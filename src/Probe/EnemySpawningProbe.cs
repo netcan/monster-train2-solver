@@ -83,7 +83,7 @@ namespace MonsterTrain2Poju.Probe
             }).ToArray();
             CombatTrigger[] triggers = data.GetTriggers().Select(trigger =>
             {
-                if (trigger.GetTriggerAtThreshold() != 0 || trigger.GetOnlyTriggerIfEquipped() ||
+                if (trigger.GetTriggerAtThreshold() != 0 || trigger.GetOnlyTriggerIfEquipped() || trigger.GetRemoveOnRelentlessChange() ||
                     trigger.GetRequiredStatusEffects().Count > 0 || trigger.GetRequiredStatusEffectsForDyingCharacter().Count > 0)
                     interactions.Add("Spawned conditional triggers");
                 CombatEffect[] effects = trigger.GetEffects().Select(effect =>
@@ -105,7 +105,8 @@ namespace MonsterTrain2Poju.Probe
                         pool.Select(card => card.GetID()).ToArray(), effect.GetParamBool2());
                 }).ToArray();
                 return new CombatTrigger(trigger.GetTrigger().ToString(), trigger.GetTriggerOnce(), false,
-                    trigger.GetHideVisualAndIgnoreSilence(), 1, effects);
+                    trigger.GetHideVisualAndIgnoreSilence(), 1, effects,
+                    AllGameManagers.Instance!.GetSaveManager().GetBalanceData().GetDisallowedDeploymentPhaseCharacterTriggers().Contains(trigger.GetTrigger()));
             }).ToArray();
             return new EnemyDefinition(new CombatUnit(0, data.GetAssetKey(), CombatTeam.Enemy, data.GetAttackDamage(),
                 data.GetHealth(), data.GetHealth(), data.GetCanAttack(), false, data.IsMiniboss(), statuses, triggers, size: data.GetSize(),

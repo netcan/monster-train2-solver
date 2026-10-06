@@ -94,7 +94,7 @@ namespace MonsterTrain2Poju.Model
                 else if (effect.Type == "Heal")
                 {
                     RoomCombatResult healed = RoomCombatModel.ApplyCardHeal(state, target.Id, effect.Value);
-                    if (!healed.Supported) return healed;
+                    if (!healed.Supported || healed.Outcome == RoomOutcome.BattleWon || healed.Outcome == RoomOutcome.PlayerDefeated) return healed;
                     state = healed.State!;
                 }
                 else if (effect.Type == "AddStatus")

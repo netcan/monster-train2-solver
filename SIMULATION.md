@@ -28,6 +28,7 @@ are copied immutable values; independent child states can run on worker threads.
 | Runtime unit upgrades | `UnitModifierModel` | Native permanent, battle and unit-death lifetimes, duplicate removal, unique upgrades, restricted size, unhealed health and lethal max-health loss |
 | Hand upgrade spells | `HandUpgradeModel` | Native targeted and targetless sequences, current-hand membership, permanent/temporary groups, uniqueness and paid-card exclusion |
 | Basic healing | `HealingModel` and `CardSpellModel` | Native targeted spells, modifier group clamps, maximum health, multiplier/immunity, regen and lifesteal; independent healability checks |
+| Healing triggers | `CombatTrigger` and `RoomCombatModel` | Native repeated/once rewards and silence; zero/full/immune healing, deployment timing, preview flags and child isolation checks |
 | Terminal spell resolution | `BattleActionModel` | Native boss-killing spell skips later played/discard callbacks, retains played cost and prunes temporary-card statistics |
 | Enemy waves and treasure | `EnemySpawningModel` | Native group cache, spawn order, phase, slots and treasure floor selection |
 | EndTurn to next decision | `BattleTurnModel.EndTurn` | Seven native consecutive transitions in each supported fixture |
@@ -209,7 +210,9 @@ and instance play history. Schema 7 adds unit upgrade ledgers, raw size, equipme
 limit, healability and source-definition matching. Schema 8 captures permanent
 deck membership for terminal card statistics. Older fixtures do not verify
 fields absent from their schema. Schema 9 additionally captures separate card
-upgrade-callback interactions in play definitions. A
+upgrade-callback interactions in play definitions. Schema 10 also includes
+deployment restrictions for each unit trigger. Legacy inputs without that
+metadata cannot model OnHeal. A
 despawn counter <= 1 is canonicalized to 1 because each value despawns at the
 next application. Native UI previews can decrement that private counter below
 zero. Longer despawn countdowns are rejected by the native definition capture
@@ -239,8 +242,6 @@ effects leave gold unchanged. Unit effect values retain their unadjusted reward;
 only generated-card effects retain a pile destination. Relic and mutator reward
 modifiers remain explicitly unsupported.
 
-Run the saved native oracles without the game:
-
 `results/full-battle-healing.json.gz` adds a controlled healing scenario to the
 same natural first battle. The isolated process appends healing and unhealed
 maximum-health effects to the owned rearrangement spell and assigns different
@@ -256,8 +257,28 @@ lifesteal coverage. The same root-only policy, mid-battle suffix and 16 parallel
 branches are checked. Basic healing clips at maximum health, uses the multiplier
 parameter independently of stacks, and respects healability. Maximum-health
 upgrade healing bypasses immunity but still respects the multiplier and
-healability. `OnHeal` triggers, overheal and specialized healing effects remain
-unsupported at this stage.
+healability. Overheal and specialized healing effects remain unsupported.
+
+`results/full-battle-healing-triggers.json.gz` adds repeated, once-only and
+ignored-silence OnHeal gold rewards to the same fixture. One Steward has both
+healing immunity and silence. All 18 card plays, six EndTurns, 53 room stages,
+11 card cycles, 11 train phases and nine spawns match the native game. Coverage
+checks require three blocked heals to award 15 gold, a consumed once-only trigger,
+and an ignored-silence trigger firing while ordinary triggers remain blocked.
+The root-only policy, mid-battle suffix and 16 parallel branches match all
+intermediate decisions and the terminal state.
+
+Eligible healing fires OnHeal even at full health or when immunity reduces the
+amount to zero. Unhealable units and negative modified healing skip it;
+maximum-health upgrade healing deliberately does not fire it. Trigger state
+preserves once-only, silence, fire count and deployment restrictions. Each native
+preview resets its own once-only flags independently of the real state; the
+model resets these only on preview copies. Pure checks also cover generated-card
+identity/RNG and despawn follow-up targeting through the existing effect engine.
+Conditional thresholds, equipment requirements, purification and trigger removal
+on relentless changes remain explicit unsupported interactions.
+
+Run the saved native oracles without the game:
 
 ```powershell
 pwsh -NoProfile -File scripts/Check-Models.ps1
@@ -278,6 +299,7 @@ pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy units-spells-and-j
 pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy units-spells-and-junk -HandUpgrades
 pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy units-spells-and-junk -TargetedHandUpgrades
 pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy units-spells-and-junk -Healing
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy units-spells-and-junk -HealingTriggers
 ```
 
 The runner checks the explicit probe success marker, capture failures, pending

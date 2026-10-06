@@ -8,6 +8,7 @@ param(
     [switch] $HandUpgrades,
     [switch] $TargetedHandUpgrades,
     [switch] $Healing,
+    [switch] $HealingTriggers,
     [switch] $SkipBuild
 )
 
@@ -40,7 +41,7 @@ $environment = @{
     MT2_PROBE_SCENARIO = 'native-replay'
     MT2_PROBE_FULL_BATTLE = '1'
     MT2_PROBE_FULL_BATTLE_POLICY = $Policy
-    MT2_PROBE_MODIFIERS = $(if ($Healing) { 'healing' } elseif ($TargetedHandUpgrades) { 'targeted-hand-upgrades' } elseif ($HandUpgrades) { 'hand-upgrades' } elseif ($SacrificeUpgrades) { 'sacrifice-upgrades' } elseif ($DynamicUpgrades) { 'dynamic-upgrades' } elseif ($NumericUpgrades) { 'numeric-upgrades' } else { '' })
+    MT2_PROBE_MODIFIERS = $(if ($HealingTriggers) { 'healing-triggers' } elseif ($Healing) { 'healing' } elseif ($TargetedHandUpgrades) { 'targeted-hand-upgrades' } elseif ($HandUpgrades) { 'hand-upgrades' } elseif ($SacrificeUpgrades) { 'sacrifice-upgrades' } elseif ($DynamicUpgrades) { 'dynamic-upgrades' } elseif ($NumericUpgrades) { 'numeric-upgrades' } else { '' })
     MT2_PROBE_DIRECT_BRANCH = '1'
     MT2_PROBE_DEPTH = '100'
     MT2_PROBE_TARGET_TURN = '0'
@@ -79,13 +80,22 @@ $healActions = @($trace.Actions | Where-Object {
     $definition = $entry.Before.PlayRules.Cards | Where-Object DataId -EQ $card.DataId
     @($definition.Effects | Where-Object Type -EQ 'Heal').Count -gt 0
 })
-$healingCoverage = -not $Healing
-if ($Healing) {
+$healingCoverage = -not ($Healing -or $HealingTriggers)
+if ($Healing -or $HealingTriggers) {
     $healingCoverage = $healActions.Count -gt 0 -and @($healActions | Where-Object {
         $entry = $_
         $beforeUnit = $entry.Before.Spawn.Train.Rooms.Units | Where-Object Id -EQ $entry.Action.TargetUnitId
         $afterUnit = $entry.Actual.Spawn.Train.Rooms.Units | Where-Object Id -EQ $entry.Action.TargetUnitId
         $null -ne $afterUnit -and $afterUnit.Health -gt $beforeUnit.Health
+    }).Count -gt 0
+}
+$onHealCoverage = -not $HealingTriggers
+if ($HealingTriggers) {
+    $onHealCoverage = @($healActions | Where-Object {
+        $entry = $_
+        $target = $entry.Before.Spawn.Train.Rooms.Units | Where-Object Id -EQ $entry.Action.TargetUnitId
+        @($target.Statuses | Where-Object Id -EQ 'heal immunity').Count -gt 0 -and
+            $entry.Actual.Spawn.Train.Context.Gold - $entry.Before.Spawn.Train.Context.Gold -eq 15
     }).Count -gt 0
 }
 if ($HandUpgrades -or $TargetedHandUpgrades) {
@@ -124,10 +134,11 @@ $result = [pscustomobject]@{
     ModifierCoverage = $modifierCoverage
     HealActions = $healActions.Count
     HealingCoverage = $healingCoverage
+    OnHealCoverage = $onHealCoverage
     Trace = $tracePath
 }
 $result | ConvertTo-Json
-if ($null -eq $trace.NativeWon -or $process.ExitCode -ne 0 -or -not $nativePassed -or -not $originalUnchanged -or -not $modifierCoverage -or -not $healingCoverage -or
+if ($null -eq $trace.NativeWon -or $process.ExitCode -ne 0 -or -not $nativePassed -or -not $originalUnchanged -or -not $modifierCoverage -or -not $healingCoverage -or -not $onHealCoverage -or
     $trace.CaptureFailures -ne 0 -or $trace.Mismatches -ne 0 -or $trace.Unsupported -ne 0 -or $trace.Pending -ne 0) {
     throw "Full battle differential probe failed; inspect $tracePath and $unityLog"
 }

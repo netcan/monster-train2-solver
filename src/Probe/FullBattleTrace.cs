@@ -106,6 +106,7 @@ namespace MonsterTrain2Poju.Probe
                 if (!character.IsAlive || character.IsDestroyed) continue;
                 int id = UnitId(character);
                 CombatTrigger[] triggers = CaptureTriggers(character, interactions);
+                if (character.IsPurified()) interactions.Add("Purified unit trigger restrictions");
                 if (character.GetRoomStateModifiers().Count > 0)
                     interactions.Add(character.GetSourceCharacterData().GetAssetKey() + " room modifiers");
                 if (character.GetEquipment().Count > 0)
@@ -164,7 +165,7 @@ namespace MonsterTrain2Poju.Probe
             return unit.GetTriggers().Select(trigger =>
             {
                 CharacterTriggerData data = trigger.GetTriggerData();
-                if (data.GetTriggerAtThreshold() != 0 || data.GetOnlyTriggerIfEquipped() ||
+                if (data.GetTriggerAtThreshold() != 0 || data.GetOnlyTriggerIfEquipped() || data.GetRemoveOnRelentlessChange() ||
                     data.GetRequiredStatusEffects().Count > 0 || data.GetRequiredStatusEffectsForDyingCharacter().Count > 0)
                     interactions.Add("Conditional trigger " + trigger.GetTrigger());
                 var effects = trigger.GetEffectStates().Select(effect =>
@@ -199,7 +200,8 @@ namespace MonsterTrain2Poju.Probe
                 }).ToArray();
                 return new CombatTrigger(trigger.GetTrigger().ToString(), data.GetTriggerOnce(),
                     trigger.GetHasTriggeredOnce(false), trigger.GetHideVisualAndIgnoreSilence(),
-                    unit.GetTriggerFireCount(trigger.GetTrigger(), trigger), effects);
+                    unit.GetTriggerFireCount(trigger.GetTrigger(), trigger), effects,
+                    AllGameManagers.Instance!.GetSaveManager().GetBalanceData().GetDisallowedDeploymentPhaseCharacterTriggers().Contains(trigger.GetTrigger()));
             }).ToArray();
         }
 
@@ -284,7 +286,7 @@ namespace MonsterTrain2Poju.Probe
             string path = Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!, "full-battle.json");
             File.WriteAllText(path, JsonConvert.SerializeObject(new
             {
-                Schema = 9,
+                Schema = 10,
                 GameVersion = Application.version,
                 GameModuleMvid = typeof(CardState).Assembly.ManifestModule.ModuleVersionId,
                 NativeWon,

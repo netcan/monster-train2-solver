@@ -80,7 +80,7 @@ internal static class BattleActionChecks
             supported++;
         }
         Console.WriteLine($"NATIVE-ACTION-CHECKS PASS: {supported} matched, {unsupported} unsupported.");
-        if (fixture.TryGetProperty("ModifierScenario", out JsonElement healingScenario) && healingScenario.GetString() == "healing")
+        if (fixture.TryGetProperty("ModifierScenario", out JsonElement healingScenario) && healingScenario.GetString() is "healing" or "healing-triggers")
         {
             int healPlays = 0, restored = 0;
             var statuses = new HashSet<string>();
@@ -101,6 +101,28 @@ internal static class BattleActionChecks
             Require(healPlays > 0 && restored > 0 && new[] { "heal multiplier", "heal immunity", "regen", "lifesteal" }.All(statuses.Contains),
                 "The healing oracle did not restore health or encounter all intended status rules.");
             Console.WriteLine($"NATIVE-HEALING-COVERAGE PASS: {healPlays} healing spell plays, {restored} restored targets, multiplier/immunity/regen/lifesteal present.");
+            if (healingScenario.GetString() == "healing-triggers")
+            {
+                var actualStates = actions.EnumerateArray().Select(entry => entry.GetProperty("Actual").Deserialize<BattleTurnState>(ModelJson.Options)!).ToArray();
+                var units = actualStates.SelectMany(state => state.Spawn.Train.Rooms).SelectMany(room => room.Units).ToArray();
+                Require(units.Any(unit => unit.Triggers.Any(trigger => trigger.Kind == "OnHeal" && trigger.Once && trigger.HasTriggered)),
+                    "The native OnHeal fixture never consumed its once-only trigger.");
+                Require(units.Any(unit => unit.Statuses.Any(status => status.Id == "silenced") &&
+                    unit.Triggers.Any(trigger => trigger.Kind == "OnHeal" && trigger.IgnoreSilence && trigger.HasTriggered) &&
+                    unit.Triggers.Where(trigger => trigger.Kind == "OnHeal" && !trigger.IgnoreSilence).All(trigger => !trigger.HasTriggered)),
+                    "The native OnHeal fixture did not exercise ignored silence.");
+                bool immuneRewards = actions.EnumerateArray().Any(entry =>
+                {
+                    BattleTurnState before = entry.GetProperty("Before").Deserialize<BattleTurnState>(ModelJson.Options)!;
+                    BattleTurnState actual = entry.GetProperty("Actual").Deserialize<BattleTurnState>(ModelJson.Options)!;
+                    int id = entry.GetProperty("Action").GetProperty("TargetUnitId").GetInt32();
+                    CombatUnit? target = before.Spawn.Train.Rooms.SelectMany(room => room.Units).SingleOrDefault(unit => unit.Id == id);
+                    return target?.Statuses.Any(status => status.Id == "heal immunity") == true &&
+                        actual.Spawn.Train.Context!.Gold - before.Spawn.Train.Context!.Gold == 15;
+                });
+                Require(immuneRewards, "Three blocked heals did not produce three native minimum rewards.");
+                Console.WriteLine("NATIVE-ONHEAL-COVERAGE PASS: three blocked heal rewards, once-only state, silence and ignored silence.");
+            }
         }
         if (fixture.TryGetProperty("ModifierScenario", out JsonElement scenario) &&
             (scenario.GetString() is "dynamic-upgrades" or "sacrifice-upgrades" or "hand-upgrades" or "targeted-hand-upgrades"))

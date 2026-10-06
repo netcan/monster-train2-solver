@@ -221,8 +221,10 @@ namespace MonsterTrain2Poju.Model
                     return "Valor requires the armor status definition.";
                 foreach (CombatTrigger trigger in unit.Triggers)
                 {
-                    if (trigger.Kind != "OnDeath" && trigger.Kind != "PostCombat")
+                    if (trigger.Kind != "OnDeath" && trigger.Kind != "PostCombat" && trigger.Kind != "OnHeal")
                         return "Unmodeled trigger " + trigger.Kind;
+                    if (trigger.Kind == "OnHeal" && trigger.SkipDuringDeployment == null)
+                        return "OnHeal requires deployment timing state.";
                     if (trigger.FireCount < 0) return "Invalid trigger fire count.";
                     foreach (CombatEffect effect in trigger.Effects)
                     {
@@ -287,6 +289,9 @@ namespace MonsterTrain2Poju.Model
             {
                 this.source = source; this.events = events;
                 units = source.Units.Select(unit => new WorkingUnit(unit)).ToList();
+                if (source.Preview)
+                    foreach (WorkingUnit unit in units)
+                        for (int index = 0; index < unit.Triggers.Count; index++) unit.Triggers[index] = unit.Triggers[index].ForPreview();
                 context = source.Context;
             }
 
@@ -346,8 +351,10 @@ namespace MonsterTrain2Poju.Model
 
             internal RoomCombatResult CardHeal(int targetId, int amount)
             {
-                Heal(units.Single(unit => unit.Source.Id == targetId), amount, "SpellHeal");
-                return Finish(RoomOutcome.Exchanged);
+                WorkingUnit target = units.Single(unit => unit.Source.Id == targetId);
+                Heal(target, amount, "SpellHeal");
+                return Finish(battleWon ? RoomOutcome.BattleWon : target.Source.IsPyre && !target.Alive
+                    ? RoomOutcome.PlayerDefeated : RoomOutcome.Exchanged);
             }
 
             private void Exchange()
@@ -498,6 +505,8 @@ namespace MonsterTrain2Poju.Model
                 int old = unit.Health;
                 unit.Health += Math.Min(modified, unit.Source.MaxHealth - unit.Health);
                 Emit(kind, unit, unit, unit.Health - old);
+                // Native ApplyHeal runs these even when clipping or immunity produces zero restoration.
+                FireTriggers(unit, "OnHeal");
             }
 
             private void FireTriggers(WorkingUnit unit, string kind)
@@ -507,6 +516,7 @@ namespace MonsterTrain2Poju.Model
                 {
                     CombatTrigger trigger = unit.Triggers[index];
                     if (trigger.Kind != kind || trigger.Once && trigger.HasTriggered ||
+                        source.Deployment && trigger.SkipDuringDeployment == true ||
                         unit.Has("silenced") && !trigger.IgnoreSilence) continue;
                     var effects = trigger.Effects.ToArray();
                     for (int fire = 0; fire < trigger.FireCount; fire++)

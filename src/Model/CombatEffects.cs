@@ -58,13 +58,15 @@ namespace MonsterTrain2Poju.Model
         public bool IgnoreSilence { get; }
         public int FireCount { get; }
         public IReadOnlyList<CombatEffect> Effects { get; }
+        public bool? SkipDuringDeployment { get; }
         public CombatTrigger(string kind, bool once, bool hasTriggered, bool ignoreSilence,
-            int fireCount, IReadOnlyList<CombatEffect> effects)
+            int fireCount, IReadOnlyList<CombatEffect> effects, bool? skipDuringDeployment = null)
         {
             Kind = kind; Once = once; HasTriggered = hasTriggered; IgnoreSilence = ignoreSilence;
-            FireCount = fireCount; Effects = Array.AsReadOnly(effects.ToArray());
+            FireCount = fireCount; Effects = Array.AsReadOnly(effects.ToArray()); SkipDuringDeployment = skipDuringDeployment;
         }
         internal CombatTrigger Fired(IReadOnlyList<CombatEffect> effects) => new CombatTrigger(Kind,
-            Once, true, IgnoreSilence, FireCount, effects);
+            Once, true, IgnoreSilence, FireCount, effects, SkipDuringDeployment);
+        internal CombatTrigger ForPreview() => new CombatTrigger(Kind, Once, false, IgnoreSilence, FireCount, Effects, SkipDuringDeployment);
     }
 }

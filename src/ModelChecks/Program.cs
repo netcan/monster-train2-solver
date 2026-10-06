@@ -82,6 +82,7 @@ UnitModifierChecks.Run();
 HandUpgradeChecks.Run();
 HealingChecks.Run();
 GoldRewardChecks.Run();
+HealingTriggerChecks.Run();
 EnemySpawningChecks.Run();
 BattleActionChecks.Run();
 CardSpellChecks.Run();

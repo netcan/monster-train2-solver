@@ -8,7 +8,7 @@ namespace MonsterTrain2Poju.Probe
 {
     internal static class HealingScenario
     {
-        internal static void Prepare(AllGameManagers managers, ManualLogSource log)
+        internal static void Prepare(AllGameManagers managers, ManualLogSource log, bool withTriggers = false)
         {
             RegisterHealingStatus("heal multiplier", "StatusEffectHealMultiplierState", 2);
             RegisterHealingStatus("heal immunity", "StatusEffectHealImmunityState", 0);
@@ -42,16 +42,42 @@ namespace MonsterTrain2Poju.Probe
             }
             CardState[] stewards = owned.Where(card => card.GetCardDataID() == "d14a50f3-728d-43e1-87f0-ef1b013f6678").Take(2).ToArray();
             if (stewards.Length != 2) throw new InvalidOperationException("Healing fixture requires two Steward copies.");
+            if (withTriggers)
+            {
+                CharacterData unit = save.GetAllGameData().FindCardData(stewards[0].GetCardDataID())!
+                    .GetEffects().Single(effect => effect.GetEffectStateName() == "CardEffectSpawnMonster").GetParamCharacterData();
+                var triggers = unit.GetTriggers().ToList();
+                triggers.Add(HealGold(2, once: false, ignoreSilence: false));
+                triggers.Add(HealGold(3, once: true, ignoreSilence: false));
+                triggers.Add(HealGold(1, once: false, ignoreSilence: true));
+                AccessTools.Field(typeof(CharacterData), "triggers").SetValue(unit, triggers);
+            }
             for (int index = 0; index < stewards.Length; index++)
             {
                 var upgrade = new CardUpgradeState(); upgrade.Setup();
                 upgrade.AddStatusEffectUpgradeStacks(index == 0 ? "heal multiplier" : "heal immunity", 1);
                 upgrade.AddStatusEffectUpgradeStacks("regen", 2);
                 upgrade.AddStatusEffectUpgradeStacks("lifesteal", 2);
+                if (withTriggers && index == 1) upgrade.AddStatusEffectUpgradeStacks("silenced", 1);
                 stewards[index].ApplyPermanentUpgrade(upgrade, save, ignoreUpgradeAnimation: true);
             }
             AccessTools.Field(typeof(CombatManager), "combatStateChanged").SetValue(managers.GetCombatManager(), true);
             log.LogInfo("HEALING-PREPARED heal group clamps, max health, immunity, multiplier, regen and lifesteal.");
+            if (withTriggers) log.LogInfo("ONHEAL-PREPARED repeat/once gold, silence and ignored-silence triggers.");
+        }
+
+        private static CharacterTriggerData HealGold(int amount, bool once, bool ignoreSilence)
+        {
+            var effect = new CardEffectData("CardEffectRewardGold", null!, Team.Type.Monsters);
+            effect.Cheat_SetTargetMode(TargetMode.Room);
+            AccessTools.Field(typeof(CardEffectData), "paramInt").SetValue(effect, amount);
+            var trigger = new CharacterTriggerData(CharacterTriggerData.Trigger.OnHeal, effect);
+            AccessTools.Field(typeof(CharacterTriggerData), "triggerOnce").SetValue(trigger, once);
+            AccessTools.Field(typeof(CharacterTriggerData), "hideVisualAndIgnoreSilence").SetValue(trigger, ignoreSilence);
+            AccessTools.Field(typeof(CharacterTriggerData), "suppressTriggerNotification").SetValue(trigger, true);
+            AccessTools.Field(typeof(CharacterTriggerData), "requiredStatusEffects").SetValue(trigger, new List<StatusEffectStackData>());
+            AccessTools.Field(typeof(CharacterTriggerData), "requiredStatusEffectsForDyingCharacter").SetValue(trigger, new List<StatusEffectStackData>());
+            return trigger;
         }
 
         // These native state classes exist in this build but their definitions may be absent.
