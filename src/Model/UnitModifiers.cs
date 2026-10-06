@@ -30,7 +30,7 @@ namespace MonsterTrain2Poju.Model
     public static class UnitModifierModel
     {
         public static RoomCombatResult Apply(RoomCombatState source, int targetId, CardUpgradeModifier upgrade, string lifetime,
-            bool remove = false, int? roomCapacity = null)
+            bool remove = false, int? roomCapacity = null, int sourceCardId = 0, string? triggerKind = null)
         {
             string? error = RoomCombatModel.Validate(source);
             if (error != null) return Unsupported(error);
@@ -42,6 +42,13 @@ namespace MonsterTrain2Poju.Model
                 return Unsupported("Unmodeled unit upgrade lifetime.");
             if (remove && upgrade.DataId.Length == 0) return Unsupported("Removing an upgrade requires a definition ID.");
             if (!remove && target.Modifiers.IsClone && upgrade.ExcludeFromClones) return Match(source);
+            if (!remove)
+            {
+                UnitUpgradeScalingResult scaled = UnitUpgradeScalingModel.Apply(source.Context, sourceCardId, upgrade, triggerKind);
+                if (!scaled.Supported) return Unsupported(scaled.UnsupportedReason!);
+                upgrade = scaled.Upgrade!;
+                source = new RoomCombatState(source.RoomIndex, source.Deployment, source.Units, source.ExternalInteractions, scaled.Context, source.Preview);
+            }
             foreach (CombatStatus status in upgrade.Statuses)
             {
                 error = RoomCombatModel.Validate(new RoomCombatState(source.RoomIndex, source.Deployment,
@@ -122,7 +129,7 @@ namespace MonsterTrain2Poju.Model
                     temporary.Upgrades.Where(item => item.DataId != upgrade.DataId).ToArray(), temporary.PersistentHealth, temporary.ExternalInteractions);
                 else if (lifetime == "Permanent") permanent = Add(permanent, upgrade);
                 else temporary = Add(temporary, upgrade);
-                var changed = new CardInstanceState(card.InstanceId, card.DataId, permanent, temporary, card.LastPlayedCost, card.LastForgedAmount, card.PlayCount, card.ExternalInteractions, card.EffectCounters, card.DamageScalingTraits, card.StatusScalingTraits);
+                var changed = new CardInstanceState(card.InstanceId, card.DataId, permanent, temporary, card.LastPlayedCost, card.LastForgedAmount, card.PlayCount, card.ExternalInteractions, card.EffectCounters, card.DamageScalingTraits, card.StatusScalingTraits, card.UnitUpgradeScalingTraits);
                 CombatContext context = state.Context.WithCard(changed);
                 state = new RoomCombatState(state.RoomIndex, state.Deployment, state.Units, state.ExternalInteractions, context, state.Preview);
             }

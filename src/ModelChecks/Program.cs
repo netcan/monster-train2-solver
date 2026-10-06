@@ -84,6 +84,7 @@ DynamicStatisticChecks.Run();
 CardModifierChecks.Run();
 TerminalSpellChecks.Run();
 UnitModifierChecks.Run();
+UnitUpgradeScalingChecks.Run();
 HandUpgradeChecks.Run();
 HealingChecks.Run();
 GoldRewardChecks.Run();

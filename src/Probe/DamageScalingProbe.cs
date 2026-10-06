@@ -8,7 +8,7 @@ namespace MonsterTrain2Poju.Probe
 {
     internal static class DamageScalingProbe
     {
-        internal static bool Known(string name) => name == "CardTraitSelfPurge" || name == "CardTraitScalingAddDamage" || name == "CardTraitScalingAddStatusEffect";
+        internal static bool Known(string name) => name == "CardTraitSelfPurge" || name == "CardTraitScalingAddDamage" || name == "CardTraitScalingAddStatusEffect" || UnitUpgradeScalingProbe.Known(name);
         internal static ScalingDamageTrait[]? Capture(CardState card)
         {
             ScalingDamageTrait[] traits = card.GetTraitStates().OfType<CardTraitScalingAddDamage>().Select(trait =>

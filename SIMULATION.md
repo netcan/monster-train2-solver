@@ -844,7 +844,7 @@ API delegates to the same engine for local checks. Each applied target updates
 its own room, then shares the resulting context with every other room; fixed
 target collections and last-target identities span the train. Capacity-limited
 unit upgrades consult the target room's definition. Dead movement and standby
-spawner routing use all rooms. The 35 saved native battle oracles exercise this
+spawner routing use all rooms. The 36 saved native battle oracles exercise this
 engine through the normal card-action path, including cross-room target modes.
 
 `StatisticQueryModel` implements the counter and definition queries used by
@@ -929,6 +929,45 @@ gold/energy/moon timing, exact cycles and 32 isolated branches. Capture failures
 differences, unsupported transitions and pending records are zero. Original
 profile files are unchanged. Additional resource-changing card/relic effects
 and variable-cost card actions remain outside this verified scope.
+
+Schema 25 captures mixed ordered `CardTraitScalingUpgradeUnitAttack` and
+`CardTraitScalingUpgradeUnitHealth` descriptors on immutable card instances and
+creation rules, plus the upgrade definition's `MagicPowerTraitScalingOnly` flag.
+Unit-upgrade effects create a fresh upgrade for each target, then run source-card
+traits in order. Queries use the associated trait owner's identity. Integer
+products and additions wrap without adding the source card's numeric modifiers.
+Restriction 1 allows an ordinary cast with no character trigger, and allows
+`OnSpawn`; it skips other character triggers. Other restriction values follow the
+native unrestricted path. A magic-only upgrade skips these traits and their
+queries. Clone exclusion precedes the callbacks; uniqueness and capacity checks
+follow them. Rejected applications still retain any query membership refresh.
+
+Scaled upgrades are retained on the unit and its spawner's applicable modifier
+group. Creation, discard, hand/unit upgrades and health updates preserve the
+source trait descriptors. Native definition-based removal finds and removes
+stored upgrade entries by ID, but deducts the base-valued upgrade passed by the
+removal effect. It does not re-run the scaling traits or deduct the stored scaled
+values. Consequently a residual attack/health bonus can remain on the unit after
+the corresponding unit/spawner modifier entry is removed; the model preserves
+this behavior.
+
+`results/full-battle-unit-upgrade-scaling.json.gz` retains 245 live callbacks and
+30 isolated callbacks, 18 plays, 6 EndTurns, 53 room stages, 11 card cycles, 11
+train phases and 9 spawns. It wins the natural battle with Pyre health 80. The
+controlled owned spell exercises both stat types, signed bonuses, local played
+history, turn/moon/forge queries, permanent/temporary/unique upgrades, repeated
+removal, and capacity and magic-only gates. The callback calibration covers
+null/OnSpawn/OnHeal restrictions. It temporarily gives the trait owner a distinct
+local counter while supplying another card as the callback argument, then
+restores the original native statistic entries and verifies the full live
+context is unchanged. Independent checks recompute complete upgrade/context
+outputs and the full battle from initial/mid-battle roots with parallel branches.
+The retained native JSON is 219,987,508 bytes, with SHA-256
+`64c8be1e716b2263b967e1a610f47a263bb244c7f58425a8b0e9a7fb4ae1df4c`.
+Capture failures, mismatches, unsupported stages and pending records are zero;
+the original profile files remain unchanged. General character-trigger upgrade
+execution, single-instance accumulation and upgrade-scaling classes beyond these
+two remain to be modeled.
 
 Schema 24 captures ordered `CardTraitScalingAddStatusEffect` descriptors on
 immutable card instances and generated-card rules, plus the native stackability

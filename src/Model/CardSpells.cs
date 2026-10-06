@@ -505,7 +505,7 @@ namespace MonsterTrain2Poju.Model
                 return UnitHealthModel.Apply(state, target.Id, effect.Value, effect.Type == "DebuffHealth", effect.Lifetime);
             if (effect.Type == "UnitUpgrade" || effect.Type == "RemoveUnitUpgrade")
                 return UnitModifierModel.Apply(state, target.Id, effect.Upgrade!, effect.Lifetime,
-                    effect.Type == "RemoveUnitUpgrade", target.Team == CombatTeam.Player ? playerCapacity : enemyCapacity);
+                    effect.Type == "RemoveUnitUpgrade", target.Team == CombatTeam.Player ? playerCapacity : enemyCapacity, sourceCardId);
             if (effect.Type == "AddStatus")
             {
                 if (effect.Value != 0)

@@ -142,6 +142,7 @@ internal static class RoomCombatChecks
         SharedPileChecks.Native(fixture);
         DamageScalingChecks.Native(fixture);
         StatusScalingChecks.Native(fixture);
+        UnitUpgradeScalingChecks.Native(fixture);
         DynamicStatisticChecks.Native(fixture);
         SharedPileChecks.MigratedRoot(fixture);
     }
