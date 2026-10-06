@@ -175,8 +175,8 @@ namespace MonsterTrain2Poju.Model
             target = new RoomCombatState(target.RoomIndex, target.Deployment, target.Units, target.ExternalInteractions, context, target.Preview);
             CombatUnit[] players = target.Units.Where(unit => unit.Team == CombatTeam.Player).ToArray();
             int position = action.PlayerPosition == -1 ? players.Length : action.PlayerPosition;
-            CombatUnit? spawned = null;
-            bool spellApplied = false;
+            int? spawnedId = null;
+            bool effectsApplied = false;
             RoomOutcome outcome = RoomOutcome.Exchanged;
             int nextUnitId = source.Spawn.NextUnitId;
             if (rule.Effect == "SpawnMonster")
@@ -194,10 +194,23 @@ namespace MonsterTrain2Poju.Model
                 if (position < 0 || position > players.Length) return Illegal("Invalid summon position.");
                 if (nextUnitId <= 0 || train.Rooms.SelectMany(room => room.Units).Any(unit => unit.Id >= nextUnitId))
                     return Unsupported("Invalid unit identity allocation.");
-                spawned = new CombatUnit(nextUnitId++, template.AssetKey, CombatTeam.Player, template.BaseAttack,
+                var spawned = new CombatUnit(nextUnitId++, template.AssetKey, CombatTeam.Player, template.BaseAttack,
                     template.Health, template.MaxHealth, template.CanAttack, false, false, template.Statuses,
                     template.Triggers, card.InstanceId, template.Size, template.StatusImmunities, template.Subtypes, template.Modifiers, template.IsBoss);
                 context = context.WithStatistics(context.Statistics?.Spawn(action.RoomIndex, template.Subtypes));
+                spawnedId = spawned.Id;
+                var nextPlayers = players.ToList(); nextPlayers.Insert(position, spawned);
+                var entered = new RoomCombatState(target.RoomIndex, target.Deployment,
+                    target.Units.Where(unit => unit.Team == CombatTeam.Enemy).Concat(nextPlayers).ToArray(), target.ExternalInteractions, context, target.Preview);
+                RoomCombatResult spawnTriggers = RoomCombatModel.ApplySpawnTriggers(entered, spawned.Id, fromCard: true);
+                if (!spawnTriggers.Supported) return Unsupported(spawnTriggers.UnsupportedReason!);
+                context = spawnTriggers.State!.Context!; outcome = spawnTriggers.Outcome;
+                piles = context.OtherPiles?.ToArray() ?? piles;
+                RoomCombatState[] enteredRooms = train.Rooms.Select(room => new RoomCombatState(room.RoomIndex, room.Deployment,
+                    room.RoomIndex == target.RoomIndex ? spawnTriggers.State.Units : room.Units, room.ExternalInteractions, context, room.Preview)).ToArray();
+                var enteredIds = new HashSet<int>(enteredRooms.SelectMany(room => room.Units).Select(unit => unit.Id));
+                train = new TrainCombatState(enteredRooms, train.Movement.Where(item => enteredIds.Contains(item.UnitId)).ToArray(), train.EnemySlotsPerRoom, context);
+                effectsApplied = true;
             }
             else if (rule.Effect == "Spell")
             {
@@ -222,7 +235,7 @@ namespace MonsterTrain2Poju.Model
                     card.InstanceId, source.PlayRules, piles);
                 if (!result.Supported) return Unsupported(result.UnsupportedReason!);
                 piles = result.OtherPiles?.ToArray() ?? piles;
-                train = result.State!; context = train.Context!; outcome = result.Outcome; spellApplied = true;
+                train = result.State!; context = train.Context!; outcome = result.Outcome; effectsApplied = true;
             }
             else if (rule.Effect != "Null") return Unsupported("Unimplemented card effect " + rule.Effect);
             else if (action.PlayerPosition != -1 || action.TargetUnitId != 0) return Illegal("A no-target card does not take a target or position.");
@@ -230,7 +243,7 @@ namespace MonsterTrain2Poju.Model
             List<CardToken> hand = context.Cards.Hand.Where(item => item.InstanceId != card.InstanceId).ToList();
             List<CardToken> discard = context.Cards.Discard.ToList();
             bool terminal = outcome == RoomOutcome.BattleWon || outcome == RoomOutcome.PlayerDefeated;
-            if (spellApplied && !(terminal && context.OtherPiles != null))
+            if (effectsApplied && !(terminal && context.OtherPiles != null))
             {
                 var alive = new HashSet<int>(train.Rooms.SelectMany(room => room.Units).Select(unit => unit.Id));
                 foreach (CombatUnit dead in source.Spawn.Train.Rooms.SelectMany(room => room.Units)
@@ -248,7 +261,7 @@ namespace MonsterTrain2Poju.Model
             if (terminal) piles = piles.Select(CardPileModel.Clear).ToArray();
             // Native DiscardCard/PurgeCard remove a naturally played card's retained buffer reference.
             piles = piles.Select(pile => pile.Name == "DiscardBuffer" ? CardPileModel.Remove(pile, card.InstanceId) : pile).ToArray();
-            if (terminal && rule.Destination != "Discard") return Unsupported("Terminal spell routing outside discard is not validated.");
+            if (terminal && rule.Destination != "Discard") return Unsupported("Terminal played-card routing outside discard is not validated.");
             if (rule.Destination == "Discard") discard.Add(card);
             else
             {
@@ -256,6 +269,15 @@ namespace MonsterTrain2Poju.Model
                 if (destination == null || (rule.Destination != "Standby" && rule.Destination != "Purged" && rule.Destination != "Exhausted"))
                     return Unsupported("Unimplemented card destination " + rule.Destination);
                 piles = piles.Select(pile => pile == destination ? CardPileModel.Add(pile, card) : pile).ToArray();
+            }
+            bool summonRemoved = spawnedId.HasValue && !train.Rooms.SelectMany(room => room.Units).Any(unit => unit.Id == spawnedId.Value);
+            if (summonRemoved && !terminal)
+            {
+                CardPileState? standby = piles.FirstOrDefault(pile => pile.Name == "Standby");
+                CardPileState? exhausted = piles.FirstOrDefault(pile => pile.Name == "Exhausted");
+                if (standby == null || exhausted == null) return Unsupported("Missing removed summon card routing.");
+                piles = piles.Select(pile => pile == standby ? CardPileModel.Remove(pile, card.InstanceId) :
+                    pile == exhausted ? CardPileModel.Add(pile, card) : pile).ToArray();
             }
             if (terminal && context.Statistics != null && context.Statistics.DeckCards == null)
                 return Unsupported("Terminal card resolution requires permanent deck membership.");
@@ -269,6 +291,7 @@ namespace MonsterTrain2Poju.Model
             if (terminal) statistics = statistics?.RefreshOwnedCards(new[] { card.InstanceId });
             statistics = statistics?.Increment(card.InstanceId, "TimesDiscarded").WithPlayedCost(card.InstanceId, null);
             if (!terminal && rule.Destination == "Exhausted") statistics = statistics?.Increment(card.InstanceId, "TimesExhausted");
+            if (summonRemoved && !terminal) statistics = statistics?.Increment(card.InstanceId, "TimesExhausted");
             context = context.AfterCardEffects();
             context = new CombatContext(new CardCycleState(hand, context.Cards.Draw, discard, context.Cards.Rng,
                 context.Cards.DrawModifier, context.Cards.ExternalInteractions), context.BattleRng,
@@ -279,13 +302,7 @@ namespace MonsterTrain2Poju.Model
                 context.OtherPiles == null ? null : piles, context.QueryFrame?.With(runningCombat: !terminal));
             RoomCombatState[] rooms = train.Rooms.Select(room =>
             {
-                CombatUnit[] units = room.Units.ToArray();
-                if (room.RoomIndex == target.RoomIndex && spawned != null)
-                {
-                    var nextPlayers = players.ToList(); nextPlayers.Insert(position, spawned);
-                    units = room.Units.Where(unit => unit.Team == CombatTeam.Enemy).Concat(nextPlayers).ToArray();
-                }
-                return new RoomCombatState(room.RoomIndex, room.Deployment, units, room.ExternalInteractions, context);
+                return new RoomCombatState(room.RoomIndex, room.Deployment, room.Units, room.ExternalInteractions, context, room.Preview);
             }).ToArray();
             var living = new HashSet<int>(rooms.SelectMany(room => room.Units).Select(unit => unit.Id));
             train = new TrainCombatState(rooms, train.Movement.Where(rule => living.Contains(rule.UnitId)).ToArray(), train.EnemySlotsPerRoom, context);

@@ -171,6 +171,16 @@ namespace MonsterTrain2Poju.Model
         public static RoomCombatResult Exchange(RoomCombatState state) => Run(state, false);
         public static RoomCombatResult Resolve(RoomCombatState state) => Run(state, true);
 
+        public static RoomCombatResult ApplySpawnTriggers(RoomCombatState state, int unitId, bool fromCard)
+        {
+            string? error = Validate(state);
+            CombatUnit? unit = state.Units.FirstOrDefault(item => item.Id == unitId);
+            if (error != null || unit == null || fromCard && unit.SpawnerCardId <= 0)
+                return new RoomCombatResult(null, RoomOutcome.Unsupported, 0, new List<CombatEvent>(),
+                    error ?? "Spawn triggers require a living new unit and its source card identity.");
+            return new Engine(state, new List<CombatEvent>(), pendingSummonCardId: fromCard ? unit.SpawnerCardId : 0).Spawn(unitId, fromCard);
+        }
+
         public static RoomCombatResult ApplyCardDamage(RoomCombatState state, int targetId, int damage, int sourceCardId = 0,
             bool deferSpawnerExhaustion = false) => ApplyCardDamage(state, targetId, damage, sourceCardId, deferSpawnerExhaustion, true);
 
@@ -237,10 +247,11 @@ namespace MonsterTrain2Poju.Model
                     return "Valor requires the armor status definition.";
                 foreach (CombatTrigger trigger in unit.Triggers)
                 {
-                    if (trigger.Kind != "OnDeath" && trigger.Kind != "PostCombat" && trigger.Kind != "OnHeal")
+                    if (trigger.Kind != "OnDeath" && trigger.Kind != "PostCombat" && trigger.Kind != "OnHeal" &&
+                        trigger.Kind != "OnSpawn" && trigger.Kind != "OnUnscaledSpawn" && trigger.Kind != "OnSpawnNotFromCard")
                         return "Unmodeled trigger " + trigger.Kind;
-                    if (trigger.Kind == "OnHeal" && trigger.SkipDuringDeployment == null)
-                        return "OnHeal requires deployment timing state.";
+                    if (trigger.Kind != "OnDeath" && trigger.Kind != "PostCombat" && trigger.SkipDuringDeployment == null)
+                        return trigger.Kind + " requires deployment timing state.";
                     if (trigger.FireCount < 0) return "Invalid trigger fire count.";
                     foreach (CombatEffect effect in trigger.Effects)
                     {
@@ -329,12 +340,14 @@ namespace MonsterTrain2Poju.Model
             private int round;
             private CombatContext? context;
             private readonly bool deferSpawnerExhaustion;
+            private readonly int pendingSummonCardId;
             private string? unsupportedReason;
 
-            internal Engine(RoomCombatState source, List<CombatEvent> events, bool deferSpawnerExhaustion = false)
+            internal Engine(RoomCombatState source, List<CombatEvent> events, bool deferSpawnerExhaustion = false, int pendingSummonCardId = 0)
             {
                 this.source = source; this.events = events;
                 this.deferSpawnerExhaustion = deferSpawnerExhaustion;
+                this.pendingSummonCardId = pendingSummonCardId;
                 units = source.Units.Select(unit => new WorkingUnit(unit)).ToList();
                 if (source.Preview)
                     foreach (WorkingUnit unit in units)
@@ -402,6 +415,16 @@ namespace MonsterTrain2Poju.Model
                 WorkingUnit target = units.Single(unit => unit.Source.Id == targetId);
                 Heal(target, amount, "SpellHeal");
                 return Finish(battleWon ? RoomOutcome.BattleWon : target.Source.IsPyre && !target.Alive
+                    ? RoomOutcome.PlayerDefeated : RoomOutcome.Exchanged);
+            }
+
+            internal RoomCombatResult Spawn(int unitId, bool fromCard)
+            {
+                WorkingUnit spawned = units.Single(unit => unit.Source.Id == unitId);
+                FireTriggers(spawned, "OnSpawn");
+                FireTriggers(spawned, "OnUnscaledSpawn");
+                if (!fromCard) FireTriggers(spawned, "OnSpawnNotFromCard");
+                return Finish(battleWon ? RoomOutcome.BattleWon : units.Any(unit => unit.Source.IsPyre && !unit.Alive)
                     ? RoomOutcome.PlayerDefeated : RoomOutcome.Exchanged);
             }
 
@@ -538,11 +561,14 @@ namespace MonsterTrain2Poju.Model
                 if (!source.Preview && context?.Statistics != null)
                     context = context.WithStatistics(context.LiveStatistics!.Death(target.Source.Team == CombatTeam.Player,
                         sourceCardId > 0 ? sourceCardId : target.Source.SpawnerCardId, requireTrackedCard: context.CardInstances?.Count == 0)
-                        .Increment(target.Source.Team == CombatTeam.Player && !deferSpawnerExhaustion ? target.Source.SpawnerCardId : 0, "TimesExhausted",
+                        .Increment(target.Source.Team == CombatTeam.Player && !DeferSpawner(target) ? target.Source.SpawnerCardId : 0, "TimesExhausted",
                             requireTrackedCard: context.CardInstances?.Count == 0));
                 if (!source.Preview && !deferSpawnerExhaustion) RouteSpawner(target);
                 if (!source.Preview && (target.Source.EndsBattleOnDeath || target.Source.IsPyre)) ClearTerminalCards();
             }
+
+            private bool DeferSpawner(WorkingUnit unit) => deferSpawnerExhaustion ||
+                pendingSummonCardId > 0 && unit.Source.SpawnerCardId == pendingSummonCardId;
 
             private void RouteSpawner(WorkingUnit unit)
             {
@@ -552,6 +578,10 @@ namespace MonsterTrain2Poju.Model
                 int id = unit.Source.SpawnerCardId;
                 CardToken? card = standby?.Cards.FirstOrDefault(item => item.InstanceId == id);
                 if (card == null && exhausted?.Cards.Any(item => item.InstanceId == id) == true) return;
+                // OnSpawn runs before its played card enters standby. Its discard callback later
+                // allocates/removes that slot and applies the exhausted counter exactly once.
+                if (card == null && id == pendingSummonCardId &&
+                    context.OtherPiles.Any(pile => pile.Name == "DiscardBuffer" && pile.Cards.Any(item => item.InstanceId == id))) return;
                 if (standby == null || exhausted == null || card == null)
                 { unsupportedReason = "Missing dead unit spawner card routing."; return; }
                 context = context.WithOtherPiles(context.OtherPiles.Select(pile => pile == standby ? CardPileModel.Remove(pile, id) :
@@ -633,7 +663,7 @@ namespace MonsterTrain2Poju.Model
                                 if (remaining <= 0 && unit.Alive)
                                 {
                                     unit.Despawned = true; unit.Health = 0; Emit("Despawn", unit, unit, 0);
-                                    if (!source.Preview && context?.Statistics != null && unit.Source.Team == CombatTeam.Player)
+                                    if (!source.Preview && context?.Statistics != null && unit.Source.Team == CombatTeam.Player && !DeferSpawner(unit))
                                         context = context.WithStatistics(context.LiveStatistics!.Increment(unit.Source.SpawnerCardId, "TimesExhausted",
                                             requireTrackedCard: context.CardInstances?.Count == 0));
                                     if (!source.Preview) RouteSpawner(unit);

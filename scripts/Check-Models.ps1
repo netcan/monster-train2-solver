@@ -24,6 +24,7 @@ $fixtures = @('full-battle-steward-once.json', 'full-battle-no-cards.json', 'ful
     'full-battle-status-scaling.json.gz',
     'full-battle-unit-upgrade-scaling.json.gz',
     'full-battle-unit-trigger-upgrades.json.gz',
+    'full-battle-spawn-triggers.json.gz', 'full-battle-spawn-triggers-lethal.json.gz',
     'card-modifier-calibration.json.gz', 'rng-calibration.json', 'gold-reward-calibration.json.gz',
     'standby-routing-calibration.json.gz', 'ui-rng-isolation-calibration.json.gz',
     'statistic-query-calibration.json.gz', 'statistic-overflow-calibration.json.gz') |

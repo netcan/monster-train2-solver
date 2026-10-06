@@ -100,6 +100,7 @@ namespace MonsterTrain2Poju.Model
                 }
                 if (selected >= wave.Candidates.Count) return Unsupported("Invalid cached spawn group.");
                 bool enteredPyre = false;
+                var entered = new List<int>();
                 foreach (EnemyDefinition definition in wave.Candidates[selected].Units.Reverse())
                 {
                     string? error = Validate(definition, context);
@@ -112,6 +113,14 @@ namespace MonsterTrain2Poju.Model
                     Insert(rooms[roomIndex], unit);
                     movement.Add(new EnemyMovement(unit.Id, 1, definition.Ascends, definition.Loops));
                     enteredPyre |= roomIndex == pyre;
+                    entered.Add(unit.Id);
+                }
+                // Native creates and enters the entire chosen group before any OnSpawn runs.
+                foreach (int unitId in entered)
+                {
+                    string? error = SpawnTriggers(unitId);
+                    if (error != null) return Unsupported(error);
+                    if (Terminal(outcome)) return Finish();
                 }
                 if (enteredPyre)
                 {
@@ -140,10 +149,25 @@ namespace MonsterTrain2Poju.Model
                     CombatUnit unit = definition.Create(nextId++);
                     Insert(rooms[eligible[floor.Value]], unit);
                     movement.Add(new EnemyMovement(unit.Id, 1, definition.Ascends, definition.Loops));
+                    error = SpawnTriggers(unit.Id);
+                    if (error != null) return Unsupported(error);
                     treasureRemaining--;
                 }
             }
             return Finish();
+
+            string? SpawnTriggers(int unitId)
+            {
+                int index = Array.FindIndex(rooms, room => room.Any(unit => unit.Id == unitId));
+                if (index < 0) return null; // An earlier group trigger can remove a later entrant.
+                RoomCombatState original = source.Train.Rooms[index];
+                var room = new RoomCombatState(index, original.Deployment, rooms[index], original.ExternalInteractions, context, original.Preview);
+                RoomCombatResult result = RoomCombatModel.ApplySpawnTriggers(room, unitId, fromCard: false);
+                if (!result.Supported) return result.UnsupportedReason;
+                rooms[index] = result.State!.Units.ToList(); context = result.State.Context;
+                if (Terminal(result.Outcome)) outcome = result.Outcome;
+                return null;
+            }
 
             EnemySpawnResult Finish()
             {
