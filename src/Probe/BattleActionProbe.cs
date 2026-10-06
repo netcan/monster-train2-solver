@@ -77,7 +77,7 @@ namespace MonsterTrain2Poju.Probe
                     CombatUnit source = definition.Unit;
                     template = new CombatUnit(0, source.AssetKey, CombatTeam.Player, source.BaseAttack, source.Health,
                         source.MaxHealth, source.CanAttack, false, false, source.Statuses, source.Triggers, size: source.Size,
-                        statusImmunities: source.StatusImmunities, subtypes: source.Subtypes, modifiers: source.Modifiers);
+                        statusImmunities: source.StatusImmunities, subtypes: source.Subtypes, modifiers: source.Modifiers, isBoss: source.IsBoss);
                 }
                 kind = "SpawnMonster"; destination = "Standby";
             }
@@ -95,9 +95,7 @@ namespace MonsterTrain2Poju.Probe
                         effect.GetEffectStateName() == "CardEffectAddPermanentCardUpgradeToCardsInHand";
                     var excluded = new List<SubtypeData>(); effect.GetTargetCharacterExcludedSubtypes(excluded);
                     if (effect.GetUseStatusEffectStackMultiplier() || effect.GetUseHealthMissingStackMultiplier() ||
-                        effect.GetUseMagicPowerMultiplier() || effect.GetTargetIgnoreBosses() || effect.GetTargetModeHealthFilter() != CardEffectData.HealthFilter.Both ||
-                        effect.GetTargetModeStatusEffectsFilter().Length > 0 || effect.GetTargetModeStatusEffectsExcludedFilter().Length > 0 ||
-                        !effect.GetTargetCharacterSubtype().IsNone || excluded.Count > 0 || !effect.GetParamSubtype().IsNone ||
+                        effect.GetUseMagicPowerMultiplier() || !effect.GetParamSubtype().IsNone ||
                         (handUpgrade ? effect.GetTargetMode() != TargetMode.Hand && effect.GetTargetMode() != TargetMode.Room :
                             !CardTargetModel.Supports(effect.GetTargetMode().ToString())))
                         interactions.Add("Spell scaling or target filters");
@@ -144,7 +142,11 @@ namespace MonsterTrain2Poju.Probe
                         upgrade, lifetime, new CardEffectTests(effect.GetShouldTest(), effect.GetShouldFailToCastIfTestFails(),
                             effect.GetShouldCancelSubsequentEffectsIfTestFails(), type == "AddStatus" && effect.GetParamBool(),
                             ((ICardEffect)Activator.CreateInstance(typeof(CardEffectBase).Assembly.GetType(effect.GetEffectStateName())!)!).CanPlayAfterBossDead),
-                        effect.GetUseIntRange() ? new CardEffectRange(effect.GetParamMinInt(), effect.GetParamMaxInt(), effect.GetParamMultiplier()) : null));
+                        effect.GetUseIntRange() ? new CardEffectRange(effect.GetParamMinInt(), effect.GetParamMaxInt(), effect.GetParamMultiplier()) : null,
+                        new CardTargetFilters(effect.GetTargetModeHealthFilter().ToString(), effect.GetTargetModeStatusEffectsFilter(),
+                            effect.GetTargetModeStatusEffectsExcludedFilter(), effect.GetTargetIgnoreBosses(),
+                            effect.GetTargetCharacterSubtype().IsNone ? "" : effect.GetTargetCharacterSubtype().Key,
+                            excluded.Select(subtype => subtype.IsNone ? "" : subtype.Key).ToArray())));
                 }
             }
             else interactions.Add("Unimplemented play effect " + kind);

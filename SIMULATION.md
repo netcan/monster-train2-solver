@@ -21,6 +21,7 @@ are copied immutable values; independent child states can run on worker threads.
 | Random spell quantities | `CardEffectRange` and `CardSpellModel` | Native per-effect quantities, damage casting/runtime test draws, upgraded endpoints, status pool/chance ordering and complete RNG state, with explicit UI RNG isolation |
 | Train spell execution | `CardSpellModel` | A single effect chain carries all rooms, shared card/statistic/RNG state and global target references; dead-unit movement and spawner routing are updated across rooms |
 | Cross-room targeting | `CardTargetModel` and `CardSpellModel` | Native tower/front/above/global HP/random selections, exact live target IDs, deferred death positions and status/death focus changes |
+| Target filtering | `CardTargetFilters` and `CardTargetModel` | Native health, required/excluded status, subtype and boss masks before selection; drop/last/physical-front bypasses, subtype precedence, filtered random legality and exact live target lists |
 | Integer RNG and shuffle | `UnityRng` | 768 native integer draws, seed initialization and complete four-word states |
 | Basic draw/discard cycle | `CardCycleModel` | 13 consecutive native operations including reshuffle |
 | Room attack exchange | `RoomCombatModel.Exchange` | Ordered initiative, target selection, retargeting, shield/armor and retaliation checks |
@@ -114,8 +115,39 @@ The full battle model rejects ranged-damage definitions when `UiRngIsolated` is
 false: the captured logical decision state cannot reproduce vanilla hand animation
 and frame-dependent highlight RNG consumption. These fixtures prove the explicit
 solver environment with the UI guard, rather than complete vanilla UI timing.
-The suite now contains 24 full battle fixtures; these controlled starting-battle
+The suite now contains 25 full battle fixtures; these controlled starting-battle
 variations do not establish complete coverage of the game's other encounters.
+
+Schema 17 carries optional `CombatUnit.IsBoss`, copied from native `IsAnyBoss`,
+separately from `EndsBattleOnDeath`. Spawn definitions, unit modifications,
+combat snapshots, room movement and card copies preserve it. Older oracles lack
+this metadata; boss-filtering modes reject unknown identities instead of
+inferring them from a unit's terminal death behavior.
+
+`CardTargetFilters` captures damaged/undamaged health, ANDed required statuses,
+excluded statuses, required/excluded subtypes and boss exclusion. Normal room,
+tower, random and HP/position selectors filter the candidate pool before selecting.
+Room-and-above fronts select the first filtered candidate per room and team.
+Physical fronts in all rooms bypass these masks, as do direct last-target modes;
+strongest-last-room instead filters candidates in the first remembered room.
+Drop overrides apply subtype/team/boss checks while bypassing health/status masks.
+A required subtype short-circuits excluded subtypes in normal collection; drop
+overrides check both lists. Random attack legality inspects the filtered pool,
+and an empty filtered pool consumes no gameplay target draw.
+
+`results/full-battle-target-filters.json.gz` retains an unaltered native trace with
+13 spells and 103 exact live effect target collections, captured after drag/drop
+override and before effect application. It verifies five drop bypasses, seven
+physical-front bypasses, 12 last-target bypasses, seven required-subtype precedence
+cases, two boss exclusions and two empty random pools. All 18 plays, six EndTurns,
+52 room stages, 11 card cycles, 11 train phases and nine spawns match native
+victory at Pyre 80. Root-only policy execution, a mid-battle suffix and 16 parallel
+simulations also match. Native capture failures, differences, unsupported and
+pending records are zero, and the original user profile is unchanged. Pure checks
+add contradictory masks, unknown boss identities, subtype ordering, filtered
+incapable attackers, parent isolation and 32 parallel branches. Relic-driven
+all-subtype rules, equipment conditions and additional target modes remain
+unsupported; these checks do not prove those interactions.
 
 `results/full-battle-steward-once.json` records a seven-decision-turn natural
 `Level1BattleJunker` battle, starting with one Steward play. The native game won
@@ -588,7 +620,7 @@ spell's played/discard callbacks.
 Pure checks cover signed offsets, detached and mismatched spawners, no-heal
 capability, the 99,999 health ceiling, preview ownership, death rewards/counters,
 post-boss continuation, later summon definitions, empty casting and 32 independent parallel branches.
-Life-link, horde, conditional sacrifice/OnHealed effects, range/scaling rules,
+Life-link, horde, conditional sacrifice/OnHealed effects, additional scaling rules,
 Pyre targeting and room-and-above selection after uncaptured sacrifice focus
 remain explicitly unsupported.
 
@@ -624,6 +656,9 @@ pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy units-spells-and-j
 pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy units-spells-and-junk -AttackBuffs
 pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy units-spells-and-junk -MaxHealthSpells
 pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy units-spells-and-junk -MaxHealthLethal
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy units-spells-and-junk -NumericRanges
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy units-spells-and-junk -NumericRangesLethal
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy units-spells-and-junk -TargetFilters
 ```
 
 The runner checks the explicit probe success marker, capture failures, pending
@@ -649,7 +684,7 @@ API delegates to the same engine for local checks. Each applied target updates
 its own room, then shares the resulting context with every other room; fixed
 target collections and last-target identities span the train. Capacity-limited
 unit upgrades consult the target room's definition. Dead movement and standby
-spawner routing use all rooms. The 22 saved native battle oracles exercise this
+spawner routing use all rooms. The 25 saved native battle oracles exercise this
 engine through the normal card-action path, including cross-room target modes.
 
 1. Capture a self-contained starting battle state and its static rule definitions.

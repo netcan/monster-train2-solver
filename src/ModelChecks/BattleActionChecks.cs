@@ -124,6 +124,8 @@ internal static class BattleActionChecks
             UnitHealthChecks.Native(fixture);
         if (fixture.TryGetProperty("ModifierScenario", out JsonElement rangeScenario) && rangeScenario.GetString() is "numeric-ranges" or "numeric-ranges-lethal")
             NumericRangeChecks.Native(fixture);
+        if (fixture.TryGetProperty("ModifierScenario", out JsonElement filterScenario) && filterScenario.GetString() == "target-filters")
+            TargetFilterChecks.Native(fixture);
         if (fixture.TryGetProperty("ModifierScenario", out JsonElement healingScenario) && healingScenario.GetString() is "healing" or "healing-triggers")
         {
             int healPlays = 0, restored = 0;

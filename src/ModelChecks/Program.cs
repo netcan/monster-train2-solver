@@ -94,6 +94,7 @@ CrossRoomSpellChecks.Run();
 UnitAttackChecks.Run();
 UnitHealthChecks.Run();
 NumericRangeChecks.Run();
+TargetFilterChecks.Run();
 TrainCombatChecks.Run();
 RoomCombatChecks.Run(args.Where(path => !path.Contains("calibration", StringComparison.OrdinalIgnoreCase)).ToArray());
 foreach (string path in args.Where(path => path.Contains("card-modifier-calibration", StringComparison.OrdinalIgnoreCase)))

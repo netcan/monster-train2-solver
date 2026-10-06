@@ -143,7 +143,7 @@ namespace MonsterTrain2Poju.Probe
                     character.GetCanAttack(), character.IsPyreHeart(), endsBattle, statuses, triggers,
                     card == null ? 0 : projection.CaptureCards(new List<CardState> { card })[0].InstanceId, character.GetSize(),
                     ((List<string>)AccessTools.Field(typeof(CharacterState), "statusEffectImmunities").GetValue(character)).ToArray(),
-                    character.GetSubtypes().Select(subtype => subtype.Key).ToArray(), UnitModifierProbe.Capture(character)));
+                    character.GetSubtypes().Select(subtype => subtype.Key).ToArray(), UnitModifierProbe.Capture(character), character.IsAnyBoss()));
             }
             return new RoomCombatState(room.GetRoomIndex(), combat.IsPlacementPhase, units,
                 interactions.Distinct().OrderBy(value => value, StringComparer.Ordinal).ToArray(), CaptureContext());
@@ -300,7 +300,7 @@ namespace MonsterTrain2Poju.Probe
             string path = Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!, "full-battle.json");
             File.WriteAllText(path, JsonConvert.SerializeObject(new
             {
-                Schema = 16,
+                Schema = 17,
                 GameVersion = Application.version,
                 GameModuleMvid = typeof(CardState).Assembly.ManifestModule.ModuleVersionId,
                 NativeWon,
@@ -320,6 +320,7 @@ namespace MonsterTrain2Poju.Probe
                 Actions = actions.Records,
                 CrossRoomTargets = CrossRoomSpellScenario.Targets,
                 NumericRanges = NumericRangeScenario.Samples,
+                FilteredTargets = TargetFilterScenario.Targets,
                 UiRngIsolation = UiRngIsolation.Records,
                 Checkpoints = checkpoints
             }, Formatting.Indented));

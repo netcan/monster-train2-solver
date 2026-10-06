@@ -67,13 +67,14 @@ namespace MonsterTrain2Poju.Model
         public IReadOnlyList<string> StatusImmunities { get; }
         public IReadOnlyList<string> Subtypes { get; }
         public UnitModifiers? Modifiers { get; }
+        public bool? IsBoss { get; }
         public int Attacks => Math.Max(1, Status("multistrike") is CombatStatus multi
             ? multi.ParamInt + multi.Stacks - 1 : 1);
 
         public CombatUnit(int id, string assetKey, CombatTeam team, int baseAttack,
             int health, int maxHealth, bool canAttack, bool isPyre, bool endsBattleOnDeath,
             IReadOnlyList<CombatStatus> statuses, IReadOnlyList<CombatTrigger>? triggers = null, int spawnerCardId = 0, int size = 0,
-            IReadOnlyList<string>? statusImmunities = null, IReadOnlyList<string>? subtypes = null, UnitModifiers? modifiers = null)
+            IReadOnlyList<string>? statusImmunities = null, IReadOnlyList<string>? subtypes = null, UnitModifiers? modifiers = null, bool? isBoss = null)
         {
             Id = id;
             AssetKey = assetKey;
@@ -94,6 +95,7 @@ namespace MonsterTrain2Poju.Model
                 .Distinct().OrderBy(id => id, StringComparer.Ordinal).ToArray());
             Subtypes = Array.AsReadOnly((subtypes ?? Array.Empty<string>()).ToArray());
             Modifiers = modifiers;
+            IsBoss = isBoss;
         }
 
         internal CombatStatus? Status(string id) => Statuses.FirstOrDefault(item => item.Id == id);
@@ -277,7 +279,7 @@ namespace MonsterTrain2Poju.Model
             }
             internal CombatUnit Freeze() => new CombatUnit(Source.Id, Source.AssetKey, Source.Team,
                 Source.BaseAttack, Health, Source.MaxHealth, Source.CanAttack, Source.IsPyre,
-                Source.EndsBattleOnDeath, Statuses.Values.ToArray(), Triggers, Source.SpawnerCardId, Source.Size, Source.StatusImmunities, Source.Subtypes, Source.Modifiers);
+                Source.EndsBattleOnDeath, Statuses.Values.ToArray(), Triggers, Source.SpawnerCardId, Source.Size, Source.StatusImmunities, Source.Subtypes, Source.Modifiers, Source.IsBoss);
         }
 
         private sealed class Engine

@@ -163,7 +163,7 @@ namespace MonsterTrain2Poju.Model
                     RngDraw chosen = state.Context!.BattleRng.Range(0, effect.Statuses.Count);
                     state = WithContext(state, state.Context.WithBattleRng(chosen.State));
                     effect = new CardActionEffect(effect.Type, effect.Target, effect.Value, effect.AllowEnemy, effect.AllowPlayer,
-                        new[] { effect.Statuses[chosen.Value] }, effect.Upgrade, effect.Lifetime, effect.Tests, effect.Range);
+                        new[] { effect.Statuses[chosen.Value] }, effect.Upgrade, effect.Lifetime, effect.Tests, effect.Range, effect.Filters);
                 }
                 UnityRng effectRng = state.Context!.BattleRng;
                 effect = Sample(effect, ref effectRng);
@@ -266,9 +266,9 @@ namespace MonsterTrain2Poju.Model
             if (validation != null) return validation;
             if (CardTargetModel.IsRandom(effects[0].Target))
             {
-                CombatUnit[] possible = source.Rooms.Where(room => effects[0].Target == "RandomFromAnyRoom" || room.RoomIndex == roomIndex)
-                    .SelectMany(room => room.Units).Where(unit => !unit.IsPyre &&
-                    unit.Statuses.All(status => status.Id != "untouchable") && (unit.Team == CombatTeam.Enemy ? effects[0].AllowEnemy : effects[0].AllowPlayer)).ToArray();
+                CardTargets candidates = CardTargetModel.RandomCandidates(source, roomIndex, effects[0]);
+                if (!candidates.Supported) return candidates.UnsupportedReason;
+                CombatUnit[] possible = source.Rooms.SelectMany(room => room.Units).Where(unit => candidates.UnitIds.Contains(unit.Id)).ToArray();
                 foreach (CardActionEffect effect in effects.Skip(1))
                 {
                     if (effect.Target == "DropTargetCharacter" && effect.Tests?.ShouldTest != false) break;
@@ -312,6 +312,8 @@ namespace MonsterTrain2Poju.Model
                 return "Mandatory last-target team tests after random selection depend on the auxiliary test stream.";
             foreach (CardActionEffect effect in effects)
             {
+                string? filterError = effect.Filters?.Validate();
+                if (filterError != null) return filterError;
                 if (effect.Range != null)
                 {
                     if (!new[] { "Damage", "Heal", "AddStatus", "BuffAttack", "DebuffAttack", "BuffHealth", "DebuffHealth" }.Contains(effect.Type))
@@ -384,17 +386,17 @@ namespace MonsterTrain2Poju.Model
             if (effect.Range == null) return effect;
             RngDraw draw = effect.Range.Sample(rng); rng = draw.State;
             return new CardActionEffect(effect.Type, effect.Target, draw.Value, effect.AllowEnemy, effect.AllowPlayer,
-                effect.Statuses, effect.Upgrade, effect.Lifetime, effect.Tests, effect.Range);
+                effect.Statuses, effect.Upgrade, effect.Lifetime, effect.Tests, effect.Range, effect.Filters);
         }
         private static int TestCount(TrainCombatState state, CardActionEffect effect, CardTargets targets) => !AttackChange(effect) ? targets.UnitIds.Count :
             state.Rooms.SelectMany(room => room.Units).Count(unit => targets.UnitIds.Contains(unit.Id) && unit.CanAttack);
         private static string? AttackTestError(TrainCombatState state, int roomIndex, CardActionEffect effect)
         {
             if (!AttackChange(effect) || !CardTargetModel.IsRandom(effect.Target)) return null;
-            IEnumerable<CombatUnit> candidates = effect.Target == "RandomFromAnyRoom" ? state.Rooms.SelectMany(room => room.Units) :
-                state.Rooms.Single(room => room.RoomIndex == roomIndex).Units;
-            bool[] outcomes = candidates.Where(unit => !unit.IsPyre && unit.Statuses.All(status => status.Id != "untouchable") &&
-                (unit.Team == CombatTeam.Enemy ? effect.AllowEnemy : effect.AllowPlayer)).Select(unit => unit.CanAttack).Distinct().ToArray();
+            CardTargets candidates = CardTargetModel.RandomCandidates(state, roomIndex, effect);
+            if (!candidates.Supported) return candidates.UnsupportedReason;
+            bool[] outcomes = state.Rooms.SelectMany(room => room.Units).Where(unit => candidates.UnitIds.Contains(unit.Id))
+                .Select(unit => unit.CanAttack).Distinct().ToArray();
             return outcomes.Length > 1 ? "Random attack-change tests depend on the auxiliary test stream." : null;
         }
 
@@ -442,7 +444,7 @@ namespace MonsterTrain2Poju.Model
 
         internal static CombatUnit Copy(CombatUnit unit, int health, IReadOnlyList<CombatStatus> statuses) =>
             new CombatUnit(unit.Id, unit.AssetKey, unit.Team, unit.BaseAttack, health, unit.MaxHealth, unit.CanAttack,
-                unit.IsPyre, unit.EndsBattleOnDeath, statuses, unit.Triggers, unit.SpawnerCardId, unit.Size, unit.StatusImmunities, unit.Subtypes, unit.Modifiers);
+                unit.IsPyre, unit.EndsBattleOnDeath, statuses, unit.Triggers, unit.SpawnerCardId, unit.Size, unit.StatusImmunities, unit.Subtypes, unit.Modifiers, unit.IsBoss);
         private static RoomCombatResult Unchanged(RoomCombatState state) => new RoomCombatResult(state, RoomOutcome.Exchanged, 0, new List<CombatEvent>());
         private static TrainSpellResult UnsupportedTrain(string reason) => new TrainSpellResult(null, RoomOutcome.Unsupported,
             Array.Empty<CombatEvent>(), reason);

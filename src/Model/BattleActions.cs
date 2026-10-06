@@ -27,10 +27,11 @@ namespace MonsterTrain2Poju.Model
         public string Lifetime { get; }
         public CardEffectTests? Tests { get; }
         public CardEffectRange? Range { get; }
+        public CardTargetFilters? Filters { get; }
         public CardActionEffect(string type, string target, int value, bool allowEnemy, bool allowPlayer, IReadOnlyList<CombatStatus> statuses,
-            CardUpgradeModifier? upgrade = null, string lifetime = "", CardEffectTests? tests = null, CardEffectRange? range = null)
+            CardUpgradeModifier? upgrade = null, string lifetime = "", CardEffectTests? tests = null, CardEffectRange? range = null, CardTargetFilters? filters = null)
         { Type = type; Target = target; Value = value; AllowEnemy = allowEnemy; AllowPlayer = allowPlayer; Statuses = Array.AsReadOnly(statuses.ToArray());
-            Upgrade = upgrade; Lifetime = lifetime; Tests = tests; Range = range; }
+            Upgrade = upgrade; Lifetime = lifetime; Tests = tests; Range = range; Filters = filters; }
     }
     public sealed class RoomPlayRule
     {
@@ -181,7 +182,7 @@ namespace MonsterTrain2Poju.Model
                     return Unsupported("Invalid unit identity allocation.");
                 spawned = new CombatUnit(nextUnitId++, template.AssetKey, CombatTeam.Player, template.BaseAttack,
                     template.Health, template.MaxHealth, template.CanAttack, false, false, template.Statuses,
-                    template.Triggers, card.InstanceId, template.Size, template.StatusImmunities, template.Subtypes, template.Modifiers);
+                    template.Triggers, card.InstanceId, template.Size, template.StatusImmunities, template.Subtypes, template.Modifiers, template.IsBoss);
                 context = context.WithStatistics(context.Statistics?.Spawn(action.RoomIndex, template.Subtypes));
             }
             else if (rule.Effect == "Spell")
