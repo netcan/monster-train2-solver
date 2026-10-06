@@ -10,8 +10,10 @@ namespace MonsterTrain2Poju.Model
         public bool FailToCast { get; }
         public bool CancelSubsequent { get; }
         public bool StrictTargets { get; }
-        public CardEffectTests(bool shouldTest, bool failToCast, bool cancelSubsequent, bool strictTargets)
-        { ShouldTest = shouldTest; FailToCast = failToCast; CancelSubsequent = cancelSubsequent; StrictTargets = strictTargets; }
+        public bool? CanPlayAfterBossDead { get; }
+        public CardEffectTests(bool shouldTest, bool failToCast, bool cancelSubsequent, bool strictTargets, bool? canPlayAfterBossDead = null)
+        { ShouldTest = shouldTest; FailToCast = failToCast; CancelSubsequent = cancelSubsequent; StrictTargets = strictTargets;
+            CanPlayAfterBossDead = canPlayAfterBossDead; }
     }
     public sealed class CardActionEffect
     {
@@ -145,7 +147,8 @@ namespace MonsterTrain2Poju.Model
             // Native direct play removes the card from hand before queued effects execute.
             context = new CombatContext(new CardCycleState(context.Cards.Hand.Where(item => item.InstanceId != card.InstanceId).ToArray(),
                 context.Cards.Draw, context.Cards.Discard, context.Cards.Rng, context.Cards.DrawModifier, context.Cards.ExternalInteractions),
-                context.BattleRng, context.Gold, context.NextCardId, context.MaxHandSize, context.StatusRules, context.Statistics, context.CardInstances, context.CardRegistry);
+                context.BattleRng, context.Gold, context.NextCardId, context.MaxHandSize, context.StatusRules, context.Statistics, context.CardInstances,
+                context.CardRegistry, context.AllScenarioBossesDead);
             target = new RoomCombatState(target.RoomIndex, target.Deployment, target.Units, target.ExternalInteractions, context, target.Preview);
             CombatUnit[] players = target.Units.Where(unit => unit.Team == CombatTeam.Player).ToArray();
             int position = action.PlayerPosition == -1 ? players.Length : action.PlayerPosition;
@@ -241,9 +244,9 @@ namespace MonsterTrain2Poju.Model
             context = new CombatContext(new CardCycleState(hand, context.Cards.Draw, discard, context.Cards.Rng,
                 context.Cards.DrawModifier, context.Cards.ExternalInteractions), context.BattleRng,
                 context.Gold, context.NextCardId, context.MaxHandSize, context.StatusRules, statistics,
-                terminal ? playingInstance == null ? context.CardInstances : new[] { playingInstance.OnDiscard(true, rule.Cost) } :
+                terminal ? playingInstance == null ? context.CardInstances : new[] { (context.FindCard(card.InstanceId) ?? playingInstance).OnDiscard(true, rule.Cost) } :
                 context.CardInstances?.Select(instance => instance.InstanceId == card.InstanceId
-                    ? instance.OnDiscard(true, rule.Cost) : instance).ToArray(), context.CardRegistry);
+                    ? instance.OnDiscard(true, rule.Cost) : instance).ToArray(), context.CardRegistry, context.AllScenarioBossesDead);
             RoomCombatState[] rooms = train.Rooms.Select(room =>
             {
                 CombatUnit[] units = room.Units.ToArray();

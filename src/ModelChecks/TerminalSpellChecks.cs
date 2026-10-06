@@ -54,6 +54,34 @@ internal static class TerminalSpellChecks
                 settled.CardRegistry.Count > settled.CardInstances!.Count,
                 "The settled terminal oracle lost unowned card references or their completed discard state.");
         Console.WriteLine("NATIVE-TERMINAL-SPELL-COVERAGE PASS: native boss kill, completed callbacks, paid energy, cleared cost and restored resolving card.");
+        if (rule.Effects.Any(effect => effect.Upgrade?.AssetKey == "PojuPostKillPermanent"))
+        {
+            CombatUnit[] oldRoom = before.Spawn.Train.Rooms.Single(room => room.RoomIndex == action.RoomIndex).Units.ToArray();
+            CombatUnit[] newRoom = actual.Spawn.Train.Rooms.Single(room => room.RoomIndex == action.RoomIndex).Units.ToArray();
+            Require(old.AllScenarioBossesDead == false && settled.AllScenarioBossesDead == true &&
+                oldRoom.Count(unit => unit.Team == CombatTeam.Enemy) >= 2 && newRoom.All(unit => unit.Team != CombatTeam.Enemy),
+                "The post-kill oracle lacks a boss death followed by a remaining enemy death.");
+            var players = oldRoom.Where(unit => unit.Team == CombatTeam.Player).ToArray();
+            Require(players.Length >= 2 && rule.Effects.Where(effect => effect.Type == "HandUpgrade")
+                .All(effect => effect.Tests!.CanPlayAfterBossDead == false) &&
+                rule.Effects.Any(effect => effect.Type == "HandUpgrade" && effect.Tests!.CancelSubsequent),
+                "The post-kill oracle lacks multiple live targets or the native hand-effect cancellation gate.");
+            foreach (CombatUnit unit in players)
+            {
+                CombatUnit next = newRoom.Single(item => item.Id == unit.Id);
+                CardInstanceState oldCard = old.CardRegistry!.Single(card => card.InstanceId == unit.SpawnerCardId);
+                CardInstanceState retained = settled.CardRegistry!.Single(card => card.InstanceId == unit.SpawnerCardId);
+                int Count(IReadOnlyList<CardUpgradeModifier> list, string name) => list.Count(upgrade => upgrade.AssetKey == "PojuPostKill" + name);
+                Require(next.BaseAttack == unit.BaseAttack + 1 && next.MaxHealth == unit.MaxHealth + 4 && next.Health == next.MaxHealth &&
+                    next.Statuses.All(status => status.Id != "armor") &&
+                    Count(retained.Permanent.Upgrades, "Permanent") == Count(oldCard.Permanent.Upgrades, "Permanent") + 1 &&
+                    Count(retained.Temporary.Upgrades, "Temporary") == Count(oldCard.Temporary.Upgrades, "Temporary") &&
+                    Count(next.Modifiers!.Upgrades, "CanceledTail") == Count(unit.Modifiers!.Upgrades, "CanceledTail") &&
+                    settled.CardInstances!.All(card => card.InstanceId != retained.InstanceId),
+                    "Post-kill damage/status/healing, detached upgrades/removal or cancellation differs.");
+            }
+            Console.WriteLine("NATIVE-POST-KILL-COVERAGE PASS: remaining enemy death, two surviving friendly targets, status consumption, permanent spawner upgrades, temporary removal, healing and canceled tail.");
+        }
     }
     private static void Require(bool condition, string message)
     { if (!condition) throw new InvalidOperationException(message); }

@@ -456,12 +456,15 @@ namespace MonsterTrain2Poju.Model
             private void Death(WorkingUnit? actor, WorkingUnit target, int sourceCardId)
             {
                 Emit("Death", actor, target, 0);
+                // Native UpdateHp sets this gate before death triggers are fired.
+                if (!source.Preview && target.Source.EndsBattleOnDeath)
+                { battleWon = true; context = context?.WithBossesDead(); }
                 FireTriggers(target, "OnDeath");
                 if (!source.Preview && context?.Statistics != null)
-                    context = context.WithStatistics(context.Statistics.Death(target.Source.Team == CombatTeam.Player,
-                        sourceCardId > 0 ? sourceCardId : target.Source.SpawnerCardId)
-                        .Increment(target.Source.Team == CombatTeam.Player ? target.Source.SpawnerCardId : 0, "TimesExhausted"));
-                if (!source.Preview && target.Source.EndsBattleOnDeath) battleWon = true;
+                    context = context.WithStatistics(context.LiveStatistics!.Death(target.Source.Team == CombatTeam.Player,
+                        sourceCardId > 0 ? sourceCardId : target.Source.SpawnerCardId, requireTrackedCard: context.CardInstances?.Count == 0)
+                        .Increment(target.Source.Team == CombatTeam.Player ? target.Source.SpawnerCardId : 0, "TimesExhausted",
+                            requireTrackedCard: context.CardInstances?.Count == 0));
                 if (!source.Preview && (target.Source.EndsBattleOnDeath || target.Source.IsPyre)) ClearTerminalCards();
             }
 
@@ -473,7 +476,7 @@ namespace MonsterTrain2Poju.Model
                     Array.Empty<CardToken>(), context.Cards.Rng, context.Cards.DrawModifier,
                     context.Cards.ExternalInteractions), context.BattleRng, context.Gold,
                     context.NextCardId, context.MaxHandSize, context.StatusRules, context.Statistics,
-                    context.CardInstances == null ? null : Array.Empty<CardInstanceState>(), context.CardRegistry);
+                    context.CardInstances == null ? null : Array.Empty<CardInstanceState>(), context.CardRegistry, context.AllScenarioBossesDead);
             }
 
             private void PostCombat()
@@ -533,7 +536,8 @@ namespace MonsterTrain2Poju.Model
                                 {
                                     unit.Despawned = true; unit.Health = 0; Emit("Despawn", unit, unit, 0);
                                     if (!source.Preview && context?.Statistics != null && unit.Source.Team == CombatTeam.Player)
-                                        context = context.WithStatistics(context.Statistics.Increment(unit.Source.SpawnerCardId, "TimesExhausted"));
+                                        context = context.WithStatistics(context.LiveStatistics!.Increment(unit.Source.SpawnerCardId, "TimesExhausted",
+                                            requireTrackedCard: context.CardInstances?.Count == 0));
                                 }
                             }
                             else if (effect.Type == "CardEffectRewardGold")
@@ -541,10 +545,11 @@ namespace MonsterTrain2Poju.Model
                                 if (source.Preview) continue;
                                 int reward = GoldRewardModel.Adjust(effect.Value);
                                 context = new CombatContext(context!.Cards, context.BattleRng,
-                                    Math.Max(0, checked(context.Gold + reward)), context.NextCardId, context.MaxHandSize, context.StatusRules, context.Statistics, context.CardInstances, context.CardRegistry);
+                                    Math.Max(0, checked(context.Gold + reward)), context.NextCardId, context.MaxHandSize, context.StatusRules, context.Statistics,
+                                    context.CardInstances, context.CardRegistry, context.AllScenarioBossesDead);
                                 Emit("Gold", unit, unit, reward);
                             }
-                            else if (effect.Type == "CardEffectAddBattleCard") AddCards(unit, effect);
+                            else if (effect.Type == "CardEffectAddBattleCard" && !battleWon && context?.AllScenarioBossesDead != true) AddCards(unit, effect);
                         }
                     }
                     unit.Triggers[index] = trigger.Fired(effects);
@@ -583,7 +588,7 @@ namespace MonsterTrain2Poju.Model
                     nextId, current.MaxHandSize, current.StatusRules,
                     current.Statistics?.TrackCards(hand.Concat(draw).Concat(discard).Select(card => card.InstanceId)),
                     current.CardInstances?.Concat(hand.Concat(draw).Concat(discard).Where(card => card.InstanceId >= current.NextCardId)
-                        .Select(card => CardInstanceState.Empty(card.InstanceId, card.DataId))).ToArray(), current.CardRegistry);
+                        .Select(card => CardInstanceState.Empty(card.InstanceId, card.DataId))).ToArray(), current.CardRegistry, current.AllScenarioBossesDead);
             }
 
             private void Trigger(WorkingUnit unit, string id, int count)

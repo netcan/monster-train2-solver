@@ -400,11 +400,12 @@ namespace MonsterTrain2Poju.Probe
             if (fullBattle && !numericModifiersPrepared && (modifierScenario == "numeric-upgrades" || modifierScenario == "dynamic-upgrades" ||
                 modifierScenario == "sacrifice-upgrades" || modifierScenario == "hand-upgrades" || modifierScenario == "targeted-hand-upgrades" ||
                 modifierScenario == "healing" || modifierScenario == "healing-triggers" || modifierScenario == "room-spells" ||
-                modifierScenario == "terminal-spells"))
+                modifierScenario == "terminal-spells" || modifierScenario == "post-kill-spells"))
             {
                 if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Numeric fixture must start on deployment turn.");
                 numericModifiersPrepared = true;
-                if (modifierScenario == "terminal-spells") TerminalSpellScenario.Prepare(managers, log);
+                if (modifierScenario == "post-kill-spells") PostKillSpellScenario.Prepare(managers, log);
+                else if (modifierScenario == "terminal-spells") TerminalSpellScenario.Prepare(managers, log);
                 else if (modifierScenario == "room-spells") RoomSpellScenario.Prepare(managers, log);
                 else if (modifierScenario == "healing" || modifierScenario == "healing-triggers")
                     HealingScenario.Prepare(managers, log, modifierScenario == "healing-triggers");

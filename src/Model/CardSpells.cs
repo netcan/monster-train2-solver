@@ -35,7 +35,7 @@ namespace MonsterTrain2Poju.Model
                 CardTargets targets = Collect(source, effect, last, initial, dropPosition, index);
                 if (!targets.Supported) return new SpellCastCheck(false, targets.UnsupportedReason);
                 Remember(effect, index, targets, ref last);
-                bool valid = PassesTest(effect, targets.UnitIds.Count);
+                bool valid = PassesTest(effect, targets.UnitIds.Count, source.Context!.AllScenarioBossesDead == true);
                 if (!valid && effect.Tests?.FailToCast == true) return new SpellCastCheck(false);
                 passed |= valid;
             }
@@ -52,23 +52,27 @@ namespace MonsterTrain2Poju.Model
             RoomCombatState state = source;
             IReadOnlyList<int> last = Array.Empty<int>();
             var events = new List<CombatEvent>();
+            RoomOutcome outcome = RoomOutcome.Exchanged;
+            bool bossDead = source.Context!.AllScenarioBossesDead == true;
+            CardInstanceState? resolvingCard = source.Context.FindCard(sourceCardId);
             for (int index = 0; index < effects.Count; index++)
             {
                 CardActionEffect effect = effects[index];
                 // Each effect reads the card's live modifiers, including earlier hand upgrades.
                 if (definitions != null && sourceCardId > 0 && state.Context!.CardInstances != null)
                 {
-                    CardInstanceState? card = state.Context.CardInstances.FirstOrDefault(item => item.InstanceId == sourceCardId);
+                    CardInstanceState? card = state.Context.FindCard(sourceCardId) ?? resolvingCard;
                     CardPlayRule? rule = definitions.Cards.FirstOrDefault(item => item.DataId == card?.DataId);
                     if (card == null || rule == null || rule.Effects.Count != effects.Count)
                         return Unsupported("Missing live spell effect definition.");
                     effect = CardModifierModel.Resolve(rule, card).Effects[index];
+                    resolvingCard = card;
                 }
                 CardTargets targets = Collect(state, effect, last, initial, dropPosition, index);
                 if (!targets.Supported) return Unsupported(targets.UnsupportedReason!);
                 Remember(effect, index, targets, ref last);
                 // Runtime tests every effect, even if its initial casting test was disabled.
-                if (!PassesTest(effect, targets.UnitIds.Count))
+                if (!PassesTest(effect, targets.UnitIds.Count, bossDead))
                 {
                     if (effect.Tests?.CancelSubsequent == true) break;
                     continue;
@@ -84,7 +88,8 @@ namespace MonsterTrain2Poju.Model
                 // Keep this effect's collection fixed; triggers may kill a later target.
                 for (int targetIndex = 0; targetIndex < targets.UnitIds.Count; targetIndex++)
                 {
-                    int id = targets.UnitIds[targetIndex];
+                    // Native status application runs backwards; damage/healing/upgrades run forwards.
+                    int id = targets.UnitIds[effect.Type == "AddStatus" ? targets.UnitIds.Count - 1 - targetIndex : targetIndex];
                     CombatUnit? target = state.Units.FirstOrDefault(unit => unit.Id == id);
                     if (target == null) continue;
                     RoomCombatResult applied = ApplyOne(state, effect, target, sourceCardId, playerCapacity, enemyCapacity);
@@ -93,17 +98,14 @@ namespace MonsterTrain2Poju.Model
                     events.AddRange(applied.Events);
                     if (applied.Outcome == RoomOutcome.BattleWon || applied.Outcome == RoomOutcome.PlayerDefeated)
                     {
-                        // Post-kill effect continuation is not yet modeled.
-                        // Reject live remaining targets instead of returning a partial terminal state.
-                        if (targets.UnitIds.Skip(targetIndex + 1).Any(next => state.Units.Any(unit => unit.Id == next)))
-                            return Unsupported("Terminal group damage with remaining live targets is not implemented.");
-                        error = TerminalTailError(state, effects, index + 1, last, initial, dropPosition);
-                        if (error != null) return Unsupported(error);
-                        return new RoomCombatResult(state, applied.Outcome, 0, events);
+                        if (outcome != RoomOutcome.Exchanged && outcome != applied.Outcome)
+                            return Unsupported("Conflicting terminal results in one spell are not modeled.");
+                        outcome = applied.Outcome;
+                        bossDead |= outcome == RoomOutcome.BattleWon;
                     }
                 }
             }
-            return new RoomCombatResult(state, RoomOutcome.Exchanged, 0, events);
+            return new RoomCombatResult(state, outcome, 0, events);
         }
 
         private static string? Validate(RoomCombatState source, IReadOnlyList<CardActionEffect> effects, int targetId)
@@ -153,28 +155,9 @@ namespace MonsterTrain2Poju.Model
         private static int DropPosition(RoomCombatState source, CombatUnit? initial) => initial == null ? -1 :
             source.Units.Where(unit => unit.Team == initial.Team).TakeWhile(unit => unit.Id != initial.Id).Count();
 
-        private static string? TerminalTailError(RoomCombatState state, IReadOnlyList<CardActionEffect> effects, int start,
-            IReadOnlyList<int> last, CombatUnit? initial, int dropPosition)
+        private static bool PassesTest(CardActionEffect effect, int count, bool bossDead = false)
         {
-            for (int index = start; index < effects.Count; index++)
-            {
-                CardActionEffect effect = effects[index];
-                CardTargets targets = Collect(state, effect, last, initial, dropPosition, index);
-                if (!targets.Supported) return targets.UnsupportedReason;
-                Remember(effect, index, targets, ref last);
-                if (!PassesTest(effect, targets.UnitIds.Count))
-                {
-                    if (effect.Tests?.CancelSubsequent == true) break;
-                    continue;
-                }
-                if (effect.Type == "HandUpgrade" || targets.UnitIds.Any(id => state.Units.Any(unit => unit.Id == id)))
-                    return "Terminal spell continuation with remaining live effects is not implemented.";
-            }
-            return null;
-        }
-
-        private static bool PassesTest(CardActionEffect effect, int count)
-        {
+            if (bossDead && !(effect.Tests?.CanPlayAfterBossDead ?? effect.Type != "HandUpgrade")) return false;
             switch (effect.Type)
             {
                 case "Damage": return effect.Value >= 0 && (effect.Target != "DropTargetCharacter" || count > 0);
@@ -202,7 +185,8 @@ namespace MonsterTrain2Poju.Model
                 int count = Math.Min(9999, (existing?.Stacks ?? 0) + added.Stacks);
                 CombatContext context = state.Context!;
                 if (context.Statistics != null)
-                    context = context.WithStatistics(context.Statistics.Increment(sourceCardId, "AnyStatusEffectStacksAdded", count - (existing?.Stacks ?? 0)));
+                    context = context.WithStatistics(context.LiveStatistics!.Increment(sourceCardId, "AnyStatusEffectStacksAdded",
+                        count - (existing?.Stacks ?? 0), requireTrackedCard: context.CardInstances?.Count == 0));
                 CombatUnit modified = Copy(target, target.Health, target.Statuses.Where(status => status.Id != added.Id)
                     .Concat(new[] { (existing ?? added).WithStacks(count) }).ToArray());
                 return Unchanged(new RoomCombatState(state.RoomIndex, state.Deployment,

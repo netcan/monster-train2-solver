@@ -31,7 +31,7 @@ are copied immutable values; independent child states can run on worker threads.
 | Hand upgrade spells | `HandUpgradeModel` | Native targeted and targetless sequences, current-hand membership, permanent/temporary groups, uniqueness and paid-card exclusion |
 | Basic healing | `HealingModel` and `CardSpellModel` | Native targeted spells, modifier group clamps, maximum health, multiplier/immunity, regen and lifesteal; independent healability checks |
 | Healing triggers | `CombatTrigger` and `RoomCombatModel` | Native repeated/once rewards and silence; zero/full/immune healing, deployment timing, preview flags and child isolation checks |
-| Terminal spell resolution | `BattleActionModel` | Settled native boss-killing spell completes played/discard callbacks, restores its card instance and clears the live played cost |
+| Terminal spell resolution | `CardSpellModel` and `BattleActionModel` | Settled native boss kill continues live effects, detached spawner upgrades/removal and healing; effect gates skip/cancel, then played/discard callbacks complete |
 | Enemy waves and treasure | `EnemySpawningModel` | Native group cache, spawn order, phase, slots and treasure floor selection |
 | EndTurn to next decision | `BattleTurnModel.EndTurn` | Seven native consecutive transitions in each supported fixture |
 | Battle to terminal result | `BattleSimulator.Resolve` and `ResolveNoMoreCards` | Independent card policies and seven-turn chains, mid-battle inputs and 16 parallel branches |
@@ -193,7 +193,7 @@ point, which can have a different occupant after rearrangement. Each drop effect
 also replaces the LastTargetedCharacters collection; those follow-ups retain
 the selected unit identity and skip a dead unit. The mixed native fixture
 exercises a rearrange followed by a drop effect hitting the new occupant.
-Multi-unit Room/LastTargeted sequences remain explicitly unsupported.
+Room and LastTargeted group sequences are covered by the room-spell fixture below.
 
 `BattleActionModel` checks instance identity, energy, enabled floors, Pyre exclusion,
 summon capacity and slots, and insertion position. Child states carry spawned
@@ -290,11 +290,12 @@ statuses, strongest-last/back/last damage and friendly room/front/weakest healin
 The verification policy prefers rooms with targets for an area spell. Coverage
 requires actual damage to multiple enemies and maximum-health upgrades/healing
 of multiple friendly units in a single play; a definition alone is insufficient.
-All 18 plays, six EndTurns, 54 room stages, 11 card cycles, 11 train phases and
-nine spawns match the game. Eight area spell plays include seven multi-unit
+All 18 plays, five EndTurns, 48 room stages, 10 card cycles, 10 train phases and
+nine spawns match the game. Eight area spell plays include eight multi-unit
 heals, one multi-enemy damage play and five surviving enemy follow-up collections.
 The independent root policy, mid-battle suffix and 16 parallel branches match
-every decision and terminal Pyre health 80/80.
+every decision and terminal Pyre health 80/80. This oracle was recaptured after
+post-kill continuation expanded the verification policy's legal action choices.
 
 Same-room collections process enemies before players, preserving each team's
 front-to-back order and the first target on health ties. Spells can target stealth
@@ -315,10 +316,14 @@ Legacy oracles sampled the entry to native `StopCombat`, before its
 `StopCombatLoop` waited for the resolving card effect. A controlled room-spell
 run exposed an intermediate terminal snapshot with only part of a post-kill
 damage effect executed. New captures wait for that loop to stop, before
-encounter-complete rewards and out-of-battle cleanup. Terminal spells with
-remaining live effect targets still reject the transition until post-kill effect
-continuation is implemented. Dead-only follow-ups are supported. Terminal spell
-destinations other than discard remain explicitly unsupported.
+encounter-complete rewards and out-of-battle cleanup. Terminal spells continue
+their fixed current target collection and subsequent effects, retaining the
+terminal outcome. Each subsequent effect is tested again, including its native
+`CanPlayAfterBossDead` flag: hand upgrades cannot run, and their configured test
+failure may skip that effect or cancel the rest of the sequence. Live source
+card modifiers remain available after ownership is cleared. Damage, healing and
+unit upgrades process targets forwards; status addition uses native reverse order.
+Terminal spell destinations other than discard remain explicitly unsupported.
 
 `results/full-battle-terminal-spells.json.gz` changes the owned rearrangement
 spell to one lethal enemy-room damage effect in the isolated process. Native
@@ -338,12 +343,31 @@ increment; discard creates a new entry for the restored card. This generated
 terminal branch has pure checks and native source evidence, but no dedicated
 native fixture yet.
 
-Schema 13 also captures an identity registry of all cards observed in the battle.
+Schema 13 captures an identity registry of all cards observed in the battle.
 It is separate from `CardInstances`, which describes current native ownership.
 The registry retains the exact modifier and play state of cards removed by
 `ClearCards`; living units can still reference and upgrade their spawner cards.
 Owned-card updates and newly generated cards update the registry, while lookup
 and upgrade of a detached spawner never add it to a pile or ownership list.
+New captures also include the native all-bosses-dead gate and each card effect's
+permission to execute after that gate is set. Missing legacy fields remain null.
+
+`results/full-battle-post-kill-spells.json.gz` replaces the owned rearrangement
+spell with a controlled effect chain, retaining the natural boss and wave data.
+The final play kills the boss at the back, damages the remaining room targets,
+kills the guard, adds and consumes armor, applies a permanent source-card upgrade,
+adds/removes a battle upgrade and heals both surviving friendly units. Their
+health changes from 41/41 and 26/26 to 45/45 and 30/30; their unowned spawner
+cards retain the permanent upgrades in the registry. A prohibited hand effect
+skips without cancellation, followed by one that cancels a labeled tail upgrade.
+The native oracle matches 13 plays, four EndTurns, 30 room stages, eight card
+cycles, eight train phases and seven spawns. Root-only policy, a mid-battle suffix
+and 16 parallel branches finish with exactly the same complete terminal state.
+Pure checks additionally cover a boss killed before remaining targets in one
+damage effect, prohibited generation from boss death and post-kill OnHeal,
+allowed post-kill gold rewards, and fallback-deck statistic membership when
+the source is a generated card. These trigger cases lack a dedicated native
+post-kill fixture.
 
 Run the saved native oracles without the game:
 

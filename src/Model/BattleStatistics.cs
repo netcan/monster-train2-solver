@@ -76,14 +76,15 @@ namespace MonsterTrain2Poju.Model
         public int Value(int cardId, string type, string duration = "ThisTurn") =>
             Values.FirstOrDefault(value => value.CardId == cardId && value.Type == type && value.Duration == duration)?.Value ?? 0;
 
-        public BattleStatistics Increment(int cardId, string type, int amount = 1)
+        public BattleStatistics Increment(int cardId, string type, int amount = 1, bool requireTrackedCard = false)
         {
             if (cardId <= 0 || amount == 0) return this;
             var values = Values.ToList();
-            int[] tracked = TrackedCards.Concat(new[] { cardId }).Distinct().ToArray();
+            int[] tracked = requireTrackedCard ? TrackedCards.ToArray() : TrackedCards.Concat(new[] { cardId }).Distinct().ToArray();
+            bool hasSource = tracked.Contains(cardId);
             foreach (string duration in new[] { "ThisTurn", "ThisBattle" })
             {
-                AddValue(cardId, duration, type, amount);
+                if (hasSource) AddValue(cardId, duration, type, amount);
                 string? any = type == "HeroesKilled" ? "AnyHeroKilled" : type == "SpawnedMonsterDeaths" ? "AnyMonsterDeath" :
                     type == "TimesDiscarded" ? "AnyDiscarded" : type == "TimesPlayed" ? "AnyCardPlayed" :
                     type == "TimesDrawn" ? "AnyCardDrawn" : type == "TimesExhausted" ? "AnyExhausted" : null;
@@ -92,7 +93,7 @@ namespace MonsterTrain2Poju.Model
                     // Native UpdateScalingTraits increments every entry, and the source entry once more.
                     // This increments by one per event even when the original amount is larger.
                     foreach (int id in tracked) AddValue(id, duration, any, 1);
-                    AddValue(cardId, duration, any, 1);
+                    if (hasSource) AddValue(cardId, duration, any, 1);
                 }
             }
             return Copy(values: values, tracked: tracked, played: type == "TimesPlayed" ? CardsPlayedThisTurn.Concat(new[] { cardId }).ToArray() : null);
@@ -121,9 +122,9 @@ namespace MonsterTrain2Poju.Model
             battleFloors: Add(SpawnedThisBattlePerFloor, new[] { roomIndex.ToString(System.Globalization.CultureInfo.InvariantCulture) }),
             turnSubtypes: Add(SubtypesSpawnedThisTurn, subtypes), battleSubtypes: Add(SubtypesSpawnedThisBattle, subtypes));
 
-        public BattleStatistics Death(bool player, int responsibleCardId) => Copy(
+        public BattleStatistics Death(bool player, int responsibleCardId, bool requireTrackedCard = false) => Copy(
             deadTurn: MonstersDeadThisTurn + (player ? 1 : 0), deadBattle: MonstersDeadThisBattle + (player ? 1 : 0))
-            .Increment(responsibleCardId, player ? "SpawnedMonsterDeaths" : "HeroesKilled");
+            .Increment(responsibleCardId, player ? "SpawnedMonsterDeaths" : "HeroesKilled", requireTrackedCard: requireTrackedCard);
 
         public BattleStatistics WithEndTurnEnergy(int energy) => Copy(energy: energy);
         public BattleStatistics WithLastAttackDamage(int damage) => Copy(lastDamage: damage);

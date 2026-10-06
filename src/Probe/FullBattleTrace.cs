@@ -160,7 +160,7 @@ namespace MonsterTrain2Poju.Probe
                 new UnityRng(draw[0], draw[1], draw[2], draw[3]), state.DrawModifier, Array.Empty<string>()),
                 new UnityRng(battle[0], battle[1], battle[2], battle[3]), state.Gold, projection.NextCardId,
                 cards.GetMaxHandSize(), new[] { "armor", "valor", "pyregel" }.Select(id => BattleActionProbe.Status(id, 1)).ToArray(),
-                statistics, instances, registry);
+                statistics, instances, registry, managers.GetCombatManager()!.AllScenarioBossesDead);
         }
 
         private static CombatTrigger[] CaptureTriggers(CharacterState unit, List<string> interactions)

@@ -106,12 +106,46 @@ internal static class RoomSpellChecks
         Require(JsonSerializer.Serialize(actionRoot) == actionParent, "An illegal spell action mutated its parent.");
         var boss = new CombatUnit(30, "boss", CombatTeam.Enemy, 7, 1, 125, true, false, true, []);
         var terminalRoom = Room(boss, Unit(20, CombatTeam.Player, 5));
+        var continuation = CardSpellModel.Apply(terminalRoom, [Effect("Damage", "Room", 1, player: false),
+            Effect("Damage", "Room", 2, enemy: false), Effect("Heal", "RoomHealTargets", 1, enemy: false)], 0);
+        var multiTerminal = CardSpellModel.Apply(Room(boss, Unit(31, CombatTeam.Enemy, 5)),
+            [Effect("Damage", "Room", 1, player: false)], 0);
         Require(CardSpellModel.Apply(terminalRoom, [Effect("Damage", "Room", 1, player: false),
             Effect("AddStatus", "LastTargetedCharacters", player: false)], 0).Outcome == RoomOutcome.BattleWon &&
-            !CardSpellModel.Apply(terminalRoom, [Effect("Damage", "Room", 1, player: false),
-                Effect("Damage", "Room", 2, enemy: false)], 0).Supported &&
-            !CardSpellModel.Apply(Room(boss, Unit(31, CombatTeam.Enemy, 5)), [Effect("Damage", "Room", 1, player: false)], 0).Supported,
-            "Uncaptured terminal coroutine timing returned a partial search state.");
+            continuation.Supported && continuation.Outcome == RoomOutcome.BattleWon && continuation.State!.Units.Single().Health == 4 &&
+            multiTerminal.Supported && multiTerminal.Outcome == RoomOutcome.BattleWon && multiTerminal.State!.Units.Single().Health == 4,
+            "Terminal spells lost later effects, remaining group targets or the victory outcome.");
+        var gated = Effect("Heal", "Room", 9, enemy: false, tests: new(true, false, false, false, false));
+        Require(CardSpellModel.Apply(terminalRoom, [Effect("Damage", "Room", 1, player: false), gated,
+            Effect("Damage", "Room", 2, enemy: false)], 0).State!.Units.Single().Health == 3 &&
+            CardSpellModel.Apply(terminalRoom, [Effect("Damage", "Room", 1, player: false),
+                Effect("Heal", "Room", 9, enemy: false, tests: new(true, false, true, false, false)),
+                Effect("Damage", "Room", 2, enemy: false)], 0).State!.Units.Single().Health == 5,
+            "Boss-death effect gates did not skip or cancel the sequence.");
+        var generation = new CombatTrigger("OnDeath", true, false, false, 1,
+            [new("CardEffectAddBattleCard", 0, 0, "HandPile", 1, ["junk"], false)]);
+        var gatedBoss = new CombatUnit(30, "boss", CombatTeam.Enemy, 7, 1, 125, true, false, true, [], [generation]);
+        var gateContext = new CombatContext(context.Cards, rng, 0, 1, 10, cardInstances: [], allScenarioBossesDead: false);
+        var noGeneration = CardSpellModel.Apply(new(0, false, [gatedBoss], [], gateContext),
+            [Effect("Damage", "Room", 1, player: false)], 0);
+        Require(noGeneration.Supported && noGeneration.State!.Context!.AllScenarioBossesDead == true &&
+            noGeneration.State.Context.NextCardId == 1 && noGeneration.State.Context.BattleRng.Equals(rng),
+            "Boss death ran a prohibited generated-card effect or consumed its RNG.");
+        var healedUnit = new CombatUnit(20, "healer", CombatTeam.Player, 3, 5, 10, true, false, false, [],
+            [new("OnHeal", false, false, false, 1, [new("CardEffectRewardGold", 2, 0, "", 0, [], false),
+                new("CardEffectAddBattleCard", 0, 0, "HandPile", 1, ["junk"], false)], skipDuringDeployment: false)],
+            modifiers: new(3, 0, 0, 1, 1, true, false, []));
+        var postKillHeal = CardSpellModel.Apply(new(0, false, [gatedBoss, healedUnit], [], gateContext),
+            [Effect("Damage", "Room", 1, player: false), Effect("Heal", "Room", 3, enemy: false)], 0);
+        Require(postKillHeal.Supported && postKillHeal.Outcome == RoomOutcome.BattleWon &&
+            postKillHeal.State!.Units.Single().Health == 8 && postKillHeal.State.Context!.Gold == 5 &&
+            postKillHeal.State.Context.NextCardId == 1 && postKillHeal.State.Context.BattleRng.Equals(rng),
+            "Post-kill OnHeal lost an allowed reward or ran a prohibited generated-card effect: " + JsonSerializer.Serialize(postKillHeal));
+        var tracked = BattleStatistics.Empty(deckCards: [9]).TrackCards([8, 9]).RefreshDeckAfterCardTerminal()
+            .Increment(8, "HeroesKilled", requireTrackedCard: true);
+        Require(tracked.TrackedCards.SequenceEqual([9]) && tracked.Value(8, "HeroesKilled") == 0 &&
+            tracked.Value(9, "AnyHeroKilled") == 1,
+            "Post-kill statistics restored an absent generated source or lost the global event count.");
         Parallel.For(0, 32, _ => Require(JsonSerializer.Serialize(CardSpellModel.Apply(room, chain, 0).State) ==
             JsonSerializer.Serialize(child.State), "Parallel group spell branches differ."));
         Require(JsonSerializer.Serialize(room) == parent, "Group spells mutated their parent.");
