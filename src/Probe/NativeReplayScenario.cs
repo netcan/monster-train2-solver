@@ -401,11 +401,14 @@ namespace MonsterTrain2Poju.Probe
                 modifierScenario == "sacrifice-upgrades" || modifierScenario == "hand-upgrades" || modifierScenario == "targeted-hand-upgrades" ||
                 modifierScenario == "healing" || modifierScenario == "healing-triggers" || modifierScenario == "room-spells" ||
                 modifierScenario == "terminal-spells" || modifierScenario == "post-kill-spells" || modifierScenario == "random-spells" ||
-                modifierScenario == "random-status" || modifierScenario == "cross-room-spells" || modifierScenario == "cross-room-targets" || modifierScenario == "attack-buffs"))
+                modifierScenario == "random-status" || modifierScenario == "cross-room-spells" || modifierScenario == "cross-room-targets" || modifierScenario == "attack-buffs" ||
+                modifierScenario == "max-health-spells" || modifierScenario == "max-health-lethal"))
             {
                 if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Numeric fixture must start on deployment turn.");
                 numericModifiersPrepared = true;
-                if (modifierScenario == "attack-buffs") AttackBuffScenario.Prepare(managers, log);
+                if (modifierScenario == "max-health-spells" || modifierScenario == "max-health-lethal")
+                    MaxHealthScenario.Prepare(managers, log, modifierScenario == "max-health-lethal");
+                else if (modifierScenario == "attack-buffs") AttackBuffScenario.Prepare(managers, log);
                 else if (modifierScenario == "cross-room-spells" || modifierScenario == "cross-room-targets")
                     CrossRoomSpellScenario.Prepare(managers, log, modifierScenario == "cross-room-spells");
                 else if (modifierScenario == "random-status") RandomStatusScenario.Prepare(managers, log);

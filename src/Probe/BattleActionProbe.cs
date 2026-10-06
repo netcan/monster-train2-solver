@@ -83,7 +83,7 @@ namespace MonsterTrain2Poju.Probe
             }
             else if (kind == "CardEffectNULL") kind = "Null";
             else if (data.GetCardType() == CardType.Spell && effects.Length > 0 && effects.All(effect =>
-                new[] { "CardEffectDamage", "CardEffectHeal", "CardEffectBuffDamage", "CardEffectDebuffDamage", "CardEffectAddStatusEffect", "CardEffectFloorRearrange", "CardEffectAddCardUpgradeToUnits",
+                new[] { "CardEffectDamage", "CardEffectHeal", "CardEffectBuffDamage", "CardEffectDebuffDamage", "CardEffectBuffMaxHealth", "CardEffectDebuffMaxHealth", "CardEffectAddStatusEffect", "CardEffectFloorRearrange", "CardEffectAddCardUpgradeToUnits",
                     "CardEffectAddTempCardUpgradeToUnits", "CardEffectRemoveTempUpgradeFromUnit",
                     "CardEffectAddTempCardUpgradeToCardsInHand", "CardEffectAddPermanentCardUpgradeToCardsInHand" }.Contains(effect.GetEffectStateName())))
             {
@@ -104,12 +104,15 @@ namespace MonsterTrain2Poju.Probe
                     string type = effect.GetEffectStateName() == "CardEffectDamage" ? "Damage" :
                         effect.GetEffectStateName() == "CardEffectBuffDamage" ? "BuffAttack" :
                         effect.GetEffectStateName() == "CardEffectDebuffDamage" ? "DebuffAttack" :
+                        effect.GetEffectStateName() == "CardEffectBuffMaxHealth" ? "BuffHealth" :
+                        effect.GetEffectStateName() == "CardEffectDebuffMaxHealth" ? "DebuffHealth" :
                         effect.GetEffectStateName() == "CardEffectHeal" ? "Heal" :
                         effect.GetEffectStateName() == "CardEffectFloorRearrange" ? "FloorRearrange" :
                         effect.GetEffectStateName() == "CardEffectAddStatusEffect" ? "AddStatus" :
                         handUpgrade ? "HandUpgrade" : effect.GetEffectStateName() == "CardEffectRemoveTempUpgradeFromUnit" ? "RemoveUnitUpgrade" : "UnitUpgrade";
                     CardUpgradeModifier? upgrade = null;
                     string lifetime = "";
+                    if (type == "BuffHealth") lifetime = ((UnitUpgradeLifetimeTempOnly)effect.GetAdditionalParamInt1()).ToString();
                     if (type == "UnitUpgrade" || type == "RemoveUnitUpgrade" || handUpgrade)
                     {
                         if (effect.GetParamCardUpgradeData() == null) interactions.Add("Missing unit upgrade data");

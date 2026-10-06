@@ -120,6 +120,8 @@ internal static class BattleActionChecks
             CrossRoomSpellChecks.Native(fixture);
         if (fixture.TryGetProperty("ModifierScenario", out JsonElement attackScenario) && attackScenario.GetString() == "attack-buffs")
             UnitAttackChecks.Native(actions);
+        if (fixture.TryGetProperty("ModifierScenario", out JsonElement healthScenario) && healthScenario.GetString() is "max-health-spells" or "max-health-lethal")
+            UnitHealthChecks.Native(fixture);
         if (fixture.TryGetProperty("ModifierScenario", out JsonElement healingScenario) && healingScenario.GetString() is "healing" or "healing-triggers")
         {
             int healPlays = 0, restored = 0;

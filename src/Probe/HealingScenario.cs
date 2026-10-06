@@ -66,7 +66,7 @@ namespace MonsterTrain2Poju.Probe
             if (withTriggers) log.LogInfo("ONHEAL-PREPARED repeat/once gold, silence and ignored-silence triggers.");
         }
 
-        private static CharacterTriggerData HealGold(int amount, bool once, bool ignoreSilence)
+        internal static CharacterTriggerData HealGold(int amount, bool once, bool ignoreSilence)
         {
             var effect = new CardEffectData("CardEffectRewardGold", null!, Team.Type.Monsters);
             effect.Cheat_SetTargetMode(TargetMode.Room);
@@ -82,7 +82,7 @@ namespace MonsterTrain2Poju.Probe
 
         // These native state classes exist in this build but their definitions may be absent.
         // Register hidden definitions only in the isolated fixture's in-memory database.
-        private static void RegisterHealingStatus(string id, string state, int parameter)
+        internal static void RegisterHealingStatus(string id, string state, int parameter)
         {
             StatusEffectManager manager = StatusEffectManager.Instance;
             if (manager.GetStatusEffectDataById(id, expectToFind: false) != null) return;

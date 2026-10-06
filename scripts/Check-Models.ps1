@@ -12,6 +12,7 @@ $fixtures = @('full-battle-steward-once.json', 'full-battle-no-cards.json', 'ful
     'full-battle-random-status.json.gz',
     'full-battle-cross-room-spells.json.gz', 'full-battle-cross-room-targets.json.gz',
     'full-battle-attack-buffs.json.gz',
+    'full-battle-max-health-spells.json.gz', 'full-battle-max-health-lethal.json.gz',
     'card-modifier-calibration.json.gz', 'rng-calibration.json', 'gold-reward-calibration.json.gz',
     'standby-routing-calibration.json.gz') |
     ForEach-Object { Join-Path $workspace ('results\' + $_) }

@@ -188,6 +188,13 @@ namespace MonsterTrain2Poju.Model
                     bool upgradeApplied = effect.Type == "UnitUpgrade" && (afterTarget == null ||
                         afterTarget.Modifiers!.Upgrades.Count > target.Modifiers!.Upgrades.Count);
                     if (effect.Type == "Heal" && target.Modifiers?.CanBeHealed == true || upgradeApplied) DrainDeaths();
+                    if (effect.Type == "BuffHealth" && effect.Value > 0 && target.Modifiers?.CanBeHealed == true &&
+                        HealingModel.ModifiedAmount(effect.Value, target.Statuses, fromMaxHealthChange: true) >= 0) DrainDeaths();
+                    if (effect.Type == "DebuffHealth" && afterTarget == null)
+                    {
+                        DrainDeaths();
+                        focusedRoom = null; // Sacrifice/removal notification focus is not captured yet.
+                    }
                     if (effect.Type == "FloorRearrange") positions = CardTargetModel.Positions(state);
                     if (applied.Outcome == RoomOutcome.BattleWon || applied.Outcome == RoomOutcome.PlayerDefeated)
                     {
@@ -294,11 +301,14 @@ namespace MonsterTrain2Poju.Model
                     continue;
                 }
                 if (!CardTargetModel.Supports(effect.Target)) return "Unimplemented spell targeting " + effect.Target;
-                if (!new[] { "Damage", "Heal", "AddStatus", "FloorRearrange", "UnitUpgrade", "RemoveUnitUpgrade", "BuffAttack", "DebuffAttack" }.Contains(effect.Type))
+                if (!new[] { "Damage", "Heal", "AddStatus", "FloorRearrange", "UnitUpgrade", "RemoveUnitUpgrade", "BuffAttack", "DebuffAttack", "BuffHealth", "DebuffHealth" }.Contains(effect.Type))
                     return "Unimplemented spell effect " + effect.Type;
                 if ((effect.Type == "UnitUpgrade" || effect.Type == "RemoveUnitUpgrade") && effect.Upgrade == null)
                     return "Missing unit upgrade definition.";
-                if (effect.Value < 0 && !AttackChange(effect) || effect.Type == "FloorRearrange" && effect.Value > 1) return "Invalid spell effect value.";
+                if (effect.Value < 0 && !AttackChange(effect) && effect.Type != "BuffHealth" && effect.Type != "DebuffHealth" ||
+                    effect.Type == "FloorRearrange" && effect.Value > 1) return "Invalid spell effect value.";
+                if (effect.Type == "BuffHealth" && effect.Lifetime != "" && effect.Lifetime != "TemporaryUntilEndOfBattle" &&
+                    effect.Lifetime != "TemporaryUntilUnitDeath") return "Unmodeled maximum-health buff lifetime.";
                 if (effect.Type == "FloorRearrange" && effect.Target != "DropTargetCharacter") return "Floor rearrangement requires a drop target.";
                 if (effect.Type == "AddStatus" && effect.Statuses.Count == 0) return "A status effect requires at least one status definition.";
                 foreach (CombatStatus status in effect.Statuses)
@@ -361,6 +371,8 @@ namespace MonsterTrain2Poju.Model
             if (effect.Type == "Damage") return RoomCombatModel.ApplyCardDamage(state, target.Id, effect.Value, sourceCardId);
             if (effect.Type == "Heal") return RoomCombatModel.ApplyCardHeal(state, target.Id, effect.Value);
             if (AttackChange(effect)) return UnitAttackModel.Apply(state, target.Id, effect.Value, effect.Type == "DebuffAttack");
+            if (effect.Type == "BuffHealth" || effect.Type == "DebuffHealth")
+                return UnitHealthModel.Apply(state, target.Id, effect.Value, effect.Type == "DebuffHealth", effect.Lifetime);
             if (effect.Type == "UnitUpgrade" || effect.Type == "RemoveUnitUpgrade")
                 return UnitModifierModel.Apply(state, target.Id, effect.Upgrade!, effect.Lifetime,
                     effect.Type == "RemoveUnitUpgrade", target.Team == CombatTeam.Player ? playerCapacity : enemyCapacity);

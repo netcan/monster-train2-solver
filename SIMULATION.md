@@ -36,6 +36,7 @@ are copied immutable values; independent child states can run on worker threads.
 | Hand upgrade spells | `HandUpgradeModel` | Native targeted and targetless sequences, current-hand membership, permanent/temporary groups, uniqueness and paid-card exclusion |
 | Basic healing | `HealingModel` and `CardSpellModel` | Native targeted spells, modifier group clamps, maximum health, multiplier/immunity, regen and lifesteal; independent healability checks |
 | Attack buff/debuff spells | `UnitAttackModel` and `CardSpellModel` | Native raw negative balances/recovery, zero-attack and incapable targets, global/random targets, source-card ownership and later unit upgrades |
+| Maximum-health buff/debuff spells | `UnitHealthModel` and `CardSpellModel` | Signed temporary source-card offsets, battle/unit-death lifetimes, multiplier/immunity, suppressed OnHeal, direct lethal loss and post-boss effect chains |
 | Healing triggers | `CombatTrigger` and `RoomCombatModel` | Native repeated/once rewards and silence; zero/full/immune healing, deployment timing, preview flags and child isolation checks |
 | Terminal spell resolution | `CardSpellModel` and `BattleActionModel` | Settled native boss kill continues live effects, detached spawner upgrades/removal and healing; effect gates skip/cancel, then played/discard callbacks complete |
 | Enemy waves and treasure | `EnemySpawningModel` | Native group cache, spawn order, phase, slots and treasure floor selection |
@@ -490,6 +491,45 @@ friendly buff consumes exactly one Battle draw. The independent root policy,
 mid-battle suffix and 16 parallel branches match the complete terminal state,
 with Pyre health 32/80 and zero unsupported transitions or differences.
 
+Maximum-health buffs increase current maximum health, heal with the native
+multiplier while bypassing heal immunity, and suppress OnHeal unit triggers.
+Unhealable units still gain maximum health. The battle lifetime also adds the
+raw signed amount to the spawner card's temporary health offset, including
+negative amounts that do not change the live unit. Unit-death lifetime and
+preview do not write that source-card offset. Debuffs subtract both maximum
+and current health directly; zero/negative amounts do nothing. A lethal debuff
+sacrifices the unit, applies death effects/statistics and routes its spawner card
+without ordinary armor/damage or damage-card attribution. Supported effect
+chains continue after a boss sacrifice using retained source-card references.
+The native base casting test also permits these effects with empty collections.
+
+`results/full-battle-max-health-spells.json.gz` adds global unhealed health,
+positive/negative/zero maximum-health buffs with both lifetimes and direct
+enemy/friendly maximum-health debuffs to the owned rearrangement spell. Two
+owned Stewards carry healing multiplier/immunity and a once-only OnHeal reward
+that these buffs must leave unfired. The natural boss and waves are retained.
+All 18 plays, six EndTurns, 60 room stages, 11 card cycles, 11 train phases and
+nine spawns match the game. Seven modified plays cover 12 remote friendly
+changes, three sacrifices, seven immune heals and five multiplier heals. The
+independent root policy, mid-battle suffix and 16 parallel branches reach the
+matching terminal Pyre health 80/80.
+
+`results/full-battle-max-health-lethal.json.gz` uses lethal enemy maximum-health
+loss and another battle-lifetime friendly buff afterward. All 12 plays, four
+EndTurns, 30 room stages, eight card cycles, eight train phases and seven spawns
+match the game. Seven modified plays cover 14 remote changes, seven sacrifices,
+seven immune heals, seven multiplier heals and five detached source cards after
+the boss dies. The independent root policy, mid-battle suffix and 16 parallel
+branches match the settled terminal state at Pyre 80/80, including the resolving
+spell's played/discard callbacks.
+
+Pure checks cover signed offsets, detached and mismatched spawners, no-heal
+capability, the 99,999 health ceiling, preview ownership, death rewards/counters,
+post-boss continuation, later summon definitions, empty casting and 32 independent parallel branches.
+Life-link, horde, conditional sacrifice/OnHealed effects, range/scaling rules,
+Pyre targeting and room-and-above selection after uncaptured sacrifice focus
+remain explicitly unsupported.
+
 Run the saved native oracles without the game:
 
 ```powershell
@@ -520,6 +560,8 @@ pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy units-spells-and-j
 pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy units-spells-and-junk -CrossRoomSpells
 pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy units-spells-and-junk -CrossRoomTargets
 pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy units-spells-and-junk -AttackBuffs
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy units-spells-and-junk -MaxHealthSpells
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy units-spells-and-junk -MaxHealthLethal
 ```
 
 The runner checks the explicit probe success marker, capture failures, pending
@@ -545,7 +587,7 @@ API delegates to the same engine for local checks. Each applied target updates
 its own room, then shares the resulting context with every other room; fixed
 target collections and last-target identities span the train. Capacity-limited
 unit upgrades consult the target room's definition. Dead movement and standby
-spawner routing use all rooms. The 20 saved native battle oracles exercise this
+spawner routing use all rooms. The 22 saved native battle oracles exercise this
 engine through the normal card-action path, including cross-room target modes.
 
 1. Capture a self-contained starting battle state and its static rule definitions.
