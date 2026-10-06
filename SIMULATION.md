@@ -965,6 +965,20 @@ and nonstackable spell casting legality remain outside the full-battle fixture.
 The retained native JSON is 322,446,069 bytes, with SHA-256
 `1427b643a923638379f2522266671384a07a3f514b0fe3cf3424a49db8f471a9`.
 
+Statistic updates also preserve the native signed integer boundary. Source-card
+and global event counters, floor/subtype spawn dictionaries and death totals
+wrap at the 32-bit boundary. Negative nonzero counters remain present and survive
+native turn/battle duration rollover; they are not saturated or discarded. A
+subsequent status-scaling target therefore reads the wrapped count and can add
+zero stacks after the preceding target reached the stack cap.
+`results/statistic-overflow-calibration.json.gz` retains 60 native source/global
+counter updates and 5 floor/subtype updates, initialized at positive and negative
+integer boundaries, including 20 positive-to-negative wraps. It runs on isolated native components and verifies that the
+live battle context is unchanged. Independent checks compare complete statistics
+and exercise cross-target status feedback and 32 parallel branches.
+The original calibration JSON is 1,049,950 bytes, with SHA-256
+`53668df023e9c950374779119c7cd19598202d68c72af2a087b04a71e956f0c5`.
+
 Schema 22 captures ordered `CardTraitScalingAddDamage` descriptors on immutable
 card instances and generated-card creation rules. Each hit queries the current
 statistics using the associated trait owner's identity. Its integer product

@@ -76,6 +76,7 @@ Console.WriteLine("MODEL-CHECKS PASS: independent branches, card identity, and u
 CardCycleChecks.Run();
 CombatEffectChecks.Run();
 BattleStatisticsChecks.Run();
+StatisticOverflowChecks.Run();
 StatisticQueryChecks.Run();
 DamageScalingChecks.Run();
 StatusScalingChecks.Run();
@@ -117,6 +118,8 @@ foreach (string path in args.Where(path => path.Contains("ui-rng-isolation-calib
     UiRngIsolationChecks.Native(path);
 foreach (string path in args.Where(path => path.Contains("statistic-query-calibration", StringComparison.OrdinalIgnoreCase)))
     StatisticQueryChecks.Native(path);
+foreach (string path in args.Where(path => path.Contains("statistic-overflow-calibration", StringComparison.OrdinalIgnoreCase)))
+    StatisticOverflowChecks.Native(path);
 
 static void Check(bool condition, string message)
 {

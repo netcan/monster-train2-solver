@@ -101,7 +101,7 @@ namespace MonsterTrain2Poju.Model
             {
                 CardStatisticValue? prior = values.FirstOrDefault(value => value.CardId == id && value.Type == counter && value.Duration == duration);
                 if (prior != null) values.Remove(prior);
-                values.Add(new CardStatisticValue(id, duration, counter, checked((prior?.Value ?? 0) + addition)));
+                values.Add(new CardStatisticValue(id, duration, counter, unchecked((prior?.Value ?? 0) + addition)));
             }
         }
 
@@ -123,7 +123,7 @@ namespace MonsterTrain2Poju.Model
             turnSubtypes: Add(SubtypesSpawnedThisTurn, subtypes), battleSubtypes: Add(SubtypesSpawnedThisBattle, subtypes));
 
         public BattleStatistics Death(bool player, int responsibleCardId, bool requireTrackedCard = false) => Copy(
-            deadTurn: MonstersDeadThisTurn + (player ? 1 : 0), deadBattle: MonstersDeadThisBattle + (player ? 1 : 0))
+            deadTurn: unchecked(MonstersDeadThisTurn + (player ? 1 : 0)), deadBattle: unchecked(MonstersDeadThisBattle + (player ? 1 : 0)))
             .Increment(responsibleCardId, player ? "SpawnedMonsterDeaths" : "HeroesKilled", requireTrackedCard: requireTrackedCard);
 
         public BattleStatistics WithEndTurnEnergy(int energy) => Copy(energy: energy);
@@ -160,7 +160,7 @@ namespace MonsterTrain2Poju.Model
         private static IReadOnlyList<StatisticCount> Add(IReadOnlyList<StatisticCount> source, IEnumerable<string> keys)
         {
             var counts = source.ToDictionary(value => value.Key, value => value.Value);
-            foreach (string key in keys) counts[key] = counts.TryGetValue(key, out int prior) ? checked(prior + 1) : 1;
+            foreach (string key in keys) counts[key] = counts.TryGetValue(key, out int prior) ? unchecked(prior + 1) : 1;
             return counts.Select(pair => new StatisticCount(pair.Key, pair.Value)).ToArray();
         }
     }
