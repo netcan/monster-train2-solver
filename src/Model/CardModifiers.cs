@@ -149,8 +149,10 @@ namespace MonsterTrain2Poju.Model
                     unit.SpawnerCardId, Math.Max(1, UpgradedStat(unit.Size, "Size", false, modifiers)), unit.StatusImmunities, unit.Subtypes, unitModifiers);
             }
             CardActionEffect[] effects = rule.Effects.Select(effect => new CardActionEffect(effect.Type, effect.Target,
-                effect.Type == "Damage" ? UpgradedStat(UpgradedStat(effect.Value, "Damage", true, instance.Permanent),
-                    "Damage", true, instance.Temporary) : effect.Value, effect.AllowEnemy, effect.AllowPlayer, effect.Statuses, effect.Upgrade, effect.Lifetime)).ToArray();
+                effect.Type == "Damage" || effect.Type == "Heal" ? UpgradedStat(UpgradedStat(effect.Value,
+                    effect.Type == "Damage" ? "Damage" : "Heal", true, instance.Permanent),
+                    effect.Type == "Damage" ? "Damage" : "Heal", true, instance.Temporary) : effect.Value,
+                effect.AllowEnemy, effect.AllowPlayer, effect.Statuses, effect.Upgrade, effect.Lifetime)).ToArray();
             return new CardPlayRule(rule.DataId, rule.AssetKey, UpgradedStat(rule.Cost, "Cost", true, modifiers), rule.Effect,
                 rule.Destination, unit, interactions.Distinct().OrderBy(value => value, StringComparer.Ordinal).ToArray(), effects, rule.UpgradeInteractions);
         }

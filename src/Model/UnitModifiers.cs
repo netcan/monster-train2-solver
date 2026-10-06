@@ -106,7 +106,8 @@ namespace MonsterTrain2Poju.Model
                     else if (delta > 0)
                     {
                         maxHealth = Math.Min(99999, checked(maxHealth + delta));
-                        if (heal && modifiers.CanBeHealed) health = Math.Min(maxHealth, checked(health + delta));
+                        if (heal) health = HealingModel.HealedHealth(health, maxHealth, delta, modifiers.CanBeHealed,
+                            target.Statuses, fromMaxHealthChange: true);
                     }
                 }
             }

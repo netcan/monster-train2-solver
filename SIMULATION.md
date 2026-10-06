@@ -26,6 +26,7 @@ are copied immutable values; independent child states can run on worker threads.
 | Card instance modifiers | `CardModifierModel` | Permanent/temporary ordered numeric upgrades, unit starting statuses, discard removal, play history and 256 native scalar calculations |
 | Runtime unit upgrades | `UnitModifierModel` | Native permanent, battle and unit-death lifetimes, duplicate removal, unique upgrades, restricted size, unhealed health and lethal max-health loss |
 | Hand upgrade spells | `HandUpgradeModel` | Native targeted and targetless sequences, current-hand membership, permanent/temporary groups, uniqueness and paid-card exclusion |
+| Basic healing | `HealingModel` and `CardSpellModel` | Native targeted spells, modifier group clamps, maximum health, multiplier/immunity, regen and lifesteal; independent healability checks |
 | Terminal spell resolution | `BattleActionModel` | Native boss-killing spell skips later played/discard callbacks, retains played cost and prunes temporary-card statistics |
 | Enemy waves and treasure | `EnemySpawningModel` | Native group cache, spawn order, phase, slots and treasure floor selection |
 | EndTurn to next decision | `BattleTurnModel.EndTurn` | Seven native consecutive transitions in each supported fixture |
@@ -229,6 +230,24 @@ floating-point draws are not implemented yet.
 
 Run the saved native oracles without the game:
 
+`results/full-battle-healing.json.gz` adds a controlled healing scenario to the
+same natural first battle. The isolated process appends healing and unhealed
+maximum-health effects to the owned rearrangement spell and assigns different
+healing statuses to two Stewards. The native healing state classes exist in this
+build; missing multiplier/immunity definitions are registered only in the
+fixture's in-memory database, with multiplier parameter 2. Boss and wave rules
+remain those of the original battle.
+
+All 18 card plays (including seven healing spell plays), six EndTurns, 53 room
+stages, 11 card cycles, 11 train phases and nine spawns match the native game.
+Checks require observed health restoration and multiplier, immunity, regen and
+lifesteal coverage. The same root-only policy, mid-battle suffix and 16 parallel
+branches are checked. Basic healing clips at maximum health, uses the multiplier
+parameter independently of stacks, and respects healability. Maximum-health
+upgrade healing bypasses immunity but still respects the multiplier and
+healability. `OnHeal` triggers, overheal and specialized healing effects remain
+unsupported at this stage.
+
 ```powershell
 pwsh -NoProfile -File scripts/Check-Models.ps1
 ```
@@ -247,6 +266,7 @@ pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy units-spells-and-j
 pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy units-spells-and-junk -SacrificeUpgrades
 pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy units-spells-and-junk -HandUpgrades
 pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy units-spells-and-junk -TargetedHandUpgrades
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy units-spells-and-junk -Healing
 ```
 
 The runner checks the explicit probe success marker, capture failures, pending

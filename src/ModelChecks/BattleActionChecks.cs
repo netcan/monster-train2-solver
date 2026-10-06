@@ -80,6 +80,28 @@ internal static class BattleActionChecks
             supported++;
         }
         Console.WriteLine($"NATIVE-ACTION-CHECKS PASS: {supported} matched, {unsupported} unsupported.");
+        if (fixture.TryGetProperty("ModifierScenario", out JsonElement healingScenario) && healingScenario.GetString() == "healing")
+        {
+            int healPlays = 0, restored = 0;
+            var statuses = new HashSet<string>();
+            foreach (JsonElement entry in actions.EnumerateArray())
+            {
+                BattleTurnState before = entry.GetProperty("Before").Deserialize<BattleTurnState>(ModelJson.Options)!;
+                BattleTurnState actual = entry.GetProperty("Actual").Deserialize<BattleTurnState>(ModelJson.Options)!;
+                PlayCardAction action = entry.GetProperty("Action").Deserialize<PlayCardAction>()!;
+                foreach (CombatStatus status in before.Spawn.Train.Rooms.SelectMany(room => room.Units).SelectMany(unit => unit.Statuses))
+                    statuses.Add(status.Id);
+                string dataId = before.Spawn.Train.Context!.Cards.Hand.Single(card => card.InstanceId == action.CardInstanceId).DataId;
+                if (!before.PlayRules!.Cards.Single(card => card.DataId == dataId).Effects.Any(effect => effect.Type == "Heal")) continue;
+                healPlays++;
+                CombatUnit? target = before.Spawn.Train.Rooms.SelectMany(room => room.Units).SingleOrDefault(unit => unit.Id == action.TargetUnitId);
+                CombatUnit? after = actual.Spawn.Train.Rooms.SelectMany(room => room.Units).SingleOrDefault(unit => unit.Id == action.TargetUnitId);
+                if (target != null && after != null && after.Health > target.Health) restored++;
+            }
+            Require(healPlays > 0 && restored > 0 && new[] { "heal multiplier", "heal immunity", "regen", "lifesteal" }.All(statuses.Contains),
+                "The healing oracle did not restore health or encounter all intended status rules.");
+            Console.WriteLine($"NATIVE-HEALING-COVERAGE PASS: {healPlays} healing spell plays, {restored} restored targets, multiplier/immunity/regen/lifesteal present.");
+        }
         if (fixture.TryGetProperty("ModifierScenario", out JsonElement scenario) &&
             (scenario.GetString() is "dynamic-upgrades" or "sacrifice-upgrades" or "hand-upgrades" or "targeted-hand-upgrades"))
         {

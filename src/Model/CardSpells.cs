@@ -31,7 +31,7 @@ namespace MonsterTrain2Poju.Model
                 }
                 if (effect.Target != "DropTargetCharacter" && effect.Target != "LastTargetedCharacters")
                     return Unsupported("Unimplemented spell targeting " + effect.Target);
-                if (effect.Type != "Damage" && effect.Type != "AddStatus" && effect.Type != "FloorRearrange" &&
+                if (effect.Type != "Damage" && effect.Type != "Heal" && effect.Type != "AddStatus" && effect.Type != "FloorRearrange" &&
                     effect.Type != "UnitUpgrade" && effect.Type != "RemoveUnitUpgrade")
                     return Unsupported("Unimplemented spell effect " + effect.Type);
                 if ((effect.Type == "UnitUpgrade" || effect.Type == "RemoveUnitUpgrade") && effect.Upgrade == null)
@@ -90,6 +90,12 @@ namespace MonsterTrain2Poju.Model
                     RoomCombatResult damage = RoomCombatModel.ApplyCardDamage(state, target.Id, effect.Value, sourceCardId);
                     if (!damage.Supported || damage.Outcome == RoomOutcome.BattleWon || damage.Outcome == RoomOutcome.PlayerDefeated) return damage;
                     state = damage.State!;
+                }
+                else if (effect.Type == "Heal")
+                {
+                    RoomCombatResult healed = RoomCombatModel.ApplyCardHeal(state, target.Id, effect.Value);
+                    if (!healed.Supported) return healed;
+                    state = healed.State!;
                 }
                 else if (effect.Type == "AddStatus")
                 {

@@ -155,7 +155,8 @@ namespace MonsterTrain2Poju.Model
             "armor", "damage shield", "dazed", "stealth", "ambush", "multistrike",
             "spikes", "lifesteal", "fragile", "piercing", "immune", "immobile",
             "relentless", "sweep", "sniper", "rooted", "haste", "untouchable",
-            "buff", "debuff", "regen", "poison", "melee weakness", "silenced", "valor", "pyregel"
+            "buff", "debuff", "regen", "poison", "melee weakness", "silenced", "valor", "pyregel",
+            "heal multiplier", "heal immunity"
         };
 
         public static RoomCombatResult Exchange(RoomCombatState state) => Run(state, false);
@@ -171,6 +172,16 @@ namespace MonsterTrain2Poju.Model
 
         internal static RoomCombatResult ApplyUnitModification(RoomCombatState state, CombatUnit changed) =>
             new Engine(state, new List<CombatEvent>()).ModifyUnit(changed);
+
+        public static RoomCombatResult ApplyCardHeal(RoomCombatState state, int targetId, int amount)
+        {
+            string? error = Validate(state);
+            CombatUnit? target = state.Units.FirstOrDefault(unit => unit.Id == targetId);
+            if (error != null || amount < 0 || target?.Modifiers == null)
+                return new RoomCombatResult(null, RoomOutcome.Unsupported, 0, new List<CombatEvent>(),
+                    error ?? "Card healing requires a valid amount, target and healability state.");
+            return new Engine(state, new List<CombatEvent>()).CardHeal(targetId, amount);
+        }
 
         private static RoomCombatResult Run(RoomCombatState state, bool entireRoom)
         {
@@ -333,6 +344,12 @@ namespace MonsterTrain2Poju.Model
                     ? RoomOutcome.PlayerDefeated : RoomOutcome.Exchanged);
             }
 
+            internal RoomCombatResult CardHeal(int targetId, int amount)
+            {
+                Heal(units.Single(unit => unit.Source.Id == targetId), amount, "SpellHeal");
+                return Finish(RoomOutcome.Exchanged);
+            }
+
             private void Exchange()
             {
                 WorkingUnit[] quick = units.Where(unit => unit.Alive &&
@@ -475,8 +492,11 @@ namespace MonsterTrain2Poju.Model
 
             private void Heal(WorkingUnit unit, int amount, string kind)
             {
+                if (!unit.Alive || unit.Source.Modifiers?.CanBeHealed == false) return;
+                int modified = HealingModel.ModifiedAmount(amount, unit.Statuses.Values.ToArray());
+                if (modified < 0) return;
                 int old = unit.Health;
-                unit.Health = Math.Min(unit.Source.MaxHealth, unit.Health + amount);
+                unit.Health += Math.Min(modified, unit.Source.MaxHealth - unit.Health);
                 Emit(kind, unit, unit, unit.Health - old);
             }
 

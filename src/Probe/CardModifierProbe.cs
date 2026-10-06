@@ -36,8 +36,9 @@ namespace MonsterTrain2Poju.Probe
                     var effects = card.GetEffectStates();
                     if (effects.Count != rule.Effects.Count) interactions.Add("Changed card effect sequence");
                     else for (int index = 0; index < effects.Count; index++)
-                        if (rule.Effects[index].Type == "Damage" && effects[index].GetParamInt() != rule.Effects[index].Value)
-                            interactions.Add("Unmodeled spell damage modifier");
+                        if ((rule.Effects[index].Type == "Damage" || rule.Effects[index].Type == "Heal") &&
+                            effects[index].GetParamInt() != rule.Effects[index].Value)
+                            interactions.Add("Unmodeled spell damage/heal modifier");
                 }
                 return new CardInstanceState(state.InstanceId, state.DataId, state.Permanent, state.Temporary,
                     state.LastPlayedCost, state.LastForgedAmount, state.PlayCount,
