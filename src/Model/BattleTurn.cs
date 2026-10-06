@@ -39,10 +39,11 @@ namespace MonsterTrain2Poju.Model
         public IReadOnlyList<string> ExternalInteractions { get; }
         public BattlePlayRules? PlayRules { get; }
         public bool BattlePreviewEnabled { get; }
+        public bool UiRngIsolated { get; }
         public BattleTurnState(EnemySpawnState spawn, int energy, int energyPerTurn, int drawPerTurn,
             int forgePoints, int dragonsHoard, string moonPhase, IReadOnlyList<BattleRngStream> rngStreams,
             IReadOnlyList<CardPileState> otherPiles, IReadOnlyList<string> externalInteractions, BattlePlayRules? playRules = null,
-            bool battlePreviewEnabled = false)
+            bool battlePreviewEnabled = false, bool uiRngIsolated = false)
         {
             Spawn = spawn; Energy = energy; EnergyPerTurn = energyPerTurn; DrawPerTurn = drawPerTurn;
             ForgePoints = forgePoints; DragonsHoard = dragonsHoard; MoonPhase = moonPhase;
@@ -50,6 +51,7 @@ namespace MonsterTrain2Poju.Model
             ExternalInteractions = Array.AsReadOnly(externalInteractions.ToArray());
             PlayRules = playRules;
             BattlePreviewEnabled = battlePreviewEnabled;
+            UiRngIsolated = uiRngIsolated;
         }
     }
     public sealed class BattleTurnResult
@@ -175,7 +177,7 @@ namespace MonsterTrain2Poju.Model
                     : otherPiles;
                 return new BattleTurnResult(new BattleTurnState(spawn, energy, source.EnergyPerTurn, source.DrawPerTurn,
                     source.ForgePoints, source.DragonsHoard, phase, streams, piles, source.ExternalInteractions, source.PlayRules,
-                    source.BattlePreviewEnabled), outcome);
+                    source.BattlePreviewEnabled, source.UiRngIsolated), outcome);
             }
 
             bool RouteDeadUnits(TrainCombatState before, TrainCombatResult result)

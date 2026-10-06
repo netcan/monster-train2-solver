@@ -103,6 +103,8 @@ foreach (string path in args.Where(path => path.Contains("gold-reward-calibratio
     GoldRewardChecks.Native(path);
 foreach (string path in args.Where(path => path.Contains("standby-routing-calibration", StringComparison.OrdinalIgnoreCase)))
     StandbyPileChecks.Native(path);
+foreach (string path in args.Where(path => path.Contains("ui-rng-isolation-calibration", StringComparison.OrdinalIgnoreCase)))
+    UiRngIsolationChecks.Native(path);
 
 static void Check(bool condition, string message)
 {

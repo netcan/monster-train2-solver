@@ -278,7 +278,7 @@ namespace MonsterTrain2Poju.Model
                 source.DrawPerTurn, source.ForgePoints, source.DragonsHoard, source.MoonPhase,
                 source.RngStreams.Select(stream => new BattleRngStream(stream.Name, stream.Seed,
                     stream.Name == "Battle" ? context.BattleRng : stream.Name == "CardDraw" ? context.Cards.Rng : stream.State)).ToArray(),
-                piles, source.ExternalInteractions, source.PlayRules, source.BattlePreviewEnabled), outcome: outcome);
+                piles, source.ExternalInteractions, source.PlayRules, source.BattlePreviewEnabled, source.UiRngIsolated), outcome: outcome);
         }
 
         // Enumerates the implemented legal actions. Unsupported hand cards remain visible to the caller.

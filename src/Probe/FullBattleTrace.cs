@@ -298,7 +298,7 @@ namespace MonsterTrain2Poju.Probe
             string path = Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!, "full-battle.json");
             File.WriteAllText(path, JsonConvert.SerializeObject(new
             {
-                Schema = 15,
+                Schema = 16,
                 GameVersion = Application.version,
                 GameModuleMvid = typeof(CardState).Assembly.ManifestModule.ModuleVersionId,
                 NativeWon,
@@ -317,6 +317,7 @@ namespace MonsterTrain2Poju.Probe
                 Turns = turns.Records,
                 Actions = actions.Records,
                 CrossRoomTargets = CrossRoomSpellScenario.Targets,
+                UiRngIsolation = UiRngIsolation.Records,
                 Checkpoints = checkpoints
             }, Formatting.Indented));
             return path;

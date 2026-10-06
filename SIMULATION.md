@@ -50,10 +50,27 @@ The game oracle is build 2.2.1, Assembly-CSharp MVID
 Gameplay RNG snapshots exclude native `BattleTest`, as well as `Chatter` and
 `NonDeterministic`. `TargetHelper` uses `BattleTest` for legality/UI preview target
 selection and `Battle` when live effects apply. `GameEffectHelper.TestEffect`
-restores the temporary target list after testing. UI test calls can consume the
-test stream without any gameplay transition; those auxiliary draws are not part
-of independently simulated battle state. Legacy snapshots retain their recorded
-test stream for backward compatibility.
+restores the temporary target list after testing. Numeric testing has a separate
+rule: `CardEffectDamage.TestEffect` calls `GetIntInRange`, which consumes `Battle`
+outside `SaveManager.PreviewMode`. In particular, `CardUI.IsPlayableAndAffectsState`
+calls those tests while refreshing hand highlights without enabling preview mode.
+The number of queries during card draw depends on UI animation/frame scheduling.
+
+Solver experiments can opt into `MT2_PROBE_ISOLATE_UI_RNG=1`. The Harmony guard
+executes the original highlight query, preserves its return value and exceptions,
+then restores the complete state and seed of both `Battle` and `BattleTest` in
+a finalizer. It does not wrap actual `PlayAnyCard` tests or effect execution.
+This changes the native UI's RNG side effects; it is an explicit experiment mode,
+not evidence of unchanged vanilla RNG behavior. Schema 16 carries `UiRngIsolated`
+through every decision state so the model can distinguish the two environments.
+The guard is disabled by default.
+
+`results/ui-rng-isolation-calibration.json.gz` preserves 185 native query records,
+including 53 that advance Battle inside the original UI method. Every query
+restores all four words and the seed of both streams, and returns an original
+boolean result. This fixture tests successful queries; no forced exception was
+introduced. Auxiliary target/UI draws are excluded from independent gameplay
+state; legacy snapshots retain their recorded test stream for compatibility.
 
 `results/full-battle-steward-once.json` records a seven-decision-turn natural
 `Level1BattleJunker` battle, starting with one Steward play. The native game won
