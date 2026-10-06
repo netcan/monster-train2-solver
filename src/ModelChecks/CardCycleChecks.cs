@@ -35,7 +35,9 @@ internal static class CardCycleChecks
             CardCycleState before = Read(cycle.GetProperty("Before"));
             CardCycleResult result = cycle.GetProperty("Kind").GetString() == "Draw"
                 ? CardCycleModel.DrawHand(before, cycle.GetProperty("HandSize").GetInt32(),
-                    cycle.GetProperty("MaxHandSize").GetInt32()) : CardCycleModel.DiscardHand(before);
+                    cycle.GetProperty("MaxHandSize").GetInt32()) : cycle.GetProperty("Kind").GetString() == "SpellDraw"
+                    ? CardCycleModel.DrawCards(before, cycle.GetProperty("HandSize").GetInt32(), cycle.GetProperty("MaxHandSize").GetInt32(),
+                        cycle.GetProperty("PlayedCardId").GetInt32()) : CardCycleModel.DiscardHand(before);
             if (!result.Supported) { unsupported++; continue; }
             CardCycleState actual = Read(cycle.GetProperty("Actual"));
             Require(Comparable(result.State!) == Comparable(actual),

@@ -34,6 +34,33 @@ namespace MonsterTrain2Poju.Model
 
     public static class CardCycleModel
     {
+        // Spell draws neither add nor reset the pending start-of-turn modifier.
+        // Native selection ignores the resolving card, and only reshuffles an empty deck.
+        public static CardCycleResult DrawCards(CardCycleState source, int count, int maxHandSize, int playedCardId = 0)
+        {
+            if (source.ExternalInteractions.Count > 0)
+                return new CardCycleResult(null, string.Join("; ", source.ExternalInteractions));
+            if (maxHandSize < 0 || source.Hand.Count > maxHandSize)
+                return new CardCycleResult(null, "Invalid hand size.");
+            var hand = source.Hand.ToList(); var draw = source.Draw.ToList(); var discard = source.Discard.ToList();
+            UnityRng rng = source.Rng;
+            int capacity = maxHandSize - hand.Count + (hand.Any(card => card.InstanceId == playedCardId) ? 1 : 0);
+            for (int index = 0; index < Math.Min(count, capacity); index++)
+            {
+                if (draw.Count == 0)
+                {
+                    ShuffleResult<CardToken> shuffled = rng.Shuffle(discard);
+                    rng = shuffled.State; draw = shuffled.Items.ToList(); discard.Clear();
+                }
+                int selected = draw.FindLastIndex(card => card.InstanceId != playedCardId);
+                if (selected < 0) break;
+                // DrawSpecificCard refuses a full hand, even when DrawCards reserved the played card's slot.
+                if (hand.Count == maxHandSize) continue;
+                CardToken card = draw[selected]; draw.RemoveAt(selected); hand.Insert(0, card);
+            }
+            return new CardCycleResult(new CardCycleState(hand, draw, discard, rng, source.DrawModifier, source.ExternalInteractions));
+        }
+
         public static CardCycleResult DrawHand(CardCycleState source, int handSize, int maxHandSize)
         {
             if (source.ExternalInteractions.Count > 0)

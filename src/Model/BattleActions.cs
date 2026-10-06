@@ -153,6 +153,7 @@ namespace MonsterTrain2Poju.Model
                 if (pileError != null) return Unsupported(pileError);
             }
             context = context.WithStatistics(context.Statistics?.WithPlayedCost(card.InstanceId, rule.Cost));
+            CombatContext castingContext = context;
             // Native direct play removes the card from hand before queued effects execute.
             context = new CombatContext(new CardCycleState(context.Cards.Hand.Where(item => item.InstanceId != card.InstanceId).ToArray(),
                 context.Cards.Draw, context.Cards.Discard, context.Cards.Rng, context.Cards.DrawModifier, context.Cards.ExternalInteractions),
@@ -199,7 +200,8 @@ namespace MonsterTrain2Poju.Model
                 }
                 else if (action.TargetUnitId != 0) return Illegal("A room or hand spell does not take a unit target.");
                 TrainCombatState spellInput = CardSpellModel.WithContext(train, context);
-                SpellCastCheck cast = CardSpellModel.TestPlay(spellInput, action.RoomIndex, rule.Effects, action.TargetUnitId, source.PlayRules);
+                SpellCastCheck cast = CardSpellModel.TestPlay(CardSpellModel.WithContext(train, castingContext), action.RoomIndex,
+                    rule.Effects, action.TargetUnitId, source.PlayRules);
                 if (!cast.Supported) return Unsupported(cast.UnsupportedReason!);
                 if (!cast.CanPlay) return Illegal("Every effect failed its cast test or a required effect failed.");
                 spellInput = CardSpellModel.WithContext(spellInput, context.WithBattleRng(cast.BattleRngAfterTests!.Value));

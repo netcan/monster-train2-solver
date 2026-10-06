@@ -403,11 +403,12 @@ namespace MonsterTrain2Poju.Probe
                 modifierScenario == "terminal-spells" || modifierScenario == "post-kill-spells" || modifierScenario == "random-spells" ||
                 modifierScenario == "random-status" || modifierScenario == "cross-room-spells" || modifierScenario == "cross-room-targets" || modifierScenario == "attack-buffs" ||
                 modifierScenario == "max-health-spells" || modifierScenario == "max-health-lethal" ||
-                modifierScenario == "numeric-ranges" || modifierScenario == "numeric-ranges-lethal" || modifierScenario == "target-filters"))
+                modifierScenario == "numeric-ranges" || modifierScenario == "numeric-ranges-lethal" || modifierScenario == "target-filters" || modifierScenario == "drawing"))
             {
                 if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Numeric fixture must start on deployment turn.");
                 numericModifiersPrepared = true;
-                if (modifierScenario == "target-filters") TargetFilterScenario.Prepare(managers, log);
+                if (modifierScenario == "drawing") DrawScenario.Prepare(managers, log);
+                else if (modifierScenario == "target-filters") TargetFilterScenario.Prepare(managers, log);
                 else if (modifierScenario == "numeric-ranges" || modifierScenario == "numeric-ranges-lethal")
                     NumericRangeScenario.Prepare(managers, log, modifierScenario == "numeric-ranges-lethal");
                 else if (modifierScenario == "max-health-spells" || modifierScenario == "max-health-lethal")

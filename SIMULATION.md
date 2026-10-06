@@ -24,6 +24,7 @@ are copied immutable values; independent child states can run on worker threads.
 | Target filtering | `CardTargetFilters` and `CardTargetModel` | Native health, required/excluded status, subtype and boss masks before selection; drop/last/physical-front bypasses, subtype precedence, filtered random legality and exact live target lists |
 | Integer RNG and shuffle | `UnityRng` | 768 native integer draws, seed initialization and complete four-word states |
 | Basic draw/discard cycle | `CardCycleModel` | 13 consecutive native operations including reshuffle |
+| Spell draws and hand cycling | `CardCycleModel.DrawCards` and `CardSpellModel` | Signed/zero/max counts, full-hand cast timing, resolving-card exclusion, reshuffle RNG, draw statistics and live membership for later hand upgrades; ranged tests require explicit UI RNG isolation |
 | Room attack exchange | `RoomCombatModel.Exchange` | Ordered initiative, target selection, retargeting, shield/armor and retaliation checks |
 | Entire room resolution | `RoomCombatModel.Resolve` | Native normal exchanges, post-combat effects and multiple rounds of boss/Pyre relentless combat |
 | Train combat phase | `TrainCombatModel.ResolveCombat` | Top-to-bottom native phase comparison |
@@ -46,6 +47,44 @@ are copied immutable values; independent child states can run on worker threads.
 | Battle to terminal result | `BattleSimulator.Resolve` and `ResolveNoMoreCards` | Independent card policies and seven-turn chains, mid-battle inputs and 16 parallel branches |
 | Additional spells, abilities, relics | Not complete | Unsupported interactions explicitly reject the model transition |
 
+`CardEffectDraw` runs through the same full card-action pipeline as other spells.
+Casting tests read the original hand; queued effects read the hand after the paid
+card has been removed. Fixed positive counts draw up to the actual hand limit,
+zero and other negative counts draw nothing, and `-1` fills to the maximum hand
+size. The native method's starting-hand description does not match that maximum
+size calculation. A draw-only spell may still pass its test with an empty deck.
+
+Spell drawing preserves the pending start-of-turn draw modifier. Deck selection
+pops from the end and prepends to the hand, excludes the resolving card, and only
+reshuffles when the draw pile is empty. Native selection occurs before the final
+full-hand refusal, so a reserved resolving-card slot can still cause a reshuffle
+without adding a card. Each successful draw updates per-card and aggregate draw
+statistics; subsequent hand upgrades use the newly changed membership. These
+operations preserve card modifiers, ownership, registry references and parent
+states, and advance only the appropriate CardDraw stream.
+
+Ranged drawing samples Battle during its initial test, runtime test and application.
+Quantity testing precedes the post-boss and preview gates; a gated draw does not apply or draw
+cards. Its original UI highlight tests also consume Battle, so full simulation
+requires the same explicit UI RNG isolation as ranged damage. Draw-type filters,
+draw-or-generate effects, next-drawn upgrades, Magnetic/IgnoreDraw traits and other
+draw callbacks remain unsupported rather than being treated as ordinary draws.
+
+`results/full-battle-drawing-ui-isolated.json.gz` retains the unaltered
+274,339,566-byte native trace from a controlled starting battle with a full hand,
+an ensured drawing spell, one additional deployment energy and a pending draw
+modifier of two. Natural enemy waves remain intact. All 24 card plays, seven
+EndTurns, 55 room stages, 82 card cycles, 13 train phases and 11 spawns match.
+Its 69 spell draw operations add 50 cards and include 14 zero-count no-ops,
+13 negative-count no-ops, 21 full-hand refusals, four reshuffles and two actual
+draws that preserve the nonzero pending modifier. All 267 native range samples
+match quantity and complete RNG state; exactly ten initial/runtime/application
+sequences are observed. The explicit UI guard preserves 1,009 original query
+results and restores 323 Battle-consuming queries. Independent root-only play,
+a mid-battle suffix and 16 parallel full simulations reach native victory at
+Pyre 80. The original user profile is unchanged; capture failures, differences,
+unsupported transitions and pending records are all zero.
+
 The game oracle is build 2.2.1, Assembly-CSharp MVID
 `8fb07b96-f4db-4d2b-884d-c00536d6ccf4`.
 
@@ -53,7 +92,7 @@ Gameplay RNG snapshots exclude native `BattleTest`, as well as `Chatter` and
 `NonDeterministic`. `TargetHelper` uses `BattleTest` for legality/UI preview target
 selection and `Battle` when live effects apply. `GameEffectHelper.TestEffect`
 restores the temporary target list after testing. Numeric testing has a separate
-rule: `CardEffectDamage.TestEffect` calls `GetIntInRange`, which consumes `Battle`
+rule: `CardEffectDamage.TestEffect` and `CardEffectDraw.TestEffect` call `GetIntInRange`, which consumes `Battle`
 outside `SaveManager.PreviewMode`. In particular, `CardUI.IsPlayableAndAffectsState`
 calls those tests while refreshing hand highlights without enabling preview mode.
 The number of queries during card draw depends on UI animation/frame scheduling.
@@ -81,7 +120,7 @@ float product rounded down; equal bounds consume no RNG, while reversed bounds
 retain Unity's descending convention. Nonfinite multipliers and out-of-domain
 float-to-int conversions are rejected explicitly.
 
-Ranged damage consumes a quantity draw during each enabled initial casting test,
+Ranged damage and drawing consume a quantity draw during each enabled initial casting test,
 another during its runtime test, and another when it applies. Runtime tests draw
 before a post-boss gate or missing-drop-target failure. The initial casting test
 returns its child RNG without mutating the parent, and the full card action passes
@@ -111,11 +150,11 @@ checks reach native victory at Pyre 80. Both original user profiles remain
 unchanged, and both native runs have zero capture failures, differences,
 unsupported transitions and pending records.
 
-The full battle model rejects ranged-damage definitions when `UiRngIsolated` is
+The full battle model rejects ranged damage/draw definitions when `UiRngIsolated` is
 false: the captured logical decision state cannot reproduce vanilla hand animation
 and frame-dependent highlight RNG consumption. These fixtures prove the explicit
 solver environment with the UI guard, rather than complete vanilla UI timing.
-The suite now contains 25 full battle fixtures; these controlled starting-battle
+The suite now contains 26 full battle fixtures; these controlled starting-battle
 variations do not establish complete coverage of the game's other encounters.
 
 Schema 17 carries optional `CombatUnit.IsBoss`, copied from native `IsAnyBoss`,
@@ -684,7 +723,7 @@ API delegates to the same engine for local checks. Each applied target updates
 its own room, then shares the resulting context with every other room; fixed
 target collections and last-target identities span the train. Capacity-limited
 unit upgrades consult the target room's definition. Dead movement and standby
-spawner routing use all rooms. The 25 saved native battle oracles exercise this
+spawner routing use all rooms. The 26 saved native battle oracles exercise this
 engine through the normal card-action path, including cross-room target modes.
 
 1. Capture a self-contained starting battle state and its static rule definitions.

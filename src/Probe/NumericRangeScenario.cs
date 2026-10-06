@@ -92,14 +92,15 @@ namespace MonsterTrain2Poju.Probe
                 __state = null;
                 string? scenario = Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS");
                 FullBattleTrace? trace = FullBattleTrace.Active;
-                if (scenario != "numeric-ranges" && scenario != "numeric-ranges-lethal" || !__instance.GetUseIntRange() ||
+                if (scenario != "numeric-ranges" && scenario != "numeric-ranges-lethal" && scenario != "drawing" || !__instance.GetUseIntRange() ||
                     trace == null || !trace.PendingActionIndex.HasValue && !trace.PendingTurnIndex.HasValue || AllGameManagers.Instance!.GetSaveManager().PreviewMode) return;
                 CardState? parent = __instance.GetParentCardState();
                 if (parent == null) return;
                 var callers = new StackTrace().GetFrames().Select(frame => frame.GetMethod()).ToArray();
                 string phase = callers.Any(method => method?.DeclaringType == typeof(CardUI)) ? "Highlight" :
                     callers.Any(method => method?.Name == "TestEffects" && method.DeclaringType == typeof(CombatManager)) ? "Cast" :
-                    callers.Any(method => method?.Name == "TestEffect" && method.DeclaringType == typeof(CardEffectDamage)) ? "Test" : "Apply";
+                    callers.Any(method => method?.Name == "TestEffect" && (method.DeclaringType == typeof(CardEffectDamage) ||
+                        method.DeclaringType == typeof(CardEffectDraw))) ? "Test" : "Apply";
                 __state = new SampleRecord { ActionIndex = trace.PendingActionIndex ?? -1, TurnIndex = trace.PendingTurnIndex ?? -1,
                     CardId = trace.CardId(parent), EffectIndex = parent.GetEffectStates().IndexOf(__instance),
                     Phase = phase, Min = __instance.GetParamMinInt(), Max = __instance.GetParamMaxInt(), Multiplier = __instance.GetParamMultiplier(), Before = Rng(),
