@@ -74,6 +74,7 @@ namespace MonsterTrain2Poju.Probe
                 RngCalibration.Capture();
                 GoldRewardCalibration.Capture(save);
                 RuleCatalogProbe.Capture(managers);
+                if (Environment.GetEnvironmentVariable("MT2_PROBE_STATISTIC_QUERIES") == "1") StatisticQueryCalibration.Capture(this);
                 calibrated = true;
             }
             checkpoints.Add(new { Label = label, State = projection.Capture(managers, save, combat, cards) });

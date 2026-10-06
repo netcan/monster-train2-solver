@@ -34,6 +34,7 @@ are copied immutable values; independent child states can run on worker threads.
 | Unit effects | `CombatTrigger` and `CombatContext` | Generated cards, Battle RNG, treasure escape; gold and once-only trigger checks |
 | Gold rewards | `GoldRewardModel` | 2,200 native calculations, reward minimums, integer/float boundaries, ties to even and preview exclusion |
 | Card statistics and preview | `BattleStatistics` and `BattlePreviewModel` | Native per-card/Any counters, turn rollover, spawn subtypes, death/exhaust attribution and preview damage statistic |
+| Statistic queries | `StatisticQueryModel` | 17,604 native queries across 40 kinds, three durations and seven card types; membership refresh, type/subtype pile counts, aggregates, costs and resource snapshots |
 | Card instance modifiers | `CardModifierModel` | Permanent/temporary ordered numeric upgrades, unit starting statuses, discard removal, play history and 256 native scalar calculations |
 | Retained card references | `CombatContext.CardRegistry` | Observed card identities survive pile clearing; detached spawner upgrades/removal preserve ownership and parent isolation |
 | Standby dictionary allocation | `CardPileModel` | Captured entry slots and free-list order preserve native hole reuse after unit death; malformed layouts, distinct futures, terminal clear and parallel branches |
@@ -843,6 +844,40 @@ target collections and last-target identities span the train. Capacity-limited
 unit upgrades consult the target room's definition. Dead movement and standby
 spawner routing use all rooms. The 32 saved native battle oracles exercise this
 engine through the normal card-action path, including cross-room target modes.
+
+`StatisticQueryModel` implements the counter and definition queries used by
+scaling traits. Every call refreshes statistic membership from all owned cards,
+including buffer-only references, or the permanent deck when every pile is
+empty. Per-card queries ignore type mismatches as the native code does. Global
+Any counters sum the corresponding ordinary counters with type/subtype filters;
+the stored Any entries are scaling notifications and cannot replace those sums.
+Current/battle monster-death totals ignore filters, but PreviousTurn falls
+through to the filtered per-card aggregate. Spawn totals/top-floor queries fall
+through to local counters for PreviousTurn; subtype spawn counts return zero.
+
+TypeInDeck excludes exhausted/eaten/purged membership. SubtypeInDeck includes
+those owned cards and ignores the requested card type. Specific-card counts use
+the permanent deck rather than current ownership. PlayedCost adds the source's
+intrinsic cost and X-cost modifiers to the stored paid amount, then floors the
+total at zero; UnmodifiedPlayedCost preserves signed stored costs. A variable
+card without a recorded cost reads current energy only in an active battle.
+Gold uses turn-start gold while the combat loop runs and live gold after it
+stops. Dynamic resource inputs are explicit query frames; callers must provide
+the current values when advancing a branch.
+
+`results/statistic-query-calibration.json.gz` preserves 17,604 raw native
+observations across six batches: live, distributed and empty piles, each with
+and without stored paid costs. Calibration uses isolated inactive native
+components, synthetic counters and a synthetic variable-cost source. The
+counter inputs include detached entries and signed integer overflow; all seven
+card type filters and all three durations are queried. It verifies membership
+refresh as well as values, and checks that the live combat context is unchanged.
+The independent reader recomputes every query. Pure checks cover retained buffer
+aliases, exhausted subtype counts, missing inputs and 64 isolated parallel
+branches. The query API supports static definition masks and no cardFilter.
+Room/status/magic/corruption/capacity, last-ability-activator and CurrentCost
+queries remain explicit unsupported results. Damage-trait callbacks and the
+propagation of dynamic query frames through combat remain to be implemented.
 
 Schema 21 captures the secondary piles in the shared combat context as well as
 the outer decision state. A room death or post-combat despawn updates standby

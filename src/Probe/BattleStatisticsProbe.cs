@@ -8,7 +8,8 @@ namespace MonsterTrain2Poju.Probe
 {
     internal static class BattleStatisticsProbe
     {
-        internal static BattleStatistics Capture(CardStatistics statistics, Func<CardState, int> cardId)
+        internal static BattleStatistics Capture(CardStatistics statistics, Func<CardState, int> cardId,
+            IReadOnlyList<CardState>? ownedCards = null)
         {
             T Field<T>(string name) => (T)AccessTools.Field(typeof(CardStatistics), name).GetValue(statistics);
             var values = new List<CardStatisticValue>();
@@ -32,7 +33,7 @@ namespace MonsterTrain2Poju.Probe
                 Field<int>("numMonstersDeadThisTurn"), Field<int>("numMonstersDeadThisBattle"),
                 Field<int>("energyRemainingEndOfTurn"), Field<int>("goldStartOfThisTurn"), Field<int>("lastAttackDamageDealt"),
                 Field<Dictionary<CardState, CardStatsEntry>>("deckStats").Keys
-                    .Concat(AllGameManagers.Instance!.GetCardManager()!.GetAllCards(new List<CardState>())).Select(cardId).ToArray(),
+                    .Concat(ownedCards ?? AllGameManagers.Instance!.GetCardManager()!.GetAllCards(new List<CardState>())).Select(cardId).ToArray(),
                 AllGameManagers.Instance!.GetSaveManager().GetDeckState().Select(cardId).ToArray());
         }
     }

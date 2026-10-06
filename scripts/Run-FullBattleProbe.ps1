@@ -27,6 +27,7 @@ param(
     [switch] $HandRemovalLethal,
     [switch] $Generation,
     [switch] $GenerationLethal,
+    [switch] $StatisticQueries,
     [switch] $SkipBuild
 )
 
@@ -68,6 +69,7 @@ $environment = @{
     MT2_PROBE_FAST_REPLAY = '0'
     MT2_PROBE_NO_TIMEOUT = '1'
     MT2_PROBE_ISOLATE_UI_RNG = $(if ($NumericRanges -or $NumericRangesLethal -or $Drawing) { '1' } else { '0' })
+    MT2_PROBE_STATISTIC_QUERIES = $(if ($StatisticQueries) { '1' } else { '0' })
 }
 $originalBefore = Get-OriginalSignature
 $unityLog = Join-Path $profile 'unity-scenario.log'
@@ -314,9 +316,17 @@ $result = [pscustomobject]@{
     DrawCoverage = $drawCoverage
     HandRemovalCoverage = $handRemovalCoverage
     GenerationCoverage = $generationCoverage
+    StatisticQueryCalibration = $(if ($StatisticQueries) { Join-Path $profile 'statistic-query-calibration.json' } else { $null })
     Trace = $tracePath
 }
 $result | ConvertTo-Json
+if ($StatisticQueries) {
+    $queryPath = Join-Path $profile 'statistic-query-calibration.json'
+    if (-not (Test-Path -LiteralPath $queryPath)) { throw 'Missing native statistic-query calibration.' }
+    $queryCalibration = Get-Content -LiteralPath $queryPath -Raw | ConvertFrom-Json
+    if (-not $queryCalibration.LiveContextUnchanged -or @($queryCalibration.Batches).Count -ne 6 -or
+        @($queryCalibration.Batches.Samples).Count -lt 500) { throw 'Native statistic-query coverage is incomplete.' }
+}
 if ($null -eq $trace.NativeWon -or $process.ExitCode -ne 0 -or -not $nativePassed -or -not $originalUnchanged -or -not $modifierCoverage -or -not $healingCoverage -or -not $onHealCoverage -or -not $roomSpellCoverage -or -not $terminalSettled -or -not $terminalSpellCoverage -or
     -not $postKillCoverage -or -not $randomCoverage -or -not $randomStatusCoverage -or -not $crossRoomCoverage -or -not $attackCoverage -or -not $maxHealthCoverage -or -not $numericRangeCoverage -or -not $targetFilterCoverage -or -not $drawCoverage -or -not $handRemovalCoverage -or -not $generationCoverage -or $trace.CaptureFailures -ne 0 -or $trace.Mismatches -ne 0 -or $trace.Unsupported -ne 0 -or $trace.Pending -ne 0) {
     throw "Full battle differential probe failed; inspect $tracePath and $unityLog"
