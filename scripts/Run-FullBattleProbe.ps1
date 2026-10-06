@@ -1,6 +1,6 @@
 #requires -Version 7.4
 param(
-    [ValidateSet('no-cards', 'steward-once')]
+    [ValidateSet('no-cards', 'steward-once', 'units-and-junk', 'units-spells-and-junk')]
     [string] $Policy = 'steward-once',
     [switch] $SkipBuild
 )
@@ -69,12 +69,17 @@ $result = [pscustomobject]@{
     Unsupported = $trace.Unsupported
     Pending = $trace.Pending
     Stages = @($trace.Stages).Count
+    CardCycles = @($trace.CardCycles).Count
+    TrainPhases = @($trace.TrainPhases).Count
+    Spawns = @($trace.Spawns).Count
+    EndTurns = @($trace.Turns).Count
+    Actions = @($trace.Actions).Count
     DecisionTurns = @($trace.Checkpoints).Count - 1
     OriginalFilesUnchanged = $originalUnchanged
     Trace = $tracePath
 }
 $result | ConvertTo-Json
 if ($null -eq $trace.NativeWon -or $process.ExitCode -ne 0 -or -not $nativePassed -or -not $originalUnchanged -or
-    $trace.CaptureFailures -ne 0 -or $trace.Mismatches -ne 0 -or $trace.Pending -ne 0) {
+    $trace.CaptureFailures -ne 0 -or $trace.Mismatches -ne 0 -or $trace.Unsupported -ne 0 -or $trace.Pending -ne 0) {
     throw "Full battle differential probe failed; inspect $tracePath and $unityLog"
 }

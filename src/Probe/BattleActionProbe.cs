@@ -1,0 +1,169 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using BepInEx.Logging;
+using MonsterTrain2Poju.Model;
+using Newtonsoft.Json.Linq;
+
+namespace MonsterTrain2Poju.Probe
+{
+    internal sealed class BattleActionProbe
+    {
+        private readonly FullBattleTrace trace;
+        private readonly UnitPlayModelProbe projection;
+        private readonly ManualLogSource log;
+        private readonly List<Record> records = new List<Record>();
+        private BattlePlayRules? rules;
+        internal IReadOnlyList<Record> Records => records;
+        internal int Mismatches => records.Count(record => record.Difference != null);
+        internal int Unsupported => records.Count(record => !record.Predicted.Supported);
+        internal BattleActionProbe(FullBattleTrace trace, UnitPlayModelProbe projection, ManualLogSource log)
+        { this.trace = trace; this.projection = projection; this.log = log; }
+
+        internal BattlePlayRules CaptureRules(EnemySpawnState spawn)
+        {
+            if (rules != null) return rules;
+            AllGameManagers managers = AllGameManagers.Instance!;
+            SaveManager save = managers.GetSaveManager();
+            CardManager cards = managers.GetCardManager()!;
+            var nativeCards = cards.GetAllCards(new List<CardState>()).ToArray();
+            var definitions = nativeCards.Select(card => card.GetCardDataID()).Concat(spawn.Waves.SelectMany(wave => wave.Candidates)
+                .SelectMany(group => group.Units).Concat(spawn.Treasures).SelectMany(unit => unit.Unit.Triggers)
+                .SelectMany(trigger => trigger.Effects).SelectMany(effect => effect.CardPool)).Distinct().ToArray();
+            RoomManager rooms = managers.GetRoomManager()!;
+            var roomRules = new List<RoomPlayRule>();
+            for (int index = 0; index < rooms.GetNumRooms(); index++)
+            {
+                RoomState room = rooms.GetRoom(index);
+                CapacityInfo capacity = room.GetCapacityInfo(Team.Type.Monsters);
+                roomRules.Add(new RoomPlayRule(index, capacity.max, capacity.numSpawnPoints,
+                    room.IsRoomEnabled(), room.IsRoomSummonBlocked(managers.GetRelicManager()), room.GetIsPyreRoom(),
+                    room.GetCapacityInfo(Team.Type.Heroes).max));
+            }
+            rules = new BattlePlayRules(roomRules, definitions.OrderBy(id => id, StringComparer.Ordinal)
+                .Select(id => Definition(save.GetAllGameData().FindCardData(id)!)).ToArray(),
+                new[] { "armor", "valor", "pyregel" }.Select(id => Status(id, 1)).ToArray());
+            return rules;
+        }
+
+        internal static CardPlayRule Definition(CardData data)
+        {
+            var interactions = new List<string>();
+            if (data.GetCardTriggers().Count > 0) interactions.Add("Card triggers");
+            if (data.GetTraits().Any(trait => trait.GetTraitStateName() != "CardTraitSelfPurge")) interactions.Add("Card traits");
+            bool selfPurge = data.GetTraits().Any(trait => trait.GetTraitStateName() == "CardTraitSelfPurge");
+            CardEffectData[] effects = data.GetEffects().ToArray();
+            string kind = effects.Length == 1 ? effects[0].GetEffectStateName() : "MultipleEffects";
+            CombatUnit? template = null;
+            var spellEffects = new List<CardActionEffect>();
+            string destination = selfPurge ? "Purged" : "Discard";
+            if (kind == "CardEffectSpawnMonster")
+            {
+                CardEffectData effect = effects[0];
+                CharacterData? unit = effect.GetParamCharacterData();
+                if (unit == null || effect.GetParamAdditionalCharacterData() != null ||
+                    effect.GetParamCharacterDataPool().Count > 0 || effect.GetParamInt() > 1 ||
+                    effect.GetParamBool() || effect.GetParamCardUpgradeData() != null ||
+                    effect.GetTargetMode() != TargetMode.Room || selfPurge)
+                    interactions.Add("Additional/modified unit spawn");
+                if (unit != null)
+                {
+                    EnemyDefinition definition = EnemySpawningProbe.Definition(unit);
+                    interactions.AddRange(definition.ExternalInteractions);
+                    if (unit.GetGraftedEquipment() != null) interactions.Add("Grafted equipment");
+                    if (unit.GetUnitAbilityCardData() != null) interactions.Add("Spawned unit ability");
+                    CombatUnit source = definition.Unit;
+                    template = new CombatUnit(0, source.AssetKey, CombatTeam.Player, source.BaseAttack, source.Health,
+                        source.MaxHealth, source.CanAttack, false, false, source.Statuses, source.Triggers, size: source.Size,
+                        statusImmunities: source.StatusImmunities, subtypes: source.Subtypes, modifiers: source.Modifiers);
+                }
+                kind = "SpawnMonster"; destination = "Standby";
+            }
+            else if (kind == "CardEffectNULL") kind = "Null";
+            else if (data.GetCardType() == CardType.Spell && effects.Length > 0 && effects.All(effect =>
+                new[] { "CardEffectDamage", "CardEffectAddStatusEffect", "CardEffectFloorRearrange" }.Contains(effect.GetEffectStateName())))
+            {
+                kind = "Spell";
+                for (int index = 0; index < effects.Length; index++)
+                {
+                    CardEffectData effect = effects[index];
+                    var excluded = new List<SubtypeData>(); effect.GetTargetCharacterExcludedSubtypes(excluded);
+                    if (effect.GetUseIntRange() || effect.GetUseStatusEffectStackMultiplier() || effect.GetUseHealthMissingStackMultiplier() ||
+                        effect.GetUseMagicPowerMultiplier() || effect.GetTargetIgnoreBosses() || effect.GetTargetModeHealthFilter() != CardEffectData.HealthFilter.Both ||
+                        effect.GetTargetModeStatusEffectsFilter().Length > 0 || effect.GetTargetModeStatusEffectsExcludedFilter().Length > 0 ||
+                        !effect.GetTargetCharacterSubtype().IsNone || excluded.Count > 0 || !effect.GetParamSubtype().IsNone ||
+                        (index == 0 ? effect.GetTargetMode() != TargetMode.DropTargetCharacter :
+                            effect.GetTargetMode() != TargetMode.LastTargetedCharacters && effect.GetTargetMode() != TargetMode.DropTargetCharacter))
+                        interactions.Add("Spell scaling or target filters");
+                    string type = effect.GetEffectStateName() == "CardEffectDamage" ? "Damage" :
+                        effect.GetEffectStateName() == "CardEffectFloorRearrange" ? "FloorRearrange" :
+                        "AddStatus";
+                    var statuses = new List<CombatStatus>();
+                    if (type == "AddStatus")
+                    {
+                        if (effect.GetParamInt() != 0 || effect.GetParamStatusEffects().Length != 1) interactions.Add("Random status effect");
+                        foreach (StatusEffectStackData status in effect.GetParamStatusEffects())
+                        {
+                            if (!StatusEffectManager.Instance.GetStatusEffectDataById(status.statusId)!.IsStackable()) interactions.Add("Nonstackable status legality");
+                            statuses.Add(Status(status.statusId, status.count));
+                        }
+                    }
+                    spellEffects.Add(new CardActionEffect(type, effect.GetTargetMode().ToString(), effect.GetParamInt(),
+                        effect.GetTargetTeamType().HasFlag(Team.Type.Heroes), effect.GetTargetTeamType().HasFlag(Team.Type.Monsters), statuses));
+                }
+            }
+            else interactions.Add("Unimplemented play effect " + kind);
+            return new CardPlayRule(data.GetID(), data.name, data.GetCost(), kind, destination, template,
+                interactions.Distinct().OrderBy(value => value, StringComparer.Ordinal).ToArray(), spellEffects);
+        }
+
+        internal static CombatStatus Status(string id, int count)
+        {
+            StatusEffectData rule = StatusEffectManager.Instance.GetStatusEffectDataById(id)!;
+            return new CombatStatus(id, count, rule.GetParamInt(), rule.GetRemoveWhenTriggered(), rule.GetRemoveStackAtEndOfTurn(),
+                rule.GetRemoveAtEndOfTurn(), rule.GetRemoveAtEndOfTurnAfterPostCombat(), false, rule.GetSkipTriggerDuringDeployment(), rule.GetRemoveDuringDeployment());
+        }
+
+        internal void Begin(PlayCardAction action)
+        {
+            try
+            {
+                if (records.Any(record => record.Actual == null)) throw new InvalidOperationException("Previous card action is pending.");
+                BattleTurnState before = trace.CaptureDecision();
+                records.Add(new Record { Index = records.Count, Before = before, Action = action,
+                    Predicted = BattleActionModel.PlayCard(before, action) });
+            }
+            catch (Exception error) { trace.CaptureFailure(error); }
+        }
+        internal void Complete()
+        {
+            Record? record = records.LastOrDefault(item => item.Actual == null);
+            if (record == null) return;
+            try
+            {
+                record.Actual = trace.CaptureDecision();
+                record.ActualOutcome = trace.NativeWon == null ? RoomOutcome.Exchanged :
+                    trace.NativeWon.Value ? RoomOutcome.BattleWon : RoomOutcome.PlayerDefeated;
+                if (record.Predicted.Supported)
+                {
+                    record.Difference = record.Predicted.Outcome != record.ActualOutcome ? "Card play terminal outcome differs" :
+                        JToken.DeepEquals(BattleTurnProbe.Comparable(record.Predicted.State!),
+                        BattleTurnProbe.Comparable(record.Actual)) ? null : "Card play decision state differs";
+                    log.LogInfo("ACTION-MODEL-" + (record.Difference == null ? "MATCH" : "MISMATCH") + " index=" + record.Index);
+                }
+                else log.LogInfo("ACTION-MODEL-UNSUPPORTED " + record.Predicted.Reason);
+            }
+            catch (Exception error) { trace.CaptureFailure(error); }
+        }
+        internal sealed class Record
+        {
+            public int Index { get; set; }
+            public BattleTurnState Before { get; set; } = null!;
+            public PlayCardAction Action { get; set; } = null!;
+            public BattleActionResult Predicted { get; set; } = null!;
+            public BattleTurnState? Actual { get; set; }
+            public RoomOutcome ActualOutcome { get; set; }
+            public string? Difference { get; set; }
+        }
+    }
+}

@@ -1,0 +1,646 @@
+{
+  "Schema": 2,
+  "GameModuleMvid": "8fb07b96-f4db-4d2b-884d-c00536d6ccf4",
+  "BossType": "None",
+  "Looping": false,
+  "Waves": [
+    [
+      [
+        "MageT1_Junker",
+        "ShieldGuardT1_BasicNonAttack"
+      ]
+    ],
+    [
+      [
+        "MageT1_Junker",
+        "HeavyT1_Basic"
+      ]
+    ],
+    [
+      []
+    ],
+    [
+      [
+        "Boss_Level1_Basic",
+        "ShieldGuardT1_BasicNonAttack"
+      ]
+    ]
+  ],
+  "Specials": {
+    "Treasure": [
+      "TreasureBagLvl1Gold"
+    ]
+  },
+  "StatusRules": [
+    {
+      "Id": "armor",
+      "Type": "StatusEffectArmorState",
+      "Value": 1,
+      "Stage": "OnPreAttackedArmor",
+      "AdditionalStages": [],
+      "RemoveWhenTriggered": true,
+      "RemoveStackAtEnd": false,
+      "RemoveAllAtEnd": false,
+      "AfterPostCombat": false,
+      "SkipDuringDeployment": false,
+      "RemoveDuringDeployment": true
+    },
+    {
+      "Id": "valor",
+      "Type": "StatusEffectValor",
+      "Value": 1,
+      "Stage": "OnPostRoomCombat",
+      "AdditionalStages": [],
+      "RemoveWhenTriggered": false,
+      "RemoveStackAtEnd": false,
+      "RemoveAllAtEnd": false,
+      "AfterPostCombat": false,
+      "SkipDuringDeployment": false,
+      "RemoveDuringDeployment": false
+    },
+    {
+      "Id": "pyregel",
+      "Type": "StatusEffectPyregelState",
+      "Value": 1,
+      "Stage": "OnPreFlatDamageIncrease",
+      "AdditionalStages": [],
+      "RemoveWhenTriggered": false,
+      "RemoveStackAtEnd": false,
+      "RemoveAllAtEnd": false,
+      "AfterPostCombat": false,
+      "SkipDuringDeployment": false,
+      "RemoveDuringDeployment": false
+    }
+  ],
+  "Cards": [
+    {
+      "Id": "19705414-816d-4549-bcf5-866f338a551f",
+      "AssetKey": "BanishedChamp1",
+      "Cost": 0,
+      "Type": "Monster",
+      "SpawnCharacter": "MonsterBanishedChampion1",
+      "Effects": [
+        {
+          "Type": "CardEffectSpawnMonster",
+          "Target": "Room",
+          "Team": "None",
+          "HealthFilter": "Both",
+          "StatusFilter": [],
+          "ExcludedStatusFilter": [],
+          "Int": 0,
+          "AdditionalInt": 0,
+          "AdditionalInt1": 0,
+          "UseRange": false,
+          "Min": 0,
+          "Max": 0,
+          "Multiplier": 0.0,
+          "Str": "",
+          "Bool": false,
+          "Bool2": false,
+          "Bool3": false,
+          "Float": 0.0,
+          "Statuses": [],
+          "Card": null,
+          "Character": "MonsterBanishedChampion1",
+          "CardPool": [],
+          "HasCardFilter": false,
+          "HasUpgrade": false
+        }
+      ],
+      "Traits": [],
+      "Triggers": []
+    },
+    {
+      "Id": "38e70e6a-20f3-4e36-8d31-c5110be07f87",
+      "AssetKey": "TrainStewardSpear",
+      "Cost": 1,
+      "Type": "Monster",
+      "SpawnCharacter": "TrainStewardSmall",
+      "Effects": [
+        {
+          "Type": "CardEffectSpawnMonster",
+          "Target": "Room",
+          "Team": "None",
+          "HealthFilter": "Both",
+          "StatusFilter": [],
+          "ExcludedStatusFilter": [],
+          "Int": 0,
+          "AdditionalInt": 0,
+          "AdditionalInt1": 0,
+          "UseRange": false,
+          "Min": 0,
+          "Max": 0,
+          "Multiplier": 0.0,
+          "Str": "",
+          "Bool": false,
+          "Bool2": false,
+          "Bool3": false,
+          "Float": 0.0,
+          "Statuses": [],
+          "Card": null,
+          "Character": "TrainStewardSmall",
+          "CardPool": [],
+          "HasCardFilter": false,
+          "HasUpgrade": false
+        }
+      ],
+      "Traits": [],
+      "Triggers": []
+    },
+    {
+      "Id": "62cc5532-5fa0-4e66-9fec-85be573af359",
+      "AssetKey": "ScourgeT1",
+      "Cost": 1,
+      "Type": "Junk",
+      "SpawnCharacter": null,
+      "Effects": [
+        {
+          "Type": "CardEffectNULL",
+          "Target": "Room",
+          "Team": "None",
+          "HealthFilter": "Both",
+          "StatusFilter": [],
+          "ExcludedStatusFilter": [],
+          "Int": 0,
+          "AdditionalInt": 0,
+          "AdditionalInt1": 0,
+          "UseRange": false,
+          "Min": 0,
+          "Max": 0,
+          "Multiplier": 0.0,
+          "Str": "",
+          "Bool": false,
+          "Bool2": true,
+          "Bool3": false,
+          "Float": 0.0,
+          "Statuses": [],
+          "Card": null,
+          "Character": null,
+          "CardPool": [],
+          "HasCardFilter": false,
+          "HasUpgrade": false
+        }
+      ],
+      "Traits": [
+        {
+          "Type": "CardTraitSelfPurge",
+          "Int": 0,
+          "Int2": 0,
+          "Int3": 0,
+          "Bool": false,
+          "Str": "",
+          "Float": 0.0,
+          "Scaling": false,
+          "TrackedValue": "SubtypeInDeck",
+          "EntryDuration": "ThisTurn"
+        }
+      ],
+      "Triggers": []
+    },
+    {
+      "Id": "c8b39244-83c1-4eb3-b474-8898226d4280",
+      "AssetKey": "JustCause",
+      "Cost": 1,
+      "Type": "Spell",
+      "SpawnCharacter": null,
+      "Effects": [
+        {
+          "Type": "CardEffectFloorRearrange",
+          "Target": "DropTargetCharacter",
+          "Team": "Heroes, Monsters",
+          "HealthFilter": "Both",
+          "StatusFilter": [],
+          "ExcludedStatusFilter": [],
+          "Int": 0,
+          "AdditionalInt": 0,
+          "AdditionalInt1": 0,
+          "UseRange": false,
+          "Min": 0,
+          "Max": 0,
+          "Multiplier": 0.0,
+          "Str": "",
+          "Bool": false,
+          "Bool2": false,
+          "Bool3": false,
+          "Float": 0.0,
+          "Statuses": [],
+          "Card": null,
+          "Character": null,
+          "CardPool": [],
+          "HasCardFilter": false,
+          "HasUpgrade": false
+        },
+        {
+          "Type": "CardEffectAddStatusEffect",
+          "Target": "LastTargetedCharacters",
+          "Team": "Heroes, Monsters",
+          "HealthFilter": "Both",
+          "StatusFilter": [],
+          "ExcludedStatusFilter": [],
+          "Int": 0,
+          "AdditionalInt": 0,
+          "AdditionalInt1": 0,
+          "UseRange": false,
+          "Min": 0,
+          "Max": 0,
+          "Multiplier": 1.0,
+          "Str": "",
+          "Bool": false,
+          "Bool2": false,
+          "Bool3": false,
+          "Float": 0.0,
+          "Statuses": [
+            {
+              "statusId": "valor",
+              "count": 2,
+              "fromPermanentUpgrade": false
+            }
+          ],
+          "Card": null,
+          "Character": null,
+          "CardPool": [],
+          "HasCardFilter": false,
+          "HasUpgrade": false
+        }
+      ],
+      "Traits": [],
+      "Triggers": []
+    },
+    {
+      "Id": "d14a50f3-728d-43e1-87f0-ef1b013f6678",
+      "AssetKey": "TrainStewardShield",
+      "Cost": 1,
+      "Type": "Monster",
+      "SpawnCharacter": "TrainStewardBig",
+      "Effects": [
+        {
+          "Type": "CardEffectSpawnMonster",
+          "Target": "Room",
+          "Team": "None",
+          "HealthFilter": "Both",
+          "StatusFilter": [],
+          "ExcludedStatusFilter": [],
+          "Int": 0,
+          "AdditionalInt": 0,
+          "AdditionalInt1": 0,
+          "UseRange": false,
+          "Min": 0,
+          "Max": 0,
+          "Multiplier": 0.0,
+          "Str": "",
+          "Bool": false,
+          "Bool2": false,
+          "Bool3": false,
+          "Float": 0.0,
+          "Statuses": [],
+          "Card": null,
+          "Character": "TrainStewardBig",
+          "CardPool": [],
+          "HasCardFilter": false,
+          "HasUpgrade": false
+        }
+      ],
+      "Traits": [],
+      "Triggers": []
+    },
+    {
+      "Id": "fb0683b1-20ac-4dd2-b580-14b502e182f4",
+      "AssetKey": "StarterFireStarter",
+      "Cost": 1,
+      "Type": "Spell",
+      "SpawnCharacter": null,
+      "Effects": [
+        {
+          "Type": "CardEffectDamage",
+          "Target": "DropTargetCharacter",
+          "Team": "Heroes, Monsters",
+          "HealthFilter": "Both",
+          "StatusFilter": [],
+          "ExcludedStatusFilter": [],
+          "Int": 1,
+          "AdditionalInt": 0,
+          "AdditionalInt1": 0,
+          "UseRange": false,
+          "Min": 0,
+          "Max": 0,
+          "Multiplier": 1.0,
+          "Str": "",
+          "Bool": false,
+          "Bool2": false,
+          "Bool3": false,
+          "Float": 0.0,
+          "Statuses": [
+            {
+              "statusId": "pyregel",
+              "count": 4,
+              "fromPermanentUpgrade": false
+            }
+          ],
+          "Card": null,
+          "Character": null,
+          "CardPool": [],
+          "HasCardFilter": false,
+          "HasUpgrade": false
+        },
+        {
+          "Type": "CardEffectAddStatusEffect",
+          "Target": "LastTargetedCharacters",
+          "Team": "Heroes, Monsters",
+          "HealthFilter": "Both",
+          "StatusFilter": [],
+          "ExcludedStatusFilter": [],
+          "Int": 0,
+          "AdditionalInt": 0,
+          "AdditionalInt1": 0,
+          "UseRange": false,
+          "Min": 0,
+          "Max": 0,
+          "Multiplier": 1.0,
+          "Str": "",
+          "Bool": false,
+          "Bool2": false,
+          "Bool3": false,
+          "Float": 0.0,
+          "Statuses": [
+            {
+              "statusId": "pyregel",
+              "count": 2,
+              "fromPermanentUpgrade": false
+            }
+          ],
+          "Card": null,
+          "Character": null,
+          "CardPool": [],
+          "HasCardFilter": false,
+          "HasUpgrade": false
+        }
+      ],
+      "Traits": [],
+      "Triggers": []
+    }
+  ],
+  "Characters": [
+    {
+      "AssetKey": "Boss_Level1_Basic",
+      "Attack": 7,
+      "Health": 125,
+      "Size": 5,
+      "CanAttack": true,
+      "Ascends": true,
+      "Loops": false,
+      "Statuses": [
+        {
+          "statusId": "relentless",
+          "count": 1,
+          "fromPermanentUpgrade": false
+        }
+      ],
+      "Triggers": []
+    },
+    {
+      "AssetKey": "HeavyT1_Basic",
+      "Attack": 4,
+      "Health": 45,
+      "Size": 2,
+      "CanAttack": true,
+      "Ascends": true,
+      "Loops": false,
+      "Statuses": [],
+      "Triggers": []
+    },
+    {
+      "AssetKey": "MageT1_Junker",
+      "Attack": 1,
+      "Health": 1,
+      "Size": 2,
+      "CanAttack": true,
+      "Ascends": true,
+      "Loops": false,
+      "Statuses": [],
+      "Triggers": [
+        {
+          "Kind": "PostCombat",
+          "Once": false,
+          "Threshold": 0,
+          "IgnoreSilence": false,
+          "OnlyIfEquipped": false,
+          "RequiredStatuses": [],
+          "RequiredDyingStatuses": [],
+          "Effects": [
+            {
+              "Type": "CardEffectAddBattleCard",
+              "Target": "Room",
+              "Team": "None",
+              "HealthFilter": "Both",
+              "StatusFilter": [],
+              "ExcludedStatusFilter": [],
+              "Int": 5,
+              "AdditionalInt": 0,
+              "AdditionalInt1": 0,
+              "UseRange": false,
+              "Min": 0,
+              "Max": 0,
+              "Multiplier": 0.0,
+              "Str": "",
+              "Bool": false,
+              "Bool2": false,
+              "Bool3": false,
+              "Float": 0.0,
+              "Statuses": [],
+              "Card": null,
+              "Character": null,
+              "CardPool": [
+                {
+                  "Id": "62cc5532-5fa0-4e66-9fec-85be573af359",
+                  "AssetKey": "ScourgeT1",
+                  "Triggers": []
+                }
+              ],
+              "HasCardFilter": false,
+              "HasUpgrade": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "AssetKey": "MonsterBanishedChampion1",
+      "Attack": 1,
+      "Health": 10,
+      "Size": 2,
+      "CanAttack": true,
+      "Ascends": true,
+      "Loops": false,
+      "Statuses": [
+        {
+          "statusId": "multistrike",
+          "count": 1,
+          "fromPermanentUpgrade": false
+        }
+      ],
+      "Triggers": []
+    },
+    {
+      "AssetKey": "PyreHeartStarter",
+      "Attack": 1,
+      "Health": 1,
+      "Size": 2,
+      "CanAttack": true,
+      "Ascends": true,
+      "Loops": false,
+      "Statuses": [
+        {
+          "statusId": "relentless",
+          "count": 1,
+          "fromPermanentUpgrade": false
+        },
+        {
+          "statusId": "sweep",
+          "count": 1,
+          "fromPermanentUpgrade": false
+        },
+        {
+          "statusId": "immobile",
+          "count": 1,
+          "fromPermanentUpgrade": false
+        },
+        {
+          "statusId": "immune",
+          "count": 1,
+          "fromPermanentUpgrade": false
+        }
+      ],
+      "Triggers": []
+    },
+    {
+      "AssetKey": "ShieldGuardT1_BasicNonAttack",
+      "Attack": 0,
+      "Health": 5,
+      "Size": 3,
+      "CanAttack": true,
+      "Ascends": true,
+      "Loops": false,
+      "Statuses": [
+        {
+          "statusId": "spikes",
+          "count": 2,
+          "fromPermanentUpgrade": false
+        },
+        {
+          "statusId": "armor",
+          "count": 25,
+          "fromPermanentUpgrade": false
+        }
+      ],
+      "Triggers": []
+    },
+    {
+      "AssetKey": "TrainStewardBig",
+      "Attack": 8,
+      "Health": 25,
+      "Size": 3,
+      "CanAttack": true,
+      "Ascends": true,
+      "Loops": false,
+      "Statuses": [],
+      "Triggers": []
+    },
+    {
+      "AssetKey": "TrainStewardSmall",
+      "Attack": 14,
+      "Health": 5,
+      "Size": 2,
+      "CanAttack": true,
+      "Ascends": true,
+      "Loops": false,
+      "Statuses": [],
+      "Triggers": []
+    },
+    {
+      "AssetKey": "TreasureBagLvl1Gold",
+      "Attack": 0,
+      "Health": 1,
+      "Size": 2,
+      "CanAttack": false,
+      "Ascends": false,
+      "Loops": false,
+      "Statuses": [],
+      "Triggers": [
+        {
+          "Kind": "OnDeath",
+          "Once": false,
+          "Threshold": 0,
+          "IgnoreSilence": false,
+          "OnlyIfEquipped": false,
+          "RequiredStatuses": [],
+          "RequiredDyingStatuses": [],
+          "Effects": [
+            {
+              "Type": "CardEffectRewardGold",
+              "Target": "Room",
+              "Team": "None",
+              "HealthFilter": "Both",
+              "StatusFilter": [],
+              "ExcludedStatusFilter": [],
+              "Int": 50,
+              "AdditionalInt": 0,
+              "AdditionalInt1": 0,
+              "UseRange": false,
+              "Min": 0,
+              "Max": 0,
+              "Multiplier": 0.0,
+              "Str": "",
+              "Bool": false,
+              "Bool2": false,
+              "Bool3": false,
+              "Float": 0.0,
+              "Statuses": [],
+              "Card": null,
+              "Character": null,
+              "CardPool": [],
+              "HasCardFilter": false,
+              "HasUpgrade": false
+            }
+          ]
+        },
+        {
+          "Kind": "PostCombat",
+          "Once": false,
+          "Threshold": 0,
+          "IgnoreSilence": false,
+          "OnlyIfEquipped": false,
+          "RequiredStatuses": [],
+          "RequiredDyingStatuses": [],
+          "Effects": [
+            {
+              "Type": "CardEffectDespawnCharacter",
+              "Target": "Room",
+              "Team": "None",
+              "HealthFilter": "Both",
+              "StatusFilter": [],
+              "ExcludedStatusFilter": [],
+              "Int": 1,
+              "AdditionalInt": 0,
+              "AdditionalInt1": 0,
+              "UseRange": false,
+              "Min": 0,
+              "Max": 0,
+              "Multiplier": 0.0,
+              "Str": "",
+              "Bool": true,
+              "Bool2": false,
+              "Bool3": false,
+              "Float": 0.0,
+              "Statuses": [],
+              "Card": null,
+              "Character": null,
+              "CardPool": [],
+              "HasCardFilter": false,
+              "HasUpgrade": false
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

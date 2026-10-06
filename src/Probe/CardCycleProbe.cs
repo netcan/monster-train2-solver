@@ -20,10 +20,10 @@ namespace MonsterTrain2Poju.Probe
         internal int Mismatches => records.Count(record => record.Difference != null);
         internal int Unsupported => records.Count(record => !record.Predicted.Supported);
 
-        internal CardCycleProbe(ManualLogSource log)
-        { this.log = log; projection = new UnitPlayModelProbe(log); active = this; }
+        internal CardCycleProbe(ManualLogSource log, UnitPlayModelProbe projection)
+        { this.log = log; this.projection = projection; active = this; }
 
-        private CardCycleState Capture(CardManager cards, string kind)
+        internal CardCycleState Capture(CardManager cards, string kind)
         {
             AllGameManagers managers = AllGameManagers.Instance!;
             CombatProjection state = projection.Capture(managers, managers.GetSaveManager(),

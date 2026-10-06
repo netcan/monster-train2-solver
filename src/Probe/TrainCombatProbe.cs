@@ -22,7 +22,7 @@ namespace MonsterTrain2Poju.Probe
         internal TrainCombatProbe(ManualLogSource log, FullBattleTrace trace)
         { this.log = log; this.trace = trace; active = this; }
 
-        private TrainCombatState Capture()
+        internal TrainCombatState Capture()
         {
             AllGameManagers managers = AllGameManagers.Instance!;
             RoomManager rooms = managers.GetRoomManager()!;
@@ -45,7 +45,7 @@ namespace MonsterTrain2Poju.Probe
                 }
             }
             return new TrainCombatState(states, movement,
-                managers.GetCombatManager()!.NumSpawnPointsPerFloor(Team.Type.Heroes));
+                managers.GetCombatManager()!.NumSpawnPointsPerFloor(Team.Type.Heroes), trace.CaptureContext());
         }
 
         private IEnumerator Wrap(IEnumerator native, string kind)
@@ -98,8 +98,8 @@ namespace MonsterTrain2Poju.Probe
             catch (Exception error) { trace.CaptureFailure(error); }
         }
 
-        private static JToken Comparable(TrainCombatState state) => JToken.FromObject(
-            state.Rooms.Select(room => new { room.RoomIndex, room.Units }).ToArray());
+        private static JToken Comparable(TrainCombatState state) => JToken.FromObject(new
+            { Rooms = state.Rooms.Select(room => new { room.RoomIndex, room.Units }).ToArray(), state.Context });
 
         internal sealed class Record
         {

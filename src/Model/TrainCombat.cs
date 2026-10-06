@@ -20,11 +20,13 @@ namespace MonsterTrain2Poju.Model
         public IReadOnlyList<RoomCombatState> Rooms { get; }
         public IReadOnlyList<EnemyMovement> Movement { get; }
         public int EnemySlotsPerRoom { get; }
+        public CombatContext? Context { get; }
         public TrainCombatState(IReadOnlyList<RoomCombatState> rooms, IReadOnlyList<EnemyMovement> movement,
-            int enemySlotsPerRoom)
+            int enemySlotsPerRoom, CombatContext? context = null)
         {
             Rooms = Array.AsReadOnly(rooms.OrderBy(room => room.RoomIndex).ToArray());
             Movement = Array.AsReadOnly(movement.ToArray()); EnemySlotsPerRoom = enemySlotsPerRoom;
+            Context = context;
         }
     }
 
@@ -47,16 +49,18 @@ namespace MonsterTrain2Poju.Model
             string? error = Validate(source);
             if (error != null) return Unsupported(error);
             RoomCombatState[] rooms = source.Rooms.ToArray();
+            CombatContext? context = source.Context;
             var results = new List<RoomCombatResult>();
             for (int index = rooms.Length - 1; index >= 0; index--)
             {
-                RoomCombatResult result = RoomCombatModel.Resolve(rooms[index]);
+                RoomCombatResult result = RoomCombatModel.Resolve(WithContext(rooms[index], context));
                 if (!result.Supported) return Unsupported(result.UnsupportedReason!);
                 rooms[index] = result.State!; results.Add(result);
+                context = result.State!.Context;
                 if (Terminal(result.Outcome))
-                    return new TrainCombatResult(Freeze(source, rooms), result.Outcome, results);
+                    return new TrainCombatResult(Freeze(source, rooms, context), result.Outcome, results);
             }
-            return new TrainCombatResult(Freeze(source, rooms), RoomOutcome.Cleared, results);
+            return new TrainCombatResult(Freeze(source, rooms, context), RoomOutcome.Cleared, results);
         }
 
         public static TrainCombatResult Ascend(TrainCombatState source)
@@ -88,7 +92,7 @@ namespace MonsterTrain2Poju.Model
                             status.RemoveWhenTriggered && (!source.Rooms[index].Deployment || status.RemoveDuringDeployment)
                                 ? status.WithStacks(status.Stacks - 1) : status).Where(status => status.Stacks > 0).ToArray();
                         arriving = new CombatUnit(enemy.Id, enemy.AssetKey, enemy.Team, enemy.BaseAttack, enemy.Health,
-                            enemy.MaxHealth, enemy.CanAttack, enemy.IsPyre, enemy.EndsBattleOnDeath, statuses);
+                            enemy.MaxHealth, enemy.CanAttack, enemy.IsPyre, enemy.EndsBattleOnDeath, statuses, enemy.Triggers, enemy.SpawnerCardId, enemy.Size, enemy.StatusImmunities, enemy.Subtypes, enemy.Modifiers);
                     }
                     int destination = Math.Max(0, Math.Min(pyre, index + speed));
                     if (destination == pyre && rule.Loops && !enemy.Statuses.Any(status => status.Id == "relentless"))
@@ -108,29 +112,32 @@ namespace MonsterTrain2Poju.Model
                 }
             }
             RoomCombatState[] next = source.Rooms.Select((room, index) => new RoomCombatState(room.RoomIndex,
-                room.Deployment, rooms[index], room.ExternalInteractions)).ToArray();
+                room.Deployment, rooms[index], room.ExternalInteractions, source.Context)).ToArray();
             // Enemies that reach the Pyre fight immediately during ascension, within this same turn.
             if (enteredPyre)
             {
                 RoomCombatResult result = RoomCombatModel.Resolve(next[pyre]);
                 if (!result.Supported) return Unsupported(result.UnsupportedReason!);
                 next[pyre] = result.State!;
-                return new TrainCombatResult(Freeze(source, next), result.Outcome, new[] { result });
+                return new TrainCombatResult(Freeze(source, next, result.State!.Context), result.Outcome, new[] { result });
             }
-            return new TrainCombatResult(Freeze(source, next), RoomOutcome.Cleared, Array.Empty<RoomCombatResult>());
+            return new TrainCombatResult(Freeze(source, next, source.Context), RoomOutcome.Cleared, Array.Empty<RoomCombatResult>());
         }
 
-        private static TrainCombatState Freeze(TrainCombatState source, RoomCombatState[] rooms)
+        private static RoomCombatState WithContext(RoomCombatState room, CombatContext? context) =>
+            new RoomCombatState(room.RoomIndex, room.Deployment, room.Units, room.ExternalInteractions, context);
+
+        private static TrainCombatState Freeze(TrainCombatState source, RoomCombatState[] rooms, CombatContext? context)
         {
             var alive = new HashSet<int>(rooms.SelectMany(room => room.Units).Select(unit => unit.Id));
-            return new TrainCombatState(rooms, source.Movement.Where(rule => alive.Contains(rule.UnitId)).ToArray(),
-                source.EnemySlotsPerRoom);
+            return new TrainCombatState(rooms.Select(room => WithContext(room, context)).ToArray(),
+                source.Movement.Where(rule => alive.Contains(rule.UnitId)).ToArray(), source.EnemySlotsPerRoom, context);
         }
 
         private static bool Terminal(RoomOutcome outcome) => outcome == RoomOutcome.BattleWon ||
             outcome == RoomOutcome.PlayerDefeated || outcome == RoomOutcome.Stalemate;
 
-        private static string? Validate(TrainCombatState source)
+        internal static string? Validate(TrainCombatState source)
         {
             if (source.Rooms.Count < 2 || source.EnemySlotsPerRoom < 1 ||
                 source.Rooms.Where((room, index) => room.RoomIndex != index).Any())

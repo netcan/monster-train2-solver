@@ -20,30 +20,44 @@ namespace MonsterTrain2Poju.Probe
         private readonly UnitPlayModelProbe projection;
         private readonly CardCycleProbe cardCycles;
         private readonly TrainCombatProbe trainCombat;
+        private readonly EnemySpawningProbe spawning;
+        private readonly BattleTurnProbe turns;
+        private readonly BattleActionProbe actions;
         private readonly Dictionary<CharacterState, int> identities = new Dictionary<CharacterState, int>();
         private readonly List<StageRecord> stages = new List<StageRecord>();
         private readonly List<object> checkpoints = new List<object>();
         private int nextId = 1;
+        internal int NextUnitId => nextId;
+        internal int UnitId(CharacterState unit)
+        {
+            if (!identities.TryGetValue(unit, out int id)) identities.Add(unit, id = nextId++);
+            return id;
+        }
         private bool calibrated;
         internal static FullBattleTrace? Active { get; private set; }
         internal bool? NativeWon { get; private set; }
         internal int CaptureFailures { get; private set; }
-        internal int Mismatches => stages.Count(stage => stage.Difference != null) + cardCycles.Mismatches + trainCombat.Mismatches;
-        internal int Unsupported => stages.Count(stage => !stage.Predicted.Supported) + cardCycles.Unsupported + trainCombat.Unsupported;
+        internal int Mismatches => stages.Count(stage => stage.Difference != null) + cardCycles.Mismatches + trainCombat.Mismatches + spawning.Mismatches + turns.Mismatches + actions.Mismatches;
+        internal int Unsupported => stages.Count(stage => !stage.Predicted.Supported) + cardCycles.Unsupported + trainCombat.Unsupported + spawning.Unsupported + turns.Unsupported + actions.Unsupported;
         internal int Pending => stages.Count(stage => stage.Actual == null) + cardCycles.Records.Count(record => record.Actual == null) +
-            trainCombat.Records.Count(record => record.Actual == null);
+            trainCombat.Records.Count(record => record.Actual == null) + spawning.Records.Count(record => record.Actual == null) +
+            turns.Records.Count(record => record.Actual == null) + actions.Records.Count(record => record.Actual == null);
 
         internal FullBattleTrace(ManualLogSource log)
         {
             this.log = log;
             projection = new UnitPlayModelProbe(log);
-            cardCycles = new CardCycleProbe(log);
+            cardCycles = new CardCycleProbe(log, projection);
             trainCombat = new TrainCombatProbe(log, this);
+            spawning = new EnemySpawningProbe(log, this, trainCombat);
+            turns = new BattleTurnProbe(this, spawning, cardCycles, projection, log);
+            actions = new BattleActionProbe(this, projection, log);
             Active = this;
         }
 
         internal void Checkpoint(string label)
         {
+            if (label.StartsWith("decision-", StringComparison.Ordinal)) turns.Complete(RoomOutcome.Exchanged);
             AllGameManagers? managers = AllGameManagers.Instance;
             if (managers == null) return;
             SaveManager save = managers.GetSaveManager();
@@ -53,10 +67,18 @@ namespace MonsterTrain2Poju.Probe
             if (!calibrated)
             {
                 RngCalibration.Capture();
+                RuleCatalogProbe.Capture(managers);
                 calibrated = true;
             }
             checkpoints.Add(new { Label = label, State = projection.Capture(managers, save, combat, cards) });
         }
+
+        internal void BeginEndTurn() => turns.Begin();
+        internal BattleTurnState CaptureDecision() => turns.Capture();
+        internal BattlePlayRules CapturePlayRules(EnemySpawnState spawn) => actions.CaptureRules(spawn);
+        internal int CardId(CardState card) => projection.CaptureCards(new List<CardState> { card })[0].InstanceId;
+        internal void BeginCardPlay(PlayCardAction action) => actions.Begin(action);
+        internal void CompleteCardPlay() => actions.Complete();
 
         internal RoomCombatState Capture(RoomState room)
         {
@@ -81,10 +103,8 @@ namespace MonsterTrain2Poju.Probe
             foreach (CharacterState character in characters)
             {
                 if (!character.IsAlive || character.IsDestroyed) continue;
-                if (!identities.TryGetValue(character, out int id)) identities.Add(character, id = nextId++);
-                if (character.GetTriggers().Count > 0)
-                    interactions.Add(character.GetSourceCharacterData().GetAssetKey() + " triggers: " +
-                        string.Join(",", character.GetTriggers().Select(trigger => trigger.GetTrigger().ToString())));
+                int id = UnitId(character);
+                CombatTrigger[] triggers = CaptureTriggers(character, interactions);
                 if (character.GetRoomStateModifiers().Count > 0)
                     interactions.Add(character.GetSourceCharacterData().GetAssetKey() + " room modifiers");
                 if (character.GetEquipment().Count > 0)
@@ -112,10 +132,69 @@ namespace MonsterTrain2Poju.Probe
                     heroes.FindPairedCompanionBoss(character) == null;
                 units.Add(new CombatUnit(id, character.GetSourceCharacterData()?.GetAssetKey() ?? "",
                     team, character.GetAttackDamageWithoutStatusEffectBuffs(), character.GetHP(), character.GetMaxHP(),
-                    character.GetCanAttack(), character.IsPyreHeart(), endsBattle, statuses));
+                    character.GetCanAttack(), character.IsPyreHeart(), endsBattle, statuses, triggers,
+                    card == null ? 0 : projection.CaptureCards(new List<CardState> { card })[0].InstanceId, character.GetSize(),
+                    ((List<string>)AccessTools.Field(typeof(CharacterState), "statusEffectImmunities").GetValue(character)).ToArray(),
+                    character.GetSubtypes().Select(subtype => subtype.Key).ToArray()));
             }
             return new RoomCombatState(room.GetRoomIndex(), combat.IsPlacementPhase, units,
-                interactions.Distinct().OrderBy(value => value, StringComparer.Ordinal).ToArray());
+                interactions.Distinct().OrderBy(value => value, StringComparer.Ordinal).ToArray(), CaptureContext());
+        }
+
+        internal CombatContext CaptureContext()
+        {
+            AllGameManagers managers = AllGameManagers.Instance!;
+            CardManager cards = managers.GetCardManager()!;
+            CombatProjection state = projection.Capture(managers, managers.GetSaveManager(),
+                managers.GetCombatManager()!, cards);
+            uint[] draw = RngCalibration.Words(RandomManager.GetState(RngId.CardDraw));
+            uint[] battle = RngCalibration.Words(RandomManager.GetState(RngId.Battle));
+            BattleStatistics statistics = BattleStatisticsProbe.Capture(managers.GetCardStatistics(), CardId);
+            return new CombatContext(new CardCycleState(state.Hand, state.Draw, state.Discard,
+                new UnityRng(draw[0], draw[1], draw[2], draw[3]), state.DrawModifier, Array.Empty<string>()),
+                new UnityRng(battle[0], battle[1], battle[2], battle[3]), state.Gold, projection.NextCardId,
+                cards.GetMaxHandSize(), new[] { "armor", "valor", "pyregel" }.Select(id => BattleActionProbe.Status(id, 1)).ToArray(),
+                statistics);
+        }
+
+        private static CombatTrigger[] CaptureTriggers(CharacterState unit, List<string> interactions)
+        {
+            return unit.GetTriggers().Select(trigger =>
+            {
+                CharacterTriggerData data = trigger.GetTriggerData();
+                if (data.GetTriggerAtThreshold() != 0 || data.GetOnlyTriggerIfEquipped() ||
+                    data.GetRequiredStatusEffects().Count > 0 || data.GetRequiredStatusEffectsForDyingCharacter().Count > 0)
+                    interactions.Add("Conditional trigger " + trigger.GetTrigger());
+                var effects = trigger.GetEffectStates().Select(effect =>
+                {
+                    string type = effect.GetCardEffect().GetType().Name;
+                    int value = effect.GetParamInt(), counter = 0;
+                    if (type == "CardEffectDespawnCharacter")
+                        counter = (int)AccessTools.Field(typeof(CardEffectDespawnCharacter), "despawnCounter")
+                            .GetValue(effect.GetCardEffect());
+                    if (type == "CardEffectRewardGold")
+                        value = (int)AccessTools.Field(typeof(CardEffectRewardGold), "unmodifiedGoldReward")
+                            .GetValue(effect.GetCardEffect());
+                    var pool = new List<CardData>();
+                    if (type == "CardEffectAddBattleCard")
+                    {
+                        effect.GetFilteredCardListFromPool(AllGameManagers.Instance!.GetRelicManager(), ref pool);
+                        if (effect.GetCopyModifiersFromSource() || effect.GetFilterBasedOnMainSubClass() ||
+                            effect.GetParamCardUpgradeData() != null)
+                            interactions.Add("Generated card modifiers");
+                        if (pool.Any(card => card.GetUpgradeData().Count > 0))
+                            interactions.Add("Generated card starting upgrades");
+                        CardManager cards = AllGameManagers.Instance!.GetCardManager()!;
+                        if (((ICollection)AccessTools.Field(typeof(CardManager), "nextAddedTempCardUpgrades")
+                            .GetValue(cards)).Count > 0) interactions.Add("Pending generated card upgrades");
+                    }
+                    return new CombatEffect(type, value, counter, ((CardPile)effect.GetParamInt()).ToString(),
+                        effect.GetAdditionalParamInt(), pool.Select(card => card.GetID()).ToArray(), effect.GetParamBool2());
+                }).ToArray();
+                return new CombatTrigger(trigger.GetTrigger().ToString(), data.GetTriggerOnce(),
+                    trigger.GetHasTriggeredOnce(false), trigger.GetHideVisualAndIgnoreSilence(),
+                    unit.GetTriggerFireCount(trigger.GetTrigger(), trigger), effects);
+            }).ToArray();
         }
 
         private IEnumerator Wrap(IEnumerator native, RoomState room, string kind)
@@ -162,6 +241,8 @@ namespace MonsterTrain2Poju.Probe
                     JToken expected = JToken.FromObject(stage.Predicted.State!.Units);
                     JToken actual = JToken.FromObject(stage.Actual.Units);
                     stage.Difference = JToken.DeepEquals(expected, actual) ? null : "Unit states differ";
+                    if (!JToken.DeepEquals(JToken.FromObject(stage.Predicted.State.Context!),
+                        JToken.FromObject(stage.Actual.Context!))) stage.Difference = "Card piles, RNG or gold differ";
                     log.LogInfo("BATTLE-MODEL-" + (stage.Difference == null ? "MATCH" : "MISMATCH") +
                         " index=" + stage.Index + " kind=" + stage.Kind + " turn=" + stage.Turn +
                         " room=" + stage.Before.RoomIndex + " rounds=" + stage.Predicted.Rounds);
@@ -184,6 +265,9 @@ namespace MonsterTrain2Poju.Probe
             NativeWon = won;
             foreach (StageRecord stage in stages.Where(stage => stage.Actual == null).ToArray()) Complete(stage);
             trainCombat.CompletePending();
+            spawning.CompletePending();
+            actions.Complete();
+            turns.Complete(won ? RoomOutcome.BattleWon : RoomOutcome.PlayerDefeated);
             Checkpoint("terminal");
             log.LogInfo("BATTLE-TERMINAL won=" + won + " pyre=" + AllGameManagers.Instance!.GetSaveManager().GetTowerHP());
             Write();
@@ -194,10 +278,12 @@ namespace MonsterTrain2Poju.Probe
             string path = Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!, "full-battle.json");
             File.WriteAllText(path, JsonConvert.SerializeObject(new
             {
-                Schema = 1,
+                Schema = 5,
                 GameVersion = Application.version,
                 GameModuleMvid = typeof(CardState).Assembly.ManifestModule.ModuleVersionId,
                 NativeWon,
+                Policy = Environment.GetEnvironmentVariable("MT2_PROBE_FULL_BATTLE_POLICY"),
+                ModifierScenario = Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS"),
                 CaptureFailures,
                 Mismatches,
                 Unsupported,
@@ -205,6 +291,9 @@ namespace MonsterTrain2Poju.Probe
                 Stages = stages,
                 CardCycles = cardCycles.Records,
                 TrainPhases = trainCombat.Records,
+                Spawns = spawning.Records,
+                Turns = turns.Records,
+                Actions = actions.Records,
                 Checkpoints = checkpoints
             }, Formatting.Indented));
             return path;
@@ -220,6 +309,17 @@ namespace MonsterTrain2Poju.Probe
             public RoomCombatResult Predicted { get; set; } = null!;
             public RoomCombatState? Actual { get; set; }
             public string? Difference { get; set; }
+        }
+
+        [HarmonyPatch(typeof(MonsterManager), nameof(MonsterManager.CreateMonsterState))]
+        private static class MonsterIdentityPatch
+        {
+            private static void Prefix(ref Action<CharacterState> onCharacterStateCreated)
+            {
+                if (Active == null || AllGameManagers.Instance!.GetSaveManager().PreviewMode) return;
+                Action<CharacterState> callback = onCharacterStateCreated;
+                onCharacterStateCreated = unit => { Active?.UnitId(unit); callback?.Invoke(unit); };
+            }
         }
 
         [HarmonyPatch(typeof(CombatManager), "DoUnitCombat")]

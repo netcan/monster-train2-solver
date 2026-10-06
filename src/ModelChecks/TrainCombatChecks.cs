@@ -59,11 +59,11 @@ internal static class TrainCombatChecks
         int matched = 0, unsupported = 0;
         foreach (JsonElement phase in phases.EnumerateArray())
         {
-            TrainCombatState before = phase.GetProperty("Before").Deserialize<TrainCombatState>()!;
+            TrainCombatState before = phase.GetProperty("Before").Deserialize<TrainCombatState>(ModelJson.Options)!;
             TrainCombatResult result = phase.GetProperty("Kind").GetString() == "Combat"
                 ? TrainCombatModel.ResolveCombat(before) : TrainCombatModel.Ascend(before);
             if (!result.Supported) { unsupported++; continue; }
-            TrainCombatState actual = phase.GetProperty("Actual").Deserialize<TrainCombatState>()!;
+            TrainCombatState actual = phase.GetProperty("Actual").Deserialize<TrainCombatState>(ModelJson.Options)!;
             Require(Comparable(result.State!) == Comparable(actual),
                 "Native train state differs at phase " + phase.GetProperty("Index"));
             matched++;
@@ -72,6 +72,6 @@ internal static class TrainCombatChecks
         Console.WriteLine($"NATIVE-TRAIN-CHECKS PASS: {matched} matched, {unsupported} unsupported.");
     }
 
-    private static string Comparable(TrainCombatState state) => JsonSerializer.Serialize(
-        state.Rooms.Select(room => new { room.RoomIndex, room.Units }).ToArray());
+    private static string Comparable(TrainCombatState state) => JsonSerializer.Serialize(new
+        { Rooms = state.Rooms.Select(room => new { room.RoomIndex, room.Units }).ToArray(), state.Context });
 }

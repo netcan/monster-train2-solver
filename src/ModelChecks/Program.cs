@@ -74,8 +74,13 @@ Check(!SimpleUnitPlayModel.Apply(unknownCard,
     "An unknown card was accepted as a simple unit play.");
 Console.WriteLine("MODEL-CHECKS PASS: independent branches, card identity, and unsupported actions.");
 CardCycleChecks.Run();
+CombatEffectChecks.Run();
+BattleStatisticsChecks.Run();
+EnemySpawningChecks.Run();
+BattleActionChecks.Run();
+CardSpellChecks.Run();
 TrainCombatChecks.Run();
-RoomCombatChecks.Run(args.Where(path => !path.Contains("rng-calibration", StringComparison.OrdinalIgnoreCase)).ToArray());
+RoomCombatChecks.Run(args.Where(path => !path.Contains("calibration", StringComparison.OrdinalIgnoreCase)).ToArray());
 foreach (string path in args.Where(path => path.Contains("rng-calibration", StringComparison.OrdinalIgnoreCase)))
     RngChecks.Run(path);
 

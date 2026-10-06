@@ -1,8 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 using System.Reflection;
 using BepInEx.Logging;
+using MonsterTrain2Poju.Model;
 using ShinyShoe;
 using ShinyShoe.Loading;
 using UnityEngine;
@@ -67,6 +69,7 @@ namespace MonsterTrain2Poju.Probe
         private bool playbackSucceeded;
         private string playbackDescription = string.Empty;
         private List<string>? sourceEntries;
+        private PlayCardAction? pendingPlay;
 
         internal NativeReplayScenario(ManualLogSource log)
         {
@@ -131,7 +134,7 @@ namespace MonsterTrain2Poju.Probe
             {
                 FullBattleTrace trace = FullBattleTrace.Active;
                 trace.Write();
-                Finish(trace.CaptureFailures == 0 && trace.Pending == 0 && trace.Mismatches == 0,
+                Finish(trace.CaptureFailures == 0 && trace.Pending == 0 && trace.Mismatches == 0 && trace.Unsupported == 0,
                     "Full native battle finished; won=" + trace.NativeWon + "; unsupported stages=" + trace.Unsupported);
                 return;
             }
@@ -370,9 +373,10 @@ namespace MonsterTrain2Poju.Probe
             }
             if (stage == Stage.SelectingRoom)
             {
-                if (Ready(managers, save, combat, cards) && managers.GetRoomManager()?.GetSelectedRoom() == 0)
+                if (Ready(managers, save, combat, cards) && managers.GetRoomManager()?.GetSelectedRoom() == (pendingPlay?.RoomIndex ?? 0))
                 {
-                    PlayConfiguredCard(cards!);
+                    if (pendingPlay != null) PlayPendingPolicyCard(managers, cards!);
+                    else PlayConfiguredCard(cards!);
                 }
                 return;
             }
@@ -380,8 +384,10 @@ namespace MonsterTrain2Poju.Probe
             {
                 if (Ready(managers, save, combat, cards))
                 {
+                    if (fullBattle) FullBattleTrace.Active?.CompleteCardPlay();
                     log.LogInfo("DEPTH-PLAYED pass=" + pass + " turn=" + (combat!.GetTurnCount() - initialTurn));
-                    AdvanceTurn(combat);
+                    if (IsUnitAndJunkPolicy()) Enter(Stage.Battle, 60f);
+                    else AdvanceTurn(combat);
                 }
                 return;
             }
@@ -446,7 +452,24 @@ namespace MonsterTrain2Poju.Probe
                 }
                 return;
             }
-            if (!(fullBattle && Environment.GetEnvironmentVariable("MT2_PROBE_FULL_BATTLE_POLICY") == "no-cards") &&
+            if (IsUnitAndJunkPolicy())
+            {
+                BattleTurnState decision = FullBattleTrace.Active!.CaptureDecision();
+                pendingPlay = Environment.GetEnvironmentVariable("MT2_PROBE_FULL_BATTLE_POLICY") == "units-spells-and-junk"
+                    ? BattleActionModel.ChooseUnitSpellAndJunkPlay(decision) : BattleActionModel.ChooseUnitAndJunkPlay(decision);
+                if (pendingPlay != null)
+                {
+                    RoomManager rooms = managers.GetRoomManager()!;
+                    if (rooms.GetSelectedRoom() != pendingPlay.RoomIndex)
+                    {
+                        save.StartCoroutine(rooms.GetRoomUI().SetSelectedRoom(pendingPlay.RoomIndex));
+                        Enter(Stage.SelectingRoom, 20f);
+                    }
+                    else PlayPendingPolicyCard(managers, cards!);
+                    return;
+                }
+            }
+            else if (!(fullBattle && Environment.GetEnvironmentVariable("MT2_PROBE_FULL_BATTLE_POLICY") == "no-cards") &&
                 (pass == Pass.Source && sourcePlayTurns.Contains(relativeTurn) ||
                 pass != Pass.Source && (relativeTurn == targetTurn ||
                     relativeTurn < targetTurn && sourcePlayTurns.Contains(relativeTurn))))
@@ -496,6 +519,7 @@ namespace MonsterTrain2Poju.Probe
                 {
                     continue;
                 }
+                if (fullBattle) FullBattleTrace.Active?.BeginCardPlay(new PlayCardAction(FullBattleTrace.Active.CardId(hand[index]), 0));
                 if (!cards.PlayCard(index, null, ref error))
                 {
                     Finish(false, "Direct Steward play failed: " + error);
@@ -534,8 +558,35 @@ namespace MonsterTrain2Poju.Probe
             Finish(false, "No legal branch card at turn " + recordedTurn + ", pass=" + pass);
         }
 
+        private bool IsUnitAndJunkPolicy() => fullBattle &&
+            (Environment.GetEnvironmentVariable("MT2_PROBE_FULL_BATTLE_POLICY") == "units-and-junk" ||
+             Environment.GetEnvironmentVariable("MT2_PROBE_FULL_BATTLE_POLICY") == "units-spells-and-junk");
+
+        private void PlayPendingPolicyCard(AllGameManagers managers, CardManager cards)
+        {
+            PlayCardAction action = pendingPlay ?? throw new InvalidOperationException("Missing policy card action.");
+            int index = cards.GetHand().FindIndex(card => FullBattleTrace.Active!.CardId(card) == action.CardInstanceId);
+            if (index < 0) throw new InvalidOperationException("Policy card disappeared from hand.");
+            RoomState room = managers.GetRoomManager()!.GetRoom(action.RoomIndex);
+            SpawnPoint? drop = action.PlayerPosition < 0 ? null : room.GetMonsterPoint(action.PlayerPosition);
+            if (action.TargetUnitId > 0)
+            {
+                var units = new List<CharacterState>(); room.AddCharactersToList(units, Team.Type.Heroes | Team.Type.Monsters);
+                CharacterState target = units.Single(unit => FullBattleTrace.Active!.UnitId(unit) == action.TargetUnitId);
+                drop = target.GetSpawnPoint();
+            }
+            if (!cards.CanPlayHandCard(cards.GetHand()[index], action.RoomIndex, drop, null, null, out var error))
+                throw new InvalidOperationException("The native game rejected a modeled legal play: " + error);
+            FullBattleTrace.Active!.BeginCardPlay(action);
+            if (!cards.PlayCard(index, drop, ref error)) throw new InvalidOperationException("Policy card play failed: " + error);
+            log.LogInfo("DEPTH-POLICY-PLAY card=" + action.CardInstanceId + " room=" + action.RoomIndex + " position=" + action.PlayerPosition + " target=" + action.TargetUnitId);
+            pendingPlay = null;
+            Enter(Stage.PlayingCard, 30f);
+        }
+
         private void AdvanceTurn(CombatManager combat)
         {
+            if (fullBattle) FullBattleTrace.Active?.BeginEndTurn();
             expectedTurn = combat.GetTurnCount() - initialTurn + 1;
             endTurn.Invoke(null, null);
             Enter(Stage.WaitingTurn, 90f);
@@ -549,8 +600,10 @@ namespace MonsterTrain2Poju.Probe
 
         private static bool Ready(AllGameManagers managers, SaveManager save, CombatManager? combat, CardManager? cards)
         {
-            return !LoadingScreen.IsWorking() && save.GetGameSequence() == SaveData.GameSequence.InBattle &&
+            return !LoadingScreen.IsWorking() && !save.PreviewMode && save.GetGameSequence() == SaveData.GameSequence.InBattle &&
                 combat != null && cards != null && combat.ShouldShowEndTurnButton() &&
+                (!save.GetBattlePreviewEnabled() || !(bool)typeof(CombatManager).GetField("combatStateChanged",
+                    BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(combat)) &&
                 combat.HaveCardsBeenDrawnForCurrentTurn() && !combat.IsRunningTriggerQueue &&
                 !managers.GetReplayManager().IsCardPlaying() &&
                 !(managers.GetHandUI()?.AreAnyCardsAnimating() ?? false);

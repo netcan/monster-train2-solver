@@ -103,7 +103,7 @@ internal static class RoomCombatChecks
 
     private static void CheckNativeFixture(string path)
     {
-        using JsonDocument document = JsonDocument.Parse(File.ReadAllText(path));
+        using JsonDocument document = ModelJson.ReadFixture(path);
         JsonElement fixture = document.RootElement;
         Require(fixture.GetProperty("NativeWon").ValueKind is JsonValueKind.True or JsonValueKind.False,
             "Native fixture did not reach the end of the battle.");
@@ -112,7 +112,7 @@ internal static class RoomCombatChecks
         int matched = 0, unsupported = 0;
         foreach (JsonElement stage in fixture.GetProperty("Stages").EnumerateArray())
         {
-            RoomCombatState state = stage.GetProperty("Before").Deserialize<RoomCombatState>()!;
+            RoomCombatState state = stage.GetProperty("Before").Deserialize<RoomCombatState>(ModelJson.Options)!;
             RoomCombatResult result = stage.GetProperty("Kind").GetString() == "Exchange"
                 ? RoomCombatModel.Exchange(state) : RoomCombatModel.Resolve(state);
             if (!result.Supported) { unsupported++; continue; }
@@ -120,11 +120,21 @@ internal static class RoomCombatChecks
             CombatUnit[] actual = stage.GetProperty("Actual").GetProperty("Units").Deserialize<CombatUnit[]>()!;
             Require(JsonSerializer.Serialize(result.State!.Units) == JsonSerializer.Serialize(actual),
                 "Native room difference at stage " + stage.GetProperty("Index") + " in " + path);
+            if (state.Context != null)
+            {
+                CombatContext actualContext = stage.GetProperty("Actual").GetProperty("Context")
+                    .Deserialize<CombatContext>(ModelJson.Options)!;
+                Require(JsonSerializer.Serialize(result.State.Context) == JsonSerializer.Serialize(actualContext),
+                    "Native room context difference at stage " + stage.GetProperty("Index"));
+            }
             matched++;
         }
         Require(matched > 0, "No native stages were verified.");
         Console.WriteLine($"NATIVE-ROOM-CHECKS PASS: {matched} matched, {unsupported} unsupported; {path}");
         CardCycleChecks.Native(fixture);
         TrainCombatChecks.Native(fixture);
+        EnemySpawningChecks.Native(fixture);
+        BattleTurnChecks.Native(fixture);
+        BattleActionChecks.Native(fixture);
     }
 }
