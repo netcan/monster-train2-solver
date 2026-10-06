@@ -86,6 +86,8 @@ internal static class BattleActionChecks
         Console.WriteLine($"NATIVE-ACTION-CHECKS PASS: {supported} matched, {unsupported} unsupported.");
         if (fixture.TryGetProperty("ModifierScenario", out JsonElement roomScenario) && roomScenario.GetString() == "room-spells")
             RoomSpellChecks.Native(actions);
+        if (fixture.TryGetProperty("ModifierScenario", out JsonElement randomScenario) && randomScenario.GetString() == "random-spells")
+            RandomSpellChecks.Native(actions);
         if (fixture.TryGetProperty("ModifierScenario", out JsonElement healingScenario) && healingScenario.GetString() is "healing" or "healing-triggers")
         {
             int healPlays = 0, restored = 0;

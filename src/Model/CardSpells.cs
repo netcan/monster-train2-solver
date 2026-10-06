@@ -32,7 +32,7 @@ namespace MonsterTrain2Poju.Model
             {
                 CardActionEffect effect = effects[index];
                 if (effect.Tests?.ShouldTest == false) continue;
-                CardTargets targets = Collect(source, effect, last, initial, dropPosition, index);
+                CardTargets targets = Collect(source, effect, last, initial, dropPosition, index, isTesting: true);
                 if (!targets.Supported) return new SpellCastCheck(false, targets.UnsupportedReason);
                 Remember(effect, index, targets, ref last);
                 bool valid = PassesTest(effect, targets.UnitIds.Count, source.Context!.AllScenarioBossesDead == true);
@@ -68,15 +68,24 @@ namespace MonsterTrain2Poju.Model
                     effect = CardModifierModel.Resolve(rule, card).Effects[index];
                     resolvingCard = card;
                 }
-                CardTargets targets = Collect(state, effect, last, initial, dropPosition, index);
+                CardTargets targets = Collect(state, effect, last, initial, dropPosition, index, isTesting: true);
                 if (!targets.Supported) return Unsupported(targets.UnsupportedReason!);
                 Remember(effect, index, targets, ref last);
                 // Runtime tests every effect, even if its initial casting test was disabled.
                 if (!PassesTest(effect, targets.UnitIds.Count, bossDead))
                 {
+                    if (index == 0 && effect.Target == "RandomInRoom" && targets.UnitIds.Count > 0 && effect.Tests?.CancelSubsequent != true &&
+                        effects.Skip(1).Any(next => next.Target.Contains("LastTargeted")))
+                        return Unsupported("A skipped first random effect retains uncaptured test-stream target history.");
                     if (effect.Tests?.CancelSubsequent == true) break;
                     continue;
                 }
+                targets = Collect(state, effect, last, initial, dropPosition, index);
+                if (!targets.Supported) return Unsupported(targets.UnsupportedReason!);
+                Remember(effect, index, targets, ref last);
+                if (targets.BattleRng.HasValue)
+                    state = new RoomCombatState(state.RoomIndex, state.Deployment, state.Units, state.ExternalInteractions,
+                        state.Context!.WithBattleRng(targets.BattleRng.Value), state.Preview);
                 if (effect.Type == "HandUpgrade")
                 {
                     RoomCombatResult upgraded = HandUpgradeModel.Apply(state, effect.Upgrade!, effect.Lifetime, definitions);
@@ -116,6 +125,10 @@ namespace MonsterTrain2Poju.Model
             if (RequiresUnitTarget(effects) && !source.Units.Any(unit => unit.Id == targetId)) return "The spell target is missing.";
             if (effects[0].Tests?.ShouldTest == false && effects.Skip(1).Any(effect => effect.Target.Contains("LastTargeted")))
                 return "Casting with an untested first effect requires uncaptured target history.";
+            if (effects[0].Target == "RandomInRoom" && effects[0].AllowEnemy && effects[0].AllowPlayer && effects.Skip(1).Any(effect =>
+                effect.Tests?.ShouldTest != false && effect.Tests?.FailToCast == true && effect.Target == "LastTargetedCharacters" &&
+                (effects[0].AllowEnemy && !effect.AllowEnemy || effects[0].AllowPlayer && !effect.AllowPlayer)))
+                return "Mandatory last-target team tests after random selection depend on the auxiliary test stream.";
             foreach (CardActionEffect effect in effects)
             {
                 if (effect.Type == "HandUpgrade")
@@ -144,8 +157,8 @@ namespace MonsterTrain2Poju.Model
         }
 
         private static CardTargets Collect(RoomCombatState state, CardActionEffect effect, IReadOnlyList<int> last,
-            CombatUnit? initial, int dropPosition, int index) => effect.Type == "HandUpgrade" && effect.Target == "Hand"
-                ? new CardTargets(Array.Empty<int>()) : CardTargetModel.Collect(state, effect, last, initial?.Team, dropPosition, index == 0);
+            CombatUnit? initial, int dropPosition, int index, bool isTesting = false) => effect.Type == "HandUpgrade" && effect.Target == "Hand"
+                ? new CardTargets(Array.Empty<int>()) : CardTargetModel.Collect(state, effect, last, initial?.Team, dropPosition, index == 0, isTesting);
 
         private static void Remember(CardActionEffect effect, int index, CardTargets targets, ref IReadOnlyList<int> last)
         {

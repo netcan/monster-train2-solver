@@ -8,18 +8,19 @@ namespace MonsterTrain2Poju.Model
     {
         public IReadOnlyList<int> UnitIds { get; }
         public string? UnsupportedReason { get; }
+        public UnityRng? BattleRng { get; }
         public bool Supported => UnsupportedReason == null;
-        internal CardTargets(IReadOnlyList<int> ids, string? error = null)
-        { UnitIds = Array.AsReadOnly(ids.ToArray()); UnsupportedReason = error; }
+        internal CardTargets(IReadOnlyList<int> ids, string? error = null, UnityRng? battleRng = null)
+        { UnitIds = Array.AsReadOnly(ids.ToArray()); UnsupportedReason = error; BattleRng = battleRng; }
     }
 
     public static class CardTargetModel
     {
         public static bool Supports(string mode) => new[] { "Room", "FrontInRoom", "BackInRoom", "Weakest", "RoomHealTargets",
-            "DropTargetCharacter", "LastTargetedCharacters", "StrongestLastTargetedCharacters" }.Contains(mode);
+            "DropTargetCharacter", "LastTargetedCharacters", "StrongestLastTargetedCharacters", "RandomInRoom" }.Contains(mode);
 
         public static CardTargets Collect(RoomCombatState room, CardActionEffect effect, IReadOnlyList<int> lastTargets,
-            CombatTeam? dropTeam = null, int dropPosition = -1, bool firstEffect = false)
+            CombatTeam? dropTeam = null, int dropPosition = -1, bool firstEffect = false, bool isTesting = false)
         {
             if (!Supports(effect.Target)) return new CardTargets(Array.Empty<int>(), "Unmodeled target mode " + effect.Target);
             if (effect.Target == "LastTargetedCharacters")
@@ -36,8 +37,17 @@ namespace MonsterTrain2Poju.Model
                 CombatUnit? occupant = dropPosition < 0 ? null : room.Units.Where(unit => unit.Team == dropTeam).ElementAtOrDefault(dropPosition);
                 return new CardTargets(occupant != null && Allowed(occupant) ? new[] { occupant.Id } : Array.Empty<int>());
             }
-            CombatUnit[] candidates = room.Units.OrderBy(unit => unit.Team).Where(unit => Allowed(unit) &&
+            CombatUnit[] candidates = room.Units.OrderBy(unit => unit.Team).Where(unit => Allowed(unit) && !unit.IsPyre &&
                 !unit.Statuses.Any(status => status.Id == "untouchable")).ToArray();
+            if (effect.Target == "RandomInRoom")
+            {
+                if (candidates.Length == 0) return new CardTargets(Array.Empty<int>());
+                // Supported effect tests depend on target count. They do not consume gameplay RNG.
+                if (isTesting) return new CardTargets(new[] { candidates[0].Id });
+                if (room.Context == null) return new CardTargets(Array.Empty<int>(), "Random targeting requires Battle RNG.");
+                RngDraw chosen = room.Context.BattleRng.Range(0, candidates.Length);
+                return new CardTargets(new[] { candidates[chosen.Value].Id }, battleRng: chosen.State);
+            }
             if (effect.Target == "RoomHealTargets")
             {
                 if (candidates.Any(unit => unit.Modifiers == null))

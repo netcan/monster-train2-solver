@@ -16,6 +16,7 @@ are copied immutable values; independent child states can run on worker threads.
 | Unit and no-target card actions | `BattleActionModel` | Eleven native plays across decision turns and rooms, selected placement, capacity and self-purge |
 | Targeted spell actions | `CardSpellModel` | Native damage, last-target follow-ups, valor, pyregel and floor rearrange; independent immunity checks |
 | Room spell targeting and effect tests | `CardTargetModel` and `CardSpellModel` | Native multi-unit damage/upgrades/healing, front/back/weakest, sticky last groups and strongest-last; empty targets, mandatory casting checks and runtime cancellation |
+| Random room targets | `CardTargetModel` and `UnityRng` | Native enemy/both-team/friendly selection, zero heals, empty follow-ups, last-target identity and complete Battle RNG states |
 | Integer RNG and shuffle | `UnityRng` | 768 native integer draws, seed initialization and complete four-word states |
 | Basic draw/discard cycle | `CardCycleModel` | 13 consecutive native operations including reshuffle |
 | Room attack exchange | `RoomCombatModel.Exchange` | Ordered initiative, target selection, retargeting, shield/armor and retaliation checks |
@@ -317,7 +318,7 @@ Native effect-test metadata is captured with schema 11. Casting tests inspect th
 unchanged pre-cast state: any tested success permits casting unless a mandatory
 effect fails. Runtime tests run again after preceding effects, and a configured
 failure can stop the rest of the sequence. Unknown target modes, additional target
-filters, random targets and untested-first effects requiring uncaptured prior
+filters, cross-room targets and untested-first effects requiring uncaptured prior
 target history remain unsupported. Rearrangement still requires a drop target.
 
 Legacy oracles sampled the entry to native `StopCombat`, before its
@@ -377,6 +378,26 @@ allowed post-kill gold rewards, and fallback-deck statistic membership when
 the source is a generated card. These trigger cases lack a dedicated native
 post-kill fixture.
 
+`results/full-battle-random-spells.json.gz` replaces the owned rearrangement spell
+with enemy, mixed-team and friendly `RandomInRoom` selections, a zero heal,
+status addition and last-target follow-ups. It ends with lethal enemy room damage
+and an empty random enemy collection. All 13 plays, four EndTurns, 30 room stages,
+eight card cycles, eight train phases and seven spawns match native execution,
+including complete gameplay RNG states. Seven random spell plays include three
+rooms with multiple enemy candidates and seven empty follow-ups; empty selection
+does not consume a live draw. A single candidate still consumes one draw.
+The independent root policy, mid-battle suffix and 16 parallel branches finish
+with exactly the same terminal state and Pyre health 80/80.
+
+Supported casting/runtime tests depend on whether a target exists. They inspect
+random collections without consuming Battle RNG; only an effect that passes its
+runtime test performs live random selection. First-effect last-target history is
+replaced with the actual chosen unit. A mandatory last-target team test after a
+mixed-team random first effect can depend on the auxiliary test stream; that
+case remains explicitly unsupported. A skipped first random effect that leaves
+test-selected last-target history for later effects also rejects the transition.
+Repeated legality tests and 32 parallel spell branches preserve their parent.
+
 Run the saved native oracles without the game:
 
 ```powershell
@@ -401,6 +422,8 @@ pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy units-spells-and-j
 pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy units-spells-and-junk -HealingTriggers
 pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy units-spells-and-junk -RoomSpells
 pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy units-spells-and-junk -TerminalSpells
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy units-spells-and-junk -PostKillSpells
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy units-spells-and-junk -RandomSpells
 ```
 
 The runner checks the explicit probe success marker, capture failures, pending

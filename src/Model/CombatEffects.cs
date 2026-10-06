@@ -41,6 +41,8 @@ namespace MonsterTrain2Poju.Model
         internal CombatContext WithBossesDead() => new CombatContext(Cards, BattleRng, Gold, NextCardId,
             MaxHandSize, StatusRules, Statistics, CardInstances, CardRegistry, AllScenarioBossesDead.HasValue ? true : (bool?)null);
         internal BattleStatistics? LiveStatistics => CardInstances?.Count == 0 ? Statistics?.RefreshDeckAfterCardTerminal() : Statistics;
+        internal CombatContext WithBattleRng(UnityRng rng) => new CombatContext(Cards, rng, Gold, NextCardId,
+            MaxHandSize, StatusRules, Statistics, CardInstances, CardRegistry, AllScenarioBossesDead);
     }
 
     public sealed class CombatEffect
