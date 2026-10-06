@@ -66,7 +66,9 @@ namespace MonsterTrain2Poju.Model
                 CardTargets targets = Collect(source, roomIndex, effect, last, initial, dropPosition, index, definitions, isTesting: true);
                 if (!targets.Supported) return new SpellCastCheck(false, targets.UnsupportedReason);
                 Remember(effect, index, targets, ref last);
-                bool valid = PassesTest(effect, targets.UnitIds.Count, source.Context!.AllScenarioBossesDead == true);
+                string? targetError = AttackTestError(source, roomIndex, effect);
+                if (targetError != null) return new SpellCastCheck(false, targetError);
+                bool valid = PassesTest(effect, TestCount(source, effect, targets), source.Context!.AllScenarioBossesDead == true);
                 if (!valid && effect.Tests?.FailToCast == true) return new SpellCastCheck(false);
                 passed |= valid;
             }
@@ -124,7 +126,9 @@ namespace MonsterTrain2Poju.Model
                 if (!targets.Supported) return UnsupportedTrain(targets.UnsupportedReason!);
                 Remember(effect, index, targets, ref last);
                 // Runtime tests every effect, even if its initial casting test was disabled.
-                if (!PassesTest(effect, targets.UnitIds.Count, bossDead))
+                string? targetError = AttackTestError(state, collectionRoom, effect);
+                if (targetError != null) return UnsupportedTrain(targetError);
+                if (!PassesTest(effect, TestCount(state, effect, targets), bossDead))
                 {
                     if (index == 0 && CardTargetModel.IsRandom(effect.Target) && targets.UnitIds.Count > 0 && effect.Tests?.CancelSubsequent != true &&
                         effects.Skip(1).Any(next => next.Target.Contains("LastTargeted")))
@@ -235,18 +239,20 @@ namespace MonsterTrain2Poju.Model
                 return "Cross-room spells require the complete train state.";
             string? validation = Validate(selected, effects, targetId);
             if (validation != null) return validation;
-            if (effects[0].Target == "RandomFromAnyRoom")
+            if (CardTargetModel.IsRandom(effects[0].Target))
             {
-                CombatUnit[] possible = source.Rooms.SelectMany(room => room.Units).Where(unit => !unit.IsPyre &&
+                CombatUnit[] possible = source.Rooms.Where(room => effects[0].Target == "RandomFromAnyRoom" || room.RoomIndex == roomIndex)
+                    .SelectMany(room => room.Units).Where(unit => !unit.IsPyre &&
                     unit.Statuses.All(status => status.Id != "untouchable") && (unit.Team == CombatTeam.Enemy ? effects[0].AllowEnemy : effects[0].AllowPlayer)).ToArray();
                 foreach (CardActionEffect effect in effects.Skip(1))
                 {
-                    if (effect.Target == "DropTargetCharacter") break;
-                    if (effect.Target != "StrongestLastTargetedCharactersRoom" || effect.Tests?.ShouldTest == false || effect.Tests?.FailToCast != true) continue;
-                    bool[] outcomes = possible.Select(unit => PassesTest(effect,
-                        CardTargetModel.Collect(source, roomIndex, effect, new[] { unit.Id }, isTesting: true).UnitIds.Count,
+                    if (effect.Target == "DropTargetCharacter" && effect.Tests?.ShouldTest != false) break;
+                    if (!(effects[0].Target == "RandomFromAnyRoom" && effect.Target == "StrongestLastTargetedCharactersRoom" ||
+                        AttackChange(effect) && effect.Target.Contains("LastTargeted")) || effect.Tests?.ShouldTest == false || effect.Tests?.FailToCast != true) continue;
+                    bool[] outcomes = possible.Select(unit => PassesTest(effect, TestCount(source, effect,
+                        CardTargetModel.Collect(source, roomIndex, effect, new[] { unit.Id }, isTesting: true)),
                         source.Context.AllScenarioBossesDead == true)).Distinct().ToArray();
-                    if (outcomes.Length > 1) return "Mandatory room tests after global random selection depend on the auxiliary test stream.";
+                    if (outcomes.Length > 1) return "Mandatory last-target tests after random selection depend on the auxiliary test stream.";
                 }
             }
             return null;
@@ -288,11 +294,11 @@ namespace MonsterTrain2Poju.Model
                     continue;
                 }
                 if (!CardTargetModel.Supports(effect.Target)) return "Unimplemented spell targeting " + effect.Target;
-                if (!new[] { "Damage", "Heal", "AddStatus", "FloorRearrange", "UnitUpgrade", "RemoveUnitUpgrade" }.Contains(effect.Type))
+                if (!new[] { "Damage", "Heal", "AddStatus", "FloorRearrange", "UnitUpgrade", "RemoveUnitUpgrade", "BuffAttack", "DebuffAttack" }.Contains(effect.Type))
                     return "Unimplemented spell effect " + effect.Type;
                 if ((effect.Type == "UnitUpgrade" || effect.Type == "RemoveUnitUpgrade") && effect.Upgrade == null)
                     return "Missing unit upgrade definition.";
-                if (effect.Value < 0 || effect.Type == "FloorRearrange" && effect.Value > 1) return "Invalid spell effect value.";
+                if (effect.Value < 0 && !AttackChange(effect) || effect.Type == "FloorRearrange" && effect.Value > 1) return "Invalid spell effect value.";
                 if (effect.Type == "FloorRearrange" && effect.Target != "DropTargetCharacter") return "Floor rearrangement requires a drop target.";
                 if (effect.Type == "AddStatus" && effect.Statuses.Count == 0) return "A status effect requires at least one status definition.";
                 foreach (CombatStatus status in effect.Statuses)
@@ -329,9 +335,24 @@ namespace MonsterTrain2Poju.Model
                 case "Heal": return effect.Target == "Room" || count > 0;
                 case "AddStatus": return effect.Tests?.StrictTargets != true && effect.Target != "DropTargetCharacter" || count > 0;
                 case "FloorRearrange":
+                case "BuffAttack":
+                case "DebuffAttack":
                 case "UnitUpgrade": return count > 0;
                 default: return true;
             }
+        }
+
+        private static bool AttackChange(CardActionEffect effect) => effect.Type == "BuffAttack" || effect.Type == "DebuffAttack";
+        private static int TestCount(TrainCombatState state, CardActionEffect effect, CardTargets targets) => !AttackChange(effect) ? targets.UnitIds.Count :
+            state.Rooms.SelectMany(room => room.Units).Count(unit => targets.UnitIds.Contains(unit.Id) && unit.CanAttack);
+        private static string? AttackTestError(TrainCombatState state, int roomIndex, CardActionEffect effect)
+        {
+            if (!AttackChange(effect) || !CardTargetModel.IsRandom(effect.Target)) return null;
+            IEnumerable<CombatUnit> candidates = effect.Target == "RandomFromAnyRoom" ? state.Rooms.SelectMany(room => room.Units) :
+                state.Rooms.Single(room => room.RoomIndex == roomIndex).Units;
+            bool[] outcomes = candidates.Where(unit => !unit.IsPyre && unit.Statuses.All(status => status.Id != "untouchable") &&
+                (unit.Team == CombatTeam.Enemy ? effect.AllowEnemy : effect.AllowPlayer)).Select(unit => unit.CanAttack).Distinct().ToArray();
+            return outcomes.Length > 1 ? "Random attack-change tests depend on the auxiliary test stream." : null;
         }
 
         private static RoomCombatResult ApplyOne(RoomCombatState state, CardActionEffect effect, CombatUnit target,
@@ -339,6 +360,7 @@ namespace MonsterTrain2Poju.Model
         {
             if (effect.Type == "Damage") return RoomCombatModel.ApplyCardDamage(state, target.Id, effect.Value, sourceCardId);
             if (effect.Type == "Heal") return RoomCombatModel.ApplyCardHeal(state, target.Id, effect.Value);
+            if (AttackChange(effect)) return UnitAttackModel.Apply(state, target.Id, effect.Value, effect.Type == "DebuffAttack");
             if (effect.Type == "UnitUpgrade" || effect.Type == "RemoveUnitUpgrade")
                 return UnitModifierModel.Apply(state, target.Id, effect.Upgrade!, effect.Lifetime,
                     effect.Type == "RemoveUnitUpgrade", target.Team == CombatTeam.Player ? playerCapacity : enemyCapacity);

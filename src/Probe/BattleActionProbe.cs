@@ -83,7 +83,7 @@ namespace MonsterTrain2Poju.Probe
             }
             else if (kind == "CardEffectNULL") kind = "Null";
             else if (data.GetCardType() == CardType.Spell && effects.Length > 0 && effects.All(effect =>
-                new[] { "CardEffectDamage", "CardEffectHeal", "CardEffectAddStatusEffect", "CardEffectFloorRearrange", "CardEffectAddCardUpgradeToUnits",
+                new[] { "CardEffectDamage", "CardEffectHeal", "CardEffectBuffDamage", "CardEffectDebuffDamage", "CardEffectAddStatusEffect", "CardEffectFloorRearrange", "CardEffectAddCardUpgradeToUnits",
                     "CardEffectAddTempCardUpgradeToUnits", "CardEffectRemoveTempUpgradeFromUnit",
                     "CardEffectAddTempCardUpgradeToCardsInHand", "CardEffectAddPermanentCardUpgradeToCardsInHand" }.Contains(effect.GetEffectStateName())))
             {
@@ -102,6 +102,8 @@ namespace MonsterTrain2Poju.Probe
                             !CardTargetModel.Supports(effect.GetTargetMode().ToString())))
                         interactions.Add("Spell scaling or target filters");
                     string type = effect.GetEffectStateName() == "CardEffectDamage" ? "Damage" :
+                        effect.GetEffectStateName() == "CardEffectBuffDamage" ? "BuffAttack" :
+                        effect.GetEffectStateName() == "CardEffectDebuffDamage" ? "DebuffAttack" :
                         effect.GetEffectStateName() == "CardEffectHeal" ? "Heal" :
                         effect.GetEffectStateName() == "CardEffectFloorRearrange" ? "FloorRearrange" :
                         effect.GetEffectStateName() == "CardEffectAddStatusEffect" ? "AddStatus" :

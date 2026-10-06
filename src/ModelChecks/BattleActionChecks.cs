@@ -118,6 +118,8 @@ internal static class BattleActionChecks
             RandomStatusChecks.Native(actions);
         if (fixture.TryGetProperty("ModifierScenario", out JsonElement crossRoomScenario) && crossRoomScenario.GetString() is "cross-room-spells" or "cross-room-targets")
             CrossRoomSpellChecks.Native(fixture);
+        if (fixture.TryGetProperty("ModifierScenario", out JsonElement attackScenario) && attackScenario.GetString() == "attack-buffs")
+            UnitAttackChecks.Native(actions);
         if (fixture.TryGetProperty("ModifierScenario", out JsonElement healingScenario) && healingScenario.GetString() is "healing" or "healing-triggers")
         {
             int healPlays = 0, restored = 0;

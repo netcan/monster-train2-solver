@@ -16,6 +16,7 @@ param(
     [switch] $RandomStatus,
     [switch] $CrossRoomSpells,
     [switch] $CrossRoomTargets,
+    [switch] $AttackBuffs,
     [switch] $SkipBuild
 )
 
@@ -48,7 +49,7 @@ $environment = @{
     MT2_PROBE_SCENARIO = 'native-replay'
     MT2_PROBE_FULL_BATTLE = '1'
     MT2_PROBE_FULL_BATTLE_POLICY = $Policy
-    MT2_PROBE_MODIFIERS = $(if ($CrossRoomTargets) { 'cross-room-targets' } elseif ($CrossRoomSpells) { 'cross-room-spells' } elseif ($RandomStatus) { 'random-status' } elseif ($RandomSpells) { 'random-spells' } elseif ($PostKillSpells) { 'post-kill-spells' } elseif ($TerminalSpells) { 'terminal-spells' } elseif ($RoomSpells) { 'room-spells' } elseif ($HealingTriggers) { 'healing-triggers' } elseif ($Healing) { 'healing' } elseif ($TargetedHandUpgrades) { 'targeted-hand-upgrades' } elseif ($HandUpgrades) { 'hand-upgrades' } elseif ($SacrificeUpgrades) { 'sacrifice-upgrades' } elseif ($DynamicUpgrades) { 'dynamic-upgrades' } elseif ($NumericUpgrades) { 'numeric-upgrades' } else { '' })
+    MT2_PROBE_MODIFIERS = $(if ($AttackBuffs) { 'attack-buffs' } elseif ($CrossRoomTargets) { 'cross-room-targets' } elseif ($CrossRoomSpells) { 'cross-room-spells' } elseif ($RandomStatus) { 'random-status' } elseif ($RandomSpells) { 'random-spells' } elseif ($PostKillSpells) { 'post-kill-spells' } elseif ($TerminalSpells) { 'terminal-spells' } elseif ($RoomSpells) { 'room-spells' } elseif ($HealingTriggers) { 'healing-triggers' } elseif ($Healing) { 'healing' } elseif ($TargetedHandUpgrades) { 'targeted-hand-upgrades' } elseif ($HandUpgrades) { 'hand-upgrades' } elseif ($SacrificeUpgrades) { 'sacrifice-upgrades' } elseif ($DynamicUpgrades) { 'dynamic-upgrades' } elseif ($NumericUpgrades) { 'numeric-upgrades' } else { '' })
     MT2_PROBE_DIRECT_BRANCH = '1'
     MT2_PROBE_DEPTH = '100'
     MT2_PROBE_TARGET_TURN = '0'
@@ -163,6 +164,31 @@ $crossRoomCoverage = -not ($CrossRoomSpells -or $CrossRoomTargets) -or @($trace.
         }).Count -gt 0
     }).Count -gt 0
 }).Count -gt 0
+$attackCoverage = -not $AttackBuffs
+if ($AttackBuffs) {
+    $attackActions = @($trace.Actions | Where-Object {
+        $entry = $_
+        $card = $entry.Before.Spawn.Train.Context.Cards.Hand | Where-Object InstanceId -EQ $entry.Action.CardInstanceId
+        $rule = $entry.Before.PlayRules.Cards | Where-Object DataId -EQ $card.DataId
+        $rule.Effects[0].Type -eq 'BuffAttack' -and $rule.Effects[0].Target -eq 'Tower'
+    })
+    $remoteAttack = $false
+    $incapableAttack = $false
+    $zeroAttack = $false
+    foreach ($entry in $attackActions) {
+        foreach ($room in $entry.Before.Spawn.Train.Rooms) {
+            foreach ($old in $room.Units) {
+                $next = $entry.Actual.Spawn.Train.Rooms.Units | Where-Object Id -EQ $old.Id
+                if ($old.IsPyre -or $null -eq $next) { continue }
+                if ($old.Team -eq 0 -and -not $old.CanAttack -and $next.Modifiers.DamageBuff -eq $old.Modifiers.DamageBuff) { $incapableAttack = $true }
+                if ($old.CanAttack -and $old.BaseAttack -eq 0 -and $next.BaseAttack -gt 0) { $zeroAttack = $true }
+                if ($room.RoomIndex -ne $entry.Action.RoomIndex -and $old.Team -eq 1 -and $old.CanAttack -and
+                    ($next.Modifiers.DamageBuff - $old.Modifiers.DamageBuff) -in @(3, 4)) { $remoteAttack = $true }
+            }
+        }
+    }
+    $attackCoverage = $attackActions.Count -gt 0 -and $remoteAttack -and $incapableAttack -and $zeroAttack
+}
 if ($PostKillSpells) {
     $postKillCoverage = @($trace.Actions | Where-Object {
         $entry = $_
@@ -223,10 +249,11 @@ $result = [pscustomobject]@{
     RandomCoverage = $randomCoverage
     RandomStatusCoverage = $randomStatusCoverage
     CrossRoomCoverage = $crossRoomCoverage
+    AttackCoverage = $attackCoverage
     Trace = $tracePath
 }
 $result | ConvertTo-Json
 if ($null -eq $trace.NativeWon -or $process.ExitCode -ne 0 -or -not $nativePassed -or -not $originalUnchanged -or -not $modifierCoverage -or -not $healingCoverage -or -not $onHealCoverage -or -not $roomSpellCoverage -or -not $terminalSettled -or -not $terminalSpellCoverage -or
-    -not $postKillCoverage -or -not $randomCoverage -or -not $randomStatusCoverage -or -not $crossRoomCoverage -or $trace.CaptureFailures -ne 0 -or $trace.Mismatches -ne 0 -or $trace.Unsupported -ne 0 -or $trace.Pending -ne 0) {
+    -not $postKillCoverage -or -not $randomCoverage -or -not $randomStatusCoverage -or -not $crossRoomCoverage -or -not $attackCoverage -or $trace.CaptureFailures -ne 0 -or $trace.Mismatches -ne 0 -or $trace.Unsupported -ne 0 -or $trace.Pending -ne 0) {
     throw "Full battle differential probe failed; inspect $tracePath and $unityLog"
 }

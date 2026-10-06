@@ -35,6 +35,7 @@ are copied immutable values; independent child states can run on worker threads.
 | Runtime unit upgrades | `UnitModifierModel` | Native permanent, battle and unit-death lifetimes, duplicate removal, unique upgrades, restricted size, unhealed health and lethal max-health loss |
 | Hand upgrade spells | `HandUpgradeModel` | Native targeted and targetless sequences, current-hand membership, permanent/temporary groups, uniqueness and paid-card exclusion |
 | Basic healing | `HealingModel` and `CardSpellModel` | Native targeted spells, modifier group clamps, maximum health, multiplier/immunity, regen and lifesteal; independent healability checks |
+| Attack buff/debuff spells | `UnitAttackModel` and `CardSpellModel` | Native raw negative balances/recovery, zero-attack and incapable targets, global/random targets, source-card ownership and later unit upgrades |
 | Healing triggers | `CombatTrigger` and `RoomCombatModel` | Native repeated/once rewards and silence; zero/full/immune healing, deployment timing, preview flags and child isolation checks |
 | Terminal spell resolution | `CardSpellModel` and `BattleActionModel` | Settled native boss kill continues live effects, detached spawner upgrades/removal and healing; effect gates skip/cancel, then played/discard callbacks complete |
 | Enemy waves and treasure | `EnemySpawningModel` | Native group cache, spawn order, phase, slots and treasure floor selection |
@@ -465,6 +466,30 @@ Pure checks additionally cover per-target room capacity, global HP ties,
 single/empty RNG draws, pending-reference cleanup, armor focus, malformed inputs
 and 32 parallel branches with unchanged parents.
 
+Attack changes use the unit's raw damage buff independently of its base attack
+and source card upgrades. Displayed attack is clamped at zero; a negative raw
+balance must first be offset by later buffs. A zero-attack unit can still receive
+these effects when `CanAttack` is true. Incapable targets remain in last-target
+history but do not pass effect tests or receive changes. Zero and negative
+effect amounts do nothing. Mixed-capability random tests and mandatory
+last-target capability tests that depend on the auxiliary test RNG reject the
+entire transition explicitly. Range/scaling parameters, trait callbacks and
+Pyre-targeted attack changes remain unsupported.
+
+`results/full-battle-attack-buffs.json.gz` replaces the owned rearrangement spell
+with global enemy buffs and last-target debuff/recovery, global friendly
+debuff/recovery, one random friendly buff, zero/negative no-ops and an until-death
+unit upgrade. It retains the natural boss and waves. Pure checks additionally
+cover casting capability, runtime cancellation, tested and untested drop-target
+history, unit upgrade/removal with a raw deficit and 32 isolated branches.
+All 21 plays, seven EndTurns, 56 room stages, 13 card cycles, 14 train phases
+and 11 spawns match the native game. Six modified spell plays cover 28 raw
+balance recoveries, seven remote friendly changes, one incapable target and
+two zero-attack recoveries. Source unit cards remain unchanged and every random
+friendly buff consumes exactly one Battle draw. The independent root policy,
+mid-battle suffix and 16 parallel branches match the complete terminal state,
+with Pyre health 32/80 and zero unsupported transitions or differences.
+
 Run the saved native oracles without the game:
 
 ```powershell
@@ -494,6 +519,7 @@ pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy units-spells-and-j
 pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy units-spells-and-junk -RandomStatus
 pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy units-spells-and-junk -CrossRoomSpells
 pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy units-spells-and-junk -CrossRoomTargets
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy units-spells-and-junk -AttackBuffs
 ```
 
 The runner checks the explicit probe success marker, capture failures, pending
@@ -519,7 +545,7 @@ API delegates to the same engine for local checks. Each applied target updates
 its own room, then shares the resulting context with every other room; fixed
 target collections and last-target identities span the train. Capacity-limited
 unit upgrades consult the target room's definition. Dead movement and standby
-spawner routing use all rooms. The 19 saved native battle oracles exercise this
+spawner routing use all rooms. The 20 saved native battle oracles exercise this
 engine through the normal card-action path, including cross-room target modes.
 
 1. Capture a self-contained starting battle state and its static rule definitions.
