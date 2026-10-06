@@ -85,6 +85,7 @@ CardModifierChecks.Run();
 TerminalSpellChecks.Run();
 UnitModifierChecks.Run();
 UnitUpgradeScalingChecks.Run();
+UnitTriggerUpgradeChecks.Run();
 HandUpgradeChecks.Run();
 HealingChecks.Run();
 GoldRewardChecks.Run();

@@ -31,6 +31,14 @@ namespace MonsterTrain2Poju.Model
     {
         public static RoomCombatResult Apply(RoomCombatState source, int targetId, CardUpgradeModifier upgrade, string lifetime,
             bool remove = false, int? roomCapacity = null, int sourceCardId = 0, string? triggerKind = null)
+            => ApplyWithSettlement(source, targetId, upgrade, lifetime, remove, roomCapacity, sourceCardId, triggerKind,
+                RoomCombatModel.ApplyUnitModification);
+
+        // A running room engine settles deaths on its existing unit references and trigger flags.
+        // Starting another engine here would reset preview triggers and detach combat attackers.
+        internal static RoomCombatResult ApplyWithSettlement(RoomCombatState source, int targetId, CardUpgradeModifier upgrade,
+            string lifetime, bool remove, int? roomCapacity, int sourceCardId, string? triggerKind,
+            Func<RoomCombatState, CombatUnit, RoomCombatResult> settle)
         {
             string? error = RoomCombatModel.Validate(source);
             if (error != null) return Unsupported(error);
@@ -98,7 +106,7 @@ namespace MonsterTrain2Poju.Model
                 var changed = new CombatUnit(target.Id, target.AssetKey, target.Team, Math.Max(0, checked(damage + buff)), health, maxHealth,
                     target.CanAttack, target.IsPyre, target.EndsBattleOnDeath, statuses.Values.ToArray(), target.Triggers, target.SpawnerCardId,
                     Math.Max(1, Math.Min(6, size)), target.StatusImmunities, target.Subtypes, nextModifiers, target.IsBoss);
-                RoomCombatResult applied = RoomCombatModel.ApplyUnitModification(state, changed);
+                RoomCombatResult applied = settle(state, changed);
                 if (!applied.Supported || applied.Outcome == RoomOutcome.BattleWon || applied.Outcome == RoomOutcome.PlayerDefeated) return applied;
                 state = applied.State!;
                 if (health <= 0) return Match(state);

@@ -139,7 +139,8 @@ namespace MonsterTrain2Poju.Probe
             private static void Prefix(CardTraitState __instance, CardState thisCard, CharacterTriggerState? characterTriggerState, CardUpgradeState upgradeState, out Sample? __state)
             {
                 __state = null; FullBattleTrace? trace = FullBattleTrace.Active;
-                if (Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") != "unit-upgrade-scaling" || trace == null ||
+                string? scenario = Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS");
+                if (scenario != "unit-upgrade-scaling" && scenario != "unit-trigger-upgrades" || trace == null ||
                     AllGameManagers.Instance!.GetSaveManager().PreviewMode || !calibrating && !trace.PendingActionIndex.HasValue && !trace.PendingTurnIndex.HasValue) return;
                 var sample = new Sample { Origin = calibrating ? "Calibration" : "Live", ActionIndex = trace.PendingActionIndex ?? -1,
                     TriggerKind = characterTriggerState?.GetTrigger().ToString() };

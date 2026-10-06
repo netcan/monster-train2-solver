@@ -72,8 +72,10 @@ namespace MonsterTrain2Poju.Model
         public IReadOnlyList<string> CardPool { get; }
         public bool SkipDuplicateInHand { get; }
         public CardGenerationRule? Generation { get; }
+        public CardActionEffect? UnitUpgrade { get; }
         public CombatEffect(string type, int value, int counter, string destination, int count,
-            IReadOnlyList<string> cardPool, bool skipDuplicateInHand, CardGenerationRule? generation = null)
+            IReadOnlyList<string> cardPool, bool skipDuplicateInHand, CardGenerationRule? generation = null,
+            CardActionEffect? unitUpgrade = null)
         {
             Type = type; Value = value;
             // Every remaining count <= 1 despawns on the next application. Native UI previews can
@@ -82,10 +84,10 @@ namespace MonsterTrain2Poju.Model
             // Only generated-card effects interpret this parameter as a pile destination.
             Destination = type == "CardEffectAddBattleCard" ? destination : ""; Count = count;
             CardPool = Array.AsReadOnly(cardPool.ToArray()); SkipDuplicateInHand = skipDuplicateInHand;
-            Generation = generation;
+            Generation = generation; UnitUpgrade = unitUpgrade;
         }
         internal CombatEffect WithCounter(int counter) => new CombatEffect(Type, Value, counter,
-            Destination, Count, CardPool, SkipDuplicateInHand, Generation);
+            Destination, Count, CardPool, SkipDuplicateInHand, Generation, UnitUpgrade);
     }
 
     public sealed class CombatTrigger

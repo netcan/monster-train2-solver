@@ -971,9 +971,45 @@ outputs and the full battle from initial/mid-battle roots with parallel branches
 The retained native JSON is 219,987,508 bytes, with SHA-256
 `64c8be1e716b2263b967e1a610f47a263bb244c7f58425a8b0e9a7fb4ae1df4c`.
 Capture failures, mismatches, unsupported stages and pending records are zero;
-the original profile files remain unchanged. General character-trigger upgrade
-execution, single-instance accumulation and upgrade-scaling classes beyond these
-two remain to be modeled.
+the original profile files remain unchanged. Single-instance accumulation and
+upgrade-scaling classes beyond these two remain to be modeled.
+
+Schema 26 adds an immutable unit-upgrade effect descriptor to character triggers.
+`OnHeal`, `PostCombat` and living room targets of `OnDeath` can apply ordinary or
+temporary unit upgrades and remove temporary upgrades. The existing upgrade
+rules receive the triggering unit's spawner card and actual trigger kind. Every
+target gets a fresh scaled upgrade. Lifetimes, clone/unique gates, base-valued
+removal and source-card updates follow the same paths as spell upgrades.
+
+Trigger preflight and per-effect tests distinguish whole-trigger refusal from
+canceling subsequent effects. Native marks a trigger as fired before its effects;
+the model preserves this ordering for nested deaths. Application updates the
+current working unit in place, preserving the attacker reference and preview
+once-only flags. Max-health healing does not recursively fire `OnHeal`. Random
+target tests do not consume RNG; successful applications do. Self targets bypass
+team, health/status/subtype and untouchable filters, retaining the native boss
+filter. Room targets use the existing collector. Relentless cycle signatures now
+include changing attack/max-health/size, unit upgrades and spawner modifiers.
+
+`results/full-battle-unit-trigger-upgrades.json.gz` preserves 72 native callbacks:
+54 `OnHeal` and 18 `PostCombat`, including 24 restricted trait skips and 9
+magic-only callbacks. The controlled Steward fixture covers continuous temporary
+application/removal, a permanent once-only upgrade, repeated until-death upgrades,
+silence and ignored-silence triggers. Eight captured silenced-unit states have
+the ignored-silence once upgrade consumed. All 15 plays, 5 EndTurns, 42 room
+stages, 9 card cycles, 9 train phases and 7 spawns match; the natural battle wins
+with Pyre health 80. Independent checks recompute complete callback outputs,
+decision transitions and initial/mid-battle full simulations with parallel
+branches. Pure checks also cover room/random/self targets, mandatory and cancel
+tests, later multistrike attacks reading upgraded stats, nested lethal upgrades,
+preview once flags and 32 isolated branches.
+
+The retained JSON is 134,230,436 bytes, SHA-256
+`5027333e3b3efd9e795cc1fc26346f74e4374d0c5f03fd7ab610eaa1c650785c`.
+Capture failures, mismatches, unsupported steps and pending records are zero;
+original profile files are unchanged. Spawn-trigger execution, dead-self upgrade
+routing, trigger upgrades that require room capacity, cross-room or remembered
+targets, and single-instance accumulation remain explicit unsupported cases.
 
 Schema 24 captures ordered `CardTraitScalingAddStatusEffect` descriptors on
 immutable card instances and generated-card rules, plus the native stackability

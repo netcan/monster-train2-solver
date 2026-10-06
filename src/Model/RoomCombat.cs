@@ -245,6 +245,27 @@ namespace MonsterTrain2Poju.Model
                     foreach (CombatEffect effect in trigger.Effects)
                     {
                         if (effect.Type == "CardEffectDespawnCharacter") continue;
+                        if (effect.Type == "CardEffectAddCardUpgradeToUnits" || effect.Type == "CardEffectAddTempCardUpgradeToUnits" ||
+                            effect.Type == "CardEffectRemoveTempUpgradeFromUnit")
+                        {
+                            CardActionEffect? action = effect.UnitUpgrade;
+                            if (action?.Upgrade == null || action.Type != (effect.Type == "CardEffectRemoveTempUpgradeFromUnit" ? "RemoveUnitUpgrade" : "UnitUpgrade"))
+                                return "Missing triggered unit upgrade definition.";
+                            if (state.Context?.CardInstances == null || unit.Modifiers == null)
+                                return "Triggered unit upgrades require unit and card modifier state.";
+                            if (action.Upgrade.ExternalInteractions.Count > 0)
+                                return string.Join("; ", action.Upgrade.ExternalInteractions);
+                            if (action.Upgrade.RestrictSizeToRoomCapacity)
+                                return "Triggered size restrictions require room capacity state.";
+                            if (action.Target != "Self" && !new[] { "Room", "FrontInRoom", "BackInRoom", "Weakest", "RoomHealTargets", "RandomInRoom" }.Contains(action.Target))
+                                return "Unmodeled triggered upgrade target " + action.Target;
+                            if (trigger.Kind == "OnDeath" && action.Target == "Self")
+                                return "Dead self upgrade routing is not modeled.";
+                            if (action.Range != null) return "Triggered upgrade range initialization is not modeled.";
+                            string? filterError = action.Filters?.Validate();
+                            if (filterError != null) return filterError;
+                            continue;
+                        }
                         if (effect.Type != "CardEffectRewardGold" && effect.Type != "CardEffectAddBattleCard")
                             return "Unmodeled effect " + effect.Type;
                         if (state.Context == null) return "Unit effects require shared battle context.";
@@ -262,7 +283,7 @@ namespace MonsterTrain2Poju.Model
 
         private sealed class WorkingUnit
         {
-            internal readonly CombatUnit Source;
+            internal CombatUnit Source;
             internal int Health;
             internal readonly Dictionary<string, CombatStatus> Statuses;
             internal readonly List<CombatTrigger> Triggers;
@@ -278,6 +299,13 @@ namespace MonsterTrain2Poju.Model
             }
 
             internal bool Has(string id) => Statuses.ContainsKey(id);
+            internal void Apply(CombatUnit changed)
+            {
+                Source = changed; Health = changed.Health;
+                Statuses.Clear();
+                foreach (CombatStatus status in changed.Statuses) Statuses.Add(status.Id, status);
+                Triggers.Clear(); Triggers.AddRange(changed.Triggers);
+            }
             internal int Amount(string id) => Statuses.TryGetValue(id, out CombatStatus? status)
                 ? status.ParamInt * status.Stacks : 0;
             internal int Count(string id) => Statuses.TryGetValue(id, out CombatStatus? status) ? status.Stacks : 0;
@@ -584,14 +612,21 @@ namespace MonsterTrain2Poju.Model
                     if (trigger.Kind != kind || trigger.Once && trigger.HasTriggered ||
                         source.Deployment && trigger.SkipDuringDeployment == true ||
                         unit.Has("silenced") && !trigger.IgnoreSilence) continue;
+                    if (!UpgradeTriggerPassesTest(unit, trigger)) continue;
                     var effects = trigger.Effects.ToArray();
+                    // Native marks the trigger before its effects; nested death effects observe it.
+                    unit.Triggers[index] = trigger.Fired(effects);
                     for (int fire = 0; fire < trigger.FireCount; fire++)
                     {
                         if (!unit.Alive && kind != "OnDeath") break;
                         for (int effectIndex = 0; effectIndex < effects.Length; effectIndex++)
                         {
                             CombatEffect effect = effects[effectIndex];
-                            if (effect.Type == "CardEffectDespawnCharacter")
+                            if (effect.UnitUpgrade != null)
+                            {
+                                if (!ApplyTriggeredUpgrade(unit, effect.UnitUpgrade, kind)) break;
+                            }
+                            else if (effect.Type == "CardEffectDespawnCharacter")
                             {
                                 int remaining = effect.Counter - 1;
                                 effects[effectIndex] = effect.WithCounter(remaining);
@@ -620,6 +655,73 @@ namespace MonsterTrain2Poju.Model
                     }
                     unit.Triggers[index] = trigger.Fired(effects);
                 }
+            }
+
+            private RoomCombatState CurrentRoom() => new RoomCombatState(source.RoomIndex, source.Deployment,
+                units.Where(unit => unit.Alive).Select(unit => unit.Freeze()).ToArray(), source.ExternalInteractions, context, source.Preview);
+
+            private CardTargets UpgradeTargets(WorkingUnit actor, CardActionEffect action, bool testing)
+            {
+                if (action.Target != "Self") return CardTargetModel.Collect(CurrentRoom(), action, Array.Empty<int>(), isTesting: testing);
+                // Native Self bypasses team, health, status, subtype and untouchable filters.
+                if (action.Filters?.IgnoreBosses == true)
+                {
+                    if (!actor.Source.IsBoss.HasValue) return new CardTargets(Array.Empty<int>(), "Self boss filtering requires boss state.");
+                    if (actor.Source.IsBoss.Value) return new CardTargets(Array.Empty<int>());
+                }
+                return new CardTargets(new[] { actor.Source.Id });
+            }
+
+            private bool UpgradeTriggerPassesTest(WorkingUnit actor, CombatTrigger trigger)
+            {
+                if (!trigger.Effects.Any(effect => effect.UnitUpgrade != null)) return true;
+                bool passed = trigger.Effects.Count == 0;
+                foreach (CombatEffect effect in trigger.Effects)
+                {
+                    CardActionEffect? action = effect.UnitUpgrade;
+                    if (action == null)
+                    {
+                        passed |= effect.Type != "CardEffectAddBattleCard" || !source.Preview &&
+                            context!.AllScenarioBossesDead != true &&
+                            (effect.Generation?.RequireHandSpace != true || context.Cards.Hand.Count < context.MaxHandSize);
+                        continue;
+                    }
+                    if (action.Tests?.ShouldTest == false) continue;
+                    CardTargets targets = UpgradeTargets(actor, action, testing: true);
+                    if (!targets.Supported) { unsupportedReason = targets.UnsupportedReason; return false; }
+                    bool valid = action.Type == "RemoveUnitUpgrade" || targets.UnitIds.Count > 0;
+                    if (!valid && action.Tests?.FailToCast == true) return false;
+                    passed |= valid;
+                }
+                return passed;
+            }
+
+            private bool ApplyTriggeredUpgrade(WorkingUnit actor, CardActionEffect action, string kind)
+            {
+                CardTargets tested = UpgradeTargets(actor, action, testing: true);
+                if (!tested.Supported) { unsupportedReason = tested.UnsupportedReason; return false; }
+                if (action.Type != "RemoveUnitUpgrade" && tested.UnitIds.Count == 0)
+                    return action.Tests?.CancelSubsequent != true;
+                CardTargets targets = UpgradeTargets(actor, action, testing: false);
+                if (!targets.Supported) { unsupportedReason = targets.UnsupportedReason; return false; }
+                if (targets.BattleRng.HasValue) context = context!.WithBattleRng(targets.BattleRng.Value);
+                foreach (int targetId in targets.UnitIds)
+                {
+                    WorkingUnit? target = units.FirstOrDefault(unit => unit.Source.Id == targetId && unit.Alive);
+                    if (target == null) continue;
+                    RoomCombatResult result = UnitModifierModel.ApplyWithSettlement(CurrentRoom(), targetId, action.Upgrade!, action.Lifetime,
+                        action.Type == "RemoveUnitUpgrade", null, actor.Source.SpawnerCardId, kind, (state, changed) =>
+                        {
+                            context = state.Context; target.Apply(changed);
+                            if (!target.Alive) Death(null, target, 0);
+                            return Finish(battleWon ? RoomOutcome.BattleWon : target.Source.IsPyre && !target.Alive
+                                ? RoomOutcome.PlayerDefeated : RoomOutcome.Exchanged);
+                        });
+                    if (!result.Supported) { unsupportedReason = result.UnsupportedReason; return false; }
+                    context = result.State!.Context;
+                    Emit(action.Type, actor, target, 0);
+                }
+                return true;
             }
 
             private void AddCards(WorkingUnit actor, CombatEffect effect)
@@ -663,7 +765,18 @@ namespace MonsterTrain2Poju.Model
                 var text = new StringBuilder();
                 foreach (WorkingUnit unit in units)
                 {
-                    text.Append(unit.Source.Id).Append(':').Append(unit.Health).Append(':');
+                    text.Append(unit.Source.Id).Append(':').Append(unit.Health).Append(':').Append(unit.Source.BaseAttack)
+                        .Append(':').Append(unit.Source.MaxHealth).Append(':').Append(unit.Source.Size).Append(':');
+                    if (unit.Source.Modifiers != null)
+                    {
+                        UnitModifiers modifiers = unit.Source.Modifiers;
+                        text.Append(modifiers.AttackDamage).Append(',').Append(modifiers.AttackDamageAdded).Append(',')
+                            .Append(modifiers.DamageBuff).Append(',').Append(modifiers.RawSize).Append(',').Append(modifiers.EquipmentLimit).Append(';');
+                        foreach (CardUpgradeModifier upgrade in modifiers.Upgrades)
+                            text.Append(upgrade.DataId.Length).Append(':').Append(upgrade.DataId).Append(':')
+                                .Append(upgrade.Stats.Damage).Append(',').Append(upgrade.Stats.Health).Append(',')
+                                .Append(upgrade.Stats.Size).Append(',').Append(upgrade.UnhealedHealth).Append(',').Append(upgrade.DamageBuff).Append(';');
+                    }
                     foreach (CombatStatus status in unit.Statuses.Values.OrderBy(status => status.Id, StringComparer.Ordinal))
                         text.Append(status.Id).Append('=').Append(status.Stacks).Append(',');
                     text.Append(';');
@@ -680,9 +793,29 @@ namespace MonsterTrain2Poju.Model
                         .Append(context.BattleRng.S2).Append(',').Append(context.BattleRng.S3);
                     foreach (CardToken card in context.Cards.Hand.Concat(context.Cards.Draw).Concat(context.Cards.Discard))
                         text.Append('|').Append(card.InstanceId).Append(':').Append(card.DataId);
+                    foreach (CardInstanceState card in context.CardInstances ?? Array.Empty<CardInstanceState>())
+                    {
+                        text.Append("|card:").Append(card.InstanceId);
+                        AppendModifiers(card.Permanent); AppendModifiers(card.Temporary);
+                    }
+                    foreach (CardInstanceState card in context.CardRegistry ?? Array.Empty<CardInstanceState>())
+                    {
+                        text.Append("|reference:").Append(card.InstanceId);
+                        AppendModifiers(card.Permanent); AppendModifiers(card.Temporary);
+                    }
                     if (context.Statistics != null) text.Append("|stats:").Append(context.Statistics.Signature());
                 }
                 return text.ToString();
+
+                void AppendModifiers(CardModifiers modifiers)
+                {
+                    text.Append('[').Append(modifiers.PersistentHealth);
+                    foreach (CardUpgradeModifier upgrade in modifiers.Upgrades)
+                        text.Append('|').Append(upgrade.DataId.Length).Append(':').Append(upgrade.DataId).Append(':')
+                            .Append(upgrade.Stats.Damage).Append(',').Append(upgrade.Stats.Health).Append(',')
+                            .Append(upgrade.Stats.Size).Append(',').Append(upgrade.UnhealedHealth).Append(',').Append(upgrade.DamageBuff);
+                    text.Append(']');
+                }
             }
 
             private void Emit(string kind, WorkingUnit? actor, WorkingUnit target, int amount) =>
