@@ -171,6 +171,15 @@ namespace MonsterTrain2Poju.Model
         public static RoomCombatResult Exchange(RoomCombatState state) => Run(state, false);
         public static RoomCombatResult Resolve(RoomCombatState state) => Run(state, true);
 
+        public static RoomCombatResult ApplyUnitTurn(RoomCombatState state, int unitId)
+        {
+            string? error = Validate(state);
+            if (error != null || !state.Units.Any(unit => unit.Id == unitId))
+                return new RoomCombatResult(null, RoomOutcome.Unsupported, 0, new List<CombatEvent>(),
+                    error ?? "Unit turn requires a living actor in the room.");
+            return new Engine(state, new List<CombatEvent>()).UnitTurn(unitId);
+        }
+
         public static RoomCombatResult ApplySpawnTriggers(RoomCombatState state, int unitId, bool fromCard)
         {
             string? error = Validate(state);
@@ -248,7 +257,8 @@ namespace MonsterTrain2Poju.Model
                 foreach (CombatTrigger trigger in unit.Triggers)
                 {
                     if (trigger.Kind != "OnDeath" && trigger.Kind != "PostCombat" && trigger.Kind != "OnHeal" &&
-                        trigger.Kind != "OnSpawn" && trigger.Kind != "OnUnscaledSpawn" && trigger.Kind != "OnSpawnNotFromCard")
+                        trigger.Kind != "OnSpawn" && trigger.Kind != "OnUnscaledSpawn" && trigger.Kind != "OnSpawnNotFromCard" &&
+                        trigger.Kind != "OnTurnBegin")
                         return "Unmodeled trigger " + trigger.Kind;
                     if (trigger.Kind != "OnDeath" && trigger.Kind != "PostCombat" && trigger.SkipDuringDeployment == null)
                         return trigger.Kind + " requires deployment timing state.";
@@ -428,6 +438,14 @@ namespace MonsterTrain2Poju.Model
                     ? RoomOutcome.PlayerDefeated : RoomOutcome.Exchanged);
             }
 
+            internal RoomCombatResult UnitTurn(int unitId)
+            {
+                round = 1;
+                Turn(units.Single(unit => unit.Source.Id == unitId));
+                return Finish(battleWon ? RoomOutcome.BattleWon : units.Any(unit => unit.Source.IsPyre && !unit.Alive)
+                    ? RoomOutcome.PlayerDefeated : RoomOutcome.Exchanged);
+            }
+
             private void Exchange()
             {
                 WorkingUnit[] quick = units.Where(unit => unit.Alive &&
@@ -446,13 +464,16 @@ namespace MonsterTrain2Poju.Model
             private void Turn(WorkingUnit actor)
             {
                 if (!actor.Alive) return;
-                if (actor.Has("dazed") && Active(actor.Statuses["dazed"]))
+                bool dazed = actor.Has("dazed") && Active(actor.Statuses["dazed"]);
+                if (dazed)
                 {
                     Trigger(actor, "dazed", 1);
                     Emit("Dazed", actor, actor, 0);
-                    return;
                 }
-                if (!actor.Source.CanAttack || actor.Attack <= 0) return;
+                // Native queues this after attack/trigger prevention, before attack conditions.
+                // Ignored-silence triggers can run while dazed, without restoring this turn's attack.
+                FireTriggers(actor, "OnTurnBegin", canFireTriggers: !dazed);
+                if (!actor.Alive || dazed || !actor.Source.CanAttack || actor.Attack <= 0) return;
                 int strikes = actor.Statuses.TryGetValue("multistrike", out CombatStatus? multi)
                     ? Math.Max(1, multi.ParamInt + multi.Stacks - 1) : 1;
                 for (int strike = 0; strike < strikes && actor.Alive; strike++)
@@ -633,7 +654,7 @@ namespace MonsterTrain2Poju.Model
                 FireTriggers(unit, "OnHeal");
             }
 
-            private void FireTriggers(WorkingUnit unit, string kind)
+            private void FireTriggers(WorkingUnit unit, string kind, bool canFireTriggers = true)
             {
                 if (kind == "OnDeath" && unit.Despawned) return;
                 for (int index = 0; index < unit.Triggers.Count; index++)
@@ -641,6 +662,7 @@ namespace MonsterTrain2Poju.Model
                     CombatTrigger trigger = unit.Triggers[index];
                     if (trigger.Kind != kind || trigger.Once && trigger.HasTriggered ||
                         source.Deployment && trigger.SkipDuringDeployment == true ||
+                        !canFireTriggers && !trigger.IgnoreSilence ||
                         unit.Has("silenced") && !trigger.IgnoreSilence) continue;
                     if (!UpgradeTriggerPassesTest(unit, trigger)) continue;
                     var effects = trigger.Effects.ToArray();

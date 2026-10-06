@@ -45,15 +45,18 @@ namespace MonsterTrain2Poju.Probe
         internal int Mismatches => stages.Count(stage => stage.Difference != null) + cardCycles.Mismatches + trainCombat.Mismatches + spawning.Mismatches + turns.Mismatches + actions.Mismatches +
             HandRemovalScenario.Records.Count(record => record.Difference != null) + GenerationScenario.Records.Count(record => record.Difference != null) +
             DamageScalingScenario.Samples.Count(sample => sample.Difference != null) + StatusScalingScenario.Samples.Count(sample => sample.Difference != null) +
-            StatusScalingScenario.Applications.Count(sample => sample.Difference != null) + UnitUpgradeScalingScenario.Samples.Count(sample => sample.Difference != null);
+            StatusScalingScenario.Applications.Count(sample => sample.Difference != null) + UnitUpgradeScalingScenario.Samples.Count(sample => sample.Difference != null) +
+            UnitTurnBeginProbe.Records.Count(record => record.Difference != null);
         internal int Unsupported => stages.Count(stage => !stage.Predicted.Supported) + cardCycles.Unsupported + trainCombat.Unsupported + spawning.Unsupported + turns.Unsupported + actions.Unsupported +
-            HandRemovalScenario.Records.Count(record => !record.Predicted.Supported) + GenerationScenario.Records.Count(record => !record.Predicted.Supported);
+            HandRemovalScenario.Records.Count(record => !record.Predicted.Supported) + GenerationScenario.Records.Count(record => !record.Predicted.Supported) +
+            UnitTurnBeginProbe.Records.Count(record => !record.Predicted.Supported);
         internal int Pending => stages.Count(stage => stage.Actual == null) + cardCycles.Records.Count(record => record.Actual == null) +
             trainCombat.Records.Count(record => record.Actual == null) + spawning.Records.Count(record => record.Actual == null) +
             turns.Records.Count(record => record.Actual == null) + actions.Records.Count(record => record.Actual == null) +
             HandRemovalScenario.Records.Count(record => record.Actual == null) + GenerationScenario.Records.Count(record => record.Actual == null) +
             DamageScalingScenario.Samples.Count(sample => sample.After == null) + StatusScalingScenario.Samples.Count(sample => sample.After == null) +
-            StatusScalingScenario.Applications.Count(sample => sample.After == null) + UnitUpgradeScalingScenario.Samples.Count(sample => sample.After == null);
+            StatusScalingScenario.Applications.Count(sample => sample.After == null) + UnitUpgradeScalingScenario.Samples.Count(sample => sample.After == null) +
+            UnitTurnBeginProbe.Records.Count(record => record.Actual == null);
 
         internal FullBattleTrace(ManualLogSource log)
         {
@@ -332,7 +335,7 @@ namespace MonsterTrain2Poju.Probe
             string path = Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!, "full-battle.json");
             File.WriteAllText(path, JsonConvert.SerializeObject(new
             {
-                Schema = 27,
+                Schema = 28,
                 GameVersion = Application.version,
                 GameModuleMvid = typeof(CardState).Assembly.ManifestModule.ModuleVersionId,
                 NativeWon,
@@ -359,6 +362,7 @@ namespace MonsterTrain2Poju.Probe
                 StatusScaling = StatusScalingScenario.Samples,
                 StatusApplications = StatusScalingScenario.Applications,
                 UnitUpgradeScaling = UnitUpgradeScalingScenario.Samples,
+                UnitTurns = UnitTurnBeginProbe.Records,
                 UnitUpgradeScalingCalibrationContextUnchanged = UnitUpgradeScalingScenario.CalibrationContextUnchanged,
                 UiRngIsolation = UiRngIsolation.Records,
                 Checkpoints = checkpoints

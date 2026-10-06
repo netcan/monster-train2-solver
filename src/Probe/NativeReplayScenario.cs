@@ -405,7 +405,7 @@ namespace MonsterTrain2Poju.Probe
                 modifierScenario == "max-health-spells" || modifierScenario == "max-health-lethal" ||
                 modifierScenario == "numeric-ranges" || modifierScenario == "numeric-ranges-lethal" || modifierScenario == "target-filters" || modifierScenario == "drawing" || modifierScenario == "damage-scaling" || modifierScenario == "dynamic-statistics" ||
                 modifierScenario == "hand-removal" || modifierScenario == "hand-removal-lethal" || modifierScenario == "generation" || modifierScenario == "generation-lethal" || modifierScenario == "status-scaling" || modifierScenario == "unit-upgrade-scaling" || modifierScenario == "unit-trigger-upgrades" ||
-                modifierScenario == "spawn-triggers" || modifierScenario == "spawn-triggers-lethal"))
+                modifierScenario == "spawn-triggers" || modifierScenario == "spawn-triggers-lethal" || modifierScenario == "unit-turn-begin"))
             {
                 if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Numeric fixture must start on deployment turn.");
                 numericModifiersPrepared = true;
@@ -418,6 +418,7 @@ namespace MonsterTrain2Poju.Probe
                 else if (modifierScenario == "status-scaling") StatusScalingScenario.Prepare(managers, log);
                 else if (modifierScenario == "unit-upgrade-scaling") UnitUpgradeScalingScenario.Prepare(managers, log);
                 else if (modifierScenario == "unit-trigger-upgrades") UnitTriggerUpgradeScenario.Prepare(managers, log);
+                else if (modifierScenario == "unit-turn-begin") UnitTurnBeginScenario.Prepare(managers, log);
                 else if (modifierScenario == "spawn-triggers" || modifierScenario == "spawn-triggers-lethal")
                     SpawnTriggerScenario.Prepare(managers, log, modifierScenario == "spawn-triggers-lethal");
                 else if (modifierScenario == "drawing") DrawScenario.Prepare(managers, log);

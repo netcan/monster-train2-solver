@@ -88,6 +88,7 @@ UnitModifierChecks.Run();
 UnitUpgradeScalingChecks.Run();
 UnitTriggerUpgradeChecks.Run();
 SpawnTriggerChecks.Run();
+UnitTurnBeginChecks.Run();
 HandUpgradeChecks.Run();
 HealingChecks.Run();
 GoldRewardChecks.Run();

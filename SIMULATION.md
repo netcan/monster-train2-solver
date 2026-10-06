@@ -1048,6 +1048,44 @@ waves and boss are retained. Other unit-added notifications, enchantments,
 attachments, cardless player spawning and battle-ending summon routing remain
 outside this verified subset and require additional modeling.
 
+Schema 28 executes `OnTurnBegin` once per unit turn, including each relentless
+round. Attack/trigger prevention is evaluated first. Active daze reports its
+prevention before this phase and disables ordinary triggers; its stacks follow
+the captured triggered/end-of-combat removal rules. Ignored-silence triggers can
+still run but do not restore the current turn's attack. Silence and deployment
+rules retain their existing gates. Attack conditions and the multistrike count
+are evaluated after turn triggers, so a zero-attack unit may gain an attack and
+an incapable unit can trigger without attacking. A turn trigger is not repeated
+for each multistrike hit. Empty opposing teams still allow turn triggers.
+
+Pure checks cover zero/incapable attacks, enemy turns, empty targets, dazed and
+silenced actors, ignored-silence exceptions, deployment skips, repeated and
+once-only upgrades, source routing after despawn, preview gold exclusion and
+32 parallel branches. Other attack-prevention statuses and status-trigger
+interactions remain outside the supported status definitions.
+
+`RoomCombatModel.ApplyUnitTurn` also exposes this phase for independent native
+comparison. The probe records the full room before/after each actual unit turn
+and direct-attack target IDs, excluding native preview attacks. These records
+participate in the trace's mismatch, unsupported and pending totals.
+`results/full-battle-unit-turn-begin.json.gz` retains 60 scaling callbacks,
+including 20 restricted skips and 20 positive attack-scaling callbacks, 47 exact
+unit turns and 37 direct attacks. Independent checks compare complete per-turn
+states and attack target sequences, covering 2 zero-attack recoveries,
+1 dazed/ignored turn without an attack, 4 silenced/ignored turns and 11 upgraded
+enemy turns. The native daze stack persists until end-of-combat removal, as its
+captured definition specifies.
+
+All 15 plays, 5 EndTurns, 42 room stages, 9 card cycles, 9 train phases and
+7 spawns match; the natural battle wins with Pyre health 69. Initial/mid-battle
+policies and 16 parallel branches reproduce the terminal result. All 39 prior
+battles and 8 calibrations still pass. The retained JSON is 169,395,775 bytes,
+SHA-256
+`86757ad020525276c197ddfcc8ff05d101ab90652fcb891ee40d362eed0326dd`.
+Capture failures, mismatches, unsupported steps and pending records are zero;
+original profile files are unchanged. Team-turn, attack and turn-entry triggers
+beyond the supported kinds still require additional modeling.
+
 Schema 24 captures ordered `CardTraitScalingAddStatusEffect` descriptors on
 immutable card instances and generated-card rules, plus the native stackability
 of status definitions. A status application's immunity check precedes its source
