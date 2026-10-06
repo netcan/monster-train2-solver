@@ -30,7 +30,7 @@ are copied immutable values; independent child states can run on worker threads.
 | Hand upgrade spells | `HandUpgradeModel` | Native targeted and targetless sequences, current-hand membership, permanent/temporary groups, uniqueness and paid-card exclusion |
 | Basic healing | `HealingModel` and `CardSpellModel` | Native targeted spells, modifier group clamps, maximum health, multiplier/immunity, regen and lifesteal; independent healability checks |
 | Healing triggers | `CombatTrigger` and `RoomCombatModel` | Native repeated/once rewards and silence; zero/full/immune healing, deployment timing, preview flags and child isolation checks |
-| Terminal spell resolution | `BattleActionModel` | Native boss-killing spell skips later played/discard callbacks, retains played cost and prunes temporary-card statistics |
+| Terminal spell resolution | `BattleActionModel` | Settled native boss-killing spell completes played/discard callbacks, restores its card instance and clears the live played cost |
 | Enemy waves and treasure | `EnemySpawningModel` | Native group cache, spawn order, phase, slots and treasure floor selection |
 | EndTurn to next decision | `BattleTurnModel.EndTurn` | Seven native consecutive transitions in each supported fixture |
 | Battle to terminal result | `BattleSimulator.Resolve` and `ResolveNoMoreCards` | Independent card policies and seven-turn chains, mid-battle inputs and 16 parallel branches |
@@ -160,11 +160,12 @@ new maximum. Unique and clone-exclusion rules, attack buffs and parallel parent
 isolation also have focused checks. Statistic-driven scaling upgrade instances,
 their shared identity, and nonempty max-health upgrade maps remain unsupported.
 
-The dynamic fixture finishes when a damage spell kills the Boss. Native battle
-stop skips the later played/discard callbacks, retains the live played-cost
-entry, and refreshes statistic membership from the permanent deck after clearing
-runtime cards. The model reproduces that ordering and rejects terminal card
-resolution when permanent deck membership was not captured.
+The dynamic fixture finishes when a damage spell kills the Boss. Kill-camera
+setup clears runtime cards. The resolving spell still completes its played and
+discard callbacks before the combat loop stops: its card instance returns to
+discard, its play/discard counters advance and its live played cost is cleared.
+Statistics first refresh from the permanent deck, then from the restored owned
+card. The model requires captured permanent deck membership for this sequence.
 
 `results/full-battle-hand-upgrades.json.gz` modifies the owned floor-rearranging
 spell into a targetless hand-upgrade spell. `results/full-battle-targeted-hand-upgrades.json.gz`
@@ -213,7 +214,9 @@ deck membership for terminal card statistics. Older fixtures do not verify
 fields absent from their schema. Schema 9 additionally captures separate card
 upgrade-callback interactions in play definitions. Schema 10 also includes
 deployment restrictions for each unit trigger. Legacy inputs without that
-metadata cannot model OnHeal. A
+metadata cannot model OnHeal. Schema 11 captures effect testing and cancellation
+flags. Schema 12 samples terminal state after `StopCombatLoop` has finished and
+records an assertion that `cardEffectResolving` is false. A
 despawn counter <= 1 is canonicalized to 1 because each value despawns at the
 next application. Native UI previews can decrement that private counter below
 zero. Longer despawn countdowns are rejected by the native definition capture
@@ -307,13 +310,32 @@ failure can stop the rest of the sequence. Unknown target modes, additional targ
 filters, random targets and untested-first effects requiring uncaptured prior
 target history remain unsupported. Rearrangement still requires a drop target.
 
-The current terminal oracle samples the entry to native `StopCombat`. Its
-`StopCombatLoop` subsequently waits for the currently resolving card effect.
-A controlled room-spell run exposed an intermediate terminal snapshot with only
-part of a post-kill damage effect executed. Terminal spells with remaining live
-targets or effective follow-ups are therefore explicitly rejected. Capturing a
-settled terminal state and modeling remaining post-kill effects is separate work;
-this fixture does not establish that behavior. Dead-only follow-ups are supported.
+Legacy oracles sampled the entry to native `StopCombat`, before its
+`StopCombatLoop` waited for the resolving card effect. A controlled room-spell
+run exposed an intermediate terminal snapshot with only part of a post-kill
+damage effect executed. New captures wait for that loop to stop, before
+encounter-complete rewards and out-of-battle cleanup. Terminal spells with
+remaining live effect targets still reject the transition until post-kill effect
+continuation is implemented. Dead-only follow-ups are supported. Terminal spell
+destinations other than discard remain explicitly unsupported.
+
+`results/full-battle-terminal-spells.json.gz` changes the owned rearrangement
+spell to one lethal enemy-room damage effect in the isolated process. Native
+boss and wave definitions remain intact. It verifies a spell-driven victory
+after the resolving effect and played/discard callbacks finish. Its completed
+terminal state includes the spell's restored instance and discard membership,
+updated statistics and cleared played-cost entry. The dynamic and two hand
+upgrade oracles are recaptured at this same settled boundary; their prior
+entry-point terminal snapshots are retained in Git history.
+The lethal-spell fixture matches all 13 plays, four EndTurns, 30 room stages,
+eight card cycles, eight train phases and seven spawns. The independent root
+policy, mid-battle suffix and 16 parallel branches reach the same terminal Pyre
+health 80/80 and complete callback state.
+Focused checks also cover a generated spell absent from the fallback permanent
+deck: its played history remains, while its missing played-statistic entry cannot
+increment; discard creates a new entry for the restored card. This generated
+terminal branch has pure checks and native source evidence, but no dedicated
+native fixture yet.
 
 Run the saved native oracles without the game:
 
@@ -338,6 +360,7 @@ pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy units-spells-and-j
 pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy units-spells-and-junk -Healing
 pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy units-spells-and-junk -HealingTriggers
 pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy units-spells-and-junk -RoomSpells
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy units-spells-and-junk -TerminalSpells
 ```
 
 The runner checks the explicit probe success marker, capture failures, pending

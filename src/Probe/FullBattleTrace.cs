@@ -36,6 +36,8 @@ namespace MonsterTrain2Poju.Probe
         private bool calibrated;
         internal static FullBattleTrace? Active { get; private set; }
         internal bool? NativeWon { get; private set; }
+        private bool? stoppingOutcome;
+        internal bool? TerminalEffectsSettled { get; private set; }
         internal int CaptureFailures { get; private set; }
         internal int Mismatches => stages.Count(stage => stage.Difference != null) + cardCycles.Mismatches + trainCombat.Mismatches + spawning.Mismatches + turns.Mismatches + actions.Mismatches;
         internal int Unsupported => stages.Count(stage => !stage.Predicted.Supported) + cardCycles.Unsupported + trainCombat.Unsupported + spawning.Unsupported + turns.Unsupported + actions.Unsupported;
@@ -270,6 +272,13 @@ namespace MonsterTrain2Poju.Probe
         private void Stop(bool won)
         {
             if (NativeWon != null) return;
+            TerminalEffectsSettled = !(bool)AccessTools.Field(typeof(CombatManager), "cardEffectResolving")
+                .GetValue(AllGameManagers.Instance!.GetCombatManager());
+            if (TerminalEffectsSettled != true)
+            {
+                CaptureFailure(new InvalidOperationException("Terminal capture preceded completion of the resolving card effect."));
+                return;
+            }
             NativeWon = won;
             foreach (StageRecord stage in stages.Where(stage => stage.Actual == null).ToArray()) Complete(stage);
             trainCombat.CompletePending();
@@ -286,10 +295,12 @@ namespace MonsterTrain2Poju.Probe
             string path = Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!, "full-battle.json");
             File.WriteAllText(path, JsonConvert.SerializeObject(new
             {
-                Schema = 11,
+                Schema = 12,
                 GameVersion = Application.version,
                 GameModuleMvid = typeof(CardState).Assembly.ManifestModule.ModuleVersionId,
                 NativeWon,
+                TerminalCaptureBoundary = "AfterStopCombatLoop",
+                TerminalEffectsSettled,
                 Policy = Environment.GetEnvironmentVariable("MT2_PROBE_FULL_BATTLE_POLICY"),
                 ModifierScenario = Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS"),
                 CaptureFailures,
@@ -352,8 +363,23 @@ namespace MonsterTrain2Poju.Probe
 
             private static IEnumerator Stop(IEnumerator native, bool won)
             {
-                Active?.Stop(won);
+                if (Active != null) Active.stoppingOutcome = won;
                 while (native.MoveNext()) yield return native.Current;
+            }
+        }
+
+        [HarmonyPatch(typeof(CombatManager), "StopCombatLoop")]
+        private static class StopLoopPatch
+        {
+            private static void Postfix(ref IEnumerator __result)
+            { if (Active != null) __result = Complete(__result); }
+
+            private static IEnumerator Complete(IEnumerator native)
+            {
+                // Native waits for cardEffectResolving and then stops the combat loop.
+                // Capture before encounter-complete rewards and out-of-battle cleanup.
+                while (native.MoveNext()) yield return native.Current;
+                if (Active?.stoppingOutcome is bool won) Active.Stop(won);
             }
         }
     }

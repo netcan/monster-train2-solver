@@ -93,8 +93,8 @@ namespace MonsterTrain2Poju.Model
                     events.AddRange(applied.Events);
                     if (applied.Outcome == RoomOutcome.BattleWon || applied.Outcome == RoomOutcome.PlayerDefeated)
                     {
-                        // The native StopCombat entry can be sampled while a spell is resolving.
-                        // Settled post-kill continuation is not yet modeled; reject partial states.
+                        // Post-kill effect continuation is not yet modeled.
+                        // Reject live remaining targets instead of returning a partial terminal state.
                         if (targets.UnitIds.Skip(targetIndex + 1).Any(next => state.Units.Any(unit => unit.Id == next)))
                             return Unsupported("Terminal group damage with remaining live targets is not implemented.");
                         error = TerminalTailError(state, effects, index + 1, last, initial, dropPosition);

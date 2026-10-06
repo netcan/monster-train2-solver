@@ -109,6 +109,9 @@ internal static class RoomCombatChecks
             "Native fixture did not reach the end of the battle.");
         Require(fixture.GetProperty("CaptureFailures").GetInt32() == 0 &&
             fixture.GetProperty("Pending").GetInt32() == 0, "Fixture capture was incomplete.");
+        if (fixture.GetProperty("Schema").GetInt32() >= 12)
+            Require(fixture.GetProperty("TerminalCaptureBoundary").GetString() == "AfterStopCombatLoop" &&
+                fixture.GetProperty("TerminalEffectsSettled").GetBoolean(), "Native terminal effects were not settled.");
         int matched = 0, unsupported = 0;
         foreach (JsonElement stage in fixture.GetProperty("Stages").EnumerateArray())
         {

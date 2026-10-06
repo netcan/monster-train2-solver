@@ -10,6 +10,7 @@ param(
     [switch] $Healing,
     [switch] $HealingTriggers,
     [switch] $RoomSpells,
+    [switch] $TerminalSpells,
     [switch] $SkipBuild
 )
 
@@ -42,7 +43,7 @@ $environment = @{
     MT2_PROBE_SCENARIO = 'native-replay'
     MT2_PROBE_FULL_BATTLE = '1'
     MT2_PROBE_FULL_BATTLE_POLICY = $Policy
-    MT2_PROBE_MODIFIERS = $(if ($RoomSpells) { 'room-spells' } elseif ($HealingTriggers) { 'healing-triggers' } elseif ($Healing) { 'healing' } elseif ($TargetedHandUpgrades) { 'targeted-hand-upgrades' } elseif ($HandUpgrades) { 'hand-upgrades' } elseif ($SacrificeUpgrades) { 'sacrifice-upgrades' } elseif ($DynamicUpgrades) { 'dynamic-upgrades' } elseif ($NumericUpgrades) { 'numeric-upgrades' } else { '' })
+    MT2_PROBE_MODIFIERS = $(if ($TerminalSpells) { 'terminal-spells' } elseif ($RoomSpells) { 'room-spells' } elseif ($HealingTriggers) { 'healing-triggers' } elseif ($Healing) { 'healing' } elseif ($TargetedHandUpgrades) { 'targeted-hand-upgrades' } elseif ($HandUpgrades) { 'hand-upgrades' } elseif ($SacrificeUpgrades) { 'sacrifice-upgrades' } elseif ($DynamicUpgrades) { 'dynamic-upgrades' } elseif ($NumericUpgrades) { 'numeric-upgrades' } else { '' })
     MT2_PROBE_DIRECT_BRANCH = '1'
     MT2_PROBE_DEPTH = '100'
     MT2_PROBE_TARGET_TURN = '0'
@@ -66,6 +67,7 @@ $tracePath = Join-Path $profile 'full-battle.json'
 if (-not (Test-Path -LiteralPath $tracePath)) { throw "Missing battle trace; inspect $unityLog" }
 $trace = Get-Content -LiteralPath $tracePath -Raw | ConvertFrom-Json
 $nativePassed = [bool] (Select-String -LiteralPath $unityLog -Pattern 'DEPTH-PASS' -Quiet)
+$terminalSettled = $trace.TerminalCaptureBoundary -eq 'AfterStopCombatLoop' -and $trace.TerminalEffectsSettled -eq $true
 $originalUnchanged = (Get-OriginalSignature) -ceq $originalBefore
 $modifierActions = @($trace.Actions | Where-Object {
     $actionEntry = $_
@@ -124,6 +126,7 @@ if ($RoomSpells) {
     }).Count -gt 0
     $roomSpellCoverage = $multiHeal -and $multiDamage
 }
+$terminalSpellCoverage = -not $TerminalSpells -or @($trace.Actions | Where-Object ActualOutcome -EQ 3).Count -gt 0
 if ($HandUpgrades -or $TargetedHandUpgrades) {
     $modifierCoverage = $modifierCoverage -and @($modifierActions | Where-Object {
         @($_.Actual.Spawn.Train.Context.CardInstances.Permanent.Upgrades | Where-Object AssetKey -Like 'PojuHand*').Count -gt 0
@@ -162,10 +165,12 @@ $result = [pscustomobject]@{
     HealingCoverage = $healingCoverage
     OnHealCoverage = $onHealCoverage
     RoomSpellCoverage = $roomSpellCoverage
+    TerminalEffectsSettled = $terminalSettled
+    TerminalSpellCoverage = $terminalSpellCoverage
     Trace = $tracePath
 }
 $result | ConvertTo-Json
-if ($null -eq $trace.NativeWon -or $process.ExitCode -ne 0 -or -not $nativePassed -or -not $originalUnchanged -or -not $modifierCoverage -or -not $healingCoverage -or -not $onHealCoverage -or -not $roomSpellCoverage -or
+if ($null -eq $trace.NativeWon -or $process.ExitCode -ne 0 -or -not $nativePassed -or -not $originalUnchanged -or -not $modifierCoverage -or -not $healingCoverage -or -not $onHealCoverage -or -not $roomSpellCoverage -or -not $terminalSettled -or -not $terminalSpellCoverage -or
     $trace.CaptureFailures -ne 0 -or $trace.Mismatches -ne 0 -or $trace.Unsupported -ne 0 -or $trace.Pending -ne 0) {
     throw "Full battle differential probe failed; inspect $tracePath and $unityLog"
 }

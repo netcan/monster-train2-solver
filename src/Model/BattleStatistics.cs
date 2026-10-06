@@ -105,10 +105,16 @@ namespace MonsterTrain2Poju.Model
         }
 
         public BattleStatistics TrackCards(IEnumerable<int> cards) => Copy(tracked: TrackedCards.Concat(cards).Distinct().ToArray());
+        public BattleStatistics RecordPlayedCard(int cardId) => Copy(played: CardsPlayedThisTurn.Concat(new[] { cardId }).ToArray());
         public BattleStatistics WithPlayedCost(int cardId, int? cost) => Copy(costs: PlayedCosts.Where(value => value.CardId != cardId)
             .Concat(cost == null ? Array.Empty<CardPlayedCost>() : new[] { new CardPlayedCost(cardId, cost.Value) }).ToArray());
         public BattleStatistics RefreshDeckAfterCardTerminal() => DeckCards == null ? this :
             Copy(values: Values.Where(value => DeckCards.Contains(value.CardId)).ToArray(), tracked: DeckCards);
+        public BattleStatistics RefreshOwnedCards(IEnumerable<int> cards)
+        {
+            int[] owned = cards.Distinct().ToArray();
+            return Copy(values: Values.Where(value => owned.Contains(value.CardId)).ToArray(), tracked: owned);
+        }
 
         public BattleStatistics Spawn(int roomIndex, IReadOnlyList<string> subtypes) => Copy(
             turnFloors: Add(SpawnedThisTurnPerFloor, new[] { roomIndex.ToString(System.Globalization.CultureInfo.InvariantCulture) }),

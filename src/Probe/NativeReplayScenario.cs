@@ -399,11 +399,13 @@ namespace MonsterTrain2Poju.Probe
             string? modifierScenario = Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS");
             if (fullBattle && !numericModifiersPrepared && (modifierScenario == "numeric-upgrades" || modifierScenario == "dynamic-upgrades" ||
                 modifierScenario == "sacrifice-upgrades" || modifierScenario == "hand-upgrades" || modifierScenario == "targeted-hand-upgrades" ||
-                modifierScenario == "healing" || modifierScenario == "healing-triggers" || modifierScenario == "room-spells"))
+                modifierScenario == "healing" || modifierScenario == "healing-triggers" || modifierScenario == "room-spells" ||
+                modifierScenario == "terminal-spells"))
             {
                 if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Numeric fixture must start on deployment turn.");
                 numericModifiersPrepared = true;
-                if (modifierScenario == "room-spells") RoomSpellScenario.Prepare(managers, log);
+                if (modifierScenario == "terminal-spells") TerminalSpellScenario.Prepare(managers, log);
+                else if (modifierScenario == "room-spells") RoomSpellScenario.Prepare(managers, log);
                 else if (modifierScenario == "healing" || modifierScenario == "healing-triggers")
                     HealingScenario.Prepare(managers, log, modifierScenario == "healing-triggers");
                 else if (modifierScenario == "hand-upgrades" || modifierScenario == "targeted-hand-upgrades")

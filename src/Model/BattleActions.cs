@@ -121,11 +121,11 @@ namespace MonsterTrain2Poju.Model
             if (card == null) return Illegal("The selected card instance is not in hand.");
             CardPlayRule? rule = source.PlayRules.Cards.FirstOrDefault(item => item.DataId == card.DataId);
             if (rule == null) return Unsupported("Missing play definition for " + card.DataId);
+            CardInstanceState? playingInstance = context.CardInstances?.FirstOrDefault(item => item.InstanceId == card.InstanceId);
             if (context.CardInstances != null)
             {
-                CardInstanceState? instance = context.CardInstances.FirstOrDefault(item => item.InstanceId == card.InstanceId);
-                if (instance == null) return Unsupported("Missing card instance modifiers.");
-                rule = CardModifierModel.Resolve(rule, instance);
+                if (playingInstance == null) return Unsupported("Missing card instance modifiers.");
+                rule = CardModifierModel.Resolve(rule, playingInstance);
             }
             if (rule.ExternalInteractions.Count > 0) return Unsupported(string.Join("; ", rule.ExternalInteractions));
             if (rule.Cost < 0) return Unsupported("Variable or negative card costs are not implemented.");
@@ -216,7 +216,8 @@ namespace MonsterTrain2Poju.Model
                 }
             }
             if (terminal) piles = piles.Select(pile => new CardPileState(pile.Name, Array.Empty<CardToken>())).ToArray();
-            else if (rule.Destination == "Discard") discard.Add(card);
+            if (terminal && rule.Destination != "Discard") return Unsupported("Terminal spell routing outside discard is not validated.");
+            if (rule.Destination == "Discard") discard.Add(card);
             else
             {
                 CardPileState? destination = piles.FirstOrDefault(pile => pile.Name == rule.Destination);
@@ -227,14 +228,21 @@ namespace MonsterTrain2Poju.Model
             }
             if (terminal && context.Statistics != null && context.Statistics.DeckCards == null)
                 return Unsupported("Terminal card resolution requires permanent deck membership.");
-            BattleStatistics? statistics = terminal ? context.Statistics?.RefreshDeckAfterCardTerminal() :
-                context.Statistics?.Increment(card.InstanceId, "TimesPlayed").Increment(card.InstanceId, "TimesDiscarded")
-                    .WithPlayedCost(card.InstanceId, null);
+            // After ClearCards the played callback refreshes statistics from the permanent deck.
+            // Discard then restores the resolving card, and its statistic refresh keeps only that card.
+            BattleStatistics? statistics = terminal ? context.Statistics?.RefreshDeckAfterCardTerminal() : context.Statistics;
+            // A generated spell absent from the fallback deck still enters played history;
+            // native IncrementStat cannot increment its missing dictionary entry.
+            statistics = terminal && statistics != null && !statistics.TrackedCards.Contains(card.InstanceId)
+                ? statistics.RecordPlayedCard(card.InstanceId) : statistics?.Increment(card.InstanceId, "TimesPlayed");
+            if (terminal) statistics = statistics?.RefreshOwnedCards(new[] { card.InstanceId });
+            statistics = statistics?.Increment(card.InstanceId, "TimesDiscarded").WithPlayedCost(card.InstanceId, null);
             if (!terminal && rule.Destination == "Exhausted") statistics = statistics?.Increment(card.InstanceId, "TimesExhausted");
             context = new CombatContext(new CardCycleState(hand, context.Cards.Draw, discard, context.Cards.Rng,
                 context.Cards.DrawModifier, context.Cards.ExternalInteractions), context.BattleRng,
                 context.Gold, context.NextCardId, context.MaxHandSize, context.StatusRules, statistics,
-                terminal ? context.CardInstances : context.CardInstances?.Select(instance => instance.InstanceId == card.InstanceId
+                terminal ? playingInstance == null ? context.CardInstances : new[] { playingInstance.OnDiscard(true, rule.Cost) } :
+                context.CardInstances?.Select(instance => instance.InstanceId == card.InstanceId
                     ? instance.OnDiscard(true, rule.Cost) : instance).ToArray());
             RoomCombatState[] rooms = train.Rooms.Select(room =>
             {

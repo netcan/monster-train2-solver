@@ -74,7 +74,11 @@ internal static class BattleActionChecks
             if (!result.Supported) { unsupported++; continue; }
             BattleTurnState actual = entry.GetProperty("Actual").Deserialize<BattleTurnState>(ModelJson.Options)!;
             if (entry.TryGetProperty("ActualOutcome", out JsonElement actionOutcome))
+            {
                 Require(result.Outcome == (RoomOutcome)actionOutcome.GetInt32(), "Native card action outcome differs.");
+                if (actionOutcome.GetInt32() == (int)RoomOutcome.BattleWon && fixture.GetProperty("Schema").GetInt32() >= 12)
+                    TerminalSpellChecks.Native(entry);
+            }
             string? difference = ModelJson.Difference(BattleTurnChecks.Comparable(result.State!), BattleTurnChecks.Comparable(actual));
             Require(difference == null, "Native card action differs at index " + entry.GetProperty("Index") + ": " + difference);
             supported++;
