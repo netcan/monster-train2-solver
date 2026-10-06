@@ -76,11 +76,14 @@ Console.WriteLine("MODEL-CHECKS PASS: independent branches, card identity, and u
 CardCycleChecks.Run();
 CombatEffectChecks.Run();
 BattleStatisticsChecks.Run();
+CardModifierChecks.Run();
 EnemySpawningChecks.Run();
 BattleActionChecks.Run();
 CardSpellChecks.Run();
 TrainCombatChecks.Run();
 RoomCombatChecks.Run(args.Where(path => !path.Contains("calibration", StringComparison.OrdinalIgnoreCase)).ToArray());
+foreach (string path in args.Where(path => path.Contains("card-modifier-calibration", StringComparison.OrdinalIgnoreCase)))
+    CardModifierChecks.Native(path);
 foreach (string path in args.Where(path => path.Contains("rng-calibration", StringComparison.OrdinalIgnoreCase)))
     RngChecks.Run(path);
 

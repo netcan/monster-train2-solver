@@ -149,12 +149,13 @@ namespace MonsterTrain2Poju.Probe
                 managers.GetCombatManager()!, cards);
             uint[] draw = RngCalibration.Words(RandomManager.GetState(RngId.CardDraw));
             uint[] battle = RngCalibration.Words(RandomManager.GetState(RngId.Battle));
+            CardInstanceState[] instances = CardModifierProbe.Capture(cards, CardId);
             BattleStatistics statistics = BattleStatisticsProbe.Capture(managers.GetCardStatistics(), CardId);
             return new CombatContext(new CardCycleState(state.Hand, state.Draw, state.Discard,
                 new UnityRng(draw[0], draw[1], draw[2], draw[3]), state.DrawModifier, Array.Empty<string>()),
                 new UnityRng(battle[0], battle[1], battle[2], battle[3]), state.Gold, projection.NextCardId,
                 cards.GetMaxHandSize(), new[] { "armor", "valor", "pyregel" }.Select(id => BattleActionProbe.Status(id, 1)).ToArray(),
-                statistics);
+                statistics, instances);
         }
 
         private static CombatTrigger[] CaptureTriggers(CharacterState unit, List<string> interactions)
@@ -278,7 +279,7 @@ namespace MonsterTrain2Poju.Probe
             string path = Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!, "full-battle.json");
             File.WriteAllText(path, JsonConvert.SerializeObject(new
             {
-                Schema = 5,
+                Schema = 6,
                 GameVersion = Application.version,
                 GameModuleMvid = typeof(CardState).Assembly.ManifestModule.ModuleVersionId,
                 NativeWon,

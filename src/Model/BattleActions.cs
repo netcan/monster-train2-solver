@@ -108,6 +108,12 @@ namespace MonsterTrain2Poju.Model
             if (card == null) return Illegal("The selected card instance is not in hand.");
             CardPlayRule? rule = source.PlayRules.Cards.FirstOrDefault(item => item.DataId == card.DataId);
             if (rule == null) return Unsupported("Missing play definition for " + card.DataId);
+            if (context.CardInstances != null)
+            {
+                CardInstanceState? instance = context.CardInstances.FirstOrDefault(item => item.InstanceId == card.InstanceId);
+                if (instance == null) return Unsupported("Missing card instance modifiers.");
+                rule = CardModifierModel.Resolve(rule, instance);
+            }
             if (rule.ExternalInteractions.Count > 0) return Unsupported(string.Join("; ", rule.ExternalInteractions));
             if (rule.Cost < 0) return Unsupported("Variable or negative card costs are not implemented.");
             if (source.Energy < rule.Cost) return Illegal("Insufficient energy.");

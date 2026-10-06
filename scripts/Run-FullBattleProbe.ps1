@@ -2,6 +2,7 @@
 param(
     [ValidateSet('no-cards', 'steward-once', 'units-and-junk', 'units-spells-and-junk')]
     [string] $Policy = 'steward-once',
+    [switch] $NumericUpgrades,
     [switch] $SkipBuild
 )
 
@@ -34,6 +35,7 @@ $environment = @{
     MT2_PROBE_SCENARIO = 'native-replay'
     MT2_PROBE_FULL_BATTLE = '1'
     MT2_PROBE_FULL_BATTLE_POLICY = $Policy
+    MT2_PROBE_MODIFIERS = $(if ($NumericUpgrades) { 'numeric-upgrades' } else { '' })
     MT2_PROBE_DIRECT_BRANCH = '1'
     MT2_PROBE_DEPTH = '100'
     MT2_PROBE_TARGET_TURN = '0'

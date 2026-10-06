@@ -23,6 +23,7 @@ are copied immutable values; independent child states can run on worker threads.
 | Enemy movement phase | `TrainCombatModel.Ascend` | Native movement and immediate Pyre combat, including the terminal boss fight |
 | Unit effects | `CombatTrigger` and `CombatContext` | Generated cards, Battle RNG, treasure escape; gold and once-only trigger checks |
 | Card statistics and preview | `BattleStatistics` and `BattlePreviewModel` | Native per-card/Any counters, turn rollover, spawn subtypes, death/exhaust attribution and preview damage statistic |
+| Card instance modifiers | `CardModifierModel` | Permanent/temporary ordered numeric upgrades, unit starting statuses, discard removal, play history and 256 native scalar calculations |
 | Enemy waves and treasure | `EnemySpawningModel` | Native group cache, spawn order, phase, slots and treasure floor selection |
 | EndTurn to next decision | `BattleTurnModel.EndTurn` | Seven native consecutive transitions in each supported fixture |
 | Battle to terminal result | `BattleSimulator.Resolve` and `ResolveNoMoreCards` | Independent card policies and seven-turn chains, mid-battle inputs and 16 parallel branches |
@@ -96,6 +97,33 @@ native probe now waits for PreviewMode to end and pending battle preview changes
 to clear before capturing a decision or choosing its next action. Earlier gates
 could sample immediately after a spell, while that statistic was still stale.
 
+`results/full-battle-numeric-upgrades.json.gz` adds schema 6 card instance state.
+An isolated native scenario gives two otherwise identical Stewards different
+permanent and temporary upgrades, and changes one damage spell. Permanent scalar
+offsets remain distinct from ordered upgrade lists; temporary upgrades marked
+RemoveOnDiscard disappear on play or hand discard, while temporary offsets
+persist. Spawned units retain the stats and armor/spikes they received before
+the source card's temporary upgrade was removed. Every card retains its own
+last played cost, forge history and scenario play count across piles.
+
+The native policy wins at Pyre 80/80 after 19 plays and six EndTurns. All 51 room
+stages, 11 card cycles, 11 train phases and nine spawns match, with zero capture
+failures, unsupported stages or differences. The independent root-only policy,
+mid-battle suffix and 16 parallel branches reproduce the full state including
+card statistics and modifiers. The compressed fixture preserves the native
+trace bytes unchanged.
+
+`results/card-modifier-calibration.json.gz` contains 256 native calculations
+across all eight scalar fields and both floor modes. The native calculation
+applies offsets before upgrade lists, immediately clamps additions whose
+magnitude is at least 99, and clamps once more at the end. Unit stats and cost
+combine the permanent and temporary groups in one calculation; spell damage
+clamps each group separately. The model preserves these differences. Trait,
+trigger and ability upgrades, merged/boxed cards, grafted equipment, persistent
+health remain explicitly unsupported.
+Generated cards with starting upgrades are rejected until their initialization
+is modeled.
+
 `BattleActionModel` checks instance identity, energy, enabled floors, Pyre exclusion,
 summon capacity and slots, and insertion position. Child states carry spawned
 unit/card relationships and all piles into EndTurn. Illegal plays and unsupported
@@ -109,7 +137,9 @@ stream except Chatter and NonDeterministic; hand/draw/discard/standby/exhausted/
 purged/eaten/buffer piles; energy, gold, forge points, hoard, and moon phase.
 Schema 5 additionally captures unit subtypes, card statistics and whether battle
 previews are enabled. Older fixtures omit statistics and do not verify them.
-A despawn counter <= 1 is canonicalized to 1 because each value despawns at the
+Schema 6 also captures every owned card's permanent/temporary modifiers
+and instance play history; older fixtures do not verify those fields. A
+despawn counter <= 1 is canonicalized to 1 because each value despawns at the
 next application. Native UI previews can decrement that private counter below
 zero. Longer despawn countdowns are rejected by the native definition capture
 until preview effects are modeled.
@@ -143,6 +173,7 @@ pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy steward-once
 pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy no-cards
 pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy units-and-junk
 pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy units-spells-and-junk
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy units-spells-and-junk -NumericUpgrades
 ```
 
 The runner checks the explicit probe success marker, capture failures, pending

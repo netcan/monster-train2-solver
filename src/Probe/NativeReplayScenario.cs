@@ -67,6 +67,7 @@ namespace MonsterTrain2Poju.Probe
         private bool roomSelectionRequested;
         private bool playbackCallbackReceived;
         private bool playbackSucceeded;
+        private bool numericModifiersPrepared;
         private string playbackDescription = string.Empty;
         private List<string>? sourceEntries;
         private PlayCardAction? pendingPlay;
@@ -393,6 +394,13 @@ namespace MonsterTrain2Poju.Probe
             }
             if (stage != Stage.Battle || !Ready(managers, save, combat, cards))
             {
+                return;
+            }
+            if (fullBattle && !numericModifiersPrepared && Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == "numeric-upgrades")
+            {
+                if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Numeric fixture must start on deployment turn.");
+                numericModifiersPrepared = true;
+                NumericUpgradeScenario.Prepare(managers, log);
                 return;
             }
             if (pass == Pass.Source && sourceSignatures.Count == 0)

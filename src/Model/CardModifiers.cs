@@ -58,7 +58,15 @@ namespace MonsterTrain2Poju.Model
         public static CardModifiers Empty() => new CardModifiers(new CardStatModifier(), Array.Empty<CardUpgradeModifier>(), 0, Array.Empty<string>());
         internal CardModifiers OnDiscard()
         {
-            return this;
+            var upgrades = Upgrades.ToList();
+            for (int index = upgrades.Count - 1; index >= 0; index--)
+                if (upgrades[index].RemoveOnDiscard)
+                {
+                    // Native RemoveUpgrade(state) removes the first matching nonempty data ID.
+                    int removed = upgrades[index].DataId.Length == 0 ? index : upgrades.FindIndex(upgrade => upgrade.DataId == upgrades[index].DataId);
+                    upgrades.RemoveAt(removed);
+                }
+            return new CardModifiers(Offsets, upgrades, PersistentHealth, ExternalInteractions);
         }
     }
 
@@ -86,13 +94,65 @@ namespace MonsterTrain2Poju.Model
 
     public static class CardModifierModel
     {
-        internal static string? UnsupportedReason(CardInstanceState instance) =>
-            instance.Permanent.Upgrades.Count == 0 && instance.Temporary.Upgrades.Count == 0 &&
-            instance.Permanent.PersistentHealth == 0 && instance.Temporary.PersistentHealth == 0 &&
-            instance.ExternalInteractions.Count == 0 && instance.Permanent.ExternalInteractions.Count == 0 &&
-            instance.Temporary.ExternalInteractions.Count == 0 &&
-            new[] { instance.Permanent, instance.Temporary }.All(modifier =>
-                new[] { "Damage", "Health", "Cost", "Heal", "Size", "XCost", "EquipmentLimit", "UpgradeSlotCount" }
-                    .All(stat => modifier.Offsets.Value(stat) == 0)) ? null : "Card instance upgrades are not implemented.";
+        internal static string? UnsupportedReason(CardInstanceState instance)
+        {
+            var interactions = instance.ExternalInteractions.Concat(instance.Permanent.ExternalInteractions)
+                .Concat(instance.Temporary.ExternalInteractions).Concat(instance.Permanent.Upgrades.Concat(instance.Temporary.Upgrades)
+                    .SelectMany(upgrade => upgrade.ExternalInteractions)).ToList();
+            if (instance.Permanent.PersistentHealth != 0 || instance.Temporary.PersistentHealth != 0) interactions.Add("Persistent card health");
+            return interactions.Count == 0 ? null : string.Join("; ", interactions.Distinct());
+        }
+        public static int UpgradedStat(int baseValue, string stat, bool enforceFloor, params CardModifiers[] modifiers)
+        {
+            if (!new[] { "Damage", "Health", "Cost", "Heal", "Size", "XCost", "EquipmentLimit", "UpgradeSlotCount" }.Contains(stat))
+                throw new ArgumentException("Unknown card statistic.", nameof(stat));
+            int floor = enforceFloor ? stat == "Health" || stat == "Size" ? 1 :
+                stat == "Damage" || stat == "Cost" || stat == "Heal" ? 0 : int.MinValue : int.MinValue;
+            int ceiling = stat == "Cost" ? 99 : stat == "Size" ? 6 : int.MaxValue;
+            int value = Clamp(baseValue);
+            foreach (CardModifiers modifier in modifiers)
+            foreach (int addition in new[] { modifier.Offsets.Value(stat) }.Concat(modifier.Upgrades.Select(upgrade => upgrade.Stats.Value(stat))))
+                if (addition != 0) value = Math.Abs((long)addition) >= 99 ? Clamp(checked(value + addition)) : checked(value + addition);
+            return Clamp(value);
+            int Clamp(int number) => Math.Max(floor, Math.Min(ceiling, number));
+        }
+
+        public static CardPlayRule Resolve(CardPlayRule rule, CardInstanceState instance)
+        {
+            var interactions = rule.ExternalInteractions.Concat(instance.ExternalInteractions)
+                .Concat(instance.Permanent.ExternalInteractions).Concat(instance.Temporary.ExternalInteractions)
+                .Concat(instance.Permanent.Upgrades.Concat(instance.Temporary.Upgrades).SelectMany(upgrade => upgrade.ExternalInteractions)).ToList();
+            if (rule.DataId != instance.DataId) interactions.Add("Card instance definition differs.");
+            if (instance.Permanent.PersistentHealth != 0 || instance.Temporary.PersistentHealth != 0) interactions.Add("Persistent card health");
+            CardModifiers[] modifiers = { instance.Permanent, instance.Temporary };
+            CombatUnit? unit = rule.SpawnUnit;
+            if (unit != null)
+            {
+                var statuses = unit.Statuses.ToDictionary(status => status.Id);
+                foreach (CombatStatus added in modifiers.SelectMany(modifier => modifier.Upgrades).SelectMany(upgrade => upgrade.Statuses))
+                {
+                    if (unit.StatusImmunities.Contains(added.Id)) continue;
+                    statuses.TryGetValue(added.Id, out CombatStatus? existing);
+                    int count = Math.Min(9999, checked((existing?.Stacks ?? 0) + added.Stacks));
+                    if (count <= 0) statuses.Remove(added.Id);
+                    else statuses[added.Id] = (existing ?? added).WithStacks(count);
+                }
+                int health = UpgradedStat(unit.MaxHealth, "Health", true, modifiers);
+                UnitModifiers? original = unit.Modifiers;
+                UnitModifiers? unitModifiers = original == null ? null : new UnitModifiers(
+                    UpgradedStat(original.AttackDamage, "Damage", true, modifiers), original.AttackDamageAdded, original.DamageBuff,
+                    UpgradedStat(original.RawSize, "Size", false, modifiers),
+                    Math.Max(1, Math.Min(4, UpgradedStat(original.EquipmentLimit, "EquipmentLimit", true, modifiers))),
+                    original.CanBeHealed, original.IsClone, original.Upgrades, original.HealthFromUpgrades, original.SpawnerMatchesDefinition);
+                unit = new CombatUnit(unit.Id, unit.AssetKey, unit.Team, UpgradedStat(unit.BaseAttack, "Damage", true, modifiers),
+                    health, health, unit.CanAttack, unit.IsPyre, unit.EndsBattleOnDeath, statuses.Values.ToArray(), unit.Triggers,
+                    unit.SpawnerCardId, Math.Max(1, UpgradedStat(unit.Size, "Size", false, modifiers)), unit.StatusImmunities, unit.Subtypes, unitModifiers);
+            }
+            CardActionEffect[] effects = rule.Effects.Select(effect => new CardActionEffect(effect.Type, effect.Target,
+                effect.Type == "Damage" ? UpgradedStat(UpgradedStat(effect.Value, "Damage", true, instance.Permanent),
+                    "Damage", true, instance.Temporary) : effect.Value, effect.AllowEnemy, effect.AllowPlayer, effect.Statuses, effect.Upgrade, effect.Lifetime)).ToArray();
+            return new CardPlayRule(rule.DataId, rule.AssetKey, UpgradedStat(rule.Cost, "Cost", true, modifiers), rule.Effect,
+                rule.Destination, unit, interactions.Distinct().OrderBy(value => value, StringComparer.Ordinal).ToArray(), effects);
+        }
     }
 }

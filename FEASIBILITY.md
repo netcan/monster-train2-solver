@@ -239,6 +239,19 @@ previews affect the native last-attack statistic; the model reproduces that
 effect on copies, and the probe waits for a completed preview before capturing
 a quiet decision. Other statistic-driven mechanics remain outside this fixture.
 
+`results/full-battle-numeric-upgrades.json.gz` includes every owned card's ordered
+permanent/temporary modifiers and play history. Different upgrades on two
+identical Stewards and one damage spell match all 19 plays, six EndTurns, 51 room
+stages, 11 card cycles, 11 train phases and nine spawns, finishing at Pyre 80/80.
+The root-only independent policy, mid-battle suffix and 16 parallel branches
+also pass with zero unsupported stages or differences. Temporary upgrades
+marked RemoveOnDiscard are removed from their source card after play or hand
+discard, while already spawned units keep the applied stats and statuses.
+The separate modifier calibration covers 256 native calculations across eight
+scalar fields, including ordered immediate clamps and permanent/temporary group
+differences. Trait/trigger upgrades, abilities, persistent health and equipment
+interactions remain outside this fixture.
+
 ## Limits
 
 - Rollback uses full scene reload and replay. It is not an in-memory clone,
