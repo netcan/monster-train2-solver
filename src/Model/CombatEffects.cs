@@ -42,7 +42,8 @@ namespace MonsterTrain2Poju.Model
             // Every remaining count <= 1 despawns on the next application. Native UI previews can
             // decrement the private counter below zero; canonicalize only those equivalent states.
             Counter = type == "CardEffectDespawnCharacter" ? Math.Max(1, counter) : counter;
-            Destination = destination; Count = count;
+            // Only generated-card effects interpret this parameter as a pile destination.
+            Destination = type == "CardEffectAddBattleCard" ? destination : ""; Count = count;
             CardPool = Array.AsReadOnly(cardPool.ToArray()); SkipDuplicateInHand = skipDuplicateInHand;
         }
         internal CombatEffect WithCounter(int counter) => new CombatEffect(Type, Value, counter,

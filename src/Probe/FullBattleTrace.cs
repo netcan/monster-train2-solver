@@ -67,6 +67,7 @@ namespace MonsterTrain2Poju.Probe
             if (!calibrated)
             {
                 RngCalibration.Capture();
+                GoldRewardCalibration.Capture(save);
                 RuleCatalogProbe.Capture(managers);
                 calibrated = true;
             }
@@ -174,8 +175,12 @@ namespace MonsterTrain2Poju.Probe
                         counter = (int)AccessTools.Field(typeof(CardEffectDespawnCharacter), "despawnCounter")
                             .GetValue(effect.GetCardEffect());
                     if (type == "CardEffectRewardGold")
+                    {
                         value = (int)AccessTools.Field(typeof(CardEffectRewardGold), "unmodifiedGoldReward")
                             .GetValue(effect.GetCardEffect());
+                        if (AllGameManagers.Instance!.GetSaveManager().GetAdjustedGoldAmount(value, isReward: true) != GoldRewardModel.Adjust(value))
+                            interactions.Add("Modified gold reward rules");
+                    }
                     var pool = new List<CardData>();
                     if (type == "CardEffectAddBattleCard")
                     {

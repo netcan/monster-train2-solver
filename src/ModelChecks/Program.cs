@@ -81,6 +81,7 @@ TerminalSpellChecks.Run();
 UnitModifierChecks.Run();
 HandUpgradeChecks.Run();
 HealingChecks.Run();
+GoldRewardChecks.Run();
 EnemySpawningChecks.Run();
 BattleActionChecks.Run();
 CardSpellChecks.Run();
@@ -90,6 +91,8 @@ foreach (string path in args.Where(path => path.Contains("card-modifier-calibrat
     CardModifierChecks.Native(path);
 foreach (string path in args.Where(path => path.Contains("rng-calibration", StringComparison.OrdinalIgnoreCase)))
     RngChecks.Run(path);
+foreach (string path in args.Where(path => path.Contains("gold-reward-calibration", StringComparison.OrdinalIgnoreCase)))
+    GoldRewardChecks.Native(path);
 
 static void Check(bool condition, string message)
 {

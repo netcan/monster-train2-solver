@@ -89,6 +89,9 @@ namespace MonsterTrain2Poju.Probe
                 CombatEffect[] effects = trigger.GetEffects().Select(effect =>
                 {
                     if (effect.GetUseIntRange()) interactions.Add("Spawned random effect initialization");
+                    if (effect.GetEffectStateName() == "CardEffectRewardGold" &&
+                        AllGameManagers.Instance!.GetSaveManager().GetAdjustedGoldAmount(effect.GetParamInt(), isReward: true) != GoldRewardModel.Adjust(effect.GetParamInt()))
+                        interactions.Add("Spawned modified gold reward rules");
                     if (effect.GetEffectStateName() == "CardEffectDespawnCharacter" && effect.GetParamInt() > 1)
                         interactions.Add("Native preview mutation of a delayed despawn counter");
                     if (effect.GetCopyModifiersFromSource() || effect.GetFilterBasedOnMainSubClass() ||

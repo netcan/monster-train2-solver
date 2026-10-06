@@ -528,9 +528,11 @@ namespace MonsterTrain2Poju.Model
                             }
                             else if (effect.Type == "CardEffectRewardGold")
                             {
+                                if (source.Preview) continue;
+                                int reward = GoldRewardModel.Adjust(effect.Value);
                                 context = new CombatContext(context!.Cards, context.BattleRng,
-                                    Math.Max(0, checked(context.Gold + effect.Value)), context.NextCardId, context.MaxHandSize, context.StatusRules, context.Statistics, context.CardInstances);
-                                Emit("Gold", unit, unit, effect.Value);
+                                    Math.Max(0, checked(context.Gold + reward)), context.NextCardId, context.MaxHandSize, context.StatusRules, context.Statistics, context.CardInstances);
+                                Emit("Gold", unit, unit, reward);
                             }
                             else if (effect.Type == "CardEffectAddBattleCard") AddCards(unit, effect);
                         }

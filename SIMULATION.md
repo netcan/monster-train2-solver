@@ -22,6 +22,7 @@ are copied immutable values; independent child states can run on worker threads.
 | Train combat phase | `TrainCombatModel.ResolveCombat` | Top-to-bottom native phase comparison |
 | Enemy movement phase | `TrainCombatModel.Ascend` | Native movement and immediate Pyre combat, including the terminal boss fight |
 | Unit effects | `CombatTrigger` and `CombatContext` | Generated cards, Battle RNG, treasure escape; gold and once-only trigger checks |
+| Gold rewards | `GoldRewardModel` | 2,200 native calculations, reward minimums, integer/float boundaries, ties to even and preview exclusion |
 | Card statistics and preview | `BattleStatistics` and `BattlePreviewModel` | Native per-card/Any counters, turn rollover, spawn subtypes, death/exhaust attribution and preview damage statistic |
 | Card instance modifiers | `CardModifierModel` | Permanent/temporary ordered numeric upgrades, unit starting statuses, discard removal, play history and 256 native scalar calculations |
 | Runtime unit upgrades | `UnitModifierModel` | Native permanent, battle and unit-death lifetimes, duplicate removal, unique upgrades, restricted size, unhealed health and lethal max-health loss |
@@ -227,6 +228,16 @@ including signed bounds, the full signed integer span, equal bounds, and reverse
 bounds. Sampling restored Unity's process RNG and did not advance the game's
 HadesRNG streams. Integer compatibility is verified for this installed build;
 floating-point draws are not implemented yet.
+
+`results/gold-reward-calibration.json.gz` captures 2,200 calls to the native
+gold adjustment function. It covers reward and ordinary balance changes, negative
+and zero values, four rounding increments and single-precision boundaries.
+For a supported battle's standard rules, positive rewards are floored through
+single precision, rounded to the nearest multiple of five with ties to even,
+and raised to at least five. Ordinary balance changes are unchanged. Preview
+effects leave gold unchanged. Unit effect values retain their unadjusted reward;
+only generated-card effects retain a pile destination. Relic and mutator reward
+modifiers remain explicitly unsupported.
 
 Run the saved native oracles without the game:
 
