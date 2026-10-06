@@ -4,6 +4,15 @@ using System.Linq;
 
 namespace MonsterTrain2Poju.Model
 {
+    public sealed class CardEffectTests
+    {
+        public bool ShouldTest { get; }
+        public bool FailToCast { get; }
+        public bool CancelSubsequent { get; }
+        public bool StrictTargets { get; }
+        public CardEffectTests(bool shouldTest, bool failToCast, bool cancelSubsequent, bool strictTargets)
+        { ShouldTest = shouldTest; FailToCast = failToCast; CancelSubsequent = cancelSubsequent; StrictTargets = strictTargets; }
+    }
     public sealed class CardActionEffect
     {
         public string Type { get; }
@@ -14,10 +23,11 @@ namespace MonsterTrain2Poju.Model
         public IReadOnlyList<CombatStatus> Statuses { get; }
         public CardUpgradeModifier? Upgrade { get; }
         public string Lifetime { get; }
+        public CardEffectTests? Tests { get; }
         public CardActionEffect(string type, string target, int value, bool allowEnemy, bool allowPlayer, IReadOnlyList<CombatStatus> statuses,
-            CardUpgradeModifier? upgrade = null, string lifetime = "")
+            CardUpgradeModifier? upgrade = null, string lifetime = "", CardEffectTests? tests = null)
         { Type = type; Target = target; Value = value; AllowEnemy = allowEnemy; AllowPlayer = allowPlayer; Statuses = Array.AsReadOnly(statuses.ToArray());
-            Upgrade = upgrade; Lifetime = lifetime; }
+            Upgrade = upgrade; Lifetime = lifetime; Tests = tests; }
     }
     public sealed class RoomPlayRule
     {
@@ -175,7 +185,10 @@ namespace MonsterTrain2Poju.Model
                     if (targeted != null && (victim.Team == CombatTeam.Enemy && !targeted.AllowEnemy ||
                         victim.Team == CombatTeam.Player && !targeted.AllowPlayer)) return Illegal("The spell excludes the target team.");
                 }
-                else if (action.TargetUnitId != 0) return Illegal("A hand spell does not take a unit target.");
+                else if (action.TargetUnitId != 0) return Illegal("A room or hand spell does not take a unit target.");
+                SpellCastCheck cast = CardSpellModel.TestPlay(target, rule.Effects, action.TargetUnitId);
+                if (!cast.Supported) return Unsupported(cast.UnsupportedReason!);
+                if (!cast.CanPlay) return Illegal("Every effect failed its cast test or a required effect failed.");
                 RoomCombatResult result = CardSpellModel.Apply(target, rule.Effects, action.TargetUnitId, card.InstanceId,
                     targetRule.PlayerCapacity, targetRule.EnemyCapacity, source.PlayRules);
                 if (!result.Supported) return Unsupported(result.UnsupportedReason!);
@@ -302,18 +315,26 @@ namespace MonsterTrain2Poju.Model
             {
                 CardPlayRule? rule = source.PlayRules.Cards.FirstOrDefault(item => item.DataId == card.DataId);
                 if (rule?.Effect != effect) continue;
-                for (int offset = 0; offset < roomCount; offset++)
+                IEnumerable<int> roomOrder = Enumerable.Range(0, roomCount).Select(offset => (source.Spawn.Turn + offset) % roomCount);
+                if (effect == "Spell" && !CardSpellModel.RequiresUnitTarget(rule.Effects))
                 {
-                    int roomIndex = (source.Spawn.Turn + offset) % roomCount;
+                    CardActionEffect? area = rule.Effects.FirstOrDefault(item => item.Type != "HandUpgrade");
+                    if (area != null)
+                        roomOrder = roomOrder.OrderByDescending(index => source.Spawn.Train.Rooms.Single(room => room.RoomIndex == index)
+                            .Units.Count(unit => !unit.Statuses.Any(status => status.Id == "untouchable") &&
+                                (unit.Team == CombatTeam.Enemy ? area.AllowEnemy : area.AllowPlayer)));
+                }
+                foreach (int roomIndex in roomOrder)
+                {
                     int count = source.Spawn.Train.Rooms.Single(room => room.RoomIndex == roomIndex)
                         .Units.Count(unit => unit.Team == CombatTeam.Player);
                     if (effect == "Spell")
                     {
                         if (!CardSpellModel.RequiresUnitTarget(rule.Effects))
                         {
-                            PlayCardAction? handSpell = plays.FirstOrDefault(action => action.CardInstanceId == card.InstanceId &&
+                            PlayCardAction? roomSpell = plays.FirstOrDefault(action => action.CardInstanceId == card.InstanceId &&
                                 action.RoomIndex == roomIndex && action.TargetUnitId == 0);
-                            if (handSpell != null) return handSpell;
+                            if (roomSpell != null) return roomSpell;
                             continue;
                         }
                         CardActionEffect firstTarget = rule.Effects.First(item => item.Target == "DropTargetCharacter" && item.Type != "HandUpgrade");

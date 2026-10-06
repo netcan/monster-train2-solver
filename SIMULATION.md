@@ -15,6 +15,7 @@ are copied immutable values; independent child states can run on worker threads.
 | Initial simple unit play | `SimpleUnitPlayModel` | Native Steward summon, turn zero only |
 | Unit and no-target card actions | `BattleActionModel` | Eleven native plays across decision turns and rooms, selected placement, capacity and self-purge |
 | Targeted spell actions | `CardSpellModel` | Native damage, last-target follow-ups, valor, pyregel and floor rearrange; independent immunity checks |
+| Room spell targeting and effect tests | `CardTargetModel` and `CardSpellModel` | Native multi-unit damage/upgrades/healing, front/back/weakest, sticky last groups and strongest-last; empty targets, mandatory casting checks and runtime cancellation |
 | Integer RNG and shuffle | `UnityRng` | 768 native integer draws, seed initialization and complete four-word states |
 | Basic draw/discard cycle | `CardCycleModel` | 13 consecutive native operations including reshuffle |
 | Room attack exchange | `RoomCombatModel.Exchange` | Ordered initiative, target selection, retargeting, shield/armor and retaliation checks |
@@ -278,6 +279,42 @@ identity/RNG and despawn follow-up targeting through the existing effect engine.
 Conditional thresholds, equipment requirements, purification and trigger removal
 on relentless changes remain explicit unsupported interactions.
 
+`results/full-battle-room-spells.json.gz` replaces the owned rearrangement spell's
+effects only in the isolated process. Boss and wave definitions stay native.
+The sequence combines enemy room damage, friendly room upgrades, enemy last-target
+statuses, strongest-last/back/last damage and friendly room/front/weakest healing.
+The verification policy prefers rooms with targets for an area spell. Coverage
+requires actual damage to multiple enemies and maximum-health upgrades/healing
+of multiple friendly units in a single play; a definition alone is insufficient.
+All 18 plays, six EndTurns, 54 room stages, 11 card cycles, 11 train phases and
+nine spawns match the game. Eight area spell plays include seven multi-unit
+heals, one multi-enemy damage play and five surviving enemy follow-up collections.
+The independent root policy, mid-battle suffix and 16 parallel branches match
+every decision and terminal Pyre health 80/80.
+
+Same-room collections process enemies before players, preserving each team's
+front-to-back order and the first target on health ties. Spells can target stealth
+but exclude untouchable units. Healing collections include full-health units if
+healable. The first effect records the last-target collection; subsequent ordinary
+room selectors preserve it, and a new drop selector replaces it. Last-target
+follow-ups remove dead units and filter teams. Strongest-last ignores team filters
+and retains dead references with zero HP, which are skipped when applying effects.
+
+Native effect-test metadata is captured with schema 11. Casting tests inspect the
+unchanged pre-cast state: any tested success permits casting unless a mandatory
+effect fails. Runtime tests run again after preceding effects, and a configured
+failure can stop the rest of the sequence. Unknown target modes, additional target
+filters, random targets and untested-first effects requiring uncaptured prior
+target history remain unsupported. Rearrangement still requires a drop target.
+
+The current terminal oracle samples the entry to native `StopCombat`. Its
+`StopCombatLoop` subsequently waits for the currently resolving card effect.
+A controlled room-spell run exposed an intermediate terminal snapshot with only
+part of a post-kill damage effect executed. Terminal spells with remaining live
+targets or effective follow-ups are therefore explicitly rejected. Capturing a
+settled terminal state and modeling remaining post-kill effects is separate work;
+this fixture does not establish that behavior. Dead-only follow-ups are supported.
+
 Run the saved native oracles without the game:
 
 ```powershell
@@ -300,6 +337,7 @@ pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy units-spells-and-j
 pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy units-spells-and-junk -TargetedHandUpgrades
 pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy units-spells-and-junk -Healing
 pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy units-spells-and-junk -HealingTriggers
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy units-spells-and-junk -RoomSpells
 ```
 
 The runner checks the explicit probe success marker, capture failures, pending

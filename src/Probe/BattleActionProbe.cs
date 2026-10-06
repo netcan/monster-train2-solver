@@ -99,8 +99,7 @@ namespace MonsterTrain2Poju.Probe
                         effect.GetTargetModeStatusEffectsFilter().Length > 0 || effect.GetTargetModeStatusEffectsExcludedFilter().Length > 0 ||
                         !effect.GetTargetCharacterSubtype().IsNone || excluded.Count > 0 || !effect.GetParamSubtype().IsNone ||
                         (handUpgrade ? effect.GetTargetMode() != TargetMode.Hand && effect.GetTargetMode() != TargetMode.Room :
-                        index == 0 ? effect.GetTargetMode() != TargetMode.DropTargetCharacter :
-                            effect.GetTargetMode() != TargetMode.LastTargetedCharacters && effect.GetTargetMode() != TargetMode.DropTargetCharacter))
+                            !CardTargetModel.Supports(effect.GetTargetMode().ToString())))
                         interactions.Add("Spell scaling or target filters");
                     string type = effect.GetEffectStateName() == "CardEffectDamage" ? "Damage" :
                         effect.GetEffectStateName() == "CardEffectHeal" ? "Heal" :
@@ -135,7 +134,8 @@ namespace MonsterTrain2Poju.Probe
                     }
                     spellEffects.Add(new CardActionEffect(type, effect.GetTargetMode().ToString(), effect.GetParamInt(),
                         effect.GetTargetTeamType().HasFlag(Team.Type.Heroes), effect.GetTargetTeamType().HasFlag(Team.Type.Monsters), statuses,
-                        upgrade, lifetime));
+                        upgrade, lifetime, new CardEffectTests(effect.GetShouldTest(), effect.GetShouldFailToCastIfTestFails(),
+                            effect.GetShouldCancelSubsequentEffectsIfTestFails(), type == "AddStatus" && effect.GetParamBool())));
                 }
             }
             else interactions.Add("Unimplemented play effect " + kind);
