@@ -156,7 +156,7 @@ namespace MonsterTrain2Poju.Probe
         {
             var states = new JObject();
             foreach (RngId id in Enum.GetValues(typeof(RngId)))
-                if (id != RngId.NonDeterministic && id != RngId.Chatter)
+                if (id != RngId.NonDeterministic && id != RngId.Chatter && id != RngId.BattleTest)
                     states[id.ToString()] = JToken.FromObject(RngCalibration.Words(RandomManager.GetState(id)));
             return states;
         }

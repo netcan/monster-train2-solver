@@ -40,6 +40,14 @@ are copied immutable values; independent child states can run on worker threads.
 The game oracle is build 2.2.1, Assembly-CSharp MVID
 `8fb07b96-f4db-4d2b-884d-c00536d6ccf4`.
 
+Gameplay RNG snapshots exclude native `BattleTest`, as well as `Chatter` and
+`NonDeterministic`. `TargetHelper` uses `BattleTest` for legality/UI preview target
+selection and `Battle` when live effects apply. `GameEffectHelper.TestEffect`
+restores the temporary target list after testing. UI test calls can consume the
+test stream without any gameplay transition; those auxiliary draws are not part
+of independently simulated battle state. Legacy snapshots retain their recorded
+test stream for backward compatibility.
+
 `results/full-battle-steward-once.json` records a seven-decision-turn natural
 `Level1BattleJunker` battle, starting with one Steward play. The native game won
 with Pyre health 49/80. The independent model matches all 55 room stages, 13

@@ -56,7 +56,8 @@ namespace MonsterTrain2Poju.Probe
             var streams = new List<BattleRngStream>();
             foreach (RngId id in Enum.GetValues(typeof(RngId)))
             {
-                if (id == RngId.NonDeterministic || id == RngId.Chatter) continue;
+                // BattleTest is used by card legality/UI previews, never live target selection.
+                if (id == RngId.NonDeterministic || id == RngId.Chatter || id == RngId.BattleTest) continue;
                 var native = (HadesRNG)AccessTools.Method(typeof(RandomManager), "GetRng").Invoke(null, new object[] { id });
                 uint[] words = RngCalibration.Words(native.GetState());
                 streams.Add(new BattleRngStream(id.ToString(), native.GetSeed(),

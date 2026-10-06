@@ -238,7 +238,7 @@ namespace MonsterTrain2Poju.Probe
             Array.Sort(fields, (left, right) => StringComparer.Ordinal.Compare(left.Name, right.Name));
             foreach (RngId id in Enum.GetValues(typeof(RngId)))
             {
-                if (id == RngId.NonDeterministic || id == RngId.Chatter)
+                if (id == RngId.NonDeterministic || id == RngId.Chatter || id == RngId.BattleTest)
                 {
                     continue;
                 }
