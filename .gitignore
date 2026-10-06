@@ -3,6 +3,7 @@
 .probe-baseline/
 .probe-data/
 .probe-runs/
+.game-reference/
 **/bin/
 **/obj/
 *.user

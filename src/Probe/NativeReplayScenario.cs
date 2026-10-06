@@ -38,6 +38,7 @@ namespace MonsterTrain2Poju.Probe
         private readonly bool fastReplay;
         private readonly bool noTimeoutReplay;
         private readonly bool branchAnyUnit;
+        private readonly bool fullBattle;
         private readonly MethodInfo setSeed;
         private readonly MethodInfo newRun;
         private readonly MethodInfo completeFtue;
@@ -88,6 +89,9 @@ namespace MonsterTrain2Poju.Probe
             fastReplay = Environment.GetEnvironmentVariable("MT2_PROBE_FAST_REPLAY") == "1";
             noTimeoutReplay = Environment.GetEnvironmentVariable("MT2_PROBE_NO_TIMEOUT") != "0";
             branchAnyUnit = Environment.GetEnvironmentVariable("MT2_PROBE_BRANCH_ANY_UNIT") == "1";
+            fullBattle = Environment.GetEnvironmentVariable("MT2_PROBE_FULL_BATTLE") == "1";
+            if (fullBattle && !directMode)
+                throw new ArgumentException("Full-battle capture requires direct mode.");
             pass = directMode ? Pass.Direct : Pass.Source;
             setSeed = Command("Command_SetSeed", typeof(string));
             newRun = Command("Command_NewRun");
@@ -121,6 +125,14 @@ namespace MonsterTrain2Poju.Probe
                 {
                     Environment.Exit(quitCode);
                 }
+                return;
+            }
+            if (fullBattle && FullBattleTrace.Active?.NativeWon != null)
+            {
+                FullBattleTrace trace = FullBattleTrace.Active;
+                trace.Write();
+                Finish(trace.CaptureFailures == 0 && trace.Pending == 0 && trace.Mismatches == 0,
+                    "Full native battle finished; won=" + trace.NativeWon + "; unsupported stages=" + trace.Unsupported);
                 return;
             }
             if (Time.realtimeSinceStartup > deadline)
@@ -407,6 +419,7 @@ namespace MonsterTrain2Poju.Probe
                 string signature = Capture(pass.ToString().ToLowerInvariant() + "-" + relativeTurn,
                     managers, save, combat, cards!);
                 recordedTurn = relativeTurn;
+                if (fullBattle) FullBattleTrace.Active?.Checkpoint("decision-" + relativeTurn);
                 if (pass == Pass.Source)
                 {
                     sourceSignatures.Add(signature);
@@ -415,7 +428,7 @@ namespace MonsterTrain2Poju.Probe
                         " replayCount=" + sourceReplayCounts[relativeTurn]);
                 }
             }
-            if (relativeTurn == depth)
+            if (relativeTurn == depth && !fullBattle)
             {
                 if (pass == Pass.Source)
                 {
@@ -433,9 +446,10 @@ namespace MonsterTrain2Poju.Probe
                 }
                 return;
             }
-            if (pass == Pass.Source && sourcePlayTurns.Contains(relativeTurn) ||
+            if (!(fullBattle && Environment.GetEnvironmentVariable("MT2_PROBE_FULL_BATTLE_POLICY") == "no-cards") &&
+                (pass == Pass.Source && sourcePlayTurns.Contains(relativeTurn) ||
                 pass != Pass.Source && (relativeTurn == targetTurn ||
-                    relativeTurn < targetTurn && sourcePlayTurns.Contains(relativeTurn)))
+                    relativeTurn < targetTurn && sourcePlayTurns.Contains(relativeTurn))))
             {
                 SelectRoomAndPlay(managers, save, cards!);
                 return;

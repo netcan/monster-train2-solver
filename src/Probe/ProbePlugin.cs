@@ -53,6 +53,8 @@ namespace MonsterTrain2Poju.Probe
             }
             else if (scenarioName == "native-replay")
             {
+                if (Environment.GetEnvironmentVariable("MT2_PROBE_FULL_BATTLE") == "1")
+                    new FullBattleTrace(Logger);
                 nativeReplayScenario = new NativeReplayScenario(Logger);
                 Logger.LogInfo("Native replay depth scenario armed.");
             }

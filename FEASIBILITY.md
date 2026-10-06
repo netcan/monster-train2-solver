@@ -178,8 +178,38 @@ for the pure branch check. Each native run writes structured before, predicted,
 and actual projections plus the game module MVID to its own
 `.probe-runs/model-unit-play-*/model-unit-play.json`. A `MODEL-PASS` means this
 explicit projection matched, not that unobserved game state or EndTurn behavior
-was simulated. The next modeling slice is one enemy-first room combat exchange;
-wave movement, new spawns, card draw, and triggers require separate checks.
+was simulated. Room combat, train movement, card cycling, and the integer RNG
+now have independent implementations and native differential checks; their
+coverage and remaining full-battle requirements are in `SIMULATION.md`.
+
+## Complete native battle oracle and independent combat components
+
+`scripts/Run-FullBattleProbe.ps1` continues the natural seed-424242 battle to a
+terminal win/loss instead of stopping at a turn horizon. The Steward-once and
+no-card policies both reached victory at Pyre health 49/80. Their JSON fixtures
+are in `results/full-battle-{steward-once,no-cards}.json`.
+
+The latest Steward run has 55 room stages, 13 card-cycle operations, and 14
+train combat/movement phases. The independent model matches 39 room stages,
+all 13 card-cycle operations, and 6 train phases. It explicitly rejects the
+remaining 16 room stages and 8 train phases due to unimplemented Junker and
+treasure triggers. Those rejections are gaps in model coverage, not passes.
+
+`RoomCombatModel` supports ordered normal/ambush initiative, multistrike
+retargeting, sweep/sniper selection, armor/shield absorption, daze, stealth,
+fragile, spikes, lifesteal, basic rage/sap and regeneration/poison processing,
+status decay, relentless, and exact cycle detection within its supported
+trigger-free room state. Most of those mechanics currently have independent
+rule checks; the native fixture only verifies the mechanics it actually uses.
+`TrainCombatModel` applies top-to-bottom room combat and enemy movement, with
+same-turn Pyre combat on arrival. `UnityRng` reproduces 768 sampled native
+integer draws and their complete states. `CardCycleModel` reproduces reverse
+hand discard, draw insertion order, and seeded reshuffling for supported cards.
+
+Run `pwsh -NoProfile -File scripts/Check-Models.ps1` to recompute the independent
+model results against captured native states without starting Unity. A complete
+independent EndTurn and full battle solver still require spawn/effect/trigger
+models and a complete battle state machine.
 
 ## Limits
 

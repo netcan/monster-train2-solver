@@ -142,7 +142,7 @@ namespace MonsterTrain2Poju.Probe
             return true;
         }
 
-        private CombatProjection Capture(AllGameManagers managers, SaveManager save,
+        internal CombatProjection Capture(AllGameManagers managers, SaveManager save,
             CombatManager combat, CardManager cards)
         {
             var data = new CombatProjectionData

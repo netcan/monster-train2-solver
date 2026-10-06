@@ -73,6 +73,11 @@ Check(!SimpleUnitPlayModel.Apply(unknownCard,
     new SimpleUnitPlay(0, 5, 0, 1, 3, "TrainStewardBig", 8, 25)).Supported,
     "An unknown card was accepted as a simple unit play.");
 Console.WriteLine("MODEL-CHECKS PASS: independent branches, card identity, and unsupported actions.");
+CardCycleChecks.Run();
+TrainCombatChecks.Run();
+RoomCombatChecks.Run(args.Where(path => !path.Contains("rng-calibration", StringComparison.OrdinalIgnoreCase)).ToArray());
+foreach (string path in args.Where(path => path.Contains("rng-calibration", StringComparison.OrdinalIgnoreCase)))
+    RngChecks.Run(path);
 
 static void Check(bool condition, string message)
 {
