@@ -18,6 +18,13 @@ internal static class CombatEffectChecks
         Require(context.Cards.Draw.Count == 1 && !junker.Triggers[0].HasTriggered,
             "A unit trigger mutated its parent context or trigger state.");
         var gold = new CombatEffect("CardEffectRewardGold", 50, 0, "", 0, [], false);
+        var pending = new CardUpgradeModifier("pending", "pending", new(damage: 4), [], false, false, false, 0, 0, []);
+        var withPending = new CombatContext(context.Cards, context.BattleRng, context.Gold, context.NextCardId,
+            context.MaxHandSize, nextAddedTemporaryUpgrades: [pending]);
+        var rewardOnly = RoomCombatModel.Resolve(new(0, false, [Unit(1, 0, 1, Trigger("PostCombat", gold))], [], withPending));
+        Require(rewardOnly.Supported && rewardOnly.State!.Context!.Gold == 60 &&
+            rewardOnly.State.Context.NextAddedTemporaryUpgrades!.Count == 0 && withPending.NextAddedTemporaryUpgrades!.Count == 1,
+            "A non-generating unit effect chain retained one-shot card upgrades or mutated its parent.");
         var despawn = new CombatEffect("CardEffectDespawnCharacter", 0, 2, "", 0, [], false);
         var treasure = Unit(1, 0, 1, Trigger("OnDeath", gold), Trigger("PostCombat", despawn));
         var escaped = RoomCombatModel.Resolve(new RoomCombatState(0, false, [treasure], [], context));

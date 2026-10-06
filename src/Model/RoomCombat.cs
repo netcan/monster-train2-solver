@@ -242,7 +242,7 @@ namespace MonsterTrain2Poju.Model
                         if (effect.Type == "CardEffectRewardGold" && effect.Value < 0)
                             return "Conditional gold costs are not modeled.";
                         if (effect.Type == "CardEffectAddBattleCard" &&
-                            (effect.CardPool.Count == 0 || !new[] { "DeckPile", "DeckPileTop", "DeckPileRandom",
+                            (effect.Generation == null && effect.CardPool.Count == 0 || !new[] { "DeckPile", "DeckPileTop", "DeckPileRandom",
                                 "HandPile", "DiscardPile" }.Contains(effect.Destination)))
                             return "Unmodeled generated card destination or empty pool.";
                     }
@@ -292,6 +292,7 @@ namespace MonsterTrain2Poju.Model
             private int round;
             private CombatContext? context;
             private readonly bool deferSpawnerExhaustion;
+            private string? unsupportedReason;
 
             internal Engine(RoomCombatState source, List<CombatEvent> events, bool deferSpawnerExhaustion = false)
             {
@@ -316,6 +317,7 @@ namespace MonsterTrain2Poju.Model
                         return Finish(RoomOutcome.Stalemate);
                     round++;
                     Exchange();
+                    if (unsupportedReason != null) return Finish(RoomOutcome.Unsupported);
                     if (!entireRoom) return Finish(RoomOutcome.Exchanged);
                     if (battleWon) return Finish(RoomOutcome.BattleWon);
                     if (!source.Preview && units.Any(unit => unit.Source.IsPyre && !unit.Alive))
@@ -485,7 +487,8 @@ namespace MonsterTrain2Poju.Model
                     Array.Empty<CardToken>(), context.Cards.Rng, context.Cards.DrawModifier,
                     context.Cards.ExternalInteractions), context.BattleRng, context.Gold,
                     context.NextCardId, context.MaxHandSize, context.StatusRules, context.Statistics,
-                    context.CardInstances == null ? null : Array.Empty<CardInstanceState>(), context.CardRegistry, context.AllScenarioBossesDead);
+                    context.CardInstances == null ? null : Array.Empty<CardInstanceState>(), context.CardRegistry, context.AllScenarioBossesDead,
+                    context.NextAddedTemporaryUpgrades);
             }
 
             private void PostCombat()
@@ -555,11 +558,13 @@ namespace MonsterTrain2Poju.Model
                                 int reward = GoldRewardModel.Adjust(effect.Value);
                                 context = new CombatContext(context!.Cards, context.BattleRng,
                                     Math.Max(0, checked(context.Gold + reward)), context.NextCardId, context.MaxHandSize, context.StatusRules, context.Statistics,
-                                    context.CardInstances, context.CardRegistry, context.AllScenarioBossesDead);
+                                    context.CardInstances, context.CardRegistry, context.AllScenarioBossesDead, context.NextAddedTemporaryUpgrades);
                                 Emit("Gold", unit, unit, reward);
                             }
-                            else if (effect.Type == "CardEffectAddBattleCard" && !battleWon && context?.AllScenarioBossesDead != true) AddCards(unit, effect);
+                            else if (effect.Type == "CardEffectAddBattleCard" && !source.Preview && !battleWon && context != null && context.AllScenarioBossesDead != true &&
+                                (effect.Generation?.RequireHandSpace != true || context.Cards.Hand.Count < context.MaxHandSize)) AddCards(unit, effect);
                         }
+                        context = context?.AfterCardEffects();
                     }
                     unit.Triggers[index] = trigger.Fired(effects);
                 }
@@ -567,37 +572,12 @@ namespace MonsterTrain2Poju.Model
 
             private void AddCards(WorkingUnit actor, CombatEffect effect)
             {
-                CombatContext current = context!;
-                var hand = current.Cards.Hand.ToList(); var draw = current.Cards.Draw.ToList();
-                var discard = current.Cards.Discard.ToList();
-                UnityRng rng = current.BattleRng;
-                int nextId = current.NextCardId;
-                for (int index = 0; index < Math.Max(1, effect.Count); index++)
-                {
-                    RngDraw selected = rng.Range(0, effect.CardPool.Count);
-                    rng = selected.State;
-                    string dataId = effect.CardPool[selected.Value];
-                    if (effect.Destination == "HandPile" && (hand.Count >= current.MaxHandSize ||
-                        effect.SkipDuplicateInHand && hand.Any(card => card.DataId == dataId))) continue;
-                    var card = new CardToken(nextId++, dataId);
-                    switch (effect.Destination)
-                    {
-                        case "HandPile": hand.Insert(0, card); break;
-                        case "DiscardPile": discard.Insert(0, card); break;
-                        case "DeckPileTop": draw.Add(card); break;
-                        case "DeckPileRandom":
-                            RngDraw placement = rng.Range(0, draw.Count); rng = placement.State;
-                            draw.Insert(placement.Value, card); break;
-                        default: draw.Insert(0, card); break;
-                    }
-                    Emit("AddCard", actor, actor, card.InstanceId);
-                }
-                context = new CombatContext(new CardCycleState(hand, draw, discard, current.Cards.Rng,
-                    current.Cards.DrawModifier, current.Cards.ExternalInteractions), rng, current.Gold,
-                    nextId, current.MaxHandSize, current.StatusRules,
-                    current.Statistics?.TrackCards(hand.Concat(draw).Concat(discard).Select(card => card.InstanceId)),
-                    current.CardInstances?.Concat(hand.Concat(draw).Concat(discard).Where(card => card.InstanceId >= current.NextCardId)
-                        .Select(card => CardInstanceState.Empty(card.InstanceId, card.DataId))).ToArray(), current.CardRegistry, current.AllScenarioBossesDead);
+                CardGenerationRule rule = effect.Generation ?? new CardGenerationRule(effect.Destination, effect.Count,
+                    effect.CardPool.Select(id => new CardCreationRule(id, CardModifiers.Empty(), null, Array.Empty<string>())).ToArray(), effect.SkipDuplicateInHand);
+                CardGenerationResult result = CardGenerationModel.Apply(context!, rule, actor.Source.SpawnerCardId);
+                if (!result.Supported) { unsupportedReason = result.UnsupportedReason; return; }
+                context = result.Context;
+                foreach (CardToken card in result.AddedCards) Emit("AddCard", actor, actor, card.InstanceId);
             }
 
             private void Trigger(WorkingUnit unit, string id, int count)
@@ -656,7 +636,8 @@ namespace MonsterTrain2Poju.Model
             private void Emit(string kind, WorkingUnit? actor, WorkingUnit target, int amount) =>
                 events.Add(new CombatEvent(round, kind, actor?.Source.Id ?? 0, target.Source.Id, amount));
 
-            private RoomCombatResult Finish(RoomOutcome outcome) => new RoomCombatResult(
+            private RoomCombatResult Finish(RoomOutcome outcome) => unsupportedReason != null
+                ? new RoomCombatResult(null, RoomOutcome.Unsupported, round, events, unsupportedReason) : new RoomCombatResult(
                 new RoomCombatState(source.RoomIndex, source.Deployment,
                     units.Where(unit => unit.Alive).Select(unit => unit.Freeze()).ToArray(), source.ExternalInteractions, context, source.Preview),
                 outcome, round, events);

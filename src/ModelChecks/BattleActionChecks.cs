@@ -18,7 +18,8 @@ internal static class BattleActionChecks
         var rng = UnityRng.Seed(42);
         var cards = new CardCycleState([new(1, "big"), new(2, "small"), new(3, "big"), new(4, "junk"), new(5, "future")],
             [], [], rng, 0, []);
-        var context = new CombatContext(cards, rng, 0, 6, 10);
+        var pending = new CardUpgradeModifier("pending", "pending", new(damage: 4), [], false, false, false, 0, 0, []);
+        var context = new CombatContext(cards, rng, 0, 6, 10, nextAddedTemporaryUpgrades: [pending]);
         var pyre = new CombatUnit(1, "pyre", CombatTeam.Player, 45, 80, 80, true, true, false, []);
         var train = new TrainCombatState(Enumerable.Range(0, 4).Select(index => new RoomCombatState(index, false,
             index == 3 ? new[] { pyre } : [], [], context)).ToArray(), [], 7, context);
@@ -28,6 +29,8 @@ internal static class BattleActionChecks
         string parent = JsonSerializer.Serialize(root);
         BattleActionResult first = BattleActionModel.PlayCard(root, new(1, 0, 0));
         Require(first.Supported, first.Reason ?? "First summon rejected");
+        Require(first.State!.Spawn.Train.Context!.NextAddedTemporaryUpgrades!.Count == 0 &&
+            context.NextAddedTemporaryUpgrades!.Count == 1, "A non-generating play retained one-shot generation upgrades or changed its parent.");
         BattleActionResult second = BattleActionModel.PlayCard(first.State!, new(2, 0, 0));
         Require(second.Supported, second.Reason ?? "Second summon rejected");
         CombatUnit[] players = second.State!.Spawn.Train.Rooms[0].Units.ToArray();
@@ -130,6 +133,8 @@ internal static class BattleActionChecks
             DrawSpellChecks.Native(fixture);
         if (fixture.TryGetProperty("ModifierScenario", out JsonElement removalScenario) && removalScenario.GetString() is "hand-removal" or "hand-removal-lethal")
             HandRemovalChecks.Native(fixture);
+        if (fixture.TryGetProperty("ModifierScenario", out JsonElement generationScenario) && generationScenario.GetString() is "generation" or "generation-lethal")
+            CardGenerationChecks.Native(fixture);
         if (fixture.TryGetProperty("ModifierScenario", out JsonElement healingScenario) && healingScenario.GetString() is "healing" or "healing-triggers")
         {
             int healPlays = 0, restored = 0;

@@ -95,15 +95,16 @@ namespace MonsterTrain2Poju.Probe
                         interactions.Add("Spawned modified gold reward rules");
                     if (effect.GetEffectStateName() == "CardEffectDespawnCharacter" && effect.GetParamInt() > 1)
                         interactions.Add("Native preview mutation of a delayed despawn counter");
-                    if (effect.GetCopyModifiersFromSource() || effect.GetFilterBasedOnMainSubClass() ||
-                        effect.GetParamCardUpgradeData() != null) interactions.Add("Spawned effect modifiers");
+                    if (effect.GetEffectStateName() != "CardEffectAddBattleCard" && (effect.GetCopyModifiersFromSource() || effect.GetFilterBasedOnMainSubClass() ||
+                        effect.GetParamCardUpgradeData() != null)) interactions.Add("Spawned effect modifiers");
                     var pool = new List<CardData>();
                     CardEffectState.GetFilteredCardListFromPool(effect.GetParamCardPool(), effect.GetParamCardFilter(),
                         AllGameManagers.Instance!.GetRelicManager(), ref pool);
                     return new CombatEffect(effect.GetEffectStateName(), effect.GetParamInt(),
                         effect.GetEffectStateName() == "CardEffectDespawnCharacter" ? Math.Max(1, effect.GetParamInt()) : 0,
                         ((CardPile)effect.GetParamInt()).ToString(), effect.GetAdditionalParamInt(),
-                        pool.Select(card => card.GetID()).ToArray(), effect.GetParamBool2());
+                        pool.Select(card => card.GetID()).ToArray(), effect.GetParamBool2(),
+                        effect.GetEffectStateName() == "CardEffectAddBattleCard" ? CardGenerationProbe.Definition(effect) : null);
                 }).ToArray();
                 return new CombatTrigger(trigger.GetTrigger().ToString(), trigger.GetTriggerOnce(), false,
                     trigger.GetHideVisualAndIgnoreSilence(), 1, effects,

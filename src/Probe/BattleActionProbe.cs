@@ -40,8 +40,17 @@ namespace MonsterTrain2Poju.Probe
                     room.IsRoomEnabled(), room.IsRoomSummonBlocked(managers.GetRelicManager()), room.GetIsPyreRoom(),
                     room.GetCapacityInfo(Team.Type.Heroes).max));
             }
-            rules = new BattlePlayRules(roomRules, definitions.OrderBy(id => id, StringComparer.Ordinal)
-                .Select(id => Definition(save.GetAllGameData().FindCardData(id)!)).ToArray(),
+            var reachable = new Dictionary<string, CardPlayRule>(StringComparer.Ordinal);
+            var pending = new Queue<string>(definitions);
+            while (pending.Count > 0)
+            {
+                string id = pending.Dequeue(); if (reachable.ContainsKey(id)) continue;
+                CardPlayRule rule = Definition(save.GetAllGameData().FindCardData(id)!); reachable.Add(id, rule);
+                foreach (string child in rule.Effects.Where(effect => effect.Generation != null).SelectMany(effect => effect.Generation!.Pool).Select(card => card.DataId)
+                    .Concat(rule.SpawnUnit?.Triggers.SelectMany(trigger => trigger.Effects).SelectMany(effect => effect.CardPool) ?? Array.Empty<string>()))
+                    pending.Enqueue(child);
+            }
+            rules = new BattlePlayRules(roomRules, reachable.Values.OrderBy(rule => rule.DataId, StringComparer.Ordinal).ToArray(),
                 new[] { "armor", "valor", "pyregel" }.Select(id => Status(id, 1)).ToArray());
             return rules;
         }
@@ -83,7 +92,7 @@ namespace MonsterTrain2Poju.Probe
             }
             else if (kind == "CardEffectNULL") kind = "Null";
             else if (data.GetCardType() == CardType.Spell && effects.Length > 0 && effects.All(effect =>
-                new[] { "CardEffectDamage", "CardEffectDraw", "CardEffectDiscardHand", "CardEffectHeal", "CardEffectBuffDamage", "CardEffectDebuffDamage", "CardEffectBuffMaxHealth", "CardEffectDebuffMaxHealth", "CardEffectAddStatusEffect", "CardEffectFloorRearrange", "CardEffectAddCardUpgradeToUnits",
+                new[] { "CardEffectDamage", "CardEffectDraw", "CardEffectDiscardHand", "CardEffectAddBattleCard", "CardEffectHeal", "CardEffectBuffDamage", "CardEffectDebuffDamage", "CardEffectBuffMaxHealth", "CardEffectDebuffMaxHealth", "CardEffectAddStatusEffect", "CardEffectFloorRearrange", "CardEffectAddCardUpgradeToUnits",
                     "CardEffectAddTempCardUpgradeToUnits", "CardEffectRemoveTempUpgradeFromUnit",
                     "CardEffectAddTempCardUpgradeToCardsInHand", "CardEffectAddPermanentCardUpgradeToCardsInHand" }.Contains(effect.GetEffectStateName())))
             {
@@ -102,6 +111,7 @@ namespace MonsterTrain2Poju.Probe
                     string type = effect.GetEffectStateName() == "CardEffectDamage" ? "Damage" :
                         effect.GetEffectStateName() == "CardEffectDraw" ? "Draw" :
                         effect.GetEffectStateName() == "CardEffectDiscardHand" ? "DiscardHand" :
+                        effect.GetEffectStateName() == "CardEffectAddBattleCard" ? "Generate" :
                         effect.GetEffectStateName() == "CardEffectBuffDamage" ? "BuffAttack" :
                         effect.GetEffectStateName() == "CardEffectDebuffDamage" ? "DebuffAttack" :
                         effect.GetEffectStateName() == "CardEffectBuffMaxHealth" ? "BuffHealth" :
@@ -111,7 +121,7 @@ namespace MonsterTrain2Poju.Probe
                         effect.GetEffectStateName() == "CardEffectAddStatusEffect" ? "AddStatus" :
                         handUpgrade ? "HandUpgrade" : effect.GetEffectStateName() == "CardEffectRemoveTempUpgradeFromUnit" ? "RemoveUnitUpgrade" : "UnitUpgrade";
                     CardUpgradeModifier? upgrade = null;
-                    if (effect.GetUseIntRange() && !new[] { "Damage", "Heal", "AddStatus", "BuffAttack", "DebuffAttack", "BuffHealth", "DebuffHealth", "Draw", "DiscardHand" }.Contains(type))
+                    if (effect.GetUseIntRange() && !new[] { "Damage", "Heal", "AddStatus", "BuffAttack", "DebuffAttack", "BuffHealth", "DebuffHealth", "Draw", "DiscardHand", "Generate" }.Contains(type))
                         interactions.Add("Unimplemented integer range consumer " + type);
                     string lifetime = "";
                     if (type == "BuffHealth") lifetime = ((UnitUpgradeLifetimeTempOnly)effect.GetAdditionalParamInt1()).ToString();
@@ -148,7 +158,8 @@ namespace MonsterTrain2Poju.Probe
                         new CardTargetFilters(effect.GetTargetModeHealthFilter().ToString(), effect.GetTargetModeStatusEffectsFilter(),
                             effect.GetTargetModeStatusEffectsExcludedFilter(), effect.GetTargetIgnoreBosses(),
                             effect.GetTargetCharacterSubtype().IsNone ? "" : effect.GetTargetCharacterSubtype().Key,
-                            excluded.Select(subtype => subtype.IsNone ? "" : subtype.Key).ToArray())));
+                            excluded.Select(subtype => subtype.IsNone ? "" : subtype.Key).ToArray()),
+                        type == "Generate" ? CardGenerationProbe.Definition(effect) : null));
                 }
             }
             else interactions.Add("Unimplemented play effect " + kind);

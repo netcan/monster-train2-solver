@@ -404,11 +404,13 @@ namespace MonsterTrain2Poju.Probe
                 modifierScenario == "random-status" || modifierScenario == "cross-room-spells" || modifierScenario == "cross-room-targets" || modifierScenario == "attack-buffs" ||
                 modifierScenario == "max-health-spells" || modifierScenario == "max-health-lethal" ||
                 modifierScenario == "numeric-ranges" || modifierScenario == "numeric-ranges-lethal" || modifierScenario == "target-filters" || modifierScenario == "drawing" ||
-                modifierScenario == "hand-removal" || modifierScenario == "hand-removal-lethal"))
+                modifierScenario == "hand-removal" || modifierScenario == "hand-removal-lethal" || modifierScenario == "generation" || modifierScenario == "generation-lethal"))
             {
                 if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Numeric fixture must start on deployment turn.");
                 numericModifiersPrepared = true;
-                if (modifierScenario == "hand-removal" || modifierScenario == "hand-removal-lethal")
+                if (modifierScenario == "generation" || modifierScenario == "generation-lethal")
+                    GenerationScenario.Prepare(managers, log, modifierScenario == "generation-lethal");
+                else if (modifierScenario == "hand-removal" || modifierScenario == "hand-removal-lethal")
                     HandRemovalScenario.Prepare(managers, log, modifierScenario == "hand-removal-lethal");
                 else if (modifierScenario == "drawing") DrawScenario.Prepare(managers, log);
                 else if (modifierScenario == "target-filters") TargetFilterScenario.Prepare(managers, log);

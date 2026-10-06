@@ -40,13 +40,13 @@ namespace MonsterTrain2Poju.Probe
         internal bool? TerminalEffectsSettled { get; private set; }
         internal int CaptureFailures { get; private set; }
         internal int Mismatches => stages.Count(stage => stage.Difference != null) + cardCycles.Mismatches + trainCombat.Mismatches + spawning.Mismatches + turns.Mismatches + actions.Mismatches +
-            HandRemovalScenario.Records.Count(record => record.Difference != null);
+            HandRemovalScenario.Records.Count(record => record.Difference != null) + GenerationScenario.Records.Count(record => record.Difference != null);
         internal int Unsupported => stages.Count(stage => !stage.Predicted.Supported) + cardCycles.Unsupported + trainCombat.Unsupported + spawning.Unsupported + turns.Unsupported + actions.Unsupported +
-            HandRemovalScenario.Records.Count(record => !record.Predicted.Supported);
+            HandRemovalScenario.Records.Count(record => !record.Predicted.Supported) + GenerationScenario.Records.Count(record => !record.Predicted.Supported);
         internal int Pending => stages.Count(stage => stage.Actual == null) + cardCycles.Records.Count(record => record.Actual == null) +
             trainCombat.Records.Count(record => record.Actual == null) + spawning.Records.Count(record => record.Actual == null) +
             turns.Records.Count(record => record.Actual == null) + actions.Records.Count(record => record.Actual == null) +
-            HandRemovalScenario.Records.Count(record => record.Actual == null);
+            HandRemovalScenario.Records.Count(record => record.Actual == null) + GenerationScenario.Records.Count(record => record.Actual == null);
 
         internal FullBattleTrace(ManualLogSource log)
         {
@@ -167,7 +167,9 @@ namespace MonsterTrain2Poju.Probe
                 new UnityRng(draw[0], draw[1], draw[2], draw[3]), state.DrawModifier, Array.Empty<string>()),
                 new UnityRng(battle[0], battle[1], battle[2], battle[3]), state.Gold, projection.NextCardId,
                 cards.GetMaxHandSize(), new[] { "armor", "valor", "pyregel" }.Select(id => BattleActionProbe.Status(id, 1)).ToArray(),
-                statistics, instances, registry, managers.GetCombatManager()!.AllScenarioBossesDead);
+                statistics, instances, registry, managers.GetCombatManager()!.AllScenarioBossesDead,
+                ((IEnumerable<CardUpgradeState>)AccessTools.Field(typeof(CardManager), "nextAddedTempCardUpgrades").GetValue(cards))
+                    .Select(CardModifierProbe.Upgrade).ToArray());
         }
 
         internal CardPileState[] CaptureOtherPiles()
@@ -207,17 +209,10 @@ namespace MonsterTrain2Poju.Probe
                     if (type == "CardEffectAddBattleCard")
                     {
                         effect.GetFilteredCardListFromPool(AllGameManagers.Instance!.GetRelicManager(), ref pool);
-                        if (effect.GetCopyModifiersFromSource() || effect.GetFilterBasedOnMainSubClass() ||
-                            effect.GetParamCardUpgradeData() != null)
-                            interactions.Add("Generated card modifiers");
-                        if (pool.Any(card => card.GetUpgradeData().Count > 0))
-                            interactions.Add("Generated card starting upgrades");
-                        CardManager cards = AllGameManagers.Instance!.GetCardManager()!;
-                        if (((ICollection)AccessTools.Field(typeof(CardManager), "nextAddedTempCardUpgrades")
-                            .GetValue(cards)).Count > 0) interactions.Add("Pending generated card upgrades");
                     }
                     return new CombatEffect(type, value, counter, ((CardPile)effect.GetParamInt()).ToString(),
-                        effect.GetAdditionalParamInt(), pool.Select(card => card.GetID()).ToArray(), effect.GetParamBool2());
+                        effect.GetAdditionalParamInt(), pool.Select(card => card.GetID()).ToArray(), effect.GetParamBool2(),
+                        type == "CardEffectAddBattleCard" ? CardGenerationProbe.Definition(effect) : null);
                 }).ToArray();
                 return new CombatTrigger(trigger.GetTrigger().ToString(), data.GetTriggerOnce(),
                     trigger.GetHasTriggeredOnce(false), trigger.GetHideVisualAndIgnoreSilence(),
@@ -314,7 +309,7 @@ namespace MonsterTrain2Poju.Probe
             string path = Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!, "full-battle.json");
             File.WriteAllText(path, JsonConvert.SerializeObject(new
             {
-                Schema = 19,
+                Schema = 20,
                 GameVersion = Application.version,
                 GameModuleMvid = typeof(CardState).Assembly.ManifestModule.ModuleVersionId,
                 NativeWon,
@@ -336,6 +331,7 @@ namespace MonsterTrain2Poju.Probe
                 NumericRanges = NumericRangeScenario.Samples,
                 FilteredTargets = TargetFilterScenario.Targets,
                 HandRemovals = HandRemovalScenario.Records,
+                CardGenerations = GenerationScenario.Records,
                 UiRngIsolation = UiRngIsolation.Records,
                 Checkpoints = checkpoints
             }, Formatting.Indented));

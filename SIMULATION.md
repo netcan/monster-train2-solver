@@ -26,6 +26,7 @@ are copied immutable values; independent child states can run on worker threads.
 | Basic draw/discard cycle | `CardCycleModel` | 13 consecutive native operations including reshuffle |
 | Spell draws and hand cycling | `CardCycleModel.DrawCards` and `CardSpellModel` | Signed/zero/max counts, full-hand cast timing, resolving-card exclusion, reshuffle RNG, draw statistics and live membership for later hand upgrades; ranged tests require explicit UI RNG isolation |
 | Spell hand discard and consumption | `HandRemovalModel` and `CardSpellModel` | Forward order, resolving-card exclusion, retained buffer aliases, discard-only upgrade removal, double exhaustion statistics, per-effect counters and nested dead-spawner returns |
+| Modified card generation | `CardGenerationModel`, `CardSpellModel` and `CombatTrigger` | Five destinations, pool/full-hand/duplicate timing, initial upgrades, modifier copies/exclusions, one-shot upgrades and fresh card effect state |
 | Room attack exchange | `RoomCombatModel.Exchange` | Ordered initiative, target selection, retargeting, shield/armor and retaliation checks |
 | Entire room resolution | `RoomCombatModel.Resolve` | Native normal exchanges, post-combat effects and multiple rounds of boss/Pyre relentless combat |
 | Train combat phase | `TrainCombatModel.ResolveCombat` | Top-to-bottom native phase comparison |
@@ -47,6 +48,67 @@ are copied immutable values; independent child states can run on worker threads.
 | EndTurn to next decision | `BattleTurnModel.EndTurn` | Seven native consecutive transitions in each supported fixture |
 | Battle to terminal result | `BattleSimulator.Resolve` and `ResolveNoMoreCards` | Independent card policies and seven-turn chains, mid-battle inputs and 16 parallel branches |
 | Additional spells, abilities, relics | Not complete | Unsupported interactions explicitly reject the model transition |
+
+`CardEffectAddBattleCard` uses one shared immutable generation model for spells
+and unit triggers. Card pools and recursively reachable card definitions are
+captured at the starting decision; the model selects each card using its own
+Battle stream. It does not read a native execution's later selections. Generation
+uses at least one attempt even for zero or negative counts, and ignores integer
+range fields. Pool selection occurs before full-hand and duplicate refusals;
+refused attempts consume selection RNG but allocate no identity or upgrade.
+An empty filtered pool consumes neither selection nor placement RNG.
+
+Hand and discard additions prepend, deck-bottom additions prepend to the draw
+pile, and deck-top additions append. Random deck insertion uses the native
+exclusive upper bound of the existing deck count. Native identities are registered
+when a card is created, so observing a reversed pile cannot reverse the assigned
+identities. Generated hand cards do not increment ordinary draw statistics.
+
+New card instances initialize their own starting upgrades, play history and
+effect counters. Optional upgrades precede source modifier copying. Copying
+replaces raw modifier offsets, merges upgrade lists, excludes clone-disabled
+upgrades, suppresses duplicate starting upgrades when copying the same card
+definition, and can omit temporary modifiers. Unit triggers copy from their
+spawner card. Discard generation also applies matching and unconditional
+source-dependent balance upgrades before copying. A pending next-added upgrade
+is applied only to the first successfully created card; an effect-chain boundary
+clears any remaining pending upgrades even when the chain creates no card.
+Casting reads the original hand for required-space tests, and runtime reads the
+hand after removal of the resolving card. Generation is gated during preview and
+after boss death. Unknown setup traits, upgrade internals and external callbacks
+reject the transition instead of returning a partial child.
+
+Schema 20 captures pending generated-card upgrades and complete generation
+rules for both spells and unit triggers. Two byte-preserving compressed native
+oracles retain controlled battles with a full initial hand, starting and optional
+upgrades, excluded source upgrades, copied offsets and newly initialized effect
+counters. Natural enemy waves remain intact. The ordinary fixture adds a
+once-only Steward post-combat generator; the lethal fixture adds conditional
+discard upgrades and a lethal spell followed by a gated generation effect.
+
+| Native oracle | Exact generation effects | Created cards | Full card plays | EndTurns | Final Pyre |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| `full-battle-generation.json.gz` | 97, including 3 unit triggers | 112 | 17 | 5 | 80 |
+| `full-battle-generation-lethal.json.gz` | 91, including 22 matching discard upgrades | 118 | 15 | 4 | 80 |
+
+The ordinary fixture also verifies 13 refused attempts, 13 empty pools, 42
+modifier-copy operations, one pending-upgrade consumption and 42 fresh card
+effect states. The lethal fixture verifies 10 refusals, 11 empty pools, 43 copy
+operations, one pending-upgrade consumption and 46 fresh card effect states.
+All five destinations occur in both. Their 623,324,864-byte and 622,795,487-byte
+raw native traces match the archives byte for byte after decompression.
+Independent simulations from the starting decision, a mid-battle suffix and
+16 parallel branches match the complete settled native result. Original profile
+files are unchanged, and capture failures, differences, unsupported transitions
+and pending records are zero. Pure checks additionally exercise conditional
+and absent-source copies, unused ranges, preview/post-boss gates, incomplete
+instance-state rejection, effect-chain cleanup and 32 parallel branches.
+
+Legacy captures omit the new pending-upgrade field and richer generation rules;
+they retain their original plain-generation behavior. Additional creation traits,
+Infusion/Crafted Spike merging, grafting, magic-power scaling and relic/room
+generation callbacks remain unsupported. These controlled fixtures do not verify
+every card-generation effect in the game.
 
 `CardEffectDraw` runs through the same full card-action pipeline as other spells.
 Casting tests read the original hand; queued effects read the hand after the paid
@@ -751,6 +813,8 @@ pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy units-spells-and-j
 pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy units-spells-and-junk -NumericRanges
 pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy units-spells-and-junk -NumericRangesLethal
 pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy units-spells-and-junk -TargetFilters
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy units-spells-and-junk -Generation
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy units-spells-and-junk -GenerationLethal
 ```
 
 The runner checks the explicit probe success marker, capture failures, pending
@@ -776,7 +840,7 @@ API delegates to the same engine for local checks. Each applied target updates
 its own room, then shares the resulting context with every other room; fixed
 target collections and last-target identities span the train. Capacity-limited
 unit upgrades consult the target room's definition. Dead movement and standby
-spawner routing use all rooms. The 28 saved native battle oracles exercise this
+spawner routing use all rooms. The 30 saved native battle oracles exercise this
 engine through the normal card-action path, including cross-room target modes.
 
 1. Capture a self-contained starting battle state and its static rule definitions.
