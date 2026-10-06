@@ -152,7 +152,7 @@ namespace MonsterTrain2Poju.Model
                 effect.Type == "Damage" ? UpgradedStat(UpgradedStat(effect.Value, "Damage", true, instance.Permanent),
                     "Damage", true, instance.Temporary) : effect.Value, effect.AllowEnemy, effect.AllowPlayer, effect.Statuses, effect.Upgrade, effect.Lifetime)).ToArray();
             return new CardPlayRule(rule.DataId, rule.AssetKey, UpgradedStat(rule.Cost, "Cost", true, modifiers), rule.Effect,
-                rule.Destination, unit, interactions.Distinct().OrderBy(value => value, StringComparer.Ordinal).ToArray(), effects);
+                rule.Destination, unit, interactions.Distinct().OrderBy(value => value, StringComparer.Ordinal).ToArray(), effects, rule.UpgradeInteractions);
         }
     }
 }

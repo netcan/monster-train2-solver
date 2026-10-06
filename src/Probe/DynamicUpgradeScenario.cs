@@ -49,7 +49,7 @@ namespace MonsterTrain2Poju.Probe
             NumericUpgradeScenario.Prepare(managers, log);
             log.LogInfo("DYNAMIC-UPGRADES-PREPARED lifetimes, repeated removal, uniqueness, capacity and sacrifice=" + sacrifice);
         }
-        private static CardUpgradeData Upgrade(string name, string id, int damage, int hp, int size, int unhealedHp, string status, int count)
+        internal static CardUpgradeData Upgrade(string name, string id, int damage, int hp, int size, int unhealedHp, string status, int count)
         {
             var upgrade = ScriptableObject.CreateInstance<CardUpgradeData>(); upgrade.name = name;
             foreach (var field in typeof(CardUpgradeData).GetFields(System.Reflection.BindingFlags.Instance |

@@ -5,6 +5,8 @@ param(
     [switch] $NumericUpgrades,
     [switch] $DynamicUpgrades,
     [switch] $SacrificeUpgrades,
+    [switch] $HandUpgrades,
+    [switch] $TargetedHandUpgrades,
     [switch] $SkipBuild
 )
 
@@ -37,7 +39,7 @@ $environment = @{
     MT2_PROBE_SCENARIO = 'native-replay'
     MT2_PROBE_FULL_BATTLE = '1'
     MT2_PROBE_FULL_BATTLE_POLICY = $Policy
-    MT2_PROBE_MODIFIERS = $(if ($SacrificeUpgrades) { 'sacrifice-upgrades' } elseif ($DynamicUpgrades) { 'dynamic-upgrades' } elseif ($NumericUpgrades) { 'numeric-upgrades' } else { '' })
+    MT2_PROBE_MODIFIERS = $(if ($TargetedHandUpgrades) { 'targeted-hand-upgrades' } elseif ($HandUpgrades) { 'hand-upgrades' } elseif ($SacrificeUpgrades) { 'sacrifice-upgrades' } elseif ($DynamicUpgrades) { 'dynamic-upgrades' } elseif ($NumericUpgrades) { 'numeric-upgrades' } else { '' })
     MT2_PROBE_DIRECT_BRANCH = '1'
     MT2_PROBE_DEPTH = '100'
     MT2_PROBE_TARGET_TURN = '0'
@@ -67,10 +69,14 @@ $modifierActions = @($trace.Actions | Where-Object {
     $playedCard = $actionEntry.Before.Spawn.Train.Context.Cards.Hand |
         Where-Object InstanceId -EQ $actionEntry.Action.CardInstanceId
     $definition = $actionEntry.Before.PlayRules.Cards | Where-Object DataId -EQ $playedCard.DataId
-    @($definition.Effects | Where-Object Type -EQ 'UnitUpgrade').Count -gt 0
+    @($definition.Effects | Where-Object { $_.Type -eq 'UnitUpgrade' -or $_.Type -eq 'HandUpgrade' }).Count -gt 0
 })
-$modifierCoverage = (-not ($DynamicUpgrades -or $SacrificeUpgrades)) -or $modifierActions.Count -gt 0
-if ($SacrificeUpgrades) {
+$modifierCoverage = (-not ($DynamicUpgrades -or $SacrificeUpgrades -or $HandUpgrades -or $TargetedHandUpgrades)) -or $modifierActions.Count -gt 0
+if ($HandUpgrades -or $TargetedHandUpgrades) {
+    $modifierCoverage = $modifierCoverage -and @($modifierActions | Where-Object {
+        @($_.Actual.Spawn.Train.Context.CardInstances.Permanent.Upgrades | Where-Object AssetKey -Like 'PojuHand*').Count -gt 0
+    }).Count -gt 0
+} elseif ($SacrificeUpgrades) {
     $modifierCoverage = $modifierCoverage -and @($modifierActions | Where-Object {
         $modifierAction = $_
         @($modifierAction.Actual.Spawn.Train.Rooms.Units | Where-Object Id -EQ $modifierAction.Action.TargetUnitId).Count -eq 0

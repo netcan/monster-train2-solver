@@ -81,19 +81,22 @@ internal static class BattleActionChecks
         }
         Console.WriteLine($"NATIVE-ACTION-CHECKS PASS: {supported} matched, {unsupported} unsupported.");
         if (fixture.TryGetProperty("ModifierScenario", out JsonElement scenario) &&
-            (scenario.GetString() == "dynamic-upgrades" || scenario.GetString() == "sacrifice-upgrades"))
+            (scenario.GetString() is "dynamic-upgrades" or "sacrifice-upgrades" or "hand-upgrades" or "targeted-hand-upgrades"))
         {
             var modifiedActions = actions.EnumerateArray().Where(entry =>
             {
                 BattleTurnState before = entry.GetProperty("Before").Deserialize<BattleTurnState>(ModelJson.Options)!;
                 int id = entry.GetProperty("Action").GetProperty("CardInstanceId").GetInt32();
                 string dataId = before.Spawn.Train.Context!.Cards.Hand.Single(card => card.InstanceId == id).DataId;
-                return before.PlayRules!.Cards.Single(card => card.DataId == dataId).Effects.Any(effect => effect.Type == "UnitUpgrade");
+                return before.PlayRules!.Cards.Single(card => card.DataId == dataId).Effects.Any(effect => effect.Type is "UnitUpgrade" or "HandUpgrade");
             }).ToArray();
             Require(modifiedActions.Length > 0, "The dynamic upgrade fixture never played its modified spell.");
             bool observed = modifiedActions.Any(entry =>
             {
                 BattleTurnState actual = entry.GetProperty("Actual").Deserialize<BattleTurnState>(ModelJson.Options)!;
+                if (scenario.GetString() is "hand-upgrades" or "targeted-hand-upgrades")
+                    return actual.Spawn.Train.Context!.CardInstances!.Any(card => card.Permanent.Upgrades
+                        .Any(upgrade => upgrade.AssetKey.StartsWith("PojuHand", StringComparison.Ordinal)));
                 return scenario.GetString() == "sacrifice-upgrades" ? !actual.Spawn.Train.Rooms.SelectMany(room => room.Units)
                     .Any(unit => unit.Id == entry.GetProperty("Action").GetProperty("TargetUnitId").GetInt32()) :
                     actual.Spawn.Train.Rooms.SelectMany(room => room.Units).Any(unit => unit.Modifiers?.Upgrades

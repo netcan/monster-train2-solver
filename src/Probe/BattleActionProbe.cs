@@ -49,6 +49,8 @@ namespace MonsterTrain2Poju.Probe
         internal static CardPlayRule Definition(CardData data)
         {
             var interactions = new List<string>();
+            var upgradeInteractions = data.GetTraits().Where(trait => trait.GetTraitStateName() != "CardTraitSelfPurge")
+                .Select(trait => "Upgrade trait " + trait.GetTraitStateName()).ToArray();
             if (data.GetCardTriggers().Count > 0) interactions.Add("Card triggers");
             if (data.GetTraits().Any(trait => trait.GetTraitStateName() != "CardTraitSelfPurge")) interactions.Add("Card traits");
             bool selfPurge = data.GetTraits().Any(trait => trait.GetTraitStateName() == "CardTraitSelfPurge");
@@ -82,27 +84,31 @@ namespace MonsterTrain2Poju.Probe
             else if (kind == "CardEffectNULL") kind = "Null";
             else if (data.GetCardType() == CardType.Spell && effects.Length > 0 && effects.All(effect =>
                 new[] { "CardEffectDamage", "CardEffectAddStatusEffect", "CardEffectFloorRearrange", "CardEffectAddCardUpgradeToUnits",
-                    "CardEffectAddTempCardUpgradeToUnits", "CardEffectRemoveTempUpgradeFromUnit" }.Contains(effect.GetEffectStateName())))
+                    "CardEffectAddTempCardUpgradeToUnits", "CardEffectRemoveTempUpgradeFromUnit",
+                    "CardEffectAddTempCardUpgradeToCardsInHand", "CardEffectAddPermanentCardUpgradeToCardsInHand" }.Contains(effect.GetEffectStateName())))
             {
                 kind = "Spell";
                 for (int index = 0; index < effects.Length; index++)
                 {
                     CardEffectData effect = effects[index];
+                    bool handUpgrade = effect.GetEffectStateName() == "CardEffectAddTempCardUpgradeToCardsInHand" ||
+                        effect.GetEffectStateName() == "CardEffectAddPermanentCardUpgradeToCardsInHand";
                     var excluded = new List<SubtypeData>(); effect.GetTargetCharacterExcludedSubtypes(excluded);
                     if (effect.GetUseIntRange() || effect.GetUseStatusEffectStackMultiplier() || effect.GetUseHealthMissingStackMultiplier() ||
                         effect.GetUseMagicPowerMultiplier() || effect.GetTargetIgnoreBosses() || effect.GetTargetModeHealthFilter() != CardEffectData.HealthFilter.Both ||
                         effect.GetTargetModeStatusEffectsFilter().Length > 0 || effect.GetTargetModeStatusEffectsExcludedFilter().Length > 0 ||
                         !effect.GetTargetCharacterSubtype().IsNone || excluded.Count > 0 || !effect.GetParamSubtype().IsNone ||
-                        (index == 0 ? effect.GetTargetMode() != TargetMode.DropTargetCharacter :
+                        (handUpgrade ? effect.GetTargetMode() != TargetMode.Hand && effect.GetTargetMode() != TargetMode.Room :
+                        index == 0 ? effect.GetTargetMode() != TargetMode.DropTargetCharacter :
                             effect.GetTargetMode() != TargetMode.LastTargetedCharacters && effect.GetTargetMode() != TargetMode.DropTargetCharacter))
                         interactions.Add("Spell scaling or target filters");
                     string type = effect.GetEffectStateName() == "CardEffectDamage" ? "Damage" :
                         effect.GetEffectStateName() == "CardEffectFloorRearrange" ? "FloorRearrange" :
                         effect.GetEffectStateName() == "CardEffectAddStatusEffect" ? "AddStatus" :
-                        effect.GetEffectStateName() == "CardEffectRemoveTempUpgradeFromUnit" ? "RemoveUnitUpgrade" : "UnitUpgrade";
+                        handUpgrade ? "HandUpgrade" : effect.GetEffectStateName() == "CardEffectRemoveTempUpgradeFromUnit" ? "RemoveUnitUpgrade" : "UnitUpgrade";
                     CardUpgradeModifier? upgrade = null;
                     string lifetime = "";
-                    if (type == "UnitUpgrade" || type == "RemoveUnitUpgrade")
+                    if (type == "UnitUpgrade" || type == "RemoveUnitUpgrade" || handUpgrade)
                     {
                         if (effect.GetParamCardUpgradeData() == null) interactions.Add("Missing unit upgrade data");
                         else
@@ -111,7 +117,8 @@ namespace MonsterTrain2Poju.Probe
                             upgrade = CardModifierProbe.Upgrade(upgradeState);
                             interactions.AddRange(upgrade.ExternalInteractions);
                         }
-                        lifetime = ((UnitUpgradeLifetime)effect.GetAdditionalParamInt1()).ToString();
+                        lifetime = handUpgrade ? effect.GetEffectStateName() == "CardEffectAddPermanentCardUpgradeToCardsInHand" ?
+                            "Permanent" : "TemporaryUntilEndOfBattle" : ((UnitUpgradeLifetime)effect.GetAdditionalParamInt1()).ToString();
                         if (effect.GetEffectStateName() == "CardEffectAddCardUpgradeToUnits" && effect.GetParamBool())
                             interactions.Add("Scaling unit upgrade instances");
                     }
@@ -132,7 +139,7 @@ namespace MonsterTrain2Poju.Probe
             }
             else interactions.Add("Unimplemented play effect " + kind);
             return new CardPlayRule(data.GetID(), data.name, data.GetCost(), kind, destination, template,
-                interactions.Distinct().OrderBy(value => value, StringComparer.Ordinal).ToArray(), spellEffects);
+                interactions.Distinct().OrderBy(value => value, StringComparer.Ordinal).ToArray(), spellEffects, upgradeInteractions);
         }
 
         internal static CombatStatus Status(string id, int count)

@@ -25,6 +25,7 @@ are copied immutable values; independent child states can run on worker threads.
 | Card statistics and preview | `BattleStatistics` and `BattlePreviewModel` | Native per-card/Any counters, turn rollover, spawn subtypes, death/exhaust attribution and preview damage statistic |
 | Card instance modifiers | `CardModifierModel` | Permanent/temporary ordered numeric upgrades, unit starting statuses, discard removal, play history and 256 native scalar calculations |
 | Runtime unit upgrades | `UnitModifierModel` | Native permanent, battle and unit-death lifetimes, duplicate removal, unique upgrades, restricted size, unhealed health and lethal max-health loss |
+| Hand upgrade spells | `HandUpgradeModel` | Native targeted and targetless sequences, current-hand membership, permanent/temporary groups, uniqueness and paid-card exclusion |
 | Terminal spell resolution | `BattleActionModel` | Native boss-killing spell skips later played/discard callbacks, retains played cost and prunes temporary-card statistics |
 | Enemy waves and treasure | `EnemySpawningModel` | Native group cache, spawn order, phase, slots and treasure floor selection |
 | EndTurn to next decision | `BattleTurnModel.EndTurn` | Seven native consecutive transitions in each supported fixture |
@@ -161,6 +162,33 @@ entry, and refreshes statistic membership from the permanent deck after clearing
 runtime cards. The model reproduces that ordering and rejects terminal card
 resolution when permanent deck membership was not captured.
 
+`results/full-battle-hand-upgrades.json.gz` modifies the owned floor-rearranging
+spell into a targetless hand-upgrade spell. `results/full-battle-targeted-hand-upgrades.json.gz`
+retains its original unit-target effects, applies the same hand upgrades, and
+then damages the unit occupying the original drop point. Each native fixture
+actually plays the modified spell seven times and matches all 23 plays, five
+EndTurns, 43 room stages, ten card cycles, ten train phases and nine spawns,
+finishing at Pyre 80/80. Both also pass independent root-only policies,
+mid-battle suffixes and 16 parallel branches. The fixture Boss and waves are native;
+only the isolated player spell and numeric starting upgrades are modified.
+
+Direct play removes the paid card from the hand before queued effects execute.
+Hand upgrades therefore affect the remaining hand, including cards with
+unsupported play effects when their upgrade callbacks are modeled. Draw,
+discard and the resolving card retain their existing upgrades. Unique upgrades
+are checked separately within permanent and temporary groups. Newly applied
+temporary hand upgrades last until battle end; preexisting RemoveOnDiscard
+upgrades still use their captured discard lifecycle. Upgrade filters and unknown
+trait callbacks reject the transition. The model re-reads source-card modifiers
+for each subsequent effect, preserving already paid cost.
+
+Repeated DropTargetCharacter effects refer to the originally selected spawn
+point, which can have a different occupant after rearrangement. Each drop effect
+also replaces the LastTargetedCharacters collection; those follow-ups retain
+the selected unit identity and skip a dead unit. The mixed native fixture
+exercises a rearrange followed by a drop effect hitting the new occupant.
+Multi-unit Room/LastTargeted sequences remain explicitly unsupported.
+
 `BattleActionModel` checks instance identity, energy, enabled floors, Pyre exclusion,
 summon capacity and slots, and insertion position. Child states carry spawned
 unit/card relationships and all piles into EndTurn. Illegal plays and unsupported
@@ -178,7 +206,8 @@ Schema 6 also captures every owned card's permanent/temporary modifiers
 and instance play history. Schema 7 adds unit upgrade ledgers, raw size, equipment
 limit, healability and source-definition matching. Schema 8 captures permanent
 deck membership for terminal card statistics. Older fixtures do not verify
-fields absent from their schema. A
+fields absent from their schema. Schema 9 additionally captures separate card
+upgrade-callback interactions in play definitions. A
 despawn counter <= 1 is canonicalized to 1 because each value despawns at the
 next application. Native UI previews can decrement that private counter below
 zero. Longer despawn countdowns are rejected by the native definition capture
@@ -216,6 +245,8 @@ pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy units-spells-and-j
 pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy units-spells-and-junk -NumericUpgrades
 pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy units-spells-and-junk -DynamicUpgrades
 pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy units-spells-and-junk -SacrificeUpgrades
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy units-spells-and-junk -HandUpgrades
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy units-spells-and-junk -TargetedHandUpgrades
 ```
 
 The runner checks the explicit probe success marker, capture failures, pending

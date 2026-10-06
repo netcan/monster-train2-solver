@@ -398,11 +398,13 @@ namespace MonsterTrain2Poju.Probe
             }
             string? modifierScenario = Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS");
             if (fullBattle && !numericModifiersPrepared && (modifierScenario == "numeric-upgrades" || modifierScenario == "dynamic-upgrades" ||
-                modifierScenario == "sacrifice-upgrades"))
+                modifierScenario == "sacrifice-upgrades" || modifierScenario == "hand-upgrades" || modifierScenario == "targeted-hand-upgrades"))
             {
                 if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Numeric fixture must start on deployment turn.");
                 numericModifiersPrepared = true;
-                if (modifierScenario == "dynamic-upgrades" || modifierScenario == "sacrifice-upgrades")
+                if (modifierScenario == "hand-upgrades" || modifierScenario == "targeted-hand-upgrades")
+                    HandUpgradeScenario.Prepare(managers, log, modifierScenario == "targeted-hand-upgrades");
+                else if (modifierScenario == "dynamic-upgrades" || modifierScenario == "sacrifice-upgrades")
                     DynamicUpgradeScenario.Prepare(managers, log, modifierScenario == "sacrifice-upgrades");
                 else NumericUpgradeScenario.Prepare(managers, log);
                 return;

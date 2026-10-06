@@ -45,12 +45,15 @@ namespace MonsterTrain2Poju.Model
         public CombatUnit? SpawnUnit { get; }
         public IReadOnlyList<string> ExternalInteractions { get; }
         public IReadOnlyList<CardActionEffect> Effects { get; }
+        public IReadOnlyList<string>? UpgradeInteractions { get; }
         public CardPlayRule(string dataId, string assetKey, int cost, string effect, string destination,
-            CombatUnit? spawnUnit, IReadOnlyList<string> externalInteractions, IReadOnlyList<CardActionEffect>? effects = null)
+            CombatUnit? spawnUnit, IReadOnlyList<string> externalInteractions, IReadOnlyList<CardActionEffect>? effects = null,
+            IReadOnlyList<string>? upgradeInteractions = null)
         {
             DataId = dataId; AssetKey = assetKey; Cost = cost; Effect = effect; Destination = destination;
             SpawnUnit = spawnUnit; ExternalInteractions = Array.AsReadOnly(externalInteractions.ToArray());
             Effects = Array.AsReadOnly((effects ?? Array.Empty<CardActionEffect>()).ToArray());
+            UpgradeInteractions = upgradeInteractions == null ? null : Array.AsReadOnly(upgradeInteractions.ToArray());
         }
     }
 
@@ -129,6 +132,10 @@ namespace MonsterTrain2Poju.Model
             if (source.OtherPiles.Select(pile => pile.Name).Distinct().Count() != source.OtherPiles.Count)
                 return Unsupported("Duplicate card piles.");
             context = context.WithStatistics(context.Statistics?.WithPlayedCost(card.InstanceId, rule.Cost));
+            // Native direct play removes the card from hand before queued effects execute.
+            context = new CombatContext(new CardCycleState(context.Cards.Hand.Where(item => item.InstanceId != card.InstanceId).ToArray(),
+                context.Cards.Draw, context.Cards.Discard, context.Cards.Rng, context.Cards.DrawModifier, context.Cards.ExternalInteractions),
+                context.BattleRng, context.Gold, context.NextCardId, context.MaxHandSize, context.StatusRules, context.Statistics, context.CardInstances);
             target = new RoomCombatState(target.RoomIndex, target.Deployment, target.Units, target.ExternalInteractions, context, target.Preview);
             CombatUnit[] players = target.Units.Where(unit => unit.Team == CombatTeam.Player).ToArray();
             int position = action.PlayerPosition == -1 ? players.Length : action.PlayerPosition;
@@ -159,12 +166,18 @@ namespace MonsterTrain2Poju.Model
             else if (rule.Effect == "Spell")
             {
                 if (action.PlayerPosition != -1) return Illegal("A spell does not take a summon position.");
-                CombatUnit? victim = target.Units.FirstOrDefault(unit => unit.Id == action.TargetUnitId);
-                if (victim == null || victim.IsPyre || victim.Statuses.Any(status => status.Id == "untouchable"))
-                    return Illegal("The spell has no legal unit target in the selected room.");
-                if (rule.Effects.Count > 0 && (victim.Team == CombatTeam.Enemy && !rule.Effects[0].AllowEnemy ||
-                    victim.Team == CombatTeam.Player && !rule.Effects[0].AllowPlayer)) return Illegal("The spell excludes the target team.");
-                RoomCombatResult result = CardSpellModel.Apply(target, rule.Effects, victim.Id, card.InstanceId, targetRule.PlayerCapacity, targetRule.EnemyCapacity);
+                if (CardSpellModel.RequiresUnitTarget(rule.Effects))
+                {
+                    CombatUnit? victim = target.Units.FirstOrDefault(unit => unit.Id == action.TargetUnitId);
+                    if (victim == null || victim.IsPyre || victim.Statuses.Any(status => status.Id == "untouchable"))
+                        return Illegal("The spell has no legal unit target in the selected room.");
+                    CardActionEffect? targeted = rule.Effects.FirstOrDefault(effect => effect.Target == "DropTargetCharacter" && effect.Type != "HandUpgrade");
+                    if (targeted != null && (victim.Team == CombatTeam.Enemy && !targeted.AllowEnemy ||
+                        victim.Team == CombatTeam.Player && !targeted.AllowPlayer)) return Illegal("The spell excludes the target team.");
+                }
+                else if (action.TargetUnitId != 0) return Illegal("A hand spell does not take a unit target.");
+                RoomCombatResult result = CardSpellModel.Apply(target, rule.Effects, action.TargetUnitId, card.InstanceId,
+                    targetRule.PlayerCapacity, targetRule.EnemyCapacity, source.PlayRules);
                 if (!result.Supported) return Unsupported(result.UnsupportedReason!);
                 spellRoom = result.State!; context = spellRoom.Context!; outcome = result.Outcome;
             }
@@ -250,7 +263,7 @@ namespace MonsterTrain2Poju.Model
             foreach (RoomPlayRule room in source.PlayRules.Rooms)
             {
                 CardPlayRule? rule = source.PlayRules.Cards.FirstOrDefault(item => item.DataId == card.DataId);
-                if (rule?.Effect == "Spell")
+                if (rule?.Effect == "Spell" && CardSpellModel.RequiresUnitTarget(rule.Effects))
                 {
                     foreach (CombatUnit target in source.Spawn.Train.Rooms.First(item => item.RoomIndex == room.RoomIndex).Units)
                     {
@@ -296,7 +309,15 @@ namespace MonsterTrain2Poju.Model
                         .Units.Count(unit => unit.Team == CombatTeam.Player);
                     if (effect == "Spell")
                     {
-                        bool damage = rule.Effects.Any(item => item.Type == "Damage");
+                        if (!CardSpellModel.RequiresUnitTarget(rule.Effects))
+                        {
+                            PlayCardAction? handSpell = plays.FirstOrDefault(action => action.CardInstanceId == card.InstanceId &&
+                                action.RoomIndex == roomIndex && action.TargetUnitId == 0);
+                            if (handSpell != null) return handSpell;
+                            continue;
+                        }
+                        CardActionEffect firstTarget = rule.Effects.First(item => item.Target == "DropTargetCharacter" && item.Type != "HandUpgrade");
+                        bool damage = firstTarget.AllowEnemy && (!firstTarget.AllowPlayer || firstTarget.Type == "Damage");
                         var targets = source.Spawn.Train.Rooms[roomIndex].Units.Where(unit =>
                             !unit.IsPyre && unit.Team == (damage ? CombatTeam.Enemy : CombatTeam.Player)).ToArray();
                         foreach (CombatUnit target in damage ? targets : targets.Reverse())

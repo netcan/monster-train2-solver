@@ -269,6 +269,15 @@ native terminal callback ordering, played-cost retention and permanent-deck
 statistic membership. Scaling upgrade instance identity, advanced upgrade
 interactions, outer/final Boss state machines, relics and equipment remain open.
 
+Two hand-upgrade fixtures now verify targetless spells and mixed unit/hand
+effect sequences. Both actually play the changed spell seven times, match
+23 total plays and five EndTurns, finish at Pyre 80/80, and pass root-only,
+mid-battle and 16 parallel simulations. Upgrades apply to the hand after removal
+of the paid card; permanent and temporary uniqueness remain separate. The mixed
+fixture also confirms that a later drop-target effect reselects the original
+spawn point after rearrangement. Original profiles remain unchanged. Upgrade
+filters, unknown trait callbacks and multi-unit target sequences remain open.
+
 ## Limits
 
 - Rollback uses full scene reload and replay. It is not an in-memory clone,

@@ -6,17 +6,29 @@ namespace MonsterTrain2Poju.Model
 {
     public static class CardSpellModel
     {
+        public static bool RequiresUnitTarget(IReadOnlyList<CardActionEffect> effects) =>
+            effects.Any(effect => effect.Type != "HandUpgrade" && effect.Target == "DropTargetCharacter");
         public static RoomCombatResult Apply(RoomCombatState source, IReadOnlyList<CardActionEffect> effects, int targetId, int sourceCardId = 0,
-            int? playerCapacity = null, int? enemyCapacity = null)
+            int? playerCapacity = null, int? enemyCapacity = null, BattlePlayRules? definitions = null)
         {
             string? error = RoomCombatModel.Validate(source);
             if (error != null) return Unsupported(error);
-            if (source.Context == null || effects.Count == 0 || effects[0].Target != "DropTargetCharacter")
-                return Unsupported("A targeted spell requires context and an initial drop target.");
+            if (source.Context == null || effects.Count == 0)
+                return Unsupported("A spell requires context and effects.");
             CombatUnit? initial = source.Units.FirstOrDefault(unit => unit.Id == targetId);
-            if (initial == null) return Unsupported("The spell target is missing.");
+            if (RequiresUnitTarget(effects) && initial == null) return Unsupported("The spell target is missing.");
+            if (!RequiresUnitTarget(effects) && effects.Any(effect => effect.Type != "HandUpgrade"))
+                return Unsupported("A unit effect requires an initial drop target.");
+            if (effects[0].Target == "Room" && effects.Any(effect => effect.Type != "HandUpgrade" && effect.Target == "LastTargetedCharacters"))
+                return Unsupported("Room-wide last targets are not implemented.");
             foreach (CardActionEffect effect in effects)
             {
+                if (effect.Type == "HandUpgrade")
+                {
+                    if (effect.Upgrade == null) return Unsupported("Missing hand upgrade definition.");
+                    if (effect.Target != "Hand" && effect.Target != "Room") return Unsupported("Unmodeled hand upgrade target collection.");
+                    continue;
+                }
                 if (effect.Target != "DropTargetCharacter" && effect.Target != "LastTargetedCharacters")
                     return Unsupported("Unimplemented spell targeting " + effect.Target);
                 if (effect.Type != "Damage" && effect.Type != "AddStatus" && effect.Type != "FloorRearrange" &&
@@ -30,22 +42,40 @@ namespace MonsterTrain2Poju.Model
                     return Unsupported("Random/multiple status selection is not implemented.");
                 foreach (CombatStatus status in effect.Statuses)
                 {
-                    var test = Copy(initial, initial.Health, initial.Statuses.Where(item => item.Id != status.Id).Concat(new[] { status }).ToArray());
+                    var test = Copy(initial!, initial!.Health, initial.Statuses.Where(item => item.Id != status.Id).Concat(new[] { status }).ToArray());
                     error = RoomCombatModel.Validate(new RoomCombatState(source.RoomIndex, source.Deployment,
                         new[] { test }, Array.Empty<string>(), source.Context));
                     if (error != null) return Unsupported(error);
                 }
             }
-            CardActionEffect first = effects[0];
-            if (initial.Team == CombatTeam.Enemy && !first.AllowEnemy || initial.Team == CombatTeam.Player && !first.AllowPlayer)
+            CardActionEffect? first = effects.FirstOrDefault(effect => effect.Type != "HandUpgrade");
+            if (first != null && (initial!.Team == CombatTeam.Enemy && !first.AllowEnemy || initial!.Team == CombatTeam.Player && !first.AllowPlayer))
                 return Unsupported("The target team is excluded by the spell definition.");
             RoomCombatState state = source;
-            int dropPosition = source.Units.Where(unit => unit.Team == initial.Team).TakeWhile(unit => unit.Id != initial.Id).Count();
-            int lastTargetId = targetId;
-            foreach (CardActionEffect effect in effects)
+            int lastTargetId = 0;
+            int dropPosition = initial == null ? -1 : source.Units.Where(unit => unit.Team == initial.Team)
+                .TakeWhile(unit => unit.Id != initial.Id).Count();
+            for (int index = 0; index < effects.Count; index++)
             {
-                // Repeated drop effects reselect the original spawn point after rearrangement.
-                CombatUnit? target = effect.Target == "DropTargetCharacter" ? state.Units.Where(unit => unit.Team == initial.Team)
+                CardActionEffect effect = effects[index];
+                // Native GetParamInt reads the card's current modifiers when each effect executes.
+                if (definitions != null && sourceCardId > 0 && state.Context!.CardInstances != null)
+                {
+                    CardInstanceState? card = state.Context.CardInstances.FirstOrDefault(item => item.InstanceId == sourceCardId);
+                    CardPlayRule? rule = definitions.Cards.FirstOrDefault(item => item.DataId == card?.DataId);
+                    if (card == null || rule == null || rule.Effects.Count != effects.Count)
+                        return Unsupported("Missing live spell effect definition.");
+                    effect = CardModifierModel.Resolve(rule, card).Effects[index];
+                }
+                if (effect.Type == "HandUpgrade")
+                {
+                    RoomCombatResult upgraded = HandUpgradeModel.Apply(state, effect.Upgrade!, effect.Lifetime, definitions);
+                    if (!upgraded.Supported) return upgraded;
+                    state = upgraded.State!;
+                    continue;
+                }
+                // A drop target refers to the chosen spawn point. Rearrangement can change its occupant.
+                CombatUnit? target = effect.Target == "DropTargetCharacter" ? state.Units.Where(unit => unit.Team == initial!.Team)
                     .ElementAtOrDefault(dropPosition) : state.Units.FirstOrDefault(unit => unit.Id == lastTargetId);
                 if (effect.Target == "DropTargetCharacter") lastTargetId = target?.Id ?? 0;
                 // LastTargetedCharacters drops killed units instead of selecting another front unit.
