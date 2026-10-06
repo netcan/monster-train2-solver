@@ -951,6 +951,12 @@ values. Consequently a residual attack/health bonus can remain on the unit after
 the corresponding unit/spawner modifier entry is removed; the model preserves
 this behavior.
 
+Unit-upgrade application and removal in preview mode change the simulated unit
+but retain both permanent and temporary spawner-card modifiers. This follows the
+native effects' explicit `!PreviewMode` source-card gates. Pure checks cover all
+three lifetimes and removal from an already upgraded unit; these preview cases
+are checked against native source behavior rather than a new runtime capture.
+
 `results/full-battle-unit-upgrade-scaling.json.gz` retains 245 live callbacks and
 30 isolated callbacks, 18 plays, 6 EndTurns, 53 room stages, 11 card cycles, 11
 train phases and 9 spawns. It wins the natural battle with Pyre health 80. The

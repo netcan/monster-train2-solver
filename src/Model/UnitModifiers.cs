@@ -120,7 +120,8 @@ namespace MonsterTrain2Poju.Model
             }
             // The native source-card update also follows a unique unit upgrade no-op.
             target = state.Units.FirstOrDefault(unit => unit.Id == targetId);
-            if (target?.SpawnerCardId > 0 && (remove || target.Modifiers!.SpawnerMatchesDefinition && lifetime != "TemporaryUntilUnitDeath"))
+            if (!source.Preview && target?.SpawnerCardId > 0 &&
+                (remove || target.Modifiers!.SpawnerMatchesDefinition && lifetime != "TemporaryUntilUnitDeath"))
             {
                 CardInstanceState? card = state.Context!.FindCard(target.SpawnerCardId);
                 if (card == null) return Unsupported("Missing upgraded unit's spawner card.");

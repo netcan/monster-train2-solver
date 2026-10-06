@@ -30,6 +30,21 @@ internal static class UnitModifierChecks
         var permanent = UnitModifierModel.Apply(room, 1, upgrade, "Permanent");
         Require(permanent.Supported && permanent.State!.Context!.CardInstances!.Single().Permanent.Upgrades.Count == 1,
             "Permanent unit upgrade did not update the permanent source group.");
+        var previewRoom = new RoomCombatState(0, false, [unit], [], context, preview: true);
+        foreach (string lifetime in new[] { "Permanent", "TemporaryUntilEndOfBattle", "TemporaryUntilUnitDeath" })
+        {
+            var preview = UnitModifierModel.Apply(previewRoom, 1, upgrade, lifetime);
+            Require(preview.Supported && preview.State!.Units.Single().BaseAttack == applied.State!.Units.Single().BaseAttack &&
+                preview.State.Units.Single().MaxHealth == applied.State.Units.Single().MaxHealth &&
+                JsonSerializer.Serialize(preview.State.Context) == JsonSerializer.Serialize(context),
+                "Preview upgrade changed its spawner card or skipped physical unit changes.");
+        }
+        var upgradedPreview = new RoomCombatState(0, false, applied.State!.Units, [], applied.State.Context, preview: true);
+        var previewRemoved = UnitModifierModel.Apply(upgradedPreview, 1, upgrade, "", remove: true);
+        Require(previewRemoved.Supported && previewRemoved.State!.Units.Single().BaseAttack == removed.State!.Units.Single().BaseAttack &&
+            previewRemoved.State.Units.Single().Modifiers!.Upgrades.Count == 0 &&
+            JsonSerializer.Serialize(previewRemoved.State.Context) == JsonSerializer.Serialize(applied.State.Context),
+            "Preview removal removed its spawner card's temporary upgrade.");
         var detachedContext = new CombatContext(context.Cards, rng, 0, 9, 10,
             statistics: context.Statistics, cardInstances: [], cardRegistry: context.CardInstances);
         var detached = new RoomCombatState(0, false, [unit], [], detachedContext);
@@ -68,7 +83,7 @@ internal static class UnitModifierChecks
         Parallel.For(0, 32, _ => Require(JsonSerializer.Serialize(UnitModifierModel.Apply(room, 1, upgrade, "TemporaryUntilEndOfBattle").State) ==
             JsonSerializer.Serialize(applied.State), "Parallel unit upgrade branches diverged."));
         Require(JsonSerializer.Serialize(room) == parent, "Unit upgrades mutated their parent.");
-        Console.WriteLine("UNIT-MODIFIER-CHECKS PASS: lifetimes, source cards, raw size, unhealed health, removal, unique/clone rules, lethal loss and parallel isolation.");
+        Console.WriteLine("UNIT-MODIFIER-CHECKS PASS: lifetimes, source cards, preview writes, raw size, unhealed health, removal, unique/clone rules, lethal loss and parallel isolation.");
     }
     private static void Require(bool condition, string message)
     { if (!condition) throw new InvalidOperationException(message); }
