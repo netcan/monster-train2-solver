@@ -83,7 +83,7 @@ namespace MonsterTrain2Poju.Probe
             }
             else if (kind == "CardEffectNULL") kind = "Null";
             else if (data.GetCardType() == CardType.Spell && effects.Length > 0 && effects.All(effect =>
-                new[] { "CardEffectDamage", "CardEffectDraw", "CardEffectHeal", "CardEffectBuffDamage", "CardEffectDebuffDamage", "CardEffectBuffMaxHealth", "CardEffectDebuffMaxHealth", "CardEffectAddStatusEffect", "CardEffectFloorRearrange", "CardEffectAddCardUpgradeToUnits",
+                new[] { "CardEffectDamage", "CardEffectDraw", "CardEffectDiscardHand", "CardEffectHeal", "CardEffectBuffDamage", "CardEffectDebuffDamage", "CardEffectBuffMaxHealth", "CardEffectDebuffMaxHealth", "CardEffectAddStatusEffect", "CardEffectFloorRearrange", "CardEffectAddCardUpgradeToUnits",
                     "CardEffectAddTempCardUpgradeToUnits", "CardEffectRemoveTempUpgradeFromUnit",
                     "CardEffectAddTempCardUpgradeToCardsInHand", "CardEffectAddPermanentCardUpgradeToCardsInHand" }.Contains(effect.GetEffectStateName())))
             {
@@ -101,6 +101,7 @@ namespace MonsterTrain2Poju.Probe
                         interactions.Add("Spell scaling or target filters");
                     string type = effect.GetEffectStateName() == "CardEffectDamage" ? "Damage" :
                         effect.GetEffectStateName() == "CardEffectDraw" ? "Draw" :
+                        effect.GetEffectStateName() == "CardEffectDiscardHand" ? "DiscardHand" :
                         effect.GetEffectStateName() == "CardEffectBuffDamage" ? "BuffAttack" :
                         effect.GetEffectStateName() == "CardEffectDebuffDamage" ? "DebuffAttack" :
                         effect.GetEffectStateName() == "CardEffectBuffMaxHealth" ? "BuffHealth" :
@@ -110,7 +111,7 @@ namespace MonsterTrain2Poju.Probe
                         effect.GetEffectStateName() == "CardEffectAddStatusEffect" ? "AddStatus" :
                         handUpgrade ? "HandUpgrade" : effect.GetEffectStateName() == "CardEffectRemoveTempUpgradeFromUnit" ? "RemoveUnitUpgrade" : "UnitUpgrade";
                     CardUpgradeModifier? upgrade = null;
-                    if (effect.GetUseIntRange() && !new[] { "Damage", "Heal", "AddStatus", "BuffAttack", "DebuffAttack", "BuffHealth", "DebuffHealth", "Draw" }.Contains(type))
+                    if (effect.GetUseIntRange() && !new[] { "Damage", "Heal", "AddStatus", "BuffAttack", "DebuffAttack", "BuffHealth", "DebuffHealth", "Draw", "DiscardHand" }.Contains(type))
                         interactions.Add("Unimplemented integer range consumer " + type);
                     string lifetime = "";
                     if (type == "BuffHealth") lifetime = ((UnitUpgradeLifetimeTempOnly)effect.GetAdditionalParamInt1()).ToString();
@@ -152,7 +153,28 @@ namespace MonsterTrain2Poju.Probe
             }
             else interactions.Add("Unimplemented play effect " + kind);
             return new CardPlayRule(data.GetID(), data.name, data.GetCost(), kind, destination, template,
-                interactions.Distinct().OrderBy(value => value, StringComparer.Ordinal).ToArray(), spellEffects, upgradeInteractions);
+                interactions.Distinct().OrderBy(value => value, StringComparer.Ordinal).ToArray(), spellEffects, upgradeInteractions,
+                HandInteractions(data, false), HandInteractions(data, true));
+        }
+
+        private static string[] HandInteractions(CardData data, bool consume)
+        {
+            var interactions = new List<string>();
+            if (data.GetCardTriggers().Count > 0) interactions.Add("Hand removal card triggers");
+            foreach (var trait in data.GetTraits())
+            {
+                Type? type = typeof(CardTraitState).Assembly.GetType(trait.GetTraitStateName());
+                if (type == null) { interactions.Add("Unknown hand removal trait"); continue; }
+                if (consume)
+                {
+                    if (typeof(CardTraitSalvage).IsAssignableFrom(type)) interactions.Add("Salvage consumption callback");
+                    if (type == typeof(CardTraitGraftedEquipment)) interactions.Add("Grafted equipment standby trait state");
+                }
+                else if (type == typeof(CardTraitEphemeral) || type == typeof(CardTraitInfusion) || type == typeof(CardTraitPersistent) || type == typeof(CardTraitTreasure) ||
+                    type != typeof(CardTraitSelfPurge) && type.GetMethod("OnCardDiscarded")?.DeclaringType != typeof(CardTraitState))
+                    interactions.Add(type.Name + " hand discard callback/routing");
+            }
+            return interactions.Distinct().OrderBy(value => value, StringComparer.Ordinal).ToArray();
         }
 
         internal static CombatStatus Status(string id, int count)

@@ -25,6 +25,7 @@ are copied immutable values; independent child states can run on worker threads.
 | Integer RNG and shuffle | `UnityRng` | 768 native integer draws, seed initialization and complete four-word states |
 | Basic draw/discard cycle | `CardCycleModel` | 13 consecutive native operations including reshuffle |
 | Spell draws and hand cycling | `CardCycleModel.DrawCards` and `CardSpellModel` | Signed/zero/max counts, full-hand cast timing, resolving-card exclusion, reshuffle RNG, draw statistics and live membership for later hand upgrades; ranged tests require explicit UI RNG isolation |
+| Spell hand discard and consumption | `HandRemovalModel` and `CardSpellModel` | Forward order, resolving-card exclusion, retained buffer aliases, discard-only upgrade removal, double exhaustion statistics, per-effect counters and nested dead-spawner returns |
 | Room attack exchange | `RoomCombatModel.Exchange` | Ordered initiative, target selection, retargeting, shield/armor and retaliation checks |
 | Entire room resolution | `RoomCombatModel.Resolve` | Native normal exchanges, post-combat effects and multiple rounds of boss/Pyre relentless combat |
 | Train combat phase | `TrainCombatModel.ResolveCombat` | Top-to-bottom native phase comparison |
@@ -84,6 +85,58 @@ results and restores 323 Battle-consuming queries. Independent root-only play,
 a mid-battle suffix and 16 parallel full simulations reach native victory at
 Pyre 80. The original user profile is unchanged; capture failures, differences,
 unsupported transitions and pending records are all zero.
+
+`CardEffectDiscardHand` also uses the full action pipeline. Its integer parameter
+selects discard or consume; range bounds and the range multiplier are unused.
+It snapshots the hand in forward order and excludes the resolving card. Empty
+hands and unknown modes remove nothing, reset this effect instance's consumed
+counter to zero and do not drain the death queue. Preview and post-boss gates
+prevent application. Separate immutable counters preserve each effect index
+across repeated plays and source-card modifier changes.
+
+A spell-triggered ordinary discard increments TimesDiscarded and removes only
+temporary upgrades marked RemoveOnDiscard. It retains play history and adds a
+buffer reference alongside the actual discard pile membership. That reference
+survives draws, consumption and EndTurns; a later natural play removes its own
+reference. The buffer is therefore an alias list, and other pile memberships
+remain unique. Captures and validation retain both the aliases and the complete
+native standby dictionary entry slots and free-list order.
+
+Consumption keeps those temporary upgrades and increments TimesExhausted twice,
+once on entering standby and once on returning to exhausted, while its effect
+counter increments only once per consumed card. OnExhausted character callbacks
+can drain a previously finished death before the consuming card's standby entry
+is removed. This recursive return changes exhausted ordering and the free list,
+even when the final standby pile is empty. The full spell engine defers a damage
+victim's exhaustion statistic until the relevant standby return and carries its
+updated shared context into the next target. Empty consumption preserves pending
+death references until another operation drains the queue.
+
+Removal callback definitions include future wave-generated cards in the initial
+rules. Unknown discard/exhaust card triggers, Salvage, special discard routing,
+grafted trait state, relics and room modifiers remain explicit unsupported
+interactions. The new fixtures use fixed damage and ordinary UI queries; their
+unused discard ranges require no UI RNG isolation.
+
+`results/full-battle-hand-removal.json.gz` preserves the unaltered 113,820,105-byte
+native trace. All 11 plays, six EndTurns, 45 room stages, 41 card cycles, 11 train
+phases and nine spawns match. Its 36 removal effects include 14 discards,
+11 consumed cards, 13 empty consumes, six ignored modes, five discarded upgrade
+removals, five consumed upgrade retentions and one transient dictionary extension.
+Independent root-only, mid-battle and 16 parallel simulations reach victory at
+Pyre 80.
+
+`results/full-battle-hand-removal-lethal.json.gz` preserves the unaltered
+162,998,905-byte trace with friendly damage immediately followed by consumption.
+All ten plays, seven EndTurns, 55 room stages, 48 card cycles, 14 train phases and
+11 spawns match. Its 49 effects include two discards, 17 consumed cards,
+20 empty consumes, seven ignored modes, two removed upgrades, eight retained
+upgrades, one dictionary extension and one dead-spawner return inside a consume
+callback. The same independent, mid-battle and 16 parallel checks reach native
+victory at Pyre 49. Both captures finish with zero failures, differences,
+unsupported transitions or pending records and leave the original profile
+unchanged. These controlled starting-battle fixtures add mechanism coverage;
+they do not establish support for every card or encounter.
 
 The game oracle is build 2.2.1, Assembly-CSharp MVID
 `8fb07b96-f4db-4d2b-884d-c00536d6ccf4`.
@@ -154,7 +207,7 @@ The full battle model rejects ranged damage/draw definitions when `UiRngIsolated
 false: the captured logical decision state cannot reproduce vanilla hand animation
 and frame-dependent highlight RNG consumption. These fixtures prove the explicit
 solver environment with the UI guard, rather than complete vanilla UI timing.
-The suite now contains 26 full battle fixtures; these controlled starting-battle
+The suite now contains 28 full battle fixtures; these controlled starting-battle
 variations do not establish complete coverage of the game's other encounters.
 
 Schema 17 carries optional `CombatUnit.IsBoss`, copied from native `IsAnyBoss`,
@@ -723,7 +776,7 @@ API delegates to the same engine for local checks. Each applied target updates
 its own room, then shares the resulting context with every other room; fixed
 target collections and last-target identities span the train. Capacity-limited
 unit upgrades consult the target room's definition. Dead movement and standby
-spawner routing use all rooms. The 26 saved native battle oracles exercise this
+spawner routing use all rooms. The 28 saved native battle oracles exercise this
 engine through the normal card-action path, including cross-room target modes.
 
 1. Capture a self-contained starting battle state and its static rule definitions.

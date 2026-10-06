@@ -168,12 +168,13 @@ namespace MonsterTrain2Poju.Model
         public static RoomCombatResult Exchange(RoomCombatState state) => Run(state, false);
         public static RoomCombatResult Resolve(RoomCombatState state) => Run(state, true);
 
-        public static RoomCombatResult ApplyCardDamage(RoomCombatState state, int targetId, int damage, int sourceCardId = 0)
+        public static RoomCombatResult ApplyCardDamage(RoomCombatState state, int targetId, int damage, int sourceCardId = 0,
+            bool deferSpawnerExhaustion = false)
         {
             string? error = Validate(state);
             if (error != null || damage < 0 || !state.Units.Any(unit => unit.Id == targetId))
                 return new RoomCombatResult(null, RoomOutcome.Unsupported, 0, new List<CombatEvent>(), error ?? "Invalid card damage target or amount.");
-            return new Engine(state, new List<CombatEvent>()).CardDamage(targetId, damage, sourceCardId);
+            return new Engine(state, new List<CombatEvent>(), deferSpawnerExhaustion).CardDamage(targetId, damage, sourceCardId);
         }
 
         internal static RoomCombatResult ApplyUnitModification(RoomCombatState state, CombatUnit changed) =>
@@ -290,10 +291,12 @@ namespace MonsterTrain2Poju.Model
             private bool battleWon;
             private int round;
             private CombatContext? context;
+            private readonly bool deferSpawnerExhaustion;
 
-            internal Engine(RoomCombatState source, List<CombatEvent> events)
+            internal Engine(RoomCombatState source, List<CombatEvent> events, bool deferSpawnerExhaustion = false)
             {
                 this.source = source; this.events = events;
+                this.deferSpawnerExhaustion = deferSpawnerExhaustion;
                 units = source.Units.Select(unit => new WorkingUnit(unit)).ToList();
                 if (source.Preview)
                     foreach (WorkingUnit unit in units)
@@ -469,7 +472,7 @@ namespace MonsterTrain2Poju.Model
                 if (!source.Preview && context?.Statistics != null)
                     context = context.WithStatistics(context.LiveStatistics!.Death(target.Source.Team == CombatTeam.Player,
                         sourceCardId > 0 ? sourceCardId : target.Source.SpawnerCardId, requireTrackedCard: context.CardInstances?.Count == 0)
-                        .Increment(target.Source.Team == CombatTeam.Player ? target.Source.SpawnerCardId : 0, "TimesExhausted",
+                        .Increment(target.Source.Team == CombatTeam.Player && !deferSpawnerExhaustion ? target.Source.SpawnerCardId : 0, "TimesExhausted",
                             requireTrackedCard: context.CardInstances?.Count == 0));
                 if (!source.Preview && (target.Source.EndsBattleOnDeath || target.Source.IsPyre)) ClearTerminalCards();
             }

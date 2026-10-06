@@ -26,7 +26,8 @@ namespace MonsterTrain2Poju.Probe
                 if ((int)AccessTools.Field(typeof(CardState), "cost").GetValue(card) != data.GetCost()) interactions.Add("Changed base card cost");
                 var state = new CardInstanceState(cardId(card), card.GetCardDataID(),
                     Modifiers(card.GetCardStateModifiers()), Modifiers(card.GetTemporaryCardStateModifiers()),
-                    card.GetLastPlayedCost(), card.GetLastForgedAmount(), card.GetCurrentScenarioPlayCount(), interactions);
+                    card.GetLastPlayedCost(), card.GetLastForgedAmount(), card.GetCurrentScenarioPlayCount(), interactions,
+                    Counters(card));
                 CardPlayRule rule = CardModifierModel.Resolve(BattleActionProbe.Definition(data), state);
                 for (int index = 0; index < managers.GetRoomManager()!.GetNumRooms(); index++)
                     if (card.GetCost(managers.GetCardStatistics(), managers.GetMonsterManager(), managers.GetRelicManager(),
@@ -45,8 +46,16 @@ namespace MonsterTrain2Poju.Probe
                 }
                 return new CardInstanceState(state.InstanceId, state.DataId, state.Permanent, state.Temporary,
                     state.LastPlayedCost, state.LastForgedAmount, state.PlayCount,
-                    interactions.Distinct().OrderBy(value => value, StringComparer.Ordinal).ToArray());
+                    interactions.Distinct().OrderBy(value => value, StringComparer.Ordinal).ToArray(), state.EffectCounters);
             }).OrderBy(card => card.InstanceId).ToArray();
+        }
+
+        private static CardEffectCounter[]? Counters(CardState card)
+        {
+            CardEffectCounter[] counters = card.GetEffectStates().Select((effect, index) => new { effect, index })
+                .Where(item => item.effect.GetCardEffect() is CardEffectDiscardHand).Select(item => new CardEffectCounter(
+                    item.index, "CardEffectDiscardHand", ((CardEffectDiscardHand)item.effect.GetCardEffect()).GetNumCardsConsumed())).ToArray();
+            return counters.Length == 0 ? null : counters;
         }
 
         private static CardModifiers Modifiers(CardStateModifiers modifiers)

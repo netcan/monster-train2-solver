@@ -60,14 +60,19 @@ namespace MonsterTrain2Poju.Model
         public IReadOnlyList<string> ExternalInteractions { get; }
         public IReadOnlyList<CardActionEffect> Effects { get; }
         public IReadOnlyList<string>? UpgradeInteractions { get; }
+        public IReadOnlyList<string>? HandDiscardInteractions { get; }
+        public IReadOnlyList<string>? HandConsumeInteractions { get; }
         public CardPlayRule(string dataId, string assetKey, int cost, string effect, string destination,
             CombatUnit? spawnUnit, IReadOnlyList<string> externalInteractions, IReadOnlyList<CardActionEffect>? effects = null,
-            IReadOnlyList<string>? upgradeInteractions = null)
+            IReadOnlyList<string>? upgradeInteractions = null, IReadOnlyList<string>? handDiscardInteractions = null,
+            IReadOnlyList<string>? handConsumeInteractions = null)
         {
             DataId = dataId; AssetKey = assetKey; Cost = cost; Effect = effect; Destination = destination;
             SpawnUnit = spawnUnit; ExternalInteractions = Array.AsReadOnly(externalInteractions.ToArray());
             Effects = Array.AsReadOnly((effects ?? Array.Empty<CardActionEffect>()).ToArray());
             UpgradeInteractions = upgradeInteractions == null ? null : Array.AsReadOnly(upgradeInteractions.ToArray());
+            HandDiscardInteractions = handDiscardInteractions == null ? null : Array.AsReadOnly(handDiscardInteractions.ToArray());
+            HandConsumeInteractions = handConsumeInteractions == null ? null : Array.AsReadOnly(handConsumeInteractions.ToArray());
         }
     }
 
@@ -140,11 +145,8 @@ namespace MonsterTrain2Poju.Model
             RoomCombatState? target = train.Rooms.FirstOrDefault(item => item.RoomIndex == action.RoomIndex);
             if (targetRule == null || target == null) return Illegal("The target room does not exist.");
             if (!targetRule.Enabled || targetRule.IsPyre) return Illegal("This card cannot be played in the target room.");
-            CardToken[] allCards = context.Cards.Hand.Concat(context.Cards.Draw).Concat(context.Cards.Discard)
-                .Concat(source.OtherPiles.SelectMany(pile => pile.Cards)).ToArray();
-            if (allCards.Select(item => item.InstanceId).Distinct().Count() != allCards.Length ||
-                allCards.Any(item => item.InstanceId <= 0 || item.InstanceId >= context.NextCardId))
-                return Unsupported("Invalid card identity allocation or duplicate pile membership.");
+            string? membershipError = CardPileModel.ValidateMembership(context.Cards, source.OtherPiles, context.NextCardId);
+            if (membershipError != null) return Unsupported(membershipError);
             if (source.OtherPiles.Select(pile => pile.Name).Distinct().Count() != source.OtherPiles.Count)
                 return Unsupported("Duplicate card piles.");
             foreach (CardPileState pile in source.OtherPiles)
@@ -154,6 +156,7 @@ namespace MonsterTrain2Poju.Model
             }
             context = context.WithStatistics(context.Statistics?.WithPlayedCost(card.InstanceId, rule.Cost));
             CombatContext castingContext = context;
+            CardPileState[] piles = source.OtherPiles.ToArray();
             // Native direct play removes the card from hand before queued effects execute.
             context = new CombatContext(new CardCycleState(context.Cards.Hand.Where(item => item.InstanceId != card.InstanceId).ToArray(),
                 context.Cards.Draw, context.Cards.Discard, context.Cards.Rng, context.Cards.DrawModifier, context.Cards.ExternalInteractions),
@@ -206,8 +209,9 @@ namespace MonsterTrain2Poju.Model
                 if (!cast.CanPlay) return Illegal("Every effect failed its cast test or a required effect failed.");
                 spellInput = CardSpellModel.WithContext(spellInput, context.WithBattleRng(cast.BattleRngAfterTests!.Value));
                 TrainSpellResult result = CardSpellModel.Apply(spellInput, action.RoomIndex, rule.Effects, action.TargetUnitId,
-                    card.InstanceId, source.PlayRules);
+                    card.InstanceId, source.PlayRules, piles);
                 if (!result.Supported) return Unsupported(result.UnsupportedReason!);
+                piles = result.OtherPiles?.ToArray() ?? piles;
                 train = result.State!; context = train.Context!; outcome = result.Outcome; spellApplied = true;
             }
             else if (rule.Effect != "Null") return Unsupported("Unimplemented card effect " + rule.Effect);
@@ -215,7 +219,6 @@ namespace MonsterTrain2Poju.Model
 
             List<CardToken> hand = context.Cards.Hand.Where(item => item.InstanceId != card.InstanceId).ToList();
             List<CardToken> discard = context.Cards.Discard.ToList();
-            CardPileState[] piles = source.OtherPiles.ToArray();
             bool terminal = outcome == RoomOutcome.BattleWon || outcome == RoomOutcome.PlayerDefeated;
             if (spellApplied)
             {
@@ -226,12 +229,15 @@ namespace MonsterTrain2Poju.Model
                     CardPileState? standby = piles.FirstOrDefault(pile => pile.Name == "Standby");
                     CardPileState? exhausted = piles.FirstOrDefault(pile => pile.Name == "Exhausted");
                     CardToken? deadCard = standby?.Cards.FirstOrDefault(item => item.InstanceId == dead.SpawnerCardId);
+                    if (deadCard == null && exhausted?.Cards.Any(item => item.InstanceId == dead.SpawnerCardId) == true) continue;
                     if (standby == null || exhausted == null || deadCard == null) return Unsupported("Missing dead unit spawner card routing.");
                     piles = piles.Select(pile => pile == standby ? CardPileModel.Remove(pile, dead.SpawnerCardId) : pile == exhausted
                             ? new CardPileState(pile.Name, pile.Cards.Concat(new[] { deadCard }).ToArray()) : pile).ToArray();
                 }
             }
             if (terminal) piles = piles.Select(CardPileModel.Clear).ToArray();
+            // Native DiscardCard/PurgeCard remove a naturally played card's retained buffer reference.
+            piles = piles.Select(pile => pile.Name == "DiscardBuffer" ? CardPileModel.Remove(pile, card.InstanceId) : pile).ToArray();
             if (terminal && rule.Destination != "Discard") return Unsupported("Terminal spell routing outside discard is not validated.");
             if (rule.Destination == "Discard") discard.Add(card);
             else

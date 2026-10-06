@@ -70,6 +70,15 @@ namespace MonsterTrain2Poju.Model
         }
     }
 
+    public sealed class CardEffectCounter
+    {
+        public int EffectIndex { get; }
+        public string Type { get; }
+        public int Value { get; }
+        public CardEffectCounter(int effectIndex, string type, int value)
+        { EffectIndex = effectIndex; Type = type; Value = value; }
+    }
+
     public sealed class CardInstanceState
     {
         public int InstanceId { get; }
@@ -80,22 +89,33 @@ namespace MonsterTrain2Poju.Model
         public int LastForgedAmount { get; }
         public int PlayCount { get; }
         public IReadOnlyList<string> ExternalInteractions { get; }
+        public IReadOnlyList<CardEffectCounter>? EffectCounters { get; }
         public CardInstanceState(int instanceId, string dataId, CardModifiers permanent, CardModifiers temporary,
-            int lastPlayedCost, int lastForgedAmount, int playCount, IReadOnlyList<string> externalInteractions)
+            int lastPlayedCost, int lastForgedAmount, int playCount, IReadOnlyList<string> externalInteractions,
+            IReadOnlyList<CardEffectCounter>? effectCounters = null)
         { InstanceId = instanceId; DataId = dataId; Permanent = permanent; Temporary = temporary;
             LastPlayedCost = lastPlayedCost; LastForgedAmount = lastForgedAmount; PlayCount = playCount;
-            ExternalInteractions = Array.AsReadOnly(externalInteractions.ToArray()); }
+            ExternalInteractions = Array.AsReadOnly(externalInteractions.ToArray());
+            EffectCounters = effectCounters == null ? null : Array.AsReadOnly(effectCounters.OrderBy(counter => counter.EffectIndex).ToArray()); }
         public static CardInstanceState Empty(int id, string dataId) => new CardInstanceState(id, dataId,
             CardModifiers.Empty(), CardModifiers.Empty(), 0, 0, 0, Array.Empty<string>());
         public CardInstanceState OnDiscard(bool played, int cost = 0) => new CardInstanceState(InstanceId, DataId,
             Permanent, Temporary.OnDiscard(), played ? cost : LastPlayedCost, LastForgedAmount,
-            PlayCount + (played ? 1 : 0), ExternalInteractions);
+            PlayCount + (played ? 1 : 0), ExternalInteractions, EffectCounters);
+        internal CardInstanceState WithCounter(int index, string type, int value) => new CardInstanceState(InstanceId, DataId,
+            Permanent, Temporary, LastPlayedCost, LastForgedAmount, PlayCount, ExternalInteractions,
+            (EffectCounters ?? Array.Empty<CardEffectCounter>()).Where(counter => counter.EffectIndex != index)
+                .Concat(new[] { new CardEffectCounter(index, type, value) }).ToArray());
     }
 
     public static class CardModifierModel
     {
         internal static string? UnsupportedReason(CardInstanceState instance)
         {
+            if (instance.EffectCounters != null && (instance.EffectCounters.Any(counter => counter.EffectIndex < 0 ||
+                counter.Value < 0 || counter.Type != "CardEffectDiscardHand") ||
+                instance.EffectCounters.Select(counter => counter.EffectIndex).Distinct().Count() != instance.EffectCounters.Count))
+                return "Invalid or unmodeled card effect counters.";
             var interactions = instance.ExternalInteractions.Concat(instance.Permanent.ExternalInteractions)
                 .Concat(instance.Temporary.ExternalInteractions).Concat(instance.Permanent.Upgrades.Concat(instance.Temporary.Upgrades)
                     .SelectMany(upgrade => upgrade.ExternalInteractions)).ToList();
@@ -153,7 +173,8 @@ namespace MonsterTrain2Poju.Model
                 effect.Range == null ? null : new CardEffectRange(ResolveValue(effect, effect.Range.Min),
                     ResolveValue(effect, effect.Range.Max), effect.Range.Multiplier), effect.Filters)).ToArray();
             return new CardPlayRule(rule.DataId, rule.AssetKey, UpgradedStat(rule.Cost, "Cost", true, modifiers), rule.Effect,
-                rule.Destination, unit, interactions.Distinct().OrderBy(value => value, StringComparer.Ordinal).ToArray(), effects, rule.UpgradeInteractions);
+                rule.Destination, unit, interactions.Distinct().OrderBy(value => value, StringComparer.Ordinal).ToArray(), effects, rule.UpgradeInteractions,
+                rule.HandDiscardInteractions, rule.HandConsumeInteractions);
 
             int ResolveValue(CardActionEffect effect, int value) => effect.Type == "Damage" || effect.Type == "Heal"
                 ? UpgradedStat(UpgradedStat(value, effect.Type, true, instance.Permanent), effect.Type, true, instance.Temporary) : value;

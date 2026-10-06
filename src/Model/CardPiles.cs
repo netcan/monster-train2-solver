@@ -1,10 +1,26 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace MonsterTrain2Poju.Model
 {
     public static class CardPileModel
     {
+        public static string? ValidateMembership(CardCycleState cards, IReadOnlyList<CardPileState> piles, int nextCardId)
+        {
+            CardToken[] primary = cards.Hand.Concat(cards.Draw).Concat(cards.Discard)
+                .Concat(piles.Where(pile => pile.Name != "DiscardBuffer").SelectMany(pile => pile.Cards)).ToArray();
+            if (primary.Select(card => card.InstanceId).Distinct().Count() != primary.Length ||
+                primary.Any(card => card.InstanceId <= 0 || card.InstanceId >= nextCardId))
+                return "Invalid card identity allocation or duplicate pile membership.";
+            CardToken[] buffer = piles.Where(pile => pile.Name == "DiscardBuffer").SelectMany(pile => pile.Cards).ToArray();
+            if (buffer.Select(card => card.InstanceId).Distinct().Count() != buffer.Length ||
+                buffer.Any(card => card.InstanceId <= 0 || card.InstanceId >= nextCardId ||
+                    primary.Any(other => other.InstanceId == card.InstanceId && other.DataId != card.DataId)))
+                return "Invalid discard buffer identity or duplicate buffer reference.";
+            return null;
+        }
+
         public static string? Validate(CardPileState source)
         {
             if (source.EntrySlots == null && source.FreeSlots == null) return null; // Legacy captures.

@@ -39,11 +39,14 @@ namespace MonsterTrain2Poju.Probe
         private bool? stoppingOutcome;
         internal bool? TerminalEffectsSettled { get; private set; }
         internal int CaptureFailures { get; private set; }
-        internal int Mismatches => stages.Count(stage => stage.Difference != null) + cardCycles.Mismatches + trainCombat.Mismatches + spawning.Mismatches + turns.Mismatches + actions.Mismatches;
-        internal int Unsupported => stages.Count(stage => !stage.Predicted.Supported) + cardCycles.Unsupported + trainCombat.Unsupported + spawning.Unsupported + turns.Unsupported + actions.Unsupported;
+        internal int Mismatches => stages.Count(stage => stage.Difference != null) + cardCycles.Mismatches + trainCombat.Mismatches + spawning.Mismatches + turns.Mismatches + actions.Mismatches +
+            HandRemovalScenario.Records.Count(record => record.Difference != null);
+        internal int Unsupported => stages.Count(stage => !stage.Predicted.Supported) + cardCycles.Unsupported + trainCombat.Unsupported + spawning.Unsupported + turns.Unsupported + actions.Unsupported +
+            HandRemovalScenario.Records.Count(record => !record.Predicted.Supported);
         internal int Pending => stages.Count(stage => stage.Actual == null) + cardCycles.Records.Count(record => record.Actual == null) +
             trainCombat.Records.Count(record => record.Actual == null) + spawning.Records.Count(record => record.Actual == null) +
-            turns.Records.Count(record => record.Actual == null) + actions.Records.Count(record => record.Actual == null);
+            turns.Records.Count(record => record.Actual == null) + actions.Records.Count(record => record.Actual == null) +
+            HandRemovalScenario.Records.Count(record => record.Actual == null);
 
         internal FullBattleTrace(ManualLogSource log)
         {
@@ -165,6 +168,17 @@ namespace MonsterTrain2Poju.Probe
                 new UnityRng(battle[0], battle[1], battle[2], battle[3]), state.Gold, projection.NextCardId,
                 cards.GetMaxHandSize(), new[] { "armor", "valor", "pyregel" }.Select(id => BattleActionProbe.Status(id, 1)).ToArray(),
                 statistics, instances, registry, managers.GetCombatManager()!.AllScenarioBossesDead);
+        }
+
+        internal CardPileState[] CaptureOtherPiles()
+        {
+            CardManager cards = AllGameManagers.Instance!.GetCardManager()!;
+            var standby = (Dictionary<CardState, RemoveFromStandByCondition>)AccessTools.Field(typeof(CardManager), "pileStandBy").GetValue(cards);
+            return new[] { StandbyPileProbe.Capture(standby, projection),
+                new CardPileState("DiscardBuffer", projection.CaptureCards(cards.GetDiscardBufferPile())),
+                new CardPileState("Exhausted", projection.CaptureCards(cards.GetExhaustedPile())),
+                new CardPileState("Purged", projection.CaptureCards(cards.GetPurgedPile())),
+                new CardPileState("Eaten", projection.CaptureCards(cards.GetEatenPile())) };
         }
 
         private static CombatTrigger[] CaptureTriggers(CharacterState unit, List<string> interactions)
@@ -300,7 +314,7 @@ namespace MonsterTrain2Poju.Probe
             string path = Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!, "full-battle.json");
             File.WriteAllText(path, JsonConvert.SerializeObject(new
             {
-                Schema = 18,
+                Schema = 19,
                 GameVersion = Application.version,
                 GameModuleMvid = typeof(CardState).Assembly.ManifestModule.ModuleVersionId,
                 NativeWon,
@@ -321,6 +335,7 @@ namespace MonsterTrain2Poju.Probe
                 CrossRoomTargets = CrossRoomSpellScenario.Targets,
                 NumericRanges = NumericRangeScenario.Samples,
                 FilteredTargets = TargetFilterScenario.Targets,
+                HandRemovals = HandRemovalScenario.Records,
                 UiRngIsolation = UiRngIsolation.Records,
                 Checkpoints = checkpoints
             }, Formatting.Indented));

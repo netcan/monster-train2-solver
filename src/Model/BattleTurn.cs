@@ -77,11 +77,9 @@ namespace MonsterTrain2Poju.Model
                 if (pileError != null) return Unsupported(pileError);
             }
             if (source.MoonPhase != "Full" && source.MoonPhase != "New") return Unsupported("Unmodeled moon phase.");
-            CardToken[] allCards = source.Spawn.Train.Context.Cards.Hand.Concat(source.Spawn.Train.Context.Cards.Draw)
-                .Concat(source.Spawn.Train.Context.Cards.Discard).Concat(source.OtherPiles.SelectMany(pile => pile.Cards)).ToArray();
-            if (allCards.Select(card => card.InstanceId).Distinct().Count() != allCards.Length ||
-                allCards.Any(card => card.InstanceId >= source.Spawn.Train.Context.NextCardId))
-                return Unsupported("Invalid card identity allocation or duplicate pile membership.");
+            string? membershipError = CardPileModel.ValidateMembership(source.Spawn.Train.Context.Cards, source.OtherPiles,
+                source.Spawn.Train.Context.NextCardId);
+            if (membershipError != null) return Unsupported(membershipError);
             int[] spawners = source.Spawn.Train.Rooms.SelectMany(room => room.Units)
                 .Where(unit => unit.SpawnerCardId > 0).Select(unit => unit.SpawnerCardId).ToArray();
             if (spawners.Distinct().Count() != spawners.Length) return Unsupported("Shared unit spawner cards are not modeled.");

@@ -29,11 +29,13 @@ namespace MonsterTrain2Poju.Model
         public IReadOnlyList<CombatEvent> Events { get; }
         public string? UnsupportedReason { get; }
         public IReadOnlyList<SpellTargetCollection> TargetCollections { get; }
+        public IReadOnlyList<CardPileState>? OtherPiles { get; }
         public bool Supported => State != null;
         internal TrainSpellResult(TrainCombatState? state, RoomOutcome outcome, IReadOnlyList<CombatEvent> events, string? error = null,
-            IReadOnlyList<SpellTargetCollection>? collections = null)
+            IReadOnlyList<SpellTargetCollection>? collections = null, IReadOnlyList<CardPileState>? otherPiles = null)
         { State = state; Outcome = outcome; Events = Array.AsReadOnly(events.ToArray()); UnsupportedReason = error;
-            TargetCollections = Array.AsReadOnly((collections ?? Array.Empty<SpellTargetCollection>()).ToArray()); }
+            TargetCollections = Array.AsReadOnly((collections ?? Array.Empty<SpellTargetCollection>()).ToArray());
+            OtherPiles = otherPiles == null ? null : Array.AsReadOnly(otherPiles.ToArray()); }
     }
 
     public static class CardSpellModel
@@ -91,11 +93,12 @@ namespace MonsterTrain2Poju.Model
         }
 
         public static TrainSpellResult Apply(TrainCombatState source, int roomIndex, IReadOnlyList<CardActionEffect> effects,
-            int targetId, int sourceCardId = 0, BattlePlayRules? definitions = null)
-            => ApplyCore(source, roomIndex, effects, targetId, sourceCardId, null, null, definitions, fullTrain: true);
+            int targetId, int sourceCardId = 0, BattlePlayRules? definitions = null, IReadOnlyList<CardPileState>? otherPiles = null)
+            => ApplyCore(source, roomIndex, effects, targetId, sourceCardId, null, null, definitions, fullTrain: true, otherPiles);
 
         private static TrainSpellResult ApplyCore(TrainCombatState source, int roomIndex, IReadOnlyList<CardActionEffect> effects,
-            int targetId, int sourceCardId, int? playerCapacity, int? enemyCapacity, BattlePlayRules? definitions, bool fullTrain)
+            int targetId, int sourceCardId, int? playerCapacity, int? enemyCapacity, BattlePlayRules? definitions, bool fullTrain,
+            IReadOnlyList<CardPileState>? otherPiles = null)
         {
             string? error = Validate(source, roomIndex, effects, targetId, fullTrain);
             if (error != null) return UnsupportedTrain(error);
@@ -112,6 +115,9 @@ namespace MonsterTrain2Poju.Model
             RoomOutcome outcome = RoomOutcome.Exchanged;
             bool bossDead = source.Context!.AllScenarioBossesDead == true;
             CardInstanceState? resolvingCard = source.Context.FindCard(sourceCardId);
+            CardPileState[]? piles = otherPiles?.ToArray();
+            var deferredExhaustion = new HashSet<int>();
+            string? routingError = null;
             for (int index = 0; index < effects.Count; index++)
             {
                 CardActionEffect effect = effects[index];
@@ -166,8 +172,24 @@ namespace MonsterTrain2Poju.Model
                         new[] { effect.Statuses[chosen.Value] }, effect.Upgrade, effect.Lifetime, effect.Tests, effect.Range, effect.Filters);
                 }
                 UnityRng effectRng = state.Context!.BattleRng;
-                effect = Sample(effect, ref effectRng);
+                if (effect.Type != "DiscardHand") effect = Sample(effect, ref effectRng);
                 state = WithContext(state, state.Context.WithBattleRng(effectRng));
+                if (effect.Type == "DiscardHand")
+                {
+                    int[] pendingCards = source.Rooms.SelectMany(room => room.Units).Where(unit => pendingDeadRooms.ContainsKey(unit.Id) &&
+                        unit.SpawnerCardId > 0 && piles?.Any(pile => pile.Name == "Standby" && pile.Cards.Any(card => card.InstanceId == unit.SpawnerCardId)) == true)
+                        .Select(unit => unit.SpawnerCardId).ToArray();
+                    bool runsQueue = state.Rooms.Single(room => room.RoomIndex == roomIndex).Units.Count > 0 || pendingDeadRooms.Values.Contains(roomIndex);
+                    HandRemovalResult removed = HandRemovalModel.Apply(state.Context!, effect.Value, sourceCardId, index, definitions, piles,
+                        pendingCards, runsQueue);
+                    if (!removed.Supported) return UnsupportedTrain(removed.UnsupportedReason!);
+                    piles = removed.OtherPiles?.ToArray();
+                    state = WithContext(state, removed.Context!);
+                    foreach (int id in pendingCards.Where(id => piles?.Any(pile => pile.Name == "Exhausted" && pile.Cards.Any(card => card.InstanceId == id)) == true))
+                        deferredExhaustion.Remove(id);
+                    if (removed.RemovedCards.Count > 0 && (effect.Value == 1 || pendingCards.Length > 0 && runsQueue)) DrainDeaths();
+                    continue;
+                }
                 if (effect.Type == "Draw")
                 {
                     CombatContext context = state.Context!;
@@ -201,10 +223,15 @@ namespace MonsterTrain2Poju.Model
                     if (effect.Type == "FloorRearrange" && pendingDeadRooms.Count > 0)
                         return UnsupportedTrain("Rearranging a floor with pending death positions is not modeled.");
                     // Damage drains previously finished deaths before marking its own final victim finished.
-                    if (effect.Type == "Damage") { FocusDamageStatuses(target, targetRoom!, effect.Value); DrainDeaths(); }
+                    if (effect.Type == "Damage")
+                    {
+                        FocusDamageStatuses(target, targetRoom!, effect.Value); DrainDeaths();
+                        // Draining a prior death updates shared statistics; the next target must read that new context.
+                        targetRoom = state.Rooms.Single(room => room.RoomIndex == targetRoom!.RoomIndex);
+                    }
                     RoomPlayRule? capacity = definitions?.Rooms.FirstOrDefault(item => item.RoomIndex == targetRoom!.RoomIndex);
                     RoomCombatResult applied = ApplyOne(targetRoom!, effect, target, sourceCardId,
-                        capacity?.PlayerCapacity ?? playerCapacity, capacity?.EnemyCapacity ?? enemyCapacity);
+                        capacity?.PlayerCapacity ?? playerCapacity, capacity?.EnemyCapacity ?? enemyCapacity, deferSpawnerExhaustion: piles != null);
                     if (!applied.Supported) return UnsupportedTrain(applied.UnsupportedReason!);
                     state = ReplaceRoom(state, applied.State!);
                     events.AddRange(applied.Events);
@@ -213,7 +240,12 @@ namespace MonsterTrain2Poju.Model
                         (trigger.IgnoreSilence || target.Statuses.All(status => status.Id != "silenced"))))
                         focusedRoom = null; // Trigger notification suppression/focus is not captured yet.
                     if (effect.Type == "Damage" && !applied.State!.Units.Any(unit => unit.Id == id))
+                    {
                         pendingDeadRooms[id] = targetRoom!.RoomIndex;
+                        if (piles != null && target.SpawnerCardId > 0) deferredExhaustion.Add(target.SpawnerCardId);
+                    }
+                    else if (piles != null && target.SpawnerCardId > 0 && !applied.State!.Units.Any(unit => unit.Id == id))
+                        RouteDeadCard(target.SpawnerCardId);
                     CombatUnit? afterTarget = applied.State!.Units.FirstOrDefault(unit => unit.Id == id);
                     bool upgradeApplied = effect.Type == "UnitUpgrade" && (afterTarget == null ||
                         afterTarget.Modifiers!.Upgrades.Count > target.Modifiers!.Upgrades.Count);
@@ -236,10 +268,35 @@ namespace MonsterTrain2Poju.Model
                 }
                 if (effect.Type == "AddStatus") DrainDeaths();
             }
-            return new TrainSpellResult(state, outcome, events, collections: collections);
+            DrainDeaths(); // The card's final played callbacks finish the remaining death queue.
+            if (routingError != null) return UnsupportedTrain(routingError);
+            return new TrainSpellResult(state, outcome, events, collections: collections, otherPiles: piles);
+
+            void RouteDeadCard(int cardId)
+            {
+                CardPileState? standby = piles!.FirstOrDefault(pile => pile.Name == "Standby");
+                CardPileState? exhausted = piles!.FirstOrDefault(pile => pile.Name == "Exhausted");
+                CardToken? token = standby?.Cards.FirstOrDefault(card => card.InstanceId == cardId);
+                if (token == null && exhausted?.Cards.Any(card => card.InstanceId == cardId) == true) return;
+                if (standby == null || exhausted == null || token == null)
+                {
+                    routingError = "Missing dead spawner routing during the trigger queue.";
+                    return;
+                }
+                piles = piles!.Select(pile => pile == standby ? CardPileModel.Remove(pile, cardId) :
+                    pile == exhausted ? CardPileModel.Add(exhausted, token) : pile).ToArray();
+                if (deferredExhaustion.Remove(cardId)) state = WithContext(state, state.Context!.WithStatistics(
+                    state.Context.LiveStatistics?.Increment(cardId, "TimesExhausted", requireTrackedCard: state.Context.CardInstances?.Count == 0)));
+            }
 
             void DrainDeaths()
             {
+                if (piles != null)
+                    foreach (int id in pendingDeadRooms.Keys)
+                    {
+                        CombatUnit? dead = source.Rooms.SelectMany(room => room.Units).FirstOrDefault(unit => unit.Id == id);
+                        if (dead?.SpawnerCardId > 0) RouteDeadCard(dead.SpawnerCardId);
+                    }
                 if (pendingDeadRooms.Count > 0) focusedRoom = pendingDeadRooms.Values.Last();
                 pendingDeadRooms.Clear(); positions = CardTargetModel.Positions(state);
             }
@@ -327,7 +384,7 @@ namespace MonsterTrain2Poju.Model
             {
                 string? filterError = effect.Filters?.Validate();
                 if (filterError != null) return filterError;
-                if (effect.Range != null)
+                if (effect.Range != null && effect.Type != "DiscardHand")
                 {
                     if (!new[] { "Damage", "Heal", "AddStatus", "BuffAttack", "DebuffAttack", "BuffHealth", "DebuffHealth", "Draw" }.Contains(effect.Type))
                         return "Unmodeled range consumer " + effect.Type;
@@ -341,11 +398,11 @@ namespace MonsterTrain2Poju.Model
                     continue;
                 }
                 if (!CardTargetModel.Supports(effect.Target)) return "Unimplemented spell targeting " + effect.Target;
-                if (!new[] { "Damage", "Heal", "AddStatus", "FloorRearrange", "UnitUpgrade", "RemoveUnitUpgrade", "BuffAttack", "DebuffAttack", "BuffHealth", "DebuffHealth", "Draw" }.Contains(effect.Type))
+                if (!new[] { "Damage", "Heal", "AddStatus", "FloorRearrange", "UnitUpgrade", "RemoveUnitUpgrade", "BuffAttack", "DebuffAttack", "BuffHealth", "DebuffHealth", "Draw", "DiscardHand" }.Contains(effect.Type))
                     return "Unimplemented spell effect " + effect.Type;
                 if ((effect.Type == "UnitUpgrade" || effect.Type == "RemoveUnitUpgrade") && effect.Upgrade == null)
                     return "Missing unit upgrade definition.";
-                if (effect.Value < 0 && !AttackChange(effect) && !new[] { "Damage", "Heal", "AddStatus", "BuffHealth", "DebuffHealth", "Draw" }.Contains(effect.Type) ||
+                if (effect.Value < 0 && !AttackChange(effect) && !new[] { "Damage", "Heal", "AddStatus", "BuffHealth", "DebuffHealth", "Draw", "DiscardHand" }.Contains(effect.Type) ||
                     effect.Type == "FloorRearrange" && effect.Value > 1) return "Invalid spell effect value.";
                 if (effect.Type == "BuffHealth" && effect.Lifetime != "" && effect.Lifetime != "TemporaryUntilEndOfBattle" &&
                     effect.Lifetime != "TemporaryUntilUnitDeath") return "Unmodeled maximum-health buff lifetime.";
@@ -378,8 +435,8 @@ namespace MonsterTrain2Poju.Model
 
         private static bool PassesTest(CardActionEffect effect, int count, bool bossDead = false, CombatContext? context = null, bool preview = false)
         {
-            if (preview && effect.Type == "Draw") return false;
-            if (bossDead && !(effect.Tests?.CanPlayAfterBossDead ?? (effect.Type != "HandUpgrade" && effect.Type != "Draw"))) return false;
+            if (preview && (effect.Type == "Draw" || effect.Type == "DiscardHand")) return false;
+            if (bossDead && !(effect.Tests?.CanPlayAfterBossDead ?? (effect.Type != "HandUpgrade" && effect.Type != "Draw" && effect.Type != "DiscardHand"))) return false;
             switch (effect.Type)
             {
                 case "Draw": return context != null && context.Cards.Hand.Count - 1 < context.MaxHandSize;
@@ -417,9 +474,9 @@ namespace MonsterTrain2Poju.Model
         }
 
         private static RoomCombatResult ApplyOne(RoomCombatState state, CardActionEffect effect, CombatUnit target,
-            int sourceCardId, int? playerCapacity, int? enemyCapacity)
+            int sourceCardId, int? playerCapacity, int? enemyCapacity, bool deferSpawnerExhaustion = false)
         {
-            if (effect.Type == "Damage") return RoomCombatModel.ApplyCardDamage(state, target.Id, Math.Max(0, effect.Value), sourceCardId);
+            if (effect.Type == "Damage") return RoomCombatModel.ApplyCardDamage(state, target.Id, Math.Max(0, effect.Value), sourceCardId, deferSpawnerExhaustion);
             if (effect.Type == "Heal") return effect.Value < 0 ? Unchanged(state) : RoomCombatModel.ApplyCardHeal(state, target.Id, effect.Value);
             if (AttackChange(effect)) return UnitAttackModel.Apply(state, target.Id, effect.Value, effect.Type == "DebuffAttack");
             if (effect.Type == "BuffHealth" || effect.Type == "DebuffHealth")
