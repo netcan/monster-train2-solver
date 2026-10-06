@@ -148,8 +148,11 @@ namespace MonsterTrain2Poju.Probe
         {
             StatusEffectData rule = StatusEffectManager.Instance.GetStatusEffectDataById(id)!;
             return new CombatStatus(id, count, rule.GetParamInt(), rule.GetRemoveWhenTriggered(), rule.GetRemoveStackAtEndOfTurn(),
-                rule.GetRemoveAtEndOfTurn(), rule.GetRemoveAtEndOfTurnAfterPostCombat(), false, rule.GetSkipTriggerDuringDeployment(), rule.GetRemoveDuringDeployment());
+                rule.GetRemoveAtEndOfTurn(), rule.GetRemoveAtEndOfTurnAfterPostCombat(), false, rule.GetSkipTriggerDuringDeployment(), rule.GetRemoveDuringDeployment(),
+                TriggeredVfx(rule, -1f), TriggeredVfx(rule, 1f));
         }
+
+        internal static bool TriggeredVfx(StatusEffectData rule, float facing) => rule.GetOnTriggeredVFX()?.GetVfxPrefab(facing) != null;
 
         internal void Begin(PlayCardAction action)
         {

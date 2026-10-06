@@ -128,7 +128,9 @@ namespace MonsterTrain2Poju.Probe
                     statuses.Add(new CombatStatus(rule.GetStatusId(), status.Count, rule.GetParamInt(),
                         rule.GetRemoveWhenTriggered(), rule.GetRemoveStackAtEndOfTurn(), rule.GetRemoveAtEndOfTurn(),
                         rule.GetRemoveAtEndOfTurnAfterPostCombat(), rule.PreventRemovalDuringRelentlessPhase,
-                        rule.GetSkipTriggerDuringDeployment(), rule.GetRemoveDuringDeployment()));
+                        rule.GetSkipTriggerDuringDeployment(), rule.GetRemoveDuringDeployment(),
+                        BattleActionProbe.TriggeredVfx(rule.GetSourceStatusEffectData(), -1f),
+                        BattleActionProbe.TriggeredVfx(rule.GetSourceStatusEffectData(), 1f)));
                 }
                 CombatTeam team = character.GetTeamType() == Team.Type.Heroes ? CombatTeam.Enemy : CombatTeam.Player;
                 bool endsBattle = team == CombatTeam.Enemy &&
@@ -296,7 +298,7 @@ namespace MonsterTrain2Poju.Probe
             string path = Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!, "full-battle.json");
             File.WriteAllText(path, JsonConvert.SerializeObject(new
             {
-                Schema = 13,
+                Schema = 14,
                 GameVersion = Application.version,
                 GameModuleMvid = typeof(CardState).Assembly.ManifestModule.ModuleVersionId,
                 NativeWon,
@@ -314,6 +316,7 @@ namespace MonsterTrain2Poju.Probe
                 Spawns = spawning.Records,
                 Turns = turns.Records,
                 Actions = actions.Records,
+                CrossRoomTargets = CrossRoomSpellScenario.Targets,
                 Checkpoints = checkpoints
             }, Formatting.Indented));
             return path;

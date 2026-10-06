@@ -190,7 +190,7 @@ namespace MonsterTrain2Poju.Model
                 }
                 else if (action.TargetUnitId != 0) return Illegal("A room or hand spell does not take a unit target.");
                 TrainCombatState spellInput = CardSpellModel.WithContext(train, context);
-                SpellCastCheck cast = CardSpellModel.TestPlay(spellInput, action.RoomIndex, rule.Effects, action.TargetUnitId);
+                SpellCastCheck cast = CardSpellModel.TestPlay(spellInput, action.RoomIndex, rule.Effects, action.TargetUnitId, source.PlayRules);
                 if (!cast.Supported) return Unsupported(cast.UnsupportedReason!);
                 if (!cast.CanPlay) return Illegal("Every effect failed its cast test or a required effect failed.");
                 TrainSpellResult result = CardSpellModel.Apply(spellInput, action.RoomIndex, rule.Effects, action.TargetUnitId,

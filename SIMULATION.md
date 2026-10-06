@@ -19,6 +19,7 @@ are copied immutable values; independent child states can run on worker threads.
 | Random room targets | `CardTargetModel` and `UnityRng` | Native enemy/both-team/friendly selection, zero heals, empty follow-ups, last-target identity and complete Battle RNG states |
 | Random status application | `CardSpellModel` | Native effect-wide status pools, per-target chances in reverse order, immunity, empty pools and post-kill RNG |
 | Train spell execution | `CardSpellModel` | A single effect chain carries all rooms, shared card/statistic/RNG state and global target references; dead-unit movement and spawner routing are updated across rooms |
+| Cross-room targeting | `CardTargetModel` and `CardSpellModel` | Native tower/front/above/global HP/random selections, exact live target IDs, deferred death positions and status/death focus changes |
 | Integer RNG and shuffle | `UnityRng` | 768 native integer draws, seed initialization and complete four-word states |
 | Basic draw/discard cycle | `CardCycleModel` | 13 consecutive native operations including reshuffle |
 | Room attack exchange | `RoomCombatModel.Exchange` | Ordered initiative, target selection, retargeting, shield/armor and retaliation checks |
@@ -320,7 +321,7 @@ Native effect-test metadata is captured with schema 11. Casting tests inspect th
 unchanged pre-cast state: any tested success permits casting unless a mandatory
 effect fails. Runtime tests run again after preceding effects, and a configured
 failure can stop the rest of the sequence. Unknown target modes, additional target
-filters, cross-room targets and untested-first effects requiring uncaptured prior
+filters and untested-first effects requiring uncaptured prior
 target history remain unsupported. Rearrangement still requires a drop target.
 
 Legacy oracles sampled the entry to native `StopCombat`, before its
@@ -421,6 +422,48 @@ and 32 isolated parallel branches. Nonstackable status casting rules, subtype
 conditions, range/scaling parameters and additional status triggers remain
 explicitly unsupported.
 
+`results/full-battle-cross-room-spells.json.gz` and
+`results/full-battle-cross-room-targets.json.gz` replace the owned rearrangement
+spell with controlled cross-room chains, preserving the natural boss and waves.
+They cover `Tower`, `FrontInAllRooms`, `FrontInRoomAndRoomAbove`,
+`WeakestAllRooms`, `StrongestAllRooms`, `RandomFromAnyRoom` and
+`StrongestLastTargetedCharactersRoom`. The first oracle matches 12 plays, four
+EndTurns, 30 room stages, eight card cycles, eight train phases and seven spawns;
+the second preserves surviving enemies and matches 15 plays, five EndTurns,
+42 room stages, nine card cycles, nine train phases and seven spawns. Both
+independent root policies, mid-battle suffixes and 16 parallel branches match
+the complete terminal state, with Pyre health 80/80.
+
+Schema 14 captures every live effect's target IDs and last-reference room/death
+state for these two scenarios. The checker recomputes the collections from each
+play's input and compares them in order, including effects with empty collections
+and runtime tests that skip execution. This detects intermediate target changes
+even when subsequent lethal damage or healing makes final unit states identical.
+The lethal fixture contains 122 exact collections and 16 remote friendly
+heal/upgrade outcomes; the surviving-enemy fixture contains 100 collections and
+13 remote outcomes. Both include enemies on multiple floors.
+
+Native `RoomState.AddCharactersToList` re-sorts the accumulated list by team and
+physical position every time it adds a room. Tower, all-front and global HP
+selectors preserve these repeated sorts; health ties also depend on room
+insertion order. Global random selection uses that candidate order and consumes
+one Battle draw for a nonempty collection, including a single candidate.
+Static Pyre room definitions bound front ranges even after Pyre removal.
+
+Damage leaves its last dead victim's spawn point available until the next native
+trigger queue drain. Strongest-last-room can therefore select a living unit in
+that reference's room before removal and yields an empty collection afterward.
+The engine tracks these pending positions independently of living room units.
+Native status triggers and death cleanup can change the UI's selected floor,
+which `FrontInRoomAndRoomAbove` reads during resolution. Status-trigger VFX
+metadata captures focus behavior for each team's facing; missing metadata
+rejects a dependent room-and-above transition. OnHeal trigger notification
+focus, rearrangement with pending death positions and mandatory room tests that
+depend on the auxiliary random stream remain explicitly unsupported.
+Pure checks additionally cover per-target room capacity, global HP ties,
+single/empty RNG draws, pending-reference cleanup, armor focus, malformed inputs
+and 32 parallel branches with unchanged parents.
+
 Run the saved native oracles without the game:
 
 ```powershell
@@ -448,6 +491,8 @@ pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy units-spells-and-j
 pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy units-spells-and-junk -PostKillSpells
 pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy units-spells-and-junk -RandomSpells
 pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy units-spells-and-junk -RandomStatus
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy units-spells-and-junk -CrossRoomSpells
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy units-spells-and-junk -CrossRoomTargets
 ```
 
 The runner checks the explicit probe success marker, capture failures, pending
@@ -463,9 +508,8 @@ API delegates to the same engine for local checks. Each applied target updates
 its own room, then shares the resulting context with every other room; fixed
 target collections and last-target identities span the train. Capacity-limited
 unit upgrades consult the target room's definition. Dead movement and standby
-spawner routing use all rooms. The 17 saved native battle oracles exercise this
-engine through the normal card-action path; global target modes are the next
-extension.
+spawner routing use all rooms. The 19 saved native battle oracles exercise this
+engine through the normal card-action path, including cross-room target modes.
 
 1. Capture a self-contained starting battle state and its static rule definitions.
    Include card instance identities, permanent/temporary modifications, card

@@ -13,15 +13,26 @@ namespace MonsterTrain2Poju.Model
         { CanPlay = canPlay; UnsupportedReason = error; }
     }
 
+    public sealed class SpellTargetCollection
+    {
+        public int EffectIndex { get; }
+        public IReadOnlyList<int> UnitIds { get; }
+        internal SpellTargetCollection(int effectIndex, IReadOnlyList<int> unitIds)
+        { EffectIndex = effectIndex; UnitIds = Array.AsReadOnly(unitIds.ToArray()); }
+    }
+
     public sealed class TrainSpellResult
     {
         public TrainCombatState? State { get; }
         public RoomOutcome Outcome { get; }
         public IReadOnlyList<CombatEvent> Events { get; }
         public string? UnsupportedReason { get; }
+        public IReadOnlyList<SpellTargetCollection> TargetCollections { get; }
         public bool Supported => State != null;
-        internal TrainSpellResult(TrainCombatState? state, RoomOutcome outcome, IReadOnlyList<CombatEvent> events, string? error = null)
-        { State = state; Outcome = outcome; Events = Array.AsReadOnly(events.ToArray()); UnsupportedReason = error; }
+        internal TrainSpellResult(TrainCombatState? state, RoomOutcome outcome, IReadOnlyList<CombatEvent> events, string? error = null,
+            IReadOnlyList<SpellTargetCollection>? collections = null)
+        { State = state; Outcome = outcome; Events = Array.AsReadOnly(events.ToArray()); UnsupportedReason = error;
+            TargetCollections = Array.AsReadOnly((collections ?? Array.Empty<SpellTargetCollection>()).ToArray()); }
     }
 
     public static class CardSpellModel
@@ -34,11 +45,12 @@ namespace MonsterTrain2Poju.Model
         public static SpellCastCheck TestPlay(RoomCombatState source, IReadOnlyList<CardActionEffect> effects, int targetId)
             => TestPlayCore(SingleRoom(source), source.RoomIndex, effects, targetId, fullTrain: false);
 
-        public static SpellCastCheck TestPlay(TrainCombatState source, int roomIndex, IReadOnlyList<CardActionEffect> effects, int targetId)
-            => TestPlayCore(source, roomIndex, effects, targetId, fullTrain: true);
+        public static SpellCastCheck TestPlay(TrainCombatState source, int roomIndex, IReadOnlyList<CardActionEffect> effects, int targetId,
+            BattlePlayRules? definitions = null)
+            => TestPlayCore(source, roomIndex, effects, targetId, fullTrain: true, definitions);
 
         private static SpellCastCheck TestPlayCore(TrainCombatState source, int roomIndex, IReadOnlyList<CardActionEffect> effects,
-            int targetId, bool fullTrain)
+            int targetId, bool fullTrain, BattlePlayRules? definitions = null)
         {
             string? error = Validate(source, roomIndex, effects, targetId, fullTrain);
             if (error != null) return new SpellCastCheck(false, error);
@@ -51,7 +63,7 @@ namespace MonsterTrain2Poju.Model
             {
                 CardActionEffect effect = effects[index];
                 if (effect.Tests?.ShouldTest == false) continue;
-                CardTargets targets = Collect(source, roomIndex, effect, last, initial, dropPosition, index, isTesting: true);
+                CardTargets targets = Collect(source, roomIndex, effect, last, initial, dropPosition, index, definitions, isTesting: true);
                 if (!targets.Supported) return new SpellCastCheck(false, targets.UnsupportedReason);
                 Remember(effect, index, targets, ref last);
                 bool valid = PassesTest(effect, targets.UnitIds.Count, source.Context!.AllScenarioBossesDead == true);
@@ -84,6 +96,10 @@ namespace MonsterTrain2Poju.Model
             TrainCombatState state = WithContext(source, source.Context!);
             IReadOnlyList<int> last = Array.Empty<int>();
             var events = new List<CombatEvent>();
+            var collections = new List<SpellTargetCollection>();
+            var pendingDeadRooms = new Dictionary<int, int>();
+            var positions = CardTargetModel.Positions(state);
+            int? focusedRoom = roomIndex;
             RoomOutcome outcome = RoomOutcome.Exchanged;
             bool bossDead = source.Context!.AllScenarioBossesDead == true;
             CardInstanceState? resolvingCard = source.Context.FindCard(sourceCardId);
@@ -100,20 +116,26 @@ namespace MonsterTrain2Poju.Model
                     effect = CardModifierModel.Resolve(rule, card).Effects[index];
                     resolvingCard = card;
                 }
-                CardTargets targets = Collect(state, roomIndex, effect, last, initial, dropPosition, index, isTesting: true);
+                if (effect.Target == "FrontInRoomAndRoomAbove" && !focusedRoom.HasValue)
+                    return UnsupportedTrain("Room-and-above selection requires uncaptured trigger focus rules.");
+                int collectionRoom = effect.Target == "FrontInRoomAndRoomAbove" ? focusedRoom!.Value : roomIndex;
+                CardTargets targets = Collect(state, collectionRoom, effect, last, initial, dropPosition, index, definitions, isTesting: true,
+                    pendingDeadRooms: pendingDeadRooms, positions: positions);
                 if (!targets.Supported) return UnsupportedTrain(targets.UnsupportedReason!);
                 Remember(effect, index, targets, ref last);
                 // Runtime tests every effect, even if its initial casting test was disabled.
                 if (!PassesTest(effect, targets.UnitIds.Count, bossDead))
                 {
-                    if (index == 0 && effect.Target == "RandomInRoom" && targets.UnitIds.Count > 0 && effect.Tests?.CancelSubsequent != true &&
+                    if (index == 0 && CardTargetModel.IsRandom(effect.Target) && targets.UnitIds.Count > 0 && effect.Tests?.CancelSubsequent != true &&
                         effects.Skip(1).Any(next => next.Target.Contains("LastTargeted")))
                         return UnsupportedTrain("A skipped first random effect retains uncaptured test-stream target history.");
                     if (effect.Tests?.CancelSubsequent == true) break;
                     continue;
                 }
-                targets = Collect(state, roomIndex, effect, last, initial, dropPosition, index);
+                targets = Collect(state, collectionRoom, effect, last, initial, dropPosition, index, definitions,
+                    pendingDeadRooms: pendingDeadRooms, positions: positions);
                 if (!targets.Supported) return UnsupportedTrain(targets.UnsupportedReason!);
+                collections.Add(new SpellTargetCollection(index, targets.UnitIds));
                 Remember(effect, index, targets, ref last);
                 if (targets.BattleRng.HasValue)
                     state = WithContext(state, state.Context!.WithBattleRng(targets.BattleRng.Value));
@@ -142,12 +164,27 @@ namespace MonsterTrain2Poju.Model
                     RoomCombatState? targetRoom = state.Rooms.FirstOrDefault(item => item.Units.Any(unit => unit.Id == id));
                     CombatUnit? target = targetRoom?.Units.FirstOrDefault(unit => unit.Id == id);
                     if (target == null) continue;
+                    if (effect.Type == "FloorRearrange" && pendingDeadRooms.Count > 0)
+                        return UnsupportedTrain("Rearranging a floor with pending death positions is not modeled.");
+                    // Damage drains previously finished deaths before marking its own final victim finished.
+                    if (effect.Type == "Damage") { FocusDamageStatuses(target, targetRoom!, effect.Value); DrainDeaths(); }
                     RoomPlayRule? capacity = definitions?.Rooms.FirstOrDefault(item => item.RoomIndex == targetRoom!.RoomIndex);
                     RoomCombatResult applied = ApplyOne(targetRoom!, effect, target, sourceCardId,
                         capacity?.PlayerCapacity ?? playerCapacity, capacity?.EnemyCapacity ?? enemyCapacity);
                     if (!applied.Supported) return UnsupportedTrain(applied.UnsupportedReason!);
                     state = ReplaceRoom(state, applied.State!);
                     events.AddRange(applied.Events);
+                    if ((effect.Type == "Heal" || effect.Type == "UnitUpgrade") && target.Triggers.Any(trigger => trigger.Kind == "OnHeal" &&
+                        (!trigger.Once || !trigger.HasTriggered) && (!targetRoom!.Deployment || trigger.SkipDuringDeployment != true) &&
+                        (trigger.IgnoreSilence || target.Statuses.All(status => status.Id != "silenced"))))
+                        focusedRoom = null; // Trigger notification suppression/focus is not captured yet.
+                    if (effect.Type == "Damage" && !applied.State!.Units.Any(unit => unit.Id == id))
+                        pendingDeadRooms[id] = targetRoom!.RoomIndex;
+                    CombatUnit? afterTarget = applied.State!.Units.FirstOrDefault(unit => unit.Id == id);
+                    bool upgradeApplied = effect.Type == "UnitUpgrade" && (afterTarget == null ||
+                        afterTarget.Modifiers!.Upgrades.Count > target.Modifiers!.Upgrades.Count);
+                    if (effect.Type == "Heal" && target.Modifiers?.CanBeHealed == true || upgradeApplied) DrainDeaths();
+                    if (effect.Type == "FloorRearrange") positions = CardTargetModel.Positions(state);
                     if (applied.Outcome == RoomOutcome.BattleWon || applied.Outcome == RoomOutcome.PlayerDefeated)
                     {
                         if (outcome != RoomOutcome.Exchanged && outcome != applied.Outcome)
@@ -156,8 +193,31 @@ namespace MonsterTrain2Poju.Model
                         bossDead |= outcome == RoomOutcome.BattleWon;
                     }
                 }
+                if (effect.Type == "AddStatus") DrainDeaths();
             }
-            return new TrainSpellResult(state, outcome, events);
+            return new TrainSpellResult(state, outcome, events, collections: collections);
+
+            void DrainDeaths()
+            {
+                if (pendingDeadRooms.Count > 0) focusedRoom = pendingDeadRooms.Values.Last();
+                pendingDeadRooms.Clear(); positions = CardTargetModel.Positions(state);
+            }
+
+            void FocusDamageStatuses(CombatUnit target, RoomCombatState room, int damage)
+            {
+                foreach (string id in new[] { "pyregel", "damage shield", "armor", "fragile" })
+                {
+                    CombatStatus? status = target.Statuses.FirstOrDefault(item => item.Id == id);
+                    if (status == null || room.Deployment && status.SkipDuringDeployment) continue;
+                    bool triggered = id == "pyregel" ? status.Stacks * status.ParamInt != 0 : damage > 0;
+                    if (!triggered) continue;
+                    bool? focus = status.RemoveWhenTriggered && (!room.Deployment || status.RemoveDuringDeployment) ? true :
+                        target.Team == CombatTeam.Enemy ? status.TriggerVfxEnemy : status.TriggerVfxPlayer;
+                    if (focus != false) focusedRoom = focus == true ? room.RoomIndex : (int?)null;
+                    damage = id == "pyregel" ? checked(damage + status.Stacks * status.ParamInt) :
+                        id == "damage shield" ? 0 : id == "armor" ? Math.Max(0, damage - status.Stacks * status.ParamInt) : damage;
+                }
+            }
         }
 
         private static string? Validate(TrainCombatState source, int roomIndex, IReadOnlyList<CardActionEffect> effects,
@@ -171,7 +231,25 @@ namespace MonsterTrain2Poju.Model
             RoomCombatState? selected = source.Rooms.FirstOrDefault(room => room.RoomIndex == roomIndex);
             if (selected == null) return "The selected spell room does not exist.";
             if (source.Context == null) return "A spell requires shared battle context.";
-            return Validate(selected, effects, targetId);
+            if (!fullTrain && effects.Any(effect => CardTargetModel.IsCrossRoom(effect.Target)))
+                return "Cross-room spells require the complete train state.";
+            string? validation = Validate(selected, effects, targetId);
+            if (validation != null) return validation;
+            if (effects[0].Target == "RandomFromAnyRoom")
+            {
+                CombatUnit[] possible = source.Rooms.SelectMany(room => room.Units).Where(unit => !unit.IsPyre &&
+                    unit.Statuses.All(status => status.Id != "untouchable") && (unit.Team == CombatTeam.Enemy ? effects[0].AllowEnemy : effects[0].AllowPlayer)).ToArray();
+                foreach (CardActionEffect effect in effects.Skip(1))
+                {
+                    if (effect.Target == "DropTargetCharacter") break;
+                    if (effect.Target != "StrongestLastTargetedCharactersRoom" || effect.Tests?.ShouldTest == false || effect.Tests?.FailToCast != true) continue;
+                    bool[] outcomes = possible.Select(unit => PassesTest(effect,
+                        CardTargetModel.Collect(source, roomIndex, effect, new[] { unit.Id }, isTesting: true).UnitIds.Count,
+                        source.Context.AllScenarioBossesDead == true)).Distinct().ToArray();
+                    if (outcomes.Length > 1) return "Mandatory room tests after global random selection depend on the auxiliary test stream.";
+                }
+            }
+            return null;
         }
 
         private static TrainCombatState SingleRoom(RoomCombatState room) => new TrainCombatState(new[] { room },
@@ -197,7 +275,7 @@ namespace MonsterTrain2Poju.Model
             if (RequiresUnitTarget(effects) && !source.Units.Any(unit => unit.Id == targetId)) return "The spell target is missing.";
             if (effects[0].Tests?.ShouldTest == false && effects.Skip(1).Any(effect => effect.Target.Contains("LastTargeted")))
                 return "Casting with an untested first effect requires uncaptured target history.";
-            if (effects[0].Target == "RandomInRoom" && effects[0].AllowEnemy && effects[0].AllowPlayer && effects.Skip(1).Any(effect =>
+            if (CardTargetModel.IsRandom(effects[0].Target) && effects[0].AllowEnemy && effects[0].AllowPlayer && effects.Skip(1).Any(effect =>
                 effect.Tests?.ShouldTest != false && effect.Tests?.FailToCast == true && effect.Target == "LastTargetedCharacters" &&
                 (effects[0].AllowEnemy && !effect.AllowEnemy || effects[0].AllowPlayer && !effect.AllowPlayer)))
                 return "Mandatory last-target team tests after random selection depend on the auxiliary test stream.";
@@ -229,8 +307,10 @@ namespace MonsterTrain2Poju.Model
         }
 
         private static CardTargets Collect(TrainCombatState state, int roomIndex, CardActionEffect effect, IReadOnlyList<int> last,
-            CombatUnit? initial, int dropPosition, int index, bool isTesting = false) => effect.Type == "HandUpgrade" && effect.Target == "Hand"
-                ? new CardTargets(Array.Empty<int>()) : CardTargetModel.Collect(state, roomIndex, effect, last, initial?.Team, dropPosition, index == 0, isTesting);
+            CombatUnit? initial, int dropPosition, int index, BattlePlayRules? definitions, bool isTesting = false,
+            IReadOnlyDictionary<int, int>? pendingDeadRooms = null, IReadOnlyDictionary<int, int>? positions = null) => effect.Type == "HandUpgrade" && effect.Target == "Hand"
+                ? new CardTargets(Array.Empty<int>()) : CardTargetModel.Collect(state, roomIndex, effect, last, initial?.Team, dropPosition,
+                    index == 0, isTesting, definitions?.Rooms.FirstOrDefault(room => room.IsPyre)?.RoomIndex, pendingDeadRooms, positions);
 
         private static void Remember(CardActionEffect effect, int index, CardTargets targets, ref IReadOnlyList<int> last)
         {

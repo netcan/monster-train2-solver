@@ -20,12 +20,14 @@ namespace MonsterTrain2Poju.Model
         public bool PreventRemovalDuringRelentless { get; }
         public bool SkipDuringDeployment { get; }
         public bool RemoveDuringDeployment { get; }
+        public bool? TriggerVfxEnemy { get; }
+        public bool? TriggerVfxPlayer { get; }
 
         public CombatStatus(string id, int stacks, int paramInt = 0,
             bool removeWhenTriggered = false, bool removeStackAtEnd = false,
             bool removeAllAtEnd = false, bool removeAfterPostCombat = false,
             bool preventRemovalDuringRelentless = false, bool skipDuringDeployment = false,
-            bool removeDuringDeployment = false)
+            bool removeDuringDeployment = false, bool? triggerVfxEnemy = null, bool? triggerVfxPlayer = null)
         {
             Id = id;
             Stacks = stacks;
@@ -37,11 +39,13 @@ namespace MonsterTrain2Poju.Model
             PreventRemovalDuringRelentless = preventRemovalDuringRelentless;
             SkipDuringDeployment = skipDuringDeployment;
             RemoveDuringDeployment = removeDuringDeployment;
+            TriggerVfxEnemy = triggerVfxEnemy;
+            TriggerVfxPlayer = triggerVfxPlayer;
         }
 
         internal CombatStatus WithStacks(int stacks) => new CombatStatus(Id, stacks, ParamInt,
             RemoveWhenTriggered, RemoveStackAtEnd, RemoveAllAtEnd, RemoveAfterPostCombat,
-            PreventRemovalDuringRelentless, SkipDuringDeployment, RemoveDuringDeployment);
+            PreventRemovalDuringRelentless, SkipDuringDeployment, RemoveDuringDeployment, TriggerVfxEnemy, TriggerVfxPlayer);
     }
 
     public sealed class CombatUnit

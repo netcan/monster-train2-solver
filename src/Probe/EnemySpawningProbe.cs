@@ -79,7 +79,8 @@ namespace MonsterTrain2Poju.Probe
                     interactions.Add("Spawned status has custom relentless removal");
                 return new CombatStatus(status.statusId, status.count, rule.GetParamInt(), rule.GetRemoveWhenTriggered(),
                     rule.GetRemoveStackAtEndOfTurn(), rule.GetRemoveAtEndOfTurn(), rule.GetRemoveAtEndOfTurnAfterPostCombat(),
-                    false, rule.GetSkipTriggerDuringDeployment(), rule.GetRemoveDuringDeployment());
+                    false, rule.GetSkipTriggerDuringDeployment(), rule.GetRemoveDuringDeployment(),
+                    BattleActionProbe.TriggeredVfx(rule, -1f), BattleActionProbe.TriggeredVfx(rule, 1f));
             }).ToArray();
             CombatTrigger[] triggers = data.GetTriggers().Select(trigger =>
             {
