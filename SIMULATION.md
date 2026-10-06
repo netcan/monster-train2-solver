@@ -31,6 +31,7 @@ are copied immutable values; independent child states can run on worker threads.
 | Card statistics and preview | `BattleStatistics` and `BattlePreviewModel` | Native per-card/Any counters, turn rollover, spawn subtypes, death/exhaust attribution and preview damage statistic |
 | Card instance modifiers | `CardModifierModel` | Permanent/temporary ordered numeric upgrades, unit starting statuses, discard removal, play history and 256 native scalar calculations |
 | Retained card references | `CombatContext.CardRegistry` | Observed card identities survive pile clearing; detached spawner upgrades/removal preserve ownership and parent isolation |
+| Standby dictionary allocation | `CardPileModel` | Captured entry slots and free-list order preserve native hole reuse after unit death; malformed layouts, distinct futures, terminal clear and parallel branches |
 | Runtime unit upgrades | `UnitModifierModel` | Native permanent, battle and unit-death lifetimes, duplicate removal, unique upgrades, restricted size, unhealed health and lethal max-health loss |
 | Hand upgrade spells | `HandUpgradeModel` | Native targeted and targetless sequences, current-hand membership, permanent/temporary groups, uniqueness and paid-card exclusion |
 | Basic healing | `HealingModel` and `CardSpellModel` | Native targeted spells, modifier group clamps, maximum health, multiplier/immunity, regen and lifesteal; independent healability checks |
@@ -502,6 +503,16 @@ checked native runs left those files unchanged. Game copies, isolated profiles,
 and locally decompiled reference material are ignored by Git.
 
 ## Requirements for completion
+
+Schema 15 captures the Standby dictionary's physical entry slots and free-list
+order. Unit death frees its card's slot; the next summon reuses the most recently
+freed slot before extending the entry array. These slots affect enumeration
+order and cannot be reconstructed from the visible cards alone. Action and
+EndTurn routing preserve this immutable allocation state, including terminal
+clearing. `standby-routing-calibration.json.gz` retains a native summon action
+that reused a deleted entry; the checker compares its complete native state
+and 32 independent parallel branches. Older captures lack this allocation
+metadata and retain their historical list behavior; they do not verify hole reuse.
 
 Spell execution now uses a complete train state internally. The existing room
 API delegates to the same engine for local checks. Each applied target updates

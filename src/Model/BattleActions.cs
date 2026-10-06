@@ -143,6 +143,11 @@ namespace MonsterTrain2Poju.Model
                 return Unsupported("Invalid card identity allocation or duplicate pile membership.");
             if (source.OtherPiles.Select(pile => pile.Name).Distinct().Count() != source.OtherPiles.Count)
                 return Unsupported("Duplicate card piles.");
+            foreach (CardPileState pile in source.OtherPiles)
+            {
+                string? pileError = CardPileModel.Validate(pile);
+                if (pileError != null) return Unsupported(pileError);
+            }
             context = context.WithStatistics(context.Statistics?.WithPlayedCost(card.InstanceId, rule.Cost));
             // Native direct play removes the card from hand before queued effects execute.
             context = new CombatContext(new CardCycleState(context.Cards.Hand.Where(item => item.InstanceId != card.InstanceId).ToArray(),
@@ -215,12 +220,11 @@ namespace MonsterTrain2Poju.Model
                     CardPileState? exhausted = piles.FirstOrDefault(pile => pile.Name == "Exhausted");
                     CardToken? deadCard = standby?.Cards.FirstOrDefault(item => item.InstanceId == dead.SpawnerCardId);
                     if (standby == null || exhausted == null || deadCard == null) return Unsupported("Missing dead unit spawner card routing.");
-                    piles = piles.Select(pile => pile == standby ? new CardPileState(pile.Name,
-                        pile.Cards.Where(item => item.InstanceId != dead.SpawnerCardId).ToArray()) : pile == exhausted
+                    piles = piles.Select(pile => pile == standby ? CardPileModel.Remove(pile, dead.SpawnerCardId) : pile == exhausted
                             ? new CardPileState(pile.Name, pile.Cards.Concat(new[] { deadCard }).ToArray()) : pile).ToArray();
                 }
             }
-            if (terminal) piles = piles.Select(pile => new CardPileState(pile.Name, Array.Empty<CardToken>())).ToArray();
+            if (terminal) piles = piles.Select(CardPileModel.Clear).ToArray();
             if (terminal && rule.Destination != "Discard") return Unsupported("Terminal spell routing outside discard is not validated.");
             if (rule.Destination == "Discard") discard.Add(card);
             else
@@ -228,8 +232,7 @@ namespace MonsterTrain2Poju.Model
                 CardPileState? destination = piles.FirstOrDefault(pile => pile.Name == rule.Destination);
                 if (destination == null || (rule.Destination != "Standby" && rule.Destination != "Purged" && rule.Destination != "Exhausted"))
                     return Unsupported("Unimplemented card destination " + rule.Destination);
-                piles = piles.Select(pile => pile == destination ? new CardPileState(pile.Name,
-                    pile.Cards.Concat(new[] { card }).ToArray()) : pile).ToArray();
+                piles = piles.Select(pile => pile == destination ? CardPileModel.Add(pile, card) : pile).ToArray();
             }
             if (terminal && context.Statistics != null && context.Statistics.DeckCards == null)
                 return Unsupported("Terminal card resolution requires permanent deck membership.");

@@ -34,7 +34,7 @@ namespace MonsterTrain2Poju.Probe
             var standby = (Dictionary<CardState, RemoveFromStandByCondition>)AccessTools.Field(typeof(CardManager), "pileStandBy").GetValue(cards);
             var otherPiles = new[]
             {
-                new CardPileState("Standby", projection.CaptureCards(standby.Keys.ToList())),
+                StandbyPileProbe.Capture(standby, projection),
                 new CardPileState("DiscardBuffer", projection.CaptureCards(cards.GetDiscardBufferPile())),
                 new CardPileState("Exhausted", projection.CaptureCards(cards.GetExhaustedPile())),
                 new CardPileState("Purged", projection.CaptureCards(cards.GetPurgedPile())),

@@ -5,6 +5,7 @@ internal static class BattleActionChecks
 {
     internal static void Run()
     {
+        StandbySlots();
         var big = new CombatUnit(0, "big", CombatTeam.Player, 8, 25, 25, true, false, false, [], size: 3);
         var small = new CombatUnit(0, "small", CombatTeam.Player, 12, 10, 10, true, false, false, [], size: 2);
         var rules = new BattlePlayRules([
@@ -60,6 +61,31 @@ internal static class BattleActionChecks
         });
         Require(JsonSerializer.Serialize(root) == parent, "Card plays mutated their parent.");
         Console.WriteLine("ACTION-CHECKS PASS: capacity, position, card identity, cost, purge, explicit rejection and parallel isolation.");
+    }
+
+    private static void StandbySlots()
+    {
+        var root = new CardPileState("Standby", [new(1, "one"), new(2, "two"), new(3, "three")], [1, 2, 3], []);
+        string parent = JsonSerializer.Serialize(root);
+        var holes = CardPileModel.Remove(CardPileModel.Remove(root, 1), 3);
+        var first = CardPileModel.Add(holes, new(4, "four"));
+        var next = CardPileModel.Add(first, new(5, "five"));
+        Require(CardPileModel.Validate(next) == null && first.Cards.Select(card => card.InstanceId).SequenceEqual(new[] { 2, 4 }) &&
+            next.Cards.Select(card => card.InstanceId).SequenceEqual(new[] { 5, 2, 4 }), "Standby insertions did not reuse free slots in native LIFO order.");
+        var differentHistory = CardPileModel.Remove(CardPileModel.Remove(root, 3), 1);
+        Require(holes.Cards.Select(card => card.InstanceId).SequenceEqual(differentHistory.Cards.Select(card => card.InstanceId)) &&
+            JsonSerializer.Serialize(holes) != JsonSerializer.Serialize(differentHistory) &&
+            CardPileModel.Add(differentHistory, new(4, "four")).Cards[0].InstanceId == 4,
+            "Same visible cards erased distinct future standby ordering.");
+        Require(CardPileModel.Validate(new("Standby", [new(2, "two")], [0, 2, 0], [0, 0])) != null &&
+            CardPileModel.Validate(new("Standby", [new(2, "two")], [0, 3], [0])) != null,
+            "Malformed standby allocation metadata was accepted.");
+        Require(CardPileModel.Clear(holes).EntrySlots!.Count == 0 && CardPileModel.Clear(holes).FreeSlots!.Count == 0,
+            "Terminal dictionary clear retained allocation history.");
+        Parallel.For(0, 32, _ => Require(JsonSerializer.Serialize(CardPileModel.Add(holes, new(4, "four"))) == JsonSerializer.Serialize(first),
+            "Parallel standby insertions differ."));
+        Require(JsonSerializer.Serialize(root) == parent, "Standby routing mutated a parent.");
+        Console.WriteLine("STANDBY-SLOT-CHECKS PASS: holes, LIFO reuse, distinct futures, malformed metadata, terminal clear and parallel isolation.");
     }
 
     internal static void Native(JsonElement fixture)

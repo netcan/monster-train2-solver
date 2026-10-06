@@ -11,7 +11,8 @@ $fixtures = @('full-battle-steward-once.json', 'full-battle-no-cards.json', 'ful
     'full-battle-random-spells.json.gz',
     'full-battle-random-status.json.gz',
     'full-battle-cross-room-spells.json.gz', 'full-battle-cross-room-targets.json.gz',
-    'card-modifier-calibration.json.gz', 'rng-calibration.json', 'gold-reward-calibration.json.gz') |
+    'card-modifier-calibration.json.gz', 'rng-calibration.json', 'gold-reward-calibration.json.gz',
+    'standby-routing-calibration.json.gz') |
     ForEach-Object { Join-Path $workspace ('results\' + $_) }
 dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release -- @fixtures
 if ($LASTEXITCODE -ne 0) { throw 'Independent model checks failed.' }

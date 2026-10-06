@@ -99,6 +99,8 @@ foreach (string path in args.Where(path => path.Contains("rng-calibration", Stri
     RngChecks.Run(path);
 foreach (string path in args.Where(path => path.Contains("gold-reward-calibration", StringComparison.OrdinalIgnoreCase)))
     GoldRewardChecks.Native(path);
+foreach (string path in args.Where(path => path.Contains("standby-routing-calibration", StringComparison.OrdinalIgnoreCase)))
+    StandbyPileChecks.Native(path);
 
 static void Check(bool condition, string message)
 {

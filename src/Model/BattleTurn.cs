@@ -15,8 +15,15 @@ namespace MonsterTrain2Poju.Model
     {
         public string Name { get; }
         public IReadOnlyList<CardToken> Cards { get; }
-        public CardPileState(string name, IReadOnlyList<CardToken> cards)
-        { Name = name; Cards = Array.AsReadOnly(cards.ToArray()); }
+        public IReadOnlyList<int>? EntrySlots { get; }
+        public IReadOnlyList<int>? FreeSlots { get; }
+        public CardPileState(string name, IReadOnlyList<CardToken> cards, IReadOnlyList<int>? entrySlots = null,
+            IReadOnlyList<int>? freeSlots = null)
+        {
+            Name = name; Cards = Array.AsReadOnly(cards.ToArray());
+            EntrySlots = entrySlots == null ? null : Array.AsReadOnly(entrySlots.ToArray());
+            FreeSlots = freeSlots == null ? null : Array.AsReadOnly(freeSlots.ToArray());
+        }
     }
     public sealed class BattleTurnState
     {
@@ -62,6 +69,11 @@ namespace MonsterTrain2Poju.Model
         {
             if (source.ExternalInteractions.Count > 0) return Unsupported(string.Join("; ", source.ExternalInteractions));
             if (source.Spawn.Train.Context == null) return Unsupported("Missing shared battle context.");
+            foreach (CardPileState pile in source.OtherPiles)
+            {
+                string? pileError = CardPileModel.Validate(pile);
+                if (pileError != null) return Unsupported(pileError);
+            }
             if (source.MoonPhase != "Full" && source.MoonPhase != "New") return Unsupported("Unmodeled moon phase.");
             CardToken[] allCards = source.Spawn.Train.Context.Cards.Hand.Concat(source.Spawn.Train.Context.Cards.Draw)
                 .Concat(source.Spawn.Train.Context.Cards.Discard).Concat(source.OtherPiles.SelectMany(pile => pile.Cards)).ToArray();
@@ -159,7 +171,7 @@ namespace MonsterTrain2Poju.Model
                     stream.Name == "Battle" ? finalContext.BattleRng : stream.Name == "CardDraw" ? finalContext.Cards.Rng :
                     stream.Name == "Spawning" ? spawn.Rng : stream.State)).ToArray();
                 CardPileState[] piles = Terminal(outcome) && outcome != RoomOutcome.Stalemate
-                    ? otherPiles.Select(pile => new CardPileState(pile.Name, Array.Empty<CardToken>())).ToArray()
+                    ? otherPiles.Select(CardPileModel.Clear).ToArray()
                     : otherPiles;
                 return new BattleTurnResult(new BattleTurnState(spawn, energy, source.EnergyPerTurn, source.DrawPerTurn,
                     source.ForgePoints, source.DragonsHoard, phase, streams, piles, source.ExternalInteractions, source.PlayRules,
@@ -178,16 +190,16 @@ namespace MonsterTrain2Poju.Model
                     .Where(dead.ContainsKey).Distinct().ToArray();
                 if (orderedDeaths.Length != dead.Count) return false;
                 int[] deadCards = orderedDeaths.Select(id => dead[id].SpawnerCardId).ToArray();
-                var standby = otherPiles.FirstOrDefault(pile => pile.Name == "Standby")?.Cards.ToList();
+                var standby = otherPiles.FirstOrDefault(pile => pile.Name == "Standby");
                 var exhausted = otherPiles.FirstOrDefault(pile => pile.Name == "Exhausted")?.Cards.ToList();
                 if (standby == null || exhausted == null) return false;
                 foreach (int cardId in deadCards)
                 {
-                    CardToken? card = standby.FirstOrDefault(item => item.InstanceId == cardId);
+                    CardToken? card = standby.Cards.FirstOrDefault(item => item.InstanceId == cardId);
                     if (card == null) return false;
-                    standby.Remove(card); exhausted.Add(card);
+                    standby = CardPileModel.Remove(standby, cardId); exhausted.Add(card);
                 }
-                otherPiles = otherPiles.Select(pile => pile.Name == "Standby" ? new CardPileState(pile.Name, standby) :
+                otherPiles = otherPiles.Select(pile => pile.Name == "Standby" ? standby :
                     pile.Name == "Exhausted" ? new CardPileState(pile.Name, exhausted) : pile).ToArray();
                 return true;
             }
