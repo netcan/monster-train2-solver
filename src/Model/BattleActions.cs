@@ -128,6 +128,7 @@ namespace MonsterTrain2Poju.Model
                 return Unsupported("Invalid card identity allocation or duplicate pile membership.");
             if (source.OtherPiles.Select(pile => pile.Name).Distinct().Count() != source.OtherPiles.Count)
                 return Unsupported("Duplicate card piles.");
+            context = context.WithStatistics(context.Statistics?.WithPlayedCost(card.InstanceId, rule.Cost));
             target = new RoomCombatState(target.RoomIndex, target.Deployment, target.Units, target.ExternalInteractions, context, target.Preview);
             CombatUnit[] players = target.Units.Where(unit => unit.Team == CombatTeam.Player).ToArray();
             int position = action.PlayerPosition == -1 ? players.Length : action.PlayerPosition;
@@ -198,8 +199,12 @@ namespace MonsterTrain2Poju.Model
                 piles = piles.Select(pile => pile == destination ? new CardPileState(pile.Name,
                     pile.Cards.Concat(new[] { card }).ToArray()) : pile).ToArray();
             }
-            BattleStatistics? statistics = context.Statistics?.Increment(card.InstanceId, "TimesPlayed").Increment(card.InstanceId, "TimesDiscarded");
-            if (rule.Destination == "Exhausted") statistics = statistics?.Increment(card.InstanceId, "TimesExhausted");
+            if (terminal && context.Statistics != null && context.Statistics.DeckCards == null)
+                return Unsupported("Terminal card resolution requires permanent deck membership.");
+            BattleStatistics? statistics = terminal ? context.Statistics?.RefreshDeckAfterCardTerminal() :
+                context.Statistics?.Increment(card.InstanceId, "TimesPlayed").Increment(card.InstanceId, "TimesDiscarded")
+                    .WithPlayedCost(card.InstanceId, null);
+            if (!terminal && rule.Destination == "Exhausted") statistics = statistics?.Increment(card.InstanceId, "TimesExhausted");
             context = new CombatContext(new CardCycleState(hand, context.Cards.Draw, discard, context.Cards.Rng,
                 context.Cards.DrawModifier, context.Cards.ExternalInteractions), context.BattleRng,
                 context.Gold, context.NextCardId, context.MaxHandSize, context.StatusRules, statistics,

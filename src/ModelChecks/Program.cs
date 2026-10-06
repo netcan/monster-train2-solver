@@ -77,6 +77,7 @@ CardCycleChecks.Run();
 CombatEffectChecks.Run();
 BattleStatisticsChecks.Run();
 CardModifierChecks.Run();
+TerminalSpellChecks.Run();
 EnemySpawningChecks.Run();
 BattleActionChecks.Run();
 CardSpellChecks.Run();

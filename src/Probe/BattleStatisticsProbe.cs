@@ -32,7 +32,8 @@ namespace MonsterTrain2Poju.Probe
                 Field<int>("numMonstersDeadThisTurn"), Field<int>("numMonstersDeadThisBattle"),
                 Field<int>("energyRemainingEndOfTurn"), Field<int>("goldStartOfThisTurn"), Field<int>("lastAttackDamageDealt"),
                 Field<Dictionary<CardState, CardStatsEntry>>("deckStats").Keys
-                    .Concat(AllGameManagers.Instance!.GetCardManager()!.GetAllCards(new List<CardState>())).Select(cardId).ToArray());
+                    .Concat(AllGameManagers.Instance!.GetCardManager()!.GetAllCards(new List<CardState>())).Select(cardId).ToArray(),
+                AllGameManagers.Instance!.GetSaveManager().GetDeckState().Select(cardId).ToArray());
         }
     }
 }

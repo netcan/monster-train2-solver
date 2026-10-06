@@ -34,6 +34,7 @@ namespace MonsterTrain2Poju.Model
     {
         public IReadOnlyList<CardStatisticValue> Values { get; }
         public IReadOnlyList<int> TrackedCards { get; }
+        public IReadOnlyList<int>? DeckCards { get; }
         public IReadOnlyList<CardPlayedCost> PlayedCosts { get; }
         public IReadOnlyList<int> CardsPlayedThisTurn { get; }
         public IReadOnlyList<StatisticCount> SpawnedThisTurnPerFloor { get; }
@@ -50,11 +51,13 @@ namespace MonsterTrain2Poju.Model
             IReadOnlyList<int> cardsPlayedThisTurn, IReadOnlyList<StatisticCount> spawnedThisTurnPerFloor,
             IReadOnlyList<StatisticCount> spawnedThisBattlePerFloor, IReadOnlyList<StatisticCount> subtypesSpawnedThisTurn,
             IReadOnlyList<StatisticCount> subtypesSpawnedThisBattle, int monstersDeadThisTurn, int monstersDeadThisBattle,
-            int energyRemainingEndOfTurn, int goldStartOfThisTurn, int lastAttackDamageDealt, IReadOnlyList<int>? trackedCards = null)
+            int energyRemainingEndOfTurn, int goldStartOfThisTurn, int lastAttackDamageDealt, IReadOnlyList<int>? trackedCards = null,
+            IReadOnlyList<int>? deckCards = null)
         {
             Values = Array.AsReadOnly(values.Where(value => value.Value != 0).OrderBy(value => value.CardId)
                 .ThenBy(value => value.Duration, StringComparer.Ordinal).ThenBy(value => value.Type, StringComparer.Ordinal).ToArray());
             TrackedCards = Array.AsReadOnly((trackedCards ?? values.Select(value => value.CardId).ToArray()).Distinct().OrderBy(id => id).ToArray());
+            DeckCards = deckCards == null ? null : Array.AsReadOnly(deckCards.Distinct().OrderBy(id => id).ToArray());
             PlayedCosts = Array.AsReadOnly(playedCosts.OrderBy(value => value.CardId).ToArray());
             CardsPlayedThisTurn = Array.AsReadOnly(cardsPlayedThisTurn.ToArray());
             SpawnedThisTurnPerFloor = Counts(spawnedThisTurnPerFloor);
@@ -66,9 +69,9 @@ namespace MonsterTrain2Poju.Model
             LastAttackDamageDealt = lastAttackDamageDealt;
         }
 
-        public static BattleStatistics Empty(int gold = 0) => new BattleStatistics(Array.Empty<CardStatisticValue>(),
+        public static BattleStatistics Empty(int gold = 0, IReadOnlyList<int>? deckCards = null) => new BattleStatistics(Array.Empty<CardStatisticValue>(),
             Array.Empty<CardPlayedCost>(), Array.Empty<int>(), Array.Empty<StatisticCount>(), Array.Empty<StatisticCount>(),
-            Array.Empty<StatisticCount>(), Array.Empty<StatisticCount>(), 0, 0, 0, gold, 0);
+            Array.Empty<StatisticCount>(), Array.Empty<StatisticCount>(), 0, 0, 0, gold, 0, deckCards: deckCards);
 
         public int Value(int cardId, string type, string duration = "ThisTurn") =>
             Values.FirstOrDefault(value => value.CardId == cardId && value.Type == type && value.Duration == duration)?.Value ?? 0;
@@ -102,6 +105,11 @@ namespace MonsterTrain2Poju.Model
         }
 
         public BattleStatistics TrackCards(IEnumerable<int> cards) => Copy(tracked: TrackedCards.Concat(cards).Distinct().ToArray());
+        public BattleStatistics WithPlayedCost(int cardId, int? cost) => Copy(costs: PlayedCosts.Where(value => value.CardId != cardId)
+            .Concat(cost == null ? Array.Empty<CardPlayedCost>() : new[] { new CardPlayedCost(cardId, cost.Value) }).ToArray());
+        public BattleStatistics RefreshDeckAfterCardTerminal() => DeckCards == null ? this :
+            Copy(values: Values.Where(value => DeckCards.Contains(value.CardId)).ToArray(), tracked: DeckCards);
+
         public BattleStatistics Spawn(int roomIndex, IReadOnlyList<string> subtypes) => Copy(
             turnFloors: Add(SpawnedThisTurnPerFloor, new[] { roomIndex.ToString(System.Globalization.CultureInfo.InvariantCulture) }),
             battleFloors: Add(SpawnedThisBattlePerFloor, new[] { roomIndex.ToString(System.Globalization.CultureInfo.InvariantCulture) }),
@@ -127,17 +135,18 @@ namespace MonsterTrain2Poju.Model
                 SpawnedThisTurnPerFloor, SpawnedThisBattlePerFloor, SubtypesSpawnedThisTurn, SubtypesSpawnedThisBattle
             }.Select(counts => string.Join(";", counts.Select(value => value.Key + ":" + value.Value)))) + "|" +
             MonstersDeadThisTurn + ":" + MonstersDeadThisBattle + ":" + EnergyRemainingEndOfTurn + ":" +
-            GoldStartOfThisTurn + ":" + LastAttackDamageDealt;
+            GoldStartOfThisTurn + ":" + LastAttackDamageDealt + "|" + (DeckCards == null ? "legacy" : string.Join(",", DeckCards));
 
         private BattleStatistics Copy(IReadOnlyList<CardStatisticValue>? values = null, IReadOnlyList<int>? played = null, IReadOnlyList<int>? tracked = null,
             IReadOnlyList<StatisticCount>? turnFloors = null, IReadOnlyList<StatisticCount>? battleFloors = null,
             IReadOnlyList<StatisticCount>? turnSubtypes = null, IReadOnlyList<StatisticCount>? battleSubtypes = null,
-            int? deadTurn = null, int? deadBattle = null, int? energy = null, int? gold = null, int? lastDamage = null) =>
-            new BattleStatistics(values ?? Values, PlayedCosts, played ?? CardsPlayedThisTurn,
+            int? deadTurn = null, int? deadBattle = null, int? energy = null, int? gold = null, int? lastDamage = null,
+            IReadOnlyList<CardPlayedCost>? costs = null) =>
+            new BattleStatistics(values ?? Values, costs ?? PlayedCosts, played ?? CardsPlayedThisTurn,
                 turnFloors ?? SpawnedThisTurnPerFloor, battleFloors ?? SpawnedThisBattlePerFloor,
                 turnSubtypes ?? SubtypesSpawnedThisTurn, battleSubtypes ?? SubtypesSpawnedThisBattle,
                 deadTurn ?? MonstersDeadThisTurn, deadBattle ?? MonstersDeadThisBattle,
-                energy ?? EnergyRemainingEndOfTurn, gold ?? GoldStartOfThisTurn, lastDamage ?? LastAttackDamageDealt, tracked ?? TrackedCards);
+                energy ?? EnergyRemainingEndOfTurn, gold ?? GoldStartOfThisTurn, lastDamage ?? LastAttackDamageDealt, tracked ?? TrackedCards, DeckCards);
 
         private static IReadOnlyList<StatisticCount> Counts(IReadOnlyList<StatisticCount> values) =>
             Array.AsReadOnly(values.Where(value => value.Value != 0).OrderBy(value => value.Key, StringComparer.Ordinal).ToArray());

@@ -182,6 +182,13 @@ probe passed. It hashes original profile files before and after the run. The
 checked native runs left those files unchanged. Game copies, isolated profiles,
 and locally decompiled reference material are ignored by Git.
 
+
+Schema 8 adds permanent deck membership. When a damage spell kills the Boss,
+native battle stop skips subsequent played/discard callbacks, retains the live
+played cost, and prunes temporary-card statistics after clearing runtime cards.
+The model follows that ordering and requires captured permanent deck membership
+for terminal card resolution. A focused terminal-spell regression checks this.
+
 ## Requirements for completion
 
 1. Capture a self-contained starting battle state and its static rule definitions.
