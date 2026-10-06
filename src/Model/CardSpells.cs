@@ -230,16 +230,23 @@ namespace MonsterTrain2Poju.Model
                     if (target == null) continue;
                     if (effect.Type == "FloorRearrange" && pendingDeadRooms.Count > 0)
                         return UnsupportedTrain("Rearranging a floor with pending death positions is not modeled.");
-                    // Damage drains previously finished deaths before marking its own final victim finished.
+                    int? scaledDamage = null;
+                    // Native calculates trait damage and defensive status focus before its trigger
+                    // queue drains the previous victim's standby return. Preserve that value once.
                     if (effect.Type == "Damage")
                     {
-                        FocusDamageStatuses(target, targetRoom!, effect.Value); DrainDeaths();
+                        DamageScalingResult scaled = DamageScalingModel.Apply(state.Context, sourceCardId, sourceCardId, Math.Max(0, effect.Value));
+                        if (!scaled.Supported) return UnsupportedTrain(scaled.UnsupportedReason!);
+                        state = WithContext(state, scaled.Context!);
+                        scaledDamage = Math.Max(0, scaled.Damage);
+                        FocusDamageStatuses(target, targetRoom!, scaledDamage.Value); DrainDeaths();
                         // Draining a prior death updates shared statistics; the next target must read that new context.
                         targetRoom = state.Rooms.Single(room => room.RoomIndex == targetRoom!.RoomIndex);
                     }
                     RoomPlayRule? capacity = definitions?.Rooms.FirstOrDefault(item => item.RoomIndex == targetRoom!.RoomIndex);
                     RoomCombatResult applied = ApplyOne(targetRoom!, effect, target, sourceCardId,
-                        capacity?.PlayerCapacity ?? playerCapacity, capacity?.EnemyCapacity ?? enemyCapacity, deferSpawnerExhaustion: piles != null);
+                        capacity?.PlayerCapacity ?? playerCapacity, capacity?.EnemyCapacity ?? enemyCapacity,
+                        deferSpawnerExhaustion: piles != null, scaledDamage: scaledDamage);
                     if (!applied.Supported) return UnsupportedTrain(applied.UnsupportedReason!);
                     state = ReplaceRoom(state, applied.State!);
                     if (state.Context!.OtherPiles != null) piles = state.Context.OtherPiles.ToArray();
@@ -487,9 +494,11 @@ namespace MonsterTrain2Poju.Model
         }
 
         private static RoomCombatResult ApplyOne(RoomCombatState state, CardActionEffect effect, CombatUnit target,
-            int sourceCardId, int? playerCapacity, int? enemyCapacity, bool deferSpawnerExhaustion = false)
+            int sourceCardId, int? playerCapacity, int? enemyCapacity, bool deferSpawnerExhaustion = false, int? scaledDamage = null)
         {
-            if (effect.Type == "Damage") return RoomCombatModel.ApplyCardDamage(state, target.Id, Math.Max(0, effect.Value), sourceCardId, deferSpawnerExhaustion);
+            if (effect.Type == "Damage") return scaledDamage.HasValue
+                ? RoomCombatModel.ApplyCardDamageAfterTraits(state, target.Id, scaledDamage.Value, sourceCardId, deferSpawnerExhaustion)
+                : RoomCombatModel.ApplyCardDamage(state, target.Id, Math.Max(0, effect.Value), sourceCardId, deferSpawnerExhaustion);
             if (effect.Type == "Heal") return effect.Value < 0 ? Unchanged(state) : RoomCombatModel.ApplyCardHeal(state, target.Id, effect.Value);
             if (AttackChange(effect)) return UnitAttackModel.Apply(state, target.Id, effect.Value, effect.Type == "DebuffAttack");
             if (effect.Type == "BuffHealth" || effect.Type == "DebuffHealth")

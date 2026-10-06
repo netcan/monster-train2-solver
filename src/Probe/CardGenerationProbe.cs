@@ -42,7 +42,7 @@ namespace MonsterTrain2Poju.Probe
         {
             var interactions = new List<string>();
             foreach (CardTraitData trait in data.GetTraits())
-                if (trait.GetTraitStateName() != "CardTraitSelfPurge") interactions.Add("Generated card trait setup/callback " + trait.GetTraitStateName());
+                if (!DamageScalingProbe.Known(trait.GetTraitStateName())) interactions.Add("Generated card trait setup/callback " + trait.GetTraitStateName());
             CardModifiers modifiers = CardModifiers.Empty();
             foreach (CardUpgradeData upgrade in data.GetUpgradeData())
             {
@@ -54,7 +54,7 @@ namespace MonsterTrain2Poju.Probe
             CardEffectCounter[] counters = data.GetEffects().Select((effect, index) => new { effect, index })
                 .Where(item => item.effect.GetEffectStateName() == "CardEffectDiscardHand")
                 .Select(item => new CardEffectCounter(item.index, "CardEffectDiscardHand", 0)).ToArray();
-            return new CardCreationRule(data.GetID(), modifiers, counters.Length == 0 ? null : counters, interactions);
+            return new CardCreationRule(data.GetID(), modifiers, counters.Length == 0 ? null : counters, interactions, DamageScalingProbe.Creation(data));
         }
     }
 }

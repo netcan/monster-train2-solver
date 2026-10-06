@@ -38,15 +38,18 @@ namespace MonsterTrain2Poju.Probe
         internal bool? NativeWon { get; private set; }
         private bool? stoppingOutcome;
         internal bool? TerminalEffectsSettled { get; private set; }
-        internal int CaptureFailures { get; private set; }
+        private int captureFailures;
+        internal int CaptureFailures => captureFailures + DamageScalingScenario.Samples.Count(sample => sample.CaptureError != null);
         internal int Mismatches => stages.Count(stage => stage.Difference != null) + cardCycles.Mismatches + trainCombat.Mismatches + spawning.Mismatches + turns.Mismatches + actions.Mismatches +
-            HandRemovalScenario.Records.Count(record => record.Difference != null) + GenerationScenario.Records.Count(record => record.Difference != null);
+            HandRemovalScenario.Records.Count(record => record.Difference != null) + GenerationScenario.Records.Count(record => record.Difference != null) +
+            DamageScalingScenario.Samples.Count(sample => sample.Difference != null);
         internal int Unsupported => stages.Count(stage => !stage.Predicted.Supported) + cardCycles.Unsupported + trainCombat.Unsupported + spawning.Unsupported + turns.Unsupported + actions.Unsupported +
             HandRemovalScenario.Records.Count(record => !record.Predicted.Supported) + GenerationScenario.Records.Count(record => !record.Predicted.Supported);
         internal int Pending => stages.Count(stage => stage.Actual == null) + cardCycles.Records.Count(record => record.Actual == null) +
             trainCombat.Records.Count(record => record.Actual == null) + spawning.Records.Count(record => record.Actual == null) +
             turns.Records.Count(record => record.Actual == null) + actions.Records.Count(record => record.Actual == null) +
-            HandRemovalScenario.Records.Count(record => record.Actual == null) + GenerationScenario.Records.Count(record => record.Actual == null);
+            HandRemovalScenario.Records.Count(record => record.Actual == null) + GenerationScenario.Records.Count(record => record.Actual == null) +
+            DamageScalingScenario.Samples.Count(sample => sample.After == null);
 
         internal FullBattleTrace(ManualLogSource log)
         {
@@ -120,7 +123,7 @@ namespace MonsterTrain2Poju.Probe
                 if (character.GetEquipment().Count > 0)
                     interactions.Add(character.GetSourceCharacterData().GetAssetKey() + " equipment");
                 CardState? card = character.GetSpawnerCard();
-                if (card != null && (card.GetTraitStates().Count > 0 || card.GetTriggers().Count > 0))
+                if (card != null && (card.GetTraitStates().Any(trait => !DamageScalingProbe.Known(trait.GetType().Name)) || card.GetTriggers().Count > 0))
                     interactions.Add(character.GetSourceCharacterData().GetAssetKey() + " card traits/triggers");
                 var nativeStatuses = new List<CharacterState.StatusEffectStack>();
                 character.GetStatusEffects(ref nativeStatuses);
@@ -280,7 +283,7 @@ namespace MonsterTrain2Poju.Probe
 
         internal void CaptureFailure(Exception error)
         {
-            CaptureFailures++;
+            captureFailures++;
             log.LogError("BATTLE-CAPTURE-FAIL " + error);
         }
 
@@ -310,7 +313,7 @@ namespace MonsterTrain2Poju.Probe
             string path = Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!, "full-battle.json");
             File.WriteAllText(path, JsonConvert.SerializeObject(new
             {
-                Schema = 21,
+                Schema = 22,
                 GameVersion = Application.version,
                 GameModuleMvid = typeof(CardState).Assembly.ManifestModule.ModuleVersionId,
                 NativeWon,
@@ -333,6 +336,7 @@ namespace MonsterTrain2Poju.Probe
                 FilteredTargets = TargetFilterScenario.Targets,
                 HandRemovals = HandRemovalScenario.Records,
                 CardGenerations = GenerationScenario.Records,
+                DamageScaling = DamageScalingScenario.Samples,
                 UiRngIsolation = UiRngIsolation.Records,
                 Checkpoints = checkpoints
             }, Formatting.Indented));

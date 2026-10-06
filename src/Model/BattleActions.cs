@@ -159,6 +159,11 @@ namespace MonsterTrain2Poju.Model
             context = context.WithOtherPiles(source.OtherPiles).WithStatistics(context.Statistics?.WithPlayedCost(card.InstanceId, rule.Cost));
             CombatContext castingContext = context;
             CardPileState[] piles = source.OtherPiles.ToArray();
+            // A naturally played card remains owned in the discard buffer during queued effects.
+            // Scaling queries refresh membership here, before the final destination is assigned.
+            piles = piles.Select(pile => pile.Name == "DiscardBuffer" && !pile.Cards.Any(item => item.InstanceId == card.InstanceId)
+                ? CardPileModel.Add(pile, card) : pile).ToArray();
+            context = context.WithOtherPiles(piles);
             // Native direct play removes the card from hand before queued effects execute.
             context = new CombatContext(new CardCycleState(context.Cards.Hand.Where(item => item.InstanceId != card.InstanceId).ToArray(),
                 context.Cards.Draw, context.Cards.Discard, context.Cards.Rng, context.Cards.DrawModifier, context.Cards.ExternalInteractions),

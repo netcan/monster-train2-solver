@@ -35,6 +35,7 @@ are copied immutable values; independent child states can run on worker threads.
 | Gold rewards | `GoldRewardModel` | 2,200 native calculations, reward minimums, integer/float boundaries, ties to even and preview exclusion |
 | Card statistics and preview | `BattleStatistics` and `BattlePreviewModel` | Native per-card/Any counters, turn rollover, spawn subtypes, death/exhaust attribution and preview damage statistic |
 | Statistic queries | `StatisticQueryModel` | 17,604 native queries across 40 kinds, three durations and seven card types; membership refresh, type/subtype pile counts, aggregates, costs and resource snapshots |
+| Statistic-driven damage traits | `DamageScalingModel` and `RoomCombatModel` | 63 native callbacks with complete refreshed contexts; trait order, replacement/addition, explicit-source upgrades, per-hit statistics and Boss/Pyre kill previews |
 | Card instance modifiers | `CardModifierModel` | Permanent/temporary ordered numeric upgrades, unit starting statuses, discard removal, play history and 256 native scalar calculations |
 | Retained card references | `CombatContext.CardRegistry` | Observed card identities survive pile clearing; detached spawner upgrades/removal preserve ownership and parent isolation |
 | Standby dictionary allocation | `CardPileModel` | Captured entry slots and free-list order preserve native hole reuse after unit death; malformed layouts, distinct futures, terminal clear and parallel branches |
@@ -842,7 +843,7 @@ API delegates to the same engine for local checks. Each applied target updates
 its own room, then shares the resulting context with every other room; fixed
 target collections and last-target identities span the train. Capacity-limited
 unit upgrades consult the target room's definition. Dead movement and standby
-spawner routing use all rooms. The 32 saved native battle oracles exercise this
+spawner routing use all rooms. The 33 saved native battle oracles exercise this
 engine through the normal card-action path, including cross-room target modes.
 
 `StatisticQueryModel` implements the counter and definition queries used by
@@ -876,8 +877,42 @@ The independent reader recomputes every query. Pure checks cover retained buffer
 aliases, exhausted subtype counts, missing inputs and 64 isolated parallel
 branches. The query API supports static definition masks and no cardFilter.
 Room/status/magic/corruption/capacity, last-ability-activator and CurrentCost
-queries remain explicit unsupported results. Damage-trait callbacks and the
-propagation of dynamic query frames through combat remain to be implemented.
+queries remain explicit unsupported results. Dynamic query frames still need
+to be propagated through combat; resource-dependent traits currently reject
+that missing boundary state.
+
+Schema 22 captures ordered `CardTraitScalingAddDamage` descriptors on immutable
+card instances and generated-card creation rules. Each hit queries the current
+statistics using the associated trait owner's identity. Its integer product
+uses native unchecked arithmetic before single-precision multiplication and
+flooring. Replacement/additive modes and multiple traits preserve native order.
+Each callback applies the explicit damage-source card's permanent and temporary
+damage upgrades to zero, with a floor between groups; an ordinary unit attack
+or spikes retaliation supplies no explicit card and adds no such upgrade term.
+The final bonus damage is clamped to zero before defensive statuses. The magic
+power-in-target-room special case returns zero without querying statistics.
+
+A naturally played card enters DiscardBuffer while its effects execute. This
+keeps the source owned during membership refresh and preserves its history.
+Damage traits and status focus run before the previous victim's queued standby
+return; the resulting damage is retained instead of querying again after that
+return. In a Boss/Pyre room, each live attack first performs the native single
+hit kill preview on copies. Character state is restored, but refreshed statistic
+membership and last-attack damage survive, including nested spikes. A trait
+reading last-attack damage therefore sees that preview's result before the real
+hit. Full-room UI previews remain a separate existing transition.
+
+`results/full-battle-damage-scaling.json.gz` preserves a complete unmodified
+native JSON trace: 15 plays, 5 EndTurns, 41 room stages and 63 damage callbacks;
+the battle is won with Pyre health 80. The native scaling oracle exercises ordered replacement/additive traits, signed
+numeric upgrades, fractional multipliers, repeated tower targets, multistrike,
+spikes and relentless. Independent checks recompute callback damage and complete
+refreshed contexts, then run the complete policy from initial/mid-battle inputs
+with parallel branches. Creation/discard/modification copies retain descriptors.
+Queries with unmodeled status-counter update paths, missing dynamic resources,
+or an unverified float-to-integer overflow domain return explicit unsupported
+results; sacrifice/ability responsibility and other damage-trait classes remain
+to be modeled.
 
 Schema 21 captures the secondary piles in the shared combat context as well as
 the outer decision state. A room death or post-combat despawn updates standby
@@ -923,7 +958,7 @@ consumption, nested dead-spawner returns and transient standby slot reuse.
 
 The supported initial battle now runs independently to a verified terminal result.
 The full objective remains open: additional legal card/ability actions,
-additional upgrade internals, statistic-driven scaling and specialized sacrifice mechanics, relics, equipment, room effects, additional statuses and
+additional upgrade internals, additional statistic-driven effects and specialized sacrifice mechanics, relics, equipment, room effects, additional statuses and
 triggers, boss actions/companions/final bosses, and resurrection are not complete.
 Actions now share a state with turn transitions and work at arbitrary decision
 turns within the supported rules. Trait/trigger upgrades, statistic-driven effects, equipment

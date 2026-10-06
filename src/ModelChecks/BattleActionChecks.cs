@@ -100,7 +100,8 @@ internal static class BattleActionChecks
             BattleTurnState before = entry.GetProperty("Before").Deserialize<BattleTurnState>(ModelJson.Options)!;
             PlayCardAction action = entry.GetProperty("Action").Deserialize<PlayCardAction>()!;
             BattleActionResult result = BattleActionModel.PlayCard(before, action);
-            if (!result.Supported) { unsupported++; continue; }
+            if (!result.Supported)
+            { unsupported++; Console.WriteLine("NATIVE-ACTION-UNSUPPORTED index=" + entry.GetProperty("Index") + ": " + result.Reason); continue; }
             BattleTurnState actual = entry.GetProperty("Actual").Deserialize<BattleTurnState>(ModelJson.Options)!;
             if (entry.TryGetProperty("ActualOutcome", out JsonElement actionOutcome))
             {

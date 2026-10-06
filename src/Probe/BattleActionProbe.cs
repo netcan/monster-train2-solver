@@ -58,10 +58,10 @@ namespace MonsterTrain2Poju.Probe
         internal static CardPlayRule Definition(CardData data)
         {
             var interactions = new List<string>();
-            var upgradeInteractions = data.GetTraits().Where(trait => trait.GetTraitStateName() != "CardTraitSelfPurge")
+            var upgradeInteractions = data.GetTraits().Where(trait => !DamageScalingProbe.Known(trait.GetTraitStateName()))
                 .Select(trait => "Upgrade trait " + trait.GetTraitStateName()).ToArray();
             if (data.GetCardTriggers().Count > 0) interactions.Add("Card triggers");
-            if (data.GetTraits().Any(trait => trait.GetTraitStateName() != "CardTraitSelfPurge")) interactions.Add("Card traits");
+            if (data.GetTraits().Any(trait => !DamageScalingProbe.Known(trait.GetTraitStateName()))) interactions.Add("Card traits");
             bool selfPurge = data.GetTraits().Any(trait => trait.GetTraitStateName() == "CardTraitSelfPurge");
             CardEffectData[] effects = data.GetEffects().ToArray();
             string kind = effects.Length == 1 ? effects[0].GetEffectStateName() : "MultipleEffects";

@@ -169,12 +169,18 @@ namespace MonsterTrain2Poju.Model
         public static RoomCombatResult Resolve(RoomCombatState state) => Run(state, true);
 
         public static RoomCombatResult ApplyCardDamage(RoomCombatState state, int targetId, int damage, int sourceCardId = 0,
-            bool deferSpawnerExhaustion = false)
+            bool deferSpawnerExhaustion = false) => ApplyCardDamage(state, targetId, damage, sourceCardId, deferSpawnerExhaustion, true);
+
+        internal static RoomCombatResult ApplyCardDamageAfterTraits(RoomCombatState state, int targetId, int damage, int sourceCardId,
+            bool deferSpawnerExhaustion) => ApplyCardDamage(state, targetId, damage, sourceCardId, deferSpawnerExhaustion, false);
+
+        private static RoomCombatResult ApplyCardDamage(RoomCombatState state, int targetId, int damage, int sourceCardId,
+            bool deferSpawnerExhaustion, bool applyTraits)
         {
             string? error = Validate(state);
             if (error != null || damage < 0 || !state.Units.Any(unit => unit.Id == targetId))
                 return new RoomCombatResult(null, RoomOutcome.Unsupported, 0, new List<CombatEvent>(), error ?? "Invalid card damage target or amount.");
-            return new Engine(state, new List<CombatEvent>(), deferSpawnerExhaustion).CardDamage(targetId, damage, sourceCardId);
+            return new Engine(state, new List<CombatEvent>(), deferSpawnerExhaustion).CardDamage(targetId, damage, sourceCardId, applyTraits);
         }
 
         internal static RoomCombatResult ApplyUnitModification(RoomCombatState state, CombatUnit changed) =>
@@ -342,10 +348,10 @@ namespace MonsterTrain2Poju.Model
                 return Finish(battleWon ? RoomOutcome.BattleWon : RoomOutcome.Cleared);
             }
 
-            internal RoomCombatResult CardDamage(int targetId, int damage, int sourceCardId)
+            internal RoomCombatResult CardDamage(int targetId, int damage, int sourceCardId, bool applyTraits = true)
             {
                 WorkingUnit target = units.Single(unit => unit.Source.Id == targetId);
-                Damage(null, target, damage, "Spell", sourceCardId);
+                Damage(null, target, damage, "Spell", sourceCardId, applyTraits);
                 return Finish(battleWon ? RoomOutcome.BattleWon : target.Source.IsPyre && !target.Alive
                     ? RoomOutcome.PlayerDefeated : RoomOutcome.Exchanged);
             }
@@ -402,13 +408,33 @@ namespace MonsterTrain2Poju.Model
                     if (targets.Length == 0) continue;
                     if (!actor.Has("sweep")) targets = new[] { actor.Has("sniper") ? targets.Last() : targets.First() };
                     if (strike > 0) Trigger(actor, "multistrike", 1);
-                    // Sweep fixes its target list before damage; a retaliatory death must not hit later targets.
+                    // Sweep fixes its target list before damage. Each hit has its own native boss-kill preview.
                     foreach (WorkingUnit target in targets)
-                        if (target.Alive) Damage(actor, target, actor.Alive ? actor.Attack : 0, "Attack");
+                        if (target.Alive)
+                        {
+                            PreviewBossAttack(actor, target);
+                            if (unsupportedReason != null) return;
+                            Damage(actor, target, actor.Alive ? actor.Attack : 0, "Attack");
+                        }
                 }
             }
 
-            private void Damage(WorkingUnit? actor, WorkingUnit target, int damage, string kind, int sourceCardId = 0)
+            private void PreviewBossAttack(WorkingUnit actor, WorkingUnit target)
+            {
+                if (source.Preview || context?.Statistics == null || !units.Any(unit => unit.Alive &&
+                    (unit.Source.IsPyre || unit.Source.IsBoss == true || unit.Source.IsBoss == null && unit.Source.EndsBattleOnDeath))) return;
+                var copied = new RoomCombatState(source.RoomIndex, source.Deployment, units.Select(unit => unit.Freeze()).ToArray(),
+                    source.ExternalInteractions, context, preview: true);
+                var preview = new Engine(copied, new List<CombatEvent>());
+                preview.Damage(preview.units.Single(unit => unit.Source.Id == actor.Source.Id),
+                    preview.units.Single(unit => unit.Source.Id == target.Source.Id), actor.Attack, "Attack");
+                if (preview.unsupportedReason != null) { unsupportedReason = "Boss kill preview: " + preview.unsupportedReason; return; }
+                // Native restores characters, but CardStatistics is shared: queries can refresh its
+                // membership and SetAttackDamageDealt survives, including nested retaliation.
+                context = context.WithStatistics(preview.context!.Statistics);
+            }
+
+            private void Damage(WorkingUnit? actor, WorkingUnit target, int damage, string kind, int sourceCardId = 0, bool applyTraits = true)
             {
                 int raw = damage;
                 int blocked = 0;
@@ -419,6 +445,13 @@ namespace MonsterTrain2Poju.Model
                     damage = checked(damage * (stacks + 1));
                     if (damage != raw) Trigger(target, "melee weakness", stacks);
                 }
+                if (applyTraits)
+                {
+                    DamageScalingResult scaled = DamageScalingModel.Apply(context, actor?.Source.SpawnerCardId ?? sourceCardId, sourceCardId, damage);
+                    if (!scaled.Supported) { unsupportedReason = scaled.UnsupportedReason; return; }
+                    context = scaled.Context; damage = scaled.Damage;
+                }
+                damage = Math.Max(0, damage);
                 if (target.Has("pyregel"))
                 {
                     damage = checked(damage + target.Amount("pyregel"));
