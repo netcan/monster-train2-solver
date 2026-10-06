@@ -354,6 +354,16 @@ namespace MonsterTrain2Poju.Probe
             public string? Difference { get; set; }
         }
 
+        [HarmonyPatch(typeof(CardManager), "AddCardImpl")]
+        private static class CardIdentityPatch
+        {
+            private static void Postfix(CardState? __result)
+            {
+                if (__result != null && Active != null && !AllGameManagers.Instance!.GetSaveManager().PreviewMode)
+                    Active.CardId(__result);
+            }
+        }
+
         [HarmonyPatch(typeof(MonsterManager), nameof(MonsterManager.CreateMonsterState))]
         private static class MonsterIdentityPatch
         {
