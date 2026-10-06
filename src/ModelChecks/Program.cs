@@ -97,6 +97,7 @@ NumericRangeChecks.Run();
 TargetFilterChecks.Run();
 DrawSpellChecks.Run();
 HandRemovalChecks.Run();
+SharedPileChecks.Run();
 CardGenerationChecks.Run();
 TrainCombatChecks.Run();
 RoomCombatChecks.Run(args.Where(path => !path.Contains("calibration", StringComparison.OrdinalIgnoreCase)).ToArray());

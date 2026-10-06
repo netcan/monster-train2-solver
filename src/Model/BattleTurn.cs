@@ -96,7 +96,7 @@ namespace MonsterTrain2Poju.Model
             if (uiRangeError != null) return Unsupported(uiRangeError);
             CardPileState[] otherPiles = source.OtherPiles.ToArray();
             TrainCombatState train = spawn.Train;
-            CombatContext context = train.Context!;
+            CombatContext context = train.Context!.WithOtherPiles(otherPiles);
             CardCycleResult discard = CardCycleModel.DiscardHand(context.Cards);
             if (!discard.Supported) return Unsupported(discard.UnsupportedReason!);
             BattleStatistics? statistics = context.Statistics;
@@ -175,6 +175,8 @@ namespace MonsterTrain2Poju.Model
                 CardPileState[] piles = Terminal(outcome) && outcome != RoomOutcome.Stalemate
                     ? otherPiles.Select(CardPileModel.Clear).ToArray()
                     : otherPiles;
+                spawn = WithTrain(spawn, CardSpellModel.WithContext(spawn.Train, finalContext.WithOtherPiles(piles)),
+                    spawn.Turn, spawn.Rng);
                 return new BattleTurnResult(new BattleTurnState(spawn, energy, source.EnergyPerTurn, source.DrawPerTurn,
                     source.ForgePoints, source.DragonsHoard, phase, streams, piles, source.ExternalInteractions, source.PlayRules,
                     source.BattlePreviewEnabled, source.UiRngIsolated), outcome);
@@ -182,6 +184,11 @@ namespace MonsterTrain2Poju.Model
 
             bool RouteDeadUnits(TrainCombatState before, TrainCombatResult result)
             {
+                if (result.State!.Context!.OtherPiles != null)
+                {
+                    otherPiles = result.State.Context.OtherPiles.ToArray();
+                    return true;
+                }
                 var alive = new HashSet<int>(result.State!.Rooms.SelectMany(room => room.Units).Select(unit => unit.Id));
                 var dead = before.Rooms.SelectMany(room => room.Units)
                     .Where(unit => unit.Team == CombatTeam.Player && unit.SpawnerCardId > 0 && !alive.Contains(unit.Id))
@@ -208,7 +215,7 @@ namespace MonsterTrain2Poju.Model
         }
         private static CombatContext WithCards(CombatContext context, CardCycleState cards) => new CombatContext(cards,
             context.BattleRng, context.Gold, context.NextCardId, context.MaxHandSize, context.StatusRules, context.Statistics, context.CardInstances,
-            context.CardRegistry, context.AllScenarioBossesDead, context.NextAddedTemporaryUpgrades);
+            context.CardRegistry, context.AllScenarioBossesDead, context.NextAddedTemporaryUpgrades, context.OtherPiles);
         private static TrainCombatState WithContext(TrainCombatState train, CombatContext context, bool deployment) =>
             new TrainCombatState(train.Rooms.Select(room => new RoomCombatState(room.RoomIndex, deployment, room.Units,
                 room.ExternalInteractions, context)).ToArray(), train.Movement, train.EnemySlotsPerRoom, context);

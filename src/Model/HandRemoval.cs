@@ -27,7 +27,7 @@ namespace MonsterTrain2Poju.Model
             if (source.Cards.ExternalInteractions.Count > 0) return Unsupported(string.Join("; ", source.Cards.ExternalInteractions));
             CardToken[] targets = mode == 0 || mode == 1
                 ? source.Cards.Hand.Where(card => card.InstanceId != sourceCardId).ToArray() : Array.Empty<CardToken>();
-            CardPileState[]? piles = otherPiles?.ToArray();
+            CardPileState[]? piles = (otherPiles ?? source.OtherPiles)?.ToArray();
             int[] pending = (pendingExhaustedCards ?? Array.Empty<int>()).ToArray();
             string? membershipError = CardPileModel.ValidateMembership(source.Cards, piles ?? Array.Empty<CardPileState>(), source.NextCardId);
             if (membershipError != null) return Unsupported(membershipError);
@@ -64,7 +64,7 @@ namespace MonsterTrain2Poju.Model
                     if (error != null) return Unsupported(error);
                 }
             }
-            CombatContext context = source;
+            CombatContext context = piles == null ? source : source.WithOtherPiles(piles);
             var processing = new HashSet<int>();
             foreach (CardToken token in targets)
             {
@@ -96,7 +96,7 @@ namespace MonsterTrain2Poju.Model
             int consumed = mode == 1 ? targets.Length : 0;
             CardInstanceState? resolving = context.FindCard(sourceCardId);
             if (resolving != null) context = context.WithCard(resolving.WithCounter(effectIndex, "CardEffectDiscardHand", consumed));
-            return new HandRemovalResult(context, piles, targets, consumed);
+            return new HandRemovalResult(piles == null ? context : context.WithOtherPiles(piles), piles, targets, consumed);
 
             void CheckStandby(int consumedId)
             {

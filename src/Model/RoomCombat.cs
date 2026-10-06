@@ -476,7 +476,22 @@ namespace MonsterTrain2Poju.Model
                         sourceCardId > 0 ? sourceCardId : target.Source.SpawnerCardId, requireTrackedCard: context.CardInstances?.Count == 0)
                         .Increment(target.Source.Team == CombatTeam.Player && !deferSpawnerExhaustion ? target.Source.SpawnerCardId : 0, "TimesExhausted",
                             requireTrackedCard: context.CardInstances?.Count == 0));
+                if (!source.Preview && !deferSpawnerExhaustion) RouteSpawner(target);
                 if (!source.Preview && (target.Source.EndsBattleOnDeath || target.Source.IsPyre)) ClearTerminalCards();
+            }
+
+            private void RouteSpawner(WorkingUnit unit)
+            {
+                if (unit.Source.Team != CombatTeam.Player || unit.Source.SpawnerCardId <= 0 || context?.OtherPiles == null) return;
+                CardPileState? standby = context.OtherPiles.FirstOrDefault(pile => pile.Name == "Standby");
+                CardPileState? exhausted = context.OtherPiles.FirstOrDefault(pile => pile.Name == "Exhausted");
+                int id = unit.Source.SpawnerCardId;
+                CardToken? card = standby?.Cards.FirstOrDefault(item => item.InstanceId == id);
+                if (card == null && exhausted?.Cards.Any(item => item.InstanceId == id) == true) return;
+                if (standby == null || exhausted == null || card == null)
+                { unsupportedReason = "Missing dead unit spawner card routing."; return; }
+                context = context.WithOtherPiles(context.OtherPiles.Select(pile => pile == standby ? CardPileModel.Remove(pile, id) :
+                    pile == exhausted ? CardPileModel.Add(CardPileModel.Remove(pile, id), card) : pile).ToArray());
             }
 
             private void ClearTerminalCards()
@@ -488,7 +503,7 @@ namespace MonsterTrain2Poju.Model
                     context.Cards.ExternalInteractions), context.BattleRng, context.Gold,
                     context.NextCardId, context.MaxHandSize, context.StatusRules, context.Statistics,
                     context.CardInstances == null ? null : Array.Empty<CardInstanceState>(), context.CardRegistry, context.AllScenarioBossesDead,
-                    context.NextAddedTemporaryUpgrades);
+                    context.NextAddedTemporaryUpgrades, context.OtherPiles?.Select(CardPileModel.Clear).ToArray());
             }
 
             private void PostCombat()
@@ -550,6 +565,7 @@ namespace MonsterTrain2Poju.Model
                                     if (!source.Preview && context?.Statistics != null && unit.Source.Team == CombatTeam.Player)
                                         context = context.WithStatistics(context.LiveStatistics!.Increment(unit.Source.SpawnerCardId, "TimesExhausted",
                                             requireTrackedCard: context.CardInstances?.Count == 0));
+                                    if (!source.Preview) RouteSpawner(unit);
                                 }
                             }
                             else if (effect.Type == "CardEffectRewardGold")
@@ -558,7 +574,7 @@ namespace MonsterTrain2Poju.Model
                                 int reward = GoldRewardModel.Adjust(effect.Value);
                                 context = new CombatContext(context!.Cards, context.BattleRng,
                                     Math.Max(0, checked(context.Gold + reward)), context.NextCardId, context.MaxHandSize, context.StatusRules, context.Statistics,
-                                    context.CardInstances, context.CardRegistry, context.AllScenarioBossesDead, context.NextAddedTemporaryUpgrades);
+                                    context.CardInstances, context.CardRegistry, context.AllScenarioBossesDead, context.NextAddedTemporaryUpgrades, context.OtherPiles);
                                 Emit("Gold", unit, unit, reward);
                             }
                             else if (effect.Type == "CardEffectAddBattleCard" && !source.Preview && !battleWon && context != null && context.AllScenarioBossesDead != true &&

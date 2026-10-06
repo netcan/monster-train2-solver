@@ -169,7 +169,7 @@ namespace MonsterTrain2Poju.Probe
                 cards.GetMaxHandSize(), new[] { "armor", "valor", "pyregel" }.Select(id => BattleActionProbe.Status(id, 1)).ToArray(),
                 statistics, instances, registry, managers.GetCombatManager()!.AllScenarioBossesDead,
                 ((IEnumerable<CardUpgradeState>)AccessTools.Field(typeof(CardManager), "nextAddedTempCardUpgrades").GetValue(cards))
-                    .Select(CardModifierProbe.Upgrade).ToArray());
+                    .Select(CardModifierProbe.Upgrade).ToArray(), CaptureOtherPiles());
         }
 
         internal CardPileState[] CaptureOtherPiles()
@@ -309,7 +309,7 @@ namespace MonsterTrain2Poju.Probe
             string path = Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!, "full-battle.json");
             File.WriteAllText(path, JsonConvert.SerializeObject(new
             {
-                Schema = 20,
+                Schema = 21,
                 GameVersion = Application.version,
                 GameModuleMvid = typeof(CardState).Assembly.ManifestModule.ModuleVersionId,
                 NativeWon,

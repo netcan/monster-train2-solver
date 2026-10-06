@@ -37,6 +37,7 @@ are copied immutable values; independent child states can run on worker threads.
 | Card instance modifiers | `CardModifierModel` | Permanent/temporary ordered numeric upgrades, unit starting statuses, discard removal, play history and 256 native scalar calculations |
 | Retained card references | `CombatContext.CardRegistry` | Observed card identities survive pile clearing; detached spawner upgrades/removal preserve ownership and parent isolation |
 | Standby dictionary allocation | `CardPileModel` | Captured entry slots and free-list order preserve native hole reuse after unit death; malformed layouts, distinct futures, terminal clear and parallel branches |
+| Shared secondary card piles | `CombatContext.OtherPiles` | Room and spell resolution carry standby/exhausted/eaten/purged/buffer state, immediate and deferred spawner returns, terminal clearing and immutable parallel branches |
 | Runtime unit upgrades | `UnitModifierModel` | Native permanent, battle and unit-death lifetimes, duplicate removal, unique upgrades, restricted size, unhealed health and lethal max-health loss |
 | Hand upgrade spells | `HandUpgradeModel` | Native targeted and targetless sequences, current-hand membership, permanent/temporary groups, uniqueness and paid-card exclusion |
 | Basic healing | `HealingModel` and `CardSpellModel` | Native targeted spells, modifier group clamps, maximum health, multiplier/immunity, regen and lifesteal; independent healability checks |
@@ -840,8 +841,27 @@ API delegates to the same engine for local checks. Each applied target updates
 its own room, then shares the resulting context with every other room; fixed
 target collections and last-target identities span the train. Capacity-limited
 unit upgrades consult the target room's definition. Dead movement and standby
-spawner routing use all rooms. The 30 saved native battle oracles exercise this
+spawner routing use all rooms. The 32 saved native battle oracles exercise this
 engine through the normal card-action path, including cross-room target modes.
+
+Schema 21 captures the secondary piles in the shared combat context as well as
+the outer decision state. A room death or post-combat despawn updates standby
+slots and exhaustion before the context reaches another room. Damage spells
+keep the final victim's spawner in standby until the existing death queue drains;
+hand removal preserves nested return ordering. The terminal clear resets all
+secondary piles and the standby dictionary layout. Older fixtures leave this
+field null and retain their historical outer-state routing; they do not verify
+native shared-pile state at room boundaries. The checker also starts each older
+oracle with a shared copy of its captured outer piles and independently runs its
+complete policy. All originally captured decision fields, including the outer
+piles, stay in that comparison; only the newly added shared copy is omitted.
+
+`results/full-battle-shared-piles.json.gz` and
+`results/full-battle-shared-piles-lethal.json.gz` preserve complete native traces
+without changing their JSON bytes. Independent checks compare room and decision
+contexts, then recompute the complete policy from the initial and mid-battle
+states with 16 parallel branches. The lethal fixture also verifies hand
+consumption, nested dead-spawner returns and transient standby slot reuse.
 
 1. Capture a self-contained starting battle state and its static rule definitions.
    Include card instance identities, permanent/temporary modifications, card

@@ -156,14 +156,14 @@ namespace MonsterTrain2Poju.Model
                 string? pileError = CardPileModel.Validate(pile);
                 if (pileError != null) return Unsupported(pileError);
             }
-            context = context.WithStatistics(context.Statistics?.WithPlayedCost(card.InstanceId, rule.Cost));
+            context = context.WithOtherPiles(source.OtherPiles).WithStatistics(context.Statistics?.WithPlayedCost(card.InstanceId, rule.Cost));
             CombatContext castingContext = context;
             CardPileState[] piles = source.OtherPiles.ToArray();
             // Native direct play removes the card from hand before queued effects execute.
             context = new CombatContext(new CardCycleState(context.Cards.Hand.Where(item => item.InstanceId != card.InstanceId).ToArray(),
                 context.Cards.Draw, context.Cards.Discard, context.Cards.Rng, context.Cards.DrawModifier, context.Cards.ExternalInteractions),
                 context.BattleRng, context.Gold, context.NextCardId, context.MaxHandSize, context.StatusRules, context.Statistics, context.CardInstances,
-                context.CardRegistry, context.AllScenarioBossesDead, context.NextAddedTemporaryUpgrades);
+                context.CardRegistry, context.AllScenarioBossesDead, context.NextAddedTemporaryUpgrades, context.OtherPiles);
             target = new RoomCombatState(target.RoomIndex, target.Deployment, target.Units, target.ExternalInteractions, context, target.Preview);
             CombatUnit[] players = target.Units.Where(unit => unit.Team == CombatTeam.Player).ToArray();
             int position = action.PlayerPosition == -1 ? players.Length : action.PlayerPosition;
@@ -222,7 +222,7 @@ namespace MonsterTrain2Poju.Model
             List<CardToken> hand = context.Cards.Hand.Where(item => item.InstanceId != card.InstanceId).ToList();
             List<CardToken> discard = context.Cards.Discard.ToList();
             bool terminal = outcome == RoomOutcome.BattleWon || outcome == RoomOutcome.PlayerDefeated;
-            if (spellApplied)
+            if (spellApplied && !(terminal && context.OtherPiles != null))
             {
                 var alive = new HashSet<int>(train.Rooms.SelectMany(room => room.Units).Select(unit => unit.Id));
                 foreach (CombatUnit dead in source.Spawn.Train.Rooms.SelectMany(room => room.Units)
@@ -267,7 +267,8 @@ namespace MonsterTrain2Poju.Model
                 context.Gold, context.NextCardId, context.MaxHandSize, context.StatusRules, statistics,
                 terminal ? playingInstance == null ? context.CardInstances : new[] { (context.FindCard(card.InstanceId) ?? playingInstance).OnDiscard(true, rule.Cost) } :
                 context.CardInstances?.Select(instance => instance.InstanceId == card.InstanceId
-                    ? instance.OnDiscard(true, rule.Cost) : instance).ToArray(), context.CardRegistry, context.AllScenarioBossesDead, context.NextAddedTemporaryUpgrades);
+                    ? instance.OnDiscard(true, rule.Cost) : instance).ToArray(), context.CardRegistry, context.AllScenarioBossesDead, context.NextAddedTemporaryUpgrades,
+                context.OtherPiles == null ? null : piles);
             RoomCombatState[] rooms = train.Rooms.Select(room =>
             {
                 CombatUnit[] units = room.Units.ToArray();

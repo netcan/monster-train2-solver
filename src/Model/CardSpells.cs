@@ -115,7 +115,8 @@ namespace MonsterTrain2Poju.Model
             RoomOutcome outcome = RoomOutcome.Exchanged;
             bool bossDead = source.Context!.AllScenarioBossesDead == true;
             CardInstanceState? resolvingCard = source.Context.FindCard(sourceCardId);
-            CardPileState[]? piles = otherPiles?.ToArray();
+            CardPileState[]? piles = (otherPiles ?? source.Context.OtherPiles)?.ToArray();
+            if (piles != null) state = WithContext(state, state.Context!.WithOtherPiles(piles));
             var deferredExhaustion = new HashSet<int>();
             string? routingError = null;
             for (int index = 0; index < effects.Count; index++)
@@ -241,6 +242,7 @@ namespace MonsterTrain2Poju.Model
                         capacity?.PlayerCapacity ?? playerCapacity, capacity?.EnemyCapacity ?? enemyCapacity, deferSpawnerExhaustion: piles != null);
                     if (!applied.Supported) return UnsupportedTrain(applied.UnsupportedReason!);
                     state = ReplaceRoom(state, applied.State!);
+                    if (state.Context!.OtherPiles != null) piles = state.Context.OtherPiles.ToArray();
                     events.AddRange(applied.Events);
                     if ((effect.Type == "Heal" && effect.Value >= 0 || effect.Type == "UnitUpgrade") && target.Triggers.Any(trigger => trigger.Kind == "OnHeal" &&
                         (!trigger.Once || !trigger.HasTriggered) && (!targetRoom!.Deployment || trigger.SkipDuringDeployment != true) &&
@@ -277,7 +279,7 @@ namespace MonsterTrain2Poju.Model
             }
             DrainDeaths(); // The card's final played callbacks finish the remaining death queue.
             if (routingError != null) return UnsupportedTrain(routingError);
-            state = WithContext(state, state.Context!.AfterCardEffects());
+            state = WithContext(state, (piles == null ? state.Context! : state.Context!.WithOtherPiles(piles)).AfterCardEffects());
             return new TrainSpellResult(state, outcome, events, collections: collections, otherPiles: piles);
 
             void RouteDeadCard(int cardId)
@@ -293,6 +295,7 @@ namespace MonsterTrain2Poju.Model
                 }
                 piles = piles!.Select(pile => pile == standby ? CardPileModel.Remove(pile, cardId) :
                     pile == exhausted ? CardPileModel.Add(exhausted, token) : pile).ToArray();
+                state = WithContext(state, state.Context!.WithOtherPiles(piles));
                 if (deferredExhaustion.Remove(cardId)) state = WithContext(state, state.Context!.WithStatistics(
                     state.Context.LiveStatistics?.Increment(cardId, "TimesExhausted", requireTrackedCard: state.Context.CardInstances?.Count == 0)));
             }
