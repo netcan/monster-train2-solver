@@ -8,7 +8,7 @@ namespace MonsterTrain2Poju.Probe
 {
     internal static class DamageScalingProbe
     {
-        internal static bool Known(string name) => name == "CardTraitSelfPurge" || name == "CardTraitScalingAddDamage";
+        internal static bool Known(string name) => name == "CardTraitSelfPurge" || name == "CardTraitScalingAddDamage" || name == "CardTraitScalingAddStatusEffect";
         internal static ScalingDamageTrait[]? Capture(CardState card)
         {
             ScalingDamageTrait[] traits = card.GetTraitStates().OfType<CardTraitScalingAddDamage>().Select(trait =>
@@ -27,7 +27,7 @@ namespace MonsterTrain2Poju.Probe
             }).ToArray();
             return traits.Length == 0 ? null : traits;
         }
-        private static CardStatisticQuery Query(CardStatistics.StatValueData data, int rawCost, bool variable)
+        internal static CardStatisticQuery Query(CardStatistics.StatValueData data, int rawCost, bool variable)
         {
             // Masks cover every static definition, including cards that future effects may generate.
             IReadOnlyList<CardData> definitions = AllGameManagers.Instance!.GetSaveManager().GetAllGameData().GetAllCardData();

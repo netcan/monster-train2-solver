@@ -22,12 +22,13 @@ namespace MonsterTrain2Poju.Model
         public bool RemoveDuringDeployment { get; }
         public bool? TriggerVfxEnemy { get; }
         public bool? TriggerVfxPlayer { get; }
+        public bool? Stackable { get; }
 
         public CombatStatus(string id, int stacks, int paramInt = 0,
             bool removeWhenTriggered = false, bool removeStackAtEnd = false,
             bool removeAllAtEnd = false, bool removeAfterPostCombat = false,
             bool preventRemovalDuringRelentless = false, bool skipDuringDeployment = false,
-            bool removeDuringDeployment = false, bool? triggerVfxEnemy = null, bool? triggerVfxPlayer = null)
+            bool removeDuringDeployment = false, bool? triggerVfxEnemy = null, bool? triggerVfxPlayer = null, bool? stackable = null)
         {
             Id = id;
             Stacks = stacks;
@@ -41,11 +42,12 @@ namespace MonsterTrain2Poju.Model
             RemoveDuringDeployment = removeDuringDeployment;
             TriggerVfxEnemy = triggerVfxEnemy;
             TriggerVfxPlayer = triggerVfxPlayer;
+            Stackable = stackable;
         }
 
         internal CombatStatus WithStacks(int stacks) => new CombatStatus(Id, stacks, ParamInt,
             RemoveWhenTriggered, RemoveStackAtEnd, RemoveAllAtEnd, RemoveAfterPostCombat,
-            PreventRemovalDuringRelentless, SkipDuringDeployment, RemoveDuringDeployment, TriggerVfxEnemy, TriggerVfxPlayer);
+            PreventRemovalDuringRelentless, SkipDuringDeployment, RemoveDuringDeployment, TriggerVfxEnemy, TriggerVfxPlayer, Stackable);
     }
 
     public sealed class CombatUnit
@@ -164,6 +166,7 @@ namespace MonsterTrain2Poju.Model
             "buff", "debuff", "regen", "poison", "melee weakness", "silenced", "valor", "pyregel",
             "heal multiplier", "heal immunity"
         };
+        internal static bool KnowsStatus(string id) => KnownStatuses.Contains(id);
 
         public static RoomCombatResult Exchange(RoomCombatState state) => Run(state, false);
         public static RoomCombatResult Resolve(RoomCombatState state) => Run(state, true);

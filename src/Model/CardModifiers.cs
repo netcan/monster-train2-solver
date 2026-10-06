@@ -91,23 +91,26 @@ namespace MonsterTrain2Poju.Model
         public IReadOnlyList<string> ExternalInteractions { get; }
         public IReadOnlyList<CardEffectCounter>? EffectCounters { get; }
         public IReadOnlyList<ScalingDamageTrait>? DamageScalingTraits { get; }
+        public IReadOnlyList<ScalingStatusTrait>? StatusScalingTraits { get; }
         public CardInstanceState(int instanceId, string dataId, CardModifiers permanent, CardModifiers temporary,
             int lastPlayedCost, int lastForgedAmount, int playCount, IReadOnlyList<string> externalInteractions,
-            IReadOnlyList<CardEffectCounter>? effectCounters = null, IReadOnlyList<ScalingDamageTrait>? damageScalingTraits = null)
+            IReadOnlyList<CardEffectCounter>? effectCounters = null, IReadOnlyList<ScalingDamageTrait>? damageScalingTraits = null,
+            IReadOnlyList<ScalingStatusTrait>? statusScalingTraits = null)
         { InstanceId = instanceId; DataId = dataId; Permanent = permanent; Temporary = temporary;
             LastPlayedCost = lastPlayedCost; LastForgedAmount = lastForgedAmount; PlayCount = playCount;
             ExternalInteractions = Array.AsReadOnly(externalInteractions.ToArray());
             EffectCounters = effectCounters == null ? null : Array.AsReadOnly(effectCounters.OrderBy(counter => counter.EffectIndex).ToArray());
-            DamageScalingTraits = damageScalingTraits == null ? null : Array.AsReadOnly(damageScalingTraits.ToArray()); }
+            DamageScalingTraits = damageScalingTraits == null ? null : Array.AsReadOnly(damageScalingTraits.ToArray());
+            StatusScalingTraits = statusScalingTraits == null ? null : Array.AsReadOnly(statusScalingTraits.ToArray()); }
         public static CardInstanceState Empty(int id, string dataId) => new CardInstanceState(id, dataId,
             CardModifiers.Empty(), CardModifiers.Empty(), 0, 0, 0, Array.Empty<string>());
         public CardInstanceState OnDiscard(bool played, int cost = 0) => new CardInstanceState(InstanceId, DataId,
             Permanent, Temporary.OnDiscard(), played ? cost : LastPlayedCost, LastForgedAmount,
-            PlayCount + (played ? 1 : 0), ExternalInteractions, EffectCounters, DamageScalingTraits);
+            PlayCount + (played ? 1 : 0), ExternalInteractions, EffectCounters, DamageScalingTraits, StatusScalingTraits);
         internal CardInstanceState WithCounter(int index, string type, int value) => new CardInstanceState(InstanceId, DataId,
             Permanent, Temporary, LastPlayedCost, LastForgedAmount, PlayCount, ExternalInteractions,
             (EffectCounters ?? Array.Empty<CardEffectCounter>()).Where(counter => counter.EffectIndex != index)
-                .Concat(new[] { new CardEffectCounter(index, type, value) }).ToArray(), DamageScalingTraits);
+                .Concat(new[] { new CardEffectCounter(index, type, value) }).ToArray(), DamageScalingTraits, StatusScalingTraits);
     }
 
     public static class CardModifierModel

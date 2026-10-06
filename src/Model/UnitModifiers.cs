@@ -122,7 +122,7 @@ namespace MonsterTrain2Poju.Model
                     temporary.Upgrades.Where(item => item.DataId != upgrade.DataId).ToArray(), temporary.PersistentHealth, temporary.ExternalInteractions);
                 else if (lifetime == "Permanent") permanent = Add(permanent, upgrade);
                 else temporary = Add(temporary, upgrade);
-                var changed = new CardInstanceState(card.InstanceId, card.DataId, permanent, temporary, card.LastPlayedCost, card.LastForgedAmount, card.PlayCount, card.ExternalInteractions, card.EffectCounters, card.DamageScalingTraits);
+                var changed = new CardInstanceState(card.InstanceId, card.DataId, permanent, temporary, card.LastPlayedCost, card.LastForgedAmount, card.PlayCount, card.ExternalInteractions, card.EffectCounters, card.DamageScalingTraits, card.StatusScalingTraits);
                 CombatContext context = state.Context.WithCard(changed);
                 state = new RoomCombatState(state.RoomIndex, state.Deployment, state.Units, state.ExternalInteractions, context, state.Preview);
             }

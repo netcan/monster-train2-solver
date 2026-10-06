@@ -844,7 +844,7 @@ API delegates to the same engine for local checks. Each applied target updates
 its own room, then shares the resulting context with every other room; fixed
 target collections and last-target identities span the train. Capacity-limited
 unit upgrades consult the target room's definition. Dead movement and standby
-spawner routing use all rooms. The 34 saved native battle oracles exercise this
+spawner routing use all rooms. The 35 saved native battle oracles exercise this
 engine through the normal card-action path, including cross-room target modes.
 
 `StatisticQueryModel` implements the counter and definition queries used by
@@ -929,6 +929,41 @@ gold/energy/moon timing, exact cycles and 32 isolated branches. Capture failures
 differences, unsupported transitions and pending records are zero. Original
 profile files are unchanged. Additional resource-changing card/relic effects
 and variable-cost card actions remain outside this verified scope.
+
+Schema 24 captures ordered `CardTraitScalingAddStatusEffect` descriptors on
+immutable card instances and generated-card rules, plus the native stackability
+of status definitions. A status application's immunity check precedes its source
+traits. Each zero-only trait checks the running incoming amount after preceding
+traits, rather than the target's existing count. List, propagatable and Horde-only
+filters preserve native query short-circuits; propagation uses captured status
+definitions with separate Hero/Monster exclusion masks. Integer products and
+running bonuses wrap as native integers do; these traits do not apply numeric
+card upgrades, floating multipliers or preview-only Juice/relic modifiers.
+
+The application clamps the final count to 0..9999 for stackable statuses, or
+0..1 for nonstackable statuses. Only an actual positive delta attributed to a
+source card updates `AnyStatusEffectStacksAdded`, and only outside preview.
+Negative additions do not count as added stacks or invoke removed-stack
+attribution. Subsequent reverse-order targets query the preceding target's
+updated statistics. Creation, discard, hand/unit upgrades and health changes
+retain trait descriptors; unsupported queries do not return usable child states.
+
+`results/full-battle-status-scaling.json.gz` preserves the original native JSON
+bytes: 312 trait callbacks, 75 applications, 15 plays, 5 EndTurns, 43 room stages,
+9 card cycles, 9 train phases and 7 spawns. It wins the natural battle with Pyre
+health 80. The controlled owned spell exercises ordered zero gates, positive and
+negative scaling, 10 observed 9999-stack caps, 13 decreases, source-counter feedback,
+20 immune applications, both target
+teams, and native turns 1..4 across both moon phases. Independent checks recompute
+callback bonuses, complete before/after application states and the entire battle
+from initial/mid-battle inputs with parallel branches. The isolated run reports
+zero capture failures, mismatches, unsupported stages and pending records; the
+original profile files are unchanged. Removed-stack scaling remains unsupported
+until its source-attribution paths are modeled. Horde filter matching and the
+nonstackable application cap have focused model checks; Horde combat mechanics
+and nonstackable spell casting legality remain outside the full-battle fixture.
+The retained native JSON is 322,446,069 bytes, with SHA-256
+`1427b643a923638379f2522266671384a07a3f514b0fe3cf3424a49db8f471a9`.
 
 Schema 22 captures ordered `CardTraitScalingAddDamage` descriptors on immutable
 card instances and generated-card creation rules. Each hit queries the current

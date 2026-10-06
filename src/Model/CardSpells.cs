@@ -516,18 +516,7 @@ namespace MonsterTrain2Poju.Model
                         state.Context.WithBattleRng(chance.State), state.Preview);
                     if (chance.Value >= effect.Value) return Unchanged(state);
                 }
-                CombatStatus added = effect.Statuses[0];
-                if (target.StatusImmunities.Contains(added.Id) || target.Statuses.Any(status => status.Id == "immune")) return Unchanged(state);
-                CombatStatus? existing = target.Statuses.FirstOrDefault(status => status.Id == added.Id);
-                int count = Math.Min(9999, (existing?.Stacks ?? 0) + added.Stacks);
-                CombatContext context = state.Context!;
-                if (context.Statistics != null)
-                    context = context.WithStatistics(context.LiveStatistics!.Increment(sourceCardId, "AnyStatusEffectStacksAdded",
-                        count - (existing?.Stacks ?? 0), requireTrackedCard: context.CardInstances?.Count == 0));
-                CombatUnit modified = Copy(target, target.Health, target.Statuses.Where(status => status.Id != added.Id)
-                    .Concat(new[] { (existing ?? added).WithStacks(count) }).ToArray());
-                return Unchanged(new RoomCombatState(state.RoomIndex, state.Deployment,
-                    state.Units.Select(unit => unit.Id == target.Id ? modified : unit).ToArray(), state.ExternalInteractions, context, state.Preview));
+                return StatusApplicationModel.Apply(state, target.Id, effect.Statuses[0], sourceCardId, overrideImmunity: effect.Target == "Pyre");
             }
             if (target.Statuses.Any(status => status.Id == "immobile")) return Unchanged(state);
             var team = state.Units.Where(unit => unit.Team == target.Team).ToList();
