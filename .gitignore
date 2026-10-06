@@ -1,0 +1,8 @@
+.sandbox-game/
+.sandbox-game-worker2/
+.probe-baseline/
+.probe-data/
+.probe-runs/
+**/bin/
+**/obj/
+*.user

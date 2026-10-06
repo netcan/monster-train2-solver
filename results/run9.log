@@ -1,0 +1,452 @@
+Mono path[0] = 'E:/Workspace/Program/monster-train2-poju/.sandbox-game/MonsterTrain2_Data/Managed'
+Mono config path = 'E:/Workspace/Program/monster-train2-poju/.sandbox-game/MonoBleedingEdge/etc'
+Fallback handler could not load library E:/Workspace/Program/monster-train2-poju/.sandbox-game/MonsterTrain2_Data/MonoBleedingEdge/data-0000018999DB30C0.dll
+Fallback handler could not load library E:/Workspace/Program/monster-train2-poju/.sandbox-game/MonsterTrain2_Data/MonoBleedingEdge/data-000001899F536040.dll
+Input System module state changed to: Initialized.
+[PhysX] Initialized MultithreadedTaskDispatcher with 16 workers.
+Initialize engine version: 2022.3.62f2 (7670c08855a9)
+[Subsystems] Discovering subsystems at path E:/Workspace/Program/monster-train2-poju/.sandbox-game/MonsterTrain2_Data/UnitySubsystems
+GfxDevice: creating device client; threaded=1; jobified=0
+Direct3D:
+    Version:  Direct3D 11.0 [level 11.1]
+    Renderer: NVIDIA GeForce RTX 5070 (ID=0x2f04)
+    Vendor:   NVIDIA
+    VRAM:     11944 MB
+    Driver:   32.0.16.1692
+Begin MonoManager ReloadAssembly
+- Loaded All Assemblies, in  0.098 seconds
+- Finished resetting the current domain, in  0.001 seconds
+<RI> Initializing input.
+<RI> Input initialized.
+<RI> Initialized touch support.
+[Message:   BepInEx] BepInEx 5.4.21.0 - MonsterTrain2 (2025/11/9 17:30:30)
+[Info   :   BepInEx] Running under Unity v2022.3.62.7762112
+[Info   :   BepInEx] CLR runtime version: 4.0.30319.42000
+[Info   :   BepInEx] Supports SRE: True
+[Info   :   BepInEx] System platform: Bits64, Windows
+[Message:   BepInEx] Preloader started
+[Info   :   BepInEx] Loaded 1 patcher method from [BepInEx.Preloader 5.4.21.0]
+[Info   :   BepInEx] 1 patcher plugin loaded
+[Info   :   BepInEx] Patching [UnityEngine.CoreModule] with [BepInEx.Chainloader]
+[Message:   BepInEx] Preloader finished
+[Message:   BepInEx] Chainloader ready
+[Message:   BepInEx] Chainloader started
+[Info   :   BepInEx] 1 plugins to load
+[Info   :   BepInEx] Loading [Monster Train 2 Isolation Probe 0.1.0]
+[Info   :Monster Train 2 Isolation Probe] Probe patches installed before AppManager startup; isolated root: E:\Workspace\Program\monster-train2-poju\.probe-runs\run9
+[Info   :Monster Train 2 Isolation Probe] Two-turn smoke scenario armed.
+[Message:   BepInEx] Chainloader startup complete
+[PhysX] Initialized MultithreadedTaskDispatcher with 16 workers.
+UnloadTime: 0.828800 ms
+[Info   :Monster Train 2 Isolation Probe] AppManager.Awake reached with isolated save-root patch active.
+[Info   :Monster Train 2 Isolation Probe] SaveDirStandalone.GetRootDirectory redirected to E:\Workspace\Program\monster-train2-poju\.probe-runs\run9
+Unloading 7 Unused Serialized files (Serialized files now loaded: 0)
+Unloading 3 unused Assets to reduce memory usage. Loaded Objects now: 27596.
+Total: 19.797200 ms (FindLiveObjects: 1.166200 ms CreateObjectMapping: 1.499700 ms MarkObjects: 17.083700 ms  DeleteObjects: 0.047100 ms)
+
+Unloading 14 Unused Serialized files (Serialized files now loaded: 0)
+Unloading 15 unused Assets to reduce memory usage. Loaded Objects now: 30368.
+Total: 27.044300 ms (FindLiveObjects: 1.560300 ms CreateObjectMapping: 1.822200 ms MarkObjects: 23.576100 ms  DeleteObjects: 0.085200 ms)
+
+Unloading 7 Unused Serialized files (Serialized files now loaded: 0)
+Unloading 1 unused Assets to reduce memory usage. Loaded Objects now: 30523.
+Total: 24.864700 ms (FindLiveObjects: 1.315400 ms CreateObjectMapping: 1.447500 ms MarkObjects: 22.062300 ms  DeleteObjects: 0.038900 ms)
+
+Unloading 8 Unused Serialized files (Serialized files now loaded: 0)
+Unloading 7 unused Assets to reduce memory usage. Loaded Objects now: 32810.
+Total: 32.923900 ms (FindLiveObjects: 1.743400 ms CreateObjectMapping: 2.046100 ms MarkObjects: 29.045500 ms  DeleteObjects: 0.088500 ms)
+
+Unloading 10 Unused Serialized files (Serialized files now loaded: 0)
+Unloading 2 unused Assets to reduce memory usage. Loaded Objects now: 36896.
+Total: 32.666400 ms (FindLiveObjects: 2.096900 ms CreateObjectMapping: 1.748900 ms MarkObjects: 28.733500 ms  DeleteObjects: 0.086700 ms)
+
+Unloading 13 Unused Serialized files (Serialized files now loaded: 0)
+Unloading 4 unused Assets to reduce memory usage. Loaded Objects now: 37449.
+Total: 31.813200 ms (FindLiveObjects: 2.411800 ms CreateObjectMapping: 1.988400 ms MarkObjects: 27.343800 ms  DeleteObjects: 0.069000 ms)
+
+Unloading 11 Unused Serialized files (Serialized files now loaded: 0)
+Unloading 6 unused Assets to reduce memory usage. Loaded Objects now: 45610.
+Total: 38.799000 ms (FindLiveObjects: 4.142400 ms CreateObjectMapping: 2.515800 ms MarkObjects: 32.039400 ms  DeleteObjects: 0.101000 ms)
+
+There can be only one active Event System.
+[Info   :Monster Train 2 Isolation Probe] AppManager.Awake reached with isolated save-root patch active.
+Unloading 8 Unused Serialized files (Serialized files now loaded: 0)
+Unloading 4 unused Assets to reduce memory usage. Loaded Objects now: 45860.
+Total: 36.608600 ms (FindLiveObjects: 4.042500 ms CreateObjectMapping: 2.567600 ms MarkObjects: 29.889200 ms  DeleteObjects: 0.108800 ms)
+
+[Info   :Monster Train 2 Isolation Probe] Smoke: moved isolated profile from IntroStart to main menu.
+[Info   :Monster Train 2 Isolation Probe] Smoke: fixed seed 424242; new run requested.
+[Info   :Monster Train 2 Isolation Probe] AppManager.Awake reached with isolated save-root patch active.
+Unloading 5 Unused Serialized files (Serialized files now loaded: 0)
+Unloading 24 unused Assets to reduce memory usage. Loaded Objects now: 47544.
+Total: 29.429300 ms (FindLiveObjects: 3.707100 ms CreateObjectMapping: 2.023400 ms MarkObjects: 23.259300 ms  DeleteObjects: 0.439000 ms)
+
+Unloading 9 Unused Serialized files (Serialized files now loaded: 20)
+Unloading 237 unused Assets to reduce memory usage. Loaded Objects now: 73925.
+Total: 41.968600 ms (FindLiveObjects: 4.502300 ms CreateObjectMapping: 3.876900 ms MarkObjects: 32.603400 ms  DeleteObjects: 0.985600 ms)
+
+Unloading 5 Unused Serialized files (Serialized files now loaded: 20)
+Unloading 3 unused Assets to reduce memory usage. Loaded Objects now: 76963.
+Total: 41.183900 ms (FindLiveObjects: 4.863700 ms CreateObjectMapping: 3.925300 ms MarkObjects: 32.242000 ms  DeleteObjects: 0.152700 ms)
+
+Unloading 9 Unused Serialized files (Serialized files now loaded: 20)
+Unloading 7 unused Assets to reduce memory usage. Loaded Objects now: 77485.
+Total: 42.940600 ms (FindLiveObjects: 5.479400 ms CreateObjectMapping: 3.816300 ms MarkObjects: 33.518200 ms  DeleteObjects: 0.126200 ms)
+
+Unloading 5 Unused Serialized files (Serialized files now loaded: 20)
+Unloading 7 unused Assets to reduce memory usage. Loaded Objects now: 93421.
+Total: 43.926500 ms (FindLiveObjects: 6.067300 ms CreateObjectMapping: 3.121200 ms MarkObjects: 34.580800 ms  DeleteObjects: 0.156700 ms)
+
+Unloading 7 Unused Serialized files (Serialized files now loaded: 20)
+Unloading 4 unused Assets to reduce memory usage. Loaded Objects now: 95607.
+Total: 50.337600 ms (FindLiveObjects: 7.052800 ms CreateObjectMapping: 4.445900 ms MarkObjects: 38.645100 ms  DeleteObjects: 0.193300 ms)
+
+Unloading 8 Unused Serialized files (Serialized files now loaded: 20)
+Unloading 2 unused Assets to reduce memory usage. Loaded Objects now: 95951.
+Total: 49.263700 ms (FindLiveObjects: 8.315300 ms CreateObjectMapping: 4.562500 ms MarkObjects: 36.225100 ms  DeleteObjects: 0.160400 ms)
+
+[Info   :Monster Train 2 Isolation Probe] Smoke: selected nonempty scenario Level1BattleHealers groups=4
+[Info   :Monster Train 2 Isolation Probe] Smoke: battle requested: Level1BattleHealers
+[Info   :Monster Train 2 Isolation Probe] AppManager.Awake reached with isolated save-root patch active.
+Unloading 8 Unused Serialized files (Serialized files now loaded: 27)
+Unloading 280 unused Assets to reduce memory usage. Loaded Objects now: 113110.
+Total: 50.355000 ms (FindLiveObjects: 9.051900 ms CreateObjectMapping: 5.155700 ms MarkObjects: 32.976100 ms  DeleteObjects: 3.170900 ms)
+
+Unloading 10 Unused Serialized files (Serialized files now loaded: 27)
+Unloading 6 unused Assets to reduce memory usage. Loaded Objects now: 116374.
+Total: 47.845000 ms (FindLiveObjects: 8.342200 ms CreateObjectMapping: 4.610100 ms MarkObjects: 34.715100 ms  DeleteObjects: 0.177000 ms)
+
+[Info   :Monster Train 2 Isolation Probe] SMOKE-WAIT stage=Battle managers=True user=UserLoaded menu=False top=Game loading=False sequence=InBattle busy=False
+[Info   :Monster Train 2 Isolation Probe] SMOKE-SNAPSHOT before turn=0 phase=MonsterTurn pyre=80/80 hand=[d14a50f3-728d-43e1-87f0-ef1b013f6678:d14a50f3-728d-43e1-87f0-ef1b013f6678,d14a50f3-728d-43e1-87f0-ef1b013f6678:d14a50f3-728d-43e1-87f0-ef1b013f6678,19705414-816d-4549-bcf5-866f338a551f:19705414-816d-4549-bcf5-866f338a551f,] draw=[fb0683b1-20ac-4dd2-b580-14b502e182f4:fb0683b1-20ac-4dd2-b580-14b502e182f4,fb0683b1-20ac-4dd2-b580-14b502e182f4:fb0683b1-20ac-4dd2-b580-14b502e182f4,fb0683b1-20ac-4dd2-b580-14b502e182f4:fb0683b1-20ac-4dd2-b580-14b502e182f4,c8b39244-83c1-4eb3-b474-8898226d4280:c8b39244-83c1-4eb3-b474-8898226d4280,fb0683b1-20ac-4dd2-b580-14b502e182f4:fb0683b1-20ac-4dd2-b580-14b502e182f4,fb0683b1-20ac-4dd2-b580-14b502e182f4:fb0683b1-20ac-4dd2-b580-14b502e182f4,c8b39244-83c1-4eb3-b474-8898226d4280:c8b39244-83c1-4eb3-b474-8898226d4280,38e70e6a-20f3-4e36-8d31-c5110be07f87:38e70e6a-20f3-4e36-8d31-c5110be07f87,38e70e6a-20f3-4e36-8d31-c5110be07f87:38e70e6a-20f3-4e36-8d31-c5110be07f87,c8b39244-83c1-4eb3-b474-8898226d4280:c8b39244-83c1-4eb3-b474-8898226d4280,c8b39244-83c1-4eb3-b474-8898226d4280:c8b39244-83c1-4eb3-b474-8898226d4280,c8b39244-83c1-4eb3-b474-8898226d4280:c8b39244-83c1-4eb3-b474-8898226d4280,] discard=[] exhausted=[] eaten=[] heroes=[] monsters=[PyreHeartStarter@3:0:45:80/80,]
+[Info   :Monster Train 2 Isolation Probe] SMOKE-RNG before Master={s0:-905267014,s1:1653247403,s2:48924428,s3:-588248859,} NonDeterministic={s0:2105697876,s1:-1890395946,s2:-589127628,s3:-1395568131,} SetupRun={s0:1642461796,s1:1522012100,s2:408987559,s3:572290056,} Spawning={s0:1059462399,s1:-1366890596,s2:846191757,s3:1191475362,} Chatter={s0:110906590,s1:48177559,s2:706940820,s3:1077369189,} CardDraw={s0:1404201429,s1:-99922742,s2:-90414896,s3:942939367,} Battle={s0:152371493,s1:1994997914,s2:2043602627,s3:1534354928,} BossActions={s0:106642708,s1:1899678949,s2:1511809882,s3:1842633859,} Merchant={s0:1648720830,s1:2127855607,s2:1980935028,s3:860534981,} StoryEvents={s0:2097849429,s1:1635209866,s2:-922391949,s3:-1572894112,} Rewards={s0:1974875670,s1:-1234232145,s2:217643020,s3:-333908116,} Trials={s0:56341503,s1:-428180836,s2:-1540105331,s3:97457058,} BossGeneration={s0:1242216635,s1:-466357048,s2:-403268887,s3:93376238,} BattleTest={s0:1653247403,s1:170354552,s2:-1942812071,s3:1964750366,} AutoselectTrainPath={s0:48924428,s1:1780528061,s2:88215186,s3:1792663963,} HellforgedShardEnemy={s0:1559234790,s1:1707120831,s2:-135038372,s3:1208910413,}
+[Info   :Monster Train 2 Isolation Probe] SMOKE-SNAPSHOT after-first turn=1 phase=MonsterTurn pyre=80/80 hand=[c8b39244-83c1-4eb3-b474-8898226d4280:c8b39244-83c1-4eb3-b474-8898226d4280,19705414-816d-4549-bcf5-866f338a551f:19705414-816d-4549-bcf5-866f338a551f,fb0683b1-20ac-4dd2-b580-14b502e182f4:fb0683b1-20ac-4dd2-b580-14b502e182f4,c8b39244-83c1-4eb3-b474-8898226d4280:c8b39244-83c1-4eb3-b474-8898226d4280,d14a50f3-728d-43e1-87f0-ef1b013f6678:d14a50f3-728d-43e1-87f0-ef1b013f6678,] draw=[fb0683b1-20ac-4dd2-b580-14b502e182f4:fb0683b1-20ac-4dd2-b580-14b502e182f4,c8b39244-83c1-4eb3-b474-8898226d4280:c8b39244-83c1-4eb3-b474-8898226d4280,fb0683b1-20ac-4dd2-b580-14b502e182f4:fb0683b1-20ac-4dd2-b580-14b502e182f4,38e70e6a-20f3-4e36-8d31-c5110be07f87:38e70e6a-20f3-4e36-8d31-c5110be07f87,fb0683b1-20ac-4dd2-b580-14b502e182f4:fb0683b1-20ac-4dd2-b580-14b502e182f4,d14a50f3-728d-43e1-87f0-ef1b013f6678:d14a50f3-728d-43e1-87f0-ef1b013f6678,c8b39244-83c1-4eb3-b474-8898226d4280:c8b39244-83c1-4eb3-b474-8898226d4280,38e70e6a-20f3-4e36-8d31-c5110be07f87:38e70e6a-20f3-4e36-8d31-c5110be07f87,c8b39244-83c1-4eb3-b474-8898226d4280:c8b39244-83c1-4eb3-b474-8898226d4280,fb0683b1-20ac-4dd2-b580-14b502e182f4:fb0683b1-20ac-4dd2-b580-14b502e182f4,] discard=[] exhausted=[] eaten=[] heroes=[HeavyT1_Basic@0:0:4:45/45,] monsters=[PyreHeartStarter@3:0:45:80/80,]
+[Info   :Monster Train 2 Isolation Probe] SMOKE-RNG after-first Master={s0:-905267014,s1:1653247403,s2:48924428,s3:-588248859,} NonDeterministic={s0:-456392585,s1:1149901465,s2:444074015,s3:36280678,} SetupRun={s0:1642461796,s1:1522012100,s2:408987559,s3:572290056,} Spawning={s0:1059462400,s1:445542657,s2:934485606,s3:-1313237953,} Chatter={s0:2065149467,s1:772797930,s2:653866048,s3:-524108027,} CardDraw={s0:1770761320,s1:-920053149,s2:-120956702,s3:323398506,} Battle={s0:152371493,s1:1994997914,s2:2043602627,s3:1534354928,} BossActions={s0:106642708,s1:1899678949,s2:1511809882,s3:1842633859,} Merchant={s0:1648720830,s1:2127855607,s2:1980935028,s3:860534981,} StoryEvents={s0:2097849429,s1:1635209866,s2:-922391949,s3:-1572894112,} Rewards={s0:1974875670,s1:-1234232145,s2:217643020,s3:-333908116,} Trials={s0:56341503,s1:-428180836,s2:-1540105331,s3:97457058,} BossGeneration={s0:1242216635,s1:-466357048,s2:-403268887,s3:93376238,} BattleTest={s0:1653247403,s1:170354552,s2:-1942812071,s3:1964750366,} AutoselectTrainPath={s0:48924428,s1:1780528061,s2:88215186,s3:1792663963,} HellforgedShardEnemy={s0:1559234790,s1:1707120831,s2:-135038372,s3:1208910413,}
+[Info   :Monster Train 2 Isolation Probe] SMOKE-SNAPSHOT after-second turn=2 phase=MonsterTurn pyre=80/80 hand=[d14a50f3-728d-43e1-87f0-ef1b013f6678:d14a50f3-728d-43e1-87f0-ef1b013f6678,c8b39244-83c1-4eb3-b474-8898226d4280:c8b39244-83c1-4eb3-b474-8898226d4280,38e70e6a-20f3-4e36-8d31-c5110be07f87:38e70e6a-20f3-4e36-8d31-c5110be07f87,c8b39244-83c1-4eb3-b474-8898226d4280:c8b39244-83c1-4eb3-b474-8898226d4280,fb0683b1-20ac-4dd2-b580-14b502e182f4:fb0683b1-20ac-4dd2-b580-14b502e182f4,] draw=[fb0683b1-20ac-4dd2-b580-14b502e182f4:fb0683b1-20ac-4dd2-b580-14b502e182f4,c8b39244-83c1-4eb3-b474-8898226d4280:c8b39244-83c1-4eb3-b474-8898226d4280,fb0683b1-20ac-4dd2-b580-14b502e182f4:fb0683b1-20ac-4dd2-b580-14b502e182f4,38e70e6a-20f3-4e36-8d31-c5110be07f87:38e70e6a-20f3-4e36-8d31-c5110be07f87,fb0683b1-20ac-4dd2-b580-14b502e182f4:fb0683b1-20ac-4dd2-b580-14b502e182f4,] discard=[d14a50f3-728d-43e1-87f0-ef1b013f6678:d14a50f3-728d-43e1-87f0-ef1b013f6678,c8b39244-83c1-4eb3-b474-8898226d4280:c8b39244-83c1-4eb3-b474-8898226d4280,fb0683b1-20ac-4dd2-b580-14b502e182f4:fb0683b1-20ac-4dd2-b580-14b502e182f4,19705414-816d-4549-bcf5-866f338a551f:19705414-816d-4549-bcf5-866f338a551f,c8b39244-83c1-4eb3-b474-8898226d4280:c8b39244-83c1-4eb3-b474-8898226d4280,] exhausted=[] eaten=[] heroes=[HeavyT1_Basic@1:0:4:45/45,HeavyT1_Basic@0:0:4:45/45,ClericT1_OminousAcolyte@0:1:0:1/1,TreasureBagLvl1Gold@1:1:0:1/1,] monsters=[PyreHeartStarter@3:0:45:80/80,]
+[Info   :Monster Train 2 Isolation Probe] SMOKE-RNG after-second Master={s0:-905267014,s1:1653247403,s2:48924428,s3:-588248859,} NonDeterministic={s0:560887485,s1:-1600294675,s2:456061058,s3:-2138292575,} SetupRun={s0:1642461796,s1:1522012100,s2:408987559,s3:572290056,} Spawning={s0:1059462401,s1:-2036991386,s2:1022779455,s3:477016028,} Chatter={s0:546161290,s1:1659135132,s2:-1174621311,s3:2069014665,} CardDraw={s0:1770761320,s1:-920053149,s2:-120956702,s3:323398506,} Battle={s0:152371493,s1:1994997914,s2:2043602627,s3:1534354928,} BossActions={s0:106642708,s1:1899678949,s2:1511809882,s3:1842633859,} Merchant={s0:1648720830,s1:2127855607,s2:1980935028,s3:860534981,} StoryEvents={s0:2097849429,s1:1635209866,s2:-922391949,s3:-1572894112,} Rewards={s0:1974875670,s1:-1234232145,s2:217643020,s3:-333908116,} Trials={s0:56341503,s1:-428180836,s2:-1540105331,s3:97457058,} BossGeneration={s0:1242216635,s1:-466357048,s2:-403268887,s3:93376238,} BattleTest={s0:1653247403,s1:170354552,s2:-1942812071,s3:1964750366,} AutoselectTrainPath={s0:48924428,s1:1780528061,s2:88215186,s3:1792663963,} HellforgedShardEnemy={s0:1559234790,s1:1707120831,s2:-135038372,s3:1208910413,}
+[Info   :Monster Train 2 Isolation Probe] SMOKE-PASS Two turns completed from turn 0 to 2
+[Info   :Monster Train 2 Isolation Probe] SMOKE-WAIT stage=Quitting managers=True user=UserLoaded menu=False top=Game loading=True sequence=InBattle busy=False
+Input System module state changed to: ShutdownInProgress.
+Input System polling thread exited.
+Input System module state changed to: Shutdown.
+Memory Statistics:
+[ALLOC_TEMP_TLS] TLS Allocator
+  StackAllocators : 
+    [ALLOC_TEMP_MAIN]
+      Peak usage frame count: [0-1.0 KB]: 2193 frames, [1.0 KB-2.0 KB]: 1 frames, [2.0 KB-4.0 KB]: 481 frames, [4.0 KB-8.0 KB]: 2515 frames, [8.0 KB-16.0 KB]: 33 frames, [16.0 KB-32.0 KB]: 1423 frames, [32.0 KB-64.0 KB]: 788 frames, [64.0 KB-128.0 KB]: 7668 frames, [128.0 KB-256.0 KB]: 7 frames, [256.0 KB-0.5 MB]: 15 frames, [0.5 MB-1.0 MB]: 5 frames, [2.0 MB-4.0 MB]: 1 frames, [4.0 MB-8.0 MB]: 17 frames
+      Initial Block Size 4.0 MB
+      Current Block Size 7.9 MB
+      Peak Allocated Bytes 7.9 MB
+      Overflow Count 54
+    [ALLOC_TEMP_Loading.AsyncRead]
+      Initial Block Size 64.0 KB
+      Current Block Size 124.0 KB
+      Peak Allocated Bytes 120.5 KB
+      Overflow Count 0
+    [ALLOC_TEMP_Loading.PreloadManager]
+      Initial Block Size 256.0 KB
+      Current Block Size 0.5 MB
+      Peak Allocated Bytes 511.6 KB
+      Overflow Count 125073
+    [ALLOC_TEMP_Background Job.Worker 8]
+      Initial Block Size 32.0 KB
+      Current Block Size 32.0 KB
+      Peak Allocated Bytes 54 B
+      Overflow Count 0
+    [ALLOC_TEMP_Background Job.Worker 9]
+      Initial Block Size 32.0 KB
+      Current Block Size 32.0 KB
+      Peak Allocated Bytes 54 B
+      Overflow Count 0
+    [ALLOC_TEMP_Job.Worker 0]
+      Initial Block Size 256.0 KB
+      Current Block Size 256.0 KB
+      Peak Allocated Bytes 17.7 KB
+      Overflow Count 0
+    [ALLOC_TEMP_Background Job.Worker 10]
+      Initial Block Size 32.0 KB
+      Current Block Size 32.0 KB
+      Peak Allocated Bytes 54 B
+      Overflow Count 0
+    [ALLOC_TEMP_Job.Worker 6]
+      Initial Block Size 256.0 KB
+      Current Block Size 256.0 KB
+      Peak Allocated Bytes 47.3 KB
+      Overflow Count 0
+    [ALLOC_TEMP_Job.Worker 5]
+      Initial Block Size 256.0 KB
+      Current Block Size 256.0 KB
+      Peak Allocated Bytes 26.3 KB
+      Overflow Count 0
+    [ALLOC_TEMP_Background Job.Worker 14]
+      Initial Block Size 32.0 KB
+      Current Block Size 32.0 KB
+      Peak Allocated Bytes 54 B
+      Overflow Count 0
+    [ALLOC_TEMP_Background Job.Worker 6]
+      Initial Block Size 32.0 KB
+      Current Block Size 32.0 KB
+      Peak Allocated Bytes 54 B
+      Overflow Count 0
+    [ALLOC_TEMP_Job.Worker 4]
+      Initial Block Size 256.0 KB
+      Current Block Size 256.0 KB
+      Peak Allocated Bytes 47.3 KB
+      Overflow Count 0
+    [ALLOC_TEMP_Job.Worker 14]
+      Initial Block Size 256.0 KB
+      Current Block Size 256.0 KB
+      Peak Allocated Bytes 54 B
+      Overflow Count 0
+    [ALLOC_TEMP_Job.Worker 3]
+      Initial Block Size 256.0 KB
+      Current Block Size 256.0 KB
+      Peak Allocated Bytes 47.3 KB
+      Overflow Count 0
+    [ALLOC_TEMP_Job.Worker 13]
+      Initial Block Size 256.0 KB
+      Current Block Size 256.0 KB
+      Peak Allocated Bytes 7.0 KB
+      Overflow Count 0
+    [ALLOC_TEMP_Background Job.Worker 12]
+      Initial Block Size 32.0 KB
+      Current Block Size 32.0 KB
+      Peak Allocated Bytes 54 B
+      Overflow Count 0
+    [ALLOC_TEMP_EnlightenWorker] x 8
+      Initial Block Size 64.0 KB
+      Current Block Size 64.0 KB
+      Peak Allocated Bytes 54 B
+      Overflow Count 0
+    [ALLOC_TEMP_Background Job.Worker 15]
+      Initial Block Size 32.0 KB
+      Current Block Size 32.0 KB
+      Peak Allocated Bytes 54 B
+      Overflow Count 0
+    [ALLOC_TEMP_Background Job.Worker 1]
+      Initial Block Size 32.0 KB
+      Current Block Size 32.0 KB
+      Peak Allocated Bytes 1.6 KB
+      Overflow Count 0
+    [ALLOC_TEMP_Background Job.Worker 2]
+      Initial Block Size 32.0 KB
+      Current Block Size 32.0 KB
+      Peak Allocated Bytes 21.0 KB
+      Overflow Count 0
+    [ALLOC_TEMP_Background Job.Worker 7]
+      Initial Block Size 32.0 KB
+      Current Block Size 32.0 KB
+      Peak Allocated Bytes 54 B
+      Overflow Count 0
+    [ALLOC_TEMP_UnityGfxDeviceWorker]
+      Initial Block Size 256.0 KB
+      Current Block Size 256.0 KB
+      Peak Allocated Bytes 47.3 KB
+      Overflow Count 0
+    [ALLOC_TEMP_AssetGarbageCollectorHelper] x 15
+      Initial Block Size 64.0 KB
+      Current Block Size 64.0 KB
+      Peak Allocated Bytes 138 B
+      Overflow Count 0
+    [ALLOC_TEMP_Background Job.Worker 5]
+      Initial Block Size 32.0 KB
+      Current Block Size 32.0 KB
+      Peak Allocated Bytes 54 B
+      Overflow Count 0
+    [ALLOC_TEMP_Job.Worker 9]
+      Initial Block Size 256.0 KB
+      Current Block Size 256.0 KB
+      Peak Allocated Bytes 16.7 KB
+      Overflow Count 0
+    [ALLOC_TEMP_Background Job.Worker 13]
+      Initial Block Size 32.0 KB
+      Current Block Size 32.0 KB
+      Peak Allocated Bytes 54 B
+      Overflow Count 0
+    [ALLOC_TEMP_Job.Worker 8]
+      Initial Block Size 256.0 KB
+      Current Block Size 256.0 KB
+      Peak Allocated Bytes 26.3 KB
+      Overflow Count 0
+    [ALLOC_TEMP_Job.Worker 7]
+      Initial Block Size 256.0 KB
+      Current Block Size 256.0 KB
+      Peak Allocated Bytes 26.3 KB
+      Overflow Count 0
+    [ALLOC_TEMP_Job.Worker 1]
+      Initial Block Size 256.0 KB
+      Current Block Size 256.0 KB
+      Peak Allocated Bytes 49.4 KB
+      Overflow Count 0
+    [ALLOC_TEMP_Job.Worker 2]
+      Initial Block Size 256.0 KB
+      Current Block Size 256.0 KB
+      Peak Allocated Bytes 51.3 KB
+      Overflow Count 0
+    [ALLOC_TEMP_Background Job.Worker 3]
+      Initial Block Size 32.0 KB
+      Current Block Size 32.0 KB
+      Peak Allocated Bytes 3.0 KB
+      Overflow Count 0
+    [ALLOC_TEMP_Background Job.Worker 11]
+      Initial Block Size 32.0 KB
+      Current Block Size 32.0 KB
+      Peak Allocated Bytes 54 B
+      Overflow Count 0
+    [ALLOC_TEMP_Job.Worker 10]
+      Initial Block Size 256.0 KB
+      Current Block Size 256.0 KB
+      Peak Allocated Bytes 47.3 KB
+      Overflow Count 0
+    [ALLOC_TEMP_Background Job.Worker 0]
+      Initial Block Size 32.0 KB
+      Current Block Size 32.0 KB
+      Peak Allocated Bytes 54 B
+      Overflow Count 0
+    [ALLOC_TEMP_Job.Worker 11]
+      Initial Block Size 256.0 KB
+      Current Block Size 256.0 KB
+      Peak Allocated Bytes 16.6 KB
+      Overflow Count 0
+    [ALLOC_TEMP_Job.Worker 12]
+      Initial Block Size 256.0 KB
+      Current Block Size 256.0 KB
+      Peak Allocated Bytes 6.8 KB
+      Overflow Count 0
+    [ALLOC_TEMP_Background Job.Worker 4]
+      Initial Block Size 32.0 KB
+      Current Block Size 32.0 KB
+      Peak Allocated Bytes 54 B
+      Overflow Count 0
+    [ALLOC_TEMP_BatchDeleteObjects]
+      Initial Block Size 64.0 KB
+      Current Block Size 64.0 KB
+      Peak Allocated Bytes 54 B
+      Overflow Count 0
+[ALLOC_DEFAULT] Dual Thread Allocator
+  Peak main deferred allocation count 44990
+    [ALLOC_BUCKET]
+      Large Block size 4.0 MB
+      Used Block count 1
+      Peak Allocated bytes 4.0 MB
+      Failed Allocations. Bucket layout:
+        16B: 21 Subsections = 21504 buckets. Failed count: 161125
+        32B: 28 Subsections = 14336 buckets. Failed count: 111089
+        48B: 120 Subsections = 40960 buckets. Failed count: 1619744
+        64B: 37 Subsections = 9472 buckets. Failed count: 112697
+        80B: 33 Subsections = 6758 buckets. Failed count: 19674
+        96B: 4 Subsections = 682 buckets. Failed count: 31666
+        112B: 6 Subsections = 877 buckets. Failed count: 14650
+        128B: 7 Subsections = 896 buckets. Failed count: 55725
+    [ALLOC_DEFAULT_MAIN]
+      Peak usage frame count: [16.0 MB-32.0 MB]: 2031 frames, [32.0 MB-64.0 MB]: 3309 frames, [64.0 MB-128.0 MB]: 9807 frames
+      Requested Block Size 16.0 MB
+      Peak Block count 6
+      Peak Allocated memory 90.4 MB
+      Peak Large allocation bytes 8.0 MB
+    [ALLOC_DEFAULT_THREAD]
+      Peak usage frame count: [32.0 MB-64.0 MB]: 12525 frames, [64.0 MB-128.0 MB]: 2622 frames
+      Requested Block Size 16.0 MB
+      Peak Block count 5
+      Peak Allocated memory 70.7 MB
+      Peak Large allocation bytes 0 B
+[ALLOC_TEMP_JOB_1_FRAME]
+  Initial Block Size 2.0 MB
+  Used Block Count 0
+  Overflow Count (too large) 0
+  Overflow Count (full) 0
+[ALLOC_TEMP_JOB_2_FRAMES]
+  Initial Block Size 2.0 MB
+  Used Block Count 0
+  Overflow Count (too large) 0
+  Overflow Count (full) 0
+[ALLOC_TEMP_JOB_4_FRAMES (JobTemp)]
+  Initial Block Size 2.0 MB
+  Used Block Count 1
+  Overflow Count (too large) 0
+  Overflow Count (full) 0
+[ALLOC_TEMP_JOB_ASYNC (Background)]
+  Initial Block Size 1.0 MB
+  Used Block Count 1
+  Overflow Count (too large) 0
+  Overflow Count (full) 0
+[ALLOC_GFX] Dual Thread Allocator
+  Peak main deferred allocation count 16
+    [ALLOC_BUCKET]
+      Large Block size 4.0 MB
+      Used Block count 1
+      Peak Allocated bytes 4.0 MB
+      Failed Allocations. Bucket layout:
+        16B: 21 Subsections = 21504 buckets. Failed count: 161125
+        32B: 28 Subsections = 14336 buckets. Failed count: 111089
+        48B: 120 Subsections = 40960 buckets. Failed count: 1619744
+        64B: 37 Subsections = 9472 buckets. Failed count: 112697
+        80B: 33 Subsections = 6758 buckets. Failed count: 19674
+        96B: 4 Subsections = 682 buckets. Failed count: 31666
+        112B: 6 Subsections = 877 buckets. Failed count: 14650
+        128B: 7 Subsections = 896 buckets. Failed count: 55725
+    [ALLOC_GFX_MAIN]
+      Peak usage frame count: [0.5 MB-1.0 MB]: 4569 frames, [1.0 MB-2.0 MB]: 2909 frames, [2.0 MB-4.0 MB]: 7669 frames
+      Requested Block Size 16.0 MB
+      Peak Block count 1
+      Peak Allocated memory 2.7 MB
+      Peak Large allocation bytes 0 B
+    [ALLOC_GFX_THREAD]
+      Peak usage frame count: [2.0 MB-4.0 MB]: 4855 frames, [4.0 MB-8.0 MB]: 10292 frames
+      Requested Block Size 16.0 MB
+      Peak Block count 1
+      Peak Allocated memory 4.9 MB
+      Peak Large allocation bytes 0 B
+[ALLOC_CACHEOBJECTS] Dual Thread Allocator
+  Peak main deferred allocation count 822
+    [ALLOC_BUCKET]
+      Large Block size 4.0 MB
+      Used Block count 1
+      Peak Allocated bytes 4.0 MB
+      Failed Allocations. Bucket layout:
+        16B: 21 Subsections = 21504 buckets. Failed count: 161125
+        32B: 28 Subsections = 14336 buckets. Failed count: 111089
+        48B: 120 Subsections = 40960 buckets. Failed count: 1619744
+        64B: 37 Subsections = 9472 buckets. Failed count: 112697
+        80B: 33 Subsections = 6758 buckets. Failed count: 19674
+        96B: 4 Subsections = 682 buckets. Failed count: 31666
+        112B: 6 Subsections = 877 buckets. Failed count: 14650
+        128B: 7 Subsections = 896 buckets. Failed count: 55725
+    [ALLOC_CACHEOBJECTS_MAIN]
+      Peak usage frame count: [4.0 MB-8.0 MB]: 2400 frames, [8.0 MB-16.0 MB]: 12747 frames
+      Requested Block Size 4.0 MB
+      Peak Block count 5
+      Peak Allocated memory 15.8 MB
+      Peak Large allocation bytes 2.0 MB
+    [ALLOC_CACHEOBJECTS_THREAD]
+      Peak usage frame count: [64.0 MB-128.0 MB]: 4611 frames, [128.0 MB-256.0 MB]: 10536 frames
+      Requested Block Size 4.0 MB
+      Peak Block count 38
+      Peak Allocated memory 246.5 MB
+      Peak Large allocation bytes 109.3 MB
+[ALLOC_TYPETREE] Dual Thread Allocator
+  Peak main deferred allocation count 1
+    [ALLOC_BUCKET]
+      Large Block size 4.0 MB
+      Used Block count 1
+      Peak Allocated bytes 4.0 MB
+      Failed Allocations. Bucket layout:
+        16B: 21 Subsections = 21504 buckets. Failed count: 161125
+        32B: 28 Subsections = 14336 buckets. Failed count: 111089
+        48B: 120 Subsections = 40960 buckets. Failed count: 1619744
+        64B: 37 Subsections = 9472 buckets. Failed count: 112697
+        80B: 33 Subsections = 6758 buckets. Failed count: 19674
+        96B: 4 Subsections = 682 buckets. Failed count: 31666
+        112B: 6 Subsections = 877 buckets. Failed count: 14650
+        128B: 7 Subsections = 896 buckets. Failed count: 55725
+    [ALLOC_TYPETREE_MAIN]
+      Peak usage frame count: [8.0 KB-16.0 KB]: 1 frames, [16.0 KB-32.0 KB]: 1444 frames, [32.0 KB-64.0 KB]: 3124 frames, [64.0 KB-128.0 KB]: 10578 frames
+      Requested Block Size 2.0 MB
+      Peak Block count 1
+      Peak Allocated memory 93.0 KB
+      Peak Large allocation bytes 0 B
+    [ALLOC_TYPETREE_THREAD]
+      Peak usage frame count: [256.0 KB-0.5 MB]: 4570 frames, [0.5 MB-1.0 MB]: 1 frames, [2.0 MB-4.0 MB]: 96 frames, [4.0 MB-8.0 MB]: 10480 frames
+      Requested Block Size 2.0 MB
+      Peak Block count 4
+      Peak Allocated memory 7.6 MB
+      Peak Large allocation bytes 0 B

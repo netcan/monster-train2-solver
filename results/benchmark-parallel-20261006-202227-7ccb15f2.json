@@ -1,0 +1,31 @@
+{
+  "Mode": "Parallel",
+  "RunId": "20261006-202227-7ccb15f2",
+  "TotalWallSeconds": 34.48,
+  "OriginalGameLogsUnchanged": true,
+  "OutcomesEqual": true,
+  "Workers": [
+    {
+      "Profile": "E:\\Workspace\\Program\\monster-train2-poju\\.probe-runs\\benchmark-parallel-20261006-202227-7ccb15f2-0",
+      "Pid": 34220,
+      "ExitCode": 0,
+      "Passed": true,
+      "WallSeconds": 34.48,
+      "CpuSeconds": 63.3,
+      "PeakWorkingSetMB": 1193,
+      "StateHash": "98E150E7E7483A4EF35187916BC69B890070614DACD0E84A7E34F2598B926313",
+      "GameplayRngHash": "54C18A051EF5F249D11685AE7065EF0286F1F7B562D347D5623BDA9F406CA4E9"
+    },
+    {
+      "Profile": "E:\\Workspace\\Program\\monster-train2-poju\\.probe-runs\\benchmark-parallel-20261006-202227-7ccb15f2-1",
+      "Pid": 5336,
+      "ExitCode": 0,
+      "Passed": true,
+      "WallSeconds": 34.46,
+      "CpuSeconds": 66.4,
+      "PeakWorkingSetMB": 1186,
+      "StateHash": "98E150E7E7483A4EF35187916BC69B890070614DACD0E84A7E34F2598B926313",
+      "GameplayRngHash": "54C18A051EF5F249D11685AE7065EF0286F1F7B562D347D5623BDA9F406CA4E9"
+    }
+  ]
+}

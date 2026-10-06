@@ -1,0 +1,135 @@
+Mono path[0] = 'E:/Workspace/Program/monster-train2-poju/.sandbox-game/MonsterTrain2_Data/Managed'
+Mono config path = 'E:/Workspace/Program/monster-train2-poju/.sandbox-game/MonoBleedingEdge/etc'
+Fallback handler could not load library E:/Workspace/Program/monster-train2-poju/.sandbox-game/MonsterTrain2_Data/MonoBleedingEdge/data-000001FA1EEA7090.dll
+Fallback handler could not load library E:/Workspace/Program/monster-train2-poju/.sandbox-game/MonsterTrain2_Data/MonoBleedingEdge/data-000001FA2456E040.dll
+Input System module state changed to: Initialized.
+[PhysX] Initialized MultithreadedTaskDispatcher with 16 workers.
+Initialize engine version: 2022.3.62f2 (7670c08855a9)
+[Subsystems] Discovering subsystems at path E:/Workspace/Program/monster-train2-poju/.sandbox-game/MonsterTrain2_Data/UnitySubsystems
+GfxDevice: creating device client; threaded=1; jobified=0
+Direct3D:
+    Version:  Direct3D 11.0 [level 11.1]
+    Renderer: NVIDIA GeForce RTX 5070 (ID=0x2f04)
+    Vendor:   NVIDIA
+    VRAM:     11944 MB
+    Driver:   32.0.16.1692
+Begin MonoManager ReloadAssembly
+- Loaded All Assemblies, in  0.086 seconds
+- Finished resetting the current domain, in  0.001 seconds
+<RI> Initializing input.
+<RI> Input initialized.
+<RI> Initialized touch support.
+[Message:   BepInEx] BepInEx 5.4.21.0 - MonsterTrain2 (2025/11/9 17:30:30)
+[Info   :   BepInEx] Running under Unity v2022.3.62.7762112
+[Info   :   BepInEx] CLR runtime version: 4.0.30319.42000
+[Info   :   BepInEx] Supports SRE: True
+[Info   :   BepInEx] System platform: Bits64, Windows
+[Message:   BepInEx] Preloader started
+[Info   :   BepInEx] Loaded 1 patcher method from [BepInEx.Preloader 5.4.21.0]
+[Info   :   BepInEx] 1 patcher plugin loaded
+[Info   :   BepInEx] Patching [UnityEngine.CoreModule] with [BepInEx.Chainloader]
+[Message:   BepInEx] Preloader finished
+[Message:   BepInEx] Chainloader ready
+[Message:   BepInEx] Chainloader started
+[Info   :   BepInEx] 1 plugins to load
+[Info   :   BepInEx] Loading [Monster Train 2 Isolation Probe 0.1.0]
+[Info   :Monster Train 2 Isolation Probe] Probe patches installed before AppManager startup; isolated root: E:\Workspace\Program\monster-train2-poju\.probe-runs\run14
+[Info   :Monster Train 2 Isolation Probe] Two-turn smoke scenario armed.
+[Message:   BepInEx] Chainloader startup complete
+[PhysX] Initialized MultithreadedTaskDispatcher with 16 workers.
+UnloadTime: 0.457400 ms
+[Info   :Monster Train 2 Isolation Probe] AppManager.Awake reached with isolated save-root patch active.
+[Info   :Monster Train 2 Isolation Probe] SaveDirStandalone.GetRootDirectory redirected to E:\Workspace\Program\monster-train2-poju\.probe-runs\run14
+Unloading 7 Unused Serialized files (Serialized files now loaded: 0)
+Unloading 3 unused Assets to reduce memory usage. Loaded Objects now: 27596.
+Total: 22.081300 ms (FindLiveObjects: 1.146700 ms CreateObjectMapping: 1.403600 ms MarkObjects: 19.489800 ms  DeleteObjects: 0.040600 ms)
+
+Unloading 14 Unused Serialized files (Serialized files now loaded: 0)
+Unloading 15 unused Assets to reduce memory usage. Loaded Objects now: 30368.
+Total: 24.796700 ms (FindLiveObjects: 1.443900 ms CreateObjectMapping: 1.544800 ms MarkObjects: 21.742700 ms  DeleteObjects: 0.064800 ms)
+
+Unloading 7 Unused Serialized files (Serialized files now loaded: 0)
+Unloading 1 unused Assets to reduce memory usage. Loaded Objects now: 30523.
+Total: 25.656700 ms (FindLiveObjects: 1.227500 ms CreateObjectMapping: 1.395600 ms MarkObjects: 22.993500 ms  DeleteObjects: 0.039600 ms)
+
+Unloading 8 Unused Serialized files (Serialized files now loaded: 0)
+Unloading 7 unused Assets to reduce memory usage. Loaded Objects now: 32810.
+Total: 28.203900 ms (FindLiveObjects: 1.408700 ms CreateObjectMapping: 1.597000 ms MarkObjects: 25.136400 ms  DeleteObjects: 0.061400 ms)
+
+Unloading 10 Unused Serialized files (Serialized files now loaded: 0)
+Unloading 2 unused Assets to reduce memory usage. Loaded Objects now: 36896.
+Total: 28.509600 ms (FindLiveObjects: 1.638000 ms CreateObjectMapping: 1.645300 ms MarkObjects: 25.166100 ms  DeleteObjects: 0.059700 ms)
+
+Unloading 13 Unused Serialized files (Serialized files now loaded: 0)
+Unloading 4 unused Assets to reduce memory usage. Loaded Objects now: 37449.
+Total: 25.867700 ms (FindLiveObjects: 1.803700 ms CreateObjectMapping: 1.498100 ms MarkObjects: 22.510400 ms  DeleteObjects: 0.054900 ms)
+
+Unloading 11 Unused Serialized files (Serialized files now loaded: 0)
+Unloading 6 unused Assets to reduce memory usage. Loaded Objects now: 45610.
+Total: 30.885900 ms (FindLiveObjects: 3.000000 ms CreateObjectMapping: 2.142500 ms MarkObjects: 25.656200 ms  DeleteObjects: 0.086800 ms)
+
+There can be only one active Event System.
+[Info   :Monster Train 2 Isolation Probe] AppManager.Awake reached with isolated save-root patch active.
+Unloading 8 Unused Serialized files (Serialized files now loaded: 0)
+Unloading 4 unused Assets to reduce memory usage. Loaded Objects now: 45860.
+Total: 34.783600 ms (FindLiveObjects: 3.138800 ms CreateObjectMapping: 2.387800 ms MarkObjects: 29.166900 ms  DeleteObjects: 0.089800 ms)
+
+[Info   :Monster Train 2 Isolation Probe] Smoke: moved isolated profile from IntroStart to main menu.
+[Info   :Monster Train 2 Isolation Probe] Smoke: fixed seed 424242; new run requested.
+[Info   :Monster Train 2 Isolation Probe] AppManager.Awake reached with isolated save-root patch active.
+Unloading 5 Unused Serialized files (Serialized files now loaded: 0)
+Unloading 24 unused Assets to reduce memory usage. Loaded Objects now: 47544.
+Total: 26.754900 ms (FindLiveObjects: 3.045500 ms CreateObjectMapping: 1.962700 ms MarkObjects: 21.377500 ms  DeleteObjects: 0.368800 ms)
+
+Unloading 9 Unused Serialized files (Serialized files now loaded: 20)
+Unloading 237 unused Assets to reduce memory usage. Loaded Objects now: 73925.
+Total: 37.663200 ms (FindLiveObjects: 4.696500 ms CreateObjectMapping: 3.982600 ms MarkObjects: 28.103500 ms  DeleteObjects: 0.879900 ms)
+
+Unloading 5 Unused Serialized files (Serialized files now loaded: 20)
+Unloading 3 unused Assets to reduce memory usage. Loaded Objects now: 76963.
+Total: 35.940500 ms (FindLiveObjects: 4.418000 ms CreateObjectMapping: 3.343900 ms MarkObjects: 28.067200 ms  DeleteObjects: 0.110900 ms)
+
+Unloading 9 Unused Serialized files (Serialized files now loaded: 20)
+Unloading 7 unused Assets to reduce memory usage. Loaded Objects now: 77485.
+Total: 37.528300 ms (FindLiveObjects: 4.164400 ms CreateObjectMapping: 3.481200 ms MarkObjects: 29.756700 ms  DeleteObjects: 0.125600 ms)
+
+Unloading 5 Unused Serialized files (Serialized files now loaded: 20)
+Unloading 7 unused Assets to reduce memory usage. Loaded Objects now: 93421.
+Total: 43.553700 ms (FindLiveObjects: 6.621400 ms CreateObjectMapping: 3.764700 ms MarkObjects: 33.020300 ms  DeleteObjects: 0.146300 ms)
+
+Unloading 7 Unused Serialized files (Serialized files now loaded: 20)
+Unloading 4 unused Assets to reduce memory usage. Loaded Objects now: 95607.
+Total: 43.302800 ms (FindLiveObjects: 6.678800 ms CreateObjectMapping: 3.677300 ms MarkObjects: 32.806800 ms  DeleteObjects: 0.139500 ms)
+
+Unloading 8 Unused Serialized files (Serialized files now loaded: 20)
+Unloading 2 unused Assets to reduce memory usage. Loaded Objects now: 95951.
+Total: 42.641100 ms (FindLiveObjects: 6.010700 ms CreateObjectMapping: 3.430200 ms MarkObjects: 33.064100 ms  DeleteObjects: 0.135700 ms)
+
+[Info   :Monster Train 2 Isolation Probe] Smoke: entering battle through the map UI.
+[Info   :Monster Train 2 Isolation Probe] Smoke: clicked map battle node in section 1.
+Unloading 7 Unused Serialized files (Serialized files now loaded: 23)
+Unloading 370 unused Assets to reduce memory usage. Loaded Objects now: 89719.
+Total: 45.176800 ms (FindLiveObjects: 6.290100 ms CreateObjectMapping: 3.905800 ms MarkObjects: 31.360600 ms  DeleteObjects: 3.619700 ms)
+
+Unloading 10 Unused Serialized files (Serialized files now loaded: 23)
+Unloading 2 unused Assets to reduce memory usage. Loaded Objects now: 90133.
+Total: 40.838100 ms (FindLiveObjects: 5.480500 ms CreateObjectMapping: 3.828000 ms MarkObjects: 31.387400 ms  DeleteObjects: 0.141800 ms)
+
+[Info   :Monster Train 2 Isolation Probe] Smoke: started battle through the intro UI.
+[Info   :Monster Train 2 Isolation Probe] SMOKE-WAIT stage=Battle managers=True user=UserLoaded menu=False top=BattleIntro loading=False sequence=BattleIntro busy=True
+[Info   :Monster Train 2 Isolation Probe] AppManager.Awake reached with isolated save-root patch active.
+Unloading 8 Unused Serialized files (Serialized files now loaded: 23)
+Unloading 116 unused Assets to reduce memory usage. Loaded Objects now: 113716.
+Total: 42.985600 ms (FindLiveObjects: 8.057600 ms CreateObjectMapping: 4.840200 ms MarkObjects: 29.422700 ms  DeleteObjects: 0.664800 ms)
+
+Unloading 10 Unused Serialized files (Serialized files now loaded: 23)
+Unloading 6 unused Assets to reduce memory usage. Loaded Objects now: 116980.
+Total: 48.283500 ms (FindLiveObjects: 8.518900 ms CreateObjectMapping: 4.372800 ms MarkObjects: 35.217100 ms  DeleteObjects: 0.174000 ms)
+
+[Info   :Monster Train 2 Isolation Probe] SMOKE-WAIT stage=Battle managers=True user=UserLoaded menu=False top=Dialog loading=False sequence=InBattle busy=True
+[Info   :Monster Train 2 Isolation Probe] SMOKE-WAIT stage=Battle managers=True user=UserLoaded menu=False top=Dialog loading=False sequence=InBattle busy=True
+[Info   :Monster Train 2 Isolation Probe] SMOKE-WAIT stage=Battle managers=True user=UserLoaded menu=False top=Dialog loading=False sequence=InBattle busy=True
+[Info   :Monster Train 2 Isolation Probe] SMOKE-WAIT stage=Battle managers=True user=UserLoaded menu=False top=Dialog loading=False sequence=InBattle busy=True
+[Info   :Monster Train 2 Isolation Probe] SMOKE-WAIT stage=Battle managers=True user=UserLoaded menu=False top=Dialog loading=False sequence=InBattle busy=True
+[Info   :Monster Train 2 Isolation Probe] SMOKE-WAIT stage=Battle managers=True user=UserLoaded menu=False top=Dialog loading=False sequence=InBattle busy=True
+[Info   :Monster Train 2 Isolation Probe] SMOKE-WAIT stage=Battle managers=True user=UserLoaded menu=False top=Dialog loading=False sequence=InBattle busy=True
