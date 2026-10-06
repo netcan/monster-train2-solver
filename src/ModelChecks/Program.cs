@@ -77,6 +77,7 @@ CardCycleChecks.Run();
 CombatEffectChecks.Run();
 BattleStatisticsChecks.Run();
 StatisticOverflowChecks.Run();
+StatisticZeroIncrementChecks.Run();
 StatisticQueryChecks.Run();
 DamageScalingChecks.Run();
 StatusScalingChecks.Run();
@@ -123,6 +124,8 @@ foreach (string path in args.Where(path => path.Contains("statistic-query-calibr
     StatisticQueryChecks.Native(path);
 foreach (string path in args.Where(path => path.Contains("statistic-overflow-calibration", StringComparison.OrdinalIgnoreCase)))
     StatisticOverflowChecks.Native(path);
+foreach (string path in args.Where(path => path.Contains("statistic-zero-increment-calibration", StringComparison.OrdinalIgnoreCase)))
+    StatisticZeroIncrementChecks.Native(path);
 
 static void Check(bool condition, string message)
 {

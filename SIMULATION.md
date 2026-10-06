@@ -1097,6 +1097,29 @@ and exercise cross-target status feedback and 32 parallel branches.
 The original calibration JSON is 1,049,950 bytes, with SHA-256
 `53668df023e9c950374779119c7cd19598202d68c72af2a087b04a71e956f0c5`.
 
+An increment with amount zero still runs native event bookkeeping. The six
+mapped event families update their `Any` counters once for each tracked card
+and once more for the tracked source, while the source quantity stays unchanged.
+`TimesPlayed` also appends the source to play history. A detached positive source
+identity contributes to global events without gaining ownership or a local
+counter. Previous-turn values stay unchanged; event counters preserve signed
+wrapping. Stack-count increments have no mapped global event.
+
+`results/statistic-zero-increment-calibration.json.gz` retains 48 native
+zero-amount updates across six event families and two stack counters, with
+24 detached sources, zero/seeded/boundary totals and 6 positive-to-negative
+wraps. The isolated native component leaves the full live context unchanged.
+Independent checks compare complete statistics and exercise 32 parallel
+branches. `Run-FullBattleProbe.ps1 -StatisticOverflow` captures both the original
+65 boundary samples and these additional 48 zero samples. The retained JSON is
+924,095 bytes, SHA-256
+`09d7cd4deb7ce74f75696af41d57908e1b9f3ffca30aea8dbcc8bca469cdee37`.
+The accompanying native full battle matches all 21 plays, 7 EndTurns, 60 room
+stages, 13 card cycles, 14 train phases and 11 spawns, winning with Pyre health
+73. Capture failures, mismatches, unsupported stages and pending records are
+zero; original profile files are unchanged. All 39 prior battles and 7 prior
+calibrations also pass; the zero calibration is the eighth retained calibration.
+
 Schema 22 captures ordered `CardTraitScalingAddDamage` descriptors on immutable
 card instances and generated-card creation rules. Each hit queries the current
 statistics using the associated trait owner's identity. Its integer product

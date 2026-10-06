@@ -78,7 +78,7 @@ namespace MonsterTrain2Poju.Model
 
         public BattleStatistics Increment(int cardId, string type, int amount = 1, bool requireTrackedCard = false)
         {
-            if (cardId <= 0 || amount == 0) return this;
+            if (cardId <= 0) return this;
             var values = Values.ToList();
             int[] tracked = requireTrackedCard ? TrackedCards.ToArray() : TrackedCards.Concat(new[] { cardId }).Distinct().ToArray();
             bool hasSource = tracked.Contains(cardId);
@@ -91,7 +91,7 @@ namespace MonsterTrain2Poju.Model
                 if (any != null)
                 {
                     // Native UpdateScalingTraits increments every entry, and the source entry once more.
-                    // This increments by one per event even when the original amount is larger.
+                    // This increments per event even when the original amount is zero or larger.
                     foreach (int id in tracked) AddValue(id, duration, any, 1);
                     if (hasSource) AddValue(cardId, duration, any, 1);
                 }

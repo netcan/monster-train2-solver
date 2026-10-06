@@ -25,13 +25,16 @@ namespace MonsterTrain2Poju.Probe
             host.SetActive(false);
             var native = host.AddComponent<CardStatistics>();
             var samples = new List<object>();
+            var zeroSamples = new List<object>();
+            var detached = new CardState();
+            int Id(CardState card) => ReferenceEquals(card, detached) ? original.NextCardId : trace.CardId(card);
             try
             {
                 foreach (string name in new[] { "allGameManagers", "cardManager", "heroManager", "monsterManager", "roomManager", "saveManager",
                     "relicManager", "playerManager", "combatManager" })
                     AccessTools.Field(typeof(CardStatistics), name).SetValue(native, AccessTools.Field(typeof(CardStatistics), name).GetValue(live));
                 void Set(string name, object value) => AccessTools.Field(typeof(CardStatistics), name).SetValue(native, value);
-                BattleStatistics Snapshot() => BattleStatisticsProbe.Capture(native, trace.CardId, owned);
+                BattleStatistics Snapshot() => BattleStatisticsProbe.Capture(native, Id, owned);
                 int[] seeds = { int.MaxValue, int.MaxValue - 1, int.MinValue, int.MinValue + 1, -1 };
                 foreach (string type in new[] { "AnyStatusEffectStacksAdded", "TimesDrawn" })
                 foreach (int seed in seeds)
@@ -77,6 +80,36 @@ namespace MonsterTrain2Poju.Probe
                         throw new InvalidOperationException("Native spawn boundary differs.");
                     samples.Add(new { Kind = "Spawn", RoomIndex = 0, Subtypes = keys, Before = before, After = after });
                 }
+                var anyCounters = new Dictionary<string, string> { ["HeroesKilled"] = "AnyHeroKilled",
+                    ["SpawnedMonsterDeaths"] = "AnyMonsterDeath", ["TimesDiscarded"] = "AnyDiscarded",
+                    ["TimesPlayed"] = "AnyCardPlayed", ["TimesDrawn"] = "AnyCardDrawn", ["TimesExhausted"] = "AnyExhausted" };
+                foreach (string type in anyCounters.Keys.Concat(new[] { "AnyStatusEffectStacksAdded", "AnyStatusEffectStacksRemoved" }))
+                foreach (int seed in new[] { 0, 7, int.MaxValue - 1 })
+                foreach (CardState source in new[] { owned[0], detached })
+                {
+                    var tracked = (CardStatistics.TrackedValueType)Enum.Parse(typeof(CardStatistics.TrackedValueType), type);
+                    var entries = new Dictionary<CardState, CardStatsEntry>();
+                    foreach (CardState card in owned)
+                    {
+                        var entry = new CardStatsEntry();
+                        foreach (CardStatistics.EntryDuration duration in new[] { CardStatistics.EntryDuration.ThisTurn, CardStatistics.EntryDuration.ThisBattle })
+                        {
+                            entry.IncrementValue(tracked, seed, duration);
+                            if (anyCounters.TryGetValue(type, out string any))
+                                entry.IncrementValue((CardStatistics.TrackedValueType)Enum.Parse(typeof(CardStatistics.TrackedValueType), any), seed, duration);
+                        }
+                        entry.IncrementValue(tracked, 9, CardStatistics.EntryDuration.PreviousTurn);
+                        entries.Add(card, entry);
+                    }
+                    Set("deckStats", entries); Set("cardsPlayedThisTurn", new List<CardState>());
+                    BattleStatistics before = Snapshot();
+                    native.IncrementStat(source, tracked, 0);
+                    BattleStatistics after = Snapshot();
+                    if (!JToken.DeepEquals(JToken.FromObject(before.Increment(Id(source), type, 0, requireTrackedCard: true)), JToken.FromObject(after)))
+                        throw new InvalidOperationException("Native zero increment differs: " + type + "/" + seed + "/detached=" + ReferenceEquals(source, detached));
+                    zeroSamples.Add(new { Type = type, SourceCardId = Id(source), Amount = 0,
+                        DetachedSource = ReferenceEquals(source, detached), Before = before, After = after });
+                }
             }
             finally { UnityEngine.Object.DestroyImmediate(host); }
             if (!JToken.DeepEquals(JToken.FromObject(original), JToken.FromObject(trace.CaptureContext())))
@@ -84,6 +117,9 @@ namespace MonsterTrain2Poju.Probe
             File.WriteAllText(Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!, "statistic-overflow-calibration.json"),
                 JsonConvert.SerializeObject(new { Schema = 1, GameModuleMvid = typeof(CardState).Assembly.ManifestModule.ModuleVersionId,
                     SyntheticCounters = true, LiveContextUnchanged = true, Samples = samples }, Formatting.Indented));
+            File.WriteAllText(Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!, "statistic-zero-increment-calibration.json"),
+                JsonConvert.SerializeObject(new { Schema = 1, GameModuleMvid = typeof(CardState).Assembly.ManifestModule.ModuleVersionId,
+                    SyntheticCounters = true, LiveContextUnchanged = true, Samples = zeroSamples }, Formatting.Indented));
         }
     }
 }
