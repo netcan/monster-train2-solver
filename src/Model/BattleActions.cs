@@ -153,7 +153,7 @@ namespace MonsterTrain2Poju.Model
             CombatUnit[] players = target.Units.Where(unit => unit.Team == CombatTeam.Player).ToArray();
             int position = action.PlayerPosition == -1 ? players.Length : action.PlayerPosition;
             CombatUnit? spawned = null;
-            RoomCombatState? spellRoom = null;
+            bool spellApplied = false;
             RoomOutcome outcome = RoomOutcome.Exchanged;
             int nextUnitId = source.Spawn.NextUnitId;
             if (rule.Effect == "SpawnMonster")
@@ -189,13 +189,14 @@ namespace MonsterTrain2Poju.Model
                         victim.Team == CombatTeam.Player && !targeted.AllowPlayer)) return Illegal("The spell excludes the target team.");
                 }
                 else if (action.TargetUnitId != 0) return Illegal("A room or hand spell does not take a unit target.");
-                SpellCastCheck cast = CardSpellModel.TestPlay(target, rule.Effects, action.TargetUnitId);
+                TrainCombatState spellInput = CardSpellModel.WithContext(train, context);
+                SpellCastCheck cast = CardSpellModel.TestPlay(spellInput, action.RoomIndex, rule.Effects, action.TargetUnitId);
                 if (!cast.Supported) return Unsupported(cast.UnsupportedReason!);
                 if (!cast.CanPlay) return Illegal("Every effect failed its cast test or a required effect failed.");
-                RoomCombatResult result = CardSpellModel.Apply(target, rule.Effects, action.TargetUnitId, card.InstanceId,
-                    targetRule.PlayerCapacity, targetRule.EnemyCapacity, source.PlayRules);
+                TrainSpellResult result = CardSpellModel.Apply(spellInput, action.RoomIndex, rule.Effects, action.TargetUnitId,
+                    card.InstanceId, source.PlayRules);
                 if (!result.Supported) return Unsupported(result.UnsupportedReason!);
-                spellRoom = result.State!; context = spellRoom.Context!; outcome = result.Outcome;
+                train = result.State!; context = train.Context!; outcome = result.Outcome; spellApplied = true;
             }
             else if (rule.Effect != "Null") return Unsupported("Unimplemented card effect " + rule.Effect);
             else if (action.PlayerPosition != -1 || action.TargetUnitId != 0) return Illegal("A no-target card does not take a target or position.");
@@ -204,10 +205,11 @@ namespace MonsterTrain2Poju.Model
             List<CardToken> discard = context.Cards.Discard.ToList();
             CardPileState[] piles = source.OtherPiles.ToArray();
             bool terminal = outcome == RoomOutcome.BattleWon || outcome == RoomOutcome.PlayerDefeated;
-            if (spellRoom != null)
+            if (spellApplied)
             {
-                var alive = new HashSet<int>(spellRoom.Units.Select(unit => unit.Id));
-                foreach (CombatUnit dead in target.Units.Where(unit => unit.SpawnerCardId > 0 && !alive.Contains(unit.Id)))
+                var alive = new HashSet<int>(train.Rooms.SelectMany(room => room.Units).Select(unit => unit.Id));
+                foreach (CombatUnit dead in source.Spawn.Train.Rooms.SelectMany(room => room.Units)
+                    .Where(unit => unit.SpawnerCardId > 0 && !alive.Contains(unit.Id)))
                 {
                     CardPileState? standby = piles.FirstOrDefault(pile => pile.Name == "Standby");
                     CardPileState? exhausted = piles.FirstOrDefault(pile => pile.Name == "Exhausted");
@@ -250,7 +252,6 @@ namespace MonsterTrain2Poju.Model
             RoomCombatState[] rooms = train.Rooms.Select(room =>
             {
                 CombatUnit[] units = room.Units.ToArray();
-                if (room.RoomIndex == target.RoomIndex && spellRoom != null) units = spellRoom.Units.ToArray();
                 if (room.RoomIndex == target.RoomIndex && spawned != null)
                 {
                     var nextPlayers = players.ToList(); nextPlayers.Insert(position, spawned);

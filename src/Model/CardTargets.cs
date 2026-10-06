@@ -19,6 +19,17 @@ namespace MonsterTrain2Poju.Model
         public static bool Supports(string mode) => new[] { "Room", "FrontInRoom", "BackInRoom", "Weakest", "RoomHealTargets",
             "DropTargetCharacter", "LastTargetedCharacters", "StrongestLastTargetedCharacters", "RandomInRoom" }.Contains(mode);
 
+        public static CardTargets Collect(TrainCombatState train, int roomIndex, CardActionEffect effect, IReadOnlyList<int> lastTargets,
+            CombatTeam? dropTeam = null, int dropPosition = -1, bool firstEffect = false, bool isTesting = false)
+        {
+            RoomCombatState? room = train.Rooms.FirstOrDefault(item => item.RoomIndex == roomIndex);
+            if (room == null) return new CardTargets(Array.Empty<int>(), "The selected target room does not exist.");
+            if (effect.Target == "LastTargetedCharacters" || effect.Target == "StrongestLastTargetedCharacters")
+                room = new RoomCombatState(roomIndex, room.Deployment, train.Rooms.SelectMany(item => item.Units).ToArray(),
+                    Array.Empty<string>(), train.Context, room.Preview);
+            return Collect(room, effect, lastTargets, dropTeam, dropPosition, firstEffect, isTesting);
+        }
+
         public static CardTargets Collect(RoomCombatState room, CardActionEffect effect, IReadOnlyList<int> lastTargets,
             CombatTeam? dropTeam = null, int dropPosition = -1, bool firstEffect = false, bool isTesting = false)
         {

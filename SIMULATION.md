@@ -18,6 +18,7 @@ are copied immutable values; independent child states can run on worker threads.
 | Room spell targeting and effect tests | `CardTargetModel` and `CardSpellModel` | Native multi-unit damage/upgrades/healing, front/back/weakest, sticky last groups and strongest-last; empty targets, mandatory casting checks and runtime cancellation |
 | Random room targets | `CardTargetModel` and `UnityRng` | Native enemy/both-team/friendly selection, zero heals, empty follow-ups, last-target identity and complete Battle RNG states |
 | Random status application | `CardSpellModel` | Native effect-wide status pools, per-target chances in reverse order, immunity, empty pools and post-kill RNG |
+| Train spell execution | `CardSpellModel` | A single effect chain carries all rooms, shared card/statistic/RNG state and global target references; dead-unit movement and spawner routing are updated across rooms |
 | Integer RNG and shuffle | `UnityRng` | 768 native integer draws, seed initialization and complete four-word states |
 | Basic draw/discard cycle | `CardCycleModel` | 13 consecutive native operations including reshuffle |
 | Room attack exchange | `RoomCombatModel.Exchange` | Ordered initiative, target selection, retargeting, shield/armor and retaliation checks |
@@ -456,6 +457,15 @@ checked native runs left those files unchanged. Game copies, isolated profiles,
 and locally decompiled reference material are ignored by Git.
 
 ## Requirements for completion
+
+Spell execution now uses a complete train state internally. The existing room
+API delegates to the same engine for local checks. Each applied target updates
+its own room, then shares the resulting context with every other room; fixed
+target collections and last-target identities span the train. Capacity-limited
+unit upgrades consult the target room's definition. Dead movement and standby
+spawner routing use all rooms. The 17 saved native battle oracles exercise this
+engine through the normal card-action path; global target modes are the next
+extension.
 
 1. Capture a self-contained starting battle state and its static rule definitions.
    Include card instance identities, permanent/temporary modifications, card
