@@ -17,6 +17,7 @@ are copied immutable values; independent child states can run on worker threads.
 | Targeted spell actions | `CardSpellModel` | Native damage, last-target follow-ups, valor, pyregel and floor rearrange; independent immunity checks |
 | Room spell targeting and effect tests | `CardTargetModel` and `CardSpellModel` | Native multi-unit damage/upgrades/healing, front/back/weakest, sticky last groups and strongest-last; empty targets, mandatory casting checks and runtime cancellation |
 | Random room targets | `CardTargetModel` and `UnityRng` | Native enemy/both-team/friendly selection, zero heals, empty follow-ups, last-target identity and complete Battle RNG states |
+| Random status application | `CardSpellModel` | Native effect-wide status pools, per-target chances in reverse order, immunity, empty pools and post-kill RNG |
 | Integer RNG and shuffle | `UnityRng` | 768 native integer draws, seed initialization and complete four-word states |
 | Basic draw/discard cycle | `CardCycleModel` | 13 consecutive native operations including reshuffle |
 | Room attack exchange | `RoomCombatModel.Exchange` | Ordered initiative, target selection, retargeting, shield/armor and retaliation checks |
@@ -398,6 +399,27 @@ case remains explicitly unsupported. A skipped first random effect that leaves
 test-selected last-target history for later effects also rejects the transition.
 Repeated legality tests and 32 parallel spell branches preserve their parent.
 
+`results/full-battle-random-status.json.gz` changes the owned rearrangement spell
+to controlled armor/regen/pyregel pools and probability parameters 0, 50 and 100.
+One owned Steward has a permanent immune status; boss and wave data remain native.
+The sequence kills remaining enemies, then performs an empty status-pool selection
+and a post-kill friendly chance effect. All 13 plays, four EndTurns, 30 room stages,
+eight card cycles, eight train phases and seven spawns match the game. Seven
+modified spell plays include five live immune targets. Exact gameplay RNG states,
+statistics, status outcomes, root-only/mid-battle policies and 16 parallel branches
+match, with final Pyre health 80/80.
+
+Native status application chooses one entry for the whole effect, even with no
+targets. Multiple pool entries consume one Battle draw; one entry consumes none.
+A zero probability parameter applies unconditionally with no chance draws;
+every nonzero parameter consumes one 0..99 draw per target in reverse collection
+order, including immune targets and a guaranteed 100-percent effect. Status
+selection follows random target selection and precedes chance draws. Pure checks
+cover hit/miss ordering, shared pool choice, empty collections, composed draws
+and 32 isolated parallel branches. Nonstackable status casting rules, subtype
+conditions, range/scaling parameters and additional status triggers remain
+explicitly unsupported.
+
 Run the saved native oracles without the game:
 
 ```powershell
@@ -424,6 +446,7 @@ pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy units-spells-and-j
 pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy units-spells-and-junk -TerminalSpells
 pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy units-spells-and-junk -PostKillSpells
 pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy units-spells-and-junk -RandomSpells
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy units-spells-and-junk -RandomStatus
 ```
 
 The runner checks the explicit probe success marker, capture failures, pending

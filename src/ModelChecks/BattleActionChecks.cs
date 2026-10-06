@@ -88,6 +88,8 @@ internal static class BattleActionChecks
             RoomSpellChecks.Native(actions);
         if (fixture.TryGetProperty("ModifierScenario", out JsonElement randomScenario) && randomScenario.GetString() == "random-spells")
             RandomSpellChecks.Native(actions);
+        if (fixture.TryGetProperty("ModifierScenario", out JsonElement randomStatusScenario) && randomStatusScenario.GetString() == "random-status")
+            RandomStatusChecks.Native(actions);
         if (fixture.TryGetProperty("ModifierScenario", out JsonElement healingScenario) && healingScenario.GetString() is "healing" or "healing-triggers")
         {
             int healPlays = 0, restored = 0;

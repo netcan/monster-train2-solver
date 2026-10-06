@@ -86,6 +86,15 @@ namespace MonsterTrain2Poju.Model
                 if (targets.BattleRng.HasValue)
                     state = new RoomCombatState(state.RoomIndex, state.Deployment, state.Units, state.ExternalInteractions,
                         state.Context!.WithBattleRng(targets.BattleRng.Value), state.Preview);
+                if (effect.Type == "AddStatus" && effect.Statuses.Count > 1)
+                {
+                    // Native chooses one status for the whole effect, including an empty collection.
+                    RngDraw chosen = state.Context!.BattleRng.Range(0, effect.Statuses.Count);
+                    state = new RoomCombatState(state.RoomIndex, state.Deployment, state.Units, state.ExternalInteractions,
+                        state.Context.WithBattleRng(chosen.State), state.Preview);
+                    effect = new CardActionEffect(effect.Type, effect.Target, effect.Value, effect.AllowEnemy, effect.AllowPlayer,
+                        new[] { effect.Statuses[chosen.Value] }, effect.Upgrade, effect.Lifetime, effect.Tests);
+                }
                 if (effect.Type == "HandUpgrade")
                 {
                     RoomCombatResult upgraded = HandUpgradeModel.Apply(state, effect.Upgrade!, effect.Lifetime, definitions);
@@ -144,7 +153,7 @@ namespace MonsterTrain2Poju.Model
                     return "Missing unit upgrade definition.";
                 if (effect.Value < 0 || effect.Type == "FloorRearrange" && effect.Value > 1) return "Invalid spell effect value.";
                 if (effect.Type == "FloorRearrange" && effect.Target != "DropTargetCharacter") return "Floor rearrangement requires a drop target.";
-                if (effect.Type == "AddStatus" && effect.Statuses.Count != 1) return "Random/multiple status selection is not implemented.";
+                if (effect.Type == "AddStatus" && effect.Statuses.Count == 0) return "A status effect requires at least one status definition.";
                 foreach (CombatStatus status in effect.Statuses)
                 {
                     var test = new CombatUnit(0, "status-validation", CombatTeam.Player, 0, 1, 1, false, false, false, new[] { status });
@@ -192,6 +201,14 @@ namespace MonsterTrain2Poju.Model
                     effect.Type == "RemoveUnitUpgrade", target.Team == CombatTeam.Player ? playerCapacity : enemyCapacity);
             if (effect.Type == "AddStatus")
             {
+                if (effect.Value != 0)
+                {
+                    // Chance is evaluated for every collected target before status immunity is checked.
+                    RngDraw chance = state.Context!.BattleRng.Range(0, 100);
+                    state = new RoomCombatState(state.RoomIndex, state.Deployment, state.Units, state.ExternalInteractions,
+                        state.Context.WithBattleRng(chance.State), state.Preview);
+                    if (chance.Value >= effect.Value) return Unchanged(state);
+                }
                 CombatStatus added = effect.Statuses[0];
                 if (target.StatusImmunities.Contains(added.Id) || target.Statuses.Any(status => status.Id == "immune")) return Unchanged(state);
                 CombatStatus? existing = target.Statuses.FirstOrDefault(status => status.Id == added.Id);

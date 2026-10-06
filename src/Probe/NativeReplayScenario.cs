@@ -400,11 +400,13 @@ namespace MonsterTrain2Poju.Probe
             if (fullBattle && !numericModifiersPrepared && (modifierScenario == "numeric-upgrades" || modifierScenario == "dynamic-upgrades" ||
                 modifierScenario == "sacrifice-upgrades" || modifierScenario == "hand-upgrades" || modifierScenario == "targeted-hand-upgrades" ||
                 modifierScenario == "healing" || modifierScenario == "healing-triggers" || modifierScenario == "room-spells" ||
-                modifierScenario == "terminal-spells" || modifierScenario == "post-kill-spells" || modifierScenario == "random-spells"))
+                modifierScenario == "terminal-spells" || modifierScenario == "post-kill-spells" || modifierScenario == "random-spells" ||
+                modifierScenario == "random-status"))
             {
                 if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Numeric fixture must start on deployment turn.");
                 numericModifiersPrepared = true;
-                if (modifierScenario == "random-spells") RandomSpellScenario.Prepare(managers, log);
+                if (modifierScenario == "random-status") RandomStatusScenario.Prepare(managers, log);
+                else if (modifierScenario == "random-spells") RandomSpellScenario.Prepare(managers, log);
                 else if (modifierScenario == "post-kill-spells") PostKillSpellScenario.Prepare(managers, log);
                 else if (modifierScenario == "terminal-spells") TerminalSpellScenario.Prepare(managers, log);
                 else if (modifierScenario == "room-spells") RoomSpellScenario.Prepare(managers, log);

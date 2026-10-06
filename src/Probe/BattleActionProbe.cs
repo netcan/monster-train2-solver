@@ -125,7 +125,7 @@ namespace MonsterTrain2Poju.Probe
                     var statuses = new List<CombatStatus>();
                     if (type == "AddStatus")
                     {
-                        if (effect.GetParamInt() != 0 || effect.GetParamStatusEffects().Length != 1) interactions.Add("Random status effect");
+                        if (effect.GetParamStatusEffects().Length == 0) interactions.Add("Empty status effect pool");
                         foreach (StatusEffectStackData status in effect.GetParamStatusEffects())
                         {
                             if (!StatusEffectManager.Instance.GetStatusEffectDataById(status.statusId)!.IsStackable()) interactions.Add("Nonstackable status legality");
