@@ -78,6 +78,7 @@ CombatEffectChecks.Run();
 BattleStatisticsChecks.Run();
 CardModifierChecks.Run();
 TerminalSpellChecks.Run();
+UnitModifierChecks.Run();
 EnemySpawningChecks.Run();
 BattleActionChecks.Run();
 CardSpellChecks.Run();

@@ -24,6 +24,8 @@ are copied immutable values; independent child states can run on worker threads.
 | Unit effects | `CombatTrigger` and `CombatContext` | Generated cards, Battle RNG, treasure escape; gold and once-only trigger checks |
 | Card statistics and preview | `BattleStatistics` and `BattlePreviewModel` | Native per-card/Any counters, turn rollover, spawn subtypes, death/exhaust attribution and preview damage statistic |
 | Card instance modifiers | `CardModifierModel` | Permanent/temporary ordered numeric upgrades, unit starting statuses, discard removal, play history and 256 native scalar calculations |
+| Runtime unit upgrades | `UnitModifierModel` | Native permanent, battle and unit-death lifetimes, duplicate removal, unique upgrades, restricted size, unhealed health and lethal max-health loss |
+| Terminal spell resolution | `BattleActionModel` | Native boss-killing spell skips later played/discard callbacks, retains played cost and prunes temporary-card statistics |
 | Enemy waves and treasure | `EnemySpawningModel` | Native group cache, spawn order, phase, slots and treasure floor selection |
 | EndTurn to next decision | `BattleTurnModel.EndTurn` | Seven native consecutive transitions in each supported fixture |
 | Battle to terminal result | `BattleSimulator.Resolve` and `ResolveNoMoreCards` | Independent card policies and seven-turn chains, mid-battle inputs and 16 parallel branches |
@@ -120,9 +122,44 @@ magnitude is at least 99, and clamps once more at the end. Unit stats and cost
 combine the permanent and temporary groups in one calculation; spell damage
 clamps each group separately. The model preserves these differences. Trait,
 trigger and ability upgrades, merged/boxed cards, grafted equipment, persistent
-health remain explicitly unsupported.
+health remain explicitly unsupported. Initial numeric card upgrades and runtime
+unit upgrades use different native calculations; the runtime model additionally
+handles unhealed health and attack buffs.
 Generated cards with starting upgrades are rejected until their initialization
 is modeled.
+
+`results/full-battle-dynamic-upgrades.json.gz` changes the runtime effect list of
+the owned floor-rearranging spell inside an isolated native process. Its effects
+compose permanent upgrades, repeated temporary upgrades and removal, a unique
+upgrade, until-death unhealed health, and room-capacity restrictions before the
+original rearrange/valor effects. The starting Boss and waves remain native.
+All 18 plays, five EndTurns, 44 room stages, ten card cycles, ten train phases and
+nine spawns match, finishing at Pyre 80/80. Four plays actually execute the modified
+spell; coverage requires both a play and observed native upgrade state.
+
+`results/full-battle-sacrifice-upgrades.json.gz` adds a max-health reduction that
+kills the selected friendly unit. Five modified-spell plays exercise death
+triggers and source-card routing. All 21 plays, seven EndTurns, 53 room stages,
+13 card cycles, 14 train phases and 11 spawns match, finishing at Pyre 56/80.
+Both fixtures pass independent root-only simulation, a mid-battle suffix and
+16 parallel branches. Compressed artifacts preserve the original trace bytes.
+
+Unit upgrade lifetimes determine whether the source card receives a permanent
+upgrade, a temporary battle upgrade, or no upgrade. Removing repeated upgrades
+uses the native template's inverse values and removes all matching temporary
+source entries. Raw size is preserved behind the displayed 1..6 clamp. Capacity
+rejection leaves both unit and source card unchanged; removal remains legal in
+a full room. Positive max-health upgrades heal, unhealed-health upgrades only
+increase the maximum, and removing a health upgrade clips current health to the
+new maximum. Unique and clone-exclusion rules, attack buffs and parallel parent
+isolation also have focused checks. Statistic-driven scaling upgrade instances,
+their shared identity, and nonempty max-health upgrade maps remain unsupported.
+
+The dynamic fixture finishes when a damage spell kills the Boss. Native battle
+stop skips the later played/discard callbacks, retains the live played-cost
+entry, and refreshes statistic membership from the permanent deck after clearing
+runtime cards. The model reproduces that ordering and rejects terminal card
+resolution when permanent deck membership was not captured.
 
 `BattleActionModel` checks instance identity, energy, enabled floors, Pyre exclusion,
 summon capacity and slots, and insertion position. Child states carry spawned
@@ -138,7 +175,10 @@ purged/eaten/buffer piles; energy, gold, forge points, hoard, and moon phase.
 Schema 5 additionally captures unit subtypes, card statistics and whether battle
 previews are enabled. Older fixtures omit statistics and do not verify them.
 Schema 6 also captures every owned card's permanent/temporary modifiers
-and instance play history; older fixtures do not verify those fields. A
+and instance play history. Schema 7 adds unit upgrade ledgers, raw size, equipment
+limit, healability and source-definition matching. Schema 8 captures permanent
+deck membership for terminal card statistics. Older fixtures do not verify
+fields absent from their schema. A
 despawn counter <= 1 is canonicalized to 1 because each value despawns at the
 next application. Native UI previews can decrement that private counter below
 zero. Longer despawn countdowns are rejected by the native definition capture
@@ -174,6 +214,8 @@ pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy no-cards
 pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy units-and-junk
 pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy units-spells-and-junk
 pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy units-spells-and-junk -NumericUpgrades
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy units-spells-and-junk -DynamicUpgrades
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy units-spells-and-junk -SacrificeUpgrades
 ```
 
 The runner checks the explicit probe success marker, capture failures, pending
@@ -181,13 +223,6 @@ records, and differences; a game's process exit code alone does not prove the
 probe passed. It hashes original profile files before and after the run. The
 checked native runs left those files unchanged. Game copies, isolated profiles,
 and locally decompiled reference material are ignored by Git.
-
-
-Schema 8 adds permanent deck membership. When a damage spell kills the Boss,
-native battle stop skips subsequent played/discard callbacks, retains the live
-played cost, and prunes temporary-card statistics after clearing runtime cards.
-The model follows that ordering and requires captured permanent deck membership
-for terminal card resolution. A focused terminal-spell regression checks this.
 
 ## Requirements for completion
 

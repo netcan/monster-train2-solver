@@ -252,6 +252,23 @@ scalar fields, including ordered immediate clamps and permanent/temporary group
 differences. Trait/trigger upgrades, abilities, persistent health and equipment
 interactions remain outside this fixture.
 
+Runtime unit upgrades now have two additional native fixtures. The positive
+fixture actually plays its modified spell four times, matches 18 total plays
+and five EndTurns, and ends at Pyre 80/80. The lethal max-health fixture plays
+its modified spell five times, matches 21 total plays and seven EndTurns, and
+ends at Pyre 56/80. Both match every captured phase, reproduce a mid-battle
+suffix and 16 parallel branches, and leave original profiles unchanged.
+Coverage checks reject traces that never execute the modified spell or never
+show its native upgrade/death effect. These are controlled spell-effect
+fixtures in the original first-battle scenario, with its original Boss and waves.
+
+The unit model includes upgrade lifetimes and source-card propagation, unique
+and clone rules, raw size and capacity restrictions, repeated removal, unhealed
+max health and lethal max-health loss. A spell killing the Boss also verifies
+native terminal callback ordering, played-cost retention and permanent-deck
+statistic membership. Scaling upgrade instance identity, advanced upgrade
+interactions, outer/final Boss state machines, relics and equipment remain open.
+
 ## Limits
 
 - Rollback uses full scene reload and replay. It is not an in-memory clone,

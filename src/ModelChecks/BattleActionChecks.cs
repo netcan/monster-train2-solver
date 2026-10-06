@@ -80,6 +80,28 @@ internal static class BattleActionChecks
             supported++;
         }
         Console.WriteLine($"NATIVE-ACTION-CHECKS PASS: {supported} matched, {unsupported} unsupported.");
+        if (fixture.TryGetProperty("ModifierScenario", out JsonElement scenario) &&
+            (scenario.GetString() == "dynamic-upgrades" || scenario.GetString() == "sacrifice-upgrades"))
+        {
+            var modifiedActions = actions.EnumerateArray().Where(entry =>
+            {
+                BattleTurnState before = entry.GetProperty("Before").Deserialize<BattleTurnState>(ModelJson.Options)!;
+                int id = entry.GetProperty("Action").GetProperty("CardInstanceId").GetInt32();
+                string dataId = before.Spawn.Train.Context!.Cards.Hand.Single(card => card.InstanceId == id).DataId;
+                return before.PlayRules!.Cards.Single(card => card.DataId == dataId).Effects.Any(effect => effect.Type == "UnitUpgrade");
+            }).ToArray();
+            Require(modifiedActions.Length > 0, "The dynamic upgrade fixture never played its modified spell.");
+            bool observed = modifiedActions.Any(entry =>
+            {
+                BattleTurnState actual = entry.GetProperty("Actual").Deserialize<BattleTurnState>(ModelJson.Options)!;
+                return scenario.GetString() == "sacrifice-upgrades" ? !actual.Spawn.Train.Rooms.SelectMany(room => room.Units)
+                    .Any(unit => unit.Id == entry.GetProperty("Action").GetProperty("TargetUnitId").GetInt32()) :
+                    actual.Spawn.Train.Rooms.SelectMany(room => room.Units).Any(unit => unit.Modifiers?.Upgrades
+                        .Any(upgrade => upgrade.AssetKey.StartsWith("PojuProbe", StringComparison.Ordinal)) == true);
+            });
+            Require(observed, "The dynamic upgrade fixture never changed the native unit or killed its target.");
+            Console.WriteLine($"NATIVE-UPGRADE-COVERAGE PASS: {modifiedActions.Length} modified spell plays, observed native {scenario.GetString()} effects.");
+        }
         if (unsupported > 0 || !fixture.TryGetProperty("Policy", out JsonElement policy) ||
             policy.GetString() is not ("units-and-junk" or "units-spells-and-junk")) return;
         Func<BattleTurnState, PlayCardAction?> chooser = policy.GetString() == "units-spells-and-junk"

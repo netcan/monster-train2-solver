@@ -396,11 +396,15 @@ namespace MonsterTrain2Poju.Probe
             {
                 return;
             }
-            if (fullBattle && !numericModifiersPrepared && Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == "numeric-upgrades")
+            string? modifierScenario = Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS");
+            if (fullBattle && !numericModifiersPrepared && (modifierScenario == "numeric-upgrades" || modifierScenario == "dynamic-upgrades" ||
+                modifierScenario == "sacrifice-upgrades"))
             {
                 if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Numeric fixture must start on deployment turn.");
                 numericModifiersPrepared = true;
-                NumericUpgradeScenario.Prepare(managers, log);
+                if (modifierScenario == "dynamic-upgrades" || modifierScenario == "sacrifice-upgrades")
+                    DynamicUpgradeScenario.Prepare(managers, log, modifierScenario == "sacrifice-upgrades");
+                else NumericUpgradeScenario.Prepare(managers, log);
                 return;
             }
             if (pass == Pass.Source && sourceSignatures.Count == 0)

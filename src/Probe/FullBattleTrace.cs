@@ -135,7 +135,7 @@ namespace MonsterTrain2Poju.Probe
                     character.GetCanAttack(), character.IsPyreHeart(), endsBattle, statuses, triggers,
                     card == null ? 0 : projection.CaptureCards(new List<CardState> { card })[0].InstanceId, character.GetSize(),
                     ((List<string>)AccessTools.Field(typeof(CharacterState), "statusEffectImmunities").GetValue(character)).ToArray(),
-                    character.GetSubtypes().Select(subtype => subtype.Key).ToArray()));
+                    character.GetSubtypes().Select(subtype => subtype.Key).ToArray(), UnitModifierProbe.Capture(character)));
             }
             return new RoomCombatState(room.GetRoomIndex(), combat.IsPlacementPhase, units,
                 interactions.Distinct().OrderBy(value => value, StringComparer.Ordinal).ToArray(), CaptureContext());

@@ -19,8 +19,11 @@ namespace MonsterTrain2Poju.Model
             {
                 if (effect.Target != "DropTargetCharacter" && effect.Target != "LastTargetedCharacters")
                     return Unsupported("Unimplemented spell targeting " + effect.Target);
-                if (effect.Type != "Damage" && effect.Type != "AddStatus" && effect.Type != "FloorRearrange")
+                if (effect.Type != "Damage" && effect.Type != "AddStatus" && effect.Type != "FloorRearrange" &&
+                    effect.Type != "UnitUpgrade" && effect.Type != "RemoveUnitUpgrade")
                     return Unsupported("Unimplemented spell effect " + effect.Type);
+                if ((effect.Type == "UnitUpgrade" || effect.Type == "RemoveUnitUpgrade") && effect.Upgrade == null)
+                    return Unsupported("Missing unit upgrade definition.");
                 if (effect.Value < 0 || effect.Type == "FloorRearrange" && effect.Value > 1)
                     return Unsupported("Invalid spell effect value.");
                 if (effect.Type == "AddStatus" && effect.Statuses.Count != 1)
@@ -62,6 +65,13 @@ namespace MonsterTrain2Poju.Model
                         .Concat(new[] { (existing ?? added).WithStacks(count) }).ToArray());
                     state = new RoomCombatState(state.RoomIndex, state.Deployment,
                         state.Units.Select(unit => unit.Id == targetId ? modified : unit).ToArray(), state.ExternalInteractions, context, state.Preview);
+                }
+                else if (effect.Type == "UnitUpgrade" || effect.Type == "RemoveUnitUpgrade")
+                {
+                    RoomCombatResult upgraded = UnitModifierModel.Apply(state, targetId, effect.Upgrade!, effect.Lifetime,
+                        effect.Type == "RemoveUnitUpgrade", target.Team == CombatTeam.Player ? playerCapacity : enemyCapacity);
+                    if (!upgraded.Supported || upgraded.Outcome == RoomOutcome.BattleWon || upgraded.Outcome == RoomOutcome.PlayerDefeated) return upgraded;
+                    state = upgraded.State!;
                 }
                 else if (!target.Statuses.Any(status => status.Id == "immobile"))
                 {

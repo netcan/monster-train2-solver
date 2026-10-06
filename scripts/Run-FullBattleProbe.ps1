@@ -3,6 +3,8 @@ param(
     [ValidateSet('no-cards', 'steward-once', 'units-and-junk', 'units-spells-and-junk')]
     [string] $Policy = 'steward-once',
     [switch] $NumericUpgrades,
+    [switch] $DynamicUpgrades,
+    [switch] $SacrificeUpgrades,
     [switch] $SkipBuild
 )
 
@@ -35,7 +37,7 @@ $environment = @{
     MT2_PROBE_SCENARIO = 'native-replay'
     MT2_PROBE_FULL_BATTLE = '1'
     MT2_PROBE_FULL_BATTLE_POLICY = $Policy
-    MT2_PROBE_MODIFIERS = $(if ($NumericUpgrades) { 'numeric-upgrades' } else { '' })
+    MT2_PROBE_MODIFIERS = $(if ($SacrificeUpgrades) { 'sacrifice-upgrades' } elseif ($DynamicUpgrades) { 'dynamic-upgrades' } elseif ($NumericUpgrades) { 'numeric-upgrades' } else { '' })
     MT2_PROBE_DIRECT_BRANCH = '1'
     MT2_PROBE_DEPTH = '100'
     MT2_PROBE_TARGET_TURN = '0'
@@ -60,6 +62,24 @@ if (-not (Test-Path -LiteralPath $tracePath)) { throw "Missing battle trace; ins
 $trace = Get-Content -LiteralPath $tracePath -Raw | ConvertFrom-Json
 $nativePassed = [bool] (Select-String -LiteralPath $unityLog -Pattern 'DEPTH-PASS' -Quiet)
 $originalUnchanged = (Get-OriginalSignature) -ceq $originalBefore
+$modifierActions = @($trace.Actions | Where-Object {
+    $actionEntry = $_
+    $playedCard = $actionEntry.Before.Spawn.Train.Context.Cards.Hand |
+        Where-Object InstanceId -EQ $actionEntry.Action.CardInstanceId
+    $definition = $actionEntry.Before.PlayRules.Cards | Where-Object DataId -EQ $playedCard.DataId
+    @($definition.Effects | Where-Object Type -EQ 'UnitUpgrade').Count -gt 0
+})
+$modifierCoverage = (-not ($DynamicUpgrades -or $SacrificeUpgrades)) -or $modifierActions.Count -gt 0
+if ($SacrificeUpgrades) {
+    $modifierCoverage = $modifierCoverage -and @($modifierActions | Where-Object {
+        $modifierAction = $_
+        @($modifierAction.Actual.Spawn.Train.Rooms.Units | Where-Object Id -EQ $modifierAction.Action.TargetUnitId).Count -eq 0
+    }).Count -gt 0
+} elseif ($DynamicUpgrades) {
+    $modifierCoverage = $modifierCoverage -and @($modifierActions | Where-Object {
+        @($_.Actual.Spawn.Train.Rooms.Units.Modifiers.Upgrades | Where-Object AssetKey -Like 'PojuProbe*').Count -gt 0
+    }).Count -gt 0
+}
 $result = [pscustomobject]@{
     Policy = $Policy
     Profile = $profile
@@ -78,10 +98,12 @@ $result = [pscustomobject]@{
     Actions = @($trace.Actions).Count
     DecisionTurns = @($trace.Checkpoints).Count - 1
     OriginalFilesUnchanged = $originalUnchanged
+    ModifierActions = $modifierActions.Count
+    ModifierCoverage = $modifierCoverage
     Trace = $tracePath
 }
 $result | ConvertTo-Json
-if ($null -eq $trace.NativeWon -or $process.ExitCode -ne 0 -or -not $nativePassed -or -not $originalUnchanged -or
+if ($null -eq $trace.NativeWon -or $process.ExitCode -ne 0 -or -not $nativePassed -or -not $originalUnchanged -or -not $modifierCoverage -or
     $trace.CaptureFailures -ne 0 -or $trace.Mismatches -ne 0 -or $trace.Unsupported -ne 0 -or $trace.Pending -ne 0) {
     throw "Full battle differential probe failed; inspect $tracePath and $unityLog"
 }

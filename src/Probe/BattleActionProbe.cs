@@ -81,7 +81,8 @@ namespace MonsterTrain2Poju.Probe
             }
             else if (kind == "CardEffectNULL") kind = "Null";
             else if (data.GetCardType() == CardType.Spell && effects.Length > 0 && effects.All(effect =>
-                new[] { "CardEffectDamage", "CardEffectAddStatusEffect", "CardEffectFloorRearrange" }.Contains(effect.GetEffectStateName())))
+                new[] { "CardEffectDamage", "CardEffectAddStatusEffect", "CardEffectFloorRearrange", "CardEffectAddCardUpgradeToUnits",
+                    "CardEffectAddTempCardUpgradeToUnits", "CardEffectRemoveTempUpgradeFromUnit" }.Contains(effect.GetEffectStateName())))
             {
                 kind = "Spell";
                 for (int index = 0; index < effects.Length; index++)
@@ -97,7 +98,23 @@ namespace MonsterTrain2Poju.Probe
                         interactions.Add("Spell scaling or target filters");
                     string type = effect.GetEffectStateName() == "CardEffectDamage" ? "Damage" :
                         effect.GetEffectStateName() == "CardEffectFloorRearrange" ? "FloorRearrange" :
-                        "AddStatus";
+                        effect.GetEffectStateName() == "CardEffectAddStatusEffect" ? "AddStatus" :
+                        effect.GetEffectStateName() == "CardEffectRemoveTempUpgradeFromUnit" ? "RemoveUnitUpgrade" : "UnitUpgrade";
+                    CardUpgradeModifier? upgrade = null;
+                    string lifetime = "";
+                    if (type == "UnitUpgrade" || type == "RemoveUnitUpgrade")
+                    {
+                        if (effect.GetParamCardUpgradeData() == null) interactions.Add("Missing unit upgrade data");
+                        else
+                        {
+                            var upgradeState = new CardUpgradeState(); upgradeState.Setup(effect.GetParamCardUpgradeData());
+                            upgrade = CardModifierProbe.Upgrade(upgradeState);
+                            interactions.AddRange(upgrade.ExternalInteractions);
+                        }
+                        lifetime = ((UnitUpgradeLifetime)effect.GetAdditionalParamInt1()).ToString();
+                        if (effect.GetEffectStateName() == "CardEffectAddCardUpgradeToUnits" && effect.GetParamBool())
+                            interactions.Add("Scaling unit upgrade instances");
+                    }
                     var statuses = new List<CombatStatus>();
                     if (type == "AddStatus")
                     {
@@ -109,7 +126,8 @@ namespace MonsterTrain2Poju.Probe
                         }
                     }
                     spellEffects.Add(new CardActionEffect(type, effect.GetTargetMode().ToString(), effect.GetParamInt(),
-                        effect.GetTargetTeamType().HasFlag(Team.Type.Heroes), effect.GetTargetTeamType().HasFlag(Team.Type.Monsters), statuses));
+                        effect.GetTargetTeamType().HasFlag(Team.Type.Heroes), effect.GetTargetTeamType().HasFlag(Team.Type.Monsters), statuses,
+                        upgrade, lifetime));
                 }
             }
             else interactions.Add("Unimplemented play effect " + kind);

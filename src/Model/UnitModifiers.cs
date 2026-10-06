@@ -27,4 +27,110 @@ namespace MonsterTrain2Poju.Model
         }
     }
 
+    public static class UnitModifierModel
+    {
+        public static RoomCombatResult Apply(RoomCombatState source, int targetId, CardUpgradeModifier upgrade, string lifetime,
+            bool remove = false, int? roomCapacity = null)
+        {
+            string? error = RoomCombatModel.Validate(source);
+            if (error != null) return Unsupported(error);
+            CombatUnit? target = source.Units.FirstOrDefault(unit => unit.Id == targetId);
+            if (target?.Modifiers == null || source.Context?.CardInstances == null)
+                return Unsupported("Unit upgrades require unit and card instance modifier state.");
+            if (upgrade.ExternalInteractions.Count > 0) return Unsupported(string.Join("; ", upgrade.ExternalInteractions));
+            if (!remove && !new[] { "TemporaryUntilEndOfBattle", "TemporaryUntilUnitDeath", "Permanent" }.Contains(lifetime))
+                return Unsupported("Unmodeled unit upgrade lifetime.");
+            if (remove && upgrade.DataId.Length == 0) return Unsupported("Removing an upgrade requires a definition ID.");
+            if (!remove && target.Modifiers.IsClone && upgrade.ExcludeFromClones) return Match(source);
+            foreach (CombatStatus status in upgrade.Statuses)
+            {
+                error = RoomCombatModel.Validate(new RoomCombatState(source.RoomIndex, source.Deployment,
+                    new[] { CardSpellModel.Copy(target, target.Health, target.Statuses.Where(item => item.Id != status.Id).Concat(new[] { status }).ToArray()) },
+                    Array.Empty<string>(), source.Context));
+                if (error != null) return Unsupported(error);
+            }
+            if (!remove && upgrade.RestrictSizeToRoomCapacity && upgrade.Stats.Size > 0)
+            {
+                if (roomCapacity == null) return Unsupported("Restricted size upgrades require a room capacity definition.");
+                if (source.Units.Where(unit => unit.Team == target.Team).Sum(unit => (long)unit.Size) > roomCapacity.Value - (long)upgrade.Stats.Size)
+                    return Match(source);
+            }
+            RoomCombatState state = source;
+            int count = remove ? target.Modifiers.Upgrades.Count(item => item.DataId == upgrade.DataId) : 1;
+            for (int index = 0; index < count; index++)
+            {
+                target = state.Units.FirstOrDefault(unit => unit.Id == targetId);
+                if (target == null) return Match(state);
+                UnitModifiers modifiers = target.Modifiers!;
+                if (!remove && upgrade.Unique && upgrade.DataId.Length > 0 && modifiers.Upgrades.Any(item => item.DataId == upgrade.DataId)) break;
+                var upgrades = modifiers.Upgrades.ToList();
+                if (remove) upgrades.RemoveAt(upgrades.FindIndex(item => item.DataId == upgrade.DataId));
+                else upgrades.Add(upgrade);
+                int sign = remove ? -1 : 1;
+                int damage = Math.Max(0, checked(modifiers.AttackDamage + sign * upgrade.Stats.Damage));
+                int added = Math.Max(0, checked(modifiers.AttackDamageAdded + sign * upgrade.Stats.Damage));
+                int buff = checked(modifiers.DamageBuff + sign * upgrade.DamageBuff);
+                int size = checked(modifiers.RawSize + sign * upgrade.Stats.Size);
+                int equipment = checked(modifiers.EquipmentLimit + sign * upgrade.Stats.EquipmentLimit);
+                if (!remove) equipment = Math.Min(4, equipment);
+                int health = target.Health, maxHealth = target.MaxHealth;
+                ChangeHealth(sign * upgrade.Stats.Health, !(remove && upgrade.Stats.Health > 0), !remove || upgrade.Stats.Health < 0);
+                if (health > 0) ChangeHealth(sign * upgrade.UnhealedHealth, !remove, false);
+                var statuses = target.Statuses.ToDictionary(status => status.Id);
+                if (health > 0)
+                    foreach (CombatStatus status in upgrade.Statuses)
+                    {
+                        statuses.TryGetValue(status.Id, out CombatStatus? existing);
+                        if (!remove && (target.StatusImmunities.Contains(status.Id) || target.Status("immune") != null)) continue;
+                        int stacks = remove ? Math.Max(0, (existing?.Stacks ?? 0) - Math.Max(0, status.Stacks)) :
+                            Math.Min(9999, checked((existing?.Stacks ?? 0) + status.Stacks));
+                        if (stacks <= 0) statuses.Remove(status.Id); else statuses[status.Id] = (existing ?? status).WithStacks(stacks);
+                    }
+                var nextModifiers = new UnitModifiers(damage, added, buff, size, equipment, modifiers.CanBeHealed, modifiers.IsClone, upgrades,
+                    modifiers.HealthFromUpgrades, modifiers.SpawnerMatchesDefinition);
+                var changed = new CombatUnit(target.Id, target.AssetKey, target.Team, Math.Max(0, checked(damage + buff)), health, maxHealth,
+                    target.CanAttack, target.IsPyre, target.EndsBattleOnDeath, statuses.Values.ToArray(), target.Triggers, target.SpawnerCardId,
+                    Math.Max(1, Math.Min(6, size)), target.StatusImmunities, target.Subtypes, nextModifiers);
+                RoomCombatResult applied = RoomCombatModel.ApplyUnitModification(state, changed);
+                if (!applied.Supported || applied.Outcome == RoomOutcome.BattleWon || applied.Outcome == RoomOutcome.PlayerDefeated) return applied;
+                state = applied.State!;
+                if (health <= 0) return Match(state);
+
+                void ChangeHealth(int delta, bool decreaseHealth, bool heal)
+                {
+                    if (delta < 0)
+                    {
+                        maxHealth = Math.Max(0, checked(maxHealth + delta));
+                        health = decreaseHealth ? Math.Max(0, checked(health + delta)) : Math.Min(health, maxHealth);
+                    }
+                    else if (delta > 0)
+                    {
+                        maxHealth = Math.Min(99999, checked(maxHealth + delta));
+                        if (heal && modifiers.CanBeHealed) health = Math.Min(maxHealth, checked(health + delta));
+                    }
+                }
+            }
+            // The native source-card update also follows a unique unit upgrade no-op.
+            target = state.Units.FirstOrDefault(unit => unit.Id == targetId);
+            if (target?.SpawnerCardId > 0 && (remove || target.Modifiers!.SpawnerMatchesDefinition && lifetime != "TemporaryUntilUnitDeath"))
+            {
+                CardInstanceState? card = state.Context!.CardInstances!.FirstOrDefault(item => item.InstanceId == target.SpawnerCardId);
+                if (card == null) return Unsupported("Missing upgraded unit's spawner card.");
+                CardModifiers permanent = card.Permanent, temporary = card.Temporary;
+                if (remove) temporary = new CardModifiers(temporary.Offsets,
+                    temporary.Upgrades.Where(item => item.DataId != upgrade.DataId).ToArray(), temporary.PersistentHealth, temporary.ExternalInteractions);
+                else if (lifetime == "Permanent") permanent = Add(permanent, upgrade);
+                else temporary = Add(temporary, upgrade);
+                var changed = new CardInstanceState(card.InstanceId, card.DataId, permanent, temporary, card.LastPlayedCost, card.LastForgedAmount, card.PlayCount, card.ExternalInteractions);
+                CombatContext context = state.Context.WithCardInstances(state.Context.CardInstances.Select(item => item.InstanceId == card.InstanceId ? changed : item).ToArray());
+                state = new RoomCombatState(state.RoomIndex, state.Deployment, state.Units, state.ExternalInteractions, context, state.Preview);
+            }
+            return Match(state);
+        }
+        internal static CardModifiers Add(CardModifiers modifiers, CardUpgradeModifier upgrade) =>
+            upgrade.Unique && upgrade.DataId.Length > 0 && modifiers.Upgrades.Any(item => item.DataId == upgrade.DataId) ? modifiers :
+            new CardModifiers(modifiers.Offsets, modifiers.Upgrades.Concat(new[] { upgrade }).ToArray(), modifiers.PersistentHealth, modifiers.ExternalInteractions);
+        private static RoomCombatResult Match(RoomCombatState state) => new RoomCombatResult(state, RoomOutcome.Exchanged, 0, new List<CombatEvent>());
+        private static RoomCombatResult Unsupported(string reason) => new RoomCombatResult(null, RoomOutcome.Unsupported, 0, new List<CombatEvent>(), reason);
+    }
 }
