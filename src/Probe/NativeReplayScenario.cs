@@ -403,7 +403,7 @@ namespace MonsterTrain2Poju.Probe
                 modifierScenario == "terminal-spells" || modifierScenario == "post-kill-spells" || modifierScenario == "random-spells" ||
                 modifierScenario == "random-status" || modifierScenario == "cross-room-spells" || modifierScenario == "cross-room-targets" || modifierScenario == "attack-buffs" ||
                 modifierScenario == "max-health-spells" || modifierScenario == "max-health-lethal" ||
-                modifierScenario == "numeric-ranges" || modifierScenario == "numeric-ranges-lethal" || modifierScenario == "target-filters" || modifierScenario == "drawing" || modifierScenario == "damage-scaling" ||
+                modifierScenario == "numeric-ranges" || modifierScenario == "numeric-ranges-lethal" || modifierScenario == "target-filters" || modifierScenario == "drawing" || modifierScenario == "damage-scaling" || modifierScenario == "dynamic-statistics" ||
                 modifierScenario == "hand-removal" || modifierScenario == "hand-removal-lethal" || modifierScenario == "generation" || modifierScenario == "generation-lethal"))
             {
                 if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Numeric fixture must start on deployment turn.");
@@ -413,6 +413,7 @@ namespace MonsterTrain2Poju.Probe
                 else if (modifierScenario == "hand-removal" || modifierScenario == "hand-removal-lethal")
                     HandRemovalScenario.Prepare(managers, log, modifierScenario == "hand-removal-lethal");
                 else if (modifierScenario == "damage-scaling") DamageScalingScenario.Prepare(managers, log);
+                else if (modifierScenario == "dynamic-statistics") DamageScalingScenario.Prepare(managers, log, true);
                 else if (modifierScenario == "drawing") DrawScenario.Prepare(managers, log);
                 else if (modifierScenario == "target-filters") TargetFilterScenario.Prepare(managers, log);
                 else if (modifierScenario == "numeric-ranges" || modifierScenario == "numeric-ranges-lethal")

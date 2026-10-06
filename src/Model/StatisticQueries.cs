@@ -35,12 +35,32 @@ namespace MonsterTrain2Poju.Model
         public int? ForgePoints { get; }
         public int? DragonsHoard { get; }
         public int? MoonPhase { get; }
+        // Native PyreHeartResurrection is a consumed/not-allowed flag (0 or 1), not a tally.
         public int? PyreResurrectionCount { get; }
         public bool ActiveBattle { get; }
         public StatisticQueryFrame(int? energy = null, bool? runningCombat = null, int? turn = null, int? forgePoints = null,
             int? dragonsHoard = null, int? moonPhase = null, int? pyreResurrectionCount = null, bool activeBattle = true)
         { Energy = energy; RunningCombat = runningCombat; Turn = turn; ForgePoints = forgePoints;
             DragonsHoard = dragonsHoard; MoonPhase = moonPhase; PyreResurrectionCount = pyreResurrectionCount; ActiveBattle = activeBattle; }
+        public StatisticQueryFrame With(int? energy = null, bool? runningCombat = null, int? turn = null,
+            int? forgePoints = null, int? dragonsHoard = null, int? moonPhase = null,
+            int? pyreResurrectionCount = null, bool? activeBattle = null) => new StatisticQueryFrame(
+                energy ?? Energy, runningCombat ?? RunningCombat, turn ?? Turn, forgePoints ?? ForgePoints,
+                dragonsHoard ?? DragonsHoard, moonPhase ?? MoonPhase, pyreResurrectionCount ?? PyreResurrectionCount,
+                activeBattle ?? ActiveBattle);
+
+        internal static string? ValidateDecision(BattleTurnState state)
+        {
+            StatisticQueryFrame? frame = state.Spawn.Train.Context?.QueryFrame;
+            if (frame == null) return null; // Old captures retain their explicitly incomplete inputs.
+            int moon = state.MoonPhase == "New" ? 1 : state.MoonPhase == "Full" ? 2 : 0;
+            if (moon == 0 || frame.Energy != state.Energy || frame.Turn != state.Spawn.Turn ||
+                frame.ForgePoints != state.ForgePoints || frame.DragonsHoard != state.DragonsHoard || frame.MoonPhase != moon)
+                return "Dynamic statistic inputs disagree with the current decision state.";
+            if (frame.RunningCombat != true || !frame.ActiveBattle || frame.PyreResurrectionCount == null)
+                return "Dynamic statistic inputs do not describe an active player decision.";
+            return null;
+        }
     }
 
     public sealed class StatisticQueryResult
@@ -58,6 +78,7 @@ namespace MonsterTrain2Poju.Model
         public static StatisticQueryResult Evaluate(CombatContext source, CardStatisticQuery query, int sourceCardId = 0,
             StatisticQueryFrame? frame = null)
         {
+            frame = frame ?? source.QueryFrame;
             if (source.Statistics == null || source.OtherPiles == null)
                 return Unsupported("Statistic queries require counters and complete card piles.");
             if (query.Duration != "ThisTurn" && query.Duration != "PreviousTurn" && query.Duration != "ThisBattle")

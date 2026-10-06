@@ -137,7 +137,7 @@ namespace MonsterTrain2Poju.Model
                     context.Cards.ExternalInteractions), rng, context.Gold, checked(context.NextCardId + 1), context.MaxHandSize,
                     context.StatusRules, context.Statistics?.TrackCards(new[] { card.InstanceId }),
                     context.CardInstances?.Concat(new[] { candidate }).ToArray(), context.CardRegistry, context.AllScenarioBossesDead,
-                    context.NextAddedTemporaryUpgrades == null ? null : Array.Empty<CardUpgradeModifier>(), context.OtherPiles);
+                    context.NextAddedTemporaryUpgrades == null ? null : Array.Empty<CardUpgradeModifier>(), context.OtherPiles, context.QueryFrame);
                 added.Add(card);
             }
             return new CardGenerationResult(context, added);

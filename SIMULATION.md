@@ -36,6 +36,7 @@ are copied immutable values; independent child states can run on worker threads.
 | Card statistics and preview | `BattleStatistics` and `BattlePreviewModel` | Native per-card/Any counters, turn rollover, spawn subtypes, death/exhaust attribution and preview damage statistic |
 | Statistic queries | `StatisticQueryModel` | 17,604 native queries across 40 kinds, three durations and seven card types; membership refresh, type/subtype pile counts, aggregates, costs and resource snapshots |
 | Statistic-driven damage traits | `DamageScalingModel` and `RoomCombatModel` | 63 native callbacks with complete refreshed contexts; trait order, replacement/addition, explicit-source upgrades, per-hit statistics and Boss/Pyre kill previews |
+| Dynamic statistic inputs | `CombatContext.QueryFrame` and turn/card transitions | 255 native damage callbacks and 48 decision boundaries; payment, combat, rollover, previews and settled terminal resources, plus multi-turn and parallel branches |
 | Card instance modifiers | `CardModifierModel` | Permanent/temporary ordered numeric upgrades, unit starting statuses, discard removal, play history and 256 native scalar calculations |
 | Retained card references | `CombatContext.CardRegistry` | Observed card identities survive pile clearing; detached spawner upgrades/removal preserve ownership and parent isolation |
 | Standby dictionary allocation | `CardPileModel` | Captured entry slots and free-list order preserve native hole reuse after unit death; malformed layouts, distinct futures, terminal clear and parallel branches |
@@ -843,7 +844,7 @@ API delegates to the same engine for local checks. Each applied target updates
 its own room, then shares the resulting context with every other room; fixed
 target collections and last-target identities span the train. Capacity-limited
 unit upgrades consult the target room's definition. Dead movement and standby
-spawner routing use all rooms. The 33 saved native battle oracles exercise this
+spawner routing use all rooms. The 34 saved native battle oracles exercise this
 engine through the normal card-action path, including cross-room target modes.
 
 `StatisticQueryModel` implements the counter and definition queries used by
@@ -863,8 +864,9 @@ intrinsic cost and X-cost modifiers to the stored paid amount, then floors the
 total at zero; UnmodifiedPlayedCost preserves signed stored costs. A variable
 card without a recorded cost reads current energy only in an active battle.
 Gold uses turn-start gold while the combat loop runs and live gold after it
-stops. Dynamic resource inputs are explicit query frames; callers must provide
-the current values when advancing a branch.
+stops. Dynamic resource inputs are immutable query frames in the shared combat
+context; transitions advance these values as the branch progresses. An explicit
+query frame overrides that shared frame for isolated calibration queries.
 
 `results/statistic-query-calibration.json.gz` preserves 17,604 raw native
 observations across six batches: live, distributed and empty piles, each with
@@ -877,9 +879,56 @@ The independent reader recomputes every query. Pure checks cover retained buffer
 aliases, exhausted subtype counts, missing inputs and 64 isolated parallel
 branches. The query API supports static definition masks and no cardFilter.
 Room/status/magic/corruption/capacity, last-ability-activator and CurrentCost
-queries remain explicit unsupported results. Dynamic query frames still need
-to be propagated through combat; resource-dependent traits currently reject
-that missing boundary state.
+queries remain explicit unsupported results. Legacy captures without dynamic
+frames still reject resource-dependent queries whose boundary state is missing.
+
+Schema 23 captures energy, combat-loop state, raw turn count, forge points,
+Dragon's Hoard, native moon flags and the Pyre resurrection query flag in every
+shared context. Moon values are New=1 and Full=2. The resurrection value is
+whether an existing resurrection relic is no longer allowed to activate, not
+a resurrection count; capturing that query does not implement resurrection.
+Modern decision inputs must agree with their outer resources and turn state.
+Contradictory or inactive decision inputs reject the transition.
+
+Casting tests retain the original energy; queued card effects see the paid
+balance. EndTurn records the remaining energy before removing it, and combat,
+movement and ordinary spawning see zero energy. After these phases, the moon
+flips and the turn increments. Turn-one initial spawning precedes replenishment;
+normal hand drawing and UI previews see replenished energy. The native statistic
+rollover clears EnergyRemainingEndOfTurn for the next decision. Terminal damage
+and effect tails keep the live-loop query state until settlement; the final
+decision has RunningCombat=false and remains in the InBattle save sequence.
+Generation, gold rewards, modifiers, card routing and terminal pile clearing all
+preserve the frame. Branches retain their parent's original values.
+An exact relentless cycle keeps RunningCombat=true; cycle detection does not
+invent a native victory/defeat settlement.
+
+`results/full-battle-dynamic-statistics.json.gz` retains an unaltered native
+trace from a controlled starting decision with forge=7, hoard=9 and eight
+energy per normal turn. Live gold deliberately differs from deployment-turn
+start gold. Reduced spell scaling lets enemies reach combat, so the trace
+actually queries nonzero end-turn energy. Natural boss and wave definitions
+are unchanged. All 19 card plays, 5 EndTurns, 38 room stages, 9 card cycles,
+9 train phases and 7 spawns match, ending in victory with Pyre health 80.
+
+All 255 scaling callbacks match damage and complete refreshed contexts: 210
+spell callbacks and 45 combat callbacks, including 27 direct attacks and 18
+spikes callbacks. Eleven query kinds occur across raw turns 1, 2 and 4; both
+native moon flags occur. Every combat callback sees current energy zero and
+remaining-end-turn energy three. Twenty-eight callbacks have live gold that
+differs from the recorded turn-start gold. The resurrection query flag is zero
+in this fixture; it does not verify activation of a resurrection relic.
+
+The archive decompresses byte-for-byte to the 264,983,231-byte native JSON
+(SHA-256 `89f8485a94a350689f11f8a0e7b702ea0668d133e1af0d2d8e15463d4880bce9`).
+The independent reader recomputes every callback and all 48 decision boundaries,
+then simulates the complete policy from initial/mid-battle roots and 16 parallel
+branches. Pure checks also verify two successive turns, variable-query energy
+fallback, explicit-frame precedence, contradictory-input rejection, terminal
+gold/energy/moon timing, exact cycles and 32 isolated branches. Capture failures,
+differences, unsupported transitions and pending records are zero. Original
+profile files are unchanged. Additional resource-changing card/relic effects
+and variable-cost card actions remain outside this verified scope.
 
 Schema 22 captures ordered `CardTraitScalingAddDamage` descriptors on immutable
 card instances and generated-card creation rules. Each hit queries the current

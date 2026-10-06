@@ -71,6 +71,8 @@ namespace MonsterTrain2Poju.Model
         {
             if (source.ExternalInteractions.Count > 0) return Unsupported(string.Join("; ", source.ExternalInteractions));
             if (source.Spawn.Train.Context == null) return Unsupported("Missing shared battle context.");
+            string? frameError = StatisticQueryFrame.ValidateDecision(source);
+            if (frameError != null) return Unsupported(frameError);
             foreach (CardPileState pile in source.OtherPiles)
             {
                 string? pileError = CardPileModel.Validate(pile);
@@ -113,6 +115,8 @@ namespace MonsterTrain2Poju.Model
                     cards.DrawModifier, cards.ExternalInteractions);
             }
             context = WithCards(context, cards);
+            // Hand callbacks precede the native energy removal; combat sees zero energy.
+            context = context.WithQueryFrame(context.QueryFrame?.With(energy: 0));
             train = WithContext(train, context, spawn.Turn == 0);
             TrainCombatResult combat = TrainCombatModel.ResolveCombat(train);
             if (!combat.Supported) return Unsupported(combat.UnsupportedReason!);
@@ -137,6 +141,8 @@ namespace MonsterTrain2Poju.Model
             context = train.Context!;
             train = WithContext(train, context.WithStatistics(context.Statistics?.NextTurn(context.Gold)), false);
             int turn = checked(spawn.Turn + 1);
+            train = WithContext(train, train.Context!.WithQueryFrame(train.Context.QueryFrame?.With(
+                turn: turn, moonPhase: moon == "New" ? 1 : 2)), false);
             // Initial enemies appear at the start of turn one, before that turn resets Spawning RNG.
             if (turn == 1)
             {
@@ -148,6 +154,7 @@ namespace MonsterTrain2Poju.Model
             }
             spawn = WithTrain(spawn, train, turn, UnityRng.Seed(unchecked(spawningStream.Seed + turn)));
             context = train.Context!;
+            context = context.WithQueryFrame(context.QueryFrame?.With(energy: source.EnergyPerTurn));
             CardCycleResult drawn = CardCycleModel.DrawHand(context.Cards, source.DrawPerTurn, context.MaxHandSize);
             if (!drawn.Supported) return Unsupported(drawn.UnsupportedReason!);
             var existingHand = new HashSet<int>(context.Cards.Hand.Select(card => card.InstanceId));
@@ -162,6 +169,11 @@ namespace MonsterTrain2Poju.Model
 
             BattleTurnResult Finish(RoomOutcome outcome, int energy, string phase)
             {
+                CombatContext settled = spawn.Train.Context!;
+                spawn = WithTrain(spawn, CardSpellModel.WithContext(spawn.Train,
+                    settled.WithQueryFrame(settled.QueryFrame?.With(energy: energy,
+                        runningCombat: outcome != RoomOutcome.BattleWon && outcome != RoomOutcome.PlayerDefeated))),
+                    spawn.Turn, spawn.Rng);
                 if (source.BattlePreviewEnabled && !Terminal(outcome))
                 {
                     TrainCombatResult preview = BattlePreviewModel.Refresh(spawn.Train);
@@ -215,7 +227,7 @@ namespace MonsterTrain2Poju.Model
         }
         private static CombatContext WithCards(CombatContext context, CardCycleState cards) => new CombatContext(cards,
             context.BattleRng, context.Gold, context.NextCardId, context.MaxHandSize, context.StatusRules, context.Statistics, context.CardInstances,
-            context.CardRegistry, context.AllScenarioBossesDead, context.NextAddedTemporaryUpgrades, context.OtherPiles);
+            context.CardRegistry, context.AllScenarioBossesDead, context.NextAddedTemporaryUpgrades, context.OtherPiles, context.QueryFrame);
         private static TrainCombatState WithContext(TrainCombatState train, CombatContext context, bool deployment) =>
             new TrainCombatState(train.Rooms.Select(room => new RoomCombatState(room.RoomIndex, deployment, room.Units,
                 room.ExternalInteractions, context)).ToArray(), train.Movement, train.EnemySlotsPerRoom, context);

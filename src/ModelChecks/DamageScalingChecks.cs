@@ -90,7 +90,8 @@ internal static class DamageScalingChecks
 
     internal static void Native(JsonElement fixture)
     {
-        if (!fixture.TryGetProperty("ModifierScenario", out JsonElement scenario) || scenario.GetString() != "damage-scaling") return;
+        if (!fixture.TryGetProperty("ModifierScenario", out JsonElement scenario) ||
+            scenario.GetString() is not ("damage-scaling" or "dynamic-statistics")) return;
         int count = 0;
         var queries = new HashSet<string>(); var types = new HashSet<string>();
         bool replacement = false, additive = false;
@@ -112,6 +113,9 @@ internal static class DamageScalingChecks
         }
         Require(count >= 60 && replacement && additive && queries.Contains("MagicPowerInTargetRoom") && queries.Contains("LastAttackDamageDealt") &&
             types.Contains("DirectAttack") && types.Contains("Default") && types.Contains("Spikes"), "Native scaling trace lacks spell/unit/retaliation or trait-mode coverage.");
+        if (scenario.GetString() == "dynamic-statistics")
+            Require(new[] { "Gold", "TurnCount", "MoonPhase", "ForgePoints", "DragonsHoardAmount", "EnergyRemainingEndOfTurn", "PyreHeartResurrection" }
+                .All(queries.Contains), "Native scaling lacks dynamic resource queries.");
         Console.WriteLine($"NATIVE-DAMAGE-SCALING-CHECKS PASS: {count} callbacks, {queries.Count} queries, spell/unit damage and complete refreshed contexts.");
     }
     private static void Require(bool condition, string message) { if (!condition) throw new InvalidOperationException(message); }

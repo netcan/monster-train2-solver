@@ -536,7 +536,7 @@ namespace MonsterTrain2Poju.Model
                     context.Cards.ExternalInteractions), context.BattleRng, context.Gold,
                     context.NextCardId, context.MaxHandSize, context.StatusRules, context.Statistics,
                     context.CardInstances == null ? null : Array.Empty<CardInstanceState>(), context.CardRegistry, context.AllScenarioBossesDead,
-                    context.NextAddedTemporaryUpgrades, context.OtherPiles?.Select(CardPileModel.Clear).ToArray());
+                    context.NextAddedTemporaryUpgrades, context.OtherPiles?.Select(CardPileModel.Clear).ToArray(), context.QueryFrame);
             }
 
             private void PostCombat()
@@ -607,7 +607,7 @@ namespace MonsterTrain2Poju.Model
                                 int reward = GoldRewardModel.Adjust(effect.Value);
                                 context = new CombatContext(context!.Cards, context.BattleRng,
                                     Math.Max(0, checked(context.Gold + reward)), context.NextCardId, context.MaxHandSize, context.StatusRules, context.Statistics,
-                                    context.CardInstances, context.CardRegistry, context.AllScenarioBossesDead, context.NextAddedTemporaryUpgrades, context.OtherPiles);
+                                    context.CardInstances, context.CardRegistry, context.AllScenarioBossesDead, context.NextAddedTemporaryUpgrades, context.OtherPiles, context.QueryFrame);
                                 Emit("Gold", unit, unit, reward);
                             }
                             else if (effect.Type == "CardEffectAddBattleCard" && !source.Preview && !battleWon && context != null && context.AllScenarioBossesDead != true &&

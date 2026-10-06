@@ -22,10 +22,12 @@ namespace MonsterTrain2Poju.Model
         public IReadOnlyList<CardUpgradeModifier>? NextAddedTemporaryUpgrades { get; }
         // Shared with room/effect resolution; null identifies legacy captures without this state.
         public IReadOnlyList<CardPileState>? OtherPiles { get; }
+        public StatisticQueryFrame? QueryFrame { get; }
         public CombatContext(CardCycleState cards, UnityRng battleRng, int gold, int nextCardId, int maxHandSize,
             IReadOnlyList<CombatStatus>? statusRules = null, BattleStatistics? statistics = null, IReadOnlyList<CardInstanceState>? cardInstances = null,
             IReadOnlyList<CardInstanceState>? cardRegistry = null, bool? allScenarioBossesDead = null,
-            IReadOnlyList<CardUpgradeModifier>? nextAddedTemporaryUpgrades = null, IReadOnlyList<CardPileState>? otherPiles = null)
+            IReadOnlyList<CardUpgradeModifier>? nextAddedTemporaryUpgrades = null, IReadOnlyList<CardPileState>? otherPiles = null,
+            StatisticQueryFrame? queryFrame = null)
         { Cards = cards; BattleRng = battleRng; Gold = gold; NextCardId = nextCardId; MaxHandSize = maxHandSize;
             StatusRules = Array.AsReadOnly((statusRules ?? Array.Empty<CombatStatus>()).ToArray()); Statistics = statistics;
             CardInstances = cardInstances == null ? null : Array.AsReadOnly(cardInstances.OrderBy(card => card.InstanceId).ToArray());
@@ -33,28 +35,31 @@ namespace MonsterTrain2Poju.Model
                 .GroupBy(card => card.InstanceId).Select(group => group.Last()).OrderBy(card => card.InstanceId).ToArray());
             AllScenarioBossesDead = allScenarioBossesDead;
             NextAddedTemporaryUpgrades = nextAddedTemporaryUpgrades == null ? null : Array.AsReadOnly(nextAddedTemporaryUpgrades.ToArray());
-            OtherPiles = otherPiles == null ? null : Array.AsReadOnly(otherPiles.ToArray()); }
+            OtherPiles = otherPiles == null ? null : Array.AsReadOnly(otherPiles.ToArray()); QueryFrame = queryFrame; }
+        internal CombatContext WithQueryFrame(StatisticQueryFrame? frame) => new CombatContext(Cards, BattleRng,
+            Gold, NextCardId, MaxHandSize, StatusRules, Statistics, CardInstances, CardRegistry, AllScenarioBossesDead,
+            NextAddedTemporaryUpgrades, OtherPiles, frame);
         internal CombatContext WithStatistics(BattleStatistics? statistics) => new CombatContext(Cards, BattleRng,
-            Gold, NextCardId, MaxHandSize, StatusRules, statistics, CardInstances, CardRegistry, AllScenarioBossesDead, NextAddedTemporaryUpgrades, OtherPiles);
+            Gold, NextCardId, MaxHandSize, StatusRules, statistics, CardInstances, CardRegistry, AllScenarioBossesDead, NextAddedTemporaryUpgrades, OtherPiles, QueryFrame);
         internal CombatContext WithCardInstances(IReadOnlyList<CardInstanceState>? instances) => new CombatContext(Cards, BattleRng,
-            Gold, NextCardId, MaxHandSize, StatusRules, Statistics, instances, CardRegistry, AllScenarioBossesDead, NextAddedTemporaryUpgrades, OtherPiles);
+            Gold, NextCardId, MaxHandSize, StatusRules, Statistics, instances, CardRegistry, AllScenarioBossesDead, NextAddedTemporaryUpgrades, OtherPiles, QueryFrame);
         internal CardInstanceState? FindCard(int id) => CardInstances?.FirstOrDefault(card => card.InstanceId == id)
             ?? CardRegistry?.FirstOrDefault(card => card.InstanceId == id);
         internal CombatContext WithCard(CardInstanceState changed) => new CombatContext(Cards, BattleRng,
             Gold, NextCardId, MaxHandSize, StatusRules, Statistics,
             CardInstances?.Select(card => card.InstanceId == changed.InstanceId ? changed : card).ToArray(),
-            CardRegistry?.Select(card => card.InstanceId == changed.InstanceId ? changed : card).ToArray(), AllScenarioBossesDead, NextAddedTemporaryUpgrades, OtherPiles);
+            CardRegistry?.Select(card => card.InstanceId == changed.InstanceId ? changed : card).ToArray(), AllScenarioBossesDead, NextAddedTemporaryUpgrades, OtherPiles, QueryFrame);
         internal CombatContext WithBossesDead() => new CombatContext(Cards, BattleRng, Gold, NextCardId,
-            MaxHandSize, StatusRules, Statistics, CardInstances, CardRegistry, AllScenarioBossesDead.HasValue ? true : (bool?)null, NextAddedTemporaryUpgrades, OtherPiles);
+            MaxHandSize, StatusRules, Statistics, CardInstances, CardRegistry, AllScenarioBossesDead.HasValue ? true : (bool?)null, NextAddedTemporaryUpgrades, OtherPiles, QueryFrame);
         internal BattleStatistics? LiveStatistics => CardInstances?.Count == 0 ? Statistics?.RefreshDeckAfterCardTerminal() : Statistics;
         internal CombatContext WithBattleRng(UnityRng rng) => new CombatContext(Cards, rng, Gold, NextCardId,
-            MaxHandSize, StatusRules, Statistics, CardInstances, CardRegistry, AllScenarioBossesDead, NextAddedTemporaryUpgrades, OtherPiles);
+            MaxHandSize, StatusRules, Statistics, CardInstances, CardRegistry, AllScenarioBossesDead, NextAddedTemporaryUpgrades, OtherPiles, QueryFrame);
         internal CombatContext WithCards(CardCycleState cards) => new CombatContext(cards, BattleRng, Gold, NextCardId,
-            MaxHandSize, StatusRules, Statistics, CardInstances, CardRegistry, AllScenarioBossesDead, NextAddedTemporaryUpgrades, OtherPiles);
+            MaxHandSize, StatusRules, Statistics, CardInstances, CardRegistry, AllScenarioBossesDead, NextAddedTemporaryUpgrades, OtherPiles, QueryFrame);
         internal CombatContext WithOtherPiles(IReadOnlyList<CardPileState> piles) => OtherPiles == null ? this : new CombatContext(Cards, BattleRng,
-            Gold, NextCardId, MaxHandSize, StatusRules, Statistics, CardInstances, CardRegistry, AllScenarioBossesDead, NextAddedTemporaryUpgrades, piles);
+            Gold, NextCardId, MaxHandSize, StatusRules, Statistics, CardInstances, CardRegistry, AllScenarioBossesDead, NextAddedTemporaryUpgrades, piles, QueryFrame);
         internal CombatContext AfterCardEffects() => NextAddedTemporaryUpgrades == null || NextAddedTemporaryUpgrades.Count == 0 ? this : new CombatContext(Cards, BattleRng, Gold,
-            NextCardId, MaxHandSize, StatusRules, Statistics, CardInstances, CardRegistry, AllScenarioBossesDead, Array.Empty<CardUpgradeModifier>(), OtherPiles);
+            NextCardId, MaxHandSize, StatusRules, Statistics, CardInstances, CardRegistry, AllScenarioBossesDead, Array.Empty<CardUpgradeModifier>(), OtherPiles, QueryFrame);
     }
 
     public sealed class CombatEffect

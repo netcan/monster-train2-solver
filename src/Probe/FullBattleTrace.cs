@@ -173,7 +173,19 @@ namespace MonsterTrain2Poju.Probe
                 cards.GetMaxHandSize(), new[] { "armor", "valor", "pyregel" }.Select(id => BattleActionProbe.Status(id, 1)).ToArray(),
                 statistics, instances, registry, managers.GetCombatManager()!.AllScenarioBossesDead,
                 ((IEnumerable<CardUpgradeState>)AccessTools.Field(typeof(CardManager), "nextAddedTempCardUpgrades").GetValue(cards))
-                    .Select(CardModifierProbe.Upgrade).ToArray(), CaptureOtherPiles());
+                    .Select(CardModifierProbe.Upgrade).ToArray(), CaptureOtherPiles(), CaptureQueryFrame(managers));
+        }
+
+        private static StatisticQueryFrame CaptureQueryFrame(AllGameManagers managers)
+        {
+            SaveManager save = managers.GetSaveManager();
+            PlayerManager player = managers.GetPlayerManager();
+            CombatManager combat = managers.GetCombatManager()!;
+            var resurrection = managers.GetRelicManager().GetRelicEffect<RelicEffectPyreHeartResurrection>();
+            return new StatisticQueryFrame(player.GetEnergy(), combat.GetIsRunningCombat(), combat.GetTurnCount(),
+                save.GetForgePoints(), save.GetDragonsHoardAmount(), (int)player.CurrentMoonPhase,
+                resurrection != null && !resurrection.IsResurrectionAllowed(save) ? 1 : 0,
+                save.GetGameSequence() == SaveData.GameSequence.InBattle);
         }
 
         internal CardPileState[] CaptureOtherPiles()
@@ -313,7 +325,7 @@ namespace MonsterTrain2Poju.Probe
             string path = Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!, "full-battle.json");
             File.WriteAllText(path, JsonConvert.SerializeObject(new
             {
-                Schema = 22,
+                Schema = 23,
                 GameVersion = Application.version,
                 GameModuleMvid = typeof(CardState).Assembly.ManifestModule.ModuleVersionId,
                 NativeWon,

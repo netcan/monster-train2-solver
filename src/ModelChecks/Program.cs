@@ -78,6 +78,7 @@ CombatEffectChecks.Run();
 BattleStatisticsChecks.Run();
 StatisticQueryChecks.Run();
 DamageScalingChecks.Run();
+DynamicStatisticChecks.Run();
 CardModifierChecks.Run();
 TerminalSpellChecks.Run();
 UnitModifierChecks.Run();

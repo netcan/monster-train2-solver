@@ -11,9 +11,16 @@ namespace MonsterTrain2Poju.Probe
     internal static class DamageScalingScenario
     {
         internal static readonly List<Sample> Samples = new List<Sample>();
-        internal static void Prepare(AllGameManagers managers, ManualLogSource log)
+        internal static void Prepare(AllGameManagers managers, ManualLogSource log, bool dynamicStatistics = false)
         {
             SaveManager save = managers.GetSaveManager();
+            if (dynamicStatistics)
+            {
+                save.SetForgePoints(7); save.SetDragonsHoardAmount(9);
+                // Deliberately differ from the already recorded start-of-turn gold.
+                save.SetGold(save.GetGold() + 17);
+                Set(save.GetBalanceData(), "startOfTurnEnergy", 8);
+            }
             CardState[] owned = managers.GetCardManager()!.GetAllCards(new List<CardState>()).ToArray();
             CardState[] spells = owned.Where(card => card.GetCardType() == CardType.Spell &&
                 card.GetEffects().Any(effect => effect.GetEffectStateName() == "CardEffectFloorRearrange")).ToArray();
@@ -21,9 +28,10 @@ namespace MonsterTrain2Poju.Probe
             if (spells.Length == 0 || stewards.Length == 0) throw new InvalidOperationException("Scaling fixture requires the rearrangement spell and Stewards.");
             CardData spell = save.GetAllGameData().FindCardData(spells[0].GetCardDataID())!;
             spell.GetTraits().Clear();
-            spell.GetTraits().Add(Trait("AnyHeroKilled", "ThisBattle", 3, .5f, false));
+            spell.GetTraits().Add(Trait("AnyHeroKilled", "ThisBattle", dynamicStatistics ? 1 : 3, .5f, false));
             spell.GetTraits().Add(Trait("AnyCardPlayed", "ThisTurn", 2, .75f, true));
             spell.GetTraits().Add(Trait("MagicPowerInTargetRoom", "ThisTurn", 10, 1f, true));
+            if (dynamicStatistics) AddDynamicTraits(spell);
             spell.GetEffects().Clear();
             foreach (int amount in new[] { 3, 0 })
             {
@@ -36,12 +44,14 @@ namespace MonsterTrain2Poju.Probe
                 card.Setup(spell, save);
                 var permanent = new CardUpgradeState(); permanent.Setup(); permanent.SetAttackDamage(-3);
                 card.ApplyPermanentUpgrade(permanent, save, ignoreUpgradeAnimation: true);
-                var temporary = new CardUpgradeState(); temporary.Setup(); temporary.SetAttackDamage(2);
+                // Keep enemies alive into combat in the resource fixture, so end-turn energy is queried.
+                var temporary = new CardUpgradeState(); temporary.Setup(); temporary.SetAttackDamage(dynamicStatistics ? 0 : 2);
                 card.ApplyTemporaryUpgrade(temporary, save);
             }
             CardData steward = save.GetAllGameData().FindCardData(stewards[0].GetCardDataID())!;
             steward.GetTraits().Add(Trait("AnyHeroKilled", "ThisBattle", 1, .5f, true));
             steward.GetTraits().Add(Trait("LastAttackDamageDealt", "ThisTurn", 1, .25f, true));
+            if (dynamicStatistics) AddDynamicTraits(steward);
             foreach (CardState card in stewards)
             {
                 card.Setup(steward, save);
@@ -51,6 +61,13 @@ namespace MonsterTrain2Poju.Probe
             }
             Set(managers.GetCombatManager()!, "combatStateChanged", true);
             log.LogInfo("DAMAGE-SCALING-PREPARED replacement/additive traits in order, fractional floors, signed upgrade floors, repeated tower targets, unit multistrike and spikes; natural boss/waves retained.");
+            if (dynamicStatistics) log.LogInfo("DYNAMIC-STATISTICS-PREPARED gold differs from turn-start gold, forge=7, hoard=9, energy-per-turn=8; native turn/moon/end-energy queries execute through full battle.");
+        }
+        private static void AddDynamicTraits(CardData card)
+        {
+            foreach (var entry in new[] { ("Gold", .01f), ("TurnCount", .5f), ("MoonPhase", .5f),
+                ("ForgePoints", .25f), ("DragonsHoardAmount", .125f), ("EnergyRemainingEndOfTurn", 1f), ("PyreHeartResurrection", 1f) })
+                card.GetTraits().Add(Trait(entry.Item1, "ThisTurn", 1, entry.Item2, true));
         }
         internal static CardTraitData Trait(string type, string duration, int amount, float multiplier, bool additive)
         {
@@ -84,7 +101,8 @@ namespace MonsterTrain2Poju.Probe
             {
                 __state = null;
                 FullBattleTrace? trace = FullBattleTrace.Active;
-                if (Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") != "damage-scaling" || trace == null ||
+                string? scenario = Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS");
+                if (scenario != "damage-scaling" && scenario != "dynamic-statistics" || trace == null ||
                     AllGameManagers.Instance!.GetSaveManager().PreviewMode || !trace.PendingActionIndex.HasValue && !trace.PendingTurnIndex.HasValue) return;
                 var sample = new Sample { ActionIndex = trace.PendingActionIndex ?? -1, TurnIndex = trace.PendingTurnIndex ?? -1,
                     IncomingDamage = damageParams.damage, DamageType = damageParams.damageType.ToString() };

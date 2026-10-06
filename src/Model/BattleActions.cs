@@ -128,6 +128,8 @@ namespace MonsterTrain2Poju.Model
                 .Any(unit => unit.Id <= 0 || unit.Id >= source.Spawn.NextUnitId || unit.Size < 0))
                 return Unsupported("Invalid unit identity allocation or size.");
             CombatContext context = train.Context;
+            string? frameError = StatisticQueryFrame.ValidateDecision(source);
+            if (frameError != null) return Unsupported(frameError);
             CardToken? card = context.Cards.Hand.FirstOrDefault(item => item.InstanceId == action.CardInstanceId);
             if (card == null) return Illegal("The selected card instance is not in hand.");
             CardPlayRule? rule = source.PlayRules.Cards.FirstOrDefault(item => item.DataId == card.DataId);
@@ -158,6 +160,7 @@ namespace MonsterTrain2Poju.Model
             }
             context = context.WithOtherPiles(source.OtherPiles).WithStatistics(context.Statistics?.WithPlayedCost(card.InstanceId, rule.Cost));
             CombatContext castingContext = context;
+            context = context.WithQueryFrame(context.QueryFrame?.With(energy: source.Energy - rule.Cost));
             CardPileState[] piles = source.OtherPiles.ToArray();
             // A naturally played card remains owned in the discard buffer during queued effects.
             // Scaling queries refresh membership here, before the final destination is assigned.
@@ -168,7 +171,7 @@ namespace MonsterTrain2Poju.Model
             context = new CombatContext(new CardCycleState(context.Cards.Hand.Where(item => item.InstanceId != card.InstanceId).ToArray(),
                 context.Cards.Draw, context.Cards.Discard, context.Cards.Rng, context.Cards.DrawModifier, context.Cards.ExternalInteractions),
                 context.BattleRng, context.Gold, context.NextCardId, context.MaxHandSize, context.StatusRules, context.Statistics, context.CardInstances,
-                context.CardRegistry, context.AllScenarioBossesDead, context.NextAddedTemporaryUpgrades, context.OtherPiles);
+                context.CardRegistry, context.AllScenarioBossesDead, context.NextAddedTemporaryUpgrades, context.OtherPiles, context.QueryFrame);
             target = new RoomCombatState(target.RoomIndex, target.Deployment, target.Units, target.ExternalInteractions, context, target.Preview);
             CombatUnit[] players = target.Units.Where(unit => unit.Team == CombatTeam.Player).ToArray();
             int position = action.PlayerPosition == -1 ? players.Length : action.PlayerPosition;
@@ -273,7 +276,7 @@ namespace MonsterTrain2Poju.Model
                 terminal ? playingInstance == null ? context.CardInstances : new[] { (context.FindCard(card.InstanceId) ?? playingInstance).OnDiscard(true, rule.Cost) } :
                 context.CardInstances?.Select(instance => instance.InstanceId == card.InstanceId
                     ? instance.OnDiscard(true, rule.Cost) : instance).ToArray(), context.CardRegistry, context.AllScenarioBossesDead, context.NextAddedTemporaryUpgrades,
-                context.OtherPiles == null ? null : piles);
+                context.OtherPiles == null ? null : piles, context.QueryFrame?.With(runningCombat: !terminal));
             RoomCombatState[] rooms = train.Rooms.Select(room =>
             {
                 CombatUnit[] units = room.Units.ToArray();
