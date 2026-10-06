@@ -40,15 +40,24 @@ namespace MonsterTrain2Poju.Model
             if (initial.Team == CombatTeam.Enemy && !first.AllowEnemy || initial.Team == CombatTeam.Player && !first.AllowPlayer)
                 return Unsupported("The target team is excluded by the spell definition.");
             RoomCombatState state = source;
+            int dropPosition = source.Units.Where(unit => unit.Team == initial.Team).TakeWhile(unit => unit.Id != initial.Id).Count();
+            int lastTargetId = targetId;
             foreach (CardActionEffect effect in effects)
             {
-                CombatUnit? target = state.Units.FirstOrDefault(unit => unit.Id == targetId);
+                // Repeated drop effects reselect the original spawn point after rearrangement.
+                CombatUnit? target = effect.Target == "DropTargetCharacter" ? state.Units.Where(unit => unit.Team == initial.Team)
+                    .ElementAtOrDefault(dropPosition) : state.Units.FirstOrDefault(unit => unit.Id == lastTargetId);
+                if (effect.Target == "DropTargetCharacter") lastTargetId = target?.Id ?? 0;
                 // LastTargetedCharacters drops killed units instead of selecting another front unit.
                 if (target == null || target.Team == CombatTeam.Enemy && !effect.AllowEnemy ||
-                    target.Team == CombatTeam.Player && !effect.AllowPlayer) continue;
+                    target.Team == CombatTeam.Player && !effect.AllowPlayer)
+                {
+                    if (effect.Target == "DropTargetCharacter") lastTargetId = 0;
+                    continue;
+                }
                 if (effect.Type == "Damage")
                 {
-                    RoomCombatResult damage = RoomCombatModel.ApplyCardDamage(state, targetId, effect.Value, sourceCardId);
+                    RoomCombatResult damage = RoomCombatModel.ApplyCardDamage(state, target.Id, effect.Value, sourceCardId);
                     if (!damage.Supported || damage.Outcome == RoomOutcome.BattleWon || damage.Outcome == RoomOutcome.PlayerDefeated) return damage;
                     state = damage.State!;
                 }
@@ -64,11 +73,11 @@ namespace MonsterTrain2Poju.Model
                     CombatUnit modified = Copy(target, target.Health, target.Statuses.Where(status => status.Id != added.Id)
                         .Concat(new[] { (existing ?? added).WithStacks(count) }).ToArray());
                     state = new RoomCombatState(state.RoomIndex, state.Deployment,
-                        state.Units.Select(unit => unit.Id == targetId ? modified : unit).ToArray(), state.ExternalInteractions, context, state.Preview);
+                        state.Units.Select(unit => unit.Id == target.Id ? modified : unit).ToArray(), state.ExternalInteractions, context, state.Preview);
                 }
                 else if (effect.Type == "UnitUpgrade" || effect.Type == "RemoveUnitUpgrade")
                 {
-                    RoomCombatResult upgraded = UnitModifierModel.Apply(state, targetId, effect.Upgrade!, effect.Lifetime,
+                    RoomCombatResult upgraded = UnitModifierModel.Apply(state, target.Id, effect.Upgrade!, effect.Lifetime,
                         effect.Type == "RemoveUnitUpgrade", target.Team == CombatTeam.Player ? playerCapacity : enemyCapacity);
                     if (!upgraded.Supported || upgraded.Outcome == RoomOutcome.BattleWon || upgraded.Outcome == RoomOutcome.PlayerDefeated) return upgraded;
                     state = upgraded.State!;

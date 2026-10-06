@@ -54,6 +54,14 @@ internal static class CardSpellChecks
         RoomCombatResult stationary = CardSpellModel.Apply(new RoomCombatState(0, false, [front, immobile], [], context), rally, 3);
         Require(stationary.Supported && stationary.State!.Units[0].Id == 2 && stationary.State.Units[1].Attack == 10,
             "Immobile cancelled the spell's later status effect.");
+        var retargetEffects = rally.Concat([new CardActionEffect("Damage", "DropTargetCharacter", 5, false, true, []),
+            new CardActionEffect("AddStatus", "LastTargetedCharacters", 0, false, true, [pyregel])]).ToArray();
+        var retarget = CardSpellModel.Apply(room, retargetEffects, 3);
+        Require(retarget.Supported && retarget.State!.Units.Single(unit => unit.Id == 3).Health == 20 &&
+            retarget.State.Units.Single(unit => unit.Id == 2).Health == 15 &&
+            retarget.State.Units.Single(unit => unit.Id == 2).Statuses.Any(status => status.Id == "pyregel") &&
+            !retarget.State.Units.Single(unit => unit.Id == 3).Statuses.Any(status => status.Id == "pyregel"),
+            "A repeated drop effect did not reselect the original spawn point or update its last target.");
         Require(!CardSpellModel.Apply(room, [damage[0], new("Unknown", "LastTargetedCharacters", 0, true, true, [])], 1).Supported,
             "A partially implemented spell returned a search state.");
         Parallel.For(0, 32, _ => Require(JsonSerializer.Serialize(CardSpellModel.Apply(room, rally, 3).State) ==
