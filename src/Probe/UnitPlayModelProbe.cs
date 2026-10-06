@@ -25,6 +25,7 @@ namespace MonsterTrain2Poju.Probe
             new Dictionary<CharacterState, int>(ReferenceComparer<CharacterState>.Instance);
         private int nextCardId = 1;
         internal int NextCardId => nextCardId;
+        internal CardState[] KnownCards => new List<CardState>(cardIds.Keys).ToArray();
         private int nextUnitId = 1;
         private CombatProjection? before;
         private CombatProjection? predicted;

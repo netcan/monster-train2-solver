@@ -10,9 +10,12 @@ namespace MonsterTrain2Poju.Probe
     internal static class CardModifierProbe
     {
         internal static CardInstanceState[] Capture(CardManager cards, Func<CardState, int> cardId)
+            => Capture(cards.GetAllCards(new List<CardState>()), cardId);
+
+        internal static CardInstanceState[] Capture(IEnumerable<CardState> cards, Func<CardState, int> cardId)
         {
             AllGameManagers managers = AllGameManagers.Instance!;
-            return cards.GetAllCards(new List<CardState>()).Select(card =>
+            return cards.Select(card =>
             {
                 var interactions = new List<string>();
                 if (card.IsPurified) interactions.Add("Purified card");

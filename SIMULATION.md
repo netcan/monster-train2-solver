@@ -26,6 +26,7 @@ are copied immutable values; independent child states can run on worker threads.
 | Gold rewards | `GoldRewardModel` | 2,200 native calculations, reward minimums, integer/float boundaries, ties to even and preview exclusion |
 | Card statistics and preview | `BattleStatistics` and `BattlePreviewModel` | Native per-card/Any counters, turn rollover, spawn subtypes, death/exhaust attribution and preview damage statistic |
 | Card instance modifiers | `CardModifierModel` | Permanent/temporary ordered numeric upgrades, unit starting statuses, discard removal, play history and 256 native scalar calculations |
+| Retained card references | `CombatContext.CardRegistry` | Observed card identities survive pile clearing; detached spawner upgrades/removal preserve ownership and parent isolation |
 | Runtime unit upgrades | `UnitModifierModel` | Native permanent, battle and unit-death lifetimes, duplicate removal, unique upgrades, restricted size, unhealed health and lethal max-health loss |
 | Hand upgrade spells | `HandUpgradeModel` | Native targeted and targetless sequences, current-hand membership, permanent/temporary groups, uniqueness and paid-card exclusion |
 | Basic healing | `HealingModel` and `CardSpellModel` | Native targeted spells, modifier group clamps, maximum health, multiplier/immunity, regen and lifesteal; independent healability checks |
@@ -336,6 +337,13 @@ deck: its played history remains, while its missing played-statistic entry canno
 increment; discard creates a new entry for the restored card. This generated
 terminal branch has pure checks and native source evidence, but no dedicated
 native fixture yet.
+
+Schema 13 also captures an identity registry of all cards observed in the battle.
+It is separate from `CardInstances`, which describes current native ownership.
+The registry retains the exact modifier and play state of cards removed by
+`ClearCards`; living units can still reference and upgrade their spawner cards.
+Owned-card updates and newly generated cards update the registry, while lookup
+and upgrade of a detached spawner never add it to a pile or ownership list.
 
 Run the saved native oracles without the game:
 

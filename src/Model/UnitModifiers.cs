@@ -115,7 +115,7 @@ namespace MonsterTrain2Poju.Model
             target = state.Units.FirstOrDefault(unit => unit.Id == targetId);
             if (target?.SpawnerCardId > 0 && (remove || target.Modifiers!.SpawnerMatchesDefinition && lifetime != "TemporaryUntilUnitDeath"))
             {
-                CardInstanceState? card = state.Context!.CardInstances!.FirstOrDefault(item => item.InstanceId == target.SpawnerCardId);
+                CardInstanceState? card = state.Context!.FindCard(target.SpawnerCardId);
                 if (card == null) return Unsupported("Missing upgraded unit's spawner card.");
                 CardModifiers permanent = card.Permanent, temporary = card.Temporary;
                 if (remove) temporary = new CardModifiers(temporary.Offsets,
@@ -123,7 +123,7 @@ namespace MonsterTrain2Poju.Model
                 else if (lifetime == "Permanent") permanent = Add(permanent, upgrade);
                 else temporary = Add(temporary, upgrade);
                 var changed = new CardInstanceState(card.InstanceId, card.DataId, permanent, temporary, card.LastPlayedCost, card.LastForgedAmount, card.PlayCount, card.ExternalInteractions);
-                CombatContext context = state.Context.WithCardInstances(state.Context.CardInstances.Select(item => item.InstanceId == card.InstanceId ? changed : item).ToArray());
+                CombatContext context = state.Context.WithCard(changed);
                 state = new RoomCombatState(state.RoomIndex, state.Deployment, state.Units, state.ExternalInteractions, context, state.Preview);
             }
             return Match(state);

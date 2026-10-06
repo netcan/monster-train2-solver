@@ -473,7 +473,7 @@ namespace MonsterTrain2Poju.Model
                     Array.Empty<CardToken>(), context.Cards.Rng, context.Cards.DrawModifier,
                     context.Cards.ExternalInteractions), context.BattleRng, context.Gold,
                     context.NextCardId, context.MaxHandSize, context.StatusRules, context.Statistics,
-                    context.CardInstances == null ? null : Array.Empty<CardInstanceState>());
+                    context.CardInstances == null ? null : Array.Empty<CardInstanceState>(), context.CardRegistry);
             }
 
             private void PostCombat()
@@ -541,7 +541,7 @@ namespace MonsterTrain2Poju.Model
                                 if (source.Preview) continue;
                                 int reward = GoldRewardModel.Adjust(effect.Value);
                                 context = new CombatContext(context!.Cards, context.BattleRng,
-                                    Math.Max(0, checked(context.Gold + reward)), context.NextCardId, context.MaxHandSize, context.StatusRules, context.Statistics, context.CardInstances);
+                                    Math.Max(0, checked(context.Gold + reward)), context.NextCardId, context.MaxHandSize, context.StatusRules, context.Statistics, context.CardInstances, context.CardRegistry);
                                 Emit("Gold", unit, unit, reward);
                             }
                             else if (effect.Type == "CardEffectAddBattleCard") AddCards(unit, effect);
@@ -583,7 +583,7 @@ namespace MonsterTrain2Poju.Model
                     nextId, current.MaxHandSize, current.StatusRules,
                     current.Statistics?.TrackCards(hand.Concat(draw).Concat(discard).Select(card => card.InstanceId)),
                     current.CardInstances?.Concat(hand.Concat(draw).Concat(discard).Where(card => card.InstanceId >= current.NextCardId)
-                        .Select(card => CardInstanceState.Empty(card.InstanceId, card.DataId))).ToArray());
+                        .Select(card => CardInstanceState.Empty(card.InstanceId, card.DataId))).ToArray(), current.CardRegistry);
             }
 
             private void Trigger(WorkingUnit unit, string id, int count)

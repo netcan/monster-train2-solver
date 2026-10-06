@@ -48,6 +48,11 @@ internal static class TerminalSpellChecks
             settled.Statistics.PlayedCosts.Count == 0 && settled.Statistics.CardsPlayedThisTurn.Contains(instance.InstanceId) &&
             actual.Energy == before.Energy - rule.Cost,
             "The settled terminal oracle lacks cast/discard callbacks, restored card state or paid energy.");
+        if (old.CardRegistry != null)
+            Require(settled.CardRegistry != null && old.CardRegistry.All(card => settled.CardRegistry.Any(next => next.InstanceId == card.InstanceId)) &&
+                settled.CardRegistry.Single(card => card.InstanceId == instance.InstanceId).PlayCount == instance.PlayCount + 1 &&
+                settled.CardRegistry.Count > settled.CardInstances!.Count,
+                "The settled terminal oracle lost unowned card references or their completed discard state.");
         Console.WriteLine("NATIVE-TERMINAL-SPELL-COVERAGE PASS: native boss kill, completed callbacks, paid energy, cleared cost and restored resolving card.");
     }
     private static void Require(bool condition, string message)

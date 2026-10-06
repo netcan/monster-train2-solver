@@ -30,6 +30,19 @@ internal static class UnitModifierChecks
         var permanent = UnitModifierModel.Apply(room, 1, upgrade, "Permanent");
         Require(permanent.Supported && permanent.State!.Context!.CardInstances!.Single().Permanent.Upgrades.Count == 1,
             "Permanent unit upgrade did not update the permanent source group.");
+        var detachedContext = new CombatContext(context.Cards, rng, 0, 9, 10,
+            statistics: context.Statistics, cardInstances: [], cardRegistry: context.CardInstances);
+        var detached = new RoomCombatState(0, false, [unit], [], detachedContext);
+        string detachedParent = JsonSerializer.Serialize(detached);
+        var retained = UnitModifierModel.Apply(detached, 1, upgrade, "TemporaryUntilEndOfBattle");
+        Require(retained.Supported && retained.State!.Context!.CardInstances!.Count == 0 &&
+            retained.State.Context.CardRegistry!.Single().Temporary.Upgrades.Count == 1 &&
+            JsonSerializer.Serialize(detached) == detachedParent,
+            "An unowned spawner reference was lost, made owned or mutated in the parent.");
+        var retainedRemoved = UnitModifierModel.Apply(retained.State!, 1, upgrade, "", true);
+        Require(retainedRemoved.Supported && retainedRemoved.State!.Context!.CardInstances!.Count == 0 &&
+            retainedRemoved.State.Context.CardRegistry!.Single().Temporary.Upgrades.Count == 0,
+            "An unowned spawner reference did not receive upgrade removal.");
         var unique = new CardUpgradeModifier("unique", "unique", new(damage: 2, health: 3), [], false, true, true, 0, 0, []);
         var once = UnitModifierModel.Apply(room, 1, unique, "TemporaryUntilUnitDeath");
         var twice = UnitModifierModel.Apply(once.State!, 1, unique, "TemporaryUntilUnitDeath");

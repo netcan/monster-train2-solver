@@ -15,15 +15,27 @@ namespace MonsterTrain2Poju.Model
         public IReadOnlyList<CombatStatus> StatusRules { get; }
         public BattleStatistics? Statistics { get; }
         public IReadOnlyList<CardInstanceState>? CardInstances { get; }
+        // Identity store for observed cards, including references retained after ClearCards.
+        // Membership here does not make a card owned or playable.
+        public IReadOnlyList<CardInstanceState>? CardRegistry { get; }
         public CombatContext(CardCycleState cards, UnityRng battleRng, int gold, int nextCardId, int maxHandSize,
-            IReadOnlyList<CombatStatus>? statusRules = null, BattleStatistics? statistics = null, IReadOnlyList<CardInstanceState>? cardInstances = null)
+            IReadOnlyList<CombatStatus>? statusRules = null, BattleStatistics? statistics = null, IReadOnlyList<CardInstanceState>? cardInstances = null,
+            IReadOnlyList<CardInstanceState>? cardRegistry = null)
         { Cards = cards; BattleRng = battleRng; Gold = gold; NextCardId = nextCardId; MaxHandSize = maxHandSize;
             StatusRules = Array.AsReadOnly((statusRules ?? Array.Empty<CombatStatus>()).ToArray()); Statistics = statistics;
-            CardInstances = cardInstances == null ? null : Array.AsReadOnly(cardInstances.OrderBy(card => card.InstanceId).ToArray()); }
+            CardInstances = cardInstances == null ? null : Array.AsReadOnly(cardInstances.OrderBy(card => card.InstanceId).ToArray());
+            CardRegistry = cardRegistry == null ? null : Array.AsReadOnly(cardRegistry.Concat(cardInstances ?? Array.Empty<CardInstanceState>())
+                .GroupBy(card => card.InstanceId).Select(group => group.Last()).OrderBy(card => card.InstanceId).ToArray()); }
         internal CombatContext WithStatistics(BattleStatistics? statistics) => new CombatContext(Cards, BattleRng,
-            Gold, NextCardId, MaxHandSize, StatusRules, statistics, CardInstances);
+            Gold, NextCardId, MaxHandSize, StatusRules, statistics, CardInstances, CardRegistry);
         internal CombatContext WithCardInstances(IReadOnlyList<CardInstanceState>? instances) => new CombatContext(Cards, BattleRng,
-            Gold, NextCardId, MaxHandSize, StatusRules, Statistics, instances);
+            Gold, NextCardId, MaxHandSize, StatusRules, Statistics, instances, CardRegistry);
+        internal CardInstanceState? FindCard(int id) => CardInstances?.FirstOrDefault(card => card.InstanceId == id)
+            ?? CardRegistry?.FirstOrDefault(card => card.InstanceId == id);
+        internal CombatContext WithCard(CardInstanceState changed) => new CombatContext(Cards, BattleRng,
+            Gold, NextCardId, MaxHandSize, StatusRules, Statistics,
+            CardInstances?.Select(card => card.InstanceId == changed.InstanceId ? changed : card).ToArray(),
+            CardRegistry?.Select(card => card.InstanceId == changed.InstanceId ? changed : card).ToArray());
     }
 
     public sealed class CombatEffect
