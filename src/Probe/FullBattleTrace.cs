@@ -80,6 +80,8 @@ namespace MonsterTrain2Poju.Probe
         internal BattleTurnState CaptureDecision() => turns.Capture();
         internal BattlePlayRules CapturePlayRules(EnemySpawnState spawn) => actions.CaptureRules(spawn);
         internal int CardId(CardState card) => projection.CaptureCards(new List<CardState> { card })[0].InstanceId;
+        internal int? PendingActionIndex => actions.Records.LastOrDefault(record => record.Actual == null)?.Index;
+        internal int? PendingTurnIndex => turns.Records.LastOrDefault(record => record.Actual == null)?.Index;
         internal void BeginCardPlay(PlayCardAction action) => actions.Begin(action);
         internal void CompleteCardPlay() => actions.Complete();
 
@@ -317,6 +319,7 @@ namespace MonsterTrain2Poju.Probe
                 Turns = turns.Records,
                 Actions = actions.Records,
                 CrossRoomTargets = CrossRoomSpellScenario.Targets,
+                NumericRanges = NumericRangeScenario.Samples,
                 UiRngIsolation = UiRngIsolation.Records,
                 Checkpoints = checkpoints
             }, Formatting.Indented));

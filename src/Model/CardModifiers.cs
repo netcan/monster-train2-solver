@@ -149,12 +149,14 @@ namespace MonsterTrain2Poju.Model
                     unit.SpawnerCardId, Math.Max(1, UpgradedStat(unit.Size, "Size", false, modifiers)), unit.StatusImmunities, unit.Subtypes, unitModifiers);
             }
             CardActionEffect[] effects = rule.Effects.Select(effect => new CardActionEffect(effect.Type, effect.Target,
-                effect.Type == "Damage" || effect.Type == "Heal" ? UpgradedStat(UpgradedStat(effect.Value,
-                    effect.Type == "Damage" ? "Damage" : "Heal", true, instance.Permanent),
-                    effect.Type == "Damage" ? "Damage" : "Heal", true, instance.Temporary) : effect.Value,
-                effect.AllowEnemy, effect.AllowPlayer, effect.Statuses, effect.Upgrade, effect.Lifetime, effect.Tests)).ToArray();
+                ResolveValue(effect, effect.Value), effect.AllowEnemy, effect.AllowPlayer, effect.Statuses, effect.Upgrade, effect.Lifetime, effect.Tests,
+                effect.Range == null ? null : new CardEffectRange(ResolveValue(effect, effect.Range.Min),
+                    ResolveValue(effect, effect.Range.Max), effect.Range.Multiplier))).ToArray();
             return new CardPlayRule(rule.DataId, rule.AssetKey, UpgradedStat(rule.Cost, "Cost", true, modifiers), rule.Effect,
                 rule.Destination, unit, interactions.Distinct().OrderBy(value => value, StringComparer.Ordinal).ToArray(), effects, rule.UpgradeInteractions);
+
+            int ResolveValue(CardActionEffect effect, int value) => effect.Type == "Damage" || effect.Type == "Heal"
+                ? UpgradedStat(UpgradedStat(value, effect.Type, true, instance.Permanent), effect.Type, true, instance.Temporary) : value;
         }
     }
 }

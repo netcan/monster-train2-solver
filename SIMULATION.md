@@ -18,6 +18,7 @@ are copied immutable values; independent child states can run on worker threads.
 | Room spell targeting and effect tests | `CardTargetModel` and `CardSpellModel` | Native multi-unit damage/upgrades/healing, front/back/weakest, sticky last groups and strongest-last; empty targets, mandatory casting checks and runtime cancellation |
 | Random room targets | `CardTargetModel` and `UnityRng` | Native enemy/both-team/friendly selection, zero heals, empty follow-ups, last-target identity and complete Battle RNG states |
 | Random status application | `CardSpellModel` | Native effect-wide status pools, per-target chances in reverse order, immunity, empty pools and post-kill RNG |
+| Random spell quantities | `CardEffectRange` and `CardSpellModel` | Native per-effect quantities, damage casting/runtime test draws, upgraded endpoints, status pool/chance ordering and complete RNG state, with explicit UI RNG isolation |
 | Train spell execution | `CardSpellModel` | A single effect chain carries all rooms, shared card/statistic/RNG state and global target references; dead-unit movement and spawner routing are updated across rooms |
 | Cross-room targeting | `CardTargetModel` and `CardSpellModel` | Native tower/front/above/global HP/random selections, exact live target IDs, deferred death positions and status/death focus changes |
 | Integer RNG and shuffle | `UnityRng` | 768 native integer draws, seed initialization and complete four-word states |
@@ -71,6 +72,50 @@ restores all four words and the seed of both streams, and returns an original
 boolean result. This fixture tests successful queries; no forced exception was
 introduced. Auxiliary target/UI draws are excluded from independent gameplay
 state; legacy snapshots retain their recorded test stream for compatibility.
+
+`CardEffectRange` captures raw integer bounds and a single-precision multiplier.
+Damage and healing upgrade each endpoint independently, with the permanent and
+temporary groups' separate floors, before sampling. The result is the native
+float product rounded down; equal bounds consume no RNG, while reversed bounds
+retain Unity's descending convention. Nonfinite multipliers and out-of-domain
+float-to-int conversions are rejected explicitly.
+
+Ranged damage consumes a quantity draw during each enabled initial casting test,
+another during its runtime test, and another when it applies. Runtime tests draw
+before a post-boss gate or missing-drop-target failure. The initial casting test
+returns its child RNG without mutating the parent, and the full card action passes
+that child RNG into execution. Other supported quantity effects sample once after
+live target selection, sharing the result across their complete collection. Status
+effects choose the shared pool entry before sampling their shared chance, then
+draw per-target chances in reverse target order; a sampled zero skips those chance
+draws. Valid empty collections still sample quantities. Signed attack/health
+effects retain their native no-op or spawner-offset behavior, negative healing
+does nothing, and negative applied damage is clamped before target defenses.
+
+`results/full-battle-numeric-ranges-ui-isolated.json.gz` preserves the unaltered
+81,893,428-byte native trace from an explicitly UI-isolated experiment. All 15
+plays, five EndTurns, 40 room stages, nine card cycles, nine train phases and seven
+spawns match. It contains 320 native quantity samples, including 77 equal bounds,
+78 signed values, 302 fractional multipliers and 266 upgraded endpoints. The
+independent policy reaches victory at Pyre 80, including a mid-battle suffix and
+16 parallel full simulations.
+
+`results/full-battle-numeric-ranges-lethal-ui-isolated.json.gz` preserves the
+unaltered 67,858,469-byte native trace with a global boss-killing ranged effect.
+All 12 plays, four EndTurns, 30 room stages, eight card cycles, eight train phases
+and seven spawns match. Its 400 quantity samples include 14 applications after a
+global lethal damage effect; two occur after the boss's death, covering empty
+status collections and retained-spawner health offsets. The same independent/mid-battle/parallel
+checks reach native victory at Pyre 80. Both original user profiles remain
+unchanged, and both native runs have zero capture failures, differences,
+unsupported transitions and pending records.
+
+The full battle model rejects ranged-damage definitions when `UiRngIsolated` is
+false: the captured logical decision state cannot reproduce vanilla hand animation
+and frame-dependent highlight RNG consumption. These fixtures prove the explicit
+solver environment with the UI guard, rather than complete vanilla UI timing.
+The suite now contains 24 full battle fixtures; these controlled starting-battle
+variations do not establish complete coverage of the game's other encounters.
 
 `results/full-battle-steward-once.json` records a seven-decision-turn natural
 `Level1BattleJunker` battle, starting with one Steward play. The native game won

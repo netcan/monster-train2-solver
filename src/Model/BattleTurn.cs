@@ -94,6 +94,8 @@ namespace MonsterTrain2Poju.Model
             BattleRngStream? spawningStream = source.RngStreams.FirstOrDefault(stream => stream.Name == "Spawning");
             if (spawningStream == null) return Unsupported("Missing spawning seed.");
             EnemySpawnState spawn = source.Spawn;
+            string? uiRangeError = CardSpellModel.UnisolatedUiRangeReason(source);
+            if (uiRangeError != null) return Unsupported(uiRangeError);
             CardPileState[] otherPiles = source.OtherPiles.ToArray();
             TrainCombatState train = spawn.Train;
             CombatContext context = train.Context!;

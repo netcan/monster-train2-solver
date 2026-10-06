@@ -26,10 +26,11 @@ namespace MonsterTrain2Poju.Model
         public CardUpgradeModifier? Upgrade { get; }
         public string Lifetime { get; }
         public CardEffectTests? Tests { get; }
+        public CardEffectRange? Range { get; }
         public CardActionEffect(string type, string target, int value, bool allowEnemy, bool allowPlayer, IReadOnlyList<CombatStatus> statuses,
-            CardUpgradeModifier? upgrade = null, string lifetime = "", CardEffectTests? tests = null)
+            CardUpgradeModifier? upgrade = null, string lifetime = "", CardEffectTests? tests = null, CardEffectRange? range = null)
         { Type = type; Target = target; Value = value; AllowEnemy = allowEnemy; AllowPlayer = allowPlayer; Statuses = Array.AsReadOnly(statuses.ToArray());
-            Upgrade = upgrade; Lifetime = lifetime; Tests = tests; }
+            Upgrade = upgrade; Lifetime = lifetime; Tests = tests; Range = range; }
     }
     public sealed class RoomPlayRule
     {
@@ -122,6 +123,8 @@ namespace MonsterTrain2Poju.Model
             CardToken? card = context.Cards.Hand.FirstOrDefault(item => item.InstanceId == action.CardInstanceId);
             if (card == null) return Illegal("The selected card instance is not in hand.");
             CardPlayRule? rule = source.PlayRules.Cards.FirstOrDefault(item => item.DataId == card.DataId);
+            string? uiRangeError = CardSpellModel.UnisolatedUiRangeReason(source);
+            if (uiRangeError != null) return Unsupported(uiRangeError);
             if (rule == null) return Unsupported("Missing play definition for " + card.DataId);
             CardInstanceState? playingInstance = context.CardInstances?.FirstOrDefault(item => item.InstanceId == card.InstanceId);
             if (context.CardInstances != null)
@@ -198,6 +201,7 @@ namespace MonsterTrain2Poju.Model
                 SpellCastCheck cast = CardSpellModel.TestPlay(spellInput, action.RoomIndex, rule.Effects, action.TargetUnitId, source.PlayRules);
                 if (!cast.Supported) return Unsupported(cast.UnsupportedReason!);
                 if (!cast.CanPlay) return Illegal("Every effect failed its cast test or a required effect failed.");
+                spellInput = CardSpellModel.WithContext(spellInput, context.WithBattleRng(cast.BattleRngAfterTests!.Value));
                 TrainSpellResult result = CardSpellModel.Apply(spellInput, action.RoomIndex, rule.Effects, action.TargetUnitId,
                     card.InstanceId, source.PlayRules);
                 if (!result.Supported) return Unsupported(result.UnsupportedReason!);

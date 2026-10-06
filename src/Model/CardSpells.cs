@@ -9,8 +9,9 @@ namespace MonsterTrain2Poju.Model
         public bool CanPlay { get; }
         public string? UnsupportedReason { get; }
         public bool Supported => UnsupportedReason == null;
-        internal SpellCastCheck(bool canPlay, string? error = null)
-        { CanPlay = canPlay; UnsupportedReason = error; }
+        public UnityRng? BattleRngAfterTests { get; }
+        internal SpellCastCheck(bool canPlay, string? error = null, UnityRng? battleRngAfterTests = null)
+        { CanPlay = canPlay; UnsupportedReason = error; BattleRngAfterTests = battleRngAfterTests; }
     }
 
     public sealed class SpellTargetCollection
@@ -37,6 +38,9 @@ namespace MonsterTrain2Poju.Model
 
     public static class CardSpellModel
     {
+        internal static string? UnisolatedUiRangeReason(BattleTurnState state) => !state.UiRngIsolated &&
+            state.PlayRules?.Cards.Any(card => card.Effects.Any(effect => effect.Type == "Damage" && effect.Range != null && effect.Tests?.ShouldTest != false)) == true
+                ? "Vanilla UI ranged-damage tests consume Battle RNG at uncaptured frame boundaries; isolate UI RNG before battle simulation." : null;
         public static bool RequiresUnitTarget(IReadOnlyList<CardActionEffect> effects) =>
             effects.Any(effect => effect.Type != "HandUpgrade" && effect.Target == "DropTargetCharacter");
 
@@ -59,6 +63,7 @@ namespace MonsterTrain2Poju.Model
             int dropPosition = DropPosition(room, initial);
             IReadOnlyList<int> last = Array.Empty<int>();
             bool passed = false;
+            UnityRng testingRng = source.Context!.BattleRng;
             for (int index = 0; index < effects.Count; index++)
             {
                 CardActionEffect effect = effects[index];
@@ -68,11 +73,13 @@ namespace MonsterTrain2Poju.Model
                 Remember(effect, index, targets, ref last);
                 string? targetError = AttackTestError(source, roomIndex, effect);
                 if (targetError != null) return new SpellCastCheck(false, targetError);
-                bool valid = PassesTest(effect, TestCount(source, effect, targets), source.Context!.AllScenarioBossesDead == true);
-                if (!valid && effect.Tests?.FailToCast == true) return new SpellCastCheck(false);
+                CardActionEffect tested = effect;
+                if (effect.Type == "Damage") tested = Sample(effect, ref testingRng);
+                bool valid = PassesTest(tested, TestCount(source, effect, targets), source.Context!.AllScenarioBossesDead == true);
+                if (!valid && effect.Tests?.FailToCast == true) return new SpellCastCheck(false, battleRngAfterTests: testingRng);
                 passed |= valid;
             }
-            return new SpellCastCheck(passed);
+            return new SpellCastCheck(passed, battleRngAfterTests: testingRng);
         }
 
         public static RoomCombatResult Apply(RoomCombatState source, IReadOnlyList<CardActionEffect> effects, int targetId, int sourceCardId = 0,
@@ -128,7 +135,14 @@ namespace MonsterTrain2Poju.Model
                 // Runtime tests every effect, even if its initial casting test was disabled.
                 string? targetError = AttackTestError(state, collectionRoom, effect);
                 if (targetError != null) return UnsupportedTrain(targetError);
-                if (!PassesTest(effect, TestCount(state, effect, targets), bossDead))
+                CardActionEffect tested = effect;
+                if (effect.Type == "Damage")
+                {
+                    UnityRng testingRng = state.Context!.BattleRng;
+                    tested = Sample(effect, ref testingRng);
+                    state = WithContext(state, state.Context.WithBattleRng(testingRng));
+                }
+                if (!PassesTest(tested, TestCount(state, effect, targets), bossDead))
                 {
                     if (index == 0 && CardTargetModel.IsRandom(effect.Target) && targets.UnitIds.Count > 0 && effect.Tests?.CancelSubsequent != true &&
                         effects.Skip(1).Any(next => next.Target.Contains("LastTargeted")))
@@ -149,8 +163,11 @@ namespace MonsterTrain2Poju.Model
                     RngDraw chosen = state.Context!.BattleRng.Range(0, effect.Statuses.Count);
                     state = WithContext(state, state.Context.WithBattleRng(chosen.State));
                     effect = new CardActionEffect(effect.Type, effect.Target, effect.Value, effect.AllowEnemy, effect.AllowPlayer,
-                        new[] { effect.Statuses[chosen.Value] }, effect.Upgrade, effect.Lifetime, effect.Tests);
+                        new[] { effect.Statuses[chosen.Value] }, effect.Upgrade, effect.Lifetime, effect.Tests, effect.Range);
                 }
+                UnityRng effectRng = state.Context!.BattleRng;
+                effect = Sample(effect, ref effectRng);
+                state = WithContext(state, state.Context.WithBattleRng(effectRng));
                 if (effect.Type == "HandUpgrade")
                 {
                     RoomCombatResult upgraded = HandUpgradeModel.Apply(state.Rooms.Single(item => item.RoomIndex == roomIndex),
@@ -178,7 +195,7 @@ namespace MonsterTrain2Poju.Model
                     if (!applied.Supported) return UnsupportedTrain(applied.UnsupportedReason!);
                     state = ReplaceRoom(state, applied.State!);
                     events.AddRange(applied.Events);
-                    if ((effect.Type == "Heal" || effect.Type == "UnitUpgrade") && target.Triggers.Any(trigger => trigger.Kind == "OnHeal" &&
+                    if ((effect.Type == "Heal" && effect.Value >= 0 || effect.Type == "UnitUpgrade") && target.Triggers.Any(trigger => trigger.Kind == "OnHeal" &&
                         (!trigger.Once || !trigger.HasTriggered) && (!targetRoom!.Deployment || trigger.SkipDuringDeployment != true) &&
                         (trigger.IgnoreSilence || target.Statuses.All(status => status.Id != "silenced"))))
                         focusedRoom = null; // Trigger notification suppression/focus is not captured yet.
@@ -187,7 +204,7 @@ namespace MonsterTrain2Poju.Model
                     CombatUnit? afterTarget = applied.State!.Units.FirstOrDefault(unit => unit.Id == id);
                     bool upgradeApplied = effect.Type == "UnitUpgrade" && (afterTarget == null ||
                         afterTarget.Modifiers!.Upgrades.Count > target.Modifiers!.Upgrades.Count);
-                    if (effect.Type == "Heal" && target.Modifiers?.CanBeHealed == true || upgradeApplied) DrainDeaths();
+                    if (effect.Type == "Heal" && effect.Value >= 0 && target.Modifiers?.CanBeHealed == true || upgradeApplied) DrainDeaths();
                     if (effect.Type == "BuffHealth" && effect.Value > 0 && target.Modifiers?.CanBeHealed == true &&
                         HealingModel.ModifiedAmount(effect.Value, target.Statuses, fromMaxHealthChange: true) >= 0) DrainDeaths();
                     if (effect.Type == "DebuffHealth" && afterTarget == null)
@@ -216,6 +233,7 @@ namespace MonsterTrain2Poju.Model
 
             void FocusDamageStatuses(CombatUnit target, RoomCombatState room, int damage)
             {
+                damage = Math.Max(0, damage);
                 foreach (string id in new[] { "pyregel", "damage shield", "armor", "fragile" })
                 {
                     CombatStatus? status = target.Statuses.FirstOrDefault(item => item.Id == id);
@@ -294,6 +312,13 @@ namespace MonsterTrain2Poju.Model
                 return "Mandatory last-target team tests after random selection depend on the auxiliary test stream.";
             foreach (CardActionEffect effect in effects)
             {
+                if (effect.Range != null)
+                {
+                    if (!new[] { "Damage", "Heal", "AddStatus", "BuffAttack", "DebuffAttack", "BuffHealth", "DebuffHealth" }.Contains(effect.Type))
+                        return "Unmodeled range consumer " + effect.Type;
+                    string? rangeError = effect.Range.Validate();
+                    if (rangeError != null) return rangeError;
+                }
                 if (effect.Type == "HandUpgrade")
                 {
                     if (effect.Upgrade == null) return "Missing hand upgrade definition.";
@@ -305,7 +330,7 @@ namespace MonsterTrain2Poju.Model
                     return "Unimplemented spell effect " + effect.Type;
                 if ((effect.Type == "UnitUpgrade" || effect.Type == "RemoveUnitUpgrade") && effect.Upgrade == null)
                     return "Missing unit upgrade definition.";
-                if (effect.Value < 0 && !AttackChange(effect) && effect.Type != "BuffHealth" && effect.Type != "DebuffHealth" ||
+                if (effect.Value < 0 && !AttackChange(effect) && !new[] { "Damage", "Heal", "AddStatus", "BuffHealth", "DebuffHealth" }.Contains(effect.Type) ||
                     effect.Type == "FloorRearrange" && effect.Value > 1) return "Invalid spell effect value.";
                 if (effect.Type == "BuffHealth" && effect.Lifetime != "" && effect.Lifetime != "TemporaryUntilEndOfBattle" &&
                     effect.Lifetime != "TemporaryUntilUnitDeath") return "Unmodeled maximum-health buff lifetime.";
@@ -341,7 +366,8 @@ namespace MonsterTrain2Poju.Model
             if (bossDead && !(effect.Tests?.CanPlayAfterBossDead ?? effect.Type != "HandUpgrade")) return false;
             switch (effect.Type)
             {
-                case "Damage": return effect.Value >= 0 && (effect.Target != "DropTargetCharacter" || count > 0);
+                case "Damage": return effect.Value >= 0 && (effect.Range == null || effect.Range.Max > 0) &&
+                    (effect.Target != "DropTargetCharacter" || count > 0);
                 case "Heal": return effect.Target == "Room" || count > 0;
                 case "AddStatus": return effect.Tests?.StrictTargets != true && effect.Target != "DropTargetCharacter" || count > 0;
                 case "FloorRearrange":
@@ -353,6 +379,13 @@ namespace MonsterTrain2Poju.Model
         }
 
         private static bool AttackChange(CardActionEffect effect) => effect.Type == "BuffAttack" || effect.Type == "DebuffAttack";
+        private static CardActionEffect Sample(CardActionEffect effect, ref UnityRng rng)
+        {
+            if (effect.Range == null) return effect;
+            RngDraw draw = effect.Range.Sample(rng); rng = draw.State;
+            return new CardActionEffect(effect.Type, effect.Target, draw.Value, effect.AllowEnemy, effect.AllowPlayer,
+                effect.Statuses, effect.Upgrade, effect.Lifetime, effect.Tests, effect.Range);
+        }
         private static int TestCount(TrainCombatState state, CardActionEffect effect, CardTargets targets) => !AttackChange(effect) ? targets.UnitIds.Count :
             state.Rooms.SelectMany(room => room.Units).Count(unit => targets.UnitIds.Contains(unit.Id) && unit.CanAttack);
         private static string? AttackTestError(TrainCombatState state, int roomIndex, CardActionEffect effect)
@@ -368,8 +401,8 @@ namespace MonsterTrain2Poju.Model
         private static RoomCombatResult ApplyOne(RoomCombatState state, CardActionEffect effect, CombatUnit target,
             int sourceCardId, int? playerCapacity, int? enemyCapacity)
         {
-            if (effect.Type == "Damage") return RoomCombatModel.ApplyCardDamage(state, target.Id, effect.Value, sourceCardId);
-            if (effect.Type == "Heal") return RoomCombatModel.ApplyCardHeal(state, target.Id, effect.Value);
+            if (effect.Type == "Damage") return RoomCombatModel.ApplyCardDamage(state, target.Id, Math.Max(0, effect.Value), sourceCardId);
+            if (effect.Type == "Heal") return effect.Value < 0 ? Unchanged(state) : RoomCombatModel.ApplyCardHeal(state, target.Id, effect.Value);
             if (AttackChange(effect)) return UnitAttackModel.Apply(state, target.Id, effect.Value, effect.Type == "DebuffAttack");
             if (effect.Type == "BuffHealth" || effect.Type == "DebuffHealth")
                 return UnitHealthModel.Apply(state, target.Id, effect.Value, effect.Type == "DebuffHealth", effect.Lifetime);

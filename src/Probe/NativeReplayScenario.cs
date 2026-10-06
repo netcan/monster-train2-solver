@@ -402,11 +402,14 @@ namespace MonsterTrain2Poju.Probe
                 modifierScenario == "healing" || modifierScenario == "healing-triggers" || modifierScenario == "room-spells" ||
                 modifierScenario == "terminal-spells" || modifierScenario == "post-kill-spells" || modifierScenario == "random-spells" ||
                 modifierScenario == "random-status" || modifierScenario == "cross-room-spells" || modifierScenario == "cross-room-targets" || modifierScenario == "attack-buffs" ||
-                modifierScenario == "max-health-spells" || modifierScenario == "max-health-lethal"))
+                modifierScenario == "max-health-spells" || modifierScenario == "max-health-lethal" ||
+                modifierScenario == "numeric-ranges" || modifierScenario == "numeric-ranges-lethal"))
             {
                 if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Numeric fixture must start on deployment turn.");
                 numericModifiersPrepared = true;
-                if (modifierScenario == "max-health-spells" || modifierScenario == "max-health-lethal")
+                if (modifierScenario == "numeric-ranges" || modifierScenario == "numeric-ranges-lethal")
+                    NumericRangeScenario.Prepare(managers, log, modifierScenario == "numeric-ranges-lethal");
+                else if (modifierScenario == "max-health-spells" || modifierScenario == "max-health-lethal")
                     MaxHealthScenario.Prepare(managers, log, modifierScenario == "max-health-lethal");
                 else if (modifierScenario == "attack-buffs") AttackBuffScenario.Prepare(managers, log);
                 else if (modifierScenario == "cross-room-spells" || modifierScenario == "cross-room-targets")

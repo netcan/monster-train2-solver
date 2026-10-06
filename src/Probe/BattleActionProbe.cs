@@ -94,7 +94,7 @@ namespace MonsterTrain2Poju.Probe
                     bool handUpgrade = effect.GetEffectStateName() == "CardEffectAddTempCardUpgradeToCardsInHand" ||
                         effect.GetEffectStateName() == "CardEffectAddPermanentCardUpgradeToCardsInHand";
                     var excluded = new List<SubtypeData>(); effect.GetTargetCharacterExcludedSubtypes(excluded);
-                    if (effect.GetUseIntRange() || effect.GetUseStatusEffectStackMultiplier() || effect.GetUseHealthMissingStackMultiplier() ||
+                    if (effect.GetUseStatusEffectStackMultiplier() || effect.GetUseHealthMissingStackMultiplier() ||
                         effect.GetUseMagicPowerMultiplier() || effect.GetTargetIgnoreBosses() || effect.GetTargetModeHealthFilter() != CardEffectData.HealthFilter.Both ||
                         effect.GetTargetModeStatusEffectsFilter().Length > 0 || effect.GetTargetModeStatusEffectsExcludedFilter().Length > 0 ||
                         !effect.GetTargetCharacterSubtype().IsNone || excluded.Count > 0 || !effect.GetParamSubtype().IsNone ||
@@ -111,6 +111,8 @@ namespace MonsterTrain2Poju.Probe
                         effect.GetEffectStateName() == "CardEffectAddStatusEffect" ? "AddStatus" :
                         handUpgrade ? "HandUpgrade" : effect.GetEffectStateName() == "CardEffectRemoveTempUpgradeFromUnit" ? "RemoveUnitUpgrade" : "UnitUpgrade";
                     CardUpgradeModifier? upgrade = null;
+                    if (effect.GetUseIntRange() && !new[] { "Damage", "Heal", "AddStatus", "BuffAttack", "DebuffAttack", "BuffHealth", "DebuffHealth" }.Contains(type))
+                        interactions.Add("Unimplemented integer range consumer " + type);
                     string lifetime = "";
                     if (type == "BuffHealth") lifetime = ((UnitUpgradeLifetimeTempOnly)effect.GetAdditionalParamInt1()).ToString();
                     if (type == "UnitUpgrade" || type == "RemoveUnitUpgrade" || handUpgrade)
@@ -141,7 +143,8 @@ namespace MonsterTrain2Poju.Probe
                         effect.GetTargetTeamType().HasFlag(Team.Type.Heroes), effect.GetTargetTeamType().HasFlag(Team.Type.Monsters), statuses,
                         upgrade, lifetime, new CardEffectTests(effect.GetShouldTest(), effect.GetShouldFailToCastIfTestFails(),
                             effect.GetShouldCancelSubsequentEffectsIfTestFails(), type == "AddStatus" && effect.GetParamBool(),
-                            ((ICardEffect)Activator.CreateInstance(typeof(CardEffectBase).Assembly.GetType(effect.GetEffectStateName())!)!).CanPlayAfterBossDead)));
+                            ((ICardEffect)Activator.CreateInstance(typeof(CardEffectBase).Assembly.GetType(effect.GetEffectStateName())!)!).CanPlayAfterBossDead),
+                        effect.GetUseIntRange() ? new CardEffectRange(effect.GetParamMinInt(), effect.GetParamMaxInt(), effect.GetParamMultiplier()) : null));
                 }
             }
             else interactions.Add("Unimplemented play effect " + kind);
