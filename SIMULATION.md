@@ -1378,11 +1378,11 @@ preserved. Status multipliers read the actor's stacks and wrap integer products.
 The shared damage engine applies Default damage defenses without direct-attack
 melee weakness, lifesteal or spikes.
 
-OnDeath callbacks remain in the shared FIFO. Damage deaths update death counters
-inline, but their spawner return/exhaustion waits until the complete trigger
-queue ends and uses active character creation order. Later generated cards
-therefore receive the exhaustion event. Upgrade deaths retain their previously
-verified inline settlement. Pure checks cover these differences, late generation,
+Ordinary callbacks drain the shared FIFO before damage deaths enter unit removal.
+Damage deaths update death counters inline, but their OnDeath effects and spawner
+return/exhaustion wait for that removal stage. Later generated cards therefore
+receive the exhaustion event. Upgrade deaths retain their previously verified
+inline settlement. Pure checks cover these differences, late generation,
 source traits/offsets, defenses, test gates, empty/random groups, integer wrapping,
 parent isolation and 32 parallel branches.
 
@@ -1407,6 +1407,38 @@ unchanged. All 48 earlier complete battles and 8 calibrations pass; there are no
 combat-event and other triggers/statuses, specialized sacrifice effects,
 equipment, room/relic effects, boss actions/companions/final bosses and
 resurrection still leave the full objective open.
+
+Schema 37 verifies the separate damage-death removal stage with
+`-DamageDeathQueue`. A PreCombat effect kills a one-health enemy, then heals its
+actor for zero. The queued OnHeal grants seven armor before the enemy's OnDeath
+deals three damage. Native requests independently witness seven then four armor
+blocking the damage with no health loss. Treating OnDeath as an ordinary queued
+callback instead costs three health in the first phase.
+
+Removal snapshots enemies before players, each in active creation order, and
+marks the complete initial batch before running any of its callbacks. Newly
+killed units during OnDeath are removed by the nested queue before the current
+parent's spawner returns; already-marked units stay in the original batch.
+Both the room engine and train dispatcher implement this staging. Pure checks
+cover ordinary callback ordering, reversed physical target order, nested return
+order, death-generated cards receiving exhaustion, and 32 isolated parallel
+branches. Boss terminal OnDeath damage is kept separate: an exploratory variant
+also exposed kill-camera card clearing before death statistics/removal, which
+still needs its own model and native fixture.
+
+`tests/fixtures/full-battle-damage-death-queue.json.gz` retains the unmodified
+complete native battle: 15 plays, 5 EndTurns, 41 room stages, 7 spawns, 8
+pre-combat phases, 8 generation effects, 16 upgrade callbacks, 8 zero-heal
+observations and 39 damage quantity observations (26 tests, 13 applications,
+17 requests and 5 OnDeath applications). The game is 2.2.1 with module MVID
+`8fb07b96-f4db-4d2b-884d-c00536d6ccf4`. Raw JSON is 183,673,530 bytes,
+SHA-256 `e2cd0c7ceaa0d1bfad28fd4c5491c01a108cb9819788301ef4ecbb5bcaabeb7f`;
+the byte-identical gzip is 6,072,874 bytes. Native capture failures, mismatches,
+unsupported phases and pending records are zero; the original profile is
+unchanged and Pyre health at victory is 80.
+Independent phase/hit checks, complete initial and mid-battle policies and 16
+parallel branches pass. All 49 earlier complete battles and 8 calibration
+fixtures also pass; the curated corpus now retains 50 complete battles.
 
 Schema 24 captures ordered `CardTraitScalingAddStatusEffect` descriptors on
 immutable card instances and generated-card rules, plus the native stackability

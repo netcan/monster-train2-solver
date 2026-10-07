@@ -164,8 +164,9 @@ namespace MonsterTrain2Poju.Model
             internal CombatUnit Unit { get; }
             internal string Kind { get; }
             internal bool ReturnSpawnerAfterQueue { get; }
-            internal QueuedCharacterTrigger(int roomIndex, CombatUnit unit, string kind = "OnDeath", bool returnSpawnerAfterQueue = false)
-            { RoomIndex = roomIndex; Unit = unit; Kind = kind; ReturnSpawnerAfterQueue = returnSpawnerAfterQueue; }
+            internal bool DeferUntilRemoval { get; }
+            internal QueuedCharacterTrigger(int roomIndex, CombatUnit unit, string kind = "OnDeath", bool returnSpawnerAfterQueue = false, bool deferUntilRemoval = false)
+            { RoomIndex = roomIndex; Unit = unit; Kind = kind; ReturnSpawnerAfterQueue = returnSpawnerAfterQueue; DeferUntilRemoval = deferUntilRemoval; }
         }
         private static readonly HashSet<string> KnownStatuses = new HashSet<string>(StringComparer.Ordinal)
         {
@@ -218,19 +219,47 @@ namespace MonsterTrain2Poju.Model
             if (!result.Supported) return result;
             var events = result.Events.ToList();
             RoomOutcome outcome = result.Outcome;
-            for (int index = 0; index < queue.Count; index++)
+            bool drained = DrainCharacterQueue(queue, queued =>
             {
-                result = ApplyQueuedCharacterTrigger(result.State!, queue[index], queue.Add);
-                if (!result.Supported) return result;
+                result = ApplyQueuedCharacterTrigger(result.State!, queued, queue.Add);
+                if (!result.Supported) return false;
                 events.AddRange(result.Events);
                 if (result.Outcome != RoomOutcome.Exchanged) outcome = result.Outcome;
-            }
-            foreach (QueuedCharacterTrigger queued in queue.Where(item => item.ReturnSpawnerAfterQueue).OrderBy(item => item.Unit.Id))
+                return true;
+            }, queued =>
             {
                 result = SettleQueuedSpawner(result.State!, queued.Unit);
-                if (!result.Supported) return result;
-            }
+                return result.Supported;
+            });
+            if (!drained) return result;
             return new RoomCombatResult(result.State, outcome, 0, events);
+        }
+
+        internal static bool DrainCharacterQueue(List<QueuedCharacterTrigger> queue, Func<QueuedCharacterTrigger, bool> fire,
+            Func<QueuedCharacterTrigger, bool> returnSpawner)
+        {
+            int next = 0;
+            var pending = new List<QueuedCharacterTrigger>();
+            bool Drain()
+            {
+                while (next < queue.Count)
+                {
+                    QueuedCharacterTrigger queued = queue[next++];
+                    if (queued.DeferUntilRemoval) pending.Add(queued);
+                    else if (!fire(queued)) return false;
+                }
+                // Native snapshots all eligible deaths and marks the complete batch as being
+                // removed. New deaths during a removal are handled before the current spawner returns.
+                QueuedCharacterTrigger[] removing = pending.OrderBy(item => item.Unit.Team).ThenBy(item => item.Unit.Id).ToArray();
+                pending.Clear();
+                foreach (QueuedCharacterTrigger dead in removing)
+                {
+                    if (!fire(dead) || !Drain()) return false;
+                    if (dead.ReturnSpawnerAfterQueue && !returnSpawner(dead)) return false;
+                }
+                return true;
+            }
+            return Drain();
         }
 
         internal static RoomCombatResult ApplyCharacterPhase(RoomCombatState state, int unitId, string kind, Action<QueuedCharacterTrigger> enqueue)
@@ -728,7 +757,7 @@ namespace MonsterTrain2Poju.Model
                 }
             }
 
-            private readonly List<WorkingUnit> deferredDamageDeaths = new List<WorkingUnit>();
+            private readonly List<(WorkingUnit Unit, bool Return)> deferredDamageDeaths = new List<(WorkingUnit, bool)>();
 
             private void Death(WorkingUnit? actor, WorkingUnit target, int sourceCardId, bool deferRemoval = false)
             {
@@ -737,11 +766,12 @@ namespace MonsterTrain2Poju.Model
                 // Native UpdateHp sets this gate before death triggers are fired.
                 if (!source.Preview && target.Source.EndsBattleOnDeath)
                 { battleWon = true; context = context?.WithBossesDead(); }
-                if (enqueueCharacterTrigger != null) enqueueCharacterTrigger(new QueuedCharacterTrigger(source.RoomIndex, target.Freeze(), returnSpawnerAfterQueue: deferReturn));
+                if (enqueueCharacterTrigger != null) enqueueCharacterTrigger(new QueuedCharacterTrigger(source.RoomIndex, target.Freeze(),
+                    returnSpawnerAfterQueue: deferReturn, deferUntilRemoval: deferRemoval));
                 else
                 {
-                    if (deferReturn) deferredDamageDeaths.Add(target);
-                    FireTriggers(target, "OnDeath");
+                    if (deferRemoval) deferredDamageDeaths.Add((target, deferReturn));
+                    else FireTriggers(target, "OnDeath");
                 }
                 if (!source.Preview && context?.Statistics != null)
                     context = context.WithStatistics(context.LiveStatistics!.Death(target.Source.Team == CombatTeam.Player,
@@ -842,9 +872,14 @@ namespace MonsterTrain2Poju.Model
                     var queued = triggerQueue.Dequeue();
                     ExecuteTriggers(queued.Unit, queued.Kind, queued.CanFire);
                 }
-                foreach (WorkingUnit dead in deferredDamageDeaths.OrderBy(unit => unit.Source.Id)) SettleDeadSpawner(dead);
+                var removing = deferredDamageDeaths.OrderBy(dead => dead.Unit.Source.Team).ThenBy(dead => dead.Unit.Source.Id).ToArray();
                 deferredDamageDeaths.Clear();
                 runningTriggerQueue = false;
+                foreach (var dead in removing)
+                {
+                    FireTriggers(dead.Unit, "OnDeath");
+                    if (dead.Return) SettleDeadSpawner(dead.Unit);
+                }
             }
 
             private void ExecuteTriggers(WorkingUnit unit, string kind, bool canFireTriggers)

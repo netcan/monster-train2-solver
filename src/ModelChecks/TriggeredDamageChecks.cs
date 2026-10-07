@@ -103,7 +103,8 @@ internal static class TriggeredDamageChecks
     }
     internal static void Native(JsonElement fixture)
     {
-        if (!fixture.TryGetProperty("ModifierScenario", out var scenario) || scenario.GetString() != "triggered-damage") return;
+        if (!fixture.TryGetProperty("ModifierScenario", out var scenario) || scenario.GetString() is not ("triggered-damage" or "damage-death-queue")) return;
+        bool removalQueue = scenario.GetString() == "damage-death-queue";
         int phases = 0, samples = 0, applications = 0, tests = 0, negativeTests = 0, empty = 0, groups = 0, random = 0,
             multipliers = 0, deaths = 0, shields = 0, armor = 0, sourceModifiers = 0, damageHits = 0, lateExhausted = 0;
         string Comparable(TrainCombatState state) => JsonSerializer.Serialize(new
@@ -169,8 +170,9 @@ internal static class TriggeredDamageChecks
                 damageHits++;
             }
         }
-        Require(phases >= 2 && applications > 0 && tests > applications && negativeTests > 0 && empty > 0 && groups > 0 && random > 0 &&
-            multipliers > 0 && deaths > 0 && shields > 0 && armor > 0 && sourceModifiers > 0 && damageHits > 0 && lateExhausted > 0, "Native triggered-damage coverage is incomplete.");
+        Require(phases >= 2 && applications > 0 && tests > applications && deaths > 0 && armor > 0 && damageHits > 0 &&
+            (removalQueue || negativeTests > 0 && empty > 0 && groups > 0 && random > 0 && multipliers > 0 && shields > 0 && sourceModifiers > 0 && lateExhausted > 0),
+            "Native triggered-damage coverage is incomplete.");
         Console.WriteLine($"TRIGGERED-DAMAGE-NATIVE PASS: phases={phases}, samples={samples}, applications={applications}, tests={tests}, negative-tests={negativeTests}, empty-ranges={empty}, groups={groups}, random={random}, status-multipliers={multipliers}, death-effects={deaths}, shields={shields}, armor={armor}, source-offsets={sourceModifiers}, hits={damageHits}, late-card-exhaustion={lateExhausted}.");
     }
     private static void Require(bool value, string message) { if (!value) throw new InvalidOperationException(message); }

@@ -96,6 +96,7 @@ PreCombatChecks.Run();
 TriggeredHealingChecks.Run();
 PostCombatHealingChecks.Run();
 TriggeredDamageChecks.Run();
+DamageDeathQueueChecks.Run();
 HandUpgradeChecks.Run();
 HealingChecks.Run();
 GoldRewardChecks.Run();

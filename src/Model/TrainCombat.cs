@@ -74,22 +74,23 @@ namespace MonsterTrain2Poju.Model
                 if (Terminal(result.Outcome))
                 { outcome = result.Outcome; break; }
             }
-            // Native OnHeal/OnDeath append to the shared FIFO after already queued team actors.
-            // Damage deaths return their spawner after the entire queue; upgrade deaths settle inline.
-            for (int next = 0; next < queue.Count; next++)
+            // Ordinary callbacks drain first; damage deaths then enter native unit removal.
+            string? queueError = null;
+            bool drained = RoomCombatModel.DrainCharacterQueue(queue, queued =>
             {
-                RoomCombatModel.QueuedCharacterTrigger queued = queue[next];
                 RoomCombatResult result = RoomCombatModel.ApplyQueuedCharacterTrigger(WithContext(rooms[queued.RoomIndex], context), queued, queue.Add);
-                if (!result.Supported) return Unsupported(result.UnsupportedReason!);
+                if (!result.Supported) { queueError = result.UnsupportedReason; return false; }
                 rooms[queued.RoomIndex] = result.State!; context = result.State!.Context; results.Add(result);
                 if (Terminal(result.Outcome)) outcome = result.Outcome;
-            }
-            foreach (RoomCombatModel.QueuedCharacterTrigger queued in queue.Where(item => item.ReturnSpawnerAfterQueue).OrderBy(item => item.Unit.Id))
+                return true;
+            }, queued =>
             {
                 RoomCombatResult result = RoomCombatModel.SettleQueuedSpawner(WithContext(rooms[queued.RoomIndex], context), queued.Unit);
-                if (!result.Supported) return Unsupported(result.UnsupportedReason!);
+                if (!result.Supported) { queueError = result.UnsupportedReason; return false; }
                 rooms[queued.RoomIndex] = result.State!; context = result.State!.Context; results.Add(result);
-            }
+                return true;
+            });
+            if (!drained) return Unsupported(queueError ?? "Character removal queue failed.");
             return new TrainCombatResult(Freeze(source, rooms, context), outcome, results);
         }
 

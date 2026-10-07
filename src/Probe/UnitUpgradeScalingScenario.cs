@@ -140,7 +140,7 @@ namespace MonsterTrain2Poju.Probe
             {
                 __state = null; FullBattleTrace? trace = FullBattleTrace.Active;
                 string? scenario = Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS");
-                if (scenario != "unit-upgrade-scaling" && scenario != "unit-trigger-upgrades" && scenario != "spawn-triggers" && scenario != "spawn-triggers-lethal" && scenario != "unit-turn-begin" && scenario != "team-turn-begin" && scenario != "pre-hand-discard" && scenario != "pre-hand-discard-lethal" && scenario != "clone-upgrade-refresh" && scenario != "pre-combat" && scenario != "pre-combat-lethal" && scenario != "triggered-healing" && scenario != "post-combat-healing" && scenario != "triggered-damage" || trace == null ||
+                if (scenario != "unit-upgrade-scaling" && scenario != "unit-trigger-upgrades" && scenario != "spawn-triggers" && scenario != "spawn-triggers-lethal" && scenario != "unit-turn-begin" && scenario != "team-turn-begin" && scenario != "pre-hand-discard" && scenario != "pre-hand-discard-lethal" && scenario != "clone-upgrade-refresh" && scenario != "pre-combat" && scenario != "pre-combat-lethal" && scenario != "triggered-healing" && scenario != "post-combat-healing" && scenario != "triggered-damage" && scenario != "damage-death-queue" || trace == null ||
                     AllGameManagers.Instance!.GetSaveManager().PreviewMode || !calibrating && !trace.PendingActionIndex.HasValue && !trace.PendingTurnIndex.HasValue) return;
                 var sample = new Sample { Origin = calibrating ? "Calibration" : "Live", ActionIndex = trace.PendingActionIndex ?? -1,
                     TriggerKind = characterTriggerState?.GetTrigger().ToString() };
