@@ -149,6 +149,12 @@ namespace MonsterTrain2Poju.Model
                     context.StatusRules, context.Statistics?.TrackCards(new[] { card.InstanceId }),
                     context.CardInstances?.Concat(new[] { candidate }).ToArray(), context.CardRegistry, context.AllScenarioBossesDead,
                     context.NextAddedTemporaryUpgrades == null ? null : Array.Empty<CardUpgradeModifier>(), context.OtherPiles, context.QueryFrame, context.KillCamActivated, context.MagicPower, context.IsolatedBattlePreview);
+                // Setup/upgrade refresh builds scaling trait text in an active battle.
+                // Those native statistic queries refresh deckStats after the new card
+                // enters its pile, even when the displayed scaling value is zero.
+                if (context.QueryFrame?.ActiveBattle == true && context.Statistics?.StoredCards != null &&
+                    (creation.DamageScalingTraits?.Count > 0 || creation.StatusScalingTraits?.Count > 0 || creation.UnitUpgradeScalingTraits?.Count > 0))
+                    context = context.WithStatistics(context.Statistics.RefreshOwnedCards(context.CardInstances!.Select(card => card.InstanceId)));
                 added.Add(card);
             }
             return new CardGenerationResult(context, added);

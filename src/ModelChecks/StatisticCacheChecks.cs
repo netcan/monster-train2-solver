@@ -15,6 +15,12 @@ internal static class StatisticCacheChecks
         var born = CardGenerationModel.Apply(root, generation);
         Require(born.Supported && born.Context!.Statistics!.TrackedCards.SequenceEqual([1, 2]) &&
             born.Context.Statistics.StoredCards!.SequenceEqual([1]), "Generation eagerly created a native statistic cache entry.");
+        var scalingGeneration = new CardGenerationRule("DiscardPile", 1, [new("scaled", CardModifiers.Empty(), null, [],
+            statusScalingTraits: [new(new("TimesDrawn", "ThisBattle"), 1, true, 0, ["armor"])])]);
+        var scalingBorn = CardGenerationModel.Apply(root, scalingGeneration);
+        Require(scalingBorn.Supported && scalingBorn.Context!.Statistics!.StoredCards!.SequenceEqual([1, 2]) &&
+            scalingBorn.Context.Statistics.Values.Count == 0 && JsonSerializer.Serialize(root.Statistics) == JsonSerializer.Serialize(stats),
+            "Generated scaling card text did not refresh native zero-valued statistics or mutated its parent.");
         string parent = JsonSerializer.Serialize(born.Context);
         CombatContext Clear(CombatContext context) => new(new([], [], [], context.Cards.Rng, 0, []), context.BattleRng,
             context.Gold, context.NextCardId, context.MaxHandSize, statistics: context.Statistics, cardInstances: [],

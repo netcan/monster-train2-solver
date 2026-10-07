@@ -2152,3 +2152,11 @@ apply to the retained actor. Native callbacks 63 and 371 in the extended action
 probe confirmed that room healing must not heal that unplaced enemy, while
 room damage still targets the actual floor occupants. A core check verifies
 this distinction and immutable parent state.
+
+Generating a card with supported scaling traits also refreshes native
+`deckStats`: card setup and upgrade text call `GetStatValue`, which runs
+`UpdateDeckStats` even for a zero result. Active-battle generation now refreshes
+owned statistic membership after placement for those traits. Plain generated
+cards still leave the new entry uncached. Native source-copy callbacks exposed
+five missing zero-valued entries; the independent callback context comparison
+now matches them. Core checks cover both generation paths and parent isolation.
