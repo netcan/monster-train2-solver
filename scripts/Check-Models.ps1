@@ -53,6 +53,7 @@ $fixtures = @('full-battle-steward-once.mt2f', 'full-battle-no-cards.mt2f', 'ful
     'full-battle-bonus-draw-lethal.mt2f',
     'full-battle-room-capacity.mt2f',
     'full-battle-room-capacity-lethal.mt2f',
+    'full-battle-direct-unit-upgrades.mt2f',
     'card-modifier-calibration.mt2f', 'rng-calibration.mt2f', 'gold-reward-calibration.mt2f',
     'standby-routing-calibration.mt2f', 'ui-rng-isolation-calibration.mt2f',
     'statistic-query-calibration.mt2f', 'statistic-overflow-calibration.mt2f',

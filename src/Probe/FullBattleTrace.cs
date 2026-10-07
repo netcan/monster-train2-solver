@@ -54,18 +54,18 @@ namespace MonsterTrain2Poju.Probe
         private bool? stoppingOutcome;
         internal bool? TerminalEffectsSettled { get; private set; }
         private int captureFailures;
-        internal int CaptureFailures => captureFailures + DamageScalingScenario.Samples.Count(sample => sample.CaptureError != null) +
+        internal int CaptureFailures => captureFailures + (DirectUnitUpgradeScenario.Error == null ? 0 : 1) + DamageScalingScenario.Samples.Count(sample => sample.CaptureError != null) +
             StatusScalingScenario.Samples.Count(sample => sample.CaptureError != null) + StatusScalingScenario.Applications.Count(sample => sample.CaptureError != null) +
             UnitUpgradeScalingScenario.Samples.Count(sample => sample.CaptureError != null);
-        internal int Mismatches => stages.Count(stage => stage.Difference != null) + cardCycles.Mismatches + trainCombat.Mismatches + spawning.Mismatches + turns.Mismatches + actions.Mismatches +
+        internal int Mismatches => DirectUnitUpgradeScenario.Records.Count(record => record.Difference != null) + stages.Count(stage => stage.Difference != null) + cardCycles.Mismatches + trainCombat.Mismatches + spawning.Mismatches + turns.Mismatches + actions.Mismatches +
             HandRemovalScenario.Records.Count(record => record.Difference != null) + GenerationScenario.Records.Count(record => record.Difference != null) +
             DamageScalingScenario.Samples.Count(sample => sample.Difference != null) + StatusScalingScenario.Samples.Count(sample => sample.Difference != null) +
             StatusScalingScenario.Applications.Count(sample => sample.Difference != null) + UnitUpgradeScalingScenario.Samples.Count(sample => sample.Difference != null) +
             UnitTurnBeginProbe.Records.Count(record => record.Difference != null) + TeamTurnBeginProbe.Records.Count(record => record.Difference != null) + PreHandDiscardProbe.Records.Count(record => record.Difference != null) + PreCombatProbe.Records.Count(record => record.Difference != null) + TriggeredHealingProbe.Records.Count(record => record.Difference != null) + PostCombatHealingProbe.Records.Count(record => record.Difference != null) + TriggeredDamageProbe.Records.Count(record => record.Difference != null);
-        internal int Unsupported => stages.Count(stage => !stage.Predicted.Supported) + cardCycles.Unsupported + trainCombat.Unsupported + spawning.Unsupported + turns.Unsupported + actions.Unsupported +
+        internal int Unsupported => DirectUnitUpgradeScenario.Records.Count(record => record.UnsupportedReason != null) + stages.Count(stage => !stage.Predicted.Supported) + cardCycles.Unsupported + trainCombat.Unsupported + spawning.Unsupported + turns.Unsupported + actions.Unsupported +
             HandRemovalScenario.Records.Count(record => !record.Predicted.Supported) + GenerationScenario.Records.Count(record => !record.Predicted.Supported) +
             UnitTurnBeginProbe.Records.Count(record => !record.Predicted.Supported) + TeamTurnBeginProbe.Records.Count(record => !record.Predicted.Supported) + PreHandDiscardProbe.Records.Count(record => !record.Predicted.Supported) + PreCombatProbe.Records.Count(record => !record.Predicted.Supported) + PostCombatHealingProbe.Records.Count(record => !record.Predicted.Supported);
-        internal int Pending => RoomCapacityProbe.Records.Count(record => !record.Completed || record.After == null) + BonusDrawProbe.Records.Count(record => !record.Completed || !record.Sampled || record.After == null) + StatusCallbackProbe.Fired.Count(record => !record.Completed || record.Actual == null || record.ActualUnit == null) + PreviewRngIsolation.Records.Count(record => !record.Completed) + TriggeredStatusProbe.Records.Count(record => !record.Completed || record.Actual == null || record.ActualUnits == null) + AttackTriggerProbe.Records.Count(record => !record.Completed || !record.GoldAfter.HasValue || record.AfterTriggered == null) + DyingUpgradeProbe.Records.Count(record => !record.Completed || record.Actual == null || record.ActualUnits == null) + HitKillProbe.Records.Count(record => !record.Completed || !record.GoldAfter.HasValue || record.AfterTriggered == null) + stages.Count(stage => stage.Actual == null) + cardCycles.Records.Count(record => record.Actual == null) +
+        internal int Pending => DirectUnitUpgradeScenario.Records.Count(record => record.After == null) + (DirectUnitUpgradeScenario.Started && !DirectUnitUpgradeScenario.Completed ? 1 : 0) + RoomCapacityProbe.Records.Count(record => !record.Completed || record.After == null) + BonusDrawProbe.Records.Count(record => !record.Completed || !record.Sampled || record.After == null) + StatusCallbackProbe.Fired.Count(record => !record.Completed || record.Actual == null || record.ActualUnit == null) + PreviewRngIsolation.Records.Count(record => !record.Completed) + TriggeredStatusProbe.Records.Count(record => !record.Completed || record.Actual == null || record.ActualUnits == null) + AttackTriggerProbe.Records.Count(record => !record.Completed || !record.GoldAfter.HasValue || record.AfterTriggered == null) + DyingUpgradeProbe.Records.Count(record => !record.Completed || record.Actual == null || record.ActualUnits == null) + HitKillProbe.Records.Count(record => !record.Completed || !record.GoldAfter.HasValue || record.AfterTriggered == null) + stages.Count(stage => stage.Actual == null) + cardCycles.Records.Count(record => record.Actual == null) +
             trainCombat.Records.Count(record => record.Actual == null) + spawning.Records.Count(record => record.Actual == null) +
             turns.Records.Count(record => record.Actual == null) + actions.Records.Count(record => record.Actual == null) +
             HandRemovalScenario.Records.Count(record => record.Actual == null) + GenerationScenario.Records.Count(record => record.Actual == null) +
@@ -379,7 +379,7 @@ namespace MonsterTrain2Poju.Probe
             string temporary = path + ".tmp";
             var snapshot = new
             {
-                Schema = 52,
+                Schema = 53,
                 GameVersion = Application.version,
                 GameModuleMvid = typeof(CardState).Assembly.ManifestModule.ModuleVersionId,
                 NativeWon,
@@ -408,6 +408,7 @@ namespace MonsterTrain2Poju.Probe
                 StatusScaling = StatusScalingScenario.Samples,
                 StatusApplications = StatusScalingScenario.Applications,
                 UnitUpgradeScaling = UnitUpgradeScalingScenario.Samples,
+                DirectUnitUpgrades = DirectUnitUpgradeScenario.Records,
                 UnitTurns = UnitTurnBeginProbe.Records,
                 TeamTurnBegins = TeamTurnBeginProbe.Records,
                 PreHandDiscards = PreHandDiscardProbe.Records,

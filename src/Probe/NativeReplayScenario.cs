@@ -401,6 +401,15 @@ namespace MonsterTrain2Poju.Probe
                 return;
             }
             string? modifierScenario = Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS");
+            if (fullBattle && modifierScenario == "direct-unit-upgrades")
+            {
+                if (DirectUnitUpgradeScenario.Error != null) throw new InvalidOperationException(DirectUnitUpgradeScenario.Error);
+                if (!DirectUnitUpgradeScenario.Completed)
+                {
+                    if (!DirectUnitUpgradeScenario.Started) DirectUnitUpgradeScenario.Start(managers, log);
+                    return;
+                }
+            }
             if (fullBattle && !numericModifiersPrepared && (modifierScenario == "numeric-upgrades" || modifierScenario == "dynamic-upgrades" ||
                 modifierScenario == "sacrifice-upgrades" || modifierScenario == "hand-upgrades" || modifierScenario == "targeted-hand-upgrades" ||
                 modifierScenario == "healing" || modifierScenario == "healing-triggers" || modifierScenario == "room-spells" ||

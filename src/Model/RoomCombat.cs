@@ -374,6 +374,21 @@ namespace MonsterTrain2Poju.Model
                 .UnitUpgrade(targetId, upgrade, lifetime, remove, roomCapacity, sourceCardId, triggerKind);
         }
 
+        internal static RoomCombatResult ApplyDirectUnitUpgrade(RoomCombatState state, int targetId, CardUpgradeModifier upgrade,
+            bool remove, string upgradeId, int? anonymousRemovalIndex)
+        {
+            string? error = Validate(state, attributedHealthTargetId: targetId);
+            if (error != null || !state.Units.Any(unit => unit.Id == targetId))
+                return new RoomCombatResult(null, RoomOutcome.Unsupported, 0, new List<CombatEvent>(), error ?? "Missing direct upgrade target.");
+            var callbacks = new List<QueuedCharacterTrigger>();
+            // RemoveCardUpgrade queues callbacks without running them. Additions run the queue.
+            RoomCombatResult result = new Engine(state, new List<CombatEvent>(),
+                enqueueCharacterTrigger: remove ? callbacks.Add : (Action<QueuedCharacterTrigger>?)null, resetPreviewTriggers: false)
+                .UnitUpgrade(targetId, upgrade, "TemporaryUntilUnitDeath", remove, null, 0, null,
+                    directApi: true, upgradeId: upgradeId, anonymousRemovalIndex: anonymousRemovalIndex);
+            return new RoomCombatResult(result.State, result.Outcome, result.Rounds, result.Events.ToList(), result.UnsupportedReason, callbacks);
+        }
+
         public static RoomCombatResult ApplyCardHeal(RoomCombatState state, int targetId, int amount)
         {
             string? error = Validate(state);
@@ -394,7 +409,7 @@ namespace MonsterTrain2Poju.Model
             return engine.Run(entireRoom);
         }
 
-        internal static string? Validate(RoomCombatState state, int? dyingTargetId = null)
+        internal static string? Validate(RoomCombatState state, int? dyingTargetId = null, int? attributedHealthTargetId = null)
         {
             if (state.ExternalInteractions.Count > 0)
                 return string.Join("; ", state.ExternalInteractions);
@@ -407,9 +422,12 @@ namespace MonsterTrain2Poju.Model
                 return "Unit instance IDs must be unique.";
             foreach (CombatUnit unit in state.Units)
             {
-                if (unit.Modifiers != null && (unit.Modifiers.HealthFromUpgrades.Count > 0 ||
+                if (unit.Modifiers != null && (unit.Modifiers.HealthFromUpgrades.Count > 0 && unit.Id != attributedHealthTargetId ||
                     unit.Modifiers.Upgrades.Any(upgrade => upgrade.ExternalInteractions.Count > 0)))
                     return "Unmodeled applied unit upgrade interactions.";
+                if (unit.Modifiers != null && (unit.Modifiers.HealthFromUpgrades.Any(item => item.Value < 0) ||
+                    unit.Modifiers.HealthFromUpgrades.Select(item => item.Key).Distinct().Count() != unit.Modifiers.HealthFromUpgrades.Count))
+                    return "Invalid attributed maximum-health ledger.";
                 if (unit.Health < 0 || unit.Health == 0 && unit.Id != dyingTargetId || unit.Health > unit.MaxHealth)
                     return "Only living units with valid health can enter room combat.";
                 if (unit.LastAttackerId < 0) return "Invalid last-attacker identity.";
@@ -699,10 +717,11 @@ namespace MonsterTrain2Poju.Model
             }
 
             internal RoomCombatResult UnitUpgrade(int targetId, CardUpgradeModifier upgrade, string lifetime,
-                bool remove, int? roomCapacity, int sourceCardId, string? triggerKind)
+                bool remove, int? roomCapacity, int sourceCardId, string? triggerKind, bool directApi = false,
+                string upgradeId = "", int? anonymousRemovalIndex = null)
             {
                 ApplyUpgrade(units.Single(unit => unit.Source.Id == targetId), upgrade, lifetime, remove,
-                    roomCapacity, sourceCardId, triggerKind);
+                    roomCapacity, sourceCardId, triggerKind, directApi, upgradeId, anonymousRemovalIndex);
                 if (enqueueCharacterTrigger == null && !runningTriggerQueue) DrainLocalTriggerQueue();
                 return Finish(battleWon ? RoomOutcome.BattleWon : units.Any(unit => unit.Source.IsPyre && !unit.Alive)
                     ? RoomOutcome.PlayerDefeated : RoomOutcome.Exchanged);
@@ -1185,7 +1204,8 @@ namespace MonsterTrain2Poju.Model
                 units.Where(unit => unit.Alive && unit.InRoom || unit == target).Select(unit => unit.Freeze()).ToArray(), source.ExternalInteractions, context, source.Preview);
 
             private bool ApplyUpgrade(WorkingUnit target, CardUpgradeModifier upgrade, string lifetime, bool remove,
-                int? roomCapacity, int sourceCardId, string? kind)
+                int? roomCapacity, int sourceCardId, string? kind, bool directApi = false,
+                string upgradeId = "", int? anonymousRemovalIndex = null)
             {
                 RoomCombatResult result = UnitModifierModel.ApplyWithSettlement(UpgradeRoom(target), target.Source.Id, upgrade, lifetime,
                     remove, roomCapacity, sourceCardId, kind, (state, changed) =>
@@ -1203,7 +1223,8 @@ namespace MonsterTrain2Poju.Model
                         // The native effect retains its target object through removal and
                         // terminal clearing. Its remaining source-card work must still run.
                         return new RoomCombatResult(UpgradeRoom(target), RoomOutcome.Exchanged, 0, new List<CombatEvent>());
-                    }, allowDyingTarget: true, enqueueCallback: QueueCallback);
+                    }, allowDyingTarget: true, enqueueCallback: QueueCallback, directApi: directApi,
+                    upgradeId: upgradeId, anonymousRemovalIndex: anonymousRemovalIndex);
                 if (!result.Supported) { unsupportedReason = result.UnsupportedReason; return false; }
                 context = result.State!.Context;
                 return true;

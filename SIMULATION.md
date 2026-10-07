@@ -2501,3 +2501,56 @@ The existing 74-archive regression and both new fixtures pass. The expanded
 required. The native probe Release build has zero warnings and errors. Relics,
 attachments, corruption and other conditional room modifiers remain explicit
 unsupported interactions until their separate execution paths are modeled.
+
+## Direct unit upgrades for equipment
+
+`UnitModifierModel.ApplyDirect` models CharacterState.ApplyCardUpgrade and
+RemoveCardUpgrade separately from card effects that maintain a unit's spawner
+modifiers. A direct operation changes the live unit and applied-upgrade list;
+it neither scales through the responsible card nor writes a temporary upgrade
+back to the spawner. Clone exclusion is a card-effect gate; the native direct
+API ignores that flag. Unique definitions and live restricted-size checks
+still gate an addition.
+
+A named removal removes the first list entry with the supplied definition ID
+and reverses the supplied descriptor's stats, which need not match that entry.
+The card-effect removal API retains its separate all-copies behavior. Anonymous
+removal uses object identity: a fresh descriptor reverses stats while retaining
+the applied entry; an explicit captured list index represents the same applied
+object and removes that entry. The temporary aggregate constructed during
+equipment attachment/removal therefore cannot be treated as a named upgrade.
+Removal also retracts maximum HP attributed to its upgrade ID. Additions run
+queued callbacks; removals expose pending callbacks for their caller to drain.
+Lethal HP steps retain already-applied changes and stop later status steps.
+Attributed-health ledgers are currently allowed only on the direct API target;
+ordinary room validation continues to reject their unmodeled producers.
+
+`full-battle-direct-unit-upgrades.mt2f` records 21 native operations on a
+naturally played Steward before the initial decision capture. Setup marks that
+unit as a clone through the native API. The attributed-health case uses native
+BuffMaxHP and seeds its private attribution ledger to exercise removal by key.
+The fixture observes duplicate IDs with different values, caller-based removal,
+fresh/same anonymous objects, unique and capacity no-ops, clone exclusion,
+positive/negative attributes, the equipment-limit cap and its negative removal
+result, keyed health and a lethal partial application. Checks recompute complete
+room/context snapshots from actual before/after data, preserve parent states,
+and repeat the 21 operations in 32 independent parallel branches.
+
+The muted Instant native run takes 49.77 seconds and retains the original Boss
+and waves. Its subsequent policy finishes at Pyre 60 after 20 plays, seven
+EndTurns and 57 room stages, with zero capture failures, differences,
+unsupported or pending records and unchanged original files. The complete
+policy matches from the initial and actual mid-battle roots in 16 parallel
+branches. The direct binary archive stores 4,658 nodes in 27,403 bytes, with
+schema 53, game 2.2.1 and module MVID
+8fb07b96-f4db-4d2b-884d-c00536d6ccf4; no source JSON document is needed.
+
+The existing 76-archive regression and the new fixture's final independent
+checks pass. The expanded 77-archive inventory and SHA-256 integrity check
+passes. The native probe Release build has zero warnings and errors;
+ModelChecks retains its 12 existing nullable warnings and has no build errors.
+
+This supplies the numeric/status upgrade primitive for equipment. Attachment,
+oldest-first replacement, reverse removal, source-equipment trigger provenance,
+equipped versus standby-host relationships, grafting, card returns and unit
+death still need their own modeled lifecycle and native fixture coverage.

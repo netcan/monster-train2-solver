@@ -27,6 +27,17 @@ value comparison.
 Isolated native probes use `.probe-runs/`, which is also ignored. Successful
 captures become fixed inputs here after native and independent comparisons pass.
 
+`full-battle-direct-unit-upgrades.mt2f` retains schema 53 with 21 actual
+CharacterState API operations before the first recorded player decision.
+They cover repeated definition IDs, single-copy removal using caller stats,
+fresh versus identical anonymous objects, unique/clone/capacity gates, negative
+modifiers, equipment-limit caps, attributed maximum HP and partial lethal
+application. The source card remains independent. The complete subsequent
+policy and 16 parallel branches match native combat; the API operations also
+match independently in 32 parallel branches. This establishes the attribute
+primitive used by equipment, while equipment attachment/lifecycle remains in
+progress.
+
 `full-battle-room-capacity.mt2f` and `full-battle-room-capacity-lethal.mt2f`
 retain schema 52 battles with live capacities used by subsequent summons and
 restricted size upgrades. Their 220 exact effect contexts and 2,050 native

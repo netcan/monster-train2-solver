@@ -173,6 +173,7 @@ internal static class RoomCombatChecks
         CardCostChecks.Native(fixture);
         BonusDrawChecks.Native(fixture);
         RoomCapacityChecks.Native(fixture);
+        DirectUnitUpgradeChecks.Native(fixture);
         SharedPileChecks.MigratedRoot(fixture);
     }
 }

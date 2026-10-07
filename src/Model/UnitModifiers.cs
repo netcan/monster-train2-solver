@@ -33,14 +33,23 @@ namespace MonsterTrain2Poju.Model
             bool remove = false, int? roomCapacity = null, int sourceCardId = 0, string? triggerKind = null)
             => RoomCombatModel.ApplyUnitUpgrade(source, targetId, upgrade, lifetime, remove, roomCapacity, sourceCardId, triggerKind);
 
+        // CharacterState's direct API, used by equipment, changes only the live unit.
+        // Anonymous removal needs an explicit applied-list index to represent object identity;
+        // a freshly constructed anonymous descriptor reverses stats but leaves the list entry.
+        public static RoomCombatResult ApplyDirect(RoomCombatState source, int targetId, CardUpgradeModifier upgrade,
+            bool remove = false, string upgradeId = "", int? anonymousRemovalIndex = null)
+            => RoomCombatModel.ApplyDirectUnitUpgrade(source, targetId, upgrade, remove, upgradeId, anonymousRemovalIndex);
+
         // A running room engine settles deaths on its existing unit references and trigger flags.
         // Starting another engine here would reset preview triggers and detach combat attackers.
         internal static RoomCombatResult ApplyWithSettlement(RoomCombatState source, int targetId, CardUpgradeModifier upgrade,
             string lifetime, bool remove, int? roomCapacity, int sourceCardId, string? triggerKind,
             Func<RoomCombatState, CombatUnit, RoomCombatResult> settle, bool allowDyingTarget = false,
-            Action<RoomCombatModel.QueuedCharacterTrigger>? enqueueCallback = null)
+            Action<RoomCombatModel.QueuedCharacterTrigger>? enqueueCallback = null, bool directApi = false,
+            string upgradeId = "", int? anonymousRemovalIndex = null)
         {
-            string? error = RoomCombatModel.Validate(source, allowDyingTarget ? targetId : (int?)null);
+            string? error = RoomCombatModel.Validate(source, allowDyingTarget ? targetId : (int?)null,
+                directApi ? targetId : (int?)null);
             if (error != null) return Unsupported(error);
             CombatUnit? target = source.Units.FirstOrDefault(unit => unit.Id == targetId);
             if (target?.Modifiers == null || source.Context?.CardInstances == null)
@@ -49,9 +58,13 @@ namespace MonsterTrain2Poju.Model
             if (upgrade.ExternalInteractions.Count > 0) return Unsupported(string.Join("; ", upgrade.ExternalInteractions));
             if (!remove && !new[] { "TemporaryUntilEndOfBattle", "TemporaryUntilUnitDeath", "Permanent" }.Contains(lifetime))
                 return Unsupported("Unmodeled unit upgrade lifetime.");
-            if (remove && upgrade.DataId.Length == 0) return Unsupported("Removing an upgrade requires a definition ID.");
-            if (!remove && target.Modifiers.IsClone && upgrade.ExcludeFromClones) return Match(source);
-            if (!remove)
+            if (remove && upgrade.DataId.Length == 0 && !directApi) return Unsupported("Removing an upgrade requires a definition ID.");
+            if (anonymousRemovalIndex.HasValue && (!directApi || !remove || upgrade.DataId.Length != 0 ||
+                anonymousRemovalIndex.Value < 0 || anonymousRemovalIndex.Value >= target.Modifiers.Upgrades.Count ||
+                target.Modifiers.Upgrades[anonymousRemovalIndex.Value].DataId.Length != 0))
+                return Unsupported("Invalid anonymous applied-upgrade identity.");
+            if (!remove && !directApi && target.Modifiers.IsClone && upgrade.ExcludeFromClones) return Match(source);
+            if (!remove && !directApi)
             {
                 UnitUpgradeScalingResult scaled = UnitUpgradeScalingModel.Apply(source.Context, sourceCardId, upgrade, triggerKind);
                 if (!scaled.Supported) return Unsupported(scaled.UnsupportedReason!);
@@ -63,7 +76,8 @@ namespace MonsterTrain2Poju.Model
                 if (status.Stacks <= 0) continue;
                 error = RoomCombatModel.Validate(new RoomCombatState(source.RoomIndex, source.Deployment,
                     new[] { CardSpellModel.Copy(target, target.Health, target.Statuses.Where(item => item.Id != status.Id).Concat(new[] { status }).ToArray()) },
-                    Array.Empty<string>(), source.Context), allowDyingTarget ? targetId : (int?)null);
+                    Array.Empty<string>(), source.Context), allowDyingTarget ? targetId : (int?)null,
+                    directApi ? targetId : (int?)null);
                 if (error != null) return Unsupported(error);
             }
             if (!remove && upgrade.RestrictSizeToRoomCapacity && upgrade.Stats.Size > 0)
@@ -73,7 +87,9 @@ namespace MonsterTrain2Poju.Model
                     return Match(source);
             }
             RoomCombatState state = source;
-            int count = remove ? target.Modifiers.Upgrades.Count(item => item.DataId == upgrade.DataId) : 1;
+            int count = !remove ? 1 : directApi ? (upgrade.DataId.Length == 0 ||
+                target.Modifiers.Upgrades.Any(item => item.DataId == upgrade.DataId) ? 1 : 0) :
+                target.Modifiers.Upgrades.Count(item => item.DataId == upgrade.DataId);
             for (int index = 0; index < count; index++)
             {
                 target = state.Units.FirstOrDefault(unit => unit.Id == targetId);
@@ -81,7 +97,11 @@ namespace MonsterTrain2Poju.Model
                 UnitModifiers modifiers = target.Modifiers!;
                 if (!remove && upgrade.Unique && upgrade.DataId.Length > 0 && modifiers.Upgrades.Any(item => item.DataId == upgrade.DataId)) break;
                 var upgrades = modifiers.Upgrades.ToList();
-                if (remove) upgrades.RemoveAt(upgrades.FindIndex(item => item.DataId == upgrade.DataId));
+                if (remove)
+                {
+                    if (upgrade.DataId.Length > 0) upgrades.RemoveAt(upgrades.FindIndex(item => item.DataId == upgrade.DataId));
+                    else if (anonymousRemovalIndex.HasValue) upgrades.RemoveAt(anonymousRemovalIndex.Value);
+                }
                 else upgrades.Add(upgrade);
                 int sign = remove ? -1 : 1;
                 int damage = Math.Max(0, checked(modifiers.AttackDamage + sign * upgrade.Stats.Damage));
@@ -101,9 +121,20 @@ namespace MonsterTrain2Poju.Model
                     ChangeHealth(sign * upgrade.UnhealedHealth, !remove, false);
                     partial = sign * upgrade.UnhealedHealth < 0 && health <= 0;
                 }
+                var healthFromUpgrades = modifiers.HealthFromUpgrades.ToList();
+                if (!partial && remove && directApi)
+                {
+                    StatisticCount? associated = healthFromUpgrades.FirstOrDefault(item => item.Key == upgradeId);
+                    if (associated != null)
+                    {
+                        ChangeHealth(-associated.Value, false, false);
+                        healthFromUpgrades.Remove(associated);
+                        partial = health <= 0;
+                    }
+                }
                 var statuses = target.Statuses.ToDictionary(status => status.Id);
                 var nextModifiers = new UnitModifiers(damage, added, buff, size, equipment, modifiers.CanBeHealed, modifiers.IsClone, upgrades,
-                    modifiers.HealthFromUpgrades, modifiers.SpawnerMatchesDefinition);
+                    healthFromUpgrades, modifiers.SpawnerMatchesDefinition);
                 CombatUnit Snapshot() => new CombatUnit(target.Id, target.AssetKey, target.Team, Math.Max(0, checked(damage + buff)), health, maxHealth,
                     target.CanAttack, target.IsPyre, target.EndsBattleOnDeath, statuses.Values.ToArray(), triggers, target.SpawnerCardId,
                     Math.Max(1, Math.Min(6, size)), target.StatusImmunities, target.Subtypes, nextModifiers, target.IsBoss, target.LastAttackerId, target.StatusRegistry);
@@ -157,7 +188,7 @@ namespace MonsterTrain2Poju.Model
             }
             // The native source-card update also follows a unique unit upgrade no-op.
             target = state.Units.FirstOrDefault(unit => unit.Id == targetId);
-            if (!source.Preview && target?.SpawnerCardId > 0 &&
+            if (!directApi && !source.Preview && target?.SpawnerCardId > 0 &&
                 (remove || target.Modifiers!.SpawnerMatchesDefinition && lifetime != "TemporaryUntilUnitDeath"))
             {
                 CardInstanceState? card = state.Context!.FindCard(target.SpawnerCardId);
