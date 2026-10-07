@@ -460,6 +460,11 @@ namespace MonsterTrain2Poju.Model
                     return "Valor requires the armor status definition.";
                 foreach (CombatTrigger trigger in unit.Triggers)
                 {
+                    if (trigger.Origin?.OnlyIfEquipped == true && unit.EquipmentCards == null)
+                        return "Equipped-only triggers require equipment membership state.";
+                    if (trigger.Origin != null && (trigger.Origin.EquipmentCardId < 0 ||
+                        trigger.Origin.IsFromEquipment != (trigger.Origin.EquipmentCardId > 0)))
+                        return "Invalid equipment trigger origin.";
                     if (trigger.Kind != "OnDeath" && trigger.Kind != "PostCombat" && trigger.Kind != "PostCombatHealing" && trigger.Kind != "OnHeal" &&
                         trigger.Kind != "OnEquipmentAdded" && trigger.Kind != "OnEquipmentAddedToAny" && trigger.Kind != "OnEquipmentRemoved" &&
                         trigger.Kind != "OnSpawn" && trigger.Kind != "OnUnscaledSpawn" && trigger.Kind != "OnSpawnNotFromCard" &&
@@ -528,6 +533,8 @@ namespace MonsterTrain2Poju.Model
                                 return "Triggered unit upgrades require unit and card modifier state.";
                             if (action.Upgrade.ExternalInteractions.Count > 0)
                                 return string.Join("; ", action.Upgrade.ExternalInteractions);
+                            if (action.Upgrade.TriggerUpgrades?.Count > 0)
+                                return "Triggered upgrades that mutate the running trigger list require retained trigger identity.";
                             if (action.Upgrade.RestrictSizeToRoomCapacity && state.Context?.RoomCapacities == null)
                                 return "Triggered size restrictions require room capacity state.";
                             if (action.Target != "Self" && !new[] { "Room", "FrontInRoom", "BackInRoom", "Weakest", "RoomHealTargets", "RandomInRoom", "LastAttackedCharacter" }.Contains(action.Target))
@@ -762,7 +769,8 @@ namespace MonsterTrain2Poju.Model
                     if (!EquipmentUpgrades(cardId, definitions, out var card, out var upgrades)) return Finish(RoomOutcome.Unsupported);
                     SetEquipment(target, target.Source.EquipmentCards.Concat(new[] { cardId }).ToArray());
                     foreach (var upgrade in upgrades)
-                        if (!ApplyUpgrade(target, upgrade, "TemporaryUntilUnitDeath", false, null, 0, null, true, EquipmentModel.UpgradeKey(cardId)))
+                        if (!ApplyUpgrade(target, upgrade, "TemporaryUntilUnitDeath", false, null, 0, null, true, EquipmentUpgradeKey(cardId, definitions),
+                            equipmentSourceCardId: cardId))
                             return Finish(RoomOutcome.Unsupported);
                     if (!target.Removed)
                         foreach (WorkingUnit unit in units.Where(unit => !unit.Removed && unit.InRoom).OrderBy(unit => unit.Source.Team))
@@ -799,7 +807,7 @@ namespace MonsterTrain2Poju.Model
                             ? target.Source.Modifiers!.Upgrades.ToList().FindIndex(applied => applied.EquipmentSourceCardId == upgrade.EquipmentSourceCardId &&
                                 applied.EquipmentSourceUpgradeIndex == upgrade.EquipmentSourceUpgradeIndex) : -1;
                         if (!ApplyUpgrade(target, upgrade, "TemporaryUntilUnitDeath", true, null, 0, null, true,
-                            EquipmentModel.UpgradeKey(cardId), index < 0 ? (int?)null : index)) return false;
+                            EquipmentUpgradeKey(cardId, definitions), index < 0 ? (int?)null : index)) return false;
                     }
                     SetEquipment(target, target.Source.EquipmentCards.Where(id => id != cardId).ToArray());
                     QueueCallback(new QueuedCharacterTrigger(source.RoomIndex, target.Freeze(), "OnEquipmentRemoved"));
@@ -815,6 +823,8 @@ namespace MonsterTrain2Poju.Model
                     unit.IsPyre, unit.EndsBattleOnDeath, unit.Statuses, unit.Triggers, unit.SpawnerCardId, unit.Size, unit.StatusImmunities,
                     unit.Subtypes, unit.Modifiers, unit.IsBoss, unit.LastAttackerId, unit.StatusRegistry, cards));
             }
+            private string EquipmentUpgradeKey(int cardId, BattlePlayRules definitions) => definitions.Cards
+                .First(rule => rule.DataId == context!.FindCard(cardId)!.DataId).Equipment!.UpgradeId ?? EquipmentModel.UpgradeKey(cardId);
 
             internal RoomCombatResult CardHeal(int targetId, int amount)
             {
@@ -1233,6 +1243,7 @@ namespace MonsterTrain2Poju.Model
                 {
                     CombatTrigger trigger = unit.Triggers[index];
                     if (trigger.Kind != kind || trigger.Once && trigger.HasTriggered ||
+                        trigger.Origin?.OnlyIfEquipped == true && unit.Source.EquipmentCards!.Count == 0 ||
                         trigger.TriggerAtThreshold > 0 && paramInt < trigger.TriggerAtThreshold ||
                         source.Deployment && trigger.SkipDuringDeployment == true ||
                         !canFireTriggers && !trigger.IgnoreSilence ||
@@ -1298,7 +1309,7 @@ namespace MonsterTrain2Poju.Model
 
             private bool ApplyUpgrade(WorkingUnit target, CardUpgradeModifier upgrade, string lifetime, bool remove,
                 int? roomCapacity, int sourceCardId, string? kind, bool directApi = false,
-                string upgradeId = "", int? anonymousRemovalIndex = null)
+                string upgradeId = "", int? anonymousRemovalIndex = null, int equipmentSourceCardId = 0)
             {
                 RoomCombatResult result = UnitModifierModel.ApplyWithSettlement(UpgradeRoom(target), target.Source.Id, upgrade, lifetime,
                     remove, roomCapacity, sourceCardId, kind, (state, changed) =>
@@ -1317,7 +1328,7 @@ namespace MonsterTrain2Poju.Model
                         // terminal clearing. Its remaining source-card work must still run.
                         return new RoomCombatResult(UpgradeRoom(target), RoomOutcome.Exchanged, 0, new List<CombatEvent>());
                     }, allowDyingTarget: true, enqueueCallback: QueueCallback, directApi: directApi,
-                    upgradeId: upgradeId, anonymousRemovalIndex: anonymousRemovalIndex);
+                    upgradeId: upgradeId, anonymousRemovalIndex: anonymousRemovalIndex, equipmentSourceCardId: equipmentSourceCardId);
                 if (!result.Supported) { unsupportedReason = result.UnsupportedReason; return false; }
                 context = result.State!.Context;
                 return true;

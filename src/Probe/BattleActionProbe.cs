@@ -173,7 +173,7 @@ namespace MonsterTrain2Poju.Probe
             {
                 var upgrades = effects.Where(effect => effect.GetParamCardUpgradeData() != null).Select(effect =>
                 { var state = new CardUpgradeState(); state.Setup(effect.GetParamCardUpgradeData()); return CardModifierProbe.Upgrade(state); }).ToArray();
-                equipment = new EquipmentDefinition(upgrades, data.GetTraits().Any(trait => trait.GetTraitStateName() == "CardTraitReturnToHandEquipment"));
+                equipment = new EquipmentDefinition(upgrades, data.GetTraits().Any(trait => trait.GetTraitStateName() == "CardTraitReturnToHandEquipment"), data.GetID());
                 interactions.AddRange(upgrades.SelectMany(upgrade => upgrade.ExternalInteractions));
                 if (data.GetCardType() == CardType.Equipment) { kind = "Equipment"; destination = "Standby"; }
             }

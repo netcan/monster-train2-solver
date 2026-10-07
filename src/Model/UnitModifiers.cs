@@ -46,7 +46,7 @@ namespace MonsterTrain2Poju.Model
             string lifetime, bool remove, int? roomCapacity, int sourceCardId, string? triggerKind,
             Func<RoomCombatState, CombatUnit, RoomCombatResult> settle, bool allowDyingTarget = false,
             Action<RoomCombatModel.QueuedCharacterTrigger>? enqueueCallback = null, bool directApi = false,
-            string upgradeId = "", int? anonymousRemovalIndex = null)
+            string upgradeId = "", int? anonymousRemovalIndex = null, int equipmentSourceCardId = 0)
         {
             string? error = RoomCombatModel.Validate(source, allowDyingTarget ? targetId : (int?)null,
                 directApi ? targetId : (int?)null);
@@ -56,6 +56,8 @@ namespace MonsterTrain2Poju.Model
                 return Unsupported("Unit upgrades require unit and card instance modifier state.");
             roomCapacity = RoomCapacityModel.Maximum(source.Context, source.RoomIndex, target.Team) ?? roomCapacity;
             if (upgrade.ExternalInteractions.Count > 0) return Unsupported(string.Join("; ", upgrade.ExternalInteractions));
+            if (equipmentSourceCardId < 0 || equipmentSourceCardId > 0 && source.Context.FindCard(equipmentSourceCardId) == null)
+                return Unsupported("Missing equipment trigger source.");
             if (!remove && !new[] { "TemporaryUntilEndOfBattle", "TemporaryUntilUnitDeath", "Permanent" }.Contains(lifetime))
                 return Unsupported("Unmodeled unit upgrade lifetime.");
             if (remove && upgrade.DataId.Length == 0 && !directApi) return Unsupported("Removing an upgrade requires a definition ID.");
@@ -132,12 +134,35 @@ namespace MonsterTrain2Poju.Model
                         partial = health <= 0;
                     }
                 }
+                if (!partial && !source.Preview && upgrade.TriggerUpgrades != null)
+                {
+                    var changedTriggers = triggers.ToList();
+                    foreach (CombatTrigger definition in upgrade.TriggerUpgrades)
+                    {
+                        if (remove)
+                        {
+                            if (upgradeId.Length > 0 && changedTriggers.Any(trigger => trigger.Kind == definition.Kind && trigger.Origin == null))
+                                return Unsupported("Removing an attributed trigger requires its upgrade origin.");
+                            changedTriggers.RemoveAll(trigger => trigger.Kind == definition.Kind &&
+                                (upgradeId.Length == 0 || trigger.Origin?.UpgradeId == upgradeId));
+                        }
+                        else changedTriggers.Add(definition.WithOrigin(upgradeId, equipmentSourceCardId));
+                    }
+                    triggers = changedTriggers;
+                }
                 var statuses = target.Statuses.ToDictionary(status => status.Id);
                 var nextModifiers = new UnitModifiers(damage, added, buff, size, equipment, modifiers.CanBeHealed, modifiers.IsClone, upgrades,
                     healthFromUpgrades, modifiers.SpawnerMatchesDefinition);
                 CombatUnit Snapshot() => new CombatUnit(target.Id, target.AssetKey, target.Team, Math.Max(0, checked(damage + buff)), health, maxHealth,
                     target.CanAttack, target.IsPyre, target.EndsBattleOnDeath, statuses.Values.ToArray(), triggers, target.SpawnerCardId,
                     Math.Max(1, Math.Min(6, size)), target.StatusImmunities, target.Subtypes, nextModifiers, target.IsBoss, target.LastAttackerId, target.StatusRegistry, target.EquipmentCards);
+                if (!partial && upgrade.TriggerUpgrades?.Count > 0)
+                {
+                    error = RoomCombatModel.Validate(new RoomCombatState(state.RoomIndex, state.Deployment,
+                        state.Units.Select(unit => unit.Id == targetId ? Snapshot() : unit).ToArray(), state.ExternalInteractions, state.Context, state.Preview),
+                        allowDyingTarget ? targetId : (int?)null, directApi ? targetId : (int?)null);
+                    if (error != null) return Unsupported(error);
+                }
                 var statusCallbacks = new List<RoomCombatModel.QueuedCharacterTrigger>();
                 if (!partial)
                     foreach (CombatStatus status in upgrade.Statuses)

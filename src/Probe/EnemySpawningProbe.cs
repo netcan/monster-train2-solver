@@ -87,43 +87,45 @@ namespace MonsterTrain2Poju.Probe
                     false, rule.GetSkipTriggerDuringDeployment(), rule.GetRemoveDuringDeployment(),
                     BattleActionProbe.TriggeredVfx(rule, -1f), BattleActionProbe.TriggeredVfx(rule, 1f), rule.IsStackable(), rule.IsHidden(), rule.GetDisplayCategory().ToString());
             }).ToArray();
-            CombatTrigger[] triggers = data.GetTriggers().Select(trigger =>
-            {
-                if (trigger.GetOnlyTriggerIfEquipped() || trigger.GetRemoveOnRelentlessChange() ||
-                    trigger.GetRequiredStatusEffects().Count > 0 || trigger.GetRequiredStatusEffectsForDyingCharacter().Count > 0)
-                    interactions.Add("Spawned conditional triggers");
-                CombatEffect[] effects = trigger.GetEffects().Select(effect =>
-                {
-                    if (effect.GetUseIntRange() && effect.GetEffectStateName() != "CardEffectHeal" && effect.GetEffectStateName() != "CardEffectDamage" && effect.GetEffectStateName() != "CardEffectAddStatusEffect" &&
-                        !EnergyModel.IsNativeEffect(effect.GetEffectStateName()) && effect.GetEffectStateName() != "CardEffectDrawAdditionalNextTurn" && effect.GetEffectStateName() != "CardEffectAdjustRoomCapacity") interactions.Add("Spawned random effect initialization");
-                    if (effect.GetEffectStateName() == "CardEffectRewardGold" &&
-                        AllGameManagers.Instance!.GetSaveManager().GetAdjustedGoldAmount(effect.GetParamInt(), isReward: true) != GoldRewardModel.Adjust(effect.GetParamInt()))
-                        interactions.Add("Spawned modified gold reward rules");
-                    if (effect.GetEffectStateName() == "CardEffectDespawnCharacter" && effect.GetParamInt() > 1)
-                        interactions.Add("Native preview mutation of a delayed despawn counter");
-                    if (effect.GetEffectStateName() != "CardEffectAddBattleCard" && (effect.GetCopyModifiersFromSource() || effect.GetFilterBasedOnMainSubClass() ||
-                        effect.GetParamCardUpgradeData() != null && !UnitTriggerUpgradeProbe.Known(effect.GetEffectStateName()) && effect.GetEffectStateName() != "CardEffectDrawAdditionalNextTurn")) interactions.Add("Spawned effect modifiers");
-                    var pool = new List<CardData>();
-                    CardEffectState.GetFilteredCardListFromPool(effect.GetParamCardPool(), effect.GetParamCardFilter(),
-                        AllGameManagers.Instance!.GetRelicManager(), ref pool);
-                    return new CombatEffect(effect.GetEffectStateName(), effect.GetEffectStateName() is "CardEffectHeal" or "CardEffectDamage" ? Math.Max(0, effect.GetParamInt()) : effect.GetParamInt(),
-                        effect.GetEffectStateName() == "CardEffectDespawnCharacter" ? Math.Max(1, effect.GetParamInt()) : 0,
-                        ((CardPile)effect.GetParamInt()).ToString(), effect.GetAdditionalParamInt(),
-                        pool.Select(card => card.GetID()).ToArray(), effect.GetParamBool2(),
-                        effect.GetEffectStateName() == "CardEffectAddBattleCard" ? CardGenerationProbe.Definition(effect) : null,
-                        UnitTriggerUpgradeProbe.Definition(effect, interactions), UnitTriggerActionProbe.Definition(effect),
-                        effect.GetEffectStateName() == "CardEffectDamage" && effect.GetUseStatusEffectStackMultiplier() ? effect.GetStatusEffectStackMultiplier() : null, UnitTriggerActionProbe.Scaling(effect));
-                }).ToArray();
-                return new CombatTrigger(trigger.GetTrigger().ToString(), trigger.GetTriggerOnce(), false,
-                    trigger.GetHideVisualAndIgnoreSilence(), 1, effects,
-                    AllGameManagers.Instance!.GetSaveManager().GetBalanceData().GetDisallowedDeploymentPhaseCharacterTriggers().Contains(trigger.GetTrigger()),
-                    trigger.GetTriggerAtThreshold());
-            }).ToArray();
+            CombatTrigger[] triggers = data.GetTriggers().Select(trigger => TriggerDefinition(trigger, interactions)).ToArray();
             return new EnemyDefinition(new CombatUnit(0, data.GetAssetKey(), CombatTeam.Enemy, data.GetAttackDamage(),
                 data.GetHealth(), data.GetHealth(), data.GetCanAttack(), false, data.IsMiniboss(), statuses, triggers, size: data.GetSize(),
                 statusImmunities: data.GetStatusEffectImmunities(), subtypes: data.GetSubtypes().Select(subtype => subtype.Key).ToArray(),
                 modifiers: UnitModifierProbe.Definition(data), isBoss: data.IsMiniboss() || data.IsOuterTrainBoss(), lastAttackerId: 0, statusRegistry: statuses, equipmentCards: Array.Empty<int>()),
                 data.GetAscendsTrainAutomatically(), data.GetLoopsBetweenTrainFloors(), interactions);
+        }
+
+        internal static CombatTrigger TriggerDefinition(CharacterTriggerData trigger, List<string> interactions)
+        {
+            if (trigger.GetRemoveOnRelentlessChange() ||
+                trigger.GetRequiredStatusEffects().Count > 0 || trigger.GetRequiredStatusEffectsForDyingCharacter().Count > 0)
+                interactions.Add("Spawned conditional triggers");
+            CombatEffect[] effects = trigger.GetEffects().Select(effect =>
+            {
+                if (effect.GetUseIntRange() && effect.GetEffectStateName() != "CardEffectHeal" && effect.GetEffectStateName() != "CardEffectDamage" && effect.GetEffectStateName() != "CardEffectAddStatusEffect" &&
+                    !EnergyModel.IsNativeEffect(effect.GetEffectStateName()) && effect.GetEffectStateName() != "CardEffectDrawAdditionalNextTurn" && effect.GetEffectStateName() != "CardEffectAdjustRoomCapacity") interactions.Add("Spawned random effect initialization");
+                if (effect.GetEffectStateName() == "CardEffectRewardGold" &&
+                    AllGameManagers.Instance!.GetSaveManager().GetAdjustedGoldAmount(effect.GetParamInt(), isReward: true) != GoldRewardModel.Adjust(effect.GetParamInt()))
+                    interactions.Add("Spawned modified gold reward rules");
+                if (effect.GetEffectStateName() == "CardEffectDespawnCharacter" && effect.GetParamInt() > 1)
+                    interactions.Add("Native preview mutation of a delayed despawn counter");
+                if (effect.GetEffectStateName() != "CardEffectAddBattleCard" && (effect.GetCopyModifiersFromSource() || effect.GetFilterBasedOnMainSubClass() ||
+                    effect.GetParamCardUpgradeData() != null && !UnitTriggerUpgradeProbe.Known(effect.GetEffectStateName()) && effect.GetEffectStateName() != "CardEffectDrawAdditionalNextTurn")) interactions.Add("Spawned effect modifiers");
+                var pool = new List<CardData>();
+                CardEffectState.GetFilteredCardListFromPool(effect.GetParamCardPool(), effect.GetParamCardFilter(),
+                    AllGameManagers.Instance!.GetRelicManager(), ref pool);
+                return new CombatEffect(effect.GetEffectStateName(), effect.GetEffectStateName() is "CardEffectHeal" or "CardEffectDamage" ? Math.Max(0, effect.GetParamInt()) : effect.GetParamInt(),
+                    effect.GetEffectStateName() == "CardEffectDespawnCharacter" ? Math.Max(1, effect.GetParamInt()) : 0,
+                    ((CardPile)effect.GetParamInt()).ToString(), effect.GetAdditionalParamInt(),
+                    pool.Select(card => card.GetID()).ToArray(), effect.GetParamBool2(),
+                    effect.GetEffectStateName() == "CardEffectAddBattleCard" ? CardGenerationProbe.Definition(effect) : null,
+                    UnitTriggerUpgradeProbe.Definition(effect, interactions), UnitTriggerActionProbe.Definition(effect),
+                    effect.GetEffectStateName() == "CardEffectDamage" && effect.GetUseStatusEffectStackMultiplier() ? effect.GetStatusEffectStackMultiplier() : null, UnitTriggerActionProbe.Scaling(effect));
+            }).ToArray();
+            return new CombatTrigger(trigger.GetTrigger().ToString(), trigger.GetTriggerOnce(), false,
+                trigger.GetHideVisualAndIgnoreSilence(), 1, effects,
+                AllGameManagers.Instance!.GetSaveManager().GetBalanceData().GetDisallowedDeploymentPhaseCharacterTriggers().Contains(trigger.GetTrigger()),
+                trigger.GetTriggerAtThreshold(), new CombatTriggerOrigin("", 0, false, trigger.GetOnlyTriggerIfEquipped()));
         }
 
         private IEnumerator Wrap(IEnumerator native, bool includeTreasure)

@@ -118,8 +118,8 @@ namespace MonsterTrain2Poju.Probe
         }
         internal string UpgradeKey(string nativeKey)
         {
-            CardState? card = projection.KnownCards.FirstOrDefault(item => item.GetID() == nativeKey);
-            return card == null ? nativeKey : "equipment:" + CardId(card);
+            // CardState.GetID() is the definition ID, shared by its copies.
+            return nativeKey;
         }
         internal CardUpgradeModifier CaptureAppliedUpgrade(CardUpgradeState upgrade)
         {
@@ -269,7 +269,7 @@ namespace MonsterTrain2Poju.Probe
                 if (unit.IsSacrifice && unit.SacrificeCard != null && unit.SacrificeCard.GetTraitStates().Count > 0 &&
                     trigger.GetEffectStates().Any(effect => effect.GetCardEffect() is CardEffectHeal))
                     interactions.Add("Sacrifice healing damage traits");
-                if (data.GetOnlyTriggerIfEquipped() || data.GetRemoveOnRelentlessChange() ||
+                if (data.GetRemoveOnRelentlessChange() ||
                     data.GetRequiredStatusEffects().Count > 0 || data.GetRequiredStatusEffectsForDyingCharacter().Count > 0)
                     interactions.Add("Conditional trigger " + trigger.GetTrigger());
                 var effects = trigger.GetEffectStates().Select(effect =>
@@ -297,11 +297,15 @@ namespace MonsterTrain2Poju.Probe
                         UnitTriggerUpgradeProbe.Capture(effect, interactions), UnitTriggerActionProbe.Capture(effect),
                         type == "CardEffectDamage" && effect.GetUseStatusEffectStackMultiplier() ? effect.GetStatusEffectStackMultiplier() : null, UnitTriggerActionProbe.Scaling(effect));
                 }).ToArray();
+                int[] boundEquipment = trigger.GetEffectStates().Select(effect => effect.GetParentEquipment() == null ? 0 : Active!.CardId(effect.GetParentEquipment()!)).Distinct().ToArray();
+                int equipmentId = boundEquipment.Length == 1 ? boundEquipment[0] : 0;
+                if (boundEquipment.Length > 1 || trigger.IsFromEquipment != (equipmentId > 0)) interactions.Add("Inconsistent equipment trigger bindings");
                 return new CombatTrigger(trigger.GetTrigger().ToString(), data.GetTriggerOnce(),
                     trigger.GetHasTriggeredOnce(false), trigger.GetHideVisualAndIgnoreSilence(),
                     unit.GetTriggerFireCount(trigger.GetTrigger(), trigger), effects,
                     AllGameManagers.Instance!.GetSaveManager().GetBalanceData().GetDisallowedDeploymentPhaseCharacterTriggers().Contains(trigger.GetTrigger()),
-                    data.GetTriggerAtThreshold());
+                    data.GetTriggerAtThreshold(), new CombatTriggerOrigin(Active!.UpgradeKey(trigger.triggerId), equipmentId,
+                        trigger.IsFromEquipment, data.GetOnlyTriggerIfEquipped()));
             }).ToArray();
         }
 
@@ -398,7 +402,7 @@ namespace MonsterTrain2Poju.Probe
             string temporary = path + ".tmp";
             var snapshot = new
             {
-                Schema = 55,
+                Schema = 56,
                 GameVersion = Application.version,
                 GameModuleMvid = typeof(CardState).Assembly.ManifestModule.ModuleVersionId,
                 NativeWon,

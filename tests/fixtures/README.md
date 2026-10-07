@@ -46,8 +46,9 @@ continues waiting until the original host dies. Global return-to-hand checks
 occur before ordinary next-turn draws. All operations compare complete native
 room/context states independently in 32 parallel branches; the subsequent
 19-play, seven-EndTurn policy matches from initial and mid-battle inputs in
-16 parallel branches. Grafted equipment, equipment-granted triggers/abilities
-and special return overrides remain unsupported.
+16 parallel branches. Equipment-granted triggers are covered separately below;
+grafted equipment, equipment-granted abilities and special return overrides
+remain unsupported.
 
 `full-battle-equipment-exhausted.mt2f` uses the same attachment/removal setup
 with ordinary equipment whose destination is Exhausted. It captures 15 native
@@ -67,6 +68,19 @@ equipment references, while spawning declares canonical references matching
 decision inputs. Its 30 equipment operations and one lethal direct upgrade
 compare independently in 32 parallel branches; the full 21-play, seven-EndTurn
 policy matches from initial and mid-battle roots in 16 parallel branches.
+
+`full-battle-equipment-triggers.mt2f` retains schema 56. Base equipment upgrades
+add once-only attachment, repeated attachment-to-any and post-combat triggers;
+an anonymous permanent equipment upgrade adds another repeated trigger. Every
+trigger records the raw native upgrade ID separately from its bound equipment
+instance. CardState.GetID() returns a definition ID, so copies share the same
+removal key: removing one copy can revoke matching triggers on another copy
+while preserving ordinary base triggers. A base equipped-only removal trigger
+also retains its condition after the final equipment disappears. Its 25 actual
+equipment operations compare in 32 parallel branches; the complete 19-play,
+seven-EndTurn policy compares from initial and mid-battle roots with 16 parallel
+branches. Trigger-list mutation by a running upgrade effect, immediate moon
+phase triggers and equipment-granted abilities remain separate work.
 
 `full-battle-room-capacity.mt2f` and `full-battle-room-capacity-lethal.mt2f`
 retain schema 52 battles with live capacities used by subsequent summons and

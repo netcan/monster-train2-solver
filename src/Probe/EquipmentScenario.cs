@@ -37,12 +37,19 @@ namespace MonsterTrain2Poju.Probe
             CardManager cards = managers.GetCardManager()!; SaveManager save = managers.GetSaveManager();
             bool exhausted = Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == "equipment-exhausted";
             bool overflow = Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == "equipment-overflow";
+            bool triggerEquipment = Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == "equipment-triggers";
             CardState[] owned = cards.GetAllCards(new List<CardState>()).ToArray();
             CardState[] gear = owned.Where(card => card.GetEffects().Any(effect => effect.GetEffectStateName() == "CardEffectDamage" &&
                 effect.GetTargetMode() == TargetMode.DropTargetCharacter)).ToArray();
             if (gear.Length < 3) { Error = "Equipment setup needs three owned targeted damage cards."; yield break; }
             CardData data = save.GetAllGameData().FindCardData(gear[0].GetCardDataID())!;
             CardUpgradeData upgrade = DynamicUpgradeScenario.Upgrade("PojuEquipment", "383fbf10-6400-4000-8000-000000000001", 2, 4, 0, 2, "armor", 2);
+            if (triggerEquipment)
+            {
+                upgrade.GetCharacterTriggerUpgrades().Add(GoldTrigger(CharacterTriggerData.Trigger.OnEquipmentAdded, 2, true));
+                upgrade.GetCharacterTriggerUpgrades().Add(GoldTrigger(CharacterTriggerData.Trigger.OnEquipmentAddedToAny, 3, false));
+                upgrade.GetCharacterTriggerUpgrades().Add(GoldTrigger(CharacterTriggerData.Trigger.PostCombat, 2, false));
+            }
             var attach = new CardEffectData("CardEffectAttachEquipment", null!, Team.Type.Monsters);
             attach.Cheat_SetTargetMode(TargetMode.DropTargetCharacter); Set(attach, "paramCardUpgradeData", upgrade);
             data.GetEffects().Clear(); data.GetEffects().Add(attach); data.GetTraits().Clear();
@@ -62,10 +69,17 @@ namespace MonsterTrain2Poju.Probe
             foreach (var kind in new[] { CharacterTriggerData.Trigger.OnEquipmentAddedToAny, CharacterTriggerData.Trigger.OnEquipmentAdded, CharacterTriggerData.Trigger.OnEquipmentRemoved })
             { var trigger = HealingScenario.HealGold(1, false, true); Set(trigger, "trigger", kind); triggers.Add(trigger); }
             Set(unitData, "triggers", triggers);
+            if (triggerEquipment)
+            {
+                var conditional = GoldTrigger(CharacterTriggerData.Trigger.OnEquipmentRemoved, 7, false);
+                Set(conditional, "onlyTriggerIfEquipped", true); triggers.Add(conditional); Set(unitData, "triggers", triggers);
+            }
             foreach (CardState card in owned.Where(card => card.GetCardDataID() == steward.GetID())) card.Setup(steward, save);
             gear[0].GetTemporaryCardStateModifiers().IncrementAdditionalDamage(1);
             gear[0].GetTemporaryCardStateModifiers().IncrementAdditionalHP(3);
             var bonus = new CardUpgradeState(); bonus.Setup(); bonus.SetAttackDamage(1); bonus.AddStatusEffectUpgradeStacks("spikes", 1);
+            if (triggerEquipment)
+                bonus.GetTriggerUpgrades().Add(GoldTrigger(CharacterTriggerData.Trigger.OnEquipmentAddedToAny, 5, false));
             gear[1].ApplyPermanentUpgrade(bonus, save, ignoreUpgradeAnimation: true);
             RoomManager rooms = managers.GetRoomManager()!; yield return rooms.GetRoomUI().SetSelectedRoom(0);
             int index = cards.GetHand().FindIndex(card => card.GetCardDataID() == steward.GetID());
@@ -108,6 +122,10 @@ namespace MonsterTrain2Poju.Probe
             Completed = true;
             log.LogInfo("EQUIPMENT-PREPARED native three-card attachment/replacement, temporary/permanent modifiers, equipment callbacks, return=" +
                 (exhausted ? "Exhausted" : "Hand") + " fullHandDeath=" + overflow + " and original Boss/waves.");
+        }
+        private static CharacterTriggerData GoldTrigger(CharacterTriggerData.Trigger kind, int amount, bool once)
+        {
+            var trigger = HealingScenario.HealGold(amount, once, true); Set(trigger, "trigger", kind); return trigger;
         }
         private static void Set(object target, string field, object value) => AccessTools.Field(target.GetType(), field).SetValue(target, value);
     }

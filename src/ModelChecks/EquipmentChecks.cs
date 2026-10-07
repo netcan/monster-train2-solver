@@ -10,7 +10,7 @@ internal static class EquipmentChecks
         var samples = records.EnumerateArray().ToArray();
         foreach (var sample in samples) Verify(sample);
         string? scenario = fixture.GetProperty("ModifierScenario").GetString();
-        if (scenario is "equipment" or "equipment-exhausted" or "equipment-overflow")
+        if (scenario is "equipment" or "equipment-exhausted" or "equipment-overflow" or "equipment-triggers")
         {
             Require(samples.Any(sample => !sample.GetProperty("Remove").GetBoolean() &&
                 Host(sample, "Before").EquipmentCards!.Count >= Host(sample, "Before").Modifiers!.EquipmentLimit &&
@@ -73,6 +73,22 @@ internal static class EquipmentChecks
                     return waiting.Length > 0 && actual.Hand.Count == context.MaxHandSize &&
                         waiting.All(condition => actual.Draw.Any(card => card.InstanceId == condition.CardId));
                 }), "Native global standby return before the full-hand draw exit was not reached.");
+            }
+            if (scenario == "equipment-triggers")
+            {
+                Require(samples.Any(sample => Host(sample, "After").Triggers.Where(trigger => trigger.Origin!.IsFromEquipment)
+                    .GroupBy(trigger => trigger.Origin!.UpgradeId).Any(group => group.Select(trigger => trigger.Origin!.EquipmentCardId).Distinct().Count() > 1)),
+                    "Native equipment copies did not share an upgrade ID while retaining different effect bindings.");
+                Require(samples.Any(sample => sample.GetProperty("Remove").GetBoolean() && sample.GetProperty("CardId").GetInt32() > 0 &&
+                    Host(sample, "Before").EquipmentCards!.Count > 1 && Host(sample, "After").EquipmentCards!.Count > 0 &&
+                    Host(sample, "Before").Triggers.Any(trigger => trigger.Origin!.IsFromEquipment) &&
+                    !Host(sample, "After").Triggers.Any(trigger => trigger.Origin!.IsFromEquipment) &&
+                    Host(sample, "After").Triggers.Any(trigger => !trigger.Origin!.IsFromEquipment && trigger.Kind == "OnEquipmentAddedToAny")),
+                    "Native same-definition removal did not revoke the other copy's matching triggers while preserving the base trigger.");
+                Require(samples.Any(sample => Host(sample, "After").Triggers.Any(trigger => trigger.Once && trigger.HasTriggered && trigger.Origin!.IsFromEquipment)) &&
+                    samples.Any(sample => Host(sample, "After").EquipmentCards!.Count == 0 &&
+                        Host(sample, "After").Triggers.Any(trigger => trigger.Origin!.OnlyIfEquipped)),
+                    "Native once flags or equipped-only base triggers were not retained.");
             }
             var attached = samples.First(sample => !sample.GetProperty("Remove").GetBoolean());
             Require(!RoomCombatModel.ApplyEquipment(attached.GetProperty("After").Deserialize<RoomCombatState>()!,

@@ -128,6 +128,16 @@ namespace MonsterTrain2Poju.Model
                 Action.Tests, Action.Range, Action.Filters, Action.Generation), DamageStatusMultiplier, StatusScaling);
     }
 
+    public sealed class CombatTriggerOrigin
+    {
+        public string UpgradeId { get; }
+        public int EquipmentCardId { get; }
+        public bool IsFromEquipment { get; }
+        public bool OnlyIfEquipped { get; }
+        public CombatTriggerOrigin(string upgradeId, int equipmentCardId, bool isFromEquipment, bool onlyIfEquipped)
+        { UpgradeId = upgradeId; EquipmentCardId = equipmentCardId; IsFromEquipment = isFromEquipment; OnlyIfEquipped = onlyIfEquipped; }
+    }
+
     public sealed class CombatTrigger
     {
         public string Kind { get; }
@@ -138,15 +148,21 @@ namespace MonsterTrain2Poju.Model
         public IReadOnlyList<CombatEffect> Effects { get; }
         public bool? SkipDuringDeployment { get; }
         public int? TriggerAtThreshold { get; }
+        public CombatTriggerOrigin? Origin { get; }
         public CombatTrigger(string kind, bool once, bool hasTriggered, bool ignoreSilence,
-            int fireCount, IReadOnlyList<CombatEffect> effects, bool? skipDuringDeployment = null, int? triggerAtThreshold = null)
+            int fireCount, IReadOnlyList<CombatEffect> effects, bool? skipDuringDeployment = null, int? triggerAtThreshold = null,
+            CombatTriggerOrigin? origin = null)
         {
             Kind = kind; Once = once; HasTriggered = hasTriggered; IgnoreSilence = ignoreSilence;
             FireCount = fireCount; Effects = Array.AsReadOnly(effects.ToArray()); SkipDuringDeployment = skipDuringDeployment;
             TriggerAtThreshold = triggerAtThreshold;
+            Origin = origin;
         }
         internal CombatTrigger Fired(IReadOnlyList<CombatEffect> effects) => new CombatTrigger(Kind,
-            Once, true, IgnoreSilence, FireCount, effects, SkipDuringDeployment, TriggerAtThreshold);
-        internal CombatTrigger ForPreview() => new CombatTrigger(Kind, Once, false, IgnoreSilence, FireCount, Effects, SkipDuringDeployment, TriggerAtThreshold);
+            Once, true, IgnoreSilence, FireCount, effects, SkipDuringDeployment, TriggerAtThreshold, Origin);
+        internal CombatTrigger ForPreview() => new CombatTrigger(Kind, Once, false, IgnoreSilence, FireCount, Effects, SkipDuringDeployment, TriggerAtThreshold, Origin);
+        internal CombatTrigger WithOrigin(string upgradeId, int equipmentCardId) => new CombatTrigger(Kind, Once, false,
+            IgnoreSilence, FireCount, Effects, SkipDuringDeployment, TriggerAtThreshold,
+            new CombatTriggerOrigin(upgradeId, equipmentCardId, equipmentCardId > 0, Origin?.OnlyIfEquipped == true));
     }
 }

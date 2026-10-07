@@ -8,8 +8,9 @@ namespace MonsterTrain2Poju.Model
     {
         public IReadOnlyList<CardUpgradeModifier> Upgrades { get; }
         public bool ReturnToHand { get; }
-        public EquipmentDefinition(IReadOnlyList<CardUpgradeModifier> upgrades, bool returnToHand = false)
-        { Upgrades = Array.AsReadOnly(upgrades.ToArray()); ReturnToHand = returnToHand; }
+        public string? UpgradeId { get; }
+        public EquipmentDefinition(IReadOnlyList<CardUpgradeModifier> upgrades, bool returnToHand = false, string? upgradeId = null)
+        { Upgrades = Array.AsReadOnly(upgrades.ToArray()); ReturnToHand = returnToHand; UpgradeId = upgradeId; }
     }
     public sealed class EquipmentStandbyCondition
     {

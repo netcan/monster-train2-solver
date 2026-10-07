@@ -2679,3 +2679,58 @@ fixtures pass the final checker, including canonical flag propagation and the
 lethal API's 32 isolated repeats. The expanded 80-archive inventory and SHA-256
 check passes. Probe builds with zero warnings/errors; ModelChecks has no errors
 and its 12 existing nullable warnings. No source JSON fixture is needed.
+
+## Equipment-granted trigger origins and shared removal IDs
+
+`-EquipmentTriggers` adds actual native character triggers through equipment
+definition upgrades and an anonymous permanent equipment upgrade. The captured
+`CombatTriggerOrigin` keeps the upgrade ID, bound equipment instance,
+IsFromEquipment flag and OnlyIfEquipped condition separately. Once flags,
+effect counters, healer adjustments and preview resets preserve the origin.
+Upgrade application adds triggers after both maximum-HP steps and before
+status callbacks; partial lethal applications skip that addition. Native
+preview application/removal leaves trigger membership unchanged. Spawner
+permanent/temporary card upgrades initialize ordinary unbound triggers.
+
+The native removal key is CardState.GetID(), which returns the definition ID,
+not the instance ID. Two copies therefore bind their effects to different
+equipment objects while sharing an upgrade ID. RemoveTrigger iterates backward
+and deletes all matching trigger kinds and IDs; an empty ID deletes every
+matching kind, including base triggers. The native fixture demonstrates removal
+of one equipment copy deleting matching triggers from the remaining copy while
+preserving unattributed base triggers. EquipmentDefinition now records this raw
+native upgrade ID. Legacy definitions retain their recorded key convention;
+new captures also preserve raw maximum-HP ledger keys without arbitrarily
+mapping a shared definition ID to the first card instance.
+
+OnlyIfEquipped tests current equipment membership before marking the once flag
+or executing effects. The native scenario retains an equipped-only base removal
+trigger after the final equipment disappears. Pure checks also cover disabled
+execution with an empty equipment list, named versus empty-ID removal,
+preview exclusion, inherited spawner triggers, immutable parents and 32
+parallel branches. Upgrade trigger descriptors share the ordinary character
+trigger projection, with bounded recursion explicitly reported as unsupported.
+
+`tests/fixtures/full-battle-equipment-triggers.mt2f` contains 4,958 nodes in
+29,238 bytes, schema 56 on game 2.2.1 and module MVID
+8fb07b96-f4db-4d2b-884d-c00536d6ccf4. The muted Instant native run takes 45.25
+seconds, wins at Pyre 61 after 19 plays and seven EndTurns, and compares 61 room
+stages, 13 card cycles, 14 train phases, 11 spawns and 25 equipment operations.
+All capture failures, differences, unsupported and pending counts are zero;
+original files are unchanged. The independent checker compares the complete
+native operations in 32 parallel branches and the whole policy from initial
+and actual mid-battle inputs with 16 parallel branches. All three previous
+equipment fixtures pass the same checker.
+
+Equipment-granted unit abilities, grafting, immediate moon/deathwish effects,
+status-conditioned triggers, empty equipment-trigger source capture, and
+upgrade effects mutating a trigger list while it is firing remain separate
+work. Running-list mutations fail closed until retained trigger identity is
+modeled; this increment does not treat them as ordinary immutable effects.
+
+The complete regression passes all 80 existing binary archives, including all
+eight calibration suites. The new native fixture and the three previous
+equipment fixtures pass the final independent checker. The expanded 81-file
+inventory and SHA-256 verification pass, as does probe-script parsing. Probe
+builds with zero warnings/errors; ModelChecks retains its 12 existing nullable
+warnings and has no errors. No JSON source fixture is introduced.

@@ -115,6 +115,7 @@ HandUpgradeChecks.Run();
 HealingChecks.Run();
 GoldRewardChecks.Run();
 HealingTriggerChecks.Run();
+TriggerUpgradeChecks.Run();
 EnemySpawningChecks.Run();
 BattleActionChecks.Run();
 DecisionReferenceChecks.Run();

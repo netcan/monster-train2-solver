@@ -9,6 +9,7 @@ namespace MonsterTrain2Poju.Probe
 {
     internal static class CardModifierProbe
     {
+        [ThreadStatic] private static int upgradeDepth;
         internal static CardInstanceState[] Capture(CardManager cards, Func<CardState, int> cardId)
             => Capture(cards.GetAllCards(new List<CardState>()), cardId);
 
@@ -78,13 +79,25 @@ namespace MonsterTrain2Poju.Probe
         internal static CardUpgradeModifier Upgrade(CardUpgradeState upgrade) => Upgrade(upgrade, false);
         internal static CardUpgradeModifier Upgrade(CardUpgradeState upgrade, bool rejectFilters)
         {
+            upgradeDepth++;
+            try { return UpgradeCore(upgrade, rejectFilters); }
+            finally { upgradeDepth--; }
+        }
+        private static CardUpgradeModifier UpgradeCore(CardUpgradeState upgrade, bool rejectFilters)
+        {
             var interactions = new List<string>();
             if (rejectFilters && upgrade.GetFilters().Count > 0) interactions.Add("Filtered bonus-draw upgrade");
             CardUpgradeData? source = upgrade.GetSourceCardUpgradeData();
             bool refresh = source != null && !source.GetUpgradeWillBeScaledByNonMagicPowerTrait();
             if (upgrade.GetUnitAbilityUpgrade() != null || upgrade.GetRoomAbilityUpgrade() != null) interactions.Add("Upgrade ability");
             if (upgrade.GetTraitDataUpgrades().Count > 0 || upgrade.GetRemoveTraitUpgrades().Count > 0) interactions.Add("Upgrade traits");
-            if (upgrade.GetTriggerUpgrades().Count > 0 || upgrade.GetCardTriggerUpgrades().Count > 0) interactions.Add("Upgrade triggers");
+            if (upgrade.GetCardTriggerUpgrades().Count > 0) interactions.Add("Upgrade card triggers");
+            CombatTrigger[]? triggers = null;
+            if (upgrade.GetTriggerUpgrades().Count > 0)
+            {
+                if (upgradeDepth > 16) interactions.Add("Recursive upgrade trigger definitions");
+                else triggers = upgrade.GetTriggerUpgrades().Select(trigger => EnemySpawningProbe.TriggerDefinition(trigger, interactions)).ToArray();
+            }
             if (upgrade.GetRoomModifierUpgrades().Count > 0) interactions.Add("Upgrade room modifiers");
             if (upgrade.GetFilters().Count > 0) interactions.Add("Upgrade card filters");
             if (upgrade.GetUpgradesToRemove().Count > 0) interactions.Add("Upgrade replacements");
@@ -97,7 +110,7 @@ namespace MonsterTrain2Poju.Probe
                 upgrade.GetRemoveOnDiscard(), upgrade.IsUnique(), upgrade.GetExcludeFromClones(), upgrade.GetAdditionalUnhealedHP(),
                 upgrade.GetAttackDamageBuff(), interactions, upgrade.GetRestrictSizeToRoomCapacity(), source?.GetMagicPowerTraitScalingOnly() == true,
                 refresh && source!.GetBonusDamage() > 0 ? (int?)source.GetBonusDamage() : null,
-                refresh && source!.GetBonusHeal() > 0 ? (int?)source.GetBonusHeal() : null);
+                refresh && source!.GetBonusHeal() > 0 ? (int?)source.GetBonusHeal() : null, triggerUpgrades: triggers);
         }
     }
 }
