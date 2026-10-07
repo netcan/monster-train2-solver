@@ -158,11 +158,13 @@ namespace MonsterTrain2Poju.Model
 
     public static class RoomCombatModel
     {
-        internal sealed class QueuedCharacterDeath
+        internal sealed class QueuedCharacterTrigger
         {
             internal int RoomIndex { get; }
             internal CombatUnit Unit { get; }
-            internal QueuedCharacterDeath(int roomIndex, CombatUnit unit) { RoomIndex = roomIndex; Unit = unit; }
+            internal string Kind { get; }
+            internal QueuedCharacterTrigger(int roomIndex, CombatUnit unit, string kind = "OnDeath")
+            { RoomIndex = roomIndex; Unit = unit; Kind = kind; }
         }
         private static readonly HashSet<string> KnownStatuses = new HashSet<string>(StringComparer.Ordinal)
         {
@@ -202,14 +204,14 @@ namespace MonsterTrain2Poju.Model
 
         private static RoomCombatResult ApplyCharacterPhase(RoomCombatState state, int unitId, string kind)
         {
-            var queue = new List<QueuedCharacterDeath>();
+            var queue = new List<QueuedCharacterTrigger>();
             RoomCombatResult result = ApplyCharacterPhase(state, unitId, kind, queue.Add);
             if (!result.Supported) return result;
             var events = result.Events.ToList();
             RoomOutcome outcome = result.Outcome;
             for (int index = 0; index < queue.Count; index++)
             {
-                result = ApplyQueuedCharacterDeath(result.State!, queue[index].Unit, queue.Add);
+                result = ApplyQueuedCharacterTrigger(result.State!, queue[index], queue.Add);
                 if (!result.Supported) return result;
                 events.AddRange(result.Events);
                 if (result.Outcome != RoomOutcome.Exchanged) outcome = result.Outcome;
@@ -217,17 +219,17 @@ namespace MonsterTrain2Poju.Model
             return new RoomCombatResult(result.State, outcome, 0, events);
         }
 
-        internal static RoomCombatResult ApplyCharacterPhase(RoomCombatState state, int unitId, string kind, Action<QueuedCharacterDeath> enqueue)
+        internal static RoomCombatResult ApplyCharacterPhase(RoomCombatState state, int unitId, string kind, Action<QueuedCharacterTrigger> enqueue)
         {
             string? error = Validate(state);
             if (error != null || !state.Units.Any(unit => unit.Id == unitId))
                 return new RoomCombatResult(null, RoomOutcome.Unsupported, 0, new List<CombatEvent>(),
                     error ?? "Character phases require a living character actor.");
-            return new Engine(state, new List<CombatEvent>(), enqueueCharacterDeath: enqueue).CharacterPhase(unitId, kind);
+            return new Engine(state, new List<CombatEvent>(), enqueueCharacterTrigger: enqueue).CharacterPhase(unitId, kind);
         }
 
-        internal static RoomCombatResult ApplyQueuedCharacterDeath(RoomCombatState state, CombatUnit dead, Action<QueuedCharacterDeath> enqueue)
-            => new Engine(state, new List<CombatEvent>(), enqueueCharacterDeath: enqueue).QueuedDeath(dead);
+        internal static RoomCombatResult ApplyQueuedCharacterTrigger(RoomCombatState state, QueuedCharacterTrigger queued, Action<QueuedCharacterTrigger> enqueue)
+            => new Engine(state, new List<CombatEvent>(), enqueueCharacterTrigger: enqueue, resetPreviewTriggers: false).QueuedTrigger(queued);
 
         public static RoomCombatResult ApplySpawnTriggers(RoomCombatState state, int unitId, bool fromCard)
         {
@@ -314,7 +316,23 @@ namespace MonsterTrain2Poju.Model
                     if (trigger.FireCount < 0) return "Invalid trigger fire count.";
                     foreach (CombatEffect effect in trigger.Effects)
                     {
+                        if (effect.Action != null && effect.Type != "CardEffectHeal")
+                            return "Mismatched triggered action definition.";
                         if (effect.Type == "CardEffectDespawnCharacter") continue;
+                        if (effect.Type == "CardEffectHeal")
+                        {
+                            CardActionEffect? action = effect.Action;
+                            if (action?.Type != "Heal") return "Missing triggered healing definition.";
+                            if (state.Units.Any(target => target.Modifiers == null))
+                                return "Triggered healing requires unit healability state.";
+                            if (!new[] { "Self", "Room", "FrontInRoom", "BackInRoom", "Weakest", "RoomHealTargets", "RandomInRoom" }.Contains(action.Target))
+                                return "Unmodeled triggered healing target " + action.Target;
+                            if ((action.Range != null || action.Target == "RandomInRoom") && state.Context == null)
+                                return "Triggered healing randomness requires shared battle context.";
+                            string? healError = action.Filters?.Validate() ?? action.Range?.Validate();
+                            if (healError != null) return healError;
+                            continue;
+                        }
                         if (effect.Type == "CardEffectAddCardUpgradeToUnits" || effect.Type == "CardEffectAddTempCardUpgradeToUnits" ||
                             effect.Type == "CardEffectRemoveTempUpgradeFromUnit")
                         {
@@ -400,18 +418,20 @@ namespace MonsterTrain2Poju.Model
             private CombatContext? context;
             private readonly bool deferSpawnerExhaustion;
             private readonly int pendingSummonCardId;
-            private readonly Action<QueuedCharacterDeath>? enqueueCharacterDeath;
+            private readonly Action<QueuedCharacterTrigger>? enqueueCharacterTrigger;
+            private readonly Queue<(WorkingUnit Unit, string Kind, bool CanFire)> triggerQueue = new Queue<(WorkingUnit, string, bool)>();
+            private bool runningTriggerQueue;
             private string? unsupportedReason;
 
             internal Engine(RoomCombatState source, List<CombatEvent> events, bool deferSpawnerExhaustion = false, int pendingSummonCardId = 0,
-                Action<QueuedCharacterDeath>? enqueueCharacterDeath = null)
+                Action<QueuedCharacterTrigger>? enqueueCharacterTrigger = null, bool resetPreviewTriggers = true)
             {
                 this.source = source; this.events = events;
                 this.deferSpawnerExhaustion = deferSpawnerExhaustion;
                 this.pendingSummonCardId = pendingSummonCardId;
-                this.enqueueCharacterDeath = enqueueCharacterDeath;
+                this.enqueueCharacterTrigger = enqueueCharacterTrigger;
                 units = source.Units.Select(unit => new WorkingUnit(unit)).ToList();
-                if (source.Preview)
+                if (source.Preview && resetPreviewTriggers)
                     foreach (WorkingUnit unit in units)
                         for (int index = 0; index < unit.Triggers.Count; index++) unit.Triggers[index] = unit.Triggers[index].ForPreview();
                 context = source.Context;
@@ -507,16 +527,18 @@ namespace MonsterTrain2Poju.Model
 
             internal RoomCombatResult CharacterPhase(int unitId, string kind)
             {
-                FireTriggers(units.Single(unit => unit.Source.Id == unitId), kind);
+                FireTriggers(units.Single(unit => unit.Source.Id == unitId), kind, fromQueue: true);
                 return Finish(battleWon ? RoomOutcome.BattleWon : units.Any(unit => unit.Source.IsPyre && !unit.Alive)
                     ? RoomOutcome.PlayerDefeated : RoomOutcome.Exchanged);
             }
 
-            internal RoomCombatResult QueuedDeath(CombatUnit dead)
+            internal RoomCombatResult QueuedTrigger(QueuedCharacterTrigger queued)
             {
-                var actor = new WorkingUnit(dead);
-                units.Add(actor);
-                FireTriggers(actor, "OnDeath");
+                WorkingUnit? actor = units.FirstOrDefault(unit => unit.Source.Id == queued.Unit.Id);
+                if (actor == null && queued.Kind == "OnDeath")
+                { actor = new WorkingUnit(queued.Unit); units.Add(actor); }
+                // A queued OnHeal on an actor killed by a later phase effect has no live effects.
+                if (actor != null) FireTriggers(actor, queued.Kind, fromQueue: true);
                 return Finish(battleWon ? RoomOutcome.BattleWon : units.Any(unit => unit.Source.IsPyre && !unit.Alive)
                     ? RoomOutcome.PlayerDefeated : RoomOutcome.Exchanged);
             }
@@ -661,7 +683,7 @@ namespace MonsterTrain2Poju.Model
                 // Native UpdateHp sets this gate before death triggers are fired.
                 if (!source.Preview && target.Source.EndsBattleOnDeath)
                 { battleWon = true; context = context?.WithBossesDead(); }
-                if (enqueueCharacterDeath != null) enqueueCharacterDeath(new QueuedCharacterDeath(source.RoomIndex, target.Freeze()));
+                if (enqueueCharacterTrigger != null) enqueueCharacterTrigger(new QueuedCharacterTrigger(source.RoomIndex, target.Freeze()));
                 else FireTriggers(target, "OnDeath");
                 if (!source.Preview && context?.Statistics != null)
                     context = context.WithStatistics(context.LiveStatistics!.Death(target.Source.Team == CombatTeam.Player,
@@ -738,7 +760,25 @@ namespace MonsterTrain2Poju.Model
                 FireTriggers(unit, "OnHeal");
             }
 
-            private void FireTriggers(WorkingUnit unit, string kind, bool canFireTriggers = true)
+            private void FireTriggers(WorkingUnit unit, string kind, bool canFireTriggers = true, bool fromQueue = false)
+            {
+                if (!fromQueue && enqueueCharacterTrigger != null)
+                { enqueueCharacterTrigger(new QueuedCharacterTrigger(source.RoomIndex, unit.Freeze(), kind)); return; }
+                if (!fromQueue && runningTriggerQueue)
+                { triggerQueue.Enqueue((unit, kind, canFireTriggers)); return; }
+                bool startedQueue = !runningTriggerQueue;
+                runningTriggerQueue = true;
+                ExecuteTriggers(unit, kind, canFireTriggers);
+                if (!startedQueue) return;
+                while (triggerQueue.Count > 0 && unsupportedReason == null)
+                {
+                    var queued = triggerQueue.Dequeue();
+                    ExecuteTriggers(queued.Unit, queued.Kind, queued.CanFire);
+                }
+                runningTriggerQueue = false;
+            }
+
+            private void ExecuteTriggers(WorkingUnit unit, string kind, bool canFireTriggers)
             {
                 if (kind == "OnDeath" && unit.Despawned) return;
                 for (int index = 0; index < unit.Triggers.Count; index++)
@@ -748,7 +788,7 @@ namespace MonsterTrain2Poju.Model
                         source.Deployment && trigger.SkipDuringDeployment == true ||
                         !canFireTriggers && !trigger.IgnoreSilence ||
                         unit.Has("silenced") && !trigger.IgnoreSilence) continue;
-                    if (!UpgradeTriggerPassesTest(unit, trigger)) continue;
+                    if (!ActionTriggerPassesTest(unit, trigger)) continue;
                     var effects = trigger.Effects.ToArray();
                     // Native marks the trigger before its effects; nested death effects observe it.
                     unit.Triggers[index] = trigger.Fired(effects);
@@ -758,7 +798,11 @@ namespace MonsterTrain2Poju.Model
                         for (int effectIndex = 0; effectIndex < effects.Length; effectIndex++)
                         {
                             CombatEffect effect = effects[effectIndex];
-                            if (effect.UnitUpgrade != null)
+                            if (effect.Action != null)
+                            {
+                                if (!ApplyTriggeredHeal(unit, effect.Action)) break;
+                            }
+                            else if (effect.UnitUpgrade != null)
                             {
                                 if (!ApplyTriggeredUpgrade(unit, effect.UnitUpgrade, kind)) break;
                             }
@@ -796,7 +840,7 @@ namespace MonsterTrain2Poju.Model
             private RoomCombatState CurrentRoom() => new RoomCombatState(source.RoomIndex, source.Deployment,
                 units.Where(unit => unit.Alive).Select(unit => unit.Freeze()).ToArray(), source.ExternalInteractions, context, source.Preview);
 
-            private CardTargets UpgradeTargets(WorkingUnit actor, CardActionEffect action, bool testing)
+            private CardTargets TriggerTargets(WorkingUnit actor, CardActionEffect action, bool testing)
             {
                 if (action.Target != "Self") return CardTargetModel.Collect(CurrentRoom(), action, Array.Empty<int>(), isTesting: testing);
                 // Native Self bypasses team, health, status, subtype and untouchable filters.
@@ -808,13 +852,13 @@ namespace MonsterTrain2Poju.Model
                 return new CardTargets(new[] { actor.Source.Id });
             }
 
-            private bool UpgradeTriggerPassesTest(WorkingUnit actor, CombatTrigger trigger)
+            private bool ActionTriggerPassesTest(WorkingUnit actor, CombatTrigger trigger)
             {
-                if (!trigger.Effects.Any(effect => effect.UnitUpgrade != null)) return true;
+                if (!trigger.Effects.Any(effect => effect.UnitUpgrade != null || effect.Action != null)) return true;
                 bool passed = trigger.Effects.Count == 0;
                 foreach (CombatEffect effect in trigger.Effects)
                 {
-                    CardActionEffect? action = effect.UnitUpgrade;
+                    CardActionEffect? action = effect.UnitUpgrade ?? effect.Action;
                     if (action == null)
                     {
                         passed |= effect.Type != "CardEffectAddBattleCard" || !source.Preview &&
@@ -823,9 +867,9 @@ namespace MonsterTrain2Poju.Model
                         continue;
                     }
                     if (action.Tests?.ShouldTest == false) continue;
-                    CardTargets targets = UpgradeTargets(actor, action, testing: true);
+                    CardTargets targets = TriggerTargets(actor, action, testing: true);
                     if (!targets.Supported) { unsupportedReason = targets.UnsupportedReason; return false; }
-                    bool valid = action.Type == "RemoveUnitUpgrade" || targets.UnitIds.Count > 0;
+                    bool valid = ActionTestValid(action, targets);
                     if (!valid && action.Tests?.FailToCast == true) return false;
                     passed |= valid;
                 }
@@ -834,11 +878,11 @@ namespace MonsterTrain2Poju.Model
 
             private bool ApplyTriggeredUpgrade(WorkingUnit actor, CardActionEffect action, string kind)
             {
-                CardTargets tested = UpgradeTargets(actor, action, testing: true);
+                CardTargets tested = TriggerTargets(actor, action, testing: true);
                 if (!tested.Supported) { unsupportedReason = tested.UnsupportedReason; return false; }
                 if (action.Type != "RemoveUnitUpgrade" && tested.UnitIds.Count == 0)
                     return action.Tests?.CancelSubsequent != true;
-                CardTargets targets = UpgradeTargets(actor, action, testing: false);
+                CardTargets targets = TriggerTargets(actor, action, testing: false);
                 if (!targets.Supported) { unsupportedReason = targets.UnsupportedReason; return false; }
                 if (targets.BattleRng.HasValue) context = context!.WithBattleRng(targets.BattleRng.Value);
                 foreach (int targetId in targets.UnitIds)
@@ -856,6 +900,32 @@ namespace MonsterTrain2Poju.Model
                     if (!result.Supported) { unsupportedReason = result.UnsupportedReason; return false; }
                     context = result.State!.Context;
                     Emit(action.Type, actor, target, 0);
+                }
+                return true;
+            }
+
+            private static bool ActionTestValid(CardActionEffect action, CardTargets targets) =>
+                action.Type == "RemoveUnitUpgrade" || action.Type == "Heal" && action.Target == "Room" || targets.UnitIds.Count > 0;
+
+            private bool ApplyTriggeredHeal(WorkingUnit actor, CardActionEffect action)
+            {
+                CardTargets tested = TriggerTargets(actor, action, testing: true);
+                if (!tested.Supported) { unsupportedReason = tested.UnsupportedReason; return false; }
+                if (!ActionTestValid(action, tested)) return action.Tests?.CancelSubsequent != true;
+                CardTargets targets = TriggerTargets(actor, action, testing: false);
+                if (!targets.Supported) { unsupportedReason = targets.UnsupportedReason; return false; }
+                if (targets.BattleRng.HasValue) context = context!.WithBattleRng(targets.BattleRng.Value);
+                int amount = action.Value;
+                // Native samples once after collection, including an empty Room target set.
+                if (action.Range != null)
+                {
+                    RngDraw draw = action.Range.Sample(context!.BattleRng);
+                    amount = draw.Value; context = context.WithBattleRng(draw.State);
+                }
+                foreach (int targetId in targets.UnitIds)
+                {
+                    WorkingUnit? target = units.FirstOrDefault(unit => unit.Source.Id == targetId);
+                    if (target != null) Heal(target, amount, "TriggeredHeal");
                 }
                 return true;
             }

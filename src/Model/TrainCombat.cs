@@ -58,7 +58,7 @@ namespace MonsterTrain2Poju.Model
             RoomCombatState[] rooms = source.Rooms.ToArray();
             CombatContext? context = source.Context;
             var results = new List<RoomCombatResult>();
-            var queue = new List<RoomCombatModel.QueuedCharacterDeath>();
+            var queue = new List<RoomCombatModel.QueuedCharacterTrigger>();
             RoomOutcome outcome = RoomOutcome.Exchanged;
             // Unit identities are assigned at creation. Native active character lists append
             // at creation and keep that order when units change floor or physical position.
@@ -74,14 +74,14 @@ namespace MonsterTrain2Poju.Model
                 if (Terminal(result.Outcome))
                 { outcome = result.Outcome; break; }
             }
-            // Native OnDeath callbacks append to the active trigger queue. Death counters
-            // and standby returns settle immediately; queued effects run after team actors.
+            // Native OnHeal/OnDeath append to the shared FIFO after already queued team actors.
+            // Death counters and standby returns still settle when the death occurs.
             for (int next = 0; next < queue.Count; next++)
             {
-                RoomCombatModel.QueuedCharacterDeath dead = queue[next];
-                RoomCombatResult result = RoomCombatModel.ApplyQueuedCharacterDeath(WithContext(rooms[dead.RoomIndex], context), dead.Unit, queue.Add);
+                RoomCombatModel.QueuedCharacterTrigger queued = queue[next];
+                RoomCombatResult result = RoomCombatModel.ApplyQueuedCharacterTrigger(WithContext(rooms[queued.RoomIndex], context), queued, queue.Add);
                 if (!result.Supported) return Unsupported(result.UnsupportedReason!);
-                rooms[dead.RoomIndex] = result.State!; context = result.State!.Context; results.Add(result);
+                rooms[queued.RoomIndex] = result.State!; context = result.State!.Context; results.Add(result);
                 if (Terminal(result.Outcome)) outcome = result.Outcome;
             }
             return new TrainCombatResult(Freeze(source, rooms, context), outcome, results);

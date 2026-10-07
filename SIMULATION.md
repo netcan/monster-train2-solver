@@ -51,6 +51,7 @@ are copied immutable values; independent child states can run on worker threads.
 | Attack buff/debuff spells | `UnitAttackModel` and `CardSpellModel` | Native raw negative balances/recovery, zero-attack and incapable targets, global/random targets, source-card ownership and later unit upgrades |
 | Maximum-health buff/debuff spells | `UnitHealthModel` and `CardSpellModel` | Signed temporary source-card offsets, battle/unit-death lifetimes, multiplier/immunity, suppressed OnHeal, direct lethal loss and post-boss effect chains |
 | Healing triggers | `CombatTrigger` and `RoomCombatModel` | Native repeated/once rewards and silence; zero/full/immune healing, deployment timing, preview flags and child isolation checks |
+| Healing effects on unit triggers | `CombatEffect.Action`, `HealingModel` and `RoomCombatModel` | Native self/room/healable/random targets, per-group ranges, negative/zero amounts, empty-room sampling, source-card independence and deferred OnHeal upgrades |
 | Terminal spell resolution | `CardSpellModel` and `BattleActionModel` | Settled native boss kill continues live effects, detached spawner upgrades/removal and healing; effect gates skip/cancel, then played/discard callbacks complete |
 | Enemy waves and treasure | `EnemySpawningModel` | Native group cache, spawn order, phase, slots and treasure floor selection |
 | EndTurn to next decision | `BattleTurnModel.EndTurn` | Seven native consecutive transitions in each supported fixture |
@@ -1281,6 +1282,44 @@ original profile files are unchanged. All 45 previous battles and 8 calibrations
 pass; there are now 46 verified complete battle fixtures. Other character/card
 triggers, relics, equipment, room effects, additional statuses, boss actions and
 companions/final bosses, resurrection and the broader objective remain open.
+
+Schema 34 captures healing effects on character triggers, both on living units
+and in definitions for future summons/waves. Ordinary character effects have no
+parent card: its heal upgrades do not change their quantities. Native getters
+still floor scalar values and range endpoints at zero. A negative range
+multiplier can produce a negative request after sampling. Target collection
+precedes one sample for the entire group; an empty `Room` passes the effect test
+and still samples. Random preflight tests leave Battle RNG unchanged.
+
+Triggered healing uses the existing healability, multiplier, immunity and health
+clipping rules. Zero, clipped and immune heals still queue OnHeal. The shared
+character queue now carries OnHeal and OnDeath in FIFO order: callbacks append
+after already queued team actors, and newly nested callbacks append at the tail.
+Ordinary room triggers also drain a local FIFO instead of executing nested
+callbacks recursively. Queued actors use current live state; a later death
+suppresses its pending healing effects. Queue continuation preserves preview
+once-only flags. Tests distinguish deferred healing upgrades from immediate
+application and retain immutable parents across 32 parallel branches.
+
+`tests/fixtures/full-battle-triggered-healing.json.gz` preserves an unchanged
+native trace with 15 plays, 5 EndTurns, 44 room stages, 7 spawns, 8 pre-combat
+phases, 69 triggered healing effects and 16 unit-upgrade scaling callbacks. It
+wins with Pyre health 79. The fixture includes self/team bypass, room/healable/
+random selection, empty ranges, scalar clamping, negative/zero/immune requests,
+source-card heal upgrades and two newly fired deferred OnHeal upgrades. Initially
+full units finish the first phase exactly five health below their new maximum:
+the later heals ran before the queued unhealed-health upgrades. Per-effect native
+sampling and request observations are independently recalculated, as are full
+phase and decision states, initial/mid-battle policies and 16 parallel branches.
+
+The raw JSON is 208,862,740 bytes, SHA-256
+`fb5bc6e58d9b2661e4f377f3a14f506d273170ed96267eee7abd0d592702a482`.
+Capture failures, mismatches, unsupported stages and pending records are zero;
+the original profile is unchanged. All 46 previous complete battle fixtures and
+8 calibrations pass; there are now 47 retained complete battle fixtures.
+Cross-room/sticky trigger targets, sacrifice
+healing traits, other trigger effects and post-combat healing phases still need
+modeling, alongside the wider outstanding battle mechanics.
 
 Schema 24 captures ordered `CardTraitScalingAddStatusEffect` descriptors on
 immutable card instances and generated-card rules, plus the native stackability

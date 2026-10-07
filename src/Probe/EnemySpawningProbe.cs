@@ -89,7 +89,7 @@ namespace MonsterTrain2Poju.Probe
                     interactions.Add("Spawned conditional triggers");
                 CombatEffect[] effects = trigger.GetEffects().Select(effect =>
                 {
-                    if (effect.GetUseIntRange()) interactions.Add("Spawned random effect initialization");
+                    if (effect.GetUseIntRange() && effect.GetEffectStateName() != "CardEffectHeal") interactions.Add("Spawned random effect initialization");
                     if (effect.GetEffectStateName() == "CardEffectRewardGold" &&
                         AllGameManagers.Instance!.GetSaveManager().GetAdjustedGoldAmount(effect.GetParamInt(), isReward: true) != GoldRewardModel.Adjust(effect.GetParamInt()))
                         interactions.Add("Spawned modified gold reward rules");
@@ -100,12 +100,12 @@ namespace MonsterTrain2Poju.Probe
                     var pool = new List<CardData>();
                     CardEffectState.GetFilteredCardListFromPool(effect.GetParamCardPool(), effect.GetParamCardFilter(),
                         AllGameManagers.Instance!.GetRelicManager(), ref pool);
-                    return new CombatEffect(effect.GetEffectStateName(), effect.GetParamInt(),
+                    return new CombatEffect(effect.GetEffectStateName(), effect.GetEffectStateName() == "CardEffectHeal" ? Math.Max(0, effect.GetParamInt()) : effect.GetParamInt(),
                         effect.GetEffectStateName() == "CardEffectDespawnCharacter" ? Math.Max(1, effect.GetParamInt()) : 0,
                         ((CardPile)effect.GetParamInt()).ToString(), effect.GetAdditionalParamInt(),
                         pool.Select(card => card.GetID()).ToArray(), effect.GetParamBool2(),
                         effect.GetEffectStateName() == "CardEffectAddBattleCard" ? CardGenerationProbe.Definition(effect) : null,
-                        UnitTriggerUpgradeProbe.Definition(effect, interactions));
+                        UnitTriggerUpgradeProbe.Definition(effect, interactions), UnitTriggerActionProbe.Definition(effect));
                 }).ToArray();
                 return new CombatTrigger(trigger.GetTrigger().ToString(), trigger.GetTriggerOnce(), false,
                     trigger.GetHideVisualAndIgnoreSilence(), 1, effects,
