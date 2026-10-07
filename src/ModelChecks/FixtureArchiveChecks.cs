@@ -2,6 +2,7 @@ using System.Text;
 using System.Text.Json;
 using MonsterTrain2Poju.Fixtures;
 using MonsterTrain2Poju.Model;
+using MonsterTrain2Poju.Capture;
 
 internal static class FixtureArchiveChecks
 {
@@ -58,7 +59,51 @@ internal static class FixtureArchiveChecks
         var invalid = new FixtureBuilder(); int invalidRoot = invalid.Add(FixtureKind.Array, children: [0]);
         using var cyclic = invalid.Build(invalidRoot, 0, new byte[32]);
         Reject(Encode(cyclic), "Cyclic/forward graph reference was accepted.");
+        CheckNativeCapture();
         Console.WriteLine("FIXTURE-ARCHIVE-CHECKS PASS: typed values, integer boundaries, exact numeric lexemes, duplicate/order/null/Unicode preservation, shared-node deduplication, deterministic archives, direct constructor defaults, 32 parallel hydrations and corruption rejection.");
+    }
+    private static void CheckNativeCapture()
+    {
+        var shared = new CaptureSample();
+        var snapshot = new
+        {
+            Shared = new[] { shared, shared },
+            Equivalent = new CaptureSample(),
+            Integers = new object[] { int.MinValue, uint.MaxValue, long.MinValue, ulong.MaxValue },
+            Reals = new object[] { 1f, -0.0d, 0.125f, 0.10000000000000000000000001m, double.NaN },
+            Enum = FixtureKind.Object,
+            Guid = new Guid("d14a50f3-728d-43e1-87f0-ef1b013f6678"),
+            Bytes = new byte[] { 0, 127, 255 },
+            Date = new DateTimeOffset(2026, 10, 7, 8, 9, 10, TimeSpan.FromHours(8)),
+            Dictionary = new Dictionary<string, object?> { ["列车"] = null, ["empty"] = Array.Empty<int>() }
+        };
+        using var direct = NativeFixtureCapture.Capture(snapshot);
+        Require(shared.Reads == 1, "Native capture revisited a shared object instance.");
+        string json = Newtonsoft.Json.JsonConvert.SerializeObject(snapshot);
+        using var legacy = LegacyFixtureImport.Read(new MemoryStream(Encoding.UTF8.GetBytes(json)));
+        foreach (var property in legacy.RootElement.EnumerateObject())
+            Require(direct.RootElement.GetProperty(property.Name).ContentEquals(property.Value), "Native object contracts differ from the independent JSON capture: " + property.Name);
+        Require(direct.RootElement.ContentEquals(legacy.RootElement), "Native object property order differs from the independent JSON capture.");
+        using var decoded = FixtureDocument.Read(new MemoryStream(Encode(direct)));
+        Require(!decoded.HasTextSource && decoded.SourceLength == 0 && decoded.SourceSha256 == new string('0', 64) &&
+            decoded.RootElement.ContentEquals(legacy.RootElement), "Direct archive values or binary-only provenance changed.");
+        Require(decoded.RootElement.GetProperty("Shared")[0].SharesNodeWith(decoded.RootElement.GetProperty("Equivalent")),
+            "Equivalent native objects were not structurally deduplicated.");
+        var inspection = (IDictionary<string, object?>)decoded.RootElement.ToObjectGraph()!;
+        var array = (object?[])inspection["Shared"]!;
+        Require(ReferenceEquals(array[0], array[1]) && ReferenceEquals(array[0], inspection["Equivalent"]) &&
+            (ulong)((object?[])inspection["Integers"]!)[3]! == ulong.MaxValue, "Launcher inspection expanded shared nodes or lost unsigned integers.");
+        var cycle = new Dictionary<string, object?>(); cycle["self"] = cycle;
+        try { using var invalid = NativeFixtureCapture.Capture(cycle); throw new InvalidOperationException("Native capture accepted a cycle."); }
+        catch (InvalidOperationException error) when (error.Message.StartsWith("Cyclic native capture graph", StringComparison.Ordinal)) { }
+        Console.WriteLine("NATIVE-FIXTURE-CAPTURE PASS: native contracts match JSON values and exact number spellings; shared references visited once; binary-only provenance, Unicode/nulls, ignored properties, structural deduplication, direct inspection and cycles verified.");
+    }
+    private sealed class CaptureSample
+    {
+        [Newtonsoft.Json.JsonIgnore] public int Reads { get; private set; }
+        public string Text { get { Reads++; return "列车🚂\0"; } }
+        [Newtonsoft.Json.JsonIgnore] public string Ignored => "not captured";
+        public int[] Values { get; } = [1, 2, 3];
     }
     private static byte[] Encode(FixtureDocument document)
     {

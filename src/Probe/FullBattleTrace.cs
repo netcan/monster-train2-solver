@@ -9,6 +9,7 @@ using HarmonyLib;
 using MonsterTrain2Poju.Model;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using MonsterTrain2Poju.Capture;
 using UnityEngine;
 
 namespace MonsterTrain2Poju.Probe
@@ -356,7 +357,8 @@ namespace MonsterTrain2Poju.Probe
 
         internal string Write()
         {
-            string path = Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!, "full-battle.json");
+            bool binary = Environment.GetEnvironmentVariable("MT2_PROBE_BINARY_CAPTURE") == "1";
+            string path = Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!, binary ? "full-battle.mt2f" : "full-battle.json");
             var timer = System.Diagnostics.Stopwatch.StartNew();
             string temporary = path + ".tmp";
             var snapshot = new
@@ -411,10 +413,26 @@ namespace MonsterTrain2Poju.Probe
             };
             try
             {
-                using (var stream = new FileStream(temporary, FileMode.Create, FileAccess.Write, FileShare.None, 65536))
-                using (var text = new StreamWriter(stream, new UTF8Encoding(false), 65536))
-                using (var json = new JsonTextWriter(text) { Formatting = Formatting.None })
-                    JsonSerializer.CreateDefault().Serialize(json, snapshot);
+                if (binary)
+                {
+                    var graphTimer = System.Diagnostics.Stopwatch.StartNew();
+                    using (var document = NativeFixtureCapture.Capture(snapshot))
+                    {
+                        graphTimer.Stop();
+                        var archiveTimer = System.Diagnostics.Stopwatch.StartNew();
+                        using (var stream = new FileStream(temporary, FileMode.Create, FileAccess.Write, FileShare.None, 65536))
+                            document.Write(stream);
+                        log.LogInfo("BATTLE-BINARY-PHASES graphSeconds=" + graphTimer.Elapsed.TotalSeconds.ToString("F3", System.Globalization.CultureInfo.InvariantCulture) +
+                            " archiveSeconds=" + archiveTimer.Elapsed.TotalSeconds.ToString("F3", System.Globalization.CultureInfo.InvariantCulture) + " nodes=" + document.UniqueNodeCount);
+                    }
+                }
+                else
+                {
+                    using (var stream = new FileStream(temporary, FileMode.Create, FileAccess.Write, FileShare.None, 65536))
+                    using (var text = new StreamWriter(stream, new UTF8Encoding(false), 65536))
+                    using (var json = new JsonTextWriter(text) { Formatting = Formatting.None })
+                        JsonSerializer.CreateDefault().Serialize(json, snapshot);
+                }
                 if (File.Exists(path)) File.Replace(temporary, path, null);
                 else File.Move(temporary, path);
             }
@@ -425,6 +443,17 @@ namespace MonsterTrain2Poju.Probe
             timer.Stop();
             log.LogInfo("BATTLE-EXPORT elapsedSeconds=" + timer.Elapsed.TotalSeconds.ToString("F3", System.Globalization.CultureInfo.InvariantCulture) +
                 " bytes=" + new FileInfo(path).Length + " pending=" + Pending);
+            if (Environment.GetEnvironmentVariable("MT2_PROBE_CAPTURE_JSON") == "1")
+            {
+                var jsonTimer = System.Diagnostics.Stopwatch.StartNew();
+                string jsonPath = Path.ChangeExtension(path, ".json");
+                using (var stream = new FileStream(jsonPath, FileMode.Create, FileAccess.Write, FileShare.None, 65536))
+                using (var text = new StreamWriter(stream, new UTF8Encoding(false), 65536))
+                using (var json = new JsonTextWriter(text) { Formatting = Formatting.None })
+                    JsonSerializer.CreateDefault().Serialize(json, snapshot);
+                log.LogInfo("BATTLE-JSON-COMPARISON elapsedSeconds=" + jsonTimer.Elapsed.TotalSeconds.ToString("F3", System.Globalization.CultureInfo.InvariantCulture) +
+                    " bytes=" + new FileInfo(jsonPath).Length);
+            }
             return path;
         }
 

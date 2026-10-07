@@ -17,6 +17,12 @@ before the binary migration. Import verification compares all values, exact
 number lexemes, property order and duplicate keys; JSON whitespace and escape
 spelling are not part of the retained representation.
 
+Direct native archives use a `native:` source label and zero text-source
+length/SHA-256, because no source JSON document exists. Their binary payload and
+complete archive hashes still protect integrity. The capture records the game
+version and module MVID; optional diagnostic JSON is used only for independent
+value comparison.
+
 `results/` is ignored and holds local logs, catalogs and benchmark outputs.
 Isolated native probes use `.probe-runs/`, which is also ignored. Successful
 captures become fixed inputs here after native and independent comparisons pass.

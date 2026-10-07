@@ -4,9 +4,12 @@
     <TargetFramework>net8.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <GameDir Condition="'$(GameDir)' == ''">F:\SteamLibrary\steamapps\common\Monster Train 2</GameDir>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\Model\Model.csproj" />
     <ProjectReference Include="..\FixtureArchive\FixtureArchive.csproj" />
+    <Compile Include="..\Probe\NativeFixtureCapture.cs" Link="NativeFixtureCapture.cs" />
+    <Reference Include="Newtonsoft.Json" HintPath="$(GameDir)\MonsterTrain2_Data\Managed\Newtonsoft.Json.dll" />
   </ItemGroup>
 </Project>

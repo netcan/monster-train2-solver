@@ -54,10 +54,13 @@ param(
     [switch] $DyingUpgrades,
     [switch] $AttackTriggers,
     [switch] $TriggeredStatus,
+    [switch] $BinaryCapture = $true,
+    [switch] $CaptureJson,
     [switch] $SkipBuild
 )
 
 $ErrorActionPreference = 'Stop'
+if ($CaptureJson) { $BinaryCapture = $true }
 $workspace = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $gameRoot = Join-Path $workspace '.sandbox-game'
 $runId = (Get-Date -Format 'yyyyMMdd-HHmmss') + '-' + [Guid]::NewGuid().ToString('N').Substring(0, 8)
@@ -76,10 +79,15 @@ function Get-OriginalSignature {
 if (-not $SkipBuild) {
     dotnet build (Join-Path $workspace 'src\Probe\Probe.csproj') -c Release
     if ($LASTEXITCODE -ne 0) { throw 'Probe build failed.' }
+    if ($BinaryCapture) {
+        dotnet build (Join-Path $workspace 'src\FixtureArchive\FixtureArchive.csproj') -c Release -f net8.0
+        if ($LASTEXITCODE -ne 0) { throw 'Fixture inspection build failed.' }
+    }
 }
 $pluginDir = Join-Path $gameRoot 'BepInEx\plugins'
 Copy-Item -LiteralPath (Join-Path $workspace 'src\Probe\bin\Release\netstandard2.1\Probe.dll') -Destination $pluginDir -Force
 Copy-Item -LiteralPath (Join-Path $workspace 'src\Model\bin\Release\netstandard2.1\Model.dll') -Destination $pluginDir -Force
+Copy-Item -LiteralPath (Join-Path $workspace 'src\FixtureArchive\bin\Release\netstandard2.1\FixtureArchive.dll') -Destination $pluginDir -Force
 Copy-Item -LiteralPath (Join-Path $workspace '.probe-baseline') -Destination $profile -Recurse
 $environment = @{
     MT2_PROBE_DATA_DIR = $profile
@@ -94,6 +102,8 @@ $environment = @{
     MT2_PROBE_BRANCH_ANY_UNIT = '0'
     MT2_PROBE_FAST_REPLAY = '0'
     MT2_PROBE_GAME_SPEED = $GameSpeed
+    MT2_PROBE_BINARY_CAPTURE = $(if ($BinaryCapture) { '1' } else { '0' })
+    MT2_PROBE_CAPTURE_JSON = $(if ($CaptureJson) { '1' } else { '0' })
     MT2_PROBE_NO_TIMEOUT = '1'
     MT2_PROBE_ISOLATE_PREVIEW_RNG = $(if ($TriggeredStatus) { '1' } else { '0' })
     MT2_PROBE_ISOLATE_UI_RNG = $(if ($NumericRanges -or $NumericRangesLethal -or $Drawing -or $TriggeredHealing -or $PostCombatHealing -or $TriggeredDamage -or $DamageDeathQueue -or $TerminalDeathDamage -or $HitKill -or $DyingUpgrades -or $AttackTriggers -or $TriggeredStatus) { '1' } else { '0' })
@@ -114,9 +124,19 @@ if (-not $process.WaitForExit(600000)) {
 }
 $nativeTimer.Stop()
 Write-Output "FULL-BATTLE-TIMING speed=$GameSpeed elapsedSeconds=$($nativeTimer.Elapsed.TotalSeconds.ToString('F2', [Globalization.CultureInfo]::InvariantCulture))"
-$tracePath = Join-Path $profile 'full-battle.json'
-if (-not (Test-Path -LiteralPath $tracePath)) { throw "Missing battle trace; inspect $unityLog" }
-$trace = Get-Content -LiteralPath $tracePath -Raw | ConvertFrom-Json
+$tracePath = Join-Path $profile $(if ($BinaryCapture) { 'full-battle.mt2f' } else { 'full-battle.json' })
+if (-not (Test-Path -LiteralPath $tracePath)) { throw "Missing battle trace (native exit code $($process.ExitCode)); inspect $unityLog" }
+$inspectionTimer = [System.Diagnostics.Stopwatch]::StartNew()
+if ($BinaryCapture) {
+    Add-Type -Path (Join-Path $workspace 'src\FixtureArchive\bin\Release\net8.0\FixtureArchive.dll')
+    $archive = [MonsterTrain2Poju.Fixtures.FixtureDocument]::Read($tracePath)
+    $trace = $archive.RootElement.ToObjectGraph()
+    $archive.Dispose()
+} else {
+    $trace = Get-Content -LiteralPath $tracePath -Raw | ConvertFrom-Json
+}
+$inspectionTimer.Stop()
+Write-Output "FULL-BATTLE-INSPECTION elapsedSeconds=$($inspectionTimer.Elapsed.TotalSeconds.ToString('F3', [Globalization.CultureInfo]::InvariantCulture))"
 $nativePassed = [bool] (Select-String -LiteralPath $unityLog -Pattern 'DEPTH-PASS' -Quiet)
 $terminalSettled = $trace.TerminalCaptureBoundary -eq 'AfterStopCombatLoop' -and $trace.TerminalEffectsSettled -eq $true
 $originalUnchanged = (Get-OriginalSignature) -ceq $originalBefore

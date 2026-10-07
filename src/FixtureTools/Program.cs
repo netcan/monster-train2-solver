@@ -16,6 +16,18 @@ else if (args.Length == 3 && args[0] == "compare-speeds")
 {
     NativeSpeedComparison.Run(args[1], args[2]);
 }
+else if (args.Length == 3 && args[0] == "compare-values")
+{
+    using var legacy = LegacyFixtureImport.Read(args[1]);
+    using var direct = FixtureDocument.Read(args[2]);
+    if (!legacy.RootElement.ContentEquals(direct.RootElement))
+        throw new InvalidDataException("Native binary capture differs from diagnostic JSON values.");
+    Console.WriteLine("NATIVE-BINARY-VALUES PASS: every captured value, property order and numeric lexeme matches the diagnostic JSON export.");
+}
+else if (args.Length == 3 && args[0] == "benchmark-capture")
+{
+    NativeCaptureBenchmark.Run(args[1], args[2]);
+}
 else if (args.Length == 3 && args[0] == "pack-directory")
 {
     string sourceDirectory = Path.GetFullPath(args[1]), outputDirectory = Path.GetFullPath(args[2]);
@@ -36,7 +48,7 @@ else if (args.Length == 3 && args[0] == "pack-directory")
 }
 else
 {
-    Console.Error.WriteLine("Usage: FixtureTools pack <legacy.json[.gz]> <output.mt2f> | verify <legacy> <archive> | pack-directory <source-dir> <output-dir> | compare-speeds <normal.mt2f> <accelerated.mt2f>");
+    Console.Error.WriteLine("Usage: FixtureTools pack <legacy.json[.gz]> <output.mt2f> | verify <legacy> <archive> | compare-values <diagnostic.json> <native.mt2f> | benchmark-capture <fixture.mt2f> <output-directory> | pack-directory <source-dir> <output-dir> | compare-speeds <normal.mt2f> <accelerated.mt2f>");
     return 2;
 }
 return 0;

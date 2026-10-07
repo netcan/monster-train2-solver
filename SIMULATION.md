@@ -2023,3 +2023,51 @@ The complete binary regression exits zero with 57 battle fixtures and eight
 calibration fixtures. This completes the status-presence prerequisite; queued
 status-change callbacks and their payloads still need implementation before the
 whole battle simulator is complete.
+
+Full-battle sampling now exports a typed `.mt2f` graph directly by default.
+It uses the same Json.NET contracts and scalar spellings as the diagnostic
+export, but visits shared objects once, caches integer/string nodes and builds
+property plans once per captured type. The archive library targets both Unity's
+netstandard2.1 runtime and the net8.0 independent tools. Explicit null hashing
+handles Mono's different `HashCode.Add(value, comparer)` behavior. Export errors
+terminate the probe with a diagnostic instead of retrying every game frame.
+The launcher reads and inspects the binary graph directly, preserving shared
+containers; model checks continue constructing fresh immutable model states.
+
+The verified final capture is
+`.probe-runs/full-battle-units-spells-and-junk-20261007-150757-9acaa467`.
+Its complete diagnostic JSON is 249,938,988 bytes; the native binary is 44,494
+bytes with 7,405 unique nodes. Binary export takes 3.411 seconds (3.105 graph
+construction and 0.302 archive writing), versus 4.964 seconds for JSON export
+from the same settled snapshot. This reduces this export phase by 31.3%.
+The launcher reads and expands the binary in 0.060 seconds. Reading and
+`ConvertFrom-Json` on the same JSON, measured separately with no simultaneous
+model regression, takes 27.145 seconds. These are individual phase timings;
+the 76.76-second native process includes optional JSON comparison export and
+must not be described as a pure binary-process benchmark. Full-process timings
+vary with native startup and frame scheduling.
+
+The complete native run exits zero with 21 card plays, seven EndTurns, 69 room
+stages, victory and Pyre 72, zero capture failures/mismatches/unsupported/pending
+observations, unchanged original game files and muted audio. Independent
+comparison verifies every binary/JSON value, property order and numeric lexeme.
+The diagnostic JSON is optional (`-CaptureJson`); `-BinaryCapture:$false`
+selects the legacy path. An offline `FixtureTools benchmark-capture` command
+measures export/import on a retained graph and verifies its complete values;
+those .NET timings are separate from Unity timings.
+
+The retained `tests/fixtures/full-battle-native-binary.mt2f` stores this complete
+native binary, SHA-256
+`7f363ab290e21dfb3c4398e596d6579f7de8c42853288af89e5a5c526efa5c13`.
+Its text-source metadata is zero because it was not imported from JSON; binary
+payload and manifest integrity checks remain active. The source includes empty
+callback-observer arrays from schema 45; these do not establish callback model
+coverage. Capture-format version one is unchanged and prior archives remain
+readable.
+
+The isolated checkout of the staged capture change builds the probe without
+warnings and completes the full regression with exit zero: 58 battle fixtures
+and eight calibration fixtures. All 66 archives match the curated inventory and
+SHA-256 manifest. The new native binary also passes independent action/turn
+chains, 16 parallel branches, all 157 triggered-status effects, 77 unit turns,
+both isolated preview streams and all 128 native registry queries.

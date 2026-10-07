@@ -15,7 +15,11 @@ internal sealed class ValueNode(FixtureKind kind, string? text, int[] children) 
     public override int GetHashCode() => hash;
     private static int Hash(FixtureKind kind, string? text, int[] children)
     {
-        var hash = new HashCode(); hash.Add(kind); hash.Add(text, StringComparer.Ordinal);
+        var hash = new HashCode(); hash.Add(kind);
+        // Unity's Mono HashCode.Add(value, comparer) invokes the comparer even
+        // for null; .NET's implementation guards it. Keep null container/boolean
+        // node text valid on both runtimes.
+        hash.Add(text == null ? 0 : StringComparer.Ordinal.GetHashCode(text));
         foreach (int child in children) hash.Add(child);
         return hash.ToHashCode();
     }
@@ -76,7 +80,42 @@ public readonly struct FixtureValue
     public double GetDouble() => double.Parse(Number(), CultureInfo.InvariantCulture);
     public decimal GetDecimal() => decimal.Parse(Number(), NumberStyles.Float, CultureInfo.InvariantCulture);
     internal string Number() { Require(FixtureKind.Number); return Node.Text!; }
+#if NET8_0_OR_GREATER
     public T? Deserialize<T>() => (T?)FixtureHydrator.Read(this, typeof(T));
+
+    // Launcher inspection shares repeated captured values instead of expanding
+    // the graph into hundreds of megabytes of independently allocated objects.
+    public object? ToObjectGraph()
+    {
+        var values = new Dictionary<int, object?>();
+        object? Read(FixtureValue value)
+        {
+            if (values.TryGetValue(value.Id, out var found)) return found;
+            object? result;
+            if (value.ValueKind == FixtureKind.Object)
+            {
+                var properties = new Dictionary<string, object?>(StringComparer.Ordinal);
+                foreach (var property in value.EnumerateObject()) properties[property.Name] = Read(property.Value);
+                result = properties;
+            }
+            else if (value.ValueKind == FixtureKind.Array) result = value.EnumerateArray().Select(Read).ToArray();
+            else if (value.ValueKind == FixtureKind.String) result = value.GetString();
+            else if (value.ValueKind == FixtureKind.Number)
+            {
+                string number = value.Number();
+                if (long.TryParse(number, NumberStyles.Integer, CultureInfo.InvariantCulture, out long signed)) result = signed;
+                else if (ulong.TryParse(number, NumberStyles.Integer, CultureInfo.InvariantCulture, out ulong unsigned)) result = unsigned;
+                else result = double.Parse(number, NumberStyles.Float, CultureInfo.InvariantCulture);
+            }
+            else if (value.ValueKind is FixtureKind.True or FixtureKind.False) result = value.GetBoolean();
+            else if (value.ValueKind == FixtureKind.Null) result = null;
+            else throw new InvalidDataException("Undefined fixture value.");
+            values.Add(value.Id, result);
+            return result;
+        }
+        return Read(this);
+    }
+#endif
     public bool SharesNodeWith(FixtureValue other) => ReferenceEquals(nodes, other.nodes) && Id == other.Id;
     public bool ContentEquals(FixtureValue other)
     {

@@ -21,6 +21,12 @@ The outer header is little endian:
 | Compressed payload length | Int64 |
 | Payload | Brotli-compressed binary tables |
 
+Direct native captures use zero for the text-source length and 32 zero bytes
+for its hash: no source JSON document exists. `HasTextSource` distinguishes these
+from imported captures. The binary payload SHA-256 and full archive manifest
+hash remain applicable. This uses the existing version-one metadata layout;
+previous imported archives remain readable without migration.
+
 The payload contains a string count and UTF-8 strings, then a node count, root
 ID and node records in that order.
 Counts, string IDs and node references use .NET's seven-bit integer encoding.
@@ -59,3 +65,38 @@ Add the resulting archive to the curated regression list and its printed
 provenance to the manifest. Local original captures stay in ignored probe/output
 directories. The native capture schema and this archive format version are
 independent.
+
+The full-battle probe exports native binary captures by default. Use
+`-BinaryCapture:$false` for the legacy diagnostic JSON path.
+Its capture adapter uses Json.NET's contracts for property order, ignored fields
+and exact scalar spellings, but constructs typed graph nodes directly and visits
+shared object instances once. It requires a stable snapshot with supported
+serialization settings and rejects cycles, converters and unsupported contracts.
+No JSON container or document is produced on this path. The launcher inspects
+the binary graph with shared dictionaries and arrays; model regression still
+hydrates fresh model instances from the immutable nodes.
+
+Use `-CaptureJson` to additionally export diagnostic JSON from the same snapshot.
+It enables binary capture and is intended for validation, not speed measurement:
+
+```powershell
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy units-spells-and-junk -TriggeredStatus -CaptureJson
+dotnet run --project src/FixtureTools -c Release -- compare-values <profile>/full-battle.json <profile>/full-battle.mt2f
+```
+
+An offline export benchmark can reuse a retained capture without starting Steam
+or the game. It verifies the complete source graph and diagnostic JSON against
+the emitted binary before reporting timings. These are .NET tool timings,
+separate from Unity battle/process timings:
+
+```powershell
+dotnet run --project src/FixtureTools -c Release -- benchmark-capture tests/fixtures/full-battle-status-registry.mt2f results/capture-benchmark
+```
+
+For a direct native fixture, copy the validated archive into the curated fixture
+directory and record its full archive hash, byte length and node count in the
+manifest. Use a `native:` source label and zero text-source length/hash. The
+capture's game version and module MVID identify the native runtime.
+
+The native capture checks and benchmark use the installed game's Json.NET DLL.
+`GameDir` can be overridden at build time, as for the probe project.
