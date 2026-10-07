@@ -783,7 +783,7 @@ namespace MonsterTrain2Poju.Model
                 var seen = new HashSet<string>(StringComparer.Ordinal);
                 do
                 {
-                    if (round > 0 && entireRoom) Clear(true, relentless);
+                    if (round > 0 && entireRoom) Clear(true);
                     // Compare the same phase: decay before the next exchange can break a apparent cycle.
                     if (entireRoom && !seen.Add(Signature()))
                         return Finish(RoomOutcome.Stalemate);
@@ -798,7 +798,7 @@ namespace MonsterTrain2Poju.Model
                     if (battleWon) return Finish(RoomOutcome.BattleWon);
                     if (!source.Preview && units.Any(unit => unit.Source.IsPyre && !unit.Alive))
                         return Finish(RoomOutcome.PlayerDefeated);
-                    Clear(false, relentless);
+                    Clear(false);
                 } while (relentless && BothTeamsPresent());
                 RunUnitPostCombat();
                 if (!source.Deployment)
@@ -817,7 +817,7 @@ namespace MonsterTrain2Poju.Model
                         foreach (QueuedCharacterTrigger callback in added.PendingCallbacks) QueueCallback(callback);
                     }
                 if (enqueueCharacterTrigger == null && !runningTriggerQueue) DrainLocalTriggerQueue();
-                Clear(true, relentless);
+                Clear(true);
                 return Finish(battleWon ? RoomOutcome.BattleWon : units.Any(unit => unit.Source.IsPyre && !unit.Alive)
                     ? RoomOutcome.PlayerDefeated : RoomOutcome.Cleared);
             }
@@ -1775,9 +1775,10 @@ namespace MonsterTrain2Poju.Model
 
             private bool Active(CombatStatus status) => !source.Deployment || !status.SkipDuringDeployment;
 
-            private void Clear(bool after, bool relentless)
+            private void Clear(bool after)
             {
                 if (source.Deployment) return;
+                bool relentless = units.Any(unit => unit.Alive && unit.InRoom && unit.Source.Team == CombatTeam.Enemy && unit.Has("relentless"));
                 foreach (WorkingUnit unit in units.Where(unit => unit.Alive))
                     foreach (CombatStatus status in unit.RegisteredStatuses().ToArray())
                         if (status.RemoveAfterPostCombat == after)

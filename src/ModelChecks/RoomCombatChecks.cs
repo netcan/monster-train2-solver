@@ -97,6 +97,14 @@ internal static class RoomCombatChecks
             new[] { "death trigger" })).Supported, "An external trigger was silently accepted.");
         Parallel.For(0, 64, _ => Require(RoomCombatModel.Exchange(root).State!.Units[1].Health == 19,
             "Parallel expansion changed state."));
+        var cooldown = new CombatStatus("cooldown", 1, removeStackAtEnd: true, preventRemovalDuringRelentless: true);
+        var soloBoss = RoomCombatModel.Resolve(Room(Unit(1, CombatTeam.Enemy, 0, 20, relentless, cooldown),
+            Unit(2, CombatTeam.Enemy, 0, 20, cooldown)));
+        Require(soloBoss.Supported && soloBoss.State!.Units.All(unit => unit.Statuses.Any(status => status.Id == "cooldown")),
+            "An enemy relentless status must preserve room cooldowns even without an opposing team.");
+        Require(RoomCombatModel.Resolve(Room(Unit(1, CombatTeam.Enemy, 0, 20, cooldown))).State!.Units[0].Statuses.Count == 0 &&
+            !RoomCombatModel.Resolve(Room(Unit(1, CombatTeam.Player, 0, 20, relentless, cooldown))).State!.Units[0].Statuses.Any(status => status.Id == "cooldown"),
+            "Ordinary rooms and player-only relentless must still decay cooldown.");
         Console.WriteLine("ROOM-CHECKS PASS: initiative, targeting, defenses, retaliation, decay, relentless, isolation.");
         foreach (string fixture in fixtures) CheckNativeFixture(fixture);
     }
