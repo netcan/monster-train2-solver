@@ -91,6 +91,12 @@ namespace MonsterTrain2Poju.Model
         {
             string? error = RoomCombatModel.Validate(source);
             if (error != null || !RoomCombatModel.KnowsStatus(added.Id)) return Unsupported(error ?? "Unmodeled added status " + added.Id);
+            return ApplyRetained(source, targetId, added, sourceCardId, overrideImmunity, allowModification);
+        }
+        // Trigger effects retain their native actor/target objects, including HP-zero victims.
+        internal static RoomCombatResult ApplyRetained(RoomCombatState source, int targetId, CombatStatus added, int sourceCardId,
+            bool overrideImmunity = false, bool allowModification = true)
+        {
             CombatUnit? target = source.Units.FirstOrDefault(unit => unit.Id == targetId);
             if (target == null) return Unsupported("Missing status target.");
             if (!overrideImmunity && (target.StatusImmunities.Contains(added.Id) || target.Status("immune") != null)) return Match(source);

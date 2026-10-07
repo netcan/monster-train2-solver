@@ -89,7 +89,7 @@ namespace MonsterTrain2Poju.Model
                 }
                 CombatUnit[] targets = candidates.ToArray();
                 if (filterError != null) return new CardTargets(Array.Empty<int>(), filterError);
-                return effect.Target == "RandomFromAnyRoom" ? Random(targets, train.Context, isTesting) :
+                return effect.Target == "RandomFromAnyRoom" ? Random(targets, train.Context, isTesting, room.Preview && train.Context?.IsolatedBattlePreview == true) :
                     new CardTargets(targets.Select(unit => unit.Id).ToArray());
             }
             if (effect.Target == "LastTargetedCharacters" || effect.Target == "StrongestLastTargetedCharacters")
@@ -124,7 +124,7 @@ namespace MonsterTrain2Poju.Model
                 !unit.Statuses.Any(status => status.Id == "untouchable") && MatchesFilters(effect, unit, false, ref filterError)).ToArray();
             if (filterError != null) return new CardTargets(Array.Empty<int>(), filterError);
             if (effect.Target == "RandomInRoom")
-                return Random(candidates, room.Context, isTesting);
+                return Random(candidates, room.Context, isTesting, room.Preview && room.Context?.IsolatedBattlePreview == true);
             if (effect.Target == "RoomHealTargets")
             {
                 if (candidates.Any(unit => unit.Modifiers == null))
@@ -138,11 +138,11 @@ namespace MonsterTrain2Poju.Model
             bool Allowed(CombatUnit unit) => unit.Team == CombatTeam.Enemy ? effect.AllowEnemy : effect.AllowPlayer;
         }
 
-        private static CardTargets Random(IReadOnlyList<CombatUnit> candidates, CombatContext? context, bool isTesting)
+        private static CardTargets Random(IReadOnlyList<CombatUnit> candidates, CombatContext? context, bool isTesting, bool consumeTest = false)
         {
             if (candidates.Count == 0) return new CardTargets(Array.Empty<int>());
             // Supported effect tests depend on target count. They do not consume gameplay RNG.
-            if (isTesting) return new CardTargets(new[] { candidates[0].Id });
+            if (isTesting && !consumeTest) return new CardTargets(new[] { candidates[0].Id });
             if (context == null) return new CardTargets(Array.Empty<int>(), "Random targeting requires Battle RNG.");
             RngDraw chosen = context.BattleRng.Range(0, candidates.Count);
             return new CardTargets(new[] { candidates[chosen.Value].Id }, battleRng: chosen.State);

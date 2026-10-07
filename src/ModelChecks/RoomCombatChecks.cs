@@ -157,6 +157,7 @@ internal static class RoomCombatChecks
         HitKillChecks.Native(fixture);
         DyingUpgradeChecks.Native(fixture);
         AttackTriggerChecks.Native(fixture);
+        TriggeredStatusChecks.Native(fixture);
         StatisticCacheChecks.Native(fixture);
         CloneUpgradeRefreshChecks.Native(fixture);
         DynamicStatisticChecks.Native(fixture);

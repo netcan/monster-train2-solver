@@ -89,7 +89,7 @@ namespace MonsterTrain2Poju.Probe
                     interactions.Add("Spawned conditional triggers");
                 CombatEffect[] effects = trigger.GetEffects().Select(effect =>
                 {
-                    if (effect.GetUseIntRange() && effect.GetEffectStateName() != "CardEffectHeal" && effect.GetEffectStateName() != "CardEffectDamage") interactions.Add("Spawned random effect initialization");
+                    if (effect.GetUseIntRange() && effect.GetEffectStateName() != "CardEffectHeal" && effect.GetEffectStateName() != "CardEffectDamage" && effect.GetEffectStateName() != "CardEffectAddStatusEffect") interactions.Add("Spawned random effect initialization");
                     if (effect.GetEffectStateName() == "CardEffectRewardGold" &&
                         AllGameManagers.Instance!.GetSaveManager().GetAdjustedGoldAmount(effect.GetParamInt(), isReward: true) != GoldRewardModel.Adjust(effect.GetParamInt()))
                         interactions.Add("Spawned modified gold reward rules");
@@ -106,7 +106,7 @@ namespace MonsterTrain2Poju.Probe
                         pool.Select(card => card.GetID()).ToArray(), effect.GetParamBool2(),
                         effect.GetEffectStateName() == "CardEffectAddBattleCard" ? CardGenerationProbe.Definition(effect) : null,
                         UnitTriggerUpgradeProbe.Definition(effect, interactions), UnitTriggerActionProbe.Definition(effect),
-                        effect.GetEffectStateName() == "CardEffectDamage" && effect.GetUseStatusEffectStackMultiplier() ? effect.GetStatusEffectStackMultiplier() : null);
+                        effect.GetEffectStateName() == "CardEffectDamage" && effect.GetUseStatusEffectStackMultiplier() ? effect.GetStatusEffectStackMultiplier() : null, UnitTriggerActionProbe.Scaling(effect));
                 }).ToArray();
                 return new CombatTrigger(trigger.GetTrigger().ToString(), trigger.GetTriggerOnce(), false,
                     trigger.GetHideVisualAndIgnoreSilence(), 1, effects,

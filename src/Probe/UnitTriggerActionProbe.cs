@@ -9,23 +9,34 @@ namespace MonsterTrain2Poju.Probe
     {
         internal static CardActionEffect? Capture(CardEffectState state)
         {
-            if (!(state.GetCardEffect() is CardEffectHeal) && !(state.GetCardEffect() is CardEffectDamage)) return null;
+            if (!(state.GetCardEffect() is CardEffectHeal) && !(state.GetCardEffect() is CardEffectDamage) && !(state.GetCardEffect() is CardEffectAddStatusEffect)) return null;
             CardEffectData effect = state.GetSourceCardEffectData();
             return Describe(effect, state.GetParamInt(), state.GetUseIntRange() ?
-                new CardEffectRange(state.GetParamMinInt(), state.GetParamMaxInt(), state.GetParamMultiplier()) : null);
+                new CardEffectRange(state.GetParamMinInt(), state.GetParamMaxInt(), state.GetParamMultiplier()) : null,
+                state.GetCardEffect() is CardEffectAddStatusEffect ? state.GetParamStatusEffectStackData().Select(status =>
+                    BattleActionProbe.Status(status.statusId, status.count)).ToArray() : null);
         }
         internal static CardActionEffect? Definition(CardEffectData effect) =>
-            effect.GetEffectStateName() != "CardEffectHeal" && effect.GetEffectStateName() != "CardEffectDamage" ? null :
+            effect.GetEffectStateName() != "CardEffectHeal" && effect.GetEffectStateName() != "CardEffectDamage" && effect.GetEffectStateName() != "CardEffectAddStatusEffect" ? null :
             // Effect states have no parent card; native damage/heal getters still clamp endpoints.
-            Describe(effect, Math.Max(0, effect.GetParamInt()), effect.GetUseIntRange() ?
-                new CardEffectRange(Math.Max(0, effect.GetParamMinInt()), Math.Max(0, effect.GetParamMaxInt()), effect.GetParamMultiplier()) : null);
-        private static CardActionEffect Describe(CardEffectData effect, int value, CardEffectRange? range)
+            Describe(effect, Numeric(effect, effect.GetParamInt()), effect.GetUseIntRange() ?
+                new CardEffectRange(Numeric(effect, effect.GetParamMinInt()), Numeric(effect, effect.GetParamMaxInt()), effect.GetParamMultiplier()) : null);
+        internal static TriggeredStatusScaling? Scaling(CardEffectState effect) => effect.GetCardEffect() is CardEffectAddStatusEffect ?
+            new TriggeredStatusScaling(effect.GetUseStatusEffectStackMultiplier() ? effect.GetStatusEffectStackMultiplier() : null,
+                effect.GetUseHealthMissingStackMultiplier(), effect.GetUseMagicPowerMultiplier(), effect.GetParamBool2(),
+                effect.GetParamSubtype().IsNone ? "" : effect.GetParamSubtype().Key) : null;
+        internal static TriggeredStatusScaling? Scaling(CardEffectData effect) => effect.GetEffectStateName() == "CardEffectAddStatusEffect" ?
+            new TriggeredStatusScaling(effect.GetUseStatusEffectStackMultiplier() ? effect.GetStatusEffectStackMultiplier() : null,
+                effect.GetUseHealthMissingStackMultiplier(), effect.GetUseMagicPowerMultiplier(), effect.GetParamBool2(),
+                effect.GetParamSubtype().IsNone ? "" : effect.GetParamSubtype().Key) : null;
+        private static int Numeric(CardEffectData effect, int value) => effect.GetEffectStateName() == "CardEffectAddStatusEffect" ? value : Math.Max(0, value);
+        private static CardActionEffect Describe(CardEffectData effect, int value, CardEffectRange? range, CombatStatus[]? statuses = null)
         {
             var excluded = new List<SubtypeData>(); effect.GetTargetCharacterExcludedSubtypes(excluded);
-            return new CardActionEffect(effect.GetEffectStateName() == "CardEffectDamage" ? "Damage" : "Heal", effect.GetTargetMode().ToString(), value,
+            return new CardActionEffect(effect.GetEffectStateName() == "CardEffectDamage" ? "Damage" : effect.GetEffectStateName() == "CardEffectHeal" ? "Heal" : "AddStatus", effect.GetTargetMode().ToString(), value,
                 effect.GetTargetTeamType().HasFlag(Team.Type.Heroes), effect.GetTargetTeamType().HasFlag(Team.Type.Monsters),
-                Array.Empty<CombatStatus>(), tests: new CardEffectTests(effect.GetShouldTest(), effect.GetShouldFailToCastIfTestFails(),
-                    effect.GetShouldCancelSubsequentEffectsIfTestFails(), false),
+                statuses ?? (effect.GetEffectStateName() == "CardEffectAddStatusEffect" ? effect.GetParamStatusEffects().Select(status => BattleActionProbe.Status(status.statusId, status.count)).ToArray() : Array.Empty<CombatStatus>()), tests: new CardEffectTests(effect.GetShouldTest(), effect.GetShouldFailToCastIfTestFails(),
+                    effect.GetShouldCancelSubsequentEffectsIfTestFails(), effect.GetEffectStateName() == "CardEffectAddStatusEffect" && effect.GetParamBool()),
                 range: range,
                 filters: new CardTargetFilters(effect.GetTargetModeHealthFilter().ToString(), effect.GetTargetModeStatusEffectsFilter(),
                     effect.GetTargetModeStatusEffectsExcludedFilter(), effect.GetTargetIgnoreBosses(),

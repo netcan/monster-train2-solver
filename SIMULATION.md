@@ -1789,3 +1789,83 @@ turns within the supported rules. Trait/trigger upgrades, statistic-driven effec
 and additional effects are the next steps. Exact pruning still requires
 broader state coverage; these fixtures do not establish a simulator for every
 Monster Train 2 battle.
+
+
+Schema 42 adds `-TriggeredStatus`, runtime/definition capture of
+`CardEffectAddStatusEffect` on character triggers, `TriggeredStatuses` effect
+observations, and captured room/team magic power in the shared combat context.
+All context transitions preserve that power snapshot, including terminal card
+clearing. Missing or duplicate power inputs are explicit unsupported results.
+
+The trigger engine now applies a single selected status to the effect's fixed
+collection in reverse order. It chooses the pool entry even for an empty
+collection, then samples the chance range once. Chance zero bypasses per-target
+rolls; negative, 100 and larger values still consume a roll for every target,
+including an immune target. Tests for stackable pools use only collection
+legality; randomized nonstackable strict legality remains unsupported because
+it depends on the native BattleTest stream. Single nonstackable strict effects
+check existing positive stacks, the effect's subtype and boss filter.
+
+The stack multiplier sums the triggering character's selected status count,
+the first collected target's missing health, and that target team's room magic
+power, then multiplies the selected incoming stack count once for the entire
+collection. Source-card status traits run afterwards per target, following
+immunity checks; positive applied deltas update source-card statistics. Dying
+actors and targets stay available through native callback settlement without
+revival, and zero/negative resulting stacks are omitted from the projected
+positive-status view.
+
+This regression also exposed two independent corrections, committed separately:
+`45fcde9` makes unit piercing conditional on a missing source damage card, as
+native DamageHelper requires; `8b97f05` preserves current floor/front-to-back
+movement metadata when new waves coexist with surviving enemies upstairs.
+The first exploratory capture recomputes to all seven exact EndTurns after
+those fixes. It is not part of the retained fixture list.
+
+Nonzero room magic power, per-target statistic feedback, strict legality,
+probability boundaries, retained dying objects, preview statistics, malformed
+power inputs, and 32 parallel immutable branches are covered by pure checks.
+The native fixture's supported rooms have zero magic power; this does not prove
+room-modifier or relic mechanics. Duality remains unsupported through status
+validation, and status-change callbacks such as OnArmorAdded/OnSilence and their
+removal paths remain unimplemented. They must be added before full battle
+simulation can be considered complete.
+
+
+Random trigger effects also make the native preview's leaked attack statistic
+history-dependent: vanilla previews consume BattleTest without starting from a
+fresh gameplay-state copy. Schema 42 therefore explicitly records
+`IsolatedBattlePreview` for the opt-in solver protocol. The native probe seeds
+BattleTest from Battle for each whole battle preview and boss-kill preview,
+then restores both original streams. Whole battle previews share their
+transient stream across floors, including random test targets and both status
+pool preflight tests. The pure model preserves the native attack-statistic
+result while returning the unchanged live RNG and units. Independent checks
+verify the native scope records, actual test-stream consumption and restoration
+of both streams. This protocol is enabled by `-TriggeredStatus`; existing
+captures retain their original preview semantics. Raw vanilla UI-driven preview
+statistics for randomized unit triggers are not established by this protocol.
+
+
+`tests/fixtures/full-battle-triggered-status.json.gz` retains the unchanged
+native JSON from
+`.probe-runs/full-battle-units-spells-and-junk-20261007-125305-01a92e59`:
+620,302,405 raw bytes, 18,625,866 gzip bytes, SHA-256
+`b2b9ec32e4545ea3b2763c6d8a85860b5181ba6839034aaef373b8152c7824bf`.
+The battle has 21 plays, 7 EndTurns, 69 room stages, 11 spawns, 14 train phases,
+13 card cycles and 77 individually verified unit turns. Its 157 exact status
+effects include 6 pools, 6 empty collections, 4 ranges, 10 area collections,
+10 retained dying observations, 2 combined multipliers, 39 attributed source
+cards, 29 immune observations and 3 strict nonstackable applications, across
+OnSpawn, PreCombat, OnAttacking, OnHit, OnDeath and OnTurnBegin. The 32 battle
+preview and 46 boss-kill preview scopes restore both streams; 43 scopes consume
+the isolated test stream. Native victory has Pyre 72, all capture failures,
+mismatches, unsupported stages and pending observations are zero, and the
+original game files remain unchanged. The debug game is automatically muted.
+Independent effect/turn/action and complete policy-chain checks pass, including
+a mid-battle root and 16 parallel policy branches.
+
+The final schema-42 regression exits successfully with all 55 battle fixtures
+and all eight calibration fixtures. Randomized triggered-status previews
+without the explicit isolated RNG protocol now return Unsupported, preventing
+an implicit approximation of vanilla UI preview history.

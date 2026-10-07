@@ -401,15 +401,22 @@ namespace MonsterTrain2Poju.Model
                     if (trigger.FireCount < 0) return "Invalid trigger fire count.";
                     foreach (CombatEffect effect in trigger.Effects)
                     {
-                        if (effect.Action != null && effect.Type != "CardEffectHeal" && effect.Type != "CardEffectDamage")
+                        if (effect.Action != null && effect.Type != "CardEffectHeal" && effect.Type != "CardEffectDamage" && effect.Type != "CardEffectAddStatusEffect")
                             return "Mismatched triggered action definition.";
                         if (effect.DamageStatusMultiplier != null && effect.Type != "CardEffectDamage")
                             return "Mismatched triggered damage multiplier.";
+                        if (effect.StatusScaling != null && effect.Type != "CardEffectAddStatusEffect") return "Mismatched triggered status scaling.";
                         if (effect.Type == "CardEffectDespawnCharacter") continue;
-                        if (effect.Type == "CardEffectHeal" || effect.Type == "CardEffectDamage")
+                        if (effect.Type == "CardEffectHeal" || effect.Type == "CardEffectDamage" || effect.Type == "CardEffectAddStatusEffect")
                         {
                             CardActionEffect? action = effect.Action;
-                            if (action?.Type != (effect.Type == "CardEffectHeal" ? "Heal" : "Damage")) return "Missing triggered action definition.";
+                            if (action?.Type != (effect.Type == "CardEffectHeal" ? "Heal" : effect.Type == "CardEffectDamage" ? "Damage" : "AddStatus")) return "Missing triggered action definition.";
+                            if (action.Type == "AddStatus")
+                            {
+                                string? statusError = TriggeredStatusModel.Validate(effect);
+                                if (statusError != null) return statusError;
+                                if (state.Context == null) return "Triggered status requires shared battle context.";
+                            }
                             if (action.Type == "Heal" && state.Units.Any(target => target.Modifiers == null))
                                 return "Triggered healing requires unit healability state.";
                             if (!new[] { "Self", "Room", "FrontInRoom", "BackInRoom", "Weakest", "RoomHealTargets", "RandomInRoom", "LastAttackedCharacter" }.Contains(action.Target))
@@ -928,7 +935,7 @@ namespace MonsterTrain2Poju.Model
                     context.NextCardId, context.MaxHandSize, context.StatusRules, context.Statistics,
                     context.CardInstances == null ? null : Array.Empty<CardInstanceState>(), context.CardRegistry, context.AllScenarioBossesDead,
                     context.NextAddedTemporaryUpgrades, context.OtherPiles?.Select(CardPileModel.Clear).ToArray(), context.QueryFrame,
-                    context.KillCamActivated.HasValue ? true : (bool?)null);
+                    context.KillCamActivated.HasValue ? true : (bool?)null, context.MagicPower, context.IsolatedBattlePreview);
             }
 
             private void PostCombat()
@@ -1050,7 +1057,7 @@ namespace MonsterTrain2Poju.Model
                                 int reward = GoldRewardModel.Adjust(effect.Value);
                                 context = new CombatContext(context!.Cards, context.BattleRng,
                                     Math.Max(0, checked(context.Gold + reward)), context.NextCardId, context.MaxHandSize, context.StatusRules, context.Statistics,
-                                    context.CardInstances, context.CardRegistry, context.AllScenarioBossesDead, context.NextAddedTemporaryUpgrades, context.OtherPiles, context.QueryFrame, context.KillCamActivated);
+                                    context.CardInstances, context.CardRegistry, context.AllScenarioBossesDead, context.NextAddedTemporaryUpgrades, context.OtherPiles, context.QueryFrame, context.KillCamActivated, context.MagicPower, context.IsolatedBattlePreview);
                                 Emit("Gold", unit, unit, reward);
                             }
                             else if (effect.Type == "CardEffectAddBattleCard" && !source.Preview && !battleWon && context != null && context.AllScenarioBossesDead != true &&
@@ -1127,7 +1134,8 @@ namespace MonsterTrain2Poju.Model
                     if (action.Tests?.ShouldTest == false) continue;
                     CardTargets targets = TriggerTargets(actor, action, testing: true);
                     if (!targets.Supported) { unsupportedReason = targets.UnsupportedReason; return false; }
-                    bool valid = ActionTestValid(action, targets, TestActionAmount(action));
+                    if (targets.BattleRng.HasValue) context = context!.WithBattleRng(targets.BattleRng.Value);
+                    bool valid = action.Type == "AddStatus" ? StatusTest(actor, effect, targets) : ActionTestValid(action, targets, TestActionAmount(action));
                     if (!valid && action.Tests?.FailToCast == true) return false;
                     passed |= valid;
                 }
@@ -1138,6 +1146,7 @@ namespace MonsterTrain2Poju.Model
             {
                 CardTargets tested = TriggerTargets(actor, action, testing: true, overrideTarget);
                 if (!tested.Supported) { unsupportedReason = tested.UnsupportedReason; return false; }
+                if (tested.BattleRng.HasValue) context = context!.WithBattleRng(tested.BattleRng.Value);
                 if (action.Type != "RemoveUnitUpgrade" && tested.UnitIds.Count == 0)
                     return action.Tests?.CancelSubsequent != true;
                 CardTargets targets = TriggerTargets(actor, action, testing: false, overrideTarget);
@@ -1173,10 +1182,22 @@ namespace MonsterTrain2Poju.Model
                 CardActionEffect action = effect.Action!;
                 CardTargets tested = TriggerTargets(actor, action, testing: true, overrideTarget);
                 if (!tested.Supported) { unsupportedReason = tested.UnsupportedReason; return false; }
-                if (!ActionTestValid(action, tested, TestActionAmount(action))) return action.Tests?.CancelSubsequent != true;
+                if (tested.BattleRng.HasValue) context = context!.WithBattleRng(tested.BattleRng.Value);
+                bool valid = action.Type == "AddStatus" ? StatusTest(actor, effect, tested) : ActionTestValid(action, tested, TestActionAmount(action));
+                if (unsupportedReason != null) return false;
+                if (!valid) return action.Tests?.CancelSubsequent != true;
                 CardTargets targets = TriggerTargets(actor, action, testing: false, overrideTarget);
                 if (!targets.Supported) { unsupportedReason = targets.UnsupportedReason; return false; }
                 if (targets.BattleRng.HasValue) context = context!.WithBattleRng(targets.BattleRng.Value);
+                if (action.Type == "AddStatus")
+                {
+                    RoomCombatResult applied = TriggeredStatusModel.Apply(RetainedStatusRoom(actor, targets.UnitIds), actor.Source.Id, effect, targets.UnitIds);
+                    if (!applied.Supported) { unsupportedReason = applied.UnsupportedReason; return false; }
+                    context = applied.State!.Context;
+                    foreach (CombatUnit changed in applied.State.Units) units.First(unit => unit.Source.Id == changed.Id).Apply(changed);
+                    foreach (CombatEvent item in applied.Events) events.Add(new CombatEvent(round, item.Kind, item.Actor, item.Target, item.Amount));
+                    return true;
+                }
                 int amount = SampleActionAmount(action);
                 // Native samples once after collection, including an empty Room target set.
                 if (action.Type == "Damage" && effect.DamageStatusMultiplier != null)
@@ -1191,6 +1212,24 @@ namespace MonsterTrain2Poju.Model
                     else if (target.Alive && !target.Removed) Damage(actor, target, amount, "TriggeredDamage", actor.Source.SpawnerCardId);
                 }
                 return true;
+            }
+
+            private RoomCombatState RetainedStatusRoom(WorkingUnit actor, IReadOnlyList<int> targets) =>
+                new RoomCombatState(source.RoomIndex, source.Deployment,
+                    units.Where(unit => unit.Alive || unit == actor || targets.Contains(unit.Source.Id)).Select(unit => unit.Freeze()).ToArray(),
+                    source.ExternalInteractions, context, source.Preview);
+
+            private bool StatusTest(WorkingUnit actor, CombatEffect effect, CardTargets targets)
+            {
+                CombatStatus? selected = null;
+                if (source.Preview && context?.IsolatedBattlePreview == true && effect.Action!.Statuses.Count > 1)
+                {
+                    RngDraw choice = context.BattleRng.Range(0, effect.Action.Statuses.Count);
+                    context = context.WithBattleRng(choice.State); selected = effect.Action.Statuses[choice.Value];
+                }
+                bool result = TriggeredStatusModel.Test(RetainedStatusRoom(actor, targets.UnitIds), effect, targets.UnitIds, out string? error, selected);
+                if (error != null) unsupportedReason = error;
+                return result;
             }
 
             private void AddCards(WorkingUnit actor, CombatEffect effect)
