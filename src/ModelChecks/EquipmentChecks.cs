@@ -9,7 +9,8 @@ internal static class EquipmentChecks
         if (!fixture.TryGetProperty("EquipmentOperations", out var records)) return;
         var samples = records.EnumerateArray().ToArray();
         foreach (var sample in samples) Verify(sample);
-        if (fixture.GetProperty("ModifierScenario").GetString() == "equipment")
+        string? scenario = fixture.GetProperty("ModifierScenario").GetString();
+        if (scenario is "equipment" or "equipment-exhausted")
         {
             Require(samples.Any(sample => !sample.GetProperty("Remove").GetBoolean() &&
                 Host(sample, "Before").EquipmentCards!.Count >= Host(sample, "Before").Modifiers!.EquipmentLimit &&
@@ -34,8 +35,17 @@ internal static class EquipmentChecks
                 var context = sample.GetProperty("StandbyContext").Deserialize<CombatContext>()!;
                 var living = sample.GetProperty("LivingUnitIds").EnumerateArray().Select(id => id.GetInt32()).ToHashSet();
                 return context.OtherPiles!.Single(pile => pile.Name == "Standby").EquipmentConditions!.Any(condition =>
-                    condition.ReturnToHand && !living.Contains(condition.HostUnitId));
+                    condition.ReturnToHand == (scenario == "equipment") && !living.Contains(condition.HostUnitId));
             }), "Native global return after the original host's death was not reached.");
+            if (scenario == "equipment-exhausted")
+                Require(fixture.GetProperty("Turns").EnumerateArray().Any(sample =>
+                {
+                    var actual = sample.GetProperty("Actual").Deserialize<BattleTurnState>()!;
+                    var context = actual.Spawn.Train.Context!;
+                    var equipment = actual.PlayRules!.Cards.Where(rule => rule.Equipment != null).Select(rule => rule.DataId).ToHashSet();
+                    return context.OtherPiles!.Single(pile => pile.Name == "Exhausted").Cards.Any(card =>
+                        equipment.Contains(card.DataId) && context.Statistics!.Value(card.InstanceId, "TimesExhausted", "ThisBattle") == 1);
+                }), "Native equipment exhaustion and its exact live statistic were not reached.");
             var attached = samples.First(sample => !sample.GetProperty("Remove").GetBoolean());
             Require(!RoomCombatModel.ApplyEquipment(attached.GetProperty("After").Deserialize<RoomCombatState>()!,
                 attached.GetProperty("UnitId").GetInt32(), attached.GetProperty("CardId").GetInt32(),

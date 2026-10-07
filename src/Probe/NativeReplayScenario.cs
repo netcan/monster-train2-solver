@@ -401,7 +401,7 @@ namespace MonsterTrain2Poju.Probe
                 return;
             }
             string? modifierScenario = Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS");
-            if (fullBattle && modifierScenario == "equipment")
+            if (fullBattle && (modifierScenario == "equipment" || modifierScenario == "equipment-exhausted"))
             {
                 if (EquipmentScenario.Error != null) throw new InvalidOperationException(EquipmentScenario.Error);
                 if (!EquipmentScenario.Completed)

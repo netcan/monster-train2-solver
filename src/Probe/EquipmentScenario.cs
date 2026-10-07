@@ -33,6 +33,7 @@ namespace MonsterTrain2Poju.Probe
         private static IEnumerator Run(AllGameManagers managers, ManualLogSource log)
         {
             CardManager cards = managers.GetCardManager()!; SaveManager save = managers.GetSaveManager();
+            bool exhausted = Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == "equipment-exhausted";
             CardState[] owned = cards.GetAllCards(new List<CardState>()).ToArray();
             CardState[] gear = owned.Where(card => card.GetEffects().Any(effect => effect.GetEffectStateName() == "CardEffectDamage" &&
                 effect.GetTargetMode() == TargetMode.DropTargetCharacter)).ToArray();
@@ -42,7 +43,8 @@ namespace MonsterTrain2Poju.Probe
             var attach = new CardEffectData("CardEffectAttachEquipment", null!, Team.Type.Monsters);
             attach.Cheat_SetTargetMode(TargetMode.DropTargetCharacter); Set(attach, "paramCardUpgradeData", upgrade);
             data.GetEffects().Clear(); data.GetEffects().Add(attach); data.GetTraits().Clear();
-            var returnTrait = new CardTraitData(); returnTrait.Setup("CardTraitReturnToHandEquipment"); data.GetTraits().Add(returnTrait);
+            if (!exhausted)
+            { var returnTrait = new CardTraitData(); returnTrait.Setup("CardTraitReturnToHandEquipment"); data.GetTraits().Add(returnTrait); }
             Set(data, "cardType", CardType.Equipment); Set(data, "cost", 0); Set(data, "costType", CardData.CostType.Default);
             Set(data, "targetless", false); Set(data, "targetsRoom", true);
             foreach (CardState card in gear) card.Setup(data, save);
@@ -81,7 +83,8 @@ namespace MonsterTrain2Poju.Probe
             }
             Set(managers.GetCombatManager()!, "combatStateChanged", true);
             Completed = true;
-            log.LogInfo("EQUIPMENT-PREPARED native three-card attachment/replacement, temporary/permanent modifiers, equipment callbacks, return-to-hand and original Boss/waves.");
+            log.LogInfo("EQUIPMENT-PREPARED native three-card attachment/replacement, temporary/permanent modifiers, equipment callbacks, return=" +
+                (exhausted ? "Exhausted" : "Hand") + " and original Boss/waves.");
         }
         private static void Set(object target, string field, object value) => AccessTools.Field(target.GetType(), field).SetValue(target, value);
     }

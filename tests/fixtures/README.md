@@ -49,6 +49,15 @@ room/context states independently in 32 parallel branches; the subsequent
 16 parallel branches. Grafted equipment, equipment-granted triggers/abilities
 and special return overrides remain unsupported.
 
+`full-battle-equipment-exhausted.mt2f` uses the same attachment/removal setup
+with ordinary equipment whose destination is Exhausted. It captures 15 native
+equipment operations and a complete 14-play, seven-EndTurn battle, including
+attached death returns and global returns of already-detached equipment. Exact
+pile order, standby holes, current card links and live TimesExhausted statistics
+match independently. Equipment API cases repeat in 32 parallel branches; the
+policy matches initial and mid-battle roots in 16 parallel branches. This
+fixture has no exhaustion listeners; their callbacks remain separate work.
+
 `full-battle-room-capacity.mt2f` and `full-battle-room-capacity-lethal.mt2f`
 retain schema 52 battles with live capacities used by subsequent summons and
 restricted size upgrades. Their 220 exact effect contexts and 2,050 native

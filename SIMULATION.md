@@ -2611,3 +2611,26 @@ unsupported guard, and all 78 archives match the curated SHA-256 inventory.
 The native probe Release build has zero warnings and errors; ModelChecks has
 no errors and retains its 12 existing nullable warnings. No source JSON fixture
 is tracked.
+
+## Ordinary equipment exhaustion
+
+`-EquipmentExhausted` constructs the same native attachment/replacement and
+reverse-removal scenario without CardTraitReturnToHandEquipment. The retained
+`tests/fixtures/full-battle-equipment-exhausted.mt2f` verifies attached equipment
+returning during the host's death and detached equipment returning during the
+global standby check. Complete contexts compare exact exhausted-pile order,
+dictionary free-slot history, card links and live TimesExhausted/AnyExhausted
+statistics. This scenario has no exhaustion listeners, so it does not establish
+their selected-room callback ordering.
+
+The muted Instant native run takes 49.28 seconds, wins at Pyre 61 and records
+15 equipment API operations, 14 policy plays, seven EndTurns and 61 room stages.
+Capture failures, differences, unsupported and pending records are all zero;
+original files are unchanged. All API transitions compare independently in
+32 parallel branches. The complete policy matches from the initial and actual
+mid-battle roots in 16 parallel branches. The schema-54 archive contains
+4,411 nodes in 26,491 bytes on game 2.2.1 and the unchanged module MVID.
+Both equipment fixtures pass the final checker and all 79 archives match the
+curated SHA-256 inventory. The probe builds without warnings/errors; the
+checker retains its 12 existing nullable warnings. This increment adds native
+evidence and scenario coverage without changing the battle model.
