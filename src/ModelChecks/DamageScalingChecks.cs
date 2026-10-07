@@ -92,7 +92,7 @@ internal static class DamageScalingChecks
     internal static void Native(FixtureValue fixture)
     {
         if (!fixture.TryGetProperty("ModifierScenario", out FixtureValue scenario) ||
-            scenario.GetString() is not ("damage-scaling" or "dynamic-statistics")) return;
+            scenario.GetString() is not ("damage-scaling" or "dynamic-statistics" or "x-cost" or "x-cost-lethal")) return;
         int count = 0;
         var queries = new HashSet<string>(); var types = new HashSet<string>();
         bool replacement = false, additive = false;
@@ -112,8 +112,12 @@ internal static class DamageScalingChecks
             queries.Add(trait.Query.Type); types.Add(sample.GetProperty("DamageType").GetString()!);
             replacement |= !trait.AddToDamage; additive |= trait.AddToDamage; count++;
         }
-        Require(count >= 60 && replacement && additive && queries.Contains("MagicPowerInTargetRoom") && queries.Contains("LastAttackDamageDealt") &&
-            types.Contains("DirectAttack") && types.Contains("Default") && types.Contains("Spikes"), "Native scaling trace lacks spell/unit/retaliation or trait-mode coverage.");
+        if (scenario.GetString() is "x-cost" or "x-cost-lethal")
+            Require(count > 0 && replacement && additive && queries.SetEquals(["UnmodifiedPlayedCost", "PlayedCost"]) && types.Contains("Default"),
+                "Native X-cost scaling lacks raw/modified payment queries.");
+        else
+            Require(count >= 60 && replacement && additive && queries.Contains("MagicPowerInTargetRoom") && queries.Contains("LastAttackDamageDealt") &&
+                types.Contains("DirectAttack") && types.Contains("Default") && types.Contains("Spikes"), "Native scaling trace lacks spell/unit/retaliation or trait-mode coverage.");
         if (scenario.GetString() == "dynamic-statistics")
             Require(new[] { "Gold", "TurnCount", "MoonPhase", "ForgePoints", "DragonsHoardAmount", "EnergyRemainingEndOfTurn", "PyreHeartResurrection" }
                 .All(queries.Contains), "Native scaling lacks dynamic resource queries.");

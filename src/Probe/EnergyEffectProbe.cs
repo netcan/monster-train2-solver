@@ -32,7 +32,7 @@ namespace MonsterTrain2Poju.Probe
                 typeof(CardEffectGainEnergyNextTurn), typeof(CardEffectGainEnergyEveryTurn) }.Select(type => AccessTools.Method(type, "ApplyEffect"));
             private static void Postfix(CardEffectState cardEffectState, CardEffectParams cardEffectParams, ref IEnumerator __result)
             {
-                if (EnergyScenario.Prepared && FullBattleTrace.Active != null && !AllGameManagers.Instance!.GetSaveManager().PreviewMode)
+                if ((EnergyScenario.Prepared || CardCostScenario.Prepared) && FullBattleTrace.Active != null && !AllGameManagers.Instance!.GetSaveManager().PreviewMode)
                     __result = Observe(__result, cardEffectState, cardEffectParams);
             }
         }

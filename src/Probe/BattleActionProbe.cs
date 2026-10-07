@@ -166,7 +166,7 @@ namespace MonsterTrain2Poju.Probe
             else interactions.Add("Unimplemented play effect " + kind);
             return new CardPlayRule(data.GetID(), data.name, data.GetCost(), kind, destination, template,
                 interactions.Distinct().OrderBy(value => value, StringComparer.Ordinal).ToArray(), spellEffects, upgradeInteractions,
-                HandInteractions(data, false), HandInteractions(data, true));
+                HandInteractions(data, false), HandInteractions(data, true), data.GetCostType().ToString());
         }
 
         private static string[] HandInteractions(CardData data, bool consume)

@@ -120,6 +120,9 @@ namespace MonsterTrain2Poju.Model
             UnitUpgradeScalingTraits = unitUpgradeScalingTraits == null ? null : Array.AsReadOnly(unitUpgradeScalingTraits.ToArray()); }
         public static CardInstanceState Empty(int id, string dataId) => new CardInstanceState(id, dataId,
             CardModifiers.Empty(), CardModifiers.Empty(), 0, 0, 0, Array.Empty<string>());
+        internal CardInstanceState WithPlayedCost(int cost) => new CardInstanceState(InstanceId, DataId,
+            Permanent, Temporary, cost, LastForgedAmount, PlayCount, ExternalInteractions,
+            EffectCounters, DamageScalingTraits, StatusScalingTraits, UnitUpgradeScalingTraits);
         public CardInstanceState OnDiscard(bool played, int cost = 0) => new CardInstanceState(InstanceId, DataId,
             Permanent, Temporary.OnDiscard(), played ? cost : LastPlayedCost, LastForgedAmount,
             PlayCount + (played ? 1 : 0), ExternalInteractions, EffectCounters, DamageScalingTraits, StatusScalingTraits, UnitUpgradeScalingTraits);
@@ -194,7 +197,7 @@ namespace MonsterTrain2Poju.Model
                     ResolveValue(effect, effect.Range.Max), effect.Range.Multiplier), effect.Filters, effect.Generation)).ToArray();
             return new CardPlayRule(rule.DataId, rule.AssetKey, UpgradedStat(rule.Cost, "Cost", true, modifiers), rule.Effect,
                 rule.Destination, unit, interactions.Distinct().OrderBy(value => value, StringComparer.Ordinal).ToArray(), effects, rule.UpgradeInteractions,
-                rule.HandDiscardInteractions, rule.HandConsumeInteractions);
+                rule.HandDiscardInteractions, rule.HandConsumeInteractions, rule.CostType);
 
             int ResolveValue(CardActionEffect effect, int value) => effect.Type == "Damage" || effect.Type == "Heal"
                 ? UpgradedStat(UpgradedStat(value, effect.Type, true, instance.Permanent), effect.Type, true, instance.Temporary) : value;

@@ -51,6 +51,7 @@ are copied immutable values; independent child states can run on worker threads.
 | Attack buff/debuff spells | `UnitAttackModel` and `CardSpellModel` | Native raw negative balances/recovery, zero-attack and incapable targets, global/random targets, source-card ownership and later unit upgrades |
 | Maximum-health buff/debuff spells | `UnitHealthModel` and `CardSpellModel` | Signed temporary source-card offsets, battle/unit-death lifetimes, multiplier/immunity, suppressed OnHeal, direct lethal loss and post-boss effect chains |
 | Current and future energy effects | `EnergyModel`, `CardSpellModel` and `RoomCombatModel` | Native spell/unit-trigger applications, caps, signed/ranged quantities, phase gates, current/next/persistent income and post-boss gates; complete policies with parallel branches |
+| X-cost payments | `BattleActionModel` and `CardPlayRule.CostType` | Zero/current-energy payment, independent fixed/X modifiers, 96 exact paid-cost scaling callbacks, redrawn cards, post-payment gains and terminal Boss kill; complete policies with parallel branches |
 | Healing triggers | `CombatTrigger` and `RoomCombatModel` | Native repeated/once rewards and silence; zero/full/immune healing, deployment timing, preview flags and child isolation checks |
 | Healing effects on unit triggers | `CombatEffect.Action`, `HealingModel` and `RoomCombatModel` | Native self/room/healable/random targets, per-group ranges, negative/zero amounts, empty-room sampling, source-card independence and deferred OnHeal upgrades |
 | Damage effects on unit triggers | `CombatEffect.Action` and `RoomCombatModel` | Native quantity tests/samples, source-card attribution, status multipliers, defenses, death FIFO and deferred spawner exhaustion |
@@ -2335,3 +2336,51 @@ fixtures retain their stronger zero/hidden-definition coverage requirements.
 The complete curated regression passes all 70 binary archives: 62 battle
 fixtures and eight calibrations, with inventory and SHA-256 integrity checks.
 The final native probe Release build succeeds with zero warnings and errors.
+
+## X-cost payment and effect quantities
+
+Schema 50 captures the definition's `CostType`. Existing archives use Default;
+their capture boundaries explicitly rejected variable-cost instances. Card
+modifier resolution preserves the type. ConsumeRemainingEnergy pays the current
+decision's entire energy, including zero, independently of the upgraded fixed
+cost. Native IsAffordable and CanPlayHandCard validate the recorded plays before
+the game actually executes them. Unknown and NonPlayable types remain rejected
+until their associated legality and callbacks are modeled.
+
+The paid amount enters both the card's LastPlayedCost and the live payment
+statistic before effects run; end-of-play callbacks clear the latter and retain
+the former on owned cards and detached registry references. UnmodifiedPlayedCost
+reads that exact payment. PlayedCost additionally reads the raw base cost and
+the separate permanent/temporary X-cost modifiers. Its bonuses change effect
+quantities without changing the amount paid. Effects can gain new energy after
+payment; a Boss-killing spell skips that subsequent gain. Pure checks also cover
+a redrawn card paying the next turn's fresh energy and 32 immutable branches.
+
+Two binary-only fixtures preserve the original Boss and waves on game 2.2.1,
+module MVID `8fb07b96-f4db-4d2b-884d-c00536d6ccf4`:
+
+- `full-battle-x-cost.mt2f`: 78.07 seconds at muted Instant timing, 28 card plays,
+  six EndTurns and 52 room stages. Its 23 X casts include nine zero and 14
+  positive payments, with 12 ignored fixed-cost reductions, 56 exact damage
+  callbacks and 23 exact energy contexts. The archive has 4,263 nodes in 24,633
+  bytes, SHA-256 `0e7b766b784abee966e5cf0041a992f829c1dc1fde5c1c9f606f2212c09afe3c`.
+- `full-battle-x-cost-lethal.mt2f`: 62.46 seconds, 21 plays, five EndTurns and
+  44 room stages. Its 16 X casts include seven zero and nine positive payments,
+  eight ignored fixed-cost reductions and the winning Boss cast, with 40 exact
+  damage callbacks and 15 exact energy contexts. The archive has 3,768 nodes in
+  22,305 bytes, SHA-256 `be50597271d31879b60ae2cf07cb72048c0be7fdb3772429479e5f0f0fcf1156`.
+
+Both end at Pyre 80 with zero capture failures, mismatches, unsupported or
+pending observations and unchanged original game files. Independent policies
+reproduce every action, EndTurn and terminal state from initial and actual
+mid-battle inputs, including 16 parallel branches. Every recorded damage and
+energy context is recomputed independently. Dedicated energy fixtures retain
+their full phase/range/cap coverage contract; other scenarios still compare all
+their observed energy effects exactly. Relic/room cost modifiers and dynamic
+trait costs remain explicit unmodeled interactions.
+
+The existing 70-archive regression passes after the payment changes. Both new
+native fixtures and the expanded pure checks also pass; the curated inventory
+now contains 64 battle fixtures and eight calibration archives.
+Its complete 72-archive inventory and SHA-256 integrity check passes, and the
+final native probe Release build succeeds with zero warnings and errors.

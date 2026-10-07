@@ -27,6 +27,12 @@ value comparison.
 Isolated native probes use `.probe-runs/`, which is also ignored. Successful
 captures become fixed inputs here after native and independent comparisons pass.
 
+`full-battle-x-cost.mt2f` and `full-battle-x-cost-lethal.mt2f` retain schema 50
+native battles with 39 X casts, including 16 zero and 23 positive payments,
+96 exact paid-cost damage callbacks and 38 exact subsequent energy contexts.
+The lethal fixture finishes with an X spell killing the Boss. Both complete
+policies match from initial and mid-battle inputs with 16 parallel branches.
+
 `full-battle-status-callbacks.mt2f` retains the complete schema 46 native battle
 and 481 ordered status callback dispatches, including zero additions, actual
 removals, silence loss and dying actors. These checks compare captured native

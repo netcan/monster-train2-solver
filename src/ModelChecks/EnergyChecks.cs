@@ -127,9 +127,10 @@ internal static class EnergyChecks
             if (effect.Range != null) ranged++; if (amount == 0) zero++; if (amount < 0) negative++;
             if (after.QueryFrame!.Energy == after.EnergyState!.Maximum && amount > 0) capped++;
         }
-        Require(kinds.Count == 5 && phases.Count >= 3 && triggers.Contains("") && triggers.Contains("PreCombat") &&
-            triggers.Contains("EndTurnPreHandDiscard") && ranged > 0 && zero > 0 && negative > 0 && capped > 0,
-            "Native energy coverage incomplete.");
+        if (fixture.GetProperty("ModifierScenario").GetString() is "energy-effects" or "energy-effects-lethal")
+            Require(kinds.Count == 5 && phases.Count >= 3 && triggers.Contains("") && triggers.Contains("PreCombat") &&
+                triggers.Contains("EndTurnPreHandDiscard") && ranged > 0 && zero > 0 && negative > 0 && capped > 0,
+                "Native energy coverage incomplete.");
         if (fixture.GetProperty("ModifierScenario").GetString() == "energy-effects-lethal")
         {
             var winning = fixture.GetProperty("Actions").EnumerateArray().Single(record => record.GetProperty("ActualOutcome").GetInt32() == (int)RoomOutcome.BattleWon);

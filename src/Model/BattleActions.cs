@@ -56,6 +56,7 @@ namespace MonsterTrain2Poju.Model
         public string DataId { get; }
         public string AssetKey { get; }
         public int Cost { get; }
+        public string CostType { get; }
         public string Effect { get; }
         public string Destination { get; }
         public CombatUnit? SpawnUnit { get; }
@@ -67,9 +68,9 @@ namespace MonsterTrain2Poju.Model
         public CardPlayRule(string dataId, string assetKey, int cost, string effect, string destination,
             CombatUnit? spawnUnit, IReadOnlyList<string> externalInteractions, IReadOnlyList<CardActionEffect>? effects = null,
             IReadOnlyList<string>? upgradeInteractions = null, IReadOnlyList<string>? handDiscardInteractions = null,
-            IReadOnlyList<string>? handConsumeInteractions = null)
+            IReadOnlyList<string>? handConsumeInteractions = null, string costType = "Default")
         {
-            DataId = dataId; AssetKey = assetKey; Cost = cost; Effect = effect; Destination = destination;
+            DataId = dataId; AssetKey = assetKey; Cost = cost; CostType = costType; Effect = effect; Destination = destination;
             SpawnUnit = spawnUnit; ExternalInteractions = Array.AsReadOnly(externalInteractions.ToArray());
             Effects = Array.AsReadOnly((effects ?? Array.Empty<CardActionEffect>()).ToArray());
             UpgradeInteractions = upgradeInteractions == null ? null : Array.AsReadOnly(upgradeInteractions.ToArray());
@@ -144,8 +145,12 @@ namespace MonsterTrain2Poju.Model
                 rule = CardModifierModel.Resolve(rule, playingInstance);
             }
             if (rule.ExternalInteractions.Count > 0) return Unsupported(string.Join("; ", rule.ExternalInteractions));
-            if (rule.Cost < 0) return Unsupported("Variable or negative card costs are not implemented.");
-            if (source.Energy < rule.Cost) return Illegal("Insufficient energy.");
+            if (rule.CostType != "Default" && rule.CostType != "ConsumeRemainingEnergy")
+                return Unsupported("Unmodeled card cost type " + rule.CostType);
+            if (rule.Cost < 0) return Unsupported("Negative card costs are not implemented.");
+            int paidCost = rule.CostType == "ConsumeRemainingEnergy" ? source.Energy : rule.Cost;
+            if (source.Energy < 0) return Unsupported("Negative decision energy.");
+            if (source.Energy < paidCost) return Illegal("Insufficient energy.");
             RoomPlayRule? targetRule = source.PlayRules.Rooms.FirstOrDefault(item => item.RoomIndex == action.RoomIndex);
             RoomCombatState? target = train.Rooms.FirstOrDefault(item => item.RoomIndex == action.RoomIndex);
             if (targetRule == null || target == null) return Illegal("The target room does not exist.");
@@ -159,9 +164,11 @@ namespace MonsterTrain2Poju.Model
                 string? pileError = CardPileModel.Validate(pile);
                 if (pileError != null) return Unsupported(pileError);
             }
-            context = context.WithOtherPiles(source.OtherPiles).WithStatistics(context.Statistics?.WithPlayedCost(card.InstanceId, rule.Cost));
+            context = context.WithOtherPiles(source.OtherPiles).WithStatistics(context.Statistics?.WithPlayedCost(card.InstanceId, paidCost));
             CombatContext castingContext = context;
-            context = context.WithQueryFrame(context.QueryFrame?.With(energy: source.Energy - rule.Cost));
+            context = context.WithQueryFrame(context.QueryFrame?.With(energy: source.Energy - paidCost));
+            // Native records the payment on the card before any queued effect runs.
+            if (playingInstance != null) context = context.WithCard(playingInstance.WithPlayedCost(paidCost));
             CardPileState[] piles = source.OtherPiles.ToArray();
             // A naturally played card remains owned in the discard buffer during queued effects.
             // Scaling queries refresh membership here, before the final destination is assigned.
@@ -300,9 +307,9 @@ namespace MonsterTrain2Poju.Model
             context = new CombatContext(new CardCycleState(hand, context.Cards.Draw, discard, context.Cards.Rng,
                 context.Cards.DrawModifier, context.Cards.ExternalInteractions), context.BattleRng,
                 context.Gold, context.NextCardId, context.MaxHandSize, context.StatusRules, statistics,
-                terminal ? playingInstance == null ? context.CardInstances : new[] { (context.FindCard(card.InstanceId) ?? playingInstance).OnDiscard(true, rule.Cost) } :
+                terminal ? playingInstance == null ? context.CardInstances : new[] { (context.FindCard(card.InstanceId) ?? playingInstance).OnDiscard(true, paidCost) } :
                 context.CardInstances?.Select(instance => instance.InstanceId == card.InstanceId
-                    ? instance.OnDiscard(true, rule.Cost) : instance).ToArray(), context.CardRegistry, context.AllScenarioBossesDead, context.NextAddedTemporaryUpgrades,
+                    ? instance.OnDiscard(true, paidCost) : instance).ToArray(), context.CardRegistry, context.AllScenarioBossesDead, context.NextAddedTemporaryUpgrades,
                 context.OtherPiles == null ? null : piles, context.QueryFrame?.With(runningCombat: !terminal), context.KillCamActivated, context.MagicPower, context.IsolatedBattlePreview, context.EnergyState);
             RoomCombatState[] rooms = train.Rooms.Select(room =>
             {
@@ -321,7 +328,7 @@ namespace MonsterTrain2Poju.Model
             spawn = new EnemySpawnState(train, spawn.Waves, spawn.SelectedGroups, spawn.Phase, spawn.Looping, spawn.Rng,
                 nextUnitId, spawn.Treasures, spawn.TreasuresRemaining, spawn.TreasureEnabled, spawn.FirstTreasureTurn,
                 spawn.FirstTreasureRoom, spawn.Turn, spawn.ExternalInteractions);
-            return new BattleActionResult(new BattleTurnState(spawn, context.EnergyState == null ? source.Energy - rule.Cost : context.QueryFrame!.Energy!.Value, source.EnergyPerTurn,
+            return new BattleActionResult(new BattleTurnState(spawn, context.EnergyState == null ? source.Energy - paidCost : context.QueryFrame!.Energy!.Value, source.EnergyPerTurn,
                 source.DrawPerTurn, source.ForgePoints, source.DragonsHoard, source.MoonPhase,
                 source.RngStreams.Select(stream => new BattleRngStream(stream.Name, stream.Seed,
                     stream.Name == "Battle" ? context.BattleRng : stream.Name == "CardDraw" ? context.Cards.Rng : stream.State)).ToArray(),

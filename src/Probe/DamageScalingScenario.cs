@@ -102,7 +102,7 @@ namespace MonsterTrain2Poju.Probe
                 __state = null;
                 FullBattleTrace? trace = FullBattleTrace.Active;
                 string? scenario = Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS");
-                if (scenario != "damage-scaling" && scenario != "dynamic-statistics" || trace == null ||
+                if (scenario != "damage-scaling" && scenario != "dynamic-statistics" && scenario != "x-cost" && scenario != "x-cost-lethal" || trace == null ||
                     AllGameManagers.Instance!.GetSaveManager().PreviewMode || !trace.PendingActionIndex.HasValue && !trace.PendingTurnIndex.HasValue) return;
                 var sample = new Sample { ActionIndex = trace.PendingActionIndex ?? -1, TurnIndex = trace.PendingTurnIndex ?? -1,
                     IncomingDamage = damageParams.damage, DamageType = damageParams.damageType.ToString() };

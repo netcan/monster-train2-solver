@@ -89,6 +89,7 @@ DamageScalingChecks.Run();
 StatusScalingChecks.Run();
 DynamicStatisticChecks.Run();
 EnergyChecks.Run();
+CardCostChecks.Run();
 CardModifierChecks.Run();
 TerminalSpellChecks.Run();
 UnitModifierChecks.Run();

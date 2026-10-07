@@ -19,10 +19,11 @@ namespace MonsterTrain2Poju.Probe
             {
                 var interactions = new List<string>();
                 if (card.IsPurified) interactions.Add("Purified card");
-                if (card.IsConsumeRemainingEnergyCostType()) interactions.Add("Variable energy cost");
                 if (card.IsNonPlayableEnergyCostType()) interactions.Add("Nonplayable card cost type");
                 if (card.GetRemoveFromStandByPileOverride(out _)) interactions.Add("Overridden standby return pile");
                 CardData data = managers.GetSaveManager().GetAllGameData().FindCardData(card.GetCardDataID())!;
+                if (card.IsConsumeRemainingEnergyCostType() != (data.GetCostType() == CardData.CostType.ConsumeRemainingEnergy) ||
+                    card.IsNonPlayableEnergyCostType() != (data.GetCostType() == CardData.CostType.NonPlayable)) interactions.Add("Changed card cost type");
                 if ((int)AccessTools.Field(typeof(CardState), "cost").GetValue(card) != data.GetCost()) interactions.Add("Changed base card cost");
                 var state = new CardInstanceState(cardId(card), card.GetCardDataID(),
                     Modifiers(card.GetCardStateModifiers()), Modifiers(card.GetTemporaryCardStateModifiers()),

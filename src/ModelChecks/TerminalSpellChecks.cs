@@ -47,7 +47,7 @@ internal static class TerminalSpellChecks
             settled.Statistics!.Value(instance.InstanceId, "TimesPlayed") == (permanent ? old.Statistics.Value(instance.InstanceId, "TimesPlayed") + 1 : 0) &&
             settled.Statistics.Value(instance.InstanceId, "TimesDiscarded") == (permanent ? old.Statistics.Value(instance.InstanceId, "TimesDiscarded") + 1 : 1) &&
             settled.Statistics.PlayedCosts.Count == 0 && settled.Statistics.CardsPlayedThisTurn.Contains(instance.InstanceId) &&
-            actual.Energy == before.Energy - rule.Cost,
+            actual.Energy == before.Energy - (rule.CostType == "ConsumeRemainingEnergy" ? before.Energy : rule.Cost),
             "The settled terminal oracle lacks cast/discard callbacks, restored card state or paid energy.");
         if (old.CardRegistry != null)
             Require(settled.CardRegistry != null && old.CardRegistry.All(card => settled.CardRegistry.Any(next => next.InstanceId == card.InstanceId)) &&
