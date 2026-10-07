@@ -77,7 +77,7 @@ namespace MonsterTrain2Poju.Model
                 if (targetError != null) return new SpellCastCheck(false, targetError);
                 CardActionEffect tested = effect;
                 if (QuantityTest(effect)) tested = Sample(effect, ref testingRng);
-                bool valid = PassesTest(tested, TestCount(source, effect, targets), source.Context!.AllScenarioBossesDead == true, source.Context, room.Preview);
+                bool valid = PassesTest(tested, TestCount(source, effect, targets), source.Context!.AllScenarioBossesDead == true, source.Context, room.Preview, room);
                 if (!valid && effect.Tests?.FailToCast == true) return new SpellCastCheck(false, battleRngAfterTests: testingRng);
                 passed |= valid;
             }
@@ -150,7 +150,8 @@ namespace MonsterTrain2Poju.Model
                     tested = Sample(effect, ref testingRng);
                     state = WithContext(state, state.Context.WithBattleRng(testingRng));
                 }
-                if (!PassesTest(tested, TestCount(state, effect, targets), bossDead, state.Context, selected.Preview))
+                if (!PassesTest(tested, TestCount(state, effect, targets), bossDead, state.Context, selected.Preview,
+                    state.Rooms.Single(room => room.RoomIndex == roomIndex)))
                 {
                     if (index == 0 && CardTargetModel.IsRandom(effect.Target) && targets.UnitIds.Count > 0 && effect.Tests?.CancelSubsequent != true &&
                         effects.Skip(1).Any(next => next.Target.Contains("LastTargeted")))
@@ -174,8 +175,14 @@ namespace MonsterTrain2Poju.Model
                         new[] { effect.Statuses[chosen.Value] }, effect.Upgrade, effect.Lifetime, effect.Tests, effect.Range, effect.Filters);
                 }
                 UnityRng effectRng = state.Context!.BattleRng;
-                if (effect.Type != "DiscardHand" && effect.Type != "Generate") effect = Sample(effect, ref effectRng);
+                if (effect.Type != "DiscardHand" && effect.Type != "Generate" && effect.Type != "AdjustCapacity") effect = Sample(effect, ref effectRng);
                 state = WithContext(state, state.Context.WithBattleRng(effectRng));
+                if (effect.Type == "AdjustCapacity")
+                {
+                    RoomCapacityResult capacity = RoomCapacityModel.Apply(state.Context!, roomIndex, effect, sourceCardId);
+                    if (!capacity.Supported) return UnsupportedTrain(capacity.UnsupportedReason!);
+                    state = WithContext(state, capacity.Context!); continue;
+                }
                 if (effect.Type == "DrawNextTurn")
                 {
                     state = WithContext(state, state.Context!.WithCards(BonusDrawModel.Schedule(state.Context.Cards,
@@ -259,7 +266,8 @@ namespace MonsterTrain2Poju.Model
                     }
                     RoomPlayRule? capacity = definitions?.Rooms.FirstOrDefault(item => item.RoomIndex == targetRoom!.RoomIndex);
                     RoomCombatResult applied = ApplyOne(targetRoom!, effect, target, sourceCardId,
-                        capacity?.PlayerCapacity ?? playerCapacity, capacity?.EnemyCapacity ?? enemyCapacity,
+                        RoomCapacityModel.Maximum(state.Context, targetRoom!.RoomIndex, CombatTeam.Player) ?? capacity?.PlayerCapacity ?? playerCapacity,
+                        RoomCapacityModel.Maximum(state.Context, targetRoom.RoomIndex, CombatTeam.Enemy) ?? capacity?.EnemyCapacity ?? enemyCapacity,
                         deferSpawnerExhaustion: piles != null, scaledDamage: scaledDamage);
                     if (!applied.Supported) return UnsupportedTrain(applied.UnsupportedReason!);
                     state = ReplaceRoom(state, applied.State!);
@@ -436,7 +444,7 @@ namespace MonsterTrain2Poju.Model
             {
                 string? filterError = effect.Filters?.Validate();
                 if (filterError != null) return filterError;
-                if (effect.Range != null && effect.Type != "DiscardHand" && effect.Type != "Generate")
+                if (effect.Range != null && effect.Type != "DiscardHand" && effect.Type != "Generate" && effect.Type != "AdjustCapacity")
                 {
                     if (!EnergyModel.IsEffect(effect.Type) && !new[] { "Damage", "Heal", "AddStatus", "BuffAttack", "DebuffAttack", "BuffHealth", "DebuffHealth", "Draw", "DrawNextTurn" }.Contains(effect.Type))
                         return "Unmodeled range consumer " + effect.Type;
@@ -450,6 +458,12 @@ namespace MonsterTrain2Poju.Model
                     continue;
                 }
                 if (!CardTargetModel.Supports(effect.Target)) return "Unimplemented spell targeting " + effect.Target;
+                if (effect.Type == "AdjustCapacity")
+                {
+                    string? capacityError = RoomCapacityModel.Validate(source.Context);
+                    if (capacityError != null) return capacityError;
+                    continue;
+                }
                 if (effect.Type == "DrawNextTurn")
                 {
                     if (source.Context?.Cards.BonusDraw == null) return "Missing bonus-draw state.";
@@ -500,8 +514,10 @@ namespace MonsterTrain2Poju.Model
         private static int DropPosition(RoomCombatState source, CombatUnit? initial) => initial == null ? -1 :
             source.Units.Where(unit => unit.Team == initial.Team).TakeWhile(unit => unit.Id != initial.Id).Count();
 
-        private static bool PassesTest(CardActionEffect effect, int count, bool bossDead = false, CombatContext? context = null, bool preview = false)
+        private static bool PassesTest(CardActionEffect effect, int count, bool bossDead = false, CombatContext? context = null, bool preview = false,
+            RoomCombatState? room = null)
         {
+            if (effect.Type == "AdjustCapacity") return !preview && !bossDead && RoomCapacityModel.Test(room, effect);
             if (EnergyModel.IsEffect(effect.Type)) return !preview && !bossDead && EnergyModel.Test(context!, effect.Type);
             if (preview && (effect.Type == "Draw" || effect.Type == "DrawNextTurn" || effect.Type == "DiscardHand" || effect.Type == "Generate")) return false;
             if (bossDead && !(effect.Tests?.CanPlayAfterBossDead ?? (effect.Type != "HandUpgrade" && effect.Type != "Draw" && effect.Type != "DrawNextTurn" && effect.Type != "DiscardHand" && effect.Type != "Generate"))) return false;

@@ -84,7 +84,7 @@ namespace MonsterTrain2Poju.Model
                 if (interactions.Count > 0) { error = string.Join("; ", interactions); return context; }
                 context = context.WithCard(new CardInstanceState(card.InstanceId, card.DataId, card.Permanent,
                     UnitModifierModel.Add(card.Temporary, application.Upgrade), card.LastPlayedCost, card.LastForgedAmount, card.PlayCount,
-                    card.ExternalInteractions, card.EffectCounters, card.DamageScalingTraits, card.StatusScalingTraits, card.UnitUpgradeScalingTraits));
+                    card.ExternalInteractions, card.EffectCounters, card.DamageScalingTraits, card.StatusScalingTraits, card.UnitUpgradeScalingTraits, card.CapacityScalingTraits));
             }
             return context;
         }

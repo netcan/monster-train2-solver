@@ -29,11 +29,12 @@ namespace MonsterTrain2Poju.Model
         public CardEffectRange? Range { get; }
         public CardTargetFilters? Filters { get; }
         public CardGenerationRule? Generation { get; }
+        public bool OnlyIfNoEnemies { get; }
         public CardActionEffect(string type, string target, int value, bool allowEnemy, bool allowPlayer, IReadOnlyList<CombatStatus> statuses,
             CardUpgradeModifier? upgrade = null, string lifetime = "", CardEffectTests? tests = null, CardEffectRange? range = null, CardTargetFilters? filters = null,
-            CardGenerationRule? generation = null)
+            CardGenerationRule? generation = null, bool onlyIfNoEnemies = false)
         { Type = type; Target = target; Value = value; AllowEnemy = allowEnemy; AllowPlayer = allowPlayer; Statuses = Array.AsReadOnly(statuses.ToArray());
-            Upgrade = upgrade; Lifetime = lifetime; Tests = tests; Range = range; Filters = filters; Generation = generation; }
+            Upgrade = upgrade; Lifetime = lifetime; Tests = tests; Range = range; Filters = filters; Generation = generation; OnlyIfNoEnemies = onlyIfNoEnemies; }
     }
     public sealed class RoomPlayRule
     {
@@ -179,7 +180,7 @@ namespace MonsterTrain2Poju.Model
             context = new CombatContext(new CardCycleState(context.Cards.Hand.Where(item => item.InstanceId != card.InstanceId).ToArray(),
                 context.Cards.Draw, context.Cards.Discard, context.Cards.Rng, context.Cards.DrawModifier, context.Cards.ExternalInteractions, context.Cards.BonusDraw),
                 context.BattleRng, context.Gold, context.NextCardId, context.MaxHandSize, context.StatusRules, context.Statistics, context.CardInstances,
-                context.CardRegistry, context.AllScenarioBossesDead, context.NextAddedTemporaryUpgrades, context.OtherPiles, context.QueryFrame, context.KillCamActivated, context.MagicPower, context.IsolatedBattlePreview, context.EnergyState);
+                context.CardRegistry, context.AllScenarioBossesDead, context.NextAddedTemporaryUpgrades, context.OtherPiles, context.QueryFrame, context.KillCamActivated, context.MagicPower, context.IsolatedBattlePreview, context.EnergyState, context.RoomCapacities);
             target = new RoomCombatState(target.RoomIndex, target.Deployment, target.Units, target.ExternalInteractions, context, target.Preview);
             CombatUnit[] players = target.Units.Where(unit => unit.Team == CombatTeam.Player).ToArray();
             int position = action.PlayerPosition == -1 ? players.Length : action.PlayerPosition;
@@ -197,7 +198,8 @@ namespace MonsterTrain2Poju.Model
                     new[] { template }, Array.Empty<string>(), context));
                 if (validation != null) return Unsupported(validation);
                 if (targetRule.SummonBlocked || players.Length >= targetRule.PlayerSlots ||
-                    players.Sum(unit => (long)unit.Size) + template.Size > targetRule.PlayerCapacity)
+                    players.Sum(unit => (long)unit.Size) + template.Size >
+                        (RoomCapacityModel.Maximum(context, action.RoomIndex, CombatTeam.Player) ?? targetRule.PlayerCapacity))
                     return Illegal("The room cannot accept this unit's size or another spawn slot.");
                 if (position < 0 || position > players.Length) return Illegal("Invalid summon position.");
                 if (nextUnitId <= 0 || train.Rooms.SelectMany(room => room.Units).Any(unit => unit.Id >= nextUnitId))
@@ -310,7 +312,7 @@ namespace MonsterTrain2Poju.Model
                 terminal ? playingInstance == null ? context.CardInstances : new[] { (context.FindCard(card.InstanceId) ?? playingInstance).OnDiscard(true, paidCost) } :
                 context.CardInstances?.Select(instance => instance.InstanceId == card.InstanceId
                     ? instance.OnDiscard(true, paidCost) : instance).ToArray(), context.CardRegistry, context.AllScenarioBossesDead, context.NextAddedTemporaryUpgrades,
-                context.OtherPiles == null ? null : piles, context.QueryFrame?.With(runningCombat: !terminal), context.KillCamActivated, context.MagicPower, context.IsolatedBattlePreview, context.EnergyState);
+                context.OtherPiles == null ? null : piles, context.QueryFrame?.With(runningCombat: !terminal), context.KillCamActivated, context.MagicPower, context.IsolatedBattlePreview, context.EnergyState, context.RoomCapacities);
             RoomCombatState[] rooms = train.Rooms.Select(room =>
             {
                 return new RoomCombatState(room.RoomIndex, room.Deployment, room.Units, room.ExternalInteractions, context, room.Preview);

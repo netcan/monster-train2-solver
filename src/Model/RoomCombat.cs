@@ -442,15 +442,15 @@ namespace MonsterTrain2Poju.Model
                     if (trigger.FireCount < 0) return "Invalid trigger fire count.";
                     foreach (CombatEffect effect in trigger.Effects)
                     {
-                        if (EnergyModel.IsNativeEffect(effect.Type) || effect.Type == "CardEffectDrawAdditionalNextTurn")
+                        if (EnergyModel.IsNativeEffect(effect.Type) || effect.Type == "CardEffectDrawAdditionalNextTurn" || effect.Type == "CardEffectAdjustRoomCapacity")
                         {
                             CardActionEffect? energy = effect.Action;
-                            if (energy == null || (effect.Type == "CardEffectDrawAdditionalNextTurn" ? energy.Type != "DrawNextTurn" :
+                            if (energy == null || (effect.Type == "CardEffectAdjustRoomCapacity" ? energy.Type != "AdjustCapacity" : effect.Type == "CardEffectDrawAdditionalNextTurn" ? energy.Type != "DrawNextTurn" :
                                 !EnergyModel.IsEffect(energy.Type) || effect.Type != "CardEffect" + (energy.Type == "GainEnergyMonsterTurn" ? "GainEnergy" : energy.Type)))
                                 return "Missing or mismatched triggered resource definition.";
-                            string? energyError = energy.Type == "DrawNextTurn" ? state.Context?.Cards.BonusDraw == null ? "Missing bonus-draw state." :
+                            string? energyError = energy.Type == "AdjustCapacity" ? RoomCapacityModel.Validate(state.Context) : energy.Type == "DrawNextTurn" ? state.Context?.Cards.BonusDraw == null ? "Missing bonus-draw state." :
                                 BonusDrawModel.Validate(state.Context.Cards) : EnergyModel.Validate(state.Context);
-                            energyError = energyError ?? energy.Range?.Validate() ?? energy.Filters?.Validate();
+                            energyError = energyError ?? (energy.Type == "AdjustCapacity" ? null : energy.Range?.Validate()) ?? energy.Filters?.Validate();
                             if (energy.Upgrade?.ExternalInteractions.Count > 0) energyError = string.Join("; ", energy.Upgrade.ExternalInteractions);
                             if (energyError != null) return energyError;
                             if (!new[] { "Self", "Room", "FrontInRoom", "BackInRoom", "Weakest", "RandomInRoom", "LastAttackedCharacter" }.Contains(energy.Target))
@@ -493,7 +493,7 @@ namespace MonsterTrain2Poju.Model
                                 return "Triggered unit upgrades require unit and card modifier state.";
                             if (action.Upgrade.ExternalInteractions.Count > 0)
                                 return string.Join("; ", action.Upgrade.ExternalInteractions);
-                            if (action.Upgrade.RestrictSizeToRoomCapacity)
+                            if (action.Upgrade.RestrictSizeToRoomCapacity && state.Context?.RoomCapacities == null)
                                 return "Triggered size restrictions require room capacity state.";
                             if (action.Target != "Self" && !new[] { "Room", "FrontInRoom", "BackInRoom", "Weakest", "RoomHealTargets", "RandomInRoom", "LastAttackedCharacter" }.Contains(action.Target))
                                 return "Unmodeled triggered upgrade target " + action.Target;
@@ -1034,7 +1034,7 @@ namespace MonsterTrain2Poju.Model
                     context.NextCardId, context.MaxHandSize, context.StatusRules, context.Statistics,
                     context.CardInstances == null ? null : Array.Empty<CardInstanceState>(), context.CardRegistry, context.AllScenarioBossesDead,
                     context.NextAddedTemporaryUpgrades, context.OtherPiles?.Select(CardPileModel.Clear).ToArray(), context.QueryFrame,
-                    context.KillCamActivated.HasValue ? true : (bool?)null, context.MagicPower, context.IsolatedBattlePreview, context.EnergyState);
+                    context.KillCamActivated.HasValue ? true : (bool?)null, context.MagicPower, context.IsolatedBattlePreview, context.EnergyState, context.RoomCapacities);
             }
 
             private void PostCombat()
@@ -1166,7 +1166,7 @@ namespace MonsterTrain2Poju.Model
                                 int reward = GoldRewardModel.Adjust(effect.Value);
                                 context = new CombatContext(context!.Cards, context.BattleRng,
                                     Math.Max(0, checked(context.Gold + reward)), context.NextCardId, context.MaxHandSize, context.StatusRules, context.Statistics,
-                                    context.CardInstances, context.CardRegistry, context.AllScenarioBossesDead, context.NextAddedTemporaryUpgrades, context.OtherPiles, context.QueryFrame, context.KillCamActivated, context.MagicPower, context.IsolatedBattlePreview, context.EnergyState);
+                                    context.CardInstances, context.CardRegistry, context.AllScenarioBossesDead, context.NextAddedTemporaryUpgrades, context.OtherPiles, context.QueryFrame, context.KillCamActivated, context.MagicPower, context.IsolatedBattlePreview, context.EnergyState, context.RoomCapacities);
                                 Emit("Gold", unit, unit, reward);
                             }
                             else if (effect.Type == "CardEffectAddBattleCard" && !source.Preview && !battleWon && context != null && context.AllScenarioBossesDead != true &&
@@ -1279,6 +1279,8 @@ namespace MonsterTrain2Poju.Model
             }
 
             private bool ActionTestValid(CardActionEffect action, CardTargets targets, int amount = 0) =>
+                action.Type == "AdjustCapacity" ? !source.Preview && !battleWon && context!.AllScenarioBossesDead != true &&
+                    RoomCapacityModel.Test(context, source.RoomIndex, units.Any(unit => unit.InRoom && unit.Source.Team == CombatTeam.Enemy), action.OnlyIfNoEnemies) :
                 action.Type == "DrawNextTurn" ? !source.Preview && !battleWon && context!.AllScenarioBossesDead != true :
                 EnergyModel.IsEffect(action.Type) ? !source.Preview && !battleWon && context!.AllScenarioBossesDead != true && EnergyModel.Test(context, action.Type) :
                 action.Type == "Damage" ? amount >= 0 && (action.Range == null || action.Range.Max > 0) &&
@@ -1316,7 +1318,13 @@ namespace MonsterTrain2Poju.Model
                     foreach (CombatEvent item in applied.Events) events.Add(new CombatEvent(round, item.Kind, item.Actor, item.Target, item.Amount));
                     return true;
                 }
-                int amount = SampleActionAmount(action);
+                int amount = action.Type == "AdjustCapacity" ? action.Value : SampleActionAmount(action);
+                if (action.Type == "AdjustCapacity")
+                {
+                    RoomCapacityResult adjusted = RoomCapacityModel.Apply(context!, source.RoomIndex, action);
+                    if (!adjusted.Supported) { unsupportedReason = adjusted.UnsupportedReason; return false; }
+                    context = adjusted.Context; Emit(action.Type, actor, actor, adjusted.Amount); return true;
+                }
                 if (action.Type == "DrawNextTurn")
                 {
                     context = context!.WithCards(BonusDrawModel.Schedule(context.Cards,

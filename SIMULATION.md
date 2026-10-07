@@ -55,6 +55,7 @@ are copied immutable values; independent child states can run on worker threads.
 | Integer RNG and shuffle | `UnityRng` | 768 native integer draws, seed initialization and complete four-word states |
 | Basic draw/discard cycle | `CardCycleModel` | 13 consecutive native operations including reshuffle |
 | Future draws and bonus upgrades | `BonusDrawModel` and `CardCycleModel` | 125 exact native contexts, shared counters and ordered duplicate listeners, signed/ranged quantities, zero-draw cancellation, capped hands and complete ordinary/lethal policies with parallel branches |
+| Dynamic room capacities | `RoomCapacityModel`, `BattleActionModel` and `UnitModifierModel` | 220 exact contexts and 2,050 native tests; both team groups, occupied shrinking, bounds/wrap, ignored ranges, statistic-driven quantities, unit triggers, live summons/restricted upgrades and complete policies with parallel branches |
 | Spell draws and hand cycling | `CardCycleModel.DrawCards` and `CardSpellModel` | Signed/zero/max counts, full-hand cast timing, resolving-card exclusion, reshuffle RNG, draw statistics and live membership for later hand upgrades; ranged tests require explicit UI RNG isolation |
 | Spell hand discard and consumption | `HandRemovalModel` and `CardSpellModel` | Forward order, resolving-card exclusion, retained buffer aliases, discard-only upgrade removal, double exhaustion statistics, per-effect counters and nested dead-spawner returns |
 | Modified card generation | `CardGenerationModel`, `CardSpellModel` and `CombatTrigger` | Five destinations, pool/full-hand/duplicate timing, initial upgrades, modifier copies/exclusions, one-shot upgrades and fresh card effect state |
@@ -2452,3 +2453,51 @@ status registry, while retaining captured historical zero-stack definitions.
 The complete curated regression passes all 74 binary archives, including
 inventory and SHA-256 checks. The native probe Release build succeeds with
 zero warnings and errors.
+
+## Dynamic room capacity effects
+
+Schema 52 captures immutable `CombatContext.RoomCapacities` for both native
+spawn-point groups in every room. Later card plays, summon legality and
+restricted size upgrades read the current shared capacity rather than the
+initial play rules. Existing archives retain null and their original static
+capacity inputs. Capacity state survives all card, room, train and terminal
+transitions; capacity-scaling traits survive payment, discard, upgrades and
+card creation. Missing capacity inputs reject the new effect.
+
+`CardEffectAdjustRoomCapacity` reads its integer parameter directly: configured
+integer ranges and multipliers do not sample RNG. Ordered
+`CardTraitScalingAdjustCapacity` traits query the existing live statistic model
+and add signed integer products before adjustment. Native RoomState bounds
+reject further decreases at one and increases at 30; accepted amounts clip to
+those limits using native signed wrap. Shrinking an occupied room retains its
+characters and can leave their total size above capacity. Exact Heroes targets
+the enemy group; None and combined flags select the player group. The
+OnlyTriggerIfNoEnemies gate checks native hero/enemy presence, including dying
+characters that have not been removed. Preview, Pyre-room and post-Boss gates
+skip effects; failed tests retain cancellation behavior and consume no quantity
+RNG. Unit triggers apply these rules with no parent-card scaling.
+
+The ordinary binary fixture runs at muted Instant timing in 107.81 seconds
+while the old regression runs concurrently. It finishes at Pyre 67 after 24
+plays, seven EndTurns and 66 room stages. Its archive has 6,070 nodes in 33,777
+bytes. The lethal fixture takes 65.00 seconds, finishes at Pyre 80 after 15
+plays, four EndTurns and 30 stages, and actually kills the original Boss with a
+spell before the later capacity effects. Its archive has 3,686 nodes in 21,865
+bytes. Both retain the original Boss and waves, unchanged original game files,
+and zero capture failures, differences, unsupported or pending observations.
+
+Independent checks recompute 220 complete effect contexts, 410 native bounds
+calls with 30 refusals, and 2,050 casting/runtime tests with 186 failed gates.
+They include 15 ignored ranges, 11 changed trait quantities, 24 unit effects,
+103 observed occupied oversize states and 15 signed wraps. Restricted size
+upgrades following PreCombat capacity changes are included in the complete
+native phase/decision comparisons. Both complete policies match from initial
+and actual mid-battle roots with 16 parallel branches. Pure checks additionally
+prove live summon legality, precedence over stale explicit upgrade limits,
+dying-enemy/Pyre/preview gates and 32 immutable parallel branches.
+
+The existing 74-archive regression and both new fixtures pass. The expanded
+76-archive inventory and SHA-256 integrity check also passes; no text JSON is
+required. The native probe Release build has zero warnings and errors. Relics,
+attachments, corruption and other conditional room modifiers remain explicit
+unsupported interactions until their separate execution paths are modeled.

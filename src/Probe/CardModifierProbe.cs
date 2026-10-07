@@ -28,7 +28,7 @@ namespace MonsterTrain2Poju.Probe
                 var state = new CardInstanceState(cardId(card), card.GetCardDataID(),
                     Modifiers(card.GetCardStateModifiers()), Modifiers(card.GetTemporaryCardStateModifiers()),
                     card.GetLastPlayedCost(), card.GetLastForgedAmount(), card.GetCurrentScenarioPlayCount(), interactions,
-                    Counters(card), DamageScalingProbe.Capture(card), StatusScalingProbe.Capture(card), UnitUpgradeScalingProbe.Capture(card));
+                    Counters(card), DamageScalingProbe.Capture(card), StatusScalingProbe.Capture(card), UnitUpgradeScalingProbe.Capture(card), RoomCapacityProbe.Traits(card));
                 CardPlayRule rule = CardModifierModel.Resolve(BattleActionProbe.Definition(data), state);
                 for (int index = 0; index < managers.GetRoomManager()!.GetNumRooms(); index++)
                     if (card.GetCost(managers.GetCardStatistics(), managers.GetMonsterManager(), managers.GetRelicManager(),
@@ -47,7 +47,7 @@ namespace MonsterTrain2Poju.Probe
                 }
                 return new CardInstanceState(state.InstanceId, state.DataId, state.Permanent, state.Temporary,
                     state.LastPlayedCost, state.LastForgedAmount, state.PlayCount,
-                    interactions.Distinct().OrderBy(value => value, StringComparer.Ordinal).ToArray(), state.EffectCounters, state.DamageScalingTraits, state.StatusScalingTraits, state.UnitUpgradeScalingTraits);
+                    interactions.Distinct().OrderBy(value => value, StringComparer.Ordinal).ToArray(), state.EffectCounters, state.DamageScalingTraits, state.StatusScalingTraits, state.UnitUpgradeScalingTraits, state.CapacityScalingTraits);
             }).OrderBy(card => card.InstanceId).ToArray();
         }
 

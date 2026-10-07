@@ -27,6 +27,15 @@ value comparison.
 Isolated native probes use `.probe-runs/`, which is also ignored. Successful
 captures become fixed inputs here after native and independent comparisons pass.
 
+`full-battle-room-capacity.mt2f` and `full-battle-room-capacity-lethal.mt2f`
+retain schema 52 battles with live capacities used by subsequent summons and
+restricted size upgrades. Their 220 exact effect contexts and 2,050 native
+casting/runtime tests cover occupied-room shrinking, 1/30 bounds, signed wrap,
+ignored quantity ranges, exact team flags, conditional cancellation, ordered
+paid-cost scaling and unit PreCombat effects. Both policies match from initial
+and mid-battle roots in 16 parallel branches; the lethal fixture also verifies
+that subsequent capacity effects skip after the spell kills the Boss.
+
 `full-battle-bonus-draw.mt2f` and `full-battle-bonus-draw-lethal.mt2f` retain
 schema 51 battles with 125 exact future-draw contexts. They cover signed/ranged
 amounts, optional upgrades, actual ordered listeners sharing private effect
