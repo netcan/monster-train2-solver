@@ -401,12 +401,12 @@ namespace MonsterTrain2Poju.Probe
                 return;
             }
             string? modifierScenario = Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS");
-            if (fullBattle && modifierScenario == "trigger-mutation")
+            if (fullBattle && (modifierScenario == "trigger-mutation" || modifierScenario == "detached-bonus-draw"))
             {
                 if (TriggerMutationScenario.Error != null) throw new InvalidOperationException(TriggerMutationScenario.Error);
                 if (!TriggerMutationScenario.Completed)
                 {
-                    if (!TriggerMutationScenario.Started) TriggerMutationScenario.Start(managers, log);
+                    if (!TriggerMutationScenario.Started) TriggerMutationScenario.Start(managers, log, modifierScenario == "detached-bonus-draw");
                     return;
                 }
             }

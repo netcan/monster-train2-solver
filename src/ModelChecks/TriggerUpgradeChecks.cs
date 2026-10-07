@@ -41,6 +41,19 @@ internal static class TriggerUpgradeChecks
         Parallel.For(0, 32, _ => Require(JsonSerializer.Serialize(UnitModifierModel.ApplyDirect(both, 1, upgrade, true, "right").State,
             ModelJson.Options) == expected, "Parallel trigger removal differed."));
         Require(JsonSerializer.Serialize(root, ModelJson.Options) == parent, "Trigger upgrades mutated their parent.");
+        var stableHost = new CombatUnit(1, "host", CombatTeam.Player, 0, 30, 30, false, false, false, [],
+            host.Triggers.Select((trigger, index) => trigger.WithStateId(index)).ToArray(), modifiers: modifiers, equipmentCards: [], nextTriggerId: 2);
+        var stableRoot = new RoomCombatState(0, false, [stableHost], [], context);
+        var stableAdded = UnitModifierModel.ApplyDirect(stableRoot, 1, upgrade, upgradeId: "stable").State!;
+        var stableRemoved = UnitModifierModel.ApplyDirect(stableAdded, 1, upgrade, true, "stable").State!;
+        var stableReadded = UnitModifierModel.ApplyDirect(stableRemoved, 1, upgrade, upgradeId: "stable").State!;
+        Require(stableAdded.Units[0].Triggers.Last().StateId == 2 && stableRemoved.Units[0].NextTriggerId == 3 &&
+            stableReadded.Units[0].Triggers.Last().StateId == 3 && stableReadded.Units[0].NextTriggerId == 4 && stableHost.NextTriggerId == 2,
+            "Removing and re-adding a trigger reused a persistent identity or changed its parent allocation.");
+        var stableInherited = CardModifierModel.Resolve(new CardPlayRule("unit", "unit", 0, "Spawn", "Standby", stableHost, []),
+            new CardInstanceState(42, "unit", new CardModifiers(new CardStatModifier(), [upgrade], 0, []), CardModifiers.Empty(), 0, 0, 0, []));
+        Require(stableInherited.SpawnUnit!.Triggers.Last().StateId == 2 && stableInherited.SpawnUnit.NextTriggerId == 3,
+            "Spawner trigger initialization lost its identity allocation.");
         Console.WriteLine("TRIGGER-UPGRADE-CHECKS PASS: attributed/empty removal, base trigger preservation, equipped condition, preview, spawner inheritance and 32 parallel branches.");
     }
     private static void Require(bool passed, string message) { if (!passed) throw new InvalidOperationException(message); }
@@ -49,6 +62,11 @@ internal static class TriggerUpgradeChecks
         if (!fixture.TryGetProperty("TriggerMutations", out var records)) return;
         var samples = records.EnumerateArray().ToArray();
         foreach (var sample in samples) Verify(sample);
+        if (fixture.GetProperty("ModifierScenario").GetString() == "detached-bonus-draw")
+        {
+            VerifyDetachedDraw(samples);
+            return;
+        }
         if (fixture.GetProperty("ModifierScenario").GetString() != "trigger-mutation") return;
         Require(samples.Length == 3 && samples.Select(sample => sample.GetProperty("Label").GetString()).ToHashSet()
             .SetEquals(["append-same-phase", "remove-earlier-skips-next", "self-removal-finishes-effects"]), "Missing native trigger mutation cases.");
@@ -69,6 +87,37 @@ internal static class TriggerUpgradeChecks
             "A removed trigger did not finish its own effects or incorrectly executed its removed sibling.");
         Parallel.For(0, 32, _ => { foreach (var sample in samples) Verify(sample); });
         Console.WriteLine("NATIVE-TRIGGER-MUTATION-CHECKS PASS: three independently compared append, shifted-index and detached-running transitions in 32 parallel branches.");
+    }
+    private static void VerifyDetachedDraw(FixtureValue[] samples)
+    {
+        Require(samples.Length == 4 && samples.Select(sample => sample.GetProperty("Label").GetString()).ToHashSet()
+            .SetEquals(["shift-after-pending-draw", "self-removed-pending-draw", "readded-first-draw", "readded-second-draw"]),
+            "Missing detached bonus-draw identity cases.");
+        var cases = samples.ToDictionary(sample => sample.GetProperty("Label").GetString()!);
+        RoomCombatState State(string label, string field) => cases[label].GetProperty(field).Deserialize<RoomCombatState>()!;
+        CombatUnit Host(string label, string field) => State(label, field).Units.Single(unit => unit.Id == cases[label].GetProperty("UnitId").GetInt32());
+        var before = Host("shift-after-pending-draw", "Before");
+        var shifted = Host("shift-after-pending-draw", "After");
+        var bonus = State("shift-after-pending-draw", "After").Context!.Cards.BonusDraw!;
+        Require(before.Triggers.Count == 2 && shifted.Triggers.Count == 1 && shifted.Triggers[0].StateId == before.Triggers[1].StateId &&
+            bonus.Listeners.Count == 2 && bonus.Counters.Count == 2 &&
+            bonus.Counters.Single(counter => counter.Key == BonusDrawState.UnitKey(before.Id, before.Triggers[0].StateId!.Value, 1)).Value == 2 &&
+            bonus.Counters.Single(counter => counter.Key == BonusDrawState.UnitKey(before.Id, before.Triggers[1].StateId!.Value, 1)).Value == 1,
+            "A shifted live trigger and removed effect did not retain independent native counters.");
+        var self = Host("self-removed-pending-draw", "Before");
+        var detached = State("self-removed-pending-draw", "After");
+        Require(Host("self-removed-pending-draw", "After").Triggers.Count == 0 && detached.Context!.Cards.BonusDraw!.Listeners.Count == 3 &&
+            detached.Context.Cards.BonusDraw.Counters.Single(counter => counter.Key == BonusDrawState.UnitKey(self.Id, self.Triggers[0].StateId!.Value, 1)).Value == 3,
+            "A self-removed trigger did not schedule its remaining draw effect or ran its removed sibling.");
+        var first = Host("readded-first-draw", "After");
+        var second = Host("readded-second-draw", "After");
+        var last = State("readded-second-draw", "After").Context!.Cards;
+        Require(second.Triggers[0].StateId > first.Triggers[0].StateId && second.NextTriggerId > first.NextTriggerId &&
+            last.DrawModifier == 8 && last.BonusDraw!.Listeners.Count == 5 && last.BonusDraw.Counters.Count == 5 &&
+            last.BonusDraw.Counters.Select(counter => counter.Key).Distinct().Count() == 5,
+            "Re-added same-definition triggers reused removed effect counters.");
+        Parallel.For(0, 32, _ => { foreach (var sample in samples) Verify(sample); });
+        Console.WriteLine("NATIVE-DETACHED-BONUS-DRAW-CHECKS PASS: four exact transitions, shifted/removed/re-added effect counters and 32 isolated branches.");
     }
     private static void Verify(FixtureValue sample)
     {

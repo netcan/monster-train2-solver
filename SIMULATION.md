@@ -2787,3 +2787,64 @@ All 82 curated archives match the SHA-256 inventory, and probe-script parsing
 passes. Probe builds with zero warnings/errors; ModelChecks retains its 12
 existing nullable warnings and has no errors. No JSON source fixture is
 introduced.
+
+## Persistent bonus-draw effects after trigger removal
+
+Native CardEffectDrawAdditionalNextTurn owns its private upgradeApplyCount.
+The registered signal closure retains the CardEffectState and parameters even
+after CharacterState removes the source trigger. Trigger-list indices are
+therefore not effect identities: shifting a live trigger or installing another
+copy at an old index must not merge its counter with a removed effect.
+
+CombatTrigger.StateId and CombatUnit.NextTriggerId now capture a per-unit
+monotonic allocation. Trigger removals preserve the allocation cursor. Granted
+unit/equipment triggers and inherited spawner triggers receive fresh IDs;
+immutable health, attack, status, equipment, ascension and engine snapshots
+preserve them. Fired/preview/healer copies retain both their internal identity
+and captured ID. Missing IDs remain nullable for legacy archives, and malformed
+captured allocations fail closed rather than guessing an effect owner.
+
+Native trigger allocation is observed when CharacterState adds a trigger,
+including additions/removals between snapshots. The trace retains removed
+trigger objects and their counters. Bonus-draw keys use the captured ID plus
+the unchanged effect position, while legacy live triggers keep their previous
+index keys. A self-removed running trigger with a persistent ID can finish its
+draw effect. The pending counters/listeners remain entirely in immutable card
+cycle state, independent of the removed unit's live trigger list and of other
+parallel branches.
+
+`-DetachedBonusDraw` authors four direct PreCombat transitions: a live trigger
+removes an earlier trigger whose draw upgrade is pending; a running trigger
+removes itself and its sibling before scheduling another upgrade; and the same
+upgrade definition is installed, fired and removed twice. The five actual
+listeners retain distinct counters totaling eight additional draws. The next
+ordinary hand caps at ten, applies the native callbacks' temporary upgrades,
+and clears their counters/listeners. The original Boss/waves are unchanged.
+
+`tests/fixtures/full-battle-detached-bonus-draw.mt2f` stores 4,087 nodes in
+24,981 bytes, schema 58 on game 2.2.1 with module MVID
+`8fb07b96-f4db-4d2b-884d-c00536d6ccf4`. The muted Instant native run takes
+44.45 seconds and wins at Pyre 80 after 17 plays and six EndTurns. All 49 room
+stages, 11 card cycles, 11 train phases, nine spawns, six bonus-draw effects and
+four mutation cases have zero capture failures, differences, unsupported or
+pending records; original files are unchanged. Independent mutation cases
+repeat in 32 parallel branches, and the complete policy matches initial and
+actual mid-battle roots in 16 parallel branches.
+
+The equipment-trigger archive is refreshed with persistent allocations using
+the unchanged scenario: 4,975 nodes, 29,380 bytes, schema 58. Its muted Instant
+native run takes 50.83 seconds with 19 plays, seven EndTurns and final Pyre 61.
+All captures match with zero failures/unsupported/pending records; original
+files are unchanged. All 25 actual equipment transitions compare independently
+in 32 parallel branches, and both complete-policy roots match with 16 parallel
+branches. This verifies allocation through real equipment-trigger additions
+and shared-definition removals as well as the new detached callback cases.
+
+The complete regression passes all 82 pre-existing archives, including the
+legacy equipment-trigger capture and all eight calibration suites. The new
+detached-draw and refreshed equipment captures separately pass the final
+independent checker, including their 32-branch local and 16-branch complete
+policies. The resulting 83-file inventory and SHA-256 validation pass.
+Probe builds with zero warnings/errors; ModelChecks retains its 12 existing
+nullable warnings and has no errors. Probe-script parsing passes, and no JSON
+source fixture is introduced.

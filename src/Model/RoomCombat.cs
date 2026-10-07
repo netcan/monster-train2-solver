@@ -81,6 +81,7 @@ namespace MonsterTrain2Poju.Model
         // Null denotes a legacy capture without relationship state; zero is known-none.
         public int? LastAttackerId { get; }
         public IReadOnlyList<int>? EquipmentCards { get; }
+        public int? NextTriggerId { get; }
         public int Attacks => Math.Max(1, Status("multistrike") is CombatStatus multi
             ? multi.ParamInt + multi.Stacks - 1 : 1);
 
@@ -88,10 +89,12 @@ namespace MonsterTrain2Poju.Model
             int health, int maxHealth, bool canAttack, bool isPyre, bool endsBattleOnDeath,
             IReadOnlyList<CombatStatus> statuses, IReadOnlyList<CombatTrigger>? triggers = null, int spawnerCardId = 0, int size = 0,
             IReadOnlyList<string>? statusImmunities = null, IReadOnlyList<string>? subtypes = null, UnitModifiers? modifiers = null, bool? isBoss = null,
-            int? lastAttackerId = null, IReadOnlyList<CombatStatus>? statusRegistry = null, IReadOnlyList<int>? equipmentCards = null)
+            int? lastAttackerId = null, IReadOnlyList<CombatStatus>? statusRegistry = null, IReadOnlyList<int>? equipmentCards = null,
+            int? nextTriggerId = null)
         {
             Id = id;
             LastAttackerId = lastAttackerId;
+            NextTriggerId = nextTriggerId;
             EquipmentCards = equipmentCards == null ? null : Array.AsReadOnly(equipmentCards.ToArray());
             AssetKey = assetKey;
             Team = team;
@@ -142,7 +145,7 @@ namespace MonsterTrain2Poju.Model
 
         internal CombatUnit WithoutRemovedAttacker(ISet<int> activeIds) => !LastAttackerId.HasValue || LastAttackerId == 0 || activeIds.Contains(LastAttackerId.Value)
             ? this : new CombatUnit(Id, AssetKey, Team, BaseAttack, Health, MaxHealth, CanAttack, IsPyre, EndsBattleOnDeath, Statuses,
-                Triggers, SpawnerCardId, Size, StatusImmunities, Subtypes, Modifiers, IsBoss, 0, StatusRegistry, EquipmentCards);
+                Triggers, SpawnerCardId, Size, StatusImmunities, Subtypes, Modifiers, IsBoss, 0, StatusRegistry, EquipmentCards, NextTriggerId);
     }
 
     public sealed class RoomCombatState
@@ -438,6 +441,11 @@ namespace MonsterTrain2Poju.Model
                 return "Unit instance IDs must be unique.";
             foreach (CombatUnit unit in state.Units)
             {
+                if (unit.NextTriggerId.HasValue ? unit.NextTriggerId < 0 ||
+                    unit.Triggers.Any(trigger => !trigger.StateId.HasValue || trigger.StateId < 0 || trigger.StateId >= unit.NextTriggerId) ||
+                    unit.Triggers.Select(trigger => trigger.StateId).Distinct().Count() != unit.Triggers.Count :
+                    unit.Triggers.Any(trigger => trigger.StateId.HasValue))
+                    return "Invalid persistent trigger identity allocation.";
                 if (unit.Modifiers != null && (unit.Modifiers.HealthFromUpgrades.Count > 0 && unit.Id != attributedHealthTargetId ||
                     unit.Modifiers.Upgrades.Any(upgrade => upgrade.ExternalInteractions.Count > 0)))
                     return "Unmodeled applied unit upgrade interactions.";
@@ -612,7 +620,7 @@ namespace MonsterTrain2Poju.Model
                 SyncRegistry();
                 return new CombatUnit(Source.Id, Source.AssetKey, Source.Team,
                     Source.BaseAttack, Health, Source.MaxHealth, Source.CanAttack, Source.IsPyre,
-                    Source.EndsBattleOnDeath, Statuses.Values.ToArray(), Triggers, Source.SpawnerCardId, Source.Size, Source.StatusImmunities, Source.Subtypes, Source.Modifiers, Source.IsBoss, LastAttackerId, statusRegistry, Source.EquipmentCards);
+                    Source.EndsBattleOnDeath, Statuses.Values.ToArray(), Triggers, Source.SpawnerCardId, Source.Size, Source.StatusImmunities, Source.Subtypes, Source.Modifiers, Source.IsBoss, LastAttackerId, statusRegistry, Source.EquipmentCards, Source.NextTriggerId);
             }
         }
 
@@ -819,7 +827,7 @@ namespace MonsterTrain2Poju.Model
                 CombatUnit unit = target.Freeze();
                 target.Apply(new CombatUnit(unit.Id, unit.AssetKey, unit.Team, unit.BaseAttack, unit.Health, unit.MaxHealth, unit.CanAttack,
                     unit.IsPyre, unit.EndsBattleOnDeath, unit.Statuses, unit.Triggers, unit.SpawnerCardId, unit.Size, unit.StatusImmunities,
-                    unit.Subtypes, unit.Modifiers, unit.IsBoss, unit.LastAttackerId, unit.StatusRegistry, cards));
+                    unit.Subtypes, unit.Modifiers, unit.IsBoss, unit.LastAttackerId, unit.StatusRegistry, cards, unit.NextTriggerId));
             }
             private string EquipmentUpgradeKey(int cardId, BattlePlayRules definitions) => definitions.Cards
                 .First(rule => rule.DataId == context!.FindCard(cardId)!.DataId).Equipment!.UpgradeId ?? EquipmentModel.UpgradeKey(cardId);
@@ -1270,9 +1278,9 @@ namespace MonsterTrain2Poju.Model
                             CombatEffect effect = effects[effectIndex];
                             if (effect.Action != null)
                             {
-                                if (live < 0 && effect.Action.Type == "DrawNextTurn")
-                                { unsupportedReason = "Detached bonus-draw trigger source requires persistent effect identity."; break; }
-                                if (!ApplyTriggeredAction(unit, effect, overrideTarget, live < 0 ? index : live, effectIndex)) break;
+                                if (live < 0 && effect.Action.Type == "DrawNextTurn" && retained.StateId == null)
+                                { unsupportedReason = "Detached bonus-draw trigger source requires captured persistent identity."; break; }
+                                if (!ApplyTriggeredAction(unit, effect, overrideTarget, retained.StateId ?? (live < 0 ? index : live), effectIndex)) break;
                             }
                             else if (effect.UnitUpgrade != null)
                             {

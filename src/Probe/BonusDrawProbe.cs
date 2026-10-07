@@ -29,9 +29,9 @@ namespace MonsterTrain2Poju.Probe
             CharacterState? actor = parameters?.selfTarget;
             CharacterTriggerState? trigger = parameters?.sourceCharacterTriggerState;
             if (actor == null || trigger == null) throw new NotSupportedException("Unknown bonus-draw effect owner.");
-            int triggerIndex = actor.GetTriggers().ToList().IndexOf(trigger), effectIndex = trigger.GetEffectStates().ToList().IndexOf(effect);
-            if (triggerIndex < 0 || effectIndex < 0) throw new NotSupportedException("Detached bonus-draw trigger definition.");
-            return BonusDrawState.UnitKey(trace.UnitId(actor), triggerIndex, effectIndex);
+            int effectIndex = trigger.GetEffectStates().ToList().IndexOf(effect);
+            if (effectIndex < 0) throw new NotSupportedException("Detached bonus-draw effect definition.");
+            return BonusDrawState.UnitKey(trace.UnitId(actor), trace.TriggerStateId(actor, trigger), effectIndex);
         }
         internal static BonusDrawState Capture(CardManager cards, FullBattleTrace trace)
         {
@@ -41,10 +41,10 @@ namespace MonsterTrain2Poju.Probe
                     if (entry.effect.GetCardEffect() is CardEffectDrawAdditionalNextTurn && Count(entry.effect) != 0)
                         counters[BonusDrawState.CardKey(trace.CardId(card), entry.index)] = Count(entry.effect);
             foreach (CharacterState unit in trace.KnownUnits)
-                foreach (var trigger in unit.GetTriggers().Select((value, index) => new { value, index }))
-                    foreach (var entry in trigger.value.GetEffectStates().Select((effect, index) => new { effect, index }))
+                foreach (var trigger in trace.TriggerStates(unit))
+                    foreach (var entry in trigger.Key.GetEffectStates().Select((effect, index) => new { effect, index }))
                         if (entry.effect.GetCardEffect() is CardEffectDrawAdditionalNextTurn && Count(entry.effect) != 0)
-                            counters[BonusDrawState.UnitKey(trace.UnitId(unit), trigger.index, entry.index)] = Count(entry.effect);
+                            counters[BonusDrawState.UnitKey(trace.UnitId(unit), trigger.Value, entry.index)] = Count(entry.effect);
             var listeners = new List<BonusDrawListener>();
             var signal = cards.bonusDrawCountCardSignal;
             if (AccessTools.Field(signal.GetType(), "OnceListener").GetValue(signal) != null)

@@ -205,11 +205,18 @@ namespace MonsterTrain2Poju.Model
                     UpgradedStat(original.RawSize, "Size", false, modifiers),
                     Math.Max(1, Math.Min(4, UpgradedStat(original.EquipmentLimit, "EquipmentLimit", true, modifiers))),
                     original.CanBeHealed, original.IsClone, original.Upgrades, original.HealthFromUpgrades, original.SpawnerMatchesDefinition);
+                int? nextTriggerId = unit.NextTriggerId;
+                var triggers = unit.Triggers.ToList();
+                foreach (CombatTrigger definition in modifiers.SelectMany(modifier => modifier.Upgrades)
+                    .SelectMany(upgrade => upgrade.TriggerUpgrades ?? Array.Empty<CombatTrigger>()))
+                {
+                    triggers.Add(definition.WithOrigin("", 0, nextTriggerId));
+                    if (nextTriggerId.HasValue) nextTriggerId = checked(nextTriggerId.Value + 1);
+                }
                 unit = new CombatUnit(unit.Id, unit.AssetKey, unit.Team, UpgradedStat(unit.BaseAttack, "Damage", true, modifiers),
                     health, health, unit.CanAttack, unit.IsPyre, unit.EndsBattleOnDeath,
-                    statuses.Values.Where(status => status.Stacks > 0).ToArray(), unit.Triggers.Concat(modifiers.SelectMany(modifier => modifier.Upgrades)
-                        .SelectMany(upgrade => upgrade.TriggerUpgrades ?? Array.Empty<CombatTrigger>()).Select(trigger => trigger.WithOrigin("", 0))).ToArray(),
-                    unit.SpawnerCardId, Math.Max(1, UpgradedStat(unit.Size, "Size", false, modifiers)), unit.StatusImmunities, unit.Subtypes, unitModifiers, unit.IsBoss, unit.LastAttackerId, unit.StatusRegistry, unit.EquipmentCards);
+                    statuses.Values.Where(status => status.Stacks > 0).ToArray(), triggers,
+                    unit.SpawnerCardId, Math.Max(1, UpgradedStat(unit.Size, "Size", false, modifiers)), unit.StatusImmunities, unit.Subtypes, unitModifiers, unit.IsBoss, unit.LastAttackerId, unit.StatusRegistry, unit.EquipmentCards, nextTriggerId);
             }
             CardActionEffect[] effects = rule.Effects.Select(effect => new CardActionEffect(effect.Type, effect.Target,
                 ResolveValue(effect, effect.Value), effect.AllowEnemy, effect.AllowPlayer, effect.Statuses, effect.Upgrade, effect.Lifetime, effect.Tests,

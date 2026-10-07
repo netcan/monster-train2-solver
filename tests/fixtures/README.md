@@ -69,7 +69,7 @@ decision inputs. Its 30 equipment operations and one lethal direct upgrade
 compare independently in 32 parallel branches; the full 21-play, seven-EndTurn
 policy matches from initial and mid-battle roots in 16 parallel branches.
 
-`full-battle-equipment-triggers.mt2f` retains schema 56. Base equipment upgrades
+`full-battle-equipment-triggers.mt2f` retains schema 58. Base equipment upgrades
 add once-only attachment, repeated attachment-to-any and post-combat triggers;
 an anonymous permanent equipment upgrade adds another repeated trigger. Every
 trigger records the raw native upgrade ID separately from its bound equipment
@@ -79,8 +79,9 @@ while preserving ordinary base triggers. A base equipped-only removal trigger
 also retains its condition after the final equipment disappears. Its 25 actual
 equipment operations compare in 32 parallel branches; the complete 19-play,
 seven-EndTurn policy compares from initial and mid-battle roots with 16 parallel
-branches. Detached bonus-draw effect identity, immediate moon phase triggers
-and equipment-granted abilities remain separate work.
+branches. Its refreshed capture includes persistent trigger IDs and allocation
+cursors across equipment addition/removal. Immediate moon phase triggers and
+equipment-granted abilities remain separate work.
 
 `full-battle-trigger-mutation.mt2f` retains schema 57. Three native PreCombat
 API cases exercise appended triggers firing in the same iteration, removal of
@@ -93,6 +94,17 @@ All three room/context states compare independently in 32 parallel branches;
 the subsequent 20-play, seven-EndTurn policy compares from initial and actual
 mid-battle roots in 16 parallel branches. Internal immutable trigger identity
 is preserved through copies without entering the binary fixture schema.
+
+`full-battle-detached-bonus-draw.mt2f` retains schema 58. Per-unit persistent
+trigger IDs and allocation cursors distinguish callbacks from removed triggers
+after list shifting and re-addition of the same upgrade definition. Four native
+API transitions retain five separate pending counters/listeners, including an
+effect that runs after its trigger removes itself. The next actual hand is
+capped and receives the callbacks' temporary card upgrades before clearing
+their counters. All transitions compare in 32 parallel branches; the complete
+17-play, six-EndTurn policy matches initial and actual mid-battle roots in 16
+parallel branches. Older captures retain their legacy index keys; detached
+execution requires a captured persistent ID.
 
 `full-battle-room-capacity.mt2f` and `full-battle-room-capacity-lethal.mt2f`
 retain schema 52 battles with live capacities used by subsequent summons and

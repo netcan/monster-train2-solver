@@ -98,6 +98,7 @@ namespace MonsterTrain2Poju.Model
                 target = state.Units.FirstOrDefault(unit => unit.Id == targetId);
                 if (target == null) return Match(state);
                 UnitModifiers modifiers = target.Modifiers!;
+                int? nextTriggerId = target.NextTriggerId;
                 if (!remove && upgrade.Unique && upgrade.DataId.Length > 0 && modifiers.Upgrades.Any(item => item.DataId == upgrade.DataId)) break;
                 var upgrades = modifiers.Upgrades.ToList();
                 if (remove)
@@ -147,7 +148,11 @@ namespace MonsterTrain2Poju.Model
                             changedTriggers.RemoveAll(trigger => trigger.Kind == definition.Kind &&
                                 (upgradeId.Length == 0 || trigger.Origin?.UpgradeId == upgradeId));
                         }
-                        else changedTriggers.Add(definition.WithOrigin(upgradeId, equipmentSourceCardId));
+                        else
+                        {
+                            changedTriggers.Add(definition.WithOrigin(upgradeId, equipmentSourceCardId, nextTriggerId));
+                            if (nextTriggerId.HasValue) nextTriggerId = checked(nextTriggerId.Value + 1);
+                        }
                     }
                     triggers = changedTriggers;
                 }
@@ -156,7 +161,7 @@ namespace MonsterTrain2Poju.Model
                     healthFromUpgrades, modifiers.SpawnerMatchesDefinition);
                 CombatUnit Snapshot() => new CombatUnit(target.Id, target.AssetKey, target.Team, Math.Max(0, checked(damage + buff)), health, maxHealth,
                     target.CanAttack, target.IsPyre, target.EndsBattleOnDeath, statuses.Values.ToArray(), triggers, target.SpawnerCardId,
-                    Math.Max(1, Math.Min(6, size)), target.StatusImmunities, target.Subtypes, nextModifiers, target.IsBoss, target.LastAttackerId, target.StatusRegistry, target.EquipmentCards);
+                    Math.Max(1, Math.Min(6, size)), target.StatusImmunities, target.Subtypes, nextModifiers, target.IsBoss, target.LastAttackerId, target.StatusRegistry, target.EquipmentCards, nextTriggerId);
                 if (!partial && upgrade.TriggerUpgrades?.Count > 0)
                 {
                     error = RoomCombatModel.Validate(new RoomCombatState(state.RoomIndex, state.Deployment,

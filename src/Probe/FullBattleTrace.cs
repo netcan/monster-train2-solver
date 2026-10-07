@@ -26,6 +26,8 @@ namespace MonsterTrain2Poju.Probe
         private readonly BattleTurnProbe turns;
         private readonly BattleActionProbe actions;
         private readonly Dictionary<CharacterState, int> identities = new Dictionary<CharacterState, int>();
+        private readonly Dictionary<CharacterState, Dictionary<CharacterTriggerState, int>> triggerIdentities =
+            new Dictionary<CharacterState, Dictionary<CharacterTriggerState, int>>();
         private readonly List<StageRecord> stages = new List<StageRecord>();
         private readonly List<object> checkpoints = new List<object>();
         private int nextId = 1;
@@ -46,6 +48,21 @@ namespace MonsterTrain2Poju.Probe
         internal int UnitId(CharacterState unit)
         {
             if (!identities.TryGetValue(unit, out int id)) identities.Add(unit, id = nextId++);
+            return id;
+        }
+        internal IReadOnlyDictionary<CharacterTriggerState, int> TriggerStates(CharacterState unit)
+        {
+            if (!triggerIdentities.TryGetValue(unit, out var states))
+                triggerIdentities.Add(unit, states = new Dictionary<CharacterTriggerState, int>());
+            foreach (CharacterTriggerState trigger in unit.GetTriggers())
+                if (!states.ContainsKey(trigger)) states.Add(trigger, states.Count);
+            return states;
+        }
+        internal int TriggerStateId(CharacterState unit, CharacterTriggerState trigger)
+        {
+            TriggerStates(unit);
+            var states = triggerIdentities[unit];
+            if (!states.TryGetValue(trigger, out int id)) states.Add(trigger, id = states.Count);
             return id;
         }
         private bool calibrated;
@@ -205,7 +222,7 @@ namespace MonsterTrain2Poju.Probe
                 ((List<string>)AccessTools.Field(typeof(CharacterState), "statusEffectImmunities").GetValue(character)).ToArray(),
                 character.GetSubtypes().Select(subtype => subtype.Key).ToArray(), UnitModifierProbe.Capture(character), character.IsAnyBoss(),
                 lastAttacker == null || normalizeDestroyedAttacker && (lastAttacker.IsDestroyed || !lastAttacker.IsAlive) ? 0 : UnitId(lastAttacker), statuses,
-                character.GetEquipment().Select(CardId).ToArray());
+                character.GetEquipment().Select(CardId).ToArray(), TriggerStates(character).Count);
         }
 
         internal CombatContext CaptureContext()
@@ -305,7 +322,7 @@ namespace MonsterTrain2Poju.Probe
                     unit.GetTriggerFireCount(trigger.GetTrigger(), trigger), effects,
                     AllGameManagers.Instance!.GetSaveManager().GetBalanceData().GetDisallowedDeploymentPhaseCharacterTriggers().Contains(trigger.GetTrigger()),
                     data.GetTriggerAtThreshold(), new CombatTriggerOrigin(Active!.UpgradeKey(trigger.triggerId), equipmentId,
-                        trigger.IsFromEquipment, data.GetOnlyTriggerIfEquipped()));
+                        trigger.IsFromEquipment, data.GetOnlyTriggerIfEquipped()), Active!.TriggerStateId(unit, trigger));
             }).ToArray();
         }
 
@@ -402,7 +419,7 @@ namespace MonsterTrain2Poju.Probe
             string temporary = path + ".tmp";
             var snapshot = new
             {
-                Schema = 57,
+                Schema = 58,
                 GameVersion = Application.version,
                 GameModuleMvid = typeof(CardState).Assembly.ManifestModule.ModuleVersionId,
                 NativeWon,
