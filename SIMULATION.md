@@ -2175,6 +2175,11 @@ Core checks cover that no-op, final source-card writeback, and a negative silenc
 upgrade whose removal callback grants gold. Direct zero/signed addition checks
 retain their existing callback expectations.
 
+Removing an upgrade passes its signed count to native `RemoveStatusEffect`:
+`-1` clears all existing stacks, while smaller counts increase the stack count
+without firing addition callbacks. Core checks verify both resulting counts and
+the removal-only reward behavior.
+
 Nested damage and healing queue payloads also preserve native `FireTriggersData`
 defaults: `OnHit` and `OnHeal` carry an empty parameter string. Native action
 dispatches verify the generated queue payloads without replacing empty strings

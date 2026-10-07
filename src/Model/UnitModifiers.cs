@@ -119,8 +119,9 @@ namespace MonsterTrain2Poju.Model
                         if (!removingStatus && (target.StatusImmunities.Contains(status.Id) || target.Status("immune") != null)) continue;
                         CombatUnit beforeStatus = Snapshot();
                         int maximum = (existing ?? target.RegisteredStatus(status.Id) ?? status).Stackable == false ? 1 : 9999;
-                        int stacks = removingStatus ? Math.Max(0, (existing?.Stacks ?? 0) - (remove ? Math.Max(0, status.Stacks) : checked(-status.Stacks))) :
-                            Math.Min(maximum, checked((existing?.Stacks ?? 0) + status.Stacks));
+                        int oldStacks = existing?.Stacks ?? 0;
+                        int stacks = remove ? (status.Stacks == -1 ? 0 : Math.Min(maximum, Math.Max(0, checked(oldStacks - status.Stacks)))) :
+                            Math.Min(maximum, Math.Max(0, checked(oldStacks + status.Stacks)));
                         statuses[status.Id] = (existing ?? target.RegisteredStatus(status.Id) ?? status).WithStacks(Math.Max(0, stacks));
                         if (removingStatus) StatusCallbackModel.Removed(state.RoomIndex, beforeStatus, Snapshot(), status.Id, statusCallbacks);
                         else

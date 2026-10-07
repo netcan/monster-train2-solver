@@ -52,6 +52,18 @@ internal static class UnitUpgradeCallbackChecks
             negative.State.Context!.Gold == writebackContext.Gold + GoldRewardModel.Adjust(2),
             "A negative upgrade used addition callbacks instead of removal and SilenceLost: " +
             (negative.UnsupportedReason ?? JsonSerializer.Serialize(negative.State)));
+        foreach (int signedRemoval in new[] { -1, -2 })
+        {
+            var armor = new CombatStatus("armor", 5, 1, stackable: true, hidden: false, displayCategory: "Positive");
+            var signed = new CardUpgradeModifier("signed", "signed", new(), [armor.WithStacks(signedRemoval)], false, false, false, 0, 0, []);
+            var removalActor = new CombatUnit(8, "writeback", CombatTeam.Player, 0, 20, 20, false, false, false, [armor],
+                [EffectTrigger("OnStatusEffectChanged", new("CardEffectRewardGold", 1, 0, "", 0, [], false))],
+                modifiers: new(0, 0, 0, 1, 1, true, false, [signed]), isBoss: false, lastAttackerId: 0, statusRegistry: [armor]);
+            var removed = UnitModifierModel.Apply(new RoomCombatState(0, false, [removalActor], [], writebackContext), 8, signed, "", remove: true);
+            Require(removed.Supported && (removed.State!.Units.Single().Status("armor")?.Stacks ?? 0) == (signedRemoval == -1 ? 0 : 7) &&
+                removed.State.Context!.Gold == writebackContext.Gold + (signedRemoval == -1 ? GoldRewardModel.Adjust(1) : 0),
+                "Removing a negative upgrade lost native clear-all/signed counts or fired addition callbacks.");
+        }
         Console.WriteLine("UNIT-UPGRADE-CALLBACK-CHECKS PASS: standalone and running-queue source-copy boundaries, final source writeback and 32 isolated branches.");
     }
     private static void Require(bool pass, string message) { if (!pass) throw new InvalidOperationException(message); }
