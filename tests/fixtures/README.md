@@ -4,9 +4,18 @@ These fixed inputs reproduce the independently modeled battle and calibration
 checks. Run `pwsh -NoProfile -File scripts/Check-Models.ps1` from the repository
 root. The script reads the curated fixture list in this directory.
 
-Native JSON captures are kept unchanged; `.json.gz` files contain their original
-bytes compressed with gzip. `SIMULATION.md` records coverage, capture versions
-and raw JSON hashes. Moving a capture does not change its contents.
+The retained inputs are `.mt2f` binary archives. They store typed, deduplicated
+value graphs, not JSON documents. Regression reads those graphs and constructs
+model states directly. Every captured value is preserved; identical repeated
+states share storage. See `src/FixtureArchive/FORMAT.md` for the versioned layout.
+
+`manifest.tsv` records the original capture length/SHA-256 and each archive's
+length/SHA-256. The regression script verifies its complete curated inventory
+and archive hashes before running. `SIMULATION.md` records native coverage and
+capture versions; historical JSON/gzip paths there describe the original inputs
+before the binary migration. Import verification compares all values, exact
+number lexemes, property order and duplicate keys; JSON whitespace and escape
+spelling are not part of the retained representation.
 
 `results/` is ignored and holds local logs, catalogs and benchmark outputs.
 Isolated native probes use `.probe-runs/`, which is also ignored. Successful

@@ -1,3 +1,4 @@
+using MonsterTrain2Poju.Fixtures;
 using MonsterTrain2Poju.Model;
 using System.Text.Json;
 
@@ -91,19 +92,19 @@ internal static class BattleActionChecks
         Console.WriteLine("STANDBY-SLOT-CHECKS PASS: holes, LIFO reuse, distinct futures, malformed metadata, terminal clear and parallel isolation.");
     }
 
-    internal static void Native(JsonElement fixture)
+    internal static void Native(FixtureValue fixture)
     {
-        if (!fixture.TryGetProperty("Actions", out JsonElement actions) || actions.GetArrayLength() == 0) return;
+        if (!fixture.TryGetProperty("Actions", out FixtureValue actions) || actions.GetArrayLength() == 0) return;
         int supported = 0, unsupported = 0;
-        foreach (JsonElement entry in actions.EnumerateArray())
+        foreach (FixtureValue entry in actions.EnumerateArray())
         {
-            BattleTurnState before = entry.GetProperty("Before").Deserialize<BattleTurnState>(ModelJson.Options)!;
+            BattleTurnState before = entry.GetProperty("Before").Deserialize<BattleTurnState>()!;
             PlayCardAction action = entry.GetProperty("Action").Deserialize<PlayCardAction>()!;
             BattleActionResult result = BattleActionModel.PlayCard(before, action);
             if (!result.Supported)
             { unsupported++; Console.WriteLine("NATIVE-ACTION-UNSUPPORTED index=" + entry.GetProperty("Index") + ": " + result.Reason); continue; }
-            BattleTurnState actual = entry.GetProperty("Actual").Deserialize<BattleTurnState>(ModelJson.Options)!;
-            if (entry.TryGetProperty("ActualOutcome", out JsonElement actionOutcome))
+            BattleTurnState actual = entry.GetProperty("Actual").Deserialize<BattleTurnState>()!;
+            if (entry.TryGetProperty("ActualOutcome", out FixtureValue actionOutcome))
             {
                 Require(result.Outcome == (RoomOutcome)actionOutcome.GetInt32(), "Native card action outcome differs.");
                 if (actionOutcome.GetInt32() == (int)RoomOutcome.BattleWon && fixture.GetProperty("Schema").GetInt32() >= 12)
@@ -114,36 +115,36 @@ internal static class BattleActionChecks
             supported++;
         }
         Console.WriteLine($"NATIVE-ACTION-CHECKS PASS: {supported} matched, {unsupported} unsupported.");
-        if (fixture.TryGetProperty("ModifierScenario", out JsonElement roomScenario) && roomScenario.GetString() == "room-spells")
+        if (fixture.TryGetProperty("ModifierScenario", out FixtureValue roomScenario) && roomScenario.GetString() == "room-spells")
             RoomSpellChecks.Native(actions);
-        if (fixture.TryGetProperty("ModifierScenario", out JsonElement randomScenario) && randomScenario.GetString() == "random-spells")
+        if (fixture.TryGetProperty("ModifierScenario", out FixtureValue randomScenario) && randomScenario.GetString() == "random-spells")
             RandomSpellChecks.Native(actions);
-        if (fixture.TryGetProperty("ModifierScenario", out JsonElement randomStatusScenario) && randomStatusScenario.GetString() == "random-status")
+        if (fixture.TryGetProperty("ModifierScenario", out FixtureValue randomStatusScenario) && randomStatusScenario.GetString() == "random-status")
             RandomStatusChecks.Native(actions);
-        if (fixture.TryGetProperty("ModifierScenario", out JsonElement crossRoomScenario) && crossRoomScenario.GetString() is "cross-room-spells" or "cross-room-targets")
+        if (fixture.TryGetProperty("ModifierScenario", out FixtureValue crossRoomScenario) && crossRoomScenario.GetString() is "cross-room-spells" or "cross-room-targets")
             CrossRoomSpellChecks.Native(fixture);
-        if (fixture.TryGetProperty("ModifierScenario", out JsonElement attackScenario) && attackScenario.GetString() == "attack-buffs")
+        if (fixture.TryGetProperty("ModifierScenario", out FixtureValue attackScenario) && attackScenario.GetString() == "attack-buffs")
             UnitAttackChecks.Native(actions);
-        if (fixture.TryGetProperty("ModifierScenario", out JsonElement healthScenario) && healthScenario.GetString() is "max-health-spells" or "max-health-lethal")
+        if (fixture.TryGetProperty("ModifierScenario", out FixtureValue healthScenario) && healthScenario.GetString() is "max-health-spells" or "max-health-lethal")
             UnitHealthChecks.Native(fixture);
-        if (fixture.TryGetProperty("ModifierScenario", out JsonElement rangeScenario) && rangeScenario.GetString() is "numeric-ranges" or "numeric-ranges-lethal")
+        if (fixture.TryGetProperty("ModifierScenario", out FixtureValue rangeScenario) && rangeScenario.GetString() is "numeric-ranges" or "numeric-ranges-lethal")
             NumericRangeChecks.Native(fixture);
-        if (fixture.TryGetProperty("ModifierScenario", out JsonElement filterScenario) && filterScenario.GetString() == "target-filters")
+        if (fixture.TryGetProperty("ModifierScenario", out FixtureValue filterScenario) && filterScenario.GetString() == "target-filters")
             TargetFilterChecks.Native(fixture);
-        if (fixture.TryGetProperty("ModifierScenario", out JsonElement drawScenario) && drawScenario.GetString() == "drawing")
+        if (fixture.TryGetProperty("ModifierScenario", out FixtureValue drawScenario) && drawScenario.GetString() == "drawing")
             DrawSpellChecks.Native(fixture);
-        if (fixture.TryGetProperty("ModifierScenario", out JsonElement removalScenario) && removalScenario.GetString() is "hand-removal" or "hand-removal-lethal")
+        if (fixture.TryGetProperty("ModifierScenario", out FixtureValue removalScenario) && removalScenario.GetString() is "hand-removal" or "hand-removal-lethal")
             HandRemovalChecks.Native(fixture);
-        if (fixture.TryGetProperty("ModifierScenario", out JsonElement generationScenario) && generationScenario.GetString() is "generation" or "generation-lethal")
+        if (fixture.TryGetProperty("ModifierScenario", out FixtureValue generationScenario) && generationScenario.GetString() is "generation" or "generation-lethal")
             CardGenerationChecks.Native(fixture);
-        if (fixture.TryGetProperty("ModifierScenario", out JsonElement healingScenario) && healingScenario.GetString() is "healing" or "healing-triggers")
+        if (fixture.TryGetProperty("ModifierScenario", out FixtureValue healingScenario) && healingScenario.GetString() is "healing" or "healing-triggers")
         {
             int healPlays = 0, restored = 0;
             var statuses = new HashSet<string>();
-            foreach (JsonElement entry in actions.EnumerateArray())
+            foreach (FixtureValue entry in actions.EnumerateArray())
             {
-                BattleTurnState before = entry.GetProperty("Before").Deserialize<BattleTurnState>(ModelJson.Options)!;
-                BattleTurnState actual = entry.GetProperty("Actual").Deserialize<BattleTurnState>(ModelJson.Options)!;
+                BattleTurnState before = entry.GetProperty("Before").Deserialize<BattleTurnState>()!;
+                BattleTurnState actual = entry.GetProperty("Actual").Deserialize<BattleTurnState>()!;
                 PlayCardAction action = entry.GetProperty("Action").Deserialize<PlayCardAction>()!;
                 foreach (CombatStatus status in before.Spawn.Train.Rooms.SelectMany(room => room.Units).SelectMany(unit => unit.Statuses))
                     statuses.Add(status.Id);
@@ -159,7 +160,7 @@ internal static class BattleActionChecks
             Console.WriteLine($"NATIVE-HEALING-COVERAGE PASS: {healPlays} healing spell plays, {restored} restored targets, multiplier/immunity/regen/lifesteal present.");
             if (healingScenario.GetString() == "healing-triggers")
             {
-                var actualStates = actions.EnumerateArray().Select(entry => entry.GetProperty("Actual").Deserialize<BattleTurnState>(ModelJson.Options)!).ToArray();
+                var actualStates = actions.EnumerateArray().Select(entry => entry.GetProperty("Actual").Deserialize<BattleTurnState>()!).ToArray();
                 var units = actualStates.SelectMany(state => state.Spawn.Train.Rooms).SelectMany(room => room.Units).ToArray();
                 Require(units.Any(unit => unit.Triggers.Any(trigger => trigger.Kind == "OnHeal" && trigger.Once && trigger.HasTriggered)),
                     "The native OnHeal fixture never consumed its once-only trigger.");
@@ -169,8 +170,8 @@ internal static class BattleActionChecks
                     "The native OnHeal fixture did not exercise ignored silence.");
                 bool immuneRewards = actions.EnumerateArray().Any(entry =>
                 {
-                    BattleTurnState before = entry.GetProperty("Before").Deserialize<BattleTurnState>(ModelJson.Options)!;
-                    BattleTurnState actual = entry.GetProperty("Actual").Deserialize<BattleTurnState>(ModelJson.Options)!;
+                    BattleTurnState before = entry.GetProperty("Before").Deserialize<BattleTurnState>()!;
+                    BattleTurnState actual = entry.GetProperty("Actual").Deserialize<BattleTurnState>()!;
                     int id = entry.GetProperty("Action").GetProperty("TargetUnitId").GetInt32();
                     CombatUnit? target = before.Spawn.Train.Rooms.SelectMany(room => room.Units).SingleOrDefault(unit => unit.Id == id);
                     return target?.Statuses.Any(status => status.Id == "heal immunity") == true &&
@@ -180,12 +181,12 @@ internal static class BattleActionChecks
                 Console.WriteLine("NATIVE-ONHEAL-COVERAGE PASS: three blocked heal rewards, once-only state, silence and ignored silence.");
             }
         }
-        if (fixture.TryGetProperty("ModifierScenario", out JsonElement scenario) &&
+        if (fixture.TryGetProperty("ModifierScenario", out FixtureValue scenario) &&
             (scenario.GetString() is "dynamic-upgrades" or "sacrifice-upgrades" or "hand-upgrades" or "targeted-hand-upgrades"))
         {
             var modifiedActions = actions.EnumerateArray().Where(entry =>
             {
-                BattleTurnState before = entry.GetProperty("Before").Deserialize<BattleTurnState>(ModelJson.Options)!;
+                BattleTurnState before = entry.GetProperty("Before").Deserialize<BattleTurnState>()!;
                 int id = entry.GetProperty("Action").GetProperty("CardInstanceId").GetInt32();
                 string dataId = before.Spawn.Train.Context!.Cards.Hand.Single(card => card.InstanceId == id).DataId;
                 return before.PlayRules!.Cards.Single(card => card.DataId == dataId).Effects.Any(effect => effect.Type is "UnitUpgrade" or "HandUpgrade");
@@ -193,7 +194,7 @@ internal static class BattleActionChecks
             Require(modifiedActions.Length > 0, "The dynamic upgrade fixture never played its modified spell.");
             bool observed = modifiedActions.Any(entry =>
             {
-                BattleTurnState actual = entry.GetProperty("Actual").Deserialize<BattleTurnState>(ModelJson.Options)!;
+                BattleTurnState actual = entry.GetProperty("Actual").Deserialize<BattleTurnState>()!;
                 if (scenario.GetString() is "hand-upgrades" or "targeted-hand-upgrades")
                     return actual.Spawn.Train.Context!.CardInstances!.Any(card => card.Permanent.Upgrades
                         .Any(upgrade => upgrade.AssetKey.StartsWith("PojuHand", StringComparison.Ordinal)));
@@ -205,12 +206,12 @@ internal static class BattleActionChecks
             Require(observed, "The dynamic upgrade fixture never changed the native unit or killed its target.");
             Console.WriteLine($"NATIVE-UPGRADE-COVERAGE PASS: {modifiedActions.Length} modified spell plays, observed native {scenario.GetString()} effects.");
         }
-        if (unsupported > 0 || !fixture.TryGetProperty("Policy", out JsonElement policy) ||
+        if (unsupported > 0 || !fixture.TryGetProperty("Policy", out FixtureValue policy) ||
             policy.GetString() is not ("units-and-junk" or "units-spells-and-junk")) return;
         Func<BattleTurnState, PlayCardAction?> chooser = policy.GetString() == "units-spells-and-junk"
             ? BattleActionModel.ChooseUnitSpellAndJunkPlay : BattleActionModel.ChooseUnitAndJunkPlay;
-        JsonElement turns = fixture.GetProperty("Turns");
-        BattleTurnState root = actions[0].GetProperty("Before").Deserialize<BattleTurnState>(ModelJson.Options)!;
+        FixtureValue turns = fixture.GetProperty("Turns");
+        BattleTurnState root = actions[0].GetProperty("Before").Deserialize<BattleTurnState>()!;
         string parent = JsonSerializer.Serialize(root);
         BattleTurnState terminal = RunPolicy(root, actions, turns, chooser);
         string expected = BattleTurnChecks.Comparable(terminal);
@@ -218,18 +219,18 @@ internal static class BattleActionChecks
             "Full policy parallel branches diverged."));
         Require(JsonSerializer.Serialize(root) == parent, "Full policy simulation mutated its root.");
         // Start independently after an actual mid-battle card action. Recompute the entire suffix.
-        JsonElement mid = actions.EnumerateArray().First(entry => entry.GetProperty("Actual").GetProperty("Spawn").GetProperty("Turn").GetInt32() > 0);
-        BattleTurnState midRoot = mid.GetProperty("Actual").Deserialize<BattleTurnState>(ModelJson.Options)!;
+        FixtureValue mid = actions.EnumerateArray().First(entry => entry.GetProperty("Actual").GetProperty("Spawn").GetProperty("Turn").GetInt32() > 0);
+        BattleTurnState midRoot = mid.GetProperty("Actual").Deserialize<BattleTurnState>()!;
         BattleSimulationResult suffix = BattleSimulator.Resolve(midRoot, chooser);
         Require(suffix.Supported && BattleTurnChecks.Comparable(suffix.State!) == expected,
             "Mid-battle policy simulation diverged: " + suffix.UnsupportedReason);
         int firstTurn = midRoot.Spawn.Turn;
-        JsonElement[] actualSuffixTurns = turns.EnumerateArray().Where(entry => entry.GetProperty("Before")
+        FixtureValue[] actualSuffixTurns = turns.EnumerateArray().Where(entry => entry.GetProperty("Before")
             .GetProperty("Spawn").GetProperty("Turn").GetInt32() >= firstTurn).ToArray();
         Require(suffix.Turns.Count == actualSuffixTurns.Length, "Mid-battle suffix EndTurn count differs.");
         for (int index = 0; index < suffix.Turns.Count; index++)
         {
-            BattleTurnState actual = actualSuffixTurns[index].GetProperty("Actual").Deserialize<BattleTurnState>(ModelJson.Options)!;
+            BattleTurnState actual = actualSuffixTurns[index].GetProperty("Actual").Deserialize<BattleTurnState>()!;
             Require(BattleTurnChecks.Comparable(suffix.Turns[index].State!) == BattleTurnChecks.Comparable(actual),
                 "Mid-battle suffix decision differs after EndTurn " + index);
         }
@@ -237,7 +238,7 @@ internal static class BattleActionChecks
         Console.WriteLine($"NATIVE-POLICY-CHAIN-CHECKS PASS: {actions.GetArrayLength()} card plays, {turns.GetArrayLength()} EndTurns, final Pyre {hp}, mid-battle root and 16 parallel branches.");
     }
 
-    private static BattleTurnState RunPolicy(BattleTurnState root, JsonElement actions, JsonElement turns, Func<BattleTurnState, PlayCardAction?> chooser)
+    private static BattleTurnState RunPolicy(BattleTurnState root, FixtureValue actions, FixtureValue turns, Func<BattleTurnState, PlayCardAction?> chooser)
     {
         // Finish first, then consult the oracle. Neither recorded actions nor the terminal turn count
         // drives the independent simulation; the policy consumes only its current model state.
@@ -249,16 +250,16 @@ internal static class BattleActionChecks
         {
             BattleSimulationAction modeled = result.Actions[index];
             PlayCardAction actualAction = actions[index].GetProperty("Action").Deserialize<PlayCardAction>()!;
-            BattleTurnState actual = actions[index].GetProperty("Actual").Deserialize<BattleTurnState>(ModelJson.Options)!;
+            BattleTurnState actual = actions[index].GetProperty("Actual").Deserialize<BattleTurnState>()!;
             Require(JsonSerializer.Serialize(modeled.Action) == JsonSerializer.Serialize(actualAction) &&
                 BattleTurnChecks.Comparable(modeled.Result.State!) == BattleTurnChecks.Comparable(actual),
                 "Independent policy diverged after card action " + index);
-            if (actions[index].TryGetProperty("ActualOutcome", out JsonElement outcome))
+            if (actions[index].TryGetProperty("ActualOutcome", out FixtureValue outcome))
                 Require(modeled.Result.Outcome == (RoomOutcome)outcome.GetInt32(), "Independent policy action outcome differs.");
         }
         for (int index = 0; index < result.Turns.Count; index++)
         {
-            BattleTurnState actual = turns[index].GetProperty("Actual").Deserialize<BattleTurnState>(ModelJson.Options)!;
+            BattleTurnState actual = turns[index].GetProperty("Actual").Deserialize<BattleTurnState>()!;
             Require(result.Turns[index].Outcome == (RoomOutcome)turns[index].GetProperty("ActualOutcome").GetInt32() &&
                 BattleTurnChecks.Comparable(result.Turns[index].State!) == BattleTurnChecks.Comparable(actual),
                 "Independent policy diverged after EndTurn " + index);

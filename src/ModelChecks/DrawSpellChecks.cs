@@ -1,3 +1,4 @@
+using MonsterTrain2Poju.Fixtures;
 using System.Text.Json;
 using MonsterTrain2Poju.Model;
 
@@ -82,31 +83,31 @@ internal static class DrawSpellChecks
         Console.WriteLine("DRAW-SPELL-CHECKS PASS: signed/max/full-hand draws, reshuffle, paid-card exclusion, live hand upgrades, statistics, three quantity phases, post-boss/preview gates and 32 parallel branches.");
     }
 
-    internal static void Native(JsonElement fixture)
+    internal static void Native(FixtureValue fixture)
     {
-        JsonElement[] cycles = fixture.GetProperty("CardCycles").EnumerateArray().Where(cycle => cycle.GetProperty("Kind").GetString() == "SpellDraw").ToArray();
+        FixtureValue[] cycles = fixture.GetProperty("CardCycles").EnumerateArray().Where(cycle => cycle.GetProperty("Kind").GetString() == "SpellDraw").ToArray();
         int draws = 0, zero = 0, negative = 0, full = 0, reshuffles = 0, modifier = 0;
-        foreach (JsonElement cycle in cycles)
+        foreach (FixtureValue cycle in cycles)
         {
-            JsonElement before = cycle.GetProperty("Before"), after = cycle.GetProperty("Actual");
+            FixtureValue before = cycle.GetProperty("Before"), after = cycle.GetProperty("Actual");
             int count = cycle.GetProperty("HandSize").GetInt32();
             int gained = after.GetProperty("Hand").GetArrayLength() - before.GetProperty("Hand").GetArrayLength();
             draws += gained;
             if (count == 0 && gained == 0) zero++;
             if (count < 0 && gained == 0) negative++;
             if (before.GetProperty("Hand").GetArrayLength() == cycle.GetProperty("MaxHandSize").GetInt32() && gained == 0) full++;
-            if (before.GetProperty("Rng").GetRawText() != after.GetProperty("Rng").GetRawText()) reshuffles++;
+            if (!before.GetProperty("Rng").ContentEquals(after.GetProperty("Rng"))) reshuffles++;
             if (before.GetProperty("DrawModifier").GetInt32() > 0 && gained > 0 &&
                 before.GetProperty("DrawModifier").GetInt32() == after.GetProperty("DrawModifier").GetInt32()) modifier++;
         }
         Require(cycles.Length > 0 && draws > 0 && zero > 0 && negative > 0 && full > 0 && reshuffles > 0 && modifier > 0,
             "Native drawing oracle lacks actual draws, no-op counts, full hands, reshuffles or retained modifiers.");
         var phases = new HashSet<string>(); int samples = 0;
-        foreach (JsonElement sample in fixture.GetProperty("NumericRanges").EnumerateArray())
+        foreach (FixtureValue sample in fixture.GetProperty("NumericRanges").EnumerateArray())
         {
             var range = new CardEffectRange(sample.GetProperty("Min").GetInt32(), sample.GetProperty("Max").GetInt32(), sample.GetProperty("Multiplier").GetSingle());
-            RngDraw expected = range.Sample(sample.GetProperty("Before").Deserialize<UnityRng>(ModelJson.Options));
-            Require(expected.Value == sample.GetProperty("Value").GetInt32() && expected.State.Equals(sample.GetProperty("After").Deserialize<UnityRng>(ModelJson.Options)),
+            RngDraw expected = range.Sample(sample.GetProperty("Before").Deserialize<UnityRng>());
+            Require(expected.Value == sample.GetProperty("Value").GetInt32() && expected.State.Equals(sample.GetProperty("After").Deserialize<UnityRng>()),
                 "Native draw quantity or RNG differs.");
             phases.Add(sample.GetProperty("Phase").GetString()!); samples++;
         }

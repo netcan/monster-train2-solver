@@ -1,3 +1,4 @@
+using MonsterTrain2Poju.Fixtures;
 using System.Text.Json;
 using MonsterTrain2Poju.Model;
 
@@ -94,21 +95,21 @@ internal static class PreCombatChecks
     private static string Comparable(TrainCombatState state) => JsonSerializer.Serialize(new
     { state.Rooms, Movement = state.Movement.OrderBy(rule => rule.UnitId), state.EnemySlotsPerRoom, state.Context });
 
-    internal static void Native(JsonElement fixture)
+    internal static void Native(FixtureValue fixture)
     {
-        if (!fixture.TryGetProperty("ModifierScenario", out JsonElement scenario) || scenario.GetString() is not ("pre-combat" or "pre-combat-lethal")) return;
+        if (!fixture.TryGetProperty("ModifierScenario", out FixtureValue scenario) || scenario.GetString() is not ("pre-combat" or "pre-combat-lethal")) return;
         bool lethal = scenario.GetString() == "pre-combat-lethal";
         int phases = 0, player = 0, enemy = 0, generated = 0, deaths = 0, dazed = 0, silent = 0;
         int callbacks = 0, turnSamples = 0, resetSamples = 0, deathOrder = 0, drawBoundaries = 0, initialEnemies = 0;
         TrainCombatState? preceding = null; int? precedingTurn = null; CombatTeam? precedingTeam = null;
-        foreach (JsonElement phase in fixture.GetProperty("PreCombats").EnumerateArray())
+        foreach (FixtureValue phase in fixture.GetProperty("PreCombats").EnumerateArray())
         {
-            TrainCombatState before = phase.GetProperty("Before").Deserialize<TrainCombatState>(ModelJson.Options)!;
-            TrainCombatState after = phase.GetProperty("Actual").Deserialize<TrainCombatState>(ModelJson.Options)!;
+            TrainCombatState before = phase.GetProperty("Before").Deserialize<TrainCombatState>()!;
+            TrainCombatState after = phase.GetProperty("Actual").Deserialize<TrainCombatState>()!;
             CombatTeam team = (CombatTeam)phase.GetProperty("Team").GetInt32();
             int[] actors = phase.GetProperty("ActorIds").Deserialize<int[]>()!;
             var predicted = TrainCombatModel.PreCombat(before, team);
-            Require(predicted.Supported && phase.GetProperty("Difference").ValueKind == JsonValueKind.Null &&
+            Require(predicted.Supported && phase.GetProperty("Difference").ValueKind == FixtureKind.Null &&
                 ModelJson.Difference(Comparable(predicted.State!), Comparable(after)) == null, "Independent native pre-combat phase differs.");
             Require(actors.SequenceEqual(before.Rooms.SelectMany(room => room.Units).Where(unit => unit.Team == team)
                 .OrderBy(unit => unit.Id).Select(unit => unit.Id)), "Native pre-combat actor order is not creation order.");
@@ -146,10 +147,10 @@ internal static class PreCombatChecks
             silent += before.Rooms.SelectMany(room => room.Units).Count(unit => unit.Statuses.Any(status => status.Id == "silenced") &&
                 unit.Triggers.Any(trigger => trigger.Kind == "PreCombat" && trigger.IgnoreSilence));
             if (team != CombatTeam.Enemy) continue;
-            JsonElement draw = fixture.GetProperty("CardCycles").EnumerateArray().Single(item =>
+            FixtureValue draw = fixture.GetProperty("CardCycles").EnumerateArray().Single(item =>
                 item.GetProperty("Kind").GetString() == "Draw" && item.GetProperty("Turn").GetInt32() == turn);
-            CardCycleState drawBefore = draw.GetProperty("Before").Deserialize<CardCycleState>(ModelJson.Options)!;
-            CardCycleState drawAfter = draw.GetProperty("Actual").Deserialize<CardCycleState>(ModelJson.Options)!;
+            CardCycleState drawBefore = draw.GetProperty("Before").Deserialize<CardCycleState>()!;
+            CardCycleState drawAfter = draw.GetProperty("Actual").Deserialize<CardCycleState>()!;
             var drawn = CardCycleModel.DrawHand(drawBefore, draw.GetProperty("HandSize").GetInt32(), draw.GetProperty("MaxHandSize").GetInt32());
             Require(JsonSerializer.Serialize(drawBefore) == JsonSerializer.Serialize(after.Context.Cards) && drawn.Supported &&
                 JsonSerializer.Serialize(drawn.State) == JsonSerializer.Serialize(drawAfter) &&
@@ -157,17 +158,17 @@ internal static class PreCombatChecks
                 "Pre-combat hand generation did not precede/coexist with the regular draw.");
             drawBoundaries++;
         }
-        foreach (JsonElement sample in fixture.GetProperty("UnitUpgradeScaling").EnumerateArray())
+        foreach (FixtureValue sample in fixture.GetProperty("UnitUpgradeScaling").EnumerateArray())
         {
-            CombatContext before = sample.GetProperty("Before").Deserialize<CombatContext>(ModelJson.Options)!;
-            CombatContext after = sample.GetProperty("After").Deserialize<CombatContext>(ModelJson.Options)!;
+            CombatContext before = sample.GetProperty("Before").Deserialize<CombatContext>()!;
+            CombatContext after = sample.GetProperty("After").Deserialize<CombatContext>()!;
             ScalingUnitUpgradeTrait trait = sample.GetProperty("Trait").Deserialize<ScalingUnitUpgradeTrait>()!;
             CardUpgradeModifier original = sample.GetProperty("BeforeUpgrade").Deserialize<CardUpgradeModifier>()!;
             CardUpgradeModifier actual = sample.GetProperty("AfterUpgrade").Deserialize<CardUpgradeModifier>()!;
             string kind = sample.GetProperty("TriggerKind").GetString()!;
             var predicted = UnitUpgradeScalingModel.ApplyTrait(before, trait, sample.GetProperty("OwnerCardId").GetInt32(), original, kind);
-            Require(predicted.Supported && sample.GetProperty("Difference").ValueKind == JsonValueKind.Null &&
-                sample.GetProperty("CaptureError").ValueKind == JsonValueKind.Null && JsonSerializer.Serialize(predicted.Upgrade) == JsonSerializer.Serialize(actual) &&
+            Require(predicted.Supported && sample.GetProperty("Difference").ValueKind == FixtureKind.Null &&
+                sample.GetProperty("CaptureError").ValueKind == FixtureKind.Null && JsonSerializer.Serialize(predicted.Upgrade) == JsonSerializer.Serialize(actual) &&
                 JsonSerializer.Serialize(predicted.Context) == JsonSerializer.Serialize(after), "Native pre-combat scaling callback differs.");
             if (kind != "PreCombat") continue;
             callbacks++;

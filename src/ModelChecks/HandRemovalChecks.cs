@@ -1,3 +1,4 @@
+using MonsterTrain2Poju.Fixtures;
 using System.Text.Json;
 using MonsterTrain2Poju.Model;
 
@@ -140,23 +141,23 @@ internal static class HandRemovalChecks
         Require(JsonSerializer.Serialize(context) == parent && JsonSerializer.Serialize(piles) == pileParent, "Hand removal mutated its parent or pile layout.");
         Console.WriteLine("HAND-REMOVAL-CHECKS PASS: forward order, source exclusion, double exhaust counters, discard-only upgrades, transient slots, nested death returns, empty-hand queue timing, live redraw chains, latent counters, ignored modes/ranges, gates and 32 parallel branches.");
     }
-    internal static void Native(JsonElement fixture)
+    internal static void Native(FixtureValue fixture)
     {
-        JsonElement records = fixture.GetProperty("HandRemovals");
+        FixtureValue records = fixture.GetProperty("HandRemovals");
         int removals = 0, discarded = 0, consumed = 0, empty = 0, ignored = 0, kept = 0, removed = 0, allocated = 0,
             pendingReturns = 0, nestedReturns = 0;
-        foreach (JsonElement record in records.EnumerateArray())
+        foreach (FixtureValue record in records.EnumerateArray())
         {
-            JsonElement before = record.GetProperty("Before"), after = record.GetProperty("Actual");
-            CombatContext context = before.GetProperty("Context").Deserialize<CombatContext>(ModelJson.Options)!;
+            FixtureValue before = record.GetProperty("Before"), after = record.GetProperty("Actual");
+            CombatContext context = before.GetProperty("Context").Deserialize<CombatContext>()!;
             CardPileState[] piles = before.GetProperty("OtherPiles").Deserialize<CardPileState[]>()!;
             int source = record.GetProperty("CardId").GetInt32(), mode = record.GetProperty("Mode").GetInt32(), index = record.GetProperty("EffectIndex").GetInt32();
-            BattleTurnState root = fixture.GetProperty("Actions")[0].GetProperty("Before").Deserialize<BattleTurnState>(ModelJson.Options)!;
-            int[] pending = before.TryGetProperty("PendingExhaustedCards", out JsonElement pendingElement) ? pendingElement.Deserialize<int[]>()! : [];
-            bool runsQueue = before.TryGetProperty("ExhaustionRunsTriggerQueue", out JsonElement queueElement) && queueElement.GetBoolean();
+            BattleTurnState root = fixture.GetProperty("Actions")[0].GetProperty("Before").Deserialize<BattleTurnState>()!;
+            int[] pending = before.TryGetProperty("PendingExhaustedCards", out FixtureValue pendingElement) ? pendingElement.Deserialize<int[]>()! : [];
+            bool runsQueue = before.TryGetProperty("ExhaustionRunsTriggerQueue", out FixtureValue queueElement) && queueElement.GetBoolean();
             HandRemovalResult predicted = HandRemovalModel.Apply(context, mode, source, index, root.PlayRules, piles, pending, runsQueue);
             Require(predicted.Supported, "Native hand removal replay unsupported: " + predicted.UnsupportedReason);
-            CombatContext actual = after.GetProperty("Context").Deserialize<CombatContext>(ModelJson.Options)!;
+            CombatContext actual = after.GetProperty("Context").Deserialize<CombatContext>()!;
             CardPileState[] actualPiles = after.GetProperty("OtherPiles").Deserialize<CardPileState[]>()!;
             string? difference = ModelJson.Difference(Comparable(predicted.Context!, predicted.OtherPiles), Comparable(actual, actualPiles));
             Require(difference == null && predicted.ConsumedCount == record.GetProperty("ConsumedCount").GetInt32(),

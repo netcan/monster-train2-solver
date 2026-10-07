@@ -1,3 +1,4 @@
+using MonsterTrain2Poju.Fixtures;
 using System.Text.Json;
 using MonsterTrain2Poju.Model;
 
@@ -77,20 +78,20 @@ internal static class UnitHealthChecks
         Console.WriteLine("UNIT-HEALTH-CHECKS PASS: raw signed spawner offsets, lifetimes, healability, multiplier/immunity, OnHeal suppression, ceilings, lethal/terminal state and parallel isolation.");
     }
 
-    internal static void Native(JsonElement fixture)
+    internal static void Native(FixtureValue fixture)
     {
         bool lethal = fixture.GetProperty("ModifierScenario").GetString() == "max-health-lethal";
         int plays = 0, remote = 0, deaths = 0, immuneHeals = 0, multipliers = 0, detached = 0;
-        foreach (JsonElement entry in fixture.GetProperty("Actions").EnumerateArray())
+        foreach (FixtureValue entry in fixture.GetProperty("Actions").EnumerateArray())
         {
-            BattleTurnState before = entry.GetProperty("Before").Deserialize<BattleTurnState>(ModelJson.Options)!;
+            BattleTurnState before = entry.GetProperty("Before").Deserialize<BattleTurnState>()!;
             PlayCardAction action = entry.GetProperty("Action").Deserialize<PlayCardAction>()!;
             CombatContext context = before.Spawn.Train.Context!;
             string dataId = context.Cards.Hand.Single(card => card.InstanceId == action.CardInstanceId).DataId;
             CardPlayRule rule = before.PlayRules!.Cards.Single(card => card.DataId == dataId);
             if (!rule.Effects.Any(effect => effect.Type == "BuffHealth")) continue;
             plays++;
-            BattleTurnState actual = entry.GetProperty("Actual").Deserialize<BattleTurnState>(ModelJson.Options)!;
+            BattleTurnState actual = entry.GetProperty("Actual").Deserialize<BattleTurnState>()!;
             CombatContext nextContext = actual.Spawn.Train.Context!;
             CombatUnit[] after = actual.Spawn.Train.Rooms.SelectMany(room => room.Units).ToArray();
             foreach (RoomCombatState room in before.Spawn.Train.Rooms)

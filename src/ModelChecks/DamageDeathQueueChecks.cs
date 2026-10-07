@@ -1,3 +1,4 @@
+using MonsterTrain2Poju.Fixtures;
 using System.Text.Json;
 using MonsterTrain2Poju.Model;
 
@@ -84,49 +85,49 @@ internal static class DamageDeathQueueChecks
         Console.WriteLine("DAMAGE-DEATH-QUEUE PASS: ordinary callbacks before removal, enemy/player creation batches, nested removal/returns, death-generated exhaustion, local/global queues and 32 parallel branches.");
     }
 
-    internal static void Native(JsonElement fixture)
+    internal static void Native(FixtureValue fixture)
     {
         if (!fixture.TryGetProperty("ModifierScenario", out var scenario) || scenario.GetString() is not ("damage-death-queue" or "terminal-death-damage")) return;
         int phases = 0, deathArmor = 0, zeroHeals = 0, upgrades = 0;
         string Comparable(TrainCombatState state) => JsonSerializer.Serialize(new
         { state.Rooms, Movement = state.Movement.OrderBy(rule => rule.UnitId), state.EnemySlotsPerRoom, state.Context });
-        foreach (JsonElement phase in fixture.GetProperty("PreCombats").EnumerateArray())
+        foreach (FixtureValue phase in fixture.GetProperty("PreCombats").EnumerateArray())
         {
-            var before = phase.GetProperty("Before").Deserialize<TrainCombatState>(ModelJson.Options)!;
-            var after = phase.GetProperty("Actual").Deserialize<TrainCombatState>(ModelJson.Options)!;
+            var before = phase.GetProperty("Before").Deserialize<TrainCombatState>()!;
+            var after = phase.GetProperty("Actual").Deserialize<TrainCombatState>()!;
             var result = TrainCombatModel.PreCombat(before, (CombatTeam)phase.GetProperty("Team").GetInt32());
-            Require(result.Supported && phase.GetProperty("Difference").ValueKind == JsonValueKind.Null &&
+            Require(result.Supported && phase.GetProperty("Difference").ValueKind == FixtureKind.Null &&
                 ModelJson.Difference(Comparable(result.State!), Comparable(after)) == null, "Independent native damage-death queue phase differs.");
             phases++;
         }
-        foreach (JsonElement sample in fixture.GetProperty("TriggeredDamage").EnumerateArray())
+        foreach (FixtureValue sample in fixture.GetProperty("TriggeredDamage").EnumerateArray())
         {
             Require(sample.GetProperty("Completed").GetBoolean() && sample.GetProperty("Sampled").GetBoolean() &&
-                sample.GetProperty("Difference").ValueKind == JsonValueKind.Null, "Damage-death damage observation is incomplete.");
+                sample.GetProperty("Difference").ValueKind == FixtureKind.Null, "Damage-death damage observation is incomplete.");
             if (sample.GetProperty("Stage").GetString() != "Application" || sample.GetProperty("TriggerKind").GetString() != "OnDeath") continue;
-            foreach (JsonElement request in sample.GetProperty("Requests").EnumerateArray())
+            foreach (FixtureValue request in sample.GetProperty("Requests").EnumerateArray())
             {
-                var unit = request.GetProperty("Before").Deserialize<CombatUnit>(ModelJson.Options)!;
+                var unit = request.GetProperty("Before").Deserialize<CombatUnit>()!;
                 if (unit.Modifiers?.Upgrades.Any(u => u.AssetKey == "PojuOnHealBeforeDeathArmor") != true || !unit.Statuses.Any(s => s.Id == "armor")) continue;
                 Require(request.GetProperty("Amount").GetInt32() == 3 && unit.Health == request.GetProperty("AfterHealth").GetInt32(),
                     "Native OnHeal armor did not block subsequent OnDeath damage.");
                 deathArmor++;
             }
         }
-        foreach (JsonElement sample in fixture.GetProperty("TriggeredHeals").EnumerateArray())
+        foreach (FixtureValue sample in fixture.GetProperty("TriggeredHeals").EnumerateArray())
         {
             Require(sample.GetProperty("Completed").GetBoolean() && sample.GetProperty("Sampled").GetBoolean() &&
-                sample.GetProperty("Difference").ValueKind == JsonValueKind.Null, "Damage-death healing observation is incomplete.");
-            var action = sample.GetProperty("Effect").Deserialize<CardActionEffect>(ModelJson.Options)!;
-            UnityRng before = sample.GetProperty("BeforeRng").Deserialize<UnityRng>(ModelJson.Options);
+                sample.GetProperty("Difference").ValueKind == FixtureKind.Null, "Damage-death healing observation is incomplete.");
+            var action = sample.GetProperty("Effect").Deserialize<CardActionEffect>()!;
+            UnityRng before = sample.GetProperty("BeforeRng").Deserialize<UnityRng>();
             RngDraw? draw = action.Range?.Sample(before);
             int amount = draw?.Value ?? action.Value;
             Require(amount == sample.GetProperty("Amount").GetInt32() &&
-                (draw?.State ?? before).Equals(sample.GetProperty("SampledRng").Deserialize<UnityRng>(ModelJson.Options)),
+                (draw?.State ?? before).Equals(sample.GetProperty("SampledRng").Deserialize<UnityRng>()),
                 "Independent damage-death heal quantity or RNG differs.");
             zeroHeals += sample.GetProperty("Amount").GetInt32() == 0 ? 1 : 0;
         }
-        foreach (JsonElement upgrade in fixture.GetProperty("UnitUpgradeScaling").EnumerateArray())
+        foreach (FixtureValue upgrade in fixture.GetProperty("UnitUpgradeScaling").EnumerateArray())
             upgrades += upgrade.GetProperty("TriggerKind").GetString() == "OnHeal" &&
                 upgrade.GetProperty("BeforeUpgrade").GetProperty("AssetKey").GetString() == "PojuOnHealBeforeDeathArmor" ? 1 : 0;
         Require(phases >= 2 && deathArmor >= 2 && zeroHeals > 0 && upgrades > 0, "Native damage-death queue coverage is incomplete.");

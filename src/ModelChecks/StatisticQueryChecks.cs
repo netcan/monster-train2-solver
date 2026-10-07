@@ -1,3 +1,4 @@
+using MonsterTrain2Poju.Fixtures;
 using System.Text.Json;
 using MonsterTrain2Poju.Model;
 
@@ -77,17 +78,17 @@ internal static class StatisticQueryChecks
     internal static void Native(string path)
     {
         using var document = ModelJson.ReadFixture(path);
-        JsonElement fixture = document.RootElement;
+        FixtureValue fixture = document.RootElement;
         Require(fixture.GetProperty("LiveContextUnchanged").GetBoolean(), "Native statistic calibration changed live battle state.");
         int samples = 0;
         var kinds = new HashSet<string>();
-        foreach (JsonElement batch in fixture.GetProperty("Batches").EnumerateArray())
+        foreach (FixtureValue batch in fixture.GetProperty("Batches").EnumerateArray())
         {
-            CombatContext before = batch.GetProperty("Before").Deserialize<CombatContext>(ModelJson.Options)!;
+            CombatContext before = batch.GetProperty("Before").Deserialize<CombatContext>()!;
             StatisticQueryFrame frame = batch.GetProperty("Frame").Deserialize<StatisticQueryFrame>()!;
             BattleStatistics actualStatistics = batch.GetProperty("AfterStatistics").Deserialize<BattleStatistics>()!;
             string parent = JsonSerializer.Serialize(before);
-            foreach (JsonElement sample in batch.GetProperty("Samples").EnumerateArray())
+            foreach (FixtureValue sample in batch.GetProperty("Samples").EnumerateArray())
             {
                 CardStatisticQuery query = sample.GetProperty("Query").Deserialize<CardStatisticQuery>()!;
                 var result = StatisticQueryModel.Evaluate(before, query, sample.GetProperty("SourceCardId").GetInt32(), frame);

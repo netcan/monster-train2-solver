@@ -1,3 +1,4 @@
+using MonsterTrain2Poju.Fixtures;
 using System.Text.Json;
 using MonsterTrain2Poju.Model;
 
@@ -44,10 +45,10 @@ internal static class StatisticOverflowChecks
     }
     internal static void Native(string path)
     {
-        using var document = ModelJson.ReadFixture(path); JsonElement fixture = document.RootElement;
+        using var document = ModelJson.ReadFixture(path); FixtureValue fixture = document.RootElement;
         Require(fixture.GetProperty("LiveContextUnchanged").GetBoolean(), "Overflow calibration changed live state.");
         int increments = 0, spawns = 0, wraps = 0;
-        foreach (JsonElement sample in fixture.GetProperty("Samples").EnumerateArray())
+        foreach (FixtureValue sample in fixture.GetProperty("Samples").EnumerateArray())
         {
             BattleStatistics before = sample.GetProperty("Before").Deserialize<BattleStatistics>()!;
             BattleStatistics after = sample.GetProperty("After").Deserialize<BattleStatistics>()!;

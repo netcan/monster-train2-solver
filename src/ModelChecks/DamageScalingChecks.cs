@@ -1,3 +1,4 @@
+using MonsterTrain2Poju.Fixtures;
 using System.Text.Json;
 using MonsterTrain2Poju.Model;
 
@@ -88,19 +89,19 @@ internal static class DamageScalingChecks
         Console.WriteLine("DAMAGE-SCALING-CHECKS PASS: trait order, replacement/addition, per-source modifiers, signed floors, per-hit updates, defenses, unsupported isolation, creation/discard and 64 parallel branches.");
     }
 
-    internal static void Native(JsonElement fixture)
+    internal static void Native(FixtureValue fixture)
     {
-        if (!fixture.TryGetProperty("ModifierScenario", out JsonElement scenario) ||
+        if (!fixture.TryGetProperty("ModifierScenario", out FixtureValue scenario) ||
             scenario.GetString() is not ("damage-scaling" or "dynamic-statistics")) return;
         int count = 0;
         var queries = new HashSet<string>(); var types = new HashSet<string>();
         bool replacement = false, additive = false;
-        foreach (JsonElement sample in fixture.GetProperty("DamageScaling").EnumerateArray())
+        foreach (FixtureValue sample in fixture.GetProperty("DamageScaling").EnumerateArray())
         {
-            Require(sample.GetProperty("CaptureError").ValueKind == JsonValueKind.Null && sample.GetProperty("Difference").ValueKind == JsonValueKind.Null,
+            Require(sample.GetProperty("CaptureError").ValueKind == FixtureKind.Null && sample.GetProperty("Difference").ValueKind == FixtureKind.Null,
                 "Native scaling callback capture is incomplete or differs.");
-            CombatContext before = sample.GetProperty("Before").Deserialize<CombatContext>(ModelJson.Options)!;
-            CombatContext after = sample.GetProperty("After").Deserialize<CombatContext>(ModelJson.Options)!;
+            CombatContext before = sample.GetProperty("Before").Deserialize<CombatContext>()!;
+            CombatContext after = sample.GetProperty("After").Deserialize<CombatContext>()!;
             ScalingDamageTrait trait = sample.GetProperty("Trait").Deserialize<ScalingDamageTrait>()!;
             string parent = JsonSerializer.Serialize(before);
             DamageScalingResult result = DamageScalingModel.ApplyTrait(before, trait, sample.GetProperty("OwnerCardId").GetInt32(),

@@ -1,3 +1,4 @@
+using MonsterTrain2Poju.Fixtures;
 using System.Text.Json;
 using MonsterTrain2Poju.Model;
 
@@ -106,7 +107,7 @@ internal static class TriggeredDamageChecks
         Require(JsonSerializer.Serialize(root) == parent, "Damage simulation mutated its parent.");
         Console.WriteLine("TRIGGERED-DAMAGE PASS: actor traits/statuses, shield/armor, three amount samples, random targets, empty/negative/test gates, death FIFO and 32 parallel branches.");
     }
-    internal static void Native(JsonElement fixture)
+    internal static void Native(FixtureValue fixture)
     {
         if (!fixture.TryGetProperty("ModifierScenario", out var scenario) || scenario.GetString() is not ("triggered-damage" or "damage-death-queue" or "terminal-death-damage")) return;
         bool removalQueue = scenario.GetString() is "damage-death-queue" or "terminal-death-damage";
@@ -114,12 +115,12 @@ internal static class TriggeredDamageChecks
             multipliers = 0, deaths = 0, shields = 0, armor = 0, sourceModifiers = 0, damageHits = 0, lateExhausted = 0;
         string Comparable(TrainCombatState state) => JsonSerializer.Serialize(new
         { state.Rooms, Movement = state.Movement.OrderBy(rule => rule.UnitId), state.EnemySlotsPerRoom, state.Context });
-        foreach (JsonElement phase in fixture.GetProperty("PreCombats").EnumerateArray())
+        foreach (FixtureValue phase in fixture.GetProperty("PreCombats").EnumerateArray())
         {
-            var before = phase.GetProperty("Before").Deserialize<TrainCombatState>(ModelJson.Options)!;
-            var after = phase.GetProperty("Actual").Deserialize<TrainCombatState>(ModelJson.Options)!;
+            var before = phase.GetProperty("Before").Deserialize<TrainCombatState>()!;
+            var after = phase.GetProperty("Actual").Deserialize<TrainCombatState>()!;
             var result = TrainCombatModel.PreCombat(before, (CombatTeam)phase.GetProperty("Team").GetInt32());
-            Require(result.Supported && phase.GetProperty("Difference").ValueKind == JsonValueKind.Null &&
+            Require(result.Supported && phase.GetProperty("Difference").ValueKind == FixtureKind.Null &&
                 ModelJson.Difference(Comparable(result.State!), Comparable(after)) == null, "Independent native triggered-damage phase differs.");
             sourceModifiers += before.Context!.CardInstances!.Count(card => card.Permanent.Offsets.Damage == 9 ||
                 card.Permanent.Upgrades.Any(upgrade => upgrade.Stats.Damage == 9));
@@ -127,15 +128,15 @@ internal static class TriggeredDamageChecks
                 value.Duration == "ThisBattle" && value.Type == "AnyExhausted" && value.Value > 0);
             phases++;
         }
-        foreach (JsonElement sample in fixture.GetProperty("TriggeredDamage").EnumerateArray())
+        foreach (FixtureValue sample in fixture.GetProperty("TriggeredDamage").EnumerateArray())
         {
             Require(sample.GetProperty("Completed").GetBoolean() && sample.GetProperty("Sampled").GetBoolean() &&
-                sample.GetProperty("Difference").ValueKind == JsonValueKind.Null, "Native triggered-damage observation is incomplete.");
-            CardActionEffect effect = sample.GetProperty("Effect").Deserialize<CardActionEffect>(ModelJson.Options)!;
-            UnityRng before = sample.GetProperty("BeforeRng").Deserialize<UnityRng>(ModelJson.Options);
+                sample.GetProperty("Difference").ValueKind == FixtureKind.Null, "Native triggered-damage observation is incomplete.");
+            CardActionEffect effect = sample.GetProperty("Effect").Deserialize<CardActionEffect>()!;
+            UnityRng before = sample.GetProperty("BeforeRng").Deserialize<UnityRng>();
             RngDraw? draw = effect.Range?.Sample(before);
             int value = draw?.Value ?? effect.Value;
-            Require(value == sample.GetProperty("Amount").GetInt32() && (draw?.State ?? before).Equals(sample.GetProperty("SampledRng").Deserialize<UnityRng>(ModelJson.Options)),
+            Require(value == sample.GetProperty("Amount").GetInt32() && (draw?.State ?? before).Equals(sample.GetProperty("SampledRng").Deserialize<UnityRng>()),
                 "Independent native triggered-damage sample/RNG differs.");
             int[] targets = sample.GetProperty("Targets").Deserialize<int[]>()!;
             samples++;
@@ -147,11 +148,11 @@ internal static class TriggeredDamageChecks
             }
             applications++; empty += targets.Length == 0 && effect.Range != null ? 1 : 0; groups += targets.Length > 1 ? 1 : 0;
             random += effect.Target == "RandomInRoom" ? 1 : 0; deaths += sample.GetProperty("TriggerKind").GetString() == "OnDeath" ? 1 : 0;
-            bool multiplied = sample.GetProperty("StatusMultiplier").ValueKind == JsonValueKind.String;
+            bool multiplied = sample.GetProperty("StatusMultiplier").ValueKind == FixtureKind.String;
             int amount = multiplied ? unchecked(value * sample.GetProperty("MultiplierStacks").GetInt32()) : value;
             multipliers += multiplied && sample.GetProperty("MultiplierStacks").GetInt32() > 0 ? 1 : 0;
             int lastTargetPosition = -1;
-            foreach (JsonElement request in sample.GetProperty("Requests").EnumerateArray())
+            foreach (FixtureValue request in sample.GetProperty("Requests").EnumerateArray())
             {
                 int targetId = request.GetProperty("TargetId").GetInt32(); int position = Array.IndexOf(targets, targetId);
                 Require(position > lastTargetPosition && request.GetProperty("Amount").GetInt32() == amount &&
@@ -159,8 +160,8 @@ internal static class TriggeredDamageChecks
                     request.GetProperty("SourceCardId").GetInt32() == sample.GetProperty("ActorCardId").GetInt32(),
                     "Native triggered damage changed group order, actor, damage type or quantity.");
                 lastTargetPosition = position;
-                var target = request.GetProperty("Before").Deserialize<CombatUnit>(ModelJson.Options)!;
-                var context = request.GetProperty("Context").Deserialize<CombatContext>(ModelJson.Options)!;
+                var target = request.GetProperty("Before").Deserialize<CombatUnit>()!;
+                var context = request.GetProperty("Context").Deserialize<CombatContext>()!;
                 var scaled = DamageScalingModel.Apply(context, sample.GetProperty("ActorCardId").GetInt32(), request.GetProperty("SourceCardId").GetInt32(), amount);
                 Require(scaled.Supported, "Native triggered damage source scaling is unsupported.");
                 int damage = Math.Max(0, scaled.Damage);

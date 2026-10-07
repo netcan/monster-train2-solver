@@ -1,3 +1,4 @@
+using MonsterTrain2Poju.Fixtures;
 using System.Text.Json;
 using MonsterTrain2Poju.Model;
 
@@ -71,15 +72,15 @@ internal static class TerminalDeathChecks
         Console.WriteLine("TERMINAL-DEATH PASS: clearing before death signals, detached spawners without exhaustion, cache refresh/attribution, live death scaling, preview, one-shot kill camera and 32 parallel branches.");
     }
 
-    internal static void Native(JsonElement fixture)
+    internal static void Native(FixtureValue fixture)
     {
         if (!fixture.TryGetProperty("ModifierScenario", out var scenario) || scenario.GetString() != "terminal-death-damage") return;
         int terminal = 0, afterClear = 0, cacheDrops = 0, lethalHits = 0;
-        foreach (JsonElement record in fixture.GetProperty("KillCams").EnumerateArray())
+        foreach (FixtureValue record in fixture.GetProperty("KillCams").EnumerateArray())
         {
             Require(record.GetProperty("Completed").GetBoolean(), "Native kill camera capture is incomplete.");
-            var before = record.GetProperty("Before").Deserialize<CombatContext>(ModelJson.Options)!;
-            var actual = record.GetProperty("Actual").Deserialize<CombatContext>(ModelJson.Options)!;
+            var before = record.GetProperty("Before").Deserialize<CombatContext>()!;
+            var actual = record.GetProperty("Actual").Deserialize<CombatContext>()!;
             if (before.KillCamActivated == true)
             {
                 Require(actual.KillCamActivated == true, "Repeated kill camera lost its activation gate.");
@@ -91,12 +92,12 @@ internal static class TerminalDeathChecks
                 "Passive kill camera clearing refreshed native statistics.");
             terminal++;
         }
-        foreach (JsonElement record in fixture.GetProperty("TerminalDeaths").EnumerateArray())
+        foreach (FixtureValue record in fixture.GetProperty("TerminalDeaths").EnumerateArray())
         {
             Require(record.GetProperty("Completed").GetBoolean() && record.GetProperty("FinishedDying").GetBoolean() &&
                 !record.GetProperty("Sacrifice").GetBoolean(), "Native death signal capture is incomplete or uses unmodeled sacrifice statistics.");
-            var before = record.GetProperty("Before").Deserialize<CombatContext>(ModelJson.Options)!;
-            var actual = record.GetProperty("Actual").Deserialize<CombatContext>(ModelJson.Options)!;
+            var before = record.GetProperty("Before").Deserialize<CombatContext>()!;
+            var actual = record.GetProperty("Actual").Deserialize<CombatContext>()!;
             bool clearing = record.GetProperty("Terminal").GetBoolean() && before.KillCamActivated == false;
             int source = record.GetProperty("SourceCardId").GetInt32();
             int responsible = source > 0 ? source : record.GetProperty("SpawnerCardId").GetInt32();
@@ -122,12 +123,12 @@ internal static class TerminalDeathChecks
                 afterClear++; cacheDrops += before.Statistics!.StoredCards!.Except(actual.Statistics!.StoredCards!).Any() ? 1 : 0;
             }
         }
-        foreach (JsonElement sample in fixture.GetProperty("TriggeredDamage").EnumerateArray())
+        foreach (FixtureValue sample in fixture.GetProperty("TriggeredDamage").EnumerateArray())
         {
             if (sample.GetProperty("Stage").GetString() != "Application" || sample.GetProperty("TriggerKind").GetString() != "OnDeath") continue;
-            foreach (JsonElement request in sample.GetProperty("Requests").EnumerateArray())
+            foreach (FixtureValue request in sample.GetProperty("Requests").EnumerateArray())
             {
-                var context = request.GetProperty("Context").Deserialize<CombatContext>(ModelJson.Options)!;
+                var context = request.GetProperty("Context").Deserialize<CombatContext>()!;
                 if (context.KillCamActivated != true) continue;
                 Require(context.CardInstances!.Count == 0 && context.OtherPiles!.All(p => p.Cards.Count == 0), "Terminal OnDeath damage ran before native card clearing.");
                 lethalHits += request.GetProperty("AfterHealth").GetInt32() == 0 ? 1 : 0;

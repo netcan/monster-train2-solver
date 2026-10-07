@@ -1,3 +1,4 @@
+using MonsterTrain2Poju.Fixtures;
 using System.Text.Json;
 using MonsterTrain2Poju.Model;
 
@@ -94,21 +95,21 @@ internal static class CardGenerationChecks
         Require(JsonSerializer.Serialize(context) == parent, "Generation mutated its source cards, pending upgrades or RNG.");
         Console.WriteLine("GENERATION-CHECKS PASS: five piles, signed counts, pool/full-hand/duplicate timing, clone offsets/upgrades/exclusions, fresh counters/history, one-shot upgrades, unused ranges, gates and 32 parallel branches.");
     }
-    internal static void Native(JsonElement fixture)
+    internal static void Native(FixtureValue fixture)
     {
         int records = 0, cards = 0, refused = 0, empty = 0, copied = 0, pending = 0, initialized = 0, discardUpgrades = 0, unitTriggers = 0;
         var piles = new HashSet<string>();
-        foreach (JsonElement record in fixture.GetProperty("CardGenerations").EnumerateArray())
+        foreach (FixtureValue record in fixture.GetProperty("CardGenerations").EnumerateArray())
         {
-            CombatContext before = record.GetProperty("Before").Deserialize<CombatContext>(ModelJson.Options)!;
-            CombatContext actual = record.GetProperty("Actual").Deserialize<CombatContext>(ModelJson.Options)!;
-            CardGenerationRule rule = record.GetProperty("Rule").Deserialize<CardGenerationRule>(ModelJson.Options)!;
+            CombatContext before = record.GetProperty("Before").Deserialize<CombatContext>()!;
+            CombatContext actual = record.GetProperty("Actual").Deserialize<CombatContext>()!;
+            CardGenerationRule rule = record.GetProperty("Rule").Deserialize<CardGenerationRule>()!;
             CardGenerationResult predicted = CardGenerationModel.Apply(before, rule, record.GetProperty("SourceCardId").GetInt32());
             Require(predicted.Supported, "Native card generation unsupported: " + predicted.UnsupportedReason);
             string? difference = ModelJson.Difference(JsonSerializer.Serialize(predicted.Context), JsonSerializer.Serialize(actual));
             Require(difference == null, "Native card generation differs: " + difference);
             records++; cards += predicted.AddedCards.Count; piles.Add(rule.Destination);
-            if (record.TryGetProperty("Origin", out JsonElement origin) && origin.GetString() == "Unit") unitTriggers++;
+            if (record.TryGetProperty("Origin", out FixtureValue origin) && origin.GetString() == "Unit") unitTriggers++;
             if (predicted.AddedCards.Count == 0 && rule.Pool.Count > 0) refused++;
             if (rule.Pool.Count == 0) empty++;
             if (rule.CopyModifiers && predicted.AddedCards.Count > 0) copied++;

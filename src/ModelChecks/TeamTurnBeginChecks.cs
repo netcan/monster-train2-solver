@@ -1,3 +1,4 @@
+using MonsterTrain2Poju.Fixtures;
 using System.Text.Json;
 using MonsterTrain2Poju.Model;
 
@@ -71,31 +72,31 @@ internal static class TeamTurnBeginChecks
         Console.WriteLine("TEAM-TURN-BEGIN-CHECKS PASS: whole-team-before-attacks, ambush/enemy/player ordering, phase decomposition, once/repeat, silent/dazed/deployment gates, removal, preview and 32 parallel branches.");
     }
 
-    internal static void Native(JsonElement fixture)
+    internal static void Native(FixtureValue fixture)
     {
-        if (!fixture.TryGetProperty("ModifierScenario", out JsonElement scenario) || scenario.GetString() != "team-turn-begin") return;
+        if (!fixture.TryGetProperty("ModifierScenario", out FixtureValue scenario) || scenario.GetString() != "team-turn-begin") return;
         int phases = 0, enemy = 0, player = 0, roomBuffs = 0, callbacks = 0, unitTurns = 0, ambush = 0;
         var records = new List<(int Sequence, CombatTeam Team, RoomCombatState Before)>();
-        foreach (JsonElement phase in fixture.GetProperty("TeamTurnBegins").EnumerateArray())
+        foreach (FixtureValue phase in fixture.GetProperty("TeamTurnBegins").EnumerateArray())
         {
-            RoomCombatState before = phase.GetProperty("Before").Deserialize<RoomCombatState>(ModelJson.Options)!;
-            RoomCombatState after = phase.GetProperty("Actual").Deserialize<RoomCombatState>(ModelJson.Options)!;
+            RoomCombatState before = phase.GetProperty("Before").Deserialize<RoomCombatState>()!;
+            RoomCombatState after = phase.GetProperty("Actual").Deserialize<RoomCombatState>()!;
             CombatTeam team = (CombatTeam)phase.GetProperty("Team").GetInt32();
             var predicted = RoomCombatModel.ApplyTeamTurnBegin(before, team);
-            Require(predicted.Supported && phase.GetProperty("Difference").ValueKind == JsonValueKind.Null &&
+            Require(predicted.Supported && phase.GetProperty("Difference").ValueKind == FixtureKind.Null &&
                 ModelJson.Difference(JsonSerializer.Serialize(predicted.State), JsonSerializer.Serialize(after)) == null,
                 "Independent native team phase differs.");
             records.Add((phase.GetProperty("Sequence").GetInt32(), team, before));
             phases++; enemy += team == CombatTeam.Enemy ? 1 : 0; player += team == CombatTeam.Player ? 1 : 0;
             roomBuffs += after.Units.Count(unit => unit.Modifiers?.Upgrades.Any(upgrade => upgrade.AssetKey is "PojuTeamRoom" or "PojuTeamEnemyRoom") == true);
         }
-        foreach (JsonElement turn in fixture.GetProperty("UnitTurns").EnumerateArray())
+        foreach (FixtureValue turn in fixture.GetProperty("UnitTurns").EnumerateArray())
         {
-            RoomCombatState before = turn.GetProperty("Before").Deserialize<RoomCombatState>(ModelJson.Options)!;
-            RoomCombatState after = turn.GetProperty("Actual").Deserialize<RoomCombatState>(ModelJson.Options)!;
+            RoomCombatState before = turn.GetProperty("Before").Deserialize<RoomCombatState>()!;
+            RoomCombatState after = turn.GetProperty("Actual").Deserialize<RoomCombatState>()!;
             int id = turn.GetProperty("ActorId").GetInt32();
             var predicted = RoomCombatModel.ApplyUnitTurn(before, id);
-            Require(predicted.Supported && turn.GetProperty("Difference").ValueKind == JsonValueKind.Null &&
+            Require(predicted.Supported && turn.GetProperty("Difference").ValueKind == FixtureKind.Null &&
                 ModelJson.Difference(JsonSerializer.Serialize(predicted.State), JsonSerializer.Serialize(after)) == null &&
                 predicted.Events.Where(item => item.Kind == "Attack" && item.Actor == id).Select(item => item.Target)
                     .SequenceEqual(turn.GetProperty("AttackedTargetIds").Deserialize<int[]>()!), "Native team fixture unit turn/attack differs.");
@@ -107,17 +108,17 @@ internal static class TeamTurnBeginChecks
             if (heroPhase.Before != null && records.Any(record => record.Team == CombatTeam.Player && record.Before.RoomIndex == before.RoomIndex &&
                 record.Sequence > heroPhase.Sequence && record.Before.Context!.QueryFrame!.Turn == before.Context!.QueryFrame!.Turn)) ambush++;
         }
-        foreach (JsonElement sample in fixture.GetProperty("UnitUpgradeScaling").EnumerateArray())
+        foreach (FixtureValue sample in fixture.GetProperty("UnitUpgradeScaling").EnumerateArray())
         {
-            CombatContext before = sample.GetProperty("Before").Deserialize<CombatContext>(ModelJson.Options)!;
-            CombatContext after = sample.GetProperty("After").Deserialize<CombatContext>(ModelJson.Options)!;
+            CombatContext before = sample.GetProperty("Before").Deserialize<CombatContext>()!;
+            CombatContext after = sample.GetProperty("After").Deserialize<CombatContext>()!;
             ScalingUnitUpgradeTrait trait = sample.GetProperty("Trait").Deserialize<ScalingUnitUpgradeTrait>()!;
             CardUpgradeModifier original = sample.GetProperty("BeforeUpgrade").Deserialize<CardUpgradeModifier>()!;
             CardUpgradeModifier actual = sample.GetProperty("AfterUpgrade").Deserialize<CardUpgradeModifier>()!;
             string kind = sample.GetProperty("TriggerKind").GetString()!;
             var predicted = UnitUpgradeScalingModel.ApplyTrait(before, trait, sample.GetProperty("OwnerCardId").GetInt32(), original, kind);
-            Require(predicted.Supported && sample.GetProperty("Difference").ValueKind == JsonValueKind.Null &&
-                sample.GetProperty("CaptureError").ValueKind == JsonValueKind.Null && JsonSerializer.Serialize(predicted.Upgrade) == JsonSerializer.Serialize(actual) &&
+            Require(predicted.Supported && sample.GetProperty("Difference").ValueKind == FixtureKind.Null &&
+                sample.GetProperty("CaptureError").ValueKind == FixtureKind.Null && JsonSerializer.Serialize(predicted.Upgrade) == JsonSerializer.Serialize(actual) &&
                 JsonSerializer.Serialize(predicted.Context) == JsonSerializer.Serialize(after), "Native team callback differs.");
             callbacks += kind == "OnTeamTurnBegin" ? 1 : 0;
         }

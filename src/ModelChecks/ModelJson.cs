@@ -1,18 +1,13 @@
 using MonsterTrain2Poju.Model;
-using System.IO.Compression;
+using MonsterTrain2Poju.Fixtures;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
 internal static class ModelJson
 {
     internal static readonly JsonSerializerOptions Options = Create();
-    internal static JsonDocument ReadFixture(string path)
-    {
-        using var file = File.OpenRead(path);
-        if (!path.EndsWith(".gz", StringComparison.OrdinalIgnoreCase)) return JsonDocument.Parse(file);
-        using var decompressed = new GZipStream(file, CompressionMode.Decompress);
-        return JsonDocument.Parse(decompressed);
-    }
+    internal static FixtureDocument ReadFixture(string path) => path.EndsWith(".mt2f", StringComparison.OrdinalIgnoreCase)
+        ? FixtureDocument.Read(path) : LegacyFixtureImport.Read(path);
     internal static string? Difference(string predicted, string actual)
     {
         using var left = JsonDocument.Parse(predicted);

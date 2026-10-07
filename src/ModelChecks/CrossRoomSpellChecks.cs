@@ -1,3 +1,4 @@
+using MonsterTrain2Poju.Fixtures;
 using System.Text.Json;
 using MonsterTrain2Poju.Model;
 
@@ -106,15 +107,15 @@ internal static class CrossRoomSpellChecks
         Console.WriteLine("CROSS-ROOM-SPELL-CHECKS PASS: tower/front/global HP/random ordering, first-reference rooms, static bounds, remote deaths/heals/capacity and parallel isolation.");
     }
 
-    internal static void Native(JsonElement fixture)
+    internal static void Native(FixtureValue fixture)
     {
-        JsonElement[] native = fixture.GetProperty("CrossRoomTargets").EnumerateArray().ToArray();
+        FixtureValue[] native = fixture.GetProperty("CrossRoomTargets").EnumerateArray().ToArray();
         int plays = 0, collections = 0, remoteHeals = 0, multipleEnemyFloors = 0, survivingEnemies = 0;
         var modes = new HashSet<string>();
-        foreach (JsonElement entry in fixture.GetProperty("Actions").EnumerateArray())
+        foreach (FixtureValue entry in fixture.GetProperty("Actions").EnumerateArray())
         {
-            var before = entry.GetProperty("Before").Deserialize<BattleTurnState>(ModelJson.Options)!;
-            var actual = entry.GetProperty("Actual").Deserialize<BattleTurnState>(ModelJson.Options)!;
+            var before = entry.GetProperty("Before").Deserialize<BattleTurnState>()!;
+            var actual = entry.GetProperty("Actual").Deserialize<BattleTurnState>()!;
             var action = entry.GetProperty("Action").Deserialize<PlayCardAction>()!;
             CardToken card = before.Spawn.Train.Context!.Cards.Hand.Single(card => card.InstanceId == action.CardInstanceId);
             CardPlayRule rule = before.PlayRules!.Cards.Single(rule => rule.DataId == card.DataId);
@@ -127,7 +128,7 @@ internal static class CrossRoomSpellChecks
             foreach (SpellTargetCollection predicted in result.TargetCollections)
             {
                 Require(collections < native.Length, "The oracle lacks a live target collection.");
-                JsonElement recorded = native[collections++];
+                FixtureValue recorded = native[collections++];
                 Require(recorded.GetProperty("CardId").GetInt32() == action.CardInstanceId &&
                     recorded.GetProperty("EffectIndex").GetInt32() == predicted.EffectIndex &&
                     recorded.GetProperty("UnitIds").Deserialize<int[]>()!.SequenceEqual(predicted.UnitIds),

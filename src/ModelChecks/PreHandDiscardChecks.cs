@@ -1,3 +1,4 @@
+using MonsterTrain2Poju.Fixtures;
 using System.Text.Json;
 using MonsterTrain2Poju.Model;
 
@@ -89,21 +90,21 @@ internal static class PreHandDiscardChecks
     private static string Comparable(TrainCombatState state) => JsonSerializer.Serialize(new
     { state.Rooms, Movement = state.Movement.OrderBy(rule => rule.UnitId), state.EnemySlotsPerRoom, state.Context });
 
-    internal static void Native(JsonElement fixture)
+    internal static void Native(FixtureValue fixture)
     {
-        if (!fixture.TryGetProperty("ModifierScenario", out JsonElement scenario) || scenario.GetString() is not ("pre-hand-discard" or "pre-hand-discard-lethal" or "clone-upgrade-refresh")) return;
+        if (!fixture.TryGetProperty("ModifierScenario", out FixtureValue scenario) || scenario.GetString() is not ("pre-hand-discard" or "pre-hand-discard-lethal" or "clone-upgrade-refresh")) return;
         bool copying = scenario.GetString() == "clone-upgrade-refresh";
         bool lethal = scenario.GetString() != "pre-hand-discard";
         int phases = 0, player = 0, enemy = 0, generated = 0, deaths = 0, dazed = 0, silent = 0, callbacks = 0, priorEnergy = 0, deathOrder = 0;
         TrainCombatState? preceding = null; int? precedingTurn = null; CombatTeam? precedingTeam = null;
-        foreach (JsonElement phase in fixture.GetProperty("PreHandDiscards").EnumerateArray())
+        foreach (FixtureValue phase in fixture.GetProperty("PreHandDiscards").EnumerateArray())
         {
-            TrainCombatState before = phase.GetProperty("Before").Deserialize<TrainCombatState>(ModelJson.Options)!;
-            TrainCombatState after = phase.GetProperty("Actual").Deserialize<TrainCombatState>(ModelJson.Options)!;
+            TrainCombatState before = phase.GetProperty("Before").Deserialize<TrainCombatState>()!;
+            TrainCombatState after = phase.GetProperty("Actual").Deserialize<TrainCombatState>()!;
             CombatTeam team = (CombatTeam)phase.GetProperty("Team").GetInt32();
             int[] actors = phase.GetProperty("ActorIds").Deserialize<int[]>()!;
             var predicted = TrainCombatModel.EndTurnPreHandDiscard(before, team);
-            Require(predicted.Supported && phase.GetProperty("Difference").ValueKind == JsonValueKind.Null &&
+            Require(predicted.Supported && phase.GetProperty("Difference").ValueKind == FixtureKind.Null &&
                 ModelJson.Difference(Comparable(predicted.State!), Comparable(after)) == null, "Independent native pre-discard phase differs.");
             Require(actors.SequenceEqual(before.Rooms.SelectMany(room => room.Units).Where(unit => unit.Team == team)
                 .OrderBy(unit => unit.Id).Select(unit => unit.Id)), "Native active character order is not creation order.");
@@ -136,25 +137,25 @@ internal static class PreHandDiscardChecks
                 after.Context.Statistics.EnergyRemainingEndOfTurn == before.Context.Statistics.EnergyRemainingEndOfTurn,
                 "Pre-discard phase removed energy or overwrote the end-of-turn energy statistic.");
             if (team != CombatTeam.Enemy) continue;
-            JsonElement discard = fixture.GetProperty("CardCycles").EnumerateArray().Single(item =>
+            FixtureValue discard = fixture.GetProperty("CardCycles").EnumerateArray().Single(item =>
                 item.GetProperty("Kind").GetString() == "Discard" && item.GetProperty("Turn").GetInt32() == turn);
-            CardCycleState discardBefore = discard.GetProperty("Before").Deserialize<CardCycleState>(ModelJson.Options)!;
-            CardCycleState discardAfter = discard.GetProperty("Actual").Deserialize<CardCycleState>(ModelJson.Options)!;
+            CardCycleState discardBefore = discard.GetProperty("Before").Deserialize<CardCycleState>()!;
+            CardCycleState discardAfter = discard.GetProperty("Actual").Deserialize<CardCycleState>()!;
             Require(JsonSerializer.Serialize(discardBefore.Hand) == JsonSerializer.Serialize(after.Context.Cards.Hand) &&
                 discardAfter.Hand.Count == 0 && after.Context.Cards.Hand.All(card => discardAfter.Discard.Any(item => item.InstanceId == card.InstanceId)),
                 "Pre-discard generated hand did not immediately enter the same-turn discard.");
         }
-        foreach (JsonElement sample in fixture.GetProperty("UnitUpgradeScaling").EnumerateArray())
+        foreach (FixtureValue sample in fixture.GetProperty("UnitUpgradeScaling").EnumerateArray())
         {
-            CombatContext before = sample.GetProperty("Before").Deserialize<CombatContext>(ModelJson.Options)!;
-            CombatContext after = sample.GetProperty("After").Deserialize<CombatContext>(ModelJson.Options)!;
+            CombatContext before = sample.GetProperty("Before").Deserialize<CombatContext>()!;
+            CombatContext after = sample.GetProperty("After").Deserialize<CombatContext>()!;
             ScalingUnitUpgradeTrait trait = sample.GetProperty("Trait").Deserialize<ScalingUnitUpgradeTrait>()!;
             CardUpgradeModifier original = sample.GetProperty("BeforeUpgrade").Deserialize<CardUpgradeModifier>()!;
             CardUpgradeModifier actual = sample.GetProperty("AfterUpgrade").Deserialize<CardUpgradeModifier>()!;
             string kind = sample.GetProperty("TriggerKind").GetString()!;
             var predicted = UnitUpgradeScalingModel.ApplyTrait(before, trait, sample.GetProperty("OwnerCardId").GetInt32(), original, kind);
-            Require(predicted.Supported && sample.GetProperty("Difference").ValueKind == JsonValueKind.Null &&
-                sample.GetProperty("CaptureError").ValueKind == JsonValueKind.Null && JsonSerializer.Serialize(predicted.Upgrade) == JsonSerializer.Serialize(actual) &&
+            Require(predicted.Supported && sample.GetProperty("Difference").ValueKind == FixtureKind.Null &&
+                sample.GetProperty("CaptureError").ValueKind == FixtureKind.Null && JsonSerializer.Serialize(predicted.Upgrade) == JsonSerializer.Serialize(actual) &&
                 JsonSerializer.Serialize(predicted.Context) == JsonSerializer.Serialize(after), "Native pre-discard scaling callback differs.");
             if (kind != "EndTurnPreHandDiscard") continue;
             callbacks++;
@@ -163,7 +164,7 @@ internal static class PreHandDiscardChecks
         Require(phases > 0 && player == enemy && generated > 0 && dazed > 0 && silent > 0 && callbacks >= 4 && priorEnergy > 0 && (!lethal || deaths > 0 && (copying || deathOrder > 0)),
             "Native pre-discard fixture lacks both teams, generated-hand discard, gates, prior energy scaling or requested deaths.");
         if (lethal && !copying) Require(fixture.GetProperty("CardGenerations").EnumerateArray().Any(item =>
-            item.GetProperty("Origin").GetString() == "Unit" && item.GetProperty("Rule").GetProperty("Upgrade").ValueKind == JsonValueKind.Object &&
+            item.GetProperty("Origin").GetString() == "Unit" && item.GetProperty("Rule").GetProperty("Upgrade").ValueKind == FixtureKind.Object &&
             item.GetProperty("Rule").GetProperty("Upgrade").GetProperty("AssetKey").GetString() == "PojuPreDiscardDeathCard"),
             "Native lethal pre-discard fixture lacks distinct upgrades on queued death cards.");
         Console.WriteLine($"NATIVE-PRE-HAND-DISCARD-CHECKS PASS: {phases} complete phases ({player} player/{enemy} enemy), {generated} generated hand cards, {callbacks} callbacks, {priorEnergy} prior-energy samples, {deaths} nested deaths and {deathOrder} marked death-generation orders; complete states.");

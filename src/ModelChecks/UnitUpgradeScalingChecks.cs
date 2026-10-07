@@ -1,3 +1,4 @@
+using MonsterTrain2Poju.Fixtures;
 using System.Text.Json;
 using MonsterTrain2Poju.Model;
 
@@ -89,18 +90,18 @@ internal static class UnitUpgradeScalingChecks
         Require(owner.UnitUpgradeScalingTraits![0].AmountPerStat == 3, "Caller mutation changed ordered trait descriptors.");
         Console.WriteLine("UNIT-UPGRADE-SCALING-CHECKS PASS: mixed traits, signed/wrapped integers, native trigger/magic gates, query ordering, base-valued removal, creation/modification and 64 parallel branches.");
     }
-    internal static void Native(JsonElement fixture)
+    internal static void Native(FixtureValue fixture)
     {
-        if (!fixture.TryGetProperty("ModifierScenario", out JsonElement scenario) || scenario.GetString() != "unit-upgrade-scaling") return;
+        if (!fixture.TryGetProperty("ModifierScenario", out FixtureValue scenario) || scenario.GetString() != "unit-upgrade-scaling") return;
         Require(fixture.GetProperty("UnitUpgradeScalingCalibrationContextUnchanged").GetBoolean(), "Native callback calibration changed live state.");
         int calibration = 0, live = 0, signed = 0, grew = 0, magic = 0, skippedTrigger = 0, distinctOwner = 0;
         var stats = new HashSet<string>(); var queries = new HashSet<string>(); var moons = new HashSet<int>(); var turns = new HashSet<int>();
-        foreach (JsonElement sample in fixture.GetProperty("UnitUpgradeScaling").EnumerateArray())
+        foreach (FixtureValue sample in fixture.GetProperty("UnitUpgradeScaling").EnumerateArray())
         {
-            Require(sample.GetProperty("CaptureError").ValueKind == JsonValueKind.Null && sample.GetProperty("Difference").ValueKind == JsonValueKind.Null,
+            Require(sample.GetProperty("CaptureError").ValueKind == FixtureKind.Null && sample.GetProperty("Difference").ValueKind == FixtureKind.Null,
                 "Native upgrade callback capture is incomplete or differs.");
-            CombatContext before = sample.GetProperty("Before").Deserialize<CombatContext>(ModelJson.Options)!;
-            CombatContext after = sample.GetProperty("After").Deserialize<CombatContext>(ModelJson.Options)!;
+            CombatContext before = sample.GetProperty("Before").Deserialize<CombatContext>()!;
+            CombatContext after = sample.GetProperty("After").Deserialize<CombatContext>()!;
             ScalingUnitUpgradeTrait trait = sample.GetProperty("Trait").Deserialize<ScalingUnitUpgradeTrait>()!;
             CardUpgradeModifier original = sample.GetProperty("BeforeUpgrade").Deserialize<CardUpgradeModifier>()!;
             CardUpgradeModifier actual = sample.GetProperty("AfterUpgrade").Deserialize<CardUpgradeModifier>()!;

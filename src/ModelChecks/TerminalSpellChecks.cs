@@ -1,3 +1,4 @@
+using MonsterTrain2Poju.Fixtures;
 using MonsterTrain2Poju.Model;
 using System.Text.Json;
 
@@ -32,10 +33,10 @@ internal static class TerminalSpellChecks
         }
         Console.WriteLine("TERMINAL-SPELL-CHECKS PASS: settled callbacks, restored card instance, cleared cost and permanent/generated deck statistic membership.");
     }
-    internal static void Native(JsonElement entry)
+    internal static void Native(FixtureValue entry)
     {
-        BattleTurnState before = entry.GetProperty("Before").Deserialize<BattleTurnState>(ModelJson.Options)!;
-        BattleTurnState actual = entry.GetProperty("Actual").Deserialize<BattleTurnState>(ModelJson.Options)!;
+        BattleTurnState before = entry.GetProperty("Before").Deserialize<BattleTurnState>()!;
+        BattleTurnState actual = entry.GetProperty("Actual").Deserialize<BattleTurnState>()!;
         PlayCardAction action = entry.GetProperty("Action").Deserialize<PlayCardAction>()!;
         CombatContext old = before.Spawn.Train.Context!, settled = actual.Spawn.Train.Context!;
         CardInstanceState instance = old.CardInstances!.Single(card => card.InstanceId == action.CardInstanceId);

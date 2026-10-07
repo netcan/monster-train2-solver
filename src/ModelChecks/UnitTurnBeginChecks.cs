@@ -1,3 +1,4 @@
+using MonsterTrain2Poju.Fixtures;
 using System.Text.Json;
 using MonsterTrain2Poju.Model;
 
@@ -93,17 +94,17 @@ internal static class UnitTurnBeginChecks
         Console.WriteLine("UNIT-TURN-BEGIN-CHECKS PASS: zero/incapable attacks, empty targets, phase prevention, ignored/silent/deployment gates, repeat/once/multistrike, enemy turns, despawn, preview and 32 parallel branches.");
     }
 
-    internal static void Native(JsonElement fixture)
+    internal static void Native(FixtureValue fixture)
     {
-        if (!fixture.TryGetProperty("ModifierScenario", out JsonElement scenario) || scenario.GetString() != "unit-turn-begin") return;
+        if (!fixture.TryGetProperty("ModifierScenario", out FixtureValue scenario) || scenario.GetString() != "unit-turn-begin") return;
         int callbacks = 0, restricted = 0, scaling = 0, zeroGrowth = 0, dazed = 0, silent = 0, enemyTurns = 0, unitTurns = 0;
-        foreach (JsonElement sample in fixture.GetProperty("UnitUpgradeScaling").EnumerateArray())
+        foreach (FixtureValue sample in fixture.GetProperty("UnitUpgradeScaling").EnumerateArray())
         {
             Require(sample.GetProperty("TriggerKind").GetString() == "OnTurnBegin" &&
-                sample.GetProperty("Difference").ValueKind == JsonValueKind.Null && sample.GetProperty("CaptureError").ValueKind == JsonValueKind.Null,
+                sample.GetProperty("Difference").ValueKind == FixtureKind.Null && sample.GetProperty("CaptureError").ValueKind == FixtureKind.Null,
                 "Native turn callback capture is incomplete.");
-            CombatContext before = sample.GetProperty("Before").Deserialize<CombatContext>(ModelJson.Options)!;
-            CombatContext after = sample.GetProperty("After").Deserialize<CombatContext>(ModelJson.Options)!;
+            CombatContext before = sample.GetProperty("Before").Deserialize<CombatContext>()!;
+            CombatContext after = sample.GetProperty("After").Deserialize<CombatContext>()!;
             ScalingUnitUpgradeTrait trait = sample.GetProperty("Trait").Deserialize<ScalingUnitUpgradeTrait>()!;
             CardUpgradeModifier original = sample.GetProperty("BeforeUpgrade").Deserialize<CardUpgradeModifier>()!;
             CardUpgradeModifier actual = sample.GetProperty("AfterUpgrade").Deserialize<CardUpgradeModifier>()!;
@@ -113,11 +114,11 @@ internal static class UnitTurnBeginChecks
             callbacks++; restricted += trait.Restriction == 1 ? 1 : 0;
             scaling += trait.Query.Type == "TurnCount" && actual.Stats.Damage > original.Stats.Damage ? 1 : 0;
         }
-        foreach (JsonElement stage in fixture.GetProperty("Stages").EnumerateArray())
+        foreach (FixtureValue stage in fixture.GetProperty("Stages").EnumerateArray())
         {
             if (stage.GetProperty("Kind").GetString() != "Exchange") continue;
-            RoomCombatState before = stage.GetProperty("Before").Deserialize<RoomCombatState>(ModelJson.Options)!;
-            RoomCombatState after = stage.GetProperty("Actual").Deserialize<RoomCombatState>(ModelJson.Options)!;
+            RoomCombatState before = stage.GetProperty("Before").Deserialize<RoomCombatState>()!;
+            RoomCombatState after = stage.GetProperty("Actual").Deserialize<RoomCombatState>()!;
             foreach (CombatUnit unit in before.Units)
             {
                 CombatUnit? next = after.Units.FirstOrDefault(candidate => candidate.Id == unit.Id);
@@ -131,13 +132,13 @@ internal static class UnitTurnBeginChecks
                 if (unit.Statuses.Any(status => status.Id == "silenced") && ignoredFired && ordinarySkipped) silent++;
             }
         }
-        foreach (JsonElement turn in fixture.GetProperty("UnitTurns").EnumerateArray())
+        foreach (FixtureValue turn in fixture.GetProperty("UnitTurns").EnumerateArray())
         {
-            RoomCombatState before = turn.GetProperty("Before").Deserialize<RoomCombatState>(ModelJson.Options)!;
-            RoomCombatState after = turn.GetProperty("Actual").Deserialize<RoomCombatState>(ModelJson.Options)!;
+            RoomCombatState before = turn.GetProperty("Before").Deserialize<RoomCombatState>()!;
+            RoomCombatState after = turn.GetProperty("Actual").Deserialize<RoomCombatState>()!;
             int id = turn.GetProperty("ActorId").GetInt32();
             RoomCombatResult predicted = RoomCombatModel.ApplyUnitTurn(before, id);
-            Require(predicted.Supported && turn.GetProperty("Difference").ValueKind == JsonValueKind.Null &&
+            Require(predicted.Supported && turn.GetProperty("Difference").ValueKind == FixtureKind.Null &&
                 ModelJson.Difference(JsonSerializer.Serialize(predicted.State), JsonSerializer.Serialize(after)) == null &&
                 predicted.Events.Where(item => item.Kind == "Attack" && item.Actor == id).Select(item => item.Target)
                     .SequenceEqual(turn.GetProperty("AttackedTargetIds").Deserialize<int[]>()!),

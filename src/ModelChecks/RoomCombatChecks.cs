@@ -1,3 +1,4 @@
+using MonsterTrain2Poju.Fixtures;
 using System.Text.Json;
 using MonsterTrain2Poju.Model;
 
@@ -103,9 +104,9 @@ internal static class RoomCombatChecks
 
     private static void CheckNativeFixture(string path)
     {
-        using JsonDocument document = ModelJson.ReadFixture(path);
-        JsonElement fixture = document.RootElement;
-        Require(fixture.GetProperty("NativeWon").ValueKind is JsonValueKind.True or JsonValueKind.False,
+        using FixtureDocument document = ModelJson.ReadFixture(path);
+        FixtureValue fixture = document.RootElement;
+        Require(fixture.GetProperty("NativeWon").ValueKind is FixtureKind.True or FixtureKind.False,
             "Native fixture did not reach the end of the battle.");
         Require(fixture.GetProperty("CaptureFailures").GetInt32() == 0 &&
             fixture.GetProperty("Pending").GetInt32() == 0, "Fixture capture was incomplete.");
@@ -113,9 +114,9 @@ internal static class RoomCombatChecks
             Require(fixture.GetProperty("TerminalCaptureBoundary").GetString() == "AfterStopCombatLoop" &&
                 fixture.GetProperty("TerminalEffectsSettled").GetBoolean(), "Native terminal effects were not settled.");
         int matched = 0, unsupported = 0;
-        foreach (JsonElement stage in fixture.GetProperty("Stages").EnumerateArray())
+        foreach (FixtureValue stage in fixture.GetProperty("Stages").EnumerateArray())
         {
-            RoomCombatState state = stage.GetProperty("Before").Deserialize<RoomCombatState>(ModelJson.Options)!;
+            RoomCombatState state = stage.GetProperty("Before").Deserialize<RoomCombatState>()!;
             RoomCombatResult result = stage.GetProperty("Kind").GetString() == "Exchange"
                 ? RoomCombatModel.Exchange(state) : RoomCombatModel.Resolve(state);
             if (!result.Supported) { unsupported++; continue; }
@@ -126,7 +127,7 @@ internal static class RoomCombatChecks
             if (state.Context != null)
             {
                 CombatContext actualContext = stage.GetProperty("Actual").GetProperty("Context")
-                    .Deserialize<CombatContext>(ModelJson.Options)!;
+                    .Deserialize<CombatContext>()!;
                 Require(JsonSerializer.Serialize(result.State.Context) == JsonSerializer.Serialize(actualContext),
                     "Native room context difference at stage " + stage.GetProperty("Index"));
             }

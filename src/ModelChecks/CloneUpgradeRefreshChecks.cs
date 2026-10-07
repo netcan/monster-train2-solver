@@ -1,3 +1,4 @@
+using MonsterTrain2Poju.Fixtures;
 using System.Text.Json;
 using MonsterTrain2Poju.Model;
 
@@ -52,18 +53,18 @@ internal static class CloneUpgradeRefreshChecks
         Console.WriteLine("CLONE-UPGRADE-REFRESH-CHECKS PASS: positive damage/heal bases, protected/anonymous values, other statistics/offsets, temporary/optional/pending order, no-copy/missing-source gates, retained scaling descriptors and 32 parallel branches.");
     }
 
-    internal static void Native(JsonElement fixture)
+    internal static void Native(FixtureValue fixture)
     {
-        if (!fixture.TryGetProperty("ModifierScenario", out JsonElement scenario) || scenario.GetString() != "clone-upgrade-refresh") return;
+        if (!fixture.TryGetProperty("ModifierScenario", out FixtureValue scenario) || scenario.GetString() != "clone-upgrade-refresh") return;
         int records = 0, copies = 0, damage = 0, heal = 0, protectedValues = 0;
-        foreach (JsonElement item in fixture.GetProperty("CardGenerations").EnumerateArray())
+        foreach (FixtureValue item in fixture.GetProperty("CardGenerations").EnumerateArray())
         {
-            CombatContext before = item.GetProperty("Before").Deserialize<CombatContext>(ModelJson.Options)!;
-            CombatContext actual = item.GetProperty("Actual").Deserialize<CombatContext>(ModelJson.Options)!;
-            CardGenerationRule rule = item.GetProperty("Rule").Deserialize<CardGenerationRule>(ModelJson.Options)!;
+            CombatContext before = item.GetProperty("Before").Deserialize<CombatContext>()!;
+            CombatContext actual = item.GetProperty("Actual").Deserialize<CombatContext>()!;
+            CardGenerationRule rule = item.GetProperty("Rule").Deserialize<CardGenerationRule>()!;
             int sourceId = item.GetProperty("SourceCardId").GetInt32();
             var predicted = CardGenerationModel.Apply(before, rule, sourceId);
-            Require(predicted.Supported && item.GetProperty("Difference").ValueKind == JsonValueKind.Null &&
+            Require(predicted.Supported && item.GetProperty("Difference").ValueKind == FixtureKind.Null &&
                 ModelJson.Difference(JsonSerializer.Serialize(predicted.Context), JsonSerializer.Serialize(actual)) == null,
                 "Independent native clone refresh differs.");
             records++;

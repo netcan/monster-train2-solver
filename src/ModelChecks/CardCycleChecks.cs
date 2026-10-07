@@ -1,3 +1,4 @@
+using MonsterTrain2Poju.Fixtures;
 using System.Text.Json;
 using MonsterTrain2Poju.Model;
 
@@ -26,11 +27,11 @@ internal static class CardCycleChecks
         Console.WriteLine("CARD-CYCLE-CHECKS PASS: draw order, discard order, reshuffle, hand limits, parent isolation.");
     }
 
-    internal static void Native(JsonElement fixture)
+    internal static void Native(FixtureValue fixture)
     {
-        if (!fixture.TryGetProperty("CardCycles", out JsonElement cycles)) return;
+        if (!fixture.TryGetProperty("CardCycles", out FixtureValue cycles)) return;
         int matched = 0, unsupported = 0;
-        foreach (JsonElement cycle in cycles.EnumerateArray())
+        foreach (FixtureValue cycle in cycles.EnumerateArray())
         {
             CardCycleState before = Read(cycle.GetProperty("Before"));
             CardCycleResult result = cycle.GetProperty("Kind").GetString() == "Draw"
@@ -50,10 +51,10 @@ internal static class CardCycleChecks
 
     private static string Comparable(CardCycleState state) => JsonSerializer.Serialize(new
         { state.Hand, state.Draw, state.Discard, state.Rng, state.DrawModifier });
-    private static CardCycleState Read(JsonElement state)
+    private static CardCycleState Read(FixtureValue state)
     {
         // System.Text.Json needs an explicit adapter for the immutable four-word RNG struct.
-        JsonElement rng = state.GetProperty("Rng");
+        FixtureValue rng = state.GetProperty("Rng");
         return new CardCycleState(state.GetProperty("Hand").Deserialize<CardToken[]>()!,
             state.GetProperty("Draw").Deserialize<CardToken[]>()!,
             state.GetProperty("Discard").Deserialize<CardToken[]>()!,

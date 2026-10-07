@@ -1,3 +1,4 @@
+using MonsterTrain2Poju.Fixtures;
 using System.Text.Json;
 using MonsterTrain2Poju.Model;
 
@@ -104,20 +105,20 @@ internal static class DyingUpgradeChecks
         Require(JsonSerializer.Serialize(positiveRoot) == parent, "Dying upgrade simulation mutated its parent.");
         Console.WriteLine("DYING-UPGRADE PASS: positive/partial HP changes, dead statuses, permanent/battle/unit lifetimes, duplicate removals, unique/clone rules, retained terminal spawners, global callbacks, preview and 32 parallel branches.");
     }
-    internal static void Native(JsonElement fixture)
+    internal static void Native(FixtureValue fixture)
     {
         if (!fixture.TryGetProperty("ModifierScenario", out var scenario) || scenario.GetString() is not ("dying-upgrades" or "attack-triggers")) return;
         int dying = 0, slays = 0, hits = 0, deaths = 0, removals = 0, negativeHp = 0, negativeUnhealed = 0, unitOnly = 0, turns = 0;
-        foreach (JsonElement record in fixture.GetProperty("DyingUpgrades").EnumerateArray())
+        foreach (FixtureValue record in fixture.GetProperty("DyingUpgrades").EnumerateArray())
         {
-            Require(record.GetProperty("Completed").GetBoolean() && record.GetProperty("Actual").ValueKind == JsonValueKind.Object &&
+            Require(record.GetProperty("Completed").GetBoolean() && record.GetProperty("Actual").ValueKind == FixtureKind.Object &&
                 record.GetProperty("Interactions").GetArrayLength() == 0, "Native dying upgrade capture is incomplete or unsupported.");
-            CombatUnit[] targets = record.GetProperty("BeforeUnits").Deserialize<CombatUnit[]>(ModelJson.Options)!;
+            CombatUnit[] targets = record.GetProperty("BeforeUnits").Deserialize<CombatUnit[]>()!;
             if (targets.Length != 1 || targets[0].Health != 0) continue;
-            var before = record.GetProperty("Before").Deserialize<RoomCombatState>(ModelJson.Options)!;
-            var after = record.GetProperty("Actual").Deserialize<RoomCombatState>(ModelJson.Options)!;
-            var actual = record.GetProperty("ActualUnits").Deserialize<CombatUnit[]>(ModelJson.Options)!.Single();
-            var effect = record.GetProperty("Effect").Deserialize<CardActionEffect>(ModelJson.Options)!;
+            var before = record.GetProperty("Before").Deserialize<RoomCombatState>()!;
+            var after = record.GetProperty("Actual").Deserialize<RoomCombatState>()!;
+            var actual = record.GetProperty("ActualUnits").Deserialize<CombatUnit[]>()!.Single();
+            var effect = record.GetProperty("Effect").Deserialize<CardActionEffect>()!;
             string kind = record.GetProperty("Kind").GetString()!;
             var scope = new RoomCombatState(before.RoomIndex, before.Deployment, before.Units.Concat(targets).ToArray(),
                 before.ExternalInteractions, before.Context);
@@ -141,13 +142,13 @@ internal static class DyingUpgradeChecks
             negativeUnhealed += effect.Type != "RemoveUnitUpgrade" && effect.Upgrade!.UnhealedHealth < 0 ? 1 : 0;
             unitOnly += effect.Lifetime == "TemporaryUntilUnitDeath" ? 1 : 0;
         }
-        foreach (JsonElement turn in fixture.GetProperty("UnitTurns").EnumerateArray())
+        foreach (FixtureValue turn in fixture.GetProperty("UnitTurns").EnumerateArray())
         {
-            var before = turn.GetProperty("Before").Deserialize<RoomCombatState>(ModelJson.Options)!;
-            var after = turn.GetProperty("Actual").Deserialize<RoomCombatState>(ModelJson.Options)!;
+            var before = turn.GetProperty("Before").Deserialize<RoomCombatState>()!;
+            var after = turn.GetProperty("Actual").Deserialize<RoomCombatState>()!;
             int actor = turn.GetProperty("ActorId").GetInt32();
             var result = RoomCombatModel.ApplyUnitTurn(before, actor);
-            Require(result.Supported && turn.GetProperty("Difference").ValueKind == JsonValueKind.Null &&
+            Require(result.Supported && turn.GetProperty("Difference").ValueKind == FixtureKind.Null &&
                 ModelJson.Difference(JsonSerializer.Serialize(result.State), JsonSerializer.Serialize(after)) == null &&
                 result.Events.Where(e => e.Kind == "Attack" && e.Actor == actor).Select(e => e.Target)
                     .SequenceEqual(turn.GetProperty("AttackedTargetIds").Deserialize<int[]>()!), "Independent dying-upgrade unit turn differs.");

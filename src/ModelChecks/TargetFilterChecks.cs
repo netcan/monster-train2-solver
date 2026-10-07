@@ -1,3 +1,4 @@
+using MonsterTrain2Poju.Fixtures;
 using System.Text.Json;
 using MonsterTrain2Poju.Model;
 
@@ -69,13 +70,13 @@ internal static class TargetFilterChecks
         Console.WriteLine("TARGET-FILTER-CHECKS PASS: health/status/subtype/boss masks, native bypasses/precedence, candidate ordering, random legality/draws, metadata and parallel isolation.");
     }
 
-    internal static void Native(JsonElement fixture)
+    internal static void Native(FixtureValue fixture)
     {
-        JsonElement[] native = fixture.GetProperty("FilteredTargets").EnumerateArray().ToArray();
+        FixtureValue[] native = fixture.GetProperty("FilteredTargets").EnumerateArray().ToArray();
         int collections = 0, plays = 0, dropBypass = 0, frontBypass = 0, lastBypass = 0, subtypePrecedence = 0, bossExcluded = 0, emptyRandom = 0;
-        foreach (JsonElement entry in fixture.GetProperty("Actions").EnumerateArray())
+        foreach (FixtureValue entry in fixture.GetProperty("Actions").EnumerateArray())
         {
-            BattleTurnState before = entry.GetProperty("Before").Deserialize<BattleTurnState>(ModelJson.Options)!;
+            BattleTurnState before = entry.GetProperty("Before").Deserialize<BattleTurnState>()!;
             PlayCardAction action = entry.GetProperty("Action").Deserialize<PlayCardAction>()!;
             string dataId = before.Spawn.Train.Context!.Cards.Hand.Single(card => card.InstanceId == action.CardInstanceId).DataId;
             CardPlayRule rule = before.PlayRules!.Cards.Single(rule => rule.DataId == dataId);
@@ -87,7 +88,7 @@ internal static class TargetFilterChecks
             foreach (SpellTargetCollection collection in result.TargetCollections)
             {
                 Require(collections < native.Length, "The native filtered target oracle is missing a collection.");
-                JsonElement record = native[collections++];
+                FixtureValue record = native[collections++];
                 CardActionEffect effect = rule.Effects[collection.EffectIndex];
                 Require(record.GetProperty("CardId").GetInt32() == action.CardInstanceId && record.GetProperty("EffectIndex").GetInt32() == collection.EffectIndex &&
                     record.GetProperty("UnitIds").Deserialize<int[]>()!.SequenceEqual(collection.UnitIds),

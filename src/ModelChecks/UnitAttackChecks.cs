@@ -1,3 +1,4 @@
+using MonsterTrain2Poju.Fixtures;
 using System.Text.Json;
 using MonsterTrain2Poju.Model;
 
@@ -62,12 +63,12 @@ internal static class UnitAttackChecks
         Console.WriteLine("UNIT-ATTACK-CHECKS PASS: raw negative balance, capability, zero/negative values, casting, auxiliary gates, source ownership, remote state and parallel branches.");
     }
 
-    internal static void Native(JsonElement actions)
+    internal static void Native(FixtureValue actions)
     {
         int plays = 0, remote = 0, incapable = 0, zeroAttack = 0, rawDebtRecovered = 0;
-        foreach (JsonElement entry in actions.EnumerateArray())
+        foreach (FixtureValue entry in actions.EnumerateArray())
         {
-            BattleTurnState before = entry.GetProperty("Before").Deserialize<BattleTurnState>(ModelJson.Options)!;
+            BattleTurnState before = entry.GetProperty("Before").Deserialize<BattleTurnState>()!;
             PlayCardAction action = entry.GetProperty("Action").Deserialize<PlayCardAction>()!;
             CombatContext context = before.Spawn.Train.Context!;
             string dataId = context.Cards.Hand.Single(card => card.InstanceId == action.CardInstanceId).DataId;
@@ -76,7 +77,7 @@ internal static class UnitAttackChecks
             plays++;
             Require(rule.Effects[0].Target == "Tower" && rule.Effects.Any(effect => effect.Type == "DebuffAttack" && effect.Value < 0) &&
                 rule.Effects.Any(effect => effect.Type == "BuffAttack" && effect.Value == 0), "Attack oracle lacks global incapable targets or no-op values.");
-            BattleTurnState actual = entry.GetProperty("Actual").Deserialize<BattleTurnState>(ModelJson.Options)!;
+            BattleTurnState actual = entry.GetProperty("Actual").Deserialize<BattleTurnState>()!;
             CombatUnit[] after = actual.Spawn.Train.Rooms.SelectMany(room => room.Units).ToArray();
             int randomRecipients = 0;
             foreach (RoomCombatState room in before.Spawn.Train.Rooms)

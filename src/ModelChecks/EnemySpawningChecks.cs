@@ -1,3 +1,4 @@
+using MonsterTrain2Poju.Fixtures;
 using MonsterTrain2Poju.Model;
 using System.Text.Json;
 
@@ -43,16 +44,16 @@ internal static class EnemySpawningChecks
     private static void Require(bool condition, string message)
     { if (!condition) throw new InvalidOperationException(message); }
 
-    internal static void Native(JsonElement fixture)
+    internal static void Native(FixtureValue fixture)
     {
-        if (!fixture.TryGetProperty("Spawns", out JsonElement spawns)) return;
+        if (!fixture.TryGetProperty("Spawns", out FixtureValue spawns)) return;
         int matched = 0, unsupported = 0;
-        foreach (JsonElement spawn in spawns.EnumerateArray())
+        foreach (FixtureValue spawn in spawns.EnumerateArray())
         {
-            EnemySpawnState before = spawn.GetProperty("Before").Deserialize<EnemySpawnState>(ModelJson.Options)!;
+            EnemySpawnState before = spawn.GetProperty("Before").Deserialize<EnemySpawnState>()!;
             EnemySpawnResult predicted = EnemySpawningModel.Spawn(before, spawn.GetProperty("IncludeTreasure").GetBoolean());
             if (!predicted.Supported) { unsupported++; continue; }
-            EnemySpawnState actual = spawn.GetProperty("Actual").Deserialize<EnemySpawnState>(ModelJson.Options)!;
+            EnemySpawnState actual = spawn.GetProperty("Actual").Deserialize<EnemySpawnState>()!;
             Require(Comparable(predicted.State!) == Comparable(actual), "Native spawning differs at index " + spawn.GetProperty("Index"));
             matched++;
         }

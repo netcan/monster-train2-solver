@@ -1,3 +1,4 @@
+using MonsterTrain2Poju.Fixtures;
 using System.Text.Json;
 using MonsterTrain2Poju.Model;
 
@@ -6,9 +7,9 @@ internal static class StandbyPileChecks
     internal static void Native(string path)
     {
         using var document = ModelJson.ReadFixture(path);
-        JsonElement entry = document.RootElement.GetProperty("Entry");
-        BattleTurnState before = entry.GetProperty("Before").Deserialize<BattleTurnState>(ModelJson.Options)!;
-        BattleTurnState actual = entry.GetProperty("Actual").Deserialize<BattleTurnState>(ModelJson.Options)!;
+        FixtureValue entry = document.RootElement.GetProperty("Entry");
+        BattleTurnState before = entry.GetProperty("Before").Deserialize<BattleTurnState>()!;
+        BattleTurnState actual = entry.GetProperty("Actual").Deserialize<BattleTurnState>()!;
         PlayCardAction action = entry.GetProperty("Action").Deserialize<PlayCardAction>()!;
         CardPileState standby = before.OtherPiles.Single(pile => pile.Name == "Standby");
         if (standby.FreeSlots == null || standby.FreeSlots.Count == 0 || standby.EntrySlots == null)

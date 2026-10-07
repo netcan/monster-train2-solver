@@ -1,3 +1,4 @@
+using MonsterTrain2Poju.Fixtures;
 using System.Text.Json;
 using MonsterTrain2Poju.Model;
 
@@ -152,13 +153,13 @@ internal static class RoomSpellChecks
         Console.WriteLine("ROOM-SPELL-CHECKS PASS: collection order/filters/ties, sticky/drop last groups, dead references, area upgrades/healing, cast tests, cancellation, action legality and parallel isolation.");
     }
 
-    internal static void Native(JsonElement actions)
+    internal static void Native(FixtureValue actions)
     {
         int areaPlays = 0, multipleHealed = 0, multipleDamaged = 0, enemyFollowups = 0;
-        foreach (JsonElement entry in actions.EnumerateArray())
+        foreach (FixtureValue entry in actions.EnumerateArray())
         {
-            BattleTurnState before = entry.GetProperty("Before").Deserialize<BattleTurnState>(ModelJson.Options)!;
-            BattleTurnState actual = entry.GetProperty("Actual").Deserialize<BattleTurnState>(ModelJson.Options)!;
+            BattleTurnState before = entry.GetProperty("Before").Deserialize<BattleTurnState>()!;
+            BattleTurnState actual = entry.GetProperty("Actual").Deserialize<BattleTurnState>()!;
             PlayCardAction action = entry.GetProperty("Action").Deserialize<PlayCardAction>()!;
             string dataId = before.Spawn.Train.Context!.Cards.Hand.Single(card => card.InstanceId == action.CardInstanceId).DataId;
             CardPlayRule rule = before.PlayRules!.Cards.Single(card => card.DataId == dataId);

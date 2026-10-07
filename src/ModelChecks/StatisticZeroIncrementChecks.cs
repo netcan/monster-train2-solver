@@ -1,3 +1,4 @@
+using MonsterTrain2Poju.Fixtures;
 using System.Text.Json;
 using MonsterTrain2Poju.Model;
 
@@ -51,11 +52,11 @@ internal static class StatisticZeroIncrementChecks
     internal static void Native(string path)
     {
         using var document = ModelJson.ReadFixture(path);
-        JsonElement fixture = document.RootElement;
+        FixtureValue fixture = document.RootElement;
         Require(fixture.GetProperty("LiveContextUnchanged").GetBoolean(), "Native zero calibration changed live context.");
         int samples = 0, detached = 0, events = 0, wraps = 0;
         var types = new HashSet<string>();
-        foreach (JsonElement sample in fixture.GetProperty("Samples").EnumerateArray())
+        foreach (FixtureValue sample in fixture.GetProperty("Samples").EnumerateArray())
         {
             string type = sample.GetProperty("Type").GetString()!;
             int id = sample.GetProperty("SourceCardId").GetInt32();

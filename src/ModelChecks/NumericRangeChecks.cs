@@ -1,3 +1,4 @@
+using MonsterTrain2Poju.Fixtures;
 using System.Text.Json;
 using MonsterTrain2Poju.Model;
 
@@ -89,19 +90,19 @@ internal static class NumericRangeChecks
         Console.WriteLine("NUMERIC-RANGE-CHECKS PASS: test/apply draws, shared quantities, upgrades, signed/fractional/equal/reversed bounds, empty/gated effects and parallel isolation.");
     }
 
-    internal static void Native(JsonElement fixture)
+    internal static void Native(FixtureValue fixture)
     {
-        JsonElement[] actions = fixture.GetProperty("Actions").EnumerateArray().ToArray();
-        JsonElement[] turns = fixture.GetProperty("Turns").EnumerateArray().ToArray();
-        JsonElement[] samples = fixture.GetProperty("NumericRanges").EnumerateArray().ToArray();
+        FixtureValue[] actions = fixture.GetProperty("Actions").EnumerateArray().ToArray();
+        FixtureValue[] turns = fixture.GetProperty("Turns").EnumerateArray().ToArray();
+        FixtureValue[] samples = fixture.GetProperty("NumericRanges").EnumerateArray().ToArray();
         var phases = new HashSet<string>(); var types = new HashSet<string>();
         int equal = 0, signed = 0, fractional = 0, changed = 0, postBoss = 0;
-        foreach (JsonElement sample in samples)
+        foreach (FixtureValue sample in samples)
         {
             int actionIndex = sample.GetProperty("ActionIndex").GetInt32(), effectIndex = sample.GetProperty("EffectIndex").GetInt32();
             string phase = sample.GetProperty("Phase").GetString()!;
-            JsonElement entry = actionIndex >= 0 ? actions[actionIndex] : turns[sample.GetProperty("TurnIndex").GetInt32()];
-            BattleTurnState before = entry.GetProperty(phase == "Highlight" ? "Actual" : "Before").Deserialize<BattleTurnState>(ModelJson.Options)!;
+            FixtureValue entry = actionIndex >= 0 ? actions[actionIndex] : turns[sample.GetProperty("TurnIndex").GetInt32()];
+            BattleTurnState before = entry.GetProperty(phase == "Highlight" ? "Actual" : "Before").Deserialize<BattleTurnState>()!;
             CombatContext context = before.Spawn.Train.Context!;
             CardInstanceState card = context.CardInstances!.Single(card => card.InstanceId == sample.GetProperty("CardId").GetInt32());
             CardPlayRule rule = before.PlayRules!.Cards.Single(rule => rule.DataId == card.DataId);
@@ -110,8 +111,8 @@ internal static class NumericRangeChecks
             var range = new CardEffectRange(sample.GetProperty("Min").GetInt32(), sample.GetProperty("Max").GetInt32(), sample.GetProperty("Multiplier").GetSingle());
             Require(range.Min == effect.Range!.Min && range.Max == effect.Range.Max && range.Multiplier == effect.Range.Multiplier,
                 "Native range endpoints differ from captured definition and live modifiers.");
-            UnityRng rngBefore = sample.GetProperty("Before").Deserialize<UnityRng>(ModelJson.Options);
-            UnityRng rngAfter = sample.GetProperty("After").Deserialize<UnityRng>(ModelJson.Options);
+            UnityRng rngBefore = sample.GetProperty("Before").Deserialize<UnityRng>();
+            UnityRng rngAfter = sample.GetProperty("After").Deserialize<UnityRng>();
             RngDraw expected = range.Sample(rngBefore);
             Require(expected.Value == sample.GetProperty("Value").GetInt32() && expected.State.Equals(rngAfter), "Native range value or complete RNG state differs.");
             phases.Add(phase); types.Add(effect.Type);
@@ -127,7 +128,7 @@ internal static class NumericRangeChecks
         foreach (var group in samples.Where(sample => sample.GetProperty("ActionIndex").GetInt32() >= 0 && sample.GetProperty("Phase").GetString() != "Highlight")
             .GroupBy(sample => sample.GetProperty("ActionIndex").GetInt32()))
         {
-            BattleTurnState before = actions[group.Key].GetProperty("Before").Deserialize<BattleTurnState>(ModelJson.Options)!;
+            BattleTurnState before = actions[group.Key].GetProperty("Before").Deserialize<BattleTurnState>()!;
             PlayCardAction action = actions[group.Key].GetProperty("Action").Deserialize<PlayCardAction>()!;
             string dataId = before.Spawn.Train.Context!.Cards.Hand.Single(card => card.InstanceId == action.CardInstanceId).DataId;
             var damageIndices = before.PlayRules!.Cards.Single(card => card.DataId == dataId).Effects.Select((effect, index) => (effect, index))

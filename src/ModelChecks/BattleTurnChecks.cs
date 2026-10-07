@@ -1,27 +1,28 @@
+using MonsterTrain2Poju.Fixtures;
 using MonsterTrain2Poju.Model;
 using System.Text.Json;
 
 internal static class BattleTurnChecks
 {
-    internal static void Native(JsonElement fixture)
+    internal static void Native(FixtureValue fixture)
     {
-        if (!fixture.TryGetProperty("Turns", out JsonElement turns) || turns.GetArrayLength() == 0) return;
+        if (!fixture.TryGetProperty("Turns", out FixtureValue turns) || turns.GetArrayLength() == 0) return;
         int matched = 0, unsupported = 0;
-        foreach (JsonElement turn in turns.EnumerateArray())
+        foreach (FixtureValue turn in turns.EnumerateArray())
         {
-            BattleTurnState before = turn.GetProperty("Before").Deserialize<BattleTurnState>(ModelJson.Options)!;
+            BattleTurnState before = turn.GetProperty("Before").Deserialize<BattleTurnState>()!;
             BattleTurnResult result = BattleTurnModel.EndTurn(before);
             if (!result.Supported) { unsupported++; continue; }
-            BattleTurnState actual = turn.GetProperty("Actual").Deserialize<BattleTurnState>(ModelJson.Options)!;
+            BattleTurnState actual = turn.GetProperty("Actual").Deserialize<BattleTurnState>()!;
             Require(result.Outcome == (RoomOutcome)turn.GetProperty("ActualOutcome").GetInt32() &&
                 Comparable(result.State!) == Comparable(actual), "Native EndTurn differs at index " + turn.GetProperty("Index"));
             matched++;
         }
         Console.WriteLine($"NATIVE-TURN-CHECKS PASS: {matched} matched, {unsupported} unsupported.");
         if (unsupported > 0) return;
-        if (fixture.TryGetProperty("Policy", out JsonElement policy) &&
+        if (fixture.TryGetProperty("Policy", out FixtureValue policy) &&
             policy.GetString() is "units-and-junk" or "units-spells-and-junk") return;
-        BattleTurnState root = turns[0].GetProperty("Before").Deserialize<BattleTurnState>(ModelJson.Options)!;
+        BattleTurnState root = turns[0].GetProperty("Before").Deserialize<BattleTurnState>()!;
         string parent = JsonSerializer.Serialize(root);
         BattleTurnState terminal = RunIndependentChain(root, turns);
         Require(JsonSerializer.Serialize(root) == parent, "Full battle simulation mutated its root.");
@@ -32,7 +33,7 @@ internal static class BattleTurnChecks
         Console.WriteLine($"NATIVE-FULL-CHAIN-CHECKS PASS: {turns.GetArrayLength()} EndTurns, final Pyre {hp}, independent root and 16 parallel branches.");
     }
 
-    private static BattleTurnState RunIndependentChain(BattleTurnState root, JsonElement oracle)
+    private static BattleTurnState RunIndependentChain(BattleTurnState root, FixtureValue oracle)
     {
         // All following states come from the model. Native Before/Predicted states are never injected.
         BattleSimulationResult simulation = BattleSimulator.ResolveNoMoreCards(root);
@@ -42,8 +43,8 @@ internal static class BattleTurnChecks
         {
             BattleTurnResult result = simulation.Turns[index];
             Require(result.Supported, "Independent full chain rejected turn " + index + ": " + result.UnsupportedReason);
-            JsonElement actualTurn = oracle[index];
-            BattleTurnState actual = actualTurn.GetProperty("Actual").Deserialize<BattleTurnState>(ModelJson.Options)!;
+            FixtureValue actualTurn = oracle[index];
+            BattleTurnState actual = actualTurn.GetProperty("Actual").Deserialize<BattleTurnState>()!;
             Require(result.Outcome == (RoomOutcome)actualTurn.GetProperty("ActualOutcome").GetInt32() &&
                 Comparable(result.State!) == Comparable(actual), "Independent full chain diverged at turn " + index);
             bool terminal = result.Outcome is RoomOutcome.BattleWon or RoomOutcome.PlayerDefeated;

@@ -1,3 +1,4 @@
+using MonsterTrain2Poju.Fixtures;
 using System.Text.Json;
 using MonsterTrain2Poju.Model;
 
@@ -111,15 +112,15 @@ internal static class DynamicStatisticChecks
             "An exact room cycle invented a stopped native combat loop: " + stuck.UnsupportedReason);
     }
 
-    internal static void Native(JsonElement fixture)
+    internal static void Native(FixtureValue fixture)
     {
         if (fixture.GetProperty("Schema").GetInt32() < 23) return;
         int decisions = 0;
         foreach (string collection in new[] { "Actions", "Turns" })
-        foreach (JsonElement record in fixture.GetProperty(collection).EnumerateArray())
+        foreach (FixtureValue record in fixture.GetProperty(collection).EnumerateArray())
         foreach (string side in new[] { "Before", "Actual" })
         {
-            BattleTurnState state = record.GetProperty(side).Deserialize<BattleTurnState>(ModelJson.Options)!;
+            BattleTurnState state = record.GetProperty(side).Deserialize<BattleTurnState>()!;
             StatisticQueryFrame frame = state.Spawn.Train.Context!.QueryFrame!;
             bool terminal = side == "Actual" && record.GetProperty("ActualOutcome").GetInt32() is
                 (int)RoomOutcome.BattleWon or (int)RoomOutcome.PlayerDefeated;
@@ -135,9 +136,9 @@ internal static class DynamicStatisticChecks
         {
             var moons = new HashSet<int>(); var turns = new HashSet<int>();
             bool spell = false, endTurn = false, differingGold = false, unusedEnergy = false;
-            foreach (JsonElement sample in fixture.GetProperty("DamageScaling").EnumerateArray())
+            foreach (FixtureValue sample in fixture.GetProperty("DamageScaling").EnumerateArray())
             {
-                CombatContext before = sample.GetProperty("Before").Deserialize<CombatContext>(ModelJson.Options)!;
+                CombatContext before = sample.GetProperty("Before").Deserialize<CombatContext>()!;
                 StatisticQueryFrame frame = before.QueryFrame!;
                 Require(frame != null && frame.ForgePoints == 7 && frame.DragonsHoard == 9 && frame.PyreResurrectionCount == 0 &&
                     frame.RunningCombat == true && frame.ActiveBattle, "Native resource fixture inputs are incomplete.");

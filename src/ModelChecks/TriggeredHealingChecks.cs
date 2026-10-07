@@ -1,3 +1,4 @@
+using MonsterTrain2Poju.Fixtures;
 using System.Text.Json;
 using MonsterTrain2Poju.Model;
 
@@ -101,18 +102,18 @@ internal static class TriggeredHealingChecks
         Console.WriteLine("TRIGGERED-HEALING-CHECKS PASS: self/team/filter targets, healability/multiplier/immunity/clipping, zero/negative, nested once/upgrades, tests/cancel, group/random/empty range RNG and 32 isolated parallel branches.");
     }
 
-    internal static void Native(JsonElement fixture)
+    internal static void Native(FixtureValue fixture)
     {
-        if (!fixture.TryGetProperty("ModifierScenario", out JsonElement scenario) || scenario.GetString() != "triggered-healing") return;
+        if (!fixture.TryGetProperty("ModifierScenario", out FixtureValue scenario) || scenario.GetString() != "triggered-healing") return;
         int phases = 0, samples = 0, empty = 0, group = 0, random = 0, zero = 0, negative = 0, immune = 0, restored = 0, sourceModifiers = 0, deferred = 0, deferredOrder = 0;
         string Comparable(TrainCombatState state) => JsonSerializer.Serialize(new
         { state.Rooms, Movement = state.Movement.OrderBy(rule => rule.UnitId), state.EnemySlotsPerRoom, state.Context });
-        foreach (JsonElement phase in fixture.GetProperty("PreCombats").EnumerateArray())
+        foreach (FixtureValue phase in fixture.GetProperty("PreCombats").EnumerateArray())
         {
-            var before = phase.GetProperty("Before").Deserialize<TrainCombatState>(ModelJson.Options)!;
-            var after = phase.GetProperty("Actual").Deserialize<TrainCombatState>(ModelJson.Options)!;
+            var before = phase.GetProperty("Before").Deserialize<TrainCombatState>()!;
+            var after = phase.GetProperty("Actual").Deserialize<TrainCombatState>()!;
             var result = TrainCombatModel.PreCombat(before, (CombatTeam)phase.GetProperty("Team").GetInt32());
-            Require(result.Supported && phase.GetProperty("Difference").ValueKind == JsonValueKind.Null &&
+            Require(result.Supported && phase.GetProperty("Difference").ValueKind == FixtureKind.Null &&
                 ModelJson.Difference(Comparable(result.State!), Comparable(after)) == null, "Independent native triggered-healing phase differs.");
             sourceModifiers += before.Context!.CardInstances!.Count(card => card.Permanent.Offsets.Heal == 9 ||
                 card.Permanent.Upgrades.Any(upgrade => upgrade.Stats.Heal == 9));
@@ -129,22 +130,22 @@ internal static class TriggeredHealingChecks
             }
             phases++;
         }
-        foreach (JsonElement sample in fixture.GetProperty("TriggeredHeals").EnumerateArray())
+        foreach (FixtureValue sample in fixture.GetProperty("TriggeredHeals").EnumerateArray())
         {
             Require(sample.GetProperty("Completed").GetBoolean() && sample.GetProperty("Sampled").GetBoolean() &&
-                sample.GetProperty("Difference").ValueKind == JsonValueKind.Null && sample.GetProperty("TriggerKind").GetString() == "PreCombat",
+                sample.GetProperty("Difference").ValueKind == FixtureKind.Null && sample.GetProperty("TriggerKind").GetString() == "PreCombat",
                 "Native triggered-healing observation is incomplete.");
-            CardActionEffect effect = sample.GetProperty("Effect").Deserialize<CardActionEffect>(ModelJson.Options)!;
-            UnityRng before = sample.GetProperty("BeforeRng").Deserialize<UnityRng>(ModelJson.Options);
+            CardActionEffect effect = sample.GetProperty("Effect").Deserialize<CardActionEffect>()!;
+            UnityRng before = sample.GetProperty("BeforeRng").Deserialize<UnityRng>();
             RngDraw? draw = effect.Range?.Sample(before);
             int value = draw?.Value ?? effect.Value;
-            Require(value == sample.GetProperty("Amount").GetInt32() && (draw?.State ?? before).Equals(sample.GetProperty("SampledRng").Deserialize<UnityRng>(ModelJson.Options)),
+            Require(value == sample.GetProperty("Amount").GetInt32() && (draw?.State ?? before).Equals(sample.GetProperty("SampledRng").Deserialize<UnityRng>()),
                 "Independent native triggered-healing amount/RNG differs.");
             int[] targets = sample.GetProperty("Targets").Deserialize<int[]>()!;
             var requests = sample.GetProperty("Requests").EnumerateArray().ToArray();
             Require(targets.SequenceEqual(requests.Select(request => request.GetProperty("TargetId").GetInt32())) &&
                 requests.All(request => request.GetProperty("Amount").GetInt32() == value), "Native group healing changed target order or sampled per target.");
-            foreach (JsonElement request in requests)
+            foreach (FixtureValue request in requests)
             {
                 int amount = request.GetProperty("Amount").GetInt32(), health = request.GetProperty("Health").GetInt32();
                 CombatStatus[] statuses = request.GetProperty("Statuses").Deserialize<CombatStatus[]>()!;

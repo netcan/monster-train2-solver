@@ -1,3 +1,4 @@
+using MonsterTrain2Poju.Fixtures;
 using MonsterTrain2Poju.Model;
 using System.Text.Json;
 
@@ -62,17 +63,17 @@ internal static class TrainCombatChecks
     private static void Require(bool condition, string message)
     { if (!condition) throw new InvalidOperationException(message); }
 
-    internal static void Native(JsonElement fixture)
+    internal static void Native(FixtureValue fixture)
     {
-        if (!fixture.TryGetProperty("TrainPhases", out JsonElement phases)) return;
+        if (!fixture.TryGetProperty("TrainPhases", out FixtureValue phases)) return;
         int matched = 0, unsupported = 0;
-        foreach (JsonElement phase in phases.EnumerateArray())
+        foreach (FixtureValue phase in phases.EnumerateArray())
         {
-            TrainCombatState before = phase.GetProperty("Before").Deserialize<TrainCombatState>(ModelJson.Options)!;
+            TrainCombatState before = phase.GetProperty("Before").Deserialize<TrainCombatState>()!;
             TrainCombatResult result = phase.GetProperty("Kind").GetString() == "Combat"
                 ? TrainCombatModel.ResolveCombat(before) : TrainCombatModel.Ascend(before);
             if (!result.Supported) { unsupported++; continue; }
-            TrainCombatState actual = phase.GetProperty("Actual").Deserialize<TrainCombatState>(ModelJson.Options)!;
+            TrainCombatState actual = phase.GetProperty("Actual").Deserialize<TrainCombatState>()!;
             Require(Comparable(result.State!) == Comparable(actual),
                 "Native train state differs at phase " + phase.GetProperty("Index"));
             matched++;

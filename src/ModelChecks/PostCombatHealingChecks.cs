@@ -1,3 +1,4 @@
+using MonsterTrain2Poju.Fixtures;
 using System.Text.Json;
 using MonsterTrain2Poju.Model;
 
@@ -85,18 +86,18 @@ internal static class PostCombatHealingChecks
         Require(JsonSerializer.Serialize(root) == parent, "Post-combat healing changed its parent.");
         Console.WriteLine("POST-COMBAT-HEALING-CHECKS PASS: per-actor/team order, healing vs trigger prevention, daze after status clearing, incapable/silenced units, once/deployment/relentless/preview and 32 parallel branches.");
     }
-    internal static void Native(JsonElement fixture)
+    internal static void Native(FixtureValue fixture)
     {
-        if (!fixture.TryGetProperty("ModifierScenario", out JsonElement scenario) || scenario.GetString() != "post-combat-healing") return;
+        if (!fixture.TryGetProperty("ModifierScenario", out FixtureValue scenario) || scenario.GetString() != "post-combat-healing") return;
         int phases = 0, blocked = 0, healed = 0, silenced = 0, ordinary = 0, once = 0;
-        foreach (JsonElement phase in fixture.GetProperty("UnitPostCombats").EnumerateArray())
+        foreach (FixtureValue phase in fixture.GetProperty("UnitPostCombats").EnumerateArray())
         {
-            var before = phase.GetProperty("Before").Deserialize<RoomCombatState>(ModelJson.Options)!;
-            var after = phase.GetProperty("Actual").Deserialize<RoomCombatState>(ModelJson.Options)!;
+            var before = phase.GetProperty("Before").Deserialize<RoomCombatState>()!;
+            var after = phase.GetProperty("Actual").Deserialize<RoomCombatState>()!;
             int[] cannotHeal = phase.GetProperty("CannotAttackOrHeal").Deserialize<int[]>()!;
             int[] cannotTrigger = phase.GetProperty("CannotFireTriggers").Deserialize<int[]>()!;
             var result = RoomCombatModel.ApplyUnitPostCombat(before, cannotHeal, cannotTrigger);
-            Require(result.Supported && phase.GetProperty("Difference").ValueKind == JsonValueKind.Null &&
+            Require(result.Supported && phase.GetProperty("Difference").ValueKind == FixtureKind.Null &&
                 ModelJson.Difference(JsonSerializer.Serialize(result.State), JsonSerializer.Serialize(after)) == null,
                 "Independent native unit post-combat phase differs.");
             foreach (int id in cannotHeal)
@@ -114,23 +115,23 @@ internal static class PostCombatHealingChecks
                 unit.Triggers.Any(trigger => trigger.Kind == "PostCombatHealing" && trigger.IgnoreSilence));
             once += after.Units.Sum(unit => unit.Triggers.Count(trigger => trigger.Kind == "PostCombatHealing" && trigger.Once && trigger.HasTriggered));
         }
-        foreach (JsonElement heal in fixture.GetProperty("TriggeredHeals").EnumerateArray().Where(heal => heal.GetProperty("TriggerKind").GetString() == "PostCombatHealing"))
+        foreach (FixtureValue heal in fixture.GetProperty("TriggeredHeals").EnumerateArray().Where(heal => heal.GetProperty("TriggerKind").GetString() == "PostCombatHealing"))
         {
-            Require(heal.GetProperty("Completed").GetBoolean() && heal.GetProperty("Difference").ValueKind == JsonValueKind.Null, "Native post-combat heal is incomplete.");
+            Require(heal.GetProperty("Completed").GetBoolean() && heal.GetProperty("Difference").ValueKind == FixtureKind.Null, "Native post-combat heal is incomplete.");
             healed++;
         }
         int inSequence = 0;
-        foreach (JsonElement sample in fixture.GetProperty("UnitUpgradeScaling").EnumerateArray())
+        foreach (FixtureValue sample in fixture.GetProperty("UnitUpgradeScaling").EnumerateArray())
         {
             string? kind = sample.GetProperty("TriggerKind").GetString();
             if (kind is not ("PostCombat" or "PostCombatHealing")) continue;
-            Require(sample.GetProperty("Difference").ValueKind == JsonValueKind.Null && sample.GetProperty("CaptureError").ValueKind == JsonValueKind.Null,
+            Require(sample.GetProperty("Difference").ValueKind == FixtureKind.Null && sample.GetProperty("CaptureError").ValueKind == FixtureKind.Null,
                 "Native post-combat upgrade callback is incomplete.");
-            var before = sample.GetProperty("Before").Deserialize<CombatContext>(ModelJson.Options)!;
-            var actualContext = sample.GetProperty("After").Deserialize<CombatContext>(ModelJson.Options)!;
-            var trait = sample.GetProperty("Trait").Deserialize<ScalingUnitUpgradeTrait>(ModelJson.Options)!;
-            var upgrade = sample.GetProperty("BeforeUpgrade").Deserialize<CardUpgradeModifier>(ModelJson.Options)!;
-            var actualUpgrade = sample.GetProperty("AfterUpgrade").Deserialize<CardUpgradeModifier>(ModelJson.Options)!;
+            var before = sample.GetProperty("Before").Deserialize<CombatContext>()!;
+            var actualContext = sample.GetProperty("After").Deserialize<CombatContext>()!;
+            var trait = sample.GetProperty("Trait").Deserialize<ScalingUnitUpgradeTrait>()!;
+            var upgrade = sample.GetProperty("BeforeUpgrade").Deserialize<CardUpgradeModifier>()!;
+            var actualUpgrade = sample.GetProperty("AfterUpgrade").Deserialize<CardUpgradeModifier>()!;
             var result = UnitUpgradeScalingModel.ApplyTrait(before, trait, sample.GetProperty("OwnerCardId").GetInt32(), upgrade, kind);
             Require(result.Supported && ModelJson.Difference(JsonSerializer.Serialize(result.Context), JsonSerializer.Serialize(actualContext)) == null &&
                 ModelJson.Difference(JsonSerializer.Serialize(result.Upgrade), JsonSerializer.Serialize(actualUpgrade)) == null, "Native post-combat upgrade scaling differs.");

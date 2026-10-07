@@ -1,3 +1,4 @@
+using MonsterTrain2Poju.Fixtures;
 using System.Text.Json;
 using MonsterTrain2Poju.Model;
 
@@ -112,32 +113,32 @@ internal static class TriggeredStatusChecks
         Console.WriteLine("TRIGGERED-STATUS-CHECKS PASS: pools, reverse chances/immune order, strict legality, additive first-target multipliers, retained dying/source state, preview and 32 parallel branches.");
     }
 
-    internal static void Native(JsonElement fixture)
+    internal static void Native(FixtureValue fixture)
     {
         if (!fixture.TryGetProperty("ModifierScenario", out var scenario) || scenario.GetString() != "triggered-status") return;
         int count = 0, pooled = 0, empty = 0, ranged = 0, area = 0, dying = 0, scaled = 0, sourced = 0, immune = 0, strict = 0, turns = 0;
         int battleScopes = 0, bossScopes = 0, changedScopes = 0;
-        foreach (JsonElement scope in fixture.GetProperty("PreviewRngIsolation").EnumerateArray())
+        foreach (FixtureValue scope in fixture.GetProperty("PreviewRngIsolation").EnumerateArray())
         {
-            UnityRng battleBefore = scope.GetProperty("BattleBefore").Deserialize<UnityRng>(ModelJson.Options);
-            UnityRng testBefore = scope.GetProperty("TestBefore").Deserialize<UnityRng>(ModelJson.Options);
-            UnityRng testObserved = scope.GetProperty("TestObserved").Deserialize<UnityRng>(ModelJson.Options);
-            Require(scope.GetProperty("Completed").GetBoolean() && battleBefore.Equals(scope.GetProperty("BattleAfter").Deserialize<UnityRng>(ModelJson.Options)) &&
-                testBefore.Equals(scope.GetProperty("TestAfter").Deserialize<UnityRng>(ModelJson.Options)), "Native preview failed to restore its RNG streams.");
+            UnityRng battleBefore = scope.GetProperty("BattleBefore").Deserialize<UnityRng>();
+            UnityRng testBefore = scope.GetProperty("TestBefore").Deserialize<UnityRng>();
+            UnityRng testObserved = scope.GetProperty("TestObserved").Deserialize<UnityRng>();
+            Require(scope.GetProperty("Completed").GetBoolean() && battleBefore.Equals(scope.GetProperty("BattleAfter").Deserialize<UnityRng>()) &&
+                testBefore.Equals(scope.GetProperty("TestAfter").Deserialize<UnityRng>()), "Native preview failed to restore its RNG streams.");
             battleScopes += scope.GetProperty("Kind").GetString() == "Battle" ? 1 : 0;
             bossScopes += scope.GetProperty("Kind").GetString() == "BossKill" ? 1 : 0;
             changedScopes += !testObserved.Equals(battleBefore) ? 1 : 0;
         }
         var chances = new HashSet<int>(); var kinds = new HashSet<string>();
-        foreach (JsonElement record in fixture.GetProperty("TriggeredStatuses").EnumerateArray())
+        foreach (FixtureValue record in fixture.GetProperty("TriggeredStatuses").EnumerateArray())
         {
             Require(record.GetProperty("Completed").GetBoolean() && record.GetProperty("Interactions").GetArrayLength() == 0 &&
-                record.GetProperty("Actual").ValueKind == JsonValueKind.Object, "Incomplete native status effect.");
-            var before = record.GetProperty("Before").Deserialize<RoomCombatState>(ModelJson.Options)!;
-            var actual = record.GetProperty("Actual").Deserialize<RoomCombatState>(ModelJson.Options)!;
-            var retained = record.GetProperty("BeforeUnits").Deserialize<CombatUnit[]>(ModelJson.Options)!;
-            var actualUnits = record.GetProperty("ActualUnits").Deserialize<CombatUnit[]>(ModelJson.Options)!;
-            var effect = record.GetProperty("Effect").Deserialize<CombatEffect>(ModelJson.Options)!;
+                record.GetProperty("Actual").ValueKind == FixtureKind.Object, "Incomplete native status effect.");
+            var before = record.GetProperty("Before").Deserialize<RoomCombatState>()!;
+            var actual = record.GetProperty("Actual").Deserialize<RoomCombatState>()!;
+            var retained = record.GetProperty("BeforeUnits").Deserialize<CombatUnit[]>()!;
+            var actualUnits = record.GetProperty("ActualUnits").Deserialize<CombatUnit[]>()!;
+            var effect = record.GetProperty("Effect").Deserialize<CombatEffect>()!;
             int actor = record.GetProperty("ActorId").GetInt32(), sourceCard = record.GetProperty("SourceCardId").GetInt32();
             int[] targets = record.GetProperty("Targets").Deserialize<int[]>()!;
             var scope = new RoomCombatState(before.RoomIndex, before.Deployment,
@@ -159,13 +160,13 @@ internal static class TriggeredStatusChecks
             sourced += sourceCard > 0 ? 1 : 0; immune += retained.Any(unit => targets.Contains(unit.Id) && unit.Status("immune") != null) ? 1 : 0;
             strict += effect.Action.Tests?.StrictTargets == true ? 1 : 0; chances.Add(effect.Action.Value); kinds.Add(record.GetProperty("Kind").GetString()!);
         }
-        foreach (JsonElement turn in fixture.GetProperty("UnitTurns").EnumerateArray())
+        foreach (FixtureValue turn in fixture.GetProperty("UnitTurns").EnumerateArray())
         {
-            var before = turn.GetProperty("Before").Deserialize<RoomCombatState>(ModelJson.Options)!;
-            var actual = turn.GetProperty("Actual").Deserialize<RoomCombatState>(ModelJson.Options)!;
+            var before = turn.GetProperty("Before").Deserialize<RoomCombatState>()!;
+            var actual = turn.GetProperty("Actual").Deserialize<RoomCombatState>()!;
             Require(before.Context?.IsolatedBattlePreview == true, "Native status fixture lacks its explicit preview isolation protocol.");
             var result = RoomCombatModel.ApplyUnitTurn(before, turn.GetProperty("ActorId").GetInt32());
-            Require(result.Supported && turn.GetProperty("Difference").ValueKind == JsonValueKind.Null &&
+            Require(result.Supported && turn.GetProperty("Difference").ValueKind == FixtureKind.Null &&
                 ModelJson.Difference(JsonSerializer.Serialize(result.State), JsonSerializer.Serialize(actual)) == null, "Independent status unit turn differs.");
             turns++;
         }

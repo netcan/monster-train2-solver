@@ -1,3 +1,4 @@
+using MonsterTrain2Poju.Fixtures;
 using System.Text.Json;
 using MonsterTrain2Poju.Model;
 
@@ -114,17 +115,17 @@ internal static class SpawnTriggerChecks
         Require(JsonSerializer.Serialize(root) == parent, "Spawn effects mutated the parent.");
         Console.WriteLine("SPAWN-TRIGGER-CHECKS PASS: paid costs/resources, pre-trigger spawn counters, ordered card/cardless phases, source upgrades/generation, death/despawn/slots, enemy batches/treasures and 32 parallel branches.");
     }
-    internal static void Native(JsonElement fixture)
+    internal static void Native(FixtureValue fixture)
     {
-        if (!fixture.TryGetProperty("ModifierScenario", out JsonElement scenario) || scenario.GetString() is not ("spawn-triggers" or "spawn-triggers-lethal")) return;
+        if (!fixture.TryGetProperty("ModifierScenario", out FixtureValue scenario) || scenario.GetString() is not ("spawn-triggers" or "spawn-triggers-lethal")) return;
         bool lethal = scenario.GetString() == "spawn-triggers-lethal";
         int spawn = 0, unscaled = 0, bonus = 0, paid = 0;
-        foreach (JsonElement sample in fixture.GetProperty("UnitUpgradeScaling").EnumerateArray())
+        foreach (FixtureValue sample in fixture.GetProperty("UnitUpgradeScaling").EnumerateArray())
         {
-            Require(sample.GetProperty("Difference").ValueKind == JsonValueKind.Null && sample.GetProperty("CaptureError").ValueKind == JsonValueKind.Null,
+            Require(sample.GetProperty("Difference").ValueKind == FixtureKind.Null && sample.GetProperty("CaptureError").ValueKind == FixtureKind.Null,
                 "Native spawn callback capture is incomplete.");
-            CombatContext before = sample.GetProperty("Before").Deserialize<CombatContext>(ModelJson.Options)!;
-            CombatContext after = sample.GetProperty("After").Deserialize<CombatContext>(ModelJson.Options)!;
+            CombatContext before = sample.GetProperty("Before").Deserialize<CombatContext>()!;
+            CombatContext after = sample.GetProperty("After").Deserialize<CombatContext>()!;
             ScalingUnitUpgradeTrait trait = sample.GetProperty("Trait").Deserialize<ScalingUnitUpgradeTrait>()!;
             CardUpgradeModifier original = sample.GetProperty("BeforeUpgrade").Deserialize<CardUpgradeModifier>()!;
             CardUpgradeModifier actual = sample.GetProperty("AfterUpgrade").Deserialize<CardUpgradeModifier>()!;
@@ -139,14 +140,14 @@ internal static class SpawnTriggerChecks
         Require(spawn >= 8 && (lethal || unscaled > 0) && bonus > 0 && paid > 0,
             "Native summon callbacks lack cost/spawn/order coverage.");
         int generatedFromSummons = 0;
-        foreach (JsonElement record in fixture.GetProperty("CardGenerations").EnumerateArray())
+        foreach (FixtureValue record in fixture.GetProperty("CardGenerations").EnumerateArray())
         {
-            CombatContext before = record.GetProperty("Before").Deserialize<CombatContext>(ModelJson.Options)!;
-            CombatContext actual = record.GetProperty("Actual").Deserialize<CombatContext>(ModelJson.Options)!;
-            CardGenerationRule rule = record.GetProperty("Rule").Deserialize<CardGenerationRule>(ModelJson.Options)!;
+            CombatContext before = record.GetProperty("Before").Deserialize<CombatContext>()!;
+            CombatContext actual = record.GetProperty("Actual").Deserialize<CombatContext>()!;
+            CardGenerationRule rule = record.GetProperty("Rule").Deserialize<CardGenerationRule>()!;
             int sourceId = record.GetProperty("SourceCardId").GetInt32();
             var predicted = CardGenerationModel.Apply(before, rule, sourceId);
-            Require(predicted.Supported && record.GetProperty("Difference").ValueKind == JsonValueKind.Null &&
+            Require(predicted.Supported && record.GetProperty("Difference").ValueKind == FixtureKind.Null &&
                 ModelJson.Difference(JsonSerializer.Serialize(predicted.Context), JsonSerializer.Serialize(actual)) == null,
                 "Independent native spawn generation differs.");
             if (record.GetProperty("Origin").GetString() == "Unit" && sourceId > 0 && rule.Count > 0)
@@ -154,7 +155,7 @@ internal static class SpawnTriggerChecks
         }
         Require(generatedFromSummons > 0, "Native summon captures lack source-owned card generation.");
         EnemySpawnState[] spawns = fixture.GetProperty("Spawns").EnumerateArray().Select(record =>
-            record.GetProperty("Actual").Deserialize<EnemySpawnState>(ModelJson.Options)!).ToArray();
+            record.GetProperty("Actual").Deserialize<EnemySpawnState>()!).ToArray();
         Require(spawns.SelectMany(state => state.Train.Rooms).SelectMany(room => room.Units).Any(unit => unit.Team == CombatTeam.Enemy &&
             unit.Modifiers!.Upgrades.Count(upgrade => upgrade.AssetKey == "PojuSpawnWaveRoom") > 1 &&
             unit.Triggers.Any(trigger => trigger.Kind == "OnSpawnNotFromCard" && trigger.HasTriggered)),
@@ -162,7 +163,7 @@ internal static class SpawnTriggerChecks
         if (lethal)
         {
             BattleTurnState[] actions = fixture.GetProperty("Actions").EnumerateArray().Select(record =>
-                record.GetProperty("Actual").Deserialize<BattleTurnState>(ModelJson.Options)!).ToArray();
+                record.GetProperty("Actual").Deserialize<BattleTurnState>()!).ToArray();
             Require(actions.Any(state => state.Spawn.Train.Context!.Statistics!.MonstersDeadThisBattle > 0 &&
                 state.OtherPiles.Single(pile => pile.Name == "Exhausted").Cards.Any(card => card.DataId == "d14a50f3-728d-43e1-87f0-ef1b013f6678") &&
                 state.OtherPiles.Single(pile => pile.Name == "Standby").FreeSlots!.Count > 0), "Native transient summon death lacks exhausted/slot history coverage.");

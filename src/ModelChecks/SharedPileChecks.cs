@@ -1,3 +1,4 @@
+using MonsterTrain2Poju.Fixtures;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using MonsterTrain2Poju.Model;
@@ -63,14 +64,14 @@ internal static class SharedPileChecks
         Console.WriteLine("SHARED-PILE-CHECKS PASS: immediate/deferred returns, physical slots, tower context propagation, despawn, terminal clearing, preview isolation and 32 parallel branches.");
     }
 
-    internal static void Native(JsonElement fixture)
+    internal static void Native(FixtureValue fixture)
     {
-        if (!fixture.TryGetProperty("Schema", out JsonElement schema) || schema.GetInt32() < 21) return;
+        if (!fixture.TryGetProperty("Schema", out FixtureValue schema) || schema.GetInt32() < 21) return;
         int deaths = 0, freeSlotReuses = 0, transientReuses = 0, contexts = 0;
-        foreach (JsonElement stage in fixture.GetProperty("Stages").EnumerateArray())
+        foreach (FixtureValue stage in fixture.GetProperty("Stages").EnumerateArray())
         {
-            RoomCombatState before = stage.GetProperty("Before").Deserialize<RoomCombatState>(ModelJson.Options)!;
-            RoomCombatState after = stage.GetProperty("Actual").Deserialize<RoomCombatState>(ModelJson.Options)!;
+            RoomCombatState before = stage.GetProperty("Before").Deserialize<RoomCombatState>()!;
+            RoomCombatState after = stage.GetProperty("Actual").Deserialize<RoomCombatState>()!;
             Require(before.Context!.OtherPiles != null && after.Context!.OtherPiles != null,
                 "Modern native room capture omitted secondary piles.");
             contexts += 2;
@@ -80,10 +81,10 @@ internal static class SharedPileChecks
                     deaths++;
         }
         foreach (string collection in new[] { "Turns", "Actions" })
-        foreach (JsonElement record in fixture.GetProperty(collection).EnumerateArray())
+        foreach (FixtureValue record in fixture.GetProperty(collection).EnumerateArray())
         foreach (string side in new[] { "Before", "Actual" })
         {
-            BattleTurnState state = record.GetProperty(side).Deserialize<BattleTurnState>(ModelJson.Options)!;
+            BattleTurnState state = record.GetProperty(side).Deserialize<BattleTurnState>()!;
             CombatContext context = state.Spawn.Train.Context!;
             Require(context.OtherPiles != null && JsonSerializer.Serialize(context.OtherPiles) == JsonSerializer.Serialize(state.OtherPiles),
                 "Modern native decision exposes inconsistent shared and outer pile state.");
@@ -91,10 +92,10 @@ internal static class SharedPileChecks
                 "A native decision room omitted the shared secondary piles.");
             contexts++;
         }
-        foreach (JsonElement record in fixture.GetProperty("Actions").EnumerateArray())
+        foreach (FixtureValue record in fixture.GetProperty("Actions").EnumerateArray())
         {
-            BattleTurnState before = record.GetProperty("Before").Deserialize<BattleTurnState>(ModelJson.Options)!;
-            BattleTurnState after = record.GetProperty("Actual").Deserialize<BattleTurnState>(ModelJson.Options)!;
+            BattleTurnState before = record.GetProperty("Before").Deserialize<BattleTurnState>()!;
+            BattleTurnState after = record.GetProperty("Actual").Deserialize<BattleTurnState>()!;
             int cardId = record.GetProperty("Action").GetProperty("CardInstanceId").GetInt32();
             CardPileState standby = before.OtherPiles!.Single(pile => pile.Name == "Standby");
             CardPileState moved = after.OtherPiles!.Single(pile => pile.Name == "Standby");
@@ -105,13 +106,13 @@ internal static class SharedPileChecks
             deaths += before.Spawn.Train.Rooms.SelectMany(room => room.Units).Count(unit => unit.Team == CombatTeam.Player &&
                 unit.SpawnerCardId > 0 && !alive.Contains(unit.Id) && exhausted.Contains(unit.SpawnerCardId));
         }
-        if (fixture.TryGetProperty("HandRemovals", out JsonElement removals))
-        foreach (JsonElement record in removals.EnumerateArray())
+        if (fixture.TryGetProperty("HandRemovals", out FixtureValue removals))
+        foreach (FixtureValue record in removals.EnumerateArray())
         {
             if (record.GetProperty("Mode").GetInt32() != 1) continue;
-            CombatContext before = record.GetProperty("Before").GetProperty("Context").Deserialize<CombatContext>(ModelJson.Options)!;
+            CombatContext before = record.GetProperty("Before").GetProperty("Context").Deserialize<CombatContext>()!;
             CardPileState standby = before.OtherPiles!.Single(pile => pile.Name == "Standby");
-            CardPileState moved = record.GetProperty("Actual").GetProperty("Context").Deserialize<CombatContext>(ModelJson.Options)!
+            CardPileState moved = record.GetProperty("Actual").GetProperty("Context").Deserialize<CombatContext>()!
                 .OtherPiles!.Single(pile => pile.Name == "Standby");
             int sourceCardId = record.GetProperty("CardId").GetInt32();
             int targets = before.Cards.Hand.Count(card => card.InstanceId != sourceCardId);
@@ -120,21 +121,21 @@ internal static class SharedPileChecks
             if (targets > 0 && standby.FreeSlots?.Count > 0 && standby.EntrySlots!.Count == moved.EntrySlots!.Count)
                 transientReuses += targets;
         }
-        bool lethalHandRemoval = fixture.TryGetProperty("ModifierScenario", out JsonElement modifier) &&
+        bool lethalHandRemoval = fixture.TryGetProperty("ModifierScenario", out FixtureValue modifier) &&
             modifier.GetString() == "hand-removal-lethal";
         Require(contexts > 0 && (!lethalHandRemoval || deaths > 0 && freeSlotReuses + transientReuses > 0),
             "Lethal shared-pile oracle lacks death returns or standby free-slot reuse.");
         Console.WriteLine($"NATIVE-SHARED-PILE-COVERAGE PASS: {contexts} room/decision contexts, {deaths} observed death returns, {freeSlotReuses} summon and {transientReuses} transient consumption slot reuses.");
     }
 
-    internal static void MigratedRoot(JsonElement fixture)
+    internal static void MigratedRoot(FixtureValue fixture)
     {
-        JsonElement turns = fixture.GetProperty("Turns");
-        fixture.TryGetProperty("Actions", out JsonElement actions);
-        string? policy = fixture.TryGetProperty("Policy", out JsonElement policyElement) ? policyElement.GetString() : null;
+        FixtureValue turns = fixture.GetProperty("Turns");
+        fixture.TryGetProperty("Actions", out FixtureValue actions);
+        string? policy = fixture.TryGetProperty("Policy", out FixtureValue policyElement) ? policyElement.GetString() : null;
         bool cardPolicy = policy is "units-and-junk" or "units-spells-and-junk";
         BattleTurnState root = (cardPolicy ? actions[0] : turns[0]).GetProperty("Before")
-            .Deserialize<BattleTurnState>(ModelJson.Options)!;
+            .Deserialize<BattleTurnState>()!;
         CombatContext old = root.Spawn.Train.Context!;
         if (old.OtherPiles != null) return;
         string parent = JsonSerializer.Serialize(root);
@@ -168,11 +169,11 @@ internal static class SharedPileChecks
         Require(JsonSerializer.Serialize(root) == parent, "Migrating a legacy root mutated its captured native state.");
         Console.WriteLine("SHARED-PILE-MIGRATION-CHECKS PASS: complete legacy policy/decision states reproduced with context-owned piles.");
 
-        static void Compare(BattleTurnState modeled, JsonElement native)
+        static void Compare(BattleTurnState modeled, FixtureValue native)
         {
             Require(JsonSerializer.Serialize(modeled.Spawn.Train.Context!.OtherPiles) == JsonSerializer.Serialize(modeled.OtherPiles),
                 "Migrated model exposes inconsistent shared and outer piles.");
-            BattleTurnState actual = native.Deserialize<BattleTurnState>(ModelJson.Options)!;
+            BattleTurnState actual = native.Deserialize<BattleTurnState>()!;
             // Older native records lack only the new shared copy. Keep every captured field,
             // including the authoritative outer piles, in the comparison.
             JsonNode view = JsonNode.Parse(BattleTurnChecks.Comparable(modeled))!;

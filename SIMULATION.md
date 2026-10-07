@@ -1869,3 +1869,31 @@ The final schema-42 regression exits successfully with all 55 battle fixtures
 and all eight calibration fixtures. Randomized triggered-status previews
 without the explicit isolated RNG protocol now return Unsupported, preventing
 an implicit approximation of vanilla UI preview history.
+
+The retained corpus now uses version-one `.mt2f` binary value graphs. All 63
+captures (55 battles and eight calibrations) preserve their complete captured
+values, exact numeric lexemes, object property order, duplicate keys, array order
+and nulls. Identical subtrees share immutable nodes; a string table and typed
+numeric encodings avoid repeating state dumps. The binary reader constructs
+model objects directly through cached constructor plans, without parsing or
+reconstructing a JSON document. Native probe JSON remains available only as a
+local import/diagnostic format in ignored output directories.
+
+Migration independently compared every original value with its decoded binary
+counterpart across 9,690,793,008 raw capture bytes. The previously retained
+JSON/gzip inputs totaled 293,389,234 bytes; the 63 binary archives total
+1,327,446 bytes, a 99.55% reduction. The triggered-status archive is 42,927 bytes
+and retains the same source SHA-256 recorded above. `tests/fixtures/manifest.tsv`
+records source provenance and full binary archive hashes, which the regression
+script checks before running. Historical JSON/gzip paths and hashes above refer
+to the original captures before migration; native capture schemas are unchanged.
+Formatting whitespace and string escape spelling are not retained. The binary
+format, numeric precision rules, import commands and corruption checks are
+documented in `src/FixtureArchive/FORMAT.md`.
+
+The complete regression using only the 63 binary fixture paths exits zero:
+all 55 battle fixtures and all eight calibration fixtures pass, including the
+157 triggered-status observations and mid-battle parallel policy branches.
+Binary-format checks cover integer boundaries, exact decimal/exponent lexemes,
+Unicode, duplicate properties, defaults, deterministic output, 32 parallel
+hydrations and rejection of corrupt/truncated/unknown-version/cyclic archives.

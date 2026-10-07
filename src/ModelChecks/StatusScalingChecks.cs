@@ -1,3 +1,4 @@
+using MonsterTrain2Poju.Fixtures;
 using System.Text.Json;
 using MonsterTrain2Poju.Model;
 
@@ -99,18 +100,18 @@ internal static class StatusScalingChecks
         Require(owner.StatusScalingTraits![0].StacksPerStat == 3, "Caller mutation changed captured traits.");
         Console.WriteLine("STATUS-SCALING-CHECKS PASS: ordered zero gates, signed application/caps, attribution/preview/immunity, propagation masks, integer wrap, creation/discard and 64 parallel branches.");
     }
-    internal static void Native(JsonElement fixture)
+    internal static void Native(FixtureValue fixture)
     {
-        if (!fixture.TryGetProperty("ModifierScenario", out JsonElement scenario) || scenario.GetString() != "status-scaling") return;
+        if (!fixture.TryGetProperty("ModifierScenario", out FixtureValue scenario) || scenario.GetString() != "status-scaling") return;
         int count = 0, applications = 0, capped = 0, decreased = 0, immune = 0;
         bool zeroApplied = false, zeroSkipped = false, negative = false, feedback = false, propagation = false;
         var filters = new HashSet<int>(); var moons = new HashSet<int>(); var turns = new HashSet<int>();
-        foreach (JsonElement sample in fixture.GetProperty("StatusScaling").EnumerateArray())
+        foreach (FixtureValue sample in fixture.GetProperty("StatusScaling").EnumerateArray())
         {
-            Require(sample.GetProperty("CaptureError").ValueKind == JsonValueKind.Null && sample.GetProperty("Difference").ValueKind == JsonValueKind.Null,
+            Require(sample.GetProperty("CaptureError").ValueKind == FixtureKind.Null && sample.GetProperty("Difference").ValueKind == FixtureKind.Null,
                 "Native status callback capture is incomplete or differs.");
-            CombatContext before = sample.GetProperty("Before").Deserialize<CombatContext>(ModelJson.Options)!;
-            CombatContext after = sample.GetProperty("After").Deserialize<CombatContext>(ModelJson.Options)!;
+            CombatContext before = sample.GetProperty("Before").Deserialize<CombatContext>()!;
+            CombatContext after = sample.GetProperty("After").Deserialize<CombatContext>()!;
             ScalingStatusTrait trait = sample.GetProperty("Trait").Deserialize<ScalingStatusTrait>()!;
             int owner = sample.GetProperty("OwnerCardId").GetInt32(), source = sample.GetProperty("SourceStacks").GetInt32();
             StatusScalingResult result = StatusScalingModel.ApplyTrait(before, trait, owner,
@@ -124,12 +125,12 @@ internal static class StatusScalingChecks
             negative |= actual < 0; feedback |= trait.Query.Type == "AnyStatusEffectStacksAdded" && actual < 0; count++;
             propagation |= trait.Filter == 1 && actual > 0;
         }
-        foreach (JsonElement sample in fixture.GetProperty("StatusApplications").EnumerateArray())
+        foreach (FixtureValue sample in fixture.GetProperty("StatusApplications").EnumerateArray())
         {
-            Require(sample.GetProperty("CaptureError").ValueKind == JsonValueKind.Null && sample.GetProperty("Difference").ValueKind == JsonValueKind.Null,
+            Require(sample.GetProperty("CaptureError").ValueKind == FixtureKind.Null && sample.GetProperty("Difference").ValueKind == FixtureKind.Null,
                 "Native status application capture is incomplete or differs.");
-            RoomCombatState before = sample.GetProperty("Before").Deserialize<RoomCombatState>(ModelJson.Options)!;
-            RoomCombatState after = sample.GetProperty("After").Deserialize<RoomCombatState>(ModelJson.Options)!;
+            RoomCombatState before = sample.GetProperty("Before").Deserialize<RoomCombatState>()!;
+            RoomCombatState after = sample.GetProperty("After").Deserialize<RoomCombatState>()!;
             int target = sample.GetProperty("TargetId").GetInt32();
             CombatStatus added = sample.GetProperty("Added").Deserialize<CombatStatus>()!;
             RoomCombatResult result = StatusApplicationModel.Apply(before, target, added, sample.GetProperty("SourceCardId").GetInt32(),

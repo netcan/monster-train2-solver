@@ -2,6 +2,7 @@ using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
 
 const string steward = "d14a50f3-728d-43e1-87f0-ef1b013f6678";
+FixtureArchiveChecks.Run();
 var input = new CombatProjectionData
 {
     Scenario = "Level1BattleJunker",

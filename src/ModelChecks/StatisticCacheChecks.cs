@@ -1,3 +1,4 @@
+using MonsterTrain2Poju.Fixtures;
 using System.Text.Json;
 using MonsterTrain2Poju.Model;
 
@@ -54,15 +55,15 @@ internal static class StatisticCacheChecks
         Console.WriteLine("STATISTIC-CACHE-CHECKS PASS: generated ownership/cached entry distinction, terminal clears, counter/query/turn refresh, passive setters, detached/zero sources, legacy captures and 32 immutable parallel branches.");
     }
 
-    internal static void Native(JsonElement fixture)
+    internal static void Native(FixtureValue fixture)
     {
         if (fixture.GetProperty("Schema").GetInt32() < 33 || fixture.GetProperty("ModifierScenario").GetString() != "pre-combat-lethal") return;
         int generations = 0, uncachedBirths = 0, terminalDrops = 0, cachedRetained = 0;
-        foreach (JsonElement record in fixture.GetProperty("CardGenerations").EnumerateArray())
+        foreach (FixtureValue record in fixture.GetProperty("CardGenerations").EnumerateArray())
         {
-            var before = record.GetProperty("Before").Deserialize<CombatContext>(ModelJson.Options)!;
-            var actual = record.GetProperty("Actual").Deserialize<CombatContext>(ModelJson.Options)!;
-            var rule = record.GetProperty("Rule").Deserialize<CardGenerationRule>(ModelJson.Options)!;
+            var before = record.GetProperty("Before").Deserialize<CombatContext>()!;
+            var actual = record.GetProperty("Actual").Deserialize<CombatContext>()!;
+            var rule = record.GetProperty("Rule").Deserialize<CardGenerationRule>()!;
             var predicted = CardGenerationModel.Apply(before, rule, record.GetProperty("SourceCardId").GetInt32());
             Require(predicted.Supported && JsonSerializer.Serialize(predicted.Context) == JsonSerializer.Serialize(actual),
                 "Independent native card generation differs with separate statistic-cache membership.");
@@ -71,10 +72,10 @@ internal static class StatisticCacheChecks
             generations++;
             uncachedBirths += predicted.AddedCards.Count(card => !actual.Statistics!.StoredCards!.Contains(card.InstanceId));
         }
-        foreach (JsonElement stage in fixture.GetProperty("Stages").EnumerateArray())
+        foreach (FixtureValue stage in fixture.GetProperty("Stages").EnumerateArray())
         {
-            var before = stage.GetProperty("Before").Deserialize<RoomCombatState>(ModelJson.Options)!;
-            var actual = stage.GetProperty("Actual").Deserialize<RoomCombatState>(ModelJson.Options)!;
+            var before = stage.GetProperty("Before").Deserialize<RoomCombatState>()!;
+            var actual = stage.GetProperty("Actual").Deserialize<RoomCombatState>()!;
             if (before.Context!.CardInstances!.Count == 0 || actual.Context!.CardInstances!.Count != 0) continue;
             var result = stage.GetProperty("Kind").GetString() == "Exchange" ? RoomCombatModel.Exchange(before) : RoomCombatModel.Resolve(before);
             Require(result.Supported && ModelJson.Difference(JsonSerializer.Serialize(result.State), JsonSerializer.Serialize(actual)) == null,

@@ -1,3 +1,4 @@
+using MonsterTrain2Poju.Fixtures;
 using System.Text.Json;
 using MonsterTrain2Poju.Model;
 
@@ -51,13 +52,13 @@ internal static class RandomStatusChecks
         Console.WriteLine("RANDOM-STATUS-CHECKS PASS: one shared pool choice, reverse chances, zero/full probability, immunity, empty collections, composed RNG and parallel isolation.");
     }
 
-    internal static void Native(JsonElement actions)
+    internal static void Native(FixtureValue actions)
     {
         int plays = 0, immunePlays = 0, terminalPlays = 0;
-        foreach (JsonElement entry in actions.EnumerateArray())
+        foreach (FixtureValue entry in actions.EnumerateArray())
         {
-            var before = entry.GetProperty("Before").Deserialize<BattleTurnState>(ModelJson.Options)!;
-            var actual = entry.GetProperty("Actual").Deserialize<BattleTurnState>(ModelJson.Options)!;
+            var before = entry.GetProperty("Before").Deserialize<BattleTurnState>()!;
+            var actual = entry.GetProperty("Actual").Deserialize<BattleTurnState>()!;
             var action = entry.GetProperty("Action").Deserialize<PlayCardAction>()!;
             var card = before.Spawn.Train.Context!.Cards.Hand.Single(card => card.InstanceId == action.CardInstanceId);
             CardPlayRule rule = before.PlayRules!.Cards.Single(rule => rule.DataId == card.DataId);

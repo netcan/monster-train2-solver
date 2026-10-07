@@ -1,3 +1,4 @@
+using MonsterTrain2Poju.Fixtures;
 using System.Text.Json;
 using MonsterTrain2Poju.Model;
 
@@ -90,30 +91,30 @@ internal static class HitKillChecks
         Console.WriteLine("HIT-KILL PASS: blocked/zero/lethal damage, HP thresholds, dead-boss suppression, Slay/lifesteal/spikes order, sweep FIFO, dying actors, once/silence and 32 parallel branches.");
     }
 
-    internal static void Native(JsonElement fixture)
+    internal static void Native(FixtureValue fixture)
     {
         if (!fixture.TryGetProperty("ModifierScenario", out var scenario) || scenario.GetString() != "hit-kill") return;
         int turns = 0, sweeps = 0, fires = 0, blocked = 0, lethal = 0, slays = 0, positiveThresholds = 0, skippedBosses = 0;
-        foreach (JsonElement turn in fixture.GetProperty("UnitTurns").EnumerateArray())
+        foreach (FixtureValue turn in fixture.GetProperty("UnitTurns").EnumerateArray())
         {
-            var before = turn.GetProperty("Before").Deserialize<RoomCombatState>(ModelJson.Options)!;
-            var after = turn.GetProperty("Actual").Deserialize<RoomCombatState>(ModelJson.Options)!;
+            var before = turn.GetProperty("Before").Deserialize<RoomCombatState>()!;
+            var after = turn.GetProperty("Actual").Deserialize<RoomCombatState>()!;
             RoomCombatResult result = RoomCombatModel.ApplyUnitTurn(before, turn.GetProperty("ActorId").GetInt32());
-            Require(result.Supported && turn.GetProperty("Difference").ValueKind == JsonValueKind.Null &&
+            Require(result.Supported && turn.GetProperty("Difference").ValueKind == FixtureKind.Null &&
                 ModelJson.Difference(JsonSerializer.Serialize(result.State), JsonSerializer.Serialize(after)) == null &&
                 result.Events.Where(e => e.Kind == "Attack" && e.Actor == turn.GetProperty("ActorId").GetInt32()).Select(e => e.Target)
                     .SequenceEqual(turn.GetProperty("AttackedTargetIds").Deserialize<int[]>()!),
                 "Independent native hit/kill unit turn differs: " + result.UnsupportedReason);
             turns++; if (turn.GetProperty("AttackedTargetIds").GetArrayLength() > 1) sweeps++;
         }
-        foreach (JsonElement record in fixture.GetProperty("HitKills").EnumerateArray())
+        foreach (FixtureValue record in fixture.GetProperty("HitKills").EnumerateArray())
         {
-            Require(record.GetProperty("Completed").GetBoolean() && record.GetProperty("GoldAfter").ValueKind == JsonValueKind.Number &&
-                record.GetProperty("AfterTriggered").ValueKind == JsonValueKind.Array, "Native hit/kill observation is incomplete.");
+            Require(record.GetProperty("Completed").GetBoolean() && record.GetProperty("GoldAfter").ValueKind == FixtureKind.Number &&
+                record.GetProperty("AfterTriggered").ValueKind == FixtureKind.Array, "Native hit/kill observation is incomplete.");
             if (record.GetProperty("Stage").GetString() != "Fire") continue;
             int amount = record.GetProperty("ParamInt").GetInt32(), reward = 0, index = 0;
             bool deadBoss = record.GetProperty("DeadBoss").GetBoolean(), silent = record.GetProperty("Silenced").GetBoolean();
-            foreach (JsonElement trigger in record.GetProperty("Triggers").EnumerateArray())
+            foreach (FixtureValue trigger in record.GetProperty("Triggers").EnumerateArray())
             {
                 bool wasFired = trigger.GetProperty("HasTriggered").GetBoolean();
                 int threshold = trigger.GetProperty("Threshold").GetInt32();

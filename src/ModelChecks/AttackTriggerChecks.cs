@@ -1,3 +1,4 @@
+using MonsterTrain2Poju.Fixtures;
 using System.Text.Json;
 using MonsterTrain2Poju.Model;
 
@@ -121,27 +122,27 @@ internal static class AttackTriggerChecks
         Console.WriteLine("ATTACK-TRIGGER PASS: cached damage/HP, pre/post upgrades/heals, blocked and skipped attacks, sweep overrides, victim history, filter bypass, dying targets/actors, thresholds/silence, damage types, Pyre and 32 parallel branches.");
     }
 
-    internal static void Native(JsonElement fixture)
+    internal static void Native(FixtureValue fixture)
     {
         if (!fixture.TryGetProperty("ModifierScenario", out var scenario) || scenario.GetString() != "attack-triggers") return;
         int turns = 0, sweeps = 0, fires = 0, beforeFires = 0, afterFires = 0, dying = 0, thresholds = 0, once = 0, silent = 0, queued = 0;
-        foreach (JsonElement turn in fixture.GetProperty("UnitTurns").EnumerateArray())
+        foreach (FixtureValue turn in fixture.GetProperty("UnitTurns").EnumerateArray())
         {
-            var before = turn.GetProperty("Before").Deserialize<RoomCombatState>(ModelJson.Options)!;
-            var after = turn.GetProperty("Actual").Deserialize<RoomCombatState>(ModelJson.Options)!;
+            var before = turn.GetProperty("Before").Deserialize<RoomCombatState>()!;
+            var after = turn.GetProperty("Actual").Deserialize<RoomCombatState>()!;
             int actor = turn.GetProperty("ActorId").GetInt32();
             var result = RoomCombatModel.ApplyUnitTurn(before, actor);
             string? difference = result.Supported ? ModelJson.Difference(JsonSerializer.Serialize(result.State), JsonSerializer.Serialize(after)) : result.UnsupportedReason;
-            Require(result.Supported && difference == null && turn.GetProperty("Difference").ValueKind == JsonValueKind.Null &&
+            Require(result.Supported && difference == null && turn.GetProperty("Difference").ValueKind == FixtureKind.Null &&
                 result.Events.Where(e => e.Kind == "Attack" && e.Actor == actor).Select(e => e.Target)
                     .SequenceEqual(turn.GetProperty("AttackedTargetIds").Deserialize<int[]>()!),
                 "Independent attack-trigger turn differs at sequence " + turn.GetProperty("Sequence") + ": " + difference);
             turns++; if (turn.GetProperty("AttackedTargetIds").GetArrayLength() > 1) sweeps++;
         }
-        foreach (JsonElement record in fixture.GetProperty("AttackTriggers").EnumerateArray())
+        foreach (FixtureValue record in fixture.GetProperty("AttackTriggers").EnumerateArray())
         {
-            Require(record.GetProperty("Completed").GetBoolean() && record.GetProperty("GoldAfter").ValueKind == JsonValueKind.Number &&
-                record.GetProperty("AfterTriggered").ValueKind == JsonValueKind.Array && record.GetProperty("OverrideTargetId").GetInt32() > 0 &&
+            Require(record.GetProperty("Completed").GetBoolean() && record.GetProperty("GoldAfter").ValueKind == FixtureKind.Number &&
+                record.GetProperty("AfterTriggered").ValueKind == FixtureKind.Array && record.GetProperty("OverrideTargetId").GetInt32() > 0 &&
                 record.GetProperty("ParamInt").GetInt32() == 0, "Native attack-trigger record lost completion, target override or zero argument.");
             if (record.GetProperty("Stage").GetString() == "Queue")
             { if (record.GetProperty("QueueRunning").GetBoolean()) queued++; continue; }
@@ -149,7 +150,7 @@ internal static class AttackTriggerChecks
             bool halted = record.GetProperty("DeadBoss").GetBoolean();
             bool dead = record.GetProperty("Health").GetInt32() == 0;
             int reward = 0, index = 0;
-            foreach (JsonElement trigger in record.GetProperty("Triggers").EnumerateArray())
+            foreach (FixtureValue trigger in record.GetProperty("Triggers").EnumerateArray())
             {
                 bool fired = trigger.GetProperty("HasTriggered").GetBoolean();
                 int threshold = trigger.GetProperty("Threshold").GetInt32(), count = trigger.GetProperty("FireCount").GetInt32();
