@@ -15,8 +15,8 @@ namespace MonsterTrain2Poju.Probe
             CardState? spawner = unit.GetSpawnerCard();
             return new UnitModifiers(unit.GetUnbuffedAttackDamage(), unit.GetAttackDamageAddedFromUpgrades(), unit.GetDamageBuff(),
                 rawSize, unit.GetEquipmentLimit(), unit.GetCanBeHealed(), unit.GetIsClone(),
-                unit.GetAppliedCardUpgrades().Select(CardModifierProbe.Upgrade).ToArray(), health.OrderBy(item => item.Key)
-                    .Select(item => new StatisticCount(item.Key, item.Value)).ToArray(),
+                unit.GetAppliedCardUpgrades().Select(upgrade => FullBattleTrace.Active?.CaptureAppliedUpgrade(upgrade) ?? CardModifierProbe.Upgrade(upgrade)).ToArray(), health.OrderBy(item => item.Key)
+                    .Select(item => new StatisticCount(FullBattleTrace.Active?.UpgradeKey(item.Key) ?? item.Key, item.Value)).ToArray(),
                 spawner?.GetSpawnCharacterData() == null || spawner.GetSpawnCharacterData() == unit.GetSourceCharacterData());
         }
         internal static UnitModifiers Definition(CharacterData data) => new UnitModifiers(data.GetAttackDamage(), 0, 0,

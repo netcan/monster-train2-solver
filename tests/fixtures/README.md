@@ -35,8 +35,19 @@ modifiers, equipment-limit caps, attributed maximum HP and partial lethal
 application. The source card remains independent. The complete subsequent
 policy and 16 parallel branches match native combat; the API operations also
 match independently in 32 parallel branches. This establishes the attribute
-primitive used by equipment, while equipment attachment/lifecycle remains in
-progress.
+primitive used by the equipment lifecycle fixture below.
+
+`full-battle-equipment.mt2f` retains schema 54 with 25 actual attachment,
+oldest-first replacement and reverse removal operations. Equipment carries
+base, permanent and aggregated temporary upgrades; permanent anonymous upgrade
+objects retain explicit identity when removed. Card links and standby closures
+record the current host separately from the original host: removed equipment
+continues waiting until the original host dies. Global return-to-hand checks
+occur before ordinary next-turn draws. All operations compare complete native
+room/context states independently in 32 parallel branches; the subsequent
+19-play, seven-EndTurn policy matches from initial and mid-battle inputs in
+16 parallel branches. Grafted equipment, equipment-granted triggers/abilities
+and special return overrides remain unsupported.
 
 `full-battle-room-capacity.mt2f` and `full-battle-room-capacity-lethal.mt2f`
 retain schema 52 battles with live capacities used by subsequent summons and

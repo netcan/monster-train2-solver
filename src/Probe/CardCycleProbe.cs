@@ -37,7 +37,8 @@ namespace MonsterTrain2Poju.Probe
                     interactions.Add(field);
             var standby = (Dictionary<CardState, RemoveFromStandByCondition>)AccessTools.Field(
                 typeof(CardManager), "pileStandBy").GetValue(cards);
-            if (kind != "SpellDraw" && standby.Values.Any(condition => condition != null && condition.GetReturnLocation() != CardPile.KeepInStandBy))
+            if (kind != "SpellDraw" && standby.Any(pair => pair.Value != null && pair.Value.GetReturnLocation() != CardPile.KeepInStandBy &&
+                pair.Key.GetCardType() != CardType.Equipment))
                 interactions.Add("Cards returning from standby");
             string[] callbacks = kind == "Draw"
                 ? new[] { "OnPreDrawingHand", "OnDrawingHand", "OnCardDrawn", "OnDeckShuffled", "IgnoreDraw" }
@@ -88,11 +89,17 @@ namespace MonsterTrain2Poju.Probe
                     managers.GetSaveManager().GetGameSequence() == SaveData.GameSequence.InBattle)
                 {
                     CardCycleState before = Capture(cards, kind);
+                    CombatContext? standbyContext = kind == "Draw" ? trace.CaptureContext() : null;
+                    int[]? livingIds = kind == "Draw" ? trace.CaptureTrain().Rooms.SelectMany(room => room.Units).Select(unit => unit.Id).ToArray() : null;
+                    CardCycleState prepared = standbyContext == null ? before : EquipmentModel.ReturnStandby(standbyContext, livingIds!).Cards;
+                    prepared = new CardCycleState(prepared.Hand, prepared.Draw, prepared.Discard, prepared.Rng, prepared.DrawModifier,
+                        before.ExternalInteractions, prepared.BonusDraw);
                     record = new Record
                     {
                         Index = records.Count, Turn = managers.GetCombatManager()!.GetTurnCount(), Kind = kind,
                         HandSize = handSize, MaxHandSize = cards.GetMaxHandSize(), Before = before,
-                        Predicted = kind == "Draw" ? CardCycleModel.DrawHand(before, handSize, cards.GetMaxHandSize())
+                        StandbyContext = standbyContext, LivingUnitIds = livingIds,
+                        Predicted = kind == "Draw" ? CardCycleModel.DrawHand(prepared, handSize, cards.GetMaxHandSize())
                             : CardCycleModel.DiscardHand(before)
                     };
                     records.Add(record);
@@ -157,6 +164,8 @@ namespace MonsterTrain2Poju.Probe
             public int MaxHandSize { get; set; }
             public int PlayedCardId { get; set; }
             public CardCycleState Before { get; set; } = null!;
+            public CombatContext? StandbyContext { get; set; }
+            public int[]? LivingUnitIds { get; set; }
             public CardCycleResult Predicted { get; set; } = null!;
             public CardCycleState? Actual { get; set; }
             public string? Difference { get; set; }

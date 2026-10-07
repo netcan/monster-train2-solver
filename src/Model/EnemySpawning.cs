@@ -14,7 +14,7 @@ namespace MonsterTrain2Poju.Model
         { Unit = unit; Ascends = ascends; Loops = loops; ExternalInteractions = Array.AsReadOnly(externalInteractions.ToArray()); }
         internal CombatUnit Create(int id) => new CombatUnit(id, Unit.AssetKey, CombatTeam.Enemy,
             Unit.BaseAttack, Unit.Health, Unit.MaxHealth, Unit.CanAttack, false, Unit.EndsBattleOnDeath,
-            Unit.Statuses, Unit.Triggers, size: Unit.Size, statusImmunities: Unit.StatusImmunities, subtypes: Unit.Subtypes, modifiers: Unit.Modifiers, isBoss: Unit.IsBoss, lastAttackerId: Unit.LastAttackerId.HasValue ? 0 : null, statusRegistry: Unit.StatusRegistry);
+            Unit.Statuses, Unit.Triggers, size: Unit.Size, statusImmunities: Unit.StatusImmunities, subtypes: Unit.Subtypes, modifiers: Unit.Modifiers, isBoss: Unit.IsBoss, lastAttackerId: Unit.LastAttackerId.HasValue ? 0 : null, statusRegistry: Unit.StatusRegistry, equipmentCards: Unit.EquipmentCards);
     }
 
     public sealed class EnemyGroup

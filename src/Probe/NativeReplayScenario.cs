@@ -401,6 +401,15 @@ namespace MonsterTrain2Poju.Probe
                 return;
             }
             string? modifierScenario = Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS");
+            if (fullBattle && modifierScenario == "equipment")
+            {
+                if (EquipmentScenario.Error != null) throw new InvalidOperationException(EquipmentScenario.Error);
+                if (!EquipmentScenario.Completed)
+                {
+                    if (!EquipmentScenario.Started) EquipmentScenario.Start(managers, log);
+                    return;
+                }
+            }
             if (fullBattle && modifierScenario == "direct-unit-upgrades")
             {
                 if (DirectUnitUpgradeScenario.Error != null) throw new InvalidOperationException(DirectUnitUpgradeScenario.Error);

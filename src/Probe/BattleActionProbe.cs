@@ -86,13 +86,13 @@ namespace MonsterTrain2Poju.Probe
                     CombatUnit source = definition.Unit;
                     template = new CombatUnit(0, source.AssetKey, CombatTeam.Player, source.BaseAttack, source.Health,
                         source.MaxHealth, source.CanAttack, false, false, source.Statuses, source.Triggers, size: source.Size,
-                        statusImmunities: source.StatusImmunities, subtypes: source.Subtypes, modifiers: source.Modifiers, isBoss: source.IsBoss, lastAttackerId: 0, statusRegistry: source.StatusRegistry);
+                        statusImmunities: source.StatusImmunities, subtypes: source.Subtypes, modifiers: source.Modifiers, isBoss: source.IsBoss, lastAttackerId: 0, statusRegistry: source.StatusRegistry, equipmentCards: source.EquipmentCards);
                 }
                 kind = "SpawnMonster"; destination = "Standby";
             }
             else if (kind == "CardEffectNULL") kind = "Null";
-            else if (data.GetCardType() == CardType.Spell && effects.Length > 0 && effects.All(effect =>
-                new[] { "CardEffectGainEnergy", "CardEffectAdjustEnergy", "CardEffectGainEnergyNextTurn", "CardEffectGainEnergyEveryTurn", "CardEffectDamage", "CardEffectDraw", "CardEffectDrawAdditionalNextTurn", "CardEffectAdjustRoomCapacity", "CardEffectDiscardHand", "CardEffectAddBattleCard", "CardEffectHeal", "CardEffectBuffDamage", "CardEffectDebuffDamage", "CardEffectBuffMaxHealth", "CardEffectDebuffMaxHealth", "CardEffectAddStatusEffect", "CardEffectFloorRearrange", "CardEffectAddCardUpgradeToUnits",
+            else if ((data.GetCardType() == CardType.Spell || data.GetCardType() == CardType.Equipment) && effects.Length > 0 && effects.All(effect =>
+                new[] { "CardEffectAttachEquipment", "CardEffectRemoveEquipment", "CardEffectGainEnergy", "CardEffectAdjustEnergy", "CardEffectGainEnergyNextTurn", "CardEffectGainEnergyEveryTurn", "CardEffectDamage", "CardEffectDraw", "CardEffectDrawAdditionalNextTurn", "CardEffectAdjustRoomCapacity", "CardEffectDiscardHand", "CardEffectAddBattleCard", "CardEffectHeal", "CardEffectBuffDamage", "CardEffectDebuffDamage", "CardEffectBuffMaxHealth", "CardEffectDebuffMaxHealth", "CardEffectAddStatusEffect", "CardEffectFloorRearrange", "CardEffectAddCardUpgradeToUnits",
                     "CardEffectAddTempCardUpgradeToUnits", "CardEffectRemoveTempUpgradeFromUnit",
                     "CardEffectAddTempCardUpgradeToCardsInHand", "CardEffectAddPermanentCardUpgradeToCardsInHand" }.Contains(effect.GetEffectStateName())))
             {
@@ -109,6 +109,8 @@ namespace MonsterTrain2Poju.Probe
                             !CardTargetModel.Supports(effect.GetTargetMode().ToString())))
                         interactions.Add("Spell scaling or target filters");
                     string type = EnergyModel.IsNativeEffect(effect.GetEffectStateName()) ? EnergyEffectProbe.Type(effect) :
+                        effect.GetEffectStateName() == "CardEffectAttachEquipment" ? "AttachEquipment" :
+                        effect.GetEffectStateName() == "CardEffectRemoveEquipment" ? "RemoveEquipment" :
                         effect.GetEffectStateName() == "CardEffectDamage" ? "Damage" :
                         effect.GetEffectStateName() == "CardEffectAdjustRoomCapacity" ? "AdjustCapacity" :
                         effect.GetEffectStateName() == "CardEffectDraw" ? "Draw" :
@@ -128,7 +130,7 @@ namespace MonsterTrain2Poju.Probe
                         interactions.Add("Unimplemented integer range consumer " + type);
                     string lifetime = "";
                     if (type == "BuffHealth") lifetime = ((UnitUpgradeLifetimeTempOnly)effect.GetAdditionalParamInt1()).ToString();
-                    if (type == "UnitUpgrade" || type == "RemoveUnitUpgrade" || handUpgrade)
+                    if (type == "UnitUpgrade" || type == "RemoveUnitUpgrade" || type == "AttachEquipment" || handUpgrade)
                     {
                         if (effect.GetParamCardUpgradeData() == null) interactions.Add("Missing unit upgrade data");
                         else
@@ -138,7 +140,7 @@ namespace MonsterTrain2Poju.Probe
                             interactions.AddRange(upgrade.ExternalInteractions);
                         }
                         lifetime = handUpgrade ? effect.GetEffectStateName() == "CardEffectAddPermanentCardUpgradeToCardsInHand" ?
-                            "Permanent" : "TemporaryUntilEndOfBattle" : ((UnitUpgradeLifetime)effect.GetAdditionalParamInt1()).ToString();
+                            "Permanent" : "TemporaryUntilEndOfBattle" : type == "AttachEquipment" ? "" : ((UnitUpgradeLifetime)effect.GetAdditionalParamInt1()).ToString();
                         if (effect.GetEffectStateName() == "CardEffectAddCardUpgradeToUnits" && effect.GetParamBool())
                             interactions.Add("Scaling unit upgrade instances");
                     }
@@ -166,9 +168,18 @@ namespace MonsterTrain2Poju.Probe
                 }
             }
             else interactions.Add("Unimplemented play effect " + kind);
+            EquipmentDefinition? equipment = null;
+            if (effects.Any(effect => effect.GetEffectStateName() == "CardEffectAttachEquipment"))
+            {
+                var upgrades = effects.Where(effect => effect.GetParamCardUpgradeData() != null).Select(effect =>
+                { var state = new CardUpgradeState(); state.Setup(effect.GetParamCardUpgradeData()); return CardModifierProbe.Upgrade(state); }).ToArray();
+                equipment = new EquipmentDefinition(upgrades, data.GetTraits().Any(trait => trait.GetTraitStateName() == "CardTraitReturnToHandEquipment"));
+                interactions.AddRange(upgrades.SelectMany(upgrade => upgrade.ExternalInteractions));
+                if (data.GetCardType() == CardType.Equipment) { kind = "Equipment"; destination = "Standby"; }
+            }
             return new CardPlayRule(data.GetID(), data.name, data.GetCost(), kind, destination, template,
                 interactions.Distinct().OrderBy(value => value, StringComparer.Ordinal).ToArray(), spellEffects, upgradeInteractions,
-                HandInteractions(data, false), HandInteractions(data, true), data.GetCostType().ToString());
+                HandInteractions(data, false), HandInteractions(data, true), data.GetCostType().ToString(), equipment);
         }
 
         private static string[] HandInteractions(CardData data, bool consume)

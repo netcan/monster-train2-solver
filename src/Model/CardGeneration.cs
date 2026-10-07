@@ -14,16 +14,18 @@ namespace MonsterTrain2Poju.Model
         public IReadOnlyList<ScalingStatusTrait>? StatusScalingTraits { get; }
         public IReadOnlyList<ScalingUnitUpgradeTrait>? UnitUpgradeScalingTraits { get; }
         public IReadOnlyList<ScalingCapacityTrait>? CapacityScalingTraits { get; }
+        public int? EquippedUnitId { get; }
         public CardCreationRule(string dataId, CardModifiers startingModifiers, IReadOnlyList<CardEffectCounter>? effectCounters,
             IReadOnlyList<string> externalInteractions, IReadOnlyList<ScalingDamageTrait>? damageScalingTraits = null,
             IReadOnlyList<ScalingStatusTrait>? statusScalingTraits = null, IReadOnlyList<ScalingUnitUpgradeTrait>? unitUpgradeScalingTraits = null,
-            IReadOnlyList<ScalingCapacityTrait>? capacityScalingTraits = null)
+            IReadOnlyList<ScalingCapacityTrait>? capacityScalingTraits = null, int? equippedUnitId = null)
         { DataId = dataId; StartingModifiers = startingModifiers; EffectCounters = effectCounters == null ? null : Array.AsReadOnly(effectCounters.ToArray());
             ExternalInteractions = Array.AsReadOnly(externalInteractions.ToArray());
             DamageScalingTraits = damageScalingTraits == null ? null : Array.AsReadOnly(damageScalingTraits.ToArray());
             StatusScalingTraits = statusScalingTraits == null ? null : Array.AsReadOnly(statusScalingTraits.ToArray());
             UnitUpgradeScalingTraits = unitUpgradeScalingTraits == null ? null : Array.AsReadOnly(unitUpgradeScalingTraits.ToArray());
-            CapacityScalingTraits = capacityScalingTraits == null ? null : Array.AsReadOnly(capacityScalingTraits.ToArray()); }
+            CapacityScalingTraits = capacityScalingTraits == null ? null : Array.AsReadOnly(capacityScalingTraits.ToArray());
+            EquippedUnitId = equippedUnitId; }
     }
 
     public sealed class DiscardGenerationUpgrade
@@ -89,7 +91,7 @@ namespace MonsterTrain2Poju.Model
                     return Unsupported("Modified generation requires complete card instance state.");
                 CardModifiers permanent = creation.StartingModifiers, temporary = CardModifiers.Empty();
                 CardInstanceState candidate = new(context.NextCardId, creation.DataId, permanent, temporary, 0, 0, 0,
-                    creation.ExternalInteractions, creation.EffectCounters, creation.DamageScalingTraits, creation.StatusScalingTraits, creation.UnitUpgradeScalingTraits, creation.CapacityScalingTraits);
+                    creation.ExternalInteractions, creation.EffectCounters, creation.DamageScalingTraits, creation.StatusScalingTraits, creation.UnitUpgradeScalingTraits, creation.CapacityScalingTraits, creation.EquippedUnitId);
                 string? error = CardModifierModel.UnsupportedReason(candidate);
                 if (error != null) return Unsupported(error);
                 if (rule.Upgrade != null)
@@ -146,7 +148,7 @@ namespace MonsterTrain2Poju.Model
                     default: draw.Insert(0, card); break;
                 }
                 candidate = new CardInstanceState(card.InstanceId, card.DataId, permanent, temporary, 0, 0, 0,
-                    creation.ExternalInteractions, creation.EffectCounters, creation.DamageScalingTraits, creation.StatusScalingTraits, creation.UnitUpgradeScalingTraits, creation.CapacityScalingTraits);
+                    creation.ExternalInteractions, creation.EffectCounters, creation.DamageScalingTraits, creation.StatusScalingTraits, creation.UnitUpgradeScalingTraits, creation.CapacityScalingTraits, creation.EquippedUnitId);
                 context = new CombatContext(new CardCycleState(hand, draw, discard, context.Cards.Rng, context.Cards.DrawModifier,
                     context.Cards.ExternalInteractions, context.Cards.BonusDraw), rng, context.Gold, checked(context.NextCardId + 1), context.MaxHandSize,
                     context.StatusRules, context.Statistics?.TrackCards(new[] { card.InstanceId }),

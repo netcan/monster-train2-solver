@@ -37,25 +37,32 @@ namespace MonsterTrain2Poju.Model
         public bool MagicPowerTraitScalingOnly { get; }
         public int? CloneDamageBase { get; }
         public int? CloneHealBase { get; }
+        public int? EquipmentSourceCardId { get; }
+        public int? EquipmentSourceUpgradeIndex { get; }
         public IReadOnlyList<string> ExternalInteractions { get; }
         public CardUpgradeModifier(string dataId, string assetKey, CardStatModifier stats, IReadOnlyList<CombatStatus> statuses,
             bool removeOnDiscard, bool unique, bool excludeFromClones, int unhealedHealth, int damageBuff,
             IReadOnlyList<string> externalInteractions, bool restrictSizeToRoomCapacity = false, bool magicPowerTraitScalingOnly = false,
-            int? cloneDamageBase = null, int? cloneHealBase = null)
+            int? cloneDamageBase = null, int? cloneHealBase = null,
+            int? equipmentSourceCardId = null, int? equipmentSourceUpgradeIndex = null)
         { DataId = dataId; AssetKey = assetKey; Stats = stats; Statuses = Array.AsReadOnly(statuses.ToArray());
             RemoveOnDiscard = removeOnDiscard; Unique = unique; ExcludeFromClones = excludeFromClones;
             UnhealedHealth = unhealedHealth; DamageBuff = damageBuff; ExternalInteractions = Array.AsReadOnly(externalInteractions.ToArray());
             RestrictSizeToRoomCapacity = restrictSizeToRoomCapacity; MagicPowerTraitScalingOnly = magicPowerTraitScalingOnly;
-            CloneDamageBase = cloneDamageBase; CloneHealBase = cloneHealBase; }
+            CloneDamageBase = cloneDamageBase; CloneHealBase = cloneHealBase;
+            EquipmentSourceCardId = equipmentSourceCardId; EquipmentSourceUpgradeIndex = equipmentSourceUpgradeIndex; }
+        public CardUpgradeModifier WithEquipmentSource(int cardId, int upgradeIndex) => new CardUpgradeModifier(DataId, AssetKey,
+            Stats, Statuses, RemoveOnDiscard, Unique, ExcludeFromClones, UnhealedHealth, DamageBuff, ExternalInteractions,
+            RestrictSizeToRoomCapacity, MagicPowerTraitScalingOnly, CloneDamageBase, CloneHealBase, cardId, upgradeIndex);
         internal CardUpgradeModifier WithScaledStats(int damage, int health) => new CardUpgradeModifier(DataId, AssetKey,
             new CardStatModifier(damage, health, Stats.Cost, Stats.Heal, Stats.Size, Stats.XCost, Stats.EquipmentLimit, Stats.UpgradeSlotCount),
             Statuses, RemoveOnDiscard, Unique, ExcludeFromClones, UnhealedHealth, DamageBuff, ExternalInteractions,
-            RestrictSizeToRoomCapacity, MagicPowerTraitScalingOnly, CloneDamageBase, CloneHealBase);
+            RestrictSizeToRoomCapacity, MagicPowerTraitScalingOnly, CloneDamageBase, CloneHealBase, EquipmentSourceCardId, EquipmentSourceUpgradeIndex);
         internal CardUpgradeModifier RefreshCloneMagicPower() => new CardUpgradeModifier(DataId, AssetKey,
             new CardStatModifier(CloneDamageBase ?? Stats.Damage, Stats.Health, Stats.Cost, CloneHealBase ?? Stats.Heal,
                 Stats.Size, Stats.XCost, Stats.EquipmentLimit, Stats.UpgradeSlotCount), Statuses, RemoveOnDiscard, Unique,
             ExcludeFromClones, UnhealedHealth, DamageBuff, ExternalInteractions, RestrictSizeToRoomCapacity,
-            MagicPowerTraitScalingOnly, CloneDamageBase, CloneHealBase);
+            MagicPowerTraitScalingOnly, CloneDamageBase, CloneHealBase, EquipmentSourceCardId, EquipmentSourceUpgradeIndex);
     }
 
     public sealed class CardModifiers
@@ -108,11 +115,12 @@ namespace MonsterTrain2Poju.Model
         public IReadOnlyList<ScalingStatusTrait>? StatusScalingTraits { get; }
         public IReadOnlyList<ScalingUnitUpgradeTrait>? UnitUpgradeScalingTraits { get; }
         public IReadOnlyList<ScalingCapacityTrait>? CapacityScalingTraits { get; }
+        public int? EquippedUnitId { get; }
         public CardInstanceState(int instanceId, string dataId, CardModifiers permanent, CardModifiers temporary,
             int lastPlayedCost, int lastForgedAmount, int playCount, IReadOnlyList<string> externalInteractions,
             IReadOnlyList<CardEffectCounter>? effectCounters = null, IReadOnlyList<ScalingDamageTrait>? damageScalingTraits = null,
             IReadOnlyList<ScalingStatusTrait>? statusScalingTraits = null, IReadOnlyList<ScalingUnitUpgradeTrait>? unitUpgradeScalingTraits = null,
-            IReadOnlyList<ScalingCapacityTrait>? capacityScalingTraits = null)
+            IReadOnlyList<ScalingCapacityTrait>? capacityScalingTraits = null, int? equippedUnitId = null)
         { InstanceId = instanceId; DataId = dataId; Permanent = permanent; Temporary = temporary;
             LastPlayedCost = lastPlayedCost; LastForgedAmount = lastForgedAmount; PlayCount = playCount;
             ExternalInteractions = Array.AsReadOnly(externalInteractions.ToArray());
@@ -120,19 +128,23 @@ namespace MonsterTrain2Poju.Model
             DamageScalingTraits = damageScalingTraits == null ? null : Array.AsReadOnly(damageScalingTraits.ToArray());
             StatusScalingTraits = statusScalingTraits == null ? null : Array.AsReadOnly(statusScalingTraits.ToArray());
             UnitUpgradeScalingTraits = unitUpgradeScalingTraits == null ? null : Array.AsReadOnly(unitUpgradeScalingTraits.ToArray());
-            CapacityScalingTraits = capacityScalingTraits == null ? null : Array.AsReadOnly(capacityScalingTraits.ToArray()); }
+            CapacityScalingTraits = capacityScalingTraits == null ? null : Array.AsReadOnly(capacityScalingTraits.ToArray());
+            EquippedUnitId = equippedUnitId; }
+        internal CardInstanceState WithEquippedUnit(int unitId) => new CardInstanceState(InstanceId, DataId,
+            Permanent, Temporary, LastPlayedCost, LastForgedAmount, PlayCount, ExternalInteractions,
+            EffectCounters, DamageScalingTraits, StatusScalingTraits, UnitUpgradeScalingTraits, CapacityScalingTraits, unitId);
         public static CardInstanceState Empty(int id, string dataId) => new CardInstanceState(id, dataId,
             CardModifiers.Empty(), CardModifiers.Empty(), 0, 0, 0, Array.Empty<string>());
         internal CardInstanceState WithPlayedCost(int cost) => new CardInstanceState(InstanceId, DataId,
             Permanent, Temporary, cost, LastForgedAmount, PlayCount, ExternalInteractions,
-            EffectCounters, DamageScalingTraits, StatusScalingTraits, UnitUpgradeScalingTraits, CapacityScalingTraits);
+            EffectCounters, DamageScalingTraits, StatusScalingTraits, UnitUpgradeScalingTraits, CapacityScalingTraits, EquippedUnitId);
         public CardInstanceState OnDiscard(bool played, int cost = 0) => new CardInstanceState(InstanceId, DataId,
             Permanent, Temporary.OnDiscard(), played ? cost : LastPlayedCost, LastForgedAmount,
-            PlayCount + (played ? 1 : 0), ExternalInteractions, EffectCounters, DamageScalingTraits, StatusScalingTraits, UnitUpgradeScalingTraits, CapacityScalingTraits);
+            PlayCount + (played ? 1 : 0), ExternalInteractions, EffectCounters, DamageScalingTraits, StatusScalingTraits, UnitUpgradeScalingTraits, CapacityScalingTraits, EquippedUnitId);
         internal CardInstanceState WithCounter(int index, string type, int value) => new CardInstanceState(InstanceId, DataId,
             Permanent, Temporary, LastPlayedCost, LastForgedAmount, PlayCount, ExternalInteractions,
             (EffectCounters ?? Array.Empty<CardEffectCounter>()).Where(counter => counter.EffectIndex != index)
-                .Concat(new[] { new CardEffectCounter(index, type, value) }).ToArray(), DamageScalingTraits, StatusScalingTraits, UnitUpgradeScalingTraits, CapacityScalingTraits);
+                .Concat(new[] { new CardEffectCounter(index, type, value) }).ToArray(), DamageScalingTraits, StatusScalingTraits, UnitUpgradeScalingTraits, CapacityScalingTraits, EquippedUnitId);
     }
 
     public static class CardModifierModel
@@ -193,7 +205,7 @@ namespace MonsterTrain2Poju.Model
                 unit = new CombatUnit(unit.Id, unit.AssetKey, unit.Team, UpgradedStat(unit.BaseAttack, "Damage", true, modifiers),
                     health, health, unit.CanAttack, unit.IsPyre, unit.EndsBattleOnDeath,
                     statuses.Values.Where(status => status.Stacks > 0).ToArray(), unit.Triggers,
-                    unit.SpawnerCardId, Math.Max(1, UpgradedStat(unit.Size, "Size", false, modifiers)), unit.StatusImmunities, unit.Subtypes, unitModifiers, unit.IsBoss, unit.LastAttackerId, unit.StatusRegistry);
+                    unit.SpawnerCardId, Math.Max(1, UpgradedStat(unit.Size, "Size", false, modifiers)), unit.StatusImmunities, unit.Subtypes, unitModifiers, unit.IsBoss, unit.LastAttackerId, unit.StatusRegistry, unit.EquipmentCards);
             }
             CardActionEffect[] effects = rule.Effects.Select(effect => new CardActionEffect(effect.Type, effect.Target,
                 ResolveValue(effect, effect.Value), effect.AllowEnemy, effect.AllowPlayer, effect.Statuses, effect.Upgrade, effect.Lifetime, effect.Tests,
@@ -201,7 +213,7 @@ namespace MonsterTrain2Poju.Model
                     ResolveValue(effect, effect.Range.Max), effect.Range.Multiplier), effect.Filters, effect.Generation, effect.OnlyIfNoEnemies)).ToArray();
             return new CardPlayRule(rule.DataId, rule.AssetKey, UpgradedStat(rule.Cost, "Cost", true, modifiers), rule.Effect,
                 rule.Destination, unit, interactions.Distinct().OrderBy(value => value, StringComparer.Ordinal).ToArray(), effects, rule.UpgradeInteractions,
-                rule.HandDiscardInteractions, rule.HandConsumeInteractions, rule.CostType);
+                rule.HandDiscardInteractions, rule.HandConsumeInteractions, rule.CostType, rule.Equipment);
 
             int ResolveValue(CardActionEffect effect, int value) => effect.Type == "Damage" || effect.Type == "Heal"
                 ? UpgradedStat(UpgradedStat(value, effect.Type, true, instance.Permanent), effect.Type, true, instance.Temporary) : value;

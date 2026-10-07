@@ -80,6 +80,7 @@ namespace MonsterTrain2Poju.Model
         public bool? IsBoss { get; }
         // Null denotes a legacy capture without relationship state; zero is known-none.
         public int? LastAttackerId { get; }
+        public IReadOnlyList<int>? EquipmentCards { get; }
         public int Attacks => Math.Max(1, Status("multistrike") is CombatStatus multi
             ? multi.ParamInt + multi.Stacks - 1 : 1);
 
@@ -87,10 +88,11 @@ namespace MonsterTrain2Poju.Model
             int health, int maxHealth, bool canAttack, bool isPyre, bool endsBattleOnDeath,
             IReadOnlyList<CombatStatus> statuses, IReadOnlyList<CombatTrigger>? triggers = null, int spawnerCardId = 0, int size = 0,
             IReadOnlyList<string>? statusImmunities = null, IReadOnlyList<string>? subtypes = null, UnitModifiers? modifiers = null, bool? isBoss = null,
-            int? lastAttackerId = null, IReadOnlyList<CombatStatus>? statusRegistry = null)
+            int? lastAttackerId = null, IReadOnlyList<CombatStatus>? statusRegistry = null, IReadOnlyList<int>? equipmentCards = null)
         {
             Id = id;
             LastAttackerId = lastAttackerId;
+            EquipmentCards = equipmentCards == null ? null : Array.AsReadOnly(equipmentCards.ToArray());
             AssetKey = assetKey;
             Team = team;
             BaseAttack = baseAttack;
@@ -140,7 +142,7 @@ namespace MonsterTrain2Poju.Model
 
         internal CombatUnit WithoutRemovedAttacker(ISet<int> activeIds) => !LastAttackerId.HasValue || LastAttackerId == 0 || activeIds.Contains(LastAttackerId.Value)
             ? this : new CombatUnit(Id, AssetKey, Team, BaseAttack, Health, MaxHealth, CanAttack, IsPyre, EndsBattleOnDeath, Statuses,
-                Triggers, SpawnerCardId, Size, StatusImmunities, Subtypes, Modifiers, IsBoss, 0, StatusRegistry);
+                Triggers, SpawnerCardId, Size, StatusImmunities, Subtypes, Modifiers, IsBoss, 0, StatusRegistry, EquipmentCards);
     }
 
     public sealed class RoomCombatState
@@ -389,6 +391,20 @@ namespace MonsterTrain2Poju.Model
             return new RoomCombatResult(result.State, result.Outcome, result.Rounds, result.Events.ToList(), result.UnsupportedReason, callbacks);
         }
 
+        public static RoomCombatResult ApplyEquipment(RoomCombatState state, int targetId, int cardId, BattlePlayRules definitions, bool remove = false)
+        {
+            string? error = Validate(state);
+            CombatUnit? target = state.Units.FirstOrDefault(unit => unit.Id == targetId);
+            if (error != null || target?.EquipmentCards == null || target.Modifiers == null || state.Context?.OtherPiles == null)
+                return new RoomCombatResult(null, RoomOutcome.Unsupported, 0, new List<CombatEvent>(), error ?? "Missing equipment unit/pile state.");
+            if (!remove && target.EquipmentCards.Contains(cardId))
+                return new RoomCombatResult(null, RoomOutcome.Unsupported, 0, new List<CombatEvent>(), "Repeated raw attachment of the same equipment object is not modeled.");
+            var callbacks = new List<QueuedCharacterTrigger>();
+            var result = new Engine(state, new List<CombatEvent>(), enqueueCharacterTrigger: remove ? callbacks.Add : (Action<QueuedCharacterTrigger>?)null,
+                resetPreviewTriggers: false).Equipment(targetId, cardId, definitions, remove);
+            return new RoomCombatResult(result.State, result.Outcome, result.Rounds, result.Events.ToList(), result.UnsupportedReason, callbacks);
+        }
+
         public static RoomCombatResult ApplyCardHeal(RoomCombatState state, int targetId, int amount)
         {
             string? error = Validate(state);
@@ -445,6 +461,7 @@ namespace MonsterTrain2Poju.Model
                 foreach (CombatTrigger trigger in unit.Triggers)
                 {
                     if (trigger.Kind != "OnDeath" && trigger.Kind != "PostCombat" && trigger.Kind != "PostCombatHealing" && trigger.Kind != "OnHeal" &&
+                        trigger.Kind != "OnEquipmentAdded" && trigger.Kind != "OnEquipmentAddedToAny" && trigger.Kind != "OnEquipmentRemoved" &&
                         trigger.Kind != "OnSpawn" && trigger.Kind != "OnUnscaledSpawn" && trigger.Kind != "OnSpawnNotFromCard" &&
                         trigger.Kind != "OnTurnBegin" && trigger.Kind != "OnTeamTurnBegin" && trigger.Kind != "EndTurnPreHandDiscard" && trigger.Kind != "PreCombat" &&
                         trigger.Kind != "OnHit" && trigger.Kind != "OnKill" && trigger.Kind != "OnAttackingBeforeDamage" && trigger.Kind != "OnAttacking" &&
@@ -590,7 +607,7 @@ namespace MonsterTrain2Poju.Model
                 SyncRegistry();
                 return new CombatUnit(Source.Id, Source.AssetKey, Source.Team,
                     Source.BaseAttack, Health, Source.MaxHealth, Source.CanAttack, Source.IsPyre,
-                    Source.EndsBattleOnDeath, Statuses.Values.ToArray(), Triggers, Source.SpawnerCardId, Source.Size, Source.StatusImmunities, Source.Subtypes, Source.Modifiers, Source.IsBoss, LastAttackerId, statusRegistry);
+                    Source.EndsBattleOnDeath, Statuses.Values.ToArray(), Triggers, Source.SpawnerCardId, Source.Size, Source.StatusImmunities, Source.Subtypes, Source.Modifiers, Source.IsBoss, LastAttackerId, statusRegistry, Source.EquipmentCards);
             }
         }
 
@@ -725,6 +742,78 @@ namespace MonsterTrain2Poju.Model
                 if (enqueueCharacterTrigger == null && !runningTriggerQueue) DrainLocalTriggerQueue();
                 return Finish(battleWon ? RoomOutcome.BattleWon : units.Any(unit => unit.Source.IsPyre && !unit.Alive)
                     ? RoomOutcome.PlayerDefeated : RoomOutcome.Exchanged);
+            }
+
+            internal RoomCombatResult Equipment(int targetId, int cardId, BattlePlayRules definitions, bool remove)
+            {
+                WorkingUnit target = units.Single(unit => unit.Source.Id == targetId);
+                if (remove)
+                {
+                    if (cardId == 0)
+                    {
+                        foreach (int id in target.Source.EquipmentCards!.Reverse().ToArray()) if (!RemoveEquipment(target, id, definitions)) break;
+                    }
+                    else RemoveEquipment(target, cardId, definitions);
+                }
+                else if (!target.Source.EquipmentCards!.Contains(cardId))
+                {
+                    while (target.Source.EquipmentCards!.Count >= target.Source.Modifiers!.EquipmentLimit && target.Source.EquipmentCards.Count > 0)
+                        if (!RemoveEquipment(target, target.Source.EquipmentCards[0], definitions)) return Finish(RoomOutcome.Unsupported);
+                    if (!EquipmentUpgrades(cardId, definitions, out var card, out var upgrades)) return Finish(RoomOutcome.Unsupported);
+                    SetEquipment(target, target.Source.EquipmentCards.Concat(new[] { cardId }).ToArray());
+                    foreach (var upgrade in upgrades)
+                        if (!ApplyUpgrade(target, upgrade, "TemporaryUntilUnitDeath", false, null, 0, null, true, EquipmentModel.UpgradeKey(cardId)))
+                            return Finish(RoomOutcome.Unsupported);
+                    if (!target.Removed)
+                        foreach (WorkingUnit unit in units.Where(unit => !unit.Removed && unit.InRoom).OrderBy(unit => unit.Source.Team))
+                            QueueCallback(new QueuedCharacterTrigger(source.RoomIndex, unit.Freeze(), "OnEquipmentAddedToAny"));
+                    QueueCallback(new QueuedCharacterTrigger(source.RoomIndex, target.Freeze(), "OnEquipmentAdded"));
+                    context = context!.WithCard((context.FindCard(cardId) ?? card!).WithEquippedUnit(targetId));
+                    DrainLocalTriggerQueue();
+                }
+                return Finish(battleWon ? RoomOutcome.BattleWon : units.Any(unit => unit.Source.IsPyre && !unit.Alive) ? RoomOutcome.PlayerDefeated : RoomOutcome.Exchanged);
+            }
+
+            private bool EquipmentUpgrades(int cardId, BattlePlayRules definitions, out CardInstanceState? card, out CardUpgradeModifier[] upgrades)
+            {
+                card = context?.FindCard(cardId); upgrades = Array.Empty<CardUpgradeModifier>();
+                string? dataId = card?.DataId;
+                EquipmentDefinition? definition = definitions.Cards.FirstOrDefault(rule => rule.DataId == dataId)?.Equipment;
+                if (card?.EquippedUnitId == null || definition == null)
+                { unsupportedReason = "Missing equipment definition or card relationship."; return false; }
+                upgrades = definition.Upgrades.Concat(card.Permanent.Upgrades.Select((upgrade, index) => upgrade.WithEquipmentSource(cardId, index)))
+                    .Concat(new[] { EquipmentModel.TemporaryAggregate(card) }).ToArray();
+                if (upgrades.Any(upgrade => upgrade.ExternalInteractions.Count > 0))
+                { unsupportedReason = "Unmodeled equipment upgrade interactions."; return false; }
+                return true;
+            }
+
+            private bool RemoveEquipment(WorkingUnit target, int cardId, BattlePlayRules definitions)
+            {
+                if (target.Source.EquipmentCards!.Contains(cardId))
+                {
+                    if (!EquipmentUpgrades(cardId, definitions, out _, out var upgrades)) return false;
+                    foreach (var upgrade in upgrades)
+                    {
+                        int index = upgrade.DataId.Length == 0 && upgrade.EquipmentSourceCardId.HasValue
+                            ? target.Source.Modifiers!.Upgrades.ToList().FindIndex(applied => applied.EquipmentSourceCardId == upgrade.EquipmentSourceCardId &&
+                                applied.EquipmentSourceUpgradeIndex == upgrade.EquipmentSourceUpgradeIndex) : -1;
+                        if (!ApplyUpgrade(target, upgrade, "TemporaryUntilUnitDeath", true, null, 0, null, true,
+                            EquipmentModel.UpgradeKey(cardId), index < 0 ? (int?)null : index)) return false;
+                    }
+                    SetEquipment(target, target.Source.EquipmentCards.Where(id => id != cardId).ToArray());
+                    QueueCallback(new QueuedCharacterTrigger(source.RoomIndex, target.Freeze(), "OnEquipmentRemoved"));
+                }
+                CardInstanceState? card = context?.FindCard(cardId);
+                if (card != null) context = context!.WithCard(card.WithEquippedUnit(0));
+                return true;
+            }
+            private static void SetEquipment(WorkingUnit target, IReadOnlyList<int> cards)
+            {
+                CombatUnit unit = target.Freeze();
+                target.Apply(new CombatUnit(unit.Id, unit.AssetKey, unit.Team, unit.BaseAttack, unit.Health, unit.MaxHealth, unit.CanAttack,
+                    unit.IsPyre, unit.EndsBattleOnDeath, unit.Statuses, unit.Triggers, unit.SpawnerCardId, unit.Size, unit.StatusImmunities,
+                    unit.Subtypes, unit.Modifiers, unit.IsBoss, unit.LastAttackerId, unit.StatusRegistry, cards));
             }
 
             internal RoomCombatResult CardHeal(int targetId, int amount)
@@ -1008,11 +1097,15 @@ namespace MonsterTrain2Poju.Model
 
             private void SettleDeadSpawner(WorkingUnit unit)
             {
-                if (source.Preview || unit.Source.Team != CombatTeam.Player || unit.Source.SpawnerCardId <= 0 || DetachedSpawner(unit)) return;
-                if (context?.Statistics != null)
-                    context = context.WithStatistics(context.LiveStatistics!.Increment(unit.Source.SpawnerCardId, "TimesExhausted",
-                        requireTrackedCard: context.CardInstances?.Count == 0));
-                RouteSpawner(unit);
+                if (source.Preview || unit.Source.Team != CombatTeam.Player) return;
+                if (unit.Source.SpawnerCardId > 0 && !DetachedSpawner(unit))
+                {
+                    if (context?.Statistics != null)
+                        context = context.WithStatistics(context.LiveStatistics!.Increment(unit.Source.SpawnerCardId, "TimesExhausted",
+                            requireTrackedCard: context.CardInstances?.Count == 0));
+                    RouteSpawner(unit);
+                }
+                if (context != null) context = EquipmentModel.ReturnAttached(context, unit.Freeze());
             }
 
             private bool DeferSpawner(WorkingUnit unit) => deferSpawnerExhaustion ||

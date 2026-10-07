@@ -244,6 +244,7 @@ namespace MonsterTrain2Poju.Model
                 // Keep this effect's collection fixed; triggers may kill a later target.
                 for (int targetIndex = 0; targetIndex < targets.UnitIds.Count; targetIndex++)
                 {
+                    if (effect.Type == "AttachEquipment" && targetIndex > 0) break;
                     // Native status application runs backwards; damage/healing/upgrades run forwards.
                     int id = targets.UnitIds[effect.Type == "AddStatus" ? targets.UnitIds.Count - 1 - targetIndex : targetIndex];
                     RoomCombatState? targetRoom = state.Rooms.FirstOrDefault(item => item.Units.Any(unit => unit.Id == id));
@@ -251,6 +252,19 @@ namespace MonsterTrain2Poju.Model
                     if (target == null) continue;
                     if (effect.Type == "FloorRearrange" && pendingDeadRooms.Count > 0)
                         return UnsupportedTrain("Rearranging a floor with pending death positions is not modeled.");
+                    if (effect.Type == "AttachEquipment" || effect.Type == "RemoveEquipment")
+                    {
+                        if (definitions == null) return UnsupportedTrain("Equipment requires play definitions.");
+                        if (effect.Type == "AttachEquipment" && target.EquipmentCards?.Contains(sourceCardId) == true) continue;
+                        RoomCombatResult equipment = RoomCombatModel.ApplyEquipment(targetRoom!, id, effect.Type == "AttachEquipment" ? sourceCardId : 0,
+                            definitions, effect.Type == "RemoveEquipment");
+                        if (!equipment.Supported) return UnsupportedTrain(equipment.UnsupportedReason!);
+                        state = ReplaceRoom(state, equipment.State!); events.AddRange(equipment.Events); callbacks.AddRange(equipment.PendingCallbacks);
+                        if (equipment.Outcome == RoomOutcome.BattleWon || equipment.Outcome == RoomOutcome.PlayerDefeated) outcome = equipment.Outcome;
+                        if (state.Context!.OtherPiles != null) piles = state.Context.OtherPiles.ToArray();
+                        if (effect.Type == "AttachEquipment") DrainDeaths();
+                        continue;
+                    }
                     int? scaledDamage = null;
                     // Native calculates trait damage and defensive status focus before its trigger
                     // queue drains the previous victim's standby return. Preserve that value once.
@@ -478,7 +492,7 @@ namespace MonsterTrain2Poju.Model
                     if (energyError != null) return energyError;
                     continue;
                 }
-                if (!new[] { "Damage", "Heal", "AddStatus", "FloorRearrange", "UnitUpgrade", "RemoveUnitUpgrade", "BuffAttack", "DebuffAttack", "BuffHealth", "DebuffHealth", "Draw", "DiscardHand", "Generate" }.Contains(effect.Type))
+                if (!new[] { "Damage", "Heal", "AddStatus", "FloorRearrange", "UnitUpgrade", "RemoveUnitUpgrade", "AttachEquipment", "RemoveEquipment", "BuffAttack", "DebuffAttack", "BuffHealth", "DebuffHealth", "Draw", "DiscardHand", "Generate" }.Contains(effect.Type))
                     return "Unimplemented spell effect " + effect.Type;
                 if (effect.Type == "Generate" && effect.Generation == null) return "Missing generated card rules.";
                 if ((effect.Type == "UnitUpgrade" || effect.Type == "RemoveUnitUpgrade") && effect.Upgrade == null)
@@ -532,7 +546,9 @@ namespace MonsterTrain2Poju.Model
                 case "FloorRearrange":
                 case "BuffAttack":
                 case "DebuffAttack":
-                case "UnitUpgrade": return count > 0;
+                case "UnitUpgrade":
+                case "AttachEquipment":
+                case "RemoveEquipment": return count > 0;
                 default: return true;
             }
         }
@@ -546,7 +562,8 @@ namespace MonsterTrain2Poju.Model
             return new CardActionEffect(effect.Type, effect.Target, draw.Value, effect.AllowEnemy, effect.AllowPlayer,
                 effect.Statuses, effect.Upgrade, effect.Lifetime, effect.Tests, effect.Range, effect.Filters, effect.Generation);
         }
-        private static int TestCount(TrainCombatState state, CardActionEffect effect, CardTargets targets) => !AttackChange(effect) ? targets.UnitIds.Count :
+        private static int TestCount(TrainCombatState state, CardActionEffect effect, CardTargets targets) => effect.Type == "RemoveEquipment" ?
+            state.Rooms.SelectMany(room => room.Units).Count(unit => targets.UnitIds.Contains(unit.Id) && unit.EquipmentCards?.Count > 0) : !AttackChange(effect) ? targets.UnitIds.Count :
             state.Rooms.SelectMany(room => room.Units).Count(unit => targets.UnitIds.Contains(unit.Id) && unit.CanAttack);
         private static string? AttackTestError(TrainCombatState state, int roomIndex, CardActionEffect effect)
         {
@@ -593,7 +610,7 @@ namespace MonsterTrain2Poju.Model
 
         internal static CombatUnit Copy(CombatUnit unit, int health, IReadOnlyList<CombatStatus> statuses) =>
             new CombatUnit(unit.Id, unit.AssetKey, unit.Team, unit.BaseAttack, health, unit.MaxHealth, unit.CanAttack,
-                unit.IsPyre, unit.EndsBattleOnDeath, statuses, unit.Triggers, unit.SpawnerCardId, unit.Size, unit.StatusImmunities, unit.Subtypes, unit.Modifiers, unit.IsBoss, unit.LastAttackerId, unit.StatusRegistry);
+                unit.IsPyre, unit.EndsBattleOnDeath, statuses, unit.Triggers, unit.SpawnerCardId, unit.Size, unit.StatusImmunities, unit.Subtypes, unit.Modifiers, unit.IsBoss, unit.LastAttackerId, unit.StatusRegistry, unit.EquipmentCards);
         private static RoomCombatResult Unchanged(RoomCombatState state) => new RoomCombatResult(state, RoomOutcome.Exchanged, 0, new List<CombatEvent>());
         private static TrainSpellResult UnsupportedTrain(string reason) => new TrainSpellResult(null, RoomOutcome.Unsupported,
             Array.Empty<CombatEvent>(), reason);

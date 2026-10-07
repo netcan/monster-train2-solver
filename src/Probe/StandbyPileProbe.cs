@@ -34,10 +34,40 @@ namespace MonsterTrain2Poju.Probe
                 free = (int)AccessTools.Field(entry.GetType(), "next").GetValue(entry);
             }
             if (holes.Count != freeCount) throw new InvalidOperationException("Native standby free count differs from its chain.");
-            var result = new CardPileState("Standby", projection.CaptureCards(native.Keys.ToList()), slots, holes);
+            var conditions = new List<EquipmentStandbyCondition>();
+            foreach (var pair in native.Where(item => item.Key.GetCardType() == CardType.Equipment))
+            {
+                if (pair.Value == null) throw new InvalidOperationException("Equipment has no native standby condition.");
+                var callback = (Delegate)AccessTools.Field(typeof(RemoveFromStandByCondition), "conditionFunction").GetValue(pair.Value);
+                object closure = callback.Target;
+                CharacterState? host = Host(closure);
+                if (ReferenceEquals(host, null) || FullBattleTrace.Active == null || pair.Key.HasTrait<CardTraitGraftedEquipment>())
+                    throw new InvalidOperationException("Unmodeled equipment standby closure or grafted equipment.");
+                conditions.Add(new EquipmentStandbyCondition(FullBattleTrace.Active.CardId(pair.Key), FullBattleTrace.Active.UnitId(host),
+                    pair.Key.HasTrait<CardTraitReturnToHandEquipment>()));
+            }
+            var result = new CardPileState("Standby", projection.CaptureCards(native.Keys.ToList()), slots, holes, conditions);
             string? error = CardPileModel.Validate(result);
             if (error != null) throw new InvalidOperationException(error);
             return result;
+        }
+        private static CharacterState? Host(object closure, int depth = 0)
+        {
+            if (depth > 4) return null;
+            foreach (var field in closure.GetType().GetFields(System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Public))
+            {
+                object? value = field.GetValue(closure);
+                if (value is CharacterState character) return character;
+                if (value == null) continue;
+                if (value.GetType().Name == "DiscardCardParams")
+                    return (CharacterState?)AccessTools.Field(value.GetType(), "firstTarget").GetValue(value);
+                if (value.GetType().Name.Contains("DisplayClass"))
+                {
+                    CharacterState? nested = Host(value, depth + 1);
+                    if (!ReferenceEquals(nested, null)) return nested;
+                }
+            }
+            return null;
         }
     }
 }

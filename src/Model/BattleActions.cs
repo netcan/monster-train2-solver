@@ -58,6 +58,7 @@ namespace MonsterTrain2Poju.Model
         public string AssetKey { get; }
         public int Cost { get; }
         public string CostType { get; }
+        public EquipmentDefinition? Equipment { get; }
         public string Effect { get; }
         public string Destination { get; }
         public CombatUnit? SpawnUnit { get; }
@@ -69,9 +70,10 @@ namespace MonsterTrain2Poju.Model
         public CardPlayRule(string dataId, string assetKey, int cost, string effect, string destination,
             CombatUnit? spawnUnit, IReadOnlyList<string> externalInteractions, IReadOnlyList<CardActionEffect>? effects = null,
             IReadOnlyList<string>? upgradeInteractions = null, IReadOnlyList<string>? handDiscardInteractions = null,
-            IReadOnlyList<string>? handConsumeInteractions = null, string costType = "Default")
+            IReadOnlyList<string>? handConsumeInteractions = null, string costType = "Default", EquipmentDefinition? equipment = null)
         {
             DataId = dataId; AssetKey = assetKey; Cost = cost; CostType = costType; Effect = effect; Destination = destination;
+            Equipment = equipment;
             SpawnUnit = spawnUnit; ExternalInteractions = Array.AsReadOnly(externalInteractions.ToArray());
             Effects = Array.AsReadOnly((effects ?? Array.Empty<CardActionEffect>()).ToArray());
             UpgradeInteractions = upgradeInteractions == null ? null : Array.AsReadOnly(upgradeInteractions.ToArray());
@@ -206,7 +208,7 @@ namespace MonsterTrain2Poju.Model
                     return Unsupported("Invalid unit identity allocation.");
                 var spawned = new CombatUnit(nextUnitId++, template.AssetKey, CombatTeam.Player, template.BaseAttack,
                     template.Health, template.MaxHealth, template.CanAttack, false, false, template.Statuses,
-                    template.Triggers, card.InstanceId, template.Size, template.StatusImmunities, template.Subtypes, template.Modifiers, template.IsBoss, template.LastAttackerId, template.StatusRegistry);
+                    template.Triggers, card.InstanceId, template.Size, template.StatusImmunities, template.Subtypes, template.Modifiers, template.IsBoss, template.LastAttackerId, template.StatusRegistry, template.EquipmentCards);
                 context = context.WithStatistics(context.Statistics?.Spawn(action.RoomIndex, template.Subtypes));
                 spawnedId = spawned.Id;
                 var nextPlayers = players.ToList(); nextPlayers.Insert(position, spawned);
@@ -225,7 +227,7 @@ namespace MonsterTrain2Poju.Model
                 train = new TrainCombatState(enteredRooms, train.Movement.Where(item => enteredIds.Contains(item.UnitId)).ToArray(), train.EnemySlotsPerRoom, context);
                 effectsApplied = true;
             }
-            else if (rule.Effect == "Spell")
+            else if (rule.Effect == "Spell" || rule.Effect == "Equipment")
             {
                 if (action.PlayerPosition != -1) return Illegal("A spell does not take a summon position.");
                 if (CardSpellModel.RequiresUnitTarget(rule.Effects))
@@ -283,6 +285,12 @@ namespace MonsterTrain2Poju.Model
                     return Unsupported("Unimplemented card destination " + rule.Destination);
                 piles = piles.Select(pile => pile == destination ? CardPileModel.Add(pile, card) : pile).ToArray();
             }
+            if (rule.Effect == "Equipment")
+            {
+                if (rule.Equipment == null || action.TargetUnitId <= 0) return Unsupported("Missing equipment standby host.");
+                piles = piles.Select(pile => pile.Name == "Standby" ? CardPileModel.BindEquipment(pile,
+                    new EquipmentStandbyCondition(card.InstanceId, action.TargetUnitId, rule.Equipment.ReturnToHand)) : pile).ToArray();
+            }
             bool summonRemoved = spawnedId.HasValue && !train.Rooms.SelectMany(room => room.Units).Any(unit => unit.Id == spawnedId.Value);
             if (summonRemoved && !terminal)
             {
@@ -317,6 +325,9 @@ namespace MonsterTrain2Poju.Model
             {
                 return new RoomCombatState(room.RoomIndex, room.Deployment, room.Units, room.ExternalInteractions, context, room.Preview);
             }).ToArray();
+            context = EquipmentModel.ReturnUnattached(context, new HashSet<int>(rooms.SelectMany(room => room.Units).Select(unit => unit.Id)));
+            piles = context.OtherPiles?.ToArray() ?? piles;
+            rooms = rooms.Select(room => new RoomCombatState(room.RoomIndex, room.Deployment, room.Units, room.ExternalInteractions, context, room.Preview)).ToArray();
             var living = new HashSet<int>(rooms.SelectMany(room => room.Units).Select(unit => unit.Id));
             train = new TrainCombatState(rooms, train.Movement.Where(rule => living.Contains(rule.UnitId)).ToArray(), train.EnemySlotsPerRoom, context);
             if (source.BattlePreviewEnabled && !terminal)
@@ -347,7 +358,7 @@ namespace MonsterTrain2Poju.Model
             foreach (RoomPlayRule room in source.PlayRules.Rooms)
             {
                 CardPlayRule? rule = source.PlayRules.Cards.FirstOrDefault(item => item.DataId == card.DataId);
-                if (rule?.Effect == "Spell" && CardSpellModel.RequiresUnitTarget(rule.Effects))
+                if ((rule?.Effect == "Spell" || rule?.Effect == "Equipment") && CardSpellModel.RequiresUnitTarget(rule.Effects))
                 {
                     foreach (CombatUnit target in source.Spawn.Train.Rooms.First(item => item.RoomIndex == room.RoomIndex).Units)
                     {
@@ -381,7 +392,7 @@ namespace MonsterTrain2Poju.Model
             if (roomCount == 0) return null;
             // A deterministic verification policy: rotate floors each turn, summon before clearing junk.
             // It is intentionally simple; a search may choose any enumerated action instead.
-            foreach (string effect in spells ? new[] { "SpawnMonster", "Spell", "Null" } : new[] { "SpawnMonster", "Null" })
+            foreach (string effect in spells ? new[] { "SpawnMonster", "Equipment", "Spell", "Null" } : new[] { "SpawnMonster", "Null" })
             foreach (CardToken card in source.Spawn.Train.Context!.Cards.Hand)
             {
                 CardPlayRule? rule = source.PlayRules.Cards.FirstOrDefault(item => item.DataId == card.DataId);
@@ -399,7 +410,7 @@ namespace MonsterTrain2Poju.Model
                 {
                     int count = source.Spawn.Train.Rooms.Single(room => room.RoomIndex == roomIndex)
                         .Units.Count(unit => unit.Team == CombatTeam.Player);
-                    if (effect == "Spell")
+                    if (effect == "Spell" || effect == "Equipment")
                     {
                         if (!CardSpellModel.RequiresUnitTarget(rule.Effects))
                         {

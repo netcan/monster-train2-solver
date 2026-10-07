@@ -137,7 +137,7 @@ namespace MonsterTrain2Poju.Model
                     healthFromUpgrades, modifiers.SpawnerMatchesDefinition);
                 CombatUnit Snapshot() => new CombatUnit(target.Id, target.AssetKey, target.Team, Math.Max(0, checked(damage + buff)), health, maxHealth,
                     target.CanAttack, target.IsPyre, target.EndsBattleOnDeath, statuses.Values.ToArray(), triggers, target.SpawnerCardId,
-                    Math.Max(1, Math.Min(6, size)), target.StatusImmunities, target.Subtypes, nextModifiers, target.IsBoss, target.LastAttackerId, target.StatusRegistry);
+                    Math.Max(1, Math.Min(6, size)), target.StatusImmunities, target.Subtypes, nextModifiers, target.IsBoss, target.LastAttackerId, target.StatusRegistry, target.EquipmentCards);
                 var statusCallbacks = new List<RoomCombatModel.QueuedCharacterTrigger>();
                 if (!partial)
                     foreach (CombatStatus status in upgrade.Statuses)
@@ -198,7 +198,7 @@ namespace MonsterTrain2Poju.Model
                     temporary.Upgrades.Where(item => item.DataId != upgrade.DataId).ToArray(), temporary.PersistentHealth, temporary.ExternalInteractions);
                 else if (lifetime == "Permanent") permanent = Add(permanent, upgrade);
                 else temporary = Add(temporary, upgrade);
-                var changed = new CardInstanceState(card.InstanceId, card.DataId, permanent, temporary, card.LastPlayedCost, card.LastForgedAmount, card.PlayCount, card.ExternalInteractions, card.EffectCounters, card.DamageScalingTraits, card.StatusScalingTraits, card.UnitUpgradeScalingTraits, card.CapacityScalingTraits);
+                var changed = new CardInstanceState(card.InstanceId, card.DataId, permanent, temporary, card.LastPlayedCost, card.LastForgedAmount, card.PlayCount, card.ExternalInteractions, card.EffectCounters, card.DamageScalingTraits, card.StatusScalingTraits, card.UnitUpgradeScalingTraits, card.CapacityScalingTraits, card.EquippedUnitId);
                 CombatContext context = state.Context.WithCard(changed);
                 state = new RoomCombatState(state.RoomIndex, state.Deployment, state.Units, state.ExternalInteractions, context, state.Preview);
             }

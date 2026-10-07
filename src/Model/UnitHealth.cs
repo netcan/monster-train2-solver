@@ -26,7 +26,7 @@ namespace MonsterTrain2Poju.Model
                     old.XCost, old.EquipmentLimit, old.UpgradeSlotCount);
                 var temporary = new CardModifiers(offsets, card.Temporary.Upgrades, card.Temporary.PersistentHealth, card.Temporary.ExternalInteractions);
                 context = context!.WithCard(new CardInstanceState(card.InstanceId, card.DataId, card.Permanent, temporary,
-                    card.LastPlayedCost, card.LastForgedAmount, card.PlayCount, card.ExternalInteractions, card.EffectCounters, card.DamageScalingTraits, card.StatusScalingTraits, card.UnitUpgradeScalingTraits, card.CapacityScalingTraits));
+                    card.LastPlayedCost, card.LastForgedAmount, card.PlayCount, card.ExternalInteractions, card.EffectCounters, card.DamageScalingTraits, card.StatusScalingTraits, card.UnitUpgradeScalingTraits, card.CapacityScalingTraits, card.EquippedUnitId));
             }
             var state = new RoomCombatState(source.RoomIndex, source.Deployment, source.Units, source.ExternalInteractions, context, source.Preview);
             if (amount <= 0) return new RoomCombatResult(state, RoomOutcome.Exchanged, 0, new List<CombatEvent>());
@@ -35,7 +35,7 @@ namespace MonsterTrain2Poju.Model
                 HealingModel.HealedHealth(target.Health, maxHealth, amount, target.Modifiers!.CanBeHealed, target.Statuses, fromMaxHealthChange: true);
             var changed = new CombatUnit(target.Id, target.AssetKey, target.Team, target.BaseAttack, health, maxHealth,
                 target.CanAttack, target.IsPyre, target.EndsBattleOnDeath, target.Statuses, target.Triggers, target.SpawnerCardId,
-                target.Size, target.StatusImmunities, target.Subtypes, target.Modifiers, target.IsBoss, target.LastAttackerId, target.StatusRegistry);
+                target.Size, target.StatusImmunities, target.Subtypes, target.Modifiers, target.IsBoss, target.LastAttackerId, target.StatusRegistry, target.EquipmentCards);
             // Lethal native debuffs sacrifice the unit without attributing damage to the played card.
             if (health <= 0) return RoomCombatModel.ApplyUnitModification(state, changed);
             return new RoomCombatResult(new RoomCombatState(state.RoomIndex, state.Deployment,

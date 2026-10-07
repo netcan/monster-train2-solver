@@ -55,9 +55,12 @@ namespace MonsterTrain2Poju.Model
         internal static TrainCombatState ProcessRemovals(TrainCombatState source)
         {
             var activeIds = new HashSet<int>(source.Rooms.SelectMany(room => room.Units).Select(unit => unit.Id));
+            CombatContext? context = source.Context;
+            foreach (CardInstanceState card in context?.CardRegistry ?? context?.CardInstances ?? Array.Empty<CardInstanceState>())
+                if (card.EquippedUnitId > 0 && !activeIds.Contains(card.EquippedUnitId.Value)) context = context!.WithCard(card.WithEquippedUnit(0));
             return new TrainCombatState(source.Rooms.Select(room => new RoomCombatState(room.RoomIndex, room.Deployment,
-                room.Units.Select(unit => unit.WithoutRemovedAttacker(activeIds)).ToArray(), room.ExternalInteractions, room.Context, room.Preview)).ToArray(),
-                source.Movement, source.EnemySlotsPerRoom, source.Context);
+                room.Units.Select(unit => unit.WithoutRemovedAttacker(activeIds)).ToArray(), room.ExternalInteractions, context, room.Preview)).ToArray(),
+                source.Movement, source.EnemySlotsPerRoom, context);
         }
 
         public static TrainCombatResult EndTurnPreHandDiscard(TrainCombatState source, CombatTeam team)
@@ -158,7 +161,7 @@ namespace MonsterTrain2Poju.Model
                             status.RemoveWhenTriggered && (!source.Rooms[index].Deployment || status.RemoveDuringDeployment)
                                 ? status.WithStacks(status.Stacks - 1) : status).Where(status => status.Stacks > 0).ToArray();
                         arriving = new CombatUnit(enemy.Id, enemy.AssetKey, enemy.Team, enemy.BaseAttack, enemy.Health,
-                            enemy.MaxHealth, enemy.CanAttack, enemy.IsPyre, enemy.EndsBattleOnDeath, statuses, enemy.Triggers, enemy.SpawnerCardId, enemy.Size, enemy.StatusImmunities, enemy.Subtypes, enemy.Modifiers, enemy.IsBoss, enemy.LastAttackerId, enemy.StatusRegistry);
+                            enemy.MaxHealth, enemy.CanAttack, enemy.IsPyre, enemy.EndsBattleOnDeath, statuses, enemy.Triggers, enemy.SpawnerCardId, enemy.Size, enemy.StatusImmunities, enemy.Subtypes, enemy.Modifiers, enemy.IsBoss, enemy.LastAttackerId, enemy.StatusRegistry, enemy.EquipmentCards);
                     }
                     int destination = Math.Max(0, Math.Min(pyre, index + speed));
                     if (destination == pyre && rule.Loops && !enemy.Statuses.Any(status => status.Id == "relentless"))

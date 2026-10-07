@@ -174,6 +174,7 @@ internal static class RoomCombatChecks
         BonusDrawChecks.Native(fixture);
         RoomCapacityChecks.Native(fixture);
         DirectUnitUpgradeChecks.Native(fixture);
+        EquipmentChecks.Native(fixture);
         SharedPileChecks.MigratedRoot(fixture);
     }
 }

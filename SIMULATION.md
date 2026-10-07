@@ -2554,3 +2554,60 @@ This supplies the numeric/status upgrade primitive for equipment. Attachment,
 oldest-first replacement, reverse removal, source-equipment trigger provenance,
 equipped versus standby-host relationships, grafting, card returns and unit
 death still need their own modeled lifecycle and native fixture coverage.
+
+## Equipment attachment and original-host returns
+
+`RoomCombatModel.ApplyEquipment` now models native attachment, oldest-first
+replacement and reverse-order remove-all with base definition upgrades,
+permanent card upgrades and the native temporary HP/damage/status aggregate.
+The equipment list changes before attachment upgrades and after removal
+upgrades. Capacity is reread after each removal. Ordinary equipment callbacks
+include OnEquipmentAddedToAny in native enemy-then-player room order,
+OnEquipmentAdded on the host and deferred OnEquipmentRemoved callbacks.
+
+Permanent upgrade objects require explicit source-card/index identity in the
+unit's applied-upgrade list. Native attachment reuses those objects and native
+removal removes the identical object. Definition upgrades and temporary
+aggregates are freshly created objects; anonymous aggregate removal therefore
+reverses attributes while retaining its anonymous applied-list entry. These
+paths share the direct attribute primitive without writing to a unit's spawner.
+
+Units carry ordered equipment card IDs and cards carry current equipped-unit
+IDs. Standby entries separately carry their original host and return-to-hand
+trait. Removing equipment clears its current card link but does not release
+the original-host standby condition. Attached equipment returns in unit-list
+order on player death; previously detached equipment waits for the global
+standby check. Global checks occur after card resolution and before ordinary
+next-turn draws, in native standby dictionary order. Return-to-hand prepends
+cards, with full-hand routing to the draw pile; ordinary exhaustion increments
+the live statistic. Destroyed host references normalize at decision boundaries.
+Grafting, special return overrides, child-unit handoffs, equipment-granted
+triggers/abilities and last-equipped target history remain unsupported.
+Raw API attachment of an already-attached equipment object also fails closed;
+the ordinary card effect separately preserves its native already-attached no-op.
+
+The authored setup converts owned targeted spells into zero-cost equipment,
+gives a naturally played Steward two equipment slots, attaches three cards
+through CharacterState.AddEquipment and supplies actual native standby
+callbacks. It additionally supplies temporary and permanent modifiers,
+equipment callbacks and a room-wide removal spell. The original Boss and waves
+remain native. The retained fixture specifically covers return-to-hand,
+including detached equipment waiting on its original host and returns before
+later draws; specialized exhaustion listeners and full-hand return overflow
+still require dedicated native coverage.
+
+`tests/fixtures/full-battle-equipment.mt2f` records 25 native API operations,
+19 subsequent card plays, seven EndTurns and 61 room stages. The muted Instant
+native run takes 72.35 seconds, wins at Pyre 61 and has zero capture failures,
+differences, unsupported or pending records, with unchanged original files.
+The schema-54 binary archive stores 4,904 nodes in 28,801 bytes on game 2.2.1,
+module MVID 8fb07b96-f4db-4d2b-884d-c00536d6ccf4. Independent checks recompute
+every operation and repeat them in 32 parallel branches; the complete policy
+matches from initial and actual mid-battle roots in 16 parallel branches.
+
+The existing 77 binary archives pass their full regression. The final equipment
+archive passes its independent checks, including the repeated-raw-attachment
+unsupported guard, and all 78 archives match the curated SHA-256 inventory.
+The native probe Release build has zero warnings and errors; ModelChecks has
+no errors and retains its 12 existing nullable warnings. No source JSON fixture
+is tracked.

@@ -118,7 +118,7 @@ namespace MonsterTrain2Poju.Probe
             return new EnemyDefinition(new CombatUnit(0, data.GetAssetKey(), CombatTeam.Enemy, data.GetAttackDamage(),
                 data.GetHealth(), data.GetHealth(), data.GetCanAttack(), false, data.IsMiniboss(), statuses, triggers, size: data.GetSize(),
                 statusImmunities: data.GetStatusEffectImmunities(), subtypes: data.GetSubtypes().Select(subtype => subtype.Key).ToArray(),
-                modifiers: UnitModifierProbe.Definition(data), isBoss: data.IsMiniboss() || data.IsOuterTrainBoss(), lastAttackerId: 0, statusRegistry: statuses),
+                modifiers: UnitModifierProbe.Definition(data), isBoss: data.IsMiniboss() || data.IsOuterTrainBoss(), lastAttackerId: 0, statusRegistry: statuses, equipmentCards: Array.Empty<int>()),
                 data.GetAscendsTrainAutomatically(), data.GetLoopsBetweenTrainFloors(), interactions);
         }
 

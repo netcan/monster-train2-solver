@@ -34,6 +34,14 @@ internal static class CardCycleChecks
         foreach (FixtureValue cycle in cycles.EnumerateArray())
         {
             CardCycleState before = Read(cycle.GetProperty("Before"));
+            if (cycle.TryGetProperty("StandbyContext", out var standby) && standby.ValueKind != FixtureKind.Null)
+            {
+                var context = standby.Deserialize<CombatContext>()!;
+                Require(Comparable(context.Cards) == Comparable(before), "Pre-draw standby context differs from the actual draw input.");
+                var prepared = EquipmentModel.ReturnStandby(context, cycle.GetProperty("LivingUnitIds").Deserialize<int[]>()!).Cards;
+                before = new CardCycleState(prepared.Hand, prepared.Draw, prepared.Discard, prepared.Rng, prepared.DrawModifier,
+                    before.ExternalInteractions, prepared.BonusDraw);
+            }
             CardCycleResult result = cycle.GetProperty("Kind").GetString() == "Draw"
                 ? CardCycleModel.DrawHand(before, cycle.GetProperty("HandSize").GetInt32(),
                     cycle.GetProperty("MaxHandSize").GetInt32()) : cycle.GetProperty("Kind").GetString() == "SpellDraw"

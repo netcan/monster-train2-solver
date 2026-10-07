@@ -17,12 +17,15 @@ namespace MonsterTrain2Poju.Model
         public IReadOnlyList<CardToken> Cards { get; }
         public IReadOnlyList<int>? EntrySlots { get; }
         public IReadOnlyList<int>? FreeSlots { get; }
+        public IReadOnlyList<EquipmentStandbyCondition>? EquipmentConditions { get; }
         public CardPileState(string name, IReadOnlyList<CardToken> cards, IReadOnlyList<int>? entrySlots = null,
-            IReadOnlyList<int>? freeSlots = null)
+            IReadOnlyList<int>? freeSlots = null, IReadOnlyList<EquipmentStandbyCondition>? equipmentConditions = null)
         {
             Name = name; Cards = Array.AsReadOnly(cards.ToArray());
             EntrySlots = entrySlots == null ? null : Array.AsReadOnly(entrySlots.ToArray());
             FreeSlots = freeSlots == null ? null : Array.AsReadOnly(freeSlots.ToArray());
+            EquipmentConditions = equipmentConditions == null ? null : Array.AsReadOnly(equipmentConditions
+                .OrderBy(condition => Array.FindIndex(cards.ToArray(), card => card.InstanceId == condition.CardId)).ToArray());
         }
     }
     public sealed class BattleTurnState
@@ -185,6 +188,8 @@ namespace MonsterTrain2Poju.Model
             }
             context = train.Context!;
             context = EnergyModel.StartTurn(context, source.EnergyPerTurn);
+            context = EquipmentModel.ReturnUnattached(context, new HashSet<int>(train.Rooms.SelectMany(room => room.Units).Select(unit => unit.Id)));
+            if (context.OtherPiles != null) otherPiles = context.OtherPiles.ToArray();
             CardCycleResult drawn = CardCycleModel.DrawHand(context.Cards, source.DrawPerTurn, context.MaxHandSize);
             if (!drawn.Supported) return Unsupported(drawn.UnsupportedReason!);
             var existingHand = new HashSet<int>(context.Cards.Hand.Select(card => card.InstanceId));
@@ -214,9 +219,9 @@ namespace MonsterTrain2Poju.Model
                     if (!preview.Supported) return Unsupported(preview.UnsupportedReason!);
                     spawn = WithTrain(spawn, preview.State!, spawn.Turn, spawn.Rng);
                 }
-                CombatContext finalContext = spawn.Train.Context!;
                 if (source.CanonicalDecisionReferences)
                     spawn = WithTrain(spawn, TrainCombatModel.ProcessRemovals(spawn.Train), spawn.Turn, spawn.Rng);
+                CombatContext finalContext = spawn.Train.Context!;
                 BattleRngStream[] streams = source.RngStreams.Select(stream => new BattleRngStream(stream.Name, stream.Seed,
                     stream.Name == "Battle" ? finalContext.BattleRng : stream.Name == "CardDraw" ? finalContext.Cards.Rng :
                     stream.Name == "Spawning" ? spawn.Rng : stream.State)).ToArray();
