@@ -78,6 +78,7 @@ CombatEffectChecks.Run();
 BattleStatisticsChecks.Run();
 StatisticOverflowChecks.Run();
 StatisticZeroIncrementChecks.Run();
+StatisticCacheChecks.Run();
 StatisticQueryChecks.Run();
 DamageScalingChecks.Run();
 StatusScalingChecks.Run();

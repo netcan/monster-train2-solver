@@ -29,7 +29,8 @@ namespace MonsterTrain2Poju.Model
             IReadOnlyList<CardUpgradeModifier>? nextAddedTemporaryUpgrades = null, IReadOnlyList<CardPileState>? otherPiles = null,
             StatisticQueryFrame? queryFrame = null)
         { Cards = cards; BattleRng = battleRng; Gold = gold; NextCardId = nextCardId; MaxHandSize = maxHandSize;
-            StatusRules = Array.AsReadOnly((statusRules ?? Array.Empty<CombatStatus>()).ToArray()); Statistics = statistics;
+            StatusRules = Array.AsReadOnly((statusRules ?? Array.Empty<CombatStatus>()).ToArray());
+            Statistics = cardInstances == null ? statistics : statistics?.WithOwnedCards(cardInstances.Select(card => card.InstanceId));
             CardInstances = cardInstances == null ? null : Array.AsReadOnly(cardInstances.OrderBy(card => card.InstanceId).ToArray());
             CardRegistry = cardRegistry == null ? null : Array.AsReadOnly(cardRegistry.Concat(cardInstances ?? Array.Empty<CardInstanceState>())
                 .GroupBy(card => card.InstanceId).Select(group => group.Last()).OrderBy(card => card.InstanceId).ToArray());

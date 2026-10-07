@@ -34,6 +34,9 @@ namespace MonsterTrain2Poju.Model
     {
         public IReadOnlyList<CardStatisticValue> Values { get; }
         public IReadOnlyList<int> TrackedCards { get; }
+        // Native deckStats keys; ownership alone does not create a cached entry.
+        // Null preserves captures that projected the two memberships together.
+        public IReadOnlyList<int>? StoredCards { get; }
         public IReadOnlyList<int>? DeckCards { get; }
         public IReadOnlyList<CardPlayedCost> PlayedCosts { get; }
         public IReadOnlyList<int> CardsPlayedThisTurn { get; }
@@ -52,11 +55,12 @@ namespace MonsterTrain2Poju.Model
             IReadOnlyList<StatisticCount> spawnedThisBattlePerFloor, IReadOnlyList<StatisticCount> subtypesSpawnedThisTurn,
             IReadOnlyList<StatisticCount> subtypesSpawnedThisBattle, int monstersDeadThisTurn, int monstersDeadThisBattle,
             int energyRemainingEndOfTurn, int goldStartOfThisTurn, int lastAttackDamageDealt, IReadOnlyList<int>? trackedCards = null,
-            IReadOnlyList<int>? deckCards = null)
+            IReadOnlyList<int>? deckCards = null, IReadOnlyList<int>? storedCards = null)
         {
             Values = Array.AsReadOnly(values.Where(value => value.Value != 0).OrderBy(value => value.CardId)
                 .ThenBy(value => value.Duration, StringComparer.Ordinal).ThenBy(value => value.Type, StringComparer.Ordinal).ToArray());
             TrackedCards = Array.AsReadOnly((trackedCards ?? values.Select(value => value.CardId).ToArray()).Distinct().OrderBy(id => id).ToArray());
+            StoredCards = storedCards == null ? null : Array.AsReadOnly(storedCards.Distinct().OrderBy(id => id).ToArray());
             DeckCards = deckCards == null ? null : Array.AsReadOnly(deckCards.Distinct().OrderBy(id => id).ToArray());
             PlayedCosts = Array.AsReadOnly(playedCosts.OrderBy(value => value.CardId).ToArray());
             CardsPlayedThisTurn = Array.AsReadOnly(cardsPlayedThisTurn.ToArray());
@@ -80,7 +84,7 @@ namespace MonsterTrain2Poju.Model
         {
             if (cardId <= 0) return this;
             var values = Values.ToList();
-            int[] tracked = requireTrackedCard ? TrackedCards.ToArray() : TrackedCards.Concat(new[] { cardId }).Distinct().ToArray();
+            int[] tracked = requireTrackedCard || StoredCards != null ? TrackedCards.ToArray() : TrackedCards.Concat(new[] { cardId }).Distinct().ToArray();
             bool hasSource = tracked.Contains(cardId);
             foreach (string duration in new[] { "ThisTurn", "ThisBattle" })
             {
@@ -96,7 +100,8 @@ namespace MonsterTrain2Poju.Model
                     if (hasSource) AddValue(cardId, duration, any, 1);
                 }
             }
-            return Copy(values: values, tracked: tracked, played: type == "TimesPlayed" ? CardsPlayedThisTurn.Concat(new[] { cardId }).ToArray() : null);
+            return Copy(values: values, tracked: tracked, stored: StoredCards == null ? null : tracked,
+                played: type == "TimesPlayed" ? CardsPlayedThisTurn.Concat(new[] { cardId }).ToArray() : null);
             void AddValue(int id, string duration, string counter, int addition)
             {
                 CardStatisticValue? prior = values.FirstOrDefault(value => value.CardId == id && value.Type == counter && value.Duration == duration);
@@ -110,11 +115,14 @@ namespace MonsterTrain2Poju.Model
         public BattleStatistics WithPlayedCost(int cardId, int? cost) => Copy(costs: PlayedCosts.Where(value => value.CardId != cardId)
             .Concat(cost == null ? Array.Empty<CardPlayedCost>() : new[] { new CardPlayedCost(cardId, cost.Value) }).ToArray());
         public BattleStatistics RefreshDeckAfterCardTerminal() => DeckCards == null ? this :
-            Copy(values: Values.Where(value => DeckCards.Contains(value.CardId)).ToArray(), tracked: DeckCards);
+            RefreshOwnedCards(DeckCards);
+        internal BattleStatistics WithOwnedCards(IEnumerable<int> cards) => StoredCards == null ? this :
+            Copy(tracked: StoredCards.Concat(cards).Distinct().ToArray());
         public BattleStatistics RefreshOwnedCards(IEnumerable<int> cards)
         {
             int[] owned = cards.Distinct().ToArray();
-            return Copy(values: Values.Where(value => owned.Contains(value.CardId)).ToArray(), tracked: owned);
+            return Copy(values: Values.Where(value => owned.Contains(value.CardId)).ToArray(), tracked: owned,
+                stored: StoredCards == null ? null : owned);
         }
 
         public BattleStatistics Spawn(int roomIndex, IReadOnlyList<string> subtypes) => Copy(
@@ -133,7 +141,7 @@ namespace MonsterTrain2Poju.Model
             .Concat(Values.Where(value => value.Duration == "ThisTurn").Select(value =>
                 new CardStatisticValue(value.CardId, "PreviousTurn", value.Type, value.Value))).ToArray(),
             played: Array.Empty<int>(), turnFloors: Array.Empty<StatisticCount>(), turnSubtypes: Array.Empty<StatisticCount>(),
-            deadTurn: 0, energy: 0, gold: gold);
+            deadTurn: 0, energy: 0, gold: gold, stored: StoredCards == null ? null : TrackedCards);
 
         internal string Signature() => string.Join(",", TrackedCards) + "|" + string.Join(";", Values.Select(value =>
             value.CardId + ":" + value.Duration + ":" + value.Type + ":" + value.Value)) + "|" +
@@ -142,18 +150,20 @@ namespace MonsterTrain2Poju.Model
                 SpawnedThisTurnPerFloor, SpawnedThisBattlePerFloor, SubtypesSpawnedThisTurn, SubtypesSpawnedThisBattle
             }.Select(counts => string.Join(";", counts.Select(value => value.Key + ":" + value.Value)))) + "|" +
             MonstersDeadThisTurn + ":" + MonstersDeadThisBattle + ":" + EnergyRemainingEndOfTurn + ":" +
-            GoldStartOfThisTurn + ":" + LastAttackDamageDealt + "|" + (DeckCards == null ? "legacy" : string.Join(",", DeckCards));
+            GoldStartOfThisTurn + ":" + LastAttackDamageDealt + "|" + (DeckCards == null ? "legacy" : string.Join(",", DeckCards)) + "|" +
+            (StoredCards == null ? "legacy" : string.Join(",", StoredCards));
 
         private BattleStatistics Copy(IReadOnlyList<CardStatisticValue>? values = null, IReadOnlyList<int>? played = null, IReadOnlyList<int>? tracked = null,
             IReadOnlyList<StatisticCount>? turnFloors = null, IReadOnlyList<StatisticCount>? battleFloors = null,
             IReadOnlyList<StatisticCount>? turnSubtypes = null, IReadOnlyList<StatisticCount>? battleSubtypes = null,
             int? deadTurn = null, int? deadBattle = null, int? energy = null, int? gold = null, int? lastDamage = null,
-            IReadOnlyList<CardPlayedCost>? costs = null) =>
+            IReadOnlyList<CardPlayedCost>? costs = null, IReadOnlyList<int>? stored = null) =>
             new BattleStatistics(values ?? Values, costs ?? PlayedCosts, played ?? CardsPlayedThisTurn,
                 turnFloors ?? SpawnedThisTurnPerFloor, battleFloors ?? SpawnedThisBattlePerFloor,
                 turnSubtypes ?? SubtypesSpawnedThisTurn, battleSubtypes ?? SubtypesSpawnedThisBattle,
                 deadTurn ?? MonstersDeadThisTurn, deadBattle ?? MonstersDeadThisBattle,
-                energy ?? EnergyRemainingEndOfTurn, gold ?? GoldStartOfThisTurn, lastDamage ?? LastAttackDamageDealt, tracked ?? TrackedCards, DeckCards);
+                energy ?? EnergyRemainingEndOfTurn, gold ?? GoldStartOfThisTurn, lastDamage ?? LastAttackDamageDealt,
+                tracked ?? TrackedCards, DeckCards, stored ?? StoredCards);
 
         private static IReadOnlyList<StatisticCount> Counts(IReadOnlyList<StatisticCount> values) =>
             Array.AsReadOnly(values.Where(value => value.Value != 0).OrderBy(value => value.Key, StringComparer.Ordinal).ToArray());

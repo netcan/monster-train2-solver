@@ -1239,10 +1239,44 @@ including queued death effects, but finds a separate terminal statistic-cache
 membership gap. Its full battle is deliberately not retained as a passing
 fixture: one newly generated card is owned but absent from native `deckStats`,
 and must disappear from projected tracking when terminal piles clear. The
-statistics model currently merges those two memberships. This needs its own
-schema, native regression and independent commit. Other triggers, relics,
+earlier statistics model merged those two memberships. The following independent
+schema 33 change resolves that gap with its own retained native regression. Other triggers, relics,
 equipment, room mechanics, boss actions/companions/final bosses, resurrection
 and the broader rules listed below still leave the overall objective open.
+
+Schema 33 captures immutable `BattleStatistics.StoredCards`, the actual native
+`deckStats` keys, separately from `TrackedCards`, the projection's union of cache
+keys and current owned cards. Generation changes ownership without necessarily
+creating a cache entry. Each context normalizes that union from its copied card
+instances and stored keys. Consequently, terminal clearing drops an uncached
+generated card while keeping genuine cache entries and retained card identities.
+
+Counter events, statistic queries and turn rollover materialize cache entries.
+Resource/last-attack setters preserve the cache; detached source counters do not
+invent entries. Empty-pile queries refresh from the permanent deck. Cache
+membership participates in the room state signature. Nullable metadata preserves
+the behavior of earlier captures, which do not prove this newly modeled boundary.
+Pure checks verify these distinct futures, source/global zero events, legacy
+states, immutable parents and 32 parallel branches.
+
+`results/full-battle-statistic-cache.json.gz` is the fresh native regression for
+the previously failing lethal pre-combat experiment. It matches all 10 complete
+generations with uncached births, two terminal removal boundaries and the nine
+cached generated cards retained at each boundary. The two killed player units
+return their standby cards immediately, while their marked death cards are
+allocated after the remaining player phase effects. All 8 character phases,
+10 scaling callbacks, 15 plays, 5 EndTurns, 43 room stages, 9 card cycles,
+9 train phases and 7 spawns match, winning with Pyre health 77. Initial/mid-battle
+independent policies and 16 parallel branches reproduce every decision and the
+terminal state.
+
+The native JSON is 177,665,942 bytes, SHA-256
+`835fcd37b9bd3011cb00db3e1fb971a83a85098f65eac14294fa19c6dae06981`.
+Capture failures, mismatches, unsupported stages and pending records are zero;
+original profile files are unchanged. All 45 previous battles and 8 calibrations
+pass; there are now 46 verified complete battle fixtures. Other character/card
+triggers, relics, equipment, room effects, additional statuses, boss actions and
+companions/final bosses, resurrection and the broader objective remain open.
 
 Schema 24 captures ordered `CardTraitScalingAddStatusEffect` descriptors on
 immutable card instances and generated-card rules, plus the native stackability
