@@ -2179,3 +2179,19 @@ Nested damage and healing queue payloads also preserve native `FireTriggersData`
 defaults: `OnHit` and `OnHeal` carry an empty parameter string. Native action
 dispatches verify the generated queue payloads without replacing empty strings
 with nulls. Core checks cover room-target damage and retained self healing.
+
+## Merged status applications when summoning upgraded cards
+
+Native `SetupStartingStatusEffects` merges authored stacks with permanent
+upgrades, then with temporary upgrades, before installing them. Each merge
+clamps the running sum to zero after every entry and drops empty entries after
+the group. Summons now enqueue one initial application per merged status rather
+than one callback per contributing upgrade. Enemy definitions without a source
+card still retain their individual authored applications.
+
+The extended native action probe's play 10 had starting armor 3 plus upgrade
+armor 1. Native queued a single armor-4 application; the old model rewarded
+both additions and overcounted gold by 5. The corrected play matches the native
+state. Core checks verify the single reward and signed entry/group boundaries.
+Definitions using native `fromPermanentUpgrade` application groups remain
+explicitly unsupported until that separate grouping metadata is modeled.

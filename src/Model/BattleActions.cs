@@ -203,9 +203,9 @@ namespace MonsterTrain2Poju.Model
                 var nextPlayers = players.ToList(); nextPlayers.Insert(position, spawned);
                 var entered = new RoomCombatState(target.RoomIndex, target.Deployment,
                     target.Units.Where(unit => unit.Team == CombatTeam.Enemy).Concat(nextPlayers).ToArray(), target.ExternalInteractions, context, target.Preview);
-                var initialStatuses = (originalRule!.SpawnUnit!.StatusRegistry ?? originalRule.SpawnUnit.Statuses)
-                    .Concat(playingInstance == null ? Array.Empty<CombatStatus>() : new[] { playingInstance.Permanent, playingInstance.Temporary }
-                        .SelectMany(modifier => modifier.Upgrades).SelectMany(upgrade => upgrade.Statuses)).ToArray();
+                IReadOnlyList<CombatStatus> initialStatuses = originalRule!.SpawnUnit!.StatusRegistry ?? originalRule.SpawnUnit.Statuses;
+                foreach (CardModifiers group in playingInstance == null ? Array.Empty<CardModifiers>() : new[] { playingInstance.Permanent, playingInstance.Temporary })
+                    initialStatuses = StatusCallbackModel.MergeStartingStatuses(initialStatuses, group.Upgrades.SelectMany(upgrade => upgrade.Statuses));
                 RoomCombatResult spawnTriggers = RoomCombatModel.ApplySpawnTriggers(entered, spawned.Id, fromCard: true, startingApplications: initialStatuses);
                 if (!spawnTriggers.Supported) return Unsupported(spawnTriggers.UnsupportedReason!);
                 context = spawnTriggers.State!.Context!; outcome = spawnTriggers.Outcome;

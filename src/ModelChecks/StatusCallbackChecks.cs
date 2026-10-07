@@ -65,6 +65,16 @@ internal static class StatusCallbackChecks
             4, nonstackable, "TemporaryUntilUnitDeath");
         Require(capped.Supported && capped.State!.Units[0].Status("piercing")!.Stacks == 1 && capped.State.Context!.Gold == 10 + GoldRewardModel.Adjust(1),
             "Unit-upgrade callbacks used an unclamped nonstackable status count.");
+        var starting = StatusCallbackModel.MergeStartingStatuses([armor.WithStacks(3)], [armor.WithStacks(1), zeroArmor]);
+        var startingActor = Unit(9, [armor.WithStacks(4)], [Gold("OnStatusEffectChanged", 1, threshold: 3)]);
+        var startingContext = new CombatContext(context.Cards, rng, 10, 1, 10, cardInstances: [], cardRegistry: []);
+        var startingResult = RoomCombatModel.ApplySpawnTriggers(Room(startingActor, startingContext), 9, fromCard: false, startingApplications: starting);
+        Require(startingResult.Supported && startingResult.State!.Context!.Gold == 10 + GoldRewardModel.Adjust(1),
+            "Merged starting armor rewarded two additions instead of the single native application.");
+        var afterPermanent = StatusCallbackModel.MergeStartingStatuses([armor], [armor.WithStacks(-8), armor.WithStacks(2)]);
+        var afterTemporary = StatusCallbackModel.MergeStartingStatuses(afterPermanent, [armor.WithStacks(-3), armor.WithStacks(1)]);
+        Require(afterPermanent.Single().Stacks == 2 && afterTemporary.Single().Stacks == 1,
+            "Starting-status merging lost per-entry nonnegative clamps or modifier-group boundaries.");
         var missing = new RoomCombatState(0, false, [new CombatUnit(5, "legacy", CombatTeam.Player, 0, 20, 20, false, false, false, [],
             [Gold("OnNewStatusEffectAdded", 1)])], [], context);
         Require(!StatusApplicationModel.Apply(missing, 5, zeroArmor).Supported, "Uncaptured native status-presence thresholds were guessed.");
@@ -108,6 +118,7 @@ internal static class StatusCallbackChecks
         var dispatches = fires.EnumerateArray().ToArray();
         Require(queued.Length == dispatches.Length, "Native status callback queue did not fully drain.");
         int reward = 0, zero = 0, negative = 0, dying = 0, enemy = 0, silenceLost = 0, sameArmor = 0, once = 0, silenceGate = 0;
+        int nested = 0, damage = 0, heals = 0, upgrades = 0, copies = 0, rooms = 0, standaloneCopies = 0, insideCopies = 0;
         var kinds = new HashSet<string>();
         for (int index = 0; index < dispatches.Length; index++)
         {
@@ -128,7 +139,44 @@ internal static class StatusCallbackChecks
             var result = RoomCombatModel.ApplyQueuedCharacterTrigger(before, callback, generated.Add);
             string? difference = result.Supported ? ModelJson.Difference(JsonSerializer.Serialize(result.State!.Context), JsonSerializer.Serialize(actual.Context)) : result.UnsupportedReason;
             difference ??= ModelJson.Difference(JsonSerializer.Serialize(callback.Unit), JsonSerializer.Serialize(actualActor));
-            Require(result.Supported && difference == null && generated.Count == 0, "Independent native callback differs at sequence " + record.GetProperty("Sequence").GetInt32() + ": " + difference);
+            Require(result.Supported && difference == null, "Independent native callback differs at sequence " + record.GetProperty("Sequence").GetInt32() + ": " + difference);
+            if (record.TryGetProperty("Generated", out var nativeGenerated))
+            {
+                var statusGenerated = generated.Where(item => !item.DeferUntilRemoval).ToArray();
+                var statusNative = nativeGenerated.EnumerateArray().ToArray();
+                Require(statusGenerated.Length == statusNative.Length, "Nested native status callback count differs at sequence " + record.GetProperty("Sequence").GetInt32());
+                for (int queuedIndex = 0; queuedIndex < statusGenerated.Length; queuedIndex++)
+                {
+                    var expected = statusGenerated[queuedIndex]; var observed = statusNative[queuedIndex];
+                    Require(expected.Unit.Id == observed.GetProperty("ActorId").GetInt32() && expected.Kind == observed.GetProperty("Kind").GetString() &&
+                        expected.ParamInt == observed.GetProperty("ParamInt").GetInt32() && expected.ParamInt2 == observed.GetProperty("ParamInt2").GetInt32() &&
+                        expected.ParamString == observed.GetProperty("ParamString").GetString(), "Nested native status payload differs at sequence " + record.GetProperty("Sequence").GetInt32());
+                }
+                // A retained actor without a room is compared separately through ActualUnit.
+                var roomUnits = result.State!.Units.Where(unit => unit.Id != actor.Id || before.Units.Any(original => original.Id == actor.Id) || actual.Units.Any(original => original.Id == actor.Id)).ToArray();
+                string? roomDifference = ModelJson.Difference(JsonSerializer.Serialize(roomUnits), JsonSerializer.Serialize(actual.Units));
+                Require(roomDifference == null, "Native callback room units differ at sequence " + record.GetProperty("Sequence").GetInt32() + ": " + roomDifference);
+                rooms++; nested += statusNative.Length;
+                var liveEffects = actor.Health > 0 && actualActor.Health > 0 ? actor.Triggers.Where((trigger, triggerIndex) =>
+                    trigger.Kind == kind && trigger.Once && !trigger.HasTriggered && actualActor.Triggers[triggerIndex].HasTriggered)
+                    .SelectMany(trigger => trigger.Effects).ToArray() : [];
+                damage += liveEffects.Count(effect => effect.Action?.Type == "Damage");
+                heals += liveEffects.Count(effect => effect.Action?.Type == "Heal");
+                upgrades += liveEffects.Count(effect => effect.UnitUpgrade != null);
+                copies += liveEffects.Count(effect => effect.Generation?.CopyModifiers == true);
+                var newCards = (actual.Context!.CardInstances ?? []).Where(card => before.Context!.FindCard(card.InstanceId) == null).ToArray();
+                const string standaloneMarker = "6daaac75-57bc-4c02-9ca5-c011baac0002", insideMarker = "6daaac75-57bc-4c02-9ca5-c011baac0001";
+                var sourceCard = before.Context!.FindCard(actor.SpawnerCardId);
+                if (kind == "OnPyregelAdded" && newCards.Length > 0 && actor.Modifiers!.Upgrades.Any(upgrade => upgrade.DataId == standaloneMarker) &&
+                    sourceCard != null && sourceCard.Permanent.Upgrades.All(upgrade => upgrade.DataId != standaloneMarker))
+                {
+                    Require(newCards.All(card => card.Permanent.Upgrades.All(upgrade => upgrade.DataId != standaloneMarker)), "Standalone callback copied a not-yet-written source upgrade.");
+                    standaloneCopies++;
+                }
+                insideCopies += liveEffects.Any(effect => effect.UnitUpgrade?.Upgrade?.DataId == insideMarker) &&
+                    newCards.Any(card => card.Permanent.Upgrades.Any(upgrade => upgrade.DataId == insideMarker)) ? 1 : 0;
+            }
+            else Require(generated.Count == 0, "Legacy status callback generated uncaptured nested work.");
             int gain = record.GetProperty("GoldAfter").GetInt32() - record.GetProperty("GoldBefore").GetInt32();
             reward += gain > 0 ? 1 : 0;
             kinds.Add(kind); dying += actor.Health == 0 ? 1 : 0; enemy += actor.Team == CombatTeam.Enemy ? 1 : 0;
@@ -146,6 +194,11 @@ internal static class StatusCallbackChecks
             silenceLost > 0 && sameArmor > 0 && once > 0 && silenceGate > 0,
             $"Native status callback coverage incomplete: kinds={string.Join(',', kinds)}, rewards={reward}, zero={zero}, negative={negative}, dying={dying}, enemy={enemy}, silenceLost={silenceLost}, sameArmor={sameArmor}, once={once}, silenceGate={silenceGate}.");
         Console.WriteLine($"NATIVE-STATUS-CALLBACKS PASS: {dispatches.Length} FIFO dispatches with exact payloads/unit/context, seven kinds, {reward} rewards, {zero} zero/{negative} negative deltas, {dying} dying actors, {enemy} enemies, {silenceLost} rewarded silence losses, {sameArmor} same-armor rewards, {once} once/{silenceGate} silence gates.");
+        if (fixture.TryGetProperty("StatusCallbackActions", out var actions) && actions.GetBoolean())
+        {
+            Require(nested > 0 && rooms == dispatches.Length && damage > 0 && heals > 0 && upgrades > 0 && copies > 0 && standaloneCopies > 0 && insideCopies > 0, "Native status callback action coverage incomplete.");
+            Console.WriteLine($"NATIVE-STATUS-CALLBACK-ACTIONS PASS: {rooms} exact room scopes, {nested} nested queue payloads, {damage} damage/{heals} healing/{upgrades} upgrade/{copies} source-copy effects, {standaloneCopies} standalone/{insideCopies} running-queue source boundaries.");
+        }
     }
     private static void Require(bool pass, string message) { if (!pass) throw new InvalidOperationException(message); }
 }

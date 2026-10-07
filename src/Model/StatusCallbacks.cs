@@ -8,6 +8,18 @@ namespace MonsterTrain2Poju.Model
         internal static readonly string[] Kinds =
         { "OnStatusEffectChanged", "OnArmorAdded", "OnPyregelAdded", "OnValiant", "OnSilence", "OnSilenceLost", "OnNewStatusEffectAdded" };
 
+        internal static IReadOnlyList<CombatStatus> MergeStartingStatuses(IEnumerable<CombatStatus> authored, IEnumerable<CombatStatus> upgrades)
+        {
+            var merged = new List<CombatStatus>();
+            foreach (CombatStatus status in authored.Concat(upgrades))
+            {
+                int index = merged.FindIndex(item => item.Id == status.Id);
+                if (index < 0) merged.Add(status.WithStacks(System.Math.Max(0, status.Stacks)));
+                else merged[index] = merged[index].WithStacks(System.Math.Max(0, unchecked(merged[index].Stacks + status.Stacks)));
+            }
+            return merged.Where(status => status.Stacks > 0).ToArray();
+        }
+
         internal static string? Added(int room, CombatUnit before, CombatUnit after, string id,
             ICollection<RoomCombatModel.QueuedCharacterTrigger> queue, CombatStatus? appliedDefinition = null)
         {
@@ -44,6 +56,7 @@ namespace MonsterTrain2Poju.Model
                 System.Array.Empty<string>(), source.Context, source.Preview);
             foreach (CombatStatus status in applications)
             {
+                if (status.Stacks <= 0) continue;
                 RoomCombatResult added = StatusApplicationModel.ApplyRetained(initializing, template.Id, status, 0, allowModification: false);
                 if (!added.Supported) return added.UnsupportedReason;
                 initializing = added.State!;

@@ -71,6 +71,7 @@ namespace MonsterTrain2Poju.Probe
             if (data.IsOuterTrainBoss() || data.IsCompanionBoss()) interactions.Add("Spawned boss companions/actions");
             CombatStatus[] statuses = data.GetStartingStatusEffects().Select(status =>
             {
+                if (status.fromPermanentUpgrade) interactions.Add("Separate permanent starting-status application group");
                 StatusEffectData rule = StatusEffectManager.Instance.GetStatusEffectDataById(status.statusId)!;
                 if (rule.GetRemoveWhenTriggeredAfterCardPlayed() || rule.GetRemoveAtEndOfTurnIfTriggered())
                     interactions.Add("Spawned delayed status removal");
