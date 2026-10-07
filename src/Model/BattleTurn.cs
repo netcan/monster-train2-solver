@@ -99,6 +99,17 @@ namespace MonsterTrain2Poju.Model
             CardPileState[] otherPiles = source.OtherPiles.ToArray();
             TrainCombatState train = spawn.Train;
             CombatContext context = train.Context!.WithOtherPiles(otherPiles);
+            train = WithContext(train, context, spawn.Turn == 0);
+            foreach (CombatTeam team in new[] { CombatTeam.Player, CombatTeam.Enemy })
+            {
+                TrainCombatResult triggers = TrainCombatModel.EndTurnPreHandDiscard(train, team);
+                if (!triggers.Supported) return Unsupported(triggers.UnsupportedReason!);
+                if (!RouteDeadUnits(train, triggers)) return Unsupported("Missing pre-discard unit death or card routing.");
+                train = triggers.State!;
+                spawn = WithTrain(spawn, train, spawn.Turn, spawn.Rng);
+                if (Terminal(triggers.Outcome)) return Finish(triggers.Outcome, source.Energy, source.MoonPhase);
+            }
+            context = train.Context!;
             CardCycleResult discard = CardCycleModel.DiscardHand(context.Cards);
             if (!discard.Supported) return Unsupported(discard.UnsupportedReason!);
             BattleStatistics? statistics = context.Statistics;

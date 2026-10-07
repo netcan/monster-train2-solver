@@ -158,6 +158,12 @@ namespace MonsterTrain2Poju.Model
 
     public static class RoomCombatModel
     {
+        internal sealed class QueuedCharacterDeath
+        {
+            internal int RoomIndex { get; }
+            internal CombatUnit Unit { get; }
+            internal QueuedCharacterDeath(int roomIndex, CombatUnit unit) { RoomIndex = roomIndex; Unit = unit; }
+        }
         private static readonly HashSet<string> KnownStatuses = new HashSet<string>(StringComparer.Ordinal)
         {
             "armor", "damage shield", "dazed", "stealth", "ambush", "multistrike",
@@ -187,6 +193,35 @@ namespace MonsterTrain2Poju.Model
                 return new RoomCombatResult(null, RoomOutcome.Unsupported, 0, new List<CombatEvent>(), error ?? "Invalid combat team.");
             return new Engine(state, new List<CombatEvent>()).TeamTurnBegin(team);
         }
+
+        public static RoomCombatResult ApplyEndTurnPreHandDiscard(RoomCombatState state, int unitId)
+        {
+            var queue = new List<QueuedCharacterDeath>();
+            RoomCombatResult result = ApplyEndTurnPreHandDiscard(state, unitId, queue.Add);
+            if (!result.Supported) return result;
+            var events = result.Events.ToList();
+            RoomOutcome outcome = result.Outcome;
+            for (int index = 0; index < queue.Count; index++)
+            {
+                result = ApplyQueuedCharacterDeath(result.State!, queue[index].Unit, queue.Add);
+                if (!result.Supported) return result;
+                events.AddRange(result.Events);
+                if (result.Outcome != RoomOutcome.Exchanged) outcome = result.Outcome;
+            }
+            return new RoomCombatResult(result.State, outcome, 0, events);
+        }
+
+        internal static RoomCombatResult ApplyEndTurnPreHandDiscard(RoomCombatState state, int unitId, Action<QueuedCharacterDeath> enqueue)
+        {
+            string? error = Validate(state);
+            if (error != null || !state.Units.Any(unit => unit.Id == unitId))
+                return new RoomCombatResult(null, RoomOutcome.Unsupported, 0, new List<CombatEvent>(),
+                    error ?? "Pre-discard triggers require a living character actor.");
+            return new Engine(state, new List<CombatEvent>(), enqueueCharacterDeath: enqueue).EndTurnPreHandDiscard(unitId);
+        }
+
+        internal static RoomCombatResult ApplyQueuedCharacterDeath(RoomCombatState state, CombatUnit dead, Action<QueuedCharacterDeath> enqueue)
+            => new Engine(state, new List<CombatEvent>(), enqueueCharacterDeath: enqueue).QueuedDeath(dead);
 
         public static RoomCombatResult ApplySpawnTriggers(RoomCombatState state, int unitId, bool fromCard)
         {
@@ -266,7 +301,7 @@ namespace MonsterTrain2Poju.Model
                 {
                     if (trigger.Kind != "OnDeath" && trigger.Kind != "PostCombat" && trigger.Kind != "OnHeal" &&
                         trigger.Kind != "OnSpawn" && trigger.Kind != "OnUnscaledSpawn" && trigger.Kind != "OnSpawnNotFromCard" &&
-                        trigger.Kind != "OnTurnBegin" && trigger.Kind != "OnTeamTurnBegin")
+                        trigger.Kind != "OnTurnBegin" && trigger.Kind != "OnTeamTurnBegin" && trigger.Kind != "EndTurnPreHandDiscard")
                         return "Unmodeled trigger " + trigger.Kind;
                     if (trigger.Kind != "OnDeath" && trigger.Kind != "PostCombat" && trigger.SkipDuringDeployment == null)
                         return trigger.Kind + " requires deployment timing state.";
@@ -359,13 +394,16 @@ namespace MonsterTrain2Poju.Model
             private CombatContext? context;
             private readonly bool deferSpawnerExhaustion;
             private readonly int pendingSummonCardId;
+            private readonly Action<QueuedCharacterDeath>? enqueueCharacterDeath;
             private string? unsupportedReason;
 
-            internal Engine(RoomCombatState source, List<CombatEvent> events, bool deferSpawnerExhaustion = false, int pendingSummonCardId = 0)
+            internal Engine(RoomCombatState source, List<CombatEvent> events, bool deferSpawnerExhaustion = false, int pendingSummonCardId = 0,
+                Action<QueuedCharacterDeath>? enqueueCharacterDeath = null)
             {
                 this.source = source; this.events = events;
                 this.deferSpawnerExhaustion = deferSpawnerExhaustion;
                 this.pendingSummonCardId = pendingSummonCardId;
+                this.enqueueCharacterDeath = enqueueCharacterDeath;
                 units = source.Units.Select(unit => new WorkingUnit(unit)).ToList();
                 if (source.Preview)
                     foreach (WorkingUnit unit in units)
@@ -457,6 +495,22 @@ namespace MonsterTrain2Poju.Model
             internal RoomCombatResult TeamTurnBegin(CombatTeam team)
             {
                 BeginTeam(team);
+                return Finish(battleWon ? RoomOutcome.BattleWon : units.Any(unit => unit.Source.IsPyre && !unit.Alive)
+                    ? RoomOutcome.PlayerDefeated : RoomOutcome.Exchanged);
+            }
+
+            internal RoomCombatResult EndTurnPreHandDiscard(int unitId)
+            {
+                FireTriggers(units.Single(unit => unit.Source.Id == unitId), "EndTurnPreHandDiscard");
+                return Finish(battleWon ? RoomOutcome.BattleWon : units.Any(unit => unit.Source.IsPyre && !unit.Alive)
+                    ? RoomOutcome.PlayerDefeated : RoomOutcome.Exchanged);
+            }
+
+            internal RoomCombatResult QueuedDeath(CombatUnit dead)
+            {
+                var actor = new WorkingUnit(dead);
+                units.Add(actor);
+                FireTriggers(actor, "OnDeath");
                 return Finish(battleWon ? RoomOutcome.BattleWon : units.Any(unit => unit.Source.IsPyre && !unit.Alive)
                     ? RoomOutcome.PlayerDefeated : RoomOutcome.Exchanged);
             }
@@ -601,7 +655,8 @@ namespace MonsterTrain2Poju.Model
                 // Native UpdateHp sets this gate before death triggers are fired.
                 if (!source.Preview && target.Source.EndsBattleOnDeath)
                 { battleWon = true; context = context?.WithBossesDead(); }
-                FireTriggers(target, "OnDeath");
+                if (enqueueCharacterDeath != null) enqueueCharacterDeath(new QueuedCharacterDeath(source.RoomIndex, target.Freeze()));
+                else FireTriggers(target, "OnDeath");
                 if (!source.Preview && context?.Statistics != null)
                     context = context.WithStatistics(context.LiveStatistics!.Death(target.Source.Team == CombatTeam.Player,
                         sourceCardId > 0 ? sourceCardId : target.Source.SpawnerCardId, requireTrackedCard: context.CardInstances?.Count == 0)

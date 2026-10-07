@@ -44,6 +44,43 @@ namespace MonsterTrain2Poju.Model
 
     public static class TrainCombatModel
     {
+        public static TrainCombatResult EndTurnPreHandDiscard(TrainCombatState source, CombatTeam team)
+        {
+            string? error = Validate(source);
+            if (error != null || team != CombatTeam.Player && team != CombatTeam.Enemy)
+                return Unsupported(error ?? "Invalid combat team.");
+            RoomCombatState[] rooms = source.Rooms.ToArray();
+            CombatContext? context = source.Context;
+            var results = new List<RoomCombatResult>();
+            var queue = new List<RoomCombatModel.QueuedCharacterDeath>();
+            RoomOutcome outcome = RoomOutcome.Exchanged;
+            // Unit identities are assigned at creation. Native active character lists append
+            // at creation and keep that order when units change floor or physical position.
+            int[] actors = rooms.SelectMany(room => room.Units).Where(unit => unit.Team == team)
+                .OrderBy(unit => unit.Id).Select(unit => unit.Id).ToArray();
+            foreach (int actor in actors)
+            {
+                int index = Array.FindIndex(rooms, room => room.Units.Any(unit => unit.Id == actor));
+                if (index < 0) continue; // An earlier queued trigger may remove a later actor.
+                RoomCombatResult result = RoomCombatModel.ApplyEndTurnPreHandDiscard(WithContext(rooms[index], context), actor, queue.Add);
+                if (!result.Supported) return Unsupported(result.UnsupportedReason!);
+                rooms[index] = result.State!; context = result.State!.Context; results.Add(result);
+                if (Terminal(result.Outcome))
+                { outcome = result.Outcome; break; }
+            }
+            // Native OnDeath callbacks append to the active trigger queue. Death counters
+            // and standby returns settle immediately; queued effects run after team actors.
+            for (int next = 0; next < queue.Count; next++)
+            {
+                RoomCombatModel.QueuedCharacterDeath dead = queue[next];
+                RoomCombatResult result = RoomCombatModel.ApplyQueuedCharacterDeath(WithContext(rooms[dead.RoomIndex], context), dead.Unit, queue.Add);
+                if (!result.Supported) return Unsupported(result.UnsupportedReason!);
+                rooms[dead.RoomIndex] = result.State!; context = result.State!.Context; results.Add(result);
+                if (Terminal(result.Outcome)) outcome = result.Outcome;
+            }
+            return new TrainCombatResult(Freeze(source, rooms, context), outcome, results);
+        }
+
         public static TrainCombatResult ResolveCombat(TrainCombatState source)
         {
             string? error = Validate(source);
@@ -125,7 +162,7 @@ namespace MonsterTrain2Poju.Model
         }
 
         private static RoomCombatState WithContext(RoomCombatState room, CombatContext? context) =>
-            new RoomCombatState(room.RoomIndex, room.Deployment, room.Units, room.ExternalInteractions, context);
+            new RoomCombatState(room.RoomIndex, room.Deployment, room.Units, room.ExternalInteractions, context, room.Preview);
 
         private static TrainCombatState Freeze(TrainCombatState source, RoomCombatState[] rooms, CombatContext? context)
         {

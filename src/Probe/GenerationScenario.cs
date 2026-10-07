@@ -157,7 +157,7 @@ namespace MonsterTrain2Poju.Probe
         private static class GenerationPatch
         {
             private static void Postfix(CardEffectState cardEffectState, CardEffectParams cardEffectParams, ref IEnumerator __result)
-            { if (Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") is "generation" or "generation-lethal" or "spawn-triggers" or "spawn-triggers-lethal") __result = Wrap(__result, cardEffectState, cardEffectParams); }
+            { if (Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") is "generation" or "generation-lethal" or "spawn-triggers" or "spawn-triggers-lethal" or "pre-hand-discard" or "pre-hand-discard-lethal") __result = Wrap(__result, cardEffectState, cardEffectParams); }
         }
     }
 }

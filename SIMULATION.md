@@ -1113,9 +1113,67 @@ reproduce the terminal result; all 40 prior battles and 8 calibrations still pas
 The retained native JSON is 202,662,856 bytes, SHA-256
 `974235394293b987d86dd48d2f029daf3d2533178995f8bd4d40e84ae6df7cba`.
 Capture failures, mismatches, unsupported stages and pending records are zero;
-original profile files are unchanged. Global pre-combat/hand-discard phases,
+original profile files are unchanged. Global pre-combat phases,
 attack/hit/kill triggers and broader status/room/relic interactions remain to be
 modeled.
+
+Schema 30 adds the global `EndTurnPreHandDiscard` character phase. Native active
+character lists append at creation and retain that order across floor and
+physical position changes. The projected unit identities are assigned at native
+creation; the model processes each team's snapshot in that order, including
+the Pyre in the player list. The player queue finishes before the enemy queue.
+Effects observe the current hand and incoming energy statistic before discard
+and energy removal. Newly generated hand cards are discarded in the same turn.
+
+Deaths update counters and return standby spawners immediately. Their `OnDeath`
+effects append to the running trigger queue, after the remaining team actors;
+nested deaths append in turn. This distinction preserves generated-card
+identities, creation upgrades and subsequent statistics. Unknown effects
+produce no usable child state. UI battle preview runs only the player
+pre-discard phase once, before previewing the rooms. Buffs affect those copied
+units; live units, card piles, gold and source upgrades remain unchanged.
+
+`TrainCombatModel.EndTurnPreHandDiscard` and its room entry point support
+independent phase comparisons. Native records retain both teams' creation
+orders and complete train states. Pure checks cover cross-floor order, Pyre
+participation, existing energy and earlier exhaustion, once/repeat triggers,
+silence/daze/deployment, queued death effects and generation, preview and 32
+parallel branches. The isolated fixtures enable this trigger during deployment
+and seed its incoming energy statistic to seven, captured in the starting
+state, to make the later energy-snapshot boundary observable.
+
+`results/full-battle-pre-hand-discard.json.gz` retains 10 exact character phases,
+14 scaling callbacks and 13 generation callbacks. Independent checks compare
+complete phases, both teams' active order, generated-hand discard and incoming
+energy. All 15 plays, 5 EndTurns, 42 room stages, 9 card cycles, 9 train phases
+and 7 spawns match; the natural battle is won with Pyre health 80. The complete
+policy also matches from initial/mid-battle roots with 16 parallel branches.
+The native JSON is 182,243,837 bytes, SHA-256
+`46fab2069ea7b672e1aab04206422b8563e228d101f149ba70f9e72f6616faed`.
+
+`results/full-battle-pre-hand-discard-lethal.json.gz` retains 14 exact phases,
+10 scaling callbacks, 2 nested unit deaths and 4 hand generations. The death
+cards carry a distinct native temporary upgrade; their identities are allocated
+after both actors' ordinary generation, independently verifying the queue order.
+All 21 plays, 7 EndTurns, 60 room stages, 13 card cycles, 13 train phases and
+11 spawns match, winning with Pyre health 74. Complete policies from initial
+and mid-battle roots reproduce the terminal state with 16 parallel branches.
+The native JSON is 275,900,270 bytes, SHA-256
+`847b15f886f6d1ebe1e849b441f602759a6ddd3b1a374c42cceadc141a07354a`.
+Both fixtures have zero capture failures, mismatches, unsupported stages and
+pending records; original profile files are unchanged. The 41 earlier battles
+and 8 calibrations also pass; there are now 43 verified complete battle fixtures.
+
+The broader objective remains open: pre-combat, other character/card triggers,
+relic and hand-retention effects, boss actions, equipment and room mechanics
+still need their own native validation.
+An additional native death-copy experiment exposed a separate clone refresh:
+when upgrade data does not mark its damage as scaled by a non-magic-power
+trait, the game resets positive damage/heal to the data's base value times the
+new card's magic-power multiplier. A scaled source damage of eight became one
+on its generated clone. Current source descriptors do not yet capture this
+refresh, so that combination remains unmodeled; it is not included among the
+verified phase fixtures.
 
 Schema 24 captures ordered `CardTraitScalingAddStatusEffect` descriptors on
 immutable card instances and generated-card rules, plus the native stackability
