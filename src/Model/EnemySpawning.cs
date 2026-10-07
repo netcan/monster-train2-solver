@@ -15,7 +15,7 @@ namespace MonsterTrain2Poju.Model
         { Unit = unit; Ascends = ascends; Loops = loops; ExternalInteractions = Array.AsReadOnly(externalInteractions.ToArray()); CompanionBoss = companionBoss; }
         internal CombatUnit Create(int id) => new CombatUnit(id, Unit.AssetKey, CombatTeam.Enemy,
             Unit.BaseAttack, Unit.Health, Unit.MaxHealth, Unit.CanAttack, false, Unit.EndsBattleOnDeath,
-            Unit.Statuses, Unit.Triggers, size: Unit.Size, statusImmunities: Unit.StatusImmunities, subtypes: Unit.Subtypes, modifiers: Unit.Modifiers, isBoss: Unit.IsBoss, lastAttackerId: Unit.LastAttackerId.HasValue ? 0 : null, statusRegistry: Unit.StatusRegistry, equipmentCards: Unit.EquipmentCards, nextTriggerId: Unit.NextTriggerId, ability: Unit.Ability, statusDictionary: Unit.StatusDictionary, abilityRules: Unit.AbilityRules);
+            Unit.Statuses, Unit.Triggers, size: Unit.Size, statusImmunities: Unit.StatusImmunities, subtypes: Unit.Subtypes, modifiers: Unit.Modifiers, isBoss: Unit.IsBoss, lastAttackerId: Unit.LastAttackerId.HasValue ? 0 : null, statusRegistry: Unit.StatusRegistry, equipmentCards: Unit.EquipmentCards, nextTriggerId: Unit.NextTriggerId, ability: Unit.Ability, statusDictionary: Unit.StatusDictionary, abilityRules: Unit.AbilityRules, hordeDefinition: Unit.HordeDefinition, isSpawning: Unit.IsSpawning);
     }
 
     public sealed class EnemyGroup
@@ -182,7 +182,8 @@ namespace MonsterTrain2Poju.Model
                 }
                 RoomCombatState original = source.Train.Rooms[index];
                 return StatusCallbackModel.Initialize(new RoomCombatState(index, original.Deployment, rooms[index],
-                    original.ExternalInteractions, context, original.Preview), unit, unit.StatusRegistry ?? unit.Statuses, callbacks);
+                    original.ExternalInteractions, context, original.Preview), unit, unit.StatusRegistry ?? unit.Statuses, callbacks,
+                    changed => rooms[index][rooms[index].FindIndex(actor => actor.Id == unit.Id)] = changed);
             }
 
             string? DrainCallbacks()

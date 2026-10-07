@@ -7,7 +7,7 @@ namespace MonsterTrain2Poju.Model
     {
         internal static readonly string[] Kinds =
         { "OnStatusEffectChanged", "OnArmorAdded", "OnPyregelAdded", "OnValiant", "OnSilence", "OnSilenceLost", "OnNewStatusEffectAdded",
-            "OnUnitAbilityAvailable", "OnUnitAbilityUnavailable" };
+            "OnUnitAbilityAvailable", "OnUnitAbilityUnavailable", "OnTroopAdded", "OnTroopRemoved" };
 
         internal static IReadOnlyList<CombatStatus> MergeStartingStatuses(IEnumerable<CombatStatus> authored, IEnumerable<CombatStatus> upgrades)
         {
@@ -28,6 +28,8 @@ namespace MonsterTrain2Poju.Model
             CombatStatus status = after.RegisteredStatus(id) ?? appliedDefinition!.WithStacks(0);
             queue.Add(new RoomCombatModel.QueuedCharacterTrigger(room, after, "OnStatusEffectChanged",
                 paramInt: status.Stacks, paramInt2: status.Stacks - old, paramString: id));
+            if (id == "horde") queue.Add(new RoomCombatModel.QueuedCharacterTrigger(room, after, "OnTroopAdded",
+                paramInt: status.Stacks, paramInt2: status.Stacks - old, paramString: ""));
             string? kind = id == "armor" ? "OnArmorAdded" : id == "pyregel" ? "OnPyregelAdded" :
                 id == "valor" ? "OnValiant" : id == "silenced" ? "OnSilence" : null;
             if (kind != null) queue.Add(new RoomCombatModel.QueuedCharacterTrigger(room, after, kind,
@@ -48,14 +50,14 @@ namespace MonsterTrain2Poju.Model
         }
 
         internal static string? Initialize(RoomCombatState source, CombatUnit template, IReadOnlyList<CombatStatus> applications,
-            ICollection<RoomCombatModel.QueuedCharacterTrigger> queue)
+            ICollection<RoomCombatModel.QueuedCharacterTrigger> queue, System.Action<CombatUnit>? update = null)
         {
             // Native installs authored immunities after applying starting statuses.
             CombatUnit empty = new CombatUnit(template.Id, template.AssetKey, template.Team, template.BaseAttack, template.Health,
                 template.MaxHealth, template.CanAttack, template.IsPyre, template.EndsBattleOnDeath, System.Array.Empty<CombatStatus>(), template.Triggers,
                 template.SpawnerCardId, template.Size, System.Array.Empty<string>(), template.Subtypes, template.Modifiers, template.IsBoss,
-                template.LastAttackerId, template.StatusRegistry == null ? null : System.Array.Empty<CombatStatus>(), template.EquipmentCards, template.NextTriggerId, template.Ability, template.StatusDictionary == null ? null : new StatusDictionaryState(System.Array.Empty<string>(), System.Array.Empty<int>()), template.AbilityRules);
-            RoomCombatState initializing = new RoomCombatState(source.RoomIndex, source.Deployment, new[] { empty },
+                template.LastAttackerId, template.StatusRegistry == null ? null : System.Array.Empty<CombatStatus>(), template.EquipmentCards, template.NextTriggerId, template.Ability, template.StatusDictionary == null ? null : new StatusDictionaryState(System.Array.Empty<string>(), System.Array.Empty<int>()), template.AbilityRules, template.HordeDefinition, template.IsSpawning);
+            RoomCombatState initializing = new RoomCombatState(source.RoomIndex, source.Deployment, source.Units.Select(unit => unit.Id == template.Id ? empty : unit).ToArray(),
                 System.Array.Empty<string>(), source.Context, source.Preview);
             foreach (CombatStatus status in applications)
             {
@@ -64,6 +66,14 @@ namespace MonsterTrain2Poju.Model
                 if (!added.Supported) return added.UnsupportedReason;
                 initializing = added.State!;
                 foreach (RoomCombatModel.QueuedCharacterTrigger callback in added.PendingCallbacks) queue.Add(callback);
+            }
+            if (applications.Any(status => status.Id == "horde" && status.Stacks > 0))
+            {
+                CombatUnit value = initializing.Units.First(unit => unit.Id == template.Id);
+                update?.Invoke(new CombatUnit(value.Id, value.AssetKey, value.Team, value.BaseAttack, value.Health, value.MaxHealth,
+                    value.CanAttack, value.IsPyre, value.EndsBattleOnDeath, value.Statuses, value.Triggers, value.SpawnerCardId, value.Size,
+                    template.StatusImmunities, value.Subtypes, value.Modifiers, value.IsBoss, value.LastAttackerId, value.StatusRegistry,
+                    value.EquipmentCards, value.NextTriggerId, value.Ability, value.StatusDictionary, value.AbilityRules, value.HordeDefinition, value.IsSpawning));
             }
             return null;
         }
@@ -76,6 +86,8 @@ namespace MonsterTrain2Poju.Model
             if (old <= count) return;
             queue.Add(new RoomCombatModel.QueuedCharacterTrigger(room, after, "OnStatusEffectChanged",
                 paramInt: count, paramInt2: count - old, paramString: id));
+            if (id == "horde") queue.Add(new RoomCombatModel.QueuedCharacterTrigger(room, after, "OnTroopRemoved",
+                paramInt: count, paramInt2: old - count, paramString: ""));
             if (id == "silenced" && count == 0)
                 queue.Add(new RoomCombatModel.QueuedCharacterTrigger(room, after, "OnSilenceLost"));
             if (id == "cooldown" && after.Ability?.HasAbility == true && old > 0 && count == 0)

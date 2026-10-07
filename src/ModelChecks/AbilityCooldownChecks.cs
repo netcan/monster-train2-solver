@@ -87,7 +87,8 @@ internal static class AbilityCooldownChecks
         {
             var result = effect.Type == "RemoveStatus" ? AbilityCooldownModel.RemoveStatus(current, id, effect.Statuses[0].Id,
                 effect.Statuses[0].Stacks, sample.GetProperty("SourceCardId").GetInt32()) :
-                AbilityCooldownModel.Apply(current, id, effect, sample.GetProperty("SourceCardId").GetInt32());
+                AbilityCooldownModel.Apply(current, id, effect, sample.GetProperty("SourceCardId").GetInt32(),
+                    sample.TryGetProperty("TriggerKind", out var kind) ? kind.GetString() : null);
             Require(result.Supported, "Native cooldown unsupported: " + result.UnsupportedReason); current = result.State!;
         }
         string? diff = ModelJson.Difference(JsonSerializer.Serialize(current, ModelJson.Options),

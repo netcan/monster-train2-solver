@@ -27,6 +27,17 @@ value comparison.
 Isolated native probes use `.probe-runs/`, which is also ignored. Successful
 captures become fixed inputs here after native and independent comparisons pass.
 
+`full-battle-horde-statuses.mt2f` retains schema 69 with eight actual Horde
+status/damage/maximum-health operations on a real summoned Steward and a second
+Steward observing rally/harvest queues. It preserves accepted queue contents and
+actual dispatch order independently of queue calls, plus complete states before
+the operation, after it and after draining. Zero/negative additions, troop
+thresholds, simulated deaths and spawning cooldown gates compare in 32 branches;
+the complete six-play, five-EndTurn policy compares from initial and mid-battle
+states in 16 branches. Preview updates are suppressed only during controlled
+setup and restored for the full battle. Final-stack removal, runtime Horde
+casualty upgrades, rally/harvest effect routing, merging and cloning remain work.
+
 `full-battle-direct-unit-upgrades.mt2f` retains schema 53 with 21 actual
 CharacterState API operations before the first recorded player decision.
 They cover repeated definition IDs, single-copy removal using caller stats,

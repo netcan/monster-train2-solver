@@ -35,12 +35,13 @@ namespace MonsterTrain2Poju.Model
                 HealingModel.HealedHealth(target.Health, maxHealth, amount, target.Modifiers!.CanBeHealed, target.Statuses, fromMaxHealthChange: true);
             var changed = new CombatUnit(target.Id, target.AssetKey, target.Team, target.BaseAttack, health, maxHealth,
                 target.CanAttack, target.IsPyre, target.EndsBattleOnDeath, target.Statuses, target.Triggers, target.SpawnerCardId,
-                target.Size, target.StatusImmunities, target.Subtypes, target.Modifiers, target.IsBoss, target.LastAttackerId, target.StatusRegistry, target.EquipmentCards, target.NextTriggerId, target.Ability, target.StatusDictionary, target.AbilityRules);
+                target.Size, target.StatusImmunities, target.Subtypes, target.Modifiers, target.IsBoss, target.LastAttackerId, target.StatusRegistry, target.EquipmentCards, target.NextTriggerId, target.Ability, target.StatusDictionary, target.AbilityRules, target.HordeDefinition, target.IsSpawning);
             // Lethal native debuffs sacrifice the unit without attributing damage to the played card.
             if (health <= 0) return RoomCombatModel.ApplyUnitModification(state, changed);
-            return new RoomCombatResult(new RoomCombatState(state.RoomIndex, state.Deployment,
-                state.Units.Select(unit => unit.Id == targetId ? changed : unit).ToArray(), state.ExternalInteractions, state.Context, state.Preview),
-                RoomOutcome.Exchanged, 0, new List<CombatEvent>());
+            var completed = new RoomCombatState(state.RoomIndex, state.Deployment,
+                state.Units.Select(unit => unit.Id == targetId ? changed : unit).ToArray(), state.ExternalInteractions, state.Context, state.Preview);
+            return debuff ? HordeStatusModel.SettleHealth(completed, targetId) :
+                new RoomCombatResult(completed, RoomOutcome.Exchanged, 0, new List<CombatEvent>());
         }
         private static RoomCombatResult Unsupported(string reason) => new RoomCombatResult(null, RoomOutcome.Unsupported, 0, new List<CombatEvent>(), reason);
     }

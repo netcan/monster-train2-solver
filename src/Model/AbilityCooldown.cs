@@ -30,13 +30,16 @@ namespace MonsterTrain2Poju.Model
     public static class AbilityCooldownModel
     {
         internal static bool IsEffect(string type) => type == "ResetCooldown" || type == "AdjustAbilityCooldown";
-        public static RoomCombatResult Apply(RoomCombatState source, int targetId, CardActionEffect effect, int sourceCardId = 0)
+        public static RoomCombatResult Apply(RoomCombatState source, int targetId, CardActionEffect effect, int sourceCardId = 0, string? triggerKind = null)
         {
             CombatUnit? target = source.Units.FirstOrDefault(unit => unit.Id == targetId);
             if (target == null || !IsEffect(effect.Type) || !effect.CooldownParameter.HasValue)
                 return Unsupported("Missing ability cooldown target or effect parameters.");
-            // Horde re-spawns retain a separate native IsSpawning gate.
-            if (target.Status("horde") != null) return Unsupported("Horde ability cooldown needs spawning state.");
+            if (effect.Type == "ResetCooldown" && target.Status("horde") != null && triggerKind == "OnSpawn")
+            {
+                if (!target.IsSpawning.HasValue) return Unsupported("Horde OnSpawn cooldown requires spawning state.");
+                if (!target.IsSpawning.Value) return Match(source);
+            }
             UnitAbilityState ability = target.Ability ?? new UnitAbilityState("", 0, 0);
             int stacks = target.Status("cooldown")?.Stacks ?? 0;
             if (effect.Type == "ResetCooldown")
@@ -63,6 +66,8 @@ namespace MonsterTrain2Poju.Model
             CombatStatus? status = target.RegisteredStatus(id);
             if (status == null) return Match(source);
             int count = amount == -1 ? 0 : Math.Max(0, Math.Min(status.Stackable == false ? 1 : 9999, unchecked(status.Stacks - amount)));
+            if (id == "horde" && status.Stacks > 0 && count == 0)
+                return Unsupported("Removing the final Horde troop requires physical-death settlement.");
             CombatUnit changed = CardSpellModel.Copy(target, target.Health, target.Statuses.Where(item => item.Id != id)
                 .Concat(count > 0 ? new[] { status.WithStacks(count) } : Array.Empty<CombatStatus>()).ToArray());
             CombatContext? context = source.Context;
@@ -70,6 +75,14 @@ namespace MonsterTrain2Poju.Model
                 context = context.WithStatistics(context.LiveStatistics!.Increment(sourceCardId, "AnyStatusEffectStacksRemoved", status.Stacks - count,
                     requireTrackedCard: context.CardInstances?.Count == 0));
             var callbacks = new List<RoomCombatModel.QueuedCharacterTrigger>();
+            if (id == "horde" && count < status.Stacks)
+            {
+                var staged = new RoomCombatState(source.RoomIndex, source.Deployment, source.Units, source.ExternalInteractions, context, source.Preview);
+                RoomCombatResult horde = HordeStatusModel.Change(staged, target, changed, count - status.Stacks);
+                if (!horde.Supported) return horde;
+                changed = horde.State!.Units.First(unit => unit.Id == targetId);
+                context = horde.State.Context; callbacks.AddRange(horde.PendingCallbacks);
+            }
             StatusCallbackModel.Removed(source.RoomIndex, target, changed, id, callbacks);
             return new RoomCombatResult(new RoomCombatState(source.RoomIndex, source.Deployment,
                 source.Units.Select(unit => unit.Id == targetId ? changed : unit).ToArray(), source.ExternalInteractions, context, source.Preview),
@@ -78,7 +91,7 @@ namespace MonsterTrain2Poju.Model
         internal static CombatUnit Copy(CombatUnit unit, UnitAbilityState? ability) => new CombatUnit(unit.Id, unit.AssetKey, unit.Team,
             unit.BaseAttack, unit.Health, unit.MaxHealth, unit.CanAttack, unit.IsPyre, unit.EndsBattleOnDeath, unit.Statuses, unit.Triggers,
             unit.SpawnerCardId, unit.Size, unit.StatusImmunities, unit.Subtypes, unit.Modifiers, unit.IsBoss, unit.LastAttackerId,
-            unit.StatusRegistry, unit.EquipmentCards, unit.NextTriggerId, ability, unit.StatusDictionary, unit.AbilityRules);
+            unit.StatusRegistry, unit.EquipmentCards, unit.NextTriggerId, ability, unit.StatusDictionary, unit.AbilityRules, unit.HordeDefinition, unit.IsSpawning);
         private static RoomCombatState Replace(RoomCombatState source, CombatUnit unit) => new RoomCombatState(source.RoomIndex,
             source.Deployment, source.Units.Select(item => item.Id == unit.Id ? unit : item).ToArray(), source.ExternalInteractions, source.Context, source.Preview);
         private static RoomCombatResult Match(RoomCombatState state) => new RoomCombatResult(state, RoomOutcome.Exchanged, 0, new List<CombatEvent>());

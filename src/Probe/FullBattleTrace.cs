@@ -228,7 +228,8 @@ namespace MonsterTrain2Poju.Probe
                 ((List<string>)AccessTools.Field(typeof(CharacterState), "statusEffectImmunities").GetValue(character)).ToArray(),
                 character.GetSubtypes().Select(subtype => subtype.Key).ToArray(), UnitModifierProbe.Capture(character), character.IsAnyBoss(),
                 lastAttacker == null || normalizeDestroyedAttacker && (lastAttacker.IsDestroyed || !lastAttacker.IsAlive) ? 0 : UnitId(lastAttacker), statuses,
-                character.GetEquipment().Select(CardId).ToArray(), TriggerStates(character).Count, AbilityCooldownProbe.Capture(character), AbilityCooldownProbe.CaptureDictionary(character), AbilityLifecycleProbe.Rules(character.GetSourceCharacterData()));
+                character.GetEquipment().Select(CardId).ToArray(), TriggerStates(character).Count, AbilityCooldownProbe.Capture(character), AbilityCooldownProbe.CaptureDictionary(character), AbilityLifecycleProbe.Rules(character.GetSourceCharacterData()),
+                new HordeBaseStats(character.GetSourceCharacterData().GetAttackDamage(), character.GetSourceCharacterData().GetHealth()), character.IsSpawning);
         }
 
         internal CombatContext CaptureContext()
@@ -246,7 +247,7 @@ namespace MonsterTrain2Poju.Probe
             return new CombatContext(new CardCycleState(state.Hand, state.Draw, state.Discard,
                 new UnityRng(draw[0], draw[1], draw[2], draw[3]), state.DrawModifier, Array.Empty<string>(), BonusDrawProbe.Capture(cards, this)),
                 new UnityRng(battle[0], battle[1], battle[2], battle[3]), state.Gold, projection.NextCardId,
-                cards.GetMaxHandSize(), new[] { "armor", "valor", "pyregel", "relentless", "cooldown", "unit_ability", "unit_ability_available" }.Select(id => BattleActionProbe.Status(id, 1)).ToArray(),
+                cards.GetMaxHandSize(), new[] { "armor", "valor", "pyregel", "relentless", "cooldown", "unit_ability", "unit_ability_available", "horde" }.Select(id => BattleActionProbe.Status(id, 1)).ToArray(),
                 statistics, instances, registry, managers.GetCombatManager()!.AllScenarioBossesDead,
                 ((IEnumerable<CardUpgradeState>)AccessTools.Field(typeof(CardManager), "nextAddedTempCardUpgrades").GetValue(cards))
                     .Select(CardModifierProbe.Upgrade).ToArray(), CaptureOtherPiles(), CaptureQueryFrame(managers),
@@ -425,7 +426,7 @@ namespace MonsterTrain2Poju.Probe
             string temporary = path + ".tmp";
             var snapshot = new
             {
-                Schema = 68,
+                Schema = 69,
                 GameVersion = Application.version,
                 GameModuleMvid = typeof(CardState).Assembly.ManifestModule.ModuleVersionId,
                 NativeWon,
@@ -459,6 +460,7 @@ namespace MonsterTrain2Poju.Probe
                 TriggerMutations = TriggerMutationScenario.Records,
                 ConditionalTriggers = ConditionalTriggerProbe.Records,
                 TriggerRepeatBatches = ConditionalTriggerScenario.RepeatBatches,
+                HordeStatusOperations = HordeStatusScenario.Records,
                 CompanionBossActions = CompanionBossProbe.Records,
                 RelentlessTriggerRemovals = CompanionBossProbe.Removals,
                 Sentries = SentryProbe.Records,

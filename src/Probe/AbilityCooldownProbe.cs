@@ -58,6 +58,7 @@ namespace MonsterTrain2Poju.Probe
         internal sealed class Record
         {
             public int SourceCardId { get; set; }
+            public string? TriggerKind { get; set; }
             public CardActionEffect Effect { get; set; } = null!;
             public int[] Targets { get; set; } = null!;
             public RoomCombatState Before { get; set; } = null!;
@@ -79,6 +80,7 @@ namespace MonsterTrain2Poju.Probe
             FullBattleTrace trace = FullBattleTrace.Active!;
             RoomState room = AllGameManagers.Instance!.GetRoomManager()!.GetRoom(parameters.selectedRoom);
             var record = new Record { SourceCardId = parameters.playedCard == null ? 0 : trace.CardId(parameters.playedCard),
+                TriggerKind = parameters.sourceCharacterTriggerState?.GetTrigger().ToString(),
                 Effect = Describe(effect.GetSourceCardEffectData(), effect.GetParamInt(), effect.GetParamBool()),
                 Targets = parameters.targets.Select(trace.UnitId).ToArray(), Before = trace.Capture(room) };
             Records.Add(record);

@@ -107,7 +107,7 @@ namespace MonsterTrain2Poju.Probe
             return new EnemyDefinition(new CombatUnit(0, data.GetAssetKey(), CombatTeam.Enemy, data.GetAttackDamage(),
                 data.GetHealth(), data.GetHealth(), data.GetCanAttack(), false, data.IsMiniboss(), statuses, triggers.ToArray(), size: data.GetSize(),
                 statusImmunities: data.GetStatusEffectImmunities(), subtypes: data.GetSubtypes().Select(subtype => subtype.Key).ToArray(),
-                modifiers: UnitModifierProbe.Definition(data), isBoss: data.IsMiniboss() || data.IsOuterTrainBoss(), lastAttackerId: 0, statusRegistry: statuses, equipmentCards: Array.Empty<int>(), nextTriggerId: triggers.Count, ability: ability, statusDictionary: new StatusDictionaryState(statuses.Select(status => (string?)status.Id).ToArray(), Array.Empty<int>()), abilityRules: AbilityLifecycleProbe.Rules(data)),
+                modifiers: UnitModifierProbe.Definition(data), isBoss: data.IsMiniboss() || data.IsOuterTrainBoss(), lastAttackerId: 0, statusRegistry: statuses, equipmentCards: Array.Empty<int>(), nextTriggerId: triggers.Count, ability: ability, statusDictionary: new StatusDictionaryState(statuses.Select(status => (string?)status.Id).ToArray(), Array.Empty<int>()), abilityRules: AbilityLifecycleProbe.Rules(data), hordeDefinition: new HordeBaseStats(data.GetAttackDamage(), data.GetHealth()), isSpawning: false),
                 data.GetAscendsTrainAutomatically(), data.GetLoopsBetweenTrainFloors(), interactions, data.IsCompanionBoss());
         }
 

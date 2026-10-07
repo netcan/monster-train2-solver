@@ -75,6 +75,7 @@ param(
     [switch] $AbilityEffects,
     [switch] $EquipmentAbilities,
     [switch] $HordeStats,
+    [switch] $HordeStatuses,
     [switch] $AbilityLifecycle,
     [switch] $AbilityCooldown,
     [switch] $AbilityCache,
@@ -129,7 +130,7 @@ $environment = @{
     MT2_PROBE_SCENARIO = 'native-replay'
     MT2_PROBE_FULL_BATTLE = '1'
     MT2_PROBE_FULL_BATTLE_POLICY = $Policy
-    MT2_PROBE_MODIFIERS = $(if ($EquipmentAbilities) { 'equipment-abilities' } elseif ($AbilityEffects) { 'ability-effects' } elseif ($AbilityLifecycle) { 'ability-lifecycle' } elseif ($AbilityActivationLethal) { 'ability-activation-lethal' } elseif ($AbilityActivationX) { 'ability-activation-x' } elseif ($AbilityActivation) { 'ability-activation' } elseif ($AbilityCache) { 'ability-cache' } elseif ($AbilityCooldown) { 'ability-cooldown' } elseif ($CompanionBoss) { 'companion-boss' } elseif ($ConditionalTriggers) { 'conditional-triggers' } elseif ($DetachedBonusDraw) { 'detached-bonus-draw' } elseif ($TriggerMutation) { 'trigger-mutation' } elseif ($EquipmentTriggers) { 'equipment-triggers' } elseif ($EquipmentOverflow) { 'equipment-overflow' } elseif ($EquipmentExhausted) { 'equipment-exhausted' } elseif ($Equipment) { 'equipment' } elseif ($DirectUnitUpgrades) { 'direct-unit-upgrades' } elseif ($RoomCapacityLethal) { 'room-capacity-lethal' } elseif ($RoomCapacity) { 'room-capacity' } elseif ($BonusDrawLethal) { 'bonus-draw-lethal' } elseif ($BonusDraw) { 'bonus-draw' } elseif ($XCostLethal) { 'x-cost-lethal' } elseif ($XCost) { 'x-cost' } elseif ($EnergyEffectsLethal) { 'energy-effects-lethal' } elseif ($EnergyEffects) { 'energy-effects' } elseif ($TriggeredStatus) { 'triggered-status' } elseif ($AttackTriggers) { 'attack-triggers' } elseif ($DyingUpgrades) { 'dying-upgrades' } elseif ($HitKill) { 'hit-kill' } elseif ($TerminalDeathDamage) { 'terminal-death-damage' } elseif ($DamageDeathQueue) { 'damage-death-queue' } elseif ($TriggeredDamage) { 'triggered-damage' } elseif ($PostCombatHealing) { 'post-combat-healing' } elseif ($TriggeredHealing) { 'triggered-healing' } elseif ($PreCombatLethal) { 'pre-combat-lethal' } elseif ($PreCombat) { 'pre-combat' } elseif ($CloneUpgradeRefresh) { 'clone-upgrade-refresh' } elseif ($PreHandDiscardLethal) { 'pre-hand-discard-lethal' } elseif ($PreHandDiscard) { 'pre-hand-discard' } elseif ($TeamTurnBegin) { 'team-turn-begin' } elseif ($UnitTurnBegin) { 'unit-turn-begin' } elseif ($SpawnTriggersLethal) { 'spawn-triggers-lethal' } elseif ($SpawnTriggers) { 'spawn-triggers' } elseif ($UnitTriggerUpgrades) { 'unit-trigger-upgrades' } elseif ($UnitUpgradeScaling) { 'unit-upgrade-scaling' } elseif ($StatusScaling) { 'status-scaling' } elseif ($DynamicStatistics) { 'dynamic-statistics' } elseif ($DamageScaling) { 'damage-scaling' } elseif ($GenerationLethal) { 'generation-lethal' } elseif ($Generation) { 'generation' } elseif ($HandRemovalLethal) { 'hand-removal-lethal' } elseif ($HandRemoval) { 'hand-removal' } elseif ($Drawing) { 'drawing' } elseif ($TargetFilters) { 'target-filters' } elseif ($NumericRangesLethal) { 'numeric-ranges-lethal' } elseif ($NumericRanges) { 'numeric-ranges' } elseif ($MaxHealthLethal) { 'max-health-lethal' } elseif ($MaxHealthSpells) { 'max-health-spells' } elseif ($AttackBuffs) { 'attack-buffs' } elseif ($CrossRoomTargets) { 'cross-room-targets' } elseif ($CrossRoomSpells) { 'cross-room-spells' } elseif ($RandomStatus) { 'random-status' } elseif ($RandomSpells) { 'random-spells' } elseif ($PostKillSpells) { 'post-kill-spells' } elseif ($TerminalSpells) { 'terminal-spells' } elseif ($RoomSpells) { 'room-spells' } elseif ($HealingTriggers) { 'healing-triggers' } elseif ($Healing) { 'healing' } elseif ($TargetedHandUpgrades) { 'targeted-hand-upgrades' } elseif ($HandUpgrades) { 'hand-upgrades' } elseif ($SacrificeUpgrades) { 'sacrifice-upgrades' } elseif ($DynamicUpgrades) { 'dynamic-upgrades' } elseif ($NumericUpgrades) { 'numeric-upgrades' } else { '' })
+    MT2_PROBE_MODIFIERS = $(if ($HordeStatuses) { 'horde-statuses' } elseif ($EquipmentAbilities) { 'equipment-abilities' } elseif ($AbilityEffects) { 'ability-effects' } elseif ($AbilityLifecycle) { 'ability-lifecycle' } elseif ($AbilityActivationLethal) { 'ability-activation-lethal' } elseif ($AbilityActivationX) { 'ability-activation-x' } elseif ($AbilityActivation) { 'ability-activation' } elseif ($AbilityCache) { 'ability-cache' } elseif ($AbilityCooldown) { 'ability-cooldown' } elseif ($CompanionBoss) { 'companion-boss' } elseif ($ConditionalTriggers) { 'conditional-triggers' } elseif ($DetachedBonusDraw) { 'detached-bonus-draw' } elseif ($TriggerMutation) { 'trigger-mutation' } elseif ($EquipmentTriggers) { 'equipment-triggers' } elseif ($EquipmentOverflow) { 'equipment-overflow' } elseif ($EquipmentExhausted) { 'equipment-exhausted' } elseif ($Equipment) { 'equipment' } elseif ($DirectUnitUpgrades) { 'direct-unit-upgrades' } elseif ($RoomCapacityLethal) { 'room-capacity-lethal' } elseif ($RoomCapacity) { 'room-capacity' } elseif ($BonusDrawLethal) { 'bonus-draw-lethal' } elseif ($BonusDraw) { 'bonus-draw' } elseif ($XCostLethal) { 'x-cost-lethal' } elseif ($XCost) { 'x-cost' } elseif ($EnergyEffectsLethal) { 'energy-effects-lethal' } elseif ($EnergyEffects) { 'energy-effects' } elseif ($TriggeredStatus) { 'triggered-status' } elseif ($AttackTriggers) { 'attack-triggers' } elseif ($DyingUpgrades) { 'dying-upgrades' } elseif ($HitKill) { 'hit-kill' } elseif ($TerminalDeathDamage) { 'terminal-death-damage' } elseif ($DamageDeathQueue) { 'damage-death-queue' } elseif ($TriggeredDamage) { 'triggered-damage' } elseif ($PostCombatHealing) { 'post-combat-healing' } elseif ($TriggeredHealing) { 'triggered-healing' } elseif ($PreCombatLethal) { 'pre-combat-lethal' } elseif ($PreCombat) { 'pre-combat' } elseif ($CloneUpgradeRefresh) { 'clone-upgrade-refresh' } elseif ($PreHandDiscardLethal) { 'pre-hand-discard-lethal' } elseif ($PreHandDiscard) { 'pre-hand-discard' } elseif ($TeamTurnBegin) { 'team-turn-begin' } elseif ($UnitTurnBegin) { 'unit-turn-begin' } elseif ($SpawnTriggersLethal) { 'spawn-triggers-lethal' } elseif ($SpawnTriggers) { 'spawn-triggers' } elseif ($UnitTriggerUpgrades) { 'unit-trigger-upgrades' } elseif ($UnitUpgradeScaling) { 'unit-upgrade-scaling' } elseif ($StatusScaling) { 'status-scaling' } elseif ($DynamicStatistics) { 'dynamic-statistics' } elseif ($DamageScaling) { 'damage-scaling' } elseif ($GenerationLethal) { 'generation-lethal' } elseif ($Generation) { 'generation' } elseif ($HandRemovalLethal) { 'hand-removal-lethal' } elseif ($HandRemoval) { 'hand-removal' } elseif ($Drawing) { 'drawing' } elseif ($TargetFilters) { 'target-filters' } elseif ($NumericRangesLethal) { 'numeric-ranges-lethal' } elseif ($NumericRanges) { 'numeric-ranges' } elseif ($MaxHealthLethal) { 'max-health-lethal' } elseif ($MaxHealthSpells) { 'max-health-spells' } elseif ($AttackBuffs) { 'attack-buffs' } elseif ($CrossRoomTargets) { 'cross-room-targets' } elseif ($CrossRoomSpells) { 'cross-room-spells' } elseif ($RandomStatus) { 'random-status' } elseif ($RandomSpells) { 'random-spells' } elseif ($PostKillSpells) { 'post-kill-spells' } elseif ($TerminalSpells) { 'terminal-spells' } elseif ($RoomSpells) { 'room-spells' } elseif ($HealingTriggers) { 'healing-triggers' } elseif ($Healing) { 'healing' } elseif ($TargetedHandUpgrades) { 'targeted-hand-upgrades' } elseif ($HandUpgrades) { 'hand-upgrades' } elseif ($SacrificeUpgrades) { 'sacrifice-upgrades' } elseif ($DynamicUpgrades) { 'dynamic-upgrades' } elseif ($NumericUpgrades) { 'numeric-upgrades' } else { '' })
     MT2_PROBE_DIRECT_BRANCH = '1'
     MT2_PROBE_DEPTH = '100'
     MT2_PROBE_TARGET_TURN = '0'
@@ -137,7 +138,7 @@ $environment = @{
     MT2_PROBE_BRANCH_ANY_UNIT = '0'
     MT2_PROBE_FAST_REPLAY = '0'
     MT2_PROBE_GAME_SPEED = $GameSpeed
-    MT2_PROBE_STATUS_CALLBACKS = $(if ($StatusCallbacks) { '1' } else { '0' })
+    MT2_PROBE_STATUS_CALLBACKS = $(if ($HordeStatuses -or $StatusCallbacks) { '1' } else { '0' })
     MT2_PROBE_STATUS_CALLBACK_ACTIONS = $(if ($StatusCallbackActions) { '1' } else { '0' })
     MT2_PROBE_BINARY_CAPTURE = $(if ($BinaryCapture) { '1' } else { '0' })
     MT2_PROBE_CAPTURE_JSON = $(if ($CaptureJson) { '1' } else { '0' })
@@ -777,6 +778,16 @@ if ($TriggerRepeats) {
         throw 'Requested native trigger repeat batches did not complete.'
     }
 }
+if ($HordeStatuses) {
+    $hordeOperations = @($trace.HordeStatusOperations)
+    $hordeLabels = @('cooldown-ready', 'troops-grow', 'zero-add', 'negative-add', 'troops-remove',
+        'damage-casualty', 'troops-regrow', 'maxhp-casualty')
+    if ($hordeOperations.Count -ne 8 -or @($hordeLabels | Where-Object { $_ -notin $hordeOperations.Label }).Count -gt 0 -or
+        @($hordeOperations | Where-Object { $null -eq $_.After -or $null -eq $_.AfterDrain -or
+            $_.QueueAfterDrain -ne 0 -or $_.RunningBeforeDrain -or $_.ActorPreviewBeforeDrain -or $_.SavePreviewBeforeDrain }).Count -gt 0) {
+        throw 'Requested native Horde status operations did not complete.'
+    }
+}
 $equipmentActivations = @()
 if ($EquipmentAbilities) {
     $skillB = 'c2f6ed7f-18ce-4070-b65f-7dd9f5160074'
@@ -846,6 +857,8 @@ if ($EquipmentAbilities) {
     }
 }
 $result = [pscustomobject]@{
+    HordeStatusCoverage = (-not $HordeStatuses -or @($trace.HordeStatusOperations).Count -eq 8)
+    HordeStatusOperations = @($trace.HordeStatusOperations).Count
     EquipmentAbilityCoverage = $equipmentAbilityCoverage
     InitialAbilitySpawns = @($trace.InitialAbilitySpawns).Count
     EquipmentAbilityActivations = $equipmentActivations.Count

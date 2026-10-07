@@ -85,6 +85,8 @@ namespace MonsterTrain2Poju.Model
         public UnitAbilityState? Ability { get; }
         public StatusDictionaryState? StatusDictionary { get; }
         public UnitAbilityRules? AbilityRules { get; }
+        public HordeBaseStats? HordeDefinition { get; }
+        public bool? IsSpawning { get; }
         public int Attacks => Math.Max(1, Status("multistrike") is CombatStatus multi
             ? multi.ParamInt + multi.Stacks - 1 : 1);
 
@@ -94,13 +96,15 @@ namespace MonsterTrain2Poju.Model
             IReadOnlyList<string>? statusImmunities = null, IReadOnlyList<string>? subtypes = null, UnitModifiers? modifiers = null, bool? isBoss = null,
             int? lastAttackerId = null, IReadOnlyList<CombatStatus>? statusRegistry = null, IReadOnlyList<int>? equipmentCards = null,
             int? nextTriggerId = null, UnitAbilityState? ability = null, StatusDictionaryState? statusDictionary = null,
-            UnitAbilityRules? abilityRules = null)
+            UnitAbilityRules? abilityRules = null, HordeBaseStats? hordeDefinition = null, bool? isSpawning = null)
         {
             Id = id;
             LastAttackerId = lastAttackerId;
             NextTriggerId = nextTriggerId;
             Ability = ability;
             AbilityRules = abilityRules;
+            HordeDefinition = hordeDefinition;
+            IsSpawning = isSpawning;
             EquipmentCards = equipmentCards == null ? null : Array.AsReadOnly(equipmentCards.ToArray());
             AssetKey = assetKey;
             Team = team;
@@ -153,7 +157,7 @@ namespace MonsterTrain2Poju.Model
 
         internal CombatUnit WithoutRemovedAttacker(ISet<int> activeIds) => !LastAttackerId.HasValue || LastAttackerId == 0 || activeIds.Contains(LastAttackerId.Value)
             ? this : new CombatUnit(Id, AssetKey, Team, BaseAttack, Health, MaxHealth, CanAttack, IsPyre, EndsBattleOnDeath, Statuses,
-                Triggers, SpawnerCardId, Size, StatusImmunities, Subtypes, Modifiers, IsBoss, 0, StatusRegistry, EquipmentCards, NextTriggerId, Ability, StatusDictionary, AbilityRules);
+                Triggers, SpawnerCardId, Size, StatusImmunities, Subtypes, Modifiers, IsBoss, 0, StatusRegistry, EquipmentCards, NextTriggerId, Ability, StatusDictionary, AbilityRules, HordeDefinition, IsSpawning);
     }
 
     public sealed class RoomCombatState
@@ -225,10 +229,11 @@ namespace MonsterTrain2Poju.Model
             internal bool ReturnSpawnerAfterQueue { get; }
             internal bool DeferUntilRemoval { get; }
             internal int TriggerCount { get; }
+            internal int LastSpawnedOverrideUnitId { get; }
             internal QueuedCharacterTrigger(int roomIndex, CombatUnit unit, string kind = "OnDeath", bool returnSpawnerAfterQueue = false, bool deferUntilRemoval = false, int paramInt = 0,
                 CombatUnit? overrideTarget = null, int paramInt2 = 0, string? paramString = null, CombatUnit? dyingCharacter = null, bool canFireTriggers = true,
-                int triggerCount = 1)
-            { RoomIndex = roomIndex; Unit = unit; Kind = kind; ReturnSpawnerAfterQueue = returnSpawnerAfterQueue; DeferUntilRemoval = deferUntilRemoval; ParamInt = paramInt; OverrideTarget = overrideTarget; ParamInt2 = paramInt2; ParamString = paramString; DyingCharacter = dyingCharacter; CanFireTriggers = canFireTriggers; TriggerCount = triggerCount; }
+                int triggerCount = 1, int lastSpawnedOverrideUnitId = 0)
+            { RoomIndex = roomIndex; Unit = unit; Kind = kind; ReturnSpawnerAfterQueue = returnSpawnerAfterQueue; DeferUntilRemoval = deferUntilRemoval; ParamInt = paramInt; OverrideTarget = overrideTarget; ParamInt2 = paramInt2; ParamString = paramString; DyingCharacter = dyingCharacter; CanFireTriggers = canFireTriggers; TriggerCount = triggerCount; LastSpawnedOverrideUnitId = lastSpawnedOverrideUnitId; }
         }
         private static readonly HashSet<string> KnownStatuses = new HashSet<string>(StringComparer.Ordinal)
         {
@@ -236,7 +241,7 @@ namespace MonsterTrain2Poju.Model
             "spikes", "lifesteal", "fragile", "piercing", "immune", "immobile",
             "relentless", "sweep", "sniper", "rooted", "haste", "untouchable",
             "buff", "debuff", "regen", "poison", "melee weakness", "silenced", "valor", "pyregel",
-            "heal multiplier", "heal immunity", "cooldown", "unit_ability", "unit_ability_available"
+            "heal multiplier", "heal immunity", "cooldown", "unit_ability", "unit_ability_available", "horde"
         };
         internal static bool KnowsStatus(string id) => KnownStatuses.Contains(id);
 
@@ -494,6 +499,8 @@ namespace MonsterTrain2Poju.Model
                     return "Invalid attributed maximum-health ledger.";
                 if (unit.Health < 0 || unit.Health == 0 && unit.Id != dyingTargetId || unit.Health > unit.MaxHealth)
                     return "Only living units with valid health can enter room combat.";
+                if (unit.Status("horde") != null && (unit.HordeDefinition == null || unit.HordeDefinition.Health <= 0 || unit.Modifiers == null))
+                    return "Horde requires authored troop stats and raw modifier fields.";
                 if (unit.StatusDictionary?.Validate(unit.StatusRegistry) is string dictionaryError) return dictionaryError;
                 if (unit.LastAttackerId < 0) return "Invalid last-attacker identity.";
                 if (unit.Statuses.Select(status => status.Id).Distinct().Count() != unit.Statuses.Count)
@@ -697,7 +704,7 @@ namespace MonsterTrain2Poju.Model
                 SyncRegistry();
                 return new CombatUnit(Source.Id, Source.AssetKey, Source.Team,
                     Source.BaseAttack, Health, Source.MaxHealth, Source.CanAttack, Source.IsPyre,
-                    Source.EndsBattleOnDeath, Statuses.Values.ToArray(), Triggers, Source.SpawnerCardId, Source.Size, Source.StatusImmunities, Source.Subtypes, Source.Modifiers, Source.IsBoss, LastAttackerId, statusRegistry, Source.EquipmentCards, Source.NextTriggerId, Source.Ability, dictionary, Source.AbilityRules);
+                    Source.EndsBattleOnDeath, Statuses.Values.ToArray(), Triggers, Source.SpawnerCardId, Source.Size, Source.StatusImmunities, Source.Subtypes, Source.Modifiers, Source.IsBoss, LastAttackerId, statusRegistry, Source.EquipmentCards, Source.NextTriggerId, Source.Ability, dictionary, Source.AbilityRules, Source.HordeDefinition, Source.IsSpawning);
             }
         }
 
@@ -906,7 +913,7 @@ namespace MonsterTrain2Poju.Model
                 CombatUnit unit = target.Freeze();
                 target.Apply(new CombatUnit(unit.Id, unit.AssetKey, unit.Team, unit.BaseAttack, unit.Health, unit.MaxHealth, unit.CanAttack,
                     unit.IsPyre, unit.EndsBattleOnDeath, unit.Statuses, unit.Triggers, unit.SpawnerCardId, unit.Size, unit.StatusImmunities,
-                    unit.Subtypes, unit.Modifiers, unit.IsBoss, unit.LastAttackerId, unit.StatusRegistry, cards, unit.NextTriggerId, unit.Ability, unit.StatusDictionary, unit.AbilityRules));
+                    unit.Subtypes, unit.Modifiers, unit.IsBoss, unit.LastAttackerId, unit.StatusRegistry, cards, unit.NextTriggerId, unit.Ability, unit.StatusDictionary, unit.AbilityRules, unit.HordeDefinition, unit.IsSpawning));
             }
             private string EquipmentUpgradeKey(int cardId, BattlePlayRules definitions) => definitions.Cards
                 .First(rule => rule.DataId == context!.FindCard(cardId)!.DataId).Equipment!.UpgradeId ?? EquipmentModel.UpgradeKey(cardId);
@@ -922,6 +929,7 @@ namespace MonsterTrain2Poju.Model
             internal RoomCombatResult Spawn(int unitId, bool fromCard, IReadOnlyList<CombatStatus>? startingApplications = null)
             {
                 WorkingUnit spawned = units.Single(unit => unit.Source.Id == unitId);
+                bool wasSpawning = spawned.Source.IsSpawning == true;
                 if (context?.AbilityCardCache != null && spawned.Source.Ability?.CardCreation is CardCreationRule creation)
                 {
                     AbilityCardResult cached = AbilityCardModel.Get(context, creation);
@@ -931,13 +939,15 @@ namespace MonsterTrain2Poju.Model
                 if (startingApplications != null)
                 {
                     var callbacks = new List<QueuedCharacterTrigger>();
-                    unsupportedReason = StatusCallbackModel.Initialize(CurrentRoom(), spawned.Freeze(), startingApplications, callbacks);
+                    unsupportedReason = StatusCallbackModel.Initialize(CurrentRoom(), spawned.Freeze(), startingApplications, callbacks, spawned.Apply);
                     if (unsupportedReason != null) return Finish(RoomOutcome.Unsupported);
                     foreach (QueuedCharacterTrigger callback in callbacks) QueueCallback(callback);
                 }
+                if (spawned.Source.Team == CombatTeam.Player) spawned.Apply(HordeStatusModel.WithSpawning(spawned.Freeze(), true));
                 FireTriggers(spawned, "OnSpawn");
                 FireTriggers(spawned, "OnUnscaledSpawn");
                 if (!fromCard) FireTriggers(spawned, "OnSpawnNotFromCard");
+                spawned.Apply(HordeStatusModel.WithSpawning(spawned.Freeze(), wasSpawning));
                 return Finish(battleWon ? RoomOutcome.BattleWon : units.Any(unit => unit.Source.IsPyre && !unit.Alive)
                     ? RoomOutcome.PlayerDefeated : RoomOutcome.Exchanged);
             }
@@ -1337,6 +1347,13 @@ namespace MonsterTrain2Poju.Model
             {
                 if (kind == "OnDeath" && unit.Despawned) return;
                 if (!unit.Alive && kind != "OnDeath" && (unit.Source.IsBoss == true || unit.Source.EndsBattleOnDeath)) return;
+                if (kind == "OnHit" && unit.Has("horde"))
+                {
+                    RoomCombatResult casualties = HordeStatusModel.SettleHealth(UpgradeRoom(unit), unit.Source.Id);
+                    if (!casualties.Supported) { unsupportedReason = casualties.UnsupportedReason; return; }
+                    context = casualties.State!.Context; unit.Apply(casualties.State.Units.First(actor => actor.Id == unit.Source.Id));
+                    foreach (QueuedCharacterTrigger callback in casualties.PendingCallbacks) QueueCallback(callback);
+                }
                 for (int index = 0; index < unit.Triggers.Count; index++)
                 {
                     CombatTrigger trigger = unit.Triggers[index];
@@ -1377,7 +1394,7 @@ namespace MonsterTrain2Poju.Model
                             {
                                 if (live < 0 && effect.Action.Type == "DrawNextTurn" && retained.StateId == null)
                                 { unsupportedReason = "Detached bonus-draw trigger source requires captured persistent identity."; break; }
-                                if (!ApplyTriggeredAction(unit, effect, overrideTarget, retained.StateId ?? (live < 0 ? index : live), effectIndex)) break;
+                                if (!ApplyTriggeredAction(unit, effect, overrideTarget, retained.StateId ?? (live < 0 ? index : live), effectIndex, kind)) break;
                             }
                             else if (effect.UnitUpgrade != null)
                             {
@@ -1548,7 +1565,7 @@ namespace MonsterTrain2Poju.Model
 
             private int TestActionAmount(CardActionEffect action) => action.Type == "Damage" ? SampleActionAmount(action) : action.Value;
 
-            private bool ApplyTriggeredAction(WorkingUnit actor, CombatEffect effect, WorkingUnit? overrideTarget, int triggerIndex, int effectIndex)
+            private bool ApplyTriggeredAction(WorkingUnit actor, CombatEffect effect, WorkingUnit? overrideTarget, int triggerIndex, int effectIndex, string triggerKind)
             {
                 CardActionEffect action = effect.Action!;
                 CardTargets tested = TriggerTargets(actor, action, testing: true, overrideTarget);
@@ -1570,7 +1587,7 @@ namespace MonsterTrain2Poju.Model
                             ? AbilityLifecycleModel.Apply(retained, id, action.AbilityChange!, action.Type == "RemoveAbility", deferCallbacks: true) :
                             action.Type == "RemoveStatus" ? AbilityCooldownModel.RemoveStatus(retained, id,
                             action.Statuses[0].Id, action.Statuses[0].Stacks, actor.Source.SpawnerCardId) :
-                            AbilityCooldownModel.Apply(retained, id, action, actor.Source.SpawnerCardId);
+                            AbilityCooldownModel.Apply(retained, id, action, actor.Source.SpawnerCardId, triggerKind);
                         if (!applied.Supported) { unsupportedReason = applied.UnsupportedReason; return false; }
                         context = applied.State!.Context;
                         foreach (CombatUnit changed in applied.State.Units) units.First(unit => unit.Source.Id == changed.Id).Apply(changed);

@@ -55,6 +55,9 @@ namespace MonsterTrain2Poju.Model
             CombatUnit? target = source.Units.FirstOrDefault(unit => unit.Id == targetId);
             if (target?.Modifiers == null || source.Context?.CardInstances == null)
                 return Unsupported("Unit upgrades require unit and card instance modifier state.");
+            if (upgrade.Statuses.Any(status => status.Id == "horde") || target.Status("horde") != null &&
+                (remove ? upgrade.Stats.Health > 0 || upgrade.UnhealedHealth > 0 : upgrade.Stats.Health < 0 || upgrade.UnhealedHealth < 0))
+                return Unsupported("Horde runtime unit upgrades require ordered status and maximum-health casualty settlement.");
             roomCapacity = RoomCapacityModel.Maximum(source.Context, source.RoomIndex, target.Team) ?? roomCapacity;
             if (upgrade.ExternalInteractions.Count > 0) return Unsupported(string.Join("; ", upgrade.ExternalInteractions));
             if (!directApi) upgradeId = upgrade.DataId;
@@ -162,7 +165,7 @@ namespace MonsterTrain2Poju.Model
                     healthFromUpgrades, modifiers.SpawnerMatchesDefinition);
                 CombatUnit Snapshot() => new CombatUnit(target.Id, target.AssetKey, target.Team, Math.Max(0, checked(damage + buff)), health, maxHealth,
                     target.CanAttack, target.IsPyre, target.EndsBattleOnDeath, statuses.Values.ToArray(), triggers, target.SpawnerCardId,
-                    Math.Max(1, Math.Min(6, size)), target.StatusImmunities, target.Subtypes, nextModifiers, target.IsBoss, target.LastAttackerId, target.StatusRegistry, target.EquipmentCards, nextTriggerId, target.Ability, target.StatusDictionary, target.AbilityRules);
+                    Math.Max(1, Math.Min(6, size)), target.StatusImmunities, target.Subtypes, nextModifiers, target.IsBoss, target.LastAttackerId, target.StatusRegistry, target.EquipmentCards, nextTriggerId, target.Ability, target.StatusDictionary, target.AbilityRules, target.HordeDefinition, target.IsSpawning);
                 if (!partial && upgrade.TriggerUpgrades?.Count > 0)
                 {
                     error = RoomCombatModel.Validate(new RoomCombatState(state.RoomIndex, state.Deployment,

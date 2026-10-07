@@ -14,7 +14,7 @@ namespace MonsterTrain2Poju.Probe
         internal static readonly List<FireRecord> OtherFired = new List<FireRecord>();
         private static FireRecord? current;
         private static readonly HashSet<string> Kinds = new HashSet<string>(StringComparer.Ordinal)
-        { "OnStatusEffectChanged", "OnArmorAdded", "OnPyregelAdded", "OnValiant", "OnSilence", "OnSilenceLost", "OnNewStatusEffectAdded" };
+        { "OnStatusEffectChanged", "OnArmorAdded", "OnPyregelAdded", "OnValiant", "OnSilence", "OnSilenceLost", "OnNewStatusEffectAdded", "OnTroopAdded", "OnTroopRemoved" };
         internal sealed class FireRecord
         {
             public int Sequence { get; set; }
@@ -49,7 +49,7 @@ namespace MonsterTrain2Poju.Probe
             {
                 bool requested = Environment.GetEnvironmentVariable("MT2_PROBE_STATUS_CALLBACKS") == "1" &&
                     (Kinds.Contains(trigger.ToString()) || Environment.GetEnvironmentVariable("MT2_PROBE_STATUS_CALLBACK_ACTIONS") == "1");
-                bool lifecycle = (AbilityEffectsScenario.Prepared || EquipmentAbilityScenario.Prepared) && trigger.ToString() is "OnPreOwnAbilityActivated" or "OnOwnAbilityActivated" or
+                bool lifecycle = (AbilityEffectsScenario.Prepared || EquipmentAbilityScenario.Prepared || HordeStatusScenario.Started) && trigger.ToString() is "OnPreOwnAbilityActivated" or "OnOwnAbilityActivated" or
                     "OnUnitAbilityAvailable" or "OnUnitAbilityUnavailable";
                 if (FullBattleTrace.Active != null && !AllGameManagers.Instance!.GetSaveManager().PreviewMode && fromRunningTriggerQueue && (requested || lifecycle))
                     __result = Wrap(__result, __instance, trigger, fireTriggersData, canFireTriggers);

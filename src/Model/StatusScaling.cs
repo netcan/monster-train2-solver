@@ -117,6 +117,14 @@ namespace MonsterTrain2Poju.Model
             CombatUnit changed = CardSpellModel.Copy(target, target.Health, target.Statuses.Where(status => status.Id != added.Id)
                 .Concat(new[] { (existing ?? added).WithStacks(count) }).ToArray());
             var queue = new List<RoomCombatModel.QueuedCharacterTrigger>();
+            if (added.Id == "horde" && count > old)
+            {
+                var staged = new RoomCombatState(source.RoomIndex, source.Deployment, source.Units, source.ExternalInteractions, context, source.Preview);
+                RoomCombatResult horde = HordeStatusModel.Change(staged, target, changed, count - old);
+                if (!horde.Supported) return horde;
+                changed = horde.State!.Units.First(unit => unit.Id == targetId); context = horde.State.Context;
+                queue.AddRange(horde.PendingCallbacks);
+            }
             string? callbackError = StatusCallbackModel.Added(source.RoomIndex, target, changed, added.Id, queue, existing ?? added);
             if (callbackError != null) return Unsupported(callbackError);
             return new RoomCombatResult(new RoomCombatState(source.RoomIndex, source.Deployment, source.Units.Select(unit => unit.Id == targetId ? changed : unit).ToArray(),

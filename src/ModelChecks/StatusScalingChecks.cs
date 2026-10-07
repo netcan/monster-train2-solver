@@ -72,7 +72,7 @@ internal static class StatusScalingChecks
         Require(StatusScalingModel.ApplyTrait(overflowContext, new(new("ForgePoints"), int.MaxValue, false, 0, ["armor"]),
             1, CombatTeam.Enemy, "armor", 0).Stacks == -2, "Native integer product did not wrap.");
         Require(!StatusScalingModel.ApplyTrait(context, new(new("AnyStatusEffectStacksRemoved"), 1, false, 0, ["armor"]),
-            1, CombatTeam.Enemy, "armor", 0).Supported && !StatusApplicationModel.Apply(room, 10, new("horde", 0), 1).Supported &&
+            1, CombatTeam.Enemy, "armor", 0).Supported && !StatusApplicationModel.Apply(room, 10, new("unmodeled-test-status", 0), 1).Supported &&
             !StatusApplicationModel.Apply(room, 10, new("armor", 0), 999).Supported,
             "Unknown effects, incomplete removal attribution or missing source metadata produced usable states.");
         Require(owner.OnDiscard(true).StatusScalingTraits!.Count == 3, "Discard cleared scaling metadata.");

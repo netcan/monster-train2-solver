@@ -91,6 +91,7 @@ AbilityLifecycleChecks.Run();
 AbilityEffectChecks.Run();
 AbilityUpgradeChecks.Run();
 HordeStatChecks.Run();
+HordeStatusChecks.Run();
 AbilityCardChecks.Run();
 UnitAbilityChecks.Run();
 BattleStatisticsChecks.Run();
