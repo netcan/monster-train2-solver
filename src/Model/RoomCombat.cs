@@ -180,6 +180,14 @@ namespace MonsterTrain2Poju.Model
             return new Engine(state, new List<CombatEvent>()).UnitTurn(unitId);
         }
 
+        public static RoomCombatResult ApplyTeamTurnBegin(RoomCombatState state, CombatTeam team)
+        {
+            string? error = Validate(state);
+            if (error != null || team != CombatTeam.Enemy && team != CombatTeam.Player)
+                return new RoomCombatResult(null, RoomOutcome.Unsupported, 0, new List<CombatEvent>(), error ?? "Invalid combat team.");
+            return new Engine(state, new List<CombatEvent>()).TeamTurnBegin(team);
+        }
+
         public static RoomCombatResult ApplySpawnTriggers(RoomCombatState state, int unitId, bool fromCard)
         {
             string? error = Validate(state);
@@ -258,7 +266,7 @@ namespace MonsterTrain2Poju.Model
                 {
                     if (trigger.Kind != "OnDeath" && trigger.Kind != "PostCombat" && trigger.Kind != "OnHeal" &&
                         trigger.Kind != "OnSpawn" && trigger.Kind != "OnUnscaledSpawn" && trigger.Kind != "OnSpawnNotFromCard" &&
-                        trigger.Kind != "OnTurnBegin")
+                        trigger.Kind != "OnTurnBegin" && trigger.Kind != "OnTeamTurnBegin")
                         return "Unmodeled trigger " + trigger.Kind;
                     if (trigger.Kind != "OnDeath" && trigger.Kind != "PostCombat" && trigger.SkipDuringDeployment == null)
                         return trigger.Kind + " requires deployment timing state.";
@@ -446,6 +454,19 @@ namespace MonsterTrain2Poju.Model
                     ? RoomOutcome.PlayerDefeated : RoomOutcome.Exchanged);
             }
 
+            internal RoomCombatResult TeamTurnBegin(CombatTeam team)
+            {
+                BeginTeam(team);
+                return Finish(battleWon ? RoomOutcome.BattleWon : units.Any(unit => unit.Source.IsPyre && !unit.Alive)
+                    ? RoomOutcome.PlayerDefeated : RoomOutcome.Exchanged);
+            }
+
+            private void BeginTeam(CombatTeam team)
+            {
+                foreach (WorkingUnit actor in units.Where(unit => unit.Alive && unit.Source.Team == team).ToArray())
+                    FireTriggers(actor, "OnTeamTurnBegin");
+            }
+
             private void Exchange()
             {
                 WorkingUnit[] quick = units.Where(unit => unit.Alive &&
@@ -455,8 +476,10 @@ namespace MonsterTrain2Poju.Model
                     Trigger(unit, "ambush", 1);
                     Turn(unit);
                 }
+                BeginTeam(CombatTeam.Enemy);
                 foreach (WorkingUnit unit in units.Where(unit => unit.Source.Team == CombatTeam.Enemy).ToArray())
                     Turn(unit);
+                BeginTeam(CombatTeam.Player);
                 foreach (WorkingUnit unit in units.Where(unit => unit.Source.Team == CombatTeam.Player).ToArray())
                     if (!quick.Contains(unit)) Turn(unit);
             }

@@ -13,6 +13,7 @@ namespace MonsterTrain2Poju.Probe
         private static Record? active;
         internal sealed class Record
         {
+            public int Sequence { get; set; }
             public int ActorId { get; set; }
             public RoomCombatState Before { get; set; } = null!;
             public RoomCombatResult Predicted { get; set; } = null!;
@@ -29,7 +30,7 @@ namespace MonsterTrain2Poju.Probe
             try
             {
                 RoomCombatState before = trace.Capture(room);
-                record = new Record { ActorId = trace.UnitId(actor), Before = before };
+                record = new Record { Sequence = trace.NextPhaseSequence(), ActorId = trace.UnitId(actor), Before = before };
                 record.Predicted = RoomCombatModel.ApplyUnitTurn(before, record.ActorId);
                 Records.Add(record); active = record;
             }
@@ -55,7 +56,7 @@ namespace MonsterTrain2Poju.Probe
         {
             private static void Postfix(CharacterState attackerState, int roomIndex, ref IEnumerator __result)
             {
-                if (Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == "unit-turn-begin" &&
+                if (Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") is "unit-turn-begin" or "team-turn-begin" &&
                     FullBattleTrace.Active != null && !AllGameManagers.Instance!.GetSaveManager().PreviewMode)
                     __result = Wrap(__result, attackerState, roomIndex);
             }

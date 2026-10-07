@@ -1083,8 +1083,39 @@ battles and 8 calibrations still pass. The retained JSON is 169,395,775 bytes,
 SHA-256
 `86757ad020525276c197ddfcc8ff05d101ab90652fcb891ee40d362eed0326dd`.
 Capture failures, mismatches, unsupported steps and pending records are zero;
-original profile files are unchanged. Team-turn, attack and turn-entry triggers
+original profile files are unchanged. Attack and turn-entry triggers
 beyond the supported kinds still require additional modeling.
+
+Schema 29 adds `OnTeamTurnBegin`. An exchange first runs ambush units, then all
+enemy team-start triggers before enemy unit turns, then all player team-start
+triggers before regular player unit turns. Ambush units still receive their
+team-start effects, but do not attack again in the regular player phase. Each
+team phase processes a snapshot of its living actors in physical room order;
+effects from every actor settle before the team attacks. Unit-turn daze
+prevention is evaluated later and does not disable the earlier team phase.
+
+`RoomCombatModel.ApplyTeamTurnBegin` supports separate phase comparisons.
+The native probe retains complete team-phase room states and a shared sequence
+for team phases and individual unit turns, allowing ambush/enemy/player ordering
+to be checked. Pure checks cover whole-team room buffs before attacks, phase
+decomposition, repeated/once triggers, silence and ignored-silence exceptions,
+deployment, removal during a team snapshot, preview and 32 parallel branches.
+
+`results/full-battle-team-turn-begin.json.gz` retains 38 exact team phases
+(19 enemy, 19 player), 40 exact unit turns with 28 direct attacks, and 90 scaling
+callbacks (42 team-start, 48 unit-start). Independent checks compare complete
+phase states, callback outputs and attack target sequences, with 6 native
+ambush-before-enemy-before-player order records. The natural battle matches all
+15 plays, 5 EndTurns, 40 room stages, 9 card cycles, 9 train phases and 7 spawns,
+winning with Pyre health 69. Initial/mid-battle policies and 16 parallel branches
+reproduce the terminal result; all 40 prior battles and 8 calibrations still pass.
+
+The retained native JSON is 202,662,856 bytes, SHA-256
+`974235394293b987d86dd48d2f029daf3d2533178995f8bd4d40e84ae6df7cba`.
+Capture failures, mismatches, unsupported stages and pending records are zero;
+original profile files are unchanged. Global pre-combat/hand-discard phases,
+attack/hit/kill triggers and broader status/room/relic interactions remain to be
+modeled.
 
 Schema 24 captures ordered `CardTraitScalingAddStatusEffect` descriptors on
 immutable card instances and generated-card rules, plus the native stackability
