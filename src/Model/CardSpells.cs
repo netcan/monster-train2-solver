@@ -172,10 +172,11 @@ namespace MonsterTrain2Poju.Model
                     RngDraw chosen = state.Context!.BattleRng.Range(0, effect.Statuses.Count);
                     state = WithContext(state, state.Context.WithBattleRng(chosen.State));
                     effect = new CardActionEffect(effect.Type, effect.Target, effect.Value, effect.AllowEnemy, effect.AllowPlayer,
-                        new[] { effect.Statuses[chosen.Value] }, effect.Upgrade, effect.Lifetime, effect.Tests, effect.Range, effect.Filters);
+                        new[] { effect.Statuses[chosen.Value] }, effect.Upgrade, effect.Lifetime, effect.Tests, effect.Range, effect.Filters,
+                        effect.Generation, effect.OnlyIfNoEnemies, effect.CooldownParameter, effect.AbilityChange);
                 }
                 UnityRng effectRng = state.Context!.BattleRng;
-                if (effect.Type != "DiscardHand" && effect.Type != "Generate" && effect.Type != "AdjustCapacity" && !AbilityCooldownModel.IsEffect(effect.Type)) effect = Sample(effect, ref effectRng);
+                if (effect.Type != "DiscardHand" && effect.Type != "Generate" && effect.Type != "AdjustCapacity" && !AbilityCooldownModel.IsEffect(effect.Type) && !AbilityLifecycleModel.IsEffect(effect.Type)) effect = Sample(effect, ref effectRng);
                 state = WithContext(state, state.Context.WithBattleRng(effectRng));
                 if (effect.Type == "AdjustCapacity")
                 {
@@ -246,10 +247,17 @@ namespace MonsterTrain2Poju.Model
                 {
                     if (effect.Type == "AttachEquipment" && targetIndex > 0) break;
                     // Native status application runs backwards; damage/healing/upgrades run forwards.
-                    int id = targets.UnitIds[(effect.Type == "AddStatus" || AbilityCooldownModel.IsEffect(effect.Type)) ? targets.UnitIds.Count - 1 - targetIndex : targetIndex];
+                    int id = targets.UnitIds[(effect.Type == "AddStatus" || AbilityCooldownModel.IsEffect(effect.Type) || AbilityLifecycleModel.IsEffect(effect.Type)) ? targets.UnitIds.Count - 1 - targetIndex : targetIndex];
                     RoomCombatState? targetRoom = state.Rooms.FirstOrDefault(item => item.Units.Any(unit => unit.Id == id));
                     CombatUnit? target = targetRoom?.Units.FirstOrDefault(unit => unit.Id == id);
                     if (target == null) continue;
+                    if (AbilityLifecycleModel.IsEffect(effect.Type))
+                    {
+                        RoomCombatResult changed = AbilityLifecycleModel.Apply(targetRoom!, id, effect.AbilityChange!, effect.Type == "RemoveAbility", deferCallbacks: true);
+                        if (!changed.Supported) return UnsupportedTrain(changed.UnsupportedReason!);
+                        state = ReplaceRoom(state, changed.State!); callbacks.AddRange(changed.PendingCallbacks);
+                        continue;
+                    }
                     if (AbilityCooldownModel.IsEffect(effect.Type))
                     {
                         RoomCombatResult adjusted = AbilityCooldownModel.Apply(targetRoom!, id, effect, sourceCardId);
@@ -465,7 +473,8 @@ namespace MonsterTrain2Poju.Model
             {
                 string? filterError = effect.Filters?.Validate();
                 if (filterError != null) return filterError;
-                if (effect.Range != null && effect.Type != "DiscardHand" && effect.Type != "Generate" && effect.Type != "AdjustCapacity")
+                if (effect.Range != null && effect.Type != "DiscardHand" && effect.Type != "Generate" && effect.Type != "AdjustCapacity" &&
+                    !AbilityLifecycleModel.IsEffect(effect.Type))
                 {
                     if (!EnergyModel.IsEffect(effect.Type) && !new[] { "Damage", "Heal", "AddStatus", "BuffAttack", "DebuffAttack", "BuffHealth", "DebuffHealth", "Draw", "DrawNextTurn" }.Contains(effect.Type))
                         return "Unmodeled range consumer " + effect.Type;
@@ -479,6 +488,11 @@ namespace MonsterTrain2Poju.Model
                     continue;
                 }
                 if (!CardTargetModel.Supports(effect.Target)) return "Unimplemented spell targeting " + effect.Target;
+                if (AbilityLifecycleModel.IsEffect(effect.Type))
+                {
+                    if (effect.AbilityChange == null) return "Missing lifecycle effect definition.";
+                    continue;
+                }
                 if (AbilityCooldownModel.IsEffect(effect.Type))
                 {
                     if (!effect.CooldownParameter.HasValue) return "Missing ability cooldown parameter.";
@@ -574,7 +588,7 @@ namespace MonsterTrain2Poju.Model
             if (effect.Range == null) return effect;
             RngDraw draw = effect.Range.Sample(rng); rng = draw.State;
             return new CardActionEffect(effect.Type, effect.Target, draw.Value, effect.AllowEnemy, effect.AllowPlayer,
-                effect.Statuses, effect.Upgrade, effect.Lifetime, effect.Tests, effect.Range, effect.Filters, effect.Generation, effect.OnlyIfNoEnemies, effect.CooldownParameter);
+                effect.Statuses, effect.Upgrade, effect.Lifetime, effect.Tests, effect.Range, effect.Filters, effect.Generation, effect.OnlyIfNoEnemies, effect.CooldownParameter, effect.AbilityChange);
         }
         private static int TestCount(TrainCombatState state, CardActionEffect effect, CardTargets targets) => effect.Type == "RemoveEquipment" ?
             state.Rooms.SelectMany(room => room.Units).Count(unit => targets.UnitIds.Contains(unit.Id) && unit.EquipmentCards?.Count > 0) : !AttackChange(effect) ? targets.UnitIds.Count :

@@ -214,7 +214,7 @@ internal static class BattleActionChecks
         Func<BattleTurnState, PlayCardAction?> chooser = policy.GetString() == "units-spells-and-junk"
             ? BattleActionModel.ChooseUnitSpellAndJunkPlay : BattleActionModel.ChooseUnitAndJunkPlay;
         if (fixture.TryGetProperty("ModifierScenario", out var abilityScenario) &&
-            abilityScenario.GetString() is "ability-activation" or "ability-activation-x" or "ability-activation-lethal")
+            abilityScenario.GetString() is "ability-activation" or "ability-activation-x" or "ability-activation-lethal" or "ability-effects")
             chooser = UnitAbilityModel.ChooseAbilityThenCards;
         FixtureValue turns = fixture.GetProperty("Turns");
         BattleTurnState root = actions[0].GetProperty("Before").Deserialize<BattleTurnState>()!;

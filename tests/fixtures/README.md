@@ -239,3 +239,17 @@ All complete API states compare in 32 branches; the subsequent 16-play,
 five-EndTurn policy matches initial and mid-battle roots in 16 branches and wins
 at Pyre 80. The 26,797-byte binary archive has no JSON dependency. Card-effect and
 equipment attachment integration of these primitives remains separate work.
+
+`full-battle-ability-effects.mt2f` retains schema 66 and integrates native
+SetUnitAbility/RemoveAbility into real card and character-trigger execution.
+Seventeen complete effect states and 17 queued dispatches, including 35 generated
+payloads, compare independently in 32 branches. Coverage includes reverse
+multi-target assignment, sticky last-target follow-ups, an inactive relic gate,
+pre-own replacement inside the running queue, cached skill self replacement /
+removal, and exact ability/common-trigger allocation. Pre-own replacement changes
+the current skill without changing the card already selected for this cast;
+permanent removal disables that current replacement and preserves duplicate IDs.
+The 17-play, five-EndTurn policy matches initial and actual mid-battle roots in
+16 parallel branches and wins at Pyre 80. The 29,332-byte direct binary archive
+has no JSON dependency. Equipment attachment grants and global relic mechanics
+remain separate work.

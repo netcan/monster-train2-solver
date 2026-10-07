@@ -32,6 +32,9 @@ namespace MonsterTrain2Poju.Probe
                 .SelectMany(trigger => trigger.Effects).SelectMany(effect => effect.CardPool)).Distinct().ToArray();
             definitions = definitions.Concat(spawn.Waves.SelectMany(wave => wave.Candidates).SelectMany(group => group.Units)
                 .Concat(spawn.Treasures).Select(unit => unit.Unit.Ability?.DataId).Where(id => !string.IsNullOrEmpty(id)).Cast<string>()).Distinct().ToArray();
+            definitions = definitions.Concat(spawn.Waves.SelectMany(wave => wave.Candidates).SelectMany(group => group.Units)
+                .Concat(spawn.Treasures).SelectMany(unit => unit.Unit.Triggers).SelectMany(trigger => trigger.Effects)
+                .Select(effect => effect.Action?.AbilityChange?.Definition?.DataId).Where(id => !string.IsNullOrEmpty(id)).Cast<string>()).Distinct().ToArray();
             RoomManager rooms = managers.GetRoomManager()!;
             var roomRules = new List<RoomPlayRule>();
             for (int index = 0; index < rooms.GetNumRooms(); index++)
@@ -51,6 +54,9 @@ namespace MonsterTrain2Poju.Probe
                 foreach (string child in rule.Effects.Where(effect => effect.Generation != null).SelectMany(effect => effect.Generation!.Pool).Select(card => card.DataId)
                     .Concat(rule.SpawnUnit?.Triggers.SelectMany(trigger => trigger.Effects).SelectMany(effect => effect.CardPool) ?? Array.Empty<string>()))
                     pending.Enqueue(child);
+                foreach (string child in rule.Effects.Select(effect => effect.AbilityChange?.Definition?.DataId)
+                    .Concat(rule.SpawnUnit?.Triggers.SelectMany(trigger => trigger.Effects).Select(effect => effect.Action?.AbilityChange?.Definition?.DataId)
+                        ?? Array.Empty<string?>()).Where(child => !string.IsNullOrEmpty(child)).Cast<string>()) pending.Enqueue(child);
                 if (rule.SpawnUnit?.Ability?.HasAbility == true) pending.Enqueue(rule.SpawnUnit.Ability.DataId);
             }
             rules = new BattlePlayRules(roomRules, reachable.Values.OrderBy(rule => rule.DataId, StringComparer.Ordinal).ToArray(),
@@ -95,7 +101,7 @@ namespace MonsterTrain2Poju.Probe
             }
             else if (kind == "CardEffectNULL") kind = "Null";
             else if ((data.GetCardType() == CardType.Spell || data.GetCardType() == CardType.Equipment) && effects.Length > 0 && effects.All(effect =>
-                new[] { "CardEffectResetCooldown", "CardEffectAdjustAbilityCooldown", "CardEffectAttachEquipment", "CardEffectRemoveEquipment", "CardEffectGainEnergy", "CardEffectAdjustEnergy", "CardEffectGainEnergyNextTurn", "CardEffectGainEnergyEveryTurn", "CardEffectDamage", "CardEffectDraw", "CardEffectDrawAdditionalNextTurn", "CardEffectAdjustRoomCapacity", "CardEffectDiscardHand", "CardEffectAddBattleCard", "CardEffectHeal", "CardEffectBuffDamage", "CardEffectDebuffDamage", "CardEffectBuffMaxHealth", "CardEffectDebuffMaxHealth", "CardEffectAddStatusEffect", "CardEffectFloorRearrange", "CardEffectAddCardUpgradeToUnits",
+                new[] { "CardEffectSetUnitAbility", "CardEffectRemoveAbility", "CardEffectResetCooldown", "CardEffectAdjustAbilityCooldown", "CardEffectAttachEquipment", "CardEffectRemoveEquipment", "CardEffectGainEnergy", "CardEffectAdjustEnergy", "CardEffectGainEnergyNextTurn", "CardEffectGainEnergyEveryTurn", "CardEffectDamage", "CardEffectDraw", "CardEffectDrawAdditionalNextTurn", "CardEffectAdjustRoomCapacity", "CardEffectDiscardHand", "CardEffectAddBattleCard", "CardEffectHeal", "CardEffectBuffDamage", "CardEffectDebuffDamage", "CardEffectBuffMaxHealth", "CardEffectDebuffMaxHealth", "CardEffectAddStatusEffect", "CardEffectFloorRearrange", "CardEffectAddCardUpgradeToUnits",
                     "CardEffectAddTempCardUpgradeToUnits", "CardEffectRemoveTempUpgradeFromUnit",
                     "CardEffectAddTempCardUpgradeToCardsInHand", "CardEffectAddPermanentCardUpgradeToCardsInHand" }.Contains(effect.GetEffectStateName())))
             {
@@ -103,6 +109,7 @@ namespace MonsterTrain2Poju.Probe
                 for (int index = 0; index < effects.Length; index++)
                 {
                     CardEffectData effect = effects[index];
+                    if (AbilityLifecycleProbe.Known(effect.GetEffectStateName())) { spellEffects.Add(AbilityLifecycleProbe.Describe(effect)); continue; }
                     if (AbilityCooldownProbe.Known(effect.GetEffectStateName())) { spellEffects.Add(AbilityCooldownProbe.Describe(effect, effect.GetParamInt(), effect.GetParamBool())); continue; }
                     bool handUpgrade = effect.GetEffectStateName() == "CardEffectAddTempCardUpgradeToCardsInHand" ||
                         effect.GetEffectStateName() == "CardEffectAddPermanentCardUpgradeToCardsInHand";

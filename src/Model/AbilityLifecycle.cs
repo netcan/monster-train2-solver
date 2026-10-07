@@ -26,9 +26,12 @@ namespace MonsterTrain2Poju.Model
         public UnitAbilityDefinition? Definition { get; }
         public bool FromEquipment { get; }
         public bool Permanent { get; }
+        public bool BlockedByRelic { get; }
         public IReadOnlyList<CombatTrigger> CommonTriggers { get; }
-        public AbilityChangeRule(UnitAbilityDefinition? definition, bool fromEquipment, bool permanent, IReadOnlyList<CombatTrigger> commonTriggers)
-        { Definition = definition; FromEquipment = fromEquipment; Permanent = permanent; CommonTriggers = Array.AsReadOnly(commonTriggers.ToArray()); }
+        public AbilityChangeRule(UnitAbilityDefinition? definition, bool fromEquipment, bool permanent, IReadOnlyList<CombatTrigger> commonTriggers,
+            bool blockedByRelic = false)
+        { Definition = definition; FromEquipment = fromEquipment; Permanent = permanent; CommonTriggers = Array.AsReadOnly(commonTriggers.ToArray());
+            BlockedByRelic = blockedByRelic; }
     }
     public static class AbilityLifecycleModel
     {
@@ -41,6 +44,7 @@ namespace MonsterTrain2Poju.Model
         public static RoomCombatResult Apply(RoomCombatState source, int unitId, AbilityChangeRule rule, bool remove,
             bool deferCallbacks = false)
         {
+            if (remove && rule.BlockedByRelic) return Match(source);
             CombatUnit? actor = source.Units.FirstOrDefault(unit => unit.Id == unitId);
             if (actor == null) return Unsupported("Missing ability lifecycle target.");
             if (!remove && rule.Definition?.IsUnitAbility != true || remove && actor.Ability?.HasAbility != true) return Match(source);

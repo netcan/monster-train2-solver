@@ -8,6 +8,26 @@ namespace MonsterTrain2Poju.Probe
 {
     internal static class AbilityLifecycleProbe
     {
+        internal static bool Known(string type) => type == "CardEffectSetUnitAbility" || type == "CardEffectRemoveAbility";
+        internal static CardActionEffect Capture(CardEffectState state) => Describe(state.GetSourceCardEffectData(),
+            state.GetParamCardData(), state.GetParamBool(), state.GetParamRelicData());
+        internal static CardActionEffect Describe(CardEffectData effect) => Describe(effect, effect.GetParamCardData(),
+            effect.GetParamBool(), effect.GetParamRelicData());
+        private static CardActionEffect Describe(CardEffectData effect, CardData? card, bool permanent, RelicData? relic)
+        {
+            bool remove = effect.GetEffectStateName() == "CardEffectRemoveAbility";
+            var excluded = new List<SubtypeData>(); effect.GetTargetCharacterExcludedSubtypes(excluded);
+            AbilityChangeRule change = Change(remove ? null : card, permanent: remove && permanent);
+            change = new AbilityChangeRule(change.Definition, false, change.Permanent, change.CommonTriggers,
+                remove && relic != null && AllGameManagers.Instance!.GetRelicManager().HasRelicState(relic.GetID()));
+            return new CardActionEffect(remove ? "RemoveAbility" : "SetUnitAbility", effect.GetTargetMode().ToString(), 0,
+                effect.GetTargetTeamType().HasFlag(Team.Type.Heroes), effect.GetTargetTeamType().HasFlag(Team.Type.Monsters), Array.Empty<CombatStatus>(),
+                tests: new CardEffectTests(effect.GetShouldTest(), effect.GetShouldFailToCastIfTestFails(), effect.GetShouldCancelSubsequentEffectsIfTestFails(), false),
+                filters: new CardTargetFilters(effect.GetTargetModeHealthFilter().ToString(), effect.GetTargetModeStatusEffectsFilter(),
+                    effect.GetTargetModeStatusEffectsExcludedFilter(), effect.GetTargetIgnoreBosses(),
+                    effect.GetTargetCharacterSubtype().IsNone ? "" : effect.GetTargetCharacterSubtype().Key,
+                    excluded.Select(subtype => subtype.IsNone ? "" : subtype.Key).ToArray()), abilityChange: change);
+        }
         internal static UnitAbilityDefinition Definition(CardData data) => new UnitAbilityDefinition(data.GetID(),
             data.IsUnitAbility(), data.GetCooldownAfterActivated(), data.GetCooldownAtSpawn(), CardGenerationProbe.Creation(data));
 

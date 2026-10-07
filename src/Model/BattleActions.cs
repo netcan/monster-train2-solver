@@ -31,12 +31,14 @@ namespace MonsterTrain2Poju.Model
         public CardGenerationRule? Generation { get; }
         public bool OnlyIfNoEnemies { get; }
         public bool? CooldownParameter { get; }
+        public AbilityChangeRule? AbilityChange { get; }
         public CardActionEffect(string type, string target, int value, bool allowEnemy, bool allowPlayer, IReadOnlyList<CombatStatus> statuses,
             CardUpgradeModifier? upgrade = null, string lifetime = "", CardEffectTests? tests = null, CardEffectRange? range = null, CardTargetFilters? filters = null,
-            CardGenerationRule? generation = null, bool onlyIfNoEnemies = false, bool? cooldownParameter = null)
+            CardGenerationRule? generation = null, bool onlyIfNoEnemies = false, bool? cooldownParameter = null,
+            AbilityChangeRule? abilityChange = null)
         { Type = type; Target = target; Value = value; AllowEnemy = allowEnemy; AllowPlayer = allowPlayer; Statuses = Array.AsReadOnly(statuses.ToArray());
             Upgrade = upgrade; Lifetime = lifetime; Tests = tests; Range = range; Filters = filters; Generation = generation; OnlyIfNoEnemies = onlyIfNoEnemies;
-            CooldownParameter = cooldownParameter; }
+            CooldownParameter = cooldownParameter; AbilityChange = abilityChange; }
     }
     public sealed class RoomPlayRule
     {

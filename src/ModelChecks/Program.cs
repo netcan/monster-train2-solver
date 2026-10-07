@@ -87,6 +87,7 @@ CompanionBossChecks.Run();
 SentryChecks.Run();
 AbilityCooldownChecks.Run();
 AbilityLifecycleChecks.Run();
+AbilityEffectChecks.Run();
 AbilityCardChecks.Run();
 UnitAbilityChecks.Run();
 BattleStatisticsChecks.Run();

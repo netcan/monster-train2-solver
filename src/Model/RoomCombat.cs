@@ -532,6 +532,17 @@ namespace MonsterTrain2Poju.Model
                     if (trigger.FireCount < 0) return "Invalid trigger fire count.";
                     foreach (CombatEffect effect in trigger.Effects)
                     {
+                        if (effect.Type == "CardEffectSetUnitAbility" || effect.Type == "CardEffectRemoveAbility")
+                        {
+                            CardActionEffect? ability = effect.Action;
+                            if (ability?.AbilityChange == null || effect.Type != "CardEffect" + ability.Type)
+                                return "Missing lifecycle effect definition.";
+                            if (!new[] { "Self", "Room", "FrontInRoom", "BackInRoom", "Weakest", "RandomInRoom", "LastAttackedCharacter" }.Contains(ability.Target))
+                                return "Unmodeled lifecycle effect target.";
+                            string? filter = ability.Target == "LastAttackedCharacter" ? null : ability.Filters?.Validate();
+                            if (filter != null) return filter;
+                            continue;
+                        }
                         if (effect.Type == "CardEffectResetCooldown" || effect.Type == "CardEffectAdjustAbilityCooldown" || effect.Type == "CardEffectRemoveStatusEffect")
                         {
                             CardActionEffect? ability = effect.Action;
@@ -1504,7 +1515,7 @@ namespace MonsterTrain2Poju.Model
             }
 
             private bool ActionTestValid(CardActionEffect action, CardTargets targets, int amount = 0) =>
-                AbilityCooldownModel.IsEffect(action.Type) || action.Type == "RemoveStatus" ? true :
+                AbilityCooldownModel.IsEffect(action.Type) || action.Type == "RemoveStatus" || AbilityLifecycleModel.IsEffect(action.Type) ? true :
                 action.Type == "AdjustCapacity" ? !source.Preview && !battleWon && context!.AllScenarioBossesDead != true &&
                     RoomCapacityModel.Test(context, source.RoomIndex, units.Any(unit => unit.InRoom && unit.Source.Team == CombatTeam.Enemy), action.OnlyIfNoEnemies) :
                 action.Type == "DrawNextTurn" ? !source.Preview && !battleWon && context!.AllScenarioBossesDead != true :
@@ -1534,13 +1545,15 @@ namespace MonsterTrain2Poju.Model
                 CardTargets targets = TriggerTargets(actor, action, testing: false, overrideTarget);
                 if (!targets.Supported) { unsupportedReason = targets.UnsupportedReason; return false; }
                 if (targets.BattleRng.HasValue) context = context!.WithBattleRng(targets.BattleRng.Value);
-                if (AbilityCooldownModel.IsEffect(action.Type) || action.Type == "RemoveStatus")
+                if (AbilityCooldownModel.IsEffect(action.Type) || action.Type == "RemoveStatus" || AbilityLifecycleModel.IsEffect(action.Type))
                 {
                     IEnumerable<int> ordered = action.Type == "RemoveStatus" ? targets.UnitIds : targets.UnitIds.Reverse();
                     foreach (int id in ordered)
                     {
                         RoomCombatState retained = RetainedStatusRoom(actor, targets.UnitIds);
-                        RoomCombatResult applied = action.Type == "RemoveStatus" ? AbilityCooldownModel.RemoveStatus(retained, id,
+                        RoomCombatResult applied = AbilityLifecycleModel.IsEffect(action.Type)
+                            ? AbilityLifecycleModel.Apply(retained, id, action.AbilityChange!, action.Type == "RemoveAbility", deferCallbacks: true) :
+                            action.Type == "RemoveStatus" ? AbilityCooldownModel.RemoveStatus(retained, id,
                             action.Statuses[0].Id, action.Statuses[0].Stacks, actor.Source.SpawnerCardId) :
                             AbilityCooldownModel.Apply(retained, id, action, actor.Source.SpawnerCardId);
                         if (!applied.Supported) { unsupportedReason = applied.UnsupportedReason; return false; }

@@ -101,6 +101,7 @@ are copied immutable values; independent child states can run on worker threads.
 | Unit ability activation | `UnitAbilityModel` and `BattleActionModel` | Native fixed/X/zero payments, shared detached history, self targets, damage attribution, pre-own/own callbacks, cooldown and direct Boss-kill settlement; complete policies and parallel branches |
 | Mono status dictionary slot reuse | `StatusDictionaryState` | Captured slot/free-list state, LIFO reuse after cleanup, exact later status enumeration and independent branch isolation |
 | Unit ability lifecycle primitives | `AbilityLifecycleModel` and spawn transitions | 21 native assignment/removal API cases, raw cooldown restoration, equipment overlay history, permanent disable order and disabled player/enemy births; complete subsequent policy and parallel branches |
+| Ability assignment/removal effects | `CardSpellModel`, `RoomCombatModel` and `AbilityLifecycleModel` | 17 native effect states and 17 queued dispatches with 35 payloads; multi-target and last-target spells, pre-own replacement, cached self replacement/removal, exact current disabled IDs and complete policies with parallel branches |
 | Additional spells, abilities, relics | Not complete | Unsupported interactions explicitly reject the model transition |
 
 `CardEffectAddBattleCard` uses one shared immutable generation model for spells
@@ -3311,3 +3312,64 @@ and SHA-256 validation, pure checks and every native comparison pass. Probe has
 zero warnings/errors; ModelChecks retains its 12 existing nullable warnings and
 adds none. PowerShell parsing and git diff --check pass. The full battle
 simulation objective remains active.
+
+## Ability card effects and running-queue replacement (2026-10-08)
+
+`CardSpellModel` and `RoomCombatModel` now execute native SetUnitAbility and
+RemoveAbility through `AbilityLifecycleModel`. Both iterate a fixed target
+collection in reverse, ignore unused integer/range parameters, and preserve
+metadata through modifier and trigger-effect copies. Their native base tests
+allow empty target collections; null/non-ability assignment remains a no-op.
+Removal honors its effective skip-if-relic-active gate. This gate does not add
+general relic support: active global relic interactions still require modeling.
+Card/trigger execution defers availability callbacks to the existing queue,
+unlike the quiet direct API's yielding boundary covered by the previous fixture.
+The reachable root catalog now recursively includes abilities assigned by card,
+summoned-unit and enemy trigger effects before any assignment or activation.
+
+`AbilityEffectsScenario` prepares real Steward skills and one ordinary spell
+at deployment turn zero. A multi-target spell assigns a skill to enemies,
+then removes/reassigns the sticky initial last-target group. A pre-own character
+trigger assigns a different skill inside the running queue. The already selected
+cached skill still executes: the first skill replaces itself, and the second
+removes the current pre-own replacement permanently. Therefore the disabled IDs
+are the queued replacement's ID, twice in order, rather than the cached played
+card's ID. Original Boss stats and ordinary spawn waves stay intact. The removal
+gate uses a cloned concrete relic definition with a fresh ID and no collected
+state. Unity cannot instantiate the abstract RelicData base; the failed initial
+setup capture is excluded from the curated inventory.
+
+`AbilityEffectProbe` observes complete before/after room/context states for every
+actual effect; `StatusCallbackProbe` additionally records pre-own, own, available
+and unavailable dispatches and their generated queue payloads. Independent
+checks recompute all 17 effect transitions and 17 dispatches, including all 35
+generated payloads, in 32 isolated branches. Complete room and retained actor
+states, payload order/values, cached identity, raw cooldowns, once flags and
+trigger allocation match. Pure checks cover reverse permanent-disable order,
+null/empty/relic gates, no RNG consumption, shared cache, missing definition
+rejection, deferred running-queue callbacks and immutable parallel branches.
+
+The accepted native run is
+`full-battle-units-spells-and-junk-20261008-010935-17c85a23`, muted with Instant
+timing and isolated save files. It wins at Pyre 80 with 17 card plays (four skill
+activations), five EndTurns, 48 room stages, nine card cycles, nine train phases
+and seven spawn phases. Capture failures, differences, unsupported and pending
+counts are zero, exit code is zero, and original files are unchanged. Its schema
+66 archive `tests/fixtures/full-battle-ability-effects.mt2f` contains 4,734 unique
+nodes in 29,332 bytes, with SHA-256
+`d0989e70226ecd4115098f7faf7f543eddd83184a2c4eb389fe05dc1a08aa8c1` and no JSON
+source dependency. The entire policy matches independently from initial and
+actual mid-battle roots in 16 parallel branches. Native capture gates require
+the actual multi-target assignment, queued grant, inactive relic gate and both
+cached self replacement/removal paths; fallback ordinary card play cannot pass.
+
+Equipment attachment grants, Horde interactions, grafts, moon/deathwish, global
+relics, room attachments and specialized Boss state machines remain necessary
+for the full battle simulation objective.
+
+The final `scripts/Check-Models.ps1` run passes all 95 curated binary archives:
+87 battle archives and eight calibration suites, with exit code zero. Inventory
+and SHA-256 checks, pure checks, all independent native comparisons and parallel
+branches pass. Probe builds with zero warnings/errors; ModelChecks adds no
+warnings beyond its 12 existing nullable warnings. PowerShell parsing and
+`git diff --check` pass. The complete simulation objective remains active.
