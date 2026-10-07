@@ -195,9 +195,15 @@ namespace MonsterTrain2Poju.Model
         }
 
         public static RoomCombatResult ApplyEndTurnPreHandDiscard(RoomCombatState state, int unitId)
+            => ApplyCharacterPhase(state, unitId, "EndTurnPreHandDiscard");
+
+        public static RoomCombatResult ApplyPreCombat(RoomCombatState state, int unitId)
+            => ApplyCharacterPhase(state, unitId, "PreCombat");
+
+        private static RoomCombatResult ApplyCharacterPhase(RoomCombatState state, int unitId, string kind)
         {
             var queue = new List<QueuedCharacterDeath>();
-            RoomCombatResult result = ApplyEndTurnPreHandDiscard(state, unitId, queue.Add);
+            RoomCombatResult result = ApplyCharacterPhase(state, unitId, kind, queue.Add);
             if (!result.Supported) return result;
             var events = result.Events.ToList();
             RoomOutcome outcome = result.Outcome;
@@ -211,13 +217,13 @@ namespace MonsterTrain2Poju.Model
             return new RoomCombatResult(result.State, outcome, 0, events);
         }
 
-        internal static RoomCombatResult ApplyEndTurnPreHandDiscard(RoomCombatState state, int unitId, Action<QueuedCharacterDeath> enqueue)
+        internal static RoomCombatResult ApplyCharacterPhase(RoomCombatState state, int unitId, string kind, Action<QueuedCharacterDeath> enqueue)
         {
             string? error = Validate(state);
             if (error != null || !state.Units.Any(unit => unit.Id == unitId))
                 return new RoomCombatResult(null, RoomOutcome.Unsupported, 0, new List<CombatEvent>(),
-                    error ?? "Pre-discard triggers require a living character actor.");
-            return new Engine(state, new List<CombatEvent>(), enqueueCharacterDeath: enqueue).EndTurnPreHandDiscard(unitId);
+                    error ?? "Character phases require a living character actor.");
+            return new Engine(state, new List<CombatEvent>(), enqueueCharacterDeath: enqueue).CharacterPhase(unitId, kind);
         }
 
         internal static RoomCombatResult ApplyQueuedCharacterDeath(RoomCombatState state, CombatUnit dead, Action<QueuedCharacterDeath> enqueue)
@@ -301,7 +307,7 @@ namespace MonsterTrain2Poju.Model
                 {
                     if (trigger.Kind != "OnDeath" && trigger.Kind != "PostCombat" && trigger.Kind != "OnHeal" &&
                         trigger.Kind != "OnSpawn" && trigger.Kind != "OnUnscaledSpawn" && trigger.Kind != "OnSpawnNotFromCard" &&
-                        trigger.Kind != "OnTurnBegin" && trigger.Kind != "OnTeamTurnBegin" && trigger.Kind != "EndTurnPreHandDiscard")
+                        trigger.Kind != "OnTurnBegin" && trigger.Kind != "OnTeamTurnBegin" && trigger.Kind != "EndTurnPreHandDiscard" && trigger.Kind != "PreCombat")
                         return "Unmodeled trigger " + trigger.Kind;
                     if (trigger.Kind != "OnDeath" && trigger.Kind != "PostCombat" && trigger.SkipDuringDeployment == null)
                         return trigger.Kind + " requires deployment timing state.";
@@ -499,9 +505,9 @@ namespace MonsterTrain2Poju.Model
                     ? RoomOutcome.PlayerDefeated : RoomOutcome.Exchanged);
             }
 
-            internal RoomCombatResult EndTurnPreHandDiscard(int unitId)
+            internal RoomCombatResult CharacterPhase(int unitId, string kind)
             {
-                FireTriggers(units.Single(unit => unit.Source.Id == unitId), "EndTurnPreHandDiscard");
+                FireTriggers(units.Single(unit => unit.Source.Id == unitId), kind);
                 return Finish(battleWon ? RoomOutcome.BattleWon : units.Any(unit => unit.Source.IsPyre && !unit.Alive)
                     ? RoomOutcome.PlayerDefeated : RoomOutcome.Exchanged);
             }

@@ -91,6 +91,7 @@ SpawnTriggerChecks.Run();
 UnitTurnBeginChecks.Run();
 TeamTurnBeginChecks.Run();
 PreHandDiscardChecks.Run();
+PreCombatChecks.Run();
 HandUpgradeChecks.Run();
 HealingChecks.Run();
 GoldRewardChecks.Run();

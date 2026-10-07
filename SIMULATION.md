@@ -1204,6 +1204,46 @@ original profile files are unchanged. All 43 earlier battles and 8 calibrations
 pass; there are now 44 verified complete battle fixtures. The full objective
 still includes the broader mechanics listed above.
 
+Schema 32 adds native per-team `PreCombat` records and pure train/room phase
+entry points. The new turn resets statistics, increments the turn counter and
+spawns its initial enemies before resetting Spawning RNG and running these
+queues. The player queue completes before the enemy queue, both in character
+creation order including the Pyre. Energy remains zero until after both phases;
+opening/ordinary hand draws follow them. Cards generated into the hand coexist
+with that draw and use the remaining hand capacity. Room combat and battle
+preview do not repeat this once-per-new-turn phase.
+
+The shared character-phase engine preserves deployment, silence/ignored-silence,
+daze, once/repeat, unit/source upgrades, immediate death counters and standby
+routing, and deferred FIFO `OnDeath` callbacks. Independent pure checks verify
+creation order across floors, Pyre/team participation, earlier exhaustion
+statistics, nested generation, unknown-effect rejection, immutable parents and
+32 parallel branches.
+
+`results/full-battle-pre-combat.json.gz` retains 8 exact complete phases (4 per
+team), 8 generated hand cards, 12 scaling callbacks (6 current-turn and 6 reset
+hand-draw queries), 4 subsequent draw boundaries and 2 initial enemies that
+participate in the first phase. All 15 plays, 5 EndTurns, 44 room stages,
+9 card cycles, 9 train phases and 7 spawns match, winning with Pyre health 79.
+The independent policy finishes from initial and mid-battle states, compares
+every action/decision, and reproduces the terminal state in 16 parallel branches.
+
+The native JSON is 173,469,684 bytes, SHA-256
+`ab1efd077ecdff0c7f61cb985484fed02dadddae1f03b1435f826e15f6550d72`.
+Capture failures, mismatches, unsupported stages and pending records are zero;
+original profile files are unchanged. All 44 earlier battles and 8 calibrations
+pass; there are now 45 verified complete battle fixtures.
+
+An additional isolated lethal experiment matches all 8 character phases,
+including queued death effects, but finds a separate terminal statistic-cache
+membership gap. Its full battle is deliberately not retained as a passing
+fixture: one newly generated card is owned but absent from native `deckStats`,
+and must disappear from projected tracking when terminal piles clear. The
+statistics model currently merges those two memberships. This needs its own
+schema, native regression and independent commit. Other triggers, relics,
+equipment, room mechanics, boss actions/companions/final bosses, resurrection
+and the broader rules listed below still leave the overall objective open.
+
 Schema 24 captures ordered `CardTraitScalingAddStatusEffect` descriptors on
 immutable card instances and generated-card rules, plus the native stackability
 of status definitions. A status application's immunity check precedes its source

@@ -45,6 +45,12 @@ namespace MonsterTrain2Poju.Model
     public static class TrainCombatModel
     {
         public static TrainCombatResult EndTurnPreHandDiscard(TrainCombatState source, CombatTeam team)
+            => CharacterPhase(source, team, "EndTurnPreHandDiscard");
+
+        public static TrainCombatResult PreCombat(TrainCombatState source, CombatTeam team)
+            => CharacterPhase(source, team, "PreCombat");
+
+        private static TrainCombatResult CharacterPhase(TrainCombatState source, CombatTeam team, string kind)
         {
             string? error = Validate(source);
             if (error != null || team != CombatTeam.Player && team != CombatTeam.Enemy)
@@ -62,7 +68,7 @@ namespace MonsterTrain2Poju.Model
             {
                 int index = Array.FindIndex(rooms, room => room.Units.Any(unit => unit.Id == actor));
                 if (index < 0) continue; // An earlier queued trigger may remove a later actor.
-                RoomCombatResult result = RoomCombatModel.ApplyEndTurnPreHandDiscard(WithContext(rooms[index], context), actor, queue.Add);
+                RoomCombatResult result = RoomCombatModel.ApplyCharacterPhase(WithContext(rooms[index], context), actor, kind, queue.Add);
                 if (!result.Supported) return Unsupported(result.UnsupportedReason!);
                 rooms[index] = result.State!; context = result.State!.Context; results.Add(result);
                 if (Terminal(result.Outcome))

@@ -164,6 +164,16 @@ namespace MonsterTrain2Poju.Model
                 if (Terminal(initial.Outcome)) return Finish(initial.Outcome, 0, moon);
             }
             spawn = WithTrain(spawn, train, turn, UnityRng.Seed(unchecked(spawningStream.Seed + turn)));
+            // Native queues each team's PreCombat after spawning/rollover, before energy and draw.
+            foreach (CombatTeam team in new[] { CombatTeam.Player, CombatTeam.Enemy })
+            {
+                TrainCombatResult triggers = TrainCombatModel.PreCombat(train, team);
+                if (!triggers.Supported) return Unsupported(triggers.UnsupportedReason!);
+                if (!RouteDeadUnits(train, triggers)) return Unsupported("Pre-combat deaths require standby card routing.");
+                train = triggers.State!;
+                spawn = WithTrain(spawn, train, turn, spawn.Rng);
+                if (Terminal(triggers.Outcome)) return Finish(triggers.Outcome, 0, moon);
+            }
             context = train.Context!;
             context = context.WithQueryFrame(context.QueryFrame?.With(energy: source.EnergyPerTurn));
             CardCycleResult drawn = CardCycleModel.DrawHand(context.Cards, source.DrawPerTurn, context.MaxHandSize);
