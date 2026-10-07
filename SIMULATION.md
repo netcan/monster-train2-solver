@@ -1422,9 +1422,8 @@ parent's spawner returns; already-marked units stay in the original batch.
 Both the room engine and train dispatcher implement this staging. Pure checks
 cover ordinary callback ordering, reversed physical target order, nested return
 order, death-generated cards receiving exhaustion, and 32 isolated parallel
-branches. Boss terminal OnDeath damage is kept separate: an exploratory variant
-also exposed kill-camera card clearing before death statistics/removal, which
-still needs its own model and native fixture.
+branches. Boss terminal OnDeath damage is kept separate here; the exploratory
+kill-camera clearing discrepancy is covered by the Schema 38 fixture below.
 
 `tests/fixtures/full-battle-damage-death-queue.json.gz` retains the unmodified
 complete native battle: 15 plays, 5 EndTurns, 41 room stages, 7 spawns, 8
@@ -1439,6 +1438,50 @@ unchanged and Pyre health at victory is 80.
 Independent phase/hit checks, complete initial and mid-battle policies and 16
 parallel branches pass. All 49 earlier complete battles and 8 calibration
 fixtures also pass; the curated corpus now retains 50 complete battles.
+
+Schema 38 adds the captured `KillCamActivated` gate and `-TerminalDeathDamage`.
+Native boss-kill preview can start the kill camera before the real ordinary
+attack. Other damage enters the same camera through CheckForDeath before death
+signals. The camera clears active cards and all piles once, while retaining
+card references and existing statistic cache entries. Subsequent death
+statistics run before OnDeath effects. A null responsible card has no native
+IncrementStat call and must not refresh the cache; an attributed death after
+clearing refreshes it against the permanent deck before incrementing source
+and global counters. Detached spawners no longer present in standby do not
+return or produce a TimesExhausted/AnyExhausted event.
+
+The model handles both camera entry points and carries its gate through card,
+room and turn transitions. The dying actor still resolves traits through its
+retained spawner reference. Older captures that omitted the identity store
+retain observed source-card metadata while the current operation settles,
+without adding unobserved registry fields to their output. Pure checks cover
+death-statistic scaling inside OnDeath, permanent/generated kill attribution,
+unattributed cache preservation, detached spawners, one-shot clearing, preview
+isolation and 32 parallel branches.
+
+`tests/fixtures/full-battle-terminal-death-damage.json.gz` retains the complete
+unchanged native battle. Its two camera observations show preview activation
+clearing 23 owned cards with no statistic change, then the real death calling
+the already-active camera. Nine exact death-signal observations include the
+terminal boss and a friendly unit killed by its OnDeath damage. That friendly
+death refreshes cached membership from 23 to 15 permanent cards, increments
+death counters, and produces no spawner exhaustion. Independent checks compare
+every captured death statistic and verify damage runs after cards clear.
+The complete battle has 15 plays, 5 EndTurns, 41 room stages, 7 spawns, 8
+pre-combat phases, 8 card generations, 16 upgrade callbacks, 8 zero heals and
+42 damage samples (28 tests, 14 applications, 19 requests, 6 OnDeath effects).
+Initial and mid-battle policies, including 16 parallel branches, reproduce
+victory with final Pyre health 80.
+
+The game is 2.2.1, module MVID `8fb07b96-f4db-4d2b-884d-c00536d6ccf4`.
+Raw JSON is 186,797,283 bytes, SHA-256
+`8ce969f2d5a651dd10bb8dcf9d6cccc0391c6fb80591fb47da175a3363fce411`;
+the byte-identical gzip is 6,192,686 bytes. Capture failures, mismatches,
+unsupported phases and pending records are zero, and the original profile
+is unchanged.
+The complete curated check script passes all 51 battle fixtures and 8
+calibrations. Combat-event triggers, equipment/room/relic effects, specialized
+boss behavior and resurrection still leave the full objective open.
 
 Schema 24 captures ordered `CardTraitScalingAddStatusEffect` descriptors on
 immutable card instances and generated-card rules, plus the native stackability

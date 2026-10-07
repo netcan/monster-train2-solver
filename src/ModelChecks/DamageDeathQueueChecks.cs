@@ -86,7 +86,7 @@ internal static class DamageDeathQueueChecks
 
     internal static void Native(JsonElement fixture)
     {
-        if (!fixture.TryGetProperty("ModifierScenario", out var scenario) || scenario.GetString() != "damage-death-queue") return;
+        if (!fixture.TryGetProperty("ModifierScenario", out var scenario) || scenario.GetString() is not ("damage-death-queue" or "terminal-death-damage")) return;
         int phases = 0, deathArmor = 0, zeroHeals = 0, upgrades = 0;
         string Comparable(TrainCombatState state) => JsonSerializer.Serialize(new
         { state.Rooms, Movement = state.Movement.OrderBy(rule => rule.UnitId), state.EnemySlotsPerRoom, state.Context });

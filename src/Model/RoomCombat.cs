@@ -469,6 +469,10 @@ namespace MonsterTrain2Poju.Model
             private readonly Action<QueuedCharacterTrigger>? enqueueCharacterTrigger;
             private readonly Queue<(WorkingUnit Unit, string Kind, bool CanFire)> triggerQueue = new Queue<(WorkingUnit, string, bool)>();
             private bool runningTriggerQueue;
+            private bool killCamActivated;
+            // Older captures omitted the identity store. Retain observed source cards while
+            // this operation finishes, without inventing unobserved references in its output.
+            private IReadOnlyList<CardInstanceState>? legacyDetachedCards;
             private readonly HashSet<int> cannotAttackOrHeal = new HashSet<int>();
             private readonly HashSet<int> cannotFireTriggers = new HashSet<int>();
             private string? unsupportedReason;
@@ -485,6 +489,7 @@ namespace MonsterTrain2Poju.Model
                     foreach (WorkingUnit unit in units)
                         for (int index = 0; index < unit.Triggers.Count; index++) unit.Triggers[index] = unit.Triggers[index].ForPreview();
                 context = source.Context;
+                killCamActivated = context?.KillCamActivated == true;
             }
 
             internal RoomCombatResult Run(bool entireRoom)
@@ -692,6 +697,8 @@ namespace MonsterTrain2Poju.Model
                 // Native restores characters, but CardStatistics is shared: queries can refresh its
                 // membership and SetAttackDamageDealt survives, including nested retaliation.
                 context = context.WithStatistics(preview.context!.Statistics);
+                if (preview.units.Any(unit => !unit.Alive && (unit.Source.EndsBattleOnDeath || unit.Source.IsPyre) &&
+                    units.Any(live => live.Alive && live.Source.Id == unit.Source.Id))) ClearTerminalCards();
             }
 
             private void Damage(WorkingUnit? actor, WorkingUnit target, int damage, string kind, int sourceCardId = 0, bool applyTraits = true)
@@ -707,9 +714,11 @@ namespace MonsterTrain2Poju.Model
                 }
                 if (applyTraits)
                 {
-                    DamageScalingResult scaled = DamageScalingModel.Apply(context, actor?.Source.SpawnerCardId ?? sourceCardId, sourceCardId, damage);
+                    bool retainedLegacy = context?.CardRegistry == null && legacyDetachedCards != null;
+                    CombatContext? scalingContext = retainedLegacy ? context!.WithCardRegistry(legacyDetachedCards) : context;
+                    DamageScalingResult scaled = DamageScalingModel.Apply(scalingContext, actor?.Source.SpawnerCardId ?? sourceCardId, sourceCardId, damage);
                     if (!scaled.Supported) { unsupportedReason = scaled.UnsupportedReason; return; }
-                    context = scaled.Context; damage = scaled.Damage;
+                    context = retainedLegacy ? scaled.Context!.WithCardRegistry(null) : scaled.Context; damage = scaled.Damage;
                 }
                 damage = Math.Max(0, damage);
                 if (target.Has("pyregel"))
@@ -766,6 +775,16 @@ namespace MonsterTrain2Poju.Model
                 // Native UpdateHp sets this gate before death triggers are fired.
                 if (!source.Preview && target.Source.EndsBattleOnDeath)
                 { battleWon = true; context = context?.WithBossesDead(); }
+                // CheckForDeath runs the terminal kill camera before dispatching death signals.
+                if (!source.Preview && (target.Source.EndsBattleOnDeath || target.Source.IsPyre)) ClearTerminalCards();
+                if (!source.Preview && context?.Statistics != null)
+                {
+                    int responsible = sourceCardId > 0 ? sourceCardId : target.Source.SpawnerCardId;
+                    // Native has no IncrementStat call (and no cache refresh) for a null responsible card.
+                    BattleStatistics statistics = responsible > 0 ? context.LiveStatistics! : context.Statistics;
+                    context = context.WithStatistics(statistics.Death(target.Source.Team == CombatTeam.Player,
+                        responsible, requireTrackedCard: context.CardInstances?.Count == 0));
+                }
                 if (enqueueCharacterTrigger != null) enqueueCharacterTrigger(new QueuedCharacterTrigger(source.RoomIndex, target.Freeze(),
                     returnSpawnerAfterQueue: deferReturn, deferUntilRemoval: deferRemoval));
                 else
@@ -773,18 +792,12 @@ namespace MonsterTrain2Poju.Model
                     if (deferRemoval) deferredDamageDeaths.Add((target, deferReturn));
                     else FireTriggers(target, "OnDeath");
                 }
-                if (!source.Preview && context?.Statistics != null)
-                    context = context.WithStatistics(context.LiveStatistics!.Death(target.Source.Team == CombatTeam.Player,
-                        sourceCardId > 0 ? sourceCardId : target.Source.SpawnerCardId, requireTrackedCard: context.CardInstances?.Count == 0)
-                        .Increment(target.Source.Team == CombatTeam.Player && !DeferSpawner(target) && !deferReturn ? target.Source.SpawnerCardId : 0, "TimesExhausted",
-                            requireTrackedCard: context.CardInstances?.Count == 0));
-                if (!source.Preview && !deferSpawnerExhaustion && !deferReturn) RouteSpawner(target);
-                if (!source.Preview && (target.Source.EndsBattleOnDeath || target.Source.IsPyre)) ClearTerminalCards();
+                if (!source.Preview && !deferReturn && !DeferSpawner(target)) SettleDeadSpawner(target);
             }
 
             private void SettleDeadSpawner(WorkingUnit unit)
             {
-                if (source.Preview) return;
+                if (source.Preview || unit.Source.Team != CombatTeam.Player || unit.Source.SpawnerCardId <= 0 || DetachedSpawner(unit)) return;
                 if (context?.Statistics != null)
                     context = context.WithStatistics(context.LiveStatistics!.Increment(unit.Source.SpawnerCardId, "TimesExhausted",
                         requireTrackedCard: context.CardInstances?.Count == 0));
@@ -794,9 +807,14 @@ namespace MonsterTrain2Poju.Model
             private bool DeferSpawner(WorkingUnit unit) => deferSpawnerExhaustion ||
                 pendingSummonCardId > 0 && unit.Source.SpawnerCardId == pendingSummonCardId;
 
+            private bool DetachedSpawner(WorkingUnit unit) => context?.CardInstances != null &&
+                !context.CardInstances.Any(card => card.InstanceId == unit.Source.SpawnerCardId) &&
+                (context.KillCamActivated == true || context.CardRegistry?.Any(card => card.InstanceId == unit.Source.SpawnerCardId) == true);
+
             private void RouteSpawner(WorkingUnit unit)
             {
                 if (unit.Source.Team != CombatTeam.Player || unit.Source.SpawnerCardId <= 0 || context?.OtherPiles == null) return;
+                if (DetachedSpawner(unit)) return;
                 CardPileState? standby = context.OtherPiles.FirstOrDefault(pile => pile.Name == "Standby");
                 CardPileState? exhausted = context.OtherPiles.FirstOrDefault(pile => pile.Name == "Exhausted");
                 int id = unit.Source.SpawnerCardId;
@@ -815,13 +833,16 @@ namespace MonsterTrain2Poju.Model
             private void ClearTerminalCards()
             {
                 // Native ShowKillCam clears the active card piles before StopCombat is entered.
-                if (context == null) return;
+                if (context == null || killCamActivated) return;
+                killCamActivated = true;
+                if (context.CardRegistry == null) legacyDetachedCards = context.CardInstances;
                 context = new CombatContext(new CardCycleState(Array.Empty<CardToken>(), Array.Empty<CardToken>(),
                     Array.Empty<CardToken>(), context.Cards.Rng, context.Cards.DrawModifier,
                     context.Cards.ExternalInteractions), context.BattleRng, context.Gold,
                     context.NextCardId, context.MaxHandSize, context.StatusRules, context.Statistics,
                     context.CardInstances == null ? null : Array.Empty<CardInstanceState>(), context.CardRegistry, context.AllScenarioBossesDead,
-                    context.NextAddedTemporaryUpgrades, context.OtherPiles?.Select(CardPileModel.Clear).ToArray(), context.QueryFrame);
+                    context.NextAddedTemporaryUpgrades, context.OtherPiles?.Select(CardPileModel.Clear).ToArray(), context.QueryFrame,
+                    context.KillCamActivated.HasValue ? true : (bool?)null);
             }
 
             private void PostCombat()
@@ -931,7 +952,7 @@ namespace MonsterTrain2Poju.Model
                                 int reward = GoldRewardModel.Adjust(effect.Value);
                                 context = new CombatContext(context!.Cards, context.BattleRng,
                                     Math.Max(0, checked(context.Gold + reward)), context.NextCardId, context.MaxHandSize, context.StatusRules, context.Statistics,
-                                    context.CardInstances, context.CardRegistry, context.AllScenarioBossesDead, context.NextAddedTemporaryUpgrades, context.OtherPiles, context.QueryFrame);
+                                    context.CardInstances, context.CardRegistry, context.AllScenarioBossesDead, context.NextAddedTemporaryUpgrades, context.OtherPiles, context.QueryFrame, context.KillCamActivated);
                                 Emit("Gold", unit, unit, reward);
                             }
                             else if (effect.Type == "CardEffectAddBattleCard" && !source.Preview && !battleWon && context != null && context.AllScenarioBossesDead != true &&

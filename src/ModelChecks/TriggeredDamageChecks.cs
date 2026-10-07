@@ -103,8 +103,8 @@ internal static class TriggeredDamageChecks
     }
     internal static void Native(JsonElement fixture)
     {
-        if (!fixture.TryGetProperty("ModifierScenario", out var scenario) || scenario.GetString() is not ("triggered-damage" or "damage-death-queue")) return;
-        bool removalQueue = scenario.GetString() == "damage-death-queue";
+        if (!fixture.TryGetProperty("ModifierScenario", out var scenario) || scenario.GetString() is not ("triggered-damage" or "damage-death-queue" or "terminal-death-damage")) return;
+        bool removalQueue = scenario.GetString() is "damage-death-queue" or "terminal-death-damage";
         int phases = 0, samples = 0, applications = 0, tests = 0, negativeTests = 0, empty = 0, groups = 0, random = 0,
             multipliers = 0, deaths = 0, shields = 0, armor = 0, sourceModifiers = 0, damageHits = 0, lateExhausted = 0;
         string Comparable(TrainCombatState state) => JsonSerializer.Serialize(new

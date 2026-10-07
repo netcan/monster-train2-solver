@@ -185,7 +185,8 @@ namespace MonsterTrain2Poju.Probe
                 cards.GetMaxHandSize(), new[] { "armor", "valor", "pyregel" }.Select(id => BattleActionProbe.Status(id, 1)).ToArray(),
                 statistics, instances, registry, managers.GetCombatManager()!.AllScenarioBossesDead,
                 ((IEnumerable<CardUpgradeState>)AccessTools.Field(typeof(CardManager), "nextAddedTempCardUpgrades").GetValue(cards))
-                    .Select(CardModifierProbe.Upgrade).ToArray(), CaptureOtherPiles(), CaptureQueryFrame(managers));
+                    .Select(CardModifierProbe.Upgrade).ToArray(), CaptureOtherPiles(), CaptureQueryFrame(managers),
+                (bool)AccessTools.Field(typeof(CombatManager), "isKillCamActivated").GetValue(managers.GetCombatManager()));
         }
 
         private static StatisticQueryFrame CaptureQueryFrame(AllGameManagers managers)
@@ -342,7 +343,7 @@ namespace MonsterTrain2Poju.Probe
             string path = Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!, "full-battle.json");
             File.WriteAllText(path, JsonConvert.SerializeObject(new
             {
-                Schema = 37,
+                Schema = 38,
                 GameVersion = Application.version,
                 GameModuleMvid = typeof(CardState).Assembly.ManifestModule.ModuleVersionId,
                 NativeWon,
@@ -375,6 +376,8 @@ namespace MonsterTrain2Poju.Probe
                 PreCombats = PreCombatProbe.Records,
                 TriggeredHeals = TriggeredHealingProbe.Records,
                 TriggeredDamage = TriggeredDamageProbe.Records,
+                TerminalDeaths = TerminalDeathProbe.Records,
+                KillCams = TerminalDeathProbe.KillCams,
                 UnitPostCombats = PostCombatHealingProbe.Records,
                 UnitUpgradeScalingCalibrationContextUnchanged = UnitUpgradeScalingScenario.CalibrationContextUnchanged,
                 UiRngIsolation = UiRngIsolation.Records,

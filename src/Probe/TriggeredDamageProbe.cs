@@ -46,7 +46,7 @@ namespace MonsterTrain2Poju.Probe
             public int SourceCardId { get; set; }
         }
         private static bool Enabled() => (Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == "triggered-damage" && TriggeredDamageScenario.Prepared ||
-            Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == "damage-death-queue" && DamageDeathQueueScenario.Prepared) && FullBattleTrace.Active != null && !AllGameManagers.Instance!.GetSaveManager().PreviewMode;
+            (Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") is "damage-death-queue" or "terminal-death-damage") && DamageDeathQueueScenario.Prepared) && FullBattleTrace.Active != null && !AllGameManagers.Instance!.GetSaveManager().PreviewMode;
         private static UnityRng Rng()
         { uint[] words = RngCalibration.Words(RandomManager.GetState(RngId.Battle)); return new UnityRng(words[0], words[1], words[2], words[3]); }
         private static Record Create(CardEffectState effect, CardEffectParams parameters, string stage)

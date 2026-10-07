@@ -10,7 +10,7 @@ namespace MonsterTrain2Poju.Probe
     internal static class DamageDeathQueueScenario
     {
         internal static bool Prepared { get; private set; }
-        internal static void Prepare(AllGameManagers managers, ManualLogSource log)
+        internal static void Prepare(AllGameManagers managers, ManualLogSource log, bool terminalDeaths = false)
         {
             PreCombatScenario.Prepare(managers, log, lethal: false);
             SaveManager save = managers.GetSaveManager();
@@ -32,13 +32,13 @@ namespace MonsterTrain2Poju.Probe
                 .Cast<SpawnGroupData>()).SelectMany(group => group.GetCharacters(save.GetCovenantsForSpawnPattern(), save, save.GetGeneratedBoss())).Distinct())
             {
                 // Keep terminal kill-camera settlement separate from this queue-order fixture.
-                if (enemy.IsOuterTrainBoss() || enemy.IsMiniboss()) continue;
+                if (!terminalDeaths && (enemy.IsOuterTrainBoss() || enemy.IsMiniboss())) continue;
                 var added = enemy.GetTriggers().ToList();
                 added.Add(Trigger("OnDeath", false, false, Effect("CardEffectDamage", TargetMode.Room, Team.Type.Monsters, 3)));
                 Set(enemy, "triggers", added);
             }
             Set(managers.GetCombatManager()!, "combatStateChanged", true); Prepared = true;
-            log.LogInfo("DAMAGE-DEATH-QUEUE-PREPARED room damage kills before zero healing; queued OnHeal grants armor before delayed enemy OnDeath damage; natural waves/boss retained.");
+            log.LogInfo("DAMAGE-DEATH-QUEUE-PREPARED room damage kills before zero healing; queued OnHeal grants armor before delayed enemy OnDeath damage; terminal death effects=" + terminalDeaths + "; natural waves/boss retained.");
         }
         private static CardEffectData Effect(string type, TargetMode target, Team.Type team, int value)
         {
