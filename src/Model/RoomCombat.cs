@@ -230,10 +230,11 @@ namespace MonsterTrain2Poju.Model
             internal bool DeferUntilRemoval { get; }
             internal int TriggerCount { get; }
             internal int LastSpawnedOverrideUnitId { get; }
+            internal bool HarvestAfterDeath { get; }
             internal QueuedCharacterTrigger(int roomIndex, CombatUnit unit, string kind = "OnDeath", bool returnSpawnerAfterQueue = false, bool deferUntilRemoval = false, int paramInt = 0,
                 CombatUnit? overrideTarget = null, int paramInt2 = 0, string? paramString = null, CombatUnit? dyingCharacter = null, bool canFireTriggers = true,
-                int triggerCount = 1, int lastSpawnedOverrideUnitId = 0)
-            { RoomIndex = roomIndex; Unit = unit; Kind = kind; ReturnSpawnerAfterQueue = returnSpawnerAfterQueue; DeferUntilRemoval = deferUntilRemoval; ParamInt = paramInt; OverrideTarget = overrideTarget; ParamInt2 = paramInt2; ParamString = paramString; DyingCharacter = dyingCharacter; CanFireTriggers = canFireTriggers; TriggerCount = triggerCount; LastSpawnedOverrideUnitId = lastSpawnedOverrideUnitId; }
+                int triggerCount = 1, int lastSpawnedOverrideUnitId = 0, bool harvestAfterDeath = false)
+            { RoomIndex = roomIndex; Unit = unit; Kind = kind; ReturnSpawnerAfterQueue = returnSpawnerAfterQueue; DeferUntilRemoval = deferUntilRemoval; ParamInt = paramInt; OverrideTarget = overrideTarget; ParamInt2 = paramInt2; ParamString = paramString; DyingCharacter = dyingCharacter; CanFireTriggers = canFireTriggers; TriggerCount = triggerCount; LastSpawnedOverrideUnitId = lastSpawnedOverrideUnitId; HarvestAfterDeath = harvestAfterDeath; }
         }
         private static readonly HashSet<string> KnownStatuses = new HashSet<string>(StringComparer.Ordinal)
         {
@@ -346,6 +347,7 @@ namespace MonsterTrain2Poju.Model
                     QueuedCharacterTrigger queued = queue[next++];
                     if (queued.DeferUntilRemoval) pending.Add(queued);
                     else if (!Fire(queued)) return false;
+                    else if (queued.HarvestAfterDeath && (!Drain() || !Harvest(queued))) return false;
                 }
                 // Native snapshots all eligible deaths and marks the complete batch as being
                 // removed. New deaths during a removal are handled before the current spawner returns.
@@ -353,8 +355,20 @@ namespace MonsterTrain2Poju.Model
                 pending.Clear();
                 foreach (QueuedCharacterTrigger dead in removing)
                 {
-                    if (!Fire(dead) || !Drain()) return false;
+                    if (!Fire(dead) || !Drain() || !Harvest(dead)) return false;
                     if (dead.ReturnSpawnerAfterQueue && !returnSpawner(dead)) return false;
+                }
+                return true;
+            }
+            bool Harvest(QueuedCharacterTrigger dead)
+            {
+                if (!dead.HarvestAfterDeath) return true;
+                CombatUnit counts = dead.Unit;
+                foreach (string stage in HarvestModel.Stages(dead.Unit))
+                {
+                    HarvestModel.Stage(stage, out string kind, out _);
+                    if (!Fire(new QueuedCharacterTrigger(dead.RoomIndex, dead.Unit, stage,
+                        triggerCount: HarvestModel.Count(counts, kind))) || !Drain()) return false;
                 }
                 return true;
             }
@@ -530,7 +544,7 @@ namespace MonsterTrain2Poju.Model
                         trigger.Kind != "OnTurnBegin" && trigger.Kind != "OnTeamTurnBegin" && trigger.Kind != "EndTurnPreHandDiscard" && trigger.Kind != "PreCombat" &&
                         trigger.Kind != "OnTrainRoomLoop" && trigger.Kind != "PostAscension" && trigger.Kind != "OnShift" && trigger.Kind != "OnSentry" &&
                         trigger.Kind != "OnHit" && trigger.Kind != "OnKill" && trigger.Kind != "OnAttackingBeforeDamage" && trigger.Kind != "OnAttacking" &&
-                        !StatusCallbackModel.Kinds.Contains(trigger.Kind))
+                        !StatusCallbackModel.Kinds.Contains(trigger.Kind) && !HarvestModel.Kinds.Contains(trigger.Kind))
                         return "Unmodeled trigger " + trigger.Kind;
                     if (trigger.Kind != "OnDeath" && trigger.Kind != "PostCombat" && trigger.SkipDuringDeployment == null)
                         return trigger.Kind + " requires deployment timing state.";
@@ -977,9 +991,14 @@ namespace MonsterTrain2Poju.Model
 
             internal RoomCombatResult QueuedTrigger(QueuedCharacterTrigger queued)
             {
+                if (HarvestModel.Stage(queued.Kind, out string harvestKind, out CombatTeam harvestTeam))
+                {
+                    QueueHarvestGroup(queued.Unit, harvestKind, harvestTeam, queued.TriggerCount);
+                    return Finish(RoomOutcome.Exchanged);
+                }
                 WorkingUnit? actor = units.FirstOrDefault(unit => unit.Source.Id == queued.Unit.Id);
                 if (actor == null && (queued.Kind == "OnDeath" || queued.Kind == "OnHit" || queued.Kind == "OnKill" ||
-                    queued.Kind == "OnAttackingBeforeDamage" || queued.Kind == "OnAttacking" || queued.Kind == "OnSentry" || StatusCallbackModel.Kinds.Contains(queued.Kind)))
+                    queued.Kind == "OnAttackingBeforeDamage" || queued.Kind == "OnAttacking" || queued.Kind == "OnSentry" || StatusCallbackModel.Kinds.Contains(queued.Kind) || HarvestModel.Kinds.Contains(queued.Kind)))
                 { actor = new WorkingUnit(queued.Unit) { InRoom = false }; units.Add(actor); }
                 // A queued OnHeal on an actor killed by a later phase effect has no live effects.
                 if (actor != null)
@@ -1202,11 +1221,11 @@ namespace MonsterTrain2Poju.Model
                         responsible, requireTrackedCard: context.CardInstances?.Count == 0));
                 }
                 if (enqueueCharacterTrigger != null) enqueueCharacterTrigger(new QueuedCharacterTrigger(source.RoomIndex, target.Freeze(),
-                    returnSpawnerAfterQueue: deferReturn, deferUntilRemoval: deferRemoval));
+                    returnSpawnerAfterQueue: deferReturn, deferUntilRemoval: deferRemoval, harvestAfterDeath: !target.Despawned));
                 else
                 {
                     if (deferRemoval) deferredDamageDeaths.Add((target, deferReturn));
-                    else FireTriggers(target, "OnDeath");
+                    else { FireTriggers(target, "OnDeath"); PhysicalHarvest(target); }
                 }
                 if (!source.Preview && !deferReturn && !DeferSpawner(target)) SettleDeadSpawner(target);
                 if (!deferRemoval) target.Removed = true;
@@ -1333,6 +1352,7 @@ namespace MonsterTrain2Poju.Model
                 foreach (var dead in removing)
                 {
                     FireTriggers(dead.Unit, "OnDeath");
+                    PhysicalHarvest(dead.Unit);
                     if (dead.Return) SettleDeadSpawner(dead.Unit);
                     dead.Unit.Removed = true;
                     // HeroManager removal starts GameScreen.EndCombat, which cancels
@@ -1340,6 +1360,27 @@ namespace MonsterTrain2Poju.Model
                     // members of the already-marked batch never fire OnDeath. A played
                     // card instead holds StopCombatLoop until its effects complete.
                     if (stopAfterBossRemoval && !source.Preview && dead.Unit.Source.EndsBattleOnDeath) break;
+                }
+            }
+
+            private void QueueHarvestGroup(CombatUnit dying, string kind, CombatTeam team, int count)
+            {
+                // Native snapshots each team's surviving actors before draining that group.
+                // Inert callbacks have no effects within the validated status rules.
+                foreach (WorkingUnit actor in units.Where(unit => unit.Alive && unit.InRoom && !unit.Removed &&
+                    unit.Source.Team == team && unit.Triggers.Any(trigger => trigger.Kind == kind)).ToArray())
+                    QueueCallback(new QueuedCharacterTrigger(source.RoomIndex, actor.Freeze(), kind,
+                        dyingCharacter: dying, triggerCount: count));
+            }
+            private void PhysicalHarvest(WorkingUnit dying)
+            {
+                if (dying.Despawned) return;
+                CombatUnit counts = dying.Freeze();
+                foreach (string stage in HarvestModel.Stages(dying.Freeze()))
+                {
+                    HarvestModel.Stage(stage, out string kind, out CombatTeam team);
+                    QueueHarvestGroup(dying.Freeze(), kind, team, HarvestModel.Count(counts, kind));
+                    DrainLocalTriggerQueue();
                 }
             }
 

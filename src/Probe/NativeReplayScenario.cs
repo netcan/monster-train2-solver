@@ -437,6 +437,15 @@ namespace MonsterTrain2Poju.Probe
                     return;
                 }
             }
+            if (fullBattle && numericModifiersPrepared && modifierScenario == "harvest-triggers")
+            {
+                if (HarvestScenario.Error != null) throw new InvalidOperationException(HarvestScenario.Error);
+                if (!HarvestScenario.Completed)
+                {
+                    if (!HarvestScenario.Started) HarvestScenario.Start(managers, log);
+                    return;
+                }
+            }
             if (fullBattle && numericModifiersPrepared && modifierScenario == "horde-statuses")
             {
                 if (HordeStatusScenario.Error != null) throw new InvalidOperationException(HordeStatusScenario.Error);
@@ -455,7 +464,7 @@ namespace MonsterTrain2Poju.Probe
                     return;
                 }
             }
-            if (fullBattle && !numericModifiersPrepared && (modifierScenario == "horde-statuses" || modifierScenario == "ability-effects" || modifierScenario == "ability-lifecycle" || modifierScenario == "ability-activation" || modifierScenario == "ability-activation-x" || modifierScenario == "ability-activation-lethal" || modifierScenario == "ability-cooldown" || modifierScenario == "ability-cache" || modifierScenario == "sentry" || modifierScenario == "sentry-lethal" || modifierScenario == "companion-boss" || modifierScenario == "numeric-upgrades" || modifierScenario == "dynamic-upgrades" ||
+            if (fullBattle && !numericModifiersPrepared && (modifierScenario == "harvest-triggers" || modifierScenario == "horde-statuses" || modifierScenario == "ability-effects" || modifierScenario == "ability-lifecycle" || modifierScenario == "ability-activation" || modifierScenario == "ability-activation-x" || modifierScenario == "ability-activation-lethal" || modifierScenario == "ability-cooldown" || modifierScenario == "ability-cache" || modifierScenario == "sentry" || modifierScenario == "sentry-lethal" || modifierScenario == "companion-boss" || modifierScenario == "numeric-upgrades" || modifierScenario == "dynamic-upgrades" ||
                 modifierScenario == "sacrifice-upgrades" || modifierScenario == "hand-upgrades" || modifierScenario == "targeted-hand-upgrades" ||
                 modifierScenario == "healing" || modifierScenario == "healing-triggers" || modifierScenario == "room-spells" ||
                 modifierScenario == "terminal-spells" || modifierScenario == "post-kill-spells" || modifierScenario == "random-spells" ||
@@ -476,6 +485,7 @@ namespace MonsterTrain2Poju.Probe
                 else if (modifierScenario == "x-cost" || modifierScenario == "x-cost-lethal") CardCostScenario.Prepare(managers, log, modifierScenario == "x-cost-lethal");
                 else if (modifierScenario == "bonus-draw" || modifierScenario == "bonus-draw-lethal") BonusDrawScenario.Prepare(managers, log, modifierScenario == "bonus-draw-lethal");
                 else if (modifierScenario == "ability-activation" || modifierScenario == "ability-activation-x" || modifierScenario == "ability-activation-lethal") AbilityActivationScenario.Prepare(managers, log, modifierScenario == "ability-activation-x", modifierScenario == "ability-activation-lethal");
+                else if (modifierScenario == "harvest-triggers") HarvestScenario.Prepare(managers, log);
                 else if (modifierScenario == "horde-statuses") HordeStatusScenario.Prepare(managers, log);
                 else if (modifierScenario == "ability-effects") AbilityEffectsScenario.Prepare(managers, log);
                 else if (modifierScenario == "ability-lifecycle") AbilityLifecycleScenario.Prepare(managers, log);

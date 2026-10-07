@@ -104,7 +104,8 @@ are copied immutable values; independent child states can run on worker threads.
 | Ability assignment/removal effects | `CardSpellModel`, `RoomCombatModel` and `AbilityLifecycleModel` | 17 native effect states and 17 queued dispatches with 35 payloads; multi-target and last-target spells, pre-own replacement, cached self replacement/removal, exact current disabled IDs and complete policies with parallel branches |
 | Ability upgrades and equipment grants | `CardUpgradeModifier`, `UnitModifierModel` and spawn transitions | Permanent/temporary initial selection, keep-existing and matching-removal gates, raw restoration after repeated equipment replacement, direct assignment clearing history, disabled upgraded births and real equipment skill casts; complete policy and parallel branches |
 | Horde numerical primitives | `HordeStatModel` | 560 native raw-stat steps and 175 casualty boundaries, signed overflow, HP/stack caps and 32 branches |
-| Horde status changes and casualties | `HordeStatusModel`, status/spawn/damage/health transitions | Eight exact native operations, accepted queues and complete drains, zero/negative notifications, simulated deaths, troop thresholds and spawning cooldown gates; complete subsequent battle and parallel branches. Final-stack removal, runtime casualty upgrades, rally/harvest effects, merging and cloning remain incomplete |
+| Horde status changes and casualties | `HordeStatusModel`, status/spawn/damage/health transitions | Eight exact native operations, accepted queues and complete drains, zero/negative notifications, simulated deaths, troop thresholds and spawning cooldown gates; complete subsequent battle and parallel branches. Final-stack removal, runtime casualty upgrades, Rally, merging and cloning remain incomplete |
+| Physical death Harvest | `HarvestModel` and `RoomCombatModel` | Four native physical deaths and 31 exact dispatches; own-death children precede player/enemy groups, Hero/Monster/Unit kinds, Horde repetition, required dying statuses, silence and once flags; complete subsequent battle and parallel branches |
 | Queued trigger repetition | `RoomCombatModel` | Eight complete native batches and 26 dispatches, once flags, zero/negative counts, ordered child callbacks, silence/fire permissions and 32 branches; Horde status callers now preserve rally/harvest repetition payloads |
 | Additional spells, abilities, relics | Not complete | Unsupported interactions explicitly reject the model transition |
 
@@ -3657,3 +3658,61 @@ work also reject. Bump merging, cloning, additional statuses and physical
 harvest routing remain necessary before broader Horde battle support.
 
 The complete 99-archive regression exits zero, including all 90 native battle inputs, nine calibrations, immutable parallel branches and manifest/SHA-256 checks. Probe builds with zero warnings/errors; both changed PowerShell scripts parse and git diff --check passes.
+
+## Physical death Harvest routing
+
+`HarvestModel` connects physical removal to the ordinary character trigger
+engine. A unit finishes OnDeath and its queued children before Harvest. For
+enemy deaths it dispatches OnAnyHeroDeathOnFloor; for player deaths it dispatches
+OnAnyMonsterDeathOnFloor. OnAnyUnitDeathOnFloor follows. Each kind snapshots the
+surviving players, queues and drains that group, then snapshots and drains the
+enemies. Removed actors do not observe their own death. Non-death despawns skip
+physical Harvest. Local room combat and the external train/card queue use the
+same group stages, retaining the current dying object across death children.
+
+The dying Horde's status snapshot determines repetition: Monster and Unit
+Harvest repeat for its remaining troops, while Hero Harvest remains one. This
+differs from simulated troop deaths, whose existing queues remain enemy-first
+and interleave Monster/Unit per observer. Lethal ordinary damage settles Horde
+casualties on OnHit first; lethal maximum-health loss preserves the Horde count
+until physical removal. Required dying statuses see changes made by OnDeath
+children, and existing once/silence/fire-count semantics apply to Harvest.
+
+`-HarvestTriggers -Policy units-and-junk` uses two actual Steward plays plus
+three native SpawnHeroInRoom calls with an isolated copy of an ordinary enemy
+definition. Both teams carry authored Harvest rewards, once rewards and
+required-dying armor/Horde conditions. A visible Horde condition reward is
+blocked on the silenced second Steward. Death triggers add armor before
+Harvest, and the resulting armor child retains the dead actor. The original
+Boss, ordinary enemy definitions and spawn waves remain unchanged.
+
+Four actual API operations kill an enemy and a player by maximum-health loss,
+then an enemy and a player by damage. Whole settled room/context states match
+independently, and observed dispatch order proves own-death/child/kind/team
+ordering for both maximum-health deaths. All 31 native OnDeath/Harvest
+dispatches independently compare complete room, actor and dying states.
+Both checks repeat in 32 branches. Pure checks also compare local/external
+queues and prove ordinary versus Horde physical repetition and dead exclusion.
+
+The muted Instant native run takes 45.34 seconds, wins at Pyre 49, and records
+55 room stages, 13 card cycles, 14 train phases, 11 spawns, nine policy plays
+and seven EndTurns. Capture failures, mismatches, unsupported transitions and
+pending records are zero; original profile signatures remain unchanged.
+The complete subsequent policy matches from initial and mid-battle inputs in
+16 branches.
+
+`tests/fixtures/full-battle-harvest-triggers.mt2f` is direct native schema 70,
+28,694 bytes / 4,567 nodes, SHA-256
+`b042c3d62aac10e7095981abd096f3fe6b34dfe378eea8ef951a094ea6e2deb7`.
+It has no JSON dependency. The curated inventory now contains 100 archives:
+91 battles and nine calibrations. Final Horde-stack status removal and its
+physical sacrifice, runtime Horde casualty upgrades, Rally, Bump merging,
+cloning and additional statuses remain separate incomplete mechanisms.
+
+The complete 100-archive regression exits zero, including all 91 native battle
+inputs, nine calibrations, immutable parallel branches and manifest/SHA-256
+checks. Additional pure checks compare immediate and deferred external removal
+queues with local Harvest, and the final focused native check verifies exact
+reward, remaining-troop and death-child boundaries. Probe builds with zero
+warnings/errors; ModelChecks retains its 12 existing nullable warnings. Both
+changed PowerShell scripts parse and `git diff --check` passes.

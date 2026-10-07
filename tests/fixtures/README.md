@@ -27,6 +27,15 @@ value comparison.
 Isolated native probes use `.probe-runs/`, which is also ignored. Successful
 captures become fixed inputs here after native and independent comparisons pass.
 
+`full-battle-harvest-triggers.mt2f` retains schema 70 with four actual physical
+deaths across both teams: lethal maximum-health loss and lethal Horde damage.
+It records complete operation states and 31 OnDeath/Harvest room/actor/dying
+dispatches, including death children, player/enemy group order, Horde repetition,
+silence, once flags and required dying statuses. Native and independent checks
+pass; operations and dispatches repeat in 32 branches, and the complete later
+policy matches initial/mid-battle roots in 16 branches. The curated inventory
+contains 100 archives: 91 battles and nine calibration suites.
+
 `full-battle-horde-statuses.mt2f` retains schema 69 with eight actual Horde
 status/damage/maximum-health operations on a real summoned Steward and a second
 Steward observing rally/harvest queues. It preserves accepted queue contents and
