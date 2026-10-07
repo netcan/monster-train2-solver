@@ -1897,3 +1897,37 @@ all 55 battle fixtures and all eight calibration fixtures pass, including the
 Binary-format checks cover integer boundaries, exact decimal/exponent lexemes,
 Unicode, duplicate properties, defaults, deterministic output, 32 parallel
 hydrations and rejection of corrupt/truncated/unknown-version/cyclic archives.
+
+Isolated full-battle probes now default to the game's native `Instant` timing
+table. `-GameSpeed Normal` retains a baseline; Fast, Ultra and SuperUltra are
+also selectable. `MT2_PROBE_FAST_REPLAY` only accelerates replayed prefixes and
+does not accelerate directly driven battle sampling. The new
+`MT2_PROBE_GAME_SPEED` override intercepts `SaveManager.GetActiveGameSpeed`,
+preserves native preview/undo/replay Instant behavior, and does not write player
+preferences or change `Time.timeScale`. Schema 43 records the requested speed
+and the number of live overrides. All debug games remain muted.
+
+A fresh Normal/Instant pair using `-Policy units-spells-and-junk
+-TriggeredStatus` captures the same 21 plays, seven EndTurns and native victory
+with Pyre 72. The native process elapsed time decreases from 155.79 seconds to
+82.34 seconds, a 1.89x speedup on this scenario. These measurements include game
+startup, sampling, export and shutdown, but exclude launcher postprocessing.
+`FixtureTools compare-speeds` compares all 41 complete gameplay sections,
+including snapshots, RNG streams, effects, callback order and checkpoints.
+Frame-dependent UI query/preview observation counts are checked independently
+for restoration and model equivalence rather than requiring identical counts.
+The native captures are
+`.probe-runs/full-battle-units-spells-and-junk-20261007-133518-be33d8ca` (Normal)
+and `.probe-runs/full-battle-units-spells-and-junk-20261007-133253-1dd16f32`
+(Instant). Both exit zero with no capture failures, mismatches, unsupported
+stages or pending observations, and original game files remain unchanged.
+
+`tests/fixtures/full-battle-triggered-status-instant.mt2f` preserves all captured
+values from the 620,310,073-byte Instant source (source SHA-256
+`d4e68baf103d6562e84dbf7235def6c9241949ffbf63aea7ca9892434eae7dcd`). The archive
+is 43,288 bytes with 7,146 unique nodes; its hash is recorded in the manifest.
+The independently modeled native actions, turns and all 157 triggered-status
+effects pass, including 36 battle/46 boss-kill preview scopes with 47 consuming
+the isolated test stream. The complete binary regression now exits zero with
+56 battle fixtures and eight calibration fixtures. Supplying a Normal capture
+as the accelerated input to the speed comparator is also rejected.

@@ -12,6 +12,10 @@ else if (args.Length == 3 && args[0] == "verify")
     LegacyFixtureImport.Verify(args[1], binary);
     Console.WriteLine("FIXTURE-VERIFY PASS: all captured values, property order and numeric lexemes preserved.");
 }
+else if (args.Length == 3 && args[0] == "compare-speeds")
+{
+    NativeSpeedComparison.Run(args[1], args[2]);
+}
 else if (args.Length == 3 && args[0] == "pack-directory")
 {
     string sourceDirectory = Path.GetFullPath(args[1]), outputDirectory = Path.GetFullPath(args[2]);
@@ -32,7 +36,7 @@ else if (args.Length == 3 && args[0] == "pack-directory")
 }
 else
 {
-    Console.Error.WriteLine("Usage: FixtureTools pack <legacy.json[.gz]> <output.mt2f> | verify <legacy> <archive> | pack-directory <source-dir> <output-dir>");
+    Console.Error.WriteLine("Usage: FixtureTools pack <legacy.json[.gz]> <output.mt2f> | verify <legacy> <archive> | pack-directory <source-dir> <output-dir> | compare-speeds <normal.mt2f> <accelerated.mt2f>");
     return 2;
 }
 return 0;

@@ -2,6 +2,8 @@
 param(
     [ValidateSet('no-cards', 'steward-once', 'units-and-junk', 'units-spells-and-junk')]
     [string] $Policy = 'steward-once',
+    [ValidateSet('Normal', 'Fast', 'Ultra', 'SuperUltra', 'Instant')]
+    [string] $GameSpeed = 'Instant',
     [switch] $NumericUpgrades,
     [switch] $DynamicUpgrades,
     [switch] $SacrificeUpgrades,
@@ -91,6 +93,7 @@ $environment = @{
     MT2_PROBE_SOURCE_PLAY_TURNS = ''
     MT2_PROBE_BRANCH_ANY_UNIT = '0'
     MT2_PROBE_FAST_REPLAY = '0'
+    MT2_PROBE_GAME_SPEED = $GameSpeed
     MT2_PROBE_NO_TIMEOUT = '1'
     MT2_PROBE_ISOLATE_PREVIEW_RNG = $(if ($TriggeredStatus) { '1' } else { '0' })
     MT2_PROBE_ISOLATE_UI_RNG = $(if ($NumericRanges -or $NumericRangesLethal -or $Drawing -or $TriggeredHealing -or $PostCombatHealing -or $TriggeredDamage -or $DamageDeathQueue -or $TerminalDeathDamage -or $HitKill -or $DyingUpgrades -or $AttackTriggers -or $TriggeredStatus) { '1' } else { '0' })
@@ -99,6 +102,7 @@ $environment = @{
 }
 $originalBefore = Get-OriginalSignature
 $unityLog = Join-Path $profile 'unity-scenario.log'
+$nativeTimer = [System.Diagnostics.Stopwatch]::StartNew()
 $process = Start-Process -FilePath (Join-Path $gameRoot 'MonsterTrain2.exe') `
     -WorkingDirectory $gameRoot -ArgumentList @('-logFile', $unityLog) `
     -Environment $environment -WindowStyle Hidden -PassThru
@@ -108,6 +112,8 @@ if (-not $process.WaitForExit(600000)) {
     $process.WaitForExit()
     throw "Full battle timed out; profile: $profile"
 }
+$nativeTimer.Stop()
+Write-Output "FULL-BATTLE-TIMING speed=$GameSpeed elapsedSeconds=$($nativeTimer.Elapsed.TotalSeconds.ToString('F2', [Globalization.CultureInfo]::InvariantCulture))"
 $tracePath = Join-Path $profile 'full-battle.json'
 if (-not (Test-Path -LiteralPath $tracePath)) { throw "Missing battle trace; inspect $unityLog" }
 $trace = Get-Content -LiteralPath $tracePath -Raw | ConvertFrom-Json

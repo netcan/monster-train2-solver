@@ -34,6 +34,7 @@ namespace MonsterTrain2Poju.Probe
             }
 
             isolatedRoot = ValidateRoot(Environment.GetEnvironmentVariable(EnvironmentVariable));
+            ProbeGameSpeed.Configure(Logger);
             AudioListener.volume = 0f;
             Logger.LogInfo("Isolated probe audio muted.");
             try
