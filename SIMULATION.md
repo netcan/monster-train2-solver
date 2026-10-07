@@ -1922,8 +1922,8 @@ and `.probe-runs/full-battle-units-spells-and-junk-20261007-133253-1dd16f32`
 (Instant). Both exit zero with no capture failures, mismatches, unsupported
 stages or pending observations, and original game files remain unchanged.
 
-`tests/fixtures/full-battle-triggered-status-instant.mt2f` preserves all captured
-values from the 620,310,073-byte Instant source (source SHA-256
+The initial `tests/fixtures/full-battle-triggered-status-instant.mt2f` preserved
+all captured values from the 620,310,073-byte Instant source (source SHA-256
 `d4e68baf103d6562e84dbf7235def6c9241949ffbf63aea7ca9892434eae7dcd`). The archive
 is 43,288 bytes with 7,146 unique nodes; its hash is recorded in the manifest.
 The independently modeled native actions, turns and all 157 triggered-status
@@ -1931,3 +1931,47 @@ effects pass, including 36 battle/46 boss-kill preview scopes with 47 consuming
 the isolated test stream. The complete binary regression now exits zero with
 56 battle fixtures and eight calibration fixtures. Supplying a Normal capture
 as the accelerated input to the speed comparator is also rejected.
+
+Full-battle export now runs once in the scenario tick after the terminal native
+coroutine has returned. Previously it also ran inside the stop wrapper, writing
+the same large capture twice. Json.NET now streams compact UTF-8 to a temporary
+file, then publishes the completed file, rather than allocating a complete
+indented string. All capture fields remain present; schema 43 and the binary
+fixture format are unchanged. The export log records duration, bytes and pending
+observations.
+
+The same triggered-status scenario now takes 74.00 seconds for the native
+process, compared with 82.34 seconds before the export change and 155.79 seconds
+at Normal speed. This is a further 10.1% reduction, or 2.11x compared with the
+Normal capture on this scenario. The single export takes 4.927 seconds and
+writes 237,681,273 bytes instead of approximately 620 MB of indented text. Total
+launcher elapsed time is 102.36 seconds including build and postprocessing;
+the previous native-process times must not be compared against this total.
+The capture is
+`.probe-runs/full-battle-units-spells-and-junk-20261007-134628-58167246`.
+Complete comparison with the fresh Normal capture again passes all 41 gameplay
+sections. Independent checks pass all 157 status effects, 77 unit turns,
+33 battle/46 boss-kill preview scopes (45 consumed), the complete action/turn
+chain and 16 parallel branches.
+
+The retained Instant fixture now contains this streamed capture: 43,400 bytes,
+7,146 unique nodes, source SHA-256
+`750f6fc21fbdcf831158ad795a5e5ad59e6094361a53eb54bc90a7cde818365c`.
+The manifest records its updated source length/hash and binary length/hash.
+Independent import verification compares every captured value with the binary
+archive. The original indented Instant capture remains available locally under
+the earlier profile path.
+
+An additional native `-TerminalDeathDamage` run at
+`.probe-runs/full-battle-units-spells-and-junk-20261007-134825-c6338e02`
+verifies the later export boundary against pending terminal effects: 15 plays,
+five EndTurns, Pyre 80, one terminal-clear signal, one later death, one cache
+drop and one lethal post-clear hit. Independent exact effect, death-queue,
+terminal-signal, action/turn and parallel-policy checks pass. Its single export
+takes 1.581 seconds with zero pending observations. Both native runs exit zero
+without capture failures, mismatches or unsupported stages; original game files
+remain unchanged and audio stays muted.
+
+The final regression with the updated streamed binary fixture exits zero:
+all 56 battle fixtures and all eight calibration fixtures pass. The curated
+inventory and complete archive SHA-256 hashes are verified before model checks.

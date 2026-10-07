@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text;
 using BepInEx.Logging;
 using HarmonyLib;
 using MonsterTrain2Poju.Model;
@@ -348,13 +349,17 @@ namespace MonsterTrain2Poju.Probe
             turns.Complete(won ? RoomOutcome.BattleWon : RoomOutcome.PlayerDefeated);
             Checkpoint("terminal");
             log.LogInfo("BATTLE-TERMINAL won=" + won + " pyre=" + AllGameManagers.Instance!.GetSaveManager().GetTowerHP());
-            Write();
+            // Tick exports once, after this native coroutine and its pending
+            // observation wrappers have returned. Exporting here would duplicate
+            // the entire capture and could still include an unfinished wrapper.
         }
 
         internal string Write()
         {
             string path = Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!, "full-battle.json");
-            File.WriteAllText(path, JsonConvert.SerializeObject(new
+            var timer = System.Diagnostics.Stopwatch.StartNew();
+            string temporary = path + ".tmp";
+            var snapshot = new
             {
                 Schema = 43,
                 GameVersion = Application.version,
@@ -402,7 +407,23 @@ namespace MonsterTrain2Poju.Probe
                 UnitUpgradeScalingCalibrationContextUnchanged = UnitUpgradeScalingScenario.CalibrationContextUnchanged,
                 UiRngIsolation = UiRngIsolation.Records,
                 Checkpoints = checkpoints
-            }, Formatting.Indented));
+            };
+            try
+            {
+                using (var stream = new FileStream(temporary, FileMode.Create, FileAccess.Write, FileShare.None, 65536))
+                using (var text = new StreamWriter(stream, new UTF8Encoding(false), 65536))
+                using (var json = new JsonTextWriter(text) { Formatting = Formatting.None })
+                    JsonSerializer.CreateDefault().Serialize(json, snapshot);
+                if (File.Exists(path)) File.Replace(temporary, path, null);
+                else File.Move(temporary, path);
+            }
+            finally
+            {
+                if (File.Exists(temporary)) File.Delete(temporary);
+            }
+            timer.Stop();
+            log.LogInfo("BATTLE-EXPORT elapsedSeconds=" + timer.Elapsed.TotalSeconds.ToString("F3", System.Globalization.CultureInfo.InvariantCulture) +
+                " bytes=" + new FileInfo(path).Length + " pending=" + Pending);
             return path;
         }
 
