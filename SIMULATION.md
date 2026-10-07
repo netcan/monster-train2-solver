@@ -1167,13 +1167,42 @@ and 8 calibrations also pass; there are now 43 verified complete battle fixtures
 The broader objective remains open: pre-combat, other character/card triggers,
 relic and hand-retention effects, boss actions, equipment and room mechanics
 still need their own native validation.
-An additional native death-copy experiment exposed a separate clone refresh:
-when upgrade data does not mark its damage as scaled by a non-magic-power
-trait, the game resets positive damage/heal to the data's base value times the
-new card's magic-power multiplier. A scaled source damage of eight became one
-on its generated clone. Current source descriptors do not yet capture this
-refresh, so that combination remains unmodeled; it is not included among the
-verified phase fixtures.
+
+Schema 31 captures immutable `CloneDamageBase` and `CloneHealBase` on upgrades.
+Native cloning first copies permanent and optional temporary upgrades, then
+refreshes all existing destination upgrades. Upgrade data whose positive
+damage/heal is not marked as scaled by a non-magic-power trait resets that
+value to its base times the new card's magic-power multiplier. The supported
+creation traits have multiplier one; multiplier-changing traits remain explicit
+external interactions. Anonymous upgrades, nonpositive data bases and upgrades
+marked for non-magic-power scaling preserve their current values. Other
+statistics, source offsets and the source itself remain unchanged.
+
+This refresh also applies to destination optional upgrades when copying source
+temporary modifiers is disabled. Pending next-added temporary upgrades arrive
+after the refresh. Missing copy sources take the native early return without
+refreshing the destination. Unit scaling preserves the immutable base fields.
+Earlier captures omit these nullable descriptors and retain their observed
+copy behavior; they do not establish coverage of this newly captured refresh.
+
+`results/full-battle-clone-upgrade-refresh.json.gz` retains 10 exact generations
+including two death copies. Each copy resets a scaled permanent damage value
+from 8 to 1 and a temporary heal value from 8 to 2, while preserving a damage
+value of 9 whose data is marked for non-magic-power scaling. Independent checks
+compare full contexts and verify that both sources stay unchanged. The battle
+matches all 21 plays, 7 EndTurns, 60 room stages, 13 card cycles, 13 train phases,
+11 spawns, 14 pre-discard phases and 10 scaling callbacks, winning with Pyre
+health 74. Complete initial/mid-battle policies and 16 parallel branches match
+the terminal state. Pure checks also cover optional/pending ordering, ignored
+temporary modifiers, no-copy/missing-source behavior, retained descriptors and
+32 parallel branches.
+
+The native JSON is 325,689,980 bytes, SHA-256
+`81bb57bb4a103f482b3b97ac1c85e1ba2b964b7f3efd38c19f4b9d4b35d69982`.
+Capture failures, mismatches, unsupported stages and pending records are zero;
+original profile files are unchanged. All 43 earlier battles and 8 calibrations
+pass; there are now 44 verified complete battle fixtures. The full objective
+still includes the broader mechanics listed above.
 
 Schema 24 captures ordered `CardTraitScalingAddStatusEffect` descriptors on
 immutable card instances and generated-card rules, plus the native stackability

@@ -148,6 +148,7 @@ internal static class RoomCombatChecks
         UnitTurnBeginChecks.Native(fixture);
         TeamTurnBeginChecks.Native(fixture);
         PreHandDiscardChecks.Native(fixture);
+        CloneUpgradeRefreshChecks.Native(fixture);
         DynamicStatisticChecks.Native(fixture);
         SharedPileChecks.MigratedRoot(fixture);
     }

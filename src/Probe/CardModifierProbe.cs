@@ -76,6 +76,8 @@ namespace MonsterTrain2Poju.Probe
         internal static CardUpgradeModifier Upgrade(CardUpgradeState upgrade)
         {
             var interactions = new List<string>();
+            CardUpgradeData? source = upgrade.GetSourceCardUpgradeData();
+            bool refresh = source != null && !source.GetUpgradeWillBeScaledByNonMagicPowerTrait();
             if (upgrade.GetUnitAbilityUpgrade() != null || upgrade.GetRoomAbilityUpgrade() != null) interactions.Add("Upgrade ability");
             if (upgrade.GetTraitDataUpgrades().Count > 0 || upgrade.GetRemoveTraitUpgrades().Count > 0) interactions.Add("Upgrade traits");
             if (upgrade.GetTriggerUpgrades().Count > 0 || upgrade.GetCardTriggerUpgrades().Count > 0) interactions.Add("Upgrade triggers");
@@ -88,7 +90,9 @@ namespace MonsterTrain2Poju.Probe
                     upgrade.GetAdditionalEquipmentLimit(), upgrade.GetAdditionalUpgradeSlotCount()),
                 upgrade.GetStatusEffectUpgrades().Select(status => BattleActionProbe.Status(status.statusId, status.count)).ToArray(),
                 upgrade.GetRemoveOnDiscard(), upgrade.IsUnique(), upgrade.GetExcludeFromClones(), upgrade.GetAdditionalUnhealedHP(),
-                upgrade.GetAttackDamageBuff(), interactions, upgrade.GetRestrictSizeToRoomCapacity(), upgrade.GetSourceCardUpgradeData()?.GetMagicPowerTraitScalingOnly() == true);
+                upgrade.GetAttackDamageBuff(), interactions, upgrade.GetRestrictSizeToRoomCapacity(), source?.GetMagicPowerTraitScalingOnly() == true,
+                refresh && source!.GetBonusDamage() > 0 ? (int?)source.GetBonusDamage() : null,
+                refresh && source!.GetBonusHeal() > 0 ? (int?)source.GetBonusHeal() : null);
         }
     }
 }

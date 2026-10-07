@@ -117,6 +117,12 @@ namespace MonsterTrain2Poju.Model
                         foreach (CardUpgradeModifier upgrade in copying.Temporary.Upgrades.Where(upgrade => upgrade.ExcludeFromClones)) ignored.Add(upgrade.DataId);
                         temporary = Copy(temporary, copying.Temporary, ignored);
                     }
+                    // Native refreshes all existing upgrades after copying. Supported card
+                    // traits have multiplier one; magic multiplier traits are explicit external
+                    // interactions on creation definitions. Anonymous/non-magic-scaled upgrades
+                    // have no reset descriptor and preserve their current values.
+                    permanent = RefreshClone(permanent);
+                    temporary = RefreshClone(temporary);
                 }
                 foreach (CardUpgradeModifier upgrade in context.NextAddedTemporaryUpgrades ?? Array.Empty<CardUpgradeModifier>())
                 {
@@ -154,6 +160,8 @@ namespace MonsterTrain2Poju.Model
                 result = UnitModifierModel.Add(result, upgrade);
             return result;
         }
+        private static CardModifiers RefreshClone(CardModifiers modifiers) => new CardModifiers(modifiers.Offsets,
+            modifiers.Upgrades.Select(upgrade => upgrade.RefreshCloneMagicPower()).ToArray(), modifiers.PersistentHealth, modifiers.ExternalInteractions);
         private static bool HasModifiers(CardModifiers modifiers) => modifiers.Upgrades.Count > 0 || modifiers.PersistentHealth != 0 ||
             new[] { "Damage", "Health", "Cost", "Heal", "Size", "XCost", "EquipmentLimit", "UpgradeSlotCount" }
                 .Any(stat => modifiers.Offsets.Value(stat) != 0);

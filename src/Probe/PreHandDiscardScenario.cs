@@ -10,7 +10,7 @@ namespace MonsterTrain2Poju.Probe
 {
     internal static class PreHandDiscardScenario
     {
-        internal static void Prepare(AllGameManagers managers, ManualLogSource log, bool lethal)
+        internal static void Prepare(AllGameManagers managers, ManualLogSource log, bool lethal, bool copying = false)
         {
             HealingScenario.Prepare(managers, log, withTriggers: true);
             SaveManager save = managers.GetSaveManager();
@@ -48,8 +48,12 @@ namespace MonsterTrain2Poju.Probe
                 deathCard.Cheat_SetTargetMode(TargetMode.Room); Set(deathCard, "paramCardPool", pool);
                 Set(deathCard, "paramInt", (int)CardPile.HandPile); Set(deathCard, "additionalParamInt", 1);
                 // Distinct native upgrades expose death generation order in the final state.
-                CardUpgradeData marker = DynamicUpgradeScenario.Upgrade("PojuPreDiscardDeathCard", "2de091ee-b111-4db1-b5e1-b69f15a50805", 0, 1, 0, 0, "armor", 0);
-                marker.GetStatusEffectUpgrades().Clear(); Set(deathCard, "paramCardUpgradeData", marker);
+                if (copying) Set(deathCard, "copyModifiersFromSource", true);
+                else
+                {
+                    CardUpgradeData marker = DynamicUpgradeScenario.Upgrade("PojuPreDiscardDeathCard", "2de091ee-b111-4db1-b5e1-b69f15a50805", 0, 1, 0, 0, "armor", 0);
+                    marker.GetStatusEffectUpgrades().Clear(); Set(deathCard, "paramCardUpgradeData", marker);
+                }
                 Set(death, "effects", death.GetEffects().Concat(new[] { deathCard }).ToList());
             }
             Set(death, "trigger", CharacterTriggerData.Trigger.OnDeath); triggers.Add(death);
@@ -57,6 +61,18 @@ namespace MonsterTrain2Poju.Probe
             foreach (CardState card in stewards) card.Setup(data, save);
             var dazed = new CardUpgradeState(); dazed.Setup(); dazed.AddStatusEffectUpgradeStacks("dazed", 1);
             stewards[0].ApplyPermanentUpgrade(dazed, save, ignoreUpgradeAnimation: true);
+            if (copying)
+                foreach (CardState card in stewards)
+                {
+                    CardUpgradeData protectedData = DynamicUpgradeScenario.Upgrade("PojuCloneProtectedDamage", "2de091ee-b111-4db1-b5e1-b69f15a50806", 2, 0, 0, 0, "armor", 0);
+                    protectedData.GetStatusEffectUpgrades().Clear(); Set(protectedData, "upgradeWillBeScaledByNonMagicPowerTrait", true);
+                    var protectedState = new CardUpgradeState(); protectedState.Setup(protectedData);
+                    card.ApplyPermanentUpgrade(protectedState, save, ignoreUpgradeAnimation: true); protectedState.SetAttackDamage(9);
+                    CardUpgradeData healData = DynamicUpgradeScenario.Upgrade("PojuCloneRefreshHeal", "2de091ee-b111-4db1-b5e1-b69f15a50807", 0, 0, 0, 0, "armor", 0);
+                    healData.GetStatusEffectUpgrades().Clear(); Set(healData, "bonusHeal", 2);
+                    var healState = new CardUpgradeState(); healState.Setup(healData);
+                    card.ApplyTemporaryUpgrade(healState, save); healState.SetAdditionalHeal(8);
+                }
             var pattern = (SpawnPatternData)AccessTools.Field(typeof(HeroManager), "spawnPattern").GetValue(managers.GetHeroManager());
             var waves = new List<SpawnGroupPoolData>(); pattern.GetUnlockedWaves(save, waves);
             foreach (CharacterData enemy in waves.SelectMany(wave => ((IEnumerable)AccessTools.Field(typeof(SpawnGroupPoolData), "possibleGroups").GetValue(wave))

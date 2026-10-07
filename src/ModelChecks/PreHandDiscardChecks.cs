@@ -91,8 +91,9 @@ internal static class PreHandDiscardChecks
 
     internal static void Native(JsonElement fixture)
     {
-        if (!fixture.TryGetProperty("ModifierScenario", out JsonElement scenario) || scenario.GetString() is not ("pre-hand-discard" or "pre-hand-discard-lethal")) return;
-        bool lethal = scenario.GetString() == "pre-hand-discard-lethal";
+        if (!fixture.TryGetProperty("ModifierScenario", out JsonElement scenario) || scenario.GetString() is not ("pre-hand-discard" or "pre-hand-discard-lethal" or "clone-upgrade-refresh")) return;
+        bool copying = scenario.GetString() == "clone-upgrade-refresh";
+        bool lethal = scenario.GetString() != "pre-hand-discard";
         int phases = 0, player = 0, enemy = 0, generated = 0, deaths = 0, dazed = 0, silent = 0, callbacks = 0, priorEnergy = 0, deathOrder = 0;
         TrainCombatState? preceding = null; int? precedingTurn = null; CombatTeam? precedingTeam = null;
         foreach (JsonElement phase in fixture.GetProperty("PreHandDiscards").EnumerateArray())
@@ -114,7 +115,7 @@ internal static class PreHandDiscardChecks
             phases++; player += team == CombatTeam.Player ? 1 : 0; enemy += team == CombatTeam.Enemy ? 1 : 0;
             generated += after.Context!.Cards.Hand.Count(card => card.InstanceId >= before.Context.NextCardId);
             deaths += after.Context.Statistics!.MonstersDeadThisTurn - before.Context.Statistics!.MonstersDeadThisTurn;
-            if (lethal && team == CombatTeam.Player)
+            if (lethal && !copying && team == CombatTeam.Player)
             {
                 CardInstanceState[] births = after.Context.CardInstances!.Where(card => card.InstanceId >= before.Context.NextCardId).ToArray();
                 int[] marked = births.Where(card => card.Temporary.Upgrades.Any(upgrade => upgrade.AssetKey == "PojuPreDiscardDeathCard"))
@@ -159,9 +160,9 @@ internal static class PreHandDiscardChecks
             callbacks++;
             if (trait.Query.Type == "EnergyRemainingEndOfTurn" && before.Statistics!.EnergyRemainingEndOfTurn != before.QueryFrame!.Energy) priorEnergy++;
         }
-        Require(phases > 0 && player == enemy && generated > 0 && dazed > 0 && silent > 0 && callbacks >= 4 && priorEnergy > 0 && (!lethal || deaths > 0 && deathOrder > 0),
+        Require(phases > 0 && player == enemy && generated > 0 && dazed > 0 && silent > 0 && callbacks >= 4 && priorEnergy > 0 && (!lethal || deaths > 0 && (copying || deathOrder > 0)),
             "Native pre-discard fixture lacks both teams, generated-hand discard, gates, prior energy scaling or requested deaths.");
-        if (lethal) Require(fixture.GetProperty("CardGenerations").EnumerateArray().Any(item =>
+        if (lethal && !copying) Require(fixture.GetProperty("CardGenerations").EnumerateArray().Any(item =>
             item.GetProperty("Origin").GetString() == "Unit" && item.GetProperty("Rule").GetProperty("Upgrade").ValueKind == JsonValueKind.Object &&
             item.GetProperty("Rule").GetProperty("Upgrade").GetProperty("AssetKey").GetString() == "PojuPreDiscardDeathCard"),
             "Native lethal pre-discard fixture lacks distinct upgrades on queued death cards.");

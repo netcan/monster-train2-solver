@@ -56,7 +56,7 @@ namespace MonsterTrain2Poju.Probe
                 }
             }
         }
-        private static bool Enabled() => (Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") is "pre-hand-discard" or "pre-hand-discard-lethal") &&
+        private static bool Enabled() => (Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") is "pre-hand-discard" or "pre-hand-discard-lethal" or "clone-upgrade-refresh") &&
             FullBattleTrace.Active != null && !AllGameManagers.Instance!.GetSaveManager().PreviewMode;
         [HarmonyPatch(typeof(MonsterManager), nameof(MonsterManager.EndTurnPreHandDiscard))]
         private static class PlayerPatch
