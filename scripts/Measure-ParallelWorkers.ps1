@@ -187,6 +187,8 @@ $result = [pscustomobject]@{
         $workerResults[0].GameplayRngHash -ceq $workerResults[1].GameplayRngHash)
     Workers = $workerResults
 }
-$resultPath = Join-Path $workspace "results\benchmark-$workload-$($Mode.ToLowerInvariant())-$runId.json"
+$outputRoot = Join-Path $workspace 'results'
+New-Item -ItemType Directory -Path $outputRoot -Force | Out-Null
+$resultPath = Join-Path $outputRoot "benchmark-$workload-$($Mode.ToLowerInvariant())-$runId.json"
 $result | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath $resultPath -Encoding utf8
 $result | ConvertTo-Json -Depth 5

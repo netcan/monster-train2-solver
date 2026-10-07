@@ -35,6 +35,6 @@ $fixtures = @('full-battle-steward-once.json', 'full-battle-no-cards.json', 'ful
     'standby-routing-calibration.json.gz', 'ui-rng-isolation-calibration.json.gz',
     'statistic-query-calibration.json.gz', 'statistic-overflow-calibration.json.gz',
     'statistic-zero-increment-calibration.json.gz') |
-    ForEach-Object { Join-Path $workspace ('results\' + $_) }
+    ForEach-Object { Join-Path $workspace ('tests\fixtures\' + $_) }
 dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release -- @fixtures
 if ($LASTEXITCODE -ne 0) { throw 'Independent model checks failed.' }

@@ -1,5 +1,9 @@
 # Full battle simulation
 
+Fixed native regression inputs live in `tests/fixtures/` and are read by
+`scripts/Check-Models.ps1`. Historical `results/` paths below refer to local
+investigation logs, catalogs and benchmarks; that output directory is ignored.
+
 The objective is an independent simulator for a complete Monster Train 2 battle
 from a captured player decision state. The objective is still in progress.
 Running the native game to a terminal result is an oracle, not proof that the
@@ -137,7 +141,7 @@ requires the same explicit UI RNG isolation as ranged damage. Draw-type filters,
 draw-or-generate effects, next-drawn upgrades, Magnetic/IgnoreDraw traits and other
 draw callbacks remain unsupported rather than being treated as ordinary draws.
 
-`results/full-battle-drawing-ui-isolated.json.gz` retains the unaltered
+`tests/fixtures/full-battle-drawing-ui-isolated.json.gz` retains the unaltered
 274,339,566-byte native trace from a controlled starting battle with a full hand,
 an ensured drawing spell, one additional deployment energy and a pending draw
 modifier of two. Natural enemy waves remain intact. All 24 card plays, seven
@@ -184,7 +188,7 @@ grafted trait state, relics and room modifiers remain explicit unsupported
 interactions. The new fixtures use fixed damage and ordinary UI queries; their
 unused discard ranges require no UI RNG isolation.
 
-`results/full-battle-hand-removal.json.gz` preserves the unaltered 113,820,105-byte
+`tests/fixtures/full-battle-hand-removal.json.gz` preserves the unaltered 113,820,105-byte
 native trace. All 11 plays, six EndTurns, 45 room stages, 41 card cycles, 11 train
 phases and nine spawns match. Its 36 removal effects include 14 discards,
 11 consumed cards, 13 empty consumes, six ignored modes, five discarded upgrade
@@ -192,7 +196,7 @@ removals, five consumed upgrade retentions and one transient dictionary extensio
 Independent root-only, mid-battle and 16 parallel simulations reach victory at
 Pyre 80.
 
-`results/full-battle-hand-removal-lethal.json.gz` preserves the unaltered
+`tests/fixtures/full-battle-hand-removal-lethal.json.gz` preserves the unaltered
 162,998,905-byte trace with friendly damage immediately followed by consumption.
 All ten plays, seven EndTurns, 55 room stages, 48 card cycles, 14 train phases and
 11 spawns match. Its 49 effects include two discards, 17 consumed cards,
@@ -225,7 +229,7 @@ not evidence of unchanged vanilla RNG behavior. Schema 16 carries `UiRngIsolated
 through every decision state so the model can distinguish the two environments.
 The guard is disabled by default.
 
-`results/ui-rng-isolation-calibration.json.gz` preserves 185 native query records,
+`tests/fixtures/ui-rng-isolation-calibration.json.gz` preserves 185 native query records,
 including 53 that advance Battle inside the original UI method. Every query
 restores all four words and the seed of both streams, and returns an original
 boolean result. This fixture tests successful queries; no forced exception was
@@ -251,7 +255,7 @@ draws. Valid empty collections still sample quantities. Signed attack/health
 effects retain their native no-op or spawner-offset behavior, negative healing
 does nothing, and negative applied damage is clamped before target defenses.
 
-`results/full-battle-numeric-ranges-ui-isolated.json.gz` preserves the unaltered
+`tests/fixtures/full-battle-numeric-ranges-ui-isolated.json.gz` preserves the unaltered
 81,893,428-byte native trace from an explicitly UI-isolated experiment. All 15
 plays, five EndTurns, 40 room stages, nine card cycles, nine train phases and seven
 spawns match. It contains 320 native quantity samples, including 77 equal bounds,
@@ -259,7 +263,7 @@ spawns match. It contains 320 native quantity samples, including 77 equal bounds
 independent policy reaches victory at Pyre 80, including a mid-battle suffix and
 16 parallel full simulations.
 
-`results/full-battle-numeric-ranges-lethal-ui-isolated.json.gz` preserves the
+`tests/fixtures/full-battle-numeric-ranges-lethal-ui-isolated.json.gz` preserves the
 unaltered 67,858,469-byte native trace with a global boss-killing ranged effect.
 All 12 plays, four EndTurns, 30 room stages, eight card cycles, eight train phases
 and seven spawns match. Its 400 quantity samples include 14 applications after a
@@ -293,7 +297,7 @@ A required subtype short-circuits excluded subtypes in normal collection; drop
 overrides check both lists. Random attack legality inspects the filtered pool,
 and an empty filtered pool consumes no gameplay target draw.
 
-`results/full-battle-target-filters.json.gz` retains an unaltered native trace with
+`tests/fixtures/full-battle-target-filters.json.gz` retains an unaltered native trace with
 13 spells and 103 exact live effect target collections, captured after drag/drop
 override and before effect application. It verifies five drop bypasses, seven
 physical-front bypasses, 12 last-target bypasses, seven required-subtype precedence
@@ -307,7 +311,7 @@ incapable attackers, parent isolation and 32 parallel branches. Relic-driven
 all-subtype rules, equipment conditions and additional target modes remain
 unsupported; these checks do not prove those interactions.
 
-`results/full-battle-steward-once.json` records a seven-decision-turn natural
+`tests/fixtures/full-battle-steward-once.json` records a seven-decision-turn natural
 `Level1BattleJunker` battle, starting with one Steward play. The native game won
 with Pyre health 49/80. The independent model matches all 55 room stages, 13
 card cycling operations, 14 train phases, 11 wave spawning operations, and seven
@@ -315,7 +319,7 @@ EndTurns. Some matched stages are empty rooms; the fixture also includes armor,
 spikes, unit death, card generation, treasure escape, and the terminal Pyre boss
 fight. There are zero unsupported transitions in this fixture.
 
-`results/full-battle-no-cards.json` is a no-card control with 52 room stages and
+`tests/fixtures/full-battle-no-cards.json` is a no-card control with 52 room stages and
 the same counts for the other phases. It also reaches native victory with Pyre
 health 49/80, with zero differences or unsupported transitions.
 
@@ -326,7 +330,7 @@ turn count. The checker then compares all model decisions and terminal state to
 the oracle, and repeats each complete simulation in 16 parallel branches. The Steward fixture
 starts after its initial summon has completed; later actions are all EndTurn.
 
-`results/full-battle-units-and-junk.json` adds 11 card plays and 61 room stages.
+`tests/fixtures/full-battle-units-and-junk.json` adds 11 card plays and 61 room stages.
 The policy summons multiple units on different floors, inserts at selected player
 positions, and plays generated self-purging junk. It reaches victory at Pyre 60/80
 with zero unsupported stages or differences. Its independent chain starts before
@@ -334,7 +338,7 @@ the first play and selects every following action from its own state, without
 injecting recorded actions or later native states. Every action and EndTurn is
 compared to the oracle, with 16 parallel runs and a separate mid-battle root.
 
-`results/full-battle-units-spells-and-junk.json` adds targeted spells to the policy.
+`tests/fixtures/full-battle-units-spells-and-junk.json` adds targeted spells to the policy.
 All 21 plays, 60 room stages, 13 card-cycle operations, 14 train phases, 11 spawns
 and seven EndTurns match the game with zero unsupported stages. The independent
 policy reaches native victory at Pyre 73/80, including complete intermediate
@@ -345,7 +349,7 @@ no follow-up status. Valor grants attack immediately and replenishes front armor
 after the whole room resolves, once per room resolution; deployment skips the
 armor effect. Unit death card routing follows actual combat event order.
 
-`results/full-battle-statistics.json.gz` repeats that policy with schema 5 and
+`tests/fixtures/full-battle-statistics.json.gz` repeats that policy with schema 5 and
 the native card-statistics state included in every room, train, spawn, action
 and EndTurn comparison. All 21 plays, 60 room stages, 13 card cycles, 14 train
 phases, 11 spawns and seven EndTurns match, with zero unsupported transitions.
@@ -372,7 +376,7 @@ native probe now waits for PreviewMode to end and pending battle preview changes
 to clear before capturing a decision or choosing its next action. Earlier gates
 could sample immediately after a spell, while that statistic was still stale.
 
-`results/full-battle-numeric-upgrades.json.gz` adds schema 6 card instance state.
+`tests/fixtures/full-battle-numeric-upgrades.json.gz` adds schema 6 card instance state.
 An isolated native scenario gives two otherwise identical Stewards different
 permanent and temporary upgrades, and changes one damage spell. Permanent scalar
 offsets remain distinct from ordered upgrade lists; temporary upgrades marked
@@ -388,7 +392,7 @@ mid-battle suffix and 16 parallel branches reproduce the full state including
 card statistics and modifiers. The compressed fixture preserves the native
 trace bytes unchanged.
 
-`results/card-modifier-calibration.json.gz` contains 256 native calculations
+`tests/fixtures/card-modifier-calibration.json.gz` contains 256 native calculations
 across all eight scalar fields and both floor modes. The native calculation
 applies offsets before upgrade lists, immediately clamps additions whose
 magnitude is at least 99, and clamps once more at the end. Unit stats and cost
@@ -401,7 +405,7 @@ handles unhealed health and attack buffs.
 Generated cards with starting upgrades are rejected until their initialization
 is modeled.
 
-`results/full-battle-dynamic-upgrades.json.gz` changes the runtime effect list of
+`tests/fixtures/full-battle-dynamic-upgrades.json.gz` changes the runtime effect list of
 the owned floor-rearranging spell inside an isolated native process. Its effects
 compose permanent upgrades, repeated temporary upgrades and removal, a unique
 upgrade, until-death unhealed health, and room-capacity restrictions before the
@@ -410,7 +414,7 @@ All 18 plays, five EndTurns, 44 room stages, ten card cycles, ten train phases a
 nine spawns match, finishing at Pyre 80/80. Four plays actually execute the modified
 spell; coverage requires both a play and observed native upgrade state.
 
-`results/full-battle-sacrifice-upgrades.json.gz` adds a max-health reduction that
+`tests/fixtures/full-battle-sacrifice-upgrades.json.gz` adds a max-health reduction that
 kills the selected friendly unit. Five modified-spell plays exercise death
 triggers and source-card routing. All 21 plays, seven EndTurns, 53 room stages,
 13 card cycles, 14 train phases and 11 spawns match, finishing at Pyre 56/80.
@@ -435,8 +439,8 @@ discard, its play/discard counters advance and its live played cost is cleared.
 Statistics first refresh from the permanent deck, then from the restored owned
 card. The model requires captured permanent deck membership for this sequence.
 
-`results/full-battle-hand-upgrades.json.gz` modifies the owned floor-rearranging
-spell into a targetless hand-upgrade spell. `results/full-battle-targeted-hand-upgrades.json.gz`
+`tests/fixtures/full-battle-hand-upgrades.json.gz` modifies the owned floor-rearranging
+spell into a targetless hand-upgrade spell. `tests/fixtures/full-battle-targeted-hand-upgrades.json.gz`
 retains its original unit-target effects, applies the same hand upgrades, and
 then damages the unit occupying the original drop point. Each native fixture
 actually plays the modified spell seven times and matches all 23 plays, five
@@ -498,13 +502,13 @@ Newer inputs also include card play definitions, room capacity/spawn-slot rules,
 and armor/valor/pyregel status definitions. `relentless` grants rooted immunity;
 live immunity state is preserved when copying, summoning and moving units.
 
-`results/rng-calibration.json` captures six seeds and both RNG values and states,
+`tests/fixtures/rng-calibration.json` captures six seeds and both RNG values and states,
 including signed bounds, the full signed integer span, equal bounds, and reversed
 bounds. Sampling restored Unity's process RNG and did not advance the game's
 HadesRNG streams. Integer compatibility is verified for this installed build;
 floating-point draws are not implemented yet.
 
-`results/gold-reward-calibration.json.gz` captures 2,200 calls to the native
+`tests/fixtures/gold-reward-calibration.json.gz` captures 2,200 calls to the native
 gold adjustment function. It covers reward and ordinary balance changes, negative
 and zero values, four rounding increments and single-precision boundaries.
 For a supported battle's standard rules, positive rewards are floored through
@@ -514,7 +518,7 @@ effects leave gold unchanged. Unit effect values retain their unadjusted reward;
 only generated-card effects retain a pile destination. Relic and mutator reward
 modifiers remain explicitly unsupported.
 
-`results/full-battle-healing.json.gz` adds a controlled healing scenario to the
+`tests/fixtures/full-battle-healing.json.gz` adds a controlled healing scenario to the
 same natural first battle. The isolated process appends healing and unhealed
 maximum-health effects to the owned rearrangement spell and assigns different
 healing statuses to two Stewards. The native healing state classes exist in this
@@ -531,7 +535,7 @@ parameter independently of stacks, and respects healability. Maximum-health
 upgrade healing bypasses immunity but still respects the multiplier and
 healability. Overheal and specialized healing effects remain unsupported.
 
-`results/full-battle-healing-triggers.json.gz` adds repeated, once-only and
+`tests/fixtures/full-battle-healing-triggers.json.gz` adds repeated, once-only and
 ignored-silence OnHeal gold rewards to the same fixture. One Steward has both
 healing immunity and silence. All 18 card plays, six EndTurns, 53 room stages,
 11 card cycles, 11 train phases and nine spawns match the native game. Coverage
@@ -550,7 +554,7 @@ identity/RNG and despawn follow-up targeting through the existing effect engine.
 Conditional thresholds, equipment requirements, purification and trigger removal
 on relentless changes remain explicit unsupported interactions.
 
-`results/full-battle-room-spells.json.gz` replaces the owned rearrangement spell's
+`tests/fixtures/full-battle-room-spells.json.gz` replaces the owned rearrangement spell's
 effects only in the isolated process. Boss and wave definitions stay native.
 The sequence combines enemy room damage, friendly room upgrades, enemy last-target
 statuses, strongest-last/back/last damage and friendly room/front/weakest healing.
@@ -592,7 +596,7 @@ card modifiers remain available after ownership is cleared. Damage, healing and
 unit upgrades process targets forwards; status addition uses native reverse order.
 Terminal spell destinations other than discard remain explicitly unsupported.
 
-`results/full-battle-terminal-spells.json.gz` changes the owned rearrangement
+`tests/fixtures/full-battle-terminal-spells.json.gz` changes the owned rearrangement
 spell to one lethal enemy-room damage effect in the isolated process. Native
 boss and wave definitions remain intact. It verifies a spell-driven victory
 after the resolving effect and played/discard callbacks finish. Its completed
@@ -619,7 +623,7 @@ and upgrade of a detached spawner never add it to a pile or ownership list.
 New captures also include the native all-bosses-dead gate and each card effect's
 permission to execute after that gate is set. Missing legacy fields remain null.
 
-`results/full-battle-post-kill-spells.json.gz` replaces the owned rearrangement
+`tests/fixtures/full-battle-post-kill-spells.json.gz` replaces the owned rearrangement
 spell with a controlled effect chain, retaining the natural boss and wave data.
 The final play kills the boss at the back, damages the remaining room targets,
 kills the guard, adds and consumes armor, applies a permanent source-card upgrade,
@@ -636,7 +640,7 @@ allowed post-kill gold rewards, and fallback-deck statistic membership when
 the source is a generated card. These trigger cases lack a dedicated native
 post-kill fixture.
 
-`results/full-battle-random-spells.json.gz` replaces the owned rearrangement spell
+`tests/fixtures/full-battle-random-spells.json.gz` replaces the owned rearrangement spell
 with enemy, mixed-team and friendly `RandomInRoom` selections, a zero heal,
 status addition and last-target follow-ups. It ends with lethal enemy room damage
 and an empty random enemy collection. All 13 plays, four EndTurns, 30 room stages,
@@ -656,7 +660,7 @@ case remains explicitly unsupported. A skipped first random effect that leaves
 test-selected last-target history for later effects also rejects the transition.
 Repeated legality tests and 32 parallel spell branches preserve their parent.
 
-`results/full-battle-random-status.json.gz` changes the owned rearrangement spell
+`tests/fixtures/full-battle-random-status.json.gz` changes the owned rearrangement spell
 to controlled armor/regen/pyregel pools and probability parameters 0, 50 and 100.
 One owned Steward has a permanent immune status; boss and wave data remain native.
 The sequence kills remaining enemies, then performs an empty status-pool selection
@@ -677,8 +681,8 @@ and 32 isolated parallel branches. Nonstackable status casting rules, subtype
 conditions, range/scaling parameters and additional status triggers remain
 explicitly unsupported.
 
-`results/full-battle-cross-room-spells.json.gz` and
-`results/full-battle-cross-room-targets.json.gz` replace the owned rearrangement
+`tests/fixtures/full-battle-cross-room-spells.json.gz` and
+`tests/fixtures/full-battle-cross-room-targets.json.gz` replace the owned rearrangement
 spell with controlled cross-room chains, preserving the natural boss and waves.
 They cover `Tower`, `FrontInAllRooms`, `FrontInRoomAndRoomAbove`,
 `WeakestAllRooms`, `StrongestAllRooms`, `RandomFromAnyRoom` and
@@ -729,7 +733,7 @@ last-target capability tests that depend on the auxiliary test RNG reject the
 entire transition explicitly. Range/scaling parameters, trait callbacks and
 Pyre-targeted attack changes remain unsupported.
 
-`results/full-battle-attack-buffs.json.gz` replaces the owned rearrangement spell
+`tests/fixtures/full-battle-attack-buffs.json.gz` replaces the owned rearrangement spell
 with global enemy buffs and last-target debuff/recovery, global friendly
 debuff/recovery, one random friendly buff, zero/negative no-ops and an until-death
 unit upgrade. It retains the natural boss and waves. Pure checks additionally
@@ -755,7 +759,7 @@ without ordinary armor/damage or damage-card attribution. Supported effect
 chains continue after a boss sacrifice using retained source-card references.
 The native base casting test also permits these effects with empty collections.
 
-`results/full-battle-max-health-spells.json.gz` adds global unhealed health,
+`tests/fixtures/full-battle-max-health-spells.json.gz` adds global unhealed health,
 positive/negative/zero maximum-health buffs with both lifetimes and direct
 enemy/friendly maximum-health debuffs to the owned rearrangement spell. Two
 owned Stewards carry healing multiplier/immunity and a once-only OnHeal reward
@@ -766,7 +770,7 @@ changes, three sacrifices, seven immune heals and five multiplier heals. The
 independent root policy, mid-battle suffix and 16 parallel branches reach the
 matching terminal Pyre health 80/80.
 
-`results/full-battle-max-health-lethal.json.gz` uses lethal enemy maximum-health
+`tests/fixtures/full-battle-max-health-lethal.json.gz` uses lethal enemy maximum-health
 loss and another battle-lifetime friendly buff afterward. All 12 plays, four
 EndTurns, 30 room stages, eight card cycles, eight train phases and seven spawns
 match the game. Seven modified plays cover 14 remote changes, seven sacrifices,
@@ -868,7 +872,7 @@ stops. Dynamic resource inputs are immutable query frames in the shared combat
 context; transitions advance these values as the branch progresses. An explicit
 query frame overrides that shared frame for isolated calibration queries.
 
-`results/statistic-query-calibration.json.gz` preserves 17,604 raw native
+`tests/fixtures/statistic-query-calibration.json.gz` preserves 17,604 raw native
 observations across six batches: live, distributed and empty piles, each with
 and without stored paid costs. Calibration uses isolated inactive native
 components, synthetic counters and a synthetic variable-cost source. The
@@ -903,7 +907,7 @@ preserve the frame. Branches retain their parent's original values.
 An exact relentless cycle keeps RunningCombat=true; cycle detection does not
 invent a native victory/defeat settlement.
 
-`results/full-battle-dynamic-statistics.json.gz` retains an unaltered native
+`tests/fixtures/full-battle-dynamic-statistics.json.gz` retains an unaltered native
 trace from a controlled starting decision with forge=7, hoard=9 and eight
 energy per normal turn. Live gold deliberately differs from deployment-turn
 start gold. Reduced spell scaling lets enemies reach combat, so the trace
@@ -957,7 +961,7 @@ native effects' explicit `!PreviewMode` source-card gates. Pure checks cover all
 three lifetimes and removal from an already upgraded unit; these preview cases
 are checked against native source behavior rather than a new runtime capture.
 
-`results/full-battle-unit-upgrade-scaling.json.gz` retains 245 live callbacks and
+`tests/fixtures/full-battle-unit-upgrade-scaling.json.gz` retains 245 live callbacks and
 30 isolated callbacks, 18 plays, 6 EndTurns, 53 room stages, 11 card cycles, 11
 train phases and 9 spawns. It wins the natural battle with Pyre health 80. The
 controlled owned spell exercises both stat types, signed bonuses, local played
@@ -991,7 +995,7 @@ team, health/status/subtype and untouchable filters, retaining the native boss
 filter. Room targets use the existing collector. Relentless cycle signatures now
 include changing attack/max-health/size, unit upgrades and spawner modifiers.
 
-`results/full-battle-unit-trigger-upgrades.json.gz` preserves 72 native callbacks:
+`tests/fixtures/full-battle-unit-trigger-upgrades.json.gz` preserves 72 native callbacks:
 54 `OnHeal` and 18 `PostCombat`, including 24 restricted trait skips and 9
 magic-only callbacks. The controlled Steward fixture covers continuous temporary
 application/removal, a permanent once-only upgrade, repeated until-death upgrades,
@@ -1027,7 +1031,7 @@ removed entrants leave no movement record. Pure checks cover paid/spawn-scaled
 upgrades, generation, deployment skips, death/despawn routing, enemy batches,
 treasures and 32 parallel branches without changing their parent states.
 
-`results/full-battle-spawn-triggers.json.gz` retains 24 native scaling callbacks
+`tests/fixtures/full-battle-spawn-triggers.json.gz` retains 24 native scaling callbacks
 (16 ordinary spawn, 8 unscaled), 8 exact generation effects including 2 cards
 generated by player summons, 20 plays, 6 EndTurns, 55 room stages, 11 card cycles,
 11 train phases and 9 enemy spawns. It wins with Pyre health 70. The lethal
@@ -1068,7 +1072,7 @@ interactions remain outside the supported status definitions.
 comparison. The probe records the full room before/after each actual unit turn
 and direct-attack target IDs, excluding native preview attacks. These records
 participate in the trace's mismatch, unsupported and pending totals.
-`results/full-battle-unit-turn-begin.json.gz` retains 60 scaling callbacks,
+`tests/fixtures/full-battle-unit-turn-begin.json.gz` retains 60 scaling callbacks,
 including 20 restricted skips and 20 positive attack-scaling callbacks, 47 exact
 unit turns and 37 direct attacks. Independent checks compare complete per-turn
 states and attack target sequences, covering 2 zero-attack recoveries,
@@ -1101,7 +1105,7 @@ to be checked. Pure checks cover whole-team room buffs before attacks, phase
 decomposition, repeated/once triggers, silence and ignored-silence exceptions,
 deployment, removal during a team snapshot, preview and 32 parallel branches.
 
-`results/full-battle-team-turn-begin.json.gz` retains 38 exact team phases
+`tests/fixtures/full-battle-team-turn-begin.json.gz` retains 38 exact team phases
 (19 enemy, 19 player), 40 exact unit turns with 28 direct attacks, and 90 scaling
 callbacks (42 team-start, 48 unit-start). Independent checks compare complete
 phase states, callback outputs and attack target sequences, with 6 native
@@ -1142,7 +1146,7 @@ parallel branches. The isolated fixtures enable this trigger during deployment
 and seed its incoming energy statistic to seven, captured in the starting
 state, to make the later energy-snapshot boundary observable.
 
-`results/full-battle-pre-hand-discard.json.gz` retains 10 exact character phases,
+`tests/fixtures/full-battle-pre-hand-discard.json.gz` retains 10 exact character phases,
 14 scaling callbacks and 13 generation callbacks. Independent checks compare
 complete phases, both teams' active order, generated-hand discard and incoming
 energy. All 15 plays, 5 EndTurns, 42 room stages, 9 card cycles, 9 train phases
@@ -1151,7 +1155,7 @@ policy also matches from initial/mid-battle roots with 16 parallel branches.
 The native JSON is 182,243,837 bytes, SHA-256
 `46fab2069ea7b672e1aab04206422b8563e228d101f149ba70f9e72f6616faed`.
 
-`results/full-battle-pre-hand-discard-lethal.json.gz` retains 14 exact phases,
+`tests/fixtures/full-battle-pre-hand-discard-lethal.json.gz` retains 14 exact phases,
 10 scaling callbacks, 2 nested unit deaths and 4 hand generations. The death
 cards carry a distinct native temporary upgrade; their identities are allocated
 after both actors' ordinary generation, independently verifying the queue order.
@@ -1185,7 +1189,7 @@ refreshing the destination. Unit scaling preserves the immutable base fields.
 Earlier captures omit these nullable descriptors and retain their observed
 copy behavior; they do not establish coverage of this newly captured refresh.
 
-`results/full-battle-clone-upgrade-refresh.json.gz` retains 10 exact generations
+`tests/fixtures/full-battle-clone-upgrade-refresh.json.gz` retains 10 exact generations
 including two death copies. Each copy resets a scaled permanent damage value
 from 8 to 1 and a temporary heal value from 8 to 2, while preserving a damage
 value of 9 whose data is marked for non-magic-power scaling. Independent checks
@@ -1220,7 +1224,7 @@ creation order across floors, Pyre/team participation, earlier exhaustion
 statistics, nested generation, unknown-effect rejection, immutable parents and
 32 parallel branches.
 
-`results/full-battle-pre-combat.json.gz` retains 8 exact complete phases (4 per
+`tests/fixtures/full-battle-pre-combat.json.gz` retains 8 exact complete phases (4 per
 team), 8 generated hand cards, 12 scaling callbacks (6 current-turn and 6 reset
 hand-draw queries), 4 subsequent draw boundaries and 2 initial enemies that
 participate in the first phase. All 15 plays, 5 EndTurns, 44 room stages,
@@ -1259,7 +1263,7 @@ the behavior of earlier captures, which do not prove this newly modeled boundary
 Pure checks verify these distinct futures, source/global zero events, legacy
 states, immutable parents and 32 parallel branches.
 
-`results/full-battle-statistic-cache.json.gz` is the fresh native regression for
+`tests/fixtures/full-battle-statistic-cache.json.gz` is the fresh native regression for
 the previously failing lethal pre-combat experiment. It matches all 10 complete
 generations with uncached births, two terminal removal boundaries and the nine
 cached generated cards retained at each boundary. The two killed player units
@@ -1296,7 +1300,7 @@ attribution. Subsequent reverse-order targets query the preceding target's
 updated statistics. Creation, discard, hand/unit upgrades and health changes
 retain trait descriptors; unsupported queries do not return usable child states.
 
-`results/full-battle-status-scaling.json.gz` preserves the original native JSON
+`tests/fixtures/full-battle-status-scaling.json.gz` preserves the original native JSON
 bytes: 312 trait callbacks, 75 applications, 15 plays, 5 EndTurns, 43 room stages,
 9 card cycles, 9 train phases and 7 spawns. It wins the natural battle with Pyre
 health 80. The controlled owned spell exercises ordered zero gates, positive and
@@ -1319,7 +1323,7 @@ wrap at the 32-bit boundary. Negative nonzero counters remain present and surviv
 native turn/battle duration rollover; they are not saturated or discarded. A
 subsequent status-scaling target therefore reads the wrapped count and can add
 zero stacks after the preceding target reached the stack cap.
-`results/statistic-overflow-calibration.json.gz` retains 60 native source/global
+`tests/fixtures/statistic-overflow-calibration.json.gz` retains 60 native source/global
 counter updates and 5 floor/subtype updates, initialized at positive and negative
 integer boundaries, including 20 positive-to-negative wraps. It runs on isolated native components and verifies that the
 live battle context is unchanged. Independent checks compare complete statistics
@@ -1335,7 +1339,7 @@ identity contributes to global events without gaining ownership or a local
 counter. Previous-turn values stay unchanged; event counters preserve signed
 wrapping. Stack-count increments have no mapped global event.
 
-`results/statistic-zero-increment-calibration.json.gz` retains 48 native
+`tests/fixtures/statistic-zero-increment-calibration.json.gz` retains 48 native
 zero-amount updates across six event families and two stack counters, with
 24 detached sources, zero/seeded/boundary totals and 6 positive-to-negative
 wraps. The isolated native component leaves the full live context unchanged.
@@ -1371,7 +1375,7 @@ membership and last-attack damage survive, including nested spikes. A trait
 reading last-attack damage therefore sees that preview's result before the real
 hit. Full-room UI previews remain a separate existing transition.
 
-`results/full-battle-damage-scaling.json.gz` preserves a complete unmodified
+`tests/fixtures/full-battle-damage-scaling.json.gz` preserves a complete unmodified
 native JSON trace: 15 plays, 5 EndTurns, 41 room stages and 63 damage callbacks;
 the battle is won with Pyre health 80. The native scaling oracle exercises ordered replacement/additive traits, signed
 numeric upgrades, fractional multipliers, repeated tower targets, multistrike,
@@ -1395,8 +1399,8 @@ oracle with a shared copy of its captured outer piles and independently runs its
 complete policy. All originally captured decision fields, including the outer
 piles, stay in that comparison; only the newly added shared copy is omitted.
 
-`results/full-battle-shared-piles.json.gz` and
-`results/full-battle-shared-piles-lethal.json.gz` preserve complete native traces
+`tests/fixtures/full-battle-shared-piles.json.gz` and
+`tests/fixtures/full-battle-shared-piles-lethal.json.gz` preserve complete native traces
 without changing their JSON bytes. Independent checks compare room and decision
 contexts, then recompute the complete policy from the initial and mid-battle
 states with 16 parallel branches. The lethal fixture also verifies hand

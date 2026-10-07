@@ -1,5 +1,9 @@
 # Monster Train 2 multi-turn search probe
 
+Fixed native regression inputs live in `tests/fixtures/` and are read by
+`scripts/Check-Models.ps1`. Historical `results/` paths below refer to local
+investigation logs, catalogs and benchmarks; that output directory is ignored.
+
 This is an isolated feasibility experiment, not an in-game solver. The probe
 plugin lives in `src/Probe`, the copied game is in `.sandbox-game`, isolated
 profiles are in `.probe-runs`, and captured Unity logs are in `results`.
@@ -217,7 +221,7 @@ relics, additional effects and boss state machines remain part of the full goal.
 
 `BattleActionModel` now applies independent unit plays at arbitrary decision turns
 and selected positions, enforcing energy, room capacity and spawn slots. It also
-routes generated self-purging junk. `results/full-battle-units-and-junk.json`
+routes generated self-purging junk. `tests/fixtures/full-battle-units-and-junk.json`
 verifies 11 plays and seven EndTurns to native victory at Pyre 60/80. The pure
 policy chooses actions from its own state and matches every intermediate result,
 including a mid-battle starting state and 16 parallel branches. The initial simple
@@ -225,12 +229,12 @@ Steward model above is retained as the first modeling experiment.
 
 The policy with unit cards and the two starting targeted spells matches 21 plays,
 seven EndTurns and every modeled intermediate state, finishing at Pyre 73/80.
-Its fixture is `results/full-battle-units-spells-and-junk.json`. Damage, pyregel,
+Its fixture is `tests/fixtures/full-battle-units-spells-and-junk.json`. Damage, pyregel,
 floor rearrange and valor are now integrated into the independent full chain;
 statistic-driven effects, additional upgrades, equipment, abilities, relics and broader battle rules
 still need coverage before exact pruning or arbitrary live-battle solving.
 
-`results/full-battle-statistics.json.gz` adds native card-statistics state to the
+`tests/fixtures/full-battle-statistics.json.gz` adds native card-statistics state to the
 same 21-play policy. Per-card counters and durations, mapped Any counters, floor
 and subtype spawn totals, death/exhaust attribution, end-turn energy, turn-start
 gold and last attack damage match through all seven turns. The independent
@@ -239,7 +243,7 @@ previews affect the native last-attack statistic; the model reproduces that
 effect on copies, and the probe waits for a completed preview before capturing
 a quiet decision. Other statistic-driven mechanics remain outside this fixture.
 
-`results/full-battle-numeric-upgrades.json.gz` includes every owned card's ordered
+`tests/fixtures/full-battle-numeric-upgrades.json.gz` includes every owned card's ordered
 permanent/temporary modifiers and play history. Different upgrades on two
 identical Stewards and one damage spell match all 19 plays, six EndTurns, 51 room
 stages, 11 card cycles, 11 train phases and nine spawns, finishing at Pyre 80/80.
