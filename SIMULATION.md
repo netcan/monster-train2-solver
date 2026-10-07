@@ -2224,7 +2224,10 @@ terminal-death and detached-source upgrade checks.
 Native character destruction is deferred until the end of a Unity frame.
 When an EndTurn callback completes, a dying object's `IsDestroyed` state can
 already be final while Unity's null comparison still returns its old reference.
-Decision capture now writes that attacker reference as zero. Room stages and
+All decision captures now write that attacker reference as zero, including
+card-action before/after states and EndTurn boundaries. Room stages and
 in-flight effect/callback captures keep their references until their own native
-boundaries. The extended native probe confirms the next-turn state and both
-intermediate room snapshots, without waiting for an animation or a new frame.
+boundaries. An initial EndTurn-only implementation passed individual steps but
+failed the continuous policy at action 9: its previous decision cleared attacker
+9, while the subsequent native card snapshot retained it. Continuous policy
+checks therefore also enforce this normalization across adjacent decisions.

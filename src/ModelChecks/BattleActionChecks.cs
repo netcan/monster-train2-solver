@@ -251,9 +251,11 @@ internal static class BattleActionChecks
             BattleSimulationAction modeled = result.Actions[index];
             PlayCardAction actualAction = actions[index].GetProperty("Action").Deserialize<PlayCardAction>()!;
             BattleTurnState actual = actions[index].GetProperty("Actual").Deserialize<BattleTurnState>()!;
-            Require(JsonSerializer.Serialize(modeled.Action) == JsonSerializer.Serialize(actualAction) &&
-                BattleTurnChecks.Comparable(modeled.Result.State!) == BattleTurnChecks.Comparable(actual),
-                "Independent policy diverged after card action " + index);
+            string modeledAction = JsonSerializer.Serialize(modeled.Action), nativeAction = JsonSerializer.Serialize(actualAction);
+            string modeledState = BattleTurnChecks.Comparable(modeled.Result.State!), nativeState = BattleTurnChecks.Comparable(actual);
+            if (modeledAction != nativeAction || modeledState != nativeState)
+                throw new InvalidOperationException("Independent policy diverged after card action " + index + ": " +
+                    (ModelJson.Difference(modeledAction, nativeAction) ?? ModelJson.Difference(modeledState, nativeState)));
             if (actions[index].TryGetProperty("ActualOutcome", out FixtureValue outcome))
                 Require(modeled.Result.Outcome == (RoomOutcome)outcome.GetInt32(), "Independent policy action outcome differs.");
         }

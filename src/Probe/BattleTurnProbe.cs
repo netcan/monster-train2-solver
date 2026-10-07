@@ -25,6 +25,9 @@ namespace MonsterTrain2Poju.Probe
         { this.trace = trace; this.spawning = spawning; this.cardCycles = cardCycles; this.projection = projection; this.log = log; }
 
         internal BattleTurnState Capture()
+            => trace.CaptureDecision(CaptureState);
+
+        private BattleTurnState CaptureState()
         {
             AllGameManagers managers = AllGameManagers.Instance!;
             SaveManager save = managers.GetSaveManager();
@@ -87,7 +90,7 @@ namespace MonsterTrain2Poju.Probe
             if (record == null) return;
             try
             {
-                record.Actual = trace.CaptureDecision(Capture); record.ActualOutcome = outcome;
+                record.Actual = Capture(); record.ActualOutcome = outcome;
                 if (record.Predicted.Supported)
                 {
                     record.Difference = record.Predicted.Outcome != outcome ? "EndTurn outcome differs" :
