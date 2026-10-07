@@ -10,19 +10,22 @@ internal static class EquipmentChecks
         var samples = records.EnumerateArray().ToArray();
         foreach (var sample in samples) Verify(sample);
         string? scenario = fixture.GetProperty("ModifierScenario").GetString();
-        if (scenario is "equipment" or "equipment-exhausted")
+        if (scenario is "equipment" or "equipment-exhausted" or "equipment-overflow")
         {
             Require(samples.Any(sample => !sample.GetProperty("Remove").GetBoolean() &&
                 Host(sample, "Before").EquipmentCards!.Count >= Host(sample, "Before").Modifiers!.EquipmentLimit &&
                 Host(sample, "Before").EquipmentCards!.Count > 0), "Native oldest-equipment replacement was not reached.");
-            Require(samples.Any(sample => sample.GetProperty("Remove").GetBoolean() && sample.GetProperty("CardId").GetInt32() == 0 &&
-                Host(sample, "Before").EquipmentCards!.Count > 1 && Host(sample, "After").EquipmentCards!.Count == 0),
-                "Native reverse remove-all was not reached.");
-            Require(samples.Any(sample => sample.GetProperty("Remove").GetBoolean() &&
-                Host(sample, "Before").Modifiers!.Upgrades.Any(upgrade => upgrade.DataId.Length == 0 && upgrade.EquipmentSourceCardId.HasValue) &&
-                Host(sample, "After").Modifiers!.Upgrades.Count(upgrade => upgrade.DataId.Length == 0 && upgrade.EquipmentSourceCardId.HasValue) <
-                Host(sample, "Before").Modifiers!.Upgrades.Count(upgrade => upgrade.DataId.Length == 0 && upgrade.EquipmentSourceCardId.HasValue)),
-                "Native permanent anonymous upgrade object removal was not reached.");
+            if (scenario != "equipment-overflow")
+            {
+                Require(samples.Any(sample => sample.GetProperty("Remove").GetBoolean() && sample.GetProperty("CardId").GetInt32() == 0 &&
+                    Host(sample, "Before").EquipmentCards!.Count > 1 && Host(sample, "After").EquipmentCards!.Count == 0),
+                    "Native reverse remove-all was not reached.");
+                Require(samples.Any(sample => sample.GetProperty("Remove").GetBoolean() &&
+                    Host(sample, "Before").Modifiers!.Upgrades.Any(upgrade => upgrade.DataId.Length == 0 && upgrade.EquipmentSourceCardId.HasValue) &&
+                    Host(sample, "After").Modifiers!.Upgrades.Count(upgrade => upgrade.DataId.Length == 0 && upgrade.EquipmentSourceCardId.HasValue) <
+                    Host(sample, "Before").Modifiers!.Upgrades.Count(upgrade => upgrade.DataId.Length == 0 && upgrade.EquipmentSourceCardId.HasValue)),
+                    "Native permanent anonymous upgrade object removal was not reached.");
+            }
             Require(samples.Any(sample =>
             {
                 var after = sample.GetProperty("After").Deserialize<RoomCombatState>()!;
@@ -35,7 +38,7 @@ internal static class EquipmentChecks
                 var context = sample.GetProperty("StandbyContext").Deserialize<CombatContext>()!;
                 var living = sample.GetProperty("LivingUnitIds").EnumerateArray().Select(id => id.GetInt32()).ToHashSet();
                 return context.OtherPiles!.Single(pile => pile.Name == "Standby").EquipmentConditions!.Any(condition =>
-                    condition.ReturnToHand == (scenario == "equipment") && !living.Contains(condition.HostUnitId));
+                    condition.ReturnToHand == (scenario != "equipment-exhausted") && !living.Contains(condition.HostUnitId));
             }), "Native global return after the original host's death was not reached.");
             if (scenario == "equipment-exhausted")
                 Require(fixture.GetProperty("Turns").EnumerateArray().Any(sample =>
@@ -46,6 +49,31 @@ internal static class EquipmentChecks
                     return context.OtherPiles!.Single(pile => pile.Name == "Exhausted").Cards.Any(card =>
                         equipment.Contains(card.DataId) && context.Statistics!.Value(card.InstanceId, "TimesExhausted", "ThisBattle") == 1);
                 }), "Native equipment exhaustion and its exact live statistic were not reached.");
+            if (scenario == "equipment-overflow")
+            {
+                var death = fixture.GetProperty("DirectUnitUpgrades").EnumerateArray().Single(sample =>
+                    sample.GetProperty("Label").GetString() == "equipment-full-hand-host-death");
+                var before = death.GetProperty("Before").Deserialize<RoomCombatState>()!;
+                var after = death.GetProperty("After").Deserialize<RoomCombatState>()!;
+                int hostId = death.GetProperty("UnitId").GetInt32();
+                var attachedIds = before.Units.Single(unit => unit.Id == hostId).EquipmentCards!;
+                Require(before.Context!.Cards.Hand.Count == before.Context.MaxHandSize &&
+                    after.Context!.Cards.Hand.Count == before.Context.Cards.Hand.Count && !after.Units.Any(unit => unit.Id == hostId) &&
+                    attachedIds.All(id => after.Context.Cards.Draw.Any(card => card.InstanceId == id)),
+                    "Native attached death return with a full hand did not route equipment to the draw pile.");
+                Require(fixture.GetProperty("CardCycles").EnumerateArray().Any(sample =>
+                {
+                    if (sample.GetProperty("Kind").GetString() != "Draw") return false;
+                    var context = sample.GetProperty("StandbyContext").Deserialize<CombatContext>()!;
+                    if (context.Cards.Hand.Count != context.MaxHandSize) return false;
+                    var living = sample.GetProperty("LivingUnitIds").EnumerateArray().Select(id => id.GetInt32()).ToHashSet();
+                    var waiting = context.OtherPiles!.Single(pile => pile.Name == "Standby").EquipmentConditions!
+                        .Where(condition => !living.Contains(condition.HostUnitId)).ToArray();
+                    var actual = sample.GetProperty("Actual").Deserialize<CardCycleState>()!;
+                    return waiting.Length > 0 && actual.Hand.Count == context.MaxHandSize &&
+                        waiting.All(condition => actual.Draw.Any(card => card.InstanceId == condition.CardId));
+                }), "Native global standby return before the full-hand draw exit was not reached.");
+            }
             var attached = samples.First(sample => !sample.GetProperty("Remove").GetBoolean());
             Require(!RoomCombatModel.ApplyEquipment(attached.GetProperty("After").Deserialize<RoomCombatState>()!,
                 attached.GetProperty("UnitId").GetInt32(), attached.GetProperty("CardId").GetInt32(),

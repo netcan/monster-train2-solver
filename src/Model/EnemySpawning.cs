@@ -46,16 +46,19 @@ namespace MonsterTrain2Poju.Model
         public int FirstTreasureRoom { get; }
         public int Turn { get; }
         public IReadOnlyList<string> ExternalInteractions { get; }
+        public bool CanonicalDecisionReferences { get; }
         public EnemySpawnState(TrainCombatState train, IReadOnlyList<EnemyWave> waves,
             IReadOnlyList<int> selectedGroups, int phase, bool looping, UnityRng rng, int nextUnitId,
             IReadOnlyList<EnemyDefinition> treasures, int treasuresRemaining, bool treasureEnabled,
-            int firstTreasureTurn, int firstTreasureRoom, int turn, IReadOnlyList<string> externalInteractions)
+            int firstTreasureTurn, int firstTreasureRoom, int turn, IReadOnlyList<string> externalInteractions,
+            bool canonicalDecisionReferences = false)
         {
             Train = train; Waves = Array.AsReadOnly(waves.ToArray()); SelectedGroups = Array.AsReadOnly(selectedGroups.ToArray());
             Phase = phase; Looping = looping; Rng = rng; NextUnitId = nextUnitId;
             Treasures = Array.AsReadOnly(treasures.ToArray()); TreasuresRemaining = treasuresRemaining;
             TreasureEnabled = treasureEnabled; FirstTreasureTurn = firstTreasureTurn; FirstTreasureRoom = firstTreasureRoom;
             Turn = turn; ExternalInteractions = Array.AsReadOnly(externalInteractions.ToArray());
+            CanonicalDecisionReferences = canonicalDecisionReferences;
         }
     }
 
@@ -219,9 +222,10 @@ namespace MonsterTrain2Poju.Model
                 var alive = new HashSet<int>(states.SelectMany(room => room.Units).Select(unit => unit.Id));
                 var train = new TrainCombatState(states, movement.Where(rule => alive.Contains(rule.UnitId)).ToArray(),
                     source.Train.EnemySlotsPerRoom, context);
+                if (source.CanonicalDecisionReferences) train = TrainCombatModel.ProcessRemovals(train);
                 return new EnemySpawnResult(new EnemySpawnState(train, source.Waves, groups, phase, source.Looping,
                     rng, nextId, source.Treasures, treasureRemaining, source.TreasureEnabled, source.FirstTreasureTurn,
-                    source.FirstTreasureRoom, source.Turn, source.ExternalInteractions), outcome);
+                    source.FirstTreasureRoom, source.Turn, source.ExternalInteractions, source.CanonicalDecisionReferences), outcome);
             }
         }
 

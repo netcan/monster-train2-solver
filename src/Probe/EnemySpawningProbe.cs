@@ -23,6 +23,9 @@ namespace MonsterTrain2Poju.Probe
         { this.log = log; this.trace = trace; this.train = train; active = this; }
 
         internal EnemySpawnState Capture()
+            => trace.CaptureDecision(CaptureState);
+
+        private EnemySpawnState CaptureState()
         {
             AllGameManagers managers = AllGameManagers.Instance!;
             SaveManager save = managers.GetSaveManager();
@@ -61,7 +64,8 @@ namespace MonsterTrain2Poju.Probe
                 (specials.TryGetValue(treasure, out CharacterData[] candidates) ? candidates : Array.Empty<CharacterData>())
                     .Select(Definition).ToArray(), total[treasure] - spawned[treasure],
                 (bool)AccessTools.Field(typeof(HeroManager), "treasureAndTraitorCharactersEnabled").GetValue(heroes),
-                easy ? 1 : 2, easy ? 1 : 0, managers.GetCombatManager()!.GetTurnCount(), interactions);
+                easy ? 1 : 2, easy ? 1 : 0, managers.GetCombatManager()!.GetTurnCount(), interactions,
+                canonicalDecisionReferences: true);
         }
 
         internal static EnemyDefinition Definition(CharacterData data)
@@ -165,7 +169,7 @@ namespace MonsterTrain2Poju.Probe
         {
             Rooms = state.Train.Rooms.Select(room => new { room.RoomIndex, room.Units }).ToArray(),
             Movement = state.Train.Movement.OrderBy(rule => rule.UnitId).ToArray(), state.Train.Context,
-            state.Phase, state.SelectedGroups, state.Rng, state.NextUnitId, state.TreasuresRemaining
+            state.Phase, state.SelectedGroups, state.Rng, state.NextUnitId, state.TreasuresRemaining, state.CanonicalDecisionReferences
         });
         internal sealed class Record
         {

@@ -58,6 +58,16 @@ match independently. Equipment API cases repeat in 32 parallel branches; the
 policy matches initial and mid-battle roots in 16 parallel branches. This
 fixture has no exhaustion listeners; their callbacks remain separate work.
 
+`full-battle-equipment-overflow.mt2f` retains schema 55. Setup fills the native
+hand to its ten-card limit, kills an equipped host through the native direct
+upgrade API, then requests a zero-card draw. Attached equipment returns to the
+draw pile during death; replaced equipment returns there during the global
+check before DrawHand's full-hand exit. Raw death snapshots retain native
+equipment references, while spawning declares canonical references matching
+decision inputs. Its 30 equipment operations and one lethal direct upgrade
+compare independently in 32 parallel branches; the full 21-play, seven-EndTurn
+policy matches from initial and mid-battle roots in 16 parallel branches.
+
 `full-battle-room-capacity.mt2f` and `full-battle-room-capacity-lethal.mt2f`
 retain schema 52 battles with live capacities used by subsequent summons and
 restricted size upgrades. Their 220 exact effect contexts and 2,050 native

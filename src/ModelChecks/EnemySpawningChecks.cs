@@ -37,7 +37,33 @@ internal static class EnemySpawningChecks
         string expected = JsonSerializer.Serialize(spawned);
         Parallel.For(0, 64, _ => Require(JsonSerializer.Serialize(EnemySpawningModel.Spawn(source, true).State) == expected,
             "Parallel spawning changed RNG or unit identities."));
+        References();
         Console.WriteLine("SPAWN-CHECKS PASS: wave order, cached choices, treasure timing/floors, slot overflow and isolation.");
+    }
+    private static void References()
+    {
+        var rng = UnityRng.Seed(91);
+        var cards = new[] {
+            new CardInstanceState(1, "dead-equipment", CardModifiers.Empty(), CardModifiers.Empty(), 0, 0, 0, [], equippedUnitId: 99),
+            new CardInstanceState(2, "live-equipment", CardModifiers.Empty(), CardModifiers.Empty(), 0, 0, 0, [], equippedUnitId: 7) };
+        var context = new CombatContext(new CardCycleState([new(1, cards[0].DataId)], [], [], rng, 0, []), rng, 0, 3, 10,
+            cardInstances: cards, cardRegistry: cards,
+            otherPiles: [new("Standby", [new(2, cards[1].DataId)], equipmentConditions: [new(2, 7, true)]), new("Exhausted", [])]);
+        var owner = new CombatUnit(7, "owner", CombatTeam.Player, 0, 1, 1, false, false, false, [], lastAttackerId: 99, equipmentCards: [2]);
+        var train = new TrainCombatState([new(0, false, [owner], [], context), new(1, false, [], [], context)], [], 7, context);
+        EnemySpawnState Root(bool canonical) => new(train, [new EnemyWave([new EnemyGroup([])])], [-1], 0, false, rng, 8, [], 0, false,
+            0, 0, 1, [], canonicalDecisionReferences: canonical);
+        string parent = JsonSerializer.Serialize(Root(true), ModelJson.Options);
+        var canonical = EnemySpawningModel.Spawn(Root(true), false).State!;
+        var legacy = EnemySpawningModel.Spawn(Root(false), false).State!;
+        Require(canonical.CanonicalDecisionReferences && canonical.Train.Context!.CardRegistry![0].EquippedUnitId == 0 &&
+            canonical.Train.Context.CardRegistry[1].EquippedUnitId == 7 && canonical.Train.Rooms[0].Units.Single().LastAttackerId == 0 &&
+            legacy.Train.Context!.CardRegistry![0].EquippedUnitId == 99 && legacy.Train.Rooms[0].Units.Single().LastAttackerId == 99,
+            "Spawning lost live equipment or retained dead references at a declared canonical boundary.");
+        string expected = JsonSerializer.Serialize(canonical, ModelJson.Options);
+        Parallel.For(0, 32, _ => Require(JsonSerializer.Serialize(EnemySpawningModel.Spawn(Root(true), false).State, ModelJson.Options) == expected,
+            "Parallel spawning reference normalization differed."));
+        Require(JsonSerializer.Serialize(Root(true), ModelJson.Options) == parent, "Spawning reference normalization mutated its root.");
     }
     private static EnemyDefinition Definition(string name, bool ascends = true) =>
         new(new CombatUnit(0, name, CombatTeam.Enemy, 0, 1, 1, false, false, false, []), ascends, false, []);
@@ -54,7 +80,9 @@ internal static class EnemySpawningChecks
             EnemySpawnResult predicted = EnemySpawningModel.Spawn(before, spawn.GetProperty("IncludeTreasure").GetBoolean());
             if (!predicted.Supported) { unsupported++; continue; }
             EnemySpawnState actual = spawn.GetProperty("Actual").Deserialize<EnemySpawnState>()!;
-            Require(Comparable(predicted.State!) == Comparable(actual), "Native spawning differs at index " + spawn.GetProperty("Index"));
+            string expectedState = Comparable(predicted.State!), actualState = Comparable(actual);
+            Require(expectedState == actualState, "Native spawning differs at index " + spawn.GetProperty("Index").GetInt32() +
+                ": " + ModelJson.Difference(expectedState, actualState));
             matched++;
         }
         Require(matched > 0, "No native spawning phases verified.");
@@ -64,6 +92,6 @@ internal static class EnemySpawningChecks
     {
         Rooms = state.Train.Rooms.Select(room => new { room.RoomIndex, room.Units }).ToArray(),
         Movement = state.Train.Movement.OrderBy(rule => rule.UnitId).ToArray(), state.Train.Context,
-        state.Phase, state.SelectedGroups, state.Rng, state.NextUnitId, state.TreasuresRemaining
+        state.Phase, state.SelectedGroups, state.Rng, state.NextUnitId, state.TreasuresRemaining, state.CanonicalDecisionReferences
     });
 }

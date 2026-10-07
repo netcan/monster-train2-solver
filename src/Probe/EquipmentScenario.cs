@@ -4,6 +4,8 @@ using System.Collections.Generic;
 using System.Linq;
 using BepInEx.Logging;
 using HarmonyLib;
+using MonsterTrain2Poju.Model;
+using Newtonsoft.Json.Linq;
 
 namespace MonsterTrain2Poju.Probe
 {
@@ -34,6 +36,7 @@ namespace MonsterTrain2Poju.Probe
         {
             CardManager cards = managers.GetCardManager()!; SaveManager save = managers.GetSaveManager();
             bool exhausted = Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == "equipment-exhausted";
+            bool overflow = Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == "equipment-overflow";
             CardState[] owned = cards.GetAllCards(new List<CardState>()).ToArray();
             CardState[] gear = owned.Where(card => card.GetEffects().Any(effect => effect.GetEffectStateName() == "CardEffectDamage" &&
                 effect.GetTargetMode() == TargetMode.DropTargetCharacter)).ToArray();
@@ -81,10 +84,30 @@ namespace MonsterTrain2Poju.Probe
                 cards.MoveToStandByPile(card, wasPlayed: true, wasExhausted: false,
                     new RemoveFromStandByCondition(() => cards.CheckEquipmentRemoveFromStandByCondition(host, equipment)));
             }
+            if (overflow)
+            {
+                yield return cards.DrawHand(cards.GetMaxHandSize());
+                if (cards.GetHand().Count != cards.GetMaxHandSize())
+                    throw new InvalidOperationException("Equipment overflow setup did not fill the native hand.");
+                FullBattleTrace trace = FullBattleTrace.Active!;
+                var lethal = new CardUpgradeState(); lethal.Setup(); lethal.SetAdditionalHP(-9999);
+                var record = new DirectUnitUpgradeScenario.Record { Label = "equipment-full-hand-host-death", UnitId = trace.UnitId(host),
+                    Before = trace.Capture(rooms.GetRoom(0)), Upgrade = CardModifierProbe.Upgrade(lethal) };
+                DirectUnitUpgradeScenario.Records.Add(record);
+                var predicted = UnitModifierModel.ApplyDirect(record.Before, record.UnitId, record.Upgrade);
+                record.UnsupportedReason = predicted.UnsupportedReason;
+                yield return host.ApplyCardUpgrade(lethal);
+                record.After = trace.Capture(rooms.GetRoom(0));
+                if (predicted.Supported && !JToken.DeepEquals(JToken.FromObject(predicted.State!), JToken.FromObject(record.After)))
+                    record.Difference = "Full-hand equipment death room/context differs";
+                // Attached equipment returns during death. The replaced first card waits
+                // for the global check at DrawHand, which still runs with a full hand.
+                yield return cards.DrawHand(0);
+            }
             Set(managers.GetCombatManager()!, "combatStateChanged", true);
             Completed = true;
             log.LogInfo("EQUIPMENT-PREPARED native three-card attachment/replacement, temporary/permanent modifiers, equipment callbacks, return=" +
-                (exhausted ? "Exhausted" : "Hand") + " and original Boss/waves.");
+                (exhausted ? "Exhausted" : "Hand") + " fullHandDeath=" + overflow + " and original Boss/waves.");
         }
         private static void Set(object target, string field, object value) => AccessTools.Field(target.GetType(), field).SetValue(target, value);
     }

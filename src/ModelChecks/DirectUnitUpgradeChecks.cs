@@ -38,6 +38,8 @@ internal static class DirectUnitUpgradeChecks
                 .Any(unit => unit.Id == byLabel["lethal-partial-add"].GetProperty("UnitId").GetInt32()), "Native partial-death path was not reached.");
             Parallel.For(0, 32, _ => { foreach (var sample in cases) Verify(sample); });
         }
+        else if (fixture.GetProperty("ModifierScenario").GetString() == "equipment-overflow")
+            Parallel.For(0, 32, _ => { foreach (var sample in cases) Verify(sample); });
         Console.WriteLine($"NATIVE-DIRECT-UPGRADE-CHECKS PASS: {cases.Length} native room/context transitions, independent descriptor/object identity and parent isolation.");
     }
     private static void Verify(FixtureValue sample)

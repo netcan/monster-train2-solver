@@ -2634,3 +2634,48 @@ Both equipment fixtures pass the final checker and all 79 archives match the
 curated SHA-256 inventory. The probe builds without warnings/errors; the
 checker retains its 12 existing nullable warnings. This increment adds native
 evidence and scenario coverage without changing the battle model.
+
+## Full-hand equipment returns and spawning reference boundaries
+
+`-EquipmentOverflow` fills the actual native hand to ten cards after the three
+setup attachments. A direct negative-HP upgrade kills the original host;
+attached return-to-hand equipment instead appends to the draw pile. The replaced
+first equipment card still waits in standby until a subsequent native
+DrawHand(0). The global standby check runs before the full-hand early exit and
+also routes that card to the draw pile. Exact room/context comparisons cover
+the lethal direct API boundary, and exact draw comparisons cover this zero-draw
+boundary. The source unit's spawner is exhausted and equipment links retain
+their original objects through the raw API snapshot.
+
+Native Unity objects can remain referenced after their logical unit removal
+and compare null only after later cleanup. Raw API recordings preserve this
+in-flight convention. Enemy spawning observations now explicitly declare
+canonical decision references, using the same capture convention as player
+decisions. `EnemySpawnState.CanonicalDecisionReferences` defaults false for
+legacy captures and is preserved through action/turn constructors. Spawning
+normalizes absent-host card links and absent-attacker unit links only at a
+declared canonical output boundary; live links and immutable parents remain
+intact. Pure checks compare both conventions and 32 parallel branches. This
+avoids making simulated semantic relationships depend on Unity frame cleanup.
+
+`tests/fixtures/full-battle-equipment-overflow.mt2f` stores 4,940 nodes in
+29,900 bytes with schema 55 on game 2.2.1 and the unchanged module MVID.
+The muted Instant native run takes 47.18 seconds and wins at Pyre 52 after
+21 policy plays, seven EndTurns and 56 room stages. Its 30 equipment API
+operations, one lethal direct upgrade, full-hand draw and complete policy have
+zero capture failures, differences, unsupported or pending records; original
+files are unchanged. Equipment and lethal API cases compare independently in
+32 parallel branches, and the entire policy matches initial and actual
+mid-battle roots with 16 parallel branches. The ordinary hand-return and
+exhaustion fixtures also pass the final independent checker.
+
+Equipment-granted triggers/abilities, grafting and special return overrides
+remain separate work. The full-hand fixture supplies targeted equipment return
+coverage; the ordinary fixtures retain their stronger reverse-removal and
+permanent-upgrade identity requirements.
+
+All 79 existing binary archives pass the full regression. All three equipment
+fixtures pass the final checker, including canonical flag propagation and the
+lethal API's 32 isolated repeats. The expanded 80-archive inventory and SHA-256
+check passes. Probe builds with zero warnings/errors; ModelChecks has no errors
+and its 12 existing nullable warnings. No source JSON fixture is needed.
