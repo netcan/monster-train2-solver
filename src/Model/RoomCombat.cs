@@ -456,6 +456,7 @@ namespace MonsterTrain2Poju.Model
 
         internal static string? Validate(RoomCombatState state, int? dyingTargetId = null, int? attributedHealthTargetId = null)
         {
+            if (state.Context != null && AbilityCardModel.Validate(state.Context) is string cacheError) return cacheError;
             if (state.ExternalInteractions.Count > 0)
                 return string.Join("; ", state.ExternalInteractions);
             foreach (CardInstanceState instance in state.Context?.CardInstances ?? Array.Empty<CardInstanceState>())
@@ -467,6 +468,8 @@ namespace MonsterTrain2Poju.Model
                 return "Unit instance IDs must be unique.";
             foreach (CombatUnit unit in state.Units)
             {
+                if (unit.Ability?.CardCreation != null && unit.Ability.DataId != unit.Ability.CardCreation.DataId)
+                    return "Unit ability and cached card creation definitions differ.";
                 if (unit.NextTriggerId.HasValue ? unit.NextTriggerId < 0 ||
                     unit.Triggers.Any(trigger => !trigger.StateId.HasValue || trigger.StateId < 0 || trigger.StateId >= unit.NextTriggerId) ||
                     unit.Triggers.Select(trigger => trigger.StateId).Distinct().Count() != unit.Triggers.Count :
@@ -895,6 +898,12 @@ namespace MonsterTrain2Poju.Model
             internal RoomCombatResult Spawn(int unitId, bool fromCard, IReadOnlyList<CombatStatus>? startingApplications = null)
             {
                 WorkingUnit spawned = units.Single(unit => unit.Source.Id == unitId);
+                if (context?.AbilityCardCache != null && spawned.Source.Ability?.CardCreation is CardCreationRule creation)
+                {
+                    AbilityCardResult cached = AbilityCardModel.Get(context, creation);
+                    if (!cached.Supported) { unsupportedReason = cached.UnsupportedReason; return Finish(RoomOutcome.Unsupported); }
+                    context = cached.Context;
+                }
                 if (startingApplications != null)
                 {
                     var callbacks = new List<QueuedCharacterTrigger>();
@@ -1220,7 +1229,7 @@ namespace MonsterTrain2Poju.Model
                     context.NextCardId, context.MaxHandSize, context.StatusRules, context.Statistics,
                     context.CardInstances == null ? null : Array.Empty<CardInstanceState>(), context.CardRegistry, context.AllScenarioBossesDead,
                     context.NextAddedTemporaryUpgrades, context.OtherPiles?.Select(CardPileModel.Clear).ToArray(), context.QueryFrame,
-                    context.KillCamActivated.HasValue ? true : (bool?)null, context.MagicPower, context.IsolatedBattlePreview, context.EnergyState, context.RoomCapacities);
+                    context.KillCamActivated.HasValue ? true : (bool?)null, context.MagicPower, context.IsolatedBattlePreview, context.EnergyState, context.RoomCapacities, context.AbilityCardCache);
             }
 
             private void PostCombat()
@@ -1367,7 +1376,7 @@ namespace MonsterTrain2Poju.Model
                                 int reward = GoldRewardModel.Adjust(effect.Value);
                                 context = new CombatContext(context!.Cards, context.BattleRng,
                                     Math.Max(0, checked(context.Gold + reward)), context.NextCardId, context.MaxHandSize, context.StatusRules, context.Statistics,
-                                    context.CardInstances, context.CardRegistry, context.AllScenarioBossesDead, context.NextAddedTemporaryUpgrades, context.OtherPiles, context.QueryFrame, context.KillCamActivated, context.MagicPower, context.IsolatedBattlePreview, context.EnergyState, context.RoomCapacities);
+                                    context.CardInstances, context.CardRegistry, context.AllScenarioBossesDead, context.NextAddedTemporaryUpgrades, context.OtherPiles, context.QueryFrame, context.KillCamActivated, context.MagicPower, context.IsolatedBattlePreview, context.EnergyState, context.RoomCapacities, context.AbilityCardCache);
                                 Emit("Gold", unit, unit, reward);
                             }
                             else if (effect.Type == "CardEffectAddBattleCard" && !source.Preview && !battleWon && context != null && context.AllScenarioBossesDead != true &&
@@ -1723,6 +1732,8 @@ namespace MonsterTrain2Poju.Model
                         text.Append("|reference:").Append(card.InstanceId);
                         AppendModifiers(card.Permanent); AppendModifiers(card.Temporary);
                     }
+                    foreach (AbilityCardCacheEntry entry in context.AbilityCardCache ?? Array.Empty<AbilityCardCacheEntry>())
+                        text.Append("|abilityCard:").Append(entry.DataId.Length).Append(':').Append(entry.DataId).Append(':').Append(entry.InstanceId);
                     if (context.Statistics != null) text.Append("|stats:").Append(context.Statistics.Signature());
                 }
                 return text.ToString();

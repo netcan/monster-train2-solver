@@ -97,6 +97,7 @@ are copied immutable values; independent child states can run on worker threads.
 | Single companion Boss transition | `CompanionBossModel` and `TrainCombatModel` | Wave exhaustion, forced looping, ordered movement/status/removal callbacks, raw/canonical phase boundaries and both no-card/card policies |
 | Unit arrival Sentry queues | `TrainCombatModel` and `RoomCombatModel` | Physical guard order, moved-target overrides, retained dead victims, once/silence/threshold gates and terminal hit/death queues |
 | Unit ability cooldown state | `AbilityCooldownModel`, `CardSpellModel` and `RoomCombatModel` | Native natural-ability spawn, separate configured/current cooldowns, signed/absolute updates, resets, status decay and availability-marker callbacks; complete battle and parallel branches |
+| Shared ability card cache | `AbilityCardModel` and `CombatContext.AbilityCardCache` | Native player and enemy ability creation, shared unit references, detached card statistics, starting upgrades and allocation before OnSpawn generation; complete battle and parallel branches |
 | Mono status dictionary slot reuse | `StatusDictionaryState` | Captured slot/free-list state, LIFO reuse after cleanup, exact later status enumeration and independent branch isolation |
 | Additional spells, abilities, relics | Not complete | Unsupported interactions explicitly reject the model transition |
 
@@ -3094,3 +3095,69 @@ separately requires actual common available/unavailable triggers to have fired.
 Probe builds with zero warnings/errors; ModelChecks keeps 12 existing nullable
 warnings and no errors. PowerShell parsing and `git diff --check` pass. Failed
 development captures are excluded; the accepted archive has no JSON dependency.
+
+## Shared native ability card cache
+
+`UnitOrRoomAbilityCardStateCache.Get` caches a single CardState per definition ID.
+Different units using that skill share modifiers, effect counters and play/cost
+history on the same instance. The cache is separate from all ordinary card piles
+and CardManager.GetAllCards: its references do not become owned cards or entries
+in deckStats. Capture observes the private dictionary without requesting new
+cards. First native cache accesses register their returned identity immediately,
+including access from presentation code; the model owns no mutable global cache.
+
+`CombatContext.AbilityCardCache` records definition-to-instance membership, while
+CardRegistry retains the detached card's complete immutable state. Creation uses
+the definition's starting upgrades and initialized traits/counters, allocates one
+identity, leaves owned piles/statistics unchanged and does not consume pending
+next-added upgrades or either gameplay RNG stream. Subsequent accesses return the
+same child instance. Native unit definitions and captured ability fields retain
+a creation blueprint from the decision input. Natural player summons and enemy
+wave spawning ensure the cache before spawn callbacks; OnSpawn card generation
+then allocates later identities. All context copies, terminal clearing and combat
+cycle signatures retain cache membership. Legacy archives keep their uncaptured
+null cache and blueprint fields.
+
+`full-battle-ability-cache.mt2f` uses schema 63, game 2.2.1 and module MVID
+`8fb07b96-f4db-4d2b-884d-c00536d6ccf4`. It has 28,676 bytes / 4,730 unique nodes,
+with SHA-256
+`30bc4353a639e87f879914ff783b103c9243518414f554b15f359bc550b1db91`.
+It starts with an empty cache and captures two natural Steward summons sharing
+skill card 16. Creation advances NextCardId from 16 to 17 while ordinary owned
+card count stays 15. Two OnSpawn generators allocate later ordinary cards. A
+second skill definition on the original Boss allocates detached card 22 during
+native enemy spawning; Boss attack/health and all original waves stay intact.
+Both skill definitions have real starting damage upgrades. The controlled
+cooldown effect chain remains on damage cards, providing 97 additional native
+cooldown/marker transitions.
+
+The accepted muted Instant native run takes 47.28 seconds, wins at Pyre 80 and
+records 17 plays / five EndTurns, 45 room stages, nine card cycles, nine train
+phases and seven spawns. Capture failures, differences, unsupported and pending
+records are zero, and original profile files are unchanged. Four native cache
+contexts independently compare creation/reuse for both definitions in 32
+branches. The complete policy matches from initial and actual mid-battle roots
+in 16 parallel branches. Coverage requires actual shared unit references,
+distinct player/enemy skills, starting upgrades and an initially empty cache;
+pre-created cache-only inputs cannot pass this fixture. Dictionary grouping in
+the PowerShell gate uses key expressions because the binary reader returns
+Dictionary objects, whose keys are not ordinary PowerShell properties.
+
+Pure checks additionally cover an owned card with the same definition, distinct
+skill allocation, retained references after cache clear/recreation, invalid
+ownership aliases, unchanged statistic membership, unknown setup rejection, unused pending upgrades,
+fresh effect counters and parent isolation. Cache clear/recreation is checked
+against the native implementation contract, but has no live native Clear sample
+in this fixture. Skill activation/payment, ability assignment/replacement/removal,
+equipment-granted abilities and Horde re-spawn gates remain necessary work.
+This increment does not complete grafts, moon/deathwish, relics, room attachments
+or specialized Boss interactions.
+
+The final scripts/Check-Models.ps1 run passes all 90 curated binary archives,
+complete inventory/SHA-256 validation, every pure check and all eight native
+calibration suites, with exit code zero. Probe builds with zero warnings/errors;
+ModelChecks keeps its 12 existing nullable warnings and no errors. PowerShell
+parsing and git diff --check pass. The accepted capture is native binary and
+introduces no JSON fixture dependency. Development runs excluded from the
+curated inventory include the first player-only capture and the enemy capture
+that the original dictionary property-name grouping incorrectly rejected.

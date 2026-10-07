@@ -170,6 +170,12 @@ namespace MonsterTrain2Poju.Model
 
             string? Initialize(CombatUnit unit, int index)
             {
+                if (context?.AbilityCardCache != null && unit.Ability?.CardCreation is CardCreationRule creation)
+                {
+                    AbilityCardResult cached = AbilityCardModel.Get(context, creation);
+                    if (!cached.Supported) return cached.UnsupportedReason;
+                    context = cached.Context;
+                }
                 RoomCombatState original = source.Train.Rooms[index];
                 return StatusCallbackModel.Initialize(new RoomCombatState(index, original.Deployment, rooms[index],
                     original.ExternalInteractions, context, original.Preview), unit, unit.StatusRegistry ?? unit.Statuses, callbacks);

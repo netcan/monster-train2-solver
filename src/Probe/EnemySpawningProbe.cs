@@ -96,7 +96,8 @@ namespace MonsterTrain2Poju.Probe
             }).ToArray();
             CardData? abilityData = data.GetUnitAbilityCardData();
             UnitAbilityState? ability = abilityData == null || !abilityData.IsUnitAbility() ? null :
-                new UnitAbilityState(abilityData.GetID(), abilityData.GetCooldownAfterActivated(), abilityData.GetCooldownAtSpawn());
+                new UnitAbilityState(abilityData.GetID(), abilityData.GetCooldownAfterActivated(), abilityData.GetCooldownAtSpawn(),
+                    cardCreation: CardGenerationProbe.Creation(abilityData));
             if (ability != null) statuses = new[] { BattleActionProbe.Status("unit_ability", 1) }.Concat(statuses).ToArray();
             var triggers = new List<CombatTrigger>();
             if (ability != null)

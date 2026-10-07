@@ -38,7 +38,7 @@ namespace MonsterTrain2Poju.Probe
         }
         private static CardUpgradeModifier Upgrade(CardUpgradeData data)
         { var state = new CardUpgradeState(); state.Setup(data); return CardModifierProbe.Upgrade(state); }
-        private static CardCreationRule Creation(CardData data)
+        internal static CardCreationRule Creation(CardData data)
         {
             var interactions = new List<string>();
             foreach (CardTraitData trait in data.GetTraits())

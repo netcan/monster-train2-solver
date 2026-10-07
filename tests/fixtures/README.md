@@ -204,3 +204,14 @@ cooldown cleanup, including later armor/valor insertion. Stewards gain 50 health
 and reduced size; all original Boss stats and spawn waves stay intact. Skill
 activation, shared cached skill-card state, assignment/replacement/removal,
 equipment abilities and Horde re-spawn interactions remain separate work.
+
+`full-battle-ability-cache.mt2f` retains schema 63 and starts before any ability
+card exists. Two natural Steward summons share one detached cached skill card;
+OnSpawn generation verifies that cache allocation precedes ordinary generated
+cards. A distinct skill on the original Boss exercises enemy cache creation.
+Four native creation/reuse contexts compare independently in 32 branches, with
+starting upgrades, exact identity, unchanged ownership/statistic membership and
+complete context preservation. The 17-play / five-EndTurn policy matches initial
+and mid-battle roots in 16 parallel branches. Skill activation/payment and ability
+assignment/replacement/removal remain separate work; live cache Clear is not
+sampled here. The accepted archive has no JSON source dependency.

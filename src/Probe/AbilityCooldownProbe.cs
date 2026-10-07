@@ -19,7 +19,8 @@ namespace MonsterTrain2Poju.Probe
             if (ability == null && cooldown == 0 && spawn == 0) return null;
             CardData? previous = (CardData?)AccessTools.Field(state.GetType(), "prevUnitAbilityCardData").GetValue(state);
             return new UnitAbilityState(ability?.GetID() ?? "", cooldown, spawn, unit.GetUnitAbilityIsFromEquipment(),
-                (bool)AccessTools.Field(state.GetType(), "isUnitAbilityResolving").GetValue(state), previous?.GetID());
+                (bool)AccessTools.Field(state.GetType(), "isUnitAbilityResolving").GetValue(state), previous?.GetID(),
+                ability == null ? null : CardGenerationProbe.Creation(ability));
         }
         internal static StatusDictionaryState CaptureDictionary(CharacterState unit)
         {

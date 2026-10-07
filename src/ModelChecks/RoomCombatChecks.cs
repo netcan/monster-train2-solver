@@ -179,6 +179,7 @@ internal static class RoomCombatChecks
         CompanionBossChecks.Native(fixture);
         SentryChecks.Native(fixture);
         AbilityCooldownChecks.Native(fixture);
+        AbilityCardChecks.Native(fixture);
         TriggerUpgradeChecks.Native(fixture);
         SharedPileChecks.MigratedRoot(fixture);
     }

@@ -12,13 +12,14 @@ namespace MonsterTrain2Poju.Model
         public bool FromEquipment { get; }
         public bool Resolving { get; }
         public string? PreviousDataId { get; }
+        public CardCreationRule? CardCreation { get; }
         public bool HasAbility => DataId.Length > 0;
         public UnitAbilityState(string dataId, int cooldown, int cooldownAtSpawn, bool fromEquipment = false,
-            bool resolving = false, string? previousDataId = null)
+            bool resolving = false, string? previousDataId = null, CardCreationRule? cardCreation = null)
         { DataId = dataId; Cooldown = cooldown; CooldownAtSpawn = cooldownAtSpawn; FromEquipment = fromEquipment;
-            Resolving = resolving; PreviousDataId = previousDataId; }
+            Resolving = resolving; PreviousDataId = previousDataId; CardCreation = cardCreation; }
         internal UnitAbilityState WithCooldown(int value) => new UnitAbilityState(DataId, Math.Max(1, value), CooldownAtSpawn,
-            FromEquipment, Resolving, PreviousDataId);
+            FromEquipment, Resolving, PreviousDataId, CardCreation);
     }
 
     public static class AbilityCooldownModel
