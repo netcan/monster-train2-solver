@@ -56,7 +56,7 @@ namespace MonsterTrain2Poju.Probe
         {
             private static void Postfix(CharacterState attackerState, int roomIndex, ref IEnumerator __result)
             {
-                if (Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") is "unit-turn-begin" or "team-turn-begin" or "hit-kill" &&
+                if (Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") is "unit-turn-begin" or "team-turn-begin" or "hit-kill" or "dying-upgrades" &&
                     FullBattleTrace.Active != null && !AllGameManagers.Instance!.GetSaveManager().PreviewMode)
                     __result = Wrap(__result, attackerState, roomIndex);
             }

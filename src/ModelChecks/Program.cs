@@ -99,6 +99,7 @@ TriggeredDamageChecks.Run();
 DamageDeathQueueChecks.Run();
 TerminalDeathChecks.Run();
 HitKillChecks.Run();
+DyingUpgradeChecks.Run();
 HandUpgradeChecks.Run();
 HealingChecks.Run();
 GoldRewardChecks.Run();

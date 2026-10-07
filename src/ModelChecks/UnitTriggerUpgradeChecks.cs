@@ -105,7 +105,10 @@ internal static class UnitTriggerUpgradeChecks
             killed.State.Context.Statistics!.MonstersDeadThisBattle == 1,
             "Lethal trigger upgrade failed to settle nested death effects/statistics once.");
         var invalid = Room([Unit(1, 8, [Trigger([Effect(upgrade)], kind: "OnDeath")])]);
-        Require(!RoomCombatModel.Resolve(invalid).Supported, "Dead self upgrade routing was silently accepted.");
+        var deathUpgrade = RoomCombatModel.ApplyCardDamage(invalid, 1, 99);
+        Require(deathUpgrade.Supported && deathUpgrade.State!.Units.Count == 0 &&
+            deathUpgrade.State.Context!.CardInstances!.Single(card => card.InstanceId == 8).Temporary.Upgrades.Single().Stats.Damage == 3,
+            "Dead self upgrade was skipped or revived its actor.");
         string result = JsonSerializer.Serialize(first.State);
         Parallel.For(0, 32, _ => Require(JsonSerializer.Serialize(RoomCombatModel.ApplyCardHeal(root, 1, 0).State) == result,
             "Parallel triggered upgrades diverged."));

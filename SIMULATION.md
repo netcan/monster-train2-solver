@@ -1504,10 +1504,10 @@ carry independent trigger queues.
 Pure checks include blocked/zero/lethal hits, HP-damage thresholds, ordinary
 Slay/lifesteal/spikes ordering, dying Slay actors, deferred sweep healing,
 global phase dispatch, once/silence/deployment/preview gates and 32 parallel
-branches. Required-status/equipment trigger gates and dying-character target
-routing remain explicitly unsupported. Self upgrades on OnHit/OnKill/OnDeath
-remain unsupported until dying-unit upgrade settlement is modeled. Positive
-thresholds on other character trigger kinds also reject the transition.
+branches. Required-status/equipment trigger gates remain explicitly
+unsupported. At schema 39, self upgrades on OnHit/OnKill/OnDeath still reject
+dying-unit settlement; schema 40 below closes that gap. Positive thresholds
+on other character trigger kinds still reject the transition.
 
 `tests/fixtures/full-battle-hit-kill.json.gz` retains the unchanged native trace:
 18 plays, 6 EndTurns, 50 room stages, 9 spawns, 11 train phases, 11 card cycles,
@@ -1528,6 +1528,56 @@ unchanged. The isolated game is automatically muted during this capture.
 The complete curated check script passes all 52 battle fixtures and 8
 calibrations. Additional combat triggers, dying-unit upgrades, equipment,
 relics, room effects, specialized bosses and resurrection remain open.
+
+Schema 40 adds `-DyingUpgrades` and native upgrade snapshots that retain the
+zero-HP target alongside the living room. OnHit, OnKill and OnDeath self
+upgrades now use the existing actor and queue rather than starting a new room
+engine. Public room inputs still require living units; the internal exception
+is restricted to the dying target of that one upgrade application.
+
+Native upgrades change their ledger, attack, size and healer quantity before
+health. Positive health changes can increase a dying actor's maximum HP and
+continue to status/source-card updates, but never revive it. A negative health
+or unhealed-health stage stops if the actor is dead: preceding changes remain,
+while later stages and source-card additions are skipped. Already-dead actors
+never repeat sacrifice, death counters or source-card exhaustion. Removal
+still processes every matching unit copy and clears all matching temporary
+source-card upgrades, even when individual removals exit at their HP stage.
+Permanent, battle and unit-only lifetimes, unique no-ops, clone exclusions,
+preview suppression and retained source cards after terminal clearing keep
+their native behavior.
+
+The native sample also corrects the old assumption that a sweep attacker at
+zero HP deals zero damage to later targets. Native combat checks destruction,
+which is postponed until the sweep group finishes. The dying actor retains
+its attack and consumes remaining lifesteal stacks without healing; spikes
+require a living attacker and no longer retaliate. Queued callbacks then see
+the current dying actor. This affects damage, kills, gold and the shared last
+attack-damage statistic in live combat and previews.
+
+`tests/fixtures/full-battle-dying-upgrades.json.gz` retains the unchanged
+native battle: 21 plays, 7 EndTurns, 57 room stages, 11 spawns, 14 train phases,
+13 card cycles, 47 independently reproduced unit turns and 2 multi-target
+sweeps. Of 53 upgrade observations, 17 capture zero-HP targets: 5 Slay,
+4 Revenge and 8 death applications, including 2 duplicate removals,
+2 failed negative-health stages, 2 failed negative-unhealed stages and
+2 unit-only upgrades. Health scaling is removed from this authored scenario
+so the negative-health case stays negative; attack scaling and the natural
+waves/boss are retained. The independent checks compare full dying-unit and
+source-card contexts. Initial/mid-battle policies and 16 parallel branches
+reproduce victory with final Pyre health 73; pure checks include 32 independent
+branches, terminal retained spawners and global queued callbacks.
+
+The game is 2.2.1, module MVID `8fb07b96-f4db-4d2b-884d-c00536d6ccf4`.
+Raw JSON is 368,944,511 bytes, SHA-256
+`5fcac7be693f6169edb939d0fb848440252a2c635ca8f1cc5560301e14754085`;
+the byte-identical gzip is 10,340,268 bytes. Native capture failures,
+mismatches, unsupported phases and pending records are zero; original
+profile files are unchanged and the isolated game is automatically muted.
+The complete curated check script passes all 53 battle fixtures and 8
+calibrations.
+Other combat triggers, equipment, relics, room effects, specialized bosses
+and resurrection still leave the full objective open.
 
 Schema 24 captures ordered `CardTraitScalingAddStatusEffect` descriptors on
 immutable card instances and generated-card rules, plus the native stackability

@@ -319,6 +319,16 @@ namespace MonsterTrain2Poju.Model
         internal static RoomCombatResult ApplyUnitModification(RoomCombatState state, CombatUnit changed) =>
             new Engine(state, new List<CombatEvent>()).ModifyUnit(changed);
 
+        internal static RoomCombatResult ApplyUnitUpgrade(RoomCombatState state, int targetId, CardUpgradeModifier upgrade,
+            string lifetime, bool remove, int? roomCapacity, int sourceCardId, string? triggerKind)
+        {
+            string? error = Validate(state);
+            if (error != null || !state.Units.Any(unit => unit.Id == targetId))
+                return new RoomCombatResult(null, RoomOutcome.Unsupported, 0, new List<CombatEvent>(), error ?? "Missing unit upgrade target.");
+            return new Engine(state, new List<CombatEvent>(), resetPreviewTriggers: false)
+                .UnitUpgrade(targetId, upgrade, lifetime, remove, roomCapacity, sourceCardId, triggerKind);
+        }
+
         public static RoomCombatResult ApplyCardHeal(RoomCombatState state, int targetId, int amount)
         {
             string? error = Validate(state);
@@ -339,7 +349,7 @@ namespace MonsterTrain2Poju.Model
             return engine.Run(entireRoom);
         }
 
-        internal static string? Validate(RoomCombatState state)
+        internal static string? Validate(RoomCombatState state, int? dyingTargetId = null)
         {
             if (state.ExternalInteractions.Count > 0)
                 return string.Join("; ", state.ExternalInteractions);
@@ -355,7 +365,7 @@ namespace MonsterTrain2Poju.Model
                 if (unit.Modifiers != null && (unit.Modifiers.HealthFromUpgrades.Count > 0 ||
                     unit.Modifiers.Upgrades.Any(upgrade => upgrade.ExternalInteractions.Count > 0)))
                     return "Unmodeled applied unit upgrade interactions.";
-                if (unit.Health <= 0 || unit.Health > unit.MaxHealth)
+                if (unit.Health < 0 || unit.Health == 0 && unit.Id != dyingTargetId || unit.Health > unit.MaxHealth)
                     return "Only living units with valid health can enter room combat.";
                 if (unit.Statuses.Select(status => status.Id).Distinct().Count() != unit.Statuses.Count)
                     return "Duplicate status IDs on unit " + unit.Id;
@@ -412,8 +422,6 @@ namespace MonsterTrain2Poju.Model
                                 return "Triggered size restrictions require room capacity state.";
                             if (action.Target != "Self" && !new[] { "Room", "FrontInRoom", "BackInRoom", "Weakest", "RoomHealTargets", "RandomInRoom" }.Contains(action.Target))
                                 return "Unmodeled triggered upgrade target " + action.Target;
-                            if ((trigger.Kind == "OnDeath" || trigger.Kind == "OnHit" || trigger.Kind == "OnKill") && action.Target == "Self")
-                                return "Dead self upgrade routing is not modeled.";
                             if (action.Range != null) return "Triggered upgrade range initialization is not modeled.";
                             string? filterError = action.Filters?.Validate();
                             if (filterError != null) return filterError;
@@ -586,6 +594,15 @@ namespace MonsterTrain2Poju.Model
                     ? RoomOutcome.PlayerDefeated : RoomOutcome.Exchanged);
             }
 
+            internal RoomCombatResult UnitUpgrade(int targetId, CardUpgradeModifier upgrade, string lifetime,
+                bool remove, int? roomCapacity, int sourceCardId, string? triggerKind)
+            {
+                ApplyUpgrade(units.Single(unit => unit.Source.Id == targetId), upgrade, lifetime, remove,
+                    roomCapacity, sourceCardId, triggerKind);
+                return Finish(battleWon ? RoomOutcome.BattleWon : units.Any(unit => unit.Source.IsPyre && !unit.Alive)
+                    ? RoomOutcome.PlayerDefeated : RoomOutcome.Exchanged);
+            }
+
             internal RoomCombatResult CardHeal(int targetId, int amount)
             {
                 WorkingUnit target = units.Single(unit => unit.Source.Id == targetId);
@@ -703,7 +720,9 @@ namespace MonsterTrain2Poju.Model
                         {
                             PreviewBossAttack(actor, target);
                             if (unsupportedReason != null) return;
-                            Damage(actor, target, actor.Alive ? actor.Attack : 0, "Attack");
+                            // Native uses IsDestroyed here. Lethal retaliation during sweep
+                            // leaves the attacker object available until the group is removed.
+                            Damage(actor, target, actor.Despawned ? 0 : actor.Attack, "Attack");
                         }
                     if (sweep) DrainLocalTriggerQueue();
                 }
@@ -782,7 +801,9 @@ namespace MonsterTrain2Poju.Model
                 // with a character attacker, including damage from a character effect.
                 if (actor != null && !actor.Despawned && !target.Alive) FireTriggers(actor, "OnKill");
                 // Native lifesteal heals by unmodified attack, even against armor; it happens before spikes.
-                if (direct && actor != null && actor.Alive && actor.Has("lifesteal") && raw > 0)
+                // A dying sweep attacker has not been destroyed yet: its remaining
+                // attacks still consume lifesteal, while Heal itself refuses revival.
+                if (direct && actor != null && !actor.Despawned && actor.Has("lifesteal") && raw > 0)
                 {
                     Trigger(actor, "lifesteal", 1);
                     Heal(actor, raw, "Lifesteal");
@@ -1012,6 +1033,28 @@ namespace MonsterTrain2Poju.Model
             private RoomCombatState CurrentRoom() => new RoomCombatState(source.RoomIndex, source.Deployment,
                 units.Where(unit => unit.Alive).Select(unit => unit.Freeze()).ToArray(), source.ExternalInteractions, context, source.Preview);
 
+            private RoomCombatState UpgradeRoom(WorkingUnit target) => new RoomCombatState(source.RoomIndex, source.Deployment,
+                units.Where(unit => unit.Alive || unit == target).Select(unit => unit.Freeze()).ToArray(), source.ExternalInteractions, context, source.Preview);
+
+            private bool ApplyUpgrade(WorkingUnit target, CardUpgradeModifier upgrade, string lifetime, bool remove,
+                int? roomCapacity, int sourceCardId, string? kind)
+            {
+                RoomCombatResult result = UnitModifierModel.ApplyWithSettlement(UpgradeRoom(target), target.Source.Id, upgrade, lifetime,
+                    remove, roomCapacity, sourceCardId, kind, (state, changed) =>
+                    {
+                        context = state.Context;
+                        bool wasAlive = target.Alive;
+                        target.Apply(changed);
+                        if (wasAlive && !target.Alive) Death(null, target, 0);
+                        // The native effect retains its target object through removal and
+                        // terminal clearing. Its remaining source-card work must still run.
+                        return new RoomCombatResult(UpgradeRoom(target), RoomOutcome.Exchanged, 0, new List<CombatEvent>());
+                    }, allowDyingTarget: true);
+                if (!result.Supported) { unsupportedReason = result.UnsupportedReason; return false; }
+                context = result.State!.Context;
+                return true;
+            }
+
             private CardTargets TriggerTargets(WorkingUnit actor, CardActionEffect action, bool testing)
             {
                 if (action.Target != "Self") return CardTargetModel.Collect(CurrentRoom(), action, Array.Empty<int>(), isTesting: testing || source.Preview);
@@ -1059,18 +1102,10 @@ namespace MonsterTrain2Poju.Model
                 if (targets.BattleRng.HasValue) context = context!.WithBattleRng(targets.BattleRng.Value);
                 foreach (int targetId in targets.UnitIds)
                 {
-                    WorkingUnit? target = units.FirstOrDefault(unit => unit.Source.Id == targetId && unit.Alive);
+                    WorkingUnit? target = units.FirstOrDefault(unit => unit.Source.Id == targetId && (unit.Alive || action.Target == "Self" && unit == actor));
                     if (target == null) continue;
-                    RoomCombatResult result = UnitModifierModel.ApplyWithSettlement(CurrentRoom(), targetId, action.Upgrade!, action.Lifetime,
-                        action.Type == "RemoveUnitUpgrade", null, actor.Source.SpawnerCardId, kind, (state, changed) =>
-                        {
-                            context = state.Context; target.Apply(changed);
-                            if (!target.Alive) Death(null, target, 0);
-                            return Finish(battleWon ? RoomOutcome.BattleWon : target.Source.IsPyre && !target.Alive
-                                ? RoomOutcome.PlayerDefeated : RoomOutcome.Exchanged);
-                        });
-                    if (!result.Supported) { unsupportedReason = result.UnsupportedReason; return false; }
-                    context = result.State!.Context;
+                    if (!ApplyUpgrade(target, action.Upgrade!, action.Lifetime, action.Type == "RemoveUnitUpgrade",
+                        null, actor.Source.SpawnerCardId, kind)) return false;
                     Emit(action.Type, actor, target, 0);
                 }
                 return true;

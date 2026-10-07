@@ -62,7 +62,8 @@ internal static class UnitUpgradeScalingChecks
         var clone = new CombatUnit(10, "clone", CombatTeam.Player, 8, 12, 25, true, false, false, [], spawnerCardId: 2, size: 2,
             modifiers: new(8, 0, 0, 2, 1, true, true, []));
         var cloneRoom = new RoomCombatState(0, false, [clone], [], incomplete);
-        Require(UnitModifierModel.Apply(cloneRoom, 10, unique, "Permanent", sourceCardId: 1).State == cloneRoom,
+        var excludedClone = UnitModifierModel.Apply(cloneRoom, 10, unique, "Permanent", sourceCardId: 1);
+        Require(excludedClone.Supported && JsonSerializer.Serialize(excludedClone.State) == JsonSerializer.Serialize(cloneRoom),
             "Clone exclusion queried a trait before the native early return.");
         Require(!UnitUpgradeScalingModel.Apply(context, 999, upgrade).Supported &&
             !UnitUpgradeScalingModel.ApplyTrait(context, new(new("AnyStatusEffectStacksRemoved"), "Damage", 1), 1, upgrade).Supported,

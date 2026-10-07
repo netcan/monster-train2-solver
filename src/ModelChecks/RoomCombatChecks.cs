@@ -57,7 +57,7 @@ internal static class RoomCombatChecks
             Unit(2, CombatTeam.Player, 0, 25, new CombatStatus("spikes", 5, 1)),
             Unit(3, CombatTeam.Player, 0, 25)));
         Require(retaliation.State!.Units.Count == 2 && retaliation.State.Units[0].Health == 17 &&
-            retaliation.State.Units[1].Health == 25, "A dead sweep attacker damaged a later target.");
+            retaliation.State.Units[1].Health == 17, "A dying sweep attacker lost a pending target before native removal.");
 
         var relentless = new CombatStatus("relentless", 1);
         RoomCombatResult boss = RoomCombatModel.Resolve(Room(Unit(1, CombatTeam.Enemy, 6, 20, relentless), player));
@@ -155,6 +155,7 @@ internal static class RoomCombatChecks
         DamageDeathQueueChecks.Native(fixture);
         TerminalDeathChecks.Native(fixture);
         HitKillChecks.Native(fixture);
+        DyingUpgradeChecks.Native(fixture);
         StatisticCacheChecks.Native(fixture);
         CloneUpgradeRefreshChecks.Native(fixture);
         DynamicStatisticChecks.Native(fixture);

@@ -61,8 +61,8 @@ internal static class HitKillChecks
         var deadSlayer = RoomCombatModel.ApplyUnitTurn(Room(Unit(1, CombatTeam.Player, 4, 2,
             [Trigger("OnKill", [Heal(99), Gold(2)]), Trigger("OnHit", [Gold(1)])], [new("sweep", 1)]),
             Unit(4, CombatTeam.Enemy, 0, 3, [], [new("spikes", 9, 1)]), Unit(5, CombatTeam.Enemy, 0, 6, [])), 1);
-        Require(deadSlayer.Supported && deadSlayer.State!.Context!.Gold == 15 && deadSlayer.State.Units.Single().Health == 6,
-            "A queued Slay on a dying sweep attacker was skipped, revived it, or damaged a later target.");
+        Require(deadSlayer.Supported && deadSlayer.State!.Context!.Gold == 15 && deadSlayer.State.Units.Single().Health == 2,
+            "A queued Slay on a dying sweep attacker was skipped, revived it, or lost a pending target.");
 
         var phaseRoot = Room(Unit(1, CombatTeam.Player, 0, 2,
             [Trigger("PreCombat", [Damage(4), Damage(4, "Self")]), Trigger("OnKill", [Gold(2)], once: true),

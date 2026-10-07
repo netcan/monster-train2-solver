@@ -31,16 +31,15 @@ namespace MonsterTrain2Poju.Model
     {
         public static RoomCombatResult Apply(RoomCombatState source, int targetId, CardUpgradeModifier upgrade, string lifetime,
             bool remove = false, int? roomCapacity = null, int sourceCardId = 0, string? triggerKind = null)
-            => ApplyWithSettlement(source, targetId, upgrade, lifetime, remove, roomCapacity, sourceCardId, triggerKind,
-                RoomCombatModel.ApplyUnitModification);
+            => RoomCombatModel.ApplyUnitUpgrade(source, targetId, upgrade, lifetime, remove, roomCapacity, sourceCardId, triggerKind);
 
         // A running room engine settles deaths on its existing unit references and trigger flags.
         // Starting another engine here would reset preview triggers and detach combat attackers.
         internal static RoomCombatResult ApplyWithSettlement(RoomCombatState source, int targetId, CardUpgradeModifier upgrade,
             string lifetime, bool remove, int? roomCapacity, int sourceCardId, string? triggerKind,
-            Func<RoomCombatState, CombatUnit, RoomCombatResult> settle)
+            Func<RoomCombatState, CombatUnit, RoomCombatResult> settle, bool allowDyingTarget = false)
         {
-            string? error = RoomCombatModel.Validate(source);
+            string? error = RoomCombatModel.Validate(source, allowDyingTarget ? targetId : (int?)null);
             if (error != null) return Unsupported(error);
             CombatUnit? target = source.Units.FirstOrDefault(unit => unit.Id == targetId);
             if (target?.Modifiers == null || source.Context?.CardInstances == null)
@@ -61,7 +60,7 @@ namespace MonsterTrain2Poju.Model
             {
                 error = RoomCombatModel.Validate(new RoomCombatState(source.RoomIndex, source.Deployment,
                     new[] { CardSpellModel.Copy(target, target.Health, target.Statuses.Where(item => item.Id != status.Id).Concat(new[] { status }).ToArray()) },
-                    Array.Empty<string>(), source.Context));
+                    Array.Empty<string>(), source.Context), allowDyingTarget ? targetId : (int?)null);
                 if (error != null) return Unsupported(error);
             }
             if (!remove && upgrade.RestrictSizeToRoomCapacity && upgrade.Stats.Size > 0)
@@ -91,9 +90,16 @@ namespace MonsterTrain2Poju.Model
                 IReadOnlyList<CombatTrigger> triggers = UnitHealerModel.ApplyDamageUpgrade(target.Triggers, unchecked(sign * upgrade.Stats.Damage), source.Preview);
                 int health = target.Health, maxHealth = target.MaxHealth;
                 ChangeHealth(sign * upgrade.Stats.Health, !(remove && upgrade.Stats.Health > 0), !remove || upgrade.Stats.Health < 0);
-                if (health > 0) ChangeHealth(sign * upgrade.UnhealedHealth, !remove, false);
+                // A negative HP step exits the native application if the target is dead.
+                // Positive steps can finish on an already-dying target, including statuses.
+                bool partial = sign * upgrade.Stats.Health < 0 && health <= 0;
+                if (!partial)
+                {
+                    ChangeHealth(sign * upgrade.UnhealedHealth, !remove, false);
+                    partial = sign * upgrade.UnhealedHealth < 0 && health <= 0;
+                }
                 var statuses = target.Statuses.ToDictionary(status => status.Id);
-                if (health > 0)
+                if (!partial)
                     foreach (CombatStatus status in upgrade.Statuses)
                     {
                         statuses.TryGetValue(status.Id, out CombatStatus? existing);
@@ -108,9 +114,11 @@ namespace MonsterTrain2Poju.Model
                     target.CanAttack, target.IsPyre, target.EndsBattleOnDeath, statuses.Values.ToArray(), triggers, target.SpawnerCardId,
                     Math.Max(1, Math.Min(6, size)), target.StatusImmunities, target.Subtypes, nextModifiers, target.IsBoss);
                 RoomCombatResult applied = settle(state, changed);
-                if (!applied.Supported || applied.Outcome == RoomOutcome.BattleWon || applied.Outcome == RoomOutcome.PlayerDefeated) return applied;
+                if (!applied.Supported) return applied;
                 state = applied.State!;
-                if (health <= 0) return Match(state);
+                // Failed additions retain their partial unit changes but never write back to
+                // the spawner. Removal still processes all copies and clears the source card.
+                if (partial && !remove) return Match(state);
 
                 void ChangeHealth(int delta, bool decreaseHealth, bool heal)
                 {

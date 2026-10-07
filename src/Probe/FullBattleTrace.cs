@@ -53,7 +53,7 @@ namespace MonsterTrain2Poju.Probe
         internal int Unsupported => stages.Count(stage => !stage.Predicted.Supported) + cardCycles.Unsupported + trainCombat.Unsupported + spawning.Unsupported + turns.Unsupported + actions.Unsupported +
             HandRemovalScenario.Records.Count(record => !record.Predicted.Supported) + GenerationScenario.Records.Count(record => !record.Predicted.Supported) +
             UnitTurnBeginProbe.Records.Count(record => !record.Predicted.Supported) + TeamTurnBeginProbe.Records.Count(record => !record.Predicted.Supported) + PreHandDiscardProbe.Records.Count(record => !record.Predicted.Supported) + PreCombatProbe.Records.Count(record => !record.Predicted.Supported) + PostCombatHealingProbe.Records.Count(record => !record.Predicted.Supported);
-        internal int Pending => HitKillProbe.Records.Count(record => !record.Completed || !record.GoldAfter.HasValue || record.AfterTriggered == null) + stages.Count(stage => stage.Actual == null) + cardCycles.Records.Count(record => record.Actual == null) +
+        internal int Pending => DyingUpgradeProbe.Records.Count(record => !record.Completed || record.Actual == null || record.ActualUnits == null) + HitKillProbe.Records.Count(record => !record.Completed || !record.GoldAfter.HasValue || record.AfterTriggered == null) + stages.Count(stage => stage.Actual == null) + cardCycles.Records.Count(record => record.Actual == null) +
             trainCombat.Records.Count(record => record.Actual == null) + spawning.Records.Count(record => record.Actual == null) +
             turns.Records.Count(record => record.Actual == null) + actions.Records.Count(record => record.Actual == null) +
             HandRemovalScenario.Records.Count(record => record.Actual == null) + GenerationScenario.Records.Count(record => record.Actual == null) +
@@ -127,45 +127,52 @@ namespace MonsterTrain2Poju.Probe
             foreach (CharacterState character in characters)
             {
                 if (!character.IsAlive || character.IsDestroyed) continue;
-                int id = UnitId(character);
-                CombatTrigger[] triggers = CaptureTriggers(character, interactions);
-                if (character.IsPurified()) interactions.Add("Purified unit trigger restrictions");
-                if (character.GetRoomStateModifiers().Count > 0)
-                    interactions.Add(character.GetSourceCharacterData().GetAssetKey() + " room modifiers");
-                if (character.GetEquipment().Count > 0)
-                    interactions.Add(character.GetSourceCharacterData().GetAssetKey() + " equipment");
-                CardState? card = character.GetSpawnerCard();
-                if (card != null && (card.GetTraitStates().Any(trait => !DamageScalingProbe.Known(trait.GetType().Name)) || card.GetTriggers().Count > 0))
-                    interactions.Add(character.GetSourceCharacterData().GetAssetKey() + " card traits/triggers");
-                var nativeStatuses = new List<CharacterState.StatusEffectStack>();
-                character.GetStatusEffects(ref nativeStatuses);
-                var statuses = new List<CombatStatus>();
-                foreach (CharacterState.StatusEffectStack status in nativeStatuses)
-                {
-                    StatusEffectState rule = status.State;
-                    if (status.Count <= 0) continue;
-                    if (rule.GetRemoveWhenTriggeredAfterCardPlayed() || rule.GetRemoveAtEndOfTurnIfTriggered())
-                        interactions.Add(rule.GetStatusId() + " delayed status removal");
-                    statuses.Add(new CombatStatus(rule.GetStatusId(), status.Count, rule.GetParamInt(),
-                        rule.GetRemoveWhenTriggered(), rule.GetRemoveStackAtEndOfTurn(), rule.GetRemoveAtEndOfTurn(),
-                        rule.GetRemoveAtEndOfTurnAfterPostCombat(), rule.PreventRemovalDuringRelentlessPhase,
-                        rule.GetSkipTriggerDuringDeployment(), rule.GetRemoveDuringDeployment(),
-                        BattleActionProbe.TriggeredVfx(rule.GetSourceStatusEffectData(), -1f),
-                        BattleActionProbe.TriggeredVfx(rule.GetSourceStatusEffectData(), 1f), rule.IsStackable()));
-                }
-                CombatTeam team = character.GetTeamType() == Team.Type.Heroes ? CombatTeam.Enemy : CombatTeam.Player;
-                bool endsBattle = team == CombatTeam.Enemy &&
-                    (character.IsMiniboss() || character.IsOuterTrainBoss()) &&
-                    heroes.FindPairedCompanionBoss(character) == null;
-                units.Add(new CombatUnit(id, character.GetSourceCharacterData()?.GetAssetKey() ?? "",
-                    team, character.GetAttackDamageWithoutStatusEffectBuffs(), character.GetHP(), character.GetMaxHP(),
-                    character.GetCanAttack(), character.IsPyreHeart(), endsBattle, statuses, triggers,
-                    card == null ? 0 : projection.CaptureCards(new List<CardState> { card })[0].InstanceId, character.GetSize(),
-                    ((List<string>)AccessTools.Field(typeof(CharacterState), "statusEffectImmunities").GetValue(character)).ToArray(),
-                    character.GetSubtypes().Select(subtype => subtype.Key).ToArray(), UnitModifierProbe.Capture(character), character.IsAnyBoss()));
+                units.Add(CaptureUnit(character, interactions));
             }
             return new RoomCombatState(room.GetRoomIndex(), combat.IsPlacementPhase, units,
                 interactions.Distinct().OrderBy(value => value, StringComparer.Ordinal).ToArray(), CaptureContext());
+        }
+
+        internal CombatUnit CaptureUnit(CharacterState character, List<string>? interactions = null)
+        {
+            interactions ??= new List<string>();
+            HeroManager heroes = AllGameManagers.Instance!.GetHeroManager()!;
+            int id = UnitId(character);
+            CombatTrigger[] triggers = CaptureTriggers(character, interactions);
+            if (character.IsPurified()) interactions.Add("Purified unit trigger restrictions");
+            if (character.GetRoomStateModifiers().Count > 0)
+                interactions.Add(character.GetSourceCharacterData().GetAssetKey() + " room modifiers");
+            if (character.GetEquipment().Count > 0)
+                interactions.Add(character.GetSourceCharacterData().GetAssetKey() + " equipment");
+            CardState? card = character.GetSpawnerCard();
+            if (card != null && (card.GetTraitStates().Any(trait => !DamageScalingProbe.Known(trait.GetType().Name)) || card.GetTriggers().Count > 0))
+                interactions.Add(character.GetSourceCharacterData().GetAssetKey() + " card traits/triggers");
+            var nativeStatuses = new List<CharacterState.StatusEffectStack>();
+            character.GetStatusEffects(ref nativeStatuses);
+            var statuses = new List<CombatStatus>();
+            foreach (CharacterState.StatusEffectStack status in nativeStatuses)
+            {
+                StatusEffectState rule = status.State;
+                if (status.Count <= 0) continue;
+                if (rule.GetRemoveWhenTriggeredAfterCardPlayed() || rule.GetRemoveAtEndOfTurnIfTriggered())
+                    interactions.Add(rule.GetStatusId() + " delayed status removal");
+                statuses.Add(new CombatStatus(rule.GetStatusId(), status.Count, rule.GetParamInt(),
+                    rule.GetRemoveWhenTriggered(), rule.GetRemoveStackAtEndOfTurn(), rule.GetRemoveAtEndOfTurn(),
+                    rule.GetRemoveAtEndOfTurnAfterPostCombat(), rule.PreventRemovalDuringRelentlessPhase,
+                    rule.GetSkipTriggerDuringDeployment(), rule.GetRemoveDuringDeployment(),
+                    BattleActionProbe.TriggeredVfx(rule.GetSourceStatusEffectData(), -1f),
+                    BattleActionProbe.TriggeredVfx(rule.GetSourceStatusEffectData(), 1f), rule.IsStackable()));
+            }
+            CombatTeam team = character.GetTeamType() == Team.Type.Heroes ? CombatTeam.Enemy : CombatTeam.Player;
+            bool endsBattle = team == CombatTeam.Enemy &&
+                (character.IsMiniboss() || character.IsOuterTrainBoss()) &&
+                heroes.FindPairedCompanionBoss(character) == null;
+            return new CombatUnit(id, character.GetSourceCharacterData()?.GetAssetKey() ?? "",
+                team, character.GetAttackDamageWithoutStatusEffectBuffs(), character.GetHP(), character.GetMaxHP(),
+                character.GetCanAttack(), character.IsPyreHeart(), endsBattle, statuses, triggers,
+                card == null ? 0 : projection.CaptureCards(new List<CardState> { card })[0].InstanceId, character.GetSize(),
+                ((List<string>)AccessTools.Field(typeof(CharacterState), "statusEffectImmunities").GetValue(character)).ToArray(),
+                character.GetSubtypes().Select(subtype => subtype.Key).ToArray(), UnitModifierProbe.Capture(character), character.IsAnyBoss());
         }
 
         internal CombatContext CaptureContext()
@@ -344,7 +351,7 @@ namespace MonsterTrain2Poju.Probe
             string path = Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!, "full-battle.json");
             File.WriteAllText(path, JsonConvert.SerializeObject(new
             {
-                Schema = 39,
+                Schema = 40,
                 GameVersion = Application.version,
                 GameModuleMvid = typeof(CardState).Assembly.ManifestModule.ModuleVersionId,
                 NativeWon,
@@ -380,6 +387,7 @@ namespace MonsterTrain2Poju.Probe
                 TerminalDeaths = TerminalDeathProbe.Records,
                 KillCams = TerminalDeathProbe.KillCams,
                 HitKills = HitKillProbe.Records,
+                DyingUpgrades = DyingUpgradeProbe.Records,
                 UnitPostCombats = PostCombatHealingProbe.Records,
                 UnitUpgradeScalingCalibrationContextUnchanged = UnitUpgradeScalingScenario.CalibrationContextUnchanged,
                 UiRngIsolation = UiRngIsolation.Records,
