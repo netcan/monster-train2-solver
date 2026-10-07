@@ -6,6 +6,11 @@ internal static class RoomCombatChecks
 {
     internal static void Run(string[] fixtures)
     {
+        RoomCombatResult flatFirst = RoomCombatModel.Exchange(Room(Unit(1, CombatTeam.Enemy, 1, 20),
+            Unit(2, CombatTeam.Player, 0, 20, new("armor", 10, 1, removeWhenTriggered: true), new("pyregel", 1, 1),
+                new("melee weakness", 1, removeWhenTriggered: true))));
+        Require(flatFirst.Supported && flatFirst.State!.Units.Single(unit => unit.Id == 2).Status("armor")!.Stacks == 6,
+            "Flat pyregel damage was multiplied after rather than before melee weakness.");
         var enemy = Unit(1, CombatTeam.Enemy, 6, 20);
         var player = Unit(2, CombatTeam.Player, 8, 25);
         RoomCombatState root = Room(enemy, player);

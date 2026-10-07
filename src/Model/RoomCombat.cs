@@ -828,12 +828,6 @@ namespace MonsterTrain2Poju.Model
                 int raw = damage;
                 int blocked = 0;
                 bool direct = kind == "Attack";
-                if (direct && target.Has("melee weakness") && !target.Has("damage shield"))
-                {
-                    int stacks = target.Count("melee weakness");
-                    damage = checked(damage * (stacks + 1));
-                    if (damage != raw) Trigger(target, "melee weakness", stacks);
-                }
                 if (applyTraits)
                 {
                     bool retainedLegacy = context?.CardRegistry == null && legacyDetachedCards != null;
@@ -847,6 +841,15 @@ namespace MonsterTrain2Poju.Model
                 {
                     damage = checked(damage + target.Amount("pyregel"));
                     Trigger(target, "pyregel", 1);
+                }
+                // Native applies source traits and flat damage increases before melee weakness.
+                if (direct && actor != null && target.Alive && !target.Has("untouchable") &&
+                    target.Has("melee weakness") && !target.Has("damage shield"))
+                {
+                    int beforeWeakness = damage;
+                    int stacks = target.Count("melee weakness");
+                    damage = checked(damage * (stacks + 1));
+                    if (damage != beforeWeakness) Trigger(target, "melee weakness", stacks);
                 }
                 // The native shield stage checks card/relic piercing without an attacker argument.
                 // Unit piercing bypasses armor, but does not bypass this shield stage.
