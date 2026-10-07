@@ -161,12 +161,13 @@ namespace MonsterTrain2Poju.Model
         internal sealed class QueuedCharacterTrigger
         {
             internal int RoomIndex { get; }
-            internal CombatUnit Unit { get; }
+            internal CombatUnit Unit { get; set; }
             internal string Kind { get; }
+            internal int ParamInt { get; }
             internal bool ReturnSpawnerAfterQueue { get; }
             internal bool DeferUntilRemoval { get; }
-            internal QueuedCharacterTrigger(int roomIndex, CombatUnit unit, string kind = "OnDeath", bool returnSpawnerAfterQueue = false, bool deferUntilRemoval = false)
-            { RoomIndex = roomIndex; Unit = unit; Kind = kind; ReturnSpawnerAfterQueue = returnSpawnerAfterQueue; DeferUntilRemoval = deferUntilRemoval; }
+            internal QueuedCharacterTrigger(int roomIndex, CombatUnit unit, string kind = "OnDeath", bool returnSpawnerAfterQueue = false, bool deferUntilRemoval = false, int paramInt = 0)
+            { RoomIndex = roomIndex; Unit = unit; Kind = kind; ReturnSpawnerAfterQueue = returnSpawnerAfterQueue; DeferUntilRemoval = deferUntilRemoval; ParamInt = paramInt; }
         }
         private static readonly HashSet<string> KnownStatuses = new HashSet<string>(StringComparer.Ordinal)
         {
@@ -240,13 +241,26 @@ namespace MonsterTrain2Poju.Model
         {
             int next = 0;
             var pending = new List<QueuedCharacterTrigger>();
+            bool Fire(QueuedCharacterTrigger queued)
+            {
+                // Callbacks retain the same native character object after lethal damage. Its
+                // latest death snapshot carries health and once flags across phase engines.
+                QueuedCharacterTrigger? dead = queue.LastOrDefault(item => item.Kind == "OnDeath" &&
+                    item.RoomIndex == queued.RoomIndex && item.Unit.Id == queued.Unit.Id && item.Unit.Health <= 0);
+                if (dead != null) queued.Unit = dead.Unit;
+                if (!fire(queued)) return false;
+                if (queued.Unit.Health <= 0)
+                    foreach (QueuedCharacterTrigger item in queue.Where(item => item.RoomIndex == queued.RoomIndex && item.Unit.Id == queued.Unit.Id))
+                        item.Unit = queued.Unit;
+                return true;
+            }
             bool Drain()
             {
                 while (next < queue.Count)
                 {
                     QueuedCharacterTrigger queued = queue[next++];
                     if (queued.DeferUntilRemoval) pending.Add(queued);
-                    else if (!fire(queued)) return false;
+                    else if (!Fire(queued)) return false;
                 }
                 // Native snapshots all eligible deaths and marks the complete batch as being
                 // removed. New deaths during a removal are handled before the current spawner returns.
@@ -254,7 +268,7 @@ namespace MonsterTrain2Poju.Model
                 pending.Clear();
                 foreach (QueuedCharacterTrigger dead in removing)
                 {
-                    if (!fire(dead) || !Drain()) return false;
+                    if (!Fire(dead) || !Drain()) return false;
                     if (dead.ReturnSpawnerAfterQueue && !returnSpawner(dead)) return false;
                 }
                 return true;
@@ -355,10 +369,13 @@ namespace MonsterTrain2Poju.Model
                 {
                     if (trigger.Kind != "OnDeath" && trigger.Kind != "PostCombat" && trigger.Kind != "PostCombatHealing" && trigger.Kind != "OnHeal" &&
                         trigger.Kind != "OnSpawn" && trigger.Kind != "OnUnscaledSpawn" && trigger.Kind != "OnSpawnNotFromCard" &&
-                        trigger.Kind != "OnTurnBegin" && trigger.Kind != "OnTeamTurnBegin" && trigger.Kind != "EndTurnPreHandDiscard" && trigger.Kind != "PreCombat")
+                        trigger.Kind != "OnTurnBegin" && trigger.Kind != "OnTeamTurnBegin" && trigger.Kind != "EndTurnPreHandDiscard" && trigger.Kind != "PreCombat" &&
+                        trigger.Kind != "OnHit" && trigger.Kind != "OnKill")
                         return "Unmodeled trigger " + trigger.Kind;
                     if (trigger.Kind != "OnDeath" && trigger.Kind != "PostCombat" && trigger.SkipDuringDeployment == null)
                         return trigger.Kind + " requires deployment timing state.";
+                    if (trigger.TriggerAtThreshold > 0 && trigger.Kind != "OnHit" && trigger.Kind != "OnKill")
+                        return "Threshold arguments are not modeled for " + trigger.Kind;
                     if (trigger.FireCount < 0) return "Invalid trigger fire count.";
                     foreach (CombatEffect effect in trigger.Effects)
                     {
@@ -395,7 +412,7 @@ namespace MonsterTrain2Poju.Model
                                 return "Triggered size restrictions require room capacity state.";
                             if (action.Target != "Self" && !new[] { "Room", "FrontInRoom", "BackInRoom", "Weakest", "RoomHealTargets", "RandomInRoom" }.Contains(action.Target))
                                 return "Unmodeled triggered upgrade target " + action.Target;
-                            if (trigger.Kind == "OnDeath" && action.Target == "Self")
+                            if ((trigger.Kind == "OnDeath" || trigger.Kind == "OnHit" || trigger.Kind == "OnKill") && action.Target == "Self")
                                 return "Dead self upgrade routing is not modeled.";
                             if (action.Range != null) return "Triggered upgrade range initialization is not modeled.";
                             string? filterError = action.Filters?.Validate();
@@ -424,6 +441,7 @@ namespace MonsterTrain2Poju.Model
             internal readonly Dictionary<string, CombatStatus> Statuses;
             internal readonly List<CombatTrigger> Triggers;
             internal bool Despawned;
+            internal bool DeathFinished;
             internal bool Alive => Health > 0;
             internal int Attack => Math.Max(0, Source.BaseAttack + Amount("buff") + Amount("valor") - Amount("debuff"));
 
@@ -467,7 +485,7 @@ namespace MonsterTrain2Poju.Model
             private readonly bool deferSpawnerExhaustion;
             private readonly int pendingSummonCardId;
             private readonly Action<QueuedCharacterTrigger>? enqueueCharacterTrigger;
-            private readonly Queue<(WorkingUnit Unit, string Kind, bool CanFire)> triggerQueue = new Queue<(WorkingUnit, string, bool)>();
+            private readonly Queue<(WorkingUnit Unit, string Kind, bool CanFire, int ParamInt)> triggerQueue = new Queue<(WorkingUnit, string, bool, int)>();
             private bool runningTriggerQueue;
             private bool killCamActivated;
             // Older captures omitted the identity store. Retain observed source cards while
@@ -611,10 +629,14 @@ namespace MonsterTrain2Poju.Model
             internal RoomCombatResult QueuedTrigger(QueuedCharacterTrigger queued)
             {
                 WorkingUnit? actor = units.FirstOrDefault(unit => unit.Source.Id == queued.Unit.Id);
-                if (actor == null && queued.Kind == "OnDeath")
+                if (actor == null && (queued.Kind == "OnDeath" || queued.Kind == "OnHit" || queued.Kind == "OnKill"))
                 { actor = new WorkingUnit(queued.Unit); units.Add(actor); }
                 // A queued OnHeal on an actor killed by a later phase effect has no live effects.
-                if (actor != null) FireTriggers(actor, queued.Kind, fromQueue: true);
+                if (actor != null)
+                {
+                    FireTriggers(actor, queued.Kind, fromQueue: true, paramInt: queued.ParamInt);
+                    queued.Unit = actor.Freeze();
+                }
                 return Finish(battleWon ? RoomOutcome.BattleWon : units.Any(unit => unit.Source.IsPyre && !unit.Alive)
                     ? RoomOutcome.PlayerDefeated : RoomOutcome.Exchanged);
             }
@@ -671,9 +693,11 @@ namespace MonsterTrain2Poju.Model
                     WorkingUnit[] targets = units.Where(unit => unit.Alive && unit.Source.Team != actor.Source.Team &&
                         !unit.Has("stealth") && !unit.Has("untouchable")).ToArray();
                     if (targets.Length == 0) continue;
-                    if (!actor.Has("sweep")) targets = new[] { actor.Has("sniper") ? targets.Last() : targets.First() };
+                    bool sweep = actor.Has("sweep");
+                    if (!sweep) targets = new[] { actor.Has("sniper") ? targets.Last() : targets.First() };
                     if (strike > 0) Trigger(actor, "multistrike", 1);
                     // Sweep fixes its target list before damage. Each hit has its own native boss-kill preview.
+                    if (sweep) runningTriggerQueue = true;
                     foreach (WorkingUnit target in targets)
                         if (target.Alive)
                         {
@@ -681,6 +705,7 @@ namespace MonsterTrain2Poju.Model
                             if (unsupportedReason != null) return;
                             Damage(actor, target, actor.Alive ? actor.Attack : 0, "Attack");
                         }
+                    if (sweep) DrainLocalTriggerQueue();
                 }
             }
 
@@ -691,6 +716,9 @@ namespace MonsterTrain2Poju.Model
                 var copied = new RoomCombatState(source.RoomIndex, source.Deployment, units.Select(unit => unit.Freeze()).ToArray(),
                     source.ExternalInteractions, context, preview: true);
                 var preview = new Engine(copied, new List<CombatEvent>());
+                // A sweep preview shares the running-queue gate: its temporary callbacks
+                // stay queued rather than healing or damaging between individual targets.
+                preview.runningTriggerQueue = runningTriggerQueue;
                 preview.Damage(preview.units.Single(unit => unit.Source.Id == actor.Source.Id),
                     preview.units.Single(unit => unit.Source.Id == target.Source.Id), actor.Attack, "Attack");
                 if (preview.unsupportedReason != null) { unsupportedReason = "Boss kill preview: " + preview.unsupportedReason; return; }
@@ -747,7 +775,12 @@ namespace MonsterTrain2Poju.Model
                 if (actor != null && context?.Statistics != null)
                     context = context.WithStatistics(context.Statistics.WithLastAttackDamage(checked(damage + blocked)));
                 target.Health = Math.Max(0, target.Health - damage);
+                if (!source.Preview && !target.Alive && target.Source.EndsBattleOnDeath)
+                { battleWon = true; context = context?.WithBossesDead(); }
                 Emit(kind, actor, target, damage);
+                // Native queues Slay before lifesteal and retaliation, for every damage type
+                // with a character attacker, including damage from a character effect.
+                if (actor != null && !actor.Despawned && !target.Alive) FireTriggers(actor, "OnKill");
                 // Native lifesteal heals by unmodified attack, even against armor; it happens before spikes.
                 if (direct && actor != null && actor.Alive && actor.Has("lifesteal") && raw > 0)
                 {
@@ -760,9 +793,11 @@ namespace MonsterTrain2Poju.Model
                     Trigger(target, "spikes", 1);
                     Damage(target, actor, retaliation, "Spikes");
                 }
-                if (!target.Alive)
+                if (target.DeathFinished) return;
+                if (damage > 0 || blocked > 0) FireTriggers(target, "OnHit", paramInt: damage);
+                if (!target.Alive && !target.DeathFinished)
                 {
-                    Death(actor, target, sourceCardId, deferRemoval: kind == "TriggeredDamage" && runningTriggerQueue);
+                    Death(actor, target, sourceCardId, deferRemoval: runningTriggerQueue);
                 }
             }
 
@@ -770,6 +805,8 @@ namespace MonsterTrain2Poju.Model
 
             private void Death(WorkingUnit? actor, WorkingUnit target, int sourceCardId, bool deferRemoval = false)
             {
+                if (target.DeathFinished) return;
+                target.DeathFinished = true;
                 bool deferReturn = deferRemoval && target.Source.Team == CombatTeam.Player && target.Source.SpawnerCardId > 0 && !DeferSpawner(target);
                 Emit("Death", actor, target, 0);
                 // Native UpdateHp sets this gate before death triggers are fired.
@@ -875,23 +912,29 @@ namespace MonsterTrain2Poju.Model
                 unit.Health += Math.Min(modified, unit.Source.MaxHealth - unit.Health);
                 Emit(kind, unit, unit, unit.Health - old);
                 // Native ApplyHeal runs these even when clipping or immunity produces zero restoration.
-                FireTriggers(unit, "OnHeal");
+                FireTriggers(unit, "OnHeal", paramInt: unit.Health - old);
             }
 
-            private void FireTriggers(WorkingUnit unit, string kind, bool canFireTriggers = true, bool fromQueue = false)
+            private void FireTriggers(WorkingUnit unit, string kind, bool canFireTriggers = true, bool fromQueue = false, int paramInt = 0)
             {
                 if (!fromQueue && enqueueCharacterTrigger != null)
-                { enqueueCharacterTrigger(new QueuedCharacterTrigger(source.RoomIndex, unit.Freeze(), kind)); return; }
+                { enqueueCharacterTrigger(new QueuedCharacterTrigger(source.RoomIndex, unit.Freeze(), kind, paramInt: paramInt)); return; }
                 if (!fromQueue && runningTriggerQueue)
-                { triggerQueue.Enqueue((unit, kind, canFireTriggers)); return; }
+                { triggerQueue.Enqueue((unit, kind, canFireTriggers, paramInt)); return; }
                 bool startedQueue = !runningTriggerQueue;
                 runningTriggerQueue = true;
-                ExecuteTriggers(unit, kind, canFireTriggers);
+                ExecuteTriggers(unit, kind, canFireTriggers, paramInt);
                 if (!startedQueue) return;
+                DrainLocalTriggerQueue();
+            }
+
+            private void DrainLocalTriggerQueue()
+            {
+                runningTriggerQueue = true;
                 while (triggerQueue.Count > 0 && unsupportedReason == null)
                 {
                     var queued = triggerQueue.Dequeue();
-                    ExecuteTriggers(queued.Unit, queued.Kind, queued.CanFire);
+                    ExecuteTriggers(queued.Unit, queued.Kind, queued.CanFire, queued.ParamInt);
                 }
                 var removing = deferredDamageDeaths.OrderBy(dead => dead.Unit.Source.Team).ThenBy(dead => dead.Unit.Source.Id).ToArray();
                 deferredDamageDeaths.Clear();
@@ -903,13 +946,15 @@ namespace MonsterTrain2Poju.Model
                 }
             }
 
-            private void ExecuteTriggers(WorkingUnit unit, string kind, bool canFireTriggers)
+            private void ExecuteTriggers(WorkingUnit unit, string kind, bool canFireTriggers, int paramInt)
             {
                 if (kind == "OnDeath" && unit.Despawned) return;
+                if (!unit.Alive && kind != "OnDeath" && (unit.Source.IsBoss == true || unit.Source.EndsBattleOnDeath)) return;
                 for (int index = 0; index < unit.Triggers.Count; index++)
                 {
                     CombatTrigger trigger = unit.Triggers[index];
                     if (trigger.Kind != kind || trigger.Once && trigger.HasTriggered ||
+                        trigger.TriggerAtThreshold > 0 && paramInt < trigger.TriggerAtThreshold ||
                         source.Deployment && trigger.SkipDuringDeployment == true ||
                         !canFireTriggers && !trigger.IgnoreSilence ||
                         unit.Has("silenced") && !trigger.IgnoreSilence) continue;
@@ -919,7 +964,7 @@ namespace MonsterTrain2Poju.Model
                     unit.Triggers[index] = trigger.Fired(effects);
                     for (int fire = 0; fire < trigger.FireCount; fire++)
                     {
-                        if (!unit.Alive && kind != "OnDeath") break;
+                        if (!unit.Alive && kind != "OnDeath" && kind != "OnHit" && kind != "OnKill") break;
                         for (int effectIndex = 0; effectIndex < effects.Length; effectIndex++)
                         {
                             effects = unit.Triggers[index].Effects.ToArray();

@@ -53,6 +53,7 @@ are copied immutable values; independent child states can run on worker threads.
 | Healing triggers | `CombatTrigger` and `RoomCombatModel` | Native repeated/once rewards and silence; zero/full/immune healing, deployment timing, preview flags and child isolation checks |
 | Healing effects on unit triggers | `CombatEffect.Action`, `HealingModel` and `RoomCombatModel` | Native self/room/healable/random targets, per-group ranges, negative/zero amounts, empty-room sampling, source-card independence and deferred OnHeal upgrades |
 | Damage effects on unit triggers | `CombatEffect.Action` and `RoomCombatModel` | Native quantity tests/samples, source-card attribution, status multipliers, defenses, death FIFO and deferred spawner exhaustion |
+| Revenge and Slay triggers | `CombatTrigger.TriggerAtThreshold` and `RoomCombatModel` | Native blocked/lethal HP damage, thresholds, once/silence, dead-boss suppression, sweep callback timing and complete unit turns |
 | Unit post-combat healing | `RoomCombatModel.ApplyUnitPostCombat` and `UnitHealerModel` | Native per-actor healing/ordinary order, attack/trigger prevention, once/silence, changing healer quantities and complete phase/decision states |
 | Terminal spell resolution | `CardSpellModel` and `BattleActionModel` | Settled native boss kill continues live effects, detached spawner upgrades/removal and healing; effect gates skip/cancel, then played/discard callbacks complete |
 | Enemy waves and treasure | `EnemySpawningModel` | Native group cache, spawn order, phase, slots and treasure floor selection |
@@ -1482,6 +1483,51 @@ is unchanged.
 The complete curated check script passes all 51 battle fixtures and 8
 calibrations. Combat-event triggers, equipment/room/relic effects, specialized
 boss behavior and resurrection still leave the full objective open.
+
+Schema 39 adds `-HitKill`, captured trigger thresholds and native OnHit/OnKill
+queue/execution observations. Armor and shield blocking still queue OnHit;
+the threshold receives damage after blocking, which can be zero. A request
+with neither positive damage nor blocking queues no OnHit. Positive thresholds
+gate that argument; zero and negative thresholds are inactive. Ordinary dying
+characters can fire OnHit and OnKill, while dead minibosses/outer bosses skip
+both. Healing an actor at zero HP does not revive it.
+
+OnKill is queued before lifesteal and spikes for damage attributed to a
+character attacker. A sweep fixes its target list and postpones all callbacks
+until every target has been hit. Pending callbacks use the actor's current
+health and once flags, even when it has died in the meantime. Ordinary queue
+entries drain before the deferred death-removal batch. Boss-kill previews
+preserve the running-queue gate during sweep, so preview callbacks do not heal
+or damage between targets. Input states remain immutable and worker branches
+carry independent trigger queues.
+
+Pure checks include blocked/zero/lethal hits, HP-damage thresholds, ordinary
+Slay/lifesteal/spikes ordering, dying Slay actors, deferred sweep healing,
+global phase dispatch, once/silence/deployment/preview gates and 32 parallel
+branches. Required-status/equipment trigger gates and dying-character target
+routing remain explicitly unsupported. Self upgrades on OnHit/OnKill/OnDeath
+remain unsupported until dying-unit upgrade settlement is modeled. Positive
+thresholds on other character trigger kinds also reject the transition.
+
+`tests/fixtures/full-battle-hit-kill.json.gz` retains the unchanged native trace:
+18 plays, 6 EndTurns, 50 room stages, 9 spawns, 11 train phases, 11 card cycles,
+56 independently reproduced unit turns and 10 observed multi-target sweeps.
+Its 162 queue/fire observations include 81 compared trigger dispatches: 17 blocked
+and 8 lethal ordinary OnHit callbacks (6 rewarded), 9 OnKill callbacks (5 rewarded), 10 positive
+threshold passes, and one dead-boss OnHit that fires no effects. Reward deltas
+and every once flag are independently recomputed from captured native inputs.
+The entire policy from initial and mid-battle states, including 16 parallel
+branches, reproduces victory with final Pyre health 80.
+
+The game is 2.2.1, module MVID `8fb07b96-f4db-4d2b-884d-c00536d6ccf4`.
+Raw JSON is 228,467,200 bytes, SHA-256
+`e9f6666a51a1894ffa8f7d8b7d832861a88d307998a82cbbdf787dee43f46cf3`;
+the byte-identical gzip is 7,306,978 bytes. Native capture failures, mismatches,
+unsupported phases and pending records are zero; original profile files are
+unchanged. The isolated game is automatically muted during this capture.
+The complete curated check script passes all 52 battle fixtures and 8
+calibrations. Additional combat triggers, dying-unit upgrades, equipment,
+relics, room effects, specialized bosses and resurrection remain open.
 
 Schema 24 captures ordered `CardTraitScalingAddStatusEffect` descriptors on
 immutable card instances and generated-card rules, plus the native stackability

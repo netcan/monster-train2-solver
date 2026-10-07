@@ -112,14 +112,16 @@ namespace MonsterTrain2Poju.Model
         public int FireCount { get; }
         public IReadOnlyList<CombatEffect> Effects { get; }
         public bool? SkipDuringDeployment { get; }
+        public int? TriggerAtThreshold { get; }
         public CombatTrigger(string kind, bool once, bool hasTriggered, bool ignoreSilence,
-            int fireCount, IReadOnlyList<CombatEffect> effects, bool? skipDuringDeployment = null)
+            int fireCount, IReadOnlyList<CombatEffect> effects, bool? skipDuringDeployment = null, int? triggerAtThreshold = null)
         {
             Kind = kind; Once = once; HasTriggered = hasTriggered; IgnoreSilence = ignoreSilence;
             FireCount = fireCount; Effects = Array.AsReadOnly(effects.ToArray()); SkipDuringDeployment = skipDuringDeployment;
+            TriggerAtThreshold = triggerAtThreshold;
         }
         internal CombatTrigger Fired(IReadOnlyList<CombatEffect> effects) => new CombatTrigger(Kind,
-            Once, true, IgnoreSilence, FireCount, effects, SkipDuringDeployment);
-        internal CombatTrigger ForPreview() => new CombatTrigger(Kind, Once, false, IgnoreSilence, FireCount, Effects, SkipDuringDeployment);
+            Once, true, IgnoreSilence, FireCount, effects, SkipDuringDeployment, TriggerAtThreshold);
+        internal CombatTrigger ForPreview() => new CombatTrigger(Kind, Once, false, IgnoreSilence, FireCount, Effects, SkipDuringDeployment, TriggerAtThreshold);
     }
 }

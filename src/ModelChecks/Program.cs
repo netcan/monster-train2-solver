@@ -98,6 +98,7 @@ PostCombatHealingChecks.Run();
 TriggeredDamageChecks.Run();
 DamageDeathQueueChecks.Run();
 TerminalDeathChecks.Run();
+HitKillChecks.Run();
 HandUpgradeChecks.Run();
 HealingChecks.Run();
 GoldRewardChecks.Run();
