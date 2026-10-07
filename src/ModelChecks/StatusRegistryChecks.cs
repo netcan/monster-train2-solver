@@ -63,8 +63,10 @@ internal static class StatusRegistryChecks
             hidden += registry.Count(status => status.Hidden == true);
             observed++;
         }
-        Require(observed > 0 && zeroSnapshots > 0 && zeroVisible > 0 && hidden > 0,
-            "Retained-status native calibration does not cover zero visible entries and hidden definitions.");
+        Require(observed > 0, "Native status registry contains no observations.");
+        if (fixture.TryGetProperty("ModifierScenario", out var scenario) && scenario.GetString() == "triggered-status")
+            Require(zeroSnapshots > 0 && zeroVisible > 0 && hidden > 0,
+                "Retained-status native calibration does not cover zero visible entries and hidden definitions.");
         Console.WriteLine($"NATIVE-STATUS-REGISTRY PASS: {observed} exact native queries, {zeroSnapshots} zero-containing snapshots, {zeroVisible} zero visible entries and {hidden} hidden definitions.");
     }
     private static void Require(bool pass, string message) { if (!pass) throw new InvalidOperationException(message); }

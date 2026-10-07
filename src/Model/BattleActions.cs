@@ -172,7 +172,7 @@ namespace MonsterTrain2Poju.Model
             context = new CombatContext(new CardCycleState(context.Cards.Hand.Where(item => item.InstanceId != card.InstanceId).ToArray(),
                 context.Cards.Draw, context.Cards.Discard, context.Cards.Rng, context.Cards.DrawModifier, context.Cards.ExternalInteractions),
                 context.BattleRng, context.Gold, context.NextCardId, context.MaxHandSize, context.StatusRules, context.Statistics, context.CardInstances,
-                context.CardRegistry, context.AllScenarioBossesDead, context.NextAddedTemporaryUpgrades, context.OtherPiles, context.QueryFrame, context.KillCamActivated, context.MagicPower, context.IsolatedBattlePreview);
+                context.CardRegistry, context.AllScenarioBossesDead, context.NextAddedTemporaryUpgrades, context.OtherPiles, context.QueryFrame, context.KillCamActivated, context.MagicPower, context.IsolatedBattlePreview, context.EnergyState);
             target = new RoomCombatState(target.RoomIndex, target.Deployment, target.Units, target.ExternalInteractions, context, target.Preview);
             CombatUnit[] players = target.Units.Where(unit => unit.Team == CombatTeam.Player).ToArray();
             int position = action.PlayerPosition == -1 ? players.Length : action.PlayerPosition;
@@ -303,7 +303,7 @@ namespace MonsterTrain2Poju.Model
                 terminal ? playingInstance == null ? context.CardInstances : new[] { (context.FindCard(card.InstanceId) ?? playingInstance).OnDiscard(true, rule.Cost) } :
                 context.CardInstances?.Select(instance => instance.InstanceId == card.InstanceId
                     ? instance.OnDiscard(true, rule.Cost) : instance).ToArray(), context.CardRegistry, context.AllScenarioBossesDead, context.NextAddedTemporaryUpgrades,
-                context.OtherPiles == null ? null : piles, context.QueryFrame?.With(runningCombat: !terminal), context.KillCamActivated, context.MagicPower, context.IsolatedBattlePreview);
+                context.OtherPiles == null ? null : piles, context.QueryFrame?.With(runningCombat: !terminal), context.KillCamActivated, context.MagicPower, context.IsolatedBattlePreview, context.EnergyState);
             RoomCombatState[] rooms = train.Rooms.Select(room =>
             {
                 return new RoomCombatState(room.RoomIndex, room.Deployment, room.Units, room.ExternalInteractions, context, room.Preview);
@@ -321,7 +321,7 @@ namespace MonsterTrain2Poju.Model
             spawn = new EnemySpawnState(train, spawn.Waves, spawn.SelectedGroups, spawn.Phase, spawn.Looping, spawn.Rng,
                 nextUnitId, spawn.Treasures, spawn.TreasuresRemaining, spawn.TreasureEnabled, spawn.FirstTreasureTurn,
                 spawn.FirstTreasureRoom, spawn.Turn, spawn.ExternalInteractions);
-            return new BattleActionResult(new BattleTurnState(spawn, source.Energy - rule.Cost, source.EnergyPerTurn,
+            return new BattleActionResult(new BattleTurnState(spawn, context.EnergyState == null ? source.Energy - rule.Cost : context.QueryFrame!.Energy!.Value, source.EnergyPerTurn,
                 source.DrawPerTurn, source.ForgePoints, source.DragonsHoard, source.MoonPhase,
                 source.RngStreams.Select(stream => new BattleRngStream(stream.Name, stream.Seed,
                     stream.Name == "Battle" ? context.BattleRng : stream.Name == "CardDraw" ? context.Cards.Rng : stream.State)).ToArray(),

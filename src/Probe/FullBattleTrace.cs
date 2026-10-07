@@ -209,7 +209,11 @@ namespace MonsterTrain2Poju.Probe
                 Enumerable.Range(0, managers.GetRoomManager()!.GetNumRooms()).SelectMany(index => new[] { Team.Type.Heroes, Team.Type.Monsters }
                     .Select(team => new RoomMagicPower(index, team == Team.Type.Heroes ? CombatTeam.Enemy : CombatTeam.Player,
                         managers.GetRoomManager()!.GetRoom(index).GetRoomStateModifiedMagicPower(team, managers.GetCoreManagers()) +
-                        managers.GetRelicManager().GetMagicPowerModification()))).ToArray(), PreviewRngIsolation.Enabled ? true : (bool?)null);
+                        managers.GetRelicManager().GetMagicPowerModification()))).ToArray(), PreviewRngIsolation.Enabled ? true : (bool?)null,
+                new BattleEnergyState(managers.GetSaveManager().GetBalanceData().GetMaxEnergy(),
+                    (int)AccessTools.Field(typeof(CombatManager), "modifiedEnergyNextTurn").GetValue(managers.GetCombatManager()),
+                    (int)AccessTools.Field(typeof(CombatManager), "modifiedEnergyEveryTurn").GetValue(managers.GetCombatManager()),
+                    managers.GetCombatManager()!.GetCombatPhase().ToString(), managers.GetPlayerManager().GetTowerHP() > 0));
         }
 
         private static StatisticQueryFrame CaptureQueryFrame(AllGameManagers managers)
@@ -418,6 +422,7 @@ namespace MonsterTrain2Poju.Probe
                 StatusCallbackFires = StatusCallbackProbe.Fired,
                 CharacterCallbackFires = StatusCallbackProbe.OtherFired,
                 StatusCallbackActions = Environment.GetEnvironmentVariable("MT2_PROBE_STATUS_CALLBACK_ACTIONS") == "1",
+                EnergyEffects = EnergyEffectProbe.Records,
                 PreviewRngIsolation = PreviewRngIsolation.Records,
                 UnitPostCombats = PostCombatHealingProbe.Records,
                 UnitUpgradeScalingCalibrationContextUnchanged = UnitUpgradeScalingScenario.CalibrationContextUnchanged,

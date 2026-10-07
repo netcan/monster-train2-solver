@@ -46,8 +46,6 @@ namespace MonsterTrain2Poju.Probe
             var interactions = new List<string>();
             interactions.AddRange(cardCycles.Capture(cards, "Draw").ExternalInteractions);
             interactions.AddRange(cardCycles.Capture(cards, "Discard").ExternalInteractions);
-            foreach (string field in new[] { "modifiedEnergyEveryTurn", "modifiedEnergyNextTurn" })
-                if ((int)AccessTools.Field(typeof(CombatManager), field).GetValue(combat) != 0) interactions.Add(field);
             foreach (CardState card in cards.GetHand().Concat(cards.GetDrawPile()).Concat(cards.GetDiscardPile()))
             {
                 if (card.TriggersOnUnplayed()) interactions.Add("Unplayed card triggers: " + card.GetCardDataID());

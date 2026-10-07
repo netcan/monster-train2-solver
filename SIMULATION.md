@@ -50,6 +50,7 @@ are copied immutable values; independent child states can run on worker threads.
 | Basic healing | `HealingModel` and `CardSpellModel` | Native targeted spells, modifier group clamps, maximum health, multiplier/immunity, regen and lifesteal; independent healability checks |
 | Attack buff/debuff spells | `UnitAttackModel` and `CardSpellModel` | Native raw negative balances/recovery, zero-attack and incapable targets, global/random targets, source-card ownership and later unit upgrades |
 | Maximum-health buff/debuff spells | `UnitHealthModel` and `CardSpellModel` | Signed temporary source-card offsets, battle/unit-death lifetimes, multiplier/immunity, suppressed OnHeal, direct lethal loss and post-boss effect chains |
+| Current and future energy effects | `EnergyModel`, `CardSpellModel` and `RoomCombatModel` | Native spell/unit-trigger applications, caps, signed/ranged quantities, phase gates, current/next/persistent income and post-boss gates; complete policies with parallel branches |
 | Healing triggers | `CombatTrigger` and `RoomCombatModel` | Native repeated/once rewards and silence; zero/full/immune healing, deployment timing, preview flags and child isolation checks |
 | Healing effects on unit triggers | `CombatEffect.Action`, `HealingModel` and `RoomCombatModel` | Native self/room/healable/random targets, per-group ranges, negative/zero amounts, empty-room sampling, source-card independence and deferred OnHeal upgrades |
 | Damage effects on unit triggers | `CombatEffect.Action` and `RoomCombatModel` | Native quantity tests/samples, source-card attribution, status multipliers, defenses, death FIFO and deferred spawner exhaustion |
@@ -2287,3 +2288,50 @@ false flag. Independent checks cover both conventions, terminal boss removal,
 live references and 32 parallel branches. A new native energy scenario exposed
 the terminal case: the prior model retained removed attacker 13 after the native
 quiet decision had cleared it.
+
+## Current, next-turn and persistent energy
+
+`EnergyModel` implements `CardEffectGainEnergy`, `CardEffectAdjustEnergy`,
+`CardEffectGainEnergyNextTurn` and `CardEffectGainEnergyEveryTurn` for spells and
+unit triggers. GainEnergy's monster-turn-only mode tests the actual combat
+phase; AdjustEnergy changes current energy during MonsterTurn and queues a
+signed change during other phases. Positive gains use the captured native cap,
+removals floor at zero, and the native integer additions wrap before clamping.
+Nonpositive GainEnergy/NextTurn/EveryTurn quantities are no-ops. A failed phase
+gate consumes no quantity RNG and respects subsequent-effect cancellation.
+
+Schema 49 adds immutable `CombatContext.EnergyState`: maximum energy, current
+phase, pending next-turn and persistent modifications, and whether the Pyre is
+alive. Current energy stays in the shared query frame. All context transitions
+preserve these fields, including card generation, payment, spawner returns and
+terminal clearing. Missing limits or phase inputs reject energy effects.
+Pre-discard triggers can change energy before its end-turn statistic is stored;
+end-turn handling then removes it before combat. Unrestricted gains during combat or PreCombat remain
+available when positive next-turn income is added. Nonpositive income preserves
+those gains, and the one-turn modifier resets after replenishment. The settled
+terminal capture occurs after StopCombatLoop, before StopCombat advances its
+phase to EndOfCombat, so it retains the last live combat phase.
+
+Two binary-only native fixtures preserve the original Boss and waves:
+`full-battle-energy-effects.mt2f` takes 47.04 seconds at muted Instant timing,
+with 28 card plays, six EndTurns, 49 room stages and 256 independently matched
+energy contexts. `full-battle-energy-effects-lethal.mt2f` takes 41.87 seconds,
+with 20 plays, four EndTurns, 30 room stages and 192 matching energy contexts.
+Both finish at Pyre 80, with zero capture failures, mismatches, unsupported or
+pending observations and unchanged original game files. Their archives contain
+5,458 nodes in 31,204 bytes and 4,043 nodes in 24,200 bytes, respectively.
+
+The 448 exact context comparisons cover five modes, four phases, 52 ranged
+samples, 84 zero and 128 negative samples, and 48 capped results. The lethal
+fixture actually kills the Boss with a spell and verifies that all four later
+energy effects skip without changing income or consuming their quantity RNG.
+Both complete policies match every action/EndTurn from initial and actual
+mid-battle inputs, including 16 isolated parallel branches. Pure checks also
+cover late end-turn energy at a terminal boundary, no-positive-income turns,
+signed wrap, stopped/Pyre-dead tests and immutable branches. Status registry
+queries continue to compare exact native results; dedicated triggered-status
+fixtures retain their stronger zero/hidden-definition coverage requirements.
+
+The complete curated regression passes all 70 binary archives: 62 battle
+fixtures and eight calibrations, with inventory and SHA-256 integrity checks.
+The final native probe Release build succeeds with zero warnings and errors.

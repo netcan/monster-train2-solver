@@ -176,6 +176,11 @@ namespace MonsterTrain2Poju.Model
                 UnityRng effectRng = state.Context!.BattleRng;
                 if (effect.Type != "DiscardHand" && effect.Type != "Generate") effect = Sample(effect, ref effectRng);
                 state = WithContext(state, state.Context.WithBattleRng(effectRng));
+                if (EnergyModel.IsEffect(effect.Type))
+                {
+                    state = WithContext(state, EnergyModel.Apply(state.Context!, effect.Type, effect.Value));
+                    continue;
+                }
                 if (effect.Type == "Generate")
                 {
                     CardGenerationResult generated = CardGenerationModel.Apply(state.Context!, effect.Generation!, sourceCardId);
@@ -425,7 +430,7 @@ namespace MonsterTrain2Poju.Model
                 if (filterError != null) return filterError;
                 if (effect.Range != null && effect.Type != "DiscardHand" && effect.Type != "Generate")
                 {
-                    if (!new[] { "Damage", "Heal", "AddStatus", "BuffAttack", "DebuffAttack", "BuffHealth", "DebuffHealth", "Draw" }.Contains(effect.Type))
+                    if (!EnergyModel.IsEffect(effect.Type) && !new[] { "Damage", "Heal", "AddStatus", "BuffAttack", "DebuffAttack", "BuffHealth", "DebuffHealth", "Draw" }.Contains(effect.Type))
                         return "Unmodeled range consumer " + effect.Type;
                     string? rangeError = effect.Range.Validate();
                     if (rangeError != null) return rangeError;
@@ -437,6 +442,12 @@ namespace MonsterTrain2Poju.Model
                     continue;
                 }
                 if (!CardTargetModel.Supports(effect.Target)) return "Unimplemented spell targeting " + effect.Target;
+                if (EnergyModel.IsEffect(effect.Type))
+                {
+                    string? energyError = EnergyModel.Validate(source.Context);
+                    if (energyError != null) return energyError;
+                    continue;
+                }
                 if (!new[] { "Damage", "Heal", "AddStatus", "FloorRearrange", "UnitUpgrade", "RemoveUnitUpgrade", "BuffAttack", "DebuffAttack", "BuffHealth", "DebuffHealth", "Draw", "DiscardHand", "Generate" }.Contains(effect.Type))
                     return "Unimplemented spell effect " + effect.Type;
                 if (effect.Type == "Generate" && effect.Generation == null) return "Missing generated card rules.";
@@ -475,6 +486,7 @@ namespace MonsterTrain2Poju.Model
 
         private static bool PassesTest(CardActionEffect effect, int count, bool bossDead = false, CombatContext? context = null, bool preview = false)
         {
+            if (EnergyModel.IsEffect(effect.Type)) return !preview && !bossDead && EnergyModel.Test(context!, effect.Type);
             if (preview && (effect.Type == "Draw" || effect.Type == "DiscardHand" || effect.Type == "Generate")) return false;
             if (bossDead && !(effect.Tests?.CanPlayAfterBossDead ?? (effect.Type != "HandUpgrade" && effect.Type != "Draw" && effect.Type != "DiscardHand" && effect.Type != "Generate"))) return false;
             if (effect.Type == "Generate" && effect.Generation?.RequireHandSpace == true && context != null && context.Cards.Hand.Count >= context.MaxHandSize) return false;

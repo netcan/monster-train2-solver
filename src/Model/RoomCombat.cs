@@ -442,6 +442,18 @@ namespace MonsterTrain2Poju.Model
                     if (trigger.FireCount < 0) return "Invalid trigger fire count.";
                     foreach (CombatEffect effect in trigger.Effects)
                     {
+                        if (EnergyModel.IsNativeEffect(effect.Type))
+                        {
+                            CardActionEffect? energy = effect.Action;
+                            if (energy == null || !EnergyModel.IsEffect(energy.Type) ||
+                                effect.Type != "CardEffect" + (energy.Type == "GainEnergyMonsterTurn" ? "GainEnergy" : energy.Type))
+                                return "Missing or mismatched triggered energy definition.";
+                            string? energyError = EnergyModel.Validate(state.Context) ?? energy.Range?.Validate() ?? energy.Filters?.Validate();
+                            if (energyError != null) return energyError;
+                            if (!new[] { "Self", "Room", "FrontInRoom", "BackInRoom", "Weakest", "RandomInRoom", "LastAttackedCharacter" }.Contains(energy.Target))
+                                return "Unmodeled triggered energy target " + energy.Target;
+                            continue;
+                        }
                         if (effect.Action != null && effect.Type != "CardEffectHeal" && effect.Type != "CardEffectDamage" && effect.Type != "CardEffectAddStatusEffect")
                             return "Mismatched triggered action definition.";
                         if (effect.DamageStatusMultiplier != null && effect.Type != "CardEffectDamage")
@@ -906,6 +918,8 @@ namespace MonsterTrain2Poju.Model
                     FireTriggers(actor, "OnAttackingBeforeDamage", overrideTarget: target);
                 if (unsupportedReason != null) return;
                 target.Health = resultingHealth;
+                if (!source.Preview && target.Source.IsPyre && context?.EnergyState != null)
+                    context = context.WithEnergyState(context.EnergyState.With(pyreAlive: target.Alive));
                 if (!source.Preview && !target.Alive && target.Source.EndsBattleOnDeath)
                 { battleWon = true; context = context?.WithBossesDead(); }
                 Emit(kind, actor, target, damage);
@@ -941,6 +955,8 @@ namespace MonsterTrain2Poju.Model
             private void Death(WorkingUnit? actor, WorkingUnit target, int sourceCardId, bool deferRemoval = false)
             {
                 if (target.DeathFinished) return;
+                if (!source.Preview && target.Source.IsPyre && context?.EnergyState != null)
+                    context = context.WithEnergyState(context.EnergyState.With(pyreAlive: false));
                 target.DeathFinished = true;
                 bool deferReturn = deferRemoval && target.Source.Team == CombatTeam.Player && target.Source.SpawnerCardId > 0 && !DeferSpawner(target);
                 Emit("Death", actor, target, 0);
@@ -1015,7 +1031,7 @@ namespace MonsterTrain2Poju.Model
                     context.NextCardId, context.MaxHandSize, context.StatusRules, context.Statistics,
                     context.CardInstances == null ? null : Array.Empty<CardInstanceState>(), context.CardRegistry, context.AllScenarioBossesDead,
                     context.NextAddedTemporaryUpgrades, context.OtherPiles?.Select(CardPileModel.Clear).ToArray(), context.QueryFrame,
-                    context.KillCamActivated.HasValue ? true : (bool?)null, context.MagicPower, context.IsolatedBattlePreview);
+                    context.KillCamActivated.HasValue ? true : (bool?)null, context.MagicPower, context.IsolatedBattlePreview, context.EnergyState);
             }
 
             private void PostCombat()
@@ -1147,7 +1163,7 @@ namespace MonsterTrain2Poju.Model
                                 int reward = GoldRewardModel.Adjust(effect.Value);
                                 context = new CombatContext(context!.Cards, context.BattleRng,
                                     Math.Max(0, checked(context.Gold + reward)), context.NextCardId, context.MaxHandSize, context.StatusRules, context.Statistics,
-                                    context.CardInstances, context.CardRegistry, context.AllScenarioBossesDead, context.NextAddedTemporaryUpgrades, context.OtherPiles, context.QueryFrame, context.KillCamActivated, context.MagicPower, context.IsolatedBattlePreview);
+                                    context.CardInstances, context.CardRegistry, context.AllScenarioBossesDead, context.NextAddedTemporaryUpgrades, context.OtherPiles, context.QueryFrame, context.KillCamActivated, context.MagicPower, context.IsolatedBattlePreview, context.EnergyState);
                                 Emit("Gold", unit, unit, reward);
                             }
                             else if (effect.Type == "CardEffectAddBattleCard" && !source.Preview && !battleWon && context != null && context.AllScenarioBossesDead != true &&
@@ -1259,7 +1275,8 @@ namespace MonsterTrain2Poju.Model
                 return true;
             }
 
-            private static bool ActionTestValid(CardActionEffect action, CardTargets targets, int amount = 0) =>
+            private bool ActionTestValid(CardActionEffect action, CardTargets targets, int amount = 0) =>
+                EnergyModel.IsEffect(action.Type) ? !source.Preview && !battleWon && context!.AllScenarioBossesDead != true && EnergyModel.Test(context, action.Type) :
                 action.Type == "Damage" ? amount >= 0 && (action.Range == null || action.Range.Max > 0) &&
                     (action.Target != "DropTargetCharacter" || targets.UnitIds.Count > 0) :
                 action.Type == "RemoveUnitUpgrade" || action.Type == "Heal" && action.Target == "Room" || targets.UnitIds.Count > 0;
@@ -1296,6 +1313,12 @@ namespace MonsterTrain2Poju.Model
                     return true;
                 }
                 int amount = SampleActionAmount(action);
+                if (EnergyModel.IsEffect(action.Type))
+                {
+                    context = EnergyModel.Apply(context!, action.Type, amount);
+                    Emit(action.Type, actor, actor, amount);
+                    return true;
+                }
                 // Native samples once after collection, including an empty Room target set.
                 if (action.Type == "Damage" && effect.DamageStatusMultiplier != null)
                     amount = unchecked(amount * actor.Count(effect.DamageStatusMultiplier));

@@ -90,7 +90,8 @@ namespace MonsterTrain2Poju.Probe
                     interactions.Add("Spawned conditional triggers");
                 CombatEffect[] effects = trigger.GetEffects().Select(effect =>
                 {
-                    if (effect.GetUseIntRange() && effect.GetEffectStateName() != "CardEffectHeal" && effect.GetEffectStateName() != "CardEffectDamage" && effect.GetEffectStateName() != "CardEffectAddStatusEffect") interactions.Add("Spawned random effect initialization");
+                    if (effect.GetUseIntRange() && effect.GetEffectStateName() != "CardEffectHeal" && effect.GetEffectStateName() != "CardEffectDamage" && effect.GetEffectStateName() != "CardEffectAddStatusEffect" &&
+                        !EnergyModel.IsNativeEffect(effect.GetEffectStateName())) interactions.Add("Spawned random effect initialization");
                     if (effect.GetEffectStateName() == "CardEffectRewardGold" &&
                         AllGameManagers.Instance!.GetSaveManager().GetAdjustedGoldAmount(effect.GetParamInt(), isReward: true) != GoldRewardModel.Adjust(effect.GetParamInt()))
                         interactions.Add("Spawned modified gold reward rules");

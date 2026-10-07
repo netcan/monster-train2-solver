@@ -169,6 +169,7 @@ internal static class RoomCombatChecks
         StatisticCacheChecks.Native(fixture);
         CloneUpgradeRefreshChecks.Native(fixture);
         DynamicStatisticChecks.Native(fixture);
+        EnergyChecks.Native(fixture);
         SharedPileChecks.MigratedRoot(fixture);
     }
 }

@@ -92,7 +92,7 @@ namespace MonsterTrain2Poju.Probe
             }
             else if (kind == "CardEffectNULL") kind = "Null";
             else if (data.GetCardType() == CardType.Spell && effects.Length > 0 && effects.All(effect =>
-                new[] { "CardEffectDamage", "CardEffectDraw", "CardEffectDiscardHand", "CardEffectAddBattleCard", "CardEffectHeal", "CardEffectBuffDamage", "CardEffectDebuffDamage", "CardEffectBuffMaxHealth", "CardEffectDebuffMaxHealth", "CardEffectAddStatusEffect", "CardEffectFloorRearrange", "CardEffectAddCardUpgradeToUnits",
+                new[] { "CardEffectGainEnergy", "CardEffectAdjustEnergy", "CardEffectGainEnergyNextTurn", "CardEffectGainEnergyEveryTurn", "CardEffectDamage", "CardEffectDraw", "CardEffectDiscardHand", "CardEffectAddBattleCard", "CardEffectHeal", "CardEffectBuffDamage", "CardEffectDebuffDamage", "CardEffectBuffMaxHealth", "CardEffectDebuffMaxHealth", "CardEffectAddStatusEffect", "CardEffectFloorRearrange", "CardEffectAddCardUpgradeToUnits",
                     "CardEffectAddTempCardUpgradeToUnits", "CardEffectRemoveTempUpgradeFromUnit",
                     "CardEffectAddTempCardUpgradeToCardsInHand", "CardEffectAddPermanentCardUpgradeToCardsInHand" }.Contains(effect.GetEffectStateName())))
             {
@@ -108,7 +108,8 @@ namespace MonsterTrain2Poju.Probe
                         (handUpgrade ? effect.GetTargetMode() != TargetMode.Hand && effect.GetTargetMode() != TargetMode.Room :
                             !CardTargetModel.Supports(effect.GetTargetMode().ToString())))
                         interactions.Add("Spell scaling or target filters");
-                    string type = effect.GetEffectStateName() == "CardEffectDamage" ? "Damage" :
+                    string type = EnergyModel.IsNativeEffect(effect.GetEffectStateName()) ? EnergyEffectProbe.Type(effect) :
+                        effect.GetEffectStateName() == "CardEffectDamage" ? "Damage" :
                         effect.GetEffectStateName() == "CardEffectDraw" ? "Draw" :
                         effect.GetEffectStateName() == "CardEffectDiscardHand" ? "DiscardHand" :
                         effect.GetEffectStateName() == "CardEffectAddBattleCard" ? "Generate" :
@@ -121,7 +122,7 @@ namespace MonsterTrain2Poju.Probe
                         effect.GetEffectStateName() == "CardEffectAddStatusEffect" ? "AddStatus" :
                         handUpgrade ? "HandUpgrade" : effect.GetEffectStateName() == "CardEffectRemoveTempUpgradeFromUnit" ? "RemoveUnitUpgrade" : "UnitUpgrade";
                     CardUpgradeModifier? upgrade = null;
-                    if (effect.GetUseIntRange() && !new[] { "Damage", "Heal", "AddStatus", "BuffAttack", "DebuffAttack", "BuffHealth", "DebuffHealth", "Draw", "DiscardHand", "Generate" }.Contains(type))
+                    if (effect.GetUseIntRange() && !EnergyModel.IsEffect(type) && !new[] { "Damage", "Heal", "AddStatus", "BuffAttack", "DebuffAttack", "BuffHealth", "DebuffHealth", "Draw", "DiscardHand", "Generate" }.Contains(type))
                         interactions.Add("Unimplemented integer range consumer " + type);
                     string lifetime = "";
                     if (type == "BuffHealth") lifetime = ((UnitUpgradeLifetimeTempOnly)effect.GetAdditionalParamInt1()).ToString();

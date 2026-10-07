@@ -14,8 +14,10 @@ internal static class BattleTurnChecks
             BattleTurnResult result = BattleTurnModel.EndTurn(before);
             if (!result.Supported) { unsupported++; continue; }
             BattleTurnState actual = turn.GetProperty("Actual").Deserialize<BattleTurnState>()!;
-            Require(result.Outcome == (RoomOutcome)turn.GetProperty("ActualOutcome").GetInt32() &&
-                Comparable(result.State!) == Comparable(actual), "Native EndTurn differs at index " + turn.GetProperty("Index"));
+            string predictedState = Comparable(result.State!), actualState = Comparable(actual);
+            Require(result.Outcome == (RoomOutcome)turn.GetProperty("ActualOutcome").GetInt32() && predictedState == actualState,
+                "Native EndTurn differs at index " + turn.GetProperty("Index").GetInt32() + ": " +
+                (predictedState == actualState ? "terminal outcome" : ModelJson.Difference(predictedState, actualState)));
             matched++;
         }
         Console.WriteLine($"NATIVE-TURN-CHECKS PASS: {matched} matched, {unsupported} unsupported.");

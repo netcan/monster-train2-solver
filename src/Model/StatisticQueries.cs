@@ -51,7 +51,15 @@ namespace MonsterTrain2Poju.Model
 
         internal static string? ValidateDecision(BattleTurnState state)
         {
-            StatisticQueryFrame? frame = state.Spawn.Train.Context?.QueryFrame;
+            CombatContext? context = state.Spawn.Train.Context;
+            if (context?.EnergyState != null)
+            {
+                string? energyError = EnergyModel.Validate(context);
+                if (energyError != null) return energyError;
+                if (context.EnergyState.Phase != "MonsterTurn" || !context.EnergyState.PyreAlive)
+                    return "Energy state does not describe an active player decision.";
+            }
+            StatisticQueryFrame? frame = context?.QueryFrame;
             if (frame == null) return null; // Old captures retain their explicitly incomplete inputs.
             int moon = state.MoonPhase == "New" ? 1 : state.MoonPhase == "Full" ? 2 : 0;
             if (moon == 0 || frame.Energy != state.Energy || frame.Turn != state.Spawn.Turn ||

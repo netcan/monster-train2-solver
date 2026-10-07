@@ -148,7 +148,7 @@ namespace MonsterTrain2Poju.Model
                     context.Cards.ExternalInteractions), rng, context.Gold, checked(context.NextCardId + 1), context.MaxHandSize,
                     context.StatusRules, context.Statistics?.TrackCards(new[] { card.InstanceId }),
                     context.CardInstances?.Concat(new[] { candidate }).ToArray(), context.CardRegistry, context.AllScenarioBossesDead,
-                    context.NextAddedTemporaryUpgrades == null ? null : Array.Empty<CardUpgradeModifier>(), context.OtherPiles, context.QueryFrame, context.KillCamActivated, context.MagicPower, context.IsolatedBattlePreview);
+                    context.NextAddedTemporaryUpgrades == null ? null : Array.Empty<CardUpgradeModifier>(), context.OtherPiles, context.QueryFrame, context.KillCamActivated, context.MagicPower, context.IsolatedBattlePreview, context.EnergyState);
                 // Setup/upgrade refresh builds scaling trait text in an active battle.
                 // Those native statistic queries refresh deckStats after the new card
                 // enters its pile, even when the displayed scaling value is zero.

@@ -37,3 +37,10 @@ with nested damage, healing, status, upgrade and source-copy callbacks. It check
 390 status and 419 other character dispatches, 95 nested queue payloads, both
 source-card writeback boundaries, and continuous simulation from initial and
 mid-battle roots with 16 isolated parallel branches.
+
+`full-battle-energy-effects.mt2f` and `full-battle-energy-effects-lethal.mt2f`
+capture current, next-turn and persistent energy changes from spells and unit
+triggers. They include phase gates, signed/ranged/zero amounts, native caps,
+late end-turn accounting, carried combat gains, cancelled ranges and post-boss
+gates. Both complete policies match from initial/mid-battle states in 16 parallel
+branches; all 448 observed energy applications also compare complete contexts.

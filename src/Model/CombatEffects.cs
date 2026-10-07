@@ -37,12 +37,13 @@ namespace MonsterTrain2Poju.Model
         public bool? KillCamActivated { get; }
         public IReadOnlyList<RoomMagicPower>? MagicPower { get; }
         public bool? IsolatedBattlePreview { get; }
+        public BattleEnergyState? EnergyState { get; }
         public CombatContext(CardCycleState cards, UnityRng battleRng, int gold, int nextCardId, int maxHandSize,
             IReadOnlyList<CombatStatus>? statusRules = null, BattleStatistics? statistics = null, IReadOnlyList<CardInstanceState>? cardInstances = null,
             IReadOnlyList<CardInstanceState>? cardRegistry = null, bool? allScenarioBossesDead = null,
             IReadOnlyList<CardUpgradeModifier>? nextAddedTemporaryUpgrades = null, IReadOnlyList<CardPileState>? otherPiles = null,
             StatisticQueryFrame? queryFrame = null, bool? killCamActivated = null, IReadOnlyList<RoomMagicPower>? magicPower = null,
-            bool? isolatedBattlePreview = null)
+            bool? isolatedBattlePreview = null, BattleEnergyState? energyState = null)
         { Cards = cards; BattleRng = battleRng; Gold = gold; NextCardId = nextCardId; MaxHandSize = maxHandSize;
             StatusRules = Array.AsReadOnly((statusRules ?? Array.Empty<CombatStatus>()).ToArray());
             Statistics = cardInstances == null ? statistics : statistics?.WithOwnedCards(cardInstances.Select(card => card.InstanceId));
@@ -53,33 +54,36 @@ namespace MonsterTrain2Poju.Model
             NextAddedTemporaryUpgrades = nextAddedTemporaryUpgrades == null ? null : Array.AsReadOnly(nextAddedTemporaryUpgrades.ToArray());
             OtherPiles = otherPiles == null ? null : Array.AsReadOnly(otherPiles.ToArray()); QueryFrame = queryFrame; KillCamActivated = killCamActivated;
             MagicPower = magicPower == null ? null : Array.AsReadOnly(magicPower.OrderBy(room => room.RoomIndex).ThenBy(room => room.Team).ToArray());
-            IsolatedBattlePreview = isolatedBattlePreview; }
+            IsolatedBattlePreview = isolatedBattlePreview; EnergyState = energyState; }
+        internal CombatContext WithEnergyState(BattleEnergyState state) => new CombatContext(Cards, BattleRng,
+            Gold, NextCardId, MaxHandSize, StatusRules, Statistics, CardInstances, CardRegistry, AllScenarioBossesDead,
+            NextAddedTemporaryUpgrades, OtherPiles, QueryFrame, KillCamActivated, MagicPower, IsolatedBattlePreview, state);
         internal CombatContext WithQueryFrame(StatisticQueryFrame? frame) => new CombatContext(Cards, BattleRng,
             Gold, NextCardId, MaxHandSize, StatusRules, Statistics, CardInstances, CardRegistry, AllScenarioBossesDead,
-            NextAddedTemporaryUpgrades, OtherPiles, frame, KillCamActivated, MagicPower, IsolatedBattlePreview);
+            NextAddedTemporaryUpgrades, OtherPiles, frame, KillCamActivated, MagicPower, IsolatedBattlePreview, EnergyState);
         internal CombatContext WithStatistics(BattleStatistics? statistics) => new CombatContext(Cards, BattleRng,
-            Gold, NextCardId, MaxHandSize, StatusRules, statistics, CardInstances, CardRegistry, AllScenarioBossesDead, NextAddedTemporaryUpgrades, OtherPiles, QueryFrame, KillCamActivated, MagicPower, IsolatedBattlePreview);
+            Gold, NextCardId, MaxHandSize, StatusRules, statistics, CardInstances, CardRegistry, AllScenarioBossesDead, NextAddedTemporaryUpgrades, OtherPiles, QueryFrame, KillCamActivated, MagicPower, IsolatedBattlePreview, EnergyState);
         internal CombatContext WithCardInstances(IReadOnlyList<CardInstanceState>? instances) => new CombatContext(Cards, BattleRng,
-            Gold, NextCardId, MaxHandSize, StatusRules, Statistics, instances, CardRegistry, AllScenarioBossesDead, NextAddedTemporaryUpgrades, OtherPiles, QueryFrame, KillCamActivated, MagicPower, IsolatedBattlePreview);
+            Gold, NextCardId, MaxHandSize, StatusRules, Statistics, instances, CardRegistry, AllScenarioBossesDead, NextAddedTemporaryUpgrades, OtherPiles, QueryFrame, KillCamActivated, MagicPower, IsolatedBattlePreview, EnergyState);
         internal CombatContext WithCardRegistry(IReadOnlyList<CardInstanceState>? registry) => new CombatContext(Cards, BattleRng,
-            Gold, NextCardId, MaxHandSize, StatusRules, Statistics, CardInstances, registry, AllScenarioBossesDead, NextAddedTemporaryUpgrades, OtherPiles, QueryFrame, KillCamActivated, MagicPower, IsolatedBattlePreview);
+            Gold, NextCardId, MaxHandSize, StatusRules, Statistics, CardInstances, registry, AllScenarioBossesDead, NextAddedTemporaryUpgrades, OtherPiles, QueryFrame, KillCamActivated, MagicPower, IsolatedBattlePreview, EnergyState);
         internal CardInstanceState? FindCard(int id) => CardInstances?.FirstOrDefault(card => card.InstanceId == id)
             ?? CardRegistry?.FirstOrDefault(card => card.InstanceId == id);
         internal CombatContext WithCard(CardInstanceState changed) => new CombatContext(Cards, BattleRng,
             Gold, NextCardId, MaxHandSize, StatusRules, Statistics,
             CardInstances?.Select(card => card.InstanceId == changed.InstanceId ? changed : card).ToArray(),
-            CardRegistry?.Select(card => card.InstanceId == changed.InstanceId ? changed : card).ToArray(), AllScenarioBossesDead, NextAddedTemporaryUpgrades, OtherPiles, QueryFrame, KillCamActivated, MagicPower, IsolatedBattlePreview);
+            CardRegistry?.Select(card => card.InstanceId == changed.InstanceId ? changed : card).ToArray(), AllScenarioBossesDead, NextAddedTemporaryUpgrades, OtherPiles, QueryFrame, KillCamActivated, MagicPower, IsolatedBattlePreview, EnergyState);
         internal CombatContext WithBossesDead() => new CombatContext(Cards, BattleRng, Gold, NextCardId,
-            MaxHandSize, StatusRules, Statistics, CardInstances, CardRegistry, AllScenarioBossesDead.HasValue ? true : (bool?)null, NextAddedTemporaryUpgrades, OtherPiles, QueryFrame, KillCamActivated, MagicPower, IsolatedBattlePreview);
+            MaxHandSize, StatusRules, Statistics, CardInstances, CardRegistry, AllScenarioBossesDead.HasValue ? true : (bool?)null, NextAddedTemporaryUpgrades, OtherPiles, QueryFrame, KillCamActivated, MagicPower, IsolatedBattlePreview, EnergyState);
         internal BattleStatistics? LiveStatistics => CardInstances?.Count == 0 ? Statistics?.RefreshDeckAfterCardTerminal() : Statistics;
         internal CombatContext WithBattleRng(UnityRng rng) => new CombatContext(Cards, rng, Gold, NextCardId,
-            MaxHandSize, StatusRules, Statistics, CardInstances, CardRegistry, AllScenarioBossesDead, NextAddedTemporaryUpgrades, OtherPiles, QueryFrame, KillCamActivated, MagicPower, IsolatedBattlePreview);
+            MaxHandSize, StatusRules, Statistics, CardInstances, CardRegistry, AllScenarioBossesDead, NextAddedTemporaryUpgrades, OtherPiles, QueryFrame, KillCamActivated, MagicPower, IsolatedBattlePreview, EnergyState);
         internal CombatContext WithCards(CardCycleState cards) => new CombatContext(cards, BattleRng, Gold, NextCardId,
-            MaxHandSize, StatusRules, Statistics, CardInstances, CardRegistry, AllScenarioBossesDead, NextAddedTemporaryUpgrades, OtherPiles, QueryFrame, KillCamActivated, MagicPower, IsolatedBattlePreview);
+            MaxHandSize, StatusRules, Statistics, CardInstances, CardRegistry, AllScenarioBossesDead, NextAddedTemporaryUpgrades, OtherPiles, QueryFrame, KillCamActivated, MagicPower, IsolatedBattlePreview, EnergyState);
         internal CombatContext WithOtherPiles(IReadOnlyList<CardPileState> piles) => OtherPiles == null ? this : new CombatContext(Cards, BattleRng,
-            Gold, NextCardId, MaxHandSize, StatusRules, Statistics, CardInstances, CardRegistry, AllScenarioBossesDead, NextAddedTemporaryUpgrades, piles, QueryFrame, KillCamActivated, MagicPower, IsolatedBattlePreview);
+            Gold, NextCardId, MaxHandSize, StatusRules, Statistics, CardInstances, CardRegistry, AllScenarioBossesDead, NextAddedTemporaryUpgrades, piles, QueryFrame, KillCamActivated, MagicPower, IsolatedBattlePreview, EnergyState);
         internal CombatContext AfterCardEffects() => NextAddedTemporaryUpgrades == null || NextAddedTemporaryUpgrades.Count == 0 ? this : new CombatContext(Cards, BattleRng, Gold,
-            NextCardId, MaxHandSize, StatusRules, Statistics, CardInstances, CardRegistry, AllScenarioBossesDead, Array.Empty<CardUpgradeModifier>(), OtherPiles, QueryFrame, KillCamActivated, MagicPower, IsolatedBattlePreview);
+            NextCardId, MaxHandSize, StatusRules, Statistics, CardInstances, CardRegistry, AllScenarioBossesDead, Array.Empty<CardUpgradeModifier>(), OtherPiles, QueryFrame, KillCamActivated, MagicPower, IsolatedBattlePreview, EnergyState);
     }
 
     public sealed class CombatEffect
