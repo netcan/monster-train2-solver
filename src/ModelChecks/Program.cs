@@ -113,6 +113,7 @@ GoldRewardChecks.Run();
 HealingTriggerChecks.Run();
 EnemySpawningChecks.Run();
 BattleActionChecks.Run();
+DecisionReferenceChecks.Run();
 CardSpellChecks.Run();
 RoomSpellChecks.Run();
 RandomSpellChecks.Run();

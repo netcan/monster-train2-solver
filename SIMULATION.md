@@ -2275,3 +2275,15 @@ now contains 60 battle fixtures and eight calibration archives.
 The complete 68-archive manifest, integrity and model regression passes after
 these changes. The native probe Release build also succeeds with zero warnings
 and zero errors.
+
+## Canonical attacker references at quiet decisions
+
+Current decision snapshots explicitly set `CanonicalDecisionReferences`.
+Attacker references to dead or destroyed characters become zero at quiet card,
+EndTurn and terminal boundaries; live attackers and in-flight callback/room
+references remain intact. The simulator applies the same rule to completed
+decisions. Older snapshots retain their original convention through the default
+false flag. Independent checks cover both conventions, terminal boss removal,
+live references and 32 parallel branches. A new native energy scenario exposed
+the terminal case: the prior model retained removed attacker 13 after the native
+quiet decision had cleared it.

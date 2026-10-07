@@ -70,7 +70,7 @@ namespace MonsterTrain2Poju.Probe
             return new BattleTurnState(spawn, player.GetEnergy(), save.GetBalanceData().GetStartOfTurnEnergy(),
                 combat.GetStartOfTurnCards(), save.GetForgePoints(), save.GetDragonsHoardAmount(), player.CurrentMoonPhase.ToString(),
                 streams, otherPiles, interactions.Distinct().OrderBy(value => value, StringComparer.Ordinal).ToArray(), trace.CapturePlayRules(spawn),
-                save.GetBattlePreviewEnabled(), UiRngIsolation.Enabled);
+                save.GetBattlePreviewEnabled(), UiRngIsolation.Enabled, canonicalDecisionReferences: true);
         }
 
         internal void Begin()
