@@ -10,9 +10,10 @@ namespace MonsterTrain2Poju.Model
         public int Speed { get; }
         public bool Ascends { get; }
         public bool Loops { get; }
+        public bool CompanionBoss { get; }
         // Intrinsic speed before movement statuses. The native default is one floor.
-        public EnemyMovement(int unitId, int speed, bool ascends, bool loops)
-        { UnitId = unitId; Speed = speed; Ascends = ascends; Loops = loops; }
+        public EnemyMovement(int unitId, int speed, bool ascends, bool loops, bool companionBoss = false)
+        { UnitId = unitId; Speed = speed; Ascends = ascends; Loops = loops; CompanionBoss = companionBoss; }
     }
 
     public sealed class TrainCombatState
@@ -50,11 +51,17 @@ namespace MonsterTrain2Poju.Model
 
     public static class TrainCombatModel
     {
-        // Native ProcessRemovals destroys the Unity objects before advancing the
-        // turn. Retained references then compare null; terminal combat skips this phase.
+        // Native ProcessRemovals marks objects Destroyed before advancing the turn;
+        // Unity completes destruction at frame end. Stable model boundaries normalize
+        // those references. Terminal combat skips this phase.
         internal static TrainCombatState ProcessRemovals(TrainCombatState source)
         {
             var activeIds = new HashSet<int>(source.Rooms.SelectMany(room => room.Units).Select(unit => unit.Id));
+            return ClearRemovedReferences(source, activeIds);
+        }
+
+        private static TrainCombatState ClearRemovedReferences(TrainCombatState source, HashSet<int> activeIds)
+        {
             CombatContext? context = source.Context;
             foreach (CardInstanceState card in context?.CardRegistry ?? context?.CardInstances ?? Array.Empty<CardInstanceState>())
                 if (card.EquippedUnitId > 0 && !activeIds.Contains(card.EquippedUnitId.Value)) context = context!.WithCard(card.WithEquippedUnit(0));
@@ -133,6 +140,9 @@ namespace MonsterTrain2Poju.Model
         }
 
         public static TrainCombatResult Ascend(TrainCombatState source)
+            => Ascend(source, null, false);
+
+        internal static TrainCombatResult Ascend(TrainCombatState source, int? onlyUnitId, bool forceLoop)
         {
             string? error = Validate(source);
             if (error != null) return Unsupported(error);
@@ -141,11 +151,15 @@ namespace MonsterTrain2Poju.Model
             bool enteredPyre = false;
             var moved = new HashSet<int>();
             var movements = source.Movement.ToDictionary(rule => rule.UnitId);
+            var looped = new List<int>();
+            var shifted = new List<(int Destination, int UnitId)>();
+            var movementResults = new List<RoomCombatResult>();
             // Reserve destinations from the top down; each enemy moves only once.
             for (int index = pyre; index >= 0; index--)
             {
                 foreach (CombatUnit enemy in rooms[index].Where(unit => unit.Team == CombatTeam.Enemy).ToArray())
                 {
+                    if (onlyUnitId.HasValue && enemy.Id != onlyUnitId) continue;
                     if (!moved.Add(enemy.Id)) continue;
                     if (!movements.TryGetValue(enemy.Id, out EnemyMovement? rule))
                         return Unsupported("Missing enemy movement rule for " + enemy.Id);
@@ -164,7 +178,7 @@ namespace MonsterTrain2Poju.Model
                             enemy.MaxHealth, enemy.CanAttack, enemy.IsPyre, enemy.EndsBattleOnDeath, statuses, enemy.Triggers, enemy.SpawnerCardId, enemy.Size, enemy.StatusImmunities, enemy.Subtypes, enemy.Modifiers, enemy.IsBoss, enemy.LastAttackerId, enemy.StatusRegistry, enemy.EquipmentCards, enemy.NextTriggerId);
                     }
                     int destination = Math.Max(0, Math.Min(pyre, index + speed));
-                    if (destination == pyre && rule.Loops && !enemy.Statuses.Any(status => status.Id == "relentless"))
+                    if ((destination == pyre || forceLoop) && rule.Loops && !enemy.Statuses.Any(status => status.Id == "relentless"))
                         destination = 0;
                     if (destination == index)
                     {
@@ -177,20 +191,74 @@ namespace MonsterTrain2Poju.Model
                     rooms[index].Remove(enemy);
                     int playerIndex = rooms[destination].FindIndex(unit => unit.Team == CombatTeam.Player);
                     rooms[destination].Insert(playerIndex < 0 ? rooms[destination].Count : playerIndex, arriving);
+                    if (destination < index && rule.Loops && enemy.Status("relentless") == null) looped.Add(enemy.Id);
+                    else shifted.Add((destination, enemy.Id));
                     enteredPyre |= destination == pyre;
                 }
             }
             RoomCombatState[] next = source.Rooms.Select((room, index) => new RoomCombatState(room.RoomIndex,
                 room.Deployment, rooms[index], room.ExternalInteractions, source.Context)).ToArray();
+            TrainCombatState moving = Freeze(source, next, source.Context);
+            if (looped.Count > 0)
+            {
+                var callbacks = looped.Select(id => (id, "OnTrainRoomLoop")).Concat(looped.SelectMany(id =>
+                    new[] { (id, "PostAscension"), (id, "OnShift") })).ToArray();
+                TrainCombatResult fired = ApplyMovementTriggers(moving, callbacks);
+                if (!fired.Supported || Terminal(fired.Outcome)) return fired;
+                moving = fired.State!;
+                movementResults.AddRange(fired.RoomResults);
+            }
+            foreach (var group in shifted.GroupBy(item => item.Destination).OrderByDescending(group => group.Key))
+            {
+                TrainCombatResult fired = ApplyMovementTriggers(moving, group.SelectMany(item =>
+                    new[] { (item.UnitId, "PostAscension"), (item.UnitId, "OnShift") }).ToArray());
+                if (!fired.Supported || Terminal(fired.Outcome)) return fired;
+                moving = fired.State!;
+                movementResults.AddRange(fired.RoomResults);
+            }
+            next = moving.Rooms.ToArray();
             // Enemies that reach the Pyre fight immediately during ascension, within this same turn.
             if (enteredPyre)
             {
                 RoomCombatResult result = RoomCombatModel.Resolve(next[pyre]);
                 if (!result.Supported) return Unsupported(result.UnsupportedReason!);
                 next[pyre] = result.State!;
-                return new TrainCombatResult(Freeze(source, next, result.State!.Context), result.Outcome, new[] { result });
+                movementResults.Add(result);
+                return new TrainCombatResult(Freeze(source, next, result.State!.Context), result.Outcome, movementResults);
             }
-            return new TrainCombatResult(Freeze(source, next, source.Context), RoomOutcome.Cleared, Array.Empty<RoomCombatResult>());
+            return new TrainCombatResult(moving, RoomOutcome.Cleared, movementResults);
+        }
+
+        internal static TrainCombatResult ApplyMovementTriggers(TrainCombatState source, IReadOnlyList<(int UnitId, string Kind)> triggers)
+        {
+            var queue = new List<RoomCombatModel.QueuedCharacterTrigger>();
+            foreach (var trigger in triggers)
+            {
+                int index = source.Rooms.ToList().FindIndex(room => room.Units.Any(unit => unit.Id == trigger.UnitId));
+                if (index >= 0) queue.Add(new RoomCombatModel.QueuedCharacterTrigger(index,
+                    source.Rooms[index].Units.First(unit => unit.Id == trigger.UnitId), trigger.Kind));
+            }
+            return ApplyCharacterQueue(source, queue);
+        }
+
+        internal static TrainCombatResult ApplyCharacterQueue(TrainCombatState source, List<RoomCombatModel.QueuedCharacterTrigger> queue)
+        {
+            RoomCombatState[] rooms = source.Rooms.ToArray(); CombatContext? context = source.Context;
+            var results = new List<RoomCombatResult>(); RoomOutcome outcome = RoomOutcome.Exchanged; string? error = null;
+            bool drained = RoomCombatModel.DrainCharacterQueue(queue, queued =>
+            {
+                RoomCombatResult fired = RoomCombatModel.ApplyQueuedCharacterTrigger(WithContext(rooms[queued.RoomIndex], context), queued, queue.Add);
+                if (!fired.Supported) { error = fired.UnsupportedReason; return false; }
+                rooms[queued.RoomIndex] = fired.State!; context = fired.State!.Context; results.Add(fired);
+                if (Terminal(fired.Outcome)) outcome = fired.Outcome;
+                return true;
+            }, queued =>
+            {
+                RoomCombatResult returned = RoomCombatModel.SettleQueuedSpawner(WithContext(rooms[queued.RoomIndex], context), queued.Unit);
+                if (!returned.Supported) { error = returned.UnsupportedReason; return false; }
+                rooms[queued.RoomIndex] = returned.State!; context = returned.State!.Context; results.Add(returned); return true;
+            });
+            return drained ? new TrainCombatResult(Freeze(source, rooms, context), outcome, results) : Unsupported(error ?? "Movement callback queue failed.");
         }
 
         private static RoomCombatState WithContext(RoomCombatState room, CombatContext? context) =>

@@ -83,6 +83,7 @@ StatusCallbackChecks.Run();
 UnitUpgradeCallbackChecks.Run();
 RetainedCallbackChecks.Run();
 ConditionalTriggerChecks.Run();
+CompanionBossChecks.Run();
 BattleStatisticsChecks.Run();
 StatisticOverflowChecks.Run();
 StatisticZeroIncrementChecks.Run();

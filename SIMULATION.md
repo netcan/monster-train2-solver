@@ -21,6 +21,8 @@ map and battle-intro flow.
 Baseline captures keep the ordinary battle. Mechanism fixtures then modify
 runtime CardData, upgrades or character triggers at deployment turn zero,
 reinitialize affected card instances, and keep the original Boss and waves.
+Companion-Boss fixtures additionally move the same Boss container to the second
+wave, preserving its attack/health and every ordinary enemy's original wave.
 The automated policy selects legal actions and invokes native card play and
 EndTurn. The probe observes actual state and callback boundaries, including
 private counters and the native ordered signal listeners. Specialized setup
@@ -89,6 +91,7 @@ are copied immutable values; independent child states can run on worker threads.
 | Enemy waves and treasure | `EnemySpawningModel` | Native group cache, spawn order, phase, slots and treasure floor selection |
 | EndTurn to next decision | `BattleTurnModel.EndTurn` | Seven native consecutive transitions in each supported fixture |
 | Battle to terminal result | `BattleSimulator.Resolve` and `ResolveNoMoreCards` | Independent card policies and seven-turn chains, mid-battle inputs and 16 parallel branches |
+| Single companion Boss transition | `CompanionBossModel` and `TrainCombatModel` | Wave exhaustion, forced looping, ordered movement/status/removal callbacks, raw/canonical phase boundaries and both no-card/card policies |
 | Additional spells, abilities, relics | Not complete | Unsupported interactions explicitly reject the model transition |
 
 `CardEffectAddBattleCard` uses one shared immutable generation model for spells
@@ -2898,3 +2901,67 @@ its 12 existing nullable warnings and no errors. No source JSON fixture is
 introduced. Relentless-transition trigger removal, immediate moon/deathwish
 effects, equipment-granted abilities, grafts, relics, room attachments and
 specialized Boss interactions remain separate work.
+
+## Companion Boss transition and selective trigger removal
+
+Native HeroManager.PerformCompanionBossAction runs only at BossActionPreCombat
+after the wave queue is exhausted. It selects a living companion in tower
+order, runs DoAscension with only that character and forceLoop enabled, adds
+relentless, then calls RemoveTriggersOnRelentlessChange. Force-loop still
+requires the character's intrinsic looping flag. The trigger removal iterates
+backward and deletes only flagged entries, preserving all surviving entries,
+fired flags and the persistent trigger allocation cursor. It does not run
+ordinary upgrade-removal effects or add its own callbacks. Relentless adds
+rooted immunity; its queued status callbacks drain after the removal through
+the native RemoveDeadCharacters phase.
+
+CombatTrigger captures the removal flag through immutable copies and granted
+unit/equipment triggers. EnemyDefinition and EnemyMovement carry companion
+membership independently of ordinary movement flags. BattleTurnModel invokes
+the companion phase after both teams' PreCombat and before energy/draw.
+Train movement dispatches OnTrainRoomLoop, PostAscension and OnShift in the
+native group order and retains their events for subsequent death/card routing.
+This removes the previous blanket rejection of relentless-removal triggers.
+Paired companions, outer/final Boss state machines and movement Sentry effects
+remain explicit unsupported interactions.
+
+Phase comparisons declare stable character/equipment references, using the
+same canonical boundary as player decisions. Unity may finish destruction
+between coroutine yields, so a marked-Destroyed object can temporarily retain
+its raw attacker ID. The capture stores RawBefore, RawAfter and RawActual,
+including pending destruction IDs, alongside the native canonical snapshots.
+Independent checks verify the raw-to-canonical mapping as well as every
+complete phase result. The model rejects phase inputs with unsettled detached
+attacker references instead of predicting animation frame timing. Retained
+dying-character payloads inside trigger queues remain separately modeled.
+
+`-CompanionBoss` moves the original first-battle Boss container to the second
+wave, sets companion/looping membership and removes its starting relentless.
+Attack and health remain 7/125, and all ordinary enemy waves remain intact.
+Six authored triggers make the actual forced return from floor two observable:
+three movement rewards sum to 75 before removal, four flagged triggers are
+removed, and the surviving status callback adds 55 afterward. Both archives
+record one real native selective-removal operation without changing queued
+callbacks or the allocation cursor.
+
+Both captures use schema 60, game 2.2.1 and module MVID
+`8fb07b96-f4db-4d2b-884d-c00536d6ccf4`:
+
+| Archive | Bytes / nodes | Native time | Plays / EndTurns | Final Pyre | Compared Boss phases |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| `full-battle-companion-boss.mt2f` | 17,734 / 2,662 | 44.92 s | 0 / 7 | 49 | 10 |
+| `full-battle-companion-boss-actions.mt2f` | 25,474 / 4,197 | 64.33 s | 18 / 6 | 75 | 8 |
+
+Muted Instant runs win with zero capture failures, differences, unsupported or
+pending records, and unchanged original files. Complete Boss phases repeat in
+32 isolated branches; both whole battles match from their initial roots in 16
+parallel branches, with an actual mid-battle root for the card policy. The
+card policy includes six observed death returns and raw destroyed-reference
+projection coverage. All 84 pre-existing archives, including eight calibration
+suites, pass full regression. Both new captures and the historical damage-death
+and detached-draw fixtures pass the final independent checker. The expanded
+86-file inventory and SHA-256 validation pass, as does probe-script parsing.
+Probe builds with zero warnings/errors; ModelChecks retains 12 existing nullable
+warnings and no errors. No JSON source fixture is introduced. Equipment-granted
+abilities, grafts, moon/deathwish, relics, room attachments and broader Boss
+interactions remain work toward the complete simulator.

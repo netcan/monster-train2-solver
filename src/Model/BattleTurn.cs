@@ -187,6 +187,17 @@ namespace MonsterTrain2Poju.Model
                 if (Terminal(triggers.Outcome)) return Finish(triggers.Outcome, 0, moon);
             }
             context = train.Context!;
+            if (train.Movement.Any(rule => rule.CompanionBoss))
+            {
+                train = WithContext(train, EnergyModel.SetPhase(context, "BossActionPreCombat"), false);
+                spawn = WithTrain(spawn, train, turn, spawn.Rng);
+                TrainCombatResult bossAction = CompanionBossModel.Resolve(spawn, true);
+                if (!bossAction.Supported) return Unsupported(bossAction.UnsupportedReason!);
+                if (!RouteDeadUnits(train, bossAction)) return Unsupported("Companion movement requires native death/card routing.");
+                train = bossAction.State!; spawn = WithTrain(spawn, train, turn, spawn.Rng);
+                if (Terminal(bossAction.Outcome)) return Finish(bossAction.Outcome, 0, moon);
+                context = train.Context!;
+            }
             context = EnergyModel.StartTurn(context, source.EnergyPerTurn);
             context = EquipmentModel.ReturnUnattached(context, new HashSet<int>(train.Rooms.SelectMany(room => room.Units).Select(unit => unit.Id)));
             if (context.OtherPiles != null) otherPiles = context.OtherPiles.ToArray();
@@ -275,7 +286,7 @@ namespace MonsterTrain2Poju.Model
         private static EnemySpawnState WithTrain(EnemySpawnState spawn, TrainCombatState train, int turn, UnityRng rng) =>
             new EnemySpawnState(train, spawn.Waves, spawn.SelectedGroups, spawn.Phase, spawn.Looping, rng, spawn.NextUnitId,
                 spawn.Treasures, spawn.TreasuresRemaining, spawn.TreasureEnabled, spawn.FirstTreasureTurn,
-                spawn.FirstTreasureRoom, turn, spawn.ExternalInteractions, spawn.CanonicalDecisionReferences);
+                spawn.FirstTreasureRoom, turn, spawn.ExternalInteractions, spawn.CanonicalDecisionReferences, spawn.PendingDestroyedUnitIds);
         private static bool Terminal(RoomOutcome outcome) => outcome == RoomOutcome.BattleWon ||
             outcome == RoomOutcome.PlayerDefeated || outcome == RoomOutcome.Stalemate;
         private static BattleTurnResult Unsupported(string reason) => new BattleTurnResult(null, RoomOutcome.Unsupported, reason);

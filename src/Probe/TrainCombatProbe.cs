@@ -41,7 +41,7 @@ namespace MonsterTrain2Poju.Probe
                 {
                     CharacterState enemy = enemies[unitIndex];
                     movement.Add(new EnemyMovement(captured[unitIndex].Id, 1,
-                        enemy.GetAscendsTrainAutomatically(), enemy.GetLoopsBetweenTrainFloors()));
+                        enemy.GetAscendsTrainAutomatically(), enemy.GetLoopsBetweenTrainFloors(), enemy.IsCompanionBoss()));
                 }
             }
             return new TrainCombatState(states, movement,

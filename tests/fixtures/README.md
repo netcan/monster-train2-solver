@@ -116,7 +116,23 @@ natural dispatches compare complete room, actor and dying-target states in 32
 parallel branches. The natural cases include two actual Slay callbacks with
 dead targets. The complete 19-play, six-EndTurn policy matches initial and
 actual mid-battle roots in 16 parallel branches, ending at Pyre 80. Relentless
-transition trigger removal remains unsupported.
+transitions are covered separately below.
+
+`full-battle-companion-boss.mt2f` and `full-battle-companion-boss-actions.mt2f`
+retain schema 60. A single companion Boss moves before gaining relentless
+after wave exhaustion, then selectively removes flagged triggers before the
+status callbacks drain. The original Boss keeps its attack/health and ordinary
+enemies keep their waves; the Boss container moves to the second wave so its
+forced return from floor two is observed. Loop/PostAscension/OnShift rewards
+total 75 before removal, and the surviving status callback adds 55 afterward.
+Trigger order and allocation cursors remain intact. Ten no-card phases and
+eight actual-card phases compare independently in 32 parallel branches; both
+complete policies compare from their initial roots in 16 parallel branches,
+with an actual mid-battle root for the card policy. Raw before/after states and
+pending Unity destruction IDs are retained separately from canonical phase
+boundaries. Independent checks verify that their only projected changes are
+destroyed attacker/equipment references. Paired companions and outer/final
+Boss state machines remain unsupported.
 
 `full-battle-room-capacity.mt2f` and `full-battle-room-capacity-lethal.mt2f`
 retain schema 52 battles with live capacities used by subsequent summons and

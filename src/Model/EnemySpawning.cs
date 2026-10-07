@@ -9,9 +9,10 @@ namespace MonsterTrain2Poju.Model
         public CombatUnit Unit { get; }
         public bool Ascends { get; }
         public bool Loops { get; }
+        public bool CompanionBoss { get; }
         public IReadOnlyList<string> ExternalInteractions { get; }
-        public EnemyDefinition(CombatUnit unit, bool ascends, bool loops, IReadOnlyList<string> externalInteractions)
-        { Unit = unit; Ascends = ascends; Loops = loops; ExternalInteractions = Array.AsReadOnly(externalInteractions.ToArray()); }
+        public EnemyDefinition(CombatUnit unit, bool ascends, bool loops, IReadOnlyList<string> externalInteractions, bool companionBoss = false)
+        { Unit = unit; Ascends = ascends; Loops = loops; ExternalInteractions = Array.AsReadOnly(externalInteractions.ToArray()); CompanionBoss = companionBoss; }
         internal CombatUnit Create(int id) => new CombatUnit(id, Unit.AssetKey, CombatTeam.Enemy,
             Unit.BaseAttack, Unit.Health, Unit.MaxHealth, Unit.CanAttack, false, Unit.EndsBattleOnDeath,
             Unit.Statuses, Unit.Triggers, size: Unit.Size, statusImmunities: Unit.StatusImmunities, subtypes: Unit.Subtypes, modifiers: Unit.Modifiers, isBoss: Unit.IsBoss, lastAttackerId: Unit.LastAttackerId.HasValue ? 0 : null, statusRegistry: Unit.StatusRegistry, equipmentCards: Unit.EquipmentCards, nextTriggerId: Unit.NextTriggerId);
@@ -47,11 +48,13 @@ namespace MonsterTrain2Poju.Model
         public int Turn { get; }
         public IReadOnlyList<string> ExternalInteractions { get; }
         public bool CanonicalDecisionReferences { get; }
+        // Unity objects marked Destroyed but still awaiting the frame-end flush.
+        public IReadOnlyList<int>? PendingDestroyedUnitIds { get; }
         public EnemySpawnState(TrainCombatState train, IReadOnlyList<EnemyWave> waves,
             IReadOnlyList<int> selectedGroups, int phase, bool looping, UnityRng rng, int nextUnitId,
             IReadOnlyList<EnemyDefinition> treasures, int treasuresRemaining, bool treasureEnabled,
             int firstTreasureTurn, int firstTreasureRoom, int turn, IReadOnlyList<string> externalInteractions,
-            bool canonicalDecisionReferences = false)
+            bool canonicalDecisionReferences = false, IReadOnlyList<int>? pendingDestroyedUnitIds = null)
         {
             Train = train; Waves = Array.AsReadOnly(waves.ToArray()); SelectedGroups = Array.AsReadOnly(selectedGroups.ToArray());
             Phase = phase; Looping = looping; Rng = rng; NextUnitId = nextUnitId;
@@ -59,6 +62,7 @@ namespace MonsterTrain2Poju.Model
             TreasureEnabled = treasureEnabled; FirstTreasureTurn = firstTreasureTurn; FirstTreasureRoom = firstTreasureRoom;
             Turn = turn; ExternalInteractions = Array.AsReadOnly(externalInteractions.ToArray());
             CanonicalDecisionReferences = canonicalDecisionReferences;
+            PendingDestroyedUnitIds = pendingDestroyedUnitIds == null ? null : Array.AsReadOnly(pendingDestroyedUnitIds.ToArray());
         }
     }
 
@@ -117,7 +121,7 @@ namespace MonsterTrain2Poju.Model
                     Insert(rooms[roomIndex], unit);
                     error = Initialize(unit, roomIndex);
                     if (error != null) return Unsupported(error);
-                    movement.Add(new EnemyMovement(unit.Id, 1, definition.Ascends, definition.Loops));
+                    movement.Add(new EnemyMovement(unit.Id, 1, definition.Ascends, definition.Loops, definition.CompanionBoss));
                     enteredPyre |= roomIndex == pyre;
                     entered.Add(unit.Id);
                 }
@@ -156,7 +160,7 @@ namespace MonsterTrain2Poju.Model
                     Insert(rooms[eligible[floor.Value]], unit);
                     error = Initialize(unit, eligible[floor.Value]);
                     if (error != null) return Unsupported(error);
-                    movement.Add(new EnemyMovement(unit.Id, 1, definition.Ascends, definition.Loops));
+                    movement.Add(new EnemyMovement(unit.Id, 1, definition.Ascends, definition.Loops, definition.CompanionBoss));
                     error = SpawnTriggers(unit.Id);
                     if (error != null) return Unsupported(error);
                     treasureRemaining--;
@@ -225,7 +229,7 @@ namespace MonsterTrain2Poju.Model
                 if (source.CanonicalDecisionReferences) train = TrainCombatModel.ProcessRemovals(train);
                 return new EnemySpawnResult(new EnemySpawnState(train, source.Waves, groups, phase, source.Looping,
                     rng, nextId, source.Treasures, treasureRemaining, source.TreasureEnabled, source.FirstTreasureTurn,
-                    source.FirstTreasureRoom, source.Turn, source.ExternalInteractions, source.CanonicalDecisionReferences), outcome);
+                    source.FirstTreasureRoom, source.Turn, source.ExternalInteractions, source.CanonicalDecisionReferences, source.PendingDestroyedUnitIds), outcome);
             }
         }
 

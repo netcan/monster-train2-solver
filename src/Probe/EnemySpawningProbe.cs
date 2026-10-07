@@ -23,9 +23,11 @@ namespace MonsterTrain2Poju.Probe
         { this.log = log; this.trace = trace; this.train = train; active = this; }
 
         internal EnemySpawnState Capture()
-            => trace.CaptureDecision(CaptureState);
+            => trace.CaptureDecision(() => CaptureState(true));
 
-        private EnemySpawnState CaptureState()
+        internal EnemySpawnState CapturePhase() => CaptureState(false);
+
+        private EnemySpawnState CaptureState(bool canonicalReferences)
         {
             AllGameManagers managers = AllGameManagers.Instance!;
             SaveManager save = managers.GetSaveManager();
@@ -49,6 +51,10 @@ namespace MonsterTrain2Poju.Probe
                 return new EnemyWave(groups.Select(group => new EnemyGroup(group.GetCharacters(
                     save.GetCovenantsForSpawnPattern(), save, save.GetGeneratedBoss()).Select(Definition).ToArray())).ToArray());
             }).ToArray();
+            var bossDefinitions = definitions.SelectMany(wave => wave.Candidates).SelectMany(group => group.Units)
+                .Where(definition => definition.Unit.IsBoss == true).GroupBy(definition => definition.Unit.AssetKey).Select(group => group.First()).ToArray();
+            if (bossDefinitions.Any(definition => definition.CompanionBoss) && bossDefinitions.Length > 1)
+                interactions.Add("Paired companion Boss death and Pyre routing");
             var specials = (Dictionary<SpawnPatternData.SpecialCharacterType, CharacterData[]>)AccessTools.Field(
                 typeof(SpawnPatternData), "specialCharacters").GetValue(pattern);
             var total = (Dictionary<SpawnPatternData.SpecialCharacterType, int>)AccessTools.Field(
@@ -65,14 +71,15 @@ namespace MonsterTrain2Poju.Probe
                     .Select(Definition).ToArray(), total[treasure] - spawned[treasure],
                 (bool)AccessTools.Field(typeof(HeroManager), "treasureAndTraitorCharactersEnabled").GetValue(heroes),
                 easy ? 1 : 2, easy ? 1 : 0, managers.GetCombatManager()!.GetTurnCount(), interactions,
-                canonicalDecisionReferences: true);
+                canonicalDecisionReferences: canonicalReferences,
+                pendingDestroyedUnitIds: canonicalReferences ? null : trace.PendingDestroyedUnitIds());
         }
 
         internal static EnemyDefinition Definition(CharacterData data)
         {
             var interactions = new List<string>();
             if (data.GetRoomModifiersData().Count > 0) interactions.Add("Spawned room modifiers");
-            if (data.IsOuterTrainBoss() || data.IsCompanionBoss()) interactions.Add("Spawned boss companions/actions");
+            if (data.IsOuterTrainBoss()) interactions.Add("Spawned outer Boss actions");
             CombatStatus[] statuses = data.GetStartingStatusEffects().Select(status =>
             {
                 if (status.fromPermanentUpgrade) interactions.Add("Separate permanent starting-status application group");
@@ -92,12 +99,11 @@ namespace MonsterTrain2Poju.Probe
                 data.GetHealth(), data.GetHealth(), data.GetCanAttack(), false, data.IsMiniboss(), statuses, triggers, size: data.GetSize(),
                 statusImmunities: data.GetStatusEffectImmunities(), subtypes: data.GetSubtypes().Select(subtype => subtype.Key).ToArray(),
                 modifiers: UnitModifierProbe.Definition(data), isBoss: data.IsMiniboss() || data.IsOuterTrainBoss(), lastAttackerId: 0, statusRegistry: statuses, equipmentCards: Array.Empty<int>(), nextTriggerId: triggers.Length),
-                data.GetAscendsTrainAutomatically(), data.GetLoopsBetweenTrainFloors(), interactions);
+                data.GetAscendsTrainAutomatically(), data.GetLoopsBetweenTrainFloors(), interactions, data.IsCompanionBoss());
         }
 
         internal static CombatTrigger TriggerDefinition(CharacterTriggerData trigger, List<string> interactions)
         {
-            if (trigger.GetRemoveOnRelentlessChange()) interactions.Add("Spawned relentless-transition trigger removal");
             CombatEffect[] effects = trigger.GetEffects().Select(effect =>
             {
                 if (effect.GetUseIntRange() && effect.GetEffectStateName() != "CardEffectHeal" && effect.GetEffectStateName() != "CardEffectDamage" && effect.GetEffectStateName() != "CardEffectAddStatusEffect" &&
@@ -124,7 +130,7 @@ namespace MonsterTrain2Poju.Probe
                 trigger.GetHideVisualAndIgnoreSilence(), 1, effects,
                 AllGameManagers.Instance!.GetSaveManager().GetBalanceData().GetDisallowedDeploymentPhaseCharacterTriggers().Contains(trigger.GetTrigger()),
                 trigger.GetTriggerAtThreshold(), new CombatTriggerOrigin("", 0, false, trigger.GetOnlyTriggerIfEquipped()),
-                conditions: TriggerConditions(trigger));
+                conditions: TriggerConditions(trigger), removeOnRelentlessChange: trigger.GetRemoveOnRelentlessChange());
         }
 
         internal static CombatTriggerConditions? TriggerConditions(CharacterTriggerData data)
