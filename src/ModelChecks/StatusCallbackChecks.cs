@@ -190,7 +190,9 @@ internal static class StatusCallbackChecks
                 sameArmor += delta == 0 && callback.ParamString == "armor" && gain > 0 ? 1 : 0;
             }
         }
-        Require(kinds.IsSupersetOf(StatusCallbackModel.Kinds) && reward > 0 && zero > 0 && negative > 0 && dying > 0 && enemy > 0 &&
+        // These fixed captures author seven generic callbacks; skill callbacks have separate native fixtures.
+        Require(kinds.IsSupersetOf(new[] { "OnStatusEffectChanged", "OnArmorAdded", "OnPyregelAdded", "OnValiant",
+            "OnSilence", "OnSilenceLost", "OnNewStatusEffectAdded" }) && reward > 0 && zero > 0 && negative > 0 && dying > 0 && enemy > 0 &&
             silenceLost > 0 && sameArmor > 0 && once > 0 && silenceGate > 0,
             $"Native status callback coverage incomplete: kinds={string.Join(',', kinds)}, rewards={reward}, zero={zero}, negative={negative}, dying={dying}, enemy={enemy}, silenceLost={silenceLost}, sameArmor={sameArmor}, once={once}, silenceGate={silenceGate}.");
         Console.WriteLine($"NATIVE-STATUS-CALLBACKS PASS: {dispatches.Length} FIFO dispatches with exact payloads/unit/context, seven kinds, {reward} rewards, {zero} zero/{negative} negative deltas, {dying} dying actors, {enemy} enemies, {silenceLost} rewarded silence losses, {sameArmor} same-armor rewards, {once} once/{silenceGate} silence gates.");

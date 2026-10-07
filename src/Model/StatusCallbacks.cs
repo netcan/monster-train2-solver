@@ -6,7 +6,8 @@ namespace MonsterTrain2Poju.Model
     internal static class StatusCallbackModel
     {
         internal static readonly string[] Kinds =
-        { "OnStatusEffectChanged", "OnArmorAdded", "OnPyregelAdded", "OnValiant", "OnSilence", "OnSilenceLost", "OnNewStatusEffectAdded" };
+        { "OnStatusEffectChanged", "OnArmorAdded", "OnPyregelAdded", "OnValiant", "OnSilence", "OnSilenceLost", "OnNewStatusEffectAdded",
+            "OnUnitAbilityAvailable", "OnUnitAbilityUnavailable" };
 
         internal static IReadOnlyList<CombatStatus> MergeStartingStatuses(IEnumerable<CombatStatus> authored, IEnumerable<CombatStatus> upgrades)
         {
@@ -31,6 +32,8 @@ namespace MonsterTrain2Poju.Model
                 id == "valor" ? "OnValiant" : id == "silenced" ? "OnSilence" : null;
             if (kind != null) queue.Add(new RoomCombatModel.QueuedCharacterTrigger(room, after, kind,
                 paramInt: id == "valor" ? status.Stacks : 0, paramString: id == "valor" ? "" : null));
+            if (id == "cooldown" && after.Ability?.HasAbility == true && old <= 0 && status.Stacks > 0)
+                queue.Add(new RoomCombatModel.QueuedCharacterTrigger(room, after, "OnUnitAbilityUnavailable"));
             if (old != 0) return null;
             if (!status.Hidden.HasValue || status.DisplayCategory == null)
                 return after.Triggers.Any(trigger => trigger.Kind == "OnNewStatusEffectAdded")
@@ -51,7 +54,7 @@ namespace MonsterTrain2Poju.Model
             CombatUnit empty = new CombatUnit(template.Id, template.AssetKey, template.Team, template.BaseAttack, template.Health,
                 template.MaxHealth, template.CanAttack, template.IsPyre, template.EndsBattleOnDeath, System.Array.Empty<CombatStatus>(), template.Triggers,
                 template.SpawnerCardId, template.Size, System.Array.Empty<string>(), template.Subtypes, template.Modifiers, template.IsBoss,
-                template.LastAttackerId, template.StatusRegistry == null ? null : System.Array.Empty<CombatStatus>(), template.EquipmentCards, template.NextTriggerId);
+                template.LastAttackerId, template.StatusRegistry == null ? null : System.Array.Empty<CombatStatus>(), template.EquipmentCards, template.NextTriggerId, template.Ability, template.StatusDictionary == null ? null : new StatusDictionaryState(System.Array.Empty<string>(), System.Array.Empty<int>()));
             RoomCombatState initializing = new RoomCombatState(source.RoomIndex, source.Deployment, new[] { empty },
                 System.Array.Empty<string>(), source.Context, source.Preview);
             foreach (CombatStatus status in applications)
@@ -75,6 +78,8 @@ namespace MonsterTrain2Poju.Model
                 paramInt: count, paramInt2: count - old, paramString: id));
             if (id == "silenced" && count == 0)
                 queue.Add(new RoomCombatModel.QueuedCharacterTrigger(room, after, "OnSilenceLost"));
+            if (id == "cooldown" && after.Ability?.HasAbility == true && old > 0 && count == 0)
+                queue.Add(new RoomCombatModel.QueuedCharacterTrigger(room, after, "OnUnitAbilityAvailable"));
         }
     }
 }

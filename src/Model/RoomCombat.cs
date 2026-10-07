@@ -82,6 +82,8 @@ namespace MonsterTrain2Poju.Model
         public int? LastAttackerId { get; }
         public IReadOnlyList<int>? EquipmentCards { get; }
         public int? NextTriggerId { get; }
+        public UnitAbilityState? Ability { get; }
+        public StatusDictionaryState? StatusDictionary { get; }
         public int Attacks => Math.Max(1, Status("multistrike") is CombatStatus multi
             ? multi.ParamInt + multi.Stacks - 1 : 1);
 
@@ -90,11 +92,12 @@ namespace MonsterTrain2Poju.Model
             IReadOnlyList<CombatStatus> statuses, IReadOnlyList<CombatTrigger>? triggers = null, int spawnerCardId = 0, int size = 0,
             IReadOnlyList<string>? statusImmunities = null, IReadOnlyList<string>? subtypes = null, UnitModifiers? modifiers = null, bool? isBoss = null,
             int? lastAttackerId = null, IReadOnlyList<CombatStatus>? statusRegistry = null, IReadOnlyList<int>? equipmentCards = null,
-            int? nextTriggerId = null)
+            int? nextTriggerId = null, UnitAbilityState? ability = null, StatusDictionaryState? statusDictionary = null)
         {
             Id = id;
             LastAttackerId = lastAttackerId;
             NextTriggerId = nextTriggerId;
+            Ability = ability;
             EquipmentCards = equipmentCards == null ? null : Array.AsReadOnly(equipmentCards.ToArray());
             AssetKey = assetKey;
             Team = team;
@@ -107,6 +110,8 @@ namespace MonsterTrain2Poju.Model
             Statuses = Array.AsReadOnly(statuses.Where(item => item.Stacks > 0)
                 .OrderBy(item => item.Id, StringComparer.Ordinal).ToArray());
             StatusRegistry = statusRegistry == null ? null : Array.AsReadOnly(MergeStatusRegistry(statusRegistry, statuses));
+            StatusDictionary = StatusRegistry == null ? statusDictionary : statusDictionary?.Sync(StatusRegistry);
+            if (StatusDictionary != null && StatusRegistry != null) StatusRegistry = Array.AsReadOnly(StatusDictionary.Order(StatusRegistry));
             Triggers = Array.AsReadOnly((triggers ?? Array.Empty<CombatTrigger>()).ToArray());
             SpawnerCardId = spawnerCardId;
             Size = size;
@@ -145,7 +150,7 @@ namespace MonsterTrain2Poju.Model
 
         internal CombatUnit WithoutRemovedAttacker(ISet<int> activeIds) => !LastAttackerId.HasValue || LastAttackerId == 0 || activeIds.Contains(LastAttackerId.Value)
             ? this : new CombatUnit(Id, AssetKey, Team, BaseAttack, Health, MaxHealth, CanAttack, IsPyre, EndsBattleOnDeath, Statuses,
-                Triggers, SpawnerCardId, Size, StatusImmunities, Subtypes, Modifiers, IsBoss, 0, StatusRegistry, EquipmentCards, NextTriggerId);
+                Triggers, SpawnerCardId, Size, StatusImmunities, Subtypes, Modifiers, IsBoss, 0, StatusRegistry, EquipmentCards, NextTriggerId, Ability, StatusDictionary);
     }
 
     public sealed class RoomCombatState
@@ -226,7 +231,7 @@ namespace MonsterTrain2Poju.Model
             "spikes", "lifesteal", "fragile", "piercing", "immune", "immobile",
             "relentless", "sweep", "sniper", "rooted", "haste", "untouchable",
             "buff", "debuff", "regen", "poison", "melee weakness", "silenced", "valor", "pyregel",
-            "heal multiplier", "heal immunity"
+            "heal multiplier", "heal immunity", "cooldown", "unit_ability", "unit_ability_available"
         };
         internal static bool KnowsStatus(string id) => KnownStatuses.Contains(id);
 
@@ -475,6 +480,7 @@ namespace MonsterTrain2Poju.Model
                     return "Invalid attributed maximum-health ledger.";
                 if (unit.Health < 0 || unit.Health == 0 && unit.Id != dyingTargetId || unit.Health > unit.MaxHealth)
                     return "Only living units with valid health can enter room combat.";
+                if (unit.StatusDictionary?.Validate(unit.StatusRegistry) is string dictionaryError) return dictionaryError;
                 if (unit.LastAttackerId < 0) return "Invalid last-attacker identity.";
                 if (unit.Statuses.Select(status => status.Id).Distinct().Count() != unit.Statuses.Count)
                     return "Duplicate status IDs on unit " + unit.Id;
@@ -497,6 +503,7 @@ namespace MonsterTrain2Poju.Model
                         trigger.Origin.IsFromEquipment != (trigger.Origin.EquipmentCardId > 0)))
                         return "Invalid equipment trigger origin.";
                     if (trigger.Kind != "OnDeath" && trigger.Kind != "PostCombat" && trigger.Kind != "PostCombatHealing" && trigger.Kind != "OnHeal" &&
+                        trigger.Kind != "OnOwnAbilityActivated" && trigger.Kind != "OnPreOwnAbilityActivated" &&
                         trigger.Kind != "OnEquipmentAdded" && trigger.Kind != "OnEquipmentAddedToAny" && trigger.Kind != "OnEquipmentRemoved" &&
                         trigger.Kind != "OnSpawn" && trigger.Kind != "OnUnscaledSpawn" && trigger.Kind != "OnSpawnNotFromCard" &&
                         trigger.Kind != "OnTurnBegin" && trigger.Kind != "OnTeamTurnBegin" && trigger.Kind != "EndTurnPreHandDiscard" && trigger.Kind != "PreCombat" &&
@@ -514,6 +521,22 @@ namespace MonsterTrain2Poju.Model
                     if (trigger.FireCount < 0) return "Invalid trigger fire count.";
                     foreach (CombatEffect effect in trigger.Effects)
                     {
+                        if (effect.Type == "CardEffectResetCooldown" || effect.Type == "CardEffectAdjustAbilityCooldown" || effect.Type == "CardEffectRemoveStatusEffect")
+                        {
+                            CardActionEffect? ability = effect.Action;
+                            if (ability == null || (effect.Type == "CardEffectRemoveStatusEffect" ? ability.Type != "RemoveStatus" :
+                                effect.Type != "CardEffect" + ability.Type || !ability.CooldownParameter.HasValue))
+                                return "Missing or mismatched ability effect definition.";
+                            if (!new[] { "Self", "Room", "FrontInRoom", "BackInRoom", "Weakest", "RandomInRoom", "LastAttackedCharacter" }.Contains(ability.Target))
+                                return "Unmodeled ability effect target.";
+                            if (ability.Type == "RemoveStatus" && (ability.Statuses.Count != 1 || ability.Statuses[0].Id != "unit_ability_available" || ability.Statuses[0].Stacks != 1))
+                                return "Status removal outside the unit ability marker remains unsupported.";
+                            if (ability.Type == "ResetCooldown" && state.Context?.StatusRules.All(rule => rule.Id != "cooldown") != false)
+                                return "Missing cooldown status definition.";
+                            string? filter = ability.Target == "LastAttackedCharacter" ? null : ability.Filters?.Validate();
+                            if (filter != null) return filter;
+                            continue;
+                        }
                         if (EnergyModel.IsNativeEffect(effect.Type) || effect.Type == "CardEffectDrawAdditionalNextTurn" || effect.Type == "CardEffectAdjustRoomCapacity")
                         {
                             CardActionEffect? energy = effect.Action;
@@ -601,6 +624,7 @@ namespace MonsterTrain2Poju.Model
             internal bool InRoom = true;
             internal int? LastAttackerId;
             private IReadOnlyList<CombatStatus>? statusRegistry;
+            private StatusDictionaryState? dictionary;
             internal bool Alive => Health > 0 && !Removed;
             internal int Attack => Math.Max(0, Source.BaseAttack + Amount("buff") + Amount("valor") - Amount("debuff"));
 
@@ -608,7 +632,7 @@ namespace MonsterTrain2Poju.Model
             {
                 Source = source; Health = source.Health; LastAttackerId = source.LastAttackerId;
                 Statuses = source.Statuses.ToDictionary(status => status.Id, StringComparer.Ordinal);
-                statusRegistry = source.StatusRegistry;
+                statusRegistry = source.StatusRegistry; dictionary = source.StatusDictionary;
                 Triggers = source.Triggers.ToList();
             }
 
@@ -616,7 +640,7 @@ namespace MonsterTrain2Poju.Model
             internal void Apply(CombatUnit changed)
             {
                 Source = changed; Health = changed.Health; LastAttackerId = changed.LastAttackerId;
-                statusRegistry = changed.StatusRegistry;
+                statusRegistry = changed.StatusRegistry; dictionary = changed.StatusDictionary;
                 Statuses.Clear();
                 foreach (CombatStatus status in changed.Statuses) Statuses.Add(status.Id, status);
                 Triggers.Clear(); Triggers.AddRange(changed.Triggers);
@@ -633,18 +657,22 @@ namespace MonsterTrain2Poju.Model
             }
             private void SyncRegistry()
             {
-                if (statusRegistry != null) statusRegistry = CombatUnit.MergeStatusRegistry(statusRegistry, Statuses.Values.ToArray());
+                if (statusRegistry != null)
+                {
+                    statusRegistry = CombatUnit.MergeStatusRegistry(statusRegistry, Statuses.Values.ToArray());
+                    if (dictionary != null) { dictionary = dictionary.Sync(statusRegistry); statusRegistry = dictionary.Order(statusRegistry); }
+                }
             }
             internal IReadOnlyList<CombatStatus> RegisteredStatuses()
             { SyncRegistry(); return statusRegistry ?? Statuses.Values.ToArray(); }
             internal void RemoveDefinition(string id)
-            { SyncRegistry(); if (statusRegistry != null) statusRegistry = statusRegistry.Where(status => status.Id != id).ToArray(); }
+            { SyncRegistry(); if (statusRegistry != null) statusRegistry = statusRegistry.Where(status => status.Id != id).ToArray(); dictionary = dictionary?.Remove(id); }
             internal CombatUnit Freeze()
             {
                 SyncRegistry();
                 return new CombatUnit(Source.Id, Source.AssetKey, Source.Team,
                     Source.BaseAttack, Health, Source.MaxHealth, Source.CanAttack, Source.IsPyre,
-                    Source.EndsBattleOnDeath, Statuses.Values.ToArray(), Triggers, Source.SpawnerCardId, Source.Size, Source.StatusImmunities, Source.Subtypes, Source.Modifiers, Source.IsBoss, LastAttackerId, statusRegistry, Source.EquipmentCards, Source.NextTriggerId);
+                    Source.EndsBattleOnDeath, Statuses.Values.ToArray(), Triggers, Source.SpawnerCardId, Source.Size, Source.StatusImmunities, Source.Subtypes, Source.Modifiers, Source.IsBoss, LastAttackerId, statusRegistry, Source.EquipmentCards, Source.NextTriggerId, Source.Ability, dictionary);
             }
         }
 
@@ -851,7 +879,7 @@ namespace MonsterTrain2Poju.Model
                 CombatUnit unit = target.Freeze();
                 target.Apply(new CombatUnit(unit.Id, unit.AssetKey, unit.Team, unit.BaseAttack, unit.Health, unit.MaxHealth, unit.CanAttack,
                     unit.IsPyre, unit.EndsBattleOnDeath, unit.Statuses, unit.Triggers, unit.SpawnerCardId, unit.Size, unit.StatusImmunities,
-                    unit.Subtypes, unit.Modifiers, unit.IsBoss, unit.LastAttackerId, unit.StatusRegistry, cards, unit.NextTriggerId));
+                    unit.Subtypes, unit.Modifiers, unit.IsBoss, unit.LastAttackerId, unit.StatusRegistry, cards, unit.NextTriggerId, unit.Ability, unit.StatusDictionary));
             }
             private string EquipmentUpgradeKey(int cardId, BattlePlayRules definitions) => definitions.Cards
                 .First(rule => rule.DataId == context!.FindCard(cardId)!.DataId).Equipment!.UpgradeId ?? EquipmentModel.UpgradeKey(cardId);
@@ -1459,6 +1487,7 @@ namespace MonsterTrain2Poju.Model
             }
 
             private bool ActionTestValid(CardActionEffect action, CardTargets targets, int amount = 0) =>
+                AbilityCooldownModel.IsEffect(action.Type) || action.Type == "RemoveStatus" ? true :
                 action.Type == "AdjustCapacity" ? !source.Preview && !battleWon && context!.AllScenarioBossesDead != true &&
                     RoomCapacityModel.Test(context, source.RoomIndex, units.Any(unit => unit.InRoom && unit.Source.Team == CombatTeam.Enemy), action.OnlyIfNoEnemies) :
                 action.Type == "DrawNextTurn" ? !source.Preview && !battleWon && context!.AllScenarioBossesDead != true :
@@ -1488,6 +1517,22 @@ namespace MonsterTrain2Poju.Model
                 CardTargets targets = TriggerTargets(actor, action, testing: false, overrideTarget);
                 if (!targets.Supported) { unsupportedReason = targets.UnsupportedReason; return false; }
                 if (targets.BattleRng.HasValue) context = context!.WithBattleRng(targets.BattleRng.Value);
+                if (AbilityCooldownModel.IsEffect(action.Type) || action.Type == "RemoveStatus")
+                {
+                    IEnumerable<int> ordered = action.Type == "RemoveStatus" ? targets.UnitIds : targets.UnitIds.Reverse();
+                    foreach (int id in ordered)
+                    {
+                        RoomCombatState retained = RetainedStatusRoom(actor, targets.UnitIds);
+                        RoomCombatResult applied = action.Type == "RemoveStatus" ? AbilityCooldownModel.RemoveStatus(retained, id,
+                            action.Statuses[0].Id, action.Statuses[0].Stacks, actor.Source.SpawnerCardId) :
+                            AbilityCooldownModel.Apply(retained, id, action, actor.Source.SpawnerCardId);
+                        if (!applied.Supported) { unsupportedReason = applied.UnsupportedReason; return false; }
+                        context = applied.State!.Context;
+                        foreach (CombatUnit changed in applied.State.Units) units.First(unit => unit.Source.Id == changed.Id).Apply(changed);
+                        foreach (QueuedCharacterTrigger callback in applied.PendingCallbacks) QueueCallback(callback);
+                    }
+                    return true;
+                }
                 if (action.Type == "AddStatus")
                 {
                     RoomCombatResult applied = TriggeredStatusModel.Apply(RetainedStatusRoom(actor, targets.UnitIds), actor.Source.Id, effect, targets.UnitIds);
@@ -1620,6 +1665,17 @@ namespace MonsterTrain2Poju.Model
                     text.Append(unit.Source.Id).Append(':').Append(unit.Health).Append(':').Append(unit.Source.BaseAttack)
                         .Append(':').Append(unit.Source.MaxHealth).Append(':').Append(unit.Source.Size).Append(':');
                     text.Append(unit.LastAttackerId).Append(':').Append(unit.Removed).Append(':');
+                    if (unit.Source.Ability is UnitAbilityState ability)
+                        text.Append("|ability:").Append(ability.DataId).Append(':').Append(ability.Cooldown).Append(':')
+                            .Append(ability.CooldownAtSpawn).Append(':').Append(ability.FromEquipment).Append(':')
+                            .Append(ability.Resolving).Append(':').Append(ability.PreviousDataId);
+                    if (unit.Source.StatusDictionary != null)
+                    {
+                        StatusDictionaryState dictionary = unit.Freeze().StatusDictionary!;
+                        text.Append("|statusSlots:");
+                        foreach (string? id in dictionary.Slots) text.Append(id?.Length ?? -1).Append(':').Append(id).Append(';');
+                        foreach (int index in dictionary.FreeSlots) text.Append(index).Append(',');
+                    }
                     if (unit.Source.Modifiers != null)
                     {
                         UnitModifiers modifiers = unit.Source.Modifiers;

@@ -94,11 +94,19 @@ namespace MonsterTrain2Poju.Probe
                     false, rule.GetSkipTriggerDuringDeployment(), rule.GetRemoveDuringDeployment(),
                     BattleActionProbe.TriggeredVfx(rule, -1f), BattleActionProbe.TriggeredVfx(rule, 1f), rule.IsStackable(), rule.IsHidden(), rule.GetDisplayCategory().ToString());
             }).ToArray();
-            CombatTrigger[] triggers = data.GetTriggers().Select((trigger, index) => TriggerDefinition(trigger, interactions).WithStateId(index)).ToArray();
+            CardData? abilityData = data.GetUnitAbilityCardData();
+            UnitAbilityState? ability = abilityData == null || !abilityData.IsUnitAbility() ? null :
+                new UnitAbilityState(abilityData.GetID(), abilityData.GetCooldownAfterActivated(), abilityData.GetCooldownAtSpawn());
+            if (ability != null) statuses = new[] { BattleActionProbe.Status("unit_ability", 1) }.Concat(statuses).ToArray();
+            var triggers = new List<CombatTrigger>();
+            if (ability != null)
+                foreach (CharacterTriggerData common in AllGameManagers.Instance!.GetCombatManager()!.GetUnitAbilityCommonData().GetCommonTriggers())
+                    triggers.Add(TriggerDefinition(common, interactions).WithOrigin("UnitAbilityCommonData", 0, triggers.Count));
+            foreach (CharacterTriggerData trigger in data.GetTriggers()) triggers.Add(TriggerDefinition(trigger, interactions).WithStateId(triggers.Count));
             return new EnemyDefinition(new CombatUnit(0, data.GetAssetKey(), CombatTeam.Enemy, data.GetAttackDamage(),
-                data.GetHealth(), data.GetHealth(), data.GetCanAttack(), false, data.IsMiniboss(), statuses, triggers, size: data.GetSize(),
+                data.GetHealth(), data.GetHealth(), data.GetCanAttack(), false, data.IsMiniboss(), statuses, triggers.ToArray(), size: data.GetSize(),
                 statusImmunities: data.GetStatusEffectImmunities(), subtypes: data.GetSubtypes().Select(subtype => subtype.Key).ToArray(),
-                modifiers: UnitModifierProbe.Definition(data), isBoss: data.IsMiniboss() || data.IsOuterTrainBoss(), lastAttackerId: 0, statusRegistry: statuses, equipmentCards: Array.Empty<int>(), nextTriggerId: triggers.Length),
+                modifiers: UnitModifierProbe.Definition(data), isBoss: data.IsMiniboss() || data.IsOuterTrainBoss(), lastAttackerId: 0, statusRegistry: statuses, equipmentCards: Array.Empty<int>(), nextTriggerId: triggers.Count, ability: ability, statusDictionary: new StatusDictionaryState(statuses.Select(status => (string?)status.Id).ToArray(), Array.Empty<int>())),
                 data.GetAscendsTrainAutomatically(), data.GetLoopsBetweenTrainFloors(), interactions, data.IsCompanionBoss());
         }
 

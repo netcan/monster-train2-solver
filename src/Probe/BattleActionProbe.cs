@@ -82,17 +82,17 @@ namespace MonsterTrain2Poju.Probe
                     EnemyDefinition definition = EnemySpawningProbe.Definition(unit);
                     interactions.AddRange(definition.ExternalInteractions);
                     if (unit.GetGraftedEquipment() != null) interactions.Add("Grafted equipment");
-                    if (unit.GetUnitAbilityCardData() != null) interactions.Add("Spawned unit ability");
+
                     CombatUnit source = definition.Unit;
                     template = new CombatUnit(0, source.AssetKey, CombatTeam.Player, source.BaseAttack, source.Health,
                         source.MaxHealth, source.CanAttack, false, false, source.Statuses, source.Triggers, size: source.Size,
-                        statusImmunities: source.StatusImmunities, subtypes: source.Subtypes, modifiers: source.Modifiers, isBoss: source.IsBoss, lastAttackerId: 0, statusRegistry: source.StatusRegistry, equipmentCards: source.EquipmentCards, nextTriggerId: source.NextTriggerId);
+                        statusImmunities: source.StatusImmunities, subtypes: source.Subtypes, modifiers: source.Modifiers, isBoss: source.IsBoss, lastAttackerId: 0, statusRegistry: source.StatusRegistry, equipmentCards: source.EquipmentCards, nextTriggerId: source.NextTriggerId, ability: source.Ability, statusDictionary: source.StatusDictionary);
                 }
                 kind = "SpawnMonster"; destination = "Standby";
             }
             else if (kind == "CardEffectNULL") kind = "Null";
             else if ((data.GetCardType() == CardType.Spell || data.GetCardType() == CardType.Equipment) && effects.Length > 0 && effects.All(effect =>
-                new[] { "CardEffectAttachEquipment", "CardEffectRemoveEquipment", "CardEffectGainEnergy", "CardEffectAdjustEnergy", "CardEffectGainEnergyNextTurn", "CardEffectGainEnergyEveryTurn", "CardEffectDamage", "CardEffectDraw", "CardEffectDrawAdditionalNextTurn", "CardEffectAdjustRoomCapacity", "CardEffectDiscardHand", "CardEffectAddBattleCard", "CardEffectHeal", "CardEffectBuffDamage", "CardEffectDebuffDamage", "CardEffectBuffMaxHealth", "CardEffectDebuffMaxHealth", "CardEffectAddStatusEffect", "CardEffectFloorRearrange", "CardEffectAddCardUpgradeToUnits",
+                new[] { "CardEffectResetCooldown", "CardEffectAdjustAbilityCooldown", "CardEffectAttachEquipment", "CardEffectRemoveEquipment", "CardEffectGainEnergy", "CardEffectAdjustEnergy", "CardEffectGainEnergyNextTurn", "CardEffectGainEnergyEveryTurn", "CardEffectDamage", "CardEffectDraw", "CardEffectDrawAdditionalNextTurn", "CardEffectAdjustRoomCapacity", "CardEffectDiscardHand", "CardEffectAddBattleCard", "CardEffectHeal", "CardEffectBuffDamage", "CardEffectDebuffDamage", "CardEffectBuffMaxHealth", "CardEffectDebuffMaxHealth", "CardEffectAddStatusEffect", "CardEffectFloorRearrange", "CardEffectAddCardUpgradeToUnits",
                     "CardEffectAddTempCardUpgradeToUnits", "CardEffectRemoveTempUpgradeFromUnit",
                     "CardEffectAddTempCardUpgradeToCardsInHand", "CardEffectAddPermanentCardUpgradeToCardsInHand" }.Contains(effect.GetEffectStateName())))
             {
@@ -100,6 +100,7 @@ namespace MonsterTrain2Poju.Probe
                 for (int index = 0; index < effects.Length; index++)
                 {
                     CardEffectData effect = effects[index];
+                    if (AbilityCooldownProbe.Known(effect.GetEffectStateName())) { spellEffects.Add(AbilityCooldownProbe.Describe(effect, effect.GetParamInt(), effect.GetParamBool())); continue; }
                     bool handUpgrade = effect.GetEffectStateName() == "CardEffectAddTempCardUpgradeToCardsInHand" ||
                         effect.GetEffectStateName() == "CardEffectAddPermanentCardUpgradeToCardsInHand";
                     var excluded = new List<SubtypeData>(); effect.GetTargetCharacterExcludedSubtypes(excluded);
@@ -206,7 +207,7 @@ namespace MonsterTrain2Poju.Probe
         {
             StatusEffectData rule = StatusEffectManager.Instance.GetStatusEffectDataById(id)!;
             return new CombatStatus(id, count, rule.GetParamInt(), rule.GetRemoveWhenTriggered(), rule.GetRemoveStackAtEndOfTurn(),
-                rule.GetRemoveAtEndOfTurn(), rule.GetRemoveAtEndOfTurnAfterPostCombat(), false, rule.GetSkipTriggerDuringDeployment(), rule.GetRemoveDuringDeployment(),
+                rule.GetRemoveAtEndOfTurn(), rule.GetRemoveAtEndOfTurnAfterPostCombat(), id == "cooldown", rule.GetSkipTriggerDuringDeployment(), rule.GetRemoveDuringDeployment(),
                 TriggeredVfx(rule, -1f), TriggeredVfx(rule, 1f), rule.IsStackable(), rule.IsHidden(), rule.GetDisplayCategory().ToString());
         }
 

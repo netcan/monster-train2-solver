@@ -96,6 +96,8 @@ are copied immutable values; independent child states can run on worker threads.
 | Battle to terminal result | `BattleSimulator.Resolve` and `ResolveNoMoreCards` | Independent card policies and seven-turn chains, mid-battle inputs and 16 parallel branches |
 | Single companion Boss transition | `CompanionBossModel` and `TrainCombatModel` | Wave exhaustion, forced looping, ordered movement/status/removal callbacks, raw/canonical phase boundaries and both no-card/card policies |
 | Unit arrival Sentry queues | `TrainCombatModel` and `RoomCombatModel` | Physical guard order, moved-target overrides, retained dead victims, once/silence/threshold gates and terminal hit/death queues |
+| Unit ability cooldown state | `AbilityCooldownModel`, `CardSpellModel` and `RoomCombatModel` | Native natural-ability spawn, separate configured/current cooldowns, signed/absolute updates, resets, status decay and availability-marker callbacks; complete battle and parallel branches |
+| Mono status dictionary slot reuse | `StatusDictionaryState` | Captured slot/free-list state, LIFO reuse after cleanup, exact later status enumeration and independent branch isolation |
 | Additional spells, abilities, relics | Not complete | Unsupported interactions explicitly reject the model transition |
 
 `CardEffectAddBattleCard` uses one shared immutable generation model for spells
@@ -3026,3 +3028,69 @@ pass. Probe builds with zero warnings/errors; ModelChecks retains its 12 existin
 nullable warnings and no errors. No source JSON fixture is introduced. The full
 simulator still needs equipment abilities, grafts, moon/deathwish, relics, room
 attachments and specialized Boss interactions.
+
+## Unit ability cooldowns and native status dictionary slots
+
+Native skills have configured cooldown-after-activation and cooldown-at-spawn
+fields, separate from the unit's current `cooldown` status stacks. A relative
+adjustment uses the configured duration; an absolute adjustment replaces it.
+The duration clamps to at least one. When the remaining stacks exceed the raw
+unclamped result, native removal reduces them using that raw result, so negative
+or zero adjustments can clear current cooldown while the configured duration
+remains one. Nonpositive relative adjustments skip units with a zero duration;
+absolute or positive adjustments can retain a duration on units without any
+ability. Such a duration does not make the unit have an ability.
+
+Reset uses the spawn or activation duration, only adds a positive shortfall,
+never reduces excess stacks, bypasses immunity and retains source-card status
+statistics. Native queues OnUnitAbilityUnavailable for zero-to-positive cooldown
+and OnUnitAbilityAvailable for positive-to-zero cooldown. Common triggers prepend
+before authored triggers at creation. They add the available marker on spawn,
+reset spawn cooldown, reset activation cooldown after own activation, add the
+marker on availability and remove it on unavailability. The implemented callback
+queue carries complete immutable units and defers child callbacks in native FIFO
+order. Actual active-skill actions remain work.
+
+Cooldown cleanup exposed a separate native dictionary rule: enumeration follows
+Mono entry slots, and new keys reuse the most recently freed slot. In the first
+modeled recording, later armor/valor entries appeared in the opposite order even
+though all stacks, fields and resources matched. Captures now retain allocated
+slots and the free-list chain. Cleanup pushes removed slots onto that chain;
+zero-stack dictionary entries stay allocated until an actual cleanup removes
+them. New entries consume free slots before extending the array. Every immutable
+unit copy carries this state; legacy archives keep their uncaptured null state.
+Combat cycle detection includes ability fields and captured dictionary layout.
+
+`full-battle-ability-cooldown.mt2f` uses schema 62, game 2.2.1 and module MVID
+`8fb07b96-f4db-4d2b-884d-c00536d6ccf4`. Its 26,367-byte binary archive has 4,303
+unique nodes and SHA-256
+`76e3b3a179f77adf0f5995f3c435159ea24e41f467934f4227debcd47daffec4`.
+The muted Instant native run took 49.98 seconds, won at Pyre 80 and recorded 15
+plays / five EndTurns, 45 room stages, nine card cycles, nine train phases and
+seven spawns. There were zero capture failures, differences, unsupported or
+pending records; original files were unchanged. Two real natural-ability
+summons execute the game's unmodified common ability trigger definitions. Their
+Stewards gain 50 health and reduced size; Boss stats and ordinary waves remain
+unchanged. Five damage-card plays each carry the ordered cooldown-effect chain.
+
+Independent checks reproduce all 89 native cooldown / available-marker effect
+states with 32 isolated branches, and the complete policy from its initial and
+actual mid-battle roots with 16 parallel branches. Pure checks cover duration /
+stack separation, immunity bypass, excess-stack retention, no-ability fields,
+LIFO dictionary reuse and parent isolation. Native capture requires actual reset,
+adjustment, marker removal and ability-bearing units, preventing a policy that
+skips unsupported summons from passing as mechanism coverage.
+
+Skill activation/payment, shared cached ability-card identity, ability lifecycle
+assignment/replacement/removal, equipment-granted skills and Horde re-spawn gates
+are not covered by this increment. Grafts, moon/deathwish, relics, room attachments
+and specialized Boss interactions also remain necessary for the complete goal.
+
+The final `scripts/Check-Models.ps1` run passes the complete 89-file curated
+inventory/SHA-256 gate, all pure checks and every native archive, including the
+eight calibration suites, with exit code zero. Both historical status-callback
+fixtures retain their original seven-kind coverage gate; the new ability fixture
+separately requires actual common available/unavailable triggers to have fired.
+Probe builds with zero warnings/errors; ModelChecks keeps 12 existing nullable
+warnings and no errors. PowerShell parsing and `git diff --check` pass. Failed
+development captures are excluded; the accepted archive has no JSON dependency.

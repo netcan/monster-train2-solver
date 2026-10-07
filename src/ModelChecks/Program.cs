@@ -85,6 +85,7 @@ RetainedCallbackChecks.Run();
 ConditionalTriggerChecks.Run();
 CompanionBossChecks.Run();
 SentryChecks.Run();
+AbilityCooldownChecks.Run();
 BattleStatisticsChecks.Run();
 StatisticOverflowChecks.Run();
 StatisticZeroIncrementChecks.Run();

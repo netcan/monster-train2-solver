@@ -189,3 +189,18 @@ triggers. They include phase gates, signed/ranged/zero amounts, native caps,
 late end-turn accounting, carried combat gains, cancelled ranges and post-boss
 gates. Both complete policies match from initial/mid-battle states in 16 parallel
 branches; all 448 observed energy applications also compare complete contexts.
+
+`full-battle-ability-cooldown.mt2f` retains schema 62. Two native Steward summons
+carry a real unit ability, its configured activation/spawn cooldowns and the
+original common ability triggers. Additional damage-card effects exercise
+relative/absolute adjustments, zero/negative values, units without abilities,
+spawn/activation reset modes, excess-stack retention and deferred available /
+unavailable callbacks. Its 89 native effect states compare independently in 32
+branches; the complete 15-play, five-EndTurn battle compares from initial and
+actual mid-battle roots in 16 parallel branches, finishing at Pyre 80. Complete
+room and action states also verify cooldown decay and available-marker changes.
+Captured Mono status dictionary slots/free lists preserve LIFO hole reuse after
+cooldown cleanup, including later armor/valor insertion. Stewards gain 50 health
+and reduced size; all original Boss stats and spawn waves stay intact. Skill
+activation, shared cached skill-card state, assignment/replacement/removal,
+equipment abilities and Horde re-spawn interactions remain separate work.

@@ -30,11 +30,13 @@ namespace MonsterTrain2Poju.Model
         public CardTargetFilters? Filters { get; }
         public CardGenerationRule? Generation { get; }
         public bool OnlyIfNoEnemies { get; }
+        public bool? CooldownParameter { get; }
         public CardActionEffect(string type, string target, int value, bool allowEnemy, bool allowPlayer, IReadOnlyList<CombatStatus> statuses,
             CardUpgradeModifier? upgrade = null, string lifetime = "", CardEffectTests? tests = null, CardEffectRange? range = null, CardTargetFilters? filters = null,
-            CardGenerationRule? generation = null, bool onlyIfNoEnemies = false)
+            CardGenerationRule? generation = null, bool onlyIfNoEnemies = false, bool? cooldownParameter = null)
         { Type = type; Target = target; Value = value; AllowEnemy = allowEnemy; AllowPlayer = allowPlayer; Statuses = Array.AsReadOnly(statuses.ToArray());
-            Upgrade = upgrade; Lifetime = lifetime; Tests = tests; Range = range; Filters = filters; Generation = generation; OnlyIfNoEnemies = onlyIfNoEnemies; }
+            Upgrade = upgrade; Lifetime = lifetime; Tests = tests; Range = range; Filters = filters; Generation = generation; OnlyIfNoEnemies = onlyIfNoEnemies;
+            CooldownParameter = cooldownParameter; }
     }
     public sealed class RoomPlayRule
     {
@@ -208,7 +210,7 @@ namespace MonsterTrain2Poju.Model
                     return Unsupported("Invalid unit identity allocation.");
                 var spawned = new CombatUnit(nextUnitId++, template.AssetKey, CombatTeam.Player, template.BaseAttack,
                     template.Health, template.MaxHealth, template.CanAttack, false, false, template.Statuses,
-                    template.Triggers, card.InstanceId, template.Size, template.StatusImmunities, template.Subtypes, template.Modifiers, template.IsBoss, template.LastAttackerId, template.StatusRegistry, template.EquipmentCards, template.NextTriggerId);
+                    template.Triggers, card.InstanceId, template.Size, template.StatusImmunities, template.Subtypes, template.Modifiers, template.IsBoss, template.LastAttackerId, template.StatusRegistry, template.EquipmentCards, template.NextTriggerId, template.Ability, template.StatusDictionary);
                 context = context.WithStatistics(context.Statistics?.Spawn(action.RoomIndex, template.Subtypes));
                 spawnedId = spawned.Id;
                 var nextPlayers = players.ToList(); nextPlayers.Insert(position, spawned);
