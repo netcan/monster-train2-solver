@@ -48,6 +48,7 @@ namespace MonsterTrain2Poju.Probe
                 AccessTools.Field(typeof(CharacterData), "triggers").SetValue(enemy, enemyTriggers);
             }
             AccessTools.Field(typeof(CombatManager), "combatStateChanged").SetValue(managers.GetCombatManager(), true);
+            if (Environment.GetEnvironmentVariable("MT2_PROBE_STATUS_CALLBACK_ACTIONS") == "1") StatusCallbackActionScenario.Prepare(managers, log);
             log.LogInfo("STATUS-CALLBACKS-PREPARED exact native queue payloads, thresholds, once flags and status dictionary presence.");
         }
         private static CardEffectData Upgrade(CardUpgradeData data, bool remove)

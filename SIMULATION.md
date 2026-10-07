@@ -2231,3 +2231,47 @@ boundaries. An initial EndTurn-only implementation passed individual steps but
 failed the continuous policy at action 9: its previous decision cleared attacker
 9, while the subsequent native card snapshot retained it. Continuous policy
 checks therefore also enforce this normalization across adjacent decisions.
+
+## Native status callback action regression
+
+`Run-FullBattleProbe.ps1 -Policy units-spells-and-junk -StatusCallbackActions`
+extends the status callback scenario with self/room damage and healing, status
+additions, permanent upgrades and source-card copies. Its played pyregel upgrade
+observes the source before writeback; an armor callback upgrades and copies the
+source while the native queue is already running. A zero-stack upgrade remains
+in the modifier list without enqueuing a status addition. Enemy callbacks add
+then directly re-add zero armor to exercise rewarded same-count additions.
+
+Schema 48 captures generated queue payloads, ordinary character dispatches,
+override targets and native activity/dying/removal flags. Temporary removal
+observations are scoped to this isolated action scenario. The observers wrap
+native enumerators and preserve parent callback scopes through nested execution.
+
+The retained `tests/fixtures/full-battle-status-callback-actions.mt2f` comes from
+game 2.2.1, module MVID `8fb07b96-f4db-4d2b-884d-c00536d6ccf4`. The native run
+takes 223.86 seconds at Instant timing with muted audio, 15 card plays, five
+EndTurns, 35 room stages, nine train phases, seven spawn observations and victory
+at Pyre 80. Capture failures, mismatches, unsupported and pending observations
+are all zero; the original game files are unchanged. The archive has 9,898 unique
+nodes in 65,121 bytes, no source JSON, and SHA-256
+`b9953779ab30f2f410952e8b53cc170b6eead2a16d3e14e86369da5f932b566f`.
+
+Independent checks match all 390 status dispatches and their full room scopes,
+95 generated queue payloads and 419 ordinary character actor/context states.
+Coverage includes 113 rewards, eight zero and 63 negative changes, 35 dying
+actors, 99 enemy dispatches, two rewarded silence losses, six same-armor rewards,
+251 once skips and 33 silence gates. Actual once-only action effects cover ten
+damage, 14 healing, seven upgrade and five source-copy executions, including one
+standalone and four running-queue source-copy boundaries. Two captured false
+can-fire gates have no matching non-ignoring effects; fixtures needing that
+queued permission flag remain rejected rather than inferred.
+
+The same binary checks 116 triggered status effects, 32 unit turns, 168 native
+status queries and both restored preview streams. Continuous simulation matches
+every action and EndTurn from the initial state, the complete suffix from an
+actual mid-battle state, and 16 isolated parallel branches. The curated inventory
+now contains 60 battle fixtures and eight calibration archives.
+
+The complete 68-archive manifest, integrity and model regression passes after
+these changes. The native probe Release build also succeeds with zero warnings
+and zero errors.

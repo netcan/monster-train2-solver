@@ -31,3 +31,9 @@ captures become fixed inputs here after native and independent comparisons pass.
 and 481 ordered status callback dispatches, including zero additions, actual
 removals, silence loss and dying actors. These checks compare captured native
 unit/context states independently of the predictions stored in the capture.
+
+`full-battle-status-callback-actions.mt2f` retains a complete schema 48 battle
+with nested damage, healing, status, upgrade and source-copy callbacks. It checks
+390 status and 419 other character dispatches, 95 nested queue payloads, both
+source-card writeback boundaries, and continuous simulation from initial and
+mid-battle roots with 16 isolated parallel branches.

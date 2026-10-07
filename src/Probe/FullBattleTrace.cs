@@ -372,7 +372,7 @@ namespace MonsterTrain2Poju.Probe
             string temporary = path + ".tmp";
             var snapshot = new
             {
-                Schema = 46,
+                Schema = 48,
                 GameVersion = Application.version,
                 GameModuleMvid = typeof(CardState).Assembly.ManifestModule.ModuleVersionId,
                 NativeWon,
@@ -416,6 +416,8 @@ namespace MonsterTrain2Poju.Probe
                 StatusRegistryCalibration = StatusRegistryCalibration.Samples,
                 StatusCallbacks = StatusCallbackProbe.Records,
                 StatusCallbackFires = StatusCallbackProbe.Fired,
+                CharacterCallbackFires = StatusCallbackProbe.OtherFired,
+                StatusCallbackActions = Environment.GetEnvironmentVariable("MT2_PROBE_STATUS_CALLBACK_ACTIONS") == "1",
                 PreviewRngIsolation = PreviewRngIsolation.Records,
                 UnitPostCombats = PostCombatHealingProbe.Records,
                 UnitUpgradeScalingCalibrationContextUnchanged = UnitUpgradeScalingScenario.CalibrationContextUnchanged,

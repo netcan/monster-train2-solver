@@ -198,6 +198,30 @@ internal static class StatusCallbackChecks
         {
             Require(nested > 0 && rooms == dispatches.Length && damage > 0 && heals > 0 && upgrades > 0 && copies > 0 && standaloneCopies > 0 && insideCopies > 0, "Native status callback action coverage incomplete.");
             Console.WriteLine($"NATIVE-STATUS-CALLBACK-ACTIONS PASS: {rooms} exact room scopes, {nested} nested queue payloads, {damage} damage/{heals} healing/{upgrades} upgrade/{copies} source-copy effects, {standaloneCopies} standalone/{insideCopies} running-queue source boundaries.");
+            var other = fixture.GetProperty("CharacterCallbackFires").EnumerateArray().ToArray();
+            foreach (var record in other)
+            {
+                Require(record.GetProperty("Completed").GetBoolean() && record.GetProperty("Interactions").GetArrayLength() == 0,
+                    "Incomplete native character callback dispatch.");
+                var before = record.GetProperty("Before").Deserialize<RoomCombatState>()!;
+                var actor = record.GetProperty("BeforeUnit").Deserialize<CombatUnit>()!;
+                string kind = record.GetProperty("Kind").GetString()!;
+                // These authored samples have no non-ignoring OnTurnBegin effects.
+                // Fail if a future sample would require the missing queued permission flag.
+                Require(record.GetProperty("CanFire").GetBoolean() || actor.Triggers.All(trigger => trigger.Kind != kind || trigger.IgnoreSilence),
+                    "Character callback needs its captured can-fire gate modeled.");
+                var actual = record.GetProperty("Actual").Deserialize<RoomCombatState>()!;
+                var actualActor = record.GetProperty("ActualUnit").Deserialize<CombatUnit>()!;
+                var callback = new RoomCombatModel.QueuedCharacterTrigger(before.RoomIndex, actor, kind,
+                    paramInt: record.GetProperty("ParamInt").GetInt32(), paramInt2: record.GetProperty("ParamInt2").GetInt32(),
+                    paramString: record.GetProperty("ParamString").GetString(), overrideTarget: record.GetProperty("OverrideTarget").Deserialize<CombatUnit>());
+                var result = RoomCombatModel.ApplyQueuedCharacterTrigger(before, callback, _ => { });
+                string? difference = result.Supported ? ModelJson.Difference(JsonSerializer.Serialize(result.State!.Context), JsonSerializer.Serialize(actual.Context)) : result.UnsupportedReason;
+                difference ??= ModelJson.Difference(JsonSerializer.Serialize(callback.Unit), JsonSerializer.Serialize(actualActor));
+                Require(result.Supported && difference == null, "Native character callback differs at sequence " + record.GetProperty("Sequence").GetInt32() + ": " + difference);
+            }
+            Require(other.Length > 0, "Native callback action fixture lacks character dispatches.");
+            Console.WriteLine($"NATIVE-CHARACTER-CALLBACKS PASS: {other.Length} independently matched actor/context dispatches and captured override targets.");
         }
     }
     private static void Require(bool pass, string message) { if (!pass) throw new InvalidOperationException(message); }

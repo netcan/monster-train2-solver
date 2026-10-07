@@ -55,12 +55,14 @@ param(
     [switch] $AttackTriggers,
     [switch] $TriggeredStatus,
     [switch] $StatusCallbacks,
+    [switch] $StatusCallbackActions,
     [switch] $BinaryCapture = $true,
     [switch] $CaptureJson,
     [switch] $SkipBuild
 )
 
 $ErrorActionPreference = 'Stop'
+if ($StatusCallbackActions) { $StatusCallbacks = $true }
 if ($StatusCallbacks) { $TriggeredStatus = $true }
 if ($CaptureJson) { $BinaryCapture = $true }
 $workspace = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
@@ -105,6 +107,7 @@ $environment = @{
     MT2_PROBE_FAST_REPLAY = '0'
     MT2_PROBE_GAME_SPEED = $GameSpeed
     MT2_PROBE_STATUS_CALLBACKS = $(if ($StatusCallbacks) { '1' } else { '0' })
+    MT2_PROBE_STATUS_CALLBACK_ACTIONS = $(if ($StatusCallbackActions) { '1' } else { '0' })
     MT2_PROBE_BINARY_CAPTURE = $(if ($BinaryCapture) { '1' } else { '0' })
     MT2_PROBE_CAPTURE_JSON = $(if ($CaptureJson) { '1' } else { '0' })
     MT2_PROBE_NO_TIMEOUT = '1'
