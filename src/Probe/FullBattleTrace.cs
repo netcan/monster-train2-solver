@@ -258,7 +258,9 @@ namespace MonsterTrain2Poju.Probe
                     (int)AccessTools.Field(typeof(CombatManager), "modifiedEnergyNextTurn").GetValue(managers.GetCombatManager()),
                     (int)AccessTools.Field(typeof(CombatManager), "modifiedEnergyEveryTurn").GetValue(managers.GetCombatManager()),
                     managers.GetCombatManager()!.GetCombatPhase().ToString(), managers.GetPlayerManager().GetTowerHP() > 0),
-                RoomCapacityProbe.Capture(managers.GetRoomManager()!), abilityCache);
+                RoomCapacityProbe.Capture(managers.GetRoomManager()!), abilityCache,
+                AccessTools.Field(typeof(CombatManager), "lastAbilityActivatorCharacter").GetValue(managers.GetCombatManager()) is CharacterState activator
+                    ? UnitId(activator) : 0);
         }
 
         private static StatisticQueryFrame CaptureQueryFrame(AllGameManagers managers)
@@ -422,7 +424,7 @@ namespace MonsterTrain2Poju.Probe
             string temporary = path + ".tmp";
             var snapshot = new
             {
-                Schema = 63,
+                Schema = 64,
                 GameVersion = Application.version,
                 GameModuleMvid = typeof(CardState).Assembly.ManifestModule.ModuleVersionId,
                 NativeWon,

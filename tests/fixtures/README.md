@@ -215,3 +215,15 @@ complete context preservation. The 17-play / five-EndTurn policy matches initial
 and mid-battle roots in 16 parallel branches. Skill activation/payment and ability
 assignment/replacement/removal remain separate work; live cache Clear is not
 sampled here. The accepted archive has no JSON source dependency.
+
+`full-battle-ability-activation.mt2f`, `full-battle-ability-activation-x.mt2f`
+and `full-battle-ability-activation-lethal.mt2f` retain schema 64. Each records
+two real units activating one shared detached skill card. Complete states verify
+fixed/X/zero payment, pre-own/own callbacks, self healing through an enemy-only
+team mask, activator damage attribution, cooldown/marker changes and global
+history without ordinary ownership/discard. The lethal fixture ends when the
+second skill kills the Boss; ordinary piles clear while skill identity/history
+and permanent-deck statistic fallback remain. Whole policies match initial and
+mid-battle roots with 16 parallel branches, and each activation compares in 32
+branches. These archives use direct native binary capture with no source JSON.
+Ability assignment/replacement/removal and equipment skills remain separate work.

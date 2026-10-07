@@ -20,6 +20,8 @@ namespace MonsterTrain2Poju.Model
             Resolving = resolving; PreviousDataId = previousDataId; CardCreation = cardCreation; }
         internal UnitAbilityState WithCooldown(int value) => new UnitAbilityState(DataId, Math.Max(1, value), CooldownAtSpawn,
             FromEquipment, Resolving, PreviousDataId, CardCreation);
+        internal UnitAbilityState WithResolving(bool value) => new UnitAbilityState(DataId, Cooldown, CooldownAtSpawn,
+            FromEquipment, value, PreviousDataId, CardCreation);
     }
 
     public static class AbilityCooldownModel

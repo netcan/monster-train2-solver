@@ -30,6 +30,8 @@ namespace MonsterTrain2Poju.Probe
             var definitions = nativeCards.Select(card => card.GetCardDataID()).Concat(spawn.Waves.SelectMany(wave => wave.Candidates)
                 .SelectMany(group => group.Units).Concat(spawn.Treasures).SelectMany(unit => unit.Unit.Triggers)
                 .SelectMany(trigger => trigger.Effects).SelectMany(effect => effect.CardPool)).Distinct().ToArray();
+            definitions = definitions.Concat(spawn.Waves.SelectMany(wave => wave.Candidates).SelectMany(group => group.Units)
+                .Concat(spawn.Treasures).Select(unit => unit.Unit.Ability?.DataId).Where(id => !string.IsNullOrEmpty(id)).Cast<string>()).Distinct().ToArray();
             RoomManager rooms = managers.GetRoomManager()!;
             var roomRules = new List<RoomPlayRule>();
             for (int index = 0; index < rooms.GetNumRooms(); index++)
@@ -49,6 +51,7 @@ namespace MonsterTrain2Poju.Probe
                 foreach (string child in rule.Effects.Where(effect => effect.Generation != null).SelectMany(effect => effect.Generation!.Pool).Select(card => card.DataId)
                     .Concat(rule.SpawnUnit?.Triggers.SelectMany(trigger => trigger.Effects).SelectMany(effect => effect.CardPool) ?? Array.Empty<string>()))
                     pending.Enqueue(child);
+                if (rule.SpawnUnit?.Ability?.HasAbility == true) pending.Enqueue(rule.SpawnUnit.Ability.DataId);
             }
             rules = new BattlePlayRules(roomRules, reachable.Values.OrderBy(rule => rule.DataId, StringComparer.Ordinal).ToArray(),
                 new[] { "armor", "valor", "pyregel" }.Select(id => Status(id, 1)).ToArray());
@@ -180,7 +183,10 @@ namespace MonsterTrain2Poju.Probe
             }
             return new CardPlayRule(data.GetID(), data.name, data.GetCost(), kind, destination, template,
                 interactions.Distinct().OrderBy(value => value, StringComparer.Ordinal).ToArray(), spellEffects, upgradeInteractions,
-                HandInteractions(data, false), HandInteractions(data, true), data.GetCostType().ToString(), equipment);
+                HandInteractions(data, false), HandInteractions(data, true), data.GetCostType().ToString(), equipment,
+                data.IsUnitAbility() ? new CardAbilityRule("Unit", data.CanAbilityTargetOtherFloors(),
+                    data.GetEffects().All(effect => ((ICardEffect)Activator.CreateInstance(typeof(CardState).Assembly
+                        .GetType(effect.GetEffectStateName())!)!).CanPlayWhenHandFull)) : null);
         }
 
         private static string[] HandInteractions(CardData data, bool consume)

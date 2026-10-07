@@ -108,7 +108,10 @@ internal static class BattleActionChecks
             {
                 Require(result.Outcome == (RoomOutcome)actionOutcome.GetInt32(), "Native card action outcome differs.");
                 if (actionOutcome.GetInt32() == (int)RoomOutcome.BattleWon && fixture.GetProperty("Schema").GetInt32() >= 12)
-                    TerminalSpellChecks.Native(entry);
+                {
+                    if (action.ActivatorUnitId > 0) UnitAbilityChecks.NativeTerminal(entry);
+                    else TerminalSpellChecks.Native(entry);
+                }
             }
             string? difference = ModelJson.Difference(BattleTurnChecks.Comparable(result.State!), BattleTurnChecks.Comparable(actual));
             Require(difference == null, "Native card action differs at index " + entry.GetProperty("Index") + ": " + difference);
@@ -210,6 +213,9 @@ internal static class BattleActionChecks
             policy.GetString() is not ("units-and-junk" or "units-spells-and-junk")) return;
         Func<BattleTurnState, PlayCardAction?> chooser = policy.GetString() == "units-spells-and-junk"
             ? BattleActionModel.ChooseUnitSpellAndJunkPlay : BattleActionModel.ChooseUnitAndJunkPlay;
+        if (fixture.TryGetProperty("ModifierScenario", out var abilityScenario) &&
+            abilityScenario.GetString() is "ability-activation" or "ability-activation-x" or "ability-activation-lethal")
+            chooser = UnitAbilityModel.ChooseAbilityThenCards;
         FixtureValue turns = fixture.GetProperty("Turns");
         BattleTurnState root = actions[0].GetProperty("Before").Deserialize<BattleTurnState>()!;
         string parent = JsonSerializer.Serialize(root);

@@ -180,6 +180,7 @@ internal static class RoomCombatChecks
         SentryChecks.Native(fixture);
         AbilityCooldownChecks.Native(fixture);
         AbilityCardChecks.Native(fixture);
+        UnitAbilityChecks.Native(fixture);
         TriggerUpgradeChecks.Native(fixture);
         SharedPileChecks.MigratedRoot(fixture);
     }

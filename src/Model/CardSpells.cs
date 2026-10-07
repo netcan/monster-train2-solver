@@ -52,11 +52,11 @@ namespace MonsterTrain2Poju.Model
             => TestPlayCore(SingleRoom(source), source.RoomIndex, effects, targetId, fullTrain: false);
 
         public static SpellCastCheck TestPlay(TrainCombatState source, int roomIndex, IReadOnlyList<CardActionEffect> effects, int targetId,
-            BattlePlayRules? definitions = null)
-            => TestPlayCore(source, roomIndex, effects, targetId, fullTrain: true, definitions);
+            BattlePlayRules? definitions = null, int selfUnitId = 0)
+            => TestPlayCore(source, roomIndex, effects, targetId, fullTrain: true, definitions, selfUnitId);
 
         private static SpellCastCheck TestPlayCore(TrainCombatState source, int roomIndex, IReadOnlyList<CardActionEffect> effects,
-            int targetId, bool fullTrain, BattlePlayRules? definitions = null)
+            int targetId, bool fullTrain, BattlePlayRules? definitions = null, int selfUnitId = 0)
         {
             string? error = Validate(source, roomIndex, effects, targetId, fullTrain);
             if (error != null) return new SpellCastCheck(false, error);
@@ -70,7 +70,7 @@ namespace MonsterTrain2Poju.Model
             {
                 CardActionEffect effect = effects[index];
                 if (effect.Tests?.ShouldTest == false) continue;
-                CardTargets targets = Collect(source, roomIndex, effect, last, initial, dropPosition, index, definitions, isTesting: true);
+                CardTargets targets = Collect(source, roomIndex, effect, last, initial, dropPosition, index, definitions, isTesting: true, selfUnitId: selfUnitId);
                 if (!targets.Supported) return new SpellCastCheck(false, targets.UnsupportedReason);
                 Remember(effect, index, targets, ref last);
                 string? targetError = AttackTestError(source, roomIndex, effect);
@@ -93,12 +93,12 @@ namespace MonsterTrain2Poju.Model
         }
 
         public static TrainSpellResult Apply(TrainCombatState source, int roomIndex, IReadOnlyList<CardActionEffect> effects,
-            int targetId, int sourceCardId = 0, BattlePlayRules? definitions = null, IReadOnlyList<CardPileState>? otherPiles = null)
-            => ApplyCore(source, roomIndex, effects, targetId, sourceCardId, null, null, definitions, fullTrain: true, otherPiles);
+            int targetId, int sourceCardId = 0, BattlePlayRules? definitions = null, IReadOnlyList<CardPileState>? otherPiles = null, int selfUnitId = 0)
+            => ApplyCore(source, roomIndex, effects, targetId, sourceCardId, null, null, definitions, fullTrain: true, otherPiles, selfUnitId);
 
         private static TrainSpellResult ApplyCore(TrainCombatState source, int roomIndex, IReadOnlyList<CardActionEffect> effects,
             int targetId, int sourceCardId, int? playerCapacity, int? enemyCapacity, BattlePlayRules? definitions, bool fullTrain,
-            IReadOnlyList<CardPileState>? otherPiles = null)
+            IReadOnlyList<CardPileState>? otherPiles = null, int selfUnitId = 0)
         {
             string? error = Validate(source, roomIndex, effects, targetId, fullTrain);
             if (error != null) return UnsupportedTrain(error);
@@ -137,7 +137,7 @@ namespace MonsterTrain2Poju.Model
                     return UnsupportedTrain("Room-and-above selection requires uncaptured trigger focus rules.");
                 int collectionRoom = effect.Target == "FrontInRoomAndRoomAbove" ? focusedRoom!.Value : roomIndex;
                 CardTargets targets = Collect(state, collectionRoom, effect, last, initial, dropPosition, index, definitions, isTesting: true,
-                    pendingDeadRooms: pendingDeadRooms, positions: positions);
+                    pendingDeadRooms: pendingDeadRooms, positions: positions, selfUnitId: selfUnitId);
                 if (!targets.Supported) return UnsupportedTrain(targets.UnsupportedReason!);
                 Remember(effect, index, targets, ref last);
                 // Runtime tests every effect, even if its initial casting test was disabled.
@@ -160,7 +160,7 @@ namespace MonsterTrain2Poju.Model
                     continue;
                 }
                 targets = Collect(state, collectionRoom, effect, last, initial, dropPosition, index, definitions,
-                    pendingDeadRooms: pendingDeadRooms, positions: positions);
+                    pendingDeadRooms: pendingDeadRooms, positions: positions, selfUnitId: selfUnitId);
                 if (!targets.Supported) return UnsupportedTrain(targets.UnsupportedReason!);
                 collections.Add(new SpellTargetCollection(index, targets.UnitIds));
                 Remember(effect, index, targets, ref last);
@@ -289,7 +289,7 @@ namespace MonsterTrain2Poju.Model
                     RoomCombatResult applied = ApplyOne(targetRoom!, effect, target, sourceCardId,
                         RoomCapacityModel.Maximum(state.Context, targetRoom!.RoomIndex, CombatTeam.Player) ?? capacity?.PlayerCapacity ?? playerCapacity,
                         RoomCapacityModel.Maximum(state.Context, targetRoom.RoomIndex, CombatTeam.Enemy) ?? capacity?.EnemyCapacity ?? enemyCapacity,
-                        deferSpawnerExhaustion: piles != null, scaledDamage: scaledDamage);
+                        deferSpawnerExhaustion: piles != null, scaledDamage: scaledDamage, selfUnitId: selfUnitId);
                     if (!applied.Supported) return UnsupportedTrain(applied.UnsupportedReason!);
                     state = ReplaceRoom(state, applied.State!);
                     callbacks.AddRange(applied.PendingCallbacks);
@@ -530,9 +530,9 @@ namespace MonsterTrain2Poju.Model
 
         private static CardTargets Collect(TrainCombatState state, int roomIndex, CardActionEffect effect, IReadOnlyList<int> last,
             CombatUnit? initial, int dropPosition, int index, BattlePlayRules? definitions, bool isTesting = false,
-            IReadOnlyDictionary<int, int>? pendingDeadRooms = null, IReadOnlyDictionary<int, int>? positions = null) => effect.Type == "HandUpgrade" && effect.Target == "Hand"
+            IReadOnlyDictionary<int, int>? pendingDeadRooms = null, IReadOnlyDictionary<int, int>? positions = null, int selfUnitId = 0) => effect.Type == "HandUpgrade" && effect.Target == "Hand"
                 ? new CardTargets(Array.Empty<int>()) : CardTargetModel.Collect(state, roomIndex, effect, last, initial?.Team, dropPosition,
-                    index == 0, isTesting, definitions?.Rooms.FirstOrDefault(room => room.IsPyre)?.RoomIndex, pendingDeadRooms, positions);
+                    index == 0, isTesting, definitions?.Rooms.FirstOrDefault(room => room.IsPyre)?.RoomIndex, pendingDeadRooms, positions, selfUnitId);
 
         private static void Remember(CardActionEffect effect, int index, CardTargets targets, ref IReadOnlyList<int> last)
         {
@@ -590,11 +590,11 @@ namespace MonsterTrain2Poju.Model
         }
 
         private static RoomCombatResult ApplyOne(RoomCombatState state, CardActionEffect effect, CombatUnit target,
-            int sourceCardId, int? playerCapacity, int? enemyCapacity, bool deferSpawnerExhaustion = false, int? scaledDamage = null)
+            int sourceCardId, int? playerCapacity, int? enemyCapacity, bool deferSpawnerExhaustion = false, int? scaledDamage = null, int selfUnitId = 0)
         {
             if (effect.Type == "Damage") return scaledDamage.HasValue
-                ? RoomCombatModel.ApplyCardDamageAfterTraits(state, target.Id, scaledDamage.Value, sourceCardId, deferSpawnerExhaustion)
-                : RoomCombatModel.ApplyCardDamage(state, target.Id, Math.Max(0, effect.Value), sourceCardId, deferSpawnerExhaustion);
+                ? RoomCombatModel.ApplyCardDamageAfterTraits(state, target.Id, scaledDamage.Value, sourceCardId, deferSpawnerExhaustion, selfUnitId)
+                : RoomCombatModel.ApplyCardDamage(state, target.Id, Math.Max(0, effect.Value), sourceCardId, deferSpawnerExhaustion, selfUnitId);
             if (effect.Type == "Heal") return effect.Value < 0 ? Unchanged(state) : RoomCombatModel.ApplyCardHeal(state, target.Id, effect.Value);
             if (AttackChange(effect)) return UnitAttackModel.Apply(state, target.Id, effect.Value, effect.Type == "DebuffAttack");
             if (effect.Type == "BuffHealth" || effect.Type == "DebuffHealth")

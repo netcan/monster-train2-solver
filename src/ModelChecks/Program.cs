@@ -87,6 +87,7 @@ CompanionBossChecks.Run();
 SentryChecks.Run();
 AbilityCooldownChecks.Run();
 AbilityCardChecks.Run();
+UnitAbilityChecks.Run();
 BattleStatisticsChecks.Run();
 StatisticOverflowChecks.Run();
 StatisticZeroIncrementChecks.Run();

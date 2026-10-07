@@ -54,6 +54,15 @@ namespace MonsterTrain2Poju.Model
 
     // Rules copied from definitions at the root, including reachable generated card definitions.
     // Unimplemented traits/effects remain attached to the card; they never silently become no-ops.
+    public sealed class CardAbilityRule
+    {
+        public string Kind { get; }
+        public bool CanTargetOtherFloors { get; }
+        public bool CanPlayWhenHandFull { get; }
+        public CardAbilityRule(string kind, bool canTargetOtherFloors, bool canPlayWhenHandFull)
+        { Kind = kind; CanTargetOtherFloors = canTargetOtherFloors; CanPlayWhenHandFull = canPlayWhenHandFull; }
+    }
+
     public sealed class CardPlayRule
     {
         public string DataId { get; }
@@ -61,6 +70,7 @@ namespace MonsterTrain2Poju.Model
         public int Cost { get; }
         public string CostType { get; }
         public EquipmentDefinition? Equipment { get; }
+        public CardAbilityRule? Ability { get; }
         public string Effect { get; }
         public string Destination { get; }
         public CombatUnit? SpawnUnit { get; }
@@ -72,10 +82,11 @@ namespace MonsterTrain2Poju.Model
         public CardPlayRule(string dataId, string assetKey, int cost, string effect, string destination,
             CombatUnit? spawnUnit, IReadOnlyList<string> externalInteractions, IReadOnlyList<CardActionEffect>? effects = null,
             IReadOnlyList<string>? upgradeInteractions = null, IReadOnlyList<string>? handDiscardInteractions = null,
-            IReadOnlyList<string>? handConsumeInteractions = null, string costType = "Default", EquipmentDefinition? equipment = null)
+            IReadOnlyList<string>? handConsumeInteractions = null, string costType = "Default", EquipmentDefinition? equipment = null,
+            CardAbilityRule? ability = null)
         {
             DataId = dataId; AssetKey = assetKey; Cost = cost; CostType = costType; Effect = effect; Destination = destination;
-            Equipment = equipment;
+            Equipment = equipment; Ability = ability;
             SpawnUnit = spawnUnit; ExternalInteractions = Array.AsReadOnly(externalInteractions.ToArray());
             Effects = Array.AsReadOnly((effects ?? Array.Empty<CardActionEffect>()).ToArray());
             UpgradeInteractions = upgradeInteractions == null ? null : Array.AsReadOnly(upgradeInteractions.ToArray());
@@ -100,8 +111,10 @@ namespace MonsterTrain2Poju.Model
         // -1 chooses the native first empty slot; 0..count inserts at the selected player position.
         public int PlayerPosition { get; }
         public int TargetUnitId { get; }
-        public PlayCardAction(int cardInstanceId, int roomIndex, int playerPosition = -1, int targetUnitId = 0)
-        { CardInstanceId = cardInstanceId; RoomIndex = roomIndex; PlayerPosition = playerPosition; TargetUnitId = targetUnitId; }
+        public int ActivatorUnitId { get; }
+        public PlayCardAction(int cardInstanceId, int roomIndex, int playerPosition = -1, int targetUnitId = 0, int activatorUnitId = 0)
+        { CardInstanceId = cardInstanceId; RoomIndex = roomIndex; PlayerPosition = playerPosition; TargetUnitId = targetUnitId;
+            ActivatorUnitId = activatorUnitId; }
     }
 
     public enum ActionRejection { None, Illegal, Unsupported }
@@ -120,6 +133,7 @@ namespace MonsterTrain2Poju.Model
     {
         public static BattleActionResult PlayCard(BattleTurnState source, PlayCardAction action)
         {
+            if (action.ActivatorUnitId != 0) return UnitAbilityModel.Activate(source, action);
             if (source.PlayRules == null || source.Spawn.Train.Context == null)
                 return Unsupported("Missing card/room play definitions or battle context.");
             if (source.ExternalInteractions.Count > 0 || source.Spawn.ExternalInteractions.Count > 0)
@@ -171,6 +185,7 @@ namespace MonsterTrain2Poju.Model
             }
             context = context.WithOtherPiles(source.OtherPiles).WithStatistics(context.Statistics?.WithPlayedCost(card.InstanceId, paidCost));
             CombatContext castingContext = context;
+            context = context.WithAbilityActivator(context.LastAbilityActivatorUnitId.HasValue ? 0 : (int?)null);
             context = context.WithQueryFrame(context.QueryFrame?.With(energy: source.Energy - paidCost));
             // Native records the payment on the card before any queued effect runs.
             if (playingInstance != null) context = context.WithCard(playingInstance.WithPlayedCost(paidCost));
@@ -184,7 +199,7 @@ namespace MonsterTrain2Poju.Model
             context = new CombatContext(new CardCycleState(context.Cards.Hand.Where(item => item.InstanceId != card.InstanceId).ToArray(),
                 context.Cards.Draw, context.Cards.Discard, context.Cards.Rng, context.Cards.DrawModifier, context.Cards.ExternalInteractions, context.Cards.BonusDraw),
                 context.BattleRng, context.Gold, context.NextCardId, context.MaxHandSize, context.StatusRules, context.Statistics, context.CardInstances,
-                context.CardRegistry, context.AllScenarioBossesDead, context.NextAddedTemporaryUpgrades, context.OtherPiles, context.QueryFrame, context.KillCamActivated, context.MagicPower, context.IsolatedBattlePreview, context.EnergyState, context.RoomCapacities, context.AbilityCardCache);
+                context.CardRegistry, context.AllScenarioBossesDead, context.NextAddedTemporaryUpgrades, context.OtherPiles, context.QueryFrame, context.KillCamActivated, context.MagicPower, context.IsolatedBattlePreview, context.EnergyState, context.RoomCapacities, context.AbilityCardCache, context.LastAbilityActivatorUnitId);
             target = new RoomCombatState(target.RoomIndex, target.Deployment, target.Units, target.ExternalInteractions, context, target.Preview);
             CombatUnit[] players = target.Units.Where(unit => unit.Team == CombatTeam.Player).ToArray();
             int position = action.PlayerPosition == -1 ? players.Length : action.PlayerPosition;
@@ -322,7 +337,7 @@ namespace MonsterTrain2Poju.Model
                 terminal ? playingInstance == null ? context.CardInstances : new[] { (context.FindCard(card.InstanceId) ?? playingInstance).OnDiscard(true, paidCost) } :
                 context.CardInstances?.Select(instance => instance.InstanceId == card.InstanceId
                     ? instance.OnDiscard(true, paidCost) : instance).ToArray(), context.CardRegistry, context.AllScenarioBossesDead, context.NextAddedTemporaryUpgrades,
-                context.OtherPiles == null ? null : piles, context.QueryFrame?.With(runningCombat: !terminal), context.KillCamActivated, context.MagicPower, context.IsolatedBattlePreview, context.EnergyState, context.RoomCapacities, context.AbilityCardCache);
+                context.OtherPiles == null ? null : piles, context.QueryFrame?.With(runningCombat: !terminal), context.KillCamActivated, context.MagicPower, context.IsolatedBattlePreview, context.EnergyState, context.RoomCapacities, context.AbilityCardCache, context.LastAbilityActivatorUnitId);
             RoomCombatState[] rooms = train.Rooms.Select(room =>
             {
                 return new RoomCombatState(room.RoomIndex, room.Deployment, room.Units, room.ExternalInteractions, context, room.Preview);
@@ -379,6 +394,7 @@ namespace MonsterTrain2Poju.Model
                     if (PlayCard(source, action).Supported) actions.Add(action);
                 }
             }
+            actions.AddRange(UnitAbilityModel.EnumerateSupportedActivations(source));
             return actions.AsReadOnly();
         }
 

@@ -437,7 +437,7 @@ namespace MonsterTrain2Poju.Probe
                     return;
                 }
             }
-            if (fullBattle && !numericModifiersPrepared && (modifierScenario == "ability-cooldown" || modifierScenario == "ability-cache" || modifierScenario == "sentry" || modifierScenario == "sentry-lethal" || modifierScenario == "companion-boss" || modifierScenario == "numeric-upgrades" || modifierScenario == "dynamic-upgrades" ||
+            if (fullBattle && !numericModifiersPrepared && (modifierScenario == "ability-activation" || modifierScenario == "ability-activation-x" || modifierScenario == "ability-activation-lethal" || modifierScenario == "ability-cooldown" || modifierScenario == "ability-cache" || modifierScenario == "sentry" || modifierScenario == "sentry-lethal" || modifierScenario == "companion-boss" || modifierScenario == "numeric-upgrades" || modifierScenario == "dynamic-upgrades" ||
                 modifierScenario == "sacrifice-upgrades" || modifierScenario == "hand-upgrades" || modifierScenario == "targeted-hand-upgrades" ||
                 modifierScenario == "healing" || modifierScenario == "healing-triggers" || modifierScenario == "room-spells" ||
                 modifierScenario == "terminal-spells" || modifierScenario == "post-kill-spells" || modifierScenario == "random-spells" ||
@@ -457,6 +457,7 @@ namespace MonsterTrain2Poju.Probe
                 else if (modifierScenario == "room-capacity" || modifierScenario == "room-capacity-lethal") RoomCapacityScenario.Prepare(managers, log, modifierScenario == "room-capacity-lethal");
                 else if (modifierScenario == "x-cost" || modifierScenario == "x-cost-lethal") CardCostScenario.Prepare(managers, log, modifierScenario == "x-cost-lethal");
                 else if (modifierScenario == "bonus-draw" || modifierScenario == "bonus-draw-lethal") BonusDrawScenario.Prepare(managers, log, modifierScenario == "bonus-draw-lethal");
+                else if (modifierScenario == "ability-activation" || modifierScenario == "ability-activation-x" || modifierScenario == "ability-activation-lethal") AbilityActivationScenario.Prepare(managers, log, modifierScenario == "ability-activation-x", modifierScenario == "ability-activation-lethal");
                 else if (modifierScenario == "ability-cooldown" || modifierScenario == "ability-cache") AbilityCooldownScenario.Prepare(managers, log, modifierScenario == "ability-cache");
                 else if (modifierScenario == "companion-boss") CompanionBossScenario.Prepare(managers, log);
                 else if (modifierScenario == "sentry" || modifierScenario == "sentry-lethal") SentryScenario.Prepare(managers, log, modifierScenario == "sentry-lethal");
@@ -568,6 +569,8 @@ namespace MonsterTrain2Poju.Probe
                 BattleTurnState decision = FullBattleTrace.Active!.CaptureDecision();
                 pendingPlay = Environment.GetEnvironmentVariable("MT2_PROBE_FULL_BATTLE_POLICY") == "units-spells-and-junk"
                     ? BattleActionModel.ChooseUnitSpellAndJunkPlay(decision) : BattleActionModel.ChooseUnitAndJunkPlay(decision);
+                if (modifierScenario == "ability-activation" || modifierScenario == "ability-activation-x" || modifierScenario == "ability-activation-lethal")
+                    pendingPlay = UnitAbilityModel.ChooseAbilityThenCards(decision);
                 if (pendingPlay != null)
                 {
                     RoomManager rooms = managers.GetRoomManager()!;
@@ -676,6 +679,14 @@ namespace MonsterTrain2Poju.Probe
         private void PlayPendingPolicyCard(AllGameManagers managers, CardManager cards)
         {
             PlayCardAction action = pendingPlay ?? throw new InvalidOperationException("Missing policy card action.");
+            if (action.ActivatorUnitId > 0)
+            {
+                CharacterState actor = FullBattleTrace.Active!.KnownUnits.Single(unit => FullBattleTrace.Active.UnitId(unit) == action.ActivatorUnitId);
+                FullBattleTrace.Active.BeginCardPlay(action);
+                if (!actor.ActivateUnitAbility(cards)) throw new InvalidOperationException("Native unit ability activation failed.");
+                log.LogInfo("DEPTH-POLICY-ABILITY card=" + action.CardInstanceId + " unit=" + action.ActivatorUnitId + " room=" + action.RoomIndex);
+                pendingPlay = null; Enter(Stage.PlayingCard, 30f); return;
+            }
             int index = cards.GetHand().FindIndex(card => FullBattleTrace.Active!.CardId(card) == action.CardInstanceId);
             if (index < 0) throw new InvalidOperationException("Policy card disappeared from hand.");
             RoomState room = managers.GetRoomManager()!.GetRoom(action.RoomIndex);

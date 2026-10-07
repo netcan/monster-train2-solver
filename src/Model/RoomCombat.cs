@@ -378,18 +378,20 @@ namespace MonsterTrain2Poju.Model
         }
 
         public static RoomCombatResult ApplyCardDamage(RoomCombatState state, int targetId, int damage, int sourceCardId = 0,
-            bool deferSpawnerExhaustion = false) => ApplyCardDamage(state, targetId, damage, sourceCardId, deferSpawnerExhaustion, true);
+            bool deferSpawnerExhaustion = false, int attackerUnitId = 0) => ApplyCardDamage(state, targetId, damage, sourceCardId, deferSpawnerExhaustion, true, attackerUnitId);
 
         internal static RoomCombatResult ApplyCardDamageAfterTraits(RoomCombatState state, int targetId, int damage, int sourceCardId,
-            bool deferSpawnerExhaustion) => ApplyCardDamage(state, targetId, damage, sourceCardId, deferSpawnerExhaustion, false);
+            bool deferSpawnerExhaustion, int attackerUnitId = 0) => ApplyCardDamage(state, targetId, damage, sourceCardId, deferSpawnerExhaustion, false, attackerUnitId);
 
         private static RoomCombatResult ApplyCardDamage(RoomCombatState state, int targetId, int damage, int sourceCardId,
-            bool deferSpawnerExhaustion, bool applyTraits)
+            bool deferSpawnerExhaustion, bool applyTraits, int attackerUnitId)
         {
             string? error = Validate(state);
             if (error != null || damage < 0 || !state.Units.Any(unit => unit.Id == targetId))
                 return new RoomCombatResult(null, RoomOutcome.Unsupported, 0, new List<CombatEvent>(), error ?? "Invalid card damage target or amount.");
-            return new Engine(state, new List<CombatEvent>(), deferSpawnerExhaustion).CardDamage(targetId, damage, sourceCardId, applyTraits);
+            if (attackerUnitId != 0 && state.Units.All(unit => unit.Id != attackerUnitId))
+                return new RoomCombatResult(null, RoomOutcome.Unsupported, 0, new List<CombatEvent>(), "Cross-room spell attacker requires a retained source unit.");
+            return new Engine(state, new List<CombatEvent>(), deferSpawnerExhaustion).CardDamage(targetId, damage, sourceCardId, applyTraits, attackerUnitId);
         }
 
         internal static RoomCombatResult ApplyUnitModification(RoomCombatState state, CombatUnit changed) =>
@@ -783,10 +785,10 @@ namespace MonsterTrain2Poju.Model
                 }
             }
 
-            internal RoomCombatResult CardDamage(int targetId, int damage, int sourceCardId, bool applyTraits = true)
+            internal RoomCombatResult CardDamage(int targetId, int damage, int sourceCardId, bool applyTraits = true, int attackerUnitId = 0)
             {
                 WorkingUnit target = units.Single(unit => unit.Source.Id == targetId);
-                Damage(null, target, damage, "Spell", sourceCardId, applyTraits);
+                Damage(units.FirstOrDefault(unit => unit.Source.Id == attackerUnitId), target, damage, "Spell", sourceCardId, applyTraits);
                 return Finish(battleWon ? RoomOutcome.BattleWon : target.Source.IsPyre && !target.Alive
                     ? RoomOutcome.PlayerDefeated : RoomOutcome.Exchanged);
             }
@@ -1229,7 +1231,7 @@ namespace MonsterTrain2Poju.Model
                     context.NextCardId, context.MaxHandSize, context.StatusRules, context.Statistics,
                     context.CardInstances == null ? null : Array.Empty<CardInstanceState>(), context.CardRegistry, context.AllScenarioBossesDead,
                     context.NextAddedTemporaryUpgrades, context.OtherPiles?.Select(CardPileModel.Clear).ToArray(), context.QueryFrame,
-                    context.KillCamActivated.HasValue ? true : (bool?)null, context.MagicPower, context.IsolatedBattlePreview, context.EnergyState, context.RoomCapacities, context.AbilityCardCache);
+                    context.KillCamActivated.HasValue ? true : (bool?)null, context.MagicPower, context.IsolatedBattlePreview, context.EnergyState, context.RoomCapacities, context.AbilityCardCache, context.LastAbilityActivatorUnitId);
             }
 
             private void PostCombat()
@@ -1376,7 +1378,7 @@ namespace MonsterTrain2Poju.Model
                                 int reward = GoldRewardModel.Adjust(effect.Value);
                                 context = new CombatContext(context!.Cards, context.BattleRng,
                                     Math.Max(0, checked(context.Gold + reward)), context.NextCardId, context.MaxHandSize, context.StatusRules, context.Statistics,
-                                    context.CardInstances, context.CardRegistry, context.AllScenarioBossesDead, context.NextAddedTemporaryUpgrades, context.OtherPiles, context.QueryFrame, context.KillCamActivated, context.MagicPower, context.IsolatedBattlePreview, context.EnergyState, context.RoomCapacities, context.AbilityCardCache);
+                                    context.CardInstances, context.CardRegistry, context.AllScenarioBossesDead, context.NextAddedTemporaryUpgrades, context.OtherPiles, context.QueryFrame, context.KillCamActivated, context.MagicPower, context.IsolatedBattlePreview, context.EnergyState, context.RoomCapacities, context.AbilityCardCache, context.LastAbilityActivatorUnitId);
                                 Emit("Gold", unit, unit, reward);
                             }
                             else if (effect.Type == "CardEffectAddBattleCard" && !source.Preview && !battleWon && context != null && context.AllScenarioBossesDead != true &&
@@ -1717,6 +1719,7 @@ namespace MonsterTrain2Poju.Model
                 }
                 if (context != null)
                 {
+                    text.Append(context.LastAbilityActivatorUnitId).Append(':');
                     text.Append(context.Gold).Append(':').Append(context.NextCardId).Append(':')
                         .Append(context.BattleRng.S0).Append(',').Append(context.BattleRng.S1).Append(',')
                         .Append(context.BattleRng.S2).Append(',').Append(context.BattleRng.S3);

@@ -98,6 +98,7 @@ are copied immutable values; independent child states can run on worker threads.
 | Unit arrival Sentry queues | `TrainCombatModel` and `RoomCombatModel` | Physical guard order, moved-target overrides, retained dead victims, once/silence/threshold gates and terminal hit/death queues |
 | Unit ability cooldown state | `AbilityCooldownModel`, `CardSpellModel` and `RoomCombatModel` | Native natural-ability spawn, separate configured/current cooldowns, signed/absolute updates, resets, status decay and availability-marker callbacks; complete battle and parallel branches |
 | Shared ability card cache | `AbilityCardModel` and `CombatContext.AbilityCardCache` | Native player and enemy ability creation, shared unit references, detached card statistics, starting upgrades and allocation before OnSpawn generation; complete battle and parallel branches |
+| Unit ability activation | `UnitAbilityModel` and `BattleActionModel` | Native fixed/X/zero payments, shared detached history, self targets, damage attribution, pre-own/own callbacks, cooldown and direct Boss-kill settlement; complete policies and parallel branches |
 | Mono status dictionary slot reuse | `StatusDictionaryState` | Captured slot/free-list state, LIFO reuse after cleanup, exact later status enumeration and independent branch isolation |
 | Additional spells, abilities, relics | Not complete | Unsupported interactions explicitly reject the model transition |
 
@@ -3161,3 +3162,77 @@ parsing and git diff --check pass. The accepted capture is native binary and
 introduces no JSON fixture dependency. Development runs excluded from the
 curated inventory include the first player-only capture and the enemy capture
 that the original dictionary property-name grouping incorrectly rejected.
+
+## Unit ability activation and terminal skills
+
+`PlayCardAction.ActivatorUnitId` identifies a unit skill independently of hand
+membership. `UnitAbilityModel` verifies availability, configured floor/hand
+restrictions and casting, obtains the shared detached skill card, pays fixed or
+remaining-energy cost, and supplies the actor to the spell effect chain. Payment
+precedes the player's pre-own callback. The resolving flag surrounds the effects
+and is cleared before the own callback queue drains. Common callbacks reset the
+actor's current cooldown and remove its available marker. Skill activations are
+included in supported action enumeration; sibling units retain their own
+cooldowns while sharing the same card modifiers and last paid cost.
+
+Self targeting follows the native exception: it ignores team, health, status
+and subtype filters, and only the ignore-Boss mask applies. Spell damage carries
+the activator into damage/death handling, preserving LastAttackerId and kill
+attribution. `CombatContext.LastAbilityActivatorUnitId` captures the native
+retained reference, survives every context copy, and clears on an ordinary card
+play. Both draw scheduling and energy effect verifiers preserve the cache and
+actor reference when reconstructing complete contexts.
+
+Skill plays update global played history and owned cards' AnyCardPlayed
+counters, but do not become owned deck statistics, discard, or increment local
+CardState play count. A winning skill clears ordinary piles without restoring
+its cached card as a resolving hand card. Cached identities and playback
+history remain; native statistics fall back to the permanent deck. A separate
+terminal skill verifier checks these invariants while the historical terminal
+spell verifier continues requiring ordinary cast/discard restoration.
+
+Three schema-64 native archives use game 2.2.1 and module MVID
+`8fb07b96-f4db-4d2b-884d-c00536d6ccf4`. Preparation extends the cache scenario:
+two natural Stewards share skill card 16 with its real starting damage upgrade,
+and the original Boss retains a distinct skill. Stewards gain 50 HP and lose one
+size only once; Boss attack/health and every original spawn wave stay intact.
+The player skill chains front-enemy damage, self healing and a future draw.
+Its pre-own trigger grants gold and deals three self damage; the heal deliberately
+uses an enemy-only team mask. Coverage accounts for armor before requiring real
+self healing, plus actual pre-own/own callbacks and shared card identity.
+
+| Archive | Bytes / nodes | Actions / EndTurns | Skill activations | Native seconds |
+| --- | --- | --- | --- | --- |
+| `full-battle-ability-activation.mt2f` | 28,207 / 4,605 | 17 / 5 | Two fixed-cost plays | 50.89 |
+| `full-battle-ability-activation-x.mt2f` | 26,952 / 4,343 | 16 / 5 | One positive X payment and one zero payment | 47.57 |
+| `full-battle-ability-activation-lethal.mt2f` | 26,047 / 4,213 | 16 / 4 | Two fixed-cost plays; the second kills the Boss | 46.02 |
+
+All three muted Instant runs win at Pyre 80, preserve original profile signatures,
+and have zero capture failures, differences, unsupported or pending records.
+Independent recomputation matches all six complete activation states in 32
+branches, 203 cooldown effect records, and each whole policy from initial and
+actual mid-battle roots with 16 parallel branches. The lethal fixture explicitly
+requires a skill to finish the battle. It also verifies the later future-draw
+effect does not run after Boss death.
+
+Pure checks cover capped pre-own energy gains after payment, zero/current X
+payments, fresh cache allocation, cooldown/resolving/silence/muted/deployment/
+hand/cost/identity/floor gates, self-filter bypass, ordinary-card actor reset,
+terminal clearing, search enumeration and parent isolation. General muted
+trigger suppression is not modeled by this increment: an affected actor cannot
+activate, and other muted contexts remain unsupported. Cross-room spell damage
+actors, retained self after removal, non-spell skill pipelines, assignment/
+replacement/removal, equipment-granted skills and Horde spawning also need
+coverage. Grafts, moon/deathwish, relics, room attachments and specialized Boss
+interactions remain necessary for the complete battle goal.
+
+The accepted archives are direct native binary captures with no JSON source
+dependency. SHA-256 and source metadata live in the curated manifest.
+
+The final `scripts/Check-Models.ps1` run passes all 93 curated archives,
+including 85 battle captures and eight calibration suites, with exit code zero.
+Complete inventory/SHA-256 validation, pure checks and every native comparison
+pass. Probe builds with zero warnings/errors; ModelChecks retains its 12 existing
+nullable warnings and introduces none. PowerShell parsing and git diff --check
+pass. Failed development coverage-gate captures remain excluded from the curated
+inventory; the accepted archives retain complete native and independent proof.
