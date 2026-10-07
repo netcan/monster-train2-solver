@@ -2848,3 +2848,53 @@ policies. The resulting 83-file inventory and SHA-256 validation pass.
 Probe builds with zero warnings/errors; ModelChecks retains its 12 existing
 nullable warnings and has no errors. Probe-script parsing passes, and no JSON
 source fixture is introduced.
+
+## Status-conditioned triggers and separate dying targets
+
+Native CharacterState.FireTriggers checks each required self status with
+HasStatusEffect, which accepts a positive count and compares status IDs without
+case sensitivity. The count configured on each requirement is ignored. Dying
+requirements are checked only when a non-null dyingCharacter is supplied.
+These gates run before effect preflight and before consuming the once flag;
+later triggers read live statuses changed by earlier effects in the same phase.
+
+CombatTriggerConditions copies both requirement lists into immutable values.
+Trigger copies and newly granted unit/equipment triggers preserve these gates.
+Character queues carry a separate dying-character payload, independent of the
+attack/override target, through local and external dispatch, sweep callbacks
+and retained removed units. Explicit queue fire permission is also preserved.
+Natural Slay dispatches now supply the actual victim for status tests, including
+its zero health and retained status registry after death. Legacy archives with
+no conditions keep their existing behavior.
+
+`-ConditionalTriggers` normally summons two initial Stewards on separate floors;
+each occupies three of the ordinary five capacity. Native direct upgrades
+install eight controlled PreCombat cases covering missing self requirements,
+case-insensitive presence, configured counts of 999 with actual counts of one,
+missing/positive/zero dying status, null-dying bypass and same-phase changes.
+Deployment-turn API testing permits PreCombat in the in-memory timing list.
+Four subsequent natural PreCombat dispatches and two actual Slay callbacks
+exercise the same conditions during the ordinary battle. The Boss and enemy
+waves remain unchanged. Each raw native phase captures complete room, actor
+and dying-target states, independently of its embedded prediction.
+
+`tests/fixtures/full-battle-conditional-triggers.mt2f` stores 4,441 nodes in
+27,430 bytes, schema 59 on game 2.2.1 with module MVID
+`8fb07b96-f4db-4d2b-884d-c00536d6ccf4`. The muted Instant native run takes
+48.21 seconds and wins at Pyre 80 after 19 plays and six EndTurns. Its 53 room
+stages, 12 card cycles, 12 train phases, 11 spawns and 14 conditional dispatches
+have zero capture failures, differences, unsupported or pending records;
+original files are unchanged. All conditional phases compare independently in
+32 parallel branches. The complete policy matches initial and actual
+mid-battle roots in 16 parallel branches. Pure checks additionally cover local
+sweep victims, retained external targets, explicit fire permission and parent
+immutability.
+
+All 83 pre-existing binary archives, including eight calibration suites, pass
+the complete regression. The new archive separately passes the independent
+checker. The expanded 84-file inventory and SHA-256 checks pass, along with
+probe-script parsing. Probe builds with zero warnings/errors; ModelChecks has
+its 12 existing nullable warnings and no errors. No source JSON fixture is
+introduced. Relentless-transition trigger removal, immediate moon/deathwish
+effects, equipment-granted abilities, grafts, relics, room attachments and
+specialized Boss interactions remain separate work.

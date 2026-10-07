@@ -138,6 +138,14 @@ namespace MonsterTrain2Poju.Model
         { UpgradeId = upgradeId; EquipmentCardId = equipmentCardId; IsFromEquipment = isFromEquipment; OnlyIfEquipped = onlyIfEquipped; }
     }
 
+    public sealed class CombatTriggerConditions
+    {
+        public IReadOnlyList<string> RequiredStatuses { get; }
+        public IReadOnlyList<string> RequiredDyingStatuses { get; }
+        public CombatTriggerConditions(IReadOnlyList<string> requiredStatuses, IReadOnlyList<string> requiredDyingStatuses)
+        { RequiredStatuses = Array.AsReadOnly(requiredStatuses.ToArray()); RequiredDyingStatuses = Array.AsReadOnly(requiredDyingStatuses.ToArray()); }
+    }
+
     public sealed class CombatTrigger
     {
         public string Kind { get; }
@@ -151,25 +159,27 @@ namespace MonsterTrain2Poju.Model
         public CombatTriggerOrigin? Origin { get; }
         // Per-unit allocation survives list shifts and removal; null denotes a legacy capture.
         public int? StateId { get; }
+        public CombatTriggerConditions? Conditions { get; }
         // Immutable copies retain the native trigger object's identity inside an engine.
         // This token is local to an in-memory branch and is never serialized.
         internal object Identity { get; }
         public CombatTrigger(string kind, bool once, bool hasTriggered, bool ignoreSilence,
             int fireCount, IReadOnlyList<CombatEffect> effects, bool? skipDuringDeployment = null, int? triggerAtThreshold = null,
-            CombatTriggerOrigin? origin = null, int? stateId = null)
+            CombatTriggerOrigin? origin = null, int? stateId = null, CombatTriggerConditions? conditions = null)
         {
             Kind = kind; Once = once; HasTriggered = hasTriggered; IgnoreSilence = ignoreSilence;
             FireCount = fireCount; Effects = Array.AsReadOnly(effects.ToArray()); SkipDuringDeployment = skipDuringDeployment;
             TriggerAtThreshold = triggerAtThreshold;
             Origin = origin;
             StateId = stateId;
+            Conditions = conditions;
             Identity = new object();
         }
         private CombatTrigger(CombatTrigger source, bool hasTriggered, IReadOnlyList<CombatEffect> effects, int? stateId)
         {
             Kind = source.Kind; Once = source.Once; HasTriggered = hasTriggered; IgnoreSilence = source.IgnoreSilence;
             FireCount = source.FireCount; Effects = Array.AsReadOnly(effects.ToArray()); SkipDuringDeployment = source.SkipDuringDeployment;
-            TriggerAtThreshold = source.TriggerAtThreshold; Origin = source.Origin; Identity = source.Identity; StateId = stateId;
+            TriggerAtThreshold = source.TriggerAtThreshold; Origin = source.Origin; Identity = source.Identity; StateId = stateId; Conditions = source.Conditions;
         }
         internal CombatTrigger Fired(IReadOnlyList<CombatEffect> effects) => new CombatTrigger(this, true, effects, StateId);
         internal CombatTrigger ForPreview() => new CombatTrigger(this, false, Effects, StateId);
@@ -177,6 +187,6 @@ namespace MonsterTrain2Poju.Model
         public CombatTrigger WithStateId(int? stateId) => new CombatTrigger(this, HasTriggered, Effects, stateId);
         internal CombatTrigger WithOrigin(string upgradeId, int equipmentCardId, int? stateId = null) => new CombatTrigger(Kind, Once, false,
             IgnoreSilence, FireCount, Effects, SkipDuringDeployment, TriggerAtThreshold,
-            new CombatTriggerOrigin(upgradeId, equipmentCardId, equipmentCardId > 0, Origin?.OnlyIfEquipped == true), stateId);
+            new CombatTriggerOrigin(upgradeId, equipmentCardId, equipmentCardId > 0, Origin?.OnlyIfEquipped == true), stateId, Conditions);
     }
 }

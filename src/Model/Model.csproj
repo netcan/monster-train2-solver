@@ -7,5 +7,6 @@
   </PropertyGroup>
   <ItemGroup>
     <InternalsVisibleTo Include="ModelChecks" />
+    <InternalsVisibleTo Include="Probe" />
   </ItemGroup>
 </Project>

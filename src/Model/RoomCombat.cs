@@ -212,11 +212,13 @@ namespace MonsterTrain2Poju.Model
             internal int ParamInt2 { get; }
             internal string? ParamString { get; }
             internal CombatUnit? OverrideTarget { get; }
+            internal CombatUnit? DyingCharacter { get; set; }
+            internal bool CanFireTriggers { get; }
             internal bool ReturnSpawnerAfterQueue { get; }
             internal bool DeferUntilRemoval { get; }
             internal QueuedCharacterTrigger(int roomIndex, CombatUnit unit, string kind = "OnDeath", bool returnSpawnerAfterQueue = false, bool deferUntilRemoval = false, int paramInt = 0,
-                CombatUnit? overrideTarget = null, int paramInt2 = 0, string? paramString = null)
-            { RoomIndex = roomIndex; Unit = unit; Kind = kind; ReturnSpawnerAfterQueue = returnSpawnerAfterQueue; DeferUntilRemoval = deferUntilRemoval; ParamInt = paramInt; OverrideTarget = overrideTarget; ParamInt2 = paramInt2; ParamString = paramString; }
+                CombatUnit? overrideTarget = null, int paramInt2 = 0, string? paramString = null, CombatUnit? dyingCharacter = null, bool canFireTriggers = true)
+            { RoomIndex = roomIndex; Unit = unit; Kind = kind; ReturnSpawnerAfterQueue = returnSpawnerAfterQueue; DeferUntilRemoval = deferUntilRemoval; ParamInt = paramInt; OverrideTarget = overrideTarget; ParamInt2 = paramInt2; ParamString = paramString; DyingCharacter = dyingCharacter; CanFireTriggers = canFireTriggers; }
         }
         private static readonly HashSet<string> KnownStatuses = new HashSet<string>(StringComparer.Ordinal)
         {
@@ -297,7 +299,15 @@ namespace MonsterTrain2Poju.Model
                 QueuedCharacterTrigger? dead = queue.LastOrDefault(item => item.Kind == "OnDeath" &&
                     item.RoomIndex == queued.RoomIndex && item.Unit.Id == queued.Unit.Id && item.Unit.Health <= 0);
                 if (dead != null) queued.Unit = dead.Unit;
+                if (queued.DyingCharacter != null)
+                {
+                    CombatUnit? latestDying = queue.LastOrDefault(item => item.Kind == "OnDeath" &&
+                        item.Unit.Id == queued.DyingCharacter.Id && item.Unit.Health <= 0)?.Unit;
+                    if (latestDying != null) queued.DyingCharacter = latestDying;
+                }
                 if (!fire(queued)) return false;
+                foreach (QueuedCharacterTrigger item in queue.Where(item => item.DyingCharacter?.Id == queued.Unit.Id))
+                    item.DyingCharacter = queued.Unit;
                 if (queued.Unit.Health <= 0)
                     foreach (QueuedCharacterTrigger item in queue.Where(item => item.RoomIndex == queued.RoomIndex && item.Unit.Id == queued.Unit.Id))
                         item.Unit = queued.Unit;
@@ -468,6 +478,8 @@ namespace MonsterTrain2Poju.Model
                     return "Valor requires the armor status definition.";
                 foreach (CombatTrigger trigger in unit.Triggers)
                 {
+                    if (trigger.Conditions != null && trigger.Conditions.RequiredStatuses.Concat(trigger.Conditions.RequiredDyingStatuses).Any(string.IsNullOrWhiteSpace))
+                        return "Invalid trigger status condition.";
                     if (trigger.Origin?.OnlyIfEquipped == true && unit.EquipmentCards == null)
                         return "Equipped-only triggers require equipment membership state.";
                     if (trigger.Origin != null && (trigger.Origin.EquipmentCardId < 0 ||
@@ -635,7 +647,7 @@ namespace MonsterTrain2Poju.Model
             private readonly bool deferSpawnerExhaustion;
             private readonly int pendingSummonCardId;
             private readonly Action<QueuedCharacterTrigger>? enqueueCharacterTrigger;
-            private readonly Queue<(WorkingUnit Unit, string Kind, bool CanFire, int ParamInt, WorkingUnit? OverrideTarget, int ParamInt2, string? ParamString)> triggerQueue = new Queue<(WorkingUnit, string, bool, int, WorkingUnit?, int, string?)>();
+            private readonly Queue<(WorkingUnit Unit, string Kind, bool CanFire, int ParamInt, WorkingUnit? OverrideTarget, int ParamInt2, string? ParamString, WorkingUnit? DyingCharacter)> triggerQueue = new Queue<(WorkingUnit, string, bool, int, WorkingUnit?, int, string?, WorkingUnit?)>();
             private bool runningTriggerQueue;
             private bool stopAfterBossRemoval;
             private bool killCamActivated;
@@ -892,8 +904,13 @@ namespace MonsterTrain2Poju.Model
                     WorkingUnit? overridden = queued.OverrideTarget == null ? null : units.FirstOrDefault(unit => unit.Source.Id == queued.OverrideTarget.Id);
                     if (overridden == null && queued.OverrideTarget != null)
                     { overridden = new WorkingUnit(queued.OverrideTarget) { InRoom = false }; units.Add(overridden); }
-                    FireTriggers(actor, queued.Kind, fromQueue: true, paramInt: queued.ParamInt, overrideTarget: overridden);
+                    WorkingUnit? dying = queued.DyingCharacter == null ? null : units.FirstOrDefault(unit => unit.Source.Id == queued.DyingCharacter.Id);
+                    if (dying == null && queued.DyingCharacter != null)
+                    { dying = new WorkingUnit(queued.DyingCharacter) { InRoom = false }; units.Add(dying); }
+                    FireTriggers(actor, queued.Kind, canFireTriggers: queued.CanFireTriggers, fromQueue: true, paramInt: queued.ParamInt,
+                        overrideTarget: overridden, dyingCharacter: dying);
                     queued.Unit = actor.Freeze();
+                    if (dying != null) queued.DyingCharacter = dying.Freeze();
                 }
                 return Finish(battleWon ? RoomOutcome.BattleWon : units.Any(unit => unit.Source.IsPyre && !unit.Alive)
                     ? RoomOutcome.PlayerDefeated : RoomOutcome.Exchanged);
@@ -1054,7 +1071,7 @@ namespace MonsterTrain2Poju.Model
                     FireTriggers(actor, "OnAttacking", overrideTarget: target);
                 // Native queues Slay before lifesteal and retaliation, for every damage type
                 // with a character attacker, including damage from a character effect.
-                if (actor != null && !actor.Despawned && !actor.Removed && !target.Alive) FireTriggers(actor, "OnKill");
+                if (actor != null && !actor.Despawned && !actor.Removed && !target.Alive) FireTriggers(actor, "OnKill", dyingCharacter: target);
                 // Native lifesteal heals by unmodified attack, even against armor; it happens before spikes.
                 // A dying sweep attacker has not been destroyed yet: its remaining
                 // attacks still consume lifesteal, while Heal itself refuses revival.
@@ -1199,20 +1216,21 @@ namespace MonsterTrain2Poju.Model
             }
 
             private void FireTriggers(WorkingUnit unit, string kind, bool canFireTriggers = true, bool fromQueue = false, int paramInt = 0,
-                WorkingUnit? overrideTarget = null)
+                WorkingUnit? overrideTarget = null, WorkingUnit? dyingCharacter = null)
             {
                 string? paramString = kind == "OnHeal" || kind == "OnHit" ? "" : null;
                 if (!fromQueue && enqueueCharacterTrigger != null)
-                { enqueueCharacterTrigger(new QueuedCharacterTrigger(source.RoomIndex, unit.Freeze(), kind, paramInt: paramInt, overrideTarget: overrideTarget?.Freeze(), paramString: paramString)); return; }
+                { enqueueCharacterTrigger(new QueuedCharacterTrigger(source.RoomIndex, unit.Freeze(), kind, paramInt: paramInt, overrideTarget: overrideTarget?.Freeze(), paramString: paramString,
+                    dyingCharacter: dyingCharacter?.Freeze(), canFireTriggers: canFireTriggers)); return; }
                 if (!fromQueue)
                 {
-                    triggerQueue.Enqueue((unit, kind, canFireTriggers, paramInt, overrideTarget, 0, paramString));
+                    triggerQueue.Enqueue((unit, kind, canFireTriggers, paramInt, overrideTarget, 0, paramString, dyingCharacter));
                     if (!runningTriggerQueue) DrainLocalTriggerQueue();
                     return;
                 }
                 bool startedQueue = !runningTriggerQueue;
                 runningTriggerQueue = true;
-                ExecuteTriggers(unit, kind, canFireTriggers, paramInt, overrideTarget);
+                ExecuteTriggers(unit, kind, canFireTriggers, paramInt, overrideTarget, dyingCharacter);
                 if (!startedQueue) return;
                 DrainLocalTriggerQueue();
             }
@@ -1223,7 +1241,7 @@ namespace MonsterTrain2Poju.Model
                 while (triggerQueue.Count > 0 && unsupportedReason == null)
                 {
                     var queued = triggerQueue.Dequeue();
-                    ExecuteTriggers(queued.Unit, queued.Kind, queued.CanFire, queued.ParamInt, queued.OverrideTarget);
+                    ExecuteTriggers(queued.Unit, queued.Kind, queued.CanFire, queued.ParamInt, queued.OverrideTarget, queued.DyingCharacter);
                 }
                 var removing = deferredDamageDeaths.OrderBy(dead => dead.Unit.Source.Team).ThenBy(dead => dead.Unit.Source.Id).ToArray();
                 deferredDamageDeaths.Clear();
@@ -1241,7 +1259,7 @@ namespace MonsterTrain2Poju.Model
                 }
             }
 
-            private void ExecuteTriggers(WorkingUnit unit, string kind, bool canFireTriggers, int paramInt, WorkingUnit? overrideTarget)
+            private void ExecuteTriggers(WorkingUnit unit, string kind, bool canFireTriggers, int paramInt, WorkingUnit? overrideTarget, WorkingUnit? dyingCharacter)
             {
                 if (kind == "OnDeath" && unit.Despawned) return;
                 if (!unit.Alive && kind != "OnDeath" && (unit.Source.IsBoss == true || unit.Source.EndsBattleOnDeath)) return;
@@ -1254,6 +1272,8 @@ namespace MonsterTrain2Poju.Model
                         source.Deployment && trigger.SkipDuringDeployment == true ||
                         !canFireTriggers && !trigger.IgnoreSilence ||
                         unit.Has("silenced") && !trigger.IgnoreSilence) continue;
+                    if (trigger.Conditions != null && (trigger.Conditions.RequiredStatuses.Any(id => !Present(unit, id)) ||
+                        dyingCharacter != null && trigger.Conditions.RequiredDyingStatuses.Any(id => !Present(dyingCharacter, id)))) continue;
                     // Removed native characters have no spawn point and skip trigger
                     // preflight, though their once flag can still be marked before abort.
                     if (unit.InRoom && !unit.Removed && !ActionTriggerPassesTest(unit, trigger)) continue;
@@ -1319,6 +1339,8 @@ namespace MonsterTrain2Poju.Model
                     int remainingTriggerIndex = LiveIndex();
                     if (remainingTriggerIndex >= 0) Store(unit.Triggers[remainingTriggerIndex].Fired(unit.Triggers[remainingTriggerIndex].Effects));
                 }
+                bool Present(WorkingUnit target, string id) => target.Statuses.Any(pair =>
+                    string.Equals(pair.Key, id, StringComparison.OrdinalIgnoreCase) && pair.Value.Stacks > 0);
             }
 
             private RoomCombatState CurrentRoom() => new RoomCombatState(source.RoomIndex, source.Deployment,
@@ -1535,7 +1557,10 @@ namespace MonsterTrain2Poju.Model
             {
                 if (enqueueCharacterTrigger != null) { enqueueCharacterTrigger(callback); return; }
                 WorkingUnit actor = units.First(unit => unit.Source.Id == callback.Unit.Id);
-                triggerQueue.Enqueue((actor, callback.Kind, true, callback.ParamInt, null, callback.ParamInt2, callback.ParamString));
+                WorkingUnit? dying = callback.DyingCharacter == null ? null : units.FirstOrDefault(unit => unit.Source.Id == callback.DyingCharacter.Id);
+                if (dying == null && callback.DyingCharacter != null)
+                { dying = new WorkingUnit(callback.DyingCharacter) { InRoom = false }; units.Add(dying); }
+                triggerQueue.Enqueue((actor, callback.Kind, callback.CanFireTriggers, callback.ParamInt, null, callback.ParamInt2, callback.ParamString, dying));
             }
 
             private void RemoveStatus(WorkingUnit unit, string id, int count)

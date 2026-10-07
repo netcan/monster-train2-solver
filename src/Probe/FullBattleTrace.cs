@@ -71,18 +71,18 @@ namespace MonsterTrain2Poju.Probe
         private bool? stoppingOutcome;
         internal bool? TerminalEffectsSettled { get; private set; }
         private int captureFailures;
-        internal int CaptureFailures => captureFailures + (TriggerMutationScenario.Error == null ? 0 : 1) + (DirectUnitUpgradeScenario.Error == null ? 0 : 1) + DamageScalingScenario.Samples.Count(sample => sample.CaptureError != null) +
+        internal int CaptureFailures => (ConditionalTriggerScenario.Error == null ? 0 : 1) + captureFailures + (TriggerMutationScenario.Error == null ? 0 : 1) + (DirectUnitUpgradeScenario.Error == null ? 0 : 1) + DamageScalingScenario.Samples.Count(sample => sample.CaptureError != null) +
             StatusScalingScenario.Samples.Count(sample => sample.CaptureError != null) + StatusScalingScenario.Applications.Count(sample => sample.CaptureError != null) +
             UnitUpgradeScalingScenario.Samples.Count(sample => sample.CaptureError != null);
-        internal int Mismatches => TriggerMutationScenario.Records.Count(record => record.Difference != null) + EquipmentProbe.Records.Count(record => record.Difference != null) + DirectUnitUpgradeScenario.Records.Count(record => record.Difference != null) + stages.Count(stage => stage.Difference != null) + cardCycles.Mismatches + trainCombat.Mismatches + spawning.Mismatches + turns.Mismatches + actions.Mismatches +
+        internal int Mismatches => ConditionalTriggerProbe.Records.Count(record => record.Difference != null) + TriggerMutationScenario.Records.Count(record => record.Difference != null) + EquipmentProbe.Records.Count(record => record.Difference != null) + DirectUnitUpgradeScenario.Records.Count(record => record.Difference != null) + stages.Count(stage => stage.Difference != null) + cardCycles.Mismatches + trainCombat.Mismatches + spawning.Mismatches + turns.Mismatches + actions.Mismatches +
             HandRemovalScenario.Records.Count(record => record.Difference != null) + GenerationScenario.Records.Count(record => record.Difference != null) +
             DamageScalingScenario.Samples.Count(sample => sample.Difference != null) + StatusScalingScenario.Samples.Count(sample => sample.Difference != null) +
             StatusScalingScenario.Applications.Count(sample => sample.Difference != null) + UnitUpgradeScalingScenario.Samples.Count(sample => sample.Difference != null) +
             UnitTurnBeginProbe.Records.Count(record => record.Difference != null) + TeamTurnBeginProbe.Records.Count(record => record.Difference != null) + PreHandDiscardProbe.Records.Count(record => record.Difference != null) + PreCombatProbe.Records.Count(record => record.Difference != null) + TriggeredHealingProbe.Records.Count(record => record.Difference != null) + PostCombatHealingProbe.Records.Count(record => record.Difference != null) + TriggeredDamageProbe.Records.Count(record => record.Difference != null);
-        internal int Unsupported => TriggerMutationScenario.Records.Count(record => record.UnsupportedReason != null) + EquipmentProbe.Records.Count(record => record.UnsupportedReason != null) + DirectUnitUpgradeScenario.Records.Count(record => record.UnsupportedReason != null) + stages.Count(stage => !stage.Predicted.Supported) + cardCycles.Unsupported + trainCombat.Unsupported + spawning.Unsupported + turns.Unsupported + actions.Unsupported +
+        internal int Unsupported => ConditionalTriggerProbe.Records.Count(record => !record.Predicted.Supported) + TriggerMutationScenario.Records.Count(record => record.UnsupportedReason != null) + EquipmentProbe.Records.Count(record => record.UnsupportedReason != null) + DirectUnitUpgradeScenario.Records.Count(record => record.UnsupportedReason != null) + stages.Count(stage => !stage.Predicted.Supported) + cardCycles.Unsupported + trainCombat.Unsupported + spawning.Unsupported + turns.Unsupported + actions.Unsupported +
             HandRemovalScenario.Records.Count(record => !record.Predicted.Supported) + GenerationScenario.Records.Count(record => !record.Predicted.Supported) +
             UnitTurnBeginProbe.Records.Count(record => !record.Predicted.Supported) + TeamTurnBeginProbe.Records.Count(record => !record.Predicted.Supported) + PreHandDiscardProbe.Records.Count(record => !record.Predicted.Supported) + PreCombatProbe.Records.Count(record => !record.Predicted.Supported) + PostCombatHealingProbe.Records.Count(record => !record.Predicted.Supported);
-        internal int Pending => TriggerMutationScenario.Records.Count(record => record.After == null) + (TriggerMutationScenario.Started && !TriggerMutationScenario.Completed ? 1 : 0) + EquipmentProbe.Records.Count(record => !record.Completed || record.After == null) + DirectUnitUpgradeScenario.Records.Count(record => record.After == null) + (DirectUnitUpgradeScenario.Started && !DirectUnitUpgradeScenario.Completed ? 1 : 0) + RoomCapacityProbe.Records.Count(record => !record.Completed || record.After == null) + BonusDrawProbe.Records.Count(record => !record.Completed || !record.Sampled || record.After == null) + StatusCallbackProbe.Fired.Count(record => !record.Completed || record.Actual == null || record.ActualUnit == null) + PreviewRngIsolation.Records.Count(record => !record.Completed) + TriggeredStatusProbe.Records.Count(record => !record.Completed || record.Actual == null || record.ActualUnits == null) + AttackTriggerProbe.Records.Count(record => !record.Completed || !record.GoldAfter.HasValue || record.AfterTriggered == null) + DyingUpgradeProbe.Records.Count(record => !record.Completed || record.Actual == null || record.ActualUnits == null) + HitKillProbe.Records.Count(record => !record.Completed || !record.GoldAfter.HasValue || record.AfterTriggered == null) + stages.Count(stage => stage.Actual == null) + cardCycles.Records.Count(record => record.Actual == null) +
+        internal int Pending => ConditionalTriggerProbe.Records.Count(record => !record.Completed || record.After == null || record.AfterActor == null) + (ConditionalTriggerScenario.Started && !ConditionalTriggerScenario.Completed ? 1 : 0) + TriggerMutationScenario.Records.Count(record => record.After == null) + (TriggerMutationScenario.Started && !TriggerMutationScenario.Completed ? 1 : 0) + EquipmentProbe.Records.Count(record => !record.Completed || record.After == null) + DirectUnitUpgradeScenario.Records.Count(record => record.After == null) + (DirectUnitUpgradeScenario.Started && !DirectUnitUpgradeScenario.Completed ? 1 : 0) + RoomCapacityProbe.Records.Count(record => !record.Completed || record.After == null) + BonusDrawProbe.Records.Count(record => !record.Completed || !record.Sampled || record.After == null) + StatusCallbackProbe.Fired.Count(record => !record.Completed || record.Actual == null || record.ActualUnit == null) + PreviewRngIsolation.Records.Count(record => !record.Completed) + TriggeredStatusProbe.Records.Count(record => !record.Completed || record.Actual == null || record.ActualUnits == null) + AttackTriggerProbe.Records.Count(record => !record.Completed || !record.GoldAfter.HasValue || record.AfterTriggered == null) + DyingUpgradeProbe.Records.Count(record => !record.Completed || record.Actual == null || record.ActualUnits == null) + HitKillProbe.Records.Count(record => !record.Completed || !record.GoldAfter.HasValue || record.AfterTriggered == null) + stages.Count(stage => stage.Actual == null) + cardCycles.Records.Count(record => record.Actual == null) +
             trainCombat.Records.Count(record => record.Actual == null) + spawning.Records.Count(record => record.Actual == null) +
             turns.Records.Count(record => record.Actual == null) + actions.Records.Count(record => record.Actual == null) +
             HandRemovalScenario.Records.Count(record => record.Actual == null) + GenerationScenario.Records.Count(record => record.Actual == null) +
@@ -286,9 +286,7 @@ namespace MonsterTrain2Poju.Probe
                 if (unit.IsSacrifice && unit.SacrificeCard != null && unit.SacrificeCard.GetTraitStates().Count > 0 &&
                     trigger.GetEffectStates().Any(effect => effect.GetCardEffect() is CardEffectHeal))
                     interactions.Add("Sacrifice healing damage traits");
-                if (data.GetRemoveOnRelentlessChange() ||
-                    data.GetRequiredStatusEffects().Count > 0 || data.GetRequiredStatusEffectsForDyingCharacter().Count > 0)
-                    interactions.Add("Conditional trigger " + trigger.GetTrigger());
+                if (data.GetRemoveOnRelentlessChange()) interactions.Add("Relentless-transition trigger removal " + trigger.GetTrigger());
                 var effects = trigger.GetEffectStates().Select(effect =>
                 {
                     string type = effect.GetCardEffect().GetType().Name;
@@ -322,7 +320,7 @@ namespace MonsterTrain2Poju.Probe
                     unit.GetTriggerFireCount(trigger.GetTrigger(), trigger), effects,
                     AllGameManagers.Instance!.GetSaveManager().GetBalanceData().GetDisallowedDeploymentPhaseCharacterTriggers().Contains(trigger.GetTrigger()),
                     data.GetTriggerAtThreshold(), new CombatTriggerOrigin(Active!.UpgradeKey(trigger.triggerId), equipmentId,
-                        trigger.IsFromEquipment, data.GetOnlyTriggerIfEquipped()), Active!.TriggerStateId(unit, trigger));
+                        trigger.IsFromEquipment, data.GetOnlyTriggerIfEquipped()), Active!.TriggerStateId(unit, trigger), EnemySpawningProbe.TriggerConditions(data));
             }).ToArray();
         }
 
@@ -419,7 +417,7 @@ namespace MonsterTrain2Poju.Probe
             string temporary = path + ".tmp";
             var snapshot = new
             {
-                Schema = 58,
+                Schema = 59,
                 GameVersion = Application.version,
                 GameModuleMvid = typeof(CardState).Assembly.ManifestModule.ModuleVersionId,
                 NativeWon,
@@ -451,6 +449,7 @@ namespace MonsterTrain2Poju.Probe
                 DirectUnitUpgrades = DirectUnitUpgradeScenario.Records,
                 EquipmentOperations = EquipmentProbe.Records,
                 TriggerMutations = TriggerMutationScenario.Records,
+                ConditionalTriggers = ConditionalTriggerProbe.Records,
                 UnitTurns = UnitTurnBeginProbe.Records,
                 TeamTurnBegins = TeamTurnBeginProbe.Records,
                 PreHandDiscards = PreHandDiscardProbe.Records,

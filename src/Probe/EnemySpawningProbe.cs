@@ -97,9 +97,7 @@ namespace MonsterTrain2Poju.Probe
 
         internal static CombatTrigger TriggerDefinition(CharacterTriggerData trigger, List<string> interactions)
         {
-            if (trigger.GetRemoveOnRelentlessChange() ||
-                trigger.GetRequiredStatusEffects().Count > 0 || trigger.GetRequiredStatusEffectsForDyingCharacter().Count > 0)
-                interactions.Add("Spawned conditional triggers");
+            if (trigger.GetRemoveOnRelentlessChange()) interactions.Add("Spawned relentless-transition trigger removal");
             CombatEffect[] effects = trigger.GetEffects().Select(effect =>
             {
                 if (effect.GetUseIntRange() && effect.GetEffectStateName() != "CardEffectHeal" && effect.GetEffectStateName() != "CardEffectDamage" && effect.GetEffectStateName() != "CardEffectAddStatusEffect" &&
@@ -125,7 +123,15 @@ namespace MonsterTrain2Poju.Probe
             return new CombatTrigger(trigger.GetTrigger().ToString(), trigger.GetTriggerOnce(), false,
                 trigger.GetHideVisualAndIgnoreSilence(), 1, effects,
                 AllGameManagers.Instance!.GetSaveManager().GetBalanceData().GetDisallowedDeploymentPhaseCharacterTriggers().Contains(trigger.GetTrigger()),
-                trigger.GetTriggerAtThreshold(), new CombatTriggerOrigin("", 0, false, trigger.GetOnlyTriggerIfEquipped()));
+                trigger.GetTriggerAtThreshold(), new CombatTriggerOrigin("", 0, false, trigger.GetOnlyTriggerIfEquipped()),
+                conditions: TriggerConditions(trigger));
+        }
+
+        internal static CombatTriggerConditions? TriggerConditions(CharacterTriggerData data)
+        {
+            string[] self = (data.GetRequiredStatusEffects() ?? new List<StatusEffectStackData>()).Select(status => status.statusId).ToArray();
+            string[] dying = (data.GetRequiredStatusEffectsForDyingCharacter() ?? new List<StatusEffectStackData>()).Select(status => status.statusId).ToArray();
+            return self.Length == 0 && dying.Length == 0 ? null : new CombatTriggerConditions(self, dying);
         }
 
         private IEnumerator Wrap(IEnumerator native, bool includeTreasure)

@@ -106,6 +106,18 @@ their counters. All transitions compare in 32 parallel branches; the complete
 parallel branches. Older captures retain their legacy index keys; detached
 execution requires a captured persistent ID.
 
+`full-battle-conditional-triggers.mt2f` retains schema 59. Trigger conditions
+require positive status presence, match IDs case-insensitively, and ignore the
+configured required stack counts. Self requirements must all pass; dying-target
+requirements are bypassed when that separate queue payload is null. Failed
+conditions do not consume once flags, and later triggers see status changes
+from earlier triggers in the same phase. Eight controlled native cases and six
+natural dispatches compare complete room, actor and dying-target states in 32
+parallel branches. The natural cases include two actual Slay callbacks with
+dead targets. The complete 19-play, six-EndTurn policy matches initial and
+actual mid-battle roots in 16 parallel branches, ending at Pyre 80. Relentless
+transition trigger removal remains unsupported.
+
 `full-battle-room-capacity.mt2f` and `full-battle-room-capacity-lethal.mt2f`
 retain schema 52 battles with live capacities used by subsequent summons and
 restricted size upgrades. Their 220 exact effect contexts and 2,050 native

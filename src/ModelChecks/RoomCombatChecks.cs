@@ -175,6 +175,7 @@ internal static class RoomCombatChecks
         RoomCapacityChecks.Native(fixture);
         DirectUnitUpgradeChecks.Native(fixture);
         EquipmentChecks.Native(fixture);
+        ConditionalTriggerChecks.Native(fixture);
         TriggerUpgradeChecks.Native(fixture);
         SharedPileChecks.MigratedRoot(fixture);
     }
