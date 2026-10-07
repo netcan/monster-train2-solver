@@ -103,16 +103,17 @@ namespace MonsterTrain2Poju.Model
                     foreach (CombatStatus status in upgrade.Statuses)
                     {
                         statuses.TryGetValue(status.Id, out CombatStatus? existing);
+                        if (remove && existing == null && target.RegisteredStatus(status.Id) == null) continue;
                         if (!remove && (target.StatusImmunities.Contains(status.Id) || target.Status("immune") != null)) continue;
                         int stacks = remove ? Math.Max(0, (existing?.Stacks ?? 0) - Math.Max(0, status.Stacks)) :
                             Math.Min(9999, checked((existing?.Stacks ?? 0) + status.Stacks));
-                        if (stacks <= 0) statuses.Remove(status.Id); else statuses[status.Id] = (existing ?? status).WithStacks(stacks);
+                        statuses[status.Id] = (existing ?? target.RegisteredStatus(status.Id) ?? status).WithStacks(Math.Max(0, stacks));
                     }
                 var nextModifiers = new UnitModifiers(damage, added, buff, size, equipment, modifiers.CanBeHealed, modifiers.IsClone, upgrades,
                     modifiers.HealthFromUpgrades, modifiers.SpawnerMatchesDefinition);
                 var changed = new CombatUnit(target.Id, target.AssetKey, target.Team, Math.Max(0, checked(damage + buff)), health, maxHealth,
                     target.CanAttack, target.IsPyre, target.EndsBattleOnDeath, statuses.Values.ToArray(), triggers, target.SpawnerCardId,
-                    Math.Max(1, Math.Min(6, size)), target.StatusImmunities, target.Subtypes, nextModifiers, target.IsBoss, target.LastAttackerId);
+                    Math.Max(1, Math.Min(6, size)), target.StatusImmunities, target.Subtypes, nextModifiers, target.IsBoss, target.LastAttackerId, target.StatusRegistry);
                 RoomCombatResult applied = settle(state, changed);
                 if (!applied.Supported) return applied;
                 state = applied.State!;

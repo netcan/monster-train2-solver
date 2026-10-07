@@ -23,12 +23,15 @@ namespace MonsterTrain2Poju.Model
         public bool? TriggerVfxEnemy { get; }
         public bool? TriggerVfxPlayer { get; }
         public bool? Stackable { get; }
+        public bool? Hidden { get; }
+        public string? DisplayCategory { get; }
 
         public CombatStatus(string id, int stacks, int paramInt = 0,
             bool removeWhenTriggered = false, bool removeStackAtEnd = false,
             bool removeAllAtEnd = false, bool removeAfterPostCombat = false,
             bool preventRemovalDuringRelentless = false, bool skipDuringDeployment = false,
-            bool removeDuringDeployment = false, bool? triggerVfxEnemy = null, bool? triggerVfxPlayer = null, bool? stackable = null)
+            bool removeDuringDeployment = false, bool? triggerVfxEnemy = null, bool? triggerVfxPlayer = null, bool? stackable = null,
+            bool? hidden = null, string? displayCategory = null)
         {
             Id = id;
             Stacks = stacks;
@@ -43,11 +46,13 @@ namespace MonsterTrain2Poju.Model
             TriggerVfxEnemy = triggerVfxEnemy;
             TriggerVfxPlayer = triggerVfxPlayer;
             Stackable = stackable;
+            Hidden = hidden;
+            DisplayCategory = displayCategory;
         }
 
         internal CombatStatus WithStacks(int stacks) => new CombatStatus(Id, stacks, ParamInt,
             RemoveWhenTriggered, RemoveStackAtEnd, RemoveAllAtEnd, RemoveAfterPostCombat,
-            PreventRemovalDuringRelentless, SkipDuringDeployment, RemoveDuringDeployment, TriggerVfxEnemy, TriggerVfxPlayer, Stackable);
+            PreventRemovalDuringRelentless, SkipDuringDeployment, RemoveDuringDeployment, TriggerVfxEnemy, TriggerVfxPlayer, Stackable, Hidden, DisplayCategory);
     }
 
     public sealed class CombatUnit
@@ -63,6 +68,9 @@ namespace MonsterTrain2Poju.Model
         public bool IsPyre { get; }
         public bool EndsBattleOnDeath { get; }
         public IReadOnlyList<CombatStatus> Statuses { get; }
+        // Native dictionary entries, in insertion order, including zero stacks.
+        // Null marks a legacy capture that cannot prove status-presence queries.
+        public IReadOnlyList<CombatStatus>? StatusRegistry { get; }
         public IReadOnlyList<CombatTrigger> Triggers { get; }
         public int SpawnerCardId { get; }
         public int Size { get; }
@@ -79,7 +87,7 @@ namespace MonsterTrain2Poju.Model
             int health, int maxHealth, bool canAttack, bool isPyre, bool endsBattleOnDeath,
             IReadOnlyList<CombatStatus> statuses, IReadOnlyList<CombatTrigger>? triggers = null, int spawnerCardId = 0, int size = 0,
             IReadOnlyList<string>? statusImmunities = null, IReadOnlyList<string>? subtypes = null, UnitModifiers? modifiers = null, bool? isBoss = null,
-            int? lastAttackerId = null)
+            int? lastAttackerId = null, IReadOnlyList<CombatStatus>? statusRegistry = null)
         {
             Id = id;
             LastAttackerId = lastAttackerId;
@@ -93,6 +101,7 @@ namespace MonsterTrain2Poju.Model
             EndsBattleOnDeath = endsBattleOnDeath;
             Statuses = Array.AsReadOnly(statuses.Where(item => item.Stacks > 0)
                 .OrderBy(item => item.Id, StringComparer.Ordinal).ToArray());
+            StatusRegistry = statusRegistry == null ? null : Array.AsReadOnly(MergeStatusRegistry(statusRegistry, statuses));
             Triggers = Array.AsReadOnly((triggers ?? Array.Empty<CombatTrigger>()).ToArray());
             SpawnerCardId = spawnerCardId;
             Size = size;
@@ -105,12 +114,33 @@ namespace MonsterTrain2Poju.Model
         }
 
         internal CombatStatus? Status(string id) => Statuses.FirstOrDefault(item => item.Id == id);
+        internal CombatStatus? RegisteredStatus(string id) => StatusRegistry?.FirstOrDefault(item => item.Id == id) ?? Status(id);
+        public int? CountUniqueStatusDefinitions() => StatusRegistry?.Count;
+        public int? CountUniqueVisibleStatuses()
+        {
+            if (StatusRegistry == null || StatusRegistry.Any(status => !status.Hidden.HasValue || status.DisplayCategory == null)) return null;
+            return StatusRegistry.Count(status => status.Hidden == false &&
+                (status.DisplayCategory == "Positive" || status.DisplayCategory == "Negative"));
+        }
+        internal static CombatStatus[] MergeStatusRegistry(IReadOnlyList<CombatStatus> registry, IReadOnlyList<CombatStatus> statuses)
+        {
+            var current = statuses.ToDictionary(status => status.Id, StringComparer.Ordinal);
+            var result = new List<CombatStatus>();
+            foreach (CombatStatus prior in registry)
+            {
+                result.Add(current.TryGetValue(prior.Id, out CombatStatus? changed) ? changed : prior.WithStacks(0));
+                current.Remove(prior.Id);
+            }
+            foreach (CombatStatus status in statuses)
+                if (current.Remove(status.Id)) result.Add(status);
+            return result.ToArray();
+        }
         internal int StatusAmount(string id) => Status(id) is CombatStatus status
             ? status.Stacks * status.ParamInt : 0;
 
         internal CombatUnit WithoutRemovedAttacker(ISet<int> activeIds) => !LastAttackerId.HasValue || LastAttackerId == 0 || activeIds.Contains(LastAttackerId.Value)
             ? this : new CombatUnit(Id, AssetKey, Team, BaseAttack, Health, MaxHealth, CanAttack, IsPyre, EndsBattleOnDeath, Statuses,
-                Triggers, SpawnerCardId, Size, StatusImmunities, Subtypes, Modifiers, IsBoss, 0);
+                Triggers, SpawnerCardId, Size, StatusImmunities, Subtypes, Modifiers, IsBoss, 0, StatusRegistry);
     }
 
     public sealed class RoomCombatState
@@ -380,6 +410,9 @@ namespace MonsterTrain2Poju.Model
                 if (unit.LastAttackerId < 0) return "Invalid last-attacker identity.";
                 if (unit.Statuses.Select(status => status.Id).Distinct().Count() != unit.Statuses.Count)
                     return "Duplicate status IDs on unit " + unit.Id;
+                if (unit.StatusRegistry != null && (unit.StatusRegistry.Select(status => status.Id).Distinct().Count() != unit.StatusRegistry.Count ||
+                    unit.StatusRegistry.Any(status => status.Stacks < 0 || status.Stacks > 9999)))
+                    return "Invalid retained status dictionary on unit " + unit.Id;
                 foreach (CombatStatus status in unit.Statuses)
                     if (!KnownStatuses.Contains(status.Id))
                         return "Unmodeled status " + status.Id + " on " + unit.AssetKey;
@@ -471,6 +504,7 @@ namespace MonsterTrain2Poju.Model
             internal bool DeathFinished;
             internal bool Removed;
             internal int? LastAttackerId;
+            private IReadOnlyList<CombatStatus>? statusRegistry;
             internal bool Alive => Health > 0 && !Removed;
             internal int Attack => Math.Max(0, Source.BaseAttack + Amount("buff") + Amount("valor") - Amount("debuff"));
 
@@ -478,6 +512,7 @@ namespace MonsterTrain2Poju.Model
             {
                 Source = source; Health = source.Health; LastAttackerId = source.LastAttackerId;
                 Statuses = source.Statuses.ToDictionary(status => status.Id, StringComparer.Ordinal);
+                statusRegistry = source.StatusRegistry;
                 Triggers = source.Triggers.ToList();
             }
 
@@ -485,6 +520,7 @@ namespace MonsterTrain2Poju.Model
             internal void Apply(CombatUnit changed)
             {
                 Source = changed; Health = changed.Health; LastAttackerId = changed.LastAttackerId;
+                statusRegistry = changed.StatusRegistry;
                 Statuses.Clear();
                 foreach (CombatStatus status in changed.Statuses) Statuses.Add(status.Id, status);
                 Triggers.Clear(); Triggers.AddRange(changed.Triggers);
@@ -494,13 +530,26 @@ namespace MonsterTrain2Poju.Model
             internal int Count(string id) => Statuses.TryGetValue(id, out CombatStatus? status) ? status.Stacks : 0;
             internal void Remove(string id, int count)
             {
+                SyncRegistry();
                 if (!Statuses.TryGetValue(id, out CombatStatus? status)) return;
                 if (status.Stacks <= count) Statuses.Remove(id);
                 else Statuses[id] = status.WithStacks(status.Stacks - count);
             }
-            internal CombatUnit Freeze() => new CombatUnit(Source.Id, Source.AssetKey, Source.Team,
-                Source.BaseAttack, Health, Source.MaxHealth, Source.CanAttack, Source.IsPyre,
-                Source.EndsBattleOnDeath, Statuses.Values.ToArray(), Triggers, Source.SpawnerCardId, Source.Size, Source.StatusImmunities, Source.Subtypes, Source.Modifiers, Source.IsBoss, LastAttackerId);
+            private void SyncRegistry()
+            {
+                if (statusRegistry != null) statusRegistry = CombatUnit.MergeStatusRegistry(statusRegistry, Statuses.Values.ToArray());
+            }
+            internal IReadOnlyList<CombatStatus> RegisteredStatuses()
+            { SyncRegistry(); return statusRegistry ?? Statuses.Values.ToArray(); }
+            internal void RemoveDefinition(string id)
+            { SyncRegistry(); if (statusRegistry != null) statusRegistry = statusRegistry.Where(status => status.Id != id).ToArray(); }
+            internal CombatUnit Freeze()
+            {
+                SyncRegistry();
+                return new CombatUnit(Source.Id, Source.AssetKey, Source.Team,
+                    Source.BaseAttack, Health, Source.MaxHealth, Source.CanAttack, Source.IsPyre,
+                    Source.EndsBattleOnDeath, Statuses.Values.ToArray(), Triggers, Source.SpawnerCardId, Source.Size, Source.StatusImmunities, Source.Subtypes, Source.Modifiers, Source.IsBoss, LastAttackerId, statusRegistry);
+            }
         }
 
         private sealed class Engine
@@ -1254,13 +1303,19 @@ namespace MonsterTrain2Poju.Model
             {
                 if (source.Deployment) return;
                 foreach (WorkingUnit unit in units.Where(unit => unit.Alive))
-                    foreach (CombatStatus status in unit.Statuses.Values.ToArray())
+                    foreach (CombatStatus status in unit.RegisteredStatuses().ToArray())
                         if (status.RemoveAfterPostCombat == after)
                         {
                             if (status.RemoveStackAtEnd && !(relentless && status.PreventRemovalDuringRelentless))
+                            {
                                 unit.Remove(status.Id, 1);
+                                if (unit.Count(status.Id) == 0) unit.RemoveDefinition(status.Id);
+                            }
                             else if (!status.RemoveStackAtEnd && status.RemoveAllAtEnd)
+                            {
                                 unit.Remove(status.Id, status.Stacks);
+                                if (unit.Count(status.Id) == 0) unit.RemoveDefinition(status.Id);
+                            }
                         }
             }
 
@@ -1288,6 +1343,17 @@ namespace MonsterTrain2Poju.Model
                     }
                     foreach (CombatStatus status in unit.Statuses.Values.OrderBy(status => status.Id, StringComparer.Ordinal))
                         text.Append(status.Id).Append('=').Append(status.Stacks).Append(',');
+                    if (unit.Source.StatusRegistry != null)
+                    {
+                        text.Append("|registry:");
+                        foreach (CombatStatus status in unit.RegisteredStatuses())
+                            text.Append(status.Id.Length).Append(':').Append(status.Id).Append(':').Append(status.Stacks).Append(':')
+                                .Append(status.ParamInt).Append(':').Append(status.Hidden).Append(':').Append(status.DisplayCategory).Append(':')
+                                .Append(status.RemoveWhenTriggered).Append(':').Append(status.RemoveStackAtEnd).Append(':')
+                                .Append(status.RemoveAllAtEnd).Append(':').Append(status.RemoveAfterPostCombat).Append(':')
+                                .Append(status.PreventRemovalDuringRelentless).Append(':').Append(status.SkipDuringDeployment).Append(':')
+                                .Append(status.RemoveDuringDeployment).Append(':').Append(status.Stackable).Append(';');
+                    }
                     text.Append(';');
                     foreach (CombatTrigger trigger in unit.Triggers)
                     {

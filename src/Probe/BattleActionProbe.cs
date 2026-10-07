@@ -86,7 +86,7 @@ namespace MonsterTrain2Poju.Probe
                     CombatUnit source = definition.Unit;
                     template = new CombatUnit(0, source.AssetKey, CombatTeam.Player, source.BaseAttack, source.Health,
                         source.MaxHealth, source.CanAttack, false, false, source.Statuses, source.Triggers, size: source.Size,
-                        statusImmunities: source.StatusImmunities, subtypes: source.Subtypes, modifiers: source.Modifiers, isBoss: source.IsBoss, lastAttackerId: 0);
+                        statusImmunities: source.StatusImmunities, subtypes: source.Subtypes, modifiers: source.Modifiers, isBoss: source.IsBoss, lastAttackerId: 0, statusRegistry: source.StatusRegistry);
                 }
                 kind = "SpawnMonster"; destination = "Standby";
             }
@@ -193,7 +193,7 @@ namespace MonsterTrain2Poju.Probe
             StatusEffectData rule = StatusEffectManager.Instance.GetStatusEffectDataById(id)!;
             return new CombatStatus(id, count, rule.GetParamInt(), rule.GetRemoveWhenTriggered(), rule.GetRemoveStackAtEndOfTurn(),
                 rule.GetRemoveAtEndOfTurn(), rule.GetRemoveAtEndOfTurnAfterPostCombat(), false, rule.GetSkipTriggerDuringDeployment(), rule.GetRemoveDuringDeployment(),
-                TriggeredVfx(rule, -1f), TriggeredVfx(rule, 1f), rule.IsStackable());
+                TriggeredVfx(rule, -1f), TriggeredVfx(rule, 1f), rule.IsStackable(), rule.IsHidden(), rule.GetDisplayCategory().ToString());
         }
 
         internal static bool TriggeredVfx(StatusEffectData rule, float facing) => rule.GetOnTriggeredVFX()?.GetVfxPrefab(facing) != null;

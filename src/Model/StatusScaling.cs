@@ -108,7 +108,7 @@ namespace MonsterTrain2Poju.Model
                 if (!scaled.Supported) return Unsupported(scaled.UnsupportedReason!);
                 context = scaled.Context; stacks = scaled.Stacks;
             }
-            CombatStatus? existing = target.Status(added.Id);
+            CombatStatus? existing = target.RegisteredStatus(added.Id);
             int old = existing?.Stacks ?? 0;
             int count = Math.Max(0, Math.Min((existing?.Stackable ?? added.Stackable) == false ? 1 : 9999, unchecked(old + stacks)));
             if (!source.Preview && sourceCardId > 0 && count > old && context?.Statistics != null)

@@ -149,32 +149,32 @@ namespace MonsterTrain2Poju.Probe
             if (card != null && (card.GetTraitStates().Any(trait => !DamageScalingProbe.Known(trait.GetType().Name)) || card.GetTriggers().Count > 0))
                 interactions.Add(character.GetSourceCharacterData().GetAssetKey() + " card traits/triggers");
             var nativeStatuses = new List<CharacterState.StatusEffectStack>();
-            character.GetStatusEffects(ref nativeStatuses);
+            character.GetStatusEffects(ref nativeStatuses, includeZeroStacks: true);
             var statuses = new List<CombatStatus>();
             foreach (CharacterState.StatusEffectStack status in nativeStatuses)
             {
                 StatusEffectState rule = status.State;
-                if (status.Count <= 0) continue;
-                if (rule.GetRemoveWhenTriggeredAfterCardPlayed() || rule.GetRemoveAtEndOfTurnIfTriggered())
+                if (status.Count > 0 && (rule.GetRemoveWhenTriggeredAfterCardPlayed() || rule.GetRemoveAtEndOfTurnIfTriggered()))
                     interactions.Add(rule.GetStatusId() + " delayed status removal");
                 statuses.Add(new CombatStatus(rule.GetStatusId(), status.Count, rule.GetParamInt(),
                     rule.GetRemoveWhenTriggered(), rule.GetRemoveStackAtEndOfTurn(), rule.GetRemoveAtEndOfTurn(),
                     rule.GetRemoveAtEndOfTurnAfterPostCombat(), rule.PreventRemovalDuringRelentlessPhase,
                     rule.GetSkipTriggerDuringDeployment(), rule.GetRemoveDuringDeployment(),
                     BattleActionProbe.TriggeredVfx(rule.GetSourceStatusEffectData(), -1f),
-                    BattleActionProbe.TriggeredVfx(rule.GetSourceStatusEffectData(), 1f), rule.IsStackable()));
+                    BattleActionProbe.TriggeredVfx(rule.GetSourceStatusEffectData(), 1f), rule.IsStackable(), rule.IsHidden(), rule.GetDisplayCategory().ToString()));
             }
             CombatTeam team = character.GetTeamType() == Team.Type.Heroes ? CombatTeam.Enemy : CombatTeam.Player;
             bool endsBattle = team == CombatTeam.Enemy &&
                 (character.IsMiniboss() || character.IsOuterTrainBoss()) &&
                 heroes.FindPairedCompanionBoss(character) == null;
+            StatusRegistryCalibration.Capture(character, id, statuses);
             return new CombatUnit(id, character.GetSourceCharacterData()?.GetAssetKey() ?? "",
                 team, character.GetAttackDamageWithoutStatusEffectBuffs(), character.GetHP(), character.GetMaxHP(),
                 character.GetCanAttack(), character.IsPyreHeart(), endsBattle, statuses, triggers,
                 card == null ? 0 : projection.CaptureCards(new List<CardState> { card })[0].InstanceId, character.GetSize(),
                 ((List<string>)AccessTools.Field(typeof(CharacterState), "statusEffectImmunities").GetValue(character)).ToArray(),
                 character.GetSubtypes().Select(subtype => subtype.Key).ToArray(), UnitModifierProbe.Capture(character), character.IsAnyBoss(),
-                character.GetLastAttackerCharacter() == null ? 0 : UnitId(character.GetLastAttackerCharacter()));
+                character.GetLastAttackerCharacter() == null ? 0 : UnitId(character.GetLastAttackerCharacter()), statuses);
         }
 
         internal CombatContext CaptureContext()
@@ -361,7 +361,7 @@ namespace MonsterTrain2Poju.Probe
             string temporary = path + ".tmp";
             var snapshot = new
             {
-                Schema = 43,
+                Schema = 44,
                 GameVersion = Application.version,
                 GameModuleMvid = typeof(CardState).Assembly.ManifestModule.ModuleVersionId,
                 NativeWon,
@@ -402,6 +402,7 @@ namespace MonsterTrain2Poju.Probe
                 DyingUpgrades = DyingUpgradeProbe.Records,
                 AttackTriggers = AttackTriggerProbe.Records,
                 TriggeredStatuses = TriggeredStatusProbe.Records,
+                StatusRegistryCalibration = StatusRegistryCalibration.Samples,
                 PreviewRngIsolation = PreviewRngIsolation.Records,
                 UnitPostCombats = PostCombatHealingProbe.Records,
                 UnitUpgradeScalingCalibrationContextUnchanged = UnitUpgradeScalingScenario.CalibrationContextUnchanged,

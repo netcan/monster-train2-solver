@@ -1975,3 +1975,51 @@ remain unchanged and audio stays muted.
 The final regression with the updated streamed binary fixture exits zero:
 all 56 battle fixtures and all eight calibration fixtures pass. The curated
 inventory and complete archive SHA-256 hashes are verified before model checks.
+
+Schema 44 captures each unit's complete native status dictionary as
+`StatusRegistry`, preserving insertion order and zero-stack entries. `Statuses`
+remains the positive-stack combat view. Definitions include native visibility
+and display category. Native presence queries count dictionary entries even
+when their stacks are zero, so treating the active list as the dictionary would
+produce incorrect arguments for `OnNewStatusEffectAdded`. Legacy captures have
+a null registry; presence queries return unknown rather than approximating them
+from active statuses.
+
+Status application, damage consumption, upgrades, unit/card cloning, summons,
+enemy creation, train movement and attacker-reference cleanup preserve registry
+entries. Readding a zero-stack status reuses its original rule and insertion
+position. Native end-of-turn cleanup removes a definition only when that status
+is selected for decay and reaches zero; ordinary consumption retains it. The
+relentless-cycle signature also includes retained definitions and their order,
+preventing presence changes from being mistaken for an identical combat state.
+Independent adversarial checks cover zero additions, consumed shields, hidden
+and persistent definitions, zero-entry cleanup/readdition, missing legacy state
+and 32 parallel branches without parent mutation.
+
+The retained `tests/fixtures/full-battle-status-registry.mt2f` comes from
+`.probe-runs/full-battle-units-spells-and-junk-20261007-140231-8021bb2d`.
+The 249,937,719-byte complete capture becomes a 45,315-byte binary archive with
+7,403 unique nodes; source SHA-256 is
+`2df29089404a322c37120c124a1abf872ace8df3f0213c20beb495887352b35b`.
+The manifest records both source and archive hashes, and import verification
+compares every captured value. All 21 plays, seven EndTurns, 69 room stages,
+77 unit turns and 157 triggered-status effects match the native game, ending
+with victory and Pyre 72. Direct native query calibration verifies 128 distinct
+unit/dictionary snapshots, 51 with zero entries, including 64 visible zero
+entries and six hidden definitions. The 34 battle/46 boss-kill preview scopes
+restore both streams, with 46 consuming the isolated test stream.
+
+An additional `-DyingUpgrades` capture at
+`.probe-runs/full-battle-units-spells-and-junk-20261007-140501-125877f3`
+independently verifies 17 dying unit/source contexts, including five Slay,
+four Revenge and eight death effects, two removals, both failed HP stages and
+two unit-only upgrade lifetimes. All 21 plays, seven EndTurns and 47 unit turns
+match, ending at Pyre 73. Its 78 native presence queries include 49 zero-entry
+snapshots, 58 visible zero entries and 23 hidden definitions. Both native runs
+exit zero with no capture failures, mismatches, unsupported stages or pending
+observations; original game files remain unchanged and audio stays muted.
+
+The complete binary regression exits zero with 57 battle fixtures and eight
+calibration fixtures. This completes the status-presence prerequisite; queued
+status-change callbacks and their payloads still need implementation before the
+whole battle simulator is complete.

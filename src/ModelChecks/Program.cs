@@ -76,6 +76,7 @@ Check(!SimpleUnitPlayModel.Apply(unknownCard,
 Console.WriteLine("MODEL-CHECKS PASS: independent branches, card identity, and unsupported actions.");
 CardCycleChecks.Run();
 CombatEffectChecks.Run();
+StatusRegistryChecks.Run();
 BattleStatisticsChecks.Run();
 StatisticOverflowChecks.Run();
 StatisticZeroIncrementChecks.Run();
