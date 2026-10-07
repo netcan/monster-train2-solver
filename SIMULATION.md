@@ -3862,3 +3862,17 @@ inventory/SHA-256 verification pass. The final native archive also passes a
 focused independent check. Probe builds with zero warnings/errors; ModelChecks
 retains its 12 pre-existing nullable warnings. Both changed PowerShell scripts
 parse, and Git whitespace checks pass.
+
+
+## Signed raw attack before status buffs
+
+Native GetAttackDamage combines signed AttackDamage and DamageBuff with status
+buffs before its final zero clamp. The captured BaseAttack display has already
+been clamped and cannot reconstruct a deficit. CombatUnit and the room engine
+now use the raw modifier fields when present, with BaseAttack as the legacy
+fallback. A raw Horde attack of -3 with four Valor deals one damage, rather than
+four. Likewise an ordinary raw/buff balance of -12 plus a 13-point status buff
+recovers only one attack. Pure checks cover both deficits and actual exchange
+damage. The new native Horde-upgrade battle and the existing attack-buff battle
+match complete initial/mid-battle policies and 16 parallel branches after this
+correction. Horde runtime upgrade integration and its archive are separate work.

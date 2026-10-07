@@ -71,7 +71,8 @@ namespace MonsterTrain2Poju.Model
         public string AssetKey { get; }
         public CombatTeam Team { get; }
         public int BaseAttack { get; }
-        public int Attack => Math.Max(0, BaseAttack + StatusAmount("buff") + StatusAmount("valor") - StatusAmount("debuff"));
+        internal int AttackBeforeStatuses => Modifiers == null ? BaseAttack : unchecked(Modifiers.AttackDamage + Modifiers.DamageBuff);
+        public int Attack => Math.Max(0, AttackBeforeStatuses + StatusAmount("buff") + StatusAmount("valor") - StatusAmount("debuff"));
         public int Health { get; }
         public int MaxHealth { get; }
         public bool CanAttack { get; }
@@ -721,7 +722,7 @@ namespace MonsterTrain2Poju.Model
             private IReadOnlyList<CombatStatus>? statusRegistry;
             private StatusDictionaryState? dictionary;
             internal bool Alive => Health > 0 && !Removed;
-            internal int Attack => Math.Max(0, Source.BaseAttack + Amount("buff") + Amount("valor") - Amount("debuff"));
+            internal int Attack => Math.Max(0, Source.AttackBeforeStatuses + Amount("buff") + Amount("valor") - Amount("debuff"));
 
             internal WorkingUnit(CombatUnit source)
             {

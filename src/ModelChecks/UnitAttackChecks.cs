@@ -21,6 +21,15 @@ internal static class UnitAttackChecks
             UnitAttackModel.Apply(debt.State, 1, 11).State!.Units[0].BaseAttack == 0 &&
             UnitAttackModel.Apply(debt.State, 1, 13).State!.Units[0].BaseAttack == 1,
             "Attack display clamping destroyed the native negative buff balance.");
+        var statusRecovery = CardSpellModel.Copy(debt.State!.Units[0], 10, [new("buff", 13, 1)]);
+        var troopDeficit = new CombatUnit(4, "troop-deficit", CombatTeam.Player, 0, 10, 10, true, false, false,
+            [new("valor", 4, 1)], modifiers: new(-3, 0, 0, 1, 0, true, false, []));
+        Require(statusRecovery.Attack == 1 && troopDeficit.Attack == 1,
+            "Raw upgrade/buff deficits must be combined with statuses before clamping attack.");
+        var defender = new CombatUnit(5, "defender", CombatTeam.Enemy, 0, 10, 10, true, false, false, []);
+        var recoveryCombat = RoomCombatModel.Exchange(new(0, true, [defender, troopDeficit], [], context));
+        Require(recoveryCombat.Supported && recoveryCombat.State!.Units.Single(unit => unit.Id == 5).Health == 9,
+            "Room combat discarded a negative troop attack deficit before Valor.");
         var added = CardSpellModel.Apply(root, [Effect("BuffAttack", 3), Effect("DebuffAttack", 1), Effect("BuffAttack", -5)], 0);
         Require(added.Supported && added.State!.Units[0].BaseAttack == 10 && added.State.Units[1].BaseAttack == 8 &&
             added.State.Units[2].BaseAttack == 2 && added.State.Context!.CardInstances!.Single().Permanent.Upgrades.Count == 0 &&
