@@ -10,6 +10,15 @@ internal static class TrainCombatChecks
         var high = new CombatUnit(3, "high", CombatTeam.Player, 6, 20, 20, true, false, false, []);
         var pyre = new CombatUnit(4, "pyre", CombatTeam.Player, 45, 80, 80, true, true, false,
             [new CombatStatus("relentless", 1), new CombatStatus("sweep", 1)]);
+        var fresh = new CombatUnit(5, "new-wave", CombatTeam.Enemy, 1, 10, 10, true, false, false, []);
+        EnemyMovement[] supplied = [new(1, 1, true, false), new(5, 1, true, false)];
+        var waves = new TrainCombatState([new(1, false, [enemy], []), new(0, false, [fresh], []),
+            new(2, false, [], []), new(3, false, [pyre], [])], supplied, 7);
+        var wavesMoved = TrainCombatModel.Ascend(waves);
+        Require(waves.Movement.Select(rule => rule.UnitId).SequenceEqual([5, 1]) && wavesMoved.Supported &&
+            wavesMoved.State!.Movement.Select(rule => rule.UnitId).SequenceEqual([5, 1]) &&
+            wavesMoved.State.Rooms[1].Units.Single().Id == 5 && wavesMoved.State.Rooms[2].Units.Single().Id == 1 &&
+            supplied.Select(rule => rule.UnitId).SequenceEqual([1, 5]), "New/surviving wave movement metadata lost physical order or mutated its caller.");
         var root = new TrainCombatState([
             new RoomCombatState(0, false, [enemy, low], []),
             new RoomCombatState(1, false, [high], []),

@@ -25,7 +25,13 @@ namespace MonsterTrain2Poju.Model
             int enemySlotsPerRoom, CombatContext? context = null)
         {
             Rooms = Array.AsReadOnly(rooms.OrderBy(room => room.RoomIndex).ToArray());
-            Movement = Array.AsReadOnly(movement.ToArray()); EnemySlotsPerRoom = enemySlotsPerRoom;
+            // Native capture enumerates movement by current floor/front-to-back order,
+            // including new lower-floor waves before surviving enemies upstairs.
+            var positions = Rooms.SelectMany(room => room.Units.Where(unit => unit.Team == CombatTeam.Enemy))
+                .Select((unit, index) => new { unit.Id, Index = index }).GroupBy(unit => unit.Id)
+                .ToDictionary(group => group.Key, group => group.First().Index);
+            Movement = Array.AsReadOnly(movement.OrderBy(rule => positions.TryGetValue(rule.UnitId, out int position) ? position : int.MaxValue).ToArray());
+            EnemySlotsPerRoom = enemySlotsPerRoom;
             Context = context;
         }
     }
