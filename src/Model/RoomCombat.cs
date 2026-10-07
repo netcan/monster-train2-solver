@@ -1051,11 +1051,12 @@ namespace MonsterTrain2Poju.Model
             private void FireTriggers(WorkingUnit unit, string kind, bool canFireTriggers = true, bool fromQueue = false, int paramInt = 0,
                 WorkingUnit? overrideTarget = null)
             {
+                string? paramString = kind == "OnHeal" || kind == "OnHit" ? "" : null;
                 if (!fromQueue && enqueueCharacterTrigger != null)
-                { enqueueCharacterTrigger(new QueuedCharacterTrigger(source.RoomIndex, unit.Freeze(), kind, paramInt: paramInt, overrideTarget: overrideTarget?.Freeze())); return; }
+                { enqueueCharacterTrigger(new QueuedCharacterTrigger(source.RoomIndex, unit.Freeze(), kind, paramInt: paramInt, overrideTarget: overrideTarget?.Freeze(), paramString: paramString)); return; }
                 if (!fromQueue)
                 {
-                    triggerQueue.Enqueue((unit, kind, canFireTriggers, paramInt, overrideTarget, 0, null));
+                    triggerQueue.Enqueue((unit, kind, canFireTriggers, paramInt, overrideTarget, 0, paramString));
                     if (!runningTriggerQueue) DrainLocalTriggerQueue();
                     return;
                 }

@@ -27,6 +27,19 @@ internal static class RetainedCallbackChecks
             queue.All(item => item.Kind != "OnHeal") && callback.Unit.Triggers[0].HasTriggered &&
             JsonSerializer.Serialize(room) == parent,
             "A live unplaced callback actor joined the room or room healing targeted its retained reference.");
+        Require(queue.Single(item => item.Kind == "OnHit").ParamString == "",
+            "Triggered damage queued a null string where native OnHit supplies an empty FireTriggersData string.");
+        var healer = new CombatUnit(5, "unplaced", CombatTeam.Enemy, 0, 10, 20, false, false, false, [],
+            [new("OnArmorAdded", true, false, true, 1,
+                [new("CardEffectHeal", 1, 0, "", 0, [], false, action: new("Heal", "Self", 1, true, false, []))], false)],
+            modifiers: actor.Modifiers, isBoss: false, lastAttackerId: 0, statusRegistry: []);
+        var healingQueue = new List<RoomCombatModel.QueuedCharacterTrigger>();
+        var healingCallback = new RoomCombatModel.QueuedCharacterTrigger(0, healer, "OnArmorAdded");
+        var healed = RoomCombatModel.ApplyQueuedCharacterTrigger(room, healingCallback, healingQueue.Add);
+        Require(healed.Supported && healingCallback.Unit.Health == 11 &&
+            healingQueue.Single(item => item.Kind == "OnHeal").ParamInt == 1 &&
+            healingQueue.Single(item => item.Kind == "OnHeal").ParamString == "",
+            "Retained self healing lost the native OnHeal amount or empty-string payload.");
         Console.WriteLine("RETAINED-CALLBACK-CHECKS PASS: unplaced living actors, self/room target membership, deferred payloads and parent isolation.");
     }
     private static void Require(bool pass, string message) { if (!pass) throw new InvalidOperationException(message); }

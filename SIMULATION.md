@@ -2174,3 +2174,8 @@ the old model incorrectly generated status-changed and armor-added callbacks.
 Core checks cover that no-op, final source-card writeback, and a negative silence
 upgrade whose removal callback grants gold. Direct zero/signed addition checks
 retain their existing callback expectations.
+
+Nested damage and healing queue payloads also preserve native `FireTriggersData`
+defaults: `OnHit` and `OnHeal` carry an empty parameter string. Native action
+dispatches verify the generated queue payloads without replacing empty strings
+with nulls. Core checks cover room-target damage and retained self healing.
