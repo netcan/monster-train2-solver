@@ -46,7 +46,8 @@ internal static class ConditionalTriggerChecks
         if (!fixture.TryGetProperty("ConditionalTriggers", out var records) || records.GetArrayLength() == 0) return;
         var samples = records.EnumerateArray().ToArray();
         foreach (var sample in samples) Verify(sample);
-        var controlled = samples.Where(sample => !sample.GetProperty("Label").GetString()!.StartsWith("natural:")).ToDictionary(sample => sample.GetProperty("Label").GetString()!);
+        var controlled = samples.Where(sample => !sample.GetProperty("Label").GetString()!.StartsWith("natural:") &&
+            !sample.GetProperty("Label").GetString()!.StartsWith("repeat:")).ToDictionary(sample => sample.GetProperty("Label").GetString()!);
         var expectedGold = new Dictionary<string, int> { ["self-missing-all"] = 25, ["self-missing-one"] = 25,
             ["self-present-case-insensitive"] = 35, ["dying-missing-status"] = 0, ["dying-present"] = 25,
             ["dying-zero-status"] = 0, ["dying-null-bypasses"] = 25, ["same-phase-status-change"] = 60 };
@@ -78,7 +79,8 @@ internal static class ConditionalTriggerChecks
         var dying = sample.GetProperty("Dying").Deserialize<CombatUnit>();
         string parent = JsonSerializer.Serialize(new { before, actor, dying }, ModelJson.Options);
         var queued = new RoomCombatModel.QueuedCharacterTrigger(before.RoomIndex, actor, sample.GetProperty("Kind").GetString()!,
-            paramInt: sample.GetProperty("ParamInt").GetInt32(), dyingCharacter: dying, canFireTriggers: sample.GetProperty("CanFire").GetBoolean());
+            paramInt: sample.GetProperty("ParamInt").GetInt32(), dyingCharacter: dying, canFireTriggers: sample.GetProperty("CanFire").GetBoolean(),
+            triggerCount: sample.TryGetProperty("TriggerCount", out var count) ? count.GetInt32() : 1);
         var result = RoomCombatModel.ApplyQueuedCharacterTrigger(before, queued, _ => { });
         Require(result.Supported, "Conditional native phase unsupported: " + result.UnsupportedReason);
         Compare(result.State, sample.GetProperty("After").Deserialize<RoomCombatState>());

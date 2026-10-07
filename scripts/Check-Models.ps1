@@ -60,6 +60,7 @@ $fixtures = @('full-battle-steward-once.mt2f', 'full-battle-no-cards.mt2f', 'ful
     'full-battle-equipment-triggers.mt2f',
     'full-battle-trigger-mutation.mt2f', 'full-battle-detached-bonus-draw.mt2f',
     'full-battle-conditional-triggers.mt2f',
+    'full-battle-trigger-repeats.mt2f',
     'full-battle-companion-boss.mt2f', 'full-battle-companion-boss-actions.mt2f',
     'full-battle-sentry.mt2f', 'full-battle-sentry-lethal.mt2f',
     'full-battle-ability-cooldown.mt2f', 'full-battle-ability-cache.mt2f',

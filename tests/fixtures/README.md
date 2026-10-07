@@ -282,3 +282,15 @@ unchanged complete live actor/context. The 4,625-byte archive contains 1,051 uni
 nodes and no source JSON. UI calls and actual status removal are intercepted
 during this numerical oracle; it does not prove Horde status callbacks, simulated
 deaths, merging or complete Horde battles. Those remain explicit integration work.
+
+`full-battle-trigger-repeats.mt2f` retains native schema 68 and adds eight complete
+queue batches and 26 independently compared conditional trigger dispatches.
+The original queue count multiplies the trigger's configured count after its
+conditions and once flag are checked. A once trigger executes every repetition
+in its first batch; later batches skip it. Zero and negative counts mark flags
+without executing effects. The first three-repeat batch queues three separate
+armor children, which drain after the parent and share their own once flag.
+Silence and explicit fire permission retain hidden-trigger behavior. Independent
+checks compare whole batches and each dispatch in 32 branches, then the seven-turn
+battle in 16 branches, winning at Pyre 68. The 26,319-byte archive contains 4,135
+unique nodes and no source JSON. Complete Horde status lifecycle remains pending.

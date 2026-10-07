@@ -70,6 +70,7 @@ param(
     [switch] $TriggerMutation,
     [switch] $DetachedBonusDraw,
     [switch] $ConditionalTriggers,
+    [switch] $TriggerRepeats,
     [switch] $CompanionBoss,
     [switch] $AbilityEffects,
     [switch] $EquipmentAbilities,
@@ -90,6 +91,7 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+if ($TriggerRepeats) { $ConditionalTriggers = $true }
 if ($EquipmentExhausted -or $EquipmentOverflow -or $EquipmentTriggers) { $Equipment = $true }
 if ($StatusCallbackActions) { $StatusCallbacks = $true }
 if ($StatusCallbacks) { $TriggeredStatus = $true }
@@ -145,6 +147,7 @@ $environment = @{
     MT2_PROBE_STATISTIC_QUERIES = $(if ($StatisticQueries) { '1' } else { '0' })
     MT2_PROBE_STATISTIC_OVERFLOW = $(if ($StatisticOverflow) { '1' } else { '0' })
     MT2_PROBE_HORDE_STATS = $(if ($HordeStats) { '1' } else { '0' })
+    MT2_PROBE_TRIGGER_REPEATS = $(if ($TriggerRepeats) { '1' } else { '0' })
 }
 if ($Sentry -or $SentryLethal) {
     $environment['MT2_PROBE_MODIFIERS'] = $(if ($SentryLethal) { 'sentry-lethal' } else { 'sentry' })
@@ -765,6 +768,15 @@ if ($AbilityEffects) {
     if (-not $abilityEffectsCoverage) { throw 'Requested multi-target ability effects, queued replacement or cached self replacement/removal did not execute.' }
 }
 $equipmentAbilityCoverage = -not $EquipmentAbilities
+if ($TriggerRepeats) {
+    $repeatBatches = @($trace.TriggerRepeatBatches)
+    $repeatLabels = @('batch-first', 'batch-once-spent', 'batch-silenced', 'batch-fire-blocked',
+        'zero-first', 'zero-after', 'negative-first', 'negative-after')
+    if ($repeatBatches.Count -ne 8 -or @($repeatLabels | Where-Object { $_ -notin $repeatBatches.Label }).Count -gt 0 -or
+        @($repeatBatches | Where-Object { $null -eq $_.After }).Count -gt 0) {
+        throw 'Requested native trigger repeat batches did not complete.'
+    }
+}
 $equipmentActivations = @()
 if ($EquipmentAbilities) {
     $skillB = 'c2f6ed7f-18ce-4070-b65f-7dd9f5160074'

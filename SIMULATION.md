@@ -104,6 +104,7 @@ are copied immutable values; independent child states can run on worker threads.
 | Ability assignment/removal effects | `CardSpellModel`, `RoomCombatModel` and `AbilityLifecycleModel` | 17 native effect states and 17 queued dispatches with 35 payloads; multi-target and last-target spells, pre-own replacement, cached self replacement/removal, exact current disabled IDs and complete policies with parallel branches |
 | Ability upgrades and equipment grants | `CardUpgradeModifier`, `UnitModifierModel` and spawn transitions | Permanent/temporary initial selection, keep-existing and matching-removal gates, raw restoration after repeated equipment replacement, direct assignment clearing history, disabled upgraded births and real equipment skill casts; complete policy and parallel branches |
 | Horde numerical primitives | `HordeStatModel` | 560 native raw-stat steps and 175 casualty boundaries, signed overflow, HP/stack caps and 32 branches; status lifecycle, queues, movement and merging remain to be integrated |
+| Queued trigger repetition | `RoomCombatModel` | Eight complete native batches and 26 dispatches, once flags, zero/negative counts, ordered child callbacks, silence/fire permissions and 32 branches; Horde callers remain to be connected |
 | Additional spells, abilities, relics | Not complete | Unsupported interactions explicitly reject the model transition |
 
 `CardEffectAddBattleCard` uses one shared immutable generation model for spells
@@ -3512,6 +3513,67 @@ part of the complete battle simulation objective, together with grafts,
 moon/deathwish, global relics, room attachments and specialized Boss state machines.
 
 The complete 97-archive regression exits zero, including inventory/SHA-256
+verification, pure checks, all independent native comparisons and parallel
+branches. Probe builds with zero warnings/errors; ModelChecks retains its 12
+existing nullable warnings. Both changed PowerShell scripts parse successfully
+and `git diff --check` passes.
+
+## Queued trigger repetition for Horde lifecycle
+
+Native CombatManager.QueueTrigger retains a signed triggerCount on one queue
+record. CharacterState.FireTriggers tests conditions and marks each accepted
+trigger before multiplying its native fire count by that record count with
+unchecked integer arithmetic. A once trigger therefore executes all repetitions
+in the first batch; it is skipped in later records. Even zero and negative
+counts mark the flag before doing no effects. Splitting a repeated record into
+multiple single-count records would lose this behavior.
+
+QueuedCharacterTrigger and the local/external room queue paths now retain that
+count, defaulting to one for ordinary callbacks and older archives. Conditions,
+silence, explicit canFireTriggers and deployment gates still run at their native
+positions. Effects may enqueue children during each repetition, but those
+children drain after the parent batch finishes. This is required for Horde's
+repeated rally/harvest callbacks; Horde status callers are not connected yet.
+
+`-TriggerRepeats` extends the conditional fixture with native OnUnscaledSpawn,
+OnSpawnNotFromCard and OnShift queue records after real summons and upgrades.
+Eight batches exercise first/spent once triggers, silence and explicit fire
+permission, zero and negative counts. The first three-repeat batch gives 180
+gold before its three armor children drain for 20, 5 and 5 gold, proving both
+queue order and the child's once flag. Pure checks additionally verify native
+fire-count multiplication and signed product overflow. No native overflow case
+is claimed. Immediate drawing via trigger-stackable effects remains unsupported
+and needs its native aggregate application semantics when added.
+
+Game 2.2.1, MVID `8fb07b96-f4db-4d2b-884d-c00536d6ccf4`: eight complete batch
+states and 26 complete room/actor/dying dispatches independently match in 32
+branches. The subsequent battle matches 62 room stages, 13 card cycles, 14 train
+phases, 11 spawn phases, seven plays and seven EndTurns; it wins at Pyre 68.
+The complete policy from initial and mid-battle roots matches in 16 branches.
+The muted Instant native run takes 44.80 seconds and exits zero, with capture
+failure/mismatch/unsupported/pending counts all zero and original files unchanged.
+
+`tests/fixtures/full-battle-trigger-repeats.mt2f` is direct native schema 68,
+26,319 bytes / 4,135 nodes, SHA-256
+`7e3ef1f226b4aae1db5f73cf5337f11a2f3a7cfecdc805c5da74162cc6735a86`.
+It has no JSON dependency. The curated inventory is 98 archives: 89 battles and
+nine calibration suites. Horde status additions/removals, simulated deaths,
+casualty settlement, spawning cooldown gates, merging and cloning remain required
+before Horde is supported by ordinary battle transitions.
+
+Current native source tracing locates merge decisions and settlement in
+CardEffectBump, rather than same-floor FloorRearrange. A move can select an
+occupied recipient spawn point when the destination contains another same-team
+Horde; CanMergeCharactersInRoom takes the first such actor without requiring a
+matching character definition. Merge adds the incoming troop count using the
+recipient's authored stats, then despawns/removes the incoming actor with
+death=false. The Bump effect type suppresses Horde's re-spawn/rally callbacks,
+while ordinary OnStatusEffectChanged and OnTroopAdded are still queued. The
+non-death removal skips InnerCharacterDeath's death and harvest work, but standby
+card/equipment returns still need native observations. These are source-derived
+integration requirements, not verified end-to-end merge model behavior.
+
+The complete 98-archive regression exits zero, including manifest/SHA-256
 verification, pure checks, all independent native comparisons and parallel
 branches. Probe builds with zero warnings/errors; ModelChecks retains its 12
 existing nullable warnings. Both changed PowerShell scripts parse successfully

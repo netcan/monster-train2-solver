@@ -15,6 +15,7 @@ namespace MonsterTrain2Poju.Probe
             public string Label { get; set; } = "";
             public string Kind { get; set; } = "";
             public int ParamInt { get; set; }
+            public int TriggerCount { get; set; } = 1;
             public bool CanFire { get; set; }
             public int[] RequiredStackCounts { get; set; } = Array.Empty<int>();
             public RoomCombatState Before { get; set; } = null!;
@@ -31,7 +32,7 @@ namespace MonsterTrain2Poju.Probe
         private static CombatUnit Unit(FullBattleTrace trace, CharacterState actor)
         { using (new CharacterState.SetAllowDestroyedAccessHelper(actor, onlyIfDestroyed: true)) return trace.CaptureUnit(actor); }
         private static IEnumerator Observe(IEnumerator native, CharacterState actor, CharacterState? dying,
-            CharacterTriggerData.Trigger kind, CharacterState.FireTriggersData? data, bool canFire)
+            CharacterTriggerData.Trigger kind, CharacterState.FireTriggersData? data, bool canFire, int triggerCount)
         {
             FullBattleTrace trace = FullBattleTrace.Active!; Record? record = null;
             RoomCombatModel.QueuedCharacterTrigger? queued = null;
@@ -41,12 +42,12 @@ namespace MonsterTrain2Poju.Probe
             try
             {
                 record = new Record { Label = ConditionalTriggerScenario.CurrentLabel ?? "natural:" + kind, Kind = kind.ToString(),
-                    CanFire = canFire, ParamInt = data?.paramInt ?? 0, Before = trace.Capture(room), Actor = Unit(trace, actor),
+                    CanFire = canFire, TriggerCount = triggerCount, ParamInt = data?.paramInt ?? 0, Before = trace.Capture(room), Actor = Unit(trace, actor),
                     Dying = dying == null ? null : Unit(trace, dying), RequiredStackCounts = actor.GetTriggers().Where(state => state.GetTrigger() == kind)
                         .SelectMany(state => state.GetTriggerData().GetRequiredStatusEffects().Concat(state.GetTriggerData().GetRequiredStatusEffectsForDyingCharacter()))
                         .Select(status => status.count).ToArray() };
                 queued = new RoomCombatModel.QueuedCharacterTrigger(room.GetRoomIndex(), record.Actor, record.Kind,
-                    paramInt: record.ParamInt, dyingCharacter: record.Dying, canFireTriggers: record.CanFire);
+                    paramInt: record.ParamInt, dyingCharacter: record.Dying, canFireTriggers: record.CanFire, triggerCount: record.TriggerCount);
                 record.Predicted = RoomCombatModel.ApplyQueuedCharacterTrigger(record.Before, queued, _ => { });
                 Records.Add(record);
             }
@@ -75,12 +76,12 @@ namespace MonsterTrain2Poju.Probe
         private static class PhasePatch
         {
             private static void Postfix(CharacterState __instance, CharacterTriggerData.Trigger trigger, CharacterState dyingCharacter,
-                CharacterState.FireTriggersData fireTriggersData, bool canFireTriggers, bool fromRunningTriggerQueue, ref IEnumerator __result)
+                CharacterState.FireTriggersData fireTriggersData, bool canFireTriggers, bool fromRunningTriggerQueue, int triggerCount, ref IEnumerator __result)
             {
                 if (fromRunningTriggerQueue && ConditionalTriggerScenario.Started && FullBattleTrace.Active != null &&
                     !AllGameManagers.Instance!.GetSaveManager().PreviewMode && __instance.GetTriggers().Any(state => state.GetTrigger() == trigger &&
                         (state.GetTriggerData().GetRequiredStatusEffects().Count > 0 || state.GetTriggerData().GetRequiredStatusEffectsForDyingCharacter().Count > 0)))
-                    __result = Observe(__result, __instance, dyingCharacter, trigger, fireTriggersData, canFireTriggers);
+                    __result = Observe(__result, __instance, dyingCharacter, trigger, fireTriggersData, canFireTriggers, triggerCount);
             }
         }
     }

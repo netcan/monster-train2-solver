@@ -224,9 +224,11 @@ namespace MonsterTrain2Poju.Model
             internal bool CanFireTriggers { get; }
             internal bool ReturnSpawnerAfterQueue { get; }
             internal bool DeferUntilRemoval { get; }
+            internal int TriggerCount { get; }
             internal QueuedCharacterTrigger(int roomIndex, CombatUnit unit, string kind = "OnDeath", bool returnSpawnerAfterQueue = false, bool deferUntilRemoval = false, int paramInt = 0,
-                CombatUnit? overrideTarget = null, int paramInt2 = 0, string? paramString = null, CombatUnit? dyingCharacter = null, bool canFireTriggers = true)
-            { RoomIndex = roomIndex; Unit = unit; Kind = kind; ReturnSpawnerAfterQueue = returnSpawnerAfterQueue; DeferUntilRemoval = deferUntilRemoval; ParamInt = paramInt; OverrideTarget = overrideTarget; ParamInt2 = paramInt2; ParamString = paramString; DyingCharacter = dyingCharacter; CanFireTriggers = canFireTriggers; }
+                CombatUnit? overrideTarget = null, int paramInt2 = 0, string? paramString = null, CombatUnit? dyingCharacter = null, bool canFireTriggers = true,
+                int triggerCount = 1)
+            { RoomIndex = roomIndex; Unit = unit; Kind = kind; ReturnSpawnerAfterQueue = returnSpawnerAfterQueue; DeferUntilRemoval = deferUntilRemoval; ParamInt = paramInt; OverrideTarget = overrideTarget; ParamInt2 = paramInt2; ParamString = paramString; DyingCharacter = dyingCharacter; CanFireTriggers = canFireTriggers; TriggerCount = triggerCount; }
         }
         private static readonly HashSet<string> KnownStatuses = new HashSet<string>(StringComparer.Ordinal)
         {
@@ -711,7 +713,7 @@ namespace MonsterTrain2Poju.Model
             private readonly int pendingSummonCardId;
             private readonly Action<QueuedCharacterTrigger>? enqueueCharacterTrigger;
             private readonly bool deferAbilityCallbacks;
-            private readonly Queue<(WorkingUnit Unit, string Kind, bool CanFire, int ParamInt, WorkingUnit? OverrideTarget, int ParamInt2, string? ParamString, WorkingUnit? DyingCharacter)> triggerQueue = new Queue<(WorkingUnit, string, bool, int, WorkingUnit?, int, string?, WorkingUnit?)>();
+            private readonly Queue<(WorkingUnit Unit, string Kind, bool CanFire, int ParamInt, WorkingUnit? OverrideTarget, int ParamInt2, string? ParamString, WorkingUnit? DyingCharacter, int TriggerCount)> triggerQueue = new Queue<(WorkingUnit, string, bool, int, WorkingUnit?, int, string?, WorkingUnit?, int)>();
             private bool runningTriggerQueue;
             private bool stopAfterBossRemoval;
             private bool killCamActivated;
@@ -979,7 +981,7 @@ namespace MonsterTrain2Poju.Model
                     if (dying == null && queued.DyingCharacter != null)
                     { dying = new WorkingUnit(queued.DyingCharacter) { InRoom = false }; units.Add(dying); }
                     FireTriggers(actor, queued.Kind, canFireTriggers: queued.CanFireTriggers, fromQueue: true, paramInt: queued.ParamInt,
-                        overrideTarget: overridden, dyingCharacter: dying);
+                        overrideTarget: overridden, dyingCharacter: dying, triggerCount: queued.TriggerCount);
                     queued.Unit = actor.Freeze();
                     if (overridden != null) queued.OverrideTarget = overridden.Freeze();
                     if (dying != null) queued.DyingCharacter = dying.Freeze();
@@ -1288,21 +1290,21 @@ namespace MonsterTrain2Poju.Model
             }
 
             private void FireTriggers(WorkingUnit unit, string kind, bool canFireTriggers = true, bool fromQueue = false, int paramInt = 0,
-                WorkingUnit? overrideTarget = null, WorkingUnit? dyingCharacter = null)
+                WorkingUnit? overrideTarget = null, WorkingUnit? dyingCharacter = null, int triggerCount = 1)
             {
                 string? paramString = kind == "OnHeal" || kind == "OnHit" ? "" : null;
                 if (!fromQueue && enqueueCharacterTrigger != null)
                 { enqueueCharacterTrigger(new QueuedCharacterTrigger(source.RoomIndex, unit.Freeze(), kind, paramInt: paramInt, overrideTarget: overrideTarget?.Freeze(), paramString: paramString,
-                    dyingCharacter: dyingCharacter?.Freeze(), canFireTriggers: canFireTriggers)); return; }
+                    dyingCharacter: dyingCharacter?.Freeze(), canFireTriggers: canFireTriggers, triggerCount: triggerCount)); return; }
                 if (!fromQueue)
                 {
-                    triggerQueue.Enqueue((unit, kind, canFireTriggers, paramInt, overrideTarget, 0, paramString, dyingCharacter));
+                    triggerQueue.Enqueue((unit, kind, canFireTriggers, paramInt, overrideTarget, 0, paramString, dyingCharacter, triggerCount));
                     if (!runningTriggerQueue) DrainLocalTriggerQueue();
                     return;
                 }
                 bool startedQueue = !runningTriggerQueue;
                 runningTriggerQueue = true;
-                ExecuteTriggers(unit, kind, canFireTriggers, paramInt, overrideTarget, dyingCharacter);
+                ExecuteTriggers(unit, kind, canFireTriggers, paramInt, overrideTarget, dyingCharacter, triggerCount);
                 if (!startedQueue) return;
                 DrainLocalTriggerQueue();
             }
@@ -1313,7 +1315,7 @@ namespace MonsterTrain2Poju.Model
                 while (triggerQueue.Count > 0 && unsupportedReason == null)
                 {
                     var queued = triggerQueue.Dequeue();
-                    ExecuteTriggers(queued.Unit, queued.Kind, queued.CanFire, queued.ParamInt, queued.OverrideTarget, queued.DyingCharacter);
+                    ExecuteTriggers(queued.Unit, queued.Kind, queued.CanFire, queued.ParamInt, queued.OverrideTarget, queued.DyingCharacter, queued.TriggerCount);
                 }
                 var removing = deferredDamageDeaths.OrderBy(dead => dead.Unit.Source.Team).ThenBy(dead => dead.Unit.Source.Id).ToArray();
                 deferredDamageDeaths.Clear();
@@ -1331,7 +1333,7 @@ namespace MonsterTrain2Poju.Model
                 }
             }
 
-            private void ExecuteTriggers(WorkingUnit unit, string kind, bool canFireTriggers, int paramInt, WorkingUnit? overrideTarget, WorkingUnit? dyingCharacter)
+            private void ExecuteTriggers(WorkingUnit unit, string kind, bool canFireTriggers, int paramInt, WorkingUnit? overrideTarget, WorkingUnit? dyingCharacter, int triggerCount)
             {
                 if (kind == "OnDeath" && unit.Despawned) return;
                 if (!unit.Alive && kind != "OnDeath" && (unit.Source.IsBoss == true || unit.Source.EndsBattleOnDeath)) return;
@@ -1359,7 +1361,10 @@ namespace MonsterTrain2Poju.Model
                         int live = LiveIndex(); retained = changed;
                         if (live >= 0) unit.Triggers[live] = retained;
                     }
-                    for (int fire = 0; fire < trigger.FireCount; fire++)
+                    // Native tests and marks each trigger once per queue record, then
+                    // executes its entire batch, including a trigger marked Once.
+                    int fireCount = unchecked(trigger.FireCount * triggerCount);
+                    for (int fire = 0; fire < fireCount; fire++)
                     {
                         if (!unit.Alive && kind != "OnDeath" && kind != "OnHit" && kind != "OnKill") return;
                         for (int effectIndex = 0; effectIndex < effects.Length; effectIndex++)
@@ -1658,7 +1663,7 @@ namespace MonsterTrain2Poju.Model
                 WorkingUnit? dying = callback.DyingCharacter == null ? null : units.FirstOrDefault(unit => unit.Source.Id == callback.DyingCharacter.Id);
                 if (dying == null && callback.DyingCharacter != null)
                 { dying = new WorkingUnit(callback.DyingCharacter) { InRoom = false }; units.Add(dying); }
-                triggerQueue.Enqueue((actor, callback.Kind, callback.CanFireTriggers, callback.ParamInt, null, callback.ParamInt2, callback.ParamString, dying));
+                triggerQueue.Enqueue((actor, callback.Kind, callback.CanFireTriggers, callback.ParamInt, null, callback.ParamInt2, callback.ParamString, dying, callback.TriggerCount));
             }
 
             private void RemoveStatus(WorkingUnit unit, string id, int count)

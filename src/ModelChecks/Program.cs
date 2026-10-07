@@ -83,6 +83,7 @@ StatusCallbackChecks.Run();
 UnitUpgradeCallbackChecks.Run();
 RetainedCallbackChecks.Run();
 ConditionalTriggerChecks.Run();
+TriggerRepeatChecks.Run();
 CompanionBossChecks.Run();
 SentryChecks.Run();
 AbilityCooldownChecks.Run();

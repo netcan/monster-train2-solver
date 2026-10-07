@@ -425,7 +425,7 @@ namespace MonsterTrain2Poju.Probe
             string temporary = path + ".tmp";
             var snapshot = new
             {
-                Schema = 67,
+                Schema = 68,
                 GameVersion = Application.version,
                 GameModuleMvid = typeof(CardState).Assembly.ManifestModule.ModuleVersionId,
                 NativeWon,
@@ -458,6 +458,7 @@ namespace MonsterTrain2Poju.Probe
                 EquipmentOperations = EquipmentProbe.Records,
                 TriggerMutations = TriggerMutationScenario.Records,
                 ConditionalTriggers = ConditionalTriggerProbe.Records,
+                TriggerRepeatBatches = ConditionalTriggerScenario.RepeatBatches,
                 CompanionBossActions = CompanionBossProbe.Records,
                 RelentlessTriggerRemovals = CompanionBossProbe.Removals,
                 Sentries = SentryProbe.Records,
