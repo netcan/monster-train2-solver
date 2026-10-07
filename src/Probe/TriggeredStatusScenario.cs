@@ -59,6 +59,7 @@ namespace MonsterTrain2Poju.Probe
                 Set(enemy, "triggers", triggers);
             }
             Set(managers.GetCombatManager()!, "combatStateChanged", true); Prepared = true;
+            if (Environment.GetEnvironmentVariable("MT2_PROBE_STATUS_CALLBACKS") == "1") StatusCallbackScenario.Prepare(managers, log);
             log.LogInfo("TRIGGERED-STATUS-PREPARED status pools, reverse chance/immune order, empty/ranged/strict legality, actor+first-target scaling, room magic power, source traits/statistics and retained dying targets; natural waves/boss retained.");
         }
         private static CardEffectData Status(TargetMode mode, Team.Type team, int chance, params StatusEffectStackData[] statuses)

@@ -118,6 +118,7 @@ namespace MonsterTrain2Poju.Model
             CardPileState[]? piles = (otherPiles ?? source.Context.OtherPiles)?.ToArray();
             if (piles != null) state = WithContext(state, state.Context!.WithOtherPiles(piles));
             var deferredExhaustion = new HashSet<int>();
+            var callbacks = new List<RoomCombatModel.QueuedCharacterTrigger>();
             string? routingError = null;
             for (int index = 0; index < effects.Count; index++)
             {
@@ -249,6 +250,7 @@ namespace MonsterTrain2Poju.Model
                         deferSpawnerExhaustion: piles != null, scaledDamage: scaledDamage);
                     if (!applied.Supported) return UnsupportedTrain(applied.UnsupportedReason!);
                     state = ReplaceRoom(state, applied.State!);
+                    callbacks.AddRange(applied.PendingCallbacks);
                     if (state.Context!.OtherPiles != null) piles = state.Context.OtherPiles.ToArray();
                     events.AddRange(applied.Events);
                     if ((effect.Type == "Heal" && effect.Value >= 0 || effect.Type == "UnitUpgrade") && target.Triggers.Any(trigger => trigger.Kind == "OnHeal" &&
@@ -309,6 +311,25 @@ namespace MonsterTrain2Poju.Model
 
             void DrainDeaths()
             {
+                string? callbackError = null;
+                bool drained = RoomCombatModel.DrainCharacterQueue(callbacks, queued =>
+                {
+                    RoomCombatState room = state.Rooms.Single(item => item.RoomIndex == queued.RoomIndex);
+                    RoomCombatResult fired = RoomCombatModel.ApplyQueuedCharacterTrigger(room, queued, callbacks.Add);
+                    if (!fired.Supported) { callbackError = fired.UnsupportedReason; return false; }
+                    state = ReplaceRoom(state, fired.State!); events.AddRange(fired.Events);
+                    if (fired.Outcome == RoomOutcome.BattleWon || fired.Outcome == RoomOutcome.PlayerDefeated) outcome = fired.Outcome;
+                    return true;
+                }, queued =>
+                {
+                    RoomCombatState room = state.Rooms.Single(item => item.RoomIndex == queued.RoomIndex);
+                    RoomCombatResult returned = RoomCombatModel.SettleQueuedSpawner(room, queued.Unit);
+                    if (!returned.Supported) { callbackError = returned.UnsupportedReason; return false; }
+                    state = ReplaceRoom(state, returned.State!); return true;
+                });
+                callbacks.Clear();
+                if (!drained) routingError = callbackError ?? "Status callback queue failed.";
+                if (state.Context!.OtherPiles != null) piles = state.Context.OtherPiles.ToArray();
                 if (piles != null)
                     foreach (int id in pendingDeadRooms.Keys)
                     {

@@ -99,6 +99,7 @@ namespace MonsterTrain2Poju.Model
                 RngDraw draw = action.Range.Sample(context.BattleRng); context = context.WithBattleRng(draw.State); chance = draw.Value;
             }
             RoomCombatState state = WithContext(source, context); var events = new List<CombatEvent>();
+            var callbacks = new List<RoomCombatModel.QueuedCharacterTrigger>();
             foreach (int id in targetIds.Reverse())
             {
                 if (chance != 0)
@@ -111,6 +112,7 @@ namespace MonsterTrain2Poju.Model
                 RoomCombatResult added = StatusApplicationModel.ApplyRetained(state, id, status, sourceCardId ?? actor.SpawnerCardId,
                     overrideImmunity: action.Target == "Pyre");
                 if (!added.Supported) return added;
+                callbacks.AddRange(added.PendingCallbacks);
                 state = added.State!;
                 CombatUnit changed = state.Units.First(unit => unit.Id == id);
                 // Captures and target filters expose only positive native status counts.
@@ -120,7 +122,7 @@ namespace MonsterTrain2Poju.Model
                 events.Add(new CombatEvent(0, "TriggeredStatus:" + status.Id, actorId, id,
                     (changed.Status(status.Id)?.Stacks ?? 0) - (before.Status(status.Id)?.Stacks ?? 0)));
             }
-            return new RoomCombatResult(state, RoomOutcome.Exchanged, 0, events);
+            return new RoomCombatResult(state, RoomOutcome.Exchanged, 0, events, pendingCallbacks: callbacks);
         }
         private static RoomCombatState WithContext(RoomCombatState source, CombatContext context) =>
             new RoomCombatState(source.RoomIndex, source.Deployment, source.Units, source.ExternalInteractions, context, source.Preview);

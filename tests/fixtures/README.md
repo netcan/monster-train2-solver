@@ -26,3 +26,8 @@ value comparison.
 `results/` is ignored and holds local logs, catalogs and benchmark outputs.
 Isolated native probes use `.probe-runs/`, which is also ignored. Successful
 captures become fixed inputs here after native and independent comparisons pass.
+
+`full-battle-status-callbacks.mt2f` retains the complete schema 46 native battle
+and 481 ordered status callback dispatches, including zero additions, actual
+removals, silence loss and dying actors. These checks compare captured native
+unit/context states independently of the predictions stored in the capture.

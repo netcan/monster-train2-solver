@@ -77,6 +77,7 @@ Console.WriteLine("MODEL-CHECKS PASS: independent branches, card identity, and u
 CardCycleChecks.Run();
 CombatEffectChecks.Run();
 StatusRegistryChecks.Run();
+StatusCallbackChecks.Run();
 BattleStatisticsChecks.Run();
 StatisticOverflowChecks.Run();
 StatisticZeroIncrementChecks.Run();

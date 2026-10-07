@@ -37,7 +37,8 @@ namespace MonsterTrain2Poju.Model
         // Starting another engine here would reset preview triggers and detach combat attackers.
         internal static RoomCombatResult ApplyWithSettlement(RoomCombatState source, int targetId, CardUpgradeModifier upgrade,
             string lifetime, bool remove, int? roomCapacity, int sourceCardId, string? triggerKind,
-            Func<RoomCombatState, CombatUnit, RoomCombatResult> settle, bool allowDyingTarget = false)
+            Func<RoomCombatState, CombatUnit, RoomCombatResult> settle, bool allowDyingTarget = false,
+            Action<RoomCombatModel.QueuedCharacterTrigger>? enqueueCallback = null)
         {
             string? error = RoomCombatModel.Validate(source, allowDyingTarget ? targetId : (int?)null);
             if (error != null) return Unsupported(error);
@@ -99,21 +100,32 @@ namespace MonsterTrain2Poju.Model
                     partial = sign * upgrade.UnhealedHealth < 0 && health <= 0;
                 }
                 var statuses = target.Statuses.ToDictionary(status => status.Id);
+                var nextModifiers = new UnitModifiers(damage, added, buff, size, equipment, modifiers.CanBeHealed, modifiers.IsClone, upgrades,
+                    modifiers.HealthFromUpgrades, modifiers.SpawnerMatchesDefinition);
+                CombatUnit Snapshot() => new CombatUnit(target.Id, target.AssetKey, target.Team, Math.Max(0, checked(damage + buff)), health, maxHealth,
+                    target.CanAttack, target.IsPyre, target.EndsBattleOnDeath, statuses.Values.ToArray(), triggers, target.SpawnerCardId,
+                    Math.Max(1, Math.Min(6, size)), target.StatusImmunities, target.Subtypes, nextModifiers, target.IsBoss, target.LastAttackerId, target.StatusRegistry);
+                var statusCallbacks = new List<RoomCombatModel.QueuedCharacterTrigger>();
                 if (!partial)
                     foreach (CombatStatus status in upgrade.Statuses)
                     {
                         statuses.TryGetValue(status.Id, out CombatStatus? existing);
                         if (remove && existing == null && target.RegisteredStatus(status.Id) == null) continue;
                         if (!remove && (target.StatusImmunities.Contains(status.Id) || target.Status("immune") != null)) continue;
+                        CombatUnit beforeStatus = Snapshot();
+                        int maximum = (existing ?? target.RegisteredStatus(status.Id) ?? status).Stackable == false ? 1 : 9999;
                         int stacks = remove ? Math.Max(0, (existing?.Stacks ?? 0) - Math.Max(0, status.Stacks)) :
-                            Math.Min(9999, checked((existing?.Stacks ?? 0) + status.Stacks));
+                            Math.Min(maximum, checked((existing?.Stacks ?? 0) + status.Stacks));
                         statuses[status.Id] = (existing ?? target.RegisteredStatus(status.Id) ?? status).WithStacks(Math.Max(0, stacks));
+                        if (remove) StatusCallbackModel.Removed(state.RoomIndex, beforeStatus, Snapshot(), status.Id, statusCallbacks);
+                        else
+                        {
+                            string? callbackError = StatusCallbackModel.Added(state.RoomIndex, beforeStatus, Snapshot(), status.Id, statusCallbacks, status);
+                            if (callbackError != null) return Unsupported(callbackError);
+                        }
                     }
-                var nextModifiers = new UnitModifiers(damage, added, buff, size, equipment, modifiers.CanBeHealed, modifiers.IsClone, upgrades,
-                    modifiers.HealthFromUpgrades, modifiers.SpawnerMatchesDefinition);
-                var changed = new CombatUnit(target.Id, target.AssetKey, target.Team, Math.Max(0, checked(damage + buff)), health, maxHealth,
-                    target.CanAttack, target.IsPyre, target.EndsBattleOnDeath, statuses.Values.ToArray(), triggers, target.SpawnerCardId,
-                    Math.Max(1, Math.Min(6, size)), target.StatusImmunities, target.Subtypes, nextModifiers, target.IsBoss, target.LastAttackerId, target.StatusRegistry);
+                var changed = Snapshot();
+                foreach (var callback in statusCallbacks) enqueueCallback?.Invoke(callback);
                 RoomCombatResult applied = settle(state, changed);
                 if (!applied.Supported) return applied;
                 state = applied.State!;

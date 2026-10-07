@@ -133,6 +133,7 @@ namespace MonsterTrain2Poju.Model
             CardToken? card = context.Cards.Hand.FirstOrDefault(item => item.InstanceId == action.CardInstanceId);
             if (card == null) return Illegal("The selected card instance is not in hand.");
             CardPlayRule? rule = source.PlayRules.Cards.FirstOrDefault(item => item.DataId == card.DataId);
+            CardPlayRule? originalRule = rule;
             string? uiRangeError = CardSpellModel.UnisolatedUiRangeReason(source);
             if (uiRangeError != null) return Unsupported(uiRangeError);
             if (rule == null) return Unsupported("Missing play definition for " + card.DataId);
@@ -202,7 +203,10 @@ namespace MonsterTrain2Poju.Model
                 var nextPlayers = players.ToList(); nextPlayers.Insert(position, spawned);
                 var entered = new RoomCombatState(target.RoomIndex, target.Deployment,
                     target.Units.Where(unit => unit.Team == CombatTeam.Enemy).Concat(nextPlayers).ToArray(), target.ExternalInteractions, context, target.Preview);
-                RoomCombatResult spawnTriggers = RoomCombatModel.ApplySpawnTriggers(entered, spawned.Id, fromCard: true);
+                var initialStatuses = (originalRule!.SpawnUnit!.StatusRegistry ?? originalRule.SpawnUnit.Statuses)
+                    .Concat(playingInstance == null ? Array.Empty<CombatStatus>() : new[] { playingInstance.Permanent, playingInstance.Temporary }
+                        .SelectMany(modifier => modifier.Upgrades).SelectMany(upgrade => upgrade.Statuses)).ToArray();
+                RoomCombatResult spawnTriggers = RoomCombatModel.ApplySpawnTriggers(entered, spawned.Id, fromCard: true, startingApplications: initialStatuses);
                 if (!spawnTriggers.Supported) return Unsupported(spawnTriggers.UnsupportedReason!);
                 context = spawnTriggers.State!.Context!; outcome = spawnTriggers.Outcome;
                 piles = context.OtherPiles?.ToArray() ?? piles;

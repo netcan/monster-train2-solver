@@ -167,7 +167,9 @@ internal static class TriggeredStatusChecks
             Require(before.Context?.IsolatedBattlePreview == true, "Native status fixture lacks its explicit preview isolation protocol.");
             var result = RoomCombatModel.ApplyUnitTurn(before, turn.GetProperty("ActorId").GetInt32());
             Require(result.Supported && turn.GetProperty("Difference").ValueKind == FixtureKind.Null &&
-                ModelJson.Difference(JsonSerializer.Serialize(result.State), JsonSerializer.Serialize(actual)) == null, "Independent status unit turn differs.");
+                ModelJson.Difference(JsonSerializer.Serialize(result.State), JsonSerializer.Serialize(actual)) == null,
+                "Independent status unit turn differs at sequence " + turn.GetProperty("Sequence").GetInt32() + ": " +
+                (result.UnsupportedReason ?? ModelJson.Difference(JsonSerializer.Serialize(result.State), JsonSerializer.Serialize(actual))));
             turns++;
         }
         Require(count > 20 && pooled > 0 && empty > 0 && ranged > 0 && area > 0 && dying > 0 && scaled > 0 && sourced > 0 && immune > 0 && strict > 0 &&

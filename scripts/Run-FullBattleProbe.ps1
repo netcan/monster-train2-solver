@@ -54,12 +54,14 @@ param(
     [switch] $DyingUpgrades,
     [switch] $AttackTriggers,
     [switch] $TriggeredStatus,
+    [switch] $StatusCallbacks,
     [switch] $BinaryCapture = $true,
     [switch] $CaptureJson,
     [switch] $SkipBuild
 )
 
 $ErrorActionPreference = 'Stop'
+if ($StatusCallbacks) { $TriggeredStatus = $true }
 if ($CaptureJson) { $BinaryCapture = $true }
 $workspace = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $gameRoot = Join-Path $workspace '.sandbox-game'
@@ -102,6 +104,7 @@ $environment = @{
     MT2_PROBE_BRANCH_ANY_UNIT = '0'
     MT2_PROBE_FAST_REPLAY = '0'
     MT2_PROBE_GAME_SPEED = $GameSpeed
+    MT2_PROBE_STATUS_CALLBACKS = $(if ($StatusCallbacks) { '1' } else { '0' })
     MT2_PROBE_BINARY_CAPTURE = $(if ($BinaryCapture) { '1' } else { '0' })
     MT2_PROBE_CAPTURE_JSON = $(if ($CaptureJson) { '1' } else { '0' })
     MT2_PROBE_NO_TIMEOUT = '1'
@@ -467,6 +470,19 @@ if ($TriggeredStatus) {
         @($status | Where-Object { @($_.BeforeUnits | Where-Object Health -EQ 0).Count -gt 0 }).Count -gt 0 -and
         @($trace.UnitTurns | Where-Object { $null -eq $_.Actual -or $null -ne $_.Difference -or -not $_.Predicted.Supported }).Count -eq 0
 }
+$statusCallbackCoverage = -not $StatusCallbacks
+if ($StatusCallbacks) {
+    $callbackFires = @($trace.StatusCallbackFires)
+    $statusCallbackCoverage = $callbackFires.Count -gt 20 -and $callbackFires.Count -eq @($trace.StatusCallbacks).Count -and
+        @($callbackFires | Where-Object { -not $_.Completed -or $null -eq $_.Actual -or $null -eq $_.ActualUnit -or $_.Interactions.Count -gt 0 }).Count -eq 0 -and
+        @($callbackFires | Where-Object { $_.Kind -eq 'OnSilenceLost' -and $_.GoldAfter -gt $_.GoldBefore }).Count -gt 0 -and
+        @($callbackFires | Where-Object { $_.Kind -eq 'OnStatusEffectChanged' -and $_.ParamString -eq 'armor' -and $_.ParamInt2 -eq 0 -and $_.GoldAfter -gt $_.GoldBefore }).Count -gt 0 -and
+        @($callbackFires | Where-Object { $_.BeforeUnit.Health -eq 0 }).Count -gt 0 -and
+        @($callbackFires | Where-Object { $_.BeforeUnit.Team -eq 0 -or $_.BeforeUnit.Team -eq 'Enemy' }).Count -gt 0
+    foreach ($callbackKind in 'OnStatusEffectChanged','OnArmorAdded','OnPyregelAdded','OnValiant','OnSilence','OnSilenceLost','OnNewStatusEffectAdded') {
+        $statusCallbackCoverage = $statusCallbackCoverage -and @($callbackFires | Where-Object { $_.Kind -eq $callbackKind }).Count -gt 0
+    }
+}
 $attackTriggerCoverage = -not $AttackTriggers
 if ($AttackTriggers) {
     $attackFires = @($trace.AttackTriggers | Where-Object Stage -EQ 'Fire')
@@ -603,6 +619,7 @@ $result = [pscustomobject]@{
     DyingUpgradeCoverage = $dyingUpgradeCoverage
     DyingUpgradeSamples = @($trace.DyingUpgrades).Count
     TriggeredStatusCoverage = $triggeredStatusCoverage
+    StatusCallbackCoverage = $statusCallbackCoverage
     TriggeredStatusSamples = @($trace.TriggeredStatuses).Count
     AttackTriggerCoverage = $attackTriggerCoverage
     AttackTriggerSamples = @($trace.AttackTriggers).Count
@@ -635,6 +652,6 @@ if ($StatisticOverflow) {
         @($zero.Samples | Where-Object Amount -NE 0).Count -ne 0) { throw 'Native zero-increment coverage is incomplete.' }
 }
 if ($null -eq $trace.NativeWon -or $process.ExitCode -ne 0 -or -not $nativePassed -or -not $originalUnchanged -or -not $modifierCoverage -or -not $healingCoverage -or -not $onHealCoverage -or -not $roomSpellCoverage -or -not $terminalSettled -or -not $terminalSpellCoverage -or
-    -not $postKillCoverage -or -not $randomCoverage -or -not $randomStatusCoverage -or -not $crossRoomCoverage -or -not $attackCoverage -or -not $maxHealthCoverage -or -not $numericRangeCoverage -or -not $targetFilterCoverage -or -not $drawCoverage -or -not $handRemovalCoverage -or -not $generationCoverage -or -not $scalingCoverage -or -not $statusScalingCoverage -or -not $unitUpgradeScalingCoverage -or -not $unitTriggerUpgradeCoverage -or -not $spawnTriggerCoverage -or -not $unitTurnBeginCoverage -or -not $teamTurnBeginCoverage -or -not $preHandDiscardCoverage -or -not $cloneUpgradeRefreshCoverage -or -not $preCombatCoverage -or -not $triggeredHealingCoverage -or -not $postCombatHealingCoverage -or -not $triggeredDamageCoverage -or -not $damageDeathQueueCoverage -or -not $terminalDeathDamageCoverage -or -not $hitKillCoverage -or -not $dyingUpgradeCoverage -or -not $attackTriggerCoverage -or -not $triggeredStatusCoverage -or $trace.CaptureFailures -ne 0 -or $trace.Mismatches -ne 0 -or $trace.Unsupported -ne 0 -or $trace.Pending -ne 0) {
+    -not $postKillCoverage -or -not $randomCoverage -or -not $randomStatusCoverage -or -not $crossRoomCoverage -or -not $attackCoverage -or -not $maxHealthCoverage -or -not $numericRangeCoverage -or -not $targetFilterCoverage -or -not $drawCoverage -or -not $handRemovalCoverage -or -not $generationCoverage -or -not $scalingCoverage -or -not $statusScalingCoverage -or -not $unitUpgradeScalingCoverage -or -not $unitTriggerUpgradeCoverage -or -not $spawnTriggerCoverage -or -not $unitTurnBeginCoverage -or -not $teamTurnBeginCoverage -or -not $preHandDiscardCoverage -or -not $cloneUpgradeRefreshCoverage -or -not $preCombatCoverage -or -not $triggeredHealingCoverage -or -not $postCombatHealingCoverage -or -not $triggeredDamageCoverage -or -not $damageDeathQueueCoverage -or -not $terminalDeathDamageCoverage -or -not $hitKillCoverage -or -not $dyingUpgradeCoverage -or -not $attackTriggerCoverage -or -not $triggeredStatusCoverage -or -not $statusCallbackCoverage -or $trace.CaptureFailures -ne 0 -or $trace.Mismatches -ne 0 -or $trace.Unsupported -ne 0 -or $trace.Pending -ne 0) {
     throw "Full battle differential probe failed; inspect $tracePath and $unityLog"
 }

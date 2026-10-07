@@ -116,8 +116,11 @@ namespace MonsterTrain2Poju.Model
                     requireTrackedCard: context.CardInstances?.Count == 0));
             CombatUnit changed = CardSpellModel.Copy(target, target.Health, target.Statuses.Where(status => status.Id != added.Id)
                 .Concat(new[] { (existing ?? added).WithStacks(count) }).ToArray());
-            return Match(new RoomCombatState(source.RoomIndex, source.Deployment, source.Units.Select(unit => unit.Id == targetId ? changed : unit).ToArray(),
-                source.ExternalInteractions, context, source.Preview));
+            var queue = new List<RoomCombatModel.QueuedCharacterTrigger>();
+            string? callbackError = StatusCallbackModel.Added(source.RoomIndex, target, changed, added.Id, queue, existing ?? added);
+            if (callbackError != null) return Unsupported(callbackError);
+            return new RoomCombatResult(new RoomCombatState(source.RoomIndex, source.Deployment, source.Units.Select(unit => unit.Id == targetId ? changed : unit).ToArray(),
+                source.ExternalInteractions, context, source.Preview), RoomOutcome.Exchanged, 0, new List<CombatEvent>(), pendingCallbacks: queue);
         }
         private static RoomCombatResult Match(RoomCombatState state) => new RoomCombatResult(state, RoomOutcome.Exchanged, 0, new List<CombatEvent>());
         private static RoomCombatResult Unsupported(string reason) => new RoomCombatResult(null, RoomOutcome.Unsupported, 0, new List<CombatEvent>(), reason);

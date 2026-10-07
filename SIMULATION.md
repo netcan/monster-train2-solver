@@ -2071,3 +2071,58 @@ and eight calibration fixtures. All 66 archives match the curated inventory and
 SHA-256 manifest. The new native binary also passes independent action/turn
 chains, 16 parallel branches, all 157 triggered-status effects, 77 unit turns,
 both isolated preview streams and all 128 native registry queries.
+
+## Status callbacks and ordered dispatch
+
+`Run-FullBattleProbe.ps1 -Policy units-spells-and-junk -StatusCallbacks` captures
+the seven modeled status callbacks: `OnStatusEffectChanged`, `OnArmorAdded`,
+`OnPyregelAdded`, `OnValiant`, `OnSilence`, `OnSilenceLost` and
+`OnNewStatusEffectAdded`. It extends the triggered-status scenario with native
+gold rewards, threshold/once/silence gates, enemy initialization and a temporary
+silence upgrade whose saturated count is removed before combat. Schema 46
+records both enqueue payloads and completed dispatches with native unit/context
+snapshots. Preview dispatches are excluded; incomplete observations fail the
+capture gate. Archives are exported directly as binary graphs.
+
+Status additions retain native no-op behavior: zero and negative additions
+still enqueue a change callback and the status-specific addition callback.
+Actual removals enqueue the negative delta and can enqueue `OnSilenceLost`;
+a negative addition does not use that removal callback. Visible status counts
+include retained zero entries. New-status thresholds require complete captured
+visibility/category definitions. Immunity prevents both mutation and callbacks.
+Unit upgrades use the native stack limit before constructing callback payloads.
+
+The model carries deferred callbacks through spell effects, triggered effects,
+unit upgrades, consumption, scheduled cleanup and initial status applications.
+It preserves FIFO ordering, including initial enemy callbacks already queued
+when the first `OnSpawn` phase is added and callbacks appended by earlier
+callbacks. A dying nonboss can mark its once flag before aborting the effects;
+dead bosses skip these callbacks. Valor still invokes an armor addition at zero
+delta when existing armor exceeds its target. Source traits and flat pyregel
+damage apply before melee-weakness multiplication.
+
+The retained `tests/fixtures/full-battle-status-callbacks.mt2f` comes from game
+2.2.1, module MVID `8fb07b96-f4db-4d2b-884d-c00536d6ccf4`. The complete native
+run takes 95.04 seconds at Instant timing and passes with 21 plays, seven
+EndTurns, 69 room stages, victory/Pyre 72, zero capture failures, mismatches,
+unsupported or pending observations, unchanged original files and muted audio.
+The binary is 61,174 bytes with 10,109 unique nodes; SHA-256 is
+`63187b1e1fff393c0e3b0f7b8f95980e4911481707d38f4797bf9c32f797450f`.
+
+Independent regression checks all 481 native enqueue/dispatch payloads in
+order and compares each dispatch's unit and complete context. Coverage includes
+all seven kinds, 71 rewarded dispatches, one zero delta, 100 negative deltas,
+32 dying actors, 79 enemy dispatches, a rewarded silence loss, a rewarded
+same-count armor addition, 147 once skips and nine silence gates. The same
+fixture also checks 159 triggered status effects, 77 unit turns and both
+restored preview RNG streams. Core checks cover nested initial queue ordering,
+nonstackable upgrade limits, cleanup and 32 isolated parallel branches.
+
+The full regression exits zero for 59 battle fixtures and eight calibrations.
+All 67 binary archives match the curated inventory and SHA-256 manifest. The
+probe builds with zero warnings and errors; no JSON fixture is tracked.
+
+This covers status callbacks inside the existing modeled effect set. Relic
+handlers, unit abilities, horde and other unmodeled status-specific callbacks
+still require separate modeling and native evidence; their interactions must
+remain unsupported.

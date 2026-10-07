@@ -185,12 +185,14 @@ namespace MonsterTrain2Poju.Model
         public IReadOnlyList<CombatEvent> Events { get; }
         public string? UnsupportedReason { get; }
         public bool Supported => State != null;
+        internal IReadOnlyList<RoomCombatModel.QueuedCharacterTrigger> PendingCallbacks { get; }
 
         internal RoomCombatResult(RoomCombatState? state, RoomOutcome outcome, int rounds,
-            List<CombatEvent> events, string? reason = null)
+            List<CombatEvent> events, string? reason = null, IReadOnlyList<RoomCombatModel.QueuedCharacterTrigger>? pendingCallbacks = null)
         {
             State = state; Outcome = outcome; Rounds = rounds;
             Events = Array.AsReadOnly(events.ToArray()); UnsupportedReason = reason;
+            PendingCallbacks = Array.AsReadOnly((pendingCallbacks ?? Array.Empty<RoomCombatModel.QueuedCharacterTrigger>()).ToArray());
         }
     }
 
@@ -202,12 +204,14 @@ namespace MonsterTrain2Poju.Model
             internal CombatUnit Unit { get; set; }
             internal string Kind { get; }
             internal int ParamInt { get; }
+            internal int ParamInt2 { get; }
+            internal string? ParamString { get; }
             internal CombatUnit? OverrideTarget { get; }
             internal bool ReturnSpawnerAfterQueue { get; }
             internal bool DeferUntilRemoval { get; }
             internal QueuedCharacterTrigger(int roomIndex, CombatUnit unit, string kind = "OnDeath", bool returnSpawnerAfterQueue = false, bool deferUntilRemoval = false, int paramInt = 0,
-                CombatUnit? overrideTarget = null)
-            { RoomIndex = roomIndex; Unit = unit; Kind = kind; ReturnSpawnerAfterQueue = returnSpawnerAfterQueue; DeferUntilRemoval = deferUntilRemoval; ParamInt = paramInt; OverrideTarget = overrideTarget; }
+                CombatUnit? overrideTarget = null, int paramInt2 = 0, string? paramString = null)
+            { RoomIndex = roomIndex; Unit = unit; Kind = kind; ReturnSpawnerAfterQueue = returnSpawnerAfterQueue; DeferUntilRemoval = deferUntilRemoval; ParamInt = paramInt; OverrideTarget = overrideTarget; ParamInt2 = paramInt2; ParamString = paramString; }
         }
         private static readonly HashSet<string> KnownStatuses = new HashSet<string>(StringComparer.Ordinal)
         {
@@ -331,14 +335,15 @@ namespace MonsterTrain2Poju.Model
         internal static RoomCombatResult SettleQueuedSpawner(RoomCombatState state, CombatUnit unit)
             => new Engine(state, new List<CombatEvent>(), resetPreviewTriggers: false).ReturnQueuedSpawner(unit);
 
-        public static RoomCombatResult ApplySpawnTriggers(RoomCombatState state, int unitId, bool fromCard)
+        public static RoomCombatResult ApplySpawnTriggers(RoomCombatState state, int unitId, bool fromCard,
+            IReadOnlyList<CombatStatus>? startingApplications = null)
         {
             string? error = Validate(state);
             CombatUnit? unit = state.Units.FirstOrDefault(item => item.Id == unitId);
             if (error != null || unit == null || fromCard && unit.SpawnerCardId <= 0)
                 return new RoomCombatResult(null, RoomOutcome.Unsupported, 0, new List<CombatEvent>(),
                     error ?? "Spawn triggers require a living new unit and its source card identity.");
-            return new Engine(state, new List<CombatEvent>(), pendingSummonCardId: fromCard ? unit.SpawnerCardId : 0).Spawn(unitId, fromCard);
+            return new Engine(state, new List<CombatEvent>(), pendingSummonCardId: fromCard ? unit.SpawnerCardId : 0).Spawn(unitId, fromCard, startingApplications);
         }
 
         public static RoomCombatResult ApplyCardDamage(RoomCombatState state, int targetId, int damage, int sourceCardId = 0,
@@ -424,13 +429,16 @@ namespace MonsterTrain2Poju.Model
                     if (trigger.Kind != "OnDeath" && trigger.Kind != "PostCombat" && trigger.Kind != "PostCombatHealing" && trigger.Kind != "OnHeal" &&
                         trigger.Kind != "OnSpawn" && trigger.Kind != "OnUnscaledSpawn" && trigger.Kind != "OnSpawnNotFromCard" &&
                         trigger.Kind != "OnTurnBegin" && trigger.Kind != "OnTeamTurnBegin" && trigger.Kind != "EndTurnPreHandDiscard" && trigger.Kind != "PreCombat" &&
-                        trigger.Kind != "OnHit" && trigger.Kind != "OnKill" && trigger.Kind != "OnAttackingBeforeDamage" && trigger.Kind != "OnAttacking")
+                        trigger.Kind != "OnHit" && trigger.Kind != "OnKill" && trigger.Kind != "OnAttackingBeforeDamage" && trigger.Kind != "OnAttacking" &&
+                        !StatusCallbackModel.Kinds.Contains(trigger.Kind))
                         return "Unmodeled trigger " + trigger.Kind;
                     if (trigger.Kind != "OnDeath" && trigger.Kind != "PostCombat" && trigger.SkipDuringDeployment == null)
                         return trigger.Kind + " requires deployment timing state.";
                     if (trigger.TriggerAtThreshold > 0 && trigger.Kind != "OnHit" && trigger.Kind != "OnKill" &&
-                        trigger.Kind != "OnAttackingBeforeDamage" && trigger.Kind != "OnAttacking")
+                        trigger.Kind != "OnAttackingBeforeDamage" && trigger.Kind != "OnAttacking" && !StatusCallbackModel.Kinds.Contains(trigger.Kind))
                         return "Threshold arguments are not modeled for " + trigger.Kind;
+                    if (trigger.Kind == "OnNewStatusEffectAdded" && !unit.CountUniqueVisibleStatuses().HasValue)
+                        return "New-status callbacks require the complete native status dictionary and display definitions.";
                     if (trigger.FireCount < 0) return "Invalid trigger fire count.";
                     foreach (CombatEffect effect in trigger.Effects)
                     {
@@ -563,7 +571,7 @@ namespace MonsterTrain2Poju.Model
             private readonly bool deferSpawnerExhaustion;
             private readonly int pendingSummonCardId;
             private readonly Action<QueuedCharacterTrigger>? enqueueCharacterTrigger;
-            private readonly Queue<(WorkingUnit Unit, string Kind, bool CanFire, int ParamInt, WorkingUnit? OverrideTarget)> triggerQueue = new Queue<(WorkingUnit, string, bool, int, WorkingUnit?)>();
+            private readonly Queue<(WorkingUnit Unit, string Kind, bool CanFire, int ParamInt, WorkingUnit? OverrideTarget, int ParamInt2, string? ParamString)> triggerQueue = new Queue<(WorkingUnit, string, bool, int, WorkingUnit?, int, string?)>();
             private bool runningTriggerQueue;
             private bool killCamActivated;
             // Older captures omitted the identity store. Retain observed source cards while
@@ -618,8 +626,16 @@ namespace MonsterTrain2Poju.Model
                         WorkingUnit? front = units.FirstOrDefault(unit => unit.Alive && unit.Source.Team == team && !unit.Has("untouchable"));
                         if (front == null || !front.Has("valor") || front.Has("immune") || front.Source.StatusImmunities.Contains("armor")) continue;
                         int goal = Math.Min(9999, front.Amount("valor"));
-                        if (goal > front.Count("armor")) front.Statuses["armor"] = context!.StatusRules.First(rule => rule.Id == "armor").WithStacks(goal);
+                        // Valor calls AddStatusEffect even when existing armor already meets its target.
+                        // That zero addition still queues status and armor callbacks in the native game.
+                        RoomCombatResult added = StatusApplicationModel.ApplyRetained(CurrentRoom(), front.Source.Id,
+                            context!.StatusRules.First(rule => rule.Id == "armor").WithStacks(Math.Max(0, goal - front.Count("armor"))), 0);
+                        if (!added.Supported) { unsupportedReason = added.UnsupportedReason; return Finish(RoomOutcome.Unsupported); }
+                        context = added.State!.Context;
+                        front.Apply(added.State.Units.First(unit => unit.Id == front.Source.Id));
+                        foreach (QueuedCharacterTrigger callback in added.PendingCallbacks) QueueCallback(callback);
                     }
+                if (enqueueCharacterTrigger == null && !runningTriggerQueue) DrainLocalTriggerQueue();
                 Clear(true, relentless);
                 return Finish(battleWon ? RoomOutcome.BattleWon : units.Any(unit => unit.Source.IsPyre && !unit.Alive)
                     ? RoomOutcome.PlayerDefeated : RoomOutcome.Cleared);
@@ -669,6 +685,7 @@ namespace MonsterTrain2Poju.Model
             {
                 ApplyUpgrade(units.Single(unit => unit.Source.Id == targetId), upgrade, lifetime, remove,
                     roomCapacity, sourceCardId, triggerKind);
+                if (enqueueCharacterTrigger == null && !runningTriggerQueue) DrainLocalTriggerQueue();
                 return Finish(battleWon ? RoomOutcome.BattleWon : units.Any(unit => unit.Source.IsPyre && !unit.Alive)
                     ? RoomOutcome.PlayerDefeated : RoomOutcome.Exchanged);
             }
@@ -681,9 +698,16 @@ namespace MonsterTrain2Poju.Model
                     ? RoomOutcome.PlayerDefeated : RoomOutcome.Exchanged);
             }
 
-            internal RoomCombatResult Spawn(int unitId, bool fromCard)
+            internal RoomCombatResult Spawn(int unitId, bool fromCard, IReadOnlyList<CombatStatus>? startingApplications = null)
             {
                 WorkingUnit spawned = units.Single(unit => unit.Source.Id == unitId);
+                if (startingApplications != null)
+                {
+                    var callbacks = new List<QueuedCharacterTrigger>();
+                    unsupportedReason = StatusCallbackModel.Initialize(CurrentRoom(), spawned.Freeze(), startingApplications, callbacks);
+                    if (unsupportedReason != null) return Finish(RoomOutcome.Unsupported);
+                    foreach (QueuedCharacterTrigger callback in callbacks) QueueCallback(callback);
+                }
                 FireTriggers(spawned, "OnSpawn");
                 FireTriggers(spawned, "OnUnscaledSpawn");
                 if (!fromCard) FireTriggers(spawned, "OnSpawnNotFromCard");
@@ -717,7 +741,7 @@ namespace MonsterTrain2Poju.Model
             {
                 WorkingUnit? actor = units.FirstOrDefault(unit => unit.Source.Id == queued.Unit.Id);
                 if (actor == null && (queued.Kind == "OnDeath" || queued.Kind == "OnHit" || queued.Kind == "OnKill" ||
-                    queued.Kind == "OnAttackingBeforeDamage" || queued.Kind == "OnAttacking"))
+                    queued.Kind == "OnAttackingBeforeDamage" || queued.Kind == "OnAttacking" || StatusCallbackModel.Kinds.Contains(queued.Kind)))
                 { actor = new WorkingUnit(queued.Unit); units.Add(actor); }
                 // A queued OnHeal on an actor killed by a later phase effect has no live effects.
                 if (actor != null)
@@ -1028,8 +1052,12 @@ namespace MonsterTrain2Poju.Model
             {
                 if (!fromQueue && enqueueCharacterTrigger != null)
                 { enqueueCharacterTrigger(new QueuedCharacterTrigger(source.RoomIndex, unit.Freeze(), kind, paramInt: paramInt, overrideTarget: overrideTarget?.Freeze())); return; }
-                if (!fromQueue && runningTriggerQueue)
-                { triggerQueue.Enqueue((unit, kind, canFireTriggers, paramInt, overrideTarget)); return; }
+                if (!fromQueue)
+                {
+                    triggerQueue.Enqueue((unit, kind, canFireTriggers, paramInt, overrideTarget, 0, null));
+                    if (!runningTriggerQueue) DrainLocalTriggerQueue();
+                    return;
+                }
                 bool startedQueue = !runningTriggerQueue;
                 runningTriggerQueue = true;
                 ExecuteTriggers(unit, kind, canFireTriggers, paramInt, overrideTarget);
@@ -1140,7 +1168,7 @@ namespace MonsterTrain2Poju.Model
                         // The native effect retains its target object through removal and
                         // terminal clearing. Its remaining source-card work must still run.
                         return new RoomCombatResult(UpgradeRoom(target), RoomOutcome.Exchanged, 0, new List<CombatEvent>());
-                    }, allowDyingTarget: true);
+                    }, allowDyingTarget: true, enqueueCallback: QueueCallback);
                 if (!result.Supported) { unsupportedReason = result.UnsupportedReason; return false; }
                 context = result.State!.Context;
                 return true;
@@ -1247,6 +1275,7 @@ namespace MonsterTrain2Poju.Model
                     if (!applied.Supported) { unsupportedReason = applied.UnsupportedReason; return false; }
                     context = applied.State!.Context;
                     foreach (CombatUnit changed in applied.State.Units) units.First(unit => unit.Source.Id == changed.Id).Apply(changed);
+                    foreach (QueuedCharacterTrigger callback in applied.PendingCallbacks) QueueCallback(callback);
                     foreach (CombatEvent item in applied.Events) events.Add(new CombatEvent(round, item.Kind, item.Actor, item.Target, item.Amount));
                     return true;
                 }
@@ -1297,7 +1326,23 @@ namespace MonsterTrain2Poju.Model
             private void Trigger(WorkingUnit unit, string id, int count)
             {
                 if (unit.Statuses.TryGetValue(id, out CombatStatus? status) && status.RemoveWhenTriggered &&
-                    (!source.Deployment || status.RemoveDuringDeployment)) unit.Remove(id, count);
+                    (!source.Deployment || status.RemoveDuringDeployment)) RemoveStatus(unit, id, count);
+            }
+
+            private void QueueCallback(QueuedCharacterTrigger callback)
+            {
+                if (enqueueCharacterTrigger != null) { enqueueCharacterTrigger(callback); return; }
+                WorkingUnit actor = units.First(unit => unit.Source.Id == callback.Unit.Id);
+                triggerQueue.Enqueue((actor, callback.Kind, true, callback.ParamInt, null, callback.ParamInt2, callback.ParamString));
+            }
+
+            private void RemoveStatus(WorkingUnit unit, string id, int count)
+            {
+                CombatUnit before = unit.Freeze();
+                unit.Remove(id, count);
+                var callbacks = new List<QueuedCharacterTrigger>();
+                StatusCallbackModel.Removed(source.RoomIndex, before, unit.Freeze(), id, callbacks);
+                foreach (QueuedCharacterTrigger callback in callbacks) QueueCallback(callback);
             }
 
             private bool Active(CombatStatus status) => !source.Deployment || !status.SkipDuringDeployment;
@@ -1311,15 +1356,16 @@ namespace MonsterTrain2Poju.Model
                         {
                             if (status.RemoveStackAtEnd && !(relentless && status.PreventRemovalDuringRelentless))
                             {
-                                unit.Remove(status.Id, 1);
+                                RemoveStatus(unit, status.Id, 1);
                                 if (unit.Count(status.Id) == 0) unit.RemoveDefinition(status.Id);
                             }
                             else if (!status.RemoveStackAtEnd && status.RemoveAllAtEnd)
                             {
-                                unit.Remove(status.Id, status.Stacks);
+                                RemoveStatus(unit, status.Id, status.Stacks);
                                 if (unit.Count(status.Id) == 0) unit.RemoveDefinition(status.Id);
                             }
                         }
+                if (enqueueCharacterTrigger == null && !runningTriggerQueue) DrainLocalTriggerQueue();
             }
 
             private bool BothTeamsPresent() => units.Any(unit => unit.Alive && unit.Source.Team == CombatTeam.Player &&
