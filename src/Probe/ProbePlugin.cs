@@ -34,6 +34,8 @@ namespace MonsterTrain2Poju.Probe
             }
 
             isolatedRoot = ValidateRoot(Environment.GetEnvironmentVariable(EnvironmentVariable));
+            AudioListener.volume = 0f;
+            Logger.LogInfo("Isolated probe audio muted.");
             try
             {
                 new Harmony(PluginId).PatchAll(typeof(ProbePlugin).Assembly);
@@ -62,6 +64,11 @@ namespace MonsterTrain2Poju.Probe
             {
                 Abort("Unknown " + ScenarioVariable + " value: " + scenarioName);
             }
+        }
+
+        private void LateUpdate()
+        {
+            if (patchInstalled) AudioListener.volume = 0f;
         }
 
         private static string ValidateRoot(string? raw)

@@ -14,6 +14,7 @@
     <Reference Include="Newtonsoft.Json" HintPath="$(GameDir)\MonsterTrain2_Data\Managed\Newtonsoft.Json.dll" Private="false" />
     <Reference Include="UnityEngine" HintPath="$(GameDir)\MonsterTrain2_Data\Managed\UnityEngine.dll" Private="false" />
     <Reference Include="UnityEngine.CoreModule" HintPath="$(GameDir)\MonsterTrain2_Data\Managed\UnityEngine.CoreModule.dll" Private="false" />
+    <Reference Include="UnityEngine.AudioModule" HintPath="$(GameDir)\MonsterTrain2_Data\Managed\UnityEngine.AudioModule.dll" Private="false" />
     <Reference Include="UnityEngine.UI" HintPath="$(GameDir)\MonsterTrain2_Data\Managed\UnityEngine.UI.dll" Private="false" />
   </ItemGroup>
 </Project>
