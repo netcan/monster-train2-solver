@@ -63,6 +63,8 @@ namespace MonsterTrain2Poju.Probe
             public CardActionEffect Effect { get; set; } = null!;
             public int[] Targets { get; set; } = null!;
             public RoomCombatState Before { get; set; } = null!;
+            public CombatUnit[] TargetActors { get; set; } = Array.Empty<CombatUnit>();
+            public CombatUnit[] AfterTargetActors { get; set; } = Array.Empty<CombatUnit>();
             public RoomCombatState? After { get; set; }
             public bool Completed { get; set; }
         }
@@ -84,10 +86,12 @@ namespace MonsterTrain2Poju.Probe
                 CardPlaying = AllGameManagers.Instance!.GetReplayManager().IsCardPlaying(),
                 TriggerKind = parameters.sourceCharacterTriggerState?.GetTrigger().ToString(),
                 Effect = Describe(effect.GetSourceCardEffectData(), effect.GetParamInt(), effect.GetParamBool()),
-                Targets = parameters.targets.Select(trace.UnitId).ToArray(), Before = trace.Capture(room) };
+                Targets = parameters.targets.Select(trace.UnitId).ToArray(), TargetActors = parameters.targets.Select(Unit).ToArray(), Before = trace.Capture(room) };
+            CombatUnit Unit(CharacterState actor)
+            { using (new CharacterState.SetAllowDestroyedAccessHelper(actor, onlyIfDestroyed: true)) return trace.CaptureUnit(actor); }
             Records.Add(record);
             try { while (native.MoveNext()) yield return native.Current; record.Completed = true; }
-            finally { (native as IDisposable)?.Dispose(); record.After = trace.Capture(room); }
+            finally { (native as IDisposable)?.Dispose(); record.After = trace.Capture(room); record.AfterTargetActors = parameters.targets.Select(Unit).ToArray(); }
         }
     }
 }

@@ -82,7 +82,10 @@ internal static class AbilityCooldownChecks
         var effect = sample.GetProperty("Effect").Deserialize<CardActionEffect>()!;
         var targets = sample.GetProperty("Targets").Deserialize<int[]>()!;
         string parent = JsonSerializer.Serialize(before, ModelJson.Options);
-        RoomCombatState current = before;
+        var retained = sample.TryGetProperty("TargetActors", out var actors) ? actors.Deserialize<CombatUnit[]>()! : [];
+        var predictedActors = retained.ToDictionary(unit => unit.Id);
+        RoomCombatState current = new(before.RoomIndex, before.Deployment, before.Units.Concat(retained.Where(unit =>
+            before.Units.All(live => live.Id != unit.Id))).ToArray(), before.ExternalInteractions, before.Context, before.Preview);
         var callbacks = new List<RoomCombatModel.QueuedCharacterTrigger>();
         string? triggerKind = sample.TryGetProperty("TriggerKind", out var kind) ? kind.GetString() : null;
         foreach (int id in effect.Type == "RemoveStatus" ? targets : targets.Reverse())
@@ -103,10 +106,23 @@ internal static class AbilityCooldownChecks
                         result = RoomCombatModel.SettleQueuedSpawner(result.State!, dead);
                         Require(result.Supported, "Native card-play standby settlement unsupported: " + result.UnsupportedReason);
                     }
+                foreach (var unit in callbacks.Select(item => item.Unit).Concat(result.RetainedUnits).Concat(result.State!.Units))
+                    if (predictedActors.ContainsKey(unit.Id)) predictedActors[unit.Id] = unit;
                 callbacks.Clear();
             }
+            foreach (var unit in callbacks.Select(item => item.Unit).Concat(result.RetainedUnits).Concat(result.State!.Units))
+                if (predictedActors.ContainsKey(unit.Id)) predictedActors[unit.Id] = unit;
             current = result.State!;
         }
+        if (sample.TryGetProperty("AfterTargetActors", out var afterActors))
+            foreach (var actual in afterActors.Deserialize<CombatUnit[]>()!)
+            {
+                Require(predictedActors.TryGetValue(actual.Id, out var predicted), "Missing retained cooldown target.");
+                string? actorDiff = ModelJson.Difference(JsonSerializer.Serialize(predicted, ModelJson.Options), JsonSerializer.Serialize(actual, ModelJson.Options));
+                Require(actorDiff == null, "Native cooldown retained actor differs: " + effect.Type + "/" + actual.Id + ": " + actorDiff);
+            }
+        current = new(current.RoomIndex, current.Deployment, current.Units.Where(unit => unit.Health > 0).ToArray(),
+            current.ExternalInteractions, current.Context, current.Preview);
         string? diff = ModelJson.Difference(JsonSerializer.Serialize(current, ModelJson.Options),
             JsonSerializer.Serialize(sample.GetProperty("After").Deserialize<RoomCombatState>(), ModelJson.Options));
         Require(diff == null, "Native cooldown state differs: " + effect.Type + "/" + sample.GetProperty("SourceCardId").GetInt32() + "/" + string.Join(',', targets) + ": " + diff);

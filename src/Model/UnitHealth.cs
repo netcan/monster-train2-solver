@@ -35,7 +35,7 @@ namespace MonsterTrain2Poju.Model
                 HealingModel.HealedHealth(target.Health, maxHealth, amount, target.Modifiers!.CanBeHealed, target.Statuses, fromMaxHealthChange: true);
             var changed = new CombatUnit(target.Id, target.AssetKey, target.Team, target.BaseAttack, health, maxHealth,
                 target.CanAttack, target.IsPyre, target.EndsBattleOnDeath, target.Statuses, target.Triggers, target.SpawnerCardId,
-                target.Size, target.StatusImmunities, target.Subtypes, target.Modifiers, target.IsBoss, target.LastAttackerId, target.StatusRegistry, target.EquipmentCards, target.NextTriggerId, target.Ability, target.StatusDictionary, target.AbilityRules, target.HordeDefinition, target.IsSpawning, target.SacrificeCardId);
+                target.Size, target.StatusImmunities, target.Subtypes, target.Modifiers, target.IsBoss, target.LastAttackerId, target.StatusRegistry, target.EquipmentCards, target.NextTriggerId, target.Ability, target.StatusDictionary, target.AbilityRules, target.HordeDefinition, target.IsSpawning, target.SacrificeCardId, target.DeathState);
             // Lethal native debuffs sacrifice the unit without attributing damage to the played card.
             if (health <= 0) return RoomCombatModel.ApplyUnitModification(state, changed);
             var completed = new RoomCombatState(state.RoomIndex, state.Deployment,

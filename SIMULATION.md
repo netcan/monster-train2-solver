@@ -106,6 +106,7 @@ are copied immutable values; independent child states can run on worker threads.
 | Horde numerical primitives | `HordeStatModel` | 560 native raw-stat steps and 175 casualty boundaries, signed overflow, HP/stack caps and 32 branches |
 | Horde status changes and casualties | `HordeStatusModel`, status/spawn/damage/health transitions | Eight exact native operations, accepted queues and complete drains, zero/negative notifications, simulated deaths, troop thresholds and spawning cooldown gates; complete subsequent battle and parallel branches. Runtime casualty upgrades, Rally, merging and cloning remain incomplete |
 | Status removal and Horde sacrifice | `StatusRemovalModel`, `CardSpellModel` and `RoomCombatModel` | Nine native API/effect/trigger operations, exact room/retained actor states, accepted queue counts, ordered death/Harvest dispatches, a real paid spell removing both teams and parallel branches; raw zero HP preserves orphan standby cards while sacrifice signals physical death and retains its responsible card |
+| Reentrant death signals and queued player sacrifice | `UnitDeathState`, `StatusRemovalModel` and `RoomCombatModel` | Three native operations, 45 exact death/Harvest phase states and complete dispatch order, 95 effect/retained-target states, pending versus cleared statistics listeners, spawner timing and parallel branches |
 | Physical death Harvest | `HarvestModel` and `RoomCombatModel` | Four native physical deaths and 31 exact dispatches; own-death children precede player/enemy groups, Hero/Monster/Unit kinds, Horde repetition, required dying statuses, silence and once flags; complete subsequent battle and parallel branches |
 | Queued trigger repetition | `RoomCombatModel` | Eight complete native batches and 26 dispatches, once flags, zero/negative counts, ordered child callbacks, silence/fire permissions and 32 branches; Horde status callers now preserve rally/harvest repetition payloads |
 | Additional spells, abilities, relics | Not complete | Unsupported interactions explicitly reject the model transition |
@@ -3787,3 +3788,77 @@ of a terminal Boss and equipment/signal interactions beyond these captures need
 further native coverage. Runtime Horde casualty upgrades, Rally, merging,
 cloning and additional statuses remain incomplete; this increment does not
 establish arbitrary-card or arbitrary-Boss battle completeness.
+
+## Reentrant death signals and queued player sacrifice, schema 72
+
+Death completion, physical removal and the statistics callback are distinct
+native states. `UnitDeathState` records HasFinishedDying, IsBeingRemoved, the
+presence of the one-shot CardStatistics death listener and the source of any
+pending statistics invocation. The probe observes the actual CheckForDeath and
+OnCharacterDeath coroutines; it does not derive these fields from a later
+recorded result. Immutable unit copies, generated spawn definitions and retained
+actors preserve the state. Legacy archives keep a null lifecycle descriptor.
+
+An existing queue changes player sacrifice settlement. The native manager
+accepts OnDeath and physical Harvest callbacks, removes the unit and returns its
+standby card before those accepted callbacks execute. The model now returns the
+player card at this boundary; outside a running queue it keeps the separately
+verified later settlement boundary.
+
+A death callback may remove the dying actor's remaining Horde stacks and invoke
+Sacrifice again. IsBeingRemoved prevents another physical removal, OnDeath and
+physical Harvest batch. This does not suppress the death signal itself: a
+remaining CardStatistics listener can increment physical-death and sacrifice
+statistics again. Cleared listeners cannot. The original statistics invocation
+can also remain pending when the OnDeath observation begins. Independent checks
+settle it at the observed phase/effect yield boundary and preserve its original
+source. For the player case, two simulated Horde deaths and two death-signal
+notifications produce four additional monster-death counts, while only one
+OnDeath dispatch and one physical Harvest batch occur.
+
+Room results expose retained actors and executed trigger dispatches internally
+for independent verification. The cooldown/removal effect probe now captures
+target actors before and after execution, including corpses absent from the
+room projection. Checks compare these identities and lifecycle fields alongside
+full room/context state, and prioritize updated actor state over old accepted
+callback snapshots.
+
+`-HordeDeath -Policy units-spells-and-junk` uses two actual Steward plays and
+three ordinary-enemy Horde observers. One player receives a PreCombat final-stack
+removal; a player and an enemy receive an additional OnDeath self-removal and
+are killed through native DebuffMaxHP. The original Boss and spawn waves remain
+intact. Three complete operations compare settled rooms and corpses, exact
+accepted dispatch order and the absence of duplicate OnDeath. Forty-five
+native death/Harvest phases and 95 cooldown/removal effects compare complete
+states and retained targets. Mechanism checks repeat in 32 independent branches;
+the subsequent 19-play/seven-EndTurn battle policy matches from initial and
+mid-battle inputs in 16 branches.
+
+This scenario also exposed cooldown decay in a room with no player units.
+RoomIsInRelentlessPhase depends on a surviving enemy Relentless unit, without
+requiring both teams. Cooldown removal now queries that condition at each clear
+boundary. An enemy Boss with another enemy preserves both cooldowns; an ordinary
+room and player-only Relentless still decay them. This correction was committed
+separately as `f78d369`.
+
+The final muted Instant run takes 53.30 seconds, wins at Pyre 51, and records
+56 room stages, 13 card cycles, 14 train phases and 11 spawn stages. Capture
+failures, mismatches, unsupported transitions and pending records are zero;
+original profile signatures remain unchanged. The direct native archive
+`tests/fixtures/full-battle-horde-death.mt2f` has schema 72, 36,353 bytes and
+6,019 unique nodes, with no source JSON. Its SHA-256 is
+`0d4f5138ea96491cfb876e4b6580db546b93e2c71233af1646d74cab6ea7eb7e`.
+The curated inventory now contains 102 archives: 93 battles and nine calibrations.
+
+These captures verify both-team repeated Horde sacrifice and queued player card
+return. Runtime Horde casualty upgrades, Rally, Bump merging, cloning, revival,
+additional statuses and broader death/equipment/relic signal callbacks remain
+incomplete. Raw final-stack removal on a terminal Boss still needs separate
+native coverage; this does not establish arbitrary-battle completeness.
+
+The complete 102-archive regression exits zero: all 93 native battle inputs,
+nine calibrations, parallel branch checks, typed archive hydration and complete
+inventory/SHA-256 verification pass. The final native archive also passes a
+focused independent check. Probe builds with zero warnings/errors; ModelChecks
+retains its 12 pre-existing nullable warnings. Both changed PowerShell scripts
+parse, and Git whitespace checks pass.

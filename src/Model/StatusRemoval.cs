@@ -62,6 +62,11 @@ namespace MonsterTrain2Poju.Model
                 raw.PendingCallbacks.LastOrDefault(item => item.Unit.Id == targetId)?.Unit ?? target;
             if ((changed.RegisteredStatus(id)?.Stacks ?? 0) != 0) return raw;
             var callbacks = raw.PendingCallbacks.ToList();
+            if (changed.DeathState?.PendingStatisticsCardId.HasValue == true)
+            {
+                raw = RoomCombatModel.SettlePendingDeathStatistics(raw.State!, changed);
+                changed = raw.State!.Units.Single(unit => unit.Id == targetId);
+            }
             RoomCombatResult sacrificed = RoomCombatModel.QueueSacrifice(raw.State!, changed, sourceCardId, callbacks.Add, whileRunningQueue);
             return new RoomCombatResult(sacrificed.State, sacrificed.Outcome, sacrificed.Rounds, sacrificed.Events.ToList(),
                 sacrificed.UnsupportedReason, callbacks);
