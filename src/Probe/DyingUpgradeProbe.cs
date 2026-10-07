@@ -24,7 +24,7 @@ namespace MonsterTrain2Poju.Probe
             public string[] Interactions { get; set; } = Array.Empty<string>();
             public bool Completed { get; set; }
         }
-        private static bool Enabled() => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == "dying-upgrades" &&
+        private static bool Enabled() => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") is "dying-upgrades" or "attack-triggers" &&
             DyingUpgradeScenario.Prepared && FullBattleTrace.Active != null && !AllGameManagers.Instance!.GetSaveManager().PreviewMode;
         private static IEnumerator Wrap(IEnumerator native, CardEffectState effect, CardEffectParams parameters)
         {

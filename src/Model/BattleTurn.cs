@@ -151,6 +151,7 @@ namespace MonsterTrain2Poju.Model
             string moon = source.MoonPhase == "Full" ? "New" : "Full";
             context = train.Context!;
             train = WithContext(train, context.WithStatistics(context.Statistics?.NextTurn(context.Gold)), false);
+            train = TrainCombatModel.ProcessRemovals(train);
             int turn = checked(spawn.Turn + 1);
             train = WithContext(train, train.Context!.WithQueryFrame(train.Context.QueryFrame?.With(
                 turn: turn, moonPhase: moon == "New" ? 1 : 2)), false);

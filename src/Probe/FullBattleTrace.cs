@@ -53,7 +53,7 @@ namespace MonsterTrain2Poju.Probe
         internal int Unsupported => stages.Count(stage => !stage.Predicted.Supported) + cardCycles.Unsupported + trainCombat.Unsupported + spawning.Unsupported + turns.Unsupported + actions.Unsupported +
             HandRemovalScenario.Records.Count(record => !record.Predicted.Supported) + GenerationScenario.Records.Count(record => !record.Predicted.Supported) +
             UnitTurnBeginProbe.Records.Count(record => !record.Predicted.Supported) + TeamTurnBeginProbe.Records.Count(record => !record.Predicted.Supported) + PreHandDiscardProbe.Records.Count(record => !record.Predicted.Supported) + PreCombatProbe.Records.Count(record => !record.Predicted.Supported) + PostCombatHealingProbe.Records.Count(record => !record.Predicted.Supported);
-        internal int Pending => DyingUpgradeProbe.Records.Count(record => !record.Completed || record.Actual == null || record.ActualUnits == null) + HitKillProbe.Records.Count(record => !record.Completed || !record.GoldAfter.HasValue || record.AfterTriggered == null) + stages.Count(stage => stage.Actual == null) + cardCycles.Records.Count(record => record.Actual == null) +
+        internal int Pending => AttackTriggerProbe.Records.Count(record => !record.Completed || !record.GoldAfter.HasValue || record.AfterTriggered == null) + DyingUpgradeProbe.Records.Count(record => !record.Completed || record.Actual == null || record.ActualUnits == null) + HitKillProbe.Records.Count(record => !record.Completed || !record.GoldAfter.HasValue || record.AfterTriggered == null) + stages.Count(stage => stage.Actual == null) + cardCycles.Records.Count(record => record.Actual == null) +
             trainCombat.Records.Count(record => record.Actual == null) + spawning.Records.Count(record => record.Actual == null) +
             turns.Records.Count(record => record.Actual == null) + actions.Records.Count(record => record.Actual == null) +
             HandRemovalScenario.Records.Count(record => record.Actual == null) + GenerationScenario.Records.Count(record => record.Actual == null) +
@@ -172,7 +172,8 @@ namespace MonsterTrain2Poju.Probe
                 character.GetCanAttack(), character.IsPyreHeart(), endsBattle, statuses, triggers,
                 card == null ? 0 : projection.CaptureCards(new List<CardState> { card })[0].InstanceId, character.GetSize(),
                 ((List<string>)AccessTools.Field(typeof(CharacterState), "statusEffectImmunities").GetValue(character)).ToArray(),
-                character.GetSubtypes().Select(subtype => subtype.Key).ToArray(), UnitModifierProbe.Capture(character), character.IsAnyBoss());
+                character.GetSubtypes().Select(subtype => subtype.Key).ToArray(), UnitModifierProbe.Capture(character), character.IsAnyBoss(),
+                character.GetLastAttackerCharacter() == null ? 0 : UnitId(character.GetLastAttackerCharacter()));
         }
 
         internal CombatContext CaptureContext()
@@ -351,7 +352,7 @@ namespace MonsterTrain2Poju.Probe
             string path = Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!, "full-battle.json");
             File.WriteAllText(path, JsonConvert.SerializeObject(new
             {
-                Schema = 40,
+                Schema = 41,
                 GameVersion = Application.version,
                 GameModuleMvid = typeof(CardState).Assembly.ManifestModule.ModuleVersionId,
                 NativeWon,
@@ -388,6 +389,7 @@ namespace MonsterTrain2Poju.Probe
                 KillCams = TerminalDeathProbe.KillCams,
                 HitKills = HitKillProbe.Records,
                 DyingUpgrades = DyingUpgradeProbe.Records,
+                AttackTriggers = AttackTriggerProbe.Records,
                 UnitPostCombats = PostCombatHealingProbe.Records,
                 UnitUpgradeScalingCalibrationContextUnchanged = UnitUpgradeScalingScenario.CalibrationContextUnchanged,
                 UiRngIsolation = UiRngIsolation.Records,

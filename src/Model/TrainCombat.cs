@@ -44,6 +44,16 @@ namespace MonsterTrain2Poju.Model
 
     public static class TrainCombatModel
     {
+        // Native ProcessRemovals destroys the Unity objects before advancing the
+        // turn. Retained references then compare null; terminal combat skips this phase.
+        internal static TrainCombatState ProcessRemovals(TrainCombatState source)
+        {
+            var activeIds = new HashSet<int>(source.Rooms.SelectMany(room => room.Units).Select(unit => unit.Id));
+            return new TrainCombatState(source.Rooms.Select(room => new RoomCombatState(room.RoomIndex, room.Deployment,
+                room.Units.Select(unit => unit.WithoutRemovedAttacker(activeIds)).ToArray(), room.ExternalInteractions, room.Context, room.Preview)).ToArray(),
+                source.Movement, source.EnemySlotsPerRoom, source.Context);
+        }
+
         public static TrainCombatResult EndTurnPreHandDiscard(TrainCombatState source, CombatTeam team)
             => CharacterPhase(source, team, "EndTurnPreHandDiscard");
 
@@ -142,7 +152,7 @@ namespace MonsterTrain2Poju.Model
                             status.RemoveWhenTriggered && (!source.Rooms[index].Deployment || status.RemoveDuringDeployment)
                                 ? status.WithStacks(status.Stacks - 1) : status).Where(status => status.Stacks > 0).ToArray();
                         arriving = new CombatUnit(enemy.Id, enemy.AssetKey, enemy.Team, enemy.BaseAttack, enemy.Health,
-                            enemy.MaxHealth, enemy.CanAttack, enemy.IsPyre, enemy.EndsBattleOnDeath, statuses, enemy.Triggers, enemy.SpawnerCardId, enemy.Size, enemy.StatusImmunities, enemy.Subtypes, enemy.Modifiers, enemy.IsBoss);
+                            enemy.MaxHealth, enemy.CanAttack, enemy.IsPyre, enemy.EndsBattleOnDeath, statuses, enemy.Triggers, enemy.SpawnerCardId, enemy.Size, enemy.StatusImmunities, enemy.Subtypes, enemy.Modifiers, enemy.IsBoss, enemy.LastAttackerId);
                     }
                     int destination = Math.Max(0, Math.Min(pyre, index + speed));
                     if (destination == pyre && rule.Loops && !enemy.Statuses.Any(status => status.Id == "relentless"))

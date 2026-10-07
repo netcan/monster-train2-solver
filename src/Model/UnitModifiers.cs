@@ -112,7 +112,7 @@ namespace MonsterTrain2Poju.Model
                     modifiers.HealthFromUpgrades, modifiers.SpawnerMatchesDefinition);
                 var changed = new CombatUnit(target.Id, target.AssetKey, target.Team, Math.Max(0, checked(damage + buff)), health, maxHealth,
                     target.CanAttack, target.IsPyre, target.EndsBattleOnDeath, statuses.Values.ToArray(), triggers, target.SpawnerCardId,
-                    Math.Max(1, Math.Min(6, size)), target.StatusImmunities, target.Subtypes, nextModifiers, target.IsBoss);
+                    Math.Max(1, Math.Min(6, size)), target.StatusImmunities, target.Subtypes, nextModifiers, target.IsBoss, target.LastAttackerId);
                 RoomCombatResult applied = settle(state, changed);
                 if (!applied.Supported) return applied;
                 state = applied.State!;

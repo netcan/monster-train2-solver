@@ -100,6 +100,7 @@ DamageDeathQueueChecks.Run();
 TerminalDeathChecks.Run();
 HitKillChecks.Run();
 DyingUpgradeChecks.Run();
+AttackTriggerChecks.Run();
 HandUpgradeChecks.Run();
 HealingChecks.Run();
 GoldRewardChecks.Run();

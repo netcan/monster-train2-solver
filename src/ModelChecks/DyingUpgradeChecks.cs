@@ -106,7 +106,7 @@ internal static class DyingUpgradeChecks
     }
     internal static void Native(JsonElement fixture)
     {
-        if (!fixture.TryGetProperty("ModifierScenario", out var scenario) || scenario.GetString() != "dying-upgrades") return;
+        if (!fixture.TryGetProperty("ModifierScenario", out var scenario) || scenario.GetString() is not ("dying-upgrades" or "attack-triggers")) return;
         int dying = 0, slays = 0, hits = 0, deaths = 0, removals = 0, negativeHp = 0, negativeUnhealed = 0, unitOnly = 0, turns = 0;
         foreach (JsonElement record in fixture.GetProperty("DyingUpgrades").EnumerateArray())
         {

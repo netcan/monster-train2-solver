@@ -70,15 +70,19 @@ namespace MonsterTrain2Poju.Model
         public IReadOnlyList<string> Subtypes { get; }
         public UnitModifiers? Modifiers { get; }
         public bool? IsBoss { get; }
+        // Null denotes a legacy capture without relationship state; zero is known-none.
+        public int? LastAttackerId { get; }
         public int Attacks => Math.Max(1, Status("multistrike") is CombatStatus multi
             ? multi.ParamInt + multi.Stacks - 1 : 1);
 
         public CombatUnit(int id, string assetKey, CombatTeam team, int baseAttack,
             int health, int maxHealth, bool canAttack, bool isPyre, bool endsBattleOnDeath,
             IReadOnlyList<CombatStatus> statuses, IReadOnlyList<CombatTrigger>? triggers = null, int spawnerCardId = 0, int size = 0,
-            IReadOnlyList<string>? statusImmunities = null, IReadOnlyList<string>? subtypes = null, UnitModifiers? modifiers = null, bool? isBoss = null)
+            IReadOnlyList<string>? statusImmunities = null, IReadOnlyList<string>? subtypes = null, UnitModifiers? modifiers = null, bool? isBoss = null,
+            int? lastAttackerId = null)
         {
             Id = id;
+            LastAttackerId = lastAttackerId;
             AssetKey = assetKey;
             Team = team;
             BaseAttack = baseAttack;
@@ -103,6 +107,10 @@ namespace MonsterTrain2Poju.Model
         internal CombatStatus? Status(string id) => Statuses.FirstOrDefault(item => item.Id == id);
         internal int StatusAmount(string id) => Status(id) is CombatStatus status
             ? status.Stacks * status.ParamInt : 0;
+
+        internal CombatUnit WithoutRemovedAttacker(ISet<int> activeIds) => !LastAttackerId.HasValue || LastAttackerId == 0 || activeIds.Contains(LastAttackerId.Value)
+            ? this : new CombatUnit(Id, AssetKey, Team, BaseAttack, Health, MaxHealth, CanAttack, IsPyre, EndsBattleOnDeath, Statuses,
+                Triggers, SpawnerCardId, Size, StatusImmunities, Subtypes, Modifiers, IsBoss, 0);
     }
 
     public sealed class RoomCombatState
@@ -164,10 +172,12 @@ namespace MonsterTrain2Poju.Model
             internal CombatUnit Unit { get; set; }
             internal string Kind { get; }
             internal int ParamInt { get; }
+            internal CombatUnit? OverrideTarget { get; }
             internal bool ReturnSpawnerAfterQueue { get; }
             internal bool DeferUntilRemoval { get; }
-            internal QueuedCharacterTrigger(int roomIndex, CombatUnit unit, string kind = "OnDeath", bool returnSpawnerAfterQueue = false, bool deferUntilRemoval = false, int paramInt = 0)
-            { RoomIndex = roomIndex; Unit = unit; Kind = kind; ReturnSpawnerAfterQueue = returnSpawnerAfterQueue; DeferUntilRemoval = deferUntilRemoval; ParamInt = paramInt; }
+            internal QueuedCharacterTrigger(int roomIndex, CombatUnit unit, string kind = "OnDeath", bool returnSpawnerAfterQueue = false, bool deferUntilRemoval = false, int paramInt = 0,
+                CombatUnit? overrideTarget = null)
+            { RoomIndex = roomIndex; Unit = unit; Kind = kind; ReturnSpawnerAfterQueue = returnSpawnerAfterQueue; DeferUntilRemoval = deferUntilRemoval; ParamInt = paramInt; OverrideTarget = overrideTarget; }
         }
         private static readonly HashSet<string> KnownStatuses = new HashSet<string>(StringComparer.Ordinal)
         {
@@ -367,6 +377,7 @@ namespace MonsterTrain2Poju.Model
                     return "Unmodeled applied unit upgrade interactions.";
                 if (unit.Health < 0 || unit.Health == 0 && unit.Id != dyingTargetId || unit.Health > unit.MaxHealth)
                     return "Only living units with valid health can enter room combat.";
+                if (unit.LastAttackerId < 0) return "Invalid last-attacker identity.";
                 if (unit.Statuses.Select(status => status.Id).Distinct().Count() != unit.Statuses.Count)
                     return "Duplicate status IDs on unit " + unit.Id;
                 foreach (CombatStatus status in unit.Statuses)
@@ -380,11 +391,12 @@ namespace MonsterTrain2Poju.Model
                     if (trigger.Kind != "OnDeath" && trigger.Kind != "PostCombat" && trigger.Kind != "PostCombatHealing" && trigger.Kind != "OnHeal" &&
                         trigger.Kind != "OnSpawn" && trigger.Kind != "OnUnscaledSpawn" && trigger.Kind != "OnSpawnNotFromCard" &&
                         trigger.Kind != "OnTurnBegin" && trigger.Kind != "OnTeamTurnBegin" && trigger.Kind != "EndTurnPreHandDiscard" && trigger.Kind != "PreCombat" &&
-                        trigger.Kind != "OnHit" && trigger.Kind != "OnKill")
+                        trigger.Kind != "OnHit" && trigger.Kind != "OnKill" && trigger.Kind != "OnAttackingBeforeDamage" && trigger.Kind != "OnAttacking")
                         return "Unmodeled trigger " + trigger.Kind;
                     if (trigger.Kind != "OnDeath" && trigger.Kind != "PostCombat" && trigger.SkipDuringDeployment == null)
                         return trigger.Kind + " requires deployment timing state.";
-                    if (trigger.TriggerAtThreshold > 0 && trigger.Kind != "OnHit" && trigger.Kind != "OnKill")
+                    if (trigger.TriggerAtThreshold > 0 && trigger.Kind != "OnHit" && trigger.Kind != "OnKill" &&
+                        trigger.Kind != "OnAttackingBeforeDamage" && trigger.Kind != "OnAttacking")
                         return "Threshold arguments are not modeled for " + trigger.Kind;
                     if (trigger.FireCount < 0) return "Invalid trigger fire count.";
                     foreach (CombatEffect effect in trigger.Effects)
@@ -400,11 +412,11 @@ namespace MonsterTrain2Poju.Model
                             if (action?.Type != (effect.Type == "CardEffectHeal" ? "Heal" : "Damage")) return "Missing triggered action definition.";
                             if (action.Type == "Heal" && state.Units.Any(target => target.Modifiers == null))
                                 return "Triggered healing requires unit healability state.";
-                            if (!new[] { "Self", "Room", "FrontInRoom", "BackInRoom", "Weakest", "RoomHealTargets", "RandomInRoom" }.Contains(action.Target))
+                            if (!new[] { "Self", "Room", "FrontInRoom", "BackInRoom", "Weakest", "RoomHealTargets", "RandomInRoom", "LastAttackedCharacter" }.Contains(action.Target))
                                 return "Unmodeled triggered action target " + action.Target;
                             if ((action.Range != null || action.Target == "RandomInRoom") && state.Context == null)
                                 return "Triggered action randomness requires shared battle context.";
-                            string? healError = action.Filters?.Validate() ?? action.Range?.Validate();
+                            string? healError = (action.Target == "LastAttackedCharacter" ? null : action.Filters?.Validate()) ?? action.Range?.Validate();
                             if (healError != null) return healError;
                             continue;
                         }
@@ -420,10 +432,10 @@ namespace MonsterTrain2Poju.Model
                                 return string.Join("; ", action.Upgrade.ExternalInteractions);
                             if (action.Upgrade.RestrictSizeToRoomCapacity)
                                 return "Triggered size restrictions require room capacity state.";
-                            if (action.Target != "Self" && !new[] { "Room", "FrontInRoom", "BackInRoom", "Weakest", "RoomHealTargets", "RandomInRoom" }.Contains(action.Target))
+                            if (action.Target != "Self" && !new[] { "Room", "FrontInRoom", "BackInRoom", "Weakest", "RoomHealTargets", "RandomInRoom", "LastAttackedCharacter" }.Contains(action.Target))
                                 return "Unmodeled triggered upgrade target " + action.Target;
                             if (action.Range != null) return "Triggered upgrade range initialization is not modeled.";
-                            string? filterError = action.Filters?.Validate();
+                            string? filterError = action.Target == "LastAttackedCharacter" ? null : action.Filters?.Validate();
                             if (filterError != null) return filterError;
                             continue;
                         }
@@ -450,12 +462,14 @@ namespace MonsterTrain2Poju.Model
             internal readonly List<CombatTrigger> Triggers;
             internal bool Despawned;
             internal bool DeathFinished;
-            internal bool Alive => Health > 0;
+            internal bool Removed;
+            internal int? LastAttackerId;
+            internal bool Alive => Health > 0 && !Removed;
             internal int Attack => Math.Max(0, Source.BaseAttack + Amount("buff") + Amount("valor") - Amount("debuff"));
 
             internal WorkingUnit(CombatUnit source)
             {
-                Source = source; Health = source.Health;
+                Source = source; Health = source.Health; LastAttackerId = source.LastAttackerId;
                 Statuses = source.Statuses.ToDictionary(status => status.Id, StringComparer.Ordinal);
                 Triggers = source.Triggers.ToList();
             }
@@ -463,7 +477,7 @@ namespace MonsterTrain2Poju.Model
             internal bool Has(string id) => Statuses.ContainsKey(id);
             internal void Apply(CombatUnit changed)
             {
-                Source = changed; Health = changed.Health;
+                Source = changed; Health = changed.Health; LastAttackerId = changed.LastAttackerId;
                 Statuses.Clear();
                 foreach (CombatStatus status in changed.Statuses) Statuses.Add(status.Id, status);
                 Triggers.Clear(); Triggers.AddRange(changed.Triggers);
@@ -479,7 +493,7 @@ namespace MonsterTrain2Poju.Model
             }
             internal CombatUnit Freeze() => new CombatUnit(Source.Id, Source.AssetKey, Source.Team,
                 Source.BaseAttack, Health, Source.MaxHealth, Source.CanAttack, Source.IsPyre,
-                Source.EndsBattleOnDeath, Statuses.Values.ToArray(), Triggers, Source.SpawnerCardId, Source.Size, Source.StatusImmunities, Source.Subtypes, Source.Modifiers, Source.IsBoss);
+                Source.EndsBattleOnDeath, Statuses.Values.ToArray(), Triggers, Source.SpawnerCardId, Source.Size, Source.StatusImmunities, Source.Subtypes, Source.Modifiers, Source.IsBoss, LastAttackerId);
         }
 
         private sealed class Engine
@@ -493,7 +507,7 @@ namespace MonsterTrain2Poju.Model
             private readonly bool deferSpawnerExhaustion;
             private readonly int pendingSummonCardId;
             private readonly Action<QueuedCharacterTrigger>? enqueueCharacterTrigger;
-            private readonly Queue<(WorkingUnit Unit, string Kind, bool CanFire, int ParamInt)> triggerQueue = new Queue<(WorkingUnit, string, bool, int)>();
+            private readonly Queue<(WorkingUnit Unit, string Kind, bool CanFire, int ParamInt, WorkingUnit? OverrideTarget)> triggerQueue = new Queue<(WorkingUnit, string, bool, int, WorkingUnit?)>();
             private bool runningTriggerQueue;
             private bool killCamActivated;
             // Older captures omitted the identity store. Retain observed source cards while
@@ -646,12 +660,16 @@ namespace MonsterTrain2Poju.Model
             internal RoomCombatResult QueuedTrigger(QueuedCharacterTrigger queued)
             {
                 WorkingUnit? actor = units.FirstOrDefault(unit => unit.Source.Id == queued.Unit.Id);
-                if (actor == null && (queued.Kind == "OnDeath" || queued.Kind == "OnHit" || queued.Kind == "OnKill"))
+                if (actor == null && (queued.Kind == "OnDeath" || queued.Kind == "OnHit" || queued.Kind == "OnKill" ||
+                    queued.Kind == "OnAttackingBeforeDamage" || queued.Kind == "OnAttacking"))
                 { actor = new WorkingUnit(queued.Unit); units.Add(actor); }
                 // A queued OnHeal on an actor killed by a later phase effect has no live effects.
                 if (actor != null)
                 {
-                    FireTriggers(actor, queued.Kind, fromQueue: true, paramInt: queued.ParamInt);
+                    WorkingUnit? overridden = queued.OverrideTarget == null ? null : units.FirstOrDefault(unit => unit.Source.Id == queued.OverrideTarget.Id);
+                    if (overridden == null && queued.OverrideTarget != null)
+                    { overridden = new WorkingUnit(queued.OverrideTarget); units.Add(overridden); }
+                    FireTriggers(actor, queued.Kind, fromQueue: true, paramInt: queued.ParamInt, overrideTarget: overridden);
                     queued.Unit = actor.Freeze();
                 }
                 return Finish(battleWon ? RoomOutcome.BattleWon : units.Any(unit => unit.Source.IsPyre && !unit.Alive)
@@ -750,6 +768,7 @@ namespace MonsterTrain2Poju.Model
 
             private void Damage(WorkingUnit? actor, WorkingUnit target, int damage, string kind, int sourceCardId = 0, bool applyTraits = true)
             {
+                if (target.LastAttackerId.HasValue) target.LastAttackerId = actor != null && !actor.Source.IsPyre ? actor.Source.Id : 0;
                 int raw = damage;
                 int blocked = 0;
                 bool direct = kind == "Attack";
@@ -793,17 +812,25 @@ namespace MonsterTrain2Poju.Model
                 if (target.Has("untouchable")) damage = 0;
                 if (actor != null && context?.Statistics != null)
                     context = context.WithStatistics(context.Statistics.WithLastAttackDamage(checked(damage + blocked)));
-                target.Health = Math.Max(0, target.Health - damage);
+                // Native fixes damage and resulting HP before firing the pre-damage
+                // callback. Healing, armor or attack changes there do not recalculate it.
+                int resultingHealth = Math.Max(0, target.Health - damage);
+                if (direct && actor != null && actor != target)
+                    FireTriggers(actor, "OnAttackingBeforeDamage", overrideTarget: target);
+                if (unsupportedReason != null) return;
+                target.Health = resultingHealth;
                 if (!source.Preview && !target.Alive && target.Source.EndsBattleOnDeath)
                 { battleWon = true; context = context?.WithBossesDead(); }
                 Emit(kind, actor, target, damage);
+                if (direct && actor != null && actor != target)
+                    FireTriggers(actor, "OnAttacking", overrideTarget: target);
                 // Native queues Slay before lifesteal and retaliation, for every damage type
                 // with a character attacker, including damage from a character effect.
-                if (actor != null && !actor.Despawned && !target.Alive) FireTriggers(actor, "OnKill");
+                if (actor != null && !actor.Despawned && !actor.Removed && !target.Alive) FireTriggers(actor, "OnKill");
                 // Native lifesteal heals by unmodified attack, even against armor; it happens before spikes.
                 // A dying sweep attacker has not been destroyed yet: its remaining
                 // attacks still consume lifesteal, while Heal itself refuses revival.
-                if (direct && actor != null && !actor.Despawned && actor.Has("lifesteal") && raw > 0)
+                if (direct && actor != null && !actor.Despawned && !actor.Removed && actor.Has("lifesteal") && raw > 0)
                 {
                     Trigger(actor, "lifesteal", 1);
                     Heal(actor, raw, "Lifesteal");
@@ -851,6 +878,7 @@ namespace MonsterTrain2Poju.Model
                     else FireTriggers(target, "OnDeath");
                 }
                 if (!source.Preview && !deferReturn && !DeferSpawner(target)) SettleDeadSpawner(target);
+                if (!deferRemoval) target.Removed = true;
             }
 
             private void SettleDeadSpawner(WorkingUnit unit)
@@ -936,15 +964,16 @@ namespace MonsterTrain2Poju.Model
                 FireTriggers(unit, "OnHeal", paramInt: unit.Health - old);
             }
 
-            private void FireTriggers(WorkingUnit unit, string kind, bool canFireTriggers = true, bool fromQueue = false, int paramInt = 0)
+            private void FireTriggers(WorkingUnit unit, string kind, bool canFireTriggers = true, bool fromQueue = false, int paramInt = 0,
+                WorkingUnit? overrideTarget = null)
             {
                 if (!fromQueue && enqueueCharacterTrigger != null)
-                { enqueueCharacterTrigger(new QueuedCharacterTrigger(source.RoomIndex, unit.Freeze(), kind, paramInt: paramInt)); return; }
+                { enqueueCharacterTrigger(new QueuedCharacterTrigger(source.RoomIndex, unit.Freeze(), kind, paramInt: paramInt, overrideTarget: overrideTarget?.Freeze())); return; }
                 if (!fromQueue && runningTriggerQueue)
-                { triggerQueue.Enqueue((unit, kind, canFireTriggers, paramInt)); return; }
+                { triggerQueue.Enqueue((unit, kind, canFireTriggers, paramInt, overrideTarget)); return; }
                 bool startedQueue = !runningTriggerQueue;
                 runningTriggerQueue = true;
-                ExecuteTriggers(unit, kind, canFireTriggers, paramInt);
+                ExecuteTriggers(unit, kind, canFireTriggers, paramInt, overrideTarget);
                 if (!startedQueue) return;
                 DrainLocalTriggerQueue();
             }
@@ -955,7 +984,7 @@ namespace MonsterTrain2Poju.Model
                 while (triggerQueue.Count > 0 && unsupportedReason == null)
                 {
                     var queued = triggerQueue.Dequeue();
-                    ExecuteTriggers(queued.Unit, queued.Kind, queued.CanFire, queued.ParamInt);
+                    ExecuteTriggers(queued.Unit, queued.Kind, queued.CanFire, queued.ParamInt, queued.OverrideTarget);
                 }
                 var removing = deferredDamageDeaths.OrderBy(dead => dead.Unit.Source.Team).ThenBy(dead => dead.Unit.Source.Id).ToArray();
                 deferredDamageDeaths.Clear();
@@ -964,10 +993,11 @@ namespace MonsterTrain2Poju.Model
                 {
                     FireTriggers(dead.Unit, "OnDeath");
                     if (dead.Return) SettleDeadSpawner(dead.Unit);
+                    dead.Unit.Removed = true;
                 }
             }
 
-            private void ExecuteTriggers(WorkingUnit unit, string kind, bool canFireTriggers, int paramInt)
+            private void ExecuteTriggers(WorkingUnit unit, string kind, bool canFireTriggers, int paramInt, WorkingUnit? overrideTarget)
             {
                 if (kind == "OnDeath" && unit.Despawned) return;
                 if (!unit.Alive && kind != "OnDeath" && (unit.Source.IsBoss == true || unit.Source.EndsBattleOnDeath)) return;
@@ -979,24 +1009,26 @@ namespace MonsterTrain2Poju.Model
                         source.Deployment && trigger.SkipDuringDeployment == true ||
                         !canFireTriggers && !trigger.IgnoreSilence ||
                         unit.Has("silenced") && !trigger.IgnoreSilence) continue;
-                    if (!ActionTriggerPassesTest(unit, trigger)) continue;
+                    // Removed native characters have no spawn point and skip trigger
+                    // preflight, though their once flag can still be marked before abort.
+                    if (!unit.Removed && !ActionTriggerPassesTest(unit, trigger)) continue;
                     var effects = trigger.Effects.ToArray();
                     // Native marks the trigger before its effects; nested death effects observe it.
                     unit.Triggers[index] = trigger.Fired(effects);
                     for (int fire = 0; fire < trigger.FireCount; fire++)
                     {
-                        if (!unit.Alive && kind != "OnDeath" && kind != "OnHit" && kind != "OnKill") break;
+                        if (!unit.Alive && kind != "OnDeath" && kind != "OnHit" && kind != "OnKill") return;
                         for (int effectIndex = 0; effectIndex < effects.Length; effectIndex++)
                         {
                             effects = unit.Triggers[index].Effects.ToArray();
                             CombatEffect effect = effects[effectIndex];
                             if (effect.Action != null)
                             {
-                                if (!ApplyTriggeredAction(unit, effect)) break;
+                                if (!ApplyTriggeredAction(unit, effect, overrideTarget)) break;
                             }
                             else if (effect.UnitUpgrade != null)
                             {
-                                if (!ApplyTriggeredUpgrade(unit, effect.UnitUpgrade, kind)) break;
+                                if (!ApplyTriggeredUpgrade(unit, effect.UnitUpgrade, kind, overrideTarget)) break;
                             }
                             else if (effect.Type == "CardEffectDespawnCharacter")
                             {
@@ -1055,8 +1087,19 @@ namespace MonsterTrain2Poju.Model
                 return true;
             }
 
-            private CardTargets TriggerTargets(WorkingUnit actor, CardActionEffect action, bool testing)
+            private CardTargets TriggerTargets(WorkingUnit actor, CardActionEffect action, bool testing, WorkingUnit? overrideTarget = null)
             {
+                if (action.Target == "LastAttackedCharacter")
+                {
+                    // The override bypasses every team/status/health/subtype/boss filter,
+                    // including for a retained dying victim. Trigger preflight has no override.
+                    if (overrideTarget != null) return new CardTargets(new[] { overrideTarget.Source.Id });
+                    WorkingUnit[] candidates = units.Where(unit => !unit.Removed &&
+                        (unit.Source.Team == CombatTeam.Enemy ? action.AllowEnemy : action.AllowPlayer)).OrderBy(unit => unit.Source.Team).ToArray();
+                    if (candidates.Any(unit => !unit.LastAttackerId.HasValue))
+                        return new CardTargets(Array.Empty<int>(), "Last-attacked targeting requires captured attacker relationships.");
+                    return new CardTargets(candidates.Where(unit => unit.LastAttackerId == actor.Source.Id).Select(unit => unit.Source.Id).ToArray());
+                }
                 if (action.Target != "Self") return CardTargetModel.Collect(CurrentRoom(), action, Array.Empty<int>(), isTesting: testing || source.Preview);
                 // Native Self bypasses team, health, status, subtype and untouchable filters.
                 if (action.Filters?.IgnoreBosses == true)
@@ -1091,18 +1134,18 @@ namespace MonsterTrain2Poju.Model
                 return passed;
             }
 
-            private bool ApplyTriggeredUpgrade(WorkingUnit actor, CardActionEffect action, string kind)
+            private bool ApplyTriggeredUpgrade(WorkingUnit actor, CardActionEffect action, string kind, WorkingUnit? overrideTarget)
             {
-                CardTargets tested = TriggerTargets(actor, action, testing: true);
+                CardTargets tested = TriggerTargets(actor, action, testing: true, overrideTarget);
                 if (!tested.Supported) { unsupportedReason = tested.UnsupportedReason; return false; }
                 if (action.Type != "RemoveUnitUpgrade" && tested.UnitIds.Count == 0)
                     return action.Tests?.CancelSubsequent != true;
-                CardTargets targets = TriggerTargets(actor, action, testing: false);
+                CardTargets targets = TriggerTargets(actor, action, testing: false, overrideTarget);
                 if (!targets.Supported) { unsupportedReason = targets.UnsupportedReason; return false; }
                 if (targets.BattleRng.HasValue) context = context!.WithBattleRng(targets.BattleRng.Value);
                 foreach (int targetId in targets.UnitIds)
                 {
-                    WorkingUnit? target = units.FirstOrDefault(unit => unit.Source.Id == targetId && (unit.Alive || action.Target == "Self" && unit == actor));
+                    WorkingUnit? target = units.FirstOrDefault(unit => unit.Source.Id == targetId && (unit.Alive || action.Target == "Self" && unit == actor || action.Target == "LastAttackedCharacter"));
                     if (target == null) continue;
                     if (!ApplyUpgrade(target, action.Upgrade!, action.Lifetime, action.Type == "RemoveUnitUpgrade",
                         null, actor.Source.SpawnerCardId, kind)) return false;
@@ -1125,13 +1168,13 @@ namespace MonsterTrain2Poju.Model
 
             private int TestActionAmount(CardActionEffect action) => action.Type == "Damage" ? SampleActionAmount(action) : action.Value;
 
-            private bool ApplyTriggeredAction(WorkingUnit actor, CombatEffect effect)
+            private bool ApplyTriggeredAction(WorkingUnit actor, CombatEffect effect, WorkingUnit? overrideTarget)
             {
                 CardActionEffect action = effect.Action!;
-                CardTargets tested = TriggerTargets(actor, action, testing: true);
+                CardTargets tested = TriggerTargets(actor, action, testing: true, overrideTarget);
                 if (!tested.Supported) { unsupportedReason = tested.UnsupportedReason; return false; }
                 if (!ActionTestValid(action, tested, TestActionAmount(action))) return action.Tests?.CancelSubsequent != true;
-                CardTargets targets = TriggerTargets(actor, action, testing: false);
+                CardTargets targets = TriggerTargets(actor, action, testing: false, overrideTarget);
                 if (!targets.Supported) { unsupportedReason = targets.UnsupportedReason; return false; }
                 if (targets.BattleRng.HasValue) context = context!.WithBattleRng(targets.BattleRng.Value);
                 int amount = SampleActionAmount(action);
@@ -1145,7 +1188,7 @@ namespace MonsterTrain2Poju.Model
                     if (action.Type == "Heal") Heal(target, amount, "TriggeredHeal");
                     // Effect-state parameters have no parent card, but CharacterState.ApplyEffects
                     // passes the spawner as playedCard for damage traits and death attribution.
-                    else if (target.Alive) Damage(actor, target, amount, "TriggeredDamage", actor.Source.SpawnerCardId);
+                    else if (target.Alive && !target.Removed) Damage(actor, target, amount, "TriggeredDamage", actor.Source.SpawnerCardId);
                 }
                 return true;
             }
@@ -1193,6 +1236,7 @@ namespace MonsterTrain2Poju.Model
                 {
                     text.Append(unit.Source.Id).Append(':').Append(unit.Health).Append(':').Append(unit.Source.BaseAttack)
                         .Append(':').Append(unit.Source.MaxHealth).Append(':').Append(unit.Source.Size).Append(':');
+                    text.Append(unit.LastAttackerId).Append(':').Append(unit.Removed).Append(':');
                     if (unit.Source.Modifiers != null)
                     {
                         UnitModifiers modifiers = unit.Source.Modifiers;

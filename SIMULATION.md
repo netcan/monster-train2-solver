@@ -1579,6 +1579,60 @@ calibrations.
 Other combat triggers, equipment, relics, room effects, specialized bosses
 and resurrection still leave the full objective open.
 
+Schema 41 adds `-AttackTriggers`, ordered native attacking observations and
+nullable `CombatUnit.LastAttackerId` relationship state. Direct attacks queue
+OnAttackingBeforeDamage after defenses and the resulting HP are computed,
+but before the HP update. Pre-damage armor cannot retroactively block that
+hit, pre-damage healing is overwritten by the cached HP, and attack changes
+affect later attacks. OnAttacking runs after HP changes, before Slay,
+lifesteal, retaliation and the victim's OnHit/death checks. Default effect
+damage and spikes do not recursively fire attacking triggers. Splash and
+trample generation remain unmodeled, although native uses these trigger kinds
+for those damage types too.
+
+Each queued attack callback retains its own victim override, including across
+sweep and dying victims. LastAttackedCharacter applies that override without
+team, health, status, subtype or boss filters. The separate trigger preflight
+has no override and finds all allowed-team units in the room whose recorded
+last attacker is the actor. These fallback victims also bypass other filters.
+Zero denotes known absence; null preserves legacy captures that lack this
+state and rejects fallback queries when they would need it. Damage updates
+the relationship, with card-only damage and Pyre attackers clearing it; unit
+copies, upgrades, spells and ascent preserve the relationship; new spawns
+start with no attacker.
+
+Ordinary dying attackers can mark a matching once flag, then abort the whole
+trigger dispatch before applying effects; subsequent triggers in that dispatch
+stay unmarked. Dead bosses skip the dispatch outright. The new attacking kinds
+supply threshold argument zero, so positive thresholds never pass. Native
+ProcessRemovals destroys removed character objects after next-turn statistics
+and before advancing the turn, clearing retained attacker references. Terminal
+combat skips this phase and retains those references. Room stages keep them
+until that actual destruction boundary.
+
+`tests/fixtures/full-battle-attack-triggers.json.gz` retains the unchanged
+native battle: 21 plays, 7 EndTurns, 53 room stages, 11 spawns, 13 train phases,
+13 card cycles, 46 independently reproduced unit turns and 2 sweeps. Its
+104 queue/fire observations contain 52 compared dispatches, split 26 before
+and 26 after damage, with 10 queued target overrides, 10 dying aborts,
+5 positive-threshold skips, 11 once skips and 3 silence gates. All 85 upgrade
+snapshots complete; 17 dying target/source contexts are independently compared.
+Initial/mid-battle policies and 16 parallel branches reproduce victory with
+final Pyre health 80. Pure checks include 32 parallel branches, cached damage
+and HP, late armor/healing, nested damage, target filter bypass, victim history,
+cross-floor live references, destruction, dying victims/actors and Pyre routing.
+
+The game is 2.2.1, module MVID `8fb07b96-f4db-4d2b-884d-c00536d6ccf4`.
+Raw JSON is 439,091,767 bytes, SHA-256
+`6d4e7d32a46c97642b4d57e9cc093a900f16ccf5bdce60d34badc12f7211706b`;
+the byte-identical gzip is 11,959,789 bytes. Native capture failures,
+mismatches, unsupported phases and pending records are zero; original
+profile files are unchanged and the isolated game is automatically muted.
+The complete curated check script passes all 54 battle fixtures and 8
+calibrations.
+Further trigger kinds, statuses, equipment, relics, room effects, specialized
+bosses and resurrection still leave the full objective open.
+
 Schema 24 captures ordered `CardTraitScalingAddStatusEffect` descriptors on
 immutable card instances and generated-card rules, plus the native stackability
 of status definitions. A status application's immunity check precedes its source
