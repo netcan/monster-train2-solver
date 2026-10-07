@@ -79,8 +79,20 @@ while preserving ordinary base triggers. A base equipped-only removal trigger
 also retains its condition after the final equipment disappears. Its 25 actual
 equipment operations compare in 32 parallel branches; the complete 19-play,
 seven-EndTurn policy compares from initial and mid-battle roots with 16 parallel
-branches. Trigger-list mutation by a running upgrade effect, immediate moon
-phase triggers and equipment-granted abilities remain separate work.
+branches. Detached bonus-draw effect identity, immediate moon phase triggers
+and equipment-granted abilities remain separate work.
+
+`full-battle-trigger-mutation.mt2f` retains schema 57. Three native PreCombat
+API cases exercise appended triggers firing in the same iteration, removal of
+an earlier trigger skipping the next shifted item, and a self-removed trigger
+finishing its remaining effects while its removed sibling never fires. These
+deployment-turn tests author the balance timing list to permit PreCombat;
+the game's original Boss and enemy waves remain intact. Raw upgrade IDs
+also distinguish direct API keys from unit-effect upgrade definition IDs.
+All three room/context states compare independently in 32 parallel branches;
+the subsequent 20-play, seven-EndTurn policy compares from initial and actual
+mid-battle roots in 16 parallel branches. Internal immutable trigger identity
+is preserved through copies without entering the binary fixture schema.
 
 `full-battle-room-capacity.mt2f` and `full-battle-room-capacity-lethal.mt2f`
 retain schema 52 battles with live capacities used by subsequent summons and

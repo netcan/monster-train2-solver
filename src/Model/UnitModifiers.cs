@@ -56,6 +56,7 @@ namespace MonsterTrain2Poju.Model
                 return Unsupported("Unit upgrades require unit and card instance modifier state.");
             roomCapacity = RoomCapacityModel.Maximum(source.Context, source.RoomIndex, target.Team) ?? roomCapacity;
             if (upgrade.ExternalInteractions.Count > 0) return Unsupported(string.Join("; ", upgrade.ExternalInteractions));
+            if (!directApi) upgradeId = upgrade.DataId;
             if (equipmentSourceCardId < 0 || equipmentSourceCardId > 0 && source.Context.FindCard(equipmentSourceCardId) == null)
                 return Unsupported("Missing equipment trigger source.");
             if (!remove && !new[] { "TemporaryUntilEndOfBattle", "TemporaryUntilUnitDeath", "Permanent" }.Contains(lifetime))

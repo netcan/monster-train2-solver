@@ -1,5 +1,6 @@
 using System.Text.Json;
 using MonsterTrain2Poju.Model;
+using MonsterTrain2Poju.Fixtures;
 
 internal static class TriggerUpgradeChecks
 {
@@ -43,4 +44,41 @@ internal static class TriggerUpgradeChecks
         Console.WriteLine("TRIGGER-UPGRADE-CHECKS PASS: attributed/empty removal, base trigger preservation, equipped condition, preview, spawner inheritance and 32 parallel branches.");
     }
     private static void Require(bool passed, string message) { if (!passed) throw new InvalidOperationException(message); }
+    internal static void Native(FixtureValue fixture)
+    {
+        if (!fixture.TryGetProperty("TriggerMutations", out var records)) return;
+        var samples = records.EnumerateArray().ToArray();
+        foreach (var sample in samples) Verify(sample);
+        if (fixture.GetProperty("ModifierScenario").GetString() != "trigger-mutation") return;
+        Require(samples.Length == 3 && samples.Select(sample => sample.GetProperty("Label").GetString()).ToHashSet()
+            .SetEquals(["append-same-phase", "remove-earlier-skips-next", "self-removal-finishes-effects"]), "Missing native trigger mutation cases.");
+        var cases = samples.ToDictionary(sample => sample.GetProperty("Label").GetString()!);
+        CombatUnit Host(FixtureValue sample, string field) => sample.GetProperty(field).Deserialize<RoomCombatState>()!.Units
+            .Single(unit => unit.Id == sample.GetProperty("UnitId").GetInt32());
+        var append = cases["append-same-phase"];
+        Require(Host(append, "After").Triggers.Count == Host(append, "Before").Triggers.Count + 1 &&
+            Host(append, "After").Triggers.Last().HasTriggered && Host(append, "After").Triggers.Last().Origin!.UpgradeId.EndsWith("000000000001"),
+            "A newly appended same-phase trigger did not fire with its native definition ID.");
+        var shifted = Host(cases["remove-earlier-skips-next"], "After");
+        Require(shifted.Triggers.Count == 3 && shifted.Triggers[0].HasTriggered && !shifted.Triggers[1].HasTriggered && shifted.Triggers[2].HasTriggered,
+            "Native list shifting did not skip the next trigger while retaining the running trigger's effects.");
+        var self = cases["self-removal-finishes-effects"];
+        var before = self.GetProperty("Before").Deserialize<RoomCombatState>()!;
+        var after = self.GetProperty("After").Deserialize<RoomCombatState>()!;
+        Require(Host(self, "After").Triggers.Count == 0 && after.Context!.Gold - before.Context!.Gold == 10,
+            "A removed trigger did not finish its own effects or incorrectly executed its removed sibling.");
+        Parallel.For(0, 32, _ => { foreach (var sample in samples) Verify(sample); });
+        Console.WriteLine("NATIVE-TRIGGER-MUTATION-CHECKS PASS: three independently compared append, shifted-index and detached-running transitions in 32 parallel branches.");
+    }
+    private static void Verify(FixtureValue sample)
+    {
+        var before = sample.GetProperty("Before").Deserialize<RoomCombatState>()!;
+        var after = sample.GetProperty("After").Deserialize<RoomCombatState>()!;
+        string parent = JsonSerializer.Serialize(before, ModelJson.Options);
+        var result = RoomCombatModel.ApplyPreCombat(before, sample.GetProperty("UnitId").GetInt32());
+        Require(result.Supported, "Native trigger mutation unsupported: " + result.UnsupportedReason);
+        string? difference = ModelJson.Difference(JsonSerializer.Serialize(result.State, ModelJson.Options), JsonSerializer.Serialize(after, ModelJson.Options));
+        Require(difference == null, sample.GetProperty("Label").GetString() + ": " + difference);
+        Require(JsonSerializer.Serialize(before, ModelJson.Options) == parent, "Trigger mutation changed its parent.");
+    }
 }

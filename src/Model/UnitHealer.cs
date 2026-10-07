@@ -18,8 +18,7 @@ namespace MonsterTrain2Poju.Model
                 {
                     CombatEffect effect = trigger.Effects[effectIndex]; if (effect.Type != "CardEffectHeal") continue;
                     var effects = trigger.Effects.ToArray(); effects[effectIndex] = effect.WithActionValue(Math.Max(0, unchecked(effect.Value + delta)));
-                    var changed = triggers.ToArray(); changed[index] = new CombatTrigger(trigger.Kind, trigger.Once, trigger.HasTriggered,
-                        trigger.IgnoreSilence, trigger.FireCount, effects, trigger.SkipDuringDeployment, trigger.TriggerAtThreshold, trigger.Origin); return changed;
+                    var changed = triggers.ToArray(); changed[index] = trigger.WithEffects(effects); return changed;
                 }
             }
             return triggers;

@@ -533,8 +533,6 @@ namespace MonsterTrain2Poju.Model
                                 return "Triggered unit upgrades require unit and card modifier state.";
                             if (action.Upgrade.ExternalInteractions.Count > 0)
                                 return string.Join("; ", action.Upgrade.ExternalInteractions);
-                            if (action.Upgrade.TriggerUpgrades?.Count > 0)
-                                return "Triggered upgrades that mutate the running trigger list require retained trigger identity.";
                             if (action.Upgrade.RestrictSizeToRoomCapacity && state.Context?.RoomCapacities == null)
                                 return "Triggered size restrictions require room capacity state.";
                             if (action.Target != "Self" && !new[] { "Room", "FrontInRoom", "BackInRoom", "Weakest", "RoomHealTargets", "RandomInRoom", "LastAttackedCharacter" }.Contains(action.Target))
@@ -1253,17 +1251,28 @@ namespace MonsterTrain2Poju.Model
                     if (unit.InRoom && !unit.Removed && !ActionTriggerPassesTest(unit, trigger)) continue;
                     var effects = trigger.Effects.ToArray();
                     // Native marks the trigger before its effects; nested death effects observe it.
-                    unit.Triggers[index] = trigger.Fired(effects);
+                    CombatTrigger retained = trigger.Fired(effects);
+                    unit.Triggers[index] = retained;
+                    int LiveIndex() => unit.Triggers.FindIndex(item => ReferenceEquals(item.Identity, retained.Identity));
+                    void Store(CombatTrigger changed)
+                    {
+                        int live = LiveIndex(); retained = changed;
+                        if (live >= 0) unit.Triggers[live] = retained;
+                    }
                     for (int fire = 0; fire < trigger.FireCount; fire++)
                     {
                         if (!unit.Alive && kind != "OnDeath" && kind != "OnHit" && kind != "OnKill") return;
                         for (int effectIndex = 0; effectIndex < effects.Length; effectIndex++)
                         {
-                            effects = unit.Triggers[index].Effects.ToArray();
+                            int live = LiveIndex();
+                            if (live >= 0) retained = unit.Triggers[live];
+                            effects = retained.Effects.ToArray();
                             CombatEffect effect = effects[effectIndex];
                             if (effect.Action != null)
                             {
-                                if (!ApplyTriggeredAction(unit, effect, overrideTarget, index, effectIndex)) break;
+                                if (live < 0 && effect.Action.Type == "DrawNextTurn")
+                                { unsupportedReason = "Detached bonus-draw trigger source requires persistent effect identity."; break; }
+                                if (!ApplyTriggeredAction(unit, effect, overrideTarget, live < 0 ? index : live, effectIndex)) break;
                             }
                             else if (effect.UnitUpgrade != null)
                             {
@@ -1273,7 +1282,7 @@ namespace MonsterTrain2Poju.Model
                             {
                                 int remaining = effect.Counter - 1;
                                 effects[effectIndex] = effect.WithCounter(remaining);
-                                unit.Triggers[index] = trigger.Fired(effects);
+                                Store(retained.Fired(effects));
                                 if (remaining <= 0 && unit.Alive)
                                 {
                                     unit.Despawned = true; unit.Health = 0; Emit("Despawn", unit, unit, 0);
@@ -1297,7 +1306,10 @@ namespace MonsterTrain2Poju.Model
                         }
                         context = context?.AfterCardEffects();
                     }
-                    unit.Triggers[index] = trigger.Fired(unit.Triggers[index].Effects);
+                    // The native local trigger object keeps resolving after list removal.
+                    // Advancing the original index still observes list shifts and appends.
+                    int remainingTriggerIndex = LiveIndex();
+                    if (remainingTriggerIndex >= 0) Store(unit.Triggers[remainingTriggerIndex].Fired(unit.Triggers[remainingTriggerIndex].Effects));
                 }
             }
 

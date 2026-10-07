@@ -2734,3 +2734,56 @@ equipment fixtures pass the final independent checker. The expanded 81-file
 inventory and SHA-256 verification pass, as does probe-script parsing. Probe
 builds with zero warnings/errors; ModelChecks retains its 12 existing nullable
 warnings and has no errors. No JSON source fixture is introduced.
+
+## Retained trigger execution during live list mutation
+
+Native CharacterState.FireTriggers iterates the mutable trigger list by index
+while retaining the current CharacterTriggerState locally. A newly appended
+matching trigger can fire during the same iteration. Removing an earlier entry
+shifts the list and the next increment can skip a trigger. Removing the current
+trigger does not cancel its remaining effects; removed siblings do not fire.
+
+CombatTrigger now carries a private immutable identity token. Fired flags,
+preview resets and healer effect updates preserve that token, while newly
+granted triggers receive fresh identities. The engine finds the retained
+trigger after immutable unit copies and list changes rather than reusing its
+old index. Removed triggers continue their local effects without writing their
+state onto a different list entry. The outer index still advances exactly as
+in the game. Tokens are not serialized and introduce no mutable state shared
+between parallel branches.
+
+The native unit upgrade effects pass their upgrade definition ID to both
+ApplyCardUpgrade and RemoveCardUpgrade. UnitModifierModel now uses that ID for
+effect-driven trigger additions/removals while preserving caller-supplied keys
+for the direct API and definition IDs for equipment. The previous blanket
+rejection of running-list mutation is removed. A detached running bonus-draw
+effect still fails closed because its counter projection needs persistent
+effect identity, separately from the trigger identity modeled here.
+
+`-TriggerMutation` authors three direct PreCombat cases on a normally summoned
+Steward: a parent grants a same-phase child, a running trigger removes an
+earlier OnHeal entry, and a running trigger removes itself plus its sibling but
+then awards gold. An acyclic removal descriptor shares the installed upgrade's
+definition ID, avoiding synthetic cyclic source data. Deployment-turn API
+testing explicitly permits PreCombat in the in-memory balance timing list;
+the original Boss and waves are unchanged. Every before/after state is
+captured from the native coroutine and independently compared.
+
+`tests/fixtures/full-battle-trigger-mutation.mt2f` stores 4,595 nodes in 27,669
+bytes, schema 57 on game 2.2.1 with the unchanged module MVID. The muted Instant
+native run takes 45.56 seconds and wins at Pyre 73 after 20 plays and seven
+EndTurns. All 60 room stages, 13 card cycles, 14 train phases, 11 spawns and
+three mutation cases have zero capture failures, differences, unsupported or
+pending records; original files are unchanged. Independent mutation cases
+repeat in 32 parallel branches, and the complete policy matches initial and
+actual mid-battle roots with 16 parallel branches. Equipment-trigger,
+effect-driven unit-upgrade and pre-combat historical fixtures also pass the
+targeted independent checker.
+
+The complete regression passes all 81 existing binary archives and all eight
+calibration suites. The new fixture passes the final independent checker,
+including 32 parallel mutation branches and the 16-branch complete policy.
+All 82 curated archives match the SHA-256 inventory, and probe-script parsing
+passes. Probe builds with zero warnings/errors; ModelChecks retains its 12
+existing nullable warnings and has no errors. No JSON source fixture is
+introduced.

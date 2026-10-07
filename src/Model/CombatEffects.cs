@@ -149,6 +149,9 @@ namespace MonsterTrain2Poju.Model
         public bool? SkipDuringDeployment { get; }
         public int? TriggerAtThreshold { get; }
         public CombatTriggerOrigin? Origin { get; }
+        // Immutable copies retain the native trigger object's identity inside an engine.
+        // This token is local to an in-memory branch and is never serialized.
+        internal object Identity { get; }
         public CombatTrigger(string kind, bool once, bool hasTriggered, bool ignoreSilence,
             int fireCount, IReadOnlyList<CombatEffect> effects, bool? skipDuringDeployment = null, int? triggerAtThreshold = null,
             CombatTriggerOrigin? origin = null)
@@ -157,10 +160,17 @@ namespace MonsterTrain2Poju.Model
             FireCount = fireCount; Effects = Array.AsReadOnly(effects.ToArray()); SkipDuringDeployment = skipDuringDeployment;
             TriggerAtThreshold = triggerAtThreshold;
             Origin = origin;
+            Identity = new object();
         }
-        internal CombatTrigger Fired(IReadOnlyList<CombatEffect> effects) => new CombatTrigger(Kind,
-            Once, true, IgnoreSilence, FireCount, effects, SkipDuringDeployment, TriggerAtThreshold, Origin);
-        internal CombatTrigger ForPreview() => new CombatTrigger(Kind, Once, false, IgnoreSilence, FireCount, Effects, SkipDuringDeployment, TriggerAtThreshold, Origin);
+        private CombatTrigger(CombatTrigger source, bool hasTriggered, IReadOnlyList<CombatEffect> effects)
+        {
+            Kind = source.Kind; Once = source.Once; HasTriggered = hasTriggered; IgnoreSilence = source.IgnoreSilence;
+            FireCount = source.FireCount; Effects = Array.AsReadOnly(effects.ToArray()); SkipDuringDeployment = source.SkipDuringDeployment;
+            TriggerAtThreshold = source.TriggerAtThreshold; Origin = source.Origin; Identity = source.Identity;
+        }
+        internal CombatTrigger Fired(IReadOnlyList<CombatEffect> effects) => new CombatTrigger(this, true, effects);
+        internal CombatTrigger ForPreview() => new CombatTrigger(this, false, Effects);
+        internal CombatTrigger WithEffects(IReadOnlyList<CombatEffect> effects) => new CombatTrigger(this, HasTriggered, effects);
         internal CombatTrigger WithOrigin(string upgradeId, int equipmentCardId) => new CombatTrigger(Kind, Once, false,
             IgnoreSilence, FireCount, Effects, SkipDuringDeployment, TriggerAtThreshold,
             new CombatTriggerOrigin(upgradeId, equipmentCardId, equipmentCardId > 0, Origin?.OnlyIfEquipped == true));
