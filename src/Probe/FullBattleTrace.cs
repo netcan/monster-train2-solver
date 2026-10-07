@@ -30,6 +30,14 @@ namespace MonsterTrain2Poju.Probe
         private readonly List<object> checkpoints = new List<object>();
         private int nextId = 1;
         private int phaseSequence;
+        private bool normalizeDestroyedAttacker;
+        internal T CaptureDecision<T>(Func<T> capture)
+        {
+            bool previous = normalizeDestroyedAttacker;
+            normalizeDestroyedAttacker = true;
+            try { return capture(); }
+            finally { normalizeDestroyedAttacker = previous; }
+        }
         internal int NextPhaseSequence() => ++phaseSequence;
         internal TrainCombatState CaptureTrain() => trainCombat.Capture();
         internal int NextUnitId => nextId;
@@ -140,6 +148,7 @@ namespace MonsterTrain2Poju.Probe
             interactions ??= new List<string>();
             HeroManager heroes = AllGameManagers.Instance!.GetHeroManager()!;
             int id = UnitId(character);
+            CharacterState? lastAttacker = character.GetLastAttackerCharacter();
             CombatTrigger[] triggers = CaptureTriggers(character, interactions);
             if (character.IsPurified()) interactions.Add("Purified unit trigger restrictions");
             if (character.GetRoomStateModifiers().Count > 0)
@@ -175,7 +184,7 @@ namespace MonsterTrain2Poju.Probe
                 card == null ? 0 : projection.CaptureCards(new List<CardState> { card })[0].InstanceId, character.GetSize(),
                 ((List<string>)AccessTools.Field(typeof(CharacterState), "statusEffectImmunities").GetValue(character)).ToArray(),
                 character.GetSubtypes().Select(subtype => subtype.Key).ToArray(), UnitModifierProbe.Capture(character), character.IsAnyBoss(),
-                character.GetLastAttackerCharacter() == null ? 0 : UnitId(character.GetLastAttackerCharacter()), statuses);
+                lastAttacker == null || normalizeDestroyedAttacker && lastAttacker.IsDestroyed ? 0 : UnitId(lastAttacker), statuses);
         }
 
         internal CombatContext CaptureContext()

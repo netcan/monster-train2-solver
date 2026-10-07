@@ -2213,3 +2213,13 @@ or `OnDeath` dispatch. The previous model overcounted its death reward by 5.
 The corrected room, unit turn and full EndTurn states match the native capture.
 Core checks cover both combat entry points and retain the existing nested
 terminal-death and detached-source upgrade checks.
+
+## Destroyed attacker references at the next decision
+
+Native character destruction is deferred until the end of a Unity frame.
+When an EndTurn callback completes, a dying object's `IsDestroyed` state can
+already be final while Unity's null comparison still returns its old reference.
+Decision capture now writes that attacker reference as zero. Room stages and
+in-flight effect/callback captures keep their references until their own native
+boundaries. The extended native probe confirms the next-turn state and both
+intermediate room snapshots, without waiting for an animation or a new frame.

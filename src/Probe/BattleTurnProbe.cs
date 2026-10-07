@@ -87,7 +87,7 @@ namespace MonsterTrain2Poju.Probe
             if (record == null) return;
             try
             {
-                record.Actual = Capture(); record.ActualOutcome = outcome;
+                record.Actual = trace.CaptureDecision(Capture); record.ActualOutcome = outcome;
                 if (record.Predicted.Supported)
                 {
                     record.Difference = record.Predicted.Outcome != outcome ? "EndTurn outcome differs" :
