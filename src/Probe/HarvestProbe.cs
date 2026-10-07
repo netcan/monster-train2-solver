@@ -43,7 +43,7 @@ namespace MonsterTrain2Poju.Probe
                 room = actor.GetCurrentRoom() ?? AllGameManagers.Instance!.GetRoomManager()!.GetRoom(0);
             try
             {
-                record = new Record { Label = (HordeUpgradeScenario.Label ?? HordeDeathScenario.Label ?? HordeRemovalScenario.Label ?? HarvestScenario.Label) ?? "natural:" + kind, Kind = kind.ToString(),
+                record = new Record { Label = (DyingHordeUpgradeScenario.Label ?? HordeUpgradeScenario.Label ?? HordeDeathScenario.Label ?? HordeRemovalScenario.Label ?? HarvestScenario.Label) ?? "natural:" + kind, Kind = kind.ToString(),
                     ActorFinishedDying = actor.HasFinishedDying, ActorBeingRemoved = actor.IsBeingRemoved(),
                     CanFire = canFire, TriggerCount = triggerCount, ParamInt = data?.paramInt ?? 0, Before = trace.Capture(room), Actor = Unit(trace, actor),
                     Dying = dying == null ? null : Unit(trace, dying), RequiredStackCounts = actor.GetTriggers().Where(state => state.GetTrigger() == kind)
@@ -81,7 +81,7 @@ namespace MonsterTrain2Poju.Probe
             private static void Postfix(CharacterState __instance, CharacterTriggerData.Trigger trigger, CharacterState dyingCharacter,
                 CharacterState.FireTriggersData fireTriggersData, bool canFireTriggers, bool fromRunningTriggerQueue, int triggerCount, ref IEnumerator __result)
             {
-                if (fromRunningTriggerQueue && (HordeUpgradeScenario.Started || HarvestScenario.Started || HordeRemovalScenario.Started || HordeDeathScenario.Started) && FullBattleTrace.Active != null &&
+                if (fromRunningTriggerQueue && (DyingHordeUpgradeScenario.Started || HordeUpgradeScenario.Started || HarvestScenario.Started || HordeRemovalScenario.Started || HordeDeathScenario.Started) && FullBattleTrace.Active != null &&
                     !AllGameManagers.Instance!.GetSaveManager().PreviewMode && __instance.GetTriggers().Any(state => state.GetTrigger() == trigger &&
                         (trigger == CharacterTriggerData.Trigger.OnAnyHeroDeathOnFloor || trigger == CharacterTriggerData.Trigger.OnAnyMonsterDeathOnFloor || trigger == CharacterTriggerData.Trigger.OnAnyUnitDeathOnFloor || trigger == CharacterTriggerData.Trigger.OnDeath)))
                     __result = Observe(__result, __instance, dyingCharacter, trigger, fireTriggersData, canFireTriggers, triggerCount);

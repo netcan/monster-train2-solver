@@ -106,6 +106,7 @@ are copied immutable values; independent child states can run on worker threads.
 | Horde numerical primitives | `HordeStatModel` | 560 native raw-stat steps and 175 casualty boundaries, signed overflow, HP/stack caps and 32 branches |
 | Horde status changes and casualties | `HordeStatusModel`, status/spawn/damage/health transitions | Eight exact native operations, accepted queues and complete drains, zero/negative notifications, simulated deaths, troop thresholds and spawning cooldown gates; complete subsequent battle and parallel branches. Rally, merging and cloning remain incomplete |
 | Horde runtime unit upgrades | `UnitModifierModel` and `HordeStatusModel` | 16 exact API/queued operations, ordered healed/unhealed/attributed HP casualties, first-stack reset, raw final removal and lethal sacrifice; 40 death/Harvest phases, four paid spell chains and complete policies with parallel branches |
+| Dying Horde unit upgrades | `UnitModifierModel` and `HordeStatusModel` | Five complete deaths, seven dying upgrade/removal effects, 45 exact death/Harvest phases, accepted callback counts and source-card writes; ordinary/unhealed/attributed HP, early exits and 32 branches |
 | Status removal and Horde sacrifice | `StatusRemovalModel`, `CardSpellModel` and `RoomCombatModel` | Nine native API/effect/trigger operations, exact room/retained actor states, accepted queue counts, ordered death/Harvest dispatches, a real paid spell removing both teams and parallel branches; raw zero HP preserves orphan standby cards while sacrifice signals physical death and retains its responsible card |
 | Reentrant death signals and queued player sacrifice | `UnitDeathState`, `StatusRemovalModel` and `RoomCombatModel` | Three native operations, 45 exact death/Harvest phase states and complete dispatch order, 95 effect/retained-target states, pending versus cleared statistics listeners, spawner timing and parallel branches |
 | Physical death Harvest | `HarvestModel` and `RoomCombatModel` | Four native physical deaths and 31 exact dispatches; own-death children precede player/enemy groups, Hero/Monster/Unit kinds, Horde repetition, required dying statuses, silence and once flags; complete subsequent battle and parallel branches |
@@ -3944,3 +3945,62 @@ The final archive also passes its focused independent API/phase/effect and
 complete-policy checks. Probe builds with zero warnings/errors; ModelChecks has
 its 12 pre-existing nullable warnings. Both changed PowerShell scripts parse and
 git diff --check passes. The separate raw-attack correction is commit `c0e4c95`.
+
+
+## Dying Horde unit upgrades, schema 74
+
+A negative maximum-health upgrade on an already-dead Horde actor still settles
+its troop casualties. Native DebuffMaxHP distinguishes the actor's original life
+state: newly lethal loss invokes Sacrifice; an actor that was already dead takes
+the Horde settlement path instead. An additional HP step then exits the upgrade
+because its actor is dead. It keeps the partially installed numeric/applied-upgrade
+changes, skips later unhealed HP, triggers, abilities and statuses, and does not
+write a failed addition to the source card. The same early exit during upgrade
+removal preserves later unit fields, while the effect still clears matching
+source-card temporary upgrades.
+
+Attributed maximum-health ledgers now survive ordinary room, damage and effect
+transitions. Their nonnegative amounts and unique keys remain validated. Removing
+an upgrade by its ID consumes the associated HP in both direct API and effect
+paths, settles any troop casualty and clears that ledger entry before the dead
+actor's early exit. Previously only direct API removal admitted this state.
+
+`-DyingHordeUpgrades -Policy units-spells-and-junk` plays two real Stewards and
+spawns three copies of an ordinary enemy observer. It installs native self-targeted
+OnDeath upgrade effects, then applies five lethal native maximum-health debuffs.
+The cases cover ordinary negative HP, positive HP followed by negative unhealed
+HP, positive-HP upgrade removal, unhealed-HP removal and attributed-HP removal.
+Every dead two-troop actor settles to one troop without another physical death or
+revival. Two positive follow-ups also verify that the failed effect does not cancel
+the subsequent effect chain: the permanent follow-up writes to the retained
+player card, while a unit-death lifetime remains local to its corpse.
+
+Independent checks compare complete operation rooms/contexts, retained corpses,
+source-card metadata, actual dispatch order and each accepted callback count.
+They also compare seven effect boundaries and all 45 death/Harvest phase states,
+repeat those checks in 32 independent branches and preserve parent states. The
+background effect loop is held only during standalone calibration, as in schema
+73; the native death, status, upgrade and trigger implementations run normally.
+
+The final muted Instant run takes 69.48 seconds, wins at Pyre 53 and captures
+56 room stages, 13 card cycles, 14 train phases, 11 spawn stages, 19 card plays and
+seven EndTurns. Capture failures, mismatches, unsupported transitions and pending
+records are zero; original profile signatures remain unchanged. Complete initial
+and actual mid-battle policies match independently in 16 parallel branches. The
+accepted native archive `tests/fixtures/full-battle-dying-horde-upgrades.mt2f` is
+36,888 bytes / 6,137 unique nodes, has no source JSON, and has SHA-256
+`9539d9f350724766e138e717b86465585def7a07d7a84ad862ad09595e4f6dc8`.
+
+These recorded death callbacks start after the original statistics listener has
+settled. Upgrades executed while that original death signal is still pending
+need their own native coverage. Horde Rally/summon integration, merging, cloning,
+revival, additional statuses and broader equipment/relic/Boss callbacks remain
+in progress.
+
+The full 104-archive regression exits zero: 95 native battle archives and nine
+calibrations pass, including typed binary hydration, complete manifest/SHA-256
+integrity and independent action/room/train/turn/complete-policy comparisons.
+The affected seven-fixture regression and the new archive's focused checks also
+pass. Probe builds with zero warnings/errors; ModelChecks retains its 12 existing
+nullable warnings. Both changed PowerShell scripts parse, and git diff --check
+passes.

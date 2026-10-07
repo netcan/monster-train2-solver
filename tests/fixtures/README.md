@@ -325,3 +325,14 @@ Silence and explicit fire permission retain hidden-trigger behavior. Independent
 checks compare whole batches and each dispatch in 32 branches, then the seven-turn
 battle in 16 branches, winning at Pyre 68. The 26,319-byte archive contains 4,135
 unique nodes and no source JSON. Complete Horde status lifecycle remains pending.
+
+
+`full-battle-dying-horde-upgrades.mt2f` is a native schema-74 battle with five
+complete dying Horde operations, seven self-upgrade/removal effects and 45 exact
+death/Harvest phases. It covers ordinary/unhealed/attributed maximum-health loss
+on corpses, troop casualties, partial additions/removals, accepted queue counts,
+retained-card writes and positive follow-ups without revival. Mechanism checks
+repeat in 32 branches, and the complete 19-play/seven-EndTurn policy wins at Pyre
+53 from initial and actual mid-battle roots in 16 branches. The 36,888-byte archive
+contains 6,137 unique nodes and no source JSON. Pending-original-death-listener
+upgrades and broader Horde summoning/merging/cloning remain separate work.

@@ -437,6 +437,15 @@ namespace MonsterTrain2Poju.Probe
                     return;
                 }
             }
+            if (fullBattle && numericModifiersPrepared && modifierScenario == "dying-horde-upgrades")
+            {
+                if (DyingHordeUpgradeScenario.Error != null) throw new InvalidOperationException(DyingHordeUpgradeScenario.Error);
+                if (!DyingHordeUpgradeScenario.Completed)
+                {
+                    if (!DyingHordeUpgradeScenario.Started) DyingHordeUpgradeScenario.Start(managers, log);
+                    return;
+                }
+            }
             if (fullBattle && numericModifiersPrepared && modifierScenario == "horde-upgrades")
             {
                 if (HordeUpgradeScenario.Error != null) throw new InvalidOperationException(HordeUpgradeScenario.Error);
@@ -491,7 +500,7 @@ namespace MonsterTrain2Poju.Probe
                     return;
                 }
             }
-            if (fullBattle && !numericModifiersPrepared && (modifierScenario == "horde-upgrades" || modifierScenario == "horde-death" || modifierScenario == "horde-removal" || modifierScenario == "harvest-triggers" || modifierScenario == "horde-statuses" || modifierScenario == "ability-effects" || modifierScenario == "ability-lifecycle" || modifierScenario == "ability-activation" || modifierScenario == "ability-activation-x" || modifierScenario == "ability-activation-lethal" || modifierScenario == "ability-cooldown" || modifierScenario == "ability-cache" || modifierScenario == "sentry" || modifierScenario == "sentry-lethal" || modifierScenario == "companion-boss" || modifierScenario == "numeric-upgrades" || modifierScenario == "dynamic-upgrades" ||
+            if (fullBattle && !numericModifiersPrepared && (modifierScenario == "dying-horde-upgrades" || modifierScenario == "horde-upgrades" || modifierScenario == "horde-death" || modifierScenario == "horde-removal" || modifierScenario == "harvest-triggers" || modifierScenario == "horde-statuses" || modifierScenario == "ability-effects" || modifierScenario == "ability-lifecycle" || modifierScenario == "ability-activation" || modifierScenario == "ability-activation-x" || modifierScenario == "ability-activation-lethal" || modifierScenario == "ability-cooldown" || modifierScenario == "ability-cache" || modifierScenario == "sentry" || modifierScenario == "sentry-lethal" || modifierScenario == "companion-boss" || modifierScenario == "numeric-upgrades" || modifierScenario == "dynamic-upgrades" ||
                 modifierScenario == "sacrifice-upgrades" || modifierScenario == "hand-upgrades" || modifierScenario == "targeted-hand-upgrades" ||
                 modifierScenario == "healing" || modifierScenario == "healing-triggers" || modifierScenario == "room-spells" ||
                 modifierScenario == "terminal-spells" || modifierScenario == "post-kill-spells" || modifierScenario == "random-spells" ||
@@ -512,6 +521,7 @@ namespace MonsterTrain2Poju.Probe
                 else if (modifierScenario == "x-cost" || modifierScenario == "x-cost-lethal") CardCostScenario.Prepare(managers, log, modifierScenario == "x-cost-lethal");
                 else if (modifierScenario == "bonus-draw" || modifierScenario == "bonus-draw-lethal") BonusDrawScenario.Prepare(managers, log, modifierScenario == "bonus-draw-lethal");
                 else if (modifierScenario == "ability-activation" || modifierScenario == "ability-activation-x" || modifierScenario == "ability-activation-lethal") AbilityActivationScenario.Prepare(managers, log, modifierScenario == "ability-activation-x", modifierScenario == "ability-activation-lethal");
+                else if (modifierScenario == "dying-horde-upgrades") DyingHordeUpgradeScenario.Prepare(managers, log);
                 else if (modifierScenario == "horde-upgrades") HordeUpgradeScenario.Prepare(managers, log);
                 else if (modifierScenario == "horde-death") HordeDeathScenario.Prepare(managers, log);
                 else if (modifierScenario == "horde-removal") HordeRemovalScenario.Prepare(managers, log);

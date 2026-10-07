@@ -49,8 +49,7 @@ namespace MonsterTrain2Poju.Model
             string upgradeId = "", int? anonymousRemovalIndex = null, int equipmentSourceCardId = 0,
             bool deferAbilityCallbacks = false)
         {
-            string? error = RoomCombatModel.Validate(source, allowDyingTarget ? targetId : (int?)null,
-                directApi ? targetId : (int?)null);
+            string? error = RoomCombatModel.Validate(source, allowDyingTarget ? targetId : (int?)null);
             if (error != null) return Unsupported(error);
             CombatUnit? target = source.Units.FirstOrDefault(unit => unit.Id == targetId);
             if (target?.Modifiers == null || source.Context?.CardInstances == null)
@@ -80,8 +79,7 @@ namespace MonsterTrain2Poju.Model
                 if (status.Stacks <= 0) continue;
                 error = RoomCombatModel.Validate(new RoomCombatState(source.RoomIndex, source.Deployment,
                     new[] { CardSpellModel.Copy(target, target.Health, target.Statuses.Where(item => item.Id != status.Id).Concat(new[] { status }).ToArray()) },
-                    Array.Empty<string>(), source.Context), allowDyingTarget ? targetId : (int?)null,
-                    directApi ? targetId : (int?)null);
+                    Array.Empty<string>(), source.Context), allowDyingTarget ? targetId : (int?)null);
                 if (error != null) return Unsupported(error);
             }
             if (!remove && upgrade.RestrictSizeToRoomCapacity && upgrade.Stats.Size > 0)
@@ -135,7 +133,7 @@ namespace MonsterTrain2Poju.Model
                     partial = sign * upgrade.UnhealedHealth < 0 && health <= 0;
                 }
 
-                if (!partial && remove && directApi)
+                if (!partial && remove)
                 {
                     StatisticCount? associated = healthFromUpgrades.FirstOrDefault(item => item.Key == upgradeId);
                     if (associated != null)
@@ -175,7 +173,7 @@ namespace MonsterTrain2Poju.Model
                 {
                     error = RoomCombatModel.Validate(new RoomCombatState(state.RoomIndex, state.Deployment,
                         state.Units.Select(unit => unit.Id == targetId ? Snapshot() : unit).ToArray(), state.ExternalInteractions, state.Context, state.Preview),
-                        allowDyingTarget ? targetId : (int?)null, directApi ? targetId : (int?)null);
+                        allowDyingTarget ? targetId : (int?)null);
                     if (error != null) return Unsupported(error);
                 }
 
@@ -252,11 +250,12 @@ namespace MonsterTrain2Poju.Model
                 {
                     if (delta < 0)
                     {
+                        bool wasAlive = health > 0;
                         maxHealth = Math.Max(0, checked(maxHealth + delta));
                         health = decreaseHealth ? Math.Max(0, checked(health + delta)) : Math.Min(health, maxHealth);
-                        // Each native DebuffMaxHP settles nonlethal troop casualties before
-                        // the next HP step, trigger/ability upgrade and authored status.
-                        if (health > 0 && statuses.TryGetValue("horde", out CombatStatus? troops) && troops.Stacks > 1)
+                        // Newly lethal loss sacrifices the actor. Already-dying actors
+                        // still settle troop casualties before the upgrade's early exit.
+                        if ((!wasAlive || health > 0) && statuses.TryGetValue("horde", out CombatStatus? troops) && troops.Stacks > 1)
                         {
                             RoomCombatResult casualties = HordeStatusModel.SettleHealth(Stage(), targetId);
                             if (!casualties.Supported) { healthFailure = casualties; return; }

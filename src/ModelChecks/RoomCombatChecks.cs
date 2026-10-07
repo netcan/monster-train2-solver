@@ -191,6 +191,7 @@ internal static class RoomCombatChecks
         AbilityEffectChecks.Native(fixture);
         AbilityUpgradeChecks.Native(fixture);
         HordeUpgradeChecks.Native(fixture);
+        DyingHordeUpgradeChecks.Native(fixture);
         HordeStatusChecks.Native(fixture);
         HarvestChecks.Native(fixture);
         HordeRemovalChecks.Native(fixture);

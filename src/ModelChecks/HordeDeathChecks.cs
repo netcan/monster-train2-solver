@@ -67,7 +67,7 @@ internal static class HordeDeathChecks
         Console.WriteLine("NATIVE-HORDE-DEATH-CHECKS PASS: three complete death operations, " + phases.Length +
             " exact retained death/Harvest phases, pending signals, card returns and 32 branches.");
     }
-    private static void VerifyOperation(FixtureValue sample)
+    internal static void VerifyOperation(FixtureValue sample)
     {
         var before = sample.GetProperty("Before").Deserialize<RoomCombatState>()!; string parent = Serialize(before);
         int actorId = sample.GetProperty("ActorId").GetInt32();

@@ -14,6 +14,9 @@ namespace MonsterTrain2Poju.Probe
         internal sealed class Record
         {
             public int Sequence { get; set; }
+            public string Label { get; set; } = "";
+            public int QueueBefore { get; set; }
+            public int QueueAfter { get; set; }
             public string Kind { get; set; } = "";
             public int OwnerCardId { get; set; }
             public CardActionEffect Effect { get; set; } = null!;
@@ -24,15 +27,18 @@ namespace MonsterTrain2Poju.Probe
             public string[] Interactions { get; set; } = Array.Empty<string>();
             public bool Completed { get; set; }
         }
-        private static bool Enabled() => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") is "dying-upgrades" or "attack-triggers" &&
-            DyingUpgradeScenario.Prepared && FullBattleTrace.Active != null && !AllGameManagers.Instance!.GetSaveManager().PreviewMode;
+        private static bool Enabled() => FullBattleTrace.Active != null && !AllGameManagers.Instance!.GetSaveManager().PreviewMode &&
+            ((Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") is "dying-upgrades" or "attack-triggers" && DyingUpgradeScenario.Prepared) ||
+             (Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == "dying-horde-upgrades" && DyingHordeUpgradeScenario.Started));
+        private static int QueueCount() => ((ICollection)AccessTools.Property(typeof(CombatManager), "TriggerQueue")
+            .GetValue(AllGameManagers.Instance!.GetCombatManager())).Count;
         private static IEnumerator Wrap(IEnumerator native, CardEffectState effect, CardEffectParams parameters)
         {
             FullBattleTrace trace = FullBattleTrace.Active!;
             CharacterState[] targets = parameters.targets.ToArray();
             RoomState room = parameters.selfTarget!.GetCurrentRoom(allowLastKnownRoom: true) ?? AllGameManagers.Instance!.GetRoomManager()!.GetRoom(0);
             var interactions = new List<string>();
-            var record = new Record { Sequence = trace.NextPhaseSequence(), Kind = parameters.sourceCharacterTriggerState?.GetTrigger().ToString() ?? "",
+            var record = new Record { Sequence = trace.NextPhaseSequence(), Label = DyingHordeUpgradeScenario.Label ?? "", QueueBefore = QueueCount(), Kind = parameters.sourceCharacterTriggerState?.GetTrigger().ToString() ?? "",
                 OwnerCardId = parameters.playedCard == null ? 0 : trace.CardId(parameters.playedCard),
                 Effect = UnitTriggerUpgradeProbe.Capture(effect, interactions)!, Before = trace.Capture(room),
                 BeforeUnits = targets.Select(target => trace.CaptureUnit(target, interactions)).ToArray() };
@@ -40,7 +46,7 @@ namespace MonsterTrain2Poju.Probe
             try { while (native.MoveNext()) yield return native.Current; record.Completed = true; }
             finally
             {
-                (native as IDisposable)?.Dispose(); record.Actual = trace.Capture(room);
+                (native as IDisposable)?.Dispose(); record.QueueAfter = QueueCount(); record.Actual = trace.Capture(room);
                 record.ActualUnits = targets.Select(target => trace.CaptureUnit(target, interactions)).ToArray();
                 record.Interactions = interactions.Distinct().ToArray();
             }

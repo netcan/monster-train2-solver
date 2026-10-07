@@ -481,7 +481,7 @@ namespace MonsterTrain2Poju.Model
         internal static RoomCombatResult ApplyDirectUnitUpgrade(RoomCombatState state, int targetId, CardUpgradeModifier upgrade,
             bool remove, string upgradeId, int? anonymousRemovalIndex)
         {
-            string? error = Validate(state, attributedHealthTargetId: targetId);
+            string? error = Validate(state);
             if (error != null || !state.Units.Any(unit => unit.Id == targetId))
                 return new RoomCombatResult(null, RoomOutcome.Unsupported, 0, new List<CombatEvent>(), error ?? "Missing direct upgrade target.");
             var callbacks = new List<QueuedCharacterTrigger>();
@@ -528,7 +528,7 @@ namespace MonsterTrain2Poju.Model
             return engine.Run(entireRoom);
         }
 
-        internal static string? Validate(RoomCombatState state, int? dyingTargetId = null, int? attributedHealthTargetId = null)
+        internal static string? Validate(RoomCombatState state, int? dyingTargetId = null)
         {
             if (state.Context != null && AbilityCardModel.Validate(state.Context) is string cacheError) return cacheError;
             if (state.ExternalInteractions.Count > 0)
@@ -552,8 +552,7 @@ namespace MonsterTrain2Poju.Model
                     unit.Triggers.Select(trigger => trigger.StateId).Distinct().Count() != unit.Triggers.Count :
                     unit.Triggers.Any(trigger => trigger.StateId.HasValue))
                     return "Invalid persistent trigger identity allocation.";
-                if (unit.Modifiers != null && (unit.Modifiers.HealthFromUpgrades.Count > 0 && unit.Id != attributedHealthTargetId ||
-                    unit.Modifiers.Upgrades.Any(upgrade => upgrade.ExternalInteractions.Count > 0)))
+                if (unit.Modifiers != null && unit.Modifiers.Upgrades.Any(upgrade => upgrade.ExternalInteractions.Count > 0))
                     return "Unmodeled applied unit upgrade interactions.";
                 if (unit.Modifiers != null && (unit.Modifiers.HealthFromUpgrades.Any(item => item.Value < 0) ||
                     unit.Modifiers.HealthFromUpgrades.Select(item => item.Key).Distinct().Count() != unit.Modifiers.HealthFromUpgrades.Count))
