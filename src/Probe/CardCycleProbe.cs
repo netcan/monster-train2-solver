@@ -74,7 +74,7 @@ namespace MonsterTrain2Poju.Probe
             uint[] words = RngCalibration.Words(RandomManager.GetState(RngId.CardDraw));
             return new CardCycleState(state.Hand, state.Draw, state.Discard,
                 new UnityRng(words[0], words[1], words[2], words[3]), state.DrawModifier,
-                interactions.Distinct().OrderBy(value => value, StringComparer.Ordinal).ToArray());
+                interactions.Distinct().OrderBy(value => value, StringComparer.Ordinal).ToArray(), BonusDrawProbe.Capture(cards, FullBattleTrace.Active!));
         }
 
         private IEnumerator Wrap(IEnumerator native, CardManager cards, string kind, int handSize)
@@ -118,7 +118,7 @@ namespace MonsterTrain2Poju.Probe
         }
 
         private static JToken Comparable(CardCycleState state) => JToken.FromObject(new
-        { state.Hand, state.Draw, state.Discard, state.Rng, state.DrawModifier });
+        { state.Hand, state.Draw, state.Discard, state.Rng, state.DrawModifier, state.BonusDraw });
 
         private Record? BeginSpellDraw(CardManager cards, int count, CardState? playedCard, CardType cardType)
         {
@@ -128,7 +128,7 @@ namespace MonsterTrain2Poju.Probe
             CardCycleState before = Capture(cards, "SpellDraw");
             int id = FullBattleTrace.Active.CardId(playedCard);
             if (cardType != CardType.Invalid) before = new CardCycleState(before.Hand, before.Draw, before.Discard,
-                before.Rng, before.DrawModifier, before.ExternalInteractions.Concat(new[] { "Unmodeled typed draw" }).ToArray());
+                before.Rng, before.DrawModifier, before.ExternalInteractions.Concat(new[] { "Unmodeled typed draw" }).ToArray(), before.BonusDraw);
             var record = new Record { Index = records.Count, Turn = managers.GetCombatManager()!.GetTurnCount(), Kind = "SpellDraw",
                 HandSize = count, MaxHandSize = cards.GetMaxHandSize(), PlayedCardId = id, Before = before,
                 Predicted = CardCycleModel.DrawCards(before, count, cards.GetMaxHandSize(), id) };

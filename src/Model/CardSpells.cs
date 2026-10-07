@@ -176,6 +176,12 @@ namespace MonsterTrain2Poju.Model
                 UnityRng effectRng = state.Context!.BattleRng;
                 if (effect.Type != "DiscardHand" && effect.Type != "Generate") effect = Sample(effect, ref effectRng);
                 state = WithContext(state, state.Context.WithBattleRng(effectRng));
+                if (effect.Type == "DrawNextTurn")
+                {
+                    state = WithContext(state, state.Context!.WithCards(BonusDrawModel.Schedule(state.Context.Cards,
+                        BonusDrawState.CardKey(sourceCardId, index), effect.Value, effect.Upgrade)));
+                    continue;
+                }
                 if (EnergyModel.IsEffect(effect.Type))
                 {
                     state = WithContext(state, EnergyModel.Apply(state.Context!, effect.Type, effect.Value));
@@ -214,7 +220,9 @@ namespace MonsterTrain2Poju.Model
                     BattleStatistics? statistics = context.Statistics;
                     foreach (CardToken card in drawn.State!.Hand.Take(drawn.State.Hand.Count - context.Cards.Hand.Count).Reverse())
                         statistics = statistics?.Increment(card.InstanceId, "TimesDrawn");
-                    state = WithContext(state, context.WithCards(drawn.State).WithStatistics(statistics));
+                    context = BonusDrawModel.ApplyUpgrades(context.WithCards(drawn.State).WithStatistics(statistics), drawn, definitions, out string? bonusError);
+                    if (bonusError != null) return UnsupportedTrain(bonusError);
+                    state = WithContext(state, context);
                     continue;
                 }
                 if (effect.Type == "HandUpgrade")
@@ -430,7 +438,7 @@ namespace MonsterTrain2Poju.Model
                 if (filterError != null) return filterError;
                 if (effect.Range != null && effect.Type != "DiscardHand" && effect.Type != "Generate")
                 {
-                    if (!EnergyModel.IsEffect(effect.Type) && !new[] { "Damage", "Heal", "AddStatus", "BuffAttack", "DebuffAttack", "BuffHealth", "DebuffHealth", "Draw" }.Contains(effect.Type))
+                    if (!EnergyModel.IsEffect(effect.Type) && !new[] { "Damage", "Heal", "AddStatus", "BuffAttack", "DebuffAttack", "BuffHealth", "DebuffHealth", "Draw", "DrawNextTurn" }.Contains(effect.Type))
                         return "Unmodeled range consumer " + effect.Type;
                     string? rangeError = effect.Range.Validate();
                     if (rangeError != null) return rangeError;
@@ -442,6 +450,14 @@ namespace MonsterTrain2Poju.Model
                     continue;
                 }
                 if (!CardTargetModel.Supports(effect.Target)) return "Unimplemented spell targeting " + effect.Target;
+                if (effect.Type == "DrawNextTurn")
+                {
+                    if (source.Context?.Cards.BonusDraw == null) return "Missing bonus-draw state.";
+                    string? bonusError = BonusDrawModel.Validate(source.Context.Cards);
+                    if (bonusError != null) return bonusError;
+                    if (effect.Upgrade?.ExternalInteractions.Count > 0) return string.Join("; ", effect.Upgrade.ExternalInteractions);
+                    continue;
+                }
                 if (EnergyModel.IsEffect(effect.Type))
                 {
                     string? energyError = EnergyModel.Validate(source.Context);
@@ -487,8 +503,8 @@ namespace MonsterTrain2Poju.Model
         private static bool PassesTest(CardActionEffect effect, int count, bool bossDead = false, CombatContext? context = null, bool preview = false)
         {
             if (EnergyModel.IsEffect(effect.Type)) return !preview && !bossDead && EnergyModel.Test(context!, effect.Type);
-            if (preview && (effect.Type == "Draw" || effect.Type == "DiscardHand" || effect.Type == "Generate")) return false;
-            if (bossDead && !(effect.Tests?.CanPlayAfterBossDead ?? (effect.Type != "HandUpgrade" && effect.Type != "Draw" && effect.Type != "DiscardHand" && effect.Type != "Generate"))) return false;
+            if (preview && (effect.Type == "Draw" || effect.Type == "DrawNextTurn" || effect.Type == "DiscardHand" || effect.Type == "Generate")) return false;
+            if (bossDead && !(effect.Tests?.CanPlayAfterBossDead ?? (effect.Type != "HandUpgrade" && effect.Type != "Draw" && effect.Type != "DrawNextTurn" && effect.Type != "DiscardHand" && effect.Type != "Generate"))) return false;
             if (effect.Type == "Generate" && effect.Generation?.RequireHandSpace == true && context != null && context.Cards.Hand.Count >= context.MaxHandSize) return false;
             switch (effect.Type)
             {

@@ -91,14 +91,14 @@ namespace MonsterTrain2Poju.Probe
                 CombatEffect[] effects = trigger.GetEffects().Select(effect =>
                 {
                     if (effect.GetUseIntRange() && effect.GetEffectStateName() != "CardEffectHeal" && effect.GetEffectStateName() != "CardEffectDamage" && effect.GetEffectStateName() != "CardEffectAddStatusEffect" &&
-                        !EnergyModel.IsNativeEffect(effect.GetEffectStateName())) interactions.Add("Spawned random effect initialization");
+                        !EnergyModel.IsNativeEffect(effect.GetEffectStateName()) && effect.GetEffectStateName() != "CardEffectDrawAdditionalNextTurn") interactions.Add("Spawned random effect initialization");
                     if (effect.GetEffectStateName() == "CardEffectRewardGold" &&
                         AllGameManagers.Instance!.GetSaveManager().GetAdjustedGoldAmount(effect.GetParamInt(), isReward: true) != GoldRewardModel.Adjust(effect.GetParamInt()))
                         interactions.Add("Spawned modified gold reward rules");
                     if (effect.GetEffectStateName() == "CardEffectDespawnCharacter" && effect.GetParamInt() > 1)
                         interactions.Add("Native preview mutation of a delayed despawn counter");
                     if (effect.GetEffectStateName() != "CardEffectAddBattleCard" && (effect.GetCopyModifiersFromSource() || effect.GetFilterBasedOnMainSubClass() ||
-                        effect.GetParamCardUpgradeData() != null && !UnitTriggerUpgradeProbe.Known(effect.GetEffectStateName()))) interactions.Add("Spawned effect modifiers");
+                        effect.GetParamCardUpgradeData() != null && !UnitTriggerUpgradeProbe.Known(effect.GetEffectStateName()) && effect.GetEffectStateName() != "CardEffectDrawAdditionalNextTurn")) interactions.Add("Spawned effect modifiers");
                     var pool = new List<CardData>();
                     CardEffectState.GetFilteredCardListFromPool(effect.GetParamCardPool(), effect.GetParamCardFilter(),
                         AllGameManagers.Instance!.GetRelicManager(), ref pool);

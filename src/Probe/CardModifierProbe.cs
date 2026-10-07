@@ -74,9 +74,11 @@ namespace MonsterTrain2Poju.Probe
                 modifiers.GetPersistentHP(), interactions);
         }
 
-        internal static CardUpgradeModifier Upgrade(CardUpgradeState upgrade)
+        internal static CardUpgradeModifier Upgrade(CardUpgradeState upgrade) => Upgrade(upgrade, false);
+        internal static CardUpgradeModifier Upgrade(CardUpgradeState upgrade, bool rejectFilters)
         {
             var interactions = new List<string>();
+            if (rejectFilters && upgrade.GetFilters().Count > 0) interactions.Add("Filtered bonus-draw upgrade");
             CardUpgradeData? source = upgrade.GetSourceCardUpgradeData();
             bool refresh = source != null && !source.GetUpgradeWillBeScaledByNonMagicPowerTrait();
             if (upgrade.GetUnitAbilityUpgrade() != null || upgrade.GetRoomAbilityUpgrade() != null) interactions.Add("Upgrade ability");

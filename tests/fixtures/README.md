@@ -27,6 +27,14 @@ value comparison.
 Isolated native probes use `.probe-runs/`, which is also ignored. Successful
 captures become fixed inputs here after native and independent comparisons pass.
 
+`full-battle-bonus-draw.mt2f` and `full-battle-bonus-draw-lethal.mt2f` retain
+schema 51 battles with 125 exact future-draw contexts. They cover signed/ranged
+amounts, optional upgrades, actual ordered listeners sharing private effect
+counters, ordinary zero draws clearing callbacks while keeping the pending draw
+count, and capped hands. Both complete policies match from initial and
+mid-battle states in 16 parallel branches; the lethal fixture kills the Boss
+with a spell and verifies subsequent-effect gates.
+
 `full-battle-x-cost.mt2f` and `full-battle-x-cost-lethal.mt2f` retain schema 50
 native battles with 39 X casts, including 16 zero and 23 positive payments,
 96 exact paid-cost damage callbacks and 38 exact subsequent energy contexts.

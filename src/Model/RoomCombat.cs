@@ -442,13 +442,16 @@ namespace MonsterTrain2Poju.Model
                     if (trigger.FireCount < 0) return "Invalid trigger fire count.";
                     foreach (CombatEffect effect in trigger.Effects)
                     {
-                        if (EnergyModel.IsNativeEffect(effect.Type))
+                        if (EnergyModel.IsNativeEffect(effect.Type) || effect.Type == "CardEffectDrawAdditionalNextTurn")
                         {
                             CardActionEffect? energy = effect.Action;
-                            if (energy == null || !EnergyModel.IsEffect(energy.Type) ||
-                                effect.Type != "CardEffect" + (energy.Type == "GainEnergyMonsterTurn" ? "GainEnergy" : energy.Type))
-                                return "Missing or mismatched triggered energy definition.";
-                            string? energyError = EnergyModel.Validate(state.Context) ?? energy.Range?.Validate() ?? energy.Filters?.Validate();
+                            if (energy == null || (effect.Type == "CardEffectDrawAdditionalNextTurn" ? energy.Type != "DrawNextTurn" :
+                                !EnergyModel.IsEffect(energy.Type) || effect.Type != "CardEffect" + (energy.Type == "GainEnergyMonsterTurn" ? "GainEnergy" : energy.Type)))
+                                return "Missing or mismatched triggered resource definition.";
+                            string? energyError = energy.Type == "DrawNextTurn" ? state.Context?.Cards.BonusDraw == null ? "Missing bonus-draw state." :
+                                BonusDrawModel.Validate(state.Context.Cards) : EnergyModel.Validate(state.Context);
+                            energyError = energyError ?? energy.Range?.Validate() ?? energy.Filters?.Validate();
+                            if (energy.Upgrade?.ExternalInteractions.Count > 0) energyError = string.Join("; ", energy.Upgrade.ExternalInteractions);
                             if (energyError != null) return energyError;
                             if (!new[] { "Self", "Room", "FrontInRoom", "BackInRoom", "Weakest", "RandomInRoom", "LastAttackedCharacter" }.Contains(energy.Target))
                                 return "Unmodeled triggered energy target " + energy.Target;
@@ -1027,7 +1030,7 @@ namespace MonsterTrain2Poju.Model
                 if (context.CardRegistry == null) legacyDetachedCards = context.CardInstances;
                 context = new CombatContext(new CardCycleState(Array.Empty<CardToken>(), Array.Empty<CardToken>(),
                     Array.Empty<CardToken>(), context.Cards.Rng, context.Cards.DrawModifier,
-                    context.Cards.ExternalInteractions), context.BattleRng, context.Gold,
+                    context.Cards.ExternalInteractions, context.Cards.BonusDraw), context.BattleRng, context.Gold,
                     context.NextCardId, context.MaxHandSize, context.StatusRules, context.Statistics,
                     context.CardInstances == null ? null : Array.Empty<CardInstanceState>(), context.CardRegistry, context.AllScenarioBossesDead,
                     context.NextAddedTemporaryUpgrades, context.OtherPiles?.Select(CardPileModel.Clear).ToArray(), context.QueryFrame,
@@ -1137,7 +1140,7 @@ namespace MonsterTrain2Poju.Model
                             CombatEffect effect = effects[effectIndex];
                             if (effect.Action != null)
                             {
-                                if (!ApplyTriggeredAction(unit, effect, overrideTarget)) break;
+                                if (!ApplyTriggeredAction(unit, effect, overrideTarget, index, effectIndex)) break;
                             }
                             else if (effect.UnitUpgrade != null)
                             {
@@ -1276,6 +1279,7 @@ namespace MonsterTrain2Poju.Model
             }
 
             private bool ActionTestValid(CardActionEffect action, CardTargets targets, int amount = 0) =>
+                action.Type == "DrawNextTurn" ? !source.Preview && !battleWon && context!.AllScenarioBossesDead != true :
                 EnergyModel.IsEffect(action.Type) ? !source.Preview && !battleWon && context!.AllScenarioBossesDead != true && EnergyModel.Test(context, action.Type) :
                 action.Type == "Damage" ? amount >= 0 && (action.Range == null || action.Range.Max > 0) &&
                     (action.Target != "DropTargetCharacter" || targets.UnitIds.Count > 0) :
@@ -1290,7 +1294,7 @@ namespace MonsterTrain2Poju.Model
 
             private int TestActionAmount(CardActionEffect action) => action.Type == "Damage" ? SampleActionAmount(action) : action.Value;
 
-            private bool ApplyTriggeredAction(WorkingUnit actor, CombatEffect effect, WorkingUnit? overrideTarget)
+            private bool ApplyTriggeredAction(WorkingUnit actor, CombatEffect effect, WorkingUnit? overrideTarget, int triggerIndex, int effectIndex)
             {
                 CardActionEffect action = effect.Action!;
                 CardTargets tested = TriggerTargets(actor, action, testing: true, overrideTarget);
@@ -1313,6 +1317,12 @@ namespace MonsterTrain2Poju.Model
                     return true;
                 }
                 int amount = SampleActionAmount(action);
+                if (action.Type == "DrawNextTurn")
+                {
+                    context = context!.WithCards(BonusDrawModel.Schedule(context.Cards,
+                        BonusDrawState.UnitKey(actor.Source.Id, triggerIndex, effectIndex), amount, action.Upgrade));
+                    Emit(action.Type, actor, actor, amount); return true;
+                }
                 if (EnergyModel.IsEffect(action.Type))
                 {
                     context = EnergyModel.Apply(context!, action.Type, amount);

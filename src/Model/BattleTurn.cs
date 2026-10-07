@@ -126,7 +126,7 @@ namespace MonsterTrain2Poju.Model
             {
                 ShuffleResult<CardToken> shuffled = cards.Rng.Shuffle(cards.Draw.Concat(cards.Discard).ToArray());
                 cards = new CardCycleState(cards.Hand, shuffled.Items, Array.Empty<CardToken>(), shuffled.State,
-                    cards.DrawModifier, cards.ExternalInteractions);
+                    cards.DrawModifier, cards.ExternalInteractions, cards.BonusDraw);
             }
             context = WithCards(context, cards);
             // Hand callbacks precede the native energy removal; combat sees zero energy.
@@ -193,6 +193,8 @@ namespace MonsterTrain2Poju.Model
                 statistics = statistics?.Increment(card.InstanceId, "TimesDrawn");
             context = context.WithStatistics(statistics);
             context = WithCards(context, drawn.State!);
+            context = BonusDrawModel.ApplyUpgrades(context, drawn, source.PlayRules, out string? bonusError);
+            if (bonusError != null) return Unsupported(bonusError);
             train = WithContext(train, context, false);
             spawn = WithTrain(spawn, train, turn, spawn.Rng);
             return Finish(RoomOutcome.Exchanged, source.EnergyPerTurn, moon);

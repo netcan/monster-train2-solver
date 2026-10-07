@@ -75,6 +75,7 @@ Check(!SimpleUnitPlayModel.Apply(unknownCard,
     "An unknown card was accepted as a simple unit play.");
 Console.WriteLine("MODEL-CHECKS PASS: independent branches, card identity, and unsupported actions.");
 CardCycleChecks.Run();
+BonusDrawChecks.Run();
 CombatEffectChecks.Run();
 StatusRegistryChecks.Run();
 StatusCallbackChecks.Run();

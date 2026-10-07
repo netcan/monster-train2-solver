@@ -50,7 +50,7 @@ internal static class CardCycleChecks
     }
 
     private static string Comparable(CardCycleState state) => JsonSerializer.Serialize(new
-        { state.Hand, state.Draw, state.Discard, state.Rng, state.DrawModifier });
+        { state.Hand, state.Draw, state.Discard, state.Rng, state.DrawModifier, state.BonusDraw });
     private static CardCycleState Read(FixtureValue state)
     {
         // System.Text.Json needs an explicit adapter for the immutable four-word RNG struct.
@@ -61,7 +61,8 @@ internal static class CardCycleChecks
             new UnityRng(rng.GetProperty("S0").GetUInt32(), rng.GetProperty("S1").GetUInt32(),
                 rng.GetProperty("S2").GetUInt32(), rng.GetProperty("S3").GetUInt32()),
             state.GetProperty("DrawModifier").GetInt32(),
-            state.GetProperty("ExternalInteractions").Deserialize<string[]>()!);
+            state.GetProperty("ExternalInteractions").Deserialize<string[]>()!,
+            state.TryGetProperty("BonusDraw", out var bonus) ? bonus.Deserialize<BonusDrawState>() : null);
     }
     private static void Require(bool condition, string message)
     { if (!condition) throw new InvalidOperationException(message); }

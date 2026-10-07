@@ -145,7 +145,7 @@ namespace MonsterTrain2Poju.Model
                 candidate = new CardInstanceState(card.InstanceId, card.DataId, permanent, temporary, 0, 0, 0,
                     creation.ExternalInteractions, creation.EffectCounters, creation.DamageScalingTraits, creation.StatusScalingTraits, creation.UnitUpgradeScalingTraits);
                 context = new CombatContext(new CardCycleState(hand, draw, discard, context.Cards.Rng, context.Cards.DrawModifier,
-                    context.Cards.ExternalInteractions), rng, context.Gold, checked(context.NextCardId + 1), context.MaxHandSize,
+                    context.Cards.ExternalInteractions, context.Cards.BonusDraw), rng, context.Gold, checked(context.NextCardId + 1), context.MaxHandSize,
                     context.StatusRules, context.Statistics?.TrackCards(new[] { card.InstanceId }),
                     context.CardInstances?.Concat(new[] { candidate }).ToArray(), context.CardRegistry, context.AllScenarioBossesDead,
                     context.NextAddedTemporaryUpgrades == null ? null : Array.Empty<CardUpgradeModifier>(), context.OtherPiles, context.QueryFrame, context.KillCamActivated, context.MagicPower, context.IsolatedBattlePreview, context.EnergyState);

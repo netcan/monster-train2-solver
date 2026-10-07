@@ -12,14 +12,16 @@ namespace MonsterTrain2Poju.Model
         public UnityRng Rng { get; }
         public int DrawModifier { get; }
         public IReadOnlyList<string> ExternalInteractions { get; }
+        public BonusDrawState? BonusDraw { get; }
 
         public CardCycleState(IReadOnlyList<CardToken> hand, IReadOnlyList<CardToken> draw,
             IReadOnlyList<CardToken> discard, UnityRng rng, int drawModifier,
-            IReadOnlyList<string> externalInteractions)
+            IReadOnlyList<string> externalInteractions, BonusDrawState? bonusDraw = null)
         {
             Hand = Array.AsReadOnly(hand.ToArray()); Draw = Array.AsReadOnly(draw.ToArray());
             Discard = Array.AsReadOnly(discard.ToArray()); Rng = rng; DrawModifier = drawModifier;
             ExternalInteractions = Array.AsReadOnly(externalInteractions.ToArray());
+            BonusDraw = bonusDraw;
         }
     }
 
@@ -28,8 +30,9 @@ namespace MonsterTrain2Poju.Model
         public CardCycleState? State { get; }
         public string? UnsupportedReason { get; }
         public bool Supported => State != null;
-        internal CardCycleResult(CardCycleState? state, string? reason = null)
-        { State = state; UnsupportedReason = reason; }
+        public IReadOnlyList<BonusUpgradeApplication> UpgradeApplications { get; }
+        internal CardCycleResult(CardCycleState? state, string? reason = null, IReadOnlyList<BonusUpgradeApplication>? upgradeApplications = null)
+        { State = state; UnsupportedReason = reason; UpgradeApplications = Array.AsReadOnly((upgradeApplications ?? Array.Empty<BonusUpgradeApplication>()).ToArray()); }
     }
 
     public static class CardCycleModel
@@ -42,6 +45,8 @@ namespace MonsterTrain2Poju.Model
                 return new CardCycleResult(null, string.Join("; ", source.ExternalInteractions));
             if (maxHandSize < 0 || source.Hand.Count > maxHandSize)
                 return new CardCycleResult(null, "Invalid hand size.");
+            string? bonusError = BonusDrawModel.Validate(source);
+            if (bonusError != null) return new CardCycleResult(null, bonusError);
             var hand = source.Hand.ToList(); var draw = source.Draw.ToList(); var discard = source.Discard.ToList();
             UnityRng rng = source.Rng;
             int capacity = maxHandSize - hand.Count + (hand.Any(card => card.InstanceId == playedCardId) ? 1 : 0);
@@ -58,7 +63,9 @@ namespace MonsterTrain2Poju.Model
                 if (hand.Count == maxHandSize) continue;
                 CardToken card = draw[selected]; draw.RemoveAt(selected); hand.Insert(0, card);
             }
-            return new CardCycleResult(new CardCycleState(hand, draw, discard, rng, source.DrawModifier, source.ExternalInteractions));
+            var applications = new List<BonusUpgradeApplication>();
+            BonusDrawState? bonus = BonusDrawModel.CompleteDraw(source.BonusDraw, Array.Empty<CardToken>(), source.Hand.Count, -1, applications);
+            return new CardCycleResult(new CardCycleState(hand, draw, discard, rng, source.DrawModifier, source.ExternalInteractions, bonus), upgradeApplications: applications);
         }
 
         public static CardCycleResult DrawHand(CardCycleState source, int handSize, int maxHandSize)
@@ -67,12 +74,15 @@ namespace MonsterTrain2Poju.Model
                 return new CardCycleResult(null, string.Join("; ", source.ExternalInteractions));
             if (handSize < 0 || maxHandSize < 0 || source.Hand.Count > maxHandSize)
                 return new CardCycleResult(null, "Invalid hand size.");
+            string? bonusError = BonusDrawModel.Validate(source);
+            if (bonusError != null) return new CardCycleResult(null, bonusError);
             var hand = source.Hand.ToList(); var draw = source.Draw.ToList(); var discard = source.Discard.ToList();
             UnityRng rng = source.Rng;
             // Native DrawHand exits before resetting the modifier if no draw can begin.
             if (hand.Count == maxHandSize || hand.Count + draw.Count + discard.Count == 0)
                 return new CardCycleResult(source);
-            int count = Math.Min(Math.Max(0, handSize + source.DrawModifier), maxHandSize - hand.Count);
+            var drawn = new List<CardToken>();
+            int count = Math.Min(Math.Max(0, unchecked(handSize + source.DrawModifier)), maxHandSize - hand.Count);
             for (int index = 0; index < count; index++)
             {
                 if (draw.Count == 0)
@@ -82,8 +92,11 @@ namespace MonsterTrain2Poju.Model
                 }
                 if (draw.Count == 0) break;
                 CardToken card = draw[draw.Count - 1]; draw.RemoveAt(draw.Count - 1); hand.Insert(0, card);
+                drawn.Add(card);
             }
-            return new CardCycleResult(new CardCycleState(hand, draw, discard, rng, 0, source.ExternalInteractions));
+            var applications = new List<BonusUpgradeApplication>();
+            BonusDrawState? bonus = BonusDrawModel.CompleteDraw(source.BonusDraw, drawn, source.Hand.Count, handSize, applications);
+            return new CardCycleResult(new CardCycleState(hand, draw, discard, rng, 0, source.ExternalInteractions, bonus), upgradeApplications: applications);
         }
 
         public static CardCycleResult DiscardHand(CardCycleState source)
@@ -92,7 +105,7 @@ namespace MonsterTrain2Poju.Model
                 return new CardCycleResult(null, string.Join("; ", source.ExternalInteractions));
             return new CardCycleResult(new CardCycleState(Array.Empty<CardToken>(), source.Draw,
                 source.Discard.Concat(source.Hand.Reverse()).ToArray(), source.Rng, source.DrawModifier,
-                source.ExternalInteractions));
+                source.ExternalInteractions, source.BonusDraw));
         }
     }
 }

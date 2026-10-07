@@ -171,6 +171,7 @@ internal static class RoomCombatChecks
         DynamicStatisticChecks.Native(fixture);
         EnergyChecks.Native(fixture);
         CardCostChecks.Native(fixture);
+        BonusDrawChecks.Native(fixture);
         SharedPileChecks.MigratedRoot(fixture);
     }
 }

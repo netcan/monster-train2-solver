@@ -177,7 +177,7 @@ namespace MonsterTrain2Poju.Model
             context = context.WithOtherPiles(piles);
             // Native direct play removes the card from hand before queued effects execute.
             context = new CombatContext(new CardCycleState(context.Cards.Hand.Where(item => item.InstanceId != card.InstanceId).ToArray(),
-                context.Cards.Draw, context.Cards.Discard, context.Cards.Rng, context.Cards.DrawModifier, context.Cards.ExternalInteractions),
+                context.Cards.Draw, context.Cards.Discard, context.Cards.Rng, context.Cards.DrawModifier, context.Cards.ExternalInteractions, context.Cards.BonusDraw),
                 context.BattleRng, context.Gold, context.NextCardId, context.MaxHandSize, context.StatusRules, context.Statistics, context.CardInstances,
                 context.CardRegistry, context.AllScenarioBossesDead, context.NextAddedTemporaryUpgrades, context.OtherPiles, context.QueryFrame, context.KillCamActivated, context.MagicPower, context.IsolatedBattlePreview, context.EnergyState);
             target = new RoomCombatState(target.RoomIndex, target.Deployment, target.Units, target.ExternalInteractions, context, target.Preview);
@@ -305,7 +305,7 @@ namespace MonsterTrain2Poju.Model
             if (summonRemoved && !terminal) statistics = statistics?.Increment(card.InstanceId, "TimesExhausted");
             context = context.AfterCardEffects();
             context = new CombatContext(new CardCycleState(hand, context.Cards.Draw, discard, context.Cards.Rng,
-                context.Cards.DrawModifier, context.Cards.ExternalInteractions), context.BattleRng,
+                context.Cards.DrawModifier, context.Cards.ExternalInteractions, context.Cards.BonusDraw), context.BattleRng,
                 context.Gold, context.NextCardId, context.MaxHandSize, context.StatusRules, statistics,
                 terminal ? playingInstance == null ? context.CardInstances : new[] { (context.FindCard(card.InstanceId) ?? playingInstance).OnDiscard(true, paidCost) } :
                 context.CardInstances?.Select(instance => instance.InstanceId == card.InstanceId

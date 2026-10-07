@@ -71,7 +71,7 @@ namespace MonsterTrain2Poju.Model
                 CardCycleState cards = context.Cards;
                 context = context.WithCards(new CardCycleState(cards.Hand.Where(card => card.InstanceId != token.InstanceId).ToArray(),
                     cards.Draw, mode == 0 ? cards.Discard.Concat(new[] { token }).ToArray() : cards.Discard,
-                    cards.Rng, cards.DrawModifier, cards.ExternalInteractions));
+                    cards.Rng, cards.DrawModifier, cards.ExternalInteractions, cards.BonusDraw));
                 if (mode == 0)
                 {
                     CardPileState buffer = piles!.Single(pile => pile.Name == "DiscardBuffer");

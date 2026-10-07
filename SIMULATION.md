@@ -9,6 +9,32 @@ from a captured player decision state. The objective is still in progress.
 Running the native game to a terminal result is an oracle, not proof that the
 independent simulator can finish a battle.
 
+## Native scenario construction
+
+`Run-FullBattleProbe.ps1` launches the sandbox game with a fresh copy of the
+isolated profile. The probe redirects the save root before game initialization
+and verifies the original profile's file signatures afterward. Audio is muted
+and the native game uses Instant timing. `NativeReplayScenario` sets seed
+424242, starts a new run, and enters the first battle through the game's own
+map and battle-intro flow.
+
+Baseline captures keep the ordinary battle. Mechanism fixtures then modify
+runtime CardData, upgrades or character triggers at deployment turn zero,
+reinitialize affected card instances, and keep the original Boss and waves.
+The automated policy selects legal actions and invokes native card play and
+EndTurn. The probe observes actual state and callback boundaries, including
+private counters and the native ordered signal listeners. Specialized setup
+may invoke native effects directly to reach otherwise rare starting states;
+for example, applying one future-draw effect twice creates two real callbacks
+that share its private counter.
+
+The recording is state/event data, rather than a video. Accepted `.mt2f`
+archives preserve definitions, starting and intermediate states, actions,
+RNG and observed results. Independent checks recompute the same operations
+and compare actual captured values, without trusting embedded predictions.
+Curated archives require native and independent checks to pass. These authored
+fixtures prove the observed paths, not every original deck, relic or Boss.
+
 ## Current implementation and evidence
 
 The pure `src/Model` library has no Unity or game assembly dependency. Its inputs
@@ -28,6 +54,7 @@ are copied immutable values; independent child states can run on worker threads.
 | Target filtering | `CardTargetFilters` and `CardTargetModel` | Native health, required/excluded status, subtype and boss masks before selection; drop/last/physical-front bypasses, subtype precedence, filtered random legality and exact live target lists |
 | Integer RNG and shuffle | `UnityRng` | 768 native integer draws, seed initialization and complete four-word states |
 | Basic draw/discard cycle | `CardCycleModel` | 13 consecutive native operations including reshuffle |
+| Future draws and bonus upgrades | `BonusDrawModel` and `CardCycleModel` | 125 exact native contexts, shared counters and ordered duplicate listeners, signed/ranged quantities, zero-draw cancellation, capped hands and complete ordinary/lethal policies with parallel branches |
 | Spell draws and hand cycling | `CardCycleModel.DrawCards` and `CardSpellModel` | Signed/zero/max counts, full-hand cast timing, resolving-card exclusion, reshuffle RNG, draw statistics and live membership for later hand upgrades; ranged tests require explicit UI RNG isolation |
 | Spell hand discard and consumption | `HandRemovalModel` and `CardSpellModel` | Forward order, resolving-card exclusion, retained buffer aliases, discard-only upgrade removal, double exhaustion statistics, per-effect counters and nested dead-spawner returns |
 | Modified card generation | `CardGenerationModel`, `CardSpellModel` and `CombatTrigger` | Five destinations, pool/full-hand/duplicate timing, initial upgrades, modifier copies/exclusions, one-shot upgrades and fresh card effect state |
@@ -2384,3 +2411,44 @@ native fixtures and the expanded pure checks also pass; the curated inventory
 now contains 64 battle fixtures and eight calibration archives.
 Its complete 72-archive inventory and SHA-256 integrity check passes, and the
 final native probe Release build succeeds with zero warnings and errors.
+
+## Future draw counts and bonus-card upgrades
+
+Schema 51 adds nullable `CardCycleState.BonusDraw`; null identifies older inputs
+that did not capture this mechanism. Counters are keyed by card/effect or
+unit/trigger/effect identity. Native capture reads the actual private effect
+counters and signal invocation list, including duplicate listeners and detached
+sources. The immutable model preserves callback order and shared counters
+across card plays, hand cycling, generation and terminal clearing.
+
+`CardEffectDrawAdditionalNextTurn` applies signed amounts, sampling a range
+only once. An optional upgrade increments the effect's private counter and
+registers a fresh listener for a nonzero amount. Bonus upgrades use the actual
+resulting hand size compared with the base hand size; duplicate listeners can
+upgrade the same card more than once while consuming their shared counter.
+DrawCards dispatches its final null/reset event even for zero or negative draws,
+clearing listeners and their counters while preserving the future draw count.
+DrawHand's empty-pool and full-hand early exits retain pending state; normal
+completion resets the count. Quantity additions use native signed wrap.
+
+The ordinary binary fixture takes 51.14 seconds at muted Instant timing: 21
+card plays, seven EndTurns, 64 room stages and 67 exact future-draw contexts,
+ending at Pyre 73. Its archive has 5,031 nodes in 31,018 bytes. The lethal
+fixture takes 44.51 seconds: 17 plays, five EndTurns, 44 room stages and 58 exact
+contexts, ending at Pyre 80 after a spell kills the original Boss. Its archive
+has 3,790 nodes in 23,898 bytes. Both have zero capture failures, mismatches,
+unsupported or pending observations and unchanged original game files.
+
+The 125 independently recomputed contexts include 22 negative and 23 zero
+amounts, 19 ranges, 106 upgraded and 18 unit effects, six duplicate-listener
+contexts, eight ordinary zero-draw cancellations and 11 capped hand draws.
+Every complete policy matches from initial and actual mid-battle inputs,
+including 16 isolated parallel branches. Pure checks also cover existing hand
+thresholds, empty/full exits, integer wrap and 32 parallel branches. Filtered
+upgrades, card-trigger owners and unknown signal listeners remain explicitly
+unsupported. Summoning applies only positive merged starting upgrades to a new
+status registry, while retaining captured historical zero-stack definitions.
+
+The complete curated regression passes all 74 binary archives, including
+inventory and SHA-256 checks. The native probe Release build succeeds with
+zero warnings and errors.
