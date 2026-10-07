@@ -34,7 +34,7 @@ dispatches, including death children, player/enemy group order, Horde repetition
 silence, once flags and required dying statuses. Native and independent checks
 pass; operations and dispatches repeat in 32 branches, and the complete later
 policy matches initial/mid-battle roots in 16 branches. The curated inventory
-contains 100 archives: 91 battles and nine calibration suites.
+contains 101 archives: 92 battles and nine calibration suites.
 
 `full-battle-horde-statuses.mt2f` retains schema 69 with eight actual Horde
 status/damage/maximum-health operations on a real summoned Steward and a second
@@ -44,8 +44,19 @@ the operation, after it and after draining. Zero/negative additions, troop
 thresholds, simulated deaths and spawning cooldown gates compare in 32 branches;
 the complete six-play, five-EndTurn policy compares from initial and mid-battle
 states in 16 branches. Preview updates are suppressed only during controlled
-setup and restored for the full battle. Final-stack removal, runtime Horde
-casualty upgrades, rally/harvest effect routing, merging and cloning remain work.
+setup and restored for the full battle. The separate removal fixture below covers
+final-stack removal; runtime Horde casualty upgrades, Rally, merging and cloning
+remain work.
+
+`full-battle-horde-removal.mt2f` retains schema 71 with nine native direct API,
+effect and running-trigger operations, 63 independently compared death/Harvest
+phases and a real paid removal spell affecting both teams. It distinguishes raw
+zero-HP status changes without physical death signals from sacrifice, preserves
+orphan standby cards and responsible sacrifice cards, and checks exact before,
+effect-return and drained states, accepted queue counts and dispatch order.
+All operations, phases and the paid spell repeat in 32 branches; the later whole
+battle also compares from initial/mid-battle roots in 16 branches. Direct effects
+and actual card play preserve their different standby settlement boundaries.
 
 `full-battle-direct-unit-upgrades.mt2f` retains schema 53 with 21 actual
 CharacterState API operations before the first recorded player decision.

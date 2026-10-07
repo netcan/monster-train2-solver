@@ -35,6 +35,7 @@ namespace MonsterTrain2Poju.Probe
         internal static string? Error, Label;
         private static Operation? current;
         private static CharacterData enemy = null!;
+        internal static CharacterData ObserverDefinition => enemy;
         internal static void Prepare(AllGameManagers managers, ManualLogSource log)
         {
             HordeStatusScenario.Prepare(managers, log);

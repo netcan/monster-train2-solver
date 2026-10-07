@@ -71,6 +71,7 @@ $fixtures = @('full-battle-steward-once.mt2f', 'full-battle-no-cards.mt2f', 'ful
     'full-battle-equipment-abilities.mt2f',
     'full-battle-horde-statuses.mt2f',
     'full-battle-harvest-triggers.mt2f',
+    'full-battle-horde-removal.mt2f',
     'card-modifier-calibration.mt2f', 'rng-calibration.mt2f', 'gold-reward-calibration.mt2f',
     'standby-routing-calibration.mt2f', 'ui-rng-isolation-calibration.mt2f',
     'statistic-query-calibration.mt2f', 'statistic-overflow-calibration.mt2f',

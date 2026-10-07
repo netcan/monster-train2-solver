@@ -36,8 +36,10 @@ internal static class HordeStatusChecks
             negative.State.Units[0].Modifiers!.AttackDamage == 32 && negative.PendingCallbacks[^1].ParamInt2 == -1,
             "Zero/negative native additions must queue troop notifications without changing raw Horde stats.");
         var removed = AbilityCooldownModel.RemoveStatus(grown.State, 1, "horde", 1);
-        Require(!AbilityCooldownModel.RemoveStatus(root, 1, "horde", -1).Supported,
-            "Final troop removal produced a searchable state without physical-death settlement.");
+        var final = AbilityCooldownModel.RemoveStatus(root, 1, "horde", -1);
+        Require(final.Supported && final.State!.Units.All(unit => unit.Id != 1) && final.PendingCallbacks.All(item => item.Kind != "OnDeath") &&
+            final.State.Context!.Statistics!.MonstersDeadThisBattle == 2,
+            "Final raw troop removal must not invent a physical death signal or OnDeath callback.");
         Require(removed.State!.Units[0].Health == 75 && removed.State.Units[0].Modifiers!.AttackDamage == 24 &&
             removed.State.Context!.Statistics!.MonstersDeadThisBattle == 1 && removed.PendingCallbacks.Count == 6 &&
             removed.PendingCallbacks.Take(4).Select(item => item.Kind).SequenceEqual([

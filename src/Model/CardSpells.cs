@@ -251,6 +251,21 @@ namespace MonsterTrain2Poju.Model
                     RoomCombatState? targetRoom = state.Rooms.FirstOrDefault(item => item.Units.Any(unit => unit.Id == id));
                     CombatUnit? target = targetRoom?.Units.FirstOrDefault(unit => unit.Id == id);
                     if (target == null) continue;
+                    if (effect.Type == "RemoveStatus")
+                    {
+                        RoomCombatResult removed = StatusRemovalModel.Effect(targetRoom!, id, effect, sourceCardId);
+                        if (!removed.Supported) return UnsupportedTrain(removed.UnsupportedReason!);
+                        state = ReplaceRoom(state, removed.State!); callbacks.AddRange(removed.PendingCallbacks); events.AddRange(removed.Events);
+                        if (target.Team == CombatTeam.Player && removed.PendingCallbacks.Any(item => item.Kind == "OnDeath" && item.Unit.Id == id))
+                        {
+                            pendingDeadRooms[id] = targetRoom!.RoomIndex;
+                            if (target.SpawnerCardId > 0 && !targetRoom.Preview) deferredExhaustion.Add(target.SpawnerCardId);
+                        }
+                        if (removed.Outcome != RoomOutcome.Exchanged) outcome = removed.Outcome;
+                        if (state.Context!.OtherPiles != null) piles = state.Context.OtherPiles.ToArray();
+                        if (StatusRemovalModel.RequiresSacrifice(removed)) { DrainDeaths(); focusedRoom = null; }
+                        continue;
+                    }
                     if (AbilityLifecycleModel.IsEffect(effect.Type))
                     {
                         RoomCombatResult changed = AbilityLifecycleModel.Apply(targetRoom!, id, effect.AbilityChange!, effect.Type == "RemoveAbility", deferCallbacks: true);
@@ -488,6 +503,12 @@ namespace MonsterTrain2Poju.Model
                     continue;
                 }
                 if (!CardTargetModel.Supports(effect.Target)) return "Unimplemented spell targeting " + effect.Target;
+                if (effect.Type == "RemoveStatus")
+                {
+                    string? removalError = StatusRemovalModel.Validate(effect, source);
+                    if (removalError != null) return removalError;
+                    continue;
+                }
                 if (AbilityLifecycleModel.IsEffect(effect.Type))
                 {
                     if (effect.AbilityChange == null) return "Missing lifecycle effect definition.";
@@ -566,6 +587,7 @@ namespace MonsterTrain2Poju.Model
             if (effect.Type == "Generate" && effect.Generation?.RequireHandSpace == true && context != null && context.Cards.Hand.Count >= context.MaxHandSize) return false;
             switch (effect.Type)
             {
+                case "RemoveStatus": return string.IsNullOrEmpty(effect.Filters?.Subtype) || count > 0;
                 case "Draw": return context != null && context.Cards.Hand.Count - 1 < context.MaxHandSize;
                 case "Damage": return effect.Value >= 0 && (effect.Range == null || effect.Range.Max > 0) &&
                     (effect.Target != "DropTargetCharacter" || count > 0);
@@ -590,7 +612,9 @@ namespace MonsterTrain2Poju.Model
             return new CardActionEffect(effect.Type, effect.Target, draw.Value, effect.AllowEnemy, effect.AllowPlayer,
                 effect.Statuses, effect.Upgrade, effect.Lifetime, effect.Tests, effect.Range, effect.Filters, effect.Generation, effect.OnlyIfNoEnemies, effect.CooldownParameter, effect.AbilityChange);
         }
-        private static int TestCount(TrainCombatState state, CardActionEffect effect, CardTargets targets) => effect.Type == "RemoveEquipment" ?
+        private static int TestCount(TrainCombatState state, CardActionEffect effect, CardTargets targets) => effect.Type == "RemoveStatus" &&
+            !string.IsNullOrEmpty(effect.Filters?.Subtype) ? state.Rooms.SelectMany(room => room.Units).Count(unit =>
+                targets.UnitIds.Contains(unit.Id) && unit.Subtypes.Contains(effect.Filters!.Subtype)) : effect.Type == "RemoveEquipment" ?
             state.Rooms.SelectMany(room => room.Units).Count(unit => targets.UnitIds.Contains(unit.Id) && unit.EquipmentCards?.Count > 0) : !AttackChange(effect) ? targets.UnitIds.Count :
             state.Rooms.SelectMany(room => room.Units).Count(unit => targets.UnitIds.Contains(unit.Id) && unit.CanAttack);
         private static string? AttackTestError(TrainCombatState state, int roomIndex, CardActionEffect effect)
@@ -638,7 +662,7 @@ namespace MonsterTrain2Poju.Model
 
         internal static CombatUnit Copy(CombatUnit unit, int health, IReadOnlyList<CombatStatus> statuses) =>
             new CombatUnit(unit.Id, unit.AssetKey, unit.Team, unit.BaseAttack, health, unit.MaxHealth, unit.CanAttack,
-                unit.IsPyre, unit.EndsBattleOnDeath, statuses, unit.Triggers, unit.SpawnerCardId, unit.Size, unit.StatusImmunities, unit.Subtypes, unit.Modifiers, unit.IsBoss, unit.LastAttackerId, unit.StatusRegistry, unit.EquipmentCards, unit.NextTriggerId, unit.Ability, unit.StatusDictionary, unit.AbilityRules, unit.HordeDefinition, unit.IsSpawning);
+                unit.IsPyre, unit.EndsBattleOnDeath, statuses, unit.Triggers, unit.SpawnerCardId, unit.Size, unit.StatusImmunities, unit.Subtypes, unit.Modifiers, unit.IsBoss, unit.LastAttackerId, unit.StatusRegistry, unit.EquipmentCards, unit.NextTriggerId, unit.Ability, unit.StatusDictionary, unit.AbilityRules, unit.HordeDefinition, unit.IsSpawning, unit.SacrificeCardId);
         private static RoomCombatResult Unchanged(RoomCombatState state) => new RoomCombatResult(state, RoomOutcome.Exchanged, 0, new List<CombatEvent>());
         private static TrainSpellResult UnsupportedTrain(string reason) => new TrainSpellResult(null, RoomOutcome.Unsupported,
             Array.Empty<CombatEvent>(), reason);

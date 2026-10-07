@@ -115,7 +115,7 @@ internal static class HarvestChecks
         }
         Require(Serialize(before) == parent, label + " changed its parent.");
     }
-    private static void VerifyPhase(FixtureValue sample)
+    internal static void VerifyPhase(FixtureValue sample)
     {
         var before = sample.GetProperty("Before").Deserialize<RoomCombatState>()!;
         var actor = sample.GetProperty("Actor").Deserialize<CombatUnit>()!;

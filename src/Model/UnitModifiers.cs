@@ -165,7 +165,7 @@ namespace MonsterTrain2Poju.Model
                     healthFromUpgrades, modifiers.SpawnerMatchesDefinition);
                 CombatUnit Snapshot() => new CombatUnit(target.Id, target.AssetKey, target.Team, Math.Max(0, checked(damage + buff)), health, maxHealth,
                     target.CanAttack, target.IsPyre, target.EndsBattleOnDeath, statuses.Values.ToArray(), triggers, target.SpawnerCardId,
-                    Math.Max(1, Math.Min(6, size)), target.StatusImmunities, target.Subtypes, nextModifiers, target.IsBoss, target.LastAttackerId, target.StatusRegistry, target.EquipmentCards, nextTriggerId, target.Ability, target.StatusDictionary, target.AbilityRules, target.HordeDefinition, target.IsSpawning);
+                    Math.Max(1, Math.Min(6, size)), target.StatusImmunities, target.Subtypes, nextModifiers, target.IsBoss, target.LastAttackerId, target.StatusRegistry, target.EquipmentCards, nextTriggerId, target.Ability, target.StatusDictionary, target.AbilityRules, target.HordeDefinition, target.IsSpawning, target.SacrificeCardId);
                 if (!partial && upgrade.TriggerUpgrades?.Count > 0)
                 {
                     error = RoomCombatModel.Validate(new RoomCombatState(state.RoomIndex, state.Deployment,

@@ -104,7 +104,8 @@ are copied immutable values; independent child states can run on worker threads.
 | Ability assignment/removal effects | `CardSpellModel`, `RoomCombatModel` and `AbilityLifecycleModel` | 17 native effect states and 17 queued dispatches with 35 payloads; multi-target and last-target spells, pre-own replacement, cached self replacement/removal, exact current disabled IDs and complete policies with parallel branches |
 | Ability upgrades and equipment grants | `CardUpgradeModifier`, `UnitModifierModel` and spawn transitions | Permanent/temporary initial selection, keep-existing and matching-removal gates, raw restoration after repeated equipment replacement, direct assignment clearing history, disabled upgraded births and real equipment skill casts; complete policy and parallel branches |
 | Horde numerical primitives | `HordeStatModel` | 560 native raw-stat steps and 175 casualty boundaries, signed overflow, HP/stack caps and 32 branches |
-| Horde status changes and casualties | `HordeStatusModel`, status/spawn/damage/health transitions | Eight exact native operations, accepted queues and complete drains, zero/negative notifications, simulated deaths, troop thresholds and spawning cooldown gates; complete subsequent battle and parallel branches. Final-stack removal, runtime casualty upgrades, Rally, merging and cloning remain incomplete |
+| Horde status changes and casualties | `HordeStatusModel`, status/spawn/damage/health transitions | Eight exact native operations, accepted queues and complete drains, zero/negative notifications, simulated deaths, troop thresholds and spawning cooldown gates; complete subsequent battle and parallel branches. Runtime casualty upgrades, Rally, merging and cloning remain incomplete |
+| Status removal and Horde sacrifice | `StatusRemovalModel`, `CardSpellModel` and `RoomCombatModel` | Nine native API/effect/trigger operations, exact room/retained actor states, accepted queue counts, ordered death/Harvest dispatches, a real paid spell removing both teams and parallel branches; raw zero HP preserves orphan standby cards while sacrifice signals physical death and retains its responsible card |
 | Physical death Harvest | `HarvestModel` and `RoomCombatModel` | Four native physical deaths and 31 exact dispatches; own-death children precede player/enemy groups, Hero/Monster/Unit kinds, Horde repetition, required dying statuses, silence and once flags; complete subsequent battle and parallel branches |
 | Queued trigger repetition | `RoomCombatModel` | Eight complete native batches and 26 dispatches, once flags, zero/negative counts, ordered child callbacks, silence/fire permissions and 32 branches; Horde status callers now preserve rally/harvest repetition payloads |
 | Additional spells, abilities, relics | Not complete | Unsupported interactions explicitly reject the model transition |
@@ -3716,3 +3717,73 @@ queues with local Harvest, and the final focused native check verifies exact
 reward, remaining-troop and death-child boundaries. Probe builds with zero
 warnings/errors; ModelChecks retains its 12 existing nullable warnings. Both
 changed PowerShell scripts parse and `git diff --check` passes.
+
+## Status removal and final Horde sacrifice, schema 71
+
+`StatusRemovalModel` separates the raw CharacterState API from
+CardEffectRemoveStatusEffect. Raw removal lowercases the ID, uses unchecked
+subtraction with native stack caps, and treats -1 as removal of every stack.
+Zero or negative removed counts do not change Horde numerics or emit removal
+notifications. The effect skips missing/zero statuses, clamps its request to the
+current count and applies its subtype test independently of target collection.
+
+Removing every Horde stack through the raw API sets HP to zero and reports
+simulated troop deaths. It does not signal physical death, execute OnDeath or
+return the spawner. Its orphan standby card remains represented. The card effect
+then explicitly sacrifices the zero-stack actor: physical death statistics and
+LastSacrificedMonsterStats use the actual source, and retained death callbacks
+preserve SacrificeCardId across immutable copies. Standby settlement remains a
+separate boundary, rather than being inserted into the raw status operation.
+The effect probe records native card-playing state so direct setup calls and
+actual card effects retain their observed settlement boundaries.
+
+Raw removal also retains actors that were already at zero HP when passed in a
+retained trigger room. Lethal damage must still settle the OnHit Horde casualty
+and then physical death; filtering that actor before casualty processing would
+break its queued lookup. The existing four-death Harvest archive and an explicit
+lethal-damage check verify this distinction from a fresh final-stack removal.
+
+Outside a running trigger queue, the sacrifice drains own-death children before
+physical Harvest groups. Inside an existing queue, native removal queues the
+physical Harvest groups immediately; own-death children append later. Both
+paths retain the same dying actor as its status and once flags change.
+
+`-HordeRemoval -Policy units-spells-and-junk` authors two initial Horde Stewards
+and four ordinary-enemy observers while preserving the original Boss and waves.
+Nine actual operations cover zero, negative, partial and missing removal, raw
+final removal on both teams, effect final removal on both teams and a PreCombat
+enemy self-removal. A further Steward is created with the native AddNewCard API
+and actually played. An ordinary owned spell is drawn natively if absent from
+the deployment hand; its real paid play removes the remaining enemy and this
+new player Horde, then executes its later healing effect and card callbacks.
+No later native result is used to choose a simulated action or target.
+
+Independent checks compare complete operation rooms and retained actors both at
+effect return and after the additional queue/standby boundary, exact accepted
+queue counts, dispatch order, 63 death/Harvest phase room/actor/dying states,
+28 cooldown/removal effect states and the complete paid spell. All mechanism
+comparisons repeat in 32 independent branches. The subsequent 19-play,
+seven-EndTurn policy matches from initial and mid-battle inputs in 16 branches.
+
+The final muted Instant native run takes 53.32 seconds, wins at Pyre 49 and
+records 56 room stages, 13 card cycles, 14 train phases and 11 spawn stages.
+Capture failures, mismatches, unsupported transitions and pending records are
+zero, and original profile signatures remain unchanged. Its direct native
+archive `tests/fixtures/full-battle-horde-removal.mt2f` has schema 71,
+35,970 bytes / 6,109 nodes and SHA-256
+`c9a25d986f7dc3279c3aafc70e1033a2da4d594739fcb52b72f977cba622cd89`.
+The curated inventory contains 101 archives: 92 battles and nine calibrations,
+with no source JSON dependency.
+
+The final complete 101-archive regression exits zero after the retained zero-HP
+actor correction, including all 92 native battle inputs and nine calibrations.
+The old physical Harvest and new removal archives also pass a focused check.
+The final Probe Release build has zero warnings/errors; ModelChecks retains
+12 existing nullable warnings. Both changed PowerShell scripts parse and the
+staged Git diff passes whitespace checks.
+
+Already dying actors, player sacrifice inside an existing queue, raw removal
+of a terminal Boss and equipment/signal interactions beyond these captures need
+further native coverage. Runtime Horde casualty upgrades, Rally, merging,
+cloning and additional statuses remain incomplete; this increment does not
+establish arbitrary-card or arbitrary-Boss battle completeness.

@@ -83,17 +83,33 @@ internal static class AbilityCooldownChecks
         var targets = sample.GetProperty("Targets").Deserialize<int[]>()!;
         string parent = JsonSerializer.Serialize(before, ModelJson.Options);
         RoomCombatState current = before;
+        var callbacks = new List<RoomCombatModel.QueuedCharacterTrigger>();
+        string? triggerKind = sample.TryGetProperty("TriggerKind", out var kind) ? kind.GetString() : null;
         foreach (int id in effect.Type == "RemoveStatus" ? targets : targets.Reverse())
         {
-            var result = effect.Type == "RemoveStatus" ? AbilityCooldownModel.RemoveStatus(current, id, effect.Statuses[0].Id,
-                effect.Statuses[0].Stacks, sample.GetProperty("SourceCardId").GetInt32()) :
+            var result = effect.Type == "RemoveStatus" ? StatusRemovalModel.Effect(current, id, effect,
+                sample.GetProperty("SourceCardId").GetInt32(), whileRunningQueue: triggerKind != null) :
                 AbilityCooldownModel.Apply(current, id, effect, sample.GetProperty("SourceCardId").GetInt32(),
-                    sample.TryGetProperty("TriggerKind", out var kind) ? kind.GetString() : null);
-            Require(result.Supported, "Native cooldown unsupported: " + result.UnsupportedReason); current = result.State!;
+                    triggerKind);
+            Require(result.Supported, "Native cooldown unsupported: " + result.UnsupportedReason);
+            callbacks.AddRange(result.PendingCallbacks);
+            if (StatusRemovalModel.RequiresSacrifice(result))
+            {
+                result = StatusRemovalModel.Drain(new(result.State, result.Outcome, result.Rounds, result.Events.ToList(), pendingCallbacks: callbacks));
+                Require(result.Supported, "Native removal sacrifice queue unsupported: " + result.UnsupportedReason);
+                if (sample.TryGetProperty("CardPlaying", out var playing) && playing.GetBoolean())
+                    foreach (var dead in callbacks.Where(item => item.Kind == "OnDeath").GroupBy(item => item.Unit.Id).Select(group => group.Last().Unit))
+                    {
+                        result = RoomCombatModel.SettleQueuedSpawner(result.State!, dead);
+                        Require(result.Supported, "Native card-play standby settlement unsupported: " + result.UnsupportedReason);
+                    }
+                callbacks.Clear();
+            }
+            current = result.State!;
         }
         string? diff = ModelJson.Difference(JsonSerializer.Serialize(current, ModelJson.Options),
             JsonSerializer.Serialize(sample.GetProperty("After").Deserialize<RoomCombatState>(), ModelJson.Options));
-        Require(diff == null, "Native cooldown state differs: " + diff);
+        Require(diff == null, "Native cooldown state differs: " + effect.Type + "/" + sample.GetProperty("SourceCardId").GetInt32() + "/" + string.Join(',', targets) + ": " + diff);
         Require(JsonSerializer.Serialize(before, ModelJson.Options) == parent, "Native cooldown changed its parent.");
     }
     private static void Require(bool condition, string message) { if (!condition) throw new InvalidOperationException(message); }
