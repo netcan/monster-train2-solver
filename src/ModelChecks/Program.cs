@@ -89,6 +89,7 @@ AbilityCooldownChecks.Run();
 AbilityLifecycleChecks.Run();
 AbilityEffectChecks.Run();
 AbilityUpgradeChecks.Run();
+HordeStatChecks.Run();
 AbilityCardChecks.Run();
 UnitAbilityChecks.Run();
 BattleStatisticsChecks.Run();
@@ -161,6 +162,8 @@ foreach (string path in args.Where(path => path.Contains("statistic-overflow-cal
     StatisticOverflowChecks.Native(path);
 foreach (string path in args.Where(path => path.Contains("statistic-zero-increment-calibration", StringComparison.OrdinalIgnoreCase)))
     StatisticZeroIncrementChecks.Native(path);
+foreach (string path in args.Where(path => path.Contains("horde-stat-calibration", StringComparison.OrdinalIgnoreCase)))
+    HordeStatChecks.Native(path);
 
 static void Check(bool condition, string message)
 {

@@ -73,6 +73,7 @@ param(
     [switch] $CompanionBoss,
     [switch] $AbilityEffects,
     [switch] $EquipmentAbilities,
+    [switch] $HordeStats,
     [switch] $AbilityLifecycle,
     [switch] $AbilityCooldown,
     [switch] $AbilityCache,
@@ -143,6 +144,7 @@ $environment = @{
     MT2_PROBE_ISOLATE_UI_RNG = $(if ($CompanionBoss -or $ConditionalTriggers -or $DetachedBonusDraw -or $RoomCapacity -or $RoomCapacityLethal -or $BonusDraw -or $BonusDrawLethal -or $NumericRanges -or $NumericRangesLethal -or $Drawing -or $TriggeredHealing -or $PostCombatHealing -or $TriggeredDamage -or $DamageDeathQueue -or $TerminalDeathDamage -or $HitKill -or $DyingUpgrades -or $AttackTriggers -or $TriggeredStatus) { '1' } else { '0' })
     MT2_PROBE_STATISTIC_QUERIES = $(if ($StatisticQueries) { '1' } else { '0' })
     MT2_PROBE_STATISTIC_OVERFLOW = $(if ($StatisticOverflow) { '1' } else { '0' })
+    MT2_PROBE_HORDE_STATS = $(if ($HordeStats) { '1' } else { '0' })
 }
 if ($Sentry -or $SentryLethal) {
     $environment['MT2_PROBE_MODIFIERS'] = $(if ($SentryLethal) { 'sentry-lethal' } else { 'sentry' })
@@ -925,8 +927,20 @@ $result = [pscustomobject]@{
     StatisticOverflowCalibration = $(if ($StatisticOverflow) { Join-Path $profile 'statistic-overflow-calibration.json' } else { $null })
     StatisticZeroIncrementCalibration = $(if ($StatisticOverflow) { Join-Path $profile 'statistic-zero-increment-calibration.json' } else { $null })
     Trace = $tracePath
+    HordeStatCalibration = $(if ($HordeStats) { Join-Path $profile 'horde-stat-calibration.mt2f' } else { $null })
 }
 $result | ConvertTo-Json
+if ($HordeStats) {
+    $hordePath = Join-Path $profile 'horde-stat-calibration.mt2f'
+    if (-not (Test-Path -LiteralPath $hordePath)) { throw 'Missing native Horde numerical calibration.' }
+    Add-Type -Path (Join-Path $workspace 'src\FixtureArchive\bin\Release\net8.0\FixtureArchive.dll')
+    $hordeArchive = [MonsterTrain2Poju.Fixtures.FixtureDocument]::Read($hordePath)
+    $horde = $hordeArchive.RootElement.ToObjectGraph()
+    $hordeArchive.Dispose()
+    if (-not $horde.LiveContextUnchanged -or $horde.Mismatches -ne 0 -or @($horde.Samples).Count -ne 560 -or @($horde.Casualties).Count -ne 175) {
+        throw 'Native Horde numerical coverage is incomplete or differs.'
+    }
+}
 if ($StatisticQueries) {
     $queryPath = Join-Path $profile 'statistic-query-calibration.json'
     if (-not (Test-Path -LiteralPath $queryPath)) { throw 'Missing native statistic-query calibration.' }

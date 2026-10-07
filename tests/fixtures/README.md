@@ -270,3 +270,15 @@ parallel branches and wins at Pyre 80. This 31,439-byte direct binary archive ha
 5,000 unique nodes and no source JSON. The first-battle Boss and original waves
 remain intact. Broader quiet-callback death, Horde, relic and room ability
 interactions remain separate work.
+
+`horde-stat-calibration.mt2f` is a direct native schema 1 numerical calibration,
+with 560 exact raw-stat steps and 175 casualty threshold/count boundaries.
+It covers first/later additions, independent HP/max HP buckets, signed overflow,
+99999 HP caps, 9999 stack caps, lethal HP and the separate threshold gate.
+Temporary definition/map/raw-field substitutions are restored before an ordinary
+steward-once battle, whose complete chain still matches in 16 branches. The
+calibration recomputes all samples independently in 32 branches and records an
+unchanged complete live actor/context. The 4,625-byte archive contains 1,051 unique
+nodes and no source JSON. UI calls and actual status removal are intercepted
+during this numerical oracle; it does not prove Horde status callbacks, simulated
+deaths, merging or complete Horde battles. Those remain explicit integration work.

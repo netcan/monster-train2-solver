@@ -123,6 +123,7 @@ namespace MonsterTrain2Poju.Probe
                 RuleCatalogProbe.Capture(managers);
                 if (Environment.GetEnvironmentVariable("MT2_PROBE_STATISTIC_QUERIES") == "1") StatisticQueryCalibration.Capture(this);
                 if (Environment.GetEnvironmentVariable("MT2_PROBE_STATISTIC_OVERFLOW") == "1") StatisticOverflowCalibration.Capture(this);
+                if (Environment.GetEnvironmentVariable("MT2_PROBE_HORDE_STATS") == "1") HordeStatCalibration.Capture(this);
                 if (Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == "unit-upgrade-scaling") UnitUpgradeScalingScenario.Calibrate(this);
                 calibrated = true;
             }

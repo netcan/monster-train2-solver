@@ -103,6 +103,7 @@ are copied immutable values; independent child states can run on worker threads.
 | Unit ability lifecycle primitives | `AbilityLifecycleModel` and spawn transitions | 21 native assignment/removal API cases, raw cooldown restoration, equipment overlay history, permanent disable order and disabled player/enemy births; complete subsequent policy and parallel branches |
 | Ability assignment/removal effects | `CardSpellModel`, `RoomCombatModel` and `AbilityLifecycleModel` | 17 native effect states and 17 queued dispatches with 35 payloads; multi-target and last-target spells, pre-own replacement, cached self replacement/removal, exact current disabled IDs and complete policies with parallel branches |
 | Ability upgrades and equipment grants | `CardUpgradeModifier`, `UnitModifierModel` and spawn transitions | Permanent/temporary initial selection, keep-existing and matching-removal gates, raw restoration after repeated equipment replacement, direct assignment clearing history, disabled upgraded births and real equipment skill casts; complete policy and parallel branches |
+| Horde numerical primitives | `HordeStatModel` | 560 native raw-stat steps and 175 casualty boundaries, signed overflow, HP/stack caps and 32 branches; status lifecycle, queues, movement and merging remain to be integrated |
 | Additional spells, abilities, relics | Not complete | Unsupported interactions explicitly reject the model transition |
 
 `CardEffectAddBattleCard` uses one shared immutable generation model for spells
@@ -3453,3 +3454,65 @@ with exit code zero, including inventory/SHA-256 verification, pure checks,
 all independent native comparisons and parallel branches. Probe builds with
 zero warnings/errors; ModelChecks retains its 12 existing nullable warnings.
 Both changed PowerShell scripts parse successfully and `git diff --check` passes.
+
+## Horde numerical primitives and native calibration
+
+`HordeStatModel` implements the numerical step in native
+StatusEffectHordeState.OnStacksChangedUpdateCharacterStats and the separate
+health-based casualty test/count. The definitions retain authored attack and
+health per troop, distinct from the unit's current raw fields. First additions
+replace those fields with authored stats times added stacks. Later additions
+add to the existing fields. Removals always subtract authored attack, but assess
+current HP and max HP separately using native single-precision division and
+ceiling: a field already in the remaining troop-count bucket is retained.
+The casualty count preserves at least one troop for the later physical death.
+
+Native integer multiplication/addition wrap. The HP setters independently cap
+at 99999, retaining negative growth results and HP above max HP; the attack setter
+does not lower-clamp raw damage. The casualty threshold uses its own signed
+integer product, so a positive computed removal count is not sufficient to
+dispatch it. Native status stack setters cap at 9999 before those checks.
+The model keeps the threshold decision and computed count separately.
+
+`-HordeStats` invokes the actual private native numerical methods synchronously
+at the first decision. It temporarily substitutes a cloned character definition
+and a copied status dictionary on the live Pyre actor. UI updates are skipped
+only for that actor during calibration. The casualty method's call to remove
+Horde is intercepted to record the requested count, avoiding status callbacks,
+simulated death statistics and trigger queues. All original definition/map
+references, raw attack, HP/max HP and the dirty flag are restored in finally;
+complete actor and context captures must match afterward. Thus this is a
+numerical oracle, not an end-to-end Horde status or battle fixture.
+
+On game 2.2.1, MVID `8fb07b96-f4db-4d2b-884d-c00536d6ccf4`, all 560 numerical
+steps and 175 casualty boundaries match with zero differences. The matrix
+includes first/later additions, removals across separate HP buckets, zero
+private-method steps, exact damage thresholds, lethal HP, overflow and caps.
+Four actual steps retain HP above max HP and 19 produce negative growth HP.
+Independent checks recompute all samples in 32 branches and preserve parent
+snapshots. The subsequent ordinary steward-once battle also matches all 55 room
+stages, 13 card cycles, 14 train phases, 11 enemy spawns and seven EndTurns,
+including the entire chain in 16 parallel branches; it wins at Pyre 49.
+The muted Instant run takes 36.46 seconds, exits zero and leaves original files
+unchanged. All battle capture failure/mismatch/unsupported/pending counts are zero.
+
+`tests/fixtures/horde-stat-calibration.mt2f` is a direct native schema 1 archive:
+4,625 bytes, 1,051 unique nodes, SHA-256
+`1705f0c276404b5f0129f8c97ed5eb3d9be0271ab31c219c4a54bfd326bd2ccb`.
+It has no text source or JSON dependency. The inventory is now 97 archives:
+88 battles and nine calibration suites.
+
+Horde remains explicitly unsupported by ordinary room validation until this
+numerical foundation is connected to starting/runtime status additions and
+removals, OnHit/max-HP casualty settlement, simulated deaths, repeated rally /
+harvest callbacks and OnTroopAdded/Removed payloads. Repeated spawns must also
+retain native IsSpawning cooldown gates; summoning, movement merging and clone
+behavior need complete native state comparisons. These requirements remain
+part of the complete battle simulation objective, together with grafts,
+moon/deathwish, global relics, room attachments and specialized Boss state machines.
+
+The complete 97-archive regression exits zero, including inventory/SHA-256
+verification, pure checks, all independent native comparisons and parallel
+branches. Probe builds with zero warnings/errors; ModelChecks retains its 12
+existing nullable warnings. Both changed PowerShell scripts parse successfully
+and `git diff --check` passes.
