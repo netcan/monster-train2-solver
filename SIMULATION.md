@@ -52,6 +52,7 @@ are copied immutable values; independent child states can run on worker threads.
 | Maximum-health buff/debuff spells | `UnitHealthModel` and `CardSpellModel` | Signed temporary source-card offsets, battle/unit-death lifetimes, multiplier/immunity, suppressed OnHeal, direct lethal loss and post-boss effect chains |
 | Healing triggers | `CombatTrigger` and `RoomCombatModel` | Native repeated/once rewards and silence; zero/full/immune healing, deployment timing, preview flags and child isolation checks |
 | Healing effects on unit triggers | `CombatEffect.Action`, `HealingModel` and `RoomCombatModel` | Native self/room/healable/random targets, per-group ranges, negative/zero amounts, empty-room sampling, source-card independence and deferred OnHeal upgrades |
+| Damage effects on unit triggers | `CombatEffect.Action` and `RoomCombatModel` | Native quantity tests/samples, source-card attribution, status multipliers, defenses, death FIFO and deferred spawner exhaustion |
 | Unit post-combat healing | `RoomCombatModel.ApplyUnitPostCombat` and `UnitHealerModel` | Native per-actor healing/ordinary order, attack/trigger prevention, once/silence, changing healer quantities and complete phase/decision states |
 | Terminal spell resolution | `CardSpellModel` and `BattleActionModel` | Settled native boss kill continues live effects, detached spawner upgrades/removal and healing; effect gates skip/cancel, then played/discard callbacks complete |
 | Enemy waves and treasure | `EnemySpawningModel` | Native group cache, spawn order, phase, slots and treasure floor selection |
@@ -1359,6 +1360,53 @@ fixtures pass; there are now 48 retained complete battles. Cross-room/sticky
 character effects, sacrifice healing, additional triggers/statuses, equipment,
 room/relic effects, boss actions/companions/final bosses and resurrection still
 leave the complete-battle objective open.
+
+Schema 36 adds ordinary character-trigger `CardEffectDamage` descriptors to live
+units, future player summons and future enemy definitions. Quantity getters
+clamp raw damage/range endpoints without parent-card modifiers. Runtime damage
+still passes the triggering unit as attacker and its spawner as the explicit
+played card. This preserves responsible-card traits, per-hit statistics and
+kill attribution; numeric source upgrades enter through applicable damage
+traits rather than changing the effect-state quantity itself.
+
+Damage preflight and runtime tests each sample a range, even for empty target
+sets. An application samples once after actual target collection, then applies
+one quantity to its ordered group. Self bypasses ordinary team filters; random
+target tests consume no Battle draws. Negative samples and zero maximum ranges
+fail before application, with casting and subsequent-effect cancellation flags
+preserved. Status multipliers read the actor's stacks and wrap integer products.
+The shared damage engine applies Default damage defenses without direct-attack
+melee weakness, lifesteal or spikes.
+
+OnDeath callbacks remain in the shared FIFO. Damage deaths update death counters
+inline, but their spawner return/exhaustion waits until the complete trigger
+queue ends and uses active character creation order. Later generated cards
+therefore receive the exhaustion event. Upgrade deaths retain their previously
+verified inline settlement. Pure checks cover these differences, late generation,
+source traits/offsets, defenses, test gates, empty/random groups, integer wrapping,
+parent isolation and 32 parallel branches.
+
+`tests/fixtures/full-battle-triggered-damage.json.gz` preserves the complete
+native trace unchanged: 18 plays, 6 EndTurns, 48 room stages, 9 spawns, 10
+pre-combat phases, 9 generation effects and 12 upgrade callbacks. Its 198 damage
+quantity observations include 138 tests and 60 applications: 9 failed negative
+tests, 9 empty ranged applications, 13 groups, 9 random selections, 6 positive
+status multipliers and 8 death effects. Independent hit checks verify 70 damage
+requests, 2 shield blocks, 16 armor observations and explicit spawner source
+identities. Two phase snapshots show newly generated cards receiving the late
+exhaustion counter. All phase and initial/mid-battle policy comparisons match,
+including 16 parallel branches, victory and final Pyre health 80.
+
+The captured game is 2.2.1, module MVID
+`8fb07b96-f4db-4d2b-884d-c00536d6ccf4`. Raw JSON is 249,677,993 bytes,
+SHA-256 `9e2c759d5cf5715e59803e1728ea64a41eb27bfd26886935c9940c6be27978ed`;
+the byte-identical gzip is 7,875,744 bytes. Capture failures, mismatches,
+unsupported phases and pending records are zero, and the original profile is
+unchanged. All 48 earlier complete battles and 8 calibrations pass; there are now
+49 retained complete battle fixtures. Cross-room/sticky character targets,
+combat-event and other triggers/statuses, specialized sacrifice effects,
+equipment, room/relic effects, boss actions/companions/final bosses and
+resurrection still leave the full objective open.
 
 Schema 24 captures ordered `CardTraitScalingAddStatusEffect` descriptors on
 immutable card instances and generated-card rules, plus the native stackability

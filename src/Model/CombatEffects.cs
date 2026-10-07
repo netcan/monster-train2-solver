@@ -75,9 +75,11 @@ namespace MonsterTrain2Poju.Model
         public CardGenerationRule? Generation { get; }
         public CardActionEffect? UnitUpgrade { get; }
         public CardActionEffect? Action { get; }
+        // Null disables scaling; otherwise native reads stacks from the triggering unit.
+        public string? DamageStatusMultiplier { get; }
         public CombatEffect(string type, int value, int counter, string destination, int count,
             IReadOnlyList<string> cardPool, bool skipDuplicateInHand, CardGenerationRule? generation = null,
-            CardActionEffect? unitUpgrade = null, CardActionEffect? action = null)
+            CardActionEffect? unitUpgrade = null, CardActionEffect? action = null, string? damageStatusMultiplier = null)
         {
             Type = type; Value = value;
             // Every remaining count <= 1 despawns on the next application. Native UI previews can
@@ -86,14 +88,14 @@ namespace MonsterTrain2Poju.Model
             // Only generated-card effects interpret this parameter as a pile destination.
             Destination = type == "CardEffectAddBattleCard" ? destination : ""; Count = count;
             CardPool = Array.AsReadOnly(cardPool.ToArray()); SkipDuplicateInHand = skipDuplicateInHand;
-            Generation = generation; UnitUpgrade = unitUpgrade; Action = action;
+            Generation = generation; UnitUpgrade = unitUpgrade; Action = action; DamageStatusMultiplier = damageStatusMultiplier;
         }
         internal CombatEffect WithCounter(int counter) => new CombatEffect(Type, Value, counter,
-            Destination, Count, CardPool, SkipDuplicateInHand, Generation, UnitUpgrade, Action);
+            Destination, Count, CardPool, SkipDuplicateInHand, Generation, UnitUpgrade, Action, DamageStatusMultiplier);
         internal CombatEffect WithActionValue(int value) => new CombatEffect(Type, value, Counter, Destination, Count,
             CardPool, SkipDuplicateInHand, Generation, UnitUpgrade, Action == null ? null : new CardActionEffect(Action.Type,
                 Action.Target, value, Action.AllowEnemy, Action.AllowPlayer, Action.Statuses, Action.Upgrade, Action.Lifetime,
-                Action.Tests, Action.Range, Action.Filters, Action.Generation));
+                Action.Tests, Action.Range, Action.Filters, Action.Generation), DamageStatusMultiplier);
     }
 
     public sealed class CombatTrigger

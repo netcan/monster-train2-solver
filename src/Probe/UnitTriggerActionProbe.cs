@@ -9,19 +9,20 @@ namespace MonsterTrain2Poju.Probe
     {
         internal static CardActionEffect? Capture(CardEffectState state)
         {
-            if (!(state.GetCardEffect() is CardEffectHeal)) return null;
+            if (!(state.GetCardEffect() is CardEffectHeal) && !(state.GetCardEffect() is CardEffectDamage)) return null;
             CardEffectData effect = state.GetSourceCardEffectData();
             return Describe(effect, state.GetParamInt(), state.GetUseIntRange() ?
                 new CardEffectRange(state.GetParamMinInt(), state.GetParamMaxInt(), state.GetParamMultiplier()) : null);
         }
-        internal static CardActionEffect? Definition(CardEffectData effect) => effect.GetEffectStateName() != "CardEffectHeal" ? null :
-            // Character trigger effects have no parent card, but native stat getters still clamp healing endpoints.
+        internal static CardActionEffect? Definition(CardEffectData effect) =>
+            effect.GetEffectStateName() != "CardEffectHeal" && effect.GetEffectStateName() != "CardEffectDamage" ? null :
+            // Effect states have no parent card; native damage/heal getters still clamp endpoints.
             Describe(effect, Math.Max(0, effect.GetParamInt()), effect.GetUseIntRange() ?
                 new CardEffectRange(Math.Max(0, effect.GetParamMinInt()), Math.Max(0, effect.GetParamMaxInt()), effect.GetParamMultiplier()) : null);
         private static CardActionEffect Describe(CardEffectData effect, int value, CardEffectRange? range)
         {
             var excluded = new List<SubtypeData>(); effect.GetTargetCharacterExcludedSubtypes(excluded);
-            return new CardActionEffect("Heal", effect.GetTargetMode().ToString(), value,
+            return new CardActionEffect(effect.GetEffectStateName() == "CardEffectDamage" ? "Damage" : "Heal", effect.GetTargetMode().ToString(), value,
                 effect.GetTargetTeamType().HasFlag(Team.Type.Heroes), effect.GetTargetTeamType().HasFlag(Team.Type.Monsters),
                 Array.Empty<CombatStatus>(), tests: new CardEffectTests(effect.GetShouldTest(), effect.GetShouldFailToCastIfTestFails(),
                     effect.GetShouldCancelSubsequentEffectsIfTestFails(), false),

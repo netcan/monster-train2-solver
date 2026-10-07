@@ -75,7 +75,7 @@ namespace MonsterTrain2Poju.Model
                 { outcome = result.Outcome; break; }
             }
             // Native OnHeal/OnDeath append to the shared FIFO after already queued team actors.
-            // Death counters and standby returns still settle when the death occurs.
+            // Damage deaths return their spawner after the entire queue; upgrade deaths settle inline.
             for (int next = 0; next < queue.Count; next++)
             {
                 RoomCombatModel.QueuedCharacterTrigger queued = queue[next];
@@ -83,6 +83,12 @@ namespace MonsterTrain2Poju.Model
                 if (!result.Supported) return Unsupported(result.UnsupportedReason!);
                 rooms[queued.RoomIndex] = result.State!; context = result.State!.Context; results.Add(result);
                 if (Terminal(result.Outcome)) outcome = result.Outcome;
+            }
+            foreach (RoomCombatModel.QueuedCharacterTrigger queued in queue.Where(item => item.ReturnSpawnerAfterQueue).OrderBy(item => item.Unit.Id))
+            {
+                RoomCombatResult result = RoomCombatModel.SettleQueuedSpawner(WithContext(rooms[queued.RoomIndex], context), queued.Unit);
+                if (!result.Supported) return Unsupported(result.UnsupportedReason!);
+                rooms[queued.RoomIndex] = result.State!; context = result.State!.Context; results.Add(result);
             }
             return new TrainCombatResult(Freeze(source, rooms, context), outcome, results);
         }
