@@ -17,7 +17,7 @@ namespace MonsterTrain2Poju.Model
     public static class CardTargetModel
     {
         public static bool Supports(string mode) => new[] { "Room", "FrontInRoom", "BackInRoom", "Weakest", "RoomHealTargets",
-            "DropTargetCharacter", "LastTargetedCharacters", "StrongestLastTargetedCharacters", "RandomInRoom", "Self" }.Contains(mode) || IsCrossRoom(mode);
+            "DropTargetCharacter", "LastTargetedCharacters", "StrongestLastTargetedCharacters", "RandomInRoom", "Self", "LastSpawnedCharacter" }.Contains(mode) || IsCrossRoom(mode);
         public static bool IsCrossRoom(string mode) => new[] { "Tower", "RandomFromAnyRoom", "FrontInAllRooms",
             "FrontInRoomAndRoomAbove", "WeakestAllRooms", "StrongestAllRooms", "StrongestLastTargetedCharactersRoom" }.Contains(mode);
         public static bool IsRandom(string mode) => mode == "RandomInRoom" || mode == "RandomFromAnyRoom";
@@ -29,6 +29,7 @@ namespace MonsterTrain2Poju.Model
             RoomCombatState? room = train.Rooms.FirstOrDefault(item => item.RoomIndex == roomIndex);
             if (room == null) return new CardTargets(Array.Empty<int>(), "The selected target room does not exist.");
             if (effect.Target == "Self") return Self(train.Rooms.SelectMany(item => item.Units), effect, selfUnitId);
+            if (effect.Target == "LastSpawnedCharacter") return LastSpawned(room);
             string? filterError = effect.Filters?.Validate();
             if (filterError != null) return new CardTargets(Array.Empty<int>(), filterError);
             if (IsCrossRoom(effect.Target))
@@ -100,8 +101,10 @@ namespace MonsterTrain2Poju.Model
         }
 
         public static CardTargets Collect(RoomCombatState room, CardActionEffect effect, IReadOnlyList<int> lastTargets,
-            CombatTeam? dropTeam = null, int dropPosition = -1, bool firstEffect = false, bool isTesting = false, int selfUnitId = 0)
+            CombatTeam? dropTeam = null, int dropPosition = -1, bool firstEffect = false, bool isTesting = false, int selfUnitId = 0,
+            int lastSpawnedOverrideUnitId = 0)
         {
+            if (effect.Target == "LastSpawnedCharacter") return LastSpawned(room, lastSpawnedOverrideUnitId);
             if (!Supports(effect.Target)) return new CardTargets(Array.Empty<int>(), "Unmodeled target mode " + effect.Target);
             if (IsCrossRoom(effect.Target)) return new CardTargets(Array.Empty<int>(), "Cross-room targeting requires the complete train.");
             if (effect.Target == "Self") return Self(room.Units, effect, selfUnitId);
@@ -148,6 +151,14 @@ namespace MonsterTrain2Poju.Model
             if (context == null) return new CardTargets(Array.Empty<int>(), "Random targeting requires Battle RNG.");
             RngDraw chosen = context.BattleRng.Range(0, candidates.Count);
             return new CardTargets(new[] { candidates[chosen.Value].Id }, battleRng: chosen.State);
+        }
+
+        private static CardTargets LastSpawned(RoomCombatState room, int overrideId = 0)
+        {
+            int? id = overrideId > 0 ? overrideId : room.Context?.LastSpawnedUnitId;
+            if (!id.HasValue) return new CardTargets(Array.Empty<int>(), "Last-spawned targeting requires the captured unit reference.");
+            // Native uses a same-room reference and bypasses ordinary target filters.
+            return new CardTargets(id > 0 && room.Units.Any(unit => unit.Id == id) ? new[] { id.Value } : Array.Empty<int>());
         }
 
         private static CardTargets Self(IEnumerable<CombatUnit> units, CardActionEffect effect, int id)

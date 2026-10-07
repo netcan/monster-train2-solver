@@ -336,3 +336,15 @@ repeat in 32 branches, and the complete 19-play/seven-EndTurn policy wins at Pyr
 53 from initial and actual mid-battle roots in 16 branches. The 36,888-byte archive
 contains 6,137 unique nodes and no source JSON. Pending-original-death-listener
 upgrades and broader Horde summoning/merging/cloning remain separate work.
+
+`full-battle-rally-triggers.mt2f` is a native schema-75 battle with five exact
+Horde growth/birth/removal operations, ten post-play player/enemy phases and twelve
+Rally dispatches. It records last-spawned reference timing, explicit overrides,
+cached original-room actors, other-floor/new-summon exclusion, repeated/once-only
+rewards, silence, required armor and an enemy override that bypasses a player-only
+effect filter. Complete operation/phase/actor states and accepted queue counts
+match independently in 32 branches. The complete 13-play/five-EndTurn policy wins
+at Pyre 80 from initial and actual mid-battle roots in 16 branches. The 30,867-byte
+archive contains 4,937 unique nodes and no source JSON. Ordinary/cardless summons,
+retained/dead references, lethal Rally and Horde merging/cloning remain separate
+native integration work.

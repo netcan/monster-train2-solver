@@ -63,6 +63,7 @@ namespace MonsterTrain2Poju.Model
         private static TrainCombatState ClearRemovedReferences(TrainCombatState source, HashSet<int> activeIds)
         {
             CombatContext? context = source.Context;
+            if (context?.LastSpawnedUnitId > 0 && !activeIds.Contains(context.LastSpawnedUnitId.Value)) context = context.WithLastSpawned(0);
             foreach (CardInstanceState card in context?.CardRegistry ?? context?.CardInstances ?? Array.Empty<CardInstanceState>())
                 if (card.EquippedUnitId > 0 && !activeIds.Contains(card.EquippedUnitId.Value)) context = context!.WithCard(card.WithEquippedUnit(0));
             return new TrainCombatState(source.Rooms.Select(room => new RoomCombatState(room.RoomIndex, room.Deployment,

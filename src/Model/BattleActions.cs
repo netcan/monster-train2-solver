@@ -210,7 +210,7 @@ namespace MonsterTrain2Poju.Model
             context = new CombatContext(new CardCycleState(context.Cards.Hand.Where(item => item.InstanceId != card.InstanceId).ToArray(),
                 context.Cards.Draw, context.Cards.Discard, context.Cards.Rng, context.Cards.DrawModifier, context.Cards.ExternalInteractions, context.Cards.BonusDraw),
                 context.BattleRng, context.Gold, context.NextCardId, context.MaxHandSize, context.StatusRules, context.Statistics, context.CardInstances,
-                context.CardRegistry, context.AllScenarioBossesDead, context.NextAddedTemporaryUpgrades, context.OtherPiles, context.QueryFrame, context.KillCamActivated, context.MagicPower, context.IsolatedBattlePreview, context.EnergyState, context.RoomCapacities, context.AbilityCardCache, context.LastAbilityActivatorUnitId, context.PermanentlyDisabledAbilities);
+                context.CardRegistry, context.AllScenarioBossesDead, context.NextAddedTemporaryUpgrades, context.OtherPiles, context.QueryFrame, context.KillCamActivated, context.MagicPower, context.IsolatedBattlePreview, context.EnergyState, context.RoomCapacities, context.AbilityCardCache, context.LastAbilityActivatorUnitId, context.PermanentlyDisabledAbilities, context.LastSpawnedUnitId);
             target = new RoomCombatState(target.RoomIndex, target.Deployment, target.Units, target.ExternalInteractions, context, target.Preview);
             CombatUnit[] players = target.Units.Where(unit => unit.Team == CombatTeam.Player).ToArray();
             int position = action.PlayerPosition == -1 ? players.Length : action.PlayerPosition;
@@ -283,9 +283,32 @@ namespace MonsterTrain2Poju.Model
             else if (rule.Effect != "Null") return Unsupported("Unimplemented card effect " + rule.Effect);
             else if (action.PlayerPosition != -1 || action.TargetUnitId != 0) return Illegal("A no-target card does not take a target or position.");
 
+            bool terminal = outcome == RoomOutcome.BattleWon || outcome == RoomOutcome.PlayerDefeated;
+            if (terminal && context.Statistics != null && context.Statistics.DeckCards == null)
+                return Unsupported("Terminal card resolution requires permanent deck membership.");
+            // Native marks the card played before Rally, while it still belongs to
+            // the resolving buffer and retains its paid cost.
+            BattleStatistics? playedStatistics = terminal ? context.Statistics?.RefreshDeckAfterCardTerminal() : context.Statistics;
+            playedStatistics = terminal && playedStatistics != null && !playedStatistics.TrackedCards.Contains(card.InstanceId)
+                ? playedStatistics.RecordPlayedCard(card.InstanceId) : playedStatistics?.Increment(card.InstanceId, "TimesPlayed");
+            context = context.WithStatistics(playedStatistics);
+            train = CardSpellModel.WithContext(train, context);
+            if (rule.Effect == "SpawnMonster")
+            {
+                int[] cached = source.Spawn.Train.Rooms.Single(room => room.RoomIndex == action.RoomIndex).Units
+                    .Where(unit => unit.Health > 0 && unit.IsSpawning != true).Select(unit => unit.Id).ToArray();
+                foreach (CombatTeam team in new[] { CombatTeam.Player, CombatTeam.Enemy })
+                {
+                    TrainCombatResult rallied = CardPlayedTriggerModel.Rally(train, team, cached);
+                    if (!rallied.Supported) return Unsupported(rallied.UnsupportedReason!);
+                    train = rallied.State!; context = train.Context!;
+                    if (rallied.Outcome != RoomOutcome.Exchanged) outcome = rallied.Outcome;
+                }
+                piles = context.OtherPiles?.ToArray() ?? piles;
+                terminal = outcome == RoomOutcome.BattleWon || outcome == RoomOutcome.PlayerDefeated;
+            }
             List<CardToken> hand = context.Cards.Hand.Where(item => item.InstanceId != card.InstanceId).ToList();
             List<CardToken> discard = context.Cards.Discard.ToList();
-            bool terminal = outcome == RoomOutcome.BattleWon || outcome == RoomOutcome.PlayerDefeated;
             if (effectsApplied && !(terminal && context.OtherPiles != null))
             {
                 var alive = new HashSet<int>(train.Rooms.SelectMany(room => room.Units).Select(unit => unit.Id));
@@ -330,13 +353,8 @@ namespace MonsterTrain2Poju.Model
             }
             if (terminal && context.Statistics != null && context.Statistics.DeckCards == null)
                 return Unsupported("Terminal card resolution requires permanent deck membership.");
-            // After ClearCards the played callback refreshes statistics from the permanent deck.
-            // Discard then restores the resolving card, and its statistic refresh keeps only that card.
-            BattleStatistics? statistics = terminal ? context.Statistics?.RefreshDeckAfterCardTerminal() : context.Statistics;
-            // A generated spell absent from the fallback deck still enters played history;
-            // native IncrementStat cannot increment its missing dictionary entry.
-            statistics = terminal && statistics != null && !statistics.TrackedCards.Contains(card.InstanceId)
-                ? statistics.RecordPlayedCard(card.InstanceId) : statistics?.Increment(card.InstanceId, "TimesPlayed");
+            // Discard restores the resolving card after terminal clearing.
+            BattleStatistics? statistics = context.Statistics;
             if (terminal) statistics = statistics?.RefreshOwnedCards(new[] { card.InstanceId });
             statistics = statistics?.Increment(card.InstanceId, "TimesDiscarded").WithPlayedCost(card.InstanceId, null);
             if (!terminal && rule.Destination == "Exhausted") statistics = statistics?.Increment(card.InstanceId, "TimesExhausted");
@@ -348,7 +366,7 @@ namespace MonsterTrain2Poju.Model
                 terminal ? playingInstance == null ? context.CardInstances : new[] { (context.FindCard(card.InstanceId) ?? playingInstance).OnDiscard(true, paidCost) } :
                 context.CardInstances?.Select(instance => instance.InstanceId == card.InstanceId
                     ? instance.OnDiscard(true, paidCost) : instance).ToArray(), context.CardRegistry, context.AllScenarioBossesDead, context.NextAddedTemporaryUpgrades,
-                context.OtherPiles == null ? null : piles, context.QueryFrame?.With(runningCombat: !terminal), context.KillCamActivated, context.MagicPower, context.IsolatedBattlePreview, context.EnergyState, context.RoomCapacities, context.AbilityCardCache, context.LastAbilityActivatorUnitId, context.PermanentlyDisabledAbilities);
+                context.OtherPiles == null ? null : piles, context.QueryFrame?.With(runningCombat: !terminal), context.KillCamActivated, context.MagicPower, context.IsolatedBattlePreview, context.EnergyState, context.RoomCapacities, context.AbilityCardCache, context.LastAbilityActivatorUnitId, context.PermanentlyDisabledAbilities, context.LastSpawnedUnitId);
             RoomCombatState[] rooms = train.Rooms.Select(room =>
             {
                 return new RoomCombatState(room.RoomIndex, room.Deployment, room.Units, room.ExternalInteractions, context, room.Preview);

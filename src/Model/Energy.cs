@@ -55,8 +55,11 @@ namespace MonsterTrain2Poju.Model
         }
         private static CombatContext Add(CombatContext context, int amount) => context.WithQueryFrame(context.QueryFrame!.With(
             energy: Math.Min(context.EnergyState!.Maximum, unchecked(context.QueryFrame.Energy!.Value + amount))));
-        internal static CombatContext SetPhase(CombatContext context, string phase) => context.EnergyState == null ? context :
-            context.WithEnergyState(context.EnergyState.With(phase: phase));
+        internal static CombatContext SetPhase(CombatContext context, string phase)
+        {
+            if (phase == "MonsterTurn" && context.LastSpawnedUnitId.HasValue) context = context.WithLastSpawned(0);
+            return context.EnergyState == null ? context : context.WithEnergyState(context.EnergyState.With(phase: phase));
+        }
         internal static CombatContext StartTurn(CombatContext context, int baseEnergy)
         {
             if (context.EnergyState == null) return context.WithQueryFrame(context.QueryFrame?.With(energy: baseEnergy));
