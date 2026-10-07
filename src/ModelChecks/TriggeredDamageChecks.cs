@@ -30,14 +30,19 @@ internal static class TriggeredDamageChecks
         // Use an owner without traits to isolate status and RNG behavior.
         context = new(context.Cards, rng, 0, 2, 10, statistics: BattleStatistics.Empty().TrackCards([1]),
             cardInstances: [CardInstanceState.Empty(1, "owner")]);
-        var armor = new CombatStatus("armor", 10, removeWhenTriggered: true);
+        var armor = new CombatStatus("armor", 10, 1, removeWhenTriggered: true);
         var shield = new CombatStatus("damage shield", 1, removeWhenTriggered: true);
         var pierce = Run(Room(Player([Trigger([Damage(4)])], [new("piercing", 1), new("lifesteal", 1)], hp: 10),
             Enemy(2, statuses: [armor, new("melee weakness", 2), new("spikes", 10)]), Enemy(3, statuses: [shield, armor])));
-        Require(pierce.State!.Units.Single(unit => unit.Id == 2).Health == 26 && pierce.State.Units.Single(unit => unit.Id == 2).Statuses.Single(s => s.Id == "armor").Stacks == 10 &&
+        Require(pierce.State!.Units.Single(unit => unit.Id == 2).Health == 30 && pierce.State.Units.Single(unit => unit.Id == 2).Statuses.Single(s => s.Id == "armor").Stacks == 6 &&
             pierce.State.Units.Single(unit => unit.Id == 3).Health == 30 && !pierce.State.Units.Single(unit => unit.Id == 3).Statuses.Any(s => s.Id == "damage shield") &&
             pierce.State.Units.Single(unit => unit.Id == 1).Health == 10 && pierce.State.Units.Single(unit => unit.Id == 1).Statuses.Single(s => s.Id == "lifesteal").Stacks == 1,
             "Default damage piercing/shield, melee weakness, spikes or lifesteal semantics differ.");
+        var cardless = RoomCombatModel.ApplyPreCombat(Room(Enemy(1, statuses: [new("piercing", 1)],
+            triggers: [Trigger([Damage(4)])]), Enemy(2, statuses: [armor])), 1);
+        Require(cardless.Supported && cardless.State!.Units.Single(unit => unit.Id == 2).Health == 26 &&
+            cardless.State.Units.Single(unit => unit.Id == 2).Status("armor")!.Stacks == 10,
+            "Cardless unit effects lost their native piercing fallback.");
         var range = new CardEffectRange(0, 7, .5f);
         var randomized = Run(Room(Player([Trigger([Damage(0, "RandomInRoom", range)])]), Enemy(2), Enemy(3)));
         RngDraw preflight = range.Sample(rng), test = range.Sample(preflight.State), target = test.State.Range(0, 2), value = range.Sample(target.State);

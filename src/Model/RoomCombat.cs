@@ -800,7 +800,7 @@ namespace MonsterTrain2Poju.Model
                     Trigger(target, "damage shield", 1);
                     damage = 0;
                 }
-                if (damage > 0 && target.Has("armor") && !(actor?.Has("piercing") ?? false))
+                if (damage > 0 && target.Has("armor") && !(sourceCardId == 0 && (actor?.Has("piercing") ?? false)))
                 {
                     int armor = target.Amount("armor");
                     int spent = Math.Min(target.Count("armor"), damage);
