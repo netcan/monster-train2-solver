@@ -35,6 +35,23 @@ internal static class UnitUpgradeCallbackChecks
         Require(JsonSerializer.Serialize(writebackRoom) == writebackParent, "Upgrade callbacks mutated their parent card state.");
         Parallel.For(0, 32, _ => Require(UnitModifierModel.Apply(writebackRoom, 8, marker, "Permanent").State!.Context!.FindCard(2)!.Permanent.Upgrades.Count == 0,
             "Parallel upgrade callbacks crossed a sibling source writeback boundary."));
+        var zeroUpgrade = new CardUpgradeModifier("zero", "zero", new(),
+            [new CombatStatus("armor", 0, 1, hidden: false, displayCategory: "Positive")], false, false, false, 0, 0, []);
+        var zero = UnitModifierModel.Apply(writebackRoom, 8, zeroUpgrade, "Permanent");
+        Require(zero.Supported && zero.State!.Context!.CardInstances!.Count == 1 &&
+            !zero.State.Units.Single().Triggers[0].HasTriggered && zero.State.Units.Single().RegisteredStatus("armor") == null &&
+            zero.State.Context.FindCard(1)!.Permanent.Upgrades.Single().DataId == "zero",
+            "A zero-stack upgrade queued direct-addition callbacks or lost its source modifier.");
+        var silence = new CombatStatus("silenced", 1, stackable: false, hidden: false, displayCategory: "Negative");
+        var gold = EffectTrigger("OnSilenceLost", new("CardEffectRewardGold", 2, 0, "", 0, [], false));
+        var unsilenceActor = new CombatUnit(8, "writeback", CombatTeam.Player, 0, 20, 20, false, false, false, [silence],
+            [gold], spawnerCardId: 1, modifiers: writebackActor.Modifiers, isBoss: false, lastAttackerId: 0, statusRegistry: [silence]);
+        var negativeUpgrade = new CardUpgradeModifier("negative", "negative", new(), [silence.WithStacks(-1)], false, false, false, 0, 0, []);
+        var negative = UnitModifierModel.Apply(new RoomCombatState(0, false, [unsilenceActor], [], writebackContext), 8, negativeUpgrade, "Permanent");
+        Require(negative.Supported && negative.State!.Units.Single().Status("silenced") == null &&
+            negative.State.Context!.Gold == writebackContext.Gold + GoldRewardModel.Adjust(2),
+            "A negative upgrade used addition callbacks instead of removal and SilenceLost: " +
+            (negative.UnsupportedReason ?? JsonSerializer.Serialize(negative.State)));
         Console.WriteLine("UNIT-UPGRADE-CALLBACK-CHECKS PASS: standalone and running-queue source-copy boundaries, final source writeback and 32 isolated branches.");
     }
     private static void Require(bool pass, string message) { if (!pass) throw new InvalidOperationException(message); }

@@ -2160,3 +2160,17 @@ owned statistic membership after placement for those traits. Plain generated
 cards still leave the new entry uncached. Native source-copy callbacks exposed
 five missing zero-valued entries; the independent callback context comparison
 now matches them. Core checks cover both generation paths and parent isolation.
+
+## Signed upgrade status stacks
+
+Native `AddStatusEffectStacks` skips a zero stack entry and sends negative
+entries through status removal. This differs from calling `AddStatusEffect`
+directly, which can enqueue callbacks even for zero or negative additions.
+Unit upgrades now retain the modifier while skipping zero status entries, and
+negative entries use removal callbacks, including `OnSilenceLost`.
+
+The extended native action probe's zero-armor upgrade generated no callbacks;
+the old model incorrectly generated status-changed and armor-added callbacks.
+Core checks cover that no-op, final source-card writeback, and a negative silence
+upgrade whose removal callback grants gold. Direct zero/signed addition checks
+retain their existing callback expectations.

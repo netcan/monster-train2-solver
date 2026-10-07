@@ -59,6 +59,7 @@ namespace MonsterTrain2Poju.Model
             }
             foreach (CombatStatus status in upgrade.Statuses)
             {
+                if (status.Stacks <= 0) continue;
                 error = RoomCombatModel.Validate(new RoomCombatState(source.RoomIndex, source.Deployment,
                     new[] { CardSpellModel.Copy(target, target.Health, target.Statuses.Where(item => item.Id != status.Id).Concat(new[] { status }).ToArray()) },
                     Array.Empty<string>(), source.Context), allowDyingTarget ? targetId : (int?)null);
@@ -109,15 +110,19 @@ namespace MonsterTrain2Poju.Model
                 if (!partial)
                     foreach (CombatStatus status in upgrade.Statuses)
                     {
+                        // Upgrade stacks go through AddStatusEffectStacks, not the direct
+                        // addition API: zero is ignored and negative stacks are removals.
+                        if (!remove && status.Stacks == 0) continue;
                         statuses.TryGetValue(status.Id, out CombatStatus? existing);
-                        if (remove && existing == null && target.RegisteredStatus(status.Id) == null) continue;
-                        if (!remove && (target.StatusImmunities.Contains(status.Id) || target.Status("immune") != null)) continue;
+                        bool removingStatus = remove || status.Stacks < 0;
+                        if (removingStatus && existing == null && target.RegisteredStatus(status.Id) == null) continue;
+                        if (!removingStatus && (target.StatusImmunities.Contains(status.Id) || target.Status("immune") != null)) continue;
                         CombatUnit beforeStatus = Snapshot();
                         int maximum = (existing ?? target.RegisteredStatus(status.Id) ?? status).Stackable == false ? 1 : 9999;
-                        int stacks = remove ? Math.Max(0, (existing?.Stacks ?? 0) - Math.Max(0, status.Stacks)) :
+                        int stacks = removingStatus ? Math.Max(0, (existing?.Stacks ?? 0) - (remove ? Math.Max(0, status.Stacks) : checked(-status.Stacks))) :
                             Math.Min(maximum, checked((existing?.Stacks ?? 0) + status.Stacks));
                         statuses[status.Id] = (existing ?? target.RegisteredStatus(status.Id) ?? status).WithStacks(Math.Max(0, stacks));
-                        if (remove) StatusCallbackModel.Removed(state.RoomIndex, beforeStatus, Snapshot(), status.Id, statusCallbacks);
+                        if (removingStatus) StatusCallbackModel.Removed(state.RoomIndex, beforeStatus, Snapshot(), status.Id, statusCallbacks);
                         else
                         {
                             string? callbackError = StatusCallbackModel.Added(state.RoomIndex, beforeStatus, Snapshot(), status.Id, statusCallbacks, status);
