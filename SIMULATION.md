@@ -23,6 +23,9 @@ runtime CardData, upgrades or character triggers at deployment turn zero,
 reinitialize affected card instances, and keep the original Boss and waves.
 Companion-Boss fixtures additionally move the same Boss container to the second
 wave, preserving its attack/health and every ordinary enemy's original wave.
+Sentry fixtures change the original Boss's looping/relentless flags and add
+movement/arrival callbacks, plus Steward health/size/status upgrades; Boss stats
+and all spawn waves stay intact.
 The automated policy selects legal actions and invokes native card play and
 EndTurn. The probe observes actual state and callback boundaries, including
 private counters and the native ordered signal listeners. Specialized setup
@@ -92,6 +95,7 @@ are copied immutable values; independent child states can run on worker threads.
 | EndTurn to next decision | `BattleTurnModel.EndTurn` | Seven native consecutive transitions in each supported fixture |
 | Battle to terminal result | `BattleSimulator.Resolve` and `ResolveNoMoreCards` | Independent card policies and seven-turn chains, mid-battle inputs and 16 parallel branches |
 | Single companion Boss transition | `CompanionBossModel` and `TrainCombatModel` | Wave exhaustion, forced looping, ordered movement/status/removal callbacks, raw/canonical phase boundaries and both no-card/card policies |
+| Unit arrival Sentry queues | `TrainCombatModel` and `RoomCombatModel` | Physical guard order, moved-target overrides, retained dead victims, once/silence/threshold gates and terminal hit/death queues |
 | Additional spells, abilities, relics | Not complete | Unsupported interactions explicitly reject the model transition |
 
 `CardEffectAddBattleCard` uses one shared immutable generation model for spells
@@ -2922,8 +2926,8 @@ the companion phase after both teams' PreCombat and before energy/draw.
 Train movement dispatches OnTrainRoomLoop, PostAscension and OnShift in the
 native group order and retains their events for subsequent death/card routing.
 This removes the previous blanket rejection of relentless-removal triggers.
-Paired companions, outer/final Boss state machines and movement Sentry effects
-remain explicit unsupported interactions.
+Paired companions and outer/final Boss state machines remain explicit
+unsupported interactions. Movement Sentry queues are covered in the next section.
 
 Phase comparisons declare stable character/equipment references, using the
 same canonical boundary as player decisions. Unity may finish destruction
@@ -2965,3 +2969,60 @@ Probe builds with zero warnings/errors; ModelChecks retains 12 existing nullable
 warnings and no errors. No JSON source fixture is introduced. Equipment-granted
 abilities, grafts, moon/deathwish, relics, room attachments and broader Boss
 interactions remain work toward the complete simulator.
+
+## Arrival Sentry queues and retained moved targets
+
+Native HeroManager.PostAscensionCharacterTriggers queues PostAscension and
+OnShift for each moved character, then queues OnSentry for opposing characters
+in the destination room's physical order, with the moved character as an explicit
+target. The complete group drains afterward. Looping groups first queue their
+OnTrainRoomLoop callbacks; ordinary destination groups run from top to bottom.
+Stationary characters do not receive arrival callbacks. OnSentry supplies a zero
+integer argument, so positive threshold triggers are accepted but never fire.
+
+TrainCombatModel now builds that complete queue for ascension and exposes a
+standalone Sentry transition. The ordinary unit-trigger engine applies supported
+damage, status, upgrade and resource effects with the native moved-target
+override. LastAttackedCharacter overrides bypass team/status/health/subtype/Boss
+filters, while trigger preflight still has no override. Once and silence gates
+retain their existing semantics. Queued override targets now retain their latest
+health, trigger flags and death state across engines and deferred callbacks;
+later guards cannot damage a stale living snapshot of an already killed victim.
+Terminal movement retains all preceding floor events for death/card routing.
+Effect types and target modes outside the modeled rules remain unsupported.
+
+The native fixtures add repeated, once, ignored-silence and threshold OnSentry
+triggers to Stewards. Permanent upgrades add 50 health and reduce size by one;
+one Steward starts silenced. The original first-battle Boss retains attack 7,
+health 125 and its spawn wave, gains looping and loses starting relentless.
+Ordinary waves stay intact. Enemy movement/hit/death gold callbacks make the
+shared queue observable. The native guard order is IDs 3 then 2, demonstrating
+physical rather than creation order. Normal damage changes the incoming Boss
+from 85 to 64 then 57 HP, including native source-card modifiers. The lethal
+case changes 85 to zero, then observes the later guard with the same zero-HP
+target. Both compare complete room, actor, target and shared resource states.
+
+Both captures use schema 61, game 2.2.1 and module MVID
+`8fb07b96-f4db-4d2b-884d-c00536d6ccf4`:
+
+| Archive | Bytes / nodes | Native time | Plays / EndTurns | Final Pyre | Native Sentry callbacks |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| `full-battle-sentry.mt2f` | 29,354 / 4,772 | 49.88 s | 25 / 8 | 80 | 2 |
+| `full-battle-sentry-lethal.mt2f` | 26,440 / 4,313 | 40.06 s | 21 / 7 | 80 | 2 |
+
+Muted Instant native runs win with zero capture failures, differences,
+unsupported or pending records, and unchanged original files. Both policies
+match independently from initial and actual mid-battle roots in 16 parallel
+branches. Four complete Sentry dispatches repeat in 32 isolated branches. Pure
+checks additionally cover multiple arrivals, once counters, terminal preservation
+of earlier floor events, stationary/opposing-team gates and parent immutability.
+The first development recording produced no Sentry callbacks; coverage gates
+reject it and it is excluded from regression inputs.
+
+All 86 pre-existing archives pass the complete regression. Both new fixtures and
+historical damage-death, attack-trigger and companion-Boss fixtures pass the final
+independent checker. The 88-file inventory/SHA-256 and PowerShell parsing checks
+pass. Probe builds with zero warnings/errors; ModelChecks retains its 12 existing
+nullable warnings and no errors. No source JSON fixture is introduced. The full
+simulator still needs equipment abilities, grafts, moon/deathwish, relics, room
+attachments and specialized Boss interactions.

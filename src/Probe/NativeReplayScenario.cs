@@ -437,7 +437,7 @@ namespace MonsterTrain2Poju.Probe
                     return;
                 }
             }
-            if (fullBattle && !numericModifiersPrepared && (modifierScenario == "companion-boss" || modifierScenario == "numeric-upgrades" || modifierScenario == "dynamic-upgrades" ||
+            if (fullBattle && !numericModifiersPrepared && (modifierScenario == "sentry" || modifierScenario == "sentry-lethal" || modifierScenario == "companion-boss" || modifierScenario == "numeric-upgrades" || modifierScenario == "dynamic-upgrades" ||
                 modifierScenario == "sacrifice-upgrades" || modifierScenario == "hand-upgrades" || modifierScenario == "targeted-hand-upgrades" ||
                 modifierScenario == "healing" || modifierScenario == "healing-triggers" || modifierScenario == "room-spells" ||
                 modifierScenario == "terminal-spells" || modifierScenario == "post-kill-spells" || modifierScenario == "random-spells" ||
@@ -458,6 +458,7 @@ namespace MonsterTrain2Poju.Probe
                 else if (modifierScenario == "x-cost" || modifierScenario == "x-cost-lethal") CardCostScenario.Prepare(managers, log, modifierScenario == "x-cost-lethal");
                 else if (modifierScenario == "bonus-draw" || modifierScenario == "bonus-draw-lethal") BonusDrawScenario.Prepare(managers, log, modifierScenario == "bonus-draw-lethal");
                 else if (modifierScenario == "companion-boss") CompanionBossScenario.Prepare(managers, log);
+                else if (modifierScenario == "sentry" || modifierScenario == "sentry-lethal") SentryScenario.Prepare(managers, log, modifierScenario == "sentry-lethal");
                 else if (modifierScenario == "damage-scaling") DamageScalingScenario.Prepare(managers, log);
                 else if (modifierScenario == "dynamic-statistics") DamageScalingScenario.Prepare(managers, log, true);
                 else if (modifierScenario == "status-scaling") StatusScalingScenario.Prepare(managers, log);

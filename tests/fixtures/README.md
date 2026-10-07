@@ -134,6 +134,21 @@ boundaries. Independent checks verify that their only projected changes are
 destroyed attacker/equipment references. Paired companions and outer/final
 Boss state machines remain unsupported.
 
+`full-battle-sentry.mt2f` and `full-battle-sentry-lethal.mt2f` retain schema 61.
+Both record two native OnSentry dispatches in physical guard order against the
+original Boss. Explicit moved targets bypass LastAttackedCharacter team filters;
+once flags, silence and zero-argument threshold gates match complete room,
+actor and target states. The lethal case preserves the killed Boss as the
+later guard's dead target without applying damage to an old living copy.
+Complete movement queues include PostAscension/OnShift, deferred hit/death
+callbacks and retained earlier-floor events at terminal combat. The authored
+Stewards gain 50 health and reduced size, with one silenced copy; the original
+Boss loses initial relentless and gains looping, retaining its stats/spawn wave.
+Both whole policies match initial and actual mid-battle roots in 16 parallel
+branches: 25 plays/eight EndTurns and 21 plays/seven EndTurns, both Pyre 80.
+Native dispatches repeat in 32 isolated branches. Additional unsupported effect
+targets continue to reject transitions explicitly.
+
 `full-battle-room-capacity.mt2f` and `full-battle-room-capacity-lethal.mt2f`
 retain schema 52 battles with live capacities used by subsequent summons and
 restricted size upgrades. Their 220 exact effect contexts and 2,050 native

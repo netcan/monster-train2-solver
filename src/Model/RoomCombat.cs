@@ -211,7 +211,7 @@ namespace MonsterTrain2Poju.Model
             internal int ParamInt { get; }
             internal int ParamInt2 { get; }
             internal string? ParamString { get; }
-            internal CombatUnit? OverrideTarget { get; }
+            internal CombatUnit? OverrideTarget { get; set; }
             internal CombatUnit? DyingCharacter { get; set; }
             internal bool CanFireTriggers { get; }
             internal bool ReturnSpawnerAfterQueue { get; }
@@ -305,9 +305,20 @@ namespace MonsterTrain2Poju.Model
                         item.Unit.Id == queued.DyingCharacter.Id && item.Unit.Health <= 0)?.Unit;
                     if (latestDying != null) queued.DyingCharacter = latestDying;
                 }
+                if (queued.OverrideTarget != null)
+                {
+                    CombatUnit? latestTarget = queue.LastOrDefault(item => item.Kind == "OnDeath" &&
+                        item.Unit.Id == queued.OverrideTarget.Id && item.Unit.Health <= 0)?.Unit;
+                    if (latestTarget != null) queued.OverrideTarget = latestTarget;
+                }
                 if (!fire(queued)) return false;
                 foreach (QueuedCharacterTrigger item in queue.Where(item => item.DyingCharacter?.Id == queued.Unit.Id))
                     item.DyingCharacter = queued.Unit;
+                foreach (QueuedCharacterTrigger item in queue.Where(item => item.OverrideTarget?.Id == queued.Unit.Id))
+                    item.OverrideTarget = queued.Unit;
+                if (queued.OverrideTarget != null)
+                    foreach (QueuedCharacterTrigger item in queue.Where(item => item.OverrideTarget?.Id == queued.OverrideTarget.Id))
+                        item.OverrideTarget = queued.OverrideTarget;
                 if (queued.Unit.Health <= 0)
                     foreach (QueuedCharacterTrigger item in queue.Where(item => item.RoomIndex == queued.RoomIndex && item.Unit.Id == queued.Unit.Id))
                         item.Unit = queued.Unit;
@@ -489,14 +500,14 @@ namespace MonsterTrain2Poju.Model
                         trigger.Kind != "OnEquipmentAdded" && trigger.Kind != "OnEquipmentAddedToAny" && trigger.Kind != "OnEquipmentRemoved" &&
                         trigger.Kind != "OnSpawn" && trigger.Kind != "OnUnscaledSpawn" && trigger.Kind != "OnSpawnNotFromCard" &&
                         trigger.Kind != "OnTurnBegin" && trigger.Kind != "OnTeamTurnBegin" && trigger.Kind != "EndTurnPreHandDiscard" && trigger.Kind != "PreCombat" &&
-                        trigger.Kind != "OnTrainRoomLoop" && trigger.Kind != "PostAscension" && trigger.Kind != "OnShift" &&
+                        trigger.Kind != "OnTrainRoomLoop" && trigger.Kind != "PostAscension" && trigger.Kind != "OnShift" && trigger.Kind != "OnSentry" &&
                         trigger.Kind != "OnHit" && trigger.Kind != "OnKill" && trigger.Kind != "OnAttackingBeforeDamage" && trigger.Kind != "OnAttacking" &&
                         !StatusCallbackModel.Kinds.Contains(trigger.Kind))
                         return "Unmodeled trigger " + trigger.Kind;
                     if (trigger.Kind != "OnDeath" && trigger.Kind != "PostCombat" && trigger.SkipDuringDeployment == null)
                         return trigger.Kind + " requires deployment timing state.";
                     if (trigger.TriggerAtThreshold > 0 && trigger.Kind != "OnHit" && trigger.Kind != "OnKill" &&
-                        trigger.Kind != "OnAttackingBeforeDamage" && trigger.Kind != "OnAttacking" && !StatusCallbackModel.Kinds.Contains(trigger.Kind))
+                        trigger.Kind != "OnAttackingBeforeDamage" && trigger.Kind != "OnAttacking" && trigger.Kind != "OnSentry" && !StatusCallbackModel.Kinds.Contains(trigger.Kind))
                         return "Threshold arguments are not modeled for " + trigger.Kind;
                     if (trigger.Kind == "OnNewStatusEffectAdded" && !unit.CountUniqueVisibleStatuses().HasValue)
                         return "New-status callbacks require the complete native status dictionary and display definitions.";
@@ -897,7 +908,7 @@ namespace MonsterTrain2Poju.Model
             {
                 WorkingUnit? actor = units.FirstOrDefault(unit => unit.Source.Id == queued.Unit.Id);
                 if (actor == null && (queued.Kind == "OnDeath" || queued.Kind == "OnHit" || queued.Kind == "OnKill" ||
-                    queued.Kind == "OnAttackingBeforeDamage" || queued.Kind == "OnAttacking" || StatusCallbackModel.Kinds.Contains(queued.Kind)))
+                    queued.Kind == "OnAttackingBeforeDamage" || queued.Kind == "OnAttacking" || queued.Kind == "OnSentry" || StatusCallbackModel.Kinds.Contains(queued.Kind)))
                 { actor = new WorkingUnit(queued.Unit) { InRoom = false }; units.Add(actor); }
                 // A queued OnHeal on an actor killed by a later phase effect has no live effects.
                 if (actor != null)
@@ -911,6 +922,7 @@ namespace MonsterTrain2Poju.Model
                     FireTriggers(actor, queued.Kind, canFireTriggers: queued.CanFireTriggers, fromQueue: true, paramInt: queued.ParamInt,
                         overrideTarget: overridden, dyingCharacter: dying);
                     queued.Unit = actor.Freeze();
+                    if (overridden != null) queued.OverrideTarget = overridden.Freeze();
                     if (dying != null) queued.DyingCharacter = dying.Freeze();
                 }
                 return Finish(battleWon ? RoomOutcome.BattleWon : units.Any(unit => unit.Source.IsPyre && !unit.Alive)

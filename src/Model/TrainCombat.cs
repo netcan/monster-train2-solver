@@ -204,17 +204,19 @@ namespace MonsterTrain2Poju.Model
                 var callbacks = looped.Select(id => (id, "OnTrainRoomLoop")).Concat(looped.SelectMany(id =>
                     new[] { (id, "PostAscension"), (id, "OnShift") })).ToArray();
                 TrainCombatResult fired = ApplyMovementTriggers(moving, callbacks);
-                if (!fired.Supported || Terminal(fired.Outcome)) return fired;
-                moving = fired.State!;
+                if (!fired.Supported) return fired;
                 movementResults.AddRange(fired.RoomResults);
+                if (Terminal(fired.Outcome)) return new TrainCombatResult(fired.State, fired.Outcome, movementResults);
+                moving = fired.State!;
             }
             foreach (var group in shifted.GroupBy(item => item.Destination).OrderByDescending(group => group.Key))
             {
                 TrainCombatResult fired = ApplyMovementTriggers(moving, group.SelectMany(item =>
                     new[] { (item.UnitId, "PostAscension"), (item.UnitId, "OnShift") }).ToArray());
-                if (!fired.Supported || Terminal(fired.Outcome)) return fired;
-                moving = fired.State!;
+                if (!fired.Supported) return fired;
                 movementResults.AddRange(fired.RoomResults);
+                if (Terminal(fired.Outcome)) return new TrainCombatResult(fired.State, fired.Outcome, movementResults);
+                moving = fired.State!;
             }
             next = moving.Rooms.ToArray();
             // Enemies that reach the Pyre fight immediately during ascension, within this same turn.
@@ -237,8 +239,27 @@ namespace MonsterTrain2Poju.Model
                 int index = source.Rooms.ToList().FindIndex(room => room.Units.Any(unit => unit.Id == trigger.UnitId));
                 if (index >= 0) queue.Add(new RoomCombatModel.QueuedCharacterTrigger(index,
                     source.Rooms[index].Units.First(unit => unit.Id == trigger.UnitId), trigger.Kind));
+                if (index >= 0 && trigger.Kind == "OnShift") QueueSentries(source.Rooms[index], trigger.UnitId, queue);
             }
             return ApplyCharacterQueue(source, queue);
+        }
+
+        public static TrainCombatResult Sentry(TrainCombatState source, int movedUnitId)
+        {
+            string? error = Validate(source);
+            if (error != null) return Unsupported(error);
+            RoomCombatState? room = source.Rooms.FirstOrDefault(item => item.Units.Any(unit => unit.Id == movedUnitId));
+            if (room == null) return Unsupported("Sentry requires the moved character in its destination room.");
+            var queue = new List<RoomCombatModel.QueuedCharacterTrigger>();
+            QueueSentries(room, movedUnitId, queue);
+            return ApplyCharacterQueue(source, queue);
+        }
+
+        private static void QueueSentries(RoomCombatState room, int movedUnitId, List<RoomCombatModel.QueuedCharacterTrigger> queue)
+        {
+            CombatUnit moved = room.Units.Single(unit => unit.Id == movedUnitId);
+            foreach (CombatUnit actor in room.Units.Where(unit => unit.Team != moved.Team))
+                queue.Add(new RoomCombatModel.QueuedCharacterTrigger(room.RoomIndex, actor, "OnSentry", overrideTarget: moved));
         }
 
         internal static TrainCombatResult ApplyCharacterQueue(TrainCombatState source, List<RoomCombatModel.QueuedCharacterTrigger> queue)

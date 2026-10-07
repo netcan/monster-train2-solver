@@ -71,6 +71,8 @@ param(
     [switch] $DetachedBonusDraw,
     [switch] $ConditionalTriggers,
     [switch] $CompanionBoss,
+    [switch] $Sentry,
+    [switch] $SentryLethal,
     [switch] $BonusDraw,
     [switch] $BonusDrawLethal,
     [switch] $BinaryCapture = $true,
@@ -133,6 +135,10 @@ $environment = @{
     MT2_PROBE_ISOLATE_UI_RNG = $(if ($CompanionBoss -or $ConditionalTriggers -or $DetachedBonusDraw -or $RoomCapacity -or $RoomCapacityLethal -or $BonusDraw -or $BonusDrawLethal -or $NumericRanges -or $NumericRangesLethal -or $Drawing -or $TriggeredHealing -or $PostCombatHealing -or $TriggeredDamage -or $DamageDeathQueue -or $TerminalDeathDamage -or $HitKill -or $DyingUpgrades -or $AttackTriggers -or $TriggeredStatus) { '1' } else { '0' })
     MT2_PROBE_STATISTIC_QUERIES = $(if ($StatisticQueries) { '1' } else { '0' })
     MT2_PROBE_STATISTIC_OVERFLOW = $(if ($StatisticOverflow) { '1' } else { '0' })
+}
+if ($Sentry -or $SentryLethal) {
+    $environment['MT2_PROBE_MODIFIERS'] = $(if ($SentryLethal) { 'sentry-lethal' } else { 'sentry' })
+    $environment['MT2_PROBE_ISOLATE_UI_RNG'] = '1'
 }
 $originalBefore = Get-OriginalSignature
 $unityLog = Join-Path $profile 'unity-scenario.log'
@@ -640,7 +646,17 @@ if ($CompanionBoss) {
         @($trace.RelentlessTriggerRemovals[0].Actual.Triggers | Where-Object RemoveOnRelentlessChange -EQ $true).Count -eq 0
     if (-not $companionCoverage) { throw 'The requested companion Boss transition/removal did not execute.' }
 }
+$sentryCoverage = -not ($Sentry -or $SentryLethal)
+if ($Sentry -or $SentryLethal) {
+    $sentryCoverage = @($trace.Sentries).Count -gt 0 -and @($trace.Sentries | Where-Object { $_.Target.IsBoss }).Count -gt 0
+    if ($SentryLethal) {
+        $sentryCoverage = $sentryCoverage -and @($trace.Sentries | Where-Object { $_.Target.Health -eq 0 -and $_.ActualTarget.Health -eq 0 }).Count -gt 0
+    }
+    if (-not $sentryCoverage) { throw 'The requested native Sentry callbacks and Boss target did not execute.' }
+}
 $result = [pscustomobject]@{
+    SentryCoverage = $sentryCoverage
+    SentrySamples = @($trace.Sentries).Count
     CompanionBossCoverage = $companionCoverage
     Policy = $Policy
     Profile = $profile
