@@ -490,7 +490,7 @@ namespace MonsterTrain2Poju.Model
                 enqueueCharacterTrigger: remove ? callbacks.Add : (Action<QueuedCharacterTrigger>?)null, resetPreviewTriggers: false)
                 .UnitUpgrade(targetId, upgrade, "TemporaryUntilUnitDeath", remove, null, 0, null,
                     directApi: true, upgradeId: upgradeId, anonymousRemovalIndex: anonymousRemovalIndex);
-            return new RoomCombatResult(result.State, result.Outcome, result.Rounds, result.Events.ToList(), result.UnsupportedReason, callbacks);
+            return new RoomCombatResult(result.State, result.Outcome, result.Rounds, result.Events.ToList(), result.UnsupportedReason, callbacks, result.RetainedUnits, result.Dispatches);
         }
 
         public static RoomCombatResult ApplyEquipment(RoomCombatState state, int targetId, int cardId, BattlePlayRules definitions, bool remove = false,
@@ -1606,7 +1606,7 @@ namespace MonsterTrain2Poju.Model
                 string upgradeId = "", int? anonymousRemovalIndex = null, int equipmentSourceCardId = 0)
             {
                 RoomCombatResult result = UnitModifierModel.ApplyWithSettlement(UpgradeRoom(target), target.Source.Id, upgrade, lifetime,
-                    remove, roomCapacity, sourceCardId, kind, (state, changed) =>
+                    remove, roomCapacity, sourceCardId, kind, (state, changed, sacrifice) =>
                     {
                         context = state.Context;
                         foreach (WorkingUnit other in units.Where(unit => unit.Source.Id != target.Source.Id && unit.InRoom))
@@ -1617,7 +1617,11 @@ namespace MonsterTrain2Poju.Model
                         }
                         bool wasAlive = target.Alive;
                         target.Apply(changed);
-                        if (wasAlive && !target.Alive) Death(null, target, 0);
+                        if (sacrifice && wasAlive && !target.Alive)
+                        {
+                            target.Apply(target.Freeze().WithSacrifice(0));
+                            Death(null, target, 0);
+                        }
                         // ApplyCardUpgrade runs the native queue before the effect writes
                         // the upgrade back to its source card. A queue already running
                         // defers child callbacks until that source write has completed.

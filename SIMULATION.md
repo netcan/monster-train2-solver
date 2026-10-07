@@ -104,7 +104,8 @@ are copied immutable values; independent child states can run on worker threads.
 | Ability assignment/removal effects | `CardSpellModel`, `RoomCombatModel` and `AbilityLifecycleModel` | 17 native effect states and 17 queued dispatches with 35 payloads; multi-target and last-target spells, pre-own replacement, cached self replacement/removal, exact current disabled IDs and complete policies with parallel branches |
 | Ability upgrades and equipment grants | `CardUpgradeModifier`, `UnitModifierModel` and spawn transitions | Permanent/temporary initial selection, keep-existing and matching-removal gates, raw restoration after repeated equipment replacement, direct assignment clearing history, disabled upgraded births and real equipment skill casts; complete policy and parallel branches |
 | Horde numerical primitives | `HordeStatModel` | 560 native raw-stat steps and 175 casualty boundaries, signed overflow, HP/stack caps and 32 branches |
-| Horde status changes and casualties | `HordeStatusModel`, status/spawn/damage/health transitions | Eight exact native operations, accepted queues and complete drains, zero/negative notifications, simulated deaths, troop thresholds and spawning cooldown gates; complete subsequent battle and parallel branches. Runtime casualty upgrades, Rally, merging and cloning remain incomplete |
+| Horde status changes and casualties | `HordeStatusModel`, status/spawn/damage/health transitions | Eight exact native operations, accepted queues and complete drains, zero/negative notifications, simulated deaths, troop thresholds and spawning cooldown gates; complete subsequent battle and parallel branches. Rally, merging and cloning remain incomplete |
+| Horde runtime unit upgrades | `UnitModifierModel` and `HordeStatusModel` | 16 exact API/queued operations, ordered healed/unhealed/attributed HP casualties, first-stack reset, raw final removal and lethal sacrifice; 40 death/Harvest phases, four paid spell chains and complete policies with parallel branches |
 | Status removal and Horde sacrifice | `StatusRemovalModel`, `CardSpellModel` and `RoomCombatModel` | Nine native API/effect/trigger operations, exact room/retained actor states, accepted queue counts, ordered death/Harvest dispatches, a real paid spell removing both teams and parallel branches; raw zero HP preserves orphan standby cards while sacrifice signals physical death and retains its responsible card |
 | Reentrant death signals and queued player sacrifice | `UnitDeathState`, `StatusRemovalModel` and `RoomCombatModel` | Three native operations, 45 exact death/Harvest phase states and complete dispatch order, 95 effect/retained-target states, pending versus cleared statistics listeners, spawner timing and parallel branches |
 | Physical death Harvest | `HarvestModel` and `RoomCombatModel` | Four native physical deaths and 31 exact dispatches; own-death children precede player/enemy groups, Hero/Monster/Unit kinds, Horde repetition, required dying statuses, silence and once flags; complete subsequent battle and parallel branches |
@@ -3876,3 +3877,70 @@ recovers only one attack. Pure checks cover both deficits and actual exchange
 damage. The new native Horde-upgrade battle and the existing attack-buff battle
 match complete initial/mid-battle policies and 16 parallel branches after this
 correction. Horde runtime upgrade integration and its archive are separate work.
+
+
+## Horde runtime unit upgrades, schema 73
+
+Unit upgrades now settle each nonlethal maximum-health reduction in native
+order: ordinary additional HP, unhealed HP, and an attributed-health removal.
+Each step updates troop counts, raw attack, simulated-death statistics and its
+accepted callbacks before the next step. New trigger and ability upgrades follow
+these numeric steps; authored status upgrades run last. A first Horde addition
+resets current attack/HP/max HP to the source troop definition, while retaining
+the independently updated attack-from-upgrades field. Growing an existing Horde
+adds its source troop stats. Zero status additions are ignored; negative additions
+and upgrade removals retain the raw status API's distinct semantics.
+
+An ordinary/unhealed HP step that kills the actor exits the native upgrade before
+its later statuses and source-card writeback. That path records nil-source
+Sacrifice and physical death. Removing all Horde stacks through an upgrade can
+instead leave HP zero without dispatching a death signal; the model retains that
+actor's unfinished lifecycle and attached statistics listener. Direct upgrade
+results retain corpses and dispatch diagnostics for independent verification.
+
+`-HordeUpgrades -Policy units-spells-and-junk` uses two real Steward plays, a cloned
+ordinary enemy observer and the original Boss/waves. Fifteen direct API operations
+and one queued PreCombat upgrade cover health before troop changes, two separate
+casualties before later growth, healed versus unhealed reversal, associated-health
+casualties, negative/zero troop upgrades, first installation, raw final removal,
+and a lethal unhealed step that skips a nine-troop addition. The queue case also
+verifies actual source-card writeback. Four real paid Rally spells each execute
+Horde growth, two-step casualty upgrades and both removals before their ordinary
+floor rearrangement. The subsequent 19-play/seven-EndTurn policy matches from
+initial and actual mid-battle inputs in 16 parallel branches.
+
+Standalone API calibration temporarily holds the background ProcessEffectsQueue
+only while its operation is running, mirroring the occupied background loop of a
+normal card effect. Otherwise idle RemoveDeadCharacters drains accepted callbacks
+between the yielded HP steps, producing scheduling-dependent results. Gameplay
+upgrade, status, death and trigger implementations are unchanged by this probe
+isolation. Actual queued-trigger and paid-card cases execute the normal native
+queue. Capture comparisons include API-boundary rooms and queue counts, complete
+settled rooms and retained actors, exact dispatched order, 40 complete native
+death/Harvest phases and 107 retained-target cooldown/removal effect states.
+Mechanism checks repeat in 32 independent branches and preserve their parents.
+
+The final muted Instant run takes 57.60 seconds, wins at Pyre 49 and records
+58 room stages, 13 card cycles, 14 train phases and 11 spawn stages. Capture
+failures, mismatches, unsupported transitions and pending records are zero;
+original profile signatures remain unchanged. The native schema-73 archive
+`tests/fixtures/full-battle-horde-upgrades.mt2f` is 40,760 bytes with 6,624 unique
+nodes, no source JSON and SHA-256
+`b44e36e43490dba2f7472a03b3b8143babaac5145ff88b551937cdd56e2cbeed`.
+The curated inventory now contains 103 archives: 94 battles and nine calibrations.
+
+This establishes runtime Horde upgrades for the recorded API, queued trigger and
+paid effect paths. Horde Rally/summon integration, Bump merging, cloning, revival,
+additional statuses and broader equipment/relic/death callbacks remain incomplete.
+Specialized room modifiers, Duality, upgrade accumulation and external interactions
+still require their own state capture and native coverage. Negative-HP upgrades
+applied to retained dying Horde actors also need separate native coverage.
+
+
+The complete 103-archive regression exits zero: all 94 native battle inputs,
+nine calibrations, typed binary hydration, manifest/SHA-256 integrity, immutable
+parallel branches and independent room/card/train/turn/action comparisons pass.
+The final archive also passes its focused independent API/phase/effect and
+complete-policy checks. Probe builds with zero warnings/errors; ModelChecks has
+its 12 pre-existing nullable warnings. Both changed PowerShell scripts parse and
+git diff --check passes. The separate raw-attack correction is commit `c0e4c95`.

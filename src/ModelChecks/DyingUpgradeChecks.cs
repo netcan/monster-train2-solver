@@ -124,7 +124,7 @@ internal static class DyingUpgradeChecks
                 before.ExternalInteractions, before.Context);
             CombatUnit projected = targets[0];
             RoomCombatResult result = UnitModifierModel.ApplyWithSettlement(scope, projected.Id, effect.Upgrade!, effect.Lifetime,
-                effect.Type == "RemoveUnitUpgrade", null, record.GetProperty("OwnerCardId").GetInt32(), kind, (state, changed) =>
+                effect.Type == "RemoveUnitUpgrade", null, record.GetProperty("OwnerCardId").GetInt32(), kind, (state, changed, _) =>
                 {
                     projected = changed;
                     return new RoomCombatResult(new(state.RoomIndex, state.Deployment,

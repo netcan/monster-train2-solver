@@ -44,7 +44,7 @@ namespace MonsterTrain2Poju.Model
         // Starting another engine here would reset preview triggers and detach combat attackers.
         internal static RoomCombatResult ApplyWithSettlement(RoomCombatState source, int targetId, CardUpgradeModifier upgrade,
             string lifetime, bool remove, int? roomCapacity, int sourceCardId, string? triggerKind,
-            Func<RoomCombatState, CombatUnit, RoomCombatResult> settle, bool allowDyingTarget = false,
+            Func<RoomCombatState, CombatUnit, bool, RoomCombatResult> settle, bool allowDyingTarget = false,
             Action<RoomCombatModel.QueuedCharacterTrigger>? enqueueCallback = null, bool directApi = false,
             string upgradeId = "", int? anonymousRemovalIndex = null, int equipmentSourceCardId = 0,
             bool deferAbilityCallbacks = false)
@@ -55,9 +55,6 @@ namespace MonsterTrain2Poju.Model
             CombatUnit? target = source.Units.FirstOrDefault(unit => unit.Id == targetId);
             if (target?.Modifiers == null || source.Context?.CardInstances == null)
                 return Unsupported("Unit upgrades require unit and card instance modifier state.");
-            if (upgrade.Statuses.Any(status => status.Id == "horde") || target.Status("horde") != null &&
-                (remove ? upgrade.Stats.Health > 0 || upgrade.UnhealedHealth > 0 : upgrade.Stats.Health < 0 || upgrade.UnhealedHealth < 0))
-                return Unsupported("Horde runtime unit upgrades require ordered status and maximum-health casualty settlement.");
             roomCapacity = RoomCapacityModel.Maximum(source.Context, source.RoomIndex, target.Team) ?? roomCapacity;
             if (upgrade.ExternalInteractions.Count > 0) return Unsupported(string.Join("; ", upgrade.ExternalInteractions));
             if (!directApi) upgradeId = upgrade.DataId;
@@ -120,22 +117,31 @@ namespace MonsterTrain2Poju.Model
                 if (!remove) equipment = Math.Min(4, equipment);
                 IReadOnlyList<CombatTrigger> triggers = UnitHealerModel.ApplyDamageUpgrade(target.Triggers, unchecked(sign * upgrade.Stats.Damage), source.Preview);
                 int health = target.Health, maxHealth = target.MaxHealth;
+                var healthFromUpgrades = modifiers.HealthFromUpgrades.ToList();
+                var statuses = target.Statuses.ToDictionary(status => status.Id);
+                var nextModifiers = new UnitModifiers(damage, added, buff, size, equipment, modifiers.CanBeHealed, modifiers.IsClone, upgrades,
+                    healthFromUpgrades, modifiers.SpawnerMatchesDefinition);
+                var statusCallbacks = new List<RoomCombatModel.QueuedCharacterTrigger>();
+                RoomCombatResult? healthFailure = null;
                 ChangeHealth(sign * upgrade.Stats.Health, !(remove && upgrade.Stats.Health > 0), !remove || upgrade.Stats.Health < 0);
+                if (healthFailure != null) return healthFailure;
                 // A negative HP step exits the native application if the target is dead.
                 // Positive steps can finish on an already-dying target, including statuses.
                 bool partial = sign * upgrade.Stats.Health < 0 && health <= 0;
                 if (!partial)
                 {
                     ChangeHealth(sign * upgrade.UnhealedHealth, !remove, false);
+                    if (healthFailure != null) return healthFailure;
                     partial = sign * upgrade.UnhealedHealth < 0 && health <= 0;
                 }
-                var healthFromUpgrades = modifiers.HealthFromUpgrades.ToList();
+
                 if (!partial && remove && directApi)
                 {
                     StatisticCount? associated = healthFromUpgrades.FirstOrDefault(item => item.Key == upgradeId);
                     if (associated != null)
                     {
                         ChangeHealth(-associated.Value, false, false);
+                        if (healthFailure != null) return healthFailure;
                         healthFromUpgrades.Remove(associated);
                         partial = health <= 0;
                     }
@@ -160,8 +166,7 @@ namespace MonsterTrain2Poju.Model
                     }
                     triggers = changedTriggers;
                 }
-                var statuses = target.Statuses.ToDictionary(status => status.Id);
-                var nextModifiers = new UnitModifiers(damage, added, buff, size, equipment, modifiers.CanBeHealed, modifiers.IsClone, upgrades,
+                nextModifiers = new UnitModifiers(damage, added, buff, size, equipment, modifiers.CanBeHealed, modifiers.IsClone, upgrades,
                     healthFromUpgrades, modifiers.SpawnerMatchesDefinition);
                 CombatUnit Snapshot() => new CombatUnit(target.Id, target.AssetKey, target.Team, Math.Max(0, checked(damage + buff)), health, maxHealth,
                     target.CanAttack, target.IsPyre, target.EndsBattleOnDeath, statuses.Values.ToArray(), triggers, target.SpawnerCardId,
@@ -173,7 +178,7 @@ namespace MonsterTrain2Poju.Model
                         allowDyingTarget ? targetId : (int?)null, directApi ? targetId : (int?)null);
                     if (error != null) return Unsupported(error);
                 }
-                var statusCallbacks = new List<RoomCombatModel.QueuedCharacterTrigger>();
+
                 if (!partial && upgrade.AbilityUpgrade?.Definition != null &&
                     (remove ? target.Ability?.DataId == upgrade.AbilityUpgrade.Definition.DataId :
                         !upgrade.DoNotReplaceExistingAbility || target.Ability?.HasAbility != true))
@@ -208,6 +213,13 @@ namespace MonsterTrain2Poju.Model
                         int stacks = remove ? (status.Stacks == -1 ? 0 : Math.Min(maximum, Math.Max(0, checked(oldStacks - status.Stacks)))) :
                             Math.Min(maximum, Math.Max(0, checked(oldStacks + status.Stacks)));
                         statuses[status.Id] = (existing ?? target.RegisteredStatus(status.Id) ?? status).WithStacks(Math.Max(0, stacks));
+                        if (status.Id == "horde" && (removingStatus ? stacks < oldStacks : stacks > oldStacks))
+                        {
+                            RoomCombatResult horde = HordeStatusModel.Change(Stage(), beforeStatus, Snapshot(), stacks - oldStacks);
+                            if (!horde.Supported) return horde;
+                            state = horde.State!; statusCallbacks.AddRange(horde.PendingCallbacks);
+                            Refresh(state.Units.Single(unit => unit.Id == targetId));
+                        }
                         if (removingStatus) StatusCallbackModel.Removed(state.RoomIndex, beforeStatus, Snapshot(), status.Id, statusCallbacks);
                         else
                         {
@@ -217,19 +229,40 @@ namespace MonsterTrain2Poju.Model
                     }
                 var changed = Snapshot();
                 foreach (var callback in statusCallbacks) enqueueCallback?.Invoke(callback);
-                RoomCombatResult applied = settle(state, changed);
+                // Raw Horde stack removal can set HP to zero without a death signal.
+                // Only the negative-HP early-exit path invokes native Sacrifice.
+                RoomCombatResult applied = settle(state, changed, partial);
                 if (!applied.Supported) return applied;
                 state = applied.State!;
                 // Failed additions retain their partial unit changes but never write back to
                 // the spawner. Removal still processes all copies and clears the source card.
                 if (partial && !remove) return Match(state);
 
+                RoomCombatState Stage() => new RoomCombatState(state.RoomIndex, state.Deployment,
+                    state.Units.Select(unit => unit.Id == targetId ? Snapshot() : unit).ToArray(), state.ExternalInteractions, state.Context, state.Preview);
+                void Refresh(CombatUnit actor)
+                {
+                    target = actor; nextModifiers = actor.Modifiers!;
+                    damage = nextModifiers.AttackDamage; added = nextModifiers.AttackDamageAdded; buff = nextModifiers.DamageBuff;
+                    size = nextModifiers.RawSize; equipment = nextModifiers.EquipmentLimit;
+                    health = actor.Health; maxHealth = actor.MaxHealth; triggers = actor.Triggers; nextTriggerId = actor.NextTriggerId;
+                    statuses = actor.Statuses.ToDictionary(status => status.Id);
+                }
                 void ChangeHealth(int delta, bool decreaseHealth, bool heal)
                 {
                     if (delta < 0)
                     {
                         maxHealth = Math.Max(0, checked(maxHealth + delta));
                         health = decreaseHealth ? Math.Max(0, checked(health + delta)) : Math.Min(health, maxHealth);
+                        // Each native DebuffMaxHP settles nonlethal troop casualties before
+                        // the next HP step, trigger/ability upgrade and authored status.
+                        if (health > 0 && statuses.TryGetValue("horde", out CombatStatus? troops) && troops.Stacks > 1)
+                        {
+                            RoomCombatResult casualties = HordeStatusModel.SettleHealth(Stage(), targetId);
+                            if (!casualties.Supported) { healthFailure = casualties; return; }
+                            state = casualties.State!; statusCallbacks.AddRange(casualties.PendingCallbacks);
+                            Refresh(state.Units.Single(unit => unit.Id == targetId));
+                        }
                     }
                     else if (delta > 0)
                     {
