@@ -90,6 +90,10 @@ namespace MonsterTrain2Poju.Model
         }
         internal CombatEffect WithCounter(int counter) => new CombatEffect(Type, Value, counter,
             Destination, Count, CardPool, SkipDuplicateInHand, Generation, UnitUpgrade, Action);
+        internal CombatEffect WithActionValue(int value) => new CombatEffect(Type, value, Counter, Destination, Count,
+            CardPool, SkipDuplicateInHand, Generation, UnitUpgrade, Action == null ? null : new CardActionEffect(Action.Type,
+                Action.Target, value, Action.AllowEnemy, Action.AllowPlayer, Action.Statuses, Action.Upgrade, Action.Lifetime,
+                Action.Tests, Action.Range, Action.Filters, Action.Generation));
     }
 
     public sealed class CombatTrigger

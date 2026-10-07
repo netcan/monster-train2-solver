@@ -88,6 +88,7 @@ namespace MonsterTrain2Poju.Model
                 int size = checked(modifiers.RawSize + sign * upgrade.Stats.Size);
                 int equipment = checked(modifiers.EquipmentLimit + sign * upgrade.Stats.EquipmentLimit);
                 if (!remove) equipment = Math.Min(4, equipment);
+                IReadOnlyList<CombatTrigger> triggers = UnitHealerModel.ApplyDamageUpgrade(target.Triggers, unchecked(sign * upgrade.Stats.Damage), source.Preview);
                 int health = target.Health, maxHealth = target.MaxHealth;
                 ChangeHealth(sign * upgrade.Stats.Health, !(remove && upgrade.Stats.Health > 0), !remove || upgrade.Stats.Health < 0);
                 if (health > 0) ChangeHealth(sign * upgrade.UnhealedHealth, !remove, false);
@@ -104,7 +105,7 @@ namespace MonsterTrain2Poju.Model
                 var nextModifiers = new UnitModifiers(damage, added, buff, size, equipment, modifiers.CanBeHealed, modifiers.IsClone, upgrades,
                     modifiers.HealthFromUpgrades, modifiers.SpawnerMatchesDefinition);
                 var changed = new CombatUnit(target.Id, target.AssetKey, target.Team, Math.Max(0, checked(damage + buff)), health, maxHealth,
-                    target.CanAttack, target.IsPyre, target.EndsBattleOnDeath, statuses.Values.ToArray(), target.Triggers, target.SpawnerCardId,
+                    target.CanAttack, target.IsPyre, target.EndsBattleOnDeath, statuses.Values.ToArray(), triggers, target.SpawnerCardId,
                     Math.Max(1, Math.Min(6, size)), target.StatusImmunities, target.Subtypes, nextModifiers, target.IsBoss);
                 RoomCombatResult applied = settle(state, changed);
                 if (!applied.Supported || applied.Outcome == RoomOutcome.BattleWon || applied.Outcome == RoomOutcome.PlayerDefeated) return applied;

@@ -37,7 +37,7 @@ namespace MonsterTrain2Poju.Probe
         }
         private static UnityRng Rng()
         { uint[] words = RngCalibration.Words(RandomManager.GetState(RngId.Battle)); return new UnityRng(words[0], words[1], words[2], words[3]); }
-        private static bool Enabled() => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == "triggered-healing" &&
+        private static bool Enabled() => (Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") is "triggered-healing" or "post-combat-healing") &&
             TriggeredHealingScenario.Prepared && FullBattleTrace.Active != null && !AllGameManagers.Instance!.GetSaveManager().PreviewMode;
         private static IEnumerator Wrap(IEnumerator native, CardEffectState effect, CardEffectParams parameters)
         {

@@ -52,6 +52,7 @@ are copied immutable values; independent child states can run on worker threads.
 | Maximum-health buff/debuff spells | `UnitHealthModel` and `CardSpellModel` | Signed temporary source-card offsets, battle/unit-death lifetimes, multiplier/immunity, suppressed OnHeal, direct lethal loss and post-boss effect chains |
 | Healing triggers | `CombatTrigger` and `RoomCombatModel` | Native repeated/once rewards and silence; zero/full/immune healing, deployment timing, preview flags and child isolation checks |
 | Healing effects on unit triggers | `CombatEffect.Action`, `HealingModel` and `RoomCombatModel` | Native self/room/healable/random targets, per-group ranges, negative/zero amounts, empty-room sampling, source-card independence and deferred OnHeal upgrades |
+| Unit post-combat healing | `RoomCombatModel.ApplyUnitPostCombat` and `UnitHealerModel` | Native per-actor healing/ordinary order, attack/trigger prevention, once/silence, changing healer quantities and complete phase/decision states |
 | Terminal spell resolution | `CardSpellModel` and `BattleActionModel` | Settled native boss kill continues live effects, detached spawner upgrades/removal and healing; effect gates skip/cancel, then played/discard callbacks complete |
 | Enemy waves and treasure | `EnemySpawningModel` | Native group cache, spawn order, phase, slots and treasure floor selection |
 | EndTurn to next decision | `BattleTurnModel.EndTurn` | Seven native consecutive transitions in each supported fixture |
@@ -1320,6 +1321,44 @@ the original profile is unchanged. All 46 previous complete battle fixtures and
 Cross-room/sticky trigger targets, sacrifice
 healing traits, other trigger effects and post-combat healing phases still need
 modeling, alongside the wider outstanding battle mechanics.
+
+Schema 35 adds unit `PostCombatHealing` before ordinary `PostCombat`, for each
+enemy then each player in room order. Each actor/phase finishes its nested queue
+before the next phase. Healing prevention blocks the entire healing phase,
+including ignored-silence effects; trigger prevention still permits those
+effects in ordinary PostCombat. Attack capability alone does not prevent
+healing. Each exchange resets its prevention sets. They remain effective after
+status clearing and through the final exchange of relentless combat; unit
+post-combat phases run once after the exchange loop.
+
+Native unit attack upgrades also adjust the scalar of its first PostCombatHealing
+heal effect, with a zero floor. Removing each matching upgrade subtracts its
+attack amount from that running value. Later healer effects and range endpoints
+are unchanged; previews leave healing quantities unchanged. This update precedes
+the upgrade's health changes. A trigger sequence reads its current effect state,
+so an earlier upgrade changes the subsequent heal and remains in the child state.
+Effect scalar values participate in the room signature. Pure checks cover
+continuous removal, clamping, ranged scalars, preview isolation, per-actor order,
+post-clear daze, deployment/once/silence, final relentless gating and 32 parallel
+branches.
+
+`tests/fixtures/full-battle-post-combat-healing.json.gz` retains a complete native
+trace with 18 exact post-combat phases, 8 pre-combat phases, 89 observed healing
+effects (19 in PostCombatHealing), 24 upgrade callbacks, 15 plays, 5 EndTurns,
+43 room stages and 7 spawns. Two phases preserve attack/healing prevention and
+leave ignored healing once flags unconsumed. Four ordinary-post callbacks and
+four within-healing callbacks independently verify scaled upgrades; the latter
+change a heal later in the same effect sequence. Initial/mid-battle independent
+policies and 16 parallel branches reproduce victory with Pyre health 79.
+
+The unchanged raw JSON is 237,928,863 bytes, SHA-256
+`ac77459194552a97c56668e3bb832d7743090d772b65583c0377e285dbba2de7`.
+Capture failures, mismatches, unsupported phases and pending records are zero;
+the original profile is unchanged. All 47 previous battles and 8 calibration
+fixtures pass; there are now 48 retained complete battles. Cross-room/sticky
+character effects, sacrifice healing, additional triggers/statuses, equipment,
+room/relic effects, boss actions/companions/final bosses and resurrection still
+leave the complete-battle objective open.
 
 Schema 24 captures ordered `CardTraitScalingAddStatusEffect` descriptors on
 immutable card instances and generated-card rules, plus the native stackability

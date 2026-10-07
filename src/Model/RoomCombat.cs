@@ -179,6 +179,14 @@ namespace MonsterTrain2Poju.Model
         public static RoomCombatResult Exchange(RoomCombatState state) => Run(state, false);
         public static RoomCombatResult Resolve(RoomCombatState state) => Run(state, true);
 
+        public static RoomCombatResult ApplyUnitPostCombat(RoomCombatState state, IReadOnlyList<int> cannotAttackOrHeal,
+            IReadOnlyList<int> cannotFireTriggers)
+        {
+            string? error = Validate(state);
+            if (error != null) return new RoomCombatResult(null, RoomOutcome.Unsupported, 0, new List<CombatEvent>(), error);
+            return new Engine(state, new List<CombatEvent>()).UnitPostCombat(cannotAttackOrHeal, cannotFireTriggers);
+        }
+
         public static RoomCombatResult ApplyUnitTurn(RoomCombatState state, int unitId)
         {
             string? error = Validate(state);
@@ -307,7 +315,7 @@ namespace MonsterTrain2Poju.Model
                     return "Valor requires the armor status definition.";
                 foreach (CombatTrigger trigger in unit.Triggers)
                 {
-                    if (trigger.Kind != "OnDeath" && trigger.Kind != "PostCombat" && trigger.Kind != "OnHeal" &&
+                    if (trigger.Kind != "OnDeath" && trigger.Kind != "PostCombat" && trigger.Kind != "PostCombatHealing" && trigger.Kind != "OnHeal" &&
                         trigger.Kind != "OnSpawn" && trigger.Kind != "OnUnscaledSpawn" && trigger.Kind != "OnSpawnNotFromCard" &&
                         trigger.Kind != "OnTurnBegin" && trigger.Kind != "OnTeamTurnBegin" && trigger.Kind != "EndTurnPreHandDiscard" && trigger.Kind != "PreCombat")
                         return "Unmodeled trigger " + trigger.Kind;
@@ -421,6 +429,8 @@ namespace MonsterTrain2Poju.Model
             private readonly Action<QueuedCharacterTrigger>? enqueueCharacterTrigger;
             private readonly Queue<(WorkingUnit Unit, string Kind, bool CanFire)> triggerQueue = new Queue<(WorkingUnit, string, bool)>();
             private bool runningTriggerQueue;
+            private readonly HashSet<int> cannotAttackOrHeal = new HashSet<int>();
+            private readonly HashSet<int> cannotFireTriggers = new HashSet<int>();
             private string? unsupportedReason;
 
             internal Engine(RoomCombatState source, List<CombatEvent> events, bool deferSpawnerExhaustion = false, int pendingSummonCardId = 0,
@@ -460,8 +470,7 @@ namespace MonsterTrain2Poju.Model
                         return Finish(RoomOutcome.PlayerDefeated);
                     Clear(false, relentless);
                 } while (relentless && BothTeamsPresent());
-                foreach (WorkingUnit unit in units.OrderBy(unit => unit.Source.Team).ToArray())
-                    if (unit.Alive) FireTriggers(unit, "PostCombat");
+                RunUnitPostCombat();
                 if (!source.Deployment)
                     foreach (CombatTeam team in new[] { CombatTeam.Enemy, CombatTeam.Player })
                     {
@@ -471,7 +480,29 @@ namespace MonsterTrain2Poju.Model
                         if (goal > front.Count("armor")) front.Statuses["armor"] = context!.StatusRules.First(rule => rule.Id == "armor").WithStacks(goal);
                     }
                 Clear(true, relentless);
-                return Finish(battleWon ? RoomOutcome.BattleWon : RoomOutcome.Cleared);
+                return Finish(battleWon ? RoomOutcome.BattleWon : units.Any(unit => unit.Source.IsPyre && !unit.Alive)
+                    ? RoomOutcome.PlayerDefeated : RoomOutcome.Cleared);
+            }
+
+            internal RoomCombatResult UnitPostCombat(IReadOnlyList<int> cannotHeal, IReadOnlyList<int> cannotTrigger)
+            {
+                cannotAttackOrHeal.UnionWith(cannotHeal); cannotFireTriggers.UnionWith(cannotTrigger);
+                RunUnitPostCombat();
+                return Finish(battleWon ? RoomOutcome.BattleWon : units.Any(unit => unit.Source.IsPyre && !unit.Alive)
+                    ? RoomOutcome.PlayerDefeated : RoomOutcome.Exchanged);
+            }
+
+            private void RunUnitPostCombat()
+            {
+                // Native snapshots enemies then players, preserving front-to-back order.
+                // Each actor finishes its healing queue before its ordinary post-combat queue.
+                foreach (WorkingUnit unit in units.OrderBy(unit => unit.Source.Team).ToArray())
+                {
+                    if (!unit.Alive) continue;
+                    bool canFire = !cannotFireTriggers.Contains(unit.Source.Id);
+                    if (!cannotAttackOrHeal.Contains(unit.Source.Id)) FireTriggers(unit, "PostCombatHealing", canFire);
+                    FireTriggers(unit, "PostCombat", canFire);
+                }
             }
 
             internal RoomCombatResult CardDamage(int targetId, int damage, int sourceCardId, bool applyTraits = true)
@@ -551,6 +582,8 @@ namespace MonsterTrain2Poju.Model
 
             private void Exchange()
             {
+                // Native clears both prevention sets for each exchange, including relentless.
+                cannotAttackOrHeal.Clear(); cannotFireTriggers.Clear();
                 WorkingUnit[] quick = units.Where(unit => unit.Alive &&
                     unit.Source.Team == CombatTeam.Player && unit.Has("ambush")).ToArray();
                 foreach (WorkingUnit unit in quick)
@@ -572,6 +605,7 @@ namespace MonsterTrain2Poju.Model
                 bool dazed = actor.Has("dazed") && Active(actor.Statuses["dazed"]);
                 if (dazed)
                 {
+                    cannotAttackOrHeal.Add(actor.Source.Id); cannotFireTriggers.Add(actor.Source.Id);
                     Trigger(actor, "dazed", 1);
                     Emit("Dazed", actor, actor, 0);
                 }
@@ -797,6 +831,7 @@ namespace MonsterTrain2Poju.Model
                         if (!unit.Alive && kind != "OnDeath") break;
                         for (int effectIndex = 0; effectIndex < effects.Length; effectIndex++)
                         {
+                            effects = unit.Triggers[index].Effects.ToArray();
                             CombatEffect effect = effects[effectIndex];
                             if (effect.Action != null)
                             {
@@ -810,6 +845,7 @@ namespace MonsterTrain2Poju.Model
                             {
                                 int remaining = effect.Counter - 1;
                                 effects[effectIndex] = effect.WithCounter(remaining);
+                                unit.Triggers[index] = trigger.Fired(effects);
                                 if (remaining <= 0 && unit.Alive)
                                 {
                                     unit.Despawned = true; unit.Health = 0; Emit("Despawn", unit, unit, 0);
@@ -833,7 +869,7 @@ namespace MonsterTrain2Poju.Model
                         }
                         context = context?.AfterCardEffects();
                     }
-                    unit.Triggers[index] = trigger.Fired(effects);
+                    unit.Triggers[index] = trigger.Fired(unit.Triggers[index].Effects);
                 }
             }
 
@@ -989,7 +1025,7 @@ namespace MonsterTrain2Poju.Model
                     foreach (CombatTrigger trigger in unit.Triggers)
                     {
                         text.Append(trigger.Kind).Append(':').Append(trigger.HasTriggered).Append(':');
-                        foreach (CombatEffect effect in trigger.Effects) text.Append(effect.Counter).Append(',');
+                        foreach (CombatEffect effect in trigger.Effects) text.Append(effect.Value).Append(':').Append(effect.Counter).Append(',');
                     }
                 }
                 if (context != null)
