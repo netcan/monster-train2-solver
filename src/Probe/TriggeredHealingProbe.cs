@@ -84,7 +84,7 @@ namespace MonsterTrain2Poju.Probe
             {
                 if (current == null || fromMaxHPChange || !Enabled()) return;
                 FullBattleTrace trace = FullBattleTrace.Active!;
-                CombatUnit unit = trace.Capture(__instance.GetCurrentRoom()).Units.Single(character => character.Id == trace.UnitId(__instance));
+                CombatUnit unit = trace.CaptureUnit(__instance);
                 var request = new Request { TargetId = unit.Id, Amount = amount, Health = unit.Health, MaxHealth = unit.MaxHealth,
                     CanBeHealed = unit.Modifiers!.CanBeHealed, Statuses = unit.Statuses.ToArray() };
                 current.Requests.Add(request); __result = Heal(__result, __instance, request);

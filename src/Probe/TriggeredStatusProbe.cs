@@ -30,21 +30,34 @@ namespace MonsterTrain2Poju.Probe
             FullBattleTrace trace = FullBattleTrace.Active!;
             CharacterState actor = parameters.selfTarget!;
             CharacterState[] units = new[] { actor }.Concat(parameters.targets).Distinct().ToArray();
-            RoomState room = actor.GetCurrentRoom(allowLastKnownRoom: true);
+            RoomState room = actor.GetCurrentRoom(allowLastKnownRoom: true) ?? AllGameManagers.Instance!.GetRoomManager()!.GetRoom(0);
             var interactions = new List<string>();
-            var record = new Record { Sequence = trace.NextPhaseSequence(), ActorId = trace.UnitId(actor),
+            Record? record = null;
+            try
+            {
+                record = new Record { Sequence = trace.NextPhaseSequence(), ActorId = trace.UnitId(actor),
                 Kind = parameters.sourceCharacterTriggerState?.GetTrigger().ToString() ?? "",
                 SourceCardId = parameters.playedCard == null ? 0 : trace.CardId(parameters.playedCard),
                 Targets = parameters.targets.Select(trace.UnitId).ToArray(),
                 Effect = new CombatEffect("CardEffectAddStatusEffect", effect.GetParamInt(), 0, "", 0, Array.Empty<string>(), false,
                     action: UnitTriggerActionProbe.Capture(effect), statusScaling: UnitTriggerActionProbe.Scaling(effect)),
                 Before = trace.Capture(room), BeforeUnits = units.Select(unit => trace.CaptureUnit(unit, interactions)).ToArray() };
-            Records.Add(record);
-            try { while (native.MoveNext()) yield return native.Current; record.Completed = true; }
+                Records.Add(record);
+            }
+            catch (Exception error) { trace.CaptureFailure(error); }
+            try { while (native.MoveNext()) yield return native.Current; if (record != null) record.Completed = true; }
             finally
             {
-                (native as IDisposable)?.Dispose(); record.Actual = trace.Capture(room);
-                record.ActualUnits = units.Select(unit => trace.CaptureUnit(unit, interactions)).ToArray(); record.Interactions = interactions.Distinct().ToArray();
+                (native as IDisposable)?.Dispose();
+                if (record != null)
+                {
+                    try
+                    {
+                        record.Actual = trace.Capture(room);
+                        record.ActualUnits = units.Select(unit => trace.CaptureUnit(unit, interactions)).ToArray(); record.Interactions = interactions.Distinct().ToArray();
+                    }
+                    catch (Exception error) { trace.CaptureFailure(error); }
+                }
             }
         }
         [HarmonyPatch(typeof(CardEffectAddStatusEffect), nameof(CardEffectAddStatusEffect.ApplyEffect))]

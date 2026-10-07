@@ -2142,3 +2142,13 @@ addition receives the original card modifiers, while the same addition inside
 a running `PreCombat` queue copies the new upgrade. Both cases retain the final
 source-card upgrade. The standalone case fails on the previous model; the new
 model passes the core suite and 32 isolated parallel branches.
+
+## Retained callback actors and generated statistic entries
+
+A queued status callback can retain a living enemy before it occupies a floor.
+The room engine now keeps that actor as an effect reference without adding it
+to room target collections or the resulting room state. Self effects still
+apply to the retained actor. Native callbacks 63 and 371 in the extended action
+probe confirmed that room healing must not heal that unplaced enemy, while
+room damage still targets the actual floor occupants. A core check verifies
+this distinction and immutable parent state.

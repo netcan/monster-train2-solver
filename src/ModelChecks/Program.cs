@@ -79,6 +79,7 @@ CombatEffectChecks.Run();
 StatusRegistryChecks.Run();
 StatusCallbackChecks.Run();
 UnitUpgradeCallbackChecks.Run();
+RetainedCallbackChecks.Run();
 BattleStatisticsChecks.Run();
 StatisticOverflowChecks.Run();
 StatisticZeroIncrementChecks.Run();

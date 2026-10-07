@@ -30,7 +30,7 @@ namespace MonsterTrain2Poju.Probe
         {
             FullBattleTrace trace = FullBattleTrace.Active!;
             CharacterState[] targets = parameters.targets.ToArray();
-            RoomState room = parameters.selfTarget!.GetCurrentRoom(allowLastKnownRoom: true);
+            RoomState room = parameters.selfTarget!.GetCurrentRoom(allowLastKnownRoom: true) ?? AllGameManagers.Instance!.GetRoomManager()!.GetRoom(0);
             var interactions = new List<string>();
             var record = new Record { Sequence = trace.NextPhaseSequence(), Kind = parameters.sourceCharacterTriggerState?.GetTrigger().ToString() ?? "",
                 OwnerCardId = parameters.playedCard == null ? 0 : trace.CardId(parameters.playedCard),

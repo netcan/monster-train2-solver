@@ -511,6 +511,7 @@ namespace MonsterTrain2Poju.Model
             internal bool Despawned;
             internal bool DeathFinished;
             internal bool Removed;
+            internal bool InRoom = true;
             internal int? LastAttackerId;
             private IReadOnlyList<CombatStatus>? statusRegistry;
             internal bool Alive => Health > 0 && !Removed;
@@ -742,13 +743,13 @@ namespace MonsterTrain2Poju.Model
                 WorkingUnit? actor = units.FirstOrDefault(unit => unit.Source.Id == queued.Unit.Id);
                 if (actor == null && (queued.Kind == "OnDeath" || queued.Kind == "OnHit" || queued.Kind == "OnKill" ||
                     queued.Kind == "OnAttackingBeforeDamage" || queued.Kind == "OnAttacking" || StatusCallbackModel.Kinds.Contains(queued.Kind)))
-                { actor = new WorkingUnit(queued.Unit); units.Add(actor); }
+                { actor = new WorkingUnit(queued.Unit) { InRoom = false }; units.Add(actor); }
                 // A queued OnHeal on an actor killed by a later phase effect has no live effects.
                 if (actor != null)
                 {
                     WorkingUnit? overridden = queued.OverrideTarget == null ? null : units.FirstOrDefault(unit => unit.Source.Id == queued.OverrideTarget.Id);
                     if (overridden == null && queued.OverrideTarget != null)
-                    { overridden = new WorkingUnit(queued.OverrideTarget); units.Add(overridden); }
+                    { overridden = new WorkingUnit(queued.OverrideTarget) { InRoom = false }; units.Add(overridden); }
                     FireTriggers(actor, queued.Kind, fromQueue: true, paramInt: queued.ParamInt, overrideTarget: overridden);
                     queued.Unit = actor.Freeze();
                 }
@@ -1098,7 +1099,7 @@ namespace MonsterTrain2Poju.Model
                         unit.Has("silenced") && !trigger.IgnoreSilence) continue;
                     // Removed native characters have no spawn point and skip trigger
                     // preflight, though their once flag can still be marked before abort.
-                    if (!unit.Removed && !ActionTriggerPassesTest(unit, trigger)) continue;
+                    if (unit.InRoom && !unit.Removed && !ActionTriggerPassesTest(unit, trigger)) continue;
                     var effects = trigger.Effects.ToArray();
                     // Native marks the trigger before its effects; nested death effects observe it.
                     unit.Triggers[index] = trigger.Fired(effects);
@@ -1150,10 +1151,10 @@ namespace MonsterTrain2Poju.Model
             }
 
             private RoomCombatState CurrentRoom() => new RoomCombatState(source.RoomIndex, source.Deployment,
-                units.Where(unit => unit.Alive).Select(unit => unit.Freeze()).ToArray(), source.ExternalInteractions, context, source.Preview);
+                units.Where(unit => unit.Alive && unit.InRoom).Select(unit => unit.Freeze()).ToArray(), source.ExternalInteractions, context, source.Preview);
 
             private RoomCombatState UpgradeRoom(WorkingUnit target) => new RoomCombatState(source.RoomIndex, source.Deployment,
-                units.Where(unit => unit.Alive || unit == target).Select(unit => unit.Freeze()).ToArray(), source.ExternalInteractions, context, source.Preview);
+                units.Where(unit => unit.Alive && unit.InRoom || unit == target).Select(unit => unit.Freeze()).ToArray(), source.ExternalInteractions, context, source.Preview);
 
             private bool ApplyUpgrade(WorkingUnit target, CardUpgradeModifier upgrade, string lifetime, bool remove,
                 int? roomCapacity, int sourceCardId, string? kind)
@@ -1454,7 +1455,7 @@ namespace MonsterTrain2Poju.Model
             private RoomCombatResult Finish(RoomOutcome outcome) => unsupportedReason != null
                 ? new RoomCombatResult(null, RoomOutcome.Unsupported, round, events, unsupportedReason) : new RoomCombatResult(
                 new RoomCombatState(source.RoomIndex, source.Deployment,
-                    units.Where(unit => unit.Alive).Select(unit => unit.Freeze()).ToArray(), source.ExternalInteractions, context, source.Preview),
+                    units.Where(unit => unit.Alive && unit.InRoom).Select(unit => unit.Freeze()).ToArray(), source.ExternalInteractions, context, source.Preview),
                 outcome, round, events);
         }
     }

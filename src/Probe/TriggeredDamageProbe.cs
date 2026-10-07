@@ -54,13 +54,13 @@ namespace MonsterTrain2Poju.Probe
         {
             FullBattleTrace trace = FullBattleTrace.Active!;
             CharacterState actor = parameters.selfTarget!;
-            CombatUnit? unit = trace.Capture(actor.GetCurrentRoom()).Units.FirstOrDefault(candidate => candidate.Id == trace.UnitId(actor));
+            CombatUnit unit = trace.CaptureUnit(actor);
             string? multiplier = effect.GetUseStatusEffectStackMultiplier() ? effect.GetStatusEffectStackMultiplier() : null;
             CardState owner = actor.GetSpawnerCard();
             return new Record { Native = effect, Stage = stage, ActorId = trace.UnitId(actor), ActorCardId = owner == null ? 0 : trace.CardId(owner),
                 TriggerKind = parameters.sourceCharacterTriggerState?.GetTrigger().ToString() ?? "",
                 Effect = UnitTriggerActionProbe.Capture(effect)!, StatusMultiplier = multiplier,
-                MultiplierStacks = multiplier == null ? 1 : actor.GetStatusEffectStacks(multiplier), ActorStatuses = unit?.Statuses.ToArray() ?? Array.Empty<CombatStatus>(),
+                MultiplierStacks = multiplier == null ? 1 : actor.GetStatusEffectStacks(multiplier), ActorStatuses = unit.Statuses.ToArray(),
                 ActorPiercing = actor.HasStatusEffect("piercing"),
                 Targets = parameters.targets.Select(trace.UnitId).ToArray() };
         }
@@ -126,7 +126,7 @@ namespace MonsterTrain2Poju.Probe
             {
                 if (current?.Stage != "Application" || !Enabled()) return;
                 FullBattleTrace trace = FullBattleTrace.Active!;
-                CombatUnit target = trace.Capture(__instance.GetCurrentRoom()).Units.Single(unit => unit.Id == trace.UnitId(__instance));
+                CombatUnit target = trace.CaptureUnit(__instance);
                 var request = new Request { TargetId = target.Id, Amount = damage, Before = target, Context = trace.CaptureContext(),
                     AttackerPreserved = damageParams.attacker != null && trace.UnitId(damageParams.attacker) == current.ActorId,
                     DefaultDamage = damageParams.damageType == Damage.Type.Default, NullSourceCard = damageParams.damageSourceCard == null,
