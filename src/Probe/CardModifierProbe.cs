@@ -89,7 +89,7 @@ namespace MonsterTrain2Poju.Probe
             if (rejectFilters && upgrade.GetFilters().Count > 0) interactions.Add("Filtered bonus-draw upgrade");
             CardUpgradeData? source = upgrade.GetSourceCardUpgradeData();
             bool refresh = source != null && !source.GetUpgradeWillBeScaledByNonMagicPowerTrait();
-            if (upgrade.GetUnitAbilityUpgrade() != null || upgrade.GetRoomAbilityUpgrade() != null) interactions.Add("Upgrade ability");
+            if (upgrade.GetRoomAbilityUpgrade() != null) interactions.Add("Upgrade room ability");
             if (upgrade.GetTraitDataUpgrades().Count > 0 || upgrade.GetRemoveTraitUpgrades().Count > 0) interactions.Add("Upgrade traits");
             if (upgrade.GetCardTriggerUpgrades().Count > 0) interactions.Add("Upgrade card triggers");
             CombatTrigger[]? triggers = null;
@@ -110,7 +110,9 @@ namespace MonsterTrain2Poju.Probe
                 upgrade.GetRemoveOnDiscard(), upgrade.IsUnique(), upgrade.GetExcludeFromClones(), upgrade.GetAdditionalUnhealedHP(),
                 upgrade.GetAttackDamageBuff(), interactions, upgrade.GetRestrictSizeToRoomCapacity(), source?.GetMagicPowerTraitScalingOnly() == true,
                 refresh && source!.GetBonusDamage() > 0 ? (int?)source.GetBonusDamage() : null,
-                refresh && source!.GetBonusHeal() > 0 ? (int?)source.GetBonusHeal() : null, triggerUpgrades: triggers);
+                refresh && source!.GetBonusHeal() > 0 ? (int?)source.GetBonusHeal() : null, triggerUpgrades: triggers,
+                abilityUpgrade: upgrade.GetUnitAbilityUpgrade() == null ? null : AbilityLifecycleProbe.Change(upgrade.GetUnitAbilityUpgrade()),
+                doNotReplaceExistingAbility: upgrade.GetDoNotReplaceExistingUnitAbility());
         }
     }
 }

@@ -72,6 +72,7 @@ param(
     [switch] $ConditionalTriggers,
     [switch] $CompanionBoss,
     [switch] $AbilityEffects,
+    [switch] $EquipmentAbilities,
     [switch] $AbilityLifecycle,
     [switch] $AbilityCooldown,
     [switch] $AbilityCache,
@@ -125,7 +126,7 @@ $environment = @{
     MT2_PROBE_SCENARIO = 'native-replay'
     MT2_PROBE_FULL_BATTLE = '1'
     MT2_PROBE_FULL_BATTLE_POLICY = $Policy
-    MT2_PROBE_MODIFIERS = $(if ($AbilityEffects) { 'ability-effects' } elseif ($AbilityLifecycle) { 'ability-lifecycle' } elseif ($AbilityActivationLethal) { 'ability-activation-lethal' } elseif ($AbilityActivationX) { 'ability-activation-x' } elseif ($AbilityActivation) { 'ability-activation' } elseif ($AbilityCache) { 'ability-cache' } elseif ($AbilityCooldown) { 'ability-cooldown' } elseif ($CompanionBoss) { 'companion-boss' } elseif ($ConditionalTriggers) { 'conditional-triggers' } elseif ($DetachedBonusDraw) { 'detached-bonus-draw' } elseif ($TriggerMutation) { 'trigger-mutation' } elseif ($EquipmentTriggers) { 'equipment-triggers' } elseif ($EquipmentOverflow) { 'equipment-overflow' } elseif ($EquipmentExhausted) { 'equipment-exhausted' } elseif ($Equipment) { 'equipment' } elseif ($DirectUnitUpgrades) { 'direct-unit-upgrades' } elseif ($RoomCapacityLethal) { 'room-capacity-lethal' } elseif ($RoomCapacity) { 'room-capacity' } elseif ($BonusDrawLethal) { 'bonus-draw-lethal' } elseif ($BonusDraw) { 'bonus-draw' } elseif ($XCostLethal) { 'x-cost-lethal' } elseif ($XCost) { 'x-cost' } elseif ($EnergyEffectsLethal) { 'energy-effects-lethal' } elseif ($EnergyEffects) { 'energy-effects' } elseif ($TriggeredStatus) { 'triggered-status' } elseif ($AttackTriggers) { 'attack-triggers' } elseif ($DyingUpgrades) { 'dying-upgrades' } elseif ($HitKill) { 'hit-kill' } elseif ($TerminalDeathDamage) { 'terminal-death-damage' } elseif ($DamageDeathQueue) { 'damage-death-queue' } elseif ($TriggeredDamage) { 'triggered-damage' } elseif ($PostCombatHealing) { 'post-combat-healing' } elseif ($TriggeredHealing) { 'triggered-healing' } elseif ($PreCombatLethal) { 'pre-combat-lethal' } elseif ($PreCombat) { 'pre-combat' } elseif ($CloneUpgradeRefresh) { 'clone-upgrade-refresh' } elseif ($PreHandDiscardLethal) { 'pre-hand-discard-lethal' } elseif ($PreHandDiscard) { 'pre-hand-discard' } elseif ($TeamTurnBegin) { 'team-turn-begin' } elseif ($UnitTurnBegin) { 'unit-turn-begin' } elseif ($SpawnTriggersLethal) { 'spawn-triggers-lethal' } elseif ($SpawnTriggers) { 'spawn-triggers' } elseif ($UnitTriggerUpgrades) { 'unit-trigger-upgrades' } elseif ($UnitUpgradeScaling) { 'unit-upgrade-scaling' } elseif ($StatusScaling) { 'status-scaling' } elseif ($DynamicStatistics) { 'dynamic-statistics' } elseif ($DamageScaling) { 'damage-scaling' } elseif ($GenerationLethal) { 'generation-lethal' } elseif ($Generation) { 'generation' } elseif ($HandRemovalLethal) { 'hand-removal-lethal' } elseif ($HandRemoval) { 'hand-removal' } elseif ($Drawing) { 'drawing' } elseif ($TargetFilters) { 'target-filters' } elseif ($NumericRangesLethal) { 'numeric-ranges-lethal' } elseif ($NumericRanges) { 'numeric-ranges' } elseif ($MaxHealthLethal) { 'max-health-lethal' } elseif ($MaxHealthSpells) { 'max-health-spells' } elseif ($AttackBuffs) { 'attack-buffs' } elseif ($CrossRoomTargets) { 'cross-room-targets' } elseif ($CrossRoomSpells) { 'cross-room-spells' } elseif ($RandomStatus) { 'random-status' } elseif ($RandomSpells) { 'random-spells' } elseif ($PostKillSpells) { 'post-kill-spells' } elseif ($TerminalSpells) { 'terminal-spells' } elseif ($RoomSpells) { 'room-spells' } elseif ($HealingTriggers) { 'healing-triggers' } elseif ($Healing) { 'healing' } elseif ($TargetedHandUpgrades) { 'targeted-hand-upgrades' } elseif ($HandUpgrades) { 'hand-upgrades' } elseif ($SacrificeUpgrades) { 'sacrifice-upgrades' } elseif ($DynamicUpgrades) { 'dynamic-upgrades' } elseif ($NumericUpgrades) { 'numeric-upgrades' } else { '' })
+    MT2_PROBE_MODIFIERS = $(if ($EquipmentAbilities) { 'equipment-abilities' } elseif ($AbilityEffects) { 'ability-effects' } elseif ($AbilityLifecycle) { 'ability-lifecycle' } elseif ($AbilityActivationLethal) { 'ability-activation-lethal' } elseif ($AbilityActivationX) { 'ability-activation-x' } elseif ($AbilityActivation) { 'ability-activation' } elseif ($AbilityCache) { 'ability-cache' } elseif ($AbilityCooldown) { 'ability-cooldown' } elseif ($CompanionBoss) { 'companion-boss' } elseif ($ConditionalTriggers) { 'conditional-triggers' } elseif ($DetachedBonusDraw) { 'detached-bonus-draw' } elseif ($TriggerMutation) { 'trigger-mutation' } elseif ($EquipmentTriggers) { 'equipment-triggers' } elseif ($EquipmentOverflow) { 'equipment-overflow' } elseif ($EquipmentExhausted) { 'equipment-exhausted' } elseif ($Equipment) { 'equipment' } elseif ($DirectUnitUpgrades) { 'direct-unit-upgrades' } elseif ($RoomCapacityLethal) { 'room-capacity-lethal' } elseif ($RoomCapacity) { 'room-capacity' } elseif ($BonusDrawLethal) { 'bonus-draw-lethal' } elseif ($BonusDraw) { 'bonus-draw' } elseif ($XCostLethal) { 'x-cost-lethal' } elseif ($XCost) { 'x-cost' } elseif ($EnergyEffectsLethal) { 'energy-effects-lethal' } elseif ($EnergyEffects) { 'energy-effects' } elseif ($TriggeredStatus) { 'triggered-status' } elseif ($AttackTriggers) { 'attack-triggers' } elseif ($DyingUpgrades) { 'dying-upgrades' } elseif ($HitKill) { 'hit-kill' } elseif ($TerminalDeathDamage) { 'terminal-death-damage' } elseif ($DamageDeathQueue) { 'damage-death-queue' } elseif ($TriggeredDamage) { 'triggered-damage' } elseif ($PostCombatHealing) { 'post-combat-healing' } elseif ($TriggeredHealing) { 'triggered-healing' } elseif ($PreCombatLethal) { 'pre-combat-lethal' } elseif ($PreCombat) { 'pre-combat' } elseif ($CloneUpgradeRefresh) { 'clone-upgrade-refresh' } elseif ($PreHandDiscardLethal) { 'pre-hand-discard-lethal' } elseif ($PreHandDiscard) { 'pre-hand-discard' } elseif ($TeamTurnBegin) { 'team-turn-begin' } elseif ($UnitTurnBegin) { 'unit-turn-begin' } elseif ($SpawnTriggersLethal) { 'spawn-triggers-lethal' } elseif ($SpawnTriggers) { 'spawn-triggers' } elseif ($UnitTriggerUpgrades) { 'unit-trigger-upgrades' } elseif ($UnitUpgradeScaling) { 'unit-upgrade-scaling' } elseif ($StatusScaling) { 'status-scaling' } elseif ($DynamicStatistics) { 'dynamic-statistics' } elseif ($DamageScaling) { 'damage-scaling' } elseif ($GenerationLethal) { 'generation-lethal' } elseif ($Generation) { 'generation' } elseif ($HandRemovalLethal) { 'hand-removal-lethal' } elseif ($HandRemoval) { 'hand-removal' } elseif ($Drawing) { 'drawing' } elseif ($TargetFilters) { 'target-filters' } elseif ($NumericRangesLethal) { 'numeric-ranges-lethal' } elseif ($NumericRanges) { 'numeric-ranges' } elseif ($MaxHealthLethal) { 'max-health-lethal' } elseif ($MaxHealthSpells) { 'max-health-spells' } elseif ($AttackBuffs) { 'attack-buffs' } elseif ($CrossRoomTargets) { 'cross-room-targets' } elseif ($CrossRoomSpells) { 'cross-room-spells' } elseif ($RandomStatus) { 'random-status' } elseif ($RandomSpells) { 'random-spells' } elseif ($PostKillSpells) { 'post-kill-spells' } elseif ($TerminalSpells) { 'terminal-spells' } elseif ($RoomSpells) { 'room-spells' } elseif ($HealingTriggers) { 'healing-triggers' } elseif ($Healing) { 'healing' } elseif ($TargetedHandUpgrades) { 'targeted-hand-upgrades' } elseif ($HandUpgrades) { 'hand-upgrades' } elseif ($SacrificeUpgrades) { 'sacrifice-upgrades' } elseif ($DynamicUpgrades) { 'dynamic-upgrades' } elseif ($NumericUpgrades) { 'numeric-upgrades' } else { '' })
     MT2_PROBE_DIRECT_BRANCH = '1'
     MT2_PROBE_DEPTH = '100'
     MT2_PROBE_TARGET_TURN = '0'
@@ -761,7 +762,79 @@ if ($AbilityEffects) {
         $disabled.Count -eq 2 -and $disabled[0] -eq 'c2f6ed7f-18ce-4070-b65f-7dd9f5160072' -and $disabled[1] -eq $disabled[0]
     if (-not $abilityEffectsCoverage) { throw 'Requested multi-target ability effects, queued replacement or cached self replacement/removal did not execute.' }
 }
+$equipmentAbilityCoverage = -not $EquipmentAbilities
+$equipmentActivations = @()
+if ($EquipmentAbilities) {
+    $skillB = 'c2f6ed7f-18ce-4070-b65f-7dd9f5160074'
+    $skillC = 'c2f6ed7f-18ce-4070-b65f-7dd9f5160075'
+    $initial = @($trace.InitialAbilitySpawns)
+    $initialCoverage = $initial.Count -eq 1 -and $null -ne $initial[0].Actual -and -not $initial[0].Difference -and $initial[0].Predicted.Supported
+    if ($initialCoverage) {
+        $sourceId = $initial[0].Action.CardInstanceId
+        $source = $initial[0].Before.Spawn.Train.Context.CardInstances | Where-Object InstanceId -EQ $sourceId
+        $born = $initial[0].Actual.Spawn.Train.Rooms.Units | Where-Object SpawnerCardId -EQ $sourceId
+        $initialCoverage = $source.Permanent.Upgrades.AbilityUpgrade.Definition.DataId -contains $skillB -and
+            $source.Temporary.Upgrades.AbilityUpgrade.Definition.DataId -contains $skillC -and
+            $born.Ability.DataId -eq $skillC -and $born.Ability.Cooldown -eq 6 -and $born.Ability.CooldownAtSpawn -eq 2 -and -not $born.Ability.FromEquipment
+    }
+    $equipmentOps = @($trace.EquipmentOperations)
+    $restoration = @($equipmentOps | Where-Object {
+        $entry = $_
+        $prior = $entry.Before.Units | Where-Object Id -EQ $entry.UnitId
+        $actual = $entry.After.Units | Where-Object Id -EQ $entry.UnitId
+        $entry.Remove -and $prior.Ability.DataId -eq $skillB -and $prior.Ability.FromEquipment -and $prior.Ability.PreviousDataId -eq $skillC -and
+            $actual.Ability.DataId -eq $skillC -and $actual.Ability.Cooldown -eq 6 -and -not $actual.Ability.FromEquipment -and
+            $null -eq $actual.Ability.PreviousDataId -and @($actual.Statuses | Where-Object { $_.Id -eq 'cooldown' -and $_.Stacks -eq 6 }).Count -eq 1
+    })
+    $equipmentCoverageBothContexts = @($equipmentOps | Where-Object DeferAbilityCallbacks -EQ $true).Count -gt 0 -and
+        @($equipmentOps | Where-Object DeferAbilityCallbacks -EQ $false).Count -gt 0
+    $direct = @($trace.DirectUnitUpgrades)
+    $directLabels = @('ability-keep-existing', 'ability-remove-nonmatching', 'ability-direct-clears-equipment-history',
+        'ability-remove-current', 'ability-add-to-empty', 'ability-remove-added', 'ability-explicit-reassign-disabled')
+    $directCoverage = $direct.Count -eq $directLabels.Count -and @($directLabels | Where-Object { $_ -notin $direct.Label }).Count -eq 0 -and
+        @($direct | Where-Object { $null -eq $_.After -or $_.Difference -or $_.UnsupportedReason }).Count -eq 0
+    $equipmentActivations = @($trace.Actions | Where-Object {
+        $entry = $_
+        $entry.Action.ActivatorUnitId -gt 0 -and @($entry.Before.Spawn.Train.Rooms.Units | Where-Object {
+            $_.Id -eq $entry.Action.ActivatorUnitId -and $_.Ability.FromEquipment -and $_.Ability.DataId -eq $skillB
+        }).Count -eq 1
+    })
+    $keptBirths = @($trace.Actions | Where-Object {
+        $entry = $_
+        $source = $entry.Before.Spawn.Train.Context.CardInstances | Where-Object InstanceId -EQ $entry.Action.CardInstanceId
+        $baseRule = $entry.Before.PlayRules.Cards | Where-Object DataId -EQ $source.DataId
+        $baseRule.SpawnUnit.Ability.HasAbility -and @($source.Permanent.Upgrades | Where-Object {
+            $_.DoNotReplaceExistingAbility -and $_.AbilityUpgrade.Definition.DataId -eq $skillB
+        }).Count -gt 0 -and @($entry.Actual.Spawn.Train.Rooms.Units | Where-Object {
+            $_.Id -ge $entry.Before.Spawn.NextUnitId -and $_.SpawnerCardId -eq $entry.Action.CardInstanceId -and $_.Ability.DataId -eq $baseRule.SpawnUnit.Ability.DataId
+        }).Count -gt 0
+    })
+    $disabledBirths = @($trace.Actions | Where-Object {
+        $entry = $_
+        $source = $entry.Before.Spawn.Train.Context.CardInstances | Where-Object InstanceId -EQ $entry.Action.CardInstanceId
+        $baseRule = $entry.Before.PlayRules.Cards | Where-Object DataId -EQ $source.DataId
+        $source.Permanent.Upgrades.AbilityUpgrade.Definition.DataId -contains $skillC -and
+            $baseRule.SpawnUnit.Ability.HasAbility -and
+            $entry.Before.Spawn.Train.Context.PermanentlyDisabledAbilities -contains $skillC -and
+            @($entry.Actual.Spawn.Train.Rooms.Units | Where-Object {
+                $_.Id -ge $entry.Before.Spawn.NextUnitId -and $_.SpawnerCardId -eq $entry.Action.CardInstanceId -and $null -eq $_.Ability -and
+                    @($_.Triggers | Where-Object { $_.Origin.UpgradeId -eq 'UnitAbilityCommonData' }).Count -eq 0
+            }).Count -gt 0
+    })
+    $callbacks = @($trace.CharacterCallbackFires)
+    $callbackKinds = @('OnPreOwnAbilityActivated', 'OnOwnAbilityActivated', 'OnUnitAbilityAvailable', 'OnUnitAbilityUnavailable')
+    $callbackCoverage = @($callbackKinds | Where-Object { $_ -notin $callbacks.Kind }).Count -eq 0 -and
+        @($callbacks | Where-Object { -not $_.Completed -or $null -eq $_.Actual -or $null -eq $_.ActualUnit }).Count -eq 0
+    $equipmentAbilityCoverage = $initialCoverage -and $restoration.Count -gt 0 -and $equipmentCoverageBothContexts -and $directCoverage -and
+        $equipmentActivations.Count -ge 2 -and $keptBirths.Count -gt 0 -and $disabledBirths.Count -gt 0 -and $callbackCoverage
+    if (-not $equipmentAbilityCoverage) {
+        throw "Equipment ability coverage incomplete: initial=$initialCoverage restorations=$($restoration.Count) contexts=$equipmentCoverageBothContexts direct=$directCoverage activations=$($equipmentActivations.Count) keptBirths=$($keptBirths.Count) disabledBirths=$($disabledBirths.Count) callbacks=$callbackCoverage"
+    }
+}
 $result = [pscustomobject]@{
+    EquipmentAbilityCoverage = $equipmentAbilityCoverage
+    InitialAbilitySpawns = @($trace.InitialAbilitySpawns).Count
+    EquipmentAbilityActivations = $equipmentActivations.Count
     AbilityEffectsCoverage = $abilityEffectsCoverage
     AbilityEffectOperations = @($trace.AbilityEffectOperations).Count
     AbilityLifecycleCoverage = $lifecycleCoverage

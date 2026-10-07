@@ -425,7 +425,8 @@ namespace MonsterTrain2Poju.Model
             return new RoomCombatResult(result.State, result.Outcome, result.Rounds, result.Events.ToList(), result.UnsupportedReason, callbacks);
         }
 
-        public static RoomCombatResult ApplyEquipment(RoomCombatState state, int targetId, int cardId, BattlePlayRules definitions, bool remove = false)
+        public static RoomCombatResult ApplyEquipment(RoomCombatState state, int targetId, int cardId, BattlePlayRules definitions, bool remove = false,
+            bool deferAbilityCallbacks = false)
         {
             string? error = Validate(state);
             CombatUnit? target = state.Units.FirstOrDefault(unit => unit.Id == targetId);
@@ -435,7 +436,7 @@ namespace MonsterTrain2Poju.Model
                 return new RoomCombatResult(null, RoomOutcome.Unsupported, 0, new List<CombatEvent>(), "Repeated raw attachment of the same equipment object is not modeled.");
             var callbacks = new List<QueuedCharacterTrigger>();
             var result = new Engine(state, new List<CombatEvent>(), enqueueCharacterTrigger: remove ? callbacks.Add : (Action<QueuedCharacterTrigger>?)null,
-                resetPreviewTriggers: false).Equipment(targetId, cardId, definitions, remove);
+                resetPreviewTriggers: false, deferAbilityCallbacks: deferAbilityCallbacks).Equipment(targetId, cardId, definitions, remove);
             return new RoomCombatResult(result.State, result.Outcome, result.Rounds, result.Events.ToList(), result.UnsupportedReason, callbacks);
         }
 
@@ -709,6 +710,7 @@ namespace MonsterTrain2Poju.Model
             private readonly bool deferSpawnerExhaustion;
             private readonly int pendingSummonCardId;
             private readonly Action<QueuedCharacterTrigger>? enqueueCharacterTrigger;
+            private readonly bool deferAbilityCallbacks;
             private readonly Queue<(WorkingUnit Unit, string Kind, bool CanFire, int ParamInt, WorkingUnit? OverrideTarget, int ParamInt2, string? ParamString, WorkingUnit? DyingCharacter)> triggerQueue = new Queue<(WorkingUnit, string, bool, int, WorkingUnit?, int, string?, WorkingUnit?)>();
             private bool runningTriggerQueue;
             private bool stopAfterBossRemoval;
@@ -721,12 +723,13 @@ namespace MonsterTrain2Poju.Model
             private string? unsupportedReason;
 
             internal Engine(RoomCombatState source, List<CombatEvent> events, bool deferSpawnerExhaustion = false, int pendingSummonCardId = 0,
-                Action<QueuedCharacterTrigger>? enqueueCharacterTrigger = null, bool resetPreviewTriggers = true)
+                Action<QueuedCharacterTrigger>? enqueueCharacterTrigger = null, bool resetPreviewTriggers = true, bool deferAbilityCallbacks = false)
             {
                 this.source = source; this.events = events;
                 this.deferSpawnerExhaustion = deferSpawnerExhaustion;
                 this.pendingSummonCardId = pendingSummonCardId;
                 this.enqueueCharacterTrigger = enqueueCharacterTrigger;
+                this.deferAbilityCallbacks = deferAbilityCallbacks;
                 units = source.Units.Select(unit => new WorkingUnit(unit)).ToList();
                 if (source.Preview && resetPreviewTriggers)
                     foreach (WorkingUnit unit in units)
@@ -1426,6 +1429,12 @@ namespace MonsterTrain2Poju.Model
                     remove, roomCapacity, sourceCardId, kind, (state, changed) =>
                     {
                         context = state.Context;
+                        foreach (WorkingUnit other in units.Where(unit => unit.Source.Id != target.Source.Id && unit.InRoom))
+                        {
+                            CombatUnit? live = state.Units.FirstOrDefault(unit => unit.Id == other.Source.Id);
+                            if (live != null) other.Apply(live);
+                            else { other.InRoom = false; other.Removed = true; }
+                        }
                         bool wasAlive = target.Alive;
                         target.Apply(changed);
                         if (wasAlive && !target.Alive) Death(null, target, 0);
@@ -1439,7 +1448,8 @@ namespace MonsterTrain2Poju.Model
                         // terminal clearing. Its remaining source-card work must still run.
                         return new RoomCombatResult(UpgradeRoom(target), RoomOutcome.Exchanged, 0, new List<CombatEvent>());
                     }, allowDyingTarget: true, enqueueCallback: QueueCallback, directApi: directApi,
-                    upgradeId: upgradeId, anonymousRemovalIndex: anonymousRemovalIndex, equipmentSourceCardId: equipmentSourceCardId);
+                    upgradeId: upgradeId, anonymousRemovalIndex: anonymousRemovalIndex, equipmentSourceCardId: equipmentSourceCardId,
+                    deferAbilityCallbacks: !directApi || deferAbilityCallbacks || runningTriggerQueue);
                 if (!result.Supported) { unsupportedReason = result.UnsupportedReason; return false; }
                 context = result.State!.Context;
                 return true;
@@ -1725,7 +1735,8 @@ namespace MonsterTrain2Poju.Model
                         foreach (CardUpgradeModifier upgrade in modifiers.Upgrades)
                             text.Append(upgrade.DataId.Length).Append(':').Append(upgrade.DataId).Append(':')
                                 .Append(upgrade.Stats.Damage).Append(',').Append(upgrade.Stats.Health).Append(',')
-                                .Append(upgrade.Stats.Size).Append(',').Append(upgrade.UnhealedHealth).Append(',').Append(upgrade.DamageBuff).Append(';');
+                                .Append(upgrade.Stats.Size).Append(',').Append(upgrade.UnhealedHealth).Append(',').Append(upgrade.DamageBuff)
+                                .Append(':').Append(upgrade.AbilityUpgrade?.Definition?.DataId).Append(':').Append(upgrade.DoNotReplaceExistingAbility).Append(';');
                     }
                     foreach (CombatStatus status in unit.Statuses.Values.OrderBy(status => status.Id, StringComparer.Ordinal))
                         text.Append(status.Id).Append('=').Append(status.Stacks).Append(',');

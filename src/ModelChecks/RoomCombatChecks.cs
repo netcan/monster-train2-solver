@@ -180,6 +180,7 @@ internal static class RoomCombatChecks
         SentryChecks.Native(fixture);
         AbilityLifecycleChecks.Native(fixture);
         AbilityEffectChecks.Native(fixture);
+        AbilityUpgradeChecks.Native(fixture);
         AbilityCooldownChecks.Native(fixture);
         AbilityCardChecks.Native(fixture);
         UnitAbilityChecks.Native(fixture);

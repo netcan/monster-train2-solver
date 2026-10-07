@@ -419,7 +419,7 @@ namespace MonsterTrain2Poju.Probe
                     return;
                 }
             }
-            if (fullBattle && (modifierScenario == "equipment" || modifierScenario == "equipment-exhausted" || modifierScenario == "equipment-overflow" || modifierScenario == "equipment-triggers"))
+            if (fullBattle && (modifierScenario == "equipment-abilities" || modifierScenario == "equipment" || modifierScenario == "equipment-exhausted" || modifierScenario == "equipment-overflow" || modifierScenario == "equipment-triggers"))
             {
                 if (EquipmentScenario.Error != null) throw new InvalidOperationException(EquipmentScenario.Error);
                 if (!EquipmentScenario.Completed)
@@ -580,7 +580,7 @@ namespace MonsterTrain2Poju.Probe
                 BattleTurnState decision = FullBattleTrace.Active!.CaptureDecision();
                 pendingPlay = Environment.GetEnvironmentVariable("MT2_PROBE_FULL_BATTLE_POLICY") == "units-spells-and-junk"
                     ? BattleActionModel.ChooseUnitSpellAndJunkPlay(decision) : BattleActionModel.ChooseUnitAndJunkPlay(decision);
-                if (modifierScenario == "ability-effects" || modifierScenario == "ability-activation" || modifierScenario == "ability-activation-x" || modifierScenario == "ability-activation-lethal")
+                if (modifierScenario == "equipment-abilities" || modifierScenario == "ability-effects" || modifierScenario == "ability-activation" || modifierScenario == "ability-activation-x" || modifierScenario == "ability-activation-lethal")
                     pendingPlay = UnitAbilityModel.ChooseAbilityThenCards(decision);
                 if (pendingPlay != null)
                 {

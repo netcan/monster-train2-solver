@@ -88,6 +88,7 @@ SentryChecks.Run();
 AbilityCooldownChecks.Run();
 AbilityLifecycleChecks.Run();
 AbilityEffectChecks.Run();
+AbilityUpgradeChecks.Run();
 AbilityCardChecks.Run();
 UnitAbilityChecks.Run();
 BattleStatisticsChecks.Run();

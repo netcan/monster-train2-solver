@@ -46,7 +46,8 @@ namespace MonsterTrain2Poju.Model
             string lifetime, bool remove, int? roomCapacity, int sourceCardId, string? triggerKind,
             Func<RoomCombatState, CombatUnit, RoomCombatResult> settle, bool allowDyingTarget = false,
             Action<RoomCombatModel.QueuedCharacterTrigger>? enqueueCallback = null, bool directApi = false,
-            string upgradeId = "", int? anonymousRemovalIndex = null, int equipmentSourceCardId = 0)
+            string upgradeId = "", int? anonymousRemovalIndex = null, int equipmentSourceCardId = 0,
+            bool deferAbilityCallbacks = false)
         {
             string? error = RoomCombatModel.Validate(source, allowDyingTarget ? targetId : (int?)null,
                 directApi ? targetId : (int?)null);
@@ -170,6 +171,24 @@ namespace MonsterTrain2Poju.Model
                     if (error != null) return Unsupported(error);
                 }
                 var statusCallbacks = new List<RoomCombatModel.QueuedCharacterTrigger>();
+                if (!partial && upgrade.AbilityUpgrade?.Definition != null &&
+                    (remove ? target.Ability?.DataId == upgrade.AbilityUpgrade.Definition.DataId :
+                        !upgrade.DoNotReplaceExistingAbility || target.Ability?.HasAbility != true))
+                {
+                    var rule = new AbilityChangeRule(upgrade.AbilityUpgrade.Definition, equipmentSourceCardId > 0, false,
+                        upgrade.AbilityUpgrade.CommonTriggers);
+                    var staged = new RoomCombatState(state.RoomIndex, state.Deployment,
+                        state.Units.Select(unit => unit.Id == targetId ? Snapshot() : unit).ToArray(), state.ExternalInteractions, state.Context, state.Preview);
+                    var ability = AbilityLifecycleModel.Apply(staged, targetId, rule, remove, deferCallbacks: deferAbilityCallbacks);
+                    if (!ability.Supported) return ability;
+                    state = ability.State!; statusCallbacks.AddRange(ability.PendingCallbacks);
+                    target = state.Units.Single(unit => unit.Id == targetId);
+                    nextModifiers = target.Modifiers!;
+                    damage = nextModifiers.AttackDamage; added = nextModifiers.AttackDamageAdded; buff = nextModifiers.DamageBuff;
+                    size = nextModifiers.RawSize; equipment = nextModifiers.EquipmentLimit;
+                    health = target.Health; maxHealth = target.MaxHealth; triggers = target.Triggers; nextTriggerId = target.NextTriggerId;
+                    statuses = target.Statuses.ToDictionary(status => status.Id);
+                }
                 if (!partial)
                     foreach (CombatStatus status in upgrade.Statuses)
                     {

@@ -161,14 +161,14 @@ namespace MonsterTrain2Poju.Model
             string? uiRangeError = CardSpellModel.UnisolatedUiRangeReason(source);
             if (uiRangeError != null) return Unsupported(uiRangeError);
             if (rule == null) return Unsupported("Missing play definition for " + card.DataId);
+            CardInstanceState? playingInstance = context.CardInstances?.FirstOrDefault(item => item.InstanceId == card.InstanceId);
             if (rule.SpawnUnit != null)
             {
-                string? spawnError = AbilityLifecycleModel.SpawnError(rule.SpawnUnit, context);
+                CombatUnit initialized = AbilityLifecycleModel.InitialAtSpawn(rule.SpawnUnit, playingInstance, context, out string? spawnError);
                 if (spawnError != null) return Unsupported(spawnError);
-                rule = rule.WithSpawn(AbilityLifecycleModel.SuppressAtSpawn(rule.SpawnUnit, context));
+                rule = rule.WithSpawn(initialized);
                 originalRule = rule;
             }
-            CardInstanceState? playingInstance = context.CardInstances?.FirstOrDefault(item => item.InstanceId == card.InstanceId);
             if (context.CardInstances != null)
             {
                 if (playingInstance == null) return Unsupported("Missing card instance modifiers.");

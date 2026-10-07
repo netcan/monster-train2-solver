@@ -253,3 +253,20 @@ The 17-play, five-EndTurn policy matches initial and actual mid-battle roots in
 16 parallel branches and wins at Pyre 80. The 29,332-byte direct binary archive
 has no JSON dependency. Equipment attachment grants and global relic mechanics
 remain separate work.
+
+`full-battle-equipment-abilities.mt2f` retains schema 67 and integrates ability
+upgrades with initial summons, direct unit upgrades and real equipment cards.
+Permanent B then temporary C selection, keep-existing B preserving base A,
+and two naturally disabled upgraded C births are observed. Seventeen native
+equipment operations include repeated replacements and restoration of original
+C with its raw activation cooldown 6. Seven direct upgrade cases cover matching
+removal, skipped/nonmatching removal, grants to empty slots and direct assignment
+clearing equipment history. Two actual equipment skill casts exercise damage,
+self-heal and shared detached card state. Twenty-two queued character callbacks
+and 12 generated payloads compare completely, with 32 isolated branches for
+initial summon, direct upgrades, equipment and callbacks. The complete 17-action,
+five-EndTurn policy also matches initial and actual mid-battle roots in 16
+parallel branches and wins at Pyre 80. This 31,439-byte direct binary archive has
+5,000 unique nodes and no source JSON. The first-battle Boss and original waves
+remain intact. Broader quiet-callback death, Horde, relic and room ability
+interactions remain separate work.

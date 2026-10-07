@@ -35,6 +35,9 @@ namespace MonsterTrain2Poju.Probe
             definitions = definitions.Concat(spawn.Waves.SelectMany(wave => wave.Candidates).SelectMany(group => group.Units)
                 .Concat(spawn.Treasures).SelectMany(unit => unit.Unit.Triggers).SelectMany(trigger => trigger.Effects)
                 .Select(effect => effect.Action?.AbilityChange?.Definition?.DataId).Where(id => !string.IsNullOrEmpty(id)).Cast<string>()).Distinct().ToArray();
+            definitions = definitions.Concat(nativeCards.SelectMany(card => card.GetCardStateModifiers().GetCardUpgrades()
+                .Concat(card.GetTemporaryCardStateModifiers().GetCardUpgrades())).Select(upgrade => upgrade.GetUnitAbilityUpgrade())
+                .Where(ability => ability != null).Select(ability => ability!.GetID())).Distinct().ToArray();
             RoomManager rooms = managers.GetRoomManager()!;
             var roomRules = new List<RoomPlayRule>();
             for (int index = 0; index < rooms.GetNumRooms(); index++)
@@ -57,6 +60,9 @@ namespace MonsterTrain2Poju.Probe
                 foreach (string child in rule.Effects.Select(effect => effect.AbilityChange?.Definition?.DataId)
                     .Concat(rule.SpawnUnit?.Triggers.SelectMany(trigger => trigger.Effects).Select(effect => effect.Action?.AbilityChange?.Definition?.DataId)
                         ?? Array.Empty<string?>()).Where(child => !string.IsNullOrEmpty(child)).Cast<string>()) pending.Enqueue(child);
+                foreach (string child in rule.Effects.Select(effect => effect.Upgrade?.AbilityUpgrade?.Definition?.DataId)
+                    .Concat(rule.Equipment?.Upgrades.Select(upgrade => upgrade.AbilityUpgrade?.Definition?.DataId) ?? Array.Empty<string?>())
+                    .Where(child => !string.IsNullOrEmpty(child)).Cast<string>()) pending.Enqueue(child);
                 if (rule.SpawnUnit?.Ability?.HasAbility == true) pending.Enqueue(rule.SpawnUnit.Ability.DataId);
             }
             rules = new BattlePlayRules(roomRules, reachable.Values.OrderBy(rule => rule.DataId, StringComparer.Ordinal).ToArray(),

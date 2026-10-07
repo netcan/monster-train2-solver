@@ -174,6 +174,45 @@ namespace MonsterTrain2Poju.Model
             }
         }
 
+        internal static CombatUnit InitialAtSpawn(CombatUnit unit, CardInstanceState? card, CombatContext context, out string? error)
+        {
+            error = null;
+            AbilityChangeRule? chosen = null;
+            bool hasDefinition = unit.Ability?.HasAbility == true;
+            foreach (CardUpgradeModifier upgrade in (card?.Permanent.Upgrades ?? Array.Empty<CardUpgradeModifier>())
+                .Concat(card?.Temporary.Upgrades ?? Array.Empty<CardUpgradeModifier>()))
+                if (upgrade.AbilityUpgrade?.Definition != null && (!upgrade.DoNotReplaceExistingAbility || !hasDefinition))
+                { chosen = upgrade.AbilityUpgrade; hasDefinition = true; }
+            if (chosen == null)
+            {
+                error = SpawnError(unit, context);
+                return error == null ? SuppressAtSpawn(unit, context) : unit;
+            }
+            if (unit.AbilityRules == null)
+            { error = "Initial upgraded abilities require captured authored starting statuses."; return unit; }
+            if (chosen.Definition?.IsUnitAbility != true)
+            { error = "Invalid initial ability definitions require native raw setup state."; return unit; }
+            UnitAbilityDefinition? definition = chosen.Definition?.IsUnitAbility == true ? chosen.Definition : null;
+            CombatStatus? marker = context.StatusRules.FirstOrDefault(status => status.Id == "unit_ability");
+            if (definition != null && (marker == null || definition.CardCreation == null || chosen.CommonTriggers.Count == 0))
+            { error = "Initial upgraded abilities require marker, creation and common trigger definitions."; return unit; }
+            CombatStatus[] statuses = (definition == null ? Array.Empty<CombatStatus>() : new[] { marker!.WithStacks(1) })
+                .Concat(unit.AbilityRules.AuthoredStartingStatuses).ToArray();
+            CombatTrigger[] triggers = (definition == null ? Array.Empty<CombatTrigger>() : chosen.CommonTriggers
+                .Select(trigger => trigger.WithOrigin(CommonOrigin, 0)).ToArray())
+                .Concat(unit.Triggers.Where(trigger => trigger.Origin?.UpgradeId != CommonOrigin))
+                .Select((trigger, index) => trigger.WithStateId(unit.NextTriggerId.HasValue ? index : (int?)null)).ToArray();
+            var ability = definition == null ? null : new UnitAbilityState(definition.DataId, definition.Cooldown, definition.CooldownAtSpawn,
+                cardCreation: definition.CardCreation, definition: definition);
+            var initialized = new CombatUnit(unit.Id, unit.AssetKey, unit.Team, unit.BaseAttack, unit.Health, unit.MaxHealth,
+                unit.CanAttack, unit.IsPyre, unit.EndsBattleOnDeath, statuses, triggers, unit.SpawnerCardId, unit.Size,
+                unit.StatusImmunities, unit.Subtypes, unit.Modifiers, unit.IsBoss, unit.LastAttackerId, statuses, unit.EquipmentCards,
+                unit.NextTriggerId.HasValue ? triggers.Length : (int?)null, ability,
+                unit.StatusDictionary == null ? null : new StatusDictionaryState(statuses.Select(status => (string?)status.Id).ToArray(), Array.Empty<int>()),
+                unit.AbilityRules);
+            return SuppressAtSpawn(initialized, context);
+        }
+
         internal static CombatUnit SuppressAtSpawn(CombatUnit unit, CombatContext? context)
         {
             if (unit.Ability?.HasAbility != true || context?.PermanentlyDisabledAbilities?.Contains(unit.Ability.DataId) != true) return unit;

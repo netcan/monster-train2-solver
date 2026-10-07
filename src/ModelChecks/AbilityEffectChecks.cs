@@ -131,7 +131,7 @@ internal static class AbilityEffectChecks
         Require(JsonSerializer.Serialize(before, ModelJson.Options) == parent, "Ability effect mutated its native root.");
     }
 
-    private static void VerifyCallback(FixtureValue record)
+    internal static void VerifyCallback(FixtureValue record)
     {
         Require(record.GetProperty("Completed").GetBoolean() && record.GetProperty("Interactions").GetArrayLength() == 0,
             "Incomplete native ability callback.");

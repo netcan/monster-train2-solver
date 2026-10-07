@@ -35,6 +35,8 @@ namespace MonsterTrain2Poju.Probe
         private static IEnumerator Run(AllGameManagers managers, ManualLogSource log)
         {
             CardManager cards = managers.GetCardManager()!; SaveManager save = managers.GetSaveManager();
+            bool abilities = Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == "equipment-abilities";
+            if (abilities) EquipmentAbilityScenario.Prepare(managers, log);
             bool exhausted = Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == "equipment-exhausted";
             bool overflow = Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == "equipment-overflow";
             bool triggerEquipment = Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == "equipment-triggers";
@@ -75,6 +77,7 @@ namespace MonsterTrain2Poju.Probe
                 Set(conditional, "onlyTriggerIfEquipped", true); triggers.Add(conditional); Set(unitData, "triggers", triggers);
             }
             foreach (CardState card in owned.Where(card => card.GetCardDataID() == steward.GetID())) card.Setup(steward, save);
+            if (abilities) EquipmentAbilityScenario.Configure(upgrade, owned, gear, steward, save);
             gear[0].GetTemporaryCardStateModifiers().IncrementAdditionalDamage(1);
             gear[0].GetTemporaryCardStateModifiers().IncrementAdditionalHP(3);
             var bonus = new CardUpgradeState(); bonus.Setup(); bonus.SetAttackDamage(1); bonus.AddStatusEffectUpgradeStacks("spikes", 1);
@@ -85,18 +88,26 @@ namespace MonsterTrain2Poju.Probe
             int index = cards.GetHand().FindIndex(card => card.GetCardDataID() == steward.GetID());
             if (index < 0) { Error = "Equipment setup needs an initial Steward."; yield break; }
             CardState source = cards.GetHand()[index]; var drop = rooms.GetRoom(0).GetMonsterPoint(0);
+            if (abilities) EquipmentAbilityScenario.BeforeInitial(source);
             if (!cards.CanPlayHandCard(source, 0, drop, null, null, out var error) || !cards.PlayCard(index, drop, ref error))
             { Error = "Equipment setup native summon failed: " + error; yield break; }
             while (managers.GetReplayManager().IsCardPlaying() || managers.GetCombatManager()!.IsRunningTriggerQueue ||
                 (managers.GetHandUI()?.AreAnyCardsAnimating() ?? false)) yield return null;
             var monsters = new List<CharacterState>(); rooms.GetRoom(0).AddCharactersToList(monsters, Team.Type.Monsters);
             CharacterState host = monsters.Single(unit => unit.GetSpawnerCard() == source);
+            if (abilities) EquipmentAbilityScenario.AfterInitial();
+            if (abilities) yield return EquipmentAbilityScenario.DisableInitial(host);
             foreach (CardState card in gear.Take(3))
             {
                 yield return host.AddEquipment(card, managers.GetCoreManagers(), grafted: false);
                 CardState equipment = card;
                 cards.MoveToStandByPile(card, wasPlayed: true, wasExhausted: false,
                     new RemoveFromStandByCondition(() => cards.CheckEquipmentRemoveFromStandByCondition(host, equipment)));
+            }
+            if (abilities)
+            {
+                yield return EquipmentAbilityScenario.RestoreEquipmentOriginal(host, gear[2]);
+                yield return EquipmentAbilityScenario.DirectCases(host);
             }
             if (overflow)
             {

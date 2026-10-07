@@ -272,7 +272,7 @@ namespace MonsterTrain2Poju.Model
                         if (definitions == null) return UnsupportedTrain("Equipment requires play definitions.");
                         if (effect.Type == "AttachEquipment" && target.EquipmentCards?.Contains(sourceCardId) == true) continue;
                         RoomCombatResult equipment = RoomCombatModel.ApplyEquipment(targetRoom!, id, effect.Type == "AttachEquipment" ? sourceCardId : 0,
-                            definitions, effect.Type == "RemoveEquipment");
+                            definitions, effect.Type == "RemoveEquipment", deferAbilityCallbacks: true);
                         if (!equipment.Supported) return UnsupportedTrain(equipment.UnsupportedReason!);
                         state = ReplaceRoom(state, equipment.State!); events.AddRange(equipment.Events); callbacks.AddRange(equipment.PendingCallbacks);
                         if (equipment.Outcome == RoomOutcome.BattleWon || equipment.Outcome == RoomOutcome.PlayerDefeated) outcome = equipment.Outcome;

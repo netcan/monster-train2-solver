@@ -102,6 +102,7 @@ are copied immutable values; independent child states can run on worker threads.
 | Mono status dictionary slot reuse | `StatusDictionaryState` | Captured slot/free-list state, LIFO reuse after cleanup, exact later status enumeration and independent branch isolation |
 | Unit ability lifecycle primitives | `AbilityLifecycleModel` and spawn transitions | 21 native assignment/removal API cases, raw cooldown restoration, equipment overlay history, permanent disable order and disabled player/enemy births; complete subsequent policy and parallel branches |
 | Ability assignment/removal effects | `CardSpellModel`, `RoomCombatModel` and `AbilityLifecycleModel` | 17 native effect states and 17 queued dispatches with 35 payloads; multi-target and last-target spells, pre-own replacement, cached self replacement/removal, exact current disabled IDs and complete policies with parallel branches |
+| Ability upgrades and equipment grants | `CardUpgradeModifier`, `UnitModifierModel` and spawn transitions | Permanent/temporary initial selection, keep-existing and matching-removal gates, raw restoration after repeated equipment replacement, direct assignment clearing history, disabled upgraded births and real equipment skill casts; complete policy and parallel branches |
 | Additional spells, abilities, relics | Not complete | Unsupported interactions explicitly reject the model transition |
 
 `CardEffectAddBattleCard` uses one shared immutable generation model for spells
@@ -3373,3 +3374,82 @@ and SHA-256 checks, pure checks, all independent native comparisons and parallel
 branches pass. Probe builds with zero warnings/errors; ModelChecks adds no
 warnings beyond its 12 existing nullable warnings. PowerShell parsing and
 `git diff --check` pass. The complete simulation objective remains active.
+
+## Unit ability upgrades and equipment integration
+
+`CardUpgradeModifier` now captures the upgrade's incoming ability definition,
+common triggers and do-not-replace flag. Equipment, scaled-stat and clone-refresh
+copies preserve this metadata. Native upgrade capture continues to reject room
+abilities, card-trigger changes and unsupported trait modifications.
+
+Live unit upgrades install/remove upgraded character triggers before changing
+the skill, then process upgraded statuses. Keep-existing skips a grant when the
+unit already has a skill. Removal changes the ability only when the incoming
+upgrade definition matches the current raw skill ID; removing an upgrade that
+was skipped does not revoke a different skill. Quiet direct API and equipment
+setup retain the native yielding boundary: pending callbacks can drain after
+the first common trigger is removed. Playing equipment through a card, or
+applying an upgrade inside the running trigger queue, defers those callbacks.
+The outer room engine also retains changes that these quiet callbacks make to
+other room actors.
+
+Equipment grants use the same overlay history as native SetUnitAbility: repeated
+replacements remember the original skill, and removing the current overlay
+restores that original with its raw activation cooldown. Direct non-equipment
+upgrades clear the remembered original. The fixture upgrades equipment with an
+OnUnitAbilityAvailable gold trigger before the skill changes, so incorrect
+trigger-installation order or premature callback draining changes the compared
+context and flags.
+
+Initial player summons select the base skill, apply permanent ability upgrades
+in order, then apply temporary ability upgrades in order. Keep-existing checks
+the selected reference before consulting the run's permanent disable list.
+Suppression occurs after selection and does not fall back to the base skill.
+The selected skill supplies marker/status dictionary slots, common trigger IDs,
+its raw definition and spawn cooldown before the ordinary OnSpawn path runs.
+Malformed upgrades referencing a card that is not a unit ability reject this
+transition explicitly; its native invalid raw-reference setup is not modeled.
+The starting rule catalog also follows abilities referenced by owned card
+upgrades, spell upgrade descriptors and equipment definitions.
+
+`-EquipmentAbilities` constructs this scenario in the isolated sandbox at turn
+zero. A first big Steward has permanent B and temporary C upgrades, so it is
+born with C (activation cooldown 6, spawn cooldown 2). C is permanently disabled
+and explicitly reassigned before equipment setup. Another big Steward retains
+base A under a keep-existing B upgrade. Small Stewards have base A plus a C
+upgrade: both later natural summons omit the disabled selected C and all common
+skill triggers. Equipment B/C/D replacements, an explicit removal/restoration
+and seven direct upgrade API cases execute before the ordinary policy. Two
+later equipped units actually activate skill B; its front-enemy damage and
+self-heal run through the native card pipeline. Boss stats and all original
+spawn waves remain intact.
+
+The muted Instant native run takes 50.55 seconds, wins at Pyre 80 and exits zero.
+Capture failures, mismatches, unsupported transitions and pending records are
+all zero; original profile files remain unchanged. Schema 67 records 17 actions,
+five EndTurns, 47 room stages, nine card cycles, nine train phases and seven
+enemy spawn phases. Independent checks compare all 17 equipment operations,
+seven direct upgrades, the initial upgraded summon and 22 queued character
+dispatches with 12 generated payloads. Those boundaries repeat in 32 isolated
+branches; the complete policy matches initial and actual mid-battle roots in
+16 parallel branches. Capture and independent checks require the actual
+keep-existing birth, disabled upgraded births, raw cooldown restoration, both
+quiet/card callback contexts and real equipment skill activation.
+
+`tests/fixtures/full-battle-equipment-abilities.mt2f` contains 5,000 unique nodes
+in 31,439 bytes, SHA-256
+`3bbbeae20c27930358f8df2e4058c7e0008be9d93e4c98b3d00f6d2b860162b2`.
+It is a direct native binary archive with no text source or JSON dependency.
+The curated inventory is now 96 archives: 88 battles and eight calibrations.
+
+Broader native coverage remains necessary for ability upgrades in generated
+cards and nested upgrade-granted triggers, damage/death during quiet lifecycle
+yields, Horde interactions, grafts, moon/deathwish, global relics, room
+attachments and specialized Boss state machines. The complete battle simulation
+objective remains active.
+
+The final `scripts/Check-Models.ps1` run passes all 96 curated binary archives
+with exit code zero, including inventory/SHA-256 verification, pure checks,
+all independent native comparisons and parallel branches. Probe builds with
+zero warnings/errors; ModelChecks retains its 12 existing nullable warnings.
+Both changed PowerShell scripts parse successfully and `git diff --check` passes.

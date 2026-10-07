@@ -49,7 +49,7 @@ namespace MonsterTrain2Poju.Probe
             {
                 bool requested = Environment.GetEnvironmentVariable("MT2_PROBE_STATUS_CALLBACKS") == "1" &&
                     (Kinds.Contains(trigger.ToString()) || Environment.GetEnvironmentVariable("MT2_PROBE_STATUS_CALLBACK_ACTIONS") == "1");
-                bool lifecycle = AbilityEffectsScenario.Prepared && trigger.ToString() is "OnPreOwnAbilityActivated" or "OnOwnAbilityActivated" or
+                bool lifecycle = (AbilityEffectsScenario.Prepared || EquipmentAbilityScenario.Prepared) && trigger.ToString() is "OnPreOwnAbilityActivated" or "OnOwnAbilityActivated" or
                     "OnUnitAbilityAvailable" or "OnUnitAbilityUnavailable";
                 if (FullBattleTrace.Active != null && !AllGameManagers.Instance!.GetSaveManager().PreviewMode && fromRunningTriggerQueue && (requested || lifecycle))
                     __result = Wrap(__result, __instance, trigger, fireTriggersData, canFireTriggers);
@@ -142,7 +142,7 @@ namespace MonsterTrain2Poju.Probe
         {
             private static void Prefix(CharacterState character, CharacterTriggerData.Trigger trigger, CharacterState.FireTriggersData fireTriggersData)
             {
-                if ((Environment.GetEnvironmentVariable("MT2_PROBE_STATUS_CALLBACKS") != "1" && !AbilityEffectsScenario.Prepared) || FullBattleTrace.Active == null ||
+                if ((Environment.GetEnvironmentVariable("MT2_PROBE_STATUS_CALLBACKS") != "1" && !AbilityEffectsScenario.Prepared && !EquipmentAbilityScenario.Prepared) || FullBattleTrace.Active == null ||
                     AllGameManagers.Instance == null || AllGameManagers.Instance.GetSaveManager().PreviewMode) return;
                 string kind = trigger.ToString();
                 var record = new Record { Index = Records.Count, ActorId = FullBattleTrace.Active.UnitId(character), Kind = kind,

@@ -97,6 +97,7 @@ internal static class EquipmentChecks
                 "Unmodeled repeated raw attachment was silently treated as a no-op.");
             Parallel.For(0, 32, _ => { foreach (var sample in samples) Verify(sample); });
         }
+        if (scenario == "equipment-abilities") Parallel.For(0, 32, _ => { foreach (var sample in samples) Verify(sample); });
         Console.WriteLine($"NATIVE-EQUIPMENT-CHECKS PASS: {samples.Length} independently compared native attachment/removal room/context transitions and parent isolation.");
     }
 
@@ -111,7 +112,8 @@ internal static class EquipmentChecks
         var definitions = sample.GetProperty("Definitions").Deserialize<BattlePlayRules>()!;
         string frozen = JsonSerializer.Serialize(before, ModelJson.Options);
         var result = RoomCombatModel.ApplyEquipment(before, sample.GetProperty("UnitId").GetInt32(), sample.GetProperty("CardId").GetInt32(),
-            definitions, sample.GetProperty("Remove").GetBoolean());
+            definitions, sample.GetProperty("Remove").GetBoolean(),
+            sample.TryGetProperty("DeferAbilityCallbacks", out var deferred) && deferred.GetBoolean());
         Require(result.Supported, "Native equipment operation unsupported: " + result.UnsupportedReason);
         string? difference = ModelJson.Difference(JsonSerializer.Serialize(result.State, ModelJson.Options), JsonSerializer.Serialize(after, ModelJson.Options));
         Require(difference == null, "Equipment unit=" + sample.GetProperty("UnitId").GetInt32() + " card=" + sample.GetProperty("CardId").GetInt32() +
