@@ -52,7 +52,25 @@ internal static class CardModifierChecks
         var discarded = new CardInstanceState(5, "spell", CardModifiers.Empty(), duplicates, 1, 0, 1, []).OnDiscard(false);
         Require(discarded.Temporary.Upgrades.Count == 0,
             "Native reverse discard loop must revisit the shifted upgrade after removing the first matching data ID.");
+        StartingStatusRegistry();
         Console.WriteLine("MODIFIER-CHECKS PASS: ordered clamps, permanent/temporary groups, discard lifecycle, per-instance actions and isolation.");
+    }
+    private static void StartingStatusRegistry()
+    {
+        var historical = new CombatStatus("buff", 0);
+        var unit = new CombatUnit(0, "unit", CombatTeam.Player, 1, 1, 1, true, false, false, [], statusRegistry: [historical]);
+        var rule = new CardPlayRule("unit", "unit", 0, "SpawnMonster", "Standby", unit, []);
+        foreach (int[] stacks in new[] { new[] { 0 }, new[] { -3 }, new[] { 3, -3 }, new[] { 0, 3 } })
+        {
+            var upgrades = stacks.Select(count => new CardUpgradeModifier("", "", new(), [new("armor", count)],
+                false, false, false, 0, 0, [])).ToArray();
+            var instance = new CardInstanceState(1, "unit", CardModifiers.Empty(), new(new(), upgrades, 0, []), 0, 0, 0, []);
+            CombatUnit resolved = CardModifierModel.Resolve(rule, instance).SpawnUnit!;
+            int expected = stacks.SequenceEqual([0, 3]) ? 3 : 0;
+            Require(resolved.Statuses.Sum(status => status.Stacks) == expected &&
+                resolved.StatusRegistry!.Count == (expected > 0 ? 2 : 1) && resolved.StatusRegistry[0].Id == "buff",
+                "Spawn upgrades created an inactive status definition or discarded the captured zero-stack registry.");
+        }
     }
     internal static void Native(string path)
     {

@@ -188,7 +188,8 @@ namespace MonsterTrain2Poju.Model
                     Math.Max(1, Math.Min(4, UpgradedStat(original.EquipmentLimit, "EquipmentLimit", true, modifiers))),
                     original.CanBeHealed, original.IsClone, original.Upgrades, original.HealthFromUpgrades, original.SpawnerMatchesDefinition);
                 unit = new CombatUnit(unit.Id, unit.AssetKey, unit.Team, UpgradedStat(unit.BaseAttack, "Damage", true, modifiers),
-                    health, health, unit.CanAttack, unit.IsPyre, unit.EndsBattleOnDeath, statuses.Values.ToArray(), unit.Triggers,
+                    health, health, unit.CanAttack, unit.IsPyre, unit.EndsBattleOnDeath,
+                    statuses.Values.Where(status => status.Stacks > 0).ToArray(), unit.Triggers,
                     unit.SpawnerCardId, Math.Max(1, UpgradedStat(unit.Size, "Size", false, modifiers)), unit.StatusImmunities, unit.Subtypes, unitModifiers, unit.IsBoss, unit.LastAttackerId, unit.StatusRegistry);
             }
             CardActionEffect[] effects = rule.Effects.Select(effect => new CardActionEffect(effect.Type, effect.Target,
