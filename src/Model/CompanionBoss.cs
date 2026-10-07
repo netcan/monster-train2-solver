@@ -48,7 +48,7 @@ namespace MonsterTrain2Poju.Model
             source.BaseAttack, source.Health, source.MaxHealth, source.CanAttack, source.IsPyre, source.EndsBattleOnDeath,
             source.Statuses, source.Triggers.Where(trigger => !trigger.RemoveOnRelentlessChange).ToArray(), source.SpawnerCardId,
             source.Size, source.StatusImmunities, source.Subtypes, source.Modifiers, source.IsBoss, source.LastAttackerId,
-            source.StatusRegistry, source.EquipmentCards, source.NextTriggerId, source.Ability, source.StatusDictionary);
+            source.StatusRegistry, source.EquipmentCards, source.NextTriggerId, source.Ability, source.StatusDictionary, source.AbilityRules);
         private static TrainCombatResult Match(TrainCombatState source) => new TrainCombatResult(source,
             RoomOutcome.Exchanged, Array.Empty<RoomCombatResult>());
         private static bool Terminal(RoomOutcome outcome) => outcome == RoomOutcome.BattleWon ||

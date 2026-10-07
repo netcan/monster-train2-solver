@@ -437,7 +437,16 @@ namespace MonsterTrain2Poju.Probe
                     return;
                 }
             }
-            if (fullBattle && !numericModifiersPrepared && (modifierScenario == "ability-activation" || modifierScenario == "ability-activation-x" || modifierScenario == "ability-activation-lethal" || modifierScenario == "ability-cooldown" || modifierScenario == "ability-cache" || modifierScenario == "sentry" || modifierScenario == "sentry-lethal" || modifierScenario == "companion-boss" || modifierScenario == "numeric-upgrades" || modifierScenario == "dynamic-upgrades" ||
+            if (fullBattle && numericModifiersPrepared && modifierScenario == "ability-lifecycle")
+            {
+                if (AbilityLifecycleScenario.Error != null) throw new InvalidOperationException(AbilityLifecycleScenario.Error);
+                if (!AbilityLifecycleScenario.Completed)
+                {
+                    if (!AbilityLifecycleScenario.Started) AbilityLifecycleScenario.Start(managers, log);
+                    return;
+                }
+            }
+            if (fullBattle && !numericModifiersPrepared && (modifierScenario == "ability-lifecycle" || modifierScenario == "ability-activation" || modifierScenario == "ability-activation-x" || modifierScenario == "ability-activation-lethal" || modifierScenario == "ability-cooldown" || modifierScenario == "ability-cache" || modifierScenario == "sentry" || modifierScenario == "sentry-lethal" || modifierScenario == "companion-boss" || modifierScenario == "numeric-upgrades" || modifierScenario == "dynamic-upgrades" ||
                 modifierScenario == "sacrifice-upgrades" || modifierScenario == "hand-upgrades" || modifierScenario == "targeted-hand-upgrades" ||
                 modifierScenario == "healing" || modifierScenario == "healing-triggers" || modifierScenario == "room-spells" ||
                 modifierScenario == "terminal-spells" || modifierScenario == "post-kill-spells" || modifierScenario == "random-spells" ||
@@ -458,6 +467,7 @@ namespace MonsterTrain2Poju.Probe
                 else if (modifierScenario == "x-cost" || modifierScenario == "x-cost-lethal") CardCostScenario.Prepare(managers, log, modifierScenario == "x-cost-lethal");
                 else if (modifierScenario == "bonus-draw" || modifierScenario == "bonus-draw-lethal") BonusDrawScenario.Prepare(managers, log, modifierScenario == "bonus-draw-lethal");
                 else if (modifierScenario == "ability-activation" || modifierScenario == "ability-activation-x" || modifierScenario == "ability-activation-lethal") AbilityActivationScenario.Prepare(managers, log, modifierScenario == "ability-activation-x", modifierScenario == "ability-activation-lethal");
+                else if (modifierScenario == "ability-lifecycle") AbilityLifecycleScenario.Prepare(managers, log);
                 else if (modifierScenario == "ability-cooldown" || modifierScenario == "ability-cache") AbilityCooldownScenario.Prepare(managers, log, modifierScenario == "ability-cache");
                 else if (modifierScenario == "companion-boss") CompanionBossScenario.Prepare(managers, log);
                 else if (modifierScenario == "sentry" || modifierScenario == "sentry-lethal") SentryScenario.Prepare(managers, log, modifierScenario == "sentry-lethal");

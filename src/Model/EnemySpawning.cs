@@ -15,7 +15,7 @@ namespace MonsterTrain2Poju.Model
         { Unit = unit; Ascends = ascends; Loops = loops; ExternalInteractions = Array.AsReadOnly(externalInteractions.ToArray()); CompanionBoss = companionBoss; }
         internal CombatUnit Create(int id) => new CombatUnit(id, Unit.AssetKey, CombatTeam.Enemy,
             Unit.BaseAttack, Unit.Health, Unit.MaxHealth, Unit.CanAttack, false, Unit.EndsBattleOnDeath,
-            Unit.Statuses, Unit.Triggers, size: Unit.Size, statusImmunities: Unit.StatusImmunities, subtypes: Unit.Subtypes, modifiers: Unit.Modifiers, isBoss: Unit.IsBoss, lastAttackerId: Unit.LastAttackerId.HasValue ? 0 : null, statusRegistry: Unit.StatusRegistry, equipmentCards: Unit.EquipmentCards, nextTriggerId: Unit.NextTriggerId, ability: Unit.Ability, statusDictionary: Unit.StatusDictionary);
+            Unit.Statuses, Unit.Triggers, size: Unit.Size, statusImmunities: Unit.StatusImmunities, subtypes: Unit.Subtypes, modifiers: Unit.Modifiers, isBoss: Unit.IsBoss, lastAttackerId: Unit.LastAttackerId.HasValue ? 0 : null, statusRegistry: Unit.StatusRegistry, equipmentCards: Unit.EquipmentCards, nextTriggerId: Unit.NextTriggerId, ability: Unit.Ability, statusDictionary: Unit.StatusDictionary, abilityRules: Unit.AbilityRules);
     }
 
     public sealed class EnemyGroup
@@ -117,7 +117,9 @@ namespace MonsterTrain2Poju.Model
                     while (roomIndex <= pyre && rooms[roomIndex].Count(unit => unit.Team == CombatTeam.Enemy)
                         >= source.Train.EnemySlotsPerRoom) roomIndex++;
                     if (roomIndex > pyre) return Unsupported("No enemy spawn point remains in the train.");
-                    CombatUnit unit = definition.Create(nextId++);
+                    string? abilityError = AbilityLifecycleModel.SpawnError(definition.Unit, context);
+                    if (abilityError != null) return Unsupported(abilityError);
+                    CombatUnit unit = AbilityLifecycleModel.SuppressAtSpawn(definition.Create(nextId++), context);
                     Insert(rooms[roomIndex], unit);
                     error = Initialize(unit, roomIndex);
                     if (error != null) return Unsupported(error);
@@ -156,7 +158,9 @@ namespace MonsterTrain2Poju.Model
                     EnemyDefinition definition = source.Treasures[chosen.Value];
                     string? error = Validate(definition, context);
                     if (error != null) return Unsupported(error);
-                    CombatUnit unit = definition.Create(nextId++);
+                    string? abilityError = AbilityLifecycleModel.SpawnError(definition.Unit, context);
+                    if (abilityError != null) return Unsupported(abilityError);
+                    CombatUnit unit = AbilityLifecycleModel.SuppressAtSpawn(definition.Create(nextId++), context);
                     Insert(rooms[eligible[floor.Value]], unit);
                     error = Initialize(unit, eligible[floor.Value]);
                     if (error != null) return Unsupported(error);

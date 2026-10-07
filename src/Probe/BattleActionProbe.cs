@@ -89,7 +89,7 @@ namespace MonsterTrain2Poju.Probe
                     CombatUnit source = definition.Unit;
                     template = new CombatUnit(0, source.AssetKey, CombatTeam.Player, source.BaseAttack, source.Health,
                         source.MaxHealth, source.CanAttack, false, false, source.Statuses, source.Triggers, size: source.Size,
-                        statusImmunities: source.StatusImmunities, subtypes: source.Subtypes, modifiers: source.Modifiers, isBoss: source.IsBoss, lastAttackerId: 0, statusRegistry: source.StatusRegistry, equipmentCards: source.EquipmentCards, nextTriggerId: source.NextTriggerId, ability: source.Ability, statusDictionary: source.StatusDictionary);
+                        statusImmunities: source.StatusImmunities, subtypes: source.Subtypes, modifiers: source.Modifiers, isBoss: source.IsBoss, lastAttackerId: 0, statusRegistry: source.StatusRegistry, equipmentCards: source.EquipmentCards, nextTriggerId: source.NextTriggerId, ability: source.Ability, statusDictionary: source.StatusDictionary, abilityRules: source.AbilityRules);
                 }
                 kind = "SpawnMonster"; destination = "Standby";
             }

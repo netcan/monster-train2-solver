@@ -178,6 +178,7 @@ internal static class RoomCombatChecks
         ConditionalTriggerChecks.Native(fixture);
         CompanionBossChecks.Native(fixture);
         SentryChecks.Native(fixture);
+        AbilityLifecycleChecks.Native(fixture);
         AbilityCooldownChecks.Native(fixture);
         AbilityCardChecks.Native(fixture);
         UnitAbilityChecks.Native(fixture);

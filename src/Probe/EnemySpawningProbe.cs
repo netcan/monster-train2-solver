@@ -97,7 +97,7 @@ namespace MonsterTrain2Poju.Probe
             CardData? abilityData = data.GetUnitAbilityCardData();
             UnitAbilityState? ability = abilityData == null || !abilityData.IsUnitAbility() ? null :
                 new UnitAbilityState(abilityData.GetID(), abilityData.GetCooldownAfterActivated(), abilityData.GetCooldownAtSpawn(),
-                    cardCreation: CardGenerationProbe.Creation(abilityData));
+                    cardCreation: CardGenerationProbe.Creation(abilityData), definition: AbilityLifecycleProbe.Definition(abilityData));
             if (ability != null) statuses = new[] { BattleActionProbe.Status("unit_ability", 1) }.Concat(statuses).ToArray();
             var triggers = new List<CombatTrigger>();
             if (ability != null)
@@ -107,7 +107,7 @@ namespace MonsterTrain2Poju.Probe
             return new EnemyDefinition(new CombatUnit(0, data.GetAssetKey(), CombatTeam.Enemy, data.GetAttackDamage(),
                 data.GetHealth(), data.GetHealth(), data.GetCanAttack(), false, data.IsMiniboss(), statuses, triggers.ToArray(), size: data.GetSize(),
                 statusImmunities: data.GetStatusEffectImmunities(), subtypes: data.GetSubtypes().Select(subtype => subtype.Key).ToArray(),
-                modifiers: UnitModifierProbe.Definition(data), isBoss: data.IsMiniboss() || data.IsOuterTrainBoss(), lastAttackerId: 0, statusRegistry: statuses, equipmentCards: Array.Empty<int>(), nextTriggerId: triggers.Count, ability: ability, statusDictionary: new StatusDictionaryState(statuses.Select(status => (string?)status.Id).ToArray(), Array.Empty<int>())),
+                modifiers: UnitModifierProbe.Definition(data), isBoss: data.IsMiniboss() || data.IsOuterTrainBoss(), lastAttackerId: 0, statusRegistry: statuses, equipmentCards: Array.Empty<int>(), nextTriggerId: triggers.Count, ability: ability, statusDictionary: new StatusDictionaryState(statuses.Select(status => (string?)status.Id).ToArray(), Array.Empty<int>()), abilityRules: AbilityLifecycleProbe.Rules(data)),
                 data.GetAscendsTrainAutomatically(), data.GetLoopsBetweenTrainFloors(), interactions, data.IsCompanionBoss());
         }
 

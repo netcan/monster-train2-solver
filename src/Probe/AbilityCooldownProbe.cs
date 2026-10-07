@@ -16,11 +16,12 @@ namespace MonsterTrain2Poju.Probe
             object state = AccessTools.Property(typeof(CharacterState), "PrimaryStateInformation").GetValue(unit);
             CardData? ability = unit.GetUnitAbility();
             int cooldown = unit.GetUnitAbilityCooldown(), spawn = unit.GetUnitAbilityCooldownAtSpawn();
-            if (ability == null && cooldown == 0 && spawn == 0) return null;
             CardData? previous = (CardData?)AccessTools.Field(state.GetType(), "prevUnitAbilityCardData").GetValue(state);
-            return new UnitAbilityState(ability?.GetID() ?? "", cooldown, spawn, unit.GetUnitAbilityIsFromEquipment(),
-                (bool)AccessTools.Field(state.GetType(), "isUnitAbilityResolving").GetValue(state), previous?.GetID(),
-                ability == null ? null : CardGenerationProbe.Creation(ability));
+            bool equipment = unit.GetUnitAbilityIsFromEquipment(), resolving = (bool)AccessTools.Field(state.GetType(), "isUnitAbilityResolving").GetValue(state);
+            if (ability == null && cooldown == 0 && spawn == 0 && previous == null && !equipment && !resolving) return null;
+            return new UnitAbilityState(ability?.GetID() ?? "", cooldown, spawn, equipment, resolving, previous?.GetID(),
+                ability == null ? null : CardGenerationProbe.Creation(ability), ability == null ? null : AbilityLifecycleProbe.Definition(ability),
+                previous == null ? null : AbilityLifecycleProbe.Definition(previous));
         }
         internal static StatusDictionaryState CaptureDictionary(CharacterState unit)
         {

@@ -13,15 +13,18 @@ namespace MonsterTrain2Poju.Model
         public bool Resolving { get; }
         public string? PreviousDataId { get; }
         public CardCreationRule? CardCreation { get; }
+        public UnitAbilityDefinition? Definition { get; }
+        public UnitAbilityDefinition? PreviousDefinition { get; }
         public bool HasAbility => DataId.Length > 0;
         public UnitAbilityState(string dataId, int cooldown, int cooldownAtSpawn, bool fromEquipment = false,
-            bool resolving = false, string? previousDataId = null, CardCreationRule? cardCreation = null)
+            bool resolving = false, string? previousDataId = null, CardCreationRule? cardCreation = null,
+            UnitAbilityDefinition? definition = null, UnitAbilityDefinition? previousDefinition = null)
         { DataId = dataId; Cooldown = cooldown; CooldownAtSpawn = cooldownAtSpawn; FromEquipment = fromEquipment;
-            Resolving = resolving; PreviousDataId = previousDataId; CardCreation = cardCreation; }
+            Resolving = resolving; PreviousDataId = previousDataId; CardCreation = cardCreation; Definition = definition; PreviousDefinition = previousDefinition; }
         internal UnitAbilityState WithCooldown(int value) => new UnitAbilityState(DataId, Math.Max(1, value), CooldownAtSpawn,
-            FromEquipment, Resolving, PreviousDataId, CardCreation);
+            FromEquipment, Resolving, PreviousDataId, CardCreation, Definition, PreviousDefinition);
         internal UnitAbilityState WithResolving(bool value) => new UnitAbilityState(DataId, Cooldown, CooldownAtSpawn,
-            FromEquipment, value, PreviousDataId, CardCreation);
+            FromEquipment, value, PreviousDataId, CardCreation, Definition, PreviousDefinition);
     }
 
     public static class AbilityCooldownModel
@@ -75,7 +78,7 @@ namespace MonsterTrain2Poju.Model
         internal static CombatUnit Copy(CombatUnit unit, UnitAbilityState? ability) => new CombatUnit(unit.Id, unit.AssetKey, unit.Team,
             unit.BaseAttack, unit.Health, unit.MaxHealth, unit.CanAttack, unit.IsPyre, unit.EndsBattleOnDeath, unit.Statuses, unit.Triggers,
             unit.SpawnerCardId, unit.Size, unit.StatusImmunities, unit.Subtypes, unit.Modifiers, unit.IsBoss, unit.LastAttackerId,
-            unit.StatusRegistry, unit.EquipmentCards, unit.NextTriggerId, ability, unit.StatusDictionary);
+            unit.StatusRegistry, unit.EquipmentCards, unit.NextTriggerId, ability, unit.StatusDictionary, unit.AbilityRules);
         private static RoomCombatState Replace(RoomCombatState source, CombatUnit unit) => new RoomCombatState(source.RoomIndex,
             source.Deployment, source.Units.Select(item => item.Id == unit.Id ? unit : item).ToArray(), source.ExternalInteractions, source.Context, source.Preview);
         private static RoomCombatResult Match(RoomCombatState state) => new RoomCombatResult(state, RoomOutcome.Exchanged, 0, new List<CombatEvent>());

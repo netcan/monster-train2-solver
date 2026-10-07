@@ -119,7 +119,7 @@ internal static class EnergyChecks
             var sampled = new CombatContext(before.Cards, sample?.State ?? before.BattleRng, before.Gold, before.NextCardId, before.MaxHandSize,
                 before.StatusRules, before.Statistics, before.CardInstances, before.CardRegistry, before.AllScenarioBossesDead,
                 before.NextAddedTemporaryUpgrades, before.OtherPiles, before.QueryFrame, before.KillCamActivated, before.MagicPower,
-                before.IsolatedBattlePreview, before.EnergyState, before.RoomCapacities, before.AbilityCardCache, before.LastAbilityActivatorUnitId);
+                before.IsolatedBattlePreview, before.EnergyState, before.RoomCapacities, before.AbilityCardCache, before.LastAbilityActivatorUnitId, before.PermanentlyDisabledAbilities);
             CombatContext predicted = EnergyModel.Apply(sampled, effect.Type, amount);
             string? difference = ModelJson.Difference(JsonSerializer.Serialize(predicted), JsonSerializer.Serialize(after));
             Require(difference == null, "Native energy context differs at " + record.GetProperty("Sequence").GetInt32() + ": " + difference);

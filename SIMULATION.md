@@ -100,6 +100,7 @@ are copied immutable values; independent child states can run on worker threads.
 | Shared ability card cache | `AbilityCardModel` and `CombatContext.AbilityCardCache` | Native player and enemy ability creation, shared unit references, detached card statistics, starting upgrades and allocation before OnSpawn generation; complete battle and parallel branches |
 | Unit ability activation | `UnitAbilityModel` and `BattleActionModel` | Native fixed/X/zero payments, shared detached history, self targets, damage attribution, pre-own/own callbacks, cooldown and direct Boss-kill settlement; complete policies and parallel branches |
 | Mono status dictionary slot reuse | `StatusDictionaryState` | Captured slot/free-list state, LIFO reuse after cleanup, exact later status enumeration and independent branch isolation |
+| Unit ability lifecycle primitives | `AbilityLifecycleModel` and spawn transitions | 21 native assignment/removal API cases, raw cooldown restoration, equipment overlay history, permanent disable order and disabled player/enemy births; complete subsequent policy and parallel branches |
 | Additional spells, abilities, relics | Not complete | Unsupported interactions explicitly reject the model transition |
 
 `CardEffectAddBattleCard` uses one shared immutable generation model for spells
@@ -3236,3 +3237,77 @@ pass. Probe builds with zero warnings/errors; ModelChecks retains its 12 existin
 nullable warnings and introduces none. PowerShell parsing and git diff --check
 pass. Failed development coverage-gate captures remain excluded from the curated
 inventory; the accepted archives retain complete native and independent proof.
+
+## Unit ability lifecycle primitives and permanent spawn suppression
+
+`AbilityLifecycleModel` models the native CharacterState assignment/removal APIs.
+Unit states now retain the original and remembered ability definitions separately
+from runtime cooldown fields. Equipment replacement keeps the original ability;
+direct replacement clears that history. Removing an equipment ability restores
+the original using its raw activation cooldown, including a zero-spawn-cooldown
+original. A changed runtime duration is not used for restoration.
+
+Assignment and removal update the native status registry, dictionary holes,
+common trigger origins and persistent trigger allocation cursor. Removal yields
+its first common-trigger operation. At a quiet direct-API boundary, the main
+combat loop processes queued status callbacks during that yield, before the
+remaining old common triggers disappear or replacement triggers are appended.
+The available marker may survive removal even after the unit no longer has an
+ability. A zero-spawn assignment subsequently removes one available marker.
+These are observed native behaviors; collapsing the operation into an atomic
+trigger replacement changes the resulting flags and statuses. The primitive
+can return deferred callbacks for integration inside a running trigger queue;
+that integration still requires its own native coverage.
+
+The probe's quiet boundary checks both IsRunningTriggerQueue and the actual
+pending queue count. A false running flag alone was insufficient: callbacks
+could remain queued and contaminate the next API record. No-op cases now
+compare only after the preceding operation fully settles.
+
+Permanent removal appends the removed definition ID to the run disable list,
+preserving order and duplicates. Removing an equipment ability disables that
+ability and still restores the original. Explicit assignment can grant a
+previously disabled definition. Natural player summons and enemy spawning
+consult the list before adding ability markers/common triggers or allocating a
+cached ability card. Authored starting statuses remain separate from the
+synthetic ability marker; card upgrades apply afterward.
+
+`full-battle-ability-lifecycle.mt2f` uses schema 65, game 2.2.1 and module MVID
+`8fb07b96-f4db-4d2b-884d-c00536d6ccf4`. Its source is
+`.probe-runs/full-battle-units-spells-and-junk-20261008-003754-fddea59f/full-battle.mt2f`.
+The direct binary archive contains 26,797 bytes and 4,398 unique nodes; SHA-256
+is `112a5069c421463b7c4939b7c59cea5e0270b6b816a5df6ceb8e6e4b90d7882e`.
+There is no source JSON dependency. The native run was muted, used Instant,
+finished in 42.21 seconds, exited zero and left original profile files unchanged.
+Capture failures, differences, unsupported and pending records are all zero.
+
+Before the first recorded policy decision, one natural Steward summon is followed
+by 21 native API operations: ordinary/null/no-ability no-ops, repeated assignment,
+zero-spawn cooldown, repeated equipment replacement, original restoration,
+direct replacement, equipment restrictions, restoration after runtime cooldown
+9 versus raw cooldown 3, permanent removal/restoration and duplicate disable
+entries. A regular enemy definition is given the same authored skill to verify
+later disabled enemy births; its stats and original wave placement remain intact.
+The original Boss keeps its distinct skill, stats and spawn wave.
+
+All 21 complete room/context transitions compare independently in 32 branches.
+Eight native cache contexts and 16 common cooldown-effect snapshots also compare
+in 32 branches. The subsequent policy has 16 plays, five EndTurns, 45 room stages,
+nine card cycles, nine train phases and seven spawn phases. It matches from its
+initial post-API state and actual mid-battle roots in 16 parallel branches,
+winning at Pyre 80. Both player and enemy birth suppression have required native
+coverage gates. The historical cache/cooldown suites keep their complete coverage
+requirements; unrelated lifecycle captures compare every observed operation
+without requiring an empty initial cache or a different suite's effect matrix.
+
+These primitives do not yet enable SetUnitAbility/RemoveAbility card effects or
+equipment attachment grants in the search action pipeline. Those integrations,
+inside-queue lifecycle changes, Horde, grafts, moon/deathwish, relics, room
+attachments and specialized Boss interactions remain part of the full objective.
+
+The final scripts/Check-Models.ps1 run passes all 94 curated archives: 86 battle
+archives and eight calibration suites, with exit code zero. Complete inventory
+and SHA-256 validation, pure checks and every native comparison pass. Probe has
+zero warnings/errors; ModelChecks retains its 12 existing nullable warnings and
+adds none. PowerShell parsing and git diff --check pass. The full battle
+simulation objective remains active.

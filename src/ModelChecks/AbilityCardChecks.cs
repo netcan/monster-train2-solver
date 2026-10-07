@@ -48,34 +48,38 @@ internal static class AbilityCardChecks
 
     internal static void Native(FixtureValue fixture)
     {
+        string? scenario = fixture.TryGetProperty("ModifierScenario", out var modifier) ? modifier.GetString() : null;
+        bool suite = scenario == "ability-cache" || scenario?.StartsWith("ability-activation", StringComparison.Ordinal) == true;
         if (!fixture.TryGetProperty("AbilityCardOperations", out var operations) || operations.GetArrayLength() == 0)
         {
-            Require(!fixture.TryGetProperty("ModifierScenario", out var scenario) || scenario.GetString() != "ability-cache",
-                "Requested native ability cache scenario did not execute.");
+            Require(!suite, "Requested native ability cache scenario did not execute.");
             return;
         }
         var samples = operations.EnumerateArray().ToArray();
         foreach (var sample in samples) Verify(sample);
         Require(samples.Any(sample => sample.GetProperty("Created").GetBoolean()) &&
             samples.Any(sample => !sample.GetProperty("Created").GetBoolean()), "Cache coverage missed creation or reuse.");
-        var initial = fixture.GetProperty("Actions")[0].GetProperty("Before").Deserialize<BattleTurnState>()!.Spawn.Train.Context!;
-        Require(initial.AbilityCardCache is { Count: 0 }, "Native fixture must start before natural skill cache allocation.");
-        Require(samples.Any(sample => sample.GetProperty("Created").GetBoolean() &&
-            sample.GetProperty("Creation").Deserialize<CardCreationRule>()!.StartingModifiers.Upgrades.Count > 0),
-            "Native cache coverage missed starting upgrades.");
-        var definitions = samples.Where(sample => sample.GetProperty("Created").GetBoolean()).Select(sample =>
-            sample.GetProperty("Creation").Deserialize<CardCreationRule>()!.DataId).Distinct().ToArray();
-        Require(definitions.Length >= 2 && fixture.GetProperty("Spawns").EnumerateArray().Any(sample =>
-            sample.GetProperty("Actual").Deserialize<EnemySpawnState>()!.Train.Rooms.SelectMany(room => room.Units)
-                .Any(unit => unit.Team == CombatTeam.Enemy && unit.Ability != null && definitions.Contains(unit.Ability.DataId))),
-            "Native cache coverage missed distinct definitions or enemy ability spawning.");
-        var accesses = fixture.GetProperty("AbilityCardAccesses").EnumerateArray().ToArray();
-        Require(accesses.GroupBy(sample => sample.GetProperty("DataId").GetString()).Any(group =>
-            group.Select(sample => sample.GetProperty("UnitId").GetInt32()).Distinct().Count() >= 2 &&
-            group.Select(sample => sample.GetProperty("CardId").GetInt32()).Distinct().Count() == 1),
-            "Native coverage did not show multiple units sharing one cache card.");
+        if (suite)
+        {
+            var initial = fixture.GetProperty("Actions")[0].GetProperty("Before").Deserialize<BattleTurnState>()!.Spawn.Train.Context!;
+            Require(initial.AbilityCardCache is { Count: 0 }, "Native fixture must start before natural skill cache allocation.");
+            Require(samples.Any(sample => sample.GetProperty("Created").GetBoolean() &&
+                sample.GetProperty("Creation").Deserialize<CardCreationRule>()!.StartingModifiers.Upgrades.Count > 0),
+                "Native cache coverage missed starting upgrades.");
+            var definitions = samples.Where(sample => sample.GetProperty("Created").GetBoolean()).Select(sample =>
+                sample.GetProperty("Creation").Deserialize<CardCreationRule>()!.DataId).Distinct().ToArray();
+            Require(definitions.Length >= 2 && fixture.GetProperty("Spawns").EnumerateArray().Any(sample =>
+                sample.GetProperty("Actual").Deserialize<EnemySpawnState>()!.Train.Rooms.SelectMany(room => room.Units)
+                    .Any(unit => unit.Team == CombatTeam.Enemy && unit.Ability != null && definitions.Contains(unit.Ability.DataId))),
+                "Native cache coverage missed distinct definitions or enemy ability spawning.");
+            var accesses = fixture.GetProperty("AbilityCardAccesses").EnumerateArray().ToArray();
+            Require(accesses.GroupBy(sample => sample.GetProperty("DataId").GetString()).Any(group =>
+                group.Select(sample => sample.GetProperty("UnitId").GetInt32()).Distinct().Count() >= 2 &&
+                group.Select(sample => sample.GetProperty("CardId").GetInt32()).Distinct().Count() == 1),
+                "Native coverage did not show multiple units sharing one cache card.");
+        }
         Parallel.For(0, 32, _ => { foreach (var sample in samples) Verify(sample); });
-        Console.WriteLine($"NATIVE-ABILITY-CARD-CHECKS PASS: {samples.Length} complete native cache contexts, shared unit identities and 32 branches.");
+        Console.WriteLine($"NATIVE-ABILITY-CARD-CHECKS PASS: {samples.Length} complete native cache contexts, cache identities and 32 branches.");
     }
     private static void Verify(FixtureValue sample)
     {

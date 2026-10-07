@@ -227,3 +227,15 @@ and permanent-deck statistic fallback remain. Whole policies match initial and
 mid-battle roots with 16 parallel branches, and each activation compares in 32
 branches. These archives use direct native binary capture with no source JSON.
 Ability assignment/replacement/removal and equipment skills remain separate work.
+
+`full-battle-ability-lifecycle.mt2f` retains schema 65 and 21 native assignment,
+replacement and removal API operations. Equipment restores the raw activation
+cooldown, preserves the original across repeated replacements and loses that
+history after direct assignment. Permanent disable IDs preserve order and
+repetitions; explicit assignment remains legal, while later natural player and
+enemy births omit the disabled skill and its common triggers. Removal's yielding
+callback boundary preserves native available markers and fresh trigger flags.
+All complete API states compare in 32 branches; the subsequent 16-play,
+five-EndTurn policy matches initial and mid-battle roots in 16 branches and wins
+at Pyre 80. The 26,797-byte binary archive has no JSON dependency. Card-effect and
+equipment attachment integration of these primitives remains separate work.

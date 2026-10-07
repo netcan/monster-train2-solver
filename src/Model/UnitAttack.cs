@@ -21,7 +21,7 @@ namespace MonsterTrain2Poju.Model
                 old.CanBeHealed, old.IsClone, old.Upgrades, old.HealthFromUpgrades, old.SpawnerMatchesDefinition);
             var changed = new CombatUnit(target.Id, target.AssetKey, target.Team, Math.Max(0, checked(old.AttackDamage + buff)),
                 target.Health, target.MaxHealth, target.CanAttack, target.IsPyre, target.EndsBattleOnDeath, target.Statuses, target.Triggers,
-                target.SpawnerCardId, target.Size, target.StatusImmunities, target.Subtypes, modifiers, target.IsBoss, target.LastAttackerId, target.StatusRegistry, target.EquipmentCards, target.NextTriggerId, target.Ability, target.StatusDictionary);
+                target.SpawnerCardId, target.Size, target.StatusImmunities, target.Subtypes, modifiers, target.IsBoss, target.LastAttackerId, target.StatusRegistry, target.EquipmentCards, target.NextTriggerId, target.Ability, target.StatusDictionary, target.AbilityRules);
             return new RoomCombatResult(new RoomCombatState(source.RoomIndex, source.Deployment,
                 source.Units.Select(unit => unit.Id == targetId ? changed : unit).ToArray(), source.ExternalInteractions, source.Context, source.Preview),
                 RoomOutcome.Exchanged, 0, new List<CombatEvent>());

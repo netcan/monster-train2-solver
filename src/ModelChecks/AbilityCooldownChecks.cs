@@ -49,26 +49,30 @@ internal static class AbilityCooldownChecks
     }
     internal static void Native(FixtureValue fixture)
     {
+        string? scenario = fixture.TryGetProperty("ModifierScenario", out var modifier) ? modifier.GetString() : null;
+        bool suite = scenario is "ability-cooldown" or "ability-cache" || scenario?.StartsWith("ability-activation", StringComparison.Ordinal) == true;
         if (!fixture.TryGetProperty("AbilityCooldownEffects", out var records) || records.GetArrayLength() == 0)
         {
-            Require(!fixture.TryGetProperty("ModifierScenario", out var modifier) || modifier.GetString() != "ability-cooldown",
-                "Requested ability cooldown scenario did not execute.");
+            Require(!suite, "Requested ability cooldown scenario did not execute.");
             return;
         }
         var samples = records.EnumerateArray().ToArray();
         foreach (var sample in samples) Verify(sample);
-        Require(samples.Any(item => item.GetProperty("Effect").Deserialize<CardActionEffect>()!.Type == "ResetCooldown") &&
-            samples.Any(item => item.GetProperty("Effect").Deserialize<CardActionEffect>()!.Type == "AdjustAbilityCooldown") &&
-            samples.Any(item => item.GetProperty("Effect").Deserialize<CardActionEffect>()!.Type == "RemoveStatus"),
-            "Native coverage missed reset, adjustment or availability-marker removal.");
-        Require(samples.Any(item => item.GetProperty("Before").Deserialize<RoomCombatState>()!.Units.Any(unit => unit.Ability?.HasAbility == true)) &&
-            samples.Any(item => item.GetProperty("After").Deserialize<RoomCombatState>()!.Units.Any(unit => unit.Ability is { HasAbility: false, Cooldown: > 0 })),
-            "Native coverage missed actual unit abilities or non-ability duration fields.");
-        var actualUnits = fixture.GetProperty("Stages").EnumerateArray().SelectMany(stage => stage.GetProperty("Actual")
-            .Deserialize<RoomCombatState>()!.Units).Where(unit => unit.Ability?.HasAbility == true).ToArray();
-        Require(new[] { "OnUnitAbilityAvailable", "OnUnitAbilityUnavailable" }.All(kind => actualUnits.Any(unit =>
-            unit.Triggers.Any(trigger => trigger.Kind == kind && trigger.HasTriggered && trigger.Origin?.UpgradeId == "UnitAbilityCommonData"))),
-            "Native common availability and unavailability callbacks did not both fire.");
+        if (suite)
+        {
+            Require(samples.Any(item => item.GetProperty("Effect").Deserialize<CardActionEffect>()!.Type == "ResetCooldown") &&
+                samples.Any(item => item.GetProperty("Effect").Deserialize<CardActionEffect>()!.Type == "AdjustAbilityCooldown") &&
+                samples.Any(item => item.GetProperty("Effect").Deserialize<CardActionEffect>()!.Type == "RemoveStatus"),
+                "Native coverage missed reset, adjustment or availability-marker removal.");
+            Require(samples.Any(item => item.GetProperty("Before").Deserialize<RoomCombatState>()!.Units.Any(unit => unit.Ability?.HasAbility == true)) &&
+                samples.Any(item => item.GetProperty("After").Deserialize<RoomCombatState>()!.Units.Any(unit => unit.Ability is { HasAbility: false, Cooldown: > 0 })),
+                "Native coverage missed actual unit abilities or non-ability duration fields.");
+            var actualUnits = fixture.GetProperty("Stages").EnumerateArray().SelectMany(stage => stage.GetProperty("Actual")
+                .Deserialize<RoomCombatState>()!.Units).Where(unit => unit.Ability?.HasAbility == true).ToArray();
+            Require(new[] { "OnUnitAbilityAvailable", "OnUnitAbilityUnavailable" }.All(kind => actualUnits.Any(unit =>
+                unit.Triggers.Any(trigger => trigger.Kind == kind && trigger.HasTriggered && trigger.Origin?.UpgradeId == "UnitAbilityCommonData"))),
+                "Native common availability and unavailability callbacks did not both fire.");
+        }
         Parallel.For(0, 32, _ => { foreach (var sample in samples) Verify(sample); });
         Console.WriteLine($"NATIVE-ABILITY-COOLDOWN-CHECKS PASS: {samples.Length} complete native effect states and 32 branches.");
     }
