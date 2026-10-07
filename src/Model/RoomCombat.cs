@@ -1165,6 +1165,12 @@ namespace MonsterTrain2Poju.Model
                         bool wasAlive = target.Alive;
                         target.Apply(changed);
                         if (wasAlive && !target.Alive) Death(null, target, 0);
+                        // ApplyCardUpgrade runs the native queue before the effect writes
+                        // the upgrade back to its source card. A queue already running
+                        // defers child callbacks until that source write has completed.
+                        if (!remove && enqueueCharacterTrigger == null && !runningTriggerQueue) DrainLocalTriggerQueue();
+                        if (unsupportedReason != null)
+                            return new RoomCombatResult(null, RoomOutcome.Unsupported, 0, new List<CombatEvent>(), unsupportedReason);
                         // The native effect retains its target object through removal and
                         // terminal clearing. Its remaining source-card work must still run.
                         return new RoomCombatResult(UpgradeRoom(target), RoomOutcome.Exchanged, 0, new List<CombatEvent>());

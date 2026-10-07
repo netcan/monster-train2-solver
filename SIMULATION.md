@@ -2126,3 +2126,19 @@ This covers status callbacks inside the existing modeled effect set. Relic
 handlers, unit abilities, horde and other unmodeled status-specific callbacks
 still require separate modeling and native evidence; their interactions must
 remain unsupported.
+
+## Unit upgrade callback source-card boundary
+
+Native `CharacterState.ApplyCardUpgradeImpl` runs `CombatManager.RunTriggerQueue`
+before `CardEffectAddCardUpgradeToUnits` writes the upgrade to the spawner card.
+The owning room engine now drains a standalone addition at that boundary, using
+its existing unit references and shared context. When a trigger queue is already
+running, child callbacks remain deferred and observe the completed card write.
+Removal retains its later drain because native `RemoveCardUpgrade` does not run
+the queue before its source-card cleanup.
+
+`UnitUpgradeCallbackChecks` verifies that a source-copy callback on a standalone
+addition receives the original card modifiers, while the same addition inside
+a running `PreCombat` queue copies the new upgrade. Both cases retain the final
+source-card upgrade. The standalone case fails on the previous model; the new
+model passes the core suite and 32 isolated parallel branches.
