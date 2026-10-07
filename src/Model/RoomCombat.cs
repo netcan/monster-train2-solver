@@ -574,6 +574,7 @@ namespace MonsterTrain2Poju.Model
             private readonly Action<QueuedCharacterTrigger>? enqueueCharacterTrigger;
             private readonly Queue<(WorkingUnit Unit, string Kind, bool CanFire, int ParamInt, WorkingUnit? OverrideTarget, int ParamInt2, string? ParamString)> triggerQueue = new Queue<(WorkingUnit, string, bool, int, WorkingUnit?, int, string?)>();
             private bool runningTriggerQueue;
+            private bool stopAfterBossRemoval;
             private bool killCamActivated;
             // Older captures omitted the identity store. Retain observed source cards while
             // this operation finishes, without inventing unobserved references in its output.
@@ -599,6 +600,7 @@ namespace MonsterTrain2Poju.Model
 
             internal RoomCombatResult Run(bool entireRoom)
             {
+                stopAfterBossRemoval = true;
                 bool relentless = units.Any(unit => unit.Has("relentless")) && BothTeamsPresent();
                 var seen = new HashSet<string>(StringComparer.Ordinal);
                 do
@@ -718,6 +720,7 @@ namespace MonsterTrain2Poju.Model
 
             internal RoomCombatResult UnitTurn(int unitId)
             {
+                stopAfterBossRemoval = true;
                 round = 1;
                 Turn(units.Single(unit => unit.Source.Id == unitId));
                 return Finish(battleWon ? RoomOutcome.BattleWon : units.Any(unit => unit.Source.IsPyre && !unit.Alive)
@@ -1083,6 +1086,11 @@ namespace MonsterTrain2Poju.Model
                     FireTriggers(dead.Unit, "OnDeath");
                     if (dead.Return) SettleDeadSpawner(dead.Unit);
                     dead.Unit.Removed = true;
+                    // HeroManager removal starts GameScreen.EndCombat, which cancels
+                    // the combat coroutine after this boss's death callbacks. Later
+                    // members of the already-marked batch never fire OnDeath. A played
+                    // card instead holds StopCombatLoop until its effects complete.
+                    if (stopAfterBossRemoval && !source.Preview && dead.Unit.Source.EndsBattleOnDeath) break;
                 }
             }
 

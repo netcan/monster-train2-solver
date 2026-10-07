@@ -18,8 +18,8 @@ internal static class TerminalDeathChecks
         CombatTrigger Death(params CombatEffect[] effects) => new("OnDeath", false, false, false, 1, effects, false);
         CombatUnit Boss(CombatTrigger[]? triggers = null) => new(4, "boss", CombatTeam.Enemy, 0, 1, 1, true, false, true, [], triggers ?? [],
             modifiers: new(0, 0, 0, 1, 1, true, false, []), isBoss: true);
-        CombatUnit Player(int id = 1, int hp = 2, int attack = 2, CombatTrigger[]? triggers = null) => new(id, "player", CombatTeam.Player,
-            attack, hp, hp, true, false, false, [], triggers ?? [], id, modifiers: new(attack, 0, 0, 1, 1, true, false, []), isBoss: false);
+        CombatUnit Player(int id = 1, int hp = 2, int attack = 2, CombatTrigger[]? triggers = null, CombatStatus[]? statuses = null) => new(id, "player", CombatTeam.Player,
+            attack, hp, hp, true, false, false, statuses ?? [], triggers ?? [], id, modifiers: new(attack, 0, 0, 1, 1, true, false, []), isBoss: false);
         RoomCombatState Room(CombatUnit[] units, CombatContext? c = null, bool preview = false) => new(0, false, units, [], c ?? context, preview);
         var root = Room([Boss([Death(damage)]), Player()]); string parent = JsonSerializer.Serialize(root);
         var result = RoomCombatModel.Resolve(root);
@@ -46,6 +46,15 @@ internal static class TerminalDeathChecks
         var preview = RoomCombatModel.Exchange(Room(root.Units.ToArray(), preview: true));
         Require(preview.Supported && preview.State!.Context!.KillCamActivated == false && preview.State.Context.CardInstances!.Count == 2 &&
             preview.State.Context.Statistics!.MonstersDeadThisTurn == 0, "Preview activated the live kill camera or death counters.");
+        var lastBoss = new CombatUnit(4, "boss", CombatTeam.Enemy, 0, 1, 1, true, false, true, [new("spikes", 99, 1)],
+            [Death(new CombatEffect("CardEffectRewardGold", 2, 0, "", 0, [], false))],
+            modifiers: new(0, 0, 0, 1, 1, true, false, []), isBoss: true);
+        var canceledDeath = Player(triggers: [Death(new CombatEffect("CardEffectRewardGold", 3, 0, "", 0, [], false))], statuses: [new("sweep", 1)]);
+        foreach (var canceled in new[] { RoomCombatModel.Resolve(Room([lastBoss, canceledDeath])),
+            RoomCombatModel.ApplyUnitTurn(Room([lastBoss, canceledDeath]), 1) })
+            Require(canceled.Supported && canceled.Outcome == RoomOutcome.BattleWon && canceled.State!.Units.Count == 0 &&
+                canceled.State.Context!.Gold == GoldRewardModel.Adjust(2),
+                "Boss removal did not cancel a later player death in the already-selected combat removal batch: " + JsonSerializer.Serialize(canceled));
 
         // The new stat value is observable by the dying unit's damage trait inside OnDeath.
         var scaledOwner = new CardInstanceState(1, "owner", CardModifiers.Empty(), CardModifiers.Empty(), 0, 0, 0, [],

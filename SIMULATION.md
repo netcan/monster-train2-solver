@@ -2195,3 +2195,21 @@ both additions and overcounted gold by 5. The corrected play matches the native
 state. Core checks verify the single reward and signed entry/group boundaries.
 Definitions using native `fromPermanentUpgrade` application groups remain
 explicitly unsupported until that separate grouping metadata is modeled.
+
+## Combat cancellation after a deferred boss removal
+
+`HeroManager.RemoveCharacter` notifies `GameScreen` after the final boss's
+death callback. `GameScreen.EndCombat` starts `StopCombatLoop`, canceling the
+main combat coroutine. Later characters already marked as being removed in
+that batch never reach their `OnDeath` callbacks. A card effect still resolving
+holds the stop operation until its effects finish.
+
+Room combat and unit turns now stop the current deferred removal batch after
+the winning boss has been removed. Nested deaths created by the boss's own
+callback still settle before that cancellation; ordinary removal and played
+card effects retain their existing behavior. In the extended native action
+probe, enemy 14 and boss 15 were removed, but sweep attacker 11 had no removal
+or `OnDeath` dispatch. The previous model overcounted its death reward by 5.
+The corrected room, unit turn and full EndTurn states match the native capture.
+Core checks cover both combat entry points and retain the existing nested
+terminal-death and detached-source upgrade checks.
