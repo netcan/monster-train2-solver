@@ -93,6 +93,7 @@ AbilityUpgradeChecks.Run();
 HordeStatChecks.Run();
 HordeStatusChecks.Run();
 HarvestChecks.Run();
+RevivalChecks.Run();
 HordeRemovalChecks.Run();
 HordeDeathChecks.Run();
 AbilityCardChecks.Run();

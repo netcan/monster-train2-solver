@@ -510,6 +510,15 @@ namespace MonsterTrain2Poju.Probe
                     return;
                 }
             }
+            if (fullBattle && numericModifiersPrepared && modifierScenario == "revival")
+            {
+                if (RevivalScenario.Error != null) throw new InvalidOperationException(RevivalScenario.Error);
+                if (!RevivalScenario.Completed)
+                {
+                    if (!RevivalScenario.Started) RevivalScenario.Start(managers, log);
+                    return;
+                }
+            }
             if (fullBattle && numericModifiersPrepared && modifierScenario == "harvest-triggers")
             {
                 if (HarvestScenario.Error != null) throw new InvalidOperationException(HarvestScenario.Error);
@@ -537,7 +546,7 @@ namespace MonsterTrain2Poju.Probe
                     return;
                 }
             }
-            if (fullBattle && !numericModifiersPrepared && (modifierScenario.StartsWith("triggered-summon", StringComparison.Ordinal) || modifierScenario == "spawn-points" || (modifierScenario.StartsWith("multi-summon", StringComparison.Ordinal)) || modifierScenario == "rally-lethal" || modifierScenario == "rally-triggers" || modifierScenario == "dying-horde-upgrades" || modifierScenario == "horde-upgrades" || modifierScenario == "horde-death" || modifierScenario == "horde-removal" || modifierScenario == "harvest-triggers" || modifierScenario == "horde-statuses" || modifierScenario == "ability-effects" || modifierScenario == "ability-lifecycle" || modifierScenario == "ability-activation" || modifierScenario == "ability-activation-x" || modifierScenario == "ability-activation-lethal" || modifierScenario == "ability-cooldown" || modifierScenario == "ability-cache" || modifierScenario == "sentry" || modifierScenario == "sentry-lethal" || modifierScenario == "companion-boss" || modifierScenario == "numeric-upgrades" || modifierScenario == "dynamic-upgrades" ||
+            if (fullBattle && !numericModifiersPrepared && (modifierScenario == "revival" || modifierScenario.StartsWith("triggered-summon", StringComparison.Ordinal) || modifierScenario == "spawn-points" || (modifierScenario.StartsWith("multi-summon", StringComparison.Ordinal)) || modifierScenario == "rally-lethal" || modifierScenario == "rally-triggers" || modifierScenario == "dying-horde-upgrades" || modifierScenario == "horde-upgrades" || modifierScenario == "horde-death" || modifierScenario == "horde-removal" || modifierScenario == "harvest-triggers" || modifierScenario == "horde-statuses" || modifierScenario == "ability-effects" || modifierScenario == "ability-lifecycle" || modifierScenario == "ability-activation" || modifierScenario == "ability-activation-x" || modifierScenario == "ability-activation-lethal" || modifierScenario == "ability-cooldown" || modifierScenario == "ability-cache" || modifierScenario == "sentry" || modifierScenario == "sentry-lethal" || modifierScenario == "companion-boss" || modifierScenario == "numeric-upgrades" || modifierScenario == "dynamic-upgrades" ||
                 modifierScenario == "sacrifice-upgrades" || modifierScenario == "hand-upgrades" || modifierScenario == "targeted-hand-upgrades" ||
                 modifierScenario == "healing" || modifierScenario == "healing-triggers" || modifierScenario == "room-spells" ||
                 modifierScenario == "terminal-spells" || modifierScenario == "post-kill-spells" || modifierScenario == "random-spells" ||
@@ -567,6 +576,7 @@ namespace MonsterTrain2Poju.Probe
                 else if (modifierScenario == "horde-upgrades") HordeUpgradeScenario.Prepare(managers, log);
                 else if (modifierScenario == "horde-death") HordeDeathScenario.Prepare(managers, log);
                 else if (modifierScenario == "horde-removal") HordeRemovalScenario.Prepare(managers, log);
+                else if (modifierScenario == "revival") RevivalScenario.Prepare(managers, log);
                 else if (modifierScenario == "harvest-triggers") HarvestScenario.Prepare(managers, log);
                 else if (modifierScenario == "horde-statuses") HordeStatusScenario.Prepare(managers, log);
                 else if (modifierScenario == "ability-effects") AbilityEffectsScenario.Prepare(managers, log);

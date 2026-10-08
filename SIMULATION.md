@@ -119,6 +119,7 @@ are copied immutable values; independent child states can run on worker threads.
 | Status removal and Horde sacrifice | `StatusRemovalModel`, `CardSpellModel` and `RoomCombatModel` | Nine native API/effect/trigger operations, exact room/retained actor states, accepted queue counts, ordered death/Harvest dispatches, a real paid spell removing both teams and parallel branches; raw zero HP preserves orphan standby cards while sacrifice signals physical death and retains its responsible card |
 | Reentrant death signals and queued player sacrifice | `UnitDeathState`, `StatusRemovalModel` and `RoomCombatModel` | Three native operations, 45 exact death/Harvest phase states and complete dispatch order, 95 effect/retained-target states, pending versus cleared statistics listeners, spawner timing and parallel branches |
 | Physical death Harvest | `HarvestModel` and `RoomCombatModel` | Four native physical deaths and 31 exact dispatches; own-death children precede player/enemy groups, Hero/Monster/Unit kinds, Horde repetition, required dying statuses, silence and once flags; complete subsequent battle and parallel branches |
+| Undying revival | `RoomCombatModel.ApplyRevival` and damage/sacrifice settlement | Eleven native revival boundaries, seven direct/removal operations, ninety callback phases, both teams, last/zero stacks, queued self damage, one-time statistics listeners and complete policies with parallel branches |
 | Queued trigger repetition | `RoomCombatModel` | Eight complete native batches and 26 dispatches, once flags, zero/negative counts, ordered child callbacks, silence/fire permissions and 32 branches; Horde status callers now preserve rally/harvest repetition payloads |
 | Additional spells, abilities, relics | Not complete | Unsupported interactions explicitly reject the model transition |
 
@@ -4953,3 +4954,90 @@ suites; six damage suites independently compare fifty-six native steps. Ten
 integrated battle-position suites, four missing-source suites and nine pool
 summon suites pass. Unsupported transition counts remain zero. The complete
 binary inventory, sizes and SHA-256 values match the curated manifest.
+
+
+## Undying revival and death listener lifetime
+
+Schema 88 captures IsSacrifice separately from the retained SacrificeCard
+reference, and distinguishes a permanent death statistics listener from a
+one-time listener. These fields are now captured for every native scenario;
+older archives retain their unknown nullable metadata. New birth templates
+carry the same fields through player and enemy allocation. Undying is included
+in the finite status definitions. A revival with unknown listener lifetime
+rejects rather than guessing whether a later death can increment statistics.
+
+Native revival restores HP to one, raises zero maximum HP to one, removes one
+undying stack and clears HasFinishedDying/IsSacrifice. It preserves the unit's
+identity, physical spawn point and its retained source reference. The living
+unit participates in its own Harvest callbacks. Both team groups for the
+specific death kind, then both groups for AnyUnit death, are queued before
+OnReanimated and OnDeath. The latter carries paramInt one, allowing native
+OnDeath threshold gates. An alive revival callback no longer marks its actor
+physically removed or clears its surviving signal listeners.
+
+Death statistics still receive the death signal, but the game's ordinary
+CardStatistics listener is registered once. The first revival consumes it;
+later revivals and final physical death do not increment it again. This is
+separate from character Harvest, reanimated and death trigger dispatch. Model
+revival preserves that distinction and retains the sacrifice source even after
+its active sacrifice flag is cleared. The direct ApplyRevival API exposes its
+pending callbacks; damage and sacrifice callers determine when their queue
+runs. A queue already running defers both revival batches from a two-effect
+self-damage trigger until that trigger returns.
+
+The fixture keeps the original Boss and waves. Setup changes real Steward
+definitions to two undying stacks and authors gold callbacks for both team
+Harvest kinds, OnReanimated and OnDeath, with once/silence/threshold gates. Two
+native card plays place the observers; two additional enemy observers copy a
+real ordinary enemy definition. Direct native operations cover the first and
+last stack, direct revival without a stack, final physical removal and a lethal
+maximum-health debuff that revives at 1/1 HP. A surviving Steward receives two
+extra stacks and 50/50 HP before the independent battle root, and its two-effect
+OnTurnBegin self damage exercises revival inside the native running queue.
+
+The recording includes the zero-HP actor before the revival API, although the
+ordinary live-room projection excludes it. Standalone setup coroutines also
+hold off automatic UI queue runners during that API boundary. The native
+caller drains the queue immediately afterward. The guard records 24 deferred
+attempts and makes no deferrals in natural combat; the two queued natural
+revivals remain unmodified. Independent checks compare the accepted callback
+FIFO, complete room/context/actor values, seven composite native operations
+and all ninety callback phase states in sixteen parallel branches. Full policy
+checks start both at the original and a middle decision, with sixteen branches;
+physical state checks compare 112 contexts in thirty-two branches.
+
+A last-target status follow-up also exposed a missing centering boundary:
+CardSpellModel's internal death drain removed the defeated front enemy without
+moving the surviving rear enemy forward. The last physical death of a team now
+runs native centering at that internal queue exit, as the outer card action
+already did. This fixes the same natural card action in the complete fixture.
+
+full-battle-revival.mt2f contains 35,564 bytes and 5,941 unique nodes, SHA-256
+9d3b2e1baf13e34384c925a64d021273028dde8c5af72596622fe343d395bf2a.
+The muted Instant run takes 50.62 seconds, plays nineteen cards, ends seven
+turns, wins at Pyre 53 and preserves the original profile/log signatures.
+CaptureFailures, Mismatches, Unsupported and Pending are all zero. Eleven
+revival boundaries include two inside a running queue; the recording contains
+299 physical compactions. The archive and manifest have no JSON dependency.
+
+Run Run-FullBattleProbe.ps1 -Policy units-spells-and-junk -Revival. The curated
+inventory contains 138 archives: 129 battles and nine calibrations. These paths
+verify ordinary player/enemy revival and the recorded integrations. Revival
+with equipment/child summons, Horde merging, wider relic/room effects, special
+Boss/Pyre revival and complete optimal search still require native integration.
+Full battle simulation and the complete solver remain unfinished.
+
+
+A fresh ordinary battle with the schema 88 snapshot also passes native and
+independent checks: twenty-one plays/seven EndTurns, final Pyre 73, complete
+policy and middle-root comparisons with sixteen parallel branches. It leaves
+original files unchanged and has zero capture failures, differences,
+unsupported or pending records. The listener/source fields are therefore
+checked outside the authored revival setup as well.
+
+The complete Check-Models.ps1 regression exits successfully across all 138
+binary archives (129 battles and nine calibrations), with zero unsupported
+transitions. It includes eleven integrated physical-position suites, eight
+queued-summon suites, four triggered-equipment suites, fifty-six native damage
+phases and the new full revival suite. Fixture sizes and SHA-256 values match
+the curated manifest.

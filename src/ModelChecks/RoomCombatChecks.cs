@@ -152,6 +152,7 @@ internal static class RoomCombatChecks
         TrainCombatChecks.Native(fixture);
         EnemySpawningChecks.Native(fixture);
         BattleTurnChecks.Native(fixture);
+        RevivalChecks.Native(fixture);
         BattleActionChecks.Native(fixture);
         UnitIdentityChecks.Native(fixture);
         SpawnPointChecks.Native(fixture);

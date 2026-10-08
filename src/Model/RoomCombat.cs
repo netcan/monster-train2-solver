@@ -61,8 +61,11 @@ namespace MonsterTrain2Poju.Model
         public bool IsBeingRemoved { get; }
         public bool HasStatisticsListener { get; }
         public int? PendingStatisticsCardId { get; }
-        public UnitDeathState(bool hasFinishedDying, bool isBeingRemoved, bool hasStatisticsListener, int? pendingStatisticsCardId = null)
-        { HasFinishedDying = hasFinishedDying; IsBeingRemoved = isBeingRemoved; HasStatisticsListener = hasStatisticsListener; PendingStatisticsCardId = pendingStatisticsCardId; }
+        public bool? IsSacrifice { get; }
+        public bool? StatisticsListenerOnce { get; }
+        public UnitDeathState(bool hasFinishedDying, bool isBeingRemoved, bool hasStatisticsListener, int? pendingStatisticsCardId = null,
+            bool? isSacrifice = null, bool? statisticsListenerOnce = null)
+        { HasFinishedDying = hasFinishedDying; IsBeingRemoved = isBeingRemoved; HasStatisticsListener = hasStatisticsListener; PendingStatisticsCardId = pendingStatisticsCardId; IsSacrifice = isSacrifice; StatisticsListenerOnce = statisticsListenerOnce; }
     }
 
     public sealed class CombatUnit
@@ -158,7 +161,9 @@ namespace MonsterTrain2Poju.Model
         internal CombatUnit WithSacrifice(int cardId) => new CombatUnit(Id, AssetKey, Team, BaseAttack, Health, MaxHealth,
             CanAttack, IsPyre, EndsBattleOnDeath, Statuses, Triggers, SpawnerCardId, Size, StatusImmunities, Subtypes,
             Modifiers, IsBoss, LastAttackerId, StatusRegistry, EquipmentCards, NextTriggerId, Ability, StatusDictionary,
-            AbilityRules, HordeDefinition, IsSpawning, cardId, DeathState);
+            AbilityRules, HordeDefinition, IsSpawning, cardId, DeathState == null ? null : new UnitDeathState(
+                DeathState.HasFinishedDying, DeathState.IsBeingRemoved, DeathState.HasStatisticsListener,
+                DeathState.PendingStatisticsCardId, DeathState.IsSacrifice.HasValue ? true : (bool?)null, DeathState.StatisticsListenerOnce));
 
         internal CombatUnit WithDeathState(UnitDeathState state) => new CombatUnit(Id, AssetKey, Team, BaseAttack, Health, MaxHealth,
             CanAttack, IsPyre, EndsBattleOnDeath, Statuses, Triggers, SpawnerCardId, Size, StatusImmunities, Subtypes,
@@ -287,7 +292,7 @@ namespace MonsterTrain2Poju.Model
             "spikes", "lifesteal", "fragile", "piercing", "immune", "immobile",
             "relentless", "sweep", "sniper", "rooted", "haste", "untouchable",
             "buff", "debuff", "regen", "poison", "melee weakness", "silenced", "valor", "pyregel",
-            "heal multiplier", "heal immunity", "cooldown", "unit_ability", "unit_ability_available", "horde", "cardless"
+            "heal multiplier", "heal immunity", "cooldown", "unit_ability", "unit_ability_available", "horde", "cardless", "undying"
         };
         internal static bool KnowsStatus(string id) => KnownStatuses.Contains(id);
 
@@ -497,6 +502,20 @@ namespace MonsterTrain2Poju.Model
         internal static RoomCombatResult ApplyUnitModification(RoomCombatState state, CombatUnit changed) =>
             new Engine(state, new List<CombatEvent>()).ModifyUnit(changed);
 
+        // The native revival API queues callbacks but leaves their execution to its caller.
+        public static RoomCombatResult ApplyRevival(RoomCombatState state, int targetId, int sourceCardId = 0, int attackerUnitId = 0)
+        {
+            string? error = Validate(state, targetId);
+            if (error != null || !state.Units.Any(unit => unit.Id == targetId) ||
+                attackerUnitId != 0 && !state.Units.Any(unit => unit.Id == attackerUnitId))
+                return new RoomCombatResult(null, RoomOutcome.Unsupported, 0, new List<CombatEvent>(), error ?? "Invalid revival actor.");
+            var callbacks = new List<QueuedCharacterTrigger>();
+            RoomCombatResult result = new Engine(state, new List<CombatEvent>(), enqueueCharacterTrigger: callbacks.Add,
+                resetPreviewTriggers: false).Revival(targetId, sourceCardId, attackerUnitId);
+            return new RoomCombatResult(result.State, result.Outcome, result.Rounds, result.Events.ToList(),
+                result.UnsupportedReason, callbacks, result.RetainedUnits, result.Dispatches);
+        }
+
         internal static RoomCombatResult ApplyUnitUpgrade(RoomCombatState state, int targetId, CardUpgradeModifier upgrade,
             string lifetime, bool remove, int? roomCapacity, int sourceCardId, string? triggerKind)
         {
@@ -614,7 +633,7 @@ namespace MonsterTrain2Poju.Model
                     if (trigger.Origin != null && (trigger.Origin.EquipmentCardId < 0 ||
                         trigger.Origin.IsFromEquipment != (trigger.Origin.EquipmentCardId > 0)))
                         return "Invalid equipment trigger origin.";
-                    if (trigger.Kind != "OnDeath" && trigger.Kind != "PostCombat" && trigger.Kind != "PostCombatHealing" && trigger.Kind != "OnHeal" &&
+                    if (trigger.Kind != "OnDeath" && trigger.Kind != "OnReanimated" && trigger.Kind != "PostCombat" && trigger.Kind != "PostCombatHealing" && trigger.Kind != "OnHeal" &&
                         trigger.Kind != "CardMonsterPlayed" && trigger.Kind != "OnOwnAbilityActivated" && trigger.Kind != "OnPreOwnAbilityActivated" &&
                         trigger.Kind != "OnEquipmentAdded" && trigger.Kind != "OnEquipmentAddedToAny" && trigger.Kind != "OnEquipmentRemoved" &&
                         trigger.Kind != "OnSpawn" && trigger.Kind != "OnUnscaledSpawn" && trigger.Kind != "OnSpawnNotFromCard" &&
@@ -625,7 +644,7 @@ namespace MonsterTrain2Poju.Model
                         return "Unmodeled trigger " + trigger.Kind;
                     if (trigger.Kind != "OnDeath" && trigger.Kind != "PostCombat" && trigger.SkipDuringDeployment == null)
                         return trigger.Kind + " requires deployment timing state.";
-                    if (trigger.TriggerAtThreshold > 0 && trigger.Kind != "OnHit" && trigger.Kind != "OnKill" &&
+                    if (trigger.TriggerAtThreshold > 0 && trigger.Kind != "OnDeath" && trigger.Kind != "OnHit" && trigger.Kind != "OnKill" &&
                         trigger.Kind != "OnAttackingBeforeDamage" && trigger.Kind != "OnAttacking" && trigger.Kind != "OnSentry" && !StatusCallbackModel.Kinds.Contains(trigger.Kind))
                         return "Threshold arguments are not modeled for " + trigger.Kind;
                     if (trigger.Kind == "OnNewStatusEffectAdded" && !unit.CountUniqueVisibleStatuses().HasValue)
@@ -746,7 +765,7 @@ namespace MonsterTrain2Poju.Model
 
         private static CombatUnit MarkBeingRemoved(CombatUnit unit) => unit.DeathState == null ? unit :
             unit.WithDeathState(new UnitDeathState(unit.DeathState.HasFinishedDying, true,
-                unit.DeathState.HasStatisticsListener, unit.DeathState.PendingStatisticsCardId));
+                unit.DeathState.HasStatisticsListener, unit.DeathState.PendingStatisticsCardId, unit.DeathState.IsSacrifice, unit.DeathState.StatisticsListenerOnce));
 
         private sealed class WorkingUnit
         {
@@ -938,7 +957,11 @@ namespace MonsterTrain2Poju.Model
                 int index = units.FindIndex(unit => unit.Source.Id == changed.Id);
                 WorkingUnit target = new WorkingUnit(changed);
                 units[index] = target;
-                if (!target.Alive) { target.Apply(target.Freeze().WithSacrifice(0)); Death(null, target, 0); }
+                if (!target.Alive)
+                {
+                    target.Apply(target.Freeze().WithSacrifice(0));
+                    if (!TryRevive(null, target, 0)) Death(null, target, 0);
+                }
                 return Finish(battleWon ? RoomOutcome.BattleWon : target.Source.IsPyre && !target.Alive
                     ? RoomOutcome.PlayerDefeated : RoomOutcome.Exchanged);
             }
@@ -1110,14 +1133,16 @@ namespace MonsterTrain2Poju.Model
                     { dying = new WorkingUnit(queued.DyingCharacter) { InRoom = false }; units.Add(dying); }
                     if (queued.Kind == "OnDeath" && actor.Source.DeathState?.PendingStatisticsCardId is int pendingSource)
                     {
-                        DispatchDeathStatistics(null, actor, pendingSource, actor.Source.SacrificeCardId.HasValue);
-                        actor.Apply(actor.Freeze().WithDeathState(new UnitDeathState(true, true,
-                            actor.Source.DeathState.HasStatisticsListener)));
+                        DispatchDeathStatistics(null, actor, pendingSource, actor.Source.DeathState.IsSacrifice ?? actor.Source.SacrificeCardId.HasValue);
+                        actor.Apply(actor.Freeze().WithDeathState(new UnitDeathState(actor.Source.DeathState.HasFinishedDying,
+                            actor.Source.DeathState.IsBeingRemoved, actor.Source.DeathState.HasStatisticsListener,
+                            isSacrifice: actor.Source.DeathState.IsSacrifice, statisticsListenerOnce: actor.Source.DeathState.StatisticsListenerOnce)));
                     }
                     FireTriggers(actor, queued.Kind, canFireTriggers: queued.CanFireTriggers, fromQueue: true, paramInt: queued.ParamInt,
                         overrideTarget: overridden, dyingCharacter: dying, triggerCount: queued.TriggerCount, lastSpawnedOverrideUnitId: queued.LastSpawnedOverrideUnitId);
-                    if (queued.Kind == "OnDeath" && actor.Source.DeathState != null)
-                        actor.Apply(actor.Freeze().WithDeathState(new UnitDeathState(true, true, false)));
+                    if (queued.Kind == "OnDeath" && queued.ParamInt != 1 && actor.Source.DeathState != null)
+                        actor.Apply(actor.Freeze().WithDeathState(new UnitDeathState(true, true, false,
+                            isSacrifice: actor.Source.DeathState.IsSacrifice, statisticsListenerOnce: actor.Source.DeathState.StatisticsListenerOnce.HasValue ? false : (bool?)null)));
                     queued.Unit = actor.Freeze();
                     if (overridden != null) queued.OverrideTarget = overridden.Freeze();
                     if (dying != null) queued.DyingCharacter = dying.Freeze();
@@ -1131,10 +1156,12 @@ namespace MonsterTrain2Poju.Model
                 WorkingUnit? target = units.FirstOrDefault(item => item.Source.Id == unit.Id);
                 if (target == null) { target = new WorkingUnit(unit.WithSacrifice(sourceCardId)) { InRoom = false }; units.Add(target); }
                 else target.Apply(unit.WithSacrifice(sourceCardId));
+                if (TryRevive(null, target, sourceCardId)) return Finish(RoomOutcome.Exchanged);
                 if (unit.DeathState?.IsBeingRemoved == true)
                 {
                     DispatchDeathStatistics(null, target, sourceCardId, sacrifice: true);
-                    target.Apply(target.Freeze().WithDeathState(new UnitDeathState(true, true, false)));
+                    target.Apply(target.Freeze().WithDeathState(new UnitDeathState(true, true, false,
+                        isSacrifice: target.Source.DeathState?.IsSacrifice, statisticsListenerOnce: target.Source.DeathState?.StatisticsListenerOnce.HasValue == true ? false : (bool?)null)));
                     return new RoomCombatResult(new RoomCombatState(source.RoomIndex, source.Deployment,
                         source.Units.Select(item => item.Id == unit.Id ? target.Freeze() : item).ToArray(),
                         source.ExternalInteractions, context, source.Preview), RoomOutcome.Exchanged, 0, events);
@@ -1164,9 +1191,10 @@ namespace MonsterTrain2Poju.Model
                 var target = new WorkingUnit(unit);
                 if (unit.DeathState?.PendingStatisticsCardId is int pendingSource)
                 {
-                    DispatchDeathStatistics(null, target, pendingSource, unit.SacrificeCardId.HasValue);
+                    DispatchDeathStatistics(null, target, pendingSource, unit.DeathState.IsSacrifice ?? unit.SacrificeCardId.HasValue);
                     target.Apply(target.Freeze().WithDeathState(new UnitDeathState(unit.DeathState.HasFinishedDying,
-                        unit.DeathState.IsBeingRemoved, unit.DeathState.HasStatisticsListener)));
+                        unit.DeathState.IsBeingRemoved, unit.DeathState.HasStatisticsListener, isSacrifice: unit.DeathState.IsSacrifice,
+                        statisticsListenerOnce: unit.DeathState.StatisticsListenerOnce)));
                 }
                 return new RoomCombatResult(new RoomCombatState(source.RoomIndex, source.Deployment,
                     source.Units.Select(item => item.Id == unit.Id ? target.Freeze() : item).ToArray(),
@@ -1353,8 +1381,55 @@ namespace MonsterTrain2Poju.Model
                 }
                 if (!target.Alive && !target.DeathFinished)
                 {
-                    Death(actor, target, sourceCardId, deferRemoval: runningTriggerQueue || nativeCardDamage);
+                    if (!TryRevive(actor, target, sourceCardId))
+                        Death(actor, target, sourceCardId, deferRemoval: runningTriggerQueue || nativeCardDamage);
                 }
+            }
+
+            internal RoomCombatResult Revival(int targetId, int sourceCardId, int attackerUnitId)
+            {
+                Revive(units.FirstOrDefault(unit => unit.Source.Id == attackerUnitId),
+                    units.Single(unit => unit.Source.Id == targetId), sourceCardId);
+                return Finish(RoomOutcome.Exchanged);
+            }
+
+            private bool TryRevive(WorkingUnit? actor, WorkingUnit target, int sourceCardId)
+            {
+                if (target.Count("undying") <= 0) return false;
+                Revive(actor, target, sourceCardId);
+                if (enqueueCharacterTrigger == null && !runningTriggerQueue) DrainLocalTriggerQueue();
+                return true;
+            }
+
+            private void Revive(WorkingUnit? actor, WorkingUnit target, int sourceCardId)
+            {
+                CombatUnit before = target.Freeze();
+                if (before.DeathState == null || !before.DeathState.StatisticsListenerOnce.HasValue)
+                { unsupportedReason = "Revival requires the native death listener lifetime."; return; }
+                target.Apply(new CombatUnit(before.Id, before.AssetKey, before.Team, before.BaseAttack, 1, Math.Max(1, before.MaxHealth),
+                    before.CanAttack, before.IsPyre, before.EndsBattleOnDeath, before.Statuses, before.Triggers, before.SpawnerCardId,
+                    before.Size, before.StatusImmunities, before.Subtypes, before.Modifiers, before.IsBoss, before.LastAttackerId,
+                    before.StatusRegistry, before.EquipmentCards, before.NextTriggerId, before.Ability, before.StatusDictionary,
+                    before.AbilityRules, before.HordeDefinition, before.IsSpawning, before.SacrificeCardId,
+                    before.DeathState == null ? null : new UnitDeathState(false, before.DeathState.IsBeingRemoved,
+                        before.DeathState.HasStatisticsListener, isSacrifice: before.DeathState.IsSacrifice.HasValue ? false : (bool?)null,
+                        statisticsListenerOnce: before.DeathState.StatisticsListenerOnce)));
+                target.DeathFinished = false;
+                RemoveStatus(target, "undying", 1);
+                CombatUnit revived = target.Freeze();
+                // Unlike physical removal, all four harvest groups are captured before any dispatch.
+                foreach (string stage in HarvestModel.Stages(revived))
+                {
+                    HarvestModel.Stage(stage, out string kind, out CombatTeam team);
+                    QueueHarvestGroup(revived, kind, team, HarvestModel.Count(revived, kind));
+                }
+                QueueCallback(new QueuedCharacterTrigger(source.RoomIndex, revived, "OnReanimated"));
+                QueueCallback(new QueuedCharacterTrigger(source.RoomIndex, revived, "OnDeath", paramInt: 1));
+                DispatchDeathStatistics(actor, target, sourceCardId, sacrifice: false);
+                if (target.Source.DeathState?.StatisticsListenerOnce == true)
+                    target.Apply(target.Freeze().WithDeathState(new UnitDeathState(false, target.Source.DeathState.IsBeingRemoved,
+                        false, isSacrifice: target.Source.DeathState.IsSacrifice, statisticsListenerOnce: false)));
+                Emit("Revive", actor, target, 1);
             }
 
             private readonly List<(WorkingUnit Unit, bool Return)> deferredDamageDeaths = new List<(WorkingUnit, bool)>();
@@ -1377,7 +1452,9 @@ namespace MonsterTrain2Poju.Model
                 if (target.Source.DeathState != null)
                     target.Apply(target.Freeze().WithDeathState(new UnitDeathState(true,
                         target.Source.DeathState.IsBeingRemoved || !deferRemoval || sacrifice,
-                        !nativeCardDamage && enqueueCharacterTrigger == null && target.Source.DeathState.HasStatisticsListener)));
+                        !nativeCardDamage && enqueueCharacterTrigger == null && target.Source.DeathState.HasStatisticsListener,
+                        isSacrifice: target.Source.DeathState.IsSacrifice,
+                        statisticsListenerOnce: target.Source.DeathState.StatisticsListenerOnce.HasValue ? false : (bool?)null)));
                 if (enqueueCharacterTrigger != null) enqueueCharacterTrigger(new QueuedCharacterTrigger(source.RoomIndex, target.Freeze(),
                     returnSpawnerAfterQueue: deferReturn, deferUntilRemoval: deferRemoval, harvestAfterDeath: !target.Despawned && !immediateHarvest,
                     completePhysicalRemovalAfterQueue: deferRemoval && context?.SpawnPoints != null));
@@ -1387,7 +1464,8 @@ namespace MonsterTrain2Poju.Model
                     else
                     {
                         FireTriggers(target, "OnDeath");
-                        if (target.Source.DeathState != null) target.Apply(target.Freeze().WithDeathState(new UnitDeathState(true, true, false)));
+                        if (target.Source.DeathState != null) target.Apply(target.Freeze().WithDeathState(new UnitDeathState(true, true, false,
+                            isSacrifice: target.Source.DeathState.IsSacrifice, statisticsListenerOnce: target.Source.DeathState.StatisticsListenerOnce)));
                         PhysicalHarvest(target);
                     }
                 }
@@ -1544,7 +1622,8 @@ namespace MonsterTrain2Poju.Model
                 {
                     FireTriggers(dead.Unit, "OnDeath");
                     if (nativeCardDamage && dead.Unit.Source.DeathState != null)
-                        dead.Unit.Apply(dead.Unit.Freeze().WithDeathState(new UnitDeathState(true, true, false)));
+                        dead.Unit.Apply(dead.Unit.Freeze().WithDeathState(new UnitDeathState(true, true, false,
+                            isSacrifice: dead.Unit.Source.DeathState.IsSacrifice, statisticsListenerOnce: dead.Unit.Source.DeathState.StatisticsListenerOnce)));
                     PhysicalHarvest(dead.Unit);
                     if (dead.Return) SettleDeadSpawner(dead.Unit);
                     bool ownedPoint = context?.SpawnPoints?.Units.FirstOrDefault(unit => unit.UnitId == dead.Unit.Source.Id)?.Current != null;
@@ -1869,7 +1948,7 @@ namespace MonsterTrain2Poju.Model
                         if (sacrifice && wasAlive && !target.Alive)
                         {
                             target.Apply(target.Freeze().WithSacrifice(0));
-                            Death(null, target, 0);
+                            if (!TryRevive(null, target, 0)) Death(null, target, 0);
                         }
                         // ApplyCardUpgrade runs the native queue before the effect writes
                         // the upgrade back to its source card. A queue already running

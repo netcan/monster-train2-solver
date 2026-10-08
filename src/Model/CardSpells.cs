@@ -476,7 +476,10 @@ namespace MonsterTrain2Poju.Model
                 }, queued =>
                 {
                     RoomCombatState room = state.Rooms.Single(item => item.RoomIndex == queued.RoomIndex);
-                    RoomCombatResult returned = RoomCombatModel.SettleQueuedSpawner(room, queued.Unit);
+                    bool lastPhysicalDeath = queued.CompletePhysicalRemovalAfterQueue && !callbacks.Any(item =>
+                        item.CompletePhysicalRemovalAfterQueue && item.Kind == "OnDeath" && item.Unit.Team == queued.Unit.Team && item.Unit.Id > queued.Unit.Id);
+                    RoomCombatResult returned = lastPhysicalDeath ? RoomCombatModel.SettleQueuedSpawnerAndCenter(room, queued.Unit) :
+                        RoomCombatModel.SettleQueuedSpawner(room, queued.Unit);
                     if (!returned.Supported) { callbackError = returned.UnsupportedReason; return false; }
                     state = ReplaceRoom(state, returned.State!); return true;
                 });

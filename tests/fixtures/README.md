@@ -593,3 +593,26 @@ suites pass, including eight queued-summon suites, four equipment suites,
 fifty-six independently compared native damage phases and ten integrated
 position suites. Unsupported transition counts remain zero; complete archive
 sizes and SHA-256 values match the curated inventory and manifest.
+
+
+Schema 88 adds full-battle-revival.mt2f (35,564 bytes / 5,941 nodes). The native
+fixture keeps the original Boss and waves, plays two real Stewards, adds two
+ordinary enemy observers and authors both-team Harvest/reanimated/death gold
+callbacks. It covers first/last-stack revival, a zero-stack direct API call,
+final removal, lethal max-health sacrifice and two revivals inside a running
+self-damage trigger queue. One-time statistics listeners and sacrifice flags
+are distinct from the retained source reference. Eleven complete revival
+boundaries, seven direct/removal operations, ninety callback phases, complete
+policies and physical state are independently recomputed with parallel branches.
+
+Standalone setup defers automatic UI queue runners during the captured API,
+then drains through the native caller; natural combat has no deferrals. The
+muted Instant run wins at Pyre 53 after nineteen plays/seven EndTurns in 50.62
+seconds, with zero capture failures, differences, unsupported or pending records
+and unchanged original profile/log signatures. The inventory contains 138
+binary archives: 129 battles and nine calibrations. Sizes/SHA-256 values are
+in manifest.tsv; no source JSON is required for regression.
+
+The complete Check-Models.ps1 regression passes all 138 archives, including
+129 battle suites and all nine calibrations, with zero unsupported transitions.
+Archive inventory, sizes and SHA-256 values match the curated manifest.

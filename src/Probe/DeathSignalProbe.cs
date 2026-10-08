@@ -20,12 +20,13 @@ namespace MonsterTrain2Poju.Probe
         {
             object state = AccessTools.Property(typeof(CharacterState), "PrimaryStateInformation").GetValue(actor);
             object signal = AccessTools.Field(state.GetType(), "deathSignal").GetValue(state);
-            bool listener = new[] { "Listener", "OnceListener" }.Any(name =>
-                (AccessTools.Field(signal.GetType(), name).GetValue(signal) as Delegate)?.GetInvocationList()
-                    .Any(callback => callback.Method.DeclaringType == typeof(CardStatistics) && callback.Method.Name == nameof(CardStatistics.OnCharacterDeath)) == true);
-            Invocation? pending = Invocations.LastOrDefault(item => item.Actor == actor && !item.StatisticsStarted);
+            bool Contains(string name) => (AccessTools.Field(signal.GetType(), name).GetValue(signal) as Delegate)?.GetInvocationList()
+                .Any(callback => callback.Method.DeclaringType == typeof(CardStatistics) && callback.Method.Name == nameof(CardStatistics.OnCharacterDeath)) == true;
+            bool permanent = Contains("Listener"), once = Contains("OnceListener"), listener = permanent || once;
+            Invocation? pending = !listener ? null : Invocations.LastOrDefault(item => item.Actor == actor && !item.StatisticsStarted);
             return new UnitDeathState(actor.HasFinishedDying, actor.IsBeingRemoved(), listener,
-                pending == null ? null : pending.Source == null ? 0 : FullBattleTrace.Active!.CardId(pending.Source));
+                pending == null ? null : pending.Source == null ? 0 : FullBattleTrace.Active!.CardId(pending.Source),
+                actor.IsSacrifice, once && !permanent);
         }
         [HarmonyPatch(typeof(CharacterState), "CheckForDeath")]
         private static class CheckPatch
