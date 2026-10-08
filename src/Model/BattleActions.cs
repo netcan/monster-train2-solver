@@ -225,6 +225,7 @@ namespace MonsterTrain2Poju.Model
             int? spawnedId = null;
             bool effectsApplied = false;
             RoomOutcome outcome = RoomOutcome.Exchanged;
+            IReadOnlyList<RoomCombatModel.QueuedCharacterTrigger> pendingSpellCallbacks = Array.Empty<RoomCombatModel.QueuedCharacterTrigger>();
             int nextUnitId = source.Spawn.NextUnitId;
             string? identityError = UnitIdentityModel.Validate(context, train.Rooms.SelectMany(room => room.Units), nextUnitId);
             if (identityError != null) return Unsupported(identityError);
@@ -321,11 +322,12 @@ namespace MonsterTrain2Poju.Model
                 if (!cast.Supported) return Unsupported(cast.UnsupportedReason!);
                 if (!cast.CanPlay) return Illegal("Every effect failed its cast test or a required effect failed.");
                 spellInput = CardSpellModel.WithContext(spellInput, context.WithBattleRng(cast.BattleRngAfterTests!.Value));
-                TrainSpellResult result = CardSpellModel.Apply(spellInput, action.RoomIndex, rule.Effects, action.TargetUnitId,
+                TrainSpellResult result = CardSpellModel.ApplyForCardPlay(spellInput, action.RoomIndex, rule.Effects, action.TargetUnitId,
                     card.InstanceId, source.PlayRules, piles);
                 if (!result.Supported) return Unsupported(result.UnsupportedReason!);
                 piles = result.OtherPiles?.ToArray() ?? piles;
                 train = result.State!; context = train.Context!; outcome = result.Outcome; effectsApplied = true;
+                pendingSpellCallbacks = result.PendingCallbacks;
             }
             else if (rule.Effect != "Null") return Unsupported("Unimplemented card effect " + rule.Effect);
             else if (action.PlayerPosition != -1 || action.TargetUnitId != 0) return Illegal("A no-target card does not take a target or position.");
@@ -340,6 +342,15 @@ namespace MonsterTrain2Poju.Model
                 ? playedStatistics.RecordPlayedCard(card.InstanceId) : playedStatistics?.Increment(card.InstanceId, "TimesPlayed");
             context = context.WithStatistics(playedStatistics);
             train = CardSpellModel.WithContext(train, context);
+            if (pendingSpellCallbacks.Count > 0)
+            {
+                TrainCombatResult completed = TrainCombatModel.ApplyCharacterQueue(train, pendingSpellCallbacks.ToList());
+                if (!completed.Supported) return Unsupported(completed.UnsupportedReason!);
+                train = completed.State!; context = train.Context!;
+                if (completed.Outcome != RoomOutcome.Exchanged) outcome = completed.Outcome;
+                piles = context.OtherPiles?.ToArray() ?? piles;
+                terminal = outcome == RoomOutcome.BattleWon || outcome == RoomOutcome.PlayerDefeated;
+            }
             if (rule.Effect == "SpawnMonster" && rule.Summon?.TriggersPaidRally != false)
             {
                 int[] initialCached = source.Spawn.Train.Rooms.Single(room => room.RoomIndex == action.RoomIndex).Units

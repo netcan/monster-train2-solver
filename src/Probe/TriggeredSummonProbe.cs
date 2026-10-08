@@ -100,7 +100,9 @@ namespace MonsterTrain2Poju.Probe
                     room.IsRoomSummonBlocked(managers.GetRelicManager()), room.GetIsPyreRoom(), room.GetCapacityInfo(Team.Type.Heroes).max);
             }).ToArray();
             catalog = new TriggeredSummonCatalog(units, sources.GroupBy(card => card.GetID()).Select(group => group.First())
-                .Select(card => new SummonCardDefinition(CardGenerationProbe.Creation(card), card.GetSpawnCharacterData()?.GetID() ?? "")).ToArray(), rooms);
+                .Select(card => new SummonCardDefinition(CardGenerationProbe.Creation(card), card.GetSpawnCharacterData()?.GetID() ?? "",
+                    card.GetEffects().Any(effect => effect.GetEffectStateName() == "CardEffectAttachEquipment")
+                        ? BattleActionProbe.Definition(card).Equipment : null)).ToArray(), rooms);
             return catalog;
         }
         private static IEnumerator Observe(IEnumerator native, CardEffectState effect, CardEffectParams parameters)

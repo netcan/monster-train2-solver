@@ -113,7 +113,8 @@ internal static class EquipmentChecks
         string frozen = JsonSerializer.Serialize(before, ModelJson.Options);
         var result = RoomCombatModel.ApplyEquipment(before, sample.GetProperty("UnitId").GetInt32(), sample.GetProperty("CardId").GetInt32(),
             definitions, sample.GetProperty("Remove").GetBoolean(),
-            sample.TryGetProperty("DeferAbilityCallbacks", out var deferred) && deferred.GetBoolean());
+            sample.TryGetProperty("DeferAbilityCallbacks", out var deferred) && deferred.GetBoolean(),
+            sample.TryGetProperty("QueueRunning", out var running) && running.GetBoolean());
         Require(result.Supported, "Native equipment operation unsupported: " + result.UnsupportedReason);
         string? difference = ModelJson.Difference(JsonSerializer.Serialize(result.State, ModelJson.Options), JsonSerializer.Serialize(after, ModelJson.Options));
         Require(difference == null, "Equipment unit=" + sample.GetProperty("UnitId").GetInt32() + " card=" + sample.GetProperty("CardId").GetInt32() +

@@ -58,6 +58,8 @@ internal static class TriggeredSummonChecks
             "The fixture did not reach its required live/zero-birth or dying-source paths.");
         Require(scenario.EndsWith("fresh", StringComparison.Ordinal) ? fresh == births : copied == births,
             "The fixture did not exercise the requested fresh/copied source path.");
+        foreach (var clone in fixture.GetProperty("DetachedCardClones").EnumerateArray()) UnitSummonChecks.VerifyClone(clone, false);
+        if (scenario.Contains("equipment")) EquipmentTransfers(records, scenario);
         var root = fixture.GetProperty("Stages").EnumerateArray().Select(sample => sample.GetProperty("Before").Deserialize<RoomCombatState>()!)
             .First(room => room.Units.Any(unit => unit.Triggers.Any(trigger => trigger.Effects.Any(effect => effect.Summon != null))));
         string parent = JsonSerializer.Serialize(root);
@@ -70,6 +72,82 @@ internal static class TriggeredSummonChecks
         DamagePhases(fixture, scenario);
         Console.WriteLine($"NATIVE-TRIGGERED-SUMMON-CHECKS PASS: {records.Length} native queued applications, {births} births, " +
             $"{zero} retained zero-birth caches, {deaths} dying sources, {copied} copies/{fresh} fresh sources; complete battle transitions checked independently.");
+    }
+
+    private static void EquipmentTransfers(FixtureValue[] records, string scenario)
+    {
+        int applications = 0, transferred = 0, excluded = 0, duplicates = 0, reused = 0;
+        foreach (var record in records)
+        {
+            var before = record.GetProperty("Before").Deserialize<RoomCombatState>()!;
+            var after = record.GetProperty("After").Deserialize<RoomCombatState>()!;
+            var actor = record.GetProperty("ActorBefore").Deserialize<CombatUnit>()!;
+            var rule = record.GetProperty("RuleBefore").Deserialize<TriggeredSummonRule>()!;
+            if (actor.EquipmentCards!.Count == 0 || before.Context!.NextUnitId == after.Context!.NextUnitId) continue;
+            applications++;
+            var catalog = before.Context.SummonCatalog!;
+            var candidates = actor.EquipmentCards.Select(id => before.Context.FindCard(id)!).ToArray();
+            var returning = candidates.Where(card => catalog.Cards.Single(def => def.Creation.DataId == card.DataId).Equipment!.ReturnToHand).ToArray();
+            var normal = candidates.Except(returning).ToArray();
+            Require(normal.Length == 2 && returning.Length == 1, "The equipped native actor did not retain both transfer and return-to-hand definitions.");
+            if (!rule.IgnoreCardUpgrades)
+            {
+                string parent = JsonSerializer.Serialize(before);
+                var incomplete = new TriggeredSummonCatalog(catalog.Units, catalog.Cards.Select(definition =>
+                    new SummonCardDefinition(definition.Creation, definition.SpawnCharacterId)).ToArray(), catalog.Rooms);
+                var bad = new RoomCombatState(before.RoomIndex, before.Deployment, before.Units, before.ExternalInteractions,
+                    before.Context.WithSummonCatalog(incomplete), before.Preview);
+                Parallel.For(0, 16, branch =>
+                {
+                    var queued = new RoomCombatModel.QueuedCharacterTrigger(before.RoomIndex, actor, record.GetProperty("Kind").GetString()!);
+                    var rejected = RoomCombatModel.ApplyQueuedCharacterTrigger(bad, queued, callback => { });
+                    Require(!rejected.Supported && rejected.State == null &&
+                        rejected.UnsupportedReason!.Contains("equipment attachment definition"),
+                        "An incomplete equipment catalog produced a partial summon child.");
+                });
+                Require(JsonSerializer.Serialize(before) == parent, "Missing-equipment branches mutated the source state.");
+            }
+            var born = after.Units.Where(unit => unit.Id >= before.Context.NextUnitId).ToArray();
+            foreach (CombatUnit unit in born)
+            {
+                excluded += returning.Length;
+                Require(!unit.EquipmentCards!.Any(id => returning.Any(card => card.DataId == after.Context.FindCard(id)!.DataId)),
+                    "Return-to-hand equipment was transferred to a summoned child.");
+                if (rule.IgnoreCardUpgrades)
+                {
+                    Require(unit.EquipmentCards.Count == 0 && !after.Context.OtherPiles!.Single(pile => pile.Name == "Standby")
+                        .EquipmentConditions!.Any(condition => condition.HostUnitId == unit.Id),
+                        "A fresh summoned child inherited equipment or its standby condition.");
+                    continue;
+                }
+                var attached = unit.EquipmentCards.Single();
+                var card = after.Context.FindCard(attached)!;
+                Require(card.DataId == normal.Last().DataId && card.EquippedUnitId == unit.Id &&
+                    card.Permanent.Upgrades.Any(upgrade => upgrade.Statuses.Any(status => status.Id == "spikes")),
+                    "Equipment transfer lost original ordering, cloned modifiers or the last attached relationship.");
+                var standby = after.Context.OtherPiles!.Single(pile => pile.Name == "Standby");
+                Require(standby.EquipmentConditions!.Any(condition => condition.CardId == attached && condition.HostUnitId == unit.Id && !condition.ReturnToHand),
+                    "Transferred equipment did not bind its native standby host.");
+                Require(unit.Triggers.Where(trigger => trigger.Origin?.IsFromEquipment == true && trigger.Once)
+                    .All(trigger => !trigger.HasTriggered), "Equipment callbacks ran inside the enclosing summon effect.");
+                transferred++;
+                if (candidates.Any(original => original.InstanceId == attached)) reused++;
+                else
+                {
+                    duplicates++;
+                    Require(after.Context.CardInstances!.Any(owned => owned.InstanceId == attached),
+                        "Duplicated equipment did not join non-permanent deck ownership.");
+                }
+                if (actor.Health > 0) Require(!candidates.Any(original => original.InstanceId == attached),
+                    "A living actor and its child shared the same attached equipment instance.");
+            }
+        }
+        Require(applications > 0 && excluded > 0, "Native equipped-source summon coverage was not reached.");
+        if (!scenario.EndsWith("fresh", StringComparison.Ordinal))
+            Require(transferred >= 2 && duplicates > 0 && (!scenario.Contains("death") || reused > 0),
+                "Native live duplication or dying-source reuse was not reached.");
+        Console.WriteLine($"NATIVE-TRIGGERED-EQUIPMENT-CHECKS PASS: {applications} equipped applications, {transferred} final attachments, " +
+            $"{duplicates} owned copies, {reused} reused originals, {excluded} return-to-hand exclusions; complete battle and queued API checks.");
     }
 
     private static void DamagePhases(FixtureValue fixture, string scenario)

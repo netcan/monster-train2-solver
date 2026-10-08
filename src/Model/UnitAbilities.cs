@@ -69,7 +69,7 @@ namespace MonsterTrain2Poju.Model
                 if (!before.Supported) return Unsupported(before.UnsupportedReason!);
                 train = before.State!; if (Terminal(before.Outcome)) outcome = before.Outcome;
             }
-            TrainSpellResult applied = CardSpellModel.Apply(train, action.RoomIndex, rule.Effects, 0, cache.Card.InstanceId,
+            TrainSpellResult applied = CardSpellModel.ApplyForCardPlay(train, action.RoomIndex, rule.Effects, 0, cache.Card.InstanceId,
                 source.PlayRules, train.Context!.OtherPiles ?? source.OtherPiles, actor.Id);
             if (!applied.Supported) return Unsupported(applied.UnsupportedReason!);
             train = applied.State!; if (Terminal(applied.Outcome)) outcome = applied.Outcome;
@@ -79,7 +79,7 @@ namespace MonsterTrain2Poju.Model
                 .WithPlayedCost(cache.Card.InstanceId, null);
             context = context.WithStatistics(statistics).AfterCardEffects();
             train = Resolving(CardSpellModel.WithContext(train, context), actor.Id, false);
-            TrainCombatResult after = OwnTrigger(train, actor.Id, "OnOwnAbilityActivated");
+            TrainCombatResult after = OwnTrigger(train, actor.Id, "OnOwnAbilityActivated", applied.PendingCallbacks);
             if (!after.Supported) return Unsupported(after.UnsupportedReason!);
             train = after.State!; if (Terminal(after.Outcome)) outcome = after.Outcome;
             context = train.Context!;
@@ -131,12 +131,14 @@ namespace MonsterTrain2Poju.Model
             .Select(room => new RoomCombatState(room.RoomIndex, room.Deployment, room.Units.Select(unit => unit.Id == id && unit.Ability != null
                 ? AbilityCooldownModel.Copy(unit, AbilityLifecycleModel.Normalize(unit.Ability.WithResolving(value))) : unit).ToArray(), room.ExternalInteractions,
                 train.Context, room.Preview)).ToArray(), train.Movement, train.EnemySlotsPerRoom, train.Context);
-        private static TrainCombatResult OwnTrigger(TrainCombatState train, int id, string kind)
+        private static TrainCombatResult OwnTrigger(TrainCombatState train, int id, string kind,
+            IReadOnlyList<RoomCombatModel.QueuedCharacterTrigger>? preceding = null)
         {
             RoomCombatState? room = train.Rooms.FirstOrDefault(item => item.Units.Any(unit => unit.Id == id && unit.Health > 0));
-            return room == null ? new TrainCombatResult(train, RoomOutcome.Exchanged, Array.Empty<RoomCombatResult>()) :
-                TrainCombatModel.ApplyCharacterQueue(train, new List<RoomCombatModel.QueuedCharacterTrigger> {
-                    new RoomCombatModel.QueuedCharacterTrigger(room.RoomIndex, room.Units.First(unit => unit.Id == id), kind) });
+            var queue = preceding?.ToList() ?? new List<RoomCombatModel.QueuedCharacterTrigger>();
+            if (room != null) queue.Add(new RoomCombatModel.QueuedCharacterTrigger(room.RoomIndex, room.Units.First(unit => unit.Id == id), kind));
+            return queue.Count == 0 ? new TrainCombatResult(train, RoomOutcome.Exchanged, Array.Empty<RoomCombatResult>()) :
+                TrainCombatModel.ApplyCharacterQueue(train, queue);
         }
         private static bool Terminal(RoomOutcome outcome) => outcome == RoomOutcome.BattleWon || outcome == RoomOutcome.PlayerDefeated;
         private static BattleActionResult Unsupported(string error) => new BattleActionResult(null, ActionRejection.Unsupported, error);

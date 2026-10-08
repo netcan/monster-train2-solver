@@ -4877,3 +4877,79 @@ native damage steps, along with six integrated position checks, two standalone
 position checks, four missing-source checks and nine pooled summon checks.
 Unsupported transition counts remain zero. All binary sizes and SHA-256 values
 match the complete curated inventory and manifest.
+
+## Triggered summon equipment transfer
+
+Schema 87 captures equipment definitions in the finite summon catalog and
+whether an attachment API runs inside the native character queue. A friendly
+summon that copies its actor's source also inherits the actor's equipment in
+original order, excluding ReturnToHand equipment. IgnoreCardUpgrades births
+inherit none. A living actor forces equipment copies; a removed dying actor
+can reuse its original cards. Each later birth tests current attachment state
+again, including equipment already displaced by an earlier replacement.
+
+Copies reset card history, preserve modifiers and join non-permanent deck
+ownership through the native AddNonPermanentCardToDeck path. This differs from
+ordinary generated cards and detached summon sources. After attachment,
+MoveToStandByPile or ChangeStandbyCondition binds the new host. Replaced gear
+keeps its condition until that host dies; transferred conditions no longer
+return the same card on the original actor's death. Attachment healing,
+equipment-added and equipment-removed callbacks remain behind the enclosing
+summon effect rather than draining a nested queue.
+
+The recording registers CopyCardState results at the actual allocation
+boundary. Previously, observing owned equipment before detached unit sources
+could reverse their assigned IDs. Independent checks compare complete clone
+contexts and actual histories, ownership, relationships and modifier state.
+
+Equipment copied by the last pending death also exposed the natural cast
+boundary: native TimesPlayed runs before the remaining removal queue. Card
+actions now carry that queue through the spell result and drain it after the
+played statistic, before discard. Ability activation carries pending callbacks
+into its own callback queue. The final physical death in each team performs
+native centering. Direct effect callers still request a settled effect result.
+
+Four binary fixtures retain the original Boss and waves. Setup changes real
+player definitions, plays the host through native CardManager, and attaches
+two ordinary equipment cards plus one ReturnToHand exclusion. The host has
+three equipment slots; summoned children have one, exercising ordered
+replacement. Ordinary gear includes temporary damage/health offsets,
+permanent anonymous spikes and a once-only equipment trigger. Each summon
+requests two births, bounded by physical slots. Death variants use real native
+Tower damage. Audio is muted, Instant timing is used and original profile
+signatures remain unchanged.
+
+| Archive | Plays / EndTurns / final Pyre | Bytes / nodes | Native seconds |
+| --- | --- | --- | --- |
+| `full-battle-triggered-summons-equipment.mt2f` | 16 / 5 / 80 | 28,661 / 4,694 | 51.58 |
+| `full-battle-triggered-summons-equipment-fresh.mt2f` | 16 / 5 / 80 | 26,359 / 4,244 | 50.78 |
+| `full-battle-triggered-summons-equipment-death.mt2f` | 23 / 7 / 49 | 35,034 / 5,982 | 54.33 |
+| `full-battle-triggered-summons-equipment-death-fresh.mt2f` | 23 / 7 / 49 | 33,340 / 5,650 | 50.41 |
+
+All four native captures pass with zero failures, mismatches, unsupported
+transitions and pending observations. The copied variants retain seventeen
+complete clone boundaries and ten queued attachments. Across the four scenes,
+independent checks observe five final transferred attachments, four of them
+owned copies, one reused original and eleven ReturnToHand exclusions. All forty-six
+attachment/removal operations compare complete native room/context state.
+Sixteen native damage steps include four cross-room pending-death boundaries.
+Initial and mid-battle policies run in sixteen branches; complete physical
+room comparisons run in thirty-two. Missing equipment definitions reject in
+sixteen branches without exposing a partial child or changing the parent.
+
+Use `Run-FullBattleProbe.ps1 -Policy units-spells-and-junk
+-TriggeredSummonsEquipment`, optionally adding `-TriggeredSummonsDeath` and/or
+`-TriggeredSummonsFresh`. Dedicated native coverage requires an equipped source
+that actually births children, queued attachment in copied variants and no
+queued attachment in fresh variants. The curated inventory now contains 137
+archives: 128 battles and nine calibration suites. Revival, Horde merging,
+additional trigger summon pool combinations, wider relic/room effects,
+grafted equipment and special Boss position paths still require integration.
+Full battle simulation and the complete solver remain unfinished.
+
+The full 137-archive regression exits zero: all 128 battle archives and nine
+calibration suites pass. Eight queued-summon suites include four equipment
+suites; six damage suites independently compare fifty-six native steps. Ten
+integrated battle-position suites, four missing-source suites and nine pool
+summon suites pass. Unsupported transition counts remain zero. The complete
+binary inventory, sizes and SHA-256 values match the curated manifest.

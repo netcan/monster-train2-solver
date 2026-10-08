@@ -328,7 +328,11 @@ namespace MonsterTrain2Poju.Model
                 return true;
             }, queued =>
             {
-                RoomCombatResult returned = RoomCombatModel.SettleQueuedSpawner(WithContext(rooms[queued.RoomIndex], context), queued.Unit);
+                bool lastPhysicalDeath = queued.CompletePhysicalRemovalAfterQueue && !queue.Any(item => item.Kind == "OnDeath" &&
+                    item.Unit.Team == queued.Unit.Team && item.Unit.Id > queued.Unit.Id);
+                RoomCombatResult returned = lastPhysicalDeath
+                    ? RoomCombatModel.SettleQueuedSpawnerAndCenter(WithContext(rooms[queued.RoomIndex], context), queued.Unit)
+                    : RoomCombatModel.SettleQueuedSpawner(WithContext(rooms[queued.RoomIndex], context), queued.Unit);
                 if (!returned.Supported) { error = returned.UnsupportedReason; return false; }
                 rooms[queued.RoomIndex] = returned.State!; context = returned.State!.Context; results.Add(returned); return true;
             });

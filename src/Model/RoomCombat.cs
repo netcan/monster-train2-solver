@@ -523,7 +523,7 @@ namespace MonsterTrain2Poju.Model
         }
 
         public static RoomCombatResult ApplyEquipment(RoomCombatState state, int targetId, int cardId, BattlePlayRules definitions, bool remove = false,
-            bool deferAbilityCallbacks = false)
+            bool deferAbilityCallbacks = false, bool deferCallbacks = false)
         {
             string? error = Validate(state);
             CombatUnit? target = state.Units.FirstOrDefault(unit => unit.Id == targetId);
@@ -532,7 +532,7 @@ namespace MonsterTrain2Poju.Model
             if (!remove && target.EquipmentCards.Contains(cardId))
                 return new RoomCombatResult(null, RoomOutcome.Unsupported, 0, new List<CombatEvent>(), "Repeated raw attachment of the same equipment object is not modeled.");
             var callbacks = new List<QueuedCharacterTrigger>();
-            var result = new Engine(state, new List<CombatEvent>(), enqueueCharacterTrigger: remove ? callbacks.Add : (Action<QueuedCharacterTrigger>?)null,
+            var result = new Engine(state, new List<CombatEvent>(), enqueueCharacterTrigger: remove || deferCallbacks ? callbacks.Add : (Action<QueuedCharacterTrigger>?)null,
                 resetPreviewTriggers: false, deferAbilityCallbacks: deferAbilityCallbacks).Equipment(targetId, cardId, definitions, remove);
             return new RoomCombatResult(result.State, result.Outcome, result.Rounds, result.Events.ToList(), result.UnsupportedReason, callbacks);
         }
@@ -980,7 +980,7 @@ namespace MonsterTrain2Poju.Model
                             QueueCallback(new QueuedCharacterTrigger(source.RoomIndex, unit.Freeze(), "OnEquipmentAddedToAny"));
                     QueueCallback(new QueuedCharacterTrigger(source.RoomIndex, target.Freeze(), "OnEquipmentAdded"));
                     context = context!.WithCard((context.FindCard(cardId) ?? card!).WithEquippedUnit(targetId));
-                    DrainLocalTriggerQueue();
+                    if (enqueueCharacterTrigger == null && !runningTriggerQueue) DrainLocalTriggerQueue();
                 }
                 return Finish(battleWon ? RoomOutcome.BattleWon : units.Any(unit => unit.Source.IsPyre && !unit.Alive) ? RoomOutcome.PlayerDefeated : RoomOutcome.Exchanged);
             }
@@ -1740,6 +1740,8 @@ namespace MonsterTrain2Poju.Model
             {
                 firstId = 0;
                 SpawnPointReference? from = SummonSourcePoint(actor);
+                var equipment = new List<int>();
+                bool transferEquipment = from != null && !rule.IgnoreCardUpgrades && actor.Source.SpawnerCardId > 0;
                 int position = 0;
                 if (from != null)
                 {
@@ -1753,8 +1755,14 @@ namespace MonsterTrain2Poju.Model
                     WorkingUnit? dead = units.FirstOrDefault(unit => unit.Source.Id == occupant);
                     if (dead != null && dead.Health <= 0 && (!SummonPhysical("Remember", occupant) || !SummonPhysical("Remove", occupant))) return false;
                     if (!source.Preview && moved > 0 && !CenterAfterSummon()) return false;
-                    if (actor.Source.EquipmentCards?.Count > 0)
-                    { unsupportedReason = "Triggered summon equipment transfer requires its attachment definitions."; return false; }
+                    if (transferEquipment)
+                        foreach (int id in actor.Source.EquipmentCards ?? Array.Empty<int>())
+                        {
+                            var definition = context.SummonCatalog!.Cards.FirstOrDefault(item => item.Creation.DataId == context.FindCard(id)?.DataId);
+                            if (definition?.Equipment == null)
+                            { unsupportedReason = "Missing triggered summon equipment attachment definition."; return false; }
+                            if (!definition.Equipment.ReturnToHand) equipment.Add(id);
+                        }
                 }
                 int requested = Math.Max(1, rule.Count);
                 if (rule.AdditionalCharacterId.Length > 0) requested = unchecked(requested + requested);
@@ -1810,6 +1818,26 @@ namespace MonsterTrain2Poju.Model
                         if (!upgraded.Supported) { unsupportedReason = upgraded.UnsupportedReason; return false; }
                         MergeSummon(upgraded);
                         foreach (var callback in upgraded.PendingCallbacks) QueueCallback(callback);
+                    }
+                    foreach (int equipmentId in equipment)
+                    {
+                        // Managers remove a dying actor before OnDeath; the retained
+                        // object still exposes its equipment, but no longer forces a copy.
+                        bool attached = units.Any(unit => !unit.Removed && unit.Source.DeathState?.IsBeingRemoved != true &&
+                            unit.Source.EquipmentCards?.Contains(equipmentId) == true);
+                        CardGenerationResult gear = EquipmentModel.CopyForTransfer(context!, equipmentId, attached, source.Preview);
+                        if (!gear.Supported) { unsupportedReason = gear.UnsupportedReason; return false; }
+                        context = gear.Context!;
+                        int addedId = gear.AddedCards.Single().InstanceId;
+                        var definitions = new BattlePlayRules(context.SummonCatalog!.Rooms, context.SummonCatalog.Cards
+                            .Where(card => card.Equipment != null).Select(card => new CardPlayRule(card.Creation.DataId,
+                                "", 0, "Equipment", "Standby", null, Array.Empty<string>(), equipment: card.Equipment)).ToArray());
+                        RoomCombatResult equipped = ApplyEquipment(CurrentRoom(), born.UnitId, addedId, definitions,
+                            deferAbilityCallbacks: true, deferCallbacks: true);
+                        if (!equipped.Supported) { unsupportedReason = equipped.UnsupportedReason; return false; }
+                        MergeSummon(equipped);
+                        foreach (var callback in equipped.PendingCallbacks) QueueCallback(callback);
+                        if (!source.Preview) context = EquipmentModel.BindTransferred(context!, addedId, born.UnitId);
                     }
                     if (bornCount++ == 0) firstId = born.UnitId;
                 }

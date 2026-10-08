@@ -17,6 +17,7 @@ namespace MonsterTrain2Poju.Probe
             public bool Remove { get; set; }
             public bool Completed { get; set; }
             public bool DeferAbilityCallbacks { get; set; }
+            public bool QueueRunning { get; set; }
             public RoomCombatState Before { get; set; } = null!;
             public RoomCombatState? After { get; set; }
             public BattlePlayRules Definitions { get; set; } = null!;
@@ -36,9 +37,10 @@ namespace MonsterTrain2Poju.Probe
                     var decision = trace.CaptureDecision();
                     record = new Record { UnitId = trace.UnitId(host), CardId = card == null ? 0 : trace.CardId(card), Remove = remove,
                         Before = trace.Capture(room), Definitions = decision.PlayRules!,
-                        DeferAbilityCallbacks = AllGameManagers.Instance.GetReplayManager().IsCardPlaying() || AllGameManagers.Instance.GetCombatManager()!.IsRunningTriggerQueue };
+                        DeferAbilityCallbacks = AllGameManagers.Instance.GetReplayManager().IsCardPlaying() || AllGameManagers.Instance.GetCombatManager()!.IsRunningTriggerQueue,
+                        QueueRunning = AllGameManagers.Instance.GetCombatManager()!.IsRunningTriggerQueue };
                     Records.Add(record);
-                    predicted = RoomCombatModel.ApplyEquipment(record.Before, record.UnitId, record.CardId, record.Definitions, remove, record.DeferAbilityCallbacks);
+                    predicted = RoomCombatModel.ApplyEquipment(record.Before, record.UnitId, record.CardId, record.Definitions, remove, record.DeferAbilityCallbacks, record.QueueRunning);
                     record.UnsupportedReason = predicted.UnsupportedReason;
                 }
                 catch (Exception error) { trace.CaptureFailure(error); }

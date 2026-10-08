@@ -22,6 +22,48 @@ namespace MonsterTrain2Poju.Model
     }
     public static class EquipmentModel
     {
+        internal static CardGenerationResult CopyForTransfer(CombatContext source, int cardId, bool attached, bool preview)
+        {
+            CardInstanceState? card = source.FindCard(cardId);
+            var definition = source.SummonCatalog?.Cards.FirstOrDefault(item => item.Creation.DataId == card?.DataId);
+            if (card == null || definition?.Equipment == null || source.CardInstances == null ||
+                source.OtherPiles?.SingleOrDefault(pile => pile.Name == "Standby")?.EquipmentConditions == null)
+                return new CardGenerationResult(null, Array.Empty<CardToken>(), "Missing equipment transfer card or ownership state.");
+            if (!attached) return new CardGenerationResult(source, new[] { new CardToken(cardId, card.DataId) });
+            var copied = CardGenerationModel.CloneDetached(source, definition.Creation, cardId);
+            if (!copied.Supported || preview) return copied;
+            CombatContext context = copied.Context!;
+            CardInstanceState clone = context.FindCard(copied.AddedCards.Single().InstanceId)!;
+            // AddNonPermanentCardToDeck only adds ownership and a draw-pile entry.
+            // It does not perform AddCardImpl's tracking, upgrades or callbacks.
+            context = new CombatContext(context.Cards, context.BattleRng, context.Gold, context.NextCardId,
+                context.MaxHandSize, context.StatusRules, context.Statistics, context.CardInstances!.Concat(new[] { clone }).ToArray(),
+                context.CardRegistry, context.AllScenarioBossesDead, context.NextAddedTemporaryUpgrades, context.OtherPiles,
+                context.QueryFrame, context.KillCamActivated, context.MagicPower, context.IsolatedBattlePreview, context.EnergyState,
+                context.RoomCapacities, context.AbilityCardCache, context.LastAbilityActivatorUnitId, context.PermanentlyDisabledAbilities,
+                context.LastSpawnedUnitId, context.NextUnitId, context.SpawnPoints, context.SummonCatalog);
+            // The temporary draw entry is removed by MoveToStandByPile after AddEquipment.
+            context = context.WithCards(new CardCycleState(context.Cards.Hand, context.Cards.Draw.Concat(copied.AddedCards).ToArray(),
+                context.Cards.Discard, context.Cards.Rng, context.Cards.DrawModifier, context.Cards.ExternalInteractions, context.Cards.BonusDraw));
+            return new CardGenerationResult(context, copied.AddedCards);
+        }
+
+        internal static CombatContext BindTransferred(CombatContext context, int cardId, int hostId)
+        {
+            var piles = context.OtherPiles!.ToArray();
+            int index = Array.FindIndex(piles, pile => pile.Name == "Standby");
+            if (!piles[index].Cards.Any(card => card.InstanceId == cardId))
+            {
+                CardInstanceState card = context.FindCard(cardId)!;
+                piles[index] = CardPileModel.Add(piles[index], new CardToken(cardId, card.DataId));
+                context = context.WithCards(new CardCycleState(context.Cards.Hand.Where(card => card.InstanceId != cardId).ToArray(),
+                    context.Cards.Draw.Where(card => card.InstanceId != cardId).ToArray(), context.Cards.Discard.Where(card => card.InstanceId != cardId).ToArray(),
+                    context.Cards.Rng, context.Cards.DrawModifier, context.Cards.ExternalInteractions, context.Cards.BonusDraw));
+            }
+            piles[index] = CardPileModel.BindEquipment(piles[index], new EquipmentStandbyCondition(cardId, hostId, false));
+            return context.WithOtherPiles(piles);
+        }
+
         public static CombatContext ReturnStandby(CombatContext context, IReadOnlyList<int> livingUnitIds)
             => ReturnUnattached(context, new HashSet<int>(livingUnitIds));
         internal static string UpgradeKey(int cardId) => "equipment:" + cardId;

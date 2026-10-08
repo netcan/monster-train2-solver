@@ -17,6 +17,12 @@ namespace MonsterTrain2Poju.Probe
                 .Select(card => card.GetSpawnCharacterData()).First(unit => unit != null && unit != host &&
                     unit.name.StartsWith("TrainSteward", StringComparison.Ordinal)) ?? throw new InvalidOperationException("Missing triggered summon child.");
             Set(host, "size", 1); Set(child, "size", 1);
+            bool equipment = TriggeredSummonEquipmentScenario.Enabled;
+            if (equipment)
+            {
+                Set(host, "equipmentLimit", 3); Set(host, "health", 35); Set(child, "equipmentLimit", 1);
+                TriggeredSummonEquipmentScenario.Prepare(managers);
+            }
             bool fresh = (Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") ?? "").EndsWith("fresh", StringComparison.Ordinal);
             var extra = DynamicUpgradeScenario.Upgrade("PojuTriggeredSpawnExtra", "c2f6ed7f-18ce-4070-b65f-7dd9f5190041",
                 1, 2, 0, 0, "armor", 1);
@@ -30,7 +36,10 @@ namespace MonsterTrain2Poju.Probe
             Set(child, "triggers", child.GetTriggers().Concat(new[] {
                 Trigger(CharacterTriggerData.Trigger.OnSpawn, Gold(2)),
                 Trigger(CharacterTriggerData.Trigger.OnUnscaledSpawn, Gold(4)),
-                Trigger(CharacterTriggerData.Trigger.OnHeal, Gold(6)),
+                Trigger(CharacterTriggerData.Trigger.OnHeal, Gold(6)) }).Concat(equipment ? new[] {
+                Trigger(CharacterTriggerData.Trigger.OnEquipmentAdded, Gold(8)),
+                Trigger(CharacterTriggerData.Trigger.OnEquipmentAddedToAny, Gold(9)),
+                Trigger(CharacterTriggerData.Trigger.OnEquipmentRemoved, Gold(10)) } : Array.Empty<CharacterTriggerData>()).Concat(new[] {
                 Trigger(CharacterTriggerData.Trigger.CardMonsterPlayed, Gold(5)) }).ToList());
             foreach (CardState card in managers.GetCardManager()!.GetAllCards(new List<CardState>()).Where(card => card.GetCardDataID() == hostCard.GetID()))
                 card.Setup(hostCard, save);
@@ -56,7 +65,7 @@ namespace MonsterTrain2Poju.Probe
         {
             var effect = new CardEffectData("CardEffectSpawnMonster", null!, Team.Type.Monsters);
             effect.Cheat_SetTargetMode(TargetMode.Room); Set(effect, "paramCharacterData", child);
-            Set(effect, "paramInt", 1); Set(effect, "paramBool", fresh); Set(effect, "paramCardUpgradeData", extra);
+            Set(effect, "paramInt", TriggeredSummonEquipmentScenario.Enabled ? 2 : 1); Set(effect, "paramBool", fresh); Set(effect, "paramCardUpgradeData", extra);
             return effect;
         }
         private static CardEffectData Gold(int amount)

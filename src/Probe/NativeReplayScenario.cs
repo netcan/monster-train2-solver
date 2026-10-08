@@ -401,6 +401,16 @@ namespace MonsterTrain2Poju.Probe
                 return;
             }
             string? modifierScenario = Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS");
+            if (fullBattle && numericModifiersPrepared && modifierScenario.StartsWith("triggered-summon", StringComparison.Ordinal) &&
+                TriggeredSummonEquipmentScenario.Enabled)
+            {
+                if (TriggeredSummonEquipmentScenario.Error != null) throw new InvalidOperationException(TriggeredSummonEquipmentScenario.Error);
+                if (!TriggeredSummonEquipmentScenario.Completed)
+                {
+                    if (!TriggeredSummonEquipmentScenario.Started) TriggeredSummonEquipmentScenario.Start(managers, log);
+                    return;
+                }
+            }
             if (fullBattle && modifierScenario == "conditional-triggers")
             {
                 if (ConditionalTriggerScenario.Error != null) throw new InvalidOperationException(ConditionalTriggerScenario.Error);

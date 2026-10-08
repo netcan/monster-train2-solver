@@ -135,7 +135,7 @@ internal static class UnitSummonChecks
                 "Source presence incorrectly gated OnSpawnNotFromCard or Rally reward count changed.");
         }
     }
-    internal static void VerifyClone(FixtureValue sample)
+    internal static void VerifyClone(FixtureValue sample, bool requireAuthoredExclusions = true)
     {
         Require(sample.GetProperty("Completed").GetBoolean(), "Incomplete native detached clone.");
         var before = sample.GetProperty("Before").Deserialize<CombatContext>()!;
@@ -149,7 +149,8 @@ internal static class UnitSummonChecks
         int id = result.AddedCards.Single().InstanceId;
         var clone = expected.CardRegistry!.Single(card => card.InstanceId == id);
         Require(!expected.CardInstances!.Any(card => card.InstanceId == id) && clone.PlayCount == 0 && clone.LastPlayedCost == 0 &&
-            clone.Permanent.Upgrades.Any(upgrade => upgrade.ExcludeFromClones) && clone.Temporary.Upgrades.Any(upgrade => upgrade.ExcludeFromClones) &&
+            (!requireAuthoredExclusions || clone.Permanent.Upgrades.Any(upgrade => upgrade.ExcludeFromClones) &&
+                clone.Temporary.Upgrades.Any(upgrade => upgrade.ExcludeFromClones)) &&
             Serialize(before.CardInstances) == Serialize(expected.CardInstances) && Serialize(before.Statistics) == Serialize(expected.Statistics) &&
             Serialize(before.NextAddedTemporaryUpgrades) == Serialize(expected.NextAddedTemporaryUpgrades),
             "Detached copies gained ownership/history, lost source upgrades or consumed unrelated generation state.");

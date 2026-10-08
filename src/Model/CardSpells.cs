@@ -99,6 +99,11 @@ namespace MonsterTrain2Poju.Model
             int targetId, int sourceCardId = 0, BattlePlayRules? definitions = null, IReadOnlyList<CardPileState>? otherPiles = null, int selfUnitId = 0)
             => ApplyCore(source, roomIndex, effects, targetId, sourceCardId, null, null, definitions, fullTrain: true, otherPiles, selfUnitId);
 
+        internal static TrainSpellResult ApplyForCardPlay(TrainCombatState source, int roomIndex, IReadOnlyList<CardActionEffect> effects,
+            int targetId, int sourceCardId, BattlePlayRules definitions, IReadOnlyList<CardPileState>? otherPiles, int selfUnitId = 0)
+            => ApplyCore(source, roomIndex, effects, targetId, sourceCardId, null, null, definitions, true, otherPiles,
+                selfUnitId, deferFinalCallbacks: true);
+
         internal static TrainSpellResult ApplyNativeDamageStep(TrainCombatState source, int roomIndex, int targetId, int damage,
             int sourceCardId, IReadOnlyList<RoomCombatModel.QueuedCharacterTrigger> pendingDeaths, int attackerUnitId = 0)
         {
@@ -154,7 +159,7 @@ namespace MonsterTrain2Poju.Model
 
         private static TrainSpellResult ApplyCore(TrainCombatState source, int roomIndex, IReadOnlyList<CardActionEffect> effects,
             int targetId, int sourceCardId, int? playerCapacity, int? enemyCapacity, BattlePlayRules? definitions, bool fullTrain,
-            IReadOnlyList<CardPileState>? otherPiles = null, int selfUnitId = 0)
+            IReadOnlyList<CardPileState>? otherPiles = null, int selfUnitId = 0, bool deferFinalCallbacks = false)
         {
             string? error = Validate(source, roomIndex, effects, targetId, fullTrain);
             if (error != null) return UnsupportedTrain(error);
@@ -422,10 +427,15 @@ namespace MonsterTrain2Poju.Model
                 }
                 if (effect.Type == "AddStatus") DrainDeaths();
             }
-            DrainDeaths(); // The card's final played callbacks finish the remaining death queue.
+            // Natural play records TimesPlayed before OnCast/unit-play callbacks
+            // drain the final queue. Direct effect callers request a settled result.
+            // Settled deaths can still have outstanding spawner routing, even
+            // when the callback list is empty. Finish that work at this boundary.
+            if (!deferFinalCallbacks || callbacks.Count == 0) DrainDeaths();
             if (routingError != null) return UnsupportedTrain(routingError);
             state = WithContext(state, (piles == null ? state.Context! : state.Context!.WithOtherPiles(piles)).AfterCardEffects());
-            return new TrainSpellResult(state, outcome, events, collections: collections, otherPiles: piles);
+            return new TrainSpellResult(state, outcome, events, collections: collections, otherPiles: piles,
+                pendingCallbacks: deferFinalCallbacks ? callbacks : null);
 
             void RouteDeadCard(int cardId)
             {

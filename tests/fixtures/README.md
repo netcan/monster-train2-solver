@@ -556,3 +556,40 @@ native damage steps, along with six integrated position checks, two standalone
 position checks, four missing-source checks and nine pooled summon checks.
 Unsupported transition counts remain zero. All binary sizes and SHA-256 values
 match the complete curated inventory and manifest.
+
+Schema 87 adds four triggered summon equipment archives:
+`full-battle-triggered-summons-equipment.mt2f`,
+`full-battle-triggered-summons-equipment-fresh.mt2f`,
+`full-battle-triggered-summons-equipment-death.mt2f` and
+`full-battle-triggered-summons-equipment-death-fresh.mt2f`.
+Native setup plays a real Steward and attaches two ordinary cards and one
+ReturnToHand card. Real definitions receive equipment upgrades, temporary
+offsets, permanent anonymous spikes and equipment triggers. Two-birth summons
+exercise the child's one-slot replacement path. Death variants retain the
+native Tower lethal spell; original Boss and waves remain intact.
+
+Copied sources duplicate attached equipment for live actors and reuse originals
+after native actor removal. ReturnToHand and IgnoreCardUpgrades exclusions,
+non-permanent ownership, standby host changes, displaced gear and outer-queue
+callback timing are checked independently. Seventeen clone boundaries and
+forty-six attachment/removal operations compare full native contexts. Sixteen
+damage phases include four cross-room pending deaths. Full policies and
+physical state checks run in sixteen/thirty-two branches; missing attachment
+definitions reject without partial children or parent changes. The death
+variant also verifies that final death-born equipment misses the preceding
+TimesPlayed event while receiving later events normally.
+
+In the archive order above, sizes/nodes are 28,661/4,694; 26,359/4,244;
+35,034/5,982; and 33,340/5,650. Native Instant times are 51.58, 50.78, 54.33
+and 50.41 seconds. Live variants finish after sixteen plays/five EndTurns at
+Pyre 80; death variants finish after twenty-three plays/seven EndTurns at
+Pyre 49. Every native capture passes with zero failures, mismatches,
+unsupported transitions and pending observations, muted audio and intact
+original profile signatures. The inventory contains 137 archives: 128 battles
+and nine calibration suites. Sizes and SHA-256 values are in `manifest.tsv`.
+
+The full 137-archive regression exits zero: 128 battles and nine calibration
+suites pass, including eight queued-summon suites, four equipment suites,
+fifty-six independently compared native damage phases and ten integrated
+position suites. Unsupported transition counts remain zero; complete archive
+sizes and SHA-256 values match the curated inventory and manifest.
