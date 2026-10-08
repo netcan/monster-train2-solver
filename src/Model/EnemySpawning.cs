@@ -182,6 +182,17 @@ namespace MonsterTrain2Poju.Model
 
             string? Initialize(CombatUnit unit, int index)
             {
+                if (context?.SpawnPoints != null)
+                {
+                    var physicalRoom = source.Train.Rooms[index];
+                    var scope = new RoomCombatState(index, physicalRoom.Deployment, rooms[index].Where(actor => actor.Id != unit.Id).ToArray(),
+                        physicalRoom.ExternalInteractions, context, physicalRoom.Preview);
+                    var born = BattleSpawnPointModel.Birth(context.SpawnPoints, scope, unit,
+                        context.SpawnPoints.FirstEmpty(index, unit.Team), shift: false);
+                    if (!born.Supported) return born.Error;
+                    context = context.WithSpawnPoints(born.State!);
+                    rooms[index] = BattleSpawnPointModel.Order(context.SpawnPoints, index, rooms[index]).ToList();
+                }
                 if (context?.AbilityCardCache != null && unit.Ability?.CardCreation is CardCreationRule creation)
                 {
                     AbilityCardResult cached = AbilityCardModel.Get(context, creation);

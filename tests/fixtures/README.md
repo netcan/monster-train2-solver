@@ -490,3 +490,29 @@ calibration suites pass, including one physical spawn-point check, four
 missing-source checks and nine pooled summon checks. Unsupported transition
 counts remain zero. The complete archive inventory, sizes and SHA-256 values
 match the curated manifest.
+
+The schema-85 `full-battle-physical-spawn-points.mt2f` and
+`full-battle-physical-spawn-points-no-cards.mt2f` archives carry physical group
+occupants and retained current/last-known references in every complete battle
+context. Independent checks cover 204 complete room contexts, 30 physical
+removals and 17 cross-room moves, plus full roots in 16 branches and complete
+rooms in 32 branches. Player/enemy/treasure births, front/back rearrangement,
+death/queued completion, treasure despawn, same-room hole filling, ascension
+and post-room centering update the shared position state. Retained identities
+survive removals; malformed identities/references reject without partial children.
+
+The first archive records 18 plays/six EndTurns/Pyre 80, 254 native compaction
+boundaries, 26,962 bytes/4,408 nodes and a 43.66-second Instant run. The no-card
+archive records seven EndTurns/Pyre 49, 233 compaction boundaries,
+18,096 bytes/2,735 nodes and a 35.44-second run. All native capture gates are
+zero, with muted audio and intact original Boss/waves/profile signatures.
+The inventory contains 129 archives: 120 battles and nine calibration suites.
+Physical capture remains opt-in; general triggered births, removed-target
+replacement/equipment transfer, revival, Horde merging, spell movement and
+special Boss paths still require further native integration.
+
+The full 129-archive regression exits zero: all 120 battle archives and nine
+calibration suites pass, including two integrated battle-position checks, two
+standalone spawn-point checks, four missing-source checks and nine pooled
+summon checks. Unsupported transition counts remain zero. The complete archive
+inventory, sizes and SHA-256 values match the curated manifest.

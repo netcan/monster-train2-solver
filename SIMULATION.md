@@ -114,7 +114,8 @@ are copied immutable values; independent child states can run on worker threads.
 | Fresh and additional summon sources | `UnitSummonRule`, `UnitSummonChoice` and `UnitStandbyModel` | Native fresh setup, original-card bindings, delayed returns, mixed unit templates, odd capped splits and source-mismatch upgrade routing; complete policies and parallel branches |
 | Pooled unit summons | `UnitSummonRule.Pool` and `UnitSummonModel` | Ordered duplicate weights, singleton RNG draws, additional overrides, fresh/copied sources and no-primary paid Rally gates; five native scenes and parallel branches |
 | Missing summon sources | `FallbackLookupComplete`, `UnitBirthModel` and `UnitStandbyModel` | Confirmed no-match fallbacks, first-birth cardless markers, no-source spawn triggers/upgrades, mixed sources and delayed original-card returns; four native scenes and parallel branches |
-| Physical spawn points | `SpawnPointModel` | 21 exact native operations and 63 current/last-known queries, holes, stale occupant references, zero-HP/undying occupancy, preview-born removal, cross-room moves and 32 branches; full battle state integration remains pending |
+| Physical spawn points | `SpawnPointModel` | 21 exact native operations and 63 current/last-known queries, holes, stale occupant references, zero-HP/undying occupancy, preview-born removal, cross-room moves and 32 branches; integrated battle paths are listed below |
+| Physical positions in complete battle states | `CombatContext.SpawnPoints`, `BattleSpawnPointModel` and battle transitions | Two native full battles, 204 room contexts, 30 removals and 17 cross-room moves; complete roots in 16 branches and rooms in 32 branches |
 | Status removal and Horde sacrifice | `StatusRemovalModel`, `CardSpellModel` and `RoomCombatModel` | Nine native API/effect/trigger operations, exact room/retained actor states, accepted queue counts, ordered death/Harvest dispatches, a real paid spell removing both teams and parallel branches; raw zero HP preserves orphan standby cards while sacrifice signals physical death and retains its responsible card |
 | Reentrant death signals and queued player sacrifice | `UnitDeathState`, `StatusRemovalModel` and `RoomCombatModel` | Three native operations, 45 exact death/Harvest phase states and complete dispatch order, 95 effect/retained-target states, pending versus cleared statistics listeners, spawner timing and parallel branches |
 | Physical death Harvest | `HarvestModel` and `RoomCombatModel` | Four native physical deaths and 31 exact dispatches; own-death children precede player/enemy groups, Hero/Monster/Unit kinds, Horde repetition, required dying statuses, silence and once flags; complete subsequent battle and parallel branches |
@@ -4735,3 +4736,66 @@ calibration suites pass, including one physical spawn-point check, four
 missing-source checks and nine pooled summon checks. Unsupported transition
 counts remain zero. The complete archive inventory, sizes and SHA-256 values
 match the curated manifest.
+
+## Physical positions throughout complete battle transitions
+
+`CombatContext.SpawnPoints` now carries immutable physical groups and retained
+unit position references through every existing context-copy path. Position
+ownership is separate from health/status inputs: the current operation supplies
+its actual combat actors to the physical model. A selected group cannot shift
+an occupied point whose retained actor's combat state is unavailable. Invalid
+identities, unknown retained points and missing shared counters reject transitions
+without partial children. Removing a unit retains its identity and last-known
+reference while clearing its current owned point.
+
+Player births use backward insertion, assignment and the native setup's
+compaction; enemy and treasure births allocate their actual first empty points.
+Enemy ascension reserves destinations from the top down and carries same-room
+hole filling and cross-room assignments before subsequent callbacks. Floor
+rearrangement updates physical references as well as room unit ordering.
+Immediate death, queued completion and treasure despawn clear their points at
+their own boundaries. Train combat includes the centering step after each
+nonterminal room; an individual room capture still precedes that step. This
+preserves the observed temporary holes instead of flattening every capture.
+
+The probe's optional `-PhysicalSpawnPoints` switch records primary native
+points and each observed unit's primary current/last-known references, including
+units retained after removal. Preview and temporary-preview groups do not pollute
+those position identities. Captured compaction records remain diagnostic native
+boundaries; complete room/train/action/turn checks independently recompute the
+full contexts, including this new state, rather than trusting recorded predictions.
+
+The schema-85 `full-battle-physical-spawn-points.mt2f` archive starts after the
+21-operation position setup and completes 18 card plays and six EndTurns at
+Pyre 80. Its 102 complete room contexts contain 17 physical removals and five
+cross-room moves. The 43.66-second native Instant run records 254 compaction
+boundaries. Initial and actual mid-battle roots pass in 16 parallel branches;
+complete room position comparisons pass in 32 branches. The archive is 26,962
+bytes with 4,408 unique nodes.
+
+`full-battle-physical-spawn-points-no-cards.mt2f` keeps the ordinary starting
+battle and plays no cards. Seven EndTurns finish at Pyre 49. Its 104 room
+contexts contain 13 physical removals and twelve cross-room moves, including
+the Pyre path; 233 native compaction boundaries are retained. The independent
+initial root matches in 16 branches and complete rooms match in 32 branches.
+The native Instant run takes 35.44 seconds. This archive is 18,096 bytes with
+2,735 unique nodes.
+
+Both native runs finish with zero failures, mismatches, unsupported transitions
+and pending observations. Audio is muted, original Boss/waves stay intact and
+original profile signatures are unchanged. Captures use game 2.2.1, MVID
+`8fb07b96-f4db-4d2b-884d-c00536d6ccf4`. The inventory contains 129 archives:
+120 battles and nine calibration suites.
+
+Native position capture is opt-in while the remaining physical paths are
+expanded. General unit-trigger spawning and retained first-born effect caches,
+death replacement/equipment transfer, revival, Horde merging and broader
+relic/room effects remain incomplete. Spell movement and special Boss paths
+still need position-aware native fixtures before broad physical coverage can
+be claimed. These two full battles establish the integrated paths above.
+
+The full 129-archive regression exits zero: all 120 battle archives and nine
+calibration suites pass, including two integrated battle-position checks, two
+standalone spawn-point checks, four missing-source checks and nine pooled
+summon checks. Unsupported transition counts remain zero. The complete archive
+inventory, sizes and SHA-256 values match the curated manifest.

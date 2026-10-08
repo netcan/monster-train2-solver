@@ -136,6 +136,16 @@ namespace MonsterTrain2Poju.Model
                 context = result.State!.Context;
                 if (Terminal(result.Outcome))
                     return new TrainCombatResult(Freeze(source, rooms, context), result.Outcome, results);
+                if (context?.SpawnPoints != null)
+                {
+                    foreach (CombatTeam team in new[] { CombatTeam.Enemy, CombatTeam.Player })
+                    {
+                        var centered = BattleSpawnPointModel.Apply(context.SpawnPoints!, WithContext(rooms[index], context), "Compact", team);
+                        if (!centered.Supported) return Unsupported(centered.Error!);
+                        context = context.WithSpawnPoints(centered.State!);
+                    }
+                    rooms[index] = WithContext(rooms[index], context);
+                }
             }
             return new TrainCombatResult(Freeze(source, rooms, context), RoomOutcome.Cleared, results);
         }
@@ -155,6 +165,7 @@ namespace MonsterTrain2Poju.Model
             var looped = new List<int>();
             var shifted = new List<(int Destination, int UnitId)>();
             var movementResults = new List<RoomCombatResult>();
+            CombatContext? movementContext = source.Context;
             // Reserve destinations from the top down; each enemy moves only once.
             for (int index = pyre; index >= 0; index--)
             {
@@ -183,12 +194,36 @@ namespace MonsterTrain2Poju.Model
                         destination = 0;
                     if (destination == index)
                     {
+                        if (movementContext?.SpawnPoints != null)
+                        {
+                            var reference = movementContext.SpawnPoints.Units.Single(unit => unit.UnitId == enemy.Id).Current;
+                            int empty = movementContext.SpawnPoints.FirstEmpty(index, CombatTeam.Enemy);
+                            if (reference != null && empty >= 0 && empty < reference.Index)
+                            {
+                                var scope = new RoomCombatState(index, source.Rooms[index].Deployment, rooms[index],
+                                    source.Rooms[index].ExternalInteractions, movementContext, source.Rooms[index].Preview);
+                                var shiftedPoint = BattleSpawnPointModel.Apply(movementContext.SpawnPoints, scope, "Set", CombatTeam.Enemy,
+                                    enemy.Id, target: new SpawnPointReference(index, CombatTeam.Enemy, empty));
+                                if (!shiftedPoint.Supported) return Unsupported(shiftedPoint.Error!);
+                                movementContext = movementContext.WithSpawnPoints(shiftedPoint.State!);
+                            }
+                        }
                         rooms[index][rooms[index].IndexOf(enemy)] = arriving;
                         continue;
                     }
                     while (destination <= pyre && rooms[destination].Count(unit => unit.Team == CombatTeam.Enemy)
                         >= source.EnemySlotsPerRoom) destination++;
                     if (destination > pyre) return Unsupported("No enemy spawn point remains in the train.");
+                    if (movementContext?.SpawnPoints != null)
+                    {
+                        int empty = movementContext.SpawnPoints.FirstEmpty(destination, CombatTeam.Enemy);
+                        var scope = new RoomCombatState(index, source.Rooms[index].Deployment, rooms[index],
+                            source.Rooms[index].ExternalInteractions, movementContext, source.Rooms[index].Preview);
+                        var movedPoint = BattleSpawnPointModel.Apply(movementContext.SpawnPoints, scope, "Set", CombatTeam.Enemy,
+                            enemy.Id, target: new SpawnPointReference(destination, CombatTeam.Enemy, empty));
+                        if (!movedPoint.Supported) return Unsupported(movedPoint.Error!);
+                        movementContext = movementContext.WithSpawnPoints(movedPoint.State!);
+                    }
                     rooms[index].Remove(enemy);
                     int playerIndex = rooms[destination].FindIndex(unit => unit.Team == CombatTeam.Player);
                     rooms[destination].Insert(playerIndex < 0 ? rooms[destination].Count : playerIndex, arriving);
@@ -198,8 +233,8 @@ namespace MonsterTrain2Poju.Model
                 }
             }
             RoomCombatState[] next = source.Rooms.Select((room, index) => new RoomCombatState(room.RoomIndex,
-                room.Deployment, rooms[index], room.ExternalInteractions, source.Context)).ToArray();
-            TrainCombatState moving = Freeze(source, next, source.Context);
+                room.Deployment, BattleSpawnPointModel.Order(movementContext?.SpawnPoints, index, rooms[index]), room.ExternalInteractions, movementContext)).ToArray();
+            TrainCombatState moving = Freeze(source, next, movementContext);
             if (looped.Count > 0)
             {
                 var callbacks = looped.Select(id => (id, "OnTrainRoomLoop")).Concat(looped.SelectMany(id =>

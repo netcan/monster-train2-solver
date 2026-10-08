@@ -6,6 +6,7 @@ param(
     [ValidateSet('Normal', 'Fast', 'Ultra', 'SuperUltra', 'Instant')]
     [string] $GameSpeed = 'Instant',
     [switch] $SpawnPoints,
+    [switch] $PhysicalSpawnPoints,
     [switch] $NumericUpgrades,
     [switch] $DynamicUpgrades,
     [switch] $SacrificeUpgrades,
@@ -176,6 +177,7 @@ $environment = @{
     MT2_PROBE_GAME_SPEED = $GameSpeed
     MT2_PROBE_STATUS_CALLBACKS = $(if ($HordeStatuses -or $StatusCallbacks) { '1' } else { '0' })
     MT2_PROBE_STATUS_CALLBACK_ACTIONS = $(if ($StatusCallbackActions) { '1' } else { '0' })
+    MT2_PROBE_PHYSICAL_SPAWNPOINTS = $(if ($PhysicalSpawnPoints) { '1' } else { '0' })
     MT2_PROBE_BINARY_CAPTURE = $(if ($BinaryCapture) { '1' } else { '0' })
     MT2_PROBE_CAPTURE_JSON = $(if ($CaptureJson) { '1' } else { '0' })
     MT2_PROBE_NO_TIMEOUT = '1'
@@ -814,6 +816,13 @@ if ($TriggerRepeats) {
         throw 'Requested native trigger repeat batches did not complete.'
     }
 }
+if ($PhysicalSpawnPoints) {
+    $physical = $trace.Stages[0].Before.Context.SpawnPoints
+    if ($null -eq $physical -or @($physical.Groups).Count -eq 0 -or @($trace.PhysicalCompactions).Count -eq 0 -or
+        @($trace.PhysicalCompactions | Where-Object { $null -ne $_.Error -or $null -eq $_.After }).Count -gt 0) {
+        throw 'Requested complete battle physical point state was not captured.'
+    }
+}
 if ($SpawnPoints) {
     $operations = @($trace.SpawnPointOperations)
     if ($operations.Count -ne 21 -or @($operations | Where-Object {
@@ -1014,6 +1023,8 @@ if ($EquipmentAbilities) {
     }
 }
 $result = [pscustomobject]@{
+    PhysicalSpawnPoints = $PhysicalSpawnPoints.IsPresent
+    PhysicalCompactions = @($trace.PhysicalCompactions).Count
     SpawnPointOperations = @($trace.SpawnPointOperations).Count
     PoolSummonSelections = @($trace.PoolSummonSelections).Count
     UnitBirths = @($trace.UnitBirths).Count

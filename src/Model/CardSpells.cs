@@ -661,6 +661,19 @@ namespace MonsterTrain2Poju.Model
             }
             if (target.Statuses.Any(status => status.Id == "immobile")) return Unchanged(state);
             var team = state.Units.Where(unit => unit.Team == target.Team).ToList();
+            if (state.Context?.SpawnPoints != null)
+            {
+                UnitSpawnPointState reference = state.Context.SpawnPoints.Units.Single(unit => unit.UnitId == target.Id);
+                if (reference.OuterBoss) return Unchanged(state);
+                if (reference.Current == null) return new RoomCombatResult(null, RoomOutcome.Unsupported, 0,
+                    new List<CombatEvent>(), "Floor rearrangement requires the target's physical point.");
+                var moved = BattleSpawnPointModel.Apply(state.Context.SpawnPoints, state, "Rearrange", target.Team,
+                    index: reference.Current.Index, targetIndex: effect.Value == 0 ? 0 : team.Count - 1);
+                if (!moved.Supported) return new RoomCombatResult(null, RoomOutcome.Unsupported, 0, new List<CombatEvent>(), moved.Error!);
+                var context = state.Context.WithSpawnPoints(moved.State!);
+                return Unchanged(new RoomCombatState(state.RoomIndex, state.Deployment,
+                    BattleSpawnPointModel.Order(context.SpawnPoints, state.RoomIndex, state.Units), state.ExternalInteractions, context, state.Preview));
+            }
             team.Remove(target); team.Insert(effect.Value == 0 ? 0 : team.Count, target);
             CombatUnit[] enemies = target.Team == CombatTeam.Enemy ? team.ToArray() : state.Units.Where(unit => unit.Team == CombatTeam.Enemy).ToArray();
             CombatUnit[] players = target.Team == CombatTeam.Player ? team.ToArray() : state.Units.Where(unit => unit.Team == CombatTeam.Player).ToArray();

@@ -19,6 +19,8 @@ namespace MonsterTrain2Poju.Model
     {
         public static string? Validate(CombatContext? context, IEnumerable<CombatUnit> units, int? outerNextUnitId = null)
         {
+            if (context?.SpawnPoints != null && BattleSpawnPointModel.Validate(context.SpawnPoints, context.NextUnitId) is string physicalError)
+                return physicalError;
             if (context?.NextUnitId is not int next) return null;
             if (next <= 0 || outerNextUnitId.HasValue && next != outerNextUnitId.Value)
                 return "Invalid or inconsistent shared unit identity counter.";

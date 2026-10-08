@@ -212,7 +212,7 @@ namespace MonsterTrain2Poju.Model
             context = new CombatContext(new CardCycleState(context.Cards.Hand.Where(item => item.InstanceId != card.InstanceId).ToArray(),
                 context.Cards.Draw, context.Cards.Discard, context.Cards.Rng, context.Cards.DrawModifier, context.Cards.ExternalInteractions, context.Cards.BonusDraw),
                 context.BattleRng, context.Gold, context.NextCardId, context.MaxHandSize, context.StatusRules, context.Statistics, context.CardInstances,
-                context.CardRegistry, context.AllScenarioBossesDead, context.NextAddedTemporaryUpgrades, context.OtherPiles, context.QueryFrame, context.KillCamActivated, context.MagicPower, context.IsolatedBattlePreview, context.EnergyState, context.RoomCapacities, context.AbilityCardCache, context.LastAbilityActivatorUnitId, context.PermanentlyDisabledAbilities, context.LastSpawnedUnitId, context.NextUnitId);
+                context.CardRegistry, context.AllScenarioBossesDead, context.NextAddedTemporaryUpgrades, context.OtherPiles, context.QueryFrame, context.KillCamActivated, context.MagicPower, context.IsolatedBattlePreview, context.EnergyState, context.RoomCapacities, context.AbilityCardCache, context.LastAbilityActivatorUnitId, context.PermanentlyDisabledAbilities, context.LastSpawnedUnitId, context.NextUnitId, context.SpawnPoints);
             target = new RoomCombatState(target.RoomIndex, target.Deployment, target.Units, target.ExternalInteractions, context, target.Preview);
             if (context.FindCard(card.InstanceId)?.PlayedRoomUnitIds != null)
             {
@@ -249,7 +249,11 @@ namespace MonsterTrain2Poju.Model
                     players.Sum(unit => (long)unit.Size) + legalSize >
                         (RoomCapacityModel.Maximum(context, action.RoomIndex, CombatTeam.Player) ?? targetRule.PlayerCapacity))
                     return Illegal("The room cannot accept this unit's size or another spawn slot.");
-                if (position < 0 || position > players.Length) return Illegal("Invalid summon position.");
+                if (context.SpawnPoints != null && context.SpawnPoints.Group(action.RoomIndex, CombatTeam.Player) == null)
+                    return Unsupported("Missing physical summon group.");
+                if (position < 0 || (context.SpawnPoints == null ? position > players.Length :
+                    position >= context.SpawnPoints.Group(action.RoomIndex, CombatTeam.Player)!.GroupCount))
+                    return Illegal("Invalid summon position.");
                 if (nextUnitId <= 0 || train.Rooms.SelectMany(room => room.Units).Any(unit => unit.Id >= nextUnitId))
                     return Unsupported("Invalid unit identity allocation.");
                 RoomCombatResult spawnTriggers;
@@ -271,7 +275,17 @@ namespace MonsterTrain2Poju.Model
                         template.Triggers, card.InstanceId, template.Size, template.StatusImmunities, template.Subtypes, template.Modifiers, template.IsBoss, template.LastAttackerId, template.StatusRegistry, template.EquipmentCards, template.NextTriggerId, template.Ability, template.StatusDictionary, template.AbilityRules, template.HordeDefinition, template.IsSpawning, template.SacrificeCardId, template.DeathState);
                     context = context.WithStatistics(context.Statistics?.Spawn(action.RoomIndex, template.Subtypes));
                     spawnedId = spawned.Id;
-                    var nextPlayers = players.ToList(); nextPlayers.Insert(position, spawned);
+                    var nextPlayers = players.ToList();
+                    if (context.SpawnPoints != null)
+                    {
+                        var scope = new RoomCombatState(target.RoomIndex, target.Deployment, target.Units, target.ExternalInteractions, context, target.Preview);
+                        var physical = BattleSpawnPointModel.Birth(context.SpawnPoints, scope, spawned, position, shift: true);
+                        if (!physical.Supported) return Unsupported(physical.Error!);
+                        context = context.WithSpawnPoints(physical.State!);
+                        nextPlayers.Add(spawned);
+                        nextPlayers = BattleSpawnPointModel.Order(context.SpawnPoints, target.RoomIndex, nextPlayers).ToList();
+                    }
+                    else nextPlayers.Insert(position, spawned);
                     var entered = new RoomCombatState(target.RoomIndex, target.Deployment,
                         target.Units.Where(unit => unit.Team == CombatTeam.Enemy).Concat(nextPlayers).ToArray(), target.ExternalInteractions, context, target.Preview);
                     IReadOnlyList<CombatStatus> initialStatuses = originalRule!.SpawnUnit!.StatusRegistry ?? originalRule.SpawnUnit.Statuses;
@@ -407,7 +421,7 @@ namespace MonsterTrain2Poju.Model
                 terminal ? playingInstance == null ? context.CardInstances : new[] { (context.FindCard(card.InstanceId) ?? playingInstance).OnDiscard(true, paidCost) } :
                 context.CardInstances?.Select(instance => instance.InstanceId == card.InstanceId
                     ? instance.OnDiscard(true, paidCost) : instance).ToArray(), context.CardRegistry, context.AllScenarioBossesDead, context.NextAddedTemporaryUpgrades,
-                context.OtherPiles == null ? null : piles, context.QueryFrame?.With(runningCombat: !terminal), context.KillCamActivated, context.MagicPower, context.IsolatedBattlePreview, context.EnergyState, context.RoomCapacities, context.AbilityCardCache, context.LastAbilityActivatorUnitId, context.PermanentlyDisabledAbilities, context.LastSpawnedUnitId, context.NextUnitId);
+                context.OtherPiles == null ? null : piles, context.QueryFrame?.With(runningCombat: !terminal), context.KillCamActivated, context.MagicPower, context.IsolatedBattlePreview, context.EnergyState, context.RoomCapacities, context.AbilityCardCache, context.LastAbilityActivatorUnitId, context.PermanentlyDisabledAbilities, context.LastSpawnedUnitId, context.NextUnitId, context.SpawnPoints);
             RoomCombatState[] rooms = train.Rooms.Select(room =>
             {
                 return new RoomCombatState(room.RoomIndex, room.Deployment, room.Units, room.ExternalInteractions, context, room.Preview);

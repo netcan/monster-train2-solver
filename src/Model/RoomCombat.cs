@@ -271,10 +271,11 @@ namespace MonsterTrain2Poju.Model
             internal int TriggerCount { get; }
             internal int LastSpawnedOverrideUnitId { get; }
             internal bool HarvestAfterDeath { get; }
+            internal bool CompletePhysicalRemovalAfterQueue { get; }
             internal QueuedCharacterTrigger(int roomIndex, CombatUnit unit, string kind = "OnDeath", bool returnSpawnerAfterQueue = false, bool deferUntilRemoval = false, int paramInt = 0,
                 CombatUnit? overrideTarget = null, int paramInt2 = 0, string? paramString = null, CombatUnit? dyingCharacter = null, bool canFireTriggers = true,
-                int triggerCount = 1, int lastSpawnedOverrideUnitId = 0, bool harvestAfterDeath = false)
-            { RoomIndex = roomIndex; Unit = unit; Kind = kind; ReturnSpawnerAfterQueue = returnSpawnerAfterQueue; DeferUntilRemoval = deferUntilRemoval; ParamInt = paramInt; OverrideTarget = overrideTarget; ParamInt2 = paramInt2; ParamString = paramString; DyingCharacter = dyingCharacter; CanFireTriggers = canFireTriggers; TriggerCount = triggerCount; LastSpawnedOverrideUnitId = lastSpawnedOverrideUnitId; HarvestAfterDeath = harvestAfterDeath; }
+                int triggerCount = 1, int lastSpawnedOverrideUnitId = 0, bool harvestAfterDeath = false, bool completePhysicalRemovalAfterQueue = false)
+            { RoomIndex = roomIndex; Unit = unit; Kind = kind; ReturnSpawnerAfterQueue = returnSpawnerAfterQueue; DeferUntilRemoval = deferUntilRemoval; ParamInt = paramInt; OverrideTarget = overrideTarget; ParamInt2 = paramInt2; ParamString = paramString; DyingCharacter = dyingCharacter; CanFireTriggers = canFireTriggers; TriggerCount = triggerCount; LastSpawnedOverrideUnitId = lastSpawnedOverrideUnitId; HarvestAfterDeath = harvestAfterDeath; CompletePhysicalRemovalAfterQueue = completePhysicalRemovalAfterQueue; }
         }
         private static readonly HashSet<string> KnownStatuses = new HashSet<string>(StringComparer.Ordinal)
         {
@@ -398,7 +399,7 @@ namespace MonsterTrain2Poju.Model
                 foreach (QueuedCharacterTrigger dead in removing)
                 {
                     if (!Fire(dead) || !Drain() || !Harvest(dead)) return false;
-                    if (dead.ReturnSpawnerAfterQueue && !returnSpawner(dead)) return false;
+                    if ((dead.ReturnSpawnerAfterQueue || dead.CompletePhysicalRemovalAfterQueue) && !returnSpawner(dead)) return false;
                 }
                 return true;
             }
@@ -1113,7 +1114,9 @@ namespace MonsterTrain2Poju.Model
 
             internal RoomCombatResult ReturnQueuedSpawner(CombatUnit unit)
             {
-                SettleDeadSpawner(new WorkingUnit(unit));
+                var removed = new WorkingUnit(unit);
+                SettleDeadSpawner(removed);
+                RemovePhysicalPoint(removed);
                 return Finish(RoomOutcome.Exchanged);
             }
 
@@ -1325,7 +1328,8 @@ namespace MonsterTrain2Poju.Model
                         target.Source.DeathState.IsBeingRemoved || !deferRemoval || sacrifice,
                         enqueueCharacterTrigger == null && target.Source.DeathState.HasStatisticsListener)));
                 if (enqueueCharacterTrigger != null) enqueueCharacterTrigger(new QueuedCharacterTrigger(source.RoomIndex, target.Freeze(),
-                    returnSpawnerAfterQueue: deferReturn, deferUntilRemoval: deferRemoval, harvestAfterDeath: !target.Despawned && !immediateHarvest));
+                    returnSpawnerAfterQueue: deferReturn, deferUntilRemoval: deferRemoval, harvestAfterDeath: !target.Despawned && !immediateHarvest,
+                    completePhysicalRemovalAfterQueue: deferRemoval && context?.SpawnPoints != null));
                 else
                 {
                     if (deferRemoval) deferredDamageDeaths.Add((target, deferReturn));
@@ -1337,7 +1341,15 @@ namespace MonsterTrain2Poju.Model
                     }
                 }
                 if (!source.Preview && !deferReturn && !DeferSpawner(target)) SettleDeadSpawner(target);
-                if (!deferRemoval) target.Removed = true;
+                if (!deferRemoval) { target.Removed = true; RemovePhysicalPoint(target); }
+            }
+
+            private void RemovePhysicalPoint(WorkingUnit unit)
+            {
+                if (context?.SpawnPoints == null) return;
+                var removed = BattleSpawnPointModel.Apply(context.SpawnPoints, CurrentRoom(), "Remove", unit.Source.Team, unit.Source.Id);
+                if (!removed.Supported) { unsupportedReason = removed.Error; return; }
+                context = context.WithSpawnPoints(removed.State!);
             }
 
             private void DispatchDeathStatistics(WorkingUnit? actor, WorkingUnit target, int sourceCardId, bool sacrifice)
@@ -1408,7 +1420,7 @@ namespace MonsterTrain2Poju.Model
                     context.NextCardId, context.MaxHandSize, context.StatusRules, context.Statistics,
                     context.CardInstances == null ? null : Array.Empty<CardInstanceState>(), context.CardRegistry, context.AllScenarioBossesDead,
                     context.NextAddedTemporaryUpgrades, context.OtherPiles?.Select(CardPileModel.Clear).ToArray(), context.QueryFrame,
-                    context.KillCamActivated.HasValue ? true : (bool?)null, context.MagicPower, context.IsolatedBattlePreview, context.EnergyState, context.RoomCapacities, context.AbilityCardCache, context.LastAbilityActivatorUnitId, context.PermanentlyDisabledAbilities, context.LastSpawnedUnitId, context.NextUnitId);
+                    context.KillCamActivated.HasValue ? true : (bool?)null, context.MagicPower, context.IsolatedBattlePreview, context.EnergyState, context.RoomCapacities, context.AbilityCardCache, context.LastAbilityActivatorUnitId, context.PermanentlyDisabledAbilities, context.LastSpawnedUnitId, context.NextUnitId, context.SpawnPoints);
             }
 
             private void PostCombat()
@@ -1483,6 +1495,7 @@ namespace MonsterTrain2Poju.Model
                     PhysicalHarvest(dead.Unit);
                     if (dead.Return) SettleDeadSpawner(dead.Unit);
                     dead.Unit.Removed = true;
+                    RemovePhysicalPoint(dead.Unit);
                     // HeroManager removal starts GameScreen.EndCombat, which cancels
                     // the combat coroutine after this boss's death callbacks. Later
                     // members of the already-marked batch never fire OnDeath. A played
@@ -1584,7 +1597,7 @@ namespace MonsterTrain2Poju.Model
                                 Store(retained.Fired(effects));
                                 if (remaining <= 0 && unit.Alive)
                                 {
-                                    unit.Despawned = true; unit.Health = 0; Emit("Despawn", unit, unit, 0);
+                                    unit.Despawned = true; unit.Health = 0; RemovePhysicalPoint(unit); Emit("Despawn", unit, unit, 0);
                                     if (!source.Preview && context?.Statistics != null && unit.Source.Team == CombatTeam.Player && !DeferSpawner(unit))
                                         context = context.WithStatistics(context.LiveStatistics!.Increment(unit.Source.SpawnerCardId, "TimesExhausted",
                                             requireTrackedCard: context.CardInstances?.Count == 0));
@@ -1597,7 +1610,7 @@ namespace MonsterTrain2Poju.Model
                                 int reward = GoldRewardModel.Adjust(effect.Value);
                                 context = new CombatContext(context!.Cards, context.BattleRng,
                                     Math.Max(0, checked(context.Gold + reward)), context.NextCardId, context.MaxHandSize, context.StatusRules, context.Statistics,
-                                    context.CardInstances, context.CardRegistry, context.AllScenarioBossesDead, context.NextAddedTemporaryUpgrades, context.OtherPiles, context.QueryFrame, context.KillCamActivated, context.MagicPower, context.IsolatedBattlePreview, context.EnergyState, context.RoomCapacities, context.AbilityCardCache, context.LastAbilityActivatorUnitId, context.PermanentlyDisabledAbilities, context.LastSpawnedUnitId, context.NextUnitId);
+                                    context.CardInstances, context.CardRegistry, context.AllScenarioBossesDead, context.NextAddedTemporaryUpgrades, context.OtherPiles, context.QueryFrame, context.KillCamActivated, context.MagicPower, context.IsolatedBattlePreview, context.EnergyState, context.RoomCapacities, context.AbilityCardCache, context.LastAbilityActivatorUnitId, context.PermanentlyDisabledAbilities, context.LastSpawnedUnitId, context.NextUnitId, context.SpawnPoints);
                                 Emit("Gold", unit, unit, reward);
                             }
                             else if (effect.Type == "CardEffectAddBattleCard" && !source.Preview && !battleWon && context != null && context.AllScenarioBossesDead != true &&

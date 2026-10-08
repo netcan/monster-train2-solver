@@ -72,14 +72,24 @@ namespace MonsterTrain2Poju.Model
             if (!allocated.Supported) return Unsupported(allocated.UnsupportedReason!);
             context = allocated.Context!;
             var players = source.Units.Where(unit => unit.Team == CombatTeam.Player).ToList();
-            if (position < 0 || position > players.Count) return Unsupported("Unit birth has an invalid insertion position.");
+            if (context.SpawnPoints == null && (position < 0 || position > players.Count))
+                return Unsupported("Unit birth has an invalid insertion position.");
             var spawned = new CombatUnit(allocated.UnitId, template.AssetKey, CombatTeam.Player, template.BaseAttack,
                 template.Health, template.MaxHealth, template.CanAttack, false, false, isCardless ? template.Statuses.Concat(new[] { cardlessStatus! }).ToArray() : template.Statuses, template.Triggers,
                 spawnerCardId, template.Size, template.StatusImmunities, template.Subtypes, template.Modifiers, template.IsBoss,
                 template.LastAttackerId, template.StatusRegistry, template.EquipmentCards, template.NextTriggerId,
                 template.Ability, template.StatusDictionary, template.AbilityRules, template.HordeDefinition, true,
                 template.SacrificeCardId, template.DeathState);
-            players.Insert(position, spawned);
+            if (context.SpawnPoints != null)
+            {
+                var scope = new RoomCombatState(source.RoomIndex, source.Deployment, source.Units, source.ExternalInteractions, context, source.Preview);
+                var physical = BattleSpawnPointModel.Birth(context.SpawnPoints, scope, spawned, position, shift: true);
+                if (!physical.Supported) return Unsupported(physical.Error!);
+                context = context.WithSpawnPoints(physical.State!);
+                players.Add(spawned);
+                players = BattleSpawnPointModel.Order(context.SpawnPoints, source.RoomIndex, players).ToList();
+            }
+            else players.Insert(position, spawned);
             context = context.WithStatistics(context.Statistics?.Spawn(source.RoomIndex, template.Subtypes));
             var entered = new RoomCombatState(source.RoomIndex, source.Deployment,
                 source.Units.Where(unit => unit.Team == CombatTeam.Enemy).Concat(players).ToArray(), source.ExternalInteractions, context, source.Preview);
