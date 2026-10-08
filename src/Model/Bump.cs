@@ -192,7 +192,13 @@ namespace MonsterTrain2Poju.Model
                     dispatched.Add(callback);
                     RoomCombatResult fired = RoomCombatModel.ApplyQueuedCharacterTrigger(state.Rooms[callback.RoomIndex], callback, queue.Add);
                     return Accept(fired);
-                }, callback => Accept(RoomCombatModel.SettleQueuedSpawnerAndCenter(state.Rooms[callback.RoomIndex], callback.Unit)));
+                }, callback => Accept(RoomCombatModel.SettleQueuedSpawnerAndCenter(state.Rooms[callback.RoomIndex], callback.Unit)),
+                () =>
+                {
+                    TrainCombatResult updated = EnchantmentWorldModel.UpdateAll(state, queue.Add);
+                    if (!updated.Supported) { error = updated.UnsupportedReason; return false; }
+                    state = updated.State!; return true;
+                });
                 if (okay) queue.Clear();
                 return okay;
             }

@@ -99,6 +99,7 @@ param(
     [switch] $PersistentEnchantmentDeaths,
     [switch] $PersistentEnchantmentRevivals,
     [switch] $PersistentEnchantmentRandomPools,
+    [switch] $PersistentEnchantmentUpgrades,
     [switch] $CharacterRemoval,
     [switch] $SettleDeathDissolves,
     [switch] $HarvestTriggers,
@@ -146,6 +147,10 @@ if ($EnchantmentWorld) { $EnchantmentCombat = $true }
 if ($PersistentEnchantmentRevivals) { $PersistentEnchantmentDeaths = $true }
 if ($PersistentEnchantmentDeaths) { $PersistentEnchantments = $true }
 if ($PersistentEnchantmentRandomPools) { $PersistentEnchantments = $true }
+if ($PersistentEnchantmentUpgrades) {
+    if ($PersistentEnchantmentDeaths) { throw 'Choose aura child upgrades or source death/revival.' }
+    $PersistentEnchantments = $true
+}
 if ($PersistentEnchantments) { $PhysicalSpawnPoints = $true }
 if ($Revival -and $TriggeredSummonsRevival) { throw 'Choose standalone revival or triggered summon revival.' }
 if ($TriggeredSummonsRevival) { $TriggeredSummonsEquipmentOwned = $true; $TriggeredSummonsDeath = $true }
@@ -236,7 +241,7 @@ if ($HeroCopy) { $environment['MT2_PROBE_MODIFIERS'] = 'hero-copy' }
 if ($SpawnEnchant) { $environment['MT2_PROBE_MODIFIERS'] = 'spawn-enchant' }
 if ($PersistentEnchantments) {
     $environment['MT2_PROBE_MODIFIERS'] = 'persistent-enchantment' + $(if ($PersistentEnchantmentRandomPools) { '-random' } else { '' }) +
-        $(if ($PersistentEnchantmentRevivals) { '-revivals' } elseif ($PersistentEnchantmentDeaths) { '-deaths' } else { '' })
+        $(if ($PersistentEnchantmentRevivals) { '-revivals' } elseif ($PersistentEnchantmentDeaths) { '-deaths' } elseif ($PersistentEnchantmentUpgrades) { '-upgrades' } else { '' })
 }
 if ($Sentry -or $SentryLethal) {
     $environment['MT2_PROBE_MODIFIERS'] = $(if ($SentryLethal) { 'sentry-lethal' } else { 'sentry' })

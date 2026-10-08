@@ -28,7 +28,8 @@ internal static class PersistentEnchantmentChecks
     {
         if (!fixture.TryGetProperty("ModifierScenario", out var scenario) ||
             scenario.GetString() is not ("persistent-enchantment" or "persistent-enchantment-deaths" or "persistent-enchantment-revivals" or
-                "persistent-enchantment-random" or "persistent-enchantment-random-deaths" or "persistent-enchantment-random-revivals")) return;
+                "persistent-enchantment-random" or "persistent-enchantment-random-deaths" or "persistent-enchantment-random-revivals" or
+                "persistent-enchantment-upgrades" or "persistent-enchantment-random-upgrades")) return;
         bool randomPools = scenario.GetString()!.StartsWith("persistent-enchantment-random", StringComparison.Ordinal);
         bool sourceDeaths = scenario.GetString()!.EndsWith("-deaths", StringComparison.Ordinal) || scenario.GetString()!.EndsWith("-revivals", StringComparison.Ordinal);
         Require(fixture.GetProperty("Schema").GetInt32() >= 103 &&
@@ -75,6 +76,7 @@ internal static class PersistentEnchantmentChecks
             entry.GetProperty("Before").Deserialize<BattleTurnState>()!.Spawn.Train.Context!.Gold),
             "The paid aura policy did not drain its status-change child effects.");
         if (randomPools) VerifyRandomCoverage(fixture, actions, turns, worlds);
+        if (scenario.GetString()!.EndsWith("-upgrades", StringComparison.Ordinal)) VerifyUpgradeChildren(actions, worlds);
         if (scenario.GetString() == "persistent-enchantment-random-revivals") VerifyRemovalSettlement(fixture, turns.Length);
         if (sourceDeaths)
         {
@@ -103,6 +105,49 @@ internal static class PersistentEnchantmentChecks
         }
         Console.WriteLine($"NATIVE-PERSISTENT-ENCHANTMENT-COVERAGE PASS: {actions.Length} paid actions, {turns.Length} EndTurns, " +
             "persistent bound sources, both teams, preview maps, retained destroyed targets and drained status children.");
+    }
+
+    private static void VerifyUpgradeChildren(FixtureValue[] actions, EnchantmentWorld[] worlds)
+    {
+        const string temporary = "ed1091ee-b111-4db1-b5e1-b69f15a50701";
+        const string permanent = "ed1091ee-b111-4db1-b5e1-b69f15a50702";
+        CombatUnit[] upgraded = worlds.SelectMany(Units).Where(unit =>
+            unit.Modifiers?.Upgrades.Any(upgrade => upgrade.DataId == permanent) == true).ToArray();
+        int[] owners = upgraded.Select(unit => unit.Id).Distinct().ToArray();
+        Require(owners.Length >= 2 && upgraded.All(unit => unit.BaseAttack == 10 && unit.MaxHealth == 33 &&
+            unit.Modifiers!.Upgrades.Count(upgrade => upgrade.DataId == permanent) == 1 &&
+            unit.Modifiers.Upgrades.All(upgrade => upgrade.DataId != temporary) &&
+            unit.Triggers.All(trigger => trigger.Origin?.UpgradeId != temporary) &&
+            unit.Triggers.Count(trigger => trigger.Origin?.UpgradeId == permanent) == 2 &&
+            unit.Triggers.Any(trigger => trigger.Kind == "OnStatusEffectChanged" && trigger.Once && trigger.HasTriggered &&
+                trigger.Effects.Count(effect => effect.UnitUpgrade != null) == 4) &&
+            unit.NextTriggerId >= 6 && unit.Triggers.All(trigger => trigger.StateId < unit.NextTriggerId) &&
+            unit.Triggers.Count < unit.NextTriggerId),
+            "Aura children lost repeated removal, once-only upgrades, actor stats, trigger origins or monotonic trigger allocation.");
+        Require(upgraded.Any(unit => unit.StatusRegistry?.Any(status => status.Id == "spikes" && status.Stacks == 0) == true) &&
+            upgraded.Any(unit => unit.Triggers.Any(trigger => trigger.Origin?.UpgradeId == permanent &&
+                trigger.Kind == "OnHit" && trigger.HasTriggered)),
+            "Removed temporary status definitions or the newly added combat trigger were not observed.");
+        var states = actions.Select(entry => entry.GetProperty("Actual").Deserialize<BattleTurnState>()!).ToArray();
+        Require(states.SelectMany(state => state.Spawn.Train.Context!.CardRegistry ?? Array.Empty<CardInstanceState>())
+            .Where(card => card.Permanent.Upgrades.Any(upgrade => upgrade.DataId == permanent))
+            .Select(card => card.InstanceId).Distinct().Count() >= 2 &&
+            states.All(state => (state.Spawn.Train.Context!.CardRegistry ?? Array.Empty<CardInstanceState>())
+                .All(card => card.Temporary.Upgrades.All(upgrade => upgrade.DataId != temporary) &&
+                    card.Permanent.Upgrades.Count(upgrade => upgrade.DataId == permanent) <= 1)),
+            "Aura child upgrades were not written to their source cards or left removed temporary/duplicate permanent modifiers.");
+        int removedTargets = actions.Count(entry =>
+        {
+            int target = entry.GetProperty("Action").GetProperty("TargetUnitId").GetInt32();
+            BattleTurnState before = entry.GetProperty("Before").Deserialize<BattleTurnState>()!;
+            BattleTurnState after = entry.GetProperty("Actual").Deserialize<BattleTurnState>()!;
+            return before.Spawn.Train.Rooms.SelectMany(room => room.Units).Any(unit => unit.Id == target && unit.Health > 0) &&
+                after.Spawn.Train.Context!.Enchantments!.RetainedUnits.Any(actor => actor.Unit.Id == target &&
+                    actor.Unit.Health == 0 && actor.Unit.DeathState?.IsDestroyed == true && actor.RoomIndex == -1);
+        });
+        Require(removedTargets > 0, "The aura child oracle did not retain a spell-killed target through queued physical removal.");
+        Console.WriteLine($"NATIVE-PERSISTENT-ENCHANTMENT-UPGRADE-COVERAGE PASS: {owners.Length} once-upgraded actors, " +
+            $"repeated temporary removal, source card writeback, trigger identities/combat callbacks and {removedTargets} retained spell deaths.");
     }
 
     private static void VerifyRandomCoverage(FixtureValue fixture, FixtureValue[] actions, FixtureValue[] turns, EnchantmentWorld[] worlds)

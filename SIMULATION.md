@@ -6152,3 +6152,58 @@ full158 regression and affected historical aura policies remain the baseline.
 The four-difference unsynchronized captures and destruction-stage prototype stay
 excluded. Broader aura children, Horde effects, room/relic/control interactions,
 special Boss/card mechanics and the complete simulator/optimal solver remain work.
+
+### Actor and source-card upgrades from persistent aura callbacks
+
+The paid persistent aura policy now covers OnStatusEffectChanged children that
+change actors, source cards and trigger lists. Each Steward has a once-only child
+which adds the same temporary damage/health/spikes upgrade twice, removes both
+copies, then applies a permanent damage/health/regen upgrade. Temporary upgrades
+add attributed status-change triggers; removal removes both trigger objects.
+The permanent upgrade adds status-change and OnHit gold children. Native preview
+does not add or remove these trigger objects, while primary state preserves their
+origins, monotonic IDs and once-only flags. No scenario operations run after the
+initial preparation; original Boss/waves and the ordinary paid policy remain.
+
+Two independent native battles prove four upgraded actors at base attack 10 and
+maximum health 33, retained zero-stack spikes definitions, two persistent child
+triggers per actor, removed temporary source-card upgrades and exactly one
+permanent source-card upgrade. Both win at Pyre 80 after fifteen paid plays/five
+EndTurns. Thirty-nine room stages, nine train phases, seven spawns and nine card
+cycles match. Initial/middle continuous policies and sixteen parallel branches
+match through the terminal result and preserve their parents. The random version
+selects all armor 2/regen 1/buff 1 entries and has 58 isolated native previews with
+both original RNG streams restored. Native captures report zero differences,
+failures, unsupported paths or pending records; original profile/log signatures
+remain unchanged. Muted Instant capture times are 61.22/56.38 seconds.
+
+This coverage exposed two omissions when a played spell kills a target retained
+by an aura map. Returning its queued spawner changed its physical point but lost
+its destruction flag from the shared world. The completed target now stays in
+the room engine's retained actors so Finish synchronizes its full state. Native
+RemoveDeadCharacters also calls HandleRoomUnitOrderPossiblyChanged once after
+each removal batch, before draining the resulting trigger queue. Shared queue
+drainers now have an explicit batch completion callback; all production callers
+refresh automatic auras there and append child callbacks to the same queue. The
+random battle previously missed two Battle RNG draws at its lethal spell; both
+draws and cached aura status now match. Primary/preview caches and destruction
+flags remain part of the complete comparison.
+
+The curated native binaries are byte-identical to their successful captures:
+
+| Fixture | Bytes / nodes | Paid plays / EndTurns / Pyre |
+| --- | --- | --- |
+| full-battle-persistent-enchantment-upgrades.mt2f | 27,301 / 4,541 | 15 / 5 / 80 |
+| full-battle-persistent-enchantment-random-upgrades.mt2f | 30,314 / 4,970 | 15 / 5 / 80 |
+
+Both have no text source or JSON companion; hashes are recorded in manifest.tsv.
+Inventory is 163 archives: 149 battles and fourteen calibrations. The rebuilt
+model passes the new policies, the six historical persistent-aura policies and
+all fourteen calibrations/pure checks. The complete 163-archive regression exits
+zero: all 149 battle suites, fourteen calibrations and 145 continuous paid policy
+chains pass. All archive sizes/hashes, inventory, native binary provenance,
+PowerShell syntax and whitespace checks pass; the probe builds without warnings
+or errors.
+Rejected diagnostic captures are not curated. Summon/copy children, Horde aura
+effects, broader room/relic/control interactions, special Boss/card mechanics
+and the complete simulator/optimal solver remain work.

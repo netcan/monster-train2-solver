@@ -10,11 +10,13 @@ namespace MonsterTrain2Poju.Probe
     internal static class EnchantmentBattleScenario
     {
         internal static bool Prepared;
+        internal static bool ChildUpgrades => (Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") ?? "").EndsWith("-upgrades", StringComparison.Ordinal);
         internal static bool RandomPools => (Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") ?? "").StartsWith("persistent-enchantment-random", StringComparison.Ordinal);
         internal static bool SourceRevivals => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == "persistent-enchantment-revivals" || Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == "persistent-enchantment-random-revivals";
         internal static bool SourceDeaths => SourceRevivals || Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == "persistent-enchantment-deaths" || Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == "persistent-enchantment-random-deaths";
         internal static bool IsScenario(string scenario) => scenario == "persistent-enchantment" || scenario == "persistent-enchantment-deaths" || scenario == "persistent-enchantment-revivals" ||
-            scenario == "persistent-enchantment-random" || scenario == "persistent-enchantment-random-deaths" || scenario == "persistent-enchantment-random-revivals";
+            scenario == "persistent-enchantment-random" || scenario == "persistent-enchantment-random-deaths" || scenario == "persistent-enchantment-random-revivals" ||
+            scenario == "persistent-enchantment-upgrades" || scenario == "persistent-enchantment-random-upgrades";
         private static readonly Dictionary<int, (CharacterState Native, int Room)> observed = new Dictionary<int, (CharacterState, int)>();
         internal static void Prepare(AllGameManagers managers, ManualLogSource log)
         {
@@ -30,6 +32,7 @@ namespace MonsterTrain2Poju.Probe
                 var triggers = new List<CharacterTriggerData>();
                 CharacterTriggerData changed = HealingScenario.HealGold(1, false, true);
                 Set(changed, "trigger", CharacterTriggerData.Trigger.OnStatusEffectChanged); triggers.Add(changed);
+                if (ChildUpgrades) triggers.Add(UpgradeChild());
                 if (data.GetID() == sourceCard)
                 {
                     if (SourceRevivals) Set(unit, "startingStatusEffects", new[] { new StatusEffectStackData { statusId = "undying", count = 2 } });
@@ -68,7 +71,38 @@ namespace MonsterTrain2Poju.Probe
                 foreach (CardState card in owned.Where(card => card.GetCardDataID() == data.GetID())) card.Setup(data, save);
             }
             Prepared = true; Set(managers.GetCombatManager()!, "combatStateChanged", true);
-            log.LogInfo("PERSISTENT-ENCHANTMENT-PREPARED paid Steward aura on both teams, status callbacks, unchanged original Boss/waves; sourceDeaths=" + SourceDeaths + " sourceRevivals=" + SourceRevivals + " randomPools=" + RandomPools);
+            log.LogInfo("PERSISTENT-ENCHANTMENT-PREPARED paid Steward aura on both teams, status callbacks, unchanged original Boss/waves; sourceDeaths=" + SourceDeaths + " sourceRevivals=" + SourceRevivals + " randomPools=" + RandomPools + " childUpgrades=" + ChildUpgrades);
+        }
+        private static CharacterTriggerData UpgradeChild()
+        {
+            CardUpgradeData temporary = DynamicUpgradeScenario.Upgrade("PojuAuraTemporaryChild",
+                "ed1091ee-b111-4db1-b5e1-b69f15a50701", 1, 1, 0, 0, "spikes", 1);
+            CardUpgradeData permanent = DynamicUpgradeScenario.Upgrade("PojuAuraPermanentChild",
+                "ed1091ee-b111-4db1-b5e1-b69f15a50702", 2, 3, 0, 0, "regen", 1);
+            CharacterTriggerData temporaryChanged = HealingScenario.HealGold(2, false, true);
+            Set(temporaryChanged, "trigger", CharacterTriggerData.Trigger.OnStatusEffectChanged);
+            temporary.GetCharacterTriggerUpgrades().Add(temporaryChanged);
+            CharacterTriggerData permanentChanged = HealingScenario.HealGold(4, false, true);
+            Set(permanentChanged, "trigger", CharacterTriggerData.Trigger.OnStatusEffectChanged);
+            permanent.GetCharacterTriggerUpgrades().Add(permanentChanged);
+            CharacterTriggerData hit = HealingScenario.HealGold(3, false, true);
+            Set(hit, "trigger", CharacterTriggerData.Trigger.OnHit);
+            permanent.GetCharacterTriggerUpgrades().Add(hit);
+            CardEffectData Effect(string type, CardUpgradeData upgrade, UnitUpgradeLifetime lifetime)
+            {
+                var effect = new CardEffectData(type, null!, Team.Type.Monsters);
+                effect.Cheat_SetTargetMode(TargetMode.Self);
+                Set(effect, "paramCardUpgradeData", upgrade); Set(effect, "additionalParamInt1", (int)lifetime);
+                return effect;
+            }
+            CharacterTriggerData child = HealingScenario.HealGold(0, true, true);
+            Set(child, "trigger", CharacterTriggerData.Trigger.OnStatusEffectChanged);
+            Set(child, "effects", new List<CardEffectData> {
+                Effect("CardEffectAddTempCardUpgradeToUnits", temporary, UnitUpgradeLifetime.TemporaryUntilEndOfBattle),
+                Effect("CardEffectAddTempCardUpgradeToUnits", temporary, UnitUpgradeLifetime.TemporaryUntilEndOfBattle),
+                Effect("CardEffectRemoveTempUpgradeFromUnit", temporary, UnitUpgradeLifetime.TemporaryUntilEndOfBattle),
+                Effect("CardEffectAddCardUpgradeToUnits", permanent, UnitUpgradeLifetime.Permanent) });
+            return child;
         }
         internal static EnchantmentWorld CaptureWorld(FullBattleTrace trace)
         {

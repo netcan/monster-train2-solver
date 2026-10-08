@@ -101,7 +101,7 @@ namespace MonsterTrain2Poju.Model
             source = Rebase(source, allowUpdates: allow);
             return allow ? UpdateAll(source) : new TrainCombatResult(source, RoomOutcome.Exchanged, Array.Empty<RoomCombatResult>());
         }
-        internal static TrainCombatResult UpdateAll(TrainCombatState source)
+        internal static TrainCombatResult UpdateAll(TrainCombatState source, Action<RoomCombatModel.QueuedCharacterTrigger>? enqueueCallback = null)
         {
             if (source.Context?.Enchantments?.AutomaticLifecycle != true)
                 return new TrainCombatResult(source, RoomOutcome.Exchanged, Array.Empty<RoomCombatResult>());
@@ -111,7 +111,22 @@ namespace MonsterTrain2Poju.Model
             CombatContext context = updated.State!.Context!;
             var train = new TrainCombatState(context.Enchantments!.Rooms.Select(room => Room(room, context)).ToArray(), source.Movement,
                 source.EnemySlotsPerRoom, context);
+            if (enqueueCallback != null)
+            {
+                foreach (RoomCombatModel.QueuedCharacterTrigger callback in updated.PendingCallbacks) enqueueCallback(callback);
+                return new TrainCombatResult(train, RoomOutcome.Exchanged, new[] { updated });
+            }
             return TrainCombatModel.ApplyCharacterQueue(train, updated.PendingCallbacks.ToList());
+        }
+
+        internal static RoomCombatResult CompleteQueuedRemovals(RoomCombatState source, Action<RoomCombatModel.QueuedCharacterTrigger> enqueueCallback)
+        {
+            if (source.Context?.Enchantments?.AutomaticLifecycle != true)
+                return new RoomCombatResult(source, RoomOutcome.Exchanged, 0, new List<CombatEvent>());
+            RoomCombatResult updated = Update(source);
+            if (updated.Supported)
+                foreach (RoomCombatModel.QueuedCharacterTrigger callback in updated.PendingCallbacks) enqueueCallback(callback);
+            return updated;
         }
 
         internal static RoomCombatResult Update(RoomCombatState source, int? onlySourceId = null)

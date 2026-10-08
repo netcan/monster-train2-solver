@@ -368,13 +368,17 @@ namespace MonsterTrain2Poju.Model
             {
                 result = SettleQueuedSpawner(result.State!, queued.Unit);
                 return result.Supported;
+            }, () =>
+            {
+                result = EnchantmentWorldModel.CompleteQueuedRemovals(result.State!, queue.Add);
+                return result.Supported;
             });
             if (!drained) return result;
             return new RoomCombatResult(result.State, outcome, 0, events);
         }
 
         internal static bool DrainCharacterQueue(List<QueuedCharacterTrigger> queue, Func<QueuedCharacterTrigger, bool> fire,
-            Func<QueuedCharacterTrigger, bool> returnSpawner)
+            Func<QueuedCharacterTrigger, bool> returnSpawner, Func<bool> afterRemovalBatch)
         {
             int next = 0;
             var pending = new List<QueuedCharacterTrigger>();
@@ -430,6 +434,9 @@ namespace MonsterTrain2Poju.Model
                     if (!Fire(dead) || !Drain() || !Harvest(dead)) return false;
                     if ((dead.ReturnSpawnerAfterQueue || dead.CompletePhysicalRemovalAfterQueue) && !returnSpawner(dead)) return false;
                 }
+                // RemoveDeadCharacters calls HandleRoomUnitOrderPossiblyChanged once
+                // after the complete batch, then drains its newly queued callbacks.
+                if (removing.Length > 0 && (!afterRemovalBatch() || !Drain())) return false;
                 return true;
             }
             bool Harvest(QueuedCharacterTrigger dead)
@@ -1301,7 +1308,12 @@ namespace MonsterTrain2Poju.Model
 
             internal RoomCombatResult ReturnQueuedSpawner(CombatUnit unit, bool center = false)
             {
-                var removed = new WorkingUnit(unit);
+                // Death queues retain their target after it leaves the live room.
+                // Keep the completed removal in the shared aura world as well as
+                // the physical point; otherwise a later callback sees its old flags.
+                WorkingUnit? removed = units.FirstOrDefault(actor => actor.Source.Id == unit.Id);
+                if (removed == null)
+                { removed = new WorkingUnit(unit) { InRoom = false }; units.Add(removed); }
                 SettleDeadSpawner(removed);
                 bool ownedPoint = context?.SpawnPoints?.Units.FirstOrDefault(point => point.UnitId == unit.Id)?.Current != null;
                 RemovePhysicalPoint(removed);

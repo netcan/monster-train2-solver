@@ -241,6 +241,13 @@ namespace MonsterTrain2Poju.Model
                     if (!result.Supported) { error = result.UnsupportedReason; return false; }
                     ImportRoom(result.State!);
                     return true;
+                }, () =>
+                {
+                    RoomCombatState original = source.Train.Rooms[0];
+                    RoomCombatResult updated = EnchantmentWorldModel.CompleteQueuedRemovals(new RoomCombatState(original.RoomIndex,
+                        original.Deployment, rooms[0], original.ExternalInteractions, context, original.Preview), callbacks.Add);
+                    if (!updated.Supported) { error = updated.UnsupportedReason; return false; }
+                    ImportRoom(updated.State!); return true;
                 });
                 callbacks.Clear();
                 return drained ? null : error;

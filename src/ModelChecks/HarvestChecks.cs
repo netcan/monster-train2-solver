@@ -38,7 +38,8 @@ internal static class HarvestChecks
         {
             if (queued.Unit.Triggers.Any(trigger => trigger.Kind == queued.Kind)) order.Add(queued.Kind + ":" + queued.Unit.Id);
             external = RoomCombatModel.ApplyQueuedCharacterTrigger(external.State!, queued, queue.Add); return external.Supported;
-        }, _ => true), "External physical harvest unsupported: " + external.UnsupportedReason);
+        }, _ => true, () => { external = EnchantmentWorldModel.CompleteQueuedRemovals(external.State!, queue.Add); return external.Supported; }),
+            "External physical harvest unsupported: " + external.UnsupportedReason);
         Require(external.State!.Context!.Gold == 240 && order.SequenceEqual([
             "OnDeath:1", "OnAnyMonsterDeathOnFloor:2", "OnAnyMonsterDeathOnFloor:3", "OnAnyUnitDeathOnFloor:2", "OnAnyUnitDeathOnFloor:3"]),
             "External death routing lost retained children or player-first drained groups.");
@@ -48,7 +49,8 @@ internal static class HarvestChecks
         Require(RoomCombatModel.DrainCharacterQueue(queue, queued =>
         {
             external = RoomCombatModel.ApplyQueuedCharacterTrigger(external.State!, queued, queue.Add); return external.Supported;
-        }, _ => true), "Deferred physical harvest unsupported: " + external.UnsupportedReason);
+        }, _ => true, () => { external = EnchantmentWorldModel.CompleteQueuedRemovals(external.State!, queue.Add); return external.Supported; }),
+            "Deferred physical harvest unsupported: " + external.UnsupportedReason);
         Compare(external.State, result.State, "local/deferred removal harvest parity");
         string expected = Serialize(result.State);
         Parallel.For(0, 32, _ => Require(Serialize(UnitHealthModel.Apply(root, 1, 20, debuff: true).State) == expected,

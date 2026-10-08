@@ -81,7 +81,8 @@ internal static class HordeDeathChecks
             Require(RoomCombatModel.DrainCharacterQueue(queue, queued =>
             {
                 result = RoomCombatModel.ApplyQueuedCharacterTrigger(result.State!, queued, queue.Add); predictedDispatches.AddRange(result.Dispatches); return result.Supported;
-            }, queued => { result = RoomCombatModel.SettleQueuedSpawner(result.State!, queued.Unit); return result.Supported; }),
+            }, queued => { result = RoomCombatModel.SettleQueuedSpawner(result.State!, queued.Unit); return result.Supported; },
+                () => { result = EnchantmentWorldModel.CompleteQueuedRemovals(result.State!, queue.Add); return result.Supported; }),
                 "Queued player sacrifice unsupported: " + result.UnsupportedReason);
             corpse = queue.Last(item => item.Unit.Id == actorId).Unit;
         }

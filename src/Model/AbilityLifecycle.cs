@@ -174,6 +174,10 @@ namespace MonsterTrain2Poju.Model
                 {
                     result = RoomCombatModel.SettleQueuedSpawner(result.State!, queued.Unit);
                     return result.Supported;
+                }, () =>
+                {
+                    result = EnchantmentWorldModel.CompleteQueuedRemovals(result.State!, callbacks.Add);
+                    return result.Supported;
                 });
                 if (drained) { state = result.State!; callbacks.Clear(); }
                 return drained;

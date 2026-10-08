@@ -146,6 +146,11 @@ namespace MonsterTrain2Poju.Model
                     if (!returned.Supported) { error = returned.UnsupportedReason; return false; }
                     state = ReplaceRoom(state, RestoreUnfinished(returned)); events.AddRange(returned.Events);
                     return true;
+                }, () =>
+                {
+                    TrainCombatResult updated = EnchantmentWorldModel.UpdateAll(state, queue.Add);
+                    if (!updated.Supported) { error = updated.UnsupportedReason; return false; }
+                    state = updated.State!; return true;
                 });
                 return new RoomCombatResult(drained ? state.Rooms.Single(room => room.RoomIndex == roomIndex) : null,
                     drained ? outcome : RoomOutcome.Unsupported, 0, events, error);
@@ -542,6 +547,11 @@ namespace MonsterTrain2Poju.Model
                         RoomCombatModel.SettleQueuedSpawner(room, queued.Unit);
                     if (!returned.Supported) { callbackError = returned.UnsupportedReason; return false; }
                     state = ReplaceRoom(state, returned.State!); return true;
+                }, () =>
+                {
+                    TrainCombatResult updated = EnchantmentWorldModel.UpdateAll(state, callbacks.Add);
+                    if (!updated.Supported) { callbackError = updated.UnsupportedReason; return false; }
+                    state = updated.State!; return true;
                 });
                 callbacks.Clear();
                 if (!drained) routingError = callbackError ?? "Status callback queue failed.";

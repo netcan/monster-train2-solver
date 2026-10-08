@@ -165,6 +165,12 @@ namespace MonsterTrain2Poju.Model
                 if (!result.Supported) { queueError = result.UnsupportedReason; return false; }
                 rooms[queued.RoomIndex] = result.State!; context = result.State!.Context; results.Add(result);
                 return true;
+            }, () =>
+            {
+                TrainCombatResult updated = EnchantmentWorldModel.UpdateAll(Freeze(source, rooms, context), queue.Add);
+                if (!updated.Supported) { queueError = updated.UnsupportedReason; return false; }
+                rooms = updated.State!.Rooms.ToArray(); context = updated.State.Context; results.AddRange(updated.RoomResults);
+                return true;
             });
             if (!drained) return Unsupported(queueError ?? "Character removal queue failed.");
             return new TrainCombatResult(Freeze(source, rooms, context), outcome, results);
@@ -391,6 +397,12 @@ namespace MonsterTrain2Poju.Model
                     : RoomCombatModel.SettleQueuedSpawner(WithContext(rooms[queued.RoomIndex], context), queued.Unit);
                 if (!returned.Supported) { error = returned.UnsupportedReason; return false; }
                 rooms[queued.RoomIndex] = returned.State!; context = returned.State!.Context; results.Add(returned); return true;
+            }, () =>
+            {
+                TrainCombatResult updated = EnchantmentWorldModel.UpdateAll(Freeze(source, rooms, context), queue.Add);
+                if (!updated.Supported) { error = updated.UnsupportedReason; return false; }
+                rooms = updated.State!.Rooms.ToArray(); context = updated.State.Context; results.AddRange(updated.RoomResults);
+                return true;
             });
             return drained ? new TrainCombatResult(Freeze(source, rooms, context), outcome, results) : Unsupported(error ?? "Movement callback queue failed.");
         }

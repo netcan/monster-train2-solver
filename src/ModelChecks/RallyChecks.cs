@@ -87,7 +87,8 @@ internal static class RallyChecks
                 dispatches.Add((queued.Unit.Id, queued.TriggerCount, queued.LastSpawnedOverrideUnitId));
             result = RoomCombatModel.ApplyQueuedCharacterTrigger(result.State!, queued, callbacks.Add);
             return result.Supported;
-        }, queued => { result = RoomCombatModel.SettleQueuedSpawner(result.State!, queued.Unit); return result.Supported; }),
+        }, queued => { result = RoomCombatModel.SettleQueuedSpawner(result.State!, queued.Unit); return result.Supported; },
+            () => { result = EnchantmentWorldModel.CompleteQueuedRemovals(result.State!, callbacks.Add); return result.Supported; }),
             label + " queue unsupported: " + result.UnsupportedReason);
         Compare(result.State, sample.GetProperty("After").Deserialize<RoomCombatState>(), label + " drain");
         var nativeDispatches = triggers.Where(item => Label(item) == label).Select(item =>

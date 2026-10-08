@@ -1118,3 +1118,30 @@ archives: 147 battles/fourteen calibrations. The new settled battle and all
 fourteen calibrations/pure checks pass with the final rebuild. A combined161 run is
 not claimed; the preceding full158 and affected historical battles provide the
 baseline. Rejected unsynchronized revival battles/prototypes remain excluded.
+
+full-battle-persistent-enchantment-upgrades.mt2f and
+full-battle-persistent-enchantment-random-upgrades.mt2f cover four actors whose
+aura status-change callbacks add the same temporary stat/status/trigger upgrade
+twice, remove both copies, then add one permanent upgrade with status-change and
+OnHit children. Full states prove actor stats, attributed trigger removal,
+monotonic trigger IDs, retained zero-stack definitions and source-card lifetimes.
+No setup operations run after preparation; fifteen paid plays/five EndTurns win
+at Pyre 80 with 39 room stages, nine train phases, seven spawns and nine cycles.
+Initial/middle policies and sixteen immutable branches match. The random scene
+selects all three aura pool entries and records 58 isolated native previews.
+
+The model now retains completed queued spell deaths in its shared aura world,
+then performs the native once-per-removal-batch aura update and drains its child
+callbacks through the existing queue. Complete comparisons include destruction
+flags and both Battle/BattleTest streams; the previously missing two random draws
+at the lethal spell are restored. Successful muted Instant captures take
+61.22/56.38 seconds with zero differences/failures/unsupported/pending records and
+unchanged original profile/log signatures. Rejected diagnostics are excluded.
+
+The byte-identical native archives have 27,301 bytes/4,541 nodes and
+30,314 bytes/4,970 nodes, without text sources or JSON companions. Inventory is
+163 archives: 149 battles/fourteen calibrations. New and historical aura policies,
+all fourteen calibrations and pure checks pass with the rebuilt model; the
+complete 163-archive regression exits zero with 149 battle suites, fourteen
+calibrations and 145 continuous paid policy chains. All inventory sizes/hashes,
+byte-identical native provenance, PowerShell syntax and whitespace checks pass.
