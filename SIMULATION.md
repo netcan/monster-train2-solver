@@ -4290,7 +4290,7 @@ unchanged original profiles.
 
 This increment covers repeated ordinary primary units with copied sources.
 Additional-character/pool selection, null or fresh fallback sources, ignored
-card upgrades, extra spawn upgrades, death replacement, equipment transfer,
+card upgrades, death replacement, equipment transfer,
 active AfterSpawnEnchant effects and room/relic spawn modifiers remain outside
 this verified scope. Unsupported variants still reject transitions. The
 whole-battle objective remains open.
@@ -4303,3 +4303,75 @@ curated inventory and SHA-256 manifest match. Probe builds with zero warnings
 and errors; ModelChecks keeps its twelve existing nullable warnings. Both
 changed PowerShell scripts parse, both summon selectors return one exact
 scenario value, and git diff --check passes.
+
+
+## Extra spawn upgrades after birth, schema 79
+
+`CardEffectSpawnMonster` awaits `CreateMonsterState` and its birth/Rally
+callbacks before applying `ParamCardUpgradeData` through the direct character
+API. It then adds the same descriptor to the source card's temporary modifiers
+outside preview, including when the unit API rejects a unique duplicate or a
+capacity-restricted size increase. The direct API does not perform this source
+write itself. Later births copy the original resolving card's current state,
+so they inherit its first extra upgrade before receiving their own extra
+upgrade. Their detached copy's subsequent source write does not modify the
+original card.
+
+`SpawnUpgradeModel` represents those two boundaries using the existing direct
+unit-upgrade engine and a registry-aware temporary source write. Repeated
+summons invoke it after each completed birth and before copying the next source.
+The source write preserves history, room cache, traits and ownership. It uses
+native unique-ID suppression independently of the unit's rejection result.
+Unknown fresh/null source creation is still rejected by the repeated-summon
+entry point rather than being approximated.
+
+The probe records full states before direct application, after the direct API
+returns, and immediately after `CardStateModifiers.AddUpgrade` returns. The
+observer excludes `fromSpawn` applications, so inherited starting upgrades are
+not mistaken for the effect's later extra application. Independent checks
+recompute both complete transitions without consulting later native states,
+require the actual source insertion/rejection result, preserve the parent and
+repeat all birth/copy/extra/Rally mechanisms in 32 parallel branches. Entire
+policies also compare from initial and actual mid-battle roots in 16 branches.
+
+All three scenes retain the original Boss (125 HP / 7 attack) and waves, two
+real upgraded Steward cards, four intended births per card and the previous
+live source growth, clone flags and cardless callbacks. Their extra upgrade
+adds 2 attack, 3 health and 2 armor. The unique variant sets `IsUnique`; the
+restricted variant also adds one size and restricts that increase to room
+capacity. Ordinary and unique scenes still exercise seven-slot truncation.
+Restricted growth makes the second real card use a different floor, so that
+scene proves capacity failure rather than slot truncation; the other fixtures
+retain the slot requirement.
+
+| Native archive | Bytes / unique nodes | Extra applications / successful source writes | Plays / EndTurns | Native seconds |
+| --- | --- | --- | --- | --- |
+| `full-battle-multi-summon-upgrade.mt2f` | 25,049 / 3,911 | 7 / 7 | 15 / 5 | 49.14 |
+| `full-battle-multi-summon-upgrade-unique.mt2f` | 24,729 / 3,857 | 7 / 2 | 15 / 5 | 50.74 |
+| `full-battle-multi-summon-upgrade-restricted.mt2f` | 23,757 / 3,672 | 8 / 8 | 14 / 5 | 50.51 |
+
+The restricted scene records four accepted unit size increases and four
+rejected increases whose source writes still succeed. The unique scene records
+five duplicate source rejections after later births inherit the unique upgrade.
+All three win at Pyre 80, with CaptureFailures/Mismatches/Unsupported/Pending
+all zero. They are direct binary captures from game 2.2.1, module MVID
+`8fb07b96-f4db-4d2b-884d-c00536d6ccf4`, run muted at Instant speed in fresh
+isolated profiles. Original profile signatures remain unchanged. Their archive
+SHA-256 values are recorded in `tests/fixtures/manifest.tsv`; no source JSON is
+needed. The curated inventory now has 113 archives (104 battles plus nine
+calibrations).
+
+This extends the previous ordinary copied-source summon path. Fresh fallback
+sources, pool/additional-character selection, lethal/removed birth targets,
+death replacement, equipment transfer, active AfterSpawnEnchant and room/relic
+spawn modifiers still require native integration. Broader battle coverage,
+complete state-based pruning and a universal optimal solver remain open.
+
+
+The final full 113-archive regression exits zero: all 104 battle archives and
+nine calibrations pass, with no unsupported state-transition checks. The
+inventory and archive SHA-256 manifest agree. The three new complete policies
+and their 32-branch birth/copy/extra/Rally checks also pass within this full run.
+Probe builds with zero warnings/errors; ModelChecks retains its twelve existing
+nullable warnings. Both changed PowerShell scripts parse, all three extra-upgrade
+selectors produce one exact scenario value, and git diff --check passes.

@@ -6,7 +6,7 @@ internal static class UnitSummonChecks
 {
     internal static void Native(FixtureValue fixture)
     {
-        if (!fixture.TryGetProperty("ModifierScenario", out var scenario) || scenario.GetString() is not ("multi-summon" or "multi-summon-zero")) return;
+        if (!fixture.TryGetProperty("ModifierScenario", out var scenario) || scenario.GetString()?.StartsWith("multi-summon", StringComparison.Ordinal) != true) return;
         var births = fixture.GetProperty("UnitBirths").EnumerateArray().ToArray();
         var clones = fixture.GetProperty("DetachedCardClones").EnumerateArray().ToArray();
         var phases = fixture.GetProperty("RallyPhases").EnumerateArray().ToArray();
@@ -16,6 +16,21 @@ internal static class UnitSummonChecks
         foreach (var sample in clones) VerifyClone(sample);
         foreach (var sample in phases) RallyChecks.VerifyPhase(sample);
         foreach (var sample in triggers) RallyChecks.VerifyTrigger(sample);
+        var extra = fixture.TryGetProperty("SpawnUpgrades", out var extraRecords) ? extraRecords.EnumerateArray().ToArray() : [];
+        foreach (var sample in extra) VerifyExtra(sample);
+        if (scenario.GetString()!.StartsWith("multi-summon-upgrade", StringComparison.Ordinal))
+        {
+            Require(extra.Length >= 4 && extra.Any(sample => sample.GetProperty("SourceAdded").GetBoolean()), "Extra spawn upgrades were not exercised.");
+            Require(clones.Any(sample => sample.GetProperty("Before").Deserialize<CombatContext>()!.FindCard(sample.GetProperty("SourceCardId").GetInt32())!
+                .Temporary.Upgrades.Any(upgrade => upgrade.AssetKey == "PojuMultiSummonExtra")), "Later births did not copy earlier extra spawn upgrades.");
+            if (scenario.GetString() == "multi-summon-upgrade-unique")
+                Require(extra.Any(sample => !sample.GetProperty("SourceAdded").GetBoolean()), "Unique duplicate source rejection was not exercised.");
+            if (scenario.GetString() == "multi-summon-upgrade-restricted")
+                Require(extra.Any(sample => sample.GetProperty("SourceAdded").GetBoolean() &&
+                    Serialize(sample.GetProperty("Before").Deserialize<RoomCombatState>()!.Units) ==
+                    Serialize(sample.GetProperty("AfterDirect").Deserialize<RoomCombatState>()!.Units)),
+                    "Restricted unit rejection followed by a successful source write was not exercised.");
+        }
         var cloneIds = clones.Select(sample => sample.GetProperty("CloneCardId").GetInt32()).ToHashSet();
         Require(births.Where(sample => sample.GetProperty("IsCardless").GetBoolean()).All(sample =>
             cloneIds.Contains(sample.GetProperty("SpawnerCardId").GetInt32())), "Cardless extra births lost their copied source reference.");
@@ -53,15 +68,41 @@ internal static class UnitSummonChecks
             truncated |= newCount > 0 && newCount < rule.Summon.Count;
             overCapacity |= newRoom.Units.Where(unit => unit.Team == CombatTeam.Player).Sum(unit => unit.Size) > before.PlayRules.Rooms[action.RoomIndex].PlayerCapacity;
         }
-        Require(truncated && overCapacity, "Native physical-slot truncation and extra-birth capacity overflow were not exercised.");
+        // Restricted size growth fills capacity before all physical slots. The next
+        // real card must use another floor; slot truncation belongs to the other scenes.
+        Require(overCapacity, "Native extra-birth capacity overflow was not exercised.");
+        if (scenario.GetString() != "multi-summon-upgrade-restricted")
+            Require(truncated, "Native physical-slot truncation was not exercised.");
         Parallel.For(0, 32, _ =>
         {
             foreach (var sample in births) VerifyBirth(sample);
             foreach (var sample in clones) VerifyClone(sample);
             foreach (var sample in phases) RallyChecks.VerifyPhase(sample);
             foreach (var sample in triggers) RallyChecks.VerifyTrigger(sample);
+            foreach (var sample in extra) VerifyExtra(sample);
         });
-        Console.WriteLine($"NATIVE-MULTI-SUMMON-CHECKS PASS: {births.Length} complete births, {clones.Length} detached clones, {phases.Length} paid phases, {triggers.Length} Rally dispatches, live source upgrades, retained clone flags, cardless/source timing, slot truncation, capacity overflow and 32 branches.");
+        Console.WriteLine($"NATIVE-MULTI-SUMMON-CHECKS PASS: {births.Length} complete births, {clones.Length} detached clones, {extra.Length} extra upgrades, {phases.Length} paid phases, {triggers.Length} Rally dispatches, live source upgrades, retained clone flags, cardless/source timing, slot truncation={truncated}, capacity overflow and 32 branches.");
+    }
+    private static void VerifyExtra(FixtureValue sample)
+    {
+        Require(sample.GetProperty("Completed").GetBoolean(), "Incomplete native extra spawn upgrade.");
+        var before = sample.GetProperty("Before").Deserialize<RoomCombatState>()!;
+        var directExpected = sample.GetProperty("AfterDirect").Deserialize<RoomCombatState>()!;
+        var expected = sample.GetProperty("After").Deserialize<RoomCombatState>()!;
+        var upgrade = sample.GetProperty("Upgrade").Deserialize<CardUpgradeModifier>()!;
+        int unitId = sample.GetProperty("UnitId").GetInt32(), sourceId = sample.GetProperty("SpawnerCardId").GetInt32();
+        string parent = Serialize(before);
+        var direct = UnitModifierModel.ApplyDirect(before, unitId, upgrade);
+        var result = SpawnUpgradeModel.Apply(before, unitId, sourceId, upgrade);
+        Require(direct.Supported && result.Supported, "Independent extra spawn upgrade failed: " + (result.UnsupportedReason ?? direct.UnsupportedReason));
+        Require(Serialize(direct.State) == Serialize(directExpected), "Extra spawn direct API differs from native.");
+        Require(Serialize(result.State) == Serialize(expected), "Extra spawn source write differs from native.");
+        Require(Serialize(before) == parent, "Extra spawn upgrade mutated its parent.");
+        Require(Serialize(before.Context!.FindCard(sourceId)) == Serialize(directExpected.Context!.FindCard(sourceId)),
+            "The direct API unexpectedly wrote back to the source card before SpawnMonster did.");
+        int oldCount = directExpected.Context.FindCard(sourceId)!.Temporary.Upgrades.Count;
+        int newCount = expected.Context!.FindCard(sourceId)!.Temporary.Upgrades.Count;
+        Require(newCount - oldCount == (sample.GetProperty("SourceAdded").GetBoolean() ? 1 : 0), "Source duplicate result or descriptor count differs.");
     }
     private static void VerifyBirth(FixtureValue sample)
     {

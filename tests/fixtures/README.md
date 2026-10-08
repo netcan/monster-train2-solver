@@ -372,3 +372,18 @@ Pyre 80, matching initial and actual mid-battle roots in 16 parallel branches.
 The 30,824/21,475-byte archives have 4,954/3,345 unique nodes and no source JSON.
 These prove shared identity state and ordinary births; cardless/nested creation
 effects remain separate native integration work.
+
+
+`full-battle-multi-summon-upgrade.mt2f`,
+`full-battle-multi-summon-upgrade-unique.mt2f` and
+`full-battle-multi-summon-upgrade-restricted.mt2f` retain schema 79. They record
+22 extra spawn-upgrade applications at separate direct-character and source-card
+write boundaries, including five unique duplicate source rejections and four
+capacity-rejected unit changes followed by successful source writes. Births,
+copies, upgrades and Rally states compare independently in 32 branches. Complete
+15/15/14-play policies from initial and mid-battle roots match in 16 branches,
+with five EndTurns and Pyre 80. The original Boss/waves remain intact, captures
+are direct binary archives, and original profile signatures are unchanged.
+The curated inventory now contains 113 archives: 104 battles and nine
+calibration suites. Fresh fallback sources and lethal/removed birth targets
+remain separate native integration work.

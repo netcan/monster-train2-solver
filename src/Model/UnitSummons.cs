@@ -94,8 +94,8 @@ namespace MonsterTrain2Poju.Model
         internal static UnitBirthResult Apply(RoomCombatState source, CardPlayRule definition, int cardId, int position, int slots)
         {
             UnitSummonRule rule = definition.Summon!;
-            if (rule.IgnoreCardUpgrades || rule.Upgrade != null)
-                return Unsupported("Modified or cardless-source spawn effects require separate native coverage.");
+            if (rule.IgnoreCardUpgrades)
+                return Unsupported("Fresh fallback spawn sources require separate native coverage.");
             if (source.Context?.FindCard(cardId)?.PlayedRoomUnitIds == null)
                 return Unsupported("Repeated summons require the source card's native room cache.");
             RoomCombatState state = source;
@@ -118,11 +118,42 @@ namespace MonsterTrain2Poju.Model
                 if (firstId == 0) firstId = born.UnitId;
                 state = born.Result.State!; events.AddRange(born.Result.Events);
                 if (born.Result.Outcome != RoomOutcome.Exchanged) outcome = born.Result.Outcome;
+                if (rule.Upgrade != null)
+                {
+                    RoomCombatResult upgraded = SpawnUpgradeModel.Apply(state, born.UnitId, sourceId, rule.Upgrade);
+                    if (!upgraded.Supported) return new UnitBirthResult(upgraded);
+                    state = upgraded.State!; events.AddRange(upgraded.Events);
+                    if (upgraded.Outcome != RoomOutcome.Exchanged) outcome = upgraded.Outcome;
+                }
             }
             return new UnitBirthResult(new RoomCombatResult(state, outcome, 0, events), firstId);
         }
         private static UnitBirthResult Unsupported(string error) => new UnitBirthResult(new RoomCombatResult(null,
             RoomOutcome.Unsupported, 0, new List<CombatEvent>(), error));
+    }
+
+    public static class SpawnUpgradeModel
+    {
+        // SpawnMonster first runs the direct character API (including its callbacks),
+        // then always writes the descriptor to the source's temporary modifiers.
+        // A unique/capacity rejection on the unit does not skip that source write.
+        public static RoomCombatResult Apply(RoomCombatState source, int unitId, int spawnerCardId, CardUpgradeModifier upgrade)
+        {
+            if (spawnerCardId < 0 || source.Context == null ||
+                spawnerCardId > 0 && source.Context.FindCard(spawnerCardId) == null)
+                return new RoomCombatResult(null, RoomOutcome.Unsupported, 0, new List<CombatEvent>(), "Missing extra spawn upgrade source.");
+            RoomCombatResult applied = UnitModifierModel.ApplyDirect(source, unitId, upgrade);
+            if (!applied.Supported || source.Preview || spawnerCardId == 0) return applied;
+            CardInstanceState card = applied.State!.Context!.FindCard(spawnerCardId)!;
+            var changed = new CardInstanceState(card.InstanceId, card.DataId, card.Permanent,
+                UnitModifierModel.Add(card.Temporary, upgrade), card.LastPlayedCost, card.LastForgedAmount, card.PlayCount,
+                card.ExternalInteractions, card.EffectCounters, card.DamageScalingTraits, card.StatusScalingTraits,
+                card.UnitUpgradeScalingTraits, card.CapacityScalingTraits, card.EquippedUnitId, card.PlayedRoomUnitIds);
+            var state = new RoomCombatState(applied.State.RoomIndex, applied.State.Deployment, applied.State.Units,
+                applied.State.ExternalInteractions, applied.State.Context.WithCard(changed), applied.State.Preview);
+            return new RoomCombatResult(state, applied.Outcome, applied.Rounds, applied.Events.ToList(),
+                applied.UnsupportedReason, applied.PendingCallbacks, applied.RetainedUnits, applied.Dispatches);
+        }
     }
 
 }

@@ -19,6 +19,16 @@ namespace MonsterTrain2Poju.Probe
             CardData data = save.GetAllGameData().FindCardData("d14a50f3-728d-43e1-87f0-ef1b013f6678")!;
             CardEffectData spawn = data.GetEffects().Single(effect => effect.GetEffectStateName() == "CardEffectSpawnMonster");
             Set(spawn, "paramInt", 4);
+            string scenario = Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") ?? "";
+            if (scenario.StartsWith("multi-summon-upgrade", StringComparison.Ordinal))
+            {
+                bool restricted = scenario == "multi-summon-upgrade-restricted";
+                var extra = DynamicUpgradeScenario.Upgrade("PojuMultiSummonExtra", SpawnUpgradeProbe.UpgradeDataId,
+                    2, 3, restricted ? 1 : 0, 0, "armor", 2);
+                Set(extra, "isUnique", scenario == "multi-summon-upgrade-unique");
+                Set(extra, "restrictSizeToRoomCapacity", restricted);
+                Set(spawn, "paramCardUpgradeData", extra);
+            }
             CharacterData unit = spawn.GetParamCharacterData(); Set(unit, "size", 1);
             var born = Gold(CharacterTriggerData.Trigger.OnSpawn, 1);
             var unscaled = Gold(CharacterTriggerData.Trigger.OnUnscaledSpawn, 2);
