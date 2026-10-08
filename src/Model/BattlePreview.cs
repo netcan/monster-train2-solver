@@ -15,23 +15,44 @@ namespace MonsterTrain2Poju.Model
             var previewTrain = new TrainCombatState(source.Rooms.Select(room => new RoomCombatState(room.RoomIndex,
                 room.Deployment, room.Units, room.ExternalInteractions, context, preview: true)).ToArray(),
                 source.Movement, source.EnemySlotsPerRoom, context);
+            var overwrittenSummons = new HashSet<(int UnitId, int TriggerId, int EffectIndex)>();
+            int firstPreviewId = context.NextUnitId ?? int.MaxValue;
+            bool previewBirth = false;
+            void ObserveSummons(IEnumerable<CombatUnit> units, CombatContext? after)
+            {
+                previewBirth |= after?.NextUnitId > firstPreviewId;
+                foreach (CombatUnit unit in units)
+                for (int triggerIndex = 0; triggerIndex < unit.Triggers.Count; triggerIndex++)
+                for (int effectIndex = 0; effectIndex < unit.Triggers[triggerIndex].Effects.Count; effectIndex++)
+                    if (unit.Triggers[triggerIndex].Effects[effectIndex].Summon?.FirstSpawnedUnitId >= firstPreviewId)
+                        overwrittenSummons.Add((unit.Id, unit.Triggers[triggerIndex].StateId ?? triggerIndex, effectIndex));
+            }
+            CombatUnit RestorePrimaryEffects(CombatUnit unit) => overwrittenSummons.Count == 0 ? unit :
+                unit.WithTriggers(unit.Triggers.Select((trigger, index) => trigger.WithEffects(trigger.Effects.Select((effect, effectIndex) =>
+                    effect.Summon != null && overwrittenSummons.Contains((unit.Id, trigger.StateId ?? index, effectIndex))
+                        ? effect.WithSummon(effect.Summon.WithFirstSpawned(0)) : effect).ToArray())).ToArray());
             // Native UI preview runs only the player pre-discard phase, once before all rooms.
             TrainCombatResult preDiscard = TrainCombatModel.EndTurnPreHandDiscard(previewTrain, CombatTeam.Player);
             if (!preDiscard.Supported) return new TrainCombatResult(null, RoomOutcome.Unsupported,
                 Array.Empty<RoomCombatResult>(), "Battle preview: " + preDiscard.UnsupportedReason);
             CombatContext previewContext = preDiscard.State!.Context!;
+            ObserveSummons(preDiscard.State.Rooms.SelectMany(room => room.Units), previewContext);
             foreach (RoomCombatState room in preDiscard.State.Rooms.Reverse())
             {
                 RoomCombatResult preview = RoomCombatModel.Resolve(new RoomCombatState(room.RoomIndex, room.Deployment,
                     room.Units, room.ExternalInteractions, previewContext, preview: true));
                 if (!preview.Supported) return new TrainCombatResult(null, RoomOutcome.Unsupported,
                     Array.Empty<RoomCombatResult>(), "Battle preview: " + preview.UnsupportedReason);
+                ObserveSummons(preview.State!.Units.Concat(preview.RetainedUnits), preview.State.Context);
                 previewContext = previewContext.WithStatistics(previewContext.Statistics!.WithLastAttackDamage(preview.State!.Context!.Statistics!.LastAttackDamageDealt));
                 if (context.IsolatedBattlePreview == true) previewContext = previewContext.WithBattleRng(preview.State!.Context!.BattleRng);
             }
             context = context.WithStatistics(context.Statistics.WithLastAttackDamage(previewContext.Statistics!.LastAttackDamageDealt));
+            // Native preview births overwrite shared weak references. Their temporary
+            // Unity objects disappear before the next stable decision capture.
+            if (previewBirth && context.LastSpawnedUnitId.HasValue) context = context.WithLastSpawned(0);
             var train = new TrainCombatState(source.Rooms.Select(room => new RoomCombatState(room.RoomIndex, room.Deployment,
-                room.Units, room.ExternalInteractions, context)).ToArray(), source.Movement, source.EnemySlotsPerRoom, context);
+                room.Units.Select(RestorePrimaryEffects).ToArray(), room.ExternalInteractions, context)).ToArray(), source.Movement, source.EnemySlotsPerRoom, context);
             return new TrainCombatResult(train, RoomOutcome.Exchanged, Array.Empty<RoomCombatResult>());
         }
     }

@@ -45,6 +45,7 @@ namespace MonsterTrain2Poju.Model
         // Shared by card/character effects; null preserves legacy captures.
         public int? NextUnitId { get; }
         public BattleSpawnPoints? SpawnPoints { get; }
+        public TriggeredSummonCatalog? SummonCatalog { get; }
         public IReadOnlyList<string>? PermanentlyDisabledAbilities { get; }
         public CombatContext(CardCycleState cards, UnityRng battleRng, int gold, int nextCardId, int maxHandSize,
             IReadOnlyList<CombatStatus>? statusRules = null, BattleStatistics? statistics = null, IReadOnlyList<CardInstanceState>? cardInstances = null,
@@ -53,7 +54,8 @@ namespace MonsterTrain2Poju.Model
             StatisticQueryFrame? queryFrame = null, bool? killCamActivated = null, IReadOnlyList<RoomMagicPower>? magicPower = null,
             bool? isolatedBattlePreview = null, BattleEnergyState? energyState = null, IReadOnlyList<RoomCapacityState>? roomCapacities = null,
             IReadOnlyList<AbilityCardCacheEntry>? abilityCardCache = null, int? lastAbilityActivatorUnitId = null,
-            IReadOnlyList<string>? permanentlyDisabledAbilities = null, int? lastSpawnedUnitId = null, int? nextUnitId = null, BattleSpawnPoints? spawnPoints = null)
+            IReadOnlyList<string>? permanentlyDisabledAbilities = null, int? lastSpawnedUnitId = null, int? nextUnitId = null, BattleSpawnPoints? spawnPoints = null,
+            TriggeredSummonCatalog? summonCatalog = null)
         { Cards = cards; BattleRng = battleRng; Gold = gold; NextCardId = nextCardId; MaxHandSize = maxHandSize;
             StatusRules = Array.AsReadOnly((statusRules ?? Array.Empty<CombatStatus>()).ToArray());
             Statistics = cardInstances == null ? statistics : statistics?.WithOwnedCards(cardInstances.Select(card => card.InstanceId));
@@ -68,63 +70,67 @@ namespace MonsterTrain2Poju.Model
             RoomCapacities = roomCapacities == null ? null : Array.AsReadOnly(roomCapacities.OrderBy(room => room.RoomIndex).ToArray());
             AbilityCardCache = abilityCardCache == null ? null : Array.AsReadOnly(abilityCardCache.OrderBy(entry => entry.DataId, StringComparer.Ordinal).ToArray());
             LastAbilityActivatorUnitId = lastAbilityActivatorUnitId; LastSpawnedUnitId = lastSpawnedUnitId;
-            NextUnitId = nextUnitId; SpawnPoints = spawnPoints;
+            NextUnitId = nextUnitId; SpawnPoints = spawnPoints; SummonCatalog = summonCatalog;
             PermanentlyDisabledAbilities = permanentlyDisabledAbilities == null ? null : Array.AsReadOnly(permanentlyDisabledAbilities.ToArray()); }
         internal CombatContext WithNextCardId(int nextCardId) => new CombatContext(Cards, BattleRng, Gold, nextCardId,
             MaxHandSize, StatusRules, Statistics, CardInstances, CardRegistry, AllScenarioBossesDead, NextAddedTemporaryUpgrades,
             OtherPiles, QueryFrame, KillCamActivated, MagicPower, IsolatedBattlePreview, EnergyState, RoomCapacities, AbilityCardCache,
-            LastAbilityActivatorUnitId, PermanentlyDisabledAbilities, LastSpawnedUnitId, NextUnitId, SpawnPoints);
+            LastAbilityActivatorUnitId, PermanentlyDisabledAbilities, LastSpawnedUnitId, NextUnitId, SpawnPoints, SummonCatalog);
+        internal CombatContext WithSummonCatalog(TriggeredSummonCatalog catalog) => new CombatContext(Cards, BattleRng, Gold, NextCardId,
+            MaxHandSize, StatusRules, Statistics, CardInstances, CardRegistry, AllScenarioBossesDead, NextAddedTemporaryUpgrades,
+            OtherPiles, QueryFrame, KillCamActivated, MagicPower, IsolatedBattlePreview, EnergyState, RoomCapacities, AbilityCardCache,
+            LastAbilityActivatorUnitId, PermanentlyDisabledAbilities, LastSpawnedUnitId, NextUnitId, SpawnPoints, catalog);
         internal CombatContext WithNextUnitId(int nextUnitId) => new CombatContext(Cards, BattleRng, Gold, NextCardId,
             MaxHandSize, StatusRules, Statistics, CardInstances, CardRegistry, AllScenarioBossesDead, NextAddedTemporaryUpgrades,
             OtherPiles, QueryFrame, KillCamActivated, MagicPower, IsolatedBattlePreview, EnergyState, RoomCapacities, AbilityCardCache,
-            LastAbilityActivatorUnitId, PermanentlyDisabledAbilities, LastSpawnedUnitId, nextUnitId, SpawnPoints);
+            LastAbilityActivatorUnitId, PermanentlyDisabledAbilities, LastSpawnedUnitId, nextUnitId, SpawnPoints, SummonCatalog);
         internal CombatContext WithSpawnPoints(BattleSpawnPoints spawnPoints) => new CombatContext(Cards, BattleRng, Gold, NextCardId,
             MaxHandSize, StatusRules, Statistics, CardInstances, CardRegistry, AllScenarioBossesDead, NextAddedTemporaryUpgrades,
             OtherPiles, QueryFrame, KillCamActivated, MagicPower, IsolatedBattlePreview, EnergyState, RoomCapacities, AbilityCardCache,
-            LastAbilityActivatorUnitId, PermanentlyDisabledAbilities, LastSpawnedUnitId, NextUnitId, spawnPoints);
+            LastAbilityActivatorUnitId, PermanentlyDisabledAbilities, LastSpawnedUnitId, NextUnitId, spawnPoints, SummonCatalog);
         internal CombatContext WithLastSpawned(int? unitId) => new CombatContext(Cards, BattleRng, Gold, NextCardId,
             MaxHandSize, StatusRules, Statistics, CardInstances, CardRegistry, AllScenarioBossesDead, NextAddedTemporaryUpgrades,
             OtherPiles, QueryFrame, KillCamActivated, MagicPower, IsolatedBattlePreview, EnergyState, RoomCapacities, AbilityCardCache,
-            LastAbilityActivatorUnitId, PermanentlyDisabledAbilities, unitId, NextUnitId, SpawnPoints);
+            LastAbilityActivatorUnitId, PermanentlyDisabledAbilities, unitId, NextUnitId, SpawnPoints, SummonCatalog);
         internal CombatContext WithAbilityActivator(int? unitId) => new CombatContext(Cards, BattleRng, Gold, NextCardId,
             MaxHandSize, StatusRules, Statistics, CardInstances, CardRegistry, AllScenarioBossesDead, NextAddedTemporaryUpgrades,
-            OtherPiles, QueryFrame, KillCamActivated, MagicPower, IsolatedBattlePreview, EnergyState, RoomCapacities, AbilityCardCache, unitId, PermanentlyDisabledAbilities, LastSpawnedUnitId, NextUnitId, SpawnPoints);
+            OtherPiles, QueryFrame, KillCamActivated, MagicPower, IsolatedBattlePreview, EnergyState, RoomCapacities, AbilityCardCache, unitId, PermanentlyDisabledAbilities, LastSpawnedUnitId, NextUnitId, SpawnPoints, SummonCatalog);
         internal CombatContext WithRoomCapacities(IReadOnlyList<RoomCapacityState> capacities) => new CombatContext(Cards, BattleRng,
             Gold, NextCardId, MaxHandSize, StatusRules, Statistics, CardInstances, CardRegistry, AllScenarioBossesDead,
-            NextAddedTemporaryUpgrades, OtherPiles, QueryFrame, KillCamActivated, MagicPower, IsolatedBattlePreview, EnergyState, capacities, AbilityCardCache, LastAbilityActivatorUnitId, PermanentlyDisabledAbilities, LastSpawnedUnitId, NextUnitId, SpawnPoints);
+            NextAddedTemporaryUpgrades, OtherPiles, QueryFrame, KillCamActivated, MagicPower, IsolatedBattlePreview, EnergyState, capacities, AbilityCardCache, LastAbilityActivatorUnitId, PermanentlyDisabledAbilities, LastSpawnedUnitId, NextUnitId, SpawnPoints, SummonCatalog);
         internal CombatContext WithEnergyState(BattleEnergyState state) => new CombatContext(Cards, BattleRng,
             Gold, NextCardId, MaxHandSize, StatusRules, Statistics, CardInstances, CardRegistry, AllScenarioBossesDead,
-            NextAddedTemporaryUpgrades, OtherPiles, QueryFrame, KillCamActivated, MagicPower, IsolatedBattlePreview, state, RoomCapacities, AbilityCardCache, LastAbilityActivatorUnitId, PermanentlyDisabledAbilities, LastSpawnedUnitId, NextUnitId, SpawnPoints);
+            NextAddedTemporaryUpgrades, OtherPiles, QueryFrame, KillCamActivated, MagicPower, IsolatedBattlePreview, state, RoomCapacities, AbilityCardCache, LastAbilityActivatorUnitId, PermanentlyDisabledAbilities, LastSpawnedUnitId, NextUnitId, SpawnPoints, SummonCatalog);
         internal CombatContext WithQueryFrame(StatisticQueryFrame? frame) => new CombatContext(Cards, BattleRng,
             Gold, NextCardId, MaxHandSize, StatusRules, Statistics, CardInstances, CardRegistry, AllScenarioBossesDead,
-            NextAddedTemporaryUpgrades, OtherPiles, frame, KillCamActivated, MagicPower, IsolatedBattlePreview, EnergyState, RoomCapacities, AbilityCardCache, LastAbilityActivatorUnitId, PermanentlyDisabledAbilities, LastSpawnedUnitId, NextUnitId, SpawnPoints);
+            NextAddedTemporaryUpgrades, OtherPiles, frame, KillCamActivated, MagicPower, IsolatedBattlePreview, EnergyState, RoomCapacities, AbilityCardCache, LastAbilityActivatorUnitId, PermanentlyDisabledAbilities, LastSpawnedUnitId, NextUnitId, SpawnPoints, SummonCatalog);
         internal CombatContext WithStatistics(BattleStatistics? statistics) => new CombatContext(Cards, BattleRng,
-            Gold, NextCardId, MaxHandSize, StatusRules, statistics, CardInstances, CardRegistry, AllScenarioBossesDead, NextAddedTemporaryUpgrades, OtherPiles, QueryFrame, KillCamActivated, MagicPower, IsolatedBattlePreview, EnergyState, RoomCapacities, AbilityCardCache, LastAbilityActivatorUnitId, PermanentlyDisabledAbilities, LastSpawnedUnitId, NextUnitId, SpawnPoints);
+            Gold, NextCardId, MaxHandSize, StatusRules, statistics, CardInstances, CardRegistry, AllScenarioBossesDead, NextAddedTemporaryUpgrades, OtherPiles, QueryFrame, KillCamActivated, MagicPower, IsolatedBattlePreview, EnergyState, RoomCapacities, AbilityCardCache, LastAbilityActivatorUnitId, PermanentlyDisabledAbilities, LastSpawnedUnitId, NextUnitId, SpawnPoints, SummonCatalog);
         internal CombatContext WithCardInstances(IReadOnlyList<CardInstanceState>? instances) => new CombatContext(Cards, BattleRng,
-            Gold, NextCardId, MaxHandSize, StatusRules, Statistics, instances, CardRegistry, AllScenarioBossesDead, NextAddedTemporaryUpgrades, OtherPiles, QueryFrame, KillCamActivated, MagicPower, IsolatedBattlePreview, EnergyState, RoomCapacities, AbilityCardCache, LastAbilityActivatorUnitId, PermanentlyDisabledAbilities, LastSpawnedUnitId, NextUnitId, SpawnPoints);
+            Gold, NextCardId, MaxHandSize, StatusRules, Statistics, instances, CardRegistry, AllScenarioBossesDead, NextAddedTemporaryUpgrades, OtherPiles, QueryFrame, KillCamActivated, MagicPower, IsolatedBattlePreview, EnergyState, RoomCapacities, AbilityCardCache, LastAbilityActivatorUnitId, PermanentlyDisabledAbilities, LastSpawnedUnitId, NextUnitId, SpawnPoints, SummonCatalog);
         internal CombatContext WithCardRegistry(IReadOnlyList<CardInstanceState>? registry) => new CombatContext(Cards, BattleRng,
-            Gold, NextCardId, MaxHandSize, StatusRules, Statistics, CardInstances, registry, AllScenarioBossesDead, NextAddedTemporaryUpgrades, OtherPiles, QueryFrame, KillCamActivated, MagicPower, IsolatedBattlePreview, EnergyState, RoomCapacities, AbilityCardCache, LastAbilityActivatorUnitId, PermanentlyDisabledAbilities, LastSpawnedUnitId, NextUnitId, SpawnPoints);
+            Gold, NextCardId, MaxHandSize, StatusRules, Statistics, CardInstances, registry, AllScenarioBossesDead, NextAddedTemporaryUpgrades, OtherPiles, QueryFrame, KillCamActivated, MagicPower, IsolatedBattlePreview, EnergyState, RoomCapacities, AbilityCardCache, LastAbilityActivatorUnitId, PermanentlyDisabledAbilities, LastSpawnedUnitId, NextUnitId, SpawnPoints, SummonCatalog);
         internal CardInstanceState? FindCard(int id) => CardInstances?.FirstOrDefault(card => card.InstanceId == id)
             ?? CardRegistry?.FirstOrDefault(card => card.InstanceId == id);
         internal CombatContext WithPermanentlyDisabledAbilities(IReadOnlyList<string> abilities) => new CombatContext(
             Cards, BattleRng, Gold, NextCardId, MaxHandSize, StatusRules, Statistics, CardInstances, CardRegistry,
             AllScenarioBossesDead, NextAddedTemporaryUpgrades, OtherPiles, QueryFrame, KillCamActivated, MagicPower,
-            IsolatedBattlePreview, EnergyState, RoomCapacities, AbilityCardCache, LastAbilityActivatorUnitId, abilities, LastSpawnedUnitId, NextUnitId, SpawnPoints);
+            IsolatedBattlePreview, EnergyState, RoomCapacities, AbilityCardCache, LastAbilityActivatorUnitId, abilities, LastSpawnedUnitId, NextUnitId, SpawnPoints, SummonCatalog);
         internal CombatContext WithCard(CardInstanceState changed) => new CombatContext(Cards, BattleRng,
             Gold, NextCardId, MaxHandSize, StatusRules, Statistics,
             CardInstances?.Select(card => card.InstanceId == changed.InstanceId ? changed : card).ToArray(),
-            CardRegistry?.Select(card => card.InstanceId == changed.InstanceId ? changed : card).ToArray(), AllScenarioBossesDead, NextAddedTemporaryUpgrades, OtherPiles, QueryFrame, KillCamActivated, MagicPower, IsolatedBattlePreview, EnergyState, RoomCapacities, AbilityCardCache, LastAbilityActivatorUnitId, PermanentlyDisabledAbilities, LastSpawnedUnitId, NextUnitId, SpawnPoints);
+            CardRegistry?.Select(card => card.InstanceId == changed.InstanceId ? changed : card).ToArray(), AllScenarioBossesDead, NextAddedTemporaryUpgrades, OtherPiles, QueryFrame, KillCamActivated, MagicPower, IsolatedBattlePreview, EnergyState, RoomCapacities, AbilityCardCache, LastAbilityActivatorUnitId, PermanentlyDisabledAbilities, LastSpawnedUnitId, NextUnitId, SpawnPoints, SummonCatalog);
         internal CombatContext WithBossesDead() => new CombatContext(Cards, BattleRng, Gold, NextCardId,
-            MaxHandSize, StatusRules, Statistics, CardInstances, CardRegistry, AllScenarioBossesDead.HasValue ? true : (bool?)null, NextAddedTemporaryUpgrades, OtherPiles, QueryFrame, KillCamActivated, MagicPower, IsolatedBattlePreview, EnergyState, RoomCapacities, AbilityCardCache, LastAbilityActivatorUnitId, PermanentlyDisabledAbilities, LastSpawnedUnitId, NextUnitId, SpawnPoints);
+            MaxHandSize, StatusRules, Statistics, CardInstances, CardRegistry, AllScenarioBossesDead.HasValue ? true : (bool?)null, NextAddedTemporaryUpgrades, OtherPiles, QueryFrame, KillCamActivated, MagicPower, IsolatedBattlePreview, EnergyState, RoomCapacities, AbilityCardCache, LastAbilityActivatorUnitId, PermanentlyDisabledAbilities, LastSpawnedUnitId, NextUnitId, SpawnPoints, SummonCatalog);
         internal BattleStatistics? LiveStatistics => CardInstances?.Count == 0 ? Statistics?.RefreshDeckAfterCardTerminal() : Statistics;
         internal CombatContext WithBattleRng(UnityRng rng) => new CombatContext(Cards, rng, Gold, NextCardId,
-            MaxHandSize, StatusRules, Statistics, CardInstances, CardRegistry, AllScenarioBossesDead, NextAddedTemporaryUpgrades, OtherPiles, QueryFrame, KillCamActivated, MagicPower, IsolatedBattlePreview, EnergyState, RoomCapacities, AbilityCardCache, LastAbilityActivatorUnitId, PermanentlyDisabledAbilities, LastSpawnedUnitId, NextUnitId, SpawnPoints);
+            MaxHandSize, StatusRules, Statistics, CardInstances, CardRegistry, AllScenarioBossesDead, NextAddedTemporaryUpgrades, OtherPiles, QueryFrame, KillCamActivated, MagicPower, IsolatedBattlePreview, EnergyState, RoomCapacities, AbilityCardCache, LastAbilityActivatorUnitId, PermanentlyDisabledAbilities, LastSpawnedUnitId, NextUnitId, SpawnPoints, SummonCatalog);
         internal CombatContext WithCards(CardCycleState cards) => new CombatContext(cards, BattleRng, Gold, NextCardId,
-            MaxHandSize, StatusRules, Statistics, CardInstances, CardRegistry, AllScenarioBossesDead, NextAddedTemporaryUpgrades, OtherPiles, QueryFrame, KillCamActivated, MagicPower, IsolatedBattlePreview, EnergyState, RoomCapacities, AbilityCardCache, LastAbilityActivatorUnitId, PermanentlyDisabledAbilities, LastSpawnedUnitId, NextUnitId, SpawnPoints);
+            MaxHandSize, StatusRules, Statistics, CardInstances, CardRegistry, AllScenarioBossesDead, NextAddedTemporaryUpgrades, OtherPiles, QueryFrame, KillCamActivated, MagicPower, IsolatedBattlePreview, EnergyState, RoomCapacities, AbilityCardCache, LastAbilityActivatorUnitId, PermanentlyDisabledAbilities, LastSpawnedUnitId, NextUnitId, SpawnPoints, SummonCatalog);
         internal CombatContext WithOtherPiles(IReadOnlyList<CardPileState> piles) => OtherPiles == null ? this : new CombatContext(Cards, BattleRng,
-            Gold, NextCardId, MaxHandSize, StatusRules, Statistics, CardInstances, CardRegistry, AllScenarioBossesDead, NextAddedTemporaryUpgrades, piles, QueryFrame, KillCamActivated, MagicPower, IsolatedBattlePreview, EnergyState, RoomCapacities, AbilityCardCache, LastAbilityActivatorUnitId, PermanentlyDisabledAbilities, LastSpawnedUnitId, NextUnitId, SpawnPoints);
+            Gold, NextCardId, MaxHandSize, StatusRules, Statistics, CardInstances, CardRegistry, AllScenarioBossesDead, NextAddedTemporaryUpgrades, piles, QueryFrame, KillCamActivated, MagicPower, IsolatedBattlePreview, EnergyState, RoomCapacities, AbilityCardCache, LastAbilityActivatorUnitId, PermanentlyDisabledAbilities, LastSpawnedUnitId, NextUnitId, SpawnPoints, SummonCatalog);
         internal CombatContext AfterCardEffects() => NextAddedTemporaryUpgrades == null || NextAddedTemporaryUpgrades.Count == 0 ? this : new CombatContext(Cards, BattleRng, Gold,
-            NextCardId, MaxHandSize, StatusRules, Statistics, CardInstances, CardRegistry, AllScenarioBossesDead, Array.Empty<CardUpgradeModifier>(), OtherPiles, QueryFrame, KillCamActivated, MagicPower, IsolatedBattlePreview, EnergyState, RoomCapacities, AbilityCardCache, LastAbilityActivatorUnitId, PermanentlyDisabledAbilities, LastSpawnedUnitId, NextUnitId, SpawnPoints);
+            NextCardId, MaxHandSize, StatusRules, Statistics, CardInstances, CardRegistry, AllScenarioBossesDead, Array.Empty<CardUpgradeModifier>(), OtherPiles, QueryFrame, KillCamActivated, MagicPower, IsolatedBattlePreview, EnergyState, RoomCapacities, AbilityCardCache, LastAbilityActivatorUnitId, PermanentlyDisabledAbilities, LastSpawnedUnitId, NextUnitId, SpawnPoints, SummonCatalog);
     }
 
     public sealed class CombatEffect
@@ -142,10 +148,11 @@ namespace MonsterTrain2Poju.Model
         // Null disables scaling; otherwise native reads stacks from the triggering unit.
         public string? DamageStatusMultiplier { get; }
         public TriggeredStatusScaling? StatusScaling { get; }
+        public TriggeredSummonRule? Summon { get; }
         public CombatEffect(string type, int value, int counter, string destination, int count,
             IReadOnlyList<string> cardPool, bool skipDuplicateInHand, CardGenerationRule? generation = null,
             CardActionEffect? unitUpgrade = null, CardActionEffect? action = null, string? damageStatusMultiplier = null,
-            TriggeredStatusScaling? statusScaling = null)
+            TriggeredStatusScaling? statusScaling = null, TriggeredSummonRule? summon = null)
         {
             Type = type; Value = value;
             // Every remaining count <= 1 despawns on the next application. Native UI previews can
@@ -154,14 +161,16 @@ namespace MonsterTrain2Poju.Model
             // Only generated-card effects interpret this parameter as a pile destination.
             Destination = type == "CardEffectAddBattleCard" ? destination : ""; Count = count;
             CardPool = Array.AsReadOnly(cardPool.ToArray()); SkipDuplicateInHand = skipDuplicateInHand;
-            Generation = generation; UnitUpgrade = unitUpgrade; Action = action; DamageStatusMultiplier = damageStatusMultiplier; StatusScaling = statusScaling;
+            Generation = generation; UnitUpgrade = unitUpgrade; Action = action; DamageStatusMultiplier = damageStatusMultiplier; StatusScaling = statusScaling; Summon = summon;
         }
         internal CombatEffect WithCounter(int counter) => new CombatEffect(Type, Value, counter,
-            Destination, Count, CardPool, SkipDuplicateInHand, Generation, UnitUpgrade, Action, DamageStatusMultiplier, StatusScaling);
+            Destination, Count, CardPool, SkipDuplicateInHand, Generation, UnitUpgrade, Action, DamageStatusMultiplier, StatusScaling, Summon);
+        internal CombatEffect WithSummon(TriggeredSummonRule summon) => new CombatEffect(Type, Value, Counter,
+            Destination, Count, CardPool, SkipDuplicateInHand, Generation, UnitUpgrade, Action, DamageStatusMultiplier, StatusScaling, summon);
         internal CombatEffect WithActionValue(int value) => new CombatEffect(Type, value, Counter, Destination, Count,
             CardPool, SkipDuplicateInHand, Generation, UnitUpgrade, Action == null ? null : new CardActionEffect(Action.Type,
                 Action.Target, value, Action.AllowEnemy, Action.AllowPlayer, Action.Statuses, Action.Upgrade, Action.Lifetime,
-                Action.Tests, Action.Range, Action.Filters, Action.Generation, Action.OnlyIfNoEnemies, Action.CooldownParameter, Action.AbilityChange), DamageStatusMultiplier, StatusScaling);
+                Action.Tests, Action.Range, Action.Filters, Action.Generation, Action.OnlyIfNoEnemies, Action.CooldownParameter, Action.AbilityChange), DamageStatusMultiplier, StatusScaling, Summon);
     }
 
     public sealed class CombatTriggerOrigin

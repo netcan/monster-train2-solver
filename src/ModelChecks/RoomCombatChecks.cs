@@ -156,6 +156,7 @@ internal static class RoomCombatChecks
         UnitIdentityChecks.Native(fixture);
         SpawnPointChecks.Native(fixture);
         BattleSpawnPointChecks.Native(fixture);
+        TriggeredSummonChecks.Native(fixture);
         SharedPileChecks.Native(fixture);
         DamageScalingChecks.Native(fixture);
         StatusScalingChecks.Native(fixture);

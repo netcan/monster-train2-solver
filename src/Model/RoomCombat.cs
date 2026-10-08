@@ -164,6 +164,10 @@ namespace MonsterTrain2Poju.Model
             CanAttack, IsPyre, EndsBattleOnDeath, Statuses, Triggers, SpawnerCardId, Size, StatusImmunities, Subtypes,
             Modifiers, IsBoss, LastAttackerId, StatusRegistry, EquipmentCards, NextTriggerId, Ability, StatusDictionary,
             AbilityRules, HordeDefinition, IsSpawning, SacrificeCardId, state);
+        internal CombatUnit WithTriggers(IReadOnlyList<CombatTrigger> triggers) => new CombatUnit(Id, AssetKey, Team, BaseAttack, Health, MaxHealth,
+            CanAttack, IsPyre, EndsBattleOnDeath, Statuses, triggers, SpawnerCardId, Size, StatusImmunities, Subtypes,
+            Modifiers, IsBoss, LastAttackerId, StatusRegistry, EquipmentCards, NextTriggerId, Ability, StatusDictionary,
+            AbilityRules, HordeDefinition, IsSpawning, SacrificeCardId, DeathState);
 
         internal static CombatStatus[] MergeStatusRegistry(IReadOnlyList<CombatStatus> registry, IReadOnlyList<CombatStatus> statuses)
         {
@@ -438,18 +442,25 @@ namespace MonsterTrain2Poju.Model
         internal static RoomCombatResult SettleQueuedSpawner(RoomCombatState state, CombatUnit unit)
             => new Engine(state, new List<CombatEvent>(), resetPreviewTriggers: false).ReturnQueuedSpawner(unit);
 
+        internal static RoomCombatResult SettleQueuedSpawnerAndCenter(RoomCombatState state, CombatUnit unit)
+            => new Engine(state, new List<CombatEvent>(), resetPreviewTriggers: false).ReturnQueuedSpawner(unit, true);
+
         internal static RoomCombatResult SettlePendingDeathStatistics(RoomCombatState state, CombatUnit unit)
             => new Engine(state, new List<CombatEvent>(), resetPreviewTriggers: false).PendingDeathStatistics(unit);
 
         public static RoomCombatResult ApplySpawnTriggers(RoomCombatState state, int unitId, bool fromCard,
             IReadOnlyList<CombatStatus>? startingApplications = null)
+            => ApplySpawnTriggers(state, unitId, fromCard, startingApplications, null);
+        internal static RoomCombatResult ApplySpawnTriggers(RoomCombatState state, int unitId, bool fromCard,
+            IReadOnlyList<CombatStatus>? startingApplications, Action<QueuedCharacterTrigger>? enqueue)
         {
             string? error = Validate(state);
             CombatUnit? unit = state.Units.FirstOrDefault(item => item.Id == unitId);
             if (error != null || unit == null || fromCard && unit.SpawnerCardId <= 0)
                 return new RoomCombatResult(null, RoomOutcome.Unsupported, 0, new List<CombatEvent>(),
                     error ?? "Spawn triggers require a living new unit and its source card identity.");
-            return new Engine(state, new List<CombatEvent>(), pendingSummonCardId: fromCard ? unit.SpawnerCardId : 0).Spawn(unitId, fromCard, startingApplications);
+            return new Engine(state, new List<CombatEvent>(), pendingSummonCardId: fromCard ? unit.SpawnerCardId : 0,
+                enqueueCharacterTrigger: enqueue).Spawn(unitId, fromCard, startingApplications);
         }
 
         public static RoomCombatResult ApplyCardDamage(RoomCombatState state, int targetId, int damage, int sourceCardId = 0,
@@ -457,6 +468,20 @@ namespace MonsterTrain2Poju.Model
 
         internal static RoomCombatResult ApplyCardDamageAfterTraits(RoomCombatState state, int targetId, int damage, int sourceCardId,
             bool deferSpawnerExhaustion, int attackerUnitId = 0) => ApplyCardDamage(state, targetId, damage, sourceCardId, deferSpawnerExhaustion, false, attackerUnitId);
+
+        internal static RoomCombatResult ApplyNativeCardDamageAfterTraits(RoomCombatState state, int targetId, int damage, int sourceCardId,
+            int attackerUnitId = 0,
+            Func<RoomCombatState, RoomCombatResult>? finishDamageQueue = null)
+        {
+            string? error = Validate(state);
+            if (error != null || damage < 0 || state.Preview || state.Context?.SpawnPoints == null ||
+                !state.Units.Any(unit => unit.Id == targetId) ||
+                attackerUnitId != 0 && !state.Units.Any(unit => unit.Id == attackerUnitId))
+                return new RoomCombatResult(null, RoomOutcome.Unsupported, 0, new List<CombatEvent>(), error ?? "Invalid native spell damage phase.");
+            return new Engine(state, new List<CombatEvent>(), nativeCardDamage: true,
+                finishDamageQueue: finishDamageQueue)
+                .CardDamage(targetId, damage, sourceCardId, false, attackerUnitId);
+        }
 
         private static RoomCombatResult ApplyCardDamage(RoomCombatState state, int targetId, int damage, int sourceCardId,
             bool deferSpawnerExhaustion, bool applyTraits, int attackerUnitId)
@@ -483,7 +508,7 @@ namespace MonsterTrain2Poju.Model
         }
 
         internal static RoomCombatResult ApplyDirectUnitUpgrade(RoomCombatState state, int targetId, CardUpgradeModifier upgrade,
-            bool remove, string upgradeId, int? anonymousRemovalIndex)
+            bool remove, string upgradeId, int? anonymousRemovalIndex, bool deferCallbacks = false)
         {
             string? error = Validate(state);
             if (error != null || !state.Units.Any(unit => unit.Id == targetId))
@@ -491,7 +516,7 @@ namespace MonsterTrain2Poju.Model
             var callbacks = new List<QueuedCharacterTrigger>();
             // RemoveCardUpgrade queues callbacks without running them. Additions run the queue.
             RoomCombatResult result = new Engine(state, new List<CombatEvent>(),
-                enqueueCharacterTrigger: remove ? callbacks.Add : (Action<QueuedCharacterTrigger>?)null, resetPreviewTriggers: false)
+                enqueueCharacterTrigger: remove || deferCallbacks ? callbacks.Add : (Action<QueuedCharacterTrigger>?)null, resetPreviewTriggers: false)
                 .UnitUpgrade(targetId, upgrade, "TemporaryUntilUnitDeath", remove, null, 0, null,
                     directApi: true, upgradeId: upgradeId, anonymousRemovalIndex: anonymousRemovalIndex);
             return new RoomCombatResult(result.State, result.Outcome, result.Rounds, result.Events.ToList(), result.UnsupportedReason, callbacks, result.RetainedUnits, result.Dispatches);
@@ -608,6 +633,12 @@ namespace MonsterTrain2Poju.Model
                     if (trigger.FireCount < 0) return "Invalid trigger fire count.";
                     foreach (CombatEffect effect in trigger.Effects)
                     {
+                        if (effect.Type == "CardEffectSpawnMonster")
+                        {
+                            string? summonError = TriggeredSummonModel.Validate(state, effect.Summon);
+                            if (summonError != null) return summonError;
+                            continue;
+                        }
                         if (effect.Type == "CardEffectSetUnitAbility" || effect.Type == "CardEffectRemoveAbility")
                         {
                             CardActionEffect? ability = effect.Action;
@@ -794,6 +825,8 @@ namespace MonsterTrain2Poju.Model
             private readonly int pendingSummonCardId;
             private readonly Action<QueuedCharacterTrigger>? enqueueCharacterTrigger;
             private readonly bool deferAbilityCallbacks;
+            private readonly bool nativeCardDamage;
+            private readonly Func<RoomCombatState, RoomCombatResult>? finishDamageQueue;
             private readonly Queue<(WorkingUnit Unit, string Kind, bool CanFire, int ParamInt, WorkingUnit? OverrideTarget, int ParamInt2, string? ParamString, WorkingUnit? DyingCharacter, int TriggerCount, int LastSpawnedOverrideUnitId)> triggerQueue = new Queue<(WorkingUnit, string, bool, int, WorkingUnit?, int, string?, WorkingUnit?, int, int)>();
             private bool runningTriggerQueue;
             private bool stopAfterBossRemoval;
@@ -806,13 +839,17 @@ namespace MonsterTrain2Poju.Model
             private string? unsupportedReason;
 
             internal Engine(RoomCombatState source, List<CombatEvent> events, bool deferSpawnerExhaustion = false, int pendingSummonCardId = 0,
-                Action<QueuedCharacterTrigger>? enqueueCharacterTrigger = null, bool resetPreviewTriggers = true, bool deferAbilityCallbacks = false)
+                Action<QueuedCharacterTrigger>? enqueueCharacterTrigger = null, bool resetPreviewTriggers = true, bool deferAbilityCallbacks = false,
+                bool nativeCardDamage = false,
+                Func<RoomCombatState, RoomCombatResult>? finishDamageQueue = null)
             {
                 this.source = source; this.events = events;
                 this.deferSpawnerExhaustion = deferSpawnerExhaustion;
                 this.pendingSummonCardId = pendingSummonCardId;
                 this.enqueueCharacterTrigger = enqueueCharacterTrigger;
                 this.deferAbilityCallbacks = deferAbilityCallbacks;
+                this.nativeCardDamage = nativeCardDamage;
+                this.finishDamageQueue = finishDamageQueue;
                 units = source.Units.Select(unit => new WorkingUnit(unit)).ToList();
                 if (source.Preview && resetPreviewTriggers)
                     foreach (WorkingUnit unit in units)
@@ -1112,11 +1149,13 @@ namespace MonsterTrain2Poju.Model
                 return Finish(battleWon ? RoomOutcome.BattleWon : RoomOutcome.Exchanged);
             }
 
-            internal RoomCombatResult ReturnQueuedSpawner(CombatUnit unit)
+            internal RoomCombatResult ReturnQueuedSpawner(CombatUnit unit, bool center = false)
             {
                 var removed = new WorkingUnit(unit);
                 SettleDeadSpawner(removed);
+                bool ownedPoint = context?.SpawnPoints?.Units.FirstOrDefault(point => point.UnitId == unit.Id)?.Current != null;
                 RemovePhysicalPoint(removed);
+                if (center && ownedPoint) CenterAfterSummon();
                 return Finish(RoomOutcome.Exchanged);
             }
 
@@ -1300,9 +1339,21 @@ namespace MonsterTrain2Poju.Model
                 }
                 if (target.DeathFinished) return;
                 if (damage > 0 || blocked > 0) FireTriggers(target, "OnHit", paramInt: damage);
+                // A played spell finishes its hit queue while this victim already has its
+                // new HP. Only previously finished deaths are eligible for removal here.
+                if (nativeCardDamage && !runningTriggerQueue) DrainLocalTriggerQueue();
+                if (nativeCardDamage && !runningTriggerQueue && finishDamageQueue != null)
+                {
+                    var frame = new RoomCombatState(source.RoomIndex, source.Deployment,
+                        units.Where(unit => !unit.Removed && unit.InRoom).Select(unit => unit.Freeze()).ToArray(),
+                        source.ExternalInteractions, context, source.Preview);
+                    RoomCombatResult drained = finishDamageQueue(frame);
+                    if (!drained.Supported) { unsupportedReason = drained.UnsupportedReason; return; }
+                    MergeSummon(drained);
+                }
                 if (!target.Alive && !target.DeathFinished)
                 {
-                    Death(actor, target, sourceCardId, deferRemoval: runningTriggerQueue);
+                    Death(actor, target, sourceCardId, deferRemoval: runningTriggerQueue || nativeCardDamage);
                 }
             }
 
@@ -1326,7 +1377,7 @@ namespace MonsterTrain2Poju.Model
                 if (target.Source.DeathState != null)
                     target.Apply(target.Freeze().WithDeathState(new UnitDeathState(true,
                         target.Source.DeathState.IsBeingRemoved || !deferRemoval || sacrifice,
-                        enqueueCharacterTrigger == null && target.Source.DeathState.HasStatisticsListener)));
+                        !nativeCardDamage && enqueueCharacterTrigger == null && target.Source.DeathState.HasStatisticsListener)));
                 if (enqueueCharacterTrigger != null) enqueueCharacterTrigger(new QueuedCharacterTrigger(source.RoomIndex, target.Freeze(),
                     returnSpawnerAfterQueue: deferReturn, deferUntilRemoval: deferRemoval, harvestAfterDeath: !target.Despawned && !immediateHarvest,
                     completePhysicalRemovalAfterQueue: deferRemoval && context?.SpawnPoints != null));
@@ -1420,7 +1471,7 @@ namespace MonsterTrain2Poju.Model
                     context.NextCardId, context.MaxHandSize, context.StatusRules, context.Statistics,
                     context.CardInstances == null ? null : Array.Empty<CardInstanceState>(), context.CardRegistry, context.AllScenarioBossesDead,
                     context.NextAddedTemporaryUpgrades, context.OtherPiles?.Select(CardPileModel.Clear).ToArray(), context.QueryFrame,
-                    context.KillCamActivated.HasValue ? true : (bool?)null, context.MagicPower, context.IsolatedBattlePreview, context.EnergyState, context.RoomCapacities, context.AbilityCardCache, context.LastAbilityActivatorUnitId, context.PermanentlyDisabledAbilities, context.LastSpawnedUnitId, context.NextUnitId, context.SpawnPoints);
+                    context.KillCamActivated.HasValue ? true : (bool?)null, context.MagicPower, context.IsolatedBattlePreview, context.EnergyState, context.RoomCapacities, context.AbilityCardCache, context.LastAbilityActivatorUnitId, context.PermanentlyDisabledAbilities, context.LastSpawnedUnitId, context.NextUnitId, context.SpawnPoints, context.SummonCatalog);
             }
 
             private void PostCombat()
@@ -1492,10 +1543,15 @@ namespace MonsterTrain2Poju.Model
                 foreach (var dead in removing)
                 {
                     FireTriggers(dead.Unit, "OnDeath");
+                    if (nativeCardDamage && dead.Unit.Source.DeathState != null)
+                        dead.Unit.Apply(dead.Unit.Freeze().WithDeathState(new UnitDeathState(true, true, false)));
                     PhysicalHarvest(dead.Unit);
                     if (dead.Return) SettleDeadSpawner(dead.Unit);
+                    bool ownedPoint = context?.SpawnPoints?.Units.FirstOrDefault(unit => unit.UnitId == dead.Unit.Source.Id)?.Current != null;
                     dead.Unit.Removed = true;
                     RemovePhysicalPoint(dead.Unit);
+                    // Centering also observes the next, zero-HP victim before CheckForDeath.
+                    if (nativeCardDamage && ownedPoint && dead.Equals(removing[removing.Length - 1])) CenterAfterSummon();
                     // HeroManager removal starts GameScreen.EndCombat, which cancels
                     // the combat coroutine after this boss's death callbacks. Later
                     // members of the already-marked batch never fire OnDeath. A played
@@ -1580,7 +1636,15 @@ namespace MonsterTrain2Poju.Model
                             if (live >= 0) retained = unit.Triggers[live];
                             effects = retained.Effects.ToArray();
                             CombatEffect effect = effects[effectIndex];
-                            if (effect.Action != null)
+                            if (effect.Summon != null)
+                            {
+                                if (!TriggeredSummonTest(unit, effect.Summon))
+                                { if (effect.Summon.Tests.CancelSubsequent) break; continue; }
+                                if (!ApplyTriggeredSummon(unit, effect.Summon, out int firstId)) break;
+                                if (firstId > 0)
+                                { effects[effectIndex] = effect.WithSummon(effect.Summon.WithFirstSpawned(firstId)); Store(retained.Fired(effects)); }
+                            }
+                            else if (effect.Action != null)
                             {
                                 if (live < 0 && effect.Action.Type == "DrawNextTurn" && retained.StateId == null)
                                 { unsupportedReason = "Detached bonus-draw trigger source requires captured persistent identity."; break; }
@@ -1610,7 +1674,7 @@ namespace MonsterTrain2Poju.Model
                                 int reward = GoldRewardModel.Adjust(effect.Value);
                                 context = new CombatContext(context!.Cards, context.BattleRng,
                                     Math.Max(0, checked(context.Gold + reward)), context.NextCardId, context.MaxHandSize, context.StatusRules, context.Statistics,
-                                    context.CardInstances, context.CardRegistry, context.AllScenarioBossesDead, context.NextAddedTemporaryUpgrades, context.OtherPiles, context.QueryFrame, context.KillCamActivated, context.MagicPower, context.IsolatedBattlePreview, context.EnergyState, context.RoomCapacities, context.AbilityCardCache, context.LastAbilityActivatorUnitId, context.PermanentlyDisabledAbilities, context.LastSpawnedUnitId, context.NextUnitId, context.SpawnPoints);
+                                    context.CardInstances, context.CardRegistry, context.AllScenarioBossesDead, context.NextAddedTemporaryUpgrades, context.OtherPiles, context.QueryFrame, context.KillCamActivated, context.MagicPower, context.IsolatedBattlePreview, context.EnergyState, context.RoomCapacities, context.AbilityCardCache, context.LastAbilityActivatorUnitId, context.PermanentlyDisabledAbilities, context.LastSpawnedUnitId, context.NextUnitId, context.SpawnPoints, context.SummonCatalog);
                                 Emit("Gold", unit, unit, reward);
                             }
                             else if (effect.Type == "CardEffectAddBattleCard" && !source.Preview && !battleWon && context != null && context.AllScenarioBossesDead != true &&
@@ -1625,6 +1689,131 @@ namespace MonsterTrain2Poju.Model
                 }
                 bool Present(WorkingUnit target, string id) => target.Statuses.Any(pair =>
                     string.Equals(pair.Key, id, StringComparison.OrdinalIgnoreCase) && pair.Value.Stacks > 0);
+            }
+
+            private SpawnPointReference? SummonSourcePoint(WorkingUnit actor)
+            {
+                UnitSpawnPointState? point = context!.SpawnPoints!.Units.FirstOrDefault(unit => unit.UnitId == actor.Source.Id);
+                return actor.Source.Team != CombatTeam.Player ? null : actor.Health <= 0 ? point?.LastKnown ?? point?.Current : point?.Current;
+            }
+            private bool TriggeredSummonTest(WorkingUnit actor, TriggeredSummonRule rule)
+            {
+                RoomPlayRule room = context!.SummonCatalog!.Rooms.First(item => item.RoomIndex == source.RoomIndex);
+                return SummonSourcePoint(actor) != null ? room.Enabled && !room.SummonBlocked :
+                    context.SpawnPoints!.FirstEmpty(source.RoomIndex, CombatTeam.Player) >= 0;
+            }
+            private int summonPivotMoves;
+            private bool SummonPhysical(string operation, int unitId = 0, int pivot = -1, CombatTeam team = CombatTeam.Player)
+            {
+                var scope = new RoomCombatState(source.RoomIndex, source.Deployment, units.Select(unit => unit.Freeze()).ToArray(),
+                    source.ExternalInteractions, context, source.Preview);
+                var changed = BattleSpawnPointModel.Apply(context!.SpawnPoints!, scope, operation, team, unitId, pivot);
+                if (!changed.Supported) { unsupportedReason = changed.Error; return false; }
+                context = context.WithSpawnPoints(changed.State!);
+                summonPivotMoves = changed.PivotMoves;
+                OrderPhysicalUnits();
+                return true;
+            }
+            private bool CenterAfterSummon() => SummonPhysical("Compact", team: CombatTeam.Enemy) && SummonPhysical("Compact");
+            private void OrderPhysicalUnits()
+            {
+                int[] order = BattleSpawnPointModel.Order(context!.SpawnPoints, source.RoomIndex,
+                    units.Where(unit => unit.InRoom).Select(unit => unit.Freeze()).ToArray()).Select(unit => unit.Id).ToArray();
+                var ordered = order.Select(id => units.First(unit => unit.Source.Id == id))
+                    .Concat(units.Where(unit => !unit.InRoom)).ToArray();
+                units.Clear(); units.AddRange(ordered);
+            }
+            private void MergeSummon(RoomCombatResult result)
+            {
+                context = result.State!.Context;
+                foreach (CombatUnit changed in result.State.Units.Concat(result.RetainedUnits))
+                {
+                    WorkingUnit? actor = units.FirstOrDefault(unit => unit.Source.Id == changed.Id);
+                    if (actor == null) { actor = new WorkingUnit(changed); units.Add(actor); }
+                    else actor.Apply(changed);
+                }
+                events.AddRange(result.Events); dispatches.AddRange(result.Dispatches);
+                if (result.Outcome == RoomOutcome.BattleWon) battleWon = true;
+                OrderPhysicalUnits();
+            }
+            private bool ApplyTriggeredSummon(WorkingUnit actor, TriggeredSummonRule rule, out int firstId)
+            {
+                firstId = 0;
+                SpawnPointReference? from = SummonSourcePoint(actor);
+                int position = 0;
+                if (from != null)
+                {
+                    SpawnPointGroupState before = context!.SpawnPoints!.Group(source.RoomIndex, CombatTeam.Player)!;
+                    var prefix = before.Occupants.Take(from.Index).Where(id => id > 0).ToHashSet();
+                    if (!SummonPhysical("Compact", pivot: from.Index)) return false;
+                    int moved = summonPivotMoves;
+                    SpawnPointGroupState after = context.SpawnPoints!.Group(source.RoomIndex, CombatTeam.Player)!;
+                    position = Math.Max(0, Math.Min(after.InnerCount - 1, after.Occupants.Take(after.InnerCount).Count(prefix.Contains)));
+                    int occupant = after.Occupants[from.Index];
+                    WorkingUnit? dead = units.FirstOrDefault(unit => unit.Source.Id == occupant);
+                    if (dead != null && dead.Health <= 0 && (!SummonPhysical("Remember", occupant) || !SummonPhysical("Remove", occupant))) return false;
+                    if (!source.Preview && moved > 0 && !CenterAfterSummon()) return false;
+                    if (actor.Source.EquipmentCards?.Count > 0)
+                    { unsupportedReason = "Triggered summon equipment transfer requires its attachment definitions."; return false; }
+                }
+                int requested = Math.Max(1, rule.Count);
+                if (rule.AdditionalCharacterId.Length > 0) requested = unchecked(requested + requested);
+                SpawnPointGroupState group = context!.SpawnPoints!.Group(source.RoomIndex, CombatTeam.Player)!;
+                int count = Math.Min(requested, group.GroupCount - group.Occupants.Take(group.GroupCount).Count(id => id != 0));
+                int bornCount = 0;
+                for (int offset = 0; offset < count && position + offset < group.InnerCount; offset++)
+                {
+                    int cardId = rule.IgnoreCardUpgrades ? 0 : actor.Source.SpawnerCardId;
+                    if (cardId > 0 && (bornCount > 0 || from != null))
+                    {
+                        CardInstanceState? card = context!.FindCard(cardId);
+                        SummonCardDefinition? copying = context.SummonCatalog!.Cards.FirstOrDefault(item => item.Creation.DataId == card?.DataId);
+                        if (copying == null) { unsupportedReason = "Missing triggered summon copy definition."; return false; }
+                        CardGenerationResult clone = CardGenerationModel.CloneDetached(context, copying.Creation, cardId);
+                        if (!clone.Supported) { unsupportedReason = clone.UnsupportedReason; return false; }
+                        context = clone.Context!; cardId = clone.AddedCards.Single().InstanceId;
+                    }
+                    string selected = rule.CharacterId;
+                    if (rule.Pool.Count > 0)
+                    {
+                        RngDraw draw = context.BattleRng.Range(0, rule.Pool.Count);
+                        selected = rule.Pool[draw.Value]; context = context.WithBattleRng(draw.State);
+                    }
+                    if (rule.AdditionalCharacterId.Length > 0 && bornCount >= count / 2) selected = rule.AdditionalCharacterId;
+                    SummonUnitDefinition? definition = context.SummonCatalog!.Units.FirstOrDefault(unit => unit.CharacterId == selected);
+                    if (definition == null) continue;
+                    if (cardId == 0 && definition.Fallback != null)
+                    {
+                        CardGenerationResult created = CardGenerationModel.CreateDetached(context, definition.Fallback);
+                        if (!created.Supported) { unsupportedReason = created.UnsupportedReason; return false; }
+                        context = created.Context!; cardId = created.AddedCards.Single().InstanceId;
+                    }
+                    CardInstanceState? sourceCard = context.FindCard(cardId);
+                    SummonCardDefinition? sourceDefinition = context.SummonCatalog!.Cards.FirstOrDefault(card => card.Creation.DataId == sourceCard?.DataId);
+                    bool matches = sourceCard == null || sourceDefinition?.SpawnCharacterId.Length == 0 || sourceDefinition?.SpawnCharacterId == selected;
+                    CombatUnit template = TriggeredSummonModel.WithSourceMatch(definition.Unit, matches);
+                    var birthRule = new CardPlayRule(sourceCard?.DataId ?? "", template.AssetKey, 0, "SpawnMonster", "Standby",
+                        template, definition.ExternalInteractions);
+                    int at = from != null ? position + offset : context.SpawnPoints!.FirstEmpty(source.RoomIndex, CombatTeam.Player);
+                    if (at < 0) continue;
+                    var callbacks = new List<QueuedCharacterTrigger>();
+                    UnitBirthResult born = UnitBirthModel.SpawnQueued(CurrentRoom(), birthRule, cardId, at,
+                        from != null || !rule.HasParentCard || bornCount > 0 || cardId == 0,
+                        context.StatusRules.First(status => status.Id == "cardless"), callbacks.Add,
+                        units.Select(unit => unit.Freeze()).ToArray(), selectedSlot: from != null);
+                    if (!born.Supported) { unsupportedReason = born.Result.UnsupportedReason; return false; }
+                    MergeSummon(born.Result);
+                    foreach (var callback in callbacks) QueueCallback(callback);
+                    if (rule.Upgrade != null)
+                    {
+                        RoomCombatResult upgraded = SpawnUpgradeModel.ApplyQueued(CurrentRoom(), born.UnitId, cardId, rule.Upgrade);
+                        if (!upgraded.Supported) { unsupportedReason = upgraded.UnsupportedReason; return false; }
+                        MergeSummon(upgraded);
+                        foreach (var callback in upgraded.PendingCallbacks) QueueCallback(callback);
+                    }
+                    if (bornCount++ == 0) firstId = born.UnitId;
+                }
+                return source.Preview ? SummonPhysical("Compact") : CenterAfterSummon();
             }
 
             private RoomCombatState CurrentRoom() => new RoomCombatState(source.RoomIndex, source.Deployment,
@@ -1696,10 +1885,18 @@ namespace MonsterTrain2Poju.Model
 
             private bool ActionTriggerPassesTest(WorkingUnit actor, CombatTrigger trigger, int lastSpawnedOverrideUnitId)
             {
-                if (!trigger.Effects.Any(effect => effect.UnitUpgrade != null || effect.Action != null)) return true;
+                if (!trigger.Effects.Any(effect => effect.UnitUpgrade != null || effect.Action != null || effect.Summon != null)) return true;
                 bool passed = trigger.Effects.Count == 0;
                 foreach (CombatEffect effect in trigger.Effects)
                 {
+                    if (effect.Summon != null)
+                    {
+                        if (!effect.Summon.Tests.ShouldTest) continue;
+                        bool summonValid = TriggeredSummonTest(actor, effect.Summon);
+                        if (!summonValid && effect.Summon.Tests.FailToCast) return false;
+                        passed |= summonValid;
+                        continue;
+                    }
                     CardActionEffect? action = effect.UnitUpgrade ?? effect.Action;
                     if (action == null)
                     {
@@ -2034,7 +2231,11 @@ namespace MonsterTrain2Poju.Model
                 ? new RoomCombatResult(null, RoomOutcome.Unsupported, round, events, unsupportedReason) : new RoomCombatResult(
                 new RoomCombatState(source.RoomIndex, source.Deployment,
                     units.Where(unit => unit.Alive && unit.InRoom).Select(unit => unit.Freeze()).ToArray(), source.ExternalInteractions, context, source.Preview),
-                outcome, round, events, retainedUnits: units.Where(unit => !unit.Alive).Select(unit => unit.Freeze()).ToArray(), dispatches: dispatches);
+                outcome, round, events, pendingCallbacks: nativeCardDamage ? deferredDamageDeaths.Select(dead =>
+                    new QueuedCharacterTrigger(source.RoomIndex, dead.Unit.Freeze(), returnSpawnerAfterQueue: dead.Return,
+                        deferUntilRemoval: true, harvestAfterDeath: !dead.Unit.Despawned,
+                        completePhysicalRemovalAfterQueue: context?.SpawnPoints != null)).ToArray() : null,
+                retainedUnits: units.Where(unit => !unit.Alive).Select(unit => unit.Freeze()).ToArray(), dispatches: dispatches);
             }
         }
     }

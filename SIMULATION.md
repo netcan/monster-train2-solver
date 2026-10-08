@@ -4799,3 +4799,81 @@ calibration suites pass, including two integrated battle-position checks, two
 standalone spawn-point checks, four missing-source checks and nine pooled
 summon checks. Unsupported transition counts remain zero. The complete archive
 inventory, sizes and SHA-256 values match the curated manifest.
+
+
+## Triggered summons and sequential damage deaths
+
+Schema 86 adds a finite `TriggeredSummonCatalog` to the shared context. Unit,
+card and room definitions use IDs; summon effects keep ID references rather
+than recursively embedding their descendants. Capturing a unit that summons
+itself therefore does not recursively expand the fixture. Every context-copy
+path preserves the immutable catalog.
+
+Character `CardEffectSpawnMonster` applications now create detached copied or
+fresh sources, mark cardless births, use actual physical insertion points and
+retain the native first-born cache. An application that has no free points
+preserves its previous cache. OnSpawn, OnUnscaledSpawn, AfterSpawnEnchant,
+cardless Rally and extra-upgrade healing callbacks join the existing outer
+character queue. The extra upgrade reaches both the new unit and its source
+before that queue resumes. Live friendly actors and zero-HP actors use the
+native current/last-known source point rules and centering steps.
+
+A physical spell damage step keeps the current zero-HP victim unfinished while
+processing previously finished deaths throughout the train. This prevents a
+later victim from incorrectly receiving Rally from an earlier death summon.
+The global death queue shares statistics, card routing, source caches and
+position state across floors; the last removal in a team batch centers its
+room. CheckForDeath removes the victim's death-statistic listener immediately,
+while its OnDeath callback remains pending for the next queue run. Unity frame
+completion clears removed actors' primary current and last-known pointers;
+card effects in the same frame can still use those retained points.
+
+Native UI previews also mutate shared summon weak references. The model
+observes actual preview births and clears only the primary effect caches they
+overwrote; it also reproduces the resulting cleared last-spawned reference.
+It does not replace these observed side effects with idealized preview behavior.
+
+Four binary archives record live/death hosts with copied/fresh sources:
+
+| Archive | Plays / EndTurns / Pyre | Bytes / unique nodes | Native Instant seconds |
+| --- | --- | --- | --- |
+| `full-battle-triggered-summons.mt2f` | 15 / 5 / 80 | 24,791 / 3,941 | 43.59 |
+| `full-battle-triggered-summons-fresh.mt2f` | 15 / 5 / 80 | 24,661 / 3,941 | 44.02 |
+| `full-battle-triggered-summons-death.mt2f` | 21 / 7 / 49 | 32,000 / 5,308 | 44.63 |
+| `full-battle-triggered-summons-death-fresh.mt2f` | 21 / 7 / 49 | 32,021 / 5,308 | 45.73 |
+
+The setup adds native summon/gold triggers to real player unit definitions and
+an extra +1 damage/+2 health/+1 armor upgrade. Death variants turn the real
+rearrangement spell into a native Tower-targeted lethal damage effect. Original
+Boss data, waves and profile signatures remain intact. All four captures finish
+with zero failures, mismatches, unsupported transitions and pending observations.
+Audio is muted. The installed game is 2.2.1, MVID
+`8fb07b96-f4db-4d2b-884d-c00536d6ccf4`.
+
+Together the captures contain 24 queued summon applications, twelve births,
+twelve zero-birth cache retentions and four dying sources. Forty complete
+native damage steps include two cross-room pending-death boundaries. The
+checker independently recomputes complete train state and retained victim
+flags in sixteen branches per damage step, rejects duplicate pending deaths,
+and checks parent isolation. Existing complete room/train/card-action/turn,
+physical-position and full-policy checks also recompute their native oracles.
+
+Use `Run-FullBattleProbe.ps1 -Policy units-spells-and-junk -TriggeredSummons`,
+adding `-TriggeredSummonsFresh`, `-TriggeredSummonsDeath`, or both to select
+the other variants. These switches enable physical capture and their own
+mandatory summon/death coverage gates. Curated data stays binary; sizes and
+SHA-256 values are recorded in `tests/fixtures/manifest.tsv`.
+
+This establishes the recorded trigger and death paths. Equipment transfer from
+an actor to its replacement still rejects; revival, Horde merging, additional
+summon pool/multi-birth trigger combinations, wider relic/room effects and
+special Boss position paths still need native integration. Full battle
+simulation and a complete solver remain unfinished.
+
+
+The full 133-archive regression exits zero: all 124 battle archives and nine
+calibration suites pass. Four summon suites independently compare all forty
+native damage steps, along with six integrated position checks, two standalone
+position checks, four missing-source checks and nine pooled summon checks.
+Unsupported transition counts remain zero. All binary sizes and SHA-256 values
+match the complete curated inventory and manifest.

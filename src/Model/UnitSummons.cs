@@ -46,6 +46,14 @@ namespace MonsterTrain2Poju.Model
     {
         public static UnitBirthResult Spawn(RoomCombatState source, CardPlayRule definition, int spawnerCardId,
             int position, bool isCardless, CombatStatus? cardlessStatus = null)
+            => SpawnCore(source, definition, spawnerCardId, position, isCardless, cardlessStatus, null, null, true);
+        internal static UnitBirthResult SpawnQueued(RoomCombatState source, CardPlayRule definition, int spawnerCardId,
+            int position, bool isCardless, CombatStatus cardlessStatus, Action<RoomCombatModel.QueuedCharacterTrigger> enqueue,
+            IReadOnlyList<CombatUnit> positionActors, bool selectedSlot = true)
+            => SpawnCore(source, definition, spawnerCardId, position, isCardless, cardlessStatus, enqueue, positionActors, selectedSlot);
+        private static UnitBirthResult SpawnCore(RoomCombatState source, CardPlayRule definition, int spawnerCardId,
+            int position, bool isCardless, CombatStatus? cardlessStatus, Action<RoomCombatModel.QueuedCharacterTrigger>? enqueue,
+            IReadOnlyList<CombatUnit>? positionActors, bool selectedSlot)
         {
             CombatContext? context = source.Context;
             CombatUnit? raw = definition.SpawnUnit;
@@ -82,8 +90,8 @@ namespace MonsterTrain2Poju.Model
                 template.SacrificeCardId, template.DeathState);
             if (context.SpawnPoints != null)
             {
-                var scope = new RoomCombatState(source.RoomIndex, source.Deployment, source.Units, source.ExternalInteractions, context, source.Preview);
-                var physical = BattleSpawnPointModel.Birth(context.SpawnPoints, scope, spawned, position, shift: true);
+                var scope = new RoomCombatState(source.RoomIndex, source.Deployment, positionActors ?? source.Units, source.ExternalInteractions, context, source.Preview);
+                var physical = BattleSpawnPointModel.Birth(context.SpawnPoints, scope, spawned, position, shift: selectedSlot);
                 if (!physical.Supported) return Unsupported(physical.Error!);
                 context = context.WithSpawnPoints(physical.State!);
                 players.Add(spawned);
@@ -97,7 +105,7 @@ namespace MonsterTrain2Poju.Model
             foreach (CardModifiers group in card == null ? Array.Empty<CardModifiers>() : new[] { card.Permanent, card.Temporary })
                 starting = StatusCallbackModel.MergeStartingStatuses(starting, group.Upgrades.SelectMany(upgrade => upgrade.Statuses));
             if (isCardless) starting = starting.Concat(new[] { cardlessStatus! }).ToArray();
-            RoomCombatResult result = RoomCombatModel.ApplySpawnTriggers(entered, spawned.Id, spawnerCardId > 0, starting);
+            RoomCombatResult result = RoomCombatModel.ApplySpawnTriggers(entered, spawned.Id, spawnerCardId > 0, starting, enqueue);
             if (!result.Supported) return new UnitBirthResult(result);
             var events = result.Events.ToList();
             RoomOutcome outcome = result.Outcome;
@@ -107,7 +115,9 @@ namespace MonsterTrain2Poju.Model
                 queue.AddRange(result.State.Units.Where(unit => unit.Team == CombatTeam.Player && unit.Id != spawned.Id)
                     .OrderBy(unit => unit.Id).Select(unit => new RoomCombatModel.QueuedCharacterTrigger(source.RoomIndex, unit,
                         "CardMonsterPlayed", lastSpawnedOverrideUnitId: spawned.Id)));
-            bool drained = RoomCombatModel.DrainCharacterQueue(queue, queued =>
+            bool drained;
+            if (enqueue != null) { foreach (var queued in queue) enqueue(queued); drained = true; }
+            else drained = RoomCombatModel.DrainCharacterQueue(queue, queued =>
             {
                 result = RoomCombatModel.ApplyQueuedCharacterTrigger(result.State!, queued, queue.Add);
                 if (!result.Supported) return false;
@@ -203,11 +213,16 @@ namespace MonsterTrain2Poju.Model
         // then always writes the descriptor to the source's temporary modifiers.
         // A unique/capacity rejection on the unit does not skip that source write.
         public static RoomCombatResult Apply(RoomCombatState source, int unitId, int spawnerCardId, CardUpgradeModifier upgrade)
+            => ApplyCore(source, unitId, spawnerCardId, upgrade, false);
+        internal static RoomCombatResult ApplyQueued(RoomCombatState source, int unitId, int spawnerCardId, CardUpgradeModifier upgrade)
+            => ApplyCore(source, unitId, spawnerCardId, upgrade, true);
+        private static RoomCombatResult ApplyCore(RoomCombatState source, int unitId, int spawnerCardId, CardUpgradeModifier upgrade,
+            bool deferCallbacks)
         {
             if (spawnerCardId < 0 || source.Context == null ||
                 spawnerCardId > 0 && source.Context.FindCard(spawnerCardId) == null)
                 return new RoomCombatResult(null, RoomOutcome.Unsupported, 0, new List<CombatEvent>(), "Missing extra spawn upgrade source.");
-            RoomCombatResult applied = UnitModifierModel.ApplyDirect(source, unitId, upgrade);
+            RoomCombatResult applied = RoomCombatModel.ApplyDirectUnitUpgrade(source, unitId, upgrade, false, "", null, deferCallbacks);
             if (!applied.Supported || source.Preview || spawnerCardId == 0) return applied;
             CardInstanceState card = applied.State!.Context!.FindCard(spawnerCardId)!;
             var changed = new CardInstanceState(card.InstanceId, card.DataId, card.Permanent,

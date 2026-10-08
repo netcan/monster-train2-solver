@@ -123,7 +123,7 @@ namespace MonsterTrain2Poju.Probe
                 if (effect.GetEffectStateName() == "CardEffectDespawnCharacter" && effect.GetParamInt() > 1)
                     interactions.Add("Native preview mutation of a delayed despawn counter");
                 if (effect.GetEffectStateName() != "CardEffectAddBattleCard" && (effect.GetCopyModifiersFromSource() || effect.GetFilterBasedOnMainSubClass() ||
-                    effect.GetParamCardUpgradeData() != null && !UnitTriggerUpgradeProbe.Known(effect.GetEffectStateName()) && effect.GetEffectStateName() != "CardEffectDrawAdditionalNextTurn")) interactions.Add("Spawned effect modifiers");
+                    effect.GetParamCardUpgradeData() != null && !UnitTriggerUpgradeProbe.Known(effect.GetEffectStateName()) && effect.GetEffectStateName() != "CardEffectDrawAdditionalNextTurn" && effect.GetEffectStateName() != "CardEffectSpawnMonster")) interactions.Add("Spawned effect modifiers");
                 var pool = new List<CardData>();
                 CardEffectState.GetFilteredCardListFromPool(effect.GetParamCardPool(), effect.GetParamCardFilter(),
                     AllGameManagers.Instance!.GetRelicManager(), ref pool);
@@ -133,7 +133,8 @@ namespace MonsterTrain2Poju.Probe
                     pool.Select(card => card.GetID()).ToArray(), effect.GetParamBool2(),
                     effect.GetEffectStateName() == "CardEffectAddBattleCard" ? CardGenerationProbe.Definition(effect) : null,
                     UnitTriggerUpgradeProbe.Definition(effect, interactions), UnitTriggerActionProbe.Definition(effect),
-                    effect.GetEffectStateName() == "CardEffectDamage" && effect.GetUseStatusEffectStackMultiplier() ? effect.GetStatusEffectStackMultiplier() : null, UnitTriggerActionProbe.Scaling(effect));
+                    effect.GetEffectStateName() == "CardEffectDamage" && effect.GetUseStatusEffectStackMultiplier() ? effect.GetStatusEffectStackMultiplier() : null, UnitTriggerActionProbe.Scaling(effect),
+                    TriggeredSummonProbe.Definition(effect));
             }).ToArray();
             return new CombatTrigger(trigger.GetTrigger().ToString(), trigger.GetTriggerOnce(), false,
                 trigger.GetHideVisualAndIgnoreSilence(), 1, effects,

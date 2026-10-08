@@ -516,3 +516,43 @@ calibration suites pass, including two integrated battle-position checks, two
 standalone spawn-point checks, four missing-source checks and nine pooled
 summon checks. Unsupported transition counts remain zero. The complete archive
 inventory, sizes and SHA-256 values match the curated manifest.
+
+
+The schema-86 triggered summon family contains four direct binary archives:
+`full-battle-triggered-summons.mt2f`, `full-battle-triggered-summons-fresh.mt2f`,
+`full-battle-triggered-summons-death.mt2f` and
+`full-battle-triggered-summons-death-fresh.mt2f`. Real player unit definitions
+receive native summon, spawn/heal gold and Rally triggers; an extra upgrade
+adds one damage, two health and one armor. Death variants apply native lethal
+Tower damage using the real rearrangement spell. Boss/waves stay original.
+
+The two live variants each win at Pyre 80 after 15 plays and five EndTurns;
+each records ten summon applications, four births and six retained zero-birth
+caches. The death variants each win at Pyre 49 after 21 plays and seven
+EndTurns, recording two dying-source applications/births. Copied and fresh
+source paths remain separate. The archives preserve flat ID-based definitions,
+physical positions, first-born effect caches and queued spawn/healing/Rally
+boundaries, including actual shared weak-reference changes during previews.
+
+Forty complete native damage steps include two cross-room pending-death
+boundaries. Independent checks compare every complete train state and the
+zero-HP victim's flags in sixteen branches, including death-statistic listener
+removal, pending callbacks, source return and physical centering. Duplicate
+deaths reject without partial children or parent changes. Full policy and
+position checks remain active. All four native capture gates are zero, with
+muted audio and unchanged original profile signatures.
+
+Sizes/nodes are 24,791/3,941; 24,661/3,941; 32,000/5,308; and 32,021/5,308
+in the archive order above. Instant sampling times are 43.59, 44.02, 44.63 and
+45.73 seconds. The inventory contains 133 archives: 124 battles and nine
+calibration suites. Equipment transfer, revival, Horde merging, additional
+trigger summon pool/multi-birth combinations and broader special mechanics
+remain incomplete; these archives establish the recorded paths only.
+
+
+The full 133-archive regression exits zero: all 124 battle archives and nine
+calibration suites pass. Four summon suites independently compare all forty
+native damage steps, along with six integrated position checks, two standalone
+position checks, four missing-source checks and nine pooled summon checks.
+Unsupported transition counts remain zero. All binary sizes and SHA-256 values
+match the complete curated inventory and manifest.

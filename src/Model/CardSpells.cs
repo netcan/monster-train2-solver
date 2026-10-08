@@ -30,12 +30,15 @@ namespace MonsterTrain2Poju.Model
         public string? UnsupportedReason { get; }
         public IReadOnlyList<SpellTargetCollection> TargetCollections { get; }
         public IReadOnlyList<CardPileState>? OtherPiles { get; }
+        internal IReadOnlyList<RoomCombatModel.QueuedCharacterTrigger> PendingCallbacks { get; }
         public bool Supported => State != null;
         internal TrainSpellResult(TrainCombatState? state, RoomOutcome outcome, IReadOnlyList<CombatEvent> events, string? error = null,
-            IReadOnlyList<SpellTargetCollection>? collections = null, IReadOnlyList<CardPileState>? otherPiles = null)
+            IReadOnlyList<SpellTargetCollection>? collections = null, IReadOnlyList<CardPileState>? otherPiles = null,
+            IReadOnlyList<RoomCombatModel.QueuedCharacterTrigger>? pendingCallbacks = null)
         { State = state; Outcome = outcome; Events = Array.AsReadOnly(events.ToArray()); UnsupportedReason = error;
             TargetCollections = Array.AsReadOnly((collections ?? Array.Empty<SpellTargetCollection>()).ToArray());
-            OtherPiles = otherPiles == null ? null : Array.AsReadOnly(otherPiles.ToArray()); }
+            OtherPiles = otherPiles == null ? null : Array.AsReadOnly(otherPiles.ToArray());
+            PendingCallbacks = Array.AsReadOnly((pendingCallbacks ?? Array.Empty<RoomCombatModel.QueuedCharacterTrigger>()).ToArray()); }
     }
 
     public static class CardSpellModel
@@ -95,6 +98,59 @@ namespace MonsterTrain2Poju.Model
         public static TrainSpellResult Apply(TrainCombatState source, int roomIndex, IReadOnlyList<CardActionEffect> effects,
             int targetId, int sourceCardId = 0, BattlePlayRules? definitions = null, IReadOnlyList<CardPileState>? otherPiles = null, int selfUnitId = 0)
             => ApplyCore(source, roomIndex, effects, targetId, sourceCardId, null, null, definitions, fullTrain: true, otherPiles, selfUnitId);
+
+        internal static TrainSpellResult ApplyNativeDamageStep(TrainCombatState source, int roomIndex, int targetId, int damage,
+            int sourceCardId, IReadOnlyList<RoomCombatModel.QueuedCharacterTrigger> pendingDeaths, int attackerUnitId = 0)
+        {
+            TrainCombatState state = source;
+            RoomCombatState? initial = source.Rooms.FirstOrDefault(room => room.RoomIndex == roomIndex);
+            if (initial == null || source.Context?.SpawnPoints == null || !source.Context.NextUnitId.HasValue ||
+                pendingDeaths.Any(queued => !source.Rooms.Any(room => room.RoomIndex == queued.RoomIndex) ||
+                queued.Kind != "OnDeath" || !queued.DeferUntilRemoval || queued.Unit.Health > 0 || queued.Unit.Id <= 0 ||
+                queued.Unit.DeathState?.HasFinishedDying != true || queued.Unit.Id >= source.Context.NextUnitId ||
+                source.Rooms.Any(room => room.Units.Any(unit => unit.Id == queued.Unit.Id))) ||
+                pendingDeaths.Select(queued => queued.Unit.Id).Distinct().Count() != pendingDeaths.Count)
+                return UnsupportedTrain("Invalid global spell damage phase.");
+            RoomCombatResult FinishQueue(RoomCombatState frame)
+            {
+                state = ReplaceRoom(state, frame);
+                var queue = pendingDeaths.ToList();
+                var events = new List<CombatEvent>();
+                RoomOutcome outcome = RoomOutcome.Exchanged;
+                string? error = null;
+                RoomCombatState RestoreUnfinished(RoomCombatResult result) => new RoomCombatState(result.State!.RoomIndex,
+                    result.State.Deployment, result.State.Units.Concat(result.RetainedUnits.Where(unit => unit.Health <= 0 &&
+                        unit.DeathState?.HasFinishedDying == false)).ToArray(), result.State.ExternalInteractions, result.State.Context, result.State.Preview);
+                bool drained = RoomCombatModel.DrainCharacterQueue(queue, queued =>
+                {
+                    RoomCombatState room = state.Rooms.Single(item => item.RoomIndex == queued.RoomIndex);
+                    var fired = RoomCombatModel.ApplyQueuedCharacterTrigger(room, queued, queue.Add);
+                    if (!fired.Supported) { error = fired.UnsupportedReason; return false; }
+                    state = ReplaceRoom(state, RestoreUnfinished(fired)); events.AddRange(fired.Events);
+                    if (fired.Outcome != RoomOutcome.Exchanged) outcome = fired.Outcome;
+                    return true;
+                }, queued =>
+                {
+                    RoomCombatState room = state.Rooms.Single(item => item.RoomIndex == queued.RoomIndex);
+                    bool lastInTeam = !queue.Any(item => item.Kind == "OnDeath" && item.Unit.Team == queued.Unit.Team &&
+                        item.Unit.Id > queued.Unit.Id);
+                    var returned = lastInTeam ? RoomCombatModel.SettleQueuedSpawnerAndCenter(room, queued.Unit) :
+                        RoomCombatModel.SettleQueuedSpawner(room, queued.Unit);
+                    if (!returned.Supported) { error = returned.UnsupportedReason; return false; }
+                    state = ReplaceRoom(state, RestoreUnfinished(returned)); events.AddRange(returned.Events);
+                    return true;
+                });
+                return new RoomCombatResult(drained ? state.Rooms.Single(room => room.RoomIndex == roomIndex) : null,
+                    drained ? outcome : RoomOutcome.Unsupported, 0, events, error);
+            }
+            var applied = RoomCombatModel.ApplyNativeCardDamageAfterTraits(initial, targetId, damage, sourceCardId,
+                attackerUnitId,
+                pendingDeaths.Count == 0 ? null : (Func<RoomCombatState, RoomCombatResult>)FinishQueue);
+            if (!applied.Supported) return UnsupportedTrain(applied.UnsupportedReason!);
+            state = ReplaceRoom(state, applied.State!);
+            return new TrainSpellResult(state, applied.Outcome, applied.Events, otherPiles: state.Context!.OtherPiles,
+                pendingCallbacks: applied.PendingCallbacks);
+        }
 
         private static TrainSpellResult ApplyCore(TrainCombatState source, int roomIndex, IReadOnlyList<CardActionEffect> effects,
             int targetId, int sourceCardId, int? playerCapacity, int? enemyCapacity, BattlePlayRules? definitions, bool fullTrain,
@@ -296,6 +352,7 @@ namespace MonsterTrain2Poju.Model
                         continue;
                     }
                     int? scaledDamage = null;
+                    bool nativeDamagePhase = effect.Type == "Damage" && targetRoom!.Context?.SpawnPoints != null && !targetRoom.Preview;
                     // Native calculates trait damage and defensive status focus before its trigger
                     // queue drains the previous victim's standby return. Preserve that value once.
                     if (effect.Type == "Damage")
@@ -304,18 +361,32 @@ namespace MonsterTrain2Poju.Model
                         if (!scaled.Supported) return UnsupportedTrain(scaled.UnsupportedReason!);
                         state = WithContext(state, scaled.Context!);
                         scaledDamage = Math.Max(0, scaled.Damage);
-                        FocusDamageStatuses(target, targetRoom!, scaledDamage.Value); DrainDeaths();
+                        FocusDamageStatuses(target, targetRoom!, scaledDamage.Value);
+                        if (!nativeDamagePhase || callbacks.Any(queued => queued.Kind != "OnDeath" || !queued.DeferUntilRemoval)) DrainDeaths();
                         // Draining a prior death updates shared statistics; the next target must read that new context.
                         targetRoom = state.Rooms.Single(room => room.RoomIndex == targetRoom!.RoomIndex);
                     }
                     RoomPlayRule? capacity = definitions?.Rooms.FirstOrDefault(item => item.RoomIndex == targetRoom!.RoomIndex);
-                    RoomCombatResult applied = ApplyOne(targetRoom!, effect, target, sourceCardId,
+                    var priorDeaths = nativeDamagePhase ? callbacks.ToArray() : Array.Empty<RoomCombatModel.QueuedCharacterTrigger>();
+                    if (nativeDamagePhase) callbacks.Clear();
+                    TrainSpellResult? nativeApplied = nativeDamagePhase ? ApplyNativeDamageStep(state, targetRoom!.RoomIndex, id,
+                        scaledDamage!.Value, sourceCardId, priorDeaths, selfUnitId) : null;
+                    if (nativeApplied != null && !nativeApplied.Supported) return UnsupportedTrain(nativeApplied.UnsupportedReason!);
+                    RoomCombatResult applied = nativeApplied != null
+                        ? new RoomCombatResult(nativeApplied.State!.Rooms.Single(room => room.RoomIndex == targetRoom!.RoomIndex),
+                            nativeApplied.Outcome, 0, nativeApplied.Events.ToList(), pendingCallbacks: nativeApplied.PendingCallbacks)
+                        : ApplyOne(targetRoom!, effect, target, sourceCardId,
                         RoomCapacityModel.Maximum(state.Context, targetRoom!.RoomIndex, CombatTeam.Player) ?? capacity?.PlayerCapacity ?? playerCapacity,
                         RoomCapacityModel.Maximum(state.Context, targetRoom.RoomIndex, CombatTeam.Enemy) ?? capacity?.EnemyCapacity ?? enemyCapacity,
                         deferSpawnerExhaustion: piles != null, scaledDamage: scaledDamage, selfUnitId: selfUnitId);
                     if (!applied.Supported) return UnsupportedTrain(applied.UnsupportedReason!);
-                    state = ReplaceRoom(state, applied.State!);
+                    state = nativeApplied?.State ?? ReplaceRoom(state, applied.State!);
                     callbacks.AddRange(applied.PendingCallbacks);
+                    foreach (var removed in priorDeaths)
+                    {
+                        pendingDeadRooms.Remove(removed.Unit.Id);
+                        deferredExhaustion.Remove(removed.Unit.SpawnerCardId);
+                    }
                     if (state.Context!.OtherPiles != null) piles = state.Context.OtherPiles.ToArray();
                     events.AddRange(applied.Events);
                     if ((effect.Type == "Heal" && effect.Value >= 0 || effect.Type == "UnitUpgrade") && target.Triggers.Any(trigger => trigger.Kind == "OnHeal" &&
@@ -325,7 +396,7 @@ namespace MonsterTrain2Poju.Model
                     if (effect.Type == "Damage" && !applied.State!.Units.Any(unit => unit.Id == id))
                     {
                         pendingDeadRooms[id] = targetRoom!.RoomIndex;
-                        if (piles != null && target.SpawnerCardId > 0) deferredExhaustion.Add(target.SpawnerCardId);
+                        if (!nativeDamagePhase && piles != null && target.SpawnerCardId > 0) deferredExhaustion.Add(target.SpawnerCardId);
                     }
                     else if (piles != null && target.SpawnerCardId > 0 && !applied.State!.Units.Any(unit => unit.Id == id))
                         RouteDeadCard(target.SpawnerCardId);

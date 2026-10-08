@@ -60,6 +60,20 @@ namespace MonsterTrain2Poju.Model
             return ClearRemovedReferences(source, activeIds);
         }
 
+        internal static TrainCombatState CompleteFrameRemovals(TrainCombatState source)
+        {
+            source = ProcessRemovals(source);
+            BattleSpawnPoints? points = source.Context?.SpawnPoints;
+            if (points == null) return source;
+            var active = source.Rooms.SelectMany(room => room.Units).Select(unit => unit.Id).ToHashSet();
+            // Unity's CharacterState.OnDestroy clears both primary position pointers.
+            // Destruction finishes at the frame boundary after the turn, while card
+            // effects can still use removed actors' last-known points within a frame.
+            var retained = points.Units.Select(unit => active.Contains(unit.UnitId) ? unit :
+                new UnitSpawnPointState(unit.UnitId, null, null, unit.OuterBoss, unit.SpawnedInPreview)).ToArray();
+            return CardSpellModel.WithContext(source, source.Context!.WithSpawnPoints(new BattleSpawnPoints(points.Groups, retained)));
+        }
+
         private static TrainCombatState ClearRemovedReferences(TrainCombatState source, HashSet<int> activeIds)
         {
             CombatContext? context = source.Context;
@@ -67,7 +81,10 @@ namespace MonsterTrain2Poju.Model
             foreach (CardInstanceState card in context?.CardRegistry ?? context?.CardInstances ?? Array.Empty<CardInstanceState>())
                 if (card.EquippedUnitId > 0 && !activeIds.Contains(card.EquippedUnitId.Value)) context = context!.WithCard(card.WithEquippedUnit(0));
             return new TrainCombatState(source.Rooms.Select(room => new RoomCombatState(room.RoomIndex, room.Deployment,
-                room.Units.Select(unit => unit.WithoutRemovedAttacker(activeIds)).ToArray(), room.ExternalInteractions, context, room.Preview)).ToArray(),
+                room.Units.Select(unit => unit.WithoutRemovedAttacker(activeIds).WithTriggers(unit.Triggers.Select(trigger =>
+                    trigger.WithEffects(trigger.Effects.Select(effect => effect.Summon?.FirstSpawnedUnitId > 0 &&
+                        !activeIds.Contains(effect.Summon.FirstSpawnedUnitId) ? effect.WithSummon(effect.Summon.WithFirstSpawned(0)) : effect).ToArray())).ToArray())).ToArray(),
+                room.ExternalInteractions, context, room.Preview)).ToArray(),
                 source.Movement, source.EnemySlotsPerRoom, context);
         }
 

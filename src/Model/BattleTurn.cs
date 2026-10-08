@@ -245,7 +245,7 @@ namespace MonsterTrain2Poju.Model
                     spawn = WithTrain(spawn, preview.State!, spawn.Turn, spawn.Rng);
                 }
                 if (source.CanonicalDecisionReferences)
-                    spawn = WithTrain(spawn, TrainCombatModel.ProcessRemovals(spawn.Train), spawn.Turn, spawn.Rng);
+                    spawn = WithTrain(spawn, TrainCombatModel.CompleteFrameRemovals(spawn.Train), spawn.Turn, spawn.Rng);
                 CombatContext finalContext = spawn.Train.Context!;
                 BattleRngStream[] streams = source.RngStreams.Select(stream => new BattleRngStream(stream.Name, stream.Seed,
                     stream.Name == "Battle" ? finalContext.BattleRng : stream.Name == "CardDraw" ? finalContext.Cards.Rng :
@@ -293,7 +293,7 @@ namespace MonsterTrain2Poju.Model
         }
         private static CombatContext WithCards(CombatContext context, CardCycleState cards) => new CombatContext(cards,
             context.BattleRng, context.Gold, context.NextCardId, context.MaxHandSize, context.StatusRules, context.Statistics, context.CardInstances,
-            context.CardRegistry, context.AllScenarioBossesDead, context.NextAddedTemporaryUpgrades, context.OtherPiles, context.QueryFrame, context.KillCamActivated, context.MagicPower, context.IsolatedBattlePreview, context.EnergyState, context.RoomCapacities, context.AbilityCardCache, context.LastAbilityActivatorUnitId, context.PermanentlyDisabledAbilities, context.LastSpawnedUnitId, context.NextUnitId, context.SpawnPoints);
+            context.CardRegistry, context.AllScenarioBossesDead, context.NextAddedTemporaryUpgrades, context.OtherPiles, context.QueryFrame, context.KillCamActivated, context.MagicPower, context.IsolatedBattlePreview, context.EnergyState, context.RoomCapacities, context.AbilityCardCache, context.LastAbilityActivatorUnitId, context.PermanentlyDisabledAbilities, context.LastSpawnedUnitId, context.NextUnitId, context.SpawnPoints, context.SummonCatalog);
         private static TrainCombatState WithContext(TrainCombatState train, CombatContext context, bool deployment) =>
             new TrainCombatState(train.Rooms.Select(room => new RoomCombatState(room.RoomIndex, deployment, room.Units,
                 room.ExternalInteractions, context)).ToArray(), train.Movement, train.EnemySlotsPerRoom, context);

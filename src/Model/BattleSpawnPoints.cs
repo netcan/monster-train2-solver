@@ -42,7 +42,9 @@ namespace MonsterTrain2Poju.Model
         internal BattleSpawnPoints? State { get; }
         internal bool Supported => State != null;
         internal string? Error { get; }
-        internal BattleSpawnPointResult(BattleSpawnPoints? state, string? error = null) { State = state; Error = error; }
+        internal int PivotMoves { get; }
+        internal BattleSpawnPointResult(BattleSpawnPoints? state, string? error = null, int pivotMoves = 0)
+        { State = state; Error = error; PivotMoves = pivotMoves; }
     }
     internal static class BattleSpawnPointModel
     {
@@ -95,7 +97,7 @@ namespace MonsterTrain2Poju.Model
                     reference.Current, reference.LastKnown);
             }).ToArray());
             var result = SpawnPointModel.Apply(world, operation, room.RoomIndex, team, unitId, index, targetIndex, target);
-            return result.Supported ? new BattleSpawnPointResult(BattleSpawnPoints.FromWorld(result.State!)) : Reject(result.UnsupportedReason!);
+            return result.Supported ? new BattleSpawnPointResult(BattleSpawnPoints.FromWorld(result.State!), pivotMoves: result.PivotMoves) : Reject(result.UnsupportedReason!);
         }
         internal static BattleSpawnPointResult Birth(BattleSpawnPoints source, RoomCombatState room, CombatUnit unit,
             int position, bool shift)
@@ -113,7 +115,7 @@ namespace MonsterTrain2Poju.Model
                 return Reject("Physical birth point is still occupied after insertion shifting.");
             var placed = Apply(state, room, "Set", unit.Team, unit.Id,
                 target: new SpawnPointReference(room.RoomIndex, unit.Team, position), newUnit: unit);
-            if (!placed.Supported || !shift || room.Preview) return placed;
+            if (!placed.Supported || !shift && unit.Team != CombatTeam.Player || room.Preview) return placed;
             return Apply(placed.State!, new RoomCombatState(room.RoomIndex, room.Deployment, room.Units.Append(unit).ToArray(),
                 room.ExternalInteractions, room.Context, room.Preview), "Compact", unit.Team);
         }
