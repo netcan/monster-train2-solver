@@ -5919,3 +5919,43 @@ native provenance and original-file gates pass; no errors or unsupported
 transitions occur. Probe builds without warnings/errors; ModelChecks retains
 fourteen existing nullable warnings. Both PowerShell scripts parse and staged
 whitespace checks pass. There are no tracked source JSON fixtures or results.
+
+### Actual aura source death and destroyed-reference release
+
+`-PersistentEnchantmentDeaths` adds native OnTurnBegin self damage and OnDeath
+gold callbacks to paid aura sources. Two sources survive the first combat, then
+die through the ordinary turn/queue path. Sources are not removed by scenario
+administration. Native binding remains available for the removal signal and
+becomes false only after Unity destruction at the stable frame boundary. The
+model now releases that binding during CompleteFrameRemovals; stopped terminal
+frames retain their existing destruction boundary. Subsequent general UI preview
+prepares only live room actors, not retained destroyed enchanters.
+
+Source removal withdraws statuses from living targets. Dead/destroyed target
+entries can retain IsEnchanted=true with NextAction=Remove because native skips
+their status API call; their exact primary/preview caches must remain intact.
+This fixture requires formerly bound sources, destroyed-reference release,
+withdrawn live targets, skipped corpse entries and no later preview preparation.
+
+The accepted muted Instant run takes 63.43 seconds, wins after 21 paid actions
+and seven EndTurns with Pyre 65, and has zero differences/capture failures/
+unsupported/pending records. Original profile/log signatures remain unchanged.
+Independent checks reproduce 61 room stages, fourteen train phases, eleven spawns,
+thirteen card cycles, all actions/turns and initial/middle-root policy chains in
+16 branches with unchanged parents. Physical checks cover 23 removals, ten
+cross-room moves and one empty ascent. The first native recording rejected the
+previous model's preparation of dead source caches; it is not curated.
+
+`full-battle-persistent-enchantment-deaths.mt2f` is byte-identical to the accepted
+native capture: 32,431 bytes / 5,518 nodes, no text source or JSON companion.
+Inventory is 156 archives: 143 battles/thirteen calibrations. All inventory
+sizes/hashes pass. Regression evidence is the preceding complete 155-archive
+run/audit plus this new paid battle, the previous persistent-aura, spawn-enchant
+and revival battles, all thirteen calibrations and the complete pure check suite.
+A second complete 156-archive run was not performed. Probe builds with zero
+warnings/errors; ModelChecks retains fourteen existing nullable warnings.
+
+Actual persistent-aura source death is now verified for this singleton armor
+policy. Aura-source revival, whole-battle random pools, actor/card-changing aura
+children and the remaining combat mechanics are still open; the full simulator
+and optimal solver remain incomplete.

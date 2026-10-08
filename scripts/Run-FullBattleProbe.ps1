@@ -96,6 +96,7 @@ param(
     [switch] $HeroCopy,
     [switch] $SpawnEnchant,
     [switch] $PersistentEnchantments,
+    [switch] $PersistentEnchantmentDeaths,
     [switch] $HarvestTriggers,
     [switch] $HordeRemoval,
     [switch] $HordeDeath,
@@ -138,6 +139,7 @@ param(
 
 $ErrorActionPreference = 'Stop'
 if ($EnchantmentWorld) { $EnchantmentCombat = $true }
+if ($PersistentEnchantmentDeaths) { $PersistentEnchantments = $true }
 if ($PersistentEnchantments) { $PhysicalSpawnPoints = $true }
 if ($Revival -and $TriggeredSummonsRevival) { throw 'Choose standalone revival or triggered summon revival.' }
 if ($TriggeredSummonsRevival) { $TriggeredSummonsEquipmentOwned = $true; $TriggeredSummonsDeath = $true }
@@ -225,6 +227,7 @@ if ($UnitCopy) { $environment['MT2_PROBE_MODIFIERS'] = 'unit-copy' }
 if ($HeroCopy) { $environment['MT2_PROBE_MODIFIERS'] = 'hero-copy' }
 if ($SpawnEnchant) { $environment['MT2_PROBE_MODIFIERS'] = 'spawn-enchant' }
 if ($PersistentEnchantments) { $environment['MT2_PROBE_MODIFIERS'] = 'persistent-enchantment' }
+if ($PersistentEnchantmentDeaths) { $environment['MT2_PROBE_MODIFIERS'] = 'persistent-enchantment-deaths' }
 if ($Sentry -or $SentryLethal) {
     $environment['MT2_PROBE_MODIFIERS'] = $(if ($SentryLethal) { 'sentry-lethal' } else { 'sentry' })
     $environment['MT2_PROBE_ISOLATE_UI_RNG'] = '1'
@@ -260,14 +263,19 @@ $nativePassed = [bool] (Select-String -LiteralPath $unityLog -Pattern 'DEPTH-PAS
 $terminalSettled = $trace.TerminalCaptureBoundary -eq 'AfterStopCombatLoop' -and $trace.TerminalEffectsSettled -eq $true
 $originalUnchanged = (Get-OriginalSignature) -ceq $originalBefore
 if ($PersistentEnchantments) {
+    $persistentScenario = if ($PersistentEnchantmentDeaths) { 'persistent-enchantment-deaths' } else { 'persistent-enchantment' }
     $persistentFrames = @($trace.Actions | ForEach-Object { $_.Actual.Spawn.Train.Context.Enchantments })
     $persistentRules = @($persistentFrames | ForEach-Object { $_.Rooms.Units.Triggers.Effects.Enchantment } | Where-Object { $null -ne $_ -and $_.Bound })
-    if ($trace.Schema -ne 103 -or $trace.ModifierScenario -ne 'persistent-enchantment' -or
+    if ($trace.Schema -ne 103 -or $trace.ModifierScenario -ne $persistentScenario -or
         -not (Select-String -LiteralPath $unityLog -Pattern 'PERSISTENT-ENCHANTMENT-PREPARED' -Quiet) -or
         $persistentFrames.Count -ne @($trace.Actions).Count -or @($trace.Turns).Count -lt 3 -or
         $persistentRules.Count -lt 2 -or @($persistentRules | Where-Object { @($_.State.PrimaryTargets).Count -gt 0 }).Count -eq 0) {
         throw 'Persistent enchantment scenario did not retain bound, nonempty aura state through the paid multi-turn battle.'
     }
+    if ($PersistentEnchantmentDeaths -and @($persistentFrames | ForEach-Object { $_.RetainedUnits } | Where-Object {
+        $_.Unit.Health -eq 0 -and $_.Unit.DeathState.IsDestroyed -and
+        @($_.Unit.Triggers.Effects.Enchantment | Where-Object { $null -ne $_ -and -not $_.Bound -and @($_.State.PrimaryTargets).Count -gt 0 }).Count -gt 0
+    }).Count -eq 0) { throw 'Persistent enchantment death scenario did not destroy and release an aura source with retained effect maps.' }
 }
 $modifierActions = @($trace.Actions | Where-Object {
     $actionEntry = $_

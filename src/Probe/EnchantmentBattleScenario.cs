@@ -10,6 +10,7 @@ namespace MonsterTrain2Poju.Probe
     internal static class EnchantmentBattleScenario
     {
         internal static bool Prepared;
+        internal static bool SourceDeaths => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == "persistent-enchantment-deaths";
         private static readonly Dictionary<int, (CharacterState Native, int Room)> observed = new Dictionary<int, (CharacterState, int)>();
         internal static void Prepare(AllGameManagers managers, ManualLogSource log)
         {
@@ -33,12 +34,22 @@ namespace MonsterTrain2Poju.Probe
                     CharacterTriggerData spawn = HealingScenario.HealGold(0, false, true);
                     Set(spawn, "trigger", CharacterTriggerData.Trigger.OnSpawn);
                     Set(spawn, "effects", new List<CardEffectData> { aura }); triggers.Add(spawn);
+                    if (SourceDeaths)
+                    {
+                        var damage = new CardEffectData("CardEffectDamage", null!, Team.Type.Monsters);
+                        damage.Cheat_SetTargetMode(TargetMode.Self); Set(damage, "paramInt", 9999);
+                        CharacterTriggerData turn = HealingScenario.HealGold(0, false, true);
+                        Set(turn, "trigger", CharacterTriggerData.Trigger.OnTurnBegin);
+                        Set(turn, "effects", new List<CardEffectData> { damage }); triggers.Add(turn);
+                        CharacterTriggerData death = HealingScenario.HealGold(3, false, true);
+                        Set(death, "trigger", CharacterTriggerData.Trigger.OnDeath); triggers.Add(death);
+                    }
                 }
                 Set(unit, "triggers", triggers);
                 foreach (CardState card in owned.Where(card => card.GetCardDataID() == data.GetID())) card.Setup(data, save);
             }
             Prepared = true; Set(managers.GetCombatManager()!, "combatStateChanged", true);
-            log.LogInfo("PERSISTENT-ENCHANTMENT-PREPARED paid Steward armor aura on both teams, status callbacks, unchanged original Boss/waves; aura remains throughout combat.");
+            log.LogInfo("PERSISTENT-ENCHANTMENT-PREPARED paid Steward armor aura on both teams, status callbacks, unchanged original Boss/waves; sourceDeaths=" + SourceDeaths);
         }
         internal static EnchantmentWorld CaptureWorld(FullBattleTrace trace)
         {

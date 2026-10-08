@@ -27,7 +27,8 @@ internal static class PersistentEnchantmentChecks
     internal static void Native(FixtureValue fixture)
     {
         if (!fixture.TryGetProperty("ModifierScenario", out var scenario) ||
-            scenario.GetString() != "persistent-enchantment") return;
+            scenario.GetString() is not ("persistent-enchantment" or "persistent-enchantment-deaths")) return;
+        bool sourceDeaths = scenario.GetString() == "persistent-enchantment-deaths";
         Require(fixture.GetProperty("Schema").GetInt32() >= 103 &&
             fixture.GetProperty("GameVersion").GetString() == "2.2.1" &&
             fixture.GetProperty("GameModuleMvid").GetString() == "8fb07b96-f4db-4d2b-884d-c00536d6ccf4" &&
@@ -48,7 +49,7 @@ internal static class PersistentEnchantmentChecks
             "The persistent-aura oracle lost preview, physical points or its shared world.");
         EnchantmentWorld[] worlds = states.Select(state => state.Spawn.Train.Context!.Enchantments!).ToArray();
         Require(worlds.Any(world => Rules(world).Count(rule => rule.Bound) >= 2) &&
-            Rules(worlds[^1]).Any(rule => rule.Bound),
+            (sourceDeaths || Rules(worlds[^1]).Any(rule => rule.Bound)),
             "Paid aura sources were not bound or did not persist through the terminal battle.");
         Require(worlds.Any(world => Rules(world).Any(rule => rule.Bound && rule.Targeting.AllowEnemy &&
             rule.Targeting.AllowPlayer && rule.StatusPool.Count == 1 && rule.StatusPool[0].Id == "armor" &&
@@ -71,6 +72,31 @@ internal static class PersistentEnchantmentChecks
             entry.GetProperty("Actual").Deserialize<BattleTurnState>()!.Spawn.Train.Context!.Gold >
             entry.GetProperty("Before").Deserialize<BattleTurnState>()!.Spawn.Train.Context!.Gold),
             "The paid aura policy did not drain its status-change child effects.");
+        if (sourceDeaths)
+        {
+            int[] sources = worlds.SelectMany(world => world.RetainedUnits).Where(actor =>
+                actor.Unit.Health == 0 && actor.Unit.DeathState?.IsDestroyed == true && actor.RoomIndex == -1 &&
+                actor.Unit.Triggers.SelectMany(trigger => trigger.Effects).Any(effect => effect.Enchantment != null &&
+                    !effect.Enchantment.Bound && effect.Enchantment.State.PrimaryTargets.Count > 0 &&
+                    effect.Enchantment.State.PrimaryTargets.Any(target => !target.IsEnchanted)))
+                .Select(actor => actor.Unit.Id).Distinct().ToArray();
+            Require(sources.Length >= 2 && sources.All(id => worlds.Any(world => world.Rooms.SelectMany(room => room.Units)
+                .Any(unit => unit.Id == id && unit.Triggers.SelectMany(trigger => trigger.Effects).Any(effect => effect.Enchantment?.Bound == true)))) &&
+                worlds.All(world => world.RetainedUnits.Where(actor => sources.Contains(actor.Unit.Id))
+                    .SelectMany(actor => actor.Unit.Triggers).SelectMany(trigger => trigger.Effects)
+                    .Where(effect => effect.Enchantment != null && !effect.Enchantment.Bound)
+                    .All(effect => effect.Enchantment!.State.PrimaryTargets.Where(target => world.Rooms.SelectMany(room => room.Units)
+                        .Any(unit => unit.Id == target.UnitId && unit.Health > 0)).All(target => !target.IsEnchanted))) &&
+                worlds.Any(world => Rules(world).Any(rule => !rule.Bound && rule.State.PrimaryTargets.Any(target =>
+                    target.IsEnchanted && target.NextAction == 2 && world.RetainedUnits.Any(actor =>
+                        actor.Unit.Id == target.UnitId && actor.Unit.DeathState?.IsDestroyed == true)))) &&
+                worlds[^1].RetainedUnits.Where(actor => sources.Contains(actor.Unit.Id))
+                    .All(actor => actor.Unit.Triggers.SelectMany(trigger => trigger.Effects).Where(effect => effect.Enchantment != null)
+                        .All(effect => !effect.Enchantment!.Bound && !effect.Enchantment.State.PreviewRequiresSync)),
+                "The source-death oracle omitted released sources, withdrawn live targets, skipped corpse entries or dormant preview maps.");
+            Console.WriteLine($"NATIVE-PERSISTENT-ENCHANTMENT-DEATH-COVERAGE PASS: {sources.Length} formerly bound sources, " +
+                "withdrawn live-target statuses, retained skipped corpse entries, binding release and no subsequent preview preparation.");
+        }
         Console.WriteLine($"NATIVE-PERSISTENT-ENCHANTMENT-COVERAGE PASS: {actions.Length} paid actions, {turns.Length} EndTurns, " +
             "persistent bound sources, both teams, preview maps, retained destroyed targets and drained status children.");
     }

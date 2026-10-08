@@ -20,7 +20,9 @@ namespace MonsterTrain2Poju.Model
             if (originalWorld?.AutomaticLifecycle == true)
             {
                 EnchantmentCombatState prepared = originalWorld.Frame(context);
-                foreach (int id in originalWorld.EnchanterIds) prepared = EnchantmentCombatModel.PrepareForPreview(prepared, id);
+                var live = originalWorld.Rooms.SelectMany(room => room.Units).Select(unit => unit.Id).ToHashSet();
+                foreach (int id in originalWorld.EnchanterIds.Where(live.Contains))
+                    prepared = EnchantmentCombatModel.PrepareForPreview(prepared, id);
                 context = context.WithEnchantments(EnchantmentWorld.From(prepared, true));
                 previewTrain = EnchantmentWorldModel.Rebase(new TrainCombatState(prepared.Train.Rooms.Select(room => new RoomCombatState(room.RoomIndex,
                     room.Deployment, room.Units, room.ExternalInteractions, context, true)).ToArray(), source.Movement,

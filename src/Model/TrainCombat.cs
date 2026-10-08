@@ -75,8 +75,14 @@ namespace MonsterTrain2Poju.Model
             if (context.Enchantments?.AutomaticLifecycle == true && context.QueryFrame?.RunningCombat != false)
             {
                 EnchantmentWorld world = context.Enchantments;
+                // The removal signal still uses the bound source. Unity invalidates
+                // that reference when destruction completes at the frame boundary.
                 context = context.WithEnchantments(new EnchantmentWorld(world.Rooms, world.Movement, world.EnemySlotsPerRoom,
-                    world.RetainedUnits.Select(actor => new EnchantmentRetainedUnit(actor.Unit.WithoutRemovedAttacker(new HashSet<int>()),
+                    world.RetainedUnits.Select(actor => new EnchantmentRetainedUnit(
+                        actor.Unit.WithoutRemovedAttacker(new HashSet<int>()).WithTriggers(actor.Unit.Triggers.Select(trigger =>
+                            trigger.WithEffects(trigger.Effects.Select(effect => actor.Unit.DeathState?.IsDestroyed == true && effect.Enchantment != null
+                                ? effect.WithEnchantment(new EnchantmentRule(effect.Enchantment.Targeting, effect.Enchantment.StatusPool,
+                                    effect.Enchantment.State, false, effect.Enchantment.HasParentCard)) : effect).ToArray())).ToArray()),
                         actor.RoomIndex, actor.Preview)).ToArray(), world.EnchanterIds, world.AllowUpdates, world.Updating,
                     world.Preview, world.TestRng, true));
             }

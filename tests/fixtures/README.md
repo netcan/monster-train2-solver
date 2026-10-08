@@ -1014,3 +1014,20 @@ Complete regression and audit pass for all 155 archives, including 138 policy
 chains, 24 physical-position and thirteen decision-reference suites. All archive
 sizes/hashes, native provenance and original-file gates pass, with no errors or
 unsupported transitions and no tracked source JSON fixtures.
+
+`full-battle-persistent-enchantment-deaths.mt2f` adds actual OnTurnBegin source
+deaths and OnDeath gold callbacks to the paid singleton armor policy. Two formerly
+bound sources withdraw statuses from live targets, retain skipped corpse map
+entries and release their bindings when Unity destruction completes. Later UI
+previews leave those source caches unchanged. Native and independent simulation
+win in 21 actions/seven EndTurns, Pyre 65, with initial/middle roots and sixteen
+branches. All 61 room stages, fourteen train phases, eleven spawns and actions/
+turns match. Muted Instant native capture takes 63.43 seconds and has zero errors/
+differences/unsupported/pending records and unchanged original-file signatures.
+
+The byte-identical native archive has 32,431 bytes / 5,518 nodes and no text source
+or JSON companion. Inventory is 156 archives: 143 battles/thirteen calibrations.
+All manifest hashes pass. Validation combines the preceding complete 155-archive
+run with the new battle, three affected historical battles, all thirteen
+calibrations and pure checks; the complete 156-archive run was not repeated.
+Aura-source revival and wider aura/combat mechanics remain unverified.
