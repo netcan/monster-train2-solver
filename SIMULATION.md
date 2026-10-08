@@ -69,6 +69,7 @@ are copied immutable values; independent child states can run on worker threads.
 | Train combat phase | `TrainCombatModel.ResolveCombat` | Top-to-bottom native phase comparison |
 | Enemy movement phase | `TrainCombatModel.Ascend` | Native movement and immediate Pyre combat, including the terminal boss fight |
 | Bump card movement | `BumpModel`, `CardSpellModel` and `HordeMergeModel.MergeAcrossRooms` | Eighteen real paid-card effect/queue comparisons, both-team cross-room Horde merges, signed/clamped/fixed-range quantities, immobility/rooting, loops, simultaneous targets, Pyre and full/partially blocked rooms |
+| Ordinary unit clone APIs | `UnitCloneModel`, `CharacterCopyModel` and `UnitBirthModel` | Thirteen native operations, 44 exact copied-card/birth/gear/stats/ability boundaries, raw/drained train states and callback payload/order; detached/cardless sources, failed allocations and 32 branches |
 | Unit effects | `CombatTrigger` and `CombatContext` | Generated cards, Battle RNG, treasure escape; gold and once-only trigger checks |
 | Gold rewards | `GoldRewardModel` | 2,200 native calculations, reward minimums, integer/float boundaries, ties to even and preview exclusion |
 | Card statistics and preview | `BattleStatistics` and `BattlePreviewModel` | Native per-card/Any counters, turn rollover, spawn subtypes, death/exhaust attribution and preview damage statistic |
@@ -5356,3 +5357,64 @@ outer/relentless Boss movement and room destruction, damage/revival interactions
 during card movement, relic/room modifiers, ordinary unit cloning and broader
 card coverage still need native fixtures and implementation. The full simulator
 and optimal search are not complete.
+
+## Ordinary unit clone APIs (schema 99)
+
+`UnitCloneModel.Apply` implements ordinary `CloneMonsterState` from captured
+source and birth definitions. It follows the native order: collect excluded
+status contributions, copy the detached source card, strip permanent/temporary
+excluded upgrades in reverse native removal order, create and mark the clone,
+copy non-grafted equipment, copy live statistics/statuses, then copy the skill
+and configured cooldown. `UnitCloneModel.Drain` resolves the remaining queue.
+
+`CharacterCopyModel` preserves native status dictionary order and separates
+source additions from recipient removals. It excludes hidden/grafted/silenced
+source statuses and equipment-owned status kinds, subtracts excluded card
+upgrade contributions, preserves recipient cardless/equipment statuses, copies
+current/max HP without healing and applies only positive source damage buffs.
+Copied equipment keeps detached ownership and its own upgrade/source identities.
+Birth sets the clone flag before spawn callbacks. Ability replacement carries
+existing status callbacks into its raw lifecycle transition; the final explicit
+drain observes the newly installed triggers.
+
+Null and invalid-room gates allocate nothing. A selected source on the last
+physical point exits before copying its card. By contrast, a full destination
+still allocates a detached card before birth fails, without allocating a unit.
+Source-free ordinary clones allocate a unit without a source card. The existing
+Horde gate grows the original actor and allocates neither card nor unit.
+EndTurn accepts verified detached clone references that are present in the
+complete registry and absent from owned instances; owned unit sources retain
+their Standby requirement.
+
+`full-battle-unit-clone.mt2f` records thirteen API operations and 44 intermediate
+train/context boundaries. A real paid Steward supplies the source. The fixture
+authors excluded permanent/temporary upgrades, a natural and replacement skill,
+gold callbacks, equipment, wounds/buffs and native cardless/filler births, while
+preserving the original Boss and waves. During raw API observation the scoped
+probe pauses automatic queue runs, preserving intrinsic birth and gear-upgrade
+queues. An explicit native drain records complete callback parameters and order.
+This separates coroutine scheduling from the rules being tested.
+
+All thirteen operations and every boundary, queue payload and final dispatch
+match in 32 branches without root mutation. The independent subsequent policy
+reproduces all fourteen plays and five EndTurns, wins at Pyre 80, and matches
+from initial/middle policy roots in sixteen parallel branches. Native capture
+uses muted Instant timing and takes 64.12 seconds; failures, differences,
+unsupported/pending records are zero and original profile/log signatures match.
+The native binary is 30,687 bytes with 4,972 unique nodes. The curated inventory
+contains 147 archives: 138 battle scenes and nine calibrations.
+
+The complete 147-archive regression exits zero: all 138 native battle fixtures
+and nine calibrations pass, including 134 independent policy chains. The audit
+confirms twenty physical-position suites, nine decision-reference suites,
+fourteen queued-summon suites, ten equipment suites, six direct summon-effect
+suites, standalone and two summon/revival suites, Horde/Bump/ordinary-clone
+suites and all 262 native summon damage phases. Unsupported transitions remain
+zero. All archive sizes and SHA-256 hashes match; the new curated clone archive
+is byte-identical to its native capture and no source JSON fixtures are tracked.
+
+This increment covers the observed ordinary APIs. Actual `CardEffectCopyUnits`
+paid-card integration, enemy copying, grafted birth/room/relic modifiers, clone
+previews and birth/movement callbacks involving destruction or revival still
+need native fixtures and implementation. Wider cards, special Boss mechanics
+and complete optimal search remain open; the full simulator is unfinished.

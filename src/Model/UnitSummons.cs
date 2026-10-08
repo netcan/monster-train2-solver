@@ -47,13 +47,16 @@ namespace MonsterTrain2Poju.Model
         public static UnitBirthResult Spawn(RoomCombatState source, CardPlayRule definition, int spawnerCardId,
             int position, bool isCardless, CombatStatus? cardlessStatus = null)
             => SpawnCore(source, definition, spawnerCardId, position, isCardless, cardlessStatus, null, null, true);
+        internal static UnitBirthResult SpawnClone(RoomCombatState source, CardPlayRule definition, int spawnerCardId,
+            int position, bool isCardless, CombatStatus? cardlessStatus, bool selectedSlot)
+            => SpawnCore(source, definition, spawnerCardId, position, isCardless, cardlessStatus, null, null, selectedSlot, true);
         internal static UnitBirthResult SpawnQueued(RoomCombatState source, CardPlayRule definition, int spawnerCardId,
             int position, bool isCardless, CombatStatus cardlessStatus, Action<RoomCombatModel.QueuedCharacterTrigger> enqueue,
             IReadOnlyList<CombatUnit> positionActors, bool selectedSlot = true)
             => SpawnCore(source, definition, spawnerCardId, position, isCardless, cardlessStatus, enqueue, positionActors, selectedSlot);
         private static UnitBirthResult SpawnCore(RoomCombatState source, CardPlayRule definition, int spawnerCardId,
             int position, bool isCardless, CombatStatus? cardlessStatus, Action<RoomCombatModel.QueuedCharacterTrigger>? enqueue,
-            IReadOnlyList<CombatUnit>? positionActors, bool selectedSlot)
+            IReadOnlyList<CombatUnit>? positionActors, bool selectedSlot, bool isClone = false)
         {
             CombatContext? context = source.Context;
             CombatUnit? raw = definition.SpawnUnit;
@@ -74,6 +77,13 @@ namespace MonsterTrain2Poju.Model
             CardPlayRule resolved = card == null ? birthDefinition.WithSpawn(initialized) : CardModifierModel.Resolve(birthDefinition.WithSpawn(initialized), card);
             if (resolved.ExternalInteractions.Count > 0) return Unsupported(string.Join("; ", resolved.ExternalInteractions));
             CombatUnit template = resolved.SpawnUnit!;
+            if (isClone)
+            {
+                UnitModifiers old = template.Modifiers!;
+                var cloned = new UnitModifiers(old.AttackDamage, old.AttackDamageAdded, old.DamageBuff, old.RawSize, old.EquipmentLimit,
+                    old.CanBeHealed, true, old.Upgrades, old.HealthFromUpgrades, old.SpawnerMatchesDefinition);
+                template = UnitCloneModel.Copy(template, cloned, template.BaseAttack, template.Health, template.MaxHealth);
+            }
             error = UnitIdentityModel.Validate(context, source.Units);
             if (error != null) return Unsupported(error);
             UnitIdentityAllocation allocated = UnitIdentityModel.Allocate(context);

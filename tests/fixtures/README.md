@@ -761,3 +761,36 @@ Actual Bump previews, teleportation, disabled/destroyed floors, special Boss
 movement/destruction and movement callbacks involving damage/revival still need
 coverage, as do ordinary cloning and wider relic/room/card mechanics. The full
 simulator and optimal search remain unfinished.
+
+### Ordinary unit clone APIs (schema 99)
+
+`full-battle-unit-clone.mt2f` preserves thirteen native clone operations and 44
+full intermediate train/context boundaries. It exercises front/back/selected
+placement, excluded permanent/temporary source upgrades and their status
+contributions, wounded/buffed/negative actors, non-grafted equipment, natural/
+replacement skills and configured cooldowns, clone-of-clone and source-free
+births. Null/invalid-room/selected-boundary gates allocate nothing; a full room
+allocates the copied card but no unit. Horde cloning allocates neither.
+
+Copied source/equipment references are detached rather than owned pile cards.
+Clone flags precede spawn callbacks. Raw observation pauses only background
+queue runs while intrinsic birth/gear-upgrade queues execute; the subsequent
+explicit drain retains complete callback payloads and order. All states and
+queues compare in 32 branches without parent mutation.
+
+The complete subsequent fourteen-play/five-EndTurn policy wins at Pyre 80 and
+matches from initial/middle roots in sixteen branches. Native capture is muted
+and Instant, takes 64.12 seconds and reports zero failures, differences,
+unsupported/pending records, with original save/log signatures intact. The
+30,687-byte native binary preserves 4,972 graph nodes. Manifest inventory now
+contains 147 archives: 138 battles and nine calibrations, without source JSON.
+
+The complete 147-archive regression exits zero with all 138 battle fixtures and
+nine calibrations passing, including 134 independent policy chains. The final
+audit checks all required native suites and 262 summon damage phases, with zero
+unsupported transitions. Every archive matches its size/SHA-256 manifest, and
+the curated clone archive is byte-identical to the native binary capture.
+
+Paid copy-spell integration, enemy/grafted/preview cloning and room/relic or
+destruction/revival interactions still require their own coverage. Broader
+simulator and optimal-search work remains unfinished.

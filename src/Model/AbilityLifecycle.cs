@@ -43,6 +43,12 @@ namespace MonsterTrain2Poju.Model
 
         public static RoomCombatResult Apply(RoomCombatState source, int unitId, AbilityChangeRule rule, bool remove,
             bool deferCallbacks = false)
+            => ApplyCore(source, unitId, rule, remove, deferCallbacks, null);
+        internal static RoomCombatResult ApplyWithPending(RoomCombatState source, int unitId, AbilityChangeRule rule,
+            IReadOnlyList<RoomCombatModel.QueuedCharacterTrigger> pending, bool deferCallbacks = false)
+            => ApplyCore(source, unitId, rule, false, deferCallbacks, pending);
+        private static RoomCombatResult ApplyCore(RoomCombatState source, int unitId, AbilityChangeRule rule, bool remove,
+            bool deferCallbacks, IReadOnlyList<RoomCombatModel.QueuedCharacterTrigger>? prior)
         {
             if (remove && rule.BlockedByRelic) return Match(source);
             CombatUnit? actor = source.Units.FirstOrDefault(unit => unit.Id == unitId);
@@ -68,7 +74,7 @@ namespace MonsterTrain2Poju.Model
             if (!remove && rule.FromEquipment && previous?.HasAbility == true && !previous.FromEquipment && remembered == null ||
                 remove && previous?.FromEquipment == true && previous.PreviousDataId != null && restored == null)
                 return Unsupported("Ability restoration requires the original definition, including its unmodified cooldowns.");
-            var callbacks = new List<RoomCombatModel.QueuedCharacterTrigger>();
+            var callbacks = (prior ?? Array.Empty<RoomCombatModel.QueuedCharacterTrigger>()).ToList();
             RoomCombatState state = source;
             var events = new List<CombatEvent>(); RoomOutcome outcome = RoomOutcome.Exchanged;
             RoomCombatResult result = Match(state);

@@ -1,6 +1,16 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
 
+if (args.Length == 2 && args[0] == "--unit-clone-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    if (fixture.RootElement.GetProperty("ModifierScenario").GetString() != "unit-clone" ||
+        fixture.RootElement.GetProperty("UnitCloneOperations").GetArrayLength() == 0)
+        throw new InvalidDataException("The requested fixture has no ordinary clone observations.");
+    UnitCloneChecks.Native(fixture.RootElement);
+    return;
+}
+
 if (args.Length == 2 && args[0] == "--bump-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);

@@ -570,7 +570,7 @@ namespace MonsterTrain2Poju.Model
         }
 
         internal static RoomCombatResult ApplyDirectUnitUpgrade(RoomCombatState state, int targetId, CardUpgradeModifier upgrade,
-            bool remove, string upgradeId, int? anonymousRemovalIndex, bool deferCallbacks = false)
+            bool remove, string upgradeId, int? anonymousRemovalIndex, bool deferCallbacks = false, int equipmentSourceCardId = 0)
         {
             string? error = Validate(state);
             if (error != null || !state.Units.Any(unit => unit.Id == targetId))
@@ -580,7 +580,7 @@ namespace MonsterTrain2Poju.Model
             RoomCombatResult result = new Engine(state, new List<CombatEvent>(),
                 enqueueCharacterTrigger: remove || deferCallbacks ? callbacks.Add : (Action<QueuedCharacterTrigger>?)null, resetPreviewTriggers: false)
                 .UnitUpgrade(targetId, upgrade, "TemporaryUntilUnitDeath", remove, null, 0, null,
-                    directApi: true, upgradeId: upgradeId, anonymousRemovalIndex: anonymousRemovalIndex);
+                    directApi: true, upgradeId: upgradeId, anonymousRemovalIndex: anonymousRemovalIndex, equipmentSourceCardId: equipmentSourceCardId);
             return new RoomCombatResult(result.State, result.Outcome, result.Rounds, result.Events.ToList(), result.UnsupportedReason, callbacks, result.RetainedUnits, result.Dispatches);
         }
 
@@ -1019,10 +1019,10 @@ namespace MonsterTrain2Poju.Model
 
             internal RoomCombatResult UnitUpgrade(int targetId, CardUpgradeModifier upgrade, string lifetime,
                 bool remove, int? roomCapacity, int sourceCardId, string? triggerKind, bool directApi = false,
-                string upgradeId = "", int? anonymousRemovalIndex = null)
+                string upgradeId = "", int? anonymousRemovalIndex = null, int equipmentSourceCardId = 0)
             {
                 ApplyUpgrade(units.Single(unit => unit.Source.Id == targetId), upgrade, lifetime, remove,
-                    roomCapacity, sourceCardId, triggerKind, directApi, upgradeId, anonymousRemovalIndex);
+                    roomCapacity, sourceCardId, triggerKind, directApi, upgradeId, anonymousRemovalIndex, equipmentSourceCardId);
                 if (enqueueCharacterTrigger == null && !runningTriggerQueue) DrainLocalTriggerQueue();
                 return Finish(battleWon ? RoomOutcome.BattleWon : units.Any(unit => unit.Source.IsPyre && !unit.Alive)
                     ? RoomOutcome.PlayerDefeated : RoomOutcome.Exchanged);

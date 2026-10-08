@@ -104,7 +104,7 @@ namespace MonsterTrain2Poju.Model
                 .SelectMany(pile => pile.Cards).Select(card => card.InstanceId));
             CombatContext birthContext = source.Spawn.Train.Context;
             if (source.Spawn.Train.Rooms.SelectMany(room => room.Units).Where(unit => unit.SpawnerCardId > 0)
-                .Any(unit => !standbyCards.Contains(unit.SpawnerCardId) && !((unit.Status("cardless")?.Stacks > 0 ||
+                .Any(unit => !standbyCards.Contains(unit.SpawnerCardId) && !((unit.Status("cardless")?.Stacks > 0 || unit.Modifiers?.IsClone == true ||
                     source.OtherPiles.Any(pile => pile.UnitConditions?.Any(binding => binding.HostUnitId == unit.Id) == true)) &&
                     birthContext.CardInstances != null && !birthContext.CardInstances.Any(card => card.InstanceId == unit.SpawnerCardId) &&
                     birthContext.CardRegistry?.Any(card => card.InstanceId == unit.SpawnerCardId) == true)))
