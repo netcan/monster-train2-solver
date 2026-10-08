@@ -71,7 +71,16 @@ namespace MonsterTrain2Poju.Model
             // effects can still use removed actors' last-known points within a frame.
             var retained = points.Units.Select(unit => active.Contains(unit.UnitId) ? unit :
                 new UnitSpawnPointState(unit.UnitId, null, null, unit.OuterBoss, unit.SpawnedInPreview)).ToArray();
-            return CardSpellModel.WithContext(source, source.Context!.WithSpawnPoints(new BattleSpawnPoints(points.Groups, retained)));
+            CombatContext context = source.Context!.WithSpawnPoints(new BattleSpawnPoints(points.Groups, retained));
+            if (context.Enchantments?.AutomaticLifecycle == true && context.QueryFrame?.RunningCombat != false)
+            {
+                EnchantmentWorld world = context.Enchantments;
+                context = context.WithEnchantments(new EnchantmentWorld(world.Rooms, world.Movement, world.EnemySlotsPerRoom,
+                    world.RetainedUnits.Select(actor => new EnchantmentRetainedUnit(actor.Unit.WithoutRemovedAttacker(new HashSet<int>()),
+                        actor.RoomIndex, actor.Preview)).ToArray(), world.EnchanterIds, world.AllowUpdates, world.Updating,
+                    world.Preview, world.TestRng, true));
+            }
+            return CardSpellModel.WithContext(source, context);
         }
 
         private static TrainCombatState ClearRemovedReferences(TrainCombatState source, HashSet<int> activeIds)
@@ -87,12 +96,20 @@ namespace MonsterTrain2Poju.Model
                         card.RawPlayedRoomUnitIds.Where(activeIds.Contains).ToArray());
                 if (!ReferenceEquals(updated, card)) context = context!.WithCard(updated);
             }
-            return new TrainCombatState(source.Rooms.Select(room => new RoomCombatState(room.RoomIndex, room.Deployment,
+            if (context?.Enchantments?.AutomaticLifecycle == true)
+            {
+                EnchantmentWorld world = context.Enchantments;
+                context = context.WithEnchantments(new EnchantmentWorld(world.Rooms, world.Movement, world.EnemySlotsPerRoom,
+                    world.RetainedUnits.Select(actor => new EnchantmentRetainedUnit(actor.Unit.WithoutRemovedAttacker(activeIds),
+                        actor.RoomIndex, actor.Preview)).ToArray(), world.EnchanterIds, world.AllowUpdates, world.Updating,
+                    world.Preview, world.TestRng, true));
+            }
+            return EnchantmentWorldModel.Rebase(new TrainCombatState(source.Rooms.Select(room => new RoomCombatState(room.RoomIndex, room.Deployment,
                 room.Units.Select(unit => unit.WithoutRemovedAttacker(activeIds).WithTriggers(unit.Triggers.Select(trigger =>
                     trigger.WithEffects(trigger.Effects.Select(effect => effect.Summon?.FirstSpawnedUnitId > 0 &&
                         !activeIds.Contains(effect.Summon.FirstSpawnedUnitId) ? effect.WithSummon(effect.Summon.WithFirstSpawned(0)) : effect).ToArray())).ToArray())).ToArray(),
                 room.ExternalInteractions, context, room.Preview)).ToArray(),
-                source.Movement, source.EnemySlotsPerRoom, context);
+                source.Movement, source.EnemySlotsPerRoom, context));
         }
 
         public static TrainCombatResult EndTurnPreHandDiscard(TrainCombatState source, CombatTeam team)
@@ -190,6 +207,12 @@ namespace MonsterTrain2Poju.Model
             var shifted = new List<(int Destination, int UnitId)>();
             var movementResults = new List<RoomCombatResult>();
             CombatContext? movementContext = source.Context;
+            if (source.Rooms.SelectMany(room => room.Units).Any(unit => unit.Team == CombatTeam.Enemy))
+            {
+                TrainCombatResult disabled = EnchantmentWorldModel.SetAllowUpdates(source, false);
+                if (!disabled.Supported) return disabled;
+                movementContext = disabled.State!.Context;
+            }
             // Reserve destinations from the top down; each enemy moves only once.
             for (int index = pyre; index >= 0; index--)
             {
@@ -258,7 +281,8 @@ namespace MonsterTrain2Poju.Model
             }
             RoomCombatState[] next = source.Rooms.Select((room, index) => new RoomCombatState(room.RoomIndex,
                 room.Deployment, BattleSpawnPointModel.Order(movementContext?.SpawnPoints, index, rooms[index]), room.ExternalInteractions, movementContext)).ToArray();
-            TrainCombatState moving = Freeze(source, next, movementContext);
+            TrainCombatState moving = EnchantmentWorldModel.Rebase(new TrainCombatState(next, source.Movement, source.EnemySlotsPerRoom, movementContext));
+            moving = Freeze(moving, moving.Rooms.ToArray(), moving.Context);
             if (looped.Count > 0)
             {
                 var callbacks = looped.Select(id => (id, "OnTrainRoomLoop")).Concat(looped.SelectMany(id =>
@@ -282,11 +306,28 @@ namespace MonsterTrain2Poju.Model
             // Enemies that reach the Pyre fight immediately during ascension, within this same turn.
             if (enteredPyre)
             {
-                RoomCombatResult result = RoomCombatModel.Resolve(next[pyre]);
+                TrainCombatResult enabled = EnchantmentWorldModel.SetAllowUpdates(moving, true);
+                if (!enabled.Supported) return enabled;
+                RoomCombatResult result = RoomCombatModel.Resolve(enabled.State!.Rooms[pyre]);
                 if (!result.Supported) return Unsupported(result.UnsupportedReason!);
                 next[pyre] = result.State!;
                 movementResults.Add(result);
-                return new TrainCombatResult(Freeze(source, next, result.State!.Context), result.Outcome, movementResults);
+                moving = Freeze(enabled.State, next, result.State!.Context);
+                if (moving.Context?.Enchantments?.AutomaticLifecycle != true)
+                    return new TrainCombatResult(moving, result.Outcome, movementResults);
+                if (Terminal(result.Outcome)) return new TrainCombatResult(moving, result.Outcome, movementResults);
+                TrainCombatResult disabled = EnchantmentWorldModel.SetAllowUpdates(moving, false);
+                if (!disabled.Supported) return disabled;
+                moving = disabled.State!;
+            }
+            if (source.Rooms.SelectMany(room => room.Units).Any(unit => unit.Team == CombatTeam.Enemy))
+            {
+                TrainCombatResult enabled = EnchantmentWorldModel.SetAllowUpdates(moving, true);
+                if (!enabled.Supported) return enabled;
+                TrainCombatResult orderChanged = EnchantmentWorldModel.UpdateAll(enabled.State!);
+                if (!orderChanged.Supported) return orderChanged;
+                moving = orderChanged.State!;
+                movementResults.AddRange(enabled.RoomResults); movementResults.AddRange(orderChanged.RoomResults);
             }
             return new TrainCombatResult(moving, RoomOutcome.Cleared, movementResults);
         }
@@ -351,6 +392,7 @@ namespace MonsterTrain2Poju.Model
 
         private static TrainCombatState Freeze(TrainCombatState source, RoomCombatState[] rooms, CombatContext? context)
         {
+            rooms = rooms.Select(room => WithContext(room, context)).ToArray();
             var alive = new HashSet<int>(rooms.SelectMany(room => room.Units).Select(unit => unit.Id));
             return new TrainCombatState(rooms.Select(room => WithContext(room, context)).ToArray(),
                 source.Movement.Where(rule => alive.Contains(rule.UnitId)).ToArray(), source.EnemySlotsPerRoom, context);

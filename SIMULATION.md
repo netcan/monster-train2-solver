@@ -5860,3 +5860,62 @@ state, all 48 callback payloads, drained child gold, ordered preview preparation
 effect maps, both RNG streams and unchanged parents match. The comparisons repeat
 in 32 branches; no new native archive is needed. This validates effect routing,
 not automatic birth/movement/death scheduling or a persistent-aura paid battle.
+
+### Persistent aura in a complete paid battle (schema 103)
+
+AutomaticLifecycle worlds now schedule native aura updates during birth binding,
+direct trigger effects, ascension, death/removal and both UI and Boss-hit previews.
+Birth preserves starting-status ordering before authored immunities; enemy OnSpawn
+binds after spawn setup. Ascension disables manager updates while reserving moves,
+then enables updates before Pyre combat and after the movement batch. Death runs
+direct source updates before Slay and at removal notification, followed by one
+global room-order update after physical removals unless terminal combat interrupts
+that boundary. Cross-room status children share the same FIFO and latest world.
+
+Generic UI preview and temporary Boss-hit preview have distinct preparation rules.
+Both restore primary actor state while carrying native effect-map/cache changes;
+temporary Boss previews prepare again on disable and drain their trigger queue.
+UI preview does not prepare on disable. A primary aura status change after UI
+preview requests another preview. Destroyed targets remain while effect maps
+reference them; frame completion clears their physical points and attacker weak
+references, while stopped terminal snapshots retain objects not yet Unity-flushed.
+
+`Run-FullBattleProbe.ps1 -Policy units-spells-and-junk -PersistentEnchantments`
+uses paid Steward cards with an OnSpawn singleton armor aura targeting both teams
+and status-change gold children. Sources remain bound throughout the actual battle;
+there is no administrative removal or status-API suppression. The launcher requires
+captured physical points, isolated preview RNG, actual preparation and nonempty
+bound aura maps, so an accidentally unprepared ordinary battle cannot pass.
+The original Boss/waves remain intact, and the isolated game is muted at Instant.
+
+The accepted game 2.2.1 capture takes 53.17 seconds, wins after 15 paid actions and
+five EndTurns with Pyre 79, and has zero differences/capture failures/unsupported/
+pending records. Original profile/log signatures remain unchanged. Independent
+.NET checks reproduce 42 room stages, nine train phases, seven spawns, nine card
+cycles, all actions and EndTurns including complete shared world state. Initial
+and middle-root policy chains finish without injecting recorded intermediate
+states; 16 branches agree and preserve parents. Physical-position checks cover
+13 removals, eight cross-room moves and one empty ascent. Coverage requires both
+teams, multiple bound sources, preview removals/preparations, retained destroyed
+targets and drained status children.
+
+`tests/fixtures/full-battle-persistent-enchantment.mt2f` is the byte-identical
+native binary: 26,528 bytes, 4,444 unique nodes, no text source or JSON companion.
+Its SHA-256 is recorded in manifest.tsv. Inventory is now 155 archives: 142 battles
+and thirteen calibrations.
+
+This proves one persistent singleton-armor policy, including ordinary target
+death and movement. Random-pool whole-battle scheduling, actual source death and
+revival, actor/card-changing aura children, preview-born identities, trigger
+replacement, Horde aura casualties, Deathwish/Purify, room/relic interactions and
+broader special Boss/card mechanics still require implementation and native
+coverage. The complete battle simulator and optimal solver remain unfinished.
+
+The complete 155-archive regression and audit exit zero: 142 battles/thirteen
+calibrations, 138 independent policy chains, 24 physical-position and thirteen
+decision-reference suites, fourteen queued-summon, ten triggered-equipment,
+six direct summon-effect suites and 262 damage phases. All binary sizes/hashes,
+native provenance and original-file gates pass; no errors or unsupported
+transitions occur. Probe builds without warnings/errors; ModelChecks retains
+fourteen existing nullable warnings. Both PowerShell scripts parse and staged
+whitespace checks pass. There are no tracked source JSON fixtures or results.

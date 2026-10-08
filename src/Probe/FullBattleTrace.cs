@@ -43,10 +43,11 @@ namespace MonsterTrain2Poju.Probe
         }
         internal int NextPhaseSequence() => ++phaseSequence;
         internal TrainCombatState CaptureTrain() => trainCombat.Capture();
+        internal TrainCombatState CaptureEnchantmentRooms() => trainCombat.Capture(false);
         internal void InvalidateCardRules() => actions.InvalidateRules();
         internal EnemySpawnState CaptureSpawnPhase() => spawning.CapturePhase();
         internal EnemySpawnState CaptureCanonicalSpawn() => spawning.Capture();
-        internal TrainCombatState CaptureCanonicalTrain() => CaptureDecision(trainCombat.Capture);
+        internal TrainCombatState CaptureCanonicalTrain() => CaptureDecision(() => trainCombat.Capture());
         internal int[] PendingDestroyedUnitIds() => identities.Where(pair => pair.Key != null && pair.Key.IsDestroyed)
             .Select(pair => pair.Value).OrderBy(id => id).ToArray();
         internal int NextUnitId => nextId;
@@ -162,7 +163,7 @@ namespace MonsterTrain2Poju.Probe
         internal void BeginCardPlay(PlayCardAction action, bool scenarioAction = false) => actions.Begin(action, scenarioAction);
         internal void CompleteCardPlay() => actions.Complete();
 
-        internal RoomCombatState Capture(RoomState room)
+        internal RoomCombatState Capture(RoomState room, bool captureContext = true)
         {
             AllGameManagers managers = AllGameManagers.Instance ?? throw new InvalidOperationException("No game managers.");
             var interactions = new List<string>();
@@ -188,7 +189,7 @@ namespace MonsterTrain2Poju.Probe
                 units.Add(CaptureUnit(character, interactions));
             }
             return new RoomCombatState(room.GetRoomIndex(), combat.IsPlacementPhase, units,
-                interactions.Distinct().OrderBy(value => value, StringComparer.Ordinal).ToArray(), CaptureContext(), preview: save.PreviewMode);
+                interactions.Distinct().OrderBy(value => value, StringComparer.Ordinal).ToArray(), captureContext ? CaptureContext() : null, preview: save.PreviewMode);
         }
 
         internal CombatUnit CaptureUnit(CharacterState character, List<string>? interactions = null)
@@ -270,7 +271,7 @@ namespace MonsterTrain2Poju.Probe
                 AccessTools.Field(typeof(CombatManager), "lastAbilityActivatorCharacter").GetValue(managers.GetCombatManager()) is CharacterState activator
                     ? UnitId(activator) : 0, AbilityLifecycleProbe.Disabled(managers.GetSaveManager()),
                 lastSpawned == null || normalizeDestroyedAttacker && (lastSpawned.IsDestroyed || !lastSpawned.IsAlive) ? 0 : UnitId(lastSpawned), NextUnitId, spawnPoints,
-                TriggeredSummonProbe.Catalog());
+                TriggeredSummonProbe.Catalog(), EnchantmentBattleScenario.Prepared ? EnchantmentBattleScenario.CaptureWorld(this) : null);
         }
 
         private static StatisticQueryFrame CaptureQueryFrame(AllGameManagers managers)
@@ -436,7 +437,7 @@ namespace MonsterTrain2Poju.Probe
             string temporary = path + ".tmp";
             var snapshot = new
             {
-                Schema = 102,
+                Schema = EnchantmentBattleScenario.Prepared ? 103 : 102,
                 GameVersion = Application.version,
                 GameModuleMvid = typeof(CardState).Assembly.ManifestModule.ModuleVersionId,
                 NativeWon,

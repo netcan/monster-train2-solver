@@ -319,8 +319,9 @@ namespace MonsterTrain2Poju.Model
                 unit.Statuses, unit.Triggers, unit.SpawnerCardId, unit.Size, unit.StatusImmunities, unit.Subtypes, modifiers, unit.IsBoss,
                 unit.LastAttackerId, unit.StatusRegistry, equipment ?? unit.EquipmentCards, unit.NextTriggerId, unit.Ability, unit.StatusDictionary,
                 unit.AbilityRules, unit.HordeDefinition, unit.IsSpawning, unit.SacrificeCardId, unit.DeathState, unit.BumpRules);
-        internal static TrainCombatState ReplaceUnit(TrainCombatState state, CombatUnit unit) => new TrainCombatState(state.Rooms.Select(room =>
-            new RoomCombatState(room.RoomIndex, room.Deployment, room.Units.Select(actor => actor.Id == unit.Id ? unit : actor).ToArray(),
-                room.ExternalInteractions, state.Context, room.Preview)).ToArray(), state.Movement, state.EnemySlotsPerRoom, state.Context);
+        internal static TrainCombatState ReplaceUnit(TrainCombatState state, CombatUnit unit) => EnchantmentWorldModel.Rebase(
+            new TrainCombatState(state.Rooms.Select(room =>
+                new RoomCombatState(room.RoomIndex, room.Deployment, room.Units.Select(actor => actor.Id == unit.Id ? unit : actor).ToArray(),
+                    room.ExternalInteractions, state.Context, room.Preview)).ToArray(), state.Movement, state.EnemySlotsPerRoom, state.Context));
     }
 }

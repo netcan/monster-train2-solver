@@ -50,7 +50,8 @@ namespace MonsterTrain2Poju.Model
         }
 
         internal static string? Initialize(RoomCombatState source, CombatUnit template, IReadOnlyList<CombatStatus> applications,
-            ICollection<RoomCombatModel.QueuedCharacterTrigger> queue, System.Action<CombatUnit>? update = null)
+            ICollection<RoomCombatModel.QueuedCharacterTrigger> queue, System.Action<CombatUnit>? update = null,
+            System.Action<RoomCombatState>? updateRoom = null)
         {
             // Native installs authored immunities after applying starting statuses.
             CombatUnit empty = new CombatUnit(template.Id, template.AssetKey, template.Team, template.BaseAttack, template.Health,
@@ -67,13 +68,22 @@ namespace MonsterTrain2Poju.Model
                 initializing = added.State!;
                 foreach (RoomCombatModel.QueuedCharacterTrigger callback in added.PendingCallbacks) queue.Add(callback);
             }
-            if (applications.Any(status => status.Id == "horde" && status.Stacks > 0))
+            bool horde = applications.Any(status => status.Id == "horde" && status.Stacks > 0);
+            if (horde || initializing.Context?.Enchantments != null)
             {
                 CombatUnit value = initializing.Units.First(unit => unit.Id == template.Id);
-                update?.Invoke(new CombatUnit(value.Id, value.AssetKey, value.Team, value.BaseAttack, value.Health, value.MaxHealth,
+                var initialized = new CombatUnit(value.Id, value.AssetKey, value.Team, value.BaseAttack, value.Health, value.MaxHealth,
                     value.CanAttack, value.IsPyre, value.EndsBattleOnDeath, value.Statuses, value.Triggers, value.SpawnerCardId, value.Size,
                     template.StatusImmunities, value.Subtypes, value.Modifiers, value.IsBoss, value.LastAttackerId, value.StatusRegistry,
-                    value.EquipmentCards, value.NextTriggerId, value.Ability, value.StatusDictionary, value.AbilityRules, value.HordeDefinition, value.IsSpawning, value.SacrificeCardId, value.DeathState, bumpRules: value.BumpRules));
+                    value.EquipmentCards, value.NextTriggerId, value.Ability, value.StatusDictionary, value.AbilityRules, value.HordeDefinition, value.IsSpawning, value.SacrificeCardId, value.DeathState, bumpRules: value.BumpRules);
+                if (horde) update?.Invoke(initialized);
+                if (initializing.Context?.Enchantments != null)
+                {
+                    initializing = EnchantmentWorldModel.Sync(new RoomCombatState(source.RoomIndex, source.Deployment,
+                        initializing.Units.Select(unit => unit.Id == template.Id ? initialized : unit).ToArray(),
+                        source.ExternalInteractions, initializing.Context, source.Preview));
+                    updateRoom?.Invoke(initializing);
+                }
             }
             return null;
         }

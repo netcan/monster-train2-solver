@@ -126,9 +126,9 @@ namespace MonsterTrain2Poju.Model
                     nextId = allocated.NextUnitId; context = allocated.Context;
                     CombatUnit unit = AbilityLifecycleModel.SuppressAtSpawn(definition.Create(allocated.UnitId), context);
                     Insert(rooms[roomIndex], unit);
+                    movement.Add(new EnemyMovement(unit.Id, 1, definition.Ascends, definition.Loops, definition.CompanionBoss));
                     error = Initialize(unit, roomIndex);
                     if (error != null) return Unsupported(error);
-                    movement.Add(new EnemyMovement(unit.Id, 1, definition.Ascends, definition.Loops, definition.CompanionBoss));
                     enteredPyre |= roomIndex == pyre;
                     entered.Add(unit.Id);
                 }
@@ -170,9 +170,9 @@ namespace MonsterTrain2Poju.Model
                     nextId = allocated.NextUnitId; context = allocated.Context;
                     CombatUnit unit = AbilityLifecycleModel.SuppressAtSpawn(definition.Create(allocated.UnitId), context);
                     Insert(rooms[eligible[floor.Value]], unit);
+                    movement.Add(new EnemyMovement(unit.Id, 1, definition.Ascends, definition.Loops, definition.CompanionBoss));
                     error = Initialize(unit, eligible[floor.Value]);
                     if (error != null) return Unsupported(error);
-                    movement.Add(new EnemyMovement(unit.Id, 1, definition.Ascends, definition.Loops, definition.CompanionBoss));
                     error = SpawnTriggers(unit.Id);
                     if (error != null) return Unsupported(error);
                     treasureRemaining--;
@@ -200,9 +200,14 @@ namespace MonsterTrain2Poju.Model
                     context = cached.Context;
                 }
                 RoomCombatState original = source.Train.Rooms[index];
+                if (context?.Enchantments?.AutomaticLifecycle == true)
+                    context = EnchantmentWorldModel.Rebase(new TrainCombatState(source.Train.Rooms.Select((room, position) =>
+                        new RoomCombatState(position, room.Deployment, rooms[position], room.ExternalInteractions, context, room.Preview)).ToArray(),
+                        movement, source.Train.EnemySlotsPerRoom, context)).Context;
                 return StatusCallbackModel.Initialize(new RoomCombatState(index, original.Deployment, rooms[index],
                     original.ExternalInteractions, context, original.Preview), unit, unit.StatusRegistry ?? unit.Statuses, callbacks,
-                    changed => rooms[index][rooms[index].FindIndex(actor => actor.Id == unit.Id)] = changed);
+                    changed => rooms[index][rooms[index].FindIndex(actor => actor.Id == unit.Id)] = changed,
+                    changed => { context = changed.Context; rooms[index] = changed.Units.ToList(); });
             }
 
             string? DrainCallbacks()
@@ -211,8 +216,8 @@ namespace MonsterTrain2Poju.Model
                 bool drained = RoomCombatModel.DrainCharacterQueue(callbacks, queued =>
                 {
                     RoomCombatState original = source.Train.Rooms[queued.RoomIndex];
-                    var room = new RoomCombatState(queued.RoomIndex, original.Deployment, rooms[queued.RoomIndex],
-                        original.ExternalInteractions, context, original.Preview);
+                    var room = EnchantmentWorldModel.Refresh(new RoomCombatState(queued.RoomIndex, original.Deployment, rooms[queued.RoomIndex],
+                        original.ExternalInteractions, context, original.Preview));
                     RoomCombatResult result = RoomCombatModel.ApplyQueuedCharacterTrigger(room, queued, callbacks.Add);
                     if (!result.Supported) { error = result.UnsupportedReason; return false; }
                     rooms[queued.RoomIndex] = result.State!.Units.ToList(); context = result.State.Context;
@@ -254,8 +259,8 @@ namespace MonsterTrain2Poju.Model
                 RoomCombatState[] states = source.Train.Rooms.Select((room, index) => new RoomCombatState(index,
                     room.Deployment, rooms[index], room.ExternalInteractions, context)).ToArray();
                 var alive = new HashSet<int>(states.SelectMany(room => room.Units).Select(unit => unit.Id));
-                var train = new TrainCombatState(states, movement.Where(rule => alive.Contains(rule.UnitId)).ToArray(),
-                    source.Train.EnemySlotsPerRoom, context);
+                var train = EnchantmentWorldModel.Rebase(new TrainCombatState(states, movement.Where(rule => alive.Contains(rule.UnitId)).ToArray(),
+                    source.Train.EnemySlotsPerRoom, context));
                 if (source.CanonicalDecisionReferences) train = TrainCombatModel.ProcessRemovals(train);
                 return new EnemySpawnResult(new EnemySpawnState(train, source.Waves, groups, phase, source.Looping,
                     rng, context?.NextUnitId ?? nextId, source.Treasures, treasureRemaining, source.TreasureEnabled, source.FirstTreasureTurn,

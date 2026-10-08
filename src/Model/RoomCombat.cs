@@ -644,7 +644,7 @@ namespace MonsterTrain2Poju.Model
 
         internal static string? Validate(RoomCombatState state, int? dyingTargetId = null)
         {
-            if (state.Context?.Enchantments?.Rooms.SelectMany(room => room.Units).Any(unit =>
+            if (state.Context?.Enchantments?.AutomaticLifecycle == false && state.Context.Enchantments.Rooms.SelectMany(room => room.Units).Any(unit =>
                 unit.Triggers.Any(trigger => trigger.Effects.Any(effect => effect.Type == "CardEffectEnchant"))) == true)
                 return "CardEffectEnchant in the shared train requires automatic birth/movement/death lifecycle integration.";
             string? identityError = UnitIdentityModel.Validate(state.Context, state.Units);
@@ -722,6 +722,14 @@ namespace MonsterTrain2Poju.Model
                     if (trigger.FireCount < 0) return "Invalid trigger fire count.";
                     foreach (CombatEffect effect in trigger.Effects)
                     {
+                        if (effect.Type == "CardEffectEnchant")
+                        {
+                            if (state.Context?.Enchantments?.AutomaticLifecycle != true || effect.Enchantment == null)
+                                return "CardEffectEnchant requires a captured automatic lifecycle world and effect definition.";
+                            if (effect.Enchantment.StatusPool.Any(status => status.Id == "horde"))
+                                return "Horde aura automatic lifecycle is not modeled.";
+                            continue;
+                        }
                         if (effect.Type == "CardEffectSpawnMonster")
                         {
                             string? summonError = TriggeredSummonModel.Validate(state, effect.Summon);
@@ -924,7 +932,7 @@ namespace MonsterTrain2Poju.Model
             private readonly bool deferAbilityCallbacks;
             private readonly bool nativeCardDamage;
             private readonly Func<RoomCombatState, RoomCombatResult>? finishDamageQueue;
-            private readonly Queue<(WorkingUnit Unit, string Kind, bool CanFire, int ParamInt, WorkingUnit? OverrideTarget, int ParamInt2, string? ParamString, WorkingUnit? DyingCharacter, int TriggerCount, int LastSpawnedOverrideUnitId)> triggerQueue = new Queue<(WorkingUnit, string, bool, int, WorkingUnit?, int, string?, WorkingUnit?, int, int)>();
+            private readonly Queue<(int RoomIndex, WorkingUnit Unit, string Kind, bool CanFire, int ParamInt, WorkingUnit? OverrideTarget, int ParamInt2, string? ParamString, WorkingUnit? DyingCharacter, int TriggerCount, int LastSpawnedOverrideUnitId)> triggerQueue = new Queue<(int, WorkingUnit, string, bool, int, WorkingUnit?, int, string?, WorkingUnit?, int, int)>();
             private bool runningTriggerQueue;
             private bool stopAfterBossRemoval;
             private bool killCamActivated;
@@ -1152,11 +1160,17 @@ namespace MonsterTrain2Poju.Model
                 if (startingApplications != null)
                 {
                     var callbacks = new List<QueuedCharacterTrigger>();
-                    unsupportedReason = StatusCallbackModel.Initialize(CurrentRoom(), spawned.Freeze(), startingApplications, callbacks, spawned.Apply);
+                    unsupportedReason = StatusCallbackModel.Initialize(CurrentRoom(), spawned.Freeze(), startingApplications, callbacks, spawned.Apply, ImportEnchantmentRoom);
                     if (unsupportedReason != null) return Finish(RoomOutcome.Unsupported);
                     foreach (QueuedCharacterTrigger callback in callbacks) QueueCallback(callback);
                 }
                 if (spawned.Source.Team == CombatTeam.Player) spawned.Apply(HordeStatusModel.WithSpawning(spawned.Freeze(), true));
+                if (!prepareOnly || spawned.Source.Team == CombatTeam.Player)
+                {
+                    if (!UpdateEnchantments()) return Finish(RoomOutcome.Unsupported);
+                    RoomCombatState bound = EnchantmentWorldModel.Bind(CurrentRoom(), spawned.Source.Id);
+                    ImportEnchantmentRoom(bound);
+                }
                 if (prepareOnly) return Finish(RoomOutcome.Exchanged);
                 FireTriggers(spawned, "OnSpawn");
                 FireTriggers(spawned, "OnUnscaledSpawn");
@@ -1229,6 +1243,11 @@ namespace MonsterTrain2Poju.Model
                 // A queued OnHeal on an actor killed by a later phase effect has no live effects.
                 if (actor != null)
                 {
+                    if (queued.Kind == "OnSpawn" && actor.Source.Team == CombatTeam.Enemy && context?.Enchantments?.AutomaticLifecycle == true)
+                    {
+                        if (!UpdateEnchantments()) return Finish(RoomOutcome.Unsupported);
+                        ImportEnchantmentRoom(EnchantmentWorldModel.Bind(CurrentRoom(), actor.Source.Id));
+                    }
                     WorkingUnit? overridden = queued.OverrideTarget == null ? null : units.FirstOrDefault(unit => unit.Source.Id == queued.OverrideTarget.Id);
                     if (overridden == null && queued.OverrideTarget != null)
                     { overridden = new WorkingUnit(queued.OverrideTarget) { InRoom = false }; units.Add(overridden); }
@@ -1379,16 +1398,47 @@ namespace MonsterTrain2Poju.Model
                     (unit.Source.IsPyre || unit.Source.IsBoss == true || unit.Source.IsBoss == null && unit.Source.EndsBattleOnDeath))) return;
                 var copied = new RoomCombatState(source.RoomIndex, source.Deployment, units.Select(unit => unit.Freeze()).ToArray(),
                     source.ExternalInteractions, context, preview: true);
+                EnchantmentWorld? originalWorld = context.Enchantments;
+                if (originalWorld?.AutomaticLifecycle == true)
+                {
+                    RoomCombatState synced = EnchantmentWorldModel.Sync(CurrentRoom(), units.Where(unit => !unit.Alive || !unit.InRoom)
+                        .Select(unit => unit.Freeze()).ToArray());
+                    context = synced.Context!; originalWorld = context.Enchantments!;
+                    EnchantmentCombatState prepared = originalWorld.Frame(context);
+                    foreach (WorkingUnit unit in units.Where(unit => unit.InRoom && !unit.Removed))
+                        prepared = EnchantmentCombatModel.PrepareForPreview(prepared, unit.Source.Id);
+                    EnchantmentWorld preparedWorld = EnchantmentWorld.From(prepared, true);
+                    CombatContext testContext = context.WithEnchantments(preparedWorld);
+                    copied = new RoomCombatState(copied.RoomIndex, copied.Deployment, units.Where(unit => unit.InRoom && !unit.Removed)
+                        .Select(unit => EnchantmentWorldModel.RestorePreviewEffects(unit.Freeze(), preparedWorld, false)).ToArray(),
+                        copied.ExternalInteractions, testContext, true);
+                    var train = new TrainCombatState(prepared.Train.Rooms.Select(room => room.RoomIndex == source.RoomIndex ? copied : room).ToArray(),
+                        originalWorld.Movement, originalWorld.EnemySlotsPerRoom, testContext);
+                    train = EnchantmentWorldModel.Rebase(train, preview: true, testRng: context.IsolatedBattlePreview == true ? context.BattleRng : originalWorld.TestRng);
+                    copied = EnchantmentWorldModel.Room(copied, train.Context);
+                }
                 var preview = new Engine(copied, new List<CombatEvent>());
                 // A sweep preview shares the running-queue gate: its temporary callbacks
                 // stay queued rather than healing or damaging between individual targets.
                 preview.runningTriggerQueue = runningTriggerQueue;
                 preview.Damage(preview.units.Single(unit => unit.Source.Id == actor.Source.Id),
                     preview.units.Single(unit => unit.Source.Id == target.Source.Id), actor.Attack, "Attack");
+                if (originalWorld?.AutomaticLifecycle == true) preview.DrainLocalTriggerQueue();
                 if (preview.unsupportedReason != null) { unsupportedReason = "Boss kill preview: " + preview.unsupportedReason; return; }
                 // Native restores characters, but CardStatistics is shared: queries can refresh its
                 // membership and SetAttackDamageDealt survives, including nested retaliation.
                 context = context.WithStatistics(preview.context!.Statistics);
+                if (originalWorld?.AutomaticLifecycle == true)
+                {
+                    EnchantmentWorld observed = preview.context!.Enchantments!;
+                    CombatUnit Restore(CombatUnit unit, int room) => EnchantmentWorldModel.RestorePreviewEffects(unit, observed, room == source.RoomIndex);
+                    context = context.WithEnchantments(new EnchantmentWorld(originalWorld.Rooms.Select(room => new RoomCombatState(room.RoomIndex,
+                        room.Deployment, room.Units.Select(unit => Restore(unit, room.RoomIndex)).ToArray(), room.ExternalInteractions, null, room.Preview)).ToArray(),
+                        originalWorld.Movement, originalWorld.EnemySlotsPerRoom, originalWorld.RetainedUnits.Select(actor => new EnchantmentRetainedUnit(
+                            Restore(actor.Unit, actor.RoomIndex), actor.RoomIndex, actor.Preview)).ToArray(), originalWorld.EnchanterIds,
+                        originalWorld.AllowUpdates, originalWorld.Updating, originalWorld.Preview, originalWorld.TestRng, true));
+                    ImportEnchantmentRoom(EnchantmentWorldModel.Refresh(EnchantmentWorldModel.Room(CurrentRoom(), context)));
+                }
                 if (preview.units.Any(unit => !unit.Alive && (unit.Source.EndsBattleOnDeath || unit.Source.IsPyre) &&
                     units.Any(live => live.Alive && live.Source.Id == unit.Source.Id))) ClearTerminalCards();
             }
@@ -1458,6 +1508,7 @@ namespace MonsterTrain2Poju.Model
                     FireTriggers(actor, "OnAttacking", overrideTarget: target);
                 // Native queues Slay before lifesteal and retaliation, for every damage type
                 // with a character attacker, including damage from a character effect.
+                if (!target.Alive && !target.DeathFinished && target.Count("undying") <= 0 && !UpdateEnchantments(target.Source.Id)) return;
                 if (actor != null && !actor.Despawned && !actor.Removed && !target.Alive) FireTriggers(actor, "OnKill", dyingCharacter: target);
                 // Native lifesteal heals by unmodified attack, even against armor; it happens before spikes.
                 // A dying sweep attacker has not been destroyed yet: its remaining
@@ -1569,6 +1620,7 @@ namespace MonsterTrain2Poju.Model
                         !nativeCardDamage && enqueueCharacterTrigger == null && target.Source.DeathState.HasStatisticsListener,
                         isSacrifice: target.Source.DeathState.IsSacrifice,
                         statisticsListenerOnce: target.Source.DeathState.StatisticsListenerOnce.HasValue ? false : (bool?)null)));
+                if (!UpdateEnchantments(target.Source.Id)) return;
                 if (enqueueCharacterTrigger != null) enqueueCharacterTrigger(new QueuedCharacterTrigger(source.RoomIndex, target.Freeze(),
                     returnSpawnerAfterQueue: deferReturn, deferUntilRemoval: deferRemoval, harvestAfterDeath: !target.Despawned && !immediateHarvest,
                     completePhysicalRemovalAfterQueue: deferRemoval && context?.SpawnPoints != null));
@@ -1584,7 +1636,12 @@ namespace MonsterTrain2Poju.Model
                     }
                 }
                 if (!source.Preview && !deferReturn && !DeferSpawner(target)) SettleDeadSpawner(target);
-                if (!deferRemoval) { target.Removed = true; RemovePhysicalPoint(target); }
+                if (!deferRemoval)
+                {
+                    target.Removed = true; RemovePhysicalPoint(target);
+                    if (!(stopAfterBossRemoval && target.Source.EndsBattleOnDeath) && UpdateEnchantments() &&
+                        !runningTriggerQueue && enqueueCharacterTrigger == null) DrainLocalTriggerQueue();
+                }
             }
 
             private void RemovePhysicalPoint(WorkingUnit unit)
@@ -1709,7 +1766,7 @@ namespace MonsterTrain2Poju.Model
                     dyingCharacter: dyingCharacter?.Freeze(), canFireTriggers: canFireTriggers, triggerCount: triggerCount, lastSpawnedOverrideUnitId: lastSpawnedOverrideUnitId)); return; }
                 if (!fromQueue)
                 {
-                    triggerQueue.Enqueue((unit, kind, canFireTriggers, paramInt, overrideTarget, 0, paramString, dyingCharacter, triggerCount, lastSpawnedOverrideUnitId));
+                    triggerQueue.Enqueue((source.RoomIndex, unit, kind, canFireTriggers, paramInt, overrideTarget, 0, paramString, dyingCharacter, triggerCount, lastSpawnedOverrideUnitId));
                     if (!runningTriggerQueue) DrainLocalTriggerQueue();
                     return;
                 }
@@ -1726,6 +1783,24 @@ namespace MonsterTrain2Poju.Model
                 while (triggerQueue.Count > 0 && unsupportedReason == null)
                 {
                     var queued = triggerQueue.Dequeue();
+                    if (queued.RoomIndex != source.RoomIndex)
+                    {
+                        RoomCombatState synced = EnchantmentWorldModel.Sync(CurrentRoom(), units.Where(unit => !unit.Alive || !unit.InRoom)
+                            .Select(unit => unit.Freeze()).ToArray());
+                        context = synced.Context;
+                        RoomCombatState? remote = context?.Enchantments?.Rooms.FirstOrDefault(room => room.RoomIndex == queued.RoomIndex);
+                        if (remote == null) { unsupportedReason = "A cross-room character callback requires the captured shared world."; break; }
+                        var callback = new QueuedCharacterTrigger(queued.RoomIndex, queued.Unit.Freeze(), queued.Kind,
+                            paramInt: queued.ParamInt, overrideTarget: queued.OverrideTarget?.Freeze(), paramInt2: queued.ParamInt2,
+                            paramString: queued.ParamString, dyingCharacter: queued.DyingCharacter?.Freeze(), canFireTriggers: queued.CanFire,
+                            triggerCount: queued.TriggerCount, lastSpawnedOverrideUnitId: queued.LastSpawnedOverrideUnitId);
+                        RoomCombatResult fired = ApplyQueuedCharacterTrigger(EnchantmentWorldModel.Room(remote, context), callback, QueueCallback);
+                        if (!fired.Supported) { unsupportedReason = fired.UnsupportedReason; break; }
+                        events.AddRange(fired.Events); dispatches.AddRange(fired.Dispatches);
+                        ImportEnchantmentRoom(EnchantmentWorldModel.Refresh(EnchantmentWorldModel.Room(CurrentRoom(), fired.State!.Context)));
+                        battleWon |= fired.Outcome == RoomOutcome.BattleWon;
+                        continue;
+                    }
                     ExecuteTriggers(queued.Unit, queued.Kind, queued.CanFire, queued.ParamInt, queued.OverrideTarget, queued.DyingCharacter, queued.TriggerCount, queued.LastSpawnedOverrideUnitId, queued.ParamInt2, queued.ParamString);
                 }
                 var removing = deferredDamageDeaths.OrderBy(dead => dead.Unit.Source.Team).ThenBy(dead => dead.Unit.Source.Id).ToArray();
@@ -1736,7 +1811,7 @@ namespace MonsterTrain2Poju.Model
                 foreach (var dead in removing)
                 {
                     FireTriggers(dead.Unit, "OnDeath");
-                    if (nativeCardDamage && dead.Unit.Source.DeathState != null)
+                    if ((nativeCardDamage || context?.Enchantments?.AutomaticLifecycle == true) && dead.Unit.Source.DeathState != null)
                         dead.Unit.Apply(dead.Unit.Freeze().WithDeathState(new UnitDeathState(true, true, false,
                             isSacrifice: dead.Unit.Source.DeathState.IsSacrifice, statisticsListenerOnce: dead.Unit.Source.DeathState.StatisticsListenerOnce)));
                     PhysicalHarvest(dead.Unit);
@@ -1752,6 +1827,9 @@ namespace MonsterTrain2Poju.Model
                     // card instead holds StopCombatLoop until its effects complete.
                     if (stopAfterBossRemoval && !source.Preview && dead.Unit.Source.EndsBattleOnDeath) break;
                 }
+                if (removing.Length > 0 && !(stopAfterBossRemoval && (battleWon || source.Preview && removing.Any(dead => dead.Unit.Source.EndsBattleOnDeath))) && UpdateEnchantments() &&
+                    triggerQueue.Count > 0 && enqueueCharacterTrigger == null)
+                    DrainLocalTriggerQueue();
             }
 
             private void QueueHarvestGroup(CombatUnit dying, string kind, CombatTeam team, int count)
@@ -1834,7 +1912,11 @@ namespace MonsterTrain2Poju.Model
                             if (live >= 0) retained = unit.Triggers[live];
                             effects = retained.Effects.ToArray();
                             CombatEffect effect = effects[effectIndex];
-                            if (effect.Summon != null)
+                            if (effect.Enchantment != null)
+                            {
+                                if (!UpdateEnchantmentEffect(unit.Source.Id, live >= 0 ? live : index, effectIndex)) break;
+                            }
+                            else if (effect.Summon != null)
                             {
                                 if (!TriggeredSummonTest(unit, effect.Summon))
                                 { if (effect.Summon.Tests.CancelSubsequent) break; continue; }
@@ -2045,6 +2127,40 @@ namespace MonsterTrain2Poju.Model
 
             private RoomCombatState CurrentRoom() => new RoomCombatState(source.RoomIndex, source.Deployment,
                 units.Where(unit => unit.Alive && unit.InRoom).Select(unit => unit.Freeze()).ToArray(), source.ExternalInteractions, context, source.Preview);
+
+            private void ImportEnchantmentRoom(RoomCombatState state)
+            {
+                context = state.Context;
+                foreach (CombatUnit changed in state.Units.Concat(context?.Enchantments?.RetainedUnits
+                    .Where(actor => actor.RoomIndex == source.RoomIndex).Select(actor => actor.Unit) ?? Array.Empty<CombatUnit>()))
+                {
+                    WorkingUnit? current = units.FirstOrDefault(unit => unit.Source.Id == changed.Id);
+                    if (current != null) current.Apply(changed);
+                }
+            }
+
+            private bool UpdateEnchantments(int? onlySourceId = null)
+            {
+                if (context?.Enchantments?.AutomaticLifecycle != true) return true;
+                RoomCombatState current = EnchantmentWorldModel.Sync(CurrentRoom(), units.Where(unit => !unit.Alive || !unit.InRoom)
+                    .Select(unit => unit.Freeze()).ToArray());
+                RoomCombatResult result = EnchantmentWorldModel.Update(current, onlySourceId);
+                if (!result.Supported) { unsupportedReason = result.UnsupportedReason; return false; }
+                ImportEnchantmentRoom(result.State!);
+                foreach (QueuedCharacterTrigger callback in result.PendingCallbacks) QueueCallback(callback);
+                return true;
+            }
+
+            private bool UpdateEnchantmentEffect(int unitId, int triggerIndex, int effectIndex)
+            {
+                RoomCombatState current = EnchantmentWorldModel.Sync(CurrentRoom(), units.Where(unit => !unit.Alive || !unit.InRoom)
+                    .Select(unit => unit.Freeze()).ToArray());
+                RoomCombatResult result = EnchantmentWorldModel.UpdateEffect(current, unitId, triggerIndex, effectIndex);
+                if (!result.Supported) { unsupportedReason = result.UnsupportedReason; return false; }
+                ImportEnchantmentRoom(result.State!);
+                foreach (QueuedCharacterTrigger callback in result.PendingCallbacks) QueueCallback(callback);
+                return true;
+            }
 
             private RoomCombatState UpgradeRoom(WorkingUnit target) => new RoomCombatState(source.RoomIndex, source.Deployment,
                 units.Where(unit => unit.Alive && unit.InRoom || unit == target).Select(unit => unit.Freeze()).ToArray(), source.ExternalInteractions, context, source.Preview);
@@ -2300,11 +2416,16 @@ namespace MonsterTrain2Poju.Model
             private void QueueCallback(QueuedCharacterTrigger callback)
             {
                 if (enqueueCharacterTrigger != null) { enqueueCharacterTrigger(callback); return; }
-                WorkingUnit actor = units.First(unit => unit.Source.Id == callback.Unit.Id);
-                WorkingUnit? dying = callback.DyingCharacter == null ? null : units.FirstOrDefault(unit => unit.Source.Id == callback.DyingCharacter.Id);
+                bool local = callback.RoomIndex == source.RoomIndex;
+                WorkingUnit actor = local ? units.First(unit => unit.Source.Id == callback.Unit.Id) : new WorkingUnit(callback.Unit) { InRoom = false };
+                WorkingUnit? dying = callback.DyingCharacter == null ? null : local ? units.FirstOrDefault(unit => unit.Source.Id == callback.DyingCharacter.Id) : null;
                 if (dying == null && callback.DyingCharacter != null)
-                { dying = new WorkingUnit(callback.DyingCharacter) { InRoom = false }; units.Add(dying); }
-                triggerQueue.Enqueue((actor, callback.Kind, callback.CanFireTriggers, callback.ParamInt, null, callback.ParamInt2, callback.ParamString, dying, callback.TriggerCount, callback.LastSpawnedOverrideUnitId));
+                { dying = new WorkingUnit(callback.DyingCharacter) { InRoom = false }; if (local) units.Add(dying); }
+                WorkingUnit? overridden = callback.OverrideTarget == null ? null : units.FirstOrDefault(unit => unit.Source.Id == callback.OverrideTarget.Id);
+                if (overridden == null && callback.OverrideTarget != null)
+                { overridden = new WorkingUnit(callback.OverrideTarget) { InRoom = false }; if (local) units.Add(overridden); }
+                triggerQueue.Enqueue((callback.RoomIndex, actor, callback.Kind, callback.CanFireTriggers, callback.ParamInt, overridden,
+                    callback.ParamInt2, callback.ParamString, dying, callback.TriggerCount, callback.LastSpawnedOverrideUnitId));
             }
 
             private void RemoveStatus(WorkingUnit unit, string id, int count)

@@ -108,7 +108,8 @@ namespace MonsterTrain2Poju.Probe
                 data.GetHealth(), data.GetHealth(), data.GetCanAttack(), false, data.IsMiniboss(), statuses, triggers.ToArray(), size: data.GetSize(),
                 statusImmunities: data.GetStatusEffectImmunities(), subtypes: data.GetSubtypes().Select(subtype => subtype.Key).ToArray(),
                 modifiers: UnitModifierProbe.Definition(data), isBoss: data.IsMiniboss() || data.IsOuterTrainBoss(), lastAttackerId: 0, statusRegistry: statuses, equipmentCards: Array.Empty<int>(), nextTriggerId: triggers.Count, ability: ability, statusDictionary: new StatusDictionaryState(statuses.Select(status => (string?)status.Id).ToArray(), Array.Empty<int>()), abilityRules: AbilityLifecycleProbe.Rules(data), hordeDefinition: new HordeBaseStats(data.GetAttackDamage(), data.GetHealth()), isSpawning: false, sacrificeCardId: 0, deathState: new UnitDeathState(false, false, true, isSacrifice: false, statisticsListenerOnce: true,
-                    isDespawned: HordeMergeScenario.Enabled || BumpScenario.Enabled ? false : (bool?)null, isDestroyed: HordeMergeScenario.Enabled || BumpScenario.Enabled ? false : (bool?)null),
+                    isDespawned: HordeMergeScenario.Enabled || BumpScenario.Enabled || EnchantmentBattleScenario.Prepared ? false : (bool?)null,
+                    isDestroyed: HordeMergeScenario.Enabled || BumpScenario.Enabled || EnchantmentBattleScenario.Prepared ? false : (bool?)null),
                     bumpRules: BumpScenario.Enabled ? new UnitBumpRules(data.GetLoopsBetweenTrainFloors(), data.IsCompanionBoss(), data.IsOuterTrainBoss()) : null),
                 data.GetAscendsTrainAutomatically(), data.GetLoopsBetweenTrainFloors(), interactions, data.IsCompanionBoss());
         }

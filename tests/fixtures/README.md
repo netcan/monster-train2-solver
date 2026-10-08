@@ -991,3 +991,26 @@ pass. Regression evidence is the preceding complete 153-archive run/audit plus
 the new 204-list suite and final affected aura suites; a second complete
 154-archive run was not performed. Generic persistent-aura combat and the full
 simulator remain incomplete.
+
+`full-battle-persistent-enchantment.mt2f` keeps paid Steward singleton armor auras
+bound throughout a real game 2.2.1 battle, targeting both teams and draining
+status-change gold children. The original Boss/waves remain intact. Schema 103
+captures the context-owned aura world, preview maps/cache, retained destroyed
+targets, physical positions and update guards at every ordinary action boundary.
+The muted Instant native run takes 53.17 seconds and wins in 15 actions/five
+EndTurns, Pyre 79, with zero differences/failures/unsupported/pending records and
+unchanged original profile/log signatures. Independent checks reproduce all
+42 room stages, nine train phases, seven spawns, actions/turns, initial/middle
+policy roots and 16 branches with unchanged parents. Coverage rejects an ordinary
+battle without persistent auras or without native preview/retained-target evidence.
+
+The byte-identical native binary has 26,528 bytes and 4,444 unique nodes, with no
+text source/JSON companion. The SHA-256 is in manifest.tsv. Inventory is now 155
+archives: 142 battle fixtures and thirteen calibrations. Whole-battle random pools,
+source death/revival, actor/card-changing aura children and broader combat effects
+remain outside this fixture's proof; the full simulator remains incomplete.
+
+Complete regression and audit pass for all 155 archives, including 138 policy
+chains, 24 physical-position and thirteen decision-reference suites. All archive
+sizes/hashes, native provenance and original-file gates pass, with no errors or
+unsupported transitions and no tracked source JSON fixtures.

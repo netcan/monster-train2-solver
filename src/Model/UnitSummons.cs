@@ -167,6 +167,7 @@ namespace MonsterTrain2Poju.Model
             RoomCombatState final = result.State!;
             final = new RoomCombatState(final.RoomIndex, final.Deployment, final.Units.Select(unit => unit.Id == spawned.Id
                 ? HordeStatusModel.WithSpawning(unit, false) : unit).ToArray(), final.ExternalInteractions, final.Context, final.Preview);
+            final = EnchantmentWorldModel.Sync(final);
             return new UnitBirthResult(new RoomCombatResult(final, outcome, 0, events), spawned.Id);
         }
         private static UnitBirthResult Unsupported(string error) => new UnitBirthResult(new RoomCombatResult(null,

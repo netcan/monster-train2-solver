@@ -17,14 +17,15 @@ namespace MonsterTrain2Poju.Model
         public bool Updating { get; }
         public bool Preview { get; }
         public UnityRng TestRng { get; }
+        public bool AutomaticLifecycle { get; }
         public EnchantmentWorld(IReadOnlyList<RoomCombatState> rooms, IReadOnlyList<EnemyMovement> movement, int enemySlotsPerRoom,
             IReadOnlyList<EnchantmentRetainedUnit> retainedUnits, IReadOnlyList<int> enchanterIds,
-            bool allowUpdates, bool updating, bool preview, UnityRng testRng)
+            bool allowUpdates, bool updating, bool preview, UnityRng testRng, bool automaticLifecycle = false)
         {
             Rooms = Array.AsReadOnly(rooms.OrderBy(room => room.RoomIndex).Select(Strip).ToArray());
             Movement = Array.AsReadOnly(movement.ToArray()); EnemySlotsPerRoom = enemySlotsPerRoom;
-            RetainedUnits = Array.AsReadOnly(retainedUnits.ToArray()); EnchanterIds = Array.AsReadOnly(enchanterIds.ToArray());
-            AllowUpdates = allowUpdates; Updating = updating; Preview = preview; TestRng = testRng;
+            RetainedUnits = Array.AsReadOnly((automaticLifecycle ? retainedUnits.OrderBy(actor => actor.Unit.Id) : retainedUnits.AsEnumerable()).ToArray()); EnchanterIds = Array.AsReadOnly(enchanterIds.ToArray());
+            AllowUpdates = allowUpdates; Updating = updating; Preview = preview; TestRng = testRng; AutomaticLifecycle = automaticLifecycle;
         }
         private static RoomCombatState Strip(RoomCombatState room) => new RoomCombatState(room.RoomIndex, room.Deployment,
             room.Units, room.ExternalInteractions, null, room.Preview);
@@ -32,9 +33,9 @@ namespace MonsterTrain2Poju.Model
             Rooms.Select(room => new RoomCombatState(room.RoomIndex, room.Deployment, room.Units, room.ExternalInteractions,
                 context.WithEnchantments(null), room.Preview)).ToArray(), Movement, EnemySlotsPerRoom, context.WithEnchantments(null)),
             RetainedUnits, EnchanterIds, AllowUpdates, Updating, Preview, TestRng);
-        internal static EnchantmentWorld From(EnchantmentCombatState frame) => new EnchantmentWorld(frame.Train.Rooms,
+        internal static EnchantmentWorld From(EnchantmentCombatState frame, bool automaticLifecycle = false) => new EnchantmentWorld(frame.Train.Rooms,
             frame.Train.Movement, frame.Train.EnemySlotsPerRoom, frame.RetainedUnits, frame.EnchanterIds,
-            frame.AllowUpdates, frame.Updating, frame.Preview, frame.TestRng);
+            frame.AllowUpdates, frame.Updating, frame.Preview, frame.TestRng, automaticLifecycle);
     }
 
     internal static class EnchantmentWorldModel
@@ -59,13 +60,59 @@ namespace MonsterTrain2Poju.Model
                 retained.RemoveAll(actor => actor.Unit.Id == unit.Id);
                 retained.Add(new EnchantmentRetainedUnit(unit, source.RoomIndex, source.Preview));
             }
+            if (world.AutomaticLifecycle)
+            {
+                var referenced = rooms.SelectMany(room => room.Units).Concat(retained.Select(actor => actor.Unit))
+                    .SelectMany(unit => unit.Triggers).SelectMany(trigger => trigger.Effects).Where(effect => effect.Enchantment != null)
+                    .SelectMany(effect => effect.Enchantment!.State.PrimaryTargets.Concat(effect.Enchantment.State.PreviewTargets))
+                    .Select(target => target.UnitId).Concat(world.EnchanterIds).ToHashSet();
+                retained = retained.Where(actor => referenced.Contains(actor.Unit.Id)).Select(actor =>
+                    new EnchantmentRetainedUnit(actor.Unit, actor.Unit.DeathState?.IsDestroyed == true ? -1 : actor.RoomIndex, actor.Preview)).ToList();
+            }
             world = new EnchantmentWorld(rooms,
-                world.Movement, world.EnemySlotsPerRoom, retained, world.EnchanterIds, world.AllowUpdates, world.Updating,
-                world.Preview, world.TestRng);
+                world.Movement.Where(rule => liveIds.Contains(rule.UnitId)).ToArray(), world.EnemySlotsPerRoom, retained, world.EnchanterIds, world.AllowUpdates, world.Updating,
+                world.Preview, world.TestRng, world.AutomaticLifecycle);
             return Room(source, source.Context!.WithEnchantments(world));
         }
         internal static RoomCombatState Room(RoomCombatState source, CombatContext? context) => new RoomCombatState(source.RoomIndex,
             source.Deployment, source.Units, source.ExternalInteractions, context, source.Preview);
+
+        internal static TrainCombatState Rebase(TrainCombatState source, bool? allowUpdates = null, bool? preview = null, UnityRng? testRng = null)
+        {
+            EnchantmentWorld? world = source.Context?.Enchantments;
+            if (world == null) return source;
+            var live = source.Rooms.SelectMany(room => room.Units).Select(unit => unit.Id).ToHashSet();
+            var retained = world.RetainedUnits.Where(actor => !live.Contains(actor.Unit.Id)).ToList();
+            foreach (RoomCombatState room in world.Rooms)
+                foreach (CombatUnit unit in room.Units)
+                    if (!live.Contains(unit.Id) && retained.All(actor => actor.Unit.Id != unit.Id))
+                        retained.Add(new EnchantmentRetainedUnit(unit, room.RoomIndex, room.Preview));
+            var changed = new EnchantmentWorld(source.Rooms, source.Movement, source.EnemySlotsPerRoom, retained,
+                world.EnchanterIds, allowUpdates ?? world.AllowUpdates, world.Updating, preview ?? world.Preview,
+                testRng ?? world.TestRng, world.AutomaticLifecycle);
+            CombatContext context = source.Context!.WithEnchantments(changed);
+            return new TrainCombatState(source.Rooms.Select(room => Room(room, context)).ToArray(), source.Movement,
+                source.EnemySlotsPerRoom, context);
+        }
+        internal static TrainCombatResult SetAllowUpdates(TrainCombatState source, bool allow)
+        {
+            if (source.Context?.Enchantments?.AutomaticLifecycle != true)
+                return new TrainCombatResult(source, RoomOutcome.Exchanged, Array.Empty<RoomCombatResult>());
+            source = Rebase(source, allowUpdates: allow);
+            return allow ? UpdateAll(source) : new TrainCombatResult(source, RoomOutcome.Exchanged, Array.Empty<RoomCombatResult>());
+        }
+        internal static TrainCombatResult UpdateAll(TrainCombatState source)
+        {
+            if (source.Context?.Enchantments?.AutomaticLifecycle != true)
+                return new TrainCombatResult(source, RoomOutcome.Exchanged, Array.Empty<RoomCombatResult>());
+            source = Rebase(source);
+            RoomCombatResult updated = Update(source.Rooms.First());
+            if (!updated.Supported) return new TrainCombatResult(null, RoomOutcome.Unsupported, Array.Empty<RoomCombatResult>(), updated.UnsupportedReason);
+            CombatContext context = updated.State!.Context!;
+            var train = new TrainCombatState(context.Enchantments!.Rooms.Select(room => Room(room, context)).ToArray(), source.Movement,
+                source.EnemySlotsPerRoom, context);
+            return TrainCombatModel.ApplyCharacterQueue(train, updated.PendingCallbacks.ToList());
+        }
 
         internal static RoomCombatResult Update(RoomCombatState source, int? onlySourceId = null)
         {
@@ -110,7 +157,7 @@ namespace MonsterTrain2Poju.Model
         private static RoomCombatResult Complete(RoomCombatState source, EnchantmentCombatResult result)
         {
             if (!result.Supported) return Unsupported(result.UnsupportedReason!);
-            EnchantmentWorld updated = EnchantmentWorld.From(result.State!);
+            EnchantmentWorld updated = EnchantmentWorld.From(result.State!, source.Context!.Enchantments!.AutomaticLifecycle);
             CombatContext context = result.State!.Train.Context!.WithEnchantments(updated);
             RoomCombatState roomState = updated.Rooms.Single(room => room.RoomIndex == source.RoomIndex);
             return new RoomCombatResult(Room(roomState, context), RoomOutcome.Exchanged, 0, new List<CombatEvent>(), pendingCallbacks: result.PendingCallbacks);
@@ -129,13 +176,26 @@ namespace MonsterTrain2Poju.Model
             CombatContext context = source.Context!;
             EnchantmentWorld world = context.Enchantments!;
             var changed = new EnchantmentWorld(world.Rooms, world.Movement, world.EnemySlotsPerRoom, world.RetainedUnits,
-                world.EnchanterIds.Concat(new[] { unitId }).Distinct().ToArray(), world.AllowUpdates, world.Updating, world.Preview, world.TestRng);
+                world.EnchanterIds.Concat(new[] { unitId }).Distinct().ToArray(), world.AllowUpdates, world.Updating, world.Preview, world.TestRng, world.AutomaticLifecycle);
             return Sync(Room(source, context.WithEnchantments(changed)));
         }
         internal static RoomCombatState Refresh(RoomCombatState source)
         {
             RoomCombatState? room = source.Context?.Enchantments?.Rooms.FirstOrDefault(item => item.RoomIndex == source.RoomIndex);
             return room == null ? source : Room(room, source.Context);
+        }
+        internal static CombatUnit RestorePreviewEffects(CombatUnit original, EnchantmentWorld observed, bool prepare)
+        {
+            CombatUnit? tested = observed.Rooms.SelectMany(room => room.Units).Concat(observed.RetainedUnits.Select(actor => actor.Unit))
+                .FirstOrDefault(unit => unit.Id == original.Id);
+            if (tested == null) return original;
+            return original.WithTriggers(original.Triggers.Select((trigger, index) => trigger.WithEffects(trigger.Effects.Select((effect, effectIndex) =>
+            {
+                EnchantmentRule? after = index < tested.Triggers.Count && effectIndex < tested.Triggers[index].Effects.Count
+                    ? tested.Triggers[index].Effects[effectIndex].Enchantment : null;
+                return effect.Enchantment == null || after == null ? effect : effect.WithEnchantment(effect.Enchantment.WithState(
+                    prepare ? EnchantmentLifecycleModel.PrepareForPreview(after.State) : after.State));
+            }).ToArray())).ToArray());
         }
         internal static TrainCombatState Attach(EnchantmentCombatState frame)
         {
