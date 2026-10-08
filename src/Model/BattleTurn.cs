@@ -95,7 +95,11 @@ namespace MonsterTrain2Poju.Model
             if (spawners.Distinct().Count() != spawners.Length) return Unsupported("Shared unit spawner cards are not modeled.");
             var standbyCards = new HashSet<int>(source.OtherPiles.Where(pile => pile.Name == "Standby")
                 .SelectMany(pile => pile.Cards).Select(card => card.InstanceId));
-            if (spawners.Any(cardId => !standbyCards.Contains(cardId)))
+            CombatContext birthContext = source.Spawn.Train.Context;
+            if (source.Spawn.Train.Rooms.SelectMany(room => room.Units).Where(unit => unit.SpawnerCardId > 0)
+                .Any(unit => !standbyCards.Contains(unit.SpawnerCardId) && !(unit.Status("cardless")?.Stacks > 0 &&
+                    birthContext.CardInstances != null && !birthContext.CardInstances.Any(card => card.InstanceId == unit.SpawnerCardId) &&
+                    birthContext.CardRegistry?.Any(card => card.InstanceId == unit.SpawnerCardId) == true)))
                 return Unsupported("A living unit's spawner card is missing from standby.");
             if (source.RngStreams.Select(stream => stream.Name).Distinct().Count() != source.RngStreams.Count)
                 return Unsupported("Duplicate gameplay RNG streams.");

@@ -76,6 +76,7 @@ namespace MonsterTrain2Poju.Model
         public string Effect { get; }
         public string Destination { get; }
         public CombatUnit? SpawnUnit { get; }
+        public UnitSummonRule? Summon { get; }
         public IReadOnlyList<string> ExternalInteractions { get; }
         public IReadOnlyList<CardActionEffect> Effects { get; }
         public IReadOnlyList<string>? UpgradeInteractions { get; }
@@ -85,18 +86,19 @@ namespace MonsterTrain2Poju.Model
             CombatUnit? spawnUnit, IReadOnlyList<string> externalInteractions, IReadOnlyList<CardActionEffect>? effects = null,
             IReadOnlyList<string>? upgradeInteractions = null, IReadOnlyList<string>? handDiscardInteractions = null,
             IReadOnlyList<string>? handConsumeInteractions = null, string costType = "Default", EquipmentDefinition? equipment = null,
-            CardAbilityRule? ability = null)
+            CardAbilityRule? ability = null, UnitSummonRule? summon = null)
         {
             DataId = dataId; AssetKey = assetKey; Cost = cost; CostType = costType; Effect = effect; Destination = destination;
             Equipment = equipment; Ability = ability;
             SpawnUnit = spawnUnit; ExternalInteractions = Array.AsReadOnly(externalInteractions.ToArray());
+            Summon = summon;
             Effects = Array.AsReadOnly((effects ?? Array.Empty<CardActionEffect>()).ToArray());
             UpgradeInteractions = upgradeInteractions == null ? null : Array.AsReadOnly(upgradeInteractions.ToArray());
             HandDiscardInteractions = handDiscardInteractions == null ? null : Array.AsReadOnly(handDiscardInteractions.ToArray());
             HandConsumeInteractions = handConsumeInteractions == null ? null : Array.AsReadOnly(handConsumeInteractions.ToArray());
         }
         internal CardPlayRule WithSpawn(CombatUnit unit) => new CardPlayRule(DataId, AssetKey, Cost, Effect, Destination,
-            unit, ExternalInteractions, Effects, UpgradeInteractions, HandDiscardInteractions, HandConsumeInteractions, CostType, Equipment, Ability);
+            unit, ExternalInteractions, Effects, UpgradeInteractions, HandDiscardInteractions, HandConsumeInteractions, CostType, Equipment, Ability, Summon);
     }
 
     public sealed class BattlePlayRules
@@ -212,6 +214,12 @@ namespace MonsterTrain2Poju.Model
                 context.BattleRng, context.Gold, context.NextCardId, context.MaxHandSize, context.StatusRules, context.Statistics, context.CardInstances,
                 context.CardRegistry, context.AllScenarioBossesDead, context.NextAddedTemporaryUpgrades, context.OtherPiles, context.QueryFrame, context.KillCamActivated, context.MagicPower, context.IsolatedBattlePreview, context.EnergyState, context.RoomCapacities, context.AbilityCardCache, context.LastAbilityActivatorUnitId, context.PermanentlyDisabledAbilities, context.LastSpawnedUnitId, context.NextUnitId);
             target = new RoomCombatState(target.RoomIndex, target.Deployment, target.Units, target.ExternalInteractions, context, target.Preview);
+            if (context.FindCard(card.InstanceId)?.PlayedRoomUnitIds != null)
+            {
+                context = context.WithCard(context.FindCard(card.InstanceId)!.WithPlayedRoomUnits(target.Units
+                    .Where(unit => unit.Health > 0 && unit.IsSpawning != true).Select(unit => unit.Id).ToArray()));
+                target = new RoomCombatState(target.RoomIndex, target.Deployment, target.Units, target.ExternalInteractions, context, target.Preview);
+            }
             CombatUnit[] players = target.Units.Where(unit => unit.Team == CombatTeam.Player).ToArray();
             int position = action.PlayerPosition == -1 ? players.Length : action.PlayerPosition;
             int? spawnedId = null;
@@ -236,22 +244,33 @@ namespace MonsterTrain2Poju.Model
                 if (position < 0 || position > players.Length) return Illegal("Invalid summon position.");
                 if (nextUnitId <= 0 || train.Rooms.SelectMany(room => room.Units).Any(unit => unit.Id >= nextUnitId))
                     return Unsupported("Invalid unit identity allocation.");
-                UnitIdentityAllocation allocated = UnitIdentityModel.Allocate(context, nextUnitId);
-                if (!allocated.Supported) return Unsupported(allocated.UnsupportedReason!);
-                nextUnitId = allocated.NextUnitId; context = allocated.Context!;
-                var spawned = new CombatUnit(allocated.UnitId, template.AssetKey, CombatTeam.Player, template.BaseAttack,
-                    template.Health, template.MaxHealth, template.CanAttack, false, false, template.Statuses,
-                    template.Triggers, card.InstanceId, template.Size, template.StatusImmunities, template.Subtypes, template.Modifiers, template.IsBoss, template.LastAttackerId, template.StatusRegistry, template.EquipmentCards, template.NextTriggerId, template.Ability, template.StatusDictionary, template.AbilityRules, template.HordeDefinition, template.IsSpawning, template.SacrificeCardId, template.DeathState);
-                context = context.WithStatistics(context.Statistics?.Spawn(action.RoomIndex, template.Subtypes));
-                spawnedId = spawned.Id;
-                var nextPlayers = players.ToList(); nextPlayers.Insert(position, spawned);
-                var entered = new RoomCombatState(target.RoomIndex, target.Deployment,
-                    target.Units.Where(unit => unit.Team == CombatTeam.Enemy).Concat(nextPlayers).ToArray(), target.ExternalInteractions, context, target.Preview);
-                IReadOnlyList<CombatStatus> initialStatuses = originalRule!.SpawnUnit!.StatusRegistry ?? originalRule.SpawnUnit.Statuses;
-                foreach (CardModifiers group in playingInstance == null ? Array.Empty<CardModifiers>() : new[] { playingInstance.Permanent, playingInstance.Temporary })
-                    initialStatuses = StatusCallbackModel.MergeStartingStatuses(initialStatuses, group.Upgrades.SelectMany(upgrade => upgrade.Statuses));
-                RoomCombatResult spawnTriggers = RoomCombatModel.ApplySpawnTriggers(entered, spawned.Id, fromCard: true, startingApplications: initialStatuses);
-                if (!spawnTriggers.Supported) return Unsupported(spawnTriggers.UnsupportedReason!);
+                RoomCombatResult spawnTriggers;
+                if (rule.Summon != null)
+                {
+                    UnitBirthResult summoned = UnitSummonModel.Apply(target, originalRule!, card.InstanceId, position, targetRule.PlayerSlots);
+                    if (!summoned.Supported) return Unsupported(summoned.Result.UnsupportedReason!);
+                    spawnedId = summoned.UnitId; spawnTriggers = summoned.Result;
+                    nextUnitId = spawnTriggers.State!.Context!.NextUnitId!.Value;
+                }
+                else
+                {
+                    UnitIdentityAllocation allocated = UnitIdentityModel.Allocate(context, nextUnitId);
+                    if (!allocated.Supported) return Unsupported(allocated.UnsupportedReason!);
+                    nextUnitId = allocated.NextUnitId; context = allocated.Context!;
+                    var spawned = new CombatUnit(allocated.UnitId, template.AssetKey, CombatTeam.Player, template.BaseAttack,
+                        template.Health, template.MaxHealth, template.CanAttack, false, false, template.Statuses,
+                        template.Triggers, card.InstanceId, template.Size, template.StatusImmunities, template.Subtypes, template.Modifiers, template.IsBoss, template.LastAttackerId, template.StatusRegistry, template.EquipmentCards, template.NextTriggerId, template.Ability, template.StatusDictionary, template.AbilityRules, template.HordeDefinition, template.IsSpawning, template.SacrificeCardId, template.DeathState);
+                    context = context.WithStatistics(context.Statistics?.Spawn(action.RoomIndex, template.Subtypes));
+                    spawnedId = spawned.Id;
+                    var nextPlayers = players.ToList(); nextPlayers.Insert(position, spawned);
+                    var entered = new RoomCombatState(target.RoomIndex, target.Deployment,
+                        target.Units.Where(unit => unit.Team == CombatTeam.Enemy).Concat(nextPlayers).ToArray(), target.ExternalInteractions, context, target.Preview);
+                    IReadOnlyList<CombatStatus> initialStatuses = originalRule!.SpawnUnit!.StatusRegistry ?? originalRule.SpawnUnit.Statuses;
+                    foreach (CardModifiers group in playingInstance == null ? Array.Empty<CardModifiers>() : new[] { playingInstance.Permanent, playingInstance.Temporary })
+                        initialStatuses = StatusCallbackModel.MergeStartingStatuses(initialStatuses, group.Upgrades.SelectMany(upgrade => upgrade.Statuses));
+                    spawnTriggers = RoomCombatModel.ApplySpawnTriggers(entered, spawned.Id, fromCard: true, startingApplications: initialStatuses);
+                    if (!spawnTriggers.Supported) return Unsupported(spawnTriggers.UnsupportedReason!);
+                }
                 context = spawnTriggers.State!.Context!; outcome = spawnTriggers.Outcome;
                 piles = context.OtherPiles?.ToArray() ?? piles;
                 RoomCombatState[] enteredRooms = train.Rooms.Select(room => new RoomCombatState(room.RoomIndex, room.Deployment,
@@ -300,10 +319,11 @@ namespace MonsterTrain2Poju.Model
             train = CardSpellModel.WithContext(train, context);
             if (rule.Effect == "SpawnMonster")
             {
-                int[] cached = source.Spawn.Train.Rooms.Single(room => room.RoomIndex == action.RoomIndex).Units
+                int[] initialCached = source.Spawn.Train.Rooms.Single(room => room.RoomIndex == action.RoomIndex).Units
                     .Where(unit => unit.Health > 0 && unit.IsSpawning != true).Select(unit => unit.Id).ToArray();
                 foreach (CombatTeam team in new[] { CombatTeam.Player, CombatTeam.Enemy })
                 {
+                    IReadOnlyList<int> cached = context.FindCard(card.InstanceId)?.PlayedRoomUnitIds ?? initialCached;
                     TrainCombatResult rallied = CardPlayedTriggerModel.Rally(train, team, cached);
                     if (!rallied.Supported) return Unsupported(rallied.UnsupportedReason!);
                     train = rallied.State!; context = train.Context!;
@@ -323,7 +343,10 @@ namespace MonsterTrain2Poju.Model
                     CardPileState? standby = piles.FirstOrDefault(pile => pile.Name == "Standby");
                     CardPileState? exhausted = piles.FirstOrDefault(pile => pile.Name == "Exhausted");
                     CardToken? deadCard = standby?.Cards.FirstOrDefault(item => item.InstanceId == dead.SpawnerCardId);
-                    if (deadCard == null && exhausted?.Cards.Any(item => item.InstanceId == dead.SpawnerCardId) == true) continue;
+                    if (deadCard == null && (exhausted?.Cards.Any(item => item.InstanceId == dead.SpawnerCardId) == true ||
+                        dead.Status("cardless")?.Stacks > 0 && context.CardInstances != null &&
+                        !context.CardInstances.Any(item => item.InstanceId == dead.SpawnerCardId) &&
+                        context.CardRegistry?.Any(item => item.InstanceId == dead.SpawnerCardId) == true)) continue;
                     if (standby == null || exhausted == null || deadCard == null) return Unsupported("Missing dead unit spawner card routing.");
                     piles = piles.Select(pile => pile == standby ? CardPileModel.Remove(pile, dead.SpawnerCardId) : pile == exhausted
                             ? new CardPileState(pile.Name, pile.Cards.Concat(new[] { deadCard }).ToArray()) : pile).ToArray();
@@ -437,6 +460,18 @@ namespace MonsterTrain2Poju.Model
             => ChoosePlay(source, false);
         public static PlayCardAction? ChooseUnitSpellAndJunkPlay(BattleTurnState source)
             => ChoosePlay(source, true);
+        public static PlayCardAction? ChooseMultiSummonThenCards(BattleTurnState source)
+        {
+            foreach (CardToken card in source.Spawn.Train.Context!.Cards.Hand.Where(card =>
+                source.PlayRules!.Cards.Any(rule => rule.DataId == card.DataId && rule.Summon != null)))
+            foreach (int room in new[] { 0, 1, 2 })
+            {
+                int position = source.Spawn.Train.Rooms.Single(item => item.RoomIndex == room).Units.Any(unit => unit.Team == CombatTeam.Player) ? 1 : 0;
+                var action = new PlayCardAction(card.InstanceId, room, position);
+                if (PlayCard(source, action).Supported) return action;
+            }
+            return ChooseUnitSpellAndJunkPlay(source);
+        }
         public static PlayCardAction? ChooseBossRoomSummonThenCards(BattleTurnState source)
         {
             foreach (RoomCombatState room in source.Spawn.Train.Rooms.Where(room =>

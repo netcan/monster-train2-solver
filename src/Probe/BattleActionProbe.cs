@@ -81,6 +81,7 @@ namespace MonsterTrain2Poju.Probe
             CardEffectData[] effects = data.GetEffects().ToArray();
             string kind = effects.Length == 1 ? effects[0].GetEffectStateName() : "MultipleEffects";
             CombatUnit? template = null;
+            UnitSummonRule? summon = null;
             var spellEffects = new List<CardActionEffect>();
             string destination = selfPurge ? "Purged" : "Discard";
             if (kind == "CardEffectSpawnMonster")
@@ -88,8 +89,7 @@ namespace MonsterTrain2Poju.Probe
                 CardEffectData effect = effects[0];
                 CharacterData? unit = effect.GetParamCharacterData();
                 if (unit == null || effect.GetParamAdditionalCharacterData() != null ||
-                    effect.GetParamCharacterDataPool().Count > 0 || effect.GetParamInt() > 1 ||
-                    effect.GetParamBool() || effect.GetParamCardUpgradeData() != null ||
+                    effect.GetParamCharacterDataPool().Count > 0 || effect.GetParamBool() ||
                     effect.GetTargetMode() != TargetMode.Room || selfPurge)
                     interactions.Add("Additional/modified unit spawn");
                 if (unit != null)
@@ -104,6 +104,13 @@ namespace MonsterTrain2Poju.Probe
                         statusImmunities: source.StatusImmunities, subtypes: source.Subtypes, modifiers: source.Modifiers, isBoss: source.IsBoss, lastAttackerId: 0, statusRegistry: source.StatusRegistry, equipmentCards: source.EquipmentCards, nextTriggerId: source.NextTriggerId, ability: source.Ability, statusDictionary: source.StatusDictionary, abilityRules: source.AbilityRules, hordeDefinition: source.HordeDefinition, isSpawning: source.IsSpawning, deathState: source.DeathState);
                 }
                 kind = "SpawnMonster"; destination = "Standby";
+                if (effect.GetParamInt() > 1 || effect.GetParamCardUpgradeData() != null || effect.GetParamBool())
+                {
+                    CardUpgradeModifier? upgrade = null;
+                    if (effect.GetParamCardUpgradeData() != null)
+                    { var state = new CardUpgradeState(); state.Setup(effect.GetParamCardUpgradeData()); upgrade = CardModifierProbe.Upgrade(state); }
+                    summon = new UnitSummonRule(effect.GetParamInt(), CardGenerationProbe.Creation(data), Status("cardless", 1), upgrade, effect.GetParamBool());
+                }
             }
             else if (kind == "CardEffectNULL") kind = "Null";
             else if ((data.GetCardType() == CardType.Spell || data.GetCardType() == CardType.Equipment) && effects.Length > 0 && effects.All(effect =>
@@ -199,7 +206,7 @@ namespace MonsterTrain2Poju.Probe
                 HandInteractions(data, false), HandInteractions(data, true), data.GetCostType().ToString(), equipment,
                 data.IsUnitAbility() ? new CardAbilityRule("Unit", data.CanAbilityTargetOtherFloors(),
                     data.GetEffects().All(effect => ((ICardEffect)Activator.CreateInstance(typeof(CardState).Assembly
-                        .GetType(effect.GetEffectStateName())!)!).CanPlayWhenHandFull)) : null);
+                        .GetType(effect.GetEffectStateName())!)!).CanPlayWhenHandFull)) : null, summon);
         }
 
         private static string[] HandInteractions(CardData data, bool consume)

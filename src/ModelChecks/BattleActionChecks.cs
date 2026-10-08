@@ -217,6 +217,8 @@ internal static class BattleActionChecks
             ? BattleActionModel.ChooseUnitSpellAndJunkPlay : BattleActionModel.ChooseUnitAndJunkPlay;
         if (fixture.TryGetProperty("ModifierScenario", out var scenarioPolicy) && scenarioPolicy.GetString() == "rally-lethal")
             chooser = BattleActionModel.ChooseBossRoomSummonThenCards;
+        if (fixture.TryGetProperty("ModifierScenario", out var summonScenario) && summonScenario.GetString() is "multi-summon" or "multi-summon-zero")
+            chooser = BattleActionModel.ChooseMultiSummonThenCards;
         if (fixture.TryGetProperty("ModifierScenario", out var abilityScenario) &&
             abilityScenario.GetString() is "ability-activation" or "ability-activation-x" or "ability-activation-lethal" or "ability-effects" or "equipment-abilities")
             chooser = UnitAbilityModel.ChooseAbilityThenCards;

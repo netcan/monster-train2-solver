@@ -139,6 +139,7 @@ namespace MonsterTrain2Poju.Model
             Size = size;
             StatusImmunities = Array.AsReadOnly((statusImmunities ?? Array.Empty<string>())
                 .Concat(Statuses.Any(status => status.Id == "relentless") ? new[] { "rooted" } : Array.Empty<string>())
+                .Concat(Statuses.Any(status => status.Id == "cardless") ? new[] { "endless" } : Array.Empty<string>())
                 .Distinct().OrderBy(id => id, StringComparer.Ordinal).ToArray());
             Subtypes = Array.AsReadOnly((subtypes ?? Array.Empty<string>()).ToArray());
             Modifiers = modifiers;
@@ -281,7 +282,7 @@ namespace MonsterTrain2Poju.Model
             "spikes", "lifesteal", "fragile", "piercing", "immune", "immobile",
             "relentless", "sweep", "sniper", "rooted", "haste", "untouchable",
             "buff", "debuff", "regen", "poison", "melee weakness", "silenced", "valor", "pyregel",
-            "heal multiplier", "heal immunity", "cooldown", "unit_ability", "unit_ability_available", "horde"
+            "heal multiplier", "heal immunity", "cooldown", "unit_ability", "unit_ability_available", "horde", "cardless"
         };
         internal static bool KnowsStatus(string id) => KnownStatuses.Contains(id);
 
@@ -1554,6 +1555,12 @@ namespace MonsterTrain2Poju.Model
                     for (int fire = 0; fire < fireCount; fire++)
                     {
                         if (!unit.Alive && kind != "OnDeath" && kind != "OnHit" && kind != "OnKill") return;
+                        int cacheCardId = trigger.Origin?.IsFromEquipment == true ? trigger.Origin.EquipmentCardId : unit.Source.SpawnerCardId;
+                        CardInstanceState? cacheCard = context?.FindCard(cacheCardId);
+                        if (unit.InRoom && !unit.Removed && cacheCard?.PlayedRoomUnitIds != null)
+                            context = context!.WithCard(cacheCard.WithPlayedRoomUnits(units.Where(item => item.Alive && item.InRoom && item.Source.IsSpawning != true)
+                                .Select(item => item.Source.Id).ToArray()));
+
                         for (int effectIndex = 0; effectIndex < effects.Length; effectIndex++)
                         {
                             int live = LiveIndex();
@@ -2001,11 +2008,19 @@ namespace MonsterTrain2Poju.Model
             private void Emit(string kind, WorkingUnit? actor, WorkingUnit target, int amount) =>
                 events.Add(new CombatEvent(round, kind, actor?.Source.Id ?? 0, target.Source.Id, amount));
 
-            private RoomCombatResult Finish(RoomOutcome outcome) => unsupportedReason != null
+            private RoomCombatResult Finish(RoomOutcome outcome)
+            {
+                var removedIds = new HashSet<int>(units.Where(unit => !unit.Alive || unit.Removed || unit.Despawned).Select(unit => unit.Source.Id));
+                foreach (CardInstanceState card in removedIds.Count == 0 ? Array.Empty<CardInstanceState>() :
+                    context?.CardRegistry ?? context?.CardInstances ?? Array.Empty<CardInstanceState>())
+                    if (card.PlayedRoomUnitIds != null && card.PlayedRoomUnitIds.Any(removedIds.Contains))
+                        context = context!.WithCard(card.WithPlayedRoomUnits(card.PlayedRoomUnitIds.Where(id => !removedIds.Contains(id)).ToArray()));
+                return unsupportedReason != null
                 ? new RoomCombatResult(null, RoomOutcome.Unsupported, round, events, unsupportedReason) : new RoomCombatResult(
                 new RoomCombatState(source.RoomIndex, source.Deployment,
                     units.Where(unit => unit.Alive && unit.InRoom).Select(unit => unit.Freeze()).ToArray(), source.ExternalInteractions, context, source.Preview),
                 outcome, round, events, retainedUnits: units.Where(unit => !unit.Alive).Select(unit => unit.Freeze()).ToArray(), dispatches: dispatches);
+            }
         }
     }
 }

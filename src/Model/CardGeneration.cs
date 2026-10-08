@@ -70,6 +70,34 @@ namespace MonsterTrain2Poju.Model
 
     public static class CardGenerationModel
     {
+        // CopyCardState creates a source reference without AddCardImpl ownership,
+        // RNG selection, statistic tracking or one-shot generation upgrades.
+        public static CardGenerationResult CloneDetached(CombatContext source, CardCreationRule creation, int sourceCardId)
+        {
+            CardInstanceState? copying = source.FindCard(sourceCardId);
+            if (copying == null || source.CardRegistry == null || source.CardInstances == null)
+                return Unsupported("Detached card cloning requires a complete source and identity registry.");
+            if (source.NextCardId <= 0 || source.NextCardId == int.MaxValue || source.CardRegistry.Any(card => card.InstanceId >= source.NextCardId))
+                return Unsupported("Invalid detached card identity allocation.");
+            if (copying.DataId != creation.DataId) return Unsupported("Detached clone definition differs from its source.");
+            string? error = CardModifierModel.UnsupportedReason(copying);
+            if (error != null) return Unsupported(error);
+            // CopyCardState does not pass an exclusion list. Clone-exclusion flags
+            // apply to AddCardImpl copies, while these detached references retain them.
+            var ignored = new HashSet<string>(StringComparer.Ordinal);
+            CardModifiers permanent = RefreshClone(Copy(CardModifiers.Empty(), copying.Permanent, ignored));
+            CardModifiers temporary = RefreshClone(Copy(CardModifiers.Empty(), copying.Temporary, ignored));
+            var clone = new CardInstanceState(source.NextCardId, creation.DataId, permanent, temporary, 0, 0, 0,
+                creation.ExternalInteractions, creation.EffectCounters, creation.DamageScalingTraits, creation.StatusScalingTraits,
+                creation.UnitUpgradeScalingTraits, creation.CapacityScalingTraits, creation.EquippedUnitId,
+                copying.PlayedRoomUnitIds == null ? null : Array.Empty<int>());
+            error = CardModifierModel.UnsupportedReason(clone);
+            if (error != null) return Unsupported(error);
+            CombatContext context = source.WithCardRegistry(source.CardRegistry.Concat(new[] { clone }).ToArray())
+                .WithNextCardId(source.NextCardId + 1);
+            return new CardGenerationResult(context, new[] { new CardToken(clone.InstanceId, clone.DataId) });
+        }
+
         public static CardGenerationResult Apply(CombatContext source, CardGenerationRule rule, int sourceCardId = 0)
         {
             if (source.Cards.ExternalInteractions.Count > 0) return Unsupported(string.Join("; ", source.Cards.ExternalInteractions));
@@ -91,7 +119,8 @@ namespace MonsterTrain2Poju.Model
                     return Unsupported("Modified generation requires complete card instance state.");
                 CardModifiers permanent = creation.StartingModifiers, temporary = CardModifiers.Empty();
                 CardInstanceState candidate = new(context.NextCardId, creation.DataId, permanent, temporary, 0, 0, 0,
-                    creation.ExternalInteractions, creation.EffectCounters, creation.DamageScalingTraits, creation.StatusScalingTraits, creation.UnitUpgradeScalingTraits, creation.CapacityScalingTraits, creation.EquippedUnitId);
+                    creation.ExternalInteractions, creation.EffectCounters, creation.DamageScalingTraits, creation.StatusScalingTraits, creation.UnitUpgradeScalingTraits, creation.CapacityScalingTraits, creation.EquippedUnitId,
+                    context.CardRegistry?.Any(card => card.PlayedRoomUnitIds != null) == true ? Array.Empty<int>() : null);
                 string? error = CardModifierModel.UnsupportedReason(candidate);
                 if (error != null) return Unsupported(error);
                 if (rule.Upgrade != null)
@@ -148,7 +177,8 @@ namespace MonsterTrain2Poju.Model
                     default: draw.Insert(0, card); break;
                 }
                 candidate = new CardInstanceState(card.InstanceId, card.DataId, permanent, temporary, 0, 0, 0,
-                    creation.ExternalInteractions, creation.EffectCounters, creation.DamageScalingTraits, creation.StatusScalingTraits, creation.UnitUpgradeScalingTraits, creation.CapacityScalingTraits, creation.EquippedUnitId);
+                    creation.ExternalInteractions, creation.EffectCounters, creation.DamageScalingTraits, creation.StatusScalingTraits, creation.UnitUpgradeScalingTraits, creation.CapacityScalingTraits, creation.EquippedUnitId,
+                    context.CardRegistry?.Any(card => card.PlayedRoomUnitIds != null) == true ? Array.Empty<int>() : null);
                 context = new CombatContext(new CardCycleState(hand, draw, discard, context.Cards.Rng, context.Cards.DrawModifier,
                     context.Cards.ExternalInteractions, context.Cards.BonusDraw), rng, context.Gold, checked(context.NextCardId + 1), context.MaxHandSize,
                     context.StatusRules, context.Statistics?.TrackCards(new[] { card.InstanceId }),

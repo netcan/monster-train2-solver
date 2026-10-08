@@ -110,6 +110,7 @@ are copied immutable values; independent child states can run on worker threads.
 | Paid summon and Horde Rally | `CardPlayedTriggerModel`, `BattleActionModel` and `RoomCombatModel` | Five exact Horde operations, ten post-play team phases, twelve repeated dispatches, cached room membership, last-spawned timing/overrides, silence/once/conditions and complete policies with parallel branches |
 | Terminal summon and lethal Rally | `BattleActionModel` and `RoomCombatModel` | Twelve native team phases and six dispatches, deferred Boss self-death, post-kill permanent/unit-death upgrades, rewards, a surviving last-spawned reference and fresh Standby routing; complete policy with parallel branches |
 | Shared unit identity allocation | `UnitIdentityModel` and `CombatContext.NextUnitId` | Player/enemy/treasure allocation, all context copies, stable death/terminal counters, 98 native spawn/decision boundaries and complete policies with parallel branches |
+| Repeated paid summons and detached sources | `UnitBirthModel`, `UnitSummonModel` and `CardGenerationModel.CloneDetached` | Ten complete native births, five detached card copies, ten paid phases and 26 Rally dispatches; live source upgrades, retained clone flags, cardless/source separation, physical slot limits, capacity overflow and parallel branches |
 | Status removal and Horde sacrifice | `StatusRemovalModel`, `CardSpellModel` and `RoomCombatModel` | Nine native API/effect/trigger operations, exact room/retained actor states, accepted queue counts, ordered death/Harvest dispatches, a real paid spell removing both teams and parallel branches; raw zero HP preserves orphan standby cards while sacrifice signals physical death and retains its responsible card |
 | Reentrant death signals and queued player sacrifice | `UnitDeathState`, `StatusRemovalModel` and `RoomCombatModel` | Three native operations, 45 exact death/Harvest phase states and complete dispatch order, 95 effect/retained-target states, pending versus cleared statistics listeners, spawner timing and parallel branches |
 | Physical death Harvest | `HarvestModel` and `RoomCombatModel` | Four native physical deaths and 31 exact dispatches; own-death children precede player/enemy groups, Hero/Monster/Unit kinds, Horde repetition, required dying statuses, silence and once flags; complete subsequent battle and parallel branches |
@@ -4208,3 +4209,97 @@ independent room/card/train/turn/action/complete-policy comparisons. Both new
 archives also pass their separate focused checks. Probe builds with zero
 warnings/errors; ModelChecks retains its twelve existing nullable warnings.
 The changed regression script parses, and git diff --check passes.
+
+## Repeated paid summons and detached source cards, schema 78
+
+`CardEffectSpawnMonster` now supports repeated ordinary primary-unit births from
+one paid card. `UnitSummonRule` captures the attempt count and source-card
+creation definition. The first unit retains the paid card; later units receive
+fresh detached copies of its current state before each birth. Those copies
+consume card identities but never enter owned cards or piles, never register
+new tracked/stored/deck cards, and never consume pending generation upgrades or
+selection RNG. Each has fresh play/payment/effect history and room cache.
+
+Native `CopyCardState` retains both permanent and temporary upgrades even when
+`ExcludeFromClones` is true. Unlike `AddCardImpl` copies, this path passes no
+exclusion list. Upgrade values receive the existing clone refresh, and later
+copies read the live source after earlier Rally callbacks have changed it.
+
+`UnitBirthModel` handles insertion, shared unit identity allocation, initial
+statistics/statuses, OnSpawn and OnUnscaledSpawn, the last-spawned reference and
+cardless Rally. Extra births carry the cardless status and Endless immunity;
+their copied source remains non-null, so OnSpawnNotFromCard does not run. The
+newborn remains IsSpawning while player-only Rally dispatches on the same floor
+run with an explicit newborn override. Previously born units join later birth
+queues. The flag clears when that complete birth returns.
+
+`CardInstanceState.PlayedRoomUnitIds` records native eligible cached membership.
+Character effects refresh their source card's cache while the newest unit is
+still spawning. The normal paid player/enemy Rally phases then use the current
+cache separately for each team. This matters because player Rally can refresh
+the cache again before the enemy phase. Card modifier/history transformations
+preserve it, and dead/destroyed actors are removed from eligible membership.
+Legacy archives keep this optional metadata null.
+Cache refresh occurs inside each positive trigger repetition. A zero repetition
+still marks the trigger but executes no effects and leaves the cache unchanged.
+The companion multi-summon-zero scene verifies this using a fresh detached
+cardless observer on floor two, created before the first captured decision.
+Native QueueAndRunTrigger dispatches its Rally with triggerCount zero; both the
+complete retained actor and room/context states are independently compared.
+The subsequent paid battle uses the normal trigger counts.
+
+The paid card's initial size test checks one unit. Remaining births use physical
+spawn slots, even when their total size exceeds room capacity. The native scene
+asks for four size-one Stewards: the first card creates four; a later card
+inserts at position one and creates only the three remaining slots, resulting
+in seven units on a capacity-five floor. Detached cardless spawners are allowed
+through EndTurn without fake Standby entries and keep existing detached death
+routing.
+
+`MultiSummonScenario` changes only isolated Steward definitions and card
+upgrades. It adds separate birth/unscaled/no-card sentinel rewards, Rally armor
+on the newest unit, and a temporary attack/HP upgrade on each Rally actor. The
+latter writes the source card, so later copies must observe the changing
+upgrade list. Both permanent and temporary source upgrades also carry clone
+exclusion flags, verifying that this native copy path retains them. The original
+125-HP, attack-seven Boss and all ordinary wave definitions remain unchanged.
+
+`UnitBirthProbe` records every native creation before/after, and records native
+CopyCardState calls independently. `UnitSummonChecks` reconstructs each result
+from its own before state and definition, compares complete actual native room
+and shared context states, checks the source/cardless and allocation invariants,
+and repeats births, copies and both Rally phase kinds in 32 isolated branches.
+Complete policies are also recomputed from initial and actual mid-battle states
+in 16 parallel branches.
+
+The curated archive is `tests/fixtures/full-battle-multi-summon.mt2f`, a direct
+binary capture with no JSON provenance: 24,180 bytes, 3,792 unique graph nodes,
+SHA-256 `7814b455c3298c84ebe57712c8e6d7c1c6477ba8a7304b695640a8847417f7c6`.
+The muted Instant native run took 55.84 seconds, completed 15 card plays and five
+EndTurns, and won at Pyre 80. Capture failures, differences, unsupported stages
+and pending work are zero; original profile signatures are unchanged.
+
+The second direct binary archive is
+`tests/fixtures/full-battle-multi-summon-zero.mt2f`: 24,643 bytes, 3,842 unique
+nodes, SHA-256 `1320a8647847ad4f000c53831f14824d2fcc9f9bd6f4d231f81ff9e386cdbddb`.
+It contains eleven complete births, six detached copies, ten paid phases and
+28 Rally dispatches, including the separate zero-count operation. Its muted
+Instant native run took 73.97 seconds and completed 15 plays and five EndTurns,
+winning at Pyre 80 with all four differential/error/pending counters zero and
+unchanged original profiles.
+
+This increment covers repeated ordinary primary units with copied sources.
+Additional-character/pool selection, null or fresh fallback sources, ignored
+card upgrades, extra spawn upgrades, death replacement, equipment transfer,
+active AfterSpawnEnchant effects and room/relic spawn modifiers remain outside
+this verified scope. Unsupported variants still reject transitions. The
+whole-battle objective remains open.
+
+The final full 110-archive regression exits zero: all 101 native battle archives
+and nine calibration archives pass. Both new files pass complete initial and
+mid-battle policies with 16 parallel branches; their births, detached copies
+and Rally phases pass independent exact comparisons in 32 branches. The full
+curated inventory and SHA-256 manifest match. Probe builds with zero warnings
+and errors; ModelChecks keeps its twelve existing nullable warnings. Both
+changed PowerShell scripts parse, both summon selectors return one exact
+scenario value, and git diff --check passes.

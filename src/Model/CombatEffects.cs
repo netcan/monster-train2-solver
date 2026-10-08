@@ -69,6 +69,10 @@ namespace MonsterTrain2Poju.Model
             LastAbilityActivatorUnitId = lastAbilityActivatorUnitId; LastSpawnedUnitId = lastSpawnedUnitId;
             NextUnitId = nextUnitId;
             PermanentlyDisabledAbilities = permanentlyDisabledAbilities == null ? null : Array.AsReadOnly(permanentlyDisabledAbilities.ToArray()); }
+        internal CombatContext WithNextCardId(int nextCardId) => new CombatContext(Cards, BattleRng, Gold, nextCardId,
+            MaxHandSize, StatusRules, Statistics, CardInstances, CardRegistry, AllScenarioBossesDead, NextAddedTemporaryUpgrades,
+            OtherPiles, QueryFrame, KillCamActivated, MagicPower, IsolatedBattlePreview, EnergyState, RoomCapacities, AbilityCardCache,
+            LastAbilityActivatorUnitId, PermanentlyDisabledAbilities, LastSpawnedUnitId, NextUnitId);
         internal CombatContext WithNextUnitId(int nextUnitId) => new CombatContext(Cards, BattleRng, Gold, NextCardId,
             MaxHandSize, StatusRules, Statistics, CardInstances, CardRegistry, AllScenarioBossesDead, NextAddedTemporaryUpgrades,
             OtherPiles, QueryFrame, KillCamActivated, MagicPower, IsolatedBattlePreview, EnergyState, RoomCapacities, AbilityCardCache,

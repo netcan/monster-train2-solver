@@ -30,7 +30,7 @@ namespace MonsterTrain2Poju.Probe
                     Modifiers(card.GetCardStateModifiers()), Modifiers(card.GetTemporaryCardStateModifiers()),
                     card.GetLastPlayedCost(), card.GetLastForgedAmount(), card.GetCurrentScenarioPlayCount(), interactions,
                     Counters(card), DamageScalingProbe.Capture(card), StatusScalingProbe.Capture(card), UnitUpgradeScalingProbe.Capture(card), RoomCapacityProbe.Traits(card),
-                    FullBattleTrace.Active?.EquippedUnitId(card) ?? 0);
+                    FullBattleTrace.Active?.EquippedUnitId(card) ?? 0, PlayedRoomUnits(card));
                 CardPlayRule rule = CardModifierModel.Resolve(BattleActionProbe.Definition(data), state);
                 for (int index = 0; index < managers.GetRoomManager()!.GetNumRooms(); index++)
                     if (card.GetCost(managers.GetCardStatistics(), managers.GetMonsterManager(), managers.GetRelicManager(),
@@ -49,8 +49,16 @@ namespace MonsterTrain2Poju.Probe
                 }
                 return new CardInstanceState(state.InstanceId, state.DataId, state.Permanent, state.Temporary,
                     state.LastPlayedCost, state.LastForgedAmount, state.PlayCount,
-                    interactions.Distinct().OrderBy(value => value, StringComparer.Ordinal).ToArray(), state.EffectCounters, state.DamageScalingTraits, state.StatusScalingTraits, state.UnitUpgradeScalingTraits, state.CapacityScalingTraits, state.EquippedUnitId);
+                    interactions.Distinct().OrderBy(value => value, StringComparer.Ordinal).ToArray(), state.EffectCounters, state.DamageScalingTraits, state.StatusScalingTraits, state.UnitUpgradeScalingTraits, state.CapacityScalingTraits, state.EquippedUnitId, state.PlayedRoomUnitIds);
             }).OrderBy(card => card.InstanceId).ToArray();
+        }
+
+        private static int[]? PlayedRoomUnits(CardState card)
+        {
+            if (!MultiSummonScenario.Prepared) return null;
+            var cached = (IEnumerable<WeakRef<CharacterState>>)AccessTools.Field(typeof(CardState), "charactersInRoomAtTimeOfCardPlay").GetValue(card);
+            return cached.Select(reference => reference.Ref).Where(unit => unit != null && card.CharacterInRoomAtTimeOfCardPlay(unit))
+                .Select(unit => FullBattleTrace.Active!.UnitId(unit)).OrderBy(id => id).ToArray();
         }
 
         private static CardEffectCounter[]? Counters(CardState card)
