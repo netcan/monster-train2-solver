@@ -11,6 +11,7 @@ namespace MonsterTrain2Poju.Probe
     internal static class MultiSummonScenario
     {
         internal static bool Prepared, ZeroStarted, ZeroCompleted;
+        internal static bool FreshSources;
         internal static string? Error;
         private static bool holding;
         internal static void Prepare(AllGameManagers managers, ManualLogSource log)
@@ -20,6 +21,13 @@ namespace MonsterTrain2Poju.Probe
             CardEffectData spawn = data.GetEffects().Single(effect => effect.GetEffectStateName() == "CardEffectSpawnMonster");
             Set(spawn, "paramInt", 4);
             string scenario = Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") ?? "";
+            FreshSources = scenario.StartsWith("multi-summon-fresh", StringComparison.Ordinal);
+            if (FreshSources)
+            {
+                Set(spawn, "paramBool", true);
+                Set(spawn, "paramCardUpgradeData", DynamicUpgradeScenario.Upgrade("PojuMultiSummonExtra", SpawnUpgradeProbe.UpgradeDataId,
+                    2, 3, 0, 0, "armor", 2));
+            }
             if (scenario.StartsWith("multi-summon-upgrade", StringComparison.Ordinal))
             {
                 bool restricted = scenario == "multi-summon-upgrade-restricted";
@@ -30,6 +38,18 @@ namespace MonsterTrain2Poju.Probe
                 Set(spawn, "paramCardUpgradeData", extra);
             }
             CharacterData unit = spawn.GetParamCharacterData(); Set(unit, "size", 1);
+            if (scenario == "multi-summon-fresh-deaths")
+            {
+                var spells = cards.GetAllCards(new List<CardState>()).Where(card => card.GetCardType() == CardType.Spell &&
+                    card.GetEffects().Any(effectState => effectState.GetEffectStateName() == "CardEffectFloorRearrange")).ToArray();
+                if (spells.Length == 0) throw new InvalidOperationException("Fresh-source death scene requires its real rearrangement spell.");
+                CardData spell = save.GetAllGameData().FindCardData(spells[0].GetCardDataID())!;
+                var lethal = new CardEffectData("CardEffectDamage", null!, Team.Type.Monsters);
+                lethal.Cheat_SetTargetMode(TargetMode.Tower); Set(lethal, "paramInt", 9999);
+                spell.GetEffects().Clear(); spell.GetEffects().Add(lethal);
+                Set(spell, "targetless", false); Set(spell, "targetsRoom", true);
+                foreach (var card in spells) card.Setup(spell, save);
+            }
             var born = Gold(CharacterTriggerData.Trigger.OnSpawn, 1);
             var unscaled = Gold(CharacterTriggerData.Trigger.OnUnscaledSpawn, 2);
             var noCard = Gold(CharacterTriggerData.Trigger.OnSpawnNotFromCard, 1000);

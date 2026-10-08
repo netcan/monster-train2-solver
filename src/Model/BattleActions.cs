@@ -344,7 +344,7 @@ namespace MonsterTrain2Poju.Model
                     CardPileState? exhausted = piles.FirstOrDefault(pile => pile.Name == "Exhausted");
                     CardToken? deadCard = standby?.Cards.FirstOrDefault(item => item.InstanceId == dead.SpawnerCardId);
                     if (deadCard == null && (exhausted?.Cards.Any(item => item.InstanceId == dead.SpawnerCardId) == true ||
-                        dead.Status("cardless")?.Stacks > 0 && context.CardInstances != null &&
+                        (dead.Status("cardless")?.Stacks > 0 || piles.Any(pile => pile.UnitConditions?.Any(binding => binding.HostUnitId == dead.Id) == true)) && context.CardInstances != null &&
                         !context.CardInstances.Any(item => item.InstanceId == dead.SpawnerCardId) &&
                         context.CardRegistry?.Any(item => item.InstanceId == dead.SpawnerCardId) == true)) continue;
                     if (standby == null || exhausted == null || deadCard == null) return Unsupported("Missing dead unit spawner card routing.");
@@ -371,6 +371,9 @@ namespace MonsterTrain2Poju.Model
                 piles = piles.Select(pile => pile.Name == "Standby" ? CardPileModel.BindEquipment(pile,
                     new EquipmentStandbyCondition(card.InstanceId, action.TargetUnitId, rule.Equipment.ReturnToHand)) : pile).ToArray();
             }
+            if (rule.Effect == "SpawnMonster" && spawnedId.HasValue && piles.Any(pile => pile.Name == "Standby" && pile.UnitConditions != null))
+                piles = piles.Select(pile => pile.Name == "Standby" ? CardPileModel.BindUnit(pile,
+                    new UnitStandbyCondition(card.InstanceId, spawnedId.Value)) : pile).ToArray();
             bool summonRemoved = spawnedId.HasValue && !train.Rooms.SelectMany(room => room.Units).Any(unit => unit.Id == spawnedId.Value);
             if (summonRemoved && !terminal)
             {
@@ -400,6 +403,7 @@ namespace MonsterTrain2Poju.Model
             {
                 return new RoomCombatState(room.RoomIndex, room.Deployment, room.Units, room.ExternalInteractions, context, room.Preview);
             }).ToArray();
+            context = UnitStandbyModel.ReturnReady(context);
             context = EquipmentModel.ReturnUnattached(context, new HashSet<int>(rooms.SelectMany(room => room.Units).Select(unit => unit.Id)));
             piles = context.OtherPiles?.ToArray() ?? piles;
             rooms = rooms.Select(room => new RoomCombatState(room.RoomIndex, room.Deployment, room.Units, room.ExternalInteractions, context, room.Preview)).ToArray();

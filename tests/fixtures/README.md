@@ -387,3 +387,19 @@ are direct binary archives, and original profile signatures are unchanged.
 The curated inventory now contains 113 archives: 104 battles and nine
 calibration suites. Fresh fallback sources and lethal/removed birth targets
 remain separate native integration work.
+
+
+`full-battle-multi-summon-fresh.mt2f` and
+`full-battle-multi-summon-fresh-deaths.mt2f` retain schema 80 with fourteen actual
+fresh fallback source setups and 66 global standby checks. Each source starts
+without copied resolving-card history/upgrades or an earlier birth's temporary
+upgrades. Source presence and the cardless marker remain independent. The death
+scene uses a real paid friendly-damage spell and records two original unit cards
+still in Standby after their differently sourced hosts die; the global check
+returns both to Exhausted with exact statistics and dictionary free slots.
+Complete states compare in 32 mechanism branches, and 15/21-play policies match
+initial and mid-battle roots in 16 branches with five/seven EndTurns. The original
+Boss/waves and profile signatures are preserved. Both captures are direct binary
+archives. The curated inventory now contains 115 archives: 106 battles and nine
+calibration suites. Null-source, pool/replacement and broader room/relic creation
+remain separate native integration work.

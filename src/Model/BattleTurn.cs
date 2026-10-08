@@ -18,13 +18,17 @@ namespace MonsterTrain2Poju.Model
         public IReadOnlyList<int>? EntrySlots { get; }
         public IReadOnlyList<int>? FreeSlots { get; }
         public IReadOnlyList<EquipmentStandbyCondition>? EquipmentConditions { get; }
+        public IReadOnlyList<UnitStandbyCondition>? UnitConditions { get; }
         public CardPileState(string name, IReadOnlyList<CardToken> cards, IReadOnlyList<int>? entrySlots = null,
-            IReadOnlyList<int>? freeSlots = null, IReadOnlyList<EquipmentStandbyCondition>? equipmentConditions = null)
+            IReadOnlyList<int>? freeSlots = null, IReadOnlyList<EquipmentStandbyCondition>? equipmentConditions = null,
+            IReadOnlyList<UnitStandbyCondition>? unitConditions = null)
         {
             Name = name; Cards = Array.AsReadOnly(cards.ToArray());
             EntrySlots = entrySlots == null ? null : Array.AsReadOnly(entrySlots.ToArray());
             FreeSlots = freeSlots == null ? null : Array.AsReadOnly(freeSlots.ToArray());
             EquipmentConditions = equipmentConditions == null ? null : Array.AsReadOnly(equipmentConditions
+                .OrderBy(condition => Array.FindIndex(cards.ToArray(), card => card.InstanceId == condition.CardId)).ToArray());
+            UnitConditions = unitConditions == null ? null : Array.AsReadOnly(unitConditions
                 .OrderBy(condition => Array.FindIndex(cards.ToArray(), card => card.InstanceId == condition.CardId)).ToArray());
         }
     }
@@ -97,7 +101,8 @@ namespace MonsterTrain2Poju.Model
                 .SelectMany(pile => pile.Cards).Select(card => card.InstanceId));
             CombatContext birthContext = source.Spawn.Train.Context;
             if (source.Spawn.Train.Rooms.SelectMany(room => room.Units).Where(unit => unit.SpawnerCardId > 0)
-                .Any(unit => !standbyCards.Contains(unit.SpawnerCardId) && !(unit.Status("cardless")?.Stacks > 0 &&
+                .Any(unit => !standbyCards.Contains(unit.SpawnerCardId) && !((unit.Status("cardless")?.Stacks > 0 ||
+                    source.OtherPiles.Any(pile => pile.UnitConditions?.Any(binding => binding.HostUnitId == unit.Id) == true)) &&
                     birthContext.CardInstances != null && !birthContext.CardInstances.Any(card => card.InstanceId == unit.SpawnerCardId) &&
                     birthContext.CardRegistry?.Any(card => card.InstanceId == unit.SpawnerCardId) == true)))
                 return Unsupported("A living unit's spawner card is missing from standby.");
@@ -139,6 +144,7 @@ namespace MonsterTrain2Poju.Model
                     cards.DrawModifier, cards.ExternalInteractions, cards.BonusDraw);
             }
             context = WithCards(context, cards);
+            if (discardedIds.Count > 0) context = UnitStandbyModel.ReturnReady(context);
             // Hand callbacks precede the native energy removal; combat sees zero energy.
             context = context.WithQueryFrame(context.QueryFrame?.With(energy: 0));
             context = EnergyModel.SetPhase(context, "Combat");
@@ -206,6 +212,7 @@ namespace MonsterTrain2Poju.Model
                 context = train.Context!;
             }
             context = EnergyModel.StartTurn(context, source.EnergyPerTurn);
+            context = UnitStandbyModel.ReturnReady(context);
             context = EquipmentModel.ReturnUnattached(context, new HashSet<int>(train.Rooms.SelectMany(room => room.Units).Select(unit => unit.Id)));
             if (context.OtherPiles != null) otherPiles = context.OtherPiles.ToArray();
             CardCycleResult drawn = CardCycleModel.DrawHand(context.Cards, source.DrawPerTurn, context.MaxHandSize);

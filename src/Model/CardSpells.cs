@@ -358,6 +358,13 @@ namespace MonsterTrain2Poju.Model
 
             void RouteDeadCard(int cardId)
             {
+                CombatContext current = state.Context!;
+                if (current.CardInstances != null && !current.CardInstances.Any(card => card.InstanceId == cardId) &&
+                    (current.KillCamActivated == true || current.CardRegistry?.Any(card => card.InstanceId == cardId) == true))
+                {
+                    deferredExhaustion.Remove(cardId);
+                    return;
+                }
                 CardPileState? standby = piles!.FirstOrDefault(pile => pile.Name == "Standby");
                 CardPileState? exhausted = piles!.FirstOrDefault(pile => pile.Name == "Exhausted");
                 CardToken? token = standby?.Cards.FirstOrDefault(card => card.InstanceId == cardId);

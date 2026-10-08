@@ -4375,3 +4375,86 @@ and their 32-branch birth/copy/extra/Rally checks also pass within this full run
 Probe builds with zero warnings/errors; ModelChecks retains its twelve existing
 nullable warnings. Both changed PowerShell scripts parse, all three extra-upgrade
 selectors produce one exact scenario value, and git diff --check passes.
+
+
+## Fresh fallback spawners and delayed unit-card returns, schema 80
+
+When `CardEffectSpawnMonster.ParamBool` ignores the resolving card's upgrades,
+native code creates a new `CardState` for every birth. It selects the first
+spawner definition in `AllGameData.GetAllCardData()` order whose character ID
+matches the selected unit, then runs `CardState.Setup`. It does not copy the
+resolving card or an earlier newborn's source. The first successful birth still
+has a non-null source and is not cardless; subsequent births receive the
+cardless marker independently of their new source reference. OnSpawnNotFromCard
+therefore does not fire in this path.
+
+`CardGenerationModel.CreateDetached` retains starting modifiers and fresh
+history/counters/traits while allocating only a registry reference. It changes
+neither ownership/piles, gameplay RNG, statistics nor pending generation
+upgrades. The summon descriptor captures the native-order fallback definition
+at the root. Each birth uses that descriptor, then applies its extra upgrade
+and updates its own new source. The original paid card retains its own upgrades
+and history; later sources do not inherit the earlier source's extra upgrades
+or Rally growth. Missing fallback definitions or missing unit-binding metadata
+remain explicit unsupported results.
+
+Native DiscardCard binds the original resolving card to the first summoned
+character. That character can have a different spawner card. A death-local
+standby check only looks for the character's own source, so it does not return
+the original card. A later global CheckStandByConditions during DiscardCard or
+DrawHand evaluates the original binding and returns the card to Exhausted.
+`CardPileState.UnitConditions` preserves the host and ready state separately
+from the unit's spawner reference, plus the existing physical dictionary slots
+and free chain. Room/death queues mark readiness; global boundaries perform the
+return and its exhaustion statistic. Legacy archives retain null metadata.
+CardPile add/remove/clear and equipment binding preserve this new state.
+
+The spell death queue now treats known unowned registry references like the
+room engine: they have no card to move between piles. This lets actual paid
+friendly damage kill both ordinary fresh-source and cardless units while the
+original cards wait for the global check. It does not relax missing-card errors
+for unknown references.
+
+The probe observes real CardState.Setup within the fallback effect iterator,
+full birth/extra-upgrade states, the native unit-card standby closures and every
+global standby check. Independent checks compare the complete setup and global
+return states, preserve parent inputs, distinguish source presence from the
+cardless marker, and repeat setups, births, upgrades, global checks and Rally
+mechanisms in 32 parallel branches. Entire policies also match from initial and
+actual mid-battle roots in 16 branches.
+
+| Native archive | Bytes / unique nodes | Fresh setups / global checks | Plays / EndTurns | Native seconds |
+| --- | --- | --- | --- | --- |
+| `full-battle-multi-summon-fresh.mt2f` | 25,497 / 4,001 | 7 / 27 | 15 / 5 | 52.25 |
+| `full-battle-multi-summon-fresh-deaths.mt2f` | 32,468 / 5,340 | 7 / 39 | 21 / 7 | 54.18 |
+
+Both scenes retain the original Boss (125 HP / 7 attack) and waves, original
+resolving-card upgrades, four intended one-size births per card, birth/Rally
+rewards and the extra 2 attack / 3 health / 2 armor upgrade. The death scene
+changes the existing rearrangement spell to actual lethal friendly Tower
+damage. It records original card 1 bound to unit 2 with source 16, and original
+card 2 bound to unit 6 with source 20. Both original cards are still in Standby
+with ready conditions immediately before the global check, then return to
+Exhausted. Independent replay matches all source, pile, statistic, death and
+terminal states. Exploratory captures that did not exercise those deaths were
+not retained.
+
+These are direct binary recordings from game 2.2.1, module MVID
+`8fb07b96-f4db-4d2b-884d-c00536d6ccf4`. Muted Instant runs use fresh isolated
+profiles; original profile signatures remain unchanged. CaptureFailures,
+Mismatches, Unsupported and Pending are zero. Archive SHA-256 hashes are in the
+manifest, and no source JSON is required. The inventory grows to 115 archives:
+106 battles and nine calibrations.
+
+This verifies the native primary-unit fallback selected in these scenes.
+No-match/null sources, pool/additional-character selection, active relic/room
+spawn modifiers, removed birth targets, death replacement, equipment transfer,
+active AfterSpawnEnchant and broader revival/Horde creation still require
+native integration. The full battle objective remains open.
+
+The final full 115-archive regression exits zero: all 106 battle archives and
+nine calibration suites pass, with no nonzero unsupported transition counts.
+The binary inventory and SHA-256 manifest agree. Both fresh-source policies
+match initial and mid-battle roots in 16 branches, and their setup, birth,
+extra-upgrade, global standby and Rally checks pass in 32 branches. The death
+scene also preserves three observed card returns and two Standby slot reuses.

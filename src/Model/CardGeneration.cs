@@ -70,6 +70,23 @@ namespace MonsterTrain2Poju.Model
 
     public static class CardGenerationModel
     {
+        // A fallback spawner uses CardState.Setup without AddCardImpl ownership or callbacks.
+        public static CardGenerationResult CreateDetached(CombatContext source, CardCreationRule creation)
+        {
+            if (source.CardRegistry == null || source.CardInstances == null || source.NextCardId <= 0 ||
+                source.NextCardId == int.MaxValue || source.CardRegistry.Any(card => card.InstanceId >= source.NextCardId))
+                return Unsupported("Fresh detached card creation requires a complete identity registry.");
+            var card = new CardInstanceState(source.NextCardId, creation.DataId, creation.StartingModifiers,
+                CardModifiers.Empty(), 0, 0, 0, creation.ExternalInteractions, creation.EffectCounters,
+                creation.DamageScalingTraits, creation.StatusScalingTraits, creation.UnitUpgradeScalingTraits,
+                creation.CapacityScalingTraits, creation.EquippedUnitId,
+                source.CardRegistry.Any(item => item.PlayedRoomUnitIds != null) ? Array.Empty<int>() : null);
+            string? error = CardModifierModel.UnsupportedReason(card);
+            if (error != null) return Unsupported(error);
+            return new CardGenerationResult(source.WithCardRegistry(source.CardRegistry.Concat(new[] { card }).ToArray())
+                .WithNextCardId(source.NextCardId + 1), new[] { new CardToken(card.InstanceId, card.DataId) });
+        }
+
         // CopyCardState creates a source reference without AddCardImpl ownership,
         // RNG selection, statistic tracking or one-shot generation upgrades.
         public static CardGenerationResult CloneDetached(CombatContext source, CardCreationRule creation, int sourceCardId)

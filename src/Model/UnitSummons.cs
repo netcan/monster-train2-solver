@@ -11,9 +11,10 @@ namespace MonsterTrain2Poju.Model
         public CombatStatus CardlessStatus { get; }
         public CardUpgradeModifier? Upgrade { get; }
         public bool IgnoreCardUpgrades { get; }
+        public CardCreationRule? FallbackCreation { get; }
         public UnitSummonRule(int count, CardCreationRule creation, CombatStatus cardlessStatus,
-            CardUpgradeModifier? upgrade = null, bool ignoreCardUpgrades = false)
-        { Count = count; Creation = creation; CardlessStatus = cardlessStatus; Upgrade = upgrade; IgnoreCardUpgrades = ignoreCardUpgrades; }
+            CardUpgradeModifier? upgrade = null, bool ignoreCardUpgrades = false, CardCreationRule? fallbackCreation = null)
+        { Count = count; Creation = creation; CardlessStatus = cardlessStatus; Upgrade = upgrade; IgnoreCardUpgrades = ignoreCardUpgrades; FallbackCreation = fallbackCreation; }
     }
 
     public sealed class UnitBirthResult
@@ -37,7 +38,13 @@ namespace MonsterTrain2Poju.Model
                 return Unsupported("Unit birth requires its template, source reference and cardless metadata.");
             CombatUnit initialized = AbilityLifecycleModel.InitialAtSpawn(raw, card, context, out string? error);
             if (error != null) return Unsupported(error);
-            CardPlayRule resolved = card == null ? definition.WithSpawn(initialized) : CardModifierModel.Resolve(definition.WithSpawn(initialized), card);
+            CardPlayRule birthDefinition = card == null || card.DataId == definition.DataId ||
+                definition.Summon?.IgnoreCardUpgrades != true || definition.Summon.FallbackCreation?.DataId != card.DataId
+                ? definition : new CardPlayRule(card.DataId, definition.AssetKey,
+                definition.Cost, definition.Effect, definition.Destination, definition.SpawnUnit, definition.ExternalInteractions,
+                definition.Effects, definition.UpgradeInteractions, definition.HandDiscardInteractions, definition.HandConsumeInteractions,
+                definition.CostType, definition.Equipment, definition.Ability, definition.Summon);
+            CardPlayRule resolved = card == null ? birthDefinition.WithSpawn(initialized) : CardModifierModel.Resolve(birthDefinition.WithSpawn(initialized), card);
             if (resolved.ExternalInteractions.Count > 0) return Unsupported(string.Join("; ", resolved.ExternalInteractions));
             CombatUnit template = resolved.SpawnUnit!;
             error = UnitIdentityModel.Validate(context, source.Units);
@@ -94,8 +101,10 @@ namespace MonsterTrain2Poju.Model
         internal static UnitBirthResult Apply(RoomCombatState source, CardPlayRule definition, int cardId, int position, int slots)
         {
             UnitSummonRule rule = definition.Summon!;
-            if (rule.IgnoreCardUpgrades)
-                return Unsupported("Fresh fallback spawn sources require separate native coverage.");
+            if (rule.IgnoreCardUpgrades && rule.FallbackCreation == null)
+                return Unsupported("Missing fallback spawner definition.");
+            if (rule.IgnoreCardUpgrades && source.Context?.OtherPiles?.Any(pile => pile.Name == "Standby" && pile.UnitConditions != null) != true)
+                return Unsupported("Fresh fallback summons require the original card's standby binding metadata.");
             if (source.Context?.FindCard(cardId)?.PlayedRoomUnitIds == null)
                 return Unsupported("Repeated summons require the source card's native room cache.");
             RoomCombatState state = source;
@@ -106,9 +115,11 @@ namespace MonsterTrain2Poju.Model
             for (int index = 0; index < count && position + index < slots; index++)
             {
                 int sourceId = cardId;
-                if (index > 0)
+                if (rule.IgnoreCardUpgrades || index > 0)
                 {
-                    CardGenerationResult clone = CardGenerationModel.CloneDetached(state.Context!, rule.Creation, cardId);
+                    CardGenerationResult clone = rule.IgnoreCardUpgrades
+                        ? CardGenerationModel.CreateDetached(state.Context!, rule.FallbackCreation!)
+                        : CardGenerationModel.CloneDetached(state.Context!, rule.Creation, cardId);
                     if (!clone.Supported) return Unsupported(clone.UnsupportedReason!);
                     sourceId = clone.AddedCards.Single().InstanceId;
                     state = new RoomCombatState(state.RoomIndex, state.Deployment, state.Units, state.ExternalInteractions, clone.Context, state.Preview);

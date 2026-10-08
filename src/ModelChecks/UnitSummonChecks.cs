@@ -7,6 +7,8 @@ internal static class UnitSummonChecks
     internal static void Native(FixtureValue fixture)
     {
         if (!fixture.TryGetProperty("ModifierScenario", out var scenario) || scenario.GetString()?.StartsWith("multi-summon", StringComparison.Ordinal) != true) return;
+        if (scenario.GetString()!.StartsWith("multi-summon-fresh", StringComparison.Ordinal))
+        { FreshSummonChecks.Native(fixture); return; }
         var births = fixture.GetProperty("UnitBirths").EnumerateArray().ToArray();
         var clones = fixture.GetProperty("DetachedCardClones").EnumerateArray().ToArray();
         var phases = fixture.GetProperty("RallyPhases").EnumerateArray().ToArray();
@@ -83,7 +85,7 @@ internal static class UnitSummonChecks
         });
         Console.WriteLine($"NATIVE-MULTI-SUMMON-CHECKS PASS: {births.Length} complete births, {clones.Length} detached clones, {extra.Length} extra upgrades, {phases.Length} paid phases, {triggers.Length} Rally dispatches, live source upgrades, retained clone flags, cardless/source timing, slot truncation={truncated}, capacity overflow and 32 branches.");
     }
-    private static void VerifyExtra(FixtureValue sample)
+    internal static void VerifyExtra(FixtureValue sample)
     {
         Require(sample.GetProperty("Completed").GetBoolean(), "Incomplete native extra spawn upgrade.");
         var before = sample.GetProperty("Before").Deserialize<RoomCombatState>()!;
@@ -104,7 +106,7 @@ internal static class UnitSummonChecks
         int newCount = expected.Context!.FindCard(sourceId)!.Temporary.Upgrades.Count;
         Require(newCount - oldCount == (sample.GetProperty("SourceAdded").GetBoolean() ? 1 : 0), "Source duplicate result or descriptor count differs.");
     }
-    private static void VerifyBirth(FixtureValue sample)
+    internal static void VerifyBirth(FixtureValue sample)
     {
         Require(sample.GetProperty("Completed").GetBoolean(), "Incomplete native birth.");
         var before = sample.GetProperty("Before").Deserialize<RoomCombatState>()!;

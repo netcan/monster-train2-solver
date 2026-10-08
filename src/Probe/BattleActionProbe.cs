@@ -89,7 +89,7 @@ namespace MonsterTrain2Poju.Probe
                 CardEffectData effect = effects[0];
                 CharacterData? unit = effect.GetParamCharacterData();
                 if (unit == null || effect.GetParamAdditionalCharacterData() != null ||
-                    effect.GetParamCharacterDataPool().Count > 0 || effect.GetParamBool() ||
+                    effect.GetParamCharacterDataPool().Count > 0 ||
                     effect.GetTargetMode() != TargetMode.Room || selfPurge)
                     interactions.Add("Additional/modified unit spawn");
                 if (unit != null)
@@ -109,7 +109,12 @@ namespace MonsterTrain2Poju.Probe
                     CardUpgradeModifier? upgrade = null;
                     if (effect.GetParamCardUpgradeData() != null)
                     { var state = new CardUpgradeState(); state.Setup(effect.GetParamCardUpgradeData()); upgrade = CardModifierProbe.Upgrade(state); }
-                    summon = new UnitSummonRule(effect.GetParamInt(), CardGenerationProbe.Creation(data), Status("cardless", 1), upgrade, effect.GetParamBool());
+                    CardData? fallback = !effect.GetParamBool() || unit == null ? null : AllGameManagers.Instance!.GetSaveManager().GetAllGameData()
+                        .GetAllCardData().FirstOrDefault(candidate => candidate != null && candidate.IsSpawnerCard() &&
+                            candidate.GetSpawnCharacterData() != null && candidate.GetSpawnCharacterData()!.GetID() == unit!.GetID());
+                    if (effect.GetParamBool() && fallback == null) interactions.Add("Missing fresh fallback source definition");
+                    summon = new UnitSummonRule(effect.GetParamInt(), CardGenerationProbe.Creation(data), Status("cardless", 1), upgrade,
+                        effect.GetParamBool(), fallback == null ? null : CardGenerationProbe.Creation(fallback));
                 }
             }
             else if (kind == "CardEffectNULL") kind = "Null";

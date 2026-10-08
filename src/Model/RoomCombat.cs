@@ -2010,6 +2010,8 @@ namespace MonsterTrain2Poju.Model
 
             private RoomCombatResult Finish(RoomOutcome outcome)
             {
+                if (!source.Preview && context != null)
+                    context = UnitStandbyModel.MarkDead(context, units.Where(unit => !unit.Alive).Select(unit => unit.Freeze()).ToArray());
                 var removedIds = new HashSet<int>(units.Where(unit => !unit.Alive || unit.Removed || unit.Despawned).Select(unit => unit.Source.Id));
                 foreach (CardInstanceState card in removedIds.Count == 0 ? Array.Empty<CardInstanceState>() :
                     context?.CardRegistry ?? context?.CardInstances ?? Array.Empty<CardInstanceState>())

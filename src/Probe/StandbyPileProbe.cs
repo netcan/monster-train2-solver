@@ -46,12 +46,24 @@ namespace MonsterTrain2Poju.Probe
                 conditions.Add(new EquipmentStandbyCondition(FullBattleTrace.Active.CardId(pair.Key), FullBattleTrace.Active.UnitId(host),
                     pair.Key.HasTrait<CardTraitReturnToHandEquipment>()));
             }
-            var result = new CardPileState("Standby", projection.CaptureCards(native.Keys.ToList()), slots, holes, conditions);
+            List<UnitStandbyCondition>? unitConditions = MultiSummonScenario.FreshSources ? new List<UnitStandbyCondition>() : null;
+            if (unitConditions != null)
+                foreach (var pair in native.Where(item => item.Key.GetCardType() == CardType.Monster))
+                {
+                    var callback = (Delegate)AccessTools.Field(typeof(RemoveFromStandByCondition), "conditionFunction").GetValue(pair.Value);
+                    CharacterState? host = Host(callback.Target, unitCard: true);
+                    CardPile location = pair.Value.GetReturnLocation();
+                    if (ReferenceEquals(host, null) || location != CardPile.KeepInStandBy && location != CardPile.ExhaustedPile)
+                        throw new InvalidOperationException("Unmodeled unit standby closure or return location.");
+                    unitConditions.Add(new UnitStandbyCondition(FullBattleTrace.Active!.CardId(pair.Key), FullBattleTrace.Active.UnitId(host),
+                        location == CardPile.ExhaustedPile));
+                }
+            var result = new CardPileState("Standby", projection.CaptureCards(native.Keys.ToList()), slots, holes, conditions, unitConditions);
             string? error = CardPileModel.Validate(result);
             if (error != null) throw new InvalidOperationException(error);
             return result;
         }
-        private static CharacterState? Host(object closure, int depth = 0)
+        private static CharacterState? Host(object closure, int depth = 0, bool unitCard = false)
         {
             if (depth > 4) return null;
             foreach (var field in closure.GetType().GetFields(System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Public))
@@ -60,10 +72,10 @@ namespace MonsterTrain2Poju.Probe
                 if (value is CharacterState character) return character;
                 if (value == null) continue;
                 if (value.GetType().Name == "DiscardCardParams")
-                    return (CharacterState?)AccessTools.Field(value.GetType(), "firstTarget").GetValue(value);
+                    return (CharacterState?)AccessTools.Field(value.GetType(), unitCard ? "characterSummoned" : "firstTarget").GetValue(value);
                 if (value.GetType().Name.Contains("DisplayClass"))
                 {
-                    CharacterState? nested = Host(value, depth + 1);
+                    CharacterState? nested = Host(value, depth + 1, unitCard);
                     if (!ReferenceEquals(nested, null)) return nested;
                 }
             }
