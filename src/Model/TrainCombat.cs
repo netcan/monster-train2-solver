@@ -51,9 +51,11 @@ namespace MonsterTrain2Poju.Model
 
     public static class TrainCombatModel
     {
-        // Native ProcessRemovals marks objects Destroyed before advancing the turn;
-        // Unity completes destruction at frame end. Stable model boundaries normalize
-        // those references. Terminal combat skips this phase.
+        // Canonical decision captures normalize references to retired actors.
+        // Actual Unity destruction additionally clears a retired owner's own fields.
+        // Random-aura revival uses an explicit native protocol which awaits dissolve
+        // callbacks before the existing turn-end queue flush; raw frame timing is not
+        // inferred from IsDestroyed. Terminal combat skips that native queue flush.
         internal static TrainCombatState ProcessRemovals(TrainCombatState source)
         {
             var activeIds = new HashSet<int>(source.Rooms.SelectMany(room => room.Units).Select(unit => unit.Id));

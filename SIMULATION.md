@@ -6108,3 +6108,47 @@ rebuild, as do the five persistent-aura battles and their complete initial/middl
 policies and sixteen branches. Probe builds without warnings/errors. All 160
 inventory sizes/hashes, PowerShell syntax and whitespace checks pass; the complete
 160-archive regression was not repeated for this separate API model.
+
+### Stable native removal flush and random aura revival
+
+The explicitly enabled -SettleDeathDissolves solver protocol wraps the original
+RunEndMonsterTurn coroutine. After its gameplay work returns, it waits for the
+original DoDeathDissolve callbacks to populate the manager removal queues, then
+allows RunCombat to execute its original ProcessRemovals. Duration, the ten-frame
+minimum, damage, revival APIs, callbacks, queues and RNG are not overwritten.
+Actual Unity destruction still occurs at its native frame boundary. This makes
+the existing canonical decision contract reproducible for the observed late
+death; it does not model arbitrary unsynchronized rendering frame timing.
+
+full-battle-persistent-enchantment-random-revivals.mt2f now proves the complete
+paid random armor 2 / regen 1 / buff 1 aura policy with natural first/last Undying
+revivals. It wins with 21 paid card plays/seven EndTurns and final Pyre 72. All
+four revival boundaries and 24 callback phases match, with bound sources surviving
+revival and naturally releasing on death. Sixty room stages, fourteen train
+phases, eleven spawns and thirteen card cycles match without unsupported paths.
+Independent policies reproduce the initial and middle roots and sixteen parallel
+branches through the terminal win, preserving their parents. Native initial and
+repeat captures have zero differences/failures/unsupported/pending capture records
+and preserve original profile/log signatures, taking 65.46 and 63.67 muted Instant
+seconds respectively. The repeat disables additional character-removal observation.
+
+Both captures observe six original nonterminal removal flushes, twelve original
+death callbacks and four additional awaited frames for retained enemy 6. That
+actor's existing callback completes its ten-frame delay and joins the queue before
+the original flush; its attacker reference clears only on real destruction. The
+recorded completed callbacks respect their unchanged minimum frame counts, and
+every pending actor at a barrier completes before the barrier returns. The final
+Boss's visual callback may remain pending after the native terminal StopCombatLoop;
+terminal combat does not gain an artificial removal flush. The two captures have
+67/66 isolated combat previews, respectively.
+
+The curated schema104 archive is byte-identical to the first native binary,
+35,337 bytes / 5,846 nodes, without a text source or JSON companion. SHA-256 is
+4cfc37af046868c088f53a433c6a25c5acc242f8d1eb4dbb5bb6ee202effcd2e.
+Inventory is 161 archives: 147 battles and fourteen calibrations. The settled
+random-revival battle and all fourteen calibrations/pure checks pass with the
+final rebuild. A combined 161-archive regression is not claimed; the preceding
+full158 regression and affected historical aura policies remain the baseline.
+The four-difference unsynchronized captures and destruction-stage prototype stay
+excluded. Broader aura children, Horde effects, room/relic/control interactions,
+special Boss/card mechanics and the complete simulator/optimal solver remain work.

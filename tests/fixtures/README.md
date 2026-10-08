@@ -1095,3 +1095,26 @@ calibrations; existing persistent-aura battles and policies pass separately.
 All fourteen calibrations and pure checks pass with the rebuilt model. All 160
 archive sizes/hashes and regression-list entries pass; a combined 160-archive
 regression was not repeated for the independent removal API model.
+
+full-battle-persistent-enchantment-random-revivals.mt2f enables the explicit native
+death-dissolve settlement protocol. The original callbacks complete before the
+game's existing turn-end removal flush, preserving their duration and ten-frame
+minimum. This resolves the late removed enemy's attacker reference without
+overwriting native gameplay, queues or RNG. Arbitrary unsynchronized frame timing
+remains outside this stable decision protocol.
+
+The scene wins at Pyre 72 after 21 paid plays/seven EndTurns, including four natural
+revivals/24 exact callback phases, 60 room stages, fourteen train phases, eleven
+spawns and thirteen card cycles. The initial 65.46-second capture and 63.67-second
+repeat are muted Instant runs with zero differences/failures/unsupported/pending
+capture records and unchanged original profile/log signatures. Each has six
+nonterminal flushes, twelve callbacks and four extra awaited frames. Terminal
+visual callbacks may outlive StopCombatLoop; they do not trigger a new flush.
+Continuous policies match from initial/middle roots and sixteen immutable branches.
+
+The curated native schema104 binary has 35,337 bytes / 5,846 nodes, no text source,
+and the manifest hash matches its raw native provenance. Inventory is now 161
+archives: 147 battles/fourteen calibrations. The new settled battle and all
+fourteen calibrations/pure checks pass with the final rebuild. A combined161 run is
+not claimed; the preceding full158 and affected historical battles provide the
+baseline. Rejected unsynchronized revival battles/prototypes remain excluded.

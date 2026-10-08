@@ -75,6 +75,7 @@ internal static class PersistentEnchantmentChecks
             entry.GetProperty("Before").Deserialize<BattleTurnState>()!.Spawn.Train.Context!.Gold),
             "The paid aura policy did not drain its status-change child effects.");
         if (randomPools) VerifyRandomCoverage(fixture, actions, turns, worlds);
+        if (scenario.GetString() == "persistent-enchantment-random-revivals") VerifyRemovalSettlement(fixture, turns.Length);
         if (sourceDeaths)
         {
             int[] sources = worlds.SelectMany(world => world.RetainedUnits).Where(actor =>
@@ -126,6 +127,28 @@ internal static class PersistentEnchantmentChecks
             "Random aura isolation must cover the actual primary room-order update after preview restoration.");
         Console.WriteLine($"NATIVE-PERSISTENT-ENCHANTMENT-RANDOM-COVERAGE PASS: three selected statuses, real Battle advancement, " +
             $"{previews.Length} isolated native previews and complete primary/preview caches.");
+    }
+
+    private static void VerifyRemovalSettlement(FixtureValue fixture, int turns)
+    {
+        Require(fixture.GetProperty("Schema").GetInt32() == 104 && fixture.GetProperty("DeathDissolveSettlementEnabled").GetBoolean(),
+            "Random aura revival requires the explicitly enabled stable removal protocol.");
+        var records = fixture.GetProperty("DeathDissolveSettlements").EnumerateArray().ToArray();
+        var callbacks = fixture.GetProperty("DeathDissolveCallbacks").EnumerateArray().ToArray();
+        Require(records.Length >= turns - 1 && records.All(item => item.GetProperty("Completed").GetBoolean() &&
+            item.GetProperty("PendingAfter").GetInt32() == 0 && item.GetProperty("Error").ValueKind == FixtureKind.Null) &&
+            records.Any(item => item.GetProperty("FramesWaited").GetInt32() > 0 && item.GetProperty("PendingUnitIds").GetArrayLength() > 0),
+            "Every native nonterminal removal flush must wait for original pending callbacks.");
+        Require(callbacks.Length > 0 && callbacks.All(item => item.GetProperty("Error").ValueKind == FixtureKind.Null) &&
+            callbacks.Where(item => item.GetProperty("CompletedFrame").ValueKind != FixtureKind.Null).All(item =>
+                item.GetProperty("CompletedFrame").GetInt32() - item.GetProperty("RegisteredFrame").GetInt32() >= item.GetProperty("MinimumFrames").GetInt32()) &&
+            callbacks.Any(item => item.GetProperty("CompletedFrame").ValueKind != FixtureKind.Null && item.GetProperty("MinimumFrames").GetInt32() >= 10) &&
+            records.All(record => record.GetProperty("PendingUnitIds").Deserialize<int[]>()!.All(id => callbacks.Any(callback =>
+                callback.GetProperty("UnitId").GetInt32() == id && callback.GetProperty("CompletedFrame").ValueKind != FixtureKind.Null &&
+                callback.GetProperty("CompletedFrame").GetInt32() <= record.GetProperty("StartedFrame").GetInt32() + record.GetProperty("FramesWaited").GetInt32()))),
+            "Actual original dissolve completion and its minimum frame delay were not observed.");
+        Console.WriteLine($"NATIVE-REMOVAL-SETTLEMENT-CHECKS PASS: {records.Length} original turn-end flushes, " +
+            $"{records.Sum(item => item.GetProperty("FramesWaited").GetInt32())} awaited frames, unchanged minimum-frame callbacks and no premature queue processing.");
     }
 
     private static IEnumerable<CombatUnit> Units(EnchantmentWorld world) =>

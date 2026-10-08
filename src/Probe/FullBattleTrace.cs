@@ -438,7 +438,10 @@ namespace MonsterTrain2Poju.Probe
             string temporary = path + ".tmp";
             var snapshot = new
             {
-                Schema = EnchantmentBattleScenario.Prepared ? 103 : 102,
+                Schema = DeathDissolveSettlement.Enabled ? 104 : EnchantmentBattleScenario.Prepared ? 103 : 102,
+                DeathDissolveSettlementEnabled = DeathDissolveSettlement.Enabled,
+                DeathDissolveSettlements = DeathDissolveSettlement.Records,
+                DeathDissolveCallbacks = DeathDissolveSettlement.Callbacks,
                 GameVersion = Application.version,
                 GameModuleMvid = typeof(CardState).Assembly.ManifestModule.ModuleVersionId,
                 NativeWon,
