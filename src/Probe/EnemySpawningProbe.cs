@@ -136,7 +136,7 @@ namespace MonsterTrain2Poju.Probe
                     effect.GetEffectStateName() == "CardEffectAddBattleCard" ? CardGenerationProbe.Definition(effect) : null,
                     UnitTriggerUpgradeProbe.Definition(effect, interactions), UnitTriggerActionProbe.Definition(effect),
                     effect.GetEffectStateName() == "CardEffectDamage" && effect.GetUseStatusEffectStackMultiplier() ? effect.GetStatusEffectStackMultiplier() : null, UnitTriggerActionProbe.Scaling(effect),
-                    TriggeredSummonProbe.Definition(effect));
+                    TriggeredSummonProbe.Definition(effect), EnchantmentCombatProbe.Definition(effect));
             }).ToArray();
             return new CombatTrigger(trigger.GetTrigger().ToString(), trigger.GetTriggerOnce(), false,
                 trigger.GetHideVisualAndIgnoreSilence(), 1, effects,

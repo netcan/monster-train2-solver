@@ -401,6 +401,15 @@ namespace MonsterTrain2Poju.Probe
                 return;
             }
             string? modifierScenario = Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS");
+            if (fullBattle && Environment.GetEnvironmentVariable("MT2_PROBE_ENCHANTMENT_COMBAT") == "1")
+            {
+                if (EnchantmentCombatCalibration.Error != null) throw new InvalidOperationException(EnchantmentCombatCalibration.Error);
+                if (!EnchantmentCombatCalibration.Completed && (EnchantmentCombatCalibration.Started || EnchantmentCombatCalibration.Eligible))
+                {
+                    if (!EnchantmentCombatCalibration.Started) EnchantmentCombatCalibration.Start(log);
+                    return;
+                }
+            }
             if (fullBattle && numericModifiersPrepared && modifierScenario.StartsWith("triggered-summon", StringComparison.Ordinal) &&
                 TriggeredSummonEquipmentScenario.Enabled)
             {

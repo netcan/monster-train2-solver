@@ -1,6 +1,12 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
 
+if (args.Length == 2 && args[0] == "--enchantment-combat-only")
+{
+    EnchantmentCombatChecks.Native(args[1]);
+    return;
+}
+
 if (args.Length == 2 && args[0] == "--enchantment-lifecycle-only")
 {
     EnchantmentLifecycleChecks.Native(args[1]);
@@ -220,6 +226,8 @@ foreach (string path in args.Where(path => path.Contains("horde-stat-calibration
     HordeStatChecks.Native(path);
 foreach (string path in args.Where(path => path.Contains("enchantment-lifecycle-calibration", StringComparison.OrdinalIgnoreCase)))
     EnchantmentLifecycleChecks.Native(path);
+foreach (string path in args.Where(path => path.Contains("enchantment-combat-calibration", StringComparison.OrdinalIgnoreCase)))
+    EnchantmentCombatChecks.Native(path);
 
 static void Check(bool condition, string message)
 {

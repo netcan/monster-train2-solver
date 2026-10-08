@@ -912,3 +912,29 @@ decision-reference suites, fourteen queued-summon, ten triggered-equipment,
 six direct summon-effect suites and 262 damage phases. All sizes/hashes and
 native provenance/original-file gates pass; errors and unsupported transitions
 are zero. Persistent aura integration into the combat engine remains open.
+
+`enchantment-combat-calibration.mt2f` captures actual status mutations and drained
+child callbacks for persistent CardEffectEnchant on two real paid units. No
+native gameplay/status API is suppressed. Thirty-two exact steps include global
+allow/reentry guards, direct nested global updates, muting/silencing, signed/zero/
+Duality-overflow counts, poison and sixteen pooled random steps. All 35 API calls,
+48 complete nine-field callback payloads, per-effect maps, train/context states,
+explicit UI preview preparation events and drained gold effects match in 32
+isolated branches. Live captured train/context, original primary states/triggers/
+identity maps, RNG and update flags restore; the queue is empty afterwards.
+The isolated profile's run-stat/UI side effects are outside that restoration claim.
+
+The following native and independent ordinary battle win after 21 paid actions,
+seven EndTurns, Pyre 73; original profile/log file gates pass. Muted Instant native
+capture takes 51.21 seconds. The 9,760-byte/1,776-node archive is byte-identical to
+native output, SHA-256 a68ec95cafa6b9fd202b8201a0c5d892f97fd2cce8fa28c673497b87e58600da.
+There is no source JSON. Generic combat still rejects persistent CardEffectEnchant
+until automatic birth/movement/death/preview hooks and mutating child callbacks
+are integrated. This is a real-status update kernel, not full aura battle support.
+
+Inventory is now 152 binary archives: 141 battles and eleven calibrations. Complete
+regression/audit pass with 137 policy, 23 physical-position, twelve decision-reference,
+fourteen queued-summon, ten triggered-equipment, six direct summon-effect suites
+and 262 damage phases. Native provenance, all archive hashes and original-file gates
+pass. Final explicit refusal/binding capture fixes build, and both enchantment
+calibrations plus unsupported-boundary checks pass independently afterwards.

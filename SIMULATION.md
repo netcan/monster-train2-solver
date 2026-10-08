@@ -5681,3 +5681,70 @@ outputs are present. Every archive matches its manifest size/SHA-256; native
 binary provenance and original-file signature gates pass. Errors and unsupported
 transitions are zero. This broad regression does not extend the primitive's
 status API boundary into automatic persistent-enchantment combat support.
+
+### Persistent aura updates with real status mutations
+
+`EnchantmentCombatModel` adds a full-train update kernel. Persistent target maps,
+preview synchronization flags, cached status definitions and binding metadata now
+belong to each `CombatEffect.Enchantment`; effect copies and live/template capture
+preserve them. The staged lifecycle plans the whole map before applying individual
+status calls. Each call marks its entry before entering the status engine, then
+refreshes the effect and recipient before continuing. The kernel collects its own
+targets, uses Battle/BattleTest in native order, and performs actual modeled status
+addition/removal and ordered callback generation.
+
+The room manager's allow/reentry guards apply to the entire train. Sources follow
+native MonsterManager floor/front-to-back order before HeroManager order, rather
+than unit creation order. Direct effect calls can enter a nested global pass;
+updates already inside a global pass cannot. Parentless aura targets can include
+the Pyre. Actor identities retained outside the live train have an explicit store;
+source removal and the automatic combat hooks still require separate integration.
+
+The accepted native calibration uses two real paid Steward units, installs runtime
+aura and callback triggers temporarily, and calls the actual native
+RoomManager.UpdateEnchantments / CardEffectEnchant.OnUpdateEnchantments.
+AddStatusEffect, RemoveStatusEffect and the trigger queue execute without gameplay
+suppression. Thirty-two observed steps cover duplicate updates, source muting and
+silencing, disabled/re-enabled global updates, direct/global reentry, zero/negative
+and overflowing Duality counts, poison removal and sixteen pooled random steps.
+All 35 status calls, 48 nine-field callback payloads and resulting status/effect/
+train/context states match independently. Gold callbacks also run through the
+existing character queue and match the native output. Thirty-two parallel copies
+preserve their parent frames.
+
+Frame-driven UI preview preparation can occur while the coroutine drains. These
+are explicit native PrepareEnchantmentsForPreview events, recorded in order and
+applied through EnchantmentCombatModel.PrepareForPreview. They are neither
+suppressed nor inferred from expected output. This calibration tests their
+synchronization flags; it does not claim a complete real-status preview rollback.
+
+The calibration restores native primary state objects, original trigger lists and
+trigger identity maps, enchanter flags, gold, RNG streams and global update flags.
+The captured live train/context and empty queue match their original values.
+Run-stat/UI side effects in the isolated profile are outside this restoration
+claim. The subsequent ordinary battle and independent initial/middle policy roots
+win after 21 paid actions and seven EndTurns, Pyre 73; original profile/log file
+signatures are unchanged. Muted Instant capture takes 51.21 seconds.
+
+The curated binary is a direct native schema-1 archive: 9,760 bytes/1,776 nodes,
+SHA-256 a68ec95cafa6b9fd202b8201a0c5d892f97fd2cce8fa28c673497b87e58600da.
+It has no source JSON. The first native experiment was rejected for an unmodeled
+preview preparation during queue draining and was not curated.
+
+This kernel is not yet wired into generic combat birth, movement, source death,
+removed-source signals, revival or trigger mutation. Generic RoomCombatModel still
+rejects CardEffectEnchant. Child callbacks that mutate actors/cards are explicitly
+rejected by this kernel until those automatic hooks are integrated; only observed
+gold callback effects currently drain. Horde aura births/casualties, room/relic modifiers, Purify and Deathwish
+also remain unsupported here. The full battle simulator remains incomplete.
+
+The complete 152-archive regression and audit pass: 141 battles and eleven
+calibrations, 137 policy chains, 23 physical-position and twelve decision-reference
+suites, fourteen queued-summon, ten triggered-equipment, six direct summon-effect
+suites and 262 summon damage phases. Sizes, SHA-256 hashes, byte-identical native
+provenance and original-file gates pass. The final small refusal/binding-capture
+fixes build successfully and the real-status calibration, explicit unsupported
+boundaries and previous 1,460-step lifecycle matrix pass again independently.
+Probe has zero warnings/errors; ModelChecks retains its fourteen existing nullable
+warnings. Generic persistent-aura combat integration and the full simulator remain
+incomplete.

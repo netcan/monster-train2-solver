@@ -328,7 +328,7 @@ namespace MonsterTrain2Poju.Probe
                         type == "CardEffectAddBattleCard" ? CardGenerationProbe.Definition(effect) : null,
                         UnitTriggerUpgradeProbe.Capture(effect, interactions), UnitTriggerActionProbe.Capture(effect),
                         type == "CardEffectDamage" && effect.GetUseStatusEffectStackMultiplier() ? effect.GetStatusEffectStackMultiplier() : null, UnitTriggerActionProbe.Scaling(effect),
-                        TriggeredSummonProbe.Capture(effect));
+                        TriggeredSummonProbe.Capture(effect), EnchantmentCombatProbe.Capture(effect));
                 }).ToArray();
                 int[] boundEquipment = trigger.GetEffectStates().Select(effect => effect.GetParentEquipment() == null ? 0 : Active!.CardId(effect.GetParentEquipment()!)).Distinct().ToArray();
                 int equipmentId = boundEquipment.Length == 1 ? boundEquipment[0] : 0;

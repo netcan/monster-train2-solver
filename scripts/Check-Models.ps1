@@ -114,7 +114,8 @@ $fixtures = @('full-battle-steward-once.mt2f', 'full-battle-no-cards.mt2f', 'ful
     'card-modifier-calibration.mt2f', 'rng-calibration.mt2f', 'gold-reward-calibration.mt2f',
     'standby-routing-calibration.mt2f', 'ui-rng-isolation-calibration.mt2f',
     'statistic-query-calibration.mt2f', 'statistic-overflow-calibration.mt2f',
-    'statistic-zero-increment-calibration.mt2f', 'horde-stat-calibration.mt2f', 'enchantment-lifecycle-calibration.mt2f') |
+    'statistic-zero-increment-calibration.mt2f', 'horde-stat-calibration.mt2f', 'enchantment-lifecycle-calibration.mt2f',
+    'enchantment-combat-calibration.mt2f') |
     ForEach-Object { Join-Path $workspace ('tests\fixtures\' + $_) }
 $manifest = Import-Csv -LiteralPath (Join-Path $workspace 'tests\fixtures\manifest.tsv') -Delimiter "`t"
 if ($manifest.Count -ne $fixtures.Count) { throw 'Fixture manifest inventory differs from the curated regression list.' }

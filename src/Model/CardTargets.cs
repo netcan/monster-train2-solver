@@ -24,7 +24,8 @@ namespace MonsterTrain2Poju.Model
 
         public static CardTargets Collect(TrainCombatState train, int roomIndex, CardActionEffect effect, IReadOnlyList<int> lastTargets,
             CombatTeam? dropTeam = null, int dropPosition = -1, bool firstEffect = false, bool isTesting = false, int? pyreRoomIndex = null,
-            IReadOnlyDictionary<int, int>? pendingDeadRooms = null, IReadOnlyDictionary<int, int>? unitPositions = null, int selfUnitId = 0)
+            IReadOnlyDictionary<int, int>? pendingDeadRooms = null, IReadOnlyDictionary<int, int>? unitPositions = null, int selfUnitId = 0,
+            bool ignorePyre = true)
         {
             RoomCombatState? room = train.Rooms.FirstOrDefault(item => item.RoomIndex == roomIndex);
             if (room == null) return new CardTargets(Array.Empty<int>(), "The selected target room does not exist.");
@@ -36,7 +37,7 @@ namespace MonsterTrain2Poju.Model
             {
                 bool AllowsTeam(CombatTeam team) => team == CombatTeam.Enemy ? effect.AllowEnemy : effect.AllowPlayer;
                 bool Allowed(CombatUnit unit) => AllowsTeam(unit.Team);
-                bool Physical(CombatUnit unit) => Allowed(unit) && !unit.IsPyre && unit.Statuses.All(status => status.Id != "untouchable");
+                bool Physical(CombatUnit unit) => Allowed(unit) && (!ignorePyre || !unit.IsPyre) && unit.Statuses.All(status => status.Id != "untouchable");
                 bool Eligible(CombatUnit unit) => Physical(unit) && MatchesFilters(effect, unit, false, ref filterError);
                 IEnumerable<CombatUnit> candidates;
                 var positions = unitPositions ?? Positions(train);
@@ -97,12 +98,12 @@ namespace MonsterTrain2Poju.Model
             if (effect.Target == "LastTargetedCharacters" || effect.Target == "StrongestLastTargetedCharacters")
                 room = new RoomCombatState(roomIndex, room.Deployment, train.Rooms.SelectMany(item => item.Units).ToArray(),
                     Array.Empty<string>(), train.Context, room.Preview);
-            return Collect(room, effect, lastTargets, dropTeam, dropPosition, firstEffect, isTesting);
+            return Collect(room, effect, lastTargets, dropTeam, dropPosition, firstEffect, isTesting, ignorePyre: ignorePyre);
         }
 
         public static CardTargets Collect(RoomCombatState room, CardActionEffect effect, IReadOnlyList<int> lastTargets,
             CombatTeam? dropTeam = null, int dropPosition = -1, bool firstEffect = false, bool isTesting = false, int selfUnitId = 0,
-            int lastSpawnedOverrideUnitId = 0)
+            int lastSpawnedOverrideUnitId = 0, bool ignorePyre = true)
         {
             if (effect.Target == "LastSpawnedCharacter") return LastSpawned(room, lastSpawnedOverrideUnitId);
             if (!Supports(effect.Target)) return new CardTargets(Array.Empty<int>(), "Unmodeled target mode " + effect.Target);
@@ -125,7 +126,7 @@ namespace MonsterTrain2Poju.Model
                 bool accepted = occupant != null && Allowed(occupant) && MatchesFilters(effect, occupant, true, ref filterError);
                 return new CardTargets(accepted ? new[] { occupant!.Id } : Array.Empty<int>(), filterError);
             }
-            CombatUnit[] candidates = room.Units.OrderBy(unit => unit.Team).Where(unit => Allowed(unit) && !unit.IsPyre &&
+            CombatUnit[] candidates = room.Units.OrderBy(unit => unit.Team).Where(unit => Allowed(unit) && (!ignorePyre || !unit.IsPyre) &&
                 !unit.Statuses.Any(status => status.Id == "untouchable") && MatchesFilters(effect, unit, false, ref filterError)).ToArray();
             if (filterError != null) return new CardTargets(Array.Empty<int>(), filterError);
             if (effect.Target == "RandomInRoom")

@@ -130,6 +130,18 @@ namespace MonsterTrain2Poju.Model
 
     public static class EnchantmentLifecycleModel
     {
+        internal sealed class PreparedUpdate
+        {
+            internal EnchantmentState State { get; }
+            internal UnityRng BattleRng { get; }
+            internal UnityRng TestRng { get; }
+            internal bool SourceDuality { get; }
+            internal IReadOnlyList<int> TargetOrder { get; }
+            internal PreparedUpdate(EnchantmentState state, UnityRng battleRng, UnityRng testRng, bool sourceDuality,
+                IReadOnlyList<int> targetOrder)
+            { State = state; BattleRng = battleRng; TestRng = testRng; SourceDuality = sourceDuality;
+                TargetOrder = Array.AsReadOnly(targetOrder.ToArray()); }
+        }
         // Setup deliberately retains the cached status and pending preview-sync flag.
         public static EnchantmentState Setup(EnchantmentState source) => new EnchantmentState(
             previewRequiresSync: source.PreviewRequiresSync, cachedStatus: source.CachedStatus);
@@ -146,11 +158,28 @@ namespace MonsterTrain2Poju.Model
             if (input.Operation != "Update") throw new ArgumentException("Unknown enchantment operation: " + input.Operation);
             if (!input.CanUpdate) return new EnchantmentTransition(source, input.BattleRng, input.TestRng, Array.Empty<EnchantmentRequest>());
 
+            PreparedUpdate prepared = Begin(source, input);
+            EnchantmentState state = prepared.State;
+            var actors = input.Actors.ToDictionary(actor => actor.Id);
+            var requests = new List<EnchantmentRequest>();
+            foreach (int id in prepared.TargetOrder)
+            {
+                EnchantmentRequest? request = Next(state, actors[id], input.Preview, prepared.SourceDuality, out state);
+                if (request != null) requests.Add(request);
+                state = Complete(state, actors[id], input.Preview);
+            }
+            return new EnchantmentTransition(state, prepared.BattleRng, prepared.TestRng, requests);
+        }
+
+        // A real status call can synchronously update other auras. Plan the entire map first,
+        // then refresh its state and actor before each API call, and clear the action afterwards.
+        internal static PreparedUpdate Begin(EnchantmentState source, EnchantmentInput input)
+        {
             UnityRng rng = input.BattleRng;
             UnityRng testRng = input.TestRng;
             if (input.StatusPool.Count == 0)
-                return new EnchantmentTransition(new EnchantmentState(source.PrimaryTargets, source.PreviewTargets,
-                    source.PreviewRequiresSync), rng, testRng, Array.Empty<EnchantmentRequest>());
+                return new PreparedUpdate(new EnchantmentState(source.PrimaryTargets, source.PreviewTargets,
+                    source.PreviewRequiresSync), rng, testRng, false, Array.Empty<int>());
             EnchantmentStatus status = input.StatusPool[0];
             if (input.StatusPool.Count > 1)
             {
@@ -185,26 +214,39 @@ namespace MonsterTrain2Poju.Model
                     enchanter.RoomIndex == target.RoomIndex;
                 selected[i] = new EnchantmentTarget(entry.UnitId, entry.IsEnchanted, valid ? 1 : 2);
             }
-            int count = enchanter.Duality && status.AffectedByDuality ? unchecked(status.Count * 2) : status.Count;
-            var requests = new List<EnchantmentRequest>();
-            for (int i = 0; i < selected.Count; i++)
-            {
-                EnchantmentTarget entry = selected[i]; EnchantmentActor target = actors[entry.UnitId];
-                if (target.IsDestroyed || !target.IsAlive && !target.Undying || target.Preview != input.Preview) continue;
-                bool add = entry.NextAction == 1 && !entry.IsEnchanted;
-                bool remove = entry.NextAction == 2 && entry.IsEnchanted;
-                if (add || remove)
-                {
-                    selected[i] = new EnchantmentTarget(entry.UnitId, add, entry.NextAction);
-                    var atCall = new EnchantmentState(primary, preview, sync, status);
-                    requests.Add(new EnchantmentRequest(entry.UnitId, add ? "Add" : "Remove", status.Id, count,
-                        add ? target.IsHero : (bool?)null, add ? (bool?)null : !input.Preview, "CardEffectEnchant", false, false,
-                        false, true, add ? false : (bool?)null, add ? true : (bool?)null, add ? false : (bool?)null,
-                        add ? false : (bool?)null, add ? false : (bool?)null, add ? (bool?)null : false, add ? (bool?)null : false, atCall));
-                }
-                selected[i] = new EnchantmentTarget(entry.UnitId, selected[i].IsEnchanted);
-            }
-            return new EnchantmentTransition(new EnchantmentState(primary, preview, sync, status), rng, testRng, requests);
+            return new PreparedUpdate(new EnchantmentState(primary, preview, sync, status), rng, testRng,
+                enchanter.Duality, selected.Select(entry => entry.UnitId).ToArray());
+        }
+        internal static EnchantmentRequest? Next(EnchantmentState source, EnchantmentActor target, bool preview,
+            bool sourceDuality, out EnchantmentState state)
+        {
+            state = source;
+            if (Skip(target, preview)) return null;
+            EnchantmentTarget entry = (preview ? source.PreviewTargets : source.PrimaryTargets).Single(item => item.UnitId == target.Id);
+            bool add = entry.NextAction == 1 && !entry.IsEnchanted;
+            bool remove = entry.NextAction == 2 && entry.IsEnchanted;
+            if (!add && !remove) return null;
+            EnchantmentStatus status = source.CachedStatus ?? throw new InvalidOperationException("An active update requires its selected status.");
+            int count = sourceDuality && status.AffectedByDuality ? unchecked(status.Count * 2) : status.Count;
+            state = Replace(source, preview, new EnchantmentTarget(target.Id, add, entry.NextAction));
+            return new EnchantmentRequest(target.Id, add ? "Add" : "Remove", status.Id, count,
+                add ? target.IsHero : (bool?)null, add ? (bool?)null : !preview, "CardEffectEnchant", false, false,
+                false, true, add ? false : (bool?)null, add ? true : (bool?)null, add ? false : (bool?)null,
+                add ? false : (bool?)null, add ? false : (bool?)null, add ? (bool?)null : false, add ? (bool?)null : false, state);
+        }
+        internal static EnchantmentState Complete(EnchantmentState source, EnchantmentActor target, bool preview)
+        {
+            if (Skip(target, preview)) return source;
+            EnchantmentTarget entry = (preview ? source.PreviewTargets : source.PrimaryTargets).Single(item => item.UnitId == target.Id);
+            return Replace(source, preview, new EnchantmentTarget(target.Id, entry.IsEnchanted));
+        }
+        private static bool Skip(EnchantmentActor actor, bool preview) => actor.IsDestroyed ||
+            !actor.IsAlive && !actor.Undying || actor.Preview != preview;
+        private static EnchantmentState Replace(EnchantmentState source, bool preview, EnchantmentTarget entry)
+        {
+            var selected = (preview ? source.PreviewTargets : source.PrimaryTargets).ToList(); Set(selected, entry);
+            return new EnchantmentState(preview ? source.PrimaryTargets : selected,
+                preview ? selected : source.PreviewTargets, source.PreviewRequiresSync, source.CachedStatus);
         }
         private static void Set(List<EnchantmentTarget> map, EnchantmentTarget value)
         { int index = map.FindIndex(entry => entry.UnitId == value.UnitId); if (index < 0) map.Add(value); else map[index] = value; }
