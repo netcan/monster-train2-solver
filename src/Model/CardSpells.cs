@@ -240,8 +240,19 @@ namespace MonsterTrain2Poju.Model
                         effect.Generation, effect.OnlyIfNoEnemies, effect.CooldownParameter, effect.AbilityChange);
                 }
                 UnityRng effectRng = state.Context!.BattleRng;
-                if (effect.Type != "Bump" && effect.Type != "DiscardHand" && effect.Type != "Generate" && effect.Type != "AdjustCapacity" && !AbilityCooldownModel.IsEffect(effect.Type) && !AbilityLifecycleModel.IsEffect(effect.Type)) effect = Sample(effect, ref effectRng);
+                if (effect.Type != "CopyUnits" && effect.Type != "Bump" && effect.Type != "DiscardHand" && effect.Type != "Generate" && effect.Type != "AdjustCapacity" && !AbilityCooldownModel.IsEffect(effect.Type) && !AbilityLifecycleModel.IsEffect(effect.Type)) effect = Sample(effect, ref effectRng);
                 state = WithContext(state, state.Context.WithBattleRng(effectRng));
+                if (effect.Type == "CopyUnits")
+                {
+                    if (!fullTrain || definitions == null) return UnsupportedTrain("Paid copying requires the complete train and birth catalog.");
+                    UnitCopyResult copied = UnitCopyModel.ApplyWithPending(state, roomIndex, targets.UnitIds, effect.Value, definitions.UnitCopyCatalog, callbacks);
+                    if (!copied.Supported) return UnsupportedTrain(copied.UnsupportedReason!);
+                    state = copied.State!; callbacks.Clear(); callbacks.AddRange(copied.PendingCallbacks); events.AddRange(copied.Events);
+                    if (copied.Outcome != RoomOutcome.Exchanged) outcome = copied.Outcome;
+                    positions = CardTargetModel.Positions(state);
+                    if (state.Context!.OtherPiles != null) piles = state.Context.OtherPiles.ToArray();
+                    continue;
+                }
                 if (effect.Type == "Bump")
                 {
                     if (!fullTrain || definitions == null) return UnsupportedTrain("Bump requires the complete train and room rules.");
@@ -624,7 +635,7 @@ namespace MonsterTrain2Poju.Model
             {
                 string? filterError = effect.Filters?.Validate();
                 if (filterError != null) return filterError;
-                if (effect.Range != null && effect.Type != "Bump" && effect.Type != "DiscardHand" && effect.Type != "Generate" && effect.Type != "AdjustCapacity" &&
+                if (effect.Range != null && effect.Type != "CopyUnits" && effect.Type != "Bump" && effect.Type != "DiscardHand" && effect.Type != "Generate" && effect.Type != "AdjustCapacity" &&
                     !AbilityLifecycleModel.IsEffect(effect.Type))
                 {
                     if (!EnergyModel.IsEffect(effect.Type) && !new[] { "Damage", "Heal", "AddStatus", "BuffAttack", "DebuffAttack", "BuffHealth", "DebuffHealth", "Draw", "DrawNextTurn" }.Contains(effect.Type))
@@ -677,12 +688,12 @@ namespace MonsterTrain2Poju.Model
                     if (energyError != null) return energyError;
                     continue;
                 }
-                if (!new[] { "Bump", "Damage", "Heal", "AddStatus", "FloorRearrange", "UnitUpgrade", "RemoveUnitUpgrade", "AttachEquipment", "RemoveEquipment", "BuffAttack", "DebuffAttack", "BuffHealth", "DebuffHealth", "Draw", "DiscardHand", "Generate" }.Contains(effect.Type))
+                if (!new[] { "CopyUnits", "Bump", "Damage", "Heal", "AddStatus", "FloorRearrange", "UnitUpgrade", "RemoveUnitUpgrade", "AttachEquipment", "RemoveEquipment", "BuffAttack", "DebuffAttack", "BuffHealth", "DebuffHealth", "Draw", "DiscardHand", "Generate" }.Contains(effect.Type))
                     return "Unimplemented spell effect " + effect.Type;
                 if (effect.Type == "Generate" && effect.Generation == null) return "Missing generated card rules.";
                 if ((effect.Type == "UnitUpgrade" || effect.Type == "RemoveUnitUpgrade") && effect.Upgrade == null)
                     return "Missing unit upgrade definition.";
-                if (effect.Value < 0 && !AttackChange(effect) && !new[] { "Bump", "Damage", "Heal", "AddStatus", "BuffHealth", "DebuffHealth", "Draw", "DiscardHand", "Generate" }.Contains(effect.Type) ||
+                if (effect.Value < 0 && !AttackChange(effect) && !new[] { "CopyUnits", "Bump", "Damage", "Heal", "AddStatus", "BuffHealth", "DebuffHealth", "Draw", "DiscardHand", "Generate" }.Contains(effect.Type) ||
                     effect.Type == "FloorRearrange" && effect.Value > 1) return "Invalid spell effect value.";
                 if (effect.Type == "BuffHealth" && effect.Lifetime != "" && effect.Lifetime != "TemporaryUntilEndOfBattle" &&
                     effect.Lifetime != "TemporaryUntilUnitDeath") return "Unmodeled maximum-health buff lifetime.";
@@ -730,6 +741,7 @@ namespace MonsterTrain2Poju.Model
                 case "Heal": return effect.Target == "Room" || count > 0;
                 case "AddStatus": return effect.Tests?.StrictTargets != true && effect.Target != "DropTargetCharacter" || count > 0;
                 case "FloorRearrange":
+                case "CopyUnits":
                 case "BuffAttack":
                 case "DebuffAttack":
                 case "UnitUpgrade":
@@ -746,7 +758,7 @@ namespace MonsterTrain2Poju.Model
             if (effect.Range == null) return effect;
             RngDraw draw = effect.Range.Sample(rng); rng = draw.State;
             return new CardActionEffect(effect.Type, effect.Target, draw.Value, effect.AllowEnemy, effect.AllowPlayer,
-                effect.Statuses, effect.Upgrade, effect.Lifetime, effect.Tests, effect.Range, effect.Filters, effect.Generation, effect.OnlyIfNoEnemies, effect.CooldownParameter, effect.AbilityChange);
+                effect.Statuses, effect.Upgrade, effect.Lifetime, effect.Tests, effect.Range, effect.Filters, effect.Generation, effect.OnlyIfNoEnemies, effect.CooldownParameter, effect.AbilityChange, effect.CopyHeroStats);
         }
         private static int TestCount(TrainCombatState state, CardActionEffect effect, CardTargets targets) => effect.Type == "RemoveStatus" &&
             !string.IsNullOrEmpty(effect.Filters?.Subtype) ? state.Rooms.SelectMany(room => room.Units).Count(unit =>

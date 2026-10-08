@@ -32,13 +32,14 @@ namespace MonsterTrain2Poju.Model
         public bool OnlyIfNoEnemies { get; }
         public bool? CooldownParameter { get; }
         public AbilityChangeRule? AbilityChange { get; }
+        public bool? CopyHeroStats { get; }
         public CardActionEffect(string type, string target, int value, bool allowEnemy, bool allowPlayer, IReadOnlyList<CombatStatus> statuses,
             CardUpgradeModifier? upgrade = null, string lifetime = "", CardEffectTests? tests = null, CardEffectRange? range = null, CardTargetFilters? filters = null,
             CardGenerationRule? generation = null, bool onlyIfNoEnemies = false, bool? cooldownParameter = null,
-            AbilityChangeRule? abilityChange = null)
+            AbilityChangeRule? abilityChange = null, bool? copyHeroStats = null)
         { Type = type; Target = target; Value = value; AllowEnemy = allowEnemy; AllowPlayer = allowPlayer; Statuses = Array.AsReadOnly(statuses.ToArray());
             Upgrade = upgrade; Lifetime = lifetime; Tests = tests; Range = range; Filters = filters; Generation = generation; OnlyIfNoEnemies = onlyIfNoEnemies;
-            CooldownParameter = cooldownParameter; AbilityChange = abilityChange; }
+            CooldownParameter = cooldownParameter; AbilityChange = abilityChange; CopyHeroStats = copyHeroStats; }
     }
     public sealed class RoomPlayRule
     {
@@ -106,8 +107,10 @@ namespace MonsterTrain2Poju.Model
         public IReadOnlyList<RoomPlayRule> Rooms { get; }
         public IReadOnlyList<CardPlayRule> Cards { get; }
         public IReadOnlyList<CombatStatus> StatusRules { get; }
-        public BattlePlayRules(IReadOnlyList<RoomPlayRule> rooms, IReadOnlyList<CardPlayRule> cards, IReadOnlyList<CombatStatus>? statusRules = null)
-        { Rooms = Array.AsReadOnly(rooms.ToArray()); Cards = Array.AsReadOnly(cards.ToArray()); StatusRules = Array.AsReadOnly((statusRules ?? Array.Empty<CombatStatus>()).ToArray()); }
+        public UnitCopyCatalog? UnitCopyCatalog { get; }
+        public BattlePlayRules(IReadOnlyList<RoomPlayRule> rooms, IReadOnlyList<CardPlayRule> cards, IReadOnlyList<CombatStatus>? statusRules = null,
+            UnitCopyCatalog? unitCopyCatalog = null)
+        { Rooms = Array.AsReadOnly(rooms.ToArray()); Cards = Array.AsReadOnly(cards.ToArray()); StatusRules = Array.AsReadOnly((statusRules ?? Array.Empty<CombatStatus>()).ToArray()); UnitCopyCatalog = unitCopyCatalog; }
     }
 
     public sealed class PlayCardAction

@@ -70,6 +70,7 @@ are copied immutable values; independent child states can run on worker threads.
 | Enemy movement phase | `TrainCombatModel.Ascend` | Native movement and immediate Pyre combat, including the terminal boss fight |
 | Bump card movement | `BumpModel`, `CardSpellModel` and `HordeMergeModel.MergeAcrossRooms` | Eighteen real paid-card effect/queue comparisons, both-team cross-room Horde merges, signed/clamped/fixed-range quantities, immobility/rooting, loops, simultaneous targets, Pyre and full/partially blocked rooms |
 | Ordinary unit clone APIs | `UnitCloneModel`, `CharacterCopyModel` and `UnitBirthModel` | Thirteen native operations, 44 exact copied-card/birth/gear/stats/ability boundaries, raw/drained train states and callback payload/order; detached/cardless sources, failed allocations and 32 branches |
+| Paid unit copy spells | `UnitCopyModel`, `UnitCloneModel` and `CardSpellModel` | Fourteen real paid effects, complete raw state and incoming/outgoing queue payload/order, sequential births, full/partial rooms, copied equipment/skills, cardless/Horde sources and 32 branches |
 | Unit effects | `CombatTrigger` and `CombatContext` | Generated cards, Battle RNG, treasure escape; gold and once-only trigger checks |
 | Gold rewards | `GoldRewardModel` | 2,200 native calculations, reward minimums, integer/float boundaries, ties to even and preview exclusion |
 | Card statistics and preview | `BattleStatistics` and `BattlePreviewModel` | Native per-card/Any counters, turn rollover, spawn subtypes, death/exhaust attribution and preview damage statistic |
@@ -5418,3 +5419,59 @@ paid-card integration, enemy copying, grafted birth/room/relic modifiers, clone
 previews and birth/movement callbacks involving destruction or revival still
 need native fixtures and implementation. Wider cards, special Boss mechanics
 and complete optimal search remain open; the full simulator is unfinished.
+
+## Paid unit copying (schema 100)
+
+`UnitCopyModel` integrates primary player-unit `CardEffectCopyUnits` with paid
+card resolution. An immutable catalog contains birth, card, equipment and skill
+definitions. Each copy resolves its rule from the current source actor and card
+registry; no recorded future action or result supplies the simulated transition.
+The effect retains each target's original physical point across its copies,
+keeps the original room actor snapshot for the final counted Rally, and compacts
+players after multiple successful births. Zero/negative counts and authored
+integer ranges follow the native fixed-count behavior without extra RNG draws.
+
+Birth drains carry the incoming global queue through spawn/status/skill phases
+and preserve child callback order. Equipment copies retain detached card
+ownership. Full-room failures can allocate copied cards without allocating a
+unit; selected-last gates allocate neither. Horde grows the source without a
+new actor or counted final Rally. Raw dispatch observations preserve all nine
+callback fields, including inert callbacks, separately from stable card results.
+
+`full-battle-unit-copy.mt2f` records fourteen actual paid casts: targeted and
+room-wide copying, successive copies, clone-of-clone, status/ability effects
+before copying, equipment, cardless sources, full/partial allocation failures
+and Horde. Native setup uses two paid Shield Steward hosts and an ordinary
+clone for the third floor, native fillers, authored upgrades/skills and gold
+callbacks. The original Boss and waves remain intact. Scoped observation
+retains incoming callbacks while allowing intrinsic birth/equipment queue runs.
+Copied card identities are captured when native `CopyCardState` creates them,
+including detached cards from failed births.
+
+All fourteen raw train states, queued payloads and intrinsic dispatch sequences
+match independently in 32 branches. All 28 paid actions, five EndTurns and
+recorded combat/spawn/card-cycle phases match. The subsequent fourteen-play
+policy wins at Pyre 80 from initial/middle roots and sixteen parallel branches.
+Its initial turn has no ordinary card play; independent verification begins
+before that first EndTurn. All four ascent inputs are empty after combat, so
+physical checks verify that no cross-room move occurs, alongside fourteen
+physical removals and every complete room position state in 32 branches.
+
+Muted Instant native recording takes 89.85 seconds, with zero capture failures,
+differences, unsupported/pending records and unchanged original profile/log
+signatures. The 35,606-byte binary contains 6,511 unique nodes and is curated
+byte-for-byte from the native archive. The inventory now contains 148 binary
+archives: 139 battle fixtures and nine calibrations. The complete regression
+exits zero, including 135 independent policy chains and all nine calibrations.
+The final audit verifies 21 physical-position suites, ten decision-reference
+suites, fourteen queued-summon suites, ten equipment suites, six direct summon
+effect suites, standalone/two summon revival suites, Horde/Bump/clone/copy
+suites and all 262 summon damage phases. No unsupported transitions occur;
+every archive matches its size and SHA-256 manifest, and the curated copy
+archive is byte-identical to the native capture. The pure Probe build has zero
+warnings/errors.
+
+Enemy copying requires a separate hero birth transition and is explicitly
+unsupported. Grafted/preview copying, room/relic modifiers, destruction/revival
+during birth, wider cards and special Boss mechanics need further native
+coverage and implementation. The full simulator and optimal search remain open.

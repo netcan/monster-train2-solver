@@ -155,6 +155,7 @@ internal static class RoomCombatChecks
         RevivalChecks.Native(fixture);
         BumpChecks.Native(fixture);
         UnitCloneChecks.Native(fixture);
+        UnitCopyChecks.Native(fixture);
         BattleActionChecks.Native(fixture);
         UnitIdentityChecks.Native(fixture);
         SpawnPointChecks.Native(fixture);

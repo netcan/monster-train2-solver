@@ -37,19 +37,27 @@ internal static class BattleSpawnPointChecks
             foreach (var actor in before.Units.Where(unit => !unit.IsPyre && !after.Units.Any(next => next.Id == unit.Id)))
                 if (after.Context!.SpawnPoints!.Units.Single(unit => unit.UnitId == actor.Id).Current == null) removals++;
         }
-        int moves = 0;
+        int moves = 0, ascents = 0, emptyAscents = 0;
         foreach (var sample in fixture.GetProperty("TrainPhases").EnumerateArray())
         {
             var before = sample.GetProperty("Before").Deserialize<TrainCombatState>()!;
             var after = sample.GetProperty("Actual").Deserialize<TrainCombatState>()!;
             Require(before.Context?.SpawnPoints != null && after.Context?.SpawnPoints != null, "A train phase lost physical state.");
+            if (sample.GetProperty("Kind").GetString() == "Ascend")
+            {
+                ascents++;
+                if (!before.Rooms.SelectMany(room => room.Units).Any(unit => unit.Team == CombatTeam.Enemy)) emptyAscents++;
+            }
             foreach (var unit in before.Context!.SpawnPoints!.Units.Where(unit => unit.Current != null))
             {
                 var next = after.Context!.SpawnPoints!.Units.Single(item => item.UnitId == unit.UnitId);
                 if (next.Current != null && next.Current.RoomIndex != unit.Current!.RoomIndex) moves++;
             }
         }
-        Require(contexts > 50 && removals > 0 && moves > 0, "Complete battle position transitions were not exercised.");
+        // If combat kills every enemy before every ascent, no cross-room move
+        // should occur. The complete captured ascent inputs prove this case.
+        Require(contexts > 50 && removals > 0 && (moves > 0 || ascents > 0 && emptyAscents == ascents),
+            "Complete battle position transitions were not exercised.");
         foreach (var sample in fixture.GetProperty("PhysicalCompactions").EnumerateArray())
             Require(sample.GetProperty("Error").ValueKind == FixtureKind.Null && sample.GetProperty("After").ValueKind != FixtureKind.Null,
                 "Native compaction observations were incomplete.");
@@ -57,7 +65,7 @@ internal static class BattleSpawnPointChecks
         Parallel.For(0, 32, _ => Verify());
         RejectMalformed(first);
         Console.WriteLine($"NATIVE-BATTLE-SPAWN-POINT-CHECKS PASS: {contexts} complete room contexts, {removals} physical removals, " +
-            $"{moves} cross-room moves, retained identities/references and 32 independent branches.");
+            $"{moves} cross-room moves, {emptyAscents} empty ascents, retained identities/references and 32 independent branches.");
 
         void Verify()
         {

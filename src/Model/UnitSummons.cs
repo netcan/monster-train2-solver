@@ -48,15 +48,17 @@ namespace MonsterTrain2Poju.Model
             int position, bool isCardless, CombatStatus? cardlessStatus = null)
             => SpawnCore(source, definition, spawnerCardId, position, isCardless, cardlessStatus, null, null, true);
         internal static UnitBirthResult SpawnClone(RoomCombatState source, CardPlayRule definition, int spawnerCardId,
-            int position, bool isCardless, CombatStatus? cardlessStatus, bool selectedSlot)
-            => SpawnCore(source, definition, spawnerCardId, position, isCardless, cardlessStatus, null, null, selectedSlot, true);
+            int position, bool isCardless, CombatStatus? cardlessStatus, bool selectedSlot,
+            Func<RoomCombatState, IReadOnlyList<RoomCombatModel.QueuedCharacterTrigger>, RoomCombatResult>? drainBirthQueue = null)
+            => SpawnCore(source, definition, spawnerCardId, position, isCardless, cardlessStatus, null, null, selectedSlot, true, drainBirthQueue);
         internal static UnitBirthResult SpawnQueued(RoomCombatState source, CardPlayRule definition, int spawnerCardId,
             int position, bool isCardless, CombatStatus cardlessStatus, Action<RoomCombatModel.QueuedCharacterTrigger> enqueue,
             IReadOnlyList<CombatUnit> positionActors, bool selectedSlot = true)
             => SpawnCore(source, definition, spawnerCardId, position, isCardless, cardlessStatus, enqueue, positionActors, selectedSlot);
         private static UnitBirthResult SpawnCore(RoomCombatState source, CardPlayRule definition, int spawnerCardId,
             int position, bool isCardless, CombatStatus? cardlessStatus, Action<RoomCombatModel.QueuedCharacterTrigger>? enqueue,
-            IReadOnlyList<CombatUnit>? positionActors, bool selectedSlot, bool isClone = false)
+            IReadOnlyList<CombatUnit>? positionActors, bool selectedSlot, bool isClone = false,
+            Func<RoomCombatState, IReadOnlyList<RoomCombatModel.QueuedCharacterTrigger>, RoomCombatResult>? drainBirthQueue = null)
         {
             CombatContext? context = source.Context;
             CombatUnit? raw = definition.SpawnUnit;
@@ -115,18 +117,44 @@ namespace MonsterTrain2Poju.Model
             foreach (CardModifiers group in card == null ? Array.Empty<CardModifiers>() : new[] { card.Permanent, card.Temporary })
                 starting = StatusCallbackModel.MergeStartingStatuses(starting, group.Upgrades.SelectMany(upgrade => upgrade.Statuses));
             if (isCardless) starting = starting.Concat(new[] { cardlessStatus! }).ToArray();
-            RoomCombatResult result = RoomCombatModel.ApplySpawnTriggers(entered, spawned.Id, spawnerCardId > 0, starting, enqueue);
+            RoomCombatResult result = drainBirthQueue == null ?
+                RoomCombatModel.ApplySpawnTriggers(entered, spawned.Id, spawnerCardId > 0, starting, enqueue) :
+                RoomCombatModel.PrepareSpawnTriggers(entered, spawned.Id, spawnerCardId > 0, starting);
             if (!result.Supported) return new UnitBirthResult(result);
             var events = result.Events.ToList();
             RoomOutcome outcome = result.Outcome;
+            if (drainBirthQueue != null)
+            {
+                var startingQueue = result.PendingCallbacks.ToList();
+                foreach (string kind in spawnerCardId > 0 ? new[] { "OnSpawn", "OnUnscaledSpawn" } :
+                    new[] { "OnSpawn", "OnUnscaledSpawn", "OnSpawnNotFromCard" })
+                {
+                    CombatUnit? live = result.State!.Units.FirstOrDefault(unit => unit.Id == spawned.Id);
+                    if (live == null) return Unsupported("A paid clone removed during birth requires retained birth-object transitions.");
+                    startingQueue.Add(new RoomCombatModel.QueuedCharacterTrigger(source.RoomIndex, live, kind));
+                    result = drainBirthQueue(result.State!, startingQueue);
+                    if (!result.Supported) return new UnitBirthResult(result);
+                    events.AddRange(result.Events); startingQueue.Clear();
+                    if (result.Outcome != RoomOutcome.Exchanged) outcome = result.Outcome;
+                }
+                CombatContext current = result.State!.Context!;
+                if (!source.Preview && current.LastSpawnedUnitId.HasValue && result.State.Units.Any(unit => unit.Id == spawned.Id && unit.Health > 0))
+                    result = new RoomCombatResult(new RoomCombatState(source.RoomIndex, source.Deployment, result.State.Units,
+                        source.ExternalInteractions, current.WithLastSpawned(spawned.Id), source.Preview), outcome, 0, new List<CombatEvent>());
+            }
             var queue = result.State!.Units.Where(unit => unit.Team == CombatTeam.Player)
                 .Select(unit => new RoomCombatModel.QueuedCharacterTrigger(source.RoomIndex, unit, "AfterSpawnEnchant")).ToList();
             if (isCardless)
                 queue.AddRange(result.State.Units.Where(unit => unit.Team == CombatTeam.Player && unit.Id != spawned.Id)
                     .Select(unit => new RoomCombatModel.QueuedCharacterTrigger(source.RoomIndex, unit,
-                        "CardMonsterPlayed", lastSpawnedOverrideUnitId: spawned.Id)));
+                        "CardMonsterPlayed", paramString: "", lastSpawnedOverrideUnitId: spawned.Id)));
             bool drained;
-            if (enqueue != null) { foreach (var queued in queue) enqueue(queued); drained = true; }
+            if (drainBirthQueue != null)
+            {
+                result = drainBirthQueue(result.State!, queue); drained = result.Supported;
+                events.AddRange(result.Events); if (result.Outcome != RoomOutcome.Exchanged) outcome = result.Outcome;
+            }
+            else if (enqueue != null) { foreach (var queued in queue) enqueue(queued); drained = true; }
             else drained = RoomCombatModel.DrainCharacterQueue(queue, queued =>
             {
                 result = RoomCombatModel.ApplyQueuedCharacterTrigger(result.State!, queued, queue.Add);

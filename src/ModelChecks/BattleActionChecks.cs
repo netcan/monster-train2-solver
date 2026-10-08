@@ -229,6 +229,13 @@ internal static class BattleActionChecks
             !entry.TryGetProperty("ScenarioAction", out var authored) || !authored.GetBoolean()).ToArray();
         Require(policyActions.Length > 0, "The fixture has no subsequent native policy actions.");
         BattleTurnState root = policyActions[0].GetProperty("Before").Deserialize<BattleTurnState>()!;
+        // A prepared hand can have no ordinary play on its first turn. That EndTurn
+        // is part of the policy, so start before it rather than at a later first play.
+        if (turns.GetArrayLength() > 0)
+        {
+            BattleTurnState firstDecision = turns[0].GetProperty("Before").Deserialize<BattleTurnState>()!;
+            if (firstDecision.Spawn.Turn < root.Spawn.Turn) root = firstDecision;
+        }
         string parent = JsonSerializer.Serialize(root);
         BattleTurnState terminal = RunPolicy(root, policyActions, turns, chooser);
         string expected = BattleTurnChecks.Comparable(terminal);
@@ -262,7 +269,8 @@ internal static class BattleActionChecks
         BattleSimulationResult result = BattleSimulator.Resolve(root, chooser);
         Require(result.Supported, "Independent card policy failed: " + result.UnsupportedReason);
         Require(result.Actions.Count == actions.Length && result.Turns.Count == turns.GetArrayLength(),
-            "Independent policy action/turn count differed.");
+            $"Independent policy action/turn count differed: {result.Actions.Count}/{actions.Length} actions, " +
+            $"{result.Turns.Count}/{turns.GetArrayLength()} EndTurns.");
         for (int index = 0; index < result.Actions.Count; index++)
         {
             BattleSimulationAction modeled = result.Actions[index];

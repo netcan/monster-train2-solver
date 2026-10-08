@@ -132,9 +132,16 @@ namespace MonsterTrain2Poju.Model
     {
         public static UnitCloneResult Apply(TrainCombatState source, int sourceId, int roomIndex, string spawnMode,
             SpawnPointReference? location, bool cardless, UnitCloneRule? rule)
+            => ApplyCore(source, sourceId, roomIndex, spawnMode, location, cardless, rule, null);
+        internal static UnitCloneResult ApplyWithPending(TrainCombatState source, int sourceId, int roomIndex,
+            SpawnPointReference? location, UnitCloneRule? rule, IReadOnlyList<RoomCombatModel.QueuedCharacterTrigger> prior)
+            => ApplyCore(source, sourceId, roomIndex, "SelectedSlot", location, true, rule, prior);
+        private static UnitCloneResult ApplyCore(TrainCombatState source, int sourceId, int roomIndex, string spawnMode,
+            SpawnPointReference? location, bool cardless, UnitCloneRule? rule, IReadOnlyList<RoomCombatModel.QueuedCharacterTrigger>? prior)
         {
             TrainCombatState state = source; var events = new List<CombatEvent>();
-            var boundaries = new List<UnitCloneBoundary>(); var pending = new List<RoomCombatModel.QueuedCharacterTrigger>();
+            var boundaries = new List<UnitCloneBoundary>(); var pending = (prior ?? Array.Empty<RoomCombatModel.QueuedCharacterTrigger>()).ToList();
+            var dispatched = new List<UnitCloneCallback>();
             int unitId = 0; RoomOutcome outcome = RoomOutcome.Exchanged;
             CombatUnit? original = Get(sourceId);
             if (sourceId == 0) return Result();
@@ -194,7 +201,8 @@ namespace MonsterTrain2Poju.Model
             if (position < 0) position = empty;
             destination = state.Rooms.Single(room => room.RoomIndex == roomIndex);
             UnitBirthResult born = UnitBirthModel.SpawnClone(destination, rule.Birth, spawnerCardId, position, cardless,
-                state.Context.StatusRules.SingleOrDefault(status => status.Id == "cardless")?.WithStacks(1), spawnMode == "SelectedSlot");
+                state.Context.StatusRules.SingleOrDefault(status => status.Id == "cardless")?.WithStacks(1), spawnMode == "SelectedSlot",
+                prior == null ? null : DrainBirthQueue);
             if (!born.Supported) return Fail(born.Result.UnsupportedReason!);
             unitId = born.UnitId; if (!Accept(born.Result)) return Fail(born.Result.UnsupportedReason!);
             Mark("after-birth");
@@ -219,7 +227,7 @@ namespace MonsterTrain2Poju.Model
                 foreach (CardUpgradeModifier upgrade in equipment.EffectUpgrades.Concat(newCard.Permanent.Upgrades).Concat(newCard.Temporary.Upgrades))
                 {
                     RoomCombatResult applied = RoomCombatModel.ApplyDirectUnitUpgrade(FindRoom(unitId)!, unitId, upgrade,
-                        false, "", null, equipmentSourceCardId: newCardId);
+                        false, "", null, equipmentSourceCardId: newCardId, captureAllDispatches: prior != null);
                     if (!Accept(applied)) return Fail(applied.UnsupportedReason!);
                 }
                 targetEquipmentStatuses.AddRange(equipment.EffectUpgrades.SelectMany(upgrade => upgrade.Statuses).Select(status => status.Id));
@@ -254,10 +262,23 @@ namespace MonsterTrain2Poju.Model
                 state = CardSpellModel.WithContext(new TrainCombatState(state.Rooms.Select(room => room.RoomIndex == result.State!.RoomIndex
                     ? result.State : room).ToArray(), state.Movement, state.EnemySlotsPerRoom, result.State!.Context), result.State.Context!);
                 pending.AddRange(result.PendingCallbacks); events.AddRange(result.Events);
+                if (prior != null) dispatched.AddRange(result.Dispatches.Select(item => new UnitCloneCallback(item.ActorId, item.Kind,
+                    item.ParamInt, item.ParamInt2, item.ParamString, item.TriggerCount, item.DyingId, item.OverrideTargetId, item.LastSpawnedOverrideUnitId)));
                 if (result.Outcome != RoomOutcome.Exchanged) outcome = result.Outcome;
                 return true;
             }
-            UnitCloneResult Result() => new UnitCloneResult(state, unitId, outcome, null, events, boundaries, pending);
+            RoomCombatResult DrainBirthQueue(RoomCombatState frame, IReadOnlyList<RoomCombatModel.QueuedCharacterTrigger> added)
+            {
+                state = CardSpellModel.WithContext(new TrainCombatState(state.Rooms.Select(room => room.RoomIndex == frame.RoomIndex ? frame : room).ToArray(),
+                    state.Movement, state.EnemySlotsPerRoom, frame.Context), frame.Context!);
+                pending.AddRange(added);
+                UnitCloneResult drained = Drain(new UnitCloneResult(state, unitId, outcome, null, Array.Empty<CombatEvent>(),
+                    Array.Empty<UnitCloneBoundary>(), pending));
+                if (!drained.Supported) return new RoomCombatResult(null, RoomOutcome.Unsupported, 0, drained.Events.ToList(), drained.UnsupportedReason);
+                state = drained.State!; pending.Clear(); dispatched.AddRange(drained.Dispatched);
+                return new RoomCombatResult(state.Rooms.Single(room => room.RoomIndex == frame.RoomIndex), drained.Outcome, 0, drained.Events.ToList());
+            }
+            UnitCloneResult Result() => new UnitCloneResult(state, unitId, outcome, null, events, boundaries, pending, dispatched);
             UnitCloneResult Fail(string reason) => new UnitCloneResult(null, unitId, RoomOutcome.Unsupported, reason, events, boundaries, pending);
         }
 

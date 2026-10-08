@@ -794,3 +794,32 @@ the curated clone archive is byte-identical to the native binary capture.
 Paid copy-spell integration, enemy/grafted/preview cloning and room/relic or
 destruction/revival interactions still require their own coverage. Broader
 simulator and optimal-search work remains unfinished.
+
+### Paid unit copy spells (schema 100)
+
+`full-battle-unit-copy.mt2f` preserves fourteen real paid `CardEffectCopyUnits`
+effects and all 28 paid card results. Coverage includes signed/ignored-range
+counts, targeted and room-wide copies, sequential births, clone-of-clone,
+incoming status/ability callbacks, non-grafted equipment, cardless sources,
+full/partial room failures, selected-last gates and Horde without a new actor.
+The immutable definition catalog resolves each clone from its current actor
+and card references. Raw train state, incoming/outgoing queues and all intrinsic
+dispatch payloads/order match independently in 32 branches without mutation.
+
+The subsequent fourteen-play/five-EndTurn policy wins at Pyre 80 and reproduces
+initial/middle roots in sixteen branches. The first policy turn has no legal
+play and is independently recomputed. Every ascent input is empty after combat;
+physical checks verify zero cross-room moves, fourteen removals and complete
+position states in 32 branches. Native recording uses paid hosts, an ordinary
+third-floor clone, native fillers and authored gold callbacks while retaining
+the original Boss/waves. Muted Instant capture takes 89.85 seconds; all native
+failure/difference/unsupported/pending gates are zero and original files match.
+
+The 35,606-byte binary has 6,511 unique nodes and matches the native archive
+exactly. Inventory is 148 archives: 139 battles and nine calibrations. Complete
+regression and audit pass, including 135 independent policy chains, all nine
+calibrations, 21 physical-position and ten decision-reference suites, and all
+262 summon damage phases. All archive sizes/SHA-256 hashes match; unsupported
+transitions are zero. Enemy/grafted/preview copying, broader room/relic/
+destruction/revival interactions, special Boss mechanics and complete optimal
+search remain unfinished.
