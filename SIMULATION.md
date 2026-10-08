@@ -109,6 +109,7 @@ are copied immutable values; independent child states can run on worker threads.
 | Ability assignment/removal effects | `CardSpellModel`, `RoomCombatModel` and `AbilityLifecycleModel` | 17 native effect states and 17 queued dispatches with 35 payloads; multi-target and last-target spells, pre-own replacement, cached self replacement/removal, exact current disabled IDs and complete policies with parallel branches |
 | Ability upgrades and equipment grants | `CardUpgradeModifier`, `UnitModifierModel` and spawn transitions | Permanent/temporary initial selection, keep-existing and matching-removal gates, raw restoration after repeated equipment replacement, direct assignment clearing history, disabled upgraded births and real equipment skill casts; complete policy and parallel branches |
 | Horde numerical primitives | `HordeStatModel` | 560 native raw-stat steps and 175 casualty boundaries, signed overflow, HP/stack caps and 32 branches |
+| Persistent enchantment lifecycle primitive | `EnchantmentLifecycleModel` | 1,460 native target-map/RNG transitions and 644 exact status API requests, primary/preview retention and 32 branches; status mutation, reentry and automatic combat integration remain open |
 | Horde status changes and casualties | `HordeStatusModel`, status/spawn/damage/health transitions | Eight exact native operations, accepted queues and complete drains, zero/negative notifications, simulated deaths, troop thresholds and spawning cooldown gates; complete subsequent battle and parallel branches |
 | Horde runtime unit upgrades | `UnitModifierModel` and `HordeStatusModel` | 16 exact API/queued operations, ordered healed/unhealed/attributed HP casualties, first-stack reset, raw final removal and lethal sacrifice; 40 death/Harvest phases, four paid spell chains and complete policies with parallel branches |
 | Dying Horde unit upgrades | `UnitModifierModel` and `HordeStatusModel` | Five complete deaths, seven dying upgrade/removal effects, 45 exact death/Harvest phases, accepted callback counts and source-card writes; ordinary/unhealed/attributed HP, early exits and 32 branches |
@@ -5588,3 +5589,95 @@ This verifies the observed status/Horde enchant paths;
 grafted and room/relic/covenant birth modifiers, destruction/revival during
 birth, wider enchant effects and special Boss mechanics still need native
 coverage and implementation. The whole battle simulator remains unfinished.
+
+## Persistent enchantment lifecycle primitive (calibration schema 1)
+
+`EnchantmentLifecycleModel` models the persistent `CardEffectEnchant` state
+machine up to its status API requests. This differs from schema 102's ordinary
+AfterSpawnEnchant AddStatus callbacks. Each effect retains an ordered primary
+map, an ordered preview map, the pending preview-sync flag and its last selected
+status. Inputs include captured retained actors and the ordered output of the
+separate target-collection phase. Constructors copy caller-owned collections;
+all transition and intermediate request states are immutable.
+
+Native updates select from the status pool every time, including duplicate
+updates and removals. They append new non-self targets and keep old keys. They
+compute add/remove decisions for the whole selected map before issuing requests
+in map order. Source mute, silence, dormancy/spark, death/despawn/destruction and
+both actors' current room gate validity. Destroyed recipients, dead recipients
+without Undying and mismatched preview recipients are skipped and retain their
+pending action and applied flag. The applied flag changes before a status API
+call; non-skipped entries clear their pending action afterward.
+
+Removal uses the currently selected status/count and the source's current
+Duality, rather than the status/count used for the original application. Armor
+and Positive/Negative categories can double; other captured categories retain
+their count. Signed multiplication wraps. Add requests attribute sourceIsHero
+to the recipient's team and have no source card, relic or triggering actor.
+Configured actor-status, missing-health and magic scaling are ignored because
+Enchant calls the selector with an empty target list and no actor. Ordinary
+AddStatus chance/range and IgnoreDualism fields also do not apply.
+
+The first native run corrected an earlier RNG assumption. The status selector
+requests Battle even in preview, but RandomManager converts that request to
+BattleTest while SaveManager.PreviewMode is true. The model now carries both
+streams: primary random updates advance Battle; preview updates advance only
+BattleTest. Singleton pools consume neither. Any solver preview protocol must
+also restore these streams outside this primitive.
+
+Preparing a preview sets a sync flag. The next valid preview update overwrites
+or appends primary entries in the preview map without clearing preview-only
+keys or changing existing key positions. Primary state is unaffected. Setup
+clears both maps but retains the sync flag and cached status. Missing bound
+managers, source or effect state make an update a complete no-op.
+
+`Run-FullBattleProbe.ps1 -Policy units-spells-and-junk -EnchantmentLifecycle`
+creates four isolated native CharacterState objects. Their room references use
+real native spawn points without putting these actors into the train. The
+calibration controls raw HP/despawn/destroyed/preview/status gates, retained maps
+and the manager's temporary LastSpawned reference, then invokes the unmodified
+native enchant update. Harmony observes native target collection and captures
+status requests, including the complete map state at each API entry. It
+suppresses those status calls and visual movement only during the calibration.
+This is an explicit status API boundary oracle; it does not verify actual status
+mutation, callbacks, removal signals or automatic train update scheduling.
+
+The accepted native archive contains 1,460 exact transitions and 644 requests:
+a 1,152-case source/recipient/preview/applied/pending-action gate matrix,
+192 signed-count/status/Duality cases, first/repeated/empty/self target
+collections, ordered multi-target calls, source/recipient state changes,
+preview resynchronization with stale keys, Setup and three missing-binding
+cases. A 64-update random pool selects armor, poison and cardless. Independent
+checks compare every native map, cached status, both RNG streams, every request
+field and intermediate state. They also carry model outputs through 34 initial
+and 72 random-chain steps instead of restarting from native snapshots. All
+checks and chains repeat in 32 branches with unchanged parents. Combat still
+explicitly rejects CardEffectEnchant until its lifecycle is integrated.
+
+After calibration, the full native and independent seven-turn battle still
+wins. Native recording uses muted Instant timing and takes 47.92 seconds.
+The train/context, primary save/preview reference, LastSpawned reference,
+Battle/BattleTest and Unity global RNG are restored. Native capture failures,
+differences, unsupported and pending records are zero, and original profile/log
+file signatures remain unchanged. The curated binary is byte-identical to the
+native archive: 19,551 bytes, 4,856 nodes, SHA-256
+`2b7bdc7a17da201945b3fd35e3d2cd21ad0edd720825b9d34b6d8d523c76c618`.
+It has no source JSON.
+
+The next step is to store this state in each live CombatEffect, independently
+collect targets through the existing target model, apply each status request
+with its child callbacks, and reproduce automatic birth/status/movement/death
+updates, removed-source signals and preview rollback. Reentry and broader
+room/relic modifiers require real status-mutating native fixtures. Special Boss
+and the remaining battle mechanics also remain open; the full simulator is
+not complete.
+
+The complete regression and audit pass for 151 archives: 141 battle fixtures
+and ten calibrations, including 137 independent policy chains, 23 physical-
+position suites, twelve decision-reference suites, fourteen queued-summon
+suites, ten triggered-equipment suites, six direct summon-effect suites and
+262 summon damage phases. All required native suites and ten final calibration
+outputs are present. Every archive matches its manifest size/SHA-256; native
+binary provenance and original-file signature gates pass. Errors and unsupported
+transitions are zero. This broad regression does not extend the primitive's
+status API boundary into automatic persistent-enchantment combat support.

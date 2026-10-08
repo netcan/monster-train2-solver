@@ -892,3 +892,23 @@ Complete regression and audit pass, including 137 independent policy chains,
 queued-summon, ten triggered-equipment and six direct summon-effect suites,
 and 262 summon damage phases. All archive sizes/SHA-256 hashes and native/
 original-file gates match; errors and unsupported transitions are zero.
+
+`enchantment-lifecycle-calibration.mt2f` is a direct native schema-1 calibration
+of persistent CardEffectEnchant at the status API request boundary. It records
+1,460 ordered primary/preview-map and two-stream RNG transitions, 644 complete
+requests with map snapshots at API entry, a 1,152-case actor gate matrix,
+192 signed-count/Duality cases, preview key retention and Setup/binding gates.
+Independent output-carrying chains cover 34 initial and 72 random steps;
+all cases and chains run in 32 branches without mutating roots. Native status
+calls are suppressed for this calibration, so automatic combat updates and
+actual status/callback integration remain unfinished and explicitly unsupported.
+The native full battle after restoration and its independent seven-turn policy
+both win. Muted Instant capture takes 47.92 seconds; capture/native/original-file
+gates pass. The binary is byte-identical to native output, 19,551 bytes/4,856
+nodes, SHA-256 `2b7bdc7a17da201945b3fd35e3d2cd21ad0edd720825b9d34b6d8d523c76c618`.
+Complete regression and audit pass for 151 archives: 141 battles and ten
+calibrations, 137 independent policy chains, 23 physical-position and twelve
+decision-reference suites, fourteen queued-summon, ten triggered-equipment,
+six direct summon-effect suites and 262 damage phases. All sizes/hashes and
+native provenance/original-file gates pass; errors and unsupported transitions
+are zero. Persistent aura integration into the combat engine remains open.

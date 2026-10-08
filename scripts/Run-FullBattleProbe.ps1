@@ -85,6 +85,7 @@ param(
     [switch] $AbilityEffects,
     [switch] $EquipmentAbilities,
     [switch] $HordeStats,
+    [switch] $EnchantmentLifecycle,
     [switch] $HordeStatuses,
     [switch] $HordeMerge,
     [switch] $Bump,
@@ -204,6 +205,7 @@ $environment = @{
     MT2_PROBE_STATISTIC_QUERIES = $(if ($StatisticQueries) { '1' } else { '0' })
     MT2_PROBE_STATISTIC_OVERFLOW = $(if ($StatisticOverflow) { '1' } else { '0' })
     MT2_PROBE_HORDE_STATS = $(if ($HordeStats) { '1' } else { '0' })
+    MT2_PROBE_ENCHANTMENT_LIFECYCLE = $(if ($EnchantmentLifecycle) { '1' } else { '0' })
     MT2_PROBE_TRIGGER_REPEATS = $(if ($TriggerRepeats) { '1' } else { '0' })
 }
 if ($TriggeredSummonsRevival) {
@@ -1337,8 +1339,23 @@ $result = [pscustomobject]@{
     StatisticZeroIncrementCalibration = $(if ($StatisticOverflow) { Join-Path $profile 'statistic-zero-increment-calibration.json' } else { $null })
     Trace = $tracePath
     HordeStatCalibration = $(if ($HordeStats) { Join-Path $profile 'horde-stat-calibration.mt2f' } else { $null })
+    EnchantmentLifecycleCalibration = $(if ($EnchantmentLifecycle) { Join-Path $profile 'enchantment-lifecycle-calibration.mt2f' } else { $null })
 }
 $result | ConvertTo-Json
+if ($EnchantmentLifecycle) {
+    $enchantmentPath = Join-Path $profile 'enchantment-lifecycle-calibration.mt2f'
+    if (-not (Test-Path -LiteralPath $enchantmentPath)) { throw 'Missing native enchantment lifecycle calibration.' }
+    Add-Type -Path (Join-Path $workspace 'src\FixtureArchive\bin\Release\net8.0\FixtureArchive.dll')
+    $enchantmentArchive = [MonsterTrain2Poju.Fixtures.FixtureDocument]::Read($enchantmentPath)
+    try { $enchantment = $enchantmentArchive.RootElement.ToObjectGraph() }
+    finally { $enchantmentArchive.Dispose() }
+    if (-not $enchantment.LiveContextUnchanged -or $enchantment.Mismatches -ne 0 -or
+        $enchantment.Boundary -ne 'StatusApiRequests' -or -not $enchantment.StatusMutationsSuppressed -or
+        @($enchantment.Samples).Count -lt 1000 -or @($enchantment.Samples | Where-Object Completed -NE $true).Count -gt 0 -or
+        @($enchantment.Samples | Where-Object { $null -ne $_.Difference }).Count -gt 0) {
+        throw 'Native enchantment lifecycle coverage is incomplete or differs.'
+    }
+}
 if ($HordeStats) {
     $hordePath = Join-Path $profile 'horde-stat-calibration.mt2f'
     if (-not (Test-Path -LiteralPath $hordePath)) { throw 'Missing native Horde numerical calibration.' }
