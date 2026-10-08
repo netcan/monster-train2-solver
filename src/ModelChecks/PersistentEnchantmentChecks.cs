@@ -27,8 +27,10 @@ internal static class PersistentEnchantmentChecks
     internal static void Native(FixtureValue fixture)
     {
         if (!fixture.TryGetProperty("ModifierScenario", out var scenario) ||
-            scenario.GetString() is not ("persistent-enchantment" or "persistent-enchantment-deaths" or "persistent-enchantment-revivals")) return;
-        bool sourceDeaths = scenario.GetString() != "persistent-enchantment";
+            scenario.GetString() is not ("persistent-enchantment" or "persistent-enchantment-deaths" or "persistent-enchantment-revivals" or
+                "persistent-enchantment-random" or "persistent-enchantment-random-deaths" or "persistent-enchantment-random-revivals")) return;
+        bool randomPools = scenario.GetString()!.StartsWith("persistent-enchantment-random", StringComparison.Ordinal);
+        bool sourceDeaths = scenario.GetString()!.EndsWith("-deaths", StringComparison.Ordinal) || scenario.GetString()!.EndsWith("-revivals", StringComparison.Ordinal);
         Require(fixture.GetProperty("Schema").GetInt32() >= 103 &&
             fixture.GetProperty("GameVersion").GetString() == "2.2.1" &&
             fixture.GetProperty("GameModuleMvid").GetString() == "8fb07b96-f4db-4d2b-884d-c00536d6ccf4" &&
@@ -52,12 +54,12 @@ internal static class PersistentEnchantmentChecks
             (sourceDeaths || Rules(worlds[^1]).Any(rule => rule.Bound)),
             "Paid aura sources were not bound or did not persist through the terminal battle.");
         Require(worlds.Any(world => Rules(world).Any(rule => rule.Bound && rule.Targeting.AllowEnemy &&
-            rule.Targeting.AllowPlayer && rule.StatusPool.Count == 1 && rule.StatusPool[0].Id == "armor" &&
+            rule.Targeting.AllowPlayer && rule.StatusPool.Count == (randomPools ? 3 : 1) && rule.StatusPool[0].Id == "armor" &&
             rule.StatusPool[0].Stacks == 2 && rule.State.PrimaryTargets.Any(target => target.IsEnchanted &&
                 Units(world).Any(unit => unit.Id == target.UnitId && unit.Team == CombatTeam.Enemy)))) &&
             worlds.Any(world => Rules(world).Any(rule => rule.State.PrimaryTargets.Any(target => target.IsEnchanted &&
                 Units(world).Any(unit => unit.Id == target.UnitId && unit.Team == CombatTeam.Player)))),
-            "The persistent-aura oracle did not enchant both teams with the intended singleton armor pool.");
+            "The persistent-aura oracle did not enchant both teams with the intended status pool.");
         Require(worlds.Any(world => Rules(world).Any(rule => rule.State.PreviewTargets.Count > 0)) &&
             worlds.Any(world => Rules(world).Any(rule => rule.State.PreviewTargets.Any(target => target.NextAction == 2))) &&
             worlds.Any(world => Rules(world).Any(rule => !rule.State.PreviewRequiresSync)) &&
@@ -72,6 +74,7 @@ internal static class PersistentEnchantmentChecks
             entry.GetProperty("Actual").Deserialize<BattleTurnState>()!.Spawn.Train.Context!.Gold >
             entry.GetProperty("Before").Deserialize<BattleTurnState>()!.Spawn.Train.Context!.Gold),
             "The paid aura policy did not drain its status-change child effects.");
+        if (randomPools) VerifyRandomCoverage(fixture, actions, turns, worlds);
         if (sourceDeaths)
         {
             int[] sources = worlds.SelectMany(world => world.RetainedUnits).Where(actor =>
@@ -99,6 +102,30 @@ internal static class PersistentEnchantmentChecks
         }
         Console.WriteLine($"NATIVE-PERSISTENT-ENCHANTMENT-COVERAGE PASS: {actions.Length} paid actions, {turns.Length} EndTurns, " +
             "persistent bound sources, both teams, preview maps, retained destroyed targets and drained status children.");
+    }
+
+    private static void VerifyRandomCoverage(FixtureValue fixture, FixtureValue[] actions, FixtureValue[] turns, EnchantmentWorld[] worlds)
+    {
+        Require(worlds.SelectMany(Rules).Where(rule => rule.Bound).All(rule =>
+            rule.StatusPool.Select(status => status.Id + ":" + status.Stacks).SequenceEqual(new[] { "armor:2", "regen:1", "buff:1" })) &&
+            worlds.SelectMany(Rules).Select(rule => rule.State.CachedStatus?.Id).Where(id => id != null).Distinct().Count() == 3,
+            "The random aura oracle did not retain and select all three authored pool entries.");
+        Require(actions.Concat(turns).Any(entry =>
+            !entry.GetProperty("Before").Deserialize<BattleTurnState>()!.Spawn.Train.Context!.BattleRng.Equals(
+            entry.GetProperty("Actual").Deserialize<BattleTurnState>()!.Spawn.Train.Context!.BattleRng)),
+            "The random aura oracle did not advance the real Battle stream.");
+        var previews = fixture.GetProperty("PreviewRngIsolation").EnumerateArray().ToArray();
+        Require(previews.Length > 0 && previews.All(entry => entry.GetProperty("Completed").GetBoolean() &&
+            entry.GetProperty("BattleBefore").Deserialize<UnityRng>().Equals(entry.GetProperty("BattleAfter").Deserialize<UnityRng>()) &&
+            entry.GetProperty("TestBefore").Deserialize<UnityRng>().Equals(entry.GetProperty("TestAfter").Deserialize<UnityRng>())) &&
+            previews.Any(entry => !entry.GetProperty("BattleBefore").Deserialize<UnityRng>().Equals(entry.GetProperty("TestObserved").Deserialize<UnityRng>())),
+            "Random aura previews must consume BattleTest and restore both original streams.");
+        var battlePreviews = previews.Where(entry => entry.GetProperty("Kind").GetString() == "Battle").ToArray();
+        Require(battlePreviews.Length > 0 && battlePreviews.All(entry => entry.GetProperty("PrimaryRoomOrderCompleted").GetBoolean()) &&
+            battlePreviews.Any(entry => !entry.GetProperty("BattleBefore").Deserialize<UnityRng>().Equals(entry.GetProperty("BattleObserved").Deserialize<UnityRng>())),
+            "Random aura isolation must cover the actual primary room-order update after preview restoration.");
+        Console.WriteLine($"NATIVE-PERSISTENT-ENCHANTMENT-RANDOM-COVERAGE PASS: three selected statuses, real Battle advancement, " +
+            $"{previews.Length} isolated native previews and complete primary/preview caches.");
     }
 
     private static IEnumerable<CombatUnit> Units(EnchantmentWorld world) =>

@@ -320,6 +320,11 @@ namespace MonsterTrain2Poju.Model
                     room.RoomIndex == target.RoomIndex ? spawnTriggers.State.Units : room.Units, room.ExternalInteractions, context, room.Preview)).ToArray();
                 var enteredIds = new HashSet<int>(enteredRooms.SelectMany(room => room.Units).Select(unit => unit.Id));
                 train = new TrainCombatState(enteredRooms, train.Movement.Where(item => enteredIds.Contains(item.UnitId)).ToArray(), train.EnemySlotsPerRoom, context);
+                // CardEffectSpawnMonster ends with HandleRoomUnitOrderPossiblyChanged.
+                // This is distinct from each unit's OnSpawn update and the card completion update.
+                TrainCombatResult spawnOrder = EnchantmentWorldModel.UpdateAll(train);
+                if (!spawnOrder.Supported) return Unsupported(spawnOrder.UnsupportedReason!);
+                train = spawnOrder.State!; context = train.Context!;
                 effectsApplied = true;
             }
             else if (rule.Effect == "Spell" || rule.Effect == "Equipment")
@@ -466,6 +471,11 @@ namespace MonsterTrain2Poju.Model
             rooms = rooms.Select(room => new RoomCombatState(room.RoomIndex, room.Deployment, room.Units, room.ExternalInteractions, context, room.Preview)).ToArray();
             var living = new HashSet<int>(rooms.SelectMany(room => room.Units).Select(unit => unit.Id));
             train = new TrainCombatState(rooms, train.Movement.Where(rule => living.Contains(rule.UnitId)).ToArray(), train.EnemySlotsPerRoom, context);
+            // CardManager.OnCardPlayed refreshes auras after discard/cost clearing,
+            // then drains their callbacks before the UI combat preview can start.
+            TrainCombatResult cardCompleted = EnchantmentWorldModel.UpdateAll(train);
+            if (!cardCompleted.Supported) return Unsupported(cardCompleted.UnsupportedReason!);
+            train = cardCompleted.State!; context = train.Context!;
             if (source.BattlePreviewEnabled && !terminal)
             {
                 TrainCombatResult preview = BattlePreviewModel.Refresh(train);

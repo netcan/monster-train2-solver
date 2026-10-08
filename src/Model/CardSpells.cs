@@ -449,6 +449,9 @@ namespace MonsterTrain2Poju.Model
                             DrainDeaths();
                         }
                         DrainDeaths();
+                        TrainCombatResult rearrangedOrder = EnchantmentWorldModel.UpdateAll(state);
+                        if (!rearrangedOrder.Supported) return UnsupportedTrain(rearrangedOrder.UnsupportedReason!);
+                        state = rearrangedOrder.State!;
                     }
                     if ((effect.Type == "Heal" && effect.Value >= 0 || effect.Type == "UnitUpgrade") && target.Triggers.Any(trigger => trigger.Kind == "OnHeal" &&
                         (!trigger.Once || !trigger.HasTriggered) && (!targetRoom!.Deployment || trigger.SkipDuringDeployment != true) &&

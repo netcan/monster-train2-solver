@@ -181,6 +181,11 @@ namespace MonsterTrain2Poju.Model
             int turn = checked(spawn.Turn + 1);
             train = WithContext(train, train.Context!.WithQueryFrame(train.Context.QueryFrame?.With(
                 turn: turn, moonPhase: moon == "New" ? 1 : 2)), false);
+            // RunCombat settles room order after incrementing the turn counter,
+            // before the next turn's initial spawn and Spawning RNG reset.
+            TrainCombatResult turnOrder = EnchantmentWorldModel.UpdateAll(train);
+            if (!turnOrder.Supported) return Unsupported(turnOrder.UnsupportedReason!);
+            train = turnOrder.State!;
             // Initial enemies appear at the start of turn one, before that turn resets Spawning RNG.
             if (turn == 1)
             {
@@ -189,6 +194,9 @@ namespace MonsterTrain2Poju.Model
                 if (!initial.Supported) return Unsupported(initial.UnsupportedReason!);
                 spawn = initial.State!; train = spawn.Train;
                 if (Terminal(initial.Outcome)) return Finish(initial.Outcome, 0, moon);
+                TrainCombatResult initialOrder = EnchantmentWorldModel.UpdateAll(train);
+                if (!initialOrder.Supported) return Unsupported(initialOrder.UnsupportedReason!);
+                train = initialOrder.State!;
             }
             spawn = WithTrain(spawn, train, turn, UnityRng.Seed(unchecked(spawningStream.Seed + turn)));
             train = WithContext(train, EnergyModel.SetPhase(train.Context!, "PreCombat"), false);

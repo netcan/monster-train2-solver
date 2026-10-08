@@ -125,6 +125,11 @@ namespace MonsterTrain2Poju.Model
                 bool statusesChanged = !train.Rooms.SelectMany(room => room.Units).Select(unit => string.Join(";", unit.Statuses.Select(status => status.Id + ":" + status.Stacks)))
                     .SequenceEqual(settled.State!.Rooms.SelectMany(room => room.Units).Select(unit => string.Join(";", unit.Statuses.Select(status => status.Id + ":" + status.Stacks))));
                 train = settled.State!;
+                // The isolated preview protocol includes the primary order update and
+                // its drained callbacks, so extra UI refreshes cannot advance combat RNG.
+                if (context.IsolatedBattlePreview == true)
+                    train = EnchantmentWorldModel.Rebase(new TrainCombatState(train.Rooms, train.Movement,
+                        train.EnemySlotsPerRoom, train.Context!.WithBattleRng(source.Context!.BattleRng)), testRng: originalWorld.TestRng);
                 if (statusesChanged) return Refresh(train);
             }
             return new TrainCombatResult(train, RoomOutcome.Exchanged, Array.Empty<RoomCombatResult>());

@@ -98,6 +98,7 @@ param(
     [switch] $PersistentEnchantments,
     [switch] $PersistentEnchantmentDeaths,
     [switch] $PersistentEnchantmentRevivals,
+    [switch] $PersistentEnchantmentRandomPools,
     [switch] $HarvestTriggers,
     [switch] $HordeRemoval,
     [switch] $HordeDeath,
@@ -142,6 +143,7 @@ $ErrorActionPreference = 'Stop'
 if ($EnchantmentWorld) { $EnchantmentCombat = $true }
 if ($PersistentEnchantmentRevivals) { $PersistentEnchantmentDeaths = $true }
 if ($PersistentEnchantmentDeaths) { $PersistentEnchantments = $true }
+if ($PersistentEnchantmentRandomPools) { $PersistentEnchantments = $true }
 if ($PersistentEnchantments) { $PhysicalSpawnPoints = $true }
 if ($Revival -and $TriggeredSummonsRevival) { throw 'Choose standalone revival or triggered summon revival.' }
 if ($TriggeredSummonsRevival) { $TriggeredSummonsEquipmentOwned = $true; $TriggeredSummonsDeath = $true }
@@ -228,9 +230,10 @@ if ($UnitClone) { $environment['MT2_PROBE_MODIFIERS'] = 'unit-clone' }
 if ($UnitCopy) { $environment['MT2_PROBE_MODIFIERS'] = 'unit-copy' }
 if ($HeroCopy) { $environment['MT2_PROBE_MODIFIERS'] = 'hero-copy' }
 if ($SpawnEnchant) { $environment['MT2_PROBE_MODIFIERS'] = 'spawn-enchant' }
-if ($PersistentEnchantments) { $environment['MT2_PROBE_MODIFIERS'] = 'persistent-enchantment' }
-if ($PersistentEnchantmentDeaths) { $environment['MT2_PROBE_MODIFIERS'] = 'persistent-enchantment-deaths' }
-if ($PersistentEnchantmentRevivals) { $environment['MT2_PROBE_MODIFIERS'] = 'persistent-enchantment-revivals' }
+if ($PersistentEnchantments) {
+    $environment['MT2_PROBE_MODIFIERS'] = 'persistent-enchantment' + $(if ($PersistentEnchantmentRandomPools) { '-random' } else { '' }) +
+        $(if ($PersistentEnchantmentRevivals) { '-revivals' } elseif ($PersistentEnchantmentDeaths) { '-deaths' } else { '' })
+}
 if ($Sentry -or $SentryLethal) {
     $environment['MT2_PROBE_MODIFIERS'] = $(if ($SentryLethal) { 'sentry-lethal' } else { 'sentry' })
     $environment['MT2_PROBE_ISOLATE_UI_RNG'] = '1'
@@ -266,7 +269,7 @@ $nativePassed = [bool] (Select-String -LiteralPath $unityLog -Pattern 'DEPTH-PAS
 $terminalSettled = $trace.TerminalCaptureBoundary -eq 'AfterStopCombatLoop' -and $trace.TerminalEffectsSettled -eq $true
 $originalUnchanged = (Get-OriginalSignature) -ceq $originalBefore
 if ($PersistentEnchantments) {
-    $persistentScenario = if ($PersistentEnchantmentRevivals) { 'persistent-enchantment-revivals' } elseif ($PersistentEnchantmentDeaths) { 'persistent-enchantment-deaths' } else { 'persistent-enchantment' }
+    $persistentScenario = $environment['MT2_PROBE_MODIFIERS']
     $persistentFrames = @($trace.Actions | ForEach-Object { $_.Actual.Spawn.Train.Context.Enchantments })
     $persistentRules = @($persistentFrames | ForEach-Object { $_.Rooms.Units.Triggers.Effects.Enchantment } | Where-Object { $null -ne $_ -and $_.Bound })
     if ($trace.Schema -ne 103 -or $trace.ModifierScenario -ne $persistentScenario -or
@@ -282,6 +285,19 @@ if ($PersistentEnchantments) {
     if ($PersistentEnchantmentRevivals -and (@($trace.Revivals).Count -lt 4 -or @($trace.RevivalOperations).Count -ne 0 -or
         @($trace.Revivals | Where-Object { $_.AutomaticQueueDeferrals -ne 0 -or -not $_.Completed -or $_.Error }).Count -gt 0)) {
         throw 'Persistent aura revival must include four natural complete revivals without setup operations or queue deferrals.'
+    }
+    if ($PersistentEnchantmentRandomPools) {
+        $randomPoolIds = @($persistentRules | ForEach-Object { $_.State.CachedStatus.Id } | Sort-Object -Unique)
+        $randomPreviews = @($trace.PreviewRngIsolation | Where-Object {
+            ($_.BattleBefore.Values -join ',') -ne ($_.TestObserved.Values -join ',')
+        })
+        if (@($persistentRules | Where-Object { @($_.StatusPool).Count -ne 3 }).Count -gt 0 -or
+            $randomPoolIds.Count -ne 3 -or $randomPreviews.Count -eq 0 -or
+            @($trace.PreviewRngIsolation | Where-Object { -not $_.Completed -or
+                ($_.BattleBefore.Values -join ',') -ne ($_.BattleAfter.Values -join ',') -or
+                ($_.TestBefore.Values -join ',') -ne ($_.TestAfter.Values -join ',') }).Count -gt 0) {
+            throw 'Random persistent auras require three selected pool entries and actual isolated preview RNG draws.'
+        }
     }
 }
 $modifierActions = @($trace.Actions | Where-Object {

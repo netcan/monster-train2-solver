@@ -84,7 +84,7 @@ internal static class RevivalChecks
         if (!fixture.TryGetProperty("Revivals", out var entries) || entries.GetArrayLength() == 0) return;
         var samples = entries.EnumerateArray().ToArray();
         var operations = fixture.GetProperty("RevivalOperations").EnumerateArray().ToArray();
-        bool auraIntegration = fixture.GetProperty("ModifierScenario").GetString() == "persistent-enchantment-revivals";
+        bool auraIntegration = fixture.GetProperty("ModifierScenario").GetString() is "persistent-enchantment-revivals" or "persistent-enchantment-random-revivals";
         bool summonIntegration = !auraIntegration && fixture.GetProperty("ModifierScenario").GetString()?.Contains("-revival") == true;
         if (auraIntegration) VerifyAuraCoverage(samples, operations);
         else if (summonIntegration) VerifySummonCoverage(fixture, samples, operations);

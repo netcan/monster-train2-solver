@@ -13,12 +13,15 @@ namespace MonsterTrain2Poju.Probe
         internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_ISOLATE_PREVIEW_RNG") == "1";
         internal static readonly List<Record> Records = new List<Record>();
         private static Scope? active;
+        internal static bool Active => active != null;
         internal sealed class Record
         {
             public string Kind { get; set; } = "";
             public UnityRng BattleBefore { get; set; }
             public UnityRng TestBefore { get; set; }
             public UnityRng TestObserved { get; set; }
+            public UnityRng BattleObserved { get; set; }
+            public bool PrimaryRoomOrderCompleted { get; set; }
             public UnityRng? BattleAfter { get; set; }
             public UnityRng? TestAfter { get; set; }
             public bool Completed { get; set; }
@@ -27,6 +30,7 @@ namespace MonsterTrain2Poju.Probe
         {
             internal HadesRNG Battle = null!, Test = null!, SavedBattle = null!, SavedTest = null!;
             internal Record Record = null!;
+            internal bool WaitingForPrimaryOrder;
         }
         private static HadesRNG Native(RngId id) => (HadesRNG)AccessTools.Method(typeof(RandomManager), "GetRng").Invoke(null, new object[] { id });
         private static UnityRng State(HadesRNG rng)
@@ -41,7 +45,8 @@ namespace MonsterTrain2Poju.Probe
         }
         private static void End(Scope scope)
         {
-            scope.Record.TestObserved = State(scope.Test); scope.Battle.Init(scope.SavedBattle); scope.Test.Init(scope.SavedTest);
+            scope.Record.TestObserved = State(scope.Test); scope.Record.BattleObserved = State(scope.Battle);
+            scope.Battle.Init(scope.SavedBattle); scope.Test.Init(scope.SavedTest);
             scope.Record.BattleAfter = State(scope.Battle); scope.Record.TestAfter = State(scope.Test); scope.Record.Completed = true;
             active = null;
         }
@@ -51,7 +56,31 @@ namespace MonsterTrain2Poju.Probe
             private static void Prefix(CharacterState.CombatPreviewState previewState)
             { if (previewState == CharacterState.CombatPreviewState.Calculating) Begin("Battle"); }
             private static void Postfix(CharacterState.CombatPreviewState previewState)
-            { if (previewState != CharacterState.CombatPreviewState.Calculating && active?.Record.Kind == "Battle") End(active); }
+            {
+                if (active?.Record.Kind != "Battle") return;
+                if (previewState == CharacterState.CombatPreviewState.On) active.WaitingForPrimaryOrder = true;
+                else if (previewState == CharacterState.CombatPreviewState.Off) End(active);
+            }
+        }
+        private static IEnumerator WrapPrimaryOrder(IEnumerator native, Scope scope)
+        {
+            try { while (native.MoveNext()) yield return native.Current; }
+            finally
+            {
+                (native as IDisposable)?.Dispose(); scope.Record.PrimaryRoomOrderCompleted = true;
+                End(scope);
+            }
+        }
+        [HarmonyPatch(typeof(RoomManager), "HandleRoomUnitOrderPossiblyChanged")]
+        private static class PrimaryOrderPatch
+        {
+            private static void Postfix(ref IEnumerator __result)
+            {
+                if (active?.Record.Kind != "Battle" || !active.WaitingForPrimaryOrder ||
+                    AllGameManagers.Instance!.GetSaveManager().PreviewMode) return;
+                Scope scope = active; scope.WaitingForPrimaryOrder = false;
+                __result = WrapPrimaryOrder(__result, scope);
+            }
         }
         private static IEnumerator Wrap(IEnumerator native)
         {

@@ -207,7 +207,17 @@ namespace MonsterTrain2Poju.Model
                 return StatusCallbackModel.Initialize(new RoomCombatState(index, original.Deployment, rooms[index],
                     original.ExternalInteractions, context, original.Preview), unit, unit.StatusRegistry ?? unit.Statuses, callbacks,
                     changed => rooms[index][rooms[index].FindIndex(actor => actor.Id == unit.Id)] = changed,
-                    changed => { context = changed.Context; rooms[index] = changed.Units.ToList(); });
+                    ImportRoom);
+            }
+
+            void ImportRoom(RoomCombatState changed)
+            {
+                context = changed.Context; rooms[changed.RoomIndex] = changed.Units.ToList();
+                // A spawn/status callback can update aura caches on a different floor.
+                // Keep every local room synchronized before the final train rebase.
+                if (context?.Enchantments?.AutomaticLifecycle == true)
+                    foreach (RoomCombatState shared in context.Enchantments.Rooms)
+                        if (shared.RoomIndex != changed.RoomIndex) rooms[shared.RoomIndex] = shared.Units.ToList();
             }
 
             string? DrainCallbacks()
@@ -220,7 +230,7 @@ namespace MonsterTrain2Poju.Model
                         original.ExternalInteractions, context, original.Preview));
                     RoomCombatResult result = RoomCombatModel.ApplyQueuedCharacterTrigger(room, queued, callbacks.Add);
                     if (!result.Supported) { error = result.UnsupportedReason; return false; }
-                    rooms[queued.RoomIndex] = result.State!.Units.ToList(); context = result.State.Context;
+                    ImportRoom(result.State!);
                     if (Terminal(result.Outcome)) outcome = result.Outcome;
                     return true;
                 }, queued =>
@@ -229,7 +239,7 @@ namespace MonsterTrain2Poju.Model
                     RoomCombatResult result = RoomCombatModel.SettleQueuedSpawner(new RoomCombatState(queued.RoomIndex,
                         original.Deployment, rooms[queued.RoomIndex], original.ExternalInteractions, context, original.Preview), queued.Unit);
                     if (!result.Supported) { error = result.UnsupportedReason; return false; }
-                    rooms[queued.RoomIndex] = result.State!.Units.ToList(); context = result.State.Context;
+                    ImportRoom(result.State!);
                     return true;
                 });
                 callbacks.Clear();

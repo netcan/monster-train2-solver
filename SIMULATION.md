@@ -6002,3 +6002,75 @@ source/target death, natural first/last-stack revival and preview behavior.
 Whole-battle random pools, actor/card-changing aura children, Horde aura effects,
 broader control/room/relic interactions and remaining special Boss/card mechanics
 are still pending. The full battle simulator and optimal solver remain incomplete.
+
+### Whole-battle random aura pools and complete preview isolation
+
+`-PersistentEnchantmentRandomPools` gives the paid aura sources the native pool
+armor 2 / regen 1 / buff 1, targeting both teams. Combining the flag with
+`-PersistentEnchantmentDeaths` exercises natural source death with the same pool.
+The original Boss, waves, paid policy and native status/trigger APIs remain in use.
+
+The native pool is selected on every aura update, including removals and updates
+which do not change any target. The cached selection is shared across primary and
+preview maps. Whole-battle integration now includes the distinct order update at
+SpawnMonster completion, CardManager.OnCardPlayed completion, FloorRearrange
+completion, turn-counter rollover and the first initial enemy spawn. Enemy spawning
+also imports aura cache changes on other floors; treasure creation previously
+advanced RNG correctly but overwrote those other-floor caches with stale units.
+
+The opt-in isolated preview protocol now spans the primary room-order update and
+its drained callbacks after combat preview restoration. Previously its scope ended
+at SetCharacterPreviewState.On, allowing this final update to consume real Battle
+RNG on each extra UI refresh. Native captures proved individually matching actions
+and turns could then diverge in a continuous policy. The extended scope preserves
+Battle and BattleTest across the whole refresh, while observing both streams before
+restoration and retaining the actual aura cache/status/statistic writes. The native
+policy waits for that scope to finish before capturing a stable decision. The model
+restores RNG before any requested subsequent preview, preserving the same protocol.
+This protocol is explicitly enabled; arbitrary unisolated random UI refresh timing
+is not modeled as a deterministic decision.
+
+| Oracle | Paid actions / EndTurns | Native seconds | Final Pyre | Preview scopes | Bytes / nodes |
+| --- | --- | --- | --- | --- | --- |
+| full-battle-persistent-enchantment-random.mt2f | 15 / 5 | 51.55 | 80 | 64 | 29,412 / 4,818 |
+| full-battle-persistent-enchantment-random-deaths.mt2f | 21 / 7 | 64.72 | 65 | 68 | 33,542 / 5,642 |
+
+Both muted Instant runs win naturally with zero capture failures, differences,
+unsupported transitions and pending records; original profile/log signatures are
+unchanged. The ordinary pool oracle reproduces 41 room stages, nine train phases,
+seven spawns and nine card cycles; the source-death oracle reproduces 61 room stages,
+fourteen train phases, eleven spawns and thirteen card cycles. Independent policies
+start from initial and middle roots, reproduce every paid action/EndTurn through
+terminal combat, and repeat in sixteen parallel branches without changing parents.
+All three cached selections, real Battle advancement, preview draws, restoration
+through primary order completion, both teams and retained target/source maps are
+required coverage, not optional observations.
+
+The archives are byte-identical native binaries without text sources or JSON
+companions. Their SHA-256 values are
+8696555b9b71d7a975bb71762d5f317e097d186fb3f659291690d02e6135194e and
+8d8b7f4326df89920e8dcbe5b3170d6f46ff2e63fd3dcd576719a7d86c0a8a37.
+Inventory is 159 archives: 146 battles and thirteen calibrations.
+
+Random source revival remains an exploratory probe mode. Its native capture reveals
+four decision differences involving a retained enemy's live last-attacker reference.
+CharacterState.IsDestroyed includes BeginDestroy and InRemoveList, while the death
+dissolve callback asynchronously adds the actor to the actual removal list. Its
+Unity object can survive until a later ProcessRemovals, so unconditional reference
+clearing at a decision boundary is incomplete. An observed destruction-stage
+prototype exposed additional room/spawn timing differences and was not retained
+in the verified model. Rejected captures are not curated and comparisons remain
+complete. Native removal scheduling, actor/card-changing aura children, Horde aura
+effects, broader control/room/relic interactions and special Boss/card mechanics
+remain work; the full battle simulator and optimal solver are incomplete.
+
+Validation: the complete 158-archive regression (145 battles and thirteen
+calibrations, including the ordinary random-pool oracle) exits zero, with 141
+continuous policy checks and no errors or unsupported transitions. A final
+rebuild of the verified model also passes nine affected battles, including the
+new random source-death oracle, and all thirteen calibrations. Both new policies
+pass initial/middle roots and sixteen parallel branches. All 159 current archive
+sizes/hashes match the manifest and regression inventory; a single combined
+159-archive regression was not repeated. The final probe build has zero warnings
+and errors, and PowerShell parsing and whitespace checks pass. The rejected
+destruction-stage prototype is excluded from these changes and results.

@@ -10,8 +10,11 @@ namespace MonsterTrain2Poju.Probe
     internal static class EnchantmentBattleScenario
     {
         internal static bool Prepared;
-        internal static bool SourceRevivals => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == "persistent-enchantment-revivals";
-        internal static bool SourceDeaths => SourceRevivals || Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == "persistent-enchantment-deaths";
+        internal static bool RandomPools => (Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") ?? "").StartsWith("persistent-enchantment-random", StringComparison.Ordinal);
+        internal static bool SourceRevivals => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == "persistent-enchantment-revivals" || Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == "persistent-enchantment-random-revivals";
+        internal static bool SourceDeaths => SourceRevivals || Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == "persistent-enchantment-deaths" || Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == "persistent-enchantment-random-deaths";
+        internal static bool IsScenario(string scenario) => scenario == "persistent-enchantment" || scenario == "persistent-enchantment-deaths" || scenario == "persistent-enchantment-revivals" ||
+            scenario == "persistent-enchantment-random" || scenario == "persistent-enchantment-random-deaths" || scenario == "persistent-enchantment-random-revivals";
         private static readonly Dictionary<int, (CharacterState Native, int Room)> observed = new Dictionary<int, (CharacterState, int)>();
         internal static void Prepare(AllGameManagers managers, ManualLogSource log)
         {
@@ -32,7 +35,9 @@ namespace MonsterTrain2Poju.Probe
                     if (SourceRevivals) Set(unit, "startingStatusEffects", new[] { new StatusEffectStackData { statusId = "undying", count = 2 } });
                     var aura = new CardEffectData("CardEffectEnchant", null!, Team.Type.Heroes | Team.Type.Monsters);
                     aura.Cheat_SetTargetMode(TargetMode.Room);
-                    Set(aura, "paramStatusEffects", new[] { new StatusEffectStackData { statusId = "armor", count = 2 } });
+                    Set(aura, "paramStatusEffects", RandomPools ? new[] { new StatusEffectStackData { statusId = "armor", count = 2 },
+                        new StatusEffectStackData { statusId = "regen", count = 1 }, new StatusEffectStackData { statusId = "buff", count = 1 } } :
+                        new[] { new StatusEffectStackData { statusId = "armor", count = 2 } });
                     CharacterTriggerData spawn = HealingScenario.HealGold(0, false, true);
                     Set(spawn, "trigger", CharacterTriggerData.Trigger.OnSpawn);
                     Set(spawn, "effects", new List<CardEffectData> { aura }); triggers.Add(spawn);
@@ -63,7 +68,7 @@ namespace MonsterTrain2Poju.Probe
                 foreach (CardState card in owned.Where(card => card.GetCardDataID() == data.GetID())) card.Setup(data, save);
             }
             Prepared = true; Set(managers.GetCombatManager()!, "combatStateChanged", true);
-            log.LogInfo("PERSISTENT-ENCHANTMENT-PREPARED paid Steward armor aura on both teams, status callbacks, unchanged original Boss/waves; sourceDeaths=" + SourceDeaths + " sourceRevivals=" + SourceRevivals);
+            log.LogInfo("PERSISTENT-ENCHANTMENT-PREPARED paid Steward aura on both teams, status callbacks, unchanged original Boss/waves; sourceDeaths=" + SourceDeaths + " sourceRevivals=" + SourceRevivals + " randomPools=" + RandomPools);
         }
         internal static EnchantmentWorld CaptureWorld(FullBattleTrace trace)
         {

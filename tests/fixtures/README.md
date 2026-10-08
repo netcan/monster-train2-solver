@@ -1049,3 +1049,32 @@ thirteen calibrations and pure checks pass. Evidence builds on the preceding
 complete 155-archive run and source-death checks; a complete 157-archive run was
 not repeated. Whole-battle random pools, changing aura children and broader
 combat mechanics still require implementation and native coverage.
+
+`full-battle-persistent-enchantment-random.mt2f` and
+`full-battle-persistent-enchantment-random-deaths.mt2f` use the paid native
+armor 2 / regen 1 / buff 1 aura pool on both teams. The ordinary scene wins at
+Pyre 80 after fifteen actions/five EndTurns in 51.55 native seconds; the source
+death scene wins at Pyre 65 after twenty-one actions/seven EndTurns in 64.72 seconds.
+Both muted Instant captures have zero differences/failures/unsupported/pending
+records and preserve the original profile/log signatures. Each continuous policy
+matches initial/middle roots and sixteen independent parallel branches, including
+complete primary/preview caches, both RNG streams and retained identities.
+
+Preview RNG isolation includes the post-preview primary room-order update and its
+callbacks. All three cached selections, actual preview draws and whole-scope RNG
+restoration are mandatory coverage. Spawn/card/rearrangement/turn order updates and
+cross-floor treasure cache propagation now follow the native cadence. These two
+byte-identical archives have 29,412 bytes / 4,818 nodes and 33,542 bytes / 5,642 nodes,
+without text sources or JSON companions. Inventory is 159: 146 battles and thirteen
+calibrations. Random source revival remains unverified because native death dissolve
+completion can defer Unity destruction; rejected revival/stage captures are not
+curated. Broader aura effects and the complete simulator/optimal solver remain work.
+
+The complete 158-archive run (145 battles/thirteen calibrations) exits zero,
+including 141 continuous policies. The final rebuilt model passes nine affected
+battles, including both new random-pool archives, plus all thirteen calibrations;
+no errors or unsupported transitions occur. All 159 current archive sizes and
+SHA-256 values match the manifest and regression inventory. These results combine
+the complete prior158 run with the new source-death coverage; a single combined
+159-archive regression was not repeated. Rejected destruction-stage changes are
+excluded from the verified model.
