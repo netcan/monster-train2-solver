@@ -1078,3 +1078,20 @@ SHA-256 values match the manifest and regression inventory. These results combin
 the complete prior158 run with the new source-death coverage; a single combined
 159-archive regression was not repeated. Rejected destruction-stage changes are
 excluded from the verified model.
+
+character-removal-calibration.mt2f observes 55 original removal API transitions,
+ten actual destructions and twelve manager queues, without changing gameplay or
+timing. The independent model checks all three destruction stages, weak-reference
+survival until OnDestroy, primary/preview/temporary references, live attacker
+cleanup, numeric/status preservation, pending actors excluded from manager queues,
+minimum-ten-frame callbacks and 32 immutable parallel branches. It has 4,282 bytes
+and 816 nodes, matches the native binary exactly and has no text source.
+
+The source diagnostic battle still has four whole-decision differences and is
+not curated. Passing API calibration does not prove automatic whole-battle
+removal scheduling. Inventory is now 160 archives: 146 battles/fourteen
+calibrations; existing persistent-aura battles and policies pass separately.
+
+All fourteen calibrations and pure checks pass with the rebuilt model. All 160
+archive sizes/hashes and regression-list entries pass; a combined 160-archive
+regression was not repeated for the independent removal API model.

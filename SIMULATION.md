@@ -6074,3 +6074,37 @@ sizes/hashes match the manifest and regression inventory; a single combined
 159-archive regression was not repeated. The final probe build has zero warnings
 and errors, and PowerShell parsing and whitespace checks pass. The rejected
 destruction-stage prototype is excluded from these changes and results.
+
+### Native character removal API model
+
+CharacterRemovalModel now separates BeginDestroy, InRemoveList, scheduled
+Destroyed and actual OnDestroy. ProcessQueue schedules only actors actually in
+the manager's queue; an actor still waiting for its minimum-ten-frame dissolve
+callback remains pending. Scheduling preserves the weak reference and all state
+information. Actual destruction clears primary/preview/temporary position,
+attacker, feeder, linked-unit, equipment, applied-upgrade and signal references,
+upgrade HP maps and manager references while preserving numeric/status fields.
+
+The opt-in -CharacterRemoval probe observes original SetDestroyedState,
+HeroManager/MonsterManager.ProcessRemovals and CharacterState.OnDestroy without
+suppressing gameplay or changing queues/timing. Its binary API calibration has
+55 exact transitions, ten real destructions and twelve manager calls. It proves
+pending dissolves survive a nonempty queue, delayed callbacks take at least ten
+frames and primary/preview/temporary information exists. Independent comparisons
+and parent checks pass in 32 parallel branches. The five historical persistent
+aura battles and their continuous policies also pass with the rebuilt model.
+
+character-removal-calibration.mt2f is a byte-identical native 4,282-byte/816-node
+archive without a text source, SHA-256
+5d13e0243419eef35e259181b7d5da424bb6d3187f31b8c57bcd0cf31b38f67c.
+Current inventory is 160 archives: 146 battles and fourteen calibrations. This
+calibration comes from the random-revival diagnostic battle, which still has
+four complete-decision differences; only the independently passing API
+calibration is curated, and that battle is excluded. API event inputs are not
+future policy inputs. Automatic whole-battle removal scheduling remains open.
+
+Validation: all fourteen calibrations and pure model checks pass with the final
+rebuild, as do the five persistent-aura battles and their complete initial/middle
+policies and sixteen branches. Probe builds without warnings/errors. All 160
+inventory sizes/hashes, PowerShell syntax and whitespace checks pass; the complete
+160-archive regression was not repeated for this separate API model.

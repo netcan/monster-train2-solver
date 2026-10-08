@@ -99,6 +99,7 @@ param(
     [switch] $PersistentEnchantmentDeaths,
     [switch] $PersistentEnchantmentRevivals,
     [switch] $PersistentEnchantmentRandomPools,
+    [switch] $CharacterRemoval,
     [switch] $HarvestTriggers,
     [switch] $HordeRemoval,
     [switch] $HordeDeath,
@@ -205,6 +206,7 @@ $environment = @{
     MT2_PROBE_BRANCH_ANY_UNIT = '0'
     MT2_PROBE_FAST_REPLAY = '0'
     MT2_PROBE_GAME_SPEED = $GameSpeed
+    MT2_PROBE_CHARACTER_REMOVAL = $(if ($CharacterRemoval) { '1' } else { '0' })
     MT2_PROBE_STATUS_CALLBACKS = $(if ($HordeStatuses -or $StatusCallbacks) { '1' } else { '0' })
     MT2_PROBE_STATUS_CALLBACK_ACTIONS = $(if ($StatusCallbackActions) { '1' } else { '0' })
     MT2_PROBE_PHYSICAL_SPAWNPOINTS = $(if ($PhysicalSpawnPoints) { '1' } else { '0' })
@@ -1392,8 +1394,22 @@ $result = [pscustomobject]@{
     EnchantmentCombatCalibration = $(if ($EnchantmentCombat) { Join-Path $profile 'enchantment-combat-calibration.mt2f' } else { $null })
     EnchantmentWorldCalibration = $(if ($EnchantmentWorld) { Join-Path $profile 'enchantment-world-calibration.mt2f' } else { $null })
     EnchantmentSourceOrderCalibration = $(if ($EnchantmentWorld) { Join-Path $profile 'enchantment-source-order-calibration.mt2f' } else { $null })
+    CharacterRemovalCalibration = $(if ($CharacterRemoval) { Join-Path $profile 'character-removal-calibration.mt2f' } else { $null })
 }
 $result | ConvertTo-Json
+if ($CharacterRemoval) {
+    $removalPath = Join-Path $profile 'character-removal-calibration.mt2f'
+    if (-not (Test-Path -LiteralPath $removalPath)) { throw 'Missing native character removal calibration.' }
+    Add-Type -Path (Join-Path $workspace 'src\FixtureArchive\bin\Release\net8.0\FixtureArchive.dll')
+    $removalArchive = [MonsterTrain2Poju.Fixtures.FixtureDocument]::Read($removalPath)
+    try { $removal = $removalArchive.RootElement.ToObjectGraph() }
+    finally { $removalArchive.Dispose() }
+    if ($removal.Boundary -ne 'NativeCharacterRemovalApis' -or $removal.GameplaySuppressed -or
+        @($removal.Errors).Count -ne 0 -or @($removal.Samples).Count -eq 0 -or
+        @($removal.Samples | Where-Object { -not $_.Completed -or $null -ne $_.Difference }).Count -ne 0) {
+        throw 'Native character removal API calibration is incomplete or differs.'
+    }
+}
 if ($EnchantmentWorld) {
     $sourceOrderPath = Join-Path $profile 'enchantment-source-order-calibration.mt2f'
     if (-not (Test-Path -LiteralPath $sourceOrderPath)) { throw 'Missing native enchantment source-order calibration.' }
