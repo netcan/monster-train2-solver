@@ -1575,7 +1575,8 @@ namespace MonsterTrain2Poju.Model
                     before.AbilityRules, before.HordeDefinition, before.IsSpawning, before.SacrificeCardId,
                     before.DeathState == null ? null : new UnitDeathState(false, before.DeathState.IsBeingRemoved,
                         before.DeathState.HasStatisticsListener, isSacrifice: before.DeathState.IsSacrifice.HasValue ? false : (bool?)null,
-                        statisticsListenerOnce: before.DeathState.StatisticsListenerOnce), bumpRules: before.BumpRules));
+                        statisticsListenerOnce: before.DeathState.StatisticsListenerOnce,
+                        isDespawned: before.DeathState.IsDespawned, isDestroyed: before.DeathState.IsDestroyed), bumpRules: before.BumpRules));
                 target.DeathFinished = false;
                 RemoveStatus(target, "undying", 1);
                 CombatUnit revived = target.Freeze();

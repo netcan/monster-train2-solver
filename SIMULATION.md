@@ -5959,3 +5959,46 @@ Actual persistent-aura source death is now verified for this singleton armor
 policy. Aura-source revival, whole-battle random pools, actor/card-changing aura
 children and the remaining combat mechanics are still open; the full simulator
 and optimal solver remain incomplete.
+
+### Natural revival of persistent aura sources
+
+`-PersistentEnchantmentRevivals` gives paid aura sources two Undying stacks and
+two real OnTurnBegin self-damage effects. Reanimated, harvest and death gold
+children run in the native FIFO. Each of two sources consumes its first and last
+stack inside the ordinary trigger queue, then dies normally later. No setup
+revival API or queue deferral is used. Revival retains the source binding and
+exact primary/preview effect maps and cached status; source death still follows
+the previously verified destruction boundary.
+
+RoomCombatModel.Revive now preserves explicit IsDespawned/IsDestroyed values.
+Dropping these values changed false into unknown and later prevented destroyed
+source binding release. The first native capture rejected four affected room/
+train/turn transitions and is not curated. Unknown values in historical inputs
+retain their existing representation.
+
+The accepted muted Instant capture takes 64.85 seconds and wins after 21 paid
+actions/seven EndTurns with Pyre 68. Differences, failures, unsupported and pending
+records are zero, and original profile/log signatures remain unchanged. Four
+natural revival boundaries include 24 accepted callback payloads and 24 actual
+callback phases. Native API room/actor/world/RNG states, first/last stacks,
+reanimated/death order, binding/maps and parent states match in 16 branches.
+Independent whole-battle checks reproduce 59 room stages, fourteen train phases,
+eleven spawns, thirteen card cycles, all actions/turns, initial/middle roots and
+16 policy branches. Physical checks cover 23 removals/eight moves and 530 canonical
+decision mappings.
+
+`full-battle-persistent-enchantment-revivals.mt2f` is the byte-identical native
+binary: 34,456 bytes / 5,860 nodes, no text source or JSON companion. Inventory is
+157 archives: 144 battles/thirteen calibrations, with all sizes/hashes verified.
+The new battle and seven affected historical battles pass: persistent aura,
+aura source death, standalone revival, Horde merge, Bump and both owned equipment
+revival variants. All thirteen calibrations and pure checks pass. This evidence
+extends the preceding complete 155-archive run and the source-death increment;
+a second complete 157-archive run was not performed. Probe builds without
+warnings/errors; ModelChecks retains fourteen existing nullable warnings.
+
+Persistent singleton-armor sources now have verified birth, target movement,
+source/target death, natural first/last-stack revival and preview behavior.
+Whole-battle random pools, actor/card-changing aura children, Horde aura effects,
+broader control/room/relic interactions and remaining special Boss/card mechanics
+are still pending. The full battle simulator and optimal solver remain incomplete.

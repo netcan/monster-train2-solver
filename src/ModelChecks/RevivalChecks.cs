@@ -84,15 +84,17 @@ internal static class RevivalChecks
         if (!fixture.TryGetProperty("Revivals", out var entries) || entries.GetArrayLength() == 0) return;
         var samples = entries.EnumerateArray().ToArray();
         var operations = fixture.GetProperty("RevivalOperations").EnumerateArray().ToArray();
-        bool summonIntegration = fixture.GetProperty("ModifierScenario").GetString()?.Contains("-revival") == true;
-        if (summonIntegration) VerifySummonCoverage(fixture, samples, operations);
+        bool auraIntegration = fixture.GetProperty("ModifierScenario").GetString() == "persistent-enchantment-revivals";
+        bool summonIntegration = !auraIntegration && fixture.GetProperty("ModifierScenario").GetString()?.Contains("-revival") == true;
+        if (auraIntegration) VerifyAuraCoverage(samples, operations);
+        else if (summonIntegration) VerifySummonCoverage(fixture, samples, operations);
         else Require(operations.Length == 7 && samples.Length >= 7 && samples.Count(sample => sample.GetProperty("QueueRunning").GetBoolean()) >= 2,
             "Native revival omitted direct, last-stack, zero-stack or nested queue paths.");
         foreach (var sample in samples) VerifyRevival(sample);
         foreach (var sample in operations) VerifyOperation(sample);
         var phases = fixture.GetProperty("HarvestTriggers").EnumerateArray().ToArray();
         foreach (var phase in phases) HarvestChecks.VerifyPhase(phase);
-        if (!summonIntegration) Require(samples.Any(sample => sample.GetProperty("AfterActor").Deserialize<CombatUnit>()!.MaxHealth == 1) &&
+        if (!summonIntegration && !auraIntegration) Require(samples.Any(sample => sample.GetProperty("AfterActor").Deserialize<CombatUnit>()!.MaxHealth == 1) &&
             samples.Any(sample => sample.GetProperty("Before").Deserialize<RoomCombatState>()!.Units.Single(unit =>
                 unit.Id == sample.GetProperty("ActorId").GetInt32()).Status("undying") == null),
             "Native revival missed zero max health and direct revival without a stack.");
@@ -100,9 +102,47 @@ internal static class RevivalChecks
             .All(sample => sample.GetProperty("AutomaticQueueDeferrals").GetInt32() == 0), "The setup queue guard changed natural battle timing.");
         Parallel.For(0, 16, _ => { foreach (var sample in samples) VerifyRevival(sample); foreach (var sample in operations) VerifyOperation(sample);
             foreach (var phase in phases) HarvestChecks.VerifyPhase(phase); });
-        if (summonIntegration)
+        if (auraIntegration)
+            Console.WriteLine($"NATIVE-REVIVAL-AURA-CHECKS PASS: {samples.Length} natural revival boundaries, {phases.Length} callback phases, " +
+                "first/last stacks, retained source binding, complete world/RNG/queue states and 16 branches.");
+        else if (summonIntegration)
             Console.WriteLine($"NATIVE-REVIVAL-SUMMON-CHECKS PASS: {samples.Length} complete revival boundaries, {phases.Length} callback phases, host/child equipment and live-source death births, exact states and 16 branches.");
         else Console.WriteLine($"NATIVE-REVIVAL-CHECKS PASS: {samples.Length} complete revival boundaries, seven direct/removal operations, {phases.Length} callback phases, both teams, queue retention and 16 branches.");
+    }
+    private static void VerifyAuraCoverage(FixtureValue[] samples, FixtureValue[] operations)
+    {
+        Require(operations.Length == 0 && samples.Length >= 4 && samples.All(sample =>
+            sample.GetProperty("Completed").GetBoolean() && sample.GetProperty("QueueRunning").GetBoolean() &&
+            sample.GetProperty("Label").GetString() == "natural:revival" &&
+            sample.GetProperty("AutomaticQueueDeferrals").GetInt32() == 0),
+            "Aura revival must run naturally inside the native trigger queue without setup or queue deferrals.");
+        var actors = samples.Select(sample => (Before: sample.GetProperty("Before").Deserialize<RoomCombatState>()!.Units
+                .Single(unit => unit.Id == sample.GetProperty("ActorId").GetInt32()),
+            After: sample.GetProperty("AfterActor").Deserialize<CombatUnit>()!)).ToArray();
+        Require(actors.GroupBy(pair => pair.Before.Id).Count(group =>
+                group.Any(pair => pair.Before.Status("undying")?.Stacks == 2) &&
+                group.Any(pair => pair.Before.Status("undying")?.Stacks == 1)) >= 2 &&
+            actors.All(pair => pair.Before.Health == 0 && pair.After.Health == 1 &&
+                pair.After.DeathState?.IsDestroyed == false && pair.After.DeathState.IsDespawned == false &&
+                pair.After.Triggers.SelectMany(trigger => trigger.Effects).Any(effect => effect.Enchantment?.Bound == true) &&
+                pair.After.Status("undying")?.Stacks == (pair.Before.Status("undying")!.Stacks > 1 ?
+                    pair.Before.Status("undying")!.Stacks - 1 : (int?)null)),
+            "Aura revival omitted first/last stacks on two bound sources or lost their lifecycle flags.");
+        Require(actors.All(pair => pair.Before.Triggers.SelectMany(trigger => trigger.Effects)
+                .Where(effect => effect.Enchantment != null).All(effect => effect.Enchantment!.Bound) &&
+            Serialize(pair.Before.Triggers.SelectMany(trigger => trigger.Effects).Where(effect => effect.Enchantment != null)
+                .Select(effect => effect.Enchantment!.State).ToArray()) ==
+            Serialize(pair.After.Triggers.SelectMany(trigger => trigger.Effects).Where(effect => effect.Enchantment != null)
+                .Select(effect => effect.Enchantment!.State).ToArray())),
+            "Natural source revival must preserve its bound aura's primary/preview maps and cached status.");
+        foreach (var sample in samples)
+        {
+            int id = sample.GetProperty("ActorId").GetInt32();
+            Require(sample.GetProperty("Queued").Deserialize<Callback[]>()!.TakeLast(2)
+                .Select(item => (item.ActorId, item.Kind, item.ParamInt)).SequenceEqual(
+                    [(id, "OnReanimated", 0), (id, "OnDeath", 1)]),
+                "Aura revival lost the reanimated/death callback order or revived payload.");
+        }
     }
     private static void VerifySummonCoverage(FixtureValue fixture, FixtureValue[] samples, FixtureValue[] operations)
     {

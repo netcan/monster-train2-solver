@@ -34,7 +34,7 @@ namespace MonsterTrain2Poju.Probe
             public string? Error { get; set; }
         }
         internal static readonly List<Record> Records = new List<Record>();
-        internal static bool Enabled => RevivalScenario.Enabled || TriggeredSummonScenario.Revival;
+        internal static bool Enabled => RevivalScenario.Enabled || TriggeredSummonScenario.Revival || EnchantmentBattleScenario.SourceRevivals;
         private static Record? current;
         internal static Callback CaptureCallback(CharacterState actor, CharacterTriggerData.Trigger trigger,
             CharacterState? dying, CharacterState.FireTriggersData? data, int count) => new Callback {

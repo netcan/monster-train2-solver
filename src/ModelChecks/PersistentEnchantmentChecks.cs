@@ -27,8 +27,8 @@ internal static class PersistentEnchantmentChecks
     internal static void Native(FixtureValue fixture)
     {
         if (!fixture.TryGetProperty("ModifierScenario", out var scenario) ||
-            scenario.GetString() is not ("persistent-enchantment" or "persistent-enchantment-deaths")) return;
-        bool sourceDeaths = scenario.GetString() == "persistent-enchantment-deaths";
+            scenario.GetString() is not ("persistent-enchantment" or "persistent-enchantment-deaths" or "persistent-enchantment-revivals")) return;
+        bool sourceDeaths = scenario.GetString() != "persistent-enchantment";
         Require(fixture.GetProperty("Schema").GetInt32() >= 103 &&
             fixture.GetProperty("GameVersion").GetString() == "2.2.1" &&
             fixture.GetProperty("GameModuleMvid").GetString() == "8fb07b96-f4db-4d2b-884d-c00536d6ccf4" &&

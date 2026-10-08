@@ -1031,3 +1031,21 @@ All manifest hashes pass. Validation combines the preceding complete 155-archive
 run with the new battle, three affected historical battles, all thirteen
 calibrations and pure checks; the complete 156-archive run was not repeated.
 Aura-source revival and wider aura/combat mechanics remain unverified.
+
+`full-battle-persistent-enchantment-revivals.mt2f` captures two paid bound sources
+consuming their first/last Undying stacks in the ordinary OnTurnBegin FIFO before
+normal death. Four natural revival APIs, 24 accepted callback payloads and 24
+callback phases match independently in sixteen branches, retaining binding and
+exact primary/preview maps and cached status. There are no setup operations or
+queue deferrals. The full policy also matches from initial/middle roots and
+16 branches, with 21 actions/seven EndTurns, final Pyre 68. Native capture takes
+64.85 muted Instant seconds, has zero failures/differences/unsupported/pending
+records and preserves original profile/log signatures.
+
+The byte-identical native binary has 34,456 bytes / 5,860 nodes, no text source
+or JSON companion. Inventory is 157 archives: 144 battles/thirteen calibrations;
+all sizes/hashes pass. The new battle, seven affected historical battles, all
+thirteen calibrations and pure checks pass. Evidence builds on the preceding
+complete 155-archive run and source-death checks; a complete 157-archive run was
+not repeated. Whole-battle random pools, changing aura children and broader
+combat mechanics still require implementation and native coverage.

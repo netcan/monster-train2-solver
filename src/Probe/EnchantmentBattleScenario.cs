@@ -10,7 +10,8 @@ namespace MonsterTrain2Poju.Probe
     internal static class EnchantmentBattleScenario
     {
         internal static bool Prepared;
-        internal static bool SourceDeaths => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == "persistent-enchantment-deaths";
+        internal static bool SourceRevivals => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == "persistent-enchantment-revivals";
+        internal static bool SourceDeaths => SourceRevivals || Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == "persistent-enchantment-deaths";
         private static readonly Dictionary<int, (CharacterState Native, int Room)> observed = new Dictionary<int, (CharacterState, int)>();
         internal static void Prepare(AllGameManagers managers, ManualLogSource log)
         {
@@ -28,6 +29,7 @@ namespace MonsterTrain2Poju.Probe
                 Set(changed, "trigger", CharacterTriggerData.Trigger.OnStatusEffectChanged); triggers.Add(changed);
                 if (data.GetID() == sourceCard)
                 {
+                    if (SourceRevivals) Set(unit, "startingStatusEffects", new[] { new StatusEffectStackData { statusId = "undying", count = 2 } });
                     var aura = new CardEffectData("CardEffectEnchant", null!, Team.Type.Heroes | Team.Type.Monsters);
                     aura.Cheat_SetTargetMode(TargetMode.Room);
                     Set(aura, "paramStatusEffects", new[] { new StatusEffectStackData { statusId = "armor", count = 2 } });
@@ -40,7 +42,19 @@ namespace MonsterTrain2Poju.Probe
                         damage.Cheat_SetTargetMode(TargetMode.Self); Set(damage, "paramInt", 9999);
                         CharacterTriggerData turn = HealingScenario.HealGold(0, false, true);
                         Set(turn, "trigger", CharacterTriggerData.Trigger.OnTurnBegin);
-                        Set(turn, "effects", new List<CardEffectData> { damage }); triggers.Add(turn);
+                        var damageEffects = new List<CardEffectData> { damage };
+                        if (SourceRevivals)
+                        {
+                            var second = new CardEffectData("CardEffectDamage", null!, Team.Type.Monsters);
+                            second.Cheat_SetTargetMode(TargetMode.Self); Set(second, "paramInt", 9999); damageEffects.Add(second);
+                            foreach (var pair in new[] { (CharacterTriggerData.Trigger.OnReanimated, 5),
+                                (CharacterTriggerData.Trigger.OnAnyMonsterDeathOnFloor, 2), (CharacterTriggerData.Trigger.OnAnyUnitDeathOnFloor, 4) })
+                            {
+                                CharacterTriggerData child = HealingScenario.HealGold(pair.Item2, false, true);
+                                Set(child, "trigger", pair.Item1); triggers.Add(child);
+                            }
+                        }
+                        Set(turn, "effects", damageEffects); triggers.Add(turn);
                         CharacterTriggerData death = HealingScenario.HealGold(3, false, true);
                         Set(death, "trigger", CharacterTriggerData.Trigger.OnDeath); triggers.Add(death);
                     }
@@ -49,7 +63,7 @@ namespace MonsterTrain2Poju.Probe
                 foreach (CardState card in owned.Where(card => card.GetCardDataID() == data.GetID())) card.Setup(data, save);
             }
             Prepared = true; Set(managers.GetCombatManager()!, "combatStateChanged", true);
-            log.LogInfo("PERSISTENT-ENCHANTMENT-PREPARED paid Steward armor aura on both teams, status callbacks, unchanged original Boss/waves; sourceDeaths=" + SourceDeaths);
+            log.LogInfo("PERSISTENT-ENCHANTMENT-PREPARED paid Steward armor aura on both teams, status callbacks, unchanged original Boss/waves; sourceDeaths=" + SourceDeaths + " sourceRevivals=" + SourceRevivals);
         }
         internal static EnchantmentWorld CaptureWorld(FullBattleTrace trace)
         {

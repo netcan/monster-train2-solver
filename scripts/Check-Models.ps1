@@ -113,6 +113,7 @@ $fixtures = @('full-battle-steward-once.mt2f', 'full-battle-no-cards.mt2f', 'ful
     'full-battle-spawn-enchant.mt2f',
     'full-battle-persistent-enchantment.mt2f',
     'full-battle-persistent-enchantment-deaths.mt2f',
+    'full-battle-persistent-enchantment-revivals.mt2f',
     'card-modifier-calibration.mt2f', 'rng-calibration.mt2f', 'gold-reward-calibration.mt2f',
     'standby-routing-calibration.mt2f', 'ui-rng-isolation-calibration.mt2f',
     'statistic-query-calibration.mt2f', 'statistic-overflow-calibration.mt2f',
