@@ -644,6 +644,9 @@ namespace MonsterTrain2Poju.Model
 
         internal static string? Validate(RoomCombatState state, int? dyingTargetId = null)
         {
+            if (state.Context?.Enchantments?.Rooms.SelectMany(room => room.Units).Any(unit =>
+                unit.Triggers.Any(trigger => trigger.Effects.Any(effect => effect.Type == "CardEffectEnchant"))) == true)
+                return "CardEffectEnchant in the shared train requires automatic birth/movement/death lifecycle integration.";
             string? identityError = UnitIdentityModel.Validate(state.Context, state.Units);
             if (identityError != null) return identityError;
             if (state.Context != null && AbilityCardModel.Validate(state.Context) is string cacheError) return cacheError;
@@ -990,7 +993,7 @@ namespace MonsterTrain2Poju.Model
                             context!.StatusRules.First(rule => rule.Id == "armor").WithStacks(Math.Max(0, goal - front.Count("armor"))), 0);
                         if (!added.Supported) { unsupportedReason = added.UnsupportedReason; return Finish(RoomOutcome.Unsupported); }
                         context = added.State!.Context;
-                        front.Apply(added.State.Units.First(unit => unit.Id == front.Source.Id));
+                        foreach (CombatUnit changed in added.State.Units) units.First(unit => unit.Source.Id == changed.Id).Apply(changed);
                         foreach (QueuedCharacterTrigger callback in added.PendingCallbacks) QueueCallback(callback);
                     }
                 if (enqueueCharacterTrigger == null && !runningTriggerQueue) DrainLocalTriggerQueue();
@@ -1661,7 +1664,7 @@ namespace MonsterTrain2Poju.Model
                     context.NextCardId, context.MaxHandSize, context.StatusRules, context.Statistics,
                     context.CardInstances == null ? null : Array.Empty<CardInstanceState>(), context.CardRegistry, context.AllScenarioBossesDead,
                     context.NextAddedTemporaryUpgrades, context.OtherPiles?.Select(CardPileModel.Clear).ToArray(), context.QueryFrame,
-                    context.KillCamActivated.HasValue ? true : (bool?)null, context.MagicPower, context.IsolatedBattlePreview, context.EnergyState, context.RoomCapacities, context.AbilityCardCache, context.LastAbilityActivatorUnitId, context.PermanentlyDisabledAbilities, context.LastSpawnedUnitId, context.NextUnitId, context.SpawnPoints, context.SummonCatalog);
+                    context.KillCamActivated.HasValue ? true : (bool?)null, context.MagicPower, context.IsolatedBattlePreview, context.EnergyState, context.RoomCapacities, context.AbilityCardCache, context.LastAbilityActivatorUnitId, context.PermanentlyDisabledAbilities, context.LastSpawnedUnitId, context.NextUnitId, context.SpawnPoints, context.SummonCatalog, context.Enchantments);
             }
 
             private void PostCombat()
@@ -1869,7 +1872,7 @@ namespace MonsterTrain2Poju.Model
                                 int reward = GoldRewardModel.Adjust(effect.Value);
                                 context = new CombatContext(context!.Cards, context.BattleRng,
                                     Math.Max(0, checked(context.Gold + reward)), context.NextCardId, context.MaxHandSize, context.StatusRules, context.Statistics,
-                                    context.CardInstances, context.CardRegistry, context.AllScenarioBossesDead, context.NextAddedTemporaryUpgrades, context.OtherPiles, context.QueryFrame, context.KillCamActivated, context.MagicPower, context.IsolatedBattlePreview, context.EnergyState, context.RoomCapacities, context.AbilityCardCache, context.LastAbilityActivatorUnitId, context.PermanentlyDisabledAbilities, context.LastSpawnedUnitId, context.NextUnitId, context.SpawnPoints, context.SummonCatalog);
+                                    context.CardInstances, context.CardRegistry, context.AllScenarioBossesDead, context.NextAddedTemporaryUpgrades, context.OtherPiles, context.QueryFrame, context.KillCamActivated, context.MagicPower, context.IsolatedBattlePreview, context.EnergyState, context.RoomCapacities, context.AbilityCardCache, context.LastAbilityActivatorUnitId, context.PermanentlyDisabledAbilities, context.LastSpawnedUnitId, context.NextUnitId, context.SpawnPoints, context.SummonCatalog, context.Enchantments);
                                 Emit("Gold", unit, unit, reward);
                             }
                             else if (effect.Type == "CardEffectAddBattleCard" && !source.Preview && !battleWon && context != null && context.AllScenarioBossesDead != true &&
@@ -2461,10 +2464,13 @@ namespace MonsterTrain2Poju.Model
                     else if (!source.Preview && card.PlayedRoomUnitIds.Any(removedIds.Contains))
                         context = context!.WithCard(card.WithPlayedRoomUnits(card.PlayedRoomUnitIds.Where(id => !removedIds.Contains(id)).ToArray()));
                 }
+                RoomCombatState state = EnchantmentWorldModel.Sync(new RoomCombatState(source.RoomIndex, source.Deployment,
+                    units.Where(unit => unit.Alive && unit.InRoom).Select(unit => unit.Freeze()).ToArray(), source.ExternalInteractions, context, source.Preview),
+                    units.Where(unit => !unit.Alive || !unit.InRoom).Select(unit => unit.Freeze()).ToArray());
+                context = state.Context;
                 return unsupportedReason != null
                 ? new RoomCombatResult(null, RoomOutcome.Unsupported, round, events, unsupportedReason) : new RoomCombatResult(
-                new RoomCombatState(source.RoomIndex, source.Deployment,
-                    units.Where(unit => unit.Alive && unit.InRoom).Select(unit => unit.Freeze()).ToArray(), source.ExternalInteractions, context, source.Preview),
+                state,
                 outcome, round, events, pendingCallbacks: nativeCardDamage ? deferredDamageDeaths.Select(dead =>
                     new QueuedCharacterTrigger(source.RoomIndex, dead.Unit.Freeze(), returnSpawnerAfterQueue: dead.Return,
                         deferUntilRemoval: true, harvestAfterDeath: !dead.Unit.Despawned,

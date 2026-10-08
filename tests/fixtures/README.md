@@ -938,3 +938,33 @@ fourteen queued-summon, ten triggered-equipment, six direct summon-effect suites
 and 262 damage phases. Native provenance, all archive hashes and original-file gates
 pass. Final explicit refusal/binding capture fixes build, and both enchantment
 calibrations plus unsupported-boundary checks pass independently afterwards.
+
+`enchantment-world-calibration.mt2f` adds 32 real AddStatusEffect/RemoveStatusEffect
+calls on the same isolated paid hosts, including silenced/muted, zero/repeated
+adds, zero/all removals, ordinary armor/dormant writes, Spark with dormancy,
+disabled updates and sixteen consecutive random-pool steps. These calls invoke
+native global aura updates automatically; the calibration does not call
+UpdateEnchantments itself or suppress gameplay APIs. Complete train/context/aura
+state, both RNG streams, 76 callback payloads and drained gold effects match;
+24 aura status calls are observed and retained for diagnostics. All cases repeat
+in 32 isolated branches, and the random chain carries model outputs forward.
+UI preview preparation is recorded explicitly. Shared world serialization and
+live/retained identity checks also pass.
+
+The accepted native capture takes 60.38 muted Instant seconds. Its 8,428-byte,
+1,470-node binary is byte-identical to native output, SHA-256
+`3a2b4af9f7f1c94d3d0b36cee560c0fc5e056a271a054d08ee641daf58132d51`.
+There is no text source/JSON companion. Captured live state, bindings/trigger
+identities, gold and RNG are restored before the subsequent ordinary paid battle
+wins after 21 actions/seven EndTurns, Pyre 73; original-file signature gates pass.
+Isolated run-stat/UI effects remain outside the restoration claim. This verifies
+automatic control-status updates, not birth/movement/death/preview scheduling or
+actor/card-changing children. Generic persistent CardEffectEnchant combat remains
+refused until those paths are integrated and verified.
+
+Complete regression and audit pass for 153 archives: 141 battles/twelve
+calibrations, 137 policy, 23 physical-position, twelve decision-reference,
+fourteen queued-summon, ten triggered-equipment, six direct summon-effect suites
+and 262 damage phases. Binary hashes/provenance and native original-file gates
+pass. Final shared-train refusal and both real-status/control-status calibrations
+also pass independently after the full run.

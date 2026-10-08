@@ -5748,3 +5748,62 @@ boundaries and previous 1,460-step lifecycle matrix pass again independently.
 Probe has zero warnings/errors; ModelChecks retains its fourteen existing nullable
 warnings. Generic persistent-aura combat integration and the full simulator remain
 incomplete.
+
+The automatic-control increment's complete 153-archive regression and audit pass:
+141 battles, twelve calibrations, 137 policy chains, 23 physical-position and
+twelve decision-reference suites, fourteen queued-summon, ten triggered-equipment,
+six direct summon-effect suites and 262 damage phases. Binary integrity/provenance
+and original-file gates pass. The final shared-train refusal is checked even on a
+room without an aura source; the new control-status and previous real-status
+calibrations pass on that final source. Probe/Model build without warnings/errors;
+ModelChecks retains fourteen existing nullable warnings.
+
+### Automatic aura updates from ordinary status APIs
+
+`CombatContext.Enchantments` now owns an immutable train snapshot, retained actors,
+enchanter identities, room-manager guards and the BattleTest stream. World rooms
+have no context back-reference, so capturing/copying this state cannot recurse
+through Context -> World -> Room -> Context. Card play, card cycles, generation,
+equipment, ability caching, gold and all context-copy methods preserve the world.
+Room completion synchronizes changed actors and retained corpses; the train queue
+refreshes each room from the latest shared world before applying its next callback.
+Identity checks cover a moved actor without duplicate live/retained entries and
+updated corpse health. These checks do not verify native movement or death hooks.
+
+Ordinary AddStatusEffect/RemoveStatusEffect model paths now request the native
+global aura update for silenced, muted, and spark on a dormant actor. Addition
+includes zero/repeated calls; removal only requests an update after an actual
+stack decrease. Other status writes synchronize the actor without requesting a
+global update. Existing global/direct reentry and source order remain in the
+kernel. Its status calls use a context without a world to avoid applying these
+automatic hooks twice. Status callbacks precede aura-generated callbacks.
+
+`Run-FullBattleProbe.ps1 -Policy units-spells-and-junk -EnchantmentWorld` extends
+the real-status calibration with 32 actual native control-status API transitions.
+It covers muting, silencing, zero/repeated additions, zero/all removals, armor and
+dormant writes without global updates, zero/positive Spark with dormancy, disabled
+updates and sixteen consecutive random-pool control steps. No gameplay status API
+or queue effect is suppressed. Complete train/context/effect maps, both RNG streams,
+76 nine-field callback payloads and drained gold results match independently.
+Twenty-four automatic aura status calls are observed; their request records are
+retained as diagnostics, rather than claimed as an independent request-field check.
+The sixteen random steps also carry model outputs forward; all cases repeat in
+32 branches with unchanged parents. UI preview preparation events remain explicit.
+
+The accepted native run takes 60.38 seconds with muted Instant timing. Native
+differences, capture failures, unsupported and pending records are zero. Native
+primary state objects, triggers/identities, enchanter flags, gold and RNG are
+restored before the subsequent ordinary seven-turn/21-action battle wins; original
+profile/log file signatures remain unchanged. Isolated run-stat/UI side effects
+remain outside the restoration claim. The directly captured binary has 8,428 bytes,
+1,470 unique nodes, SHA-256
+`3a2b4af9f7f1c94d3d0b36cee560c0fc5e056a271a054d08ee641daf58132d51`;
+it has no text source or JSON companion.
+
+This increment verifies automatic control-status updates and shared callback state.
+Birth binding, per-movement scheduling, source death/removal, revival and full
+preview rollback are still pending. Actor/card-changing aura children, Horde aura
+casualties, Deathwish, Purify and room/relic interactions remain refused. Generic
+RoomCombatModel still rejects CardEffectEnchant; the restored ordinary battle is
+not evidence of a persistent-aura multi-turn battle. The full simulator remains
+incomplete.

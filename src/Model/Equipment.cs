@@ -41,7 +41,7 @@ namespace MonsterTrain2Poju.Model
                 context.CardRegistry, context.AllScenarioBossesDead, context.NextAddedTemporaryUpgrades, context.OtherPiles,
                 context.QueryFrame, context.KillCamActivated, context.MagicPower, context.IsolatedBattlePreview, context.EnergyState,
                 context.RoomCapacities, context.AbilityCardCache, context.LastAbilityActivatorUnitId, context.PermanentlyDisabledAbilities,
-                context.LastSpawnedUnitId, context.NextUnitId, context.SpawnPoints, context.SummonCatalog);
+                context.LastSpawnedUnitId, context.NextUnitId, context.SpawnPoints, context.SummonCatalog, context.Enchantments);
             // The temporary draw entry is removed by MoveToStandByPile after AddEquipment.
             context = context.WithCards(new CardCycleState(context.Cards.Hand, context.Cards.Draw.Concat(copied.AddedCards).ToArray(),
                 context.Cards.Discard, context.Cards.Rng, context.Cards.DrawModifier, context.Cards.ExternalInteractions, context.Cards.BonusDraw));

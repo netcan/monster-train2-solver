@@ -41,10 +41,11 @@ namespace MonsterTrain2Poju.Model
                 context = horde.State.Context; callbacks.AddRange(horde.PendingCallbacks);
             }
             StatusCallbackModel.Removed(source.RoomIndex, target, changed, id, callbacks);
-            return new RoomCombatResult(new RoomCombatState(source.RoomIndex, source.Deployment,
+            return EnchantmentWorldModel.StatusChanged(new RoomCombatResult(new RoomCombatState(source.RoomIndex, source.Deployment,
                 source.Units.Select(unit => unit.Id == targetId ? changed : unit)
                     .Where(unit => unit.Id != targetId || target.Health <= 0 || changed.Health > 0).ToArray(), source.ExternalInteractions, context, source.Preview),
-                RoomOutcome.Exchanged, 0, new List<CombatEvent>(), pendingCallbacks: callbacks);
+                RoomOutcome.Exchanged, 0, new List<CombatEvent>(), pendingCallbacks: callbacks), id,
+                target.Status("dormant") != null, update: count < status.Stacks);
         }
         // The card effect clamps its request to the current count, skips a zero
         // status and explicitly sacrifices a Horde whose final count becomes zero.

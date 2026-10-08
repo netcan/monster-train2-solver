@@ -347,7 +347,7 @@ namespace MonsterTrain2Poju.Model
         }
 
         private static RoomCombatState WithContext(RoomCombatState room, CombatContext? context) =>
-            new RoomCombatState(room.RoomIndex, room.Deployment, room.Units, room.ExternalInteractions, context, room.Preview);
+            EnchantmentWorldModel.Refresh(new RoomCombatState(room.RoomIndex, room.Deployment, room.Units, room.ExternalInteractions, context, room.Preview));
 
         private static TrainCombatState Freeze(TrainCombatState source, RoomCombatState[] rooms, CombatContext? context)
         {

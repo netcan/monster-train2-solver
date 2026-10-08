@@ -87,6 +87,7 @@ param(
     [switch] $HordeStats,
     [switch] $EnchantmentLifecycle,
     [switch] $EnchantmentCombat,
+    [switch] $EnchantmentWorld,
     [switch] $HordeStatuses,
     [switch] $HordeMerge,
     [switch] $Bump,
@@ -135,6 +136,7 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+if ($EnchantmentWorld) { $EnchantmentCombat = $true }
 if ($Revival -and $TriggeredSummonsRevival) { throw 'Choose standalone revival or triggered summon revival.' }
 if ($TriggeredSummonsRevival) { $TriggeredSummonsEquipmentOwned = $true; $TriggeredSummonsDeath = $true }
 if ($TriggerRepeats) { $ConditionalTriggers = $true }
@@ -208,6 +210,7 @@ $environment = @{
     MT2_PROBE_HORDE_STATS = $(if ($HordeStats) { '1' } else { '0' })
     MT2_PROBE_ENCHANTMENT_LIFECYCLE = $(if ($EnchantmentLifecycle) { '1' } else { '0' })
     MT2_PROBE_ENCHANTMENT_COMBAT = $(if ($EnchantmentCombat) { '1' } else { '0' })
+    MT2_PROBE_ENCHANTMENT_WORLD = $(if ($EnchantmentWorld) { '1' } else { '0' })
     MT2_PROBE_TRIGGER_REPEATS = $(if ($TriggerRepeats) { '1' } else { '0' })
 }
 if ($TriggeredSummonsRevival) {
@@ -1343,8 +1346,24 @@ $result = [pscustomobject]@{
     HordeStatCalibration = $(if ($HordeStats) { Join-Path $profile 'horde-stat-calibration.mt2f' } else { $null })
     EnchantmentLifecycleCalibration = $(if ($EnchantmentLifecycle) { Join-Path $profile 'enchantment-lifecycle-calibration.mt2f' } else { $null })
     EnchantmentCombatCalibration = $(if ($EnchantmentCombat) { Join-Path $profile 'enchantment-combat-calibration.mt2f' } else { $null })
+    EnchantmentWorldCalibration = $(if ($EnchantmentWorld) { Join-Path $profile 'enchantment-world-calibration.mt2f' } else { $null })
 }
 $result | ConvertTo-Json
+if ($EnchantmentWorld) {
+    $enchantmentPath = Join-Path $profile 'enchantment-world-calibration.mt2f'
+    if (-not (Test-Path -LiteralPath $enchantmentPath)) { throw 'Missing native automatic aura world calibration.' }
+    Add-Type -Path (Join-Path $workspace 'src\FixtureArchive\bin\Release\net8.0\FixtureArchive.dll')
+    $enchantmentArchive = [MonsterTrain2Poju.Fixtures.FixtureDocument]::Read($enchantmentPath)
+    try { $enchantment = $enchantmentArchive.RootElement.ToObjectGraph() }
+    finally { $enchantmentArchive.Dispose() }
+    if (-not $enchantment.LiveContextUnchanged -or $enchantment.Mismatches -ne 0 -or
+        $enchantment.Boundary -ne 'AutomaticControlStatusAndQueue' -or $enchantment.StatusMutationsSuppressed -or
+        -not $enchantment.ExternalPreviewPreparationsRecorded -or @($enchantment.Samples).Count -ne 32 -or
+        @($enchantment.Samples | Where-Object Completed -NE $true).Count -gt 0 -or
+        @($enchantment.Samples | Where-Object { $null -ne $_.Difference }).Count -gt 0) {
+        throw 'Native automatic aura world status coverage is incomplete or differs.'
+    }
+}
 if ($EnchantmentCombat) {
     $enchantmentPath = Join-Path $profile 'enchantment-combat-calibration.mt2f'
     if (-not (Test-Path -LiteralPath $enchantmentPath)) { throw 'Missing native real-status enchantment combat calibration.' }

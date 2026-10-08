@@ -90,6 +90,7 @@ namespace MonsterTrain2Poju.Probe
             var originalGlobal = UnityEngine.Random.state; int originalGold = Save.GetGold();
             bool originalAllow = rooms.AllowEnchantmentUpdates;
             var samples = new List<object>(); int mismatches = 0;
+            var worldSamples = new List<object>(); int worldMismatches = 0;
             try
             {
                 Set(rooms, "_allowEnchantmentUpdates", true);
@@ -127,6 +128,33 @@ namespace MonsterTrain2Poju.Probe
                 Raw(hosts[0], "duality", 0); Configure("armor", 2, "poison", 1, random: true);
                 for (int i = 0; i < 16; i++)
                 { Raw(hosts[0], "muted", i % 2); yield return Sample("random-carried-" + i); }
+                if (Environment.GetEnvironmentVariable("MT2_PROBE_ENCHANTMENT_WORLD") == "1")
+                {
+                    Raw(hosts[0], "muted", 0); Raw(hosts[1], "muted", 0);
+                    Raw(hosts[0], "silenced", 0); Raw(hosts[1], "silenced", 0);
+                    Configure("armor", 2, "armor", 3);
+                    yield return StatusSample("mute-add", "muted", 1);
+                    yield return StatusSample("mute-zero-add", "muted", 0);
+                    yield return StatusSample("mute-repeat", "muted", 1);
+                    yield return StatusSample("mute-zero-remove", "muted", 0, true);
+                    yield return StatusSample("mute-remove-all", "muted", -1, true);
+                    yield return StatusSample("silence-add", "silenced", 1);
+                    yield return StatusSample("silence-remove", "silenced", 1, true);
+                    yield return StatusSample("armor-zero-no-global", "armor", 0);
+                    yield return StatusSample("dormant-no-global", "dormant", 1);
+                    yield return StatusSample("spark-zero-dormant", "spark", 0);
+                    yield return StatusSample("spark-enable-dormant", "spark", 1);
+                    yield return StatusSample("spark-zero-remove", "spark", 0, true);
+                    yield return StatusSample("spark-remove-dormant", "spark", 1, true);
+                    yield return StatusSample("dormant-remove-no-global", "dormant", -1, true);
+                    Set(rooms, "_allowEnchantmentUpdates", false);
+                    yield return StatusSample("disabled-mute", "muted", 1);
+                    Set(rooms, "_allowEnchantmentUpdates", true);
+                    yield return StatusSample("enabled-unmute", "muted", -1, true);
+                    Configure("armor", 2, "poison", 1, random: true);
+                    for (int i = 0; i < 16; i++)
+                        yield return StatusSample("control-random-carried-" + i, "muted", i % 2 == 0 ? 1 : -1, i % 2 != 0);
+                }
             }
             finally
             {
@@ -149,6 +177,16 @@ namespace MonsterTrain2Poju.Probe
                 StatusMutationsSuppressed = false, ExternalPreviewPreparationsRecorded = true, LiveContextUnchanged = restored, Mismatches = mismatches, Samples = samples }))
             using (var stream = File.Create(path)) archive.Write(stream);
             if (!restored || mismatches != 0) throw new InvalidOperationException("Real enchantment combat calibration differs/restoration failed: " + mismatches + "/" + restored);
+            if (worldSamples.Count > 0)
+            {
+                string worldPath = Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!, "enchantment-world-calibration.mt2f");
+                using (var archive = NativeFixtureCapture.Capture(new { Schema = 1, GameVersion = UnityEngine.Application.version,
+                    GameModuleMvid = typeof(CharacterState).Assembly.ManifestModule.ModuleVersionId, Boundary = "AutomaticControlStatusAndQueue",
+                    StatusMutationsSuppressed = false, ExternalPreviewPreparationsRecorded = true, LiveContextUnchanged = restored,
+                    Mismatches = worldMismatches, Samples = worldSamples }))
+                using (var stream = File.Create(worldPath)) archive.Write(stream);
+                if (worldMismatches != 0) throw new InvalidOperationException("Automatic world status calibration differs: " + worldMismatches);
+            }
 
             void Configure(string first, int firstCount, string second, int secondCount, bool random = false)
             {
@@ -191,6 +229,34 @@ namespace MonsterTrain2Poju.Probe
                 if (difference != null) mismatches++;
                 samples.Add(new { Label = label, Direct = direct, SourceId = id, TriggerIndex = triggerIndex, EffectIndex = 0,
                     Before = before, Actual = actual, Requests = nativeRequests, Callbacks = queued, AfterQueue = afterQueue,
+                    PreviewPreparedUnitIds = previewPreparedUnits.ToArray(), Difference = difference, Completed = true });
+            }
+            IEnumerator StatusSample(string label, string statusId, int count, bool remove = false)
+            {
+                if (Queue().Length != 0) throw new InvalidOperationException("Automatic calibration requires an empty trigger queue.");
+                EnchantmentCombatState before = Snapshot(); int id = Trace.UnitId(hosts[0]);
+                CombatStatus definition = BattleActionProbe.Status(statusId, count);
+                EnchantmentCombatResult predicted = EnchantmentWorldModel.ChangeStatus(before, id, definition, remove);
+                requests.Clear(); previewPreparedUnits.Clear(); recordPreviewPreparation = true; recording = true;
+                try
+                {
+                    if (remove) hosts[0].RemoveStatusEffect(statusId, count, new CharacterState.RemoveStatusEffectParams());
+                    else hosts[0].AddStatusEffect(statusId, count, new CharacterState.AddStatusEffectParams());
+                }
+                finally { recording = false; }
+                EnchantmentCombatState actual = Snapshot(); EnchantmentCallback[] queued = Queue();
+                EnchantmentRequest[] nativeRequests = requests.ToArray();
+                string? difference = !predicted.Supported ? predicted.UnsupportedReason : !Equal(predicted.State!, actual) ? "Automatic status/train/effect state differs" :
+                    !Equal(predicted.Callbacks, queued) ? "Automatic callback payloads/order differ" : null;
+                EnchantmentCombatResult drained = EnchantmentWorldModel.Drain(predicted);
+                yield return combat.RunTriggerQueue();
+                recordPreviewPreparation = false;
+                EnchantmentCombatState afterQueue = Snapshot(); EnchantmentCombatState? modeled = drained.State;
+                if (modeled != null) foreach (int preparedId in previewPreparedUnits) modeled = EnchantmentCombatModel.PrepareForPreview(modeled, preparedId);
+                if (difference == null && (!drained.Supported || !Equal(modeled!, afterQueue))) difference = drained.UnsupportedReason ?? "Automatic queue/context/preparation differs";
+                if (difference != null) worldMismatches++;
+                worldSamples.Add(new { Label = label, UnitId = id, Status = definition, Remove = remove, Before = before, Actual = actual,
+                    ObservedAuraRequests = nativeRequests, Callbacks = queued, AfterQueue = afterQueue,
                     PreviewPreparedUnitIds = previewPreparedUnits.ToArray(), Difference = difference, Completed = true });
             }
         }
