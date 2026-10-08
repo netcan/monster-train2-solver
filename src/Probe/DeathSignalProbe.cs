@@ -26,7 +26,9 @@ namespace MonsterTrain2Poju.Probe
             Invocation? pending = !listener ? null : Invocations.LastOrDefault(item => item.Actor == actor && !item.StatisticsStarted);
             return new UnitDeathState(actor.HasFinishedDying, actor.IsBeingRemoved(), listener,
                 pending == null ? null : pending.Source == null ? 0 : FullBattleTrace.Active!.CardId(pending.Source),
-                actor.IsSacrifice, once && !permanent);
+                actor.IsSacrifice, once && !permanent,
+                HordeMergeScenario.Enabled ? (bool)AccessTools.Property(typeof(CharacterState), "FiredDespawnEvent").GetValue(actor) : (bool?)null,
+                HordeMergeScenario.Enabled ? actor.IsDestroyed : (bool?)null);
         }
         [HarmonyPatch(typeof(CharacterState), "CheckForDeath")]
         private static class CheckPatch

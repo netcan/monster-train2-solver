@@ -63,9 +63,14 @@ namespace MonsterTrain2Poju.Model
         public int? PendingStatisticsCardId { get; }
         public bool? IsSacrifice { get; }
         public bool? StatisticsListenerOnce { get; }
+        // Older captures do not observe these flags. A retained positive-HP actor may be despawned.
+        public bool? IsDespawned { get; }
+        public bool? IsDestroyed { get; }
         public UnitDeathState(bool hasFinishedDying, bool isBeingRemoved, bool hasStatisticsListener, int? pendingStatisticsCardId = null,
-            bool? isSacrifice = null, bool? statisticsListenerOnce = null)
-        { HasFinishedDying = hasFinishedDying; IsBeingRemoved = isBeingRemoved; HasStatisticsListener = hasStatisticsListener; PendingStatisticsCardId = pendingStatisticsCardId; IsSacrifice = isSacrifice; StatisticsListenerOnce = statisticsListenerOnce; }
+            bool? isSacrifice = null, bool? statisticsListenerOnce = null, bool? isDespawned = null, bool? isDestroyed = null)
+        { HasFinishedDying = hasFinishedDying; IsBeingRemoved = isBeingRemoved; HasStatisticsListener = hasStatisticsListener; PendingStatisticsCardId = pendingStatisticsCardId; IsSacrifice = isSacrifice; StatisticsListenerOnce = statisticsListenerOnce; IsDespawned = isDespawned; IsDestroyed = isDestroyed; }
+        internal UnitDeathState WithLifecycle(bool? despawned, bool? destroyed) => new UnitDeathState(HasFinishedDying,
+            IsBeingRemoved, HasStatisticsListener, PendingStatisticsCardId, IsSacrifice, StatisticsListenerOnce, despawned, destroyed);
     }
 
     public sealed class CombatUnit
@@ -163,12 +168,14 @@ namespace MonsterTrain2Poju.Model
             Modifiers, IsBoss, LastAttackerId, StatusRegistry, EquipmentCards, NextTriggerId, Ability, StatusDictionary,
             AbilityRules, HordeDefinition, IsSpawning, cardId, DeathState == null ? null : new UnitDeathState(
                 DeathState.HasFinishedDying, DeathState.IsBeingRemoved, DeathState.HasStatisticsListener,
-                DeathState.PendingStatisticsCardId, DeathState.IsSacrifice.HasValue ? true : (bool?)null, DeathState.StatisticsListenerOnce));
+                DeathState.PendingStatisticsCardId, DeathState.IsSacrifice.HasValue ? true : (bool?)null, DeathState.StatisticsListenerOnce,
+                DeathState.IsDespawned, DeathState.IsDestroyed));
 
         internal CombatUnit WithDeathState(UnitDeathState state) => new CombatUnit(Id, AssetKey, Team, BaseAttack, Health, MaxHealth,
             CanAttack, IsPyre, EndsBattleOnDeath, Statuses, Triggers, SpawnerCardId, Size, StatusImmunities, Subtypes,
             Modifiers, IsBoss, LastAttackerId, StatusRegistry, EquipmentCards, NextTriggerId, Ability, StatusDictionary,
-            AbilityRules, HordeDefinition, IsSpawning, SacrificeCardId, state);
+            AbilityRules, HordeDefinition, IsSpawning, SacrificeCardId, state.WithLifecycle(
+                state.IsDespawned ?? DeathState?.IsDespawned, state.IsDestroyed ?? DeathState?.IsDestroyed));
         internal CombatUnit WithTriggers(IReadOnlyList<CombatTrigger> triggers) => new CombatUnit(Id, AssetKey, Team, BaseAttack, Health, MaxHealth,
             CanAttack, IsPyre, EndsBattleOnDeath, Statuses, triggers, SpawnerCardId, Size, StatusImmunities, Subtypes,
             Modifiers, IsBoss, LastAttackerId, StatusRegistry, EquipmentCards, NextTriggerId, Ability, StatusDictionary,
@@ -385,7 +392,7 @@ namespace MonsterTrain2Poju.Model
                 if (queued.OverrideTarget != null)
                     foreach (QueuedCharacterTrigger item in queue.Where(item => item.OverrideTarget?.Id == queued.OverrideTarget.Id))
                         item.OverrideTarget = queued.OverrideTarget;
-                if (queued.Unit.Health <= 0)
+                if (queued.Unit.Health <= 0 || queued.Unit.DeathState?.IsDespawned == true || queued.Unit.DeathState?.IsDestroyed == true)
                     foreach (QueuedCharacterTrigger item in queue.Where(item => item.RoomIndex == queued.RoomIndex && item.Unit.Id == queued.Unit.Id))
                         item.Unit = queued.Unit;
                 return true;
@@ -804,18 +811,21 @@ namespace MonsterTrain2Poju.Model
             internal readonly Dictionary<string, CombatStatus> Statuses;
             internal readonly List<CombatTrigger> Triggers;
             internal bool Despawned;
+            internal bool Destroyed;
             internal bool DeathFinished;
             internal bool Removed;
             internal bool InRoom = true;
             internal int? LastAttackerId;
             private IReadOnlyList<CombatStatus>? statusRegistry;
             private StatusDictionaryState? dictionary;
-            internal bool Alive => Health > 0 && !Removed;
+            internal bool Alive => Health > 0 && !Removed && !Despawned;
             internal int Attack => Math.Max(0, Source.AttackBeforeStatuses + Amount("buff") + Amount("valor") - Amount("debuff"));
 
             internal WorkingUnit(CombatUnit source)
             {
                 Source = source; Health = source.Health; LastAttackerId = source.LastAttackerId;
+                Despawned = source.DeathState?.IsDespawned == true; Destroyed = source.DeathState?.IsDestroyed == true;
+                Removed = Destroyed;
                 Statuses = source.Statuses.ToDictionary(status => status.Id, StringComparer.Ordinal);
                 statusRegistry = source.StatusRegistry; dictionary = source.StatusDictionary;
                 Triggers = source.Triggers.ToList();
@@ -825,6 +835,7 @@ namespace MonsterTrain2Poju.Model
             internal void Apply(CombatUnit changed)
             {
                 Source = changed; Health = changed.Health; LastAttackerId = changed.LastAttackerId;
+                Despawned = changed.DeathState?.IsDespawned ?? Despawned; Destroyed = changed.DeathState?.IsDestroyed ?? Destroyed;
                 statusRegistry = changed.StatusRegistry; dictionary = changed.StatusDictionary;
                 Statuses.Clear();
                 foreach (CombatStatus status in changed.Statuses) Statuses.Add(status.Id, status);
@@ -857,7 +868,9 @@ namespace MonsterTrain2Poju.Model
                 SyncRegistry();
                 return new CombatUnit(Source.Id, Source.AssetKey, Source.Team,
                     Source.BaseAttack, Health, Source.MaxHealth, Source.CanAttack, Source.IsPyre,
-                    Source.EndsBattleOnDeath, Statuses.Values.ToArray(), Triggers, Source.SpawnerCardId, Source.Size, Source.StatusImmunities, Source.Subtypes, Source.Modifiers, Source.IsBoss, LastAttackerId, statusRegistry, Source.EquipmentCards, Source.NextTriggerId, Source.Ability, dictionary, Source.AbilityRules, Source.HordeDefinition, Source.IsSpawning, Source.SacrificeCardId, Source.DeathState);
+                    Source.EndsBattleOnDeath, Statuses.Values.ToArray(), Triggers, Source.SpawnerCardId, Source.Size, Source.StatusImmunities, Source.Subtypes, Source.Modifiers, Source.IsBoss, LastAttackerId, statusRegistry, Source.EquipmentCards, Source.NextTriggerId, Source.Ability, dictionary, Source.AbilityRules, Source.HordeDefinition, Source.IsSpawning, Source.SacrificeCardId,
+                    Source.DeathState?.WithLifecycle(Source.DeathState.IsDespawned.HasValue ? Despawned : (bool?)null,
+                        Source.DeathState.IsDestroyed.HasValue ? Destroyed : (bool?)null));
             }
         }
 
@@ -1172,6 +1185,8 @@ namespace MonsterTrain2Poju.Model
                     return Finish(RoomOutcome.Exchanged);
                 }
                 WorkingUnit? actor = units.FirstOrDefault(unit => unit.Source.Id == queued.Unit.Id);
+                if (actor == null && (queued.Unit.DeathState?.IsDespawned == true || queued.Unit.DeathState?.IsDestroyed == true))
+                { actor = new WorkingUnit(queued.Unit) { InRoom = false }; units.Add(actor); }
                 if (actor == null && (queued.Kind == "OnDeath" || queued.Kind == "OnHit" || queued.Kind == "OnKill" ||
                     queued.Kind == "OnAttackingBeforeDamage" || queued.Kind == "OnAttacking" || queued.Kind == "OnSentry" || StatusCallbackModel.Kinds.Contains(queued.Kind) || HarvestModel.Kinds.Contains(queued.Kind)))
                 { actor = new WorkingUnit(queued.Unit) { InRoom = false }; units.Add(actor); }
@@ -1535,6 +1550,7 @@ namespace MonsterTrain2Poju.Model
 
             private void RemovePhysicalPoint(WorkingUnit unit)
             {
+                unit.Destroyed = true;
                 if (context?.SpawnPoints == null) return;
                 var removed = BattleSpawnPointModel.Apply(context.SpawnPoints, CurrentRoom(), "Remove", unit.Source.Team, unit.Source.Id);
                 if (!removed.Supported) { unsupportedReason = removed.Error; return; }

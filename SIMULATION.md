@@ -5216,3 +5216,75 @@ sizes and SHA-256 manifest, without source JSON dependencies.
 Horde merging/cloning, wider relic and room effects, special Boss/Pyre mechanics
 and broader card-effect coverage remain unfinished; the complete battle
 simulator is still in progress.
+
+## Horde merge/clone APIs and temporary previews (schema 97)
+
+`HordeMergeModel` now models the native Horde branch of `CloneMonsterState`
+and `StatusEffectHordeState.MergeCharactersInRoom`. Cloning adds one troop to
+the existing actor without allocating a unit/card, choosing a spawn point or
+consuming RNG. Selection chooses the first other Horde actor in native
+same-team manager order; authored character definitions need not match.
+Selection and the direct API have distinct gates: the latter also accepts
+self-merges and cross-team actors.
+
+Merge growth uses the recipient's authored troop attack/HP. A real merge
+despawns and destroys the incoming actor while retaining its positive HP,
+equipment references, death-listener state and unfinished death flags. It
+does not emit death/Harvest notifications or increment physical death counters.
+Removal clears its physical point and centers both teams, including gaps on
+the opposing team. Attached ordinary gear returns to Exhausted, return-to-hand
+gear enters Hand, and the incoming unit's own card remains in Standby because
+its death condition is unfinished. Passing `CardEffectBump` suppresses Horde
+re-spawn/Rally callbacks while preserving status-change and troop-added records.
+This API-level effect-type test does not implement Bump movement/card play.
+
+Optional despawn/destruction fields distinguish removed positive-HP objects
+from live actors. Queue engines retain those objects, their callback entries
+and evolving trigger flags across phases. Ordinary callbacks on them abort
+their effects at the native lifecycle gate. Self-merging first grows the same
+object, then removes it; immunity blocks recipient growth but still removes
+the source. Missing lifecycle/physical inputs return an unsupported result.
+
+Temporary previews retain physical positions, equipment piles and destruction
+state, while their source becomes logically despawned in the temporary actor
+state. Preview restoration returns the complete primary actor/save/context
+state and preserves native shared weak room caches, resolving visibility again
+against the restored primary actors. Raw cache references are captured rather
+than inferred. Trigger capture reads the active primary/preview once flag;
+the scenario includes once-only re-spawn triggers and verifies their restored
+primary flags.
+
+`tests/fixtures/full-battle-horde-merge.mt2f` records 17 native API operations,
+including four temporary previews, and five manager-order selections. It
+covers both teams, different definitions, self/cross-team/null/non-Horde/immunity
+boundaries, a removed actor still present in the Rally queue, both equipment
+destinations and opposing-team physical centering. All before/API-return/drained
+room/context/source states and accepted/dequeued callback payloads compare
+independently in 32 branches; all four complete restored primary states match.
+Two hosts are summoned through real paid plays. Ordinary equipment is played
+from hand; the returning item uses native attachment/standby preparation when
+absent from the starting hand. Five enemy observers use the native spawn API
+with authored definitions derived from an ordinary wave template, without
+changing the original Boss or subsequent wave definitions.
+
+The muted Instant native capture wins at Pyre 80 after 17 recorded card plays
+and five EndTurns, with zero failures, differences, unsupported transitions or
+pending records and unchanged original profile/log signatures. Complete later
+policies also match from initial/middle roots in 16 parallel branches. The
+archive is 31,631 bytes with 5,159 unique graph nodes; SHA-256 is in manifest.tsv.
+Instrumented native capture takes 48.05 seconds, not a model/search benchmark.
+The curated inventory contains 145 binary archives: 136 battles and nine
+calibrations, with complete size/hash inventory checks and no source JSON.
+
+The complete `Check-Models.ps1` regression exits zero across all 145 archives.
+All 136 battles and nine calibrations pass, including eighteen physical-position
+suites, fourteen queued-summon suites, ten equipment suites, six direct summon
+effect suites, seven decision reference suites and the new Horde API/preview
+suite. All 262 native summon damage phases still match; no transition is
+unsupported. Two raw cache memberships become visible again after the native
+preview merge is rolled back, and both match the independent restoration.
+
+Real Bump targeting, cross-room movement/merge, blocked movement, arrival/Shift/
+Sentry callbacks, ordinary unit cloning, wider relic/room effects, special
+Boss/Pyre mechanics and broader card coverage remain unfinished. The complete
+battle simulator and optimal search are still in progress.

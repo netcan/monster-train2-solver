@@ -91,8 +91,8 @@ namespace MonsterTrain2Poju.Model
                 // Unaffected groups retain their references. Their numerical fields
                 // are never used by this operation; the selected group's actors are required above.
                 int hp = unit?.Health ?? 1;
-                bool alive = hp > 0;
-                return new SpawnPointOccupant(reference.UnitId, hp, alive, !alive, false,
+                bool alive = hp > 0 && unit?.DeathState?.IsDespawned != true;
+                return new SpawnPointOccupant(reference.UnitId, hp, alive, !alive, unit?.DeathState?.IsDestroyed == true,
                     unit?.Status("undying")?.Stacks ?? 0, reference.SpawnedInPreview, reference.OuterBoss,
                     reference.Current, reference.LastKnown);
             }).ToArray());

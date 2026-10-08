@@ -95,7 +95,7 @@ namespace MonsterTrain2Poju.Model
         }
         // Trigger effects retain their native actor/target objects, including HP-zero victims.
         internal static RoomCombatResult ApplyRetained(RoomCombatState source, int targetId, CombatStatus added, int sourceCardId,
-            bool overrideImmunity = false, bool allowModification = true)
+            bool overrideImmunity = false, bool allowModification = true, bool suppressHordeSpawnCallbacks = false)
         {
             CombatUnit? target = source.Units.FirstOrDefault(unit => unit.Id == targetId);
             if (target == null) return Unsupported("Missing status target.");
@@ -120,7 +120,7 @@ namespace MonsterTrain2Poju.Model
             if (added.Id == "horde" && count > old)
             {
                 var staged = new RoomCombatState(source.RoomIndex, source.Deployment, source.Units, source.ExternalInteractions, context, source.Preview);
-                RoomCombatResult horde = HordeStatusModel.Change(staged, target, changed, count - old);
+                RoomCombatResult horde = HordeStatusModel.Change(staged, target, changed, count - old, suppressHordeSpawnCallbacks);
                 if (!horde.Supported) return horde;
                 changed = horde.State!.Units.First(unit => unit.Id == targetId); context = horde.State.Context;
                 queue.AddRange(horde.PendingCallbacks);

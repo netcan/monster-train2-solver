@@ -697,3 +697,32 @@ zero unsupported transitions and intact complete inventory/size/SHA-256 checks.
 
 Horde merging/cloning, broader relic/room effects, special Boss/Pyre behavior
 and complete optimal search remain unfinished.
+
+`full-battle-horde-merge.mt2f` adds schema 97 native Horde cloning/merging with
+17 API operations, four temporary previews and five manager-order selections.
+Exact API/drained room/context/source states, complete primary restoration,
+accepted/dequeued callbacks and evolving once flags match in 32 branches.
+Coverage includes both teams, different definitions, self/cross-team/null/
+non-Horde/immunity gates, a removed actor's pending Rally entry, mixed attached
+gear destinations, orphan unit Standby cards and opposing-team physical gaps.
+Preview merges retain physical points and equipment; primary restoration
+preserves and resolves native shared raw weak room caches.
+
+Its complete 17-play/five-EndTurn battle wins at Pyre 80; initial/middle policies
+match in 16 branches. Native failures, differences, unsupported/pending records
+are zero, and the original profile/log signatures are intact. The capture uses
+real paid hosts and native equipment/enemy API preparation; original Boss/waves
+are unchanged. The 31,631-byte archive retains 5,159 unique nodes. The curated
+inventory now contains 145 binary archives: 136 battles and nine calibrations.
+Sizes and hashes are in manifest.tsv; no source JSON dependency is introduced.
+
+The complete 145-archive regression exits zero: all 136 battles and nine
+calibrations pass. It retains eighteen physical-position suites, fourteen
+queued-summon suites, ten equipment suites, six direct summon-effect suites,
+seven decision reference suites, all 262 summon damage phases and the new Horde
+API/preview suite, with no unsupported transitions. Both restored raw weak cache
+memberships match; complete inventory/size/SHA-256 checks pass.
+
+The direct Horde APIs are covered. Real Bump movement/card integration,
+ordinary unit cloning, wider relic/room/Boss/Pyre behavior, broader card coverage
+and complete optimal search remain unfinished.

@@ -70,6 +70,7 @@ $fixtures = @('full-battle-steward-once.mt2f', 'full-battle-no-cards.mt2f', 'ful
     'full-battle-ability-effects.mt2f',
     'full-battle-equipment-abilities.mt2f',
     'full-battle-horde-statuses.mt2f',
+    'full-battle-horde-merge.mt2f',
     'full-battle-harvest-triggers.mt2f',
     'full-battle-horde-removal.mt2f',
     'full-battle-horde-death.mt2f',
