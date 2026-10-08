@@ -264,7 +264,7 @@ namespace MonsterTrain2Poju.Probe
                 RoomCapacityProbe.Capture(managers.GetRoomManager()!), abilityCache,
                 AccessTools.Field(typeof(CombatManager), "lastAbilityActivatorCharacter").GetValue(managers.GetCombatManager()) is CharacterState activator
                     ? UnitId(activator) : 0, AbilityLifecycleProbe.Disabled(managers.GetSaveManager()),
-                lastSpawned == null || normalizeDestroyedAttacker && (lastSpawned.IsDestroyed || !lastSpawned.IsAlive) ? 0 : UnitId(lastSpawned));
+                lastSpawned == null || normalizeDestroyedAttacker && (lastSpawned.IsDestroyed || !lastSpawned.IsAlive) ? 0 : UnitId(lastSpawned), NextUnitId);
         }
 
         private static StatisticQueryFrame CaptureQueryFrame(AllGameManagers managers)
@@ -428,7 +428,7 @@ namespace MonsterTrain2Poju.Probe
             string temporary = path + ".tmp";
             var snapshot = new
             {
-                Schema = 76,
+                Schema = 77,
                 GameVersion = Application.version,
                 GameModuleMvid = typeof(CardState).Assembly.ManifestModule.ModuleVersionId,
                 NativeWon,

@@ -109,6 +109,7 @@ are copied immutable values; independent child states can run on worker threads.
 | Dying Horde unit upgrades | `UnitModifierModel` and `HordeStatusModel` | Five complete deaths, seven dying upgrade/removal effects, 45 exact death/Harvest phases, accepted callback counts and source-card writes; ordinary/unhealed/attributed HP, early exits and 32 branches |
 | Paid summon and Horde Rally | `CardPlayedTriggerModel`, `BattleActionModel` and `RoomCombatModel` | Five exact Horde operations, ten post-play team phases, twelve repeated dispatches, cached room membership, last-spawned timing/overrides, silence/once/conditions and complete policies with parallel branches |
 | Terminal summon and lethal Rally | `BattleActionModel` and `RoomCombatModel` | Twelve native team phases and six dispatches, deferred Boss self-death, post-kill permanent/unit-death upgrades, rewards, a surviving last-spawned reference and fresh Standby routing; complete policy with parallel branches |
+| Shared unit identity allocation | `UnitIdentityModel` and `CombatContext.NextUnitId` | Player/enemy/treasure allocation, all context copies, stable death/terminal counters, 98 native spawn/decision boundaries and complete policies with parallel branches |
 | Status removal and Horde sacrifice | `StatusRemovalModel`, `CardSpellModel` and `RoomCombatModel` | Nine native API/effect/trigger operations, exact room/retained actor states, accepted queue counts, ordered death/Harvest dispatches, a real paid spell removing both teams and parallel branches; raw zero HP preserves orphan standby cards while sacrifice signals physical death and retains its responsible card |
 | Reentrant death signals and queued player sacrifice | `UnitDeathState`, `StatusRemovalModel` and `RoomCombatModel` | Three native operations, 45 exact death/Harvest phase states and complete dispatch order, 95 effect/retained-target states, pending versus cleared statistics listeners, spawner timing and parallel branches |
 | Physical death Harvest | `HarvestModel` and `RoomCombatModel` | Four native physical deaths and 31 exact dispatches; own-death children precede player/enemy groups, Hero/Monster/Unit kinds, Horde repetition, required dying statuses, silence and once flags; complete subsequent battle and parallel branches |
@@ -4139,3 +4140,71 @@ The new archive also passes its separate focused regression, and eight affected
 older fixtures pass their focused checks. Probe builds with zero warnings/errors;
 ModelChecks retains its twelve existing nullable warnings. Both changed
 PowerShell scripts parse, and git diff --check passes.
+
+## Shared unit identity allocation, schema 77
+
+Player and enemy births previously allocated identities through the outer
+EnemySpawnState only. Nested card or character effects cannot access that state;
+inferring a new ID from living units would reuse an identity after its last
+holder dies. CombatContext now carries an optional shared NextUnitId, and all
+context copies preserve it through card generation, statistics, abilities,
+upgrades, status callbacks, death and terminal clearing. Ordinary card plays,
+enemy groups and treasure births use the same immutable allocation model.
+Outer spawn/decision outputs take the completed shared counter, including any
+future nested allocations. A birth advances the counter before initialization
+and OnSpawn callbacks; removing units never reduces it.
+
+Native capture observes the existing probe-local reference identity counter,
+whose creation hooks assign IDs when characters are born. This is independent
+of unit position and native team-specific cheat IDs. Every modern room context
+and outer decision/spawn state retains the same value. Missing legacy fields
+remain null: existing unit plays/waves use their original outer counter, while
+context-only creation explicitly rejects an uncaptured counter. Inconsistent
+outer/shared values, existing-unit collisions and exhausted allocation bounds
+are explicit unsupported results. They are not silently repaired by guessing
+from current units.
+
+Independent checks start from a counter above all living IDs, summon a unit,
+kill it, summon again and create an enemy group. The second summon keeps the
+next identity, and both enemy births continue the same sequence. Complete child
+states match in 32 branches without mutating the parent. Invalid, conflicting,
+missing and exhausted metadata cases also reject explicitly, and legacy captures
+retain their previous state representation.
+
+Two fresh muted Instant native runs preserve the original Boss/waves and repeat
+the schema-75 Rally and schema-76 lethal-Rally scenarios. The ordinary run takes
+48.97 seconds, wins at Pyre 80 and compares 50 complete spawn/decision boundaries,
+including ten births across recorded actions/turns. The lethal run takes 39.81
+seconds, also wins at Pyre 80, and compares 48 boundaries with thirteen births.
+Both have zero capture failures, mismatches, unsupported transitions and pending
+records, and original profile signatures remain unchanged. Independent complete
+policies match all thirteen plays and five/four EndTurns from initial and actual
+mid-battle roots in 16 parallel branches. Mechanism checks also repeat in 32
+branches, preserving the new counter at each captured callback boundary.
+
+`tests/fixtures/full-battle-unit-identities.mt2f` is 30,824 bytes / 4,954 unique
+nodes, with SHA-256
+`229dd8ed2603d2b2f07f00dbeaebcf134f6d4518574c1ef2c0a5668ec9713823`.
+`tests/fixtures/full-battle-unit-identities-lethal.mt2f` is 21,475 bytes / 3,345
+unique nodes, with SHA-256
+`ac7353c87345a229588dd185a83887fce36afc7f35c89a6c36549e38f8401f76`.
+Both are direct native binary captures with no source JSON.
+
+This supplies the allocation prerequisite for cardless and nested births;
+it does not implement their creation effects. CardEffectSpawnMonster integration
+still needs its own native coverage for placement, fresh/copied spawner cards,
+multiple births, extra upgrades, cardless Rally overrides, death replacement,
+equipment transfer and room/relic spawn modifiers. The whole-battle objective
+remains open.
+
+Source inspection also distinguishes the cardless flag from a null spawner
+card: fallback creation can supply a card while the unit remains cardless.
+OnSpawnNotFromCard uses the null-card condition, whereas cardless Rally uses
+the separate flag. Runtime integration must verify both independently.
+
+The full 108-archive regression exits zero: 99 native battle archives and nine
+calibrations pass, including manifest/SHA-256 integrity, typed hydration and
+independent room/card/train/turn/action/complete-policy comparisons. Both new
+archives also pass their separate focused checks. Probe builds with zero
+warnings/errors; ModelChecks retains its twelve existing nullable warnings.
+The changed regression script parses, and git diff --check passes.

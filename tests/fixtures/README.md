@@ -360,3 +360,15 @@ actual mid-battle roots in 16 parallel branches, winning at Pyre 80. The
 21,543-byte archive has 3,333 unique nodes and no source JSON. Original Boss
 stats and waves remain intact. Cardless summons, retained/dead targets, Rally
 movement and broader Horde merging/cloning/revival remain separate work.
+
+`full-battle-unit-identities.mt2f` and `full-battle-unit-identities-lethal.mt2f`
+are native schema-77 recordings of the ordinary and lethal Rally scenarios.
+The shared unit allocation counter agrees with every room and outer spawn state
+at 50/48 spawn/decision boundaries, including ten/thirteen births across recorded
+actions and turns. Existing summon, callback, death and terminal-card states
+compare completely; the counter advances at births and survives removals and
+terminal clearing. Thirteen-play policies finish after five/four EndTurns at
+Pyre 80, matching initial and actual mid-battle roots in 16 parallel branches.
+The 30,824/21,475-byte archives have 4,954/3,345 unique nodes and no source JSON.
+These prove shared identity state and ordinary births; cardless/nested creation
+effects remain separate native integration work.

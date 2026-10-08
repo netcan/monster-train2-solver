@@ -93,6 +93,8 @@ namespace MonsterTrain2Poju.Model
             int phase = source.Phase, nextId = source.NextUnitId, treasureRemaining = source.TreasuresRemaining;
             UnityRng rng = source.Rng;
             CombatContext? context = source.Train.Context;
+            string? identityError = UnitIdentityModel.Validate(context, source.Train.Rooms.SelectMany(room => room.Units), nextId);
+            if (identityError != null) return Unsupported(identityError);
             RoomOutcome outcome = RoomOutcome.Cleared;
             int pyre = rooms.Length - 1;
             if (source.Looping || phase < source.Waves.Count)
@@ -119,7 +121,10 @@ namespace MonsterTrain2Poju.Model
                     if (roomIndex > pyre) return Unsupported("No enemy spawn point remains in the train.");
                     string? abilityError = AbilityLifecycleModel.SpawnError(definition.Unit, context);
                     if (abilityError != null) return Unsupported(abilityError);
-                    CombatUnit unit = AbilityLifecycleModel.SuppressAtSpawn(definition.Create(nextId++), context);
+                    UnitIdentityAllocation allocated = UnitIdentityModel.Allocate(context, context?.NextUnitId ?? nextId);
+                    if (!allocated.Supported) return Unsupported(allocated.UnsupportedReason!);
+                    nextId = allocated.NextUnitId; context = allocated.Context;
+                    CombatUnit unit = AbilityLifecycleModel.SuppressAtSpawn(definition.Create(allocated.UnitId), context);
                     Insert(rooms[roomIndex], unit);
                     error = Initialize(unit, roomIndex);
                     if (error != null) return Unsupported(error);
@@ -160,7 +165,10 @@ namespace MonsterTrain2Poju.Model
                     if (error != null) return Unsupported(error);
                     string? abilityError = AbilityLifecycleModel.SpawnError(definition.Unit, context);
                     if (abilityError != null) return Unsupported(abilityError);
-                    CombatUnit unit = AbilityLifecycleModel.SuppressAtSpawn(definition.Create(nextId++), context);
+                    UnitIdentityAllocation allocated = UnitIdentityModel.Allocate(context, context?.NextUnitId ?? nextId);
+                    if (!allocated.Supported) return Unsupported(allocated.UnsupportedReason!);
+                    nextId = allocated.NextUnitId; context = allocated.Context;
+                    CombatUnit unit = AbilityLifecycleModel.SuppressAtSpawn(definition.Create(allocated.UnitId), context);
                     Insert(rooms[eligible[floor.Value]], unit);
                     error = Initialize(unit, eligible[floor.Value]);
                     if (error != null) return Unsupported(error);
@@ -239,7 +247,7 @@ namespace MonsterTrain2Poju.Model
                     source.Train.EnemySlotsPerRoom, context);
                 if (source.CanonicalDecisionReferences) train = TrainCombatModel.ProcessRemovals(train);
                 return new EnemySpawnResult(new EnemySpawnState(train, source.Waves, groups, phase, source.Looping,
-                    rng, nextId, source.Treasures, treasureRemaining, source.TreasureEnabled, source.FirstTreasureTurn,
+                    rng, context?.NextUnitId ?? nextId, source.Treasures, treasureRemaining, source.TreasureEnabled, source.FirstTreasureTurn,
                     source.FirstTreasureRoom, source.Turn, source.ExternalInteractions, source.CanonicalDecisionReferences, source.PendingDestroyedUnitIds), outcome);
             }
         }

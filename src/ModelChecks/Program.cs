@@ -134,6 +134,7 @@ TriggerUpgradeChecks.Run();
 EnemySpawningChecks.Run();
 BattleActionChecks.Run();
 DecisionReferenceChecks.Run();
+UnitIdentityChecks.Run();
 CardSpellChecks.Run();
 RoomSpellChecks.Run();
 RandomSpellChecks.Run();

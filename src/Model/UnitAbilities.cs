@@ -11,6 +11,8 @@ namespace MonsterTrain2Poju.Model
             TrainCombatState train = source.Spawn.Train;
             CombatContext? context = train.Context;
             if (context == null || source.PlayRules == null) return Unsupported("Missing ability battle context or definitions.");
+            string? identityError = UnitIdentityModel.Validate(context, train.Rooms.SelectMany(room => room.Units), source.Spawn.NextUnitId);
+            if (identityError != null) return Unsupported(identityError);
             if (source.ExternalInteractions.Count > 0 || source.Spawn.ExternalInteractions.Count > 0)
                 return Unsupported(string.Join("; ", source.ExternalInteractions.Concat(source.Spawn.ExternalInteractions)));
             if (source.PlayRules.Cards.Select(rule => rule.DataId).Distinct().Count() != source.PlayRules.Cards.Count)
@@ -92,7 +94,7 @@ namespace MonsterTrain2Poju.Model
             }
             if (source.CanonicalDecisionReferences) train = TrainCombatModel.ProcessRemovals(train);
             EnemySpawnState old = source.Spawn;
-            var spawn = new EnemySpawnState(train, old.Waves, old.SelectedGroups, old.Phase, old.Looping, old.Rng, old.NextUnitId,
+            var spawn = new EnemySpawnState(train, old.Waves, old.SelectedGroups, old.Phase, old.Looping, old.Rng, train.Context?.NextUnitId ?? old.NextUnitId,
                 old.Treasures, old.TreasuresRemaining, old.TreasureEnabled, old.FirstTreasureTurn, old.FirstTreasureRoom,
                 old.Turn, old.ExternalInteractions, old.CanonicalDecisionReferences);
             return new BattleActionResult(new BattleTurnState(spawn, context.QueryFrame?.Energy ?? source.Energy - paid,

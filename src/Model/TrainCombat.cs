@@ -298,6 +298,8 @@ namespace MonsterTrain2Poju.Model
 
         internal static string? Validate(TrainCombatState source)
         {
+            string? identityError = UnitIdentityModel.Validate(source.Context, source.Rooms.SelectMany(room => room.Units));
+            if (identityError != null) return identityError;
             if (source.Context != null && AbilityCardModel.Validate(source.Context) is string cacheError) return cacheError;
             if (source.Rooms.Count < 2 || source.EnemySlotsPerRoom < 1 ||
                 source.Rooms.Where((room, index) => room.RoomIndex != index).Any())

@@ -210,7 +210,7 @@ namespace MonsterTrain2Poju.Model
             context = new CombatContext(new CardCycleState(context.Cards.Hand.Where(item => item.InstanceId != card.InstanceId).ToArray(),
                 context.Cards.Draw, context.Cards.Discard, context.Cards.Rng, context.Cards.DrawModifier, context.Cards.ExternalInteractions, context.Cards.BonusDraw),
                 context.BattleRng, context.Gold, context.NextCardId, context.MaxHandSize, context.StatusRules, context.Statistics, context.CardInstances,
-                context.CardRegistry, context.AllScenarioBossesDead, context.NextAddedTemporaryUpgrades, context.OtherPiles, context.QueryFrame, context.KillCamActivated, context.MagicPower, context.IsolatedBattlePreview, context.EnergyState, context.RoomCapacities, context.AbilityCardCache, context.LastAbilityActivatorUnitId, context.PermanentlyDisabledAbilities, context.LastSpawnedUnitId);
+                context.CardRegistry, context.AllScenarioBossesDead, context.NextAddedTemporaryUpgrades, context.OtherPiles, context.QueryFrame, context.KillCamActivated, context.MagicPower, context.IsolatedBattlePreview, context.EnergyState, context.RoomCapacities, context.AbilityCardCache, context.LastAbilityActivatorUnitId, context.PermanentlyDisabledAbilities, context.LastSpawnedUnitId, context.NextUnitId);
             target = new RoomCombatState(target.RoomIndex, target.Deployment, target.Units, target.ExternalInteractions, context, target.Preview);
             CombatUnit[] players = target.Units.Where(unit => unit.Team == CombatTeam.Player).ToArray();
             int position = action.PlayerPosition == -1 ? players.Length : action.PlayerPosition;
@@ -218,6 +218,8 @@ namespace MonsterTrain2Poju.Model
             bool effectsApplied = false;
             RoomOutcome outcome = RoomOutcome.Exchanged;
             int nextUnitId = source.Spawn.NextUnitId;
+            string? identityError = UnitIdentityModel.Validate(context, train.Rooms.SelectMany(room => room.Units), nextUnitId);
+            if (identityError != null) return Unsupported(identityError);
             if (rule.Effect == "SpawnMonster")
             {
                 if (action.TargetUnitId != 0) return Illegal("A summon takes a spawn position, not a unit target.");
@@ -234,7 +236,10 @@ namespace MonsterTrain2Poju.Model
                 if (position < 0 || position > players.Length) return Illegal("Invalid summon position.");
                 if (nextUnitId <= 0 || train.Rooms.SelectMany(room => room.Units).Any(unit => unit.Id >= nextUnitId))
                     return Unsupported("Invalid unit identity allocation.");
-                var spawned = new CombatUnit(nextUnitId++, template.AssetKey, CombatTeam.Player, template.BaseAttack,
+                UnitIdentityAllocation allocated = UnitIdentityModel.Allocate(context, nextUnitId);
+                if (!allocated.Supported) return Unsupported(allocated.UnsupportedReason!);
+                nextUnitId = allocated.NextUnitId; context = allocated.Context!;
+                var spawned = new CombatUnit(allocated.UnitId, template.AssetKey, CombatTeam.Player, template.BaseAttack,
                     template.Health, template.MaxHealth, template.CanAttack, false, false, template.Statuses,
                     template.Triggers, card.InstanceId, template.Size, template.StatusImmunities, template.Subtypes, template.Modifiers, template.IsBoss, template.LastAttackerId, template.StatusRegistry, template.EquipmentCards, template.NextTriggerId, template.Ability, template.StatusDictionary, template.AbilityRules, template.HordeDefinition, template.IsSpawning, template.SacrificeCardId, template.DeathState);
                 context = context.WithStatistics(context.Statistics?.Spawn(action.RoomIndex, template.Subtypes));
@@ -367,7 +372,7 @@ namespace MonsterTrain2Poju.Model
                 terminal ? playingInstance == null ? context.CardInstances : new[] { (context.FindCard(card.InstanceId) ?? playingInstance).OnDiscard(true, paidCost) } :
                 context.CardInstances?.Select(instance => instance.InstanceId == card.InstanceId
                     ? instance.OnDiscard(true, paidCost) : instance).ToArray(), context.CardRegistry, context.AllScenarioBossesDead, context.NextAddedTemporaryUpgrades,
-                context.OtherPiles == null ? null : piles, context.QueryFrame?.With(runningCombat: !terminal), context.KillCamActivated, context.MagicPower, context.IsolatedBattlePreview, context.EnergyState, context.RoomCapacities, context.AbilityCardCache, context.LastAbilityActivatorUnitId, context.PermanentlyDisabledAbilities, context.LastSpawnedUnitId);
+                context.OtherPiles == null ? null : piles, context.QueryFrame?.With(runningCombat: !terminal), context.KillCamActivated, context.MagicPower, context.IsolatedBattlePreview, context.EnergyState, context.RoomCapacities, context.AbilityCardCache, context.LastAbilityActivatorUnitId, context.PermanentlyDisabledAbilities, context.LastSpawnedUnitId, context.NextUnitId);
             RoomCombatState[] rooms = train.Rooms.Select(room =>
             {
                 return new RoomCombatState(room.RoomIndex, room.Deployment, room.Units, room.ExternalInteractions, context, room.Preview);
@@ -386,7 +391,7 @@ namespace MonsterTrain2Poju.Model
             EnemySpawnState spawn = source.Spawn;
             if (source.CanonicalDecisionReferences) train = TrainCombatModel.ProcessRemovals(train);
             spawn = new EnemySpawnState(train, spawn.Waves, spawn.SelectedGroups, spawn.Phase, spawn.Looping, spawn.Rng,
-                nextUnitId, spawn.Treasures, spawn.TreasuresRemaining, spawn.TreasureEnabled, spawn.FirstTreasureTurn,
+                train.Context?.NextUnitId ?? nextUnitId, spawn.Treasures, spawn.TreasuresRemaining, spawn.TreasureEnabled, spawn.FirstTreasureTurn,
                 spawn.FirstTreasureRoom, spawn.Turn, spawn.ExternalInteractions, spawn.CanonicalDecisionReferences);
             return new BattleActionResult(new BattleTurnState(spawn, context.EnergyState == null ? source.Energy - paidCost : context.QueryFrame!.Energy!.Value, source.EnergyPerTurn,
                 source.DrawPerTurn, source.ForgePoints, source.DragonsHoard, source.MoonPhase,
