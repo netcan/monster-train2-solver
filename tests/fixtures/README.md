@@ -1145,3 +1145,27 @@ all fourteen calibrations and pure checks pass with the rebuilt model; the
 complete 163-archive regression exits zero with 149 battle suites, fourteen
 calibrations and 145 continuous paid policy chains. All inventory sizes/hashes,
 byte-identical native provenance, PowerShell syntax and whitespace checks pass.
+
+Four enchantment-summon[-fresh|-random|-random-fresh]-calibration.mt2f archives
+observe original queued SpawnMonster applications whose new units carry persistent
+auras. Each contains two batches/four births/51 full callback payloads and matches
+complete room/world/source-card/physical/RNG state in 32 immutable branches. The
+copied variants additionally compare four detached source-card clones each; fresh
+variants use the matching child fallback definition. The model now performs the
+original final room-order aura update after a triggered summon batch, before
+queued OnSpawn callbacks drain.
+
+These are component calibrations with WholeBattleVerified=false, not accepted
+new full-battle policies. Preview-only births retained by aura dictionaries still
+expose incomplete actor retention, source-cache restoration, synthetic identities
+and preview physical references. Rejected diagnostic battles are not curated.
+The four binaries have 7,258/6,772/7,721/7,124 bytes and 1,140/1,027/1,168/1,049
+nodes respectively, match native bytes exactly and have no JSON companions or
+text sources. Inventory is now 167: 149 battles and eighteen calibrations.
+
+Validation includes all 22 historical triggered-summon/persistent-aura battles,
+their continuous policies, all fourteen historical calibrations/pure checks and
+the four new curated calibrations/pure checks. All 167 hashes/sizes, regression
+entries and PowerShell syntax pass. A combined167 run is not claimed; the prior
+complete163 run remains the baseline. The failed new whole-battle diagnostics
+are excluded.

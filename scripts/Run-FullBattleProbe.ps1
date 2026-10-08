@@ -100,6 +100,8 @@ param(
     [switch] $PersistentEnchantmentRevivals,
     [switch] $PersistentEnchantmentRandomPools,
     [switch] $PersistentEnchantmentUpgrades,
+    [switch] $PersistentEnchantmentSummons,
+    [switch] $PersistentEnchantmentSummonsFresh,
     [switch] $CharacterRemoval,
     [switch] $SettleDeathDissolves,
     [switch] $HarvestTriggers,
@@ -147,6 +149,13 @@ if ($EnchantmentWorld) { $EnchantmentCombat = $true }
 if ($PersistentEnchantmentRevivals) { $PersistentEnchantmentDeaths = $true }
 if ($PersistentEnchantmentDeaths) { $PersistentEnchantments = $true }
 if ($PersistentEnchantmentRandomPools) { $PersistentEnchantments = $true }
+if ($PersistentEnchantmentSummonsFresh) { $PersistentEnchantmentSummons = $true }
+if ($PersistentEnchantmentSummons) {
+    if ($PersistentEnchantmentDeaths -or $PersistentEnchantmentUpgrades -or $TriggeredSummons -or $TriggeredSummonsFresh -or $TriggeredSummonsDeath -or $TriggeredSummonsEquipment -or $TriggeredSummonsEquipmentOwned -or $TriggeredSummonsRevival) {
+        throw 'Choose aura child summons or source death/upgrades/standalone summons.'
+    }
+    $PersistentEnchantments = $true
+}
 if ($PersistentEnchantmentUpgrades) {
     if ($PersistentEnchantmentDeaths) { throw 'Choose aura child upgrades or source death/revival.' }
     $PersistentEnchantments = $true
@@ -241,7 +250,7 @@ if ($HeroCopy) { $environment['MT2_PROBE_MODIFIERS'] = 'hero-copy' }
 if ($SpawnEnchant) { $environment['MT2_PROBE_MODIFIERS'] = 'spawn-enchant' }
 if ($PersistentEnchantments) {
     $environment['MT2_PROBE_MODIFIERS'] = 'persistent-enchantment' + $(if ($PersistentEnchantmentRandomPools) { '-random' } else { '' }) +
-        $(if ($PersistentEnchantmentRevivals) { '-revivals' } elseif ($PersistentEnchantmentDeaths) { '-deaths' } elseif ($PersistentEnchantmentUpgrades) { '-upgrades' } else { '' })
+        $(if ($PersistentEnchantmentRevivals) { '-revivals' } elseif ($PersistentEnchantmentDeaths) { '-deaths' } elseif ($PersistentEnchantmentUpgrades) { '-upgrades' } elseif ($PersistentEnchantmentSummons) { '-summons' + $(if ($PersistentEnchantmentSummonsFresh) { '-fresh' } else { '' }) } else { '' })
 }
 if ($Sentry -or $SentryLethal) {
     $environment['MT2_PROBE_MODIFIERS'] = $(if ($SentryLethal) { 'sentry-lethal' } else { 'sentry' })

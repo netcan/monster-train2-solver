@@ -1,6 +1,11 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
 
+if (args.Length == 2 && args[0] == "--enchantment-summon-only")
+{
+    EnchantmentSummonChecks.Native(args[1]);
+    return;
+}
 if (args.Length == 2 && args[0] == "--character-removal-only")
 {
     CharacterRemovalChecks.Native(args[1]);
@@ -251,6 +256,9 @@ foreach (string path in args.Where(path => path.Contains("enchantment-source-ord
     EnchantmentSourceOrderChecks.Native(path);
 foreach (string path in args.Where(path => path.Contains("character-removal-calibration", StringComparison.OrdinalIgnoreCase)))
     CharacterRemovalChecks.Native(path);
+foreach (string path in args.Where(path => path.Contains("enchantment-summon-", StringComparison.OrdinalIgnoreCase) &&
+    path.Contains("calibration", StringComparison.OrdinalIgnoreCase)))
+    EnchantmentSummonChecks.Native(path);
 
 static void Check(bool condition, string message)
 {

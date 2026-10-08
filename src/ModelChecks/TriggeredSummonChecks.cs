@@ -7,7 +7,8 @@ internal static class TriggeredSummonChecks
     internal static void Native(FixtureValue fixture)
     {
         string scenario = fixture.TryGetProperty("ModifierScenario", out var setting) ? setting.GetString() ?? "" : "";
-        if (!scenario.StartsWith("triggered-summon", StringComparison.Ordinal)) return;
+        bool auraChildren = scenario.StartsWith("persistent-enchantment", StringComparison.Ordinal) && scenario.Contains("-summons");
+        if (!scenario.StartsWith("triggered-summon", StringComparison.Ordinal) && !auraChildren) return;
         var records = fixture.GetProperty("TriggeredSummons").EnumerateArray().ToArray();
         int births = 0, zero = 0, deaths = 0, copied = 0, fresh = 0;
         Require(records.Length >= 2, "Native triggered summon effects were not observed.");
@@ -20,6 +21,9 @@ internal static class TriggeredSummonChecks
             var actor = record.GetProperty("ActorBefore").Deserialize<CombatUnit>()!;
             var rule = record.GetProperty("RuleBefore").Deserialize<TriggeredSummonRule>()!;
             var resultingRule = record.GetProperty("RuleAfter").Deserialize<TriggeredSummonRule>()!;
+            if (auraChildren) Require(record.GetProperty("Kind").GetString() == "OnStatusEffectChanged" &&
+                actor.Triggers.Single(trigger => trigger.StateId == record.GetProperty("TriggerStateId").GetInt32()).Once &&
+                rule.Count == 2, "Aura child summons require the original once-only status callback and two requested births.");
             int count = after.Context!.NextUnitId!.Value - before.Context!.NextUnitId!.Value;
             Require(count >= 0 && after.Context.SummonCatalog != null && after.Context.SpawnPoints != null,
                 "A triggered summon lost its definitions, positions or identity allocation.");
@@ -47,6 +51,10 @@ internal static class TriggeredSummonChecks
                     Require(unit.Modifiers!.Upgrades.Any(upgrade => upgrade.DataId == rule.Upgrade.DataId) &&
                         source!.Temporary.Upgrades.Any(upgrade => upgrade.DataId == rule.Upgrade.DataId),
                         "The extra spawn upgrade did not reach both the unit and its detached source.");
+                if (auraChildren) Require(unit.BaseAttack == 9 && unit.MaxHealth == 32 &&
+                    unit.Triggers.SelectMany(trigger => trigger.Effects).Any(effect => effect.Enchantment?.Bound == true &&
+                        effect.Enchantment.State.PrimaryTargets.Count > 0),
+                    "A summoned aura child did not bind and update before the native effect returned.");
                 // OnSpawn was queued behind the current native effect. Its once marker
                 // remains untouched until the outer queue resumes.
                 Require(unit.Triggers.Where(trigger => trigger.Kind == "OnSpawn" || trigger.Kind == "OnHeal").All(trigger => !trigger.HasTriggered),
@@ -54,7 +62,7 @@ internal static class TriggeredSummonChecks
             }
             births += count;
         }
-        Require(births >= 2 && (scenario.Contains("death") ? deaths >= 2 : zero >= 2),
+        Require(births >= 2 && (auraChildren || (scenario.Contains("death") ? deaths >= 2 : zero >= 2)),
             "The fixture did not reach its required live/zero-birth or dying-source paths.");
         Require(scenario.EndsWith("fresh", StringComparison.Ordinal) ? fresh == births : copied == births,
             "The fixture did not exercise the requested fresh/copied source path.");
@@ -113,7 +121,7 @@ internal static class TriggeredSummonChecks
         Console.WriteLine($"NATIVE-TRIGGERED-SUMMON-EFFECT-CHECKS PASS: {captured.Length} complete effect boundaries, " +
             $"{owned} equipment bindings, {liveOwnedBirths} live/{dyingOwnedBirths} dying equipment births, native source caches and accepted callbacks in 16 branches.");
     }
-    private static void VerifyEffect(FixtureValue record)
+    internal static void VerifyEffect(FixtureValue record)
     {
         var before = record.GetProperty("Before").Deserialize<RoomCombatState>()!;
         var actor = record.GetProperty("ActorBefore").Deserialize<CombatUnit>()!;
@@ -128,6 +136,9 @@ internal static class TriggeredSummonChecks
         var callbacks = result.PendingCallbacks.Where(item => item.Unit.Triggers.Any(trigger => trigger.Kind == item.Kind))
             .Select(item => new Callback(item.Unit.Id, item.Kind, item.DyingCharacter?.Id ?? 0, item.ParamInt, item.TriggerCount)).ToArray();
         Compare(callbacks, record.GetProperty("Queued").Deserialize<Callback[]>(), "Native summon accepted callbacks");
+        if (record.TryGetProperty("FullQueued", out var full))
+            Compare(result.PendingCallbacks.Where(item => item.Unit.Triggers.Any(trigger => trigger.Kind == item.Kind))
+                .Select(UnitCloneCallback.From).ToArray(), full.Deserialize<UnitCloneCallback[]>(), "Native summon full callback payloads");
         Require(JsonSerializer.Serialize(before) == parent && JsonSerializer.Serialize(actor) == originalActor,
             "Native summon effect changed its parent or retained source actor.");
         var invalid = RoomCombatModel.ApplyNativeTriggeredSummon(before, actor, record.GetProperty("TriggerStateId").GetInt32(),

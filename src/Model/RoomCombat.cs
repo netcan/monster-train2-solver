@@ -2135,7 +2135,10 @@ namespace MonsterTrain2Poju.Model
                     }
                     if (bornCount++ == 0) firstId = born.UnitId;
                 }
-                return source.Preview ? SummonPhysical("Compact") : CenterAfterSummon();
+                if (!(source.Preview ? SummonPhysical("Compact") : CenterAfterSummon())) return false;
+                // Native SpawnMonster completes the birth batch with the room-order
+                // handler, so the last bound child updates its aura before queued OnSpawn.
+                return UpdateEnchantments();
             }
 
             private RoomCombatState CurrentRoom() => new RoomCombatState(source.RoomIndex, source.Deployment,

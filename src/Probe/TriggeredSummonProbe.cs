@@ -2,8 +2,11 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.IO;
 using HarmonyLib;
 using MonsterTrain2Poju.Model;
+using MonsterTrain2Poju.Capture;
+using Newtonsoft.Json.Linq;
 
 namespace MonsterTrain2Poju.Probe
 {
@@ -20,6 +23,7 @@ namespace MonsterTrain2Poju.Probe
             public int TriggerStateId { get; set; }
             public int EffectIndex { get; set; }
             public List<RevivalProbe.Callback> Queued { get; set; } = new List<RevivalProbe.Callback>();
+            public List<UnitCloneCallback> FullQueued { get; set; } = new List<UnitCloneCallback>();
             public TriggeredSummonRule RuleBefore { get; set; } = null!;
             public TriggeredSummonRule? RuleAfter { get; set; }
             public CombatUnit ActorBefore { get; set; } = null!;
@@ -57,7 +61,7 @@ namespace MonsterTrain2Poju.Probe
             public string? Error { get; set; }
         }
         internal static readonly List<DamageRecord> Damages = new List<DamageRecord>();
-        internal static bool Enabled => (Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") ?? "").StartsWith("triggered-summon", StringComparison.Ordinal);
+        internal static bool Enabled => (Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") ?? "").StartsWith("triggered-summon", StringComparison.Ordinal) || EnchantmentBattleScenario.ChildSummons;
         private static string Register(CharacterData? unit)
         { if (unit == null) return ""; characters[unit.GetID()] = unit; return unit.GetID(); }
         internal static TriggeredSummonRule? Definition(CardEffectData effect)
@@ -154,7 +158,33 @@ namespace MonsterTrain2Poju.Probe
                     record.After = trace.Capture(room);
                 }
                 catch (Exception error) { record.Error = error.ToString(); }
+                if (EnchantmentBattleScenario.ChildSummons && Records.Count >= 2 && Records.All(item => item.Completed)) WriteAuraCalibration();
             }
+        }
+        private static void WriteAuraCalibration()
+        {
+            string? Difference(Record record)
+            {
+                if (record.Error != null || record.After == null) return record.Error ?? "Missing native completion.";
+                RoomCombatResult result = RoomCombatModel.ApplyNativeTriggeredSummon(record.Before, record.ActorBefore,
+                    record.TriggerStateId, record.EffectIndex, out TriggeredSummonRule? rule);
+                if (!result.Supported) return result.UnsupportedReason;
+                CombatUnit actor = result.State!.Units.Concat(result.RetainedUnits).Single(unit => unit.Id == record.ActorBefore.Id);
+                UnitCloneCallback[] callbacks = result.PendingCallbacks.Where(item => item.Unit.Triggers.Any(trigger => trigger.Kind == item.Kind))
+                    .Select(UnitCloneCallback.From).ToArray();
+                return JToken.DeepEquals(JToken.FromObject(result.State), JToken.FromObject(record.After)) &&
+                    JToken.DeepEquals(JToken.FromObject(actor), JToken.FromObject(record.ActorAfter!)) &&
+                    JToken.DeepEquals(JToken.FromObject(rule!), JToken.FromObject(record.RuleAfter!)) &&
+                    JToken.DeepEquals(JToken.FromObject(callbacks), JToken.FromObject(record.FullQueued)) ? null : "Native queued aura summon differs.";
+            }
+            var comparisons = Records.Select(record => new { Native = record, Difference = Difference(record) }).ToArray();
+            string path = Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!, "enchantment-summon-calibration.mt2f");
+            using (var archive = NativeFixtureCapture.Capture(new { Schema = 1, GameVersion = UnityEngine.Application.version,
+                GameModuleMvid = typeof(CharacterState).Assembly.ManifestModule.ModuleVersionId,
+                Boundary = "OriginalQueuedSpawnMonster", GameplaySuppressed = false, WholeBattleVerified = false,
+                ModifierScenario = Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS"),
+                Mismatches = comparisons.Count(item => item.Difference != null), Samples = comparisons, SourceClones = UnitBirthProbe.Clones }))
+            using (var stream = File.Create(path)) archive.Write(stream);
         }
         private static IEnumerator ObserveDamage(IEnumerator native, int damage, CharacterState target, CombatManager.ApplyDamageToTargetParameters parameters)
         {
@@ -214,7 +244,14 @@ namespace MonsterTrain2Poju.Probe
                 CharacterState dyingCharacter, CharacterState.FireTriggersData fireTriggersData, int triggerCount, int __state)
             {
                 if (current != null && Count(__instance) > __state && character.GetTriggers().Any(state => state.GetTrigger() == trigger))
+                {
                     current.Queued.Add(RevivalProbe.CaptureCallback(character, trigger, dyingCharacter, fireTriggersData, triggerCount));
+                    FullBattleTrace trace = FullBattleTrace.Active!;
+                    current.FullQueued.Add(new UnitCloneCallback(trace.UnitId(character), trigger.ToString(), fireTriggersData?.paramInt ?? 0,
+                        fireTriggersData?.paramInt2 ?? 0, fireTriggersData?.paramString, triggerCount, dyingCharacter == null ? 0 : trace.UnitId(dyingCharacter),
+                        fireTriggersData?.overrideTargetCharacter == null ? 0 : trace.UnitId(fireTriggersData.overrideTargetCharacter),
+                        fireTriggersData?.overrideLastSpawnedCharacter == null ? 0 : trace.UnitId(fireTriggersData.overrideLastSpawnedCharacter)));
+                }
             }
             private static int Count(CombatManager combat) => ((ICollection)AccessTools.Property(typeof(CombatManager), "TriggerQueue").GetValue(combat)).Count;
         }

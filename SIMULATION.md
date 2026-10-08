@@ -6207,3 +6207,67 @@ or errors.
 Rejected diagnostic captures are not curated. Summon/copy children, Horde aura
 effects, broader room/relic/control interactions, special Boss/card mechanics
 and the complete simulator/optimal solver remain work.
+
+### Queued summons that create persistent aura sources
+
+The opt-in persistent-enchantment-summons scenes add a finite once-only
+OnStatusEffectChanged SpawnMonster child to the original aura Steward. Each
+application requests two different Steward characters, with damage 1/health 2/
+armor 1 as an extra unit/source-card upgrade. The children have their own
+persistent aura, status-change rewards, OnUnscaledSpawn and Rally children;
+they do not recursively summon. Setup finishes and seeds the reachable summon
+catalog before the initial captured decision. Ordinary paid plays, original
+Boss and waves are preserved. Fresh-source and three-status random-pool flags
+produce the remaining three variants.
+
+Original CardEffectSpawnMonster finishes its whole birth batch with
+HandleRoomUnitOrderPossiblyChanged, after recentering or preview compaction.
+The model previously stopped after compaction. It now refreshes the automatic
+aura world and appends accepted status children to the existing queue before
+the enclosing effect returns. This makes the last new bound source update its
+cache and statuses before its queued OnSpawn callback. Complete native effect
+comparisons include rooms, shared world, retained objects, source cards, physical
+points, actor state, first-birth cache and the two RNG streams.
+
+Four native component archives prove eight queued batches, sixteen nested aura
+births and 204 accepted callbacks, including all nine payload fields. Each
+variant has two original applications/four births/51 callbacks. Copied sources
+have eight observed detached card clones across the two variants; fresh sources
+use the child-character fallback card and preserve the source-match distinction.
+All four independent comparisons and 32 immutable branches per variant pass.
+The archives are binary-only, without text sources, and byte-identical to native
+exports. Their boundaries are OriginalQueuedSpawnMonster and WholeBattleVerified
+is explicitly false.
+
+| Calibration | Bytes / nodes |
+| --- | --- |
+| enchantment-summon-calibration.mt2f | 7,258 / 1,140 |
+| enchantment-summon-fresh-calibration.mt2f | 6,772 / 1,027 |
+| enchantment-summon-random-calibration.mt2f | 7,721 / 1,168 |
+| enchantment-summon-random-fresh-calibration.mt2f | 7,124 / 1,049 |
+
+Whole-battle acceptance remains open. Native combat previews reset once flags,
+so these sources can create additional preview-only units even after their real
+once flag is set. Aura dictionaries retain those actual temporary object keys
+after removal; first-birth weak references can be overwritten then cleared.
+The current decision collector omits actors that never appeared in a primary
+room, while preview restoration does not carry all referenced temporary actors.
+Simply observing the objects also exposes preview-group physical references
+outside the primary groups and advances the probe's synthetic identity counter.
+No preview object, target-map entry or identity field is discarded to hide this
+difference. Diagnostic battles remain excluded from curated battle fixtures;
+the component inputs are not future policy inputs. Full capture/model retention,
+source-cache restoration and physical preview-reference representation are the
+next required integration work. The complete simulator/optimal solver is still
+unfinished.
+
+Validation: all 22 historical triggered-summon/persistent-aura battles and their
+continuous policies pass with the changed model, together with all fourteen
+historical calibrations and pure checks. The four new curated calibrations/pure
+checks also pass. Probe builds with zero warnings/errors; ModelChecks retains
+its fourteen existing nullable warnings and has no errors. All 167 archive
+sizes/hashes, regression-list entries, four native byte provenances, PowerShell
+syntax and whitespace checks pass. Inventory is 149 battles/eighteen calibrations;
+a combined 167-archive run is not claimed. The prior full163 run remains the
+complete regression baseline, and no new whole-battle aura-summon policy is
+claimed accepted.

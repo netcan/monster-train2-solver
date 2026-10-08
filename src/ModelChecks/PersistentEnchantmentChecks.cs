@@ -29,7 +29,9 @@ internal static class PersistentEnchantmentChecks
         if (!fixture.TryGetProperty("ModifierScenario", out var scenario) ||
             scenario.GetString() is not ("persistent-enchantment" or "persistent-enchantment-deaths" or "persistent-enchantment-revivals" or
                 "persistent-enchantment-random" or "persistent-enchantment-random-deaths" or "persistent-enchantment-random-revivals" or
-                "persistent-enchantment-upgrades" or "persistent-enchantment-random-upgrades")) return;
+                "persistent-enchantment-upgrades" or "persistent-enchantment-random-upgrades" or
+                "persistent-enchantment-summons" or "persistent-enchantment-summons-fresh" or
+                "persistent-enchantment-random-summons" or "persistent-enchantment-random-summons-fresh")) return;
         bool randomPools = scenario.GetString()!.StartsWith("persistent-enchantment-random", StringComparison.Ordinal);
         bool sourceDeaths = scenario.GetString()!.EndsWith("-deaths", StringComparison.Ordinal) || scenario.GetString()!.EndsWith("-revivals", StringComparison.Ordinal);
         Require(fixture.GetProperty("Schema").GetInt32() >= 103 &&
@@ -77,6 +79,7 @@ internal static class PersistentEnchantmentChecks
             "The paid aura policy did not drain its status-change child effects.");
         if (randomPools) VerifyRandomCoverage(fixture, actions, turns, worlds);
         if (scenario.GetString()!.EndsWith("-upgrades", StringComparison.Ordinal)) VerifyUpgradeChildren(actions, worlds);
+        if (scenario.GetString()!.Contains("-summons")) VerifySummonChildren(fixture, actions, worlds);
         if (scenario.GetString() == "persistent-enchantment-random-revivals") VerifyRemovalSettlement(fixture, turns.Length);
         if (sourceDeaths)
         {
@@ -105,6 +108,29 @@ internal static class PersistentEnchantmentChecks
         }
         Console.WriteLine($"NATIVE-PERSISTENT-ENCHANTMENT-COVERAGE PASS: {actions.Length} paid actions, {turns.Length} EndTurns, " +
             "persistent bound sources, both teams, preview maps, retained destroyed targets and drained status children.");
+    }
+
+    private static void VerifySummonChildren(FixtureValue fixture, FixtureValue[] actions, EnchantmentWorld[] worlds)
+    {
+        var records = fixture.GetProperty("TriggeredSummons").EnumerateArray().ToArray();
+        int[] children = records.SelectMany(record =>
+        {
+            var before = record.GetProperty("Before").Deserialize<RoomCombatState>()!;
+            return record.GetProperty("After").Deserialize<RoomCombatState>()!.Units
+                .Where(unit => unit.Id >= before.Context!.NextUnitId).Select(unit => unit.Id);
+        }).Distinct().ToArray();
+        Require(children.Length >= 4 && records.All(record => record.GetProperty("Kind").GetString() == "OnStatusEffectChanged") &&
+            worlds.Any(world => Rules(world).Count(rule => rule.Bound) >= 6) &&
+            children.All(id => worlds.Any(world => Units(world).Any(unit => unit.Id == id &&
+                unit.Triggers.SelectMany(trigger => trigger.Effects).Any(effect => effect.Enchantment?.Bound == true)))) &&
+            actions.Any(action => action.GetProperty("Actual").Deserialize<BattleTurnState>()!.Spawn.Train.Context!.Gold -
+                action.GetProperty("Before").Deserialize<BattleTurnState>()!.Spawn.Train.Context!.Gold >= 16),
+            "The paid aura policy omitted nested births, six bound sources or drained birth/status children.");
+        Require(worlds.SelectMany(Units).Where(unit => unit.Triggers.SelectMany(trigger => trigger.Effects).Any(effect => effect.Summon != null))
+            .Any(unit => unit.Triggers.Any(trigger => trigger.Kind == "OnStatusEffectChanged" && trigger.Once && trigger.HasTriggered)),
+            "The aura summon source lost its original once-only completion state.");
+        Console.WriteLine($"NATIVE-PERSISTENT-ENCHANTMENT-SUMMON-COVERAGE PASS: {children.Length} nested aura births, " +
+            "six bound sources, once-only callbacks, upgraded detached sources and drained child gold effects.");
     }
 
     private static void VerifyUpgradeChildren(FixtureValue[] actions, EnchantmentWorld[] worlds)

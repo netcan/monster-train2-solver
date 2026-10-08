@@ -208,7 +208,7 @@ namespace MonsterTrain2Poju.Model
             {
                 EnchantmentTarget entry = selected[i];
                 if (!actors.TryGetValue(entry.UnitId, out EnchantmentActor target))
-                    throw new ArgumentException("An enchantment requires all retained target actors.");
+                    throw new ArgumentException("An enchantment requires retained target " + entry.UnitId + " for source " + input.SourceId + ".");
                 bool valid = !enchanter.Muted && !enchanter.Silenced && !enchanter.IsDormant && !enchanter.IsDestroyed &&
                     enchanter.IsAlive && !target.IsDestroyed && target.IsAlive && target.Id != enchanter.Id &&
                     enchanter.RoomIndex == target.RoomIndex;
