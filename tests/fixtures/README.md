@@ -389,6 +389,8 @@ calibration suites. Fresh fallback sources and lethal/removed birth targets
 remain separate native integration work.
 
 
+
+
 `full-battle-multi-summon-fresh.mt2f` and
 `full-battle-multi-summon-fresh-deaths.mt2f` retain schema 80 with fourteen actual
 fresh fallback source setups and 66 global standby checks. Each source starts
@@ -403,3 +405,18 @@ Boss/waves and profile signatures are preserved. Both captures are direct binary
 archives. The curated inventory now contains 115 archives: 106 battles and nine
 calibration suites. Null-source, pool/replacement and broader room/relic creation
 remain separate native integration work.
+
+`full-battle-multi-summon-additional.mt2f` and
+`full-battle-multi-summon-additional-fresh.mt2f` retain schema 81 mixed summons.
+Each original four-plus-four request caps to seven positions before choosing
+three TrainStewardBig and four TrainStewardSmall units. Ordinary mode records
+twelve detached copies and mismatched source-character upgrades; fresh mode
+records fourteen matching source setups with no copies. Both retain seventeen
+complete births and fourteen explicit extra upgrades, including source writes
+that still succeed for mismatched characters. Self-growth skips that source
+write. Full birth/copy/upgrade/Rally states match in 32 branches, and initial
+and mid-battle 15-play/five-EndTurn policies match in 16 branches at Pyre 80.
+Original Boss/waves and profile signatures are preserved. Both captures are
+direct binary archives. The curated inventory now contains 117 archives:
+108 battles and nine calibration suites. Pool selection, spawn-count relics,
+replacement and broader room/relic creation remain separate native work.

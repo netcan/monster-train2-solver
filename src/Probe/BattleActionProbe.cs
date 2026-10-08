@@ -54,16 +54,18 @@ namespace MonsterTrain2Poju.Probe
             {
                 string id = pending.Dequeue(); if (reachable.ContainsKey(id)) continue;
                 CardPlayRule rule = Definition(save.GetAllGameData().FindCardData(id)!); reachable.Add(id, rule);
+                CombatUnit[] spawned = new[] { rule.SpawnUnit, rule.Summon?.Additional?.Unit }
+                    .Where(unit => unit != null).Cast<CombatUnit>().ToArray();
                 foreach (string child in rule.Effects.Where(effect => effect.Generation != null).SelectMany(effect => effect.Generation!.Pool).Select(card => card.DataId)
-                    .Concat(rule.SpawnUnit?.Triggers.SelectMany(trigger => trigger.Effects).SelectMany(effect => effect.CardPool) ?? Array.Empty<string>()))
+                    .Concat(spawned.SelectMany(unit => unit.Triggers).SelectMany(trigger => trigger.Effects).SelectMany(effect => effect.CardPool)))
                     pending.Enqueue(child);
                 foreach (string child in rule.Effects.Select(effect => effect.AbilityChange?.Definition?.DataId)
-                    .Concat(rule.SpawnUnit?.Triggers.SelectMany(trigger => trigger.Effects).Select(effect => effect.Action?.AbilityChange?.Definition?.DataId)
-                        ?? Array.Empty<string?>()).Where(child => !string.IsNullOrEmpty(child)).Cast<string>()) pending.Enqueue(child);
+                    .Concat(spawned.SelectMany(unit => unit.Triggers).SelectMany(trigger => trigger.Effects)
+                        .Select(effect => effect.Action?.AbilityChange?.Definition?.DataId)).Where(child => !string.IsNullOrEmpty(child)).Cast<string>()) pending.Enqueue(child);
                 foreach (string child in rule.Effects.Select(effect => effect.Upgrade?.AbilityUpgrade?.Definition?.DataId)
                     .Concat(rule.Equipment?.Upgrades.Select(upgrade => upgrade.AbilityUpgrade?.Definition?.DataId) ?? Array.Empty<string?>())
                     .Where(child => !string.IsNullOrEmpty(child)).Cast<string>()) pending.Enqueue(child);
-                if (rule.SpawnUnit?.Ability?.HasAbility == true) pending.Enqueue(rule.SpawnUnit.Ability.DataId);
+                foreach (CombatUnit unit in spawned.Where(unit => unit.Ability?.HasAbility == true)) pending.Enqueue(unit.Ability!.DataId);
             }
             rules = new BattlePlayRules(roomRules, reachable.Values.OrderBy(rule => rule.DataId, StringComparer.Ordinal).ToArray(),
                 new[] { "armor", "valor", "pyregel" }.Select(id => Status(id, 1)).ToArray());
@@ -88,33 +90,27 @@ namespace MonsterTrain2Poju.Probe
             {
                 CardEffectData effect = effects[0];
                 CharacterData? unit = effect.GetParamCharacterData();
-                if (unit == null || effect.GetParamAdditionalCharacterData() != null ||
-                    effect.GetParamCharacterDataPool().Count > 0 ||
+                if (unit == null || effect.GetParamCharacterDataPool().Count > 0 ||
                     effect.GetTargetMode() != TargetMode.Room || selfPurge)
                     interactions.Add("Additional/modified unit spawn");
                 if (unit != null)
-                {
-                    EnemyDefinition definition = EnemySpawningProbe.Definition(unit);
-                    interactions.AddRange(definition.ExternalInteractions);
-                    if (unit.GetGraftedEquipment() != null) interactions.Add("Grafted equipment");
-
-                    CombatUnit source = definition.Unit;
-                    template = new CombatUnit(0, source.AssetKey, CombatTeam.Player, source.BaseAttack, source.Health,
-                        source.MaxHealth, source.CanAttack, false, false, source.Statuses, source.Triggers, size: source.Size,
-                        statusImmunities: source.StatusImmunities, subtypes: source.Subtypes, modifiers: source.Modifiers, isBoss: source.IsBoss, lastAttackerId: 0, statusRegistry: source.StatusRegistry, equipmentCards: source.EquipmentCards, nextTriggerId: source.NextTriggerId, ability: source.Ability, statusDictionary: source.StatusDictionary, abilityRules: source.AbilityRules, hordeDefinition: source.HordeDefinition, isSpawning: source.IsSpawning, deathState: source.DeathState);
-                }
+                    template = SpawnTemplate(unit, data.GetSpawnCharacterData() == null || data.GetSpawnCharacterData() == unit, interactions);
                 kind = "SpawnMonster"; destination = "Standby";
-                if (effect.GetParamInt() > 1 || effect.GetParamCardUpgradeData() != null || effect.GetParamBool())
+                if (effect.GetParamInt() > 1 || effect.GetParamCardUpgradeData() != null || effect.GetParamBool() || effect.GetParamAdditionalCharacterData() != null)
                 {
                     CardUpgradeModifier? upgrade = null;
                     if (effect.GetParamCardUpgradeData() != null)
                     { var state = new CardUpgradeState(); state.Setup(effect.GetParamCardUpgradeData()); upgrade = CardModifierProbe.Upgrade(state); }
-                    CardData? fallback = !effect.GetParamBool() || unit == null ? null : AllGameManagers.Instance!.GetSaveManager().GetAllGameData()
-                        .GetAllCardData().FirstOrDefault(candidate => candidate != null && candidate.IsSpawnerCard() &&
-                            candidate.GetSpawnCharacterData() != null && candidate.GetSpawnCharacterData()!.GetID() == unit!.GetID());
+                    CardData? fallback = !effect.GetParamBool() || unit == null ? null : Fallback(unit);
                     if (effect.GetParamBool() && fallback == null) interactions.Add("Missing fresh fallback source definition");
+                    CharacterData? additional = effect.GetParamAdditionalCharacterData();
+                    CardData? additionalFallback = !effect.GetParamBool() || additional == null ? null : Fallback(additional);
+                    if (effect.GetParamBool() && additional != null && additionalFallback == null) interactions.Add("Missing additional fallback source definition");
+                    UnitSummonChoice? choice = additional == null ? null : new UnitSummonChoice(
+                        SpawnTemplate(additional, effect.GetParamBool() || data.GetSpawnCharacterData() == null || data.GetSpawnCharacterData() == additional, interactions),
+                        additionalFallback == null ? null : CardGenerationProbe.Creation(additionalFallback));
                     summon = new UnitSummonRule(effect.GetParamInt(), CardGenerationProbe.Creation(data), Status("cardless", 1), upgrade,
-                        effect.GetParamBool(), fallback == null ? null : CardGenerationProbe.Creation(fallback));
+                        effect.GetParamBool(), fallback == null ? null : CardGenerationProbe.Creation(fallback), choice);
                 }
             }
             else if (kind == "CardEffectNULL") kind = "Null";
@@ -212,6 +208,38 @@ namespace MonsterTrain2Poju.Probe
                 data.IsUnitAbility() ? new CardAbilityRule("Unit", data.CanAbilityTargetOtherFloors(),
                     data.GetEffects().All(effect => ((ICardEffect)Activator.CreateInstance(typeof(CardState).Assembly
                         .GetType(effect.GetEffectStateName())!)!).CanPlayWhenHandFull)) : null, summon);
+        }
+
+        private static CardData? Fallback(CharacterData unit) => AllGameManagers.Instance!.GetSaveManager().GetAllGameData()
+            .GetAllCardData().FirstOrDefault(candidate => candidate != null && candidate.IsSpawnerCard() &&
+                candidate.GetSpawnCharacterData() != null && candidate.GetSpawnCharacterData()!.GetID() == unit.GetID());
+
+        internal static CombatUnit SpawnTemplate(CharacterData unit, bool matchesSource, List<string> interactions)
+        {
+            EnemyDefinition definition = EnemySpawningProbe.Definition(unit);
+            interactions.AddRange(definition.ExternalInteractions);
+            if (unit.GetGraftedEquipment() != null) interactions.Add("Grafted equipment");
+            CombatUnit source = definition.Unit;
+            UnitModifiers? m = source.Modifiers;
+            var modifiers = m == null ? null : new UnitModifiers(m.AttackDamage, m.AttackDamageAdded, m.DamageBuff,
+                m.RawSize, m.EquipmentLimit, m.CanBeHealed, m.IsClone, m.Upgrades, m.HealthFromUpgrades, matchesSource);
+            return new CombatUnit(0, source.AssetKey, CombatTeam.Player, source.BaseAttack, source.Health,
+                source.MaxHealth, source.CanAttack, false, false, source.Statuses, source.Triggers, size: source.Size,
+                statusImmunities: source.StatusImmunities, subtypes: source.Subtypes, modifiers: modifiers, isBoss: source.IsBoss,
+                lastAttackerId: 0, statusRegistry: source.StatusRegistry, equipmentCards: source.EquipmentCards,
+                nextTriggerId: source.NextTriggerId, ability: source.Ability, statusDictionary: source.StatusDictionary,
+                abilityRules: source.AbilityRules, hordeDefinition: source.HordeDefinition, isSpawning: source.IsSpawning, deathState: source.DeathState);
+        }
+
+        internal static CardPlayRule BirthDefinition(CardData data, CharacterData monster)
+        {
+            CardPlayRule rule = Definition(data);
+            var interactions = rule.ExternalInteractions.ToList();
+            CombatUnit unit = SpawnTemplate(monster, data.GetSpawnCharacterData() == null || data.GetSpawnCharacterData() == monster, interactions);
+            return new CardPlayRule(rule.DataId, rule.AssetKey, rule.Cost, rule.Effect, rule.Destination, unit,
+                interactions.Distinct().OrderBy(item => item, StringComparer.Ordinal).ToArray(), rule.Effects,
+                rule.UpgradeInteractions, rule.HandDiscardInteractions, rule.HandConsumeInteractions, rule.CostType,
+                rule.Equipment, rule.Ability, rule.Summon);
         }
 
         private static string[] HandInteractions(CardData data, bool consume)

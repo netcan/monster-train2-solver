@@ -4,6 +4,14 @@ using System.Linq;
 
 namespace MonsterTrain2Poju.Model
 {
+    public sealed class UnitSummonChoice
+    {
+        public CombatUnit Unit { get; }
+        public CardCreationRule? FallbackCreation { get; }
+        public UnitSummonChoice(CombatUnit unit, CardCreationRule? fallbackCreation = null)
+        { Unit = unit; FallbackCreation = fallbackCreation; }
+    }
+
     public sealed class UnitSummonRule
     {
         public int Count { get; }
@@ -12,9 +20,11 @@ namespace MonsterTrain2Poju.Model
         public CardUpgradeModifier? Upgrade { get; }
         public bool IgnoreCardUpgrades { get; }
         public CardCreationRule? FallbackCreation { get; }
+        public UnitSummonChoice? Additional { get; }
         public UnitSummonRule(int count, CardCreationRule creation, CombatStatus cardlessStatus,
-            CardUpgradeModifier? upgrade = null, bool ignoreCardUpgrades = false, CardCreationRule? fallbackCreation = null)
-        { Count = count; Creation = creation; CardlessStatus = cardlessStatus; Upgrade = upgrade; IgnoreCardUpgrades = ignoreCardUpgrades; FallbackCreation = fallbackCreation; }
+            CardUpgradeModifier? upgrade = null, bool ignoreCardUpgrades = false, CardCreationRule? fallbackCreation = null,
+            UnitSummonChoice? additional = null)
+        { Count = count; Creation = creation; CardlessStatus = cardlessStatus; Upgrade = upgrade; IgnoreCardUpgrades = ignoreCardUpgrades; FallbackCreation = fallbackCreation; Additional = additional; }
     }
 
     public sealed class UnitBirthResult
@@ -39,7 +49,8 @@ namespace MonsterTrain2Poju.Model
             CombatUnit initialized = AbilityLifecycleModel.InitialAtSpawn(raw, card, context, out string? error);
             if (error != null) return Unsupported(error);
             CardPlayRule birthDefinition = card == null || card.DataId == definition.DataId ||
-                definition.Summon?.IgnoreCardUpgrades != true || definition.Summon.FallbackCreation?.DataId != card.DataId
+                definition.Summon?.IgnoreCardUpgrades != true ||
+                definition.Summon.FallbackCreation?.DataId != card.DataId && definition.Summon.Additional?.FallbackCreation?.DataId != card.DataId
                 ? definition : new CardPlayRule(card.DataId, definition.AssetKey,
                 definition.Cost, definition.Effect, definition.Destination, definition.SpawnUnit, definition.ExternalInteractions,
                 definition.Effects, definition.UpgradeInteractions, definition.HandDiscardInteractions, definition.HandConsumeInteractions,
@@ -101,30 +112,40 @@ namespace MonsterTrain2Poju.Model
         internal static UnitBirthResult Apply(RoomCombatState source, CardPlayRule definition, int cardId, int position, int slots)
         {
             UnitSummonRule rule = definition.Summon!;
-            if (rule.IgnoreCardUpgrades && rule.FallbackCreation == null)
+            if (rule.IgnoreCardUpgrades && (rule.FallbackCreation == null || rule.Additional != null && rule.Additional.FallbackCreation == null))
                 return Unsupported("Missing fallback spawner definition.");
             if (rule.IgnoreCardUpgrades && source.Context?.OtherPiles?.Any(pile => pile.Name == "Standby" && pile.UnitConditions != null) != true)
                 return Unsupported("Fresh fallback summons require the original card's standby binding metadata.");
             if (source.Context?.FindCard(cardId)?.PlayedRoomUnitIds == null)
                 return Unsupported("Repeated summons require the source card's native room cache.");
             RoomCombatState state = source;
-            int count = Math.Min(Math.Max(1, rule.Count), Math.Max(0, slots - state.Units.Count(unit => unit.Team == CombatTeam.Player)));
+            int requested = Math.Max(1, rule.Count);
+            if (rule.Additional != null) requested = unchecked(requested + requested);
+            int count = Math.Min(requested, Math.Max(0, slots - state.Units.Count(unit => unit.Team == CombatTeam.Player)));
             var events = new List<CombatEvent>();
             int firstId = 0;
             RoomOutcome outcome = RoomOutcome.Exchanged;
             for (int index = 0; index < count && position + index < slots; index++)
             {
                 int sourceId = cardId;
-                if (rule.IgnoreCardUpgrades || index > 0)
+                if (!rule.IgnoreCardUpgrades && index > 0)
                 {
-                    CardGenerationResult clone = rule.IgnoreCardUpgrades
-                        ? CardGenerationModel.CreateDetached(state.Context!, rule.FallbackCreation!)
-                        : CardGenerationModel.CloneDetached(state.Context!, rule.Creation, cardId);
+                    CardGenerationResult clone = CardGenerationModel.CloneDetached(state.Context!, rule.Creation, cardId);
                     if (!clone.Supported) return Unsupported(clone.UnsupportedReason!);
                     sourceId = clone.AddedCards.Single().InstanceId;
                     state = new RoomCombatState(state.RoomIndex, state.Deployment, state.Units, state.ExternalInteractions, clone.Context, state.Preview);
                 }
-                UnitBirthResult born = UnitBirthModel.Spawn(state, definition, sourceId, position + index, index > 0, rule.CardlessStatus);
+                // Native selection uses the capped total, before the insertion-index loop limit.
+                UnitSummonChoice? selected = rule.Additional != null && index >= count / 2 ? rule.Additional : null;
+                if (rule.IgnoreCardUpgrades)
+                {
+                    CardGenerationResult created = CardGenerationModel.CreateDetached(state.Context!, selected?.FallbackCreation ?? rule.FallbackCreation!);
+                    if (!created.Supported) return Unsupported(created.UnsupportedReason!);
+                    sourceId = created.AddedCards.Single().InstanceId;
+                    state = new RoomCombatState(state.RoomIndex, state.Deployment, state.Units, state.ExternalInteractions, created.Context, state.Preview);
+                }
+                UnitBirthResult born = UnitBirthModel.Spawn(state, selected == null ? definition : definition.WithSpawn(selected.Unit),
+                    sourceId, position + index, index > 0, rule.CardlessStatus);
                 if (!born.Supported) return born;
                 if (firstId == 0) firstId = born.UnitId;
                 state = born.Result.State!; events.AddRange(born.Result.Events);

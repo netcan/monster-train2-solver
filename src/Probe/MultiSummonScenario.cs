@@ -21,10 +21,11 @@ namespace MonsterTrain2Poju.Probe
             CardEffectData spawn = data.GetEffects().Single(effect => effect.GetEffectStateName() == "CardEffectSpawnMonster");
             Set(spawn, "paramInt", 4);
             string scenario = Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") ?? "";
-            FreshSources = scenario.StartsWith("multi-summon-fresh", StringComparison.Ordinal);
-            if (FreshSources)
+            bool additional = scenario.StartsWith("multi-summon-additional", StringComparison.Ordinal);
+            FreshSources = scenario.StartsWith("multi-summon-fresh", StringComparison.Ordinal) || scenario == "multi-summon-additional-fresh";
+            if (FreshSources || additional)
             {
-                Set(spawn, "paramBool", true);
+                Set(spawn, "paramBool", FreshSources);
                 Set(spawn, "paramCardUpgradeData", DynamicUpgradeScenario.Upgrade("PojuMultiSummonExtra", SpawnUpgradeProbe.UpgradeDataId,
                     2, 3, 0, 0, "armor", 2));
             }
@@ -38,6 +39,13 @@ namespace MonsterTrain2Poju.Probe
                 Set(spawn, "paramCardUpgradeData", extra);
             }
             CharacterData unit = spawn.GetParamCharacterData(); Set(unit, "size", 1);
+            CharacterData? second = null;
+            if (additional)
+            {
+                second = cards.GetAllCards(new List<CardState>()).Select(card => card.GetSpawnCharacterData())
+                    .First(candidate => candidate != null && candidate != unit && candidate.name.StartsWith("TrainSteward", StringComparison.Ordinal));
+                Set(second!, "size", 1); Set(spawn, "paramAdditionalCharacterData", second!);
+            }
             if (scenario == "multi-summon-fresh-deaths")
             {
                 var spells = cards.GetAllCards(new List<CardState>()).Where(card => card.GetCardType() == CardType.Spell &&
@@ -65,7 +73,8 @@ namespace MonsterTrain2Poju.Probe
             Set(growth, "additionalParamInt1", (int)UnitUpgradeLifetime.TemporaryUntilEndOfBattle);
             Set(rally, "effects", new List<CardEffectData> { new CardEffectData("CardEffectRewardGold", null!, Team.Type.None), effect, growth });
             Set(rally.GetEffects()[0], "paramInt", 3); rally.GetEffects()[0].Cheat_SetTargetMode(TargetMode.Room);
-            Set(unit, "triggers", unit.GetTriggers().Concat(new[] { born, unscaled, noCard, rally }).ToList());
+            foreach (CharacterData kind in second == null ? new[] { unit } : new[] { unit, second })
+                Set(kind, "triggers", kind.GetTriggers().Concat(new[] { born, unscaled, noCard, rally }).ToList());
             foreach (CardState card in cards.GetAllCards(new List<CardState>()).Where(card => card.GetCardDataID() == data.GetID()))
             {
                 card.Setup(data, save);

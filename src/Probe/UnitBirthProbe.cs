@@ -76,13 +76,13 @@ namespace MonsterTrain2Poju.Probe
         [HarmonyPatch(typeof(MonsterManager), nameof(MonsterManager.CreateMonsterState))]
         private static class BirthPatch
         {
-            private static void Prefix(CardState spawnerCard, bool isCardless, SpawnPoint spawnLocation,
+            private static void Prefix(CharacterData monsterData, CardState spawnerCard, bool isCardless, SpawnPoint spawnLocation,
                 ref Action<CharacterState> afterCharacterCreated, out Record? __state)
             {
                 __state = null;
                 if (!MultiSummonScenario.Prepared || FullBattleTrace.Active == null || AllGameManagers.Instance!.GetSaveManager().PreviewMode ||
                     spawnerCard == null || spawnLocation == null) return;
-                var record = new Record { Definition = BattleActionProbe.Definition(AllGameManagers.Instance!.GetSaveManager().GetAllGameData().FindCardData(spawnerCard.GetCardDataID())!),
+                var record = new Record { Definition = BattleActionProbe.BirthDefinition(AllGameManagers.Instance!.GetSaveManager().GetAllGameData().FindCardData(spawnerCard.GetCardDataID())!, monsterData),
                     SpawnerCardId = FullBattleTrace.Active.CardId(spawnerCard), IsCardless = isCardless,
                     CardlessStatus = BattleActionProbe.Status("cardless", 1) };
                 __state = record; Action<CharacterState> callback = afterCharacterCreated;

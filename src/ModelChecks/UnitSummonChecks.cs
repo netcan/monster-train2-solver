@@ -7,6 +7,8 @@ internal static class UnitSummonChecks
     internal static void Native(FixtureValue fixture)
     {
         if (!fixture.TryGetProperty("ModifierScenario", out var scenario) || scenario.GetString()?.StartsWith("multi-summon", StringComparison.Ordinal) != true) return;
+        if (scenario.GetString()!.StartsWith("multi-summon-additional", StringComparison.Ordinal))
+        { AdditionalSummonChecks.Native(fixture); return; }
         if (scenario.GetString()!.StartsWith("multi-summon-fresh", StringComparison.Ordinal))
         { FreshSummonChecks.Native(fixture); return; }
         var births = fixture.GetProperty("UnitBirths").EnumerateArray().ToArray();
@@ -129,7 +131,7 @@ internal static class UnitSummonChecks
                 "Copied sources incorrectly fired OnSpawnNotFromCard or Rally reward count changed.");
         }
     }
-    private static void VerifyClone(FixtureValue sample)
+    internal static void VerifyClone(FixtureValue sample)
     {
         Require(sample.GetProperty("Completed").GetBoolean(), "Incomplete native detached clone.");
         var before = sample.GetProperty("Before").Deserialize<CombatContext>()!;

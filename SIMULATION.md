@@ -111,6 +111,7 @@ are copied immutable values; independent child states can run on worker threads.
 | Terminal summon and lethal Rally | `BattleActionModel` and `RoomCombatModel` | Twelve native team phases and six dispatches, deferred Boss self-death, post-kill permanent/unit-death upgrades, rewards, a surviving last-spawned reference and fresh Standby routing; complete policy with parallel branches |
 | Shared unit identity allocation | `UnitIdentityModel` and `CombatContext.NextUnitId` | Player/enemy/treasure allocation, all context copies, stable death/terminal counters, 98 native spawn/decision boundaries and complete policies with parallel branches |
 | Repeated paid summons and detached sources | `UnitBirthModel`, `UnitSummonModel` and `CardGenerationModel.CloneDetached` | Ten complete native births, five detached card copies, ten paid phases and 26 Rally dispatches; live source upgrades, retained clone flags, cardless/source separation, physical slot limits, capacity overflow and parallel branches |
+| Fresh and additional summon sources | `UnitSummonRule`, `UnitSummonChoice` and `UnitStandbyModel` | Native fresh setup, original-card bindings, delayed returns, mixed unit templates, odd capped splits and source-mismatch upgrade routing; complete policies and parallel branches |
 | Status removal and Horde sacrifice | `StatusRemovalModel`, `CardSpellModel` and `RoomCombatModel` | Nine native API/effect/trigger operations, exact room/retained actor states, accepted queue counts, ordered death/Harvest dispatches, a real paid spell removing both teams and parallel branches; raw zero HP preserves orphan standby cards while sacrifice signals physical death and retains its responsible card |
 | Reentrant death signals and queued player sacrifice | `UnitDeathState`, `StatusRemovalModel` and `RoomCombatModel` | Three native operations, 45 exact death/Harvest phase states and complete dispatch order, 95 effect/retained-target states, pending versus cleared statistics listeners, spawner timing and parallel branches |
 | Physical death Harvest | `HarvestModel` and `RoomCombatModel` | Four native physical deaths and 31 exact dispatches; own-death children precede player/enemy groups, Hero/Monster/Unit kinds, Horde repetition, required dying statuses, silence and once flags; complete subsequent battle and parallel branches |
@@ -4368,6 +4369,8 @@ spawn modifiers still require native integration. Broader battle coverage,
 complete state-based pruning and a universal optimal solver remain open.
 
 
+
+
 The final full 113-archive regression exits zero: all 104 battle archives and
 nine calibrations pass, with no unsupported state-transition checks. The
 inventory and archive SHA-256 manifest agree. The three new complete policies
@@ -4458,3 +4461,77 @@ The binary inventory and SHA-256 manifest agree. Both fresh-source policies
 match initial and mid-battle roots in 16 branches, and their setup, birth,
 extra-upgrade, global standby and Rally checks pass in 32 branches. The death
 scene also preserves three observed card returns and two Standby slot reuses.
+
+## Additional unit selection and mismatched sources, schema 81
+
+`CardEffectSpawnMonster` independently requests at least one primary and one
+additional unit for each `ParamInt` count. Without active spawn-count relics,
+the requested total is twice `max(ParamInt, 1)`. Native code caps that total by
+the remaining physical positions before choosing which character to spawn:
+successful birth indices at or beyond integer `cappedTotal / 2` use the
+additional character. The insertion-index loop has its own final-position
+limit; it does not change the halfway point. Seven available positions therefore
+produce three primary and four additional units for a four-plus-four request.
+Additional selection alone consumes no gameplay RNG; pooled selection remains
+a separate path.
+
+`UnitSummonChoice` retains the additional raw character template and its
+native-order fallback source definition. Each birth initializes that selected
+template with the live source upgrades, starting statuses, ability state and
+callbacks. Ordinary source mode still uses the resolving card for the first
+birth and live detached copies of that same card for subsequent births, even
+when the additional character differs. `SpawnerMatchesDefinition` is captured
+from actual character/source identity and preserved through modifier resolution.
+This makes ordinary self-growth upgrade the mismatched live unit without writing
+the battle-lifetime upgrade back to its source. The explicit extra spawn upgrade
+still applies directly after birth callbacks and writes the source's temporary
+modifiers, independent of that match flag.
+
+Fresh source mode chooses a new matching fallback for every selected character.
+It therefore switches source CardData when the additional character changes,
+retains fresh histories and applies neither the resolving card's upgrades nor
+the previous birth's source modifications. The first birth remains non-cardless;
+later births receive the marker independently of their selected kind. Original
+paid-card standby bindings continue to point at the first host rather than its
+fallback source.
+
+The birth probe now captures the actual `MonsterManager.CreateMonsterState`
+character argument; the spawner card alone cannot identify a mixed birth. Root
+rule closure includes generated-card pools, ability changes and natural ability
+cards from both templates. Independent mechanism checks compare complete births,
+copies, extra upgrades and Rally phases/dispatches in 32 branches. They separately
+require the odd split and both kinds, correct fresh source selection, a mismatched
+self-growth without source write and an explicit extra upgrade with source write.
+Complete policies compare initial and actual mid-battle roots in 16 branches.
+
+| Native archive | Bytes / unique nodes | Births / detached copies / fresh setups | Rally dispatches | Plays / EndTurns | Native seconds |
+| --- | --- | --- | --- | --- | --- |
+| `full-battle-multi-summon-additional.mt2f` | 27,610 / 4,474 | 17 / 12 / 0 | 55 | 15 / 5 | 73.23 |
+| `full-battle-multi-summon-additional-fresh.mt2f` | 28,056 / 4,491 | 17 / 0 / 14 | 43 | 15 / 5 | 70.31 |
+
+Each scene pays two actual upgraded Steward cards for four primary plus four
+additional one-size Stewards. Each occupied floor shows three TrainStewardBig
+and four TrainStewardSmall units. Fourteen extra upgrades run in each scene;
+seventeen recorded births include three other ordinary unit-card plays. The
+original Boss (125 HP / 7 attack) and waves remain intact. Both battles win at
+Pyre 80 with CaptureFailures/Mismatches/Unsupported/Pending all zero. Direct
+binary captures are from game 2.2.1, module MVID
+`8fb07b96-f4db-4d2b-884d-c00536d6ccf4`; original profile signatures are unchanged.
+The native game is muted at Instant speed. Only this scenario's observation
+deadline grows to 180 seconds after actual progressing seven-birth recording
+exceeded the old 30-second limit. Script parameters now reject unknown names;
+both new selectors have one exact scenario value and were verified against the
+actual archives, so an ordinary baseline cannot count as mixed-unit coverage.
+
+Both focused independent checks exit zero. The curated binary inventory grows
+to 117 archives: 108 battles plus nine calibrations. Their SHA-256 values and
+node counts are recorded in the manifest; no source JSON is required.
+Character pools, active spawn-count relics/room modifiers, missing fallback
+sources, removed birth targets, death replacement/equipment transfer and broader
+revival/Horde creation still require native integration. Full battle coverage,
+complete state-based pruning and a universal optimal solver remain open.
+
+The final full 117-archive regression exits zero: all 108 battle archives and
+nine calibration suites pass with no nonzero unsupported transition counts.
+The curated binary inventory and SHA-256 manifest agree. Both mixed-source
+policies and all 32-branch mechanism checks pass within this complete run.

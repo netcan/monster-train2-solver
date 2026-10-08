@@ -797,7 +797,8 @@ namespace MonsterTrain2Poju.Probe
             if (!cards.PlayCard(index, drop, ref error)) throw new InvalidOperationException("Policy card play failed: " + error);
             log.LogInfo("DEPTH-POLICY-PLAY card=" + action.CardInstanceId + " room=" + action.RoomIndex + " position=" + action.PlayerPosition + " target=" + action.TargetUnitId);
             pendingPlay = null;
-            Enter(Stage.PlayingCard, 30f);
+            Enter(Stage.PlayingCard, (Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") ?? "")
+                .StartsWith("multi-summon-additional", StringComparison.Ordinal) ? 180f : 30f);
         }
 
         private void AdvanceTurn(CombatManager combat)
