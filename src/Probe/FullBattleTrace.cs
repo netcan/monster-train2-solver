@@ -244,6 +244,7 @@ namespace MonsterTrain2Poju.Probe
             BattleStatistics statistics = BattleStatisticsProbe.Capture(managers.GetCardStatistics(), CardId);
             AbilityCardCacheEntry[] abilityCache = AbilityCardProbe.Capture(this);
             CardInstanceState[] registry = CardModifierProbe.Capture(projection.KnownCards, CardId);
+            CharacterState lastSpawned = managers.GetMonsterManager()!.GetLastSpawnedCharacterThisTurn();
             return new CombatContext(new CardCycleState(state.Hand, state.Draw, state.Discard,
                 new UnityRng(draw[0], draw[1], draw[2], draw[3]), state.DrawModifier, Array.Empty<string>(), BonusDrawProbe.Capture(cards, this)),
                 new UnityRng(battle[0], battle[1], battle[2], battle[3]), state.Gold, projection.NextCardId,
@@ -263,8 +264,7 @@ namespace MonsterTrain2Poju.Probe
                 RoomCapacityProbe.Capture(managers.GetRoomManager()!), abilityCache,
                 AccessTools.Field(typeof(CombatManager), "lastAbilityActivatorCharacter").GetValue(managers.GetCombatManager()) is CharacterState activator
                     ? UnitId(activator) : 0, AbilityLifecycleProbe.Disabled(managers.GetSaveManager()),
-                managers.GetMonsterManager()!.GetLastSpawnedCharacterThisTurn() == null ? 0 :
-                    UnitId(managers.GetMonsterManager()!.GetLastSpawnedCharacterThisTurn()));
+                lastSpawned == null || normalizeDestroyedAttacker && (lastSpawned.IsDestroyed || !lastSpawned.IsAlive) ? 0 : UnitId(lastSpawned));
         }
 
         private static StatisticQueryFrame CaptureQueryFrame(AllGameManagers managers)
@@ -428,7 +428,7 @@ namespace MonsterTrain2Poju.Probe
             string temporary = path + ".tmp";
             var snapshot = new
             {
-                Schema = 75,
+                Schema = 76,
                 GameVersion = Application.version,
                 GameModuleMvid = typeof(CardState).Assembly.ManifestModule.ModuleVersionId,
                 NativeWon,

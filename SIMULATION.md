@@ -108,6 +108,7 @@ are copied immutable values; independent child states can run on worker threads.
 | Horde runtime unit upgrades | `UnitModifierModel` and `HordeStatusModel` | 16 exact API/queued operations, ordered healed/unhealed/attributed HP casualties, first-stack reset, raw final removal and lethal sacrifice; 40 death/Harvest phases, four paid spell chains and complete policies with parallel branches |
 | Dying Horde unit upgrades | `UnitModifierModel` and `HordeStatusModel` | Five complete deaths, seven dying upgrade/removal effects, 45 exact death/Harvest phases, accepted callback counts and source-card writes; ordinary/unhealed/attributed HP, early exits and 32 branches |
 | Paid summon and Horde Rally | `CardPlayedTriggerModel`, `BattleActionModel` and `RoomCombatModel` | Five exact Horde operations, ten post-play team phases, twelve repeated dispatches, cached room membership, last-spawned timing/overrides, silence/once/conditions and complete policies with parallel branches |
+| Terminal summon and lethal Rally | `BattleActionModel` and `RoomCombatModel` | Twelve native team phases and six dispatches, deferred Boss self-death, post-kill permanent/unit-death upgrades, rewards, a surviving last-spawned reference and fresh Standby routing; complete policy with parallel branches |
 | Status removal and Horde sacrifice | `StatusRemovalModel`, `CardSpellModel` and `RoomCombatModel` | Nine native API/effect/trigger operations, exact room/retained actor states, accepted queue counts, ordered death/Harvest dispatches, a real paid spell removing both teams and parallel branches; raw zero HP preserves orphan standby cards while sacrifice signals physical death and retains its responsible card |
 | Reentrant death signals and queued player sacrifice | `UnitDeathState`, `StatusRemovalModel` and `RoomCombatModel` | Three native operations, 45 exact death/Harvest phase states and complete dispatch order, 95 effect/retained-target states, pending versus cleared statistics listeners, spawner timing and parallel branches |
 | Physical death Harvest | `HarvestModel` and `RoomCombatModel` | Four native physical deaths and 31 exact dispatches; own-death children precede player/enemy groups, Hero/Monster/Unit kinds, Horde repetition, required dying statuses, silence and once flags; complete subsequent battle and parallel branches |
@@ -4075,3 +4076,66 @@ The seven affected old fixtures and both fresh Rally/terminal-spell runs also
 pass their focused checks. Probe builds with zero warnings/errors; ModelChecks
 retains its twelve existing nullable warnings. Both changed PowerShell scripts
 parse, and git diff --check passes.
+
+## Terminal summon and lethal Rally, schema 76
+
+An ordinary paid unit summon can end the battle inside its post-play Rally queue.
+The model now settles a SpawnMonster card whose destination is Standby through
+that terminal boundary. Boss death clears the primary and secondary card piles,
+but the resolving card is restored to a fresh Standby allocation when its play
+finishes. Its living unit and last-spawned reference remain. Other unverified
+terminal card destinations still reject the transition explicitly.
+
+TimesPlayed is incremented before Rally, so even a generated resolving card
+retains that increment after the Boss kill. Its PlayCount and TimesDiscarded
+also complete, while the played-cost dictionary clears. Subsequent effects in
+the same Boss trigger still apply a permanent attack/health upgrade to the new
+summon's card, a temporary-until-unit-death armor upgrade to the unit, and gold.
+Queued Boss OnDeath and player Harvest rewards also settle before the terminal
+decision. Complete native card, unit, statistics and pile states are compared.
+
+Self damage inside a running character queue finishes the Boss's death signal
+and removes its statistics listener before physical removal begins. At the end
+of that parent Rally trigger, HasFinishedDying is true and IsBeingRemoved is
+false. Deferred removal marks the removal batch later, before OnDeath and
+Harvest dispatches. The model preserves this distinction instead of marking
+every death as being removed immediately. Stable decision capture also clears
+a dead/destroyed last-spawned reference; raw trigger observations retain the
+in-flight reference for exact callback comparisons.
+
+`-LethalRally -Policy units-spells-and-junk` reduces the ordinary large Steward's
+size to one and adds Rally/Harvest gold observers. The original Boss receives
+an OnSpawn trigger that generates that same Steward into the hand, plus the
+lethal Rally effect chain and OnDeath reward. Its original attack/health and all
+spawn waves remain intact. The probe selects a legal Boss-room summon through
+the native CanPlayHandCard API to reach the terminal path. Independent complete
+policy checks choose a supported Boss-room summon from the current model state;
+they do not read future native decisions or reuse captured predictions.
+
+Independent checks recompute all twelve team phases, all six actor/room
+dispatches, the complete thirteen-play/four-EndTurn policy, and its actual
+mid-battle root. Mechanism checks repeat in 32 branches, and complete policies
+repeat in 16 parallel branches with parent isolation. The shared-pile checker
+counts slot reuse only for nonterminal actions: terminal clearing resets the
+allocation, so the pre-clear free-slot index cannot describe the restored card.
+
+The final muted Instant native run takes 39.39 seconds, wins at Pyre 80, and
+captures 28 room stages, eight card cycles, eight train phases and seven spawn
+stages. Capture failures, mismatches, unsupported transitions and pending records
+are zero; original profile signatures remain unchanged.
+`tests/fixtures/full-battle-rally-lethal.mt2f` is 21,543 bytes / 3,333 unique nodes,
+contains no source JSON, and has SHA-256
+`a583073ce01d40551f8d63947ea6fbee318ea61a5893d988421095d033fc7857`.
+
+This supplies the ordinary paid summon, lethal Rally and nonempty terminal
+reference coverage left open by schema 75. Cardless summons, retained/dead
+last-spawned targets, movement during Rally, Horde merging/cloning/revival and
+broader equipment/relic/Boss callbacks still need native coverage and integration.
+
+The full 106-archive regression exits zero: 97 native battle archives and nine
+calibrations pass, with complete manifest/SHA-256 integrity, typed binary
+hydration and independent room/card/train/turn/action/complete-policy checks.
+The new archive also passes its separate focused regression, and eight affected
+older fixtures pass their focused checks. Probe builds with zero warnings/errors;
+ModelChecks retains its twelve existing nullable warnings. Both changed
+PowerShell scripts parse, and git diff --check passes.

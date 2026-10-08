@@ -509,7 +509,7 @@ namespace MonsterTrain2Poju.Probe
                     return;
                 }
             }
-            if (fullBattle && !numericModifiersPrepared && (modifierScenario == "rally-triggers" || modifierScenario == "dying-horde-upgrades" || modifierScenario == "horde-upgrades" || modifierScenario == "horde-death" || modifierScenario == "horde-removal" || modifierScenario == "harvest-triggers" || modifierScenario == "horde-statuses" || modifierScenario == "ability-effects" || modifierScenario == "ability-lifecycle" || modifierScenario == "ability-activation" || modifierScenario == "ability-activation-x" || modifierScenario == "ability-activation-lethal" || modifierScenario == "ability-cooldown" || modifierScenario == "ability-cache" || modifierScenario == "sentry" || modifierScenario == "sentry-lethal" || modifierScenario == "companion-boss" || modifierScenario == "numeric-upgrades" || modifierScenario == "dynamic-upgrades" ||
+            if (fullBattle && !numericModifiersPrepared && (modifierScenario == "rally-lethal" || modifierScenario == "rally-triggers" || modifierScenario == "dying-horde-upgrades" || modifierScenario == "horde-upgrades" || modifierScenario == "horde-death" || modifierScenario == "horde-removal" || modifierScenario == "harvest-triggers" || modifierScenario == "horde-statuses" || modifierScenario == "ability-effects" || modifierScenario == "ability-lifecycle" || modifierScenario == "ability-activation" || modifierScenario == "ability-activation-x" || modifierScenario == "ability-activation-lethal" || modifierScenario == "ability-cooldown" || modifierScenario == "ability-cache" || modifierScenario == "sentry" || modifierScenario == "sentry-lethal" || modifierScenario == "companion-boss" || modifierScenario == "numeric-upgrades" || modifierScenario == "dynamic-upgrades" ||
                 modifierScenario == "sacrifice-upgrades" || modifierScenario == "hand-upgrades" || modifierScenario == "targeted-hand-upgrades" ||
                 modifierScenario == "healing" || modifierScenario == "healing-triggers" || modifierScenario == "room-spells" ||
                 modifierScenario == "terminal-spells" || modifierScenario == "post-kill-spells" || modifierScenario == "random-spells" ||
@@ -531,6 +531,7 @@ namespace MonsterTrain2Poju.Probe
                 else if (modifierScenario == "bonus-draw" || modifierScenario == "bonus-draw-lethal") BonusDrawScenario.Prepare(managers, log, modifierScenario == "bonus-draw-lethal");
                 else if (modifierScenario == "ability-activation" || modifierScenario == "ability-activation-x" || modifierScenario == "ability-activation-lethal") AbilityActivationScenario.Prepare(managers, log, modifierScenario == "ability-activation-x", modifierScenario == "ability-activation-lethal");
                 else if (modifierScenario == "rally-triggers") RallyScenario.Prepare(managers, log);
+                else if (modifierScenario == "rally-lethal") LethalRallyScenario.Prepare(managers, log);
                 else if (modifierScenario == "dying-horde-upgrades") DyingHordeUpgradeScenario.Prepare(managers, log);
                 else if (modifierScenario == "horde-upgrades") HordeUpgradeScenario.Prepare(managers, log);
                 else if (modifierScenario == "horde-death") HordeDeathScenario.Prepare(managers, log);
@@ -650,6 +651,7 @@ namespace MonsterTrain2Poju.Probe
                 BattleTurnState decision = FullBattleTrace.Active!.CaptureDecision();
                 pendingPlay = Environment.GetEnvironmentVariable("MT2_PROBE_FULL_BATTLE_POLICY") == "units-spells-and-junk"
                     ? BattleActionModel.ChooseUnitSpellAndJunkPlay(decision) : BattleActionModel.ChooseUnitAndJunkPlay(decision);
+                if (modifierScenario == "rally-lethal") pendingPlay = LethalRallyScenario.ChooseNativeBossSummon(managers) ?? pendingPlay;
                 if (modifierScenario == "equipment-abilities" || modifierScenario == "ability-effects" || modifierScenario == "ability-activation" || modifierScenario == "ability-activation-x" || modifierScenario == "ability-activation-lethal")
                     pendingPlay = UnitAbilityModel.ChooseAbilityThenCards(decision);
                 if (pendingPlay != null)

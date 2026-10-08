@@ -37,7 +37,7 @@ namespace MonsterTrain2Poju.Probe
         }
         internal static readonly List<Phase> Phases = new List<Phase>();
         internal static readonly List<Trigger> Triggers = new List<Trigger>();
-        private static bool Enabled => RallyScenario.Started && FullBattleTrace.Active != null && !AllGameManagers.Instance!.GetSaveManager().PreviewMode;
+        private static bool Enabled => (RallyScenario.Started || LethalRallyScenario.Prepared) && FullBattleTrace.Active != null && !AllGameManagers.Instance!.GetSaveManager().PreviewMode;
         private static IEnumerator ObservePhase(IEnumerator native, ICharacterManager manager, CardState card)
         {
             FullBattleTrace trace = FullBattleTrace.Active!; var units = new List<CharacterState>();

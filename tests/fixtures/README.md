@@ -348,3 +348,15 @@ at Pyre 80 from initial and actual mid-battle roots in 16 branches. The 30,867-b
 archive contains 4,937 unique nodes and no source JSON. Ordinary/cardless summons,
 retained/dead references, lethal Rally and Horde merging/cloning remain separate
 native integration work.
+
+`full-battle-rally-lethal.mt2f` is a native schema-76 battle with twelve paid team
+phases and six Rally dispatches. An ordinary summon triggers the original Boss's
+self-death, then receives permanent attack/health and unit-death armor upgrades
+before queued OnDeath/Harvest rewards settle. Complete states preserve the
+finished-but-not-yet-removing Boss, live last-spawned unit, resolving card history,
+cleared costs and fresh terminal Standby allocation. Mechanisms match in 32
+branches; the complete thirteen-play/four-EndTurn policy matches initial and
+actual mid-battle roots in 16 parallel branches, winning at Pyre 80. The
+21,543-byte archive has 3,333 unique nodes and no source JSON. Original Boss
+stats and waves remain intact. Cardless summons, retained/dead targets, Rally
+movement and broader Horde merging/cloning/revival remain separate work.

@@ -110,6 +110,8 @@ internal static class BattleActionChecks
                 if (actionOutcome.GetInt32() == (int)RoomOutcome.BattleWon && fixture.GetProperty("Schema").GetInt32() >= 12)
                 {
                     if (action.ActivatorUnitId > 0) UnitAbilityChecks.NativeTerminal(entry);
+                    else if (before.PlayRules!.Cards.Single(rule => rule.DataId == before.Spawn.Train.Context!.FindCard(action.CardInstanceId)!.DataId).Effect == "SpawnMonster")
+                        LethalRallyChecks.NativeTerminal(entry);
                     else TerminalSpellChecks.Native(entry);
                 }
             }
@@ -213,6 +215,8 @@ internal static class BattleActionChecks
             policy.GetString() is not ("units-and-junk" or "units-spells-and-junk")) return;
         Func<BattleTurnState, PlayCardAction?> chooser = policy.GetString() == "units-spells-and-junk"
             ? BattleActionModel.ChooseUnitSpellAndJunkPlay : BattleActionModel.ChooseUnitAndJunkPlay;
+        if (fixture.TryGetProperty("ModifierScenario", out var scenarioPolicy) && scenarioPolicy.GetString() == "rally-lethal")
+            chooser = BattleActionModel.ChooseBossRoomSummonThenCards;
         if (fixture.TryGetProperty("ModifierScenario", out var abilityScenario) &&
             abilityScenario.GetString() is "ability-activation" or "ability-activation-x" or "ability-activation-lethal" or "ability-effects" or "equipment-abilities")
             chooser = UnitAbilityModel.ChooseAbilityThenCards;

@@ -99,7 +99,11 @@ internal static class SharedPileChecks
             int cardId = record.GetProperty("Action").GetProperty("CardInstanceId").GetInt32();
             CardPileState standby = before.OtherPiles!.Single(pile => pile.Name == "Standby");
             CardPileState moved = after.OtherPiles!.Single(pile => pile.Name == "Standby");
-            if (standby.FreeSlots?.Count > 0 && moved.Cards.Any(card => card.InstanceId == cardId) &&
+            RoomOutcome outcome = record.GetProperty("ActualOutcome").Deserialize<RoomOutcome>();
+            // Terminal clearing resets the allocation; the resolving summon is then
+            // inserted into a fresh Standby rather than reusing a pre-clear slot.
+            if (outcome is not (RoomOutcome.BattleWon or RoomOutcome.PlayerDefeated) &&
+                standby.FreeSlots?.Count > 0 && moved.Cards.Any(card => card.InstanceId == cardId) &&
                 moved.EntrySlots![standby.FreeSlots[0]] == cardId) freeSlotReuses++;
             var alive = after.Spawn.Train.Rooms.SelectMany(room => room.Units).Select(unit => unit.Id).ToHashSet();
             var exhausted = after.OtherPiles!.Single(pile => pile.Name == "Exhausted").Cards.Select(card => card.InstanceId).ToHashSet();

@@ -327,7 +327,8 @@ namespace MonsterTrain2Poju.Model
             if (terminal) piles = piles.Select(CardPileModel.Clear).ToArray();
             // Native DiscardCard/PurgeCard remove a naturally played card's retained buffer reference.
             piles = piles.Select(pile => pile.Name == "DiscardBuffer" ? CardPileModel.Remove(pile, card.InstanceId) : pile).ToArray();
-            if (terminal && rule.Destination != "Discard") return Unsupported("Terminal played-card routing outside discard is not validated.");
+            if (terminal && rule.Destination != "Discard" && !(rule.Destination == "Standby" && rule.Effect == "SpawnMonster"))
+                return Unsupported("Terminal routing for this card effect/destination is not validated.");
             if (rule.Destination == "Discard") discard.Add(card);
             else
             {
@@ -431,6 +432,18 @@ namespace MonsterTrain2Poju.Model
             => ChoosePlay(source, false);
         public static PlayCardAction? ChooseUnitSpellAndJunkPlay(BattleTurnState source)
             => ChoosePlay(source, true);
+        public static PlayCardAction? ChooseBossRoomSummonThenCards(BattleTurnState source)
+        {
+            foreach (RoomCombatState room in source.Spawn.Train.Rooms.Where(room =>
+                room.Units.Any(unit => unit.Team == CombatTeam.Enemy && unit.EndsBattleOnDeath && unit.Health > 0)))
+                foreach (CardToken card in source.Spawn.Train.Context!.Cards.Hand.Where(card =>
+                    source.PlayRules?.Cards.Any(rule => rule.DataId == card.DataId && rule.Effect == "SpawnMonster") == true))
+                {
+                    var action = new PlayCardAction(card.InstanceId, room.RoomIndex, 0);
+                    if (PlayCard(source, action).Supported) return action;
+                }
+            return ChooseUnitSpellAndJunkPlay(source);
+        }
         private static PlayCardAction? ChoosePlay(BattleTurnState source, bool spells)
         {
             if (source.PlayRules == null) return null;

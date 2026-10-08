@@ -98,7 +98,7 @@ internal static class RallyChecks
             label + " queue did not settle or parent changed.");
     }
 
-    private static void VerifyPhase(FixtureValue sample)
+    internal static void VerifyPhase(FixtureValue sample)
     {
         var before = sample.GetProperty("Before").Deserialize<TrainCombatState>()!;
         string parent = Serialize(before);
@@ -109,7 +109,7 @@ internal static class RallyChecks
         Require(sample.GetProperty("Completed").GetBoolean() && Serialize(before) == parent, "Rally team phase incomplete or parent changed.");
     }
 
-    private static void VerifyTrigger(FixtureValue sample)
+    internal static void VerifyTrigger(FixtureValue sample)
     {
         var before = sample.GetProperty("Before").Deserialize<RoomCombatState>()!;
         var actor = sample.GetProperty("Actor").Deserialize<CombatUnit>()!;

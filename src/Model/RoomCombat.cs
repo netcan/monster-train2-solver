@@ -393,6 +393,8 @@ namespace MonsterTrain2Poju.Model
                 QueuedCharacterTrigger[] removing = pending.OrderBy(item => item.Unit.Team).ThenBy(item => item.Unit.Id).ToArray();
                 pending.Clear();
                 foreach (QueuedCharacterTrigger dead in removing)
+                    dead.Unit = MarkBeingRemoved(dead.Unit);
+                foreach (QueuedCharacterTrigger dead in removing)
                 {
                     if (!Fire(dead) || !Drain() || !Harvest(dead)) return false;
                     if (dead.ReturnSpawnerAfterQueue && !returnSpawner(dead)) return false;
@@ -706,6 +708,10 @@ namespace MonsterTrain2Poju.Model
             }
             return null;
         }
+
+        private static CombatUnit MarkBeingRemoved(CombatUnit unit) => unit.DeathState == null ? unit :
+            unit.WithDeathState(new UnitDeathState(unit.DeathState.HasFinishedDying, true,
+                unit.DeathState.HasStatisticsListener, unit.DeathState.PendingStatisticsCardId));
 
         private sealed class WorkingUnit
         {
@@ -1312,7 +1318,8 @@ namespace MonsterTrain2Poju.Model
                 if (!source.Preview && (target.Source.EndsBattleOnDeath || target.Source.IsPyre)) ClearTerminalCards();
                 DispatchDeathStatistics(actor, target, sourceCardId, sacrifice);
                 if (target.Source.DeathState != null)
-                    target.Apply(target.Freeze().WithDeathState(new UnitDeathState(true, true,
+                    target.Apply(target.Freeze().WithDeathState(new UnitDeathState(true,
+                        target.Source.DeathState.IsBeingRemoved || !deferRemoval || sacrifice,
                         enqueueCharacterTrigger == null && target.Source.DeathState.HasStatisticsListener)));
                 if (enqueueCharacterTrigger != null) enqueueCharacterTrigger(new QueuedCharacterTrigger(source.RoomIndex, target.Freeze(),
                     returnSpawnerAfterQueue: deferReturn, deferUntilRemoval: deferRemoval, harvestAfterDeath: !target.Despawned && !immediateHarvest));
@@ -1465,6 +1472,8 @@ namespace MonsterTrain2Poju.Model
                 var removing = deferredDamageDeaths.OrderBy(dead => dead.Unit.Source.Team).ThenBy(dead => dead.Unit.Source.Id).ToArray();
                 deferredDamageDeaths.Clear();
                 runningTriggerQueue = false;
+                foreach (var dead in removing)
+                    dead.Unit.Apply(MarkBeingRemoved(dead.Unit.Freeze()));
                 foreach (var dead in removing)
                 {
                     FireTriggers(dead.Unit, "OnDeath");
