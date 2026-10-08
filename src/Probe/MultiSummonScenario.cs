@@ -11,7 +11,7 @@ namespace MonsterTrain2Poju.Probe
     internal static class MultiSummonScenario
     {
         internal static bool Prepared, ZeroStarted, ZeroCompleted;
-        internal static bool FreshSources;
+        internal static bool FreshSources, Pooled;
         internal static string? Error;
         private static bool holding;
         internal static void Prepare(AllGameManagers managers, ManualLogSource log)
@@ -21,9 +21,10 @@ namespace MonsterTrain2Poju.Probe
             CardEffectData spawn = data.GetEffects().Single(effect => effect.GetEffectStateName() == "CardEffectSpawnMonster");
             Set(spawn, "paramInt", 4);
             string scenario = Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") ?? "";
-            bool additional = scenario.StartsWith("multi-summon-additional", StringComparison.Ordinal);
-            FreshSources = scenario.StartsWith("multi-summon-fresh", StringComparison.Ordinal) || scenario == "multi-summon-additional-fresh";
-            if (FreshSources || additional)
+            Pooled = scenario.StartsWith("multi-summon-pool", StringComparison.Ordinal);
+            bool additional = scenario.StartsWith("multi-summon-additional", StringComparison.Ordinal) || Pooled && scenario.Contains("additional");
+            FreshSources = scenario.StartsWith("multi-summon-fresh", StringComparison.Ordinal) || scenario == "multi-summon-additional-fresh" || Pooled && scenario.EndsWith("fresh", StringComparison.Ordinal);
+            if (FreshSources || additional || Pooled)
             {
                 Set(spawn, "paramBool", FreshSources);
                 Set(spawn, "paramCardUpgradeData", DynamicUpgradeScenario.Upgrade("PojuMultiSummonExtra", SpawnUpgradeProbe.UpgradeDataId,
@@ -40,11 +41,15 @@ namespace MonsterTrain2Poju.Probe
             }
             CharacterData unit = spawn.GetParamCharacterData(); Set(unit, "size", 1);
             CharacterData? second = null;
-            if (additional)
+            if (additional || Pooled)
             {
                 second = cards.GetAllCards(new List<CardState>()).Select(card => card.GetSpawnCharacterData())
                     .First(candidate => candidate != null && candidate != unit && candidate.name.StartsWith("TrainSteward", StringComparison.Ordinal));
-                Set(second!, "size", 1); Set(spawn, "paramAdditionalCharacterData", second!);
+                Set(second!, "size", 1);
+                if (additional) Set(spawn, "paramAdditionalCharacterData", second!);
+                if (Pooled) Set(spawn, "paramCharacterDataPool", scenario.Contains("singleton")
+                    ? new List<CharacterData> { unit } : new List<CharacterData> { unit, second!, unit });
+                if (scenario == "multi-summon-pool-no-primary") Set(spawn, "paramCharacterData", null!);
             }
             if (scenario == "multi-summon-fresh-deaths")
             {

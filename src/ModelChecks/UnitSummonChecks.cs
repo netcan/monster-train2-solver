@@ -7,6 +7,8 @@ internal static class UnitSummonChecks
     internal static void Native(FixtureValue fixture)
     {
         if (!fixture.TryGetProperty("ModifierScenario", out var scenario) || scenario.GetString()?.StartsWith("multi-summon", StringComparison.Ordinal) != true) return;
+        if (scenario.GetString()!.StartsWith("multi-summon-pool", StringComparison.Ordinal))
+        { PoolSummonChecks.Native(fixture); return; }
         if (scenario.GetString()!.StartsWith("multi-summon-additional", StringComparison.Ordinal))
         { AdditionalSummonChecks.Native(fixture); return; }
         if (scenario.GetString()!.StartsWith("multi-summon-fresh", StringComparison.Ordinal))

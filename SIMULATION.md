@@ -112,6 +112,7 @@ are copied immutable values; independent child states can run on worker threads.
 | Shared unit identity allocation | `UnitIdentityModel` and `CombatContext.NextUnitId` | Player/enemy/treasure allocation, all context copies, stable death/terminal counters, 98 native spawn/decision boundaries and complete policies with parallel branches |
 | Repeated paid summons and detached sources | `UnitBirthModel`, `UnitSummonModel` and `CardGenerationModel.CloneDetached` | Ten complete native births, five detached card copies, ten paid phases and 26 Rally dispatches; live source upgrades, retained clone flags, cardless/source separation, physical slot limits, capacity overflow and parallel branches |
 | Fresh and additional summon sources | `UnitSummonRule`, `UnitSummonChoice` and `UnitStandbyModel` | Native fresh setup, original-card bindings, delayed returns, mixed unit templates, odd capped splits and source-mismatch upgrade routing; complete policies and parallel branches |
+| Pooled unit summons | `UnitSummonRule.Pool` and `UnitSummonModel` | Ordered duplicate weights, singleton RNG draws, additional overrides, fresh/copied sources and no-primary paid Rally gates; five native scenes and parallel branches |
 | Status removal and Horde sacrifice | `StatusRemovalModel`, `CardSpellModel` and `RoomCombatModel` | Nine native API/effect/trigger operations, exact room/retained actor states, accepted queue counts, ordered death/Harvest dispatches, a real paid spell removing both teams and parallel branches; raw zero HP preserves orphan standby cards while sacrifice signals physical death and retains its responsible card |
 | Reentrant death signals and queued player sacrifice | `UnitDeathState`, `StatusRemovalModel` and `RoomCombatModel` | Three native operations, 45 exact death/Harvest phase states and complete dispatch order, 95 effect/retained-target states, pending versus cleared statistics listeners, spawner timing and parallel branches |
 | Physical death Harvest | `HarvestModel` and `RoomCombatModel` | Four native physical deaths and 31 exact dispatches; own-death children precede player/enemy groups, Hero/Monster/Unit kinds, Horde repetition, required dying statuses, silence and once flags; complete subsequent battle and parallel branches |
@@ -4535,3 +4536,70 @@ The final full 117-archive regression exits zero: all 108 battle archives and
 nine calibration suites pass with no nonzero unsupported transition counts.
 The curated binary inventory and SHA-256 manifest agree. Both mixed-source
 policies and all 32-branch mechanism checks pass within this complete run.
+
+## Pooled unit selection and no-primary cards, schema 82
+
+`UnitSummonRule.Pool` preserves native pool order and duplicate entries rather
+than treating the pool as a set. Every birth draws once from the Battle stream,
+including a singleton pool and a draw later replaced by an additional character.
+Ordinary mode clones the live resolving source before sampling. The sampled
+character is then overridden at the capped total's halfway point, if applicable.
+Fresh mode creates its matching fallback source after that selection. Birth
+callbacks and the explicit extra unit/source upgrade follow in native order.
+`SpawnerMatchesDefinition` uses actual source-character identity, including
+the selected fallback, rather than assuming that every fresh source matches.
+
+The scoped pool probe observes the real `RandomElement<CharacterData>` call
+inside the native spawn iterator. It records ordered pool entries, the chosen
+character and complete before/after contexts. Independent checks recompute
+each draw from the captured decision state, verify every born kind/source and
+the final Battle RNG, and compare complete sampling boundaries. Singleton
+sampling is required to advance RNG. Additional scenes require an actual
+sampled result to be overridden; merely configuring an additional character
+cannot satisfy that coverage check.
+
+A pooled monster card can have no primary `ParamCharacterData`. Its legality
+uses captured `NativeBaseSize` zero, followed by actual card size upgrades and
+the native 1..6 clamp. It needs no placeholder unit template. The native
+`CanCardTriggerRally` gate rejects the paid card when `GetSpawnCharacterData`
+is null, so `TriggersPaidRally` suppresses that post-play phase. Later cardless
+births still trigger their own Rally. The initial exploratory no-primary
+capture exposed two full-action mismatches from the missing paid-card gate;
+that archive is not curated. The corrected native recording passes completely.
+
+| Native archive suffix after `full-battle-multi-summon-` | Bytes / unique nodes | Pool draws / births / copies / fresh setups | Paid phases / Rally dispatches | Native seconds |
+| --- | --- | --- | --- | --- |
+| `pool-additional.mt2f` | 28,550 / 4,577 | 14 / 17 / 12 / 0 | 10 / 55 | 67.38 |
+| `pool-additional-fresh.mt2f` | 28,790 / 4,559 | 14 / 17 / 0 / 14 | 10 / 43 | 80.16 |
+| `pool-singleton-additional.mt2f` | 28,327 / 4,541 | 14 / 17 / 12 / 0 | 10 / 55 | 73.68 |
+| `pool.mt2f` | 25,476 / 3,933 | 7 / 10 / 5 / 0 | 10 / 26 | 49.55 |
+| `pool-no-primary.mt2f` | 24,421 / 3,772 | 7 / 10 / 5 / 0 | 6 / 17 | 47.26 |
+
+Weighted scenes use `[TrainStewardBig, TrainStewardSmall, TrainStewardBig]`;
+the singleton scene uses `[TrainStewardBig]`. Additional scenes request four
+plus four births and cap to seven before splitting. Fresh mode additionally
+records 27 complete global Standby checks. Each scene applies one explicit
+extra upgrade per pool draw and finishes after fifteen plays and five EndTurns
+at Pyre 80. The original Boss (125 HP / 7 attack) and waves remain intact.
+CaptureFailures, Mismatches, Unsupported and Pending are all zero. All five
+focused independent checks pass, including complete initial/mid-battle policies
+in 16 parallel branches and complete mechanism states in 32 branches.
+
+These are direct binary captures from game 2.2.1, module MVID
+`8fb07b96-f4db-4d2b-884d-c00536d6ccf4`. The game is muted at Instant speed;
+original profile signatures remain unchanged. All five script selectors are
+explicit parameters and were checked against actual scenario metadata.
+The curated inventory grows to 122 archives: 113 battles plus nine calibrations,
+with sizes, SHA-256 values and unique node counts in the manifest and no source
+JSON dependency.
+
+Missing/null fresh sources, active spawn-count relics/room modifiers, removed
+birth targets and physical slot holes, death replacement/equipment transfer,
+and broader revival/Horde creation still need native integration. Full battle
+coverage, complete state-based pruning and a universal optimal solver remain open.
+
+The final full 122-archive regression exits zero: all 113 battle archives,
+all nine calibration suites and all five pooled summon checks pass. Complete
+policies and parallel mechanism branches pass within this run. There are no
+nonzero unsupported transition counts, and archive sizes/SHA-256 values match
+the curated manifest. Legacy summon rules retain their constructor defaults.

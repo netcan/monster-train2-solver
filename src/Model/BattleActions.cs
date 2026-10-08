@@ -232,13 +232,21 @@ namespace MonsterTrain2Poju.Model
             {
                 if (action.TargetUnitId != 0) return Illegal("A summon takes a spawn position, not a unit target.");
                 CombatUnit? template = rule.SpawnUnit;
-                if (template == null || template.IsPyre || template.Size < 0 || rule.Destination != "Standby")
+                if (template == null && !(rule.Summon?.Pool.Count > 0 && rule.Summon.NativeBaseSize.HasValue) ||
+                    template?.IsPyre == true || template?.Size < 0 || rule.Destination != "Standby")
                     return Unsupported("Invalid unit spawn definition.");
-                string? validation = RoomCombatModel.Validate(new RoomCombatState(target.RoomIndex, target.Deployment,
+                string? validation = template == null ? null : RoomCombatModel.Validate(new RoomCombatState(target.RoomIndex, target.Deployment,
                     new[] { template }, Array.Empty<string>(), context));
                 if (validation != null) return Unsupported(validation);
+                int legalSize = template?.Size ?? 0;
+                if (rule.Summon?.NativeBaseSize is int nativeSize)
+                {
+                    if (playingInstance == null) return Unsupported("Pooled summon legality requires card modifiers.");
+                    legalSize = Math.Max(1, Math.Min(6, CardModifierModel.UpgradedStat(nativeSize, "Size", false,
+                        playingInstance.Permanent, playingInstance.Temporary)));
+                }
                 if (targetRule.SummonBlocked || players.Length >= targetRule.PlayerSlots ||
-                    players.Sum(unit => (long)unit.Size) + template.Size >
+                    players.Sum(unit => (long)unit.Size) + legalSize >
                         (RoomCapacityModel.Maximum(context, action.RoomIndex, CombatTeam.Player) ?? targetRule.PlayerCapacity))
                     return Illegal("The room cannot accept this unit's size or another spawn slot.");
                 if (position < 0 || position > players.Length) return Illegal("Invalid summon position.");
@@ -254,6 +262,7 @@ namespace MonsterTrain2Poju.Model
                 }
                 else
                 {
+                    if (template == null) return Unsupported("Missing ordinary summon template.");
                     UnitIdentityAllocation allocated = UnitIdentityModel.Allocate(context, nextUnitId);
                     if (!allocated.Supported) return Unsupported(allocated.UnsupportedReason!);
                     nextUnitId = allocated.NextUnitId; context = allocated.Context!;
@@ -317,7 +326,7 @@ namespace MonsterTrain2Poju.Model
                 ? playedStatistics.RecordPlayedCard(card.InstanceId) : playedStatistics?.Increment(card.InstanceId, "TimesPlayed");
             context = context.WithStatistics(playedStatistics);
             train = CardSpellModel.WithContext(train, context);
-            if (rule.Effect == "SpawnMonster")
+            if (rule.Effect == "SpawnMonster" && rule.Summon?.TriggersPaidRally != false)
             {
                 int[] initialCached = source.Spawn.Train.Rooms.Single(room => room.RoomIndex == action.RoomIndex).Units
                     .Where(unit => unit.Health > 0 && unit.IsSpawning != true).Select(unit => unit.Id).ToArray();

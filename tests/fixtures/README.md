@@ -420,3 +420,26 @@ Original Boss/waves and profile signatures are preserved. Both captures are
 direct binary archives. The curated inventory now contains 117 archives:
 108 battles and nine calibration suites. Pool selection, spawn-count relics,
 replacement and broader room/relic creation remain separate native work.
+
+The five schema-82 archives `full-battle-multi-summon-pool-additional.mt2f`,
+`full-battle-multi-summon-pool-additional-fresh.mt2f`,
+`full-battle-multi-summon-pool-singleton-additional.mt2f`,
+`full-battle-multi-summon-pool.mt2f` and
+`full-battle-multi-summon-pool-no-primary.mt2f` record actual pooled unit choices.
+Native pool order and duplicate weights are retained. Every birth consumes a
+Battle RNG draw, even for a singleton or a subsequent additional-character
+override. Copied/fresh source selection, extra upgrades and complete callback
+states are checked independently in 32 branches; initial/mid-battle complete
+policies pass in 16 branches, with fifteen plays, five EndTurns and Pyre 80.
+The no-primary scene captures base size zero and the native paid-card Rally
+gate while preserving cardless birth Rally. Its earlier mismatching exploratory
+recording is excluded. All five accepted captures have zero failures,
+mismatches, unsupported transitions and pending observations. Original
+Boss/waves and profile signatures are preserved; all are direct binary captures.
+The inventory contains 122 archives: 113 battles and nine calibration suites.
+Missing fresh sources, spawn-count relics, removed birth targets/replacement
+and broader room/relic creation remain separate native integration work.
+
+The full 122-archive regression exits zero with 113 battle passes, nine
+calibration passes and all five pooled summon checks. Unsupported transition
+counts remain zero, and every archive matches the inventory/SHA-256 manifest.

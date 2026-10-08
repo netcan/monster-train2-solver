@@ -55,7 +55,8 @@ namespace MonsterTrain2Poju.Probe
                 string id = pending.Dequeue(); if (reachable.ContainsKey(id)) continue;
                 CardPlayRule rule = Definition(save.GetAllGameData().FindCardData(id)!); reachable.Add(id, rule);
                 CombatUnit[] spawned = new[] { rule.SpawnUnit, rule.Summon?.Additional?.Unit }
-                    .Where(unit => unit != null).Cast<CombatUnit>().ToArray();
+                    .Where(unit => unit != null).Cast<CombatUnit>()
+                    .Concat(rule.Summon?.Pool.Select(choice => choice.Unit) ?? Array.Empty<CombatUnit>()).ToArray();
                 foreach (string child in rule.Effects.Where(effect => effect.Generation != null).SelectMany(effect => effect.Generation!.Pool).Select(card => card.DataId)
                     .Concat(spawned.SelectMany(unit => unit.Triggers).SelectMany(trigger => trigger.Effects).SelectMany(effect => effect.CardPool)))
                     pending.Enqueue(child);
@@ -90,27 +91,43 @@ namespace MonsterTrain2Poju.Probe
             {
                 CardEffectData effect = effects[0];
                 CharacterData? unit = effect.GetParamCharacterData();
-                if (unit == null || effect.GetParamCharacterDataPool().Count > 0 ||
+                CharacterData[] pool = effect.GetParamCharacterDataPool()?.ToArray() ?? Array.Empty<CharacterData>();
+                if (unit == null && pool.Length == 0 ||
                     effect.GetTargetMode() != TargetMode.Room || selfPurge)
                     interactions.Add("Additional/modified unit spawn");
+                CardData? fallback = !effect.GetParamBool() || unit == null ? null : Fallback(unit);
+                CardData? primarySource = effect.GetParamBool() ? fallback : data;
                 if (unit != null)
-                    template = SpawnTemplate(unit, data.GetSpawnCharacterData() == null || data.GetSpawnCharacterData() == unit, interactions);
+                    template = SpawnTemplate(unit, primarySource?.GetSpawnCharacterData() == null || primarySource.GetSpawnCharacterData() == unit, interactions);
                 kind = "SpawnMonster"; destination = "Standby";
-                if (effect.GetParamInt() > 1 || effect.GetParamCardUpgradeData() != null || effect.GetParamBool() || effect.GetParamAdditionalCharacterData() != null)
+                if (effect.GetParamInt() > 1 || effect.GetParamCardUpgradeData() != null || effect.GetParamBool() || effect.GetParamAdditionalCharacterData() != null || pool.Length > 0)
                 {
                     CardUpgradeModifier? upgrade = null;
                     if (effect.GetParamCardUpgradeData() != null)
                     { var state = new CardUpgradeState(); state.Setup(effect.GetParamCardUpgradeData()); upgrade = CardModifierProbe.Upgrade(state); }
-                    CardData? fallback = !effect.GetParamBool() || unit == null ? null : Fallback(unit);
-                    if (effect.GetParamBool() && fallback == null) interactions.Add("Missing fresh fallback source definition");
+                    if (effect.GetParamBool() && pool.Length == 0 && fallback == null) interactions.Add("Missing fresh fallback source definition");
                     CharacterData? additional = effect.GetParamAdditionalCharacterData();
                     CardData? additionalFallback = !effect.GetParamBool() || additional == null ? null : Fallback(additional);
                     if (effect.GetParamBool() && additional != null && additionalFallback == null) interactions.Add("Missing additional fallback source definition");
+                    CardData? additionalSource = effect.GetParamBool() ? additionalFallback : data;
                     UnitSummonChoice? choice = additional == null ? null : new UnitSummonChoice(
-                        SpawnTemplate(additional, effect.GetParamBool() || data.GetSpawnCharacterData() == null || data.GetSpawnCharacterData() == additional, interactions),
+                        SpawnTemplate(additional, additionalSource?.GetSpawnCharacterData() == null || additionalSource.GetSpawnCharacterData() == additional, interactions),
                         additionalFallback == null ? null : CardGenerationProbe.Creation(additionalFallback));
+                    var choices = new List<UnitSummonChoice>();
+                    foreach (CharacterData candidate in pool)
+                    {
+                        if (candidate == null) { interactions.Add("Null character in unit pool"); continue; }
+                        CardData? candidateFallback = !effect.GetParamBool() ? null : Fallback(candidate);
+                        if (effect.GetParamBool() && candidateFallback == null) interactions.Add("Missing pooled fallback source definition");
+                        CardData? candidateSource = effect.GetParamBool() ? candidateFallback : data;
+                        choices.Add(new UnitSummonChoice(SpawnTemplate(candidate,
+                            candidateSource?.GetSpawnCharacterData() == null || candidateSource.GetSpawnCharacterData() == candidate, interactions),
+                            candidateFallback == null ? null : CardGenerationProbe.Creation(candidateFallback)));
+                    }
                     summon = new UnitSummonRule(effect.GetParamInt(), CardGenerationProbe.Creation(data), Status("cardless", 1), upgrade,
-                        effect.GetParamBool(), fallback == null ? null : CardGenerationProbe.Creation(fallback), choice);
+                        effect.GetParamBool(), fallback == null ? null : CardGenerationProbe.Creation(fallback), choice,
+                        choices, pool.Length == 0 ? null : (int?)(data.GetSpawnCharacterData()?.GetSize() ?? 0),
+                        data.GetSpawnCharacterData() != null);
                 }
             }
             else if (kind == "CardEffectNULL") kind = "Null";

@@ -21,10 +21,15 @@ namespace MonsterTrain2Poju.Model
         public bool IgnoreCardUpgrades { get; }
         public CardCreationRule? FallbackCreation { get; }
         public UnitSummonChoice? Additional { get; }
+        public IReadOnlyList<UnitSummonChoice> Pool { get; }
+        public int? NativeBaseSize { get; }
+        public bool TriggersPaidRally { get; }
         public UnitSummonRule(int count, CardCreationRule creation, CombatStatus cardlessStatus,
             CardUpgradeModifier? upgrade = null, bool ignoreCardUpgrades = false, CardCreationRule? fallbackCreation = null,
-            UnitSummonChoice? additional = null)
-        { Count = count; Creation = creation; CardlessStatus = cardlessStatus; Upgrade = upgrade; IgnoreCardUpgrades = ignoreCardUpgrades; FallbackCreation = fallbackCreation; Additional = additional; }
+            UnitSummonChoice? additional = null, IReadOnlyList<UnitSummonChoice>? pool = null, int? nativeBaseSize = null,
+            bool triggersPaidRally = true)
+        { Count = count; Creation = creation; CardlessStatus = cardlessStatus; Upgrade = upgrade; IgnoreCardUpgrades = ignoreCardUpgrades; FallbackCreation = fallbackCreation; Additional = additional;
+            Pool = Array.AsReadOnly((pool ?? Array.Empty<UnitSummonChoice>()).ToArray()); NativeBaseSize = nativeBaseSize; TriggersPaidRally = triggersPaidRally; }
     }
 
     public sealed class UnitBirthResult
@@ -50,7 +55,8 @@ namespace MonsterTrain2Poju.Model
             if (error != null) return Unsupported(error);
             CardPlayRule birthDefinition = card == null || card.DataId == definition.DataId ||
                 definition.Summon?.IgnoreCardUpgrades != true ||
-                definition.Summon.FallbackCreation?.DataId != card.DataId && definition.Summon.Additional?.FallbackCreation?.DataId != card.DataId
+                definition.Summon.FallbackCreation?.DataId != card.DataId && definition.Summon.Additional?.FallbackCreation?.DataId != card.DataId &&
+                !definition.Summon.Pool.Any(choice => choice.FallbackCreation?.DataId == card.DataId)
                 ? definition : new CardPlayRule(card.DataId, definition.AssetKey,
                 definition.Cost, definition.Effect, definition.Destination, definition.SpawnUnit, definition.ExternalInteractions,
                 definition.Effects, definition.UpgradeInteractions, definition.HandDiscardInteractions, definition.HandConsumeInteractions,
@@ -112,7 +118,8 @@ namespace MonsterTrain2Poju.Model
         internal static UnitBirthResult Apply(RoomCombatState source, CardPlayRule definition, int cardId, int position, int slots)
         {
             UnitSummonRule rule = definition.Summon!;
-            if (rule.IgnoreCardUpgrades && (rule.FallbackCreation == null || rule.Additional != null && rule.Additional.FallbackCreation == null))
+            if (rule.IgnoreCardUpgrades && (rule.Pool.Count == 0 && rule.FallbackCreation == null ||
+                rule.Additional != null && rule.Additional.FallbackCreation == null || rule.Pool.Any(choice => choice.FallbackCreation == null)))
                 return Unsupported("Missing fallback spawner definition.");
             if (rule.IgnoreCardUpgrades && source.Context?.OtherPiles?.Any(pile => pile.Name == "Standby" && pile.UnitConditions != null) != true)
                 return Unsupported("Fresh fallback summons require the original card's standby binding metadata.");
@@ -136,7 +143,15 @@ namespace MonsterTrain2Poju.Model
                     state = new RoomCombatState(state.RoomIndex, state.Deployment, state.Units, state.ExternalInteractions, clone.Context, state.Preview);
                 }
                 // Native selection uses the capped total, before the insertion-index loop limit.
-                UnitSummonChoice? selected = rule.Additional != null && index >= count / 2 ? rule.Additional : null;
+                UnitSummonChoice? selected = null;
+                if (rule.Pool.Count > 0)
+                {
+                    RngDraw draw = state.Context!.BattleRng.Range(0, rule.Pool.Count);
+                    selected = rule.Pool[draw.Value];
+                    state = new RoomCombatState(state.RoomIndex, state.Deployment, state.Units, state.ExternalInteractions,
+                        state.Context.WithBattleRng(draw.State), state.Preview);
+                }
+                if (rule.Additional != null && index >= count / 2) selected = rule.Additional;
                 if (rule.IgnoreCardUpgrades)
                 {
                     CardGenerationResult created = CardGenerationModel.CreateDetached(state.Context!, selected?.FallbackCreation ?? rule.FallbackCreation!);
