@@ -7,6 +7,8 @@ internal static class UnitSummonChecks
     internal static void Native(FixtureValue fixture)
     {
         if (!fixture.TryGetProperty("ModifierScenario", out var scenario) || scenario.GetString()?.StartsWith("multi-summon", StringComparison.Ordinal) != true) return;
+        if (scenario.GetString()!.Contains("missing-fresh"))
+        { MissingSourceSummonChecks.Native(fixture); return; }
         if (scenario.GetString()!.StartsWith("multi-summon-pool", StringComparison.Ordinal))
         { PoolSummonChecks.Native(fixture); return; }
         if (scenario.GetString()!.StartsWith("multi-summon-additional", StringComparison.Ordinal))
@@ -106,8 +108,8 @@ internal static class UnitSummonChecks
         Require(Serialize(before) == parent, "Extra spawn upgrade mutated its parent.");
         Require(Serialize(before.Context!.FindCard(sourceId)) == Serialize(directExpected.Context!.FindCard(sourceId)),
             "The direct API unexpectedly wrote back to the source card before SpawnMonster did.");
-        int oldCount = directExpected.Context.FindCard(sourceId)!.Temporary.Upgrades.Count;
-        int newCount = expected.Context!.FindCard(sourceId)!.Temporary.Upgrades.Count;
+        int oldCount = directExpected.Context.FindCard(sourceId)?.Temporary.Upgrades.Count ?? 0;
+        int newCount = expected.Context!.FindCard(sourceId)?.Temporary.Upgrades.Count ?? 0;
         Require(newCount - oldCount == (sample.GetProperty("SourceAdded").GetBoolean() ? 1 : 0), "Source duplicate result or descriptor count differs.");
     }
     internal static void VerifyBirth(FixtureValue sample)
@@ -129,8 +131,8 @@ internal static class UnitSummonChecks
             var born = expected.Units.Single(unit => unit.Id == result.UnitId);
             Require(born.IsSpawning == false && (born.Status("cardless")?.Stacks > 0) == cardless &&
                 born.StatusImmunities.Contains("endless") == cardless, "Birth flag, cardless marker or Endless immunity differs.");
-            Require(expected.Context!.Gold - before.Context!.Gold == 10 + (cardless ? 5 * before.Units.Count(unit => unit.Team == CombatTeam.Player) : 0),
-                "Copied sources incorrectly fired OnSpawnNotFromCard or Rally reward count changed.");
+            Require(expected.Context!.Gold - before.Context!.Gold == 10 + (id == 0 ? 1000 : 0) + (cardless ? 5 * before.Units.Count(unit => unit.Team == CombatTeam.Player) : 0),
+                "Source presence incorrectly gated OnSpawnNotFromCard or Rally reward count changed.");
         }
     }
     internal static void VerifyClone(FixtureValue sample)

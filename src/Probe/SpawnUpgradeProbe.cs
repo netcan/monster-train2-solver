@@ -36,7 +36,20 @@ namespace MonsterTrain2Poju.Probe
                 Upgrade = CardModifierProbe.Upgrade(upgrade), Before = before, NativeUpgrade = upgrade, Room = room };
             Records.Add(record);
             try { while (native.MoveNext()) yield return native.Current; }
-            finally { (native as IDisposable)?.Dispose(); record.AfterDirect = trace.Capture(room); }
+            finally
+            {
+                (native as IDisposable)?.Dispose(); record.AfterDirect = trace.Capture(room);
+                if (record.SpawnerCardId == 0) { record.After = record.AfterDirect; Complete(record); }
+            }
+        }
+        private static void Complete(Record record)
+        {
+            record.Completed = true;
+            RoomCombatResult predicted = SpawnUpgradeModel.Apply(record.Before, record.UnitId, record.SpawnerCardId, record.Upgrade);
+            RoomCombatResult direct = UnitModifierModel.ApplyDirect(record.Before, record.UnitId, record.Upgrade);
+            record.Difference = !predicted.Supported ? predicted.UnsupportedReason : !direct.Supported ? direct.UnsupportedReason :
+                !JToken.DeepEquals(JToken.FromObject(direct.State!), JToken.FromObject(record.AfterDirect!)) ? "Extra spawn direct upgrade differs" :
+                !JToken.DeepEquals(JToken.FromObject(predicted.State!), JToken.FromObject(record.After!)) ? "Extra spawn source write differs" : null;
         }
         [HarmonyPatch(typeof(CharacterState), nameof(CharacterState.ApplyCardUpgrade))]
         private static class DirectPatch
@@ -58,12 +71,7 @@ namespace MonsterTrain2Poju.Probe
                 if (record == null) return;
                 var birth = UnitBirthProbe.Records.Last(sample => sample.UnitId == record.UnitId);
                 if (!ReferenceEquals(birth.Unit!.GetSpawnerCard().GetTemporaryCardStateModifiers(), __instance)) return;
-                record.SourceAdded = __result; record.After = FullBattleTrace.Active!.Capture(record.Room); record.Completed = true;
-                RoomCombatResult predicted = SpawnUpgradeModel.Apply(record.Before, record.UnitId, record.SpawnerCardId, record.Upgrade);
-                RoomCombatResult direct = UnitModifierModel.ApplyDirect(record.Before, record.UnitId, record.Upgrade);
-                record.Difference = !predicted.Supported ? predicted.UnsupportedReason : !direct.Supported ? direct.UnsupportedReason :
-                    !JToken.DeepEquals(JToken.FromObject(direct.State!), JToken.FromObject(record.AfterDirect!)) ? "Extra spawn direct upgrade differs" :
-                    !JToken.DeepEquals(JToken.FromObject(predicted.State!), JToken.FromObject(record.After)) ? "Extra spawn source write differs" : null;
+                record.SourceAdded = __result; record.After = FullBattleTrace.Active!.Capture(record.Room); Complete(record);
             }
         }
     }

@@ -7,7 +7,8 @@ internal static class PoolSummonChecks
     internal static void Native(FixtureValue fixture)
     {
         string scenario = fixture.GetProperty("ModifierScenario").GetString()!;
-        bool fresh = scenario.EndsWith("fresh", StringComparison.Ordinal);
+        bool missing = scenario.Contains("missing-fresh");
+        bool fresh = scenario.EndsWith("fresh", StringComparison.Ordinal) || missing;
         var samples = fixture.GetProperty("PoolSummonSelections").EnumerateArray().ToArray();
         var births = fixture.GetProperty("UnitBirths").EnumerateArray().ToArray();
         var clones = fixture.GetProperty("DetachedCardClones").EnumerateArray().ToArray();
@@ -42,7 +43,10 @@ internal static class PoolSummonChecks
                 Require(born[index].AssetKey == selected.Unit.AssetKey &&
                     born[index].Modifiers!.SpawnerMatchesDefinition == selected.Unit.Modifiers!.SpawnerMatchesDefinition,
                     "Pool choice, additional override or source matching differs.");
-                Require(after.Spawn.Train.Context!.FindCard(born[index].SpawnerCardId)!.DataId ==
+                if (fresh && selected.FallbackCreation == null)
+                    Require(selected.FallbackLookupComplete && born[index].SpawnerCardId == 0 && (born[index].Status("cardless")?.Stacks ?? 0) > 0,
+                        "A known missing fallback was replaced by a source or lost its cardless marker.");
+                else Require(after.Spawn.Train.Context!.FindCard(born[index].SpawnerCardId)!.DataId ==
                     (fresh ? selected.FallbackCreation!.DataId : card.DataId), "Selected unit source definition differs.");
             }
             Require(rng.Equals(after.Spawn.Train.Context!.BattleRng), "Birth callbacks or override skipped/added a pool draw.");
@@ -54,8 +58,8 @@ internal static class PoolSummonChecks
         if (scenario.Contains("additional")) Require(overridden, "No sampled result was actually overridden by the additional character.");
         if (scenario.Contains("singleton")) Require(samples.All(sample => sample.GetProperty("Pool").GetArrayLength() == 1), "Singleton case used a larger pool.");
         else Require(duplicates, "Ordered duplicate pool entries were not exercised.");
-        if (scenario.EndsWith("no-primary", StringComparison.Ordinal)) Require(noPrimary, "A no-primary pool was replaced by a placeholder template.");
-        if (fresh) FreshSummonChecks.Native(fixture);
+        if (scenario.Contains("no-primary")) Require(noPrimary, "A no-primary pool was replaced by a placeholder template.");
+        if (fresh && !missing) FreshSummonChecks.Native(fixture);
         Verify();
         Parallel.For(0, 32, _ => Verify());
         void Verify()

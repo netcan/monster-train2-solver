@@ -105,29 +105,26 @@ namespace MonsterTrain2Poju.Probe
                     CardUpgradeModifier? upgrade = null;
                     if (effect.GetParamCardUpgradeData() != null)
                     { var state = new CardUpgradeState(); state.Setup(effect.GetParamCardUpgradeData()); upgrade = CardModifierProbe.Upgrade(state); }
-                    if (effect.GetParamBool() && pool.Length == 0 && fallback == null) interactions.Add("Missing fresh fallback source definition");
                     CharacterData? additional = effect.GetParamAdditionalCharacterData();
                     CardData? additionalFallback = !effect.GetParamBool() || additional == null ? null : Fallback(additional);
-                    if (effect.GetParamBool() && additional != null && additionalFallback == null) interactions.Add("Missing additional fallback source definition");
                     CardData? additionalSource = effect.GetParamBool() ? additionalFallback : data;
                     UnitSummonChoice? choice = additional == null ? null : new UnitSummonChoice(
                         SpawnTemplate(additional, additionalSource?.GetSpawnCharacterData() == null || additionalSource.GetSpawnCharacterData() == additional, interactions),
-                        additionalFallback == null ? null : CardGenerationProbe.Creation(additionalFallback));
+                        additionalFallback == null ? null : CardGenerationProbe.Creation(additionalFallback), effect.GetParamBool());
                     var choices = new List<UnitSummonChoice>();
                     foreach (CharacterData candidate in pool)
                     {
                         if (candidate == null) { interactions.Add("Null character in unit pool"); continue; }
                         CardData? candidateFallback = !effect.GetParamBool() ? null : Fallback(candidate);
-                        if (effect.GetParamBool() && candidateFallback == null) interactions.Add("Missing pooled fallback source definition");
                         CardData? candidateSource = effect.GetParamBool() ? candidateFallback : data;
                         choices.Add(new UnitSummonChoice(SpawnTemplate(candidate,
                             candidateSource?.GetSpawnCharacterData() == null || candidateSource.GetSpawnCharacterData() == candidate, interactions),
-                            candidateFallback == null ? null : CardGenerationProbe.Creation(candidateFallback)));
+                            candidateFallback == null ? null : CardGenerationProbe.Creation(candidateFallback), effect.GetParamBool()));
                     }
                     summon = new UnitSummonRule(effect.GetParamInt(), CardGenerationProbe.Creation(data), Status("cardless", 1), upgrade,
                         effect.GetParamBool(), fallback == null ? null : CardGenerationProbe.Creation(fallback), choice,
                         choices, pool.Length == 0 ? null : (int?)(data.GetSpawnCharacterData()?.GetSize() ?? 0),
-                        data.GetSpawnCharacterData() != null);
+                        data.GetSpawnCharacterData() != null, effect.GetParamBool());
                 }
             }
             else if (kind == "CardEffectNULL") kind = "Null";
@@ -248,11 +245,11 @@ namespace MonsterTrain2Poju.Probe
                 abilityRules: source.AbilityRules, hordeDefinition: source.HordeDefinition, isSpawning: source.IsSpawning, deathState: source.DeathState);
         }
 
-        internal static CardPlayRule BirthDefinition(CardData data, CharacterData monster)
+        internal static CardPlayRule BirthDefinition(CardData data, CharacterData monster, bool sourceAbsent = false)
         {
             CardPlayRule rule = Definition(data);
             var interactions = rule.ExternalInteractions.ToList();
-            CombatUnit unit = SpawnTemplate(monster, data.GetSpawnCharacterData() == null || data.GetSpawnCharacterData() == monster, interactions);
+            CombatUnit unit = SpawnTemplate(monster, sourceAbsent || data.GetSpawnCharacterData() == null || data.GetSpawnCharacterData() == monster, interactions);
             return new CardPlayRule(rule.DataId, rule.AssetKey, rule.Cost, rule.Effect, rule.Destination, unit,
                 interactions.Distinct().OrderBy(item => item, StringComparer.Ordinal).ToArray(), rule.Effects,
                 rule.UpgradeInteractions, rule.HandDiscardInteractions, rule.HandConsumeInteractions, rule.CostType,

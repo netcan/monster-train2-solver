@@ -113,6 +113,7 @@ are copied immutable values; independent child states can run on worker threads.
 | Repeated paid summons and detached sources | `UnitBirthModel`, `UnitSummonModel` and `CardGenerationModel.CloneDetached` | Ten complete native births, five detached card copies, ten paid phases and 26 Rally dispatches; live source upgrades, retained clone flags, cardless/source separation, physical slot limits, capacity overflow and parallel branches |
 | Fresh and additional summon sources | `UnitSummonRule`, `UnitSummonChoice` and `UnitStandbyModel` | Native fresh setup, original-card bindings, delayed returns, mixed unit templates, odd capped splits and source-mismatch upgrade routing; complete policies and parallel branches |
 | Pooled unit summons | `UnitSummonRule.Pool` and `UnitSummonModel` | Ordered duplicate weights, singleton RNG draws, additional overrides, fresh/copied sources and no-primary paid Rally gates; five native scenes and parallel branches |
+| Missing summon sources | `FallbackLookupComplete`, `UnitBirthModel` and `UnitStandbyModel` | Confirmed no-match fallbacks, first-birth cardless markers, no-source spawn triggers/upgrades, mixed sources and delayed original-card returns; four native scenes and parallel branches |
 | Status removal and Horde sacrifice | `StatusRemovalModel`, `CardSpellModel` and `RoomCombatModel` | Nine native API/effect/trigger operations, exact room/retained actor states, accepted queue counts, ordered death/Harvest dispatches, a real paid spell removing both teams and parallel branches; raw zero HP preserves orphan standby cards while sacrifice signals physical death and retains its responsible card |
 | Reentrant death signals and queued player sacrifice | `UnitDeathState`, `StatusRemovalModel` and `RoomCombatModel` | Three native operations, 45 exact death/Harvest phase states and complete dispatch order, 95 effect/retained-target states, pending versus cleared statistics listeners, spawner timing and parallel branches |
 | Physical death Harvest | `HarvestModel` and `RoomCombatModel` | Four native physical deaths and 31 exact dispatches; own-death children precede player/enemy groups, Hero/Monster/Unit kinds, Horde repetition, required dying statuses, silence and once flags; complete subsequent battle and parallel branches |
@@ -4603,3 +4604,83 @@ all nine calibration suites and all five pooled summon checks pass. Complete
 policies and parallel mechanism branches pass within this run. There are no
 nonzero unsupported transition counts, and archive sizes/SHA-256 values match
 the curated manifest. Legacy summon rules retain their constructor defaults.
+
+## Confirmed missing fallback sources, schema 83
+
+Native `CardEffectSpawnMonster` searches the ordered card catalog when it has
+no source card. If no matching spawner definition exists, it still creates the
+selected character with a null source. `UnitSummonRule` and each
+`UnitSummonChoice` now capture `FallbackLookupComplete`: a null creation rule
+with this flag records a completed no-match lookup. An absent rule without the
+flag remains unsupported. Independent negative checks remove that metadata from
+actual decision states and require rejection without a partial child or parent
+mutation. Existing positive fallback definitions retain their constructor defaults.
+
+The model creates a detached source only for a matching selected fallback.
+A missing additional or pooled fallback cannot fall back to the primary
+character's source definition. Source-free births allocate a unit identity but
+no card identity, inherit no resolving-card upgrades and use source ID zero.
+Their first birth is also cardless, with native Endless immunity, unlike the
+first birth with a matching fresh source. `OnSpawnNotFromCard` follows actual
+source absence independently of the cardless marker. Existing units receive
+the first source-free birth's cardless Rally as well as subsequent births.
+Every pool draw still precedes additional override and source lookup, preserving
+the complete Battle RNG. Extra upgrades apply directly to the unit; only the
+source-card write is omitted when that source is null.
+
+The native birth probe accepts null spawners and uses `fromPlayedCard` only
+to capture static definitions. It records source ID zero, actual cardless flags
+and complete before/after states. Extra-upgrade observations close at the direct
+API boundary for source-free units rather than waiting for a source write that
+does not exist. Independent checks compare complete births, upgrades, sampling
+and Rally states in 32 branches. They also check fresh setups, card identity
+allocation, absence of copied paid-card upgrades and global Standby returns.
+Complete policies recompute the initial and actual mid-battle roots in 16 branches.
+
+The original paid card still binds to its first born host, even when that host
+has no source. A death-local source check cannot return that card. The recorded
+death scene kills source-free hosts with a real paid friendly-damage spell,
+marks the original bindings ready, then returns them in a real global Standby
+check with exact pile allocation and statistics. Paid Rally remains governed
+by the original card's primary spawn definition; no-primary variants suppress
+that phase while keeping source-free birth Rally.
+
+| Native archive suffix after `full-battle-multi-summon-` | Bytes / unique nodes | Pool draws / births / missing sources / fresh setups | Global checks | Plays / EndTurns / final Pyre | Native seconds |
+| --- | --- | --- | --- | --- | --- | --- |
+| `pool-missing-fresh.mt2f` | 25,909 / 4,002 | 7 / 10 / 3 / 4 | 27 | 15 / 5 / 80 | 51.81 |
+| `pool-additional-missing-fresh.mt2f` | 27,503 / 4,275 | 14 / 16 / 11 / 3 | 27 | 14 / 5 / 80 | 62.49 |
+| `pool-no-primary-missing-fresh.mt2f` | 25,038 / 3,868 | 7 / 10 / 7 / 0 | 27 | 15 / 5 / 80 | 46.67 |
+| `pool-no-primary-missing-fresh-deaths.mt2f` | 31,983 / 5,189 | 7 / 10 / 7 / 0 | 39 | 21 / 7 / 49 | 49.93 |
+
+Each scene copies actual Steward `CharacterData` in memory, gives the copy a
+distinct fixed ID and verifies that the ordered spawner catalog contains no
+matching definition. The original prefab/stats are retained, with one-size
+births and explicit spawn/unscaled/no-source/Rally callbacks. Mixed pools keep
+one real matched kind; no-primary pools contain only unmatched copies. No
+fallback card or future selection is fabricated. The original Boss (125 HP /
+7 attack), waves and profile signatures are unchanged. The game is muted at
+Instant speed. All four direct binary captures are from game 2.2.1, module MVID
+`8fb07b96-f4db-4d2b-884d-c00536d6ccf4`, with CaptureFailures, Mismatches,
+Unsupported and Pending all zero. All four focused independent checks pass.
+
+The curated inventory grows to 126 binary archives: 117 battles plus nine
+calibrations, with actual sizes, SHA-256 values and node counts in the manifest.
+Parentless unit-trigger creation, active spawn-count relics/room modifiers,
+removed birth targets and physical holes, death replacement/equipment transfer
+and broader revival/Horde creation still require native integration. Full battle
+coverage, complete state-based pruning and a universal optimal solver remain open.
+
+The next spawn integration also needs current/last-known physical spawn points.
+`CharacterState.ApplyEffects` passes the caster as `selfTarget`, so the native
+`IsEffectFromMonsterDeath` helper enters its pivot/compaction path for live
+monster-trigger casters as well as dying ones. The loop separates physical
+attempt indices from successful-birth counts. Each effect retains its first
+born weak reference and does not reset it on a zero-success execution. Those
+references and layouts need capture before general trigger/replacement branches
+can be treated as complete states.
+
+The final full 126-archive regression exits zero: all 117 battle archives,
+all nine calibration suites, all four missing-source checks and all nine pooled
+summon checks pass. Initial/mid-battle policies and parallel mechanism branches
+pass within this complete run. Unsupported transition counts remain zero, and
+the archive inventory, sizes and SHA-256 values match the curated manifest.

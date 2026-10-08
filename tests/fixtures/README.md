@@ -443,3 +443,28 @@ and broader room/relic creation remain separate native integration work.
 The full 122-archive regression exits zero with 113 battle passes, nine
 calibration passes and all five pooled summon checks. Unsupported transition
 counts remain zero, and every archive matches the inventory/SHA-256 manifest.
+
+The four schema-83 archives `full-battle-multi-summon-pool-missing-fresh.mt2f`,
+`full-battle-multi-summon-pool-additional-missing-fresh.mt2f`,
+`full-battle-multi-summon-pool-no-primary-missing-fresh.mt2f` and
+`full-battle-multi-summon-pool-no-primary-missing-fresh-deaths.mt2f` record actual
+births after a completed no-match fallback lookup. The first two mix 3/11
+source-free births with 4/3 matching fresh sources; the latter two record seven
+source-free births and no fresh setup. A missing choice cannot reuse the
+primary fallback or allocate a card identity. The first source-free birth is
+cardless, triggers `OnSpawnNotFromCard`, and skips only the source write of an
+extra unit upgrade. The original paid card retains its first-host binding.
+The death scene records actual delayed returns during a global Standby check.
+Complete mechanisms pass in 32 branches; initial/mid-battle policies pass in
+16 branches. Ordinary scenes win at Pyre 80 after 14/15 plays and five EndTurns;
+the death scene wins at Pyre 49 after 21 plays and seven EndTurns. The Boss,
+waves and original profile signatures are preserved. All four captures are
+direct binary archives with zero failures, mismatches, unsupported transitions
+and pending observations. The inventory contains 126 archives: 117 battles
+and nine calibration suites. Parentless trigger creation, spawn-count relics,
+removed birth targets/replacement and broader creation remain separate work.
+
+The full 126-archive regression exits zero with 117 battle passes, nine
+calibration suites, four missing-source checks and nine pooled summon checks.
+Unsupported transition counts remain zero; all archives match the inventory,
+sizes and SHA-256 manifest.

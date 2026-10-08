@@ -44,7 +44,7 @@ internal static class FreshSummonChecks
         }
         Console.WriteLine($"NATIVE-FRESH-SUMMON-CHECKS PASS: {setups.Length} fresh setups, {births.Length} births, {upgrades.Length} extra upgrades, {globals.Length} global standby checks, original-card bindings, fresh histories, source/cardless separation and 32 branches.");
     }
-    private static void VerifySetup(FixtureValue sample)
+    internal static void VerifySetup(FixtureValue sample)
     {
         Require(sample.GetProperty("Completed").GetBoolean(), "Incomplete native fresh setup.");
         var before = sample.GetProperty("Before").Deserialize<CombatContext>()!;
@@ -62,7 +62,7 @@ internal static class FreshSummonChecks
             "Fresh setup copied history, acquired ownership or changed unrelated generation state.");
         Require(Serialize(before) == parent, "Fresh setup mutated its parent.");
     }
-    private static void VerifyGlobal(FixtureValue sample)
+    internal static void VerifyGlobal(FixtureValue sample)
     {
         Require(sample.GetProperty("Completed").GetBoolean(), "Incomplete native global standby check.");
         var before = sample.GetProperty("Before").Deserialize<CombatContext>()!;

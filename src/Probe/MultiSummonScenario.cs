@@ -22,8 +22,9 @@ namespace MonsterTrain2Poju.Probe
             Set(spawn, "paramInt", 4);
             string scenario = Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") ?? "";
             Pooled = scenario.StartsWith("multi-summon-pool", StringComparison.Ordinal);
+            bool missing = scenario.Contains("missing-fresh"), noPrimary = scenario.Contains("no-primary");
             bool additional = scenario.StartsWith("multi-summon-additional", StringComparison.Ordinal) || Pooled && scenario.Contains("additional");
-            FreshSources = scenario.StartsWith("multi-summon-fresh", StringComparison.Ordinal) || scenario == "multi-summon-additional-fresh" || Pooled && scenario.EndsWith("fresh", StringComparison.Ordinal);
+            FreshSources = scenario.StartsWith("multi-summon-fresh", StringComparison.Ordinal) || scenario == "multi-summon-additional-fresh" || Pooled && (scenario.EndsWith("fresh", StringComparison.Ordinal) || missing);
             if (FreshSources || additional || Pooled)
             {
                 Set(spawn, "paramBool", FreshSources);
@@ -41,17 +42,23 @@ namespace MonsterTrain2Poju.Probe
             }
             CharacterData unit = spawn.GetParamCharacterData(); Set(unit, "size", 1);
             CharacterData? second = null;
+            CharacterData poolPrimary = unit;
             if (additional || Pooled)
             {
                 second = cards.GetAllCards(new List<CardState>()).Select(card => card.GetSpawnCharacterData())
                     .First(candidate => candidate != null && candidate != unit && candidate.name.StartsWith("TrainSteward", StringComparison.Ordinal));
+                if (missing)
+                {
+                    second = WithoutSource(second!, "c2f6ed7f-18ce-4070-b65f-7dd9f5190031");
+                    if (noPrimary) poolPrimary = WithoutSource(unit, "c2f6ed7f-18ce-4070-b65f-7dd9f5190032");
+                }
                 Set(second!, "size", 1);
                 if (additional) Set(spawn, "paramAdditionalCharacterData", second!);
                 if (Pooled) Set(spawn, "paramCharacterDataPool", scenario.Contains("singleton")
-                    ? new List<CharacterData> { unit } : new List<CharacterData> { unit, second!, unit });
-                if (scenario == "multi-summon-pool-no-primary") Set(spawn, "paramCharacterData", null!);
+                    ? new List<CharacterData> { unit } : new List<CharacterData> { poolPrimary, second!, poolPrimary });
+                if (noPrimary) Set(spawn, "paramCharacterData", null!);
             }
-            if (scenario == "multi-summon-fresh-deaths")
+            if (scenario == "multi-summon-fresh-deaths" || missing && scenario.EndsWith("deaths", StringComparison.Ordinal))
             {
                 var spells = cards.GetAllCards(new List<CardState>()).Where(card => card.GetCardType() == CardType.Spell &&
                     card.GetEffects().Any(effectState => effectState.GetEffectStateName() == "CardEffectFloorRearrange")).ToArray();
@@ -78,7 +85,7 @@ namespace MonsterTrain2Poju.Probe
             Set(growth, "additionalParamInt1", (int)UnitUpgradeLifetime.TemporaryUntilEndOfBattle);
             Set(rally, "effects", new List<CardEffectData> { new CardEffectData("CardEffectRewardGold", null!, Team.Type.None), effect, growth });
             Set(rally.GetEffects()[0], "paramInt", 3); rally.GetEffects()[0].Cheat_SetTargetMode(TargetMode.Room);
-            foreach (CharacterData kind in second == null ? new[] { unit } : new[] { unit, second })
+            foreach (CharacterData kind in (second == null ? new[] { unit } : new[] { unit, second, poolPrimary }).Distinct())
                 Set(kind, "triggers", kind.GetTriggers().Concat(new[] { born, unscaled, noCard, rally }).ToList());
             foreach (CardState card in cards.GetAllCards(new List<CardState>()).Where(card => card.GetCardDataID() == data.GetID()))
             {
@@ -146,5 +153,14 @@ namespace MonsterTrain2Poju.Probe
         private static void Add(CardState card, CardUpgradeData data, bool temporary)
         { var state = new CardUpgradeState(); state.Setup(data); (temporary ? card.GetTemporaryCardStateModifiers() : card.GetCardStateModifiers()).AddUpgrade(state); }
         private static void Set(object target, string field, object value) => AccessTools.Field(target.GetType(), field).SetValue(target, value);
+        private static CharacterData WithoutSource(CharacterData original, string id)
+        {
+            CharacterData copy = UnityEngine.Object.Instantiate(original); copy.name = original.name + "PojuNoSource";
+            Set(copy, "id", id); Set(copy, "size", 1);
+            if (AllGameManagers.Instance!.GetSaveManager().GetAllGameData().GetAllCardData().Any(card => card != null &&
+                card.IsSpawnerCard() && card.GetSpawnCharacterData()?.GetID() == id))
+                throw new InvalidOperationException("Missing-source fixture unexpectedly has a matching card.");
+            return copy;
+        }
     }
 }
