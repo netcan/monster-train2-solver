@@ -72,6 +72,7 @@ are copied immutable values; independent child states can run on worker threads.
 | Ordinary unit clone APIs | `UnitCloneModel`, `CharacterCopyModel` and `UnitBirthModel` | Thirteen native operations, 44 exact copied-card/birth/gear/stats/ability boundaries, raw/drained train states and callback payload/order; detached/cardless sources, failed allocations and 32 branches |
 | Paid unit copy spells | `UnitCopyModel`, `UnitCloneModel` and `CardSpellModel` | Fourteen real paid effects, complete raw state and incoming/outgoing queue payload/order, sequential births, full/partial rooms, copied equipment/skills, cardless/Horde sources and 32 branches |
 | Enemy and mixed-team copy spells | `HeroUnitBirthModel`, `UnitCopyModel` and `CardSpellModel` | Sixteen real paid effects, raw/live stats, natural skills, optional equipment, initial hero compaction, full/partial rooms, incoming global callbacks and 32 branches; subsequent paid summon and complete first-turn defeat |
+| Spawn enchant callbacks | `BattleActionModel`, `UnitBirthModel` and `RoomCombatModel` | Ordinary/repeated paid births retain IsSpawning through player-wide enchant and child queues; fifteen native Horde/armor phases, complete source caches and nine-field child payloads in 32 branches |
 | Unit effects | `CombatTrigger` and `CombatContext` | Generated cards, Battle RNG, treasure escape; gold and once-only trigger checks |
 | Gold rewards | `GoldRewardModel` | 2,200 native calculations, reward minimums, integer/float boundaries, ties to even and preview exclusion |
 | Card statistics and preview | `BattleStatistics` and `BattlePreviewModel` | Native per-card/Any counters, turn rollover, spawn subtypes, death/exhaust attribution and preview damage statistic |
@@ -5538,3 +5539,52 @@ grafted/substituted births, room/relic/covenant interactions, actual previews,
 destruction/revival during birth and wider effects require additional native
 inputs, implementation and fixtures. The whole simulator and optimal search
 remain unfinished.
+
+## Spawn enchant and paid birth lifetime (schema 102)
+
+Ordinary paid player births now keep IsSpawning true through the room's
+AfterSpawnEnchant queue and all its children. The flag clears after that queue
+settles, before paid Rally. This matches MonsterManager.CreateMonsterState and
+the existing repeated/clone birth path. Enemy creation keeps its separate native
+timing. Legacy archives without this optional flag retain their earlier shape.
+
+This timing affects behavior: trigger effects refresh their source card's
+room-membership cache while excluding in-progress births. Clearing the flag
+early included the newborn in its own subsequent paid Rally. The new native
+archive rejects the old model at the first card: the newborn's CardMonsterPlayed
+HasTriggered flag was true instead of the native false. The corrected model
+reproduces that complete action and the remaining battle independently.
+
+`full-battle-spawn-enchant.mt2f` records ordinary one-unit Shield Steward cards
+and repeated two-unit Sword Steward cards. Authored player-wide enchant phases
+add Horde and armor to their actors, with spawn/unscaled/not-from-card/status/
+Rally gold callbacks. Boss definitions and waves stay intact. This covers both
+newborn and older-unit enchant, initial Horde application and later troop growth,
+incoming queue order, status children and Horde's separate spawn/Rally children.
+Raw and canonical card caches are captured, including detached source cards.
+
+Fifteen native enchant phases, seven complete births and 66 child callbacks
+match in 32 independent branches. All nine callback fields, complete room/context
+states and parent isolation compare. Two detached card clones, ten paid Rally
+team phases and 27 actor dispatches are recorded and independently checked.
+All fifteen paid actions, 38 room stages, nine train phases and five EndTurns
+match; independent initial/mid-battle policy roots finish the same native win at
+Pyre 80 in sixteen branches. Physical checks cover 76 room contexts, fifteen
+removals, eight cross-room moves and 370 raw/canonical reference mappings.
+
+Muted Instant native recording takes 47.39 seconds. Native capture failures,
+differences, unsupported and pending records are zero, with unchanged original
+profile/log signatures. The curated binary is byte-identical to native output:
+30,572 bytes, 4,966 unique nodes, SHA-256
+`27aadd9bf013e6cb2ea5d538578e5a19a411421c14f6a4fa1cef249da00b06dc`.
+It has no source JSON. Complete regression and audit pass for 150 archives:
+141 battles, nine calibrations, 137 independent policy chains, 23 physical-
+position and twelve decision-reference suites. All fourteen queued-summon,
+ten triggered-equipment, six direct summon-effect suites and 262 summon damage
+phases pass. Sizes/SHA-256 hashes, native capture and original-file gates match;
+errors and unsupported transitions are zero.
+
+This verifies the observed status/Horde enchant paths;
+grafted and room/relic/covenant birth modifiers, destruction/revival during
+birth, wider enchant effects and special Boss mechanics still need native
+coverage and implementation. The whole battle simulator remains unfinished.

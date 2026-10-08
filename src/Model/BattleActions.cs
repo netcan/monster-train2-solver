@@ -277,7 +277,8 @@ namespace MonsterTrain2Poju.Model
                     nextUnitId = allocated.NextUnitId; context = allocated.Context!;
                     var spawned = new CombatUnit(allocated.UnitId, template.AssetKey, CombatTeam.Player, template.BaseAttack,
                         template.Health, template.MaxHealth, template.CanAttack, false, false, template.Statuses,
-                        template.Triggers, card.InstanceId, template.Size, template.StatusImmunities, template.Subtypes, template.Modifiers, template.IsBoss, template.LastAttackerId, template.StatusRegistry, template.EquipmentCards, template.NextTriggerId, template.Ability, template.StatusDictionary, template.AbilityRules, template.HordeDefinition, template.IsSpawning, template.SacrificeCardId, template.DeathState, bumpRules: template.BumpRules);
+                        template.Triggers, card.InstanceId, template.Size, template.StatusImmunities, template.Subtypes, template.Modifiers, template.IsBoss, template.LastAttackerId, template.StatusRegistry, template.EquipmentCards, template.NextTriggerId, template.Ability, template.StatusDictionary, template.AbilityRules, template.HordeDefinition,
+                        template.IsSpawning.HasValue ? true : (bool?)null, template.SacrificeCardId, template.DeathState, bumpRules: template.BumpRules);
                     context = context.WithStatistics(context.Statistics?.Spawn(action.RoomIndex, template.Subtypes));
                     spawnedId = spawned.Id;
                     var nextPlayers = players.ToList();
@@ -308,7 +309,9 @@ namespace MonsterTrain2Poju.Model
                         train.EnemySlotsPerRoom, spawnTriggers.State.Context), enchantQueue);
                     if (!enchanted.Supported) return Unsupported(enchanted.UnsupportedReason!);
                     train = enchanted.State!;
-                    spawnTriggers = new RoomCombatResult(enchanted.State!.Rooms.Single(room => room.RoomIndex == target.RoomIndex),
+                    CombatUnit? completedBirth = train.Rooms.SelectMany(room => room.Units).FirstOrDefault(unit => unit.Id == spawned.Id);
+                    if (completedBirth != null) train = UnitCloneModel.ReplaceUnit(train, HordeStatusModel.WithSpawning(completedBirth, false));
+                    spawnTriggers = new RoomCombatResult(train.Rooms.Single(room => room.RoomIndex == target.RoomIndex),
                         enchanted.Outcome == RoomOutcome.Exchanged ? spawnTriggers.Outcome : enchanted.Outcome, 0, spawnTriggers.Events.ToList());
                 }
                 context = spawnTriggers.State!.Context!; outcome = spawnTriggers.Outcome;

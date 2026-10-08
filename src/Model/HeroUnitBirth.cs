@@ -20,7 +20,7 @@ namespace MonsterTrain2Poju.Model
                 BattleSpawnPointModel.Order(centered.State!, roomIndex, destination.Units), destination.ExternalInteractions, centeredContext);
             state = CardSpellModel.WithContext(new TrainCombatState(state.Rooms.Select(room => room.RoomIndex == roomIndex ? destination : room).ToArray(),
                 state.Movement, state.EnemySlotsPerRoom, centeredContext), centeredContext);
-            int point = state.Context.SpawnPoints.FirstEmpty(roomIndex, CombatTeam.Enemy);
+            int point = state.Context!.SpawnPoints!.FirstEmpty(roomIndex, CombatTeam.Enemy);
             if (point < 0) return Result();
             CombatUnit? original = Get(sourceId);
             if (original == null) return Fail("Missing retained hero-copy source.");

@@ -860,3 +860,35 @@ Complete regression and audit pass, including 136 independent policy chains,
 queued-summon, ten triggered-equipment and six direct summon-effect suites,
 and all 262 summon damage phases. Sizes/SHA-256 hashes and native/original-file
 gates match; errors and unsupported transitions are zero.
+
+### Spawn enchant lifetime and Horde children (schema 102)
+
+`full-battle-spawn-enchant.mt2f` records ordinary one-unit Shield Steward and
+repeated two-unit Sword Steward paid births, player-wide Self Horde/armor
+enchant and authored spawn/unscaled/not-from-card/status/Rally callbacks.
+Original Boss definitions and waves stay intact. Newborn IsSpawning stays true
+until enchant and its child queue settle, then clears before paid Rally. Source
+card room caches exclude that newborn while enchant effects execute.
+
+Fifteen enchant phases, seven complete births and 66 exact nine-field child
+callbacks compare in 32 isolated branches. Native observations include newborn
+and older actors, initial and later Horde growth, raw/canonical room caches,
+two detached source clones, ten paid Rally team phases and 27 Rally dispatches.
+All fifteen paid actions, 38 room stages and five EndTurns match. Independent
+initial/mid-battle policy roots win at Pyre 80 in sixteen branches. Seventy-six
+room contexts, fifteen removals, eight cross-room moves and 370 reference
+mappings verify physical state. The old model fails this archive's first action
+because it incorrectly marks the newborn's paid Rally trigger as fired.
+
+Muted Instant capture takes 47.39 seconds, with zero failures/differences/
+unsupported/pending records and unchanged original files. The 30,572-byte
+binary contains 4,966 unique nodes and exactly matches native output. No source
+JSON is retained. Wider enchant effects, grafting, birth destruction/revival,
+room/relic/covenant interactions and special Boss mechanics remain unfinished.
+
+Inventory is now 150 binary archives: 141 battles and nine calibrations.
+Complete regression and audit pass, including 137 independent policy chains,
+23 physical-position and twelve decision-reference suites, all fourteen
+queued-summon, ten triggered-equipment and six direct summon-effect suites,
+and 262 summon damage phases. All archive sizes/SHA-256 hashes and native/
+original-file gates match; errors and unsupported transitions are zero.

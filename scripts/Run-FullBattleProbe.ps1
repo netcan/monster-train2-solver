@@ -91,6 +91,7 @@ param(
     [switch] $UnitClone,
     [switch] $UnitCopy,
     [switch] $HeroCopy,
+    [switch] $SpawnEnchant,
     [switch] $HarvestTriggers,
     [switch] $HordeRemoval,
     [switch] $HordeDeath,
@@ -137,7 +138,7 @@ if ($TriggeredSummonsRevival) { $TriggeredSummonsEquipmentOwned = $true; $Trigge
 if ($TriggerRepeats) { $ConditionalTriggers = $true }
 if ($TriggeredSummonsEquipmentOwned) { $TriggeredSummonsEquipment = $true }
 if ($TriggeredSummonsFresh -or $TriggeredSummonsDeath -or $TriggeredSummonsEquipment) { $TriggeredSummons = $true }
-if ($TriggeredSummons -or $Revival -or $HordeMerge -or $Bump -or $UnitClone -or $UnitCopy -or $HeroCopy) { $PhysicalSpawnPoints = $true }
+if ($TriggeredSummons -or $Revival -or $HordeMerge -or $Bump -or $UnitClone -or $UnitCopy -or $HeroCopy -or $SpawnEnchant) { $PhysicalSpawnPoints = $true }
 if ($MultiSummonUpgradeUnique -or $MultiSummonUpgradeRestricted) { $MultiSummonUpgrade = $true }
 if ($MultiSummonAdditionalFresh) { $MultiSummonAdditional = $true; $MultiSummonFresh = $true }
 $missingFresh = $MultiSummonPoolMissingFresh -or $MultiSummonPoolAdditionalMissingFresh -or $MultiSummonPoolNoPrimaryMissingFresh -or $MultiSummonPoolNoPrimaryMissingFreshDeaths
@@ -213,6 +214,7 @@ if ($Bump) { $environment['MT2_PROBE_MODIFIERS'] = 'bump' }
 if ($UnitClone) { $environment['MT2_PROBE_MODIFIERS'] = 'unit-clone' }
 if ($UnitCopy) { $environment['MT2_PROBE_MODIFIERS'] = 'unit-copy' }
 if ($HeroCopy) { $environment['MT2_PROBE_MODIFIERS'] = 'hero-copy' }
+if ($SpawnEnchant) { $environment['MT2_PROBE_MODIFIERS'] = 'spawn-enchant' }
 if ($Sentry -or $SentryLethal) {
     $environment['MT2_PROBE_MODIFIERS'] = $(if ($SentryLethal) { 'sentry-lethal' } else { 'sentry' })
     $environment['MT2_PROBE_ISOLATE_UI_RNG'] = '1'
@@ -1029,6 +1031,12 @@ if ($UnitCopy) {
         throw 'Requested native paid unit-copy operations did not complete.'
     }
 }
+if ($SpawnEnchant) {
+    if (@($trace.SpawnEnchantments).Count -lt 3 -or @($trace.UnitBirths).Count -lt 3 -or
+        @($trace.SpawnEnchantments | Where-Object { -not $_.Completed -or $null -eq $_.After -or $null -ne $_.Difference -or $null -ne $_.UnsupportedReason }).Count -gt 0) {
+        throw 'Requested native spawning enchant phases did not complete.'
+    }
+}
 if ($HeroCopy) {
     $heroCopyLabels = @('zero-targeted', 'negative-room', 'raw-source-no-stats', 'copy-live-stats', 'multiple-targeted',
         'clone-of-copy-ignores-range', 'status-before-copy', 'ability-before-copy', 'equipped-no-stats', 'equipped-live-stats',
@@ -1234,6 +1242,7 @@ $result = [pscustomobject]@{
     UnitCloneOperations = @($trace.UnitCloneOperations).Count
     UnitCopyOperations = @($trace.UnitCopyOperations).Count
     HeroCopyOperations = @($trace.HeroCopyOperations).Count
+    SpawnEnchantments = @($trace.SpawnEnchantments).Count
     EquipmentAbilityCoverage = $equipmentAbilityCoverage
     InitialAbilitySpawns = @($trace.InitialAbilitySpawns).Count
     EquipmentAbilityActivations = $equipmentActivations.Count

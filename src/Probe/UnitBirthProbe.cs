@@ -41,7 +41,7 @@ namespace MonsterTrain2Poju.Probe
             private static void Prefix(CardState sourceCardState, out CloneRecord? __state)
             {
                 __state = null;
-                if ((!MultiSummonScenario.Prepared && !TriggeredSummonProbe.Enabled) || FullBattleTrace.Active == null || AllGameManagers.Instance!.GetSaveManager().PreviewMode) return;
+                if ((!MultiSummonScenario.Prepared && !TriggeredSummonProbe.Enabled && !SpawnEnchantScenario.Prepared) || FullBattleTrace.Active == null || AllGameManagers.Instance!.GetSaveManager().PreviewMode) return;
                 __state = new CloneRecord { SourceCardId = FullBattleTrace.Active.CardId(sourceCardState),
                     Creation = CardGenerationProbe.Creation(AllGameManagers.Instance.GetSaveManager().GetAllGameData().FindCardData(sourceCardState.GetCardDataID())!),
                     Before = FullBattleTrace.Active.CaptureContext() }; Clones.Add(__state);
@@ -80,7 +80,7 @@ namespace MonsterTrain2Poju.Probe
                 ref Action<CharacterState> afterCharacterCreated, out Record? __state)
             {
                 __state = null;
-                if (!MultiSummonScenario.Prepared || FullBattleTrace.Active == null || AllGameManagers.Instance!.GetSaveManager().PreviewMode ||
+                if ((!MultiSummonScenario.Prepared && !SpawnEnchantScenario.Prepared) || FullBattleTrace.Active == null || AllGameManagers.Instance!.GetSaveManager().PreviewMode ||
                     monsterData == null || spawnerCard == null && fromPlayedCard == null || spawnLocation == null) return;
                 CardState definitionCard = spawnerCard ?? fromPlayedCard;
                 var record = new Record { Definition = BattleActionProbe.BirthDefinition(AllGameManagers.Instance!.GetSaveManager().GetAllGameData().FindCardData(definitionCard.GetCardDataID())!, monsterData, spawnerCard == null),
