@@ -30,7 +30,7 @@ internal static class EnchantmentCombatChecks
         int requests = samples.Sum(sample => sample.GetProperty("Requests").GetArrayLength());
         int callbacks = samples.Sum(sample => sample.GetProperty("Callbacks").GetArrayLength());
         Console.WriteLine($"NATIVE-ENCHANTMENT-COMBAT-CHECKS PASS: {samples.Length} real status/train/effect transitions, {requests} status calls, " +
-            $"{callbacks} complete callback payloads, drained child gold effects, guarded/direct reentry, retained per-effect maps/RNG and 32 isolated branches.");
+            $"{callbacks} complete callback payloads, standalone/shared-world effect routing and drained child gold effects, guarded/direct reentry, retained per-effect maps/RNG and 32 isolated branches.");
     }
     private static void Verify(FixtureValue sample)
     {
@@ -45,6 +45,7 @@ internal static class EnchantmentCombatChecks
         Compare(result.State!, sample.GetProperty("Actual").Deserialize<EnchantmentCombatState>()!, label + " state");
         Compare(result.Requests, sample.GetProperty("Requests").Deserialize<EnchantmentRequest[]>()!, label + " requests");
         Compare(result.Callbacks, sample.GetProperty("Callbacks").Deserialize<EnchantmentCallback[]>()!, label + " callbacks");
+        VerifySharedWorld(sample, before);
         var drained = EnchantmentCombatModel.Drain(result);
         Require(drained.Supported, label + " drain: " + drained.UnsupportedReason);
         EnchantmentCombatState afterQueue = drained.State!;
@@ -58,6 +59,32 @@ internal static class EnchantmentCombatChecks
             Require(ReferenceEquals(effect.Enchantment, effect.WithCounter(9).Enchantment) &&
                 ReferenceEquals(effect.Enchantment, effect.WithActionValue(11).Enchantment), "Effect copying lost its persistent enchantment state.");
         }
+    }
+    private static void VerifySharedWorld(FixtureValue sample, EnchantmentCombatState before)
+    {
+        string label = sample.GetProperty("Label").GetString()!;
+        TrainCombatState train = EnchantmentWorldModel.Attach(before);
+        RoomCombatState input = train.Rooms.First();
+        string parent = JsonSerializer.Serialize(train);
+        RoomCombatResult result = sample.GetProperty("Direct").GetBoolean()
+            ? EnchantmentWorldModel.UpdateEffect(input, sample.GetProperty("SourceId").GetInt32(),
+                sample.GetProperty("TriggerIndex").GetInt32(), sample.GetProperty("EffectIndex").GetInt32())
+            : EnchantmentWorldModel.Update(input);
+        Require(result.Supported, label + " shared-world update: " + result.UnsupportedReason);
+        EnchantmentCombatState actual = result.State!.Context!.Enchantments!.Frame(result.State.Context);
+        Compare(actual, sample.GetProperty("Actual").Deserialize<EnchantmentCombatState>()!, label + " shared-world state");
+        Compare(result.PendingCallbacks.Select(EnchantmentCallback.From).ToArray(),
+            sample.GetProperty("Callbacks").Deserialize<EnchantmentCallback[]>()!, label + " shared-world callbacks");
+        var drained = EnchantmentWorldModel.Drain(new EnchantmentCombatResult(actual, Array.Empty<EnchantmentRequest>(), result.PendingCallbacks));
+        Require(drained.Supported, label + " shared-world drain: " + drained.UnsupportedReason);
+        EnchantmentCombatState after = drained.State!;
+        foreach (var id in sample.GetProperty("PreviewPreparedUnitIds").EnumerateArray())
+            after = EnchantmentCombatModel.PrepareForPreview(after, id.GetInt32());
+        Compare(after, sample.GetProperty("AfterQueue").Deserialize<EnchantmentCombatState>()!, label + " shared-world after queue");
+        Require(JsonSerializer.Serialize(train) == parent, label + ": shared-world parent state changed.");
+        Require(!EnchantmentWorldModel.UpdateEffect(input, int.MaxValue, 0, 0).Supported &&
+            !EnchantmentWorldModel.UpdateEffect(input, sample.GetProperty("SourceId").GetInt32(), -1, 0).Supported,
+            "Invalid shared-world enchantment effect identity was accepted.");
     }
     private static void Compare<T>(T actual, T expected, string label)
     {

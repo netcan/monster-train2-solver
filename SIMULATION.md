@@ -5845,3 +5845,18 @@ regression/audit plus this new collector suite and final affected aura suites,
 rather than a second complete 154-archive run. Automatic birth/movement/death,
 changing children, full preview rollback and the rest of the full simulator remain
 open; generic persistent-aura combat is still refused.
+
+### Shared-world direct effect routing
+
+EnchantmentWorldModel.UpdateEffect invokes only the selected actor/trigger/effect,
+including direct calls while the manager update gate is disabled. It preserves
+the effect binding gate and refuses missing actors or invalid effect indices.
+A character trigger must use this route instead of updating every aura owned by
+that character, which would repeat status calls and random draws.
+
+All 32 existing real-status native samples now independently check both the
+standalone kernel and the context-owned shared-world route. Exact train/status
+state, all 48 callback payloads, drained child gold, ordered preview preparations,
+effect maps, both RNG streams and unchanged parents match. The comparisons repeat
+in 32 branches; no new native archive is needed. This validates effect routing,
+not automatic birth/movement/death scheduling or a persistent-aura paid battle.

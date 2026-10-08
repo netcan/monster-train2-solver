@@ -91,6 +91,24 @@ namespace MonsterTrain2Poju.Model
                         }
             }
             else result = EnchantmentCombatModel.UpdateAll(frame);
+            return Complete(source, result);
+        }
+        internal static RoomCombatResult UpdateEffect(RoomCombatState source, int sourceId, int triggerIndex, int effectIndex)
+        {
+            source = Sync(source);
+            EnchantmentWorld? world = source.Context?.Enchantments;
+            if (world == null) return Unsupported("A direct enchantment effect update requires the captured shared world.");
+            CombatUnit? owner = world.Rooms.SelectMany(room => room.Units).Concat(world.RetainedUnits.Select(actor => actor.Unit))
+                .FirstOrDefault(unit => unit.Id == sourceId);
+            if (owner == null || triggerIndex < 0 || triggerIndex >= owner.Triggers.Count || effectIndex < 0 ||
+                effectIndex >= owner.Triggers[triggerIndex].Effects.Count || owner.Triggers[triggerIndex].Effects[effectIndex].Enchantment == null)
+                return Unsupported("A direct enchantment effect update requires a captured actor and valid effect identity.");
+            // CharacterState.ApplyEffects invokes this one effect directly, even while
+            // the manager's global update gate is closed. Bound remains an effect gate.
+            return Complete(source, EnchantmentCombatModel.UpdateEffect(world.Frame(source.Context!), sourceId, triggerIndex, effectIndex));
+        }
+        private static RoomCombatResult Complete(RoomCombatState source, EnchantmentCombatResult result)
+        {
             if (!result.Supported) return Unsupported(result.UnsupportedReason!);
             EnchantmentWorld updated = EnchantmentWorld.From(result.State!);
             CombatContext context = result.State!.Train.Context!.WithEnchantments(updated);
