@@ -243,7 +243,10 @@ internal static class BattleActionChecks
             "Full policy parallel branches diverged."));
         Require(JsonSerializer.Serialize(root) == parent, "Full policy simulation mutated its root.");
         // Start independently after an actual mid-battle card action. Recompute the entire suffix.
-        FixtureValue mid = policyActions.First(entry => entry.GetProperty("Actual").GetProperty("Spawn").GetProperty("Turn").GetInt32() > 0);
+        FixtureValue mid = policyActions.FirstOrDefault(entry => entry.GetProperty("Actual").GetProperty("Spawn").GetProperty("Turn").GetInt32() > 0);
+        // A battle may finish on its first EndTurn. Its later policy root is
+        // still independently checkable after the final ordinary card play.
+        if (mid.ValueKind == FixtureKind.Undefined) mid = policyActions[^1];
         BattleTurnState midRoot = mid.GetProperty("Actual").Deserialize<BattleTurnState>()!;
         BattleSimulationResult suffix = BattleSimulator.Resolve(midRoot, chooser);
         Require(suffix.Supported && BattleTurnChecks.Comparable(suffix.State!) == expected,

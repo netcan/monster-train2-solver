@@ -1,6 +1,16 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
 
+if (args.Length == 2 && args[0] == "--hero-copy-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    if (fixture.RootElement.GetProperty("ModifierScenario").GetString() != "hero-copy" ||
+        fixture.RootElement.GetProperty("HeroCopyOperations").GetArrayLength() == 0)
+        throw new InvalidDataException("The requested fixture has no hero-copy observations.");
+    HeroCopyChecks.Native(fixture.RootElement);
+    return;
+}
+
 if (args.Length == 2 && args[0] == "--unit-copy-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);

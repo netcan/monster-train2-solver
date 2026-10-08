@@ -71,6 +71,7 @@ are copied immutable values; independent child states can run on worker threads.
 | Bump card movement | `BumpModel`, `CardSpellModel` and `HordeMergeModel.MergeAcrossRooms` | Eighteen real paid-card effect/queue comparisons, both-team cross-room Horde merges, signed/clamped/fixed-range quantities, immobility/rooting, loops, simultaneous targets, Pyre and full/partially blocked rooms |
 | Ordinary unit clone APIs | `UnitCloneModel`, `CharacterCopyModel` and `UnitBirthModel` | Thirteen native operations, 44 exact copied-card/birth/gear/stats/ability boundaries, raw/drained train states and callback payload/order; detached/cardless sources, failed allocations and 32 branches |
 | Paid unit copy spells | `UnitCopyModel`, `UnitCloneModel` and `CardSpellModel` | Fourteen real paid effects, complete raw state and incoming/outgoing queue payload/order, sequential births, full/partial rooms, copied equipment/skills, cardless/Horde sources and 32 branches |
+| Enemy and mixed-team copy spells | `HeroUnitBirthModel`, `UnitCopyModel` and `CardSpellModel` | Sixteen real paid effects, raw/live stats, natural skills, optional equipment, initial hero compaction, full/partial rooms, incoming global callbacks and 32 branches; subsequent paid summon and complete first-turn defeat |
 | Unit effects | `CombatTrigger` and `CombatContext` | Generated cards, Battle RNG, treasure escape; gold and once-only trigger checks |
 | Gold rewards | `GoldRewardModel` | 2,200 native calculations, reward minimums, integer/float boundaries, ties to even and preview exclusion |
 | Card statistics and preview | `BattleStatistics` and `BattlePreviewModel` | Native per-card/Any counters, turn rollover, spawn subtypes, death/exhaust attribution and preview damage statistic |
@@ -5471,7 +5472,69 @@ every archive matches its size and SHA-256 manifest, and the curated copy
 archive is byte-identical to the native capture. The pure Probe build has zero
 warnings/errors.
 
-Enemy copying requires a separate hero birth transition and is explicitly
-unsupported. Grafted/preview copying, room/relic modifiers, destruction/revival
+Enemy and mixed-team copying are covered by the next increment below.
+Grafted/preview copying, room/relic modifiers, destruction/revival
 during birth, wider cards and special Boss mechanics need further native
 coverage and implementation. The full simulator and optimal search remain open.
+
+## Enemy and mixed-team copying (schema 101)
+
+The declared effect team selects the birth path. An exact Heroes mask creates
+an enemy through `HeroUnitBirthModel`; a mixed Heroes/Monsters mask uses ordinary
+monster cloning even when its target is an enemy. The catalog captures separate
+raw enemy definitions, including natural skills and spawn interactions. Rules
+are resolved from the current source actor and immutable card registry.
+
+Enemy birth compacts its physical group before finding the first free point.
+A full group allocates neither card nor unit. Setup and incoming global callbacks,
+including their children, drain before OnSpawn; the new enemy clears IsSpawning
+before that phase. OnSpawn, Unscaled, NotFromCard and only the newborn's
+AfterSpawnEnchant then run in native order. Optional copying applies detached
+non-grafted equipment and live character statistics/statuses, while preserving
+the natural skill and configured cooldown. It creates no source card, player
+spawn statistic, clone/cardless flag or MonsterManager last-spawned update.
+
+Native `SpawnHeroInRoom` receives its output actor by value, so the effect's
+counted spawn total remains zero despite actual births. There is no final
+counted effect Rally or compaction. Copying Horde statistics can separately
+queue Rally over existing room actors; its count and payload remain distinct.
+
+`full-battle-hero-copy.mt2f` records sixteen paid casts: zero/negative counts,
+raw/live stats, repeated and clone-of-copy births, status/ability callbacks
+already queued, both equipment-copy settings, room targeting, a last-point
+Horde source, full/partial hero groups and both mixed-mask source teams. Two
+paid player hosts and three native enemy hosts use authored Shield Steward
+definitions, natural/replacement skills and gold callbacks. Native fillers
+create exact capacity boundaries. Original Boss definitions and waves stay
+intact. The recorded original-actor queues and all nine dispatch fields match
+independently in 32 branches without changing parents.
+
+The subsequent ordinary Champion play verifies player-wide AfterSpawnEnchant
+before paid Rally. The battle then naturally loses on its first EndTurn at
+Pyre zero. All seventeen paid actions, ten room stages, two train phases and
+the EndTurn match. Independent policy runs from the initial decision and the
+later state after the ordinary play agree in sixteen parallel branches. Physical
+checks cover twenty room contexts, twenty-one cross-room moves and 275 raw/
+canonical reference mappings in 32 branches. No ordinary unit dies; the model
+preserves the Pyre's raw physical occupancy and skips ordinary unit death
+statistics/removal. No new wave is spawned after defeat; phase/cache/RNG stay
+unchanged. This fixture verifies a complete loss, not a second multi-turn win.
+
+Muted Instant native capture takes 43.30 seconds. Capture failures, differences,
+unsupported and pending records are zero, and original profile/log signatures
+match. The accepted binary is 24,418 bytes with 4,755 unique nodes, SHA-256
+`a6bd22ac6f407c026166b1645edfdc45807cd12750965abb7976bc930b980336`.
+The curated archive is byte-identical to native output and has no source JSON.
+
+The complete 149-archive regression and audit pass: 140 battles, nine
+calibrations, 136 independent policy chains, 22 physical-position and eleven
+decision-reference suites. All fourteen queued-summon, ten triggered-equipment,
+six direct summon-effect suites and 262 summon damage phases remain passing.
+Every archive matches its size and SHA-256 manifest; there are no errors or
+unsupported transitions. Native capture and original-file signature gates pass.
+
+This covers the observed primary enemy/mixed-copy paths. Boss registration,
+grafted/substituted births, room/relic/covenant interactions, actual previews,
+destruction/revival during birth and wider effects require additional native
+inputs, implementation and fixtures. The whole simulator and optimal search
+remain unfinished.

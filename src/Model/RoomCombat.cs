@@ -702,7 +702,7 @@ namespace MonsterTrain2Poju.Model
                     if (trigger.Kind != "OnDeath" && trigger.Kind != "OnReanimated" && trigger.Kind != "PostCombat" && trigger.Kind != "PostCombatHealing" && trigger.Kind != "OnHeal" &&
                         trigger.Kind != "CardMonsterPlayed" && trigger.Kind != "OnOwnAbilityActivated" && trigger.Kind != "OnPreOwnAbilityActivated" &&
                         trigger.Kind != "OnEquipmentAdded" && trigger.Kind != "OnEquipmentAddedToAny" && trigger.Kind != "OnEquipmentRemoved" &&
-                        trigger.Kind != "OnSpawn" && trigger.Kind != "OnUnscaledSpawn" && trigger.Kind != "OnSpawnNotFromCard" &&
+                        trigger.Kind != "OnSpawn" && trigger.Kind != "OnUnscaledSpawn" && trigger.Kind != "OnSpawnNotFromCard" && trigger.Kind != "AfterSpawnEnchant" &&
                         trigger.Kind != "OnTurnBegin" && trigger.Kind != "OnTeamTurnBegin" && trigger.Kind != "EndTurnPreHandDiscard" && trigger.Kind != "PreCombat" &&
                         trigger.Kind != "OnTrainRoomLoop" && trigger.Kind != "PostAscension" && trigger.Kind != "OnShift" && trigger.Kind != "OnSentry" &&
                         trigger.Kind != "PostDescension" && trigger.Kind != "PostAttemptedAscension" && trigger.Kind != "PostAttemptedDescension" &&
@@ -1556,6 +1556,9 @@ namespace MonsterTrain2Poju.Model
                 { battleWon = true; context = context?.WithBossesDead(); }
                 // CheckForDeath runs the terminal kill camera before dispatching death signals.
                 if (!source.Preview && (target.Source.EndsBattleOnDeath || target.Source.IsPyre)) ClearTerminalCards();
+                // At the captured StopCombatLoop boundary, Pyre death has no
+                // ordinary unit death accounting/removal; its point stays occupied.
+                if (target.Source.IsPyre) return;
                 DispatchDeathStatistics(actor, target, sourceCardId, sacrifice);
                 if (target.Source.DeathState != null)
                     target.Apply(target.Freeze().WithDeathState(new UnitDeathState(true,

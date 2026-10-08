@@ -820,6 +820,43 @@ exactly. Inventory is 148 archives: 139 battles and nine calibrations. Complete
 regression and audit pass, including 135 independent policy chains, all nine
 calibrations, 21 physical-position and ten decision-reference suites, and all
 262 summon damage phases. All archive sizes/SHA-256 hashes match; unsupported
-transitions are zero. Enemy/grafted/preview copying, broader room/relic/
+transitions are zero. Enemy/mixed-team copying is covered below; grafted/preview copying, broader room/relic/
 destruction/revival interactions, special Boss mechanics and complete optimal
 search remain unfinished.
+
+### Enemy and mixed-team copy spells (schema 101)
+
+`full-battle-hero-copy.mt2f` preserves sixteen real paid copy effects: raw versus
+live stats, repeated/clone-of-copy births, incoming status and replacement-skill
+queues, optional detached equipment, room targets, last/full/partial physical
+groups, Horde and both mixed-mask source teams. Exact Heroes masks create
+enemies; mixed masks use monster cloning even from an enemy source. Enemy
+births retain natural skills, clear IsSpawning before OnSpawn, drain global
+setup/child queues before that phase and enchant only the newborn. Their
+counted effect spawn total stays zero; copying Horde stats preserves its
+separate Rally. Initial hero compaction is distinct from effect-end compaction.
+
+All raw train states, queued callbacks and nine-field intrinsic dispatches
+compare independently in 32 branches. All seventeen paid actions and the
+subsequent first-turn loss compare, including a real ordinary Champion birth's
+player-wide enchant phase before Rally. Initial and later policy roots reach
+the same Pyre-zero result in sixteen branches. Twenty room contexts, twenty-one
+cross-room moves and 275 decision-reference mappings pass; no ordinary unit
+dies. Pyre death preserves raw occupancy and ordinary death statistics, and
+the terminal transition skips new waves without changing phase/cache/RNG.
+
+Native setup uses two paid player hosts, three enemy Shield Steward hosts,
+authored skills/gold callbacks/equipment and native fillers. Original Boss
+definitions and waves stay intact. Muted Instant capture takes 43.30 seconds;
+all failure/difference/unsupported/pending gates are zero and original files
+match. The 24,418-byte binary contains 4,755 unique nodes and is byte-identical
+to native output, with no source JSON. This verifies the observed primary
+copying and loss paths; grafted/substituted/Boss/preview births, broader effects,
+room/relic/covenant interactions and birth destruction/revival remain work.
+
+Inventory is now 149 binary archives: 140 battles and nine calibrations.
+Complete regression and audit pass, including 136 independent policy chains,
+22 physical-position and eleven decision-reference suites, all fourteen
+queued-summon, ten triggered-equipment and six direct summon-effect suites,
+and all 262 summon damage phases. Sizes/SHA-256 hashes and native/original-file
+gates match; errors and unsupported transitions are zero.

@@ -298,6 +298,18 @@ namespace MonsterTrain2Poju.Model
                         initialStatuses = StatusCallbackModel.MergeStartingStatuses(initialStatuses, group.Upgrades.SelectMany(upgrade => upgrade.Statuses));
                     spawnTriggers = RoomCombatModel.ApplySpawnTriggers(entered, spawned.Id, fromCard: true, startingApplications: initialStatuses);
                     if (!spawnTriggers.Supported) return Unsupported(spawnTriggers.UnsupportedReason!);
+                    // Ordinary paid births have the same player-wide enchant phase
+                    // as repeated and cloned births, before the post-play Rally.
+                    var enchantQueue = spawnTriggers.State!.Units.Where(unit => unit.Team == CombatTeam.Player)
+                        .Select(unit => new RoomCombatModel.QueuedCharacterTrigger(target.RoomIndex, unit, "AfterSpawnEnchant")).ToList();
+                    TrainCombatResult enchanted = TrainCombatModel.ApplyCharacterQueue(new TrainCombatState(train.Rooms.Select(room =>
+                        room.RoomIndex == target.RoomIndex ? spawnTriggers.State : new RoomCombatState(room.RoomIndex, room.Deployment,
+                            room.Units, room.ExternalInteractions, spawnTriggers.State.Context, room.Preview)).ToArray(), train.Movement,
+                        train.EnemySlotsPerRoom, spawnTriggers.State.Context), enchantQueue);
+                    if (!enchanted.Supported) return Unsupported(enchanted.UnsupportedReason!);
+                    train = enchanted.State!;
+                    spawnTriggers = new RoomCombatResult(enchanted.State!.Rooms.Single(room => room.RoomIndex == target.RoomIndex),
+                        enchanted.Outcome == RoomOutcome.Exchanged ? spawnTriggers.Outcome : enchanted.Outcome, 0, spawnTriggers.Events.ToList());
                 }
                 context = spawnTriggers.State!.Context!; outcome = spawnTriggers.Outcome;
                 piles = context.OtherPiles?.ToArray() ?? piles;

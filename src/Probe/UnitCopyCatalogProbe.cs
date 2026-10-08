@@ -24,7 +24,10 @@ namespace MonsterTrain2Poju.Probe
             {
                 var errors = new List<string>();
                 CombatUnit unit = BattleActionProbe.SpawnTemplate(data, true, errors);
-                return new UnitCopyBirthDefinition(unit, errors.Distinct().ToArray(), data.GetGraftedEquipment() != null);
+                EnemyDefinition raw = EnemySpawningProbe.Definition(data);
+                var hero = new EnemyDefinition(raw.Unit, raw.Ascends, raw.Loops,
+                    raw.ExternalInteractions.Concat(spawn.ExternalInteractions).Distinct().ToArray(), raw.CompanionBoss);
+                return new UnitCopyBirthDefinition(unit, errors.Distinct().ToArray(), data.GetGraftedEquipment() != null, hero);
             }).OrderBy(item => item.Unit.AssetKey, StringComparer.Ordinal).ToArray();
             string[] cardIds = reachable.Select(rule => rule.DataId).Concat(live.SelectMany(unit => unit.GetEquipment())
                 .Select(card => card.GetCardDataID())).Concat(live.Select(unit => unit.GetSpawnerCard()?.GetCardDataID()).Where(id => id != null).Cast<string>())

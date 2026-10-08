@@ -73,6 +73,18 @@ internal static class EnemySpawningChecks
     internal static void Native(FixtureValue fixture)
     {
         if (!fixture.TryGetProperty("Spawns", out FixtureValue spawns)) return;
+        if (spawns.GetArrayLength() == 0 && fixture.GetProperty("NativeWon").ValueKind == FixtureKind.False &&
+            fixture.GetProperty("Turns").GetArrayLength() == 1 &&
+            fixture.GetProperty("Turns")[0].GetProperty("ActualOutcome").GetInt32() == (int)RoomOutcome.PlayerDefeated)
+        {
+            var turn = fixture.GetProperty("Turns")[0];
+            var before = turn.GetProperty("Before").Deserialize<BattleTurnState>()!.Spawn;
+            var after = turn.GetProperty("Actual").Deserialize<BattleTurnState>()!.Spawn;
+            Require(before.Phase == after.Phase && JsonSerializer.Serialize(before.SelectedGroups) == JsonSerializer.Serialize(after.SelectedGroups) &&
+                JsonSerializer.Serialize(before.Rng) == JsonSerializer.Serialize(after.Rng), "First-turn defeat unexpectedly advanced a wave or spawning RNG.");
+            Console.WriteLine("NATIVE-SPAWN-CHECKS PASS: terminal first-turn defeat skips new waves and preserves phase/cache/RNG.");
+            return;
+        }
         int matched = 0, unsupported = 0;
         foreach (FixtureValue spawn in spawns.EnumerateArray())
         {

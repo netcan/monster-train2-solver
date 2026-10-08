@@ -245,7 +245,8 @@ namespace MonsterTrain2Poju.Model
                 if (effect.Type == "CopyUnits")
                 {
                     if (!fullTrain || definitions == null) return UnsupportedTrain("Paid copying requires the complete train and birth catalog.");
-                    UnitCopyResult copied = UnitCopyModel.ApplyWithPending(state, roomIndex, targets.UnitIds, effect.Value, definitions.UnitCopyCatalog, callbacks);
+                    UnitCopyResult copied = UnitCopyModel.ApplyWithPending(state, roomIndex, targets.UnitIds, effect.Value, definitions.UnitCopyCatalog, callbacks,
+                        heroBirth: effect.AllowEnemy && !effect.AllowPlayer, copyHeroStats: effect.CopyHeroStats == true);
                     if (!copied.Supported) return UnsupportedTrain(copied.UnsupportedReason!);
                     state = copied.State!; callbacks.Clear(); callbacks.AddRange(copied.PendingCallbacks); events.AddRange(copied.Events);
                     if (copied.Outcome != RoomOutcome.Exchanged) outcome = copied.Outcome;

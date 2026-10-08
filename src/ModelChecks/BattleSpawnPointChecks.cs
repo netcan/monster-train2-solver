@@ -56,7 +56,19 @@ internal static class BattleSpawnPointChecks
         }
         // If combat kills every enemy before every ascent, no cross-room move
         // should occur. The complete captured ascent inputs prove this case.
-        Require(contexts > 50 && removals > 0 && (moves > 0 || ascents > 0 && emptyAscents == ascents),
+        bool firstTurnDefeat = fixture.GetProperty("NativeWon").ValueKind == FixtureKind.False &&
+            fixture.GetProperty("Turns").GetArrayLength() == 1 &&
+            fixture.GetProperty("Turns")[0].GetProperty("ActualOutcome").GetInt32() == (int)RoomOutcome.PlayerDefeated;
+        bool noUnitDied = samples.All(sample =>
+        {
+            var before = sample.GetProperty("Before").Deserialize<RoomCombatState>()!;
+            var after = sample.GetProperty("Actual").Deserialize<RoomCombatState>()!;
+            return before.Units.Where(unit => !unit.IsPyre).All(unit => after.Units.Any(next => next.Id == unit.Id));
+        });
+        // A first-turn defeat can occur before any ordinary actor is killed.
+        // Its complete room observations must prove the absence of removals.
+        Require((contexts > 50 || firstTurnDefeat && contexts > 0) && (removals > 0 || firstTurnDefeat && noUnitDied) &&
+            (moves > 0 || ascents > 0 && emptyAscents == ascents),
             "Complete battle position transitions were not exercised.");
         foreach (var sample in fixture.GetProperty("PhysicalCompactions").EnumerateArray())
             Require(sample.GetProperty("Error").ValueKind == FixtureKind.Null && sample.GetProperty("After").ValueKind != FixtureKind.Null,

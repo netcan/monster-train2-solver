@@ -9,8 +9,9 @@ namespace MonsterTrain2Poju.Model
         public CombatUnit Unit { get; }
         public IReadOnlyList<string> ExternalInteractions { get; }
         public bool Grafted { get; }
-        public UnitCopyBirthDefinition(CombatUnit unit, IReadOnlyList<string> externalInteractions, bool grafted)
-        { Unit = unit; ExternalInteractions = Array.AsReadOnly(externalInteractions.ToArray()); Grafted = grafted; }
+        public EnemyDefinition? HeroDefinition { get; }
+        public UnitCopyBirthDefinition(CombatUnit unit, IReadOnlyList<string> externalInteractions, bool grafted, EnemyDefinition? heroDefinition = null)
+        { Unit = unit; ExternalInteractions = Array.AsReadOnly(externalInteractions.ToArray()); Grafted = grafted; HeroDefinition = heroDefinition; }
     }
     public sealed class UnitCopyGearDefinition
     {
@@ -81,10 +82,10 @@ namespace MonsterTrain2Poju.Model
     public static class UnitCopyModel
     {
         public static UnitCopyResult Apply(TrainCombatState source, int roomIndex, IReadOnlyList<int> targets,
-            int count, UnitCopyCatalog? catalog)
-            => ApplyWithPending(source, roomIndex, targets, count, catalog, Array.Empty<RoomCombatModel.QueuedCharacterTrigger>());
+            int count, UnitCopyCatalog? catalog, bool heroBirth = false, bool copyHeroStats = false)
+            => ApplyWithPending(source, roomIndex, targets, count, catalog, Array.Empty<RoomCombatModel.QueuedCharacterTrigger>(), heroBirth, copyHeroStats);
         internal static UnitCopyResult ApplyWithPending(TrainCombatState source, int roomIndex, IReadOnlyList<int> targets,
-            int count, UnitCopyCatalog? catalog, IReadOnlyList<RoomCombatModel.QueuedCharacterTrigger> prior)
+            int count, UnitCopyCatalog? catalog, IReadOnlyList<RoomCombatModel.QueuedCharacterTrigger> prior, bool heroBirth = false, bool copyHeroStats = false)
         {
             TrainCombatState state = source; int spawned = 0; RoomOutcome outcome = RoomOutcome.Exchanged;
             var events = new List<CombatEvent>(); var pending = prior.ToList(); var dispatched = new List<UnitCloneCallback>();
@@ -104,12 +105,13 @@ namespace MonsterTrain2Poju.Model
                 {
                     CombatUnit? actor = state.Rooms.SelectMany(item => item.Units).FirstOrDefault(unit => unit.Id == id);
                     if (actor == null) return Fail("Copying a removed source requires retained native target objects.");
-                    if (actor.Team != CombatTeam.Player) return Fail("Enemy copying requires its separate native hero birth transition.");
-                    UnitCloneRule? rule = catalog?.Resolve(state.Context!, actor);
-                    UnitCloneResult copy = UnitCloneModel.ApplyWithPending(state, id, roomIndex, location, rule, pending);
+                    UnitCloneResult copy = heroBirth ? HeroUnitBirthModel.Apply(state, id, roomIndex, catalog, copyHeroStats, pending) :
+                        UnitCloneModel.ApplyWithPending(state, id, roomIndex, location, catalog?.Resolve(state.Context!, actor), pending);
                     if (!copy.Supported) return Fail(copy.UnsupportedReason!);
                     state = copy.State!; pending = copy.PendingCallbacks.ToList(); events.AddRange(copy.Events); dispatched.AddRange(copy.Dispatched);
-                    if (copy.UnitId > 0) spawned++;
+                    // SpawnHeroInRoom's output parameter is passed by value in native code.
+                    // Hero actors are created, but this effect's counted spawn total stays zero.
+                    if (!heroBirth && copy.UnitId > 0) spawned++;
                     if (copy.Outcome != RoomOutcome.Exchanged) outcome = copy.Outcome;
                 }
             }
