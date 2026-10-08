@@ -429,6 +429,7 @@ namespace MonsterTrain2Poju.Probe
 
         internal string Write()
         {
+            EnchantmentSourceOrderProbe.Write();
             bool binary = Environment.GetEnvironmentVariable("MT2_PROBE_BINARY_CAPTURE") == "1";
             string path = Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!, binary ? "full-battle.mt2f" : "full-battle.json");
             var timer = System.Diagnostics.Stopwatch.StartNew();

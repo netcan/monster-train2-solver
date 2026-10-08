@@ -5693,9 +5693,9 @@ refreshes the effect and recipient before continuing. The kernel collects its ow
 targets, uses Battle/BattleTest in native order, and performs actual modeled status
 addition/removal and ordered callback generation.
 
-The room manager's allow/reentry guards apply to the entire train. Sources follow
-native MonsterManager floor/front-to-back order before HeroManager order, rather
-than unit creation order. Direct effect calls can enter a nested global pass;
+The room manager's allow/reentry guards apply to the entire train. Source ordering
+now reproduces each native manager's repeated whole-list sort, as detailed below.
+Direct effect calls can enter a nested global pass;
 updates already inside a global pass cannot. Parentless aura targets can include
 the Pyre. Actor identities retained outside the live train have an explicit store;
 source removal and the automatic combat hooks still require separate integration.
@@ -5807,3 +5807,41 @@ casualties, Deathwish, Purify and room/relic interactions remain refused. Generi
 RoomCombatModel still rejects CardEffectEnchant; the restored ordinary battle is
 not evidence of a persistent-aura multi-turn battle. The full simulator remains
 incomplete.
+
+### Native enchantment source collection order
+
+Native RoomState.AddCharactersToList sorts the entire accumulated list after each
+floor call, including empty floors. Team.Heroes=1 and Team.Monsters=2 put enemies
+before players; same-team comparisons use actual physical IndexInRoom across
+floors. It skips actors already present while adding a room, but preserves
+duplicates in an incoming list. Thus walking MonsterManager before HeroManager
+does not imply that player sources run first, and a floor traversal alone does
+not reproduce the final order. EnchantmentCombatModel now uses the independent
+collector. Multiple source floors require captured physical points; the model
+explicitly refuses missing point data rather than guessing a cross-floor order.
+
+The new native collector calibration observes 172 ordinary manager lists across
+the real status matrix and subsequent paid battle, plus 32 read-only stress lists.
+Initial lengths 0, 1, 15, 16, 17, 31, 33 and 64 exercise duplicate incoming actors,
+equal physical indices, both teams, empty-floor calls and sorting size thresholds.
+All 204 native arrays match independently in .NET and repeat in 32 branches without
+parent changes. The first independent test exposed missing collection deduplication;
+the corrected collector passes the same captured native inputs. Gameplay/status
+APIs are never suppressed by this observer.
+
+The accepted muted Instant native run takes 74.43 seconds, with passed/won true,
+zero capture failures/differences/unsupported/pending records and unchanged original
+profile/log signatures. The restored ordinary battle also passes independent
+initial/middle-root policy chains, 21 actions/seven EndTurns, Pyre 73 and 16 branches.
+Both existing real-status calibrations and the 1,460-step lifecycle suite pass on
+the corrected source, including the missing-physical-point refusal.
+
+The new native binary has 2,681 bytes/581 unique nodes, SHA-256
+`b9011555d2a5cd35f410b917166240a64c83d56de74de4766a5e77581bfe5804`.
+It has no text source/JSON companion and is byte-identical to native output.
+The curated inventory now contains 154 archives (141 battles/thirteen calibrations).
+All hashes pass; validation consists of the preceding complete 153-archive
+regression/audit plus this new collector suite and final affected aura suites,
+rather than a second complete 154-archive run. Automatic birth/movement/death,
+changing children, full preview rollback and the rest of the full simulator remain
+open; generic persistent-aura combat is still refused.

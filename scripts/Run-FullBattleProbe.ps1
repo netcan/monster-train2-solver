@@ -1347,9 +1347,21 @@ $result = [pscustomobject]@{
     EnchantmentLifecycleCalibration = $(if ($EnchantmentLifecycle) { Join-Path $profile 'enchantment-lifecycle-calibration.mt2f' } else { $null })
     EnchantmentCombatCalibration = $(if ($EnchantmentCombat) { Join-Path $profile 'enchantment-combat-calibration.mt2f' } else { $null })
     EnchantmentWorldCalibration = $(if ($EnchantmentWorld) { Join-Path $profile 'enchantment-world-calibration.mt2f' } else { $null })
+    EnchantmentSourceOrderCalibration = $(if ($EnchantmentWorld) { Join-Path $profile 'enchantment-source-order-calibration.mt2f' } else { $null })
 }
 $result | ConvertTo-Json
 if ($EnchantmentWorld) {
+    $sourceOrderPath = Join-Path $profile 'enchantment-source-order-calibration.mt2f'
+    if (-not (Test-Path -LiteralPath $sourceOrderPath)) { throw 'Missing native enchantment source-order calibration.' }
+    Add-Type -Path (Join-Path $workspace 'src\FixtureArchive\bin\Release\net8.0\FixtureArchive.dll')
+    $sourceOrderArchive = [MonsterTrain2Poju.Fixtures.FixtureDocument]::Read($sourceOrderPath)
+    try { $sourceOrderData = $sourceOrderArchive.RootElement.ToObjectGraph() }
+    finally { $sourceOrderArchive.Dispose() }
+    if ($sourceOrderData.Boundary -ne 'NativeManagerListCollection' -or $sourceOrderData.GameplaySuppressed -or
+        @($sourceOrderData.Samples | Where-Object { $_.Label.StartsWith('sort-stress-') }).Count -ne 32 -or
+        @($sourceOrderData.Samples | Where-Object { @($_.Positions.Team | Select-Object -Unique).Count -eq 2 }).Count -eq 0) {
+        throw 'Native source-order both-team/sort-threshold coverage is incomplete.'
+    }
     $enchantmentPath = Join-Path $profile 'enchantment-world-calibration.mt2f'
     if (-not (Test-Path -LiteralPath $enchantmentPath)) { throw 'Missing native automatic aura world calibration.' }
     Add-Type -Path (Join-Path $workspace 'src\FixtureArchive\bin\Release\net8.0\FixtureArchive.dll')

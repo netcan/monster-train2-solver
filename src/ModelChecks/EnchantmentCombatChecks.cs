@@ -95,6 +95,16 @@ internal static class EnchantmentCombatChecks
         result = EnchantmentCombatModel.UpdateAll(Replace(hordeOwner));
         Require(!result.Supported && result.UnsupportedReason!.Contains("Horde aura", StringComparison.Ordinal),
             "Horde aura casualties silently bypassed retained-actor/birth hooks.");
+        int origin = source.Train.Rooms.Single(room => room.Units.Any(unit => unit.Id == owner.Id)).RoomIndex;
+        int destination = source.Train.Rooms.First(room => room.RoomIndex != origin).RoomIndex;
+        var moved = new TrainCombatState(source.Train.Rooms.Select(room => new RoomCombatState(room.RoomIndex, room.Deployment,
+            room.RoomIndex == origin ? room.Units.Where(unit => unit.Id != owner.Id).ToArray() :
+            room.RoomIndex == destination ? room.Units.Append(owner).ToArray() : room.Units,
+            room.ExternalInteractions, room.Context, room.Preview)).ToArray(), source.Train.Movement, source.Train.EnemySlotsPerRoom, source.Train.Context);
+        result = EnchantmentCombatModel.UpdateAll(new EnchantmentCombatState(moved, source.RetainedUnits, source.EnchanterIds,
+            source.AllowUpdates, source.Updating, source.Preview, source.TestRng));
+        Require(!result.Supported && result.UnsupportedReason!.Contains("physical points", StringComparison.Ordinal),
+            "Cross-room aura sources silently used room traversal instead of captured physical ordering.");
     }
     private static void Require(bool value, string message) { if (!value) throw new InvalidDataException(message); }
 }

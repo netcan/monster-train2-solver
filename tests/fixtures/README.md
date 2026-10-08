@@ -968,3 +968,26 @@ fourteen queued-summon, ten triggered-equipment, six direct summon-effect suites
 and 262 damage phases. Binary hashes/provenance and native original-file gates
 pass. Final shared-train refusal and both real-status/control-status calibrations
 also pass independently after the full run.
+
+`enchantment-source-order-calibration.mt2f` records the actual native manager list
+collector: 172 ordinary lists across the real status matrix/restored paid battle,
+and 32 read-only incoming-list stress cases with lengths 0/1/15/16/17/31/33/64.
+All 204 arrays match independently in 32 branches, covering both teams, equal
+physical positions across floors, deduplication during room collection and repeated
+sorting after empty rooms. Native team values sort enemies before players; same-
+team sorting uses physical IndexInRoom, correcting the earlier floor-first account.
+Multiple aura-source floors explicitly require captured physical points.
+
+The byte-identical native archive is 2,681 bytes/581 nodes, SHA-256
+`b9011555d2a5cd35f410b917166240a64c83d56de74de4766a5e77581bfe5804`,
+with no text source/JSON companion. The 74.43-second muted Instant run passes/wins,
+has zero errors/unsupported/pending records, preserves original-file signatures
+and independently wins the restored ordinary battle in 21 actions/seven turns,
+Pyre 73, initial/middle roots and 16 branches. Final control/real-status/lifecycle
+suites pass on the corrected collector, including missing-point refusal.
+
+Inventory is 154 archives: 141 battles/thirteen calibrations. All manifest hashes
+pass. Regression evidence is the preceding complete 153-archive run/audit plus
+the new 204-list suite and final affected aura suites; a second complete
+154-archive run was not performed. Generic persistent-aura combat and the full
+simulator remain incomplete.

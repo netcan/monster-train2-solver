@@ -150,9 +150,24 @@ namespace MonsterTrain2Poju.Model
             {
                 if (!state.AllowUpdates || state.Updating || error != null) return;
                 Set(updating: true);
-                // MonsterManager visits floors/front-to-back first, then HeroManager does the same.
-                int[] sources = new[] { CombatTeam.Player, CombatTeam.Enemy }.SelectMany(team => state.Train.Rooms
-                    .SelectMany(room => room.Units.Where(unit => unit.Team == team))).Select(unit => unit.Id).ToArray();
+                int[] sourceRooms = state.Train.Rooms.Where(room => room.Units.Any(unit => state.EnchanterIds.Contains(unit.Id)))
+                    .Select(room => room.RoomIndex).ToArray();
+                if (sourceRooms.Length > 1 && state.Train.Context?.SpawnPoints == null)
+                { error = "Cross-room enchantment source order requires captured physical points."; Set(updating: false); return; }
+                var positions = new List<EnchantmentSourcePosition>();
+                foreach (RoomCombatState room in state.Train.Rooms)
+                    foreach (CombatTeam team in new[] { CombatTeam.Enemy, CombatTeam.Player })
+                    {
+                        int rank = 0;
+                        foreach (CombatUnit unit in room.Units.Where(unit => unit.Team == team))
+                        {
+                            var group = state.Train.Context?.SpawnPoints?.Group(room.RoomIndex, team);
+                            int index = group == null ? rank : Array.IndexOf(group.Occupants.ToArray(), unit.Id);
+                            if (index < 0) { error = "Missing physical point for enchantment source collection."; Set(updating: false); return; }
+                            positions.Add(new EnchantmentSourcePosition(unit.Id, team, room.RoomIndex, index)); rank++;
+                        }
+                    }
+                int[] sources = EnchantmentSourceOrderModel.Collect(state.Train.Rooms.Count, positions);
                 foreach (int id in sources)
                 {
                     if (!state.EnchanterIds.Contains(id)) continue;

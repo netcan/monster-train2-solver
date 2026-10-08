@@ -1,6 +1,11 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
 
+if (args.Length == 2 && args[0] == "--enchantment-source-order-only")
+{
+    EnchantmentSourceOrderChecks.Native(args[1]);
+    return;
+}
 if (args.Length == 2 && args[0] == "--enchantment-world-only")
 {
     EnchantmentWorldChecks.Native(args[1]);
@@ -235,6 +240,8 @@ foreach (string path in args.Where(path => path.Contains("enchantment-combat-cal
     EnchantmentCombatChecks.Native(path);
 foreach (string path in args.Where(path => path.Contains("enchantment-world-calibration", StringComparison.OrdinalIgnoreCase)))
     EnchantmentWorldChecks.Native(path);
+foreach (string path in args.Where(path => path.Contains("enchantment-source-order-calibration", StringComparison.OrdinalIgnoreCase)))
+    EnchantmentSourceOrderChecks.Native(path);
 
 static void Check(bool condition, string message)
 {
