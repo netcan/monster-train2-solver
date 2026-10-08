@@ -59,6 +59,7 @@ internal static class TriggeredSummonChecks
         Require(scenario.EndsWith("fresh", StringComparison.Ordinal) ? fresh == births : copied == births,
             "The fixture did not exercise the requested fresh/copied source path.");
         foreach (var clone in fixture.GetProperty("DetachedCardClones").EnumerateArray()) UnitSummonChecks.VerifyClone(clone, false);
+        EffectBoundaries(records, scenario);
         if (scenario.Contains("equipment")) EquipmentTransfers(records, scenario);
         var root = fixture.GetProperty("Stages").EnumerateArray().Select(sample => sample.GetProperty("Before").Deserialize<RoomCombatState>()!)
             .First(room => room.Units.Any(unit => unit.Triggers.Any(trigger => trigger.Effects.Any(effect => effect.Summon != null))));
@@ -72,6 +73,72 @@ internal static class TriggeredSummonChecks
         DamagePhases(fixture, scenario);
         Console.WriteLine($"NATIVE-TRIGGERED-SUMMON-CHECKS PASS: {records.Length} native queued applications, {births} births, " +
             $"{zero} retained zero-birth caches, {deaths} dying sources, {copied} copies/{fresh} fresh sources; complete battle transitions checked independently.");
+    }
+
+    private sealed record Callback(int ActorId, string Kind, int DyingId, int ParamInt, int TriggerCount);
+    private static void EffectBoundaries(FixtureValue[] records, string scenario)
+    {
+        var captured = records.Where(record => record.TryGetProperty("TriggerStateId", out _)).ToArray();
+        if (captured.Length == 0) return;
+        int owned = 0, liveOwnedBirths = 0, dyingOwnedBirths = 0;
+        foreach (var record in captured)
+        {
+            var before = record.GetProperty("Before").Deserialize<RoomCombatState>()!;
+            var after = record.GetProperty("After").Deserialize<RoomCombatState>()!;
+            var actor = record.GetProperty("ActorBefore").Deserialize<CombatUnit>()!;
+            int equipmentId = record.GetProperty("EquipmentCardId").GetInt32();
+            int sourceId = record.GetProperty("SourceCardId").GetInt32();
+            Require(sourceId == actor.SpawnerCardId, "An equipment-bound trigger replaced the native host source card.");
+            if (sourceId > 0)
+                Require(before.Context!.FindCard(sourceId)!.PlayedRoomUnitIds!.SequenceEqual(before.Units
+                    .Where(unit => unit.Health > 0 && unit.IsSpawning != true).Select(unit => unit.Id).OrderBy(id => id)),
+                    "The native trigger did not cache its host card's complete live room membership.");
+            var trigger = actor.Triggers.Single(item => item.StateId == record.GetProperty("TriggerStateId").GetInt32());
+            Require(trigger.Origin!.EquipmentCardId == equipmentId && trigger.Origin.IsFromEquipment == (equipmentId > 0),
+                "A native summon effect lost its separate equipment binding.");
+            if (equipmentId > 0)
+            {
+                owned++;
+                Require(sourceId != equipmentId && !record.GetProperty("RuleBefore").Deserialize<TriggeredSummonRule>()!.HasParentCard,
+                    "Native equipment binding was confused with the parent card or effect source.");
+                if (after.Context!.NextUnitId > before.Context!.NextUnitId)
+                { if (actor.Health > 0) liveOwnedBirths++; else dyingOwnedBirths++; }
+            }
+            VerifyEffect(record);
+        }
+        if (scenario.Contains("equipment-owned"))
+            Require(owned > 0 && (scenario.Contains("death") ? dyingOwnedBirths > 0 : liveOwnedBirths > 0),
+                "Equipment-owned summons did not reach the requested live/dead birth path.");
+        Parallel.For(0, 16, _ => { foreach (var record in captured) VerifyEffect(record); });
+        Console.WriteLine($"NATIVE-TRIGGERED-SUMMON-EFFECT-CHECKS PASS: {captured.Length} complete effect boundaries, " +
+            $"{owned} equipment bindings, {liveOwnedBirths} live/{dyingOwnedBirths} dying equipment births, native source caches and accepted callbacks in 16 branches.");
+    }
+    private static void VerifyEffect(FixtureValue record)
+    {
+        var before = record.GetProperty("Before").Deserialize<RoomCombatState>()!;
+        var actor = record.GetProperty("ActorBefore").Deserialize<CombatUnit>()!;
+        string parent = JsonSerializer.Serialize(before), originalActor = JsonSerializer.Serialize(actor);
+        var result = RoomCombatModel.ApplyNativeTriggeredSummon(before, actor, record.GetProperty("TriggerStateId").GetInt32(),
+            record.GetProperty("EffectIndex").GetInt32(), out var resultingRule);
+        Require(result.Supported, "Native summon effect unsupported: " + result.UnsupportedReason);
+        Compare(result.State, record.GetProperty("After").Deserialize<RoomCombatState>(), "Native summon effect room");
+        Compare(result.State!.Units.Concat(result.RetainedUnits).Single(unit => unit.Id == actor.Id),
+            record.GetProperty("ActorAfter").Deserialize<CombatUnit>(), "Native summon effect actor");
+        Compare(resultingRule, record.GetProperty("RuleAfter").Deserialize<TriggeredSummonRule>(), "Native summon effect cache");
+        var callbacks = result.PendingCallbacks.Where(item => item.Unit.Triggers.Any(trigger => trigger.Kind == item.Kind))
+            .Select(item => new Callback(item.Unit.Id, item.Kind, item.DyingCharacter?.Id ?? 0, item.ParamInt, item.TriggerCount)).ToArray();
+        Compare(callbacks, record.GetProperty("Queued").Deserialize<Callback[]>(), "Native summon accepted callbacks");
+        Require(JsonSerializer.Serialize(before) == parent && JsonSerializer.Serialize(actor) == originalActor,
+            "Native summon effect changed its parent or retained source actor.");
+        var invalid = RoomCombatModel.ApplyNativeTriggeredSummon(before, actor, record.GetProperty("TriggerStateId").GetInt32(),
+            -1, out var invalidRule);
+        Require(!invalid.Supported && invalid.State == null && invalidRule == null && JsonSerializer.Serialize(before) == parent,
+            "An invalid native summon cursor produced a partial child or changed the parent.");
+    }
+    private static void Compare<T>(T actual, T expected, string label)
+    {
+        string? difference = ModelJson.Difference(JsonSerializer.Serialize(actual), JsonSerializer.Serialize(expected));
+        Require(difference == null, label + " differs: " + difference);
     }
 
     private static void EquipmentTransfers(FixtureValue[] records, string scenario)
@@ -89,8 +156,9 @@ internal static class TriggeredSummonChecks
             var candidates = actor.EquipmentCards.Select(id => before.Context.FindCard(id)!).ToArray();
             var returning = candidates.Where(card => catalog.Cards.Single(def => def.Creation.DataId == card.DataId).Equipment!.ReturnToHand).ToArray();
             var normal = candidates.Except(returning).ToArray();
-            Require(normal.Length == 2 && returning.Length == 1, "The equipped native actor did not retain both transfer and return-to-hand definitions.");
-            if (!rule.IgnoreCardUpgrades)
+            if (!scenario.Contains("equipment-owned"))
+                Require(normal.Length == 2 && returning.Length == 1, "The equipped native actor did not retain both transfer and return-to-hand definitions.");
+            if (!rule.IgnoreCardUpgrades && normal.Length > 0)
             {
                 string parent = JsonSerializer.Serialize(before);
                 var incomplete = new TriggeredSummonCatalog(catalog.Units, catalog.Cards.Select(definition =>
@@ -100,7 +168,9 @@ internal static class TriggeredSummonChecks
                 Parallel.For(0, 16, branch =>
                 {
                     var queued = new RoomCombatModel.QueuedCharacterTrigger(before.RoomIndex, actor, record.GetProperty("Kind").GetString()!);
-                    var rejected = RoomCombatModel.ApplyQueuedCharacterTrigger(bad, queued, callback => { });
+                    var rejected = record.TryGetProperty("TriggerStateId", out var cursor)
+                        ? RoomCombatModel.ApplyNativeTriggeredSummon(bad, actor, cursor.GetInt32(), record.GetProperty("EffectIndex").GetInt32(), out _)
+                        : RoomCombatModel.ApplyQueuedCharacterTrigger(bad, queued, callback => { });
                     Require(!rejected.Supported && rejected.State == null &&
                         rejected.UnsupportedReason!.Contains("equipment attachment definition"),
                         "An incomplete equipment catalog produced a partial summon child.");
@@ -113,7 +183,7 @@ internal static class TriggeredSummonChecks
                 excluded += returning.Length;
                 Require(!unit.EquipmentCards!.Any(id => returning.Any(card => card.DataId == after.Context.FindCard(id)!.DataId)),
                     "Return-to-hand equipment was transferred to a summoned child.");
-                if (rule.IgnoreCardUpgrades)
+                if (rule.IgnoreCardUpgrades || normal.Length == 0)
                 {
                     Require(unit.EquipmentCards.Count == 0 && !after.Context.OtherPiles!.Single(pile => pile.Name == "Standby")
                         .EquipmentConditions!.Any(condition => condition.HostUnitId == unit.Id),

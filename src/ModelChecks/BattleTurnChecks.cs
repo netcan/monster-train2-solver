@@ -60,7 +60,8 @@ internal static class BattleTurnChecks
         Movement = state.Spawn.Train.Movement.OrderBy(rule => rule.UnitId).ToArray(), state.Spawn.Train.Context,
         state.Spawn.Phase, state.Spawn.SelectedGroups, state.Spawn.Rng, state.Spawn.NextUnitId,
         state.Spawn.TreasuresRemaining, state.Spawn.Turn, state.Energy, state.ForgePoints, state.DragonsHoard,
-        state.MoonPhase, state.RngStreams, state.OtherPiles, state.PlayRules, state.BattlePreviewEnabled, state.UiRngIsolated
+        state.MoonPhase, state.RngStreams, state.OtherPiles, state.PlayRules, state.BattlePreviewEnabled, state.UiRngIsolated,
+        state.CanonicalPhysicalReferences
     });
     private static void Require(bool condition, string message)
     { if (!condition) throw new InvalidOperationException(message); }

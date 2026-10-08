@@ -20,6 +20,13 @@ namespace MonsterTrain2Poju.Probe
             public string? Error { get; set; }
         }
         internal static readonly List<CompactRecord> Compactions = new List<CompactRecord>();
+        internal sealed class DecisionRecord
+        {
+            public BattleSpawnPoints Raw { get; set; } = null!;
+            public BattleSpawnPoints Canonical { get; set; } = null!;
+            public int[] LivingUnitIds { get; set; } = Array.Empty<int>();
+        }
+        internal static readonly List<DecisionRecord> Decisions = new List<DecisionRecord>();
         internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_PHYSICAL_SPAWNPOINTS") == "1";
         internal static BattleSpawnPoints Capture(FullBattleTrace trace)
         {
@@ -50,7 +57,17 @@ namespace MonsterTrain2Poju.Probe
                     Reference((SpawnPoint?)AccessTools.Field(primary.GetType(), "lastKnownSpawnPoint").GetValue(primary)),
                     unit.IsOuterTrainBoss(), unit.SpawnedInPreviewMode));
             }
-            return new BattleSpawnPoints(groups, references);
+            var raw = new BattleSpawnPoints(groups, references);
+            if (!trace.CanonicalDecisionCapture) return raw;
+            // Coroutine effects retain raw points above. Stable decisions use logical
+            // removal, independent of when the corpse dissolve destroys its Unity object.
+            int[] living = trace.KnownUnits.Where(unit => unit != null && unit.IsAlive && !unit.IsDestroyed)
+                .Select(trace.UnitId).OrderBy(id => id).ToArray();
+            var active = new HashSet<int>(living);
+            var canonical = new BattleSpawnPoints(groups, references.Select(point => active.Contains(point.UnitId) ? point :
+                new UnitSpawnPointState(point.UnitId, null, null, point.OuterBoss, point.SpawnedInPreview)).ToArray());
+            Decisions.Add(new DecisionRecord { Raw = raw, Canonical = canonical, LivingUnitIds = living });
+            return canonical;
             SpawnPointReference? Reference(SpawnPoint? point) => point == null ? null :
                 pointsByReference.TryGetValue(point, out SpawnPointReference? reference) ? reference :
                 throw new InvalidOperationException("Retained physical point is outside the captured primary groups.");

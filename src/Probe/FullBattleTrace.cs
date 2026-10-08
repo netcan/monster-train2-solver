@@ -33,6 +33,7 @@ namespace MonsterTrain2Poju.Probe
         private int nextId = 1;
         private int phaseSequence;
         private bool normalizeDestroyedAttacker;
+        internal bool CanonicalDecisionCapture => normalizeDestroyedAttacker;
         internal T CaptureDecision<T>(Func<T> capture)
         {
             bool previous = normalizeDestroyedAttacker;
@@ -431,7 +432,7 @@ namespace MonsterTrain2Poju.Probe
             string temporary = path + ".tmp";
             var snapshot = new
             {
-                Schema = 88,
+                Schema = 89,
                 GameVersion = Application.version,
                 GameModuleMvid = typeof(CardState).Assembly.ManifestModule.ModuleVersionId,
                 NativeWon,
@@ -483,6 +484,8 @@ namespace MonsterTrain2Poju.Probe
                 HordeStatusOperations = HordeStatusScenario.Records,
                 RevivalOperations = RevivalScenario.Operations,
                 Revivals = RevivalProbe.Records,
+                SummonSourceCaches = TriggeredSummonProbe.Caches,
+                DecisionSpawnPoints = BattleSpawnPointProbe.Decisions,
                 HarvestOperations = HarvestScenario.Operations,
                 HordeDeathOperations = HordeDeathScenario.Operations,
                 HordeRemovalOperations = HordeRemovalScenario.Records,

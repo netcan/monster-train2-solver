@@ -68,7 +68,8 @@ namespace MonsterTrain2Poju.Probe
             return new BattleTurnState(spawn, player.GetEnergy(), save.GetBalanceData().GetStartOfTurnEnergy(),
                 combat.GetStartOfTurnCards(), save.GetForgePoints(), save.GetDragonsHoardAmount(), player.CurrentMoonPhase.ToString(),
                 streams, otherPiles, interactions.Distinct().OrderBy(value => value, StringComparer.Ordinal).ToArray(), trace.CapturePlayRules(spawn),
-                save.GetBattlePreviewEnabled(), UiRngIsolation.Enabled, canonicalDecisionReferences: true);
+                save.GetBattlePreviewEnabled(), UiRngIsolation.Enabled, canonicalDecisionReferences: true,
+                canonicalPhysicalReferences: BattleSpawnPointProbe.Enabled);
         }
 
         internal void Begin()
@@ -106,7 +107,8 @@ namespace MonsterTrain2Poju.Probe
             Movement = state.Spawn.Train.Movement.OrderBy(rule => rule.UnitId).ToArray(), state.Spawn.Train.Context,
             state.Spawn.Phase, state.Spawn.SelectedGroups, state.Spawn.Rng, state.Spawn.NextUnitId,
             state.Spawn.TreasuresRemaining, state.Spawn.Turn, state.Energy, state.ForgePoints, state.DragonsHoard,
-            state.MoonPhase, state.RngStreams, state.OtherPiles, state.PlayRules, state.BattlePreviewEnabled, state.UiRngIsolated
+            state.MoonPhase, state.RngStreams, state.OtherPiles, state.PlayRules, state.BattlePreviewEnabled, state.UiRngIsolated,
+            state.CanonicalPhysicalReferences
         });
         internal sealed class Record
         {

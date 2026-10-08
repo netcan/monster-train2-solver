@@ -120,6 +120,7 @@ are copied immutable values; independent child states can run on worker threads.
 | Reentrant death signals and queued player sacrifice | `UnitDeathState`, `StatusRemovalModel` and `RoomCombatModel` | Three native operations, 45 exact death/Harvest phase states and complete dispatch order, 95 effect/retained-target states, pending versus cleared statistics listeners, spawner timing and parallel branches |
 | Physical death Harvest | `HarvestModel` and `RoomCombatModel` | Four native physical deaths and 31 exact dispatches; own-death children precede player/enemy groups, Hero/Monster/Unit kinds, Horde repetition, required dying statuses, silence and once flags; complete subsequent battle and parallel branches |
 | Undying revival | `RoomCombatModel.ApplyRevival` and damage/sacrifice settlement | Eleven native revival boundaries, seven direct/removal operations, ninety callback phases, both teams, last/zero stacks, queued self damage, one-time statistics listeners and complete policies with parallel branches |
+| Equipment-owned summons | `RoomCombatModel`, `UnitBirthModel` and `BattlePreviewModel` | Native equipment binding is separate from the host source card; individual summon effects compare complete states, first-birth caches and accepted callback FIFO, including physical Rally order and retained death sources |
 | Queued trigger repetition | `RoomCombatModel` | Eight complete native batches and 26 dispatches, once flags, zero/negative counts, ordered child callbacks, silence/fire permissions and 32 branches; Horde status callers now preserve rally/harvest repetition payloads |
 | Additional spells, abilities, relics | Not complete | Unsupported interactions explicitly reject the model transition |
 
@@ -5041,3 +5042,100 @@ transitions. It includes eleven integrated physical-position suites, eight
 queued-summon suites, four triggered-equipment suites, fifty-six native damage
 phases and the new full revival suite. Fixture sizes and SHA-256 values match
 the curated manifest.
+
+## Equipment-owned summons and decision reference lifetimes
+
+Schema 89 records each triggered summon's actual source card, separate equipment
+binding, persistent trigger state ID, effect index and accepted child callbacks.
+CharacterState.ApplyEffects passes the host's spawner card even for effects
+bound to equipment. The source card's room membership cache therefore refreshes
+on the host card, including retained OnDeath actors using the last-known room.
+New triggered-summon recordings include these room caches on every card;
+older archives retain their optional unknown fields.
+
+ApplyNativeTriggeredSummon resumes one effect after native trigger preflight,
+once marking and source caching. It returns a complete child and pending
+callbacks without draining them, or rejects missing definitions/cursors/source
+state. Independent checks recompute each effect from its captured input, compare
+the complete room, retained actor, first-birth cache and accepted callback FIFO,
+then repeat in sixteen branches while checking parent isolation. Complete battle
+policies still start from the original or a middle decision and generate all
+subsequent states themselves.
+
+This exposed an ordering error that whole-state comparisons did not detect:
+cardless birth Rally uses MonsterManager.AddCharactersInRoomToList and therefore
+physical room order. It does not sort the actors by identity. The simulator now
+keeps that order and refreshes its working roster after a physical birth before
+equipment-added callbacks snapshot the room.
+
+Native UI battle previews also write source card caches. The preview model carries
+those writes back to original card instances, filters out temporary preview-born
+references and preserves the raw cached identities of original units until
+their normal state is restored. A terminal Boss or Pyre removal stops the preview
+coroutine, including subsequent unit turns, post-combat work and lower rooms.
+The simulator follows that boundary rather than overwriting a later actor's cache
+after the native preview has stopped.
+
+CanonicalPhysicalReferences explicitly identifies new stable decision inputs.
+At those boundaries, logically removed actors have no current/last-known physical
+point, independent of the corpse dissolve's Unity destruction timing. Raw effect,
+damage, death and compaction boundaries keep the original references. The recorder
+exports both raw and canonical physical layouts plus live actor IDs; independent
+checks verify that only removed object references change and that live positions,
+physical groups, identity coverage and Boss/preview flags remain exact. The flag
+defaults to false for old inputs and follows card, ability and turn transitions.
+The existing canonical weak-reference rule also clears a removed first-birth
+reference at a decision; raw effect boundaries retain it until actual destruction.
+
+The authored scene adds once-only OnTurnBegin and OnDeath summons to one real
+return-to-hand equipment definition. The host keeps its ordinary summon triggers,
+and the original Boss and waves remain intact. Two other equipment cards transfer
+to children, while the summoning equipment itself returns to hand. The ordinary
+policy can attach it again, exposing repeated live and dying sources, changing
+equipment memberships and later uses of the same card. Copied and fresh-source
+variants exercise both upgrade-inheritance paths. Native runs remain muted,
+use Instant timing and verify original profile/log signatures.
+
+The four accepted archives have the following native and independent results.
+Names below share the prefix full-battle-triggered-summons-equipment-owned.
+
+| Archive suffix | Bytes / nodes | Plays / EndTurns | Final Pyre | Equipment birth applications: live / dying | Instant seconds |
+| --- | --- | --- | --- | --- | --- |
+| .mt2f | 31,013 / 5,105 | 16 / 5 | 80 | 1 / 0 | 134.37 |
+| -fresh.mt2f | 27,905 / 4,507 | 16 / 5 | 80 | 1 / 0 | 83.83 |
+| -death.mt2f | 53,404 / 9,150 | 25 / 5 | 79 | 4 / 9 | 78.06 |
+| -death-fresh.mt2f | 47,865 / 8,209 | 25 / 5 | 79 | 4 / 9 | 80.17 |
+
+All four native runs win with zero capture failures, mismatches, unsupported
+transitions and pending records, and unchanged original profile/log signatures.
+Their independent checks exit zero, including original and middle decision
+roots, sixteen parallel policies and thirty-two physical-position branches.
+Fifty individual summon effect boundaries include twenty-eight equipment-owned
+applications that produce units, eighteen from retained dying hosts. Sixty
+additional native damage phases compare pending deaths and zero-HP actors.
+The four recordings preserve
+1,330 source-cache writes and 2,165 raw/canonical decision mappings; the mapping
+checks prove that 1,290 removed-unit reference records are cleared while live
+actors and physical groups remain unchanged. Counts cover repeated boundary
+snapshots, not distinct removed units.
+The timings are native capture wall times with instrumentation, not independent
+model or search performance measurements.
+
+Run Run-FullBattleProbe.ps1 -Policy units-spells-and-junk
+-TriggeredSummonsEquipmentOwned, adding -TriggeredSummonsFresh and/or
+-TriggeredSummonsDeath for the other variants. The inventory now contains 142
+binary archives: 133 battles and nine calibrations. Sizes and SHA-256 values
+are recorded in tests/fixtures/manifest.tsv; regression has no source JSON
+dependency.
+
+The complete Check-Models.ps1 regression exits zero across all 142 archives,
+including all 133 battle suites and nine calibrations. It checks fifteen
+integrated physical-position suites, twelve queued-summon suites, eight
+triggered-equipment suites, four direct summon-effect suites and four decision
+reference mapping suites. All 116 captured summon damage phases match
+independently. Unsupported transition counts remain zero, and the complete
+binary inventory matches its sizes and SHA-256 manifest.
+
+These integrations do not finish the whole battle simulator. Revival combined
+with equipment/child summons, Horde merging/cloning, further relic and room
+effects, special Boss/Pyre mechanics and broader card-effect coverage remain.

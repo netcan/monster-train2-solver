@@ -86,7 +86,8 @@ internal static class MissingSourceSummonChecks
             before.PlayRules.Cards.Select(item => item.DataId == rule.DataId ? changed : item).ToArray(), before.PlayRules.StatusRules);
         var uncaptured = new BattleTurnState(before.Spawn, before.Energy, before.EnergyPerTurn, before.DrawPerTurn,
             before.ForgePoints, before.DragonsHoard, before.MoonPhase, before.RngStreams, before.OtherPiles,
-            before.ExternalInteractions, rules, before.BattlePreviewEnabled, before.UiRngIsolated, before.CanonicalDecisionReferences);
+            before.ExternalInteractions, rules, before.BattlePreviewEnabled, before.UiRngIsolated,
+            before.CanonicalDecisionReferences, before.CanonicalPhysicalReferences);
         string parent = JsonSerializer.Serialize(uncaptured);
         var result = BattleActionModel.PlayCard(uncaptured, action);
         Require(!result.Supported && result.Rejection == ActionRejection.Unsupported && JsonSerializer.Serialize(uncaptured) == parent,

@@ -48,10 +48,12 @@ namespace MonsterTrain2Poju.Model
         public bool BattlePreviewEnabled { get; }
         public bool UiRngIsolated { get; }
         public bool CanonicalDecisionReferences { get; }
+        public bool CanonicalPhysicalReferences { get; }
         public BattleTurnState(EnemySpawnState spawn, int energy, int energyPerTurn, int drawPerTurn,
             int forgePoints, int dragonsHoard, string moonPhase, IReadOnlyList<BattleRngStream> rngStreams,
             IReadOnlyList<CardPileState> otherPiles, IReadOnlyList<string> externalInteractions, BattlePlayRules? playRules = null,
-            bool battlePreviewEnabled = false, bool uiRngIsolated = false, bool canonicalDecisionReferences = false)
+            bool battlePreviewEnabled = false, bool uiRngIsolated = false, bool canonicalDecisionReferences = false,
+            bool canonicalPhysicalReferences = false)
         {
             Spawn = spawn; Energy = energy; EnergyPerTurn = energyPerTurn; DrawPerTurn = drawPerTurn;
             ForgePoints = forgePoints; DragonsHoard = dragonsHoard; MoonPhase = moonPhase;
@@ -61,6 +63,7 @@ namespace MonsterTrain2Poju.Model
             BattlePreviewEnabled = battlePreviewEnabled;
             UiRngIsolated = uiRngIsolated;
             CanonicalDecisionReferences = canonicalDecisionReferences;
+            CanonicalPhysicalReferences = canonicalPhysicalReferences;
         }
     }
     public sealed class BattleTurnResult
@@ -257,7 +260,7 @@ namespace MonsterTrain2Poju.Model
                     spawn.Turn, spawn.Rng);
                 return new BattleTurnResult(new BattleTurnState(spawn, energy, source.EnergyPerTurn, source.DrawPerTurn,
                     source.ForgePoints, source.DragonsHoard, phase, streams, piles, source.ExternalInteractions, source.PlayRules,
-                    source.BattlePreviewEnabled, source.UiRngIsolated, source.CanonicalDecisionReferences), outcome);
+                    source.BattlePreviewEnabled, source.UiRngIsolated, source.CanonicalDecisionReferences, source.CanonicalPhysicalReferences), outcome);
             }
 
             bool RouteDeadUnits(TrainCombatState before, TrainCombatResult result)

@@ -10,12 +10,13 @@ namespace MonsterTrain2Poju.Probe
     internal static class TriggeredSummonEquipmentScenario
     {
         internal static bool Enabled => (Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") ?? "").Contains("equipment");
+        internal static bool Owned => (Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") ?? "").Contains("equipment-owned");
         internal static bool Started { get; private set; }
         internal static bool Completed { get; private set; }
         internal static string? Error { get; private set; }
         private static CardState[] gear = Array.Empty<CardState>();
 
-        internal static void Prepare(AllGameManagers managers)
+        internal static void Prepare(AllGameManagers managers, CardEffectData liveSummon, CardEffectData deathSummon)
         {
             SaveManager save = managers.GetSaveManager();
             var owned = managers.GetCardManager()!.GetAllCards(new List<CardState>()).ToArray();
@@ -30,7 +31,21 @@ namespace MonsterTrain2Poju.Probe
             Set(once, "trigger", CharacterTriggerData.Trigger.OnEquipmentAdded);
             upgrade.GetCharacterTriggerUpgrades().Add(once);
             Configure(save, normal, upgrade, false);
-            Configure(save, returning, upgrade, true);
+            var returningUpgrade = upgrade;
+            if (Owned)
+            {
+                returningUpgrade = DynamicUpgradeScenario.Upgrade("PojuEquipmentOwnedSummons", "383fbf10-6400-4000-8000-000000000003",
+                    2, 4, 0, 0, "armor", 2);
+                returningUpgrade.GetCharacterTriggerUpgrades().Add(once);
+                foreach (var pair in new[] { (CharacterTriggerData.Trigger.OnTurnBegin, liveSummon),
+                    (CharacterTriggerData.Trigger.OnDeath, deathSummon) })
+                {
+                    var trigger = HealingScenario.HealGold(0, true, true);
+                    Set(trigger, "trigger", pair.Item1); Set(trigger, "effects", new List<CardEffectData> { pair.Item2 });
+                    returningUpgrade.GetCharacterTriggerUpgrades().Add(trigger);
+                }
+            }
+            Configure(save, returning, returningUpgrade, true);
             gear = normal.Take(2).Concat(returning.Take(1)).ToArray();
             gear[0].GetTemporaryCardStateModifiers().IncrementAdditionalDamage(1);
             gear[0].GetTemporaryCardStateModifiers().IncrementAdditionalHP(3);

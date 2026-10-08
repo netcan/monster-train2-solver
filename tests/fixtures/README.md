@@ -616,3 +616,45 @@ in manifest.tsv; no source JSON is required for regression.
 The complete Check-Models.ps1 regression passes all 138 archives, including
 129 battle suites and all nine calibrations, with zero unsupported transitions.
 Archive inventory, sizes and SHA-256 values match the curated manifest.
+
+Schema 89 adds four equipment-owned summon archives:
+`full-battle-triggered-summons-equipment-owned.mt2f`,
+`full-battle-triggered-summons-equipment-owned-fresh.mt2f`,
+`full-battle-triggered-summons-equipment-owned-death.mt2f` and
+`full-battle-triggered-summons-equipment-owned-death-fresh.mt2f`.
+Real return-to-hand equipment receives once-only OnTurnBegin and OnDeath
+summons. Native card plays attach it to the ordinary host, and the policy can
+re-attach the same equipment after it returns. The original Boss and waves
+remain intact. Effects use the host's spawner card; the equipment binding is
+separate and is excluded from child transfer. Copied/fresh sources exercise
+both inheritance paths, including sources retained during death.
+
+The archives record fifty complete summon effects, twenty-eight equipment-owned
+birth applications (eighteen from dying hosts), sixty native damage phases and
+1,330 source cache writes. Independent effect checks compare complete room/actor states,
+first-birth caches and accepted callback FIFO in sixteen branches. Complete
+policies run from original/middle roots; physical state checks use thirty-two
+branches. Raw effect/death point references remain intact. An explicit stable
+decision protocol exports 2,165 raw/canonical mappings, verifies the clearing
+of 1,290 removed-unit reference records and preserves live positions and
+physical groups.
+These counts include repeated snapshots of the same actors.
+
+In the archive order above, sizes/nodes are 31,013/5,105; 27,905/4,507;
+53,404/9,150; and 47,865/8,209. Muted Instant native runs take 134.37, 83.83,
+78.06 and 80.17 seconds. Live variants play sixteen cards/five EndTurns and win
+at Pyre 80; death variants play twenty-five cards/five EndTurns and win at Pyre
+79. Native and independent checks pass with zero failures, mismatches,
+unsupported or pending observations and intact original profile/log signatures.
+The inventory contains 142 binary archives: 133 battles and nine calibrations.
+Sizes and SHA-256 values are recorded in manifest.tsv; no JSON is required.
+
+The full 142-archive regression exits zero: all 133 battle suites and nine
+calibrations pass, with zero unsupported transitions. It includes fifteen
+integrated physical-position suites, twelve queued-summon suites, eight
+triggered-equipment suites, four direct effect suites, four raw/canonical
+decision mapping suites and 116 independently compared summon damage phases.
+The complete binary inventory matches the curated sizes and SHA-256 manifest.
+
+Revival with equipment/child summons, Horde merging/cloning, broader relic/room
+effects, special Boss/Pyre behavior and complete optimal search remain unfinished.

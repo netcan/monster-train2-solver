@@ -7,7 +7,8 @@ namespace MonsterTrain2Poju.Model
     internal static class BattlePreviewModel
     {
         // The installed game's preview does not guard SetAttackDamageDealt with PreviewMode.
-        // Each room is simulated on copies, and only that observed statistic crosses back.
+        // Room units are copied, while source card caches also retain native
+        // preview writes. Their weak references resolve to the restored live units.
         internal static TrainCombatResult Refresh(TrainCombatState source)
         {
             CombatContext? context = source.Context;
@@ -18,6 +19,17 @@ namespace MonsterTrain2Poju.Model
             var overwrittenSummons = new HashSet<(int UnitId, int TriggerId, int EffectIndex)>();
             int firstPreviewId = context.NextUnitId ?? int.MaxValue;
             bool previewBirth = false;
+            var originalUnits = source.Rooms.SelectMany(room => room.Units).Where(unit => unit.Health > 0)
+                .Select(unit => unit.Id).ToHashSet();
+            void CarryRoomCaches(CombatContext from)
+            {
+                foreach (CardInstanceState original in context.CardRegistry ?? context.CardInstances ?? Array.Empty<CardInstanceState>())
+                {
+                    IReadOnlyList<int>? cache = from.FindCard(original.InstanceId)?.PlayedRoomUnitIds;
+                    if (original.PlayedRoomUnitIds != null && cache != null)
+                        context = context.WithCard(original.WithPlayedRoomUnits(cache.Where(originalUnits.Contains).ToArray()));
+                }
+            }
             void ObserveSummons(IEnumerable<CombatUnit> units, CombatContext? after)
             {
                 previewBirth |= after?.NextUnitId > firstPreviewId;
@@ -36,6 +48,7 @@ namespace MonsterTrain2Poju.Model
             if (!preDiscard.Supported) return new TrainCombatResult(null, RoomOutcome.Unsupported,
                 Array.Empty<RoomCombatResult>(), "Battle preview: " + preDiscard.UnsupportedReason);
             CombatContext previewContext = preDiscard.State!.Context!;
+            CarryRoomCaches(previewContext);
             ObserveSummons(preDiscard.State.Rooms.SelectMany(room => room.Units), previewContext);
             foreach (RoomCombatState room in preDiscard.State.Rooms.Reverse())
             {
@@ -44,8 +57,16 @@ namespace MonsterTrain2Poju.Model
                 if (!preview.Supported) return new TrainCombatResult(null, RoomOutcome.Unsupported,
                     Array.Empty<RoomCombatResult>(), "Battle preview: " + preview.UnsupportedReason);
                 ObserveSummons(preview.State!.Units.Concat(preview.RetainedUnits), preview.State.Context);
+                CarryRoomCaches(preview.State.Context!);
+                foreach (CardInstanceState card in previewContext.CardRegistry ?? previewContext.CardInstances ?? Array.Empty<CardInstanceState>())
+                {
+                    IReadOnlyList<int>? cache = preview.State.Context!.FindCard(card.InstanceId)?.PlayedRoomUnitIds;
+                    if (card.PlayedRoomUnitIds != null && cache != null)
+                        previewContext = previewContext.WithCard(card.WithPlayedRoomUnits(cache));
+                }
                 previewContext = previewContext.WithStatistics(previewContext.Statistics!.WithLastAttackDamage(preview.State!.Context!.Statistics!.LastAttackDamageDealt));
                 if (context.IsolatedBattlePreview == true) previewContext = previewContext.WithBattleRng(preview.State!.Context!.BattleRng);
+                if (preview.RetainedUnits.Any(unit => unit.Health <= 0 && (unit.EndsBattleOnDeath || unit.IsPyre))) break;
             }
             context = context.WithStatistics(context.Statistics.WithLastAttackDamage(previewContext.Statistics!.LastAttackDamageDealt));
             // Native preview births overwrite shared weak references. Their temporary

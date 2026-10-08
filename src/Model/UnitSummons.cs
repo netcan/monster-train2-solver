@@ -113,7 +113,7 @@ namespace MonsterTrain2Poju.Model
                 .Select(unit => new RoomCombatModel.QueuedCharacterTrigger(source.RoomIndex, unit, "AfterSpawnEnchant")).ToList();
             if (isCardless)
                 queue.AddRange(result.State.Units.Where(unit => unit.Team == CombatTeam.Player && unit.Id != spawned.Id)
-                    .OrderBy(unit => unit.Id).Select(unit => new RoomCombatModel.QueuedCharacterTrigger(source.RoomIndex, unit,
+                    .Select(unit => new RoomCombatModel.QueuedCharacterTrigger(source.RoomIndex, unit,
                         "CardMonsterPlayed", lastSpawnedOverrideUnitId: spawned.Id)));
             bool drained;
             if (enqueue != null) { foreach (var queued in queue) enqueue(queued); drained = true; }

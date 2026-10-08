@@ -92,7 +92,8 @@ namespace MonsterTrain2Poju.Model
                 if (!preview.Supported) return Unsupported(preview.UnsupportedReason!);
                 train = preview.State!; context = train.Context!;
             }
-            if (source.CanonicalDecisionReferences) train = TrainCombatModel.ProcessRemovals(train);
+            if (source.CanonicalPhysicalReferences) train = TrainCombatModel.CompleteFrameRemovals(train);
+            else if (source.CanonicalDecisionReferences) train = TrainCombatModel.ProcessRemovals(train);
             EnemySpawnState old = source.Spawn;
             var spawn = new EnemySpawnState(train, old.Waves, old.SelectedGroups, old.Phase, old.Looping, old.Rng, train.Context?.NextUnitId ?? old.NextUnitId,
                 old.Treasures, old.TreasuresRemaining, old.TreasureEnabled, old.FirstTreasureTurn, old.FirstTreasureRoom,
@@ -102,7 +103,7 @@ namespace MonsterTrain2Poju.Model
                 source.RngStreams.Select(stream => new BattleRngStream(stream.Name, stream.Seed,
                     stream.Name == "Battle" ? context.BattleRng : stream.Name == "CardDraw" ? context.Cards.Rng : stream.State)).ToArray(),
                 context.OtherPiles ?? source.OtherPiles, source.ExternalInteractions, source.PlayRules, source.BattlePreviewEnabled,
-                source.UiRngIsolated, source.CanonicalDecisionReferences), outcome: outcome);
+                source.UiRngIsolated, source.CanonicalDecisionReferences, source.CanonicalPhysicalReferences), outcome: outcome);
         }
 
         public static IReadOnlyList<PlayCardAction> EnumerateSupportedActivations(BattleTurnState source)

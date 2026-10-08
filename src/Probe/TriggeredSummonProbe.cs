@@ -15,6 +15,11 @@ namespace MonsterTrain2Poju.Probe
         {
             public string Kind { get; set; } = "";
             public bool QueueRunning { get; set; }
+            public int SourceCardId { get; set; }
+            public int EquipmentCardId { get; set; }
+            public int TriggerStateId { get; set; }
+            public int EffectIndex { get; set; }
+            public List<RevivalProbe.Callback> Queued { get; set; } = new List<RevivalProbe.Callback>();
             public TriggeredSummonRule RuleBefore { get; set; } = null!;
             public TriggeredSummonRule? RuleAfter { get; set; }
             public CombatUnit ActorBefore { get; set; } = null!;
@@ -25,6 +30,15 @@ namespace MonsterTrain2Poju.Probe
             public string? Error { get; set; }
         }
         internal static readonly List<Record> Records = new List<Record>();
+        private static Record? current;
+        internal sealed class CacheRecord
+        {
+            public int Turn { get; set; }
+            public bool Preview { get; set; }
+            public int SourceCardId { get; set; }
+            public int[] Units { get; set; } = Array.Empty<int>();
+        }
+        internal static readonly List<CacheRecord> Caches = new List<CacheRecord>();
         internal sealed class DamageRecord
         {
             public int TargetId { get; set; }
@@ -63,6 +77,10 @@ namespace MonsterTrain2Poju.Probe
             if (!(effect.GetCardEffect() is CardEffectSpawnMonster native)) return null;
             TriggeredSummonRule rule = Definition(effect.GetSourceCardEffectData())!;
             CharacterState? spawned = native.GetSpawnedMonster();
+            // Decision projections already clear removed attacker/spawner references.
+            // The effect's weak first-birth cache follows the same rule; raw effect
+            // boundaries keep a dead object until native destruction completes.
+            if (FullBattleTrace.Active!.CanonicalDecisionCapture && spawned != null && (!spawned.IsAlive || spawned.IsDestroyed)) spawned = null;
             return new TriggeredSummonRule(Register(effect.GetParamCharacterData()), Register(effect.GetParamAdditionalCharacterData()),
                 (effect.GetParamCharacterDataPool() ?? new List<CharacterData>()).Select(Register).ToArray(),
                 effect.GetParamInt(), effect.GetParamBool(), effect.GetParentCardState() != null, rule.Upgrade, rule.Tests,
@@ -108,12 +126,17 @@ namespace MonsterTrain2Poju.Probe
         private static IEnumerator Observe(IEnumerator native, CardEffectState effect, CardEffectParams parameters)
         {
             var record = new Record(); Records.Add(record);
+            Record? previous = current; current = record;
             FullBattleTrace trace = FullBattleTrace.Active!;
             CharacterState actor = parameters.selfTarget!;
             RoomState room = parameters.GetSelectedRoom(AllGameManagers.Instance!.GetRoomManager()!)!;
             try
             {
                 record.Kind = parameters.sourceCharacterTriggerState?.GetTrigger().ToString() ?? "";
+                record.TriggerStateId = trace.TriggerStateId(actor, parameters.sourceCharacterTriggerState!);
+                record.EffectIndex = parameters.sourceCharacterTriggerState!.GetEffectStates().FindIndex(item => item == effect);
+                record.SourceCardId = parameters.playedCard == null ? 0 : trace.CardId(parameters.playedCard);
+                record.EquipmentCardId = effect.GetParentEquipment() == null ? 0 : trace.CardId(effect.GetParentEquipment()!);
                 record.QueueRunning = AllGameManagers.Instance!.GetCombatManager()!.IsRunningTriggerQueue;
                 record.RuleBefore = Capture(effect)!;
                 using (new CharacterState.SetAllowDestroyedAccessHelper(actor, onlyIfDestroyed: true)) record.ActorBefore = trace.CaptureUnit(actor);
@@ -123,7 +146,7 @@ namespace MonsterTrain2Poju.Probe
             try { while (native.MoveNext()) yield return native.Current; record.Completed = true; }
             finally
             {
-                (native as IDisposable)?.Dispose();
+                (native as IDisposable)?.Dispose(); current = previous;
                 try
                 {
                     record.RuleAfter = Capture(effect);
@@ -166,6 +189,34 @@ namespace MonsterTrain2Poju.Probe
                 }
                 catch (Exception error) { record.Error = error.ToString(); }
             }
+        }
+        [HarmonyPatch(typeof(CardState), nameof(CardState.CacheRoomStateCharactersAtTimeOfCardPlay))]
+        private static class CachePatch
+        {
+            private static void Postfix(CardState __instance)
+            {
+                FullBattleTrace? trace = FullBattleTrace.Active;
+                if (!Enabled || trace == null || !trace.KnownCards.Contains(__instance)) return;
+                var known = new HashSet<CharacterState>(trace.KnownUnits);
+                var cached = (IEnumerable<WeakRef<CharacterState>>)AccessTools.Field(typeof(CardState), "charactersInRoomAtTimeOfCardPlay").GetValue(__instance);
+                Caches.Add(new CacheRecord { Turn = AllGameManagers.Instance!.GetCombatManager()!.GetTurnCount(),
+                    Preview = AllGameManagers.Instance.GetSaveManager().PreviewMode, SourceCardId = trace.CardId(__instance),
+                    Units = cached.Select(reference => reference.Ref).Where(unit => unit != null && known.Contains(unit))
+                        .Select(unit => trace.UnitId(unit)).OrderBy(id => id).ToArray() });
+            }
+        }
+        [HarmonyPatch(typeof(CombatManager), nameof(CombatManager.QueueTrigger), new[] { typeof(CharacterState), typeof(CharacterTriggerData.Trigger),
+            typeof(CharacterState), typeof(bool), typeof(bool), typeof(CharacterState.FireTriggersData), typeof(int), typeof(CharacterTriggerState) })]
+        private static class QueuePatch
+        {
+            private static void Prefix(CombatManager __instance, out int __state) => __state = Count(__instance);
+            private static void Postfix(CombatManager __instance, CharacterState character, CharacterTriggerData.Trigger trigger,
+                CharacterState dyingCharacter, CharacterState.FireTriggersData fireTriggersData, int triggerCount, int __state)
+            {
+                if (current != null && Count(__instance) > __state && character.GetTriggers().Any(state => state.GetTrigger() == trigger))
+                    current.Queued.Add(RevivalProbe.CaptureCallback(character, trigger, dyingCharacter, fireTriggersData, triggerCount));
+            }
+            private static int Count(CombatManager combat) => ((ICollection)AccessTools.Property(typeof(CombatManager), "TriggerQueue").GetValue(combat)).Count;
         }
         [HarmonyPatch(typeof(CombatManager), nameof(CombatManager.ApplyDamageToTarget))]
         private static class DamagePatch

@@ -21,13 +21,13 @@ namespace MonsterTrain2Poju.Probe
             if (equipment)
             {
                 Set(host, "equipmentLimit", 3); Set(host, "health", 35); Set(child, "equipmentLimit", 1);
-                TriggeredSummonEquipmentScenario.Prepare(managers);
             }
             bool fresh = (Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") ?? "").EndsWith("fresh", StringComparison.Ordinal);
             var extra = DynamicUpgradeScenario.Upgrade("PojuTriggeredSpawnExtra", "c2f6ed7f-18ce-4070-b65f-7dd9f5190041",
                 1, 2, 0, 0, "armor", 1);
             CardEffectData summon = Summon(child, fresh, extra);
             CardEffectData deathSummon = Summon(child, fresh, extra);
+            if (equipment) TriggeredSummonEquipmentScenario.Prepare(managers, summon, deathSummon);
             Set(host, "triggers", host.GetTriggers().Concat(new[] {
                 Trigger(CharacterTriggerData.Trigger.OnTurnBegin, summon),
                 Trigger(CharacterTriggerData.Trigger.OnDeath, deathSummon),

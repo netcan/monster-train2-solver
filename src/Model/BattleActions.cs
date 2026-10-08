@@ -450,7 +450,8 @@ namespace MonsterTrain2Poju.Model
                 train = preview.State!; context = train.Context!;
             }
             EnemySpawnState spawn = source.Spawn;
-            if (source.CanonicalDecisionReferences) train = TrainCombatModel.ProcessRemovals(train);
+            if (source.CanonicalPhysicalReferences) train = TrainCombatModel.CompleteFrameRemovals(train);
+            else if (source.CanonicalDecisionReferences) train = TrainCombatModel.ProcessRemovals(train);
             spawn = new EnemySpawnState(train, spawn.Waves, spawn.SelectedGroups, spawn.Phase, spawn.Looping, spawn.Rng,
                 train.Context?.NextUnitId ?? nextUnitId, spawn.Treasures, spawn.TreasuresRemaining, spawn.TreasureEnabled, spawn.FirstTreasureTurn,
                 spawn.FirstTreasureRoom, spawn.Turn, spawn.ExternalInteractions, spawn.CanonicalDecisionReferences);
@@ -458,7 +459,8 @@ namespace MonsterTrain2Poju.Model
                 source.DrawPerTurn, source.ForgePoints, source.DragonsHoard, source.MoonPhase,
                 source.RngStreams.Select(stream => new BattleRngStream(stream.Name, stream.Seed,
                     stream.Name == "Battle" ? context.BattleRng : stream.Name == "CardDraw" ? context.Cards.Rng : stream.State)).ToArray(),
-                piles, source.ExternalInteractions, source.PlayRules, source.BattlePreviewEnabled, source.UiRngIsolated, source.CanonicalDecisionReferences), outcome: outcome);
+                piles, source.ExternalInteractions, source.PlayRules, source.BattlePreviewEnabled, source.UiRngIsolated,
+                source.CanonicalDecisionReferences, source.CanonicalPhysicalReferences), outcome: outcome);
         }
 
         // Enumerates the implemented legal actions. Unsupported hand cards remain visible to the caller.

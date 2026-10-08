@@ -4,11 +4,30 @@ using MonsterTrain2Poju.Model;
 
 internal static class BattleSpawnPointChecks
 {
+    private static void DecisionReferences(FixtureValue fixture)
+    {
+        if (!fixture.TryGetProperty("DecisionSpawnPoints", out var decisions) || decisions.GetArrayLength() == 0) return;
+        int removed = 0;
+        foreach (var sample in decisions.EnumerateArray())
+        {
+            var raw = sample.GetProperty("Raw").Deserialize<BattleSpawnPoints>()!;
+            var canonical = sample.GetProperty("Canonical").Deserialize<BattleSpawnPoints>()!;
+            var living = sample.GetProperty("LivingUnitIds").Deserialize<int[]>()!.ToHashSet();
+            var expected = new BattleSpawnPoints(raw.Groups, raw.Units.Select(unit => living.Contains(unit.UnitId) ? unit :
+                new UnitSpawnPointState(unit.UnitId, null, null, unit.OuterBoss, unit.SpawnedInPreview)).ToArray());
+            Require(JsonSerializer.Serialize(canonical) == JsonSerializer.Serialize(expected),
+                "Decision normalization changed live positions, group order or retained identity metadata.");
+            removed += raw.Units.Count(unit => !living.Contains(unit.UnitId) && (unit.Current != null || unit.LastKnown != null));
+        }
+        Console.WriteLine($"NATIVE-DECISION-SPAWN-POINT-CHECKS PASS: {decisions.GetArrayLength()} complete raw/canonical mappings, " +
+            $"{removed} removed object references, preserved live actors and unchanged physical groups.");
+    }
     internal static void Native(FixtureValue fixture)
     {
         var samples = fixture.GetProperty("Stages").EnumerateArray().ToArray();
         var first = samples[0].GetProperty("Before").Deserialize<RoomCombatState>()!;
         if (first.Context?.SpawnPoints == null) return;
+        DecisionReferences(fixture);
         int contexts = 0, removals = 0;
         foreach (var sample in samples)
         {
