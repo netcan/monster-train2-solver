@@ -23,6 +23,7 @@ namespace MonsterTrain2Poju.Probe
             public int ActorId { get; set; }
             public int SourceCardId { get; set; }
             public int AttackerId { get; set; }
+            public CombatUnit? Attacker { get; set; }
             public bool QueueRunning { get; set; }
             public int AutomaticQueueDeferrals { get; set; }
             public RoomCombatState Before { get; set; } = null!;
@@ -33,6 +34,7 @@ namespace MonsterTrain2Poju.Probe
             public string? Error { get; set; }
         }
         internal static readonly List<Record> Records = new List<Record>();
+        internal static bool Enabled => RevivalScenario.Enabled || TriggeredSummonScenario.Revival;
         private static Record? current;
         internal static Callback CaptureCallback(CharacterState actor, CharacterTriggerData.Trigger trigger,
             CharacterState? dying, CharacterState.FireTriggersData? data, int count) => new Callback {
@@ -47,6 +49,9 @@ namespace MonsterTrain2Poju.Probe
                 record = new Record { Label = RevivalScenario.Label ?? "natural:revival", ActorId = trace.UnitId(actor),
                     SourceCardId = source == null ? 0 : trace.CardId(source), AttackerId = attacker == null ? 0 : trace.UnitId(attacker),
                     QueueRunning = AllGameManagers.Instance!.GetCombatManager()!.IsRunningTriggerQueue, Before = Before(trace, room, actor) };
+                if (attacker != null)
+                    using (new CharacterState.SetAllowDestroyedAccessHelper(attacker, onlyIfDestroyed: true))
+                        record.Attacker = trace.CaptureUnit(attacker);
                 Records.Add(record); current = record;
             }
             catch (Exception error) { trace.CaptureFailure(error); }
@@ -73,7 +78,7 @@ namespace MonsterTrain2Poju.Probe
         private static class RevivePatch
         {
             private static void Postfix(CharacterState __instance, CardState damageSourceCard, CharacterState attacker, ref IEnumerator __result)
-            { if (RevivalScenario.Enabled && FullBattleTrace.Active != null && !AllGameManagers.Instance!.GetSaveManager().PreviewMode)
+            { if (Enabled && FullBattleTrace.Active != null && !AllGameManagers.Instance!.GetSaveManager().PreviewMode)
                     __result = Observe(__result, __instance, damageSourceCard, attacker); }
         }
         [HarmonyPatch(typeof(CombatManager), nameof(CombatManager.QueueTrigger), new[] { typeof(CharacterState), typeof(CharacterTriggerData.Trigger),

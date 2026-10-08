@@ -228,7 +228,7 @@ namespace MonsterTrain2Poju.Model
             var changed = new CardInstanceState(card.InstanceId, card.DataId, card.Permanent,
                 UnitModifierModel.Add(card.Temporary, upgrade), card.LastPlayedCost, card.LastForgedAmount, card.PlayCount,
                 card.ExternalInteractions, card.EffectCounters, card.DamageScalingTraits, card.StatusScalingTraits,
-                card.UnitUpgradeScalingTraits, card.CapacityScalingTraits, card.EquippedUnitId, card.PlayedRoomUnitIds);
+                card.UnitUpgradeScalingTraits, card.CapacityScalingTraits, card.EquippedUnitId, card.PlayedRoomUnitIds, card.RawPlayedRoomUnitIds);
             var state = new RoomCombatState(applied.State.RoomIndex, applied.State.Deployment, applied.State.Units,
                 applied.State.ExternalInteractions, applied.State.Context.WithCard(changed), applied.State.Preview);
             return new RoomCombatResult(state, applied.Outcome, applied.Rounds, applied.Events.ToList(),

@@ -80,7 +80,8 @@ namespace MonsterTrain2Poju.Model
                 CardModifiers.Empty(), 0, 0, 0, creation.ExternalInteractions, creation.EffectCounters,
                 creation.DamageScalingTraits, creation.StatusScalingTraits, creation.UnitUpgradeScalingTraits,
                 creation.CapacityScalingTraits, creation.EquippedUnitId,
-                source.CardRegistry.Any(item => item.PlayedRoomUnitIds != null) ? Array.Empty<int>() : null);
+                source.CardRegistry.Any(item => item.PlayedRoomUnitIds != null) ? Array.Empty<int>() : null,
+                source.CardRegistry.Any(item => item.RawPlayedRoomUnitIds != null) ? Array.Empty<int>() : null);
             string? error = CardModifierModel.UnsupportedReason(card);
             if (error != null) return Unsupported(error);
             return new CardGenerationResult(source.WithCardRegistry(source.CardRegistry.Concat(new[] { card }).ToArray())
@@ -107,7 +108,8 @@ namespace MonsterTrain2Poju.Model
             var clone = new CardInstanceState(source.NextCardId, creation.DataId, permanent, temporary, 0, 0, 0,
                 creation.ExternalInteractions, creation.EffectCounters, creation.DamageScalingTraits, creation.StatusScalingTraits,
                 creation.UnitUpgradeScalingTraits, creation.CapacityScalingTraits, creation.EquippedUnitId,
-                copying.PlayedRoomUnitIds == null ? null : Array.Empty<int>());
+                copying.PlayedRoomUnitIds == null ? null : Array.Empty<int>(),
+                copying.RawPlayedRoomUnitIds == null ? null : Array.Empty<int>());
             error = CardModifierModel.UnsupportedReason(clone);
             if (error != null) return Unsupported(error);
             CombatContext context = source.WithCardRegistry(source.CardRegistry.Concat(new[] { clone }).ToArray())
@@ -137,7 +139,8 @@ namespace MonsterTrain2Poju.Model
                 CardModifiers permanent = creation.StartingModifiers, temporary = CardModifiers.Empty();
                 CardInstanceState candidate = new(context.NextCardId, creation.DataId, permanent, temporary, 0, 0, 0,
                     creation.ExternalInteractions, creation.EffectCounters, creation.DamageScalingTraits, creation.StatusScalingTraits, creation.UnitUpgradeScalingTraits, creation.CapacityScalingTraits, creation.EquippedUnitId,
-                    context.CardRegistry?.Any(card => card.PlayedRoomUnitIds != null) == true ? Array.Empty<int>() : null);
+                    context.CardRegistry?.Any(card => card.PlayedRoomUnitIds != null) == true ? Array.Empty<int>() : null,
+                    context.CardRegistry?.Any(card => card.RawPlayedRoomUnitIds != null) == true ? Array.Empty<int>() : null);
                 string? error = CardModifierModel.UnsupportedReason(candidate);
                 if (error != null) return Unsupported(error);
                 if (rule.Upgrade != null)
@@ -195,7 +198,8 @@ namespace MonsterTrain2Poju.Model
                 }
                 candidate = new CardInstanceState(card.InstanceId, card.DataId, permanent, temporary, 0, 0, 0,
                     creation.ExternalInteractions, creation.EffectCounters, creation.DamageScalingTraits, creation.StatusScalingTraits, creation.UnitUpgradeScalingTraits, creation.CapacityScalingTraits, creation.EquippedUnitId,
-                    context.CardRegistry?.Any(card => card.PlayedRoomUnitIds != null) == true ? Array.Empty<int>() : null);
+                    context.CardRegistry?.Any(card => card.PlayedRoomUnitIds != null) == true ? Array.Empty<int>() : null,
+                    context.CardRegistry?.Any(card => card.RawPlayedRoomUnitIds != null) == true ? Array.Empty<int>() : null);
                 context = new CombatContext(new CardCycleState(hand, draw, discard, context.Cards.Rng, context.Cards.DrawModifier,
                     context.Cards.ExternalInteractions, context.Cards.BonusDraw), rng, context.Gold, checked(context.NextCardId + 1), context.MaxHandSize,
                     context.StatusRules, context.Statistics?.TrackCards(new[] { card.InstanceId }),

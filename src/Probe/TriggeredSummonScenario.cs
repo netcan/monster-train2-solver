@@ -8,6 +8,7 @@ namespace MonsterTrain2Poju.Probe
 {
     internal static class TriggeredSummonScenario
     {
+        internal static bool Revival => (Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") ?? "").Contains("-revival");
         internal static void Prepare(AllGameManagers managers, ManualLogSource log)
         {
             SaveManager save = managers.GetSaveManager();
@@ -22,6 +23,13 @@ namespace MonsterTrain2Poju.Probe
             {
                 Set(host, "equipmentLimit", 3); Set(host, "health", 35); Set(child, "equipmentLimit", 1);
             }
+            if (Revival)
+            {
+                Set(host, "startingStatusEffects", host.GetStartingStatusEffects().Concat(new[] {
+                    new StatusEffectStackData { statusId = "undying", count = 2 } }).ToArray());
+                Set(child, "startingStatusEffects", child.GetStartingStatusEffects().Concat(new[] {
+                    new StatusEffectStackData { statusId = "undying", count = 1 } }).ToArray());
+            }
             bool fresh = (Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") ?? "").EndsWith("fresh", StringComparison.Ordinal);
             var extra = DynamicUpgradeScenario.Upgrade("PojuTriggeredSpawnExtra", "c2f6ed7f-18ce-4070-b65f-7dd9f5190041",
                 1, 2, 0, 0, "armor", 1);
@@ -32,7 +40,8 @@ namespace MonsterTrain2Poju.Probe
                 Trigger(CharacterTriggerData.Trigger.OnTurnBegin, summon),
                 Trigger(CharacterTriggerData.Trigger.OnDeath, deathSummon),
                 Trigger(CharacterTriggerData.Trigger.CardMonsterPlayed, Gold(3)),
-                Trigger(CharacterTriggerData.Trigger.OnSpawn, Gold(1)) }).ToList());
+                Trigger(CharacterTriggerData.Trigger.OnSpawn, Gold(1)) }).Concat(Revival ? new[] {
+                Trigger(CharacterTriggerData.Trigger.OnReanimated, Gold(12)) } : Array.Empty<CharacterTriggerData>()).ToList());
             Set(child, "triggers", child.GetTriggers().Concat(new[] {
                 Trigger(CharacterTriggerData.Trigger.OnSpawn, Gold(2)),
                 Trigger(CharacterTriggerData.Trigger.OnUnscaledSpawn, Gold(4)),
@@ -40,7 +49,8 @@ namespace MonsterTrain2Poju.Probe
                 Trigger(CharacterTriggerData.Trigger.OnEquipmentAdded, Gold(8)),
                 Trigger(CharacterTriggerData.Trigger.OnEquipmentAddedToAny, Gold(9)),
                 Trigger(CharacterTriggerData.Trigger.OnEquipmentRemoved, Gold(10)) } : Array.Empty<CharacterTriggerData>()).Concat(new[] {
-                Trigger(CharacterTriggerData.Trigger.CardMonsterPlayed, Gold(5)) }).ToList());
+                Trigger(CharacterTriggerData.Trigger.CardMonsterPlayed, Gold(5)) }).Concat(Revival ? new[] {
+                Trigger(CharacterTriggerData.Trigger.OnReanimated, Gold(11)) } : Array.Empty<CharacterTriggerData>()).ToList());
             foreach (CardState card in managers.GetCardManager()!.GetAllCards(new List<CardState>()).Where(card => card.GetCardDataID() == hostCard.GetID()))
                 card.Setup(hostCard, save);
             if ((Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") ?? "").Contains("death"))

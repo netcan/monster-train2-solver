@@ -432,7 +432,7 @@ namespace MonsterTrain2Poju.Probe
             string temporary = path + ".tmp";
             var snapshot = new
             {
-                Schema = 89,
+                Schema = 92,
                 GameVersion = Application.version,
                 GameModuleMvid = typeof(CardState).Assembly.ManifestModule.ModuleVersionId,
                 NativeWon,
@@ -486,6 +486,7 @@ namespace MonsterTrain2Poju.Probe
                 Revivals = RevivalProbe.Records,
                 SummonSourceCaches = TriggeredSummonProbe.Caches,
                 DecisionSpawnPoints = BattleSpawnPointProbe.Decisions,
+                DecisionRoomCaches = CardModifierProbe.DecisionCaches,
                 HarvestOperations = HarvestScenario.Operations,
                 HordeDeathOperations = HordeDeathScenario.Operations,
                 HordeRemovalOperations = HordeRemovalScenario.Records,

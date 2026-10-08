@@ -5139,3 +5139,80 @@ binary inventory matches its sizes and SHA-256 manifest.
 These integrations do not finish the whole battle simulator. Revival combined
 with equipment/child summons, Horde merging/cloning, further relic and room
 effects, special Boss/Pyre mechanics and broader card-effect coverage remain.
+
+## Revival, child summons and retained card room membership
+
+Schema 91 distinguishes CardInstanceState.RawPlayedRoomUnitIds from the current
+PlayedRoomUnitIds query view. Native CardState keeps weak references in its
+cached room list; CharacterInRoomAtTimeOfCardPlay masks dead/destroyed actors
+without deleting those entries. A zero-HP actor can therefore disappear from
+the query and reappear when ReviveFromUndyingStatus restores one HP. The room
+model now recomputes this view from retained membership after life changes.
+Modifier, equipment, discard, upgrade and resource transitions preserve both
+lists; generated/cloned/ability cards begin with empty captured caches.
+Revival rejects an input that captured a query view but omitted its raw cache,
+because that view alone cannot recover masked references.
+
+Battle previews carry raw membership back to restored original units and remove
+temporary preview-born references. Stable decision captures also clear removed
+members, using the same explicit logical reference lifetime as physical points.
+DecisionRoomCaches records native raw memberships, captured memberships and
+independent living-unit IDs so the projection can be checked. Effect and revival
+API inputs keep the raw zero-HP references needed for restoration.
+
+The new authored scenario extends real equipment-owned summons: the host starts
+with two undying stacks, children with one, and both receive reanimated rewards.
+The existing real Tower damage card and normal policy cause the deaths; no
+standalone revival setup operations run. Native revival restores HP before its
+OnReanimated and OnDeath callbacks, so the latter can copy a living host's
+equipment while leaving the originals attached. Copied/fresh source variants
+use Run-FullBattleProbe.ps1 -Policy units-spells-and-junk
+-TriggeredSummonsRevival, optionally adding -TriggeredSummonsFresh.
+
+Queued death recording now resolves an actor's last-known room after physical
+removal. Falling back to floor zero hid child births on another floor and gave
+the standalone phase model an incorrect input; an actor without either room
+is now a capture failure. Complete train/card/turn checks remain independent
+of these additional phase recordings.
+
+Schema 92 additionally captures each revival's original attacker. The native
+fresh-source recording includes a zero-HP attacker omitted from the alive-only
+room snapshot while it still occupies its physical slot. ApplyRevival accepts
+an explicit retained attacker snapshot without inserting it into the visible
+unit list or changing its physical slot; missing, mismatched or duplicate
+references reject. The same reference preserves sacrifice-card attribution.
+Independent checks compare native room/actor states and accepted callback FIFO,
+reject missing raw memberships and attacker snapshots, and verify immutable
+parents across sixteen native and thirty-two isolated model branches.
+
+Two new direct binary archives cover this integration:
+
+| Fixture | Schema | Bytes / nodes | Plays / EndTurns | Final Pyre | Revivals / callback phases | Native capture seconds |
+| --- | --- | --- | --- | --- | --- | --- |
+| full-battle-triggered-summons-equipment-owned-revival.mt2f | 91 | 85,318 / 15,420 | 32 / 7 | 76 | 41 / 60 | 113.50 |
+| full-battle-triggered-summons-equipment-owned-revival-fresh.mt2f | 92 | 73,284 / 12,902 | 31 / 7 | 75 | 43 / 61 | 110.98 |
+
+Both muted Instant native runs win with zero capture failures, differences,
+unsupported transitions or pending records, and preserve original profile/log
+signatures. Independent complete policies also match from original/middle roots
+in sixteen branches; physical states compare in thirty-two branches. There are
+twelve equipped-host and sixty-four cardless-child revival boundaries, ten
+equipment-owned OnDeath birth applications from revived live hosts, forty-seven
+summon-effect boundaries and 146 additional independently checked damage phases.
+The two archives retain 534 restored room-cache membership observations and
+92,140 raw/canonical cache mappings; these counts include repeated snapshots.
+SHA-256 values and sizes are in tests/fixtures/manifest.tsv. Timings are native
+capture wall times with instrumentation, not model or search benchmarks.
+
+The complete Check-Models.ps1 regression exits zero across all 144 binary
+archives: 135 battles and nine calibrations. It includes seventeen integrated
+physical-position suites, fourteen queued-summon suites, ten triggered-equipment
+suites, six direct summon-effect suites, six decision reference mapping suites,
+one standalone revival suite and both new revival/summon suites. All 262
+captured summon damage phases match independently. There are no nonzero
+unsupported transition counts, and the complete archive inventory matches its
+sizes and SHA-256 manifest, without source JSON dependencies.
+
+Horde merging/cloning, wider relic and room effects, special Boss/Pyre mechanics
+and broader card-effect coverage remain unfinished; the complete battle
+simulator is still in progress.

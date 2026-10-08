@@ -13,6 +13,7 @@ param(
     [switch] $TriggeredSummonsDeath,
     [switch] $TriggeredSummonsEquipment,
     [switch] $TriggeredSummonsEquipmentOwned,
+    [switch] $TriggeredSummonsRevival,
     [switch] $NumericUpgrades,
     [switch] $DynamicUpgrades,
     [switch] $SacrificeUpgrades,
@@ -126,6 +127,8 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+if ($Revival -and $TriggeredSummonsRevival) { throw 'Choose standalone revival or triggered summon revival.' }
+if ($TriggeredSummonsRevival) { $TriggeredSummonsEquipmentOwned = $true; $TriggeredSummonsDeath = $true }
 if ($TriggerRepeats) { $ConditionalTriggers = $true }
 if ($TriggeredSummonsEquipmentOwned) { $TriggeredSummonsEquipment = $true }
 if ($TriggeredSummonsFresh -or $TriggeredSummonsDeath -or $TriggeredSummonsEquipment) { $TriggeredSummons = $true }
@@ -196,6 +199,9 @@ $environment = @{
     MT2_PROBE_STATISTIC_OVERFLOW = $(if ($StatisticOverflow) { '1' } else { '0' })
     MT2_PROBE_HORDE_STATS = $(if ($HordeStats) { '1' } else { '0' })
     MT2_PROBE_TRIGGER_REPEATS = $(if ($TriggerRepeats) { '1' } else { '0' })
+}
+if ($TriggeredSummonsRevival) {
+    $environment['MT2_PROBE_MODIFIERS'] = 'triggered-summon-equipment-owned-death-revival' + $(if ($TriggeredSummonsFresh) { '-fresh' } else { '' })
 }
 if ($Sentry -or $SentryLethal) {
     $environment['MT2_PROBE_MODIFIERS'] = $(if ($SentryLethal) { 'sentry-lethal' } else { 'sentry' })
@@ -1059,6 +1065,9 @@ $queuedEquipmentAttachments = 0
 $ownedSummonApplications = 0
 $ownedSummonBirths = 0
 $ownedSummonDyingBirths = 0
+$ownedSummonRevivedBirths = 0
+$summonRevivalHostSamples = 0
+$summonRevivalChildSamples = 0
 if ($TriggeredSummonsEquipment) {
     $equipped = @($trace.TriggeredSummons | Where-Object {
         @($_.ActorBefore.EquipmentCards).Count -gt 0 -and $_.After.Context.NextUnitId -gt $_.Before.Context.NextUnitId
@@ -1077,10 +1086,13 @@ if ($TriggeredSummonsEquipmentOwned) {
     $ownedBirths = @($owned | Where-Object { $_.After.Context.NextUnitId -gt $_.Before.Context.NextUnitId })
     $ownedSummonBirths = $ownedBirths.Count
     $ownedSummonDyingBirths = @($ownedBirths | Where-Object { $_.ActorBefore.Health -le 0 }).Count
+    $ownedSummonRevivedBirths = @($ownedBirths | Where-Object { $_.Kind -eq 'OnDeath' -and $_.ActorBefore.Health -gt 0 -and
+        $_.ActorBefore.Id -in @($trace.Revivals.ActorId) }).Count
     if ($owned.Count -eq 0 -or $ownedBirths.Count -eq 0 -or @($owned | Where-Object {
         $_.SourceCardId -ne $_.ActorBefore.SpawnerCardId -or $_.SourceCardId -eq $_.EquipmentCardId -or
         $_.RuleBefore.HasParentCard -or $null -eq $_.Queued -or $_.EffectIndex -lt 0
-    }).Count -gt 0 -or ($TriggeredSummonsDeath -and $ownedSummonDyingBirths -eq 0)) {
+    }).Count -gt 0 -or ($TriggeredSummonsDeath -and -not $TriggeredSummonsRevival -and $ownedSummonDyingBirths -eq 0) -or
+        ($TriggeredSummonsRevival -and $ownedSummonRevivedBirths -eq 0)) {
         throw 'Equipment-owned native summon source, queue or live/death coverage incomplete.'
     }
 }
@@ -1094,6 +1106,19 @@ if ($Revival) {
         throw 'Revival coverage requires seven native operations and both direct and queued revivals.'
     }
 }
+if ($TriggeredSummonsRevival) {
+    $revivals = @($trace.Revivals)
+    $equippedHostRevivals = @($revivals | Where-Object { @($_.AfterActor.EquipmentCards).Count -gt 0 -and
+        @($_.AfterActor.Triggers | ForEach-Object { $_.Effects } | Where-Object { $null -ne $_.Summon }).Count -gt 0 })
+    $childRevivals = @($revivals | Where-Object { @($_.AfterActor.Statuses | Where-Object Id -eq 'cardless').Count -gt 0 -and
+        @($_.AfterActor.Triggers | ForEach-Object { $_.Effects } | Where-Object { $null -ne $_.Summon }).Count -eq 0 })
+    $summonRevivalHostSamples = $equippedHostRevivals.Count
+    $summonRevivalChildSamples = $childRevivals.Count
+    if ($equippedHostRevivals.Count -lt 2 -or $childRevivals.Count -eq 0 -or $ownedSummonRevivedBirths -eq 0 -or
+        @($revivals | Where-Object { -not $_.Completed -or $null -eq $_.After -or $null -ne $_.Error -or $_.AutomaticQueueDeferrals -ne 0 }).Count -gt 0) {
+        throw 'Triggered summon revival requires equipped host/child revivals and live-source death births without queue deferrals.'
+    }
+}
 $result = [pscustomobject]@{
     RevivalOperations = @($trace.RevivalOperations).Count
     Revivals = @($trace.Revivals).Count
@@ -1102,6 +1127,9 @@ $result = [pscustomobject]@{
     OwnedSummonApplications = $ownedSummonApplications
     OwnedSummonBirths = $ownedSummonBirths
     OwnedSummonDyingBirths = $ownedSummonDyingBirths
+    OwnedSummonRevivedBirths = $ownedSummonRevivedBirths
+    SummonRevivalHostSamples = $summonRevivalHostSamples
+    SummonRevivalChildSamples = $summonRevivalChildSamples
     QueuedEquipmentAttachments = $queuedEquipmentAttachments
     TriggeredSummonCoverage = $triggeredSummonCoverage
     TriggeredSummonBirths = $triggeredSummonBirths

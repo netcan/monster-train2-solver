@@ -25,9 +25,16 @@ namespace MonsterTrain2Poju.Model
             {
                 foreach (CardInstanceState original in context.CardRegistry ?? context.CardInstances ?? Array.Empty<CardInstanceState>())
                 {
-                    IReadOnlyList<int>? cache = from.FindCard(original.InstanceId)?.PlayedRoomUnitIds;
+                    CardInstanceState? captured = from.FindCard(original.InstanceId);
+                    IReadOnlyList<int>? cache = captured?.RawPlayedRoomUnitIds ?? captured?.PlayedRoomUnitIds;
                     if (original.PlayedRoomUnitIds != null && cache != null)
-                        context = context.WithCard(original.WithPlayedRoomUnits(cache.Where(originalUnits.Contains).ToArray()));
+                    {
+                        int[] restored = cache.Where(originalUnits.Contains).ToArray();
+                        if (!restored.SequenceEqual(original.PlayedRoomUnitIds) || original.RawPlayedRoomUnitIds != null &&
+                            !restored.SequenceEqual(original.RawPlayedRoomUnitIds))
+                            context = context.WithCard(original.WithRoomCacheState(restored,
+                                original.RawPlayedRoomUnitIds == null ? null : restored));
+                    }
                 }
             }
             void ObserveSummons(IEnumerable<CombatUnit> units, CombatContext? after)
@@ -60,9 +67,11 @@ namespace MonsterTrain2Poju.Model
                 CarryRoomCaches(preview.State.Context!);
                 foreach (CardInstanceState card in previewContext.CardRegistry ?? previewContext.CardInstances ?? Array.Empty<CardInstanceState>())
                 {
-                    IReadOnlyList<int>? cache = preview.State.Context!.FindCard(card.InstanceId)?.PlayedRoomUnitIds;
-                    if (card.PlayedRoomUnitIds != null && cache != null)
-                        previewContext = previewContext.WithCard(card.WithPlayedRoomUnits(cache));
+                    CardInstanceState? captured = preview.State.Context!.FindCard(card.InstanceId);
+                    if (card.PlayedRoomUnitIds != null && captured?.PlayedRoomUnitIds != null &&
+                        (!card.PlayedRoomUnitIds.SequenceEqual(captured.PlayedRoomUnitIds) ||
+                            card.RawPlayedRoomUnitIds != null && !card.RawPlayedRoomUnitIds.SequenceEqual(captured.RawPlayedRoomUnitIds!)))
+                        previewContext = previewContext.WithCard(card.WithRoomCacheState(captured.PlayedRoomUnitIds, captured.RawPlayedRoomUnitIds));
                 }
                 previewContext = previewContext.WithStatistics(previewContext.Statistics!.WithLastAttackDamage(preview.State!.Context!.Statistics!.LastAttackDamageDealt));
                 if (context.IsolatedBattlePreview == true) previewContext = previewContext.WithBattleRng(preview.State!.Context!.BattleRng);

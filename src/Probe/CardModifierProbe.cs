@@ -9,6 +9,14 @@ namespace MonsterTrain2Poju.Probe
 {
     internal static class CardModifierProbe
     {
+        internal sealed class CacheDecision
+        {
+            public int CardId { get; set; }
+            public int[] Raw { get; set; } = Array.Empty<int>();
+            public int[] Captured { get; set; } = Array.Empty<int>();
+            public int[] Living { get; set; } = Array.Empty<int>();
+        }
+        internal static readonly List<CacheDecision> DecisionCaches = new List<CacheDecision>();
         [ThreadStatic] private static int upgradeDepth;
         internal static CardInstanceState[] Capture(CardManager cards, Func<CardState, int> cardId)
             => Capture(cards.GetAllCards(new List<CardState>()), cardId);
@@ -30,7 +38,7 @@ namespace MonsterTrain2Poju.Probe
                     Modifiers(card.GetCardStateModifiers()), Modifiers(card.GetTemporaryCardStateModifiers()),
                     card.GetLastPlayedCost(), card.GetLastForgedAmount(), card.GetCurrentScenarioPlayCount(), interactions,
                     Counters(card), DamageScalingProbe.Capture(card), StatusScalingProbe.Capture(card), UnitUpgradeScalingProbe.Capture(card), RoomCapacityProbe.Traits(card),
-                    FullBattleTrace.Active?.EquippedUnitId(card) ?? 0, PlayedRoomUnits(card));
+                    FullBattleTrace.Active?.EquippedUnitId(card) ?? 0, PlayedRoomUnits(card), RawPlayedRoomUnits(card));
                 CardPlayRule rule = CardModifierModel.Resolve(BattleActionProbe.Definition(data), state);
                 for (int index = 0; index < managers.GetRoomManager()!.GetNumRooms(); index++)
                     if (card.GetCost(managers.GetCardStatistics(), managers.GetMonsterManager(), managers.GetRelicManager(),
@@ -49,7 +57,7 @@ namespace MonsterTrain2Poju.Probe
                 }
                 return new CardInstanceState(state.InstanceId, state.DataId, state.Permanent, state.Temporary,
                     state.LastPlayedCost, state.LastForgedAmount, state.PlayCount,
-                    interactions.Distinct().OrderBy(value => value, StringComparer.Ordinal).ToArray(), state.EffectCounters, state.DamageScalingTraits, state.StatusScalingTraits, state.UnitUpgradeScalingTraits, state.CapacityScalingTraits, state.EquippedUnitId, state.PlayedRoomUnitIds);
+                    interactions.Distinct().OrderBy(value => value, StringComparer.Ordinal).ToArray(), state.EffectCounters, state.DamageScalingTraits, state.StatusScalingTraits, state.UnitUpgradeScalingTraits, state.CapacityScalingTraits, state.EquippedUnitId, state.PlayedRoomUnitIds, state.RawPlayedRoomUnitIds);
             }).OrderBy(card => card.InstanceId).ToArray();
         }
 
@@ -59,6 +67,21 @@ namespace MonsterTrain2Poju.Probe
             var cached = (IEnumerable<WeakRef<CharacterState>>)AccessTools.Field(typeof(CardState), "charactersInRoomAtTimeOfCardPlay").GetValue(card);
             return cached.Select(reference => reference.Ref).Where(unit => unit != null && card.CharacterInRoomAtTimeOfCardPlay(unit))
                 .Select(unit => FullBattleTrace.Active!.UnitId(unit)).OrderBy(id => id).ToArray();
+        }
+
+        private static int[]? RawPlayedRoomUnits(CardState card)
+        {
+            if (!MultiSummonScenario.Prepared && !TriggeredSummonProbe.Enabled) return null;
+            FullBattleTrace trace = FullBattleTrace.Active!;
+            var cached = (IEnumerable<WeakRef<CharacterState>>)AccessTools.Field(typeof(CardState), "charactersInRoomAtTimeOfCardPlay").GetValue(card);
+            var units = cached.Select(reference => reference.Ref).Where(unit => unit != null && !unit.SpawnedInPreviewMode).ToArray();
+            int[] raw = units.Select(trace.UnitId).OrderBy(id => id).ToArray();
+            if (!trace.CanonicalDecisionCapture) return raw;
+            int[] living = units.Where(unit => card.CharacterInRoomAtTimeOfCardPlay(unit)).Select(trace.UnitId).OrderBy(id => id).ToArray();
+            int[] liveIds = trace.KnownUnits.Where(unit => unit != null && unit.IsAlive && !unit.IsDestroyed)
+                .Select(trace.UnitId).OrderBy(id => id).ToArray();
+            DecisionCaches.Add(new CacheDecision { CardId = trace.CardId(card), Raw = raw, Captured = living, Living = liveIds });
+            return living;
         }
 
         private static CardEffectCounter[]? Counters(CardState card)

@@ -79,7 +79,14 @@ namespace MonsterTrain2Poju.Model
             CombatContext? context = source.Context;
             if (context?.LastSpawnedUnitId > 0 && !activeIds.Contains(context.LastSpawnedUnitId.Value)) context = context.WithLastSpawned(0);
             foreach (CardInstanceState card in context?.CardRegistry ?? context?.CardInstances ?? Array.Empty<CardInstanceState>())
-                if (card.EquippedUnitId > 0 && !activeIds.Contains(card.EquippedUnitId.Value)) context = context!.WithCard(card.WithEquippedUnit(0));
+            {
+                CardInstanceState updated = card;
+                if (card.EquippedUnitId > 0 && !activeIds.Contains(card.EquippedUnitId.Value)) updated = updated.WithEquippedUnit(0);
+                if (card.RawPlayedRoomUnitIds?.Any(id => !activeIds.Contains(id)) == true)
+                    updated = updated.WithRoomCacheState(card.PlayedRoomUnitIds!.Where(activeIds.Contains).ToArray(),
+                        card.RawPlayedRoomUnitIds.Where(activeIds.Contains).ToArray());
+                if (!ReferenceEquals(updated, card)) context = context!.WithCard(updated);
+            }
             return new TrainCombatState(source.Rooms.Select(room => new RoomCombatState(room.RoomIndex, room.Deployment,
                 room.Units.Select(unit => unit.WithoutRemovedAttacker(activeIds).WithTriggers(unit.Triggers.Select(trigger =>
                     trigger.WithEffects(trigger.Effects.Select(effect => effect.Summon?.FirstSpawnedUnitId > 0 &&

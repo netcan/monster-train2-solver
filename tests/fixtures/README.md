@@ -658,3 +658,42 @@ The complete binary inventory matches the curated sizes and SHA-256 manifest.
 
 Revival with equipment/child summons, Horde merging/cloning, broader relic/room
 effects, special Boss/Pyre behavior and complete optimal search remain unfinished.
+
+Two new equipment-owned revival archives add complete ordinary card/combat
+paths, preserving the original Boss and waves. Hosts start with two undying
+stacks and children with one; OnReanimated precedes OnDeath, whose live source
+copies equipment while keeping originals attached. There are no standalone
+setup revival operations or natural queue deferrals.
+
+`full-battle-triggered-summons-equipment-owned-revival.mt2f` uses schema 91,
+85,318 bytes / 15,420 nodes, and records 32 plays / seven EndTurns, final Pyre
+76, 41 revival boundaries and 60 callback phases in 113.50 native seconds.
+`full-battle-triggered-summons-equipment-owned-revival-fresh.mt2f` uses schema
+92, 73,284 bytes / 12,902 nodes, and records 31 plays / seven EndTurns, final
+Pyre 75, 43 revivals and 61 phases in 110.98 seconds. Both muted Instant native
+runs and independent complete policies pass, with zero native failures,
+differences, unsupported or pending observations and intact original profile
+and log signatures. Timings measure instrumented capture, not search speed.
+
+Raw card room-cache membership is distinct from the alive-only query view;
+zero-HP members become visible again after revival. The archives preserve 534
+restored cache observations, 92,140 independently checked raw/canonical cache
+mappings, 47 complete summon effects and 146 additional native damage phases.
+Schema 92 also retains a zero-HP attacker snapshot omitted from visible units
+while its physical slot remains occupied. Independent checks preserve
+attribution and physical references without inserting that attacker into the
+visible unit list, reject missing cache/reference data and compare states and
+accepted FIFO in parallel branches. Counts include repeated snapshots, not
+distinct actors.
+
+The inventory now contains 144 binary archives: 135 battles and nine
+calibrations. Sizes and SHA-256 values are in manifest.tsv; regression has no
+source JSON dependency. The complete Check-Models.ps1 regression exits zero:
+all 135 battles and nine calibrations pass, including seventeen integrated
+position suites, fourteen queued-summon suites, ten equipment suites, six direct
+effect suites, six decision reference suites, the standalone revival suite and
+both new revival/summon suites. All 262 native summon damage phases match, with
+zero unsupported transitions and intact complete inventory/size/SHA-256 checks.
+
+Horde merging/cloning, broader relic/room effects, special Boss/Pyre behavior
+and complete optimal search remain unfinished.

@@ -107,7 +107,7 @@ internal static class TriggeredSummonChecks
             VerifyEffect(record);
         }
         if (scenario.Contains("equipment-owned"))
-            Require(owned > 0 && (scenario.Contains("death") ? dyingOwnedBirths > 0 : liveOwnedBirths > 0),
+            Require(owned > 0 && (scenario.Contains("death") && !scenario.Contains("revival") ? dyingOwnedBirths > 0 : liveOwnedBirths > 0),
                 "Equipment-owned summons did not reach the requested live/dead birth path.");
         Parallel.For(0, 16, _ => { foreach (var record in captured) VerifyEffect(record); });
         Console.WriteLine($"NATIVE-TRIGGERED-SUMMON-EFFECT-CHECKS PASS: {captured.Length} complete effect boundaries, " +

@@ -38,11 +38,12 @@ namespace MonsterTrain2Poju.Probe
         {
             FullBattleTrace trace = FullBattleTrace.Active!; Record? record = null;
             RoomCombatModel.QueuedCharacterTrigger? queued = null;
-            RoomState room;
-            using (new CharacterState.SetAllowDestroyedAccessHelper(actor, onlyIfDestroyed: true))
-                room = actor.GetCurrentRoom() ?? AllGameManagers.Instance!.GetRoomManager()!.GetRoom(0);
+            RoomState? room = null;
             try
             {
+                using (new CharacterState.SetAllowDestroyedAccessHelper(actor, onlyIfDestroyed: true))
+                    room = actor.GetCurrentRoom(allowLastKnownRoom: true) ??
+                        throw new InvalidOperationException("A queued death actor has no captured current/last-known room.");
                 record = new Record { Label = (RevivalScenario.Label ?? DyingHordeUpgradeScenario.Label ?? HordeUpgradeScenario.Label ?? HordeDeathScenario.Label ?? HordeRemovalScenario.Label ?? HarvestScenario.Label) ?? "natural:" + kind, Kind = kind.ToString(),
                     ActorFinishedDying = actor.HasFinishedDying, ActorBeingRemoved = actor.IsBeingRemoved(),
                     CanFire = canFire, TriggerCount = triggerCount, ParamInt = data?.paramInt ?? 0, Before = trace.Capture(room), Actor = Unit(trace, actor),
@@ -59,7 +60,7 @@ namespace MonsterTrain2Poju.Probe
             finally
             {
                 (native as IDisposable)?.Dispose();
-                if (record != null)
+                if (record != null && room != null)
                 {
                     try
                     {
@@ -81,7 +82,7 @@ namespace MonsterTrain2Poju.Probe
             private static void Postfix(CharacterState __instance, CharacterTriggerData.Trigger trigger, CharacterState dyingCharacter,
                 CharacterState.FireTriggersData fireTriggersData, bool canFireTriggers, bool fromRunningTriggerQueue, int triggerCount, ref IEnumerator __result)
             {
-                if (fromRunningTriggerQueue && (RevivalScenario.Started || DyingHordeUpgradeScenario.Started || HordeUpgradeScenario.Started || HarvestScenario.Started || HordeRemovalScenario.Started || HordeDeathScenario.Started) && FullBattleTrace.Active != null &&
+                if (fromRunningTriggerQueue && (TriggeredSummonScenario.Revival || RevivalScenario.Started || DyingHordeUpgradeScenario.Started || HordeUpgradeScenario.Started || HarvestScenario.Started || HordeRemovalScenario.Started || HordeDeathScenario.Started) && FullBattleTrace.Active != null &&
                     !AllGameManagers.Instance!.GetSaveManager().PreviewMode && __instance.GetTriggers().Any(state => state.GetTrigger() == trigger &&
                         (trigger == CharacterTriggerData.Trigger.OnReanimated || trigger == CharacterTriggerData.Trigger.OnAnyHeroDeathOnFloor || trigger == CharacterTriggerData.Trigger.OnAnyMonsterDeathOnFloor || trigger == CharacterTriggerData.Trigger.OnAnyUnitDeathOnFloor || trigger == CharacterTriggerData.Trigger.OnDeath)))
                     __result = Observe(__result, __instance, dyingCharacter, trigger, fireTriggersData, canFireTriggers, triggerCount);

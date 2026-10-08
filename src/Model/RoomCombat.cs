@@ -528,15 +528,20 @@ namespace MonsterTrain2Poju.Model
             new Engine(state, new List<CombatEvent>()).ModifyUnit(changed);
 
         // The native revival API queues callbacks but leaves their execution to its caller.
-        public static RoomCombatResult ApplyRevival(RoomCombatState state, int targetId, int sourceCardId = 0, int attackerUnitId = 0)
+        public static RoomCombatResult ApplyRevival(RoomCombatState state, int targetId, int sourceCardId = 0, int attackerUnitId = 0,
+            CombatUnit? retainedAttacker = null)
         {
             string? error = Validate(state, targetId);
-            if (error != null || !state.Units.Any(unit => unit.Id == targetId) ||
-                attackerUnitId != 0 && !state.Units.Any(unit => unit.Id == attackerUnitId))
+            if (error != null || !state.Units.Any(unit => unit.Id == targetId))
                 return new RoomCombatResult(null, RoomOutcome.Unsupported, 0, new List<CombatEvent>(), error ?? "Invalid revival actor.");
+            if (retainedAttacker != null && (retainedAttacker.Id != attackerUnitId ||
+                state.Units.Any(unit => unit.Id == attackerUnitId)))
+                return new RoomCombatResult(null, RoomOutcome.Unsupported, 0, new List<CombatEvent>(), "Invalid retained revival attacker.");
+            if (attackerUnitId != 0 && retainedAttacker == null && !state.Units.Any(unit => unit.Id == attackerUnitId))
+                return new RoomCombatResult(null, RoomOutcome.Unsupported, 0, new List<CombatEvent>(), "Missing revival attacker reference.");
             var callbacks = new List<QueuedCharacterTrigger>();
             RoomCombatResult result = new Engine(state, new List<CombatEvent>(), enqueueCharacterTrigger: callbacks.Add,
-                resetPreviewTriggers: false).Revival(targetId, sourceCardId, attackerUnitId);
+                resetPreviewTriggers: false).Revival(targetId, sourceCardId, attackerUnitId, retainedAttacker);
             return new RoomCombatResult(result.State, result.Outcome, result.Rounds, result.Events.ToList(),
                 result.UnsupportedReason, callbacks, result.RetainedUnits, result.Dispatches);
         }
@@ -1438,10 +1443,11 @@ namespace MonsterTrain2Poju.Model
                 }
             }
 
-            internal RoomCombatResult Revival(int targetId, int sourceCardId, int attackerUnitId)
+            internal RoomCombatResult Revival(int targetId, int sourceCardId, int attackerUnitId, CombatUnit? retainedAttacker)
             {
-                Revive(units.FirstOrDefault(unit => unit.Source.Id == attackerUnitId),
-                    units.Single(unit => unit.Source.Id == targetId), sourceCardId);
+                WorkingUnit? attacker = units.FirstOrDefault(unit => unit.Source.Id == attackerUnitId);
+                if (attacker == null && retainedAttacker != null) attacker = new WorkingUnit(retainedAttacker) { InRoom = false };
+                Revive(attacker, units.Single(unit => unit.Source.Id == targetId), sourceCardId);
                 return Finish(RoomOutcome.Exchanged);
             }
 
@@ -1456,6 +1462,8 @@ namespace MonsterTrain2Poju.Model
             private void Revive(WorkingUnit? actor, WorkingUnit target, int sourceCardId)
             {
                 CombatUnit before = target.Freeze();
+                if ((context?.CardRegistry ?? context?.CardInstances)?.Any(card => card.PlayedRoomUnitIds != null && card.RawPlayedRoomUnitIds == null) == true)
+                { unsupportedReason = "Revival requires raw card room-cache membership."; return; }
                 if (before.DeathState == null || !before.DeathState.StatisticsListenerOnce.HasValue)
                 { unsupportedReason = "Revival requires the native death listener lifetime."; return; }
                 target.Apply(new CombatUnit(before.Id, before.AssetKey, before.Team, before.BaseAttack, 1, Math.Max(1, before.MaxHealth),
@@ -2385,10 +2393,20 @@ namespace MonsterTrain2Poju.Model
                 if (!source.Preview && context != null)
                     context = UnitStandbyModel.MarkDead(context, units.Where(unit => !unit.Alive).Select(unit => unit.Freeze()).ToArray());
                 var removedIds = new HashSet<int>(units.Where(unit => !unit.Alive || unit.Removed || unit.Despawned).Select(unit => unit.Source.Id));
-                foreach (CardInstanceState card in source.Preview || removedIds.Count == 0 ? Array.Empty<CardInstanceState>() :
-                    context?.CardRegistry ?? context?.CardInstances ?? Array.Empty<CardInstanceState>())
-                    if (card.PlayedRoomUnitIds != null && card.PlayedRoomUnitIds.Any(removedIds.Contains))
+                var localIds = units.Select(unit => unit.Source.Id).ToHashSet();
+                foreach (CardInstanceState card in context?.CardRegistry ?? context?.CardInstances ?? Array.Empty<CardInstanceState>())
+                {
+                    if (card.PlayedRoomUnitIds == null) continue;
+                    if (card.RawPlayedRoomUnitIds != null)
+                    {
+                        int[] visible = card.RawPlayedRoomUnitIds.Where(id => localIds.Contains(id) ?
+                            !removedIds.Contains(id) : card.PlayedRoomUnitIds.Contains(id)).ToArray();
+                        if (!visible.SequenceEqual(card.PlayedRoomUnitIds))
+                            context = context!.WithCard(card.WithRoomCacheState(visible, card.RawPlayedRoomUnitIds));
+                    }
+                    else if (!source.Preview && card.PlayedRoomUnitIds.Any(removedIds.Contains))
                         context = context!.WithCard(card.WithPlayedRoomUnits(card.PlayedRoomUnitIds.Where(id => !removedIds.Contains(id)).ToArray()));
+                }
                 return unsupportedReason != null
                 ? new RoomCombatResult(null, RoomOutcome.Unsupported, round, events, unsupportedReason) : new RoomCombatResult(
                 new RoomCombatState(source.RoomIndex, source.Deployment,

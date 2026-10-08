@@ -26,7 +26,7 @@ namespace MonsterTrain2Poju.Model
                     old.XCost, old.EquipmentLimit, old.UpgradeSlotCount);
                 var temporary = new CardModifiers(offsets, card.Temporary.Upgrades, card.Temporary.PersistentHealth, card.Temporary.ExternalInteractions);
                 context = context!.WithCard(new CardInstanceState(card.InstanceId, card.DataId, card.Permanent, temporary,
-                    card.LastPlayedCost, card.LastForgedAmount, card.PlayCount, card.ExternalInteractions, card.EffectCounters, card.DamageScalingTraits, card.StatusScalingTraits, card.UnitUpgradeScalingTraits, card.CapacityScalingTraits, card.EquippedUnitId, card.PlayedRoomUnitIds));
+                    card.LastPlayedCost, card.LastForgedAmount, card.PlayCount, card.ExternalInteractions, card.EffectCounters, card.DamageScalingTraits, card.StatusScalingTraits, card.UnitUpgradeScalingTraits, card.CapacityScalingTraits, card.EquippedUnitId, card.PlayedRoomUnitIds, card.RawPlayedRoomUnitIds));
             }
             var state = new RoomCombatState(source.RoomIndex, source.Deployment, source.Units, source.ExternalInteractions, context, source.Preview);
             if (amount <= 0) return new RoomCombatResult(state, RoomOutcome.Exchanged, 0, new List<CombatEvent>());
