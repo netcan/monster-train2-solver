@@ -1,6 +1,16 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
 
+if (args.Length == 2 && args[0] == "--bump-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    if (fixture.RootElement.GetProperty("ModifierScenario").GetString() != "bump" ||
+        fixture.RootElement.GetProperty("BumpOperations").GetArrayLength() == 0)
+        throw new InvalidDataException("The requested fixture has no native Bump observations.");
+    BumpChecks.Native(fixture.RootElement);
+    return;
+}
+
 const string steward = "d14a50f3-728d-43e1-87f0-ef1b013f6678";
 FixtureArchiveChecks.Run();
 var input = new CombatProjectionData

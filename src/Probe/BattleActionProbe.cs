@@ -15,6 +15,7 @@ namespace MonsterTrain2Poju.Probe
         private readonly List<Record> records = new List<Record>();
         private BattlePlayRules? rules;
         internal IReadOnlyList<Record> Records => records;
+        internal void InvalidateRules() => rules = null;
         internal int Mismatches => records.Count(record => record.Difference != null);
         internal int Unsupported => records.Count(record => !record.Predicted.Supported);
         internal BattleActionProbe(FullBattleTrace trace, UnitPlayModelProbe projection, ManualLogSource log)
@@ -129,7 +130,7 @@ namespace MonsterTrain2Poju.Probe
             }
             else if (kind == "CardEffectNULL") kind = "Null";
             else if ((data.GetCardType() == CardType.Spell || data.GetCardType() == CardType.Equipment) && effects.Length > 0 && effects.All(effect =>
-                new[] { "CardEffectRemoveStatusEffect", "CardEffectSetUnitAbility", "CardEffectRemoveAbility", "CardEffectResetCooldown", "CardEffectAdjustAbilityCooldown", "CardEffectAttachEquipment", "CardEffectRemoveEquipment", "CardEffectGainEnergy", "CardEffectAdjustEnergy", "CardEffectGainEnergyNextTurn", "CardEffectGainEnergyEveryTurn", "CardEffectDamage", "CardEffectDraw", "CardEffectDrawAdditionalNextTurn", "CardEffectAdjustRoomCapacity", "CardEffectDiscardHand", "CardEffectAddBattleCard", "CardEffectHeal", "CardEffectBuffDamage", "CardEffectDebuffDamage", "CardEffectBuffMaxHealth", "CardEffectDebuffMaxHealth", "CardEffectAddStatusEffect", "CardEffectFloorRearrange", "CardEffectAddCardUpgradeToUnits",
+                new[] { "CardEffectBump", "CardEffectRemoveStatusEffect", "CardEffectSetUnitAbility", "CardEffectRemoveAbility", "CardEffectResetCooldown", "CardEffectAdjustAbilityCooldown", "CardEffectAttachEquipment", "CardEffectRemoveEquipment", "CardEffectGainEnergy", "CardEffectAdjustEnergy", "CardEffectGainEnergyNextTurn", "CardEffectGainEnergyEveryTurn", "CardEffectDamage", "CardEffectDraw", "CardEffectDrawAdditionalNextTurn", "CardEffectAdjustRoomCapacity", "CardEffectDiscardHand", "CardEffectAddBattleCard", "CardEffectHeal", "CardEffectBuffDamage", "CardEffectDebuffDamage", "CardEffectBuffMaxHealth", "CardEffectDebuffMaxHealth", "CardEffectAddStatusEffect", "CardEffectFloorRearrange", "CardEffectAddCardUpgradeToUnits",
                     "CardEffectAddTempCardUpgradeToUnits", "CardEffectRemoveTempUpgradeFromUnit",
                     "CardEffectAddTempCardUpgradeToCardsInHand", "CardEffectAddPermanentCardUpgradeToCardsInHand" }.Contains(effect.GetEffectStateName())))
             {
@@ -148,6 +149,7 @@ namespace MonsterTrain2Poju.Probe
                             !CardTargetModel.Supports(effect.GetTargetMode().ToString())))
                         interactions.Add("Spell scaling or target filters");
                     string type = EnergyModel.IsNativeEffect(effect.GetEffectStateName()) ? EnergyEffectProbe.Type(effect) :
+                        effect.GetEffectStateName() == "CardEffectBump" ? "Bump" :
                         effect.GetEffectStateName() == "CardEffectAttachEquipment" ? "AttachEquipment" :
                         effect.GetEffectStateName() == "CardEffectRemoveEquipment" ? "RemoveEquipment" :
                         effect.GetEffectStateName() == "CardEffectDamage" ? "Damage" :
@@ -165,7 +167,7 @@ namespace MonsterTrain2Poju.Probe
                         effect.GetEffectStateName() == "CardEffectAddStatusEffect" ? "AddStatus" :
                         handUpgrade ? "HandUpgrade" : effect.GetEffectStateName() == "CardEffectRemoveTempUpgradeFromUnit" ? "RemoveUnitUpgrade" : "UnitUpgrade";
                     CardUpgradeModifier? upgrade = type == "DrawNextTurn" ? BonusDrawProbe.Upgrade(effect) : null;
-                    if (effect.GetUseIntRange() && !EnergyModel.IsEffect(type) && !new[] { "Damage", "Heal", "AddStatus", "BuffAttack", "DebuffAttack", "BuffHealth", "DebuffHealth", "Draw", "DrawNextTurn", "AdjustCapacity", "DiscardHand", "Generate" }.Contains(type))
+                    if (effect.GetUseIntRange() && !EnergyModel.IsEffect(type) && !new[] { "Bump", "Damage", "Heal", "AddStatus", "BuffAttack", "DebuffAttack", "BuffHealth", "DebuffHealth", "Draw", "DrawNextTurn", "AdjustCapacity", "DiscardHand", "Generate" }.Contains(type))
                         interactions.Add("Unimplemented integer range consumer " + type);
                     string lifetime = "";
                     if (type == "BuffHealth") lifetime = ((UnitUpgradeLifetimeTempOnly)effect.GetAdditionalParamInt1()).ToString();
@@ -243,7 +245,7 @@ namespace MonsterTrain2Poju.Probe
                 lastAttackerId: 0, statusRegistry: source.StatusRegistry, equipmentCards: source.EquipmentCards,
                 nextTriggerId: source.NextTriggerId, ability: source.Ability, statusDictionary: source.StatusDictionary,
                 abilityRules: source.AbilityRules, hordeDefinition: source.HordeDefinition, isSpawning: source.IsSpawning,
-                sacrificeCardId: source.SacrificeCardId, deathState: source.DeathState);
+                sacrificeCardId: source.SacrificeCardId, deathState: source.DeathState, bumpRules: source.BumpRules);
         }
 
         internal static CardPlayRule BirthDefinition(CardData data, CharacterData monster, bool sourceAbsent = false)
@@ -287,13 +289,13 @@ namespace MonsterTrain2Poju.Probe
 
         internal static bool TriggeredVfx(StatusEffectData rule, float facing) => rule.GetOnTriggeredVFX()?.GetVfxPrefab(facing) != null;
 
-        internal void Begin(PlayCardAction action)
+        internal void Begin(PlayCardAction action, bool scenarioAction = false)
         {
             try
             {
                 if (records.Any(record => record.Actual == null)) throw new InvalidOperationException("Previous card action is pending.");
                 BattleTurnState before = trace.CaptureDecision();
-                records.Add(new Record { Index = records.Count, Before = before, Action = action,
+                records.Add(new Record { Index = records.Count, ScenarioAction = scenarioAction, Before = before, Action = action,
                     Predicted = BattleActionModel.PlayCard(before, action) });
             }
             catch (Exception error) { trace.CaptureFailure(error); }
@@ -321,6 +323,7 @@ namespace MonsterTrain2Poju.Probe
         internal sealed class Record
         {
             public int Index { get; set; }
+            public bool ScenarioAction { get; set; }
             public BattleTurnState Before { get; set; } = null!;
             public PlayCardAction Action { get; set; } = null!;
             public BattleActionResult Predicted { get; set; } = null!;

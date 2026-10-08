@@ -13,6 +13,19 @@ namespace MonsterTrain2Poju.Model
         { Result = result; SourceAfter = sourceAfter; }
     }
 
+    public sealed class TrainHordeMergeResult
+    {
+        public TrainCombatState? State { get; }
+        public CombatUnit? SourceAfter { get; }
+        public string? UnsupportedReason { get; }
+        public bool Supported => State != null;
+        internal IReadOnlyList<RoomCombatModel.QueuedCharacterTrigger> PendingCallbacks { get; }
+        internal TrainHordeMergeResult(TrainCombatState? state, CombatUnit? sourceAfter,
+            IReadOnlyList<RoomCombatModel.QueuedCharacterTrigger>? callbacks = null, string? error = null)
+        { State = state; SourceAfter = sourceAfter; UnsupportedReason = error;
+            PendingCallbacks = Array.AsReadOnly((callbacks ?? Array.Empty<RoomCombatModel.QueuedCharacterTrigger>()).ToArray()); }
+    }
+
     public static class HordeMergeModel
     {
         // Selection uses the same-team manager order; the direct API below has different gates.
@@ -80,6 +93,55 @@ namespace MonsterTrain2Poju.Model
             RoomCombatState state = added.State!;
             // Self-merges add to the same object before removing it. Immunity still allows removal.
             CombatUnit removed = state.Units.Single(unit => unit.Id == sourceId);
+            return Remove(state, removed, added.PendingCallbacks);
+        }
+
+        // Bump retains the incoming actor in its original room until this API removes it.
+        // Recipient callbacks and source-room physical centering therefore have different scopes.
+        public static TrainHordeMergeResult MergeAcrossRooms(TrainCombatState train, int sourceId, int targetId, bool fromBump = false)
+        {
+            RoomCombatState? origin = train.Rooms.FirstOrDefault(room => room.Units.Any(unit => unit.Id == sourceId));
+            RoomCombatState? destination = train.Rooms.FirstOrDefault(room => room.Units.Any(unit => unit.Id == targetId));
+            CombatUnit? source = origin?.Units.FirstOrDefault(unit => unit.Id == sourceId);
+            if (sourceId == 0 || targetId == 0) return new TrainHordeMergeResult(train, source);
+            if (origin == null || destination == null) return Fail("Missing cross-room Horde merge actor.");
+            string? error = TrainCombatModel.Validate(train);
+            if (error != null) return Fail(error);
+            HordeMergeResult result;
+            RoomCombatState? changedDestination = null;
+            if (origin.RoomIndex == destination.RoomIndex) result = Merge(origin, sourceId, targetId, fromBump);
+            else
+            {
+                CombatUnit target = destination.Units.Single(unit => unit.Id == targetId);
+                int stacks = source!.Status("horde")?.Stacks ?? 0;
+                if (stacks == 0 || target.Status("horde") == null) return new TrainHordeMergeResult(train, source);
+                if (source.DeathState?.IsDespawned == null || source.DeathState.IsDestroyed == null)
+                    return Fail("Cross-room Horde merge requires source lifecycle state.");
+                RoomCombatResult added = StatusApplicationModel.ApplyRetained(destination, targetId,
+                    target.RegisteredStatus("horde")!.WithStacks(stacks), 0, suppressHordeSpawnCallbacks: fromBump);
+                if (!added.Supported) return Fail(added.UnsupportedReason!);
+                changedDestination = added.State!;
+                var removalScope = new RoomCombatState(origin.RoomIndex, origin.Deployment, origin.Units,
+                    origin.ExternalInteractions, changedDestination.Context, origin.Preview);
+                result = Remove(removalScope, source, added.PendingCallbacks);
+            }
+            if (!result.Supported) return Fail(result.Result.UnsupportedReason!);
+            RoomCombatState changedOrigin = result.Result.State!;
+            CombatContext context = changedOrigin.Context!;
+            var rooms = train.Rooms.Select(room => room.RoomIndex == changedOrigin.RoomIndex ? changedOrigin :
+                changedDestination != null && room.RoomIndex == changedDestination.RoomIndex ? changedDestination : room).ToArray();
+            var alive = rooms.SelectMany(room => room.Units).Select(unit => unit.Id).ToHashSet();
+            return new TrainHordeMergeResult(CardSpellModel.WithContext(new TrainCombatState(rooms,
+                train.Movement.Where(rule => alive.Contains(rule.UnitId)).ToArray(), train.EnemySlotsPerRoom, context), context),
+                result.SourceAfter, result.Result.PendingCallbacks);
+
+            TrainHordeMergeResult Fail(string reason) => new TrainHordeMergeResult(null, null, error: reason);
+        }
+
+        private static HordeMergeResult Remove(RoomCombatState state, CombatUnit removed,
+            IReadOnlyList<RoomCombatModel.QueuedCharacterTrigger> callbacks)
+        {
+            int sourceId = removed.Id;
             removed = removed.WithDeathState(removed.DeathState!.WithLifecycle(true, state.Preview ? removed.DeathState.IsDestroyed : true));
             CombatContext? context = state.Context;
             if (context?.SpawnPoints == null) return Unsupported("Horde merge requires retained physical points.");
@@ -105,11 +167,11 @@ namespace MonsterTrain2Poju.Model
             foreach (CardInstanceState card in context.CardRegistry ?? context.CardInstances ?? Array.Empty<CardInstanceState>())
                 if (card.PlayedRoomUnitIds?.Contains(sourceId) == true)
                     context = context.WithCard(card.WithRoomCacheState(card.PlayedRoomUnitIds.Where(id => id != sourceId).ToArray(), card.RawPlayedRoomUnitIds));
-            foreach (RoomCombatModel.QueuedCharacterTrigger callback in added.PendingCallbacks)
+            foreach (RoomCombatModel.QueuedCharacterTrigger callback in callbacks)
                 if (callback.Unit.Id == sourceId) callback.Unit = removed;
             return new HordeMergeResult(new RoomCombatResult(new RoomCombatState(state.RoomIndex, state.Deployment,
                 BattleSpawnPointModel.Order(context.SpawnPoints, state.RoomIndex, survivors), state.ExternalInteractions, context, state.Preview),
-                RoomOutcome.Exchanged, 0, new List<CombatEvent>(), pendingCallbacks: added.PendingCallbacks, retainedUnits: new[] { removed }), removed);
+                RoomOutcome.Exchanged, 0, new List<CombatEvent>(), pendingCallbacks: callbacks, retainedUnits: new[] { removed }), removed);
         }
         private static HordeMergeResult Match(RoomCombatState state, CombatUnit? source) => new HordeMergeResult(
             new RoomCombatResult(state, RoomOutcome.Exchanged, 0, new List<CombatEvent>()), source);

@@ -108,7 +108,7 @@ $fixtures = @('full-battle-steward-once.mt2f', 'full-battle-no-cards.mt2f', 'ful
     'full-battle-triggered-summons-equipment-owned-death.mt2f', 'full-battle-triggered-summons-equipment-owned-death-fresh.mt2f',
     'full-battle-triggered-summons-equipment-owned-revival.mt2f', 'full-battle-triggered-summons-equipment-owned-revival-fresh.mt2f',
     'full-battle-triggered-summons-death.mt2f', 'full-battle-triggered-summons-death-fresh.mt2f',
-    'full-battle-revival.mt2f',
+    'full-battle-revival.mt2f', 'full-battle-bump.mt2f',
     'card-modifier-calibration.mt2f', 'rng-calibration.mt2f', 'gold-reward-calibration.mt2f',
     'standby-routing-calibration.mt2f', 'ui-rng-isolation-calibration.mt2f',
     'statistic-query-calibration.mt2f', 'statistic-overflow-calibration.mt2f',

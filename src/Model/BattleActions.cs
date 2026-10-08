@@ -226,6 +226,7 @@ namespace MonsterTrain2Poju.Model
             bool effectsApplied = false;
             RoomOutcome outcome = RoomOutcome.Exchanged;
             IReadOnlyList<RoomCombatModel.QueuedCharacterTrigger> pendingSpellCallbacks = Array.Empty<RoomCombatModel.QueuedCharacterTrigger>();
+            IReadOnlyList<CombatUnit> retainedSpellUnits = Array.Empty<CombatUnit>();
             int nextUnitId = source.Spawn.NextUnitId;
             string? identityError = UnitIdentityModel.Validate(context, train.Rooms.SelectMany(room => room.Units), nextUnitId);
             if (identityError != null) return Unsupported(identityError);
@@ -273,7 +274,7 @@ namespace MonsterTrain2Poju.Model
                     nextUnitId = allocated.NextUnitId; context = allocated.Context!;
                     var spawned = new CombatUnit(allocated.UnitId, template.AssetKey, CombatTeam.Player, template.BaseAttack,
                         template.Health, template.MaxHealth, template.CanAttack, false, false, template.Statuses,
-                        template.Triggers, card.InstanceId, template.Size, template.StatusImmunities, template.Subtypes, template.Modifiers, template.IsBoss, template.LastAttackerId, template.StatusRegistry, template.EquipmentCards, template.NextTriggerId, template.Ability, template.StatusDictionary, template.AbilityRules, template.HordeDefinition, template.IsSpawning, template.SacrificeCardId, template.DeathState);
+                        template.Triggers, card.InstanceId, template.Size, template.StatusImmunities, template.Subtypes, template.Modifiers, template.IsBoss, template.LastAttackerId, template.StatusRegistry, template.EquipmentCards, template.NextTriggerId, template.Ability, template.StatusDictionary, template.AbilityRules, template.HordeDefinition, template.IsSpawning, template.SacrificeCardId, template.DeathState, bumpRules: template.BumpRules);
                     context = context.WithStatistics(context.Statistics?.Spawn(action.RoomIndex, template.Subtypes));
                     spawnedId = spawned.Id;
                     var nextPlayers = players.ToList();
@@ -328,6 +329,7 @@ namespace MonsterTrain2Poju.Model
                 piles = result.OtherPiles?.ToArray() ?? piles;
                 train = result.State!; context = train.Context!; outcome = result.Outcome; effectsApplied = true;
                 pendingSpellCallbacks = result.PendingCallbacks;
+                retainedSpellUnits = result.RetainedUnits;
             }
             else if (rule.Effect != "Null") return Unsupported("Unimplemented card effect " + rule.Effect);
             else if (action.PlayerPosition != -1 || action.TargetUnitId != 0) return Illegal("A no-target card does not take a target or position.");
@@ -374,6 +376,9 @@ namespace MonsterTrain2Poju.Model
                 foreach (CombatUnit dead in source.Spawn.Train.Rooms.SelectMany(room => room.Units)
                     .Where(unit => unit.SpawnerCardId > 0 && !alive.Contains(unit.Id)))
                 {
+                    CombatUnit? removed = retainedSpellUnits.FirstOrDefault(unit => unit.Id == dead.Id);
+                    if (removed?.DeathState?.IsDespawned == true && removed.DeathState.IsDestroyed == true &&
+                        !removed.DeathState.HasFinishedDying && removed.Health > 0) continue;
                     CardPileState? standby = piles.FirstOrDefault(pile => pile.Name == "Standby");
                     CardPileState? exhausted = piles.FirstOrDefault(pile => pile.Name == "Exhausted");
                     CardToken? deadCard = standby?.Cards.FirstOrDefault(item => item.InstanceId == dead.SpawnerCardId);

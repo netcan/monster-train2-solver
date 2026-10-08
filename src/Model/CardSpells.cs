@@ -30,13 +30,15 @@ namespace MonsterTrain2Poju.Model
         public string? UnsupportedReason { get; }
         public IReadOnlyList<SpellTargetCollection> TargetCollections { get; }
         public IReadOnlyList<CardPileState>? OtherPiles { get; }
+        public IReadOnlyList<CombatUnit> RetainedUnits { get; }
         internal IReadOnlyList<RoomCombatModel.QueuedCharacterTrigger> PendingCallbacks { get; }
         public bool Supported => State != null;
         internal TrainSpellResult(TrainCombatState? state, RoomOutcome outcome, IReadOnlyList<CombatEvent> events, string? error = null,
             IReadOnlyList<SpellTargetCollection>? collections = null, IReadOnlyList<CardPileState>? otherPiles = null,
-            IReadOnlyList<RoomCombatModel.QueuedCharacterTrigger>? pendingCallbacks = null)
+            IReadOnlyList<RoomCombatModel.QueuedCharacterTrigger>? pendingCallbacks = null, IReadOnlyList<CombatUnit>? retainedUnits = null)
         { State = state; Outcome = outcome; Events = Array.AsReadOnly(events.ToArray()); UnsupportedReason = error;
             TargetCollections = Array.AsReadOnly((collections ?? Array.Empty<SpellTargetCollection>()).ToArray());
+            RetainedUnits = Array.AsReadOnly((retainedUnits ?? Array.Empty<CombatUnit>()).ToArray());
             OtherPiles = otherPiles == null ? null : Array.AsReadOnly(otherPiles.ToArray());
             PendingCallbacks = Array.AsReadOnly((pendingCallbacks ?? Array.Empty<RoomCombatModel.QueuedCharacterTrigger>()).ToArray()); }
     }
@@ -180,6 +182,7 @@ namespace MonsterTrain2Poju.Model
             if (piles != null) state = WithContext(state, state.Context!.WithOtherPiles(piles));
             var deferredExhaustion = new HashSet<int>();
             var callbacks = new List<RoomCombatModel.QueuedCharacterTrigger>();
+            var retained = new Dictionary<int, CombatUnit>();
             string? routingError = null;
             for (int index = 0; index < effects.Count; index++)
             {
@@ -237,8 +240,20 @@ namespace MonsterTrain2Poju.Model
                         effect.Generation, effect.OnlyIfNoEnemies, effect.CooldownParameter, effect.AbilityChange);
                 }
                 UnityRng effectRng = state.Context!.BattleRng;
-                if (effect.Type != "DiscardHand" && effect.Type != "Generate" && effect.Type != "AdjustCapacity" && !AbilityCooldownModel.IsEffect(effect.Type) && !AbilityLifecycleModel.IsEffect(effect.Type)) effect = Sample(effect, ref effectRng);
+                if (effect.Type != "Bump" && effect.Type != "DiscardHand" && effect.Type != "Generate" && effect.Type != "AdjustCapacity" && !AbilityCooldownModel.IsEffect(effect.Type) && !AbilityLifecycleModel.IsEffect(effect.Type)) effect = Sample(effect, ref effectRng);
                 state = WithContext(state, state.Context.WithBattleRng(effectRng));
+                if (effect.Type == "Bump")
+                {
+                    if (!fullTrain || definitions == null) return UnsupportedTrain("Bump requires the complete train and room rules.");
+                    BumpResult bumped = BumpModel.Apply(state, targets.UnitIds, effect.Value, definitions.Rooms, sourceCardId, callbacks);
+                    if (!bumped.Supported) return UnsupportedTrain(bumped.UnsupportedReason!);
+                    state = bumped.State!; callbacks.Clear(); callbacks.AddRange(bumped.PendingCallbacks); events.AddRange(bumped.Events);
+                    foreach (CombatUnit unit in bumped.RetainedUnits) retained[unit.Id] = unit;
+                    if (bumped.Outcome == RoomOutcome.BattleWon || bumped.Outcome == RoomOutcome.PlayerDefeated) outcome = bumped.Outcome;
+                    positions = CardTargetModel.Positions(state);
+                    if (state.Context!.OtherPiles != null) piles = state.Context.OtherPiles.ToArray();
+                    continue;
+                }
                 if (effect.Type == "AdjustCapacity")
                 {
                     RoomCapacityResult capacity = RoomCapacityModel.Apply(state.Context!, roomIndex, effect, sourceCardId);
@@ -394,6 +409,35 @@ namespace MonsterTrain2Poju.Model
                     }
                     if (state.Context!.OtherPiles != null) piles = state.Context.OtherPiles.ToArray();
                     events.AddRange(applied.Events);
+                    if (effect.Type == "FloorRearrange" && target.Status("immobile") == null &&
+                        state.Context!.SpawnPoints?.Units.Single(unit => unit.UnitId == target.Id).OuterBoss != true)
+                    {
+                        CombatUnit[] beforeTeam = targetRoom!.Units.Where(unit => unit.Team == target.Team).ToArray();
+                        int oldIndex = Array.FindIndex(beforeTeam, unit => unit.Id == target.Id);
+                        int goal = effect.Value == 0 ? 0 : beforeTeam.Length - 1;
+                        var shiftedIds = new List<int> { target.Id };
+                        int direction = oldIndex < goal ? 1 : -1;
+                        for (int position = oldIndex; position != goal; position += direction)
+                            shiftedIds.Add(beforeTeam[position + direction].Id);
+                        foreach (int shiftedId in shiftedIds)
+                        {
+                            CombatUnit shifted = state.Rooms.SelectMany(room => room.Units).FirstOrDefault(unit => unit.Id == shiftedId)
+                                ?? retained.GetValueOrDefault(shiftedId) ?? beforeTeam.Single(unit => unit.Id == shiftedId);
+                            if (shiftedId != target.Id || oldIndex != goal)
+                            {
+                                callbacks.Add(new RoomCombatModel.QueuedCharacterTrigger(targetRoom.RoomIndex, shifted, "OnShift"));
+                                DrainDeaths();
+                            }
+                            shifted = state.Rooms.SelectMany(room => room.Units).FirstOrDefault(unit => unit.Id == shiftedId)
+                                ?? retained.GetValueOrDefault(shiftedId) ?? shifted;
+                            foreach (CombatUnit guard in state.Rooms.Single(room => room.RoomIndex == targetRoom.RoomIndex).Units
+                                .Where(unit => unit.Team != shifted.Team))
+                                callbacks.Add(new RoomCombatModel.QueuedCharacterTrigger(targetRoom.RoomIndex, guard, "OnSentry",
+                                    overrideTarget: shifted, paramString: ""));
+                            DrainDeaths();
+                        }
+                        DrainDeaths();
+                    }
                     if ((effect.Type == "Heal" && effect.Value >= 0 || effect.Type == "UnitUpgrade") && target.Triggers.Any(trigger => trigger.Kind == "OnHeal" &&
                         (!trigger.Once || !trigger.HasTriggered) && (!targetRoom!.Deployment || trigger.SkipDuringDeployment != true) &&
                         (trigger.IgnoreSilence || target.Statuses.All(status => status.Id != "silenced"))))
@@ -435,7 +479,7 @@ namespace MonsterTrain2Poju.Model
             if (routingError != null) return UnsupportedTrain(routingError);
             state = WithContext(state, (piles == null ? state.Context! : state.Context!.WithOtherPiles(piles)).AfterCardEffects());
             return new TrainSpellResult(state, outcome, events, collections: collections, otherPiles: piles,
-                pendingCallbacks: deferFinalCallbacks ? callbacks : null);
+                pendingCallbacks: deferFinalCallbacks ? callbacks : null, retainedUnits: retained.Values.ToArray());
 
             void RouteDeadCard(int cardId)
             {
@@ -470,6 +514,7 @@ namespace MonsterTrain2Poju.Model
                     RoomCombatState room = state.Rooms.Single(item => item.RoomIndex == queued.RoomIndex);
                     RoomCombatResult fired = RoomCombatModel.ApplyQueuedCharacterTrigger(room, queued, callbacks.Add);
                     if (!fired.Supported) { callbackError = fired.UnsupportedReason; return false; }
+                    foreach (CombatUnit unit in fired.RetainedUnits) retained[unit.Id] = unit;
                     state = ReplaceRoom(state, fired.State!); events.AddRange(fired.Events);
                     if (fired.Outcome == RoomOutcome.BattleWon || fired.Outcome == RoomOutcome.PlayerDefeated) outcome = fired.Outcome;
                     return true;
@@ -579,7 +624,7 @@ namespace MonsterTrain2Poju.Model
             {
                 string? filterError = effect.Filters?.Validate();
                 if (filterError != null) return filterError;
-                if (effect.Range != null && effect.Type != "DiscardHand" && effect.Type != "Generate" && effect.Type != "AdjustCapacity" &&
+                if (effect.Range != null && effect.Type != "Bump" && effect.Type != "DiscardHand" && effect.Type != "Generate" && effect.Type != "AdjustCapacity" &&
                     !AbilityLifecycleModel.IsEffect(effect.Type))
                 {
                     if (!EnergyModel.IsEffect(effect.Type) && !new[] { "Damage", "Heal", "AddStatus", "BuffAttack", "DebuffAttack", "BuffHealth", "DebuffHealth", "Draw", "DrawNextTurn" }.Contains(effect.Type))
@@ -632,12 +677,12 @@ namespace MonsterTrain2Poju.Model
                     if (energyError != null) return energyError;
                     continue;
                 }
-                if (!new[] { "Damage", "Heal", "AddStatus", "FloorRearrange", "UnitUpgrade", "RemoveUnitUpgrade", "AttachEquipment", "RemoveEquipment", "BuffAttack", "DebuffAttack", "BuffHealth", "DebuffHealth", "Draw", "DiscardHand", "Generate" }.Contains(effect.Type))
+                if (!new[] { "Bump", "Damage", "Heal", "AddStatus", "FloorRearrange", "UnitUpgrade", "RemoveUnitUpgrade", "AttachEquipment", "RemoveEquipment", "BuffAttack", "DebuffAttack", "BuffHealth", "DebuffHealth", "Draw", "DiscardHand", "Generate" }.Contains(effect.Type))
                     return "Unimplemented spell effect " + effect.Type;
                 if (effect.Type == "Generate" && effect.Generation == null) return "Missing generated card rules.";
                 if ((effect.Type == "UnitUpgrade" || effect.Type == "RemoveUnitUpgrade") && effect.Upgrade == null)
                     return "Missing unit upgrade definition.";
-                if (effect.Value < 0 && !AttackChange(effect) && !new[] { "Damage", "Heal", "AddStatus", "BuffHealth", "DebuffHealth", "Draw", "DiscardHand", "Generate" }.Contains(effect.Type) ||
+                if (effect.Value < 0 && !AttackChange(effect) && !new[] { "Bump", "Damage", "Heal", "AddStatus", "BuffHealth", "DebuffHealth", "Draw", "DiscardHand", "Generate" }.Contains(effect.Type) ||
                     effect.Type == "FloorRearrange" && effect.Value > 1) return "Invalid spell effect value.";
                 if (effect.Type == "BuffHealth" && effect.Lifetime != "" && effect.Lifetime != "TemporaryUntilEndOfBattle" &&
                     effect.Lifetime != "TemporaryUntilUnitDeath") return "Unmodeled maximum-health buff lifetime.";
@@ -766,7 +811,7 @@ namespace MonsterTrain2Poju.Model
 
         internal static CombatUnit Copy(CombatUnit unit, int health, IReadOnlyList<CombatStatus> statuses) =>
             new CombatUnit(unit.Id, unit.AssetKey, unit.Team, unit.BaseAttack, health, unit.MaxHealth, unit.CanAttack,
-                unit.IsPyre, unit.EndsBattleOnDeath, statuses, unit.Triggers, unit.SpawnerCardId, unit.Size, unit.StatusImmunities, unit.Subtypes, unit.Modifiers, unit.IsBoss, unit.LastAttackerId, unit.StatusRegistry, unit.EquipmentCards, unit.NextTriggerId, unit.Ability, unit.StatusDictionary, unit.AbilityRules, unit.HordeDefinition, unit.IsSpawning, unit.SacrificeCardId, unit.DeathState);
+                unit.IsPyre, unit.EndsBattleOnDeath, statuses, unit.Triggers, unit.SpawnerCardId, unit.Size, unit.StatusImmunities, unit.Subtypes, unit.Modifiers, unit.IsBoss, unit.LastAttackerId, unit.StatusRegistry, unit.EquipmentCards, unit.NextTriggerId, unit.Ability, unit.StatusDictionary, unit.AbilityRules, unit.HordeDefinition, unit.IsSpawning, unit.SacrificeCardId, unit.DeathState, bumpRules: unit.BumpRules);
         private static RoomCombatResult Unchanged(RoomCombatState state) => new RoomCombatResult(state, RoomOutcome.Exchanged, 0, new List<CombatEvent>());
         private static TrainSpellResult UnsupportedTrain(string reason) => new TrainSpellResult(null, RoomOutcome.Unsupported,
             Array.Empty<CombatEvent>(), reason);

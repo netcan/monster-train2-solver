@@ -22,7 +22,7 @@ namespace MonsterTrain2Poju.Model
                 changed.Health, changed.MaxHealth, after.CanAttack, after.IsPyre, after.EndsBattleOnDeath, after.Statuses,
                 after.Triggers, after.SpawnerCardId, after.Size, after.StatusImmunities, after.Subtypes, modifiers, after.IsBoss,
                 after.LastAttackerId, after.StatusRegistry, after.EquipmentCards, after.NextTriggerId, after.Ability,
-                after.StatusDictionary, after.AbilityRules, after.HordeDefinition, after.IsSpawning, after.SacrificeCardId, after.DeathState);
+                after.StatusDictionary, after.AbilityRules, after.HordeDefinition, after.IsSpawning, after.SacrificeCardId, after.DeathState, bumpRules: after.BumpRules);
             var callbacks = new List<RoomCombatModel.QueuedCharacterTrigger>();
             CombatContext? context = source.Context;
             if (delta > 0 && !suppressSpawnCallbacks)
@@ -70,7 +70,7 @@ namespace MonsterTrain2Poju.Model
             unit.BaseAttack, unit.Health, unit.MaxHealth, unit.CanAttack, unit.IsPyre, unit.EndsBattleOnDeath, unit.Statuses, unit.Triggers,
             unit.SpawnerCardId, unit.Size, unit.StatusImmunities, unit.Subtypes, unit.Modifiers, unit.IsBoss, unit.LastAttackerId,
             unit.StatusRegistry, unit.EquipmentCards, unit.NextTriggerId, unit.Ability, unit.StatusDictionary, unit.AbilityRules,
-            unit.HordeDefinition, unit.IsSpawning.HasValue ? value : (bool?)null, unit.SacrificeCardId, unit.DeathState);
+            unit.HordeDefinition, unit.IsSpawning.HasValue ? value : (bool?)null, unit.SacrificeCardId, unit.DeathState, bumpRules: unit.BumpRules);
         private static RoomCombatState Replace(RoomCombatState source, CombatUnit actor) => new RoomCombatState(source.RoomIndex,
             source.Deployment, source.Units.Select(unit => unit.Id == actor.Id ? actor : unit).ToArray(), source.ExternalInteractions, source.Context, source.Preview);
         private static RoomCombatResult Match(RoomCombatState state) => new RoomCombatResult(state, RoomOutcome.Exchanged, 0, new List<CombatEvent>());

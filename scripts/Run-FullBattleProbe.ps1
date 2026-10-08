@@ -87,6 +87,7 @@ param(
     [switch] $HordeStats,
     [switch] $HordeStatuses,
     [switch] $HordeMerge,
+    [switch] $Bump,
     [switch] $HarvestTriggers,
     [switch] $HordeRemoval,
     [switch] $HordeDeath,
@@ -133,7 +134,7 @@ if ($TriggeredSummonsRevival) { $TriggeredSummonsEquipmentOwned = $true; $Trigge
 if ($TriggerRepeats) { $ConditionalTriggers = $true }
 if ($TriggeredSummonsEquipmentOwned) { $TriggeredSummonsEquipment = $true }
 if ($TriggeredSummonsFresh -or $TriggeredSummonsDeath -or $TriggeredSummonsEquipment) { $TriggeredSummons = $true }
-if ($TriggeredSummons -or $Revival -or $HordeMerge) { $PhysicalSpawnPoints = $true }
+if ($TriggeredSummons -or $Revival -or $HordeMerge -or $Bump) { $PhysicalSpawnPoints = $true }
 if ($MultiSummonUpgradeUnique -or $MultiSummonUpgradeRestricted) { $MultiSummonUpgrade = $true }
 if ($MultiSummonAdditionalFresh) { $MultiSummonAdditional = $true; $MultiSummonFresh = $true }
 $missingFresh = $MultiSummonPoolMissingFresh -or $MultiSummonPoolAdditionalMissingFresh -or $MultiSummonPoolNoPrimaryMissingFresh -or $MultiSummonPoolNoPrimaryMissingFreshDeaths
@@ -205,6 +206,7 @@ if ($TriggeredSummonsRevival) {
     $environment['MT2_PROBE_MODIFIERS'] = 'triggered-summon-equipment-owned-death-revival' + $(if ($TriggeredSummonsFresh) { '-fresh' } else { '' })
 }
 if ($HordeMerge) { $environment['MT2_PROBE_MODIFIERS'] = 'horde-merge' }
+if ($Bump) { $environment['MT2_PROBE_MODIFIERS'] = 'bump' }
 if ($Sentry -or $SentryLethal) {
     $environment['MT2_PROBE_MODIFIERS'] = $(if ($SentryLethal) { 'sentry-lethal' } else { 'sentry' })
     $environment['MT2_PROBE_ISOLATE_UI_RNG'] = '1'
@@ -989,6 +991,18 @@ if ($HordeMerge) {
         throw 'Requested native Horde merge/clone operations did not complete.'
     }
 }
+if ($Bump) {
+    $bumpOperations = @($trace.BumpOperations)
+    $bumpLabels = @('player-up', 'player-down', 'player-partial-up-ignores-range', 'player-pyre-blocked',
+        'player-zero', 'player-clamped-down', 'enemy-up', 'enemy-down', 'enemy-rooted', 'enemy-immobile-before-rooted',
+        'enemy-loop-up-to-bottom', 'enemy-room-multiple-targets', 'enemy-to-top-before-merge',
+        'player-cross-room-horde-merge', 'enemy-cross-room-horde-merge', 'enemy-into-pyre',
+        'enemy-full-room-blocked', 'enemy-partial-full-room')
+    if ($bumpOperations.Count -ne $bumpLabels.Count -or @($bumpLabels | Where-Object { $_ -notin $bumpOperations.Label }).Count -gt 0 -or
+        @($bumpOperations | Where-Object { $null -eq $_.After -or $null -eq $_.TargetsAfter -or $_.QueueAfter -ne 0 }).Count -gt 0) {
+        throw 'Requested native paid Bump operations did not complete.'
+    }
+}
 $equipmentActivations = @()
 if ($EquipmentAbilities) {
     $skillB = 'c2f6ed7f-18ce-4070-b65f-7dd9f5160074'
@@ -1178,6 +1192,8 @@ $result = [pscustomobject]@{
     HordeMergeCoverage = (-not $HordeMerge -or @($trace.HordeMergeOperations).Count -eq 17)
     HordeMergeOperations = @($trace.HordeMergeOperations).Count
     HordeMergeSelections = @($trace.HordeMergeSelections).Count
+    BumpCoverage = (-not $Bump -or @($trace.BumpOperations).Count -eq 18)
+    BumpOperations = @($trace.BumpOperations).Count
     EquipmentAbilityCoverage = $equipmentAbilityCoverage
     InitialAbilitySpawns = @($trace.InitialAbilitySpawns).Count
     EquipmentAbilityActivations = $equipmentActivations.Count

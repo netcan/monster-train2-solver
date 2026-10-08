@@ -87,7 +87,7 @@ namespace MonsterTrain2Poju.Model
                 spawnerCardId, template.Size, template.StatusImmunities, template.Subtypes, template.Modifiers, template.IsBoss,
                 template.LastAttackerId, template.StatusRegistry, template.EquipmentCards, template.NextTriggerId,
                 template.Ability, template.StatusDictionary, template.AbilityRules, template.HordeDefinition, true,
-                template.SacrificeCardId, template.DeathState);
+                template.SacrificeCardId, template.DeathState, bumpRules: template.BumpRules);
             if (context.SpawnPoints != null)
             {
                 var scope = new RoomCombatState(source.RoomIndex, source.Deployment, positionActors ?? source.Units, source.ExternalInteractions, context, source.Preview);

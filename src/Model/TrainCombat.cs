@@ -211,7 +211,7 @@ namespace MonsterTrain2Poju.Model
                             status.RemoveWhenTriggered && (!source.Rooms[index].Deployment || status.RemoveDuringDeployment)
                                 ? status.WithStacks(status.Stacks - 1) : status).Where(status => status.Stacks > 0).ToArray();
                         arriving = new CombatUnit(enemy.Id, enemy.AssetKey, enemy.Team, enemy.BaseAttack, enemy.Health,
-                            enemy.MaxHealth, enemy.CanAttack, enemy.IsPyre, enemy.EndsBattleOnDeath, statuses, enemy.Triggers, enemy.SpawnerCardId, enemy.Size, enemy.StatusImmunities, enemy.Subtypes, enemy.Modifiers, enemy.IsBoss, enemy.LastAttackerId, enemy.StatusRegistry, enemy.EquipmentCards, enemy.NextTriggerId, enemy.Ability, enemy.StatusDictionary, enemy.AbilityRules, enemy.HordeDefinition, enemy.IsSpawning, enemy.SacrificeCardId, enemy.DeathState);
+                            enemy.MaxHealth, enemy.CanAttack, enemy.IsPyre, enemy.EndsBattleOnDeath, statuses, enemy.Triggers, enemy.SpawnerCardId, enemy.Size, enemy.StatusImmunities, enemy.Subtypes, enemy.Modifiers, enemy.IsBoss, enemy.LastAttackerId, enemy.StatusRegistry, enemy.EquipmentCards, enemy.NextTriggerId, enemy.Ability, enemy.StatusDictionary, enemy.AbilityRules, enemy.HordeDefinition, enemy.IsSpawning, enemy.SacrificeCardId, enemy.DeathState, bumpRules: enemy.BumpRules);
                     }
                     int destination = Math.Max(0, Math.Min(pyre, index + speed));
                     if ((destination == pyre || forceLoop) && rule.Loops && !enemy.Statuses.Any(status => status.Id == "relentless"))

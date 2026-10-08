@@ -108,6 +108,7 @@ namespace MonsterTrain2Poju.Model
         public bool? IsSpawning { get; }
         public int? SacrificeCardId { get; }
         public UnitDeathState? DeathState { get; }
+        public UnitBumpRules? BumpRules { get; }
         public int Attacks => Math.Max(1, Status("multistrike") is CombatStatus multi
             ? multi.ParamInt + multi.Stacks - 1 : 1);
 
@@ -117,7 +118,8 @@ namespace MonsterTrain2Poju.Model
             IReadOnlyList<string>? statusImmunities = null, IReadOnlyList<string>? subtypes = null, UnitModifiers? modifiers = null, bool? isBoss = null,
             int? lastAttackerId = null, IReadOnlyList<CombatStatus>? statusRegistry = null, IReadOnlyList<int>? equipmentCards = null,
             int? nextTriggerId = null, UnitAbilityState? ability = null, StatusDictionaryState? statusDictionary = null,
-            UnitAbilityRules? abilityRules = null, HordeBaseStats? hordeDefinition = null, bool? isSpawning = null, int? sacrificeCardId = null, UnitDeathState? deathState = null)
+            UnitAbilityRules? abilityRules = null, HordeBaseStats? hordeDefinition = null, bool? isSpawning = null, int? sacrificeCardId = null, UnitDeathState? deathState = null,
+            UnitBumpRules? bumpRules = null)
         {
             Id = id;
             LastAttackerId = lastAttackerId;
@@ -128,6 +130,7 @@ namespace MonsterTrain2Poju.Model
             IsSpawning = isSpawning;
             SacrificeCardId = sacrificeCardId;
             DeathState = deathState;
+            BumpRules = bumpRules;
             EquipmentCards = equipmentCards == null ? null : Array.AsReadOnly(equipmentCards.ToArray());
             AssetKey = assetKey;
             Team = team;
@@ -169,17 +172,17 @@ namespace MonsterTrain2Poju.Model
             AbilityRules, HordeDefinition, IsSpawning, cardId, DeathState == null ? null : new UnitDeathState(
                 DeathState.HasFinishedDying, DeathState.IsBeingRemoved, DeathState.HasStatisticsListener,
                 DeathState.PendingStatisticsCardId, DeathState.IsSacrifice.HasValue ? true : (bool?)null, DeathState.StatisticsListenerOnce,
-                DeathState.IsDespawned, DeathState.IsDestroyed));
+                DeathState.IsDespawned, DeathState.IsDestroyed), bumpRules: BumpRules);
 
         internal CombatUnit WithDeathState(UnitDeathState state) => new CombatUnit(Id, AssetKey, Team, BaseAttack, Health, MaxHealth,
             CanAttack, IsPyre, EndsBattleOnDeath, Statuses, Triggers, SpawnerCardId, Size, StatusImmunities, Subtypes,
             Modifiers, IsBoss, LastAttackerId, StatusRegistry, EquipmentCards, NextTriggerId, Ability, StatusDictionary,
             AbilityRules, HordeDefinition, IsSpawning, SacrificeCardId, state.WithLifecycle(
-                state.IsDespawned ?? DeathState?.IsDespawned, state.IsDestroyed ?? DeathState?.IsDestroyed));
+                state.IsDespawned ?? DeathState?.IsDespawned, state.IsDestroyed ?? DeathState?.IsDestroyed), bumpRules: BumpRules);
         internal CombatUnit WithTriggers(IReadOnlyList<CombatTrigger> triggers) => new CombatUnit(Id, AssetKey, Team, BaseAttack, Health, MaxHealth,
             CanAttack, IsPyre, EndsBattleOnDeath, Statuses, triggers, SpawnerCardId, Size, StatusImmunities, Subtypes,
             Modifiers, IsBoss, LastAttackerId, StatusRegistry, EquipmentCards, NextTriggerId, Ability, StatusDictionary,
-            AbilityRules, HordeDefinition, IsSpawning, SacrificeCardId, DeathState);
+            AbilityRules, HordeDefinition, IsSpawning, SacrificeCardId, DeathState, bumpRules: BumpRules);
 
         internal static CombatStatus[] MergeStatusRegistry(IReadOnlyList<CombatStatus> registry, IReadOnlyList<CombatStatus> statuses)
         {
@@ -199,7 +202,7 @@ namespace MonsterTrain2Poju.Model
 
         internal CombatUnit WithoutRemovedAttacker(ISet<int> activeIds) => !LastAttackerId.HasValue || LastAttackerId == 0 || activeIds.Contains(LastAttackerId.Value)
             ? this : new CombatUnit(Id, AssetKey, Team, BaseAttack, Health, MaxHealth, CanAttack, IsPyre, EndsBattleOnDeath, Statuses,
-                Triggers, SpawnerCardId, Size, StatusImmunities, Subtypes, Modifiers, IsBoss, 0, StatusRegistry, EquipmentCards, NextTriggerId, Ability, StatusDictionary, AbilityRules, HordeDefinition, IsSpawning, SacrificeCardId, DeathState);
+                Triggers, SpawnerCardId, Size, StatusImmunities, Subtypes, Modifiers, IsBoss, 0, StatusRegistry, EquipmentCards, NextTriggerId, Ability, StatusDictionary, AbilityRules, HordeDefinition, IsSpawning, SacrificeCardId, DeathState, bumpRules: BumpRules);
     }
 
     public sealed class RoomCombatState
@@ -292,6 +295,9 @@ namespace MonsterTrain2Poju.Model
                 CombatUnit? overrideTarget = null, int paramInt2 = 0, string? paramString = null, CombatUnit? dyingCharacter = null, bool canFireTriggers = true,
                 int triggerCount = 1, int lastSpawnedOverrideUnitId = 0, bool harvestAfterDeath = false, bool completePhysicalRemovalAfterQueue = false)
             { RoomIndex = roomIndex; Unit = unit; Kind = kind; ReturnSpawnerAfterQueue = returnSpawnerAfterQueue; DeferUntilRemoval = deferUntilRemoval; ParamInt = paramInt; OverrideTarget = overrideTarget; ParamInt2 = paramInt2; ParamString = paramString; DyingCharacter = dyingCharacter; CanFireTriggers = canFireTriggers; TriggerCount = triggerCount; LastSpawnedOverrideUnitId = lastSpawnedOverrideUnitId; HarvestAfterDeath = harvestAfterDeath; CompletePhysicalRemovalAfterQueue = completePhysicalRemovalAfterQueue; }
+            internal QueuedCharacterTrigger InRoom(int roomIndex) => new QueuedCharacterTrigger(roomIndex, Unit, Kind,
+                ReturnSpawnerAfterQueue, DeferUntilRemoval, ParamInt, OverrideTarget, ParamInt2, ParamString, DyingCharacter,
+                CanFireTriggers, TriggerCount, LastSpawnedOverrideUnitId, HarvestAfterDeath, CompletePhysicalRemovalAfterQueue);
         }
         private static readonly HashSet<string> KnownStatuses = new HashSet<string>(StringComparer.Ordinal)
         {
@@ -676,6 +682,7 @@ namespace MonsterTrain2Poju.Model
                         trigger.Kind != "OnSpawn" && trigger.Kind != "OnUnscaledSpawn" && trigger.Kind != "OnSpawnNotFromCard" &&
                         trigger.Kind != "OnTurnBegin" && trigger.Kind != "OnTeamTurnBegin" && trigger.Kind != "EndTurnPreHandDiscard" && trigger.Kind != "PreCombat" &&
                         trigger.Kind != "OnTrainRoomLoop" && trigger.Kind != "PostAscension" && trigger.Kind != "OnShift" && trigger.Kind != "OnSentry" &&
+                        trigger.Kind != "PostDescension" && trigger.Kind != "PostAttemptedAscension" && trigger.Kind != "PostAttemptedDescension" &&
                         trigger.Kind != "OnHit" && trigger.Kind != "OnKill" && trigger.Kind != "OnAttackingBeforeDamage" && trigger.Kind != "OnAttacking" &&
                         !StatusCallbackModel.Kinds.Contains(trigger.Kind) && !HarvestModel.Kinds.Contains(trigger.Kind))
                         return "Unmodeled trigger " + trigger.Kind;
@@ -870,7 +877,7 @@ namespace MonsterTrain2Poju.Model
                     Source.BaseAttack, Health, Source.MaxHealth, Source.CanAttack, Source.IsPyre,
                     Source.EndsBattleOnDeath, Statuses.Values.ToArray(), Triggers, Source.SpawnerCardId, Source.Size, Source.StatusImmunities, Source.Subtypes, Source.Modifiers, Source.IsBoss, LastAttackerId, statusRegistry, Source.EquipmentCards, Source.NextTriggerId, Source.Ability, dictionary, Source.AbilityRules, Source.HordeDefinition, Source.IsSpawning, Source.SacrificeCardId,
                     Source.DeathState?.WithLifecycle(Source.DeathState.IsDespawned.HasValue ? Despawned : (bool?)null,
-                        Source.DeathState.IsDestroyed.HasValue ? Destroyed : (bool?)null));
+                        Source.DeathState.IsDestroyed.HasValue ? Destroyed : (bool?)null), bumpRules: Source.BumpRules);
             }
         }
 
@@ -1091,7 +1098,7 @@ namespace MonsterTrain2Poju.Model
                 CombatUnit unit = target.Freeze();
                 target.Apply(new CombatUnit(unit.Id, unit.AssetKey, unit.Team, unit.BaseAttack, unit.Health, unit.MaxHealth, unit.CanAttack,
                     unit.IsPyre, unit.EndsBattleOnDeath, unit.Statuses, unit.Triggers, unit.SpawnerCardId, unit.Size, unit.StatusImmunities,
-                    unit.Subtypes, unit.Modifiers, unit.IsBoss, unit.LastAttackerId, unit.StatusRegistry, cards, unit.NextTriggerId, unit.Ability, unit.StatusDictionary, unit.AbilityRules, unit.HordeDefinition, unit.IsSpawning, unit.SacrificeCardId, unit.DeathState));
+                    unit.Subtypes, unit.Modifiers, unit.IsBoss, unit.LastAttackerId, unit.StatusRegistry, cards, unit.NextTriggerId, unit.Ability, unit.StatusDictionary, unit.AbilityRules, unit.HordeDefinition, unit.IsSpawning, unit.SacrificeCardId, unit.DeathState, bumpRules: unit.BumpRules));
             }
             private string EquipmentUpgradeKey(int cardId, BattlePlayRules definitions) => definitions.Cards
                 .First(rule => rule.DataId == context!.FindCard(cardId)!.DataId).Equipment!.UpgradeId ?? EquipmentModel.UpgradeKey(cardId);
@@ -1488,7 +1495,7 @@ namespace MonsterTrain2Poju.Model
                     before.AbilityRules, before.HordeDefinition, before.IsSpawning, before.SacrificeCardId,
                     before.DeathState == null ? null : new UnitDeathState(false, before.DeathState.IsBeingRemoved,
                         before.DeathState.HasStatisticsListener, isSacrifice: before.DeathState.IsSacrifice.HasValue ? false : (bool?)null,
-                        statisticsListenerOnce: before.DeathState.StatisticsListenerOnce)));
+                        statisticsListenerOnce: before.DeathState.StatisticsListenerOnce), bumpRules: before.BumpRules));
                 target.DeathFinished = false;
                 RemoveStatus(target, "undying", 1);
                 CombatUnit revived = target.Freeze();

@@ -116,7 +116,7 @@ internal static class BattleActionChecks
                 }
             }
             string? difference = ModelJson.Difference(BattleTurnChecks.Comparable(result.State!), BattleTurnChecks.Comparable(actual));
-            Require(difference == null, "Native card action differs at index " + entry.GetProperty("Index") + ": " + difference);
+            Require(difference == null, "Native card action differs at index " + entry.GetProperty("Index").GetInt32() + ": " + difference);
             supported++;
         }
         Console.WriteLine($"NATIVE-ACTION-CHECKS PASS: {supported} matched, {unsupported} unsupported.");
@@ -223,15 +223,20 @@ internal static class BattleActionChecks
             abilityScenario.GetString() is "ability-activation" or "ability-activation-x" or "ability-activation-lethal" or "ability-effects" or "equipment-abilities")
             chooser = UnitAbilityModel.ChooseAbilityThenCards;
         FixtureValue turns = fixture.GetProperty("Turns");
-        BattleTurnState root = actions[0].GetProperty("Before").Deserialize<BattleTurnState>()!;
+        // Authored setup plays are checked individually above. The independent policy starts
+        // after that prelude and must reproduce every ordinary policy play and EndTurn.
+        FixtureValue[] policyActions = actions.EnumerateArray().Where(entry =>
+            !entry.TryGetProperty("ScenarioAction", out var authored) || !authored.GetBoolean()).ToArray();
+        Require(policyActions.Length > 0, "The fixture has no subsequent native policy actions.");
+        BattleTurnState root = policyActions[0].GetProperty("Before").Deserialize<BattleTurnState>()!;
         string parent = JsonSerializer.Serialize(root);
-        BattleTurnState terminal = RunPolicy(root, actions, turns, chooser);
+        BattleTurnState terminal = RunPolicy(root, policyActions, turns, chooser);
         string expected = BattleTurnChecks.Comparable(terminal);
-        Parallel.For(0, 16, _ => Require(BattleTurnChecks.Comparable(RunPolicy(root, actions, turns, chooser)) == expected,
+        Parallel.For(0, 16, _ => Require(BattleTurnChecks.Comparable(RunPolicy(root, policyActions, turns, chooser)) == expected,
             "Full policy parallel branches diverged."));
         Require(JsonSerializer.Serialize(root) == parent, "Full policy simulation mutated its root.");
         // Start independently after an actual mid-battle card action. Recompute the entire suffix.
-        FixtureValue mid = actions.EnumerateArray().First(entry => entry.GetProperty("Actual").GetProperty("Spawn").GetProperty("Turn").GetInt32() > 0);
+        FixtureValue mid = policyActions.First(entry => entry.GetProperty("Actual").GetProperty("Spawn").GetProperty("Turn").GetInt32() > 0);
         BattleTurnState midRoot = mid.GetProperty("Actual").Deserialize<BattleTurnState>()!;
         BattleSimulationResult suffix = BattleSimulator.Resolve(midRoot, chooser);
         Require(suffix.Supported && BattleTurnChecks.Comparable(suffix.State!) == expected,
@@ -247,16 +252,16 @@ internal static class BattleActionChecks
                 "Mid-battle suffix decision differs after EndTurn " + index);
         }
         int hp = terminal.Spawn.Train.Rooms.SelectMany(room => room.Units).SingleOrDefault(unit => unit.IsPyre)?.Health ?? 0;
-        Console.WriteLine($"NATIVE-POLICY-CHAIN-CHECKS PASS: {actions.GetArrayLength()} card plays, {turns.GetArrayLength()} EndTurns, final Pyre {hp}, mid-battle root and 16 parallel branches.");
+        Console.WriteLine($"NATIVE-POLICY-CHAIN-CHECKS PASS: {policyActions.Length} policy card plays, {turns.GetArrayLength()} EndTurns, final Pyre {hp}, mid-battle root and 16 parallel branches.");
     }
 
-    private static BattleTurnState RunPolicy(BattleTurnState root, FixtureValue actions, FixtureValue turns, Func<BattleTurnState, PlayCardAction?> chooser)
+    private static BattleTurnState RunPolicy(BattleTurnState root, FixtureValue[] actions, FixtureValue turns, Func<BattleTurnState, PlayCardAction?> chooser)
     {
         // Finish first, then consult the oracle. Neither recorded actions nor the terminal turn count
         // drives the independent simulation; the policy consumes only its current model state.
         BattleSimulationResult result = BattleSimulator.Resolve(root, chooser);
         Require(result.Supported, "Independent card policy failed: " + result.UnsupportedReason);
-        Require(result.Actions.Count == actions.GetArrayLength() && result.Turns.Count == turns.GetArrayLength(),
+        Require(result.Actions.Count == actions.Length && result.Turns.Count == turns.GetArrayLength(),
             "Independent policy action/turn count differed.");
         for (int index = 0; index < result.Actions.Count; index++)
         {

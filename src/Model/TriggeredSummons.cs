@@ -89,7 +89,7 @@ namespace MonsterTrain2Poju.Model
                 source.CanAttack, source.IsPyre, source.EndsBattleOnDeath, source.Statuses, source.Triggers, source.SpawnerCardId,
                 source.Size, source.StatusImmunities, source.Subtypes, modifiers, source.IsBoss, source.LastAttackerId,
                 source.StatusRegistry, source.EquipmentCards, source.NextTriggerId, source.Ability, source.StatusDictionary,
-                source.AbilityRules, source.HordeDefinition, source.IsSpawning, source.SacrificeCardId, source.DeathState);
+                source.AbilityRules, source.HordeDefinition, source.IsSpawning, source.SacrificeCardId, source.DeathState, bumpRules: source.BumpRules);
         }
     }
 }

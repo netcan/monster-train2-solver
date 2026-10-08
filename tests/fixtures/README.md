@@ -723,6 +723,41 @@ seven decision reference suites, all 262 summon damage phases and the new Horde
 API/preview suite, with no unsupported transitions. Both restored raw weak cache
 memberships match; complete inventory/size/SHA-256 checks pass.
 
-The direct Horde APIs are covered. Real Bump movement/card integration,
-ordinary unit cloning, wider relic/room/Boss/Pyre behavior, broader card coverage
-and complete optimal search remain unfinished.
+The schema 97 coverage above proves the direct Horde APIs. Schema 98 adds the
+primary Bump card paths described below; broader simulator/search work remains.
+
+### Primary Bump cards (schema 98)
+
+`full-battle-bump.mt2f` records eighteen actual Bump card plays, including
+up/down/zero/clamped quantities, an ignored authored integer range, rooting,
+immobility priority, looping, simultaneous enemy targets, player Pyre blocking,
+enemy Pyre entry, full/partially blocked rooms and both-team cross-room Horde
+merges. Complete raw train/context/retained-target states and dispatch payloads
+are independently compared in 32 branches. Merged unit cards remain in Standby
+without death/Harvest/Rally/re-spawn callbacks.
+
+All 38 paid-card records compare individually, including the eighteen authored
+plays marked `ScenarioAction=true`. The subsequent ordinary policy consists of
+20 card plays and five EndTurns, wins at Pyre 74, and matches from initial/middle
+policy roots in 16 parallel branches. Native recording uses paid Steward hosts,
+native observer/filler births and gold callbacks with the original Boss/waves.
+It preserves raw effect boundaries and stable decisions after preview refresh.
+Later rearrangement plays also verify missing Shift/Sentry reward callbacks.
+
+Native capture is muted and Instant, takes 55.49 seconds and has zero failures,
+differences, unsupported/pending records; original save/log signatures match.
+The archive has 7,189 graph nodes and is 37,157 bytes. Manifest size/hash and
+regression inventory now cover 146 binary archives: 137 battles and nine
+calibrations, without any source JSON dependency.
+
+The full 146-archive regression exits zero with all 137 battles and nine
+calibrations passing and no unsupported transitions. The audited inventory
+retains nineteen physical-position suites, fourteen queued-summon suites, ten
+equipment suites, six direct summon-effect suites, eight decision-reference
+suites, standalone/two summon revival suites, Horde/Bump suites and all 262
+native summon damage phases. All archive sizes and SHA-256 hashes match.
+
+Actual Bump previews, teleportation, disabled/destroyed floors, special Boss
+movement/destruction and movement callbacks involving damage/revival still need
+coverage, as do ordinary cloning and wider relic/room/card mechanics. The full
+simulator and optimal search remain unfinished.
