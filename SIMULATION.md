@@ -114,6 +114,7 @@ are copied immutable values; independent child states can run on worker threads.
 | Fresh and additional summon sources | `UnitSummonRule`, `UnitSummonChoice` and `UnitStandbyModel` | Native fresh setup, original-card bindings, delayed returns, mixed unit templates, odd capped splits and source-mismatch upgrade routing; complete policies and parallel branches |
 | Pooled unit summons | `UnitSummonRule.Pool` and `UnitSummonModel` | Ordered duplicate weights, singleton RNG draws, additional overrides, fresh/copied sources and no-primary paid Rally gates; five native scenes and parallel branches |
 | Missing summon sources | `FallbackLookupComplete`, `UnitBirthModel` and `UnitStandbyModel` | Confirmed no-match fallbacks, first-birth cardless markers, no-source spawn triggers/upgrades, mixed sources and delayed original-card returns; four native scenes and parallel branches |
+| Physical spawn points | `SpawnPointModel` | 21 exact native operations and 63 current/last-known queries, holes, stale occupant references, zero-HP/undying occupancy, preview-born removal, cross-room moves and 32 branches; full battle state integration remains pending |
 | Status removal and Horde sacrifice | `StatusRemovalModel`, `CardSpellModel` and `RoomCombatModel` | Nine native API/effect/trigger operations, exact room/retained actor states, accepted queue counts, ordered death/Harvest dispatches, a real paid spell removing both teams and parallel branches; raw zero HP preserves orphan standby cards while sacrifice signals physical death and retains its responsible card |
 | Reentrant death signals and queued player sacrifice | `UnitDeathState`, `StatusRemovalModel` and `RoomCombatModel` | Three native operations, 45 exact death/Harvest phase states and complete dispatch order, 95 effect/retained-target states, pending versus cleared statistics listeners, spawner timing and parallel branches |
 | Physical death Harvest | `HarvestModel` and `RoomCombatModel` | Four native physical deaths and 31 exact dispatches; own-death children precede player/enemy groups, Hero/Monster/Unit kinds, Horde repetition, required dying statuses, silence and once flags; complete subsequent battle and parallel branches |
@@ -4684,3 +4685,53 @@ all nine calibration suites, all four missing-source checks and all nine pooled
 summon checks pass. Initial/mid-battle policies and parallel mechanism branches
 pass within this complete run. Unsupported transition counts remain zero, and
 the archive inventory, sizes and SHA-256 values match the curated manifest.
+
+## Physical spawn point operations and retained references
+
+The schema-84 `full-battle-spawn-points.mt2f` archive captures the actual slot
+occupants independently from each unit's current and last-known slot references.
+These can temporarily disagree: setting a slot overwrites its occupant without
+clearing the displaced unit's pointer. Moving that displaced unit only clears
+its old slot if it still owns that slot. Direct removal retains the old
+last-known reference; an explicit remember operation or compaction refreshes it.
+Allow-last-known lookup uses that reference only at nonpositive HP.
+
+`SpawnPointModel` separately models backward insertion shifts, adjacent
+rearrangement, cross-room assignments and the native compaction loop with its
+12-pass limit and pivot movement count. Compaction remembers removed occupants,
+retains undying occupants at zero HP, removes preview-born units in a live world
+and finally refreshes occupied inner points. Remaining-point counts include
+ordinary dead occupants and exclude outer-train Boss units. Group point counts,
+SaveManager inner counts and the actual outside-point flags remain distinct.
+
+The native setup creates three source-free Stewards and runs 21 observed native
+operations. It deliberately produces holes, stale references, zero HP,
+undying occupancy, a preview-born flag and a destroyed detached actor. The
+final setup restores healthy actors to owned points before ordinary play.
+These controlled flags and raw health edits establish position API behavior;
+they do not establish a real death, revival or preview-mode lifecycle.
+
+Independent checks recompute every complete before/after world, all 63 native
+current/allow-last-known queries, pivot movements and remaining-point counts.
+They verify parent isolation, reject malformed identities/references without
+partial children, and repeat the operations in 32 parallel branches. The
+subsequent policy also matches from initial and actual mid-battle roots in
+16 branches: 18 card plays and six EndTurns, victory at Pyre 80. The native
+Instant run takes 45.18 seconds with muted audio, original Boss/waves and
+unchanged original profile signatures. Capture failures, mismatches,
+unsupported transitions and pending observations are all zero.
+
+The direct archive is 25,202 bytes with 4,058 unique nodes. It was captured on
+game 2.2.1, MVID `8fb07b96-f4db-4d2b-884d-c00536d6ccf4`. The inventory now
+contains 127 archives: 118 battles and nine calibration suites.
+
+This is an independently checked position component. The ordinary full battle
+state does not yet carry this physical world through every transition. General
+unit-trigger summons, retained first-born effect references, removed birth
+targets, death replacement and equipment transfer still require that integration.
+
+The full 127-archive regression exits zero: all 118 battle archives and nine
+calibration suites pass, including one physical spawn-point check, four
+missing-source checks and nine pooled summon checks. Unsupported transition
+counts remain zero. The complete archive inventory, sizes and SHA-256 values
+match the curated manifest.

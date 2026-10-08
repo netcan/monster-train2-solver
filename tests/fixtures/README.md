@@ -468,3 +468,25 @@ The full 126-archive regression exits zero with 117 battle passes, nine
 calibration suites, four missing-source checks and nine pooled summon checks.
 Unsupported transition counts remain zero; all archives match the inventory,
 sizes and SHA-256 manifest.
+
+The schema-84 `full-battle-spawn-points.mt2f` archive records 21 real native
+position operations and 63 current/allow-last-known queries over three
+source-free Stewards. It preserves slot occupants, independent unit pointers,
+last-known references, holes, invalid-index no-ops, pivot shifts, cross-room
+moves, zero-HP/undying occupancy, preview-born removal and the destroyed-detached
+assignment guard. These are controlled API setups, rather than real death,
+revival or preview-mode lifecycle tests. Actor-owned points are restored before
+ordinary play. Complete operations match in 32 branches; the initial and
+mid-battle policies match in 16 branches, winning at Pyre 80 after 18 plays and
+six EndTurns. The Instant run takes 45.18 seconds; Boss/waves and original
+profile signatures stay intact. All native capture gates are zero. The direct
+archive is 25,202 bytes with 4,058 unique nodes. The inventory contains
+127 archives: 118 battles and nine calibration suites. Integrating physical
+point state throughout ordinary battle transitions, unit-trigger summons and
+death replacement remains separate work.
+
+The full 127-archive regression exits zero: all 118 battle archives and nine
+calibration suites pass, including one physical spawn-point check, four
+missing-source checks and nine pooled summon checks. Unsupported transition
+counts remain zero. The complete archive inventory, sizes and SHA-256 values
+match the curated manifest.
