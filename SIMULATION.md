@@ -6879,5 +6879,11 @@ full-battle-purify-queues.mt2f, 49,314 bytes and 8,697 nodes, with no text sourc
 Its SHA-256 is 1b852c9c28642bbbc254cee356c143e8112ae3d1336a023e6b81665a83f6fc20.
 The required list and manifest contain 179 archives: 155 accepted battles and 24
 component calibrations. The completed178 baseline above belongs to the previous
-status-Purify model; the final queue/removal model's combined179 regression is
-pending and is not claimed complete.
+status-Purify model; the final queue/removal model's combined179 regression has
+now completed: 155 accepted battles, 151 continuous paid-policy chains, four
+no-more-card chains and all 24 strict component calibrations. No recorded native
+operation is unsupported or skipped. The 179 required input identities, archive
+sizes and manifest SHA-256 hashes are independently rechecked. This baseline uses
+Model.dll SHA-256
+fb6341d949d6b98027472cf3735bd5dda0ed9540351b22221b0cf9d61c432a3f;
+the subsequent Incant work requires separate validation.

@@ -1404,4 +1404,10 @@ full-battle-purify-queues.mt2f is a byte-identical native archive: 49,314 bytes,
 1b852c9c28642bbbc254cee356c143e8112ae3d1336a023e6b81665a83f6fc20, without a text source.
 The manifest and required list contain 179 archives: 155 accepted battles and 24
 component calibrations. The complete178 baseline belongs to the preceding model;
-the new queue/removal model's combined179 regression is still pending.
+the new queue/removal model's combined179 regression has now completed: 155
+accepted battles, 151 continuous paid-policy chains, four no-more-card chains and
+all 24 strict component calibrations, with no unsupported or skipped native
+operation. All 179 required identities, archive sizes and manifest SHA-256 hashes
+are independently rechecked. This baseline uses Model.dll SHA-256
+fb6341d949d6b98027472cf3735bd5dda0ed9540351b22221b0cf9d61c432a3f;
+the subsequent Incant changes require separate validation.
