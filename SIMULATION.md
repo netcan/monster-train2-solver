@@ -6317,3 +6317,66 @@ warnings/errors; ModelChecks has its fourteen existing nullable warnings and no
 errors. All 168 inventory entries/sizes/hashes, the new native byte provenance,
 source-free binary metadata, script syntax and whitespace checks pass. A full
 168-archive run is not claimed; the previous complete163 run remains the baseline.
+
+### Primary origins for preview-born actors
+
+Preview-born actors now retain an immutable primary origin captured by the model
+before preview-only spawn statuses and applied upgrades. Native InitialSetup
+initializes raw attack/HP/size, trigger upgrades and abilities before
+EnableCombatPreviews; authored statuses and immunities are installed afterward.
+The origin is internal simulation metadata and does not change native snapshot
+serialization or fixture hydration.
+
+Restoration returns the origin's numerical state and primary once flags while
+preserving shared aura dictionaries, source-card references and the immunity list.
+Original preview removal schedules destruction without setting normal death,
+despawn or statistics-listener flags. The native cardless immunity to endless
+survives restoration. Aura binding is still present at the immediate On/OnDestroy
+observations; the existing stable frame settlement later releases it.
+
+Automatic aura worlds retain these referenced primary actors after they leave
+live rooms. Whole-train and nested Boss previews carry observed unit/card identity
+counters and new detached source-card clones between rooms and into restored
+state. Their room caches resolve against restored primary actors, including an
+enemy that died only in the preview. Stable inactive physical entries remain
+empty; raw primary/temporary spawn-point planes are still an open integration
+requirement.
+
+The opt-in PreviewReferences observer now captures each birth's definition,
+source card and ability initialization inputs before EnableCombatPreviews, then
+its preview, restored primary and original OnDestroy states. Assigning observed
+unit/source-card identities at this first boundary also avoids an old diagnostic
+capture-order inconsistency between room and outer identity counters. It does
+not suppress gameplay or replace the original preview/removal operations.
+
+Four source-free native lifecycle archives independently compare primary
+initialization and restoration/destruction of all 53 births, complete observable
+unit states, and 32 immutable parallel branches per archive:
+
+| Archive | Births | Bytes | Unique nodes |
+| --- | ---: | ---: | ---: |
+| preview-birth-calibration.mt2f | 9 | 3,193 | 396 |
+| preview-birth-fresh-calibration.mt2f | 9 | 3,151 | 396 |
+| preview-birth-random-calibration.mt2f | 18 | 4,067 | 572 |
+| preview-birth-random-fresh-calibration.mt2f | 17 | 4,068 | 566 |
+
+Each is byte-identical to its native archive, has zero lifecycle capture errors
+and WholeBattleVerified=false. The four muted Instant runs preserve the original
+profile/log signatures. Their rejected full-battle traces are not curated: each
+has ten physical capture failures involving retained temporary points outside
+the captured primary groups, plus eight or twelve model differences. The latest
+fixed-pool diagnostic recomputation carries its own state through nine paid
+actions and the first two EndTurns; the next EndTurn differs in a retained removed
+actor's LastAttackerId (model zero/native two). This partial chain is diagnostic
+evidence, not a new accepted whole-battle policy. Lifecycle checks use the
+observed preview state as restoration input and do not establish independent
+simulation of the entire preview sequence.
+
+Inventory is now 172 archives: 149 accepted battles and 23 component calibrations.
+Validation with the final model includes thirty affected historical battle suites,
+28 continuous paid policy chains, all nineteen earlier calibrations/pure checks,
+and all four new lifecycle calibrations. The Probe build has zero warnings/errors;
+ModelChecks retains fourteen existing nullable warnings and no errors. All 172
+inventory sizes/hashes/list entries, new native binary provenance, PowerShell
+syntax and whitespace checks pass. A combined172 run is not claimed; the previous
+complete163 run remains the full regression baseline.

@@ -100,6 +100,9 @@ namespace MonsterTrain2Poju.Model
                 template.LastAttackerId, template.StatusRegistry, template.EquipmentCards, template.NextTriggerId,
                 template.Ability, template.StatusDictionary, template.AbilityRules, template.HordeDefinition, true,
                 template.SacrificeCardId, template.DeathState, bumpRules: template.BumpRules);
+            if (source.Preview)
+                spawned = spawned.WithDeathState((spawned.DeathState ?? new UnitDeathState(false, false, false))
+                    .WithPreviewPrimary(PreviewBirthModel.InitialPrimary(raw, template, spawned.Id, spawnerCardId)));
             if (context.SpawnPoints != null)
             {
                 var scope = new RoomCombatState(source.RoomIndex, source.Deployment, positionActors ?? source.Units, source.ExternalInteractions, context, source.Preview);

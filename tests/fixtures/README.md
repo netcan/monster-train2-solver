@@ -1192,3 +1192,32 @@ hashes/sizes and regression entries match, and the new binary equals its raw
 native source. Probe has zero build warnings/errors; the checker keeps fourteen
 existing nullable warnings with no errors. A full168 run is not claimed; the
 earlier complete163 regression remains the full baseline.
+
+Four preview-birth[-fresh|-random|-random-fresh]-calibration.mt2f archives observe
+the original lifecycle of 9/9/18/17 preview-only aura summons. Independent checks
+initialize each primary origin from its character/card/ability inputs, then
+restore from the observed preview actor and compare complete original On and
+OnDestroy states in 32 immutable branches. Native attack 8/HP 30 restores from
+preview attack 9/HP 32; preview upgrades/statuses vanish, shared endless immunity
+and aura maps remain, and destruction bypasses ordinary death/listener flags.
+
+The model retains these primary origins internally, carries referenced newborns,
+their detached source cards and observed identity counters through automatic aura
+previews, and restores card room caches against the surviving primary actors.
+The observer assigns birth/source identities before subsequent room captures.
+Raw temporary position planes and a late removed actor's attacker reference still
+prevent acceptance of the new whole battles. The latest fixed diagnostic chain
+matches nine paid actions and two EndTurns before that remaining difference.
+
+All four lifecycle captures have zero errors and WholeBattleVerified=false;
+their entire rejected battle traces are excluded. The muted Instant native runs
+preserve original profile/log signatures. Native binary copies are byte-identical,
+have no text source or JSON companions, and measure 3,193/3,151/4,067/4,068 bytes
+with 396/396/572/566 nodes. Inventory is 172: 149 accepted battles/23 calibrations.
+
+The final build passes thirty affected historical battles, 28 continuous paid
+policy chains, the earlier nineteen calibrations/pure checks and four new
+lifecycle calibrations. All 172 manifest hashes/sizes and regression entries
+match. Probe builds without warnings/errors; ModelChecks keeps fourteen existing
+nullable warnings and no errors. A combined172 run is not claimed; the previous
+complete163 regression remains the full baseline.

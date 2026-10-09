@@ -66,11 +66,19 @@ namespace MonsterTrain2Poju.Model
         // Older captures do not observe these flags. A retained positive-HP actor may be despawned.
         public bool? IsDespawned { get; }
         public bool? IsDestroyed { get; }
+        // Transient immutable state needed to restore units born during a preview.
+        // This is internal simulation metadata, not a native observable field.
+        internal CombatUnit? PreviewPrimary { get; }
         public UnitDeathState(bool hasFinishedDying, bool isBeingRemoved, bool hasStatisticsListener, int? pendingStatisticsCardId = null,
             bool? isSacrifice = null, bool? statisticsListenerOnce = null, bool? isDespawned = null, bool? isDestroyed = null)
         { HasFinishedDying = hasFinishedDying; IsBeingRemoved = isBeingRemoved; HasStatisticsListener = hasStatisticsListener; PendingStatisticsCardId = pendingStatisticsCardId; IsSacrifice = isSacrifice; StatisticsListenerOnce = statisticsListenerOnce; IsDespawned = isDespawned; IsDestroyed = isDestroyed; }
+        private UnitDeathState(UnitDeathState source, CombatUnit? previewPrimary) : this(source.HasFinishedDying,
+            source.IsBeingRemoved, source.HasStatisticsListener, source.PendingStatisticsCardId, source.IsSacrifice,
+            source.StatisticsListenerOnce, source.IsDespawned, source.IsDestroyed) { PreviewPrimary = previewPrimary; }
+        internal UnitDeathState WithPreviewPrimary(CombatUnit? primary) => new UnitDeathState(this, primary);
         internal UnitDeathState WithLifecycle(bool? despawned, bool? destroyed) => new UnitDeathState(HasFinishedDying,
-            IsBeingRemoved, HasStatisticsListener, PendingStatisticsCardId, IsSacrifice, StatisticsListenerOnce, despawned, destroyed);
+            IsBeingRemoved, HasStatisticsListener, PendingStatisticsCardId, IsSacrifice, StatisticsListenerOnce, despawned, destroyed)
+                .WithPreviewPrimary(PreviewPrimary);
     }
 
     public sealed class CombatUnit
@@ -172,13 +180,14 @@ namespace MonsterTrain2Poju.Model
             AbilityRules, HordeDefinition, IsSpawning, cardId, DeathState == null ? null : new UnitDeathState(
                 DeathState.HasFinishedDying, DeathState.IsBeingRemoved, DeathState.HasStatisticsListener,
                 DeathState.PendingStatisticsCardId, DeathState.IsSacrifice.HasValue ? true : (bool?)null, DeathState.StatisticsListenerOnce,
-                DeathState.IsDespawned, DeathState.IsDestroyed), bumpRules: BumpRules);
+                DeathState.IsDespawned, DeathState.IsDestroyed).WithPreviewPrimary(DeathState.PreviewPrimary), bumpRules: BumpRules);
 
         internal CombatUnit WithDeathState(UnitDeathState state) => new CombatUnit(Id, AssetKey, Team, BaseAttack, Health, MaxHealth,
             CanAttack, IsPyre, EndsBattleOnDeath, Statuses, Triggers, SpawnerCardId, Size, StatusImmunities, Subtypes,
             Modifiers, IsBoss, LastAttackerId, StatusRegistry, EquipmentCards, NextTriggerId, Ability, StatusDictionary,
             AbilityRules, HordeDefinition, IsSpawning, SacrificeCardId, state.WithLifecycle(
-                state.IsDespawned ?? DeathState?.IsDespawned, state.IsDestroyed ?? DeathState?.IsDestroyed), bumpRules: BumpRules);
+                state.IsDespawned ?? DeathState?.IsDespawned, state.IsDestroyed ?? DeathState?.IsDestroyed)
+                    .WithPreviewPrimary(state.PreviewPrimary ?? DeathState?.PreviewPrimary), bumpRules: BumpRules);
         internal CombatUnit WithTriggers(IReadOnlyList<CombatTrigger> triggers) => new CombatUnit(Id, AssetKey, Team, BaseAttack, Health, MaxHealth,
             CanAttack, IsPyre, EndsBattleOnDeath, Statuses, triggers, SpawnerCardId, Size, StatusImmunities, Subtypes,
             Modifiers, IsBoss, LastAttackerId, StatusRegistry, EquipmentCards, NextTriggerId, Ability, StatusDictionary,
@@ -1445,11 +1454,25 @@ namespace MonsterTrain2Poju.Model
                     EnchantmentWorld observed = preview.context!.Enchantments!;
                     int[] removedPreviewIds = observed.Rooms.SelectMany(room => room.Units).Concat(observed.RetainedUnits.Select(unit => unit.Unit))
                         .Where(unit => unit.Id >= context.NextUnitId).Select(unit => unit.Id).ToArray();
+                    int firstPreviewId = context.NextUnitId ?? int.MaxValue;
+                    int firstPreviewCardId = context.NextCardId;
+                    if (preview.context!.NextUnitId is int nextId) context = context.WithNextUnitId(nextId);
+                    if (context.CardRegistry != null && preview.context.CardRegistry != null)
+                        context = context.WithCardRegistry(context.CardRegistry.Concat(
+                            PreviewBirthModel.RestoreSourceCards(preview.context, firstPreviewCardId,
+                                originalWorld.Rooms.SelectMany(room => room.Units).Where(unit => unit.Health > 0)
+                                    .Select(unit => unit.Id).ToHashSet())).ToArray())
+                            .WithNextCardId(preview.context.NextCardId);
+                    if (context.SpawnPoints != null)
+                        context = context.WithSpawnPoints(new BattleSpawnPoints(context.SpawnPoints.Groups, context.SpawnPoints.Units.Concat(
+                            removedPreviewIds.Select(id => new UnitSpawnPointState(id, null, null, spawnedInPreview: true))).ToArray()));
                     CombatUnit Restore(CombatUnit unit, int room) => EnchantmentWorldModel.RestorePreviewEffects(unit, observed, room == source.RoomIndex, removedPreviewIds);
                     context = context.WithEnchantments(new EnchantmentWorld(originalWorld.Rooms.Select(room => new RoomCombatState(room.RoomIndex,
                         room.Deployment, room.Units.Select(unit => Restore(unit, room.RoomIndex)).ToArray(), room.ExternalInteractions, null, room.Preview)).ToArray(),
                         originalWorld.Movement, originalWorld.EnemySlotsPerRoom, originalWorld.RetainedUnits.Select(actor => new EnchantmentRetainedUnit(
-                            Restore(actor.Unit, actor.RoomIndex), actor.RoomIndex, actor.Preview)).ToArray(), originalWorld.EnchanterIds,
+                            Restore(actor.Unit, actor.RoomIndex), actor.RoomIndex, actor.Preview))
+                            .Concat(PreviewBirthModel.Retain(observed, firstPreviewId, removedPreviewIds)).ToArray(),
+                        originalWorld.EnchanterIds.Concat(observed.EnchanterIds).Distinct().ToArray(),
                         originalWorld.AllowUpdates, originalWorld.Updating, originalWorld.Preview, originalWorld.TestRng, true));
                     ImportEnchantmentRoom(EnchantmentWorldModel.Refresh(EnchantmentWorldModel.Room(CurrentRoom(), context)));
                 }
@@ -1590,7 +1613,8 @@ namespace MonsterTrain2Poju.Model
                     before.DeathState == null ? null : new UnitDeathState(false, before.DeathState.IsBeingRemoved,
                         before.DeathState.HasStatisticsListener, isSacrifice: before.DeathState.IsSacrifice.HasValue ? false : (bool?)null,
                         statisticsListenerOnce: before.DeathState.StatisticsListenerOnce,
-                        isDespawned: before.DeathState.IsDespawned, isDestroyed: before.DeathState.IsDestroyed), bumpRules: before.BumpRules));
+                        isDespawned: before.DeathState.IsDespawned, isDestroyed: before.DeathState.IsDestroyed)
+                        .WithPreviewPrimary(before.DeathState.PreviewPrimary), bumpRules: before.BumpRules));
                 target.DeathFinished = false;
                 RemoveStatus(target, "undying", 1);
                 CombatUnit revived = target.Freeze();

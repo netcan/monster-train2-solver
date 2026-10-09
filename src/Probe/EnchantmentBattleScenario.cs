@@ -144,6 +144,11 @@ namespace MonsterTrain2Poju.Probe
                     CharacterState native = trace.KnownUnits.Single(actor => trace.UnitId(actor) == unit.Id);
                     observed[unit.Id] = (native, room.RoomIndex);
                 }
+            // Preview-only births can leave every live room while shared aura maps
+            // still retain the managed objects. Include these initialized identities.
+            foreach (CharacterState native in trace.KnownUnits.Where(actor => actor.SpawnedInPreviewMode))
+                using (new CharacterState.SetAllowDestroyedAccessHelper(native, onlyIfDestroyed: true))
+                    observed[trace.UnitId(native)] = (native, native.GetCurrentRoomIndex());
             var retained = new List<EnchantmentRetainedUnit>();
             var enchanters = new List<int>();
             foreach (var pair in observed)

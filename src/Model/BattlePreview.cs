@@ -30,6 +30,7 @@ namespace MonsterTrain2Poju.Model
             }
             var overwrittenSummons = new HashSet<(int UnitId, int TriggerId, int EffectIndex)>();
             int firstPreviewId = context.NextUnitId ?? int.MaxValue;
+            int firstPreviewCardId = context.NextCardId;
             bool previewBirth = false;
             var originalUnits = source.Rooms.SelectMany(room => room.Units).Where(unit => unit.Health > 0)
                 .Select(unit => unit.Id).ToHashSet();
@@ -87,7 +88,15 @@ namespace MonsterTrain2Poju.Model
                 }
                 previewContext = previewContext.WithStatistics(previewContext.Statistics!.WithLastAttackDamage(preview.State!.Context!.Statistics!.LastAttackDamageDealt));
                 if (context.IsolatedBattlePreview == true) previewContext = previewContext.WithBattleRng(preview.State!.Context!.BattleRng);
-                if (originalWorld?.AutomaticLifecycle == true) previewContext = previewContext.WithEnchantments(preview.State!.Context!.Enchantments);
+                if (originalWorld?.AutomaticLifecycle == true)
+                {
+                    previewContext = previewContext.WithEnchantments(preview.State!.Context!.Enchantments);
+                    if (preview.State.Context.NextUnitId is int nextId) previewContext = previewContext.WithNextUnitId(nextId);
+                    if (previewContext.CardRegistry != null && preview.State.Context.CardRegistry != null)
+                        previewContext = previewContext.WithCardRegistry(previewContext.CardRegistry.Concat(
+                            preview.State.Context.CardRegistry.Where(card => card.InstanceId >= firstPreviewCardId)).ToArray())
+                            .WithNextCardId(preview.State.Context.NextCardId);
+                }
                 if (preview.RetainedUnits.Any(unit => unit.Health <= 0 && (unit.EndsBattleOnDeath || unit.IsPyre))) break;
             }
             context = context.WithStatistics(context.Statistics!.WithLastAttackDamage(previewContext.Statistics!.LastAttackDamageDealt));
@@ -99,6 +108,14 @@ namespace MonsterTrain2Poju.Model
                 EnchantmentWorld observed = previewContext.Enchantments!;
                 var actors = observed.Rooms.SelectMany(room => room.Units).Concat(observed.RetainedUnits.Select(actor => actor.Unit)).ToDictionary(unit => unit.Id);
                 int[] removed = actors.Keys.Where(id => id >= firstPreviewId).ToArray();
+                if (previewContext.NextUnitId is int nextId) context = context.WithNextUnitId(nextId);
+                if (context.CardRegistry != null && previewContext.CardRegistry != null)
+                    context = context.WithCardRegistry(context.CardRegistry.Concat(
+                        PreviewBirthModel.RestoreSourceCards(previewContext, firstPreviewCardId, originalUnits)).ToArray())
+                        .WithNextCardId(previewContext.NextCardId);
+                if (context.SpawnPoints != null)
+                    context = context.WithSpawnPoints(new BattleSpawnPoints(context.SpawnPoints.Groups, context.SpawnPoints.Units.Concat(
+                        removed.Select(id => new UnitSpawnPointState(id, null, null, spawnedInPreview: true))).ToArray()));
                 CombatUnit RestoreEnchantments(CombatUnit original)
                 {
                     if (!actors.TryGetValue(original.Id, out CombatUnit? tested)) return original;
@@ -107,7 +124,9 @@ namespace MonsterTrain2Poju.Model
                 context = context.WithEnchantments(new EnchantmentWorld(source.Rooms.Select(room => new RoomCombatState(room.RoomIndex,
                     room.Deployment, room.Units.Select(RestoreEnchantments).ToArray(), room.ExternalInteractions, null, room.Preview)).ToArray(),
                     source.Movement, source.EnemySlotsPerRoom, originalWorld.RetainedUnits.Select(actor => new EnchantmentRetainedUnit(
-                        RestoreEnchantments(actor.Unit), actor.RoomIndex, actor.Preview)).ToArray(), originalWorld.EnchanterIds,
+                        RestoreEnchantments(actor.Unit), actor.RoomIndex, actor.Preview))
+                        .Concat(PreviewBirthModel.Retain(observed, firstPreviewId, removed)).ToArray(),
+                    originalWorld.EnchanterIds.Concat(observed.EnchanterIds).Distinct().ToArray(),
                     originalWorld.AllowUpdates, originalWorld.Updating, originalWorld.Preview, originalWorld.TestRng, true));
             }
             var train = new TrainCombatState(source.Rooms.Select(room => new RoomCombatState(room.RoomIndex, room.Deployment,

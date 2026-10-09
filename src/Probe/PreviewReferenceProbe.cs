@@ -20,6 +20,13 @@ namespace MonsterTrain2Poju.Probe
             public int PointIndex { get; set; }
             public bool TemporaryPoint { get; set; }
             public int RemovalStage { get; set; }
+            public CardPlayRule Definition { get; set; } = null!;
+            public CardInstanceState? SourceCard { get; set; }
+            public string[] DisabledAbilities { get; set; } = Array.Empty<string>();
+            public CombatStatus AbilityMarker { get; set; } = null!;
+            public CombatUnit? Preview { get; set; }
+            public CombatUnit? Restored { get; set; }
+            public CombatUnit? Destroyed { get; set; }
             internal CharacterState Native = null!;
         }
         internal sealed class Sample
@@ -59,12 +66,17 @@ namespace MonsterTrain2Poju.Probe
         {
             if (active == null) return;
             foreach (var actor in active.Actors) actor.Sample.Preview = FullBattleTrace.Active!.CaptureUnit(actor.Native);
+            foreach (Birth birth in active.Births) birth.Preview = FullBattleTrace.Active!.CaptureUnit(birth.Native);
         }
         private static void Complete()
         {
             if (active == null) return;
             foreach (Birth birth in active.Births)
+            {
                 birth.RemovalStage = Convert.ToInt32(AccessTools.Field(typeof(CharacterState), "destroyedState").GetValue(birth.Native));
+                using (new CharacterState.SetAllowDestroyedAccessHelper(birth.Native, onlyIfDestroyed: true))
+                    birth.Restored = FullBattleTrace.Active!.CaptureDecision(() => FullBattleTrace.Active.CaptureUnit(birth.Native));
+            }
             int[] removed = active.Births.Where(birth => birth.RemovalStage > 0).Select(birth => birth.UnitId).ToArray();
             foreach (var actor in active.Actors)
             {
@@ -86,6 +98,13 @@ namespace MonsterTrain2Poju.Probe
                 ModifierScenario = Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS"), Errors = errors,
                 Mismatches = samples.Count(sample => sample.Difference != null), Samples = samples, Births = births }))
             using (var stream = File.Create(path)) archive.Write(stream);
+            if (births.Count == 0) return;
+            using (var archive = NativeFixtureCapture.Capture(new { Schema = 1, GameVersion = UnityEngine.Application.version,
+                GameModuleMvid = typeof(CharacterState).Assembly.ManifestModule.ModuleVersionId,
+                Boundary = "OriginalPreviewBirthLifecycle", GameplaySuppressed = false, WholeBattleVerified = false,
+                ModifierScenario = Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS"), Errors = errors, Births = births }))
+            using (var stream = File.Create(Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!, "preview-birth-calibration.mt2f")))
+                archive.Write(stream);
         }
         [HarmonyPatch(typeof(CharacterState), nameof(CharacterState.EnableCombatPreviews))]
         private static class BirthPatch
@@ -100,11 +119,36 @@ namespace MonsterTrain2Poju.Probe
                     RoomState room = point.GetRoomOwner() ?? throw new InvalidOperationException("A preview birth has no room owner.");
                     object group = AccessTools.Field(typeof(RoomState), "monsterSpawnPointGroup").GetValue(room);
                     var temporary = (List<SpawnPoint>)AccessTools.Field(group.GetType(), "_temporarySpawnPoints").GetValue(group);
+                    CardState? source = __instance.GetSpawnerCard();
+                    var interactions = new List<string>();
+                    CharacterData data = __instance.GetSourceCharacterData();
+                    CardPlayRule definition = source == null ? new CardPlayRule("", data.GetAssetKey(), 0, "Summon", "Standby",
+                        BattleActionProbe.SpawnTemplate(data, true, interactions), interactions) :
+                        BattleActionProbe.BirthDefinition(AllGameManagers.Instance!.GetSaveManager().GetAllGameData().FindCardData(source.GetCardDataID())!, data);
                     var birth = new Birth { UnitId = trace.UnitId(__instance), Primary = trace.CaptureUnit(__instance),
-                        RoomIndex = room.GetRoomIndex(), PointIndex = point.GetIndexInRoom(), TemporaryPoint = temporary.Contains(point), Native = __instance };
+                        RoomIndex = room.GetRoomIndex(), PointIndex = point.GetIndexInRoom(), TemporaryPoint = temporary.Contains(point), Native = __instance,
+                        Definition = definition, SourceCard = source == null ? null : CardModifierProbe.Capture(new[] { source }, trace.CardId).Single(),
+                        DisabledAbilities = AbilityLifecycleProbe.Disabled(AllGameManagers.Instance!.GetSaveManager()).ToArray(),
+                        AbilityMarker = BattleActionProbe.Status("unit_ability", 1) };
                     active.Births.Add(birth); births.Add(birth);
                 }
                 catch (Exception error) { errors.Add(error.ToString()); }
+            }
+        }
+        [HarmonyPatch(typeof(CharacterState), "OnDestroy")]
+        private static class DestroyPatch
+        {
+            private static void Postfix(CharacterState __instance)
+            {
+                Birth? birth = births.LastOrDefault(item => ReferenceEquals(item.Native, __instance));
+                if (birth == null) return;
+                try
+                {
+                    using (new CharacterState.SetAllowDestroyedAccessHelper(__instance, onlyIfDestroyed: true))
+                        birth.Destroyed = FullBattleTrace.Active!.CaptureDecision(() => FullBattleTrace.Active.CaptureUnit(__instance));
+                    Write();
+                }
+                catch (Exception error) { errors.Add(error.ToString()); Write(); }
             }
         }
         [HarmonyPatch(typeof(CombatManager), "SetCharacterPreviewState")]
