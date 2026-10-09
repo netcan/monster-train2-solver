@@ -180,6 +180,7 @@ StatusRegistryChecks.Run();
 StatusCallbackChecks.Run();
 PersistentEnchantmentChecks.Run();
 PreviewCopyChecks.Run();
+ContextReferenceChecks.Run();
 UnitUpgradeCallbackChecks.Run();
 RetainedCallbackChecks.Run();
 ConditionalTriggerChecks.Run();

@@ -127,6 +127,7 @@ are copied immutable values; independent child states can run on worker threads.
 | Physical death Harvest | `HarvestModel` and `RoomCombatModel` | Four native physical deaths and 31 exact dispatches; own-death children precede player/enemy groups, Hero/Monster/Unit kinds, Horde repetition, required dying statuses, silence and once flags; complete subsequent battle and parallel branches |
 | Undying revival | `RoomCombatModel.ApplyRevival` and damage/sacrifice settlement | Eleven native revival boundaries, seven direct/removal operations, ninety callback phases, both teams, last/zero stacks, queued self damage, one-time statistics listeners and complete policies with parallel branches |
 | Equipment-owned summons | `RoomCombatModel`, `UnitBirthModel` and `BattlePreviewModel` | Native equipment binding is separate from the host source card; individual summon effects compare complete states, first-birth caches and accepted callback FIFO, including physical Rally order and retained death sources |
+| Persistent enchantment summons and preview births | `EnchantmentCombatModel`, `UnitBirthModel`, `RoomCombatModel` and `BattleSpawnPointModel` | Complete schema105 battle with fifteen paid actions, five EndTurns and sixteen independent branches; nested aura births, detached source cards, shared weak targets and copied-point allocation; original card/death callback settlement is explicitly enabled |
 | Queued trigger repetition | `RoomCombatModel` | Eight complete native batches and 26 dispatches, once flags, zero/negative counts, ordered child callbacks, silence/fire permissions and 32 branches; Horde status callers now preserve rally/harvest repetition payloads |
 | Additional spells, abilities, relics | Not complete | Unsupported interactions explicitly reject the model transition |
 
@@ -6503,9 +6504,11 @@ plane mappings.
 
 Strict full-battle verification still rejects three intermediate differences:
 TrainPhase8/Combat and Stage36/Room retain a ninth native copied position group
-where the model has eight; Stage37/Exchange creates a source card one callback
-boundary too early (NextCardId30 versus native29). The following native exchange
-input already has NextCardId30, but it is comparison evidence, never model input.
+where the model has eight; Stage37/Exchange differs in its frozen source-card
+registry/counter (NextCardId30 versus native29). Later reference-closure checks
+identify this as an incomplete observed snapshot: retained actor26 already names
+source card29 while the native registry ends at28. The following native exchange
+input has NextCardId30, but it is comparison evidence, never model input.
 Stages38-40 now match. Neither diagnostic is curated as an accepted battle.
 The targeted 32-battle/30-policy/24-calibration regression passes; a combined173
 regression was not repeated, and complete163 remains the full regression baseline.
@@ -6554,3 +6557,39 @@ A 160.97-second muted Instant run has 24 scheduled movements, none pending,
 and an independently matching fifteen-action/five-EndTurn policy in sixteen
 branches, including the new copy counter. The script requires positive movement
 coverage and zero pending callbacks before accepting this protocol.
+
+### Native snapshot reference closure
+
+CaptureContext now discovers retained actors, detached source cards, card-pile
+members, ability caches, bonus-draw owners and copied-point references before
+freezing the card registry and identity counters. Capture passes repeat until
+both identity sets stop growing; only the final complete physical decision
+record is retained. These are observations of existing objects and references,
+not battle effects or replacement model state.
+
+The formerly rejected Stage37 snapshot already contained retained actor26 with
+SpawnerCardId29, although its frozen registry ended at28 and NextCardId was29.
+CaptureWorld discovered that card after the constructor's registry/counter
+arguments had been evaluated. The following snapshot exposed the existing card;
+the discrepancy was not evidence that the model needed a delayed summon rule.
+
+Schema105 independent checks now require complete registries/counters and valid
+retained source-card, equipment, pile, weak-target and physical-point references.
+The malformed native snapshot is explicitly rejected for actor26/source29. The
+corrected 135.20-second muted Instant native recording has zero differences,
+capture failures, unsupported paths or pending records, and preserves original
+profile/log signatures. All 154 Before/Actual contexts pass; all 41 room stages,
+nine train phases, seven spawns, fifteen paid actions and five EndTurns match.
+The continuous policy uses its own evolving state, passes a mid-battle root and
+sixteen immutable parallel branches, and finishes with Pyre80. This closes the
+previous full-battle difference for the recorded persistent-enchantment summons
+case; broader combat coverage and the optimal solver remain unfinished.
+
+The final rebuilt Probe repeats this result in 162.55 seconds with the full
+original movement-completion gate (24 movements scheduled, none pending).
+Its final independent checker again passes all 154 closed contexts, complete
+intermediate/terminal states, the fifteen-action/five-EndTurn policy, a mid-battle
+root and sixteen parallel branches. Probe, isolated runtime and checker load the
+same Model.dll SHA-256 (59153b6d1959e90bd39ee4de0ba729863a628c616f8a0cd6408ee1900e8f2ffd).
+Probe builds with zero warnings/errors; ModelChecks retains fourteen existing
+nullable warnings and no errors.

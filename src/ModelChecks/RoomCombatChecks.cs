@@ -119,6 +119,7 @@ internal static class RoomCombatChecks
     {
         using FixtureDocument document = ModelJson.ReadFixture(path);
         FixtureValue fixture = document.RootElement;
+        ContextReferenceChecks.Native(fixture);
         Require(fixture.GetProperty("NativeWon").ValueKind is FixtureKind.True or FixtureKind.False,
             "Native fixture did not reach the end of the battle.");
         Require(fixture.GetProperty("CaptureFailures").GetInt32() == 0 &&

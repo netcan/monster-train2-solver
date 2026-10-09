@@ -246,18 +246,43 @@ namespace MonsterTrain2Poju.Probe
             uint[] draw = RngCalibration.Words(RandomManager.GetState(RngId.CardDraw));
             uint[] battle = RngCalibration.Words(RandomManager.GetState(RngId.Battle));
             CardInstanceState[] instances = CardModifierProbe.Capture(cards, CardId);
-            BattleStatistics statistics = BattleStatisticsProbe.Capture(managers.GetCardStatistics(), CardId);
-            AbilityCardCacheEntry[] abilityCache = AbilityCardProbe.Capture(this);
-            CardInstanceState[] registry = CardModifierProbe.Capture(projection.KnownCards, CardId);
             CharacterState lastSpawned = managers.GetMonsterManager()!.GetLastSpawnedCharacterThisTurn();
-            BattleSpawnPoints? spawnPoints = BattleSpawnPointProbe.Enabled ? BattleSpawnPointProbe.Capture(this) : null;
+            int lastSpawnedId = lastSpawned == null || normalizeDestroyedAttacker && (lastSpawned.IsDestroyed || !lastSpawned.IsAlive)
+                ? 0 : UnitId(lastSpawned);
+            int activatorId = AccessTools.Field(typeof(CombatManager), "lastAbilityActivatorCharacter").GetValue(managers.GetCombatManager()) is CharacterState activator
+                ? UnitId(activator) : 0;
+            BattleStatistics statistics;
+            AbilityCardCacheEntry[] abilityCache;
+            CardInstanceState[] registry;
+            CardPileState[] otherPiles;
+            BonusDrawState bonusDraw;
+            BattleSpawnPoints? spawnPoints;
+            EnchantmentWorld? enchantments;
+            int observedCards, observedUnits;
+            // Retained preview actors can reveal detached source cards; copied
+            // slots and card weak references can reveal additional actors. Close
+            // these references before freezing either registry or identity counter.
+            do
+            {
+                observedCards = projection.KnownCards.Count(); observedUnits = identities.Count;
+                int decisionStart = BattleSpawnPointProbe.Decisions.Count;
+                otherPiles = CaptureOtherPiles();
+                enchantments = EnchantmentBattleScenario.Prepared ? EnchantmentBattleScenario.CaptureWorld(this) : null;
+                abilityCache = AbilityCardProbe.Capture(this);
+                bonusDraw = BonusDrawProbe.Capture(cards, this);
+                spawnPoints = BattleSpawnPointProbe.Enabled ? BattleSpawnPointProbe.Capture(this) : null;
+                statistics = BattleStatisticsProbe.Capture(managers.GetCardStatistics(), CardId);
+                registry = CardModifierProbe.Capture(projection.KnownCards, CardId);
+                if (observedCards != projection.KnownCards.Count() || observedUnits != identities.Count)
+                    BattleSpawnPointProbe.Decisions.RemoveRange(decisionStart, BattleSpawnPointProbe.Decisions.Count - decisionStart);
+            } while (observedCards != projection.KnownCards.Count() || observedUnits != identities.Count);
             return new CombatContext(new CardCycleState(state.Hand, state.Draw, state.Discard,
-                new UnityRng(draw[0], draw[1], draw[2], draw[3]), state.DrawModifier, Array.Empty<string>(), BonusDrawProbe.Capture(cards, this)),
+                new UnityRng(draw[0], draw[1], draw[2], draw[3]), state.DrawModifier, Array.Empty<string>(), bonusDraw),
                 new UnityRng(battle[0], battle[1], battle[2], battle[3]), state.Gold, projection.NextCardId,
                 cards.GetMaxHandSize(), new[] { "armor", "valor", "pyregel", "relentless", "cooldown", "unit_ability", "unit_ability_available", "horde" }.Concat(TriggeredSummonProbe.Enabled || UnitCloneScenario.Enabled || UnitCopyScenario.Enabled || HeroCopyScenario.Enabled ? new[] { "cardless" } : Array.Empty<string>()).Concat(new[] { "undying" }).Select(id => BattleActionProbe.Status(id, 1)).ToArray(),
                 statistics, instances, registry, managers.GetCombatManager()!.AllScenarioBossesDead,
                 ((IEnumerable<CardUpgradeState>)AccessTools.Field(typeof(CardManager), "nextAddedTempCardUpgrades").GetValue(cards))
-                    .Select(CardModifierProbe.Upgrade).ToArray(), CaptureOtherPiles(), CaptureQueryFrame(managers),
+                    .Select(CardModifierProbe.Upgrade).ToArray(), otherPiles, CaptureQueryFrame(managers),
                 (bool)AccessTools.Field(typeof(CombatManager), "isKillCamActivated").GetValue(managers.GetCombatManager()),
                 Enumerable.Range(0, managers.GetRoomManager()!.GetNumRooms()).SelectMany(index => new[] { Team.Type.Heroes, Team.Type.Monsters }
                     .Select(team => new RoomMagicPower(index, team == Team.Type.Heroes ? CombatTeam.Enemy : CombatTeam.Player,
@@ -268,10 +293,9 @@ namespace MonsterTrain2Poju.Probe
                     (int)AccessTools.Field(typeof(CombatManager), "modifiedEnergyEveryTurn").GetValue(managers.GetCombatManager()),
                     managers.GetCombatManager()!.GetCombatPhase().ToString(), managers.GetPlayerManager().GetTowerHP() > 0),
                 RoomCapacityProbe.Capture(managers.GetRoomManager()!), abilityCache,
-                AccessTools.Field(typeof(CombatManager), "lastAbilityActivatorCharacter").GetValue(managers.GetCombatManager()) is CharacterState activator
-                    ? UnitId(activator) : 0, AbilityLifecycleProbe.Disabled(managers.GetSaveManager()),
-                lastSpawned == null || normalizeDestroyedAttacker && (lastSpawned.IsDestroyed || !lastSpawned.IsAlive) ? 0 : UnitId(lastSpawned), NextUnitId, spawnPoints,
-                TriggeredSummonProbe.Catalog(), EnchantmentBattleScenario.Prepared ? EnchantmentBattleScenario.CaptureWorld(this) : null);
+                activatorId, AbilityLifecycleProbe.Disabled(managers.GetSaveManager()),
+                lastSpawnedId, NextUnitId, spawnPoints,
+                TriggeredSummonProbe.Catalog(), enchantments);
         }
 
         private static StatisticQueryFrame CaptureQueryFrame(AllGameManagers managers)
