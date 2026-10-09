@@ -152,7 +152,8 @@ namespace MonsterTrain2Poju.Probe
             }
             int[] CopyIds(IEnumerable<UnitSpawnPointState> states) => states.SelectMany(state => new[] { state.Current, state.LastKnown })
                 .Where(point => point?.PreviewCopyId != null).Select(point => point!.PreviewCopyId!.Value).Distinct().OrderBy(id => id).ToArray();
-            var raw = new BattleSpawnPoints(groups.Concat(CopyIds(references).Select(id => CopyGroup(trace, id))).ToArray(), references);
+            var raw = new BattleSpawnPoints(groups.Concat(CopyIds(references).Select(id => CopyGroup(trace, id))).ToArray(), references,
+                copies.Count + 1);
             if (!trace.CanonicalDecisionCapture) return raw;
             // Coroutine effects retain raw points above. Stable decisions use logical
             // removal, independent of when the corpse dissolve destroys its Unity object.
@@ -160,7 +161,7 @@ namespace MonsterTrain2Poju.Probe
                 .Select(trace.UnitId).OrderBy(id => id).ToArray();
             var active = new HashSet<int>(living);
             var canonical = new BattleSpawnPoints(groups, references.Select(point => active.Contains(point.UnitId) ? point :
-                new UnitSpawnPointState(point.UnitId, null, null, point.OuterBoss, point.SpawnedInPreview)).ToArray());
+                new UnitSpawnPointState(point.UnitId, null, null, point.OuterBoss, point.SpawnedInPreview)).ToArray(), copies.Count + 1);
             int[] allCopies = CopyIds(planes.SelectMany(unit => new[] { unit.Primary, unit.Preview, unit.Temporary })
                 .Where(state => state != null).Cast<UnitSpawnPointState>()).Concat(currentCopies).Distinct().OrderBy(id => id).ToArray();
             Decisions.Add(new DecisionRecord { Raw = raw, Canonical = canonical, LivingUnitIds = living,

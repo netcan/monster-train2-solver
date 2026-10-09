@@ -13,6 +13,8 @@ namespace MonsterTrain2Poju.Model
         {
             CombatContext? context = source.Context;
             if (context?.Statistics == null) return new TrainCombatResult(source, RoomOutcome.Exchanged, Array.Empty<RoomCombatResult>());
+            BattleSpawnPoints? originalPoints = context.SpawnPoints;
+            if (originalPoints != null) context = context.WithSpawnPoints(originalPoints.BeginPreview());
             var previewTrain = new TrainCombatState(source.Rooms.Select(room => new RoomCombatState(room.RoomIndex,
                 room.Deployment, room.Units, room.ExternalInteractions, context, preview: true)).ToArray(),
                 source.Movement, source.EnemySlotsPerRoom, context);
@@ -87,6 +89,7 @@ namespace MonsterTrain2Poju.Model
                         previewContext = previewContext.WithCard(card.WithRoomCacheState(captured.PlayedRoomUnitIds, captured.RawPlayedRoomUnitIds));
                 }
                 previewContext = previewContext.WithStatistics(previewContext.Statistics!.WithLastAttackDamage(preview.State!.Context!.Statistics!.LastAttackDamageDealt));
+                if (preview.State.Context.SpawnPoints != null) previewContext = previewContext.WithSpawnPoints(preview.State.Context.SpawnPoints);
                 if (context.IsolatedBattlePreview == true) previewContext = previewContext.WithBattleRng(preview.State!.Context!.BattleRng);
                 if (originalWorld?.AutomaticLifecycle == true)
                 {
@@ -100,6 +103,8 @@ namespace MonsterTrain2Poju.Model
                 if (preview.RetainedUnits.Any(unit => unit.Health <= 0 && (unit.EndsBattleOnDeath || unit.IsPyre))) break;
             }
             context = context.WithStatistics(context.Statistics!.WithLastAttackDamage(previewContext.Statistics!.LastAttackDamageDealt));
+            if (originalPoints?.NextPreviewCopyId.HasValue == true)
+                context = context.WithSpawnPoints(BattleSpawnPoints.EndPreview(originalPoints, previewContext.SpawnPoints!, clearBirths: true));
             // Native preview births overwrite shared weak references. Their temporary
             // Unity objects disappear before the next stable decision capture.
             if (previewBirth && context.LastSpawnedUnitId.HasValue) context = context.WithLastSpawned(0);
@@ -113,8 +118,8 @@ namespace MonsterTrain2Poju.Model
                     context = context.WithCardRegistry(context.CardRegistry.Concat(
                         PreviewBirthModel.RestoreSourceCards(previewContext, firstPreviewCardId, originalUnits)).ToArray())
                         .WithNextCardId(previewContext.NextCardId);
-                if (context.SpawnPoints != null)
-                    context = context.WithSpawnPoints(new BattleSpawnPoints(context.SpawnPoints.Groups, context.SpawnPoints.Units.Concat(
+                if (context.SpawnPoints != null && originalPoints?.NextPreviewCopyId.HasValue != true)
+                    context = context.WithSpawnPoints(context.SpawnPoints.WithState(context.SpawnPoints.Groups, context.SpawnPoints.Units.Concat(
                         removed.Select(id => new UnitSpawnPointState(id, null, null, spawnedInPreview: true))).ToArray()));
                 CombatUnit RestoreEnchantments(CombatUnit original)
                 {

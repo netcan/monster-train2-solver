@@ -1418,7 +1418,8 @@ namespace MonsterTrain2Poju.Model
                 if (source.Preview || context?.Statistics == null || !units.Any(unit => unit.Alive &&
                     (unit.Source.IsPyre || unit.Source.IsBoss == true || unit.Source.IsBoss == null && unit.Source.EndsBattleOnDeath))) return;
                 var copied = new RoomCombatState(source.RoomIndex, source.Deployment, units.Select(unit => unit.Freeze()).ToArray(),
-                    source.ExternalInteractions, context, preview: true);
+                    source.ExternalInteractions, context.SpawnPoints == null ? context :
+                        context.WithSpawnPoints(context.SpawnPoints.BeginPreview()), preview: true);
                 EnchantmentWorld? originalWorld = context.Enchantments;
                 if (originalWorld?.AutomaticLifecycle == true)
                 {
@@ -1430,6 +1431,7 @@ namespace MonsterTrain2Poju.Model
                         prepared = EnchantmentCombatModel.PrepareForPreview(prepared, unit.Source.Id);
                     EnchantmentWorld preparedWorld = EnchantmentWorld.From(prepared, true);
                     CombatContext testContext = context.WithEnchantments(preparedWorld);
+                    if (testContext.SpawnPoints != null) testContext = testContext.WithSpawnPoints(testContext.SpawnPoints.BeginPreview());
                     copied = new RoomCombatState(copied.RoomIndex, copied.Deployment, units.Where(unit => unit.InRoom && !unit.Removed)
                         .Select(unit => EnchantmentWorldModel.RestorePreviewEffects(unit.Freeze(), preparedWorld, false)).ToArray(),
                         copied.ExternalInteractions, testContext, true);
@@ -1449,6 +1451,9 @@ namespace MonsterTrain2Poju.Model
                 // Native restores characters, but CardStatistics is shared: queries can refresh its
                 // membership and SetAttackDamageDealt survives, including nested retaliation.
                 context = context.WithStatistics(preview.context!.Statistics);
+                BattleSpawnPoints? restoredPoints = context.SpawnPoints?.NextPreviewCopyId.HasValue == true ?
+                    BattleSpawnPoints.EndPreview(context.SpawnPoints, preview.context.SpawnPoints!, clearBirths: false) : null;
+                if (restoredPoints != null) context = context.WithSpawnPoints(restoredPoints);
                 if (originalWorld?.AutomaticLifecycle == true)
                 {
                     EnchantmentWorld observed = preview.context!.Enchantments!;
@@ -1483,8 +1488,8 @@ namespace MonsterTrain2Poju.Model
                             .WithNextCardId(preview.context.NextCardId);
                     }
                     if (context.LastSpawnedUnitId.HasValue) context = context.WithLastSpawned(preview.context.LastSpawnedUnitId ?? 0);
-                    if (context.SpawnPoints != null)
-                        context = context.WithSpawnPoints(new BattleSpawnPoints(context.SpawnPoints.Groups, context.SpawnPoints.Units.Concat(
+                    if (context.SpawnPoints != null && restoredPoints == null)
+                        context = context.WithSpawnPoints(context.SpawnPoints.WithState(context.SpawnPoints.Groups, context.SpawnPoints.Units.Concat(
                             births.Select(actor => new UnitSpawnPointState(actor.Unit.Id, null, null, spawnedInPreview: true))).ToArray()));
                     var restoredActors = units.Where(unit => unit.InRoom && !unit.Removed).Select(unit => unit.Source.Id).ToHashSet();
                     CombatUnit Restore(CombatUnit unit, int room) => EnchantmentWorldModel.RestorePreviewEffects(unit, observed,
@@ -1801,7 +1806,7 @@ namespace MonsterTrain2Poju.Model
                                     .WithLifecycle(actor.Unit.DeathState?.IsDespawned, true)), -1, actor.Preview) : actor).ToArray(),
                             world.EnchanterIds, world.AllowUpdates, world.Updating, world.Preview, world.TestRng, true));
                         BattleSpawnPoints points = context.SpawnPoints!;
-                        context = context.WithSpawnPoints(new BattleSpawnPoints(points.Groups.Select(group => new SpawnPointGroupState(
+                        context = context.WithSpawnPoints(points.WithState(points.Groups.Select(group => new SpawnPointGroupState(
                             group.RoomIndex, group.Team, group.InnerCount, group.GroupCount,
                             group.Occupants.Select(id => cleared.Contains(id) ? 0 : id).ToArray(), group.Outside, group.PreviewCopyId)).ToArray(), points.Units));
                         foreach (CardInstanceState card in context.CardRegistry ?? context.CardInstances ?? Array.Empty<CardInstanceState>())
@@ -2112,11 +2117,11 @@ namespace MonsterTrain2Poju.Model
                 int position = 0;
                 if (from != null)
                 {
-                    SpawnPointGroupState before = context!.SpawnPoints!.Group(source.RoomIndex, CombatTeam.Player)!;
+                    SpawnPointGroupState before = context!.SpawnPoints!.SelectedGroup(source.RoomIndex, CombatTeam.Player)!;
                     var prefix = before.Occupants.Take(from.Index).Where(id => id > 0).ToHashSet();
                     if (!SummonPhysical("Compact", pivot: from.Index)) return false;
                     int moved = summonPivotMoves;
-                    SpawnPointGroupState after = context.SpawnPoints!.Group(source.RoomIndex, CombatTeam.Player)!;
+                    SpawnPointGroupState after = context.SpawnPoints!.SelectedGroup(source.RoomIndex, CombatTeam.Player)!;
                     position = Math.Max(0, Math.Min(after.InnerCount - 1, after.Occupants.Take(after.InnerCount).Count(prefix.Contains)));
                     int occupant = after.Occupants[from.Index];
                     WorkingUnit? dead = units.FirstOrDefault(unit => unit.Source.Id == occupant);
@@ -2133,7 +2138,7 @@ namespace MonsterTrain2Poju.Model
                 }
                 int requested = Math.Max(1, rule.Count);
                 if (rule.AdditionalCharacterId.Length > 0) requested = unchecked(requested + requested);
-                SpawnPointGroupState group = context!.SpawnPoints!.Group(source.RoomIndex, CombatTeam.Player)!;
+                SpawnPointGroupState group = context!.SpawnPoints!.SelectedGroup(source.RoomIndex, CombatTeam.Player)!;
                 int count = Math.Min(requested, group.GroupCount - group.Occupants.Take(group.GroupCount).Count(id => id != 0));
                 int bornCount = 0;
                 for (int offset = 0; offset < count && position + offset < group.InnerCount; offset++)

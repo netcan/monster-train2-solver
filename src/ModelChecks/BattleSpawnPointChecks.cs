@@ -14,7 +14,7 @@ internal static class BattleSpawnPointChecks
             var canonical = sample.GetProperty("Canonical").Deserialize<BattleSpawnPoints>()!;
             var living = sample.GetProperty("LivingUnitIds").Deserialize<int[]>()!.ToHashSet();
             var expected = new BattleSpawnPoints(raw.Groups.Where(group => group.PreviewCopyId == null).ToArray(), raw.Units.Select(unit => living.Contains(unit.UnitId) ? unit :
-                new UnitSpawnPointState(unit.UnitId, null, null, unit.OuterBoss, unit.SpawnedInPreview)).ToArray());
+                new UnitSpawnPointState(unit.UnitId, null, null, unit.OuterBoss, unit.SpawnedInPreview)).ToArray(), raw.NextPreviewCopyId);
             Require(JsonSerializer.Serialize(canonical) == JsonSerializer.Serialize(expected),
                 "Decision normalization changed live positions, group order or retained identity metadata.");
             if (sample.TryGetProperty("Planes", out var planes))
@@ -25,6 +25,10 @@ internal static class BattleSpawnPointChecks
                 int[] current = planes.GetProperty("CurrentCopyIds").Deserialize<int[]>()!;
                 Require(current.Distinct().Count() == current.Length && current.All(id => id > 0 && groups.Any(group => group.PreviewCopyId == id)),
                     "Current copied groups are missing from raw physical state.");
+                if (raw.NextPreviewCopyId.HasValue)
+                    Require(raw.NextPreviewCopyId > 0 && groups.All(group => group.PreviewCopyId < raw.NextPreviewCopyId ||
+                        group.PreviewCopyId == null) && current.Max() + 1 == raw.NextPreviewCopyId,
+                        "Raw copied-list identity counter is missing, reused or inconsistent with current native copies.");
                 foreach (var unit in planes.GetProperty("Units").EnumerateArray())
                 {
                     int id = unit.GetProperty("UnitId").GetInt32();

@@ -73,7 +73,10 @@ namespace MonsterTrain2Poju.Model
             // effects can still use removed actors' last-known points within a frame.
             var retained = points.Units.Select(unit => active.Contains(unit.UnitId) ? unit :
                 new UnitSpawnPointState(unit.UnitId, null, null, unit.OuterBoss, unit.SpawnedInPreview)).ToArray();
-            CombatContext context = source.Context!.WithSpawnPoints(new BattleSpawnPoints(points.Groups, retained));
+            var usedCopies = retained.SelectMany(unit => new[] { unit.Current, unit.LastKnown })
+                .Where(point => point?.PreviewCopyId != null).Select(point => point!.PreviewCopyId!.Value).ToHashSet();
+            CombatContext context = source.Context!.WithSpawnPoints(points.WithState(points.Groups.Where(group =>
+                !points.NextPreviewCopyId.HasValue || !group.PreviewCopyId.HasValue || usedCopies.Contains(group.PreviewCopyId.Value)).ToArray(), retained));
             if (context.Enchantments?.AutomaticLifecycle == true && context.QueryFrame?.RunningCombat != false)
             {
                 EnchantmentWorld world = context.Enchantments;

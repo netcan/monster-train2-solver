@@ -161,7 +161,7 @@ namespace MonsterTrain2Poju.Model
                         int rank = 0;
                         foreach (CombatUnit unit in room.Units.Where(unit => unit.Team == team))
                         {
-                            var group = state.Train.Context?.SpawnPoints?.Group(room.RoomIndex, team);
+                            var group = state.Train.Context?.SpawnPoints?.SelectedGroup(room.RoomIndex, team);
                             int index = group == null ? rank : Array.IndexOf(group.Occupants.ToArray(), unit.Id);
                             if (index < 0) { error = "Missing physical point for enchantment source collection."; Set(updating: false); return; }
                             positions.Add(new EnchantmentSourcePosition(unit.Id, team, room.RoomIndex, index)); rank++;

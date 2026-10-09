@@ -179,6 +179,7 @@ CombatEffectChecks.Run();
 StatusRegistryChecks.Run();
 StatusCallbackChecks.Run();
 PersistentEnchantmentChecks.Run();
+PreviewCopyChecks.Run();
 UnitUpgradeCallbackChecks.Run();
 RetainedCallbackChecks.Run();
 ConditionalTriggerChecks.Run();

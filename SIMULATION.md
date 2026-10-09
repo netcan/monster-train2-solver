@@ -6509,3 +6509,31 @@ input already has NextCardId30, but it is comparison evidence, never model input
 Stages38-40 now match. Neither diagnostic is curated as an accepted battle.
 The targeted 32-battle/30-policy/24-calibration regression passes; a combined173
 regression was not repeated, and complete163 remains the full regression baseline.
+
+### Independent copied-list allocation and selected preview positions
+
+BattleSpawnPoints now captures NextPreviewCopyId before an operation. The model
+allocates each primary room/team copy in native order (eight lists for four rooms),
+preserves the counter across restoration and allocates nothing when already
+calculating. This input counter supplies no future copy identities or actions.
+Preview births, compaction, summon positioning and aura source collection operate
+on the selected copied list. A newborn retains the copied point assigned at birth
+as its primary origin even if its selected preview point later moves. Restoration
+keeps referenced historical copies; frame destruction removes unreferenced lists.
+
+Independent checks exercise allocation order, nested calculation, newborn movement
+versus primary origin, repeated preview allocation, UI clearing, frame cleanup and
+32 immutable branches. The final model passes 32 historical battle suites, thirty
+continuous paid policies, all 24 component calibrations and pure checks. The Probe
+build has zero warnings/errors; ModelChecks retains fourteen existing nullable
+warnings with no errors. Inventory remains 173 and a combined173 run is not claimed.
+
+A muted Instant diagnostic (196.53 seconds, original profile/log signatures
+unchanged) independently matches every copied position, including complete Room36
+and TrainPhase8 states; the copy counter advances 185 to 369 during final combat
+in both model and game. A later 160.97-second diagnostic with complete card callback
+settlement matches the model's fifteen-action/five-EndTurn continuous policy,
+canonical terminal state and sixteen parallel branches, including copy counters.
+The new raw/canonical mapping checks pass 370 decisions and 11,785 state-plane
+mappings. One Stage37 source-card capture difference still rejects that diagnostic;
+it remains outside the accepted battle inventory while snapshot closure is checked.
