@@ -6749,5 +6749,19 @@ full-battle-persistent-enchantment-random-summons-fresh.mt2f: 47,591 bytes,
 8,608 nodes, no text source and SHA-256
 fc09a429aa4e2e0c6361b7e0ac0877ad99be2813b5fa2fcc62a69e6183455102.
 The required regression list and manifest include it. Inventory is 177 archives:
-153 accepted battles and 24 component calibrations. A combined177 regression of
-the current room-membership model has not yet completed.
+153 accepted battles and 24 component calibrations.
+
+### Completed room-membership 177-archive regression baseline
+
+The isolated combined177 run now exits successfully against Model.dll SHA-256
+d46c6961737888c3b84bfb883c5cdbfd85741536ea3dee8400b6cb91c6a68cbb. All
+153 complete battle suites, 149 continuous paid policies, four complete
+no-more-card chains and all 24 component calibrations pass. Initial and
+mid-battle policy roots include sixteen immutable parallel branches. No recorded
+room, card-cycle, train, spawn, EndTurn or action operation is skipped as
+unsupported. All 177 manifest sizes and SHA-256 hashes are verified, with no
+fixture JSON dependencies.
+
+This baseline covers retained room membership and both copied/fresh random aura
+summon battles. The in-progress Purify model requires separate native and
+regression validation. Complete combat coverage and optimal search remain open.

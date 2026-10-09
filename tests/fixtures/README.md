@@ -1343,3 +1343,13 @@ byte-identical source-free binary is 47,591 bytes with 8,608 unique nodes. The
 current model separately passes 59 affected archives: 35 complete battles,
 33 paid policies, two no-more-card chains and all 24 calibrations. The complete
 battle simulator and optimal solver remain in progress.
+
+The completed room-membership baseline now passes all 177 binary archives:
+153 complete battle suites, 149 continuous paid policies, four complete
+no-more-card chains and all 24 component calibrations. Each complete policy
+checks independent initial/mid-battle roots and sixteen parallel branches.
+No recorded room/card-cycle/train/spawn/EndTurn/action operation is unsupported
+or skipped, and all manifest sizes and SHA-256 hashes are verified. The isolated
+runner uses Model.dll SHA-256
+d46c6961737888c3b84bfb883c5cdbfd85741536ea3dee8400b6cb91c6a68cbb;
+the new Purify work is being validated separately.
