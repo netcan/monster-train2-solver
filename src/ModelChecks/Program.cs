@@ -99,6 +99,15 @@ if (args.Length == 2 && args[0] == "--bump-only")
     return;
 }
 
+if (args.Length == 2 && args[0] == "--ability-incant-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    if (fixture.RootElement.GetProperty("ModifierScenario").GetString() != "ability-incant" ||
+        fixture.RootElement.GetProperty("CaptureFailures").GetInt32() != 0 || fixture.RootElement.GetProperty("Pending").GetInt32() != 0)
+        throw new InvalidDataException("The requested fixture has no complete native relic ability Incant observations.");
+    RelicChecks.Native(fixture.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--incant-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
@@ -213,6 +222,7 @@ HordeRemovalChecks.Run();
 HordeDeathChecks.Run();
 AbilityCardChecks.Run();
 UnitAbilityChecks.Run();
+RelicChecks.Run();
 BattleStatisticsChecks.Run();
 StatisticOverflowChecks.Run();
 StatisticZeroIncrementChecks.Run();

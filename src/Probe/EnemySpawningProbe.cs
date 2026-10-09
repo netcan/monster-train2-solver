@@ -36,7 +36,9 @@ namespace MonsterTrain2Poju.Probe
             var interactions = new List<string>();
             var pattern = (SpawnPatternData)AccessTools.Field(typeof(HeroManager), "spawnPattern").GetValue(heroes);
             if (pattern.GetBossType() != SpawnPatternData.BossType.None) interactions.Add("Outer or queued final boss spawning");
-            if (save.GetCollectedRelics().Count > 0 || save.GetMutators().Count > 0) interactions.Add("Spawn relics/mutators");
+            string? relicError = RelicModel.Validate(state.Context);
+            if (relicError != null) interactions.Add(relicError);
+            if (save.GetMutators().Count > 0) interactions.Add("Spawn mutators");
             if (save.GetCovenantsForSpawnPattern().Count > 0) interactions.Add("Spawn covenant effects");
             var cache = (Dictionary<int, SpawnGroupData>)AccessTools.Field(typeof(SpawnPatternData),
                 "groupIndexToGroupData").GetValue(pattern);

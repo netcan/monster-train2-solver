@@ -233,7 +233,7 @@ internal static class BattleActionChecks
         if (fixture.TryGetProperty("ModifierScenario", out var summonScenario) && summonScenario.GetString()?.StartsWith("multi-summon", StringComparison.Ordinal) == true)
             chooser = BattleActionModel.ChooseMultiSummonThenCards;
         if (fixture.TryGetProperty("ModifierScenario", out var abilityScenario) &&
-            abilityScenario.GetString() is "ability-activation" or "ability-activation-x" or "ability-activation-lethal" or "ability-effects" or "equipment-abilities")
+            abilityScenario.GetString() is "ability-incant" or "ability-activation" or "ability-activation-x" or "ability-activation-lethal" or "ability-effects" or "equipment-abilities")
             chooser = UnitAbilityModel.ChooseAbilityThenCards;
         FixtureValue turns = fixture.GetProperty("Turns");
         // Authored setup plays are checked individually above. The independent policy starts

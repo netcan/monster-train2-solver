@@ -16,7 +16,8 @@ namespace MonsterTrain2Poju.Probe
         {
             AllGameManagers managers = AllGameManagers.Instance!;
             SaveManager save = managers.GetSaveManager();
-            if (save.GetCollectedRelics().Count != 0) throw new InvalidOperationException("Statistic calibration requires no relic modifiers.");
+            string? relicError = RelicModel.Validate(RelicProbe.Capture(managers));
+            if (relicError != null) throw new InvalidOperationException(relicError);
             CombatContext original = trace.CaptureContext();
             CardStatistics live = managers.GetCardStatistics();
             CardState[] owned = managers.GetCardManager()!.GetAllCards(new List<CardState>()).ToArray();

@@ -30,7 +30,8 @@ namespace MonsterTrain2Poju.Probe
                 managers.GetCombatManager()!, cards);
             var interactions = new List<string>();
             bool drawing = kind != "Discard";
-            if (managers.GetSaveManager().GetCollectedRelics().Count > 0) interactions.Add("Relics");
+            string? relicError = RelicModel.Validate(RelicProbe.Capture(managers));
+            if (relicError != null) interactions.Add(relicError);
             if (managers.GetSaveManager().GetMutators().Count > 0) interactions.Add("Mutators");
             foreach (string field in new[] { "nonDrawableCards", "nextDrawnTempCardUpgrades" })
                 if (drawing && ((ICollection)AccessTools.Field(typeof(CardManager), field).GetValue(cards)).Count > 0)

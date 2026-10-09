@@ -171,7 +171,8 @@ namespace MonsterTrain2Poju.Probe
             CombatManager combat = managers.GetCombatManager() ?? throw new InvalidOperationException("No combat manager.");
             HeroManager heroes = managers.GetHeroManager() ?? throw new InvalidOperationException("No enemy manager.");
             if (!room.GetCombatAllowed()) interactions.Add("Disabled room combat");
-            if (save.GetCollectedRelics().Count != 0) interactions.Add("Collected relic effects");
+            string? relicError = RelicModel.Validate(RelicProbe.Capture(managers));
+            if (relicError != null) interactions.Add(relicError);
             if (save.GetMutators().Count != 0) interactions.Add("Mutator effects");
             if (room.Attachments.Count > 0) interactions.Add("Room attachments");
             if (room.GetCurrentCorruption() > 0) interactions.Add("Room corruption");
@@ -295,7 +296,8 @@ namespace MonsterTrain2Poju.Probe
                 activatorId, AbilityLifecycleProbe.Disabled(managers.GetSaveManager()),
                 lastSpawnedId, NextUnitId, spawnPoints,
                 TriggeredSummonProbe.Catalog(), enchantments,
-                managers.GetSaveManager().GetBalanceData().GetDisallowedPurifyCharacterTriggers().Select(kind => kind.ToString()).ToArray());
+                managers.GetSaveManager().GetBalanceData().GetDisallowedPurifyCharacterTriggers().Select(kind => kind.ToString()).ToArray(),
+                RelicProbe.Capture(managers));
         }
 
         private static StatisticQueryFrame CaptureQueryFrame(AllGameManagers managers)
@@ -463,7 +465,7 @@ namespace MonsterTrain2Poju.Probe
             string temporary = path + ".tmp";
             var snapshot = new
             {
-                Schema = CardAnimationSettlement.Enabled ? 105 : DeathDissolveSettlement.Enabled ? 104 : EnchantmentBattleScenario.Prepared ? 103 : 102,
+                Schema = AbilityIncantScenario.Prepared ? 106 : CardAnimationSettlement.Enabled ? 105 : DeathDissolveSettlement.Enabled ? 104 : EnchantmentBattleScenario.Prepared ? 103 : 102,
                 DeathDissolveSettlementEnabled = DeathDissolveSettlement.Enabled,
                 DeathDissolveSettlements = DeathDissolveSettlement.Records,
                 DeathDissolveCallbacks = DeathDissolveSettlement.Callbacks,

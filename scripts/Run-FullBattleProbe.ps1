@@ -99,6 +99,7 @@ param(
     [switch] $PurifyQueues,
     [switch] $Incant,
     [switch] $IncantThresholds,
+    [switch] $AbilityIncant,
     [switch] $PersistentEnchantments,
     [switch] $PersistentEnchantmentDeaths,
     [switch] $PersistentEnchantmentRevivals,
@@ -264,6 +265,10 @@ if ($Purify) {
 }
 if ($Incant) {
     $environment['MT2_PROBE_MODIFIERS'] = $(if ($IncantThresholds) { 'incant-thresholds' } else { 'incant' })
+    $environment['MT2_PROBE_STATUS_CALLBACKS'] = '1'
+}
+if ($AbilityIncant) {
+    $environment['MT2_PROBE_MODIFIERS'] = 'ability-incant'
     $environment['MT2_PROBE_STATUS_CALLBACKS'] = '1'
 }
 if ($PersistentEnchantments) {
@@ -1347,6 +1352,18 @@ if ($Incant) {
         $incantRejected.Count -gt 0 -and $emptySpellPlays -gt 0 -and $silencedFires -gt 0 -and $visibleFires -gt 0
     if (-not $incantCoverage) { throw "Incant coverage incomplete: phases=$($incantPhases.Count) fires=$($incantFires.Count) rejected=$($incantRejected.Count) empty=$emptySpellPlays silenced=$silencedFires visible=$visibleFires" }
 }
+$abilityIncantCoverage = -not $AbilityIncant
+if ($AbilityIncant) {
+    $abilityPhases = @($trace.IncantPhases | Where-Object IsAnyAbility)
+    $abilityActions = @($trace.Actions | Where-Object { $_.Action.ActivatorUnitId -gt 0 })
+    $abilityIncantCoverage = $trace.ModifierScenario -eq 'ability-incant' -and $abilityPhases.Count -ge 4 -and
+        @($abilityActions | ForEach-Object { $_.Action.ActivatorUnitId } | Sort-Object -Unique).Count -ge 2 -and
+        @($abilityPhases | Where-Object { -not $_.Completed -or $null -eq $_.After -or $null -ne $_.Difference }).Count -eq 0 -and
+        @($trace.IncantTriggers | Where-Object { -not $_.Completed -or $null -eq $_.After -or $null -eq $_.AfterActor -or $null -ne $_.Difference }).Count -eq 0 -and
+        @($trace.IncantTriggers | Where-Object { $_.Actor.Team -eq 0 }).Count -gt 0 -and
+        @($trace.IncantTriggers | Where-Object { $_.Actor.Team -eq 1 }).Count -gt 0
+    if (-not $abilityIncantCoverage) { throw "Ability Incant coverage incomplete: phases=$($abilityPhases.Count) actions=$($abilityActions.Count)" }
+}
 $incantThresholdCoverage = -not $IncantThresholds
 if ($IncantThresholds) {
     $positiveThresholds = 0; $zeroThresholds = 0; $negativeThresholds = 0; $spentThresholds = 0; $incorrectThresholds = 0
@@ -1368,6 +1385,7 @@ $result = [pscustomobject]@{
     PurifyCoverage = $purifyCoverage
     PurifyQueueCoverage = $purifyQueueCoverage
     IncantCoverage = $incantCoverage
+    AbilityIncantCoverage = $abilityIncantCoverage
     IncantThresholdCoverage = $incantThresholdCoverage
     RevivalOperations = @($trace.RevivalOperations).Count
     Revivals = @($trace.Revivals).Count

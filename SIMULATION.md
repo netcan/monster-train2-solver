@@ -7046,3 +7046,69 @@ model's completed180 baseline remains separately bound to e26db6f6. Ongoing
 relic/combined-prefix work requires its own final-binary native and historical
 validation; neither completed baseline establishes that new model or completion
 of the whole battle simulation.
+
+
+### Relic-enabled ability Incant and combined card-play queues
+
+The model now retains ordered active relic identities and runtime effect types,
+including the complete list searched by RelicManager.GetRelicEffect: hero
+blessings, collected artifacts, covenants, mutators, Pyre artifacts and souls.
+All production context copies preserve this immutable list. Only the native
+RelicEffectIncantTriggeredByUnitAbilities marker is modeled here; other active
+effect types are explicitly refused by the model and captures. Duplicate marker
+instances remain a boolean presence query, without multiplying Incant.
+
+Unit skills cache the selected room after PreOwn and before effects, keep their
+resolving flag and paid-cost queries through both card-play manager phases,
+and queue Own then Incant per actor in creation order. The entire player batch
+is admitted before any callback runs; enemies are admitted after the player
+batch drains. Existing accepted effect callbacks stay at the head of this same
+batch. Ordinary spells and Rally also retain those prefixes; draining them
+separately can change Purify admission, status children and trigger flags.
+
+The game 2.2.1 asset catalog contains no collectable relic using this effect
+class. The -AbilityIncant scenario therefore creates an isolated test artifact
+PojuNativeAbilityIncantRelic (id c2f6ed7f-18ce-4070-b65f-7dd9f5160068), registers
+it through the native SaveManager.AddRelic pipeline and runs the original native
+effect class. Its setup builds on the actual shared-skill activation scene,
+including that scene's modified Boss ability, and preserves the natural wave
+pattern. It adds Incant observers to owned Stewards and naturally scheduled
+ordinary enemies. This is an authored test asset, not a naturally obtainable
+artifact in this game build.
+
+The final muted Instant native recording takes 106.41 seconds and retains schema
+106: 17 plays, five EndTurns, two actual activators sharing one skill, 20 manager
+phases, 25 Incant dispatches, 242 status callbacks and 780 original queue-admission
+requests. Final Pyre is 80. Native capture reports zero failures, discrepancies,
+unsupported stages or pending records, and original profile/log files are
+unchanged. An ordinary cooldown spell exposes 34 accepted prefix callbacks.
+Independent exact action/component checks and 32 phase/dispatch branches pass.
+
+Evidence is .probe-runs/ability-incant-native-final.log and
+.probe-runs/full-battle-units-spells-and-junk-20261009-170051-2fe13390/full-battle.mt2f.
+The --ability-incant-only check passes against that recording in
+.probe-runs/ability-incant-component-final.log. Pure checks cover absent,
+duplicate and unknown relics, missing card classification, post-PreOwn lethal
+cache admission, skill allocation, per-actor Own/Incant order, accepted prefixes,
+Purify and parent isolation. Source-mutation negatives that ignore the marker
+or omit the prefix fail on native gold or trigger flags respectively.
+
+The final model SHA-256 is
+F418B74A91DF12254ECBA6A1EF2A9AC3EA88FAA11D84DD5ED687590CB984B7FF,
+retained in .probe-runs/ability-incant-final-checks. Its 37-input targeted
+historical run has completed: 13 affected battles/paid policies and all 24 strict
+calibrations, with archive identities, sizes and hashes verified. Evidence is
+.probe-runs/ability-incant-prefix-historical.log and its explicit input list.
+The separately completed 181-input threshold baseline belongs to ab9e8f6f;
+it does not establish a complete regression of this relic model.
+
+The new recording is NOT accepted into the curated inventory yet. The complete
+independent policy fails after action 2 because native floor selection performs
+an extra interface preview between plays: previous action's next copied-list
+id is 41, next native action starts at 49 and finishes at 57, while the continuous
+model finishes at 49. All isolated plays and EndTurns match, but the missing
+selection transition prevents claiming complete replay from the initial root.
+The original full-policy and physical-reference comparisons remain strict;
+no oracle state or recorded actions are injected into the model to hide this
+difference. Room-selection preview modeling, further relic effects, unmodeled
+card/trigger/effect combinations and the whole battle simulation remain work.

@@ -62,11 +62,11 @@ namespace MonsterTrain2Poju.Probe
                 reason = "Only the starting Train Steward unit card is modeled.";
                 return false;
             }
-            if (save.GetCollectedRelics().Count != 0 || before.Heroes.Count != 0 ||
+            if (RelicModel.Validate(RelicProbe.Capture(managers)) != null || before.Heroes.Count != 0 ||
                 before.Monsters.Count != 1 || before.Monsters[0].AssetKey != "PyreHeartStarter" ||
                 before.Monsters.Any(unit => unit.Room == 0))
             {
-                reason = "Relics, enemies, and occupied summon rooms are not modeled.";
+                reason = "Unmodeled relics, enemies, and occupied summon rooms are not modeled.";
                 return false;
             }
             if (card.GetCardStateModifiers().GetCardUpgrades().Count != 0 ||

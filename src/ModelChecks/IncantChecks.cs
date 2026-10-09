@@ -231,7 +231,7 @@ internal static class IncantChecks
             $"{admissions.Length} original admissions/{rejected} Purify rejections, {emptySpells} paid empty spells, " +
             "once/repeat/silence/status children, exact card types, team continuity and 32 independent branches.");
     }
-    private static void VerifyPhase(FixtureValue record)
+    internal static void VerifyPhase(FixtureValue record)
     {
         Require(record.GetProperty("Completed").GetBoolean(), "Incomplete native Incant team phase.");
         var before = record.GetProperty("Before").Deserialize<TrainCombatState>()!;
@@ -240,14 +240,23 @@ internal static class IncantChecks
         if (record.GetProperty("CardType").GetString() == "Spell" && !record.GetProperty("IsAnyAbility").GetBoolean())
         {
             var result = CardPlayedTriggerModel.Spell(before, record.GetProperty("Team").Deserialize<CombatTeam>(),
-                record.GetProperty("CachedUnitIds").Deserialize<int[]>()!);
+                record.GetProperty("CachedUnitIds").Deserialize<int[]>()!, record.TryGetProperty("PrecedingCallbacks", out var prefix)
+                    ? prefix.Deserialize<CardPlayedQueueEntry[]>()?.Select(entry => entry.ToQueued()).ToArray() : null);
             Require(result.Supported, "Independent Incant team phase unsupported: " + result.UnsupportedReason);
+            predicted = result.State!;
+        }
+        else if (record.GetProperty("IsAnyAbility").GetBoolean())
+        {
+            var result = CardPlayedTriggerModel.Ability(before, record.GetProperty("Team").Deserialize<CombatTeam>(),
+                record.GetProperty("CachedUnitIds").Deserialize<int[]>()!, record.GetProperty("ActivatorUnitId").GetInt32(),
+                record.GetProperty("PrecedingCallbacks").Deserialize<CardPlayedQueueEntry[]>()?.Select(entry => entry.ToQueued()).ToArray());
+            Require(result.Supported, "Independent ability Incant team phase unsupported: " + result.UnsupportedReason);
             predicted = result.State!;
         }
         Compare(predicted, record.GetProperty("After").Deserialize<TrainCombatState>(), "Incant team phase");
         Require(Serialize(before) == parent, "Incant team phase mutated its parent.");
     }
-    private static void VerifyTrigger(FixtureValue record)
+    internal static void VerifyTrigger(FixtureValue record)
     {
         Require(record.GetProperty("Completed").GetBoolean(), "Incomplete native Incant actor dispatch.");
         var before = record.GetProperty("Before").Deserialize<RoomCombatState>()!;
@@ -262,7 +271,7 @@ internal static class IncantChecks
         Compare(queued.Unit, record.GetProperty("AfterActor").Deserialize<CombatUnit>(), "Incant actor");
         Require(Serialize(new { before, actor }) == parent, "Incant dispatch mutated its parent.");
     }
-    private static void VerifyAdmission(FixtureValue record)
+    internal static void VerifyAdmission(FixtureValue record)
     {
         Require(record.GetProperty("Completed").GetBoolean() && record.GetProperty("Interactions").GetArrayLength() == 0,
             "Incomplete native Incant admission request.");

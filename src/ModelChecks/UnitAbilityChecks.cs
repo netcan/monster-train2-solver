@@ -71,9 +71,9 @@ internal static class UnitAbilityChecks
         Console.WriteLine("UNIT-ABILITY-CHECKS PASS: fixed/X payment, capped pre-own timing, self/damage attribution, cooldown callbacks, detached history, availability, search actions and 32 branches.");
     }
 
-    private static BattleTurnState Root(string? blocked = null, bool resolving = false, bool deployment = false, int energy = 3,
+    internal static BattleTurnState Root(string? blocked = null, bool resolving = false, bool deployment = false, int energy = 3,
         bool handFull = false, bool allowFull = true, bool xCost = false, bool emptyCache = false, bool otherFloors = false,
-        bool terminalEnemy = false)
+        bool terminalEnemy = false, bool typed = true)
     {
         var rng = UnityRng.Seed(84);
         CombatStatus cooldown = new("cooldown", 1, removeStackAtEnd: true, preventRemovalDuringRelentless: true, stackable: true);
@@ -108,7 +108,8 @@ internal static class UnitAbilityChecks
             new(2, 0, 7, true, true, true), new(9, 5, 7, true, false, false)],
             [new("skill", "skill", 1, "Spell", "Discard", null, [],
                 [new("Damage", "FrontInRoom", 4, true, false, []), new("Heal", "Self", 1, true, false, [])],
-                upgradeInteractions: [], costType: xCost ? "ConsumeRemainingEnergy" : "Default", ability: new("Unit", otherFloors, allowFull)),
+                upgradeInteractions: [], costType: xCost ? "ConsumeRemainingEnergy" : "Default", ability: new("Unit", otherFloors, allowFull),
+                cardType: typed ? "Spell" : null, isAnyAbility: typed ? true : null),
              new("ordinary", "ordinary", 0, "Null", "Discard", null, [], upgradeInteractions: [])]);
         return new(spawn, energy, 3, 3, 0, 0, "New", [new("Battle", 84, rng), new("CardDraw", 84, rng)], piles, [], rules);
     }

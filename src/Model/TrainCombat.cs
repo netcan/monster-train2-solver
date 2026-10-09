@@ -432,6 +432,8 @@ namespace MonsterTrain2Poju.Model
 
         internal static string? Validate(TrainCombatState source)
         {
+            string? relicError = RelicModel.Validate(source.Context);
+            if (relicError != null) return relicError;
             string? identityError = UnitIdentityModel.Validate(source.Context, source.Rooms.SelectMany(room => room.Units));
             if (identityError != null) return identityError;
             if (source.Context != null && AbilityCardModel.Validate(source.Context) is string cacheError) return cacheError;

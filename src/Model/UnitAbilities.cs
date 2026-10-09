@@ -39,6 +39,8 @@ namespace MonsterTrain2Poju.Model
                 return Illegal("The selected ability room does not exist or is disabled.");
             if (rule.Effect != "Spell") return Unsupported("Unit ability effect pipeline " + rule.Effect + " is not modeled.");
             if (rule.ExternalInteractions.Count > 0) return Unsupported(string.Join("; ", rule.ExternalInteractions));
+            if (RelicModel.AbilitiesTriggerIncant(context) && (rule.CardType != "Spell" || rule.IsAnyAbility != true))
+                return Unsupported("Unit ability Incant requires captured Spell/ability classification.");
             if (actor.Ability.CardCreation == null) return Unsupported("Missing ability card creation state.");
             AbilityCardResult cache = AbilityCardModel.Get(context, actor.Ability.CardCreation);
             if (!cache.Supported) return Unsupported(cache.UnsupportedReason!);
@@ -69,20 +71,33 @@ namespace MonsterTrain2Poju.Model
                 if (!before.Supported) return Unsupported(before.UnsupportedReason!);
                 train = before.State!; if (Terminal(before.Outcome)) outcome = before.Outcome;
             }
+            // CombatManager caches the selected room after PreOwn, before effects.
+            int[] cachedUnits = train.Rooms.Single(room => room.RoomIndex == action.RoomIndex).Units
+                .Where(unit => unit.Health > 0 && unit.DeathState?.IsDestroyed != true && unit.IsSpawning != true)
+                .Select(unit => unit.Id).ToArray();
+            if (train.Context!.FindCard(cache.Card.InstanceId)?.PlayedRoomUnitIds != null)
+                train = CardSpellModel.WithContext(train, train.Context.WithCard(
+                    train.Context.FindCard(cache.Card.InstanceId)!.WithPlayedRoomUnits(cachedUnits)));
             TrainSpellResult applied = CardSpellModel.ApplyForCardPlay(train, action.RoomIndex, rule.Effects, 0, cache.Card.InstanceId,
                 source.PlayRules, train.Context!.OtherPiles ?? source.OtherPiles, actor.Id);
             if (!applied.Supported) return Unsupported(applied.UnsupportedReason!);
             train = applied.State!; if (Terminal(applied.Outcome)) outcome = applied.Outcome;
             context = train.Context!;
             // Cached cards enter global played history, but never discard or increment local play count.
-            BattleStatistics? statistics = context.LiveStatistics?.Increment(cache.Card.InstanceId, "TimesPlayed", requireTrackedCard: true)
-                .WithPlayedCost(cache.Card.InstanceId, null);
+            BattleStatistics? statistics = context.LiveStatistics?.Increment(cache.Card.InstanceId, "TimesPlayed", requireTrackedCard: true);
             context = context.WithStatistics(statistics).AfterCardEffects();
-            train = Resolving(CardSpellModel.WithContext(train, context), actor.Id, false);
-            TrainCombatResult after = OwnTrigger(train, actor.Id, "OnOwnAbilityActivated", applied.PendingCallbacks);
-            if (!after.Supported) return Unsupported(after.UnsupportedReason!);
-            train = after.State!; if (Terminal(after.Outcome)) outcome = after.Outcome;
+            train = CardSpellModel.WithContext(train, context);
+            foreach (CombatTeam team in new[] { CombatTeam.Player, CombatTeam.Enemy })
+            {
+                TrainCombatResult after = CardPlayedTriggerModel.Ability(train, team, cachedUnits, actor.Id,
+                    team == CombatTeam.Player ? applied.PendingCallbacks : null);
+                if (!after.Supported) return Unsupported(after.UnsupportedReason!);
+                train = after.State!; if (Terminal(after.Outcome)) outcome = after.Outcome;
+            }
+            // Native clears resolving and played-cost queries after both team queues.
+            train = Resolving(train, actor.Id, false);
             context = train.Context!;
+            context = context.WithStatistics(context.Statistics?.WithPlayedCost(cache.Card.InstanceId, null));
             context = EquipmentModel.ReturnUnattached(context, new HashSet<int>(train.Rooms.SelectMany(room => room.Units).Select(unit => unit.Id)));
             if (Terminal(outcome)) context = context.WithQueryFrame(context.QueryFrame?.With(runningCombat: false));
             train = CardSpellModel.WithContext(train, context);

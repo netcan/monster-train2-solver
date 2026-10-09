@@ -217,7 +217,7 @@ namespace MonsterTrain2Poju.Model
             context = new CombatContext(new CardCycleState(context.Cards.Hand.Where(item => item.InstanceId != card.InstanceId).ToArray(),
                 context.Cards.Draw, context.Cards.Discard, context.Cards.Rng, context.Cards.DrawModifier, context.Cards.ExternalInteractions, context.Cards.BonusDraw),
                 context.BattleRng, context.Gold, context.NextCardId, context.MaxHandSize, context.StatusRules, context.Statistics, context.CardInstances,
-                context.CardRegistry, context.AllScenarioBossesDead, context.NextAddedTemporaryUpgrades, context.OtherPiles, context.QueryFrame, context.KillCamActivated, context.MagicPower, context.IsolatedBattlePreview, context.EnergyState, context.RoomCapacities, context.AbilityCardCache, context.LastAbilityActivatorUnitId, context.PermanentlyDisabledAbilities, context.LastSpawnedUnitId, context.NextUnitId, context.SpawnPoints, context.SummonCatalog, context.Enchantments, context.PurifyBlockedTriggers);
+                context.CardRegistry, context.AllScenarioBossesDead, context.NextAddedTemporaryUpgrades, context.OtherPiles, context.QueryFrame, context.KillCamActivated, context.MagicPower, context.IsolatedBattlePreview, context.EnergyState, context.RoomCapacities, context.AbilityCardCache, context.LastAbilityActivatorUnitId, context.PermanentlyDisabledAbilities, context.LastSpawnedUnitId, context.NextUnitId, context.SpawnPoints, context.SummonCatalog, context.Enchantments, context.PurifyBlockedTriggers, context.Relics);
             target = new RoomCombatState(target.RoomIndex, target.Deployment, target.Units, target.ExternalInteractions, context, target.Preview);
             if (context.FindCard(card.InstanceId)?.PlayedRoomUnitIds != null)
             {
@@ -369,15 +369,7 @@ namespace MonsterTrain2Poju.Model
                 ? playedStatistics.RecordPlayedCard(card.InstanceId) : playedStatistics?.Increment(card.InstanceId, "TimesPlayed");
             context = context.WithStatistics(playedStatistics);
             train = CardSpellModel.WithContext(train, context);
-            if (pendingSpellCallbacks.Count > 0)
-            {
-                TrainCombatResult completed = TrainCombatModel.ApplyCharacterQueue(train, pendingSpellCallbacks.ToList());
-                if (!completed.Supported) return Unsupported(completed.UnsupportedReason!);
-                train = completed.State!; context = train.Context!;
-                if (completed.Outcome != RoomOutcome.Exchanged) outcome = completed.Outcome;
-                piles = context.OtherPiles?.ToArray() ?? piles;
-                terminal = outcome == RoomOutcome.BattleWon || outcome == RoomOutcome.PlayerDefeated;
-            }
+            bool prefixConsumed = false;
             bool incantObserved = train.Rooms.SelectMany(room => room.Units).Any(unit => unit.Triggers.Any(trigger => trigger.Kind == "CardSpellPlayed"));
             if (incantObserved && (rule.CardType == null || rule.CardType == "Spell" && !rule.IsAnyAbility.HasValue && rule.Ability == null))
                 return Unsupported("Card-play triggers require captured card type and spell ability metadata.");
@@ -388,11 +380,13 @@ namespace MonsterTrain2Poju.Model
                 foreach (CombatTeam team in new[] { CombatTeam.Player, CombatTeam.Enemy })
                 {
                     IReadOnlyList<int> cached = context.FindCard(card.InstanceId)?.PlayedRoomUnitIds ?? initialCached;
-                    TrainCombatResult incanted = CardPlayedTriggerModel.Spell(train, team, cached);
+                    TrainCombatResult incanted = CardPlayedTriggerModel.Spell(train, team, cached,
+                        team == CombatTeam.Player ? pendingSpellCallbacks : null);
                     if (!incanted.Supported) return Unsupported(incanted.UnsupportedReason!);
                     train = incanted.State!; context = train.Context!;
                     if (incanted.Outcome != RoomOutcome.Exchanged) outcome = incanted.Outcome;
                 }
+                prefixConsumed = true;
                 piles = context.OtherPiles?.ToArray() ?? piles;
                 terminal = outcome == RoomOutcome.BattleWon || outcome == RoomOutcome.PlayerDefeated;
             }
@@ -403,11 +397,22 @@ namespace MonsterTrain2Poju.Model
                 foreach (CombatTeam team in new[] { CombatTeam.Player, CombatTeam.Enemy })
                 {
                     IReadOnlyList<int> cached = context.FindCard(card.InstanceId)?.PlayedRoomUnitIds ?? initialCached;
-                    TrainCombatResult rallied = CardPlayedTriggerModel.Rally(train, team, cached);
+                    TrainCombatResult rallied = CardPlayedTriggerModel.Rally(train, team, cached,
+                        team == CombatTeam.Player ? pendingSpellCallbacks : null);
                     if (!rallied.Supported) return Unsupported(rallied.UnsupportedReason!);
                     train = rallied.State!; context = train.Context!;
                     if (rallied.Outcome != RoomOutcome.Exchanged) outcome = rallied.Outcome;
                 }
+                prefixConsumed = true;
+                piles = context.OtherPiles?.ToArray() ?? piles;
+                terminal = outcome == RoomOutcome.BattleWon || outcome == RoomOutcome.PlayerDefeated;
+            }
+            if (!prefixConsumed && pendingSpellCallbacks.Count > 0)
+            {
+                TrainCombatResult completed = TrainCombatModel.ApplyCharacterQueue(train, pendingSpellCallbacks.ToList());
+                if (!completed.Supported) return Unsupported(completed.UnsupportedReason!);
+                train = completed.State!; context = train.Context!;
+                if (completed.Outcome != RoomOutcome.Exchanged) outcome = completed.Outcome;
                 piles = context.OtherPiles?.ToArray() ?? piles;
                 terminal = outcome == RoomOutcome.BattleWon || outcome == RoomOutcome.PlayerDefeated;
             }
@@ -480,7 +485,7 @@ namespace MonsterTrain2Poju.Model
                 terminal ? playingInstance == null ? context.CardInstances : new[] { (context.FindCard(card.InstanceId) ?? playingInstance).OnDiscard(true, paidCost) } :
                 context.CardInstances?.Select(instance => instance.InstanceId == card.InstanceId
                     ? instance.OnDiscard(true, paidCost) : instance).ToArray(), context.CardRegistry, context.AllScenarioBossesDead, context.NextAddedTemporaryUpgrades,
-                context.OtherPiles == null ? null : piles, context.QueryFrame?.With(runningCombat: !terminal), context.KillCamActivated, context.MagicPower, context.IsolatedBattlePreview, context.EnergyState, context.RoomCapacities, context.AbilityCardCache, context.LastAbilityActivatorUnitId, context.PermanentlyDisabledAbilities, context.LastSpawnedUnitId, context.NextUnitId, context.SpawnPoints, context.SummonCatalog, context.Enchantments, context.PurifyBlockedTriggers);
+                context.OtherPiles == null ? null : piles, context.QueryFrame?.With(runningCombat: !terminal), context.KillCamActivated, context.MagicPower, context.IsolatedBattlePreview, context.EnergyState, context.RoomCapacities, context.AbilityCardCache, context.LastAbilityActivatorUnitId, context.PermanentlyDisabledAbilities, context.LastSpawnedUnitId, context.NextUnitId, context.SpawnPoints, context.SummonCatalog, context.Enchantments, context.PurifyBlockedTriggers, context.Relics);
             RoomCombatState[] rooms = train.Rooms.Select(room =>
             {
                 return new RoomCombatState(room.RoomIndex, room.Deployment, room.Units, room.ExternalInteractions, context, room.Preview);
