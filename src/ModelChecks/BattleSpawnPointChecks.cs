@@ -4,23 +4,50 @@ using MonsterTrain2Poju.Model;
 
 internal static class BattleSpawnPointChecks
 {
-    private static void DecisionReferences(FixtureValue fixture)
+    internal static void DecisionReferences(FixtureValue fixture)
     {
         if (!fixture.TryGetProperty("DecisionSpawnPoints", out var decisions) || decisions.GetArrayLength() == 0) return;
-        int removed = 0;
+        int removed = 0, planeMappings = 0;
         foreach (var sample in decisions.EnumerateArray())
         {
             var raw = sample.GetProperty("Raw").Deserialize<BattleSpawnPoints>()!;
             var canonical = sample.GetProperty("Canonical").Deserialize<BattleSpawnPoints>()!;
             var living = sample.GetProperty("LivingUnitIds").Deserialize<int[]>()!.ToHashSet();
-            var expected = new BattleSpawnPoints(raw.Groups, raw.Units.Select(unit => living.Contains(unit.UnitId) ? unit :
+            var expected = new BattleSpawnPoints(raw.Groups.Where(group => group.PreviewCopyId == null).ToArray(), raw.Units.Select(unit => living.Contains(unit.UnitId) ? unit :
                 new UnitSpawnPointState(unit.UnitId, null, null, unit.OuterBoss, unit.SpawnedInPreview)).ToArray());
             Require(JsonSerializer.Serialize(canonical) == JsonSerializer.Serialize(expected),
                 "Decision normalization changed live positions, group order or retained identity metadata.");
+            if (sample.TryGetProperty("Planes", out var planes))
+            {
+                var groups = planes.GetProperty("Groups").Deserialize<SpawnPointGroupState[]>()!;
+                Require(groups.Select(group => (group.RoomIndex, group.Team, group.PreviewCopyId)).Distinct().Count() == groups.Length,
+                    "A copied list was aliased to another physical group.");
+                int[] current = planes.GetProperty("CurrentCopyIds").Deserialize<int[]>()!;
+                Require(current.Distinct().Count() == current.Length && current.All(id => id > 0 && groups.Any(group => group.PreviewCopyId == id)),
+                    "Current copied groups are missing from raw physical state.");
+                foreach (var unit in planes.GetProperty("Units").EnumerateArray())
+                {
+                    int id = unit.GetProperty("UnitId").GetInt32();
+                    var primary = unit.GetProperty("Primary").Deserialize<UnitSpawnPointState>()!;
+                    Require(JsonSerializer.Serialize(primary) == JsonSerializer.Serialize(raw.Units.Single(actor => actor.UnitId == id)),
+                        "Raw primary pointers differ from their complete plane mapping.");
+                    foreach (string key in new[] { "Primary", "Preview", "Temporary" })
+                    {
+                        var state = unit.GetProperty(key).Deserialize<UnitSpawnPointState>();
+                        if (state == null) continue;
+                        Require(state.UnitId == id, "A native state plane changed its actor identity.");
+                        foreach (var point in new[] { state.Current, state.LastKnown }.Where(point => point != null))
+                            Require(groups.Any(group => group.RoomIndex == point!.RoomIndex && group.Team == point.Team &&
+                                group.PreviewCopyId == point.PreviewCopyId && point.Index >= 0 && point.Index < group.Occupants.Count),
+                                "A raw state-plane pointer is outside its observed physical list.");
+                        planeMappings++;
+                    }
+                }
+            }
             removed += raw.Units.Count(unit => !living.Contains(unit.UnitId) && (unit.Current != null || unit.LastKnown != null));
         }
         Console.WriteLine($"NATIVE-DECISION-SPAWN-POINT-CHECKS PASS: {decisions.GetArrayLength()} complete raw/canonical mappings, " +
-            $"{removed} removed object references, preserved live actors and unchanged physical groups.");
+            $"{removed} removed object references, {planeMappings} primary/preview/temporary plane mappings, preserved live actors and unchanged physical groups.");
     }
     internal static void Native(FixtureValue fixture)
     {

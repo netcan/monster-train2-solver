@@ -1,6 +1,21 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
 
+if (args.Length == 2 && args[0] == "--physical-decision-only")
+{
+    using var document = ModelJson.ReadFixture(args[1]);
+    var physicalRoot = document.RootElement;
+    if (physicalRoot.GetProperty("CaptureFailures").GetInt32() != 0 || physicalRoot.GetProperty("Pending").GetInt32() != 0 ||
+        physicalRoot.GetProperty("DecisionSpawnPoints").GetArrayLength() == 0)
+        throw new InvalidDataException("Physical decision mappings are incomplete.");
+    BattleSpawnPointChecks.DecisionReferences(physicalRoot);
+    return;
+}
+if (args.Length == 2 && args[0] == "--physical-plane-only")
+{
+    PhysicalPlaneChecks.Native(args[1]);
+    return;
+}
 if (args.Length == 2 && args[0] == "--preview-birth-only")
 {
     PreviewBirthChecks.Native(args[1]);
@@ -274,6 +289,8 @@ foreach (string path in args.Where(path => path.Contains("preview-reference-cali
 foreach (string path in args.Where(path => path.Contains("preview-birth-", StringComparison.OrdinalIgnoreCase) &&
     path.Contains("calibration", StringComparison.OrdinalIgnoreCase)))
     PreviewBirthChecks.Native(path);
+foreach (string path in args.Where(path => path.Contains("physical-plane-calibration", StringComparison.OrdinalIgnoreCase)))
+    PhysicalPlaneChecks.Native(path);
 
 static void Check(bool condition, string message)
 {

@@ -22,10 +22,10 @@ namespace MonsterTrain2Poju.Model
         public IReadOnlyList<SpawnPointGroupState> Groups { get; }
         public IReadOnlyList<UnitSpawnPointState> Units { get; }
         public BattleSpawnPoints(IReadOnlyList<SpawnPointGroupState> groups, IReadOnlyList<UnitSpawnPointState> units)
-        { Groups = Array.AsReadOnly(groups.OrderBy(group => group.RoomIndex).ThenBy(group => group.Team).ToArray());
+        { Groups = Array.AsReadOnly(groups.OrderBy(group => group.RoomIndex).ThenBy(group => group.Team).ThenBy(group => group.PreviewCopyId).ToArray());
             Units = Array.AsReadOnly(units.OrderBy(unit => unit.UnitId).ToArray()); }
-        public SpawnPointGroupState? Group(int roomIndex, CombatTeam team) =>
-            Groups.SingleOrDefault(group => group.RoomIndex == roomIndex && group.Team == team);
+        public SpawnPointGroupState? Group(int roomIndex, CombatTeam team, int? previewCopyId = null) =>
+            Groups.SingleOrDefault(group => group.RoomIndex == roomIndex && group.Team == team && group.PreviewCopyId == previewCopyId);
         public int FirstEmpty(int roomIndex, CombatTeam team)
         {
             SpawnPointGroupState? group = Group(roomIndex, team);
@@ -52,15 +52,15 @@ namespace MonsterTrain2Poju.Model
         {
             if (!nextUnitId.HasValue || source.Units.Any(unit => unit.UnitId <= 0 || unit.UnitId >= nextUnitId.Value) ||
                 source.Units.Select(unit => unit.UnitId).Distinct().Count() != source.Units.Count ||
-                source.Groups.Select(group => (group.RoomIndex, group.Team)).Distinct().Count() != source.Groups.Count)
+                source.Groups.Select(group => (group.RoomIndex, group.Team, group.PreviewCopyId)).Distinct().Count() != source.Groups.Count)
                 return "Invalid retained physical identities or missing shared counter.";
             var ids = source.Units.Select(unit => unit.UnitId).ToHashSet();
-            if (source.Groups.Any(group => group.InnerCount < 1 || group.GroupCount < 0 ||
+            if (source.Groups.Any(group => group.PreviewCopyId <= 0 || group.InnerCount < 1 || group.GroupCount < 0 ||
                 Math.Max(group.InnerCount, group.GroupCount) > group.Occupants.Count || group.Outside.Count != group.Occupants.Count ||
                 group.Occupants.Any(id => id < 0 || id > 0 && !ids.Contains(id)))) return "Invalid physical point layout.";
             foreach (var reference in source.Units.SelectMany(unit => new[] { unit.Current, unit.LastKnown }).Where(point => point != null))
             {
-                var group = source.Group(reference!.RoomIndex, reference.Team);
+                var group = source.Group(reference!.RoomIndex, reference.Team, reference.PreviewCopyId);
                 if (group == null || reference.Index < 0 || reference.Index >= group.Occupants.Count)
                     return "Uncaptured retained physical reference.";
             }

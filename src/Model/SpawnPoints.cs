@@ -9,9 +9,12 @@ namespace MonsterTrain2Poju.Model
         public int RoomIndex { get; }
         public CombatTeam Team { get; }
         public int Index { get; }
-        public SpawnPointReference(int roomIndex, CombatTeam team, int index)
-        { RoomIndex = roomIndex; Team = team; Index = index; }
-        internal bool Same(SpawnPointReference? other) => other != null && RoomIndex == other.RoomIndex && Team == other.Team && Index == other.Index;
+        // Null identifies the primary list; each copied list has a distinct identity.
+        public int? PreviewCopyId { get; }
+        public SpawnPointReference(int roomIndex, CombatTeam team, int index, int? previewCopyId = null)
+        { RoomIndex = roomIndex; Team = team; Index = index; PreviewCopyId = previewCopyId; }
+        internal bool Same(SpawnPointReference? other) => other != null && RoomIndex == other.RoomIndex && Team == other.Team &&
+            Index == other.Index && PreviewCopyId == other.PreviewCopyId;
     }
     public sealed class SpawnPointOccupant
     {
@@ -40,10 +43,11 @@ namespace MonsterTrain2Poju.Model
         public int GroupCount { get; }
         public IReadOnlyList<int> Occupants { get; }
         public IReadOnlyList<bool> Outside { get; }
+        public int? PreviewCopyId { get; }
         public SpawnPointGroupState(int roomIndex, CombatTeam team, int innerCount, int groupCount,
-            IReadOnlyList<int> occupants, IReadOnlyList<bool> outside)
+            IReadOnlyList<int> occupants, IReadOnlyList<bool> outside, int? previewCopyId = null)
         { RoomIndex = roomIndex; Team = team; InnerCount = innerCount; GroupCount = groupCount;
-            Occupants = Array.AsReadOnly(occupants.ToArray()); Outside = Array.AsReadOnly(outside.ToArray()); }
+            Occupants = Array.AsReadOnly(occupants.ToArray()); Outside = Array.AsReadOnly(outside.ToArray()); PreviewCopyId = previewCopyId; }
     }
     public sealed class SpawnPointWorld
     {
@@ -51,16 +55,17 @@ namespace MonsterTrain2Poju.Model
         public IReadOnlyList<SpawnPointGroupState> Groups { get; }
         public IReadOnlyList<SpawnPointOccupant> Units { get; }
         public SpawnPointWorld(bool preview, IReadOnlyList<SpawnPointGroupState> groups, IReadOnlyList<SpawnPointOccupant> units)
-        { Preview = preview; Groups = Array.AsReadOnly(groups.OrderBy(group => group.RoomIndex).ThenBy(group => group.Team).ToArray());
+        { Preview = preview; Groups = Array.AsReadOnly(groups.OrderBy(group => group.RoomIndex).ThenBy(group => group.Team)
+                .ThenBy(group => group.PreviewCopyId).ToArray());
             Units = Array.AsReadOnly(units.OrderBy(unit => unit.UnitId).ToArray()); }
         public SpawnPointReference? Point(int unitId, bool allowLastKnown = false)
         {
             SpawnPointOccupant unit = Units.Single(item => item.UnitId == unitId);
             return allowLastKnown && unit.Health <= 0 ? unit.LastKnown ?? unit.Current : unit.Current;
         }
-        public int Remaining(int roomIndex, CombatTeam team)
+        public int Remaining(int roomIndex, CombatTeam team, int? previewCopyId = null)
         {
-            SpawnPointGroupState group = Groups.Single(item => item.RoomIndex == roomIndex && item.Team == team);
+            SpawnPointGroupState group = Groups.Single(item => item.RoomIndex == roomIndex && item.Team == team && item.PreviewCopyId == previewCopyId);
             return Math.Max(group.GroupCount - group.Occupants.Count(id => id != 0 && !Units.Single(unit => unit.UnitId == id).OuterBoss), 0);
         }
     }
@@ -76,14 +81,14 @@ namespace MonsterTrain2Poju.Model
     public static class SpawnPointModel
     {
         public static SpawnPointResult Apply(SpawnPointWorld source, string operation, int roomIndex,
-            CombatTeam team, int unitId = 0, int index = -1, int targetIndex = -1, SpawnPointReference? target = null)
+            CombatTeam team, int unitId = 0, int index = -1, int targetIndex = -1, SpawnPointReference? target = null, int? previewCopyId = null)
         {
             string? error = Validate(source);
             if (error != null) return new SpawnPointResult(null, unsupportedReason: error);
-            var groups = source.Groups.ToDictionary(group => (group.RoomIndex, group.Team), group => group.Occupants.ToArray());
+            var groups = source.Groups.ToDictionary(group => (group.RoomIndex, group.Team, group.PreviewCopyId), group => group.Occupants.ToArray());
             var units = source.Units.ToDictionary(unit => unit.UnitId);
-            if (!groups.TryGetValue((roomIndex, team), out int[]? points)) return Reject("Unknown spawn point group.");
-            SpawnPointGroupState group = source.Groups.Single(item => item.RoomIndex == roomIndex && item.Team == team);
+            if (!groups.TryGetValue((roomIndex, team, previewCopyId), out int[]? points)) return Reject("Unknown spawn point group.");
+            SpawnPointGroupState group = source.Groups.Single(item => item.RoomIndex == roomIndex && item.Team == team && item.PreviewCopyId == previewCopyId);
             int pivotMoves = 0;
             try
             {
@@ -142,8 +147,8 @@ namespace MonsterTrain2Poju.Model
             catch (InvalidOperationException ex) { return Reject(ex.Message); }
             return new SpawnPointResult(new SpawnPointWorld(source.Preview, source.Groups.Select(item =>
                 new SpawnPointGroupState(item.RoomIndex, item.Team, item.InnerCount, item.GroupCount,
-                    groups[(item.RoomIndex, item.Team)], item.Outside)).ToArray(), units.Values.ToArray()), pivotMoves);
-            SpawnPointReference Reference(int at) => new SpawnPointReference(roomIndex, team, at);
+                    groups[(item.RoomIndex, item.Team, item.PreviewCopyId)], item.Outside, item.PreviewCopyId)).ToArray(), units.Values.ToArray()), pivotMoves);
+            SpawnPointReference Reference(int at) => new SpawnPointReference(roomIndex, team, at, previewCopyId);
             void Remember(int id)
             {
                 if (!units.TryGetValue(id, out SpawnPointOccupant? unit)) throw new InvalidOperationException("Unknown spawn point unit.");
@@ -154,27 +159,27 @@ namespace MonsterTrain2Poju.Model
                 if (!units.TryGetValue(id, out SpawnPointOccupant? unit)) throw new InvalidOperationException("Unknown spawn point unit.");
                 if (unit.Destroyed && unit.Current == null && to != null) return;
                 if (to != null && !Exists(to)) throw new InvalidOperationException("Unknown target spawn point.");
-                if (unit.Current != null && groups[(unit.Current.RoomIndex, unit.Current.Team)][unit.Current.Index] == id)
-                    groups[(unit.Current.RoomIndex, unit.Current.Team)][unit.Current.Index] = 0;
+                if (unit.Current != null && groups[(unit.Current.RoomIndex, unit.Current.Team, unit.Current.PreviewCopyId)][unit.Current.Index] == id)
+                    groups[(unit.Current.RoomIndex, unit.Current.Team, unit.Current.PreviewCopyId)][unit.Current.Index] = 0;
                 units[id] = unit.WithPoints(to, unit.LastKnown);
-                if (to != null) groups[(to.RoomIndex, to.Team)][to.Index] = id;
+                if (to != null) groups[(to.RoomIndex, to.Team, to.PreviewCopyId)][to.Index] = id;
             }
-            bool Exists(SpawnPointReference point) => groups.TryGetValue((point.RoomIndex, point.Team), out int[]? values) &&
+            bool Exists(SpawnPointReference point) => groups.TryGetValue((point.RoomIndex, point.Team, point.PreviewCopyId), out int[]? values) &&
                 point.Index >= 0 && point.Index < values.Length;
             SpawnPointResult Reject(string reason) => new SpawnPointResult(null, unsupportedReason: reason);
         }
         private static string? Validate(SpawnPointWorld source)
         {
-            if (source.Groups.Select(group => (group.RoomIndex, group.Team)).Distinct().Count() != source.Groups.Count ||
+            if (source.Groups.Select(group => (group.RoomIndex, group.Team, group.PreviewCopyId)).Distinct().Count() != source.Groups.Count ||
                 source.Units.Select(unit => unit.UnitId).Distinct().Count() != source.Units.Count || source.Units.Any(unit => unit.UnitId <= 0))
                 return "Invalid spawn point identities.";
             var ids = source.Units.Select(unit => unit.UnitId).ToHashSet();
-            if (source.Groups.Any(group => group.InnerCount < 1 || group.GroupCount < 0 ||
+            if (source.Groups.Any(group => group.PreviewCopyId <= 0 || group.InnerCount < 1 || group.GroupCount < 0 ||
                 Math.Max(group.InnerCount, group.GroupCount) > group.Occupants.Count || group.Outside.Count != group.Occupants.Count ||
                 group.Occupants.Any(id => id < 0 || id != 0 && !ids.Contains(id)))) return "Invalid spawn point group layout.";
             foreach (SpawnPointReference point in source.Units.SelectMany(unit => new[] { unit.Current, unit.LastKnown }).Where(point => point != null).Cast<SpawnPointReference>())
             {
-                SpawnPointGroupState? group = source.Groups.SingleOrDefault(item => item.RoomIndex == point.RoomIndex && item.Team == point.Team);
+                SpawnPointGroupState? group = source.Groups.SingleOrDefault(item => item.RoomIndex == point.RoomIndex && item.Team == point.Team && item.PreviewCopyId == point.PreviewCopyId);
                 if (group == null || point.Index < 0 || point.Index >= group.Occupants.Count) return "Invalid current or last-known spawn point.";
             }
             return null;

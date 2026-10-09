@@ -6380,3 +6380,55 @@ ModelChecks retains fourteen existing nullable warnings and no errors. All 172
 inventory sizes/hashes/list entries, new native binary provenance, PowerShell
 syntax and whitespace checks pass. A combined172 run is not claimed; the previous
 complete163 run remains the full regression baseline.
+
+### Copied physical position lists and original preview compaction
+
+SpawnPointReference and SpawnPointGroupState now carry an optional PreviewCopyId.
+Null denotes the primary list; every native DeepCopyTemporarySpawnPointsList call
+gets a separate copied-list identity. Position equality, group validation,
+assignment, removal and compaction use room/team/copy/index, so a copied position
+does not alias the primary position at the same coordinates. Legacy inputs still
+denote primary lists without supplying the optional field.
+
+The physical observer retains the actual point objects across copy replacement.
+Raw primary references can resolve to historical copied lists. Stable decision
+normalization retains the primary layout and live primary pointers, while its
+new Planes payload separately preserves all observed primary/preview/temporary
+actor pointers and current copied lists. Unknown references still fail capture;
+they are neither mapped onto primary slots nor dropped before observation.
+
+PhysicalPlaneProbe observes original CharacterState.SetSpawnPoint and copied-list
+RoomState.ShiftSpawnPoints calls. It records the complete selected-state world
+before and after each nonvisual assignment/compaction. Actor inventories include
+the closure of characters owned by referenced copied slots before freezing the
+snapshot; one rejected prototype exposed a late actor (27) missing from this
+inventory. The corrected capture includes it as an input, without replacing
+gameplay or supplying future events to the model.
+
+physical-plane-calibration.mt2f independently matches all 100 original assignments
+and 40 copied compactions over ten distinct copied lists, full layout/ownership/
+current/last-known state and pivot counts, with 32 immutable branches. It is a
+byte-identical source-free native binary: 4,032 bytes/825 nodes, SHA-256
+c9d3bd6658c34de5576121ba305e175e7998570b2cef3c575339b45e0d0c1a12.
+The archive has zero errors/differences/incomplete samples, GameplaySuppressed=false
+and WholeBattleVerified=false. Inventory is 173: 149 accepted battles/24 calibrations.
+
+Muted Instant native battles now have zero capture failures, unsupported effects
+and pending records. The final 109.60-second run preserves original profile/log
+signatures and its 370 raw/canonical decisions independently verify 11,835 state
+plane mappings, including five retired raw references. The existing
+SettleDeathDissolves protocol resolves the earlier third-turn attacker gap by
+awaiting original callbacks before the original removal flush. A diagnostic chain
+matches fourteen paid actions and four EndTurns; the next paid action sees an
+extra retained preview target. Seven terminal-preview/aura/source-cache differences
+still reject the entire new battle. These traces and the malformed prototype are
+not curated as accepted battles, and arbitrary frame timing remains outside the
+explicit settled decision protocol.
+
+Validation passes 31 affected historical battle suites/29 continuous paid policies
+(three position scenes plus 28 earlier summon/aura/Boss/bump/copy scenes), all 23
+earlier component calibrations/pure checks, the new native calibration and complete
+raw decision mappings. Probe builds without warnings/errors; ModelChecks has its
+fourteen existing nullable warnings and no errors. All 173 inventory hashes/sizes,
+curated list entries, native byte provenance, PowerShell syntax and whitespace pass.
+A combined173 run is not claimed; complete163 remains the full regression baseline.

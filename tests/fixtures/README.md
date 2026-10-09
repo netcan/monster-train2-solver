@@ -1221,3 +1221,26 @@ lifecycle calibrations. All 172 manifest hashes/sizes and regression entries
 match. Probe builds without warnings/errors; ModelChecks keeps fourteen existing
 nullable warnings and no errors. A combined172 run is not claimed; the previous
 complete163 regression remains the full baseline.
+
+physical-plane-calibration.mt2f captures 100 original SetSpawnPoint assignments and
+40 original copied-list compactions. Complete before/after worlds match in 32
+immutable branches, including ten distinct copied lists, cross-plane ownership,
+preview-born detachment, retained point pointers and native pivot counts. The model
+keys positions by room/team/PreviewCopyId/index; null denotes the primary layout.
+The observer preserves historical copied points and all three actor-state planes.
+Copied-slot actor closure is observed before freezing inputs, correcting a rejected
+prototype whose last copied group retained actor 27 outside its unit inventory.
+
+This byte-identical native binary has 4,032 bytes/825 nodes, no text source or JSON
+companion, zero incomplete/differing samples and WholeBattleVerified=false. Inventory
+is 173: 149 accepted battles and 24 component calibrations. The final muted Instant
+native run preserves original profile/log signatures, removes all ten former
+physical capture failures and independently verifies 370 raw/canonical decisions
+with 11,835 primary/preview/temporary mappings. Original dissolve settlement resolves
+the third-turn attacker gap; terminal aura/preview/cache differences still reject
+the full battle, which is excluded from the accepted inventory.
+
+All 31 affected historical battles/29 paid policies, 23 earlier calibrations/pure
+checks, the new calibration, binary provenance, all 173 manifest entries and script
+syntax pass. A combined173 regression is not claimed; complete163 remains the full
+baseline.
