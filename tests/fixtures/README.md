@@ -4,7 +4,7 @@ These fixed inputs reproduce the independently modeled battle and calibration
 checks. Run `pwsh -NoProfile -File scripts/Check-Models.ps1` from the repository
 root. The script reads the curated fixture list in this directory.
 
-Current inventory is 186 archives: 162 accepted battles and 24 component
+Current inventory is 187 archives: 162 accepted battles and 25 component
 calibrations. The initial Incant model's complete 180-archive regression passes.
 The threshold model's combined181 regression has also completed successfully.
 The relic model's combined181 regression has also completed successfully.
@@ -25,6 +25,16 @@ pass; all28 pre/post-policy states repeat exactly. The final scheduling model's
 complete186 regression also passes:162 battles (158 paid/four no-more-card
 chains) and24 component calibrations, with every input and frozen binary hash
 audited. This baseline precedes further card-upgrade-mask model work.
+
+`card-upgrade-mask-calibration.mt2f` retains schema2 with62 original upgrade/card
+filters against668 raw card definitions,15 owned cards, one live character and
+null sources:42,470 native matrix queries plus58 controlled native boundary
+queries. The independent component and32 immutable parallel replays pass. The
+native capture preserves full context, units, gameplay/test RNG and frame and
+its complete recorded battle also passes independent policy checks. This archive
+is34,127 bytes/3,087 nodes, with no JSON dependency. It calibrates eligibility;
+applying temporary relic upgrades in battle remains unfinished. The full187
+regression is separate from the completed preceding-model186 baseline.
 
 `full-battle-incant-relic.mt2f` retains schema108 with the original obtainable
 ExtraSpellCastTrigger acquired through SaveManager. The relic asset is unchanged;

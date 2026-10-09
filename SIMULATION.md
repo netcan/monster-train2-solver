@@ -7649,3 +7649,17 @@ RelicEffectAddTempUpgrade remains rejected by the production relic guard until
 those lifecycle paths and native battles are verified. This increment does not
 increase the six verified original collectable artifacts or complete the entire
 battle simulator; the complete186 baseline precedes this independent component.
+
+### Accepted original card-upgrade mask calibration archive
+
+The verified native schema2 capture is byte-identically curated as
+tests/fixtures/card-upgrade-mask-calibration.mt2f, with34,127 bytes,3,087 nodes and
+SHA256f0b892649780b816168e4d244a0dbcdb3f70050d54b4d5ac5b9bace876f301b3.
+Its native-source manifest row is appended while preserving all previous bytes
+and row order. The curated script and manifest now contain187 archives:162
+accepted complete battles and25 component calibrations. Native generation and
+independent matrix/boundary/complete-battle acceptance precede this curation;
+the completed frozen186 regression is separate evidence. A full187-input
+regression of the extended checker/model remains required. No generated JSON or
+results output becomes a dependency, and broader relic lifecycle, room, Boss and
+card/effect simulation remains unfinished.
