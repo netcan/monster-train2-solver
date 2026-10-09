@@ -7371,3 +7371,22 @@ and24 strict component calibrations. The combined native/all-component acceptanc
 is separate evidence from the still-running frozen183-input regression. A complete
 184-input run remains required afterward; no ongoing process is restarted to add it.
 The entire battle simulator still lacks further relic, room, Boss and effect coverage.
+
+### Complete original trigger-count relic 183 regression
+
+The frozen .probe-runs/incant-relic-checks snapshot has completed its183-input
+regression with terminal exit zero. Model.dll remains
+1F7CBD55F96F8D34BF531BAED707CB43C2A67D48A555C93F034921F3CF2A2BE8 and
+ModelChecks.dll remains1A51C8C0C76B6EC23E357D0FEDDF93955C925F6ABD3A5CAD4E1CAD1745ACAD77.
+All159 accepted battles pass, including155 complete paid policy chains and four
+no-more-card chains. All24 component calibrations and their expected native
+check-kind counts pass. There are zero failed checks or unsupported recorded
+room/card-cycle/train/spawn/turn/action operations.
+
+The183 retained input identities are unique; every length and SHA256 still matches
+its original manifest row. All159 room-check input paths exactly match the battle
+subset. The manifest now includes a184th combined-relic archive, which was not
+part of this preserved run. It retains its separate complete native and independent
+acceptance; broader regression of that archive and subsequent relic effects remains
+required. Evidence is .probe-runs/incant-relic-complete-regression.log and
+.probe-runs/incant-relic-complete-inputs.txt plus the frozen checker snapshot.

@@ -9,8 +9,9 @@ calibrations. The initial Incant model's complete 180-archive regression passes.
 The threshold model's combined181 regression has also completed successfully.
 The relic model's combined181 regression has also completed successfully.
 The corrected checker's combined182 regression has also completed successfully.
-The extended trigger-count model passes the new relic battle and eight historical
-battles; its complete183 regression is a separate running check. The combined
+The extended trigger-count model's complete183 regression has completed:159
+battles,155 paid policy chains,four no-more-card chains and24 calibrations pass.
+The combined
 relic scene passes independently; a complete184 run is still required afterward.
 
 `full-battle-incant-relic.mt2f` retains schema108 with the original obtainable
@@ -22,7 +23,7 @@ contexts/callbacks and initial/mid-battle parallel policies match the native gam
 `full-battle-incant-relics-combined.mt2f` adds the original ExtraSpawnTrigger and
 ExtraDeathTrigger artifacts. The unchanged production model matches all21 plays,
 seven EndTurns, five actual player deaths,160 native fire-count queries and complete
-parallel policies. The earlier183 process is preserved with its frozen inventory;
+parallel policies. The completed183 run retains its original frozen inventory;
 that run cannot establish the new184 inventory's complete result.
 
 `full-battle-ability-incant.mt2f` retains schema107 with an isolated authored
