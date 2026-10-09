@@ -7026,3 +7026,23 @@ retained in .probe-runs/incant-verified-checks. Evidence is the terminal-zero
 model's combined181 run remains separate and running; ongoing relic work is
 not covered by this initial Incant baseline. The whole battle model remains
 incomplete for the explicitly refused mechanics.
+
+
+### Complete Incant threshold regression baseline
+
+The isolated threshold model's combined181 run has completed with terminal exit
+zero: 157 accepted complete battles, 153 paid policies, four no-more-card chains
+and 24 strict component calibrations. No recorded room, card-cycle, train, spawn,
+turn or paid action is unsupported or skipped. All 181 unique required archive
+identities, sizes and SHA-256 hashes match the complete manifest. The final
+calibration output includes all 24 required suites.
+
+This baseline belongs to Model.dll SHA-256
+AB9E8F6FE6B86FB4D2B66075621D6C3719C385616F51363DBCC798020528DB96,
+retained in .probe-runs/incant-threshold-final-checks. Evidence is
+.probe-runs/incant-threshold-complete-regression.log and its explicit
+.probe-runs/incant-threshold-complete-inputs.txt inventory. The initial Incant
+model's completed180 baseline remains separately bound to e26db6f6. Ongoing
+relic/combined-prefix work requires its own final-binary native and historical
+validation; neither completed baseline establishes that new model or completion
+of the whole battle simulation.
