@@ -6997,3 +6997,12 @@ e26db6f690855eadc4adc90ec5dd2feaf5570de1a1a9695ab826195e5f5b5cea.
 Relic-triggered ability Incant, further card/trigger/effect combinations,
 Purify/Horde/aura interactions, card purification, complete pruning and the whole
 combat simulator remain unfinished.
+
+The final native threshold recording is byte-identically curated as
+full-battle-incant-thresholds.mt2f: 49,221 bytes, 8,328 unique nodes, no text source
+and SHA-256
+8cb07e36205d0f19db5a5f1fdc40cab8489b082eb12eb956762dae396f31d13f.
+The required list and manifest now contain 181 archives: 157 accepted complete
+battles and 24 strict component calibrations. A combined181 regression of the
+threshold model is pending; the initial Incant model's separate combined180 run
+continues against its isolated e26db6f6 snapshot.

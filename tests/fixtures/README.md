@@ -1461,3 +1461,10 @@ Model.dll SHA-256:
 ab9e8f6fe6b86fb4d2b66075621d6c3719c385616f51363dbcc798020528db96.
 The earlier combined180 run belongs to the initial Incant model e26db6f6. Further
 relic/ability/card/trigger combinations and the complete simulator remain open.
+
+`full-battle-incant-thresholds.mt2f` is the byte-identical final native recording:
+49,221 bytes, 8,328 unique nodes, no text-source provenance and SHA-256
+8cb07e36205d0f19db5a5f1fdc40cab8489b082eb12eb956762dae396f31d13f.
+The manifest and required list now contain 181 archives: 157 accepted battles and
+24 strict component calibrations. The threshold model's combined181 regression is
+pending; the earlier combined180 run remains bound to the initial Incant model.
