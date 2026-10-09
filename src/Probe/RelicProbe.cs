@@ -22,8 +22,42 @@ namespace MonsterTrain2Poju.Probe
             // Includes hero blessings, covenants, mutators, Pyre artifacts and souls,
             // in the exact order searched by GetRelicEffect<T>.
             var relics = Current(managers);
-            return relics.Select(relic => new CombatRelicState(relic.GetRelicDataID(), relic.GetAssetName(),
-                relic.GetEffects().Select(effect => effect.GetType().Name).ToArray())).ToArray();
+            return relics.Select(relic => {
+                var effects = relic.GetEffects().ToArray();
+                var statuses = effects.Select((effect, index) => new { Effect = effect, Index = index })
+                    .Where(item => item.Effect is RelicEffectAddStatusEffectOnSpawn).Select(item => SpawnStatus(item.Effect, item.Index)).ToArray();
+                return new CombatRelicState(relic.GetRelicDataID(), relic.GetAssetName(), effects.Select(effect => effect.GetType().Name).ToArray(),
+                    statuses.Length == 0 ? null : statuses, statuses.Length == 0 ? null : (bool?)(relic is CovenantState),
+                    statuses.Length == 0 ? null : (bool?)relic.DisallowedInPlacementPhase);
+            }).ToArray();
+        }
+
+        private static RelicSpawnStatus SpawnStatus(IRelicEffect effect, int index)
+        {
+            object Field(string name) => AccessTools.Field(effect.GetType(), name).GetValue(effect);
+            var conditions = ((System.Collections.Generic.IEnumerable<RelicEffectCondition>)Field("_effectConditions")).Select(condition => {
+                object C(string name) => AccessTools.Field(typeof(RelicEffectCondition), name).GetValue(condition);
+                bool trackCount = (bool)C("paramTrackTriggerCount");
+                var input = new CardStatistics.StatValueData {
+                    trackedValue = (CardStatistics.TrackedValueType)C("paramTrackedValue"),
+                    entryDuration = (CardStatistics.EntryDuration)C("paramEntryDuration"),
+                    cardTypeTarget = (CardStatistics.CardTypeTarget)C("paramCardType"),
+                    paramSubtype = SubtypeManager.GetSubtypeData((string)C("paramSubtype")) };
+                CardStatisticQuery query = trackCount ? new CardStatisticQuery(input.trackedValue.ToString(), input.entryDuration.ToString()) :
+                    DamageScalingProbe.Query(input, 0, false);
+                return new RelicConditionState(query, trackCount, Convert.ToInt32(C("paramComparator")), (int)C("paramInt"),
+                    (bool)C("allowMultipleTriggersPerDuration"), (bool)C("triggered"), (int)C("valueAtLastTrigger"), (int)C("durationTriggerCount"));
+            }).ToArray();
+            Team.Type team = (Team.Type)Field("targetTeam");
+            var subtype = (SubtypeData)Field("characterSubtype");
+            bool allowFromCard = (bool)Field("allowFromCard"), onlyFromCard = (bool)Field("onlyAllowedFromCard");
+            return new RelicSpawnStatus(index, team.HasFlag(Team.Type.Monsters), team.HasFlag(Team.Type.Heroes),
+                ((StatusEffectStackData[])Field("statusEffects")).Select(status => BattleActionProbe.Status(status.statusId, status.count)).ToArray(),
+                subtype?.Key, subtype == null || subtype.IsNone, subtype?.IsPyre == true,
+                ((SubtypeData[])Field("excludeCharacterSubtypes")).Select(item => item.Key).ToArray(),
+                (bool)Field("restrictToRoom") ? (int?)Field("restrictedRoomIndex") : null, (int)Field("hpPercentAsStacks"),
+                onlyFromCard ? "OnlyFromCard" : allowFromCard ? "" : "NoCard", (bool)Field("requireGraft"),
+                ((List<CharacterData>)Field("characterFilter")).Select(character => character == null ? "<null>" : character.name).ToArray(), conditions);
         }
 
         internal static TriggerCountState? TriggerCounts(AllGameManagers managers)

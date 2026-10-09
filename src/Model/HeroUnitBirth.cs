@@ -51,6 +51,8 @@ namespace MonsterTrain2Poju.Model
             // Hero covenant/added notifications drain setup and incoming callbacks
             // before the separate OnSpawn queue, including their child callbacks.
             if (!Drain()) return Fail(error!);
+            RoomCombatResult relics = RelicSpawnStatusModel.CharacterAdded(FindRoom()!, unitId, 0, false);
+            if (!Accept(relics)) return Fail(relics.UnsupportedReason!);
             foreach (string phase in new[] { "OnSpawn", "OnUnscaledSpawn", "OnSpawnNotFromCard", "AfterSpawnEnchant" })
             {
                 CombatUnit? live = Get(unitId);

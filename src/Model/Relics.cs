@@ -11,14 +11,23 @@ namespace MonsterTrain2Poju.Model
         public string DataId { get; }
         public string AssetKey { get; }
         public IReadOnlyList<string> EffectTypes { get; }
-        public CombatRelicState(string dataId, string assetKey, IReadOnlyList<string> effectTypes)
-        { DataId = dataId; AssetKey = assetKey; EffectTypes = Array.AsReadOnly(effectTypes.ToArray()); }
+        public IReadOnlyList<RelicSpawnStatus>? SpawnStatuses { get; }
+        public bool? IsCovenant { get; }
+        public bool? DisallowedInPlacementPhase { get; }
+        public CombatRelicState(string dataId, string assetKey, IReadOnlyList<string> effectTypes,
+            IReadOnlyList<RelicSpawnStatus>? spawnStatuses = null, bool? isCovenant = null, bool? disallowedInPlacementPhase = null)
+        { DataId = dataId; AssetKey = assetKey; EffectTypes = Array.AsReadOnly(effectTypes.ToArray());
+            SpawnStatuses = spawnStatuses == null ? null : Array.AsReadOnly(spawnStatuses.ToArray());
+            IsCovenant = isCovenant; DisallowedInPlacementPhase = disallowedInPlacementPhase; }
+        internal CombatRelicState WithSpawnStatuses(IReadOnlyList<RelicSpawnStatus> rules) =>
+            new CombatRelicState(DataId, AssetKey, EffectTypes, rules, IsCovenant, DisallowedInPlacementPhase);
     }
 
     internal static class RelicModel
     {
         internal const string AbilityIncant = "RelicEffectIncantTriggeredByUnitAbilities";
         internal const string ModifyTriggerCount = "RelicEffectModifyTriggerCount";
+        internal const string AddStatusOnSpawn = "RelicEffectAddStatusEffectOnSpawn";
         internal static bool AbilitiesTriggerIncant(CombatContext? context) =>
             context?.Relics?.Any(relic => relic.EffectTypes.Contains(AbilityIncant)) == true;
         internal static string? Validate(CombatContext? context) => Validate(context?.Relics) ??
@@ -32,7 +41,9 @@ namespace MonsterTrain2Poju.Model
                 if (string.IsNullOrEmpty(relic.DataId) || string.IsNullOrEmpty(relic.AssetKey))
                     return "Missing captured relic identity.";
                 foreach (string effect in relic.EffectTypes)
-                    if (effect != AbilityIncant && effect != ModifyTriggerCount) return "Unmodeled relic effect " + effect + " on " + relic.AssetKey + ".";
+                    if (effect != AbilityIncant && effect != ModifyTriggerCount && effect != AddStatusOnSpawn) return "Unmodeled relic effect " + effect + " on " + relic.AssetKey + ".";
+                string? error = RelicSpawnStatusModel.Validate(relic);
+                if (error != null) return error;
             }
             return null;
         }

@@ -112,6 +112,7 @@ param(
     [switch] $RelicCatalog,
     [switch] $IncantRelic,
     [switch] $IncantRelics,
+    [switch] $SpawnStatusRelics,
     [switch] $SettleDeathDissolves,
     [switch] $SettleCardAnimations,
     [switch] $HarvestTriggers,
@@ -265,6 +266,10 @@ if ($HeroCopy) { $environment['MT2_PROBE_MODIFIERS'] = 'hero-copy' }
 if ($SpawnEnchant) { $environment['MT2_PROBE_MODIFIERS'] = 'spawn-enchant' }
 if ($Purify) {
     $environment['MT2_PROBE_MODIFIERS'] = $(if ($PurifyQueues) { 'purify-queues' } else { 'purify' })
+    $environment['MT2_PROBE_STATUS_CALLBACKS'] = '1'
+}
+if ($SpawnStatusRelics) {
+    $environment['MT2_PROBE_MODIFIERS'] = 'spawn-status-relics'
     $environment['MT2_PROBE_STATUS_CALLBACKS'] = '1'
 }
 if ($IncantRelics) { $IncantRelic = $true }
@@ -1375,6 +1380,33 @@ if ($Incant) {
         $incantRejected.Count -gt 0 -and $emptySpellPlays -gt 0 -and $silencedFires -gt 0 -and $visibleFires -gt 0
     if (-not $incantCoverage) { throw "Incant coverage incomplete: phases=$($incantPhases.Count) fires=$($incantFires.Count) rejected=$($incantRejected.Count) empty=$emptySpellPlays silenced=$silencedFires visible=$visibleFires" }
 }
+if ($SpawnStatusRelics) {
+    $births = @($trace.RelicSpawnStatuses)
+    $spawnRelicPlayers = 0
+    $spawnRelicEnemies = 0
+    $spawnRelicFirsts = 0
+    $spawnRelicSkips = 0
+    $spawnRelicTurns = [Collections.Generic.HashSet[int]]::new()
+    foreach ($birth in $births) {
+        $actor = @($birth.After.Units | Where-Object { $_.Id -eq $birth.UnitId })
+        if ($actor.Count -ne 1) { throw 'Native relic birth actor is missing or duplicated.' }
+        if ($actor[0].Team -eq 1) {
+            $spawnRelicPlayers++
+            $oldShield = @($birth.Before.Context.Relics | Where-Object AssetKey -EQ 'FirstUnitGainDamageShield')[0].SpawnStatuses[0].Conditions[0]
+            $newShield = @($birth.After.Context.Relics | Where-Object AssetKey -EQ 'FirstUnitGainDamageShield')[0].SpawnStatuses[0].Conditions[0]
+            if ($oldShield.DurationTriggerCount -eq 0 -and $newShield.DurationTriggerCount -eq 1) {
+                $spawnRelicFirsts++
+                [void]$spawnRelicTurns.Add($birth.Before.Context.QueryFrame.Turn)
+            } elseif ($oldShield.DurationTriggerCount -eq 1 -and $newShield.DurationTriggerCount -eq 1) { $spawnRelicSkips++ }
+        } else { $spawnRelicEnemies++ }
+    }
+    if ($trace.Schema -ne 109 -or $trace.ModifierScenario -ne 'spawn-status-relics' -or $births.Count -lt 3 -or
+        $spawnRelicPlayers -lt 2 -or $spawnRelicEnemies -lt 1 -or $spawnRelicFirsts -lt 2 -or $spawnRelicSkips -lt 1 -or $spawnRelicTurns.Count -lt 2 -or
+        @($births | Where-Object { -not $_.Completed -or -not $_.After -or $_.Difference }).Count -ne 0 -or
+        @($trace.Actions[0].Before.Spawn.Train.Context.Relics | Where-Object { $_.AssetKey -in @('SpawnWithArmor','FirstUnitGainDamageShield','FrostbiteOnEnemies') }).Count -ne 3) {
+        throw 'Native original spawn-status relic coverage is incomplete or failed.'
+    }
+}
 if ($IncantRelic) {
     $players = @($incantFires | Where-Object { $_.Actor.Team -eq 1 })
     $enemies = @($incantFires | Where-Object { $_.Actor.Team -eq 0 })
@@ -1577,7 +1609,7 @@ $result = [pscustomobject]@{
 }
 $result | ConvertTo-Json
 if ($SettleDeathDissolves) {
-    if (-not $trace.DeathDissolveSettlementEnabled -or $trace.Schema -ne $(if ($IncantRelic) { 108 } elseif ($AbilityIncant) { 107 } elseif ($SettleCardAnimations) { 105 } else { 104 }) -or
+    if (-not $trace.DeathDissolveSettlementEnabled -or $trace.Schema -ne $(if ($SpawnStatusRelics) { 109 } elseif ($IncantRelic) { 108 } elseif ($AbilityIncant) { 107 } elseif ($SettleCardAnimations) { 105 } else { 104 }) -or
         @($trace.DeathDissolveSettlements).Count -eq 0 -or
         @($trace.DeathDissolveSettlements | Where-Object { -not $_.Completed -or $_.PendingAfter -ne 0 -or $_.Error }).Count -ne 0 -or
         @($trace.DeathDissolveCallbacks | Where-Object { $_.Error }).Count -ne 0) {
@@ -1585,7 +1617,7 @@ if ($SettleDeathDissolves) {
     }
 }
 if ($SettleCardAnimations) {
-    if ($trace.Schema -ne $(if ($IncantRelic) { 108 } elseif ($AbilityIncant) { 107 } else { 105 }) -or -not $trace.CardAnimationSettlement.Enabled -or
+    if ($trace.Schema -ne $(if ($SpawnStatusRelics) { 109 } elseif ($IncantRelic) { 108 } elseif ($AbilityIncant) { 107 } else { 105 }) -or -not $trace.CardAnimationSettlement.Enabled -or
         $trace.CardAnimationSettlement.PreviewWaits -lt 0 -or $trace.CardAnimationSettlement.DecisionWaits -lt 0 -or
         $trace.CardAnimationSettlement.ScheduledMovements -le 0 -or $trace.CardAnimationSettlement.PendingMovements -ne 0) {
         throw 'Native card-animation settlement protocol is missing or invalid.'

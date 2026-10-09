@@ -212,6 +212,7 @@ internal static class RoomCombatChecks
         IncantChecks.Native(fixture);
         RelicChecks.Native(fixture);
         TriggerCountChecks.Native(fixture);
+        RelicSpawnStatusChecks.Native(fixture);
         LethalRallyChecks.Native(fixture);
         UnitSummonChecks.Native(fixture);
         HarvestChecks.Native(fixture);

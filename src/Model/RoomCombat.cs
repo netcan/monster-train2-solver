@@ -1222,13 +1222,19 @@ namespace MonsterTrain2Poju.Model
                     foreach (QueuedCharacterTrigger callback in callbacks) QueueCallback(callback);
                 }
                 if (spawned.Source.Team == CombatTeam.Player) spawned.Apply(HordeStatusModel.WithSpawning(spawned.Freeze(), true));
+                if (!ApplyBirthRelics(true)) return Finish(RoomOutcome.Unsupported);
                 if (!prepareOnly || spawned.Source.Team == CombatTeam.Player)
                 {
                     if (!UpdateEnchantments()) return Finish(RoomOutcome.Unsupported);
-                    RoomCombatState bound = EnchantmentWorldModel.Bind(CurrentRoom(), spawned.Source.Id);
-                    ImportEnchantmentRoom(bound);
                 }
-                if (prepareOnly) return Finish(RoomOutcome.Exchanged);
+                if (prepareOnly)
+                {
+                    ImportEnchantmentRoom(EnchantmentWorldModel.Bind(CurrentRoom(), spawned.Source.Id));
+                    return Finish(RoomOutcome.Exchanged);
+                }
+                if (!ApplyBirthRelics(false)) return Finish(RoomOutcome.Unsupported);
+                RoomCombatState bound = EnchantmentWorldModel.Bind(CurrentRoom(), spawned.Source.Id);
+                ImportEnchantmentRoom(bound);
                 FireTriggers(spawned, "OnSpawn");
                 FireTriggers(spawned, "OnUnscaledSpawn");
                 if (!fromCard) FireTriggers(spawned, "OnSpawnNotFromCard");
@@ -1240,6 +1246,17 @@ namespace MonsterTrain2Poju.Model
                     context = context.WithLastSpawned(spawned.Source.Id);
                 return Finish(battleWon ? RoomOutcome.BattleWon : units.Any(unit => unit.Source.IsPyre && !unit.Alive)
                     ? RoomOutcome.PlayerDefeated : RoomOutcome.Exchanged);
+
+                bool ApplyBirthRelics(bool covenants)
+                {
+                    RoomCombatResult result = RelicSpawnStatusModel.CharacterAdded(CurrentRoom(), unitId,
+                        fromCard ? spawned.Source.SpawnerCardId : 0, covenants);
+                    if (!result.Supported) { unsupportedReason = result.UnsupportedReason; return false; }
+                    ImportEnchantmentRoom(result.State!);
+                    foreach (QueuedCharacterTrigger callback in result.PendingCallbacks) QueueCallback(callback);
+                    events.AddRange(result.Events);
+                    return true;
+                }
             }
 
             internal RoomCombatResult UnitTurn(int unitId)

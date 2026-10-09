@@ -7390,3 +7390,57 @@ part of this preserved run. It retains its separate complete native and independ
 acceptance; broader regression of that archive and subsequent relic effects remains
 required. Evidence is .probe-runs/incant-relic-complete-regression.log and
 .probe-runs/incant-relic-complete-inputs.txt plus the frozen checker snapshot.
+
+### Original relic spawn status effects and per-turn conditions
+
+CombatRelicState now retains ordered native RelicEffectAddStatusEffectOnSpawn
+parameters and live copied condition counters. The pure model preserves early
+character/source/team/control/exclusion/room gates, Battle random selection before
+required-subtype testing, single-precision HP percentages, immunity overrides and
+notification after an attempted status application. Conditions keep their native
+triggered/value-at-last-trigger/duration-trigger-count values and reset on the
+original PreviousTurn/ThisTurn rollover. Non-trigger-count conditions use the
+previously calibrated statistic-query model. Status children stay on the shared
+FIFO queue. Unknown effects/parameters and required graft metadata are refused.
+
+Birth integration includes the covenant stage, player paid/repeated births,
+queued clone births, hero copies and whole enemy groups. The new native evidence
+below verifies ordinary paid births and natural enemy spawns. Active relics with
+copied/cardless/aura/grafted births still need their own native combinations;
+historical copy/summon fixtures establish regression of the existing paths.
+
+The optional -SpawnStatusRelics schema109 scenario acquires three unchanged
+original collectable artifacts through SaveManager: SpawnWithArmor
+(68ef2523-5c2e-4660-b96d-00b1c0485f54), FirstUnitGainDamageShield
+(60a2a8a3-5f7a-4a9d-b427-5f261145fa1f) and FrostbiteOnEnemies
+(270356af-16bd-4433-a0b2-3e5bb94ef890). Authored healing spells and an OnArmorAdded
+gold callback exercise the original effects; Boss and waves are retained.
+Two muted Instant recordings under explicit card-animation settlement finish
+with terminal exit zero in79.13 and53.25 seconds. Both have zero failures,
+differences, unsupported or pending records and preserve original profile files.
+All18 complete pre-action and post-action states are identical between runs.
+
+The final independent checker exits zero:18 paid plays, six EndTurns, final Pyre80,
+12 complete native CharacterAdded phases (five player/seven enemy births), three
+first-unit shield triggers and two same-turn skips across three turns. All170
+FIFO status dispatches, exact payloads/unit/context and initial/mid-battle policies
+match; policies repeat in16 branches and relic birth transitions in32 branches.
+Pure checks cover selection/gating order, immutable counters, duration reset,
+per-status immunity notification, HP percentage and callback/parent isolation.
+Probe Release build has zero warnings/errors; checker build has14 existing
+nullable warnings and zero errors.
+
+The retained .probe-runs/spawn-status-relics-final-checks snapshot uses Model.dll
+BDFB316583737511EA317CEA188973F4E0DACCB17825008C71F620987486958F and
+ModelChecks.dll4EA66BFDF8B93F1F7BDDB17B003C94965092C415CE5333DA216449528C683005.
+It also passes the previous recording and historical unit-clone/hero-copy battles.
+The initial implementation passes six manifest-verified historical complete
+battles/policy chains with terminal exit zero. Evidence is
+.probe-runs/spawn-status-relics-final-native.log,
+.probe-runs/spawn-status-relics-final-native-independent.log,
+.probe-runs/spawn-status-relics-final-independent.log and
+.probe-runs/spawn-status-relics-targeted.log with their retained input lists.
+The final recording remains .probe-runs/full-battle-units-spells-and-junk-20261009-193135-fe1a6341/full-battle.mt2f.
+This increment establishes three further original artifacts, not complete relic
+or battle coverage. The complete183 baseline belongs to the preceding model;
+a full regression of this extended model remains required.
