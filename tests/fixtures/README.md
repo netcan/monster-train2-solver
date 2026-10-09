@@ -4,11 +4,10 @@ These fixed inputs reproduce the independently modeled battle and calibration
 checks. Run `pwsh -NoProfile -File scripts/Check-Models.ps1` from the repository
 root. The script reads the curated fixture list in this directory.
 
-Current inventory is 177 archives: 153 accepted battles and 24 component
-calibrations. The baseline model's complete 173-archive historical regression
-passes. The current room-membership model passes 59 affected archives and the
-new fresh-source random aura-summon battle in separate complete checks. A
-combined177 run of the current model has not been performed.
+Current inventory is 181 archives: 157 accepted battles and 24 component
+calibrations. The initial Incant model's complete 180-archive regression passes.
+The threshold model's combined181 regression is still running. New relic model
+work requires separate validation against its own final model binary.
 
 The retained inputs are `.mt2f` binary archives. They store typed, deduplicated
 value graphs, not JSON documents. Regression reads those graphs and constructs
@@ -1468,3 +1467,23 @@ relic/ability/card/trigger combinations and the complete simulator remain open.
 The manifest and required list now contain 181 archives: 157 accepted battles and
 24 strict component calibrations. The threshold model's combined181 regression is
 pending; the earlier combined180 run remains bound to the initial Incant model.
+
+
+### Complete initial Incant regression baseline
+
+The isolated initial Incant model's combined180 run has completed successfully:
+156 accepted complete battles, 152 paid policies, four no-more-card chains and
+24 strict component calibrations. Every recorded room, card-cycle, train, spawn,
+turn and paid action is modeled, with zero unsupported or skipped operations.
+The 180 explicit input identities are unique; their archive sizes and SHA-256
+hashes match the manifest. Native calibration output includes all 24 required
+suites, including the four aura-summon and four preview-birth variants.
+
+This baseline belongs to Model.dll SHA-256
+E26DB6F690855EADC4ADC90EC5DD2FEAF5570DE1A1A9695AB826195E5F5B5CEA,
+retained in .probe-runs/incant-verified-checks. Evidence is the terminal-zero
+.probe-runs/incant-complete-regression.log and its explicit
+.probe-runs/incant-complete-inputs.txt inventory. The subsequent threshold
+model's combined181 run remains separate and running; ongoing relic work is
+not covered by this initial Incant baseline. The whole battle model remains
+incomplete for the explicitly refused mechanics.
