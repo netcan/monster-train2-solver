@@ -7215,3 +7215,26 @@ inputs and manifest lengths/hashes are verified before launch. Evidence is
 the complete181 baseline does not establish its result. Whole-battle coverage
 of further relics, original arbitrary frame scheduling and unmodeled card/Boss
 mechanics remains unfinished.
+
+### Original relic definition catalog
+
+The optional -RelicCatalog probe reads all eight original AllGameData collections
+without acquiring or initializing an artifact. It saves a schema3 binary value
+archive with identities, runtime effect classes, parameters, conditions, trigger
+types, excluded card triggers and status definitions. Both the probe and runner
+require identical gameplay/test RNG states and frame counters before/after the
+read, plus the original module identity and all eight collection labels.
+
+The muted Instant native run completes in63.57 seconds with terminal exit zero,
+zero capture failures/differences/unsupported/pending records, unchanged original
+files and an unchanged frame10750. Its662 definitions include224 collectable
+relics,11 covenants,10 endless mutators,89 enhancers,150 mutators,16 Pyre artifacts,
+63 sins and99 souls. ExtraSpellCastTrigger is an original collectable artifact:
+id410ba540-7c4f-4dc5-a84f-b1d8af508891, RelicEffectModifyTriggerCount,
+CardSpellPlayed +1, no conditions or exclusions, and no enemy-team permission.
+Catalog inspection is evidence about definitions, not proof that these effects
+are simulated. No new battle fixture is accepted by this diagnostic alone.
+
+Evidence is .probe-runs/relic-catalog-final-native.log and
+.probe-runs/full-battle-units-spells-and-junk-20261009-181643-22db90f2/relic-catalog.mt2f
+(35,585 bytes). The archive remains an ignored diagnostic, with no JSON dependency.

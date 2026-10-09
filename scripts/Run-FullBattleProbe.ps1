@@ -109,6 +109,7 @@ param(
     [switch] $PersistentEnchantmentSummonsFresh,
     [switch] $CharacterRemoval,
     [switch] $PreviewReferences,
+    [switch] $RelicCatalog,
     [switch] $SettleDeathDissolves,
     [switch] $SettleCardAnimations,
     [switch] $HarvestTriggers,
@@ -232,6 +233,7 @@ $environment = @{
     MT2_PROBE_GAME_SPEED = $GameSpeed
     MT2_PROBE_CHARACTER_REMOVAL = $(if ($CharacterRemoval) { '1' } else { '0' })
     MT2_PROBE_PREVIEW_REFERENCES = $(if ($PreviewReferences) { '1' } else { '0' })
+    MT2_PROBE_RELIC_CATALOG = $(if ($RelicCatalog) { '1' } else { '0' })
     MT2_PROBE_SETTLE_DEATH_DISSOLVES = $(if ($SettleDeathDissolves) { '1' } else { '0' })
     MT2_PROBE_SETTLE_CARD_ANIMATIONS = $(if ($SettleCardAnimations) { '1' } else { '0' })
     MT2_PROBE_STATUS_CALLBACKS = $(if ($HordeStatuses -or $StatusCallbacks) { '1' } else { '0' })
@@ -309,6 +311,23 @@ Write-Output "FULL-BATTLE-INSPECTION elapsedSeconds=$($inspectionTimer.Elapsed.T
 $nativePassed = [bool] (Select-String -LiteralPath $unityLog -Pattern 'DEPTH-PASS' -Quiet)
 $terminalSettled = $trace.TerminalCaptureBoundary -eq 'AfterStopCombatLoop' -and $trace.TerminalEffectsSettled -eq $true
 $originalUnchanged = (Get-OriginalSignature) -ceq $originalBefore
+if ($RelicCatalog) {
+    Add-Type -Path (Join-Path $workspace 'src\FixtureArchive\bin\Release\net8.0\FixtureArchive.dll')
+    $catalogArchive = [MonsterTrain2Poju.Fixtures.FixtureDocument]::Read((Join-Path $profile 'relic-catalog.mt2f'))
+    try {
+        $catalog = $catalogArchive.RootElement
+        $catalogRecords = @($catalog.GetProperty('Relics').EnumerateArray())
+        if ($catalog.GetProperty('Schema').GetInt32() -ne 3 -or
+            $catalog.GetProperty('GameModuleMvid').GetString() -ne $trace.GameModuleMvid -or
+            $catalog.GetProperty('FrameBefore').GetInt32() -ne $catalog.GetProperty('FrameAfter').GetInt32() -or
+            -not $catalog.GetProperty('RngBefore').ContentEquals($catalog.GetProperty('RngAfter')) -or
+            $catalogRecords.Count -eq 0 -or
+            @($catalogRecords | ForEach-Object { $_.GetProperty('Collection').GetString() } | Sort-Object -Unique).Count -ne 8) {
+            throw 'Relic definition catalog is incomplete or changed native RNG/frame.'
+        }
+        Write-Output "NATIVE-RELIC-CATALOG PASS: $($catalogRecords.Count) definitions from eight original collections; unchanged gameplay/test RNG and frame."
+    } finally { $catalogArchive.Dispose() }
+}
 if ($PersistentEnchantments) {
     $persistentScenario = $environment['MT2_PROBE_MODIFIERS']
     $persistentFrames = @($trace.Actions | ForEach-Object { $_.Actual.Spawn.Train.Context.Enchantments })
