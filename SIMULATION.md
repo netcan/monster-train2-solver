@@ -7705,3 +7705,17 @@ The still-running frozen187-input upgrade-mask regression precedes this correcti
 and is preserved. Full regression of the correction remains required, as do
 branch-derived card eligibility, temporary relic upgrade lifecycle and broader
 room, Boss and card/effect coverage. The entire battle objective remains open.
+
+### Accepted native card-modifier overflow archive
+
+The verified native capture is byte-identically curated as
+tests/fixtures/card-modifier-overflow-calibration.mt2f:9,282 bytes,2,949 nodes,
+SHA256ebe5a4c9e54232661ab4247a2748ef17478ee90ba357983818b3ace1e0e8bbd5.
+Its native-source manifest row is appended while retaining all prior bytes/order.
+The required inventory is now188 binary archives:162 accepted complete battles
+and26 component calibrations. The original frozen187-input regression continues
+on its retained input list/model/checker and does not include this correction.
+The corrected arithmetic requires its own full188 regression; no generated
+JSON/results output is added as a dependency. Temporary relic lifecycle,
+branch-derived full card eligibility and further room/Boss/card mechanics remain
+necessary for the entire battle simulation objective.

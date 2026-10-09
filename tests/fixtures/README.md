@@ -4,7 +4,7 @@ These fixed inputs reproduce the independently modeled battle and calibration
 checks. Run `pwsh -NoProfile -File scripts/Check-Models.ps1` from the repository
 root. The script reads the curated fixture list in this directory.
 
-Current inventory is 187 archives: 162 accepted battles and 25 component
+Current inventory is 188 archives: 162 accepted battles and 26 component
 calibrations. The initial Incant model's complete 180-archive regression passes.
 The threshold model's combined181 regression has also completed successfully.
 The relic model's combined181 regression has also completed successfully.
@@ -35,6 +35,15 @@ its complete recorded battle also passes independent policy checks. This archive
 is34,127 bytes/3,087 nodes, with no JSON dependency. It calibrates eligibility;
 applying temporary relic upgrades in battle remains unfinished. The full187
 regression is separate from the completed preceding-model186 baseline.
+
+`card-modifier-overflow-calibration.mt2f` retains2,240 schema1 native arithmetic
+queries:1,344 numeric results and896 original minimum-integer exceptions across
+eight statistics, both floor settings and offset/upgrade placements. Independent
+values/exception types and32 immutable replays pass. The corrected shared
+modifier function also passes all pure checks, original256 numeric calculations,
+the upgrade-mask calibration and this recording's complete paid battle. The
+archive is9,282 bytes/2,949 nodes with no JSON dependency. Its correction is later
+than the preserved frozen187 run and requires a separate full188 regression.
 
 `full-battle-incant-relic.mt2f` retains schema108 with the original obtainable
 ExtraSpellCastTrigger acquired through SaveManager. The relic asset is unchanged;
