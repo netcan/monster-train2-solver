@@ -4,19 +4,26 @@ These fixed inputs reproduce the independently modeled battle and calibration
 checks. Run `pwsh -NoProfile -File scripts/Check-Models.ps1` from the repository
 root. The script reads the curated fixture list in this directory.
 
-Current inventory is 183 archives: 159 accepted battles and 24 component
+Current inventory is 184 archives: 160 accepted battles and 24 component
 calibrations. The initial Incant model's complete 180-archive regression passes.
 The threshold model's combined181 regression has also completed successfully.
 The relic model's combined181 regression has also completed successfully.
 The corrected checker's combined182 regression has also completed successfully.
 The extended trigger-count model passes the new relic battle and eight historical
-battles; its complete183 regression is a separate pending check.
+battles; its complete183 regression is a separate running check. The combined
+relic scene passes independently; a complete184 run is still required afterward.
 
 `full-battle-incant-relic.mt2f` retains schema108 with the original obtainable
 ExtraSpellCastTrigger acquired through SaveManager. The relic asset is unchanged;
 authored unit/spell triggers exercise count2 player Incant and count1 enemy Incant,
 once/silence/Purify and status children. All21 paid plays, seven EndTurns, complete
 contexts/callbacks and initial/mid-battle parallel policies match the native game.
+
+`full-battle-incant-relics-combined.mt2f` adds the original ExtraSpawnTrigger and
+ExtraDeathTrigger artifacts. The unchanged production model matches all21 plays,
+seven EndTurns, five actual player deaths,160 native fire-count queries and complete
+parallel policies. The earlier183 process is preserved with its frozen inventory;
+that run cannot establish the new184 inventory's complete result.
 
 `full-battle-ability-incant.mt2f` retains schema107 with an isolated authored
 relic using the original native ability-Incant effect. It is not an obtainable

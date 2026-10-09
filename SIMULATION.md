@@ -7359,3 +7359,15 @@ Incant relic's complete team/actor/admission comparisons in32 branches, with ter
 exit zero. Evidence is .probe-runs/combined-trigger-relics-historical.log using the
 same retained combined checker. Existing scenario gates keep their earlier coverage
 requirements; the new label adds its explicit three-artifact/spawn/death requirements.
+
+### Accepted combined trigger-count relic archive
+
+The fully verified combined recording is byte-identically curated as
+tests/fixtures/full-battle-incant-relics-combined.mt2f:67,012 bytes,10,189 unique
+nodes,SHA2566820bcf4a39c3b7219fbcb29e04f93d67f7d0346dc45ccb43ba889306273adcc.
+The native-source manifest row is appended with all previous bytes/order intact.
+The required inventory is now184 binary archives:160 accepted complete battles
+and24 strict component calibrations. The combined native/all-component acceptance
+is separate evidence from the still-running frozen183-input regression. A complete
+184-input run remains required afterward; no ongoing process is restarted to add it.
+The entire battle simulator still lacks further relic, room, Boss and effect coverage.
