@@ -6695,3 +6695,11 @@ preview components affected by the fix. The completed historical173 run remains
 the old model's full baseline; a combined175 run of this new model has not been
 performed. The rejected diagnostics are not curated, and complete battle
 coverage/optimal search remain unfinished.
+
+The accepted source-free native binary is now byte-identically curated as
+full-battle-persistent-enchantment-random-summons.mt2f: 47,789 bytes, 8,710 nodes
+and SHA-256 1ffd3ebe2d9cb509cd36ec64957e6534203b2a75b657dda426d91dc75b9cd634.
+Inventory is 176 archives: 152 accepted battles and 24 component calibrations.
+The manifest and required regression list include the new battle. The final
+model's 58 affected archives and this additional complete battle pass separately;
+a combined176 run of the current model has not been performed.

@@ -4,10 +4,11 @@ These fixed inputs reproduce the independently modeled battle and calibration
 checks. Run `pwsh -NoProfile -File scripts/Check-Models.ps1` from the repository
 root. The script reads the curated fixture list in this directory.
 
-Current inventory is 175 archives: 151 accepted battles and 24 component
+Current inventory is 176 archives: 152 accepted battles and 24 component
 calibrations. The baseline model's complete 173-archive historical regression
-passes, as do the two newer battles in separate complete checks. The subsequent
-retained-preview callback change is undergoing its own affected-sample regression.
+passes. The current retained-preview model passes 58 affected archives and the
+new random aura-summon battle in separate complete checks. A combined176 run of
+the current model has not been performed.
 
 The retained inputs are `.mt2f` binary archives. They store typed, deduplicated
 value graphs, not JSON documents. Regression reads those graphs and constructs
@@ -1304,3 +1305,23 @@ no-more-card chains and all 24 calibrations. No room, card-cycle, train, spawn,
 EndTurn or action operation is skipped as unsupported. This run uses Model.dll
 SHA-256 59153b6d1959e90bd39ee4de0ba729863a628c616f8a0cd6408ee1900e8f2ffd;
 the later retained-preview callback model is being verified separately.
+
+`full-battle-persistent-enchantment-random-summons.mt2f` accepts schema105 with
+three randomly selected aura statuses, four nested child births, six bound
+sources and retained preview actors outside the selected room list. Local aura
+callbacks use the current retained state; temporary Boss previews preserve
+complete states for actors outside their restore list, including withdrawn
+statuses and once flags. All fifteen paid actions, five EndTurns, 41 room stages,
+nine train phases, seven spawns and 154 closed contexts match independently.
+The complete initial/mid-battle policies match Pyre80 in sixteen branches;
+370 raw/canonical decisions and 14,385 position-plane mappings also pass.
+
+The muted Instant native run takes 211.59 seconds, completes all 23 scheduled
+original card-movement callbacks, has zero capture failures, differences,
+unsupported operations or pending records, and preserves original profile/log
+signatures. Its byte-identical source-free binary is 47,789 bytes with 8,710
+nodes. The final model also passes all 58 affected historical archives:
+34 battle suites, 32 paid policies, two no-more-card chains and 24 calibrations.
+This is an explicitly settled recording; broader native timing and combat
+coverage remain work. The three previously rejected random diagnostics are
+outside the curated inventory.
