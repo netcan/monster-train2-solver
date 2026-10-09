@@ -1353,3 +1353,20 @@ or skipped, and all manifest sizes and SHA-256 hashes are verified. The isolated
 runner uses Model.dll SHA-256
 d46c6961737888c3b84bfb883c5cdbfd85741536ea3dee8400b6cb91c6a68cbb;
 the new Purify work is being validated separately.
+
+`full-battle-purify.mt2f` records ordered starting statuses, active Purify blocking
+positive/zero/negative additions, zero-stack clearing, explicit removal and
+reapplication, native trigger admission and six real paid room spells. Accepted
+callbacks survive later purification, while newly forbidden status/combat
+callbacks are absent from the queue. All 159 FIFO dispatches and eighteen status
+boundaries match independently, including exact dictionary/zero definitions,
+source statistics and eight explicit removal effects.
+
+The muted Instant native battle takes 86.30 seconds and preserves the original
+Boss/waves and profile/log signatures, with zero capture failures, differences,
+unsupported operations or pending records. All 61 room stages, 21 paid actions,
+seven EndTurns, 228 closed contexts and complete initial/mid-battle policies match
+in sixteen immutable branches ending with Pyre65. Its source-free binary is
+42,703 bytes with 7,162 nodes, copied byte-identically from native capture.
+The final Purify model separately passes 27 historical battles and all 24
+calibrations; the completed177 baseline remains tied to the earlier model.

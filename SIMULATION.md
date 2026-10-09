@@ -6817,3 +6817,10 @@ This proves the recorded status, room/team and paid-spell paths. Native Purify
 interactions with Horde/aura births, manually assembled birth/Rally/Harvest/Sentry
 queues and physical death cleanup still require additional integration coverage.
 The full battle simulator and optimal solver remain unfinished.
+
+The accepted native battle is byte-identically curated as full-battle-purify.mt2f:
+42,703 bytes, 7,162 nodes, no text source and SHA-256
+e2ca35b99de71ea1e4d48bc7cfcf363873105669a72956babdda0c2a0f5e50ba.
+The required regression list and manifest now contain 178 archives: 154 accepted
+battles and 24 component calibrations. The full178 regression of the Purify model
+has not yet completed.
