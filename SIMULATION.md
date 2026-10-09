@@ -7444,3 +7444,17 @@ The final recording remains .probe-runs/full-battle-units-spells-and-junk-202610
 This increment establishes three further original artifacts, not complete relic
 or battle coverage. The complete183 baseline belongs to the preceding model;
 a full regression of this extended model remains required.
+
+### Accepted original spawn-status relic archive
+
+The final schema109 recording is byte-identically curated as
+tests/fixtures/full-battle-spawn-status-relics.mt2f:38,483 bytes,6,061 unique nodes,
+SHA2562147f6871cc015f027269e18cdf23a3ba1e0c943394723e897d50b68ae73e499.
+The native-source manifest row is appended without changing any previous byte
+or row order. No JSON or generated results output is introduced as a dependency.
+The curated regression list now contains185 archives:161 accepted complete
+battles and24 component calibrations. The completed183 preceding-model baseline
+and this new original-artifact native/independent acceptance are distinct evidence.
+The latest model's full185 regression remains required, including the previously
+added combined trigger-count scene. Further relic, room, Boss and effect coverage
+is still necessary before the whole-battle objective can be complete.

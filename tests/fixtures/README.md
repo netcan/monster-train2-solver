@@ -4,15 +4,15 @@ These fixed inputs reproduce the independently modeled battle and calibration
 checks. Run `pwsh -NoProfile -File scripts/Check-Models.ps1` from the repository
 root. The script reads the curated fixture list in this directory.
 
-Current inventory is 184 archives: 160 accepted battles and 24 component
+Current inventory is 185 archives: 161 accepted battles and 24 component
 calibrations. The initial Incant model's complete 180-archive regression passes.
 The threshold model's combined181 regression has also completed successfully.
 The relic model's combined181 regression has also completed successfully.
 The corrected checker's combined182 regression has also completed successfully.
 The extended trigger-count model's complete183 regression has completed:159
 battles,155 paid policy chains,four no-more-card chains and24 calibrations pass.
-The combined
-relic scene passes independently; a complete184 run is still required afterward.
+The combined relic and new spawn-status scenes pass independently. The latest
+spawn-status model requires a complete185 regression, including both additions.
 
 `full-battle-incant-relic.mt2f` retains schema108 with the original obtainable
 ExtraSpellCastTrigger acquired through SaveManager. The relic asset is unchanged;
@@ -24,7 +24,16 @@ contexts/callbacks and initial/mid-battle parallel policies match the native gam
 ExtraDeathTrigger artifacts. The unchanged production model matches all21 plays,
 seven EndTurns, five actual player deaths,160 native fire-count queries and complete
 parallel policies. The completed183 run retains its original frozen inventory;
-that run cannot establish the new184 inventory's complete result.
+that run cannot establish the subsequent inventory's complete result.
+
+`full-battle-spawn-status-relics.mt2f` retains schema109 with three unchanged
+original artifacts:SpawnWithArmor,FirstUnitGainDamageShield and FrostbiteOnEnemies.
+All18 plays,six EndTurns,final Pyre80,12 native birth phases and170 exact FIFO
+status callbacks pass. Shield triggers once on each of three different turns,
+with two same-turn skips. Complete initial/mid-battle policies repeat in16
+branches; original birth phases in32. Two native recordings retain identical
+complete pre/post states for every one of the18 actions. Grafted/cardless/copied
+birth combinations and further relic effects still need native acceptance.
 
 `full-battle-ability-incant.mt2f` retains schema107 with an isolated authored
 relic using the original native ability-Incant effect. It is not an obtainable
