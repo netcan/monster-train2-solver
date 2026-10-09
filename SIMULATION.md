@@ -7458,3 +7458,22 @@ and this new original-artifact native/independent acceptance are distinct eviden
 The latest model's full185 regression remains required, including the previously
 added combined trigger-count scene. Further relic, room, Boss and effect coverage
 is still necessary before the whole-battle objective can be complete.
+
+### Relic count refresh when replacing a unit ability
+
+Installing common ability triggers now refreshes their native fire counts before
+the ability API can return, including deferred-callback copies. Previously a newly
+installed OnSpawn trigger retained its raw count1 under ExtraSpawnTrigger, while
+the native state queried count2. Missing count-admission metadata remains unsupported.
+Pure checks cover immediate/deferred installation and parent isolation. The frozen
+.probe-runs/ability-lifecycle-relic-count-checks checker passes the accepted ability
+lifecycle and ordinary clone battles, including both full policy chains,21 ability
+API states and13 clone operations in32 branches, with terminal exit zero.
+Model.dll SHA2563673531C418DFCEE84288449DF6385ED1738E10C26046EAFEC81494222C044BD;
+ModelChecks.dll SHA256EC5C553D83F9B330CE7031BB36E7FE6668D4892CD83ABEF95F5EFC785BDD8C0E.
+The unaccepted combined spawn-status/clone recording also passes its13 complete
+clone operations after this correction, but still differs at the relic birth
+callback boundary. It is not added to the curated inventory. Evidence is
+.probe-runs/ability-lifecycle-relic-count-pure.log,
+.probe-runs/ability-lifecycle-relic-count-historical.log and
+.probe-runs/ability-lifecycle-relic-count-clone.log.

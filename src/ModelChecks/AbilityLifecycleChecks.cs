@@ -64,11 +64,31 @@ internal static class AbilityLifecycleChecks
         var preview = new RoomCombatState(0, false, root.Units, [], context, true);
         Require(Apply(preview, Rule(c)).Units[0].NextTriggerId == 3 && Apply(preview, Rule(), true).Units[0].Triggers.Count == 3,
             "Preview changed the live common trigger list or allocation cursor.");
+        CombatTrigger[] countedCommon = new[] { "OnSpawn", "OnOwnAbilityActivated", "OnUnitAbilityAvailable", "OnUnitAbilityUnavailable" }
+            .Select((kind, index) => new CombatTrigger(kind, false, false, true, 1, [], false,
+                origin: new("UnitAbilityCommonData", 0, false, false), stateId: index, noCountModifiersAllowed: false)).ToArray();
+        var countedContext = new CombatContext(new([], [], [], rng, 0, []), rng, 0, 1, 10, statuses,
+            cardInstances: [], cardRegistry: [], abilityCardCache: [], permanentlyDisabledAbilities: [],
+            triggerCounts: new([new("OnSpawn", 1)], [], [], []));
+        CombatUnit countedUnit = AbilityLifecycleModel.Copy(Unit(), Unit().Ability,
+            countedCommon.Select(trigger => trigger.Kind == "OnSpawn" ? trigger.WithFireCount(2) : trigger).ToArray(), 4);
+        var countedRoot = new RoomCombatState(0, false, [countedUnit], [], countedContext);
+        string countedParent = JsonSerializer.Serialize(countedRoot, ModelJson.Options);
+        foreach (bool deferred in new[] { false, true })
+        {
+            var counted = AbilityLifecycleModel.Apply(countedRoot, 1, new(c, true, false, countedCommon), false, deferred);
+            Require(counted.Supported && counted.State!.Units[0].Triggers.Single(trigger => trigger.Kind == "OnSpawn").FireCount == 2 &&
+                counted.State.Units[0].Triggers.Where(trigger => trigger.Kind != "OnSpawn").All(trigger => trigger.FireCount == 1),
+                "New common ability triggers lost the relic count at the installation boundary: " + counted.UnsupportedReason);
+        }
+        Require(!AbilityLifecycleModel.Apply(countedRoot, 1, new(c, true, false, common), false, true).Supported,
+            "New common ability triggers guessed missing count-admission metadata.");
+        Require(JsonSerializer.Serialize(countedRoot, ModelJson.Options) == countedParent, "Installing counted common triggers changed its parent.");
         string expected = JsonSerializer.Serialize(restored, ModelJson.Options);
         Parallel.For(0, 32, _ => Require(JsonSerializer.Serialize(Apply(Apply(Apply(root, Rule(c, true)), Rule(b, true)), Rule(), true),
             ModelJson.Options) == expected, "Parallel lifecycle branches differ."));
         Require(JsonSerializer.Serialize(root, ModelJson.Options) == parent, "Lifecycle changed its parent.");
-        Console.WriteLine("ABILITY-LIFECYCLE-CHECKS PASS: raw cooldown restoration, equipment replacement, permanent duplicate order, no-op gates and 32 branches.");
+        Console.WriteLine("ABILITY-LIFECYCLE-CHECKS PASS: raw cooldown restoration, equipment replacement, fresh relic counts with immediate/deferred callbacks, permanent duplicate order, no-op gates and 32 branches.");
     }
     internal static void Native(FixtureValue fixture)
     {
