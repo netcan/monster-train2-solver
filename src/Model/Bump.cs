@@ -198,7 +198,7 @@ namespace MonsterTrain2Poju.Model
                     TrainCombatResult updated = EnchantmentWorldModel.UpdateAll(state, queue.Add);
                     if (!updated.Supported) { error = updated.UnsupportedReason; return false; }
                     state = updated.State!; return true;
-                });
+                }, () => state.Context, message => error = message);
                 if (okay) queue.Clear();
                 return okay;
             }

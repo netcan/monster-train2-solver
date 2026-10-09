@@ -297,7 +297,7 @@ namespace MonsterTrain2Poju.Model
                     TrainCombatResult updated = EnchantmentWorldModel.UpdateAll(state, queue.Add);
                     if (!updated.Supported) { error = updated.UnsupportedReason; return false; }
                     state = updated.State!; return true;
-                });
+                }, () => state.Context, message => error = message);
             return new UnitCloneResult(okay ? state : null, input.UnitId, okay ? outcome : RoomOutcome.Unsupported,
                 error, events, input.Boundaries, okay ? Array.Empty<RoomCombatModel.QueuedCharacterTrigger>() : queue, dispatched);
 

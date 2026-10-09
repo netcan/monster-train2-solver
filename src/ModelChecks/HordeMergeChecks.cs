@@ -149,7 +149,7 @@ internal static class HordeMergeChecks
                 result.RetainedUnits.FirstOrDefault(unit => unit.Id == source) ?? retained;
             return result.Supported;
         }, queued => { result = RoomCombatModel.SettleQueuedSpawner(result.State!, queued.Unit); return result.Supported; },
-            () => { result = EnchantmentWorldModel.CompleteQueuedRemovals(result.State!, callbacks.Add); return result.Supported; }),
+            () => { result = EnchantmentWorldModel.CompleteQueuedRemovals(result.State!, callbacks.Add); return result.Supported; }, () => result.State?.Context, message => result = new RoomCombatResult(null, RoomOutcome.Unsupported, 0, [], message)),
             label + " queue unsupported: " + result.UnsupportedReason);
         Compare(result.State, sample.GetProperty("After"), label + " drained state");
         Compare(retained, sample.GetProperty("SourceAfterDrain"), label + " drained source");

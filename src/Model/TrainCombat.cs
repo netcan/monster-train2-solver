@@ -180,7 +180,7 @@ namespace MonsterTrain2Poju.Model
                 if (!updated.Supported) { queueError = updated.UnsupportedReason; return false; }
                 rooms = updated.State!.Rooms.ToArray(); context = updated.State.Context; results.AddRange(updated.RoomResults);
                 return true;
-            });
+            }, () => context, message => queueError = message);
             if (!drained) return Unsupported(queueError ?? "Character removal queue failed.");
             return new TrainCombatResult(Freeze(source, rooms, context), outcome, results);
         }
@@ -412,7 +412,7 @@ namespace MonsterTrain2Poju.Model
                 if (!updated.Supported) { error = updated.UnsupportedReason; return false; }
                 rooms = updated.State!.Rooms.ToArray(); context = updated.State.Context; results.AddRange(updated.RoomResults);
                 return true;
-            });
+            }, () => context, message => error = message);
             return drained ? new TrainCombatResult(Freeze(source, rooms, context), outcome, results) : Unsupported(error ?? "Movement callback queue failed.");
         }
 

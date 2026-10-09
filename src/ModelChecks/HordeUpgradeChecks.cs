@@ -91,7 +91,7 @@ internal static class HordeUpgradeChecks
             foreach (var unit in result.RetainedUnits) retained[unit.Id] = unit;
             return result.Supported;
         }, queued => { result = RoomCombatModel.SettleQueuedSpawner(result.State!, queued.Unit); return result.Supported; },
-            () => { result = EnchantmentWorldModel.CompleteQueuedRemovals(result.State!, callbacks.Add); return result.Supported; }),
+            () => { result = EnchantmentWorldModel.CompleteQueuedRemovals(result.State!, callbacks.Add); return result.Supported; }, () => result.State?.Context, message => result = new RoomCombatResult(null, RoomOutcome.Unsupported, 0, [], message)),
             label + " queue: " + result.UnsupportedReason);
         Compare(result.State, sample.GetProperty("After").Deserialize<RoomCombatState>(), label + " settled room");
         var changed = result.State!.Units.FirstOrDefault(unit => unit.Id == id) ?? retained.GetValueOrDefault(id);

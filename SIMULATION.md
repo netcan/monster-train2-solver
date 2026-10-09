@@ -6814,8 +6814,8 @@ regression of this Purify model is still to run; complete177 above uses the
 previous room-membership model.
 
 This proves the recorded status, room/team and paid-spell paths. Native Purify
-interactions with Horde/aura births, manually assembled birth/Rally/Harvest/Sentry
-queues and physical death cleanup still require additional integration coverage.
+interactions with Horde/aura births still require additional integration coverage;
+the manually assembled queues and physical death cleanup are extended below.
 The full battle simulator and optimal solver remain unfinished.
 
 The accepted native battle is byte-identically curated as full-battle-purify.mt2f:
@@ -6824,3 +6824,40 @@ e2ca35b99de71ea1e4d48bc7cfcf363873105669a72956babdda0c2a0f5e50ba.
 The required regression list and manifest now contain 178 archives: 154 accepted
 battles and 24 component calibrations. The full178 regression of the Purify model
 has not yet completed.
+
+Purify now applies native admission to manually assembled character queues as
+well as engine/status queues. Each new batch is admitted before its first effect;
+accepted callbacks survive later purification and actor refreshes. Rejected
+requests never remain in the queue. Admission scans only new entries and copies
+shared callback objects before branch-local mutation. Synthetic removal entries
+retain death statistics, physical removal, Harvest and spawner settlement; their
+actual OnDeath request uses the actor's status at removal time.
+
+Pure regressions cover birth/AfterSpawnEnchant, cached Rally, Sentry, movement,
+Harvest recipients, allowed silence loss, missing rules, callbacks accepted before
+later purification, deferred death after Purify addition/removal, unchanged parent
+callbacks and 32 parallel physical-death branches. Two deliberate negative models
+fail at fresh AfterSpawnEnchant admission and removal-time OnDeath admission.
+
+The final muted Instant purify-queues battle takes 81.00 seconds with the original
+Boss/waves and profile/log signatures preserved. It has zero capture failures,
+differences, unsupported operations and pending records. Independent comparison
+passes all 61 room stages, 21 paid actions, seven EndTurns, 228 closed contexts,
+530 raw/canonical decisions and 11,860 physical-plane mappings. Both complete
+policies and sixteen parallel branches end with Pyre65. All 759 original native
+queue requests match their captured balance rules and exact queue-count deltas;
+Purify rejects two OnSpawn, two OnUnscaledSpawn, four AfterSpawnEnchant, two Rally,
+six Sentry, five OnDeath and five Unit-Harvest requests. These observations use the
+character overload; the queue-data overload's Purify bypass is source-derived and
+has no request in this recording. Eighteen status boundaries, eight explicit
+removals, six paid room spells and all 159 FIFO status dispatches still match.
+The checker, probe and isolated game use Model.dll SHA-256
+fb6341d949d6b98027472cf3735bd5dda0ed9540351b22221b0cf9d61c432a3f.
+The final historical/component regression is running separately.
+
+The incidental character-removal calibration emitted with this battle is not
+accepted: it lacks the strict calibration's nonempty manager-queue observation
+with a pending dissolve actor. Battle removal/position transitions pass their
+complete comparison; the existing 24 curated component calibrations retain their
+strict gates. Runtime Purify with Horde/aura births, card purification and further
+unimplemented triggers/effects remain open. The whole simulator remains unfinished.

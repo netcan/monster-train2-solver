@@ -44,7 +44,7 @@ internal static class RevivalChecks
         var queue = direct.PendingCallbacks.ToList();
         Require(RoomCombatModel.DrainCharacterQueue(queue, item => {
             drained = RoomCombatModel.ApplyQueuedCharacterTrigger(drained.State!, item, queue.Add); return drained.Supported;
-        }, _ => true, () => { drained = EnchantmentWorldModel.CompleteQueuedRemovals(drained.State!, queue.Add); return drained.Supported; }),
+        }, _ => true, () => { drained = EnchantmentWorldModel.CompleteQueuedRemovals(drained.State!, queue.Add); return drained.Supported; }, () => drained.State?.Context, message => drained = new RoomCombatResult(null, RoomOutcome.Unsupported, 0, [], message)),
             "Direct revival queue failed: " + drained.UnsupportedReason);
         Require(drained.State!.Units.Single(unit => unit.Id == 1).DeathState!.IsBeingRemoved == false,
             "The revival OnDeath callback marked a live actor removed.");
@@ -275,7 +275,7 @@ internal static class RevivalChecks
                 result = item.CompletePhysicalRemovalAfterQueue ? RoomCombatModel.SettleQueuedSpawnerAndCenter(result.State!, item.Unit) :
                     RoomCombatModel.SettleQueuedSpawner(result.State!, item.Unit);
                 return result.Supported;
-            }, () => { result = EnchantmentWorldModel.CompleteQueuedRemovals(result.State!, queue.Add); return result.Supported; }),
+            }, () => { result = EnchantmentWorldModel.CompleteQueuedRemovals(result.State!, queue.Add); return result.Supported; }, () => result.State?.Context, message => result = new RoomCombatResult(null, RoomOutcome.Unsupported, 0, [], message)),
                 "Native revival/removal drain failed: " + result.UnsupportedReason);
         }
         Compare(result.State, sample.GetProperty("After").Deserialize<RoomCombatState>(), "Revival operation " + sample.GetProperty("Label").GetString());

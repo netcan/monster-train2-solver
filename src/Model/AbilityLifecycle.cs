@@ -178,7 +178,7 @@ namespace MonsterTrain2Poju.Model
                 {
                     result = EnchantmentWorldModel.CompleteQueuedRemovals(result.State!, callbacks.Add);
                     return result.Supported;
-                });
+                }, () => result.State?.Context, message => result = new RoomCombatResult(null, RoomOutcome.Unsupported, 0, events, message));
                 if (drained) { state = result.State!; callbacks.Clear(); }
                 return drained;
             }

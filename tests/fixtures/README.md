@@ -1370,3 +1370,22 @@ in sixteen immutable branches ending with Pyre65. Its source-free binary is
 42,703 bytes with 7,162 nodes, copied byte-identically from native capture.
 The final Purify model separately passes 27 historical battles and all 24
 calibrations; the completed177 baseline remains tied to the earlier model.
+
+The -PurifyQueues native probe extends the Purify scene with ordinary birth,
+AfterSpawnEnchant, Rally, Sentry, Harvest and death rewards. The final muted
+Instant battle takes 81.00 seconds with zero differences, capture failures,
+unsupported operations or pending records. Complete independent replay passes
+21 paid actions, seven EndTurns, 61 room stages, 228 closed contexts, both policies
+and sixteen parallel branches ending with Pyre65. All 759 character-overload queue
+requests match captured rules and original queue-count deltas, including purified
+birth/Rally/Sentry/Harvest/death rejection. No queue-data overload is observed.
+
+Removal entries preserve physical death/spawner cleanup while gating the actual
+OnDeath request at removal time. Accepted batches survive later purification and
+branch-local retained actor updates. Pure tests and two deliberately broken models
+verify these admission/death boundaries. Final Model.dll SHA-256 is
+fb6341d949d6b98027472cf3735bd5dda0ed9540351b22221b0cf9d61c432a3f;
+historical/component regression is still running. The incidental new removal
+calibration lacks its required nonempty pending-dissolve queue observation and is
+not curated; existing calibration gates remain strict. Horde/aura births with
+Purify and the complete simulator remain open.

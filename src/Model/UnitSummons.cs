@@ -166,7 +166,7 @@ namespace MonsterTrain2Poju.Model
                 if (result.Outcome != RoomOutcome.Exchanged) outcome = result.Outcome;
                 return true;
             }, queued => { result = RoomCombatModel.SettleQueuedSpawner(result.State!, queued.Unit); return result.Supported; },
-                () => { result = EnchantmentWorldModel.CompleteQueuedRemovals(result.State!, queue.Add); return result.Supported; });
+                () => { result = EnchantmentWorldModel.CompleteQueuedRemovals(result.State!, queue.Add); return result.Supported; }, () => result.State?.Context, message => result = new RoomCombatResult(null, RoomOutcome.Unsupported, 0, events, message));
             if (!drained) return new UnitBirthResult(result);
             RoomCombatState final = result.State!;
             final = new RoomCombatState(final.RoomIndex, final.Deployment, final.Units.Select(unit => unit.Id == spawned.Id

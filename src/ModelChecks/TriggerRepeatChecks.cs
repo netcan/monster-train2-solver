@@ -91,7 +91,7 @@ internal static class TriggerRepeatChecks
         {
             result = RoomCombatModel.ApplyQueuedCharacterTrigger(result.State!, queued, callbacks.Add); return result.Supported;
         }, queued => { result = RoomCombatModel.SettleQueuedSpawner(result.State!, queued.Unit); return result.Supported; },
-            () => { result = EnchantmentWorldModel.CompleteQueuedRemovals(result.State!, callbacks.Add); return result.Supported; }),
+            () => { result = EnchantmentWorldModel.CompleteQueuedRemovals(result.State!, callbacks.Add); return result.Supported; }, () => result.State?.Context, message => result = new RoomCombatResult(null, RoomOutcome.Unsupported, 0, [], message)),
             "Native repeat child unsupported: " + result.UnsupportedReason);
         string? difference = ModelJson.Difference(JsonSerializer.Serialize(result.State, ModelJson.Options),
             JsonSerializer.Serialize(sample.GetProperty("After").Deserialize<RoomCombatState>(), ModelJson.Options));

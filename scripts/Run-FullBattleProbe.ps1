@@ -96,6 +96,7 @@ param(
     [switch] $HeroCopy,
     [switch] $SpawnEnchant,
     [switch] $Purify,
+    [switch] $PurifyQueues,
     [switch] $PersistentEnchantments,
     [switch] $PersistentEnchantmentDeaths,
     [switch] $PersistentEnchantmentRevivals,
@@ -182,6 +183,7 @@ if ($MultiSummonZero -or $MultiSummonUpgrade -or $MultiSummonFresh -or $MultiSum
 if ($EquipmentExhausted -or $EquipmentOverflow -or $EquipmentTriggers) { $Equipment = $true }
 if ($StatusCallbackActions) { $StatusCallbacks = $true }
 if ($StatusCallbacks) { $TriggeredStatus = $true }
+if ($PurifyQueues) { $Purify = $true }
 if ($CaptureJson) { $BinaryCapture = $true }
 $workspace = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $gameRoot = Join-Path $workspace '.sandbox-game'
@@ -254,7 +256,7 @@ if ($UnitCopy) { $environment['MT2_PROBE_MODIFIERS'] = 'unit-copy' }
 if ($HeroCopy) { $environment['MT2_PROBE_MODIFIERS'] = 'hero-copy' }
 if ($SpawnEnchant) { $environment['MT2_PROBE_MODIFIERS'] = 'spawn-enchant' }
 if ($Purify) {
-    $environment['MT2_PROBE_MODIFIERS'] = 'purify'
+    $environment['MT2_PROBE_MODIFIERS'] = $(if ($PurifyQueues) { 'purify-queues' } else { 'purify' })
     $environment['MT2_PROBE_STATUS_CALLBACKS'] = '1'
 }
 if ($PersistentEnchantments) {
@@ -1297,7 +1299,7 @@ if ($Purify) {
         $rule = $sample.Before.PlayRules.Cards | Where-Object DataId -EQ $source.DataId
         $rule.Effects.Statuses.Id -contains 'purify'
     })
-    $purifyCoverage = $trace.ModifierScenario -eq 'purify' -and $blockedPositive -gt 0 -and $blockedZero -gt 0 -and $blockedNegative -gt 0 -and
+    $purifyCoverage = $trace.ModifierScenario -in @('purify', 'purify-queues') -and $blockedPositive -gt 0 -and $blockedZero -gt 0 -and $blockedNegative -gt 0 -and
         $zeroPurifyClears -gt 0 -and $positivePurifyClears -gt 0 -and $purifyRemovals.Count -gt 0 -and $purifyPaidActions.Count -gt 0 -and
         @($purifySamples | Where-Object { -not $_.Completed -or $null -eq $_.Actual -or @($_.Interactions).Count -gt 0 }).Count -eq 0 -and
         @($purifyRemovals | Where-Object { -not $_.Completed -or $null -eq $_.After }).Count -eq 0 -and
@@ -1306,8 +1308,18 @@ if ($Purify) {
         throw "Purify coverage incomplete: blocked=$blockedPositive/$blockedZero/$blockedNegative clears=$positivePurifyClears/$zeroPurifyClears removals=$($purifyRemovals.Count) paid=$($purifyPaidActions.Count)"
     }
 }
+$purifyQueueCoverage = -not $PurifyQueues
+if ($PurifyQueues) {
+    $admissions = @($trace.PurifyQueueAdmissions)
+    $rejectedKinds = @($admissions | Where-Object { $_.Purified -and $_.Overload -eq 'Character' -and $_.QueueAfter -eq $_.QueueBefore } | ForEach-Object Kind | Sort-Object -Unique)
+    $requiredKinds = @('OnSpawn', 'OnUnscaledSpawn', 'AfterSpawnEnchant', 'CardMonsterPlayed', 'OnSentry', 'OnDeath', 'OnAnyUnitDeathOnFloor')
+    $purifyQueueCoverage = $admissions.Count -gt 0 -and @($admissions | Where-Object { -not $_.Completed -or @($_.Interactions).Count -gt 0 }).Count -eq 0 -and
+        @($requiredKinds | Where-Object { $_ -notin $rejectedKinds }).Count -eq 0
+    if (-not $purifyQueueCoverage) { throw "Purify queue coverage incomplete: rejected=$($rejectedKinds -join ',')" }
+}
 $result = [pscustomobject]@{
     PurifyCoverage = $purifyCoverage
+    PurifyQueueCoverage = $purifyQueueCoverage
     RevivalOperations = @($trace.RevivalOperations).Count
     Revivals = @($trace.Revivals).Count
     TriggeredEquipmentCoverage = $triggeredEquipmentCoverage

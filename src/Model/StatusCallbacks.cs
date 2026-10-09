@@ -7,9 +7,28 @@ namespace MonsterTrain2Poju.Model
     {
         internal static string? FilterPurifyQueue(CombatContext? context, List<RoomCombatModel.QueuedCharacterTrigger> queue)
         {
-            if (!queue.Any(callback => callback.Unit.Status("purify")?.Stacks > 0)) return null;
-            if (context?.PurifyBlockedTriggers == null) return "Purify requires captured trigger queue restrictions.";
-            queue.RemoveAll(callback => callback.Unit.Status("purify")?.Stacks > 0 && context.PurifyBlockedTriggers.Contains(callback.Kind));
+            for (int index = 0; index < queue.Count; index++)
+            {
+                string? error = Admit(context, queue[index], out RoomCombatModel.QueuedCharacterTrigger admitted);
+                if (error != null) return error;
+                queue[index] = admitted;
+            }
+            queue.RemoveAll(callback => callback.Admission == RoomCombatModel.CharacterTriggerAdmission.Rejected);
+            return null;
+        }
+        internal static string? Admit(CombatContext? context, RoomCombatModel.QueuedCharacterTrigger callback,
+            out RoomCombatModel.QueuedCharacterTrigger admitted)
+        {
+            admitted = callback;
+            if (callback.Admission != RoomCombatModel.CharacterTriggerAdmission.Pending || callback.RemovalLifecycle ||
+                HarvestModel.Stage(callback.Kind, out _, out _)) return null;
+            bool blocked = false;
+            if (callback.Unit.Status("purify")?.Stacks > 0)
+            {
+                if (context?.PurifyBlockedTriggers == null) return "Purify requires captured trigger queue restrictions.";
+                blocked = context.PurifyBlockedTriggers.Contains(callback.Kind);
+            }
+            admitted = callback.WithAdmission(blocked ? RoomCombatModel.CharacterTriggerAdmission.Rejected : RoomCombatModel.CharacterTriggerAdmission.Accepted);
             return null;
         }
         internal static readonly string[] Kinds =

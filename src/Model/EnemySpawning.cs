@@ -248,7 +248,7 @@ namespace MonsterTrain2Poju.Model
                         original.Deployment, rooms[0], original.ExternalInteractions, context, original.Preview), callbacks.Add);
                     if (!updated.Supported) { error = updated.UnsupportedReason; return false; }
                     ImportRoom(updated.State!); return true;
-                });
+                }, () => context, message => error = message);
                 callbacks.Clear();
                 return drained ? null : error;
             }

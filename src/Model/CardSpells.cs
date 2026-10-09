@@ -151,7 +151,7 @@ namespace MonsterTrain2Poju.Model
                     TrainCombatResult updated = EnchantmentWorldModel.UpdateAll(state, queue.Add);
                     if (!updated.Supported) { error = updated.UnsupportedReason; return false; }
                     state = updated.State!; return true;
-                });
+                }, () => state.Context, message => error = message);
                 return new RoomCombatResult(drained ? state.Rooms.Single(room => room.RoomIndex == roomIndex) : null,
                     drained ? outcome : RoomOutcome.Unsupported, 0, events, error);
             }
@@ -552,7 +552,7 @@ namespace MonsterTrain2Poju.Model
                     TrainCombatResult updated = EnchantmentWorldModel.UpdateAll(state, callbacks.Add);
                     if (!updated.Supported) { callbackError = updated.UnsupportedReason; return false; }
                     state = updated.State!; return true;
-                });
+                }, () => state.Context, message => callbackError = message);
                 callbacks.Clear();
                 if (!drained) routingError = callbackError ?? "Status callback queue failed.";
                 if (state.Context!.OtherPiles != null) piles = state.Context.OtherPiles.ToArray();

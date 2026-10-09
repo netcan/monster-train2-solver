@@ -131,7 +131,7 @@ internal static class HordeStatusChecks
         {
             result = RoomCombatModel.ApplyQueuedCharacterTrigger(result.State!, queued, callbacks.Add); return result.Supported;
         }, queued => { result = RoomCombatModel.SettleQueuedSpawner(result.State!, queued.Unit); return result.Supported; },
-            () => { result = EnchantmentWorldModel.CompleteQueuedRemovals(result.State!, callbacks.Add); return result.Supported; }),
+            () => { result = EnchantmentWorldModel.CompleteQueuedRemovals(result.State!, callbacks.Add); return result.Supported; }, () => result.State?.Context, message => result = new RoomCombatResult(null, RoomOutcome.Unsupported, 0, [], message)),
             "Native Horde queue unsupported: " + result.UnsupportedReason);
         Compare(result.State, sample.GetProperty("AfterDrain"), sample.GetProperty("Label").GetString() + " after drain");
         var dispatched = callbacks.Select(item => new { ActorId = item.Unit.Id, item.Kind, item.ParamInt, item.ParamInt2,

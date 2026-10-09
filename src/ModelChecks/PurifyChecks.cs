@@ -176,11 +176,89 @@ internal static class PurifyChecks
                 JsonSerializer.Serialize(prevented.State, ModelJson.Options), "Purify queue gates diverged across branches.");
         });
         Require(JsonSerializer.Serialize(gatedRoot, ModelJson.Options) == gatedParent, "Purify queue gate mutated its parent.");
+        string[] manualKinds = ["OnSpawn", "OnUnscaledSpawn", "AfterSpawnEnchant", "CardMonsterPlayed",
+            "OnSentry", "OnShift", "OnDeath", "OnAnyMonsterDeathOnFloor", "OnAnyUnitDeathOnFloor"];
+        var manualContext = new CombatContext(context.Cards, rng, 0, 5, 10, purifyBlockedTriggers: manualKinds);
+        var manualActor = new CombatUnit(1, "manual", CombatTeam.Player, 0, 20, 20, false, false, false, [purify],
+            manualKinds.Append("OnSilenceLost").Select(GoldTrigger).ToArray());
+        var manualRoot = Train(manualContext, manualActor);
+        string manualParent = JsonSerializer.Serialize(manualRoot, ModelJson.Options);
+        foreach (string kind in manualKinds)
+        {
+            var requests = new List<RoomCombatModel.QueuedCharacterTrigger> { new(0, manualActor, kind) };
+            var blocked = TrainCombatModel.ApplyCharacterQueue(manualRoot, requests);
+            Require(blocked.Supported && blocked.State!.Context!.Gold == 0 &&
+                requests.Count == 0 && blocked.State.Rooms[0].Units[0].Triggers.All(trigger => !trigger.HasTriggered),
+                "A fresh manually assembled callback bypassed Purify: " + kind + "/" + blocked.UnsupportedReason);
+        }
+        var allowed = TrainCombatModel.ApplyCharacterQueue(manualRoot, [new(0, manualActor, "OnSilenceLost")]);
+        Require(allowed.Supported && allowed.State!.Context!.Gold == 5, "Purify blocked an allowed manually queued callback: " + allowed.UnsupportedReason);
+        var rally = CardPlayedTriggerModel.Rally(manualRoot, CombatTeam.Player, [1]);
+        Require(rally.Supported && rally.State!.Context!.Gold == 0, "Purify failed to gate Rally's cached actor queue: " + rally.UnsupportedReason);
+        var entrant = new CombatUnit(9, "entrant", CombatTeam.Enemy, 0, 20, 20, false, false, false, []);
+        var sentry = TrainCombatModel.Sentry(Train(manualContext, manualActor, entrant), entrant.Id);
+        Require(sentry.Supported && sentry.State!.Context!.Gold == 0, "Purify failed to gate Sentry's opposing actor queue.");
+        var missingManual = TrainCombatModel.ApplyCharacterQueue(Train(missingContext, manualActor), [new(0, manualActor, "OnShift")]);
+        Require(!missingManual.Supported && missingManual.UnsupportedReason!.Contains("Purify requires"),
+            "Missing queue restrictions yielded a guessed manual callback.");
+        var manualPurifier = new CombatUnit(1, "purifier", CombatTeam.Player, 0, 20, 20, false, false, false, [],
+            [new("AfterSpawnEnchant", true, false, true, 1, purifier.Triggers[0].Effects, false)]);
+        var manualFollower = new CombatUnit(2, "follower", CombatTeam.Player, 0, 20, 20, false, false, false, [],
+            [GoldTrigger("AfterSpawnEnchant")]);
+        var manualAccepted = TrainCombatModel.ApplyCharacterQueue(Train(manualContext, manualPurifier, manualFollower),
+            [new(0, manualPurifier, "AfterSpawnEnchant"), new(0, manualFollower, "AfterSpawnEnchant")]);
+        Require(manualAccepted.Supported && manualAccepted.State!.Context!.Gold == 5 &&
+            manualAccepted.State.Rooms[0].Units.All(unit => unit.Status("purify")?.Stacks > 0 && unit.Triggers[0].HasTriggered),
+            "A batch callback accepted before purification was cancelled: " + manualAccepted.UnsupportedReason);
+        var deathContext = new CombatContext(new([], [], [], rng, 0, []), rng, 0, 5, 10,
+            statistics: BattleStatistics.Empty(), otherPiles: [new("Standby", [new(4, "unit")]), new("Exhausted", [])],
+            purifyBlockedTriggers: manualKinds);
+        var victim = new CombatUnit(1, "victim", CombatTeam.Player, 0, 1, 1, false, false, false, [purify],
+            [GoldTrigger("OnDeath")], spawnerCardId: 4, deathState: new(false, false, true, isSacrifice: false, statisticsListenerOnce: true));
+        var blockedHarvester = new CombatUnit(2, "blocked-harvester", CombatTeam.Player, 0, 20, 20, false, false, false, [purify],
+            [GoldTrigger("OnAnyUnitDeathOnFloor")]);
+        var liveHarvester = new CombatUnit(3, "harvester", CombatTeam.Player, 0, 20, 20, false, false, false, [],
+            [GoldTrigger("OnAnyUnitDeathOnFloor")]);
+        var deathRoot = Train(deathContext, victim, blockedHarvester, liveHarvester);
+        string deathParent = JsonSerializer.Serialize(deathRoot, ModelJson.Options);
+        var death = CardSpellModel.Apply(deathRoot, 0, [new("Damage", "Room", 1, false, true, [])], 0);
+        Require(death.Supported && death.State!.Context!.Gold == 5 &&
+            death.State.Rooms[0].Units.Select(unit => unit.Id).SequenceEqual([2, 3]) &&
+            death.State.Context.OtherPiles!.Single(pile => pile.Name == "Standby").Cards.Count == 0 &&
+            death.State.Context.OtherPiles!.Single(pile => pile.Name == "Exhausted").Cards.Single().InstanceId == 4 &&
+            death.State.Context.Statistics!.Value(4, "TimesExhausted") == 1 &&
+            !death.State.Rooms[0].Units.Single(unit => unit.Id == 2).Triggers[0].HasTriggered &&
+            death.State.Rooms[0].Units.Single(unit => unit.Id == 3).Triggers[0].HasTriggered,
+            "Purify lost death removal/spawner settlement, admitted OnDeath or blocked a living Harvest recipient: " + death.UnsupportedReason);
+        string expectedDeath = JsonSerializer.Serialize(death.State, ModelJson.Options);
+        Parallel.For(0, 32, _ => Require(JsonSerializer.Serialize(CardSpellModel.Apply(deathRoot, 0,
+            [new("Damage", "Room", 1, false, true, [])], 0).State, ModelJson.Options) == expectedDeath,
+            "Purified physical death diverged across parallel branches."));
+        Require(JsonSerializer.Serialize(manualRoot, ModelJson.Options) == manualParent &&
+            JsonSerializer.Serialize(deathRoot, ModelJson.Options) == deathParent, "Manual Purify queues/death settlement mutated a parent.");
+        foreach (bool startsPurified in new[] { false, true })
+        {
+            CombatEffect toggle = new(startsPurified ? "CardEffectRemoveStatusEffect" : "CardEffectAddStatusEffect", 0, 0, "", 0, [], false,
+                action: new(startsPurified ? "RemoveStatus" : "AddStatus", "Self", 0, false, true, [purify]));
+            var dyingActor = new CombatUnit(10, "dying", CombatTeam.Player, 0, 0, 1, false, false, false,
+                startsPurified ? [purify] : [], [new("OnHit", true, false, true, 1, [toggle], false), GoldTrigger("OnDeath")],
+                statusRegistry: startsPurified ? [purify] : [], statusDictionary: new(startsPurified ? ["purify"] : [], []),
+                deathState: new(true, false, false, isSacrifice: false, statisticsListenerOnce: false));
+            var pendingDeath = new RoomCombatModel.QueuedCharacterTrigger(0, dyingActor, deferUntilRemoval: true, removalLifecycle: true);
+            var acceptedHit = new RoomCombatModel.QueuedCharacterTrigger(0, dyingActor, "OnHit",
+                admission: RoomCombatModel.CharacterTriggerAdmission.Accepted);
+            var settled = TrainCombatModel.ApplyCharacterQueue(Train(manualContext), [acceptedHit, pendingDeath]);
+            Require(settled.Supported && settled.State!.Context!.Gold == (startsPurified ? 5 : 0),
+                "Deferred OnDeath admission used the lethal-damage status instead of the later removal status: " + settled.UnsupportedReason);
+            Require(pendingDeath.Unit == dyingActor && acceptedHit.Unit == dyingActor && pendingDeath.Admission == RoomCombatModel.CharacterTriggerAdmission.Pending,
+                "Draining a branch mutated its input death/accepted callback objects.");
+        }
+        Console.WriteLine("PURIFY-QUEUE-CHECKS PASS: fresh birth/Rally/Sentry/shift/Harvest gates, accepted batch lifetime, missing metadata, physical death/spawner settlement and 32 branches.");
         Console.WriteLine("PURIFY-CHECKS PASS: signed/zero additions, early block, immunity overrides, ordered callbacks/zero definitions, unattributed clears, removal/reapplication, retained Horde casualties, starting statuses and 32 immutable branches.");
     }
     internal static void Native(FixtureValue fixture)
     {
-        if (!fixture.TryGetProperty("ModifierScenario", out var scenario) || scenario.GetString() != "purify") return;
+        if (!fixture.TryGetProperty("ModifierScenario", out var scenario) || scenario.GetString() is not ("purify" or "purify-queues")) return;
         var records = fixture.GetProperty("TriggeredStatuses").EnumerateArray().ToArray();
         Require(records.Length > 0, "Native Purify status boundaries are missing.");
         int positiveBlocked = 0, zeroBlocked = 0, negativeBlocked = 0, zeroClears = 0, clears = 0;
@@ -258,6 +336,55 @@ internal static class PurifyChecks
                         trigger.Kind == "PreCombat" && !trigger.HasTriggered))),
             $"Native Purify coverage incomplete: blocked={positiveBlocked}/{zeroBlocked}/{negativeBlocked}, clears={clears}/{zeroClears}, paid={actions.Length}, kinds={string.Join(',', kinds)}.");
         Console.WriteLine($"NATIVE-PURIFY-CHECKS PASS: {records.Length} exact status boundaries, {removals.Length} explicit removals, {actions.Length} paid room spells; positive/zero/negative blocks, zero clears, ordered callbacks and retained definitions.");
+        if (scenario.GetString() == "purify-queues") NativeQueues(fixture);
+    }
+    private static void NativeQueues(FixtureValue fixture)
+    {
+        var records = fixture.GetProperty("PurifyQueueAdmissions").EnumerateArray().ToArray();
+        Require(records.Length > 0, "Native Purify queue requests were not recorded.");
+        var rejected = new HashSet<string>();
+        foreach (var record in records)
+        {
+            Verify(record);
+            if (record.GetProperty("Purified").GetBoolean() && record.GetProperty("Overload").GetString() == "Character" &&
+                record.GetProperty("QueueAfter").GetInt32() == record.GetProperty("QueueBefore").GetInt32())
+                rejected.Add(record.GetProperty("Kind").GetString()!);
+        }
+        Require(new[] { "OnSpawn", "OnUnscaledSpawn", "AfterSpawnEnchant", "CardMonsterPlayed", "OnSentry", "OnDeath", "OnAnyUnitDeathOnFloor" }
+            .All(rejected.Contains), "Native Purify queue coverage incomplete: " + string.Join(',', rejected));
+        Parallel.For(0, 32, _ => { foreach (var record in records) Verify(record); });
+        int dataRequests = records.Count(record => record.GetProperty("Overload").GetString() == "QueueData");
+        Console.WriteLine($"NATIVE-PURIFY-QUEUE-CHECKS PASS: {records.Length} original native admission requests ({dataRequests} queue-data overload), " +
+            "birth/Rally/Sentry/Harvest/death restrictions, exact queue deltas and 32 branches.");
+        static void Verify(FixtureValue record)
+        {
+            Require(record.GetProperty("Completed").GetBoolean() && record.GetProperty("Interactions").GetArrayLength() == 0,
+                "Incomplete native Purify queue request.");
+            var actor = record.GetProperty("Actor").Deserialize<CombatUnit>()!;
+            string parent = JsonSerializer.Serialize(actor, ModelJson.Options);
+            bool purified = record.GetProperty("Purified").GetBoolean();
+            Require(purified == (actor.Status("purify")?.Stacks > 0), "Captured Purify status disagrees with the native character query.");
+            string kind = record.GetProperty("Kind").GetString()!;
+            string overload = record.GetProperty("Overload").GetString()!;
+            Require(overload is "Character" or "QueueData", "Unknown native queue overload.");
+            string[]? purify = record.GetProperty("PurifyBlockedTriggers").Deserialize<string[]>();
+            string[]? deployment = record.GetProperty("DeploymentBlockedTriggers").Deserialize<string[]>();
+            bool deploymentBlocked = record.GetProperty("Turn").GetInt32() == 0 && deployment?.Contains(kind) == true;
+            bool purifyBlocked = overload == "Character" && purified && purify?.Contains(kind) == true;
+            int delta = record.GetProperty("QueueAfter").GetInt32() - record.GetProperty("QueueBefore").GetInt32();
+            Require(delta == (deploymentBlocked || purifyBlocked ? 0 : 1), "Native admission disagrees with captured balance restrictions: " + kind);
+            if (!deploymentBlocked && purify != null)
+            {
+                var rng = UnityRng.Seed(149);
+                var context = new CombatContext(new([], [], [], rng, 0, []), rng, 0, 1, 10, purifyBlockedTriggers: purify);
+                var request = new RoomCombatModel.QueuedCharacterTrigger(0, actor, kind,
+                    admission: overload == "QueueData" ? RoomCombatModel.CharacterTriggerAdmission.Accepted : RoomCombatModel.CharacterTriggerAdmission.Pending);
+                string? error = StatusCallbackModel.Admit(context, request, out var admitted);
+                Require(error == null && (admitted.Admission == RoomCombatModel.CharacterTriggerAdmission.Rejected) == (delta == 0),
+                    "Independent admission differs from native queue delta: " + kind + "/" + error);
+            }
+            Require(JsonSerializer.Serialize(actor, ModelJson.Options) == parent, "Purify queue admission mutated its actor.");
+        }
     }
     private static void Require(bool condition, string message) { if (!condition) throw new InvalidOperationException(message); }
 }

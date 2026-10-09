@@ -9,6 +9,7 @@ namespace MonsterTrain2Poju.Probe
     internal static class PurifyScenario
     {
         internal static bool Prepared { get; private set; }
+        internal static bool QueueCoverage { get; private set; }
         internal static void Prepare(AllGameManagers managers, ManualLogSource log)
         {
             SaveManager save = managers.GetSaveManager();
@@ -21,8 +22,13 @@ namespace MonsterTrain2Poju.Probe
             var triggers = unit.GetTriggers().ToList();
             foreach (string kind in new[] { "OnStatusEffectChanged", "OnSilenceLost", "OnNewStatusEffectAdded" })
                 triggers.Add(Gold(kind, 1));
-            // Status notifications are allowed while purified; ordinary spawn,
-            // attack and combat triggers remain subject to the real BalanceData.
+            QueueCoverage = Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == "purify-queues";
+            if (QueueCoverage)
+                foreach (string kind in new[] { "OnSpawn", "OnUnscaledSpawn", "AfterSpawnEnchant", "CardMonsterPlayed", "OnSentry",
+                    "OnDeath", "OnAnyHeroDeathOnFloor", "OnAnyMonsterDeathOnFloor", "OnAnyUnitDeathOnFloor" })
+                    triggers.Add(Gold(kind, 1));
+            // Native queue admission permits silence-loss notifications while
+            // restricting ordinary spawn, attack and combat callbacks.
             triggers.Add(Trigger("OnSilenceLost", Remove("purify", 1), Add("armor", 3), Add("buff", 0),
                 Add("purify", 0), Add("armor", 2), Add("purify", 1), Add("armor", 1), Add("armor", 0), Add("regen", -3), Add("purify", -1)));
             triggers.Add(Trigger("PreCombat", Add("armor", 2), Remove("purify", 1), Add("regen", 2),

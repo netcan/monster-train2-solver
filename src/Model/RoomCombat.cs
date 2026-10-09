@@ -290,6 +290,7 @@ namespace MonsterTrain2Poju.Model
 
     public static class RoomCombatModel
     {
+        internal enum CharacterTriggerAdmission { Pending, Accepted, Rejected }
         internal sealed class QueuedCharacterTrigger
         {
             internal int RoomIndex { get; }
@@ -307,13 +308,19 @@ namespace MonsterTrain2Poju.Model
             internal int LastSpawnedOverrideUnitId { get; }
             internal bool HarvestAfterDeath { get; }
             internal bool CompletePhysicalRemovalAfterQueue { get; }
+            internal CharacterTriggerAdmission Admission { get; }
+            internal bool RemovalLifecycle { get; }
             internal QueuedCharacterTrigger(int roomIndex, CombatUnit unit, string kind = "OnDeath", bool returnSpawnerAfterQueue = false, bool deferUntilRemoval = false, int paramInt = 0,
                 CombatUnit? overrideTarget = null, int paramInt2 = 0, string? paramString = null, CombatUnit? dyingCharacter = null, bool canFireTriggers = true,
-                int triggerCount = 1, int lastSpawnedOverrideUnitId = 0, bool harvestAfterDeath = false, bool completePhysicalRemovalAfterQueue = false)
-            { RoomIndex = roomIndex; Unit = unit; Kind = kind; ReturnSpawnerAfterQueue = returnSpawnerAfterQueue; DeferUntilRemoval = deferUntilRemoval; ParamInt = paramInt; OverrideTarget = overrideTarget; ParamInt2 = paramInt2; ParamString = paramString; DyingCharacter = dyingCharacter; CanFireTriggers = canFireTriggers; TriggerCount = triggerCount; LastSpawnedOverrideUnitId = lastSpawnedOverrideUnitId; HarvestAfterDeath = harvestAfterDeath; CompletePhysicalRemovalAfterQueue = completePhysicalRemovalAfterQueue; }
+                int triggerCount = 1, int lastSpawnedOverrideUnitId = 0, bool harvestAfterDeath = false, bool completePhysicalRemovalAfterQueue = false,
+                CharacterTriggerAdmission admission = CharacterTriggerAdmission.Pending, bool removalLifecycle = false)
+            { RoomIndex = roomIndex; Unit = unit; Kind = kind; ReturnSpawnerAfterQueue = returnSpawnerAfterQueue; DeferUntilRemoval = deferUntilRemoval; ParamInt = paramInt; OverrideTarget = overrideTarget; ParamInt2 = paramInt2; ParamString = paramString; DyingCharacter = dyingCharacter; CanFireTriggers = canFireTriggers; TriggerCount = triggerCount; LastSpawnedOverrideUnitId = lastSpawnedOverrideUnitId; HarvestAfterDeath = harvestAfterDeath; CompletePhysicalRemovalAfterQueue = completePhysicalRemovalAfterQueue; Admission = admission; RemovalLifecycle = removalLifecycle; }
             internal QueuedCharacterTrigger InRoom(int roomIndex) => new QueuedCharacterTrigger(roomIndex, Unit, Kind,
                 ReturnSpawnerAfterQueue, DeferUntilRemoval, ParamInt, OverrideTarget, ParamInt2, ParamString, DyingCharacter,
-                CanFireTriggers, TriggerCount, LastSpawnedOverrideUnitId, HarvestAfterDeath, CompletePhysicalRemovalAfterQueue);
+                CanFireTriggers, TriggerCount, LastSpawnedOverrideUnitId, HarvestAfterDeath, CompletePhysicalRemovalAfterQueue, Admission, RemovalLifecycle);
+            internal QueuedCharacterTrigger WithAdmission(CharacterTriggerAdmission admission) => new QueuedCharacterTrigger(RoomIndex, Unit, Kind,
+                ReturnSpawnerAfterQueue, DeferUntilRemoval, ParamInt, OverrideTarget, ParamInt2, ParamString, DyingCharacter,
+                CanFireTriggers, TriggerCount, LastSpawnedOverrideUnitId, HarvestAfterDeath, CompletePhysicalRemovalAfterQueue, admission, RemovalLifecycle);
         }
         private static readonly HashSet<string> KnownStatuses = new HashSet<string>(StringComparer.Ordinal)
         {
@@ -381,16 +388,34 @@ namespace MonsterTrain2Poju.Model
             {
                 result = EnchantmentWorldModel.CompleteQueuedRemovals(result.State!, queue.Add);
                 return result.Supported;
-            });
+            }, () => result.State?.Context, message => result = new RoomCombatResult(null, RoomOutcome.Unsupported, 0, events, message));
             if (!drained) return result;
             return new RoomCombatResult(result.State, outcome, 0, events);
         }
 
         internal static bool DrainCharacterQueue(List<QueuedCharacterTrigger> queue, Func<QueuedCharacterTrigger, bool> fire,
-            Func<QueuedCharacterTrigger, bool> returnSpawner, Func<bool> afterRemovalBatch)
+            Func<QueuedCharacterTrigger, bool> returnSpawner, Func<bool> afterRemovalBatch,
+            Func<CombatContext?> getContext, Action<string> reject)
         {
             int next = 0;
+            int nextAdmission = 0;
             var pending = new List<QueuedCharacterTrigger>();
+            bool AdmitPending()
+            {
+                // Capture admission for the whole batch before the first callback can
+                // purify another actor or refresh an accepted callback's retained object.
+                CombatContext? rules = getContext();
+                for (int index = nextAdmission; index < queue.Count; index++)
+                {
+                    string? error = StatusCallbackModel.Admit(rules, queue[index], out QueuedCharacterTrigger admitted);
+                    if (error != null) { reject(error); return false; }
+                    if (admitted.Admission == CharacterTriggerAdmission.Rejected)
+                    { queue.RemoveAt(index--); continue; }
+                    queue[index] = ReferenceEquals(admitted, queue[index]) ? admitted.InRoom(admitted.RoomIndex) : admitted;
+                }
+                nextAdmission = queue.Count;
+                return true;
+            }
             bool Fire(QueuedCharacterTrigger queued)
             {
                 // Callbacks retain the same native character object after lethal damage. Its
@@ -411,6 +436,7 @@ namespace MonsterTrain2Poju.Model
                     if (latestTarget != null) queued.OverrideTarget = latestTarget;
                 }
                 if (!fire(queued)) return false;
+                if (!AdmitPending()) return false;
                 foreach (QueuedCharacterTrigger item in queue.Where(item => item.DyingCharacter?.Id == queued.Unit.Id))
                     item.DyingCharacter = queued.Unit;
                 foreach (QueuedCharacterTrigger item in queue.Where(item => item.OverrideTarget?.Id == queued.Unit.Id))
@@ -425,6 +451,7 @@ namespace MonsterTrain2Poju.Model
             }
             bool Drain()
             {
+                if (!AdmitPending()) return false;
                 while (next < queue.Count)
                 {
                     QueuedCharacterTrigger queued = queue[next++];
@@ -1280,7 +1307,16 @@ namespace MonsterTrain2Poju.Model
                             actor.Source.DeathState.IsBeingRemoved, actor.Source.DeathState.HasStatisticsListener,
                             isSacrifice: actor.Source.DeathState.IsSacrifice, statisticsListenerOnce: actor.Source.DeathState.StatisticsListenerOnce)));
                     }
-                    FireTriggers(actor, queued.Kind, canFireTriggers: queued.CanFireTriggers, fromQueue: true, paramInt: queued.ParamInt,
+                    // A removal entry schedules death bookkeeping, Harvest and spawner
+                    // cleanup. Its native OnDeath request occurs only now, during removal.
+                    bool blockedDeath = false;
+                    if (queued.RemovalLifecycle && actor.Has("purify"))
+                    {
+                        if (context?.PurifyBlockedTriggers == null)
+                        { unsupportedReason = "Purify requires captured trigger queue restrictions."; return Finish(RoomOutcome.Unsupported); }
+                        blockedDeath = context.PurifyBlockedTriggers.Contains(queued.Kind);
+                    }
+                    if (!blockedDeath) FireTriggers(actor, queued.Kind, canFireTriggers: queued.CanFireTriggers, fromQueue: true, paramInt: queued.ParamInt,
                         overrideTarget: overridden, dyingCharacter: dying, triggerCount: queued.TriggerCount, lastSpawnedOverrideUnitId: queued.LastSpawnedOverrideUnitId);
                     if (queued.Kind == "OnDeath" && queued.ParamInt != 1 && actor.Source.DeathState != null)
                         actor.Apply(actor.Freeze().WithDeathState(new UnitDeathState(true, true, false,
@@ -1698,7 +1734,7 @@ namespace MonsterTrain2Poju.Model
                 if (!UpdateEnchantments(target.Source.Id)) return;
                 if (enqueueCharacterTrigger != null) enqueueCharacterTrigger(new QueuedCharacterTrigger(source.RoomIndex, target.Freeze(),
                     returnSpawnerAfterQueue: deferReturn, deferUntilRemoval: deferRemoval, harvestAfterDeath: !target.Despawned && !immediateHarvest,
-                    completePhysicalRemovalAfterQueue: deferRemoval && context?.SpawnPoints != null));
+                    completePhysicalRemovalAfterQueue: deferRemoval && context?.SpawnPoints != null, removalLifecycle: true));
                 else
                 {
                     if (deferRemoval) deferredDamageDeaths.Add((target, deferReturn));
@@ -1871,7 +1907,8 @@ namespace MonsterTrain2Poju.Model
                 }
                 if (!fromQueue && enqueueCharacterTrigger != null)
                 { enqueueCharacterTrigger(new QueuedCharacterTrigger(source.RoomIndex, unit.Freeze(), kind, paramInt: paramInt, overrideTarget: overrideTarget?.Freeze(), paramString: paramString,
-                    dyingCharacter: dyingCharacter?.Freeze(), canFireTriggers: canFireTriggers, triggerCount: triggerCount, lastSpawnedOverrideUnitId: lastSpawnedOverrideUnitId)); return; }
+                    dyingCharacter: dyingCharacter?.Freeze(), canFireTriggers: canFireTriggers, triggerCount: triggerCount, lastSpawnedOverrideUnitId: lastSpawnedOverrideUnitId,
+                    admission: CharacterTriggerAdmission.Accepted)); return; }
                 if (!fromQueue)
                 {
                     triggerQueue.Enqueue((source.RoomIndex, unit, kind, canFireTriggers, paramInt, overrideTarget, 0, paramString, dyingCharacter, triggerCount, lastSpawnedOverrideUnitId));
@@ -2526,11 +2563,10 @@ namespace MonsterTrain2Poju.Model
 
             private void QueueCallback(QueuedCharacterTrigger callback)
             {
-                if (callback.Unit.Status("purify")?.Stacks > 0)
-                {
-                    if (context?.PurifyBlockedTriggers == null) { unsupportedReason = "Purify requires captured trigger queue restrictions."; return; }
-                    if (context.PurifyBlockedTriggers.Contains(callback.Kind)) return;
-                }
+                string? error = StatusCallbackModel.Admit(context, callback, out QueuedCharacterTrigger admitted);
+                if (error != null) { unsupportedReason = error; return; }
+                if (admitted.Admission == CharacterTriggerAdmission.Rejected) return;
+                callback = admitted;
                 if (enqueueCharacterTrigger != null) { enqueueCharacterTrigger(callback); return; }
                 bool local = callback.RoomIndex == source.RoomIndex;
                 WorkingUnit? actor = local ? units.FirstOrDefault(unit => unit.Source.Id == callback.Unit.Id) : null;
@@ -2724,7 +2760,7 @@ namespace MonsterTrain2Poju.Model
                 outcome, round, events, pendingCallbacks: nativeCardDamage ? deferredDamageDeaths.Select(dead =>
                     new QueuedCharacterTrigger(source.RoomIndex, dead.Unit.Freeze(), returnSpawnerAfterQueue: dead.Return,
                         deferUntilRemoval: true, harvestAfterDeath: !dead.Unit.Despawned,
-                        completePhysicalRemovalAfterQueue: context?.SpawnPoints != null)).ToArray() : null,
+                        completePhysicalRemovalAfterQueue: context?.SpawnPoints != null, removalLifecycle: true)).ToArray() : null,
                 retainedUnits: units.Where(unit => !unit.Alive).Select(unit => unit.Freeze()).ToArray(), dispatches: dispatches);
             }
         }

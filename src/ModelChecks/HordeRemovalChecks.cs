@@ -133,7 +133,7 @@ internal static class HordeRemovalChecks
                 dispatched.Add(new(queued.Unit.Id, queued.Kind, queued.DyingCharacter?.Id ?? 0, queued.TriggerCount));
             result = RoomCombatModel.ApplyQueuedCharacterTrigger(result.State!, queued, queue.Add); return result.Supported;
         }, queued => { result = RoomCombatModel.SettleQueuedSpawner(result.State!, queued.Unit); return result.Supported; },
-            () => { result = EnchantmentWorldModel.CompleteQueuedRemovals(result.State!, queue.Add); return result.Supported; }),
+            () => { result = EnchantmentWorldModel.CompleteQueuedRemovals(result.State!, queue.Add); return result.Supported; }, () => result.State?.Context, message => result = new RoomCombatResult(null, RoomOutcome.Unsupported, 0, [], message)),
             "Removal queue unsupported: " + result.UnsupportedReason);
         return result;
     }
