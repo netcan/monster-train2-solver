@@ -1462,9 +1462,10 @@ namespace MonsterTrain2Poju.Model
                     // Temporary previews restore only the characters collected before
                     // the hit. New actors keep their preview state and copied point;
                     // switching the room back to its primary list does not destroy them.
-                    EnchantmentRetainedUnit[] births = observed.Rooms.SelectMany(room => room.Units.Select(unit =>
+                    EnchantmentRetainedUnit[] observedActors = observed.Rooms.SelectMany(room => room.Units.Select(unit =>
                         new EnchantmentRetainedUnit(unit, room.RoomIndex, room.Preview)))
-                        .Concat(observed.RetainedUnits).Where(unit => unit.Unit.Id >= firstPreviewId).ToArray();
+                        .Concat(observed.RetainedUnits).ToArray();
+                    EnchantmentRetainedUnit[] births = observedActors.Where(unit => unit.Unit.Id >= firstPreviewId).ToArray();
                     int[] removedPreviewIds = births.Where(actor => actor.Unit.Health <= 0 || actor.Unit.DeathState?.IsDestroyed == true)
                         .Select(actor => actor.Unit.Id).ToArray();
                     var restoredIds = originalWorld.Rooms.SelectMany(room => room.Units).Where(unit => unit.Health > 0)
@@ -1494,10 +1495,15 @@ namespace MonsterTrain2Poju.Model
                     var restoredActors = units.Where(unit => unit.InRoom && !unit.Removed).Select(unit => unit.Source.Id).ToHashSet();
                     CombatUnit Restore(CombatUnit unit, int room) => EnchantmentWorldModel.RestorePreviewEffects(unit, observed,
                         restoredActors.Contains(unit.Id), removedPreviewIds);
+                    // Earlier preview births were also outside the collected restore
+                    // list. Keep their complete observed state and location, including
+                    // status withdrawals and callbacks from this temporary preview.
+                    EnchantmentRetainedUnit Retained(EnchantmentRetainedUnit actor) => actor.Preview ? observedActors
+                        .FirstOrDefault(unit => unit.Unit.Id == actor.Unit.Id) ?? actor :
+                        new EnchantmentRetainedUnit(Restore(actor.Unit, actor.RoomIndex), actor.RoomIndex, actor.Preview);
                     context = context.WithEnchantments(new EnchantmentWorld(originalWorld.Rooms.Select(room => new RoomCombatState(room.RoomIndex,
                         room.Deployment, room.Units.Select(unit => Restore(unit, room.RoomIndex)).ToArray(), room.ExternalInteractions, null, room.Preview)).ToArray(),
-                        originalWorld.Movement, originalWorld.EnemySlotsPerRoom, originalWorld.RetainedUnits.Select(actor => new EnchantmentRetainedUnit(
-                            Restore(actor.Unit, actor.RoomIndex), actor.RoomIndex, actor.Preview))
+                        originalWorld.Movement, originalWorld.EnemySlotsPerRoom, originalWorld.RetainedUnits.Select(Retained)
                             .Concat(births).ToArray(),
                         originalWorld.EnchanterIds.Concat(observed.EnchanterIds).Distinct().ToArray(),
                         originalWorld.AllowUpdates, originalWorld.Updating, originalWorld.Preview, originalWorld.TestRng, true));
@@ -2512,7 +2518,17 @@ namespace MonsterTrain2Poju.Model
             {
                 if (enqueueCharacterTrigger != null) { enqueueCharacterTrigger(callback); return; }
                 bool local = callback.RoomIndex == source.RoomIndex;
-                WorkingUnit actor = local ? units.First(unit => unit.Source.Id == callback.Unit.Id) : new WorkingUnit(callback.Unit) { InRoom = false };
+                WorkingUnit? actor = local ? units.FirstOrDefault(unit => unit.Source.Id == callback.Unit.Id) : null;
+                if (actor == null)
+                {
+                    // Aura maps retain preview-born objects outside the selected room
+                    // list. Their callbacks still execute on the retained actor without
+                    // restoring that actor's membership or allocating another identity.
+                    CombatUnit current = local ? context?.Enchantments?.RetainedUnits
+                        .FirstOrDefault(unit => unit.Unit.Id == callback.Unit.Id)?.Unit ?? callback.Unit : callback.Unit;
+                    actor = new WorkingUnit(current) { InRoom = false };
+                    if (local) units.Add(actor);
+                }
                 WorkingUnit? dying = callback.DyingCharacter == null ? null : local ? units.FirstOrDefault(unit => unit.Source.Id == callback.DyingCharacter.Id) : null;
                 if (dying == null && callback.DyingCharacter != null)
                 { dying = new WorkingUnit(callback.DyingCharacter) { InRoom = false }; if (local) units.Add(dying); }

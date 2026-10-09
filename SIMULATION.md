@@ -6650,3 +6650,48 @@ unaccepted random aura-summon diagnostic. Its fix changes the model, so the
 completed historical result is a baseline rather than a claim that the new
 model's current regression has already finished. Inventory remains 175, and
 the complete simulator/optimal solver remain in progress.
+
+### Retained aura callbacks and temporary Boss preview restoration
+
+The unaccepted random aura-summon diagnostic first exposed four callback
+exceptions, then four complete-state differences after those callbacks could be
+captured. Aura targets can retain living preview-born characters that no longer
+belong to the selected room list. Their local callbacks now use the latest
+retained world state without restoring membership or allocating another identity.
+This avoids both the missing-actor exception and stale snapshots when two auras
+withdraw statuses before the queued callbacks run.
+
+Temporary Boss previews restore only their collected characters. Earlier retained
+preview births are outside that restore list, so their complete observed state
+and location survive, including withdrawn statuses and once-trigger flags. The
+previous restoration incorrectly reintroduced a regeneration stack on retained
+actor34; the recorded random diagnostic was rejected rather than curated.
+
+Pure regressions cover local callbacks and temporary Boss preview restoration,
+two withdrawn statuses, once state, ignored preview gold, stable identity and
+32 immutable parallel branches each. The new restoration regression fails on the
+previous model with armor2/buff1 and an untriggered once flag. With the fix, every
+recorded paid action, room stage, train phase and EndTurn in the rejected trace
+matches independently. A continuous policy from only its initial root also
+matches all fifteen paid actions, five EndTurns and the complete terminal state
+in sixteen branches.
+
+The rebuilt muted Instant native run now finishes successfully in 211.59 seconds:
+41 room stages, nine train phases, seven spawns, fifteen paid actions and five
+EndTurns, with zero capture failures, differences, unsupported paths or pending
+records. Its 23 original card-movement callbacks complete and original profile/log
+signatures remain unchanged. Probe, isolated runtime and checker load Model.dll
+SHA-256 5123073de29e18517afac0a913acedf0d9869f0534abad0de16fdd6e8e9d8636.
+The new native binary's complete independent check also passes: all 154 closed
+contexts, complete intermediate/terminal states, the fifteen-action/five-EndTurn
+policy, a mid-battle root and sixteen immutable parallel branches, with Pyre80.
+Its 370 raw/canonical decisions and 14,385 position-plane mappings also match.
+
+The final model's 58-archive affected regression exits successfully: 34 complete
+battle suites, 32 paid continuous policies, two complete no-more-card chains and
+all 24 calibrations, with no skipped unsupported operations. This covers the
+persistent aura, triggered summon/equipment/death/revival, clone/copy and shared
+preview components affected by the fix. The completed historical173 run remains
+the old model's full baseline; a combined175 run of this new model has not been
+performed. The rejected diagnostics are not curated, and complete battle
+coverage/optimal search remain unfinished.
