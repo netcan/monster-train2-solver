@@ -84,7 +84,7 @@ namespace MonsterTrain2Poju.Probe
             if (data.GetTraits().Any(trait => !DamageScalingProbe.Known(trait.GetTraitStateName()))) interactions.Add("Card traits");
             bool selfPurge = data.GetTraits().Any(trait => trait.GetTraitStateName() == "CardTraitSelfPurge");
             CardEffectData[] effects = data.GetEffects().ToArray();
-            string kind = effects.Length == 1 ? effects[0].GetEffectStateName() : "MultipleEffects";
+            string kind = effects.Length == 0 ? "CardEffectNULL" : effects.Length == 1 ? effects[0].GetEffectStateName() : "MultipleEffects";
             CombatUnit? template = null;
             UnitSummonRule? summon = null;
             var spellEffects = new List<CardActionEffect>();
@@ -231,7 +231,8 @@ namespace MonsterTrain2Poju.Probe
                 HandInteractions(data, false), HandInteractions(data, true), data.GetCostType().ToString(), equipment,
                 data.IsUnitAbility() ? new CardAbilityRule("Unit", data.CanAbilityTargetOtherFloors(),
                     data.GetEffects().All(effect => ((ICardEffect)Activator.CreateInstance(typeof(CardState).Assembly
-                        .GetType(effect.GetEffectStateName())!)!).CanPlayWhenHandFull)) : null, summon);
+                        .GetType(effect.GetEffectStateName())!)!).CanPlayWhenHandFull)) : null, summon,
+                data.GetCardType().ToString(), data.IsUnitAbility() || data.IsRoomAbility());
         }
 
         private static CardData? Fallback(CharacterData unit) => AllGameManagers.Instance!.GetSaveManager().GetAllGameData()
@@ -264,7 +265,7 @@ namespace MonsterTrain2Poju.Probe
             return new CardPlayRule(rule.DataId, rule.AssetKey, rule.Cost, rule.Effect, rule.Destination, unit,
                 interactions.Distinct().OrderBy(item => item, StringComparer.Ordinal).ToArray(), rule.Effects,
                 rule.UpgradeInteractions, rule.HandDiscardInteractions, rule.HandConsumeInteractions, rule.CostType,
-                rule.Equipment, rule.Ability, rule.Summon);
+                rule.Equipment, rule.Ability, rule.Summon, rule.CardType, rule.IsAnyAbility);
         }
 
         private static string[] HandInteractions(CardData data, bool consume)

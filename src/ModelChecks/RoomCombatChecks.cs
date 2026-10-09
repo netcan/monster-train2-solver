@@ -209,6 +209,7 @@ internal static class RoomCombatChecks
         HordeStatusChecks.Native(fixture);
         HordeMergeChecks.Native(fixture);
         RallyChecks.Native(fixture);
+        IncantChecks.Native(fixture);
         LethalRallyChecks.Native(fixture);
         UnitSummonChecks.Native(fixture);
         HarvestChecks.Native(fixture);

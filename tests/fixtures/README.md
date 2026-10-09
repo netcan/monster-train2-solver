@@ -1411,3 +1411,23 @@ operation. All 179 required identities, archive sizes and manifest SHA-256 hashe
 are independently rechecked. This baseline uses Model.dll SHA-256
 fb6341d949d6b98027472cf3735bd5dda0ed9540351b22221b0cf9d61c432a3f;
 the subsequent Incant changes require separate validation.
+
+The Incant model captures native card types and ability flags, retains original
+room actor identities, admits/drains players before enemies, and supports empty
+and summon-effect spells through the ordinary CardSpellPlayed queue. Equipment,
+monster and default unit/room ability classifications are checked in the pure
+suite; the native scene records paid ordinary spells, natural units, status
+children, silence removal and exact Purify admission.
+
+The final muted Instant Incant recording takes 87.29 seconds with original profile
+and log signatures preserved. It independently matches 32 team phases, 18 actor
+dispatches, 51 original admission requests with 12 Purify rejections, eleven paid
+empty-effect spells, 139 FIFO status callbacks and 23 removal-effect boundaries.
+Thirty-two independent branches retain their parents. Two deliberately incorrect
+current-source models fail on native empty-spell routing and cached actor scope.
+The same model also passes 29 historical battles, 28 paid policies, one no-more-card
+chain and all 24 strict component calibrations (53 unique inputs). Model.dll SHA-256:
+e26db6f690855eadc4adc90ec5dd2feaf5570de1a1a9695ab826195e5f5b5cea.
+The preceding complete179 baseline is not a combined regression of this Incant
+version. Positive Incant thresholds, relic-triggered ability Incant and the whole
+simulator remain unfinished.

@@ -194,6 +194,10 @@ internal static class StatusCallbackChecks
         if (hordeSuite)
             Require(kinds.IsSupersetOf(["OnStatusEffectChanged", "OnTroopAdded", "OnTroopRemoved"]) && reward > 0 && zero > 0 && negative > 0,
                 "Native Horde status notification coverage incomplete.");
+        else if (fixture.TryGetProperty("ModifierScenario", out var incantScenario) && incantScenario.GetString() == "incant")
+            Require(kinds.IsSupersetOf(["OnStatusEffectChanged", "OnArmorAdded", "OnSilence", "OnSilenceLost", "OnNewStatusEffectAdded"]) &&
+                reward > 0 && zero > 0 && negative > 0,
+                "Native Incant status-child coverage incomplete.");
         else if (fixture.TryGetProperty("ModifierScenario", out var purifyScenario) && purifyScenario.GetString() is "purify" or "purify-queues")
             Require(kinds.IsSupersetOf(["OnStatusEffectChanged", "OnArmorAdded", "OnSilence", "OnSilenceLost", "OnNewStatusEffectAdded"]) &&
                 reward > 0 && zero > 0 && negative > 0 && silenceLost > 0,

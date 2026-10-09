@@ -746,7 +746,7 @@ namespace MonsterTrain2Poju.Model
                         trigger.Origin.IsFromEquipment != (trigger.Origin.EquipmentCardId > 0)))
                         return "Invalid equipment trigger origin.";
                     if (trigger.Kind != "OnDeath" && trigger.Kind != "OnReanimated" && trigger.Kind != "PostCombat" && trigger.Kind != "PostCombatHealing" && trigger.Kind != "OnHeal" &&
-                        trigger.Kind != "CardMonsterPlayed" && trigger.Kind != "OnOwnAbilityActivated" && trigger.Kind != "OnPreOwnAbilityActivated" &&
+                        trigger.Kind != "CardMonsterPlayed" && trigger.Kind != "CardSpellPlayed" && trigger.Kind != "OnOwnAbilityActivated" && trigger.Kind != "OnPreOwnAbilityActivated" &&
                         trigger.Kind != "OnEquipmentAdded" && trigger.Kind != "OnEquipmentAddedToAny" && trigger.Kind != "OnEquipmentRemoved" &&
                         trigger.Kind != "OnSpawn" && trigger.Kind != "OnUnscaledSpawn" && trigger.Kind != "OnSpawnNotFromCard" && trigger.Kind != "AfterSpawnEnchant" &&
                         trigger.Kind != "OnTurnBegin" && trigger.Kind != "OnTeamTurnBegin" && trigger.Kind != "EndTurnPreHandDiscard" && trigger.Kind != "PreCombat" &&
@@ -1284,7 +1284,7 @@ namespace MonsterTrain2Poju.Model
                 if (actor == null && (queued.Unit.DeathState?.IsDespawned == true || queued.Unit.DeathState?.IsDestroyed == true))
                 { actor = new WorkingUnit(queued.Unit) { InRoom = false }; units.Add(actor); }
                 if (actor == null && (queued.Kind == "OnDeath" || queued.Kind == "OnHit" || queued.Kind == "OnKill" ||
-                    queued.Kind == "OnAttackingBeforeDamage" || queued.Kind == "OnAttacking" || queued.Kind == "OnSentry" || StatusCallbackModel.Kinds.Contains(queued.Kind) || HarvestModel.Kinds.Contains(queued.Kind)))
+                    queued.Kind == "OnAttackingBeforeDamage" || queued.Kind == "OnAttacking" || queued.Kind == "OnSentry" || queued.Kind == "CardSpellPlayed" || StatusCallbackModel.Kinds.Contains(queued.Kind) || HarvestModel.Kinds.Contains(queued.Kind)))
                 { actor = new WorkingUnit(queued.Unit) { InRoom = false }; units.Add(actor); }
                 // A queued OnHeal on an actor killed by a later phase effect has no live effects.
                 if (actor != null)

@@ -6887,3 +6887,57 @@ sizes and manifest SHA-256 hashes are independently rechecked. This baseline use
 Model.dll SHA-256
 fb6341d949d6b98027472cf3735bd5dda0ed9540351b22221b0cf9d61c432a3f;
 the subsequent Incant work requires separate validation.
+
+### Incant card classification and cached team queues
+
+Card play rules now capture the native CardType and IsAnyAbility queries, and
+preserve them through modifier resolution, spawn-definition copies and fallback
+birth definitions. Ordinary Spell cards run CardSpellPlayed even with no card
+effects, or with a summon effect. Monster/equipment cards and unit/room abilities
+do not acquire ordinary Incant from their effect kind. Missing classification
+metadata is refused when an Incant observer is present. Legacy non-Incant archives
+retain their existing behavior.
+
+The original living, non-spawning room actors are cached by identity before card
+effects. The player manager admits its complete callback batch before firing any
+effect and drains the generated children; only then does the enemy manager admit
+and drain its own batch. Purify uses the native balance restrictions at each
+admission. Once/repeat flags, silence, ignored silence, status-presence conditions,
+dead actor handling and FIFO status children use the existing character scheduler.
+Pure checks cover empty and summon spells, default ability exclusion, moved cached
+actors, excluded newborn/other-floor actors, player admission before purification,
+enemy admission after it, missing metadata and 32 isolated branches.
+
+The Incant recording uses owned Stewards, two owned spell definitions and natural
+ordinary enemies. It adds repeat/once/visible/ignored-silence observers, an
+OnTurnBegin silence effect, a status-presence condition, armor add/zero/remove
+children, and starting enemy Purify. One owned spell has an actual empty effects
+list; another removes silence/Purify. A deterministic verification policy summons
+first, then plays the empty spell before status removal. The Boss and wave pattern
+are preserved; these authored data changes are limited to the isolated test game.
+
+The final muted Instant recording takes 87.29 seconds and has zero capture
+failures, mismatches, unsupported operations and pending records. Original profile
+and log signatures are unchanged. All 32 complete team phases, 18 actor dispatches,
+all 62 room stages, 21 paid actions, seven EndTurns, 230 closed contexts, 530
+raw/canonical decisions and 11,860 physical-plane mappings match. Both complete
+policies and sixteen parallel branches finish with Pyre61. The
+51 original native Incant admission requests (12 Purify rejections), eleven paid
+empty spells, 139 FIFO status callbacks and 23 explicit status-removal effect
+boundaries match independently. Team continuity, exact native type/ability
+classification, complete empty-card routing and unchanged parents are checked;
+team/actor/admission/removal comparisons also pass 32 independent branches.
+Two current-source negative models are rejected by this native recording:
+effect-kind classification loses an empty spell's status registry, and dropping
+cached identity filtering produces gold 140 instead of 95 in a team phase.
+
+The final model separately passes 29 historical complete battles, 28 continuous
+paid-policy chains, one no-more-card chain and all 24 curated strict calibrations:
+53 unique inputs with no unsupported or skipped native operation. The checker,
+probe and isolated game use Model.dll SHA-256
+e26db6f690855eadc4adc90ec5dd2feaf5570de1a1a9695ab826195e5f5b5cea.
+The complete179 baseline above belongs to the preceding Purify queue model; a
+combined regression of this Incant model still requires its own run. Positive
+Incant threshold callbacks remain refused. Relic-triggered ability Incant, further
+trigger/effect combinations, Purify/Horde/aura integration, card purification,
+complete state pruning and the whole simulator remain unfinished.

@@ -97,6 +97,7 @@ param(
     [switch] $SpawnEnchant,
     [switch] $Purify,
     [switch] $PurifyQueues,
+    [switch] $Incant,
     [switch] $PersistentEnchantments,
     [switch] $PersistentEnchantmentDeaths,
     [switch] $PersistentEnchantmentRevivals,
@@ -257,6 +258,10 @@ if ($HeroCopy) { $environment['MT2_PROBE_MODIFIERS'] = 'hero-copy' }
 if ($SpawnEnchant) { $environment['MT2_PROBE_MODIFIERS'] = 'spawn-enchant' }
 if ($Purify) {
     $environment['MT2_PROBE_MODIFIERS'] = $(if ($PurifyQueues) { 'purify-queues' } else { 'purify' })
+    $environment['MT2_PROBE_STATUS_CALLBACKS'] = '1'
+}
+if ($Incant) {
+    $environment['MT2_PROBE_MODIFIERS'] = 'incant'
     $environment['MT2_PROBE_STATUS_CALLBACKS'] = '1'
 }
 if ($PersistentEnchantments) {
@@ -1317,9 +1322,33 @@ if ($PurifyQueues) {
         @($requiredKinds | Where-Object { $_ -notin $rejectedKinds }).Count -eq 0
     if (-not $purifyQueueCoverage) { throw "Purify queue coverage incomplete: rejected=$($rejectedKinds -join ',')" }
 }
+$incantCoverage = -not $Incant
+if ($Incant) {
+    $incantPhases = @($trace.IncantPhases)
+    $incantFires = @($trace.IncantTriggers)
+    $incantRequests = @($trace.PurifyQueueAdmissions | Where-Object { $_.Kind -eq 'CardSpellPlayed' })
+    $incantRejected = @($incantRequests | Where-Object { $_.Purified -and $_.QueueBefore -eq $_.QueueAfter })
+    $emptySpellPlays = 0; $silencedFires = 0; $visibleFires = 0
+    foreach ($action in $trace.Actions) {
+        $source = $action.Before.Spawn.Train.Context.CardInstances | Where-Object InstanceId -EQ $action.Action.CardInstanceId
+        $rule = $action.Before.PlayRules.Cards | Where-Object DataId -EQ $source.DataId
+        if ($rule.CardType -eq 'Spell' -and -not $rule.IsAnyAbility -and $rule.Effect -eq 'Null') { $emptySpellPlays++ }
+    }
+    foreach ($fire in $incantFires) {
+        if (@($fire.Actor.Statuses | Where-Object { $_.Id -eq 'silenced' -and $_.Stacks -gt 0 }).Count -gt 0) { $silencedFires++ }
+        elseif (@($fire.AfterActor.Triggers | Where-Object { $_.Kind -eq 'CardSpellPlayed' -and -not $_.IgnoreSilence -and $_.HasTriggered }).Count -gt 0) { $visibleFires++ }
+    }
+    $incantCoverage = $trace.ModifierScenario -eq 'incant' -and $incantPhases.Count -ge 10 -and $incantFires.Count -gt 5 -and
+        @($incantPhases | Where-Object { -not $_.Completed -or $null -eq $_.After -or $null -ne $_.Difference }).Count -eq 0 -and
+        @($incantFires | Where-Object { -not $_.Completed -or $null -eq $_.After -or $null -eq $_.AfterActor -or $null -ne $_.Difference }).Count -eq 0 -and
+        @($incantFires | Where-Object { $_.Actor.Team -eq 1 }).Count -gt 0 -and @($incantFires | Where-Object { $_.Actor.Team -eq 0 }).Count -gt 0 -and
+        $incantRejected.Count -gt 0 -and $emptySpellPlays -gt 0 -and $silencedFires -gt 0 -and $visibleFires -gt 0
+    if (-not $incantCoverage) { throw "Incant coverage incomplete: phases=$($incantPhases.Count) fires=$($incantFires.Count) rejected=$($incantRejected.Count) empty=$emptySpellPlays silenced=$silencedFires visible=$visibleFires" }
+}
 $result = [pscustomobject]@{
     PurifyCoverage = $purifyCoverage
     PurifyQueueCoverage = $purifyQueueCoverage
+    IncantCoverage = $incantCoverage
     RevivalOperations = @($trace.RevivalOperations).Count
     Revivals = @($trace.Revivals).Count
     TriggeredEquipmentCoverage = $triggeredEquipmentCoverage

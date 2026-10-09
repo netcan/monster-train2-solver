@@ -75,7 +75,7 @@ namespace MonsterTrain2Poju.Model
                 ? definition : new CardPlayRule(card.DataId, definition.AssetKey,
                 definition.Cost, definition.Effect, definition.Destination, definition.SpawnUnit, definition.ExternalInteractions,
                 definition.Effects, definition.UpgradeInteractions, definition.HandDiscardInteractions, definition.HandConsumeInteractions,
-                definition.CostType, definition.Equipment, definition.Ability, definition.Summon);
+                definition.CostType, definition.Equipment, definition.Ability, definition.Summon, definition.CardType, definition.IsAnyAbility);
             CardPlayRule resolved = card == null ? birthDefinition.WithSpawn(initialized) : CardModifierModel.Resolve(birthDefinition.WithSpawn(initialized), card);
             if (resolved.ExternalInteractions.Count > 0) return Unsupported(string.Join("; ", resolved.ExternalInteractions));
             CombatUnit template = resolved.SpawnUnit!;

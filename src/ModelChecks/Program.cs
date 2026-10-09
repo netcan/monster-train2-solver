@@ -99,6 +99,17 @@ if (args.Length == 2 && args[0] == "--bump-only")
     return;
 }
 
+if (args.Length == 2 && args[0] == "--incant-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    var observed = fixture.RootElement;
+    if (observed.GetProperty("ModifierScenario").GetString() != "incant" ||
+        observed.GetProperty("CaptureFailures").GetInt32() != 0 || observed.GetProperty("Pending").GetInt32() != 0)
+        throw new InvalidDataException("The requested fixture has no complete native Incant observations.");
+    IncantChecks.Native(observed);
+    return;
+}
+
 const string steward = "d14a50f3-728d-43e1-87f0-ef1b013f6678";
 FixtureArchiveChecks.Run();
 var input = new CombatProjectionData
@@ -179,6 +190,7 @@ CombatEffectChecks.Run();
 StatusRegistryChecks.Run();
 StatusCallbackChecks.Run();
 PurifyChecks.Run();
+IncantChecks.Run();
 PersistentEnchantmentChecks.Run();
 PreviewCopyChecks.Run();
 ContextReferenceChecks.Run();

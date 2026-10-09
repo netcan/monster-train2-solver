@@ -75,7 +75,7 @@ namespace MonsterTrain2Poju.Probe
             private static IEnumerable<MethodBase> TargetMethods() => new[] { typeof(CardEffectResetCooldown), typeof(CardEffectAdjustAbilityCooldown),
                 typeof(CardEffectRemoveStatusEffect) }.Select(type => AccessTools.Method(type, "ApplyEffect"));
             private static void Postfix(CardEffectState cardEffectState, CardEffectParams cardEffectParams, ref IEnumerator __result)
-            { if ((AbilityCooldownScenario.Prepared || PurifyScenario.Prepared) && FullBattleTrace.Active != null && !AllGameManagers.Instance!.GetSaveManager().PreviewMode)
+            { if ((AbilityCooldownScenario.Prepared || PurifyScenario.Prepared || IncantScenario.Prepared) && FullBattleTrace.Active != null && !AllGameManagers.Instance!.GetSaveManager().PreviewMode)
                     __result = Observe(__result, cardEffectState, cardEffectParams); }
         }
         private static IEnumerator Observe(IEnumerator native, CardEffectState effect, CardEffectParams parameters)

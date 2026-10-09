@@ -29,7 +29,7 @@ namespace MonsterTrain2Poju.Probe
             ((ICollection)AccessTools.Property(typeof(CombatManager), "TriggerQueue").GetValue(manager)).Count;
         private static Record? Begin(CombatManager manager, CharacterState actor, CharacterTriggerData.Trigger kind, string overload)
         {
-            if (!PurifyScenario.QueueCoverage || FullBattleTrace.Active == null ||
+            if ((!PurifyScenario.QueueCoverage && !IncantScenario.Prepared) || FullBattleTrace.Active == null ||
                 AllGameManagers.Instance!.GetSaveManager().PreviewMode) return null;
             try
             {

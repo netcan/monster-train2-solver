@@ -74,6 +74,8 @@ namespace MonsterTrain2Poju.Model
         public string CostType { get; }
         public EquipmentDefinition? Equipment { get; }
         public CardAbilityRule? Ability { get; }
+        public string? CardType { get; }
+        public bool? IsAnyAbility { get; }
         public string Effect { get; }
         public string Destination { get; }
         public CombatUnit? SpawnUnit { get; }
@@ -87,10 +89,10 @@ namespace MonsterTrain2Poju.Model
             CombatUnit? spawnUnit, IReadOnlyList<string> externalInteractions, IReadOnlyList<CardActionEffect>? effects = null,
             IReadOnlyList<string>? upgradeInteractions = null, IReadOnlyList<string>? handDiscardInteractions = null,
             IReadOnlyList<string>? handConsumeInteractions = null, string costType = "Default", EquipmentDefinition? equipment = null,
-            CardAbilityRule? ability = null, UnitSummonRule? summon = null)
+            CardAbilityRule? ability = null, UnitSummonRule? summon = null, string? cardType = null, bool? isAnyAbility = null)
         {
             DataId = dataId; AssetKey = assetKey; Cost = cost; CostType = costType; Effect = effect; Destination = destination;
-            Equipment = equipment; Ability = ability;
+            Equipment = equipment; Ability = ability; CardType = cardType; IsAnyAbility = isAnyAbility;
             SpawnUnit = spawnUnit; ExternalInteractions = Array.AsReadOnly(externalInteractions.ToArray());
             Summon = summon;
             Effects = Array.AsReadOnly((effects ?? Array.Empty<CardActionEffect>()).ToArray());
@@ -99,7 +101,7 @@ namespace MonsterTrain2Poju.Model
             HandConsumeInteractions = handConsumeInteractions == null ? null : Array.AsReadOnly(handConsumeInteractions.ToArray());
         }
         internal CardPlayRule WithSpawn(CombatUnit unit) => new CardPlayRule(DataId, AssetKey, Cost, Effect, Destination,
-            unit, ExternalInteractions, Effects, UpgradeInteractions, HandDiscardInteractions, HandConsumeInteractions, CostType, Equipment, Ability, Summon);
+            unit, ExternalInteractions, Effects, UpgradeInteractions, HandDiscardInteractions, HandConsumeInteractions, CostType, Equipment, Ability, Summon, CardType, IsAnyAbility);
     }
 
     public sealed class BattlePlayRules
@@ -376,7 +378,25 @@ namespace MonsterTrain2Poju.Model
                 piles = context.OtherPiles?.ToArray() ?? piles;
                 terminal = outcome == RoomOutcome.BattleWon || outcome == RoomOutcome.PlayerDefeated;
             }
-            if (rule.Effect == "SpawnMonster" && rule.Summon?.TriggersPaidRally != false)
+            bool incantObserved = train.Rooms.SelectMany(room => room.Units).Any(unit => unit.Triggers.Any(trigger => trigger.Kind == "CardSpellPlayed"));
+            if (incantObserved && (rule.CardType == null || rule.CardType == "Spell" && !rule.IsAnyAbility.HasValue && rule.Ability == null))
+                return Unsupported("Card-play triggers require captured card type and spell ability metadata.");
+            if (rule.CardType == "Spell" && (rule.IsAnyAbility ?? rule.Ability != null) == false)
+            {
+                int[] initialCached = source.Spawn.Train.Rooms.Single(room => room.RoomIndex == action.RoomIndex).Units
+                    .Where(unit => unit.Health > 0 && unit.IsSpawning != true).Select(unit => unit.Id).ToArray();
+                foreach (CombatTeam team in new[] { CombatTeam.Player, CombatTeam.Enemy })
+                {
+                    IReadOnlyList<int> cached = context.FindCard(card.InstanceId)?.PlayedRoomUnitIds ?? initialCached;
+                    TrainCombatResult incanted = CardPlayedTriggerModel.Spell(train, team, cached);
+                    if (!incanted.Supported) return Unsupported(incanted.UnsupportedReason!);
+                    train = incanted.State!; context = train.Context!;
+                    if (incanted.Outcome != RoomOutcome.Exchanged) outcome = incanted.Outcome;
+                }
+                piles = context.OtherPiles?.ToArray() ?? piles;
+                terminal = outcome == RoomOutcome.BattleWon || outcome == RoomOutcome.PlayerDefeated;
+            }
+            if (rule.Effect == "SpawnMonster" && (rule.CardType == null || rule.CardType == "Monster") && rule.Summon?.TriggersPaidRally != false)
             {
                 int[] initialCached = source.Spawn.Train.Rooms.Single(room => room.RoomIndex == action.RoomIndex).Units
                     .Where(unit => unit.Health > 0 && unit.IsSpawning != true).Select(unit => unit.Id).ToArray();
@@ -533,6 +553,30 @@ namespace MonsterTrain2Poju.Model
             => ChoosePlay(source, false);
         public static PlayCardAction? ChooseUnitSpellAndJunkPlay(BattleTurnState source)
             => ChoosePlay(source, true);
+        public static PlayCardAction? ChooseEmptySpellThenCards(BattleTurnState source)
+        {
+            PlayCardAction? ordinary = ChooseUnitSpellAndJunkPlay(source);
+            if (ordinary != null)
+            {
+                CardToken card = source.Spawn.Train.Context!.Cards.Hand.Single(item => item.InstanceId == ordinary.CardInstanceId);
+                if (source.PlayRules!.Cards.Single(rule => rule.DataId == card.DataId).Effect is "SpawnMonster" or "Equipment")
+                    return ordinary;
+            }
+            // Verification policy: observe Incant before a later spell changes the cached actors' statuses.
+            if (source.PlayRules == null || source.Spawn.Train.Context == null) return ordinary;
+            foreach (CardToken card in source.Spawn.Train.Context.Cards.Hand)
+            {
+                CardPlayRule? rule = source.PlayRules.Cards.FirstOrDefault(item => item.DataId == card.DataId);
+                if (rule?.CardType != "Spell" || rule.IsAnyAbility != false || rule.Effect != "Null") continue;
+                foreach (RoomCombatState room in source.Spawn.Train.Rooms.Where(room => !source.PlayRules.Rooms.Single(rule => rule.RoomIndex == room.RoomIndex).IsPyre)
+                    .OrderByDescending(room => room.Units.Count(unit => unit.Health > 0 && unit.Triggers.Any(trigger => trigger.Kind == "CardSpellPlayed"))))
+                {
+                    var play = new PlayCardAction(card.InstanceId, room.RoomIndex);
+                    if (PlayCard(source, play).Supported) return play;
+                }
+            }
+            return ordinary;
+        }
         public static PlayCardAction? ChooseMultiSummonThenCards(BattleTurnState source)
         {
             foreach (CardToken card in source.Spawn.Train.Context!.Cards.Hand.Where(card =>
