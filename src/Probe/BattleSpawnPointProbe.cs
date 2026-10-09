@@ -51,6 +51,7 @@ namespace MonsterTrain2Poju.Probe
         private static readonly Dictionary<int, Copy> copies = new Dictionary<int, Copy>();
         internal static readonly List<DecisionRecord> Decisions = new List<DecisionRecord>();
         internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_PHYSICAL_SPAWNPOINTS") == "1";
+        internal static int NextPreviewCopyId => copies.Count + 1;
         private static int TrackCopy(SpawnPointGroup group)
         {
             var points = (List<SpawnPoint>)AccessTools.Field(typeof(SpawnPointGroup), "_temporarySpawnPoints").GetValue(group);

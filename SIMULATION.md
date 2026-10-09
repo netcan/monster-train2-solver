@@ -7112,3 +7112,32 @@ The original full-policy and physical-reference comparisons remain strict;
 no oracle state or recorded actions are injected into the model to hide this
 difference. Room-selection preview modeling, further relic effects, unmodeled
 card/trigger/effect combinations and the whole battle simulation remain work.
+
+### Ability Incant preview scheduling diagnosis
+
+Schema107 records the original preview requests, selected room, copied-list
+counter, preview/hand/card/control flags and explicit policy/selection boundaries
+for the ability-Incant scene. These probes observe scheduling without replacing
+native effects, callbacks, animations or previews.
+
+The muted Instant diagnostic takes 100.78 seconds, preserves original files,
+and records 266 scheduling events with zero capture failures/unsupported/pending
+records and one intermediate difference. It is not a curated regression input.
+At frame11170 PlayReady reports next copied-list id41 and no hand animation.
+At frame11171 the policy requests room1, then an original card-movement completion
+dispatches CardManager.TryAddCardStateImpl and HandUI.OnCardAddedAnimationFinished
+pile notifications. They request another battle preview, advancing41 to49 before
+RoomSelectionReady at frame11172. The extra preview is caused by the previous
+card's outstanding animation callback, rather than by room selection itself.
+Evidence is .probe-runs/ability-incant-preview-scheduling-native.log and
+.probe-runs/full-battle-units-spells-and-junk-20261009-173809-14189810/full-battle.mt2f.
+
+The existing explicit -SettleCardAnimations protocol is therefore used to test
+quiet decision boundaries. Its first schema107 recording has zero native
+failures/differences/unsupported/pending records, and independent complete-root,
+mid-battle and sixteen parallel policy chains match all17 plays/five EndTurns.
+The all-component checker still rejects a stale future-draw test context copy;
+this recording is not accepted yet. Schema validation now recognizes the exact
+ability-Incant schema107 when animation/death settlement is also requested,
+while preserving each protocol's original completion gates. Unmodified arbitrary
+frame scheduling remains unverified; the complete battle simulator is unfinished.

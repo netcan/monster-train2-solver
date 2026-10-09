@@ -465,7 +465,7 @@ namespace MonsterTrain2Poju.Probe
             string temporary = path + ".tmp";
             var snapshot = new
             {
-                Schema = AbilityIncantScenario.Prepared ? 106 : CardAnimationSettlement.Enabled ? 105 : DeathDissolveSettlement.Enabled ? 104 : EnchantmentBattleScenario.Prepared ? 103 : 102,
+                Schema = AbilityIncantScenario.Prepared ? 107 : CardAnimationSettlement.Enabled ? 105 : DeathDissolveSettlement.Enabled ? 104 : EnchantmentBattleScenario.Prepared ? 103 : 102,
                 DeathDissolveSettlementEnabled = DeathDissolveSettlement.Enabled,
                 DeathDissolveSettlements = DeathDissolveSettlement.Records,
                 DeathDissolveCallbacks = DeathDissolveSettlement.Callbacks,

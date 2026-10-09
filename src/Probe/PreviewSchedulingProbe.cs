@@ -18,17 +18,30 @@ namespace MonsterTrain2Poju.Probe
             public bool RunningQueue { get; set; }
             public int NextUnitId { get; set; }
             public int Room { get; set; }
+            public int NextPreviewCopyId { get; set; }
+            public bool PreviewRequested { get; set; }
+            public bool PreviewRngActive { get; set; }
+            public bool HandAnimating { get; set; }
+            public bool CardPlaying { get; set; }
+            public bool PlayerControl { get; set; }
             public string[] Callers { get; set; } = Array.Empty<string>();
         }
         internal static readonly List<Record> Records = new List<Record>();
-        private static void Observe(string operation, bool callers = false)
+        internal static void Observe(string operation, bool callers = false)
         {
-            if (!PreviewReferenceProbe.Enabled || FullBattleTrace.Active == null || !EnchantmentBattleScenario.Prepared) return;
+            if (FullBattleTrace.Active == null || !(AbilityIncantScenario.Prepared ||
+                PreviewReferenceProbe.Enabled && EnchantmentBattleScenario.Prepared)) return;
             AllGameManagers managers = AllGameManagers.Instance!;
+            CombatManager combat = managers.GetCombatManager()!;
             Records.Add(new Record { Operation = operation, Frame = UnityEngine.Time.frameCount,
                 Turn = managers.GetCombatManager()!.GetTurnCount(), SavePreview = managers.GetSaveManager().PreviewMode,
                 RunningQueue = managers.GetCombatManager()!.IsRunningTriggerQueue,
                 NextUnitId = FullBattleTrace.Active.NextUnitId, Room = managers.GetRoomManager()!.GetSelectedRoom(),
+                NextPreviewCopyId = BattleSpawnPointProbe.NextPreviewCopyId,
+                PreviewRequested = (bool)AccessTools.Field(typeof(CombatManager), "combatStateChanged").GetValue(combat),
+                PreviewRngActive = PreviewRngIsolation.Active,
+                HandAnimating = managers.GetHandUI()?.AreAnyCardsAnimating() ?? false,
+                CardPlaying = managers.GetReplayManager().IsCardPlaying(), PlayerControl = combat.ShouldShowEndTurnButton(),
                 Callers = callers ? new StackTrace().GetFrames().Skip(2).Take(7).Select(frame =>
                     frame.GetMethod()!.DeclaringType?.FullName + "." + frame.GetMethod()!.Name).ToArray() : Array.Empty<string>() });
         }

@@ -380,6 +380,7 @@ namespace MonsterTrain2Poju.Probe
             {
                 if (Ready(managers, save, combat, cards) && managers.GetRoomManager()?.GetSelectedRoom() == (pendingPlay?.RoomIndex ?? 0))
                 {
+                    PreviewSchedulingProbe.Observe("RoomSelectionReady");
                     if (pendingPlay != null) PlayPendingPolicyCard(managers, cards!);
                     else PlayConfiguredCard(cards!);
                 }
@@ -389,6 +390,7 @@ namespace MonsterTrain2Poju.Probe
             {
                 if (Ready(managers, save, combat, cards))
                 {
+                    PreviewSchedulingProbe.Observe("PlayReady");
                     if (fullBattle) FullBattleTrace.Active?.CompleteCardPlay();
                     log.LogInfo("DEPTH-PLAYED pass=" + pass + " turn=" + (combat!.GetTurnCount() - initialTurn));
                     if (IsUnitAndJunkPolicy()) Enter(Stage.Battle, 60f);
@@ -766,6 +768,7 @@ namespace MonsterTrain2Poju.Probe
                     RoomManager rooms = managers.GetRoomManager()!;
                     if (rooms.GetSelectedRoom() != pendingPlay.RoomIndex)
                     {
+                        PreviewSchedulingProbe.Observe("RoomSelectionRequest:" + pendingPlay.RoomIndex);
                         save.StartCoroutine(rooms.GetRoomUI().SetSelectedRoom(pendingPlay.RoomIndex));
                         Enter(Stage.SelectingRoom, 20f);
                     }
@@ -869,6 +872,7 @@ namespace MonsterTrain2Poju.Probe
         private void PlayPendingPolicyCard(AllGameManagers managers, CardManager cards)
         {
             PlayCardAction action = pendingPlay ?? throw new InvalidOperationException("Missing policy card action.");
+            PreviewSchedulingProbe.Observe("Play:" + action.CardInstanceId);
             if (action.ActivatorUnitId > 0)
             {
                 CharacterState actor = FullBattleTrace.Active!.KnownUnits.Single(unit => FullBattleTrace.Active.UnitId(unit) == action.ActivatorUnitId);
