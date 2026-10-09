@@ -7189,3 +7189,29 @@ proves the authored relic marker and original callback paths under explicit
 animation settlement. It does not verify other relics or arbitrary native frame
 scheduling. A complete182-input run of the corrected checker is still required;
 the prior181 baseline and this targeted acceptance are separate evidence.
+
+### Complete relic-model historical regression baseline
+
+The original relic/combined-prefix model's complete181 run has now finished with
+terminal exit zero:157 accepted complete battles,153 paid policy chains,four
+no-more-card chains and all24 strict component calibrations. Every required
+archive identity,length and SHA256 matches its retained input list and unchanged
+manifest row. No recorded room/card-cycle/train/spawn/turn/action is unsupported
+or skipped, and no check reports a failure.
+
+This evidence belongs to Model.dll
+F418B74A91DF12254ECBA6A1EF2A9AC3EA88FAA11D84DD5ED687590CB984B7FF and original
+ModelChecks.dllF7C9FD5A9FAA0C5C07302010A15387CDD1B727BD42E53F7F7013C9B4F6FBCB16
+retained in .probe-runs/ability-incant-final-checks. The completed log is
+.probe-runs/ability-incant-complete-regression.log; its explicit181-input list is
+.probe-runs/ability-incant-complete-inputs.txt. The new accepted ability-Incant
+battle is covered by the separate corrected-checker/native evidence above.
+
+The corrected checker460aac21 and the same frozen model are now running the
+complete182 inventory, including the accepted schema107 battle. All182 unique
+inputs and manifest lengths/hashes are verified before launch. Evidence is
+.probe-runs/ability-incant-settled-complete-regression.log and
+.probe-runs/ability-incant-settled-complete-inputs.txt. That run remains pending;
+the complete181 baseline does not establish its result. Whole-battle coverage
+of further relics, original arbitrary frame scheduling and unmodeled card/Boss
+mechanics remains unfinished.

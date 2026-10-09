@@ -7,8 +7,8 @@ root. The script reads the curated fixture list in this directory.
 Current inventory is 182 archives: 158 accepted battles and 24 component
 calibrations. The initial Incant model's complete 180-archive regression passes.
 The threshold model's combined181 regression has also completed successfully.
-The relic model's combined181 run and the corrected checker's combined182 run
-require separate final-binary evidence.
+The relic model's combined181 regression has also completed successfully.
+The corrected checker's combined182 run remains separate and in progress.
 
 `full-battle-ability-incant.mt2f` retains schema107 with an isolated authored
 relic using the original native ability-Incant effect. It is not an obtainable
