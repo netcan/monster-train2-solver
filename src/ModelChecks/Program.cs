@@ -112,10 +112,11 @@ if (args.Length == 2 && args[0] == "--incant-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
     var observed = fixture.RootElement;
-    if (observed.GetProperty("ModifierScenario").GetString() is not ("incant" or "incant-thresholds") ||
+    if (observed.GetProperty("ModifierScenario").GetString() is not ("incant" or "incant-thresholds" or "incant-relic") ||
         observed.GetProperty("CaptureFailures").GetInt32() != 0 || observed.GetProperty("Pending").GetInt32() != 0)
         throw new InvalidDataException("The requested fixture has no complete native Incant observations.");
     IncantChecks.Native(observed);
+    TriggerCountChecks.Native(observed);
     return;
 }
 
@@ -223,6 +224,7 @@ HordeDeathChecks.Run();
 AbilityCardChecks.Run();
 UnitAbilityChecks.Run();
 RelicChecks.Run();
+TriggerCountChecks.Run();
 BattleStatisticsChecks.Run();
 StatisticOverflowChecks.Run();
 StatisticZeroIncrementChecks.Run();

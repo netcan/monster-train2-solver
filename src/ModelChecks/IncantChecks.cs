@@ -134,7 +134,7 @@ internal static class IncantChecks
     }
     internal static void Native(FixtureValue fixture)
     {
-        if (!fixture.TryGetProperty("ModifierScenario", out var scenario) || scenario.GetString() is not ("incant" or "incant-thresholds")) return;
+        if (!fixture.TryGetProperty("ModifierScenario", out var scenario) || scenario.GetString() is not ("incant" or "incant-thresholds" or "incant-relic")) return;
         var phases = fixture.GetProperty("IncantPhases").EnumerateArray().ToArray();
         var triggers = fixture.GetProperty("IncantTriggers").EnumerateArray().ToArray();
         var admissions = fixture.GetProperty("PurifyQueueAdmissions").EnumerateArray()

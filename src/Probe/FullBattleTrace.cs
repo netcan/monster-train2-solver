@@ -298,7 +298,7 @@ namespace MonsterTrain2Poju.Probe
                 lastSpawnedId, NextUnitId, spawnPoints,
                 TriggeredSummonProbe.Catalog(), enchantments,
                 managers.GetSaveManager().GetBalanceData().GetDisallowedPurifyCharacterTriggers().Select(kind => kind.ToString()).ToArray(),
-                RelicProbe.Capture(managers));
+                RelicProbe.Capture(managers), RelicProbe.TriggerCounts(managers));
         }
 
         private static StatisticQueryFrame CaptureQueryFrame(AllGameManagers managers)
@@ -328,6 +328,13 @@ namespace MonsterTrain2Poju.Probe
         {
             return unit.GetTriggers().Select(trigger =>
             {
+                if (RelicProbe.HasTriggerCounts(AllGameManagers.Instance!))
+                {
+                    object primary = AccessTools.Property(typeof(CharacterState), "PrimaryStateInformation").GetValue(unit);
+                    var point = (SpawnPoint?)AccessTools.Field(primary.GetType(), "spawnPoint").GetValue(primary);
+                    if (point?.GetRoomOwner()?.GetRoomStateTriggerCountModification(trigger.GetTrigger(), unit) != 0 && point?.GetRoomOwner() != null)
+                        interactions.Add("Unmodeled room trigger count modification");
+                }
                 CharacterTriggerData data = trigger.GetTriggerData();
                 if (unit.IsSacrifice && unit.SacrificeCard != null && unit.SacrificeCard.GetTraitStates().Count > 0 &&
                     trigger.GetEffectStates().Any(effect => effect.GetCardEffect() is CardEffectHeal))
@@ -366,7 +373,8 @@ namespace MonsterTrain2Poju.Probe
                     unit.GetTriggerFireCount(trigger.GetTrigger(), trigger), effects,
                     AllGameManagers.Instance!.GetSaveManager().GetBalanceData().GetDisallowedDeploymentPhaseCharacterTriggers().Contains(trigger.GetTrigger()),
                     data.GetTriggerAtThreshold(), new CombatTriggerOrigin(Active!.UpgradeKey(trigger.triggerId), equipmentId,
-                        trigger.IsFromEquipment, data.GetOnlyTriggerIfEquipped()), Active!.TriggerStateId(unit, trigger), EnemySpawningProbe.TriggerConditions(data), data.GetRemoveOnRelentlessChange());
+                        trigger.IsFromEquipment, data.GetOnlyTriggerIfEquipped()), Active!.TriggerStateId(unit, trigger), EnemySpawningProbe.TriggerConditions(data), data.GetRemoveOnRelentlessChange(),
+                    RelicProbe.HasTriggerCounts(AllGameManagers.Instance!) ? trigger.isNoCountModifiersAllowed : (bool?)null);
             }).ToArray();
         }
 
@@ -466,7 +474,7 @@ namespace MonsterTrain2Poju.Probe
             string temporary = path + ".tmp";
             var snapshot = new
             {
-                Schema = AbilityIncantScenario.Prepared ? 107 : CardAnimationSettlement.Enabled ? 105 : DeathDissolveSettlement.Enabled ? 104 : EnchantmentBattleScenario.Prepared ? 103 : 102,
+                Schema = TriggerCountScenario.Prepared ? 108 : AbilityIncantScenario.Prepared ? 107 : CardAnimationSettlement.Enabled ? 105 : DeathDissolveSettlement.Enabled ? 104 : EnchantmentBattleScenario.Prepared ? 103 : 102,
                 DeathDissolveSettlementEnabled = DeathDissolveSettlement.Enabled,
                 DeathDissolveSettlements = DeathDissolveSettlement.Records,
                 DeathDissolveCallbacks = DeathDissolveSettlement.Callbacks,

@@ -110,6 +110,7 @@ param(
     [switch] $CharacterRemoval,
     [switch] $PreviewReferences,
     [switch] $RelicCatalog,
+    [switch] $IncantRelic,
     [switch] $SettleDeathDissolves,
     [switch] $SettleCardAnimations,
     [switch] $HarvestTriggers,
@@ -265,8 +266,9 @@ if ($Purify) {
     $environment['MT2_PROBE_MODIFIERS'] = $(if ($PurifyQueues) { 'purify-queues' } else { 'purify' })
     $environment['MT2_PROBE_STATUS_CALLBACKS'] = '1'
 }
+if ($IncantRelic) { $Incant = $true }
 if ($Incant) {
-    $environment['MT2_PROBE_MODIFIERS'] = $(if ($IncantThresholds) { 'incant-thresholds' } else { 'incant' })
+    $environment['MT2_PROBE_MODIFIERS'] = $(if ($IncantRelic) { 'incant-relic' } elseif ($IncantThresholds) { 'incant-thresholds' } else { 'incant' })
     $environment['MT2_PROBE_STATUS_CALLBACKS'] = '1'
 }
 if ($AbilityIncant) {
@@ -1364,12 +1366,24 @@ if ($Incant) {
         if (@($fire.Actor.Statuses | Where-Object { $_.Id -eq 'silenced' -and $_.Stacks -gt 0 }).Count -gt 0) { $silencedFires++ }
         elseif (@($fire.AfterActor.Triggers | Where-Object { $_.Kind -eq 'CardSpellPlayed' -and -not $_.IgnoreSilence -and $_.HasTriggered }).Count -gt 0) { $visibleFires++ }
     }
-    $incantCoverage = $trace.ModifierScenario -eq $(if ($IncantThresholds) { 'incant-thresholds' } else { 'incant' }) -and $incantPhases.Count -ge 10 -and $incantFires.Count -gt 5 -and
+    $incantCoverage = $trace.ModifierScenario -eq $(if ($IncantRelic) { 'incant-relic' } elseif ($IncantThresholds) { 'incant-thresholds' } else { 'incant' }) -and $incantPhases.Count -ge 10 -and $incantFires.Count -gt 5 -and
         @($incantPhases | Where-Object { -not $_.Completed -or $null -eq $_.After -or $null -ne $_.Difference }).Count -eq 0 -and
         @($incantFires | Where-Object { -not $_.Completed -or $null -eq $_.After -or $null -eq $_.AfterActor -or $null -ne $_.Difference }).Count -eq 0 -and
         @($incantFires | Where-Object { $_.Actor.Team -eq 1 }).Count -gt 0 -and @($incantFires | Where-Object { $_.Actor.Team -eq 0 }).Count -gt 0 -and
         $incantRejected.Count -gt 0 -and $emptySpellPlays -gt 0 -and $silencedFires -gt 0 -and $visibleFires -gt 0
     if (-not $incantCoverage) { throw "Incant coverage incomplete: phases=$($incantPhases.Count) fires=$($incantFires.Count) rejected=$($incantRejected.Count) empty=$emptySpellPlays silenced=$silencedFires visible=$visibleFires" }
+}
+if ($IncantRelic) {
+    $players = @($incantFires | Where-Object { $_.Actor.Team -eq 1 })
+    $enemies = @($incantFires | Where-Object { $_.Actor.Team -eq 0 })
+    $context = $trace.Actions[0].Before.Spawn.Train.Context
+    if ($trace.Schema -ne 108 -or $players.Count -eq 0 -or $enemies.Count -eq 0 -or
+        @($players.Actor.Triggers | Where-Object { $_.Kind -eq 'CardSpellPlayed' -and $_.FireCount -ne 2 }).Count -ne 0 -or
+        @($enemies.Actor.Triggers | Where-Object { $_.Kind -eq 'CardSpellPlayed' -and $_.FireCount -ne 1 }).Count -ne 0 -or
+        @($context.Relics | Where-Object { $_.DataId -eq '410ba540-7c4f-4dc5-a84f-b1d8af508891' -and $_.AssetKey -eq 'ExtraSpellCastTrigger' }).Count -ne 1 -or
+        @($context.TriggerCounts.Modifiers | Where-Object { $_.Kind -eq 'CardSpellPlayed' -and $_.Value -eq 1 }).Count -ne 1 -or
+        @($context.TriggerCounts.EnemyAllowedKinds).Count -ne 0) { throw 'Original relic trigger-count coverage incomplete.' }
+    Write-Output "NATIVE-RELIC-TRIGGER-COUNT PASS: $($players.Count) player dispatches with count2 and $($enemies.Count) enemy dispatches with count1; original acquired relic and compiled cache."
 }
 $abilityIncantCoverage = -not $AbilityIncant
 if ($AbilityIncant) {
@@ -1552,7 +1566,7 @@ $result = [pscustomobject]@{
 }
 $result | ConvertTo-Json
 if ($SettleDeathDissolves) {
-    if (-not $trace.DeathDissolveSettlementEnabled -or $trace.Schema -ne $(if ($AbilityIncant) { 107 } elseif ($SettleCardAnimations) { 105 } else { 104 }) -or
+    if (-not $trace.DeathDissolveSettlementEnabled -or $trace.Schema -ne $(if ($IncantRelic) { 108 } elseif ($AbilityIncant) { 107 } elseif ($SettleCardAnimations) { 105 } else { 104 }) -or
         @($trace.DeathDissolveSettlements).Count -eq 0 -or
         @($trace.DeathDissolveSettlements | Where-Object { -not $_.Completed -or $_.PendingAfter -ne 0 -or $_.Error }).Count -ne 0 -or
         @($trace.DeathDissolveCallbacks | Where-Object { $_.Error }).Count -ne 0) {
@@ -1560,7 +1574,7 @@ if ($SettleDeathDissolves) {
     }
 }
 if ($SettleCardAnimations) {
-    if ($trace.Schema -ne $(if ($AbilityIncant) { 107 } else { 105 }) -or -not $trace.CardAnimationSettlement.Enabled -or
+    if ($trace.Schema -ne $(if ($IncantRelic) { 108 } elseif ($AbilityIncant) { 107 } else { 105 }) -or -not $trace.CardAnimationSettlement.Enabled -or
         $trace.CardAnimationSettlement.PreviewWaits -lt 0 -or $trace.CardAnimationSettlement.DecisionWaits -lt 0 -or
         $trace.CardAnimationSettlement.ScheduledMovements -le 0 -or $trace.CardAnimationSettlement.PendingMovements -ne 0) {
         throw 'Native card-animation settlement protocol is missing or invalid.'

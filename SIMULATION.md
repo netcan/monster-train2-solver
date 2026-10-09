@@ -7255,3 +7255,52 @@ Evidence remains .probe-runs/ability-incant-settled-complete-regression.log and
 in .probe-runs/ability-incant-settlement-checks. This completes that inventory's
 regression, including schema107 ability Incant. It does not establish support
 for further relics, arbitrary original-frame scheduling or every game battle.
+
+### Original relic trigger count model
+
+TriggerCountState retains the native manager's registration-time count dictionary,
+compiled card-trigger exclusions and enemy-team eligibility. Registration conditions
+are not reevaluated against later statistics. The initial equipment definition table
+records the original AttachEquipment parameter's character trigger kinds, because
+native enemy eligibility ignores additional permanent/temporary card upgrades.
+Every production context copy carries this immutable cache. CombatTrigger retains
+the native per-trigger no-count-modifiers flag, including copied and upgraded states.
+
+The room engine computes counts from these inputs when dispatching and freezing
+states. Raw newborn templates still start at count1; the model derives count2 for
+player Incant after acquiring the relic. Existing count2 snapshots are recomputed
+without double addition. Enemy permission/equipment gates and per-trigger exclusion
+return1. Signed/wrapped non-positive counts execute no effects but still retain
+native once marking. Unknown cache/trigger/equipment inputs remain unsupported;
+room count modifiers and in-battle relic registration remain outside this change.
+
+The schema108 scenario acquires the unmodified original ExtraSpellCastTrigger via
+SaveManager.AddRelic, preserving original Boss and waves. Its muted Instant recording
+completes in75.11 seconds with terminal exit zero, unchanged original files and zero
+capture failures/differences/unsupported/pending records. The independent all-component
+checker exits zero:21 paid plays, seven EndTurns, final Pyre61,32 complete Incant team
+phases,18 actor dispatches,51 admissions/12 Purify rejections,204 FIFO status callbacks
+and98 independently computed native fire-count queries. Thirteen player dispatches
+use count2; five enemy dispatches use count1. Initial/mid-battle policies repeat in16
+branches; Incant/status callback comparisons repeat in32 independent branches.
+
+Pure checks also pass immutable cache/parent isolation, newly computed whole batches,
+spent once flags, excluded triggers, original enemy gear eligibility, missing metadata,
+negative/zero/overflow counts and32 branches. This proves the observed original relic
+paths; it does not establish every relic or room modifier combination.
+
+Evidence is .probe-runs/incant-relic-native.log, .probe-runs/incant-relic-independent.log,
+.probe-runs/incant-relic-pure.log and
+.probe-runs/full-battle-units-spells-and-junk-20261009-183403-86a7bce8/full-battle.mt2f.
+The retained checker snapshot .probe-runs/incant-relic-checks uses Model.dll
+1F7CBD55F96F8D34BF531BAED707CB43C2A67D48A555C93F034921F3CF2A2BE8 and ModelChecks.dll
+1A51C8C0C76B6EC23E357D0FEDDF93955C925F6ABD3A5CAD4E1CAD1745ACAD77. The new recording
+has not yet been curated; the completed182 baseline belongs to its earlier model.
+
+Eight historical Incant/threshold/ability-Incant, unit clone/trigger upgrade,
+equipment-trigger, equipment-owned revival summon and spawn-enchant battles also
+pass with terminal exit zero using the same retained model/checker. All eight
+complete paid policies and native room/effect checks pass; their names, lengths
+and hashes still match the manifest. Evidence is .probe-runs/incant-relic-targeted.log
+and .probe-runs/incant-relic-targeted-inputs.txt. These targeted results do not replace
+a complete regression of the extended model against the full required inventory.

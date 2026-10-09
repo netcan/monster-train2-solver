@@ -145,7 +145,8 @@ namespace MonsterTrain2Poju.Probe
                 trigger.GetHideVisualAndIgnoreSilence(), 1, effects,
                 AllGameManagers.Instance!.GetSaveManager().GetBalanceData().GetDisallowedDeploymentPhaseCharacterTriggers().Contains(trigger.GetTrigger()),
                 trigger.GetTriggerAtThreshold(), new CombatTriggerOrigin("", 0, false, trigger.GetOnlyTriggerIfEquipped()),
-                conditions: TriggerConditions(trigger), removeOnRelentlessChange: trigger.GetRemoveOnRelentlessChange());
+                conditions: TriggerConditions(trigger), removeOnRelentlessChange: trigger.GetRemoveOnRelentlessChange(),
+                noCountModifiersAllowed: RelicProbe.HasTriggerCounts(AllGameManagers.Instance!) ? false : (bool?)null);
         }
 
         internal static CombatTriggerConditions? TriggerConditions(CharacterTriggerData data)

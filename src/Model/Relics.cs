@@ -18,9 +18,12 @@ namespace MonsterTrain2Poju.Model
     internal static class RelicModel
     {
         internal const string AbilityIncant = "RelicEffectIncantTriggeredByUnitAbilities";
+        internal const string ModifyTriggerCount = "RelicEffectModifyTriggerCount";
         internal static bool AbilitiesTriggerIncant(CombatContext? context) =>
             context?.Relics?.Any(relic => relic.EffectTypes.Contains(AbilityIncant)) == true;
-        internal static string? Validate(CombatContext? context) => Validate(context?.Relics);
+        internal static string? Validate(CombatContext? context) => Validate(context?.Relics) ??
+            (context?.Relics?.Any(relic => relic.EffectTypes.Contains(ModifyTriggerCount)) == true && context.TriggerCounts == null
+                ? "Missing native relic trigger count cache." : TriggerCountModel.Validate(context?.TriggerCounts));
         internal static string? Validate(IReadOnlyList<CombatRelicState>? relics)
         {
             if (relics == null) return null; // Legacy captures retained their external-effect guard.
@@ -29,7 +32,7 @@ namespace MonsterTrain2Poju.Model
                 if (string.IsNullOrEmpty(relic.DataId) || string.IsNullOrEmpty(relic.AssetKey))
                     return "Missing captured relic identity.";
                 foreach (string effect in relic.EffectTypes)
-                    if (effect != AbilityIncant) return "Unmodeled relic effect " + effect + " on " + relic.AssetKey + ".";
+                    if (effect != AbilityIncant && effect != ModifyTriggerCount) return "Unmodeled relic effect " + effect + " on " + relic.AssetKey + ".";
             }
             return null;
         }

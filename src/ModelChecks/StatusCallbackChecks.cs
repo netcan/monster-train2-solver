@@ -197,7 +197,7 @@ internal static class StatusCallbackChecks
         else if (fixture.TryGetProperty("ModifierScenario", out var abilityIncantScenario) && abilityIncantScenario.GetString() == "ability-incant")
             Require(kinds.IsSupersetOf(["OnStatusEffectChanged", "OnNewStatusEffectAdded"]) && reward > 0 && zero > 0 && negative > 0,
                 "Native ability Incant cooldown/status-child coverage incomplete.");
-        else if (fixture.TryGetProperty("ModifierScenario", out var incantScenario) && incantScenario.GetString() is "incant" or "incant-thresholds")
+        else if (fixture.TryGetProperty("ModifierScenario", out var incantScenario) && incantScenario.GetString() is "incant" or "incant-thresholds" or "incant-relic")
             Require(kinds.IsSupersetOf(["OnStatusEffectChanged", "OnArmorAdded", "OnSilence", "OnSilenceLost", "OnNewStatusEffectAdded"]) &&
                 reward > 0 && zero > 0 && negative > 0,
                 "Native Incant status-child coverage incomplete.");
