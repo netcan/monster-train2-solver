@@ -4,11 +4,11 @@ These fixed inputs reproduce the independently modeled battle and calibration
 checks. Run `pwsh -NoProfile -File scripts/Check-Models.ps1` from the repository
 root. The script reads the curated fixture list in this directory.
 
-Current inventory is 176 archives: 152 accepted battles and 24 component
+Current inventory is 177 archives: 153 accepted battles and 24 component
 calibrations. The baseline model's complete 173-archive historical regression
-passes. The current retained-preview model passes 58 affected archives and the
-new random aura-summon battle in separate complete checks. A combined176 run of
-the current model has not been performed.
+passes. The current room-membership model passes 59 affected archives and the
+new fresh-source random aura-summon battle in separate complete checks. A
+combined177 run of the current model has not been performed.
 
 The retained inputs are `.mt2f` binary archives. They store typed, deduplicated
 value graphs, not JSON documents. Regression reads those graphs and constructs
@@ -1325,3 +1325,21 @@ nodes. The final model also passes all 58 affected historical archives:
 This is an explicitly settled recording; broader native timing and combat
 coverage remain work. The three previously rejected random diagnostics are
 outside the curated inventory.
+
+`full-battle-persistent-enchantment-random-summons-fresh.mt2f` independently covers
+random aura statuses with four fresh child source cards and no source copies.
+The current model preserves explicit retained callbacks while restricting
+ordinary attacks, team/unit/post-combat callbacks, status decay and relentless
+continuation to actual room members. All 154 closed contexts, fifteen paid
+actions, five EndTurns and complete intermediate/terminal states match, including
+the initial/mid-battle policies and sixteen immutable parallel branches ending
+with Pyre80. All 370 raw/canonical decisions and 14,385 position-plane mappings
+also pass.
+
+The muted Instant native run takes 218.97 seconds, has zero capture failures,
+differences, unsupported operations or pending records, completes all 23 original
+card-movement callbacks and preserves original profile/log signatures. Its
+byte-identical source-free binary is 47,591 bytes with 8,608 unique nodes. The
+current model separately passes 59 affected archives: 35 complete battles,
+33 paid policies, two no-more-card chains and all 24 calibrations. The complete
+battle simulator and optimal solver remain in progress.

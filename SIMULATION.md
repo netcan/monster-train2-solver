@@ -6743,3 +6743,11 @@ calibrations. No recorded room/card-cycle/train/spawn/EndTurn/action operation i
 unsupported or skipped. Inventory remains 176; a combined176 run of this model
 has not yet been completed. Complete combat coverage and optimal search remain
 unfinished.
+
+The accepted fresh-source random native battle is byte-identically curated as
+full-battle-persistent-enchantment-random-summons-fresh.mt2f: 47,591 bytes,
+8,608 nodes, no text source and SHA-256
+fc09a429aa4e2e0c6361b7e0ac0877ad99be2813b5fa2fcc62a69e6183455102.
+The required regression list and manifest include it. Inventory is 177 archives:
+153 accepted battles and 24 component calibrations. A combined177 regression of
+the current room-membership model has not yet completed.
