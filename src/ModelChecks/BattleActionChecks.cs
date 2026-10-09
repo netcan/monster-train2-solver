@@ -64,6 +64,16 @@ internal static class BattleActionChecks
             Require(BattleTurnChecks.Comparable(child) == expected, "Parallel action branches diverged.");
         });
         Require(JsonSerializer.Serialize(root) == parent, "Card plays mutated their parent.");
+        using var unsupportedFixture = MonsterTrain2Poju.Capture.NativeFixtureCapture.Capture(new
+        {
+            Policy = "units-and-junk",
+            Actions = new[] { new { Index = 0, Before = root, Actual = root, Action = new PlayCardAction(5, 0) } }
+        });
+        bool skippedActionRejected = false;
+        try { Native(unsupportedFixture.RootElement); }
+        catch (InvalidOperationException error) when (error.Message == "Native action verification skipped unsupported actions.")
+        { skippedActionRejected = true; }
+        Require(skippedActionRejected, "An unsupported native action silently skipped its continuous policy verification.");
         Console.WriteLine("ACTION-CHECKS PASS: capacity, position, card identity, cost, purge, explicit rejection and parallel isolation.");
     }
 
@@ -119,6 +129,7 @@ internal static class BattleActionChecks
             Require(difference == null, "Native card action differs at index " + entry.GetProperty("Index").GetInt32() + ": " + difference);
             supported++;
         }
+        Require(unsupported == 0, "Native action verification skipped unsupported actions.");
         Console.WriteLine($"NATIVE-ACTION-CHECKS PASS: {supported} matched, {unsupported} unsupported.");
         if (fixture.TryGetProperty("ModifierScenario", out FixtureValue roomScenario) && roomScenario.GetString() == "room-spells")
             RoomSpellChecks.Native(actions);
@@ -211,7 +222,7 @@ internal static class BattleActionChecks
             Require(observed, "The dynamic upgrade fixture never changed the native unit or killed its target.");
             Console.WriteLine($"NATIVE-UPGRADE-COVERAGE PASS: {modifiedActions.Length} modified spell plays, observed native {scenario.GetString()} effects.");
         }
-        if (unsupported > 0 || !fixture.TryGetProperty("Policy", out FixtureValue policy) ||
+        if (!fixture.TryGetProperty("Policy", out FixtureValue policy) ||
             policy.GetString() is not ("units-and-junk" or "units-spells-and-junk")) return;
         Func<BattleTurnState, PlayCardAction?> chooser = policy.GetString() == "units-spells-and-junk"
             ? BattleActionModel.ChooseUnitSpellAndJunkPlay : BattleActionModel.ChooseUnitAndJunkPlay;

@@ -148,6 +148,7 @@ internal static class RoomCombatChecks
             matched++;
         }
         Require(matched > 0, "No native stages were verified.");
+        Require(unsupported == 0, "Native room verification skipped unsupported stages in " + path);
         Console.WriteLine($"NATIVE-ROOM-CHECKS PASS: {matched} matched, {unsupported} unsupported; {path}");
         CardCycleChecks.Native(fixture);
         TrainCombatChecks.Native(fixture);

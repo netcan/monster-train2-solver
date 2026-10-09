@@ -79,6 +79,7 @@ internal static class TrainCombatChecks
             matched++;
         }
         Require(matched > 0, "No native train phases were verified.");
+        Require(unsupported == 0, "Native train verification skipped unsupported phases.");
         Console.WriteLine($"NATIVE-TRAIN-CHECKS PASS: {matched} matched, {unsupported} unsupported.");
     }
 

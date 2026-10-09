@@ -98,6 +98,7 @@ internal static class EnemySpawningChecks
             matched++;
         }
         Require(matched > 0, "No native spawning phases verified.");
+        Require(unsupported == 0, "Native spawning verification skipped unsupported phases.");
         Console.WriteLine($"NATIVE-SPAWN-CHECKS PASS: {matched} matched, {unsupported} unsupported.");
     }
     private static string Comparable(EnemySpawnState state) => JsonSerializer.Serialize(new

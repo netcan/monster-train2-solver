@@ -20,8 +20,8 @@ internal static class BattleTurnChecks
                 (predictedState == actualState ? "terminal outcome" : ModelJson.Difference(predictedState, actualState)));
             matched++;
         }
+        Require(unsupported == 0, "Native EndTurn verification skipped unsupported turns.");
         Console.WriteLine($"NATIVE-TURN-CHECKS PASS: {matched} matched, {unsupported} unsupported.");
-        if (unsupported > 0) return;
         if (fixture.TryGetProperty("Policy", out FixtureValue policy) &&
             policy.GetString() is "units-and-junk" or "units-spells-and-junk") return;
         BattleTurnState root = turns[0].GetProperty("Before").Deserialize<BattleTurnState>()!;

@@ -6602,3 +6602,18 @@ Inventory is 174: 150 accepted battles and 24 component calibrations. A complete
 fixture check; it has not yet completed. The previous complete163 run remains
 the completed combined regression baseline. The full battle simulator and
 optimal solver remain in progress.
+
+### Complete native regression coverage gates
+
+Native room, card-cycle, train, spawn, EndTurn and action checks now fail whenever
+any recorded operation is unsupported. A partial matched count can no longer
+print PASS or silently bypass a continuous policy. The previous legacy preview
+regression exposed this gap by skipping two owned-equipment revival policies.
+
+An in-memory binary fixture deliberately records an unsupported card action;
+the action verifier must reject it before reporting PASS or returning without a
+policy check. All pure checks pass, and the two historical revival fixtures still
+verify all 32/31 paid actions, seven EndTurns, mid-battle roots and sixteen branches.
+ModelChecks builds with fourteen existing nullable warnings and no errors. The
+ongoing full historical run uses the same Model.dll; its coverage counts are
+checked for skipped operations separately before claiming a complete result.

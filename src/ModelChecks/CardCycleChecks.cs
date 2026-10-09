@@ -54,6 +54,7 @@ internal static class CardCycleChecks
             matched++;
         }
         Require(matched > 0, "No native card cycling stages were verified.");
+        Require(unsupported == 0, "Native card cycling verification skipped unsupported stages.");
         Console.WriteLine($"NATIVE-CARD-CYCLE-CHECKS PASS: {matched} matched, {unsupported} unsupported.");
     }
 
