@@ -41,10 +41,12 @@ namespace MonsterTrain2Poju.Probe
         internal static readonly List<Record> Records = new List<Record>();
         internal static bool Started, Completed;
         internal static string? Error;
-        internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == "unit-clone";
+        internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == "unit-clone" || SpawnStatusRelicScenario.Clones;
         private static Record? current;
         private static Record? draining;
         private static bool intrinsicQueue;
+        internal static bool StandaloneBirth => Started && !Completed &&
+            !AllGameManagers.Instance!.GetReplayManager()!.IsCardPlaying();
         private static int sourceCopies;
         private static CardData steward = null!, originalAbility = null!, changedAbility = null!, gear = null!;
         private static CharacterData unitData = null!;

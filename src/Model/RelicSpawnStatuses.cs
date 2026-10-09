@@ -84,17 +84,25 @@ namespace MonsterTrain2Poju.Model
                 relic.WithSpawnStatuses(relic.SpawnStatuses.Select(rule => rule.WithConditions(rule.Conditions.Select(condition =>
                     condition.Reset(duration)).ToArray())).ToArray())).ToArray());
 
-        // Native CharacterAdded leaves status callbacks on the shared queue for its caller.
+        // A running character queue defers these children. A standalone birth can
+        // settle the shared queue during each non-covenant pre/post-fire yield.
         public static RoomCombatResult CharacterAdded(RoomCombatState source, int unitId, int fromCardId, bool onlyCovenants)
+            => CharacterAddedWithPending(source, unitId, fromCardId, onlyCovenants, null, null);
+        internal static RoomCombatResult CharacterAddedWithPending(RoomCombatState source, int unitId, int fromCardId, bool onlyCovenants,
+            Func<RoomCombatState, IReadOnlyList<RoomCombatModel.QueuedCharacterTrigger>, RoomCombatResult>? drainCallbacks,
+            IReadOnlyList<RoomCombatModel.QueuedCharacterTrigger>? prior)
         {
             string? error = RelicModel.Validate(source.Context);
             if (error != null) return Fail(error);
-            if (source.Context?.Relics == null || !source.Context.Relics.Any(relic => relic.SpawnStatuses?.Count > 0)) return Match(source);
+            if (source.Context?.Relics == null || !source.Context.Relics.Any(relic => relic.SpawnStatuses?.Count > 0))
+                return new RoomCombatResult(source, RoomOutcome.Exchanged, 0, new List<CombatEvent>(), pendingCallbacks: prior);
             if (!source.Units.Any(unit => unit.Id == unitId) || fromCardId < 0 ||
                 fromCardId > 0 && source.Context.FindCard(fromCardId) == null) return Fail("Missing native relic birth references.");
             RoomCombatState state = source;
-            var callbacks = new List<RoomCombatModel.QueuedCharacterTrigger>();
+            var callbacks = (prior ?? Array.Empty<RoomCombatModel.QueuedCharacterTrigger>()).ToList();
             var events = new List<CombatEvent>();
+            RoomOutcome outcome = RoomOutcome.Exchanged;
+            RoomCombatResult? failed = null;
             for (int relicIndex = 0; relicIndex < state.Context!.Relics!.Count; relicIndex++)
             {
                 CombatRelicState relic = state.Context!.Relics![relicIndex];
@@ -102,7 +110,8 @@ namespace MonsterTrain2Poju.Model
                     relic.DisallowedInPlacementPhase == true && state.Deployment) continue;
                 for (int ruleIndex = 0; ruleIndex < relic.SpawnStatuses!.Count; ruleIndex++)
                 {
-                    RelicSpawnStatus rule = relic.SpawnStatuses[ruleIndex];
+                    relic = state.Context!.Relics![relicIndex];
+                    RelicSpawnStatus rule = relic.SpawnStatuses![ruleIndex];
                     bool admitted = true;
                     foreach (RelicConditionState condition in rule.Conditions)
                     {
@@ -136,6 +145,9 @@ namespace MonsterTrain2Poju.Model
                     bool matches = rule.SubtypeIsNone ? actor.Team == CombatTeam.Enemy || !actor.IsPyre :
                         actor.Subtypes.Contains(rule.RequiredSubtype!) && (actor.Team == CombatTeam.Enemy || (rule.SubtypeIsPyre == actor.IsPyre));
                     if (!matches) continue;
+                    if (!onlyCovenants && !DrainYield()) return failed!;
+                    relic = state.Context!.Relics![relicIndex];
+                    rule = relic.SpawnStatuses![ruleIndex];
                     RoomCombatResult added = StatusApplicationModel.ApplyRetained(state, actor.Id,
                         rule.Statuses[draw.Value].WithStacks(stacks), 0, overrideImmunity: rule.SubtypeIsPyre);
                     if (!added.Supported) return added;
@@ -151,9 +163,10 @@ namespace MonsterTrain2Poju.Model
                     relic = relic.WithSpawnStatuses(rules);
                     var relics = state.Context!.Relics!.ToArray(); relics[relicIndex] = relic;
                     SetContext(state.Context.WithRelics(relics));
+                    if (!onlyCovenants && !DrainYield()) return failed!;
                 }
             }
-            return new RoomCombatResult(state, RoomOutcome.Exchanged, 0, events, pendingCallbacks: callbacks);
+            return new RoomCombatResult(state, outcome, 0, events, pendingCallbacks: callbacks);
 
             int Value(RelicConditionState condition)
             {
@@ -164,6 +177,16 @@ namespace MonsterTrain2Poju.Model
             }
             void SetContext(CombatContext context) => state = new RoomCombatState(state.RoomIndex, state.Deployment,
                 state.Units, state.ExternalInteractions, context, state.Preview);
+            bool DrainYield()
+            {
+                if (drainCallbacks == null || state.Preview) return true;
+                RoomCombatResult drained = drainCallbacks(state, callbacks);
+                if (!drained.Supported) { failed = drained; return false; }
+                state = drained.State!; events.AddRange(drained.Events);
+                callbacks.Clear(); callbacks.AddRange(drained.PendingCallbacks);
+                if (drained.Outcome != RoomOutcome.Exchanged) outcome = drained.Outcome;
+                return true;
+            }
         }
         private static RoomCombatResult Match(RoomCombatState state) => new RoomCombatResult(state, RoomOutcome.Exchanged, 0, new List<CombatEvent>());
         private static RoomCombatResult Fail(string error) => new RoomCombatResult(null, RoomOutcome.Unsupported, 0, new List<CombatEvent>(), error);

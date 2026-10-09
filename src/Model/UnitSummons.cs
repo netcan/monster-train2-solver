@@ -129,9 +129,10 @@ namespace MonsterTrain2Poju.Model
             if (drainBirthQueue != null)
             {
                 var startingQueue = result.PendingCallbacks.ToList();
-                RoomCombatResult relics = RelicSpawnStatusModel.CharacterAdded(result.State!, spawned.Id, spawnerCardId, false);
+                RoomCombatResult relics = RelicSpawnStatusModel.CharacterAddedWithPending(result.State!, spawned.Id, spawnerCardId, false,
+                    drainBirthQueue, startingQueue);
                 if (!relics.Supported) return new UnitBirthResult(relics);
-                result = relics; startingQueue.AddRange(relics.PendingCallbacks); events.AddRange(relics.Events);
+                result = relics; startingQueue = relics.PendingCallbacks.ToList(); events.AddRange(relics.Events);
                 foreach (string kind in spawnerCardId > 0 ? new[] { "OnSpawn", "OnUnscaledSpawn" } :
                     new[] { "OnSpawn", "OnUnscaledSpawn", "OnSpawnNotFromCard" })
                 {

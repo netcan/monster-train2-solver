@@ -205,7 +205,7 @@ internal static class StatusCallbackChecks
             Require(kinds.IsSupersetOf(["OnStatusEffectChanged", "OnArmorAdded", "OnSilence", "OnSilenceLost", "OnNewStatusEffectAdded"]) &&
                 reward > 0 && zero > 0 && negative > 0 && silenceLost > 0,
                 "Native Purify status notification coverage incomplete.");
-        else if (fixture.TryGetProperty("ModifierScenario", out var spawnRelicScenario) && spawnRelicScenario.GetString() == "spawn-status-relics")
+        else if (fixture.TryGetProperty("ModifierScenario", out var spawnRelicScenario) && spawnRelicScenario.GetString() is "spawn-status-relics" or "spawn-status-relics-clones")
             Require(kinds.IsSupersetOf(["OnStatusEffectChanged", "OnArmorAdded", "OnNewStatusEffectAdded"]) && reward > 0 && enemy > 0,
                 "Native relic spawn status callback coverage incomplete.");
         else

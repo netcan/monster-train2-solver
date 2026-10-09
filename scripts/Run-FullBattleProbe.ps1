@@ -113,6 +113,7 @@ param(
     [switch] $IncantRelic,
     [switch] $IncantRelics,
     [switch] $SpawnStatusRelics,
+    [switch] $SpawnStatusRelicsClones,
     [switch] $SettleDeathDissolves,
     [switch] $SettleCardAnimations,
     [switch] $HarvestTriggers,
@@ -156,6 +157,7 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+if ($SpawnStatusRelicsClones) { $SpawnStatusRelics = $true; $UnitClone = $true }
 if ($EnchantmentWorld) { $EnchantmentCombat = $true }
 if ($PersistentEnchantmentRevivals) { $PersistentEnchantmentDeaths = $true }
 if ($PersistentEnchantmentDeaths) { $PersistentEnchantments = $true }
@@ -268,8 +270,9 @@ if ($Purify) {
     $environment['MT2_PROBE_MODIFIERS'] = $(if ($PurifyQueues) { 'purify-queues' } else { 'purify' })
     $environment['MT2_PROBE_STATUS_CALLBACKS'] = '1'
 }
+
 if ($SpawnStatusRelics) {
-    $environment['MT2_PROBE_MODIFIERS'] = 'spawn-status-relics'
+    $environment['MT2_PROBE_MODIFIERS'] = $(if ($SpawnStatusRelicsClones) { 'spawn-status-relics-clones' } else { 'spawn-status-relics' })
     $environment['MT2_PROBE_STATUS_CALLBACKS'] = '1'
 }
 if ($IncantRelics) { $IncantRelic = $true }
@@ -1400,8 +1403,9 @@ if ($SpawnStatusRelics) {
             } elseif ($oldShield.DurationTriggerCount -eq 1 -and $newShield.DurationTriggerCount -eq 1) { $spawnRelicSkips++ }
         } else { $spawnRelicEnemies++ }
     }
-    if ($trace.Schema -ne 109 -or $trace.ModifierScenario -ne 'spawn-status-relics' -or $births.Count -lt 3 -or
-        $spawnRelicPlayers -lt 2 -or $spawnRelicEnemies -lt 1 -or $spawnRelicFirsts -lt 2 -or $spawnRelicSkips -lt 1 -or $spawnRelicTurns.Count -lt 2 -or
+    if ($trace.Schema -ne $(if ($SpawnStatusRelicsClones) { 110 } else { 109 }) -or $trace.ModifierScenario -ne $(if ($SpawnStatusRelicsClones) { 'spawn-status-relics-clones' } else { 'spawn-status-relics' }) -or $births.Count -lt 3 -or
+        $spawnRelicPlayers -lt 2 -or $spawnRelicEnemies -lt 1 -or $spawnRelicFirsts -lt 1 -or $spawnRelicSkips -lt 1 -or
+        (-not $SpawnStatusRelicsClones -and ($spawnRelicFirsts -lt 2 -or $spawnRelicTurns.Count -lt 2)) -or
         @($births | Where-Object { -not $_.Completed -or -not $_.After -or $_.Difference }).Count -ne 0 -or
         @($trace.Actions[0].Before.Spawn.Train.Context.Relics | Where-Object { $_.AssetKey -in @('SpawnWithArmor','FirstUnitGainDamageShield','FrostbiteOnEnemies') }).Count -ne 3) {
         throw 'Native original spawn-status relic coverage is incomplete or failed.'
@@ -1609,7 +1613,7 @@ $result = [pscustomobject]@{
 }
 $result | ConvertTo-Json
 if ($SettleDeathDissolves) {
-    if (-not $trace.DeathDissolveSettlementEnabled -or $trace.Schema -ne $(if ($SpawnStatusRelics) { 109 } elseif ($IncantRelic) { 108 } elseif ($AbilityIncant) { 107 } elseif ($SettleCardAnimations) { 105 } else { 104 }) -or
+    if (-not $trace.DeathDissolveSettlementEnabled -or $trace.Schema -ne $(if ($SpawnStatusRelicsClones) { 110 } elseif ($SpawnStatusRelics) { 109 } elseif ($IncantRelic) { 108 } elseif ($AbilityIncant) { 107 } elseif ($SettleCardAnimations) { 105 } else { 104 }) -or
         @($trace.DeathDissolveSettlements).Count -eq 0 -or
         @($trace.DeathDissolveSettlements | Where-Object { -not $_.Completed -or $_.PendingAfter -ne 0 -or $_.Error }).Count -ne 0 -or
         @($trace.DeathDissolveCallbacks | Where-Object { $_.Error }).Count -ne 0) {
@@ -1617,7 +1621,7 @@ if ($SettleDeathDissolves) {
     }
 }
 if ($SettleCardAnimations) {
-    if ($trace.Schema -ne $(if ($SpawnStatusRelics) { 109 } elseif ($IncantRelic) { 108 } elseif ($AbilityIncant) { 107 } else { 105 }) -or -not $trace.CardAnimationSettlement.Enabled -or
+    if ($trace.Schema -ne $(if ($SpawnStatusRelicsClones) { 110 } elseif ($SpawnStatusRelics) { 109 } elseif ($IncantRelic) { 108 } elseif ($AbilityIncant) { 107 } else { 105 }) -or -not $trace.CardAnimationSettlement.Enabled -or
         $trace.CardAnimationSettlement.PreviewWaits -lt 0 -or $trace.CardAnimationSettlement.DecisionWaits -lt 0 -or
         $trace.CardAnimationSettlement.ScheduledMovements -le 0 -or $trace.CardAnimationSettlement.PendingMovements -ne 0) {
         throw 'Native card-animation settlement protocol is missing or invalid.'

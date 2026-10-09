@@ -7493,3 +7493,43 @@ retain their original hashes. Evidence is .probe-runs/spawn-status-relics-comple
 .probe-runs/spawn-status-relics-complete-audit.log. This establishes the original
 spawn-status model baseline. Later ability-count and standalone-birth scheduling
 changes are not included, and require their own regression.
+
+### Original relics with standalone, copied and cardless births
+
+RelicSpawnStatusModel accepts a caller-provided shared queue and settles it at
+native non-covenant pre/post-fire yields. A running queue or enclosing native
+coroutine keeps callbacks deferred. RelicBirthModel carries the whole train,
+prior FIFO payloads, exact remaining queue and dispatched payloads across those
+boundaries. Conditions are recorded before post-fire settlement, and the next
+effect reads the updated immutable relic state. Unknown retained queue actors or
+exclusive/disabled native queue flags are refused. This is an explicit standalone
+scenario settlement protocol; IsRunningTriggerQueue alone is not sufficient to
+infer arbitrary native coroutine scheduling.
+
+The -SpawnStatusRelicsClones schema110 scene acquires unchanged original armor,
+first-unit shield, enemy frostbite and ExtraSpawnTrigger artifacts. It runs the13
+existing clone operations and independent filler births, including detached,
+cardless, equipped, excluded-upgrade, wounded and runtime-ability cases. Two muted
+Instant recordings finish with terminal exit zero in105.24 and104.22 seconds,
+zero capture failures/differences/unsupported/pending and unchanged original files.
+All28 complete pre/post-policy states are identical between recordings.
+The final frozen checker passes both recordings:14 paid plays,five EndTurns,
+final Pyre80,22 complete relic birth phases (15 player/seven enemy),13 settled
+and nine deferred phases,28 in-phase dispatches and16 carried parent callbacks.
+All287 status callbacks and13 clone API/state/queue comparisons match; policies
+repeat in16 branches and clone/relic births in32 isolated branches. Pure checks
+also verify cross-floor prior callbacks, deferred versus settled execution and
+parent isolation. Probe Release has zero warnings/errors; checker has14 existing
+nullable warnings and zero errors. The preceding scheduling checker passes the
+accepted ability lifecycle, unit clone and original spawn-status battle/policy chains.
+
+The final .probe-runs/relic-birth-yields-final2-checks snapshot uses Model.dll
+SHA2565532740C871AB91183EACCB35BB6BFBB5D13F437B4A3543EA913F136E7445880 and
+ModelChecks.dll SHA25621C5EAE8143B23448A2FCE0EF56465992477DFC7068128EFEDEC2EA5B2DC5B36.
+Evidence is .probe-runs/relic-birth-yields-final2-native.log,
+.probe-runs/relic-birth-yields-final2-independent.log,
+.probe-runs/relic-birth-yields-repeat-native.log,
+.probe-runs/relic-birth-yields-repeat-independent.log and
+.probe-runs/relic-birth-yields-final-historical.log. The full185 baseline remains
+separate evidence from this increment. Grafted/aura births, further artifacts and
+arbitrary original-frame scheduling still need native acceptance.
