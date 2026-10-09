@@ -105,6 +105,7 @@ param(
     [switch] $CharacterRemoval,
     [switch] $PreviewReferences,
     [switch] $SettleDeathDissolves,
+    [switch] $SettleCardAnimations,
     [switch] $HarvestTriggers,
     [switch] $HordeRemoval,
     [switch] $HordeDeath,
@@ -225,6 +226,7 @@ $environment = @{
     MT2_PROBE_CHARACTER_REMOVAL = $(if ($CharacterRemoval) { '1' } else { '0' })
     MT2_PROBE_PREVIEW_REFERENCES = $(if ($PreviewReferences) { '1' } else { '0' })
     MT2_PROBE_SETTLE_DEATH_DISSOLVES = $(if ($SettleDeathDissolves) { '1' } else { '0' })
+    MT2_PROBE_SETTLE_CARD_ANIMATIONS = $(if ($SettleCardAnimations) { '1' } else { '0' })
     MT2_PROBE_STATUS_CALLBACKS = $(if ($HordeStatuses -or $StatusCallbacks) { '1' } else { '0' })
     MT2_PROBE_STATUS_CALLBACK_ACTIONS = $(if ($StatusCallbackActions) { '1' } else { '0' })
     MT2_PROBE_PHYSICAL_SPAWNPOINTS = $(if ($PhysicalSpawnPoints) { '1' } else { '0' })
@@ -292,7 +294,7 @@ if ($PersistentEnchantments) {
     $persistentScenario = $environment['MT2_PROBE_MODIFIERS']
     $persistentFrames = @($trace.Actions | ForEach-Object { $_.Actual.Spawn.Train.Context.Enchantments })
     $persistentRules = @($persistentFrames | ForEach-Object { $_.Rooms.Units.Triggers.Effects.Enchantment } | Where-Object { $null -ne $_ -and $_.Bound })
-    if ($trace.Schema -ne $(if ($SettleDeathDissolves) { 104 } else { 103 }) -or $trace.ModifierScenario -ne $persistentScenario -or
+    if ($trace.Schema -ne $(if ($SettleCardAnimations) { 105 } elseif ($SettleDeathDissolves) { 104 } else { 103 }) -or $trace.ModifierScenario -ne $persistentScenario -or
         -not (Select-String -LiteralPath $unityLog -Pattern 'PERSISTENT-ENCHANTMENT-PREPARED' -Quiet) -or
         $persistentFrames.Count -ne @($trace.Actions).Count -or @($trace.Turns).Count -lt 3 -or
         $persistentRules.Count -lt 2 -or @($persistentRules | Where-Object { @($_.State.PrimaryTargets).Count -gt 0 }).Count -eq 0) {
@@ -1416,11 +1418,17 @@ $result = [pscustomobject]@{
 }
 $result | ConvertTo-Json
 if ($SettleDeathDissolves) {
-    if (-not $trace.DeathDissolveSettlementEnabled -or $trace.Schema -ne 104 -or
+    if (-not $trace.DeathDissolveSettlementEnabled -or $trace.Schema -ne $(if ($SettleCardAnimations) { 105 } else { 104 }) -or
         @($trace.DeathDissolveSettlements).Count -eq 0 -or
         @($trace.DeathDissolveSettlements | Where-Object { -not $_.Completed -or $_.PendingAfter -ne 0 -or $_.Error }).Count -ne 0 -or
         @($trace.DeathDissolveCallbacks | Where-Object { $_.Error }).Count -ne 0) {
         throw 'Native death-dissolve settlement is incomplete or failed.'
+    }
+}
+if ($SettleCardAnimations) {
+    if ($trace.Schema -ne 105 -or -not $trace.CardAnimationSettlement.Enabled -or
+        $trace.CardAnimationSettlement.PreviewWaits -lt 0 -or $trace.CardAnimationSettlement.DecisionWaits -lt 0) {
+        throw 'Native card-animation settlement protocol is missing or invalid.'
     }
 }
 if ($CharacterRemoval) {

@@ -439,7 +439,7 @@ namespace MonsterTrain2Poju.Probe
             string temporary = path + ".tmp";
             var snapshot = new
             {
-                Schema = DeathDissolveSettlement.Enabled ? 104 : EnchantmentBattleScenario.Prepared ? 103 : 102,
+                Schema = CardAnimationSettlement.Enabled ? 105 : DeathDissolveSettlement.Enabled ? 104 : EnchantmentBattleScenario.Prepared ? 103 : 102,
                 DeathDissolveSettlementEnabled = DeathDissolveSettlement.Enabled,
                 DeathDissolveSettlements = DeathDissolveSettlement.Records,
                 DeathDissolveCallbacks = DeathDissolveSettlement.Callbacks,
@@ -541,6 +541,7 @@ namespace MonsterTrain2Poju.Probe
                 CapacityTests = RoomCapacityProbe.Tests,
                 PreviewRngIsolation = PreviewRngIsolation.Records,
                 PreviewScheduling = PreviewSchedulingProbe.Records,
+                CardAnimationSettlement = new { Enabled = CardAnimationSettlement.Enabled, CardAnimationSettlement.PreviewWaits, CardAnimationSettlement.DecisionWaits },
                 UnitPostCombats = PostCombatHealingProbe.Records,
                 UnitUpgradeScalingCalibrationContextUnchanged = UnitUpgradeScalingScenario.CalibrationContextUnchanged,
                 UiRngIsolation = UiRngIsolation.Records,

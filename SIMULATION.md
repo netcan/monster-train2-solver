@@ -6478,3 +6478,34 @@ policy chains, all 24 component calibrations and pure checks. Probe builds with
 zero warnings/errors; ModelChecks retains fourteen existing nullable warnings and
 no errors. The curated inventory remains 173 binary archives (149 accepted battles
 and 24 calibrations), with no fixture JSON dependency or new accepted battle.
+
+### Explicit card-animation settlement protocol
+
+Run-FullBattleProbe.ps1 -SettleCardAnimations opts into schema105 sampling.
+The original hand predicate omits temporary card-pool movements and cards already
+removed from the hand. The new gate waits for both CardAnimator's original
+temporary pool and HandUI's discardingCards collection before preview start and
+before policy input. It defers HasGameCalmedDown while these callbacks are pending,
+coalescing original preview requests; the original animations, notifications,
+preview execution and card effects still run. This protocol changes preview start
+timing and is disabled by default. It does not establish arbitrary unmodified
+frame-scheduling equivalence.
+
+Two muted Instant recordings under this protocol complete fifteen paid actions
+and five EndTurns. The independent model chooses every action from its own current
+state, starting only from the first root; no later native Before state is injected.
+All action results, EndTurn states/outcomes and the complete canonical terminal
+state match, with root immutability and sixteen parallel branches. The latest run
+takes 162.27 seconds and preserves original profile/log signatures. It has zero
+capture failures, unsupported effects or pending records, and independently
+verifies 370 raw/canonical mappings, five retired raw references and 11,785 position
+plane mappings.
+
+Strict full-battle verification still rejects three intermediate differences:
+TrainPhase8/Combat and Stage36/Room retain a ninth native copied position group
+where the model has eight; Stage37/Exchange creates a source card one callback
+boundary too early (NextCardId30 versus native29). The following native exchange
+input already has NextCardId30, but it is comparison evidence, never model input.
+Stages38-40 now match. Neither diagnostic is curated as an accepted battle.
+The targeted 32-battle/30-policy/24-calibration regression passes; a combined173
+regression was not repeated, and complete163 remains the full regression baseline.

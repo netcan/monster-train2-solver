@@ -1244,3 +1244,23 @@ All 31 affected historical battles/29 paid policies, 23 earlier calibrations/pur
 checks, the new calibration, binary provenance, all 173 manifest entries and script
 syntax pass. A combined173 regression is not claimed; complete163 remains the full
 baseline.
+
+The latest temporary Boss-preview model preserves newborn preview states, shared
+card-room targets and last-spawned references, skips primary spawn statistics in
+preview, and cancels retained preview births when terminal ClearCards runs.
+An opt-in schema105 card-animation settlement protocol waits for original
+temporary-pool movements and discard completion before previews/policy input.
+It changes preview start timing; arbitrary unmodified frame timing remains open.
+
+Two new diagnostic battles independently match fifteen paid actions, five EndTurns
+and complete canonical terminal states, including sixteen immutable parallel
+branches. The latest muted Instant run takes 162.27 seconds, preserves original
+profile/log signatures, and has zero capture failures/unsupported effects/pending
+records. Its 370 raw/canonical decision mappings and 11,785 position-plane mappings
+pass. Three intermediate copied-group/callback-boundary differences still reject
+full-battle verification, so these traces remain outside the curated inventory.
+
+The final model passes 32 affected historical battles, 30 continuous paid policies,
+all 24 calibrations and pure checks. Inventory remains 173 binary archives:
+149 accepted battles and 24 component calibrations. A combined173 regression was
+not repeated; complete163 remains the full regression baseline.
