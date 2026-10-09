@@ -21,8 +21,10 @@ original spawn-status artifacts and unchanged ExtraSpawnTrigger. It adds13 clone
 operations and22 complete birth observations:13 standalone settlements and nine
 deferred phases, including exact prior/remaining queues and dispatched payloads
 across the whole train. Both native recordings and independent complete battles
-pass; all28 pre/post-policy states repeat exactly. The frozen185 baseline remains
-separate evidence; the final scheduling model requires a complete186 regression.
+pass; all28 pre/post-policy states repeat exactly. The final scheduling model's
+complete186 regression also passes:162 battles (158 paid/four no-more-card
+chains) and24 component calibrations, with every input and frozen binary hash
+audited. This baseline precedes further card-upgrade-mask model work.
 
 `full-battle-incant-relic.mt2f` retains schema108 with the original obtainable
 ExtraSpellCastTrigger acquired through SaveManager. The relic asset is unchanged;

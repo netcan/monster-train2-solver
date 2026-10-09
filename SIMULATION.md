@@ -7571,3 +7571,25 @@ Evidence is .probe-runs/relic-upgrade-catalog-final-build.log (zero warnings/err
 .probe-runs/relic-upgrade-catalog-final-native.log,
 .probe-runs/relic-upgrade-catalog-final-audit.log and
 .probe-runs/full-battle-units-spells-and-junk-20261009-211225-c831a751/relic-catalog.mt2f.
+
+### Complete original relic birth scheduling 186 regression
+
+The preserved final scheduling model/checker finishes its full186-input run
+with terminal exit zero (session24305). All162 accepted battles pass, including
+158 complete paid policy chains and four no-more-card chains, plus all24 exact
+ordered component calibrations. Every battle is represented exactly once;
+there are zero failures or unsupported core room/card-cycle/train/spawn/turn/
+action transitions. The186 unique input names, lengths and SHA256 values match
+both the full manifest and curated script inventory after the run.
+
+Both frozen binaries remain unchanged: Model.dll
+5532740c871ab91183eaccb35bb6bfbb5d13f437b4a3543ea913f136e7445880 and
+ModelChecks.dll21c5eae8143b23448a2fce0ef56465992477dfc7068128efedec2ea5b2dc5b36.
+Evidence is .probe-runs/relic-birth-yields-complete186-regression.log,
+.probe-runs/relic-birth-yields-complete186-inputs.txt,
+.probe-runs/relic-birth-yields-complete186-audit.log and the retained
+.probe-runs/relic-birth-yields-final2-checks snapshot. This verifies the ability
+count refresh and original relic clone/cardless-birth scheduling fixes against
+the full accepted inventory. Later card-upgrade-mask changes and further relic,
+room, Boss and card mechanics require their own evidence; the entire battle
+simulation objective remains incomplete.
