@@ -98,6 +98,7 @@ param(
     [switch] $Purify,
     [switch] $PurifyQueues,
     [switch] $Incant,
+    [switch] $IncantThresholds,
     [switch] $PersistentEnchantments,
     [switch] $PersistentEnchantmentDeaths,
     [switch] $PersistentEnchantmentRevivals,
@@ -185,6 +186,7 @@ if ($EquipmentExhausted -or $EquipmentOverflow -or $EquipmentTriggers) { $Equipm
 if ($StatusCallbackActions) { $StatusCallbacks = $true }
 if ($StatusCallbacks) { $TriggeredStatus = $true }
 if ($PurifyQueues) { $Purify = $true }
+if ($IncantThresholds) { $Incant = $true }
 if ($CaptureJson) { $BinaryCapture = $true }
 $workspace = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $gameRoot = Join-Path $workspace '.sandbox-game'
@@ -261,7 +263,7 @@ if ($Purify) {
     $environment['MT2_PROBE_STATUS_CALLBACKS'] = '1'
 }
 if ($Incant) {
-    $environment['MT2_PROBE_MODIFIERS'] = 'incant'
+    $environment['MT2_PROBE_MODIFIERS'] = $(if ($IncantThresholds) { 'incant-thresholds' } else { 'incant' })
     $environment['MT2_PROBE_STATUS_CALLBACKS'] = '1'
 }
 if ($PersistentEnchantments) {
@@ -1338,17 +1340,35 @@ if ($Incant) {
         if (@($fire.Actor.Statuses | Where-Object { $_.Id -eq 'silenced' -and $_.Stacks -gt 0 }).Count -gt 0) { $silencedFires++ }
         elseif (@($fire.AfterActor.Triggers | Where-Object { $_.Kind -eq 'CardSpellPlayed' -and -not $_.IgnoreSilence -and $_.HasTriggered }).Count -gt 0) { $visibleFires++ }
     }
-    $incantCoverage = $trace.ModifierScenario -eq 'incant' -and $incantPhases.Count -ge 10 -and $incantFires.Count -gt 5 -and
+    $incantCoverage = $trace.ModifierScenario -eq $(if ($IncantThresholds) { 'incant-thresholds' } else { 'incant' }) -and $incantPhases.Count -ge 10 -and $incantFires.Count -gt 5 -and
         @($incantPhases | Where-Object { -not $_.Completed -or $null -eq $_.After -or $null -ne $_.Difference }).Count -eq 0 -and
         @($incantFires | Where-Object { -not $_.Completed -or $null -eq $_.After -or $null -eq $_.AfterActor -or $null -ne $_.Difference }).Count -eq 0 -and
         @($incantFires | Where-Object { $_.Actor.Team -eq 1 }).Count -gt 0 -and @($incantFires | Where-Object { $_.Actor.Team -eq 0 }).Count -gt 0 -and
         $incantRejected.Count -gt 0 -and $emptySpellPlays -gt 0 -and $silencedFires -gt 0 -and $visibleFires -gt 0
     if (-not $incantCoverage) { throw "Incant coverage incomplete: phases=$($incantPhases.Count) fires=$($incantFires.Count) rejected=$($incantRejected.Count) empty=$emptySpellPlays silenced=$silencedFires visible=$visibleFires" }
 }
+$incantThresholdCoverage = -not $IncantThresholds
+if ($IncantThresholds) {
+    $positiveThresholds = 0; $zeroThresholds = 0; $negativeThresholds = 0; $spentThresholds = 0; $incorrectThresholds = 0
+    foreach ($fire in $incantFires) {
+        if ($fire.ParamInt -ne 0 -or $fire.TriggerCount -ne 1) { $incorrectThresholds++ }
+        foreach ($trigger in $fire.AfterActor.Triggers) {
+            if ($trigger.Kind -ne 'CardSpellPlayed') { continue }
+            if ($trigger.TriggerAtThreshold -gt 0 -and $trigger.HasTriggered) { $incorrectThresholds++ }
+            if ($trigger.TriggerAtThreshold -eq 1 -and @($trigger.Effects | Where-Object { $_.Type -eq 'CardEffectRewardGold' -and $_.Value -eq 23 }).Count -gt 0) { $positiveThresholds++ }
+            if ($trigger.TriggerAtThreshold -eq 0 -and $trigger.HasTriggered -and @($trigger.Effects | Where-Object { $_.Type -eq 'CardEffectRewardGold' -and $_.Value -eq 31 }).Count -gt 0) { $zeroThresholds++ }
+            if ($trigger.TriggerAtThreshold -eq -3 -and $trigger.Once -and $trigger.HasTriggered -and @($trigger.Effects | Where-Object { $_.Type -eq 'CardEffectRewardGold' -and $_.Value -eq 13 }).Count -gt 0) { $negativeThresholds++ }
+        }
+        if (@($fire.Actor.Triggers | Where-Object { $_.Kind -eq 'CardSpellPlayed' -and $_.TriggerAtThreshold -eq -3 -and $_.Once -and $_.HasTriggered }).Count -gt 0) { $spentThresholds++ }
+    }
+    $incantThresholdCoverage = $positiveThresholds -gt 0 -and $zeroThresholds -gt 0 -and $negativeThresholds -gt 0 -and $spentThresholds -gt 0 -and $incorrectThresholds -eq 0
+    if (-not $incantThresholdCoverage) { throw "Incant threshold coverage incomplete: positive=$positiveThresholds zero=$zeroThresholds negative=$negativeThresholds spent=$spentThresholds incorrect=$incorrectThresholds" }
+}
 $result = [pscustomobject]@{
     PurifyCoverage = $purifyCoverage
     PurifyQueueCoverage = $purifyQueueCoverage
     IncantCoverage = $incantCoverage
+    IncantThresholdCoverage = $incantThresholdCoverage
     RevivalOperations = @($trace.RevivalOperations).Count
     Revivals = @($trace.Revivals).Count
     TriggeredEquipmentCoverage = $triggeredEquipmentCoverage

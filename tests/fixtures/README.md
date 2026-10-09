@@ -1429,7 +1429,7 @@ The same model also passes 29 historical battles, 28 paid policies, one no-more-
 chain and all 24 strict component calibrations (53 unique inputs). Model.dll SHA-256:
 e26db6f690855eadc4adc90ec5dd2feaf5570de1a1a9695ab826195e5f5b5cea.
 The preceding complete179 baseline is not a combined regression of this Incant
-version. Positive Incant thresholds, relic-triggered ability Incant and the whole
+version. That version refused positive Incant thresholds; relic-triggered ability Incant and the whole
 simulator remain unfinished.
 
 `full-battle-incant.mt2f` is the byte-identical final native Incant recording:
@@ -1438,3 +1438,26 @@ simulator remain unfinished.
 The required list and manifest now contain 180 archives: 156 accepted battles and
 24 strict component calibrations. The completed179 baseline belongs to the prior
 Purify queue model; the Incant model's combined180 regression is pending.
+
+The threshold Incant version now accepts positive CardSpellPlayed thresholds while
+preserving the native default-zero card-play argument. Its -IncantThresholds
+recording observes a skipped positive threshold, fired zero/negative thresholds
+and spent negative-once callbacks. The muted Instant native battle takes 97.95
+seconds, with the original Boss/waves and profile/log signatures preserved and no
+capture failure, mismatch, unsupported operation or pending record.
+
+All 21 paid plays/seven EndTurns, 32 team phases, 18 actor dispatches, 51 native
+admissions with 12 Purify rejections, eleven paid empty spells, 139 FIFO status
+callbacks and 23 explicit removals match independently. Thirty-two parallel
+component branches retain their parents; sixteen complete branches end at
+Pyre61. An intentionally incorrect current-source model loses the positive
+observer's untouched HasTriggered flag. Equality/above-threshold arguments and
+zero/negative repeat batches are covered by pure/source-derived checks, not by
+this ordinary-card native recording, whose argument/count are always zero/one.
+
+The final threshold model also passes 30 historical battles, 29 paid-policy chains,
+one no-more-card chain and all 24 strict component calibrations (54 unique inputs).
+Model.dll SHA-256:
+ab9e8f6fe6b86fb4d2b66075621d6c3719c385616f51363dbcc798020528db96.
+The earlier combined180 run belongs to the initial Incant model e26db6f6. Further
+relic/ability/card/trigger combinations and the complete simulator remain open.

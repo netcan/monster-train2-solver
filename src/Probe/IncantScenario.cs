@@ -10,6 +10,7 @@ namespace MonsterTrain2Poju.Probe
     internal static class IncantScenario
     {
         internal static bool Prepared { get; private set; }
+        internal static bool ThresholdCoverage { get; private set; }
         internal static void Prepare(AllGameManagers managers, ManualLogSource log)
         {
             SaveManager save = managers.GetSaveManager();
@@ -18,6 +19,7 @@ namespace MonsterTrain2Poju.Probe
             if (stewards.Length == 0) throw new InvalidOperationException("Incant fixture requires owned Stewards.");
             CardData steward = save.GetAllGameData().FindCardData(stewards[0].GetCardDataID())!;
             CharacterData unit = steward.GetSpawnCharacterData()!;
+            ThresholdCoverage = Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == "incant-thresholds";
             Set(unit, "startingStatusEffects", unit.GetStartingStatusEffects().Concat(new[] { Stack("silenced", 1) }).ToArray());
             var guarded = Gold(19, false, true);
             Set(guarded, "requiredStatusEffects", new List<StatusEffectStackData> { Stack("silenced", 999) });
@@ -28,6 +30,13 @@ namespace MonsterTrain2Poju.Probe
             Set(silence, "effects", new List<CardEffectData> { Add("silenced", 1) });
             Set(unit, "triggers", unit.GetTriggers().Concat(new[] { Gold(5, false, true), Gold(11, true, true),
                 Gold(17, false, false), guarded, chain, child, silence }).ToList());
+            if (ThresholdCoverage)
+            {
+                var positive = Gold(23, true, true); Set(positive, "triggerAtThreshold", 1);
+                var zero = Gold(31, false, true); Set(zero, "triggerAtThreshold", 0);
+                var negative = Gold(13, true, true); Set(negative, "triggerAtThreshold", -3);
+                Set(unit, "triggers", unit.GetTriggers().Concat(new[] { positive, zero, negative }).ToList());
+            }
             foreach (CardState card in stewards) card.Setup(steward, save);
 
             var pattern = (SpawnPatternData)AccessTools.Field(typeof(HeroManager), "spawnPattern").GetValue(managers.GetHeroManager());

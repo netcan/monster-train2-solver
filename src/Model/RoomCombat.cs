@@ -758,7 +758,7 @@ namespace MonsterTrain2Poju.Model
                     if (trigger.Kind != "OnDeath" && trigger.Kind != "PostCombat" && trigger.SkipDuringDeployment == null)
                         return trigger.Kind + " requires deployment timing state.";
                     if (trigger.TriggerAtThreshold > 0 && trigger.Kind != "OnDeath" && trigger.Kind != "OnHit" && trigger.Kind != "OnKill" &&
-                        trigger.Kind != "OnAttackingBeforeDamage" && trigger.Kind != "OnAttacking" && trigger.Kind != "OnSentry" && !StatusCallbackModel.Kinds.Contains(trigger.Kind))
+                        trigger.Kind != "OnAttackingBeforeDamage" && trigger.Kind != "OnAttacking" && trigger.Kind != "OnSentry" && trigger.Kind != "CardSpellPlayed" && !StatusCallbackModel.Kinds.Contains(trigger.Kind))
                         return "Threshold arguments are not modeled for " + trigger.Kind;
                     if (trigger.Kind == "OnNewStatusEffectAdded" && !unit.CountUniqueVisibleStatuses().HasValue)
                         return "New-status callbacks require the complete native status dictionary and display definitions.";

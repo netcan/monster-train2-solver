@@ -7,8 +7,8 @@ internal static class IncantChecks
     internal static void Run()
     {
         var rng = UnityRng.Seed(173);
-        CombatTrigger Reward(int value, bool once = false, bool ignoreSilence = true) => new("CardSpellPlayed", once, false,
-            ignoreSilence, 1, [new("CardEffectRewardGold", value, 0, "", 0, [], false)], false);
+        CombatTrigger Reward(int value, bool once = false, bool ignoreSilence = true, int fireCount = 1, int? threshold = null) => new("CardSpellPlayed", once, false,
+            ignoreSilence, fireCount, [new("CardEffectRewardGold", value, 0, "", 0, [], false)], false, threshold);
         CombatUnit Actor(int id, CombatTeam team, params CombatStatus[] statuses) => new(id, "incant", team, 0, 20, 20,
             false, false, false, statuses, [Reward(5)], size: 1);
         BattleTurnState Root(CardPlayRule rule, CombatUnit[]? actors = null)
@@ -89,6 +89,43 @@ internal static class IncantChecks
         var resolved = CardModifierModel.Resolve(spellSummonRule.WithSpawn(born), new CardInstanceState(3, "summon",
             CardModifiers.Empty(), CardModifiers.Empty(), 0, 0, 0, []));
         Require(resolved.CardType == "Spell" && resolved.IsAnyAbility == false, "Modifiers/birth definition dropped card type or ability metadata.");
+        var thresholdActor = new CombatUnit(10, "thresholds", CombatTeam.Player, 0, 20, 20, false, false, false, [],
+            [Reward(5, once: true, fireCount: 2, threshold: 1), Reward(10, once: true, threshold: -2),
+                Reward(3, fireCount: 3, threshold: 0), Reward(31, once: true, fireCount: 0, threshold: 0)], size: 1);
+        var thresholdRoot = Root(Null("Spell"), [thresholdActor]);
+        string thresholdParent = Serialize(thresholdRoot);
+        var thresholdFirst = BattleActionModel.PlayCard(thresholdRoot, new(1, 0));
+        var thresholdSecond = BattleActionModel.PlayCard(thresholdFirst.State!, new(2, 0));
+        Require(thresholdFirst.Supported && thresholdSecond.Supported &&
+            thresholdFirst.State!.Spawn.Train.Context!.Gold == 25 && thresholdSecond.State!.Spawn.Train.Context!.Gold == 40 &&
+            thresholdSecond.State.Spawn.Train.Rooms[0].Units[0].Triggers.Select(trigger => trigger.HasTriggered).SequenceEqual([false, true, true, true]),
+            "Ordinary Incant lost default-zero arguments, signed thresholds, per-repeat gold or zero-count once flags: " + thresholdFirst.Reason);
+        var thresholdRoom = thresholdRoot.Spawn.Train.Rooms[0];
+        RoomCombatResult Dispatch(int argument, int count, RoomCombatState room)
+        {
+            var request = new RoomCombatModel.QueuedCharacterTrigger(0, room.Units[0], "CardSpellPlayed", paramInt: argument,
+                triggerCount: count, admission: RoomCombatModel.CharacterTriggerAdmission.Accepted);
+            return RoomCombatModel.ApplyQueuedCharacterTrigger(room, request, _ => { });
+        }
+        var equal = Dispatch(1, 2, thresholdRoom);
+        var above = Dispatch(2, 2, thresholdRoom);
+        var negativeArgument = Dispatch(-9, 1, thresholdRoom);
+        Require(equal.Supported && above.Supported && equal.State!.Context!.Gold == 70 && above.State!.Context!.Gold == 70 &&
+            equal.State.Units[0].Triggers.All(trigger => trigger.HasTriggered), "Incant equality/above threshold or multiplicative repeat counts differ.");
+        Require(negativeArgument.Supported && negativeArgument.State!.Context!.Gold == 25 &&
+            negativeArgument.State.Units[0].Triggers.Select(trigger => trigger.HasTriggered).SequenceEqual([false, true, true, true]),
+            "A negative argument incorrectly gated a non-positive Incant threshold.");
+        foreach (int count in new[] { 0, -2 })
+        {
+            var empty = Dispatch(1, count, thresholdRoom);
+            Require(empty.Supported && empty.State!.Context!.Gold == 0 && empty.State.Units[0].Triggers.All(trigger => trigger.HasTriggered),
+                "Zero/negative Incant counts did not mark once-only triggers before the empty effect loop.");
+            var repeated = Dispatch(1, 1, empty.State!);
+            Require(repeated.Supported && repeated.State!.Context!.Gold == 15, "Incant replay after an empty batch repeated spent once effects.");
+        }
+        Parallel.For(0, 32, _ => Require(Serialize(Dispatch(1, 2, thresholdRoom).State) == Serialize(equal.State), "Parallel threshold Incant branches differ."));
+        Require(Serialize(thresholdRoot) == thresholdParent, "Threshold Incant changed its parent.");
+        Console.WriteLine("INCANT-THRESHOLD-CHECKS PASS: default-zero/signed arguments, positive/equal/above thresholds, per-repeat gold, zero/negative counts, consumed once flags and 32 branches.");
         string expected = Serialize(second.State);
         Parallel.For(0, 32, _ => Require(Serialize(BattleActionModel.PlayCard(BattleActionModel.PlayCard(root, new(1, 0)).State!, new(2, 0)).State) == expected,
             "Parallel Incant branches differed."));
@@ -97,7 +134,7 @@ internal static class IncantChecks
     }
     internal static void Native(FixtureValue fixture)
     {
-        if (!fixture.TryGetProperty("ModifierScenario", out var scenario) || scenario.GetString() != "incant") return;
+        if (!fixture.TryGetProperty("ModifierScenario", out var scenario) || scenario.GetString() is not ("incant" or "incant-thresholds")) return;
         var phases = fixture.GetProperty("IncantPhases").EnumerateArray().ToArray();
         var triggers = fixture.GetProperty("IncantTriggers").EnumerateArray().ToArray();
         var admissions = fixture.GetProperty("PurifyQueueAdmissions").EnumerateArray()
@@ -115,6 +152,23 @@ internal static class IncantChecks
         Require(rejected > 0, "Native Incant lacks an actual Purify admission rejection.");
         var actors = triggers.Select(record => record.GetProperty("Actor").Deserialize<CombatUnit>()!).ToArray();
         var afterActors = triggers.Select(record => record.GetProperty("AfterActor").Deserialize<CombatUnit>()!).ToArray();
+        if (scenario.GetString() == "incant-thresholds")
+        {
+            Require(triggers.All(record => record.GetProperty("ParamInt").GetInt32() == 0 && record.GetProperty("TriggerCount").GetInt32() == 1),
+                "Native ordinary Incant did not preserve default-zero arguments and one queued batch.");
+            var thresholds = afterActors.SelectMany(actor => actor.Triggers).Where(trigger => trigger.Kind == "CardSpellPlayed").ToArray();
+            bool Gold(CombatTrigger trigger, int value) => trigger.Effects.Any(effect => effect.Type == "CardEffectRewardGold" && effect.Value == value);
+            Require(thresholds.Any(trigger => trigger.TriggerAtThreshold == 1 && Gold(trigger, 23)) &&
+                thresholds.Where(trigger => trigger.TriggerAtThreshold > 0).All(trigger => !trigger.HasTriggered) &&
+                thresholds.Any(trigger => trigger.TriggerAtThreshold == 0 && Gold(trigger, 31) && trigger.HasTriggered) &&
+                thresholds.Any(trigger => trigger.TriggerAtThreshold == -3 && Gold(trigger, 13) && trigger.Once && trigger.HasTriggered) &&
+                actors.Any(actor => actor.Triggers.Any(trigger => trigger.Kind == "CardSpellPlayed" && trigger.TriggerAtThreshold == -3 &&
+                    Gold(trigger, 13) && trigger.Once && !trigger.HasTriggered)) &&
+                actors.Any(actor => actor.Triggers.Any(trigger => trigger.Kind == "CardSpellPlayed" && trigger.TriggerAtThreshold == -3 &&
+                    Gold(trigger, 13) && trigger.Once && trigger.HasTriggered)),
+                "Native Incant threshold/negative-once/repeated-spent coverage is incomplete.");
+            Console.WriteLine("NATIVE-INCANT-THRESHOLDS PASS: default-zero arguments, skipped positive thresholds, fired zero/negative thresholds and spent once-only replays.");
+        }
         Require(actors.Any(actor => actor.Status("silenced")?.Stacks > 0 && actor.Triggers.Any(trigger =>
                 trigger.Kind == "CardSpellPlayed" && !trigger.IgnoreSilence && !trigger.HasTriggered)) &&
             afterActors.Any(actor => actor.Status("silenced") == null && actor.Triggers.Any(trigger =>

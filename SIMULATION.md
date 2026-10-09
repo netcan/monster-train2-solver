@@ -6938,7 +6938,7 @@ probe and isolated game use Model.dll SHA-256
 e26db6f690855eadc4adc90ec5dd2feaf5570de1a1a9695ab826195e5f5b5cea.
 The complete179 baseline above belongs to the preceding Purify queue model; a
 combined regression of this Incant model still requires its own run. Positive
-Incant threshold callbacks remain refused. Relic-triggered ability Incant, further
+Incant threshold callbacks were refused in that initial version. Relic-triggered ability Incant, further
 trigger/effect combinations, Purify/Horde/aura integration, card purification,
 complete state pruning and the whole simulator remain unfinished.
 
@@ -6949,3 +6949,51 @@ The required list and manifest now contain 180 archives: 156 accepted complete
 battles and 24 strict component calibrations. A combined180 regression of the
 Incant model is pending; the completed179 baseline remains explicitly tied to the
 preceding Purify queue model.
+
+### Incant threshold arguments and empty repeat batches
+
+Ordinary card-play queues pass null FireTriggersData and therefore argument zero;
+they do not use the card's accumulated TimesPlayed statistic as the threshold
+argument. The native character loop gates only positive trigger thresholds, before
+marking HasTriggered and before multiplying FireCount by the queued TriggerCount.
+The model now accepts positive CardSpellPlayed thresholds and uses that captured
+argument through the existing scheduler. Zero/negative thresholds remain ungated;
+an accepted zero/negative repeat batch can mark and consume once-only triggers
+without applying any effect.
+
+Pure checks cover the default-zero paid-spell path, below/equal/above positive
+thresholds, a negative argument below a negative threshold, individual rounded
+gold rewards per repeat, multiplicative fire/queue counts, zero/negative batches,
+spent once-only replays and 32 immutable branches. The explicit equality,
+above-threshold and nonpositive repeat cases are pure/source-derived; the native
+ordinary-card recording observes only argument zero and queued count one.
+
+The -IncantThresholds scene adds three native observers to the existing isolated
+Incant fixture: threshold one with gold23/Once, threshold zero with repeated
+gold31, and threshold minus three with gold13/Once. The original card-play method
+records a skipped positive observer, fired zero/negative observers and subsequent
+spent negative-once callbacks. The final muted Instant battle takes 97.95 seconds
+with the original Boss/waves and profile/log signatures preserved, zero capture
+failures/mismatches/unsupported operations/pending records, and all terminal
+effects settled.
+
+Independent comparison passes 62 room stages, 21 paid actions, seven EndTurns,
+230 closed contexts, 530 raw/canonical decisions and 11,860 physical-plane
+mappings. Complete policies and sixteen parallel branches end with Pyre61.
+All 32 team phases, 18 actor boundaries, 51 original admissions (12 Purify
+rejections), eleven paid empty spells, 139 FIFO status dispatches and 23 explicit
+status-removal boundaries match. Thirty-two team/actor/admission/removal branches
+also retain their parents. A current-source model deliberately ignoring positive
+Incant thresholds fails on the original native actor's HasTriggered flag
+(true instead of false).
+
+The same final model passes 30 historical complete battles, 29 paid-policy chains,
+one no-more-card chain and all 24 strict component calibrations: 54 unique
+historical inputs, with no unsupported or skipped native operation. The probe,
+checker and isolated game use Model.dll SHA-256
+ab9e8f6fe6b86fb4d2b66075621d6c3719c385616f51363dbcc798020528db96.
+The initial Incant model's combined180 regression remains a separate run bound to
+e26db6f690855eadc4adc90ec5dd2feaf5570de1a1a9695ab826195e5f5b5cea.
+Relic-triggered ability Incant, further card/trigger/effect combinations,
+Purify/Horde/aura interactions, card purification, complete pruning and the whole
+combat simulator remain unfinished.
