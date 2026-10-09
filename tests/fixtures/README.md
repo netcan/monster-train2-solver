@@ -1385,7 +1385,8 @@ OnDeath request at removal time. Accepted batches survive later purification and
 branch-local retained actor updates. Pure tests and two deliberately broken models
 verify these admission/death boundaries. Final Model.dll SHA-256 is
 fb6341d949d6b98027472cf3735bd5dda0ed9540351b22221b0cf9d61c432a3f;
-historical/component regression is still running. The incidental new removal
+its final regression passes 29 complete battles, 28 continuous paid-policy chains,
+one no-more-card chain and all 24 curated component calibrations. The incidental new removal
 calibration lacks its required nonempty pending-dissolve queue observation and is
 not curated; existing calibration gates remain strict. Horde/aura births with
 Purify and the complete simulator remain open.
@@ -1397,3 +1398,10 @@ operation is unsupported or skipped. All input identities, archive sizes and
 manifest SHA-256 hashes pass. This complete178 baseline uses Model.dll SHA-256
 e546dcf00cbda02d12431a4289be8b24b864a0f8cc7062bbaa7180530854ff0b;
 the newer removal/admission version is validated separately.
+
+full-battle-purify-queues.mt2f is a byte-identical native archive: 49,314 bytes,
+8,697 nodes and SHA-256
+1b852c9c28642bbbc254cee356c143e8112ae3d1336a023e6b81665a83f6fc20, without a text source.
+The manifest and required list contain 179 archives: 155 accepted battles and 24
+component calibrations. The complete178 baseline belongs to the preceding model;
+the new queue/removal model's combined179 regression is still pending.

@@ -46,6 +46,7 @@ $fixtures = @('full-battle-steward-once.mt2f', 'full-battle-no-cards.mt2f', 'ful
     'full-battle-status-callbacks.mt2f',
     'full-battle-status-callback-actions.mt2f',
     'full-battle-purify.mt2f',
+    'full-battle-purify-queues.mt2f',
     'full-battle-energy-effects.mt2f',
     'full-battle-energy-effects-lethal.mt2f',
     'full-battle-x-cost.mt2f',

@@ -6853,7 +6853,9 @@ has no request in this recording. Eighteen status boundaries, eight explicit
 removals, six paid room spells and all 159 FIFO status dispatches still match.
 The checker, probe and isolated game use Model.dll SHA-256
 fb6341d949d6b98027472cf3735bd5dda0ed9540351b22221b0cf9d61c432a3f.
-The final historical/component regression is running separately.
+The same final model passes 29 complete battle inputs, 28 continuous paid-policy
+chains, one no-more-card chain and all 24 curated component calibrations: 53 unique
+inputs with no unsupported or skipped native operation.
 
 The incidental character-removal calibration emitted with this battle is not
 accepted: it lacks the strict calibration's nonempty manager-queue observation
@@ -6871,3 +6873,11 @@ versioned baseline uses Model.dll SHA-256
 e546dcf00cbda02d12431a4289be8b24b864a0f8cc7062bbaa7180530854ff0b.
 It does not replace the separate validation of the newer removal/admission model
 fb6341d949d6b98027472cf3735bd5dda0ed9540351b22221b0cf9d61c432a3f.
+
+The final Purify queue battle is byte-identically curated as
+full-battle-purify-queues.mt2f, 49,314 bytes and 8,697 nodes, with no text source.
+Its SHA-256 is 1b852c9c28642bbbc254cee356c143e8112ae3d1336a023e6b81665a83f6fc20.
+The required list and manifest contain 179 archives: 155 accepted battles and 24
+component calibrations. The completed178 baseline above belongs to the previous
+status-Purify model; the final queue/removal model's combined179 regression is
+pending and is not claimed complete.
