@@ -7169,3 +7169,23 @@ and corrected ModelChecks.dll460AAC21C6EB82A08B31ACEAD854BF5B3CF344D3AD5820B03BC
 retained in .probe-runs/ability-incant-settlement-checks. No production model
 source change was needed for this sampling/control issue. The earlier raw frame
 captures remain rejected; arbitrary original-frame scheduling is still unverified.
+
+### Accepted binary ability-Incant battle
+
+The fully verified second settled recording is byte-identically curated as
+tests/fixtures/full-battle-ability-incant.mt2f:55,375 bytes,9,329 unique nodes,
+SHA256f36e097a8f59346c647d2e9d0163c6391d088025839d640c5980a9cee527e3e4.
+The native-source manifest records its complete archive identity; no JSON input
+or results directory becomes a regression dependency. The previous manifest
+rows retain their original bytes and order.
+
+The required inventory is now182 binary archives:158 accepted complete battles
+and24 strict component calibrations. This new scene covers17 paid actions/five
+EndTurns, two real shared-skill activators,20 card-play manager phases,25 Incant
+dispatches,242 status callbacks and81 native ability-cooldown effect states.
+All native stages and independent full-state comparisons pass; initial/mid-battle
+policies repeat in16 branches and callback/effect checks in32 branches. This
+proves the authored relic marker and original callback paths under explicit
+animation settlement. It does not verify other relics or arbitrary native frame
+scheduling. A complete182-input run of the corrected checker is still required;
+the prior181 baseline and this targeted acceptance are separate evidence.

@@ -4,10 +4,18 @@ These fixed inputs reproduce the independently modeled battle and calibration
 checks. Run `pwsh -NoProfile -File scripts/Check-Models.ps1` from the repository
 root. The script reads the curated fixture list in this directory.
 
-Current inventory is 181 archives: 157 accepted battles and 24 component
+Current inventory is 182 archives: 158 accepted battles and 24 component
 calibrations. The initial Incant model's complete 180-archive regression passes.
 The threshold model's combined181 regression has also completed successfully.
-New relic model work requires separate validation against its own final model binary.
+The relic model's combined181 run and the corrected checker's combined182 run
+require separate final-binary evidence.
+
+`full-battle-ability-incant.mt2f` retains schema107 with an isolated authored
+relic using the original native ability-Incant effect. It is not an obtainable
+artifact in the 2.2.1 asset catalog. Under the explicit card-animation settlement
+protocol, two native recordings have identical complete decision states; all17
+plays, five EndTurns, callbacks and initial/mid-battle parallel policies pass.
+The earlier recording with outstanding animation callbacks remains excluded.
 
 The retained inputs are `.mt2f` binary archives. They store typed, deduplicated
 value graphs, not JSON documents. Regression reads those graphs and constructs
