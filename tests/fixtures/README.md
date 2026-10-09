@@ -4,7 +4,7 @@ These fixed inputs reproduce the independently modeled battle and calibration
 checks. Run `pwsh -NoProfile -File scripts/Check-Models.ps1` from the repository
 root. The script reads the curated fixture list in this directory.
 
-Current inventory is 174 archives: 150 accepted battles and 24 component
+Current inventory is 175 archives: 151 accepted battles and 24 component
 calibrations. The newly accepted battle passes strict native and independent
 checks; the combined inventory regression is still in progress.
 
@@ -1286,3 +1286,13 @@ binary, has no text source or fixture JSON companion, and contains 39,816 bytes
 and 7,342 unique nodes. Card metadata records 24 original movements scheduled and
 none pending. This acceptance applies to the explicitly settled protocol;
 arbitrary unmodified frame timing and broader combat mechanics remain open.
+
+`full-battle-persistent-enchantment-summons-fresh.mt2f` independently covers the
+fresh-source variant of the same aura battle. Four nested child births create
+new source cards instead of copying the previous source's runtime state. All
+fifteen paid actions, five EndTurns, 41 room stages, 154 closed contexts and the
+complete initial/mid-battle policies match, with sixteen immutable branches and
+Pyre80. The muted Instant native run takes 181.73 seconds, has zero capture
+failures/differences/unsupported/pending records and preserves original profile
+signatures. Its byte-identical source-free native binary is 39,470 bytes with
+7,242 nodes. The combined inventory regression remains in progress.

@@ -6617,3 +6617,19 @@ verify all 32/31 paid actions, seven EndTurns, mid-battle roots and sixteen bran
 ModelChecks builds with fourteen existing nullable warnings and no errors. The
 ongoing full historical run uses the same Model.dll; its coverage counts are
 checked for skipped operations separately before claiming a complete result.
+
+### Fresh source cards in persistent aura summons
+
+The native fresh-source variant now passes its complete fifteen-action,
+five-EndTurn battle and every intermediate state, with four real child births
+and no copied child source cards. All 154 closed contexts, 370 raw/canonical
+decisions, 11,785 position-plane mappings, a mid-battle root and sixteen parallel
+branches match, including Pyre80. The muted Instant run takes 181.73 seconds and
+has zero capture failures, differences, unsupported paths or pending records;
+original profile/log signatures are unchanged.
+
+Its source-free native binary is byte-identical and curated as
+full-battle-persistent-enchantment-summons-fresh.mt2f (39,470 bytes, 7,242 nodes).
+Inventory is 175: 151 accepted battles and 24 calibrations. The new checker rejects
+skipped operations; a combined175 regression is not yet complete. The full battle
+simulator and optimal solver remain unfinished.
