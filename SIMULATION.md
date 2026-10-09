@@ -7663,3 +7663,45 @@ the completed frozen186 regression is separate evidence. A full187-input
 regression of the extended checker/model remains required. No generated JSON or
 results output becomes a dependency, and broader relic lifecycle, room, Boss and
 card/effect simulation remains unfinished.
+
+### Native signed card-modifier arithmetic and minimum-integer exceptions
+
+The shared CardModifierModel.UpgradedStat now preserves unchecked32-bit additions
+before native large-change and final clamps. Its magnitude test uses integer
+Math.Abs, matching Unity Mathf.Abs and its OverflowException for an added
+int.MinValue. Widening the magnitude to long suppressed that native exception;
+checked additions incorrectly threw on ordinary native wraps. For example,
+Damage base-5 with two int.MaxValue upgrades and no floor returns-7 natively;
+the retained previous model threw OverflowException on that exact recorded case.
+
+The optional -ModifierOverflow probe queries original native arithmetic using
+isolated managed modifier/upgrade objects, capturing a binary schema1 archive.
+All2,240 queries span eight statistics, both floor settings, seven bases,
+ten ordered addition sequences and offset/upgrade placement. They retain1,344
+numeric results and896 original minimum-integer exceptions. The independent
+corrected model matches both values and exception types and repeats all cases
+in32 immutable parallel branches. Native full context, gameplay/test RNG and
+frame are unchanged; no live card or modifier is edited. The muted Instant
+native recording exits zero in67.04 seconds with unchanged original files and
+zero capture failures/differences/unsupported/pending records.
+
+All existing pure checks, the256 original modifier calculations and the
+42,470-query/58-boundary upgrade-mask calibration pass with the fixed model.
+The captured native battle's complete independent check also exits zero:21 paid
+plays, seven EndTurns, final Pyre73 and16 policy branches. Probe builds without
+warnings/errors; checker has14 existing nullable warnings and no errors.
+The overflow archive is9,282 bytes,2,949 nodes, SHA256
+ebe5a4c9e54232661ab4247a2748ef17478ee90ba357983818b3ace1e0e8bbd5.
+Evidence is .probe-runs/modifier-overflow-final-native.log,
+.probe-runs/modifier-overflow-before-independent.log,
+.probe-runs/modifier-overflow-final-independent.log,
+.probe-runs/modifier-overflow-pure-and-components.log,
+.probe-runs/modifier-overflow-battle-independent.log and
+.probe-runs/full-battle-units-spells-and-junk-20261009-215316-7fbbdac7/card-modifier-overflow-calibration.mt2f.
+The fixed .probe-runs/modifier-overflow-final-checks snapshot retains Model.dll
+1b430917555e2b2e43876d93179407ec60a6dfb575602ae958605a4ac6c7e388 and
+ModelChecks.dll9aac535de3ee921665066610a2b33768b7b142179dea25bf72695a0f8ec2832c.
+The still-running frozen187-input upgrade-mask regression precedes this correction
+and is preserved. Full regression of the correction remains required, as do
+branch-derived card eligibility, temporary relic upgrade lifecycle and broader
+room, Boss and card/effect coverage. The entire battle objective remains open.

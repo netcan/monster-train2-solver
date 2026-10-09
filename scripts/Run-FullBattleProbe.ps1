@@ -111,6 +111,7 @@ param(
     [switch] $PreviewReferences,
     [switch] $RelicCatalog,
     [switch] $UpgradeMasks,
+    [switch] $ModifierOverflow,
     [switch] $IncantRelic,
     [switch] $IncantRelics,
     [switch] $SpawnStatusRelics,
@@ -241,6 +242,7 @@ $environment = @{
     MT2_PROBE_PREVIEW_REFERENCES = $(if ($PreviewReferences) { '1' } else { '0' })
     MT2_PROBE_RELIC_CATALOG = $(if ($RelicCatalog) { '1' } else { '0' })
     MT2_PROBE_UPGRADE_MASKS = $(if ($UpgradeMasks) { '1' } else { '0' })
+    MT2_PROBE_MODIFIER_OVERFLOW = $(if ($ModifierOverflow) { '1' } else { '0' })
     MT2_PROBE_SETTLE_DEATH_DISSOLVES = $(if ($SettleDeathDissolves) { '1' } else { '0' })
     MT2_PROBE_SETTLE_CARD_ANIMATIONS = $(if ($SettleCardAnimations) { '1' } else { '0' })
     MT2_PROBE_STATUS_CALLBACKS = $(if ($HordeStatuses -or $StatusCallbacks) { '1' } else { '0' })
@@ -341,6 +343,19 @@ if ($RelicCatalog) {
         }
         Write-Output "NATIVE-RELIC-CATALOG PASS: $($catalogRecords.Count) definitions from eight original collections; unchanged gameplay/test RNG and frame."
     } finally { $catalogArchive.Dispose() }
+}
+if ($ModifierOverflow) {
+    Add-Type -Path (Join-Path $workspace 'src\FixtureArchive\bin\Release\net8.0\FixtureArchive.dll')
+    $overflowArchive = [MonsterTrain2Poju.Fixtures.FixtureDocument]::Read((Join-Path $profile 'card-modifier-overflow-calibration.mt2f'))
+    try {
+        $overflowData = $overflowArchive.RootElement
+        if (-not $overflowData.GetProperty('ContextUnchanged').GetBoolean() -or
+            $overflowData.GetProperty('GameModuleMvid').GetString() -ne $trace.GameModuleMvid -or
+            $overflowData.GetProperty('FrameBefore').GetInt32() -ne $overflowData.GetProperty('FrameAfter').GetInt32() -or
+            -not $overflowData.GetProperty('RngBefore').ContentEquals($overflowData.GetProperty('RngAfter')) -or
+            $overflowData.GetProperty('Samples').GetArrayLength() -ne 2240) { throw 'Incomplete or mutating modifier overflow calibration.' }
+        Write-Output 'NATIVE-MODIFIER-OVERFLOW-CAPTURE PASS: 2240 original numeric queries; unchanged context/RNG/frame.'
+    } finally { $overflowArchive.Dispose() }
 }
 if ($UpgradeMasks) {
     Add-Type -Path (Join-Path $workspace 'src\FixtureArchive\bin\Release\net8.0\FixtureArchive.dll')

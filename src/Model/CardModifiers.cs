@@ -190,7 +190,9 @@ namespace MonsterTrain2Poju.Model
             int value = Clamp(baseValue);
             foreach (CardModifiers modifier in modifiers)
             foreach (int addition in new[] { modifier.Offsets.Value(stat) }.Concat(modifier.Upgrades.Select(upgrade => upgrade.Stats.Value(stat))))
-                if (addition != 0) value = Math.Abs((long)addition) >= 99 ? Clamp(checked(value + addition)) : checked(value + addition);
+                // Native Mathf.Abs(int) throws for MinValue; ordinary additions
+                // wrap before either the immediate large-change clamp or final clamp.
+                if (addition != 0) value = Math.Abs(addition) >= 99 ? Clamp(unchecked(value + addition)) : unchecked(value + addition);
             return Clamp(value);
             int Clamp(int number) => Math.Max(floor, Math.Min(ceiling, number));
         }

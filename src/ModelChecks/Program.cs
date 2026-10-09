@@ -1,6 +1,12 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
 
+if (args.Length == 2 && args[0] == "--modifier-overflow-only")
+{
+    CardModifierOverflowChecks.Native(args[1]);
+    return;
+}
+
 if (args.Length == 1 && args[0] == "--upgrade-mask-pure")
 {
     CardUpgradeMaskChecks.Run();
@@ -307,6 +313,8 @@ foreach (string path in args.Where(path => path.Contains("card-modifier-calibrat
     CardModifierChecks.Native(path);
 foreach (string path in args.Where(path => path.Contains("card-upgrade-mask-calibration", StringComparison.OrdinalIgnoreCase)))
     CardUpgradeMaskChecks.Native(path);
+foreach (string path in args.Where(path => path.Contains("card-modifier-overflow-calibration", StringComparison.OrdinalIgnoreCase)))
+    CardModifierOverflowChecks.Native(path);
 foreach (string path in args.Where(path => path.Contains("rng-calibration", StringComparison.OrdinalIgnoreCase)))
     RngChecks.Run(path);
 foreach (string path in args.Where(path => path.Contains("gold-reward-calibration", StringComparison.OrdinalIgnoreCase)))

@@ -18,6 +18,17 @@ internal static class CardModifierChecks
         Require(CardModifierModel.UpgradedStat(3, "Damage", true, low, high) == 0 &&
             CardModifierModel.UpgradedStat(CardModifierModel.UpgradedStat(3, "Damage", true, low), "Damage", true, high) == 5,
             "Unit combined and spell separate modifier group clamps differ.");
+        var wrapped = new CardModifiers(new(), [Upgrade(new(damage: int.MaxValue, xCost: int.MaxValue)), Upgrade(new(damage: 1, xCost: 1))], 0, []);
+        Require(CardModifierModel.UpgradedStat(0, "Damage", false, wrapped) == int.MinValue &&
+            CardModifierModel.UpgradedStat(0, "Damage", true, wrapped) == 0 &&
+            CardModifierModel.UpgradedStat(0, "XCost", true, wrapped) == int.MinValue,
+            "Native signed integer wrap did not precede the requested final floor.");
+        Require(CardModifierModel.UpgradedStat(99, "Cost", true, new CardModifiers(new(cost: int.MaxValue), [], 0, [])) == 0,
+            "A large overflowing cost offset must wrap before its immediate clamp.");
+        bool minimumFailed = false;
+        try { CardModifierModel.UpgradedStat(0, "Size", false, new CardModifiers(new(size: int.MinValue), [], 0, [])); }
+        catch (OverflowException) { minimumFailed = true; }
+        Require(minimumFailed, "Native Mathf.Abs(int.MinValue) exception was silently converted into a numeric result.");
         var instance = new CardInstanceState(1, "unit", permanent, temporary, 0, 0, 0, []);
         var unit = new CombatUnit(0, "steward", CombatTeam.Player, 8, 25, 25, true, false, false, [], size: 3);
         var rule = new CardPlayRule("unit", "unit", 1, "SpawnMonster", "Standby", unit, []);
