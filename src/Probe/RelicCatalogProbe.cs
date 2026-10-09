@@ -31,6 +31,7 @@ namespace MonsterTrain2Poju.Probe
                     Bool = effect.GetParamBool(), Bool2 = effect.GetParamBool2(), Str = effect.GetParamString(),
                     Trigger = effect.GetParamTrigger().ToString(), ExcludedCardTriggers = effect.GetCardTriggers().Select(trigger => trigger.ToString()).ToArray(),
                     Statuses = (effect.GetParamStatusEffects() ?? Array.Empty<StatusEffectStackData>()).Select(status => new { status.statusId, status.count }).ToArray(),
+                    CardUpgrade = Upgrade(effect.GetParamCardUpgradeData()),
                     Conditions = (effect.GetEffectConditions() ?? new System.Collections.Generic.List<RelicEffectCondition>()).Select(condition => new
                     {
                         TrackedValue = Field(condition, "paramTrackedValue").ToString(), CardType = Field(condition, "paramCardType").ToString(),
@@ -45,13 +46,28 @@ namespace MonsterTrain2Poju.Probe
                 throw new InvalidOperationException("Relic definition inspection changed native RNG or frame.");
             using (var document = NativeFixtureCapture.Capture(new
             {
-                Schema = 3, GameVersion = UnityEngine.Application.version,
+                Schema = 4, GameVersion = UnityEngine.Application.version,
                 GameModuleMvid = typeof(RelicState).Assembly.ManifestModule.ModuleVersionId,
                 FrameBefore = frame, FrameAfter = UnityEngine.Time.frameCount, RngBefore = before, RngAfter = after, Relics = relics
             }))
             using (var stream = File.Create(Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!, "relic-catalog.mt2f")))
                 document.Write(stream);
         }
+        private static object? Upgrade(CardUpgradeData? data) => data == null ? null : new
+        {
+            Id = data.GetID(), AssetKey = data.name, Unique = data.IsUnique(), ExcludeFromClones = data.GetExcludeFromClones(),
+            Damage = data.GetBonusDamage(), Health = data.GetBonusHP(), UnhealedHealth = data.GetUnhealedBonusHP(),
+            CostReduction = data.GetCostReduction(), XCostReduction = data.GetXCostReduction(), Heal = data.GetBonusHeal(),
+            Size = data.GetBonusSize(), EquipmentLimit = data.GetBonusEquipment(), UpgradeSlots = data.GetBonusUpgradeSlotCount(),
+            Statuses = data.GetStatusEffectUpgrades().Select(status => new { status.statusId, status.count, status.fromPermanentUpgrade }).ToArray(),
+            AddedTraits = data.GetTraitDataUpgrades().Select(trait => trait.GetTraitStateName()).ToArray(), RemovedTraits = data.GetRemoveTraitUpgrades().ToArray(),
+            CharacterTriggers = data.GetCharacterTriggerUpgrades().Select(trigger => trigger.GetTrigger().ToString()).ToArray(),
+            CardTriggers = data.GetCardTriggerUpgrades().Select(trigger => trigger.GetTrigger().ToString()).ToArray(),
+            RoomModifierCount = data.GetRoomModifierUpgrades().Count,
+            ReplacedUpgradeIds = data.GetUpgradesToRemove().Select(upgrade => upgrade.GetID()).ToArray(),
+            UnitAbilityId = data.GetUnitAbilityUpgrade()?.GetID(), RoomAbilityId = data.GetRoomAbilityUpgrade()?.GetID(),
+            Filters = data.GetFilters().Select(CardUpgradeMaskProbe.Definition).ToArray()
+        };
         private static object Field(object source, string name) => AccessTools.Field(source.GetType(), name).GetValue(source);
         private static JObject RngStates()
         {

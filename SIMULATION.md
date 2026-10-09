@@ -7545,3 +7545,29 @@ and24 component calibrations, with no JSON/results dependency. Native/independen
 acceptance of this scene and the completed185 preceding-model baseline are
 distinct evidence; the final scheduling model requires its own complete186 run.
 The whole-battle goal still requires further relic, room, Boss and effect coverage.
+
+### Original relic card-upgrade parameter catalog
+
+The optional relic catalog now writes schema4, adding each effect's serialized
+card-upgrade definition: numeric bonuses, uniqueness/clone flags, statuses,
+trait/trigger names, ability IDs, replacement IDs, room-modifier count and full
+filter parameters with original card-pool IDs. Required/excluded sizes remain
+integers. This inspection does not instantiate upgrades, execute filters or
+acquire artifacts. Trait/trigger names and room-modifier counts are diagnostic
+metadata rather than complete runnable definitions.
+
+The final muted Instant native recording exits zero in61.83 seconds, with no
+capture differences, unchanged original files and identical gameplay/test RNG
+and frame counters across inspection. The schema4 archive is52,600 bytes with
+5,247 unique nodes, SHA256
+1bc19a3e67108739532a4783c8a34643017a7a739bd7a69bd931ba77440eec9f.
+An ordered comparison against schema3 confirms all662 identities and every
+previously recorded effect field remain identical. Eleven of224 collectable
+artifacts contain RelicEffectAddTempUpgrade; their actual upgrades include cost,
+X-cost, stats, statuses, traits and unit abilities. Catalog discovery does not
+establish simulation support for this family or increase the accepted inventory.
+
+Evidence is .probe-runs/relic-upgrade-catalog-final-build.log (zero warnings/errors),
+.probe-runs/relic-upgrade-catalog-final-native.log,
+.probe-runs/relic-upgrade-catalog-final-audit.log and
+.probe-runs/full-battle-units-spells-and-junk-20261009-211225-c831a751/relic-catalog.mt2f.
