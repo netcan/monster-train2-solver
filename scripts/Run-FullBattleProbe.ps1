@@ -103,6 +103,7 @@ param(
     [switch] $PersistentEnchantmentSummons,
     [switch] $PersistentEnchantmentSummonsFresh,
     [switch] $CharacterRemoval,
+    [switch] $PreviewReferences,
     [switch] $SettleDeathDissolves,
     [switch] $HarvestTriggers,
     [switch] $HordeRemoval,
@@ -222,6 +223,7 @@ $environment = @{
     MT2_PROBE_FAST_REPLAY = '0'
     MT2_PROBE_GAME_SPEED = $GameSpeed
     MT2_PROBE_CHARACTER_REMOVAL = $(if ($CharacterRemoval) { '1' } else { '0' })
+    MT2_PROBE_PREVIEW_REFERENCES = $(if ($PreviewReferences) { '1' } else { '0' })
     MT2_PROBE_SETTLE_DEATH_DISSOLVES = $(if ($SettleDeathDissolves) { '1' } else { '0' })
     MT2_PROBE_STATUS_CALLBACKS = $(if ($HordeStatuses -or $StatusCallbacks) { '1' } else { '0' })
     MT2_PROBE_STATUS_CALLBACK_ACTIONS = $(if ($StatusCallbackActions) { '1' } else { '0' })

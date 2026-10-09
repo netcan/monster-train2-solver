@@ -199,18 +199,13 @@ namespace MonsterTrain2Poju.Model
             RoomCombatState? room = source.Context?.Enchantments?.Rooms.FirstOrDefault(item => item.RoomIndex == source.RoomIndex);
             return room == null ? source : Room(room, source.Context);
         }
-        internal static CombatUnit RestorePreviewEffects(CombatUnit original, EnchantmentWorld observed, bool prepare)
+        internal static CombatUnit RestorePreviewEffects(CombatUnit original, EnchantmentWorld observed, bool prepare,
+            IReadOnlyCollection<int>? removedPreviewUnitIds = null)
         {
             CombatUnit? tested = observed.Rooms.SelectMany(room => room.Units).Concat(observed.RetainedUnits.Select(actor => actor.Unit))
                 .FirstOrDefault(unit => unit.Id == original.Id);
             if (tested == null) return original;
-            return original.WithTriggers(original.Triggers.Select((trigger, index) => trigger.WithEffects(trigger.Effects.Select((effect, effectIndex) =>
-            {
-                EnchantmentRule? after = index < tested.Triggers.Count && effectIndex < tested.Triggers[index].Effects.Count
-                    ? tested.Triggers[index].Effects[effectIndex].Enchantment : null;
-                return effect.Enchantment == null || after == null ? effect : effect.WithEnchantment(effect.Enchantment.WithState(
-                    prepare ? EnchantmentLifecycleModel.PrepareForPreview(after.State) : after.State));
-            }).ToArray())).ToArray());
+            return PreviewEffectsModel.Restore(original, tested, removedPreviewUnitIds ?? Array.Empty<int>(), prepare);
         }
         internal static TrainCombatState Attach(EnchantmentCombatState frame)
         {

@@ -98,16 +98,11 @@ namespace MonsterTrain2Poju.Model
             {
                 EnchantmentWorld observed = previewContext.Enchantments!;
                 var actors = observed.Rooms.SelectMany(room => room.Units).Concat(observed.RetainedUnits.Select(actor => actor.Unit)).ToDictionary(unit => unit.Id);
+                int[] removed = actors.Keys.Where(id => id >= firstPreviewId).ToArray();
                 CombatUnit RestoreEnchantments(CombatUnit original)
                 {
                     if (!actors.TryGetValue(original.Id, out CombatUnit? tested)) return original;
-                    return original.WithTriggers(original.Triggers.Select((trigger, index) => trigger.WithEffects(trigger.Effects.Select((effect, effectIndex) =>
-                    {
-                        EnchantmentRule? after = index < tested.Triggers.Count && effectIndex < tested.Triggers[index].Effects.Count
-                            ? tested.Triggers[index].Effects[effectIndex].Enchantment : null;
-                        return effect.Enchantment == null || after == null ? effect : effect.WithEnchantment(effect.Enchantment.WithState(
-                            after.State));
-                    }).ToArray())).ToArray());
+                    return PreviewEffectsModel.Restore(RestorePrimaryEffects(original), tested, removed);
                 }
                 context = context.WithEnchantments(new EnchantmentWorld(source.Rooms.Select(room => new RoomCombatState(room.RoomIndex,
                     room.Deployment, room.Units.Select(RestoreEnchantments).ToArray(), room.ExternalInteractions, null, room.Preview)).ToArray(),

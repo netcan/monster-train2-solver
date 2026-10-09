@@ -1,6 +1,11 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
 
+if (args.Length == 2 && args[0] == "--preview-reference-only")
+{
+    PreviewReferenceChecks.Native(args[1]);
+    return;
+}
 if (args.Length == 2 && args[0] == "--enchantment-summon-only")
 {
     EnchantmentSummonChecks.Native(args[1]);
@@ -259,6 +264,8 @@ foreach (string path in args.Where(path => path.Contains("character-removal-cali
 foreach (string path in args.Where(path => path.Contains("enchantment-summon-", StringComparison.OrdinalIgnoreCase) &&
     path.Contains("calibration", StringComparison.OrdinalIgnoreCase)))
     EnchantmentSummonChecks.Native(path);
+foreach (string path in args.Where(path => path.Contains("preview-reference-calibration", StringComparison.OrdinalIgnoreCase)))
+    PreviewReferenceChecks.Native(path);
 
 static void Check(bool condition, string message)
 {

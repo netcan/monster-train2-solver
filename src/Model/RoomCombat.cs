@@ -1443,7 +1443,9 @@ namespace MonsterTrain2Poju.Model
                 if (originalWorld?.AutomaticLifecycle == true)
                 {
                     EnchantmentWorld observed = preview.context!.Enchantments!;
-                    CombatUnit Restore(CombatUnit unit, int room) => EnchantmentWorldModel.RestorePreviewEffects(unit, observed, room == source.RoomIndex);
+                    int[] removedPreviewIds = observed.Rooms.SelectMany(room => room.Units).Concat(observed.RetainedUnits.Select(unit => unit.Unit))
+                        .Where(unit => unit.Id >= context.NextUnitId).Select(unit => unit.Id).ToArray();
+                    CombatUnit Restore(CombatUnit unit, int room) => EnchantmentWorldModel.RestorePreviewEffects(unit, observed, room == source.RoomIndex, removedPreviewIds);
                     context = context.WithEnchantments(new EnchantmentWorld(originalWorld.Rooms.Select(room => new RoomCombatState(room.RoomIndex,
                         room.Deployment, room.Units.Select(unit => Restore(unit, room.RoomIndex)).ToArray(), room.ExternalInteractions, null, room.Preview)).ToArray(),
                         originalWorld.Movement, originalWorld.EnemySlotsPerRoom, originalWorld.RetainedUnits.Select(actor => new EnchantmentRetainedUnit(

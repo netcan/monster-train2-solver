@@ -6271,3 +6271,49 @@ syntax and whitespace checks pass. Inventory is 149 battles/eighteen calibration
 a combined 167-archive run is not claimed. The prior full163 run remains the
 complete regression baseline, and no new whole-battle aura-summon policy is
 claimed accepted.
+
+### Shared effects after combat preview restoration
+
+PreviewEffectsModel restores native shared effect state while retaining the
+primary actor's numeric state and primary trigger once flags. It matches observed
+triggers by StateId, carries both persistent aura maps without dropping target
+entries, and carries the summon effect's first-born identity. A preview-born
+target scheduled for removal resolves to zero in the canonical decision cache;
+a cache still pointing to a real primary unit remains intact.
+
+Both whole-train UI previews and nested Boss attack previews use this restoration.
+Previously the train path cleared a preview-overwritten summon cache, then
+refreshed from a shared aura world containing the old cache. The world now stores
+the restored summon and aura effects together, preventing that overwrite.
+
+The opt-in PreviewReferences observer records original
+SetCharacterPreviewState(Calculating/On) boundaries without replacing gameplay.
+Its native calibration has nineteen complete actor restorations and one preview
+birth. The latter is captured before EnableCombatPreviews: its primary origin is
+attack 8/HP 30, empty statuses and no applied stat upgrades, on temporary room-zero
+point 2. The original On boundary schedules it at removal stage 3. Scheduled
+removal is distinct from actual Unity destruction, as calibrated separately.
+
+Independent checks recompute all nineteen complete actor states and verify both
+the overwritten cache 4 -> preview birth 11 -> zero and preserved live cache 6,
+restored primary once flags, retained aura target 11 and 32 immutable parallel
+branches. The 3,787-byte/580-node preview-reference-calibration.mt2f is the exact
+native binary, has no text source and has SHA-256
+82fea7df028775f9258ba3f1d93925eba21e6aba481f48de63bda4235128a833.
+
+This calibrates restoration given observed preview actors/removals. It does not
+claim independent simulation of the full preview sequence: metadata explicitly
+keeps FullPreviewSimulationVerified=false. Full aura-summon battles still require
+retaining preview-born primary origins and referenced objects, both physical
+spawn-point planes and synthetic identity advancement. Failed diagnostic battles
+remain excluded. Inventory is 168 archives: 149 battles and nineteen calibrations.
+
+Validation: the rebuilt model passes all thirty affected historical battle
+suites (22 triggered-summon/persistent-aura scenes plus Boss, physical-point,
+bump and copy scenes), 28 continuous paid policy chains, all nineteen
+calibrations and pure checks. The latest native restoration calibration passes
+independently and in that combined affected regression. Probe builds with zero
+warnings/errors; ModelChecks has its fourteen existing nullable warnings and no
+errors. All 168 inventory entries/sizes/hashes, the new native byte provenance,
+source-free binary metadata, script syntax and whitespace checks pass. A full
+168-archive run is not claimed; the previous complete163 run remains the baseline.

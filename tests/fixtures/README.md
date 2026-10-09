@@ -1169,3 +1169,26 @@ the four new curated calibrations/pure checks. All 167 hashes/sizes, regression
 entries and PowerShell syntax pass. A combined167 run is not claimed; the prior
 complete163 run remains the baseline. The failed new whole-battle diagnostics
 are excluded.
+
+preview-reference-calibration.mt2f observes nineteen original native combat-preview
+actor restorations and one temporary birth before EnableCombatPreviews. Independent
+checks compare complete states, the cleared preview-overwritten first-born cache,
+a preserved real-unit cache, primary once flags and aura dictionaries retaining
+the temporary target. Thirty-two immutable parallel branches pass. The native
+birth's primary origin has attack 8/HP 30 and no applied stat upgrades or statuses;
+its temporary point is room 0/index 2 and original removal reaches stage 3.
+
+The model now restores summon and aura effect state in the same shared world,
+preventing a later refresh from reintroducing the old summon cache. The archive is
+a byte-identical, source-free native binary with 3,787 bytes/580 nodes. It explicitly
+keeps FullPreviewSimulationVerified=false: complete preview-born actor retention,
+physical position planes and identity advancement remain open, and rejected
+whole-battle diagnostics are excluded. Inventory is now 168 archives: 149 battles
+and nineteen calibrations.
+
+The rebuilt model passes thirty affected historical battle suites, 28 continuous
+paid policy chains, all nineteen calibrations and pure checks. All 168 inventory
+hashes/sizes and regression entries match, and the new binary equals its raw
+native source. Probe has zero build warnings/errors; the checker keeps fourteen
+existing nullable warnings with no errors. A full168 run is not claimed; the
+earlier complete163 regression remains the full baseline.
