@@ -7477,3 +7477,19 @@ callback boundary. It is not added to the curated inventory. Evidence is
 .probe-runs/ability-lifecycle-relic-count-pure.log,
 .probe-runs/ability-lifecycle-relic-count-historical.log and
 .probe-runs/ability-lifecycle-relic-count-clone.log.
+
+### Complete original spawn-status relic 185 regression
+
+The frozen .probe-runs/spawn-status-relics-final-checks snapshot's185-input
+regression has completed with terminal exit zero:161 complete native battles,
+157 paid policy chains,four no-more-card chains and24 component calibrations.
+Every original input identity, byte length and SHA256 still matches the manifest;
+the curated list contains exactly these185 unique inputs. All161 battle outputs,
+the24 ordered calibration results and zero failed/unsupported core transitions
+are audited. Frozen Model.dll BDFB316583737511EA317CEA188973F4E0DACCB17825008C71F620987486958F
+and ModelChecks.dll4EA66BFDF8B93F1F7BDDB17B003C94965092C415CE5333DA216449528C683005
+retain their original hashes. Evidence is .probe-runs/spawn-status-relics-complete-regression.log,
+.probe-runs/spawn-status-relics-complete-inputs.txt and
+.probe-runs/spawn-status-relics-complete-audit.log. This establishes the original
+spawn-status model baseline. Later ability-count and standalone-birth scheduling
+changes are not included, and require their own regression.

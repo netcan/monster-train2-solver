@@ -11,8 +11,10 @@ The relic model's combined181 regression has also completed successfully.
 The corrected checker's combined182 regression has also completed successfully.
 The extended trigger-count model's complete183 regression has completed:159
 battles,155 paid policy chains,four no-more-card chains and24 calibrations pass.
-The combined relic and new spawn-status scenes pass independently. The latest
-spawn-status model requires a complete185 regression, including both additions.
+The original spawn-status model's complete185 regression has completed:161
+battles,157 paid policy chains,four no-more-card chains and24 calibrations pass.
+Subsequent ability-count and relic-birth scheduling changes require their own
+regression; the frozen185 baseline does not include those changes.
 
 `full-battle-incant-relic.mt2f` retains schema108 with the original obtainable
 ExtraSpellCastTrigger acquired through SaveManager. The relic asset is unchanged;
