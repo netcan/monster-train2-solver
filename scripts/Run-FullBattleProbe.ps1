@@ -1427,7 +1427,8 @@ if ($SettleDeathDissolves) {
 }
 if ($SettleCardAnimations) {
     if ($trace.Schema -ne 105 -or -not $trace.CardAnimationSettlement.Enabled -or
-        $trace.CardAnimationSettlement.PreviewWaits -lt 0 -or $trace.CardAnimationSettlement.DecisionWaits -lt 0) {
+        $trace.CardAnimationSettlement.PreviewWaits -lt 0 -or $trace.CardAnimationSettlement.DecisionWaits -lt 0 -or
+        $trace.CardAnimationSettlement.ScheduledMovements -le 0 -or $trace.CardAnimationSettlement.PendingMovements -ne 0) {
         throw 'Native card-animation settlement protocol is missing or invalid.'
     }
 }

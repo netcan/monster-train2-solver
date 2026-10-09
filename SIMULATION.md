@@ -6543,3 +6543,14 @@ position projection across preview rooms. Carrying selected preview positions
 without that input initially skipped two owned-equipment revival policy checks.
 The final guard restores both complete 32-action/31-action, seven-EndTurn policies;
 the earlier thirty other battle suites and 24 calibrations remain passing.
+
+The card-animation settlement protocol also waits for CardAnimator's original
+cardPlayedTweens completion callbacks. The played-monster FX branch schedules
+these callbacks without emitting AnimationStarted, so hand flags and temporary
+pool occupancy alone can falsely appear settled. The opt-in gate observes active,
+incomplete original tweens; it neither completes nor suppresses their callbacks.
+Native metadata records scheduled movements and remaining completion callbacks.
+A 160.97-second muted Instant run has 24 scheduled movements, none pending,
+and an independently matching fifteen-action/five-EndTurn policy in sixteen
+branches, including the new copy counter. The script requires positive movement
+coverage and zero pending callbacks before accepting this protocol.
