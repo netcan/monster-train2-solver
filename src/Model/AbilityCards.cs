@@ -79,7 +79,7 @@ namespace MonsterTrain2Poju.Model
             IReadOnlyList<AbilityCardCacheEntry>? cache) => new CombatContext(source.Cards, source.BattleRng, source.Gold, nextId,
                 source.MaxHandSize, source.StatusRules, source.Statistics, source.CardInstances, registry, source.AllScenarioBossesDead,
                 source.NextAddedTemporaryUpgrades, source.OtherPiles, source.QueryFrame, source.KillCamActivated, source.MagicPower,
-                source.IsolatedBattlePreview, source.EnergyState, source.RoomCapacities, cache, source.LastAbilityActivatorUnitId, source.PermanentlyDisabledAbilities, source.LastSpawnedUnitId, source.NextUnitId, source.SpawnPoints, source.SummonCatalog, source.Enchantments);
+                source.IsolatedBattlePreview, source.EnergyState, source.RoomCapacities, cache, source.LastAbilityActivatorUnitId, source.PermanentlyDisabledAbilities, source.LastSpawnedUnitId, source.NextUnitId, source.SpawnPoints, source.SummonCatalog, source.Enchantments, source.PurifyBlockedTriggers);
         private static AbilityCardResult Unsupported(string error) => new AbilityCardResult(null, null, false, error);
     }
 }

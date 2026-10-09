@@ -199,7 +199,6 @@ namespace MonsterTrain2Poju.Probe
             int id = UnitId(character);
             CharacterState? lastAttacker = character.GetLastAttackerCharacter();
             CombatTrigger[] triggers = CaptureTriggers(character, interactions);
-            if (character.IsPurified()) interactions.Add("Purified unit trigger restrictions");
             if (character.GetRoomStateModifiers().Count > 0)
                 interactions.Add(character.GetSourceCharacterData().GetAssetKey() + " room modifiers");
             CardState? card = character.GetSpawnerCard();
@@ -295,7 +294,8 @@ namespace MonsterTrain2Poju.Probe
                 RoomCapacityProbe.Capture(managers.GetRoomManager()!), abilityCache,
                 activatorId, AbilityLifecycleProbe.Disabled(managers.GetSaveManager()),
                 lastSpawnedId, NextUnitId, spawnPoints,
-                TriggeredSummonProbe.Catalog(), enchantments);
+                TriggeredSummonProbe.Catalog(), enchantments,
+                managers.GetSaveManager().GetBalanceData().GetDisallowedPurifyCharacterTriggers().Select(kind => kind.ToString()).ToArray());
         }
 
         private static StatisticQueryFrame CaptureQueryFrame(AllGameManagers managers)

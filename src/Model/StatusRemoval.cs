@@ -41,6 +41,8 @@ namespace MonsterTrain2Poju.Model
                 context = horde.State.Context; callbacks.AddRange(horde.PendingCallbacks);
             }
             StatusCallbackModel.Removed(source.RoomIndex, target, changed, id, callbacks);
+            string? queueError = StatusCallbackModel.FilterPurifyQueue(context, callbacks);
+            if (queueError != null) return Unsupported(queueError);
             return EnchantmentWorldModel.StatusChanged(new RoomCombatResult(new RoomCombatState(source.RoomIndex, source.Deployment,
                 source.Units.Select(unit => unit.Id == targetId ? changed : unit)
                     .Where(unit => unit.Id != targetId || target.Health <= 0 || changed.Health > 0).ToArray(), source.ExternalInteractions, context, source.Preview),

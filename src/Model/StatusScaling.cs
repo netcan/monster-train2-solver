@@ -100,6 +100,7 @@ namespace MonsterTrain2Poju.Model
             CombatUnit? target = source.Units.FirstOrDefault(unit => unit.Id == targetId);
             if (target == null) return Unsupported("Missing status target.");
             if (!overrideImmunity && (target.StatusImmunities.Contains(added.Id) || target.Status("immune") != null)) return Match(source);
+            if (target.Status("purify")?.Stacks > 0) return Match(source);
             CombatContext? context = source.Context;
             int stacks = added.Stacks;
             if (allowModification)
@@ -127,9 +128,44 @@ namespace MonsterTrain2Poju.Model
             }
             string? callbackError = StatusCallbackModel.Added(source.RoomIndex, target, changed, added.Id, queue, existing ?? added);
             if (callbackError != null) return Unsupported(callbackError);
-            return EnchantmentWorldModel.StatusChanged(new RoomCombatResult(new RoomCombatState(source.RoomIndex, source.Deployment,
+            callbackError = StatusCallbackModel.FilterPurifyQueue(context, queue);
+            if (callbackError != null) return Unsupported(callbackError);
+            RoomCombatResult applied = EnchantmentWorldModel.StatusChanged(new RoomCombatResult(new RoomCombatState(source.RoomIndex, source.Deployment,
                 source.Units.Select(unit => unit.Id == targetId ? changed : unit).ToArray(), source.ExternalInteractions, context, source.Preview),
                 RoomOutcome.Exchanged, 0, new List<CombatEvent>(), pendingCallbacks: queue), added.Id, target.Status("dormant") != null, update: true);
+            return applied.Supported && added.Id == "purify" ? ClearForPurify(applied, targetId) : applied;
+        }
+        private static RoomCombatResult ClearForPurify(RoomCombatResult applied, int targetId)
+        {
+            RoomCombatState state = applied.State!;
+            CombatUnit actor = state.Units.Single(unit => unit.Id == targetId);
+            // Native copies every dictionary key after adding purify, including zero
+            // definitions, then calls the raw removal API with no responsible card.
+            string[] keys = (actor.StatusRegistry ?? actor.Statuses).Select(status => status.Id).Where(id => id != "purify").ToArray();
+            var callbacks = applied.PendingCallbacks.ToList();
+            var events = applied.Events.ToList();
+            var retained = applied.RetainedUnits.ToDictionary(unit => unit.Id);
+            bool inRoom = true;
+            foreach (string id in keys)
+            {
+                RoomCombatState scope = inRoom ? state : new RoomCombatState(state.RoomIndex, state.Deployment,
+                    state.Units.Concat(new[] { actor }).ToArray(), state.ExternalInteractions, state.Context, state.Preview);
+                RoomCombatResult removed = StatusRemovalModel.Remove(scope, targetId, id, -1);
+                if (!removed.Supported) return removed;
+                actor = removed.State!.Units.FirstOrDefault(unit => unit.Id == targetId) ??
+                    removed.RetainedUnits.FirstOrDefault(unit => unit.Id == targetId) ??
+                    removed.PendingCallbacks.LastOrDefault(item => item.Unit.Id == targetId)?.Unit ?? actor;
+                inRoom &= removed.State.Units.Any(unit => unit.Id == targetId);
+                foreach (CombatUnit unit in removed.RetainedUnits) retained[unit.Id] = unit;
+                if (!inRoom) retained[targetId] = actor;
+                state = new RoomCombatState(state.RoomIndex, state.Deployment,
+                    removed.State.Units.Where(unit => inRoom || unit.Id != targetId).ToArray(),
+                    removed.State.ExternalInteractions, removed.State.Context, state.Preview);
+                if (!inRoom) state = EnchantmentWorldModel.Sync(state, retained.Values.ToArray());
+                callbacks.AddRange(removed.PendingCallbacks); events.AddRange(removed.Events);
+            }
+            return new RoomCombatResult(state, applied.Outcome, applied.Rounds, events, pendingCallbacks: callbacks,
+                retainedUnits: retained.Values.ToArray());
         }
         private static RoomCombatResult Match(RoomCombatState state) => new RoomCombatResult(state, RoomOutcome.Exchanged, 0, new List<CombatEvent>());
         private static RoomCombatResult Unsupported(string reason) => new RoomCombatResult(null, RoomOutcome.Unsupported, 0, new List<CombatEvent>(), reason);

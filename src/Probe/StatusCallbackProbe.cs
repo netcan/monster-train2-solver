@@ -140,10 +140,14 @@ namespace MonsterTrain2Poju.Probe
         [HarmonyPatch(typeof(CombatManager), nameof(CombatManager.QueueTrigger), new[] { typeof(CharacterState), typeof(CharacterTriggerData.Trigger), typeof(CharacterState), typeof(bool), typeof(bool), typeof(CharacterState.FireTriggersData), typeof(int), typeof(CharacterTriggerState) })]
         private static class QueuePatch
         {
-            private static void Prefix(CharacterState character, CharacterTriggerData.Trigger trigger, CharacterState.FireTriggersData fireTriggersData)
+            private static void Prefix(CombatManager __instance, out int __state)
+                => __state = ((ICollection)AccessTools.Property(typeof(CombatManager), "TriggerQueue").GetValue(__instance)).Count;
+            private static void Postfix(CombatManager __instance, int __state, CharacterState character,
+                CharacterTriggerData.Trigger trigger, CharacterState.FireTriggersData fireTriggersData)
             {
                 if ((Environment.GetEnvironmentVariable("MT2_PROBE_STATUS_CALLBACKS") != "1" && !AbilityEffectsScenario.Prepared && !EquipmentAbilityScenario.Prepared) || FullBattleTrace.Active == null ||
                     AllGameManagers.Instance == null || AllGameManagers.Instance.GetSaveManager().PreviewMode) return;
+                if (((ICollection)AccessTools.Property(typeof(CombatManager), "TriggerQueue").GetValue(__instance)).Count == __state) return;
                 string kind = trigger.ToString();
                 var record = new Record { Index = Records.Count, ActorId = FullBattleTrace.Active.UnitId(character), Kind = kind,
                     ParamInt = fireTriggersData?.paramInt ?? 0, ParamInt2 = fireTriggersData?.paramInt2 ?? 0, ParamString = fireTriggersData?.paramString };

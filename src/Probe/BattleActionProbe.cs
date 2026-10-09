@@ -193,7 +193,12 @@ namespace MonsterTrain2Poju.Probe
                         if (effect.GetParamStatusEffects().Length == 0) interactions.Add("Empty status effect pool");
                         foreach (StatusEffectStackData status in effect.GetParamStatusEffects())
                         {
-                            if (!StatusEffectManager.Instance.GetStatusEffectDataById(status.statusId)!.IsStackable()) interactions.Add("Nonstackable status legality");
+                            // Native unconditionally accepts non-strict room tests.
+                            // Strict/drop-target nonstackable tests still need their
+                            // independently modeled pre-cast target legality.
+                            if (!StatusEffectManager.Instance.GetStatusEffectDataById(status.statusId)!.IsStackable() &&
+                                (effect.GetParamBool() || effect.GetTargetMode() == TargetMode.DropTargetCharacter))
+                                interactions.Add("Nonstackable status legality");
                             statuses.Add(Status(status.statusId, status.count));
                         }
                     }

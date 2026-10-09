@@ -95,6 +95,7 @@ param(
     [switch] $UnitCopy,
     [switch] $HeroCopy,
     [switch] $SpawnEnchant,
+    [switch] $Purify,
     [switch] $PersistentEnchantments,
     [switch] $PersistentEnchantmentDeaths,
     [switch] $PersistentEnchantmentRevivals,
@@ -252,6 +253,10 @@ if ($UnitClone) { $environment['MT2_PROBE_MODIFIERS'] = 'unit-clone' }
 if ($UnitCopy) { $environment['MT2_PROBE_MODIFIERS'] = 'unit-copy' }
 if ($HeroCopy) { $environment['MT2_PROBE_MODIFIERS'] = 'hero-copy' }
 if ($SpawnEnchant) { $environment['MT2_PROBE_MODIFIERS'] = 'spawn-enchant' }
+if ($Purify) {
+    $environment['MT2_PROBE_MODIFIERS'] = 'purify'
+    $environment['MT2_PROBE_STATUS_CALLBACKS'] = '1'
+}
 if ($PersistentEnchantments) {
     $environment['MT2_PROBE_MODIFIERS'] = 'persistent-enchantment' + $(if ($PersistentEnchantmentRandomPools) { '-random' } else { '' }) +
         $(if ($PersistentEnchantmentRevivals) { '-revivals' } elseif ($PersistentEnchantmentDeaths) { '-deaths' } elseif ($PersistentEnchantmentUpgrades) { '-upgrades' } elseif ($PersistentEnchantmentSummons) { '-summons' + $(if ($PersistentEnchantmentSummonsFresh) { '-fresh' } else { '' }) } else { '' })
@@ -1271,7 +1276,38 @@ if ($TriggeredSummonsRevival) {
         throw 'Triggered summon revival requires equipped host/child revivals and live-source death births without queue deferrals.'
     }
 }
+$purifyCoverage = -not $Purify
+if ($Purify) {
+    $purifySamples = @($trace.TriggeredStatuses)
+    $blockedPositive = 0; $blockedZero = 0; $blockedNegative = 0; $zeroPurifyClears = 0; $positivePurifyClears = 0
+    foreach ($sample in $purifySamples) {
+        $status = $sample.Effect.Action.Statuses[0]
+        foreach ($unit in @($sample.BeforeUnits | Where-Object { $_.Id -in $sample.Targets })) {
+            if (@($unit.Statuses | Where-Object { $_.Id -eq 'purify' -and $_.Stacks -gt 0 }).Count -gt 0) {
+                if ($status.Stacks -gt 0) { $blockedPositive++ } elseif ($status.Stacks -eq 0) { $blockedZero++ } else { $blockedNegative++ }
+            } elseif ($status.Id -eq 'purify' -and @($unit.Statuses | Where-Object { $_.Id -ne 'purify' -and $_.Stacks -gt 0 }).Count -gt 0) {
+                if ($status.Stacks -eq 0) { $zeroPurifyClears++ } elseif ($status.Stacks -gt 0) { $positivePurifyClears++ }
+            }
+        }
+    }
+    $purifyRemovals = @($trace.AbilityCooldownEffects | Where-Object { $_.Effect.Type -eq 'RemoveStatus' -and $_.Effect.Statuses.Id -contains 'purify' })
+    $purifyPaidActions = @($trace.Actions | Where-Object {
+        $sample = $_
+        $source = $sample.Before.Spawn.Train.Context.CardInstances | Where-Object InstanceId -EQ $sample.Action.CardInstanceId
+        $rule = $sample.Before.PlayRules.Cards | Where-Object DataId -EQ $source.DataId
+        $rule.Effects.Statuses.Id -contains 'purify'
+    })
+    $purifyCoverage = $trace.ModifierScenario -eq 'purify' -and $blockedPositive -gt 0 -and $blockedZero -gt 0 -and $blockedNegative -gt 0 -and
+        $zeroPurifyClears -gt 0 -and $positivePurifyClears -gt 0 -and $purifyRemovals.Count -gt 0 -and $purifyPaidActions.Count -gt 0 -and
+        @($purifySamples | Where-Object { -not $_.Completed -or $null -eq $_.Actual -or @($_.Interactions).Count -gt 0 }).Count -eq 0 -and
+        @($purifyRemovals | Where-Object { -not $_.Completed -or $null -eq $_.After }).Count -eq 0 -and
+        @($trace.StatusCallbackFires).Count -gt 0 -and @($trace.StatusCallbackFires).Count -eq @($trace.StatusCallbacks).Count
+    if (-not $purifyCoverage) {
+        throw "Purify coverage incomplete: blocked=$blockedPositive/$blockedZero/$blockedNegative clears=$positivePurifyClears/$zeroPurifyClears removals=$($purifyRemovals.Count) paid=$($purifyPaidActions.Count)"
+    }
+}
 $result = [pscustomobject]@{
+    PurifyCoverage = $purifyCoverage
     RevivalOperations = @($trace.RevivalOperations).Count
     Revivals = @($trace.Revivals).Count
     TriggeredEquipmentCoverage = $triggeredEquipmentCoverage

@@ -5,6 +5,13 @@ namespace MonsterTrain2Poju.Model
 {
     internal static class StatusCallbackModel
     {
+        internal static string? FilterPurifyQueue(CombatContext? context, List<RoomCombatModel.QueuedCharacterTrigger> queue)
+        {
+            if (!queue.Any(callback => callback.Unit.Status("purify")?.Stacks > 0)) return null;
+            if (context?.PurifyBlockedTriggers == null) return "Purify requires captured trigger queue restrictions.";
+            queue.RemoveAll(callback => callback.Unit.Status("purify")?.Stacks > 0 && context.PurifyBlockedTriggers.Contains(callback.Kind));
+            return null;
+        }
         internal static readonly string[] Kinds =
         { "OnStatusEffectChanged", "OnArmorAdded", "OnPyregelAdded", "OnValiant", "OnSilence", "OnSilenceLost", "OnNewStatusEffectAdded",
             "OnUnitAbilityAvailable", "OnUnitAbilityUnavailable", "OnTroopAdded", "OnTroopRemoved" };
@@ -60,28 +67,38 @@ namespace MonsterTrain2Poju.Model
                 template.LastAttackerId, template.StatusRegistry == null ? null : System.Array.Empty<CombatStatus>(), template.EquipmentCards, template.NextTriggerId, template.Ability, template.StatusDictionary == null ? null : new StatusDictionaryState(System.Array.Empty<string>(), System.Array.Empty<int>()), template.AbilityRules, template.HordeDefinition, template.IsSpawning, template.SacrificeCardId, template.DeathState, bumpRules: template.BumpRules);
             RoomCombatState initializing = new RoomCombatState(source.RoomIndex, source.Deployment, source.Units.Select(unit => unit.Id == template.Id ? empty : unit).ToArray(),
                 System.Array.Empty<string>(), source.Context, source.Preview);
+            CombatUnit current = empty;
+            bool inRoom = true;
             foreach (CombatStatus status in applications)
             {
                 if (status.Stacks <= 0) continue;
-                RoomCombatResult added = StatusApplicationModel.ApplyRetained(initializing, template.Id, status, 0, allowModification: false);
+                RoomCombatState scope = inRoom ? initializing : new RoomCombatState(initializing.RoomIndex, initializing.Deployment,
+                    initializing.Units.Concat(new[] { current }).ToArray(), initializing.ExternalInteractions, initializing.Context, initializing.Preview);
+                RoomCombatResult added = StatusApplicationModel.ApplyRetained(scope, template.Id, status, 0, allowModification: false);
                 if (!added.Supported) return added.UnsupportedReason;
                 initializing = added.State!;
+                current = initializing.Units.FirstOrDefault(unit => unit.Id == template.Id) ??
+                    added.RetainedUnits.FirstOrDefault(unit => unit.Id == template.Id) ?? current;
+                inRoom &= initializing.Units.Any(unit => unit.Id == template.Id);
+                if (!inRoom) initializing = EnchantmentWorldModel.Sync(new RoomCombatState(initializing.RoomIndex, initializing.Deployment,
+                    initializing.Units.Where(unit => unit.Id != template.Id).ToArray(), initializing.ExternalInteractions, initializing.Context, initializing.Preview), new[] { current });
                 foreach (RoomCombatModel.QueuedCharacterTrigger callback in added.PendingCallbacks) queue.Add(callback);
             }
             bool horde = applications.Any(status => status.Id == "horde" && status.Stacks > 0);
-            if (horde || initializing.Context?.Enchantments != null)
+            bool purify = applications.Any(status => status.Id == "purify" && status.Stacks > 0);
+            if (horde || purify || initializing.Context?.Enchantments != null)
             {
-                CombatUnit value = initializing.Units.First(unit => unit.Id == template.Id);
+                CombatUnit value = current;
                 var initialized = new CombatUnit(value.Id, value.AssetKey, value.Team, value.BaseAttack, value.Health, value.MaxHealth,
                     value.CanAttack, value.IsPyre, value.EndsBattleOnDeath, value.Statuses, value.Triggers, value.SpawnerCardId, value.Size,
                     template.StatusImmunities, value.Subtypes, value.Modifiers, value.IsBoss, value.LastAttackerId, value.StatusRegistry,
                     value.EquipmentCards, value.NextTriggerId, value.Ability, value.StatusDictionary, value.AbilityRules, value.HordeDefinition, value.IsSpawning, value.SacrificeCardId, value.DeathState, bumpRules: value.BumpRules);
-                if (horde) update?.Invoke(initialized);
+                if (horde || purify) update?.Invoke(initialized);
                 if (initializing.Context?.Enchantments != null)
                 {
                     initializing = EnchantmentWorldModel.Sync(new RoomCombatState(source.RoomIndex, source.Deployment,
                         initializing.Units.Select(unit => unit.Id == template.Id ? initialized : unit).ToArray(),
-                        source.ExternalInteractions, initializing.Context, source.Preview));
+                        source.ExternalInteractions, initializing.Context, source.Preview), inRoom ? null : new[] { initialized });
                     updateRoom?.Invoke(initializing);
                 }
             }

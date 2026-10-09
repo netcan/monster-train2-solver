@@ -141,7 +141,13 @@ namespace MonsterTrain2Poju.Model
             RoomOutcome outcome = RoomOutcome.Exchanged;
             // Unit identities are assigned at creation. Native active character lists append
             // at creation and keep that order when units change floor or physical position.
-            int[] actors = rooms.SelectMany(room => room.Units).Where(unit => unit.Team == team)
+            CombatUnit[] candidates = rooms.SelectMany(room => room.Units).Where(unit => unit.Team == team).ToArray();
+            if (candidates.Any(unit => unit.Status("purify")?.Stacks > 0) && context?.PurifyBlockedTriggers == null)
+                return Unsupported("Purify requires captured trigger queue restrictions.");
+            // Native queues the entire team before running its first callback.
+            // Later purification cannot cancel an already accepted team phase.
+            int[] actors = candidates.Where(unit => unit.Status("purify")?.Stacks <= 0 || unit.Status("purify") == null ||
+                    !context!.PurifyBlockedTriggers!.Contains(kind))
                 .OrderBy(unit => unit.Id).Select(unit => unit.Id).ToArray();
             foreach (int actor in actors)
             {

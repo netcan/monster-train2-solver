@@ -6765,3 +6765,55 @@ fixture JSON dependencies.
 This baseline covers retained room membership and both copied/fresh random aura
 summon battles. The in-progress Purify model requires separate native and
 regression validation. Complete combat coverage and optimal search remain open.
+
+### Runtime Purify status and queue admission
+
+The independent status API now models active Purify's early rejection of all
+status additions, including zero/negative values, repeated Purify, source traits
+and immunity overrides. Initial zero-stack Purify still clears other statuses.
+Implicit clearing follows dictionary order, retains zero definitions, attributes
+no status removals to the adding card and preserves raw Horde casualty actors
+for later operations. Starting-status initialization writes back the actual
+cleared unit instead of the authored positive-status template.
+
+CombatContext captures the native BalanceData list of Purify-blocked trigger
+kinds and carries it through card/resource/terminal/preview context copies.
+Ordinary room and team triggers check this list when they enter the queue;
+status additions/removals filter their generated callbacks at that same point.
+Callbacks already accepted before purification still fire, including the whole
+team batch queued before its first actor's effects. OnSilenceLost remains allowed
+in this native configuration. When all ordinary spawn triggers are blocked,
+previously accepted starting-status callbacks still drain. Missing queue rules
+are rejected instead of guessed. CardState's separate purified-card flag remains
+outside this runtime-status change.
+
+Pure regressions cover signed/zero additions, source attribution, immunity,
+ordered callbacks and dictionary slots, explicit removal/reapplication, retained
+Horde casualties, starting status order, native queue gates, accepted callbacks
+after later purification and 32 immutable branches. The old model fails the
+new Purify check. Native recording now observes actual queue admission rather
+than logging rejected queue requests, and permits native non-strict room tests
+for nonstackable status spells while retaining strict/drop-target guards.
+
+The muted Instant native battle takes 86.30 seconds, preserves the original
+Boss/waves and profile/log signatures, and has zero capture failures,
+differences, unsupported operations or pending records. Independent comparison
+passes all 61 room stages, 21 paid actions, seven EndTurns, 228 closed contexts,
+the initial/mid-battle policies and sixteen parallel branches ending with
+Pyre65. Eighteen status boundaries, eight explicit removal effects, six paid
+room spells and all 159 FIFO callback payloads/unit/context transitions match.
+All 530 raw/canonical decisions and 11,860 position-plane mappings pass.
+The same model passes all 24 archived component calibrations and all pure checks:
+Model.dll SHA-256 e546dcf00cbda02d12431a4289be8b24b864a0f8cc7062bbaa7180530854ff0b.
+Its targeted historical regression also exits successfully: 27 complete battles,
+26 continuous paid policies and one no-more-card chain. The final validation
+therefore covers 28 complete battle inputs and 24 calibrations without unsupported
+or skipped operations. The pre-fix queue model fails the new callback-admission
+regression, reproducing the repaired extra-gold behavior. A combined inventory
+regression of this Purify model is still to run; complete177 above uses the
+previous room-membership model.
+
+This proves the recorded status, room/team and paid-spell paths. Native Purify
+interactions with Horde/aura births, manually assembled birth/Rally/Harvest/Sentry
+queues and physical death cleanup still require additional integration coverage.
+The full battle simulator and optimal solver remain unfinished.

@@ -321,7 +321,7 @@ namespace MonsterTrain2Poju.Model
             "spikes", "lifesteal", "fragile", "piercing", "immune", "immobile",
             "relentless", "sweep", "sniper", "rooted", "haste", "untouchable",
             "buff", "debuff", "regen", "poison", "melee weakness", "silenced", "valor", "pyregel",
-            "heal multiplier", "heal immunity", "cooldown", "unit_ability", "unit_ability_available", "horde", "cardless", "undying"
+            "heal multiplier", "heal immunity", "cooldown", "unit_ability", "unit_ability_available", "horde", "cardless", "undying", "purify"
         };
         internal static bool KnowsStatus(string id) => KnownStatuses.Contains(id);
 
@@ -1191,6 +1191,9 @@ namespace MonsterTrain2Poju.Model
                 FireTriggers(spawned, "OnSpawn");
                 FireTriggers(spawned, "OnUnscaledSpawn");
                 if (!fromCard) FireTriggers(spawned, "OnSpawnNotFromCard");
+                // Purify may reject every spawn trigger; starting-status callbacks
+                // already accepted by native setup still need their normal drain.
+                if (enqueueCharacterTrigger == null && !runningTriggerQueue) DrainLocalTriggerQueue();
                 spawned.Apply(HordeStatusModel.WithSpawning(spawned.Freeze(), wasSpawning));
                 if (spawned.Alive && !spawned.Removed && context?.LastSpawnedUnitId.HasValue == true)
                     context = context.WithLastSpawned(spawned.Source.Id);
@@ -1793,7 +1796,7 @@ namespace MonsterTrain2Poju.Model
                     context.NextCardId, context.MaxHandSize, context.StatusRules, context.Statistics,
                     context.CardInstances == null ? null : Array.Empty<CardInstanceState>(), context.CardRegistry, context.AllScenarioBossesDead,
                     context.NextAddedTemporaryUpgrades, context.OtherPiles?.Select(CardPileModel.Clear).ToArray(), context.QueryFrame,
-                    context.KillCamActivated.HasValue ? true : (bool?)null, context.MagicPower, context.IsolatedBattlePreview, context.EnergyState, context.RoomCapacities, context.AbilityCardCache, context.LastAbilityActivatorUnitId, context.PermanentlyDisabledAbilities, context.LastSpawnedUnitId, context.NextUnitId, context.SpawnPoints, context.SummonCatalog, context.Enchantments);
+                    context.KillCamActivated.HasValue ? true : (bool?)null, context.MagicPower, context.IsolatedBattlePreview, context.EnergyState, context.RoomCapacities, context.AbilityCardCache, context.LastAbilityActivatorUnitId, context.PermanentlyDisabledAbilities, context.LastSpawnedUnitId, context.NextUnitId, context.SpawnPoints, context.SummonCatalog, context.Enchantments, context.PurifyBlockedTriggers);
                 // ClearCards cancels card-play previews. The original cancellation
                 // removes preview-born actors without normal death signals or a
                 // primary-state restoration, including temporary Boss-preview births.
@@ -1859,6 +1862,13 @@ namespace MonsterTrain2Poju.Model
                 WorkingUnit? overrideTarget = null, WorkingUnit? dyingCharacter = null, int triggerCount = 1, int lastSpawnedOverrideUnitId = 0)
             {
                 string? paramString = kind == "OnHeal" || kind == "OnHit" ? "" : null;
+                // CombatManager checks purification when adding to its queue, not
+                // when dispatching an already accepted callback.
+                if (!fromQueue && unit.Has("purify"))
+                {
+                    if (context?.PurifyBlockedTriggers == null) { unsupportedReason = "Purify requires captured trigger queue restrictions."; return; }
+                    if (context.PurifyBlockedTriggers.Contains(kind)) return;
+                }
                 if (!fromQueue && enqueueCharacterTrigger != null)
                 { enqueueCharacterTrigger(new QueuedCharacterTrigger(source.RoomIndex, unit.Freeze(), kind, paramInt: paramInt, overrideTarget: overrideTarget?.Freeze(), paramString: paramString,
                     dyingCharacter: dyingCharacter?.Freeze(), canFireTriggers: canFireTriggers, triggerCount: triggerCount, lastSpawnedOverrideUnitId: lastSpawnedOverrideUnitId)); return; }
@@ -2052,7 +2062,7 @@ namespace MonsterTrain2Poju.Model
                                 int reward = GoldRewardModel.Adjust(effect.Value);
                                 context = new CombatContext(context!.Cards, context.BattleRng,
                                     Math.Max(0, checked(context.Gold + reward)), context.NextCardId, context.MaxHandSize, context.StatusRules, context.Statistics,
-                                    context.CardInstances, context.CardRegistry, context.AllScenarioBossesDead, context.NextAddedTemporaryUpgrades, context.OtherPiles, context.QueryFrame, context.KillCamActivated, context.MagicPower, context.IsolatedBattlePreview, context.EnergyState, context.RoomCapacities, context.AbilityCardCache, context.LastAbilityActivatorUnitId, context.PermanentlyDisabledAbilities, context.LastSpawnedUnitId, context.NextUnitId, context.SpawnPoints, context.SummonCatalog, context.Enchantments);
+                                    context.CardInstances, context.CardRegistry, context.AllScenarioBossesDead, context.NextAddedTemporaryUpgrades, context.OtherPiles, context.QueryFrame, context.KillCamActivated, context.MagicPower, context.IsolatedBattlePreview, context.EnergyState, context.RoomCapacities, context.AbilityCardCache, context.LastAbilityActivatorUnitId, context.PermanentlyDisabledAbilities, context.LastSpawnedUnitId, context.NextUnitId, context.SpawnPoints, context.SummonCatalog, context.Enchantments, context.PurifyBlockedTriggers);
                                 Emit("Gold", unit, unit, reward);
                             }
                             else if (effect.Type == "CardEffectAddBattleCard" && !source.Preview && !battleWon && context != null && context.AllScenarioBossesDead != true &&
@@ -2516,6 +2526,11 @@ namespace MonsterTrain2Poju.Model
 
             private void QueueCallback(QueuedCharacterTrigger callback)
             {
+                if (callback.Unit.Status("purify")?.Stacks > 0)
+                {
+                    if (context?.PurifyBlockedTriggers == null) { unsupportedReason = "Purify requires captured trigger queue restrictions."; return; }
+                    if (context.PurifyBlockedTriggers.Contains(callback.Kind)) return;
+                }
                 if (enqueueCharacterTrigger != null) { enqueueCharacterTrigger(callback); return; }
                 bool local = callback.RoomIndex == source.RoomIndex;
                 WorkingUnit? actor = local ? units.FirstOrDefault(unit => unit.Source.Id == callback.Unit.Id) : null;

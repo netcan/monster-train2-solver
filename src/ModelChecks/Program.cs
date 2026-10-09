@@ -178,6 +178,7 @@ RoomCapacityChecks.Run();
 CombatEffectChecks.Run();
 StatusRegistryChecks.Run();
 StatusCallbackChecks.Run();
+PurifyChecks.Run();
 PersistentEnchantmentChecks.Run();
 PreviewCopyChecks.Run();
 ContextReferenceChecks.Run();

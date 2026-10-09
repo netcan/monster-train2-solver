@@ -65,7 +65,7 @@ namespace MonsterTrain2Poju.Probe
         {
             private static void Postfix(CardEffectState cardEffectState, CardEffectParams cardEffectParams, ref IEnumerator __result)
             {
-                if (Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == "triggered-status" && TriggeredStatusScenario.Prepared &&
+                if (((Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == "triggered-status" && TriggeredStatusScenario.Prepared) || PurifyScenario.Prepared) &&
                     FullBattleTrace.Active != null && !AllGameManagers.Instance!.GetSaveManager().PreviewMode && cardEffectParams.selfTarget != null)
                     __result = Wrap(__result, cardEffectState, cardEffectParams);
             }

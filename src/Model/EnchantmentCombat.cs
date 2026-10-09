@@ -201,8 +201,6 @@ namespace MonsterTrain2Poju.Model
                 if (state.Train.Context == null) { error = "Enchantment updates require shared combat context."; return; }
                 if (state.Train.Rooms.Any(item => item.ExternalInteractions.Count != 0))
                 { error = "Enchantment updates require modeled room/relic interactions."; return; }
-                if (Actors.Any(actor => actor.Unit.Status("purify") != null))
-                { error = "Purified enchantment status targets are not modeled."; return; }
                 if (rule.StatusPool.Any(status => status.Id == "horde"))
                 { error = "Horde aura births/casualties require automatic combat lifecycle integration."; return; }
                 int room = Find(id).RoomIndex;
