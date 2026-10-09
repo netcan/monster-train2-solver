@@ -6537,3 +6537,9 @@ canonical terminal state and sixteen parallel branches, including copy counters.
 The new raw/canonical mapping checks pass 370 decisions and 11,785 state-plane
 mappings. One Stage37 source-card capture difference still rejects that diagnostic;
 it remains outside the accepted battle inventory while snapshot closure is checked.
+
+Legacy archives without a copy counter continue using their recorded primary
+position projection across preview rooms. Carrying selected preview positions
+without that input initially skipped two owned-equipment revival policy checks.
+The final guard restores both complete 32-action/31-action, seven-EndTurn policies;
+the earlier thirty other battle suites and 24 calibrations remain passing.

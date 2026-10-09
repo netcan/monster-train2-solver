@@ -89,7 +89,8 @@ namespace MonsterTrain2Poju.Model
                         previewContext = previewContext.WithCard(card.WithRoomCacheState(captured.PlayedRoomUnitIds, captured.RawPlayedRoomUnitIds));
                 }
                 previewContext = previewContext.WithStatistics(previewContext.Statistics!.WithLastAttackDamage(preview.State!.Context!.Statistics!.LastAttackDamageDealt));
-                if (preview.State.Context.SpawnPoints != null) previewContext = previewContext.WithSpawnPoints(preview.State.Context.SpawnPoints);
+                if (originalPoints?.NextPreviewCopyId.HasValue == true && preview.State.Context.SpawnPoints != null)
+                    previewContext = previewContext.WithSpawnPoints(preview.State.Context.SpawnPoints);
                 if (context.IsolatedBattlePreview == true) previewContext = previewContext.WithBattleRng(preview.State!.Context!.BattleRng);
                 if (originalWorld?.AutomaticLifecycle == true)
                 {
