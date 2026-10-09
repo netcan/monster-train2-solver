@@ -540,6 +540,7 @@ namespace MonsterTrain2Poju.Probe
                 CapacityEffects = RoomCapacityProbe.Records,
                 CapacityTests = RoomCapacityProbe.Tests,
                 PreviewRngIsolation = PreviewRngIsolation.Records,
+                PreviewScheduling = PreviewSchedulingProbe.Records,
                 UnitPostCombats = PostCombatHealingProbe.Records,
                 UnitUpgradeScalingCalibrationContextUnchanged = UnitUpgradeScalingScenario.CalibrationContextUnchanged,
                 UiRngIsolation = UiRngIsolation.Records,

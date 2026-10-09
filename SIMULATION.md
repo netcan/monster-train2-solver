@@ -6432,3 +6432,27 @@ raw decision mappings. Probe builds without warnings/errors; ModelChecks has its
 fourteen existing nullable warnings and no errors. All 173 inventory hashes/sizes,
 curated list entries, native byte provenance, PowerShell syntax and whitespace pass.
 A combined173 run is not claimed; complete163 remains the full regression baseline.
+
+### Observed preview request scheduling
+
+The opt-in PreviewReferences observer now records original card-pile notifications,
+external preview requests, battle-preview states and temporary-preview toggles.
+Each record includes its frame, turn, selected room, identity counter and (for
+requests) original callers. These observations do not replace or suppress gameplay.
+
+A muted Instant diagnostic (137.96 seconds, original profile/log signatures
+unchanged) identifies the extra preview between the final two paid actions:
+the first preview advances NextUnitId 24 to 25 at frame 15618; at frame 15620,
+HandUI.OnCardAddedAnimationFinished dispatches another card-pile notification,
+which requests a second original preview and advances 25 to 26. The selected room
+also changes then, but the observed request comes from the animation callback.
+The existing Ready predicate checks hand animations, not every card movement's
+completion signal. Independent action boundaries must account for this pending
+callback rather than injecting the following native Before state.
+
+The same trace observes a temporary Boss preview advancing 27 to 28. Native
+SetTemporaryStateEnabled restores only its original character list; a newborn
+outside that list retains preview state, a copied point and shared weak references.
+This diagnostic still has seven full-battle differences and is excluded from
+the accepted fixture inventory. The observation is evidence for the next model
+and settlement changes, not a passing whole-battle result.
