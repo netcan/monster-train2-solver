@@ -5,8 +5,9 @@ checks. Run `pwsh -NoProfile -File scripts/Check-Models.ps1` from the repository
 root. The script reads the curated fixture list in this directory.
 
 Current inventory is 175 archives: 151 accepted battles and 24 component
-calibrations. The newly accepted battle passes strict native and independent
-checks; the combined inventory regression is still in progress.
+calibrations. The baseline model's complete 173-archive historical regression
+passes, as do the two newer battles in separate complete checks. The subsequent
+retained-preview callback change is undergoing its own affected-sample regression.
 
 The retained inputs are `.mt2f` binary archives. They store typed, deduplicated
 value graphs, not JSON documents. Regression reads those graphs and constructs
@@ -1295,4 +1296,11 @@ complete initial/mid-battle policies match, with sixteen immutable branches and
 Pyre80. The muted Instant native run takes 181.73 seconds, has zero capture
 failures/differences/unsupported/pending records and preserves original profile
 signatures. Its byte-identical source-free native binary is 39,470 bytes with
-7,242 nodes. The combined inventory regression remains in progress.
+7,242 nodes.
+
+The completed historical baseline checks every one of its 173 archives:
+149 complete battle suites, 145 continuous paid policies, four complete
+no-more-card chains and all 24 calibrations. No room, card-cycle, train, spawn,
+EndTurn or action operation is skipped as unsupported. This run uses Model.dll
+SHA-256 59153b6d1959e90bd39ee4de0ba729863a628c616f8a0cd6408ee1900e8f2ffd;
+the later retained-preview callback model is being verified separately.

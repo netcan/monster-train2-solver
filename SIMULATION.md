@@ -6633,3 +6633,20 @@ full-battle-persistent-enchantment-summons-fresh.mt2f (39,470 bytes, 7,242 nodes
 Inventory is 175: 151 accepted battles and 24 calibrations. The new checker rejects
 skipped operations; a combined175 regression is not yet complete. The full battle
 simulator and optimal solver remain unfinished.
+
+### Completed historical 173-archive regression baseline
+
+The historical run now exits successfully after checking all 173 archived inputs:
+149 complete battle suites, 145 continuous paid policies, four complete
+no-more-card chains and all 24 component calibrations. Every recorded room,
+card-cycle, train, spawn, EndTurn and action operation is supported; the final
+log contains no skipped operations. This baseline uses Model.dll SHA-256
+59153b6d1959e90bd39ee4de0ba729863a628c616f8a0cd6408ee1900e8f2ffd. The two
+newly curated copied/fresh aura-summon battles pass separate complete checks
+against that same model, including initial/mid-battle roots and sixteen branches.
+
+The subsequently discovered retained-preview callback failure occurs in the
+unaccepted random aura-summon diagnostic. Its fix changes the model, so the
+completed historical result is a baseline rather than a claim that the new
+model's current regression has already finished. Inventory remains 175, and
+the complete simulator/optimal solver remain in progress.
