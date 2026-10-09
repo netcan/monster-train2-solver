@@ -110,6 +110,7 @@ param(
     [switch] $CharacterRemoval,
     [switch] $PreviewReferences,
     [switch] $RelicCatalog,
+    [switch] $UpgradeMasks,
     [switch] $IncantRelic,
     [switch] $IncantRelics,
     [switch] $SpawnStatusRelics,
@@ -239,6 +240,7 @@ $environment = @{
     MT2_PROBE_CHARACTER_REMOVAL = $(if ($CharacterRemoval) { '1' } else { '0' })
     MT2_PROBE_PREVIEW_REFERENCES = $(if ($PreviewReferences) { '1' } else { '0' })
     MT2_PROBE_RELIC_CATALOG = $(if ($RelicCatalog) { '1' } else { '0' })
+    MT2_PROBE_UPGRADE_MASKS = $(if ($UpgradeMasks) { '1' } else { '0' })
     MT2_PROBE_SETTLE_DEATH_DISSOLVES = $(if ($SettleDeathDissolves) { '1' } else { '0' })
     MT2_PROBE_SETTLE_CARD_ANIMATIONS = $(if ($SettleCardAnimations) { '1' } else { '0' })
     MT2_PROBE_STATUS_CALLBACKS = $(if ($HordeStatuses -or $StatusCallbacks) { '1' } else { '0' })
@@ -339,6 +341,26 @@ if ($RelicCatalog) {
         }
         Write-Output "NATIVE-RELIC-CATALOG PASS: $($catalogRecords.Count) definitions from eight original collections; unchanged gameplay/test RNG and frame."
     } finally { $catalogArchive.Dispose() }
+}
+if ($UpgradeMasks) {
+    Add-Type -Path (Join-Path $workspace 'src\FixtureArchive\bin\Release\net8.0\FixtureArchive.dll')
+    $maskArchive = [MonsterTrain2Poju.Fixtures.FixtureDocument]::Read((Join-Path $profile 'card-upgrade-mask-calibration.mt2f'))
+    try {
+        $maskCalibration = $maskArchive.RootElement
+        if ($maskCalibration.GetProperty('Schema').GetInt32() -ne 2 -or
+            $maskCalibration.GetProperty('GameModuleMvid').GetString() -ne $trace.GameModuleMvid -or
+            -not $maskCalibration.GetProperty('ContextUnchanged').GetBoolean() -or
+            $maskCalibration.GetProperty('FrameBefore').GetInt32() -ne $maskCalibration.GetProperty('FrameAfter').GetInt32() -or
+            -not $maskCalibration.GetProperty('RngBefore').ContentEquals($maskCalibration.GetProperty('RngAfter')) -or
+            $maskCalibration.GetProperty('Rows').GetArrayLength() -eq 0 -or
+            $maskCalibration.GetProperty('CardData').GetArrayLength() -eq 0 -or
+            $maskCalibration.GetProperty('CardStates').GetArrayLength() -eq 0 -or
+            $maskCalibration.GetProperty('Characters').GetArrayLength() -eq 0 -or
+            $maskCalibration.GetProperty('EdgeCases').GetArrayLength() -lt 50) {
+            throw 'Card upgrade mask calibration is incomplete or changed native state.'
+        }
+        Write-Output "NATIVE-UPGRADE-MASK-CAPTURE PASS: $($maskCalibration.GetProperty('Rows').GetArrayLength()) original masks, $($maskCalibration.GetProperty('CardData').GetArrayLength()) original card definitions, owned cards and live characters; unchanged native context/RNG/frame."
+    } finally { $maskArchive.Dispose() }
 }
 if ($PersistentEnchantments) {
     $persistentScenario = $environment['MT2_PROBE_MODIFIERS']

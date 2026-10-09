@@ -1,6 +1,18 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
 
+if (args.Length == 1 && args[0] == "--upgrade-mask-pure")
+{
+    CardUpgradeMaskChecks.Run();
+    return;
+}
+if (args.Length == 2 && args[0] == "--upgrade-mask-only")
+{
+    CardUpgradeMaskChecks.Run();
+    CardUpgradeMaskChecks.Native(args[1]);
+    return;
+}
+
 if (args.Length == 2 && args[0] == "--physical-decision-only")
 {
     using var document = ModelJson.ReadFixture(args[1]);
@@ -235,6 +247,7 @@ UnitAbilityChecks.Run();
 RelicChecks.Run();
 TriggerCountChecks.Run();
 RelicSpawnStatusChecks.Run();
+CardUpgradeMaskChecks.Run();
 BattleStatisticsChecks.Run();
 StatisticOverflowChecks.Run();
 StatisticZeroIncrementChecks.Run();
@@ -292,6 +305,8 @@ TrainCombatChecks.Run();
 RoomCombatChecks.Run(args.Where(path => !path.Contains("calibration", StringComparison.OrdinalIgnoreCase)).ToArray());
 foreach (string path in args.Where(path => path.Contains("card-modifier-calibration", StringComparison.OrdinalIgnoreCase)))
     CardModifierChecks.Native(path);
+foreach (string path in args.Where(path => path.Contains("card-upgrade-mask-calibration", StringComparison.OrdinalIgnoreCase)))
+    CardUpgradeMaskChecks.Native(path);
 foreach (string path in args.Where(path => path.Contains("rng-calibration", StringComparison.OrdinalIgnoreCase)))
     RngChecks.Run(path);
 foreach (string path in args.Where(path => path.Contains("gold-reward-calibration", StringComparison.OrdinalIgnoreCase)))

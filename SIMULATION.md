@@ -7593,3 +7593,59 @@ count refresh and original relic clone/cardless-birth scheduling fixes against
 the full accepted inventory. Later card-upgrade-mask changes and further relic,
 room, Boss and card mechanics require their own evidence; the entire battle
 simulation objective remains incomplete.
+
+### Independent original card-upgrade mask model
+
+CardUpgradeMaskModel evaluates immutable mask parameters and card/character
+classification and values. It preserves the native distinction between raw
+CardData, owned CardState and null card sources; source-quantified exclusion OR;
+asymmetric status-count comparison; intersection of nonempty allowed pools;
+X-cost range bypass; target-flag containment; CardState-only visible-upgrade,
+ability/graft/upgrade-ID checks; and the separate character filter that checks
+registered zero-stack status presence while ignoring card-only fields and
+status counts/operators. Effect names include main effects, OnCast effects and
+OnCast effects in trait-parameter upgrades. The all-subtypes marker bypasses
+subtype matching without bypassing the mask's Monster-type validation.
+
+The optional -UpgradeMasks probe captures schema2 as a binary archive. It queries
+all62 distinct original masks referenced by registered card upgrades, collectable
+relic upgrades and primary card effects against all668 original card definitions
+(six types),15 owned cards, one live character and null card sources. The
+independent checker matches all42,470 matrix queries:23,373 accepted and19,035
+rejected non-null cases, plus62 null-source cases. Fifty unique upgrade-filter
+names from all eight original relic collections are represented in this matrix.
+
+An additional58 native boundary queries use isolated definition/card copies and
+an inactive all-subtypes marker manager. They cover controlled status counts,
+excluded-subtype operators, conflicting sizes, normal/X costs, target flags,
+raw/owned ability and visible-upgrade restrictions, actual upgrade IDs,
+permanent graft presence despite Purify, null sources and explicitly registered
+zero-stack character statuses. The original character registry is restored in
+a finally block; native full context, units, gameplay/test RNG and frame counters
+match before/after calibration. All matrix and boundary results repeat in32
+independent parallel branches without mutating their parents.
+
+The final muted Instant native battle exits zero in52.99 seconds with unchanged
+original files and zero capture failures/differences/unsupported/pending records.
+Its complete independent battle check also exits zero:21 paid plays, seven
+EndTurns, final Pyre73 and16 policy branches. The mask archive is34,127 bytes,
+3,087 unique nodes, SHA256
+f0b892649780b816168e4d244a0dbcdb3f70050d54b4d5ac5b9bace876f301b3.
+Probe builds without warnings/errors; checker has14 existing nullable warnings
+and no errors. Evidence is .probe-runs/upgrade-mask-edge3-native.log,
+.probe-runs/upgrade-mask-final-independent.log,
+.probe-runs/upgrade-mask-final-battle-independent.log,
+.probe-runs/upgrade-mask-catalog-audit.log and
+.probe-runs/full-battle-units-spells-and-junk-20261009-213444-4788540b/card-upgrade-mask-calibration.mt2f.
+The retained .probe-runs/upgrade-mask-final-checks snapshot uses Model.dll
+ed1641e4aaa65761d6733c4eeccc3b328df2c84fe1236cb139fa0521f376065a and
+ModelChecks.dll226f51b16c1bb3c7f6349735f523ce14e35b31c9cb8ecf36454b23ae3e0c3533.
+
+This is a reusable eligibility component, not support for applying temporary
+relic upgrades during owned card creation/reset or cardless unit births. The
+battle adapter still needs to derive changing mask values from each branch's
+modifiers and retain original effect ordering, conditions and notifications.
+RelicEffectAddTempUpgrade remains rejected by the production relic guard until
+those lifecycle paths and native battles are verified. This increment does not
+increase the six verified original collectable artifacts or complete the entire
+battle simulator; the complete186 baseline precedes this independent component.
