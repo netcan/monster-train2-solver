@@ -111,6 +111,7 @@ param(
     [switch] $PreviewReferences,
     [switch] $RelicCatalog,
     [switch] $IncantRelic,
+    [switch] $IncantRelics,
     [switch] $SettleDeathDissolves,
     [switch] $SettleCardAnimations,
     [switch] $HarvestTriggers,
@@ -266,9 +267,10 @@ if ($Purify) {
     $environment['MT2_PROBE_MODIFIERS'] = $(if ($PurifyQueues) { 'purify-queues' } else { 'purify' })
     $environment['MT2_PROBE_STATUS_CALLBACKS'] = '1'
 }
+if ($IncantRelics) { $IncantRelic = $true }
 if ($IncantRelic) { $Incant = $true }
 if ($Incant) {
-    $environment['MT2_PROBE_MODIFIERS'] = $(if ($IncantRelic) { 'incant-relic' } elseif ($IncantThresholds) { 'incant-thresholds' } else { 'incant' })
+    $environment['MT2_PROBE_MODIFIERS'] = $(if ($IncantRelics) { 'incant-relic-combined' } elseif ($IncantRelic) { 'incant-relic' } elseif ($IncantThresholds) { 'incant-thresholds' } else { 'incant' })
     $environment['MT2_PROBE_STATUS_CALLBACKS'] = '1'
 }
 if ($AbilityIncant) {
@@ -1366,7 +1368,7 @@ if ($Incant) {
         if (@($fire.Actor.Statuses | Where-Object { $_.Id -eq 'silenced' -and $_.Stacks -gt 0 }).Count -gt 0) { $silencedFires++ }
         elseif (@($fire.AfterActor.Triggers | Where-Object { $_.Kind -eq 'CardSpellPlayed' -and -not $_.IgnoreSilence -and $_.HasTriggered }).Count -gt 0) { $visibleFires++ }
     }
-    $incantCoverage = $trace.ModifierScenario -eq $(if ($IncantRelic) { 'incant-relic' } elseif ($IncantThresholds) { 'incant-thresholds' } else { 'incant' }) -and $incantPhases.Count -ge 10 -and $incantFires.Count -gt 5 -and
+    $incantCoverage = $trace.ModifierScenario -eq $(if ($IncantRelics) { 'incant-relic-combined' } elseif ($IncantRelic) { 'incant-relic' } elseif ($IncantThresholds) { 'incant-thresholds' } else { 'incant' }) -and $incantPhases.Count -ge 10 -and $incantFires.Count -gt 5 -and
         @($incantPhases | Where-Object { -not $_.Completed -or $null -eq $_.After -or $null -ne $_.Difference }).Count -eq 0 -and
         @($incantFires | Where-Object { -not $_.Completed -or $null -eq $_.After -or $null -eq $_.AfterActor -or $null -ne $_.Difference }).Count -eq 0 -and
         @($incantFires | Where-Object { $_.Actor.Team -eq 1 }).Count -gt 0 -and @($incantFires | Where-Object { $_.Actor.Team -eq 0 }).Count -gt 0 -and
@@ -1384,6 +1386,15 @@ if ($IncantRelic) {
         @($context.TriggerCounts.Modifiers | Where-Object { $_.Kind -eq 'CardSpellPlayed' -and $_.Value -eq 1 }).Count -ne 1 -or
         @($context.TriggerCounts.EnemyAllowedKinds).Count -ne 0) { throw 'Original relic trigger-count coverage incomplete.' }
     Write-Output "NATIVE-RELIC-TRIGGER-COUNT PASS: $($players.Count) player dispatches with count2 and $($enemies.Count) enemy dispatches with count1; original acquired relic and compiled cache."
+    if ($IncantRelics) {
+        foreach ($kind in @('OnSpawn','OnDeath')) {
+            if (@($context.TriggerCounts.Modifiers | Where-Object { $_.Kind -eq $kind -and $_.Value -eq 1 }).Count -ne 1 -or
+                @($players.Actor.Triggers | Where-Object { $_.Kind -eq $kind -and $_.FireCount -eq 2 }).Count -eq 0 -or
+                @($enemies.Actor.Triggers | Where-Object { $_.Kind -eq $kind -and $_.FireCount -eq 1 }).Count -eq 0) { throw "Combined relic count coverage missing: $kind" }
+        }
+        if (@($trace.Turns | Where-Object { $_.Actual.Spawn.Train.Context.Statistics.MonstersDeadThisBattle -gt 0 }).Count -eq 0) { throw 'Combined relic battle lacks real player deaths.' }
+        Write-Output 'NATIVE-RELIC-COUNTS-COMBINED PASS: original Incant/spawn/death relics, new paid births and real player deaths.'
+    }
 }
 $abilityIncantCoverage = -not $AbilityIncant
 if ($AbilityIncant) {

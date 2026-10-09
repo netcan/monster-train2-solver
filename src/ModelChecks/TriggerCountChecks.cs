@@ -62,10 +62,11 @@ internal static class TriggerCountChecks
 
     internal static void Native(FixtureValue fixture)
     {
-        if (!fixture.TryGetProperty("ModifierScenario", out var scenario) || scenario.GetString() != "incant-relic") return;
+        if (!fixture.TryGetProperty("ModifierScenario", out var scenario) || scenario.GetString() is not ("incant-relic" or "incant-relic-combined")) return;
+        bool combined = scenario.GetString() == "incant-relic-combined";
         Require(fixture.GetProperty("Schema").GetInt32() == 108 && fixture.GetProperty("CaptureFailures").GetInt32() == 0 &&
             fixture.GetProperty("Pending").GetInt32() == 0, "Incomplete original relic native recording.");
-        int queries = 0, players = 0, enemies = 0;
+        int queries = 0, players = 0, enemies = 0, spawnQueries = 0, deathQueries = 0;
         foreach (var record in fixture.GetProperty("IncantTriggers").EnumerateArray())
         {
             var before = record.GetProperty("Before").Deserialize<RoomCombatState>()!;
@@ -76,6 +77,11 @@ internal static class TriggerCountChecks
                 int predicted = TriggerCountModel.Query(before.Context, actor, trigger, out string? error);
                 Require(error == null && predicted == trigger.FireCount, "Independent native trigger count differs: " + error);
                 queries++;
+                if (combined && trigger.Kind is "OnSpawn" or "OnDeath")
+                {
+                    Require(predicted == (actor.Team == CombatTeam.Player ? 2 : 1), "Combined relic spawn/death query differs.");
+                    if (trigger.Kind == "OnSpawn") spawnQueries++; else deathQueries++;
+                }
                 if (trigger.Kind != Kind) continue;
                 if (actor.Team == CombatTeam.Player) { Require(predicted == 2, "Original player Incant count is not two."); players++; }
                 else { Require(predicted == 1, "Original enemy Incant count is not one."); enemies++; }
@@ -88,13 +94,27 @@ internal static class TriggerCountChecks
         Require(players > 0 && enemies > 0 && queries > 20, "Native trigger count coverage is incomplete.");
         Console.WriteLine($"NATIVE-RELIC-TRIGGER-COUNT-CHECKS PASS: {queries} original queries, fresh template births, player count2/enemy count1, original acquired relic and registration cache; complete callbacks/policies checked separately.");
 
-        static void ValidateContext(CombatContext context)
+        if (combined)
+        {
+            Require(spawnQueries > 0 && deathQueries > 0 && fixture.GetProperty("Turns").EnumerateArray().Any(record =>
+                record.GetProperty("Actual").Deserialize<BattleTurnState>()!.Spawn.Train.Context!.Statistics!.MonstersDeadThisBattle > 0),
+                "Combined relic scene lacks actual spawn/death paths.");
+            Console.WriteLine($"NATIVE-COMBINED-RELIC-COUNT-CHECKS PASS: {spawnQueries} spawn/{deathQueries} death queries, three original artifacts, new paid births and actual player deaths; all complete native transitions checked separately.");
+        }
+
+        void ValidateContext(CombatContext context)
         {
             Require(RelicModel.Validate(context) == null && context.Relics!.Count(relic => relic.DataId == "410ba540-7c4f-4dc5-a84f-b1d8af508891" &&
                 relic.AssetKey == "ExtraSpellCastTrigger" && relic.EffectTypes.SequenceEqual([RelicModel.ModifyTriggerCount])) == 1 &&
-                context.TriggerCounts!.Modifiers.Count == 1 && context.TriggerCounts.Modifiers[0].Kind == Kind && context.TriggerCounts.Modifiers[0].Value == 1 &&
+                context.TriggerCounts!.Modifiers.Count == (combined ? 3 : 1) && context.TriggerCounts.Modifiers[0].Kind == Kind && context.TriggerCounts.Modifiers[0].Value == 1 &&
                 context.TriggerCounts.EnemyAllowedKinds.Count == 0 && context.TriggerCounts.ExcludedCardTriggers.Count == 0 && context.TriggerCounts.EquipmentDefinitions.Count > 0,
                 "Original acquired relic/cache/definitions differ from the catalog.");
+            if (combined)
+                Require(context.Relics!.Count(relic => relic.DataId == "9e0deb69-6196-44a6-8220-85bd0df25f77" && relic.AssetKey == "ExtraSpawnTrigger" &&
+                    relic.EffectTypes.SequenceEqual([RelicModel.ModifyTriggerCount])) == 1 && context.Relics!.Count(relic =>
+                    relic.DataId == "a5d67620-a9ec-4257-91b5-305336e11987" && relic.AssetKey == "ExtraDeathTrigger" &&
+                    relic.EffectTypes.SequenceEqual([RelicModel.ModifyTriggerCount])) == 1 && context.TriggerCounts!.Modifiers.Any(item => item.Kind == "OnSpawn" && item.Value == 1) &&
+                    context.TriggerCounts.Modifiers.Any(item => item.Kind == "OnDeath" && item.Value == 1), "Original combined relic registration differs.");
         }
     }
     private static CombatTrigger Gold(int amount, bool once = false, bool blocked = false) => new(Kind, once, false, true, 1,

@@ -11,7 +11,7 @@ namespace MonsterTrain2Poju.Probe
     {
         internal static bool Prepared { get; private set; }
         internal static bool ThresholdCoverage { get; private set; }
-        internal static void Prepare(AllGameManagers managers, ManualLogSource log)
+        internal static void Prepare(AllGameManagers managers, ManualLogSource log, bool spawnAndDeath = false)
         {
             SaveManager save = managers.GetSaveManager();
             CardState[] cards = managers.GetCardManager()!.GetAllCards(new List<CardState>()).ToArray();
@@ -30,6 +30,10 @@ namespace MonsterTrain2Poju.Probe
             Set(silence, "effects", new List<CardEffectData> { Add("silenced", 1) });
             Set(unit, "triggers", unit.GetTriggers().Concat(new[] { Gold(5, false, true), Gold(11, true, true),
                 Gold(17, false, false), guarded, chain, child, silence }).ToList());
+            if (spawnAndDeath)
+                Set(unit, "triggers", unit.GetTriggers().Concat(new[] { OtherGold(CharacterTriggerData.Trigger.OnSpawn, 5, false),
+                    OtherGold(CharacterTriggerData.Trigger.OnSpawn, 11, true), OtherGold(CharacterTriggerData.Trigger.OnDeath, 23, false),
+                    OtherGold(CharacterTriggerData.Trigger.OnDeath, 31, true) }).ToList());
             if (ThresholdCoverage)
             {
                 var positive = Gold(23, true, true); Set(positive, "triggerAtThreshold", 1);
@@ -48,6 +52,9 @@ namespace MonsterTrain2Poju.Probe
             foreach (CharacterData enemy in ordinary)
             {
                 Set(enemy, "triggers", enemy.GetTriggers().Concat(new[] { Gold(7, false, true) }).ToList());
+                if (spawnAndDeath)
+                    Set(enemy, "triggers", enemy.GetTriggers().Concat(new[] { OtherGold(CharacterTriggerData.Trigger.OnSpawn, 7, false),
+                        OtherGold(CharacterTriggerData.Trigger.OnDeath, 13, false) }).ToList());
                 Set(enemy, "startingStatusEffects", enemy.GetStartingStatusEffects().Concat(new[] { Stack("purify", 1) }).ToArray());
             }
 
@@ -78,6 +85,8 @@ namespace MonsterTrain2Poju.Probe
             CharacterTriggerData trigger = HealingScenario.HealGold(value, once, ignoreSilence);
             Set(trigger, "trigger", CharacterTriggerData.Trigger.CardSpellPlayed); return trigger;
         }
+        private static CharacterTriggerData OtherGold(CharacterTriggerData.Trigger kind, int amount, bool once)
+        { var trigger = Gold(amount, once, true); Set(trigger, "trigger", kind); return trigger; }
         private static CardEffectData Add(string id, int count, TargetMode mode = TargetMode.Self) => Effect("CardEffectAddStatusEffect", id, count, mode);
         private static CardEffectData Remove(string id, int count, TargetMode mode = TargetMode.Self) => Effect("CardEffectRemoveStatusEffect", id, count, mode);
         private static CardEffectData Effect(string type, string id, int count, TargetMode mode)

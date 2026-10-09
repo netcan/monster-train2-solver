@@ -7319,3 +7319,43 @@ independent acceptance is separate from the completed182 baseline. A complete183
 regression of the extended trigger-count model remains required. Whole-battle
 simulation of further relics, room modifiers, Bosses and other unmodeled effects
 remains unfinished.
+
+### Combined original Incant, summon and death relics
+
+The optional -IncantRelics scene acquires three unmodified original artifacts:
+ExtraSpellCastTrigger (410ba540-7c4f-4dc5-a84f-b1d8af508891), ExtraSpawnTrigger
+(9e0deb69-6196-44a6-8220-85bd0df25f77) and ExtraDeathTrigger
+(a5d67620-a9ec-4257-91b5-305336e11987). Each contributes +1 to its own kind and
+grants no enemy permission. Authored Steward/ordinary-enemy spawn/death gold
+triggers include repeat and once cases. Original Boss and waves remain intact.
+This scene extends coverage of the committed cache model without changing its
+production source. The recording still uses schema108's unchanged value contract.
+
+The muted Instant native recording completes in103.69 seconds with terminal exit
+zero, unchanged original files and zero failures/differences/unsupported/pending
+records. The independent complete checker also exits zero:21 paid plays, seven
+EndTurns, final Pyre61, five actual player-unit deaths,204 exact status callbacks,
+160 independently computed fire-count queries (including31 spawn and31 death
+queries),32 Incant phases and18 actor dispatches. New player births and deaths
+use count2; native enemy spawn/death queries remain count1. Complete initial and
+mid-battle policies repeat in16 branches; Incant and callback operations in32.
+The pure suite also passes with terminal exit zero. These checks prove the
+recorded combination, not additional relics, room modifiers or every Boss.
+
+Evidence is .probe-runs/combined-trigger-relics-native.log,
+.probe-runs/combined-trigger-relics-independent.log,
+.probe-runs/combined-trigger-relics-pure.log and
+.probe-runs/full-battle-units-spells-and-junk-20261009-185339-c60fd147/full-battle.mt2f.
+The retained .probe-runs/combined-trigger-relics-checks snapshot uses Model.dll
+6C9105B41D47AE2AA1609E6B80AE33E4F91450B9713976A24C8705A43C170629 and
+ModelChecks.dll87DB019193858334F277B1B24A96889B843F12B08386F048908C634DD92EE878.
+The earlier model/checker snapshot is still running the separate183-input
+regression (.probe-runs/incant-relic-complete-regression.log and its retained
+input list), with all183 initial archive identities/lengths/hashes verified.
+That process is preserved; its current result remains pending.
+
+The updated combined-scenario checker also repeats the previously accepted original
+Incant relic's complete team/actor/admission comparisons in32 branches, with terminal
+exit zero. Evidence is .probe-runs/combined-trigger-relics-historical.log using the
+same retained combined checker. Existing scenario gates keep their earlier coverage
+requirements; the new label adds its explicit three-artifact/spawn/death requirements.
