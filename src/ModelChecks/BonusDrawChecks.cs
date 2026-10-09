@@ -95,10 +95,7 @@ internal static class BonusDrawChecks
             RngDraw? sampled = effect.Range?.Sample(before.BattleRng); int amount = sampled?.Value ?? effect.Value;
             Require(amount == record.GetProperty("Amount").GetInt32(), "Native future-draw range differs.");
             var cards = BonusDrawModel.Schedule(before.Cards, record.GetProperty("Key").GetString()!, amount, effect.Upgrade);
-            var predicted = new CombatContext(cards, sampled?.State ?? before.BattleRng, before.Gold, before.NextCardId, before.MaxHandSize,
-                before.StatusRules, before.Statistics, before.CardInstances, before.CardRegistry, before.AllScenarioBossesDead,
-                before.NextAddedTemporaryUpgrades, before.OtherPiles, before.QueryFrame, before.KillCamActivated, before.MagicPower, before.IsolatedBattlePreview, before.EnergyState, before.RoomCapacities,
-                before.AbilityCardCache, before.LastAbilityActivatorUnitId, before.PermanentlyDisabledAbilities);
+            CombatContext predicted = before.WithCards(cards).WithBattleRng(sampled?.State ?? before.BattleRng);
             string? difference = ModelJson.Difference(JsonSerializer.Serialize(predicted), JsonSerializer.Serialize(after));
             Require(difference == null, "Native future-draw context differs: " + difference);
             count++; if (amount < 0) negative++; if (amount == 0) zero++; if (effect.Range != null) ranged++;

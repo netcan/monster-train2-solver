@@ -7141,3 +7141,31 @@ this recording is not accepted yet. Schema validation now recognizes the exact
 ability-Incant schema107 when animation/death settlement is also requested,
 while preserving each protocol's original completion gates. Unmodified arbitrary
 frame scheduling remains unverified; the complete battle simulator is unfinished.
+
+### Future-draw checker context preservation
+
+The native future-draw checker previously rebuilt CombatContext using an older
+constructor argument list ending at permanently disabled abilities. It silently
+dropped captured last-spawned/unit identities, physical positions, summon/aura
+state, Purify admission and relic descriptors. The new ability-Incant scene
+exposes this as LastSpawnedUnitId null versus a captured number. The independent
+future-draw Schedule calculation is unchanged; WithCards and WithBattleRng now
+preserve all remaining input fields before comparing the complete native context.
+No comparison field is removed, normalized or substituted with a future state.
+
+The corrected checker passes five historical bonus-draw/skill activation battles
+and the first settled ability-Incant recording with terminal exit zero. A second
+muted Instant recording completes in102.91 seconds with terminal native exit zero,
+zero failures/differences/unsupported/pending records and unchanged original files;
+its complete independent checker also exits zero. Both native recordings have
+identical actual Before/After/outcome values at all22 decision transitions
+(66 complete comparisons), including every independently chosen action.
+
+Evidence is .probe-runs/ability-incant-settlement-targeted.log and its six-input
+inventory, .probe-runs/ability-incant-animation-settled-repeat-native.log and
+.probe-runs/ability-incant-animation-settled-repeat-independent.log. The checks
+use Model.dll F418B74A91DF12254ECBA6A1EF2A9AC3EA88FAA11D84DD5ED687590CB984B7FF
+and corrected ModelChecks.dll460AAC21C6EB82A08B31ACEAD854BF5B3CF344D3AD5820B03BC5D740563D78A6
+retained in .probe-runs/ability-incant-settlement-checks. No production model
+source change was needed for this sampling/control issue. The earlier raw frame
+captures remain rejected; arbitrary original-frame scheduling is still unverified.
