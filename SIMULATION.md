@@ -6810,7 +6810,7 @@ Its targeted historical regression also exits successfully: 27 complete battles,
 therefore covers 28 complete battle inputs and 24 calibrations without unsupported
 or skipped operations. The pre-fix queue model fails the new callback-admission
 regression, reproducing the repaired extra-gold behavior. A combined inventory
-regression of this Purify model is still to run; complete177 above uses the
+regression of this Purify model now passes as recorded below; complete177 above uses the
 previous room-membership model.
 
 This proves the recorded status, room/team and paid-spell paths. Native Purify
@@ -6822,8 +6822,8 @@ The accepted native battle is byte-identically curated as full-battle-purify.mt2
 42,703 bytes, 7,162 nodes, no text source and SHA-256
 e2ca35b99de71ea1e4d48bc7cfcf363873105669a72956babdda0c2a0f5e50ba.
 The required regression list and manifest now contain 178 archives: 154 accepted
-battles and 24 component calibrations. The full178 regression of the Purify model
-has not yet completed.
+battles and 24 component calibrations. The full178 regression of the status-Purify
+model has completed as recorded below.
 
 Purify now applies native admission to manually assembled character queues as
 well as engine/status queues. Each new batch is admitted before its first effect;
@@ -6861,3 +6861,13 @@ with a pending dissolve actor. Battle removal/position transitions pass their
 complete comparison; the existing 24 curated component calibrations retain their
 strict gates. Runtime Purify with Horde/aura births, card purification and further
 unimplemented triggers/effects remain open. The whole simulator remains unfinished.
+
+The preceding status-Purify model has now completed the entire 178-archive
+inventory regression: 154 accepted battles, 150 continuous paid-policy chains,
+four no-more-card chains and all 24 component calibrations. Every recorded
+room/card-cycle/train/spawn/EndTurn/action operation is supported and matched;
+all input identities, archive sizes and manifest SHA-256 hashes pass. This
+versioned baseline uses Model.dll SHA-256
+e546dcf00cbda02d12431a4289be8b24b864a0f8cc7062bbaa7180530854ff0b.
+It does not replace the separate validation of the newer removal/admission model
+fb6341d949d6b98027472cf3735bd5dda0ed9540351b22221b0cf9d61c432a3f.

@@ -1389,3 +1389,11 @@ historical/component regression is still running. The incidental new removal
 calibration lacks its required nonempty pending-dissolve queue observation and is
 not curated; existing calibration gates remain strict. Horde/aura births with
 Purify and the complete simulator remain open.
+
+The status-Purify version has completed all 178 required archives: 154 accepted
+battles, 150 continuous paid-policy chains, four no-more-card chains and all 24
+component calibrations. No recorded room/card-cycle/train/spawn/EndTurn/action
+operation is unsupported or skipped. All input identities, archive sizes and
+manifest SHA-256 hashes pass. This complete178 baseline uses Model.dll SHA-256
+e546dcf00cbda02d12431a4289be8b24b864a0f8cc7062bbaa7180530854ff0b;
+the newer removal/admission version is validated separately.
