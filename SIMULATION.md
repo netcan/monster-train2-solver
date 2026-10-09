@@ -6941,3 +6941,11 @@ combined regression of this Incant model still requires its own run. Positive
 Incant threshold callbacks remain refused. Relic-triggered ability Incant, further
 trigger/effect combinations, Purify/Horde/aura integration, card purification,
 complete state pruning and the whole simulator remain unfinished.
+
+The final Incant battle is byte-identically curated as full-battle-incant.mt2f:
+49,010 bytes, 8,274 unique nodes, no text source and SHA-256
+01812c137f392da5b24408df6999705c26b45d2b243cb871784713c1e5409d4c.
+The required list and manifest now contain 180 archives: 156 accepted complete
+battles and 24 strict component calibrations. A combined180 regression of the
+Incant model is pending; the completed179 baseline remains explicitly tied to the
+preceding Purify queue model.

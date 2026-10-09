@@ -1431,3 +1431,10 @@ e26db6f690855eadc4adc90ec5dd2feaf5570de1a1a9695ab826195e5f5b5cea.
 The preceding complete179 baseline is not a combined regression of this Incant
 version. Positive Incant thresholds, relic-triggered ability Incant and the whole
 simulator remain unfinished.
+
+`full-battle-incant.mt2f` is the byte-identical final native Incant recording:
+49,010 bytes, 8,274 unique nodes and no text-source provenance. SHA-256:
+01812c137f392da5b24408df6999705c26b45d2b243cb871784713c1e5409d4c.
+The required list and manifest now contain 180 archives: 156 accepted battles and
+24 strict component calibrations. The completed179 baseline belongs to the prior
+Purify queue model; the Incant model's combined180 regression is pending.
