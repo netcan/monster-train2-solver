@@ -7304,3 +7304,18 @@ complete paid policies and native room/effect checks pass; their names, lengths
 and hashes still match the manifest. Evidence is .probe-runs/incant-relic-targeted.log
 and .probe-runs/incant-relic-targeted-inputs.txt. These targeted results do not replace
 a complete regression of the extended model against the full required inventory.
+
+### Accepted original Incant relic archive
+
+The verified schema108 recording is byte-identically curated as
+tests/fixtures/full-battle-incant-relic.mt2f:66,810 bytes,10,132 unique nodes,
+SHA25688de4749ce5cac84ed296ffd8240b5052f89178df4d3649f08037db5d702b83e.
+Its native-source manifest row is appended while retaining every previous manifest
+byte and row order. No diagnostic JSON or results output becomes a dependency.
+
+The required inventory is now183 binary archives:159 accepted complete battles and
+24 component calibrations. The new original-artifact battle's full native and
+independent acceptance is separate from the completed182 baseline. A complete183
+regression of the extended trigger-count model remains required. Whole-battle
+simulation of further relics, room modifiers, Bosses and other unmodeled effects
+remains unfinished.
