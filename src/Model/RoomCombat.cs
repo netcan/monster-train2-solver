@@ -982,7 +982,7 @@ namespace MonsterTrain2Poju.Model
             internal RoomCombatResult Run(bool entireRoom)
             {
                 stopAfterBossRemoval = true;
-                bool relentless = units.Any(unit => unit.Has("relentless")) && BothTeamsPresent();
+                bool relentless = units.Any(unit => unit.InRoom && unit.Has("relentless")) && BothTeamsPresent();
                 var seen = new HashSet<string>(StringComparer.Ordinal);
                 do
                 {
@@ -1008,7 +1008,7 @@ namespace MonsterTrain2Poju.Model
                 if (!source.Deployment)
                     foreach (CombatTeam team in new[] { CombatTeam.Enemy, CombatTeam.Player })
                     {
-                        WorkingUnit? front = units.FirstOrDefault(unit => unit.Alive && unit.Source.Team == team && !unit.Has("untouchable"));
+                        WorkingUnit? front = units.FirstOrDefault(unit => unit.Alive && unit.InRoom && unit.Source.Team == team && !unit.Has("untouchable"));
                         if (front == null || !front.Has("valor") || front.Has("immune") || front.Source.StatusImmunities.Contains("armor")) continue;
                         int goal = Math.Min(9999, front.Amount("valor"));
                         // Valor calls AddStatusEffect even when existing armor already meets its target.
@@ -1038,7 +1038,7 @@ namespace MonsterTrain2Poju.Model
             {
                 // Native snapshots enemies then players, preserving front-to-back order.
                 // Each actor finishes its healing queue before its ordinary post-combat queue.
-                foreach (WorkingUnit unit in units.OrderBy(unit => unit.Source.Team).ToArray())
+                foreach (WorkingUnit unit in units.Where(unit => unit.InRoom).OrderBy(unit => unit.Source.Team).ToArray())
                 {
                     if (!unit.Alive) continue;
                     bool canFire = !cannotFireTriggers.Contains(unit.Source.Id);
@@ -1347,7 +1347,7 @@ namespace MonsterTrain2Poju.Model
 
             private void BeginTeam(CombatTeam team)
             {
-                foreach (WorkingUnit actor in units.Where(unit => unit.Alive && unit.Source.Team == team).ToArray())
+                foreach (WorkingUnit actor in units.Where(unit => unit.Alive && unit.InRoom && unit.Source.Team == team).ToArray())
                     FireTriggers(actor, "OnTeamTurnBegin");
             }
 
@@ -1355,7 +1355,7 @@ namespace MonsterTrain2Poju.Model
             {
                 // Native clears both prevention sets for each exchange, including relentless.
                 cannotAttackOrHeal.Clear(); cannotFireTriggers.Clear();
-                WorkingUnit[] quick = units.Where(unit => unit.Alive &&
+                WorkingUnit[] quick = units.Where(unit => unit.Alive && unit.InRoom &&
                     unit.Source.Team == CombatTeam.Player && unit.Has("ambush")).ToArray();
                 foreach (WorkingUnit unit in quick)
                 {
@@ -1364,10 +1364,10 @@ namespace MonsterTrain2Poju.Model
                     if (CombatPreviewStopped()) return;
                 }
                 BeginTeam(CombatTeam.Enemy);
-                foreach (WorkingUnit unit in units.Where(unit => unit.Source.Team == CombatTeam.Enemy).ToArray())
+                foreach (WorkingUnit unit in units.Where(unit => unit.InRoom && unit.Source.Team == CombatTeam.Enemy).ToArray())
                 { Turn(unit); if (CombatPreviewStopped()) return; }
                 BeginTeam(CombatTeam.Player);
-                foreach (WorkingUnit unit in units.Where(unit => unit.Source.Team == CombatTeam.Player).ToArray())
+                foreach (WorkingUnit unit in units.Where(unit => unit.InRoom && unit.Source.Team == CombatTeam.Player).ToArray())
                     if (!quick.Contains(unit)) { Turn(unit); if (CombatPreviewStopped()) return; }
             }
 
@@ -1376,7 +1376,7 @@ namespace MonsterTrain2Poju.Model
 
             private void Turn(WorkingUnit actor)
             {
-                if (!actor.Alive) return;
+                if (!actor.Alive || !actor.InRoom) return;
                 bool dazed = actor.Has("dazed") && Active(actor.Statuses["dazed"]);
                 if (dazed)
                 {
@@ -1392,7 +1392,7 @@ namespace MonsterTrain2Poju.Model
                     ? Math.Max(1, multi.ParamInt + multi.Stacks - 1) : 1;
                 for (int strike = 0; strike < strikes && actor.Alive; strike++)
                 {
-                    WorkingUnit[] targets = units.Where(unit => unit.Alive && unit.Source.Team != actor.Source.Team &&
+                    WorkingUnit[] targets = units.Where(unit => unit.Alive && unit.InRoom && unit.Source.Team != actor.Source.Team &&
                         !unit.Has("stealth") && !unit.Has("untouchable")).ToArray();
                     if (targets.Length == 0) continue;
                     bool sweep = actor.Has("sweep");
@@ -1415,7 +1415,7 @@ namespace MonsterTrain2Poju.Model
 
             private void PreviewBossAttack(WorkingUnit actor, WorkingUnit target)
             {
-                if (source.Preview || context?.Statistics == null || !units.Any(unit => unit.Alive &&
+                if (source.Preview || context?.Statistics == null || !units.Any(unit => unit.Alive && unit.InRoom &&
                     (unit.Source.IsPyre || unit.Source.IsBoss == true || unit.Source.IsBoss == null && unit.Source.EndsBattleOnDeath))) return;
                 var copied = new RoomCombatState(source.RoomIndex, source.Deployment, units.Select(unit => unit.Freeze()).ToArray(),
                     source.ExternalInteractions, context.SpawnPoints == null ? context :
@@ -1825,7 +1825,7 @@ namespace MonsterTrain2Poju.Model
             private void PostCombat()
             {
                 // Enemy post-combat runs before player post-combat, each front to back.
-                foreach (WorkingUnit unit in units.OrderBy(unit => unit.Source.Team))
+                foreach (WorkingUnit unit in units.Where(unit => unit.InRoom).OrderBy(unit => unit.Source.Team))
                 {
                     if (!unit.Alive) continue;
                     if (!source.Deployment && unit.Has("regen"))
@@ -2554,7 +2554,7 @@ namespace MonsterTrain2Poju.Model
             {
                 if (source.Deployment) return;
                 bool relentless = units.Any(unit => unit.Alive && unit.InRoom && unit.Source.Team == CombatTeam.Enemy && unit.Has("relentless"));
-                foreach (WorkingUnit unit in units.Where(unit => unit.Alive))
+                foreach (WorkingUnit unit in units.Where(unit => unit.Alive && unit.InRoom))
                     foreach (CombatStatus status in unit.RegisteredStatuses().ToArray())
                         if (status.RemoveAfterPostCombat == after)
                         {
@@ -2572,8 +2572,8 @@ namespace MonsterTrain2Poju.Model
                 if (enqueueCharacterTrigger == null && !runningTriggerQueue) DrainLocalTriggerQueue();
             }
 
-            private bool BothTeamsPresent() => units.Any(unit => unit.Alive && unit.Source.Team == CombatTeam.Player &&
-                !unit.Has("untouchable")) && units.Any(unit => unit.Alive && unit.Source.Team == CombatTeam.Enemy &&
+            private bool BothTeamsPresent() => units.Any(unit => unit.Alive && unit.InRoom && unit.Source.Team == CombatTeam.Player &&
+                !unit.Has("untouchable")) && units.Any(unit => unit.Alive && unit.InRoom && unit.Source.Team == CombatTeam.Enemy &&
                 !unit.Has("untouchable"));
 
             private string Signature()

@@ -6703,3 +6703,43 @@ Inventory is 176 archives: 152 accepted battles and 24 component calibrations.
 The manifest and required regression list include the new battle. The final
 model's 58 affected archives and this additional complete battle pass separately;
 a combined176 run of the current model has not been performed.
+
+### Room membership of living retained callback actors
+
+A retained actor can be alive while remaining outside the selected room list.
+Local aura callbacks keep a working reference to such an actor so explicit
+queued effects can execute. Subsequent room phases must still use actual room
+membership. Native unit/team turns, room post-combat, status clearing and
+relentless continuation collect characters from the room's selected groups.
+
+The independent engine now filters those ordinary phases by `InRoom`, including
+attackers/targets, ambush, front valor, Boss presence and both-team continuation.
+Explicit callbacks and retained self effects remain available. Previously, a
+living callback actor participated in later relentless exchanges, fired all its
+team/unit/post-combat once triggers and lost its regeneration/poison stacks.
+
+Behavior regressions cover three relentless exchanges with an attacking retained
+actor, and death of the last placed defender while a retained friend remains
+alive. Both check exact real attack targets, untouched retained health/statuses,
+an executed explicit status callback, unfired room-phase flags, stable resources
+and identities, immutable roots and 32 parallel branches. The original model
+fails the new test; the updated pure suite passes. Probe and independent checker
+load Model.dll SHA-256 d46c6961737888c3b84bfb883c5cdbfd85741536ea3dee8400b6cb91c6a68cbb.
+
+The fresh-source random aura-summon native battle passes in 218.97 seconds,
+muted and using Instant timing. It has zero differences, capture failures,
+unsupported operations or pending records; all 23 original card-movement
+callbacks complete and original profile/log signatures remain unchanged.
+Complete independent comparison also passes: all 154 closed contexts, 41 room
+stages, nine train phases, seven spawns, fifteen paid actions, five EndTurns,
+the initial/mid-battle policies and sixteen immutable parallel branches, ending
+with Pyre80. Its four nested births use four fresh child source cards and no
+source copies; 370 raw/canonical decisions and 14,385 position-plane mappings
+also pass.
+
+The 59-archive affected regression exits successfully: 35 complete battle suites,
+33 paid continuous policies, two complete no-more-card chains and all 24
+calibrations. No recorded room/card-cycle/train/spawn/EndTurn/action operation is
+unsupported or skipped. Inventory remains 176; a combined176 run of this model
+has not yet been completed. Complete combat coverage and optimal search remain
+unfinished.

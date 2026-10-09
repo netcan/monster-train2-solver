@@ -7,6 +7,8 @@ internal static class RetainedCallbackChecks
     {
         AutomaticRetainedAuraCallback(false);
         AutomaticRetainedAuraCallback(true);
+        RetainedActorCombatPhases(false);
+        RetainedActorCombatPhases(true);
         var rng = UnityRng.Seed(81);
         var context = new CombatContext(new([], [], [], rng, 0, []), rng, 10, 1, 10);
         var effects = new CombatEffect[] {
@@ -82,6 +84,52 @@ internal static class RetainedCallbackChecks
         Verify(); Parallel.For(0, 32, _ => Verify());
         Require(JsonSerializer.Serialize(room) == parent, "Retained aura callbacks mutated their root.");
         Console.WriteLine($"RETAINED-AURA-CALLBACK-CHECKS PASS: {(temporaryBossPreview ? "temporary Boss preview restoration" : "local preview callbacks")}, two withdrawn statuses, once state, preview gold, stable identity and 32 immutable branches.");
+    }
+    private static void RetainedActorCombatPhases(bool defenderDies)
+    {
+        var rng = UnityRng.Seed(81);
+        var armor = new CombatStatus("armor", 2, 1, stackable: true, hidden: false, displayCategory: "Positive");
+        var regen = new CombatStatus("regen", 2, 1, removeStackAtEnd: true);
+        var poison = new CombatStatus("poison", 2, 1, removeStackAtEnd: true);
+        var aura = new EnchantmentRule(new("Enchant", "Room", 0, true, true, []), [armor],
+            new EnchantmentState(previewTargets: [new(5, true, 0)]), bound: true);
+        var sourceTriggers = new List<CombatTrigger> { new("OnSpawn", false, false, false, 1,
+            [new("CardEffectEnchant", 0, 0, "", 0, [], false, enchantment: aura)], false) };
+        if (defenderDies) sourceTriggers.Add(new("OnDeath", false, false, false, 1,
+            [new("CardEffectDamage", 20, 0, "", 0, [], false, action: new("Damage", "Room", 20, false, true, []))], false));
+        var source = new CombatUnit(1, "aura", CombatTeam.Enemy, 0, 1, 1, false, false, false, [],
+            sourceTriggers,
+            isBoss: false, lastAttackerId: 0, statusRegistry: []);
+        var enemy = new CombatUnit(6, "relentless", CombatTeam.Enemy, 0, 2, 2, false, false, false, [new("relentless", 1)],
+            isBoss: false, lastAttackerId: 0, statusRegistry: [new("relentless", 1)]);
+        var defender = new CombatUnit(2, "defender", CombatTeam.Player, 1, 20, 20, true, false, false, [],
+            isBoss: false, lastAttackerId: 0, statusRegistry: []);
+        var retained = new CombatUnit(5, "retained-preview", CombatTeam.Player, 99, 10, 20, true, false, false, [armor, regen, poison],
+            new[] { "OnStatusEffectChanged", "OnTeamTurnBegin", "OnTurnBegin", "PostCombatHealing", "PostCombat" }
+                .Select(kind => new CombatTrigger(kind, true, false, false, 1, [new("CardEffectRewardGold", 7, 0, "", 0, [], false)], false)).ToArray(),
+            isBoss: false, lastAttackerId: 0, statusRegistry: [armor, regen, poison]);
+        var room = new RoomCombatState(0, false, [source, enemy, defender], [], preview: true);
+        var context = new CombatContext(new([], [], [], rng, 0, []), rng, 10, 1, 10, nextUnitId: 7,
+            enchantments: new([room], [], 7, [new(retained, 0, true)], [1], true, false, true, rng, true));
+        room = new RoomCombatState(0, false, room.Units, [], context, true);
+        string parent = JsonSerializer.Serialize(room);
+        void Verify()
+        {
+            var result = RoomCombatModel.Resolve(room);
+            Require(result.Supported, result.UnsupportedReason ?? "Retained combat phase was rejected.");
+            var actor = result.State!.Context!.Enchantments!.RetainedUnits.Single(unit => unit.Unit.Id == 5).Unit;
+            Require(result.State.Units.Select(unit => unit.Id).SequenceEqual(new[] { defenderDies ? 6 : 2 }) &&
+                actor.Health == 10 && actor.Status("regen")?.Stacks == 2 && actor.Status("poison")?.Stacks == 2 &&
+                actor.Triggers[0].HasTriggered && actor.Triggers.Skip(1).All(trigger => !trigger.HasTriggered) &&
+                result.State.Context.Gold == 10 && result.State.Context.NextUnitId == 7 &&
+                result.Events.Where(item => item.Kind == "Attack").Select(item => item.Target)
+                    .SequenceEqual(defenderDies ? new[] { 1 } : new[] { 1, 6, 6 }) &&
+                result.Events.All(item => item.Actor != 5 && item.Target != 5),
+                $"Retained combat phases: units={string.Join(',', result.State.Units.Select(unit => unit.Id))}, health={actor.Health}, regen={actor.Status("regen")?.Stacks}, poison={actor.Status("poison")?.Stacks}, triggers={string.Join(',', actor.Triggers.Select(trigger => trigger.HasTriggered))}, attacks={string.Join(',', result.Events.Where(item => item.Kind == "Attack").Select(item => item.Target))}.");
+        }
+        Verify(); Parallel.For(0, 32, _ => Verify());
+        Require(JsonSerializer.Serialize(room) == parent, "Retained combat phases mutated their root.");
+        Console.WriteLine($"RETAINED-COMBAT-PHASE-CHECKS PASS: {(defenderDies ? "last placed defender death" : "three relentless exchanges")}, outside-room attacks, team/unit/post-combat callbacks, regeneration/poison and status decay excluded, 32 immutable branches.");
     }
     private static void Require(bool pass, string message) { if (!pass) throw new InvalidOperationException(message); }
 }
