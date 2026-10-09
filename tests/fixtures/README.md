@@ -4,7 +4,7 @@ These fixed inputs reproduce the independently modeled battle and calibration
 checks. Run `pwsh -NoProfile -File scripts/Check-Models.ps1` from the repository
 root. The script reads the curated fixture list in this directory.
 
-Current inventory is 185 archives: 161 accepted battles and 24 component
+Current inventory is 186 archives: 162 accepted battles and 24 component
 calibrations. The initial Incant model's complete 180-archive regression passes.
 The threshold model's combined181 regression has also completed successfully.
 The relic model's combined181 regression has also completed successfully.
@@ -15,6 +15,14 @@ The original spawn-status model's complete185 regression has completed:161
 battles,157 paid policy chains,four no-more-card chains and24 calibrations pass.
 Subsequent ability-count and relic-birth scheduling changes require their own
 regression; the frozen185 baseline does not include those changes.
+
+`full-battle-spawn-status-relics-clones.mt2f` retains schema110 with the three
+original spawn-status artifacts and unchanged ExtraSpawnTrigger. It adds13 clone
+operations and22 complete birth observations:13 standalone settlements and nine
+deferred phases, including exact prior/remaining queues and dispatched payloads
+across the whole train. Both native recordings and independent complete battles
+pass; all28 pre/post-policy states repeat exactly. The frozen185 baseline remains
+separate evidence; the final scheduling model requires a complete186 regression.
 
 `full-battle-incant-relic.mt2f` retains schema108 with the original obtainable
 ExtraSpellCastTrigger acquired through SaveManager. The relic asset is unchanged;
@@ -34,8 +42,9 @@ All18 plays,six EndTurns,final Pyre80,12 native birth phases and170 exact FIFO
 status callbacks pass. Shield triggers once on each of three different turns,
 with two same-turn skips. Complete initial/mid-battle policies repeat in16
 branches; original birth phases in32. Two native recordings retain identical
-complete pre/post states for every one of the18 actions. Grafted/cardless/copied
-birth combinations and further relic effects still need native acceptance.
+complete pre/post states for every one of the18 actions. The schema110 companion
+above covers ordinary copied/cardless births. Grafted/aura births and further
+relic effects still need native acceptance.
 
 `full-battle-ability-incant.mt2f` retains schema107 with an isolated authored
 relic using the original native ability-Incant effect. It is not an obtainable

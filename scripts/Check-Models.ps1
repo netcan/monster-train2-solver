@@ -52,6 +52,7 @@ $fixtures = @('full-battle-steward-once.mt2f', 'full-battle-no-cards.mt2f', 'ful
     'full-battle-ability-incant.mt2f', 'full-battle-incant-relic.mt2f',
     'full-battle-incant-relics-combined.mt2f',
     'full-battle-spawn-status-relics.mt2f',
+    'full-battle-spawn-status-relics-clones.mt2f',
     'full-battle-energy-effects.mt2f',
     'full-battle-energy-effects-lethal.mt2f',
     'full-battle-x-cost.mt2f',

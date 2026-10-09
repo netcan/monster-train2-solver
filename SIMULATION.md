@@ -7533,3 +7533,15 @@ Evidence is .probe-runs/relic-birth-yields-final2-native.log,
 .probe-runs/relic-birth-yields-final-historical.log. The full185 baseline remains
 separate evidence from this increment. Grafted/aura births, further artifacts and
 arbitrary original-frame scheduling still need native acceptance.
+
+### Accepted original relic clone-combination archive
+
+The final repeat native recording is curated as
+tests/fixtures/full-battle-spawn-status-relics-clones.mt2f:64,176 bytes,9,277 unique
+nodes,SHA256da7c454f4a27af6ce356384867bfeacc5a014a2f44585bf042837cc3c38190a6.
+The manifest row is appended with every preceding byte and row order preserved.
+The curated inventory is now186 binary archives:162 accepted complete battles
+and24 component calibrations, with no JSON/results dependency. Native/independent
+acceptance of this scene and the completed185 preceding-model baseline are
+distinct evidence; the final scheduling model requires its own complete186 run.
+The whole-battle goal still requires further relic, room, Boss and effect coverage.
