@@ -4,6 +4,10 @@ These fixed inputs reproduce the independently modeled battle and calibration
 checks. Run `pwsh -NoProfile -File scripts/Check-Models.ps1` from the repository
 root. The script reads the curated fixture list in this directory.
 
+Current inventory is 174 archives: 150 accepted battles and 24 component
+calibrations. The newly accepted battle passes strict native and independent
+checks; the combined inventory regression is still in progress.
+
 The retained inputs are `.mt2f` binary archives. They store typed, deduplicated
 value graphs, not JSON documents. Regression reads those graphs and constructs
 model states directly. Every captured value is preserved; identical repeated
@@ -1264,3 +1268,21 @@ The final model passes 32 affected historical battles, 30 continuous paid polici
 all 24 calibrations and pure checks. Inventory remains 173 binary archives:
 149 accepted battles and 24 component calibrations. A combined173 regression was
 not repeated; complete163 remains the full regression baseline.
+
+`full-battle-persistent-enchantment-summons.mt2f` now accepts the complete battle
+under schema105 and explicit original death/card callback settlement. All fifteen
+paid actions, five EndTurns, 41 room stages, nine train phases and seven spawns
+match independently, including the terminal Pyre80 state, a mid-battle root and
+sixteen immutable parallel branches. Four nested aura births and six bound
+sources retain detached source cards, shared weak targets, native copied-list
+allocation counters and selected/primary position planes. All 154 Before/Actual
+contexts have complete registries and counters; 370 complete raw/canonical
+decisions and 11,785 position-plane mappings pass.
+
+The final muted Instant native recording takes 162.55 seconds and has zero
+differences, capture failures, unsupported paths or pending records; original
+profile/log signatures remain unchanged. The archive is a byte-identical native
+binary, has no text source or fixture JSON companion, and contains 39,816 bytes
+and 7,342 unique nodes. Card metadata records 24 original movements scheduled and
+none pending. This acceptance applies to the explicitly settled protocol;
+arbitrary unmodified frame timing and broader combat mechanics remain open.

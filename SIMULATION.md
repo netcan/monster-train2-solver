@@ -6593,3 +6593,12 @@ root and sixteen parallel branches. Probe, isolated runtime and checker load the
 same Model.dll SHA-256 (59153b6d1959e90bd39ee4de0ba729863a628c616f8a0cd6408ee1900e8f2ffd).
 Probe builds with zero warnings/errors; ModelChecks retains fourteen existing
 nullable warnings and no errors.
+
+The final native full-battle binary is curated as
+full-battle-persistent-enchantment-summons.mt2f (39,816 bytes, 7,342 nodes), with
+native source metadata, zero text-source length/hash and byte-identical provenance.
+Inventory is 174: 150 accepted battles and 24 component calibrations. A complete
+173-archive historical regression is running independently alongside this new
+fixture check; it has not yet completed. The previous complete163 run remains
+the completed combined regression baseline. The full battle simulator and
+optimal solver remain in progress.
