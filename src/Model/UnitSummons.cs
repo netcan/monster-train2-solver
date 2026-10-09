@@ -113,7 +113,7 @@ namespace MonsterTrain2Poju.Model
                 players = BattleSpawnPointModel.Order(context.SpawnPoints, source.RoomIndex, players).ToList();
             }
             else players.Insert(position, spawned);
-            context = context.WithStatistics(context.Statistics?.Spawn(source.RoomIndex, template.Subtypes));
+            if (!source.Preview) context = context.WithStatistics(context.Statistics?.Spawn(source.RoomIndex, template.Subtypes));
             var entered = new RoomCombatState(source.RoomIndex, source.Deployment,
                 source.Units.Where(unit => unit.Team == CombatTeam.Enemy).Concat(players).ToArray(), source.ExternalInteractions, context, source.Preview);
             IReadOnlyList<CombatStatus> starting = raw.StatusRegistry ?? raw.Statuses;
@@ -141,7 +141,7 @@ namespace MonsterTrain2Poju.Model
                     if (result.Outcome != RoomOutcome.Exchanged) outcome = result.Outcome;
                 }
                 CombatContext current = result.State!.Context!;
-                if (!source.Preview && current.LastSpawnedUnitId.HasValue && result.State.Units.Any(unit => unit.Id == spawned.Id && unit.Health > 0))
+                if (current.LastSpawnedUnitId.HasValue && result.State.Units.Any(unit => unit.Id == spawned.Id && unit.Health > 0))
                     result = new RoomCombatResult(new RoomCombatState(source.RoomIndex, source.Deployment, result.State.Units,
                         source.ExternalInteractions, current.WithLastSpawned(spawned.Id), source.Preview), outcome, 0, new List<CombatEvent>());
             }

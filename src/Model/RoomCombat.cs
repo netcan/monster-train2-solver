@@ -1192,7 +1192,7 @@ namespace MonsterTrain2Poju.Model
                 FireTriggers(spawned, "OnUnscaledSpawn");
                 if (!fromCard) FireTriggers(spawned, "OnSpawnNotFromCard");
                 spawned.Apply(HordeStatusModel.WithSpawning(spawned.Freeze(), wasSpawning));
-                if (!source.Preview && spawned.Alive && !spawned.Removed && context?.LastSpawnedUnitId.HasValue == true)
+                if (spawned.Alive && !spawned.Removed && context?.LastSpawnedUnitId.HasValue == true)
                     context = context.WithLastSpawned(spawned.Source.Id);
                 return Finish(battleWon ? RoomOutcome.BattleWon : units.Any(unit => unit.Source.IsPyre && !unit.Alive)
                     ? RoomOutcome.PlayerDefeated : RoomOutcome.Exchanged);
@@ -1452,26 +1452,48 @@ namespace MonsterTrain2Poju.Model
                 if (originalWorld?.AutomaticLifecycle == true)
                 {
                     EnchantmentWorld observed = preview.context!.Enchantments!;
-                    int[] removedPreviewIds = observed.Rooms.SelectMany(room => room.Units).Concat(observed.RetainedUnits.Select(unit => unit.Unit))
-                        .Where(unit => unit.Id >= context.NextUnitId).Select(unit => unit.Id).ToArray();
                     int firstPreviewId = context.NextUnitId ?? int.MaxValue;
                     int firstPreviewCardId = context.NextCardId;
+                    // Temporary previews restore only the characters collected before
+                    // the hit. New actors keep their preview state and copied point;
+                    // switching the room back to its primary list does not destroy them.
+                    EnchantmentRetainedUnit[] births = observed.Rooms.SelectMany(room => room.Units.Select(unit =>
+                        new EnchantmentRetainedUnit(unit, room.RoomIndex, room.Preview)))
+                        .Concat(observed.RetainedUnits).Where(unit => unit.Unit.Id >= firstPreviewId).ToArray();
+                    int[] removedPreviewIds = births.Where(actor => actor.Unit.Health <= 0 || actor.Unit.DeathState?.IsDestroyed == true)
+                        .Select(actor => actor.Unit.Id).ToArray();
+                    var restoredIds = originalWorld.Rooms.SelectMany(room => room.Units).Where(unit => unit.Health > 0)
+                        .Select(unit => unit.Id).Concat(originalWorld.RetainedUnits.Where(actor => actor.Unit.Health > 0 &&
+                            actor.Unit.DeathState?.IsDestroyed != true).Select(actor => actor.Unit.Id))
+                        .Concat(births.Where(actor => !removedPreviewIds.Contains(actor.Unit.Id)).Select(actor => actor.Unit.Id)).ToHashSet();
                     if (preview.context!.NextUnitId is int nextId) context = context.WithNextUnitId(nextId);
                     if (context.CardRegistry != null && preview.context.CardRegistry != null)
+                    {
+                        foreach (CardInstanceState card in context.CardRegistry)
+                        {
+                            CardInstanceState? tested = preview.context.FindCard(card.InstanceId);
+                            IReadOnlyList<int>? raw = tested?.RawPlayedRoomUnitIds ?? tested?.PlayedRoomUnitIds;
+                            if (card.PlayedRoomUnitIds == null || raw == null) continue;
+                            context = context.WithCard(card.WithRoomCacheState(raw.Concat(tested!.PlayedRoomUnitIds ?? Array.Empty<int>())
+                                .Distinct().Where(restoredIds.Contains).ToArray(),
+                                card.RawPlayedRoomUnitIds == null ? null : raw));
+                        }
                         context = context.WithCardRegistry(context.CardRegistry.Concat(
-                            PreviewBirthModel.RestoreSourceCards(preview.context, firstPreviewCardId,
-                                originalWorld.Rooms.SelectMany(room => room.Units).Where(unit => unit.Health > 0)
-                                    .Select(unit => unit.Id).ToHashSet())).ToArray())
+                            PreviewBirthModel.RestoreSourceCards(preview.context, firstPreviewCardId, restoredIds)).ToArray())
                             .WithNextCardId(preview.context.NextCardId);
+                    }
+                    if (context.LastSpawnedUnitId.HasValue) context = context.WithLastSpawned(preview.context.LastSpawnedUnitId ?? 0);
                     if (context.SpawnPoints != null)
                         context = context.WithSpawnPoints(new BattleSpawnPoints(context.SpawnPoints.Groups, context.SpawnPoints.Units.Concat(
-                            removedPreviewIds.Select(id => new UnitSpawnPointState(id, null, null, spawnedInPreview: true))).ToArray()));
-                    CombatUnit Restore(CombatUnit unit, int room) => EnchantmentWorldModel.RestorePreviewEffects(unit, observed, room == source.RoomIndex, removedPreviewIds);
+                            births.Select(actor => new UnitSpawnPointState(actor.Unit.Id, null, null, spawnedInPreview: true))).ToArray()));
+                    var restoredActors = units.Where(unit => unit.InRoom && !unit.Removed).Select(unit => unit.Source.Id).ToHashSet();
+                    CombatUnit Restore(CombatUnit unit, int room) => EnchantmentWorldModel.RestorePreviewEffects(unit, observed,
+                        restoredActors.Contains(unit.Id), removedPreviewIds);
                     context = context.WithEnchantments(new EnchantmentWorld(originalWorld.Rooms.Select(room => new RoomCombatState(room.RoomIndex,
                         room.Deployment, room.Units.Select(unit => Restore(unit, room.RoomIndex)).ToArray(), room.ExternalInteractions, null, room.Preview)).ToArray(),
                         originalWorld.Movement, originalWorld.EnemySlotsPerRoom, originalWorld.RetainedUnits.Select(actor => new EnchantmentRetainedUnit(
                             Restore(actor.Unit, actor.RoomIndex), actor.RoomIndex, actor.Preview))
-                            .Concat(PreviewBirthModel.Retain(observed, firstPreviewId, removedPreviewIds)).ToArray(),
+                            .Concat(births).ToArray(),
                         originalWorld.EnchanterIds.Concat(observed.EnchanterIds).Distinct().ToArray(),
                         originalWorld.AllowUpdates, originalWorld.Updating, originalWorld.Preview, originalWorld.TestRng, true));
                     ImportEnchantmentRoom(EnchantmentWorldModel.Refresh(EnchantmentWorldModel.Room(CurrentRoom(), context)));
@@ -1761,6 +1783,32 @@ namespace MonsterTrain2Poju.Model
                     context.CardInstances == null ? null : Array.Empty<CardInstanceState>(), context.CardRegistry, context.AllScenarioBossesDead,
                     context.NextAddedTemporaryUpgrades, context.OtherPiles?.Select(CardPileModel.Clear).ToArray(), context.QueryFrame,
                     context.KillCamActivated.HasValue ? true : (bool?)null, context.MagicPower, context.IsolatedBattlePreview, context.EnergyState, context.RoomCapacities, context.AbilityCardCache, context.LastAbilityActivatorUnitId, context.PermanentlyDisabledAbilities, context.LastSpawnedUnitId, context.NextUnitId, context.SpawnPoints, context.SummonCatalog, context.Enchantments);
+                // ClearCards cancels card-play previews. The original cancellation
+                // removes preview-born actors without normal death signals or a
+                // primary-state restoration, including temporary Boss-preview births.
+                if (context.Enchantments?.AutomaticLifecycle == true && context.SpawnPoints != null)
+                {
+                    EnchantmentWorld world = context.Enchantments;
+                    var previewIds = context.SpawnPoints.Units.Where(unit => unit.SpawnedInPreview)
+                        .Select(unit => unit.UnitId).ToHashSet();
+                    var cleared = world.RetainedUnits.Where(actor => actor.Preview && previewIds.Contains(actor.Unit.Id) &&
+                        actor.Unit.DeathState?.IsDestroyed != true).Select(actor => actor.Unit.Id).ToHashSet();
+                    if (cleared.Count > 0)
+                    {
+                        context = context.WithEnchantments(new EnchantmentWorld(world.Rooms, world.Movement, world.EnemySlotsPerRoom,
+                            world.RetainedUnits.Select(actor => cleared.Contains(actor.Unit.Id) ? new EnchantmentRetainedUnit(
+                                actor.Unit.WithDeathState((actor.Unit.DeathState ?? new UnitDeathState(false, false, false))
+                                    .WithLifecycle(actor.Unit.DeathState?.IsDespawned, true)), -1, actor.Preview) : actor).ToArray(),
+                            world.EnchanterIds, world.AllowUpdates, world.Updating, world.Preview, world.TestRng, true));
+                        BattleSpawnPoints points = context.SpawnPoints!;
+                        context = context.WithSpawnPoints(new BattleSpawnPoints(points.Groups.Select(group => new SpawnPointGroupState(
+                            group.RoomIndex, group.Team, group.InnerCount, group.GroupCount,
+                            group.Occupants.Select(id => cleared.Contains(id) ? 0 : id).ToArray(), group.Outside, group.PreviewCopyId)).ToArray(), points.Units));
+                        foreach (CardInstanceState card in context.CardRegistry ?? context.CardInstances ?? Array.Empty<CardInstanceState>())
+                            if (card.PlayedRoomUnitIds?.Any(cleared.Contains) == true)
+                                context = context.WithCard(card.WithRoomCacheState(card.PlayedRoomUnitIds.Where(id => !cleared.Contains(id)).ToArray(), card.RawPlayedRoomUnitIds));
+                    }
+                }
             }
 
             private void PostCombat()
@@ -2619,7 +2667,10 @@ namespace MonsterTrain2Poju.Model
                     if (card.PlayedRoomUnitIds == null) continue;
                     if (card.RawPlayedRoomUnitIds != null)
                     {
-                        int[] visible = card.RawPlayedRoomUnitIds.Where(id => localIds.Contains(id) ?
+                        var retainedPreviewIds = context?.Enchantments?.RetainedUnits.Where(actor => actor.Preview &&
+                            actor.Unit.Health > 0 && actor.Unit.DeathState?.IsDestroyed != true).Select(actor => actor.Unit.Id).ToHashSet();
+                        int[] visible = card.RawPlayedRoomUnitIds.Concat(card.PlayedRoomUnitIds.Where(id =>
+                            retainedPreviewIds?.Contains(id) == true)).Distinct().Where(id => localIds.Contains(id) ?
                             !removedIds.Contains(id) : card.PlayedRoomUnitIds.Contains(id)).ToArray();
                         if (!visible.SequenceEqual(card.PlayedRoomUnitIds))
                             context = context!.WithCard(card.WithRoomCacheState(visible, card.RawPlayedRoomUnitIds));

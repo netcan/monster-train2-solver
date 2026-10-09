@@ -74,7 +74,7 @@ namespace MonsterTrain2Poju.Probe
             if (!MultiSummonScenario.Prepared && !TriggeredSummonProbe.Enabled && !HordeMergeScenario.Enabled && !BumpScenario.Enabled && !SpawnEnchantScenario.Prepared) return null;
             FullBattleTrace trace = FullBattleTrace.Active!;
             var cached = (IEnumerable<WeakRef<CharacterState>>)AccessTools.Field(typeof(CardState), "charactersInRoomAtTimeOfCardPlay").GetValue(card);
-            var units = cached.Select(reference => reference.Ref).Where(unit => unit != null && !unit.SpawnedInPreviewMode).ToArray();
+            var units = cached.Select(reference => reference.Ref).Where(unit => unit != null).ToArray();
             int[] raw = units.Select(trace.UnitId).OrderBy(id => id).ToArray();
             if (!trace.CanonicalDecisionCapture) return raw;
             int[] living = units.Where(unit => card.CharacterInRoomAtTimeOfCardPlay(unit)).Select(trace.UnitId).OrderBy(id => id).ToArray();

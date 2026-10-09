@@ -6456,3 +6456,25 @@ outside that list retains preview state, a copied point and shared weak referenc
 This diagnostic still has seven full-battle differences and is excluded from
 the accepted fixture inventory. The observation is evidence for the next model
 and settlement changes, not a passing whole-battle result.
+
+### Temporary Boss-preview births and shared caches
+
+Temporary Boss previews now restore only the actors collected before the hit.
+Newborns outside that list retain their selected preview state, room membership,
+death listeners and enchantment bindings instead of being restored or destroyed
+when the room switches back to its primary list. Shared card-room weak references
+retain living newborns, and the native observer records preview-born raw targets
+instead of filtering them out. Preview summons skip primary spawn statistics but
+still update the shared last-spawned reference, as the original managers do.
+
+Terminal ClearCards cancellation removes retained preview births without ordinary
+death signals or primary-state restoration. It clears their visible card targets
+and slot occupants while preserving raw pointers until original destruction
+callbacks run. Copied-list allocation and the exact intermediate callback boundary
+remain unfinished; these changes do not accept the diagnostic as a full battle.
+
+The final model passes 32 affected historical battle suites, 30 continuous paid
+policy chains, all 24 component calibrations and pure checks. Probe builds with
+zero warnings/errors; ModelChecks retains fourteen existing nullable warnings and
+no errors. The curated inventory remains 173 binary archives (149 accepted battles
+and 24 calibrations), with no fixture JSON dependency or new accepted battle.
