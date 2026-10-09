@@ -7238,3 +7238,20 @@ are simulated. No new battle fixture is accepted by this diagnostic alone.
 Evidence is .probe-runs/relic-catalog-final-native.log and
 .probe-runs/full-battle-units-spells-and-junk-20261009-181643-22db90f2/relic-catalog.mt2f
 (35,585 bytes). The archive remains an ignored diagnostic, with no JSON dependency.
+
+### Complete corrected-checker 182 regression baseline
+
+The retained Model.dll F418B74A91DF12254ECBA6A1EF2A9AC3EA88FAA11D84DD5ED687590CB984B7FF
+and corrected ModelChecks.dll460AAC21C6EB82A08B31ACEAD854BF5B3CF344D3AD5820B03BC5D740563D78A6
+have completed the previously pending182-input run with terminal exit zero.
+All158 accepted complete battles pass:154 paid policy chains and four no-more-card
+chains, plus all24 strict component calibrations. All182 retained input names,
+lengths and SHA256 values are rechecked against the unchanged complete manifest.
+There are zero failed checks and no unsupported recorded room/card-cycle/train/
+spawn/turn/action operations. The expected calibration kind counts also match.
+
+Evidence remains .probe-runs/ability-incant-settled-complete-regression.log and
+.probe-runs/ability-incant-settled-complete-inputs.txt, with both binaries retained
+in .probe-runs/ability-incant-settlement-checks. This completes that inventory's
+regression, including schema107 ability Incant. It does not establish support
+for further relics, arbitrary original-frame scheduling or every game battle.
