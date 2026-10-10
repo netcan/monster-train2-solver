@@ -4,7 +4,7 @@ These fixed inputs reproduce the independently modeled battle and calibration
 checks. Run `pwsh -NoProfile -File scripts/Check-Models.ps1` from the repository
 root. The script reads the curated fixture list in this directory.
 
-Current inventory is 190 archives: 162 accepted battles and 28 component
+Current inventory is 191 archives: 162 accepted battles and 29 component
 calibrations. The initial Incant model's complete 180-archive regression passes.
 The threshold model's combined181 regression has also completed successfully.
 The relic model's combined181 regression has also completed successfully.
@@ -128,6 +128,11 @@ This is the branch-query model; the battle adapter still needs to own and update
 its descriptor through upgrade/trait/trigger lifecycles. Temporary relic effects
 remain refused until that complete integration is verified. The earlier frozen
 189/190 regressions do not establish this later model's combined result.
+
+`card-owned-mask-calibration.mt2f` retains the schema1 native branch-query
+acceptance described above:13,129 bytes/1,709 nodes, SHA256
+845dfedbef2552e647dd8c4ee8a7cebcaf85670ea557e160fe4501156d7b0c9f.
+The curated archive is byte-identical to native capture with no JSON dependency.
 
 `full-battle-incant-relic.mt2f` retains schema108 with the original obtainable
 ExtraSpellCastTrigger acquired through SaveManager. The relic asset is unchanged;
