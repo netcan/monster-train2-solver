@@ -4,7 +4,7 @@ These fixed inputs reproduce the independently modeled battle and calibration
 checks. Run `pwsh -NoProfile -File scripts/Check-Models.ps1` from the repository
 root. The script reads the curated fixture list in this directory.
 
-Current inventory is 198 archives: 168 accepted battles and 30 component
+Current inventory is 199 archives: 168 accepted battles and 31 component
 calibrations. The initial Incant model's complete 180-archive regression passes.
 The threshold model's combined181 regression has also completed successfully.
 The relic model's combined181 regression has also completed successfully.
@@ -268,6 +268,14 @@ This calibrates the card-side effect kernel, not actual battle-manager dispatch,
 live unit upgrades or execution of installed traits/triggers. Original relic
 battle coverage remains6/224. The frozen198 adapter regression is a distinct
 preceding version; complete regression of this later kernel is separate.
+
+`relic-card-upgrade-calibration.mt2f` retains that schema1 native component
+byte-for-byte:12,045 bytes/1,448 nodes, SHA256
+e5b3e22265b6ac217c5879e9b8704aede11a3d062e8bc23404b2159e07cd356f.
+It has no JSON source/companion and joins the curated regression list. The
+previous198 manifest rows remain byte-identical, and all199 input identities
+match their manifest. The queued full199 run uses an immutable input snapshot
+and frozen kernel/checker binaries; its result is separate from frozen198.
 
 `full-battle-incant-relic.mt2f` retains schema108 with the original obtainable
 ExtraSpellCastTrigger acquired through SaveManager. The relic asset is unchanged;
