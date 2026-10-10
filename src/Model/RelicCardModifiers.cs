@@ -11,9 +11,14 @@ namespace MonsterTrain2Poju.Model
         public CardUpgradeModifier? Upgrade { get; }
         public bool ApplyToCardlessSpawns { get; }
         public int ConditionCount { get; }
+        public IReadOnlyList<RelicConditionState> Conditions { get; }
         public RelicCardModifier(int effectIndex, RelicCardUpgradeRule rule, CardUpgradeModifier? upgrade,
-            bool applyToCardlessSpawns, int conditionCount)
-        { EffectIndex = effectIndex; Rule = rule; Upgrade = upgrade; ApplyToCardlessSpawns = applyToCardlessSpawns; ConditionCount = conditionCount; }
+            bool applyToCardlessSpawns, IReadOnlyList<RelicConditionState>? conditions = null, int conditionCount = 0)
+        { EffectIndex = effectIndex; Rule = rule; Upgrade = upgrade; ApplyToCardlessSpawns = applyToCardlessSpawns;
+            Conditions = Array.AsReadOnly((conditions ?? Array.Empty<RelicConditionState>()).ToArray());
+            ConditionCount = conditions?.Count ?? conditionCount; }
+        internal RelicCardModifier WithConditions(IReadOnlyList<RelicConditionState> conditions) =>
+            new RelicCardModifier(EffectIndex, Rule, Upgrade, ApplyToCardlessSpawns, conditions);
     }
     public sealed class RelicCardModifierDispatch
     {
@@ -33,8 +38,11 @@ namespace MonsterTrain2Poju.Model
         public string? UnsupportedReason { get; }
         public bool Supported => Card != null;
         public IReadOnlyList<RelicCardModifierDispatch> Dispatches { get; }
-        public RelicCardModifierResult(CardInstanceState? card, IReadOnlyList<RelicCardModifierDispatch>? dispatches = null, string? unsupportedReason = null)
-        { Card = card; Dispatches = Array.AsReadOnly((dispatches ?? Array.Empty<RelicCardModifierDispatch>()).ToArray()); UnsupportedReason = unsupportedReason; }
+        public CombatContext? Context { get; }
+        public RelicCardModifierResult(CardInstanceState? card, IReadOnlyList<RelicCardModifierDispatch>? dispatches = null,
+            string? unsupportedReason = null, CombatContext? context = null)
+        { Card = card; Dispatches = Array.AsReadOnly((dispatches ?? Array.Empty<RelicCardModifierDispatch>()).ToArray());
+            UnsupportedReason = unsupportedReason; Context = context; }
     }
     public static class RelicCardModifierModel
     {
@@ -47,7 +55,9 @@ namespace MonsterTrain2Poju.Model
                 return "Missing ordered native relic card modifier definitions.";
             foreach (var effect in relic.CardModifiers)
             {
-                if (effect.ConditionCount != 0) return "Unmodeled relic card modifier conditions.";
+                if (effect.ConditionCount != effect.Conditions.Count) return "Relic card modifier condition definitions are incomplete.";
+                if (effect.Conditions.Any(condition => condition.Comparator < 0 || condition.Comparator > 7))
+                    return "Malformed native relic card modifier conditions.";
                 if (effect.ApplyToCardlessSpawns && (relic.IsCovenant == null || relic.DisallowedInPlacementPhase == null))
                     return "Cardless relic upgrades require native covenant and placement metadata.";
                 var template = effect.Rule.Upgrade; var upgrade = effect.Upgrade;
@@ -68,11 +78,17 @@ namespace MonsterTrain2Poju.Model
         }
 
         public static RelicCardModifierResult Apply(CardInstanceState source, IReadOnlyList<CombatRelicState>? relics,
-            bool resetTemporary = true)
+            bool resetTemporary = true, CombatContext? context = null)
         {
+            relics ??= context?.Relics;
+            var workingRelics = relics?.ToArray();
+            if (context != null) context = context.WithRelics(workingRelics);
             string? error = RelicModel.Validate(relics);
             if (error != null) return Fail(error);
-            if (!resetTemporary && relics?.Any(relic => relic.CardModifiers?.Count > 0) != true) return new RelicCardModifierResult(source);
+            if (workingRelics?.Any(relic => relic.CardModifiers?.Any(effect => effect.Conditions.Count > 0) == true) == true && context == null)
+                return Fail("Relic card modifier conditions require the current combat context.");
+            if (!resetTemporary && workingRelics?.Any(relic => relic.CardModifiers?.Count > 0) != true)
+                return new RelicCardModifierResult(source, context: context);
             error = CardModifierModel.UnsupportedReason(source);
             if (error != null) return Fail(error);
             if (source.MaskDescriptor == null) return Fail("Relic card modifiers require branch-owned mask metadata.");
@@ -94,21 +110,49 @@ namespace MonsterTrain2Poju.Model
                     card.Permanent.ExternalInteractions), CardModifiers.Empty());
             }
             var dispatches = new List<RelicCardModifierDispatch>();
-            for (int relicIndex = 0; relicIndex < (relics?.Count ?? 0); relicIndex++)
-            foreach (var effect in relics![relicIndex].CardModifiers ?? Array.Empty<RelicCardModifier>())
+            for (int relicIndex = 0; relicIndex < (workingRelics?.Length ?? 0); relicIndex++)
+            foreach (var effect in workingRelics![relicIndex].CardModifiers ?? Array.Empty<RelicCardModifier>())
             {
+                RelicConditionEvaluation? conditionEvaluation = null;
+                if (effect.Conditions.Count > 0)
+                {
+                    conditionEvaluation = RelicConditionModel.Evaluate(context!, effect.Conditions);
+                    if (!conditionEvaluation.Supported) return Fail(conditionEvaluation.UnsupportedReason!);
+                    context = conditionEvaluation.Context;
+                    if (!conditionEvaluation.Passed) continue;
+                }
                 var applied = RelicCardUpgradeModel.Apply(state, effect.Rule, next);
                 state = applied.State; next = applied.NextUpgradeInstanceId;
                 if (applied.UpgradeAdded) card = card.WithModifiers(card.Permanent, UnitModifierModel.Add(card.Temporary, effect.Upgrade!));
+                if (applied.Returned && conditionEvaluation != null)
+                {
+                    RelicConditionRecord record = RelicConditionModel.Record(context!, effect.Conditions);
+                    if (!record.Supported) return Fail(record.UnsupportedReason!);
+                    context = record.Context;
+                    var updatedEffects = workingRelics[relicIndex].CardModifiers!.ToArray();
+                    int effectOffset = Array.FindIndex(updatedEffects, item => item.EffectIndex == effect.EffectIndex);
+                    if (effectOffset < 0) return Fail("Relic card modifier order changed while recording its condition.");
+                    updatedEffects[effectOffset] = effect.WithConditions(record.Conditions);
+                    workingRelics[relicIndex] = workingRelics[relicIndex].WithCardModifiers(updatedEffects);
+                    context = context!.WithRelics(workingRelics);
+                }
                 dispatches.Add(new RelicCardModifierDispatch(relicIndex, effect.EffectIndex, applied.Returned, applied.UpgradeAdded, applied.Filters));
             }
-            return new RelicCardModifierResult(card, dispatches);
+            return new RelicCardModifierResult(card, dispatches, context: context);
         }
 
         internal static RoomCombatResult ApplyCardlessSpawn(RoomCombatState source, int unitId, int fromCardId,
             RelicCardModifier effect)
         {
             CardUpgradeModifier? upgrade = effect.Upgrade;
+            if (effect.Conditions.Count > 0)
+            {
+                if (source.Context == null) return FailRoom("Relic card modifier conditions require the current combat context.");
+                RelicConditionEvaluation evaluation = RelicConditionModel.Evaluate(source.Context, effect.Conditions);
+                if (!evaluation.Supported) return FailRoom(evaluation.UnsupportedReason!);
+                source = WithContext(source, evaluation.Context);
+                if (!evaluation.Passed) return Match(source);
+            }
             if (!effect.ApplyToCardlessSpawns || upgrade == null) return Match(source);
             CombatUnit? actor = source.Units.FirstOrDefault(unit => unit.Id == unitId);
             if (actor == null) return FailRoom("Missing cardless relic birth unit.");
@@ -145,6 +189,8 @@ namespace MonsterTrain2Poju.Model
 
         private static RoomCombatResult Match(RoomCombatState state) =>
             new RoomCombatResult(state, RoomOutcome.Exchanged, 0, new List<CombatEvent>());
+        private static RoomCombatState WithContext(RoomCombatState state, CombatContext context) =>
+            new RoomCombatState(state.RoomIndex, state.Deployment, state.Units, state.ExternalInteractions, context, state.Preview);
         private static RelicCardModifierResult Fail(string error) => new RelicCardModifierResult(null, unsupportedReason: error);
         private static RoomCombatResult FailRoom(string error) =>
             new RoomCombatResult(null, RoomOutcome.Unsupported, 0, new List<CombatEvent>(), error);

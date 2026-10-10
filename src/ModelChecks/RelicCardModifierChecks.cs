@@ -13,6 +13,8 @@ internal static class RelicCardModifierChecks
             "Native relic manager capture is incomplete or from another game build.");
         var rows = root.GetProperty("RelicCardModifiers").EnumerateArray().Select(row => (
             Before: row.GetProperty("Before").Deserialize<CardInstanceState>()!,
+            ContextBefore: row.TryGetProperty("ContextBefore", out var beforeContext) ? beforeContext.Deserialize<CombatContext>() : null,
+            ContextAfter: row.TryGetProperty("ContextAfter", out var afterContext) ? afterContext.Deserialize<CombatContext>() : null,
             Relics: row.GetProperty("Relics").Deserialize<CombatRelicState[]>()!,
             Reset: row.GetProperty("ResetTemporary").GetBoolean(),
             Actual: row.GetProperty("Actual").Deserialize<CardInstanceState>()!,
@@ -29,16 +31,60 @@ internal static class RelicCardModifierChecks
         {
             foreach (var row in rows)
             {
-                var predicted = RelicCardModifierModel.Apply(row.Before, row.Relics, row.Reset);
+                var predicted = RelicCardModifierModel.Apply(row.Before, row.Relics, row.Reset, row.ContextBefore);
                 Require(predicted.Supported, "Native relic manager cannot be simulated: " + predicted.UnsupportedReason);
                 Equal(predicted.Card, row.Actual, "complete native manager card state");
                 Equal(predicted.Dispatches, row.Dispatches, "ordered native manager effects, filter outcomes and unique return/add flags");
+                if (row.ContextAfter != null)
+                {
+                    Equal(predicted.Context!.Relics, row.ContextAfter.Relics, "native relic condition state");
+                    Equal(predicted.Context.Statistics, row.ContextAfter.Statistics, "native relic condition statistic cache");
+                }
                 var notifications = predicted.Dispatches.Where(effect => effect.Returned).Select(effect => (effect.RelicIndex, effect.EffectIndex)).ToArray();
                 Require(notifications.SequenceEqual(row.Notifications), "Native manager notified a different effect/order, including unique rejection.");
             }
         }
         Check(); Parallel.For(0, 32, _ => Check());
         Require(JsonSerializer.Serialize(rows) == parent, "Relic manager replay mutated its source cards or relics.");
+        if (root.TryGetProperty("ModifierScenario", out var modifierScenario) &&
+            modifierScenario.GetString() == "conditional-relic-card-upgrades")
+        {
+            bool sawCondition = false, sawSpentGate = false, sawTurnReset = false;
+            foreach (var row in rows)
+            {
+                var relics = row.ContextBefore?.Relics;
+                if (relics == null) continue;
+                for (int relicIndex = 0; relicIndex < relics.Count; relicIndex++)
+                foreach (var effect in relics[relicIndex].CardModifiers ?? Array.Empty<RelicCardModifier>())
+                {
+                    if (effect.Conditions.Count == 0) continue;
+                    sawCondition = true;
+                    bool spent = effect.Conditions.Any(condition => condition.TrackTriggerCount &&
+                        condition.DurationTriggerCount - condition.ValueAtLastTrigger >= condition.Value);
+                    bool dispatched = row.Dispatches.Any(dispatch => dispatch.RelicIndex == relicIndex && dispatch.EffectIndex == effect.EffectIndex);
+                    if (spent && !dispatched) sawSpentGate = true;
+                }
+            }
+            bool previouslyTriggered = false;
+            foreach (var row in rows)
+            {
+                var relics = row.ContextBefore?.Relics;
+                if (relics == null) continue;
+                foreach (var relic in relics)
+                {
+                    if (relic.AssetKey != "ReduceStarterCost") continue;
+                    foreach (var effect in relic.CardModifiers ?? Array.Empty<RelicCardModifier>())
+                    foreach (var condition in effect.Conditions)
+                    {
+                        if (!condition.TrackTriggerCount || condition.Query.Duration != "ThisTurn") continue;
+                        if (condition.DurationTriggerCount > 0) previouslyTriggered = true;
+                        else if (previouslyTriggered && !condition.Triggered) sawTurnReset = true;
+                    }
+                }
+            }
+            Require(sawCondition && sawSpentGate && sawTurnReset,
+                "Conditional relic capture lacks a native trigger limit, spent-condition skip or ThisTurn reset.");
+        }
         var generated = root.GetProperty("CardGenerations").EnumerateArray().Select(row => (
             Before: row.GetProperty("Before").Deserialize<CombatContext>()!,
             Actual: row.GetProperty("Actual").Deserialize<CombatContext>()!)).ToArray();

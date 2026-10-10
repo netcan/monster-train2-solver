@@ -79,10 +79,8 @@ namespace MonsterTrain2Poju.Model
             return null;
         }
 
-        internal static CombatContext EndDuration(CombatContext context, string duration) => context.Relics == null ? context :
-            context.WithRelics(context.Relics.Select(relic => relic.SpawnStatuses == null ? relic :
-                relic.WithSpawnStatuses(relic.SpawnStatuses.Select(rule => rule.WithConditions(rule.Conditions.Select(condition =>
-                    condition.Reset(duration)).ToArray())).ToArray())).ToArray());
+        internal static CombatContext EndDuration(CombatContext context, string duration) =>
+            RelicConditionModel.EndDuration(context, duration);
 
         // A running character queue defers these children. A standalone birth can
         // settle the shared queue during each non-covenant pre/post-fire yield.
@@ -95,7 +93,7 @@ namespace MonsterTrain2Poju.Model
             string? error = RelicModel.Validate(source.Context);
             if (error != null) return Fail(error);
             if (source.Context?.Relics == null || !source.Context.Relics.Any(relic => relic.SpawnStatuses?.Count > 0 ||
-                relic.CardModifiers?.Any(effect => effect.ApplyToCardlessSpawns) == true))
+                relic.CardModifiers?.Count > 0))
                 return new RoomCombatResult(source, RoomOutcome.Exchanged, 0, new List<CombatEvent>(), pendingCallbacks: prior);
             if (!source.Units.Any(unit => unit.Id == unitId) || fromCardId < 0 ||
                 fromCardId > 0 && source.Context.FindCard(fromCardId) == null) return Fail("Missing native relic birth references.");
@@ -107,12 +105,12 @@ namespace MonsterTrain2Poju.Model
             for (int relicIndex = 0; relicIndex < state.Context!.Relics!.Count; relicIndex++)
             {
                 CombatRelicState relic = state.Context!.Relics![relicIndex];
-                var cardlessModifiers = relic.CardModifiers?.Where(effect => effect.ApplyToCardlessSpawns)
+                var cardModifiers = relic.CardModifiers?
                     .OrderBy(effect => effect.EffectIndex).ToArray() ?? Array.Empty<RelicCardModifier>();
                 bool hasSpawnStatuses = relic.SpawnStatuses?.Count > 0;
-                if (!hasSpawnStatuses && cardlessModifiers.Length == 0 || relic.IsCovenant != onlyCovenants ||
+                if (!hasSpawnStatuses && cardModifiers.Length == 0 || relic.IsCovenant != onlyCovenants ||
                     relic.DisallowedInPlacementPhase == true && state.Deployment) continue;
-                foreach (RelicCardModifier effect in cardlessModifiers)
+                foreach (RelicCardModifier effect in cardModifiers)
                 {
                     RoomCombatResult applied = RelicCardModifierModel.ApplyCardlessSpawn(state, unitId, fromCardId, effect);
                     if (!applied.Supported) return applied;
@@ -125,19 +123,10 @@ namespace MonsterTrain2Poju.Model
                 {
                     relic = state.Context!.Relics![relicIndex];
                     RelicSpawnStatus rule = relic.SpawnStatuses![ruleIndex];
-                    bool admitted = true;
-                    foreach (RelicConditionState condition in rule.Conditions)
-                    {
-                        if (!condition.AllowMultiple && condition.Triggered) { admitted = false; break; }
-                        int value = Value(condition);
-                        if (error != null) return Fail(error);
-                        int delta = unchecked(value - condition.ValueAtLastTrigger);
-                        if (!(condition.TrackTriggerCount ? delta < condition.Value :
-                            (condition.Comparator & 2) != 0 && delta == condition.Value ||
-                            (condition.Comparator & 4) != 0 && delta > condition.Value ||
-                            (condition.Comparator & 1) != 0 && delta < condition.Value)) { admitted = false; break; }
-                    }
-                    if (!admitted) continue;
+                    RelicConditionEvaluation conditionEvaluation = RelicConditionModel.Evaluate(state.Context!, rule.Conditions);
+                    if (!conditionEvaluation.Supported) return Fail(conditionEvaluation.UnsupportedReason!);
+                    SetContext(conditionEvaluation.Context);
+                    if (!conditionEvaluation.Passed) continue;
                     CombatUnit? actor = state.Units.FirstOrDefault(unit => unit.Id == unitId);
                     if (actor == null) return Fail("Relic birth removal requires a retained native actor.");
                     if (rule.CharacterAssetKeys.Count > 0 && !rule.CharacterAssetKeys.Contains(actor.AssetKey)) continue;
@@ -165,14 +154,10 @@ namespace MonsterTrain2Poju.Model
                         rule.Statuses[draw.Value].WithStacks(stacks), 0, overrideImmunity: rule.SubtypeIsPyre);
                     if (!added.Supported) return added;
                     state = added.State!; callbacks.AddRange(added.PendingCallbacks); events.AddRange(added.Events);
-                    var conditions = new List<RelicConditionState>();
-                    foreach (RelicConditionState condition in rule.Conditions)
-                    {
-                        int value = Value(condition);
-                        if (error != null) return Fail(error);
-                        conditions.Add(condition.Recorded(value));
-                    }
-                    var rules = relic.SpawnStatuses.ToArray(); rules[ruleIndex] = rule.WithConditions(conditions);
+                    RelicConditionRecord record = RelicConditionModel.Record(state.Context!, rule.Conditions);
+                    if (!record.Supported) return Fail(record.UnsupportedReason!);
+                    SetContext(record.Context);
+                    var rules = relic.SpawnStatuses.ToArray(); rules[ruleIndex] = rule.WithConditions(record.Conditions);
                     relic = relic.WithSpawnStatuses(rules);
                     var relics = state.Context!.Relics!.ToArray(); relics[relicIndex] = relic;
                     SetContext(state.Context.WithRelics(relics));
@@ -181,13 +166,6 @@ namespace MonsterTrain2Poju.Model
             }
             return new RoomCombatResult(state, outcome, 0, events, pendingCallbacks: callbacks);
 
-            int Value(RelicConditionState condition)
-            {
-                if (condition.TrackTriggerCount) return condition.DurationTriggerCount;
-                StatisticQueryResult query = StatisticQueryModel.Evaluate(state.Context!, condition.Query);
-                if (!query.Supported) { error = query.UnsupportedReason; return 0; }
-                SetContext(query.Context!); return query.Value;
-            }
             void SetContext(CombatContext context) => state = new RoomCombatState(state.RoomIndex, state.Deployment,
                 state.Units, state.ExternalInteractions, context, state.Preview);
             bool DrainYield()

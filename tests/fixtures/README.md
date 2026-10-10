@@ -14,7 +14,7 @@ The default command still checks the full curated inventory.
 For routine changes, run only the new and directly affected fixtures with
 `-Fixture`; run the full inventory at completed milestones and before delivery.
 
-Current inventory is 201 archives: 170 accepted battles and 31 component
+Current inventory is 203 archives: 172 accepted battles and 31 component
 calibrations. The initial Incant model's complete 180-archive regression passes.
 The threshold model's combined181 regression has also completed successfully.
 The relic model's combined181 regression has also completed successfully.
@@ -1932,3 +1932,18 @@ archive is 56,537 bytes/7,789 nodes, SHA-256
 `f0d0cc92cabcd364a3023150c9c0bdbaa10ea81731ee7bacd40a79f72dbb2380`. Run its
 focused regression with
 `pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-cardless-relic-upgrades.mt2f`.
+
+`full-battle-conditional-relic-card-upgrades.mt2f` combines the original
+`ReduceStarterCost` relic with a native card-generation battle and a controlled
+ThisTurn, one-trigger condition. Its 109 manager calls match, including the
+spent-condition skip and reset before a later turn; generated-card state and 16
+parallel policy branches also pass. The muted Instant battle wins with 18 actions
+and six EndTurns, across 49 matched stages with no capture failures, mismatches,
+unsupported stages or pending records. The binary-only archive is 60,444 bytes/
+11,473 nodes, SHA-256
+`25b1ed257205c6539dff32b08b795ed0d0ebb4b3c4631ac07b4cc337e87967d7`. Run its
+focused regression with
+`pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-conditional-relic-card-upgrades.mt2f`.
+
+The complete 203-archive regression exits zero: 172 accepted battles and 31
+component calibrations pass, and every archive matches the integrity manifest.

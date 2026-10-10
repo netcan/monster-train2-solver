@@ -17,9 +17,11 @@ namespace MonsterTrain2Poju.Probe
         internal sealed class Record
         {
             public CardInstanceState Before { get; set; } = null!;
+            public CombatContext ContextBefore { get; set; } = null!;
             public CombatRelicState[] Relics { get; set; } = null!;
             public bool ResetTemporary { get; set; }
             public CardInstanceState? Actual { get; set; }
+            public CombatContext? ContextAfter { get; set; }
             public List<Dispatch> Dispatches { get; } = new List<Dispatch>();
             public List<object> Notifications { get; } = new List<object>();
             public string? Difference { get; set; }
@@ -50,7 +52,25 @@ namespace MonsterTrain2Poju.Probe
                 template, source?.GetFilters().Select(CardUpgradeMaskProbe.Rule).ToArray() ?? Array.Empty<CardUpgradeMaskRule>(),
                 sourceTeam.HasFlag(Team.Type.Heroes));
             return new RelicCardModifier(index, rule, upgrade, (bool)Field("_applyToCardlessSpawns"),
-                ((IEnumerable<RelicEffectCondition>)Field("_effectConditions")).Count());
+                Conditions(effect));
+        }
+        internal static RelicConditionState[] Conditions(IRelicEffect effect)
+        {
+            object Field(string name) => AccessTools.Field(effect.GetType(), name).GetValue(effect);
+            return ((IEnumerable<RelicEffectCondition>)Field("_effectConditions")).Select(condition => {
+                object C(string name) => AccessTools.Field(typeof(RelicEffectCondition), name).GetValue(condition);
+                var input = new CardStatistics.StatValueData {
+                    trackedValue = (CardStatistics.TrackedValueType)C("paramTrackedValue"),
+                    entryDuration = (CardStatistics.EntryDuration)C("paramEntryDuration"),
+                    cardTypeTarget = (CardStatistics.CardTypeTarget)C("paramCardType"),
+                    paramSubtype = SubtypeManager.GetSubtypeData((string)C("paramSubtype")) };
+                bool trackCount = (bool)C("paramTrackTriggerCount");
+                CardStatisticQuery query = trackCount ? new CardStatisticQuery(input.trackedValue.ToString(), input.entryDuration.ToString()) :
+                    DamageScalingProbe.Query(input, 0, false);
+                return new RelicConditionState(query, trackCount, Convert.ToInt32(C("paramComparator")), (int)C("paramInt"),
+                    (bool)C("allowMultipleTriggersPerDuration"), (bool)C("triggered"), (int)C("valueAtLastTrigger"),
+                    (int)C("durationTriggerCount"));
+            }).ToArray();
         }
         private static (int Relic, int Effect) Index(Record record, IRelicEffect effect)
         {
@@ -77,8 +97,10 @@ namespace MonsterTrain2Poju.Probe
                 {
                     var managers = AllGameManagers.Instance!; var nativeRelics = new List<RelicState>();
                     AccessTools.Method(typeof(RelicManager), "GetCurrentRelics").Invoke(managers.GetRelicManager(), new object[] { nativeRelics });
+                    CombatContext context = trace.CaptureContext();
                     __state = new Record { Before = CardModifierProbe.Capture(new[] { cardState }, trace.CardId).Single(),
-                        Relics = RelicProbe.Capture(managers), ResetTemporary = resetTempCardModifiers, NativeRelics = nativeRelics };
+                        ContextBefore = context, Relics = context.Relics?.ToArray() ?? RelicProbe.Capture(managers),
+                        ResetTemporary = resetTempCardModifiers, NativeRelics = nativeRelics };
                     Records.Add(__state); active.Add(__state);
                 }
                 catch (Exception error) { trace.CaptureFailure(error); }
@@ -89,9 +111,13 @@ namespace MonsterTrain2Poju.Probe
                 try
                 {
                     __state.Actual = CardModifierProbe.Capture(new[] { cardState }, FullBattleTrace.Active!.CardId).Single();
-                    var predicted = RelicCardModifierModel.Apply(__state.Before, __state.Relics, __state.ResetTemporary);
+                    __state.ContextAfter = FullBattleTrace.Active.CaptureContext();
+                    var predicted = RelicCardModifierModel.Apply(__state.Before, __state.Relics,
+                        __state.ResetTemporary, __state.ContextBefore);
                     __state.Difference = !predicted.Supported ? predicted.UnsupportedReason :
-                        JToken.DeepEquals(JToken.FromObject(predicted.Card!), JToken.FromObject(__state.Actual)) ? null : "Native relic manager card modifiers differ.";
+                        !JToken.DeepEquals(JToken.FromObject(predicted.Card!), JToken.FromObject(__state.Actual)) ? "Native relic manager card modifiers differ." :
+                        !JToken.DeepEquals(JToken.FromObject(predicted.Context!.Relics!), JToken.FromObject(__state.ContextAfter!.Relics!)) ? "Native relic modifier condition state differs." :
+                        !JToken.DeepEquals(JToken.FromObject(predicted.Context.Statistics!), JToken.FromObject(__state.ContextAfter.Statistics!)) ? "Native relic modifier statistic cache differs." : null;
                 }
                 catch (Exception error) { FullBattleTrace.Active?.CaptureFailure(error); }
                 finally { active.Remove(__state); }

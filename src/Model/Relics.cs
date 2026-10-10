@@ -24,6 +24,8 @@ namespace MonsterTrain2Poju.Model
             CardModifiers = cardModifiers == null ? null : Array.AsReadOnly(cardModifiers.ToArray()); }
         internal CombatRelicState WithSpawnStatuses(IReadOnlyList<RelicSpawnStatus> rules) =>
             new CombatRelicState(DataId, AssetKey, EffectTypes, rules, IsCovenant, DisallowedInPlacementPhase, CardModifiers);
+        internal CombatRelicState WithCardModifiers(IReadOnlyList<RelicCardModifier> modifiers) =>
+            new CombatRelicState(DataId, AssetKey, EffectTypes, SpawnStatuses, IsCovenant, DisallowedInPlacementPhase, modifiers);
     }
 
     internal static class RelicModel

@@ -39,19 +39,7 @@ namespace MonsterTrain2Poju.Probe
         private static RelicSpawnStatus SpawnStatus(IRelicEffect effect, int index)
         {
             object Field(string name) => AccessTools.Field(effect.GetType(), name).GetValue(effect);
-            var conditions = ((System.Collections.Generic.IEnumerable<RelicEffectCondition>)Field("_effectConditions")).Select(condition => {
-                object C(string name) => AccessTools.Field(typeof(RelicEffectCondition), name).GetValue(condition);
-                bool trackCount = (bool)C("paramTrackTriggerCount");
-                var input = new CardStatistics.StatValueData {
-                    trackedValue = (CardStatistics.TrackedValueType)C("paramTrackedValue"),
-                    entryDuration = (CardStatistics.EntryDuration)C("paramEntryDuration"),
-                    cardTypeTarget = (CardStatistics.CardTypeTarget)C("paramCardType"),
-                    paramSubtype = SubtypeManager.GetSubtypeData((string)C("paramSubtype")) };
-                CardStatisticQuery query = trackCount ? new CardStatisticQuery(input.trackedValue.ToString(), input.entryDuration.ToString()) :
-                    DamageScalingProbe.Query(input, 0, false);
-                return new RelicConditionState(query, trackCount, Convert.ToInt32(C("paramComparator")), (int)C("paramInt"),
-                    (bool)C("allowMultipleTriggersPerDuration"), (bool)C("triggered"), (int)C("valueAtLastTrigger"), (int)C("durationTriggerCount"));
-            }).ToArray();
+            var conditions = RelicCardModifierProbe.Conditions(effect);
             Team.Type team = (Team.Type)Field("targetTeam");
             var subtype = (SubtypeData)Field("characterSubtype");
             bool allowFromCard = (bool)Field("allowFromCard"), onlyFromCard = (bool)Field("onlyAllowedFromCard");

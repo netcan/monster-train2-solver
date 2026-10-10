@@ -57,7 +57,7 @@ internal static class RelicCardlessUpgradeChecks
         IReadOnlyList<CardUpgradeMaskRule> filters, bool applyToCardless = true)
     {
         var rule = new RelicCardUpgradeRule("CardlessUpgrade", true, lifecycle, filters);
-        return new RelicCardModifier(0, rule, upgrade, applyToCardless, 0);
+        return new RelicCardModifier(0, rule, upgrade, applyToCardless, Array.Empty<RelicConditionState>());
     }
 
     private static CombatRelicState Relic(RelicCardModifier modifier) => new("relic-id", "CardlessUpgradeRelic",

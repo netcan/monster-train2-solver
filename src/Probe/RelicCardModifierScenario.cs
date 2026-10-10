@@ -37,9 +37,32 @@ namespace MonsterTrain2Poju.Probe
                 managers.GetRelicManager().ApplyCardStateModifiers(card, resetTempCardModifiers: false);
                 managers.GetRelicManager().ApplyCardStateModifiers(card);
             }
+            if (Environment.GetEnvironmentVariable("MT2_PROBE_CONDITIONAL_BATTLE_RELIC_UPGRADES") == "1")
+                InstallOncePerTurnCondition(managers, eligible[0]);
             Prepared = true;
             AccessTools.Field(typeof(CombatManager), "combatStateChanged").SetValue(managers.GetCombatManager(), true);
-            log.LogInfo("RELIC-CARD-MODIFIERS-PREPARED unchanged original ReduceStarterCost, native acquire/repeat/reset and battle-generated cards.");
+            log.LogInfo("RELIC-CARD-MODIFIERS-PREPARED unchanged original ReduceStarterCost, native acquire/repeat/reset and battle-generated cards; conditional=" +
+                (Environment.GetEnvironmentVariable("MT2_PROBE_CONDITIONAL_BATTLE_RELIC_UPGRADES") == "1") + ".");
+
+            static void InstallOncePerTurnCondition(AllGameManagers managers, CardState sample)
+            {
+                var current = new List<RelicState>();
+                AccessTools.Method(typeof(RelicManager), "GetCurrentRelics").Invoke(managers.GetRelicManager(), new object[] { current });
+                RelicEffectAddTempUpgrade effect = current.Single(relic => relic.GetAssetName() == "ReduceStarterCost")
+                    .GetEffects().OfType<RelicEffectAddTempUpgrade>().Single();
+                var condition = new RelicEffectCondition();
+                void Set(string name, object value) => AccessTools.Field(typeof(RelicEffectCondition), name).SetValue(condition, value);
+                Set("paramTrackedValue", CardStatistics.TrackedValueType.TimesPlayed);
+                Set("paramCardType", CardStatistics.CardTypeTarget.Any);
+                Set("paramTrackTriggerCount", true);
+                Set("paramEntryDuration", CardStatistics.EntryDuration.ThisTurn);
+                Set("paramComparator", RelicEffectCondition.Comparator.LessThan);
+                Set("paramInt", 1);
+                Set("allowMultipleTriggersPerDuration", true);
+                ((List<RelicEffectCondition>)AccessTools.Field(typeof(RelicEffectBase), "_effectConditions").GetValue(effect)).Add(condition);
+                managers.GetRelicManager().ApplyCardStateModifiers(sample, resetTempCardModifiers: false);
+                managers.GetRelicManager().ApplyCardStateModifiers(sample, resetTempCardModifiers: false);
+            }
         }
     }
 }

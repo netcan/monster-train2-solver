@@ -157,7 +157,15 @@ namespace MonsterTrain2Poju.Probe
         private static class GenerationPatch
         {
             private static void Postfix(CardEffectState cardEffectState, CardEffectParams cardEffectParams, ref IEnumerator __result)
-            { if (Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") is "generation" or "generation-lethal" or "spawn-triggers" or "spawn-triggers-lethal" or "pre-hand-discard" or "pre-hand-discard-lethal" or "clone-upgrade-refresh" or "pre-combat" or "pre-combat-lethal" or "triggered-healing" or "post-combat-healing" or "triggered-damage" or "damage-death-queue" or "terminal-death-damage") __result = Wrap(__result, cardEffectState, cardEffectParams); }
+            {
+                string? scenario = Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS");
+                if (scenario is "generation" or "generation-lethal" or "spawn-triggers" or "spawn-triggers-lethal" or
+                    "pre-hand-discard" or "pre-hand-discard-lethal" or "clone-upgrade-refresh" or "pre-combat" or
+                    "pre-combat-lethal" or "triggered-healing" or "post-combat-healing" or "triggered-damage" or
+                    "damage-death-queue" or "terminal-death-damage" ||
+                    scenario == "conditional-relic-card-upgrades" && Environment.GetEnvironmentVariable("MT2_PROBE_GENERATION") == "1")
+                    __result = Wrap(__result, cardEffectState, cardEffectParams);
+            }
         }
     }
 }
