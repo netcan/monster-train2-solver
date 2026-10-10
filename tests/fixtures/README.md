@@ -178,6 +178,14 @@ Those effects remain refused. The production battle adapter must still own/updat
 the query descriptor through ordinary upgrades, clones, new cards and resets,
 then implement native relic ordering, applicability and notifications.
 
+The native sampler now retains the state captured immediately after
+StopCombatLoop, then waits for the original card animation callbacks before
+exporting and exiting. This preserves the battle boundary while later game
+cleanup resets Moon/resources/phase. The hand-upgrade validation completes23
+paid plays/five EndTurns, Pyre80, with zero pending card movements at export;
+the independent complete battle and original decision states match. The terminal
+wait does not replace the recorded state with a later post-battle cleanup state.
+
 `card-upgrade-lifecycle-calibration.mt2f` retains the schema1 native lifecycle
 acceptance described above:8,370 bytes/1,334 nodes, SHA256
 22024931ace427c1aa883c3389f5001f64ed0d605429a944daafd93ea0122552.

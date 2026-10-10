@@ -136,6 +136,14 @@ namespace MonsterTrain2Poju.Probe
                 FullBattleTrace trace = FullBattleTrace.Active;
                 try
                 {
+                    // StopCombatLoop captures the battle boundary. Later cleanup
+                    // resets resources/phase; keep that snapshot while allowing
+                    // native card animation callbacks to finish before export/exit.
+                    if (!CardAnimationSettlement.Ready())
+                    {
+                        if (Time.realtimeSinceStartup > deadline) Finish(false, "Terminal card animations did not settle before capture.");
+                        return;
+                    }
                     trace.Write();
                     Finish(trace.CaptureFailures == 0 && trace.Pending == 0 && trace.Mismatches == 0 && trace.Unsupported == 0,
                         "Full native battle finished; won=" + trace.NativeWon + "; unsupported stages=" + trace.Unsupported);
