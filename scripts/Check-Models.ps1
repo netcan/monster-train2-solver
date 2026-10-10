@@ -5,7 +5,8 @@ $ErrorActionPreference = 'Stop'
 $workspace = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $fixtureNames = @('full-battle-steward-once.mt2f', 'full-battle-no-cards.mt2f', 'full-battle-units-and-junk.mt2f',
     'full-battle-units-spells-and-junk.mt2f', 'full-battle-relic-card-modifiers.mt2f',
-    'full-battle-relic-card-status-upgrades.mt2f', 'full-battle-conditional-relic-card-upgrades.mt2f', 'full-battle-statistics.mt2f', 'full-battle-numeric-upgrades.mt2f',
+    'full-battle-relic-card-status-upgrades.mt2f', 'full-battle-generation-relic-card-status-upgrades.mt2f',
+    'full-battle-conditional-relic-card-upgrades.mt2f', 'full-battle-statistics.mt2f', 'full-battle-numeric-upgrades.mt2f',
     'full-battle-dynamic-upgrades.mt2f', 'full-battle-sacrifice-upgrades.mt2f',
     'full-battle-hand-upgrades.mt2f', 'full-battle-targeted-hand-upgrades.mt2f',
     'full-battle-healing.mt2f', 'full-battle-healing-triggers.mt2f', 'full-battle-room-spells.mt2f',

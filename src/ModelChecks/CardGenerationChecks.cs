@@ -68,6 +68,23 @@ internal static class CardGenerationChecks
         Require(!CardGenerationModel.Apply(context, new("ExhaustedPile", 1, [creation])).Supported &&
             !CardGenerationModel.Apply(context, new("DeckPile", 1, [new("bad", CardModifiers.Empty(), null, ["Unknown setup trait"])])).Supported,
             "Unknown generation routing/setup returned a partial child.");
+        CardUpgradeModifier sourceUpgrade = new("shared-upgrade", "NativeUpgrade", new(damage: 2), [new("armor", 3)],
+            true, true, false, 0, 0, [], copyRemoveOnDiscard: false, copyUnique: false, copyExcludeFromClones: true);
+        CardUpgradeModifier existingUpgrade = new("shared-upgrade", "NativeUpgrade", new(damage: 1), [new("armor", 1)],
+            false, true, false, 0, 0, []);
+        var copySource = new CardInstanceState(40, "source-card", new(new(), [sourceUpgrade], 0, []),
+            CardModifiers.Empty(), 0, 0, 0, []);
+        var copyContext = new CombatContext(new([], [new(40, "source-card")], [], rng, 2, []), rng, 0, 41, 2,
+            cardInstances: [copySource]);
+        var copyCreation = new CardCreationRule("generated-card", new(new(), [existingUpgrade], 0, []), null, []);
+        CardGenerationResult copied = CardGenerationModel.Apply(copyContext,
+            new("DeckPile", 1, [copyCreation], copyModifiers: true), 40);
+        CardUpgradeModifier[] copiedUpgrades = copied.Context!.CardInstances!.Single(card => card.InstanceId == 41)
+            .Permanent.Upgrades.ToArray();
+        Require(copied.Supported && copiedUpgrades.Length == 2 && copiedUpgrades[0].Unique &&
+            !copiedUpgrades[1].Unique && !copiedUpgrades[1].RemoveOnDiscard && copiedUpgrades[1].ExcludeFromClones &&
+            copiedUpgrades[1].Stats.Damage == 2 && copiedUpgrades[1].Statuses.Single().Stacks == 3,
+            "AddCard upgrade copy did not restore base identity flags while preserving copied values.");
         var missingInstances = new CombatContext(context.Cards, rng, 0, 4, 2);
         Require(!CardGenerationModel.Apply(missingInstances, new("DeckPile", 1, [creation])).Supported,
             "Modified generation silently lost upgrade and effect-counter state when instance ownership was absent.");

@@ -182,11 +182,11 @@ namespace MonsterTrain2Poju.Model
                     var ignored = new HashSet<string>(copying.DataId == creation.DataId ? permanent.Upgrades.Select(upgrade => upgrade.DataId) :
                         Array.Empty<string>(), StringComparer.Ordinal);
                     foreach (CardUpgradeModifier upgrade in copying.Permanent.Upgrades.Where(upgrade => upgrade.ExcludeFromClones)) ignored.Add(upgrade.DataId);
-                    permanent = Copy(permanent, copying.Permanent, ignored);
+                    permanent = Copy(permanent, copying.Permanent, ignored, forAddCardPipeline: true);
                     if (!rule.IgnoreTemporaryModifiers)
                     {
                         foreach (CardUpgradeModifier upgrade in copying.Temporary.Upgrades.Where(upgrade => upgrade.ExcludeFromClones)) ignored.Add(upgrade.DataId);
-                        temporary = Copy(temporary, copying.Temporary, ignored);
+                        temporary = Copy(temporary, copying.Temporary, ignored, forAddCardPipeline: true);
                     }
                     // Native refreshes all existing upgrades after copying. Supported card
                     // traits have multiplier one; magic multiplier traits are explicit external
@@ -232,11 +232,12 @@ namespace MonsterTrain2Poju.Model
             }
             return new CardGenerationResult(context, added);
         }
-        private static CardModifiers Copy(CardModifiers destination, CardModifiers source, HashSet<string> ignored)
+        private static CardModifiers Copy(CardModifiers destination, CardModifiers source, HashSet<string> ignored,
+            bool forAddCardPipeline = false)
         {
             CardModifiers result = new CardModifiers(source.Offsets, destination.Upgrades, source.PersistentHealth, source.ExternalInteractions);
             foreach (CardUpgradeModifier upgrade in source.Upgrades.Where(upgrade => !ignored.Contains(upgrade.DataId)))
-                result = UnitModifierModel.Add(result, upgrade);
+                result = UnitModifierModel.Add(result, forAddCardPipeline ? upgrade.ForAddCardCopy() : upgrade);
             return result;
         }
         private static CardModifiers RefreshClone(CardModifiers modifiers) => new CardModifiers(modifiers.Offsets,

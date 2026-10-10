@@ -133,6 +133,8 @@ namespace MonsterTrain2Poju.Probe
             if (!filtersAlreadyApplied && upgrade.GetFilters().Count > 0) interactions.Add("Upgrade card filters");
             if (upgrade.GetUpgradesToRemove().Count > 0) interactions.Add("Upgrade replacements");
             if (upgrade.GetStatusEffectUpgrades().Any(status => status.fromPermanentUpgrade)) interactions.Add("Separate permanent starting-status application group");
+            CardUpgradeData? copyDefinition = AllGameManagers.Instance?.GetSaveManager()?.GetAllGameData()
+                .FindCardUpgradeData(upgrade.GetCardUpgradeDataId());
             return new CardUpgradeModifier(upgrade.GetCardUpgradeDataId(), upgrade.GetAssetName(),
                 new CardStatModifier(upgrade.GetAttackDamage(), upgrade.GetAdditionalHP(), -upgrade.GetCostReduction(),
                     upgrade.GetAdditionalHeal(), upgrade.GetAdditionalSize(), upgrade.GetXCostReduction(),
@@ -143,7 +145,9 @@ namespace MonsterTrain2Poju.Probe
                 refresh && source!.GetBonusDamage() > 0 ? (int?)source.GetBonusDamage() : null,
                 refresh && source!.GetBonusHeal() > 0 ? (int?)source.GetBonusHeal() : null, triggerUpgrades: triggers,
                 abilityUpgrade: upgrade.GetUnitAbilityUpgrade() == null ? null : AbilityLifecycleProbe.Change(upgrade.GetUnitAbilityUpgrade()),
-                doNotReplaceExistingAbility: upgrade.GetDoNotReplaceExistingUnitAbility(), maskMetadata: CardBranchMaskProbe.Upgrade(upgrade));
+                doNotReplaceExistingAbility: upgrade.GetDoNotReplaceExistingUnitAbility(), maskMetadata: CardBranchMaskProbe.Upgrade(upgrade),
+                copyRemoveOnDiscard: copyDefinition == null ? null : false, copyUnique: copyDefinition?.IsUnique(),
+                copyExcludeFromClones: copyDefinition?.GetExcludeFromClones());
         }
     }
 }

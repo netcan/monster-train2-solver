@@ -163,7 +163,8 @@ namespace MonsterTrain2Poju.Probe
                     "pre-hand-discard" or "pre-hand-discard-lethal" or "clone-upgrade-refresh" or "pre-combat" or
                     "pre-combat-lethal" or "triggered-healing" or "post-combat-healing" or "triggered-damage" or
                     "damage-death-queue" or "terminal-death-damage" ||
-                    scenario == "conditional-relic-card-upgrades" && Environment.GetEnvironmentVariable("MT2_PROBE_GENERATION") == "1")
+                    (scenario == "conditional-relic-card-upgrades" || scenario == "relic-card-status-upgrades") &&
+                        Environment.GetEnvironmentVariable("MT2_PROBE_GENERATION") == "1")
                     __result = Wrap(__result, cardEffectState, cardEffectParams);
             }
         }
