@@ -10,11 +10,12 @@ namespace MonsterTrain2Poju.Model
     {
         public string AssetKey { get; }
         public bool SourceMonsters { get; }
+        public bool SourceHeroes { get; }
         public CardLifecycleUpgrade? Upgrade { get; }
         public IReadOnlyList<CardUpgradeMaskRule> Filters { get; }
         public RelicCardUpgradeRule(string assetKey, bool sourceMonsters, CardLifecycleUpgrade? upgrade,
-            IReadOnlyList<CardUpgradeMaskRule> filters)
-        { AssetKey = assetKey; SourceMonsters = sourceMonsters; Upgrade = upgrade; Filters = Array.AsReadOnly(filters.ToArray()); }
+            IReadOnlyList<CardUpgradeMaskRule> filters, bool sourceHeroes = false)
+        { AssetKey = assetKey; SourceMonsters = sourceMonsters; SourceHeroes = sourceHeroes; Upgrade = upgrade; Filters = Array.AsReadOnly(filters.ToArray()); }
     }
 
     public sealed class RelicCardFilterResult

@@ -67,8 +67,10 @@ namespace MonsterTrain2Poju.Probe
             {
                 var source = effect.GetParamCardUpgradeData(); CardLifecycleUpgrade? upgrade = null;
                 if (source != null) { var instance = new CardUpgradeState(); instance.Setup(source); upgrade = CardUpgradeLifecycleProbe.Definition(instance); }
-                return new RelicCardUpgradeRule(name, effect.GetParamSourceTeam().HasFlag(Team.Type.Monsters), upgrade,
-                    source?.GetFilters().Select(CardUpgradeMaskProbe.Rule).ToArray() ?? Array.Empty<CardUpgradeMaskRule>());
+                Team.Type sourceTeam = effect.GetParamSourceTeam();
+                return new RelicCardUpgradeRule(name, sourceTeam.HasFlag(Team.Type.Monsters), upgrade,
+                    source?.GetFilters().Select(CardUpgradeMaskProbe.Rule).ToArray() ?? Array.Empty<CardUpgradeMaskRule>(),
+                    sourceTeam.HasFlag(Team.Type.Heroes));
             }
             void Observe(string group, string operation, CardState card, CardUpgradeLifecycleProbe probe, RelicData? relic = null, RelicEffectData? effectData = null)
             {

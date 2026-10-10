@@ -22,15 +22,17 @@ namespace MonsterTrain2Poju.Probe
             // Includes hero blessings, covenants, mutators, Pyre artifacts and souls,
             // in the exact order searched by GetRelicEffect<T>.
             var relics = Current(managers);
+            bool captureCardModifiers = RelicCardModifierProbe.Enabled ||
+                Environment.GetEnvironmentVariable("MT2_PROBE_CARDLESS_RELIC_UPGRADES") == "1";
             return relics.Select(relic => {
                 var effects = relic.GetEffects().ToArray();
                 var statuses = effects.Select((effect, index) => new { Effect = effect, Index = index })
                     .Where(item => item.Effect is RelicEffectAddStatusEffectOnSpawn).Select(item => SpawnStatus(item.Effect, item.Index)).ToArray();
-                var cardModifiers = RelicCardModifierProbe.Enabled ? effects.Select((effect, index) => new { Effect = effect, Index = index })
+                var cardModifiers = captureCardModifiers ? effects.Select((effect, index) => new { Effect = effect, Index = index })
                     .Where(item => item.Effect is RelicEffectAddTempUpgrade).Select(item => RelicCardModifierProbe.Definition(item.Effect, item.Index)).ToArray() : null;
                 return new CombatRelicState(relic.GetRelicDataID(), relic.GetAssetName(), effects.Select(effect => effect.GetType().Name).ToArray(),
-                    statuses.Length == 0 ? null : statuses, statuses.Length == 0 ? null : (bool?)(relic is CovenantState),
-                    statuses.Length == 0 ? null : (bool?)relic.DisallowedInPlacementPhase, cardModifiers?.Length > 0 ? cardModifiers : null);
+                    statuses.Length == 0 ? null : statuses, relic is CovenantState,
+                    relic.DisallowedInPlacementPhase, cardModifiers?.Length > 0 ? cardModifiers : null);
             }).ToArray();
         }
 

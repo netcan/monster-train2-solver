@@ -158,7 +158,7 @@ namespace MonsterTrain2Poju.Probe
         }
         internal CardUpgradeModifier CaptureAppliedUpgrade(CardUpgradeState upgrade)
         {
-            CardUpgradeModifier modifier = CardModifierProbe.Upgrade(upgrade);
+            CardUpgradeModifier modifier = CardModifierProbe.Upgrade(upgrade, rejectFilters: false, filtersAlreadyApplied: true);
             foreach (CardState card in projection.KnownCards.Where(item => item.GetCardType() == CardType.Equipment))
             {
                 int index = card.GetCardStateModifiers().GetCardUpgrades().FindIndex(item => ReferenceEquals(item, upgrade));

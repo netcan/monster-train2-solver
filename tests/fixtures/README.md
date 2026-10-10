@@ -1921,3 +1921,14 @@ finishes at Pyre80. The archive is 51,499 bytes/8,650 nodes, SHA-256
 JSON source. Its focused regression passes. The complete 201-archive stage run
 also passes in about 38 minutes: 170 accepted battles and 31 component
 calibrations; every archive matches the integrity manifest.
+
+`full-battle-cardless-relic-upgrades.mt2f` adds the original `PyreHeartSon`
+relic to the clone-birth scenario with one ordinary policy card play. Its 22 native
+`RelicManager.CharacterAdded` calls match: the +5 damage/+12 health upgrade is
+applied to five ordinary cardless births and skipped on five cardless clones.
+The Instant battle wins with 42 matched stages, five EndTurns, zero capture
+failures, mismatches, unsupported stages or pending records. The binary-only
+archive is 56,537 bytes/7,789 nodes, SHA-256
+`f0d0cc92cabcd364a3023150c9c0bdbaa10ea81731ee7bacd40a79f72dbb2380`. Run its
+focused regression with
+`pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-cardless-relic-upgrades.mt2f`.

@@ -94,7 +94,8 @@ namespace MonsterTrain2Poju.Model
         {
             string? error = RelicModel.Validate(source.Context);
             if (error != null) return Fail(error);
-            if (source.Context?.Relics == null || !source.Context.Relics.Any(relic => relic.SpawnStatuses?.Count > 0))
+            if (source.Context?.Relics == null || !source.Context.Relics.Any(relic => relic.SpawnStatuses?.Count > 0 ||
+                relic.CardModifiers?.Any(effect => effect.ApplyToCardlessSpawns) == true))
                 return new RoomCombatResult(source, RoomOutcome.Exchanged, 0, new List<CombatEvent>(), pendingCallbacks: prior);
             if (!source.Units.Any(unit => unit.Id == unitId) || fromCardId < 0 ||
                 fromCardId > 0 && source.Context.FindCard(fromCardId) == null) return Fail("Missing native relic birth references.");
@@ -106,8 +107,20 @@ namespace MonsterTrain2Poju.Model
             for (int relicIndex = 0; relicIndex < state.Context!.Relics!.Count; relicIndex++)
             {
                 CombatRelicState relic = state.Context!.Relics![relicIndex];
-                if (relic.SpawnStatuses == null || relic.IsCovenant != onlyCovenants ||
+                var cardlessModifiers = relic.CardModifiers?.Where(effect => effect.ApplyToCardlessSpawns)
+                    .OrderBy(effect => effect.EffectIndex).ToArray() ?? Array.Empty<RelicCardModifier>();
+                bool hasSpawnStatuses = relic.SpawnStatuses?.Count > 0;
+                if (!hasSpawnStatuses && cardlessModifiers.Length == 0 || relic.IsCovenant != onlyCovenants ||
                     relic.DisallowedInPlacementPhase == true && state.Deployment) continue;
+                foreach (RelicCardModifier effect in cardlessModifiers)
+                {
+                    RoomCombatResult applied = RelicCardModifierModel.ApplyCardlessSpawn(state, unitId, fromCardId, effect);
+                    if (!applied.Supported) return applied;
+                    state = applied.State!; callbacks.AddRange(applied.PendingCallbacks); events.AddRange(applied.Events);
+                    if (applied.Outcome != RoomOutcome.Exchanged) outcome = applied.Outcome;
+                    if (!onlyCovenants && !DrainYield()) return failed!;
+                }
+                if (!hasSpawnStatuses) continue;
                 for (int ruleIndex = 0; ruleIndex < relic.SpawnStatuses!.Count; ruleIndex++)
                 {
                     relic = state.Context!.Relics![relicIndex];

@@ -26,6 +26,7 @@ namespace MonsterTrain2Poju.Probe
             Acquire("68ef2523-5c2e-4660-b96d-00b1c0485f54", "SpawnWithArmor");
             Acquire("60a2a8a3-5f7a-4a9d-b427-5f261145fa1f", "FirstUnitGainDamageShield");
             Acquire("270356af-16bd-4433-a0b2-3e5bb94ef890", "FrostbiteOnEnemies");
+            if (Clones) AcquireCardlessUpgrade();
             if (Clones)
             {
                 CollectableRelicData extraSpawn = save.GetAllGameData().GetAllCollectableRelicData().Single(item =>
@@ -44,6 +45,16 @@ namespace MonsterTrain2Poju.Probe
                 CollectableRelicData relic = save.GetAllGameData().GetAllCollectableRelicData().Single(item => item.GetID() == id);
                 if (relic.name != key || relic.GetEffects().Count != 1 || relic.GetEffects()[0].GetEffectClassName() != "RelicEffectAddStatusEffectOnSpawn")
                     throw new InvalidOperationException("Original spawn status relic changed: " + key);
+                save.AddRelic(relic);
+            }
+
+            void AcquireCardlessUpgrade()
+            {
+                CollectableRelicData relic = save.GetAllGameData().GetAllCollectableRelicData().Single(item => item.name == "PyreHeartSon");
+                RelicEffectData effect = relic.GetEffects().Single();
+                if (effect.GetEffectClassName() != "RelicEffectAddTempUpgrade" || effect.GetParamCardUpgradeData() == null ||
+                    !effect.GetParamSourceTeam().HasFlag(Team.Type.Monsters) || !effect.GetParamBool() || effect.GetEffectConditions().Count != 0)
+                    throw new InvalidOperationException("Original PyreHeartSon cardless upgrade relic changed.");
                 save.AddRelic(relic);
             }
         }

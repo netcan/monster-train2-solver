@@ -48,7 +48,8 @@ namespace MonsterTrain2Poju.Model
             foreach (var effect in relic.CardModifiers)
             {
                 if (effect.ConditionCount != 0) return "Unmodeled relic card modifier conditions.";
-                if (effect.ApplyToCardlessSpawns) return "Unmodeled relic cardless upgrade dispatch.";
+                if (effect.ApplyToCardlessSpawns && (relic.IsCovenant == null || relic.DisallowedInPlacementPhase == null))
+                    return "Cardless relic upgrades require native covenant and placement metadata.";
                 var template = effect.Rule.Upgrade; var upgrade = effect.Upgrade;
                 if (template == null ? upgrade != null : upgrade == null || template.Values.DataId != upgrade.DataId ||
                     template.AssetKey != upgrade.AssetKey || template.Unique != upgrade.Unique || template.RemoveOnDiscard != upgrade.RemoveOnDiscard)
@@ -103,6 +104,49 @@ namespace MonsterTrain2Poju.Model
             }
             return new RelicCardModifierResult(card, dispatches);
         }
+
+        internal static RoomCombatResult ApplyCardlessSpawn(RoomCombatState source, int unitId, int fromCardId,
+            RelicCardModifier effect)
+        {
+            CardUpgradeModifier? upgrade = effect.Upgrade;
+            if (!effect.ApplyToCardlessSpawns || upgrade == null) return Match(source);
+            CombatUnit? actor = source.Units.FirstOrDefault(unit => unit.Id == unitId);
+            if (actor == null) return FailRoom("Missing cardless relic birth unit.");
+            if (!(actor.Team == CombatTeam.Player ? effect.Rule.SourceMonsters : effect.Rule.SourceHeroes) ||
+                actor.Status("cardless") == null) return Match(source);
+            if (actor.Modifiers == null) return FailRoom("Cardless relic upgrades require retained unit modifiers.");
+            if (actor.Modifiers.IsClone) return Match(source);
+            if (source.Context == null) return FailRoom("Cardless relic upgrades require a combat context.");
+            CardInstanceState? fromCard = fromCardId == 0 ? null : source.Context.FindCard(fromCardId);
+            if (fromCardId < 0 || fromCardId > 0 && fromCard == null)
+                return FailRoom("Missing cardless relic source card.");
+
+            CardUpgradeMaskCard? cardMask = null;
+            if (effect.Rule.Filters.Count > 0 && fromCard != null)
+            {
+                if (fromCard.MaskDescriptor == null) return FailRoom("Cardless relic filters require source-card mask metadata.");
+                cardMask = CardBranchMaskModel.Resolve(fromCard);
+            }
+            bool needsStatusRegistry = effect.Rule.Filters.Any(filter =>
+                filter.Statuses.Required.Count > 0 || filter.Statuses.Excluded.Count > 0);
+            if (needsStatusRegistry && actor.StatusRegistry == null)
+                return FailRoom("Cardless relic filters require the native character status registry.");
+            var characterMask = new CardUpgradeMaskCharacter(actor.Subtypes,
+                (actor.StatusRegistry ?? actor.Statuses).Select(status => status.Id).ToArray(), actor.Size);
+            foreach (CardUpgradeMaskRule filter in effect.Rule.Filters)
+            {
+                if (!CardUpgradeMaskModel.FilterCard(filter, cardMask) ||
+                    !CardUpgradeMaskModel.FilterCharacter(filter, characterMask)) return Match(source);
+            }
+            if (upgrade.Unique && fromCard != null && fromCard.Permanent.Upgrades.Concat(fromCard.Temporary.Upgrades)
+                .Any(item => item.DataId == upgrade.DataId)) return Match(source);
+            return UnitModifierModel.ApplyDirectDeferred(source, unitId, upgrade);
+        }
+
+        private static RoomCombatResult Match(RoomCombatState state) =>
+            new RoomCombatResult(state, RoomOutcome.Exchanged, 0, new List<CombatEvent>());
         private static RelicCardModifierResult Fail(string error) => new RelicCardModifierResult(null, unsupportedReason: error);
+        private static RoomCombatResult FailRoom(string error) =>
+            new RoomCombatResult(null, RoomOutcome.Unsupported, 0, new List<CombatEvent>(), error);
     }
 }

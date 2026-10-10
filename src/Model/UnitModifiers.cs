@@ -40,6 +40,9 @@ namespace MonsterTrain2Poju.Model
             bool remove = false, string upgradeId = "", int? anonymousRemovalIndex = null)
             => RoomCombatModel.ApplyDirectUnitUpgrade(source, targetId, upgrade, remove, upgradeId, anonymousRemovalIndex);
 
+        internal static RoomCombatResult ApplyDirectDeferred(RoomCombatState source, int targetId, CardUpgradeModifier upgrade)
+            => RoomCombatModel.ApplyDirectUnitUpgrade(source, targetId, upgrade, false, upgrade.DataId, null, deferCallbacks: true);
+
         // A running room engine settles deaths on its existing unit references and trigger flags.
         // Starting another engine here would reset preview triggers and detach combat attackers.
         internal static RoomCombatResult ApplyWithSettlement(RoomCombatState source, int targetId, CardUpgradeModifier upgrade,

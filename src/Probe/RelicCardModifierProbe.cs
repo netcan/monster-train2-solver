@@ -45,8 +45,10 @@ namespace MonsterTrain2Poju.Probe
                 template = CardUpgradeLifecycleProbe.Definition(instance);
                 upgrade = CardModifierProbe.Upgrade(instance, false, filtersAlreadyApplied: true);
             }
-            var rule = new RelicCardUpgradeRule(source?.name ?? "", ((Team.Type)Field("_sourceTeam")).HasFlag(Team.Type.Monsters),
-                template, source?.GetFilters().Select(CardUpgradeMaskProbe.Rule).ToArray() ?? Array.Empty<CardUpgradeMaskRule>());
+            Team.Type sourceTeam = (Team.Type)Field("_sourceTeam");
+            var rule = new RelicCardUpgradeRule(source?.name ?? "", sourceTeam.HasFlag(Team.Type.Monsters),
+                template, source?.GetFilters().Select(CardUpgradeMaskProbe.Rule).ToArray() ?? Array.Empty<CardUpgradeMaskRule>(),
+                sourceTeam.HasFlag(Team.Type.Heroes));
             return new RelicCardModifier(index, rule, upgrade, (bool)Field("_applyToCardlessSpawns"),
                 ((IEnumerable<RelicEffectCondition>)Field("_effectConditions")).Count());
         }

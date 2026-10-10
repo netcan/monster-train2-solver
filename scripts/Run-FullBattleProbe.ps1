@@ -166,7 +166,7 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
-if ($BattleRelicUpgrades) { $BranchCardMasks = $true }
+if ($BattleRelicUpgrades -or $SpawnStatusRelicsClones) { $BranchCardMasks = $true }
 if ($SpawnStatusRelicsClones) { $SpawnStatusRelics = $true; $UnitClone = $true }
 if ($EnchantmentWorld) { $EnchantmentCombat = $true }
 if ($PersistentEnchantmentRevivals) { $PersistentEnchantmentDeaths = $true }
@@ -258,6 +258,7 @@ $environment = @{
     MT2_PROBE_BRANCH_CARD_MASKS = $(if ($BranchCardMasks) { '1' } else { '0' })
     MT2_PROBE_RELIC_CARD_UPGRADES = $(if ($RelicCardUpgrades) { '1' } else { '0' })
     MT2_PROBE_BATTLE_RELIC_UPGRADES = $(if ($BattleRelicUpgrades) { '1' } else { '0' })
+    MT2_PROBE_CARDLESS_RELIC_UPGRADES = $(if ($SpawnStatusRelicsClones) { '1' } else { '0' })
     MT2_PROBE_SETTLE_DEATH_DISSOLVES = $(if ($SettleDeathDissolves) { '1' } else { '0' })
     MT2_PROBE_SETTLE_CARD_ANIMATIONS = $(if ($SettleCardAnimations) { '1' } else { '0' })
     MT2_PROBE_STATUS_CALLBACKS = $(if ($HordeStatuses -or $StatusCallbacks) { '1' } else { '0' })
@@ -1536,10 +1537,30 @@ if ($SpawnStatusRelics) {
     $spawnRelicEnemies = 0
     $spawnRelicFirsts = 0
     $spawnRelicSkips = 0
+    $cardlessUpgradeApplied = 0
+    $cardlessCloneSkipped = 0
     $spawnRelicTurns = [Collections.Generic.HashSet[int]]::new()
+    $cardlessUpgradeId = $null
+    if ($SpawnStatusRelicsClones -and $births.Count -gt 0) {
+        $cardlessUpgradeRelics = @($births[0].Before.Context.Relics | Where-Object AssetKey -EQ 'PyreHeartSon')
+        if ($cardlessUpgradeRelics.Count -eq 1 -and $cardlessUpgradeRelics[0].CardModifiers.Count -eq 1 -and
+            $cardlessUpgradeRelics[0].CardModifiers[0].ApplyToCardlessSpawns) {
+            $cardlessUpgradeId = $cardlessUpgradeRelics[0].CardModifiers[0].Upgrade.DataId
+        }
+    }
     foreach ($birth in $births) {
         $actor = @($birth.After.Units | Where-Object { $_.Id -eq $birth.UnitId })
+        $beforeActor = @($birth.Before.Units | Where-Object { $_.Id -eq $birth.UnitId })
         if ($actor.Count -ne 1) { throw 'Native relic birth actor is missing or duplicated.' }
+        if ($beforeActor.Count -ne 1) { throw 'Native relic birth before-state actor is missing or duplicated.' }
+        if ($SpawnStatusRelicsClones -and $cardlessUpgradeId -and
+            @($beforeActor[0].Statuses | Where-Object Id -EQ 'cardless').Count -gt 0) {
+            $beforeUpgradeCount = @($beforeActor[0].Modifiers.Upgrades | Where-Object DataId -EQ $cardlessUpgradeId).Count
+            $afterUpgradeCount = @($actor[0].Modifiers.Upgrades | Where-Object DataId -EQ $cardlessUpgradeId).Count
+            if ($beforeActor[0].Modifiers.IsClone) {
+                if ($afterUpgradeCount -eq $beforeUpgradeCount) { $cardlessCloneSkipped++ }
+            } elseif ($afterUpgradeCount -gt $beforeUpgradeCount) { $cardlessUpgradeApplied++ }
+        }
         if ($actor[0].Team -eq 1) {
             $spawnRelicPlayers++
             $oldShield = @($birth.Before.Context.Relics | Where-Object AssetKey -EQ 'FirstUnitGainDamageShield')[0].SpawnStatuses[0].Conditions[0]
@@ -1553,9 +1574,13 @@ if ($SpawnStatusRelics) {
     if ($trace.Schema -ne $(if ($SpawnStatusRelicsClones) { 111 } else { 110 }) -or $trace.ModifierScenario -ne $(if ($SpawnStatusRelicsClones) { 'spawn-status-relics-clones' } else { 'spawn-status-relics' }) -or $births.Count -lt 3 -or
         $spawnRelicPlayers -lt 2 -or $spawnRelicEnemies -lt 1 -or $spawnRelicFirsts -lt 1 -or $spawnRelicSkips -lt 1 -or
         (-not $SpawnStatusRelicsClones -and ($spawnRelicFirsts -lt 2 -or $spawnRelicTurns.Count -lt 2)) -or
+        ($SpawnStatusRelicsClones -and (-not $cardlessUpgradeId -or $cardlessUpgradeApplied -lt 1 -or $cardlessCloneSkipped -lt 1)) -or
         @($births | Where-Object { -not $_.Completed -or -not $_.After -or $_.Difference }).Count -ne 0 -or
         @($trace.Actions[0].Before.Spawn.Train.Context.Relics | Where-Object { $_.AssetKey -in @('SpawnWithArmor','FirstUnitGainDamageShield','FrostbiteOnEnemies') }).Count -ne 3) {
         throw 'Native original spawn-status relic coverage is incomplete or failed.'
+    }
+    if ($SpawnStatusRelicsClones) {
+        Write-Output "NATIVE-CARDLESS-RELIC-UPGRADE PASS: upgrade applied to $cardlessUpgradeApplied non-clone cardless births and skipped on $cardlessCloneSkipped cardless clones."
     }
 }
 if ($IncantRelic) {
