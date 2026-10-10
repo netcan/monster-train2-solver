@@ -21,9 +21,16 @@ internal static class RelicCardModifierChecks
             Dispatches: row.GetProperty("Dispatches").Deserialize<RelicCardModifierDispatch[]>()!,
             Notifications: row.GetProperty("Notifications").EnumerateArray().Select(item =>
                 (Relic: item.GetProperty("RelicIndex").GetInt32(), Effect: item.GetProperty("EffectIndex").GetInt32())).ToArray())).ToArray();
-        Require(rows.Length > 0 && rows.Any(row => !row.Reset && row.Dispatches.Any(effect => effect.Returned && !effect.UpgradeAdded)) &&
+        bool statusUpgradeScenario = root.TryGetProperty("ModifierScenario", out var scenario) &&
+            scenario.GetString() == "relic-card-status-upgrades";
+        bool sawExpectedRejection = statusUpgradeScenario
+            ? rows.Any(row => row.Dispatches.Any(effect => !effect.Returned && !effect.UpgradeAdded))
+            : rows.Any(row => !row.Reset && row.Dispatches.Any(effect => effect.Returned && !effect.UpgradeAdded));
+        Require(rows.Length > 0 && sawExpectedRejection &&
             rows.Any(row => row.Reset && row.Dispatches.Any(effect => effect.UpgradeAdded)) &&
-            rows.Any(row => row.Dispatches.Any(effect => !effect.Returned)), "Native manager lacks reset/repeat/unique rejection and failed eligibility.");
+            rows.Any(row => row.Dispatches.Any(effect => !effect.Returned)), statusUpgradeScenario
+                ? "Native manager lacks reset and failed-eligibility rejection."
+                : "Native manager lacks reset/repeat/unique rejection and failed eligibility.");
         Require(rows.Any(row => row.Relics.Any(relic => relic.AssetKey == "ReduceStarterCost" &&
             relic.EffectTypes.SequenceEqual(new[] { "RelicEffectAddTempUpgrade" }))), "Original starter-cost relic is missing.");
         string parent = JsonSerializer.Serialize(rows);
@@ -85,15 +92,31 @@ internal static class RelicCardModifierChecks
             Require(sawCondition && sawSpentGate && sawTurnReset,
                 "Conditional relic capture lacks a native trigger limit, spent-condition skip or ThisTurn reset.");
         }
+        if (statusUpgradeScenario)
+        {
+            bool statusReachedSummonedUnit = root.GetProperty("Actions").EnumerateArray().Any(action =>
+            {
+                int cardId = action.GetProperty("Action").GetProperty("CardInstanceId").GetInt32();
+                BattleTurnState after = action.GetProperty("Actual").Deserialize<BattleTurnState>()!;
+                CardInstanceState? card = after.Spawn.Train.Context!.FindCard(cardId);
+                return card?.Temporary.Upgrades.Any(upgrade => upgrade.Statuses.Any(status => status.Id == "armor")) == true &&
+                    after.Spawn.Train.Rooms.SelectMany(room => room.Units).Any(unit => unit.SpawnerCardId == cardId &&
+                        unit.Status("armor")?.Stacks > 0);
+            });
+            Require(statusReachedSummonedUnit,
+                "A native card-side relic armor upgrade did not reach the summoned unit in the independent policy.");
+        }
         var generated = root.GetProperty("CardGenerations").EnumerateArray().Select(row => (
             Before: row.GetProperty("Before").Deserialize<CombatContext>()!,
             Actual: row.GetProperty("Actual").Deserialize<CombatContext>()!)).ToArray();
         var births = generated.SelectMany(row => row.Actual.CardInstances!.Where(card => card.InstanceId >= row.Before.NextCardId)).ToArray();
-        Require(births.Any(card => card.Temporary.Upgrades.Any(upgrade => upgrade.AssetKey == "ReduceStarterCost" ||
-            rows.SelectMany(row => row.Relics).SelectMany(relic => relic.CardModifiers ?? []).Any(effect => effect.Upgrade?.DataId == upgrade.DataId))),
-            "No battle-generated eligible card received an original relic upgrade.");
+        if (!statusUpgradeScenario)
+            Require(births.Any(card => card.Temporary.Upgrades.Any(upgrade => upgrade.AssetKey == "ReduceStarterCost" ||
+                rows.SelectMany(row => row.Relics).SelectMany(relic => relic.CardModifiers ?? []).Any(effect => effect.Upgrade?.DataId == upgrade.DataId))),
+                "No battle-generated eligible card received an original relic upgrade.");
+        string coverage = statusUpgradeScenario ? "card status upgrades reached summoned units" : "eligible battle-generated cards";
         Console.WriteLine($"NATIVE-RELIC-CARD-MODIFIER-CHECKS PASS: {rows.Length} original manager calls, {rows.Sum(row => row.Dispatches.Length)} ordered effect/filter results, " +
-            $"{rows.Sum(row => row.Notifications.Length)} exact trigger notifications, eligible battle-generated cards and 32 immutable branches.");
+            $"{rows.Sum(row => row.Notifications.Length)} exact trigger notifications, {coverage} and 32 immutable branches.");
     }
     private static void Equal<T>(T expected, T actual, string label)
     {

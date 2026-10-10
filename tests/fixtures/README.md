@@ -14,8 +14,10 @@ The default command still checks the full curated inventory.
 For routine changes, run only the new and directly affected fixtures with
 `-Fixture`; run the full inventory at completed milestones and before delivery.
 
-Current inventory is 203 archives: 172 accepted battles and 31 component
-calibrations. The initial Incant model's complete 180-archive regression passes.
+Current inventory is 204 archives: 173 accepted battles and 31 component
+calibrations. `full-battle-relic-card-status-upgrades.mt2f` verifies a native
+temporary card status upgrade reaches the unit summoned by that card. The
+initial Incant model's complete 180-archive regression passes.
 The threshold model's combined181 regression has also completed successfully.
 The relic model's combined181 regression has also completed successfully.
 The corrected checker's combined182 regression has also completed successfully.

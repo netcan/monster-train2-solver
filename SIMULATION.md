@@ -7755,4 +7755,18 @@ plays, seven EndTurns, final Pyre 73, an independent mid-battle suffix and 16
 parallel branches. The separate `full-battle-room-selection-preview.mt2f`
 regression passes 17 paid plays, five EndTurns and 16 parallel branches. The
 cardless relic-upgrade fixture also passes its focused checks. The complete
-curated regression was deferred; the current inventory has 202 archives.
+curated regression was deferred; the current inventory has 204 archives.
+
+### Temporary relic status-upgrade propagation
+
+The new native `ReduceStarterCost` scenario replaces only the active relic
+effect's upgrade payload with an armor upgrade filtered to monster cards. Its
+captured manager calls match the immutable model, and a full battle proves the
+same played card retains the temporary status upgrade while its summoned unit
+receives armor.
+
+`full-battle-relic-card-status-upgrades.mt2f` passes 49 room transitions, 11
+card cycles, 11 train phases, nine spawn checks, six turns and 28 actions. The
+native capture has zero failures, mismatches, unsupported stages or pending
+records. The focused new and original relic-modifier fixtures both pass; the
+full 204-archive regression remains deferred until a milestone.

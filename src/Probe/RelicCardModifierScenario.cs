@@ -28,7 +28,10 @@ namespace MonsterTrain2Poju.Probe
                 foreach (var card in owned.Where(card => card.GetCardDataID() == id)) AccessTools.Field(typeof(CardState), "cost").SetValue(card, 2);
             }
             save.AddRelic(original);
-            var filters = original.GetEffects().Single().GetParamCardUpgradeData().GetFilters();
+            RelicEffectAddTempUpgrade relicEffect = CurrentRelic(managers).GetEffects().OfType<RelicEffectAddTempUpgrade>().Single();
+            if (Environment.GetEnvironmentVariable("MT2_PROBE_RELIC_CARD_STATUS_UPGRADE") == "1")
+                InstallArmorUpgrade(save.GetAllGameData(), relicEffect);
+            var filters = UpgradeData(relicEffect).GetFilters();
             var eligible = owned.Where(card => filters.All(filter => filter.FilterCard(card, managers.GetRelicManager()))).Take(2).ToArray();
             if (eligible.Length != 2) throw new InvalidOperationException("Relic scenario lacks eligible repeated/reset owned cards.");
             CaptureReady = true;
@@ -42,14 +45,42 @@ namespace MonsterTrain2Poju.Probe
             Prepared = true;
             AccessTools.Field(typeof(CombatManager), "combatStateChanged").SetValue(managers.GetCombatManager(), true);
             log.LogInfo("RELIC-CARD-MODIFIERS-PREPARED unchanged original ReduceStarterCost, native acquire/repeat/reset and battle-generated cards; conditional=" +
-                (Environment.GetEnvironmentVariable("MT2_PROBE_CONDITIONAL_BATTLE_RELIC_UPGRADES") == "1") + ".");
+                (Environment.GetEnvironmentVariable("MT2_PROBE_CONDITIONAL_BATTLE_RELIC_UPGRADES") == "1") + ", status=" +
+                (Environment.GetEnvironmentVariable("MT2_PROBE_RELIC_CARD_STATUS_UPGRADE") == "1") + ".");
 
-            static void InstallOncePerTurnCondition(AllGameManagers managers, CardState sample)
+            static RelicState CurrentRelic(AllGameManagers managers)
             {
                 var current = new List<RelicState>();
                 AccessTools.Method(typeof(RelicManager), "GetCurrentRelics").Invoke(managers.GetRelicManager(), new object[] { current });
-                RelicEffectAddTempUpgrade effect = current.Single(relic => relic.GetAssetName() == "ReduceStarterCost")
-                    .GetEffects().OfType<RelicEffectAddTempUpgrade>().Single();
+                return current.Single(relic => relic.GetAssetName() == "ReduceStarterCost");
+            }
+
+            static CardUpgradeData UpgradeData(RelicEffectAddTempUpgrade effect) =>
+                (CardUpgradeData)AccessTools.Field(typeof(RelicEffectAddTempUpgrade), "_cardUpgradeData").GetValue(effect);
+
+            static void InstallArmorUpgrade(AllGameData gameData, RelicEffectAddTempUpgrade effect)
+            {
+                CardUpgradeData original = UpgradeData(effect);
+                CardUpgradeData? source = gameData.GetAllCardUpgradeData().FirstOrDefault(upgrade =>
+                    upgrade.GetStatusEffectUpgrades().Count > 0 &&
+                    upgrade.GetStatusEffectUpgrades().All(status => status.statusId == "armor" && status.count > 0) &&
+                    !upgrade.IsUnique() && upgrade.GetTraitDataUpgrades().Count == 0 && upgrade.GetRemoveTraitUpgrades().Count == 0 &&
+                    upgrade.GetCharacterTriggerUpgrades().Count == 0 && upgrade.GetCardTriggerUpgrades().Count == 0 &&
+                    upgrade.GetRoomModifierUpgrades().Count == 0 && upgrade.GetUpgradesToRemove().Count == 0 &&
+                    upgrade.GetUnitAbilityUpgrade() == null && upgrade.GetRoomAbilityUpgrade() == null && upgrade.GetBonusSize() == 0);
+                if (source == null) throw new InvalidOperationException("Game data has no isolated armor-only card upgrade.");
+                var clone = (CardUpgradeData)AccessTools.Method(typeof(object), "MemberwiseClone").Invoke(source, null)!;
+                var monsterMask = UnityEngine.ScriptableObject.CreateInstance<CardUpgradeMaskData>();
+                monsterMask.name = "PojuRelicCardStatusMonsterMask";
+                AccessTools.Field(typeof(CardUpgradeMaskData), "cardType").SetValue(monsterMask, CardType.Monster);
+                AccessTools.Field(typeof(CardUpgradeData), "filters").SetValue(clone, new List<CardUpgradeMaskData> { monsterMask });
+                AccessTools.Field(typeof(CardUpgradeData), "isUnique").SetValue(clone, original.IsUnique());
+                AccessTools.Field(typeof(RelicEffectAddTempUpgrade), "_cardUpgradeData").SetValue(effect, clone);
+            }
+
+            static void InstallOncePerTurnCondition(AllGameManagers managers, CardState sample)
+            {
+                RelicEffectAddTempUpgrade effect = CurrentRelic(managers).GetEffects().OfType<RelicEffectAddTempUpgrade>().Single();
                 var condition = new RelicEffectCondition();
                 void Set(string name, object value) => AccessTools.Field(typeof(RelicEffectCondition), name).SetValue(condition, value);
                 Set("paramTrackedValue", CardStatistics.TrackedValueType.TimesPlayed);
