@@ -101,10 +101,16 @@ namespace MonsterTrain2Poju.Model
             var card = source;
             var owned = CardBranchMaskModel.OwnedState(card);
             int next = 1;
-            CardLifecycleUpgrade Payload(CardUpgradeModifier upgrade) => new CardLifecycleUpgrade(upgrade.MaskMetadata!.Current(upgrade),
-                upgrade.AssetKey, upgrade.Unique, upgrade.RemoveOnDiscard, Array.Empty<CardTraitValue>(), Array.Empty<string>(),
-                false, Array.Empty<string>(), Array.Empty<string>(), Array.Empty<CardLifecycleTrigger>(), upgrade.CloneDamageBase,
-                upgrade.CloneHealBase, next++);
+            CardLifecycleUpgrade Payload(CardUpgradeModifier upgrade)
+            {
+                CardLifecycleUpgrade? lifecycle = upgrade.Lifecycle;
+                return new CardLifecycleUpgrade(upgrade.MaskMetadata!.Current(upgrade), upgrade.AssetKey, upgrade.Unique,
+                    upgrade.RemoveOnDiscard, lifecycle?.AddedTraits ?? Array.Empty<CardTraitValue>(),
+                    lifecycle?.RemovedRuntimeTypes ?? Array.Empty<string>(), lifecycle?.AvoidClobbering ?? false,
+                    lifecycle?.TraitsModified ?? Array.Empty<string>(), lifecycle?.ReplacedAssets ?? Array.Empty<string>(),
+                    lifecycle?.Triggers ?? Array.Empty<CardLifecycleTrigger>(), upgrade.CloneDamageBase ?? lifecycle?.OriginalDamage,
+                    upgrade.CloneHealBase ?? lifecycle?.OriginalHeal, next++);
+            }
             var state = new CardUpgradeLifecycleState(owned, card.Permanent.Upgrades.Select(Payload).ToArray(),
                 card.Temporary.Upgrades.Select(Payload).ToArray(), new[] { new CardLifecycleTrigger("OnCast", null, owned.InstalledCastEffects) },
                 Array.Empty<CardLifecycleTrigger>(), false, "None");

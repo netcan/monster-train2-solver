@@ -311,6 +311,7 @@ RelicChecks.Run();
 TriggerCountChecks.Run();
 RelicCardlessUpgradeChecks.Run();
 RelicSpawnStatusChecks.Run();
+RelicCardModifierChecks.Run();
 CardUpgradeMaskChecks.Run();
 CardTraitCompositionChecks.Run();
 CardStatusCompositionChecks.Run();

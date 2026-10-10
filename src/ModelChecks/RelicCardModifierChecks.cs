@@ -4,6 +4,49 @@ using MonsterTrain2Poju.Model;
 
 internal static class RelicCardModifierChecks
 {
+    internal static void Run()
+    {
+        var definition = new CardMaskDefinition("monster", "Monster", "Common", true, true, true,
+            [], [], [], [], null, false, 1, 0, false, false, false);
+        var descriptor = new CardMaskDescriptor(definition, 1, [], []);
+        CardUpgradeMaskMetadata Metadata(IReadOnlyList<UpgradeMaskStatus>? statuses = null) =>
+            new CardUpgradeMaskMetadata(statuses ?? [], false, false, false, false);
+        CardUpgradeModifier Modifier(string id, CardLifecycleUpgrade lifecycle, IReadOnlyList<CombatStatus>? statuses = null,
+            IReadOnlyList<UpgradeMaskStatus>? maskStatuses = null) => new CardUpgradeModifier(id, id,
+                new CardStatModifier(), statuses ?? [], false, false, false, 0, 0, [],
+                maskMetadata: Metadata(maskStatuses), lifecycle: lifecycle);
+
+        var permanentLifecycle = new CardLifecycleUpgrade(new CardMaskUpgrade("permanent-remove-piercing",
+            new CardStatModifier(), [], false, false, false, false), "permanent-remove-piercing", false, false,
+            [], ["CardTraitIgnoreArmor"], false, [], [], []);
+        var permanent = Modifier("permanent-remove-piercing", permanentLifecycle);
+        var firstLifecycle = new CardLifecycleUpgrade(new CardMaskUpgrade("temporary-add-piercing",
+            new CardStatModifier(), [], false, false, false, false), "temporary-add-piercing", false, false,
+            [new CardTraitValue("CardTraitIgnoreArmor", "CardTraitIgnoreArmor", 0, 0, true, 0)], [], false, [], [], []);
+        var firstUpgrade = Modifier("temporary-add-piercing", firstLifecycle);
+        var armor = new UpgradeMaskStatus("armor", 2);
+        var secondLifecycle = new CardLifecycleUpgrade(new CardMaskUpgrade("temporary-armor",
+            new CardStatModifier(), [armor], false, false, false, false), "temporary-armor", false, false,
+            [], [], false, [], [], []);
+        var secondUpgrade = Modifier("temporary-armor", secondLifecycle, [new CombatStatus("armor", 2)], [armor]);
+        var traitFilter = new CardUpgradeMaskRule(cardType: "Monster",
+            traits: new UpgradeMaskContent<string>(["CardTraitIgnoreArmor"]));
+        var relic = new CombatRelicState("test-relic", "TestRelic",
+            [RelicModel.AddTempUpgrade, RelicModel.AddTempUpgrade], cardModifiers:
+            [new RelicCardModifier(0, new RelicCardUpgradeRule("temporary-add-piercing", true, firstLifecycle, []), firstUpgrade, false),
+             new RelicCardModifier(1, new RelicCardUpgradeRule("temporary-armor", true, secondLifecycle, [traitFilter]), secondUpgrade, false)]);
+        var card = new CardInstanceState(1, definition.DataId,
+            new CardModifiers(new CardStatModifier(), [permanent], 0, []), CardModifiers.Empty(), 0, 0, 0, [],
+            maskDescriptor: descriptor);
+        RelicCardModifierResult result = RelicCardModifierModel.Apply(card, [relic], resetTemporary: true);
+        Require(result.Supported, "Permanent trait removals could not be replayed through relic reset: " + result.UnsupportedReason);
+        Require(result.Dispatches.Count == 2 && result.Dispatches[0].UpgradeAdded &&
+            result.Dispatches[1].Filters.Single().Accepted == false && !result.Dispatches[1].UpgradeAdded &&
+            result.Card!.Temporary.Upgrades.Count == 1 && result.Card.Temporary.Upgrades[0].DataId == "temporary-add-piercing",
+            "Relic reset lost a permanent removed-trait rule before a later effect filter.");
+        Console.WriteLine("RELIC-CARD-RESET-CHECKS PASS: permanent removed traits survive reset and constrain later ordered effect filters.");
+    }
+
     internal static void Native(FixtureValue root, bool required = false)
     {
         if (!root.TryGetProperty("RelicCardModifiersEnabled", out var enabled) || !enabled.GetBoolean())

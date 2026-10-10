@@ -8,6 +8,7 @@ For a focused check, pass one or more archive names with `-Fixture`, for example
 
 ```powershell
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-units-and-junk.mt2f
+pwsh -NoProfile -Command "& './scripts/Check-Models.ps1' -Fixture @('full-battle-relic-card-status-upgrades.mt2f','full-battle-relic-card-piercing-upgrades.mt2f')"
 ```
 
 The default command still checks the full curated inventory.
@@ -1967,3 +1968,10 @@ mismatches, unsupported stages or pending records. The archive is 28,105 bytes/
 4,641 nodes, SHA-256 `2501705d0562a618146c81ecf5d99b9386143ac0707bedb84ca3cc8c2baa9f41`.
 Its focused check passes; the full 206-archive regression remains for the next
 completed milestone.
+
+The relic reset adapter now preserves existing upgrade lifecycle data while
+rebuilding an ordered `RelicEffectAddTempUpgrade` sequence. A pure regression
+confirms that a permanent removed-trait rule remains active after reset and
+still blocks a later relic filter. The focused status-upgrade and piercing
+fixtures both pass after this change; the full 206-archive regression remains
+deferred to a completed milestone.

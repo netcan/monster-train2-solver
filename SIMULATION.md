@@ -80,6 +80,7 @@ are copied immutable values; independent child states can run on worker threads.
 | Statistic-driven damage traits | `DamageScalingModel` and `RoomCombatModel` | 63 native callbacks with complete refreshed contexts; trait order, replacement/addition, explicit-source upgrades, per-hit statistics and Boss/Pyre kill previews |
 | Dynamic statistic inputs | `CombatContext.QueryFrame` and turn/card transitions | 255 native damage callbacks and 48 decision boundaries; payment, combat, rollover, previews and settled terminal resources, plus multi-turn and parallel branches |
 | Card instance modifiers | `CardModifierModel` | Permanent/temporary ordered numeric upgrades, unit starting statuses, discard removal, play history and 256 native scalar calculations |
+| Relic card modifiers | `RelicCardModifierModel` and `CardUpgradeLifecycleModel` | Native ordering/conditions, numeric/status/IgnoreArmor upgrades, generation and cardless births; reset retains pre-existing permanent and temporary upgrade lifecycle metadata. Other trait, trigger, replacement and ability payloads remain explicitly rejected. |
 | Retained card references | `CombatContext.CardRegistry` | Observed card identities survive pile clearing; detached spawner upgrades/removal preserve ownership and parent isolation |
 | Standby dictionary allocation | `CardPileModel` | Captured entry slots and free-list order preserve native hole reuse after unit death; malformed layouts, distinct futures, terminal clear and parallel branches |
 | Shared secondary card piles | `CombatContext.OtherPiles` | Room and spell resolution carry standby/exhausted/eaten/purged/buffer state, immediate and deferred spawner returns, terminal clearing and immutable parallel branches |
@@ -7755,7 +7756,7 @@ plays, seven EndTurns, final Pyre 73, an independent mid-battle suffix and 16
 parallel branches. The separate `full-battle-room-selection-preview.mt2f`
 regression passes 17 paid plays, five EndTurns and 16 parallel branches. The
 cardless relic-upgrade fixture also passes its focused checks. The complete
-curated regression was deferred; the current inventory has 204 archives.
+curated regression was deferred at that stage; the inventory then had 204 archives.
 
 ### Temporary relic status-upgrade propagation
 
@@ -7768,5 +7769,21 @@ receives armor.
 `full-battle-relic-card-status-upgrades.mt2f` passes 49 room transitions, 11
 card cycles, 11 train phases, nine spawn checks, six turns and 28 actions. The
 native capture has zero failures, mismatches, unsupported stages or pending
-records. The focused new and original relic-modifier fixtures both pass; the
-full 204-archive regression remains deferred until a milestone.
+records. The focused new and original relic-modifier fixtures both pass. The
+full 204-archive regression was deferred at that stage and predates the current
+206-archive inventory.
+
+### Permanent card-upgrade rules across relic reset
+
+`RelicCardModifierModel` now reconstructs each existing upgrade from its
+captured `CardLifecycleUpgrade`, retaining added/removed traits, replacement
+assets, trigger definitions, trait-modification state and original scalable
+values while `ResetTemporaryCardModifiers` clears the temporary group. This
+prevents a permanent removed-trait rule from disappearing before later ordered
+relic filters run. A pure two-effect regression adds a trait that the permanent
+upgrade removed, then proves a later filter still rejects it.
+
+The pure regression passes, and the focused status-upgrade and piercing-upgrade
+native battle archives both replay with zero mismatches or unsupported stages.
+This does not validate every relic payload or complete a full inventory run;
+the 206-archive regression remains deferred to a completed milestone.
