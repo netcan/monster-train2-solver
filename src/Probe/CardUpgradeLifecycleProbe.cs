@@ -10,9 +10,15 @@ namespace MonsterTrain2Poju.Probe
     internal sealed class CardUpgradeLifecycleProbe
     {
         private readonly Dictionary<CardUpgradeState, int> upgradeIds = new Dictionary<CardUpgradeState, int>();
+        internal int NextInstanceId => upgradeIds.Count + 1;
         internal CardLifecycleUpgrade Upgrade(CardUpgradeState upgrade)
         {
             if (!upgradeIds.TryGetValue(upgrade, out int id)) { id = upgradeIds.Count + 1; upgradeIds.Add(upgrade, id); }
+            return Value(upgrade, id);
+        }
+        internal static CardLifecycleUpgrade Definition(CardUpgradeState upgrade) => Value(upgrade, 0);
+        private static CardLifecycleUpgrade Value(CardUpgradeState upgrade, int id)
+        {
             var source = upgrade.GetSourceCardUpgradeData();
             bool rescale = source != null && !source.GetUpgradeWillBeScaledByNonMagicPowerTrait();
             var values = new CardMaskUpgrade(upgrade.GetCardUpgradeDataId(),

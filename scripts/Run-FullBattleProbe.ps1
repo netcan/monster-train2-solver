@@ -117,6 +117,7 @@ param(
     [switch] $OwnedCardMasks,
     [switch] $CardUpgradeLifecycle,
     [switch] $BranchCardMasks,
+    [switch] $RelicCardUpgrades,
     [switch] $IncantRelic,
     [switch] $IncantRelics,
     [switch] $SpawnStatusRelics,
@@ -253,6 +254,7 @@ $environment = @{
     MT2_PROBE_OWNED_CARD_MASKS = $(if ($OwnedCardMasks) { '1' } else { '0' })
     MT2_PROBE_CARD_UPGRADE_LIFECYCLE = $(if ($CardUpgradeLifecycle) { '1' } else { '0' })
     MT2_PROBE_BRANCH_CARD_MASKS = $(if ($BranchCardMasks) { '1' } else { '0' })
+    MT2_PROBE_RELIC_CARD_UPGRADES = $(if ($RelicCardUpgrades) { '1' } else { '0' })
     MT2_PROBE_SETTLE_DEATH_DISSOLVES = $(if ($SettleDeathDissolves) { '1' } else { '0' })
     MT2_PROBE_SETTLE_CARD_ANIMATIONS = $(if ($SettleCardAnimations) { '1' } else { '0' })
     MT2_PROBE_STATUS_CALLBACKS = $(if ($HordeStatuses -or $StatusCallbacks) { '1' } else { '0' })
@@ -381,6 +383,22 @@ if ($CardStatusComposition) {
             $statusData.GetProperty('Rows').GetArrayLength() -ne 1039) { throw 'Incomplete or mutating card status composition calibration.' }
         Write-Output 'NATIVE-CARD-STATUS-COMPOSITION-CAPTURE PASS: 1039 original-owned/controlled status queries; unchanged context/RNG/frame.'
     } finally { $statusArchive.Dispose() }
+}
+if ($RelicCardUpgrades) {
+    Add-Type -Path (Join-Path $workspace 'src\FixtureArchive\bin\Release\net8.0\FixtureArchive.dll')
+    $relicUpgradeArchive = [MonsterTrain2Poju.Fixtures.FixtureDocument]::Read((Join-Path $profile 'relic-card-upgrade-calibration.mt2f'))
+    try {
+        $relicUpgradeData = $relicUpgradeArchive.RootElement
+        if ($relicUpgradeData.GetProperty('Schema').GetInt32() -ne 1 -or
+            -not $relicUpgradeData.GetProperty('ContextUnchanged').GetBoolean() -or
+            $relicUpgradeData.GetProperty('GameModuleMvid').GetString() -ne $trace.GameModuleMvid -or
+            $relicUpgradeData.GetProperty('FrameBefore').GetInt32() -ne $relicUpgradeData.GetProperty('FrameAfter').GetInt32() -or
+            -not $relicUpgradeData.GetProperty('RngBefore').ContentEquals($relicUpgradeData.GetProperty('RngAfter')) -or
+            $relicUpgradeData.GetProperty('Rows').GetArrayLength() -ne 432 -or
+            $relicUpgradeData.GetProperty('OriginalRelicAssets').GetArrayLength() -ne 11 -or
+            $relicUpgradeData.GetProperty('OwnedCardCount').GetInt32() -ne 15) { throw 'Incomplete or mutating relic card upgrade calibration.' }
+        Write-Output 'NATIVE-RELIC-CARD-UPGRADE-CAPTURE PASS: 432 original-effect operations,11 original relics,15 owned cards; unchanged context/RNG/frame.'
+    } finally { $relicUpgradeArchive.Dispose() }
 }
 if ($BranchCardMasks) {
     $branchRows = @($trace.BranchCardMasks)

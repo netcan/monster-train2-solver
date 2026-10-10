@@ -1,6 +1,11 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
 
+if (args.Length == 2 && args[0] == "--relic-card-upgrades-only")
+{
+    RelicCardUpgradeChecks.Native(args[1]);
+    return;
+}
 if (args.Length == 2 && args[0] == "--branch-card-masks-only")
 {
     using var branchDocument = ModelJson.ReadFixture(args[1]);
@@ -373,6 +378,8 @@ foreach (string path in args.Where(path => path.Contains("card-owned-mask-calibr
     CardOwnedMaskChecks.Native(path);
 foreach (string path in args.Where(path => path.Contains("card-upgrade-lifecycle-calibration", StringComparison.OrdinalIgnoreCase)))
     CardUpgradeLifecycleChecks.Native(path);
+foreach (string path in args.Where(path => path.Contains("relic-card-upgrade-calibration", StringComparison.OrdinalIgnoreCase)))
+    RelicCardUpgradeChecks.Native(path);
 foreach (string path in args.Where(path => path.Contains("rng-calibration", StringComparison.OrdinalIgnoreCase)))
     RngChecks.Run(path);
 foreach (string path in args.Where(path => path.Contains("gold-reward-calibration", StringComparison.OrdinalIgnoreCase)))

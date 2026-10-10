@@ -52,6 +52,8 @@ namespace MonsterTrain2Poju.Model
         }
         internal CardLifecycleUpgrade ClearModified() => new CardLifecycleUpgrade(Values, AssetKey, Unique, RemoveOnDiscard, AddedTraits, RemovedRuntimeTypes,
             AvoidClobbering, Array.Empty<string>(), ReplacedAssets, Triggers, OriginalDamage, OriginalHeal, InstanceId);
+        internal CardLifecycleUpgrade WithInstanceId(int instanceId) => new CardLifecycleUpgrade(Values, AssetKey, Unique, RemoveOnDiscard, AddedTraits, RemovedRuntimeTypes,
+            AvoidClobbering, TraitsModified, ReplacedAssets, Triggers, OriginalDamage, OriginalHeal, instanceId);
     }
     public sealed class CardUpgradeLifecycleState
     {

@@ -237,6 +237,38 @@ identity and both retained binary hashes, with no failed/unsupported core
 transitions. This proves the lifecycle version's historical regression; the later
 branch-owned adapter and full198 run remain a separate validation scope.
 
+The subsequent card-side RelicEffectAddTempUpgrade kernel preserves source-team
+and null-upgrade gates, sequential filter dispatch, lazy query/cache changes,
+fresh installed-upgrade identity, native temporary application and body refresh.
+The original effect returns true even when unique application refuses a duplicate;
+the kernel carries this result separately from whether an upgrade was added.
+Relic manager conditions, ordering, reset scheduling and notifications remain
+the enclosing manager's responsibility; the production battle still refuses this
+effect until that integration is modeled.
+
+The isolated native acceptance invokes all11 unchanged original collectible
+relic effects on eligible native cards and15 copied owned cards. Its432 carried
+operations cover repeat/reset/reapply for every original, forward/reverse ordered
+effect chains and controlled source/null/first-filter/second-filter/no-filter
+gates. Independent raw states, ordered filters, returned/added flags, next IDs,
+queried views and post-query states match across32 immutable parallel replays.
+Instrumentation wraps only the effect's native FilterCard call site, preserving
+Mono's shared generic implementation and other CardData/CardState callers.
+
+The muted Instant native capture exits zero in67.05 seconds, preserving complete
+live context, gameplay/test RNG, frame and original files. Its separate complete
+battle passes21 paid plays/seven EndTurns, Pyre73, initial/mid-battle policies
+and16 parallel branches. All pure checks and the six existing mask/arithmetic/
+trait/status/owned-view/temporary-lifecycle calibrations pass with frozen binaries
+under .probe-runs/relic-card-upgrade-final-checks:Model SHA256
+602A4C87B4049EC7B8563AF17995EE540A5DC3151544A0CF623D9152237A8CBC,
+ModelChecks SHA256
+D37F83F9730B70AE385A6FBCA7630B1DA514548B7C44DAD5895C705E1DBECEF9.
+This calibrates the card-side effect kernel, not actual battle-manager dispatch,
+live unit upgrades or execution of installed traits/triggers. Original relic
+battle coverage remains6/224. The frozen198 adapter regression is a distinct
+preceding version; complete regression of this later kernel is separate.
+
 `full-battle-incant-relic.mt2f` retains schema108 with the original obtainable
 ExtraSpellCastTrigger acquired through SaveManager. The relic asset is unchanged;
 authored unit/spell triggers exercise count2 player Incant and count1 enemy Incant,
