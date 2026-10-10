@@ -1,6 +1,12 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
 
+if (args.Length == 2 && args[0] == "--branch-card-masks-only")
+{
+    using var branchDocument = ModelJson.ReadFixture(args[1]);
+    CardBranchMaskChecks.Native(branchDocument.RootElement, required: true);
+    return;
+}
 if (args.Length == 1 && args[0] == "--card-upgrade-lifecycle-pure")
 {
     CardUpgradeLifecycleChecks.Run();

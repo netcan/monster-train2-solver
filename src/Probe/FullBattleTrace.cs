@@ -283,7 +283,7 @@ namespace MonsterTrain2Poju.Probe
                 if (observedCards != projection.KnownCards.Count() || observedUnits != identities.Count)
                     BattleSpawnPointProbe.Decisions.RemoveRange(decisionStart, BattleSpawnPointProbe.Decisions.Count - decisionStart);
             } while (observedCards != projection.KnownCards.Count() || observedUnits != identities.Count);
-            return new CombatContext(new CardCycleState(state.Hand, state.Draw, state.Discard,
+            var context = new CombatContext(new CardCycleState(state.Hand, state.Draw, state.Discard,
                 new UnityRng(draw[0], draw[1], draw[2], draw[3]), state.DrawModifier, Array.Empty<string>(), bonusDraw),
                 new UnityRng(battle[0], battle[1], battle[2], battle[3]), state.Gold, projection.NextCardId,
                 cards.GetMaxHandSize(), new[] { "armor", "valor", "pyregel", "relentless", "cooldown", "unit_ability", "unit_ability_available", "horde" }.Concat(TriggeredSummonProbe.Enabled || UnitCloneScenario.Enabled || UnitCopyScenario.Enabled || HeroCopyScenario.Enabled ? new[] { "cardless" } : Array.Empty<string>()).Concat(new[] { "undying" }).Select(id => BattleActionProbe.Status(id, 1)).ToArray(),
@@ -305,6 +305,8 @@ namespace MonsterTrain2Poju.Probe
                 TriggeredSummonProbe.Catalog(), enchantments,
                 managers.GetSaveManager().GetBalanceData().GetDisallowedPurifyCharacterTriggers().Select(kind => kind.ToString()).ToArray(),
                 RelicProbe.Capture(managers), RelicProbe.TriggerCounts(managers));
+            CardBranchMaskProbe.Observe(this, context);
+            return context;
         }
 
         private static StatisticQueryFrame CaptureQueryFrame(AllGameManagers managers)
@@ -545,6 +547,8 @@ namespace MonsterTrain2Poju.Probe
                 SummonSourceCaches = TriggeredSummonProbe.Caches,
                 DecisionSpawnPoints = BattleSpawnPointProbe.Decisions,
                 DecisionRoomCaches = CardModifierProbe.DecisionCaches,
+                BranchCardMasksEnabled = CardBranchMaskProbe.Enabled,
+                BranchCardMasks = CardBranchMaskProbe.Records,
                 HarvestOperations = HarvestScenario.Operations,
                 HordeDeathOperations = HordeDeathScenario.Operations,
                 HordeRemovalOperations = HordeRemovalScenario.Records,

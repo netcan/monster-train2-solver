@@ -57,7 +57,7 @@ namespace MonsterTrain2Poju.Probe
                 }
                 return new CardInstanceState(state.InstanceId, state.DataId, state.Permanent, state.Temporary,
                     state.LastPlayedCost, state.LastForgedAmount, state.PlayCount,
-                    interactions.Distinct().OrderBy(value => value, StringComparer.Ordinal).ToArray(), state.EffectCounters, state.DamageScalingTraits, state.StatusScalingTraits, state.UnitUpgradeScalingTraits, state.CapacityScalingTraits, state.EquippedUnitId, state.PlayedRoomUnitIds, state.RawPlayedRoomUnitIds);
+                    interactions.Distinct().OrderBy(value => value, StringComparer.Ordinal).ToArray(), state.EffectCounters, state.DamageScalingTraits, state.StatusScalingTraits, state.UnitUpgradeScalingTraits, state.CapacityScalingTraits, state.EquippedUnitId, state.PlayedRoomUnitIds, state.RawPlayedRoomUnitIds, CardBranchMaskProbe.Capture(card));
             }).OrderBy(card => card.InstanceId).ToArray();
         }
 
@@ -143,7 +143,7 @@ namespace MonsterTrain2Poju.Probe
                 refresh && source!.GetBonusDamage() > 0 ? (int?)source.GetBonusDamage() : null,
                 refresh && source!.GetBonusHeal() > 0 ? (int?)source.GetBonusHeal() : null, triggerUpgrades: triggers,
                 abilityUpgrade: upgrade.GetUnitAbilityUpgrade() == null ? null : AbilityLifecycleProbe.Change(upgrade.GetUnitAbilityUpgrade()),
-                doNotReplaceExistingAbility: upgrade.GetDoNotReplaceExistingUnitAbility());
+                doNotReplaceExistingAbility: upgrade.GetDoNotReplaceExistingUnitAbility(), maskMetadata: CardBranchMaskProbe.Upgrade(upgrade));
         }
     }
 }

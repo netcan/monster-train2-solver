@@ -178,6 +178,35 @@ Those effects remain refused. The production battle adapter must still own/updat
 the query descriptor through ordinary upgrades, clones, new cards and resets,
 then implement native relic ordering, applicability and notifications.
 
+The subsequent battle adapter owns card mask descriptors and ordered upgrade
+metadata on CardInstanceState and CardCreationRule. Ordinary play/discard,
+hand upgrades, generated/copied cards, bonus draws, abilities and source-card
+writebacks preserve those inputs; queries derive numeric cost/size and upgrade
+status/icon/ability flags from the current branch. Creation refuses a missing
+descriptor when the source registry uses owned descriptors. Native equipment
+temporary aggregation creates an anonymous upgrade with no icon/ability and
+non-permanent status groups; the model now retains its metadata too.
+
+Six muted Instant native recordings cover ordinary combat, hand upgrades,
+generation, clone upgrade refresh, bonus draw and equipment. Independent full
+battles and initial/mid-battle parallel policies pass for all six with the final
+frozen model:122 paid plays,38 EndTurns,3,125 complete decision contexts and
+74,855 exact native card views, including34,725 upgraded-card observations.
+Every view repeats in32 immutable query branches. The equipment recording also
+matches25 complete native attachment/removal operations. The six mask/arithmetic/
+trait/status/owned-view/temporary-lifecycle calibrations and all pure checks pass.
+The explicit --branch-card-masks-only command rejects fixtures without enabled
+acceptance, and enabled acceptance must contain at least one card view.
+
+Final binaries are retained in .probe-runs/branch-card-masks-equipment-final-checks:
+Model SHA256 B5B9B6D15F421241F9A22C7B359DDFBF9B323893FF334A816B662E7242D46045,
+ModelChecks SHA2561AA00B4116BE8489348F6F6467D302559760D9350A704D8560E782C2EA81E52F.
+This integrates the currently supported modifier paths; mutable trait/cache
+callbacks, installed upgrade trigger execution, reset/relic ordering and complete
+RelicEffectAddTempUpgrade integration remain open. Existing interaction guards
+remain active. The frozen192 lifecycle regression validates its preceding model,
+not this later adapter; a complete regression for this version is separate.
+
 The native sampler now retains the state captured immediately after
 StopCombatLoop, then waits for the original card animation callbacks before
 exporting and exiting. This preserves the battle boundary while later game

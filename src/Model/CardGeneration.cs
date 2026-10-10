@@ -15,17 +15,18 @@ namespace MonsterTrain2Poju.Model
         public IReadOnlyList<ScalingUnitUpgradeTrait>? UnitUpgradeScalingTraits { get; }
         public IReadOnlyList<ScalingCapacityTrait>? CapacityScalingTraits { get; }
         public int? EquippedUnitId { get; }
+        public CardMaskDescriptor? MaskDescriptor { get; }
         public CardCreationRule(string dataId, CardModifiers startingModifiers, IReadOnlyList<CardEffectCounter>? effectCounters,
             IReadOnlyList<string> externalInteractions, IReadOnlyList<ScalingDamageTrait>? damageScalingTraits = null,
             IReadOnlyList<ScalingStatusTrait>? statusScalingTraits = null, IReadOnlyList<ScalingUnitUpgradeTrait>? unitUpgradeScalingTraits = null,
-            IReadOnlyList<ScalingCapacityTrait>? capacityScalingTraits = null, int? equippedUnitId = null)
+            IReadOnlyList<ScalingCapacityTrait>? capacityScalingTraits = null, int? equippedUnitId = null, CardMaskDescriptor? maskDescriptor = null)
         { DataId = dataId; StartingModifiers = startingModifiers; EffectCounters = effectCounters == null ? null : Array.AsReadOnly(effectCounters.ToArray());
             ExternalInteractions = Array.AsReadOnly(externalInteractions.ToArray());
             DamageScalingTraits = damageScalingTraits == null ? null : Array.AsReadOnly(damageScalingTraits.ToArray());
             StatusScalingTraits = statusScalingTraits == null ? null : Array.AsReadOnly(statusScalingTraits.ToArray());
             UnitUpgradeScalingTraits = unitUpgradeScalingTraits == null ? null : Array.AsReadOnly(unitUpgradeScalingTraits.ToArray());
             CapacityScalingTraits = capacityScalingTraits == null ? null : Array.AsReadOnly(capacityScalingTraits.ToArray());
-            EquippedUnitId = equippedUnitId; }
+            EquippedUnitId = equippedUnitId; MaskDescriptor = maskDescriptor; }
     }
 
     public sealed class DiscardGenerationUpgrade
@@ -73,6 +74,8 @@ namespace MonsterTrain2Poju.Model
         // A fallback spawner uses CardState.Setup without AddCardImpl ownership or callbacks.
         public static CardGenerationResult CreateDetached(CombatContext source, CardCreationRule creation)
         {
+            string? descriptorError = CardBranchMaskModel.ValidateCreation(source, creation);
+            if (descriptorError != null) return Unsupported(descriptorError);
             if (source.CardRegistry == null || source.CardInstances == null || source.NextCardId <= 0 ||
                 source.NextCardId == int.MaxValue || source.CardRegistry.Any(card => card.InstanceId >= source.NextCardId))
                 return Unsupported("Fresh detached card creation requires a complete identity registry.");
@@ -81,7 +84,7 @@ namespace MonsterTrain2Poju.Model
                 creation.DamageScalingTraits, creation.StatusScalingTraits, creation.UnitUpgradeScalingTraits,
                 creation.CapacityScalingTraits, creation.EquippedUnitId,
                 source.CardRegistry.Any(item => item.PlayedRoomUnitIds != null) ? Array.Empty<int>() : null,
-                source.CardRegistry.Any(item => item.RawPlayedRoomUnitIds != null) ? Array.Empty<int>() : null);
+                source.CardRegistry.Any(item => item.RawPlayedRoomUnitIds != null) ? Array.Empty<int>() : null, creation.MaskDescriptor);
             string? error = CardModifierModel.UnsupportedReason(card);
             if (error != null) return Unsupported(error);
             return new CardGenerationResult(source.WithCardRegistry(source.CardRegistry.Concat(new[] { card }).ToArray())
@@ -92,6 +95,8 @@ namespace MonsterTrain2Poju.Model
         // RNG selection, statistic tracking or one-shot generation upgrades.
         public static CardGenerationResult CloneDetached(CombatContext source, CardCreationRule creation, int sourceCardId)
         {
+            string? descriptorError = CardBranchMaskModel.ValidateCreation(source, creation);
+            if (descriptorError != null) return Unsupported(descriptorError);
             CardInstanceState? copying = source.FindCard(sourceCardId);
             if (copying == null || source.CardRegistry == null || source.CardInstances == null)
                 return Unsupported("Detached card cloning requires a complete source and identity registry.");
@@ -109,7 +114,7 @@ namespace MonsterTrain2Poju.Model
                 creation.ExternalInteractions, creation.EffectCounters, creation.DamageScalingTraits, creation.StatusScalingTraits,
                 creation.UnitUpgradeScalingTraits, creation.CapacityScalingTraits, creation.EquippedUnitId,
                 copying.PlayedRoomUnitIds == null ? null : Array.Empty<int>(),
-                copying.RawPlayedRoomUnitIds == null ? null : Array.Empty<int>());
+                copying.RawPlayedRoomUnitIds == null ? null : Array.Empty<int>(), creation.MaskDescriptor);
             error = CardModifierModel.UnsupportedReason(clone);
             if (error != null) return Unsupported(error);
             CombatContext context = source.WithCardRegistry(source.CardRegistry.Concat(new[] { clone }).ToArray())
@@ -133,6 +138,8 @@ namespace MonsterTrain2Poju.Model
                 CardCreationRule creation = rule.Pool[selected.Value];
                 if (rule.Destination == "HandPile" && (context.Cards.Hand.Count >= context.MaxHandSize ||
                     rule.SkipDuplicateInHand && context.Cards.Hand.Any(card => card.DataId == creation.DataId))) continue;
+                string? descriptorError = CardBranchMaskModel.ValidateCreation(context, creation);
+                if (descriptorError != null) return Unsupported(descriptorError);
                 if (context.CardInstances == null && (HasModifiers(creation.StartingModifiers) || creation.EffectCounters?.Count > 0 || creation.DamageScalingTraits?.Count > 0 || creation.StatusScalingTraits?.Count > 0 || creation.UnitUpgradeScalingTraits?.Count > 0 ||
                     rule.Upgrade != null || context.NextAddedTemporaryUpgrades?.Count > 0 || rule.CopyModifiers && context.FindCard(sourceCardId) != null))
                     return Unsupported("Modified generation requires complete card instance state.");
@@ -140,7 +147,7 @@ namespace MonsterTrain2Poju.Model
                 CardInstanceState candidate = new(context.NextCardId, creation.DataId, permanent, temporary, 0, 0, 0,
                     creation.ExternalInteractions, creation.EffectCounters, creation.DamageScalingTraits, creation.StatusScalingTraits, creation.UnitUpgradeScalingTraits, creation.CapacityScalingTraits, creation.EquippedUnitId,
                     context.CardRegistry?.Any(card => card.PlayedRoomUnitIds != null) == true ? Array.Empty<int>() : null,
-                    context.CardRegistry?.Any(card => card.RawPlayedRoomUnitIds != null) == true ? Array.Empty<int>() : null);
+                    context.CardRegistry?.Any(card => card.RawPlayedRoomUnitIds != null) == true ? Array.Empty<int>() : null, creation.MaskDescriptor);
                 string? error = CardModifierModel.UnsupportedReason(candidate);
                 if (error != null) return Unsupported(error);
                 if (rule.Upgrade != null)
@@ -199,7 +206,7 @@ namespace MonsterTrain2Poju.Model
                 candidate = new CardInstanceState(card.InstanceId, card.DataId, permanent, temporary, 0, 0, 0,
                     creation.ExternalInteractions, creation.EffectCounters, creation.DamageScalingTraits, creation.StatusScalingTraits, creation.UnitUpgradeScalingTraits, creation.CapacityScalingTraits, creation.EquippedUnitId,
                     context.CardRegistry?.Any(card => card.PlayedRoomUnitIds != null) == true ? Array.Empty<int>() : null,
-                    context.CardRegistry?.Any(card => card.RawPlayedRoomUnitIds != null) == true ? Array.Empty<int>() : null);
+                    context.CardRegistry?.Any(card => card.RawPlayedRoomUnitIds != null) == true ? Array.Empty<int>() : null, creation.MaskDescriptor);
                 context = new CombatContext(new CardCycleState(hand, draw, discard, context.Cards.Rng, context.Cards.DrawModifier,
                     context.Cards.ExternalInteractions, context.Cards.BonusDraw), rng, context.Gold, checked(context.NextCardId + 1), context.MaxHandSize,
                     context.StatusRules, context.Statistics?.TrackCards(new[] { card.InstanceId }),

@@ -57,13 +57,15 @@ namespace MonsterTrain2Poju.Model
                 return Unsupported("Missing captured ability cache or card registry.");
             AbilityCardCacheEntry? entry = source.AbilityCardCache.FirstOrDefault(item => item.DataId == creation.DataId);
             if (entry != null) return new AbilityCardResult(source, source.FindCard(entry.InstanceId), false);
+            error = CardBranchMaskModel.ValidateCreation(source, creation);
+            if (error != null) return Unsupported(error);
             if (creation.DataId.Length == 0 || source.NextCardId <= 0 || source.NextCardId == int.MaxValue ||
                 source.CardRegistry.Any(card => card.InstanceId >= source.NextCardId)) return Unsupported("Invalid ability card allocation.");
             var card = new CardInstanceState(source.NextCardId, creation.DataId, creation.StartingModifiers, CardModifiers.Empty(),
                 0, 0, 0, creation.ExternalInteractions, creation.EffectCounters, creation.DamageScalingTraits,
                 creation.StatusScalingTraits, creation.UnitUpgradeScalingTraits, creation.CapacityScalingTraits, creation.EquippedUnitId,
                 source.CardRegistry?.Any(card => card.PlayedRoomUnitIds != null) == true ? Array.Empty<int>() : null,
-                source.CardRegistry?.Any(card => card.RawPlayedRoomUnitIds != null) == true ? Array.Empty<int>() : null);
+                source.CardRegistry?.Any(card => card.RawPlayedRoomUnitIds != null) == true ? Array.Empty<int>() : null, creation.MaskDescriptor);
             error = CardModifierModel.UnsupportedReason(card);
             if (error != null) return Unsupported(error);
             CombatContext context = Copy(source, source.NextCardId + 1, source.CardRegistry.Concat(new[] { card }).ToArray(),

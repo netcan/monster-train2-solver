@@ -81,7 +81,12 @@ namespace MonsterTrain2Poju.Model
                     else statuses[index] = statuses[index].WithStacks(unchecked(statuses[index].Stacks + status.Stacks));
                 }
             }
-            return new CardUpgradeModifier("", "", new CardStatModifier(damage, health), statuses, false, false, false, 0, 0, Array.Empty<string>());
+            // Native GetUpgradeStateFromTemporaryModifiers allocates an empty
+            // upgrade, then adds numeric values and non-permanent status groups.
+            var mask = card.MaskDescriptor == null ? null : new CardUpgradeMaskMetadata(
+                statuses.Select(status => new UpgradeMaskStatus(status.Id, status.Stacks, false)).ToArray(), false, false, false, false);
+            return new CardUpgradeModifier("", "", new CardStatModifier(damage, health), statuses, false, false, false, 0, 0,
+                Array.Empty<string>(), maskMetadata: mask);
         }
         internal static CombatContext ReturnCard(CombatContext context, EquipmentStandbyCondition condition)
         {

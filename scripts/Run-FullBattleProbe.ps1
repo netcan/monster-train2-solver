@@ -116,6 +116,7 @@ param(
     [switch] $CardStatusComposition,
     [switch] $OwnedCardMasks,
     [switch] $CardUpgradeLifecycle,
+    [switch] $BranchCardMasks,
     [switch] $IncantRelic,
     [switch] $IncantRelics,
     [switch] $SpawnStatusRelics,
@@ -251,6 +252,7 @@ $environment = @{
     MT2_PROBE_CARD_STATUS_COMPOSITION = $(if ($CardStatusComposition) { '1' } else { '0' })
     MT2_PROBE_OWNED_CARD_MASKS = $(if ($OwnedCardMasks) { '1' } else { '0' })
     MT2_PROBE_CARD_UPGRADE_LIFECYCLE = $(if ($CardUpgradeLifecycle) { '1' } else { '0' })
+    MT2_PROBE_BRANCH_CARD_MASKS = $(if ($BranchCardMasks) { '1' } else { '0' })
     MT2_PROBE_SETTLE_DEATH_DISSOLVES = $(if ($SettleDeathDissolves) { '1' } else { '0' })
     MT2_PROBE_SETTLE_CARD_ANIMATIONS = $(if ($SettleCardAnimations) { '1' } else { '0' })
     MT2_PROBE_STATUS_CALLBACKS = $(if ($HordeStatuses -or $StatusCallbacks) { '1' } else { '0' })
@@ -379,6 +381,15 @@ if ($CardStatusComposition) {
             $statusData.GetProperty('Rows').GetArrayLength() -ne 1039) { throw 'Incomplete or mutating card status composition calibration.' }
         Write-Output 'NATIVE-CARD-STATUS-COMPOSITION-CAPTURE PASS: 1039 original-owned/controlled status queries; unchanged context/RNG/frame.'
     } finally { $statusArchive.Dispose() }
+}
+if ($BranchCardMasks) {
+    $branchRows = @($trace.BranchCardMasks)
+    if (-not $trace.BranchCardMasksEnabled -or $branchRows.Count -eq 0 -or
+        @($branchRows | Where-Object { @($_.Views).Count -ne @($_.Context.CardRegistry).Count -or
+            @($_.Context.CardRegistry | Where-Object { $null -eq $_.MaskDescriptor -or $_.MaskDescriptor.Definition.DataId -ne $_.DataId }).Count -gt 0 }).Count -gt 0) {
+        throw 'Branch card mask oracle or owned descriptors are incomplete.'
+    }
+    Write-Output "NATIVE-BRANCH-CARD-MASK-CAPTURE PASS: $($branchRows.Count) complete decision contexts with independent native views."
 }
 if ($OwnedCardMasks) {
     Add-Type -Path (Join-Path $workspace 'src\FixtureArchive\bin\Release\net8.0\FixtureArchive.dll')
