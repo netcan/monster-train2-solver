@@ -142,6 +142,35 @@ acceptance described above:13,129 bytes/1,709 nodes, SHA256
 845dfedbef2552e647dd8c4ee8a7cebcaf85670ea557e160fe4501156d7b0c9f.
 The curated archive is byte-identical to native capture with no JSON dependency.
 
+The subsequent temporary-card-upgrade lifecycle model matches212 native
+operations with predicted state carried through each sequence:88 operations
+using all11 original collectible relic upgrade payloads on unit/spell copies,
+112 controlled operations and12 Moon multiplier query/reset operations. Exact
+raw post-operation and post-query states match across36 sequences and32 immutable
+parallel replays. Replays carry predicted state rather than recorded outcomes.
+Coverage includes temporary-only uniqueness and empty IDs, shared upgrade
+instances, ID/index removal cache differences, replacement asset/ID ordering,
+AvoidClobbering/TraitsModified, tagged trigger installation/removal, discarded
+modifier removal retaining triggers, reset/trait-only reset and magic rescaling.
+Reset clears both the standby override flag and its pile value toNone. The two
+native magic multiplier overrides include Moon's saved float factor with signed
+nearest-even rounding; Moon resource callbacks remain separately scoped.
+
+The muted Instant capture exits zero in63.65 seconds with original files,
+complete context, gameplay/test RNG and frame unchanged. Its independent complete
+battle matches21 paid plays/seven EndTurns, Pyre73 and initial/mid-battle policies.
+All pure checks and the existing mask/overflow/trait/status/owned-view calibrations
+pass. Frozen validation binaries are in
+.probe-runs/card-upgrade-lifecycle-final-checks:Model SHA256
+79C4850AE40800EF3D9E55C83318EC12AAEC634AC8725BE21B8168967142A8DD,
+ModelChecks SHA256
+4998DF3A9041770DE53C296C6BF03FF8ECDEA3257703980C3F727A8A8A83780A.
+This models CardState upgrade operations and installed trigger definitions, not
+trigger firing, live unit updates or RelicEffectAddTempUpgrade battle integration.
+Those effects remain refused. The production battle adapter must still own/update
+the query descriptor through ordinary upgrades, clones, new cards and resets,
+then implement native relic ordering, applicability and notifications.
+
 `full-battle-incant-relic.mt2f` retains schema108 with the original obtainable
 ExtraSpellCastTrigger acquired through SaveManager. The relic asset is unchanged;
 authored unit/spell triggers exercise count2 player Incant and count1 enemy Incant,

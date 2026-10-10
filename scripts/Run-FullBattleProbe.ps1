@@ -115,6 +115,7 @@ param(
     [switch] $TraitComposition,
     [switch] $CardStatusComposition,
     [switch] $OwnedCardMasks,
+    [switch] $CardUpgradeLifecycle,
     [switch] $IncantRelic,
     [switch] $IncantRelics,
     [switch] $SpawnStatusRelics,
@@ -249,6 +250,7 @@ $environment = @{
     MT2_PROBE_TRAIT_COMPOSITION = $(if ($TraitComposition) { '1' } else { '0' })
     MT2_PROBE_CARD_STATUS_COMPOSITION = $(if ($CardStatusComposition) { '1' } else { '0' })
     MT2_PROBE_OWNED_CARD_MASKS = $(if ($OwnedCardMasks) { '1' } else { '0' })
+    MT2_PROBE_CARD_UPGRADE_LIFECYCLE = $(if ($CardUpgradeLifecycle) { '1' } else { '0' })
     MT2_PROBE_SETTLE_DEATH_DISSOLVES = $(if ($SettleDeathDissolves) { '1' } else { '0' })
     MT2_PROBE_SETTLE_CARD_ANIMATIONS = $(if ($SettleCardAnimations) { '1' } else { '0' })
     MT2_PROBE_STATUS_CALLBACKS = $(if ($HordeStatuses -or $StatusCallbacks) { '1' } else { '0' })
@@ -393,6 +395,21 @@ if ($OwnedCardMasks) {
             -not $ownedData.GetProperty('ParameterTraitPresent').GetBoolean()) { throw 'Incomplete or mutating owned card mask calibration.' }
         Write-Output 'NATIVE-OWNED-CARD-MASK-CAPTURE PASS: 416 owned/controlled carried views and 62 original masks; unchanged context/RNG/frame.'
     } finally { $ownedArchive.Dispose() }
+}
+if ($CardUpgradeLifecycle) {
+    Add-Type -Path (Join-Path $workspace 'src\FixtureArchive\bin\Release\net8.0\FixtureArchive.dll')
+    $lifecycleArchive = [MonsterTrain2Poju.Fixtures.FixtureDocument]::Read((Join-Path $profile 'card-upgrade-lifecycle-calibration.mt2f'))
+    try {
+        $lifecycleData = $lifecycleArchive.RootElement
+        if ($lifecycleData.GetProperty('Schema').GetInt32() -ne 1 -or
+            -not $lifecycleData.GetProperty('ContextUnchanged').GetBoolean() -or
+            $lifecycleData.GetProperty('GameModuleMvid').GetString() -ne $trace.GameModuleMvid -or
+            $lifecycleData.GetProperty('FrameBefore').GetInt32() -ne $lifecycleData.GetProperty('FrameAfter').GetInt32() -or
+            -not $lifecycleData.GetProperty('RngBefore').ContentEquals($lifecycleData.GetProperty('RngAfter')) -or
+            $lifecycleData.GetProperty('OriginalRelicAssets').GetArrayLength() -ne 11 -or
+            $lifecycleData.GetProperty('Rows').GetArrayLength() -ne 212) { throw 'Incomplete or mutating card upgrade lifecycle calibration.' }
+        Write-Output 'NATIVE-CARD-UPGRADE-LIFECYCLE-CAPTURE PASS: 212 native operations across 11 original relic payloads and controlled lifecycle/magic power sequences; unchanged context/RNG/frame.'
+    } finally { $lifecycleArchive.Dispose() }
 }
 if ($ModifierOverflow) {
     Add-Type -Path (Join-Path $workspace 'src\FixtureArchive\bin\Release\net8.0\FixtureArchive.dll')

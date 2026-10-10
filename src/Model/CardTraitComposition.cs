@@ -12,6 +12,7 @@ namespace MonsterTrain2Poju.Model
         public int ParamInt { get; }
         public bool Removable { get; }
         public bool? DefinitionRemovable { get; }
+        public float? MagicPowerScale { get; }
         public int StackMode { get; }
         public bool TemporaryReplacement { get; }
         public IReadOnlyList<string> ParameterUpgradeCastEffects { get; }
@@ -20,11 +21,12 @@ namespace MonsterTrain2Poju.Model
         public bool HasData => DeclaredName != null;
         public CardTraitValue(string runtimeType, string? declaredName, int definitionParamInt, int paramInt,
             bool removable, int stackMode, bool temporaryReplacement = false, IReadOnlyList<string>? parameterUpgradeCastEffects = null,
-            bool? definitionRemovable = null)
+            bool? definitionRemovable = null, float? magicPowerScale = null)
         {
             RuntimeType = runtimeType; DeclaredName = declaredName; DefinitionParamInt = definitionParamInt; ParamInt = paramInt;
             Removable = removable; StackMode = stackMode; TemporaryReplacement = temporaryReplacement;
             DefinitionRemovable = definitionRemovable ?? (declaredName == null ? true : removable);
+            MagicPowerScale = runtimeType == "CardTraitScalingMagicPowerOnMoonPhase" ? magicPowerScale ?? 1f : magicPowerScale;
             ParameterUpgradeCastEffects = Array.AsReadOnly((parameterUpgradeCastEffects ?? Array.Empty<string>()).ToArray());
         }
         internal CardTraitValue Retyped(CardTraitReplacement replacement, bool temporary) =>

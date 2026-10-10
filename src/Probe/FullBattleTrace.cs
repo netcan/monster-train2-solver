@@ -130,6 +130,7 @@ namespace MonsterTrain2Poju.Probe
                 CardTraitCompositionCalibration.Capture(this);
                 CardStatusCompositionCalibration.Capture(this);
                 CardOwnedMaskCalibration.Capture(this);
+                CardUpgradeLifecycleCalibration.Capture(this);
                 if (Environment.GetEnvironmentVariable("MT2_PROBE_STATISTIC_QUERIES") == "1") StatisticQueryCalibration.Capture(this);
                 if (Environment.GetEnvironmentVariable("MT2_PROBE_STATISTIC_OVERFLOW") == "1") StatisticOverflowCalibration.Capture(this);
                 if (Environment.GetEnvironmentVariable("MT2_PROBE_HORDE_STATS") == "1") HordeStatCalibration.Capture(this);

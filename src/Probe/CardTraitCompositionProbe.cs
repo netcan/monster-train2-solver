@@ -20,7 +20,8 @@ namespace MonsterTrain2Poju.Probe
             CardTraitData? data = trait.GetCardTraitData();
             return new CardTraitValue(trait.GetType().FullName, data?.GetTraitStateName(), data?.GetParamInt() ?? 0,
                 trait.GetParamInt(), trait.GetTraitIsRemovable(), (int)trait.GetStackMode(), trait.IsTemporaryReplacement(),
-                data == null ? Array.Empty<string>() : CastEffects(data), data?.GetTraitIsRemovable());
+                data == null ? Array.Empty<string>() : CastEffects(data), data?.GetTraitIsRemovable(),
+                trait is CardTraitScalingMagicPowerOnMoonPhase ? (float?)AccessTools.Field(typeof(CardTraitScalingMagicPowerOnMoonPhase), "MagicPowerMultiplier").GetValue(trait) : null);
         }
         internal static List<CardTraitState> Bases(CardState card) => (List<CardTraitState>)AccessTools.Field(typeof(CardState), "traits").GetValue(card);
         internal static List<CardTraitState> Combined(CardState card) => (List<CardTraitState>)AccessTools.Field(typeof(CardState), "combinedTraits").GetValue(card);
