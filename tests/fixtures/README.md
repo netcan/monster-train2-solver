@@ -11,8 +11,10 @@ pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-units-and-ju
 ```
 
 The default command still checks the full curated inventory.
+For routine changes, run only the new and directly affected fixtures with
+`-Fixture`; run the full inventory at completed milestones and before delivery.
 
-Current inventory is 200 archives: 169 accepted battles and 31 component
+Current inventory is 201 archives: 170 accepted battles and 31 component
 calibrations. The initial Incant model's complete 180-archive regression passes.
 The threshold model's combined181 regression has also completed successfully.
 The relic model's combined181 regression has also completed successfully.
@@ -1908,3 +1910,13 @@ supported. The run exited 0 at `2026-10-10T16:41:19.3333019Z` UTC on commit
 `9d8df99fb2c11cf16c7e902453c0c9ca49d221af036023d0e06ef1c18c3cb48e` and
 ModelChecks SHA-256 is
 `3b0e6ec1da26542a91f71b5c27cc0498f22470dc85b213e54967b249b8b60b87`.
+
+`full-battle-room-selection-preview.mt2f` adds native selected-room state to the
+schema108 battle recording. It captures the floor-selection preview between
+cross-room actions and the selected floor after EndTurn. The muted Instant battle
+wins with 17 actions, five EndTurns, zero capture failures/mismatches/unsupported
+stages/pending records; independent replay matches all actions and turns and
+finishes at Pyre80. The archive is 51,499 bytes/8,650 nodes, SHA-256
+`b037950662c2cc337101ac9e7e6cb6fe0773815bef1d2e2b4f754afa9c817950`, with no
+JSON source. Its focused regression passes; the combined 201-archive stage run is
+pending.
