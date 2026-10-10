@@ -230,6 +230,13 @@ The curated binary is byte-identical to native capture without a JSON source or
 companion. It joins the regression inventory; the complete192 run is separate
 from the preceding frozen191 owned-view version.
 
+The frozen lifecycle complete192 regression has now completed with durable exit0
+at2026-10-10T14:38:57.9793705Z. Its audited output verifies all162 battles (158
+paid/four no-more-card chains) and30 ordered calibrations, every manifest input
+identity and both retained binary hashes, with no failed/unsupported core
+transitions. This proves the lifecycle version's historical regression; the later
+branch-owned adapter and full198 run remain a separate validation scope.
+
 `full-battle-incant-relic.mt2f` retains schema108 with the original obtainable
 ExtraSpellCastTrigger acquired through SaveManager. The relic asset is unchanged;
 authored unit/spell triggers exercise count2 player Incant and count1 enemy Incant,
