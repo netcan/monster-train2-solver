@@ -127,6 +127,7 @@ namespace MonsterTrain2Poju.Probe
                 RelicCatalogProbe.Capture(managers);
                 CardUpgradeMaskCalibration.Capture(this);
                 CardModifierOverflowCalibration.Capture(this);
+                CardTraitCompositionCalibration.Capture(this);
                 if (Environment.GetEnvironmentVariable("MT2_PROBE_STATISTIC_QUERIES") == "1") StatisticQueryCalibration.Capture(this);
                 if (Environment.GetEnvironmentVariable("MT2_PROBE_STATISTIC_OVERFLOW") == "1") StatisticOverflowCalibration.Capture(this);
                 if (Environment.GetEnvironmentVariable("MT2_PROBE_HORDE_STATS") == "1") HordeStatCalibration.Capture(this);

@@ -112,6 +112,7 @@ param(
     [switch] $RelicCatalog,
     [switch] $UpgradeMasks,
     [switch] $ModifierOverflow,
+    [switch] $TraitComposition,
     [switch] $IncantRelic,
     [switch] $IncantRelics,
     [switch] $SpawnStatusRelics,
@@ -243,6 +244,7 @@ $environment = @{
     MT2_PROBE_RELIC_CATALOG = $(if ($RelicCatalog) { '1' } else { '0' })
     MT2_PROBE_UPGRADE_MASKS = $(if ($UpgradeMasks) { '1' } else { '0' })
     MT2_PROBE_MODIFIER_OVERFLOW = $(if ($ModifierOverflow) { '1' } else { '0' })
+    MT2_PROBE_TRAIT_COMPOSITION = $(if ($TraitComposition) { '1' } else { '0' })
     MT2_PROBE_SETTLE_DEATH_DISSOLVES = $(if ($SettleDeathDissolves) { '1' } else { '0' })
     MT2_PROBE_SETTLE_CARD_ANIMATIONS = $(if ($SettleCardAnimations) { '1' } else { '0' })
     MT2_PROBE_STATUS_CALLBACKS = $(if ($HordeStatuses -or $StatusCallbacks) { '1' } else { '0' })
@@ -343,6 +345,20 @@ if ($RelicCatalog) {
         }
         Write-Output "NATIVE-RELIC-CATALOG PASS: $($catalogRecords.Count) definitions from eight original collections; unchanged gameplay/test RNG and frame."
     } finally { $catalogArchive.Dispose() }
+}
+if ($TraitComposition) {
+    Add-Type -Path (Join-Path $workspace 'src\FixtureArchive\bin\Release\net8.0\FixtureArchive.dll')
+    $traitArchive = [MonsterTrain2Poju.Fixtures.FixtureDocument]::Read((Join-Path $profile 'card-trait-composition-calibration.mt2f'))
+    try {
+        $traitData = $traitArchive.RootElement
+        if ($traitData.GetProperty('Schema').GetInt32() -ne 1 -or
+            -not $traitData.GetProperty('ContextUnchanged').GetBoolean() -or
+            $traitData.GetProperty('GameModuleMvid').GetString() -ne $trace.GameModuleMvid -or
+            $traitData.GetProperty('FrameBefore').GetInt32() -ne $traitData.GetProperty('FrameAfter').GetInt32() -or
+            -not $traitData.GetProperty('RngBefore').ContentEquals($traitData.GetProperty('RngAfter')) -or
+            $traitData.GetProperty('Rows').GetArrayLength() -ne 2134) { throw 'Incomplete or mutating trait composition calibration.' }
+        Write-Output 'NATIVE-TRAIT-COMPOSITION-CAPTURE PASS: 2134 original/owned/controlled refresh observations; unchanged context/RNG/frame.'
+    } finally { $traitArchive.Dispose() }
 }
 if ($ModifierOverflow) {
     Add-Type -Path (Join-Path $workspace 'src\FixtureArchive\bin\Release\net8.0\FixtureArchive.dll')

@@ -52,6 +52,26 @@ gone; interruption discarded the terminal handles, so original exit codes
 cannot be verified. These are complete check-output audits, not preserved
 terminal-exit-zero evidence. The complete186 baseline retains that evidence.
 
+The new trait composition model separately matches2,134 native forced-refresh
+observations:668 raw card trait seeds,15 isolated owned-card copies and384
+controlled combinations, each refreshed twice with persistent results carried.
+It preserves ordered first-base replacements, parameter resets, the previous
+combined list's insertion bound, temporary-original-type deduplication, removed
+types, temporary replacement markers and Exhaust/SelfPurge suppression. Exact
+base/temporary/created instance origins and32 immutable parallel replays pass.
+The muted Instant capture exits zero in97.15 seconds without changing original
+files, complete context, gameplay/test RNG or frame. Its separate complete
+21-play/seven-EndTurn battle passes independent initial/mid-battle policies,
+ending at Pyre73; all pure checks and the existing mask/overflow calibrations
+also pass. Frozen validation binaries are retained under
+.probe-runs/trait-composition-final-checks:Model SHA256
+60795214D56C2FD301E5CC28656A69267225FB8FE706E3AB94B6DE78817CFA73,
+ModelChecks SHA256
+CC85004B4D78B5B2CB01E8AEE68F387893F69B3C66336E914DF5D8052B7237BD.
+This calibrates trait composition inputs/outputs, not trait callbacks, permanent
+upgrade installation or temporary relic upgrade lifecycle integration. It is
+later than the audited frozen188 baseline; a combined regression is separate.
+
 `full-battle-incant-relic.mt2f` retains schema108 with the original obtainable
 ExtraSpellCastTrigger acquired through SaveManager. The relic asset is unchanged;
 authored unit/spell triggers exercise count2 player Incant and count1 enemy Incant,
