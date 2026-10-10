@@ -123,7 +123,7 @@ namespace MonsterTrain2Poju.Probe
             {
                 RngCalibration.Capture();
                 GoldRewardCalibration.Capture(save);
-                RuleCatalogProbe.Capture(managers);
+                RuleCatalogProbe.Capture(managers, Environment.GetEnvironmentVariable("MT2_PROBE_FULL_RULE_CATALOG") == "1");
                 RelicCatalogProbe.Capture(managers);
                 CardUpgradeMaskCalibration.Capture(this);
                 CardModifierOverflowCalibration.Capture(this);

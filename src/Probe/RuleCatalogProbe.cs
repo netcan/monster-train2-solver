@@ -12,7 +12,7 @@ namespace MonsterTrain2Poju.Probe
     // Read definitions and candidate pools, never select a future group or consume RNG.
     internal static class RuleCatalogProbe
     {
-        internal static void Capture(AllGameManagers managers)
+        internal static void Capture(AllGameManagers managers, bool fullGameDataCatalog = false)
         {
             JObject before = RngStates();
             SaveManager save = managers.GetSaveManager();
@@ -49,11 +49,19 @@ namespace MonsterTrain2Poju.Probe
                     if (effect.GetParamCardPool() is CardPool pool)
                         for (int index = 0; index < pool.GetNumCards(); index++)
                         { CardData card = pool.GetCardAtIndex(index); cardDefinitions[card.GetID()] = card; }
+            if (fullGameDataCatalog)
+            {
+                AllGameData gameData = save.GetAllGameData();
+                foreach (CardData card in gameData.GetAllCardData()) cardDefinitions[card.GetID()] = card;
+                foreach (CharacterData character in gameData.GetAllCharacterData()) Add(characters, character);
+            }
             foreach (CardData card in cardDefinitions.Values)
                 if (card.GetSpawnCharacterData() is CharacterData unit) Add(characters, unit);
             var catalog = new
             {
                 Schema = 2,
+                CardCatalogScope = fullGameDataCatalog ? "AllGameData" : "ObservedAndReachable",
+                CharacterCatalogScope = fullGameDataCatalog ? "AllGameData" : "ObservedAndReachable",
                 GameModuleMvid = typeof(CardState).Assembly.ManifestModule.ModuleVersionId,
                 BossType = pattern.GetBossType().ToString(),
                 Looping = pattern.GetIsLoopingScenario(),
