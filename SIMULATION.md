@@ -7719,3 +7719,22 @@ The corrected arithmetic requires its own full188 regression; no generated
 JSON/results output is added as a dependency. Temporary relic lifecycle,
 branch-derived full card eligibility and further room/Boss/card mechanics remain
 necessary for the entire battle simulation objective.
+
+### Complete 187 and188 check-output audits after interruption
+
+Both retained regression logs now contain all162 battle passes,158 paid/four
+no-more-card chains and their exact ordered25/26 component calibrations. Every
+retained input name, length and SHA256 remains valid, and both pairs of frozen
+model/checker hashes match the snapshots recorded above. Every battle occurs
+exactly once, with no failed checks or unsupported core transitions. Evidence
+is .probe-runs/upgrade-mask-complete187-output-audit.log and
+.probe-runs/modifier-overflow-complete188-output-audit.log, with the respective
+regression logs, input lists and frozen snapshots.
+
+After interruption both unified process handles are missing and no matching
+dotnet/controller workload remains. Their original terminal exit codes are
+unavailable; the audits establish complete recorded check outputs rather than
+observed terminal exit zero. The earlier complete186 baseline retains its
+terminal evidence. Future complete runs must retain a completion/exit record
+independently of transient tool handles. Broader original relic, branch-derived
+card state, room, Boss and effect simulation remains incomplete.

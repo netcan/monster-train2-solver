@@ -45,6 +45,13 @@ the upgrade-mask calibration and this recording's complete paid battle. The
 archive is9,282 bytes/2,949 nodes with no JSON dependency. Its correction is later
 than the preserved frozen187 run and requires a separate full188 regression.
 
+The frozen187 and188 runs now have complete output audits: every162 battle
+passes (158 paid/four no-more-card chains), with25 and26 ordered calibrations
+respectively. All input and retained binary hashes match. Their processes are
+gone; interruption discarded the terminal handles, so original exit codes
+cannot be verified. These are complete check-output audits, not preserved
+terminal-exit-zero evidence. The complete186 baseline retains that evidence.
+
 `full-battle-incant-relic.mt2f` retains schema108 with the original obtainable
 ExtraSpellCastTrigger acquired through SaveManager. The relic asset is unchanged;
 authored unit/spell triggers exercise count2 player Incant and count1 enemy Incant,
