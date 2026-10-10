@@ -15,7 +15,7 @@ The default command still checks the full curated inventory.
 For routine changes, run only the new and directly affected fixtures with
 `-Fixture`; run the full inventory at completed milestones and before delivery.
 
-Current inventory is 206 archives: 175 accepted battles and 31 component
+Current inventory is 207 archives: 176 accepted battles and 31 component
 calibrations. `full-battle-relic-card-status-upgrades.mt2f` verifies a native
 temporary card status upgrade reaches the unit summoned by that card.
 `full-battle-relic-card-piercing-upgrades.mt2f` verifies a native relic's
@@ -25,6 +25,8 @@ modifier copies with that relic upgrade: 84 generation callbacks, 36 copied
 modifier cases, 107 relic-manager calls and 74 notifications match with no
 differential failures. Its focused native and model checks pass; the next
 milestone full regression will include it.
+`full-battle-relic-card-self-purge-upgrades.mt2f` verifies temporary relic
+SelfPurge traits route played spells into Purged and remove them from deck counts.
 
 The initial Incant model's complete 180-archive regression passes.
 The threshold model's combined181 regression has also completed successfully.
@@ -1966,8 +1968,8 @@ branch-mask contexts; five native relic manager calls, all 49 battle stages,
 and all 32 immutable model branches pass with zero capture failures,
 mismatches, unsupported stages or pending records. The archive is 28,105 bytes/
 4,641 nodes, SHA-256 `2501705d0562a618146c81ecf5d99b9386143ac0707bedb84ca3cc8c2baa9f41`.
-Its focused check passes; the full 206-archive regression remains for the next
-completed milestone.
+Its focused check passes; the full 206-archive regression remained deferred at
+that milestone.
 
 The relic reset adapter now preserves existing upgrade lifecycle data while
 rebuilding an ordered `RelicEffectAddTempUpgrade` sequence. A pure regression
@@ -1975,3 +1977,12 @@ confirms that a permanent removed-trait rule remains active after reset and
 still blocks a later relic filter. The focused status-upgrade and piercing
 fixtures both pass after this change; the full 206-archive regression remains
 deferred to a completed milestone.
+
+### Temporary relic SelfPurge routing
+
+`full-battle-relic-card-self-purge-upgrades.mt2f` captures native
+`RelicEffectAddTempUpgrade` adding `CardTraitSelfPurge` to eligible spells. Two
+played cards enter the Purged pile and leave permanent deck membership. The
+full native battle wins with 51 stages, 28 actions, zero mismatches, unsupported
+transitions, capture failures or pending records. The focused fixture and model
+checks pass; the full 207-archive regression remains deferred to a milestone.

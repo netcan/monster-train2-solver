@@ -68,6 +68,8 @@ internal static class RelicCardModifierChecks
             scenario.GetString() == "relic-card-status-upgrades";
         bool piercingUpgradeScenario = root.TryGetProperty("ModifierScenario", out scenario) &&
             scenario.GetString() == "relic-card-piercing-upgrades";
+        bool selfPurgeUpgradeScenario = root.TryGetProperty("ModifierScenario", out scenario) &&
+            scenario.GetString() == "relic-card-self-purge-upgrades";
         bool sawExpectedRejection = statusUpgradeScenario || piercingUpgradeScenario
             ? rows.Any(row => row.Dispatches.Any(effect => !effect.Returned && !effect.UpgradeAdded))
             : rows.Any(row => !row.Reset && row.Dispatches.Any(effect => effect.Returned && !effect.UpgradeAdded));
@@ -169,12 +171,13 @@ internal static class RelicCardModifierChecks
             Before: row.GetProperty("Before").Deserialize<CombatContext>()!,
             Actual: row.GetProperty("Actual").Deserialize<CombatContext>()!)).ToArray();
         var births = generated.SelectMany(row => row.Actual.CardInstances!.Where(card => card.InstanceId >= row.Before.NextCardId)).ToArray();
-        if (!statusUpgradeScenario && !piercingUpgradeScenario)
+        if (!statusUpgradeScenario && !piercingUpgradeScenario && !selfPurgeUpgradeScenario)
             Require(births.Any(card => card.Temporary.Upgrades.Any(upgrade => upgrade.AssetKey == "ReduceStarterCost" ||
                 rows.SelectMany(row => row.Relics).SelectMany(relic => relic.CardModifiers ?? []).Any(effect => effect.Upgrade?.DataId == upgrade.DataId))),
                 "No battle-generated eligible card received an original relic upgrade.");
         string coverage = statusUpgradeScenario ? "card status upgrades reached summoned units" :
-            piercingUpgradeScenario ? "IgnoreArmor relic traits retained on played cards" : "eligible battle-generated cards";
+            piercingUpgradeScenario ? "IgnoreArmor relic traits retained on played cards" :
+            selfPurgeUpgradeScenario ? "SelfPurge relic traits retained on played cards" : "eligible battle-generated cards";
         Console.WriteLine($"NATIVE-RELIC-CARD-MODIFIER-CHECKS PASS: {rows.Length} original manager calls, {rows.Sum(row => row.Dispatches.Length)} ordered effect/filter results, " +
             $"{rows.Sum(row => row.Notifications.Length)} exact trigger notifications, {coverage} and 32 immutable branches.");
     }

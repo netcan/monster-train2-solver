@@ -488,6 +488,7 @@ namespace MonsterTrain2Poju.Model
             statistics = statistics?.Increment(card.InstanceId, "TimesDiscarded").WithPlayedCost(card.InstanceId, null);
             if (!terminal && rule.Destination == "Exhausted") statistics = statistics?.Increment(card.InstanceId, "TimesExhausted");
             if (summonRemoved && !terminal) statistics = statistics?.Increment(card.InstanceId, "TimesExhausted");
+            if (rule.Destination == "Purged") statistics = statistics?.RemoveDeckCard(card.InstanceId);
             context = context.AfterCardEffects();
             context = new CombatContext(new CardCycleState(hand, context.Cards.Draw, discard, context.Cards.Rng,
                 context.Cards.DrawModifier, context.Cards.ExternalInteractions, context.Cards.BonusDraw), context.BattleRng,

@@ -122,10 +122,11 @@ namespace MonsterTrain2Poju.Probe
             bool refresh = source != null && !source.GetUpgradeWillBeScaledByNonMagicPowerTrait();
             if (upgrade.GetRoomAbilityUpgrade() != null) interactions.Add("Upgrade room ability");
             CardLifecycleUpgrade lifecycle = CardUpgradeLifecycleProbe.Definition(upgrade);
-            bool ignoreArmorOnly = lifecycle.AddedTraits.Count > 0 && lifecycle.AddedTraits.All(trait =>
-                trait.RuntimeType == "CardTraitIgnoreArmor" && trait.DeclaredName == "CardTraitIgnoreArmor") &&
+            bool supportedTraitsOnly = lifecycle.AddedTraits.Count > 0 && lifecycle.AddedTraits.All(trait =>
+                trait.RuntimeType == trait.DeclaredName &&
+                trait.RuntimeType is "CardTraitIgnoreArmor" or "CardTraitSelfPurge") &&
                 lifecycle.RemovedRuntimeTypes.Count == 0 && lifecycle.ReplacedAssets.Count == 0 && lifecycle.Triggers.Count == 0;
-            if ((upgrade.GetTraitDataUpgrades().Count > 0 || upgrade.GetRemoveTraitUpgrades().Count > 0) && !ignoreArmorOnly)
+            if ((upgrade.GetTraitDataUpgrades().Count > 0 || upgrade.GetRemoveTraitUpgrades().Count > 0) && !supportedTraitsOnly)
                 interactions.Add("Upgrade traits");
             if (upgrade.GetCardTriggerUpgrades().Count > 0) interactions.Add("Upgrade card triggers");
             CombatTrigger[]? triggers = null;

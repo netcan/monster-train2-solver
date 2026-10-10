@@ -116,6 +116,11 @@ namespace MonsterTrain2Poju.Model
             .Concat(cost == null ? Array.Empty<CardPlayedCost>() : new[] { new CardPlayedCost(cardId, cost.Value) }).ToArray());
         public BattleStatistics RefreshDeckAfterCardTerminal() => DeckCards == null ? this :
             RefreshOwnedCards(DeckCards);
+        internal BattleStatistics RemoveDeckCard(int cardId) => DeckCards == null || !DeckCards.Contains(cardId) ? this :
+            new BattleStatistics(Values, PlayedCosts, CardsPlayedThisTurn, SpawnedThisTurnPerFloor, SpawnedThisBattlePerFloor,
+                SubtypesSpawnedThisTurn, SubtypesSpawnedThisBattle, MonstersDeadThisTurn, MonstersDeadThisBattle,
+                EnergyRemainingEndOfTurn, GoldStartOfThisTurn, LastAttackDamageDealt, TrackedCards,
+                DeckCards.Where(id => id != cardId).ToArray(), StoredCards);
         internal BattleStatistics WithOwnedCards(IEnumerable<int> cards) => StoredCards == null ? this :
             Copy(tracked: StoredCards.Concat(cards).Distinct().ToArray());
         public BattleStatistics RefreshOwnedCards(IEnumerable<int> cards)

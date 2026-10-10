@@ -80,7 +80,7 @@ are copied immutable values; independent child states can run on worker threads.
 | Statistic-driven damage traits | `DamageScalingModel` and `RoomCombatModel` | 63 native callbacks with complete refreshed contexts; trait order, replacement/addition, explicit-source upgrades, per-hit statistics and Boss/Pyre kill previews |
 | Dynamic statistic inputs | `CombatContext.QueryFrame` and turn/card transitions | 255 native damage callbacks and 48 decision boundaries; payment, combat, rollover, previews and settled terminal resources, plus multi-turn and parallel branches |
 | Card instance modifiers | `CardModifierModel` | Permanent/temporary ordered numeric upgrades, unit starting statuses, discard removal, play history and 256 native scalar calculations |
-| Relic card modifiers | `RelicCardModifierModel` and `CardUpgradeLifecycleModel` | Native ordering/conditions, numeric/status/IgnoreArmor upgrades, generation and cardless births; reset retains pre-existing permanent and temporary upgrade lifecycle metadata. Other trait, trigger, replacement and ability payloads remain explicitly rejected. |
+| Relic card modifiers | `RelicCardModifierModel` and `CardUpgradeLifecycleModel` | Native ordering/conditions, numeric/status/IgnoreArmor/SelfPurge upgrades, generation and cardless births; reset retains pre-existing permanent and temporary upgrade lifecycle metadata. Other trait, trigger, replacement and ability payloads remain explicitly rejected. |
 | Retained card references | `CombatContext.CardRegistry` | Observed card identities survive pile clearing; detached spawner upgrades/removal preserve ownership and parent isolation |
 | Standby dictionary allocation | `CardPileModel` | Captured entry slots and free-list order preserve native hole reuse after unit death; malformed layouts, distinct futures, terminal clear and parallel branches |
 | Shared secondary card piles | `CombatContext.OtherPiles` | Room and spell resolution carry standby/exhausted/eaten/purged/buffer state, immediate and deferred spawner returns, terminal clearing and immutable parallel branches |
@@ -7787,3 +7787,18 @@ The pure regression passes, and the focused status-upgrade and piercing-upgrade
 native battle archives both replay with zero mismatches or unsupported stages.
 This does not validate every relic payload or complete a full inventory run;
 the 206-archive regression remains deferred to a completed milestone.
+
+### Temporary relic SelfPurge routing
+
+`RelicCardModifierModel` now accepts a temporary `CardTraitSelfPurge` upgrade
+payload when it has no unmodeled removals, replacements or triggers. Card play
+resolves the current branch trait composition before routing: eligible spells
+enter Purged and are removed from permanent deck membership, while older states
+without a branch-owned mask descriptor keep their captured destination.
+
+`full-battle-relic-card-self-purge-upgrades.mt2f` records two played relic-upgraded
+spells reaching Purged and leaving deck counts. The native battle wins with 51
+stages and 28 actions; capture failures, mismatches, unsupported transitions and
+pending records are zero. Its focused model/native regression passes. The full
+207-archive run remains deferred to a completed milestone; other trait,
+trigger, replacement and ability relic payloads are still unsupported.

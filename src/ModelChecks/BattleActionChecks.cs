@@ -6,6 +6,7 @@ internal static class BattleActionChecks
 {
     internal static void Run()
     {
+        SelfPurgeUpgradeDestination();
         StandbySlots();
         var big = new CombatUnit(0, "big", CombatTeam.Player, 8, 25, 25, true, false, false, [], size: 3);
         var small = new CombatUnit(0, "small", CombatTeam.Player, 12, 10, 10, true, false, false, [], size: 2);
@@ -87,6 +88,29 @@ internal static class BattleActionChecks
         Console.WriteLine("ACTION-CHECKS PASS: capacity, position, card identity, cost, purge, explicit rejection and parallel isolation.");
     }
 
+    private static void SelfPurgeUpgradeDestination()
+    {
+        var definition = new CardMaskDefinition("purgeable", "Spell", "Common", false, false, false,
+            [], [], [], [], null, false, 0, 0, false, false, false);
+        var descriptor = new CardMaskDescriptor(definition, 0, [], []);
+        var trait = new CardTraitValue("CardTraitSelfPurge", "CardTraitSelfPurge", 0, 0, true, 0);
+        var lifecycle = new CardLifecycleUpgrade(new CardMaskUpgrade("relic-self-purge",
+            new CardStatModifier(), [], false, false, false, false), "RelicSelfPurge", false, false,
+            [trait], [], false, [], [], []);
+        var upgrade = new CardUpgradeModifier("relic-self-purge", "RelicSelfPurge", new CardStatModifier(), [],
+            false, true, false, 0, 0, [], maskMetadata: new CardUpgradeMaskMetadata([], false, false, false, false),
+            lifecycle: lifecycle);
+        var card = new CardInstanceState(6, "purgeable", CardModifiers.Empty(),
+            new CardModifiers(new CardStatModifier(), [upgrade], 0, []), 0, 0, 0, [], maskDescriptor: descriptor);
+        var rule = new CardPlayRule("purgeable", "Purgeable", 0, "Null", "Discard", null, [], cardType: "Spell");
+        CardPlayRule resolved = CardModifierModel.Resolve(rule, card);
+        Require(resolved.Destination == "Purged",
+            "A branch-added SelfPurge trait did not change the played card destination.");
+        Require(CardModifierModel.Resolve(rule, new CardInstanceState(7, "purgeable", CardModifiers.Empty(),
+            CardModifiers.Empty(), 0, 0, 0, [])).Destination == "Discard",
+            "A legacy card without branch trait metadata changed its captured destination.");
+    }
+
     private static void StandbySlots()
     {
         var root = new CardPileState("Standby", [new(1, "one"), new(2, "two"), new(3, "three")], [1, 2, 3], []);
@@ -141,6 +165,27 @@ internal static class BattleActionChecks
         }
         Require(unsupported == 0, "Native action verification skipped unsupported actions.");
         Console.WriteLine($"NATIVE-ACTION-CHECKS PASS: {supported} matched, {unsupported} unsupported.");
+        if (fixture.TryGetProperty("ModifierScenario", out FixtureValue relicScenario) &&
+            relicScenario.GetString() == "relic-card-self-purge-upgrades")
+        {
+            int selfPurged = 0;
+            foreach (FixtureValue entry in actions.EnumerateArray())
+            {
+                BattleTurnState before = entry.GetProperty("Before").Deserialize<BattleTurnState>()!;
+                PlayCardAction action = entry.GetProperty("Action").Deserialize<PlayCardAction>()!;
+                CardInstanceState? card = before.Spawn.Train.Context!.FindCard(action.CardInstanceId);
+                if (card?.Temporary.Upgrades.SelectMany(upgrade => upgrade.Lifecycle?.AddedTraits ?? Array.Empty<CardTraitValue>())
+                    .Any(trait => trait.RuntimeType == "CardTraitSelfPurge") != true) continue;
+                BattleTurnState actual = entry.GetProperty("Actual").Deserialize<BattleTurnState>()!;
+                bool reachedPurgedPile = actual.OtherPiles.Single(pile => pile.Name == "Purged").Cards.Any(item => item.InstanceId == action.CardInstanceId);
+                IReadOnlyList<int>? deckCards = actual.Spawn.Train.Context!.Statistics?.DeckCards;
+                Require(reachedPurgedPile && deckCards != null && !deckCards.Contains(action.CardInstanceId),
+                    "A played relic SelfPurge card remained in the native deck or missed the Purged pile.");
+                selfPurged++;
+            }
+            Require(selfPurged > 0, "The native relic SelfPurge scenario did not play a card carrying its temporary trait.");
+            Console.WriteLine($"NATIVE-SELF-PURGE-CHECKS PASS: {selfPurged} relic-upgraded spells moved to Purged and left deck membership.");
+        }
         if (fixture.TryGetProperty("ModifierScenario", out FixtureValue roomScenario) && roomScenario.GetString() == "room-spells")
             RoomSpellChecks.Native(actions);
         if (fixture.TryGetProperty("ModifierScenario", out FixtureValue randomScenario) && randomScenario.GetString() == "random-spells")
