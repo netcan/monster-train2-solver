@@ -108,7 +108,7 @@ namespace MonsterTrain2Poju.Probe
             state.Spawn.Phase, state.Spawn.SelectedGroups, state.Spawn.Rng, state.Spawn.NextUnitId,
             state.Spawn.TreasuresRemaining, state.Spawn.Turn, state.Energy, state.ForgePoints, state.DragonsHoard,
             state.MoonPhase, state.RngStreams, state.OtherPiles, state.PlayRules, state.BattlePreviewEnabled, state.UiRngIsolated,
-            state.CanonicalPhysicalReferences, state.SelectedRoom
+            state.CanonicalPhysicalReferences
         });
         internal sealed class Record
         {
