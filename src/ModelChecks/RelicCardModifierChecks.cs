@@ -91,7 +91,9 @@ internal static class RelicCardModifierChecks
             scenario.GetString() == "relic-card-self-purge-upgrades";
         bool abilityUpgradeScenario = root.TryGetProperty("ModifierScenario", out scenario) &&
             scenario.GetString() == "relic-card-ability-upgrades";
-        bool sawExpectedRejection = statusUpgradeScenario || piercingUpgradeScenario || abilityUpgradeScenario
+        bool triggerUpgradeScenario = root.TryGetProperty("ModifierScenario", out scenario) &&
+            scenario.GetString() == "relic-card-trigger-upgrades";
+        bool sawExpectedRejection = statusUpgradeScenario || piercingUpgradeScenario || abilityUpgradeScenario || triggerUpgradeScenario
             ? rows.Any(row => row.Dispatches.Any(effect => !effect.Returned && !effect.UpgradeAdded))
             : rows.Any(row => !row.Reset && row.Dispatches.Any(effect => effect.Returned && !effect.UpgradeAdded));
         Require(rows.Length > 0 && sawExpectedRejection &&
@@ -210,18 +212,46 @@ internal static class RelicCardModifierChecks
                 "The native relic ability scenario did not play and summon from an ability-upgraded card.");
             Console.WriteLine($"NATIVE-RELIC-CARD-ABILITY-CHECKS PASS: {abilityUpgradedSummons} relic-upgraded summons received their native unit abilities.");
         }
+        if (triggerUpgradeScenario)
+        {
+            int triggerUpgradedSummons = 0;
+            foreach (FixtureValue entry in root.GetProperty("Actions").EnumerateArray())
+            {
+                BattleTurnState before = entry.GetProperty("Before").Deserialize<BattleTurnState>()!;
+                PlayCardAction action = entry.GetProperty("Action").Deserialize<PlayCardAction>()!;
+                CardInstanceState? card = before.Spawn.Train.Context!.FindCard(action.CardInstanceId);
+                CardUpgradeModifier? upgrade = card?.Temporary.Upgrades.FirstOrDefault(candidate =>
+                    candidate.TriggerUpgrades?.Any(trigger => trigger.Kind == "OnKill") == true);
+                if (upgrade == null) continue;
+                CombatTrigger expected = upgrade.TriggerUpgrades!.Single(trigger => trigger.Kind == "OnKill");
+                BattleTurnState actual = entry.GetProperty("Actual").Deserialize<BattleTurnState>()!;
+                CombatUnit? spawned = actual.Spawn.Train.Rooms.SelectMany(room => room.Units)
+                    .FirstOrDefault(unit => unit.SpawnerCardId == action.CardInstanceId);
+                CombatTrigger? applied = spawned?.Triggers.FirstOrDefault(trigger => trigger.Kind == "OnKill");
+                Require(applied != null && applied.Once == expected.Once &&
+                    applied.IgnoreSilence == expected.IgnoreSilence && applied.FireCount == expected.FireCount &&
+                    applied.TriggerAtThreshold == expected.TriggerAtThreshold,
+                    "A relic-upgraded card did not give its summoned unit the native OnKill trigger.");
+                Equal(expected.Effects, applied!.Effects, "relic OnKill trigger effects");
+                triggerUpgradedSummons++;
+            }
+            Require(triggerUpgradedSummons > 0,
+                "The native relic trigger scenario did not play and summon from an OnKill-upgraded card.");
+            Console.WriteLine($"NATIVE-RELIC-CARD-TRIGGER-CHECKS PASS: {triggerUpgradedSummons} relic-upgraded summons received their native OnKill triggers.");
+        }
         var generated = root.GetProperty("CardGenerations").EnumerateArray().Select(row => (
             Before: row.GetProperty("Before").Deserialize<CombatContext>()!,
             Actual: row.GetProperty("Actual").Deserialize<CombatContext>()!)).ToArray();
         var births = generated.SelectMany(row => row.Actual.CardInstances!.Where(card => card.InstanceId >= row.Before.NextCardId)).ToArray();
-        if (!statusUpgradeScenario && !piercingUpgradeScenario && !selfPurgeUpgradeScenario && !abilityUpgradeScenario)
+        if (!statusUpgradeScenario && !piercingUpgradeScenario && !selfPurgeUpgradeScenario && !abilityUpgradeScenario && !triggerUpgradeScenario)
             Require(births.Any(card => card.Temporary.Upgrades.Any(upgrade => upgrade.AssetKey == "ReduceStarterCost" ||
                 rows.SelectMany(row => row.Relics).SelectMany(relic => relic.CardModifiers ?? []).Any(effect => effect.Upgrade?.DataId == upgrade.DataId))),
                 "No battle-generated eligible card received an original relic upgrade.");
         string coverage = statusUpgradeScenario ? "card status upgrades reached summoned units" :
             piercingUpgradeScenario ? "IgnoreArmor relic traits retained on played cards" :
             selfPurgeUpgradeScenario ? "SelfPurge relic traits retained on played cards" :
-            abilityUpgradeScenario ? "unit ability upgrades reached summoned units" : "eligible battle-generated cards";
+            abilityUpgradeScenario ? "unit ability upgrades reached summoned units" :
+            triggerUpgradeScenario ? "OnKill character triggers reached summoned units" : "eligible battle-generated cards";
         Console.WriteLine($"NATIVE-RELIC-CARD-MODIFIER-CHECKS PASS: {rows.Length} original manager calls, {rows.Sum(row => row.Dispatches.Length)} ordered effect/filter results, " +
             $"{rows.Sum(row => row.Notifications.Length)} exact trigger notifications, {coverage} and 32 immutable branches.");
     }

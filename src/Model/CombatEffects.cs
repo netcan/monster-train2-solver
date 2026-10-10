@@ -193,7 +193,8 @@ namespace MonsterTrain2Poju.Model
         internal CombatEffect WithActionValue(int value) => new CombatEffect(Type, value, Counter, Destination, Count,
             CardPool, SkipDuplicateInHand, Generation, UnitUpgrade, Action == null ? null : new CardActionEffect(Action.Type,
                 Action.Target, value, Action.AllowEnemy, Action.AllowPlayer, Action.Statuses, Action.Upgrade, Action.Lifetime,
-                Action.Tests, Action.Range, Action.Filters, Action.Generation, Action.OnlyIfNoEnemies, Action.CooldownParameter, Action.AbilityChange), DamageStatusMultiplier, StatusScaling, Summon, Enchantment);
+                Action.Tests, Action.Range, Action.Filters, Action.Generation, Action.OnlyIfNoEnemies, Action.CooldownParameter,
+                Action.AbilityChange, Action.CopyHeroStats, Action.ScaleUpgrade), DamageStatusMultiplier, StatusScaling, Summon, Enchantment);
     }
 
     public sealed class CombatTriggerOrigin

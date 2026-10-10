@@ -173,19 +173,22 @@ namespace MonsterTrain2Poju.Probe
                         interactions.Add("Unimplemented integer range consumer " + type);
                     string lifetime = "";
                     if (type == "BuffHealth") lifetime = ((UnitUpgradeLifetimeTempOnly)effect.GetAdditionalParamInt1()).ToString();
+                    bool scaleUpgrade = effect.GetEffectStateName() == "CardEffectAddCardUpgradeToUnits" && effect.GetParamBool();
                     if (type == "UnitUpgrade" || type == "RemoveUnitUpgrade" || type == "AttachEquipment" || handUpgrade)
                     {
                         if (effect.GetParamCardUpgradeData() == null) interactions.Add("Missing unit upgrade data");
                         else
                         {
-                            var upgradeState = new CardUpgradeState(); upgradeState.Setup(effect.GetParamCardUpgradeData());
-                            upgrade = CardModifierProbe.Upgrade(upgradeState);
+                            CardUpgradeData upgradeData = effect.GetParamCardUpgradeData();
+                            var upgradeState = new CardUpgradeState(); upgradeState.Setup(upgradeData);
+                            bool filtersIgnoredByEffect = effect.GetEffectStateName() == "CardEffectAddCardUpgradeToUnits";
+                            upgrade = CardModifierProbe.Upgrade(upgradeState, false, filtersAlreadyApplied: filtersIgnoredByEffect);
                             interactions.AddRange(upgrade.ExternalInteractions);
+                            if (scaleUpgrade && !upgradeData.CanScaleUpgradeToSingleInstance())
+                                interactions.Add("Invalid scaled unit upgrade definition");
                         }
                         lifetime = handUpgrade ? effect.GetEffectStateName() == "CardEffectAddPermanentCardUpgradeToCardsInHand" ?
                             "Permanent" : "TemporaryUntilEndOfBattle" : type == "AttachEquipment" ? "" : ((UnitUpgradeLifetime)effect.GetAdditionalParamInt1()).ToString();
-                        if (effect.GetEffectStateName() == "CardEffectAddCardUpgradeToUnits" && effect.GetParamBool())
-                            interactions.Add("Scaling unit upgrade instances");
                     }
                     var statuses = new List<CombatStatus>();
                     if (type == "AddStatus")
@@ -213,7 +216,8 @@ namespace MonsterTrain2Poju.Probe
                             effect.GetTargetCharacterSubtype().IsNone ? "" : effect.GetTargetCharacterSubtype().Key,
                             excluded.Select(subtype => subtype.IsNone ? "" : subtype.Key).ToArray()),
                         type == "Generate" ? CardGenerationProbe.Definition(effect) : null, type == "AdjustCapacity" && effect.GetParamBool(),
-                        copyHeroStats: type == "CopyUnits" ? effect.GetParamBool() : (bool?)null));
+                        copyHeroStats: type == "CopyUnits" ? effect.GetParamBool() : (bool?)null,
+                        scaleUpgrade: scaleUpgrade));
                 }
             }
             else interactions.Add("Unimplemented play effect " + kind);

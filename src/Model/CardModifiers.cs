@@ -91,6 +91,45 @@ namespace MonsterTrain2Poju.Model
             RestrictSizeToRoomCapacity, MagicPowerTraitScalingOnly, CloneDamageBase, CloneHealBase, EquipmentSourceCardId,
             EquipmentSourceUpgradeIndex, TriggerUpgrades, AbilityUpgrade, DoNotReplaceExistingAbility, MaskMetadata,
             CopyRemoveOnDiscard, CopyUnique, CopyExcludeFromClones, lifecycle);
+        internal CardUpgradeModifier Accumulate(CardUpgradeModifier addition)
+        {
+            if (DataId.Length == 0 || DataId != addition.DataId)
+                throw new InvalidOperationException("Scaled upgrades must share a nonempty definition ID.");
+            var stats = new CardStatModifier(
+                checked(Stats.Damage + addition.Stats.Damage), checked(Stats.Health + addition.Stats.Health),
+                checked(Stats.Cost + addition.Stats.Cost), checked(Stats.Heal + addition.Stats.Heal),
+                checked(Stats.Size + addition.Stats.Size), checked(Stats.XCost + addition.Stats.XCost),
+                checked(Stats.EquipmentLimit + addition.Stats.EquipmentLimit),
+                checked(Stats.UpgradeSlotCount + addition.Stats.UpgradeSlotCount));
+            var statuses = Statuses.ToList();
+            foreach (CombatStatus added in addition.Statuses)
+            {
+                int index = statuses.FindIndex(status => status.Id == added.Id);
+                if (index < 0) statuses.Add(added);
+                else statuses[index] = statuses[index].WithStacks(checked(statuses[index].Stacks + added.Stacks));
+            }
+            CardLifecycleUpgrade? lifecycle = Lifecycle;
+            if (lifecycle != null)
+            {
+                var maskStatuses = lifecycle.Values.Statuses.ToList();
+                foreach (UpgradeMaskStatus added in addition.Lifecycle?.Values.Statuses ?? Array.Empty<UpgradeMaskStatus>())
+                {
+                    int index = maskStatuses.FindIndex(status => status.Id == added.Id &&
+                        status.FromPermanentUpgrade == added.FromPermanentUpgrade);
+                    if (index < 0) maskStatuses.Add(added);
+                    else maskStatuses[index] = new UpgradeMaskStatus(added.Id,
+                        checked(maskStatuses[index].Count + added.Count), added.FromPermanentUpgrade);
+                }
+                var values = new CardMaskUpgrade(lifecycle.Values.DataId, stats, maskStatuses,
+                    lifecycle.Values.HasIcon, lifecycle.Values.HideIcon, lifecycle.Values.RegionRun, lifecycle.Values.UnitAbility);
+                lifecycle = lifecycle.WithValues(values);
+            }
+            return new CardUpgradeModifier(DataId, AssetKey, stats, statuses, RemoveOnDiscard, Unique, ExcludeFromClones,
+                checked(UnhealedHealth + addition.UnhealedHealth), DamageBuff, ExternalInteractions, RestrictSizeToRoomCapacity,
+                MagicPowerTraitScalingOnly, CloneDamageBase, CloneHealBase, EquipmentSourceCardId, EquipmentSourceUpgradeIndex,
+                TriggerUpgrades, AbilityUpgrade, DoNotReplaceExistingAbility, MaskMetadata, CopyRemoveOnDiscard, CopyUnique,
+                CopyExcludeFromClones, lifecycle);
+        }
         internal CardUpgradeModifier ForAddCardCopy() => new CardUpgradeModifier(DataId, AssetKey, Stats, Statuses,
             CopyRemoveOnDiscard ?? RemoveOnDiscard, CopyUnique ?? Unique, CopyExcludeFromClones ?? ExcludeFromClones,
             UnhealedHealth, DamageBuff, ExternalInteractions, RestrictSizeToRoomCapacity, MagicPowerTraitScalingOnly,
@@ -272,7 +311,8 @@ namespace MonsterTrain2Poju.Model
             CardActionEffect[] effects = rule.Effects.Select(effect => new CardActionEffect(effect.Type, effect.Target,
                 ResolveValue(effect, effect.Value), effect.AllowEnemy, effect.AllowPlayer, effect.Statuses, effect.Upgrade, effect.Lifetime, effect.Tests,
                 effect.Range == null ? null : new CardEffectRange(ResolveValue(effect, effect.Range.Min),
-                    ResolveValue(effect, effect.Range.Max), effect.Range.Multiplier), effect.Filters, effect.Generation, effect.OnlyIfNoEnemies, effect.CooldownParameter, effect.AbilityChange, effect.CopyHeroStats)).ToArray();
+                    ResolveValue(effect, effect.Range.Max), effect.Range.Multiplier), effect.Filters, effect.Generation, effect.OnlyIfNoEnemies,
+                effect.CooldownParameter, effect.AbilityChange, effect.CopyHeroStats, effect.ScaleUpgrade)).ToArray();
             string destination = rule.Destination;
             if (destination == "Discard" && instance.MaskDescriptor != null &&
                 CardBranchMaskModel.Resolve(instance).Traits.Contains("CardTraitSelfPurge", StringComparer.Ordinal))

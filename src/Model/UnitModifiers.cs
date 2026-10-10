@@ -30,8 +30,8 @@ namespace MonsterTrain2Poju.Model
     public static class UnitModifierModel
     {
         public static RoomCombatResult Apply(RoomCombatState source, int targetId, CardUpgradeModifier upgrade, string lifetime,
-            bool remove = false, int? roomCapacity = null, int sourceCardId = 0, string? triggerKind = null)
-            => RoomCombatModel.ApplyUnitUpgrade(source, targetId, upgrade, lifetime, remove, roomCapacity, sourceCardId, triggerKind);
+            bool remove = false, int? roomCapacity = null, int sourceCardId = 0, string? triggerKind = null, bool scaleUpgrade = false)
+            => RoomCombatModel.ApplyUnitUpgrade(source, targetId, upgrade, lifetime, remove, roomCapacity, sourceCardId, triggerKind, scaleUpgrade);
 
         // CharacterState's direct API, used by equipment, changes only the live unit.
         // Anonymous removal needs an explicit applied-list index to represent object identity;
@@ -50,7 +50,7 @@ namespace MonsterTrain2Poju.Model
             Func<RoomCombatState, CombatUnit, bool, RoomCombatResult> settle, bool allowDyingTarget = false,
             Action<RoomCombatModel.QueuedCharacterTrigger>? enqueueCallback = null, bool directApi = false,
             string upgradeId = "", int? anonymousRemovalIndex = null, int equipmentSourceCardId = 0,
-            bool deferAbilityCallbacks = false)
+            bool deferAbilityCallbacks = false, bool scaleUpgrade = false)
         {
             string? error = RoomCombatModel.Validate(source, allowDyingTarget ? targetId : (int?)null);
             if (error != null) return Unsupported(error);
@@ -59,6 +59,8 @@ namespace MonsterTrain2Poju.Model
                 return Unsupported("Unit upgrades require unit and card instance modifier state.");
             roomCapacity = RoomCapacityModel.Maximum(source.Context, source.RoomIndex, target.Team) ?? roomCapacity;
             if (upgrade.ExternalInteractions.Count > 0) return Unsupported(string.Join("; ", upgrade.ExternalInteractions));
+            if (scaleUpgrade && (remove || directApi || upgrade.Unique || upgrade.DataId.Length == 0))
+                return Unsupported("Scaled unit upgrades require a non-unique defined addition through the native effect.");
             if (!directApi) upgradeId = upgrade.DataId;
             if (equipmentSourceCardId < 0 || equipmentSourceCardId > 0 && source.Context.FindCard(equipmentSourceCardId) == null)
                 return Unsupported("Missing equipment trigger source.");
@@ -92,6 +94,7 @@ namespace MonsterTrain2Poju.Model
                     return Match(source);
             }
             RoomCombatState state = source;
+            bool accumulatedExistingUpgrade = false;
             int count = !remove ? 1 : directApi ? (upgrade.DataId.Length == 0 ||
                 target.Modifiers.Upgrades.Any(item => item.DataId == upgrade.DataId) ? 1 : 0) :
                 target.Modifiers.Upgrades.Count(item => item.DataId == upgrade.DataId);
@@ -102,12 +105,16 @@ namespace MonsterTrain2Poju.Model
                 UnitModifiers modifiers = target.Modifiers!;
                 int? nextTriggerId = target.NextTriggerId;
                 if (!remove && upgrade.Unique && upgrade.DataId.Length > 0 && modifiers.Upgrades.Any(item => item.DataId == upgrade.DataId)) break;
+                int existingUpgradeIndex = scaleUpgrade
+                    ? modifiers.Upgrades.ToList().FindIndex(item => item.DataId == upgrade.DataId) : -1;
+                accumulatedExistingUpgrade |= existingUpgradeIndex >= 0;
                 var upgrades = modifiers.Upgrades.ToList();
                 if (remove)
                 {
                     if (upgrade.DataId.Length > 0) upgrades.RemoveAt(upgrades.FindIndex(item => item.DataId == upgrade.DataId));
                     else if (anonymousRemovalIndex.HasValue) upgrades.RemoveAt(anonymousRemovalIndex.Value);
                 }
+                else if (existingUpgradeIndex >= 0) upgrades[existingUpgradeIndex] = upgrades[existingUpgradeIndex].Accumulate(upgrade);
                 else upgrades.Add(upgrade);
                 int sign = remove ? -1 : 1;
                 int damage = Math.Max(0, checked(modifiers.AttackDamage + sign * upgrade.Stats.Damage));
@@ -284,8 +291,9 @@ namespace MonsterTrain2Poju.Model
                 CardModifiers permanent = card.Permanent, temporary = card.Temporary;
                 if (remove) temporary = new CardModifiers(temporary.Offsets,
                     temporary.Upgrades.Where(item => item.DataId != upgrade.DataId).ToArray(), temporary.PersistentHealth, temporary.ExternalInteractions);
-                else if (lifetime == "Permanent") permanent = Add(permanent, upgrade);
-                else temporary = Add(temporary, upgrade);
+                else if (lifetime == "Permanent") permanent = accumulatedExistingUpgrade
+                    ? AccumulateExisting(permanent, upgrade) : Add(permanent, upgrade);
+                else temporary = accumulatedExistingUpgrade ? AccumulateExisting(temporary, upgrade) : Add(temporary, upgrade);
                 var changed = new CardInstanceState(card.InstanceId, card.DataId, permanent, temporary, card.LastPlayedCost, card.LastForgedAmount, card.PlayCount, card.ExternalInteractions, card.EffectCounters, card.DamageScalingTraits, card.StatusScalingTraits, card.UnitUpgradeScalingTraits, card.CapacityScalingTraits, card.EquippedUnitId, card.PlayedRoomUnitIds, card.RawPlayedRoomUnitIds, card.MaskDescriptor);
                 CombatContext context = state.Context.WithCard(changed);
                 state = new RoomCombatState(state.RoomIndex, state.Deployment, state.Units, state.ExternalInteractions, context, state.Preview);
@@ -295,6 +303,14 @@ namespace MonsterTrain2Poju.Model
         internal static CardModifiers Add(CardModifiers modifiers, CardUpgradeModifier upgrade) =>
             upgrade.Unique && upgrade.DataId.Length > 0 && modifiers.Upgrades.Any(item => item.DataId == upgrade.DataId) ? modifiers :
             new CardModifiers(modifiers.Offsets, modifiers.Upgrades.Concat(new[] { upgrade }).ToArray(), modifiers.PersistentHealth, modifiers.ExternalInteractions);
+        private static CardModifiers AccumulateExisting(CardModifiers modifiers, CardUpgradeModifier upgrade)
+        {
+            int index = modifiers.Upgrades.ToList().FindIndex(item => item.DataId == upgrade.DataId);
+            if (index < 0) return modifiers;
+            var upgrades = modifiers.Upgrades.ToArray();
+            upgrades[index] = upgrades[index].Accumulate(upgrade);
+            return new CardModifiers(modifiers.Offsets, upgrades, modifiers.PersistentHealth, modifiers.ExternalInteractions);
+        }
         private static RoomCombatResult Match(RoomCombatState state) => new RoomCombatResult(state, RoomOutcome.Exchanged, 0, new List<CombatEvent>());
         private static RoomCombatResult Unsupported(string reason) => new RoomCombatResult(null, RoomOutcome.Unsupported, 0, new List<CombatEvent>(), reason);
     }

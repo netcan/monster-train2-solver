@@ -242,7 +242,8 @@ namespace MonsterTrain2Poju.Model
                     state = WithContext(state, state.Context.WithBattleRng(chosen.State));
                     effect = new CardActionEffect(effect.Type, effect.Target, effect.Value, effect.AllowEnemy, effect.AllowPlayer,
                         new[] { effect.Statuses[chosen.Value] }, effect.Upgrade, effect.Lifetime, effect.Tests, effect.Range, effect.Filters,
-                        effect.Generation, effect.OnlyIfNoEnemies, effect.CooldownParameter, effect.AbilityChange);
+                        effect.Generation, effect.OnlyIfNoEnemies, effect.CooldownParameter, effect.AbilityChange,
+                        effect.CopyHeroStats, effect.ScaleUpgrade);
                 }
                 UnityRng effectRng = state.Context!.BattleRng;
                 if (effect.Type != "CopyUnits" && effect.Type != "Bump" && effect.Type != "DiscardHand" && effect.Type != "Generate" && effect.Type != "AdjustCapacity" && !AbilityCooldownModel.IsEffect(effect.Type) && !AbilityLifecycleModel.IsEffect(effect.Type)) effect = Sample(effect, ref effectRng);
@@ -772,7 +773,8 @@ namespace MonsterTrain2Poju.Model
             if (effect.Range == null) return effect;
             RngDraw draw = effect.Range.Sample(rng); rng = draw.State;
             return new CardActionEffect(effect.Type, effect.Target, draw.Value, effect.AllowEnemy, effect.AllowPlayer,
-                effect.Statuses, effect.Upgrade, effect.Lifetime, effect.Tests, effect.Range, effect.Filters, effect.Generation, effect.OnlyIfNoEnemies, effect.CooldownParameter, effect.AbilityChange, effect.CopyHeroStats);
+                effect.Statuses, effect.Upgrade, effect.Lifetime, effect.Tests, effect.Range, effect.Filters, effect.Generation,
+                effect.OnlyIfNoEnemies, effect.CooldownParameter, effect.AbilityChange, effect.CopyHeroStats, effect.ScaleUpgrade);
         }
         private static int TestCount(TrainCombatState state, CardActionEffect effect, CardTargets targets) => effect.Type == "RemoveStatus" &&
             !string.IsNullOrEmpty(effect.Filters?.Subtype) ? state.Rooms.SelectMany(room => room.Units).Count(unit =>
@@ -801,7 +803,8 @@ namespace MonsterTrain2Poju.Model
                 return UnitHealthModel.Apply(state, target.Id, effect.Value, effect.Type == "DebuffHealth", effect.Lifetime);
             if (effect.Type == "UnitUpgrade" || effect.Type == "RemoveUnitUpgrade")
                 return UnitModifierModel.Apply(state, target.Id, effect.Upgrade!, effect.Lifetime,
-                    effect.Type == "RemoveUnitUpgrade", target.Team == CombatTeam.Player ? playerCapacity : enemyCapacity, sourceCardId);
+                    effect.Type == "RemoveUnitUpgrade", target.Team == CombatTeam.Player ? playerCapacity : enemyCapacity,
+                    sourceCardId, scaleUpgrade: effect.ScaleUpgrade);
             if (effect.Type == "AddStatus")
             {
                 if (effect.Value != 0)

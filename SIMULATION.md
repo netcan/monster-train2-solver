@@ -7815,6 +7815,21 @@ unit ability before its battle actions are replayed.
 matched room stages and 28 matched actions. Its five manager calls, including
 temporary reset and failed-filter cases, match exactly; one ability-upgraded
 summon receives the native ability. Capture failures, mismatches, unsupported
-transitions and pending records are zero. The focused regression passes. Other
-trait, card-trigger, replacement and room-ability relic payloads remain
-unsupported; the full 208-archive run is deferred to a completed milestone.
+transitions and pending records are zero. The focused regression passes. At that
+milestone, other trait, card-trigger, replacement and room-ability relic payloads
+remained unsupported; the then-current full 208-archive run was deferred to a
+completed milestone.
+
+### Temporary relic OnKill trigger upgrades
+
+`CardEffectAddCardUpgradeToUnits` now models its native scale-up flag. When a
+non-unique upgrade with the same definition is already present, the model
+accumulates its stats/status stacks in the existing live-unit and source-card
+modifier. The native `PyreHeartSavagery_UpgradeData` relic scenario confirms
+that its OnKill trigger and nested Damage+1 effect reach the Train Steward
+summoned by the upgraded card. The captured battle wins with 49 matched room
+stages, 28 actions, five exact relic-manager calls and zero capture failures,
+mismatches, unsupported transitions or pending records. The focused 1-of-209
+archive regression passes, including 32 immutable branches. The full inventory
+remains deferred to a completed milestone; replacement and room-ability relic
+payloads and broader Boss/effect coverage remain open.

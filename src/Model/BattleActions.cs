@@ -33,13 +33,14 @@ namespace MonsterTrain2Poju.Model
         public bool? CooldownParameter { get; }
         public AbilityChangeRule? AbilityChange { get; }
         public bool? CopyHeroStats { get; }
+        public bool ScaleUpgrade { get; }
         public CardActionEffect(string type, string target, int value, bool allowEnemy, bool allowPlayer, IReadOnlyList<CombatStatus> statuses,
             CardUpgradeModifier? upgrade = null, string lifetime = "", CardEffectTests? tests = null, CardEffectRange? range = null, CardTargetFilters? filters = null,
             CardGenerationRule? generation = null, bool onlyIfNoEnemies = false, bool? cooldownParameter = null,
-            AbilityChangeRule? abilityChange = null, bool? copyHeroStats = null)
+            AbilityChangeRule? abilityChange = null, bool? copyHeroStats = null, bool scaleUpgrade = false)
         { Type = type; Target = target; Value = value; AllowEnemy = allowEnemy; AllowPlayer = allowPlayer; Statuses = Array.AsReadOnly(statuses.ToArray());
             Upgrade = upgrade; Lifetime = lifetime; Tests = tests; Range = range; Filters = filters; Generation = generation; OnlyIfNoEnemies = onlyIfNoEnemies;
-            CooldownParameter = cooldownParameter; AbilityChange = abilityChange; CopyHeroStats = copyHeroStats; }
+            CooldownParameter = cooldownParameter; AbilityChange = abilityChange; CopyHeroStats = copyHeroStats; ScaleUpgrade = scaleUpgrade; }
     }
     public sealed class RoomPlayRule
     {

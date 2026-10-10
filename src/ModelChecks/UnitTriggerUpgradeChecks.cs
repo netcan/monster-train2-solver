@@ -17,9 +17,10 @@ internal static class UnitTriggerUpgradeChecks
         CardUpgradeModifier Upgrade(int damage = 1, int health = 1, string id = "upgrade") =>
             new(id, id, new(damage: damage, health: health), [], false, false, false, 0, 0, []);
         CombatEffect Effect(CardUpgradeModifier upgrade, string lifetime = "TemporaryUntilEndOfBattle", string target = "Self", bool remove = false,
-            CardTargetFilters? filters = null, CardEffectTests? tests = null, bool enemies = false) =>
+            CardTargetFilters? filters = null, CardEffectTests? tests = null, bool enemies = false, bool scale = false) =>
             new(remove ? "CardEffectRemoveTempUpgradeFromUnit" : "CardEffectAddCardUpgradeToUnits", 0, 0, "", 0, [], false,
-                unitUpgrade: new(remove ? "RemoveUnitUpgrade" : "UnitUpgrade", target, 0, enemies, !enemies, [], upgrade, lifetime, tests, filters: filters));
+                unitUpgrade: new(remove ? "RemoveUnitUpgrade" : "UnitUpgrade", target, 0, enemies, !enemies, [], upgrade, lifetime, tests,
+                    filters: filters, scaleUpgrade: scale));
         CombatTrigger Trigger(CombatEffect[] effects, string kind = "OnHeal", bool once = false, bool ignoreSilence = false, int count = 1) =>
             new(kind, once, false, ignoreSilence, count, effects, false);
         CombatUnit Unit(int id, int spawner, CombatTrigger[] triggers, CombatStatus[]? statuses = null) =>
@@ -73,6 +74,19 @@ internal static class UnitTriggerUpgradeChecks
         var simpleOwner = CardInstanceState.Empty(8, "owner");
         var simpleContext = new CombatContext(context.Cards, rng, 0, 10, 10, statistics: context.Statistics,
             cardInstances: [simpleOwner, other], otherPiles: context.OtherPiles);
+        var scaled = Upgrade(1, 1, "scaled");
+        var scaledRoot = new RoomCombatState(0, false, [Unit(1, 8, [Trigger([Effect(scaled, "Permanent", scale: true)])])], [], simpleContext);
+        RoomCombatResult firstScale = RoomCombatModel.ApplyCardHeal(scaledRoot, 1, 0);
+        Require(firstScale.Supported && firstScale.State != null, "The first scaled unit upgrade was unsupported.");
+        RoomCombatResult secondScale = RoomCombatModel.ApplyCardHeal(firstScale.State!, 1, 0);
+        Require(secondScale.Supported && secondScale.State != null, "The repeated scaled unit upgrade was unsupported.");
+        CardUpgradeModifier accumulated = secondScale.State!.Units.Single().Modifiers!.Upgrades.Single();
+        CardUpgradeModifier sourceAccumulated = secondScale.State.Context!.CardInstances!.Single(card => card.InstanceId == 8)
+            .Permanent.Upgrades.Single();
+        Require(secondScale.State.Units.Single().BaseAttack == 4 &&
+            secondScale.State.Units.Single().MaxHealth == 12 && accumulated.Stats.Damage == 2 && accumulated.Stats.Health == 2 &&
+            sourceAccumulated.Stats.Damage == 2 && sourceAccumulated.Stats.Health == 2,
+            "Scaled unit upgrades did not accumulate in one live and spawner-card upgrade instance.");
         CombatUnit attacker = Unit(1, 8, [Trigger([Effect(Upgrade(3, 1), "TemporaryUntilUnitDeath")])],
             [new("lifesteal", 2, removeWhenTriggered: true), new("multistrike", 1, 2)]);
         var enemy = new CombatUnit(3, "enemy", CombatTeam.Enemy, 0, 100, 100, true, false, false, []);

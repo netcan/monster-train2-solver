@@ -15,7 +15,7 @@ The default command still checks the full curated inventory.
 For routine changes, run only the new and directly affected fixtures with
 `-Fixture`; run the full inventory at completed milestones and before delivery.
 
-Current inventory is 208 archives: 177 accepted battles and 31 component
+Current inventory is 209 archives: 178 accepted battles and 31 component
 calibrations. `full-battle-relic-card-status-upgrades.mt2f` verifies a native
 temporary card status upgrade reaches the unit summoned by that card.
 `full-battle-relic-card-piercing-upgrades.mt2f` verifies a native relic's
@@ -30,6 +30,10 @@ SelfPurge traits route played spells into Purged and remove them from deck count
 `full-battle-relic-card-ability-upgrades.mt2f` verifies the real
 `StewardSacrificeDamage_Upgrade` relic payload gives its summoned Train Steward
 the recorded unit ability.
+`full-battle-relic-card-trigger-upgrades.mt2f` verifies the real
+`PyreHeartSavagery_UpgradeData` relic payload gives its summoned Train Steward
+the native OnKill trigger and models repeated same-definition unit-upgrade
+accumulation. Its focused battle replay matches all 49 room stages and 28 actions.
 
 The initial Incant model's complete 180-archive regression passes.
 The threshold model's combined181 regression has also completed successfully.

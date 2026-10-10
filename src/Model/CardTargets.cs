@@ -175,7 +175,8 @@ namespace MonsterTrain2Poju.Model
 
         internal static CardTargets RandomCandidates(TrainCombatState train, int roomIndex, CardActionEffect effect) => Collect(train, roomIndex,
             new CardActionEffect(effect.Type, effect.Target == "RandomFromAnyRoom" ? "Tower" : "Room", effect.Value, effect.AllowEnemy,
-                effect.AllowPlayer, effect.Statuses, effect.Upgrade, effect.Lifetime, effect.Tests, effect.Range, effect.Filters), Array.Empty<int>());
+                effect.AllowPlayer, effect.Statuses, effect.Upgrade, effect.Lifetime, effect.Tests, effect.Range, effect.Filters,
+                copyHeroStats: effect.CopyHeroStats, scaleUpgrade: effect.ScaleUpgrade), Array.Empty<int>());
 
         private static bool MatchesFilters(CardActionEffect effect, CombatUnit unit, bool dropOverride, ref string? error)
         {

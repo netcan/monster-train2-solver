@@ -20,14 +20,18 @@ namespace MonsterTrain2Poju.Probe
                 effect.GetUseStatusEffectStackMultiplier() || effect.GetUseHealthMissingStackMultiplier() ||
                 effect.GetUseMagicPowerMultiplier() || !effect.GetParamSubtype().IsNone)
                 interactions.Add("Unmodeled triggered unit upgrade parameters");
-            if (effect.GetEffectStateName() == "CardEffectAddCardUpgradeToUnits" && effect.GetParamBool())
-                interactions.Add("Triggered single-instance upgrade accumulation");
+            bool scaleUpgrade = effect.GetEffectStateName() == "CardEffectAddCardUpgradeToUnits" && effect.GetParamBool();
             CardUpgradeModifier? upgrade = null;
             if (effect.GetParamCardUpgradeData() == null) interactions.Add("Missing triggered unit upgrade definition");
             else
             {
-                var state = new CardUpgradeState(); state.Setup(effect.GetParamCardUpgradeData());
-                upgrade = CardModifierProbe.Upgrade(state); interactions.AddRange(upgrade.ExternalInteractions);
+                CardUpgradeData data = effect.GetParamCardUpgradeData();
+                if (scaleUpgrade && !data.CanScaleUpgradeToSingleInstance())
+                    interactions.Add("Invalid scaled triggered unit upgrade definition");
+                var state = new CardUpgradeState(); state.Setup(data);
+                bool filtersIgnoredByEffect = effect.GetEffectStateName() == "CardEffectAddCardUpgradeToUnits";
+                upgrade = CardModifierProbe.Upgrade(state, false, filtersAlreadyApplied: filtersIgnoredByEffect);
+                interactions.AddRange(upgrade.ExternalInteractions);
             }
             var excluded = new List<SubtypeData>(); effect.GetTargetCharacterExcludedSubtypes(excluded);
             string type = effect.GetEffectStateName() == "CardEffectRemoveTempUpgradeFromUnit" ? "RemoveUnitUpgrade" : "UnitUpgrade";
@@ -39,7 +43,7 @@ namespace MonsterTrain2Poju.Probe
                 new CardTargetFilters(effect.GetTargetModeHealthFilter().ToString(), effect.GetTargetModeStatusEffectsFilter(),
                     effect.GetTargetModeStatusEffectsExcludedFilter(), effect.GetTargetIgnoreBosses(),
                     effect.GetTargetCharacterSubtype().IsNone ? "" : effect.GetTargetCharacterSubtype().Key,
-                    excluded.Select(subtype => subtype.IsNone ? "" : subtype.Key).ToArray()));
+                    excluded.Select(subtype => subtype.IsNone ? "" : subtype.Key).ToArray()), scaleUpgrade: scaleUpgrade);
         }
     }
 }

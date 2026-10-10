@@ -625,13 +625,13 @@ namespace MonsterTrain2Poju.Model
         }
 
         internal static RoomCombatResult ApplyUnitUpgrade(RoomCombatState state, int targetId, CardUpgradeModifier upgrade,
-            string lifetime, bool remove, int? roomCapacity, int sourceCardId, string? triggerKind)
+            string lifetime, bool remove, int? roomCapacity, int sourceCardId, string? triggerKind, bool scaleUpgrade = false)
         {
             string? error = Validate(state);
             if (error != null || !state.Units.Any(unit => unit.Id == targetId))
                 return new RoomCombatResult(null, RoomOutcome.Unsupported, 0, new List<CombatEvent>(), error ?? "Missing unit upgrade target.");
             return new Engine(state, new List<CombatEvent>(), resetPreviewTriggers: false)
-                .UnitUpgrade(targetId, upgrade, lifetime, remove, roomCapacity, sourceCardId, triggerKind);
+                .UnitUpgrade(targetId, upgrade, lifetime, remove, roomCapacity, sourceCardId, triggerKind, scaleUpgrade: scaleUpgrade);
         }
 
         internal static RoomCombatResult ApplyDirectUnitUpgrade(RoomCombatState state, int targetId, CardUpgradeModifier upgrade,
@@ -1112,10 +1112,12 @@ namespace MonsterTrain2Poju.Model
 
             internal RoomCombatResult UnitUpgrade(int targetId, CardUpgradeModifier upgrade, string lifetime,
                 bool remove, int? roomCapacity, int sourceCardId, string? triggerKind, bool directApi = false,
+                bool scaleUpgrade = false,
                 string upgradeId = "", int? anonymousRemovalIndex = null, int equipmentSourceCardId = 0)
             {
                 ApplyUpgrade(units.Single(unit => unit.Source.Id == targetId), upgrade, lifetime, remove,
-                    roomCapacity, sourceCardId, triggerKind, directApi, upgradeId, anonymousRemovalIndex, equipmentSourceCardId);
+                    roomCapacity, sourceCardId, triggerKind, directApi, upgradeId, anonymousRemovalIndex,
+                    equipmentSourceCardId, scaleUpgrade);
                 if (enqueueCharacterTrigger == null && !runningTriggerQueue) DrainLocalTriggerQueue();
                 return Finish(battleWon ? RoomOutcome.BattleWon : units.Any(unit => unit.Source.IsPyre && !unit.Alive)
                     ? RoomOutcome.PlayerDefeated : RoomOutcome.Exchanged);
@@ -2360,7 +2362,8 @@ namespace MonsterTrain2Poju.Model
 
             private bool ApplyUpgrade(WorkingUnit target, CardUpgradeModifier upgrade, string lifetime, bool remove,
                 int? roomCapacity, int sourceCardId, string? kind, bool directApi = false,
-                string upgradeId = "", int? anonymousRemovalIndex = null, int equipmentSourceCardId = 0)
+                string upgradeId = "", int? anonymousRemovalIndex = null, int equipmentSourceCardId = 0,
+                bool scaleUpgrade = false)
             {
                 RoomCombatResult result = UnitModifierModel.ApplyWithSettlement(UpgradeRoom(target), target.Source.Id, upgrade, lifetime,
                     remove, roomCapacity, sourceCardId, kind, (state, changed, sacrifice) =>
@@ -2390,7 +2393,7 @@ namespace MonsterTrain2Poju.Model
                         return new RoomCombatResult(UpgradeRoom(target), RoomOutcome.Exchanged, 0, new List<CombatEvent>());
                     }, allowDyingTarget: true, enqueueCallback: QueueCallback, directApi: directApi,
                     upgradeId: upgradeId, anonymousRemovalIndex: anonymousRemovalIndex, equipmentSourceCardId: equipmentSourceCardId,
-                    deferAbilityCallbacks: !directApi || deferAbilityCallbacks || runningTriggerQueue);
+                    deferAbilityCallbacks: !directApi || deferAbilityCallbacks || runningTriggerQueue, scaleUpgrade: scaleUpgrade);
                 if (!result.Supported) { unsupportedReason = result.UnsupportedReason; return false; }
                 context = result.State!.Context;
                 return true;
@@ -2467,7 +2470,7 @@ namespace MonsterTrain2Poju.Model
                     WorkingUnit? target = units.FirstOrDefault(unit => unit.Source.Id == targetId && (unit.Alive || action.Target == "Self" && unit == actor || action.Target == "LastAttackedCharacter"));
                     if (target == null) continue;
                     if (!ApplyUpgrade(target, action.Upgrade!, action.Lifetime, action.Type == "RemoveUnitUpgrade",
-                        null, actor.Source.SpawnerCardId, kind)) return false;
+                        null, actor.Source.SpawnerCardId, kind, scaleUpgrade: action.ScaleUpgrade)) return false;
                     Emit(action.Type, actor, target, 0);
                 }
                 return true;
