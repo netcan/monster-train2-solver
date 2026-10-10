@@ -137,6 +137,13 @@ its descriptor through upgrade/trait/trigger lifecycles. Temporary relic effects
 remain refused until that complete integration is verified. The earlier frozen
 189/190 regressions do not establish this later model's combined result.
 
+The frozen owned-view complete191 regression now retains terminal exit0 at
+2026-10-10T13:57:56.6806960Z. Its audited output verifies all162 battles (158
+paid/four no-more-card chains) and29 ordered calibrations, with no failed or
+unsupported core transitions. Every input and frozen model/checker hash matches.
+This baseline precedes temporary-upgrade lifecycles and branch-owned battle
+descriptors; it does not establish either later version's full regression.
+
 `card-owned-mask-calibration.mt2f` retains the schema1 native branch-query
 acceptance described above:13,129 bytes/1,709 nodes, SHA256
 845dfedbef2552e647dd8c4ee8a7cebcaf85670ea557e160fe4501156d7b0c9f.
