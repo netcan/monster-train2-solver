@@ -237,6 +237,15 @@ identity and both retained binary hashes, with no failed/unsupported core
 transitions. This proves the lifecycle version's historical regression; the later
 branch-owned adapter and full198 run remain a separate validation scope.
 
+The frozen branch-owned adapter complete198 regression has also completed with
+durable exit0 at2026-10-10T15:15:54.2894370Z. Its independent output audit verifies
+all168 accepted battles (164 paid/four no-more-card chains),30 ordered component
+calibrations and all six card-view oracles:3,125 contexts,74,855 exact views and
+34,725 upgraded-card observations. Every manifest input and both retained binary
+hashes match, with zero failed/unsupported core transitions. This proves that
+adapter version; the later relic card kernel/full199 and subsequent actual battle
+relic-manager integration require their own regressions.
+
 The subsequent card-side RelicEffectAddTempUpgrade kernel preserves source-team
 and null-upgrade gates, sequential filter dispatch, lazy query/cache changes,
 fresh installed-upgrade identity, native temporary application and body refresh.
