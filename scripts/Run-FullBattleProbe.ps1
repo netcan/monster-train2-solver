@@ -114,6 +114,7 @@ param(
     [switch] $ModifierOverflow,
     [switch] $TraitComposition,
     [switch] $CardStatusComposition,
+    [switch] $OwnedCardMasks,
     [switch] $IncantRelic,
     [switch] $IncantRelics,
     [switch] $SpawnStatusRelics,
@@ -247,6 +248,7 @@ $environment = @{
     MT2_PROBE_MODIFIER_OVERFLOW = $(if ($ModifierOverflow) { '1' } else { '0' })
     MT2_PROBE_TRAIT_COMPOSITION = $(if ($TraitComposition) { '1' } else { '0' })
     MT2_PROBE_CARD_STATUS_COMPOSITION = $(if ($CardStatusComposition) { '1' } else { '0' })
+    MT2_PROBE_OWNED_CARD_MASKS = $(if ($OwnedCardMasks) { '1' } else { '0' })
     MT2_PROBE_SETTLE_DEATH_DISSOLVES = $(if ($SettleDeathDissolves) { '1' } else { '0' })
     MT2_PROBE_SETTLE_CARD_ANIMATIONS = $(if ($SettleCardAnimations) { '1' } else { '0' })
     MT2_PROBE_STATUS_CALLBACKS = $(if ($HordeStatuses -or $StatusCallbacks) { '1' } else { '0' })
@@ -375,6 +377,22 @@ if ($CardStatusComposition) {
             $statusData.GetProperty('Rows').GetArrayLength() -ne 1039) { throw 'Incomplete or mutating card status composition calibration.' }
         Write-Output 'NATIVE-CARD-STATUS-COMPOSITION-CAPTURE PASS: 1039 original-owned/controlled status queries; unchanged context/RNG/frame.'
     } finally { $statusArchive.Dispose() }
+}
+if ($OwnedCardMasks) {
+    Add-Type -Path (Join-Path $workspace 'src\FixtureArchive\bin\Release\net8.0\FixtureArchive.dll')
+    $ownedArchive = [MonsterTrain2Poju.Fixtures.FixtureDocument]::Read((Join-Path $profile 'card-owned-mask-calibration.mt2f'))
+    try {
+        $ownedData = $ownedArchive.RootElement
+        if ($ownedData.GetProperty('Schema').GetInt32() -ne 1 -or
+            -not $ownedData.GetProperty('ContextUnchanged').GetBoolean() -or
+            $ownedData.GetProperty('GameModuleMvid').GetString() -ne $trace.GameModuleMvid -or
+            $ownedData.GetProperty('FrameBefore').GetInt32() -ne $ownedData.GetProperty('FrameAfter').GetInt32() -or
+            -not $ownedData.GetProperty('RngBefore').ContentEquals($ownedData.GetProperty('RngAfter')) -or
+            $ownedData.GetProperty('Rows').GetArrayLength() -ne 416 -or
+            $ownedData.GetProperty('Masks').GetArrayLength() -ne 62 -or
+            -not $ownedData.GetProperty('ParameterTraitPresent').GetBoolean()) { throw 'Incomplete or mutating owned card mask calibration.' }
+        Write-Output 'NATIVE-OWNED-CARD-MASK-CAPTURE PASS: 416 owned/controlled carried views and 62 original masks; unchanged context/RNG/frame.'
+    } finally { $ownedArchive.Dispose() }
 }
 if ($ModifierOverflow) {
     Add-Type -Path (Join-Path $workspace 'src\FixtureArchive\bin\Release\net8.0\FixtureArchive.dll')

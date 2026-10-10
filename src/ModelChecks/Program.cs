@@ -1,6 +1,16 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
 
+if (args.Length == 1 && args[0] == "--owned-card-mask-pure")
+{
+    CardOwnedMaskChecks.Run();
+    return;
+}
+if (args.Length == 2 && args[0] == "--owned-card-mask-only")
+{
+    CardOwnedMaskChecks.Native(args[1]);
+    return;
+}
 if (args.Length == 1 && args[0] == "--card-status-composition-pure")
 {
     CardStatusCompositionChecks.Run();
@@ -276,6 +286,7 @@ RelicSpawnStatusChecks.Run();
 CardUpgradeMaskChecks.Run();
 CardTraitCompositionChecks.Run();
 CardStatusCompositionChecks.Run();
+CardOwnedMaskChecks.Run();
 BattleStatisticsChecks.Run();
 StatisticOverflowChecks.Run();
 StatisticZeroIncrementChecks.Run();
@@ -341,6 +352,8 @@ foreach (string path in args.Where(path => path.Contains("card-trait-composition
     CardTraitCompositionChecks.Native(path);
 foreach (string path in args.Where(path => path.Contains("card-status-composition-calibration", StringComparison.OrdinalIgnoreCase)))
     CardStatusCompositionChecks.Native(path);
+foreach (string path in args.Where(path => path.Contains("card-owned-mask-calibration", StringComparison.OrdinalIgnoreCase)))
+    CardOwnedMaskChecks.Native(path);
 foreach (string path in args.Where(path => path.Contains("rng-calibration", StringComparison.OrdinalIgnoreCase)))
     RngChecks.Run(path);
 foreach (string path in args.Where(path => path.Contains("gold-reward-calibration", StringComparison.OrdinalIgnoreCase)))

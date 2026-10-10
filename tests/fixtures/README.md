@@ -102,6 +102,33 @@ status query capture described above:11,026 bytes/3,316 nodes, SHA256
 f2c2a6d4da1bb317b68e5778a66f9db8e6a761da4c5744e87033962191ac5582.
 It has no JSON source/companion and joins the curated binary regression list.
 
+The subsequent owned-card mask view model derives current cost/size, two-stage
+status groups, trait names/parameter effects, visible upgrades, duplicate upgrade
+IDs and unit ability/graft flags from immutable branch values. It carries native
+lazy trait cache state:own dirty flag, both modifier counters and both saved
+counters. Repeated clean queries preserve pending replacement order instead of
+forcing another refresh. Native CardTraitData.None placeholders retain null
+trait names; their replacement uses the definition's removable flag separately
+from the runtime dummy flag. DefinitionRemovable is optional for older captures;
+the original None definition supplies its known default when absent.
+
+Exact native acceptance covers416 carried states/views:15 isolated owned copies,
+192 controlled unit/spell combinations and a None-definition replacement edge,
+each queried twice. All25,792 outcomes across62 unchanged original masks and
+permanent-only costs match, with32 immutable branches. The muted Instant capture
+exits zero in103.08 seconds with complete context, RNG/frame and original files
+unchanged. Its separate21-play/seven-EndTurn battle matches independent initial/
+mid-battle policies, Pyre73; all pure checks and the mask/overflow/trait/status
+calibrations pass. Frozen checker binaries are retained under
+.probe-runs/owned-card-mask-final-checks:Model SHA256
+8714E08890A269EA7B6C2E19EEE65B68B124552D235C27B4C3297986DA51C285,
+ModelChecks SHA256
+32598863275AC0AC62E1BE0A987901F6DEE5EF1AF3808EA20DCC7B71BFF2D672.
+This is the branch-query model; the battle adapter still needs to own and update
+its descriptor through upgrade/trait/trigger lifecycles. Temporary relic effects
+remain refused until that complete integration is verified. The earlier frozen
+189/190 regressions do not establish this later model's combined result.
+
 `full-battle-incant-relic.mt2f` retains schema108 with the original obtainable
 ExtraSpellCastTrigger acquired through SaveManager. The relic asset is unchanged;
 authored unit/spell triggers exercise count2 player Incant and count1 enemy Incant,

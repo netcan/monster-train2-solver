@@ -11,20 +11,25 @@ namespace MonsterTrain2Poju.Model
         public int DefinitionParamInt { get; }
         public int ParamInt { get; }
         public bool Removable { get; }
+        public bool? DefinitionRemovable { get; }
         public int StackMode { get; }
         public bool TemporaryReplacement { get; }
         public IReadOnlyList<string> ParameterUpgradeCastEffects { get; }
+        // Historical capture flag for a declared name. Native CardTraitData.None
+        // is non-null and remains in GetTraits with a null declared name.
         public bool HasData => DeclaredName != null;
         public CardTraitValue(string runtimeType, string? declaredName, int definitionParamInt, int paramInt,
-            bool removable, int stackMode, bool temporaryReplacement = false, IReadOnlyList<string>? parameterUpgradeCastEffects = null)
+            bool removable, int stackMode, bool temporaryReplacement = false, IReadOnlyList<string>? parameterUpgradeCastEffects = null,
+            bool? definitionRemovable = null)
         {
             RuntimeType = runtimeType; DeclaredName = declaredName; DefinitionParamInt = definitionParamInt; ParamInt = paramInt;
             Removable = removable; StackMode = stackMode; TemporaryReplacement = temporaryReplacement;
+            DefinitionRemovable = definitionRemovable ?? (declaredName == null ? true : removable);
             ParameterUpgradeCastEffects = Array.AsReadOnly((parameterUpgradeCastEffects ?? Array.Empty<string>()).ToArray());
         }
         internal CardTraitValue Retyped(CardTraitReplacement replacement, bool temporary) =>
             new CardTraitValue(replacement.NewRuntimeType, replacement.NewName, DefinitionParamInt, DefinitionParamInt,
-                Removable, StackMode, temporary, ParameterUpgradeCastEffects);
+                DefinitionRemovable ?? Removable, StackMode, temporary, ParameterUpgradeCastEffects, DefinitionRemovable);
         internal static CardTraitValue Dummy() => new CardTraitValue("CardTraitDummy", null, 0, 0, false, 0);
     }
 
@@ -70,7 +75,6 @@ namespace MonsterTrain2Poju.Model
             {
                 int index = bases.FindIndex(trait => trait.RuntimeType == replacement.OldName);
                 if (index < 0) continue;
-                if (!bases[index].HasData) throw new InvalidOperationException("Native replacement requires a trait definition.");
                 CardTraitValue added = removed.Contains(replacement.NewRuntimeType) ? CardTraitValue.Dummy() : bases[index].Retyped(replacement, false);
                 bases.RemoveAt(index);
                 // AddTrait also checks the previous combined list's length when
