@@ -80,7 +80,7 @@ are copied immutable values; independent child states can run on worker threads.
 | Statistic-driven damage traits | `DamageScalingModel` and `RoomCombatModel` | 63 native callbacks with complete refreshed contexts; trait order, replacement/addition, explicit-source upgrades, per-hit statistics and Boss/Pyre kill previews |
 | Dynamic statistic inputs | `CombatContext.QueryFrame` and turn/card transitions | 255 native damage callbacks and 48 decision boundaries; payment, combat, rollover, previews and settled terminal resources, plus multi-turn and parallel branches |
 | Card instance modifiers | `CardModifierModel` | Permanent/temporary ordered numeric upgrades, unit starting statuses, discard removal, play history and 256 native scalar calculations |
-| Relic card modifiers | `RelicCardModifierModel` and `CardUpgradeLifecycleModel` | Native ordering/conditions, numeric/status/IgnoreArmor/SelfPurge upgrades, generation and cardless births; reset retains pre-existing permanent and temporary upgrade lifecycle metadata. Other trait, trigger, replacement and ability payloads remain explicitly rejected. |
+| Relic card modifiers | `RelicCardModifierModel` and `CardUpgradeLifecycleModel` | Native ordering/conditions, numeric/status/IgnoreArmor/SelfPurge upgrades, unit-ability upgrades, generation and cardless births; reset retains pre-existing permanent and temporary upgrade lifecycle metadata. Other traits, card triggers, replacements and room-ability payloads remain explicitly rejected. |
 | Retained card references | `CombatContext.CardRegistry` | Observed card identities survive pile clearing; detached spawner upgrades/removal preserve ownership and parent isolation |
 | Standby dictionary allocation | `CardPileModel` | Captured entry slots and free-list order preserve native hole reuse after unit death; malformed layouts, distinct futures, terminal clear and parallel branches |
 | Shared secondary card piles | `CombatContext.OtherPiles` | Room and spell resolution carry standby/exhausted/eaten/purged/buffer state, immediate and deferred spawner returns, terminal clearing and immutable parallel branches |
@@ -7800,5 +7800,21 @@ without a branch-owned mask descriptor keep their captured destination.
 spells reaching Purged and leaving deck counts. The native battle wins with 51
 stages and 28 actions; capture failures, mismatches, unsupported transitions and
 pending records are zero. Its focused model/native regression passes. The full
-207-archive run remains deferred to a completed milestone; other trait,
-trigger, replacement and ability relic payloads are still unsupported.
+207-archive run remained deferred at that milestone; other traits,
+card-trigger, replacement and room-ability relic payloads are still unsupported.
+
+### Temporary relic unit-ability upgrades
+
+`RelicCardModifierModel` accepts a captured unit-ability upgrade only when the
+upgrade definition marks an ability and includes its native common triggers.
+`StewardSacrificeDamage_Upgrade` exercises the real catalog payload: the relic
+manager installs it on a Train Steward, and the summoned unit receives the same
+unit ability before its battle actions are replayed.
+
+`full-battle-relic-card-ability-upgrades.mt2f` wins the native battle with 49
+matched room stages and 28 matched actions. Its five manager calls, including
+temporary reset and failed-filter cases, match exactly; one ability-upgraded
+summon receives the native ability. Capture failures, mismatches, unsupported
+transitions and pending records are zero. The focused regression passes. Other
+trait, card-trigger, replacement and room-ability relic payloads remain
+unsupported; the full 208-archive run is deferred to a completed milestone.

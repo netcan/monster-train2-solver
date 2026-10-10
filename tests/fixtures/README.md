@@ -15,7 +15,7 @@ The default command still checks the full curated inventory.
 For routine changes, run only the new and directly affected fixtures with
 `-Fixture`; run the full inventory at completed milestones and before delivery.
 
-Current inventory is 207 archives: 176 accepted battles and 31 component
+Current inventory is 208 archives: 177 accepted battles and 31 component
 calibrations. `full-battle-relic-card-status-upgrades.mt2f` verifies a native
 temporary card status upgrade reaches the unit summoned by that card.
 `full-battle-relic-card-piercing-upgrades.mt2f` verifies a native relic's
@@ -27,6 +27,9 @@ differential failures. Its focused native and model checks pass; the next
 milestone full regression will include it.
 `full-battle-relic-card-self-purge-upgrades.mt2f` verifies temporary relic
 SelfPurge traits route played spells into Purged and remove them from deck counts.
+`full-battle-relic-card-ability-upgrades.mt2f` verifies the real
+`StewardSacrificeDamage_Upgrade` relic payload gives its summoned Train Steward
+the recorded unit ability.
 
 The initial Incant model's complete 180-archive regression passes.
 The threshold model's combined181 regression has also completed successfully.
@@ -1985,4 +1988,16 @@ deferred to a completed milestone.
 played cards enter the Purged pile and leave permanent deck membership. The
 full native battle wins with 51 stages, 28 actions, zero mismatches, unsupported
 transitions, capture failures or pending records. The focused fixture and model
-checks pass; the full 207-archive regression remains deferred to a milestone.
+checks pass; the full 207-archive regression remained deferred at that milestone.
+
+### Temporary relic unit-ability upgrades
+
+`full-battle-relic-card-ability-upgrades.mt2f` uses the real
+`StewardSacrificeDamage_Upgrade` payload from the native relic catalog. The
+captured relic manager adds the ability upgrade, resets the temporary group and
+filters other owned cards. One played Train Steward summons with the same unit
+ability. The battle wins with 49 matched room stages and 28 matched actions; all
+five manager calls and 32 immutable branches pass with zero capture failures,
+mismatches, unsupported transitions or pending records. The focused fixture
+passes; the full 208-archive regression remains deferred to a completed
+milestone.

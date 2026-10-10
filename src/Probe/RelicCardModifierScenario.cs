@@ -14,8 +14,9 @@ namespace MonsterTrain2Poju.Probe
         {
             if (!RelicCardModifierProbe.Enabled || Prepared) return;
             int selectedScenario = new[] { "MT2_PROBE_RELIC_CARD_STATUS_UPGRADE", "MT2_PROBE_RELIC_CARD_PIERCING_UPGRADE",
-                "MT2_PROBE_RELIC_CARD_SELF_PURGE_UPGRADE" }.Count(name => Environment.GetEnvironmentVariable(name) == "1");
-            if (selectedScenario > 1) throw new InvalidOperationException("Relic card status, piercing and self-purge scenarios are mutually exclusive.");
+                "MT2_PROBE_RELIC_CARD_SELF_PURGE_UPGRADE", "MT2_PROBE_RELIC_CARD_ABILITY_UPGRADE" }
+                .Count(name => Environment.GetEnvironmentVariable(name) == "1");
+            if (selectedScenario > 1) throw new InvalidOperationException("Relic card status, piercing, self-purge and ability scenarios are mutually exclusive.");
             var save = managers.GetSaveManager();
             var original = save.GetAllGameData().GetAllCollectableRelicData().Single(relic => relic.name == "ReduceStarterCost");
             var cards = managers.GetCardManager()!;
@@ -38,9 +39,14 @@ namespace MonsterTrain2Poju.Probe
                 InstallPiercingUpgrade(save.GetAllGameData(), relicEffect);
             if (Environment.GetEnvironmentVariable("MT2_PROBE_RELIC_CARD_SELF_PURGE_UPGRADE") == "1")
                 InstallSelfPurgeUpgrade(relicEffect);
+            bool abilityScenario = Environment.GetEnvironmentVariable("MT2_PROBE_RELIC_CARD_ABILITY_UPGRADE") == "1";
+            if (abilityScenario) InstallStewardAbilityUpgrade(save.GetAllGameData(), relicEffect);
             var filters = UpgradeData(relicEffect).GetFilters();
-            var eligible = owned.Where(card => filters.All(filter => filter.FilterCard(card, managers.GetRelicManager()))).Take(2).ToArray();
-            if (eligible.Length != 2) throw new InvalidOperationException("Relic scenario lacks eligible repeated/reset owned cards.");
+            var eligible = owned.Where(card => filters.All(filter => filter.FilterCard(card, managers.GetRelicManager())))
+                .Take(abilityScenario ? 1 : 2).ToArray();
+            int requiredEligibleCards = abilityScenario ? 1 : 2;
+            if (eligible.Length != requiredEligibleCards)
+                throw new InvalidOperationException("Relic scenario has " + eligible.Length + " eligible owned cards; required " + requiredEligibleCards + ".");
             CaptureReady = true;
             foreach (var card in eligible)
             {
@@ -53,7 +59,7 @@ namespace MonsterTrain2Poju.Probe
             AccessTools.Field(typeof(CombatManager), "combatStateChanged").SetValue(managers.GetCombatManager(), true);
             log.LogInfo("RELIC-CARD-MODIFIERS-PREPARED unchanged original ReduceStarterCost, native acquire/repeat/reset and battle-generated cards; conditional=" +
                 (Environment.GetEnvironmentVariable("MT2_PROBE_CONDITIONAL_BATTLE_RELIC_UPGRADES") == "1") + ", status=" +
-                (Environment.GetEnvironmentVariable("MT2_PROBE_RELIC_CARD_STATUS_UPGRADE") == "1") + ".");
+                (Environment.GetEnvironmentVariable("MT2_PROBE_RELIC_CARD_STATUS_UPGRADE") == "1") + ", ability=" + abilityScenario + ".");
 
             static RelicState CurrentRelic(AllGameManagers managers)
             {
@@ -114,6 +120,15 @@ namespace MonsterTrain2Poju.Probe
                 AccessTools.Field(typeof(CardUpgradeData), "filters").SetValue(clone, new List<CardUpgradeMaskData> { spellMask });
                 AccessTools.Field(typeof(CardUpgradeData), "isUnique").SetValue(clone, original.IsUnique());
                 AccessTools.Field(typeof(RelicEffectAddTempUpgrade), "_cardUpgradeData").SetValue(effect, clone);
+            }
+
+            static void InstallStewardAbilityUpgrade(AllGameData gameData, RelicEffectAddTempUpgrade effect)
+            {
+                CardUpgradeData source = gameData.GetAllCardUpgradeData().Single(upgrade =>
+                    upgrade.GetAssetKey() == "StewardSacrificeDamage_Upgrade");
+                if (source.GetUnitAbilityUpgrade() == null || source.GetFilters().Count == 0 || !source.IsUnique())
+                    throw new InvalidOperationException("Original StewardSacrificeDamage upgrade definition changed.");
+                AccessTools.Field(typeof(RelicEffectAddTempUpgrade), "_cardUpgradeData").SetValue(effect, source);
             }
 
             static void InstallOncePerTurnCondition(AllGameManagers managers, CardState sample)

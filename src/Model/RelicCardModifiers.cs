@@ -76,8 +76,13 @@ namespace MonsterTrain2Poju.Model
                     return "Supported relic upgrade trait lifecycle is missing or differs from its native definition.";
                 if (upgrade != null && (upgrade.MaskMetadata == null || upgrade.ExternalInteractions.Count > 0))
                     return "Unmodeled relic card upgrade payload: " + string.Join("; ", upgrade.ExternalInteractions);
-                if (upgrade != null && (upgrade.AbilityUpgrade != null || upgrade.UnhealedHealth != 0 || upgrade.DamageBuff != 0))
-                    return "Unmodeled relic upgrade ability or additional unit health/damage behavior.";
+                bool expectsAbility = template?.Values.UnitAbility == true;
+                bool hasAbility = upgrade?.AbilityUpgrade?.Definition != null;
+                if (expectsAbility != hasAbility || hasAbility && (upgrade!.AbilityUpgrade!.Definition!.IsUnitAbility != true ||
+                    upgrade.AbilityUpgrade.CommonTriggers.Count == 0))
+                    return "Relic unit ability upgrade definition or common triggers are missing or inconsistent.";
+                if (upgrade != null && (upgrade.UnhealedHealth != 0 || upgrade.DamageBuff != 0))
+                    return "Unmodeled relic additional unit health/damage behavior.";
                 if (template != null && upgrade != null && new[] { "Damage", "Health", "Cost", "Heal", "Size", "XCost", "EquipmentLimit", "UpgradeSlotCount" }
                     .Any(stat => template.Values.Stats.Value(stat) != upgrade.Stats.Value(stat))) return "Relic card upgrade numeric payload differs.";
             }

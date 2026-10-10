@@ -45,6 +45,25 @@ internal static class RelicCardModifierChecks
             result.Card!.Temporary.Upgrades.Count == 1 && result.Card.Temporary.Upgrades[0].DataId == "temporary-add-piercing",
             "Relic reset lost a permanent removed-trait rule before a later effect filter.");
         Console.WriteLine("RELIC-CARD-RESET-CHECKS PASS: permanent removed traits survive reset and constrain later ordered effect filters.");
+
+        var abilityDefinition = new UnitAbilityDefinition("steward-sacrifice", true, 1, 1, null);
+        var ability = new AbilityChangeRule(abilityDefinition, false, false,
+            [new CombatTrigger("OnOwnAbilityActivated", false, false, true, 1, [], skipDuringDeployment: false)]);
+        var abilityValues = new CardMaskUpgrade("steward-sacrifice-upgrade", new CardStatModifier(), [], false, false, false, true);
+        var abilityLifecycle = new CardLifecycleUpgrade(abilityValues, "StewardSacrificeDamage_Upgrade", true, false,
+            [], [], false, [], [], []);
+        var abilityUpgrade = new CardUpgradeModifier("steward-sacrifice-upgrade", "StewardSacrificeDamage_Upgrade",
+            new CardStatModifier(), [], false, true, false, 0, 0, [], abilityUpgrade: ability,
+            maskMetadata: Metadata(), lifecycle: abilityLifecycle);
+        var abilityCard = new CardInstanceState(2, definition.DataId, CardModifiers.Empty(), CardModifiers.Empty(), 0, 0, 0, [],
+            maskDescriptor: descriptor);
+        var abilityModifier = new RelicCardModifier(0,
+            new RelicCardUpgradeRule("steward-sacrifice-upgrade", true, abilityLifecycle, []), abilityUpgrade, false);
+        var abilityRelic = new CombatRelicState("ability-relic", "AbilityRelic", [RelicModel.AddTempUpgrade], cardModifiers: [abilityModifier]);
+        RelicCardModifierResult abilityResult = RelicCardModifierModel.Apply(abilityCard, [abilityRelic], resetTemporary: false);
+        Require(abilityResult.Supported && abilityResult.Card!.Temporary.Upgrades.Single().AbilityUpgrade?.Definition?.DataId ==
+            "steward-sacrifice", "A supported relic unit-ability upgrade was rejected or lost during application: " + abilityResult.UnsupportedReason);
+        Console.WriteLine("RELIC-CARD-ABILITY-CHECKS PASS: unit ability upgrade payload survives native relic application.");
     }
 
     internal static void Native(FixtureValue root, bool required = false)
@@ -70,7 +89,9 @@ internal static class RelicCardModifierChecks
             scenario.GetString() == "relic-card-piercing-upgrades";
         bool selfPurgeUpgradeScenario = root.TryGetProperty("ModifierScenario", out scenario) &&
             scenario.GetString() == "relic-card-self-purge-upgrades";
-        bool sawExpectedRejection = statusUpgradeScenario || piercingUpgradeScenario
+        bool abilityUpgradeScenario = root.TryGetProperty("ModifierScenario", out scenario) &&
+            scenario.GetString() == "relic-card-ability-upgrades";
+        bool sawExpectedRejection = statusUpgradeScenario || piercingUpgradeScenario || abilityUpgradeScenario
             ? rows.Any(row => row.Dispatches.Any(effect => !effect.Returned && !effect.UpgradeAdded))
             : rows.Any(row => !row.Reset && row.Dispatches.Any(effect => effect.Returned && !effect.UpgradeAdded));
         Require(rows.Length > 0 && sawExpectedRejection &&
@@ -167,17 +188,40 @@ internal static class RelicCardModifierChecks
             Require(modifierContainsTrait && playedCardContainsTrait,
                 "Native relic piercing trait was not retained on an independently played card.");
         }
+        if (abilityUpgradeScenario)
+        {
+            int abilityUpgradedSummons = 0;
+            foreach (FixtureValue entry in root.GetProperty("Actions").EnumerateArray())
+            {
+                BattleTurnState before = entry.GetProperty("Before").Deserialize<BattleTurnState>()!;
+                PlayCardAction action = entry.GetProperty("Action").Deserialize<PlayCardAction>()!;
+                CardInstanceState? card = before.Spawn.Train.Context!.FindCard(action.CardInstanceId);
+                AbilityChangeRule? ability = card?.Temporary.Upgrades.Select(upgrade => upgrade.AbilityUpgrade)
+                    .FirstOrDefault(candidate => candidate?.Definition != null);
+                if (ability?.Definition == null) continue;
+                BattleTurnState actual = entry.GetProperty("Actual").Deserialize<BattleTurnState>()!;
+                CombatUnit? spawned = actual.Spawn.Train.Rooms.SelectMany(room => room.Units)
+                    .FirstOrDefault(unit => unit.SpawnerCardId == action.CardInstanceId);
+                Require(spawned?.Ability?.DataId == ability.Definition.DataId,
+                    "A relic-upgraded card did not give its summoned unit the captured native ability.");
+                abilityUpgradedSummons++;
+            }
+            Require(abilityUpgradedSummons > 0,
+                "The native relic ability scenario did not play and summon from an ability-upgraded card.");
+            Console.WriteLine($"NATIVE-RELIC-CARD-ABILITY-CHECKS PASS: {abilityUpgradedSummons} relic-upgraded summons received their native unit abilities.");
+        }
         var generated = root.GetProperty("CardGenerations").EnumerateArray().Select(row => (
             Before: row.GetProperty("Before").Deserialize<CombatContext>()!,
             Actual: row.GetProperty("Actual").Deserialize<CombatContext>()!)).ToArray();
         var births = generated.SelectMany(row => row.Actual.CardInstances!.Where(card => card.InstanceId >= row.Before.NextCardId)).ToArray();
-        if (!statusUpgradeScenario && !piercingUpgradeScenario && !selfPurgeUpgradeScenario)
+        if (!statusUpgradeScenario && !piercingUpgradeScenario && !selfPurgeUpgradeScenario && !abilityUpgradeScenario)
             Require(births.Any(card => card.Temporary.Upgrades.Any(upgrade => upgrade.AssetKey == "ReduceStarterCost" ||
                 rows.SelectMany(row => row.Relics).SelectMany(relic => relic.CardModifiers ?? []).Any(effect => effect.Upgrade?.DataId == upgrade.DataId))),
                 "No battle-generated eligible card received an original relic upgrade.");
         string coverage = statusUpgradeScenario ? "card status upgrades reached summoned units" :
             piercingUpgradeScenario ? "IgnoreArmor relic traits retained on played cards" :
-            selfPurgeUpgradeScenario ? "SelfPurge relic traits retained on played cards" : "eligible battle-generated cards";
+            selfPurgeUpgradeScenario ? "SelfPurge relic traits retained on played cards" :
+            abilityUpgradeScenario ? "unit ability upgrades reached summoned units" : "eligible battle-generated cards";
         Console.WriteLine($"NATIVE-RELIC-CARD-MODIFIER-CHECKS PASS: {rows.Length} original manager calls, {rows.Sum(row => row.Dispatches.Length)} ordered effect/filter results, " +
             $"{rows.Sum(row => row.Notifications.Length)} exact trigger notifications, {coverage} and 32 immutable branches.");
     }
