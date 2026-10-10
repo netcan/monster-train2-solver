@@ -14,9 +14,11 @@ The default command still checks the full curated inventory.
 For routine changes, run only the new and directly affected fixtures with
 `-Fixture`; run the full inventory at completed milestones and before delivery.
 
-Current inventory is 205 archives: 174 accepted battles and 31 component
+Current inventory is 206 archives: 175 accepted battles and 31 component
 calibrations. `full-battle-relic-card-status-upgrades.mt2f` verifies a native
 temporary card status upgrade reaches the unit summoned by that card.
+`full-battle-relic-card-piercing-upgrades.mt2f` verifies a native relic's
+IgnoreArmor trait survives temporary upgrade composition and drives card piercing.
 `full-battle-generation-relic-card-status-upgrades.mt2f` combines generated-card
 modifier copies with that relic upgrade: 84 generation callbacks, 36 copied
 modifier cases, 107 relic-manager calls and 74 notifications match with no
@@ -1955,3 +1957,13 @@ focused regression with
 
 The complete 203-archive regression exits zero: 172 accepted battles and 31
 component calibrations pass, and every archive matches the integrity manifest.
+
+`full-battle-relic-card-piercing-upgrades.mt2f` captures the original
+`StingBuffPiercing` trait applied by a relic to eligible monster cards. The
+muted Instant battle wins with 27 matched plays, six EndTurns and 585 complete
+branch-mask contexts; five native relic manager calls, all 49 battle stages,
+and all 32 immutable model branches pass with zero capture failures,
+mismatches, unsupported stages or pending records. The archive is 28,105 bytes/
+4,641 nodes, SHA-256 `2501705d0562a618146c81ecf5d99b9386143ac0707bedb84ca3cc8c2baa9f41`.
+Its focused check passes; the full 206-archive regression remains for the next
+completed milestone.

@@ -43,6 +43,7 @@ namespace MonsterTrain2Poju.Model
         public AbilityChangeRule? AbilityUpgrade { get; }
         public bool DoNotReplaceExistingAbility { get; }
         public CardUpgradeMaskMetadata? MaskMetadata { get; }
+        public CardLifecycleUpgrade? Lifecycle { get; }
         public IReadOnlyList<string> ExternalInteractions { get; }
         public bool? CopyRemoveOnDiscard { get; }
         public bool? CopyUnique { get; }
@@ -54,7 +55,8 @@ namespace MonsterTrain2Poju.Model
             int? equipmentSourceCardId = null, int? equipmentSourceUpgradeIndex = null,
             IReadOnlyList<CombatTrigger>? triggerUpgrades = null, AbilityChangeRule? abilityUpgrade = null,
             bool doNotReplaceExistingAbility = false, CardUpgradeMaskMetadata? maskMetadata = null,
-            bool? copyRemoveOnDiscard = null, bool? copyUnique = null, bool? copyExcludeFromClones = null)
+            bool? copyRemoveOnDiscard = null, bool? copyUnique = null, bool? copyExcludeFromClones = null,
+            CardLifecycleUpgrade? lifecycle = null)
         { DataId = dataId; AssetKey = assetKey; Stats = stats; Statuses = Array.AsReadOnly(statuses.ToArray());
             RemoveOnDiscard = removeOnDiscard; Unique = unique; ExcludeFromClones = excludeFromClones;
             UnhealedHealth = unhealedHealth; DamageBuff = damageBuff; ExternalInteractions = Array.AsReadOnly(externalInteractions.ToArray());
@@ -63,16 +65,17 @@ namespace MonsterTrain2Poju.Model
             EquipmentSourceCardId = equipmentSourceCardId; EquipmentSourceUpgradeIndex = equipmentSourceUpgradeIndex;
             TriggerUpgrades = triggerUpgrades == null ? null : Array.AsReadOnly(triggerUpgrades.ToArray());
             AbilityUpgrade = abilityUpgrade; DoNotReplaceExistingAbility = doNotReplaceExistingAbility; MaskMetadata = maskMetadata;
+            Lifecycle = lifecycle;
             CopyRemoveOnDiscard = copyRemoveOnDiscard; CopyUnique = copyUnique; CopyExcludeFromClones = copyExcludeFromClones; }
         public CardUpgradeModifier WithEquipmentSource(int cardId, int upgradeIndex) => new CardUpgradeModifier(DataId, AssetKey,
             Stats, Statuses, RemoveOnDiscard, Unique, ExcludeFromClones, UnhealedHealth, DamageBuff, ExternalInteractions,
             RestrictSizeToRoomCapacity, MagicPowerTraitScalingOnly, CloneDamageBase, CloneHealBase, cardId, upgradeIndex, TriggerUpgrades, AbilityUpgrade, DoNotReplaceExistingAbility, MaskMetadata,
-            CopyRemoveOnDiscard, CopyUnique, CopyExcludeFromClones);
+            CopyRemoveOnDiscard, CopyUnique, CopyExcludeFromClones, Lifecycle);
         internal CardUpgradeModifier WithScaledStats(int damage, int health) => new CardUpgradeModifier(DataId, AssetKey,
             new CardStatModifier(damage, health, Stats.Cost, Stats.Heal, Stats.Size, Stats.XCost, Stats.EquipmentLimit, Stats.UpgradeSlotCount),
             Statuses, RemoveOnDiscard, Unique, ExcludeFromClones, UnhealedHealth, DamageBuff, ExternalInteractions,
             RestrictSizeToRoomCapacity, MagicPowerTraitScalingOnly, CloneDamageBase, CloneHealBase, EquipmentSourceCardId, EquipmentSourceUpgradeIndex, TriggerUpgrades, AbilityUpgrade, DoNotReplaceExistingAbility, MaskMetadata,
-            CopyRemoveOnDiscard, CopyUnique, CopyExcludeFromClones);
+            CopyRemoveOnDiscard, CopyUnique, CopyExcludeFromClones, Lifecycle);
         internal CardUpgradeModifier WithStats(CardStatModifier stats) => new CardUpgradeModifier(DataId, AssetKey,
             stats, Statuses, RemoveOnDiscard, Unique, ExcludeFromClones, UnhealedHealth, DamageBuff, ExternalInteractions,
             RestrictSizeToRoomCapacity, MagicPowerTraitScalingOnly, CloneDamageBase, CloneHealBase, EquipmentSourceCardId, EquipmentSourceUpgradeIndex, TriggerUpgrades, AbilityUpgrade, DoNotReplaceExistingAbility, MaskMetadata,
@@ -82,12 +85,17 @@ namespace MonsterTrain2Poju.Model
                 Stats.Size, Stats.XCost, Stats.EquipmentLimit, Stats.UpgradeSlotCount), Statuses, RemoveOnDiscard, Unique,
             ExcludeFromClones, UnhealedHealth, DamageBuff, ExternalInteractions, RestrictSizeToRoomCapacity,
             MagicPowerTraitScalingOnly, CloneDamageBase, CloneHealBase, EquipmentSourceCardId, EquipmentSourceUpgradeIndex, TriggerUpgrades, AbilityUpgrade, DoNotReplaceExistingAbility, MaskMetadata,
-            CopyRemoveOnDiscard, CopyUnique, CopyExcludeFromClones);
+            CopyRemoveOnDiscard, CopyUnique, CopyExcludeFromClones, Lifecycle);
+        internal CardUpgradeModifier WithLifecycle(CardLifecycleUpgrade? lifecycle) => new CardUpgradeModifier(DataId, AssetKey,
+            Stats, Statuses, RemoveOnDiscard, Unique, ExcludeFromClones, UnhealedHealth, DamageBuff, ExternalInteractions,
+            RestrictSizeToRoomCapacity, MagicPowerTraitScalingOnly, CloneDamageBase, CloneHealBase, EquipmentSourceCardId,
+            EquipmentSourceUpgradeIndex, TriggerUpgrades, AbilityUpgrade, DoNotReplaceExistingAbility, MaskMetadata,
+            CopyRemoveOnDiscard, CopyUnique, CopyExcludeFromClones, lifecycle);
         internal CardUpgradeModifier ForAddCardCopy() => new CardUpgradeModifier(DataId, AssetKey, Stats, Statuses,
             CopyRemoveOnDiscard ?? RemoveOnDiscard, CopyUnique ?? Unique, CopyExcludeFromClones ?? ExcludeFromClones,
             UnhealedHealth, DamageBuff, ExternalInteractions, RestrictSizeToRoomCapacity, MagicPowerTraitScalingOnly,
             CloneDamageBase, CloneHealBase, EquipmentSourceCardId, EquipmentSourceUpgradeIndex, TriggerUpgrades,
-            AbilityUpgrade, DoNotReplaceExistingAbility, MaskMetadata, CopyRemoveOnDiscard, CopyUnique, CopyExcludeFromClones);
+            AbilityUpgrade, DoNotReplaceExistingAbility, MaskMetadata, CopyRemoveOnDiscard, CopyUnique, CopyExcludeFromClones, Lifecycle);
     }
 
     public sealed class CardModifiers

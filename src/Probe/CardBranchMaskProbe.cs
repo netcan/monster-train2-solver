@@ -14,7 +14,8 @@ namespace MonsterTrain2Poju.Probe
             if (!Enabled) return null;
             var state = CardOwnedMaskProbe.Capture(card);
             return new CardMaskDescriptor(state.Definition, state.BaseCost, state.Traits.Composition.BaseTraits,
-                state.InstalledCastEffects, state.Purified, state.PermanentGraft);
+                state.InstalledCastEffects, state.Purified, state.PermanentGraft,
+                state.Traits.Composition.TemporaryTraits, state.Traits.Composition.PermanentReplacements);
         }
         internal static CardUpgradeMaskMetadata? Upgrade(CardUpgradeState upgrade) => !Enabled ? null :
             new CardUpgradeMaskMetadata(upgrade.GetStatusEffectUpgrades().Select(status =>

@@ -30,6 +30,36 @@ internal static class CardSpellChecks
             !shield.State.Units[0].Statuses.Any(status => status.Id == "damage shield") &&
             shield.State.Units[0].Statuses.Single(status => status.Id == "pyregel").Stacks == 2,
             "Spell shield and follow-up status handling differed.");
+        var armorRule = new CombatStatus("armor", 1);
+        var shieldRule = new CombatStatus("damage shield", 1, removeWhenTriggered: true);
+        var mask = new CardMaskDefinition("piercing-source", "Spell", "Common", false, false, false,
+            [], [], [], [], null, false, 0, 0, false, false, false);
+        var piercingTrait = new CardTraitValue("CardTraitIgnoreArmor", "CardTraitIgnoreArmor", 0, 0, true, 0);
+        var lifecycle = new CardLifecycleUpgrade(new CardMaskUpgrade("piercing-upgrade", new CardStatModifier(),
+            [], false, false, false, false), "piercing-upgrade", false, false,
+            [piercingTrait], [], false, [], [], []);
+        var piercingUpgrade = new CardUpgradeModifier("piercing-upgrade", "piercing-upgrade", new CardStatModifier(),
+            [], false, false, false, 0, 0, [], maskMetadata: new CardUpgradeMaskMetadata([], false, false, false, false),
+            lifecycle: lifecycle);
+        var descriptor = new CardMaskDescriptor(mask, 0, [], []);
+        var piercingCard = new CardInstanceState(7, mask.DataId, CardModifiers.Empty(),
+            new CardModifiers(new CardStatModifier(), [piercingUpgrade], 0, []), 0, 0, 0, [], maskDescriptor: descriptor);
+        var ordinaryCard = CardInstanceState.Empty(8, "ordinary-source");
+        CombatContext CardContext(CardInstanceState card) => new CombatContext(new CardCycleState([], [], [], rng, 0, []), rng,
+            0, 9, 10, [armorRule, shieldRule], cardInstances: [card], cardRegistry: [card]);
+        RoomCombatState DamageRoom(CardInstanceState card, params CombatStatus[] statuses) => new RoomCombatState(0, false,
+            [Make(9, CombatTeam.Enemy, 20, statuses)], [], CardContext(card));
+        RoomCombatResult piercingArmor = RoomCombatModel.ApplyCardDamage(DamageRoom(piercingCard, new CombatStatus("armor", 5, 1)), 9, 4, 7);
+        Require(piercingArmor.Supported && piercingArmor.State!.Units[0].Health == 16 &&
+            piercingArmor.State.Units[0].Status("armor")?.Stacks == 5,
+            "An upgrade-added IgnoreArmor trait did not pierce armor without consuming it.");
+        RoomCombatResult piercingShield = RoomCombatModel.ApplyCardDamage(DamageRoom(piercingCard, new CombatStatus("damage shield", 1, removeWhenTriggered: true)), 9, 4, 7);
+        Require(piercingShield.Supported && piercingShield.State!.Units[0].Health == 16 &&
+            piercingShield.State.Units[0].Status("damage shield")?.Stacks == 1,
+            "An upgrade-added IgnoreArmor trait did not pierce damage shield without consuming it.");
+        RoomCombatResult ordinaryArmor = RoomCombatModel.ApplyCardDamage(DamageRoom(ordinaryCard, new CombatStatus("armor", 5, 1)), 9, 4, 8);
+        Require(ordinaryArmor.Supported && ordinaryArmor.State!.Units[0].Health == 20,
+            "A card without IgnoreArmor bypassed armor.");
         RoomCombatResult lethal = CardSpellModel.Apply(new RoomCombatState(0, false,
             [Make(1, CombatTeam.Enemy, 1), Make(4, CombatTeam.Enemy, 5), front], [], context), damage, 1);
         Require(lethal.Supported && lethal.State!.Units[0].Id == 4 && lethal.State.Units[0].Statuses.Count == 0,

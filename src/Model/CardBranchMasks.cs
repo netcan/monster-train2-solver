@@ -24,12 +24,17 @@ namespace MonsterTrain2Poju.Model
         public CardMaskDefinition Definition { get; }
         public int BaseCost { get; }
         public IReadOnlyList<CardTraitValue> BaseTraits { get; }
+        public IReadOnlyList<CardTraitValue> TemporaryTraits { get; }
+        public IReadOnlyList<CardTraitReplacement> PermanentReplacements { get; }
         public IReadOnlyList<string> AuthoredCastEffects { get; }
         public bool Purified { get; }
         public bool PermanentGraft { get; }
         public CardMaskDescriptor(CardMaskDefinition definition, int baseCost, IReadOnlyList<CardTraitValue> baseTraits,
-            IReadOnlyList<string> authoredCastEffects, bool purified = false, bool permanentGraft = false)
+            IReadOnlyList<string> authoredCastEffects, bool purified = false, bool permanentGraft = false,
+            IReadOnlyList<CardTraitValue>? temporaryTraits = null, IReadOnlyList<CardTraitReplacement>? permanentReplacements = null)
         { Definition = definition; BaseCost = baseCost; BaseTraits = Array.AsReadOnly(baseTraits.ToArray());
+            TemporaryTraits = Array.AsReadOnly((temporaryTraits ?? Array.Empty<CardTraitValue>()).ToArray());
+            PermanentReplacements = Array.AsReadOnly((permanentReplacements ?? Array.Empty<CardTraitReplacement>()).ToArray());
             AuthoredCastEffects = Array.AsReadOnly(authoredCastEffects.ToArray()); Purified = purified; PermanentGraft = permanentGraft; }
     }
 
@@ -51,8 +56,11 @@ namespace MonsterTrain2Poju.Model
             CardMaskModifiers Modifiers(CardModifiers modifiers) => new CardMaskModifiers(modifiers.Offsets,
                 modifiers.Upgrades.Select(upgrade => (upgrade.MaskMetadata ??
                     throw new InvalidOperationException("Missing branch-owned upgrade mask metadata.")).Current(upgrade)).ToArray());
-            var traits = new CardTraitCompositionState(descriptor.BaseTraits, Array.Empty<CardTraitValue>(),
-                Array.Empty<IReadOnlyList<CardTraitValue>>(), Array.Empty<string>(), Array.Empty<CardTraitReplacement>());
+            var upgrades = instance.Permanent.Upgrades.Concat(instance.Temporary.Upgrades)
+                .Select(upgrade => upgrade.Lifecycle).Where(upgrade => upgrade != null).Cast<CardLifecycleUpgrade>().ToArray();
+            var traits = new CardTraitCompositionState(descriptor.BaseTraits, descriptor.TemporaryTraits,
+                instance.Temporary.Upgrades.Select(upgrade => (IReadOnlyList<CardTraitValue>)(upgrade.Lifecycle?.AddedTraits ?? Array.Empty<CardTraitValue>())).ToArray(),
+                upgrades.SelectMany(upgrade => upgrade.RemovedRuntimeTypes).ToArray(), descriptor.PermanentReplacements);
             return new CardOwnedMaskState(descriptor.Definition, descriptor.BaseCost, Modifiers(instance.Permanent), Modifiers(instance.Temporary),
                 new CardTraitRefreshState(traits, true, 1, 1, 0, 0), descriptor.AuthoredCastEffects, descriptor.Purified, descriptor.PermanentGraft);
         }

@@ -1598,6 +1598,18 @@ namespace MonsterTrain2Poju.Model
                     context = retainedLegacy ? scaled.Context!.WithCardRegistry(null) : scaled.Context; damage = scaled.Damage;
                 }
                 damage = Math.Max(0, damage);
+                bool cardPiercing = false;
+                if (damage > 0 && (target.Has("damage shield") || target.Has("armor")))
+                {
+                    int piercingCardId = sourceCardId > 0 ? sourceCardId : actor?.Source.SpawnerCardId ?? 0;
+                    CardInstanceState? piercingCard = piercingCardId > 0 ? context?.FindCard(piercingCardId) : null;
+                    if (piercingCard?.MaskDescriptor != null)
+                    {
+                        string? cardError = CardModifierModel.UnsupportedReason(piercingCard);
+                        if (cardError != null) { unsupportedReason = cardError; return; }
+                        cardPiercing = CardBranchMaskModel.Resolve(piercingCard).Traits.Contains("CardTraitIgnoreArmor", StringComparer.Ordinal);
+                    }
+                }
                 if (target.Has("pyregel"))
                 {
                     damage = checked(damage + target.Amount("pyregel"));
@@ -1614,13 +1626,13 @@ namespace MonsterTrain2Poju.Model
                 }
                 // The native shield stage checks card/relic piercing without an attacker argument.
                 // Unit piercing bypasses armor, but does not bypass this shield stage.
-                if (damage > 0 && target.Has("damage shield"))
+                if (damage > 0 && target.Has("damage shield") && !cardPiercing)
                 {
                     blocked += damage;
                     Trigger(target, "damage shield", 1);
                     damage = 0;
                 }
-                if (damage > 0 && target.Has("armor") && !(sourceCardId == 0 && (actor?.Has("piercing") ?? false)))
+                if (damage > 0 && target.Has("armor") && !cardPiercing && !(sourceCardId == 0 && (actor?.Has("piercing") ?? false)))
                 {
                     int armor = target.Amount("armor");
                     int spent = Math.Min(target.Count("armor"), damage);

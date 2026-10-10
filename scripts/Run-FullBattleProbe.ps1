@@ -121,6 +121,7 @@ param(
     [switch] $BattleRelicUpgrades,
     [switch] $ConditionalBattleRelicUpgrades,
     [switch] $RelicCardStatusUpgrades,
+    [switch] $RelicCardPiercingUpgrades,
     [switch] $IncantRelic,
     [switch] $IncantRelics,
     [switch] $SpawnStatusRelics,
@@ -170,6 +171,7 @@ param(
 $ErrorActionPreference = 'Stop'
 if ($ConditionalBattleRelicUpgrades) { $BattleRelicUpgrades = $true }
 if ($RelicCardStatusUpgrades) { $BattleRelicUpgrades = $true }
+if ($RelicCardPiercingUpgrades) { $BattleRelicUpgrades = $true }
 if ($BattleRelicUpgrades -or $SpawnStatusRelicsClones) { $BranchCardMasks = $true }
 if ($SpawnStatusRelicsClones) { $SpawnStatusRelics = $true; $UnitClone = $true }
 if ($EnchantmentWorld) { $EnchantmentCombat = $true }
@@ -264,6 +266,7 @@ $environment = @{
     MT2_PROBE_BATTLE_RELIC_UPGRADES = $(if ($BattleRelicUpgrades) { '1' } else { '0' })
     MT2_PROBE_CONDITIONAL_BATTLE_RELIC_UPGRADES = $(if ($ConditionalBattleRelicUpgrades) { '1' } else { '0' })
     MT2_PROBE_RELIC_CARD_STATUS_UPGRADE = $(if ($RelicCardStatusUpgrades) { '1' } else { '0' })
+    MT2_PROBE_RELIC_CARD_PIERCING_UPGRADE = $(if ($RelicCardPiercingUpgrades) { '1' } else { '0' })
     MT2_PROBE_GENERATION = $(if ($Generation) { '1' } else { '0' })
     MT2_PROBE_CARDLESS_RELIC_UPGRADES = $(if ($SpawnStatusRelicsClones) { '1' } else { '0' })
     MT2_PROBE_SETTLE_DEATH_DISSOLVES = $(if ($SettleDeathDissolves) { '1' } else { '0' })
@@ -302,6 +305,7 @@ if ($SpawnStatusRelics) {
     $environment['MT2_PROBE_MODIFIERS'] = $(if ($SpawnStatusRelicsClones) { 'spawn-status-relics-clones' } else { 'spawn-status-relics' })
     $environment['MT2_PROBE_STATUS_CALLBACKS'] = '1'
 }
+if ($RelicCardPiercingUpgrades) { $environment['MT2_PROBE_MODIFIERS'] = 'relic-card-piercing-upgrades' }
 if ($IncantRelics) { $IncantRelic = $true }
 if ($IncantRelic) { $Incant = $true }
 if ($Incant) {
@@ -413,7 +417,7 @@ if ($RelicCardUpgrades) {
 }
 if ($BattleRelicUpgrades) {
     $modifierRows = @($trace.RelicCardModifiers)
-    $rejectedDispatches = if ($RelicCardStatusUpgrades) {
+    $rejectedDispatches = if ($RelicCardStatusUpgrades -or $RelicCardPiercingUpgrades) {
         @($modifierRows | ForEach-Object Dispatches | Where-Object { -not $_.Returned -and -not $_.UpgradeAdded }).Count
     } else {
         @($modifierRows | ForEach-Object Dispatches | Where-Object { $_.Returned -and -not $_.UpgradeAdded }).Count
@@ -425,8 +429,8 @@ if ($BattleRelicUpgrades) {
         @($modifierRows | ForEach-Object Dispatches | Where-Object UpgradeAdded).Count -eq 0) {
         throw 'Incomplete native relic manager card modifier acceptance.'
     }
-    if ($RelicCardStatusUpgrades) {
-        Write-Output "NATIVE-RELIC-CARD-STATUS-UPGRADE-CAPTURE PASS: $($modifierRows.Count) actual manager calls, status-bearing temporary upgrade, reset and failed-eligibility paths."
+    if ($RelicCardStatusUpgrades -or $RelicCardPiercingUpgrades) {
+        Write-Output "NATIVE-RELIC-CARD-UPGRADE-CAPTURE PASS: $($modifierRows.Count) actual manager calls, temporary upgrade payload, reset and failed-eligibility paths."
     } else {
         Write-Output "NATIVE-RELIC-CARD-MODIFIER-CAPTURE PASS: $($modifierRows.Count) actual manager calls, original eligibility, reset/repeat/unique rejection and notifications."
     }
@@ -436,6 +440,9 @@ if ($ConditionalBattleRelicUpgrades -and $trace.ModifierScenario -ne 'conditiona
 }
 if ($RelicCardStatusUpgrades -and $trace.ModifierScenario -ne 'relic-card-status-upgrades') {
     throw 'Relic card status upgrade scenario was not recorded.'
+}
+if ($RelicCardPiercingUpgrades -and $trace.ModifierScenario -ne 'relic-card-piercing-upgrades') {
+    throw 'Relic card piercing upgrade scenario was not recorded.'
 }
 if ($BranchCardMasks) {
     $branchRows = @($trace.BranchCardMasks)

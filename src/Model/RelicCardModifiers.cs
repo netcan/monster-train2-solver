@@ -64,9 +64,15 @@ namespace MonsterTrain2Poju.Model
                 if (template == null ? upgrade != null : upgrade == null || template.Values.DataId != upgrade.DataId ||
                     template.AssetKey != upgrade.AssetKey || template.Unique != upgrade.Unique || template.RemoveOnDiscard != upgrade.RemoveOnDiscard)
                     return "Relic card upgrade payload identity differs.";
-                if (template?.AddedTraits.Count > 0 || template?.RemovedRuntimeTypes.Count > 0 ||
-                    template?.ReplacedAssets.Count > 0 || template?.Triggers.Count > 0)
+                bool ignoreArmorOnly = template?.AddedTraits.Count > 0 && template.AddedTraits.All(trait =>
+                    trait.RuntimeType == "CardTraitIgnoreArmor" && trait.DeclaredName == "CardTraitIgnoreArmor") &&
+                    template.RemovedRuntimeTypes.Count == 0 && template.ReplacedAssets.Count == 0 && template.Triggers.Count == 0;
+                if (template != null && (template.AddedTraits.Count > 0 && !ignoreArmorOnly ||
+                    template.RemovedRuntimeTypes.Count > 0 || template.ReplacedAssets.Count > 0 || template.Triggers.Count > 0))
                     return "Unmodeled relic upgrade trait/trigger lifecycle in battle.";
+                if (ignoreArmorOnly && (upgrade?.Lifecycle == null || upgrade.Lifecycle.AddedTraits.Count != template!.AddedTraits.Count ||
+                    !upgrade.Lifecycle.AddedTraits.Select(trait => trait.DeclaredName).SequenceEqual(template.AddedTraits.Select(trait => trait.DeclaredName))))
+                    return "Piercing relic upgrade trait lifecycle is missing or differs from its native definition.";
                 if (upgrade != null && (upgrade.MaskMetadata == null || upgrade.ExternalInteractions.Count > 0))
                     return "Unmodeled relic card upgrade payload: " + string.Join("; ", upgrade.ExternalInteractions);
                 if (upgrade != null && (upgrade.AbilityUpgrade != null || upgrade.UnhealedHealth != 0 || upgrade.DamageBuff != 0))

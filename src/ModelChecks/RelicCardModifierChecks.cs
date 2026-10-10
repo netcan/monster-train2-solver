@@ -23,7 +23,9 @@ internal static class RelicCardModifierChecks
                 (Relic: item.GetProperty("RelicIndex").GetInt32(), Effect: item.GetProperty("EffectIndex").GetInt32())).ToArray())).ToArray();
         bool statusUpgradeScenario = root.TryGetProperty("ModifierScenario", out var scenario) &&
             scenario.GetString() == "relic-card-status-upgrades";
-        bool sawExpectedRejection = statusUpgradeScenario
+        bool piercingUpgradeScenario = root.TryGetProperty("ModifierScenario", out scenario) &&
+            scenario.GetString() == "relic-card-piercing-upgrades";
+        bool sawExpectedRejection = statusUpgradeScenario || piercingUpgradeScenario
             ? rows.Any(row => row.Dispatches.Any(effect => !effect.Returned && !effect.UpgradeAdded))
             : rows.Any(row => !row.Reset && row.Dispatches.Any(effect => effect.Returned && !effect.UpgradeAdded));
         Require(rows.Length > 0 && sawExpectedRejection &&
@@ -106,15 +108,30 @@ internal static class RelicCardModifierChecks
             Require(statusReachedSummonedUnit,
                 "A native card-side relic armor upgrade did not reach the summoned unit in the independent policy.");
         }
+        if (piercingUpgradeScenario)
+        {
+            bool modifierContainsTrait = rows.Any(row => row.Actual.Temporary.Upgrades.Any(upgrade =>
+                upgrade.Lifecycle?.AddedTraits.Any(trait => trait.DeclaredName == "CardTraitIgnoreArmor") == true));
+            bool playedCardContainsTrait = root.GetProperty("Actions").EnumerateArray().Any(action =>
+            {
+                int cardId = action.GetProperty("Action").GetProperty("CardInstanceId").GetInt32();
+                BattleTurnState after = action.GetProperty("Actual").Deserialize<BattleTurnState>()!;
+                CardInstanceState? card = after.Spawn.Train.Context!.FindCard(cardId);
+                return card?.MaskDescriptor != null && CardBranchMaskModel.Resolve(card).Traits.Contains("CardTraitIgnoreArmor");
+            });
+            Require(modifierContainsTrait && playedCardContainsTrait,
+                "Native relic piercing trait was not retained on an independently played card.");
+        }
         var generated = root.GetProperty("CardGenerations").EnumerateArray().Select(row => (
             Before: row.GetProperty("Before").Deserialize<CombatContext>()!,
             Actual: row.GetProperty("Actual").Deserialize<CombatContext>()!)).ToArray();
         var births = generated.SelectMany(row => row.Actual.CardInstances!.Where(card => card.InstanceId >= row.Before.NextCardId)).ToArray();
-        if (!statusUpgradeScenario)
+        if (!statusUpgradeScenario && !piercingUpgradeScenario)
             Require(births.Any(card => card.Temporary.Upgrades.Any(upgrade => upgrade.AssetKey == "ReduceStarterCost" ||
                 rows.SelectMany(row => row.Relics).SelectMany(relic => relic.CardModifiers ?? []).Any(effect => effect.Upgrade?.DataId == upgrade.DataId))),
                 "No battle-generated eligible card received an original relic upgrade.");
-        string coverage = statusUpgradeScenario ? "card status upgrades reached summoned units" : "eligible battle-generated cards";
+        string coverage = statusUpgradeScenario ? "card status upgrades reached summoned units" :
+            piercingUpgradeScenario ? "IgnoreArmor relic traits retained on played cards" : "eligible battle-generated cards";
         Console.WriteLine($"NATIVE-RELIC-CARD-MODIFIER-CHECKS PASS: {rows.Length} original manager calls, {rows.Sum(row => row.Dispatches.Length)} ordered effect/filter results, " +
             $"{rows.Sum(row => row.Notifications.Length)} exact trigger notifications, {coverage} and 32 immutable branches.");
     }

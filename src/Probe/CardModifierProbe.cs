@@ -121,7 +121,12 @@ namespace MonsterTrain2Poju.Probe
             CardUpgradeData? source = upgrade.GetSourceCardUpgradeData();
             bool refresh = source != null && !source.GetUpgradeWillBeScaledByNonMagicPowerTrait();
             if (upgrade.GetRoomAbilityUpgrade() != null) interactions.Add("Upgrade room ability");
-            if (upgrade.GetTraitDataUpgrades().Count > 0 || upgrade.GetRemoveTraitUpgrades().Count > 0) interactions.Add("Upgrade traits");
+            CardLifecycleUpgrade lifecycle = CardUpgradeLifecycleProbe.Definition(upgrade);
+            bool ignoreArmorOnly = lifecycle.AddedTraits.Count > 0 && lifecycle.AddedTraits.All(trait =>
+                trait.RuntimeType == "CardTraitIgnoreArmor" && trait.DeclaredName == "CardTraitIgnoreArmor") &&
+                lifecycle.RemovedRuntimeTypes.Count == 0 && lifecycle.ReplacedAssets.Count == 0 && lifecycle.Triggers.Count == 0;
+            if ((upgrade.GetTraitDataUpgrades().Count > 0 || upgrade.GetRemoveTraitUpgrades().Count > 0) && !ignoreArmorOnly)
+                interactions.Add("Upgrade traits");
             if (upgrade.GetCardTriggerUpgrades().Count > 0) interactions.Add("Upgrade card triggers");
             CombatTrigger[]? triggers = null;
             if (upgrade.GetTriggerUpgrades().Count > 0)
@@ -147,7 +152,7 @@ namespace MonsterTrain2Poju.Probe
                 abilityUpgrade: upgrade.GetUnitAbilityUpgrade() == null ? null : AbilityLifecycleProbe.Change(upgrade.GetUnitAbilityUpgrade()),
                 doNotReplaceExistingAbility: upgrade.GetDoNotReplaceExistingUnitAbility(), maskMetadata: CardBranchMaskProbe.Upgrade(upgrade),
                 copyRemoveOnDiscard: copyDefinition == null ? null : false, copyUnique: copyDefinition?.IsUnique(),
-                copyExcludeFromClones: copyDefinition?.GetExcludeFromClones());
+                copyExcludeFromClones: copyDefinition?.GetExcludeFromClones(), lifecycle: lifecycle);
         }
     }
 }
