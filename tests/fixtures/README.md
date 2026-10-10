@@ -4,7 +4,7 @@ These fixed inputs reproduce the independently modeled battle and calibration
 checks. Run `pwsh -NoProfile -File scripts/Check-Models.ps1` from the repository
 root. The script reads the curated fixture list in this directory.
 
-Current inventory is 192 archives: 162 accepted battles and 30 component
+Current inventory is 198 archives: 168 accepted battles and 30 component
 calibrations. The initial Incant model's complete 180-archive regression passes.
 The threshold model's combined181 regression has also completed successfully.
 The relic model's combined181 regression has also completed successfully.
@@ -206,6 +206,14 @@ callbacks, installed upgrade trigger execution, reset/relic ordering and complet
 RelicEffectAddTempUpgrade integration remain open. Existing interaction guards
 remain active. The frozen192 lifecycle regression validates its preceding model,
 not this later adapter; a complete regression for this version is separate.
+
+The six branch-owned recordings are retained byte-for-byte in the binary
+inventory as full-battle-branch-card-masks.mt2f and its -hand-upgrades,
+-generation, -clone-upgrade-refresh, -bonus-draw and -equipment companions.
+Together they occupy205,839 bytes; all SHA256 hashes/node counts are in
+manifest.tsv. The original192 manifest rows remain byte-identical and no
+text/JSON sources or generated result logs are tracked. All six join the curated
+regression list; the new full198 run is distinct from frozen192.
 
 The native sampler now retains the state captured immediately after
 StopCombatLoop, then waits for the original card animation callbacks before
