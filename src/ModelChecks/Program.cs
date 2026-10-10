@@ -1,6 +1,12 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
 
+if (args.Length == 2 && args[0] == "--relic-card-modifiers-only")
+{
+    using var relicDocument = ModelJson.ReadFixture(args[1]);
+    RelicCardModifierChecks.Native(relicDocument.RootElement, required: true);
+    return;
+}
 if (args.Length == 2 && args[0] == "--relic-card-upgrades-only")
 {
     RelicCardUpgradeChecks.Native(args[1]);

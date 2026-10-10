@@ -706,6 +706,11 @@ namespace MonsterTrain2Poju.Probe
                 else NumericUpgradeScenario.Prepare(managers, log);
                 return;
             }
+            if (fullBattle && RelicCardModifierProbe.Enabled && !RelicCardModifierScenario.Prepared)
+            {
+                RelicCardModifierScenario.Prepare(managers, log);
+                return;
+            }
             if (pass == Pass.Source && sourceSignatures.Count == 0)
             {
                 initialTurn = combat!.GetTurnCount();

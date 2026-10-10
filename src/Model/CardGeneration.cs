@@ -150,6 +150,15 @@ namespace MonsterTrain2Poju.Model
                     context.CardRegistry?.Any(card => card.RawPlayedRoomUnitIds != null) == true ? Array.Empty<int>() : null, creation.MaskDescriptor);
                 string? error = CardModifierModel.UnsupportedReason(candidate);
                 if (error != null) return Unsupported(error);
+                // AddCardImpl applies the manager's current relics before optional,
+                // copied, discard-conditional and pending temporary upgrades.
+                if (context.Relics?.Any(relic => relic.CardModifiers?.Count > 0) == true)
+                {
+                    var relicModifiers = RelicCardModifierModel.Apply(candidate, context.Relics);
+                    if (!relicModifiers.Supported) return Unsupported(relicModifiers.UnsupportedReason!);
+                    permanent = relicModifiers.Card!.Permanent;
+                    temporary = relicModifiers.Card.Temporary;
+                }
                 if (rule.Upgrade != null)
                 {
                     if (rule.Upgrade.ExternalInteractions.Count > 0) return Unsupported(string.Join("; ", rule.Upgrade.ExternalInteractions));

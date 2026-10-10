@@ -163,6 +163,7 @@ internal static class RoomCombatChecks
         PersistentEnchantmentChecks.Native(fixture);
         BattleActionChecks.Native(fixture);
         CardBranchMaskChecks.Native(fixture);
+        RelicCardModifierChecks.Native(fixture);
         UnitIdentityChecks.Native(fixture);
         SpawnPointChecks.Native(fixture);
         BattleSpawnPointChecks.Native(fixture);

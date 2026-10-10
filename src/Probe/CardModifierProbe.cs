@@ -103,18 +103,18 @@ namespace MonsterTrain2Poju.Probe
             if (modifiers.GetTemporaryTraits().Count > 0 || modifiers.GetTraitReplacements().Count > 0) interactions.Add("Temporary/replaced card traits");
             return new CardModifiers(new CardStatModifier(Field("additionalDamage"), Field("additionalMaxHP"), Field("additionalCost"),
                 Field("additionalHeal"), Field("additionalSize"), Field("additionalXCost"), Field("additionalEquipmentLimit"),
-                Field("additionalUpgradeSlotCount")), modifiers.GetCardUpgrades().Select(Upgrade).ToArray(),
+                Field("additionalUpgradeSlotCount")), modifiers.GetCardUpgrades().Select(upgrade => Upgrade(upgrade, false, true)).ToArray(),
                 modifiers.GetPersistentHP(), interactions);
         }
 
         internal static CardUpgradeModifier Upgrade(CardUpgradeState upgrade) => Upgrade(upgrade, false);
-        internal static CardUpgradeModifier Upgrade(CardUpgradeState upgrade, bool rejectFilters)
+        internal static CardUpgradeModifier Upgrade(CardUpgradeState upgrade, bool rejectFilters, bool filtersAlreadyApplied = false)
         {
             upgradeDepth++;
-            try { return UpgradeCore(upgrade, rejectFilters); }
+            try { return UpgradeCore(upgrade, rejectFilters, filtersAlreadyApplied); }
             finally { upgradeDepth--; }
         }
-        private static CardUpgradeModifier UpgradeCore(CardUpgradeState upgrade, bool rejectFilters)
+        private static CardUpgradeModifier UpgradeCore(CardUpgradeState upgrade, bool rejectFilters, bool filtersAlreadyApplied)
         {
             var interactions = new List<string>();
             if (rejectFilters && upgrade.GetFilters().Count > 0) interactions.Add("Filtered bonus-draw upgrade");
@@ -130,7 +130,7 @@ namespace MonsterTrain2Poju.Probe
                 else triggers = upgrade.GetTriggerUpgrades().Select(trigger => EnemySpawningProbe.TriggerDefinition(trigger, interactions)).ToArray();
             }
             if (upgrade.GetRoomModifierUpgrades().Count > 0) interactions.Add("Upgrade room modifiers");
-            if (upgrade.GetFilters().Count > 0) interactions.Add("Upgrade card filters");
+            if (!filtersAlreadyApplied && upgrade.GetFilters().Count > 0) interactions.Add("Upgrade card filters");
             if (upgrade.GetUpgradesToRemove().Count > 0) interactions.Add("Upgrade replacements");
             if (upgrade.GetStatusEffectUpgrades().Any(status => status.fromPermanentUpgrade)) interactions.Add("Separate permanent starting-status application group");
             return new CardUpgradeModifier(upgrade.GetCardUpgradeDataId(), upgrade.GetAssetName(),

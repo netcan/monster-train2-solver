@@ -14,13 +14,16 @@ namespace MonsterTrain2Poju.Model
         public IReadOnlyList<RelicSpawnStatus>? SpawnStatuses { get; }
         public bool? IsCovenant { get; }
         public bool? DisallowedInPlacementPhase { get; }
+        public IReadOnlyList<RelicCardModifier>? CardModifiers { get; }
         public CombatRelicState(string dataId, string assetKey, IReadOnlyList<string> effectTypes,
-            IReadOnlyList<RelicSpawnStatus>? spawnStatuses = null, bool? isCovenant = null, bool? disallowedInPlacementPhase = null)
+            IReadOnlyList<RelicSpawnStatus>? spawnStatuses = null, bool? isCovenant = null, bool? disallowedInPlacementPhase = null,
+            IReadOnlyList<RelicCardModifier>? cardModifiers = null)
         { DataId = dataId; AssetKey = assetKey; EffectTypes = Array.AsReadOnly(effectTypes.ToArray());
             SpawnStatuses = spawnStatuses == null ? null : Array.AsReadOnly(spawnStatuses.ToArray());
-            IsCovenant = isCovenant; DisallowedInPlacementPhase = disallowedInPlacementPhase; }
+            IsCovenant = isCovenant; DisallowedInPlacementPhase = disallowedInPlacementPhase;
+            CardModifiers = cardModifiers == null ? null : Array.AsReadOnly(cardModifiers.ToArray()); }
         internal CombatRelicState WithSpawnStatuses(IReadOnlyList<RelicSpawnStatus> rules) =>
-            new CombatRelicState(DataId, AssetKey, EffectTypes, rules, IsCovenant, DisallowedInPlacementPhase);
+            new CombatRelicState(DataId, AssetKey, EffectTypes, rules, IsCovenant, DisallowedInPlacementPhase, CardModifiers);
     }
 
     internal static class RelicModel
@@ -28,6 +31,7 @@ namespace MonsterTrain2Poju.Model
         internal const string AbilityIncant = "RelicEffectIncantTriggeredByUnitAbilities";
         internal const string ModifyTriggerCount = "RelicEffectModifyTriggerCount";
         internal const string AddStatusOnSpawn = "RelicEffectAddStatusEffectOnSpawn";
+        internal const string AddTempUpgrade = "RelicEffectAddTempUpgrade";
         internal static bool AbilitiesTriggerIncant(CombatContext? context) =>
             context?.Relics?.Any(relic => relic.EffectTypes.Contains(AbilityIncant)) == true;
         internal static string? Validate(CombatContext? context) => Validate(context?.Relics) ??
@@ -41,8 +45,8 @@ namespace MonsterTrain2Poju.Model
                 if (string.IsNullOrEmpty(relic.DataId) || string.IsNullOrEmpty(relic.AssetKey))
                     return "Missing captured relic identity.";
                 foreach (string effect in relic.EffectTypes)
-                    if (effect != AbilityIncant && effect != ModifyTriggerCount && effect != AddStatusOnSpawn) return "Unmodeled relic effect " + effect + " on " + relic.AssetKey + ".";
-                string? error = RelicSpawnStatusModel.Validate(relic);
+                    if (effect != AbilityIncant && effect != ModifyTriggerCount && effect != AddStatusOnSpawn && effect != AddTempUpgrade) return "Unmodeled relic effect " + effect + " on " + relic.AssetKey + ".";
+                string? error = RelicCardModifierModel.Validate(relic) ?? RelicSpawnStatusModel.Validate(relic);
                 if (error != null) return error;
             }
             return null;

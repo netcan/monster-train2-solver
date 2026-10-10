@@ -118,6 +118,7 @@ param(
     [switch] $CardUpgradeLifecycle,
     [switch] $BranchCardMasks,
     [switch] $RelicCardUpgrades,
+    [switch] $BattleRelicUpgrades,
     [switch] $IncantRelic,
     [switch] $IncantRelics,
     [switch] $SpawnStatusRelics,
@@ -165,6 +166,7 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+if ($BattleRelicUpgrades) { $BranchCardMasks = $true }
 if ($SpawnStatusRelicsClones) { $SpawnStatusRelics = $true; $UnitClone = $true }
 if ($EnchantmentWorld) { $EnchantmentCombat = $true }
 if ($PersistentEnchantmentRevivals) { $PersistentEnchantmentDeaths = $true }
@@ -255,6 +257,7 @@ $environment = @{
     MT2_PROBE_CARD_UPGRADE_LIFECYCLE = $(if ($CardUpgradeLifecycle) { '1' } else { '0' })
     MT2_PROBE_BRANCH_CARD_MASKS = $(if ($BranchCardMasks) { '1' } else { '0' })
     MT2_PROBE_RELIC_CARD_UPGRADES = $(if ($RelicCardUpgrades) { '1' } else { '0' })
+    MT2_PROBE_BATTLE_RELIC_UPGRADES = $(if ($BattleRelicUpgrades) { '1' } else { '0' })
     MT2_PROBE_SETTLE_DEATH_DISSOLVES = $(if ($SettleDeathDissolves) { '1' } else { '0' })
     MT2_PROBE_SETTLE_CARD_ANIMATIONS = $(if ($SettleCardAnimations) { '1' } else { '0' })
     MT2_PROBE_STATUS_CALLBACKS = $(if ($HordeStatuses -or $StatusCallbacks) { '1' } else { '0' })
@@ -399,6 +402,17 @@ if ($RelicCardUpgrades) {
             $relicUpgradeData.GetProperty('OwnedCardCount').GetInt32() -ne 15) { throw 'Incomplete or mutating relic card upgrade calibration.' }
         Write-Output 'NATIVE-RELIC-CARD-UPGRADE-CAPTURE PASS: 432 original-effect operations,11 original relics,15 owned cards; unchanged context/RNG/frame.'
     } finally { $relicUpgradeArchive.Dispose() }
+}
+if ($BattleRelicUpgrades) {
+    $modifierRows = @($trace.RelicCardModifiers)
+    if (-not $trace.RelicCardModifiersEnabled -or $modifierRows.Count -eq 0 -or
+        @($modifierRows | Where-Object { $null -eq $_.Actual -or $_.Difference }).Count -gt 0 -or
+        @($modifierRows | Where-Object { -not $_.ResetTemporary }).Count -eq 0 -or
+        @($modifierRows | ForEach-Object Dispatches | Where-Object { $_.Returned -and -not $_.UpgradeAdded }).Count -eq 0 -or
+        @($modifierRows | ForEach-Object Dispatches | Where-Object UpgradeAdded).Count -eq 0) {
+        throw 'Incomplete native relic manager card modifier acceptance.'
+    }
+    Write-Output "NATIVE-RELIC-CARD-MODIFIER-CAPTURE PASS: $($modifierRows.Count) actual manager calls, original eligibility, reset/repeat/unique rejection and notifications."
 }
 if ($BranchCardMasks) {
     $branchRows = @($trace.BranchCardMasks)

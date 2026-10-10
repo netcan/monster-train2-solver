@@ -20,6 +20,7 @@ namespace MonsterTrain2Poju.Probe
         {
             bool accepted = mask.FilterCard(card, manager);
             if (observing) filters.Add(new RelicCardFilterResult(mask.name, accepted));
+            RelicCardModifierProbe.ObserveFilter(mask.name, accepted);
             return accepted;
         }
         // Mono shares generic reference-type method bodies. Instrument the

@@ -41,6 +41,8 @@ namespace MonsterTrain2Poju.Model
                 creation.StartingModifiers.Upgrades.Any(upgrade => upgrade.MaskMetadata == null)
                 ? "Generated card requires its branch mask descriptor and upgrade metadata." : null;
         public static CardUpgradeMaskCard Resolve(CardInstanceState instance, bool ignoreTemporaryCost = false)
+            => CardOwnedMaskModel.Resolve(OwnedState(instance), ignoreTemporaryCost).Card;
+        internal static CardOwnedMaskState OwnedState(CardInstanceState instance)
         {
             var descriptor = instance.MaskDescriptor ?? throw new InvalidOperationException("Missing branch-owned card mask descriptor.");
             string? unsupported = CardModifierModel.UnsupportedReason(instance);
@@ -51,9 +53,8 @@ namespace MonsterTrain2Poju.Model
                     throw new InvalidOperationException("Missing branch-owned upgrade mask metadata.")).Current(upgrade)).ToArray());
             var traits = new CardTraitCompositionState(descriptor.BaseTraits, Array.Empty<CardTraitValue>(),
                 Array.Empty<IReadOnlyList<CardTraitValue>>(), Array.Empty<string>(), Array.Empty<CardTraitReplacement>());
-            var state = new CardOwnedMaskState(descriptor.Definition, descriptor.BaseCost, Modifiers(instance.Permanent), Modifiers(instance.Temporary),
+            return new CardOwnedMaskState(descriptor.Definition, descriptor.BaseCost, Modifiers(instance.Permanent), Modifiers(instance.Temporary),
                 new CardTraitRefreshState(traits, true, 1, 1, 0, 0), descriptor.AuthoredCastEffects, descriptor.Purified, descriptor.PermanentGraft);
-            return CardOwnedMaskModel.Resolve(state, ignoreTemporaryCost).Card;
         }
     }
 }
