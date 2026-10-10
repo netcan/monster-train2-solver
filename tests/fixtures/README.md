@@ -12,7 +12,7 @@ pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-units-and-ju
 
 The default command still checks the full curated inventory.
 
-Current inventory is 199 archives: 168 accepted battles and 31 component
+Current inventory is 200 archives: 169 accepted battles and 31 component
 calibrations. The initial Incant model's complete 180-archive regression passes.
 The threshold model's combined181 regression has also completed successfully.
 The relic model's combined181 regression has also completed successfully.
@@ -1887,3 +1887,17 @@ The original full-policy and physical-reference comparisons remain strict;
 no oracle state or recorded actions are injected into the model to hide this
 difference. Room-selection preview modeling, further relic effects, unmodeled
 card/trigger/effect combinations and the whole battle simulation remain work.
+
+`full-battle-relic-card-modifiers.mt2f` is the accepted muted Instant native
+recording for original relic card-side temporary upgrades: 51,448 bytes, 10,080
+unique nodes and SHA-256 `2c8e68457d536a04f07aa6bf66ece80b76dd730e36034290ea15f2aaa2751f31`.
+It preserves an 18-play, five-EndTurn winning battle with original
+`ReduceStarterCost`, 124 exact relic-manager calls, ordered filter/effect results,
+49 trigger notifications and an eligible generated card carrying the relic
+upgrade. Independent manager replay and 32 immutable branches pass. The battle
+capture has zero failures, pending records or unsupported stages, and original
+game files remain unchanged. Run its focused check with
+`pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-relic-card-modifiers.mt2f`.
+
+The 199-input frozen regression completed before this manager integration and
+verified its own frozen hashes; a combined 200-input regression has not yet run.
