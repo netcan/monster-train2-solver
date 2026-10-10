@@ -61,7 +61,7 @@ internal static class BattleTurnChecks
         state.Spawn.Phase, state.Spawn.SelectedGroups, state.Spawn.Rng, state.Spawn.NextUnitId,
         state.Spawn.TreasuresRemaining, state.Spawn.Turn, state.Energy, state.ForgePoints, state.DragonsHoard,
         state.MoonPhase, state.RngStreams, state.OtherPiles, state.PlayRules, state.BattlePreviewEnabled, state.UiRngIsolated,
-        state.CanonicalPhysicalReferences
+        state.CanonicalPhysicalReferences, state.SelectedRoom
     });
     private static void Require(bool condition, string message)
     { if (!condition) throw new InvalidOperationException(message); }

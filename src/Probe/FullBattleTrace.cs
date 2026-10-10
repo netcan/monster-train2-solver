@@ -483,7 +483,7 @@ namespace MonsterTrain2Poju.Probe
             string temporary = path + ".tmp";
             var snapshot = new
             {
-                Schema = SpawnStatusRelicScenario.Prepared ? SpawnStatusRelicScenario.Clones ? 110 : 109 : TriggerCountScenario.Prepared ? 108 : AbilityIncantScenario.Prepared ? 107 : CardAnimationSettlement.Enabled ? 105 : DeathDissolveSettlement.Enabled ? 104 : EnchantmentBattleScenario.Prepared ? 103 : 102,
+                Schema = SpawnStatusRelicScenario.Prepared ? SpawnStatusRelicScenario.Clones ? 111 : 110 : TriggerCountScenario.Prepared ? 109 : AbilityIncantScenario.Prepared ? 108 : CardAnimationSettlement.Enabled ? 106 : DeathDissolveSettlement.Enabled ? 105 : EnchantmentBattleScenario.Prepared ? 104 : 103,
                 DeathDissolveSettlementEnabled = DeathDissolveSettlement.Enabled,
                 DeathDissolveSettlements = DeathDissolveSettlement.Records,
                 DeathDissolveCallbacks = DeathDissolveSettlement.Callbacks,

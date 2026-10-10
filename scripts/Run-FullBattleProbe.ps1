@@ -491,7 +491,7 @@ if ($PersistentEnchantments) {
     $persistentScenario = $environment['MT2_PROBE_MODIFIERS']
     $persistentFrames = @($trace.Actions | ForEach-Object { $_.Actual.Spawn.Train.Context.Enchantments })
     $persistentRules = @($persistentFrames | ForEach-Object { $_.Rooms.Units.Triggers.Effects.Enchantment } | Where-Object { $null -ne $_ -and $_.Bound })
-    if ($trace.Schema -ne $(if ($SettleCardAnimations) { 105 } elseif ($SettleDeathDissolves) { 104 } else { 103 }) -or $trace.ModifierScenario -ne $persistentScenario -or
+    if ($trace.Schema -ne $(if ($SettleCardAnimations) { 106 } elseif ($SettleDeathDissolves) { 105 } else { 104 }) -or $trace.ModifierScenario -ne $persistentScenario -or
         -not (Select-String -LiteralPath $unityLog -Pattern 'PERSISTENT-ENCHANTMENT-PREPARED' -Quiet) -or
         $persistentFrames.Count -ne @($trace.Actions).Count -or @($trace.Turns).Count -lt 3 -or
         $persistentRules.Count -lt 2 -or @($persistentRules | Where-Object { @($_.State.PrimaryTargets).Count -gt 0 }).Count -eq 0) {
@@ -1550,7 +1550,7 @@ if ($SpawnStatusRelics) {
             } elseif ($oldShield.DurationTriggerCount -eq 1 -and $newShield.DurationTriggerCount -eq 1) { $spawnRelicSkips++ }
         } else { $spawnRelicEnemies++ }
     }
-    if ($trace.Schema -ne $(if ($SpawnStatusRelicsClones) { 110 } else { 109 }) -or $trace.ModifierScenario -ne $(if ($SpawnStatusRelicsClones) { 'spawn-status-relics-clones' } else { 'spawn-status-relics' }) -or $births.Count -lt 3 -or
+    if ($trace.Schema -ne $(if ($SpawnStatusRelicsClones) { 111 } else { 110 }) -or $trace.ModifierScenario -ne $(if ($SpawnStatusRelicsClones) { 'spawn-status-relics-clones' } else { 'spawn-status-relics' }) -or $births.Count -lt 3 -or
         $spawnRelicPlayers -lt 2 -or $spawnRelicEnemies -lt 1 -or $spawnRelicFirsts -lt 1 -or $spawnRelicSkips -lt 1 -or
         (-not $SpawnStatusRelicsClones -and ($spawnRelicFirsts -lt 2 -or $spawnRelicTurns.Count -lt 2)) -or
         @($births | Where-Object { -not $_.Completed -or -not $_.After -or $_.Difference }).Count -ne 0 -or
@@ -1562,7 +1562,7 @@ if ($IncantRelic) {
     $players = @($incantFires | Where-Object { $_.Actor.Team -eq 1 })
     $enemies = @($incantFires | Where-Object { $_.Actor.Team -eq 0 })
     $context = $trace.Actions[0].Before.Spawn.Train.Context
-    if ($trace.Schema -ne 108 -or $players.Count -eq 0 -or $enemies.Count -eq 0 -or
+    if ($trace.Schema -ne 109 -or $players.Count -eq 0 -or $enemies.Count -eq 0 -or
         @($players.Actor.Triggers | Where-Object { $_.Kind -eq 'CardSpellPlayed' -and $_.FireCount -ne 2 }).Count -ne 0 -or
         @($enemies.Actor.Triggers | Where-Object { $_.Kind -eq 'CardSpellPlayed' -and $_.FireCount -ne 1 }).Count -ne 0 -or
         @($context.Relics | Where-Object { $_.DataId -eq '410ba540-7c4f-4dc5-a84f-b1d8af508891' -and $_.AssetKey -eq 'ExtraSpellCastTrigger' }).Count -ne 1 -or
@@ -1760,7 +1760,7 @@ $result = [pscustomobject]@{
 }
 $result | ConvertTo-Json
 if ($SettleDeathDissolves) {
-    if (-not $trace.DeathDissolveSettlementEnabled -or $trace.Schema -ne $(if ($SpawnStatusRelicsClones) { 110 } elseif ($SpawnStatusRelics) { 109 } elseif ($IncantRelic) { 108 } elseif ($AbilityIncant) { 107 } elseif ($SettleCardAnimations) { 105 } else { 104 }) -or
+    if (-not $trace.DeathDissolveSettlementEnabled -or $trace.Schema -ne $(if ($SpawnStatusRelicsClones) { 111 } elseif ($SpawnStatusRelics) { 110 } elseif ($IncantRelic) { 109 } elseif ($AbilityIncant) { 108 } elseif ($SettleCardAnimations) { 106 } else { 105 }) -or
         @($trace.DeathDissolveSettlements).Count -eq 0 -or
         @($trace.DeathDissolveSettlements | Where-Object { -not $_.Completed -or $_.PendingAfter -ne 0 -or $_.Error }).Count -ne 0 -or
         @($trace.DeathDissolveCallbacks | Where-Object { $_.Error }).Count -ne 0) {
@@ -1768,7 +1768,7 @@ if ($SettleDeathDissolves) {
     }
 }
 if ($SettleCardAnimations) {
-    if ($trace.Schema -ne $(if ($SpawnStatusRelicsClones) { 110 } elseif ($SpawnStatusRelics) { 109 } elseif ($IncantRelic) { 108 } elseif ($AbilityIncant) { 107 } else { 105 }) -or -not $trace.CardAnimationSettlement.Enabled -or
+    if ($trace.Schema -ne $(if ($SpawnStatusRelicsClones) { 111 } elseif ($SpawnStatusRelics) { 110 } elseif ($IncantRelic) { 109 } elseif ($AbilityIncant) { 108 } else { 106 }) -or -not $trace.CardAnimationSettlement.Enabled -or
         $trace.CardAnimationSettlement.PreviewWaits -lt 0 -or $trace.CardAnimationSettlement.DecisionWaits -lt 0 -or
         $trace.CardAnimationSettlement.ScheduledMovements -le 0 -or $trace.CardAnimationSettlement.PendingMovements -ne 0) {
         throw 'Native card-animation settlement protocol is missing or invalid.'

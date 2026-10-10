@@ -202,7 +202,7 @@ internal static class PersistentEnchantmentChecks
 
     private static void VerifyRemovalSettlement(FixtureValue fixture, int turns)
     {
-        Require(fixture.GetProperty("Schema").GetInt32() == 104 && fixture.GetProperty("DeathDissolveSettlementEnabled").GetBoolean(),
+        Require(fixture.GetProperty("Schema").GetInt32() is 104 or 105 && fixture.GetProperty("DeathDissolveSettlementEnabled").GetBoolean(),
             "Random aura revival requires the explicitly enabled stable removal protocol.");
         var records = fixture.GetProperty("DeathDissolveSettlements").EnumerateArray().ToArray();
         var callbacks = fixture.GetProperty("DeathDissolveCallbacks").EnumerateArray().ToArray();

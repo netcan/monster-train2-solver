@@ -118,7 +118,7 @@ namespace MonsterTrain2Poju.Model
                 source.RngStreams.Select(stream => new BattleRngStream(stream.Name, stream.Seed,
                     stream.Name == "Battle" ? context.BattleRng : stream.Name == "CardDraw" ? context.Cards.Rng : stream.State)).ToArray(),
                 context.OtherPiles ?? source.OtherPiles, source.ExternalInteractions, source.PlayRules, source.BattlePreviewEnabled,
-                source.UiRngIsolated, source.CanonicalDecisionReferences, source.CanonicalPhysicalReferences), outcome: outcome);
+                source.UiRngIsolated, source.CanonicalDecisionReferences, source.CanonicalPhysicalReferences, source.SelectedRoom), outcome: outcome);
         }
 
         public static IReadOnlyList<PlayCardAction> EnumerateSupportedActivations(BattleTurnState source)

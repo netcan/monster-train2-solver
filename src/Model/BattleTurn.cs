@@ -49,11 +49,12 @@ namespace MonsterTrain2Poju.Model
         public bool UiRngIsolated { get; }
         public bool CanonicalDecisionReferences { get; }
         public bool CanonicalPhysicalReferences { get; }
+        public int SelectedRoom { get; }
         public BattleTurnState(EnemySpawnState spawn, int energy, int energyPerTurn, int drawPerTurn,
             int forgePoints, int dragonsHoard, string moonPhase, IReadOnlyList<BattleRngStream> rngStreams,
             IReadOnlyList<CardPileState> otherPiles, IReadOnlyList<string> externalInteractions, BattlePlayRules? playRules = null,
             bool battlePreviewEnabled = false, bool uiRngIsolated = false, bool canonicalDecisionReferences = false,
-            bool canonicalPhysicalReferences = false)
+            bool canonicalPhysicalReferences = false, int selectedRoom = -1)
         {
             Spawn = spawn; Energy = energy; EnergyPerTurn = energyPerTurn; DrawPerTurn = drawPerTurn;
             ForgePoints = forgePoints; DragonsHoard = dragonsHoard; MoonPhase = moonPhase;
@@ -64,6 +65,7 @@ namespace MonsterTrain2Poju.Model
             UiRngIsolated = uiRngIsolated;
             CanonicalDecisionReferences = canonicalDecisionReferences;
             CanonicalPhysicalReferences = canonicalPhysicalReferences;
+            SelectedRoom = selectedRoom;
         }
     }
     public sealed class BattleTurnResult
@@ -78,6 +80,46 @@ namespace MonsterTrain2Poju.Model
 
     public static class BattleTurnModel
     {
+        // Room changes refresh the native combat preview before the selected action.
+        // Older captures without a selected room remain explicitly unknown.
+        public static BattleTurnResult SelectRoom(BattleTurnState source, int roomIndex)
+        {
+            if (source.PlayRules == null || source.Spawn.Train.Context == null)
+                return Unsupported("Missing room-selection rules or battle context.");
+            if (!source.PlayRules.Rooms.Any(room => room.RoomIndex == roomIndex))
+                return Unsupported("Selected room is not present in the captured rules.");
+            if (source.SelectedRoom == roomIndex)
+                return new BattleTurnResult(source, RoomOutcome.Exchanged);
+            if (source.ExternalInteractions.Count > 0)
+                return Unsupported(string.Join("; ", source.ExternalInteractions));
+            TrainCombatState train = source.Spawn.Train;
+            if (train.Rooms.Any(room => room.ExternalInteractions.Count > 0))
+                return Unsupported(string.Join("; ", train.Rooms.SelectMany(room => room.ExternalInteractions).Distinct()));
+            string? relicError = RelicModel.Validate(train.Context);
+            if (relicError != null) return Unsupported(relicError);
+            if (source.SelectedRoom >= 0 && !source.PlayRules.Rooms.Any(room => room.RoomIndex == source.SelectedRoom))
+                return Unsupported("Current selected room is not present in the captured rules.");
+
+            if (source.SelectedRoom >= 0 && source.BattlePreviewEnabled)
+            {
+                TrainCombatResult preview = BattlePreviewModel.Refresh(train);
+                if (!preview.Supported) return Unsupported(preview.UnsupportedReason!);
+                train = preview.State!;
+            }
+            EnemySpawnState old = source.Spawn;
+            var spawn = new EnemySpawnState(train, old.Waves, old.SelectedGroups, old.Phase, old.Looping,
+                old.Rng, train.Context?.NextUnitId ?? old.NextUnitId, old.Treasures, old.TreasuresRemaining,
+                old.TreasureEnabled, old.FirstTreasureTurn, old.FirstTreasureRoom, old.Turn, old.ExternalInteractions,
+                old.CanonicalDecisionReferences, old.PendingDestroyedUnitIds);
+            BattleRngStream[] streams = source.RngStreams.Select(stream => new BattleRngStream(stream.Name, stream.Seed,
+                stream.Name == "Battle" ? train.Context!.BattleRng : stream.State)).ToArray();
+            return new BattleTurnResult(new BattleTurnState(spawn, source.Energy, source.EnergyPerTurn,
+                source.DrawPerTurn, source.ForgePoints, source.DragonsHoard, source.MoonPhase, streams,
+                source.OtherPiles, source.ExternalInteractions, source.PlayRules, source.BattlePreviewEnabled,
+                source.UiRngIsolated, source.CanonicalDecisionReferences, source.CanonicalPhysicalReferences, roomIndex),
+                RoomOutcome.Exchanged);
+        }
+
         // One quiet player decision point through EndTurn to the next decision or terminal battle.
         public static BattleTurnResult EndTurn(BattleTurnState source)
         {
@@ -266,9 +308,27 @@ namespace MonsterTrain2Poju.Model
                     : otherPiles;
                 spawn = WithTrain(spawn, CardSpellModel.WithContext(spawn.Train, finalContext.WithOtherPiles(piles)),
                     spawn.Turn, spawn.Rng);
+                int selectedRoom = source.SelectedRoom;
+                if (selectedRoom >= 0)
+                {
+                    var priorRooms = source.Spawn.Train.Rooms.SelectMany(room => room.Units.Select(unit => (unit.Id, room.RoomIndex)))
+                        .ToDictionary(item => item.Id, item => item.RoomIndex);
+                    int latestChangedUnit = -1;
+                    foreach (RoomCombatState room in spawn.Train.Rooms)
+                    foreach (CombatUnit unit in room.Units)
+                    {
+                        if ((!priorRooms.TryGetValue(unit.Id, out int priorRoom) || priorRoom != room.RoomIndex) &&
+                            unit.Id > latestChangedUnit)
+                        {
+                            latestChangedUnit = unit.Id;
+                            selectedRoom = room.RoomIndex;
+                        }
+                    }
+                }
                 return new BattleTurnResult(new BattleTurnState(spawn, energy, source.EnergyPerTurn, source.DrawPerTurn,
                     source.ForgePoints, source.DragonsHoard, phase, streams, piles, source.ExternalInteractions, source.PlayRules,
-                    source.BattlePreviewEnabled, source.UiRngIsolated, source.CanonicalDecisionReferences, source.CanonicalPhysicalReferences), outcome);
+                    source.BattlePreviewEnabled, source.UiRngIsolated, source.CanonicalDecisionReferences, source.CanonicalPhysicalReferences,
+                    selectedRoom), outcome);
             }
 
             bool RouteDeadUnits(TrainCombatState before, TrainCombatResult result)

@@ -64,7 +64,7 @@ internal static class TriggerCountChecks
     {
         if (!fixture.TryGetProperty("ModifierScenario", out var scenario) || scenario.GetString() is not ("incant-relic" or "incant-relic-combined")) return;
         bool combined = scenario.GetString() == "incant-relic-combined";
-        Require(fixture.GetProperty("Schema").GetInt32() == 108 && fixture.GetProperty("CaptureFailures").GetInt32() == 0 &&
+        Require(fixture.GetProperty("Schema").GetInt32() is 108 or 109 && fixture.GetProperty("CaptureFailures").GetInt32() == 0 &&
             fixture.GetProperty("Pending").GetInt32() == 0, "Incomplete original relic native recording.");
         int queries = 0, players = 0, enemies = 0, spawnQueries = 0, deathQueries = 0;
         foreach (var record in fixture.GetProperty("IncantTriggers").EnumerateArray())

@@ -26,8 +26,12 @@ internal static class BattleActionChecks
             index == 3 ? new[] { pyre } : [], [], context)).ToArray(), [], 7, context);
         var spawn = new EnemySpawnState(train, [new EnemyWave([new EnemyGroup([])])], [-1], 0, false, rng, 2, [], 0, false, 2, 1, 3, []);
         var root = new BattleTurnState(spawn, 3, 3, 5, 0, 0, "New", [new("Spawning", 42, rng)],
-            [new("Standby", []), new("Exhausted", []), new("Purged", [])], [], rules);
+            [new("Standby", []), new("Exhausted", []), new("Purged", [])], [], rules, selectedRoom: 0);
         string parent = JsonSerializer.Serialize(root);
+        BattleTurnResult selected = BattleTurnModel.SelectRoom(root, 1);
+        Require(selected.Supported && selected.State!.SelectedRoom == 1 && root.SelectedRoom == 0 &&
+            BattleTurnModel.SelectRoom(selected.State, 1).State == selected.State,
+            "Room selection did not produce an immutable, idempotent transition.");
         BattleActionResult first = BattleActionModel.PlayCard(root, new(1, 0, 0));
         Require(first.Supported, first.Reason ?? "First summon rejected");
         Require(first.State!.Spawn.Train.Context!.NextAddedTemporaryUpgrades!.Count == 0 &&
@@ -42,8 +46,14 @@ internal static class BattleActionChecks
         Require(BattleActionModel.PlayCard(second.State, new(3, 0)).Rejection == ActionRejection.Illegal,
             "A summon exceeded capacity.");
         BattleActionResult otherRoom = BattleActionModel.PlayCard(second.State, new(3, 1));
-        Require(otherRoom.Supported && otherRoom.State!.Spawn.Train.Rooms[1].Units.Single().Size == 3,
-            "An arbitrary decision-turn summon into another room failed.");
+        Require(otherRoom.Supported && otherRoom.State!.Spawn.Train.Rooms[1].Units.Single().Size == 3 &&
+            otherRoom.State.SelectedRoom == 1 && second.State.SelectedRoom == 0,
+            "An arbitrary decision-turn summon into another room failed or changed its parent selection.");
+        var legacyRoot = new BattleTurnState(spawn, 3, 3, 5, 0, 0, "New", root.RngStreams,
+            root.OtherPiles, [], rules);
+        BattleActionResult legacyRoom = BattleActionModel.PlayCard(legacyRoot, new(3, 1));
+        Require(legacyRoom.Supported && legacyRoom.State!.SelectedRoom == -1,
+            "An old capture with unknown room selection was silently assigned a selection.");
         BattleActionResult purge = BattleActionModel.PlayCard(second.State, new(4, 0));
         Require(purge.Supported && purge.State!.OtherPiles.Single(pile => pile.Name == "Purged").Cards.Single().InstanceId == 4 &&
             purge.State.Spawn.Train.Context!.Cards.Discard.Count == 0, "Self-purge routing differed.");

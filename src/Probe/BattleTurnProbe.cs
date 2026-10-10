@@ -69,7 +69,7 @@ namespace MonsterTrain2Poju.Probe
                 combat.GetStartOfTurnCards(), save.GetForgePoints(), save.GetDragonsHoardAmount(), player.CurrentMoonPhase.ToString(),
                 streams, otherPiles, interactions.Distinct().OrderBy(value => value, StringComparer.Ordinal).ToArray(), trace.CapturePlayRules(spawn),
                 save.GetBattlePreviewEnabled(), UiRngIsolation.Enabled, canonicalDecisionReferences: true,
-                canonicalPhysicalReferences: BattleSpawnPointProbe.Enabled);
+                canonicalPhysicalReferences: BattleSpawnPointProbe.Enabled, selectedRoom: managers.GetRoomManager()!.GetSelectedRoom());
         }
 
         internal void Begin()
@@ -108,7 +108,7 @@ namespace MonsterTrain2Poju.Probe
             state.Spawn.Phase, state.Spawn.SelectedGroups, state.Spawn.Rng, state.Spawn.NextUnitId,
             state.Spawn.TreasuresRemaining, state.Spawn.Turn, state.Energy, state.ForgePoints, state.DragonsHoard,
             state.MoonPhase, state.RngStreams, state.OtherPiles, state.PlayRules, state.BattlePreviewEnabled, state.UiRngIsolated,
-            state.CanonicalPhysicalReferences
+            state.CanonicalPhysicalReferences, state.SelectedRoom
         });
         internal sealed class Record
         {

@@ -84,7 +84,8 @@ internal static class RelicSpawnStatusChecks
     {
         if (!fixture.TryGetProperty("ModifierScenario", out var scenario) || scenario.GetString() is not ("spawn-status-relics" or "spawn-status-relics-clones")) return;
         bool clones = scenario.GetString() == "spawn-status-relics-clones";
-        Require(fixture.GetProperty("Schema").GetInt32() == (clones ? 110 : 109) && fixture.GetProperty("CaptureFailures").GetInt32() == 0 &&
+        int schema = fixture.GetProperty("Schema").GetInt32();
+        Require((clones ? schema is 110 or 111 : schema is 109 or 110) && fixture.GetProperty("CaptureFailures").GetInt32() == 0 &&
             fixture.GetProperty("Pending").GetInt32() == 0, "Incomplete relic spawn status native recording.");
         var records = fixture.GetProperty("RelicSpawnStatuses").EnumerateArray().ToArray();
         int players = 0, enemies = 0, shieldTriggers = 0, shieldSkips = 0;
