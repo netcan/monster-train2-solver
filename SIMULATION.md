@@ -7738,3 +7738,21 @@ observed terminal exit zero. The earlier complete186 baseline retains its
 terminal evidence. Future complete runs must retain a completion/exit record
 independently of transient tool handles. Broader original relic, branch-derived
 card state, room, Boss and effect simulation remains incomplete.
+
+### Multi-action room selection and preview timing
+
+Regular card plays now resolve directly in their requested room and, when the
+capture has a known selection, store that room as the resulting selection. They
+do not run a separate room-selection
+preview before the card resolves; explicit `SelectRoom` transitions still run
+their native preview. This prevents a replay from refreshing the same preview
+again after EndTurn. Battle-state comparisons omit the UI-selected room and the
+allocator for transient preview objects; combat state, spawn-point groups and
+unit references remain compared.
+
+The focused `full-battle-units-spells-and-junk.mt2f` regression passes 21 paid
+plays, seven EndTurns, final Pyre 73, an independent mid-battle suffix and 16
+parallel branches. The separate `full-battle-room-selection-preview.mt2f`
+regression passes 17 paid plays, five EndTurns and 16 parallel branches. The
+cardless relic-upgrade fixture also passes its focused checks. The complete
+curated regression was deferred; the current inventory has 202 archives.

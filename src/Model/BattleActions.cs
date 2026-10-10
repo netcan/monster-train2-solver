@@ -144,14 +144,17 @@ namespace MonsterTrain2Poju.Model
     {
         public static BattleActionResult PlayCard(BattleTurnState source, PlayCardAction action)
         {
-            if (source.SelectedRoom >= 0 && source.SelectedRoom != action.RoomIndex &&
-                source.PlayRules?.Rooms.Any(room => room.RoomIndex == action.RoomIndex) == true)
+            if (action.ActivatorUnitId != 0)
             {
-                BattleTurnResult selection = BattleTurnModel.SelectRoom(source, action.RoomIndex);
-                if (!selection.Supported) return Unsupported(selection.UnsupportedReason!);
-                source = selection.State!;
+                if (source.SelectedRoom >= 0 && source.SelectedRoom != action.RoomIndex &&
+                    source.PlayRules?.Rooms.Any(room => room.RoomIndex == action.RoomIndex) == true)
+                {
+                    BattleTurnResult selection = BattleTurnModel.SelectRoom(source, action.RoomIndex);
+                    if (!selection.Supported) return Unsupported(selection.UnsupportedReason!);
+                    source = selection.State!;
+                }
+                return UnitAbilityModel.Activate(source, action);
             }
-            if (action.ActivatorUnitId != 0) return UnitAbilityModel.Activate(source, action);
             if (source.PlayRules == null || source.Spawn.Train.Context == null)
                 return Unsupported("Missing card/room play definitions or battle context.");
             if (source.ExternalInteractions.Count > 0 || source.Spawn.ExternalInteractions.Count > 0)
@@ -525,7 +528,8 @@ namespace MonsterTrain2Poju.Model
                 source.RngStreams.Select(stream => new BattleRngStream(stream.Name, stream.Seed,
                     stream.Name == "Battle" ? context.BattleRng : stream.Name == "CardDraw" ? context.Cards.Rng : stream.State)).ToArray(),
                 piles, source.ExternalInteractions, source.PlayRules, source.BattlePreviewEnabled, source.UiRngIsolated,
-                source.CanonicalDecisionReferences, source.CanonicalPhysicalReferences, source.SelectedRoom), outcome: outcome);
+                source.CanonicalDecisionReferences, source.CanonicalPhysicalReferences,
+                source.SelectedRoom < 0 ? source.SelectedRoom : action.RoomIndex), outcome: outcome);
         }
 
         // Enumerates the implemented legal actions. Unsupported hand cards remain visible to the caller.

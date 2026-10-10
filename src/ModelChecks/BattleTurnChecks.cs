@@ -54,15 +54,25 @@ internal static class BattleTurnChecks
         }
         return simulation.State!;
     }
-    internal static string Comparable(BattleTurnState state) => JsonSerializer.Serialize(new
+    internal static string Comparable(BattleTurnState state)
     {
-        Rooms = state.Spawn.Train.Rooms.Select(room => new { room.RoomIndex, room.Deployment, room.Units }).ToArray(),
-        Movement = state.Spawn.Train.Movement.OrderBy(rule => rule.UnitId).ToArray(), state.Spawn.Train.Context,
-        state.Spawn.Phase, state.Spawn.SelectedGroups, state.Spawn.Rng, state.Spawn.NextUnitId,
-        state.Spawn.TreasuresRemaining, state.Spawn.Turn, state.Energy, state.ForgePoints, state.DragonsHoard,
-        state.MoonPhase, state.RngStreams, state.OtherPiles, state.PlayRules, state.BattlePreviewEnabled, state.UiRngIsolated,
-        state.CanonicalPhysicalReferences
-    });
+        // Room selection and this allocator belong to UI previews, not battle decisions.
+        CombatContext? context = state.Spawn.Train.Context;
+        if (context?.SpawnPoints?.NextPreviewCopyId.HasValue == true)
+        {
+            BattleSpawnPoints points = context.SpawnPoints;
+            context = context.WithSpawnPoints(new BattleSpawnPoints(points.Groups, points.Units));
+        }
+        return JsonSerializer.Serialize(new
+        {
+            Rooms = state.Spawn.Train.Rooms.Select(room => new { room.RoomIndex, room.Deployment, room.Units }).ToArray(),
+            Movement = state.Spawn.Train.Movement.OrderBy(rule => rule.UnitId).ToArray(), Context = context,
+            state.Spawn.Phase, state.Spawn.SelectedGroups, state.Spawn.Rng, state.Spawn.NextUnitId,
+            state.Spawn.TreasuresRemaining, state.Spawn.Turn, state.Energy, state.ForgePoints, state.DragonsHoard,
+            state.MoonPhase, state.RngStreams, state.OtherPiles, state.PlayRules, state.BattlePreviewEnabled, state.UiRngIsolated,
+            state.CanonicalPhysicalReferences
+        });
+    }
     private static void Require(bool condition, string message)
     { if (!condition) throw new InvalidOperationException(message); }
 }
