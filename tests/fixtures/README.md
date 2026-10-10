@@ -4,7 +4,7 @@ These fixed inputs reproduce the independently modeled battle and calibration
 checks. Run `pwsh -NoProfile -File scripts/Check-Models.ps1` from the repository
 root. The script reads the curated fixture list in this directory.
 
-Current inventory is 188 archives: 162 accepted battles and 26 component
+Current inventory is 189 archives: 162 accepted battles and 27 component
 calibrations. The initial Incant model's complete 180-archive regression passes.
 The threshold model's combined181 regression has also completed successfully.
 The relic model's combined181 regression has also completed successfully.
@@ -71,6 +71,11 @@ CC85004B4D78B5B2CB01E8AEE68F387893F69B3C66336E914DF5D8052B7237BD.
 This calibrates trait composition inputs/outputs, not trait callbacks, permanent
 upgrade installation or temporary relic upgrade lifecycle integration. It is
 later than the audited frozen188 baseline; a combined regression is separate.
+
+`card-trait-composition-calibration.mt2f` is the byte-identical schema1 native
+trait refresh capture described above:31,261 bytes/4,744 nodes, SHA256
+d22122720e4f265e8f036d82ed76017e332d7629310340095e5e6124710f9680.
+It has no JSON source/companion and is included in the curated binary inventory.
 
 `full-battle-incant-relic.mt2f` retains schema108 with the original obtainable
 ExtraSpellCastTrigger acquired through SaveManager. The relic asset is unchanged;
