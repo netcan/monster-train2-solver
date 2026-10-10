@@ -1,7 +1,9 @@
 #requires -Version 7.4
+param([string[]]$Fixture = @())
+
 $ErrorActionPreference = 'Stop'
 $workspace = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
-$fixtures = @('full-battle-steward-once.mt2f', 'full-battle-no-cards.mt2f', 'full-battle-units-and-junk.mt2f',
+$fixtureNames = @('full-battle-steward-once.mt2f', 'full-battle-no-cards.mt2f', 'full-battle-units-and-junk.mt2f',
     'full-battle-units-spells-and-junk.mt2f', 'full-battle-statistics.mt2f', 'full-battle-numeric-upgrades.mt2f',
     'full-battle-dynamic-upgrades.mt2f', 'full-battle-sacrifice-upgrades.mt2f',
     'full-battle-hand-upgrades.mt2f', 'full-battle-targeted-hand-upgrades.mt2f',
@@ -148,24 +150,38 @@ $fixtures = @('full-battle-steward-once.mt2f', 'full-battle-no-cards.mt2f', 'ful
     'physical-plane-calibration.mt2f', 'card-upgrade-mask-calibration.mt2f',
     'card-modifier-overflow-calibration.mt2f', 'card-trait-composition-calibration.mt2f',
     'card-status-composition-calibration.mt2f', 'card-owned-mask-calibration.mt2f',
-    'card-upgrade-lifecycle-calibration.mt2f', 'relic-card-upgrade-calibration.mt2f') |
-    ForEach-Object { Join-Path $workspace ('tests\fixtures\' + $_) }
+    'card-upgrade-lifecycle-calibration.mt2f', 'relic-card-upgrade-calibration.mt2f')
+$selectedFixtureNames = $fixtureNames
+if ($Fixture.Count -gt 0) {
+    $selectedFixtureNames = @($Fixture | ForEach-Object { Split-Path -Leaf $_ })
+    $unknown = @($selectedFixtureNames | Where-Object { $_ -notin $fixtureNames })
+    if ($unknown.Count -gt 0) { throw "Unknown curated fixture: $($unknown -join ', ')" }
+    if (@($selectedFixtureNames | Select-Object -Unique).Count -ne $selectedFixtureNames.Count) {
+        throw 'Duplicate fixture selections are not allowed.'
+    }
+}
+$fixtures = @($selectedFixtureNames | ForEach-Object { Join-Path $workspace ('tests\fixtures\' + $_) })
 $manifest = Import-Csv -LiteralPath (Join-Path $workspace 'tests\fixtures\manifest.tsv') -Delimiter "`t"
-if ($manifest.Count -ne $fixtures.Count) { throw 'Fixture manifest inventory differs from the curated regression list.' }
+if ($manifest.Count -ne $fixtureNames.Count) { throw 'Fixture manifest inventory differs from the curated regression list.' }
 $manifestByName = @{}
 foreach ($entry in $manifest) {
     if ($manifestByName.ContainsKey($entry.archive)) { throw "Duplicate fixture manifest entry: $($entry.archive)" }
+    if ($entry.archive -notin $fixtureNames) { throw "Unexpected fixture manifest entry: $($entry.archive)" }
     $manifestByName[$entry.archive] = $entry
 }
-foreach ($fixture in $fixtures) {
-    $name = Split-Path -Leaf $fixture
+foreach ($fixturePath in $fixtures) {
+    $name = Split-Path -Leaf $fixturePath
     if (-not $manifestByName.ContainsKey($name)) { throw "Fixture missing from manifest: $name" }
     $entry = $manifestByName[$name]
-    if ((Get-Item -LiteralPath $fixture).Length -ne [long]$entry.archive_bytes -or
-        (Get-FileHash -LiteralPath $fixture -Algorithm SHA256).Hash -ne $entry.archive_sha256) {
+    if ((Get-Item -LiteralPath $fixturePath).Length -ne [long]$entry.archive_bytes -or
+        (Get-FileHash -LiteralPath $fixturePath -Algorithm SHA256).Hash -ne $entry.archive_sha256) {
         throw "Fixture archive integrity check failed: $name"
     }
 }
-Write-Host "FIXTURE-INTEGRITY PASS: $($fixtures.Count) binary archives match the curated inventory and SHA-256 manifest."
+if ($Fixture.Count -gt 0) {
+    Write-Host "FIXTURE-INTEGRITY PASS: $($fixtures.Count) selected of $($fixtureNames.Count) curated archives match the SHA-256 manifest."
+} else {
+    Write-Host "FIXTURE-INTEGRITY PASS: $($fixtures.Count) binary archives match the curated inventory and SHA-256 manifest."
+}
 dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release -- @fixtures
 if ($LASTEXITCODE -ne 0) { throw 'Independent model checks failed.' }

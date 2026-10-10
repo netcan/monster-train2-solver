@@ -4,6 +4,14 @@ These fixed inputs reproduce the independently modeled battle and calibration
 checks. Run `pwsh -NoProfile -File scripts/Check-Models.ps1` from the repository
 root. The script reads the curated fixture list in this directory.
 
+For a focused check, pass one or more archive names with `-Fixture`, for example:
+
+```powershell
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-units-and-junk.mt2f
+```
+
+The default command still checks the full curated inventory.
+
 Current inventory is 199 archives: 168 accepted battles and 31 component
 calibrations. The initial Incant model's complete 180-archive regression passes.
 The threshold model's combined181 regression has also completed successfully.
