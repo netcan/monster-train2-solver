@@ -52,6 +52,14 @@ gone; interruption discarded the terminal handles, so original exit codes
 cannot be verified. These are complete check-output audits, not preserved
 terminal-exit-zero evidence. The complete186 baseline retains that evidence.
 
+The later frozen189 and190 regressions retain successful terminal status and
+complete output audits:162 battles (158 paid/four no-more-card chains), with27
+and28 ordered calibrations respectively. Every input's manifest size/hash and
+the frozen model/checker hashes match. Durable exit codes are zero, with terminal
+timestamps2026-10-10T13:14:05.0335854Z and2026-10-10T13:21:27.8389773Z.
+These validate the trait and status composition versions respectively; they
+precede the owned-card mask and temporary-upgrade lifecycle additions.
+
 The new trait composition model separately matches2,134 native forced-refresh
 observations:668 raw card trait seeds,15 isolated owned-card copies and384
 controlled combinations, each refreshed twice with persistent results carried.
