@@ -77,6 +77,26 @@ trait refresh capture described above:31,261 bytes/4,744 nodes, SHA256
 d22122720e4f265e8f036d82ed76017e332d7629310340095e5e6124710f9680.
 It has no JSON source/companion and is included in the curated binary inventory.
 
+The subsequent card status composition model separately matches1,039 native
+ordered queries:15 owned CardState.TryGetStatusEffects results and1,024
+controlled original-helper two-stage merges. Groups retain both status ID and
+fromPermanentUpgrade, clamp after each unchecked Int32 addition, discard zero
+groups after each stage and preserve their resulting order. Purify removes
+starting statuses, not upgrades; card queries have no unit9999-stack cap.
+Exact source flags, ordered counts and32 immutable parallel replays pass.
+The muted Instant capture exits zero in64.56 seconds with complete context,
+RNG/frame and original files unchanged. Its independent complete battle passes
+21 paid plays/seven EndTurns, Pyre73 and initial/mid-battle branch policies;
+all pure checks and mask/overflow/trait calibrations also pass. Frozen binaries
+are retained in .probe-runs/card-status-composition-final-checks:Model SHA256
+077E8D1778C05A20FB302D3232E151ADD931C0E324C380FC1DAA78661D56F884,
+ModelChecks SHA256
+5713EEBEA689CCD398FD3E9E89CFD44F345F39E0DE388BF67133888085BFF429.
+This models card queries with applyDuality=false; Duality and live unit spawning
+remain separately scoped. The full189 trait-version regression does not cover
+this later status-source metadata/model change. Branch-derived owned mask views
+and complete temporary relic upgrade lifecycles remain unfinished.
+
 `full-battle-incant-relic.mt2f` retains schema108 with the original obtainable
 ExtraSpellCastTrigger acquired through SaveManager. The relic asset is unchanged;
 authored unit/spell triggers exercise count2 player Incant and count1 enemy Incant,

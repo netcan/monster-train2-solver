@@ -113,6 +113,7 @@ param(
     [switch] $UpgradeMasks,
     [switch] $ModifierOverflow,
     [switch] $TraitComposition,
+    [switch] $CardStatusComposition,
     [switch] $IncantRelic,
     [switch] $IncantRelics,
     [switch] $SpawnStatusRelics,
@@ -245,6 +246,7 @@ $environment = @{
     MT2_PROBE_UPGRADE_MASKS = $(if ($UpgradeMasks) { '1' } else { '0' })
     MT2_PROBE_MODIFIER_OVERFLOW = $(if ($ModifierOverflow) { '1' } else { '0' })
     MT2_PROBE_TRAIT_COMPOSITION = $(if ($TraitComposition) { '1' } else { '0' })
+    MT2_PROBE_CARD_STATUS_COMPOSITION = $(if ($CardStatusComposition) { '1' } else { '0' })
     MT2_PROBE_SETTLE_DEATH_DISSOLVES = $(if ($SettleDeathDissolves) { '1' } else { '0' })
     MT2_PROBE_SETTLE_CARD_ANIMATIONS = $(if ($SettleCardAnimations) { '1' } else { '0' })
     MT2_PROBE_STATUS_CALLBACKS = $(if ($HordeStatuses -or $StatusCallbacks) { '1' } else { '0' })
@@ -359,6 +361,20 @@ if ($TraitComposition) {
             $traitData.GetProperty('Rows').GetArrayLength() -ne 2134) { throw 'Incomplete or mutating trait composition calibration.' }
         Write-Output 'NATIVE-TRAIT-COMPOSITION-CAPTURE PASS: 2134 original/owned/controlled refresh observations; unchanged context/RNG/frame.'
     } finally { $traitArchive.Dispose() }
+}
+if ($CardStatusComposition) {
+    Add-Type -Path (Join-Path $workspace 'src\FixtureArchive\bin\Release\net8.0\FixtureArchive.dll')
+    $statusArchive = [MonsterTrain2Poju.Fixtures.FixtureDocument]::Read((Join-Path $profile 'card-status-composition-calibration.mt2f'))
+    try {
+        $statusData = $statusArchive.RootElement
+        if ($statusData.GetProperty('Schema').GetInt32() -ne 1 -or
+            -not $statusData.GetProperty('ContextUnchanged').GetBoolean() -or
+            $statusData.GetProperty('GameModuleMvid').GetString() -ne $trace.GameModuleMvid -or
+            $statusData.GetProperty('FrameBefore').GetInt32() -ne $statusData.GetProperty('FrameAfter').GetInt32() -or
+            -not $statusData.GetProperty('RngBefore').ContentEquals($statusData.GetProperty('RngAfter')) -or
+            $statusData.GetProperty('Rows').GetArrayLength() -ne 1039) { throw 'Incomplete or mutating card status composition calibration.' }
+        Write-Output 'NATIVE-CARD-STATUS-COMPOSITION-CAPTURE PASS: 1039 original-owned/controlled status queries; unchanged context/RNG/frame.'
+    } finally { $statusArchive.Dispose() }
 }
 if ($ModifierOverflow) {
     Add-Type -Path (Join-Path $workspace 'src\FixtureArchive\bin\Release\net8.0\FixtureArchive.dll')

@@ -40,7 +40,7 @@ namespace MonsterTrain2Poju.Probe
             bool ignoreTemporaryCost = false;
             var state = card as CardState;
             if (state != null && manager != null && manager.HasPermanentUpgradeChangeRelicEffects(state, out bool applied)) ignoreTemporaryCost = applied;
-            UpgradeMaskStatus Status(StatusEffectStackData status) => new UpgradeMaskStatus(status.statusId, status.count);
+            UpgradeMaskStatus Status(StatusEffectStackData status) => new UpgradeMaskStatus(status.statusId, status.count, status.fromPermanentUpgrade);
             return new CardUpgradeMaskCard(card.GetID(), card.GetCardType().ToString(), card.GetRarity().ToString(), card.IsSpawnerCard(),
                 spawn != null && spawn.GetCanAttack(), spawn?.GetSubtypes().Select(subtype => subtype.Key).ToArray() ?? Array.Empty<string>(),
                 statuses.Select(Status).ToArray(), effects.Select(effect => (IReadOnlyList<UpgradeMaskStatus>)

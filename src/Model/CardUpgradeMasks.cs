@@ -21,7 +21,9 @@ namespace MonsterTrain2Poju.Model
     {
         public string Id { get; }
         public int Count { get; }
-        public UpgradeMaskStatus(string id, int count) { Id = id; Count = count; }
+        public bool FromPermanentUpgrade { get; }
+        public UpgradeMaskStatus(string id, int count, bool fromPermanentUpgrade = false)
+        { Id = id; Count = count; FromPermanentUpgrade = fromPermanentUpgrade; }
     }
 
     public sealed class CardUpgradeMaskRule

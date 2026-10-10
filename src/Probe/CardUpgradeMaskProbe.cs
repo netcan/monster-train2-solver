@@ -21,7 +21,7 @@ namespace MonsterTrain2Poju.Probe
             string[] Clans(string name) => ((IEnumerable)Field(name)).Cast<ClassData>().Select(data => data.GetID()).ToArray();
             string[] Upgrades(string name) => ((IEnumerable)Field(name)).Cast<CardUpgradeData>().Select(data => data.GetID()).ToArray();
             UpgradeMaskStatus[] Statuses(string name) => ((IEnumerable)Field(name)).Cast<StatusEffectStackData>()
-                .Select(status => new UpgradeMaskStatus(status.statusId, status.count)).ToArray();
+                .Select(status => new UpgradeMaskStatus(status.statusId, status.count, status.fromPermanentUpgrade)).ToArray();
             IReadOnlyList<string>[] Pools(string name) => ((IEnumerable)Field(name)).Cast<CardPool>()
                 .Select(pool => (IReadOnlyList<string>)Enumerable.Range(0, pool.GetNumCards()).Select(index => pool.GetCardAtIndex(index).GetID()).ToArray()).ToArray();
             var costs = (UnityEngine.Vector2)Field("costRange");
