@@ -1918,5 +1918,6 @@ wins with 17 actions, five EndTurns, zero capture failures/mismatches/unsupporte
 stages/pending records; independent replay matches all actions and turns and
 finishes at Pyre80. The archive is 51,499 bytes/8,650 nodes, SHA-256
 `b037950662c2cc337101ac9e7e6cb6fe0773815bef1d2e2b4f754afa9c817950`, with no
-JSON source. Its focused regression passes; the combined 201-archive stage run is
-pending.
+JSON source. Its focused regression passes. The complete 201-archive stage run
+also passes in about 38 minutes: 170 accepted battles and 31 component
+calibrations; every archive matches the integrity manifest.
