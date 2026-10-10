@@ -1899,5 +1899,12 @@ capture has zero failures, pending records or unsupported stages, and original
 game files remain unchanged. Run its focused check with
 `pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-relic-card-modifiers.mt2f`.
 
-The 199-input frozen regression completed before this manager integration and
-verified its own frozen hashes; a combined 200-input regression has not yet run.
+The complete 200-input regression passes: 169 battles (165 paid/four no-more-card
+chains), 31 ordered component calibrations and seven branch-card oracles with
+3,540 decision contexts, 103,940 card views and 61,735 upgraded observations.
+Every input archive matches its manifest size/SHA-256; all core transitions are
+supported. The run exited 0 at `2026-10-10T16:41:19.3333019Z` UTC on commit
+`8b938988600f7890c13d28035b6dbb8493ae7f7a`. Model SHA-256 is
+`9d8df99fb2c11cf16c7e902453c0c9ca49d221af036023d0e06ef1c18c3cb48e` and
+ModelChecks SHA-256 is
+`3b0e6ec1da26542a91f71b5c27cc0498f22470dc85b213e54967b249b8b60b87`.
