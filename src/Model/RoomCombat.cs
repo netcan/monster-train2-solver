@@ -262,6 +262,12 @@ namespace MonsterTrain2Poju.Model
 
         internal RoomCombatState WithCompanionBosses(IReadOnlyList<int>? ids) => new(RoomIndex, Deployment, Units,
             ExternalInteractions, Context, Preview, ids);
+
+        internal RoomCombatState WithUnits(IReadOnlyList<CombatUnit> units) => new(RoomIndex, Deployment, units,
+            ExternalInteractions, Context, Preview, ActiveCompanionBossIds);
+
+        internal RoomCombatState WithContext(CombatContext? context) => new(RoomIndex, Deployment, Units,
+            ExternalInteractions, context, Preview, ActiveCompanionBossIds);
     }
 
     public sealed class CombatEvent

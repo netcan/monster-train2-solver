@@ -118,14 +118,14 @@ namespace MonsterTrain2Poju.Model
                 // Captures and target filters expose only positive native status counts.
                 changed = CardSpellModel.Copy(changed, changed.Health, changed.Statuses.Where(item => item.Stacks > 0).ToArray());
                 state = new RoomCombatState(state.RoomIndex, state.Deployment, state.Units.Select(unit => unit.Id == id ? changed : unit).ToArray(),
-                    state.ExternalInteractions, state.Context, state.Preview);
+                    state.ExternalInteractions, state.Context, state.Preview, state.ActiveCompanionBossIds);
                 events.Add(new CombatEvent(0, "TriggeredStatus:" + status.Id, actorId, id,
                     (changed.Status(status.Id)?.Stacks ?? 0) - (before.Status(status.Id)?.Stacks ?? 0)));
             }
             return new RoomCombatResult(state, RoomOutcome.Exchanged, 0, events, pendingCallbacks: callbacks);
         }
         private static RoomCombatState WithContext(RoomCombatState source, CombatContext context) =>
-            new RoomCombatState(source.RoomIndex, source.Deployment, source.Units, source.ExternalInteractions, context, source.Preview);
+            source.WithContext(context);
         private static RoomCombatResult Unsupported(string reason) => new RoomCombatResult(null, RoomOutcome.Unsupported, 0, new List<CombatEvent>(), reason);
     }
 }

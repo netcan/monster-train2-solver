@@ -24,7 +24,8 @@ namespace MonsterTrain2Poju.Model
                 target.Health, target.MaxHealth, target.CanAttack, target.IsPyre, target.EndsBattleOnDeath, target.Statuses, target.Triggers,
                 target.SpawnerCardId, target.Size, target.StatusImmunities, target.Subtypes, modifiers, target.IsBoss, target.LastAttackerId, target.StatusRegistry, target.EquipmentCards, target.NextTriggerId, target.Ability, target.StatusDictionary, target.AbilityRules, target.HordeDefinition, target.IsSpawning, target.SacrificeCardId, target.DeathState, bumpRules: target.BumpRules);
             return new RoomCombatResult(new RoomCombatState(source.RoomIndex, source.Deployment,
-                source.Units.Select(unit => unit.Id == targetId ? changed : unit).ToArray(), source.ExternalInteractions, source.Context, source.Preview),
+                source.Units.Select(unit => unit.Id == targetId ? changed : unit).ToArray(), source.ExternalInteractions, source.Context,
+                source.Preview, source.ActiveCompanionBossIds),
                 RoomOutcome.Exchanged, 0, new List<CombatEvent>());
         }
     }

@@ -62,7 +62,7 @@ namespace MonsterTrain2Poju.Model
             RelicConditionEvaluation evaluated = RelicConditionModel.Evaluate(source.Context!, rule.Conditions);
             if (!evaluated.Supported) return Fail(evaluated.UnsupportedReason!);
             RoomCombatState state = new RoomCombatState(source.RoomIndex, source.Deployment, source.Units,
-                source.ExternalInteractions, evaluated.Context, source.Preview);
+                source.ExternalInteractions, evaluated.Context, source.Preview, source.ActiveCompanionBossIds);
             CombatUnit? actor = state.Units.FirstOrDefault(unit => unit.Id == unitId);
             if (actor == null) return Fail("Relic trigger installation requires a retained native actor.");
             bool team = actor.Team == CombatTeam.Player ? rule.SourcePlayer : rule.SourceEnemy;
@@ -87,7 +87,7 @@ namespace MonsterTrain2Poju.Model
             if (error != null) return Fail(error);
             state = new RoomCombatState(state.RoomIndex, state.Deployment,
                 state.Units.Select(unit => unit.Id == unitId ? actor : unit).ToArray(), state.ExternalInteractions,
-                state.Context, state.Preview);
+                state.Context, state.Preview, state.ActiveCompanionBossIds);
             error = RoomCombatModel.Validate(state);
             return error == null ? Match(state) : Fail(error);
             // This native effect does not notify its relic or record its conditions.

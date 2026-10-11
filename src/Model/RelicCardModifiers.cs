@@ -208,7 +208,7 @@ namespace MonsterTrain2Poju.Model
         private static RoomCombatResult Match(RoomCombatState state) =>
             new RoomCombatResult(state, RoomOutcome.Exchanged, 0, new List<CombatEvent>());
         private static RoomCombatState WithContext(RoomCombatState state, CombatContext context) =>
-            new RoomCombatState(state.RoomIndex, state.Deployment, state.Units, state.ExternalInteractions, context, state.Preview);
+            state.WithContext(context);
         private static RelicCardModifierResult Fail(string error) => new RelicCardModifierResult(null, unsupportedReason: error);
         private static RoomCombatResult FailRoom(string error) =>
             new RoomCombatResult(null, RoomOutcome.Unsupported, 0, new List<CombatEvent>(), error);

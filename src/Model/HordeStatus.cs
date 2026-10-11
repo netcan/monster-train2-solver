@@ -52,7 +52,8 @@ namespace MonsterTrain2Poju.Model
             }
             var state = Replace(source, actor);
             return new RoomCombatResult(new RoomCombatState(state.RoomIndex, state.Deployment, state.Units,
-                state.ExternalInteractions, context, state.Preview), RoomOutcome.Exchanged, 0, new List<CombatEvent>(), pendingCallbacks: callbacks);
+                state.ExternalInteractions, context, state.Preview, state.ActiveCompanionBossIds), RoomOutcome.Exchanged, 0,
+                new List<CombatEvent>(), pendingCallbacks: callbacks);
         }
 
         public static RoomCombatResult SettleHealth(RoomCombatState source, int targetId)
@@ -73,7 +74,8 @@ namespace MonsterTrain2Poju.Model
             unit.StatusRegistry, unit.EquipmentCards, unit.NextTriggerId, unit.Ability, unit.StatusDictionary, unit.AbilityRules,
             unit.HordeDefinition, unit.IsSpawning.HasValue ? value : (bool?)null, unit.SacrificeCardId, unit.DeathState, bumpRules: unit.BumpRules);
         private static RoomCombatState Replace(RoomCombatState source, CombatUnit actor) => new RoomCombatState(source.RoomIndex,
-            source.Deployment, source.Units.Select(unit => unit.Id == actor.Id ? actor : unit).ToArray(), source.ExternalInteractions, source.Context, source.Preview);
+            source.Deployment, source.Units.Select(unit => unit.Id == actor.Id ? actor : unit).ToArray(), source.ExternalInteractions,
+            source.Context, source.Preview, source.ActiveCompanionBossIds);
         private static RoomCombatResult Match(RoomCombatState state) => new RoomCombatResult(state, RoomOutcome.Exchanged, 0, new List<CombatEvent>());
         private static RoomCombatResult Unsupported(string error) => new RoomCombatResult(null, RoomOutcome.Unsupported, 0, new List<CombatEvent>(), error);
     }

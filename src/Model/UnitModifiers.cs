@@ -213,7 +213,8 @@ namespace MonsterTrain2Poju.Model
                 if (!partial && upgrade.TriggerUpgrades?.Count > 0)
                 {
                     error = RoomCombatModel.Validate(new RoomCombatState(state.RoomIndex, state.Deployment,
-                        state.Units.Select(unit => unit.Id == targetId ? Snapshot() : unit).ToArray(), state.ExternalInteractions, state.Context, state.Preview),
+                        state.Units.Select(unit => unit.Id == targetId ? Snapshot() : unit).ToArray(), state.ExternalInteractions,
+                        state.Context, state.Preview, state.ActiveCompanionBossIds),
                         allowDyingTarget ? targetId : (int?)null);
                     if (error != null) return Unsupported(error);
                 }

@@ -8,6 +8,20 @@ internal static class UnitAbilityChecks
     {
         var root = Root(); string parent = JsonSerializer.Serialize(root);
         var action = new PlayCardAction(2, 0, activatorUnitId: 10);
+        var snapshotContext = root.Spawn.Train.Context!;
+        var explicitEmptyRoom = new RoomCombatState(0, false, [], [], snapshotContext, activeCompanionBossIds: Array.Empty<int>());
+        var unknownRoom = new RoomCombatState(0, false, [], [], snapshotContext);
+        Require(explicitEmptyRoom.WithContext(snapshotContext).ActiveCompanionBossIds is { Count: 0 } &&
+            explicitEmptyRoom.WithUnits(explicitEmptyRoom.Units).ActiveCompanionBossIds is { Count: 0 } &&
+            unknownRoom.ActiveCompanionBossIds == null,
+            "Room copies collapsed an explicitly empty companion-Boss snapshot into an unknown roster.");
+        TrainCombatState emptyRoster = new(root.Spawn.Train.Rooms.Select(room => new RoomCombatState(room.RoomIndex,
+            room.Deployment, room.Units, room.ExternalInteractions, snapshotContext, room.Preview, Array.Empty<int>())).ToArray(),
+            root.Spawn.Train.Movement, root.Spawn.Train.EnemySlotsPerRoom, snapshotContext);
+        TrainCombatState resolving = UnitAbilityModel.Resolving(emptyRoster, 10, true);
+        Require(resolving.Rooms.All(room => room.ActiveCompanionBossIds is { Count: 0 }) &&
+            resolving.Rooms.SelectMany(room => room.Units).Single(unit => unit.Id == 10).Ability!.Resolving,
+            "Ability resolving copies lost the explicit companion-Boss snapshot.");
         BattleActionResult result = BattleActionModel.PlayCard(root, action);
         Require(result.Supported, "Skill activation rejected: " + result.Reason);
         var after = result.State!; var context = after.Spawn.Train.Context!;

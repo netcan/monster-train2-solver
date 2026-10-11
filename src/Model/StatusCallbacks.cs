@@ -86,7 +86,7 @@ namespace MonsterTrain2Poju.Model
                 template.Modifiers?.ResetStartingStatusCaches(), template.IsBoss,
                 template.LastAttackerId, template.StatusRegistry == null ? null : System.Array.Empty<CombatStatus>(), template.EquipmentCards, template.NextTriggerId, template.Ability, template.StatusDictionary == null ? null : new StatusDictionaryState(System.Array.Empty<string>(), System.Array.Empty<int>()), template.AbilityRules, template.HordeDefinition, template.IsSpawning, template.SacrificeCardId, template.DeathState, bumpRules: template.BumpRules);
             RoomCombatState initializing = new RoomCombatState(source.RoomIndex, source.Deployment, source.Units.Select(unit => unit.Id == template.Id ? empty : unit).ToArray(),
-                System.Array.Empty<string>(), source.Context, source.Preview);
+                System.Array.Empty<string>(), source.Context, source.Preview, source.ActiveCompanionBossIds);
             CombatUnit current = empty;
             bool inRoom = true;
             var orderedApplications = applications.Where(status => cardStatus == null || status.Id != "cardless")
@@ -104,7 +104,8 @@ namespace MonsterTrain2Poju.Model
                 CombatStatus status = application.Status;
                 if (status.Stacks <= 0) continue;
                 RoomCombatState scope = inRoom ? initializing : new RoomCombatState(initializing.RoomIndex, initializing.Deployment,
-                    initializing.Units.Concat(new[] { current }).ToArray(), initializing.ExternalInteractions, initializing.Context, initializing.Preview);
+                    initializing.Units.Concat(new[] { current }).ToArray(), initializing.ExternalInteractions, initializing.Context,
+                    initializing.Preview, initializing.ActiveCompanionBossIds);
                 RoomCombatResult added = StatusApplicationModel.ApplyRetained(scope, template.Id, status, application.SourceCardId,
                     spawnEffect: true, fromEffectType: application.FromEffectType, allowStackModifiers: application.AllowStackModifiers);
                 if (!added.Supported) return added.UnsupportedReason;
@@ -113,7 +114,8 @@ namespace MonsterTrain2Poju.Model
                     added.RetainedUnits.FirstOrDefault(unit => unit.Id == template.Id) ?? current;
                 inRoom &= initializing.Units.Any(unit => unit.Id == template.Id);
                 if (!inRoom) initializing = EnchantmentWorldModel.Sync(new RoomCombatState(initializing.RoomIndex, initializing.Deployment,
-                    initializing.Units.Where(unit => unit.Id != template.Id).ToArray(), initializing.ExternalInteractions, initializing.Context, initializing.Preview), new[] { current });
+                    initializing.Units.Where(unit => unit.Id != template.Id).ToArray(), initializing.ExternalInteractions, initializing.Context,
+                    initializing.Preview, initializing.ActiveCompanionBossIds), new[] { current });
                 foreach (RoomCombatModel.QueuedCharacterTrigger callback in added.PendingCallbacks) queue.Add(callback);
             }
             bool horde = applications.Any(status => status.Id == "horde" && status.Stacks > 0) ||
@@ -135,7 +137,8 @@ namespace MonsterTrain2Poju.Model
                 {
                     initializing = EnchantmentWorldModel.Sync(new RoomCombatState(source.RoomIndex, source.Deployment,
                         initializing.Units.Select(unit => unit.Id == template.Id ? initialized : unit).ToArray(),
-                        source.ExternalInteractions, initializing.Context, source.Preview), inRoom ? null : new[] { initialized });
+                        source.ExternalInteractions, initializing.Context, source.Preview, source.ActiveCompanionBossIds),
+                        inRoom ? null : new[] { initialized });
                     updateRoom?.Invoke(initializing);
                 }
             }

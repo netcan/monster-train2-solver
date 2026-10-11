@@ -120,7 +120,7 @@ namespace MonsterTrain2Poju.Model
                 old.DamageBuffFromStatusEffects, old.MagebladeDamagePerMagicPower);
             CombatUnit changed = UnitCloneModel.Copy(target, modifiers, Math.Max(0, unchecked(attack + buff)), source.Health, source.MaxHealth);
             state = new RoomCombatState(state.RoomIndex, state.Deployment, state.Units.Select(unit => unit.Id == targetId ? changed : unit).ToArray(),
-                state.ExternalInteractions, state.Context, state.Preview);
+                state.ExternalInteractions, state.Context, state.Preview, state.ActiveCompanionBossIds);
             return new RoomCombatResult(state, RoomOutcome.Exchanged, 0, events, pendingCallbacks: pending);
 
             int Ignored(string id) => excluded.FirstOrDefault(item => item.Key == id)?.Value ?? 0;

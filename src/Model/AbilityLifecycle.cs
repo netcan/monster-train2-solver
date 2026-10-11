@@ -247,10 +247,9 @@ namespace MonsterTrain2Poju.Model
                 unit.IsPyre, unit.EndsBattleOnDeath, unit.Statuses, triggers, unit.SpawnerCardId, unit.Size, unit.StatusImmunities,
                 unit.Subtypes, unit.Modifiers, unit.IsBoss, unit.LastAttackerId, unit.StatusRegistry, unit.EquipmentCards, next,
                 ability, unit.StatusDictionary, unit.AbilityRules, unit.HordeDefinition, unit.IsSpawning, unit.SacrificeCardId, unit.DeathState, bumpRules: unit.BumpRules);
-        private static RoomCombatState Replace(RoomCombatState state, CombatUnit unit) => new RoomCombatState(state.RoomIndex,
-            state.Deployment, state.Units.Select(item => item.Id == unit.Id ? unit : item).ToArray(), state.ExternalInteractions, state.Context, state.Preview);
-        private static RoomCombatState Context(RoomCombatState state, CombatContext context) => new RoomCombatState(state.RoomIndex,
-            state.Deployment, state.Units, state.ExternalInteractions, context, state.Preview);
+        private static RoomCombatState Replace(RoomCombatState state, CombatUnit unit) => state.WithUnits(
+            state.Units.Select(item => item.Id == unit.Id ? unit : item).ToArray());
+        private static RoomCombatState Context(RoomCombatState state, CombatContext context) => state.WithContext(context);
         private static RoomCombatResult Match(RoomCombatState state) => new RoomCombatResult(state, RoomOutcome.Exchanged, 0, new List<CombatEvent>());
         private static RoomCombatResult Unsupported(string error) => new RoomCombatResult(null, RoomOutcome.Unsupported, 0, new List<CombatEvent>(), error);
     }

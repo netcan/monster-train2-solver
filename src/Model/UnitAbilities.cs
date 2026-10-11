@@ -143,10 +143,10 @@ namespace MonsterTrain2Poju.Model
         public static PlayCardAction? ChooseAbilityThenCards(BattleTurnState source) =>
             EnumerateSupportedActivations(source).FirstOrDefault() ?? BattleActionModel.ChooseUnitSpellAndJunkPlay(source);
 
-        private static TrainCombatState Resolving(TrainCombatState train, int id, bool value) => new TrainCombatState(train.Rooms
+        internal static TrainCombatState Resolving(TrainCombatState train, int id, bool value) => new TrainCombatState(train.Rooms
             .Select(room => new RoomCombatState(room.RoomIndex, room.Deployment, room.Units.Select(unit => unit.Id == id && unit.Ability != null
                 ? AbilityCooldownModel.Copy(unit, AbilityLifecycleModel.Normalize(unit.Ability.WithResolving(value))) : unit).ToArray(), room.ExternalInteractions,
-                train.Context, room.Preview)).ToArray(), train.Movement, train.EnemySlotsPerRoom, train.Context);
+                train.Context, room.Preview, room.ActiveCompanionBossIds)).ToArray(), train.Movement, train.EnemySlotsPerRoom, train.Context);
         private static TrainCombatResult OwnTrigger(TrainCombatState train, int id, string kind,
             IReadOnlyList<RoomCombatModel.QueuedCharacterTrigger>? preceding = null)
         {
