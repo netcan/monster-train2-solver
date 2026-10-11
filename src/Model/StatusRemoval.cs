@@ -74,7 +74,7 @@ namespace MonsterTrain2Poju.Model
             return new RoomCombatResult(sacrificed.State, sacrificed.Outcome, sacrificed.Rounds, sacrificed.Events.ToList(),
                 sacrificed.UnsupportedReason, callbacks);
         }
-        internal static RoomCombatResult Drain(RoomCombatResult result)
+        internal static RoomCombatResult Drain(RoomCombatResult result, bool settleSpawner = true)
         {
             if (!result.Supported) return result;
             var callbacks = result.PendingCallbacks.ToList(); var events = result.Events.ToList(); RoomOutcome outcome = result.Outcome;
@@ -83,7 +83,11 @@ namespace MonsterTrain2Poju.Model
                 result = RoomCombatModel.ApplyQueuedCharacterTrigger(result.State!, queued, callbacks.Add);
                 if (result.Supported) { events.AddRange(result.Events); if (result.Outcome != RoomOutcome.Exchanged) outcome = result.Outcome; }
                 return result.Supported;
-            }, queued => { result = RoomCombatModel.SettleQueuedSpawner(result.State!, queued.Unit); return result.Supported; },
+            }, queued =>
+            {
+                if (!settleSpawner) return true;
+                result = RoomCombatModel.SettleQueuedSpawner(result.State!, queued.Unit); return result.Supported;
+            },
                 () => { result = EnchantmentWorldModel.CompleteQueuedRemovals(result.State!, callbacks.Add); return result.Supported; }, () => result.State?.Context, message => result = new RoomCombatResult(null, RoomOutcome.Unsupported, 0, events, message));
             return drained ? new RoomCombatResult(result.State, outcome, result.Rounds, events) : result;
         }

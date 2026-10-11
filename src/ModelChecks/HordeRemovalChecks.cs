@@ -107,10 +107,12 @@ internal static class HordeRemovalChecks
                 : StatusRemovalModel.Remove(before, actorId, id, amount, sourceId);
             Require(result.Supported, label + " unsupported: " + result.UnsupportedReason);
             queue.AddRange(result.PendingCallbacks);
-            if (StatusRemovalModel.RequiresSacrifice(result)) { result = Drain(result, queue, dispatched); drained = true; }
+            if (StatusRemovalModel.RequiresSacrifice(result))
+            { result = Drain(result, queue, dispatched, settleSpawner: false); drained = true; }
         }
         Require(result.Supported, label + " unsupported: " + result.UnsupportedReason);
-        Compare(result.State, sample.GetProperty("After").Deserialize<RoomCombatState>(), label + " operation room");
+        var actualRoom = sample.GetProperty("After").Deserialize<RoomCombatState>()!;
+        Compare(result.State, actualRoom, label + " operation room");
         Compare(Actor(), sample.GetProperty("AfterActor").Deserialize<CombatUnit>(), label + " operation actor");
         Require(drained || queue.Count == sample.GetProperty("QueueBeforeDrain").GetInt32(), label + " raw accepted queue count differs.");
         if (!drained) result = Drain(result, queue, dispatched);
@@ -125,14 +127,19 @@ internal static class HordeRemovalChecks
         CombatUnit Actor() => result.State!.Units.FirstOrDefault(unit => unit.Id == actorId) ??
             queue.Last(item => item.Unit.Id == actorId).Unit;
     }
-    private static RoomCombatResult Drain(RoomCombatResult result, List<RoomCombatModel.QueuedCharacterTrigger> queue, List<Dispatch> dispatched)
+    private static RoomCombatResult Drain(RoomCombatResult result, List<RoomCombatModel.QueuedCharacterTrigger> queue,
+        List<Dispatch> dispatched, bool settleSpawner = true)
     {
         Require(RoomCombatModel.DrainCharacterQueue(queue, queued =>
         {
             if (queued.Unit.Triggers.Any(trigger => trigger.Kind == queued.Kind))
                 dispatched.Add(new(queued.Unit.Id, queued.Kind, queued.DyingCharacter?.Id ?? 0, queued.TriggerCount));
             result = RoomCombatModel.ApplyQueuedCharacterTrigger(result.State!, queued, queue.Add); return result.Supported;
-        }, queued => { result = RoomCombatModel.SettleQueuedSpawner(result.State!, queued.Unit); return result.Supported; },
+        }, queued =>
+        {
+            if (!settleSpawner) return true;
+            result = RoomCombatModel.SettleQueuedSpawner(result.State!, queued.Unit); return result.Supported;
+        },
             () => { result = EnchantmentWorldModel.CompleteQueuedRemovals(result.State!, queue.Add); return result.Supported; }, () => result.State?.Context, message => result = new RoomCombatResult(null, RoomOutcome.Unsupported, 0, [], message)),
             "Removal queue unsupported: " + result.UnsupportedReason);
         return result;

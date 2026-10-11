@@ -98,9 +98,11 @@ internal static class AbilityCooldownChecks
             callbacks.AddRange(result.PendingCallbacks);
             if (StatusRemovalModel.RequiresSacrifice(result))
             {
-                result = StatusRemovalModel.Drain(new(result.State, result.Outcome, result.Rounds, result.Events.ToList(), pendingCallbacks: callbacks));
+                bool cardPlaying = sample.TryGetProperty("CardPlaying", out var playing) && playing.GetBoolean();
+                result = StatusRemovalModel.Drain(new(result.State, result.Outcome, result.Rounds, result.Events.ToList(), pendingCallbacks: callbacks),
+                    settleSpawner: false);
                 Require(result.Supported, "Native removal sacrifice queue unsupported: " + result.UnsupportedReason);
-                if (sample.TryGetProperty("CardPlaying", out var playing) && playing.GetBoolean())
+                if (cardPlaying)
                     foreach (var dead in callbacks.Where(item => item.Kind == "OnDeath").GroupBy(item => item.Unit.Id).Select(group => group.Last().Unit))
                     {
                         result = RoomCombatModel.SettleQueuedSpawner(result.State!, dead);
