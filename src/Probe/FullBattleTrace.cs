@@ -248,9 +248,10 @@ namespace MonsterTrain2Poju.Probe
                     BattleActionProbe.TriggeredVfx(rule.GetSourceStatusEffectData(), 1f), rule.IsStackable(), rule.IsHidden(), rule.GetDisplayCategory().ToString()));
             }
             CombatTeam team = character.GetTeamType() == Team.Type.Heroes ? CombatTeam.Enemy : CombatTeam.Player;
+            CharacterState? pairedBoss = heroes.FindPairedCompanionBoss(character);
             bool endsBattle = team == CombatTeam.Enemy &&
                 (character.IsMiniboss() || character.IsOuterTrainBoss()) &&
-                heroes.FindPairedCompanionBoss(character) == null;
+                pairedBoss == null;
             StatusRegistryCalibration.Capture(character, id, statuses);
             UnitModifiers modifiers = UnitModifierProbe.Capture(character);
             int baseAttack = character.GetAttackDamageWithoutStatusEffectBuffs();
@@ -272,7 +273,8 @@ namespace MonsterTrain2Poju.Probe
                 new HordeBaseStats(character.GetSourceCharacterData().GetAttackDamage(), character.GetSourceCharacterData().GetHealth()), character.IsSpawning, character.SacrificeCard == null ? 0 : CardId(character.SacrificeCard), DeathSignalProbe.Capture(character),
                 BumpScenario.Enabled || (OriginalUnitRelicBatchScenario.Enabled || OriginalTriggerRelicBatchScenario.Enabled || OriginalLifecycleRelicBatchScenario.Enabled)
                     ? new UnitBumpRules(character.GetLoopsBetweenTrainFloors(), character.IsCompanionBoss(), character.IsOuterTrainBoss(),
-                        character.IsOuterTrainBoss() && character.GetBossState().GetCurrentAttackPhase() == BossState.AttackPhase.Relentless)
+                        character.IsOuterTrainBoss() && character.GetBossState().GetCurrentAttackPhase() == BossState.AttackPhase.Relentless,
+                        pairedBoss == null ? 0 : UnitId(pairedBoss))
                     : null);
         }
 

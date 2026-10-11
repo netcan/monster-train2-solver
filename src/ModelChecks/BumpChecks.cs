@@ -19,10 +19,13 @@ internal static class BumpChecks
         var records = values.EnumerateArray().ToArray();
         const string pairedRelentlessLabel = "enemy-companion-relentless-up-refuses-ascension";
         const string outerBossLabel = "enemy-outer-boss-move";
+        const string pairedOuterBossLabel = "enemy-outer-boss-paired-relentless-move";
         bool hasPairedRelentless = records.Any(record => record.GetProperty("Label").GetString() == pairedRelentlessLabel);
         bool hasOuterBoss = records.Any(record => record.GetProperty("Label").GetString() == outerBossLabel);
+        bool hasPairedOuterBoss = records.Any(record => record.GetProperty("Label").GetString() == pairedOuterBossLabel);
         string[] expectedLabels = Labels.Where(label => label != pairedRelentlessLabel || hasPairedRelentless)
-            .Concat(hasOuterBoss ? new[] { outerBossLabel } : Array.Empty<string>()).ToArray();
+            .Concat(hasOuterBoss ? new[] { outerBossLabel } : Array.Empty<string>())
+            .Concat(hasPairedOuterBoss ? new[] { pairedOuterBossLabel } : Array.Empty<string>()).ToArray();
         Require(records.Select(record => record.GetProperty("Label").GetString()!).SequenceEqual(expectedLabels), "Missing native Bump boundary cases.");
         var setup = fixture.GetProperty("Actions").EnumerateArray().Where(action => action.GetProperty("ScenarioAction").GetBoolean()).ToArray();
         Require(setup.Length == records.Length, "Authored paid Bump action inventory differs from the effect observations.");
@@ -111,15 +114,18 @@ internal static class BumpChecks
             int pairedTarget = paired.GetProperty("Targets").Deserialize<int[]>()!.Single();
             int[] companionIds = pairedBefore.Movement.Where(rule => rule.CompanionBoss).Select(rule => rule.UnitId).ToArray();
             int pairedVictimId = companionIds.Single(id => id != pairedTarget);
-            Require(companionIds.Length == 2 && pairedBefore.Rooms[0].Units.Any(unit => unit.Id == pairedTarget && unit.Status("relentless") != null) &&
-                pairedBefore.Rooms[0].Units.Any(unit => unit.Id == pairedVictimId) &&
-                pairedAfter.Context!.SpawnPoints!.Units.Single(unit => unit.UnitId == pairedTarget).Current!.RoomIndex == 0 &&
-                pairedAfter.Context.SpawnPoints.Units.Single(unit => unit.UnitId == pairedVictimId).Current!.RoomIndex == 0 &&
+            int pairedFloor = pairedBefore.Context!.SpawnPoints!.Units.Single(unit => unit.UnitId == pairedTarget).Current!.RoomIndex;
+            Require(companionIds.Length == 2 && pairedBefore.Rooms.SelectMany(room => room.Units).Any(unit => unit.Id == pairedTarget && unit.Status("relentless") != null) &&
+                pairedBefore.Rooms.SelectMany(room => room.Units).Any(unit => unit.Id == pairedVictimId) &&
+                pairedAfter.Context!.SpawnPoints!.Units.Single(unit => unit.UnitId == pairedTarget).Current!.RoomIndex == pairedFloor &&
+                pairedAfter.Context.SpawnPoints.Units.Single(unit => unit.UnitId == pairedVictimId).Current!.RoomIndex == pairedFloor &&
                 paired.GetProperty("RoomEnabledAfter").EnumerateArray().All(enabled => enabled.GetBoolean()) &&
                 paired.GetProperty("Dispatched").EnumerateArray().Any(callback => callback.GetProperty("ActorId").GetInt32() == pairedTarget &&
                     callback.GetProperty("Kind").GetString() == "PostAttemptedAscension"),
                 "Native Relentless Bump did not preserve a paired companion and dispatch the attempted-movement callback.");
         }
+        if (hasPairedOuterBoss)
+            VerifyPairedOuterBossMovement(records.Single(record => record.GetProperty("Label").GetString() == pairedOuterBossLabel));
         Console.WriteLine($"NATIVE-BUMP-CHECKS PASS: {records.Length} real paid-card effect states including unpaired Relentless room destruction; paired and outer Boss movement when recorded; plus synthetic ordinary/outer-Boss branches, exact dispatch/retained targets, signed/clamped/fixed-range movement, rooting/immobility, looping, simultaneous targets, both-team cross-room Horde removal, Pyre/full/partially blocked rooms and 32 branches.");
     }
 
@@ -191,6 +197,35 @@ internal static class BumpChecks
         Require(callbacks.Length >= 2 && callbacks[0].Unit.Id == id && callbacks[0].Kind == "PostAscension" &&
             callbacks[1].Unit.Id == id && callbacks[1].Kind == "OnShift",
             "Outer Boss ForceMoveBoss callbacks did not begin with PostAscension then Shift.");
+    }
+
+    private static void VerifyPairedOuterBossMovement(FixtureValue record)
+    {
+        TrainCombatState before = record.GetProperty("Before").Deserialize<TrainCombatState>()!;
+        TrainCombatState after = record.GetProperty("After").Deserialize<TrainCombatState>()!;
+        int outerId = record.GetProperty("Targets").Deserialize<int[]>()!.Single();
+        CombatUnit outerBoss = before.Rooms.SelectMany(room => room.Units).Single(unit => unit.Id == outerId);
+        int pairedId = outerBoss.BumpRules?.PairedBossUnitId ?? 0;
+        CombatUnit? pairedBoss = before.Rooms.SelectMany(room => room.Units).SingleOrDefault(unit => unit.Id == pairedId);
+        SpawnPointReference? outerBefore = before.Context!.SpawnPoints!.Units.Single(unit => unit.UnitId == outerId).Current;
+        SpawnPointReference? pairedBefore = before.Context.SpawnPoints.Units.Single(unit => unit.UnitId == pairedId).Current;
+        SpawnPointReference? outerAfter = after.Context!.SpawnPoints!.Units.Single(unit => unit.UnitId == outerId).Current;
+        SpawnPointReference? pairedAfter = after.Context.SpawnPoints.Units.Single(unit => unit.UnitId == pairedId).Current;
+        Require(pairedId != 0 && pairedBoss?.BumpRules?.CompanionBoss == true && pairedBoss.Status("relentless") == null &&
+            outerBoss.Status("relentless") != null && outerBefore?.RoomIndex == pairedBefore?.RoomIndex &&
+            outerAfter?.RoomIndex != outerBefore?.RoomIndex && pairedAfter?.RoomIndex != pairedBefore?.RoomIndex &&
+            outerAfter?.RoomIndex == pairedAfter?.RoomIndex,
+            "A paired Relentless Outer Boss Bump did not move both boss anchors to the same destination.");
+
+        var callbacks = record.GetProperty("Dispatched").EnumerateArray().ToArray();
+        int Index(int actorId, params string[] kinds) => Array.FindIndex(callbacks, callback =>
+            callback.GetProperty("ActorId").GetInt32() == actorId && kinds.Contains(callback.GetProperty("Kind").GetString()));
+        int pairedPost = Index(pairedId, "PostAscension", "PostDescension");
+        int pairedShift = Index(pairedId, "OnShift");
+        int outerPost = Index(outerId, "PostAscension", "PostDescension");
+        int outerShift = Index(outerId, "OnShift");
+        Require(pairedPost >= 0 && pairedShift > pairedPost && outerPost > pairedShift && outerShift > outerPost,
+            "Paired Boss force-move callbacks did not run before the Outer Boss callbacks.");
     }
 
     private static void Verify(FixtureValue record)

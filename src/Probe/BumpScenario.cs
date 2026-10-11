@@ -66,7 +66,7 @@ namespace MonsterTrain2Poju.Probe
             log.LogInfo("BUMP-PREPARED real paid cards and hosts, including an original Outer Train Boss; ordinary wave groups intact.");
         }
         internal static void Start(AllGameManagers managers, ManualLogSource log)
-        { Started = true; managers.GetSaveManager().StartCoroutine(Protect(Run(managers), log)); }
+        { Started = true; managers.GetSaveManager().StartCoroutine(Protect(Run(managers, log), log)); }
         private static IEnumerator Protect(IEnumerator native, ManualLogSource log)
         {
             while (true)
@@ -79,7 +79,7 @@ namespace MonsterTrain2Poju.Probe
             }
             (native as IDisposable)?.Dispose(); label = null; Completed = Error == null;
         }
-        private static IEnumerator Run(AllGameManagers managers)
+        private static IEnumerator Run(AllGameManagers managers, ManualLogSource log)
         {
             CardManager cards = managers.GetCardManager()!; RoomManager rooms = managers.GetRoomManager()!;
             CombatManager combat = managers.GetCombatManager()!;
@@ -172,24 +172,28 @@ namespace MonsterTrain2Poju.Probe
                 CharacterData companionPrototype = waves.SelectMany(wave => ((IEnumerable)AccessTools.Field(typeof(SpawnGroupPoolData), "possibleGroups")
                     .GetValue(wave)).Cast<SpawnGroupData>()).SelectMany(group => group.GetCharacters(managers.GetSaveManager().GetCovenantsForSpawnPattern(),
                     managers.GetSaveManager(), managers.GetSaveManager().GetGeneratedBoss())).First(unit => unit.IsMiniboss());
+                int pairedBossStartFloor = 0;
                 CharacterData companionMoverData = UnityEngine.Object.Instantiate(companionPrototype); companionMoverData.name = "PojuBumpCompanionMover";
                 Set(companionMoverData, "id", "c2f6ed7f-18ce-4070-b6f0-7dd9f5200007");
                 Set(companionMoverData, "attackDamage", 1); Set(companionMoverData, "health", 20);
                 Set(companionMoverData, "isCompanionBoss", true); Set(companionMoverData, "loopsBetweenTrainFloors", false);
-                Set(companionMoverData, "startingStatusEffects", new[] { new StatusEffectStackData { statusId = "relentless", count = 1 } });
+                Set(companionMoverData, "startingStatusEffects", Array.Empty<StatusEffectStackData>());
                 Set(companionMoverData, "triggers", Triggers(zeroReward: true));
                 CharacterData companionVictimData = UnityEngine.Object.Instantiate(companionPrototype); companionVictimData.name = "PojuBumpCompanionVictim";
                 Set(companionVictimData, "id", "c2f6ed7f-18ce-4070-b6f0-7dd9f5200008");
                 Set(companionVictimData, "attackDamage", 1); Set(companionVictimData, "health", 20);
                 Set(companionVictimData, "isCompanionBoss", true); Set(companionVictimData, "loopsBetweenTrainFloors", false);
-                Set(companionVictimData, "startingStatusEffects", Array.Empty<StatusEffectStackData>());
+                Set(companionVictimData, "startingStatusEffects", new[] { new StatusEffectStackData { statusId = "relentless", count = 1 } });
                 Set(companionVictimData, "triggers", Triggers(zeroReward: true));
-                yield return managers.GetHeroManager()!.SpawnHeroInRoom(companionMoverData, 0, null!);
-                yield return managers.GetHeroManager()!.SpawnHeroInRoom(companionVictimData, 0, null!);
+                yield return managers.GetHeroManager()!.SpawnHeroInRoom(companionMoverData, pairedBossStartFloor, null!);
+                yield return managers.GetHeroManager()!.SpawnHeroInRoom(companionVictimData, pairedBossStartFloor, null!);
                 yield return combat.RunTriggerQueue();
-                var pairedRoom = new List<CharacterState>(); rooms.GetRoom(0).AddCharactersToList(pairedRoom, Team.Type.Heroes);
+                var pairedRoom = new List<CharacterState>(); rooms.GetRoom(pairedBossStartFloor).AddCharactersToList(pairedRoom, Team.Type.Heroes);
                 CharacterState companionMover = pairedRoom.Single(unit => unit.GetSourceCharacterData() == companionMoverData);
-                yield return Cast("enemy-companion-relentless-up-refuses-ascension", companionMover, 1);
+                CharacterState companionVictim = pairedRoom.Single(unit => unit.GetSourceCharacterData() == companionVictimData);
+                yield return Cast("enemy-companion-relentless-up-refuses-ascension", companionVictim, 1);
+                log.LogInfo("BUMP-PAIR-REFUSAL complete floor=" + pairedBossStartFloor);
+                RemoveProbeCharacter(managers, companionVictim);
                 rooms.GetRoom(0).SetRoomEnabled(true);
                 FullBattleTrace.Active!.InvalidateCardRules();
                 CharacterState outerBoss = managers.GetHeroManager()!.GetOuterTrainBossCharacter();
@@ -197,7 +201,39 @@ namespace MonsterTrain2Poju.Probe
                 int outerFloor = outerBoss.GetCurrentRoomIndex();
                 int pyreFloor = rooms.GetNumRooms() - 1;
                 int outerAmount = outerFloor < pyreFloor - 1 ? 1 : -1;
+                log.LogInfo("BUMP-OUTER-ORDINARY start floor=" + outerFloor + " amount=" + outerAmount);
                 yield return Cast("enemy-outer-boss-move", outerBoss, outerAmount);
+                log.LogInfo("BUMP-OUTER-ORDINARY complete floor=" + outerBoss.GetCurrentRoomIndex());
+                outerFloor = outerBoss.GetCurrentRoomIndex();
+                SpawnPoint? pairedBossPoint = rooms.GetRoom(outerFloor).GetFirstEmptyHeroPoint();
+                if (pairedBossPoint == null) throw new InvalidOperationException("Paired Boss movement setup found no Outer Boss room slot.");
+                log.LogInfo("BUMP-PAIR-REPOSITION start from=" + companionMover.GetCurrentRoomIndex() + " to=" + outerFloor);
+                yield return rooms.GetRoom(outerFloor).MoveBossToRoom(companionMover, animate: false, moveCamera: false,
+                    spawnPointOverride: pairedBossPoint);
+                log.LogInfo("BUMP-PAIR-REPOSITION complete");
+                int pairedAmount = 0;
+                int pairedDestinationFloor = -1;
+                foreach (int direction in new[] { -1, 1 })
+                {
+                    int candidate = outerFloor + direction;
+                    if (candidate < 0 || candidate >= pyreFloor || !rooms.GetRoom(candidate).IsRoomEnabled() ||
+                        rooms.GetRoom(candidate).GetFirstEmptyHeroPoint() == null) continue;
+                    pairedAmount = direction;
+                    pairedDestinationFloor = candidate;
+                    break;
+                }
+                if (pairedAmount == 0 || pairedDestinationFloor < 0)
+                    throw new InvalidOperationException("Paired Boss movement setup found no adjacent native destination.");
+                log.LogInfo("BUMP-PAIRED-OUTER start floor=" + outerFloor + " destination=" + pairedDestinationFloor + " amount=" + pairedAmount);
+                outerBoss.AddStatusEffect("relentless", 1);
+                yield return combat.RunTriggerQueue();
+                CharacterState? pairedForMove = managers.GetHeroManager()!.FindPairedCompanionBoss(outerBoss);
+                if (pairedForMove == null) throw new InvalidOperationException("Paired Outer Boss setup has no native companion.");
+                log.LogInfo("BUMP-PAIRED-OUTER selected=" + pairedForMove.GetSourceCharacterData().name +
+                    " companion=" + pairedForMove.IsCompanionBoss() + " floor=" + pairedForMove.GetCurrentRoomIndex());
+                yield return Cast("enemy-outer-boss-paired-relentless-move", outerBoss, pairedAmount);
+                log.LogInfo("BUMP-PAIRED-OUTER complete companion=" + companionMover.GetCurrentRoomIndex() + " outer=" + outerBoss.GetCurrentRoomIndex());
+                RemoveProbeCharacter(managers, companionMover);
                 RemoveProbeBoss(managers, outerBoss);
                 // Return the same authored card to a simple down mode for the subsequent ordinary policy.
                 Configure(managers, -1, TargetMode.DropTargetCharacter, Team.Type.Heroes | Team.Type.Monsters, false);
@@ -268,12 +304,8 @@ namespace MonsterTrain2Poju.Probe
             if (!probeBossSpawned) return;
             HeroManager heroes = managers.GetHeroManager()!;
             CombatManager combat = managers.GetCombatManager()!;
-            if (boss.GetSpawnPoint() is SpawnPoint point) point.SetCharacterState(null);
-            boss.SetSpawnPoint(null, animate: false, setPosition: false);
-            ((List<CharacterState>)AccessTools.Field(typeof(HeroManager), "activeHeroes").GetValue(heroes)!).Remove(boss);
+            RemoveProbeCharacter(managers, boss);
             Set(heroes, "outerTrainBoss", null!);
-            boss.SetDestroyedState(CharacterState.DestroyedState.Destroyed);
-            UnityEngine.Object.Destroy(boss.gameObject);
             if (probeBossPattern != null)
             {
                 Set(probeBossPattern, "bossCharacter", originalBossData!);
@@ -281,6 +313,16 @@ namespace MonsterTrain2Poju.Probe
             }
             combat.AllScenarioBossesDead = originalAllScenarioBossesDead;
             probeBossSpawned = false;
+        }
+        private static void RemoveProbeCharacter(AllGameManagers managers, CharacterState character)
+        {
+            HeroManager heroes = managers.GetHeroManager()!;
+            CombatManager combat = managers.GetCombatManager()!;
+            if (character.GetSpawnPoint() is SpawnPoint point) point.SetCharacterState(null);
+            character.SetSpawnPoint(null, animate: false, setPosition: false);
+            ((List<CharacterState>)AccessTools.Field(typeof(HeroManager), "activeHeroes").GetValue(heroes)!).Remove(character);
+            character.SetDestroyedState(CharacterState.DestroyedState.Destroyed);
+            UnityEngine.Object.Destroy(character.gameObject);
             Set(combat, "combatStateChanged", true);
         }
         private static void Configure(AllGameManagers managers, int amount, TargetMode mode, Team.Type team, bool ranged)
