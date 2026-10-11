@@ -2845,3 +2845,14 @@ inventory replay remains deferred.
 dotnet run --project src/ModelChecks -c Release -- --equipment-native-only tests/fixtures/full-battle-equipment-buff.mt2f
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-equipment-buff.mt2f
 ```
+
+### Persistent enchantment Boss preview restoration
+
+Full-battle preview restoration now clears pending `PreviewTargets.NextAction`
+for Boss identities, including Bosses referenced by preview-born retained aura
+sources. This matches all eight existing persistent-enchantment EndTurn
+snapshots; six archives pass their complete targeted checks. The two
+random-pool summon archives continue past EndTurn and stop at card action 12,
+where a new source's cached status is `buff` in the model and `regen` in native
+state. That cache-selection difference is still open. Inventory remains 236
+archives and accepted original relic evidence remains 59/224 (26.34%).

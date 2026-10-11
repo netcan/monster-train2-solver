@@ -124,17 +124,20 @@ namespace MonsterTrain2Poju.Model
                 if (context.SpawnPoints != null && originalPoints?.NextPreviewCopyId.HasValue != true)
                     context = context.WithSpawnPoints(context.SpawnPoints.WithState(context.SpawnPoints.Groups, context.SpawnPoints.Units.Concat(
                         removed.Select(id => new UnitSpawnPointState(id, null, null, spawnedInPreview: true))).ToArray()));
+                // Full-battle previews restore Boss identities without their temporary pending actions.
+                int[] previewBossIds = actors.Values.Where(unit => unit.IsBoss == true).Select(unit => unit.Id).ToArray();
                 CombatUnit RestoreEnchantments(CombatUnit original)
                 {
                     if (!actors.TryGetValue(original.Id, out CombatUnit? tested)) return original;
-                    return PreviewEffectsModel.Restore(RestorePrimaryEffects(original), tested, removed);
+                    return PreviewEffectsModel.Restore(RestorePrimaryEffects(original), tested, removed,
+                        resetPreviewActionsForUnitIds: previewBossIds);
                 }
                 context = context.WithEnchantments(new EnchantmentWorld(source.Rooms.Select(room => new RoomCombatState(room.RoomIndex,
                     room.Deployment, room.Units.Select(RestoreEnchantments).ToArray(), room.ExternalInteractions, null, room.Preview,
                     room.ActiveCompanionBossIds)).ToArray(),
                     source.Movement, source.EnemySlotsPerRoom, originalWorld.RetainedUnits.Select(actor => new EnchantmentRetainedUnit(
                         RestoreEnchantments(actor.Unit), actor.RoomIndex, actor.Preview))
-                        .Concat(PreviewBirthModel.Retain(observed, firstPreviewId, removed)).ToArray(),
+                        .Concat(PreviewBirthModel.Retain(observed, firstPreviewId, removed, previewBossIds)).ToArray(),
                     originalWorld.EnchanterIds.Concat(observed.EnchanterIds).Distinct().ToArray(),
                     originalWorld.AllowUpdates, originalWorld.Updating, originalWorld.Preview, originalWorld.TestRng, true));
             }
