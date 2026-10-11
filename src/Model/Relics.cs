@@ -15,17 +15,21 @@ namespace MonsterTrain2Poju.Model
         public bool? IsCovenant { get; }
         public bool? DisallowedInPlacementPhase { get; }
         public IReadOnlyList<RelicCardModifier>? CardModifiers { get; }
+        public IReadOnlyList<RelicCharacterTriggers>? TriggerAdditions { get; }
         public CombatRelicState(string dataId, string assetKey, IReadOnlyList<string> effectTypes,
             IReadOnlyList<RelicSpawnStatus>? spawnStatuses = null, bool? isCovenant = null, bool? disallowedInPlacementPhase = null,
-            IReadOnlyList<RelicCardModifier>? cardModifiers = null)
+            IReadOnlyList<RelicCardModifier>? cardModifiers = null, IReadOnlyList<RelicCharacterTriggers>? triggerAdditions = null)
         { DataId = dataId; AssetKey = assetKey; EffectTypes = Array.AsReadOnly(effectTypes.ToArray());
             SpawnStatuses = spawnStatuses == null ? null : Array.AsReadOnly(spawnStatuses.ToArray());
             IsCovenant = isCovenant; DisallowedInPlacementPhase = disallowedInPlacementPhase;
-            CardModifiers = cardModifiers == null ? null : Array.AsReadOnly(cardModifiers.ToArray()); }
+            CardModifiers = cardModifiers == null ? null : Array.AsReadOnly(cardModifiers.ToArray());
+            TriggerAdditions = triggerAdditions == null ? null : Array.AsReadOnly(triggerAdditions.ToArray()); }
         internal CombatRelicState WithSpawnStatuses(IReadOnlyList<RelicSpawnStatus> rules) =>
-            new CombatRelicState(DataId, AssetKey, EffectTypes, rules, IsCovenant, DisallowedInPlacementPhase, CardModifiers);
+            new CombatRelicState(DataId, AssetKey, EffectTypes, rules, IsCovenant, DisallowedInPlacementPhase, CardModifiers, TriggerAdditions);
         internal CombatRelicState WithCardModifiers(IReadOnlyList<RelicCardModifier> modifiers) =>
-            new CombatRelicState(DataId, AssetKey, EffectTypes, SpawnStatuses, IsCovenant, DisallowedInPlacementPhase, modifiers);
+            new CombatRelicState(DataId, AssetKey, EffectTypes, SpawnStatuses, IsCovenant, DisallowedInPlacementPhase, modifiers, TriggerAdditions);
+        internal CombatRelicState WithTriggerAdditions(IReadOnlyList<RelicCharacterTriggers> rules) =>
+            new CombatRelicState(DataId, AssetKey, EffectTypes, SpawnStatuses, IsCovenant, DisallowedInPlacementPhase, CardModifiers, rules);
     }
 
     internal static class RelicModel
@@ -34,10 +38,11 @@ namespace MonsterTrain2Poju.Model
         internal const string ModifyTriggerCount = "RelicEffectModifyTriggerCount";
         internal const string AddStatusOnSpawn = "RelicEffectAddStatusEffectOnSpawn";
         internal const string AddTempUpgrade = "RelicEffectAddTempUpgrade";
+        internal const string AddTrigger = "RelicEffectAddTrigger";
         internal static bool AbilitiesTriggerIncant(CombatContext? context) =>
             context?.Relics?.Any(relic => relic.EffectTypes.Contains(AbilityIncant)) == true;
         internal static string? Validate(CombatContext? context) => Validate(context?.Relics) ??
-            (context?.Relics?.Any(relic => relic.EffectTypes.Contains(ModifyTriggerCount)) == true && context.TriggerCounts == null
+            (context?.Relics?.Any(relic => relic.EffectTypes.Contains(ModifyTriggerCount) || relic.EffectTypes.Contains(AddTrigger)) == true && context.TriggerCounts == null
                 ? "Missing native relic trigger count cache." : TriggerCountModel.Validate(context?.TriggerCounts));
         internal static string? Validate(IReadOnlyList<CombatRelicState>? relics)
         {
@@ -47,9 +52,11 @@ namespace MonsterTrain2Poju.Model
                 if (string.IsNullOrEmpty(relic.DataId) || string.IsNullOrEmpty(relic.AssetKey))
                     return "Missing captured relic identity.";
                 foreach (string effect in relic.EffectTypes)
-                    if (effect != AbilityIncant && effect != ModifyTriggerCount && effect != AddStatusOnSpawn && effect != AddTempUpgrade) return "Unmodeled relic effect " + effect + " on " + relic.AssetKey + ".";
-                string? error = RelicCardModifierModel.Validate(relic) ?? RelicSpawnStatusModel.Validate(relic);
+                    if (effect != AbilityIncant && effect != ModifyTriggerCount && effect != AddStatusOnSpawn && effect != AddTempUpgrade && effect != AddTrigger) return "Unmodeled relic effect " + effect + " on " + relic.AssetKey + ".";
+                string? error = RelicCardModifierModel.Validate(relic) ?? RelicSpawnStatusModel.Validate(relic) ?? RelicCharacterTriggerModel.Validate(relic);
                 if (error != null) return error;
+                // Keep the prior queue boundary guarded until a mixed-order
+                // native cardless-upgrade fixture observes its interleaving.
                 if (relic.CardModifiers?.Any(effect => effect.ApplyToCardlessSpawns &&
                     relic.SpawnStatuses?.Any(status => status.EffectIndex < effect.EffectIndex) == true) == true)
                     return "Mixed cardless upgrade and spawn-status effect ordering is unmodeled.";

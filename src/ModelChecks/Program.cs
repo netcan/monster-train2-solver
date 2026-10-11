@@ -1,6 +1,14 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
 
+if (args.Length == 1 && args[0] == "--relic-triggers-pure")
+{
+    RelicCharacterTriggerChecks.Run();
+    RelicSpawnStatusChecks.Run();
+    RelicCardlessUpgradeChecks.Run();
+    return;
+}
+
 if (args.Length == 2 && args[0] == "--original-unit-relics-only")
 {
     using var relicDocument = ModelJson.ReadFixture(args[1]);
@@ -344,6 +352,7 @@ RelicChecks.Run();
 TriggerCountChecks.Run();
 RelicCardlessUpgradeChecks.Run();
 RelicSpawnStatusChecks.Run();
+RelicCharacterTriggerChecks.Run();
 RelicCardModifierChecks.Run();
 TypedDrawChecks.Run();
 CardMagicPowerChecks.Run();

@@ -93,7 +93,7 @@ namespace MonsterTrain2Poju.Model
             string? error = RelicModel.Validate(source.Context);
             if (error != null) return Fail(error);
             if (source.Context?.Relics == null || !source.Context.Relics.Any(relic => relic.SpawnStatuses?.Count > 0 ||
-                relic.CardModifiers?.Count > 0))
+                relic.CardModifiers?.Count > 0 || relic.TriggerAdditions?.Count > 0))
                 return new RoomCombatResult(source, RoomOutcome.Exchanged, 0, new List<CombatEvent>(), pendingCallbacks: prior);
             if (!source.Units.Any(unit => unit.Id == unitId) || fromCardId < 0 ||
                 fromCardId > 0 && source.Context.FindCard(fromCardId) == null) return Fail("Missing native relic birth references.");
@@ -105,23 +105,32 @@ namespace MonsterTrain2Poju.Model
             for (int relicIndex = 0; relicIndex < state.Context!.Relics!.Count; relicIndex++)
             {
                 CombatRelicState relic = state.Context!.Relics![relicIndex];
-                var cardModifiers = relic.CardModifiers?
-                    .OrderBy(effect => effect.EffectIndex).ToArray() ?? Array.Empty<RelicCardModifier>();
-                bool hasSpawnStatuses = relic.SpawnStatuses?.Count > 0;
-                if (!hasSpawnStatuses && cardModifiers.Length == 0 || relic.IsCovenant != onlyCovenants ||
+                if (relic.IsCovenant != onlyCovenants ||
                     relic.DisallowedInPlacementPhase == true && state.Deployment) continue;
-                foreach (RelicCardModifier effect in cardModifiers)
-                {
-                    RoomCombatResult applied = RelicCardModifierModel.ApplyCardlessSpawn(state, unitId, fromCardId, effect);
-                    if (!applied.Supported) return applied;
-                    state = applied.State!; callbacks.AddRange(applied.PendingCallbacks); events.AddRange(applied.Events);
-                    if (applied.Outcome != RoomOutcome.Exchanged) outcome = applied.Outcome;
-                    if (!onlyCovenants && !DrainYield()) return failed!;
-                }
-                if (!hasSpawnStatuses) continue;
-                for (int ruleIndex = 0; ruleIndex < relic.SpawnStatuses!.Count; ruleIndex++)
+                for (int effectIndex = 0; effectIndex < relic.EffectTypes.Count; effectIndex++)
                 {
                     relic = state.Context!.Relics![relicIndex];
+                    if (relic.EffectTypes[effectIndex] == RelicModel.AddTempUpgrade)
+                    {
+                        RelicCardModifier effect = relic.CardModifiers!.Single(item => item.EffectIndex == effectIndex);
+                        RoomCombatResult applied = RelicCardModifierModel.ApplyCardlessSpawn(state, unitId, fromCardId, effect);
+                        if (!applied.Supported) return applied;
+                        state = applied.State!; callbacks.AddRange(applied.PendingCallbacks); events.AddRange(applied.Events);
+                        if (applied.Outcome != RoomOutcome.Exchanged) outcome = applied.Outcome;
+                        if (!onlyCovenants && !DrainYield()) return failed!;
+                        continue;
+                    }
+                    if (relic.EffectTypes[effectIndex] == RelicModel.AddTrigger)
+                    {
+                        RoomCombatResult applied = RelicCharacterTriggerModel.Apply(state, unitId,
+                            relic.TriggerAdditions!.Single(item => item.EffectIndex == effectIndex));
+                        if (!applied.Supported) return applied;
+                        state = applied.State!;
+                        if (!onlyCovenants && !DrainYield()) return failed!;
+                        continue;
+                    }
+                    if (relic.EffectTypes[effectIndex] != RelicModel.AddStatusOnSpawn) continue;
+                    int ruleIndex = relic.SpawnStatuses!.ToList().FindIndex(rule => rule.EffectIndex == effectIndex);
                     RelicSpawnStatus rule = relic.SpawnStatuses![ruleIndex];
                     RelicConditionEvaluation conditionEvaluation = RelicConditionModel.Evaluate(state.Context!, rule.Conditions);
                     if (!conditionEvaluation.Supported) return Fail(conditionEvaluation.UnsupportedReason!);
