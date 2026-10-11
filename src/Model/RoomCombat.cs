@@ -572,9 +572,10 @@ namespace MonsterTrain2Poju.Model
 
         public static RoomCombatResult ApplySpawnTriggers(RoomCombatState state, int unitId, bool fromCard,
             IReadOnlyList<CombatStatus>? startingApplications = null, Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null)
-            => ApplySpawnTriggers(state, unitId, fromCard, startingApplications, null, refreshPyre: refreshPyre);
+            => ApplySpawnTriggers(state, unitId, fromCard, startingApplications, null, refreshPyre);
         internal static RoomCombatResult ApplySpawnTriggers(RoomCombatState state, int unitId, bool fromCard,
-            IReadOnlyList<CombatStatus>? startingApplications, Action<QueuedCharacterTrigger>? enqueue, Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null)
+            IReadOnlyList<CombatStatus>? startingApplications, Action<QueuedCharacterTrigger>? enqueue,
+            Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null, SpawnStatusApplication? additionalStatus = null)
         {
             string? error = Validate(state);
             CombatUnit? unit = state.Units.FirstOrDefault(item => item.Id == unitId);
@@ -582,11 +583,13 @@ namespace MonsterTrain2Poju.Model
                 return new RoomCombatResult(null, RoomOutcome.Unsupported, 0, new List<CombatEvent>(),
                     error ?? "Spawn triggers require a living new unit and its source card identity.");
             return new Engine(state, new List<CombatEvent>(), pendingSummonCardId: fromCard ? unit.SpawnerCardId : 0,
-                enqueueCharacterTrigger: enqueue, refreshPyre: refreshPyre).Spawn(unitId, fromCard, startingApplications);
+                enqueueCharacterTrigger: enqueue, refreshPyre: refreshPyre).Spawn(unitId, fromCard, startingApplications,
+                    additionalStatus: additionalStatus);
         }
 
         internal static RoomCombatResult PrepareSpawnTriggers(RoomCombatState state, int unitId, bool fromCard,
-            IReadOnlyList<CombatStatus> startingApplications, Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null)
+            IReadOnlyList<CombatStatus> startingApplications, Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null,
+            SpawnStatusApplication? additionalStatus = null)
         {
             string? error = Validate(state);
             if (error != null || !state.Units.Any(unit => unit.Id == unitId))
@@ -596,7 +599,7 @@ namespace MonsterTrain2Poju.Model
                 callbacks.Add(new QueuedCharacterTrigger(state.RoomIndex, state.Units.Single(unit => unit.Id == unitId), moon == 1 ? "OnMoonShade" : "OnMoonLit"));
             RoomCombatResult result = new Engine(state, new List<CombatEvent>(), pendingSummonCardId: fromCard ?
                 state.Units.Single(unit => unit.Id == unitId).SpawnerCardId : 0, enqueueCharacterTrigger: callbacks.Add, refreshPyre: refreshPyre)
-                .Spawn(unitId, fromCard, startingApplications, prepareOnly: true);
+                .Spawn(unitId, fromCard, startingApplications, prepareOnly: true, additionalStatus: additionalStatus);
             return new RoomCombatResult(result.State, result.Outcome, 0, result.Events.ToList(), result.UnsupportedReason, callbacks);
         }
 
@@ -1275,7 +1278,8 @@ namespace MonsterTrain2Poju.Model
                     ? RoomOutcome.PlayerDefeated : RoomOutcome.Exchanged);
             }
 
-            internal RoomCombatResult Spawn(int unitId, bool fromCard, IReadOnlyList<CombatStatus>? startingApplications = null, bool prepareOnly = false)
+            internal RoomCombatResult Spawn(int unitId, bool fromCard, IReadOnlyList<CombatStatus>? startingApplications = null,
+                bool prepareOnly = false, SpawnStatusApplication? additionalStatus = null)
             {
                 WorkingUnit spawned = units.Single(unit => unit.Source.Id == unitId);
                 bool wasSpawning = spawned.Source.IsSpawning == true;
@@ -1288,7 +1292,8 @@ namespace MonsterTrain2Poju.Model
                 if (startingApplications != null)
                 {
                     var callbacks = new List<QueuedCharacterTrigger>();
-                    unsupportedReason = StatusCallbackModel.Initialize(CurrentRoom(), spawned.Freeze(), startingApplications, callbacks, spawned.Apply, ImportEnchantmentRoom);
+                    unsupportedReason = StatusCallbackModel.Initialize(CurrentRoom(), spawned.Freeze(), startingApplications,
+                        callbacks, spawned.Apply, ImportEnchantmentRoom, additionalStatus);
                     if (unsupportedReason != null) return Finish(RoomOutcome.Unsupported);
                     foreach (QueuedCharacterTrigger callback in callbacks) QueueCallback(callback);
                 }

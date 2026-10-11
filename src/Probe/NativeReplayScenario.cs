@@ -661,6 +661,12 @@ namespace MonsterTrain2Poju.Probe
                     return;
                 }
             }
+            if (fullBattle && !numericModifiersPrepared && modifierScenario == "spawn-or-status")
+            {
+                if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Spawn-or-status fixture must start on deployment turn.");
+                numericModifiersPrepared = true;
+                AbilityActivationScenario.Prepare(managers, log, false, false, spawnOrStatus: true);
+            }
             if (fullBattle && !numericModifiersPrepared && ((modifierScenario == "spawn-status-relics" || modifierScenario == "spawn-status-relics-clones" || modifierScenario == "spawn-status-relics-mixed-cardless-order" || modifierScenario == "incant" || modifierScenario == "incant-thresholds" || (modifierScenario == "incant-relic" || modifierScenario == "incant-relic-combined") || modifierScenario == "ability-incant") || modifierScenario == "purify" || modifierScenario == "purify-queues" || EnchantmentBattleScenario.IsScenario(modifierScenario) || modifierScenario == "spawn-enchant" || modifierScenario == "hero-copy" || modifierScenario == "unit-copy" || modifierScenario == "unit-clone" || modifierScenario == "bump" || modifierScenario == "horde-merge" || modifierScenario == "revival" || modifierScenario.StartsWith("triggered-summon", StringComparison.Ordinal) || modifierScenario == "spawn-points" || (modifierScenario.StartsWith("multi-summon", StringComparison.Ordinal)) || modifierScenario == "rally-lethal" || modifierScenario == "rally-triggers" || modifierScenario == "dying-horde-upgrades" || modifierScenario == "horde-upgrades" || modifierScenario == "horde-death" || modifierScenario == "horde-removal" || modifierScenario == "harvest-triggers" || modifierScenario == "horde-statuses" || modifierScenario == "ability-effects" || modifierScenario == "ability-lifecycle" || modifierScenario == "ability-activation" || modifierScenario == "ability-activation-x" || modifierScenario == "ability-activation-lethal" || modifierScenario == "ability-cooldown" || modifierScenario == "ability-cache" || modifierScenario == "sentry" || modifierScenario == "sentry-lethal" || modifierScenario == "companion-boss" || modifierScenario == "numeric-upgrades" || modifierScenario == "dynamic-upgrades" ||
                 modifierScenario == "sacrifice-upgrades" || modifierScenario == "hand-upgrades" || modifierScenario == "targeted-hand-upgrades" || modifierScenario == "permanent-consume-hand-upgrades" || modifierScenario == "permanent-consume-over-temporary" ||
                 modifierScenario == "healing" || modifierScenario == "healing-triggers" || modifierScenario == "room-spells" ||
@@ -859,7 +865,7 @@ namespace MonsterTrain2Poju.Probe
                 if (modifierScenario == "rally-lethal") pendingPlay = LethalRallyScenario.ChooseNativeBossSummon(managers) ?? pendingPlay;
                 if (modifierScenario == "incant" || modifierScenario == "incant-thresholds" || (modifierScenario == "incant-relic" || modifierScenario == "incant-relic-combined")) pendingPlay = BattleActionModel.ChooseEmptySpellThenCards(decision);
                 if (modifierScenario.StartsWith("multi-summon", StringComparison.Ordinal)) pendingPlay = MultiSummonScenario.Choose(managers) ?? pendingPlay;
-                if (modifierScenario == "ability-incant" || modifierScenario == "equipment-abilities" || modifierScenario == "ability-effects" || modifierScenario == "ability-activation" || modifierScenario == "ability-activation-x" || modifierScenario == "ability-activation-lethal")
+                if (modifierScenario == "ability-incant" || modifierScenario == "equipment-abilities" || modifierScenario == "ability-effects" || modifierScenario == "spawn-or-status" || modifierScenario == "ability-activation" || modifierScenario == "ability-activation-x" || modifierScenario == "ability-activation-lethal")
                     pendingPlay = UnitAbilityModel.ChooseAbilityThenCards(decision);
                 if (pendingPlay != null)
                 {

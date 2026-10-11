@@ -44,6 +44,8 @@ namespace MonsterTrain2Poju.Model
         public bool RequireEquipment { get; }
         public bool UseSelectedRoom { get; }
         public bool CountStatusOnlyOnTargets { get; }
+        public CombatUnit? SpawnFallbackUnit { get; }
+        public bool DisallowStatusStackModifiers { get; }
         public CardActionEffect(string type, string target, int value, bool allowEnemy, bool allowPlayer, IReadOnlyList<CombatStatus> statuses,
             CardUpgradeModifier? upgrade = null, string lifetime = "", CardEffectTests? tests = null, CardEffectRange? range = null, CardTargetFilters? filters = null,
             CardGenerationRule? generation = null, bool onlyIfNoEnemies = false, bool? cooldownParameter = null,
@@ -51,14 +53,16 @@ namespace MonsterTrain2Poju.Model
             bool? doNotFullyRemove = null, string sacrificeSubtype = "", TypedDrawRule? typedDraw = null,
             NextDrawUpgradeRule? nextDrawUpgrade = null, int requiredGold = 0, bool? goldCostRequired = null,
             bool useCardTraits = false, bool requireEquipment = false, bool useSelectedRoom = false,
-            bool countStatusOnlyOnTargets = false)
+            bool countStatusOnlyOnTargets = false, CombatUnit? spawnFallbackUnit = null,
+            bool disallowStatusStackModifiers = false)
         { Type = type; Target = target; Value = value; AllowEnemy = allowEnemy; AllowPlayer = allowPlayer; Statuses = Array.AsReadOnly(statuses.ToArray());
             Upgrade = upgrade; Lifetime = lifetime; Tests = tests; Range = range; Filters = filters; Generation = generation; OnlyIfNoEnemies = onlyIfNoEnemies;
             CooldownParameter = cooldownParameter; AbilityChange = abilityChange; CopyHeroStats = copyHeroStats; ScaleUpgrade = scaleUpgrade;
             DoNotFullyRemove = doNotFullyRemove; SacrificeSubtype = sacrificeSubtype;
             TypedDraw = typedDraw; NextDrawUpgrade = nextDrawUpgrade; RequiredGold = requiredGold; GoldCostRequired = goldCostRequired;
             UseCardTraits = useCardTraits; RequireEquipment = requireEquipment; UseSelectedRoom = useSelectedRoom;
-            CountStatusOnlyOnTargets = countStatusOnlyOnTargets; }
+            CountStatusOnlyOnTargets = countStatusOnlyOnTargets; SpawnFallbackUnit = spawnFallbackUnit;
+            DisallowStatusStackModifiers = disallowStatusStackModifiers; }
     }
     public sealed class RoomPlayRule
     {

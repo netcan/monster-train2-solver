@@ -131,7 +131,7 @@ namespace MonsterTrain2Poju.Probe
             }
             else if (kind == "CardEffectNULL") kind = "Null";
             else if ((data.GetCardType() == CardType.Spell || data.GetCardType() == CardType.Equipment) && effects.Length > 0 && effects.All(effect =>
-                    new[] { "CardEffectCopyUnits", "CardEffectBump", "CardEffectAttackWithUnit", "CardEffectRemoveStatusEffect", "CardEffectSetUnitAbility", "CardEffectRemoveAbility", "CardEffectResetCooldown", "CardEffectAdjustAbilityCooldown", "CardEffectAttachEquipment", "CardEffectRemoveEquipment", "CardEffectRewardGold", "CardEffectGainEnergy", "CardEffectAdjustEnergy", "CardEffectGainEnergyNextTurn", "CardEffectGainEnergyEveryTurn", "CardEffectDamage", "CardEffectDamagePerSourceAttack", "CardEffectDraw", "CardEffectDrawAdditionalNextTurn", "CardEffectAdjustRoomCapacity", "CardEffectDiscardHand", "CardEffectAddBattleCard", "CardEffectHeal", "CardEffectSacrifice", "CardEffectBuffDamage", "CardEffectDebuffDamage", "CardEffectBuffMaxHealth", "CardEffectDebuffMaxHealth", "CardEffectAddStatusEffect", "CardEffectAddStatusEffectPerOtherEffect", "CardEffectFloorRearrange", "CardEffectAddCardUpgradeToUnits",
+                    new[] { "CardEffectCopyUnits", "CardEffectBump", "CardEffectAttackWithUnit", "CardEffectRemoveStatusEffect", "CardEffectSetUnitAbility", "CardEffectRemoveAbility", "CardEffectResetCooldown", "CardEffectAdjustAbilityCooldown", "CardEffectAttachEquipment", "CardEffectRemoveEquipment", "CardEffectRewardGold", "CardEffectGainEnergy", "CardEffectAdjustEnergy", "CardEffectGainEnergyNextTurn", "CardEffectGainEnergyEveryTurn", "CardEffectDamage", "CardEffectDamagePerSourceAttack", "CardEffectDraw", "CardEffectDrawAdditionalNextTurn", "CardEffectAdjustRoomCapacity", "CardEffectDiscardHand", "CardEffectAddBattleCard", "CardEffectHeal", "CardEffectSacrifice", "CardEffectBuffDamage", "CardEffectDebuffDamage", "CardEffectBuffMaxHealth", "CardEffectDebuffMaxHealth", "CardEffectAddStatusEffect", "CardEffectAddStatusEffectPerOtherEffect", "CardEffectSpawnMonsterOrAddStatusEffect", "CardEffectFloorRearrange", "CardEffectAddCardUpgradeToUnits",
                     "CardEffectDrawType", "CardEffectAddTempCardUpgradeToNextDrawnCard",
                     "CardEffectAddTempCardUpgradeToUnits", "CardEffectRemoveTempUpgradeFromUnit",
                     "CardEffectAddTempCardUpgradeToCardsInHand", "CardEffectAddPermanentCardUpgradeToCardsInHand" }.Contains(effect.GetEffectStateName())))
@@ -150,7 +150,8 @@ namespace MonsterTrain2Poju.Probe
                          effect.GetTargetMode() == TargetMode.LastDrawnCard);
                     var excluded = new List<SubtypeData>(); effect.GetTargetCharacterExcludedSubtypes(excluded);
                     if (effect.GetUseStatusEffectStackMultiplier() || effect.GetUseHealthMissingStackMultiplier() ||
-                        effect.GetUseMagicPowerMultiplier() || effect.GetEffectStateName() != "CardEffectSacrifice" && !effect.GetParamSubtype().IsNone ||
+                        effect.GetUseMagicPowerMultiplier() || effect.GetEffectStateName() != "CardEffectSacrifice" &&
+                        effect.GetEffectStateName() != "CardEffectSpawnMonsterOrAddStatusEffect" && !effect.GetParamSubtype().IsNone ||
                         (handUpgrade ? effect.GetTargetMode() != TargetMode.Hand && effect.GetTargetMode() != TargetMode.Room :
                             !cardOnlyDrawTarget && !CardTargetModel.Supports(effect.GetTargetMode().ToString())))
                         interactions.Add("Spell scaling or target filters");
@@ -178,6 +179,7 @@ namespace MonsterTrain2Poju.Probe
                         effect.GetEffectStateName() == "CardEffectSacrifice" ? "Sacrifice" :
                         effect.GetEffectStateName() == "CardEffectFloorRearrange" ? "FloorRearrange" :
                         effect.GetEffectStateName() == "CardEffectAddStatusEffectPerOtherEffect" ? "AddStatusPerOtherEffect" :
+                        effect.GetEffectStateName() == "CardEffectSpawnMonsterOrAddStatusEffect" ? "SpawnOrStatus" :
                         effect.GetEffectStateName() == "CardEffectAddStatusEffect" ? "AddStatus" :
                         handUpgrade ? "HandUpgrade" : effect.GetEffectStateName() == "CardEffectRemoveTempUpgradeFromUnit" ? "RemoveUnitUpgrade" : "UnitUpgrade";
                     CardUpgradeModifier? upgrade = type == "DrawNextTurn" ? BonusDrawProbe.Upgrade(effect) : null;
@@ -203,7 +205,7 @@ namespace MonsterTrain2Poju.Probe
                             "Permanent" : "TemporaryUntilEndOfBattle" : type == "AttachEquipment" ? "" : ((UnitUpgradeLifetime)effect.GetAdditionalParamInt1()).ToString();
                     }
                     var statuses = new List<CombatStatus>();
-                    if (type == "AddStatus" || type == "AddStatusPerOtherEffect")
+                    if (type == "AddStatus" || type == "AddStatusPerOtherEffect" || type == "SpawnOrStatus")
                     {
                         if (effect.GetParamStatusEffects().Length == 0) interactions.Add("Empty status effect pool");
                         foreach (StatusEffectStackData status in effect.GetParamStatusEffects())
@@ -217,8 +219,16 @@ namespace MonsterTrain2Poju.Probe
                             statuses.Add(Status(status.statusId, status.count));
                         }
                     }
+                    CombatUnit? spawnFallbackUnit = null;
+                    if (type == "SpawnOrStatus")
+                    {
+                        CharacterData? fallback = effect.GetParamCharacterData();
+                        if (fallback == null) interactions.Add("Missing spawn-or-status fallback character.");
+                        else spawnFallbackUnit = SpawnTemplate(fallback, true, interactions);
+                    }
                     spellEffects.Add(new CardActionEffect(type, effect.GetTargetMode().ToString(), effect.GetParamInt(),
-                        effect.GetTargetTeamType().HasFlag(Team.Type.Heroes), effect.GetTargetTeamType().HasFlag(Team.Type.Monsters), statuses,
+                        type == "SpawnOrStatus" || effect.GetTargetTeamType().HasFlag(Team.Type.Heroes),
+                        type != "SpawnOrStatus" && effect.GetTargetTeamType().HasFlag(Team.Type.Monsters), statuses,
                         upgrade, lifetime, new CardEffectTests(effect.GetShouldTest(), effect.GetShouldFailToCastIfTestFails(),
                             effect.GetShouldCancelSubsequentEffectsIfTestFails(), type == "AddStatus" && effect.GetParamBool(),
                             ((ICardEffect)Activator.CreateInstance(typeof(CardEffectBase).Assembly.GetType(effect.GetEffectStateName())!)!).CanPlayAfterBossDead),
@@ -239,7 +249,9 @@ namespace MonsterTrain2Poju.Probe
                         useCardTraits: type == "DamagePerSourceAttack" && effect.GetParamBool(),
                         requireEquipment: type == "AttackWithUnit" && effect.GetParamBool(),
                         useSelectedRoom: type == "AttackWithUnit" && effect.GetParamBool2(),
-                        countStatusOnlyOnTargets: type == "AddStatusPerOtherEffect" && effect.GetParamBool()));
+                        countStatusOnlyOnTargets: type == "AddStatusPerOtherEffect" && effect.GetParamBool(),
+                        spawnFallbackUnit: spawnFallbackUnit,
+                        disallowStatusStackModifiers: type == "SpawnOrStatus" && effect.GetDisallowStatusEffectStackModifiers()));
                 }
             }
             else interactions.Add("Unimplemented play effect " + kind);
@@ -319,7 +331,10 @@ namespace MonsterTrain2Poju.Probe
 
         internal static CombatStatus Status(string id, int count)
         {
-            StatusEffectData rule = StatusEffectManager.Instance.GetStatusEffectDataById(id)!;
+            StatusEffectManager manager = StatusEffectManager.Instance;
+            if (manager == null) throw new InvalidOperationException("Status data is unavailable while capturing '" + id + "'.");
+            StatusEffectData? rule = manager.GetStatusEffectDataById(id);
+            if (rule == null) throw new InvalidOperationException("Unknown status while capturing card rules: '" + id + "'.");
             return new CombatStatus(id, count, rule.GetParamInt(), rule.GetRemoveWhenTriggered(), rule.GetRemoveStackAtEndOfTurn(),
                 rule.GetRemoveAtEndOfTurn(), rule.GetRemoveAtEndOfTurnAfterPostCombat(), id == "cooldown", rule.GetSkipTriggerDuringDeployment(), rule.GetRemoveDuringDeployment(),
                 TriggeredVfx(rule, -1f), TriggeredVfx(rule, 1f), rule.IsStackable(), rule.IsHidden(), rule.GetDisplayCategory().ToString());

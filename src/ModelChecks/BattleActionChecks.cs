@@ -378,7 +378,7 @@ internal static class BattleActionChecks
         if (fixture.TryGetProperty("ModifierScenario", out var summonScenario) && summonScenario.GetString()?.StartsWith("multi-summon", StringComparison.Ordinal) == true)
             chooser = BattleActionModel.ChooseMultiSummonThenCards;
         if (fixture.TryGetProperty("ModifierScenario", out var abilityScenario) &&
-            abilityScenario.GetString() is "ability-incant" or "ability-activation" or "ability-activation-x" or "ability-activation-lethal" or "ability-effects" or "equipment-abilities")
+            abilityScenario.GetString() is "ability-incant" or "ability-activation" or "ability-activation-x" or "ability-activation-lethal" or "ability-effects" or "equipment-abilities" or "spawn-or-status")
             chooser = UnitAbilityModel.ChooseAbilityThenCards;
         if (fixture.TryGetProperty("ModifierScenario", out var magebladeScenario) && magebladeScenario.GetString() == "mageblade")
             chooser = ChooseMagebladeThenCards;

@@ -183,6 +183,7 @@ param(
     [switch] $AbilityActivation,
     [switch] $AbilityActivationX,
     [switch] $AbilityActivationLethal,
+    [switch] $SpawnOrStatus,
     [switch] $Sentry,
     [switch] $SentryLethal,
     [switch] $BonusDraw,
@@ -257,6 +258,7 @@ if ($PurifyQueues) { $Purify = $true }
 if ($IncantThresholds) { $Incant = $true }
 if ($CaptureJson) { $BinaryCapture = $true }
 if ($SacrificeEffects) { $Policy = 'units-spells-and-junk' }
+if ($SpawnOrStatus) { $Policy = 'units-and-junk' }
 $workspace = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $gameRoot = Join-Path $workspace '.sandbox-game'
 $runId = (Get-Date -Format 'yyyyMMdd-HHmmss') + '-' + [Guid]::NewGuid().ToString('N').Substring(0, 8)
@@ -418,6 +420,10 @@ if ($GenerationPermanentConsume) { $environment['MT2_PROBE_MODIFIERS'] = 'genera
 $originalBefore = Get-OriginalSignature
 $unityLog = Join-Path $profile 'unity-scenario.log'
 $nativeTimer = [System.Diagnostics.Stopwatch]::StartNew()
+if ($SpawnOrStatus) {
+    $environment.MT2_PROBE_MODIFIERS = 'spawn-or-status'
+    $environment.MT2_PROBE_PHYSICAL_SPAWNPOINTS = '1'
+}
 $process = Start-Process -FilePath (Join-Path $gameRoot 'MonsterTrain2.exe') `
     -WorkingDirectory $gameRoot -ArgumentList @('-logFile', $unityLog) `
     -Environment $environment -WindowStyle Hidden -PassThru
@@ -445,6 +451,11 @@ Write-Output "FULL-BATTLE-INSPECTION elapsedSeconds=$($inspectionTimer.Elapsed.T
 $nativePassed = [bool] (Select-String -LiteralPath $unityLog -Pattern 'DEPTH-PASS' -Quiet)
 $terminalSettled = $trace.TerminalCaptureBoundary -eq 'AfterStopCombatLoop' -and $trace.TerminalEffectsSettled -eq $true
 $originalUnchanged = (Get-OriginalSignature) -ceq $originalBefore
+if ($SpawnOrStatus -and ($trace.ModifierScenario -ne 'spawn-or-status' -or
+    -not (Select-String -LiteralPath $unityLog -Pattern 'ABILITY-ACTIVATION-PREPARED .*spawnOrStatus=True' -Quiet) -or
+    @($trace.Actions | Where-Object { $_.Action.ActivatorUnitId -gt 0 }).Count -eq 0)) {
+    throw 'Spawn-or-status native setup or ability activation did not run.'
+}
 if ($Mageblade) {
     $magebladeProof = @(
         foreach ($stage in $trace.Stages) {

@@ -1,10 +1,15 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-11): 230 binary archives, including 199
+Current accepted inventory (2026-10-11): 231 binary archives, including 200
 full battles and 31 component calibrations. Unchanged original relic evidence
 covers 58/224 catalog entries (25.89%); see
 [the owner evidence table](tests/fixtures/relic-coverage.md). Whole-battle
 coverage and the optimal solver remain in progress.
+
+Native `CardEffectSpawnMonsterOrAddStatusEffect` fallback births and the
+existing-unit status branch now match in
+[`full-battle-spawn-or-status.mt2f`](tests/fixtures/full-battle-spawn-or-status.mt2f).
+The battle wins after two skill activations with zero differential failures.
 
 The fixed-cost ability activation archive now exercises native
 `CardEffectDamagePerSourceAttack` inside the full battle. Its unmodified

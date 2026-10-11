@@ -9,18 +9,44 @@ namespace MonsterTrain2Poju.Probe
     internal static class AbilityActivationScenario
     {
         internal static void Prepare(AllGameManagers managers, ManualLogSource log, bool xCost, bool lethal,
-            bool sourceAttack = false, bool attackWithUnit = false)
+            bool sourceAttack = false, bool attackWithUnit = false, bool spawnOrStatus = false)
         {
             AbilityCooldownScenario.Prepare(managers, log, cacheScenario: true);
             SaveManager save = managers.GetSaveManager();
             CardData ability = save.GetAllGameData().FindCardData("c2f6ed7f-18ce-4070-b65f-7dd9f5160063")!;
+            CardData steward = save.GetAllGameData().FindCardData("d14a50f3-728d-43e1-87f0-ef1b013f6678")!;
+            CharacterData unit = steward.GetSpawnCharacterData()!;
             Set(ability, "cost", 1); Set(ability, "targetsRoom", true); Set(ability, "targetless", false);
             Set(ability, "costType", xCost ? CardData.CostType.ConsumeRemainingEnergy : CardData.CostType.Default);
-            var damage = Effect(sourceAttack ? "DamagePerSourceAttack" : "Damage", lethal ? 999 : 2,
-                TargetMode.FrontInRoom, Team.Type.Heroes);
-            var heal = Effect("Heal", 1, TargetMode.Self, Team.Type.Heroes);
-            var futureDraw = Effect("DrawAdditionalNextTurn", 1, TargetMode.Room, Team.Type.None);
-            var effects = new List<CardEffectData> { damage, heal, futureDraw };
+            var effects = new List<CardEffectData>();
+            if (spawnOrStatus)
+            {
+                CardEffectData nativeEffect = save.GetAllGameData().GetAllCardData().SelectMany(card => card.GetEffects())
+                    .FirstOrDefault(effect => effect.GetEffectStateName() == "CardEffectSpawnMonsterOrAddStatusEffect")
+                    ?? throw new InvalidOperationException("Spawn-or-status fixture could not find a native effect definition.");
+                CharacterData fallback = nativeEffect.GetParamCharacterData()
+                    ?? throw new InvalidOperationException("Native spawn-or-status effect has no fallback character.");
+                string subtype = fallback.GetSubtypes().Select(item => item.Key)
+                    .FirstOrDefault(key => !unit.GetSubtypes().Any(item => item.Key == key))
+                    ?? throw new InvalidOperationException("Native fallback has no subtype distinct from the ability actor.");
+                CardEffectData StatusOrSpawn(string statusId, int stacks)
+                {
+                    CardEffectData effect = Effect("SpawnMonsterOrAddStatusEffect", 0, TargetMode.Room, Team.Type.Monsters);
+                    Set(effect, "paramCharacterData", fallback);
+                    Set(effect, "targetCharacterSubtype", subtype);
+                    Set(effect, "paramStatusEffects", new[] { new StatusEffectStackData { statusId = statusId, count = stacks } });
+                    return effect;
+                }
+                effects.Add(StatusOrSpawn("armor", 2));
+                effects.Add(StatusOrSpawn("damage shield", 3));
+            }
+            else
+            {
+                effects.Add(Effect(sourceAttack ? "DamagePerSourceAttack" : "Damage", lethal ? 999 : 2,
+                    TargetMode.FrontInRoom, Team.Type.Heroes));
+                effects.Add(Effect("Heal", 1, TargetMode.Self, Team.Type.Heroes));
+                effects.Add(Effect("DrawAdditionalNextTurn", 1, TargetMode.Room, Team.Type.None));
+            }
             if (attackWithUnit)
             {
                 var unitAttack = Effect("AttackWithUnit", 0, TargetMode.Self, Team.Type.Heroes);
@@ -43,10 +69,9 @@ namespace MonsterTrain2Poju.Probe
                 effects.Add(armorPerShield);
             }
             Set(ability, "effects", effects);
-            CardData steward = save.GetAllGameData().FindCardData("d14a50f3-728d-43e1-87f0-ef1b013f6678")!;
-            CharacterData unit = steward.GetSpawnCharacterData()!;
             var triggers = unit.GetTriggers().ToList();
-            foreach (var phase in new[] { CharacterTriggerData.Trigger.OnPreOwnAbilityActivated, CharacterTriggerData.Trigger.OnOwnAbilityActivated })
+            foreach (var phase in spawnOrStatus ? Array.Empty<CharacterTriggerData.Trigger>() :
+                new[] { CharacterTriggerData.Trigger.OnPreOwnAbilityActivated, CharacterTriggerData.Trigger.OnOwnAbilityActivated })
             {
                 CharacterTriggerData trigger = HealingScenario.HealGold(phase == CharacterTriggerData.Trigger.OnPreOwnAbilityActivated ? 3 : 13, false, false);
                 Set(trigger, "trigger", phase);
@@ -61,7 +86,7 @@ namespace MonsterTrain2Poju.Probe
             }
             Set(managers.GetCombatManager()!, "combatStateChanged", true);
             log.LogInfo("ABILITY-ACTIVATION-PREPARED natural cached skill, payment, pre/own callbacks and unchanged waves; x=" + xCost +
-                "; lethal=" + lethal + "; sourceAttack=" + sourceAttack + "; attackWithUnit=" + attackWithUnit);
+                "; lethal=" + lethal + "; sourceAttack=" + sourceAttack + "; attackWithUnit=" + attackWithUnit + "; spawnOrStatus=" + spawnOrStatus);
         }
         private static CardEffectData Effect(string kind, int value, TargetMode mode, Team.Type team)
         {

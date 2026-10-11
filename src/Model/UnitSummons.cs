@@ -42,11 +42,25 @@ namespace MonsterTrain2Poju.Model
         internal UnitBirthResult(RoomCombatResult result, int unitId = 0) { Result = result; UnitId = unitId; }
     }
 
+    internal sealed class SpawnStatusApplication
+    {
+        internal CombatStatus Status { get; }
+        internal int SourceCardId { get; }
+        internal bool AllowStackModifiers { get; }
+        internal string FromEffectType { get; }
+        internal SpawnStatusApplication(CombatStatus status, int sourceCardId, bool allowStackModifiers, string fromEffectType)
+        { Status = status; SourceCardId = sourceCardId; AllowStackModifiers = allowStackModifiers; FromEffectType = fromEffectType; }
+    }
+
     public static class UnitBirthModel
     {
         public static UnitBirthResult Spawn(RoomCombatState source, CardPlayRule definition, int spawnerCardId,
             int position, bool isCardless, CombatStatus? cardlessStatus = null)
             => SpawnCore(source, definition, spawnerCardId, position, isCardless, cardlessStatus, null, null, true);
+        internal static UnitBirthResult SpawnWithStatus(RoomCombatState source, CardPlayRule definition, int spawnerCardId,
+            int position, CombatStatus cardlessStatus, SpawnStatusApplication cardStatus)
+            => SpawnCore(source, definition, spawnerCardId, position, true, cardlessStatus, null, null, true,
+                cardStatus: cardStatus);
         internal static UnitBirthResult SpawnClone(RoomCombatState source, CardPlayRule definition, int spawnerCardId,
             int position, bool isCardless, CombatStatus? cardlessStatus, bool selectedSlot,
             Func<RoomCombatState, IReadOnlyList<RoomCombatModel.QueuedCharacterTrigger>, RoomCombatResult>? drainBirthQueue = null)
@@ -58,7 +72,8 @@ namespace MonsterTrain2Poju.Model
         private static UnitBirthResult SpawnCore(RoomCombatState source, CardPlayRule definition, int spawnerCardId,
             int position, bool isCardless, CombatStatus? cardlessStatus, Action<RoomCombatModel.QueuedCharacterTrigger>? enqueue,
             IReadOnlyList<CombatUnit>? positionActors, bool selectedSlot, bool isClone = false,
-            Func<RoomCombatState, IReadOnlyList<RoomCombatModel.QueuedCharacterTrigger>, RoomCombatResult>? drainBirthQueue = null)
+            Func<RoomCombatState, IReadOnlyList<RoomCombatModel.QueuedCharacterTrigger>, RoomCombatResult>? drainBirthQueue = null,
+            SpawnStatusApplication? cardStatus = null)
         {
             CombatContext? context = source.Context;
             CombatUnit? raw = definition.SpawnUnit;
@@ -123,8 +138,10 @@ namespace MonsterTrain2Poju.Model
             var entered = new RoomCombatState(source.RoomIndex, source.Deployment,
                 source.Units.Where(unit => unit.Team == CombatTeam.Enemy).Concat(players).ToArray(), source.ExternalInteractions, context, source.Preview);
             RoomCombatResult result = drainBirthQueue == null ?
-                RoomCombatModel.ApplySpawnTriggers(entered, spawned.Id, spawnerCardId > 0, starting, enqueue) :
-                RoomCombatModel.PrepareSpawnTriggers(entered, spawned.Id, spawnerCardId > 0, starting);
+                RoomCombatModel.ApplySpawnTriggers(entered, spawned.Id, spawnerCardId > 0, starting, enqueue,
+                    additionalStatus: cardStatus) :
+                RoomCombatModel.PrepareSpawnTriggers(entered, spawned.Id, spawnerCardId > 0, starting,
+                    additionalStatus: cardStatus);
             if (!result.Supported) return new UnitBirthResult(result);
             var events = result.Events.ToList();
             RoomOutcome outcome = result.Outcome;

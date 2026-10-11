@@ -15,9 +15,12 @@ The default command still checks the full curated inventory.
 For routine changes, run only the new and directly affected fixtures with
 `-Fixture`; run the full inventory at completed milestones and before delivery.
 
-Current inventory is 230 archives: 199 accepted battles and 31 component
+Current inventory is 231 archives: 200 accepted battles and 31 component
 calibrations. `full-battle-relic-card-status-upgrades.mt2f` verifies a native
 temporary card status upgrade reaches the unit summoned by that card.
+`full-battle-spawn-or-status.mt2f` covers fallback birth and existing-unit
+branches of `CardEffectSpawnMonsterOrAddStatusEffect` across two native skill
+activations.
 `full-battle-sacrifice-effects.mt2f` covers native `CardEffectSacrifice` target
 selection, death callbacks, spawner exhaustion and a 23-action, seven-turn battle;
 the binary archive is 30,799 bytes with 5,088 unique nodes and no JSON source.
@@ -2733,4 +2736,21 @@ remains deferred to a milestone.
 
 ```powershell
 & ./scripts/Check-Models.ps1 -Fixture full-battle-original-deployable-relic.mt2f
+```
+
+### Spawn-or-status skill effect
+
+`full-battle-spawn-or-status.mt2f` exercises both branches of native
+`CardEffectSpawnMonsterOrAddStatusEffect`: the first skill activation creates a
+cardless Funguy with Armor, and the next activation applies statuses to the
+existing unit. Both activations and all 17 card actions match native state; the
+battle wins after 44 stages with zero capture failures, mismatches, unsupported
+transitions or pending records. The muted Instant capture took 59.60 seconds.
+The 35,554-byte archive has 5,850 unique nodes, SHA-256
+`efe52d33f38dbd9b15059f826cd5620948205db866e0d5ae5a0b2beb320d5975`, and no
+JSON companion. Inventory is 231 archives: 200 battles and 31 component
+calibrations. Original relic evidence remains 58/224 (25.89%).
+
+```powershell
+& ./scripts/Check-Models.ps1 -Fixture @('full-battle-spawn-or-status.mt2f','full-battle-ability-activation.mt2f','full-battle-spawn-status-relics.mt2f')
 ```
