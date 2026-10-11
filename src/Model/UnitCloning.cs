@@ -326,6 +326,7 @@ namespace MonsterTrain2Poju.Model
         internal static TrainCombatState ReplaceUnit(TrainCombatState state, CombatUnit unit) => EnchantmentWorldModel.Rebase(
             new TrainCombatState(state.Rooms.Select(room =>
                 new RoomCombatState(room.RoomIndex, room.Deployment, room.Units.Select(actor => actor.Id == unit.Id ? unit : actor).ToArray(),
-                    room.ExternalInteractions, state.Context, room.Preview)).ToArray(), state.Movement, state.EnemySlotsPerRoom, state.Context));
+                    room.ExternalInteractions, state.Context, room.Preview, room.ActiveCompanionBossIds)).ToArray(),
+                state.Movement, state.EnemySlotsPerRoom, state.Context));
     }
 }

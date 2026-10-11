@@ -383,7 +383,8 @@ namespace MonsterTrain2Poju.Model
             context.CardRegistry, context.AllScenarioBossesDead, context.NextAddedTemporaryUpgrades, context.OtherPiles, context.QueryFrame, context.KillCamActivated, context.MagicPower, context.IsolatedBattlePreview, context.EnergyState, context.RoomCapacities, context.AbilityCardCache, context.LastAbilityActivatorUnitId, context.PermanentlyDisabledAbilities, context.LastSpawnedUnitId, context.NextUnitId, context.SpawnPoints, context.SummonCatalog, context.Enchantments, context.PurifyBlockedTriggers, context.Relics, context.TriggerCounts, context.Resources);
         private static TrainCombatState WithContext(TrainCombatState train, CombatContext context, bool deployment) =>
             new TrainCombatState(train.Rooms.Select(room => new RoomCombatState(room.RoomIndex, deployment, room.Units,
-                room.ExternalInteractions, context)).ToArray(), train.Movement, train.EnemySlotsPerRoom, context);
+                room.ExternalInteractions, context, room.Preview, room.ActiveCompanionBossIds)).ToArray(),
+                train.Movement, train.EnemySlotsPerRoom, context);
         private static EnemySpawnState WithTrain(EnemySpawnState spawn, TrainCombatState train, int turn, UnityRng rng) =>
             new EnemySpawnState(train, spawn.Waves, spawn.SelectedGroups, spawn.Phase, spawn.Looping, rng, train.Context?.NextUnitId ?? spawn.NextUnitId,
                 spawn.Treasures, spawn.TreasuresRemaining, spawn.TreasureEnabled, spawn.FirstTreasureTurn,

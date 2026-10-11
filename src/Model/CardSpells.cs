@@ -137,7 +137,8 @@ namespace MonsterTrain2Poju.Model
                 string? error = null;
                 RoomCombatState RestoreUnfinished(RoomCombatResult result) => new RoomCombatState(result.State!.RoomIndex,
                     result.State.Deployment, result.State.Units.Concat(result.RetainedUnits.Where(unit => unit.Health <= 0 &&
-                        unit.DeathState?.HasFinishedDying == false)).ToArray(), result.State.ExternalInteractions, result.State.Context, result.State.Preview);
+                        unit.DeathState?.HasFinishedDying == false)).ToArray(), result.State.ExternalInteractions, result.State.Context,
+                    result.State.Preview, result.State.ActiveCompanionBossIds);
                 bool drained = RoomCombatModel.DrainCharacterQueue(queue, queued =>
                 {
                     RoomCombatState room = state.Rooms.Single(item => item.RoomIndex == queued.RoomIndex);
@@ -908,12 +909,13 @@ namespace MonsterTrain2Poju.Model
                 {
                     if (room.RoomIndex == attackRoom.RoomIndex) return turn.State;
                     if (room.RoomIndex != actorRoom.RoomIndex) return new RoomCombatState(room.RoomIndex, room.Deployment,
-                        room.Units, room.ExternalInteractions, context, room.Preview);
+                        room.Units, room.ExternalInteractions, context, room.Preview, room.ActiveCompanionBossIds);
                     bool actorAlive = updatedActor.Health > 0 && updatedActor.DeathState?.IsDestroyed != true &&
                         updatedActor.DeathState?.IsDespawned != true;
                     CombatUnit[] units = room.Units.Select(unit => unit.Id == actorId && actorAlive ? updatedActor : unit)
                         .Where(unit => unit.Id != actorId || actorAlive).ToArray();
-                    return new RoomCombatState(room.RoomIndex, room.Deployment, units, room.ExternalInteractions, context, room.Preview);
+                    return new RoomCombatState(room.RoomIndex, room.Deployment, units, room.ExternalInteractions, context,
+                        room.Preview, room.ActiveCompanionBossIds);
                 }).ToArray();
                 var aliveIds = new HashSet<int>(rooms.SelectMany(room => room.Units).Select(unit => unit.Id));
                 changed = WithContext(new TrainCombatState(rooms, source.Movement.Where(move => aliveIds.Contains(move.UnitId)).ToArray(),
@@ -1048,7 +1050,7 @@ namespace MonsterTrain2Poju.Model
                         modifiers: new UnitModifiers(0, 0, 0, 1, 1, true, false, Array.Empty<CardUpgradeModifier>(),
                             damageBuffFromStatusEffects: 0));
                     error = RoomCombatModel.Validate(new RoomCombatState(source.RoomIndex, source.Deployment,
-                        new[] { test }, Array.Empty<string>(), source.Context));
+                        new[] { test }, Array.Empty<string>(), source.Context, source.Preview, source.ActiveCompanionBossIds));
                     if (error != null) return error;
                 }
             }
@@ -1255,7 +1257,7 @@ namespace MonsterTrain2Poju.Model
                     // Chance is evaluated for every collected target before status immunity is checked.
                     RngDraw chance = state.Context!.BattleRng.Range(0, 100);
                     state = new RoomCombatState(state.RoomIndex, state.Deployment, state.Units, state.ExternalInteractions,
-                        state.Context.WithBattleRng(chance.State), state.Preview);
+                        state.Context.WithBattleRng(chance.State), state.Preview, state.ActiveCompanionBossIds);
                     if (chance.Value >= effect.Value) return Unchanged(state);
                 }
                 return StatusApplicationModel.Apply(state, target.Id, effect.Statuses[0], sourceCardId,
@@ -1276,12 +1278,14 @@ namespace MonsterTrain2Poju.Model
                 if (!moved.Supported) return new RoomCombatResult(null, RoomOutcome.Unsupported, 0, new List<CombatEvent>(), moved.Error!);
                 var context = state.Context.WithSpawnPoints(moved.State!);
                 return Unchanged(new RoomCombatState(state.RoomIndex, state.Deployment,
-                    BattleSpawnPointModel.Order(context.SpawnPoints, state.RoomIndex, state.Units), state.ExternalInteractions, context, state.Preview));
+                    BattleSpawnPointModel.Order(context.SpawnPoints, state.RoomIndex, state.Units), state.ExternalInteractions, context,
+                    state.Preview, state.ActiveCompanionBossIds));
             }
             team.Remove(target); team.Insert(effect.Value == 0 ? 0 : team.Count, target);
             CombatUnit[] enemies = target.Team == CombatTeam.Enemy ? team.ToArray() : state.Units.Where(unit => unit.Team == CombatTeam.Enemy).ToArray();
             CombatUnit[] players = target.Team == CombatTeam.Player ? team.ToArray() : state.Units.Where(unit => unit.Team == CombatTeam.Player).ToArray();
-            return Unchanged(new RoomCombatState(state.RoomIndex, state.Deployment, enemies.Concat(players).ToArray(), state.ExternalInteractions, state.Context, state.Preview));
+            return Unchanged(new RoomCombatState(state.RoomIndex, state.Deployment, enemies.Concat(players).ToArray(),
+                state.ExternalInteractions, state.Context, state.Preview, state.ActiveCompanionBossIds));
         }
 
         internal static CombatUnit Copy(CombatUnit unit, int health, IReadOnlyList<CombatStatus> statuses) =>

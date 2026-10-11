@@ -98,7 +98,7 @@ namespace MonsterTrain2Poju.Model
             }
             if (effect.Target == "LastTargetedCharacters" || effect.Target == "StrongestLastTargetedCharacters")
                 room = new RoomCombatState(roomIndex, room.Deployment, train.Rooms.SelectMany(item => item.Units).ToArray(),
-                    Array.Empty<string>(), train.Context, room.Preview);
+                    Array.Empty<string>(), train.Context, room.Preview, room.ActiveCompanionBossIds);
             return Collect(room, effect, lastTargets, dropTeam, dropPosition, firstEffect, isTesting, ignorePyre: ignorePyre);
         }
 

@@ -49,7 +49,8 @@ namespace MonsterTrain2Poju.Model
             if (world != null)
                 context = context.WithEnchantments(new EnchantmentWorld(world.Rooms.Select(room => new RoomCombatState(
                     room.RoomIndex, room.Deployment, room.Units.Select(unit => unit.Id == pyre.Id ? pyre : unit).ToArray(),
-                    room.ExternalInteractions, null, room.Preview)).ToArray(), world.Movement, world.EnemySlotsPerRoom,
+                    room.ExternalInteractions, null, room.Preview, room.ActiveCompanionBossIds)).ToArray(),
+                    world.Movement, world.EnemySlotsPerRoom,
                     world.RetainedUnits, world.EnchanterIds, world.AllowUpdates, world.Updating, world.Preview,
                     world.TestRng, world.AutomaticLifecycle));
             return new RelicPyreAttackRefreshResult(context, pyre);
@@ -70,7 +71,7 @@ namespace MonsterTrain2Poju.Model
                     RoomCombatState room = rooms[index];
                     rooms[index] = new RoomCombatState(room.RoomIndex, room.Deployment,
                         room.Units.Select(unit => unit.Id == result.Pyre.Id ? result.Pyre : unit).ToArray(),
-                        room.ExternalInteractions, result.Context, room.Preview);
+                        room.ExternalInteractions, result.Context, room.Preview, room.ActiveCompanionBossIds);
                 }
             return result;
         }
@@ -86,7 +87,7 @@ namespace MonsterTrain2Poju.Model
             if (!result.Supported) return GoldModel.Fail(result.UnsupportedReason!);
             RoomCombatState[] rooms = source.Rooms.Select(room => new RoomCombatState(room.RoomIndex, room.Deployment,
                 room.Units.Select(unit => result.Pyre?.Id == unit.Id ? result.Pyre! : unit).ToArray(),
-                room.ExternalInteractions, result.Context, room.Preview)).ToArray();
+                room.ExternalInteractions, result.Context, room.Preview, room.ActiveCompanionBossIds)).ToArray();
             return GoldModel.Success(EnchantmentWorldModel.Rebase(new TrainCombatState(rooms, source.Movement,
                 source.EnemySlotsPerRoom, result.Context)));
         }

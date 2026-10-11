@@ -177,7 +177,7 @@ namespace MonsterTrain2Poju.Model
             return new RoomCombatResult(state, outcome, 0, events, pendingCallbacks: callbacks);
 
             void SetContext(CombatContext context) => state = new RoomCombatState(state.RoomIndex, state.Deployment,
-                state.Units, state.ExternalInteractions, context, state.Preview);
+                state.Units, state.ExternalInteractions, context, state.Preview, state.ActiveCompanionBossIds);
             bool DrainYield()
             {
                 if (drainCallbacks == null || state.Preview) return true;

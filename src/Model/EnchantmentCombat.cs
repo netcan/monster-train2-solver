@@ -95,7 +95,8 @@ namespace MonsterTrain2Poju.Model
                 trigger.WithEffects(trigger.Effects.Select(effect => effect.Enchantment == null ? effect : effect.WithEnchantment(
                     effect.Enchantment.WithState(EnchantmentLifecycleModel.PrepareForPreview(effect.Enchantment.State)))).ToArray())).ToArray());
             var train = new TrainCombatState(source.Train.Rooms.Select(room => new RoomCombatState(room.RoomIndex, room.Deployment,
-                room.Units.Select(Prepare).ToArray(), room.ExternalInteractions, room.Context, room.Preview)).ToArray(),
+                room.Units.Select(Prepare).ToArray(), room.ExternalInteractions, room.Context, room.Preview,
+                room.ActiveCompanionBossIds)).ToArray(),
                 source.Train.Movement, source.Train.EnemySlotsPerRoom, source.Train.Context);
             return new EnchantmentCombatState(train, source.RetainedUnits.Select(actor => new EnchantmentRetainedUnit(Prepare(actor.Unit),
                 actor.RoomIndex, actor.Preview)).ToArray(), source.EnchanterIds, source.AllowUpdates, source.Updating, source.Preview, source.TestRng);
@@ -245,7 +246,9 @@ namespace MonsterTrain2Poju.Model
             {
                 EnchantmentRetainedUnit actor = Find(request.UnitId);
                 RoomCombatState? liveRoom = state.Train.Rooms.FirstOrDefault(room => room.Units.Any(unit => unit.Id == request.UnitId));
-                var room = liveRoom ?? new RoomCombatState(actor.RoomIndex, false, new[] { actor.Unit }, Array.Empty<string>(), state.Train.Context, actor.Preview);
+                IReadOnlyList<int>? companionBossIds = state.Train.Rooms.FirstOrDefault(room => room.RoomIndex == actor.RoomIndex)?.ActiveCompanionBossIds;
+                var room = liveRoom ?? new RoomCombatState(actor.RoomIndex, false, new[] { actor.Unit }, Array.Empty<string>(),
+                    state.Train.Context, actor.Preview, companionBossIds);
                 RoomCombatResult changed = request.Operation == "Add"
                     ? StatusApplicationModel.ApplyRetained(room, request.UnitId, rule.StatusPool.First(status => status.Id == request.StatusId).WithStacks(request.Count), 0)
                     : StatusRemovalModel.Remove(room, request.UnitId, request.StatusId, request.Count);
@@ -266,7 +269,8 @@ namespace MonsterTrain2Poju.Model
             {
                 TrainCombatState train = new TrainCombatState(state.Train.Rooms.Select(room => new RoomCombatState(room.RoomIndex,
                     room.Deployment, room.Units.Select(unit => unit.Id == value.Id ? value : unit).ToArray(), room.ExternalInteractions,
-                    room.Context, room.Preview)).ToArray(), state.Train.Movement, state.Train.EnemySlotsPerRoom, state.Train.Context);
+                    room.Context, room.Preview, room.ActiveCompanionBossIds)).ToArray(), state.Train.Movement,
+                    state.Train.EnemySlotsPerRoom, state.Train.Context);
                 Set(train: train, retained: state.RetainedUnits.Select(actor => actor.Unit.Id == value.Id
                     ? new EnchantmentRetainedUnit(value, actor.RoomIndex, actor.Preview) : actor).ToArray());
             }
@@ -275,7 +279,7 @@ namespace MonsterTrain2Poju.Model
                     retained ?? state.RetainedUnits, state.EnchanterIds, state.AllowUpdates, updating ?? state.Updating, state.Preview, testRng ?? state.TestRng);
             private static TrainCombatState WithContext(TrainCombatState train, CombatContext? context) => new TrainCombatState(
                 train.Rooms.Select(room => new RoomCombatState(room.RoomIndex, room.Deployment, room.Units, room.ExternalInteractions,
-                    context, room.Preview)).ToArray(), train.Movement, train.EnemySlotsPerRoom, context);
+                    context, room.Preview, room.ActiveCompanionBossIds)).ToArray(), train.Movement, train.EnemySlotsPerRoom, context);
         }
     }
 }

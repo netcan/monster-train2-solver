@@ -40,7 +40,7 @@ namespace MonsterTrain2Poju.Model
                 .Where(id => liveUnits.TryGetValue(id, out CombatUnit? unit) && unit.IsBoss == true &&
                     (unit.Health > 0 || unit.Status("undying")?.Stacks > 0)).ToArray();
             IReadOnlyList<int>? roster = companionBosses.Length == 0
-                ? orderedRooms.Length > 0 && orderedRooms.All(room => room.ActiveCompanionBossIds is { Count: 0 })
+                ? orderedRooms.Length > 0 && orderedRooms.Any(room => room.ActiveCompanionBossIds != null)
                     ? Array.Empty<int>() : null
                 : Array.AsReadOnly(companionBosses);
             Rooms = Array.AsReadOnly(orderedRooms.Select(room => new RoomCombatState(room.RoomIndex, room.Deployment,
@@ -132,7 +132,7 @@ namespace MonsterTrain2Poju.Model
                 room.Units.Select(unit => unit.WithoutRemovedAttacker(activeIds).WithTriggers(unit.Triggers.Select(trigger =>
                     trigger.WithEffects(trigger.Effects.Select(effect => effect.Summon?.FirstSpawnedUnitId > 0 &&
                         !activeIds.Contains(effect.Summon.FirstSpawnedUnitId) ? effect.WithSummon(effect.Summon.WithFirstSpawned(0)) : effect).ToArray())).ToArray())).ToArray(),
-                room.ExternalInteractions, context, room.Preview)).ToArray(),
+                room.ExternalInteractions, context, room.Preview, room.ActiveCompanionBossIds)).ToArray(),
                 source.Movement, source.EnemySlotsPerRoom, context));
         }
 
@@ -292,7 +292,8 @@ namespace MonsterTrain2Poju.Model
                             if (reference != null && empty >= 0 && empty < reference.Index)
                             {
                                 var scope = new RoomCombatState(index, source.Rooms[index].Deployment, rooms[index],
-                                    source.Rooms[index].ExternalInteractions, movementContext, source.Rooms[index].Preview);
+                                    source.Rooms[index].ExternalInteractions, movementContext, source.Rooms[index].Preview,
+                                    source.Rooms[index].ActiveCompanionBossIds);
                                 var shiftedPoint = BattleSpawnPointModel.Apply(movementContext.SpawnPoints, scope, "Set", CombatTeam.Enemy,
                                     enemy.Id, target: new SpawnPointReference(index, CombatTeam.Enemy, empty));
                                 if (!shiftedPoint.Supported) return Unsupported(shiftedPoint.Error!);
@@ -309,7 +310,8 @@ namespace MonsterTrain2Poju.Model
                     {
                         int empty = movementContext.SpawnPoints.FirstEmpty(destination, CombatTeam.Enemy);
                         var scope = new RoomCombatState(index, source.Rooms[index].Deployment, rooms[index],
-                            source.Rooms[index].ExternalInteractions, movementContext, source.Rooms[index].Preview);
+                            source.Rooms[index].ExternalInteractions, movementContext, source.Rooms[index].Preview,
+                            source.Rooms[index].ActiveCompanionBossIds);
                         var movedPoint = BattleSpawnPointModel.Apply(movementContext.SpawnPoints, scope, "Set", CombatTeam.Enemy,
                             enemy.Id, target: new SpawnPointReference(destination, CombatTeam.Enemy, empty));
                         if (!movedPoint.Supported) return Unsupported(movedPoint.Error!);
@@ -324,7 +326,8 @@ namespace MonsterTrain2Poju.Model
                 }
             }
             RoomCombatState[] next = source.Rooms.Select((room, index) => new RoomCombatState(room.RoomIndex,
-                room.Deployment, BattleSpawnPointModel.Order(movementContext?.SpawnPoints, index, rooms[index]), room.ExternalInteractions, movementContext)).ToArray();
+                room.Deployment, BattleSpawnPointModel.Order(movementContext?.SpawnPoints, index, rooms[index]), room.ExternalInteractions,
+                movementContext, room.Preview, room.ActiveCompanionBossIds)).ToArray();
             TrainCombatState moving = EnchantmentWorldModel.Rebase(new TrainCombatState(next, source.Movement, source.EnemySlotsPerRoom, movementContext));
             moving = Freeze(moving, moving.Rooms.ToArray(), moving.Context);
             if (looped.Count > 0)

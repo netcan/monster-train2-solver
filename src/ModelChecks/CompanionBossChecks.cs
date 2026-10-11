@@ -30,6 +30,10 @@ internal static class CompanionBossChecks
             [new EnemyWave([new EnemyGroup([])])], [0], phase, false, rng, pending?.Count > 0 ? pending.Max() + 1 : 3,
             [], 0, false, 1, 0, 4, paired ? ["Paired companion Boss death and Pyre routing"] : [], pendingDestroyedUnitIds: pending);
         var root = Root(); string parent = JsonSerializer.Serialize(root, ModelJson.Options);
+        var retiredRoster = new TrainCombatState([new RoomCombatState(0, false, [], [], context,
+            activeCompanionBossIds: [1])], [], 7, context);
+        Require(retiredRoster.Rooms.Single().ActiveCompanionBossIds is { Count: 0 },
+            "A known companion-Boss roster was not cleared after its last registered boss left the train.");
         var result = CompanionBossModel.Resolve(root, true);
         Require(result.Supported && result.State!.Rooms[0].Units.Single().Id == 1 && result.State.Rooms[1].Units.Single().Id == 2 &&
             result.State.Context!.Gold == 55, "Forced Boss loop, movement callbacks or status/removal/queue order differs.");

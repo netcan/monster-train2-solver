@@ -223,7 +223,7 @@ namespace MonsterTrain2Poju.Model
                 placed = new BattleSpawnPointResult(placed.State!.WithBirthPrimary(unit.Id), pivotMoves: placed.PivotMoves);
             if (!placed.Supported || !shift && unit.Team != CombatTeam.Player || room.Preview) return placed;
             return Apply(placed.State!, new RoomCombatState(room.RoomIndex, room.Deployment, room.Units.Append(unit).ToArray(),
-                room.ExternalInteractions, room.Context, room.Preview), "Compact", unit.Team);
+                room.ExternalInteractions, room.Context, room.Preview, room.ActiveCompanionBossIds), "Compact", unit.Team);
         }
         internal static CombatUnit[] Order(BattleSpawnPoints? source, int roomIndex, IReadOnlyList<CombatUnit> units)
         {

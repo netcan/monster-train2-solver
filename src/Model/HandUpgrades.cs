@@ -37,7 +37,7 @@ namespace MonsterTrain2Poju.Model
                     lifetime == "TemporaryUntilEndOfBattle" ? UnitModifierModel.Add(card.Temporary, applied) : card.Temporary), out _);
             }
             return new RoomCombatResult(new RoomCombatState(source.RoomIndex, source.Deployment, source.Units,
-                source.ExternalInteractions, context, source.Preview),
+                source.ExternalInteractions, context, source.Preview, source.ActiveCompanionBossIds),
                 RoomOutcome.Exchanged, 0, new List<CombatEvent>());
         }
         private static RoomCombatResult Unsupported(string reason) =>

@@ -293,7 +293,7 @@ namespace MonsterTrain2Poju.Model
                     template = StatusAttackDamageModel.PrepareBirthTemplate(template, initialStatuses);
                 }
                 string? validation = template == null ? null : RoomCombatModel.Validate(new RoomCombatState(target.RoomIndex, target.Deployment,
-                    new[] { template }, Array.Empty<string>(), context));
+                    new[] { template }, Array.Empty<string>(), context, target.Preview, target.ActiveCompanionBossIds));
                 if (validation != null) return Unsupported(validation);
                 int legalSize = template?.Size ?? 0;
                 if (rule.Summon?.NativeBaseSize is int nativeSize)
@@ -336,7 +336,8 @@ namespace MonsterTrain2Poju.Model
                     var nextPlayers = players.ToList();
                     if (context.SpawnPoints != null)
                     {
-                        var scope = new RoomCombatState(target.RoomIndex, target.Deployment, target.Units, target.ExternalInteractions, context, target.Preview);
+                        var scope = new RoomCombatState(target.RoomIndex, target.Deployment, target.Units, target.ExternalInteractions,
+                            context, target.Preview, target.ActiveCompanionBossIds);
                         var physical = BattleSpawnPointModel.Birth(context.SpawnPoints, scope, spawned, position, shift: true);
                         if (!physical.Supported) return Unsupported(physical.Error!);
                         context = context.WithSpawnPoints(physical.State!);
@@ -345,7 +346,8 @@ namespace MonsterTrain2Poju.Model
                     }
                     else nextPlayers.Insert(position, spawned);
                     var entered = new RoomCombatState(target.RoomIndex, target.Deployment,
-                        target.Units.Where(unit => unit.Team == CombatTeam.Enemy).Concat(nextPlayers).ToArray(), target.ExternalInteractions, context, target.Preview);
+                        target.Units.Where(unit => unit.Team == CombatTeam.Enemy).Concat(nextPlayers).ToArray(),
+                        target.ExternalInteractions, context, target.Preview, target.ActiveCompanionBossIds);
                     spawnTriggers = RoomCombatModel.ApplySpawnTriggers(entered, spawned.Id, fromCard: true, startingApplications: initialStatuses);
                     if (!spawnTriggers.Supported) return Unsupported(spawnTriggers.UnsupportedReason!);
                     // Ordinary paid births have the same player-wide enchant phase
@@ -354,7 +356,7 @@ namespace MonsterTrain2Poju.Model
                         .Select(unit => new RoomCombatModel.QueuedCharacterTrigger(target.RoomIndex, unit, "AfterSpawnEnchant")).ToList();
                     TrainCombatResult enchanted = TrainCombatModel.ApplyCharacterQueue(new TrainCombatState(train.Rooms.Select(room =>
                         room.RoomIndex == target.RoomIndex ? spawnTriggers.State : new RoomCombatState(room.RoomIndex, room.Deployment,
-                            room.Units, room.ExternalInteractions, spawnTriggers.State.Context, room.Preview)).ToArray(), train.Movement,
+                            room.Units, room.ExternalInteractions, spawnTriggers.State.Context, room.Preview, room.ActiveCompanionBossIds)).ToArray(), train.Movement,
                         train.EnemySlotsPerRoom, spawnTriggers.State.Context), enchantQueue);
                     if (!enchanted.Supported) return Unsupported(enchanted.UnsupportedReason!);
                     train = enchanted.State!;
@@ -366,7 +368,8 @@ namespace MonsterTrain2Poju.Model
                 context = spawnTriggers.State!.Context!; outcome = spawnTriggers.Outcome;
                 piles = context.OtherPiles?.ToArray() ?? piles;
                 RoomCombatState[] enteredRooms = train.Rooms.Select(room => new RoomCombatState(room.RoomIndex, room.Deployment,
-                    room.RoomIndex == target.RoomIndex ? spawnTriggers.State.Units : room.Units, room.ExternalInteractions, context, room.Preview)).ToArray();
+                    room.RoomIndex == target.RoomIndex ? spawnTriggers.State.Units : room.Units, room.ExternalInteractions, context,
+                    room.Preview, room.ActiveCompanionBossIds)).ToArray();
                 var enteredIds = new HashSet<int>(enteredRooms.SelectMany(room => room.Units).Select(unit => unit.Id));
                 train = new TrainCombatState(enteredRooms, train.Movement.Where(item => enteredIds.Contains(item.UnitId)).ToArray(), train.EnemySlotsPerRoom, context);
                 // CardEffectSpawnMonster ends with HandleRoomUnitOrderPossiblyChanged.
@@ -558,12 +561,14 @@ namespace MonsterTrain2Poju.Model
             }
             RoomCombatState[] rooms = train.Rooms.Select(room =>
             {
-                return new RoomCombatState(room.RoomIndex, room.Deployment, room.Units, room.ExternalInteractions, context, room.Preview);
+                return new RoomCombatState(room.RoomIndex, room.Deployment, room.Units, room.ExternalInteractions,
+                    context, room.Preview, room.ActiveCompanionBossIds);
             }).ToArray();
             context = UnitStandbyModel.ReturnReady(context);
             context = EquipmentModel.ReturnUnattached(context, new HashSet<int>(rooms.SelectMany(room => room.Units).Select(unit => unit.Id)));
             piles = context.OtherPiles?.ToArray() ?? piles;
-            rooms = rooms.Select(room => new RoomCombatState(room.RoomIndex, room.Deployment, room.Units, room.ExternalInteractions, context, room.Preview)).ToArray();
+            rooms = rooms.Select(room => new RoomCombatState(room.RoomIndex, room.Deployment, room.Units, room.ExternalInteractions,
+                context, room.Preview, room.ActiveCompanionBossIds)).ToArray();
             var living = new HashSet<int>(rooms.SelectMany(room => room.Units).Select(unit => unit.Id));
             train = new TrainCombatState(rooms, train.Movement.Where(rule => living.Contains(rule.UnitId)).ToArray(), train.EnemySlotsPerRoom, context);
             // CardManager.OnCardPlayed refreshes auras after discard/cost clearing,

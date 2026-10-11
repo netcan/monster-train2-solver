@@ -16,7 +16,8 @@ namespace MonsterTrain2Poju.Model
             BattleSpawnPoints? originalPoints = context.SpawnPoints;
             if (originalPoints != null) context = context.WithSpawnPoints(originalPoints.BeginPreview());
             var previewTrain = new TrainCombatState(source.Rooms.Select(room => new RoomCombatState(room.RoomIndex,
-                room.Deployment, room.Units, room.ExternalInteractions, context, preview: true)).ToArray(),
+                room.Deployment, room.Units, room.ExternalInteractions, context, preview: true,
+                activeCompanionBossIds: room.ActiveCompanionBossIds)).ToArray(),
                 source.Movement, source.EnemySlotsPerRoom, context);
             EnchantmentWorld? originalWorld = context.Enchantments;
             if (originalWorld?.AutomaticLifecycle == true)
@@ -27,7 +28,7 @@ namespace MonsterTrain2Poju.Model
                     prepared = EnchantmentCombatModel.PrepareForPreview(prepared, id);
                 context = context.WithEnchantments(EnchantmentWorld.From(prepared, true));
                 previewTrain = EnchantmentWorldModel.Rebase(new TrainCombatState(prepared.Train.Rooms.Select(room => new RoomCombatState(room.RoomIndex,
-                    room.Deployment, room.Units, room.ExternalInteractions, context, true)).ToArray(), source.Movement,
+                    room.Deployment, room.Units, room.ExternalInteractions, context, true, room.ActiveCompanionBossIds)).ToArray(), source.Movement,
                     source.EnemySlotsPerRoom, context), preview: true, testRng: context.IsolatedBattlePreview == true ? context.BattleRng : originalWorld.TestRng);
             }
             var overwrittenSummons = new HashSet<(int UnitId, int TriggerId, int EffectIndex)>();
@@ -129,7 +130,8 @@ namespace MonsterTrain2Poju.Model
                     return PreviewEffectsModel.Restore(RestorePrimaryEffects(original), tested, removed);
                 }
                 context = context.WithEnchantments(new EnchantmentWorld(source.Rooms.Select(room => new RoomCombatState(room.RoomIndex,
-                    room.Deployment, room.Units.Select(RestoreEnchantments).ToArray(), room.ExternalInteractions, null, room.Preview)).ToArray(),
+                    room.Deployment, room.Units.Select(RestoreEnchantments).ToArray(), room.ExternalInteractions, null, room.Preview,
+                    room.ActiveCompanionBossIds)).ToArray(),
                     source.Movement, source.EnemySlotsPerRoom, originalWorld.RetainedUnits.Select(actor => new EnchantmentRetainedUnit(
                         RestoreEnchantments(actor.Unit), actor.RoomIndex, actor.Preview))
                         .Concat(PreviewBirthModel.Retain(observed, firstPreviewId, removed)).ToArray(),
@@ -137,7 +139,8 @@ namespace MonsterTrain2Poju.Model
                     originalWorld.AllowUpdates, originalWorld.Updating, originalWorld.Preview, originalWorld.TestRng, true));
             }
             var train = new TrainCombatState(source.Rooms.Select(room => new RoomCombatState(room.RoomIndex, room.Deployment,
-                room.Units.Select(RestorePrimaryEffects).ToArray(), room.ExternalInteractions, context)).ToArray(), source.Movement, source.EnemySlotsPerRoom, context);
+                room.Units.Select(RestorePrimaryEffects).ToArray(), room.ExternalInteractions, context, room.Preview,
+                room.ActiveCompanionBossIds)).ToArray(), source.Movement, source.EnemySlotsPerRoom, context);
             if (originalWorld?.AutomaticLifecycle == true)
             {
                 train = new TrainCombatState(train.Rooms.Select(EnchantmentWorldModel.Refresh).ToArray(), train.Movement, train.EnemySlotsPerRoom, context);

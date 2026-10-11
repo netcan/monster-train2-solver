@@ -17,7 +17,8 @@ namespace MonsterTrain2Poju.Model
             if (!centered.Supported) return Fail(centered.Error!);
             CombatContext centeredContext = state.Context.WithSpawnPoints(centered.State!);
             destination = new RoomCombatState(roomIndex, destination.Deployment,
-                BattleSpawnPointModel.Order(centered.State!, roomIndex, destination.Units), destination.ExternalInteractions, centeredContext);
+                BattleSpawnPointModel.Order(centered.State!, roomIndex, destination.Units), destination.ExternalInteractions,
+                centeredContext, destination.Preview, destination.ActiveCompanionBossIds);
             state = CardSpellModel.WithContext(new TrainCombatState(state.Rooms.Select(room => room.RoomIndex == roomIndex ? destination : room).ToArray(),
                 state.Movement, state.EnemySlotsPerRoom, centeredContext), centeredContext);
             int point = state.Context!.SpawnPoints!.FirstEmpty(roomIndex, CombatTeam.Enemy);
@@ -41,7 +42,8 @@ namespace MonsterTrain2Poju.Model
             if (!physical.Supported) return Fail(physical.Error!);
             CombatContext context = allocated.Context.WithSpawnPoints(physical.State!);
             var entered = new RoomCombatState(roomIndex, destination.Deployment,
-                BattleSpawnPointModel.Order(physical.State, roomIndex, destination.Units.Append(unit).ToArray()), destination.ExternalInteractions, context);
+                BattleSpawnPointModel.Order(physical.State, roomIndex, destination.Units.Append(unit).ToArray()),
+                destination.ExternalInteractions, context, destination.Preview, destination.ActiveCompanionBossIds);
             state = CardSpellModel.WithContext(new TrainCombatState(state.Rooms.Select(room => room.RoomIndex == roomIndex ? entered : room).ToArray(),
                 state.Movement.Append(new EnemyMovement(unitId, 1, definition.Ascends, definition.Loops, definition.CompanionBoss)).ToArray(), state.EnemySlotsPerRoom, context), context);
             RoomCombatResult prepared = RoomCombatModel.PrepareSpawnTriggers(FindRoom()!, unitId, false, unit.StatusRegistry ?? unit.Statuses);

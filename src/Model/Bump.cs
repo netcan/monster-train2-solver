@@ -154,7 +154,8 @@ namespace MonsterTrain2Poju.Model
                     CombatContext context = state.Context.WithSpawnPoints(placed.State!);
                     var rooms = state.Rooms.Select(room => new RoomCombatState(room.RoomIndex, room.Deployment,
                         room.Units.Where(unit => unit.Id != id).Concat(room.RoomIndex == destination.RoomIndex
-                            ? new[] { actor } : Array.Empty<CombatUnit>()).ToArray(), room.ExternalInteractions, context)).ToArray();
+                            ? new[] { actor } : Array.Empty<CombatUnit>()).ToArray(), room.ExternalInteractions, context,
+                        room.Preview, room.ActiveCompanionBossIds)).ToArray();
                     state = CardSpellModel.WithContext(new TrainCombatState(rooms, state.Movement, state.EnemySlotsPerRoom, context), context);
                 }
                 moved.Add((id, old.RoomIndex, destination.RoomIndex, false));
@@ -231,7 +232,8 @@ namespace MonsterTrain2Poju.Model
             {
                 state = new TrainCombatState(state.Rooms.Select(room => new RoomCombatState(room.RoomIndex, room.Deployment,
                     BattleSpawnPointModel.Order(state.Context!.SpawnPoints, room.RoomIndex, room.Units), room.ExternalInteractions,
-                    state.Context)).ToArray(), state.Movement, state.EnemySlotsPerRoom, state.Context);
+                    state.Context, room.Preview, room.ActiveCompanionBossIds)).ToArray(),
+                    state.Movement, state.EnemySlotsPerRoom, state.Context);
             }
             bool Accept(RoomCombatResult result)
             {

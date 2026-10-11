@@ -110,7 +110,8 @@ namespace MonsterTrain2Poju.Model
                 if (status.Stacks <= 0) continue;
                 error = RoomCombatModel.Validate(new RoomCombatState(source.RoomIndex, source.Deployment,
                     new[] { CardSpellModel.Copy(target, target.Health, target.Statuses.Where(item => item.Id != status.Id).Concat(new[] { status }).ToArray()) },
-                    Array.Empty<string>(), source.Context), allowDyingTarget ? targetId : (int?)null);
+                    Array.Empty<string>(), source.Context, source.Preview, source.ActiveCompanionBossIds),
+                    allowDyingTarget ? targetId : (int?)null);
                 if (error != null) return Unsupported(error);
             }
             if (!remove && upgrade.RestrictSizeToRoomCapacity && upgrade.Stats.Size > 0)

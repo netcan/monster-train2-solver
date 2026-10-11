@@ -44,7 +44,7 @@ namespace MonsterTrain2Poju.Model
             CombatUnit changed = RemoveTriggers(added.State!.Units.First(unit => unit.Id == boss.Id));
             RoomCombatState[] rooms = train.Rooms.Select((room, roomIndex) => new RoomCombatState(room.RoomIndex, room.Deployment,
                 roomIndex == index ? added.State.Units.Select(unit => unit.Id == changed.Id ? changed : unit).ToArray() : room.Units,
-                room.ExternalInteractions, added.State.Context, room.Preview)).ToArray();
+                room.ExternalInteractions, added.State.Context, room.Preview, added.State.ActiveCompanionBossIds)).ToArray();
             train = new TrainCombatState(rooms, train.Movement, train.EnemySlotsPerRoom, added.State.Context);
             // AddStatusEffect queues callbacks; the native RemoveDeadCharacters drains
             // them only after RemoveTriggersOnRelentlessChange has removed the gates.

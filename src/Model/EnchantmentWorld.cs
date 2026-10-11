@@ -28,10 +28,11 @@ namespace MonsterTrain2Poju.Model
             AllowUpdates = allowUpdates; Updating = updating; Preview = preview; TestRng = testRng; AutomaticLifecycle = automaticLifecycle;
         }
         private static RoomCombatState Strip(RoomCombatState room) => new RoomCombatState(room.RoomIndex, room.Deployment,
-            room.Units, room.ExternalInteractions, null, room.Preview);
+            room.Units, room.ExternalInteractions, null, room.Preview, room.ActiveCompanionBossIds);
         internal EnchantmentCombatState Frame(CombatContext context) => new EnchantmentCombatState(new TrainCombatState(
             Rooms.Select(room => new RoomCombatState(room.RoomIndex, room.Deployment, room.Units, room.ExternalInteractions,
-                context.WithEnchantments(null), room.Preview)).ToArray(), Movement, EnemySlotsPerRoom, context.WithEnchantments(null)),
+                context.WithEnchantments(null), room.Preview, room.ActiveCompanionBossIds)).ToArray(),
+            Movement, EnemySlotsPerRoom, context.WithEnchantments(null)),
             RetainedUnits, EnchanterIds, AllowUpdates, Updating, Preview, TestRng);
         internal static EnchantmentWorld From(EnchantmentCombatState frame, bool automaticLifecycle = false) => new EnchantmentWorld(frame.Train.Rooms,
             frame.Train.Movement, frame.Train.EnemySlotsPerRoom, frame.RetainedUnits, frame.EnchanterIds,
@@ -47,7 +48,7 @@ namespace MonsterTrain2Poju.Model
             var currentIds = source.Units.Select(unit => unit.Id).ToHashSet();
             var rooms = world.Rooms.Select(room => room.RoomIndex == source.RoomIndex ? source :
                 new RoomCombatState(room.RoomIndex, room.Deployment, room.Units.Where(unit => !currentIds.Contains(unit.Id)).ToArray(),
-                    room.ExternalInteractions, null, room.Preview)).ToArray();
+                    room.ExternalInteractions, null, room.Preview, room.ActiveCompanionBossIds)).ToArray();
             var liveIds = rooms.SelectMany(room => room.Units).Select(unit => unit.Id).ToHashSet();
             var retained = world.RetainedUnits.Where(actor => !liveIds.Contains(actor.Unit.Id)).ToList();
             RoomCombatState? previous = world.Rooms.FirstOrDefault(room => room.RoomIndex == source.RoomIndex);
@@ -187,7 +188,7 @@ namespace MonsterTrain2Poju.Model
                 effect.Enchantment == null ? effect : effect.WithEnchantment(new EnchantmentRule(effect.Enchantment.Targeting,
                     effect.Enchantment.StatusPool, effect.Enchantment.State, true, effect.Enchantment.HasParentCard))).ToArray())).ToArray());
             source = new RoomCombatState(source.RoomIndex, source.Deployment, source.Units.Select(old => old.Id == unitId ? bound : old).ToArray(),
-                source.ExternalInteractions, source.Context, source.Preview);
+                source.ExternalInteractions, source.Context, source.Preview, source.ActiveCompanionBossIds);
             CombatContext context = source.Context!;
             EnchantmentWorld world = context.Enchantments!;
             var changed = new EnchantmentWorld(world.Rooms, world.Movement, world.EnemySlotsPerRoom, world.RetainedUnits,

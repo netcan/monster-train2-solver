@@ -71,7 +71,8 @@ namespace MonsterTrain2Poju.Model
                 context = context.WithCard(original.WithRoomCacheState(visible, changed.RawPlayedRoomUnitIds));
             }
             return new RoomCombatResult(new RoomCombatState(primary.RoomIndex, primary.Deployment, primary.Units,
-                primary.ExternalInteractions, context), RoomOutcome.Exchanged, 0, new List<CombatEvent>());
+                primary.ExternalInteractions, context, primary.Preview, primary.ActiveCompanionBossIds),
+                RoomOutcome.Exchanged, 0, new List<CombatEvent>());
         }
 
         public static HordeMergeResult Merge(RoomCombatState room, int sourceId, int targetId, bool fromBump = false)
@@ -122,7 +123,7 @@ namespace MonsterTrain2Poju.Model
                 if (!added.Supported) return Fail(added.UnsupportedReason!);
                 changedDestination = added.State!;
                 var removalScope = new RoomCombatState(origin.RoomIndex, origin.Deployment, origin.Units,
-                    origin.ExternalInteractions, changedDestination.Context, origin.Preview);
+                    origin.ExternalInteractions, changedDestination.Context, origin.Preview, origin.ActiveCompanionBossIds);
                 result = Remove(removalScope, source, added.PendingCallbacks);
             }
             if (!result.Supported) return Fail(result.Result.UnsupportedReason!);
@@ -153,7 +154,8 @@ namespace MonsterTrain2Poju.Model
                 context = context.WithSpawnPoints(physical.State!);
             }
             CombatUnit[] survivors = state.Units.Where(unit => unit.Id != sourceId).ToArray();
-            state = new RoomCombatState(state.RoomIndex, state.Deployment, survivors, state.ExternalInteractions, context, state.Preview);
+            state = new RoomCombatState(state.RoomIndex, state.Deployment, survivors, state.ExternalInteractions, context,
+                state.Preview, state.ActiveCompanionBossIds);
             if (ownedPoint && !state.Preview)
             {
                 foreach (CombatTeam team in new[] { CombatTeam.Enemy, CombatTeam.Player })
@@ -170,7 +172,8 @@ namespace MonsterTrain2Poju.Model
             foreach (RoomCombatModel.QueuedCharacterTrigger callback in callbacks)
                 if (callback.Unit.Id == sourceId) callback.Unit = removed;
             return new HordeMergeResult(new RoomCombatResult(new RoomCombatState(state.RoomIndex, state.Deployment,
-                BattleSpawnPointModel.Order(context.SpawnPoints, state.RoomIndex, survivors), state.ExternalInteractions, context, state.Preview),
+                BattleSpawnPointModel.Order(context.SpawnPoints, state.RoomIndex, survivors), state.ExternalInteractions,
+                context, state.Preview, state.ActiveCompanionBossIds),
                 RoomOutcome.Exchanged, 0, new List<CombatEvent>(), pendingCallbacks: callbacks, retainedUnits: new[] { removed }), removed);
         }
         private static HordeMergeResult Match(RoomCombatState state, CombatUnit? source) => new HordeMergeResult(

@@ -126,7 +126,8 @@ namespace MonsterTrain2Poju.Model
                     .WithPreviewPrimary(PreviewBirthModel.InitialPrimary(raw, template, spawned.Id, spawnerCardId)));
             if (context.SpawnPoints != null)
             {
-                var scope = new RoomCombatState(source.RoomIndex, source.Deployment, positionActors ?? source.Units, source.ExternalInteractions, context, source.Preview);
+                var scope = new RoomCombatState(source.RoomIndex, source.Deployment, positionActors ?? source.Units,
+                    source.ExternalInteractions, context, source.Preview, source.ActiveCompanionBossIds);
                 var physical = BattleSpawnPointModel.Birth(context.SpawnPoints, scope, spawned, position, shift: selectedSlot);
                 if (!physical.Supported) return Unsupported(physical.Error!);
                 context = context.WithSpawnPoints(physical.State!);
@@ -136,7 +137,8 @@ namespace MonsterTrain2Poju.Model
             else players.Insert(position, spawned);
             if (!source.Preview) context = context.WithStatistics(context.Statistics?.Spawn(source.RoomIndex, template.Subtypes));
             var entered = new RoomCombatState(source.RoomIndex, source.Deployment,
-                source.Units.Where(unit => unit.Team == CombatTeam.Enemy).Concat(players).ToArray(), source.ExternalInteractions, context, source.Preview);
+                source.Units.Where(unit => unit.Team == CombatTeam.Enemy).Concat(players).ToArray(), source.ExternalInteractions,
+                context, source.Preview, source.ActiveCompanionBossIds);
             RoomCombatResult result = drainBirthQueue == null ?
                 RoomCombatModel.ApplySpawnTriggers(entered, spawned.Id, spawnerCardId > 0, starting, enqueue,
                     additionalStatus: cardStatus) :
@@ -166,7 +168,8 @@ namespace MonsterTrain2Poju.Model
                 CombatContext current = result.State!.Context!;
                 if (current.LastSpawnedUnitId.HasValue && result.State.Units.Any(unit => unit.Id == spawned.Id && unit.Health > 0))
                     result = new RoomCombatResult(new RoomCombatState(source.RoomIndex, source.Deployment, result.State.Units,
-                        source.ExternalInteractions, current.WithLastSpawned(spawned.Id), source.Preview), outcome, 0, new List<CombatEvent>());
+                        source.ExternalInteractions, current.WithLastSpawned(spawned.Id), source.Preview,
+                        result.State.ActiveCompanionBossIds), outcome, 0, new List<CombatEvent>());
             }
             var queue = result.State!.Units.Where(unit => unit.Team == CombatTeam.Player)
                 .Select(unit => new RoomCombatModel.QueuedCharacterTrigger(source.RoomIndex, unit, "AfterSpawnEnchant")).ToList();
@@ -193,7 +196,8 @@ namespace MonsterTrain2Poju.Model
             if (!drained) return new UnitBirthResult(result);
             RoomCombatState final = result.State!;
             final = new RoomCombatState(final.RoomIndex, final.Deployment, final.Units.Select(unit => unit.Id == spawned.Id
-                ? HordeStatusModel.WithSpawning(unit, false) : unit).ToArray(), final.ExternalInteractions, final.Context, final.Preview);
+                ? HordeStatusModel.WithSpawning(unit, false) : unit).ToArray(), final.ExternalInteractions, final.Context,
+                final.Preview, final.ActiveCompanionBossIds);
             final = EnchantmentWorldModel.Sync(final);
             return new UnitBirthResult(new RoomCombatResult(final, outcome, 0, events), spawned.Id);
         }
@@ -229,7 +233,8 @@ namespace MonsterTrain2Poju.Model
                     CardGenerationResult clone = CardGenerationModel.CloneDetached(state.Context!, rule.Creation, cardId);
                     if (!clone.Supported) return Unsupported(clone.UnsupportedReason!);
                     sourceId = clone.AddedCards.Single().InstanceId;
-                    state = new RoomCombatState(state.RoomIndex, state.Deployment, state.Units, state.ExternalInteractions, clone.Context, state.Preview);
+                    state = new RoomCombatState(state.RoomIndex, state.Deployment, state.Units, state.ExternalInteractions,
+                        clone.Context, state.Preview, state.ActiveCompanionBossIds);
                 }
                 // Native selection uses the capped total, before the insertion-index loop limit.
                 UnitSummonChoice? selected = null;
@@ -238,7 +243,7 @@ namespace MonsterTrain2Poju.Model
                     RngDraw draw = state.Context!.BattleRng.Range(0, rule.Pool.Count);
                     selected = rule.Pool[draw.Value];
                     state = new RoomCombatState(state.RoomIndex, state.Deployment, state.Units, state.ExternalInteractions,
-                        state.Context.WithBattleRng(draw.State), state.Preview);
+                        state.Context.WithBattleRng(draw.State), state.Preview, state.ActiveCompanionBossIds);
                 }
                 if (rule.Additional != null && index >= count / 2) selected = rule.Additional;
                 if (rule.IgnoreCardUpgrades)
@@ -250,7 +255,8 @@ namespace MonsterTrain2Poju.Model
                         CardGenerationResult created = CardGenerationModel.CreateDetached(state.Context!, fallback);
                         if (!created.Supported) return Unsupported(created.UnsupportedReason!);
                         sourceId = created.AddedCards.Single().InstanceId;
-                        state = new RoomCombatState(state.RoomIndex, state.Deployment, state.Units, state.ExternalInteractions, created.Context, state.Preview);
+                        state = new RoomCombatState(state.RoomIndex, state.Deployment, state.Units, state.ExternalInteractions,
+                            created.Context, state.Preview, state.ActiveCompanionBossIds);
                     }
                 }
                 UnitBirthResult born = UnitBirthModel.Spawn(state, selected == null ? definition : definition.WithSpawn(selected.Unit),
@@ -293,7 +299,8 @@ namespace MonsterTrain2Poju.Model
             CardInstanceState card = applied.State!.Context!.FindCard(spawnerCardId)!;
             var changed = card.WithModifiers(card.Permanent, UnitModifierModel.Add(card.Temporary, upgrade));
             var state = new RoomCombatState(applied.State.RoomIndex, applied.State.Deployment, applied.State.Units,
-                applied.State.ExternalInteractions, applied.State.Context.WithCard(changed), applied.State.Preview);
+                applied.State.ExternalInteractions, applied.State.Context.WithCard(changed), applied.State.Preview,
+                applied.State.ActiveCompanionBossIds);
             return new RoomCombatResult(state, applied.Outcome, applied.Rounds, applied.Events.ToList(),
                 applied.UnsupportedReason, applied.PendingCallbacks, applied.RetainedUnits, applied.Dispatches);
         }

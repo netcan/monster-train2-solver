@@ -126,7 +126,8 @@ namespace MonsterTrain2Poju.Model
                 CombatContext context = state.Context.WithSpawnPoints(centered.State!);
                 CombatUnit[] players = BattleSpawnPointModel.Order(centered.State!, roomIndex, room.Units.Where(unit => unit.Team == CombatTeam.Player).ToArray()).ToArray();
                 var frame = new RoomCombatState(roomIndex, room.Deployment,
-                    room.Units.Where(unit => unit.Team == CombatTeam.Enemy).Concat(players).ToArray(), room.ExternalInteractions, context);
+                    room.Units.Where(unit => unit.Team == CombatTeam.Enemy).Concat(players).ToArray(),
+                    room.ExternalInteractions, context, room.Preview, room.ActiveCompanionBossIds);
                 state = CardSpellModel.WithContext(new TrainCombatState(state.Rooms.Select(item => item.RoomIndex == roomIndex ? frame : item).ToArray(),
                     state.Movement, state.EnemySlotsPerRoom, context), context);
             }
