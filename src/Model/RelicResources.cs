@@ -22,16 +22,18 @@ namespace MonsterTrain2Poju.Model
         public IReadOnlyList<int> UpgradeHealth { get; }
         public IReadOnlyList<string> MutatorIds { get; }
         public float GoldRewardMultiplier { get; }
+        public int? BaseFloorCapacity { get; }
         public BattleResourceState(int baseEnergy, int deploymentExtraEnergy, int baseDraw, int maxEnergy, int maxHandSize,
             string pyreDataId, int pyreBaseAttack, int basePyreMaxHealth, int pyrePersistentDamage, int pyreModifiedBaseAttack,
             IReadOnlyList<int> upgradeAttack, IReadOnlyList<int> upgradeHealth, IReadOnlyList<string> mutatorIds,
-            float goldRewardMultiplier = 1f)
+            float goldRewardMultiplier = 1f, int? baseFloorCapacity = null)
         {
             BaseEnergy = baseEnergy; DeploymentExtraEnergy = deploymentExtraEnergy; BaseDraw = baseDraw;
             MaxEnergy = maxEnergy; MaxHandSize = maxHandSize; PyreDataId = pyreDataId; PyreBaseAttack = pyreBaseAttack;
             BasePyreMaxHealth = basePyreMaxHealth; PyrePersistentDamage = pyrePersistentDamage;
             PyreModifiedBaseAttack = pyreModifiedBaseAttack;
             GoldRewardMultiplier = goldRewardMultiplier;
+            BaseFloorCapacity = baseFloorCapacity;
             UpgradeAttack = Array.AsReadOnly(upgradeAttack.ToArray()); UpgradeHealth = Array.AsReadOnly(upgradeHealth.ToArray());
             MutatorIds = Array.AsReadOnly(mutatorIds.ToArray());
         }
@@ -49,18 +51,22 @@ namespace MonsterTrain2Poju.Model
         public IReadOnlyList<RelicConditionState> Conditions { get; }
         public float? DrawValue { get; }
         public int? DrawMutationOrder { get; }
+        public float? CapacityValue { get; }
+        public int? CapacityMutationOrder { get; }
         public RelicResourceEffect(int effectIndex, string type, int paramInt, int paramInt2, int amount,
             bool canApplyInPreviewMode, string? requiredMutatorId = null, IReadOnlyList<RelicConditionState>? conditions = null,
-            float? drawValue = null, int? drawMutationOrder = null)
+            float? drawValue = null, int? drawMutationOrder = null,
+            float? capacityValue = null, int? capacityMutationOrder = null)
         {
             EffectIndex = effectIndex; Type = type; ParamInt = paramInt; ParamInt2 = paramInt2; Amount = amount;
             CanApplyInPreviewMode = canApplyInPreviewMode; RequiredMutatorId = requiredMutatorId;
             Conditions = Array.AsReadOnly((conditions ?? Array.Empty<RelicConditionState>()).ToArray());
             DrawValue = drawValue; DrawMutationOrder = drawMutationOrder;
+            CapacityValue = capacityValue; CapacityMutationOrder = capacityMutationOrder;
         }
         internal RelicResourceEffect WithConditions(IReadOnlyList<RelicConditionState> conditions) =>
             new RelicResourceEffect(EffectIndex, Type, ParamInt, ParamInt2, Amount, CanApplyInPreviewMode,
-                RequiredMutatorId, conditions, DrawValue, DrawMutationOrder);
+                RequiredMutatorId, conditions, DrawValue, DrawMutationOrder, CapacityValue, CapacityMutationOrder);
     }
 
     public sealed class RelicResourceEvent
@@ -105,8 +111,9 @@ namespace MonsterTrain2Poju.Model
         public const string Draw = "RelicEffectChangeStartingHandSize";
         public const string PyreAttack = "RelicEffectIncreasePyreAttack";
         public const string PyreHealth = "RelicEffectIncreasePyreHealth";
+        public const string FloorCapacity = "RelicEffectChangeFloorCapacity";
         public static bool IsEffect(string type) => type == Energy || type == DeploymentEnergy || type == Draw ||
-            type == PyreAttack || type == PyreHealth;
+            type == PyreAttack || type == PyreHealth || type == FloorCapacity;
 
         internal static string? Validate(CombatRelicState relic)
         {
@@ -129,7 +136,15 @@ namespace MonsterTrain2Poju.Model
                 }
                 else if (rule.DrawValue.HasValue || rule.DrawMutationOrder.HasValue)
                     return "Unexpected native draw metadata on a different resource effect.";
-                if ((rule.Type == Energy || rule.Type == DeploymentEnergy || rule.Type == Draw) && rule.RequiredMutatorId != null)
+                if (rule.Type == FloorCapacity)
+                {
+                    if (!rule.CapacityValue.HasValue || rule.CapacityValue.Value != (float)rule.ParamInt ||
+                        !TryRound(rule.CapacityValue.Value, out int rounded) || rounded != rule.Amount || rule.CapacityMutationOrder < 0)
+                        return "Missing or inconsistent native float floor capacity mutation metadata.";
+                }
+                else if (rule.CapacityValue.HasValue || rule.CapacityMutationOrder.HasValue)
+                    return "Unexpected native floor capacity metadata on a different resource effect.";
+                if ((rule.Type == Energy || rule.Type == DeploymentEnergy || rule.Type == Draw || rule.Type == FloorCapacity) && rule.RequiredMutatorId != null)
                     return "Unexpected required mutator on a resource effect without that native gate.";
                 if ((rule.Type == Energy || rule.Type == DeploymentEnergy || rule.Type == PyreAttack || rule.Type == PyreHealth) &&
                     !relic.DisallowedInPlacementPhase.HasValue)
@@ -149,6 +164,7 @@ namespace MonsterTrain2Poju.Model
                 context.EnergyState?.Maximum != raw.MaxEnergy || float.IsNaN(raw.GoldRewardMultiplier) || float.IsInfinity(raw.GoldRewardMultiplier))
                 return "Invalid or inconsistent raw native resource inputs.";
             var orders = new List<int>();
+            var capacityOrders = new List<int>();
             foreach (CombatRelicState relic in context.Relics)
             {
                 string? error = Validate(relic);
@@ -156,6 +172,11 @@ namespace MonsterTrain2Poju.Model
                 foreach (RelicResourceEffect rule in relic.ResourceEffects ?? Array.Empty<RelicResourceEffect>())
                 {
                     if (rule.DrawMutationOrder.HasValue) orders.Add(rule.DrawMutationOrder.Value);
+                    if (rule.Type == FloorCapacity)
+                    {
+                        if (!raw.BaseFloorCapacity.HasValue) return "Missing raw native base floor capacity.";
+                        if (rule.CapacityMutationOrder.HasValue) capacityOrders.Add(rule.CapacityMutationOrder.Value);
+                    }
                     if (rule.Type == PyreAttack || rule.Type == PyreHealth)
                     {
                         IReadOnlyList<int> table = rule.Type == PyreAttack ? raw.UpgradeAttack : raw.UpgradeHealth;
@@ -164,7 +185,8 @@ namespace MonsterTrain2Poju.Model
                     }
                 }
             }
-            return orders.Distinct().Count() != orders.Count ? "Duplicate native draw mutation registration order." : null;
+            if (orders.Distinct().Count() != orders.Count) return "Duplicate native draw mutation registration order.";
+            return capacityOrders.Distinct().Count() != capacityOrders.Count ? "Duplicate native floor capacity mutation registration order." : null;
         }
 
         private static string? Ready(CombatContext source) => RelicModel.Validate(source) ??

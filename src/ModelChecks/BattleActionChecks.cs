@@ -308,6 +308,8 @@ internal static class BattleActionChecks
             chooser = OriginalResourceRelicBatchChecks.Choose;
         else if (fixture.TryGetProperty("ModifierScenario", out var pyreResourceScenario) && pyreResourceScenario.GetString() == "pyre-resource-refresh")
             chooser = PyreResourceRefreshChecks.Choose;
+        else if (fixture.TryGetProperty("ModifierScenario", out var capacityRelicScenario) && capacityRelicScenario.GetString() == "original-floor-capacity-relics")
+            chooser = OriginalFloorCapacityRelicChecks.Choose;
         if (fixture.TryGetProperty("ModifierScenario", out var summonScenario) && summonScenario.GetString()?.StartsWith("multi-summon", StringComparison.Ordinal) == true)
             chooser = BattleActionModel.ChooseMultiSummonThenCards;
         if (fixture.TryGetProperty("ModifierScenario", out var abilityScenario) &&

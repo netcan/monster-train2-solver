@@ -1,7 +1,7 @@
 # Original relic coverage evidence
 
-As of 2026-10-11, **50 distinct original collectable relics / 224 catalog entries
-(22.32%)** have accepted native full-battle evidence. This counts unchanged relic
+As of 2026-10-11, **55 distinct original collectable relics / 224 catalog entries
+(24.55%)** have accepted native full-battle evidence. This counts unchanged relic
 definitions whose effects actually ran, including their original filters and
 conditions. Test cards, unit triggers and carrier subtypes may be authored to
 exercise those effects; the claim covers the recorded paths, not every possible
@@ -14,15 +14,15 @@ five now have accepted original-owner evidence. Both catalog owners of
 Rage and Frostbite consumers. Unknown status families and other effects on the
 remaining owners still require modeling and native proof.
 
-All 14 source archives below report game `2.2.1`, module MVID
+All 15 source archives below report game `2.2.1`, module MVID
 `8fb07b96-f4db-4d2b-884d-c00536d6ccf4`, `NativeWon=true`, and zero
 `CaptureFailures`, `Mismatches`, `Unsupported` and `Pending`. Archive provenance,
 byte lengths and SHA-256 hashes are recorded in [manifest.tsv](manifest.tsv).
-The Pyre refresh batch passes strict native acceptance, complete-fixture checks,
-independent full-battle replay and five directly affected old-fixture regressions.
-The accepted inventory is 221 archives: 190 battles and 31 component
-calibrations. All 221 archive names, byte lengths and SHA-256 hashes match the
-manifest and curated list, with no JSON companions. A full 221-archive replay remains
+The floor-capacity batch passes strict native acceptance, complete-fixture checks,
+independent full-battle replay and six directly affected old-fixture regressions.
+The accepted inventory is 222 archives: 191 battles and 31 component
+calibrations. All 222 archive names, byte lengths and SHA-256 hashes match the
+manifest and curated list, with no JSON companions. A full 222-archive replay remains
 deferred to a milestone.
 
 | AssetKey | DataId | Accepted archive | Actual effect witness |
@@ -77,9 +77,14 @@ deferred to a milestone.
 | `BossIncreaseTurnDraw` | `f9cc17ee-b7e5-45de-a02f-bd271e2dcd1a` | [Pyre refresh relics][pyreRefresh] | All three original effects have positive witnesses: six real draw8 → draw7 owner ablations, one acquisition +20 HP/max and six actual Pyre combat attack witnesses for its table-index-0 +30 attack. Thirteen combined witnesses. |
 | `BossIncreaseTurnDrawDH` | `401f30f6-6206-4c1c-b014-a8047c01597e` | [Pyre refresh relics][pyreRefresh] | All three original effects have positive witnesses: six real draw8 → draw7 owner ablations, acquisition +20 HP/max and six Pyre combat witnesses for table-index-1 +55 attack. Thirteen combined witnesses retain native upgrade/status history. |
 | `BossIncreaseTurnDraw2` | `341001b3-3fa9-47a5-9d88-eb04390b82fa` | [Pyre refresh relics][pyreRefresh] | All three original effects have positive witnesses: six real +1 draw applications, acquisition +20 HP/max and six actual combat witnesses for table-index-1 +55 attack. Thirteen combined witnesses; catalog Int10/30 are not substituted for initialized lookup amounts. |
+| `PurgeChampionReward` | `be25af24-9516-4ed2-9cf1-c756a381a928` | [floor capacity relics][floorCapacity] | All four original effects have positive witnesses: +1 ordinary/deployment Ember, +1 draw and +2 floor capacity. Six real energy callbacks, four draw6 applications and a capacity-15 native room; removing only this relic reduces a new room to 13. |
+| `BossCapacity` | `9291142a-dc6f-4834-89f1-ceda778e06ec` | [floor capacity relics][floorCapacity] | All three original effects have positive witnesses: +2 capacity and its initialized Pyre health/attack table entry. Removing only this relic reduces a new room from 15 to 13. |
+| `BossCapacity2` | `2d313e11-aa80-4116-b359-7560d3307544` | [floor capacity relics][floorCapacity] | All three original effects have positive witnesses: +2 capacity and its initialized Pyre health/attack table entry. Removing only this relic reduces a new room from 15 to 13. |
+| `BossCapacityDH` | `f7b0c251-7f96-4115-897a-d5b4a40a36ef` | [floor capacity relics][floorCapacity] | All three original effects have positive witnesses: +2 capacity and its initialized Pyre health/attack table entry. Removing only this relic reduces a new room from 15 to 13. |
+| `SilverIncreasedCapacity` | `aab4971f-05c6-430a-8a6a-dfb654a41b0c` | [floor capacity relics][floorCapacity] | Its original +2 capacity effect has positive native query and owner-removal witnesses; the full room fits sizes 6+6 and rejects the next size-2 summon. |
 
 Record indices above are zero-based. Full-battle acceptance and independent
-effect checks are documented in [README.md](README.md); the table's 14 source
+effect checks are documented in [README.md](README.md); the table's 15 source
 archives contain these observed battle sizes:
 
 | Archive | Schema | Card plays | EndTurns | Matched stages | Independent relic observations |
@@ -98,6 +103,7 @@ archives contain these observed battle sizes:
 | [original decay relics][decays] | 116 | 21 | 5 | 42 | 16 matrix, 11 live and ten preview decay queries; 239 stack queries; two positive original effects |
 | [original resource relics][resources] | 117 | 42 | 7 | 50 | Eight real acquisitions, 48 native energy bodies, six empty-hand draw8 applications and six positive Pyre combat stages; all 20 original effects |
 | [Pyre refresh relics][pyreRefresh] | 118 | 1 | 7 | 50 | Three real acquisitions, six actual draw8 applications, Gold0/+5/-5 and two nested refreshes with three notifications each, six positive Pyre combat stages; all nine original effects |
+| [floor capacity relics][floorCapacity] | 119 | 26 | 5 | 51 | Five real acquisitions, all 14 original effects, 21 capacity queries, four room initializations, capacity 15 and legal 6/6/2/1 native deployment |
 
 The checks that enforce these observations are
 [TriggerCountChecks.Native](../../src/ModelChecks/TriggerCountChecks.cs),
@@ -111,7 +117,8 @@ The checks that enforce these observations are
 [OriginalLifecycleRelicBatchChecks.Native](../../src/ModelChecks/OriginalLifecycleRelicBatchChecks.cs),
 [OriginalDecayRelicBatchChecks.Native](../../src/ModelChecks/OriginalDecayRelicBatchChecks.cs),
 [OriginalResourceRelicBatchChecks.Native](../../src/ModelChecks/OriginalResourceRelicBatchChecks.cs),
-and [PyreResourceRefreshChecks.Native](../../src/ModelChecks/PyreResourceRefreshChecks.cs).
+[PyreResourceRefreshChecks.Native](../../src/ModelChecks/PyreResourceRefreshChecks.cs),
+and [OriginalFloorCapacityRelicChecks.Native](../../src/ModelChecks/OriginalFloorCapacityRelicChecks.cs).
 Each new trigger archive has eight positive owner effects; their union covers
 all nine distinct originals. Removing only one original's installed callbacks
 must change health, attack, membership or status stacks, beyond trigger metadata.
@@ -233,3 +240,5 @@ include the starter-cost, cardless or four-artifact batch evidence above.
 [decays]: full-battle-original-decay-relics.mt2f
 [resources]: full-battle-original-resource-relics.mt2f
 [pyreRefresh]: full-battle-pyre-resource-refresh.mt2f
+[floorCapacity]: full-battle-original-floor-capacity-relics.mt2f
+[floorCapacity]: full-battle-original-floor-capacity-relics.mt2f

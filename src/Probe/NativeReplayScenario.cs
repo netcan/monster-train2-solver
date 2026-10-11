@@ -250,6 +250,8 @@ namespace MonsterTrain2Poju.Probe
                         OriginalResourceRelicBatchScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && PyreResourceRefreshScenario.Enabled && !PyreResourceRefreshScenario.Prepared)
                         PyreResourceRefreshScenario.AcquireBeforeBattle(managers!, log);
+                    if (fullBattle && OriginalFloorCapacityRelicScenario.Enabled && !OriginalFloorCapacityRelicScenario.Prepared)
+                        OriginalFloorCapacityRelicScenario.AcquireBeforeBattle(managers!, log);
                     ReplayManager.TryClickButton(node);
                 }
                 return;
@@ -415,6 +417,13 @@ namespace MonsterTrain2Poju.Probe
                 return;
             }
             string? modifierScenario = Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS");
+            if (fullBattle && !numericModifiersPrepared && OriginalFloorCapacityRelicScenario.Enabled)
+            {
+                if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Floor capacity originals must start on deployment turn.");
+                OriginalFloorCapacityRelicScenario.Prepare(managers, log);
+                numericModifiersPrepared = true;
+                return;
+            }
             if (fullBattle && !numericModifiersPrepared && PyreResourceRefreshScenario.Enabled)
             {
                 if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Pyre resource refresh must start on deployment turn.");
@@ -827,6 +836,7 @@ namespace MonsterTrain2Poju.Probe
                 if (OriginalDecayRelicBatchScenario.Enabled) pendingPlay = OriginalDecayRelicBatchScenario.Choose(decision);
                 if (OriginalResourceRelicBatchScenario.Enabled) pendingPlay = OriginalResourceRelicBatchScenario.Choose(decision);
                 if (PyreResourceRefreshScenario.Enabled) pendingPlay = PyreResourceRefreshScenario.Choose(decision);
+                if (OriginalFloorCapacityRelicScenario.Enabled) pendingPlay = OriginalFloorCapacityRelicScenario.Choose(decision);
                 if (modifierScenario == "rally-lethal") pendingPlay = LethalRallyScenario.ChooseNativeBossSummon(managers) ?? pendingPlay;
                 if (modifierScenario == "incant" || modifierScenario == "incant-thresholds" || (modifierScenario == "incant-relic" || modifierScenario == "incant-relic-combined")) pendingPlay = BattleActionModel.ChooseEmptySpellThenCards(decision);
                 if (modifierScenario.StartsWith("multi-summon", StringComparison.Ordinal)) pendingPlay = MultiSummonScenario.Choose(managers) ?? pendingPlay;

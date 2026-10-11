@@ -26,6 +26,7 @@ namespace MonsterTrain2Poju.Probe
             public int Turn { get; set; }
             public bool Preview { get; set; }
             public int Gold { get; set; }
+            public int Capacity { get; set; }
         }
 
         internal sealed class Operation
@@ -51,7 +52,7 @@ namespace MonsterTrain2Poju.Probe
 
         internal static BattleResourceState? CaptureResources(AllGameManagers managers)
         {
-            if (!OriginalResourceRelicBatchScenario.Enabled && !PyreResourceRefreshScenario.Enabled &&
+            if (!OriginalResourceRelicBatchScenario.Enabled && !PyreResourceRefreshScenario.Enabled && !OriginalFloorCapacityRelicScenario.Enabled &&
                 !Current(managers).Any(relic => relic.GetEffects().Any(effect => RelicResourceModel.IsEffect(effect.GetType().Name))))
                 return null;
             SaveManager save = managers.GetSaveManager();
@@ -69,7 +70,8 @@ namespace MonsterTrain2Poju.Probe
                 ((int[])AccessTools.Field(typeof(PyreHeartData), "upgradeHP").GetValue(pyre)).ToArray(),
                 rawSave.GetMutatorIDs().ToArray(),
                 ((MutableRules)AccessTools.Field(typeof(SaveManager), "mutableRules").GetValue(save))
-                    .GetRule(MutableRules.Condition.GoldRewardMultiplier, 1f));
+                    .GetRule(MutableRules.Condition.GoldRewardMultiplier, 1f),
+                baseFloorCapacity: balance.GetCharacterCapacityPerFloor());
         }
 
         internal static RelicResourceEffect Definition(IRelicEffect effect, int index, AllGameManagers managers)
@@ -79,6 +81,8 @@ namespace MonsterTrain2Poju.Probe
             int amount;
             float? value = null;
             int? registration = null;
+            float? capacityValue = null;
+            int? capacityRegistration = null;
             MutatorData? required = null;
             if (effect is RelicEffectChangeStartingHandSize draw)
             {
@@ -96,6 +100,22 @@ namespace MonsterTrain2Poju.Probe
                     }
                 }
             }
+            else if (effect is RelicEffectChangeFloorCapacity capacity)
+            {
+                capacityValue = capacity.Value;
+                amount = UnityEngine.Mathf.RoundToInt(capacity.Value);
+                var rules = (MutableRules?)AccessTools.Field(typeof(SaveManager), "mutableRules").GetValue(managers.GetSaveManager());
+                if (rules != null)
+                {
+                    var map = (Dictionary<MutableRules.Condition, List<IBalanceEditingRelicEffect>>)
+                        AccessTools.Field(typeof(MutableRules), "ruleMap").GetValue(rules);
+                    if (map.TryGetValue(MutableRules.Condition.AdditionalCharactersPerFloor, out var list))
+                    {
+                        int order = list.FindIndex(item => ReferenceEquals(item, effect));
+                        if (order >= 0) capacityRegistration = order;
+                    }
+                }
+            }
             else if (effect is RelicEffectIncreasePyreAttack || effect is RelicEffectIncreasePyreHealth)
             {
                 amount = (int)AccessTools.Field(effect.GetType(), effect is RelicEffectIncreasePyreAttack ? "_attackAmount" : "_healthAmount").GetValue(effect);
@@ -104,10 +124,11 @@ namespace MonsterTrain2Poju.Probe
             else
                 amount = (int)AccessTools.Field(effect.GetType(), "energyChange").GetValue(effect);
             return new RelicResourceEffect(index, type, data.GetParamInt(), data.GetParamInt2(), amount,
-                effect.CanApplyInPreviewMode, required?.GetID(), RelicCardModifierProbe.Conditions(effect), value, registration);
+                effect.CanApplyInPreviewMode, required?.GetID(), RelicCardModifierProbe.Conditions(effect), value, registration,
+                capacityValue, capacityRegistration);
         }
 
-        private static ResourceSnapshot Capture()
+        internal static ResourceSnapshot Capture()
         {
             AllGameManagers managers = AllGameManagers.Instance!;
             SaveManager save = managers.GetSaveManager();
@@ -120,7 +141,7 @@ namespace MonsterTrain2Poju.Probe
                 EnergyModification = managers.GetRelicManager().GetEnergyPerTurnModification(),
                 DeploymentModification = managers.GetRelicManager().GetEnergyPerDeploymentPhaseModification(),
                 Phase = combat?.GetCombatPhase().ToString() ?? "UNUSED", Turn = combat?.GetTurnCount() ?? 0,
-                Preview = save.PreviewMode, Gold = save.GetGold()
+                Preview = save.PreviewMode, Gold = save.GetGold(), Capacity = save.GetCharacterCapacityPerFloor()
             };
         }
 
@@ -154,7 +175,8 @@ namespace MonsterTrain2Poju.Probe
             {
                 __state = null;
                 if (!(OriginalResourceRelicBatchScenario.Enabled && OriginalResourceRelicBatchScenario.Artifacts.Any(item => item.Id == relicData.GetID())) &&
-                    !(PyreResourceRefreshScenario.Enabled && PyreResourceRefreshScenario.Artifacts.Any(item => item.Id == relicData.GetID()))) return;
+                    !(PyreResourceRefreshScenario.Enabled && PyreResourceRefreshScenario.Artifacts.Any(item => item.Id == relicData.GetID())) &&
+                    !(OriginalFloorCapacityRelicScenario.Enabled && OriginalFloorCapacityRelicScenario.Artifacts.Any(item => item.Id == relicData.GetID()))) return;
                 try
                 {
                     __state = new Operation { Kind = "Acquire", OwnerDataId = relicData.GetID(), Before = Capture() };
@@ -174,14 +196,14 @@ namespace MonsterTrain2Poju.Probe
         private static class EnergyPatch
         {
             private static void Postfix(RelicEffectModifyEnergy __instance, ref IEnumerator __result)
-            { if (OriginalResourceRelicBatchScenario.Prepared || PyreResourceRefreshScenario.Prepared) __result = WrapEnergy(__result, __instance, false); }
+            { if (OriginalResourceRelicBatchScenario.Prepared || PyreResourceRefreshScenario.Prepared || OriginalFloorCapacityRelicScenario.Prepared) __result = WrapEnergy(__result, __instance, false); }
         }
 
         [HarmonyPatch(typeof(RelicEffectModifyEnergyDuringDeployment), nameof(RelicEffectModifyEnergyDuringDeployment.ApplyEffectTurnPhaseTiming))]
         private static class DeploymentPatch
         {
             private static void Postfix(RelicEffectModifyEnergyDuringDeployment __instance, ref IEnumerator __result)
-            { if (OriginalResourceRelicBatchScenario.Prepared || PyreResourceRefreshScenario.Prepared) __result = WrapEnergy(__result, __instance, true); }
+            { if (OriginalResourceRelicBatchScenario.Prepared || PyreResourceRefreshScenario.Prepared || OriginalFloorCapacityRelicScenario.Prepared) __result = WrapEnergy(__result, __instance, true); }
         }
 
         [HarmonyPatch(typeof(RelicManager), nameof(RelicManager.NotifyRelicTriggered))]

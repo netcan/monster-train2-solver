@@ -1,6 +1,21 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
 
+if (args.Length == 1 && args[0] == "--relic-floor-capacity-pure")
+{
+    RelicFloorCapacityChecks.Run();
+    RelicResourceChecks.Run();
+    RoomCapacityChecks.Run();
+    return;
+}
+
+if (args.Length == 2 && args[0] == "--original-floor-capacity-only")
+{
+    using var document = ModelJson.ReadFixture(args[1]);
+    OriginalFloorCapacityRelicChecks.Native(document.RootElement, required: true, replayBattle: true);
+    return;
+}
+
 if (args.Length == 1 && args[0] == "--gold-pyre-pure")
 {
     GoldPyreChecks.Run();
@@ -456,6 +471,7 @@ RelicStatusStackChecks.Run();
 RelicStatusMagnitudeChecks.Run();
 RelicStatusDecayChecks.Run();
 RelicResourceChecks.Run();
+RelicFloorCapacityChecks.Run();
 StatusAttackDamageChecks.Run();
 TypedDrawChecks.Run();
 CardMagicPowerChecks.Run();

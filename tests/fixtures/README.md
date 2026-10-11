@@ -15,7 +15,7 @@ The default command still checks the full curated inventory.
 For routine changes, run only the new and directly affected fixtures with
 `-Fixture`; run the full inventory at completed milestones and before delivery.
 
-Current inventory is 221 archives: 190 accepted battles and 31 component
+Current inventory is 222 archives: 191 accepted battles and 31 component
 calibrations. `full-battle-relic-card-status-upgrades.mt2f` verifies a native
 temporary card status upgrade reaches the unit summoned by that card.
 `full-battle-sacrifice-effects.mt2f` covers native `CardEffectSacrifice` target
@@ -2504,8 +2504,9 @@ the final checker in `.probe-runs/pyre-refresh-acceptance3/`; pure, strict and
 complete focused logs are `pyre-refresh-pure3.log`, `pyre-refresh-strict3.log`
 and `pyre-refresh-full3.log`, all retaining successful terminal exit status.
 
-Inventory is now 221 archives: 190 battles and 31 calibrations. Original relic
-coverage is 50/224 (22.32%) across 14 evidence archives. All 221 archive names,
+At the Pyre-refresh milestone, inventory stood at 221 archives: 190 battles
+and 31 calibrations. Original relic coverage at that milestone was 50/224
+(22.32%) across 14 evidence archives. All 221 archive names,
 byte lengths and SHA-256 hashes match the manifest and curated list, with no
 JSON companions. Nonzero saved modified
 Pyre base attack and unsupported tower room modifiers remain guarded. Gold
@@ -2516,4 +2517,41 @@ card/relic combinations, all Bosses and the optimal solver remain unfinished.
 dotnet run --project src/ModelChecks -c Release -- --gold-pyre-pure
 dotnet run --project src/ModelChecks -c Release -- --pyre-resource-refresh-only tests/fixtures/full-battle-pyre-resource-refresh.mt2f
 & ./scripts/Check-Models.ps1 -Fixture full-battle-pyre-resource-refresh.mt2f
+```
+
+### Original floor capacity relics
+
+`full-battle-original-floor-capacity-relics.mt2f` validates unchanged original
+`PurgeChampionReward`, `BossCapacity`, `BossCapacity2`, `BossCapacityDH` and
+`SilverIncreasedCapacity`. All 14 original effects have positive native
+witnesses: five +2 floor-capacity contributions, PurgeChampionReward's normal
+and deployment energy and draw, and the three Boss relics' indexed Pyre health
+and attack. The recorded room reaches capacity 15 with native size 6/6/2/1
+units; removing any one capacity relic yields 13 in a newly initialized room.
+The 6+6 deployment fits, while the next size-2 unit is rejected; an existing
+room retains its original maximum after relic removal. Native mutation order,
+registration, RNG state, resource queries and room identities are preserved by
+the independent checks. This encounter has no Pyre attack exchange, so the
+Boss attack contributions are verified through native acquisition and Pyre
+birth stats.
+
+The schema-119 Instant battle wins in 76 seconds with 26 card actions, five
+EndTurns and 51 matched combat stages. It has zero capture failures,
+mismatches, unsupported transitions or pending records. Whole-battle and
+mid-battle policy replays each pass 16 immutable parallel branches. The focused
+capacity regression also passes the previous room-capacity, lethal-capacity,
+physical-spawn, physical-spawn-without-cards, typed-draw and Pyre-resource
+fixtures. The full 222-archive replay remains deferred to a milestone.
+
+The binary has no JSON source: 32,376 bytes, 6,658 unique nodes, SHA-256
+`7286230896e2253fe22db88f74dc5d61d51b36e6f9609b81ace026194022e09b`. Native
+sampling used the final model and strict acceptance replays the archived state.
+The inventory is 222 archives (191 battles, 31 calibrations); accepted original
+relic coverage is 55/224 (24.55%) across 15 evidence archives. Broader
+card/relic combinations, unsupported tower room modifiers, all Bosses and the
+optimal solver remain unfinished.
+
+```powershell
+dotnet run --project src/ModelChecks -c Release -- --relic-floor-capacity-pure
+& ./scripts/Check-Models.ps1 -Fixture full-battle-original-floor-capacity-relics.mt2f
 ```

@@ -182,6 +182,8 @@ internal static class RoomCombatChecks
             OriginalResourceRelicBatchChecks.Native(fixture, required: true);
         else if (fixture.TryGetProperty("ModifierScenario", out relicScenario) && relicScenario.GetString() == "pyre-resource-refresh")
             PyreResourceRefreshChecks.Native(fixture, required: true);
+        else if (fixture.TryGetProperty("ModifierScenario", out relicScenario) && relicScenario.GetString() == "original-floor-capacity-relics")
+            OriginalFloorCapacityRelicChecks.Native(fixture, required: true);
         else RelicCardModifierChecks.Native(fixture, requireScenarioCoverage:
             !fixture.TryGetProperty("ModifierScenario", out var integrationScenario) || integrationScenario.GetString() != "typed-draw");
         UnitIdentityChecks.Native(fixture);
