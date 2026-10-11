@@ -116,10 +116,7 @@ internal static class EnergyChecks
             int amount = sample?.Value ?? effect.Value;
             Require(EnergyModel.Validate(before) == null && EnergyModel.Test(before, effect.Type) && amount == record.GetProperty("Amount").GetInt32(),
                 "Native energy gate or quantity differs at " + record.GetProperty("Sequence").GetInt32());
-            var sampled = new CombatContext(before.Cards, sample?.State ?? before.BattleRng, before.Gold, before.NextCardId, before.MaxHandSize,
-                before.StatusRules, before.Statistics, before.CardInstances, before.CardRegistry, before.AllScenarioBossesDead,
-                before.NextAddedTemporaryUpgrades, before.OtherPiles, before.QueryFrame, before.KillCamActivated, before.MagicPower,
-                before.IsolatedBattlePreview, before.EnergyState, before.RoomCapacities, before.AbilityCardCache, before.LastAbilityActivatorUnitId, before.PermanentlyDisabledAbilities);
+            var sampled = before.WithBattleRng(sample?.State ?? before.BattleRng);
             CombatContext predicted = EnergyModel.Apply(sampled, effect.Type, amount);
             string? difference = ModelJson.Difference(JsonSerializer.Serialize(predicted), JsonSerializer.Serialize(after));
             Require(difference == null, "Native energy context differs at " + record.GetProperty("Sequence").GetInt32() + ": " + difference);
