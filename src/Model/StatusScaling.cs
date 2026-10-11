@@ -87,15 +87,18 @@ namespace MonsterTrain2Poju.Model
     public static class StatusApplicationModel
     {
         public static RoomCombatResult Apply(RoomCombatState source, int targetId, CombatStatus added, int sourceCardId = 0,
-            bool overrideImmunity = false, bool allowModification = true)
+            bool overrideImmunity = false, bool allowModification = true, bool fromPermanentUpgrade = false,
+            bool spawnEffect = false, string? fromEffectType = null)
         {
             string? error = RoomCombatModel.Validate(source);
             if (error != null || !RoomCombatModel.KnowsStatus(added.Id)) return Unsupported(error ?? "Unmodeled added status " + added.Id);
-            return ApplyRetained(source, targetId, added, sourceCardId, overrideImmunity, allowModification);
+            return ApplyRetained(source, targetId, added, sourceCardId, overrideImmunity, allowModification,
+                fromPermanentUpgrade: fromPermanentUpgrade, spawnEffect: spawnEffect, fromEffectType: fromEffectType);
         }
         // Trigger effects retain their native actor/target objects, including HP-zero victims.
         internal static RoomCombatResult ApplyRetained(RoomCombatState source, int targetId, CombatStatus added, int sourceCardId,
-            bool overrideImmunity = false, bool allowModification = true, bool suppressHordeSpawnCallbacks = false)
+            bool overrideImmunity = false, bool allowModification = true, bool suppressHordeSpawnCallbacks = false,
+            bool fromPermanentUpgrade = false, bool spawnEffect = false, string? fromEffectType = null)
         {
             CombatUnit? target = source.Units.FirstOrDefault(unit => unit.Id == targetId);
             if (target == null) return Unsupported("Missing status target.");
@@ -108,7 +111,12 @@ namespace MonsterTrain2Poju.Model
                 StatusScalingResult scaled = StatusScalingModel.Apply(context, sourceCardId, target.Team, added.Id, stacks);
                 if (!scaled.Supported) return Unsupported(scaled.UnsupportedReason!);
                 context = scaled.Context; stacks = scaled.Stacks;
+                stacks = RelicStatusStackModel.GetStacks(context?.Relics, added.Id, stacks, target.Team,
+                    target.Status(added.Id)?.Stacks > 0, fromPermanentUpgrade, fromEffectType: fromEffectType);
             }
+            StatusScalingResult notified = RelicStatusStackModel.Notify(context, source.Preview, fromEffectType);
+            if (!notified.Supported) return Unsupported(notified.UnsupportedReason!);
+            context = notified.Context;
             CombatStatus? existing = target.RegisteredStatus(added.Id);
             int old = existing?.Stacks ?? 0;
             int count = Math.Max(0, Math.Min((existing?.Stackable ?? added.Stackable) == false ? 1 : 9999, unchecked(old + stacks)));
@@ -133,6 +141,20 @@ namespace MonsterTrain2Poju.Model
             RoomCombatResult applied = EnchantmentWorldModel.StatusChanged(new RoomCombatResult(new RoomCombatState(source.RoomIndex, source.Deployment,
                 source.Units.Select(unit => unit.Id == targetId ? changed : unit).ToArray(), source.ExternalInteractions, context, source.Preview),
                 RoomOutcome.Exchanged, 0, new List<CombatEvent>(), pendingCallbacks: queue), added.Id, target.Status("dormant") != null, update: true);
+            if (applied.Supported && count > old && fromPermanentUpgrade && !spawnEffect)
+            {
+                int deferred = RelicStatusStackModel.GetStacks(applied.State!.Context?.Relics, added.Id, 0,
+                    target.Team, count > 0, fromPermanentUpgrade: true, deferred: true, fromEffectType: fromEffectType);
+                if (deferred > 0)
+                {
+                    RoomCombatResult extra = ApplyRetained(applied.State, targetId, added.WithStacks(deferred), sourceCardId,
+                        overrideImmunity: overrideImmunity, allowModification: false, fromEffectType: fromEffectType);
+                    if (!extra.Supported) return extra;
+                    applied = new RoomCombatResult(extra.State, extra.Outcome, extra.Rounds,
+                        applied.Events.Concat(extra.Events).ToList(), pendingCallbacks: applied.PendingCallbacks.Concat(extra.PendingCallbacks).ToArray(),
+                        retainedUnits: applied.RetainedUnits.Concat(extra.RetainedUnits).ToArray());
+                }
+            }
             return applied.Supported && added.Id == "purify" ? ClearForPurify(applied, targetId) : applied;
         }
         private static RoomCombatResult ClearForPurify(RoomCombatResult applied, int targetId)

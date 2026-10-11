@@ -218,6 +218,14 @@ namespace MonsterTrain2Poju.Model
                         bool removingStatus = remove || status.Stacks < 0;
                         if (removingStatus && existing == null && target.RegisteredStatus(status.Id) == null) continue;
                         if (!removingStatus && (target.StatusImmunities.Contains(status.Id) || target.Status("immune") != null)) continue;
+                        if (!removingStatus && state.Context?.Relics?.Any(relic => relic.StatusStackAdditions?.Count > 0) == true)
+                        {
+                            RoomCombatResult appliedStatus = StatusApplicationModel.ApplyRetained(Stage(), targetId, status, 0);
+                            if (!appliedStatus.Supported) return appliedStatus;
+                            state = appliedStatus.State!; statusCallbacks.AddRange(appliedStatus.PendingCallbacks);
+                            Refresh(state.Units.Single(unit => unit.Id == targetId));
+                            continue;
+                        }
                         CombatUnit beforeStatus = Snapshot();
                         int maximum = (existing ?? target.RegisteredStatus(status.Id) ?? status).Stackable == false ? 1 : 9999;
                         int oldStacks = existing?.Stacks ?? 0;

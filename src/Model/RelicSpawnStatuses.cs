@@ -166,6 +166,7 @@ namespace MonsterTrain2Poju.Model
                     RelicConditionRecord record = RelicConditionModel.Record(state.Context!, rule.Conditions);
                     if (!record.Supported) return Fail(record.UnsupportedReason!);
                     SetContext(record.Context);
+                    relic = state.Context!.Relics![relicIndex];
                     var rules = relic.SpawnStatuses.ToArray(); rules[ruleIndex] = rule.WithConditions(record.Conditions);
                     relic = relic.WithSpawnStatuses(rules);
                     var relics = state.Context!.Relics!.ToArray(); relics[relicIndex] = relic;

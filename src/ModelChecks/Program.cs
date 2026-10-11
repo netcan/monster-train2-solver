@@ -1,6 +1,19 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
 
+if (args.Length == 1 && args[0] == "--relic-status-stacks-pure")
+{
+    RelicStatusStackChecks.Run();
+    return;
+}
+
+if (args.Length == 2 && args[0] == "--original-status-relics-only")
+{
+    using var document = ModelJson.ReadFixture(args[1]);
+    OriginalStatusRelicBatchChecks.Native(document.RootElement, required: true);
+    return;
+}
+
 if (args.Length == 3 && args[0] == "--original-trigger-relics-combined")
 {
     using var deaths = ModelJson.ReadFixture(args[1]);
@@ -369,6 +382,7 @@ RelicCardlessUpgradeChecks.Run();
 RelicSpawnStatusChecks.Run();
 RelicCharacterTriggerChecks.Run();
 RelicCardModifierChecks.Run();
+RelicStatusStackChecks.Run();
 TypedDrawChecks.Run();
 CardMagicPowerChecks.Run();
 CardExhaustChecks.Run();

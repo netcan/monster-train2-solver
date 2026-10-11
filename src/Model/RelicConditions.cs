@@ -89,6 +89,9 @@ namespace MonsterTrain2Poju.Model
                 if (relic.TriggerAdditions != null)
                     relic = relic.WithTriggerAdditions(relic.TriggerAdditions.Select(rule => rule.WithConditions(
                         rule.Conditions.Select(condition => condition.Reset(duration)).ToArray())).ToArray());
+                if (relic.StatusStackAdditions != null)
+                    relic = relic.WithStatusStackAdditions(relic.StatusStackAdditions.Select(rule => rule.WithConditions(
+                        rule.Conditions.Select(condition => condition.Reset(duration)).ToArray())).ToArray());
                 return relic;
             }).ToArray();
             return context.WithRelics(relics);

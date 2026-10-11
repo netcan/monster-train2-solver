@@ -32,11 +32,20 @@ namespace MonsterTrain2Poju.Probe
                     .Where(item => item.Effect is RelicEffectAddTempUpgrade).Select(item => RelicCardModifierProbe.Definition(item.Effect, item.Index)).ToArray() : null;
                 var triggers = effects.Select((effect, index) => new { Effect = effect, Index = index })
                     .Where(item => item.Effect is RelicEffectAddTrigger).Select(item => AddedTriggers(item.Effect, item.Index)).ToArray();
+                var stackAdditions = effects.Select((effect, index) => new { Effect = effect, Index = index })
+                    .Where(item => item.Effect is RelicEffectAddStatusEffectOnStatusApplied).Select(item => StatusStacks(item.Effect, item.Index)).ToArray();
                 return new CombatRelicState(relic.GetRelicDataID(), relic.GetAssetName(), effects.Select(effect => effect.GetType().Name).ToArray(),
                     statuses.Length == 0 ? null : statuses, relic is CovenantState,
                     relic.DisallowedInPlacementPhase, cardModifiers?.Length > 0 ? cardModifiers : null,
-                    triggers.Length > 0 ? triggers : null);
+                    triggers.Length > 0 ? triggers : null, stackAdditions.Length > 0 ? stackAdditions : null);
             }).ToArray();
+        }
+
+        private static RelicStatusStacks StatusStacks(IRelicEffect effect, int index)
+        {
+            object Field(string name) => AccessTools.Field(effect.GetType(), name).GetValue(effect);
+            return new RelicStatusStacks(index, Field("team").ToString(), (string)Field("statusId"),
+                (int)Field("additionalStacks"), Convert.ToInt32(Field("optionalAddConditions")), RelicCardModifierProbe.Conditions(effect));
         }
 
         private static RelicCharacterTriggers AddedTriggers(IRelicEffect effect, int index)

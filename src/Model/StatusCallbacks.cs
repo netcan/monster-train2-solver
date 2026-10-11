@@ -93,7 +93,7 @@ namespace MonsterTrain2Poju.Model
                 if (status.Stacks <= 0) continue;
                 RoomCombatState scope = inRoom ? initializing : new RoomCombatState(initializing.RoomIndex, initializing.Deployment,
                     initializing.Units.Concat(new[] { current }).ToArray(), initializing.ExternalInteractions, initializing.Context, initializing.Preview);
-                RoomCombatResult added = StatusApplicationModel.ApplyRetained(scope, template.Id, status, 0, allowModification: false);
+                RoomCombatResult added = StatusApplicationModel.ApplyRetained(scope, template.Id, status, 0, spawnEffect: true);
                 if (!added.Supported) return added.UnsupportedReason;
                 initializing = added.State!;
                 current = initializing.Units.FirstOrDefault(unit => unit.Id == template.Id) ??
@@ -105,15 +105,16 @@ namespace MonsterTrain2Poju.Model
             }
             bool horde = applications.Any(status => status.Id == "horde" && status.Stacks > 0);
             bool purify = applications.Any(status => status.Id == "purify" && status.Stacks > 0);
-            if (horde || purify || initializing.Context?.Enchantments != null)
+            bool relicStacks = initializing.Context?.Relics?.Any(relic => relic.StatusStackAdditions?.Count > 0) == true;
+            if (horde || purify || relicStacks || initializing.Context?.Enchantments != null)
             {
                 CombatUnit value = current;
                 var initialized = new CombatUnit(value.Id, value.AssetKey, value.Team, value.BaseAttack, value.Health, value.MaxHealth,
                     value.CanAttack, value.IsPyre, value.EndsBattleOnDeath, value.Statuses, value.Triggers, value.SpawnerCardId, value.Size,
                     template.StatusImmunities, value.Subtypes, value.Modifiers, value.IsBoss, value.LastAttackerId, value.StatusRegistry,
                     value.EquipmentCards, value.NextTriggerId, value.Ability, value.StatusDictionary, value.AbilityRules, value.HordeDefinition, value.IsSpawning, value.SacrificeCardId, value.DeathState, bumpRules: value.BumpRules);
-                if (horde || purify) update?.Invoke(initialized);
-                if (initializing.Context?.Enchantments != null)
+                if (horde || purify || relicStacks) update?.Invoke(initialized);
+                if (relicStacks || initializing.Context?.Enchantments != null)
                 {
                     initializing = EnchantmentWorldModel.Sync(new RoomCombatState(source.RoomIndex, source.Deployment,
                         initializing.Units.Select(unit => unit.Id == template.Id ? initialized : unit).ToArray(),
