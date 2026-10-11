@@ -10,7 +10,7 @@ namespace MonsterTrain2Poju.Probe
     {
         private static EquipmentTriggerDefinition[]? equipmentDefinitions;
         internal static bool HasTriggerCounts(AllGameManagers managers) =>
-            Current(managers).Any(relic => relic.GetEffects().Any(effect => effect is RelicEffectModifyTriggerCount));
+            Current(managers).Any(relic => relic.GetEffects().Any(effect => effect is RelicEffectModifyTriggerCount || effect is RelicEffectAddTrigger));
         private static List<RelicState> Current(AllGameManagers managers)
         {
             var relics = new List<RelicState>();
@@ -30,10 +30,29 @@ namespace MonsterTrain2Poju.Probe
                     .Where(item => item.Effect is RelicEffectAddStatusEffectOnSpawn).Select(item => SpawnStatus(item.Effect, item.Index)).ToArray();
                 var cardModifiers = captureCardModifiers ? effects.Select((effect, index) => new { Effect = effect, Index = index })
                     .Where(item => item.Effect is RelicEffectAddTempUpgrade).Select(item => RelicCardModifierProbe.Definition(item.Effect, item.Index)).ToArray() : null;
+                var triggers = effects.Select((effect, index) => new { Effect = effect, Index = index })
+                    .Where(item => item.Effect is RelicEffectAddTrigger).Select(item => AddedTriggers(item.Effect, item.Index)).ToArray();
                 return new CombatRelicState(relic.GetRelicDataID(), relic.GetAssetName(), effects.Select(effect => effect.GetType().Name).ToArray(),
                     statuses.Length == 0 ? null : statuses, relic is CovenantState,
-                    relic.DisallowedInPlacementPhase, cardModifiers?.Length > 0 ? cardModifiers : null);
+                    relic.DisallowedInPlacementPhase, cardModifiers?.Length > 0 ? cardModifiers : null,
+                    triggers.Length > 0 ? triggers : null);
             }).ToArray();
+        }
+
+        private static RelicCharacterTriggers AddedTriggers(IRelicEffect effect, int index)
+        {
+            object Field(string name) => AccessTools.Field(effect.GetType(), name).GetValue(effect);
+            Team.Type team = (Team.Type)Field("sourceTeam");
+            var subtype = (SubtypeData)Field("characterSubtype");
+            var interactions = new List<string>();
+            var data = (List<CharacterTriggerData>?)Field("triggerDataList");
+            CombatTrigger[] triggers = (data ?? new List<CharacterTriggerData>())
+                .Select(trigger => EnemySpawningProbe.TriggerDefinition(trigger, interactions)).ToArray();
+            return new RelicCharacterTriggers(index, team.HasFlag(Team.Type.Monsters), team.HasFlag(Team.Type.Heroes),
+                triggers, (bool)Field("noCountModifiersAllowed"), subtype?.Key, subtype == null || subtype.IsNone,
+                subtype?.IsPyre == true, ((List<CharacterData>)Field("characterFilter"))
+                    .Select(character => character == null ? "<null>" : character.name).ToArray(),
+                RelicCardModifierProbe.Conditions(effect), interactions);
         }
 
         private static RelicSpawnStatus SpawnStatus(IRelicEffect effect, int index)

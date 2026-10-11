@@ -33,6 +33,18 @@ namespace MonsterTrain2Poju.Probe
         }
         internal static readonly List<Record> Records = new List<Record>();
         private static readonly List<Record> active = new List<Record>();
+        private static int observingBirth;
+        [HarmonyPatch(typeof(CharacterState), nameof(CharacterState.AddTrigger))]
+        private static class TriggerIdentityPatch
+        {
+            private static void Postfix(CharacterState __instance)
+            {
+                // Register after each prepend so IDs reflect creation order, even
+                // when a relic installs several triggers before the next snapshot.
+                if (observingBirth > 0 && !AllGameManagers.Instance!.GetSaveManager().PreviewMode)
+                    FullBattleTrace.Active?.TriggerStates(__instance);
+            }
+        }
         [HarmonyPatch(typeof(RelicManager), nameof(RelicManager.CharacterAdded), new[] { typeof(CharacterState), typeof(CardState), typeof(bool) })]
         private static class AddedPatch
         {
@@ -65,9 +77,11 @@ namespace MonsterTrain2Poju.Probe
                 active.Add(record);
             }
             else predicted = RelicSpawnStatusModel.CharacterAdded(record.Before, record.UnitId, record.FromCardId, covenants);
+            observingBirth++;
             try { while (native.MoveNext()) yield return native.Current; record.Completed = true; }
             finally
             {
+                observingBirth--;
                 (native as IDisposable)?.Dispose(); record.After = trace.Capture(room);
                 if (SpawnStatusRelicScenario.Clones)
                 {

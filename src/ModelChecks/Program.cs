@@ -1,6 +1,21 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
 
+if (args.Length == 3 && args[0] == "--original-trigger-relics-combined")
+{
+    using var deaths = ModelJson.ReadFixture(args[1]);
+    using var shifts = ModelJson.ReadFixture(args[2]);
+    OriginalTriggerRelicBatchChecks.Combined(deaths.RootElement, shifts.RootElement);
+    return;
+}
+
+if (args.Length == 2 && args[0] == "--original-trigger-relics-only")
+{
+    using var document = ModelJson.ReadFixture(args[1]);
+    OriginalTriggerRelicBatchChecks.Native(document.RootElement, required: true);
+    return;
+}
+
 if (args.Length == 1 && args[0] == "--relic-triggers-pure")
 {
     RelicCharacterTriggerChecks.Run();
