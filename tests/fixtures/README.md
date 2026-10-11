@@ -15,7 +15,7 @@ The default command still checks the full curated inventory.
 For routine changes, run only the new and directly affected fixtures with
 `-Fixture`; run the full inventory at completed milestones and before delivery.
 
-Current inventory is 217 archives: 186 accepted battles and 31 component
+Current inventory is 218 archives: 187 accepted battles and 31 component
 calibrations. `full-battle-relic-card-status-upgrades.mt2f` verifies a native
 temporary card status upgrade reaches the unit summoned by that card.
 `full-battle-sacrifice-effects.mt2f` covers native `CardEffectSacrifice` target
@@ -2259,4 +2259,48 @@ room spell power and its cached coefficient have independent native evidence.
 dotnet run --project src/ModelChecks -c Release -- --relic-status-magnitudes-pure
 dotnet run --project src/ModelChecks -c Release -- --original-magnitude-relics-only tests/fixtures/full-battle-original-magnitude-relics.mt2f
 & ./scripts/Check-Models.ps1 -Fixture full-battle-original-magnitude-relics.mt2f
+```
+
+### Original lifecycle trigger relics
+
+`full-battle-original-lifecycle-relics.mt2f` validates five unchanged originals:
+`IncreaseArmorStacks_DH`, `AvariceOnSummon`, `ShroomsGainRegen`,
+`DamageOnGoingDownFloor` and `LifeInsurer`. Two authored Steward carriers
+exercise native unit abilities, the original Shroom filter, natural lethal
+damage and one-stack Undying revival. The Boss, waves, relic definitions,
+payloads and count-exclusion flags remain original.
+
+The Instant native battle takes 104.40 seconds and wins at Pyre 80 after 24
+actions (18 ordinary plays and six abilities), five EndTurns and 35 complete
+combat stages, with zero capture failures, mismatches, unsupported transitions
+or pending records. Complete fixture checks, independent policy replay,
+mid-battle continuation and 16 parallel branches pass. Fourteen complete
+birth/train/queue records include seven enemy gates, three Shroom births and
+four other player subtypes; installation checks pass 32 immutable branches.
+One natural revival and 17 callback phases match complete states and the
+pending Reanimated-before-Death FIFO. Once-listener checks also preserve
+physical lifecycle flags and preview metadata through the existing model.
+
+Removing only each owner's installed callbacks preserves accumulated upgrades,
+raw attack and all other caches. Required future-effect witnesses are 24
+ability Armor, 24 non-unique +5 attack upgrades, 16 Shroom Regen, one front-unit
+Death Armor and one revived-unit Armor witness. Avarice's exact `Plus5Attack`
+upgrade is non-unique and lasts `TemporaryUntilEndOfBattle`; the misleading
+`DamageOnGoingDownFloor` asset actually adds Armor on Death. Focused existing
+revival, equipment-owned-revival and original-trigger-relic regressions pass.
+
+The schema-115 binary archive has no JSON source: 54,584 bytes, 7,977 unique
+nodes, SHA-256
+`a1bdc38ec74d932ab637d65545b3df4f623b3f8b316a533d3112ac0cc1f2cfef`.
+Raw source:
+`.probe-runs/full-battle-units-spells-and-junk-20261011-121109-1646fe31/full-battle.mt2f`.
+All 218 archive names, sizes and hashes match the curated list and manifest.
+The full 218-archive replay remains deferred to a completed milestone.
+Original relic coverage is now 37/224 (16.52%); Mageblade and broader effect
+and Boss coverage remain open.
+
+```powershell
+dotnet run --project src/ModelChecks -c Release -- --relic-lifecycle-pure
+dotnet run --project src/ModelChecks -c Release -- --original-lifecycle-relics-only tests/fixtures/full-battle-original-lifecycle-relics.mt2f
+& ./scripts/Check-Models.ps1 -Fixture full-battle-original-lifecycle-relics.mt2f
 ```

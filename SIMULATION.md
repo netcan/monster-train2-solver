@@ -1,8 +1,8 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-11): 217 binary archives, including 186
+Current accepted inventory (2026-10-11): 218 binary archives, including 187
 full battles and 31 component calibrations. Unchanged original relic evidence
-covers 32/224 catalog entries (14.29%); see
+covers 37/224 catalog entries (16.52%); see
 [the owner evidence table](tests/fixtures/relic-coverage.md). Whole-battle
 coverage and the optimal solver remain in progress.
 
@@ -7874,3 +7874,27 @@ ablations, and verify actual future attack, retaliation and healing differences.
 New/affected fixture regression and archive integrity pass; the full historical
 inventory remains deferred. Details and commands are in
 [the fixture documentation](tests/fixtures/README.md).
+
+### Original ability, death and revival relics
+
+The schema-115 lifecycle archive reuses the existing native-calibrated trigger,
+temporary-upgrade and revival models to validate five unchanged relic owners.
+Authored Shroom and subtype-negative carriers exercise real ability activations
+and one natural Undying revival against the original Boss and waves. Complete
+birth records compare the whole train, pending queues and dispatched callbacks;
+negative team and subtype cases and 32 immutable branches also pass.
+
+The independent simulator finishes the 24-action battle (18 ordinary plays and
+six abilities), five EndTurns and 35 combat stages at Pyre 80. Complete states,
+mid-battle continuation and 16 parallel policy branches match. Removing each
+owner's callbacks and relic state preserves previously accumulated upgrades
+and caches while changing its actual future Armor, attack or Regen effect.
+All five owners have positive witnesses. Native Reanimated and Death callbacks
+retain their FIFO and physical unit identity. The once-listener regression
+also checks the existing model's retained physical flags and preview metadata.
+
+The new complete fixture and three directly affected old battles pass;
+218 binary archives now include 187 full battles and 31 calibrations.
+Original relic coverage is 37/224 (16.52%). This expands verified paths without
+claiming every combination; broader card/effect/Boss coverage and the optimal
+solver remain open. Full-inventory replay remains scheduled for milestones.

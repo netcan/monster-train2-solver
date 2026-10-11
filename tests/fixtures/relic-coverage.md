@@ -1,23 +1,25 @@
 # Original relic coverage evidence
 
-As of 2026-10-11, **32 distinct original collectable relics / 224 catalog entries
-(14.29%)** have accepted native full-battle evidence. This counts unchanged relic
+As of 2026-10-11, **37 distinct original collectable relics / 224 catalog entries
+(16.52%)** have accepted native full-battle evidence. This counts unchanged relic
 definitions whose effects actually ran, including their original filters and
 conditions. Test cards, unit triggers and carrier subtypes may be authored to
 exercise those effects; the claim covers the recorded paths, not every possible
 combination. Catalog enumeration and other owners of a supported effect class
 do not count as validated relics. `RelicEffectAddTrigger` appears on 26 catalog
-entries; nine now have accepted original-owner effect evidence.
+entries; 14 now have accepted original-owner effect evidence.
 `RelicEffectAddStatusEffectOnStatusApplied` appears on eight catalog entries;
 four now have accepted original-owner evidence. Unknown status families and
 other effects on the remaining owners still require modeling and native proof.
 
-All ten archives below report game `2.2.1`, module MVID
+All 11 source archives below report game `2.2.1`, module MVID
 `8fb07b96-f4db-4d2b-884d-c00536d6ccf4`, `NativeWon=true`, and zero
-`CaptureFailures`, `Mismatches`, `Unsupported` and `Pending`. Their current byte
-lengths and SHA-256 hashes were checked against [manifest.tsv](manifest.tsv).
-The newest batch includes native sampling, independent replay and focused
-regression; the older evidence was retained without a new full-inventory run.
+`CaptureFailures`, `Mismatches`, `Unsupported` and `Pending`. All source archives'
+byte lengths and SHA-256 hashes were checked against [manifest.tsv](manifest.tsv).
+The lifecycle batch passes strict native acceptance, independent replay,
+complete-fixture checks and three affected old battle fixtures. All 218 archive
+names, sizes and hashes match the manifest and curated list. The older evidence
+was retained without a new full-inventory replay.
 
 | AssetKey | DataId | Accepted archive | Actual effect witness |
 | --- | --- | --- | --- |
@@ -53,9 +55,14 @@ regression; the older evidence was retained without a new full-inventory run.
 | `IncreaseRageDamage` | `b9bddf11-acaa-40fb-bc40-eee83e478424` | [original magnitude relics][magnitudes] | The unchanged Monsters-team buff magnitude adds 1 attack per future added/removed Rage stack. Removing only this owner preserves captured starting attack history but changes subsequent status attack in 21 action/combat witnesses. |
 | `StrongerSpikes` | `aa94ad34-ee09-464e-89ff-2a2c2867c097` | [original magnitude relics][magnitudes] | The unchanged Monsters-team spikes magnitude adds 1 damage per stack at retaliation. Twelve player-owned Spikes event witnesses deal less real damage after removing only this owner. |
 | `AwokenRegen` | `1fd244de-7d7b-4345-974b-4e5bf287a3df` | [original magnitude relics][magnitudes] | The unchanged Monsters-team regen magnitude adds 1 healing per stack at post-combat. Fourteen player-owned Regen event witnesses restore less actual health after removing only this owner. |
+| `IncreaseArmorStacks_DH` | `c9b18f6f-20d1-4228-bfab-b740609db8dc` | [original lifecycle relics][lifecycles] | Original player OnOwnAbilityActivated adds 3 Armor to player units on its floor. Six real ability activations provide 24 positive unit-state witnesses after removing only this owner's installed callback and context relic. The original exclusion flag keeps fire count 1. |
+| `AvariceOnSummon` | `644749c2-6ee3-4ce6-91ed-420077ee0193` | [original lifecycle relics][lifecycles] | Its actual OnOwnAbilityActivated payload applies original `Plus5Attack` (`069b201b-ee72-4daf-99d8-914d56f1bad5`), non-unique and `TemporaryUntilEndOfBattle`, to player units on its floor. Twenty-four positive witnesses lose future +5 attack gains when only this owner is removed; existing applied upgrades, raw attack and shared ability-card caches remain intact. |
+| `ShroomsGainRegen` | `bbe03be9-dae9-40bb-bb46-ab7553a17bd9` | [original lifecycle relics][lifecycles] | The unchanged Shroom installation and target-subtype filters grant Regen 1 on OnAnyUnitDeathOnFloor. Sixteen positive future Regen witnesses differ under owner removal; three Shroom births accept the trigger, four other player births and seven enemy births reject it. |
+| `DamageOnGoingDownFloor` | `19147050-9859-4cf1-b826-f258f6c48c42` | [original lifecycle relics][lifecycles] | Its actual OnDeath payload adds 5 Armor to FrontInRoom on the player team, with original action value 100. A real Undying death/revival gives the front Shroom Armor 5; removing only this owner loses that gain in one positive witness. |
+| `LifeInsurer` | `c1ae061c-5f95-4f1d-a8f0-6e027636a81e` | [original lifecycle relics][lifecycles] | One natural Undying revival consumes a stack and restores health 0 → 1, then original OnReanimated grants its actor Armor 14. One positive owner ablation loses that Armor. The native queue preserves Harvest callbacks followed by OnReanimated and OnDeath with parameter 1. |
 
 Record indices above are zero-based. Full-battle acceptance and independent
-effect checks are documented in [README.md](README.md); the table's ten source
+effect checks are documented in [README.md](README.md); the table's 11 source
 archives contain these observed battle sizes:
 
 | Archive | Schema | Card plays | EndTurns | Matched stages | Independent relic observations |
@@ -70,6 +77,7 @@ archives contain these observed battle sizes:
 | [original trigger relics][triggers] | 106 | 28 | 7 | 54 | 14 births, three attachments including one enemy, ten Bump plays, eight required effect witnesses |
 | [original status relics][statusAdders] | 113 | 26 | 5 | 39 | 27 distinct real queries, 192 boundary queries, four positive original effects |
 | [original magnitude relics][magnitudes] | 114 | 18 | 5 | 39 | 20 matrix, seven live and four preview getter cases; three positive original effects |
+| [original lifecycle relics][lifecycles] | 115 | 24 | 5 | 35 | 14 exact birth/train/queue phases, six ability activations, one natural revival, 17 callback phases; five positive original effects |
 
 The checks that enforce these observations are
 [TriggerCountChecks.Native](../../src/ModelChecks/TriggerCountChecks.cs),
@@ -79,7 +87,8 @@ The checks that enforce these observations are
 [OriginalUnitRelicBatchChecks.Native](../../src/ModelChecks/OriginalUnitRelicBatchChecks.cs),
 [OriginalTriggerRelicBatchChecks.Native/Combined](../../src/ModelChecks/OriginalTriggerRelicBatchChecks.cs),
 [OriginalStatusRelicBatchChecks.Native](../../src/ModelChecks/OriginalStatusRelicBatchChecks.cs),
-and [OriginalMagnitudeRelicBatchChecks.Native](../../src/ModelChecks/OriginalMagnitudeRelicBatchChecks.cs).
+[OriginalMagnitudeRelicBatchChecks.Native](../../src/ModelChecks/OriginalMagnitudeRelicBatchChecks.cs),
+and [OriginalLifecycleRelicBatchChecks.Native](../../src/ModelChecks/OriginalLifecycleRelicBatchChecks.cs).
 Each new trigger archive has eight positive owner effects; their union covers
 all nine distinct originals. Removing only one original's installed callbacks
 must change health, attack, membership or status stacks, beyond trigger metadata.
@@ -89,6 +98,16 @@ The cardless archive uses the clone-birth path in `RelicSpawnStatusChecks.Native
 to compare the complete train, callback queue and dispatched callbacks;
 [RelicCardlessUpgradeChecks](../../src/ModelChecks/RelicCardlessUpgradeChecks.cs)
 adds focused synthetic checks for its application gates.
+
+The lifecycle archive requires a positive actual future effect for all five
+original owners, with counts 24, 24, 16, 1 and 1 in table order. Each owner
+counterfactual removes only its matching installed callbacks and context relic;
+existing unit stats, previously applied upgrades, other callbacks, trigger-count
+caches and shared ability-card caches are preserved. Full native action/combat
+states, team/subtype rejections, installation order, complete birth callback
+queues and dispatches match, with 32 immutable birth branches. Its independent
+policy replay covers the complete battle, a mid-battle continuation and 16
+parallel branches, ending with Pyre health 80.
 
 No additional original relic is counted for the status, piercing, SelfPurge,
 unit-ability, OnKill or conditional modifier fixtures. Their preparation in
@@ -105,10 +124,14 @@ The ability-Incant fixture's
 The original batch was accepted in commit `63d4f07` with focused regression.
 The preceding 210-archive milestone used a passing prefix and a fixed passing
 suffix; it is not a fresh full regression on the final batch implementation.
-The latest magnitude batch passed its complete fixture checks, independent
+The preceding magnitude batch passed its complete fixture checks, independent
 full-battle/mid-battle/16-branch replay and three affected old battle fixtures.
-All 217 archive names, sizes and hashes match; a full 217-archive replay remains
-deferred. Mageblade still requires room spell power and its cached coefficient,
+At that milestone, all 217 archive names, sizes and hashes matched; a full
+217-archive replay remained deferred. The lifecycle batch passes strict native
+acceptance, complete-fixture checks and focused regression; all 218 archives'
+integrity checks pass. Its 24 actions comprise 18 ordinary plays and six unit
+ability activations. A full 218-archive replay remains deferred.
+Mageblade still requires room spell power and its cached coefficient,
 and is excluded from accepted magnitude consumers and original-owner coverage.
 The older `6/224` passage in README describes an earlier milestone; it does not
 include the starter-cost, cardless or four-artifact batch evidence above.
@@ -123,3 +146,4 @@ include the starter-cost, cardless or four-artifact batch evidence above.
 [triggers]: full-battle-original-trigger-relics.mt2f
 [statusAdders]: full-battle-original-status-relics.mt2f
 [magnitudes]: full-battle-original-magnitude-relics.mt2f
+[lifecycles]: full-battle-original-lifecycle-relics.mt2f
