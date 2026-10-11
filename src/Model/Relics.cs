@@ -19,11 +19,12 @@ namespace MonsterTrain2Poju.Model
         public IReadOnlyList<RelicStatusStacks>? StatusStackAdditions { get; }
         public IReadOnlyList<RelicStatusMagnitude>? StatusMagnitudes { get; }
         public IReadOnlyList<RelicStatusDecay>? StatusDecays { get; }
+        public IReadOnlyList<RelicResourceEffect>? ResourceEffects { get; }
         public CombatRelicState(string dataId, string assetKey, IReadOnlyList<string> effectTypes,
             IReadOnlyList<RelicSpawnStatus>? spawnStatuses = null, bool? isCovenant = null, bool? disallowedInPlacementPhase = null,
             IReadOnlyList<RelicCardModifier>? cardModifiers = null, IReadOnlyList<RelicCharacterTriggers>? triggerAdditions = null,
             IReadOnlyList<RelicStatusStacks>? statusStackAdditions = null, IReadOnlyList<RelicStatusMagnitude>? statusMagnitudes = null,
-            IReadOnlyList<RelicStatusDecay>? statusDecays = null)
+            IReadOnlyList<RelicStatusDecay>? statusDecays = null, IReadOnlyList<RelicResourceEffect>? resourceEffects = null)
         { DataId = dataId; AssetKey = assetKey; EffectTypes = Array.AsReadOnly(effectTypes.ToArray());
             SpawnStatuses = spawnStatuses == null ? null : Array.AsReadOnly(spawnStatuses.ToArray());
             IsCovenant = isCovenant; DisallowedInPlacementPhase = disallowedInPlacementPhase;
@@ -31,17 +32,20 @@ namespace MonsterTrain2Poju.Model
             TriggerAdditions = triggerAdditions == null ? null : Array.AsReadOnly(triggerAdditions.ToArray());
             StatusStackAdditions = statusStackAdditions == null ? null : Array.AsReadOnly(statusStackAdditions.ToArray());
             StatusMagnitudes = statusMagnitudes == null ? null : Array.AsReadOnly(statusMagnitudes.ToArray());
-            StatusDecays = statusDecays == null ? null : Array.AsReadOnly(statusDecays.ToArray()); }
+            StatusDecays = statusDecays == null ? null : Array.AsReadOnly(statusDecays.ToArray());
+            ResourceEffects = resourceEffects == null ? null : Array.AsReadOnly(resourceEffects.ToArray()); }
         internal CombatRelicState WithSpawnStatuses(IReadOnlyList<RelicSpawnStatus> rules) =>
-            new CombatRelicState(DataId, AssetKey, EffectTypes, rules, IsCovenant, DisallowedInPlacementPhase, CardModifiers, TriggerAdditions, StatusStackAdditions, StatusMagnitudes, StatusDecays);
+            new CombatRelicState(DataId, AssetKey, EffectTypes, rules, IsCovenant, DisallowedInPlacementPhase, CardModifiers, TriggerAdditions, StatusStackAdditions, StatusMagnitudes, StatusDecays, ResourceEffects);
         internal CombatRelicState WithCardModifiers(IReadOnlyList<RelicCardModifier> modifiers) =>
-            new CombatRelicState(DataId, AssetKey, EffectTypes, SpawnStatuses, IsCovenant, DisallowedInPlacementPhase, modifiers, TriggerAdditions, StatusStackAdditions, StatusMagnitudes, StatusDecays);
+            new CombatRelicState(DataId, AssetKey, EffectTypes, SpawnStatuses, IsCovenant, DisallowedInPlacementPhase, modifiers, TriggerAdditions, StatusStackAdditions, StatusMagnitudes, StatusDecays, ResourceEffects);
         internal CombatRelicState WithTriggerAdditions(IReadOnlyList<RelicCharacterTriggers> rules) =>
-            new CombatRelicState(DataId, AssetKey, EffectTypes, SpawnStatuses, IsCovenant, DisallowedInPlacementPhase, CardModifiers, rules, StatusStackAdditions, StatusMagnitudes, StatusDecays);
+            new CombatRelicState(DataId, AssetKey, EffectTypes, SpawnStatuses, IsCovenant, DisallowedInPlacementPhase, CardModifiers, rules, StatusStackAdditions, StatusMagnitudes, StatusDecays, ResourceEffects);
         internal CombatRelicState WithStatusStackAdditions(IReadOnlyList<RelicStatusStacks> rules) =>
-            new CombatRelicState(DataId, AssetKey, EffectTypes, SpawnStatuses, IsCovenant, DisallowedInPlacementPhase, CardModifiers, TriggerAdditions, rules, StatusMagnitudes, StatusDecays);
+            new CombatRelicState(DataId, AssetKey, EffectTypes, SpawnStatuses, IsCovenant, DisallowedInPlacementPhase, CardModifiers, TriggerAdditions, rules, StatusMagnitudes, StatusDecays, ResourceEffects);
         internal CombatRelicState WithStatusMagnitudes(IReadOnlyList<RelicStatusMagnitude> rules) =>
-            new CombatRelicState(DataId, AssetKey, EffectTypes, SpawnStatuses, IsCovenant, DisallowedInPlacementPhase, CardModifiers, TriggerAdditions, StatusStackAdditions, rules, StatusDecays);
+            new CombatRelicState(DataId, AssetKey, EffectTypes, SpawnStatuses, IsCovenant, DisallowedInPlacementPhase, CardModifiers, TriggerAdditions, StatusStackAdditions, rules, StatusDecays, ResourceEffects);
+        internal CombatRelicState WithResourceEffects(IReadOnlyList<RelicResourceEffect> rules) =>
+            new CombatRelicState(DataId, AssetKey, EffectTypes, SpawnStatuses, IsCovenant, DisallowedInPlacementPhase, CardModifiers, TriggerAdditions, StatusStackAdditions, StatusMagnitudes, StatusDecays, rules);
     }
 
     internal static class RelicModel
@@ -58,7 +62,7 @@ namespace MonsterTrain2Poju.Model
             context?.Relics?.Any(relic => relic.EffectTypes.Contains(AbilityIncant)) == true;
         internal static string? Validate(CombatContext? context) => Validate(context?.Relics) ??
             (context?.Relics?.Any(relic => relic.EffectTypes.Contains(ModifyTriggerCount) || relic.EffectTypes.Contains(AddTrigger)) == true && context.TriggerCounts == null
-                ? "Missing native relic trigger count cache." : TriggerCountModel.Validate(context?.TriggerCounts));
+                ? "Missing native relic trigger count cache." : TriggerCountModel.Validate(context?.TriggerCounts)) ?? RelicResourceModel.Validate(context);
         internal static string? Validate(IReadOnlyList<CombatRelicState>? relics)
         {
             if (relics == null) return null; // Legacy captures retained their external-effect guard.
@@ -67,8 +71,8 @@ namespace MonsterTrain2Poju.Model
                 if (string.IsNullOrEmpty(relic.DataId) || string.IsNullOrEmpty(relic.AssetKey))
                     return "Missing captured relic identity.";
                 foreach (string effect in relic.EffectTypes)
-                    if (effect != AbilityIncant && effect != ModifyTriggerCount && effect != AddStatusOnSpawn && effect != AddTempUpgrade && effect != AddTrigger && effect != AddStatusOnApplied && effect != ModifyStatusMagnitude && effect != PreventStatusDecay) return "Unmodeled relic effect " + effect + " on " + relic.AssetKey + ".";
-                string? error = RelicCardModifierModel.Validate(relic) ?? RelicSpawnStatusModel.Validate(relic) ?? RelicCharacterTriggerModel.Validate(relic) ?? RelicStatusStackModel.Validate(relic) ?? RelicStatusMagnitudeModel.Validate(relic) ?? RelicStatusDecayModel.Validate(relic);
+                    if (effect != AbilityIncant && effect != ModifyTriggerCount && effect != AddStatusOnSpawn && effect != AddTempUpgrade && effect != AddTrigger && effect != AddStatusOnApplied && effect != ModifyStatusMagnitude && effect != PreventStatusDecay && !RelicResourceModel.IsEffect(effect)) return "Unmodeled relic effect " + effect + " on " + relic.AssetKey + ".";
+                string? error = RelicCardModifierModel.Validate(relic) ?? RelicSpawnStatusModel.Validate(relic) ?? RelicCharacterTriggerModel.Validate(relic) ?? RelicStatusStackModel.Validate(relic) ?? RelicStatusMagnitudeModel.Validate(relic) ?? RelicStatusDecayModel.Validate(relic) ?? RelicResourceModel.Validate(relic);
                 if (error != null) return error;
                 // Keep the prior queue boundary guarded until a mixed-order
                 // native cardless-upgrade fixture observes its interleaving.

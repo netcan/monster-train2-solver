@@ -164,6 +164,13 @@ namespace MonsterTrain2Poju.Model
             CardPileState[] otherPiles = source.OtherPiles.ToArray();
             TrainCombatState train = spawn.Train;
             CombatContext context = train.Context!.WithOtherPiles(otherPiles);
+            int drawPerTurn = source.DrawPerTurn;
+            if (context.Resources != null)
+            {
+                RelicResourceResult resourceDraw = RelicResourceModel.GetDrawCount(context);
+                if (!resourceDraw.Supported) return Unsupported(resourceDraw.UnsupportedReason!);
+                context = resourceDraw.Context!; drawPerTurn = resourceDraw.Value;
+            }
             context = EnergyModel.SetPhase(context, "HeroTurn");
             train = WithContext(train, context, spawn.Turn == 0);
             foreach (CombatTeam team in new[] { CombatTeam.Player, CombatTeam.Enemy })
@@ -267,11 +274,17 @@ namespace MonsterTrain2Poju.Model
                 if (Terminal(bossAction.Outcome)) return Finish(bossAction.Outcome, 0, moon);
                 context = train.Context!;
             }
-            context = EnergyModel.StartTurn(context, source.EnergyPerTurn);
+            if (context.Resources != null)
+            {
+                RelicResourceResult resourceEnergy = RelicResourceModel.StartTurn(context);
+                if (!resourceEnergy.Supported) return Unsupported(resourceEnergy.UnsupportedReason!);
+                context = resourceEnergy.Context!;
+            }
+            else context = EnergyModel.StartTurn(context, source.EnergyPerTurn);
             context = UnitStandbyModel.ReturnReady(context);
             context = EquipmentModel.ReturnUnattached(context, new HashSet<int>(train.Rooms.SelectMany(room => room.Units).Select(unit => unit.Id)));
             if (context.OtherPiles != null) otherPiles = context.OtherPiles.ToArray();
-            CardCycleResult drawn = CardCycleModel.DrawHand(context.Cards, source.DrawPerTurn, context.MaxHandSize);
+            CardCycleResult drawn = CardCycleModel.DrawHand(context.Cards, drawPerTurn, context.MaxHandSize);
             if (!drawn.Supported) return Unsupported(drawn.UnsupportedReason!);
             var existingHand = new HashSet<int>(context.Cards.Hand.Select(card => card.InstanceId));
             statistics = context.Statistics;
@@ -328,7 +341,7 @@ namespace MonsterTrain2Poju.Model
                         }
                     }
                 }
-                return new BattleTurnResult(new BattleTurnState(spawn, energy, source.EnergyPerTurn, source.DrawPerTurn,
+                return new BattleTurnResult(new BattleTurnState(spawn, energy, source.EnergyPerTurn, drawPerTurn,
                     source.ForgePoints, source.DragonsHoard, phase, streams, piles, source.ExternalInteractions, source.PlayRules,
                     source.BattlePreviewEnabled, source.UiRngIsolated, source.CanonicalDecisionReferences, source.CanonicalPhysicalReferences,
                     selectedRoom), outcome);
@@ -367,7 +380,7 @@ namespace MonsterTrain2Poju.Model
         }
         private static CombatContext WithCards(CombatContext context, CardCycleState cards) => new CombatContext(cards,
             context.BattleRng, context.Gold, context.NextCardId, context.MaxHandSize, context.StatusRules, context.Statistics, context.CardInstances,
-            context.CardRegistry, context.AllScenarioBossesDead, context.NextAddedTemporaryUpgrades, context.OtherPiles, context.QueryFrame, context.KillCamActivated, context.MagicPower, context.IsolatedBattlePreview, context.EnergyState, context.RoomCapacities, context.AbilityCardCache, context.LastAbilityActivatorUnitId, context.PermanentlyDisabledAbilities, context.LastSpawnedUnitId, context.NextUnitId, context.SpawnPoints, context.SummonCatalog, context.Enchantments, context.PurifyBlockedTriggers, context.Relics, context.TriggerCounts);
+            context.CardRegistry, context.AllScenarioBossesDead, context.NextAddedTemporaryUpgrades, context.OtherPiles, context.QueryFrame, context.KillCamActivated, context.MagicPower, context.IsolatedBattlePreview, context.EnergyState, context.RoomCapacities, context.AbilityCardCache, context.LastAbilityActivatorUnitId, context.PermanentlyDisabledAbilities, context.LastSpawnedUnitId, context.NextUnitId, context.SpawnPoints, context.SummonCatalog, context.Enchantments, context.PurifyBlockedTriggers, context.Relics, context.TriggerCounts, context.Resources);
         private static TrainCombatState WithContext(TrainCombatState train, CombatContext context, bool deployment) =>
             new TrainCombatState(train.Rooms.Select(room => new RoomCombatState(room.RoomIndex, deployment, room.Units,
                 room.ExternalInteractions, context)).ToArray(), train.Movement, train.EnemySlotsPerRoom, context);
