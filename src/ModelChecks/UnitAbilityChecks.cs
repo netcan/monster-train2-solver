@@ -26,6 +26,21 @@ internal static class UnitAbilityChecks
             BattleActionModel.EnumerateSupportedPlays(root).Any(play => play.ActivatorUnitId == 10) &&
             BattleActionModel.EnumerateSupportedPlays(after).All(play => play.ActivatorUnitId != 10),
             "Search enumeration accepted a cooling-down actor or omitted an available skill.");
+        BattleTurnState sourceAttackRoot = Root(actorAttack: 5, sourceAttackDamage: true, damageMultiplier: 2);
+        BattleActionResult sourceAttack = UnitAbilityModel.Activate(sourceAttackRoot, action);
+        Require(sourceAttack.Supported, "Source-attack ability was rejected: " + sourceAttack.Reason);
+        CombatUnit sourceAttackActor = sourceAttack.State!.Spawn.Train.Rooms[0].Units.Single(unit => unit.Id == 10);
+        CombatUnit sourceAttackEnemy = sourceAttack.State.Spawn.Train.Rooms[0].Units.Single(unit => unit.Id == 11);
+        Require(sourceAttack.Supported && sourceAttackActor.Attack == 5 && sourceAttackEnemy.Health == 30 &&
+            sourceAttackEnemy.LastAttackerId == 10, "Source-attack damage did not use the live ability caster's attack and attribution.");
+        BattleActionResult cardTraitsAttack = UnitAbilityModel.Activate(
+            Root(actorAttack: 5, sourceAttackDamage: true, damageMultiplier: 2, useCardTraits: true), action);
+        CombatUnit cardTraitsTarget = cardTraitsAttack.State!.Spawn.Train.Rooms[0].Units.Single(unit => unit.Id == 11);
+        Require(cardTraitsAttack.Supported && cardTraitsTarget.Health == 30 && cardTraitsTarget.LastAttackerId == 0,
+            "The card-traits flag did not use card traits without a native self-target attacker.");
+        var missingCasterEffect = new CardActionEffect("DamagePerSourceAttack", "FrontInRoom", 2, false, true, []);
+        Require(!CardSpellModel.TestPlay(sourceAttackRoot.Spawn.Train, 0, [missingCasterEffect], 0, sourceAttackRoot.PlayRules).Supported,
+            "A source-attack effect without a captured caster entered the search space.");
         var ordinary = BattleActionModel.PlayCard(after, new(3, 0));
         Require(ordinary.Supported && ordinary.State!.Spawn.Train.Context!.LastAbilityActivatorUnitId == 0,
             "An ordinary card did not clear the last ability actor.");
@@ -73,7 +88,8 @@ internal static class UnitAbilityChecks
 
     internal static BattleTurnState Root(string? blocked = null, bool resolving = false, bool deployment = false, int energy = 3,
         bool handFull = false, bool allowFull = true, bool xCost = false, bool emptyCache = false, bool otherFloors = false,
-        bool terminalEnemy = false, bool typed = true)
+        bool terminalEnemy = false, bool typed = true, int actorAttack = 1, bool sourceAttackDamage = false, int damageMultiplier = 4,
+        bool useCardTraits = false)
     {
         var rng = UnityRng.Seed(84);
         CombatStatus cooldown = new("cooldown", 1, removeStackAtEnd: true, preventRemovalDuringRelentless: true, stackable: true);
@@ -94,8 +110,9 @@ internal static class UnitAbilityChecks
                 [new("CardEffectResetCooldown", 0, 0, "", 0, [], false, action: new("ResetCooldown", "Self", 0, false, true, [], cooldownParameter: false))], false),
             new CombatTrigger("OnUnitAbilityUnavailable", false, false, true, 1,
                 [new("CardEffectRemoveStatusEffect", -1, 0, "", 0, [], false, action: new("RemoveStatus", "Self", -1, false, true, [marker]))], false) };
-        var actor = new CombatUnit(10, "actor", CombatTeam.Player, 1, 18, 20, true, false, false,
-            blocked == null ? [marker] : [marker, new(blocked, 1)], triggers, 1, 1, modifiers: new(1, 0, 0, 1, 1, true, false, []), isBoss: false,
+        var actor = new CombatUnit(10, "actor", CombatTeam.Player, actorAttack, 18, 20, true, false, false,
+            blocked == null ? [marker] : [marker, new(blocked, 1)], triggers, 1, 1,
+            modifiers: new(actorAttack, 0, 0, 1, 1, true, false, []), isBoss: false,
             ability: new("skill", 3, 2, resolving: resolving, cardCreation: creation));
         var enemy = new CombatUnit(11, "enemy", CombatTeam.Enemy, 1, terminalEnemy ? 4 : 40, 40, true, false, terminalEnemy, [],
             isBoss: terminalEnemy, lastAttackerId: 0);
@@ -107,7 +124,9 @@ internal static class UnitAbilityChecks
         var rules = new BattlePlayRules([new(0, 5, 7, true, false, false), new(1, 5, 7, true, false, false),
             new(2, 0, 7, true, true, true), new(9, 5, 7, true, false, false)],
             [new("skill", "skill", 1, "Spell", "Discard", null, [],
-                [new("Damage", "FrontInRoom", 4, true, false, []), new("Heal", "Self", 1, true, false, [])],
+                [new(sourceAttackDamage ? "DamagePerSourceAttack" : "Damage", "FrontInRoom",
+                    sourceAttackDamage ? damageMultiplier : 4, true, false, [], useCardTraits: useCardTraits),
+                    new("Heal", "Self", 1, true, false, [])],
                 upgradeInteractions: [], costType: xCost ? "ConsumeRemainingEnergy" : "Default", ability: new("Unit", otherFloors, allowFull),
                 cardType: typed ? "Spell" : null, isAnyAbility: typed ? true : null),
              new("ordinary", "ordinary", 0, "Null", "Discard", null, [], upgradeInteractions: [])]);
@@ -193,7 +212,15 @@ internal static class UnitAbilityChecks
         var result = UnitAbilityModel.Activate(before, action);
         Require(result.Supported, "Native skill independently rejected: " + result.Reason);
         string? difference = ModelJson.Difference(BattleTurnChecks.Comparable(result.State!), BattleTurnChecks.Comparable(actual));
-        Require(difference == null, "Native skill state differs: " + difference);
+        if (difference != null)
+        {
+            static string Units(BattleTurnState state) => string.Join(" | ", state.Spawn.Train.Rooms.SelectMany(room =>
+                room.Units.Select(unit => $"room={room.RoomIndex}:id={unit.Id}:asset={unit.AssetKey}:team={unit.Team}:hp={unit.Health}:atk={unit.Attack}:statuses=[{string.Join(',', unit.Statuses.Select(status => status.Id + ':' + status.Stacks))}]")));
+            CombatUnit caster = before.Spawn.Train.Rooms.SelectMany(room => room.Units).Single(unit => unit.Id == action.ActivatorUnitId);
+            CardPlayRule skill = before.PlayRules!.Cards.Single(rule => rule.DataId == caster.Ability!.DataId);
+            CardActionEffect effect = CardModifierModel.Resolve(skill, before.Spawn.Train.Context!.FindCard(action.CardInstanceId)!).Effects[0];
+            throw new InvalidOperationException($"Native skill state differs: {difference}; action={action}; caster={caster.Id}/{caster.AssetKey} attack={caster.Attack} base={caster.BaseAttack}; effect={effect.Type}:{effect.Value}; before=[{Units(before)}]; predicted=[{Units(result.State!)}]; actual=[{Units(actual)}]");
+        }
         Require(JsonSerializer.Serialize(before) == parent, "Native skill comparison mutated its input.");
     }
     private static void Require(bool condition, string message) { if (!condition) throw new InvalidOperationException(message); }

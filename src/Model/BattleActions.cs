@@ -40,17 +40,20 @@ namespace MonsterTrain2Poju.Model
         public NextDrawUpgradeRule? NextDrawUpgrade { get; }
         public int RequiredGold { get; }
         public bool? GoldCostRequired { get; }
+        public bool UseCardTraits { get; }
         public CardActionEffect(string type, string target, int value, bool allowEnemy, bool allowPlayer, IReadOnlyList<CombatStatus> statuses,
             CardUpgradeModifier? upgrade = null, string lifetime = "", CardEffectTests? tests = null, CardEffectRange? range = null, CardTargetFilters? filters = null,
             CardGenerationRule? generation = null, bool onlyIfNoEnemies = false, bool? cooldownParameter = null,
             AbilityChangeRule? abilityChange = null, bool? copyHeroStats = null, bool scaleUpgrade = false,
             bool? doNotFullyRemove = null, string sacrificeSubtype = "", TypedDrawRule? typedDraw = null,
-            NextDrawUpgradeRule? nextDrawUpgrade = null, int requiredGold = 0, bool? goldCostRequired = null)
+            NextDrawUpgradeRule? nextDrawUpgrade = null, int requiredGold = 0, bool? goldCostRequired = null,
+            bool useCardTraits = false)
         { Type = type; Target = target; Value = value; AllowEnemy = allowEnemy; AllowPlayer = allowPlayer; Statuses = Array.AsReadOnly(statuses.ToArray());
             Upgrade = upgrade; Lifetime = lifetime; Tests = tests; Range = range; Filters = filters; Generation = generation; OnlyIfNoEnemies = onlyIfNoEnemies;
             CooldownParameter = cooldownParameter; AbilityChange = abilityChange; CopyHeroStats = copyHeroStats; ScaleUpgrade = scaleUpgrade;
             DoNotFullyRemove = doNotFullyRemove; SacrificeSubtype = sacrificeSubtype;
-            TypedDraw = typedDraw; NextDrawUpgrade = nextDrawUpgrade; RequiredGold = requiredGold; GoldCostRequired = goldCostRequired; }
+            TypedDraw = typedDraw; NextDrawUpgrade = nextDrawUpgrade; RequiredGold = requiredGold; GoldCostRequired = goldCostRequired;
+            UseCardTraits = useCardTraits; }
     }
     public sealed class RoomPlayRule
     {

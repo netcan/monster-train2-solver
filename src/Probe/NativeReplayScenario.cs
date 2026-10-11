@@ -687,7 +687,9 @@ namespace MonsterTrain2Poju.Probe
                 else if (modifierScenario == "room-capacity" || modifierScenario == "room-capacity-lethal") RoomCapacityScenario.Prepare(managers, log, modifierScenario == "room-capacity-lethal");
                 else if (modifierScenario == "x-cost" || modifierScenario == "x-cost-lethal") CardCostScenario.Prepare(managers, log, modifierScenario == "x-cost-lethal");
                 else if (modifierScenario == "bonus-draw" || modifierScenario == "bonus-draw-lethal") BonusDrawScenario.Prepare(managers, log, modifierScenario == "bonus-draw-lethal");
-                else if (modifierScenario == "ability-activation" || modifierScenario == "ability-activation-x" || modifierScenario == "ability-activation-lethal") AbilityActivationScenario.Prepare(managers, log, modifierScenario == "ability-activation-x", modifierScenario == "ability-activation-lethal");
+                else if (modifierScenario == "ability-activation" || modifierScenario == "ability-activation-x" || modifierScenario == "ability-activation-lethal")
+                    AbilityActivationScenario.Prepare(managers, log, modifierScenario == "ability-activation-x",
+                        modifierScenario == "ability-activation-lethal", sourceAttack: modifierScenario == "ability-activation");
                 else if (modifierScenario.StartsWith("triggered-summon", StringComparison.Ordinal)) TriggeredSummonScenario.Prepare(managers, log);
                 else if (modifierScenario == "spawn-points") SpawnPointScenario.Prepare(managers, log);
                 else if (modifierScenario == "rally-triggers") RallyScenario.Prepare(managers, log);

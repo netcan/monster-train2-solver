@@ -1,6 +1,19 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
 
+if (args.Length == 1 && args[0] == "--unit-ability-pure")
+{
+    UnitAbilityChecks.Run();
+    return;
+}
+
+if (args.Length == 2 && args[0] == "--unit-ability-native-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    UnitAbilityChecks.Native(fixture.RootElement);
+    return;
+}
+
 if (args.Length == 1 && args[0] == "--relic-floor-capacity-pure")
 {
     RelicFloorCapacityChecks.Run();

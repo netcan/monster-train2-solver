@@ -6,6 +6,11 @@ covers 58/224 catalog entries (25.89%); see
 [the owner evidence table](tests/fixtures/relic-coverage.md). Whole-battle
 coverage and the optimal solver remain in progress.
 
+The fixed-cost ability activation archive now exercises native
+`CardEffectDamagePerSourceAttack` inside the full battle. Its unmodified
+multiplier uses the activating unit's live attack, and its card-traits flag
+selects the corresponding damage source.
+
 `full-battle-original-sting-relics.mt2f` now exercises both unchanged original
 Sting upgrade owners. Three played Stings retain the combined +30 damage and
 IgnoreArmor; 53 native manager calls match reset, unique-repeat and filter
@@ -151,7 +156,7 @@ are copied immutable values; independent child states can run on worker threads.
 | Unit arrival Sentry queues | `TrainCombatModel` and `RoomCombatModel` | Physical guard order, moved-target overrides, retained dead victims, once/silence/threshold gates and terminal hit/death queues |
 | Unit ability cooldown state | `AbilityCooldownModel`, `CardSpellModel` and `RoomCombatModel` | Native natural-ability spawn, separate configured/current cooldowns, signed/absolute updates, resets, status decay and availability-marker callbacks; complete battle and parallel branches |
 | Shared ability card cache | `AbilityCardModel` and `CombatContext.AbilityCardCache` | Native player and enemy ability creation, shared unit references, detached card statistics, starting upgrades and allocation before OnSpawn generation; complete battle and parallel branches |
-| Unit ability activation | `UnitAbilityModel` and `BattleActionModel` | Native fixed/X/zero payments, shared detached history, self targets, damage attribution, pre-own/own callbacks, cooldown and direct Boss-kill settlement; complete policies and parallel branches |
+| Unit ability activation | `UnitAbilityModel` and `BattleActionModel` | Native fixed/X/zero payments, shared detached history, self targets, source-attack damage, pre-own/own callbacks, cooldown and direct Boss-kill settlement; complete policies and parallel branches |
 | Mono status dictionary slot reuse | `StatusDictionaryState` | Captured slot/free-list state, LIFO reuse after cleanup, exact later status enumeration and independent branch isolation |
 | Unit ability lifecycle primitives | `AbilityLifecycleModel` and spawn transitions | 21 native assignment/removal API cases, raw cooldown restoration, equipment overlay history, permanent disable order and disabled player/enemy births; complete subsequent policy and parallel branches |
 | Ability assignment/removal effects | `CardSpellModel`, `RoomCombatModel` and `AbilityLifecycleModel` | 17 native effect states and 17 queued dispatches with 35 payloads; multi-target and last-target spells, pre-own replacement, cached self replacement/removal, exact current disabled IDs and complete policies with parallel branches |
@@ -3253,9 +3258,12 @@ included in supported action enumeration; sibling units retain their own
 cooldowns while sharing the same card modifiers and last paid cost.
 
 Self targeting follows the native exception: it ignores team, health, status
-and subtype filters, and only the ignore-Boss mask applies. Spell damage carries
-the activator into damage/death handling, preserving LastAttackerId and kill
-attribution. `CombatContext.LastAbilityActivatorUnitId` captures the native
+and subtype filters, and only the ignore-Boss mask applies. Ordinary spell
+damage carries the activator into damage/death handling, preserving
+LastAttackerId and kill attribution. `DamagePerSourceAttack` instead multiplies
+its unmodified native multiplier by the live caster attack; its `ParamBool`
+chooses card traits with no self target or attacker traits with the caster.
+`CombatContext.LastAbilityActivatorUnitId` captures the native
 retained reference, survives every context copy, and clears on an ordinary card
 play. Both draw scheduling and energy effect verifiers preserve the cache and
 actor reference when reconstructing complete contexts.
@@ -3268,19 +3276,21 @@ history remain; native statistics fall back to the permanent deck. A separate
 terminal skill verifier checks these invariants while the historical terminal
 spell verifier continues requiring ordinary cast/discard restoration.
 
-Three schema-64 native archives use game 2.2.1 and module MVID
-`8fb07b96-f4db-4d2b-884d-c00536d6ccf4`. Preparation extends the cache scenario:
+Three native archives use game 2.2.1 and module MVID
+`8fb07b96-f4db-4d2b-884d-c00536d6ccf4`; the fixed-cost archive is schema 103,
+while the X and lethal archives remain schema 64. Preparation extends the cache scenario:
 two natural Stewards share skill card 16 with its real starting damage upgrade,
 and the original Boss retains a distinct skill. Stewards gain 50 HP and lose one
 size only once; Boss attack/health and every original spawn wave stay intact.
-The player skill chains front-enemy damage, self healing and a future draw.
+The fixed-cost player skill chains source-attack front-enemy damage, self healing
+and a future draw; the X and lethal scenarios retain ordinary damage.
 Its pre-own trigger grants gold and deals three self damage; the heal deliberately
 uses an enemy-only team mask. Coverage accounts for armor before requiring real
 self healing, plus actual pre-own/own callbacks and shared card identity.
 
 | Archive | Bytes / nodes | Actions / EndTurns | Skill activations | Native seconds |
 | --- | --- | --- | --- | --- |
-| `full-battle-ability-activation.mt2f` | 28,207 / 4,605 | 17 / 5 | Two fixed-cost plays | 50.89 |
+| `full-battle-ability-activation.mt2f` | 30,942 / 4,940 | 17 / 5 | Two fixed-cost source-attack plays | 56.13 |
 | `full-battle-ability-activation-x.mt2f` | 26,952 / 4,343 | 16 / 5 | One positive X payment and one zero payment | 47.57 |
 | `full-battle-ability-activation-lethal.mt2f` | 26,047 / 4,213 | 16 / 4 | Two fixed-cost plays; the second kills the Boss | 46.02 |
 

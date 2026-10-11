@@ -596,17 +596,20 @@ and mid-battle roots in 16 parallel branches. Skill activation/payment and abili
 assignment/replacement/removal remain separate work; live cache Clear is not
 sampled here. The accepted archive has no JSON source dependency.
 
-`full-battle-ability-activation.mt2f`, `full-battle-ability-activation-x.mt2f`
-and `full-battle-ability-activation-lethal.mt2f` retain schema 64. Each records
-two real units activating one shared detached skill card. Complete states verify
-fixed/X/zero payment, pre-own/own callbacks, self healing through an enemy-only
-team mask, activator damage attribution, cooldown/marker changes and global
-history without ordinary ownership/discard. The lethal fixture ends when the
-second skill kills the Boss; ordinary piles clear while skill identity/history
-and permanent-deck statistic fallback remain. Whole policies match initial and
-mid-battle roots with 16 parallel branches, and each activation compares in 32
-branches. These archives use direct native binary capture with no source JSON.
-Ability assignment/replacement/removal and equipment skills remain separate work.
+`full-battle-ability-activation.mt2f` now uses schema 103; the X and lethal
+archives remain schema 64. Each records two real units activating one shared
+detached skill card. Complete states verify fixed/X/zero payment, pre-own/own
+callbacks, self healing through an enemy-only team mask, cooldown/marker changes
+and global history without ordinary ownership/discard. The fixed-cost archive
+also exercises native `DamagePerSourceAttack`: the unmodified multiplier uses
+the activating unit's live attack, while its card-traits flag selects whether
+damage traits come from the ability card or attacker. The lethal fixture ends
+when the second skill kills the Boss; ordinary piles clear while skill
+identity/history and permanent-deck statistic fallback remain. Whole policies
+match initial and mid-battle roots with 16 parallel branches, and each
+activation compares in 32 branches. These archives use direct native binary
+capture with no source JSON. Ability assignment/replacement/removal and equipment
+skills remain separate work.
 
 `full-battle-ability-lifecycle.mt2f` retains schema 65 and 21 native assignment,
 replacement and removal API operations. Equipment restores the raw activation

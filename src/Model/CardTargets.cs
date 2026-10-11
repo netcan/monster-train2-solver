@@ -187,7 +187,9 @@ namespace MonsterTrain2Poju.Model
             new CardActionEffect(effect.Type, effect.Target == "RandomFromAnyRoom" ? "Tower" : "Room", effect.Value, effect.AllowEnemy,
                 effect.AllowPlayer, effect.Statuses, effect.Upgrade, effect.Lifetime, effect.Tests, effect.Range, effect.Filters,
                 copyHeroStats: effect.CopyHeroStats, scaleUpgrade: effect.ScaleUpgrade,
-                doNotFullyRemove: effect.DoNotFullyRemove, sacrificeSubtype: effect.SacrificeSubtype, typedDraw: effect.TypedDraw, nextDrawUpgrade: effect.NextDrawUpgrade, requiredGold: effect.RequiredGold, goldCostRequired: effect.GoldCostRequired), Array.Empty<int>());
+                doNotFullyRemove: effect.DoNotFullyRemove, sacrificeSubtype: effect.SacrificeSubtype, typedDraw: effect.TypedDraw,
+                nextDrawUpgrade: effect.NextDrawUpgrade, requiredGold: effect.RequiredGold,
+                goldCostRequired: effect.GoldCostRequired, useCardTraits: effect.UseCardTraits), Array.Empty<int>());
             return result.Supported && effect.Type == "Sacrifice" && effect.Target == "RandomInRoom" && effect.SacrificeSubtype.Length > 0
                 ? new CardTargets(result.UnitIds.Where(id => train.Rooms.SelectMany(room => room.Units)
                     .Any(unit => unit.Id == id && unit.Subtypes.Contains(effect.SacrificeSubtype))).ToArray()) : result;
