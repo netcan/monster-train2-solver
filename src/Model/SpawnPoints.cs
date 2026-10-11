@@ -11,10 +11,12 @@ namespace MonsterTrain2Poju.Model
         public int Index { get; }
         // Null identifies the primary list; each copied list has a distinct identity.
         public int? PreviewCopyId { get; }
-        public SpawnPointReference(int roomIndex, CombatTeam team, int index, int? previewCopyId = null)
-        { RoomIndex = roomIndex; Team = team; Index = index; PreviewCopyId = previewCopyId; }
+        public bool OuterBossAnchor { get; }
+        public SpawnPointReference(int roomIndex, CombatTeam team, int index, int? previewCopyId = null,
+            bool outerBossAnchor = false)
+        { RoomIndex = roomIndex; Team = team; Index = index; PreviewCopyId = previewCopyId; OuterBossAnchor = outerBossAnchor; }
         internal bool Same(SpawnPointReference? other) => other != null && RoomIndex == other.RoomIndex && Team == other.Team &&
-            Index == other.Index && PreviewCopyId == other.PreviewCopyId;
+            Index == other.Index && PreviewCopyId == other.PreviewCopyId && OuterBossAnchor == other.OuterBossAnchor;
     }
     public sealed class SpawnPointOccupant
     {
@@ -158,14 +160,18 @@ namespace MonsterTrain2Poju.Model
             {
                 if (!units.TryGetValue(id, out SpawnPointOccupant? unit)) throw new InvalidOperationException("Unknown spawn point unit.");
                 if (unit.Destroyed && unit.Current == null && to != null) return;
-                if (to != null && !Exists(to)) throw new InvalidOperationException("Unknown target spawn point.");
-                if (unit.Current != null && groups[(unit.Current.RoomIndex, unit.Current.Team, unit.Current.PreviewCopyId)][unit.Current.Index] == id)
+                if (to != null && !Exists(to, unit)) throw new InvalidOperationException("Unknown target spawn point.");
+                if (unit.Current != null && !unit.Current.OuterBossAnchor &&
+                    groups[(unit.Current.RoomIndex, unit.Current.Team, unit.Current.PreviewCopyId)][unit.Current.Index] == id)
                     groups[(unit.Current.RoomIndex, unit.Current.Team, unit.Current.PreviewCopyId)][unit.Current.Index] = 0;
                 units[id] = unit.WithPoints(to, unit.LastKnown);
-                if (to != null) groups[(to.RoomIndex, to.Team, to.PreviewCopyId)][to.Index] = id;
+                if (to != null && !to.OuterBossAnchor) groups[(to.RoomIndex, to.Team, to.PreviewCopyId)][to.Index] = id;
             }
-            bool Exists(SpawnPointReference point) => groups.TryGetValue((point.RoomIndex, point.Team, point.PreviewCopyId), out int[]? values) &&
-                point.Index >= 0 && point.Index < values.Length;
+            bool Exists(SpawnPointReference point, SpawnPointOccupant owner) => point.OuterBossAnchor
+                ? owner.OuterBoss && point.Team == CombatTeam.Enemy && point.Index == 0 && !point.PreviewCopyId.HasValue &&
+                    source.Groups.Any(item => item.RoomIndex == point.RoomIndex)
+                : groups.TryGetValue((point.RoomIndex, point.Team, point.PreviewCopyId), out int[]? values) &&
+                    point.Index >= 0 && point.Index < values.Length;
             SpawnPointResult Reject(string reason) => new SpawnPointResult(null, unsupportedReason: reason);
         }
         private static string? Validate(SpawnPointWorld source)
@@ -177,8 +183,16 @@ namespace MonsterTrain2Poju.Model
             if (source.Groups.Any(group => group.PreviewCopyId <= 0 || group.InnerCount < 1 || group.GroupCount < 0 ||
                 Math.Max(group.InnerCount, group.GroupCount) > group.Occupants.Count || group.Outside.Count != group.Occupants.Count ||
                 group.Occupants.Any(id => id < 0 || id != 0 && !ids.Contains(id)))) return "Invalid spawn point group layout.";
-            foreach (SpawnPointReference point in source.Units.SelectMany(unit => new[] { unit.Current, unit.LastKnown }).Where(point => point != null).Cast<SpawnPointReference>())
+            foreach (SpawnPointOccupant owner in source.Units)
+            foreach (SpawnPointReference point in new[] { owner.Current, owner.LastKnown }.Where(point => point != null).Cast<SpawnPointReference>())
             {
+                if (point.OuterBossAnchor)
+                {
+                    if (!owner.OuterBoss || point.Team != CombatTeam.Enemy || point.Index != 0 || point.PreviewCopyId.HasValue ||
+                        !source.Groups.Any(item => item.RoomIndex == point.RoomIndex))
+                        return "Invalid outer Boss anchor reference.";
+                    continue;
+                }
                 SpawnPointGroupState? group = source.Groups.SingleOrDefault(item => item.RoomIndex == point.RoomIndex && item.Team == point.Team && item.PreviewCopyId == point.PreviewCopyId);
                 if (group == null || point.Index < 0 || point.Index >= group.Occupants.Count) return "Invalid current or last-known spawn point.";
             }

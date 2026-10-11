@@ -55,6 +55,7 @@ internal static class SpawnPointChecks
             "No occupied layout with a physical hole was observed.");
         Verify();
         Parallel.For(0, 32, _ => Verify());
+        VerifyOuterBossAnchors(Before("remember-initial"));
         VerifyRejections(Before("remember-initial"));
         Console.WriteLine($"NATIVE-SPAWN-POINT-CHECKS PASS: {samples.Length} exact physical operations, " +
             $"{samples.Sum(sample => sample.GetProperty("Queries").GetArrayLength())} current/last-known queries, " +
@@ -90,6 +91,25 @@ internal static class SpawnPointChecks
                 Require(parent == JsonSerializer.Serialize(before), "A position branch mutated its parent.");
             }
         }
+    }
+    private static void VerifyOuterBossAnchors(SpawnPointWorld source)
+    {
+        int id = source.Units.Max(unit => unit.UnitId) + 1;
+        var boss = new SpawnPointOccupant(id, 100, true, false, false, 0, false, true,
+            new SpawnPointReference(2, CombatTeam.Enemy, 0, outerBossAnchor: true), null);
+        var withBoss = new SpawnPointWorld(source.Preview, source.Groups, source.Units.Append(boss).ToArray());
+        string parent = JsonSerializer.Serialize(withBoss);
+        SpawnPointResult moved = SpawnPointModel.Apply(withBoss, "Set", 2, CombatTeam.Enemy, id,
+            target: new SpawnPointReference(1, CombatTeam.Enemy, 0, outerBossAnchor: true));
+        Require(moved.Supported && moved.State!.Point(id)?.OuterBossAnchor == true && moved.State.Point(id)!.RoomIndex == 1 &&
+            Equal(moved.State.Groups, withBoss.Groups) && parent == JsonSerializer.Serialize(withBoss),
+            "Moving an outer Boss between anchors changed ordinary group slots or its parent.");
+
+        SpawnPointWorld ordinary = new SpawnPointWorld(source.Preview, source.Groups, source.Units);
+        SpawnPointResult rejected = SpawnPointModel.Apply(ordinary, "Set", 1, CombatTeam.Player,
+            ordinary.Units[0].UnitId, target: new SpawnPointReference(2, CombatTeam.Enemy, 0, outerBossAnchor: true));
+        Require(!rejected.Supported && rejected.State == null && rejected.UnsupportedReason != null,
+            "An ordinary unit occupied an outer Boss anchor.");
     }
     private static void VerifyRejections(SpawnPointWorld source)
     {

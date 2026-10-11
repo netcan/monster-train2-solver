@@ -99,9 +99,17 @@ namespace MonsterTrain2Poju.Model
             if (source.Groups.Any(group => group.PreviewCopyId <= 0 || group.InnerCount < 1 || group.GroupCount < 0 ||
                 Math.Max(group.InnerCount, group.GroupCount) > group.Occupants.Count || group.Outside.Count != group.Occupants.Count ||
                 group.Occupants.Any(id => id < 0 || id > 0 && !ids.Contains(id)))) return "Invalid physical point layout.";
-            foreach (var reference in source.Units.SelectMany(unit => new[] { unit.Current, unit.LastKnown }).Where(point => point != null))
+            foreach (UnitSpawnPointState owner in source.Units)
+            foreach (SpawnPointReference reference in new[] { owner.Current, owner.LastKnown }.Where(point => point != null).Cast<SpawnPointReference>())
             {
-                var group = source.Group(reference!.RoomIndex, reference.Team, reference.PreviewCopyId);
+                if (reference.OuterBossAnchor)
+                {
+                    if (!owner.OuterBoss || reference.Team != CombatTeam.Enemy || reference.Index != 0 || reference.PreviewCopyId.HasValue ||
+                        !source.Groups.Any(group => group.RoomIndex == reference.RoomIndex))
+                        return "Invalid outer Boss anchor reference.";
+                    continue;
+                }
+                var group = source.Group(reference.RoomIndex, reference.Team, reference.PreviewCopyId);
                 if (group == null || reference.Index < 0 || reference.Index >= group.Occupants.Count)
                     return "Uncaptured retained physical reference.";
             }

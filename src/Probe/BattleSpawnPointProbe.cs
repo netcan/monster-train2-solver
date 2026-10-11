@@ -68,9 +68,17 @@ namespace MonsterTrain2Poju.Probe
                 pointReferences.Add(points[index], new SpawnPointReference(copy.RoomIndex, copy.Team, index, copy.Id));
             return copy.Id;
         }
-        internal static SpawnPointReference? Reference(SpawnPoint? point) => point == null ? null :
-            pointReferences.TryGetValue(point, out SpawnPointReference? reference) ? reference :
-            throw new InvalidOperationException("A retained physical point is outside all observed primary/copied lists.");
+        internal static SpawnPointReference? Reference(SpawnPoint? point)
+        {
+            if (point == null) return null;
+            if (point is OuterTrainSpawnPoint)
+            {
+                RoomState room = point.GetRoomOwner().OrNull() ?? throw new InvalidOperationException("Outer Boss anchor has no room owner.");
+                return new SpawnPointReference(room.GetRoomIndex(), CombatTeam.Enemy, 0, outerBossAnchor: true);
+            }
+            return pointReferences.TryGetValue(point, out SpawnPointReference? reference) ? reference :
+                throw new InvalidOperationException("A retained physical point is outside all observed primary/copied lists.");
+        }
         private static SpawnPointGroupState CopyGroup(FullBattleTrace trace, int id)
         {
             Copy copy = copies[id];
