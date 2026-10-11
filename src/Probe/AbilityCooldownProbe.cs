@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -10,6 +11,18 @@ namespace MonsterTrain2Poju.Probe
 {
     internal static class AbilityCooldownProbe
     {
+        private static readonly ConcurrentDictionary<(Type Type, string Name), FieldInfo> DictionaryFields =
+            new ConcurrentDictionary<(Type Type, string Name), FieldInfo>();
+        private static object? DictionaryField(object target, string name) => DictionaryFields.GetOrAdd((target.GetType(), name), key =>
+        {
+            foreach (string candidate in new[] { key.Name, "_" + key.Name })
+            for (Type? type = key.Type; type != null; type = type.BaseType)
+            {
+                FieldInfo? field = type.GetField(candidate, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly);
+                if (field != null) return field;
+            }
+            throw new MissingFieldException(key.Type.FullName, key.Name);
+        }).GetValue(target);
         internal static bool Known(string type) => type == "CardEffectResetCooldown" || type == "CardEffectAdjustAbilityCooldown" || type == "CardEffectRemoveStatusEffect";
         internal static UnitAbilityState? Capture(CharacterState unit)
         {
@@ -27,17 +40,16 @@ namespace MonsterTrain2Poju.Probe
         {
             object state = AccessTools.Property(typeof(CharacterState), "PrimaryStateInformation").GetValue(unit);
             object dictionary = AccessTools.Field(state.GetType(), "statusEffects").GetValue(state);
-            object? Field(object target, string name) => (AccessTools.Field(target.GetType(), name) ?? AccessTools.Field(target.GetType(), "_" + name)).GetValue(target);
-            int count = (int)Field(dictionary, "count")!;
-            Array? entries = (Array?)Field(dictionary, "entries");
+            int count = (int)DictionaryField(dictionary, "count")!;
+            Array? entries = (Array?)DictionaryField(dictionary, "entries");
             if (count == 0) return new StatusDictionaryState(Array.Empty<string>(), Array.Empty<int>());
-            string?[] slots = Enumerable.Range(0, count).Select(index => (string?)Field(entries!.GetValue(index)!, "key")).ToArray();
+            string?[] slots = Enumerable.Range(0, count).Select(index => (string?)DictionaryField(entries!.GetValue(index)!, "key")).ToArray();
             var free = new List<int>();
-            int next = (int)Field(dictionary, "freeList")!;
+            int next = (int)DictionaryField(dictionary, "freeList")!;
             while (next >= 0)
             {
                 if (free.Contains(next) || next >= count) throw new InvalidOperationException("Invalid native dictionary free list.");
-                free.Add(next); next = (int)Field(entries!.GetValue(next)!, "next")!;
+                free.Add(next); next = (int)DictionaryField(entries!.GetValue(next)!, "next")!;
             }
             return new StatusDictionaryState(slots, free);
         }
