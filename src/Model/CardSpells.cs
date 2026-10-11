@@ -792,7 +792,11 @@ namespace MonsterTrain2Poju.Model
                 if (effect.Type == "AddStatus" && effect.Statuses.Count == 0) return "A status effect requires at least one status definition.";
                 foreach (CombatStatus status in effect.Statuses)
                 {
-                    var test = new CombatUnit(0, "status-validation", CombatTeam.Player, 0, 1, 1, false, false, false, new[] { status });
+                    // This unit validates a definition, not captured live attack history.
+                    // Retain the context for status rules while satisfying its cache guard.
+                    var test = new CombatUnit(0, "status-validation", CombatTeam.Player, 0, 1, 1, false, false, false, new[] { status },
+                        modifiers: new UnitModifiers(0, 0, 0, 1, 1, true, false, Array.Empty<CardUpgradeModifier>(),
+                            damageBuffFromStatusEffects: 0));
                     error = RoomCombatModel.Validate(new RoomCombatState(source.RoomIndex, source.Deployment,
                         new[] { test }, Array.Empty<string>(), source.Context));
                     if (error != null) return error;

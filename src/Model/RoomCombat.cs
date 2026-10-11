@@ -721,7 +721,8 @@ namespace MonsterTrain2Poju.Model
             }
             if (state.Units.Select(unit => unit.Id).Distinct().Count() != state.Units.Count)
                 return "Unit instance IDs must be unique.";
-            bool requireStatusDamage = state.Context?.Relics?.Any(relic => relic.StatusMagnitudes?.Count > 0) == true;
+            bool requireStatusDamage = state.Context?.Relics?.Any(relic => relic.StatusMagnitudes?.Count > 0 ||
+                relic.StatusDecays?.Any(rule => rule.StatusIds.Contains("buff")) == true) == true;
             foreach (CombatUnit unit in state.Units)
             {
                 if (requireStatusDamage && unit.Modifiers?.DamageBuffFromStatusEffects.HasValue != true)
@@ -2638,7 +2639,13 @@ namespace MonsterTrain2Poju.Model
             private void Trigger(WorkingUnit unit, string id, int count)
             {
                 if (unit.Statuses.TryGetValue(id, out CombatStatus? status) && status.RemoveWhenTriggered &&
-                    (!source.Deployment || status.RemoveDuringDeployment)) RemoveStatus(unit, id, count);
+                    (!source.Deployment || status.RemoveDuringDeployment))
+                {
+                    RelicStatusDecayResult removal = RelicStatusDecayModel.GetShouldRemove(context, true, id,
+                        unit.Source.Team == CombatTeam.Player ? 2 : 1, source.Preview);
+                    if (!removal.Supported) { unsupportedReason = removal.UnsupportedReason; return; }
+                    if (removal.ShouldRemove) RemoveStatus(unit, id, count);
+                }
             }
 
             private void QueueCallback(QueuedCharacterTrigger callback)
@@ -2707,10 +2714,16 @@ namespace MonsterTrain2Poju.Model
                     foreach (CombatStatus status in unit.RegisteredStatuses().ToArray())
                         if (status.RemoveAfterPostCombat == after)
                         {
-                            if (status.RemoveStackAtEnd && !(relentless && status.PreventRemovalDuringRelentless))
+                            if (status.RemoveStackAtEnd)
                             {
-                                RemoveStatus(unit, status.Id, 1);
-                                if (unit.Count(status.Id) == 0) unit.RemoveDefinition(status.Id);
+                                RelicStatusDecayResult removal = RelicStatusDecayModel.GetShouldRemove(context, true, status.Id,
+                                    unit.Source.Team == CombatTeam.Player ? 2 : 1, source.Preview);
+                                if (!removal.Supported) { unsupportedReason = removal.UnsupportedReason; return; }
+                                if (removal.ShouldRemove && !(relentless && status.PreventRemovalDuringRelentless))
+                                {
+                                    RemoveStatus(unit, status.Id, 1);
+                                    if (unit.Count(status.Id) == 0) unit.RemoveDefinition(status.Id);
+                                }
                             }
                             else if (!status.RemoveStackAtEnd && status.RemoveAllAtEnd)
                             {

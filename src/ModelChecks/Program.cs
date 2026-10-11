@@ -1,6 +1,12 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
 
+if (args.Length == 1 && args[0] == "--relic-status-decay-pure")
+{
+    RelicStatusDecayChecks.Run();
+    return;
+}
+
 if (args.Length == 1 && args[0] == "--relic-lifecycle-pure")
 {
     RelicCharacterTriggerChecks.Run();
@@ -413,6 +419,7 @@ RelicCharacterTriggerChecks.Run();
 RelicCardModifierChecks.Run();
 RelicStatusStackChecks.Run();
 RelicStatusMagnitudeChecks.Run();
+RelicStatusDecayChecks.Run();
 StatusAttackDamageChecks.Run();
 TypedDrawChecks.Run();
 CardMagicPowerChecks.Run();
