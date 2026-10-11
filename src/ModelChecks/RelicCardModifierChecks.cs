@@ -99,7 +99,9 @@ internal static class RelicCardModifierChecks
             scenario.GetString() == "relic-card-ability-upgrades";
         bool triggerUpgradeScenario = root.TryGetProperty("ModifierScenario", out scenario) &&
             scenario.GetString() == "relic-card-trigger-upgrades";
-        bool sawExpectedRejection = statusUpgradeScenario || piercingUpgradeScenario || abilityUpgradeScenario || triggerUpgradeScenario
+        bool deployableRelicScenario = root.TryGetProperty("ModifierScenario", out scenario) &&
+            scenario.GetString() == "original-deployable-relic";
+        bool sawExpectedRejection = statusUpgradeScenario || piercingUpgradeScenario || abilityUpgradeScenario || triggerUpgradeScenario || deployableRelicScenario
             ? rows.Any(row => row.Dispatches.Any(effect => !effect.Returned && !effect.UpgradeAdded))
             : rows.Any(row => !row.Reset && row.Dispatches.Any(effect => effect.Returned && !effect.UpgradeAdded));
         Require(rows.Length > 0, "Native relic manager capture contains no calls.");
@@ -112,8 +114,10 @@ internal static class RelicCardModifierChecks
             rows.Any(row => row.Dispatches.Any(effect => !effect.Returned)), statusUpgradeScenario
                 ? "Native manager lacks reset and failed-eligibility rejection."
                 : "Native manager lacks reset/repeat/unique rejection and failed eligibility.");
-        Require(rows.Any(row => row.Relics.Any(relic => relic.AssetKey == "ReduceStarterCost" &&
-            relic.EffectTypes.SequenceEqual(new[] { "RelicEffectAddTempUpgrade" }))), "Original starter-cost relic is missing.");
+        string expectedOwner = root.TryGetProperty("ModifierScenario", out var ownerScenario) &&
+            ownerScenario.GetString() == "original-deployable-relic" ? "NonBannerUnitsHaveDeployable" : "ReduceStarterCost";
+        Require(rows.Any(row => row.Relics.Any(relic => relic.AssetKey == expectedOwner &&
+            relic.EffectTypes.SequenceEqual(new[] { "RelicEffectAddTempUpgrade" }))), "Expected original relic owner is missing.");
         string parent = JsonSerializer.Serialize(rows);
         void Check()
         {
@@ -278,12 +282,13 @@ internal static class RelicCardModifierChecks
             Before: row.GetProperty("Before").Deserialize<CombatContext>()!,
             Actual: row.GetProperty("Actual").Deserialize<CombatContext>()!)).ToArray();
         var births = generated.SelectMany(row => row.Actual.CardInstances!.Where(card => card.InstanceId >= row.Before.NextCardId)).ToArray();
-        if (requireScenarioCoverage && !statusUpgradeScenario && !piercingUpgradeScenario && !selfPurgeUpgradeScenario &&
+        if (requireScenarioCoverage && !deployableRelicScenario && !statusUpgradeScenario && !piercingUpgradeScenario && !selfPurgeUpgradeScenario &&
             !exhaustUpgradeScenario && !abilityUpgradeScenario && !triggerUpgradeScenario)
             Require(births.Any(card => card.Temporary.Upgrades.Any(upgrade => upgrade.AssetKey == "ReduceStarterCost" ||
                 rows.SelectMany(row => row.Relics).SelectMany(relic => relic.CardModifiers ?? []).Any(effect => effect.Upgrade?.DataId == upgrade.DataId))),
                 "No battle-generated eligible card received an original relic upgrade.");
         string coverage = !requireScenarioCoverage ? "all recorded composite eligibility results" :
+            deployableRelicScenario ? "eligible deployment-phase units are independently played" :
             statusUpgradeScenario ? "card status upgrades reached summoned units" :
             piercingUpgradeScenario ? "IgnoreArmor relic traits retained on played cards" :
             selfPurgeUpgradeScenario ? "SelfPurge relic traits retained on played cards" :

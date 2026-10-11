@@ -1,8 +1,8 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-11): 229 binary archives, including 198
+Current accepted inventory (2026-10-11): 230 binary archives, including 199
 full battles and 31 component calibrations. Unchanged original relic evidence
-covers 57/224 catalog entries (25.45%); see
+covers 58/224 catalog entries (25.89%); see
 [the owner evidence table](tests/fixtures/relic-coverage.md). Whole-battle
 coverage and the optimal solver remain in progress.
 
@@ -11,6 +11,13 @@ Sting upgrade owners. Three played Stings retain the combined +30 damage and
 IgnoreArmor; 53 native manager calls match reset, unique-repeat and filter
 behavior. Their second `RelicEffectAddCardsNull` entries only provide tooltip
 cards and have no native battle hook.
+
+`full-battle-original-deployable-relic.mt2f` verifies the unchanged
+`NonBannerUnitsHaveDeployable` upgrade: two eligible non-Banner units enter the
+first decision hand and both are independently played. All 48 relic-manager
+calls, filters, reset behavior, notifications and 32 immutable branches match.
+This captures the native deployment hand before the simulator's first-decision
+input; whole-game relic coverage and the optimal solver remain unfinished.
 
 `full-battle-mageblade.mt2f` now validates the Mageblade cache and room-power
 attack path through a complete battle and independent mid-battle replay. Its

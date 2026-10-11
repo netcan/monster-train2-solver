@@ -2696,3 +2696,27 @@ Full-inventory replay remains deferred to a completed milestone.
 ```powershell
 pwsh -NoProfile -Command "& './scripts/Check-Models.ps1' -Fixture @('full-battle-original-sting-relics.mt2f','full-battle-relic-card-piercing-upgrades.mt2f','full-battle-original-relic-batch.mt2f')"
 ```
+
+### Original deployment-phase relic
+
+`full-battle-original-deployable-relic.mt2f` acquires the unchanged
+`NonBannerUnitsHaveDeployable` relic before the native first-battle draw. Its
+original `RelicEffectAddTempUpgrade` adds `CardTraitDrawInDeploymentPhase` to
+eligible non-Banner units. Native setup places two such units in the first
+player-decision hand, and the independent policy plays both into rooms. The
+native manager's non-unique repeated-upgrade behavior is retained.
+
+The muted Instant battle wins at Pyre 73 after 23 card plays, seven EndTurns
+and 62 matched room states. All 48 relic-manager calls, 48 ordered filter
+results and six notifications match; the model also passes 560 decision
+contexts, 9,375 exact card-mask queries, 1,120 upgraded-card observations and
+32 immutable query branches. Sixteen policy branches pass the complete replay.
+The schema-125 archive is 34,673 bytes with 5,346 unique nodes and SHA-256
+`8496a6ac544baba57535f5b0fafd4a855004ef854c19da1c9e314a5698188178`; it has
+no JSON companion. Inventory is now 230 archives: 199 battles and 31 component
+calibrations. Original relic evidence is 58/224 (25.89%). Full-inventory replay
+remains deferred to a milestone.
+
+```powershell
+& ./scripts/Check-Models.ps1 -Fixture full-battle-original-deployable-relic.mt2f
+```

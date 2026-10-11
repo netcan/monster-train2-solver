@@ -125,6 +125,7 @@ namespace MonsterTrain2Poju.Probe
             bool supportedTraitsOnly = lifecycle.AddedTraits.Count > 0 && lifecycle.AddedTraits.All(trait =>
                 trait.RuntimeType == trait.DeclaredName &&
                 (trait.RuntimeType is "CardTraitIgnoreArmor" or "CardTraitSelfPurge" or "CardTraitExhaustState" ||
+                    trait.RuntimeType == "CardTraitDrawInDeploymentPhase" ||
                     trait.RuntimeType == "CardTraitStrongerMagicPower" && CardBranchMaskProbe.Enabled)) &&
                 lifecycle.RemovedRuntimeTypes.Count == 0 && lifecycle.ReplacedAssets.Count == 0 && lifecycle.Triggers.Count == 0;
             if ((upgrade.GetTraitDataUpgrades().Count > 0 || upgrade.GetRemoveTraitUpgrades().Count > 0) && !supportedTraitsOnly)

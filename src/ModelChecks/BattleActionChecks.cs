@@ -361,6 +361,8 @@ internal static class BattleActionChecks
             chooser = OriginalUnitRelicBatchChecks.Choose;
         if (fixture.TryGetProperty("ModifierScenario", out var originalStingRelicPolicy) && originalStingRelicPolicy.GetString() == "original-sting-relics")
             chooser = OriginalStingRelicBatchChecks.Choose;
+        if (fixture.TryGetProperty("ModifierScenario", out var originalDeployableRelicPolicy) && originalDeployableRelicPolicy.GetString() == "original-deployable-relic")
+            chooser = OriginalDeployableRelicChecks.Choose;
         if (fixture.TryGetProperty("ModifierScenario", out var originalTriggerRelicPolicy) && originalTriggerRelicPolicy.GetString() == "original-trigger-relic-batch")
             chooser = OriginalTriggerRelicBatchChecks.Choose;
         if (fixture.TryGetProperty("ModifierScenario", out var originalLifecycleRelicPolicy) && originalLifecycleRelicPolicy.GetString() == "original-lifecycle-relic-batch")

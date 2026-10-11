@@ -132,6 +132,7 @@ param(
     [switch] $RelicCardAbilityUpgrades,
     [switch] $RelicCardTriggerUpgrades,
     [switch] $OriginalRelicBatch,
+    [switch] $OriginalDeployableRelic,
     [switch] $OriginalStingRelicBatch,
     [switch] $OriginalUnitRelicBatch,
     [switch] $OriginalTriggerRelicBatch,
@@ -196,7 +197,7 @@ if ($PermanentConsumeHandUpgrades -or $PermanentConsumeOverTemporary) { $HandUpg
 if ($GenerationPermanentConsume) { $Generation = $true; $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($TypedDraw) { $BranchCardMasks = $true; $BattleRelicUpgrades = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalUnitRelicBatch) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
-if ($OriginalStingRelicBatch) { $BattleRelicUpgrades = $true; $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
+if ($OriginalStingRelicBatch -or $OriginalDeployableRelic) { $BattleRelicUpgrades = $true; $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalStatusRelicBatch) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalMagnitudeRelicBatch) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalDecayRelicBatch) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
@@ -216,7 +217,7 @@ if ($RelicCardExhaustUpgrades) { $BattleRelicUpgrades = $true; $Policy = 'units-
 if ($RelicCardAbilityUpgrades) { $BattleRelicUpgrades = $true }
 if ($RelicCardTriggerUpgrades) { $BattleRelicUpgrades = $true }
 if ($MixedCardlessRelicOrder) { $SpawnStatusRelicsClones = $true }
-if ($BattleRelicUpgrades -or $SpawnStatusRelicsClones -or $OriginalRelicBatch -or $OriginalStingRelicBatch) { $BranchCardMasks = $true }
+if ($BattleRelicUpgrades -or $SpawnStatusRelicsClones -or $OriginalRelicBatch -or $OriginalStingRelicBatch -or $OriginalDeployableRelic) { $BranchCardMasks = $true }
 if ($SpawnStatusRelicsClones) { $SpawnStatusRelics = $true; $UnitClone = $true }
 if ($EnchantmentWorld) { $EnchantmentCombat = $true }
 if ($PersistentEnchantmentRevivals) { $PersistentEnchantmentDeaths = $true }
@@ -395,6 +396,7 @@ if ($SacrificeEffects) {
 if ($OriginalRelicBatch) {
     $environment['MT2_PROBE_MODIFIERS'] = 'original-relic-batch'
 }
+if ($OriginalDeployableRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-deployable-relic' }
 if ($OriginalStingRelicBatch) { $environment['MT2_PROBE_MODIFIERS'] = 'original-sting-relics' }
 if ($OriginalUnitRelicBatch) { $environment['MT2_PROBE_MODIFIERS'] = 'original-unit-relic-batch' }
 if ($OriginalTriggerRelicBatch) { $environment['MT2_PROBE_MODIFIERS'] = 'original-trigger-relic-batch' }
@@ -527,7 +529,7 @@ if ($RelicCardUpgrades) {
 }
 if ($BattleRelicUpgrades) {
     $modifierRows = @($trace.RelicCardModifiers)
-    $rejectedDispatches = if ($RelicCardStatusUpgrades -or $RelicCardPiercingUpgrades -or $RelicCardAbilityUpgrades -or $RelicCardTriggerUpgrades) {
+    $rejectedDispatches = if ($RelicCardStatusUpgrades -or $RelicCardPiercingUpgrades -or $RelicCardAbilityUpgrades -or $RelicCardTriggerUpgrades -or $OriginalDeployableRelic) {
         @($modifierRows | ForEach-Object Dispatches | Where-Object { -not $_.Returned -and -not $_.UpgradeAdded }).Count
     } else {
         @($modifierRows | ForEach-Object Dispatches | Where-Object { $_.Returned -and -not $_.UpgradeAdded }).Count

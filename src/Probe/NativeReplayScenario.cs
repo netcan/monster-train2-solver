@@ -254,6 +254,8 @@ namespace MonsterTrain2Poju.Probe
                         PyreResourceRefreshScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalFloorCapacityRelicScenario.Enabled && !OriginalFloorCapacityRelicScenario.Prepared)
                         OriginalFloorCapacityRelicScenario.AcquireBeforeBattle(managers!, log);
+                    if (fullBattle && OriginalDeployableRelicScenario.Enabled && !OriginalDeployableRelicScenario.Acquired)
+                        OriginalDeployableRelicScenario.AcquireBeforeBattle(managers!, log);
                     ReplayManager.TryClickButton(node);
                 }
                 return;
@@ -840,6 +842,7 @@ namespace MonsterTrain2Poju.Probe
                     ? OriginalStingRelicBatchScenario.Choose(decision)
                     : Environment.GetEnvironmentVariable("MT2_PROBE_FULL_BATTLE_POLICY") == "units-spells-and-junk"
                         ? BattleActionModel.ChooseUnitSpellAndJunkPlay(decision) : BattleActionModel.ChooseUnitAndJunkPlay(decision);
+                if (OriginalDeployableRelicScenario.Enabled) pendingPlay = OriginalDeployableRelicScenario.Choose(decision) ?? pendingPlay;
                 if (modifierScenario == "sacrifice-effects") pendingPlay = SacrificeScenario.Choose(decision);
                 if (modifierScenario == "typed-draw") pendingPlay = TypedDrawScenario.Choose(decision);
                 if (OriginalUnitRelicBatchScenario.Enabled) pendingPlay = OriginalUnitRelicBatchScenario.Choose(decision);

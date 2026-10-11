@@ -168,6 +168,8 @@ internal static class RoomCombatChecks
             OriginalRelicBatchChecks.Native(fixture);
         else if (fixture.TryGetProperty("ModifierScenario", out relicScenario) && relicScenario.GetString() == "original-sting-relics")
             OriginalStingRelicBatchChecks.Native(fixture, required: true);
+        else if (fixture.TryGetProperty("ModifierScenario", out relicScenario) && relicScenario.GetString() == "original-deployable-relic")
+            OriginalDeployableRelicChecks.Native(fixture, required: true);
         else if (fixture.TryGetProperty("ModifierScenario", out relicScenario) && relicScenario.GetString() == "original-unit-relic-batch")
             OriginalUnitRelicBatchChecks.Native(fixture, required: true);
         else if (fixture.TryGetProperty("ModifierScenario", out relicScenario) && relicScenario.GetString() == "original-trigger-relic-batch")

@@ -66,7 +66,7 @@ namespace MonsterTrain2Poju.Model
                     return "Relic card upgrade payload identity differs.";
                 bool supportedTraitsOnly = template?.AddedTraits.Count > 0 && template.AddedTraits.All(trait =>
                     trait.RuntimeType == trait.DeclaredName &&
-                    trait.RuntimeType is "CardTraitIgnoreArmor" or "CardTraitSelfPurge" or "CardTraitExhaustState") &&
+                    trait.RuntimeType is "CardTraitIgnoreArmor" or "CardTraitSelfPurge" or "CardTraitExhaustState" or "CardTraitDrawInDeploymentPhase") &&
                     template.RemovedRuntimeTypes.Count == 0 && template.ReplacedAssets.Count == 0 && template.Triggers.Count == 0;
                 if (template != null && (template.AddedTraits.Count > 0 && !supportedTraitsOnly ||
                     template.RemovedRuntimeTypes.Count > 0 || template.ReplacedAssets.Count > 0 || template.Triggers.Count > 0))

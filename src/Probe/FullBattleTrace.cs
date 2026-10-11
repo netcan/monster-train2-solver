@@ -212,7 +212,9 @@ namespace MonsterTrain2Poju.Probe
                 interactions.Add(character.GetSourceCharacterData().GetAssetKey() + " room modifiers");
             CardState? card = character.GetSpawnerCard();
             if (card != null && (card.GetTraitStates().Any(trait =>
-                    trait.GetType().Name != "CardTraitIgnoreArmor" && !DamageScalingProbe.Known(trait.GetType().Name)) || card.GetTriggers().Count > 0))
+                    trait.GetType().Name != "CardTraitIgnoreArmor" &&
+                    trait.GetType().Name != "CardTraitDrawInDeploymentPhase" &&
+                    !DamageScalingProbe.Known(trait.GetType().Name)) || card.GetTriggers().Count > 0))
                 interactions.Add(character.GetSourceCharacterData().GetAssetKey() + " card traits/triggers");
             var nativeStatuses = new List<CharacterState.StatusEffectStack>();
             character.GetStatusEffects(ref nativeStatuses, includeZeroStacks: true);
