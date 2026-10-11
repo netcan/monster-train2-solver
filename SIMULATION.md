@@ -1,10 +1,15 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-11): 221 binary archives, including 190
+Current accepted inventory (2026-10-11): 223 binary archives, including 192
 full battles and 31 component calibrations. Unchanged original relic evidence
-covers 50/224 catalog entries (22.32%); see
+covers 55/224 catalog entries (24.55%); see
 [the owner evidence table](tests/fixtures/relic-coverage.md). Whole-battle
 coverage and the optimal solver remain in progress.
+
+`full-battle-mageblade.mt2f` now validates the Mageblade cache and room-power
+attack path through a complete battle and independent mid-battle replay. Its
++15 room magic power is a controlled probe input; natural room-power sources
+and preview-copy lifecycle remain unverified.
 
 Fixed native regression inputs live in `tests/fixtures/` and are read by
 `scripts/Check-Models.ps1`. Historical `results/` paths below refer to local
@@ -7862,8 +7867,10 @@ captures without these rules retain their prior null metadata.
 Spikes and Regen read magnitude at their actual trigger. Modeled Pyregel and
 Poison consumers also call the getter so unrelated outer-condition queries
 retain their native effects, while unvalidated owner rules remain guarded.
-Mageblade remains unsupported: it needs room spell power and a separate cached
-per-stack coefficient, including source changes and preview-copy behavior.
+At this schema-114 milestone, Mageblade still needed a separate cached
+coefficient and room-power evidence. The later schema-120 full-battle fixture
+validates that cache and attack consumer with controlled room power; natural
+room-power sources and preview-copy behavior remain unverified.
 
 The initial schema-114 original magnitude capture independently validated three
 unchanged owners across 18 plays, five EndTurns and 39 complete combat stages,

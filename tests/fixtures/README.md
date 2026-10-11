@@ -15,7 +15,7 @@ The default command still checks the full curated inventory.
 For routine changes, run only the new and directly affected fixtures with
 `-Fixture`; run the full inventory at completed milestones and before delivery.
 
-Current inventory is 222 archives: 191 accepted battles and 31 component
+Current inventory is 223 archives: 192 accepted battles and 31 component
 calibrations. `full-battle-relic-card-status-upgrades.mt2f` verifies a native
 temporary card status upgrade reaches the unit summoned by that card.
 `full-battle-sacrifice-effects.mt2f` covers native `CardEffectSacrifice` target
@@ -2541,17 +2541,22 @@ mismatches, unsupported transitions or pending records. Whole-battle and
 mid-battle policy replays each pass 16 immutable parallel branches. The focused
 capacity regression also passes the previous room-capacity, lethal-capacity,
 physical-spawn, physical-spawn-without-cards, typed-draw and Pyre-resource
-fixtures. The full 222-archive replay remains deferred to a milestone.
+fixtures. The full 223-archive replay remains deferred to a milestone.
 
 The binary has no JSON source: 32,376 bytes, 6,658 unique nodes, SHA-256
 `7286230896e2253fe22db88f74dc5d61d51b36e6f9609b81ace026194022e09b`. Native
 sampling used the final model and strict acceptance replays the archived state.
-The inventory is 222 archives (191 battles, 31 calibrations); accepted original
+The inventory is 223 archives (192 battles, 31 calibrations); accepted original
 relic coverage is 55/224 (24.55%) across 15 evidence archives. Broader
 card/relic combinations, unsupported tower room modifiers, all Bosses and the
 optimal solver remain unfinished. Mageblade now has pure model checks for its
-cached per-unit coefficient and captured room-power attack bonus; native
-battle replay is still pending, so the accepted coverage count is unchanged.
+cached per-unit coefficient and captured room-power attack bonus. The new
+`full-battle-mageblade.mt2f` archive records 39 status/cache/room-power
+observations and passes the complete native battle, action replay, mid-battle
+continuation and 16 parallel branches. Its +15 room magic power is a controlled
+probe input, so it validates Mageblade's cache and attack consumer rather than
+the natural source of room power. Mageblade is not an original relic and does
+not change the 55/224 relic-owner count.
 
 ```powershell
 dotnet run --project src/ModelChecks -c Release -- --relic-floor-capacity-pure

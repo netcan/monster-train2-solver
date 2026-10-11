@@ -137,6 +137,7 @@ param(
     [switch] $OriginalResourceRelicBatch,
     [switch] $PyreResourceRefresh,
     [switch] $OriginalFloorCapacityRelics,
+    [switch] $Mageblade,
     [switch] $TypedDraw,
     [switch] $IncantRelic,
     [switch] $IncantRelics,
@@ -193,6 +194,7 @@ if ($OriginalDecayRelicBatch) { $BranchCardMasks = $true; $Policy = 'units-spell
 if ($OriginalResourceRelicBatch) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($PyreResourceRefresh) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalFloorCapacityRelics) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
+if ($Mageblade) { $BranchCardMasks = $true; $Policy = 'units-and-junk' }
 if ($OriginalTriggerRelicBatch -or $OriginalLifecycleRelicBatch) {
     $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $SettleDeathDissolves = $true; $SettleCardAnimations = $true
     $Policy = 'units-spells-and-junk'
@@ -385,6 +387,7 @@ if ($OriginalDecayRelicBatch) { $environment['MT2_PROBE_MODIFIERS'] = 'original-
 if ($OriginalResourceRelicBatch) { $environment['MT2_PROBE_MODIFIERS'] = 'original-resource-relic-batch' }
 if ($PyreResourceRefresh) { $environment['MT2_PROBE_MODIFIERS'] = 'pyre-resource-refresh' }
 if ($OriginalFloorCapacityRelics) { $environment['MT2_PROBE_MODIFIERS'] = 'original-floor-capacity-relics' }
+if ($Mageblade) { $environment['MT2_PROBE_MODIFIERS'] = 'mageblade' }
 if ($TypedDraw) {
     $environment['MT2_PROBE_MODIFIERS'] = 'typed-draw'
     $environment['MT2_PROBE_ISOLATE_UI_RNG'] = '1'
@@ -419,6 +422,27 @@ Write-Output "FULL-BATTLE-INSPECTION elapsedSeconds=$($inspectionTimer.Elapsed.T
 $nativePassed = [bool] (Select-String -LiteralPath $unityLog -Pattern 'DEPTH-PASS' -Quiet)
 $terminalSettled = $trace.TerminalCaptureBoundary -eq 'AfterStopCombatLoop' -and $trace.TerminalEffectsSettled -eq $true
 $originalUnchanged = (Get-OriginalSignature) -ceq $originalBefore
+if ($Mageblade) {
+    $magebladeProof = @(
+        foreach ($stage in $trace.Stages) {
+            if ($null -eq $stage.Actual -or $null -eq $stage.Actual.Context) { continue }
+            foreach ($unit in $stage.Actual.Units) {
+                $magebladeStatuses = @($unit.Statuses | Where-Object { $_.Id -eq 'mageblade' -and $_.Stacks -gt 0 })
+                $power = @($stage.Actual.Context.MagicPower | Where-Object {
+                    $_.RoomIndex -eq $stage.Actual.RoomIndex -and $_.Team -eq 1 -and $_.Value -gt 0
+                })
+                if ($magebladeStatuses.Count -gt 0 -and $unit.Modifiers.MagebladeDamagePerMagicPower -gt 0 -and $power.Count -gt 0) {
+                    [pscustomobject]@{ Room = $stage.Actual.RoomIndex; Stacks = $magebladeStatuses[0].Stacks; Power = $power[0].Value; Cache = $unit.Modifiers.MagebladeDamagePerMagicPower }
+                }
+            }
+        }
+    )
+    if ($trace.Schema -ne 120 -or $trace.ModifierScenario -ne 'mageblade' -or
+        -not (Select-String -LiteralPath $unityLog -Pattern 'MAGEBLADE-PREPARED' -Quiet) -or $magebladeProof.Count -eq 0) {
+        throw 'Mageblade native battle did not capture a cached Mageblade unit in a positive-magic-power room.'
+    }
+    Write-Output "MAGEBLADE-NATIVE-CAPTURE PASS: $($magebladeProof.Count) stages with stacks=$($magebladeProof[0].Stacks), roomPower=$($magebladeProof[0].Power), cachedCoefficient=$($magebladeProof[0].Cache)."
+}
 if ($RelicCatalog) {
     Add-Type -Path (Join-Path $workspace 'src\FixtureArchive\bin\Release\net8.0\FixtureArchive.dll')
     $catalogArchive = [MonsterTrain2Poju.Fixtures.FixtureDocument]::Read((Join-Path $profile 'relic-catalog.mt2f'))

@@ -79,6 +79,10 @@ namespace MonsterTrain2Poju.Model
             CardPlayRule resolved = card == null ? birthDefinition.WithSpawn(initialized) : CardModifierModel.Resolve(birthDefinition.WithSpawn(initialized), card);
             if (resolved.ExternalInteractions.Count > 0) return Unsupported(string.Join("; ", resolved.ExternalInteractions));
             CombatUnit template = resolved.SpawnUnit!;
+            IReadOnlyList<CombatStatus> starting = raw.StatusRegistry ?? raw.Statuses;
+            foreach (CardModifiers group in card == null ? Array.Empty<CardModifiers>() : new[] { card.Permanent, card.Temporary })
+                starting = StatusCallbackModel.MergeStartingStatuses(starting, group.Upgrades.SelectMany(upgrade => upgrade.Statuses));
+            if (isCardless) starting = starting.Concat(new[] { cardlessStatus! }).ToArray();
             if (isClone)
             {
                 UnitModifiers old = template.Modifiers!;
@@ -87,6 +91,7 @@ namespace MonsterTrain2Poju.Model
                     old.DamageBuffFromStatusEffects, old.MagebladeDamagePerMagicPower);
                 template = UnitCloneModel.Copy(template, cloned, template.BaseAttack, template.Health, template.MaxHealth);
             }
+            template = StatusAttackDamageModel.PrepareBirthTemplate(template, starting);
             error = UnitIdentityModel.Validate(context, source.Units);
             if (error != null) return Unsupported(error);
             UnitIdentityAllocation allocated = UnitIdentityModel.Allocate(context);
@@ -117,10 +122,6 @@ namespace MonsterTrain2Poju.Model
             if (!source.Preview) context = context.WithStatistics(context.Statistics?.Spawn(source.RoomIndex, template.Subtypes));
             var entered = new RoomCombatState(source.RoomIndex, source.Deployment,
                 source.Units.Where(unit => unit.Team == CombatTeam.Enemy).Concat(players).ToArray(), source.ExternalInteractions, context, source.Preview);
-            IReadOnlyList<CombatStatus> starting = raw.StatusRegistry ?? raw.Statuses;
-            foreach (CardModifiers group in card == null ? Array.Empty<CardModifiers>() : new[] { card.Permanent, card.Temporary })
-                starting = StatusCallbackModel.MergeStartingStatuses(starting, group.Upgrades.SelectMany(upgrade => upgrade.Statuses));
-            if (isCardless) starting = starting.Concat(new[] { cardlessStatus! }).ToArray();
             RoomCombatResult result = drainBirthQueue == null ?
                 RoomCombatModel.ApplySpawnTriggers(entered, spawned.Id, spawnerCardId > 0, starting, enqueue) :
                 RoomCombatModel.PrepareSpawnTriggers(entered, spawned.Id, spawnerCardId > 0, starting);

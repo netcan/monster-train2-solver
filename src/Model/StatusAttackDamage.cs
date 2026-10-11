@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace MonsterTrain2Poju.Model
@@ -15,6 +16,14 @@ namespace MonsterTrain2Poju.Model
 
     internal static class StatusAttackDamageModel
     {
+        internal static CombatUnit PrepareBirthTemplate(CombatUnit template, IReadOnlyList<CombatStatus> startingApplications)
+        {
+            if (template.Modifiers == null || template.Modifiers.MagebladeDamagePerMagicPower.HasValue ||
+                !startingApplications.Any(status => status.Id == "mageblade" && status.Stacks > 0))
+                return template;
+            return template.WithModifiers(template.Modifiers.WithMagebladeDamage(0));
+        }
+
         // Native stores status attack separately. A later condition change does
         // not recompute old stacks, and removal can leave a nonzero accumulator.
         internal static StatusAttackDamageResult Change(CombatContext? context, CombatUnit unit, CombatStatus status, int delta, bool adding)

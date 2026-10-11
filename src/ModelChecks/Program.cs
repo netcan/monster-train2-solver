@@ -16,6 +16,20 @@ if (args.Length == 2 && args[0] == "--original-floor-capacity-only")
     return;
 }
 
+if (args.Length == 2 && args[0] == "--mageblade-only")
+{
+    using var document = ModelJson.ReadFixture(args[1]);
+    MagebladeChecks.Native(document.RootElement, required: true);
+    return;
+}
+
+if (args.Length == 1 && args[0] == "--mageblade-pure")
+{
+    BattleActionChecks.MagebladeStartingStatusSummon();
+    StatusAttackDamageChecks.Run();
+    return;
+}
+
 if (args.Length == 1 && args[0] == "--gold-pyre-pure")
 {
     GoldPyreChecks.Run();
@@ -539,6 +553,11 @@ TrainCombatChecks.Run();
 RoomCombatChecks.Run(args.Where(path => !path.Contains("calibration", StringComparison.OrdinalIgnoreCase)).ToArray());
 foreach (string path in args.Where(path => path.Contains("card-modifier-calibration", StringComparison.OrdinalIgnoreCase)))
     CardModifierChecks.Native(path);
+foreach (string path in args.Where(path => path.Contains("mageblade", StringComparison.OrdinalIgnoreCase)))
+{
+    using var document = ModelJson.ReadFixture(path);
+    MagebladeChecks.Native(document.RootElement);
+}
 foreach (string path in args.Where(path => path.Contains("card-upgrade-mask-calibration", StringComparison.OrdinalIgnoreCase)))
     CardUpgradeMaskChecks.Native(path);
 foreach (string path in args.Where(path => path.Contains("card-modifier-overflow-calibration", StringComparison.OrdinalIgnoreCase)))

@@ -108,15 +108,16 @@ namespace MonsterTrain2Poju.Model
             bool purify = applications.Any(status => status.Id == "purify" && status.Stacks > 0);
             bool relicStacks = initializing.Context?.Relics?.Any(relic => relic.StatusStackAdditions?.Count > 0 || relic.StatusMagnitudes?.Count > 0) == true;
             bool statusDamage = template.Modifiers?.DamageBuffFromStatusEffects.HasValue == true;
-            if (horde || purify || relicStacks || statusDamage || initializing.Context?.Enchantments != null)
+            bool magebladeDamage = template.Modifiers?.MagebladeDamagePerMagicPower.HasValue == true;
+            if (horde || purify || relicStacks || statusDamage || magebladeDamage || initializing.Context?.Enchantments != null)
             {
                 CombatUnit value = current;
                 var initialized = new CombatUnit(value.Id, value.AssetKey, value.Team, value.BaseAttack, value.Health, value.MaxHealth,
                     value.CanAttack, value.IsPyre, value.EndsBattleOnDeath, value.Statuses, value.Triggers, value.SpawnerCardId, value.Size,
                     template.StatusImmunities, value.Subtypes, value.Modifiers, value.IsBoss, value.LastAttackerId, value.StatusRegistry,
                     value.EquipmentCards, value.NextTriggerId, value.Ability, value.StatusDictionary, value.AbilityRules, value.HordeDefinition, value.IsSpawning, value.SacrificeCardId, value.DeathState, bumpRules: value.BumpRules);
-                if (horde || purify || relicStacks || statusDamage) update?.Invoke(initialized);
-                if (relicStacks || statusDamage || initializing.Context?.Enchantments != null)
+                if (horde || purify || relicStacks || statusDamage || magebladeDamage) update?.Invoke(initialized);
+                if (relicStacks || statusDamage || magebladeDamage || initializing.Context?.Enchantments != null)
                 {
                     initializing = EnchantmentWorldModel.Sync(new RoomCombatState(source.RoomIndex, source.Deployment,
                         initializing.Units.Select(unit => unit.Id == template.Id ? initialized : unit).ToArray(),

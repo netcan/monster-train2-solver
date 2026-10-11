@@ -20,10 +20,12 @@ All 15 source archives below report game `2.2.1`, module MVID
 byte lengths and SHA-256 hashes are recorded in [manifest.tsv](manifest.tsv).
 The floor-capacity batch passes strict native acceptance, complete-fixture checks,
 independent full-battle replay and six directly affected old-fixture regressions.
-The accepted inventory is 222 archives: 191 battles and 31 component
-calibrations. All 222 archive names, byte lengths and SHA-256 hashes match the
-manifest and curated list, with no JSON companions. A full 222-archive replay remains
-deferred to a milestone.
+The accepted inventory is 223 archives: 192 battles and 31 component
+calibrations. All 223 archive names, byte lengths and SHA-256 hashes match the
+manifest and curated list, with no JSON companions. A full 223-archive replay
+remains deferred to a milestone. The Mageblade status/cache/attack path has an
+accepted native battle archive, but Mageblade is not a collectable relic and is
+not included in the 55/224 owner count.
 
 | AssetKey | DataId | Accepted archive | Actual effect witness |
 | --- | --- | --- | --- |
@@ -222,10 +224,12 @@ replay against the captured native states. Full 221-archive replay remains
 deferred, and unsupported tower room modifiers and uncaptured Setup-time Gold
 range amounts remain guarded.
 Mageblade magnitude rules, its captured per-unit cache, and attacks using captured
-room magic power are now modeled and covered by pure checks. The model rejects
-missing cache or room-power evidence, but Mageblade remains outside accepted
-native battle evidence and the 55/224 original-owner count until a full native
-replay validates the mechanic.
+room magic power are now modeled. `full-battle-mageblade.mt2f` verifies 39 native
+status/cache/room-power observations and passes all 45 battle stages, eight paid
+actions, six EndTurns and 16 whole-battle/mid-battle policy branches. The test
+injects +15 room power as a controlled input; the natural source and preview-copy
+lifecycle of room power remain outside this evidence. Mageblade is not part of
+the 55/224 original-relic owner count.
 The older `6/224` passage in README describes an earlier milestone; it does not
 include the starter-cost, cardless or four-artifact batch evidence above.
 

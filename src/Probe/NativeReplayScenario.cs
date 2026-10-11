@@ -246,6 +246,8 @@ namespace MonsterTrain2Poju.Probe
                 int section = save.GetCurrentDistance() + 1;
                 if (map != null && map.TryGetBattleNodeUI(section, out MapBattleNodeUI node))
                 {
+                    if (fullBattle && MagebladeScenario.Enabled && !MagebladeScenario.Prepared)
+                        MagebladeScenario.ConfigureBeforeBattle(managers!, log);
                     if (fullBattle && OriginalResourceRelicBatchScenario.Enabled && !OriginalResourceRelicBatchScenario.Prepared)
                         OriginalResourceRelicBatchScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && PyreResourceRefreshScenario.Enabled && !PyreResourceRefreshScenario.Prepared)
@@ -822,6 +824,11 @@ namespace MonsterTrain2Poju.Probe
             }
             if (IsUnitAndJunkPolicy())
             {
+                if (fullBattle && MagebladeScenario.Enabled && !MagebladeScenario.CaptureReady)
+                {
+                    if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Mageblade fixture must start on deployment turn.");
+                    MagebladeScenario.Prepare(managers, log);
+                }
                 BattleTurnState decision = FullBattleTrace.Active!.CaptureDecision();
                 RelicStatusStackProbe.Matrix();
                 RelicStatusMagnitudeProbe.Matrix();
@@ -837,6 +844,7 @@ namespace MonsterTrain2Poju.Probe
                 if (OriginalResourceRelicBatchScenario.Enabled) pendingPlay = OriginalResourceRelicBatchScenario.Choose(decision);
                 if (PyreResourceRefreshScenario.Enabled) pendingPlay = PyreResourceRefreshScenario.Choose(decision);
                 if (OriginalFloorCapacityRelicScenario.Enabled) pendingPlay = OriginalFloorCapacityRelicScenario.Choose(decision);
+                if (MagebladeScenario.Enabled) pendingPlay = MagebladeScenario.Choose(decision) ?? pendingPlay;
                 if (modifierScenario == "rally-lethal") pendingPlay = LethalRallyScenario.ChooseNativeBossSummon(managers) ?? pendingPlay;
                 if (modifierScenario == "incant" || modifierScenario == "incant-thresholds" || (modifierScenario == "incant-relic" || modifierScenario == "incant-relic-combined")) pendingPlay = BattleActionModel.ChooseEmptySpellThenCards(decision);
                 if (modifierScenario.StartsWith("multi-summon", StringComparison.Ordinal)) pendingPlay = MultiSummonScenario.Choose(managers) ?? pendingPlay;

@@ -265,6 +265,15 @@ namespace MonsterTrain2Poju.Model
                 if (template == null && !(rule.Summon?.Pool.Count > 0 && rule.Summon.NativeBaseSize.HasValue) ||
                     template?.IsPyre == true || template?.Size < 0 || rule.Destination != "Standby")
                     return Unsupported("Invalid unit spawn definition.");
+                IReadOnlyList<CombatStatus> initialStatuses = Array.Empty<CombatStatus>();
+                if (template != null)
+                {
+                    CombatUnit startingTemplate = originalRule?.SpawnUnit ?? template;
+                    initialStatuses = startingTemplate.StatusRegistry ?? startingTemplate.Statuses;
+                    foreach (CardModifiers group in playingInstance == null ? Array.Empty<CardModifiers>() : new[] { playingInstance.Permanent, playingInstance.Temporary })
+                        initialStatuses = StatusCallbackModel.MergeStartingStatuses(initialStatuses, group.Upgrades.SelectMany(upgrade => upgrade.Statuses));
+                    template = StatusAttackDamageModel.PrepareBirthTemplate(template, initialStatuses);
+                }
                 string? validation = template == null ? null : RoomCombatModel.Validate(new RoomCombatState(target.RoomIndex, target.Deployment,
                     new[] { template }, Array.Empty<string>(), context));
                 if (validation != null) return Unsupported(validation);
@@ -319,9 +328,6 @@ namespace MonsterTrain2Poju.Model
                     else nextPlayers.Insert(position, spawned);
                     var entered = new RoomCombatState(target.RoomIndex, target.Deployment,
                         target.Units.Where(unit => unit.Team == CombatTeam.Enemy).Concat(nextPlayers).ToArray(), target.ExternalInteractions, context, target.Preview);
-                    IReadOnlyList<CombatStatus> initialStatuses = originalRule!.SpawnUnit!.StatusRegistry ?? originalRule.SpawnUnit.Statuses;
-                    foreach (CardModifiers group in playingInstance == null ? Array.Empty<CardModifiers>() : new[] { playingInstance.Permanent, playingInstance.Temporary })
-                        initialStatuses = StatusCallbackModel.MergeStartingStatuses(initialStatuses, group.Upgrades.SelectMany(upgrade => upgrade.Statuses));
                     spawnTriggers = RoomCombatModel.ApplySpawnTriggers(entered, spawned.Id, fromCard: true, startingApplications: initialStatuses);
                     if (!spawnTriggers.Supported) return Unsupported(spawnTriggers.UnsupportedReason!);
                     // Ordinary paid births have the same player-wide enchant phase

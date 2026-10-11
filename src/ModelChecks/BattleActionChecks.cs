@@ -8,6 +8,7 @@ internal static class BattleActionChecks
     {
         SelfPurgeUpgradeDestination();
         StandbySlots();
+        MagebladeStartingStatusSummon();
         var big = new CombatUnit(0, "big", CombatTeam.Player, 8, 25, 25, true, false, false, [], size: 3);
         var small = new CombatUnit(0, "small", CombatTeam.Player, 12, 10, 10, true, false, false, [], size: 2);
         var rules = new BattlePlayRules([
@@ -134,6 +135,44 @@ internal static class BattleActionChecks
             "Parallel standby insertions differ."));
         Require(JsonSerializer.Serialize(root) == parent, "Standby routing mutated a parent.");
         Console.WriteLine("STANDBY-SLOT-CHECKS PASS: holes, LIFO reuse, distinct futures, malformed metadata, terminal clear and parallel isolation.");
+    }
+
+    internal static void MagebladeStartingStatusSummon()
+    {
+        var rng = UnityRng.Seed(42);
+        var status = new CombatStatus("mageblade", 2, 1);
+        var template = new CombatUnit(0, "mageblade-unit", CombatTeam.Player, 3, 80, 80, true, false, false,
+            [status], size: 1, modifiers: new UnitModifiers(3, 0, 0, 1, 1, true, false, []), statusRegistry: [status]);
+        var target = new CombatUnit(2, "mageblade-target", CombatTeam.Enemy, 0, 100, 100, false, false, false, [], size: 1);
+        var pyre = new CombatUnit(1, "pyre", CombatTeam.Player, 45, 80, 80, true, true, false, []);
+        var rules = new BattlePlayRules(
+            [new(0, 5, 7, true, false, false), new(1, 5, 7, true, false, false),
+                new(2, 5, 7, true, false, false), new(3, 0, 7, true, true, true)],
+            [new("mageblade-card", "MagebladeCard", 0, "SpawnMonster", "Standby", template, [])]);
+        var cards = new CardCycleState([new(1, "mageblade-card")], [], [], rng, 0, []);
+        var context = new CombatContext(cards, rng, 0, 2, 10,
+            magicPower: [new RoomMagicPower(0, CombatTeam.Player, 15)], nextUnitId: 3);
+        var train = new TrainCombatState(Enumerable.Range(0, 4).Select(index => new RoomCombatState(index, false,
+            index == 0 ? [target] : index == 3 ? [pyre] : [], [], context)).ToArray(), [], 7, context);
+        var spawn = new EnemySpawnState(train, [new EnemyWave([new EnemyGroup([])])], [-1], 0, false,
+            rng, 3, [], 0, false, 2, 1, 3, []);
+        var decision = new BattleTurnState(spawn, 3, 3, 5, 0, 0, "New", [new("Spawning", 42, rng)],
+            [new("Standby", []), new("Exhausted", []), new("Purged", [])], [], rules, selectedRoom: 0);
+
+        Require(BattleActionModel.EnumerateSupportedPlays(decision).Any(action => action.CardInstanceId == 1 && action.RoomIndex == 0),
+            "A starting Mageblade unit was filtered out before its birth callbacks could initialize the cache.");
+        BattleActionResult played = BattleActionModel.PlayCard(decision, new(1, 0));
+        Require(played.Supported, played.Reason ?? "A starting Mageblade unit could not be summoned.");
+        CombatUnit born = played.State!.Spawn.Train.Rooms[0].Units.Single(unit => unit.Team == CombatTeam.Player);
+        Require(born.Status("mageblade")?.Stacks == 2 && born.Modifiers?.MagebladeDamagePerMagicPower == 2,
+            "Birth callbacks did not rebuild the Mageblade coefficient from the starting stacks: status=" +
+                (born.Status("mageblade")?.Stacks.ToString() ?? "missing") + ", cache=" +
+                (born.Modifiers?.MagebladeDamagePerMagicPower?.ToString() ?? "missing") + ".");
+
+        RoomCombatResult exchange = RoomCombatModel.Exchange(played.State.Spawn.Train.Rooms[0]);
+        Require(exchange.Supported && exchange.State!.Units.Single(unit => unit.Id == target.Id).Health == 67,
+            exchange.UnsupportedReason ?? "The born Mageblade unit did not apply its captured room-power attack bonus.");
+        Console.WriteLine("MAGEBLADE-BIRTH-CHECKS PASS: legal summon, callback cache=2 and captured power 15 produced 33 attack damage.");
     }
 
     internal static void Native(FixtureValue fixture)
@@ -315,6 +354,8 @@ internal static class BattleActionChecks
         if (fixture.TryGetProperty("ModifierScenario", out var abilityScenario) &&
             abilityScenario.GetString() is "ability-incant" or "ability-activation" or "ability-activation-x" or "ability-activation-lethal" or "ability-effects" or "equipment-abilities")
             chooser = UnitAbilityModel.ChooseAbilityThenCards;
+        if (fixture.TryGetProperty("ModifierScenario", out var magebladeScenario) && magebladeScenario.GetString() == "mageblade")
+            chooser = ChooseMagebladeThenCards;
         FixtureValue turns = fixture.GetProperty("Turns");
         // Authored setup plays are checked individually above. The independent policy starts
         // after that prelude and must reproduce every ordinary policy play and EndTurn.
@@ -368,6 +409,23 @@ internal static class BattleActionChecks
             if (BattleActionModel.PlayCard(source, action).Supported) return action;
         }
         return BattleActionModel.ChooseUnitSpellAndJunkPlay(source);
+    }
+
+    private static PlayCardAction? ChooseMagebladeThenCards(BattleTurnState source)
+    {
+        CombatContext? context = source.Spawn.Train.Context;
+        if (context?.MagicPower != null && source.PlayRules != null)
+        {
+            HashSet<int> empoweredRooms = context.MagicPower.Where(power => power.Team == CombatTeam.Player && power.Value > 0)
+                .Select(power => power.RoomIndex).ToHashSet();
+            IReadOnlyList<PlayCardAction> plays = BattleActionModel.EnumerateSupportedPlays(source);
+            foreach (CardToken card in context.Cards.Hand.Where(item => source.PlayRules.Cards.Any(rule => rule.DataId == item.DataId &&
+                (rule.SpawnUnit?.Statuses.Any(status => status.Id == "mageblade" && status.Stacks > 0) == true ||
+                 rule.SpawnUnit?.StatusRegistry?.Any(status => status.Id == "mageblade" && status.Stacks > 0) == true))))
+            foreach (PlayCardAction play in plays.Where(item => item.CardInstanceId == card.InstanceId && empoweredRooms.Contains(item.RoomIndex)))
+                return play;
+        }
+        return BattleActionModel.ChooseUnitAndJunkPlay(source);
     }
 
     private static PlayCardAction? ChooseSacrificeEffectsThenCards(BattleTurnState source)

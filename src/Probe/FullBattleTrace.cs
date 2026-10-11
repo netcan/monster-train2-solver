@@ -234,12 +234,21 @@ namespace MonsterTrain2Poju.Probe
                 (character.IsMiniboss() || character.IsOuterTrainBoss()) &&
                 heroes.FindPairedCompanionBoss(character) == null;
             StatusRegistryCalibration.Capture(character, id, statuses);
+            UnitModifiers modifiers = UnitModifierProbe.Capture(character);
+            int baseAttack = character.GetAttackDamageWithoutStatusEffectBuffs();
+            if (modifiers.MagebladeDamagePerMagicPower is int magebladeCoefficient && character.GetCurrentRoom() is RoomState currentRoom)
+            {
+                AllGameManagers managers = AllGameManagers.Instance!;
+                int roomMagicPower = currentRoom.GetRoomStateModifiedMagicPower(character.GetTeamType(), managers.GetCoreManagers()) +
+                    managers.GetRelicManager().GetMagicPowerModification();
+                baseAttack = unchecked(baseAttack - unchecked(magebladeCoefficient * roomMagicPower));
+            }
             return new CombatUnit(id, character.GetSourceCharacterData()?.GetAssetKey() ?? "",
-                team, character.GetAttackDamageWithoutStatusEffectBuffs(), character.GetHP(), character.GetMaxHP(),
+                team, baseAttack, character.GetHP(), character.GetMaxHP(),
                 character.GetCanAttack(), character.IsPyreHeart(), endsBattle, statuses, triggers,
                 card == null ? 0 : projection.CaptureCards(new List<CardState> { card })[0].InstanceId, character.GetSize(),
                 ((List<string>)AccessTools.Field(typeof(CharacterState), "statusEffectImmunities").GetValue(character)).ToArray(),
-                character.GetSubtypes().Select(subtype => subtype.Key).ToArray(), UnitModifierProbe.Capture(character), character.IsAnyBoss(),
+                character.GetSubtypes().Select(subtype => subtype.Key).ToArray(), modifiers, character.IsAnyBoss(),
                 lastAttacker == null || normalizeDestroyedAttacker && (lastAttacker.IsDestroyed || !lastAttacker.IsAlive) ? 0 : UnitId(lastAttacker), statuses,
                 character.GetEquipment().Select(CardId).ToArray(), TriggerStates(character).Count, AbilityCooldownProbe.Capture(character), AbilityCooldownProbe.CaptureDictionary(character), AbilityLifecycleProbe.Rules(character.GetSourceCharacterData()),
                 new HordeBaseStats(character.GetSourceCharacterData().GetAttackDamage(), character.GetSourceCharacterData().GetHealth()), character.IsSpawning, character.SacrificeCard == null ? 0 : CardId(character.SacrificeCard), DeathSignalProbe.Capture(character),
@@ -486,7 +495,7 @@ namespace MonsterTrain2Poju.Probe
             string temporary = path + ".tmp";
             var snapshot = new
             {
-                Schema = OriginalFloorCapacityRelicScenario.Prepared ? 119 : PyreResourceRefreshScenario.Prepared ? 118 : OriginalResourceRelicBatchScenario.Prepared ? 117 : OriginalDecayRelicBatchScenario.Prepared ? 116 : OriginalLifecycleRelicBatchScenario.Prepared ? 115 : OriginalMagnitudeRelicBatchScenario.Prepared ? 114 : OriginalStatusRelicBatchScenario.Prepared ? 113 : TypedDrawProbe.Enabled ? 112 : SpawnStatusRelicScenario.Prepared ? SpawnStatusRelicScenario.Clones ? 111 : 110 : TriggerCountScenario.Prepared ? 109 : AbilityIncantScenario.Prepared ? 108 : CardAnimationSettlement.Enabled ? 106 : DeathDissolveSettlement.Enabled ? 105 : EnchantmentBattleScenario.Prepared ? 104 : 103,
+                Schema = MagebladeScenario.Prepared ? 120 : OriginalFloorCapacityRelicScenario.Prepared ? 119 : PyreResourceRefreshScenario.Prepared ? 118 : OriginalResourceRelicBatchScenario.Prepared ? 117 : OriginalDecayRelicBatchScenario.Prepared ? 116 : OriginalLifecycleRelicBatchScenario.Prepared ? 115 : OriginalMagnitudeRelicBatchScenario.Prepared ? 114 : OriginalStatusRelicBatchScenario.Prepared ? 113 : TypedDrawProbe.Enabled ? 112 : SpawnStatusRelicScenario.Prepared ? SpawnStatusRelicScenario.Clones ? 111 : 110 : TriggerCountScenario.Prepared ? 109 : AbilityIncantScenario.Prepared ? 108 : CardAnimationSettlement.Enabled ? 106 : DeathDissolveSettlement.Enabled ? 105 : EnchantmentBattleScenario.Prepared ? 104 : 103,
                 DeathDissolveSettlementEnabled = DeathDissolveSettlement.Enabled,
                 DeathDissolveSettlements = DeathDissolveSettlement.Records,
                 DeathDissolveCallbacks = DeathDissolveSettlement.Callbacks,
