@@ -67,7 +67,7 @@ namespace MonsterTrain2Poju.Model
         public static CombatContext ReturnStandby(CombatContext context, IReadOnlyList<int> livingUnitIds)
             => ReturnUnattached(context, new HashSet<int>(livingUnitIds));
         internal static string UpgradeKey(int cardId) => "equipment:" + cardId;
-        internal static CardUpgradeModifier TemporaryAggregate(CardInstanceState card)
+        internal static CardUpgradeModifier TemporaryAggregate(CardInstanceState card, bool captureLifecycle = false)
         {
             int health = card.Temporary.Offsets.Health, damage = card.Temporary.Offsets.Damage;
             var statuses = new List<CombatStatus>();
@@ -85,8 +85,13 @@ namespace MonsterTrain2Poju.Model
             // upgrade, then adds numeric values and non-permanent status groups.
             var mask = card.MaskDescriptor == null ? null : new CardUpgradeMaskMetadata(
                 statuses.Select(status => new UpgradeMaskStatus(status.Id, status.Stacks, false)).ToArray(), false, false, false, false);
+            var stats = new CardStatModifier(damage, health);
+            var lifecycle = !captureLifecycle ? null : new CardLifecycleUpgrade(
+                new CardMaskUpgrade("", stats, statuses.Select(status => new UpgradeMaskStatus(status.Id, status.Stacks, false)).ToArray(),
+                    false, false, false, false), "", false, false, Array.Empty<CardTraitValue>(), Array.Empty<string>(),
+                false, Array.Empty<string>(), Array.Empty<string>(), Array.Empty<CardLifecycleTrigger>());
             return new CardUpgradeModifier("", "", new CardStatModifier(damage, health), statuses, false, false, false, 0, 0,
-                Array.Empty<string>(), maskMetadata: mask);
+                Array.Empty<string>(), maskMetadata: mask, lifecycle: lifecycle);
         }
         internal static CombatContext ReturnCard(CombatContext context, EquipmentStandbyCondition condition)
         {

@@ -1168,7 +1168,8 @@ namespace MonsterTrain2Poju.Model
                 if (card?.EquippedUnitId == null || definition == null)
                 { unsupportedReason = "Missing equipment definition or card relationship."; return false; }
                 upgrades = definition.Upgrades.Concat(card.Permanent.Upgrades.Select((upgrade, index) => upgrade.WithEquipmentSource(cardId, index)))
-                    .Concat(new[] { EquipmentModel.TemporaryAggregate(card) }).ToArray();
+                    .Concat(new[] { EquipmentModel.TemporaryAggregate(card,
+                        definition.Upgrades.Any(upgrade => upgrade.Lifecycle != null)) }).ToArray();
                 if (upgrades.Any(upgrade => upgrade.ExternalInteractions.Count > 0))
                 { unsupportedReason = "Unmodeled equipment upgrade interactions."; return false; }
                 return true;
