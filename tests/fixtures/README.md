@@ -15,7 +15,7 @@ The default command still checks the full curated inventory.
 For routine changes, run only the new and directly affected fixtures with
 `-Fixture`; run the full inventory at completed milestones and before delivery.
 
-Current inventory is 210 archives: 179 accepted battles and 31 component
+Current inventory is 212 archives: 181 accepted battles and 31 component
 calibrations. `full-battle-relic-card-status-upgrades.mt2f` verifies a native
 temporary card status upgrade reaches the unit summoned by that card.
 `full-battle-sacrifice-effects.mt2f` covers native `CardEffectSacrifice` target
@@ -2028,4 +2028,54 @@ pass. The prior 210-archive milestone was completed as a 159-fixture passing
 prefix, four affected checks after the retired-owner-pointer fix, and a passing
 51-fixture suffix (20 full battles and 31 calibrations, 765.53 seconds). This is
 split regression evidence, not a fresh 210-fixture run on one final binary.
-The inventory now contains 211 archives; the new batch received focused checks.
+At that milestone the inventory contained 211 archives; the new batch received
+focused checks.
+
+### Typed draw, shared upgrades and Consume
+
+`full-battle-typed-draw.mt2f` validates `CardEffectDrawType` and
+`CardEffectAddTempCardUpgradeToNextDrawnCard` in one muted Instant battle.
+Channelsong and GiftsForAGuard retain their original effects, costs and upgrades;
+both actually play and exhaust. One originally non-Consume recipient drawn by
+Gifts also actually plays, exhausts and increments native exhaustion statistics.
+The authored JustCause carriers exercise primary/secondary filters, zero and
+negative counts, ranged draws, full hands, duplicate upgrade definitions,
+uniqueness and filter short-circuiting. One carrier has an instance-specific
+StrongerMagicPower upgrade to expose different multipliers on shared owners.
+
+All 57 typed-draw records, 32 schedules and 100 individual upgraded draw states
+match complete independently replayed contexts. The sample includes eight
+fallbacks, five ranges, five unique suppressions, 86 full-hand refusals and six
+magic-power draws. Seven completed OnCardPlayed boundaries show the queue
+clearing. Two installed upgrades refresh their still-pending queue objects;
+three refresh observations update multiple shared card owners after the queue
+is empty.
+Explicit captured reference IDs survive serialization and preserve immutable
+parallel branches. Native copies receive fresh private objects even when their
+upgrade definitions match.
+
+The complete 23-play/five-EndTurn policy wins with Pyre health 80 and passes
+16 parallel branches. The 490 captured decision contexts additionally match
+17,080 native card queries and 15,885 upgraded observations in 32 query branches.
+All 19 captured starter-relic manager calls are compared exactly. Its dedicated
+fixture retains the separate reset, rejection and successful-generation gates;
+this composite fixture acquires that relic before the recording starts.
+There are zero native capture failures, mismatches, unsupported or pending
+records. Native sampling takes 147.81 seconds.
+
+The byte-identical archive is 45,763 bytes/8,470 nodes, SHA-256
+`f1e6c1c7285051415a07b2e89f19a74de6bff280058062545b03d94f2b728c4e`.
+The complete new fixture, three new pure suites, the existing strict relic
+manager check and four affected fixtures (drawing, generation, bonus draw and
+equipment exhaustion) pass. A full 212-archive rerun remains deferred.
+These accepted paths do not imply complete card coverage: new permanent Consume
+installation, unsupported Consume summon callbacks and source-driven next-draw
+scaling remain explicit guards.
+
+Focused commands:
+
+```powershell
+dotnet run --project src/ModelChecks -c Release -- --typed-draw-pure
+dotnet run --project src/ModelChecks -c Release -- --typed-draw-only tests/fixtures/full-battle-typed-draw.mt2f
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-typed-draw.mt2f
+```
