@@ -134,7 +134,7 @@ are copied immutable values; independent child states can run on worker threads.
 | Entire room resolution | `RoomCombatModel.Resolve` | Native normal exchanges, post-combat effects and multiple rounds of boss/Pyre relentless combat |
 | Train combat phase | `TrainCombatModel.ResolveCombat` | Top-to-bottom native phase comparison |
 | Enemy movement phase | `TrainCombatModel.Ascend` | Native movement and immediate Pyre combat, including the terminal boss fight |
-| Bump card movement | `BumpModel`, `CardSpellModel` and `HordeMergeModel.MergeAcrossRooms` | Eighteen real paid-card effect/queue comparisons, a synthetic non-Relentless companion-Boss ordinary move, both-team cross-room Horde merges, signed/clamped/fixed-range quantities, immobility/rooting, loops, simultaneous targets, Pyre and full/partially blocked rooms; Outer Boss movement and Relentless room destruction remain unsupported |
+| Bump card movement | `BumpModel`, `CardSpellModel` and `HordeMergeModel.MergeAcrossRooms` | Nineteen real paid-card effect/queue comparisons including unpaired Relentless room destruction and Undying removal, a synthetic non-Relentless companion-Boss ordinary move, both-team cross-room Horde merges, signed/clamped/fixed-range quantities, immobility/rooting, loops, simultaneous targets, Pyre and full/partially blocked rooms; Outer Boss and paired companion-Boss transitions remain unsupported |
 | Ordinary unit clone APIs | `UnitCloneModel`, `CharacterCopyModel` and `UnitBirthModel` | Thirteen native operations, 44 exact copied-card/birth/gear/stats/ability boundaries, raw/drained train states and callback payload/order; detached/cardless sources, failed allocations and 32 branches |
 | Paid unit copy spells | `UnitCopyModel`, `UnitCloneModel` and `CardSpellModel` | Fourteen real paid effects, complete raw state and incoming/outgoing queue payload/order, sequential births, full/partial rooms, copied equipment/skills, cardless/Horde sources and 32 branches |
 | Enemy and mixed-team copy spells | `HeroUnitBirthModel`, `UnitCopyModel` and `CardSpellModel` | Sixteen real paid effects, raw/live stats, natural skills, optional equipment, initial hero compaction, full/partial rooms, incoming global callbacks and 32 branches; subsequent paid summon and complete first-turn defeat |
@@ -5402,10 +5402,11 @@ points, partial movement before a blocked floor, player Pyre restrictions and
 enemy entry into Pyre. Native Bump reads the fixed authored integer; configured
 integer ranges affect its tooltip but are not sampled by the effect.
 
-A synthetic check now covers a non-Relentless companion Boss on the ordinary
-movement path identified in the native effect. Captured full-battle evidence
-still does not validate Boss Bump behavior; Outer Boss displacement and
-Relentless-triggered room destruction remain unsupported.
+A synthetic check covers a non-Relentless companion Boss on the ordinary
+movement path identified in the native effect. Native Relentless Bump now moves
+an unpaired target, disables every crossed room, removes Undying and sacrifices
+the remaining room occupants. Outer Boss displacement and paired companion-
+Boss transitions remain unsupported.
 
 The same native run exposed missing floor-rearrangement callbacks. That effect
 now visits its drop actor and every crossed actor in native order, fires Shift
@@ -5413,38 +5414,42 @@ only for actors that move, and runs Sentry even for a drop actor already at the
 requested position. Each phase drains before the next actor/effect. Five later
 native rearrangement plays verify the rewards of these callbacks.
 
-`full-battle-bump.mt2f` contains eighteen authored Bump plays using native
+`full-battle-bump.mt2f` contains nineteen authored Bump plays using native
 `CanPlayHandCard`/`PlayCard`, two paid Steward hosts and native observer/filler
-births. Observers carry gold callbacks to make dispatch ordering and flags
-observable; the original Boss and wave definitions remain intact. Card
+births. Movement observers carry gold callbacks; the Relentless destruction pair
+uses zero-value callbacks so the capture isolates Bump lifecycle behavior. The
+original Boss and wave definitions remain intact. Card
 reconfiguration explicitly invalidates captured definitions. Raw effect return
 states are separate from stable decisions, which include the ordinary combat
 preview refresh. Authored plays have `ScenarioAction=true`; all are independently
 recomputed, while the subsequent policy starts after that preparation.
 
-All eighteen effect states, retained targets and complete dispatch payloads
-match in 32 independent branches. All 38 card actions, five EndTurns and later
-combat/spawn/card-cycle phases match independently. The ordinary 20-play policy
-reaches the same win at Pyre 74 from initial/middle policy roots in 16 branches.
-The muted Instant native capture takes 55.49 seconds; capture failures,
-differences, unsupported/pending records are zero, and original profile/log
-signatures are intact. The binary archive is 37,157 bytes and 7,189 graph nodes;
-the curated inventory contains 146 archives: 137 battles and nine calibrations.
+All nineteen effect states, retained targets and complete character-trigger
+dispatch payloads match in 32 independent branches. The subsequent native battle
+completes six turns with 26 card actions and six EndTurns. The muted Instant
+capture takes 62.01 seconds; capture failures, differences,
+unsupported/pending records are zero, and original profile/log signatures are
+intact. The binary archive is 44,030 bytes and 8,475 graph nodes. Replacing the
+earlier archive keeps the current inventory at 233 binaries; the complete
+233-archive regression has not been rerun after this targeted update.
+The focused `Check-Models.ps1 -Fixture full-battle-bump.mt2f` passes: 53 room
+phases, 11 train phases, nine spawns, six EndTurns, 26 actions, and seven policy
+plays through a win at Pyre 74; 16 policy branches match.
 
-The complete 146-archive regression exits zero: all 137 battles and nine
-calibrations pass, with no unsupported transitions. The audit verifies nineteen
+At the prior 146-archive inventory, the complete regression exited zero across
+137 battles and nine calibrations. That audit verified nineteen
 physical-position suites, fourteen queued-summon suites, ten equipment suites,
 six direct summon-effect suites, eight decision-reference suites, the standalone
 revival and two revival/summon suites, Horde and Bump suites, and all 262 native
 summon damage phases. Every curated archive matches its size/SHA-256 manifest;
 there are no tracked source JSON fixtures.
 
-This validates the recorded primary movement and gold callbacks. Actual Bump
-preview movement/rollback, teleportation, destroyed-floor handling, companion/
-outer/relentless Boss movement and room destruction, damage/revival interactions
-during card movement, relic/room modifiers, ordinary unit cloning and broader
-card coverage still need native fixtures and implementation. The full simulator
-and optimal search are not complete.
+This validates ordinary movement, unpaired Relentless room destruction, and
+recorded movement callbacks. Preview movement/rollback, teleportation, Outer Boss
+and paired companion-Boss movement, damage/revival interactions during card
+movement, relic/room modifiers, ordinary unit cloning and broader card coverage
+still need native fixtures and implementation. The full simulator and optimal
+search are not complete.
 
 ## Ordinary unit clone APIs (schema 99)
 

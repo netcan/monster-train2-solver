@@ -76,6 +76,8 @@ namespace MonsterTrain2Poju.Model
         public RoomPlayRule(int roomIndex, int playerCapacity, int playerSlots, bool enabled, bool summonBlocked, bool isPyre, int enemyCapacity = 0)
         { RoomIndex = roomIndex; PlayerCapacity = playerCapacity; PlayerSlots = playerSlots; Enabled = enabled; SummonBlocked = summonBlocked; IsPyre = isPyre;
             EnemyCapacity = enemyCapacity; }
+        internal RoomPlayRule WithEnabled(bool enabled) => new(RoomIndex, PlayerCapacity, PlayerSlots, enabled,
+            SummonBlocked, IsPyre, EnemyCapacity);
     }
 
     // Rules copied from definitions at the root, including reachable generated card definitions.
@@ -137,6 +139,7 @@ namespace MonsterTrain2Poju.Model
         public BattlePlayRules(IReadOnlyList<RoomPlayRule> rooms, IReadOnlyList<CardPlayRule> cards, IReadOnlyList<CombatStatus>? statusRules = null,
             UnitCopyCatalog? unitCopyCatalog = null)
         { Rooms = Array.AsReadOnly(rooms.ToArray()); Cards = Array.AsReadOnly(cards.ToArray()); StatusRules = Array.AsReadOnly((statusRules ?? Array.Empty<CombatStatus>()).ToArray()); UnitCopyCatalog = unitCopyCatalog; }
+        internal BattlePlayRules WithRooms(IReadOnlyList<RoomPlayRule> rooms) => new(rooms, Cards, StatusRules, UnitCopyCatalog);
     }
 
     public sealed class PlayCardAction
@@ -187,6 +190,7 @@ namespace MonsterTrain2Poju.Model
                 source.PlayRules.Rooms.Select(room => room.RoomIndex).Distinct().Count() != source.PlayRules.Rooms.Count)
                 return Unsupported("Duplicate play definitions.");
             TrainCombatState train = source.Spawn.Train;
+            BattlePlayRules outputPlayRules = source.PlayRules;
             string? trainValidation = TrainCombatModel.Validate(train);
             if (trainValidation != null) return Unsupported(trainValidation);
             if (source.Spawn.NextUnitId <= 0 || train.Rooms.SelectMany(room => room.Units)
@@ -396,6 +400,7 @@ namespace MonsterTrain2Poju.Model
                 if (!result.Supported) return Unsupported(result.UnsupportedReason!);
                 piles = result.OtherPiles?.ToArray() ?? piles;
                 train = result.State!; context = train.Context!; outcome = result.Outcome; effectsApplied = true;
+                outputPlayRules = result.PlayRules ?? outputPlayRules;
                 pendingSpellCallbacks = result.PendingCallbacks;
                 retainedSpellUnits = result.RetainedUnits;
             }
@@ -582,7 +587,7 @@ namespace MonsterTrain2Poju.Model
                 source.DrawPerTurn, context.QueryFrame?.ForgePoints ?? source.ForgePoints, source.DragonsHoard, source.MoonPhase,
                 source.RngStreams.Select(stream => new BattleRngStream(stream.Name, stream.Seed,
                     stream.Name == "Battle" ? context.BattleRng : stream.Name == "CardDraw" ? context.Cards.Rng : stream.State)).ToArray(),
-                piles, source.ExternalInteractions, source.PlayRules, source.BattlePreviewEnabled, source.UiRngIsolated,
+                piles, source.ExternalInteractions, outputPlayRules, source.BattlePreviewEnabled, source.UiRngIsolated,
                 source.CanonicalDecisionReferences, source.CanonicalPhysicalReferences,
                 source.SelectedRoom < 0 ? source.SelectedRoom : action.RoomIndex), outcome: outcome);
         }

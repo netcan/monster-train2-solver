@@ -30,6 +30,7 @@ namespace MonsterTrain2Poju.Probe
             public int SourceCardId { get; set; }
             public int[] Targets { get; set; } = Array.Empty<int>();
             public RoomPlayRule[] Rooms { get; set; } = Array.Empty<RoomPlayRule>();
+            public bool[]? RoomEnabledAfter { get; set; }
             public TrainCombatState Before { get; set; } = null!;
             public TrainCombatState? After { get; set; }
             public CombatUnit[]? TargetsAfter { get; set; }
@@ -141,6 +142,24 @@ namespace MonsterTrain2Poju.Probe
                 yield return combat.RunTriggerQueue();
                 var bottom = new List<CharacterState>(); rooms.GetRoom(0).AddCharactersToList(bottom, Team.Type.Heroes);
                 yield return Cast("enemy-partial-full-room", bottom.Single(unit => unit.GetSourceCharacterData() == filler), 2);
+                CharacterData destroyerData = UnityEngine.Object.Instantiate(prototype); destroyerData.name = "PojuBumpRelentless";
+                Set(destroyerData, "id", "c2f6ed7f-18ce-4070-b6f0-7dd9f5200005"); Set(destroyerData, "attackDamage", 1); Set(destroyerData, "health", 20);
+                Set(destroyerData, "startingStatusEffects", Array.Empty<StatusEffectStackData>()); Set(destroyerData, "triggers", Triggers(zeroReward: true));
+                Set(destroyerData, "loopsBetweenTrainFloors", false);
+                yield return managers.GetHeroManager()!.SpawnHeroInRoom(destroyerData, 0, null!);
+                CharacterData doomedData = UnityEngine.Object.Instantiate(prototype); doomedData.name = "PojuBumpRoomVictim";
+                Set(doomedData, "id", "c2f6ed7f-18ce-4070-b6f0-7dd9f5200006"); Set(doomedData, "attackDamage", 1); Set(doomedData, "health", 20);
+                Set(doomedData, "startingStatusEffects", Array.Empty<StatusEffectStackData>()); Set(doomedData, "triggers", Triggers(zeroReward: true));
+                Set(doomedData, "loopsBetweenTrainFloors", false);
+                yield return managers.GetHeroManager()!.SpawnHeroInRoom(doomedData, 0, null!);
+                var roomZero = new List<CharacterState>(); rooms.GetRoom(0).AddCharactersToList(roomZero, Team.Type.Heroes);
+                CharacterState destroyer = roomZero.Single(unit => unit.GetSourceCharacterData() == destroyerData);
+                CharacterState doomed = roomZero.Single(unit => unit.GetSourceCharacterData() == doomedData);
+                doomed.AddStatusEffect("undying", 1); destroyer.AddStatusEffect("relentless", 1);
+                yield return combat.RunTriggerQueue();
+                yield return Cast("enemy-relentless-up-destroys-room", destroyer, 1);
+                rooms.GetRoom(0).SetRoomEnabled(true);
+                FullBattleTrace.Active!.InvalidateCardRules();
                 // Return the same authored card to a simple down mode for the subsequent ordinary policy.
                 Configure(managers, -1, TargetMode.DropTargetCharacter, Team.Type.Heroes | Team.Type.Monsters, false);
                 Set(combat, "combatStateChanged", true);
@@ -187,7 +206,7 @@ namespace MonsterTrain2Poju.Probe
                 card.Setup(data, managers.GetSaveManager());
             FullBattleTrace.Active?.InvalidateCardRules();
         }
-        private static List<CharacterTriggerData> Triggers()
+        private static List<CharacterTriggerData> Triggers(bool zeroReward = false)
         {
             var list = new List<CharacterTriggerData>();
             foreach (var item in new[] { (CharacterTriggerData.Trigger.OnShift, 3), (CharacterTriggerData.Trigger.OnSentry, 5),
@@ -196,7 +215,7 @@ namespace MonsterTrain2Poju.Probe
                 (CharacterTriggerData.Trigger.OnTrainRoomLoop, 19), (CharacterTriggerData.Trigger.OnStatusEffectChanged, 23),
                 (CharacterTriggerData.Trigger.OnTroopAdded, 29), (CharacterTriggerData.Trigger.OnSpawn, 31),
                 (CharacterTriggerData.Trigger.CardMonsterPlayed, 37), (CharacterTriggerData.Trigger.OnDeath, 41) })
-            { var trigger = HealingScenario.HealGold(item.Item2, false, true); Set(trigger, "trigger", item.Item1); list.Add(trigger); }
+            { var trigger = HealingScenario.HealGold(zeroReward ? 0 : item.Item2, false, true); Set(trigger, "trigger", item.Item1); list.Add(trigger); }
             return list;
         }
         private static int Count(CombatManager combat) => ((ICollection)AccessTools.Property(typeof(CombatManager), "TriggerQueue").GetValue(combat)).Count;
@@ -219,6 +238,8 @@ namespace MonsterTrain2Poju.Probe
                 {
                     (native as IDisposable)?.Dispose(); current = null;
                     record.After = trace.CaptureTrain(); record.QueueAfter = Count(AllGameManagers.Instance!.GetCombatManager()!);
+                    record.RoomEnabledAfter = Enumerable.Range(0, AllGameManagers.Instance!.GetRoomManager()!.GetNumRooms())
+                        .Select(index => AllGameManagers.Instance!.GetRoomManager()!.GetRoom(index).IsRoomEnabled()).ToArray();
                     record.TargetsAfter = actors.Select(actor => {
                         using (new CharacterState.SetAllowDestroyedAccessHelper(actor, onlyIfDestroyed: true)) return trace.CaptureUnit(actor);
                     }).ToArray();

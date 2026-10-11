@@ -31,15 +31,18 @@ namespace MonsterTrain2Poju.Model
         public IReadOnlyList<SpellTargetCollection> TargetCollections { get; }
         public IReadOnlyList<CardPileState>? OtherPiles { get; }
         public IReadOnlyList<CombatUnit> RetainedUnits { get; }
+        public BattlePlayRules? PlayRules { get; }
         internal IReadOnlyList<RoomCombatModel.QueuedCharacterTrigger> PendingCallbacks { get; }
         public bool Supported => State != null;
         internal TrainSpellResult(TrainCombatState? state, RoomOutcome outcome, IReadOnlyList<CombatEvent> events, string? error = null,
             IReadOnlyList<SpellTargetCollection>? collections = null, IReadOnlyList<CardPileState>? otherPiles = null,
-            IReadOnlyList<RoomCombatModel.QueuedCharacterTrigger>? pendingCallbacks = null, IReadOnlyList<CombatUnit>? retainedUnits = null)
+            IReadOnlyList<RoomCombatModel.QueuedCharacterTrigger>? pendingCallbacks = null, IReadOnlyList<CombatUnit>? retainedUnits = null,
+            BattlePlayRules? playRules = null)
         { State = state; Outcome = outcome; Events = Array.AsReadOnly(events.ToArray()); UnsupportedReason = error;
             TargetCollections = Array.AsReadOnly((collections ?? Array.Empty<SpellTargetCollection>()).ToArray());
             RetainedUnits = Array.AsReadOnly((retainedUnits ?? Array.Empty<CombatUnit>()).ToArray());
             OtherPiles = otherPiles == null ? null : Array.AsReadOnly(otherPiles.ToArray());
+            PlayRules = playRules;
             PendingCallbacks = Array.AsReadOnly((pendingCallbacks ?? Array.Empty<RoomCombatModel.QueuedCharacterTrigger>()).ToArray()); }
     }
 
@@ -381,6 +384,7 @@ namespace MonsterTrain2Poju.Model
                     BumpResult bumped = BumpModel.Apply(state, targets.UnitIds, effect.Value, definitions.Rooms, sourceCardId, callbacks);
                     if (!bumped.Supported) return UnsupportedTrain(bumped.UnsupportedReason!);
                     state = bumped.State!; callbacks.Clear(); callbacks.AddRange(bumped.PendingCallbacks); events.AddRange(bumped.Events);
+                    definitions = definitions.WithRooms(bumped.RoomRules);
                     foreach (CombatUnit unit in bumped.RetainedUnits) retained[unit.Id] = unit;
                     if (bumped.Outcome == RoomOutcome.BattleWon || bumped.Outcome == RoomOutcome.PlayerDefeated) outcome = bumped.Outcome;
                     positions = CardTargetModel.Positions(state);
@@ -735,7 +739,7 @@ namespace MonsterTrain2Poju.Model
             if (routingError != null) return UnsupportedTrain(routingError);
             state = WithContext(state, (piles == null ? state.Context! : state.Context!.WithOtherPiles(piles)).AfterCardEffects());
             return new TrainSpellResult(state, outcome, events, collections: collections, otherPiles: piles,
-                pendingCallbacks: deferFinalCallbacks ? callbacks : null, retainedUnits: retained.Values.ToArray());
+                pendingCallbacks: deferFinalCallbacks ? callbacks : null, retainedUnits: retained.Values.ToArray(), playRules: definitions);
 
             void RouteDeadCard(int cardId)
             {

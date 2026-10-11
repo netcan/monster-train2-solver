@@ -21,15 +21,17 @@ namespace MonsterTrain2Poju.Model
         public bool Supported => State != null;
         public IReadOnlyList<CombatEvent> Events { get; }
         public IReadOnlyList<CombatUnit> RetainedUnits { get; }
+        public IReadOnlyList<RoomPlayRule> RoomRules { get; }
         internal IReadOnlyList<RoomCombatModel.QueuedCharacterTrigger> PendingCallbacks { get; }
         internal IReadOnlyList<RoomCombatModel.QueuedCharacterTrigger> Dispatched { get; }
         internal BumpResult(TrainCombatState? state, RoomOutcome outcome, string? error,
             IReadOnlyList<CombatEvent> events, IReadOnlyList<CombatUnit> retained,
             IReadOnlyList<RoomCombatModel.QueuedCharacterTrigger> pending,
-            IReadOnlyList<RoomCombatModel.QueuedCharacterTrigger> dispatched)
+            IReadOnlyList<RoomCombatModel.QueuedCharacterTrigger> dispatched,
+            IReadOnlyList<RoomPlayRule>? roomRules = null)
         { State = state; Outcome = outcome; UnsupportedReason = error; Events = Array.AsReadOnly(events.ToArray());
             RetainedUnits = Array.AsReadOnly(retained.ToArray()); PendingCallbacks = Array.AsReadOnly(pending.ToArray());
-            Dispatched = Array.AsReadOnly(dispatched.ToArray()); }
+            Dispatched = Array.AsReadOnly(dispatched.ToArray()); RoomRules = Array.AsReadOnly((roomRules ?? Array.Empty<RoomPlayRule>()).ToArray()); }
     }
 
     public static class BumpModel
@@ -46,10 +48,11 @@ namespace MonsterTrain2Poju.Model
             var dispatched = new List<RoomCombatModel.QueuedCharacterTrigger>();
             var queue = (pending ?? Array.Empty<RoomCombatModel.QueuedCharacterTrigger>()).ToList();
             TrainCombatState state = source; RoomOutcome outcome = RoomOutcome.Exchanged;
+            RoomPlayRule[] updatedRoomRules = roomRules.ToArray();
             if (error != null) return Fail(error);
             if (source.Context?.SpawnPoints == null || source.Rooms.Any(room => room.Preview) ||
-                source.Rooms.Any(room => roomRules.Count(rule => rule.RoomIndex == room.RoomIndex) != 1) ||
-                roomRules.Count(rule => rule.IsPyre) != 1 || !roomRules.Last().IsPyre)
+                source.Rooms.Any(room => updatedRoomRules.Count(rule => rule.RoomIndex == room.RoomIndex) != 1) ||
+                updatedRoomRules.Count(rule => rule.IsPyre) != 1 || !updatedRoomRules.Last().IsPyre)
                 return Fail("Bump requires captured physical points, all room rules and a primary state.");
             int pyre = source.Rooms.Count - 1;
             var moved = new List<(int Id, int OldRoom, int NewRoom)>(); var attempted = new List<int>();
@@ -60,8 +63,8 @@ namespace MonsterTrain2Poju.Model
                 SpawnPointReference? old = state.Context!.SpawnPoints!.Units.SingleOrDefault(unit => unit.UnitId == id)?.Current;
                 if (actor == null || old == null) continue;
                 if (actor.BumpRules == null) return Fail("Missing native Bump movement properties for actor " + id);
-                if (actor.BumpRules.OuterBoss || actor.Status("relentless") != null)
-                    return Fail("Outer Boss movement and Relentless room destruction require their dedicated transition model.");
+                if (actor.BumpRules.OuterBoss || actor.BumpRules.CompanionBoss && actor.Status("relentless") != null)
+                    return Fail("Outer and paired companion Boss movement require their dedicated transition model.");
                 if (actor.Status("immobile") != null) { attempted.Add(id); continue; }
                 if (actor.Status("rooted") != null)
                 {
@@ -71,13 +74,13 @@ namespace MonsterTrain2Poju.Model
                 }
                 if (actor.IsPyre) continue;
                 int steps = Math.Max(-pyre, Math.Min(pyre, amount)), direction = steps > 0 ? 1 : -1;
-                bool looping = actor.BumpRules.Loops && direction > 0 && old.RoomIndex + steps >= pyre;
+                bool looping = actor.BumpRules.Loops && actor.Status("relentless") == null && direction > 0 && old.RoomIndex + steps >= pyre;
                 if (looping) { direction = -1; steps = old.RoomIndex; }
                 SpawnPointReference? destination = null; bool blocked = false;
                 for (int step = 1; step <= Math.Abs(steps); step++)
                 {
                     int floor = Math.Max(0, Math.Min(pyre, old.RoomIndex + step * direction));
-                    RoomPlayRule rule = roomRules.Single(item => item.RoomIndex == floor);
+                    RoomPlayRule rule = updatedRoomRules.Single(item => item.RoomIndex == floor);
                     if (!rule.Enabled || actor.Team == CombatTeam.Player && rule.IsPyre) { blocked = true; break; }
                     int recipient = actor.Team == CombatTeam.Player ? HordeMergeModel.Select(state.Rooms[floor], actor) : 0;
                     int point = recipient == 0 ? state.Context!.SpawnPoints!.FirstEmpty(floor, actor.Team) :
@@ -116,6 +119,9 @@ namespace MonsterTrain2Poju.Model
             foreach (var move in moved)
             {
                 CombatUnit actor = Get(move.Id)!;
+                if (actor.Status("relentless") != null && move.NewRoom > move.OldRoom)
+                    for (int floor = move.OldRoom; floor < move.NewRoom; floor++)
+                        if (!DestroyRoom(floor)) return Fail(error!);
                 int recipient = HordeMergeModel.Select(state.Rooms[move.NewRoom], actor);
                 if (recipient != 0)
                 {
@@ -155,7 +161,7 @@ namespace MonsterTrain2Poju.Model
             // Native room-order handling always runs the remaining queue, including rooted
             // player status notifications when nothing moved.
             if (!Drain()) return Fail(error!);
-            return new BumpResult(state, outcome, null, events, retained.Values.ToArray(), queue, dispatched);
+            return new BumpResult(state, outcome, null, events, retained.Values.ToArray(), queue, dispatched, updatedRoomRules);
 
             CombatUnit? Get(int id) => state.Rooms.SelectMany(room => room.Units).FirstOrDefault(unit => unit.Id == id);
             RoomCombatState? FindRoom(int id) => state.Rooms.FirstOrDefault(room => room.Units.Any(unit => unit.Id == id));
@@ -201,6 +207,26 @@ namespace MonsterTrain2Poju.Model
                 }, () => state.Context, message => error = message);
                 if (okay) queue.Clear();
                 return okay;
+            }
+            bool DestroyRoom(int floor)
+            {
+                updatedRoomRules = updatedRoomRules.Select(rule => rule.RoomIndex == floor ? rule.WithEnabled(false) : rule).ToArray();
+                foreach (CombatUnit listed in state.Rooms[floor].Units.ToArray())
+                {
+                    if (listed.BumpRules?.OuterBoss == true) continue;
+                    CombatUnit? actor = Get(listed.Id) ?? retained.GetValueOrDefault(listed.Id);
+                    if (actor == null || actor.Health <= 0 || actor.DeathState?.IsDestroyed == true) continue;
+                    if (actor.Status("undying") is CombatStatus undying)
+                    {
+                        RoomCombatResult removed = StatusRemovalModel.Remove(state.Rooms[floor], actor.Id, "undying", undying.Stacks);
+                        if (!Accept(removed) || !Drain()) return false;
+                        actor = Get(listed.Id) ?? retained.GetValueOrDefault(listed.Id);
+                        if (actor == null) continue;
+                    }
+                    RoomCombatResult sacrificed = RoomCombatModel.QueueSacrifice(state.Rooms[floor], actor, 0, queue.Add);
+                    if (!Accept(sacrificed) || !Drain()) return false;
+                }
+                return true;
             }
         }
     }

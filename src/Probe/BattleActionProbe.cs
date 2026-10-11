@@ -360,14 +360,24 @@ namespace MonsterTrain2Poju.Probe
             if (record == null) return;
             try
             {
+                trace.InvalidateCardRules();
                 record.Actual = trace.CaptureDecision();
                 record.ActualOutcome = trace.NativeWon == null ? RoomOutcome.Exchanged :
                     trace.NativeWon.Value ? RoomOutcome.BattleWon : RoomOutcome.PlayerDefeated;
                 if (record.Predicted.Supported)
                 {
+                    JToken predicted = BattleTurnProbe.Comparable(record.Predicted.State!);
+                    JToken actual = BattleTurnProbe.Comparable(record.Actual);
                     record.Difference = record.Predicted.Outcome != record.ActualOutcome ? "Card play terminal outcome differs" :
-                        JToken.DeepEquals(BattleTurnProbe.Comparable(record.Predicted.State!),
-                        BattleTurnProbe.Comparable(record.Actual)) ? null : "Card play decision state differs";
+                        JToken.DeepEquals(predicted, actual) ? null : "Card play decision state differs";
+                    if (record.Difference != null && record.Predicted.Outcome == record.ActualOutcome &&
+                        predicted is JObject predictedObject && actual is JObject actualObject)
+                    {
+                        string fields = string.Join(",", predictedObject.Properties()
+                            .Where(property => !JToken.DeepEquals(property.Value, actualObject[property.Name]))
+                            .Select(property => property.Name));
+                        log.LogInfo("ACTION-MODEL-DIFF index=" + record.Index + " fields=" + fields);
+                    }
                     log.LogInfo("ACTION-MODEL-" + (record.Difference == null ? "MATCH" : "MISMATCH") + " index=" + record.Index);
                 }
                 else log.LogInfo("ACTION-MODEL-UNSUPPORTED " + record.Predicted.Reason);

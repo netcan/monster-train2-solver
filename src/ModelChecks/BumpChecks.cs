@@ -10,7 +10,7 @@ internal static class BumpChecks
         "player-pyre-blocked", "player-zero", "player-clamped-down", "enemy-up", "enemy-down", "enemy-rooted",
         "enemy-immobile-before-rooted", "enemy-loop-up-to-bottom", "enemy-room-multiple-targets",
         "enemy-to-top-before-merge", "player-cross-room-horde-merge", "enemy-cross-room-horde-merge",
-        "enemy-into-pyre", "enemy-full-room-blocked", "enemy-partial-full-room"];
+        "enemy-into-pyre", "enemy-full-room-blocked", "enemy-partial-full-room", "enemy-relentless-up-destroys-room"];
 
     internal static void Native(FixtureValue fixture)
     {
@@ -74,7 +74,15 @@ internal static class BumpChecks
                 callback.GetProperty("Kind").GetString() is "OnSpawn" or "OnUnscaledSpawn" or "OnSpawnNotFromCard" or "CardMonsterPlayed" or "OnDeath"),
                 "Paid Bump merge fired birth, Rally or death callbacks.");
         }
-        Console.WriteLine("NATIVE-BUMP-CHECKS PASS: 18 real paid-card effect states plus a synthetic non-relentless companion-Boss move, exact dispatch/retained targets, signed/clamped/fixed-range movement, rooting/immobility, looping, simultaneous targets, both-team cross-room Horde removal, Pyre/full/partially blocked rooms and 32 branches.");
+        var relentless = records.Single(record => record.GetProperty("Label").GetString() == "enemy-relentless-up-destroys-room");
+        TrainCombatState relentlessBefore = relentless.GetProperty("Before").Deserialize<TrainCombatState>()!;
+        TrainCombatState relentlessAfter = relentless.GetProperty("After").Deserialize<TrainCombatState>()!;
+        int relentlessTarget = relentless.GetProperty("Targets").Deserialize<int[]>()!.Single();
+        int sourceRoom = relentlessBefore.Context!.SpawnPoints!.Units.Single(unit => unit.UnitId == relentlessTarget).Current!.RoomIndex;
+        int destinationRoom = relentlessAfter.Context!.SpawnPoints!.Units.Single(unit => unit.UnitId == relentlessTarget).Current!.RoomIndex;
+        Require(destinationRoom > sourceRoom && relentless.GetProperty("RoomEnabledAfter")[sourceRoom].GetBoolean() == false,
+            "Native Relentless Bump did not disable every crossed room.");
+        Console.WriteLine("NATIVE-BUMP-CHECKS PASS: 19 real paid-card effect states including Relentless room destruction, plus a synthetic companion-Boss move; exact dispatch/retained targets, signed/clamped/fixed-range movement, rooting/immobility, looping, simultaneous targets, both-team cross-room Horde removal, Pyre/full/partially blocked rooms and 32 branches.");
     }
 
     private static void VerifyOrdinaryCompanionMovement(FixtureValue record)
@@ -111,11 +119,15 @@ internal static class BumpChecks
             record.GetProperty("Rooms").Deserialize<RoomPlayRule[]>()!, record.GetProperty("SourceCardId").GetInt32());
         Require(result.Supported, label + " unsupported: " + result.UnsupportedReason);
         Compare(result.State, record.GetProperty("After").Deserialize<TrainCombatState>(), label + " effect return");
+        Compare(result.RoomRules.Select(room => room.Enabled).ToArray(), record.GetProperty("RoomEnabledAfter").Deserialize<bool[]>()!,
+            label + " room enabled state");
         var targets = record.GetProperty("Targets").Deserialize<int[]>()!;
         var retained = targets.Select(id => result.State!.Rooms.SelectMany(room => room.Units).FirstOrDefault(unit => unit.Id == id)
             ?? result.RetainedUnits.FirstOrDefault(unit => unit.Id == id)).ToArray();
         Compare(retained, record.GetProperty("TargetsAfter").Deserialize<CombatUnit[]>(), label + " retained targets");
-        var callbacks = result.Dispatched.Select(callback => new CallbackSnapshot(callback.Unit.Id, callback.Kind,
+        // Physical harvest phases are global combat callbacks, not CharacterState.FireTriggers observations.
+        var callbacks = result.Dispatched.Where(callback => !callback.Kind.StartsWith("#PhysicalHarvest:", StringComparison.Ordinal))
+            .Select(callback => new CallbackSnapshot(callback.Unit.Id, callback.Kind,
             callback.ParamInt, callback.ParamInt2, callback.ParamString, callback.TriggerCount,
             callback.DyingCharacter?.Id ?? 0, callback.OverrideTarget?.Id ?? 0, callback.LastSpawnedOverrideUnitId)).ToArray();
         Compare(callbacks, record.GetProperty("Dispatched").Deserialize<CallbackSnapshot[]>()!, label + " dispatch order");
@@ -125,6 +137,13 @@ internal static class BumpChecks
     private static void Compare<T>(T predicted, T actual, string label)
     {
         string? error = ModelJson.Difference(JsonSerializer.Serialize(predicted), JsonSerializer.Serialize(actual));
+        if (error != null && predicted is CallbackSnapshot[] predictedCallbacks && actual is CallbackSnapshot[] actualCallbacks)
+        {
+            string Format(IEnumerable<CallbackSnapshot> callbacks) => string.Join(",", callbacks.Select(callback =>
+                callback.ActorId + ":" + callback.Kind + "(" + callback.ParamInt + "," + callback.ParamInt2 + "," +
+                callback.ParamString + ",dying=" + callback.DyingId + ",target=" + callback.OverrideTargetId + ")"));
+            error += "; predicted=[" + Format(predictedCallbacks) + "]; native=[" + Format(actualCallbacks) + "]";
+        }
         Require(error == null, label + ": " + error);
     }
     private static void Require(bool okay, string message) { if (!okay) throw new Exception(message); }

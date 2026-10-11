@@ -178,7 +178,7 @@ namespace MonsterTrain2Poju.Probe
             SaveManager save = managers.GetSaveManager();
             CombatManager combat = managers.GetCombatManager() ?? throw new InvalidOperationException("No combat manager.");
             HeroManager heroes = managers.GetHeroManager() ?? throw new InvalidOperationException("No enemy manager.");
-            if (!room.GetCombatAllowed()) interactions.Add("Disabled room combat");
+            if (room.IsRoomEnabled() && !room.GetCombatAllowed()) interactions.Add("Disabled room combat");
             string? relicError = RelicModel.Validate(RelicProbe.Capture(managers));
             if (relicError != null) interactions.Add(relicError);
             if (save.GetMutators().Count != 0) interactions.Add("Mutator effects");
