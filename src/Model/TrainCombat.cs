@@ -68,10 +68,12 @@ namespace MonsterTrain2Poju.Model
             BattleSpawnPoints? points = source.Context?.SpawnPoints;
             if (points == null) return source;
             var active = source.Rooms.SelectMany(room => room.Units).Select(unit => unit.Id).ToHashSet();
-            // Unity's CharacterState.OnDestroy clears both primary position pointers.
-            // Destruction finishes at the frame boundary after the turn, while card
-            // effects can still use removed actors' last-known points within a frame.
-            var retained = points.Units.Select(unit => active.Contains(unit.UnitId) || unit.Current is { PreviewCopyId: null } ? unit :
+            // Canonical decisions retire both owner pointers, matching the capture's
+            // logical-removal boundary independently of Unity's dissolve timing.
+            // Slot occupants are separate: terminal Pyres and DoNotFullyRemove deaths
+            // can still occupy a group slot after their owner's pointers are cleared.
+            // In-flight card/room transitions keep their raw last-known points.
+            var retained = points.Units.Select(unit => active.Contains(unit.UnitId) ? unit :
                 new UnitSpawnPointState(unit.UnitId, null, null, unit.OuterBoss, unit.SpawnedInPreview)).ToArray();
             var usedCopies = retained.SelectMany(unit => new[] { unit.Current, unit.LastKnown })
                 .Where(point => point?.PreviewCopyId != null).Select(point => point!.PreviewCopyId!.Value).ToHashSet();

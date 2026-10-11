@@ -43,8 +43,10 @@ internal static class SacrificeChecks
             "DoNotFullyRemove did not retain the dead occupant's physical slot.");
         var retainedTrain = new TrainCombatState([retained.State!], [], 1, retained.State!.Context);
         BattleSpawnPoints afterFrame = TrainCombatModel.CompleteFrameRemovals(retainedTrain).Context!.SpawnPoints!;
-        Require(afterFrame.Group(0, CombatTeam.Player)!.Occupants[0] == 1,
-            "Frame cleanup released a slot retained by DoNotFullyRemove.");
+        Require(afterFrame.Group(0, CombatTeam.Player)!.Occupants[0] == 1 &&
+            afterFrame.Units.Single(unit => unit.UnitId == 1).Current == null &&
+            afterFrame.Units.Single(unit => unit.UnitId == 1).LastKnown == null,
+            "Canonical cleanup must clear the retired owner's pointers while retaining its DoNotFullyRemove slot.");
         RoomCombatResult removed = CardSpellModel.Apply(occupiedRoom, [Effect("DropTargetCharacter")], 1, 8);
         Require(removed.Supported && removed.State!.Context!.SpawnPoints!.FirstEmpty(0, CombatTeam.Player) == 0,
             "Ordinary sacrifice did not release its physical slot.");
