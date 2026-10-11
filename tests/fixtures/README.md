@@ -2567,8 +2567,9 @@ birth states and callback queues, observes Armor followed by the upgrade on five
 non-clone cardless births, and verifies that five cardless clones skip the
 upgrade. The battle has 42 combat stages, nine card cycles, seven births, five
 EndTurns, and finishes at Pyre 80 with zero capture failures, mismatches,
-unsupported transitions, or pending records. Independent strict replay is
-required for acceptance; a full 224-archive replay remains deferred.
+unsupported transitions, or pending records. The independent strict replay
+passed all 42 stages and 16 immutable branches; a full 224-archive replay
+remains deferred.
 
 This combines two existing effect payloads for an ordering test. It does not add
 an original relic owner to the 55/224 evidence count or establish every
