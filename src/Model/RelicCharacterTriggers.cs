@@ -66,7 +66,7 @@ namespace MonsterTrain2Poju.Model
             CombatUnit? actor = state.Units.FirstOrDefault(unit => unit.Id == unitId);
             if (actor == null) return Fail("Relic trigger installation requires a retained native actor.");
             bool team = actor.Team == CombatTeam.Player ? rule.SourcePlayer : rule.SourceEnemy;
-            bool subtype = rule.SubtypeIsNone ? !actor.IsPyre : actor.Subtypes.Contains(rule.RequiredSubtype!) &&
+            bool subtype = rule.SubtypeIsNone ? actor.Team == CombatTeam.Enemy || !actor.IsPyre : actor.Subtypes.Contains(rule.RequiredSubtype!) &&
                 (actor.Team == CombatTeam.Enemy || rule.SubtypeIsPyre == actor.IsPyre);
             if (!evaluated.Passed || !team || !subtype || state.Preview || rule.Triggers.Count == 0) return Match(state);
             if (!actor.NextTriggerId.HasValue) return Fail("Missing native trigger allocation for relic installation.");
