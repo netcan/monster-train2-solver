@@ -1,14 +1,15 @@
 # Original relic coverage evidence
 
-As of 2026-10-11, **16 distinct original collectable relics / 224 catalog entries
-(7.14%)** have accepted native full-battle evidence. This counts unchanged relic
+As of 2026-10-11, **25 distinct original collectable relics / 224 catalog entries
+(11.16%)** have accepted native full-battle evidence. This counts unchanged relic
 definitions whose effects actually ran, including their original filters and
 conditions. Test cards, unit triggers and carrier subtypes may be authored to
 exercise those effects; the claim covers the recorded paths, not every possible
-combination. Catalog enumeration and the 26 effect-class candidates do not count
-as implemented or validated relics.
+combination. Catalog enumeration and other owners of a supported effect class
+do not count as validated relics. `RelicEffectAddTrigger` appears on 26 catalog
+entries; nine now have accepted original-owner effect evidence.
 
-All six archives below report game `2.2.1`, module MVID
+All eight archives below report game `2.2.1`, module MVID
 `8fb07b96-f4db-4d2b-884d-c00536d6ccf4`, `NativeWon=true`, and zero
 `CaptureFailures`, `Mismatches`, `Unsupported` and `Pending`. Their current byte
 lengths and SHA-256 hashes were checked against [manifest.tsv](manifest.tsv).
@@ -33,9 +34,18 @@ regression; the older evidence was retained without a new full-inventory run.
 | `StewardSacrificeDamage` | `f6a4e405-98b9-4eeb-bae1-50cb204d12ed` | [original unit relic batch][units] | Six original `StewardSacrificeDamageAbility` activations remove their own units; three damage enemies. Three paid source cards exhaust and three cardless source copies retire from ownership. All queued callbacks and physical position changes match. |
 | `MorselsGetDamageShield` | `d1daea7e-3346-47df-a756-c839b044e5f3` | [original unit relic batch][units] | Three paid Morsel births retain their starting shield without repeating the spawn effect; three cardless births gain one additional shield. One native exchange consumes a shield while preserving its owner's health. Both original effects and filters remain unchanged. |
 | `ValorTransferOnAngelDeath` | `8c493cd7-8048-4598-bdd5-6cc2801cd842` | [original unit relic batch][units] | Twenty-eight native Shift queries cover player 2, enemy body 1, original enemy equipment 2 and excluded trigger 1. Eight player shifts and one equipped-enemy shift double the moved unit's gold callback and match other same-team callbacks. |
+| `EquippedUnitsGainArmor` | `9af0364b-8e05-45d9-be46-7b7dd1e721e7` | [original trigger relics][triggers] | Original OnEquipmentAdded grants 10 Armor and permits count modifiers. An authored native +1 count carrier produces fire count 2; two player attachments give two positive effect counterfactuals. |
+| `DamageShieldOnEquip` | `0c50313f-1f07-40c4-8a3e-54748b57981f` | [original trigger relics][triggers] | Each player attachment adds one shield. Its original exclusion flag keeps fire count 1 with the same +1 equipment modifier; two positive effect counterfactuals. |
+| `ManyBuffonAngelEquip` | `c97500a9-b0a4-4c18-b203-b9f4447c84c3` | [original trigger relics][triggers] | Original source team 255 admits both teams, filtered to Angels. Two player and one enemy attachments each add 3 Valor, 3 Rage and 3 Regen; complete states and three effect counterfactuals match. |
+| `SurgeonsStitcher` | `8f22145d-5c41-45da-8abf-95bc5f369648` | [original trigger relics][triggers] | Original 999999 Self heal restores a wounded 68/80 player to 80/80 on attachment. Removing its installed trigger loses that heal. |
+| `AngelsSpawnWithShiftyValor` | `3d4705ec-ee6b-433b-88c8-1b4ce0ed7cc9` | [original trigger relics][triggers] | Original Angel OnShift adds 2 Valor with fire count 1 despite the original +1 Shift relic. Ten Bump plays provide six positive effect counterfactuals; physical positions and other same-team callbacks also match. |
+| `RageOnHymnistDeath` | `ec46f782-87ad-4cbd-aacb-023701417283` | [stationary trigger relic deaths][triggerDeaths] | Original player OnDeath targets eligible Angels on its floor with 7 Rage. Two combat counterfactuals change actual unit/status results. This effect has no positive witness in the separate physical Shift archive. |
+| `WhelpsGainExtinguishHealPyre` | `e6a167d5-f57e-4a02-a0f0-b8cf9373c838` | [original trigger relics][triggers] | Its actual payload adds 5 Pyregel to enemies on a Whelp's floor. The original exclusion flag prevents the +1 Death relic from doubling it. Four death/action/combat counterfactuals change unit/status results. |
+| `DragonsGainStrikeAddPyregel` | `1fdf2fde-a5e7-4eae-86eb-d432145c4621` | [original trigger relics][triggers] | Original Dragon Strike adds 5 Pyregel to LastAttackedCharacter. Five action/combat counterfactuals change unit/status results. |
+| `WhelpStrikeAddPyregel_DH` | `588825ab-8517-48db-8447-31b48e931aaa` | [original trigger relics][triggers] | Original Whelp Strike adds 3 Pyregel to LastAttackedCharacter. Six action/combat counterfactuals change unit/status results. |
 
 Record indices above are zero-based. Full-battle acceptance and independent
-effect checks are documented in [README.md](README.md); the table's six source
+effect checks are documented in [README.md](README.md); the table's eight source
 archives contain these observed battle sizes:
 
 | Archive | Schema | Card plays | EndTurns | Matched stages | Independent relic observations |
@@ -46,13 +56,21 @@ archives contain these observed battle sizes:
 | [cardless relic upgrades][cardless] | 111 | 1 | 5 | 42 | 22 birth phases |
 | [original relic batch][batch] | 106 | 21 | 5 | 46 | 30 modifier calls, 12 birth phases |
 | [original unit relic batch][units] | 106 | 39 | 7 | 56 | 40 modifier calls, 28 Shift queries, 6 original ability activations |
+| [stationary trigger relic deaths][triggerDeaths] | 103 | 13 | 5 | 35 | 14 births, eight required original effect witnesses |
+| [original trigger relics][triggers] | 106 | 28 | 7 | 54 | 14 births, three attachments including one enemy, ten Bump plays, eight required effect witnesses |
 
 The checks that enforce these observations are
 [TriggerCountChecks.Native](../../src/ModelChecks/TriggerCountChecks.cs),
 [RelicSpawnStatusChecks.Native](../../src/ModelChecks/RelicSpawnStatusChecks.cs),
 [RelicCardModifierChecks.Native](../../src/ModelChecks/RelicCardModifierChecks.cs),
 [OriginalRelicBatchChecks.Native](../../src/ModelChecks/OriginalRelicBatchChecks.cs),
-and [OriginalUnitRelicBatchChecks.Native](../../src/ModelChecks/OriginalUnitRelicBatchChecks.cs).
+[OriginalUnitRelicBatchChecks.Native](../../src/ModelChecks/OriginalUnitRelicBatchChecks.cs),
+and [OriginalTriggerRelicBatchChecks.Native/Combined](../../src/ModelChecks/OriginalTriggerRelicBatchChecks.cs).
+Each new trigger archive has eight positive owner effects; their union covers
+all nine distinct originals. Removing only one original's installed callbacks
+must change health, attack, membership or status stacks, beyond trigger metadata.
+Each archive also compares full native states, all nine installation rules,
+negative team/subtype gates, count admission and 32 immutable birth branches.
 The cardless archive uses the clone-birth path in `RelicSpawnStatusChecks.Native`
 to compare the complete train, callback queue and dispatched callbacks;
 [RelicCardlessUpgradeChecks](../../src/ModelChecks/RelicCardlessUpgradeChecks.cs)
@@ -82,3 +100,5 @@ include the starter-cost, cardless or four-artifact batch evidence above.
 [cardless]: full-battle-cardless-relic-upgrades.mt2f
 [batch]: full-battle-original-relic-batch.mt2f
 [units]: full-battle-original-unit-relics.mt2f
+[triggerDeaths]: full-battle-original-trigger-relic-deaths.mt2f
+[triggers]: full-battle-original-trigger-relics.mt2f

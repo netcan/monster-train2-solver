@@ -2121,3 +2121,63 @@ There are no JSON companions. See [relic-coverage.md](relic-coverage.md) for the
 dotnet run --project src/ModelChecks -c Release -- --original-unit-relics-only tests/fixtures/full-battle-original-unit-relics.mt2f
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-unit-relics.mt2f
 ```
+
+### Original added-trigger relic batch
+
+Two byte-identical native archives validate nine additional unchanged original
+owners of `RelicEffectAddTrigger`: `EquippedUnitsGainArmor`, `DamageShieldOnEquip`,
+`ManyBuffonAngelEquip`, `SurgeonsStitcher`, `AngelsSpawnWithShiftyValor`,
+`RageOnHymnistDeath`, `WhelpsGainExtinguishHealPyre`, `DragonsGainStrikeAddPyregel`
+and `WhelpStrikeAddPyregel_DH`. Relic definitions and trigger payloads are
+unchanged. Unit subtypes, damage/equipment/Bump carriers and an additional
+equipment-count relic are authored; the original +1 Death and Shift relics are
+also present and are not counted again.
+
+The earlier stationary archive supplies the natural Angel-targeted death
+witness. The later physical archive supplies actual Shift and enemy equipment
+witnesses. Each has eight positive owner effects; the combined check requires
+all nine across the pair. An effect witness removes only that owner's installed
+callbacks and requires a difference in actual unit health, attack, membership or
+status stacks. Changes only to trigger identities or flags do not count.
+
+Both fixtures compare all nine ordered installation definitions, complete
+CharacterAdded states, negative team/subtype gates and 32 immutable branches.
+Fourteen births per archive include enemy Angels; player equipment Armor fires
+twice while original excluded equipment, Death and Shift callbacks retain fire
+count 1. The physical fixture plays three equipment cards, including one on an
+enemy, restores a wounded 68/80 player to 80/80 and records ten Bump plays.
+
+The stationary battle has 13 plays, five EndTurns, 35 matched stages and final
+Pyre health 80; native sampling takes 78.56 seconds. Its schema 103 archive is
+45,490 bytes/6,244 nodes, SHA-256
+`e22ebd80a7f827948a97e7cb444803f4df3b96a7885d682c31b82e533aa369a6`.
+It records the earlier policy with no physical movement metadata or weak-Whelp
+damage step; its independent chooser preserves that recorded policy.
+
+The physical battle has 28 plays, seven EndTurns, 54 matched stages and final
+Pyre health 75; native sampling takes 102.72 seconds. Its schema 106 archive is
+65,645 bytes/10,228 nodes, SHA-256
+`6c40aafc15c0393fb0c1d139a1865529c18ff14cd710732fd5ba057fb1105ed5`.
+Both muted Instant samples have zero capture failures, mismatches, unsupported
+or pending records, settled terminal effects and unchanged installation files.
+They have no JSON companions.
+
+Both complete independent policies, mid-battle suffixes and 16 policy branches
+pass. Native card-view comparisons cover 350/650 decision contexts and
+7,595/16,610 exact queries respectively, with 32 immutable query branches. The
+physical archive additionally compares 108 complete room contexts, 19 removals,
+12 cross-room moves and one empty ascent. Three affected old fixtures pass
+(original unit relics, spawn status relics and cardless relic upgrades), as do
+the three focused pure suites. All 215 archive names, sizes and SHA-256 hashes
+match the curated manifest; a full 215-archive regression remains deferred.
+
+Original relic coverage is now 25/224 (11.16%), with its exact scope documented
+in [relic-coverage.md](relic-coverage.md). Definition-ID filters, Deathwish
+installation and unsupported trigger payloads retain explicit guards; the
+shared class does not establish coverage of its other 17 catalog owners.
+
+```powershell
+dotnet run --project src/ModelChecks -c Release -- --relic-triggers-pure
+dotnet run --project src/ModelChecks -c Release -- --original-trigger-relics-combined tests/fixtures/full-battle-original-trigger-relic-deaths.mt2f tests/fixtures/full-battle-original-trigger-relics.mt2f
+& ./scripts/Check-Models.ps1 -Fixture @('full-battle-original-trigger-relics.mt2f', 'full-battle-original-trigger-relic-deaths.mt2f')
+```
