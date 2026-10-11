@@ -14,6 +14,21 @@ namespace MonsterTrain2Poju.Probe
         internal static bool Started { get; private set; }
         internal static bool Completed { get; private set; }
         internal static string? Error { get; private set; }
+        internal static PlayCardAction? ChooseBuffTarget(BattleTurnState source, PlayCardAction? selected)
+        {
+            if (selected == null || source.PlayRules == null || source.Spawn.Train.Context == null) return null;
+            CardToken? card = source.Spawn.Train.Context.Cards.Hand.FirstOrDefault(item => item.InstanceId == selected.CardInstanceId);
+            CardPlayRule? rule = card == null ? null : source.PlayRules.Cards.FirstOrDefault(item => item.DataId == card.DataId);
+            if (rule?.Effects.Any(effect => effect.Type == "BuffEquipment") != true) return null;
+            foreach (RoomCombatState room in source.Spawn.Train.Rooms.OrderBy(item => item.RoomIndex))
+            foreach (CombatUnit target in room.Units.Where(unit => unit.Team == CombatTeam.Player && unit.EquipmentCards?.Count >= 2)
+                .OrderByDescending(unit => unit.EquipmentCards!.Count))
+            {
+                var action = new PlayCardAction(selected.CardInstanceId, room.RoomIndex, targetUnitId: target.Id);
+                if (BattleActionModel.PlayCard(source, action).Supported) return action;
+            }
+            return null;
+        }
         internal static void Start(AllGameManagers managers, ManualLogSource log)
         {
             Started = true;
@@ -40,6 +55,7 @@ namespace MonsterTrain2Poju.Probe
             bool exhausted = Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == "equipment-exhausted";
             bool overflow = Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == "equipment-overflow";
             bool triggerEquipment = Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == "equipment-triggers";
+            bool buffEquipment = Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == "equipment-buff";
             CardState[] owned = cards.GetAllCards(new List<CardState>()).ToArray();
             CardState[] gear = owned.Where(card => card.GetEffects().Any(effect => effect.GetEffectStateName() == "CardEffectDamage" &&
                 effect.GetTargetMode() == TargetMode.DropTargetCharacter)).ToArray();
@@ -61,12 +77,23 @@ namespace MonsterTrain2Poju.Probe
             Set(data, "targetless", false); Set(data, "targetsRoom", true);
             foreach (CardState card in gear) card.Setup(data, save);
             CardData rally = save.GetAllGameData().FindCardData(owned.First(card => card.GetEffects().Any(effect => effect.GetEffectStateName() == "CardEffectFloorRearrange")).GetCardDataID())!;
-            rally.GetEffects().Clear(); var remove = new CardEffectData("CardEffectRemoveEquipment", null!, Team.Type.Monsters);
-            remove.Cheat_SetTargetMode(TargetMode.Room); rally.GetEffects().Add(remove); Set(rally, "targetless", false); Set(rally, "targetsRoom", true);
+            rally.GetEffects().Clear();
+            if (buffEquipment)
+            {
+                var buff = new CardEffectData("CardEffectBuffEquipment", null!, Team.Type.Monsters);
+                buff.Cheat_SetTargetMode(TargetMode.DropTargetCharacter); Set(buff, "paramCardUpgradeData", upgrade); Set(buff, "paramBool", true);
+                rally.GetEffects().Add(buff);
+            }
+            else
+            {
+                var remove = new CardEffectData("CardEffectRemoveEquipment", null!, Team.Type.Monsters);
+                remove.Cheat_SetTargetMode(TargetMode.Room); rally.GetEffects().Add(remove);
+            }
+            Set(rally, "targetless", false); Set(rally, "targetsRoom", true);
             foreach (CardState card in owned.Where(card => card.GetCardDataID() == rally.GetID())) card.Setup(rally, save);
             CardData steward = save.GetAllGameData().FindCardData("d14a50f3-728d-43e1-87f0-ef1b013f6678")!;
             CharacterData unitData = steward.GetEffects().Single(effect => effect.GetEffectStateName() == "CardEffectSpawnMonster").GetParamCharacterData();
-            Set(unitData, "equipmentLimit", 2); Set(unitData, "health", 35);
+            Set(unitData, "equipmentLimit", 3); Set(unitData, "health", 35);
             var triggers = unitData.GetTriggers().ToList();
             foreach (var kind in new[] { CharacterTriggerData.Trigger.OnEquipmentAddedToAny, CharacterTriggerData.Trigger.OnEquipmentAdded, CharacterTriggerData.Trigger.OnEquipmentRemoved })
             { var trigger = HealingScenario.HealGold(1, false, true); Set(trigger, "trigger", kind); triggers.Add(trigger); }
@@ -95,6 +122,8 @@ namespace MonsterTrain2Poju.Probe
                 (managers.GetHandUI()?.AreAnyCardsAnimating() ?? false)) yield return null;
             var monsters = new List<CharacterState>(); rooms.GetRoom(0).AddCharactersToList(monsters, Team.Type.Monsters);
             CharacterState host = monsters.Single(unit => unit.GetSpawnerCard() == source);
+            object primaryState = AccessTools.Property(typeof(CharacterState), "PrimaryStateInformation").GetValue(host)!;
+            AccessTools.Property(primaryState.GetType(), "EquipmentLimit").SetValue(primaryState, 3);
             if (abilities) EquipmentAbilityScenario.AfterInitial();
             if (abilities) yield return EquipmentAbilityScenario.DisableInitial(host);
             foreach (CardState card in gear.Take(3))
@@ -104,6 +133,8 @@ namespace MonsterTrain2Poju.Probe
                 cards.MoveToStandByPile(card, wasPlayed: true, wasExhausted: false,
                     new RemoveFromStandByCondition(() => cards.CheckEquipmentRemoveFromStandByCondition(host, equipment)));
             }
+            if (buffEquipment && host.GetEquipment().Count != 3)
+                throw new InvalidOperationException("Equipment buff acceptance setup did not attach all three equipment cards.");
             if (abilities)
             {
                 yield return EquipmentAbilityScenario.RestoreEquipmentOriginal(host, gear[2]);
@@ -131,7 +162,8 @@ namespace MonsterTrain2Poju.Probe
             }
             Set(managers.GetCombatManager()!, "combatStateChanged", true);
             Completed = true;
-            log.LogInfo("EQUIPMENT-PREPARED native three-card attachment/replacement, temporary/permanent modifiers, equipment callbacks, return=" +
+            log.LogInfo("EQUIPMENT-PREPARED native three-card attachment/replacement, temporary/permanent modifiers, buff=" + buffEquipment +
+                ", equipmentCount=" + host.GetEquipment().Count + " limit=" + host.GetEquipmentLimit() + ", equipment callbacks, return=" +
                 (exhausted ? "Exhausted" : "Hand") + " fullHandDeath=" + overflow + " and original Boss/waves.");
         }
         private static CharacterTriggerData GoldTrigger(CharacterTriggerData.Trigger kind, int amount, bool once)

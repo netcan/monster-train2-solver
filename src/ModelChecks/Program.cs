@@ -32,6 +32,15 @@ if (args.Length == 2 && args[0] == "--unit-ability-native-only")
     return;
 }
 
+if (args.Length == 2 && args[0] == "--equipment-native-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    EquipmentChecks.Native(fixture.RootElement);
+    int schema = fixture.RootElement.GetProperty("Schema").GetInt32();
+    Console.WriteLine($"NATIVE-FIXTURE-METADATA schema={schema} bytes={new FileInfo(args[1]).Length} uniqueNodes={fixture.UniqueNodeCount}");
+    return;
+}
+
 if (args.Length == 1 && args[0] == "--relic-floor-capacity-pure")
 {
     RelicFloorCapacityChecks.Run();

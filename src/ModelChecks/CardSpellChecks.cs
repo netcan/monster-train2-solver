@@ -84,6 +84,91 @@ internal static class CardSpellChecks
         RoomCombatResult stationary = CardSpellModel.Apply(new RoomCombatState(0, false, [front, immobile], [], context), rally, 3);
         Require(stationary.Supported && stationary.State!.Units[0].Id == 2 && stationary.State.Units[1].Attack == 10,
             "Immobile cancelled the spell's later status effect.");
+        var equipmentUpgrade = new CardUpgradeModifier("buff-equipment", "buff-equipment",
+            new CardStatModifier(damage: 2, health: 3), [], false, false, false, 0, 0, []);
+        var equipmentCards = new[] { CardInstanceState.Empty(40, "equipment-a"), CardInstanceState.Empty(41, "equipment-b") };
+        var equipmentContext = new CombatContext(new CardCycleState([], [], [], rng, 0, []), rng, 0, 42, 10,
+            cardInstances: equipmentCards, cardRegistry: equipmentCards);
+        var equippedUnit = new CombatUnit(39, "equipped-unit", CombatTeam.Player, 5, 20, 20, true, false, false, [],
+            modifiers: new UnitModifiers(5, 0, 0, 1, 2, true, false, []), isBoss: false, equipmentCards: [40, 41]);
+        var equipmentRoom = new RoomCombatState(0, false, [equippedUnit], [], equipmentContext, activeCompanionBossIds: []);
+        TrainCombatState equipmentTrain = new TrainCombatState([equipmentRoom], [], 1, equipmentContext);
+        Require(equipmentTrain.Rooms.Single().ActiveCompanionBossIds is { Count: 0 },
+            "A single-room train wrapper dropped the explicitly captured empty companion-boss store.");
+        string equipmentParent = JsonSerializer.Serialize(equipmentRoom);
+        var buffEquipment = new CardActionEffect("BuffEquipment", "DropTargetCharacter", 0, false, true, [],
+            upgrade: equipmentUpgrade, lifetime: "TemporaryUntilUnitDeath", scaleUpgrade: true);
+        RoomCombatResult firstEquipmentBuff = CardSpellModel.Apply(equipmentRoom, [buffEquipment], 39);
+        RoomCombatResult preservedEquipmentSnapshot = UnitModifierModel.Apply(equipmentRoom, 39, equipmentUpgrade,
+            "TemporaryUntilUnitDeath", scaleUpgrade: true, accumulateScaledUpgradeRecord: false);
+        Require(preservedEquipmentSnapshot.Supported && preservedEquipmentSnapshot.State!.ActiveCompanionBossIds is { Count: 0 },
+            "A direct unit upgrade dropped the explicitly captured empty companion-boss store.");
+        Require(firstEquipmentBuff.Supported && firstEquipmentBuff.State!.Units.Single().Attack == 9 &&
+            firstEquipmentBuff.State.ActiveCompanionBossIds is { Count: 0 } &&
+            firstEquipmentBuff.State.Units.Single().Modifiers!.Upgrades.Single().Stats.Damage == 2 &&
+            equipmentCards.All(card => firstEquipmentBuff.State.Context!.FindCard(card.InstanceId)!.Permanent.Upgrades
+                .Single(upgrade => upgrade.DataId == equipmentUpgrade.DataId).Stats.Damage == 2),
+            "BuffEquipment did not upgrade each attached card and its host: attack=" +
+            (firstEquipmentBuff.State?.Units.SingleOrDefault()?.Attack.ToString() ?? "missing") + ", active=" +
+            (firstEquipmentBuff.State?.ActiveCompanionBossIds == null ? "null" : firstEquipmentBuff.State.ActiveCompanionBossIds.Count.ToString()) +
+            ", gear=" + string.Join(",", equipmentCards.Select(card => firstEquipmentBuff.State?.Context?.FindCard(card.InstanceId)?.Permanent.Upgrades
+                .SingleOrDefault(upgrade => upgrade.DataId == equipmentUpgrade.DataId)?.Stats.Damage.ToString() ?? "missing")) +
+            ", reason=" + firstEquipmentBuff.UnsupportedReason);
+        RoomCombatResult scaledEquipmentBuff = CardSpellModel.Apply(firstEquipmentBuff.State!, [buffEquipment], 39);
+        Require(scaledEquipmentBuff.Supported && scaledEquipmentBuff.State!.Units.Single().Attack == 13 &&
+            scaledEquipmentBuff.State.Units.Single().Modifiers!.Upgrades.Single().Stats.Damage == 2 &&
+            equipmentCards.All(card => scaledEquipmentBuff.State.Context!.FindCard(card.InstanceId)!.Permanent.Upgrades
+                .Count(upgrade => upgrade.DataId == equipmentUpgrade.DataId) == 1 &&
+                scaledEquipmentBuff.State.Context.FindCard(card.InstanceId)!.Permanent.Upgrades
+                    .Single(upgrade => upgrade.DataId == equipmentUpgrade.DataId).Stats.Damage == 4),
+            "Scaled BuffEquipment did not accumulate equipment and host upgrades.");
+        var strongerEquipmentDescriptor = new CardMaskDescriptor(new CardMaskDefinition("strong-equipment", "Equipment", "Common",
+            false, false, false, [], [], [], [], null, false, 0, 0, false, false, false), 1,
+            [new("CardTraitStrongerMagicPower", "CardTraitStrongerMagicPower", 0, 0, true, 0)], []);
+        CardInstanceState StrongEquipment(int id) => new(id, "strong-equipment", CardModifiers.Empty(), CardModifiers.Empty(),
+            0, 0, 0, [], maskDescriptor: strongerEquipmentDescriptor);
+        CardInstanceState[] strongerEquipmentCards = [StrongEquipment(40), StrongEquipment(41)];
+        var strongerEquipmentContext = new CombatContext(equipmentContext.Cards, rng, 0, 42, 10,
+            cardInstances: strongerEquipmentCards, cardRegistry: strongerEquipmentCards);
+        var strongerEquipmentUpgrade = new CardUpgradeModifier(equipmentUpgrade.DataId, equipmentUpgrade.AssetKey,
+            equipmentUpgrade.Stats, equipmentUpgrade.Statuses, false, false, false, 0, 0, [],
+            maskMetadata: new CardUpgradeMaskMetadata([], false, false, false, false));
+        var strongerBuffEquipment = new CardActionEffect("BuffEquipment", "DropTargetCharacter", 0, false, true, [],
+            upgrade: strongerEquipmentUpgrade, lifetime: "TemporaryUntilUnitDeath", scaleUpgrade: true);
+        var strongerEquipmentRoom = new RoomCombatState(0, false,
+            [new CombatUnit(39, "strong-equipped-unit", CombatTeam.Player, 5, 20, 20, true, false, false, [],
+                modifiers: new UnitModifiers(5, 0, 0, 1, 2, true, false, []), equipmentCards: [40, 41])], [], strongerEquipmentContext);
+        RoomCombatResult firstStrongBuff = CardSpellModel.Apply(strongerEquipmentRoom, [strongerBuffEquipment], 39);
+        Require(firstStrongBuff.Supported, "Strong-magic equipment buff failed: " + firstStrongBuff.UnsupportedReason);
+        Require(firstStrongBuff.State!.Units.Single().Attack == 17 && strongerEquipmentCards.All(card =>
+            firstStrongBuff.State.Context!.FindCard(card.InstanceId)!.Permanent.Upgrades
+                .Single(upgrade => upgrade.DataId == equipmentUpgrade.DataId).Stats.Damage == 10),
+            "Strong-magic BuffEquipment did not scale each first equipment upgrade while applying the raw host increment after the first item.");
+        RoomCombatResult repeatedStrongBuff = CardSpellModel.Apply(firstStrongBuff.State!, [strongerBuffEquipment], 39);
+        Require(repeatedStrongBuff.Supported && repeatedStrongBuff.State!.Units.Single().Attack == 21 &&
+            strongerEquipmentCards.All(card => repeatedStrongBuff.State.Context!.FindCard(card.InstanceId)!.Permanent.Upgrades
+                .Single(upgrade => upgrade.DataId == equipmentUpgrade.DataId).Stats.Damage == 12),
+            "Scaled BuffEquipment did not apply magic power only to the first equipment upgrade: attack=" +
+            (repeatedStrongBuff.State?.Units.Single().Attack.ToString() ?? "missing") + ", damage=" + string.Join(",",
+                strongerEquipmentCards.Select(card => repeatedStrongBuff.State?.Context?.FindCard(card.InstanceId)?.Permanent.Upgrades
+                    .SingleOrDefault(upgrade => upgrade.DataId == equipmentUpgrade.DataId)?.Stats.Damage.ToString() ?? "missing")) +
+            ", reason=" + repeatedStrongBuff.UnsupportedReason);
+        var existingUpgradeUnit = new CombatUnit(39, "upgraded-equipped-unit", CombatTeam.Player, 7, 20, 20, true,
+            false, false, [], modifiers: new UnitModifiers(7, 2, 0, 1, 2, true, false, [equipmentUpgrade]),
+            equipmentCards: [40, 41]);
+        var existingUpgradeRoom = new RoomCombatState(0, false, [existingUpgradeUnit], [], equipmentContext);
+        RoomCombatResult existingUpgradeBuff = CardSpellModel.Apply(existingUpgradeRoom, [buffEquipment], 39);
+        Require(existingUpgradeBuff.Supported && existingUpgradeBuff.State!.Units.Single().Attack == 11 &&
+            existingUpgradeBuff.State.Units.Single().Modifiers!.Upgrades.Single().Stats.Damage == 2,
+            "BuffEquipment changed the host's accumulated CardUpgradeState instead of only scaling live stats.");
+        var unscaledEquipmentBuff = new CardActionEffect("BuffEquipment", "DropTargetCharacter", 0, false, true, [],
+            upgrade: equipmentUpgrade, lifetime: "TemporaryUntilUnitDeath");
+        RoomCombatResult unscaledBuff = CardSpellModel.Apply(equipmentRoom, [unscaledEquipmentBuff], 39);
+        Require(unscaledBuff.Supported && unscaledBuff.State!.Units.Single().Attack == 9 &&
+            unscaledBuff.State.Units.Single().Modifiers!.Upgrades.Count(upgrade => upgrade.DataId == equipmentUpgrade.DataId) == 2,
+            "Unscaled BuffEquipment did not apply one host upgrade for every equipped card.");
+        Require(JsonSerializer.Serialize(equipmentRoom) == equipmentParent,
+            "BuffEquipment mutated its source state.");
         var retargetEffects = rally.Concat([new CardActionEffect("Damage", "DropTargetCharacter", 5, false, true, []),
             new CardActionEffect("AddStatus", "LastTargetedCharacters", 0, false, true, [pyregel])]).ToArray();
         var retarget = CardSpellModel.Apply(room, retargetEffects, 3);

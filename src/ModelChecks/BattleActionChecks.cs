@@ -387,6 +387,8 @@ internal static class BattleActionChecks
             chooser = UnitAbilityModel.ChooseAbilityThenCards;
         if (fixture.TryGetProperty("ModifierScenario", out var magebladeScenario) && magebladeScenario.GetString() == "mageblade")
             chooser = ChooseMagebladeThenCards;
+        if (fixture.TryGetProperty("ModifierScenario", out var equipmentBuffScenario) && equipmentBuffScenario.GetString() == "equipment-buff")
+            chooser = ChooseEquipmentBuffThenCards;
         FixtureValue turns = fixture.GetProperty("Turns");
         // Authored setup plays are checked individually above. The independent policy starts
         // after that prelude and must reproduce every ordinary policy play and EndTurn.
@@ -457,6 +459,23 @@ internal static class BattleActionChecks
                 return play;
         }
         return BattleActionModel.ChooseUnitAndJunkPlay(source);
+    }
+
+    private static PlayCardAction? ChooseEquipmentBuffThenCards(BattleTurnState source)
+    {
+        PlayCardAction? selected = BattleActionModel.ChooseUnitSpellAndJunkPlay(source);
+        if (selected == null || source.PlayRules == null || source.Spawn.Train.Context == null) return selected;
+        CardToken? card = source.Spawn.Train.Context.Cards.Hand.FirstOrDefault(item => item.InstanceId == selected.CardInstanceId);
+        CardPlayRule? rule = card == null ? null : source.PlayRules.Cards.FirstOrDefault(item => item.DataId == card.DataId);
+        if (rule?.Effects.Any(effect => effect.Type == "BuffEquipment") != true) return selected;
+        foreach (RoomCombatState room in source.Spawn.Train.Rooms.OrderBy(item => item.RoomIndex))
+        foreach (CombatUnit target in room.Units.Where(unit => unit.Team == CombatTeam.Player && unit.EquipmentCards?.Count >= 2)
+            .OrderByDescending(unit => unit.EquipmentCards!.Count))
+        {
+            var action = new PlayCardAction(selected.CardInstanceId, room.RoomIndex, targetUnitId: target.Id);
+            if (BattleActionModel.PlayCard(source, action).Supported) return action;
+        }
+        return selected;
     }
 
     private static PlayCardAction? ChooseSacrificeEffectsThenCards(BattleTurnState source)

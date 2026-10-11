@@ -46,9 +46,10 @@ namespace MonsterTrain2Poju.Model
     {
         public static RoomCombatResult Apply(RoomCombatState source, int targetId, CardUpgradeModifier upgrade, string lifetime,
             bool remove = false, int? roomCapacity = null, int sourceCardId = 0, string? triggerKind = null, bool scaleUpgrade = false,
-            Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null)
+            Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null,
+            bool accumulateScaledUpgradeRecord = true)
             => RoomCombatModel.ApplyUnitUpgrade(source, targetId, upgrade, lifetime, remove, roomCapacity, sourceCardId, triggerKind,
-                scaleUpgrade, refreshPyre: refreshPyre);
+                scaleUpgrade, refreshPyre: refreshPyre, accumulateScaledUpgradeRecord: accumulateScaledUpgradeRecord);
 
         // CharacterState's direct API, used by equipment, changes only the live unit.
         // Anonymous removal needs an explicit applied-list index to represent object identity;
@@ -71,7 +72,7 @@ namespace MonsterTrain2Poju.Model
             Func<RoomCombatState, CombatUnit, bool, RoomCombatResult> settle, bool allowDyingTarget = false,
             Action<RoomCombatModel.QueuedCharacterTrigger>? enqueueCallback = null, bool directApi = false,
             string upgradeId = "", int? anonymousRemovalIndex = null, int equipmentSourceCardId = 0,
-            bool deferAbilityCallbacks = false, bool scaleUpgrade = false)
+            bool deferAbilityCallbacks = false, bool scaleUpgrade = false, bool accumulateScaledUpgradeRecord = true)
         {
             string? error = RoomCombatModel.Validate(source, allowDyingTarget ? targetId : (int?)null);
             if (error != null) return Unsupported(error);
@@ -139,7 +140,10 @@ namespace MonsterTrain2Poju.Model
                     if (upgrade.DataId.Length > 0) upgrades.RemoveAt(upgrades.FindIndex(item => item.DataId == upgrade.DataId));
                     else if (anonymousRemovalIndex.HasValue) upgrades.RemoveAt(anonymousRemovalIndex.Value);
                 }
-                else if (existingUpgradeIndex >= 0) upgrades[existingUpgradeIndex] = upgrades[existingUpgradeIndex].Accumulate(upgrade);
+                else if (existingUpgradeIndex >= 0)
+                {
+                    if (accumulateScaledUpgradeRecord) upgrades[existingUpgradeIndex] = upgrades[existingUpgradeIndex].Accumulate(upgrade);
+                }
                 else upgrades.Add(upgrade);
                 int sign = remove ? -1 : 1;
                 int damage = Math.Max(0, checked(modifiers.AttackDamage + sign * upgrade.Stats.Damage));

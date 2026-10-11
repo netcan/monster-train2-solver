@@ -39,7 +39,10 @@ namespace MonsterTrain2Poju.Model
             int[] companionBosses = Movement.Where(rule => rule.CompanionBoss).Select(rule => rule.UnitId).Distinct()
                 .Where(id => liveUnits.TryGetValue(id, out CombatUnit? unit) && unit.IsBoss == true &&
                     (unit.Health > 0 || unit.Status("undying")?.Stacks > 0)).ToArray();
-            IReadOnlyList<int>? roster = companionBosses.Length == 0 ? null : Array.AsReadOnly(companionBosses);
+            IReadOnlyList<int>? roster = companionBosses.Length == 0
+                ? orderedRooms.Length > 0 && orderedRooms.All(room => room.ActiveCompanionBossIds is { Count: 0 })
+                    ? Array.Empty<int>() : null
+                : Array.AsReadOnly(companionBosses);
             Rooms = Array.AsReadOnly(orderedRooms.Select(room => new RoomCombatState(room.RoomIndex, room.Deployment,
                 room.Units, room.ExternalInteractions, room.Context, room.Preview, roster)).ToArray());
         }

@@ -670,13 +670,15 @@ namespace MonsterTrain2Poju.Model
         }
 
         internal static RoomCombatResult ApplyUnitUpgrade(RoomCombatState state, int targetId, CardUpgradeModifier upgrade,
-            string lifetime, bool remove, int? roomCapacity, int sourceCardId, string? triggerKind, bool scaleUpgrade = false, Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null)
+            string lifetime, bool remove, int? roomCapacity, int sourceCardId, string? triggerKind, bool scaleUpgrade = false,
+            Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null, bool accumulateScaledUpgradeRecord = true)
         {
             string? error = Validate(state);
             if (error != null || !state.Units.Any(unit => unit.Id == targetId))
                 return new RoomCombatResult(null, RoomOutcome.Unsupported, 0, new List<CombatEvent>(), error ?? "Missing unit upgrade target.");
             return new Engine(state, new List<CombatEvent>(), resetPreviewTriggers: false, refreshPyre: refreshPyre)
-                .UnitUpgrade(targetId, upgrade, lifetime, remove, roomCapacity, sourceCardId, triggerKind, scaleUpgrade: scaleUpgrade);
+                .UnitUpgrade(targetId, upgrade, lifetime, remove, roomCapacity, sourceCardId, triggerKind,
+                    scaleUpgrade: scaleUpgrade, accumulateScaledUpgradeRecord: accumulateScaledUpgradeRecord);
         }
 
         internal static RoomCombatResult ApplyDirectUnitUpgrade(RoomCombatState state, int targetId, CardUpgradeModifier upgrade,
@@ -1124,8 +1126,12 @@ namespace MonsterTrain2Poju.Model
             private bool IsTerminalBossDeath(WorkingUnit unit) => !HasLivingPairedCompanionBoss(unit.Source.Id) &&
                 (unit.Source.EndsBattleOnDeath || unit.Source.IsBoss == true && activeCompanionBossIds.Contains(unit.Source.Id));
 
-            private IReadOnlyList<int>? CompanionBossSnapshot() => activeCompanionBossIds.Count == 0
-                ? null : activeCompanionBossIds.ToArray();
+            private IReadOnlyList<int>? CompanionBossSnapshot()
+            {
+                if (activeCompanionBossIds.Count > 0) return activeCompanionBossIds.ToArray();
+                // An explicitly captured empty store differs from an omitted legacy snapshot.
+                return source.ActiveCompanionBossIds == null ? null : Array.Empty<int>();
+            }
 
             internal RoomCombatResult Run(bool entireRoom)
             {
@@ -1220,11 +1226,12 @@ namespace MonsterTrain2Poju.Model
             internal RoomCombatResult UnitUpgrade(int targetId, CardUpgradeModifier upgrade, string lifetime,
                 bool remove, int? roomCapacity, int sourceCardId, string? triggerKind, bool directApi = false,
                 bool scaleUpgrade = false,
-                string upgradeId = "", int? anonymousRemovalIndex = null, int equipmentSourceCardId = 0)
+                string upgradeId = "", int? anonymousRemovalIndex = null, int equipmentSourceCardId = 0,
+                bool accumulateScaledUpgradeRecord = true)
             {
                 ApplyUpgrade(units.Single(unit => unit.Source.Id == targetId), upgrade, lifetime, remove,
                     roomCapacity, sourceCardId, triggerKind, directApi, upgradeId, anonymousRemovalIndex,
-                    equipmentSourceCardId, scaleUpgrade);
+                    equipmentSourceCardId, scaleUpgrade, accumulateScaledUpgradeRecord);
                 if (enqueueCharacterTrigger == null && !runningTriggerQueue) DrainLocalTriggerQueue();
                 return Finish(battleWon ? RoomOutcome.BattleWon : units.Any(unit => unit.Source.IsPyre && !unit.Alive)
                     ? RoomOutcome.PlayerDefeated : RoomOutcome.Exchanged);
@@ -2525,7 +2532,7 @@ namespace MonsterTrain2Poju.Model
             private bool ApplyUpgrade(WorkingUnit target, CardUpgradeModifier upgrade, string lifetime, bool remove,
                 int? roomCapacity, int sourceCardId, string? kind, bool directApi = false,
                 string upgradeId = "", int? anonymousRemovalIndex = null, int equipmentSourceCardId = 0,
-                bool scaleUpgrade = false)
+                bool scaleUpgrade = false, bool accumulateScaledUpgradeRecord = true)
             {
                 RoomCombatResult result = UnitModifierModel.ApplyWithSettlement(UpgradeRoom(target), target.Source.Id, upgrade, lifetime,
                     remove, roomCapacity, sourceCardId, kind, (state, changed, sacrifice) =>
@@ -2555,7 +2562,8 @@ namespace MonsterTrain2Poju.Model
                         return new RoomCombatResult(UpgradeRoom(target), RoomOutcome.Exchanged, 0, new List<CombatEvent>());
                     }, allowDyingTarget: true, enqueueCallback: QueueCallback, directApi: directApi,
                     upgradeId: upgradeId, anonymousRemovalIndex: anonymousRemovalIndex, equipmentSourceCardId: equipmentSourceCardId,
-                    deferAbilityCallbacks: !directApi || deferAbilityCallbacks || runningTriggerQueue, scaleUpgrade: scaleUpgrade);
+                    deferAbilityCallbacks: !directApi || deferAbilityCallbacks || runningTriggerQueue, scaleUpgrade: scaleUpgrade,
+                    accumulateScaledUpgradeRecord: accumulateScaledUpgradeRecord);
                 if (!result.Supported) { unsupportedReason = result.UnsupportedReason; return false; }
                 context = result.State!.Context;
                 return true;

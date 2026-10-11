@@ -612,6 +612,15 @@ namespace MonsterTrain2Poju.Model
                         state = ReplaceRoom(state, adjusted.State!); callbacks.AddRange(adjusted.PendingCallbacks);
                         continue;
                     }
+                    if (effect.Type == "BuffEquipment")
+                    {
+                        string? equipmentError = BuffEquipmentCards(ref state, id, sourceCardId, effect, targetRoom!.Preview,
+                            callbacks, events, ref outcome, Refresh);
+                        if (equipmentError != null) return UnsupportedTrain(equipmentError);
+                        if (state.Context!.OtherPiles != null) piles = state.Context.OtherPiles.ToArray();
+                        if (outcome == RoomOutcome.BattleWon) bossDead = true;
+                        continue;
+                    }
                     if (effect.Type == "FloorRearrange" && pendingDeadRooms.Count > 0)
                         return UnsupportedTrain("Rearranging a floor with pending death positions is not modeled.");
                     if (effect.Type == "AttachEquipment" || effect.Type == "RemoveEquipment")
@@ -698,7 +707,7 @@ namespace MonsterTrain2Poju.Model
                         if (!rearrangedOrder.Supported) return UnsupportedTrain(rearrangedOrder.UnsupportedReason!);
                         state = rearrangedOrder.State!;
                     }
-                    if ((effect.Type == "Heal" && effect.Value >= 0 || effect.Type == "UnitUpgrade") && target.Triggers.Any(trigger => trigger.Kind == "OnHeal" &&
+                    if ((effect.Type == "Heal" && effect.Value >= 0 || effect.Type == "UnitUpgrade" || effect.Type == "BuffEquipment") && target.Triggers.Any(trigger => trigger.Kind == "OnHeal" &&
                         (!trigger.Once || !trigger.HasTriggered) && (!targetRoom!.Deployment || trigger.SkipDuringDeployment != true) &&
                         (trigger.IgnoreSilence || target.Statuses.All(status => status.Id != "silenced"))))
                         focusedRoom = null; // Trigger notification suppression/focus is not captured yet.
@@ -710,7 +719,7 @@ namespace MonsterTrain2Poju.Model
                     else if (piles != null && target.SpawnerCardId > 0 && !applied.State!.Units.Any(unit => unit.Id == id))
                         RouteDeadCard(target.SpawnerCardId);
                     CombatUnit? afterTarget = applied.State!.Units.FirstOrDefault(unit => unit.Id == id);
-                    bool upgradeApplied = effect.Type == "UnitUpgrade" && (afterTarget == null ||
+                    bool upgradeApplied = (effect.Type == "UnitUpgrade" || effect.Type == "BuffEquipment") && (afterTarget == null ||
                         afterTarget.Modifiers!.Upgrades.Count > target.Modifiers!.Upgrades.Count);
                     if (effect.Type == "Heal" && effect.Value >= 0 && target.Modifiers?.CanBeHealed == true || upgradeApplied) DrainDeaths();
                     if (effect.Type == "BuffHealth" && effect.Value > 0 && target.Modifiers?.CanBeHealed == true &&
@@ -863,7 +872,7 @@ namespace MonsterTrain2Poju.Model
 
         internal static TrainCombatState WithContext(TrainCombatState source, CombatContext context) => new TrainCombatState(
             source.Rooms.Select(room => new RoomCombatState(room.RoomIndex, room.Deployment, room.Units,
-                room.ExternalInteractions, context, room.Preview)).ToArray(), source.Movement, source.EnemySlotsPerRoom, context);
+                room.ExternalInteractions, context, room.Preview, room.ActiveCompanionBossIds)).ToArray(), source.Movement, source.EnemySlotsPerRoom, context);
 
         private static TrainCombatState ReplaceRoom(TrainCombatState source, RoomCombatState changed)
         {
@@ -1014,11 +1023,13 @@ namespace MonsterTrain2Poju.Model
                     if (forgeError != null) return forgeError;
                     continue;
                 }
-                if (!new[] { "CopyUnits", "Bump", "AttackWithUnit", "Damage", "DamagePerSourceAttack", "Heal", "Sacrifice", "AddStatus", "AddStatusPerOtherEffect", "SpawnOrStatus", "FloorRearrange", "UnitUpgrade", "RemoveUnitUpgrade", "AttachEquipment", "RemoveEquipment", "BuffAttack", "DebuffAttack", "BuffHealth", "DebuffHealth", "Draw", "DiscardHand", "Generate" }.Contains(effect.Type))
+                if (!new[] { "CopyUnits", "Bump", "AttackWithUnit", "Damage", "DamagePerSourceAttack", "Heal", "Sacrifice", "AddStatus", "AddStatusPerOtherEffect", "SpawnOrStatus", "FloorRearrange", "UnitUpgrade", "BuffEquipment", "RemoveUnitUpgrade", "AttachEquipment", "RemoveEquipment", "BuffAttack", "DebuffAttack", "BuffHealth", "DebuffHealth", "Draw", "DiscardHand", "Generate" }.Contains(effect.Type))
                     return "Unimplemented spell effect " + effect.Type;
                 if (effect.Type == "Generate" && effect.Generation == null) return "Missing generated card rules.";
-                if ((effect.Type == "UnitUpgrade" || effect.Type == "RemoveUnitUpgrade") && effect.Upgrade == null)
+                if ((effect.Type == "UnitUpgrade" || effect.Type == "BuffEquipment" || effect.Type == "RemoveUnitUpgrade") && effect.Upgrade == null)
                     return "Missing unit upgrade definition.";
+                if (effect.Type == "BuffEquipment" && effect.Lifetime != "TemporaryUntilUnitDeath")
+                    return "Equipment buffs require the native unit-death lifetime.";
                 if (effect.Value < 0 && !AttackChange(effect) && effect.Type != ForgePointsModel.Effect && !new[] { "CopyUnits", "Bump", "Damage", "DamagePerSourceAttack", "Heal", "AddStatus", "AddStatusPerOtherEffect", "SpawnOrStatus", "BuffHealth", "DebuffHealth", "Draw", "DiscardHand", "Generate" }.Contains(effect.Type) ||
                     effect.Type == "FloorRearrange" && effect.Value > 1) return "Invalid spell effect value.";
                 if (effect.Type == "BuffHealth" && effect.Lifetime != "" && effect.Lifetime != "TemporaryUntilEndOfBattle" &&
@@ -1115,6 +1126,7 @@ namespace MonsterTrain2Poju.Model
                 case "BuffAttack":
                 case "DebuffAttack":
                 case "UnitUpgrade":
+                case "BuffEquipment":
                 case "AttachEquipment":
                 case "RemoveEquipment": return count > 0;
                 default: return true;
@@ -1133,6 +1145,60 @@ namespace MonsterTrain2Poju.Model
                 room.Units.Any(unit => unit.IsPyre) || context.RoomCapacities?.FirstOrDefault(item => item.RoomIndex == room.RoomIndex)?.IsPyre == true)
                 return false;
             return context.SpawnPoints.FirstEmpty(room.RoomIndex, CombatTeam.Player) >= 0;
+        }
+
+        private static string? BuffEquipmentCards(ref TrainCombatState state, int targetId, int sourceCardId,
+            CardActionEffect effect, bool preview, List<RoomCombatModel.QueuedCharacterTrigger> callbacks,
+            List<CombatEvent> events, ref RoomOutcome outcome,
+            Func<CombatContext, bool, RelicPyreAttackRefreshResult> refreshPyre)
+        {
+            RoomCombatState? initialRoom = state.Rooms.FirstOrDefault(room => room.Units.Any(unit => unit.Id == targetId));
+            CombatUnit? target = initialRoom?.Units.FirstOrDefault(unit => unit.Id == targetId);
+            if (target?.EquipmentCards == null || state.Context?.CardInstances == null)
+                return "Equipment buffs require captured equipped-card ownership state.";
+            if (effect.Upgrade == null) return "Equipment buff is missing its upgrade definition.";
+            if (effect.Upgrade.ExternalInteractions.Count > 0)
+                return string.Join("; ", effect.Upgrade.ExternalInteractions);
+            bool persistent = !preview && state.Context.IsolatedBattlePreview != true;
+            foreach (int equipmentId in target.EquipmentCards.ToArray())
+            {
+                if (equipmentId == sourceCardId) continue;
+                CardInstanceState? card = state.Context!.CardInstances?.FirstOrDefault(item => item.InstanceId == equipmentId);
+                if (card == null) return "Equipment buff could not resolve an attached card instance.";
+                CardUpgradeModifier unitUpgrade = effect.Upgrade.WithSharedReference(null);
+                if (persistent)
+                {
+                    CardUpgradeModifier? existingEquipmentUpgrade = effect.ScaleUpgrade
+                        ? card.Permanent.Upgrades.FirstOrDefault(item => item.DataId == effect.Upgrade.DataId) : null;
+                    CardUpgradeModifier cardUpgrade = existingEquipmentUpgrade == null
+                        ? CardMagicPowerModel.Scale(unitUpgrade, CardMagicPowerModel.Multiplier(card))
+                        : unitUpgrade;
+                    CardInstanceState upgraded = card.WithPermanentUpgrade(cardUpgrade, effect.ScaleUpgrade);
+                    if (effect.ScaleUpgrade)
+                        unitUpgrade = upgraded.Permanent.Upgrades.First(item => item.DataId == effect.Upgrade.DataId);
+                    else unitUpgrade = cardUpgrade;
+                    state = WithContext(state, state.Context!.WithCard(upgraded));
+                }
+
+                RoomCombatState? room = state.Rooms.FirstOrDefault(item => item.Units.Any(unit => unit.Id == targetId));
+                CombatUnit? liveTarget = room?.Units.FirstOrDefault(unit => unit.Id == targetId);
+                if (room == null || liveTarget?.Modifiers == null)
+                    return "Equipment buff host left the modeled room before all attached equipment resolved.";
+                bool hasUpgrade = liveTarget.Modifiers.Upgrades.Any(item => item.DataId == effect.Upgrade.DataId);
+                bool scaleUnit = persistent && effect.ScaleUpgrade;
+                if (scaleUnit && hasUpgrade)
+                    unitUpgrade = effect.Upgrade.WithSharedReference(null);
+                RoomCombatResult applied = UnitModifierModel.Apply(room, targetId, unitUpgrade,
+                    "TemporaryUntilUnitDeath", sourceCardId: 0, scaleUpgrade: scaleUnit, refreshPyre: refreshPyre,
+                    accumulateScaledUpgradeRecord: false);
+                if (!applied.Supported) return applied.UnsupportedReason;
+                state = ReplaceRoom(state, applied.State!);
+                callbacks.AddRange(applied.PendingCallbacks);
+                events.AddRange(applied.Events);
+                if (applied.Outcome == RoomOutcome.BattleWon || applied.Outcome == RoomOutcome.PlayerDefeated)
+                    outcome = applied.Outcome;
+            }
+            return null;
         }
 
         private static bool AttackChange(CardActionEffect effect) => effect.Type == "BuffAttack" || effect.Type == "DebuffAttack";
@@ -1178,7 +1244,7 @@ namespace MonsterTrain2Poju.Model
             if (AttackChange(effect)) return UnitAttackModel.Apply(state, target.Id, effect.Value, effect.Type == "DebuffAttack");
             if (effect.Type == "BuffHealth" || effect.Type == "DebuffHealth")
                 return UnitHealthModel.Apply(state, target.Id, effect.Value, effect.Type == "DebuffHealth", effect.Lifetime, refreshPyre: refreshPyre);
-            if (effect.Type == "UnitUpgrade" || effect.Type == "RemoveUnitUpgrade")
+            if (effect.Type == "UnitUpgrade" || effect.Type == "BuffEquipment" || effect.Type == "RemoveUnitUpgrade")
                 return UnitModifierModel.Apply(state, target.Id, effect.Upgrade!, effect.Lifetime,
                     effect.Type == "RemoveUnitUpgrade", target.Team == CombatTeam.Player ? playerCapacity : enemyCapacity,
                     sourceCardId, scaleUpgrade: effect.ScaleUpgrade, refreshPyre: refreshPyre);

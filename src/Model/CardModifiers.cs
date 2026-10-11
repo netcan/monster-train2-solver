@@ -170,6 +170,15 @@ namespace MonsterTrain2Poju.Model
                 }
             return new CardModifiers(Offsets, upgrades, PersistentHealth, ExternalInteractions);
         }
+        internal CardModifiers WithPermanentUpgrade(CardUpgradeModifier upgrade, bool scale)
+        {
+            var upgrades = Upgrades.ToList();
+            int existing = scale && upgrade.DataId.Length > 0
+                ? upgrades.FindIndex(item => item.DataId == upgrade.DataId) : -1;
+            if (existing >= 0) upgrades[existing] = upgrades[existing].Accumulate(upgrade);
+            else upgrades.Add(upgrade);
+            return new CardModifiers(Offsets, upgrades, PersistentHealth, ExternalInteractions);
+        }
     }
 
     public sealed class CardEffectCounter
@@ -246,6 +255,8 @@ namespace MonsterTrain2Poju.Model
             return refreshTraits && (!Permanent.Upgrades.SequenceEqual(permanent.Upgrades) || !Temporary.Upgrades.SequenceEqual(temporary.Upgrades))
                 ? CardExhaustModel.RefreshUpgradeTrait(changed) : changed;
         }
+        internal CardInstanceState WithPermanentUpgrade(CardUpgradeModifier upgrade, bool scale)
+            => WithModifiers(Permanent.WithPermanentUpgrade(upgrade, scale), Temporary);
         internal CardInstanceState WithPlayedRoomUnits(IReadOnlyList<int> units) => new CardInstanceState(InstanceId, DataId,
             Permanent, Temporary, LastPlayedCost, LastForgedAmount, PlayCount, ExternalInteractions,
             EffectCounters, DamageScalingTraits, StatusScalingTraits, UnitUpgradeScalingTraits, CapacityScalingTraits, EquippedUnitId, units,

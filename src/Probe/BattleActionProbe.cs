@@ -131,7 +131,7 @@ namespace MonsterTrain2Poju.Probe
             }
             else if (kind == "CardEffectNULL") kind = "Null";
             else if ((data.GetCardType() == CardType.Spell || data.GetCardType() == CardType.Equipment) && effects.Length > 0 && effects.All(effect =>
-                    new[] { "CardEffectCopyUnits", "CardEffectBump", "CardEffectAttackWithUnit", "CardEffectRemoveStatusEffect", "CardEffectSetUnitAbility", "CardEffectRemoveAbility", "CardEffectResetCooldown", "CardEffectAdjustAbilityCooldown", "CardEffectAttachEquipment", "CardEffectRemoveEquipment", "CardEffectRewardGold", "CardEffectGainEnergy", "CardEffectAdjustEnergy", "CardEffectGainEnergyNextTurn", "CardEffectGainEnergyEveryTurn", "CardEffectDamage", "CardEffectDamagePerSourceAttack", "CardEffectDraw", "CardEffectDrawAdditionalNextTurn", "CardEffectAdjustRoomCapacity", "CardEffectAdjustForgePoints", "CardEffectDiscardHand", "CardEffectAddBattleCard", "CardEffectHeal", "CardEffectSacrifice", "CardEffectBuffDamage", "CardEffectDebuffDamage", "CardEffectBuffMaxHealth", "CardEffectDebuffMaxHealth", "CardEffectAddStatusEffect", "CardEffectAddStatusEffectPerOtherEffect", "CardEffectSpawnMonsterOrAddStatusEffect", "CardEffectFloorRearrange", "CardEffectAddCardUpgradeToUnits",
+                    new[] { "CardEffectCopyUnits", "CardEffectBump", "CardEffectAttackWithUnit", "CardEffectRemoveStatusEffect", "CardEffectSetUnitAbility", "CardEffectRemoveAbility", "CardEffectResetCooldown", "CardEffectAdjustAbilityCooldown", "CardEffectAttachEquipment", "CardEffectBuffEquipment", "CardEffectRemoveEquipment", "CardEffectRewardGold", "CardEffectGainEnergy", "CardEffectAdjustEnergy", "CardEffectGainEnergyNextTurn", "CardEffectGainEnergyEveryTurn", "CardEffectDamage", "CardEffectDamagePerSourceAttack", "CardEffectDraw", "CardEffectDrawAdditionalNextTurn", "CardEffectAdjustRoomCapacity", "CardEffectAdjustForgePoints", "CardEffectDiscardHand", "CardEffectAddBattleCard", "CardEffectHeal", "CardEffectSacrifice", "CardEffectBuffDamage", "CardEffectDebuffDamage", "CardEffectBuffMaxHealth", "CardEffectDebuffMaxHealth", "CardEffectAddStatusEffect", "CardEffectAddStatusEffectPerOtherEffect", "CardEffectSpawnMonsterOrAddStatusEffect", "CardEffectFloorRearrange", "CardEffectAddCardUpgradeToUnits",
                     "CardEffectDrawType", "CardEffectAddTempCardUpgradeToNextDrawnCard",
                     "CardEffectAddTempCardUpgradeToUnits", "CardEffectRemoveTempUpgradeFromUnit",
                     "CardEffectAddTempCardUpgradeToCardsInHand", "CardEffectAddPermanentCardUpgradeToCardsInHand" }.Contains(effect.GetEffectStateName())))
@@ -161,6 +161,7 @@ namespace MonsterTrain2Poju.Probe
                         effect.GetEffectStateName() == "CardEffectBump" ? "Bump" :
                         effect.GetEffectStateName() == "CardEffectAttackWithUnit" ? "AttackWithUnit" :
                         effect.GetEffectStateName() == "CardEffectAttachEquipment" ? "AttachEquipment" :
+                        effect.GetEffectStateName() == "CardEffectBuffEquipment" ? "BuffEquipment" :
                         effect.GetEffectStateName() == "CardEffectRemoveEquipment" ? "RemoveEquipment" :
                         effect.GetEffectStateName() == "CardEffectRewardGold" ? "RewardGold" :
                         effect.GetEffectStateName() == "CardEffectDamage" ? "Damage" :
@@ -188,8 +189,10 @@ namespace MonsterTrain2Poju.Probe
                         interactions.Add("Unimplemented integer range consumer " + type);
                     string lifetime = "";
                     if (type == "BuffHealth") lifetime = ((UnitUpgradeLifetimeTempOnly)effect.GetAdditionalParamInt1()).ToString();
-                    bool scaleUpgrade = effect.GetEffectStateName() == "CardEffectAddCardUpgradeToUnits" && effect.GetParamBool();
-                    if (type == "UnitUpgrade" || type == "RemoveUnitUpgrade" || type == "AttachEquipment" || handUpgrade)
+                    bool scaleUpgrade = (effect.GetEffectStateName() == "CardEffectAddCardUpgradeToUnits" ||
+                        effect.GetEffectStateName() == "CardEffectBuffEquipment") && effect.GetParamBool();
+                    if (type == "UnitUpgrade" || type == "RemoveUnitUpgrade" || type == "AttachEquipment" ||
+                        type == "BuffEquipment" || handUpgrade)
                     {
                         if (effect.GetParamCardUpgradeData() == null) interactions.Add("Missing unit upgrade data");
                         else
@@ -202,8 +205,9 @@ namespace MonsterTrain2Poju.Probe
                             if (scaleUpgrade && !upgradeData.CanScaleUpgradeToSingleInstance())
                                 interactions.Add("Invalid scaled unit upgrade definition");
                         }
-                        lifetime = handUpgrade ? effect.GetEffectStateName() == "CardEffectAddPermanentCardUpgradeToCardsInHand" ?
-                            "Permanent" : "TemporaryUntilEndOfBattle" : type == "AttachEquipment" ? "" : ((UnitUpgradeLifetime)effect.GetAdditionalParamInt1()).ToString();
+                        lifetime = type == "BuffEquipment" ? "TemporaryUntilUnitDeath" : handUpgrade ?
+                            effect.GetEffectStateName() == "CardEffectAddPermanentCardUpgradeToCardsInHand" ? "Permanent" : "TemporaryUntilEndOfBattle" :
+                            type == "AttachEquipment" ? "" : ((UnitUpgradeLifetime)effect.GetAdditionalParamInt1()).ToString();
                     }
                     var statuses = new List<CombatStatus>();
                     if (type == "AddStatus" || type == "AddStatusPerOtherEffect" || type == "SpawnOrStatus")

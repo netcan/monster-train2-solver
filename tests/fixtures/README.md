@@ -2826,3 +2826,22 @@ match. The 34,872-byte archive has 5,643 unique nodes and SHA-256
 ```powershell
 & ./scripts/Check-Models.ps1 -Fixture full-battle-original-endless-return.mt2f
 ```
+
+### Buff equipment spell
+
+`full-battle-equipment-buff.mt2f` records the `BuffEquipment` spell on a host
+with three attached equipment cards. The muted Instant battle wins at Pyre 80
+after 16 policy plays and five EndTurns. All 40 room stages, nine card cycles,
+nine train phases, seven spawns, 16 actions, five EndTurns and five equipment
+operations match native state, with zero mismatches, unsupported transitions,
+capture failures or pending records. Sampling took 41.76 seconds. The schema-103
+archive is 23,820 bytes with 3,860 unique nodes and SHA-256
+`9f561a27aa020aa7e8f33285d659668c047d406da37ed92f230313098ec8963d`; it has no
+JSON companion. The inventory is 236 archives: 205 battles and 31 component
+calibrations. Accepted original relic evidence remains 59/224 (26.34%). Full
+inventory replay remains deferred.
+
+```powershell
+dotnet run --project src/ModelChecks -c Release -- --equipment-native-only tests/fixtures/full-battle-equipment-buff.mt2f
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-equipment-buff.mt2f
+```

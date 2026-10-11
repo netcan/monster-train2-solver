@@ -499,7 +499,7 @@ namespace MonsterTrain2Poju.Probe
                     return;
                 }
             }
-            if (fullBattle && (modifierScenario == "equipment-abilities" || modifierScenario == "equipment" || modifierScenario == "equipment-exhausted" || modifierScenario == "equipment-overflow" || modifierScenario == "equipment-triggers"))
+            if (fullBattle && (modifierScenario == "equipment-abilities" || modifierScenario == "equipment" || modifierScenario == "equipment-exhausted" || modifierScenario == "equipment-overflow" || modifierScenario == "equipment-triggers" || modifierScenario == "equipment-buff"))
             {
                 if (EquipmentScenario.Error != null) throw new InvalidOperationException(EquipmentScenario.Error);
                 if (!EquipmentScenario.Completed)
@@ -869,6 +869,8 @@ namespace MonsterTrain2Poju.Probe
                 if (modifierScenario.StartsWith("multi-summon", StringComparison.Ordinal)) pendingPlay = MultiSummonScenario.Choose(managers) ?? pendingPlay;
                 if (modifierScenario == "ability-incant" || modifierScenario == "equipment-abilities" || modifierScenario == "ability-effects" || modifierScenario == "spawn-or-status" || modifierScenario == "ability-activation" || modifierScenario == "ability-activation-x" || modifierScenario == "ability-activation-lethal")
                     pendingPlay = UnitAbilityModel.ChooseAbilityThenCards(decision);
+                if (modifierScenario == "equipment-buff")
+                    pendingPlay = EquipmentScenario.ChooseBuffTarget(decision, pendingPlay) ?? pendingPlay;
                 if (pendingPlay != null)
                 {
                     RoomManager rooms = managers.GetRoomManager()!;

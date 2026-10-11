@@ -79,6 +79,7 @@ param(
     [switch] $RoomCapacityLethal,
     [switch] $DirectUnitUpgrades,
     [switch] $Equipment,
+    [switch] $EquipmentBuff,
     [switch] $EquipmentExhausted,
     [switch] $EquipmentOverflow,
     [switch] $EquipmentTriggers,
@@ -349,6 +350,7 @@ $environment = @{
     MT2_PROBE_ENCHANTMENT_WORLD = $(if ($EnchantmentWorld) { '1' } else { '0' })
     MT2_PROBE_TRIGGER_REPEATS = $(if ($TriggerRepeats) { '1' } else { '0' })
 }
+if ($EquipmentBuff) { $environment['MT2_PROBE_MODIFIERS'] = 'equipment-buff' }
 if ($ForgePointsEffects) { $environment['MT2_PROBE_MODIFIERS'] = 'forge-points' }
 if ($TriggeredSummonsRevival) {
     $environment['MT2_PROBE_MODIFIERS'] = 'triggered-summon-equipment-owned-death-revival' + $(if ($TriggeredSummonsFresh) { '-fresh' } else { '' })
@@ -454,6 +456,10 @@ Write-Output "FULL-BATTLE-INSPECTION elapsedSeconds=$($inspectionTimer.Elapsed.T
 $nativePassed = [bool] (Select-String -LiteralPath $unityLog -Pattern 'DEPTH-PASS' -Quiet)
 $terminalSettled = $trace.TerminalCaptureBoundary -eq 'AfterStopCombatLoop' -and $trace.TerminalEffectsSettled -eq $true
 $originalUnchanged = (Get-OriginalSignature) -ceq $originalBefore
+if ($EquipmentBuff -and ($trace.ModifierScenario -ne 'equipment-buff' -or
+    -not (Select-String -LiteralPath $unityLog -Pattern 'EQUIPMENT-PREPARED .*buff=True' -Quiet))) {
+    throw 'Equipment buff scenario setup did not run.'
+}
 if ($SpawnOrStatus -and ($trace.ModifierScenario -ne 'spawn-or-status' -or
     -not (Select-String -LiteralPath $unityLog -Pattern 'ABILITY-ACTIVATION-PREPARED .*spawnOrStatus=True' -Quiet) -or
     @($trace.Actions | Where-Object { $_.Action.ActivatorUnitId -gt 0 }).Count -eq 0)) {
@@ -694,6 +700,35 @@ $modifierActions = @($trace.Actions | Where-Object {
     $definition = $actionEntry.Before.PlayRules.Cards | Where-Object DataId -EQ $playedCard.DataId
     @($definition.Effects | Where-Object { $_.Type -eq 'UnitUpgrade' -or $_.Type -eq 'HandUpgrade' }).Count -gt 0
 })
+$equipmentBuffActions = @($trace.Actions | Where-Object {
+    $actionEntry = $_
+    $playedCard = $actionEntry.Before.Spawn.Train.Context.Cards.Hand |
+        Where-Object InstanceId -EQ $actionEntry.Action.CardInstanceId
+    $definition = $actionEntry.Before.PlayRules.Cards | Where-Object DataId -EQ $playedCard.DataId
+    @($definition.Effects | Where-Object Type -EQ 'BuffEquipment').Count -gt 0
+})
+if ($EquipmentBuff) {
+    $equipmentBuffCoverage = $equipmentBuffActions.Count -gt 0 -and @($equipmentBuffActions | Where-Object {
+        $entry = $_
+        $card = $entry.Before.Spawn.Train.Context.Cards.Hand | Where-Object InstanceId -EQ $entry.Action.CardInstanceId
+        $definition = $entry.Before.PlayRules.Cards | Where-Object DataId -EQ $card.DataId
+        $effect = $definition.Effects | Where-Object Type -EQ 'BuffEquipment' | Select-Object -First 1
+        $beforeUnit = $entry.Before.Spawn.Train.Rooms.Units | Where-Object Id -EQ $entry.Action.TargetUnitId
+        $afterUnit = $entry.Actual.Spawn.Train.Rooms.Units | Where-Object Id -EQ $entry.Action.TargetUnitId
+        $equipmentIds = @($beforeUnit.EquipmentCards)
+        $allEquipmentChanged = $equipmentIds.Count -ge 2 -and @($equipmentIds | Where-Object {
+            $equipmentId = $_
+            $afterCard = $entry.Actual.Spawn.Train.Context.CardInstances | Where-Object InstanceId -EQ $equipmentId
+            @($afterCard.Permanent.Upgrades | Where-Object { $_.DataId -eq $effect.Upgrade.DataId }).Count -eq 0
+        }).Count -eq 0
+        $expectedAttackGain = $effect.Upgrade.Stats.Damage * $equipmentIds.Count
+        $expectedMaxHealthGain = ($effect.Upgrade.Stats.Health + $effect.Upgrade.UnhealedHealth) * $equipmentIds.Count
+        $unitUpgradeChanged = $afterUnit.Attack - $beforeUnit.Attack -eq $expectedAttackGain -and
+            $afterUnit.MaxHealth - $beforeUnit.MaxHealth -eq $expectedMaxHealthGain
+        -not $_.Difference -and $_.Predicted.Supported -and $allEquipmentChanged -and $unitUpgradeChanged
+    }).Count -gt 0
+    if (-not $equipmentBuffCoverage) { throw 'BuffEquipment did not upgrade its host and every attached equipment card in a matched native action.' }
+}
 $modifierCoverage = (-not ($DynamicUpgrades -or $SacrificeUpgrades -or $HandUpgrades -or $TargetedHandUpgrades)) -or $modifierActions.Count -gt 0
 $sacrificeEffectActions = @($trace.Actions | Where-Object {
     $actionEntry = $_
