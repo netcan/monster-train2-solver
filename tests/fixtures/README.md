@@ -27,7 +27,7 @@ The default command checks the full curated inventory. For routine changes, run
 the dedicated checks for the new and directly affected scenarios; run the full
 inventory at completed milestones and before delivery.
 
-Current inventory is 235 archives: 204 accepted battles and 31 component
+Current inventory is 236 archives: 205 accepted battles and 31 component
 calibrations. `full-battle-companion-bump.mt2f` covers a paired Relentless
 companion Boss refusal, its attempted-ascension callback and the survivor's
 terminal-death handoff. `full-battle-relic-card-status-upgrades.mt2f` verifies a native
@@ -1159,7 +1159,7 @@ zero. Focused replay matches 21 Bump states, all 23 room stages and all 22
 native actions; 16 policy branches match. Capture took 50.54 seconds. The
 34,008-byte binary archive has 6,825 unique nodes and SHA-256
 `90c49da7ebf3c8cead2acff9d80d291460fe760539a8ceac92f11174f7eefc30`. It adds
-no original relic-owner evidence. Inventory is 235 archives: 204 battles and
+no original relic-owner evidence. Inventory is 236 archives: 205 battles and
 31 component calibrations; full-inventory replay remains deferred to a
 milestone.
 

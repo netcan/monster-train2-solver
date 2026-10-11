@@ -1,6 +1,6 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-12): 235 binary archives, including 204
+Current accepted inventory (2026-10-12): 236 binary archives, including 205
 full battles and 31 component calibrations. Unchanged original relic evidence
 covers 59/224 catalog entries (26.34%); see
 [the owner evidence table](tests/fixtures/relic-coverage.md). Whole-battle
@@ -5456,8 +5456,8 @@ Bump states, all 53 room stages and all 29 native actions, including 16 parallel
 policy branches. The 47,260-byte archive has 9,241 unique nodes and SHA-256
 `db3a1c7e89835e3639ea8f4829912813288abd7e1103ca4185ede5d1124e9343`. The
 capture took 65.43 seconds; this does not add original relic-owner evidence.
-Inventory is now 235 archives: 204 battles and 31 component calibrations. A
-full 235-archive regression remains deferred to a milestone.
+Inventory is now 236 archives: 205 battles and 31 component calibrations. A
+full 236-archive regression remains deferred to a milestone.
 
 ```powershell
 & ./scripts/Check-Models.ps1 -Fixture full-battle-outer-boss-bump.mt2f
