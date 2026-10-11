@@ -50,6 +50,7 @@ internal static class BumpChecks
         var ranged = records.Single(record => record.GetProperty("Label").GetString() == "player-partial-up-ignores-range");
         Compare(ranged.GetProperty("Before").Deserialize<TrainCombatState>()!.Context!.BattleRng,
             ranged.GetProperty("After").Deserialize<TrainCombatState>()!.Context!.BattleRng, "Native Bump unexpectedly sampled its integer range");
+        VerifyOrdinaryCompanionMovement(records.Single(record => record.GetProperty("Label").GetString() == "enemy-up"));
         var rooted = records.Single(record => record.GetProperty("Label").GetString() == "enemy-rooted");
         var immobile = records.Single(record => record.GetProperty("Label").GetString() == "enemy-immobile-before-rooted");
         Require(rooted.GetProperty("TargetsAfter").Deserialize<CombatUnit[]>()!.Single().Status("rooted")!.Stacks == 1 &&
@@ -73,7 +74,32 @@ internal static class BumpChecks
                 callback.GetProperty("Kind").GetString() is "OnSpawn" or "OnUnscaledSpawn" or "OnSpawnNotFromCard" or "CardMonsterPlayed" or "OnDeath"),
                 "Paid Bump merge fired birth, Rally or death callbacks.");
         }
-        Console.WriteLine("NATIVE-BUMP-CHECKS PASS: 18 real paid-card effect states, exact dispatch/retained targets, signed/clamped/fixed-range movement, rooting/immobility, looping, simultaneous targets, both-team cross-room Horde removal, Pyre/full/partially blocked rooms and 32 branches.");
+        Console.WriteLine("NATIVE-BUMP-CHECKS PASS: 18 real paid-card effect states plus a synthetic non-relentless companion-Boss move, exact dispatch/retained targets, signed/clamped/fixed-range movement, rooting/immobility, looping, simultaneous targets, both-team cross-room Horde removal, Pyre/full/partially blocked rooms and 32 branches.");
+    }
+
+    private static void VerifyOrdinaryCompanionMovement(FixtureValue record)
+    {
+        TrainCombatState source = record.GetProperty("Before").Deserialize<TrainCombatState>()!;
+        int id = record.GetProperty("Targets").Deserialize<int[]>()!.Single();
+        CombatUnit original = source.Rooms.SelectMany(room => room.Units).Single(unit => unit.Id == id);
+        var companion = new CombatUnit(original.Id, original.AssetKey, original.Team, original.BaseAttack, original.Health,
+            original.MaxHealth, original.CanAttack, original.IsPyre, original.EndsBattleOnDeath, original.Statuses,
+            original.Triggers, original.SpawnerCardId, original.Size, original.StatusImmunities, original.Subtypes,
+            original.Modifiers, isBoss: true, lastAttackerId: original.LastAttackerId, statusRegistry: original.StatusRegistry,
+            equipmentCards: original.EquipmentCards, nextTriggerId: original.NextTriggerId, ability: original.Ability,
+            statusDictionary: original.StatusDictionary, abilityRules: original.AbilityRules, hordeDefinition: original.HordeDefinition,
+            isSpawning: original.IsSpawning, sacrificeCardId: original.SacrificeCardId, deathState: original.DeathState,
+            bumpRules: new(false, true, false));
+        RoomCombatState[] rooms = source.Rooms.Select(room => new RoomCombatState(room.RoomIndex, room.Deployment,
+            room.Units.Select(unit => unit.Id == id ? companion : unit).ToArray(), room.ExternalInteractions, source.Context, room.Preview)).ToArray();
+        EnemyMovement[] movement = source.Movement.Select(rule => rule.UnitId == id
+            ? new EnemyMovement(rule.UnitId, rule.Speed, rule.Ascends, rule.Loops, companionBoss: true) : rule).ToArray();
+        var companionState = new TrainCombatState(rooms, movement, source.EnemySlotsPerRoom, source.Context);
+        BumpResult result = BumpModel.Apply(companionState, [id], 1,
+            record.GetProperty("Rooms").Deserialize<RoomPlayRule[]>()!);
+        int oldRoom = source.Context!.SpawnPoints!.Units.Single(unit => unit.UnitId == id).Current!.RoomIndex;
+        Require(result.Supported && result.State!.Context!.SpawnPoints!.Units.Single(unit => unit.UnitId == id).Current!.RoomIndex == oldRoom + 1,
+            "A non-relentless companion Boss failed to use ordinary native Bump movement: " + result.UnsupportedReason);
     }
 
     private static void Verify(FixtureValue record)

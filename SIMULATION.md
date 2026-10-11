@@ -134,7 +134,7 @@ are copied immutable values; independent child states can run on worker threads.
 | Entire room resolution | `RoomCombatModel.Resolve` | Native normal exchanges, post-combat effects and multiple rounds of boss/Pyre relentless combat |
 | Train combat phase | `TrainCombatModel.ResolveCombat` | Top-to-bottom native phase comparison |
 | Enemy movement phase | `TrainCombatModel.Ascend` | Native movement and immediate Pyre combat, including the terminal boss fight |
-| Bump card movement | `BumpModel`, `CardSpellModel` and `HordeMergeModel.MergeAcrossRooms` | Eighteen real paid-card effect/queue comparisons, both-team cross-room Horde merges, signed/clamped/fixed-range quantities, immobility/rooting, loops, simultaneous targets, Pyre and full/partially blocked rooms |
+| Bump card movement | `BumpModel`, `CardSpellModel` and `HordeMergeModel.MergeAcrossRooms` | Eighteen real paid-card effect/queue comparisons, a synthetic non-Relentless companion-Boss ordinary move, both-team cross-room Horde merges, signed/clamped/fixed-range quantities, immobility/rooting, loops, simultaneous targets, Pyre and full/partially blocked rooms; Outer Boss movement and Relentless room destruction remain unsupported |
 | Ordinary unit clone APIs | `UnitCloneModel`, `CharacterCopyModel` and `UnitBirthModel` | Thirteen native operations, 44 exact copied-card/birth/gear/stats/ability boundaries, raw/drained train states and callback payload/order; detached/cardless sources, failed allocations and 32 branches |
 | Paid unit copy spells | `UnitCopyModel`, `UnitCloneModel` and `CardSpellModel` | Fourteen real paid effects, complete raw state and incoming/outgoing queue payload/order, sequential births, full/partial rooms, copied equipment/skills, cardless/Horde sources and 32 branches |
 | Enemy and mixed-team copy spells | `HeroUnitBirthModel`, `UnitCopyModel` and `CardSpellModel` | Sixteen real paid effects, raw/live stats, natural skills, optional equipment, initial hero compaction, full/partial rooms, incoming global callbacks and 32 branches; subsequent paid summon and complete first-turn defeat |
@@ -5401,6 +5401,11 @@ amounts, rooting removal, immobility priority, looping to the bottom, first-empt
 points, partial movement before a blocked floor, player Pyre restrictions and
 enemy entry into Pyre. Native Bump reads the fixed authored integer; configured
 integer ranges affect its tooltip but are not sampled by the effect.
+
+A synthetic check now covers a non-Relentless companion Boss on the ordinary
+movement path identified in the native effect. Captured full-battle evidence
+still does not validate Boss Bump behavior; Outer Boss displacement and
+Relentless-triggered room destruction remain unsupported.
 
 The same native run exposed missing floor-rearrangement callbacks. That effect
 now visits its drop actor and every crossed actor in native order, fires Shift

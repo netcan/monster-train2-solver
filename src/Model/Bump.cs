@@ -60,8 +60,8 @@ namespace MonsterTrain2Poju.Model
                 SpawnPointReference? old = state.Context!.SpawnPoints!.Units.SingleOrDefault(unit => unit.UnitId == id)?.Current;
                 if (actor == null || old == null) continue;
                 if (actor.BumpRules == null) return Fail("Missing native Bump movement properties for actor " + id);
-                if (actor.BumpRules.OuterBoss || actor.BumpRules.CompanionBoss || actor.Status("relentless") != null)
-                    return Fail("Boss Bump movement and room destruction require their dedicated transition model.");
+                if (actor.BumpRules.OuterBoss || actor.Status("relentless") != null)
+                    return Fail("Outer Boss movement and Relentless room destruction require their dedicated transition model.");
                 if (actor.Status("immobile") != null) { attempted.Add(id); continue; }
                 if (actor.Status("rooted") != null)
                 {
