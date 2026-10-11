@@ -1124,7 +1124,8 @@ namespace MonsterTrain2Poju.Model
             private bool IsTerminalBossDeath(WorkingUnit unit) => !HasLivingPairedCompanionBoss(unit.Source.Id) &&
                 (unit.Source.EndsBattleOnDeath || unit.Source.IsBoss == true && activeCompanionBossIds.Contains(unit.Source.Id));
 
-            private int[] CompanionBossSnapshot() => activeCompanionBossIds.ToArray();
+            private IReadOnlyList<int>? CompanionBossSnapshot() => activeCompanionBossIds.Count == 0
+                ? null : activeCompanionBossIds.ToArray();
 
             internal RoomCombatResult Run(bool entireRoom)
             {

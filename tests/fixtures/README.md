@@ -4,16 +4,27 @@ These fixed inputs reproduce the independently modeled battle and calibration
 checks. Run `pwsh -NoProfile -File scripts/Check-Models.ps1` from the repository
 root. The script reads the curated fixture list in this directory.
 
-For a focused check, pass one or more archive names with `-Fixture`, for example:
+To run the standard model-check suite against selected archives, pass one or more
+names with `-Fixture`, for example:
 
 ```powershell
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-units-and-junk.mt2f
 pwsh -NoProfile -Command "& './scripts/Check-Models.ps1' -Fixture @('full-battle-relic-card-status-upgrades.mt2f','full-battle-relic-card-piercing-upgrades.mt2f')"
 ```
 
-The default command still checks the full curated inventory.
-For routine changes, run only the new and directly affected fixtures with
-`-Fixture`; run the full inventory at completed milestones and before delivery.
+`-Fixture` still runs the pure model checks and all native checks that consume
+the selected captures. Some native coverage gates require a representative
+full-battle capture or the complete inventory. For a narrower scenario check,
+call its dedicated `ModelChecks` mode directly, for example:
+
+```powershell
+dotnet run --project src/ModelChecks -c Release -- --bump-only tests/fixtures/full-battle-companion-bump.mt2f
+dotnet run --project src/ModelChecks -c Release -- --room-combat-only tests/fixtures/full-battle-companion-bump.mt2f
+```
+
+The default command checks the full curated inventory. For routine changes, run
+the dedicated checks for the new and directly affected scenarios; run the full
+inventory at completed milestones and before delivery.
 
 Current inventory is 234 archives: 203 accepted battles and 31 component
 calibrations. `full-battle-companion-bump.mt2f` covers a paired Relentless
