@@ -20,9 +20,9 @@ All 15 source archives below report game `2.2.1`, module MVID
 byte lengths and SHA-256 hashes are recorded in [manifest.tsv](manifest.tsv).
 The floor-capacity batch passes strict native acceptance, complete-fixture checks,
 independent full-battle replay and six directly affected old-fixture regressions.
-The accepted inventory is 223 archives: 192 battles and 31 component
-calibrations. All 223 archive names, byte lengths and SHA-256 hashes match the
-manifest and curated list, with no JSON companions. A full 223-archive replay
+The accepted inventory is 224 archives: 193 battles and 31 component
+calibrations. All 224 archive names, byte lengths and SHA-256 hashes match the
+manifest and curated list, with no JSON companions. A full 224-archive replay
 remains deferred to a milestone. The Mageblade status/cache/attack path has an
 accepted native battle archive, but Mageblade is not a collectable relic and is
 not included in the 55/224 owner count.
@@ -230,6 +230,11 @@ actions, six EndTurns and 16 whole-battle/mid-battle policy branches. The test
 injects +15 room power as a controlled input; the natural source and preview-copy
 lifecycle of room power remain outside this evidence. Mageblade is not part of
 the 55/224 original-relic owner count.
+The schema-121 mixed cardless-order fixture places `SpawnWithArmor`'s status
+payload before `PyreHeartSon`'s cardless upgrade in a single test relic. Native
+and independent replay verify five non-clone applications and five clone skips.
+This combines two existing payloads for ordering coverage and does not add an
+original relic owner to the 55/224 count.
 The older `6/224` passage in README describes an earlier milestone; it does not
 include the starter-cost, cardless or four-artifact batch evidence above.
 

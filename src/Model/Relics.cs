@@ -74,11 +74,6 @@ namespace MonsterTrain2Poju.Model
                     if (effect != AbilityIncant && effect != ModifyTriggerCount && effect != AddStatusOnSpawn && effect != AddTempUpgrade && effect != AddTrigger && effect != AddStatusOnApplied && effect != ModifyStatusMagnitude && effect != PreventStatusDecay && !RelicResourceModel.IsEffect(effect)) return "Unmodeled relic effect " + effect + " on " + relic.AssetKey + ".";
                 string? error = RelicCardModifierModel.Validate(relic) ?? RelicSpawnStatusModel.Validate(relic) ?? RelicCharacterTriggerModel.Validate(relic) ?? RelicStatusStackModel.Validate(relic) ?? RelicStatusMagnitudeModel.Validate(relic) ?? RelicStatusDecayModel.Validate(relic) ?? RelicResourceModel.Validate(relic);
                 if (error != null) return error;
-                // Keep the prior queue boundary guarded until a mixed-order
-                // native cardless-upgrade fixture observes its interleaving.
-                if (relic.CardModifiers?.Any(effect => effect.ApplyToCardlessSpawns &&
-                    relic.SpawnStatuses?.Any(status => status.EffectIndex < effect.EffectIndex) == true) == true)
-                    return "Mixed cardless upgrade and spawn-status effect ordering is unmodeled.";
             }
             return null;
         }

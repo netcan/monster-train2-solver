@@ -9,7 +9,9 @@ namespace MonsterTrain2Poju.Probe
     internal static class SpawnStatusRelicScenario
     {
         internal static bool Prepared { get; private set; }
-        internal static bool Clones => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == "spawn-status-relics-clones";
+        internal static bool Clones => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") is
+            "spawn-status-relics-clones" or "spawn-status-relics-mixed-cardless-order";
+        internal static bool MixedCardlessOrder => Environment.GetEnvironmentVariable("MT2_PROBE_MIXED_CARDLESS_RELIC_ORDER") == "1";
         internal static void Prepare(AllGameManagers managers, ManualLogSource log)
         {
             if (Clones) UnitCloneScenario.Prepare(managers, log);
@@ -23,7 +25,7 @@ namespace MonsterTrain2Poju.Probe
             AccessTools.Field(typeof(CharacterTriggerData), "trigger").SetValue(armor, CharacterTriggerData.Trigger.OnArmorAdded);
             AccessTools.Field(typeof(CharacterData), "triggers").SetValue(unit, unit.GetTriggers().Concat(new[] { armor }).ToList());
             foreach (CardState card in cards) card.Setup(data, save);
-            Acquire("68ef2523-5c2e-4660-b96d-00b1c0485f54", "SpawnWithArmor");
+            if (!MixedCardlessOrder) Acquire("68ef2523-5c2e-4660-b96d-00b1c0485f54", "SpawnWithArmor");
             Acquire("60a2a8a3-5f7a-4a9d-b427-5f261145fa1f", "FirstUnitGainDamageShield");
             Acquire("270356af-16bd-4433-a0b2-3e5bb94ef890", "FrostbiteOnEnemies");
             if (Clones) AcquireCardlessUpgrade();
@@ -55,6 +57,13 @@ namespace MonsterTrain2Poju.Probe
                 if (effect.GetEffectClassName() != "RelicEffectAddTempUpgrade" || effect.GetParamCardUpgradeData() == null ||
                     !effect.GetParamSourceTeam().HasFlag(Team.Type.Monsters) || !effect.GetParamBool() || effect.GetEffectConditions().Count != 0)
                     throw new InvalidOperationException("Original PyreHeartSon cardless upgrade relic changed.");
+                if (MixedCardlessOrder)
+                {
+                    CollectableRelicData spawnRelic = save.GetAllGameData().GetAllCollectableRelicData().Single(item => item.name == "SpawnWithArmor");
+                    RelicEffectData statusEffect = spawnRelic.GetEffects().Single(item => item.GetEffectClassName() == "RelicEffectAddStatusEffectOnSpawn");
+                    var statusCopy = (RelicEffectData)AccessTools.Method(typeof(object), "MemberwiseClone").Invoke(statusEffect, null)!;
+                    relic.GetEffects().Insert(0, statusCopy);
+                }
                 save.AddRelic(relic);
             }
         }

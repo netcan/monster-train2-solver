@@ -15,7 +15,7 @@ The default command still checks the full curated inventory.
 For routine changes, run only the new and directly affected fixtures with
 `-Fixture`; run the full inventory at completed milestones and before delivery.
 
-Current inventory is 223 archives: 192 accepted battles and 31 component
+Current inventory is 224 archives: 193 accepted battles and 31 component
 calibrations. `full-battle-relic-card-status-upgrades.mt2f` verifies a native
 temporary card status upgrade reaches the unit summoned by that card.
 `full-battle-sacrifice-effects.mt2f` covers native `CardEffectSacrifice` target
@@ -2557,6 +2557,22 @@ continuation and 16 parallel branches. Its +15 room magic power is a controlled
 probe input, so it validates Mageblade's cache and attack consumer rather than
 the natural source of room power. Mageblade is not an original relic and does
 not change the 55/224 relic-owner count.
+
+### Mixed cardless relic effect order (schema 121)
+
+`full-battle-spawn-status-relics-mixed-cardless-order.mt2f` places the original
+`SpawnWithArmor` spawn-status payload before `PyreHeartSon`'s cardless temporary
+upgrade on one captured relic. The full-battle probe matches the native relic
+birth states and callback queues, observes Armor followed by the upgrade on five
+non-clone cardless births, and verifies that five cardless clones skip the
+upgrade. The battle has 42 combat stages, nine card cycles, seven births, five
+EndTurns, and finishes at Pyre 80 with zero capture failures, mismatches,
+unsupported transitions, or pending records. Independent strict replay is
+required for acceptance; a full 224-archive replay remains deferred.
+
+This combines two existing effect payloads for an ordering test. It does not add
+an original relic owner to the 55/224 evidence count or establish every
+temporary-upgrade lifecycle and interaction.
 
 ```powershell
 dotnet run --project src/ModelChecks -c Release -- --relic-floor-capacity-pure

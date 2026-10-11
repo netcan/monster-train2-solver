@@ -325,7 +325,7 @@ if (args.Length == 2 && args[0] == "--unit-copy-only")
 if (args.Length == 2 && args[0] == "--unit-clone-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
-    if (fixture.RootElement.GetProperty("ModifierScenario").GetString() is not ("unit-clone" or "spawn-status-relics-clones") ||
+    if (fixture.RootElement.GetProperty("ModifierScenario").GetString() is not ("unit-clone" or "spawn-status-relics-clones" or "spawn-status-relics-mixed-cardless-order") ||
         fixture.RootElement.GetProperty("UnitCloneOperations").GetArrayLength() == 0)
         throw new InvalidDataException("The requested fixture has no ordinary clone observations.");
     UnitCloneChecks.Native(fixture.RootElement);
@@ -355,7 +355,7 @@ if (args.Length == 2 && args[0] == "--ability-incant-only")
 if (args.Length == 2 && args[0] == "--relic-spawn-status-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
-    if (fixture.RootElement.GetProperty("ModifierScenario").GetString() is not ("spawn-status-relics" or "spawn-status-relics-clones"))
+    if (fixture.RootElement.GetProperty("ModifierScenario").GetString() is not ("spawn-status-relics" or "spawn-status-relics-clones" or "spawn-status-relics-mixed-cardless-order"))
         throw new InvalidDataException("The requested fixture has no native relic spawn status observations.");
     RelicSpawnStatusChecks.Native(fixture.RootElement);
     return;

@@ -143,6 +143,7 @@ param(
     [switch] $IncantRelics,
     [switch] $SpawnStatusRelics,
     [switch] $SpawnStatusRelicsClones,
+    [switch] $MixedCardlessRelicOrder,
     [switch] $SettleDeathDissolves,
     [switch] $SettleCardAnimations,
     [switch] $HarvestTriggers,
@@ -205,6 +206,7 @@ if ($RelicCardPiercingUpgrades) { $BattleRelicUpgrades = $true }
 if ($RelicCardSelfPurgeUpgrades) { $BattleRelicUpgrades = $true }
 if ($RelicCardAbilityUpgrades) { $BattleRelicUpgrades = $true }
 if ($RelicCardTriggerUpgrades) { $BattleRelicUpgrades = $true }
+if ($MixedCardlessRelicOrder) { $SpawnStatusRelicsClones = $true }
 if ($BattleRelicUpgrades -or $SpawnStatusRelicsClones -or $OriginalRelicBatch) { $BranchCardMasks = $true }
 if ($SpawnStatusRelicsClones) { $SpawnStatusRelics = $true; $UnitClone = $true }
 if ($EnchantmentWorld) { $EnchantmentCombat = $true }
@@ -314,6 +316,7 @@ $environment = @{
     MT2_PROBE_RELIC_CARD_TRIGGER_UPGRADE = $(if ($RelicCardTriggerUpgrades) { '1' } else { '0' })
     MT2_PROBE_GENERATION = $(if ($Generation) { '1' } else { '0' })
     MT2_PROBE_CARDLESS_RELIC_UPGRADES = $(if ($SpawnStatusRelicsClones) { '1' } else { '0' })
+    MT2_PROBE_MIXED_CARDLESS_RELIC_ORDER = $(if ($MixedCardlessRelicOrder) { '1' } else { '0' })
     MT2_PROBE_SETTLE_DEATH_DISSOLVES = $(if ($SettleDeathDissolves) { '1' } else { '0' })
     MT2_PROBE_SETTLE_CARD_ANIMATIONS = $(if ($SettleCardAnimations) { '1' } else { '0' })
     MT2_PROBE_STATUS_CALLBACKS = $(if ($HordeStatuses -or $StatusCallbacks) { '1' } else { '0' })
@@ -349,6 +352,9 @@ if ($Purify) {
 if ($SpawnStatusRelics) {
     $environment['MT2_PROBE_MODIFIERS'] = $(if ($SpawnStatusRelicsClones) { 'spawn-status-relics-clones' } else { 'spawn-status-relics' })
     $environment['MT2_PROBE_STATUS_CALLBACKS'] = '1'
+}
+if ($MixedCardlessRelicOrder) {
+    $environment['MT2_PROBE_MODIFIERS'] = 'spawn-status-relics-mixed-cardless-order'
 }
 if ($RelicCardPiercingUpgrades) { $environment['MT2_PROBE_MODIFIERS'] = 'relic-card-piercing-upgrades' }
 if ($RelicCardSelfPurgeUpgrades) { $environment['MT2_PROBE_MODIFIERS'] = 'relic-card-self-purge-upgrades' }
@@ -1678,6 +1684,7 @@ if ($SpawnStatusRelics) {
     $spawnRelicSkips = 0
     $cardlessUpgradeApplied = 0
     $cardlessCloneSkipped = 0
+    $mixedOrderWitnesses = 0
     $spawnRelicTurns = [Collections.Generic.HashSet[int]]::new()
     $cardlessUpgradeId = $null
     if ($SpawnStatusRelicsClones -and $births.Count -gt 0) {
@@ -1698,7 +1705,10 @@ if ($SpawnStatusRelics) {
             $afterUpgradeCount = @($actor[0].Modifiers.Upgrades | Where-Object DataId -EQ $cardlessUpgradeId).Count
             if ($beforeActor[0].Modifiers.IsClone) {
                 if ($afterUpgradeCount -eq $beforeUpgradeCount) { $cardlessCloneSkipped++ }
-            } elseif ($afterUpgradeCount -gt $beforeUpgradeCount) { $cardlessUpgradeApplied++ }
+            } elseif ($afterUpgradeCount -gt $beforeUpgradeCount) {
+                $cardlessUpgradeApplied++
+                if ($MixedCardlessRelicOrder -and @($actor[0].Statuses | Where-Object Id -EQ 'armor').Count -gt 0) { $mixedOrderWitnesses++ }
+            }
         }
         if ($actor[0].Team -eq 1) {
             $spawnRelicPlayers++
@@ -1710,13 +1720,26 @@ if ($SpawnStatusRelics) {
             } elseif ($oldShield.DurationTriggerCount -eq 1 -and $newShield.DurationTriggerCount -eq 1) { $spawnRelicSkips++ }
         } else { $spawnRelicEnemies++ }
     }
-    if ($trace.Schema -ne $(if ($SpawnStatusRelicsClones) { 111 } else { 110 }) -or $trace.ModifierScenario -ne $(if ($SpawnStatusRelicsClones) { 'spawn-status-relics-clones' } else { 'spawn-status-relics' }) -or $births.Count -lt 3 -or
+    $expectedSpawnScenario = if ($MixedCardlessRelicOrder) { 'spawn-status-relics-mixed-cardless-order' } elseif ($SpawnStatusRelicsClones) { 'spawn-status-relics-clones' } else { 'spawn-status-relics' }
+    $expectedSpawnSchema = if ($MixedCardlessRelicOrder) { 121 } elseif ($SpawnStatusRelicsClones) { 111 } else { 110 }
+    $requiredSpawnRelics = @('SpawnWithArmor', 'FirstUnitGainDamageShield', 'FrostbiteOnEnemies')
+    if ($MixedCardlessRelicOrder) { $requiredSpawnRelics = @('PyreHeartSon', 'FirstUnitGainDamageShield', 'FrostbiteOnEnemies') }
+    $observedSpawnRelics = @($trace.Actions[0].Before.Spawn.Train.Context.Relics | Where-Object { $_.AssetKey -in $requiredSpawnRelics }).Count
+    if ($trace.Schema -ne $expectedSpawnSchema -or $trace.ModifierScenario -ne $expectedSpawnScenario -or $births.Count -lt 3 -or
         $spawnRelicPlayers -lt 2 -or $spawnRelicEnemies -lt 1 -or $spawnRelicFirsts -lt 1 -or $spawnRelicSkips -lt 1 -or
         (-not $SpawnStatusRelicsClones -and ($spawnRelicFirsts -lt 2 -or $spawnRelicTurns.Count -lt 2)) -or
         ($SpawnStatusRelicsClones -and (-not $cardlessUpgradeId -or $cardlessUpgradeApplied -lt 1 -or $cardlessCloneSkipped -lt 1)) -or
         @($births | Where-Object { -not $_.Completed -or -not $_.After -or $_.Difference }).Count -ne 0 -or
-        @($trace.Actions[0].Before.Spawn.Train.Context.Relics | Where-Object { $_.AssetKey -in @('SpawnWithArmor','FirstUnitGainDamageShield','FrostbiteOnEnemies') }).Count -ne 3) {
+        $observedSpawnRelics -ne 3) {
         throw 'Native original spawn-status relic coverage is incomplete or failed.'
+    }
+    if ($MixedCardlessRelicOrder) {
+        $mixedRelic = @($trace.Actions[0].Before.Spawn.Train.Context.Relics | Where-Object AssetKey -EQ 'PyreHeartSon')
+        $mixedOrder = if ($mixedRelic.Count -eq 1) { @($mixedRelic[0].EffectTypes) -join '|' } else { '' }
+        if ($mixedOrder -ne 'RelicEffectAddStatusEffectOnSpawn|RelicEffectAddTempUpgrade' -or $mixedOrderWitnesses -lt 1) {
+            throw 'Mixed cardless relic ordering lacks the native status-before-upgrade witness.'
+        }
+        Write-Output "NATIVE-MIXED-CARDLESS-RELIC-ORDER PASS: status then cardless upgrade matched on $mixedOrderWitnesses births."
     }
     if ($SpawnStatusRelicsClones) {
         Write-Output "NATIVE-CARDLESS-RELIC-UPGRADE PASS: upgrade applied to $cardlessUpgradeApplied non-clone cardless births and skipped on $cardlessCloneSkipped cardless clones."

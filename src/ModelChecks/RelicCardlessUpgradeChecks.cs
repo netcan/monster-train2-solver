@@ -50,6 +50,45 @@ internal static class RelicCardlessUpgradeChecks
             "A relic upgrade with cardless dispatch disabled was applied to a summon.");
         Parallel.For(0, 32, _ => Require(JsonSerializer.Serialize(Apply(root).State) == JsonSerializer.Serialize(applied.State),
             "Parallel cardless relic branches diverged."));
+
+        var armorFilter = new CardUpgradeMaskRule(statuses: new UpgradeMaskContent<UpgradeMaskStatus>(
+            required: [new UpgradeMaskStatus("armor", 1)]));
+        var birthArmor = new CombatStatus("armor", 2);
+        RoomCombatState Ordered(bool statusFirst)
+        {
+            UnityRng orderedRng = UnityRng.Seed(23);
+            int statusIndex = statusFirst ? 0 : 1;
+            int upgradeIndex = statusFirst ? 1 : 0;
+            var statusEffect = new RelicSpawnStatus(statusIndex, true, false, [birthArmor]);
+            var orderedUpgrade = new RelicCardModifier(upgradeIndex,
+                new RelicCardUpgradeRule("CardlessUpgrade", true, lifecycle, [armorFilter]), upgrade, true);
+            string[] effects = statusFirst ? [RelicModel.AddStatusOnSpawn, RelicModel.AddTempUpgrade] :
+                [RelicModel.AddTempUpgrade, RelicModel.AddStatusOnSpawn];
+            var relic = new CombatRelicState("mixed-relic", "MixedCardlessRelic", effects,
+                [statusEffect], false, false, [orderedUpgrade]);
+            var context = new CombatContext(new CardCycleState([], [], [], orderedRng, 0, []), orderedRng, 0, 1, 10,
+                statusRules: [new CombatStatus("multistrike", 1), birthArmor], cardInstances: [], relics: [relic]);
+            return new RoomCombatState(0, false, [Unit()], [], context);
+        }
+
+        RoomCombatState statusFirst = Ordered(statusFirst: true);
+        RoomCombatResult statusFirstResult = RelicSpawnStatusModel.CharacterAdded(statusFirst, 1, 0, onlyCovenants: false);
+        Require(statusFirstResult.Supported, "Earlier status plus later cardless upgrade is unsupported: " + statusFirstResult.UnsupportedReason);
+        CombatUnit statusFirstUnit = statusFirstResult.State!.Units.Single();
+        Require(statusFirstUnit.Status("armor")?.Stacks == 2 &&
+            statusFirstUnit.Modifiers!.Upgrades.Any(item => item.DataId == upgrade.DataId),
+            "A later cardless relic upgrade did not see status installed by an earlier effect: " + statusFirstResult.UnsupportedReason);
+
+        RoomCombatState upgradeFirst = Ordered(statusFirst: false);
+        RoomCombatResult upgradeFirstResult = RelicSpawnStatusModel.CharacterAdded(upgradeFirst, 1, 0, onlyCovenants: false);
+        Require(upgradeFirstResult.Supported, "Earlier cardless upgrade plus later status is unsupported: " + upgradeFirstResult.UnsupportedReason);
+        CombatUnit upgradeFirstUnit = upgradeFirstResult.State!.Units.Single();
+        Require(upgradeFirstUnit.Status("armor")?.Stacks == 2 &&
+            !upgradeFirstUnit.Modifiers!.Upgrades.Any(item => item.DataId == upgrade.DataId),
+            "A cardless relic upgrade matched a status that was only installed by a later effect.");
+        Parallel.For(0, 32, _ => Require(JsonSerializer.Serialize(RelicSpawnStatusModel.CharacterAdded(
+            statusFirst, 1, 0, onlyCovenants: false).State) == JsonSerializer.Serialize(statusFirstResult.State),
+            "Parallel mixed cardless relic ordering branches diverged."));
         Console.WriteLine("RELIC-CARDLESS-UPGRADE-CHECKS PASS: team/cardless/clone/filter/source-unique gates, status and stat application, and 32 immutable branches.");
     }
 

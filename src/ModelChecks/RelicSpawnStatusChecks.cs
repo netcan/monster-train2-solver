@@ -82,10 +82,12 @@ internal static class RelicSpawnStatusChecks
 
     internal static void Native(FixtureValue fixture)
     {
-        if (!fixture.TryGetProperty("ModifierScenario", out var scenario) || scenario.GetString() is not ("spawn-status-relics" or "spawn-status-relics-clones")) return;
-        bool clones = scenario.GetString() == "spawn-status-relics-clones";
+        if (!fixture.TryGetProperty("ModifierScenario", out var scenario) || scenario.GetString() is not
+            ("spawn-status-relics" or "spawn-status-relics-clones" or "spawn-status-relics-mixed-cardless-order")) return;
+        bool mixedCardlessOrder = scenario.GetString() == "spawn-status-relics-mixed-cardless-order";
+        bool clones = scenario.GetString() is "spawn-status-relics-clones" or "spawn-status-relics-mixed-cardless-order";
         int schema = fixture.GetProperty("Schema").GetInt32();
-        Require((clones ? schema is 110 or 111 : schema is 109 or 110) && fixture.GetProperty("CaptureFailures").GetInt32() == 0 &&
+        Require((mixedCardlessOrder ? schema == 121 : clones ? schema is 110 or 111 : schema is 109 or 110) && fixture.GetProperty("CaptureFailures").GetInt32() == 0 &&
             fixture.GetProperty("Pending").GetInt32() == 0, "Incomplete relic spawn status native recording.");
         var records = fixture.GetProperty("RelicSpawnStatuses").EnumerateArray().ToArray();
         int players = 0, enemies = 0, shieldTriggers = 0, shieldSkips = 0;
@@ -129,7 +131,10 @@ internal static class RelicSpawnStatusChecks
             Require(record.GetProperty("Completed").GetBoolean() && record.GetProperty("Difference").ValueKind == FixtureKind.Null,
                 "Native relic birth observation was incomplete or differed.");
             var relics = before.Context!.Relics!;
-            Require(relics.Any(relic => relic.AssetKey == "SpawnWithArmor" && relic.DataId == "68ef2523-5c2e-4660-b96d-00b1c0485f54") &&
+            Require((mixedCardlessOrder
+                    ? relics.Any(relic => relic.AssetKey == "PyreHeartSon" && relic.SpawnStatuses?.Count == 1 && relic.CardModifiers?.Count == 1 &&
+                        relic.EffectTypes.SequenceEqual([RelicModel.AddStatusOnSpawn, RelicModel.AddTempUpgrade]))
+                    : relics.Any(relic => relic.AssetKey == "SpawnWithArmor" && relic.DataId == "68ef2523-5c2e-4660-b96d-00b1c0485f54")) &&
                 relics.Any(relic => relic.AssetKey == "FirstUnitGainDamageShield" && relic.DataId == "60a2a8a3-5f7a-4a9d-b427-5f261145fa1f") &&
                 relics.Any(relic => relic.AssetKey == "FrostbiteOnEnemies" && relic.DataId == "270356af-16bd-4433-a0b2-3e5bb94ef890"),
                 "Original relic identities were not retained.");
