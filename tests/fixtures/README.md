@@ -20,13 +20,14 @@ call its dedicated `ModelChecks` mode directly, for example:
 ```powershell
 dotnet run --project src/ModelChecks -c Release -- --bump-only tests/fixtures/full-battle-companion-bump.mt2f
 dotnet run --project src/ModelChecks -c Release -- --room-combat-only tests/fixtures/full-battle-companion-bump.mt2f
+dotnet run --project src/ModelChecks -c Release -- --bump-only tests/fixtures/full-battle-outer-boss-bump.mt2f
 ```
 
 The default command checks the full curated inventory. For routine changes, run
 the dedicated checks for the new and directly affected scenarios; run the full
 inventory at completed milestones and before delivery.
 
-Current inventory is 234 archives: 203 accepted battles and 31 component
+Current inventory is 235 archives: 204 accepted battles and 31 component
 calibrations. `full-battle-companion-bump.mt2f` covers a paired Relentless
 companion Boss refusal, its attempted-ascension callback and the survivor's
 terminal-death handoff. `full-battle-relic-card-status-upgrades.mt2f` verifies a native
@@ -1143,10 +1144,28 @@ equipment suites, six direct summon-effect suites, eight decision-reference
 suites, standalone/two summon revival suites, Horde/Bump suites and all 262
 native summon damage phases. All archive sizes and SHA-256 hashes match.
 
-Actual Bump previews, teleportation, disabled/destroyed floors, special Boss
-movement/destruction and movement callbacks involving damage/revival still need
-coverage, as do ordinary cloning and wider relic/room/card mechanics. The full
-simulator and optimal search remain unfinished.
+Actual Bump previews, teleportation, disabled/destroyed floors, paired
+companion-Boss forced movement/destruction and movement callbacks involving
+damage/revival still need coverage, as do ordinary cloning and wider
+relic/room/card mechanics. The full simulator and optimal search remain
+unfinished.
+
+`full-battle-outer-boss-bump.mt2f` covers 21 native Bump operations against the
+Outer Train Boss. Its anchor and reserved outside physical spawn slot move
+together, with callback order and the boss attack phase matched. The muted
+Instant fight wins at Pyre 74 with 22 actions, two EndTurns and 23 room stages;
+capture failures, mismatches, unsupported transitions and pending records are
+zero. Focused replay matches 21 Bump states, all 23 room stages and all 22
+native actions; 16 policy branches match. Capture took 50.54 seconds. The
+34,008-byte binary archive has 6,825 unique nodes and SHA-256
+`90c49da7ebf3c8cead2acff9d80d291460fe760539a8ceac92f11174f7eefc30`. It adds
+no original relic-owner evidence. Inventory is 235 archives: 204 battles and
+31 component calibrations; full-inventory replay remains deferred to a
+milestone.
+
+```powershell
+& ./scripts/Check-Models.ps1 -Fixture full-battle-outer-boss-bump.mt2f
+```
 
 ### Ordinary unit clone APIs (schema 99)
 

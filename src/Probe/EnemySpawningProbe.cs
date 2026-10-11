@@ -22,20 +22,23 @@ namespace MonsterTrain2Poju.Probe
         internal EnemySpawningProbe(ManualLogSource log, FullBattleTrace trace, TrainCombatProbe train)
         { this.log = log; this.trace = trace; this.train = train; active = this; }
 
-        internal EnemySpawnState Capture()
-            => trace.CaptureDecision(() => CaptureState(true));
+        internal EnemySpawnState Capture(bool includeOuterBossForBump = false,
+            bool ignoreOuterBossSpawnInteraction = false)
+            => trace.CaptureDecision(() => CaptureState(true, includeOuterBossForBump, ignoreOuterBossSpawnInteraction));
 
-        internal EnemySpawnState CapturePhase() => CaptureState(false);
+        internal EnemySpawnState CapturePhase() => CaptureState(false, false, false);
 
-        private EnemySpawnState CaptureState(bool canonicalReferences)
+        private EnemySpawnState CaptureState(bool canonicalReferences, bool includeOuterBossForBump,
+            bool ignoreOuterBossSpawnInteraction)
         {
             AllGameManagers managers = AllGameManagers.Instance!;
             SaveManager save = managers.GetSaveManager();
             HeroManager heroes = managers.GetHeroManager()!;
-            TrainCombatState state = train.Capture();
+            TrainCombatState state = train.Capture(includeOuterBossForBump: includeOuterBossForBump);
             var interactions = new List<string>();
             var pattern = (SpawnPatternData)AccessTools.Field(typeof(HeroManager), "spawnPattern").GetValue(heroes);
-            if (pattern.GetBossType() != SpawnPatternData.BossType.None) interactions.Add("Outer or queued final boss spawning");
+            if (pattern.GetBossType() != SpawnPatternData.BossType.None && !ignoreOuterBossSpawnInteraction)
+                interactions.Add("Outer or queued final boss spawning");
             string? relicError = RelicModel.Validate(state.Context);
             if (relicError != null) interactions.Add(relicError);
             if (save.GetMutators().Count > 0) interactions.Add("Spawn mutators");

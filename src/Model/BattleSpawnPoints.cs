@@ -147,8 +147,62 @@ namespace MonsterTrain2Poju.Model
             }).ToArray());
             var result = SpawnPointModel.Apply(world, operation, room.RoomIndex, team, unitId, index, targetIndex, target,
                 previewCopyId: group.PreviewCopyId);
-            return result.Supported ? new BattleSpawnPointResult(BattleSpawnPoints.FromWorld(source, result.State!), pivotMoves: result.PivotMoves) : Reject(result.UnsupportedReason!);
+            if (!result.Supported) return Reject(result.UnsupportedReason!);
+            BattleSpawnPoints updated = BattleSpawnPoints.FromWorld(source, result.State!);
+            if (operation == "Set" && target?.OuterBossAnchor == true)
+            {
+                var shadow = MoveOuterBossGroupSlot(source, updated, unitId, target);
+                if (!shadow.Supported) return shadow;
+                updated = shadow.State!;
+            }
+            return new BattleSpawnPointResult(updated, pivotMoves: result.PivotMoves);
         }
+
+        private static BattleSpawnPointResult MoveOuterBossGroupSlot(BattleSpawnPoints source,
+            BattleSpawnPoints updated, int unitId, SpawnPointReference target)
+        {
+            UnitSpawnPointState? boss = source.Units.SingleOrDefault(unit => unit.UnitId == unitId);
+            if (boss?.OuterBoss != true || boss.Current?.OuterBossAnchor != true)
+                return Reject("Outer Boss anchor movement is missing its captured Boss state.");
+            if (boss.Current.RoomIndex == target.RoomIndex) return new BattleSpawnPointResult(updated);
+
+            SpawnPointGroupState[] owners = source.Groups.Where(group => group.Team == CombatTeam.Enemy &&
+                !group.PreviewCopyId.HasValue && group.Occupants.Contains(unitId)).ToArray();
+            if (owners.Length == 0) return new BattleSpawnPointResult(updated);
+            if (owners.Length != 1 || owners[0].RoomIndex != boss.Current.RoomIndex)
+                return Reject("Outer Boss must occupy one reserved primary hero point in its anchor room.");
+
+            SpawnPointGroupState origin = owners[0];
+            int originIndex = Array.IndexOf(origin.Occupants.ToArray(), unitId);
+            if (!origin.Outside[originIndex])
+                return Reject("Outer Boss physical occupancy is not in a reserved hero point.");
+            SpawnPointGroupState? destination = updated.Group(target.RoomIndex, CombatTeam.Enemy);
+            if (destination == null) return Reject("Outer Boss destination hero points were not captured.");
+            int destinationIndex = Enumerable.Range(0, destination.Occupants.Count).Where(index =>
+                destination.Outside[index] && destination.Occupants[index] == 0).DefaultIfEmpty(-1).First();
+            if (destinationIndex < 0) return Reject("Outer Boss destination has no free reserved hero point.");
+
+            var groups = updated.Groups.Select(group =>
+            {
+                if (group.RoomIndex == origin.RoomIndex && group.Team == CombatTeam.Enemy && !group.PreviewCopyId.HasValue)
+                {
+                    int[] occupants = group.Occupants.ToArray();
+                    occupants[originIndex] = 0;
+                    return new SpawnPointGroupState(group.RoomIndex, group.Team, group.InnerCount, group.GroupCount,
+                        occupants, group.Outside, group.PreviewCopyId);
+                }
+                if (group.RoomIndex == destination.RoomIndex && group.Team == CombatTeam.Enemy && !group.PreviewCopyId.HasValue)
+                {
+                    int[] occupants = group.Occupants.ToArray();
+                    occupants[destinationIndex] = unitId;
+                    return new SpawnPointGroupState(group.RoomIndex, group.Team, group.InnerCount, group.GroupCount,
+                        occupants, group.Outside, group.PreviewCopyId);
+                }
+                return group;
+            }).ToArray();
+            return new BattleSpawnPointResult(updated.WithState(groups, updated.Units));
+        }
+
         internal static BattleSpawnPointResult Birth(BattleSpawnPoints source, RoomCombatState room, CombatUnit unit,
             int position, bool shift)
         {

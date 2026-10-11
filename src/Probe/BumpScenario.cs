@@ -38,12 +38,19 @@ namespace MonsterTrain2Poju.Probe
             public List<Callback> Dispatched { get; set; } = new List<Callback>();
         }
         internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == "bump";
+        internal static bool CaptureOuterBossForAction => Enabled && probeBossSpawned && label != null;
         internal static readonly List<Record> Records = new List<Record>();
         internal static bool Started, Completed;
         internal static string? Error;
         private static string? label;
         private static Record? current;
         private static CardState source = null!;
+        private static SpawnPatternData? probeBossPattern;
+        private static CharacterData? originalBossData;
+        private static SpawnPatternData.BossType originalBossType;
+        private static bool originalAllScenarioBossesDead;
+        private static bool probeBossSpawned;
+
         internal static void Prepare(AllGameManagers managers, ManualLogSource log)
         {
             SaveManager save = managers.GetSaveManager();
@@ -56,7 +63,7 @@ namespace MonsterTrain2Poju.Probe
             Set(unit, "triggers", unit.GetTriggers().Concat(Triggers()).ToList());
             foreach (CardState card in cards.GetAllCards(new List<CardState>()).Where(card => card.GetCardDataID() == steward.GetID())) card.Setup(steward, save);
             Configure(managers, 1, TargetMode.DropTargetCharacter, Team.Type.Heroes | Team.Type.Monsters, false);
-            log.LogInfo("BUMP-PREPARED real paid cards and hosts, room movement/attempt/Shift/Sentry/troop callbacks; original Boss/waves intact.");
+            log.LogInfo("BUMP-PREPARED real paid cards and hosts, including an original Outer Train Boss; ordinary wave groups intact.");
         }
         internal static void Start(AllGameManagers managers, ManualLogSource log)
         { Started = true; managers.GetSaveManager().StartCoroutine(Protect(Run(managers), log)); }
@@ -76,6 +83,8 @@ namespace MonsterTrain2Poju.Probe
         {
             CardManager cards = managers.GetCardManager()!; RoomManager rooms = managers.GetRoomManager()!;
             CombatManager combat = managers.GetCombatManager()!;
+            if (managers.GetHeroManager()!.GetOuterTrainBossCharacter() == null)
+                yield return SpawnOuterBoss(managers);
             for (int floor = 0; floor < 2; floor++)
             {
                 yield return rooms.GetRoomUI().SetSelectedRoom(floor);
@@ -183,6 +192,13 @@ namespace MonsterTrain2Poju.Probe
                 yield return Cast("enemy-companion-relentless-up-refuses-ascension", companionMover, 1);
                 rooms.GetRoom(0).SetRoomEnabled(true);
                 FullBattleTrace.Active!.InvalidateCardRules();
+                CharacterState outerBoss = managers.GetHeroManager()!.GetOuterTrainBossCharacter();
+                if (outerBoss == null || !outerBoss.IsAlive) throw new InvalidOperationException("Bump scenario did not spawn its Outer Train Boss.");
+                int outerFloor = outerBoss.GetCurrentRoomIndex();
+                int pyreFloor = rooms.GetNumRooms() - 1;
+                int outerAmount = outerFloor < pyreFloor - 1 ? 1 : -1;
+                yield return Cast("enemy-outer-boss-move", outerBoss, outerAmount);
+                RemoveProbeBoss(managers, outerBoss);
                 // Return the same authored card to a simple down mode for the subsequent ordinary policy.
                 Configure(managers, -1, TargetMode.DropTargetCharacter, Team.Type.Heroes | Team.Type.Monsters, false);
                 Set(combat, "combatStateChanged", true);
@@ -202,7 +218,8 @@ namespace MonsterTrain2Poju.Probe
                 if (!cards.CanPlayHandCard(source, floor, point, null, null, out var error))
                     throw new InvalidOperationException("Bump paid card failed " + name + ": " + error);
                 FullBattleTrace.Active!.BeginCardPlay(new PlayCardAction(FullBattleTrace.Active.CardId(source), floor,
-                    targetUnitId: room ? 0 : FullBattleTrace.Active.UnitId(target)), scenarioAction: true);
+                    targetUnitId: room ? 0 : FullBattleTrace.Active.UnitId(target)), scenarioAction: true,
+                    includeOuterBossForBump: probeBossSpawned, ignoreOuterBossSpawnInteraction: probeBossSpawned);
                 if (!cards.PlayCard(hand, point, ref error)) throw new InvalidOperationException("Bump paid card failed " + name + ": " + error);
                 while (!Ready()) yield return null;
                 // A decision boundary includes the normal combat-preview refresh. Raw effect
@@ -216,6 +233,55 @@ namespace MonsterTrain2Poju.Probe
             bool Ready() => !managers.GetSaveManager().PreviewMode && !managers.GetReplayManager().IsCardPlaying() &&
                 !combat.IsRunningTriggerQueue && Count(combat) == 0 && !(managers.GetHandUI()?.AreAnyCardsAnimating() ?? false) &&
                 (combat.SuppressCombatPreviewUpdates || !(bool)AccessTools.Field(typeof(CombatManager), "combatStateChanged").GetValue(combat));
+        }
+        private static IEnumerator SpawnOuterBoss(AllGameManagers managers)
+        {
+            HeroManager heroes = managers.GetHeroManager()!;
+            RoomManager rooms = managers.GetRoomManager()!;
+            CombatManager combat = managers.GetCombatManager()!;
+            SaveManager save = managers.GetSaveManager();
+            var pattern = (SpawnPatternData)AccessTools.Field(typeof(HeroManager), "spawnPattern").GetValue(heroes);
+            probeBossPattern = pattern;
+            originalBossData = pattern.GetOuterTrainBossCharacter();
+            originalBossType = pattern.GetBossType();
+            originalAllScenarioBossesDead = combat.AllScenarioBossesDead;
+            var ftueUnits = ((IEnumerable)AccessTools.Field(typeof(HeroManager), "arkionFtueUnits").GetValue(heroes)!)
+                .Cast<CharacterData>().ToHashSet();
+            CharacterData? data = pattern.GetOuterTrainBossCharacter();
+            if (data == null || !data.IsOuterTrainBoss() || ftueUnits.Contains(data) || data.GetBossActionData().Count == 0)
+                data = save.GetAllGameData().GetAllCharacterData().First(character => character.IsOuterTrainBoss() &&
+                    !ftueUnits.Contains(character) && character.GetBossActionData().Count > 0);
+            Set(pattern, "bossCharacter", data);
+            Set(pattern, "bossType", SpawnPatternData.BossType.OuterTrainBoss);
+            var spawn = (IEnumerator)AccessTools.Method(typeof(HeroManager), "DoOuterTrainBossSpawning")!
+                .Invoke(heroes, new object?[] { combat.ActiveTiming, null })!;
+            while (spawn.MoveNext()) yield return spawn.Current;
+            (spawn as IDisposable)?.Dispose();
+            probeBossSpawned = true;
+            rooms.EnableRoomSelection(enable: true);
+            yield return combat.RunTriggerQueue();
+            if (heroes.GetOuterTrainBossCharacter() == null)
+                throw new InvalidOperationException("Native Outer Train Boss spawning did not retain its actor.");
+        }
+        private static void RemoveProbeBoss(AllGameManagers managers, CharacterState boss)
+        {
+            if (!probeBossSpawned) return;
+            HeroManager heroes = managers.GetHeroManager()!;
+            CombatManager combat = managers.GetCombatManager()!;
+            if (boss.GetSpawnPoint() is SpawnPoint point) point.SetCharacterState(null);
+            boss.SetSpawnPoint(null, animate: false, setPosition: false);
+            ((List<CharacterState>)AccessTools.Field(typeof(HeroManager), "activeHeroes").GetValue(heroes)!).Remove(boss);
+            Set(heroes, "outerTrainBoss", null!);
+            boss.SetDestroyedState(CharacterState.DestroyedState.Destroyed);
+            UnityEngine.Object.Destroy(boss.gameObject);
+            if (probeBossPattern != null)
+            {
+                Set(probeBossPattern, "bossCharacter", originalBossData!);
+                Set(probeBossPattern, "bossType", originalBossType);
+            }
+            combat.AllScenarioBossesDead = originalAllScenarioBossesDead;
+            probeBossSpawned = false;
+            Set(combat, "combatStateChanged", true);
         }
         private static void Configure(AllGameManagers managers, int amount, TargetMode mode, Team.Type team, bool ranged)
         {
@@ -254,13 +320,13 @@ namespace MonsterTrain2Poju.Probe
                 CharacterState[] actors = parameters.targets.ToArray();
                 var record = new Record { Label = label!, Amount = effect.GetSourceCardEffectData().GetParamInt(),
                     SourceCardId = parameters.playedCard == null ? 0 : trace.CardId(parameters.playedCard), Targets = actors.Select(trace.UnitId).ToArray(),
-                    Before = trace.CaptureTrain(), Rooms = trace.CaptureDecision().PlayRules!.Rooms.ToArray() };
+                    Before = trace.CaptureTrain(includeOuterBossForBump: true), Rooms = trace.CaptureDecision().PlayRules!.Rooms.ToArray() };
                 Records.Add(record); current = record;
                 try { while (native.MoveNext()) yield return native.Current; }
                 finally
                 {
                     (native as IDisposable)?.Dispose(); current = null;
-                    record.After = trace.CaptureTrain(); record.QueueAfter = Count(AllGameManagers.Instance!.GetCombatManager()!);
+                    record.After = trace.CaptureTrain(includeOuterBossForBump: true); record.QueueAfter = Count(AllGameManagers.Instance!.GetCombatManager()!);
                     record.RoomEnabledAfter = Enumerable.Range(0, AllGameManagers.Instance!.GetRoomManager()!.GetNumRooms())
                         .Select(index => AllGameManagers.Instance!.GetRoomManager()!.GetRoom(index).IsRoomEnabled()).ToArray();
                     record.TargetsAfter = actors.Select(actor => {

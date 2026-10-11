@@ -142,7 +142,7 @@ $fixtureNames = @('full-battle-steward-once.mt2f', 'full-battle-no-cards.mt2f', 
     'full-battle-triggered-summons-equipment-owned-death.mt2f', 'full-battle-triggered-summons-equipment-owned-death-fresh.mt2f',
     'full-battle-triggered-summons-equipment-owned-revival.mt2f', 'full-battle-triggered-summons-equipment-owned-revival-fresh.mt2f',
     'full-battle-triggered-summons-death.mt2f', 'full-battle-triggered-summons-death-fresh.mt2f',
-    'full-battle-revival.mt2f', 'full-battle-bump.mt2f', 'full-battle-companion-bump.mt2f', 'full-battle-unit-clone.mt2f', 'full-battle-unit-copy.mt2f',
+    'full-battle-revival.mt2f', 'full-battle-bump.mt2f', 'full-battle-companion-bump.mt2f', 'full-battle-outer-boss-bump.mt2f', 'full-battle-unit-clone.mt2f', 'full-battle-unit-copy.mt2f',
     'full-battle-hero-copy.mt2f',
     'full-battle-spawn-enchant.mt2f',
     'full-battle-persistent-enchantment.mt2f',
@@ -207,5 +207,29 @@ if ($Fixture.Count -gt 0) {
 } else {
     Write-Host "FIXTURE-INTEGRITY PASS: $($fixtures.Count) binary archives match the curated inventory and SHA-256 manifest."
 }
-dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release -- @fixtures
+$focusedBumpFixtures = @($fixtures | Where-Object {
+    (Split-Path -Leaf $_) -in @('full-battle-companion-bump.mt2f', 'full-battle-outer-boss-bump.mt2f')
+})
+$generalFixtures = @($fixtures | Where-Object {
+    (Split-Path -Leaf $_) -notin @('full-battle-companion-bump.mt2f', 'full-battle-outer-boss-bump.mt2f')
+})
+if ($generalFixtures.Count -gt 0) {
+    dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release -- @generalFixtures
+} else {
+    dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release
+}
 if ($LASTEXITCODE -ne 0) { throw 'Independent model checks failed.' }
+
+$bumpFixtures = @($fixtures | Where-Object {
+    (Split-Path -Leaf $_) -in @('full-battle-bump.mt2f', 'full-battle-companion-bump.mt2f', 'full-battle-outer-boss-bump.mt2f')
+})
+foreach ($fixturePath in $bumpFixtures) {
+    dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- --bump-only $fixturePath
+    if ($LASTEXITCODE -ne 0) { throw "Bump scenario checks failed: $fixturePath" }
+    dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- --native-actions-only $fixturePath
+    if ($LASTEXITCODE -ne 0) { throw "Native action checks failed: $fixturePath" }
+}
+foreach ($fixturePath in $focusedBumpFixtures) {
+    dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- --room-combat-only $fixturePath
+    if ($LASTEXITCODE -ne 0) { throw "Room combat checks failed: $fixturePath" }
+}

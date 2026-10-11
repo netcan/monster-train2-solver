@@ -1,6 +1,6 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-12): 234 binary archives, including 203
+Current accepted inventory (2026-10-12): 235 binary archives, including 204
 full battles and 31 component calibrations. Unchanged original relic evidence
 covers 59/224 catalog entries (26.34%); see
 [the owner evidence table](tests/fixtures/relic-coverage.md). Whole-battle
@@ -134,7 +134,7 @@ are copied immutable values; independent child states can run on worker threads.
 | Entire room resolution | `RoomCombatModel.Resolve` | Native normal exchanges, post-combat effects and multiple rounds of boss/Pyre relentless combat |
 | Train combat phase | `TrainCombatModel.ResolveCombat` | Top-to-bottom native phase comparison |
 | Enemy movement phase | `TrainCombatModel.Ascend` | Native movement and immediate Pyre combat, including the terminal boss fight |
-| Bump card movement | `BumpModel`, `CardSpellModel` and `HordeMergeModel.MergeAcrossRooms` | Nineteen real paid-card effect/queue comparisons including unpaired Relentless room destruction and Undying removal, a synthetic non-Relentless companion-Boss ordinary move, both-team cross-room Horde merges, signed/clamped/fixed-range quantities, immobility/rooting, loops, simultaneous targets, Pyre and full/partially blocked rooms; Outer Boss and paired companion-Boss transitions remain unsupported |
+| Bump card movement | `BumpModel`, `CardSpellModel` and `HordeMergeModel.MergeAcrossRooms` | Native paid-card comparisons cover unpaired Relentless room destruction and Undying removal, a synthetic non-Relentless companion-Boss move, Outer Train Boss movement with its reserved physical spawn slot, both-team cross-room Horde merges, signed/clamped/fixed-range quantities, immobility/rooting, loops, simultaneous targets, Pyre and full/partially blocked rooms; paired companion-Boss forced movement, previews/rollback and teleportation remain unsupported |
 | Ordinary unit clone APIs | `UnitCloneModel`, `CharacterCopyModel` and `UnitBirthModel` | Thirteen native operations, 44 exact copied-card/birth/gear/stats/ability boundaries, raw/drained train states and callback payload/order; detached/cardless sources, failed allocations and 32 branches |
 | Paid unit copy spells | `UnitCopyModel`, `UnitCloneModel` and `CardSpellModel` | Fourteen real paid effects, complete raw state and incoming/outgoing queue payload/order, sequential births, full/partial rooms, copied equipment/skills, cardless/Horde sources and 32 branches |
 | Enemy and mixed-team copy spells | `HeroUnitBirthModel`, `UnitCopyModel` and `CardSpellModel` | Sixteen real paid effects, raw/live stats, natural skills, optional equipment, initial hero compaction, full/partial rooms, incoming global callbacks and 32 branches; subsequent paid summon and complete first-turn defeat |
@@ -5446,6 +5446,23 @@ all 23 room stages and all 21 actions. The archive is 32,754 bytes and 6,565
 graph nodes. The inventory is now 234 archives; the complete 234-archive
 regression remains deferred to a milestone.
 
+`full-battle-outer-boss-bump.mt2f` adds 21 native Bump operations against the
+Outer Train Boss. The model moves the boss anchor and its reserved outside
+physical spawn slot together, then matches native callback and attack-phase
+ordering. The muted Instant fight wins at Pyre 74 with 22 actions, two
+EndTurns and 23 room stages; capture failures, mismatches, unsupported steps
+and pending records are zero. Focused replay matches all 21 Bump states, all 23
+room stages and all 22 native actions, including 16 parallel policy branches.
+The 34,008-byte archive has 6,825 unique nodes and SHA-256
+`90c49da7ebf3c8cead2acff9d80d291460fe760539a8ceac92f11174f7eefc30`. The
+capture took 50.54 seconds; this does not add original relic-owner evidence.
+Inventory is now 235 archives: 204 battles and 31 component calibrations. A
+full 235-archive regression remains deferred to a milestone.
+
+```powershell
+& ./scripts/Check-Models.ps1 -Fixture full-battle-outer-boss-bump.mt2f
+```
+
 At the prior 146-archive inventory, the complete regression exited zero across
 137 battles and nine calibrations. That audit verified nineteen
 physical-position suites, fourteen queued-summon suites, ten equipment suites,
@@ -5454,9 +5471,10 @@ revival and two revival/summon suites, Horde and Bump suites, and all 262 native
 summon damage phases. Every curated archive matches its size/SHA-256 manifest;
 there are no tracked source JSON fixtures.
 
-This validates ordinary movement, unpaired Relentless room destruction, and
-recorded movement callbacks. Preview movement/rollback, teleportation, Outer Boss
-and paired companion-Boss movement, damage/revival interactions during card
+This validates ordinary movement, unpaired Relentless room destruction, Outer
+Boss movement with its reserved physical spawn slot, and recorded movement
+callbacks. Preview movement/rollback, teleportation, paired companion-Boss
+forced movement, damage/revival interactions during card
 movement, relic/room modifiers, ordinary unit cloning and broader card coverage
 still need native fixtures and implementation. The full simulator and optimal
 search are not complete.

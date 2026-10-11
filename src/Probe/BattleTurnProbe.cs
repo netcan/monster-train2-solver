@@ -24,10 +24,11 @@ namespace MonsterTrain2Poju.Probe
             UnitPlayModelProbe projection, ManualLogSource log)
         { this.trace = trace; this.spawning = spawning; this.cardCycles = cardCycles; this.projection = projection; this.log = log; }
 
-        internal BattleTurnState Capture()
-            => trace.CaptureDecision(CaptureState);
+        internal BattleTurnState Capture(bool includeOuterBossForBump = false,
+            bool ignoreOuterBossSpawnInteraction = false)
+            => trace.CaptureDecision(() => CaptureState(includeOuterBossForBump, ignoreOuterBossSpawnInteraction));
 
-        private BattleTurnState CaptureState()
+        private BattleTurnState CaptureState(bool includeOuterBossForBump, bool ignoreOuterBossSpawnInteraction)
         {
             AllGameManagers managers = AllGameManagers.Instance!;
             SaveManager save = managers.GetSaveManager();
@@ -64,7 +65,7 @@ namespace MonsterTrain2Poju.Probe
                 streams.Add(new BattleRngStream(id.ToString(), native.GetSeed(),
                     new UnityRng(words[0], words[1], words[2], words[3])));
             }
-            EnemySpawnState spawn = spawning.Capture();
+            EnemySpawnState spawn = spawning.Capture(includeOuterBossForBump, ignoreOuterBossSpawnInteraction);
             return new BattleTurnState(spawn, player.GetEnergy(), save.GetBalanceData().GetStartOfTurnEnergy(),
                 combat.GetStartOfTurnCards(), save.GetForgePoints(), save.GetDragonsHoardAmount(), player.CurrentMoonPhase.ToString(),
                 streams, otherPiles, interactions.Distinct().OrderBy(value => value, StringComparer.Ordinal).ToArray(), trace.CapturePlayRules(spawn),

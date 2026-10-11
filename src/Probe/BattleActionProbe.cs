@@ -343,13 +343,16 @@ namespace MonsterTrain2Poju.Probe
 
         internal static bool TriggeredVfx(StatusEffectData rule, float facing) => rule.GetOnTriggeredVFX()?.GetVfxPrefab(facing) != null;
 
-        internal void Begin(PlayCardAction action, bool scenarioAction = false)
+        internal void Begin(PlayCardAction action, bool scenarioAction = false,
+            bool includeOuterBossForBump = false, bool ignoreOuterBossSpawnInteraction = false)
         {
             try
             {
                 if (records.Any(record => record.Actual == null)) throw new InvalidOperationException("Previous card action is pending.");
-                BattleTurnState before = trace.CaptureDecision();
-                records.Add(new Record { Index = records.Count, ScenarioAction = scenarioAction, Before = before, Action = action,
+                BattleTurnState before = trace.CaptureDecision(includeOuterBossForBump, ignoreOuterBossSpawnInteraction);
+                records.Add(new Record { Index = records.Count, ScenarioAction = scenarioAction,
+                    IncludeOuterBossForBump = includeOuterBossForBump,
+                    IgnoreOuterBossSpawnInteraction = ignoreOuterBossSpawnInteraction, Before = before, Action = action,
                     Predicted = BattleActionModel.PlayCard(before, action) });
             }
             catch (Exception error) { trace.CaptureFailure(error); }
@@ -361,7 +364,8 @@ namespace MonsterTrain2Poju.Probe
             try
             {
                 trace.InvalidateCardRules();
-                record.Actual = trace.CaptureDecision();
+                record.Actual = trace.CaptureDecision(record.IncludeOuterBossForBump,
+                    record.IgnoreOuterBossSpawnInteraction);
                 record.ActualOutcome = trace.NativeWon == null ? RoomOutcome.Exchanged :
                     trace.NativeWon.Value ? RoomOutcome.BattleWon : RoomOutcome.PlayerDefeated;
                 if (record.Predicted.Supported)
@@ -388,6 +392,8 @@ namespace MonsterTrain2Poju.Probe
         {
             public int Index { get; set; }
             public bool ScenarioAction { get; set; }
+            public bool IncludeOuterBossForBump { get; set; }
+            public bool IgnoreOuterBossSpawnInteraction { get; set; }
             public BattleTurnState Before { get; set; } = null!;
             public PlayCardAction Action { get; set; } = null!;
             public BattleActionResult Predicted { get; set; } = null!;

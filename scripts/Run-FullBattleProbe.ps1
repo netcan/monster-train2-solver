@@ -1497,7 +1497,7 @@ if ($Bump) {
         'enemy-loop-up-to-bottom', 'enemy-room-multiple-targets', 'enemy-to-top-before-merge',
         'player-cross-room-horde-merge', 'enemy-cross-room-horde-merge', 'enemy-into-pyre',
         'enemy-full-room-blocked', 'enemy-partial-full-room', 'enemy-relentless-up-destroys-room',
-        'enemy-companion-relentless-up-refuses-ascension')
+        'enemy-companion-relentless-up-refuses-ascension', 'enemy-outer-boss-move')
     if ($bumpOperations.Count -ne $bumpLabels.Count -or @($bumpLabels | Where-Object { $_ -notin $bumpOperations.Label }).Count -gt 0 -or
         @($bumpOperations | Where-Object { $null -eq $_.After -or $null -eq $_.TargetsAfter -or $_.QueueAfter -ne 0 }).Count -gt 0) {
         throw 'Requested native paid Bump operations did not complete.'
@@ -1915,7 +1915,7 @@ $result = [pscustomobject]@{
     HordeMergeCoverage = (-not $HordeMerge -or @($trace.HordeMergeOperations).Count -eq 17)
     HordeMergeOperations = @($trace.HordeMergeOperations).Count
     HordeMergeSelections = @($trace.HordeMergeSelections).Count
-    BumpCoverage = (-not $Bump -or @($trace.BumpOperations).Count -eq 20)
+    BumpCoverage = (-not $Bump -or @($trace.BumpOperations).Count -eq 21)
     BumpOperations = @($trace.BumpOperations).Count
     UnitCloneOperations = @($trace.UnitCloneOperations).Count
     UnitCopyOperations = @($trace.UnitCopyOperations).Count

@@ -9,8 +9,9 @@ namespace MonsterTrain2Poju.Model
         public bool Loops { get; }
         public bool CompanionBoss { get; }
         public bool OuterBoss { get; }
-        public UnitBumpRules(bool loops, bool companionBoss, bool outerBoss)
-        { Loops = loops; CompanionBoss = companionBoss; OuterBoss = outerBoss; }
+        public bool OuterBossRelentlessPhase { get; }
+        public UnitBumpRules(bool loops, bool companionBoss, bool outerBoss, bool outerBossRelentlessPhase = false)
+        { Loops = loops; CompanionBoss = companionBoss; OuterBoss = outerBoss; OuterBossRelentlessPhase = outerBossRelentlessPhase; }
     }
 
     public sealed class BumpResult
@@ -55,7 +56,7 @@ namespace MonsterTrain2Poju.Model
                 updatedRoomRules.Count(rule => rule.IsPyre) != 1 || !updatedRoomRules.Last().IsPyre)
                 return Fail("Bump requires captured physical points, all room rules and a primary state.");
             int pyre = source.Rooms.Count - 1;
-            var moved = new List<(int Id, int OldRoom, int NewRoom)>(); var attempted = new List<int>();
+            var moved = new List<(int Id, int OldRoom, int NewRoom, bool OuterBoss)>(); var attempted = new List<int>();
             // Native snapshots the target list, moves all actors first, then starts callbacks.
             foreach (int id in targets)
             {
@@ -63,8 +64,6 @@ namespace MonsterTrain2Poju.Model
                 SpawnPointReference? old = state.Context!.SpawnPoints!.Units.SingleOrDefault(unit => unit.UnitId == id)?.Current;
                 if (actor == null || old == null) continue;
                 if (actor.BumpRules == null) return Fail("Missing native Bump movement properties for actor " + id);
-                if (actor.BumpRules.OuterBoss)
-                    return Fail("Outer Boss movement requires its dedicated transition model.");
                 if (actor.Status("immobile") != null) { attempted.Add(id); continue; }
                 if (actor.Status("rooted") != null)
                 {
@@ -73,6 +72,54 @@ namespace MonsterTrain2Poju.Model
                     attempted.Add(id); continue;
                 }
                 if (actor.IsPyre) continue;
+                if (actor.BumpRules.OuterBoss)
+                {
+                    if (actor.Team != CombatTeam.Enemy || !old.OuterBossAnchor)
+                        return Fail("Outer Boss movement requires its captured Boss anchor.");
+                    int outerSteps = Math.Max(-pyre, Math.Min(pyre, amount)), outerDirection = outerSteps > 0 ? 1 : -1;
+                    bool outerLooping = actor.BumpRules.Loops && actor.Status("relentless") == null && outerDirection > 0 && old.RoomIndex + outerSteps >= pyre;
+                    if (outerLooping) { outerDirection = -1; outerSteps = old.RoomIndex; }
+                    SpawnPointReference? outerDestination = null; bool outerBlocked = false;
+                    for (int step = 1; step <= Math.Abs(outerSteps); step++)
+                    {
+                        int floor = Math.Max(0, Math.Min(pyre, old.RoomIndex + step * outerDirection));
+                        RoomPlayRule rule = updatedRoomRules.Single(item => item.RoomIndex == floor);
+                        if (!rule.Enabled || rule.IsPyre && !actor.BumpRules.OuterBossRelentlessPhase)
+                        { outerBlocked = true; break; }
+                        outerDestination = new SpawnPointReference(floor, CombatTeam.Enemy, 0, outerBossAnchor: true);
+                    }
+                    if (outerDestination == null || outerDestination.RoomIndex == old.RoomIndex)
+                    { attempted.Add(id); continue; }
+                    if (outerLooping && !outerBlocked)
+                        queue.Add(new RoomCombatModel.QueuedCharacterTrigger(origin!.RoomIndex, actor, "OnTrainRoomLoop"));
+                    var outerPlaced = BattleSpawnPointModel.Apply(state.Context!.SpawnPoints!, origin!, "Set", CombatTeam.Enemy, id,
+                        target: outerDestination);
+                    if (!outerPlaced.Supported) return Fail(outerPlaced.Error!);
+                    CombatContext outerContext = state.Context.WithSpawnPoints(outerPlaced.State!);
+                    var outerRooms = state.Rooms.Select(room =>
+                    {
+                        var units = room.Units.Where(unit => unit.Team == CombatTeam.Enemy && unit.Id != id).ToList();
+                        if (room.RoomIndex == outerDestination.RoomIndex) units.Add(actor);
+                        units.AddRange(room.Units.Where(unit => unit.Team == CombatTeam.Player));
+                        return new RoomCombatState(room.RoomIndex, room.Deployment, units.ToArray(),
+                            room.ExternalInteractions, outerContext);
+                    }).ToArray();
+                    state = CardSpellModel.WithContext(new TrainCombatState(outerRooms, state.Movement, state.EnemySlotsPerRoom, outerContext), outerContext);
+                    moved.Add((id, old.RoomIndex, outerDestination.RoomIndex, true));
+
+                    queue.Add(new RoomCombatModel.QueuedCharacterTrigger(outerDestination.RoomIndex, actor,
+                        amount > 0 ? "PostAscension" : "PostDescension"));
+                    if (!Drain()) return Fail(error!);
+                    actor = Get(id) ?? retained.GetValueOrDefault(id) ?? actor;
+                    queue.Add(new RoomCombatModel.QueuedCharacterTrigger(outerDestination.RoomIndex, actor, "OnShift"));
+                    if (!Drain()) return Fail(error!);
+                    actor = Get(id) ?? retained.GetValueOrDefault(id) ?? actor;
+                    foreach (CombatUnit guard in state.Rooms[outerDestination.RoomIndex].Units.Where(unit => unit.Team != actor.Team))
+                        queue.Add(new RoomCombatModel.QueuedCharacterTrigger(outerDestination.RoomIndex, guard, "OnSentry",
+                            overrideTarget: actor, paramString: ""));
+                    if (!Drain()) return Fail(error!);
+                    continue;
+                }
                 if (actor.BumpRules.CompanionBoss && actor.Status("relentless") != null)
                 { attempted.Add(id); continue; }
                 int steps = Math.Max(-pyre, Math.Min(pyre, amount)), direction = steps > 0 ? 1 : -1;
@@ -102,12 +149,13 @@ namespace MonsterTrain2Poju.Model
                             ? new[] { actor } : Array.Empty<CombatUnit>()).ToArray(), room.ExternalInteractions, context)).ToArray();
                     state = CardSpellModel.WithContext(new TrainCombatState(rooms, state.Movement, state.EnemySlotsPerRoom, context), context);
                 }
-                moved.Add((id, old.RoomIndex, destination.RoomIndex));
+                moved.Add((id, old.RoomIndex, destination.RoomIndex, false));
             }
             // Position updates happen after the entire first pass; compaction can affect both
             // the departure and destination of another target in the same card effect.
             foreach (var move in moved)
             {
+                if (move.OuterBoss) continue;
                 CombatUnit actor = Get(move.Id)!;
                 if (HordeMergeModel.Select(state.Rooms[move.NewRoom], actor) == 0)
                     foreach (int floor in new[] { move.OldRoom, move.NewRoom })
@@ -124,6 +172,7 @@ namespace MonsterTrain2Poju.Model
                 if (actor.Status("relentless") != null && move.NewRoom > move.OldRoom)
                     for (int floor = move.OldRoom; floor < move.NewRoom; floor++)
                         if (!DestroyRoom(floor)) return Fail(error!);
+                if (move.OuterBoss) continue;
                 int recipient = HordeMergeModel.Select(state.Rooms[move.NewRoom], actor);
                 if (recipient != 0)
                 {
@@ -139,7 +188,8 @@ namespace MonsterTrain2Poju.Model
                 }
                 foreach (int floor in new[] { move.OldRoom, move.NewRoom })
                 {
-                    int[] members = state.Rooms[floor].Units.Where(unit => unit.Team == actor.Team).Select(unit => unit.Id).ToArray();
+                    int[] members = state.Rooms[floor].Units.Where(unit => unit.Team == actor.Team && unit.BumpRules?.OuterBoss != true)
+                        .Select(unit => unit.Id).ToArray();
                     foreach (int id in members)
                     {
                         CombatUnit shifted = Get(id) ?? retained[id];

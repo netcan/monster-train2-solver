@@ -22,7 +22,7 @@ namespace MonsterTrain2Poju.Probe
         internal TrainCombatProbe(ManualLogSource log, FullBattleTrace trace)
         { this.log = log; this.trace = trace; active = this; }
 
-        internal TrainCombatState Capture(bool captureContext = true)
+        internal TrainCombatState Capture(bool captureContext = true, bool includeOuterBossForBump = false)
         {
             AllGameManagers managers = AllGameManagers.Instance!;
             RoomManager rooms = managers.GetRoomManager()!;
@@ -31,16 +31,14 @@ namespace MonsterTrain2Poju.Probe
             for (int index = 0; index < rooms.GetNumRooms(); index++)
             {
                 RoomState room = rooms.GetRoom(index);
-                RoomCombatState state = trace.Capture(room, captureContext);
+                RoomCombatState state = trace.Capture(room, captureContext, includeOuterBossForBump);
                 states.Add(state);
                 var enemies = new List<CharacterState>();
                 room.AddCharactersToList(enemies, Team.Type.Heroes);
-                CombatUnit[] captured = state.Units.Where(unit => unit.Team == CombatTeam.Enemy).ToArray();
                 enemies = enemies.Where(unit => unit.IsAlive && !unit.IsDestroyed).ToList();
-                for (int unitIndex = 0; unitIndex < enemies.Count; unitIndex++)
+                foreach (CharacterState enemy in enemies)
                 {
-                    CharacterState enemy = enemies[unitIndex];
-                    movement.Add(new EnemyMovement(captured[unitIndex].Id, 1,
+                    movement.Add(new EnemyMovement(trace.UnitId(enemy), 1,
                         enemy.GetAscendsTrainAutomatically(), enemy.GetLoopsBetweenTrainFloors(), enemy.IsCompanionBoss()));
                 }
             }

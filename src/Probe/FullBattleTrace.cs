@@ -42,7 +42,8 @@ namespace MonsterTrain2Poju.Probe
             finally { normalizeDestroyedAttacker = previous; }
         }
         internal int NextPhaseSequence() => ++phaseSequence;
-        internal TrainCombatState CaptureTrain() => trainCombat.Capture();
+        internal TrainCombatState CaptureTrain(bool includeOuterBossForBump = false) =>
+            trainCombat.Capture(includeOuterBossForBump: includeOuterBossForBump);
         internal TrainCombatState CaptureEnchantmentRooms() => trainCombat.Capture(false);
         internal void InvalidateCardRules() => actions.InvalidateRules();
         internal EnemySpawnState CaptureSpawnPhase() => spawning.CapturePhase();
@@ -143,7 +144,8 @@ namespace MonsterTrain2Poju.Probe
         }
 
         internal void BeginEndTurn() => turns.Begin();
-        internal BattleTurnState CaptureDecision() => turns.Capture();
+        internal BattleTurnState CaptureDecision(bool includeOuterBossForBump = false,
+            bool ignoreOuterBossSpawnInteraction = false) => turns.Capture(includeOuterBossForBump, ignoreOuterBossSpawnInteraction);
         internal BattlePlayRules CapturePlayRules(EnemySpawnState spawn) => actions.CaptureRules(spawn);
         internal int CardId(CardState card) => projection.CaptureCards(new List<CardState> { card })[0].InstanceId;
         internal int EquippedUnitId(CardState card)
@@ -168,10 +170,12 @@ namespace MonsterTrain2Poju.Probe
         }
         internal int? PendingActionIndex => actions.Records.LastOrDefault(record => record.Actual == null)?.Index;
         internal int? PendingTurnIndex => turns.Records.LastOrDefault(record => record.Actual == null)?.Index;
-        internal void BeginCardPlay(PlayCardAction action, bool scenarioAction = false) => actions.Begin(action, scenarioAction);
+        internal void BeginCardPlay(PlayCardAction action, bool scenarioAction = false,
+            bool includeOuterBossForBump = false, bool ignoreOuterBossSpawnInteraction = false) =>
+            actions.Begin(action, scenarioAction, includeOuterBossForBump, ignoreOuterBossSpawnInteraction);
         internal void CompleteCardPlay() => actions.Complete();
 
-        internal RoomCombatState Capture(RoomState room, bool captureContext = true)
+        internal RoomCombatState Capture(RoomState room, bool captureContext = true, bool includeOuterBossForBump = false)
         {
             AllGameManagers managers = AllGameManagers.Instance ?? throw new InvalidOperationException("No game managers.");
             var interactions = new List<string>();
@@ -186,12 +190,14 @@ namespace MonsterTrain2Poju.Probe
             if (room.Attachments.Count > 0) interactions.Add("Room attachments");
             if (room.GetCurrentCorruption() > 0) interactions.Add("Room corruption");
             CharacterState? outerBoss = heroes.GetOuterTrainBossCharacter();
-            if (outerBoss != null && outerBoss.IsAlive && outerBoss.GetCurrentRoomIndex() == room.GetRoomIndex())
+            bool outerBossHere = outerBoss != null && outerBoss.IsAlive && outerBoss.GetCurrentRoomIndex() == room.GetRoomIndex();
+            if (outerBossHere && !includeOuterBossForBump)
                 interactions.Add("Outer train boss");
             if (heroes.HasNextBoss()) interactions.Add("Queued final bosses");
             var characters = new List<CharacterState>();
             room.AddCharactersToList(characters, Team.Type.Heroes);
             room.AddCharactersToList(characters, Team.Type.Monsters);
+            if (includeOuterBossForBump && outerBossHere && !characters.Contains(outerBoss!)) characters.Add(outerBoss!);
             var units = new List<CombatUnit>();
             foreach (CharacterState character in characters)
             {
@@ -264,7 +270,10 @@ namespace MonsterTrain2Poju.Probe
                 lastAttacker == null || normalizeDestroyedAttacker && (lastAttacker.IsDestroyed || !lastAttacker.IsAlive) ? 0 : UnitId(lastAttacker), statuses,
                 character.GetEquipment().Select(CardId).ToArray(), TriggerStates(character).Count, AbilityCooldownProbe.Capture(character), AbilityCooldownProbe.CaptureDictionary(character), AbilityLifecycleProbe.Rules(character.GetSourceCharacterData()),
                 new HordeBaseStats(character.GetSourceCharacterData().GetAttackDamage(), character.GetSourceCharacterData().GetHealth()), character.IsSpawning, character.SacrificeCard == null ? 0 : CardId(character.SacrificeCard), DeathSignalProbe.Capture(character),
-                BumpScenario.Enabled || (OriginalUnitRelicBatchScenario.Enabled || OriginalTriggerRelicBatchScenario.Enabled || OriginalLifecycleRelicBatchScenario.Enabled) ? new UnitBumpRules(character.GetLoopsBetweenTrainFloors(), character.IsCompanionBoss(), character.IsOuterTrainBoss()) : null);
+                BumpScenario.Enabled || (OriginalUnitRelicBatchScenario.Enabled || OriginalTriggerRelicBatchScenario.Enabled || OriginalLifecycleRelicBatchScenario.Enabled)
+                    ? new UnitBumpRules(character.GetLoopsBetweenTrainFloors(), character.IsCompanionBoss(), character.IsOuterTrainBoss(),
+                        character.IsOuterTrainBoss() && character.GetBossState().GetCurrentAttackPhase() == BossState.AttackPhase.Relentless)
+                    : null);
         }
 
         internal CombatContext CaptureContext()
