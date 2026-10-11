@@ -241,4 +241,3 @@ include the starter-cost, cardless or four-artifact batch evidence above.
 [resources]: full-battle-original-resource-relics.mt2f
 [pyreRefresh]: full-battle-pyre-resource-refresh.mt2f
 [floorCapacity]: full-battle-original-floor-capacity-relics.mt2f
-[floorCapacity]: full-battle-original-floor-capacity-relics.mt2f
