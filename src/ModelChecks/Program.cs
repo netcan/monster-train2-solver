@@ -1,6 +1,18 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
 
+if (args.Length == 1 && args[0] == "--sacrifice-pure")
+{
+    SacrificeChecks.Run();
+    Console.WriteLine("SACRIFICE-PURE-CHECKS PASS");
+    return;
+}
+if (args.Length == 2 && args[0] == "--native-actions-only")
+{
+    using var actionDocument = ModelJson.ReadFixture(args[1]);
+    BattleActionChecks.Native(actionDocument.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--relic-card-modifiers-only")
 {
     using var relicDocument = ModelJson.ReadFixture(args[1]);
@@ -356,6 +368,7 @@ BattleActionChecks.Run();
 DecisionReferenceChecks.Run();
 UnitIdentityChecks.Run();
 CardSpellChecks.Run();
+SacrificeChecks.Run();
 RoomSpellChecks.Run();
 RandomSpellChecks.Run();
 RandomStatusChecks.Run();

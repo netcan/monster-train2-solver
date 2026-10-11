@@ -71,7 +71,7 @@ namespace MonsterTrain2Poju.Model
             // Unity's CharacterState.OnDestroy clears both primary position pointers.
             // Destruction finishes at the frame boundary after the turn, while card
             // effects can still use removed actors' last-known points within a frame.
-            var retained = points.Units.Select(unit => active.Contains(unit.UnitId) ? unit :
+            var retained = points.Units.Select(unit => active.Contains(unit.UnitId) || unit.Current is { PreviewCopyId: null } ? unit :
                 new UnitSpawnPointState(unit.UnitId, null, null, unit.OuterBoss, unit.SpawnedInPreview)).ToArray();
             var usedCopies = retained.SelectMany(unit => new[] { unit.Current, unit.LastKnown })
                 .Where(point => point?.PreviewCopyId != null).Select(point => point!.PreviewCopyId!.Value).ToHashSet();

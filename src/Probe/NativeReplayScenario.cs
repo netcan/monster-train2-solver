@@ -411,6 +411,12 @@ namespace MonsterTrain2Poju.Probe
                 return;
             }
             string? modifierScenario = Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS");
+            if (fullBattle && !numericModifiersPrepared && modifierScenario == "sacrifice-effects")
+            {
+                if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Sacrifice fixture must start on deployment turn.");
+                numericModifiersPrepared = true;
+                SacrificeScenario.Prepare(managers, log);
+            }
             if (fullBattle && Environment.GetEnvironmentVariable("MT2_PROBE_ENCHANTMENT_COMBAT") == "1")
             {
                 if (EnchantmentCombatCalibration.Error != null) throw new InvalidOperationException(EnchantmentCombatCalibration.Error);
@@ -778,6 +784,7 @@ namespace MonsterTrain2Poju.Probe
                 BattleTurnState decision = FullBattleTrace.Active!.CaptureDecision();
                 pendingPlay = Environment.GetEnvironmentVariable("MT2_PROBE_FULL_BATTLE_POLICY") == "units-spells-and-junk"
                     ? BattleActionModel.ChooseUnitSpellAndJunkPlay(decision) : BattleActionModel.ChooseUnitAndJunkPlay(decision);
+                if (modifierScenario == "sacrifice-effects") pendingPlay = SacrificeScenario.Choose(decision);
                 if (modifierScenario == "rally-lethal") pendingPlay = LethalRallyScenario.ChooseNativeBossSummon(managers) ?? pendingPlay;
                 if (modifierScenario == "incant" || modifierScenario == "incant-thresholds" || (modifierScenario == "incant-relic" || modifierScenario == "incant-relic-combined")) pendingPlay = BattleActionModel.ChooseEmptySpellThenCards(decision);
                 if (modifierScenario.StartsWith("multi-summon", StringComparison.Ordinal)) pendingPlay = MultiSummonScenario.Choose(managers) ?? pendingPlay;

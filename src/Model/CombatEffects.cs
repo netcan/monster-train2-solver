@@ -194,7 +194,8 @@ namespace MonsterTrain2Poju.Model
             CardPool, SkipDuplicateInHand, Generation, UnitUpgrade, Action == null ? null : new CardActionEffect(Action.Type,
                 Action.Target, value, Action.AllowEnemy, Action.AllowPlayer, Action.Statuses, Action.Upgrade, Action.Lifetime,
                 Action.Tests, Action.Range, Action.Filters, Action.Generation, Action.OnlyIfNoEnemies, Action.CooldownParameter,
-                Action.AbilityChange, Action.CopyHeroStats, Action.ScaleUpgrade), DamageStatusMultiplier, StatusScaling, Summon, Enchantment);
+                Action.AbilityChange, Action.CopyHeroStats, Action.ScaleUpgrade, Action.DoNotFullyRemove,
+                Action.SacrificeSubtype), DamageStatusMultiplier, StatusScaling, Summon, Enchantment);
     }
 
     public sealed class CombatTriggerOrigin

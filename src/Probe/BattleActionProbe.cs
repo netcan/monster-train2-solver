@@ -131,7 +131,7 @@ namespace MonsterTrain2Poju.Probe
             }
             else if (kind == "CardEffectNULL") kind = "Null";
             else if ((data.GetCardType() == CardType.Spell || data.GetCardType() == CardType.Equipment) && effects.Length > 0 && effects.All(effect =>
-                new[] { "CardEffectCopyUnits", "CardEffectBump", "CardEffectRemoveStatusEffect", "CardEffectSetUnitAbility", "CardEffectRemoveAbility", "CardEffectResetCooldown", "CardEffectAdjustAbilityCooldown", "CardEffectAttachEquipment", "CardEffectRemoveEquipment", "CardEffectGainEnergy", "CardEffectAdjustEnergy", "CardEffectGainEnergyNextTurn", "CardEffectGainEnergyEveryTurn", "CardEffectDamage", "CardEffectDraw", "CardEffectDrawAdditionalNextTurn", "CardEffectAdjustRoomCapacity", "CardEffectDiscardHand", "CardEffectAddBattleCard", "CardEffectHeal", "CardEffectBuffDamage", "CardEffectDebuffDamage", "CardEffectBuffMaxHealth", "CardEffectDebuffMaxHealth", "CardEffectAddStatusEffect", "CardEffectFloorRearrange", "CardEffectAddCardUpgradeToUnits",
+                new[] { "CardEffectCopyUnits", "CardEffectBump", "CardEffectRemoveStatusEffect", "CardEffectSetUnitAbility", "CardEffectRemoveAbility", "CardEffectResetCooldown", "CardEffectAdjustAbilityCooldown", "CardEffectAttachEquipment", "CardEffectRemoveEquipment", "CardEffectGainEnergy", "CardEffectAdjustEnergy", "CardEffectGainEnergyNextTurn", "CardEffectGainEnergyEveryTurn", "CardEffectDamage", "CardEffectDraw", "CardEffectDrawAdditionalNextTurn", "CardEffectAdjustRoomCapacity", "CardEffectDiscardHand", "CardEffectAddBattleCard", "CardEffectHeal", "CardEffectSacrifice", "CardEffectBuffDamage", "CardEffectDebuffDamage", "CardEffectBuffMaxHealth", "CardEffectDebuffMaxHealth", "CardEffectAddStatusEffect", "CardEffectFloorRearrange", "CardEffectAddCardUpgradeToUnits",
                     "CardEffectAddTempCardUpgradeToUnits", "CardEffectRemoveTempUpgradeFromUnit",
                     "CardEffectAddTempCardUpgradeToCardsInHand", "CardEffectAddPermanentCardUpgradeToCardsInHand" }.Contains(effect.GetEffectStateName())))
             {
@@ -145,7 +145,7 @@ namespace MonsterTrain2Poju.Probe
                         effect.GetEffectStateName() == "CardEffectAddPermanentCardUpgradeToCardsInHand";
                     var excluded = new List<SubtypeData>(); effect.GetTargetCharacterExcludedSubtypes(excluded);
                     if (effect.GetUseStatusEffectStackMultiplier() || effect.GetUseHealthMissingStackMultiplier() ||
-                        effect.GetUseMagicPowerMultiplier() || !effect.GetParamSubtype().IsNone ||
+                        effect.GetUseMagicPowerMultiplier() || effect.GetEffectStateName() != "CardEffectSacrifice" && !effect.GetParamSubtype().IsNone ||
                         (handUpgrade ? effect.GetTargetMode() != TargetMode.Hand && effect.GetTargetMode() != TargetMode.Room :
                             !CardTargetModel.Supports(effect.GetTargetMode().ToString())))
                         interactions.Add("Spell scaling or target filters");
@@ -165,6 +165,7 @@ namespace MonsterTrain2Poju.Probe
                         effect.GetEffectStateName() == "CardEffectBuffMaxHealth" ? "BuffHealth" :
                         effect.GetEffectStateName() == "CardEffectDebuffMaxHealth" ? "DebuffHealth" :
                         effect.GetEffectStateName() == "CardEffectHeal" ? "Heal" :
+                        effect.GetEffectStateName() == "CardEffectSacrifice" ? "Sacrifice" :
                         effect.GetEffectStateName() == "CardEffectFloorRearrange" ? "FloorRearrange" :
                         effect.GetEffectStateName() == "CardEffectAddStatusEffect" ? "AddStatus" :
                         handUpgrade ? "HandUpgrade" : effect.GetEffectStateName() == "CardEffectRemoveTempUpgradeFromUnit" ? "RemoveUnitUpgrade" : "UnitUpgrade";
@@ -217,7 +218,9 @@ namespace MonsterTrain2Poju.Probe
                             excluded.Select(subtype => subtype.IsNone ? "" : subtype.Key).ToArray()),
                         type == "Generate" ? CardGenerationProbe.Definition(effect) : null, type == "AdjustCapacity" && effect.GetParamBool(),
                         copyHeroStats: type == "CopyUnits" ? effect.GetParamBool() : (bool?)null,
-                        scaleUpgrade: scaleUpgrade));
+                        scaleUpgrade: scaleUpgrade,
+                        doNotFullyRemove: type == "Sacrifice" ? effect.GetParamBool() : (bool?)null,
+                        sacrificeSubtype: type == "Sacrifice" && !effect.GetParamSubtype().IsNone ? effect.GetParamSubtype().Key : ""));
                 }
             }
             else interactions.Add("Unimplemented play effect " + kind);

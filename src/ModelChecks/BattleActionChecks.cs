@@ -160,6 +160,13 @@ internal static class BattleActionChecks
                 }
             }
             string? difference = ModelJson.Difference(BattleTurnChecks.Comparable(result.State!), BattleTurnChecks.Comparable(actual));
+            if (difference != null && result.State!.Spawn.Train.Context?.Statistics is BattleStatistics modeledStatistics &&
+                actual.Spawn.Train.Context?.Statistics is BattleStatistics actualStatistics)
+            {
+                var modeledKeys = modeledStatistics.Values.Select(value => (value.CardId, value.Duration, value.Type)).ToHashSet();
+                foreach (CardStatisticValue missing in actualStatistics.Values.Where(value => !modeledKeys.Contains((value.CardId, value.Duration, value.Type))))
+                    Console.WriteLine($"ACTION-STAT-MISSING index={entry.GetProperty("Index").GetInt32()} card={missing.CardId} duration={missing.Duration} type={missing.Type} actual={missing.Value}");
+            }
             Require(difference == null, "Native card action differs at index " + entry.GetProperty("Index").GetInt32() + ": " + difference);
             supported++;
         }
@@ -283,6 +290,8 @@ internal static class BattleActionChecks
             ? BattleActionModel.ChooseUnitSpellAndJunkPlay : BattleActionModel.ChooseUnitAndJunkPlay;
         if (fixture.TryGetProperty("ModifierScenario", out var scenarioPolicy) && scenarioPolicy.GetString() == "rally-lethal")
             chooser = BattleActionModel.ChooseBossRoomSummonThenCards;
+        if (fixture.TryGetProperty("ModifierScenario", out var sacrificeScenario) && sacrificeScenario.GetString() == "sacrifice-effects")
+            chooser = ChooseSacrificeEffectsThenCards;
         if (fixture.TryGetProperty("ModifierScenario", out var incantPolicy) && incantPolicy.GetString() is "incant" or "incant-thresholds" or "incant-relic" or "incant-relic-combined")
             chooser = BattleActionModel.ChooseEmptySpellThenCards;
         if (fixture.TryGetProperty("ModifierScenario", out var summonScenario) && summonScenario.GetString()?.StartsWith("multi-summon", StringComparison.Ordinal) == true)
@@ -331,6 +340,23 @@ internal static class BattleActionChecks
         }
         int hp = terminal.Spawn.Train.Rooms.SelectMany(room => room.Units).SingleOrDefault(unit => unit.IsPyre)?.Health ?? 0;
         Console.WriteLine($"NATIVE-POLICY-CHAIN-CHECKS PASS: {policyActions.Length} policy card plays, {turns.GetArrayLength()} EndTurns, final Pyre {hp}, mid-battle root and 16 parallel branches.");
+    }
+
+    private static PlayCardAction? ChooseSacrificeEffectsThenCards(BattleTurnState source)
+    {
+        const string sacrificeCardId = "17f98264-cbc5-46c4-8fd8-8f86c413e228";
+        CardToken? sacrifice = source.Spawn.Train.Context!.Cards.Hand.FirstOrDefault(card => card.DataId == sacrificeCardId);
+        if (sacrifice != null)
+        {
+            RoomCombatState room = source.Spawn.Train.Rooms.Single(item => item.RoomIndex == 0);
+            CombatUnit? target = room.Units.LastOrDefault(unit => unit.Team == CombatTeam.Player && !unit.IsPyre);
+            if (target != null)
+            {
+                var action = new PlayCardAction(sacrifice.InstanceId, 0, targetUnitId: target.Id);
+                if (BattleActionModel.PlayCard(source, action).Supported) return action;
+            }
+        }
+        return BattleActionModel.ChooseUnitSpellAndJunkPlay(source);
     }
 
     private static BattleTurnState RunPolicy(BattleTurnState root, FixtureValue[] actions, FixtureValue turns, Func<BattleTurnState, PlayCardAction?> chooser)

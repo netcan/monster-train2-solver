@@ -312,7 +312,8 @@ namespace MonsterTrain2Poju.Model
                 ResolveValue(effect, effect.Value), effect.AllowEnemy, effect.AllowPlayer, effect.Statuses, effect.Upgrade, effect.Lifetime, effect.Tests,
                 effect.Range == null ? null : new CardEffectRange(ResolveValue(effect, effect.Range.Min),
                     ResolveValue(effect, effect.Range.Max), effect.Range.Multiplier), effect.Filters, effect.Generation, effect.OnlyIfNoEnemies,
-                effect.CooldownParameter, effect.AbilityChange, effect.CopyHeroStats, effect.ScaleUpgrade)).ToArray();
+                effect.CooldownParameter, effect.AbilityChange, effect.CopyHeroStats, effect.ScaleUpgrade,
+                effect.DoNotFullyRemove, effect.SacrificeSubtype)).ToArray();
             string destination = rule.Destination;
             if (destination == "Discard" && instance.MaskDescriptor != null &&
                 CardBranchMaskModel.Resolve(instance).Traits.Contains("CardTraitSelfPurge", StringComparer.Ordinal))

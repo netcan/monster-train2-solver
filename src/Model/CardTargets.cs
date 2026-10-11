@@ -129,6 +129,8 @@ namespace MonsterTrain2Poju.Model
             CombatUnit[] candidates = room.Units.OrderBy(unit => unit.Team).Where(unit => Allowed(unit) && (!ignorePyre || !unit.IsPyre) &&
                 !unit.Statuses.Any(status => status.Id == "untouchable") && MatchesFilters(effect, unit, false, ref filterError)).ToArray();
             if (filterError != null) return new CardTargets(Array.Empty<int>(), filterError);
+            if (effect.Type == "Sacrifice" && effect.Target == "RandomInRoom" && effect.SacrificeSubtype.Length > 0)
+                candidates = candidates.Where(unit => unit.Subtypes.Contains(effect.SacrificeSubtype)).ToArray();
             if (effect.Target == "RandomInRoom")
                 return Random(candidates, room.Context, isTesting, room.Preview && room.Context?.IsolatedBattlePreview == true);
             if (effect.Target == "RoomHealTargets")
@@ -173,10 +175,17 @@ namespace MonsterTrain2Poju.Model
                 ? Array.Empty<int>() : new[] { id });
         }
 
-        internal static CardTargets RandomCandidates(TrainCombatState train, int roomIndex, CardActionEffect effect) => Collect(train, roomIndex,
+        internal static CardTargets RandomCandidates(TrainCombatState train, int roomIndex, CardActionEffect effect)
+        {
+            CardTargets result = Collect(train, roomIndex,
             new CardActionEffect(effect.Type, effect.Target == "RandomFromAnyRoom" ? "Tower" : "Room", effect.Value, effect.AllowEnemy,
                 effect.AllowPlayer, effect.Statuses, effect.Upgrade, effect.Lifetime, effect.Tests, effect.Range, effect.Filters,
-                copyHeroStats: effect.CopyHeroStats, scaleUpgrade: effect.ScaleUpgrade), Array.Empty<int>());
+                copyHeroStats: effect.CopyHeroStats, scaleUpgrade: effect.ScaleUpgrade,
+                doNotFullyRemove: effect.DoNotFullyRemove, sacrificeSubtype: effect.SacrificeSubtype), Array.Empty<int>());
+            return result.Supported && effect.Type == "Sacrifice" && effect.Target == "RandomInRoom" && effect.SacrificeSubtype.Length > 0
+                ? new CardTargets(result.UnitIds.Where(id => train.Rooms.SelectMany(room => room.Units)
+                    .Any(unit => unit.Id == id && unit.Subtypes.Contains(effect.SacrificeSubtype))).ToArray()) : result;
+        }
 
         private static bool MatchesFilters(CardActionEffect effect, CombatUnit unit, bool dropOverride, ref string? error)
         {

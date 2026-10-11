@@ -17,6 +17,7 @@ param(
     [switch] $NumericUpgrades,
     [switch] $DynamicUpgrades,
     [switch] $SacrificeUpgrades,
+    [switch] $SacrificeEffects,
     [switch] $HandUpgrades,
     [switch] $TargetedHandUpgrades,
     [switch] $Healing,
@@ -218,6 +219,7 @@ if ($StatusCallbacks) { $TriggeredStatus = $true }
 if ($PurifyQueues) { $Purify = $true }
 if ($IncantThresholds) { $Incant = $true }
 if ($CaptureJson) { $BinaryCapture = $true }
+if ($SacrificeEffects) { $Policy = 'units-spells-and-junk' }
 $workspace = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $gameRoot = Join-Path $workspace '.sandbox-game'
 $runId = (Get-Date -Format 'yyyyMMdd-HHmmss') + '-' + [Guid]::NewGuid().ToString('N').Substring(0, 8)
@@ -344,6 +346,9 @@ if ($PersistentEnchantments) {
 if ($Sentry -or $SentryLethal) {
     $environment['MT2_PROBE_MODIFIERS'] = $(if ($SentryLethal) { 'sentry-lethal' } else { 'sentry' })
     $environment['MT2_PROBE_ISOLATE_UI_RNG'] = '1'
+}
+if ($SacrificeEffects) {
+    $environment['MT2_PROBE_MODIFIERS'] = 'sacrifice-effects'
 }
 $originalBefore = Get-OriginalSignature
 $unityLog = Join-Path $profile 'unity-scenario.log'
@@ -587,6 +592,18 @@ $modifierActions = @($trace.Actions | Where-Object {
     @($definition.Effects | Where-Object { $_.Type -eq 'UnitUpgrade' -or $_.Type -eq 'HandUpgrade' }).Count -gt 0
 })
 $modifierCoverage = (-not ($DynamicUpgrades -or $SacrificeUpgrades -or $HandUpgrades -or $TargetedHandUpgrades)) -or $modifierActions.Count -gt 0
+$sacrificeEffectActions = @($trace.Actions | Where-Object {
+    $actionEntry = $_
+    $playedCard = $actionEntry.Before.Spawn.Train.Context.Cards.Hand |
+        Where-Object InstanceId -EQ $actionEntry.Action.CardInstanceId
+    $definition = $actionEntry.Before.PlayRules.Cards | Where-Object DataId -EQ $playedCard.DataId
+    @($definition.Effects | Where-Object Type -EQ 'Sacrifice').Count -gt 0
+})
+$sacrificeEffectCoverage = -not $SacrificeEffects -or @($sacrificeEffectActions | Where-Object {
+    $actionEntry = $_
+    $room = $actionEntry.Actual.Spawn.Train.Rooms | Where-Object RoomIndex -EQ $actionEntry.Action.RoomIndex
+    $actionEntry.Action.TargetUnitId -gt 0 -and @($room.Units | Where-Object Id -EQ $actionEntry.Action.TargetUnitId).Count -eq 0
+}).Count -gt 0
 $healActions = @($trace.Actions | Where-Object {
     $entry = $_
     $card = $entry.Before.Spawn.Train.Context.Cards.Hand | Where-Object InstanceId -EQ $entry.Action.CardInstanceId
@@ -1777,6 +1794,8 @@ $result = [pscustomobject]@{
     OriginalFilesUnchanged = $originalUnchanged
     ModifierActions = $modifierActions.Count
     ModifierCoverage = $modifierCoverage
+    SacrificeEffectActions = $sacrificeEffectActions.Count
+    SacrificeEffectCoverage = $sacrificeEffectCoverage
     HealActions = $healActions.Count
     HealingCoverage = $healingCoverage
     OnHealCoverage = $onHealCoverage
@@ -1842,6 +1861,7 @@ $result = [pscustomobject]@{
     EnchantmentSourceOrderCalibration = $(if ($EnchantmentWorld) { Join-Path $profile 'enchantment-source-order-calibration.mt2f' } else { $null })
     CharacterRemovalCalibration = $(if ($CharacterRemoval) { Join-Path $profile 'character-removal-calibration.mt2f' } else { $null })
 }
+if (-not $sacrificeEffectCoverage) { throw 'Native CardEffectSacrifice was not exercised through a full battle action.' }
 $result | ConvertTo-Json
 if ($SettleDeathDissolves) {
     if (-not $trace.DeathDissolveSettlementEnabled -or $trace.Schema -ne $(if ($SpawnStatusRelicsClones) { 111 } elseif ($SpawnStatusRelics) { 110 } elseif ($IncantRelic) { 109 } elseif ($AbilityIncant) { 108 } elseif ($SettleCardAnimations) { 106 } else { 105 }) -or
