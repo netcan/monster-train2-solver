@@ -70,7 +70,7 @@ internal static class RelicCardModifierChecks
         Console.WriteLine("RELIC-CARD-ABILITY-CHECKS PASS: unit ability upgrade payload survives native relic application.");
     }
 
-    internal static void Native(FixtureValue root, bool required = false)
+    internal static void Native(FixtureValue root, bool required = false, bool requireScenarioCoverage = true)
     {
         if (!root.TryGetProperty("RelicCardModifiersEnabled", out var enabled) || !enabled.GetBoolean())
         { Require(!required, "Fixture lacks enabled native relic manager card modifiers."); return; }
@@ -100,7 +100,12 @@ internal static class RelicCardModifierChecks
         bool sawExpectedRejection = statusUpgradeScenario || piercingUpgradeScenario || abilityUpgradeScenario || triggerUpgradeScenario
             ? rows.Any(row => row.Dispatches.Any(effect => !effect.Returned && !effect.UpgradeAdded))
             : rows.Any(row => !row.Reset && row.Dispatches.Any(effect => effect.Returned && !effect.UpgradeAdded));
-        Require(rows.Length > 0 && sawExpectedRejection &&
+        Require(rows.Length > 0, "Native relic manager capture contains no calls.");
+        // Composite draw fixtures acquire the already-calibrated starter relic
+        // before their trace begins and need not generate an eligible card.
+        // Compare every call; dedicated relic fixtures also require their
+        // reset, rejection and successful-generation coverage witnesses.
+        if (requireScenarioCoverage) Require(sawExpectedRejection &&
             rows.Any(row => row.Reset && row.Dispatches.Any(effect => effect.UpgradeAdded)) &&
             rows.Any(row => row.Dispatches.Any(effect => !effect.Returned)), statusUpgradeScenario
                 ? "Native manager lacks reset and failed-eligibility rejection."
@@ -247,11 +252,12 @@ internal static class RelicCardModifierChecks
             Before: row.GetProperty("Before").Deserialize<CombatContext>()!,
             Actual: row.GetProperty("Actual").Deserialize<CombatContext>()!)).ToArray();
         var births = generated.SelectMany(row => row.Actual.CardInstances!.Where(card => card.InstanceId >= row.Before.NextCardId)).ToArray();
-        if (!statusUpgradeScenario && !piercingUpgradeScenario && !selfPurgeUpgradeScenario && !abilityUpgradeScenario && !triggerUpgradeScenario)
+        if (requireScenarioCoverage && !statusUpgradeScenario && !piercingUpgradeScenario && !selfPurgeUpgradeScenario && !abilityUpgradeScenario && !triggerUpgradeScenario)
             Require(births.Any(card => card.Temporary.Upgrades.Any(upgrade => upgrade.AssetKey == "ReduceStarterCost" ||
                 rows.SelectMany(row => row.Relics).SelectMany(relic => relic.CardModifiers ?? []).Any(effect => effect.Upgrade?.DataId == upgrade.DataId))),
                 "No battle-generated eligible card received an original relic upgrade.");
-        string coverage = statusUpgradeScenario ? "card status upgrades reached summoned units" :
+        string coverage = !requireScenarioCoverage ? "all recorded composite eligibility results" :
+            statusUpgradeScenario ? "card status upgrades reached summoned units" :
             piercingUpgradeScenario ? "IgnoreArmor relic traits retained on played cards" :
             selfPurgeUpgradeScenario ? "SelfPurge relic traits retained on played cards" :
             abilityUpgradeScenario ? "unit ability upgrades reached summoned units" :

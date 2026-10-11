@@ -1,6 +1,20 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
 
+if (args.Length == 1 && args[0] == "--typed-draw-pure")
+{
+    TypedDrawChecks.Run();
+    CardMagicPowerChecks.Run();
+    CardExhaustChecks.Run();
+    return;
+}
+if (args.Length == 2 && args[0] == "--typed-draw-only")
+{
+    using var typedDocument = ModelJson.ReadFixture(args[1]);
+    TypedDrawNativeChecks.Native(typedDocument.RootElement, required: true);
+    return;
+}
+
 if (args.Length == 1 && args[0] == "--sacrifice-pure")
 {
     SacrificeChecks.Run();
@@ -324,6 +338,9 @@ TriggerCountChecks.Run();
 RelicCardlessUpgradeChecks.Run();
 RelicSpawnStatusChecks.Run();
 RelicCardModifierChecks.Run();
+TypedDrawChecks.Run();
+CardMagicPowerChecks.Run();
+CardExhaustChecks.Run();
 CardUpgradeMaskChecks.Run();
 CardTraitCompositionChecks.Run();
 CardStatusCompositionChecks.Run();

@@ -41,10 +41,10 @@ namespace MonsterTrain2Poju.Model
     public static class CardBranchMaskModel
     {
         internal static string? ValidateCreation(CombatContext context, CardCreationRule creation) =>
-            context.CardRegistry?.Any(card => card.MaskDescriptor != null) != true ? null :
+            CardExhaustModel.CreationError(creation) ?? (context.CardRegistry?.Any(card => card.MaskDescriptor != null) != true ? null :
             creation.MaskDescriptor == null || creation.MaskDescriptor.Definition.DataId != creation.DataId ||
                 creation.StartingModifiers.Upgrades.Any(upgrade => upgrade.MaskMetadata == null)
-                ? "Generated card requires its branch mask descriptor and upgrade metadata." : null;
+                ? "Generated card requires its branch mask descriptor and upgrade metadata." : null);
         public static CardUpgradeMaskCard Resolve(CardInstanceState instance, bool ignoreTemporaryCost = false)
             => CardOwnedMaskModel.Resolve(OwnedState(instance), ignoreTemporaryCost).Card;
         internal static CardOwnedMaskState OwnedState(CardInstanceState instance)

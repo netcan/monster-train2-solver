@@ -44,7 +44,7 @@ namespace MonsterTrain2Poju.Model
                 context.LastSpawnedUnitId, context.NextUnitId, context.SpawnPoints, context.SummonCatalog, context.Enchantments, context.PurifyBlockedTriggers, context.Relics, context.TriggerCounts);
             // The temporary draw entry is removed by MoveToStandByPile after AddEquipment.
             context = context.WithCards(new CardCycleState(context.Cards.Hand, context.Cards.Draw.Concat(copied.AddedCards).ToArray(),
-                context.Cards.Discard, context.Cards.Rng, context.Cards.DrawModifier, context.Cards.ExternalInteractions, context.Cards.BonusDraw));
+                context.Cards.Discard, context.Cards.Rng, context.Cards.DrawModifier, context.Cards.ExternalInteractions, context.Cards.BonusDraw, context.Cards.NextDrawUpgrades, context.Cards.NextUpgradeReferenceId));
             return new CardGenerationResult(context, copied.AddedCards);
         }
 
@@ -58,7 +58,7 @@ namespace MonsterTrain2Poju.Model
                 piles[index] = CardPileModel.Add(piles[index], new CardToken(cardId, card.DataId));
                 context = context.WithCards(new CardCycleState(context.Cards.Hand.Where(card => card.InstanceId != cardId).ToArray(),
                     context.Cards.Draw.Where(card => card.InstanceId != cardId).ToArray(), context.Cards.Discard.Where(card => card.InstanceId != cardId).ToArray(),
-                    context.Cards.Rng, context.Cards.DrawModifier, context.Cards.ExternalInteractions, context.Cards.BonusDraw));
+                    context.Cards.Rng, context.Cards.DrawModifier, context.Cards.ExternalInteractions, context.Cards.BonusDraw, context.Cards.NextDrawUpgrades, context.Cards.NextUpgradeReferenceId));
             }
             piles[index] = CardPileModel.BindEquipment(piles[index], new EquipmentStandbyCondition(cardId, hostId, false));
             return context.WithOtherPiles(piles);
@@ -94,11 +94,11 @@ namespace MonsterTrain2Poju.Model
             CardToken? card = standby?.Cards.FirstOrDefault(item => item.InstanceId == condition.CardId);
             if (card == null) return context; // Terminal clearing or an earlier return.
             CardCycleState cards = context.Cards;
-            CardPileState[] piles = context.OtherPiles!.Select(pile => pile == standby ? CardPileModel.Remove(pile, card.InstanceId) : pile).ToArray();
+            CardPileState[] piles = context.OtherPiles!.Select(pile => pile == standby ? CardPileModel.Remove(pile, card.InstanceId) : pile.Name == "Exhausted" ? CardPileModel.Remove(pile, card.InstanceId) : pile).ToArray();
             if (condition.ReturnToHand)
                 cards = new CardCycleState(cards.Hand.Count < context.MaxHandSize ? new[] { card }.Concat(cards.Hand).ToArray() : cards.Hand,
                     cards.Hand.Count < context.MaxHandSize ? cards.Draw : cards.Draw.Concat(new[] { card }).ToArray(), cards.Discard,
-                    cards.Rng, cards.DrawModifier, cards.ExternalInteractions, cards.BonusDraw);
+                    cards.Rng, cards.DrawModifier, cards.ExternalInteractions, cards.BonusDraw, cards.NextDrawUpgrades, cards.NextUpgradeReferenceId);
             else
             {
                 piles = piles.Select(pile => pile.Name == "Exhausted" ? CardPileModel.Add(pile, card) : pile).ToArray();

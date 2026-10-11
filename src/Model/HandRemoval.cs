@@ -28,6 +28,8 @@ namespace MonsterTrain2Poju.Model
             CardToken[] targets = mode == 0 || mode == 1
                 ? source.Cards.Hand.Where(card => card.InstanceId != sourceCardId).ToArray() : Array.Empty<CardToken>();
             CardPileState[]? piles = (otherPiles ?? source.OtherPiles)?.ToArray();
+            if (source.OtherPiles == null && piles?.Any(pile => pile.ExhaustConditions?.Count > 0) == true)
+                return Unsupported("Consume standby callbacks require captured context piles.");
             int[] pending = (pendingExhaustedCards ?? Array.Empty<int>()).ToArray();
             string? membershipError = CardPileModel.ValidateMembership(source.Cards, piles ?? Array.Empty<CardPileState>(), source.NextCardId);
             if (membershipError != null) return Unsupported(membershipError);
@@ -71,7 +73,7 @@ namespace MonsterTrain2Poju.Model
                 CardCycleState cards = context.Cards;
                 context = context.WithCards(new CardCycleState(cards.Hand.Where(card => card.InstanceId != token.InstanceId).ToArray(),
                     cards.Draw, mode == 0 ? cards.Discard.Concat(new[] { token }).ToArray() : cards.Discard,
-                    cards.Rng, cards.DrawModifier, cards.ExternalInteractions, cards.BonusDraw));
+                    cards.Rng, cards.DrawModifier, cards.ExternalInteractions, cards.BonusDraw, cards.NextDrawUpgrades, cards.NextUpgradeReferenceId));
                 if (mode == 0)
                 {
                     CardPileState buffer = piles!.Single(pile => pile.Name == "DiscardBuffer");
@@ -101,6 +103,11 @@ namespace MonsterTrain2Poju.Model
             void CheckStandby(int consumedId)
             {
                 if (piles == null) return;
+                if (context.OtherPiles != null)
+                {
+                    context = CardExhaustModel.ReturnReady(context.WithOtherPiles(piles));
+                    piles = context.OtherPiles!.ToArray();
+                }
                 // Native snapshots physical dictionary order, but callbacks can remove a later entry recursively.
                 CardPileState? standby = piles.FirstOrDefault(pile => pile.Name == "Standby");
                 if (standby == null) return;

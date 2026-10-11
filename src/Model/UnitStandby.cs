@@ -21,7 +21,7 @@ namespace MonsterTrain2Poju.Model
             return context.WithOtherPiles(context.OtherPiles.Select(pile => pile.UnitConditions == null ? pile :
                 new CardPileState(pile.Name, pile.Cards, pile.EntrySlots, pile.FreeSlots, pile.EquipmentConditions,
                     pile.UnitConditions.Select(binding => new UnitStandbyCondition(binding.CardId, binding.HostUnitId,
-                        binding.Ready || ready.Contains(binding.HostUnitId))).ToArray())).ToArray());
+                        binding.Ready || ready.Contains(binding.HostUnitId))).ToArray(), pile.ExhaustConditions)).ToArray());
         }
         // Global checks occur during DiscardCard and DrawHand. A death-local check only
         // checks the character's own source and does not return a differently bound card.
@@ -36,7 +36,7 @@ namespace MonsterTrain2Poju.Model
                 if (!binding.Ready) continue;
                 CardToken card = standby!.Cards.Single(item => item.InstanceId == binding.CardId);
                 context = context.WithOtherPiles(context.OtherPiles!.Select(pile => pile.Name == "Standby"
-                    ? CardPileModel.Remove(pile, card.InstanceId) : pile.Name == "Exhausted" ? CardPileModel.Add(pile, card) : pile).ToArray())
+                    ? CardPileModel.Remove(pile, card.InstanceId) : pile.Name == "Exhausted" ? CardPileModel.Add(CardPileModel.Remove(pile, card.InstanceId), card) : pile).ToArray())
                     .WithStatistics(context.LiveStatistics?.Increment(card.InstanceId, "TimesExhausted", requireTrackedCard: context.CardInstances?.Count == 0));
             }
             return context;

@@ -292,6 +292,8 @@ internal static class BattleActionChecks
             chooser = BattleActionModel.ChooseBossRoomSummonThenCards;
         if (fixture.TryGetProperty("ModifierScenario", out var sacrificeScenario) && sacrificeScenario.GetString() == "sacrifice-effects")
             chooser = ChooseSacrificeEffectsThenCards;
+        if (fixture.TryGetProperty("ModifierScenario", out var typedDrawScenario) && typedDrawScenario.GetString() == "typed-draw")
+            chooser = ChooseTypedDrawThenCards;
         if (fixture.TryGetProperty("ModifierScenario", out var incantPolicy) && incantPolicy.GetString() is "incant" or "incant-thresholds" or "incant-relic" or "incant-relic-combined")
             chooser = BattleActionModel.ChooseEmptySpellThenCards;
         if (fixture.TryGetProperty("ModifierScenario", out var summonScenario) && summonScenario.GetString()?.StartsWith("multi-summon", StringComparison.Ordinal) == true)
@@ -340,6 +342,18 @@ internal static class BattleActionChecks
         }
         int hp = terminal.Spawn.Train.Rooms.SelectMany(room => room.Units).SingleOrDefault(unit => unit.IsPyre)?.Health ?? 0;
         Console.WriteLine($"NATIVE-POLICY-CHAIN-CHECKS PASS: {policyActions.Length} policy card plays, {turns.GetArrayLength()} EndTurns, final Pyre {hp}, mid-battle root and 16 parallel branches.");
+    }
+
+    private static PlayCardAction? ChooseTypedDrawThenCards(BattleTurnState source)
+    {
+        foreach (string asset in new[] { "Channelsong", "GiftsForAGuard", "JustCause" })
+        foreach (CardToken card in source.Spawn.Train.Context!.Cards.Hand.Where(card =>
+            source.PlayRules!.Cards.Any(rule => rule.DataId == card.DataId && rule.AssetKey == asset)))
+        {
+            var action = new PlayCardAction(card.InstanceId, 0);
+            if (BattleActionModel.PlayCard(source, action).Supported) return action;
+        }
+        return BattleActionModel.ChooseUnitSpellAndJunkPlay(source);
     }
 
     private static PlayCardAction? ChooseSacrificeEffectsThenCards(BattleTurnState source)

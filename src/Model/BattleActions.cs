@@ -36,15 +36,20 @@ namespace MonsterTrain2Poju.Model
         public bool ScaleUpgrade { get; }
         public bool? DoNotFullyRemove { get; }
         public string SacrificeSubtype { get; }
+        public TypedDrawRule? TypedDraw { get; }
+        public NextDrawUpgradeRule? NextDrawUpgrade { get; }
+        public int RequiredGold { get; }
         public CardActionEffect(string type, string target, int value, bool allowEnemy, bool allowPlayer, IReadOnlyList<CombatStatus> statuses,
             CardUpgradeModifier? upgrade = null, string lifetime = "", CardEffectTests? tests = null, CardEffectRange? range = null, CardTargetFilters? filters = null,
             CardGenerationRule? generation = null, bool onlyIfNoEnemies = false, bool? cooldownParameter = null,
             AbilityChangeRule? abilityChange = null, bool? copyHeroStats = null, bool scaleUpgrade = false,
-            bool? doNotFullyRemove = null, string sacrificeSubtype = "")
+            bool? doNotFullyRemove = null, string sacrificeSubtype = "", TypedDrawRule? typedDraw = null,
+            NextDrawUpgradeRule? nextDrawUpgrade = null, int requiredGold = 0)
         { Type = type; Target = target; Value = value; AllowEnemy = allowEnemy; AllowPlayer = allowPlayer; Statuses = Array.AsReadOnly(statuses.ToArray());
             Upgrade = upgrade; Lifetime = lifetime; Tests = tests; Range = range; Filters = filters; Generation = generation; OnlyIfNoEnemies = onlyIfNoEnemies;
             CooldownParameter = cooldownParameter; AbilityChange = abilityChange; CopyHeroStats = copyHeroStats; ScaleUpgrade = scaleUpgrade;
-            DoNotFullyRemove = doNotFullyRemove; SacrificeSubtype = sacrificeSubtype; }
+            DoNotFullyRemove = doNotFullyRemove; SacrificeSubtype = sacrificeSubtype;
+            TypedDraw = typedDraw; NextDrawUpgrade = nextDrawUpgrade; RequiredGold = requiredGold; }
     }
     public sealed class RoomPlayRule
     {
@@ -230,7 +235,7 @@ namespace MonsterTrain2Poju.Model
             context = context.WithOtherPiles(piles);
             // Native direct play removes the card from hand before queued effects execute.
             context = new CombatContext(new CardCycleState(context.Cards.Hand.Where(item => item.InstanceId != card.InstanceId).ToArray(),
-                context.Cards.Draw, context.Cards.Discard, context.Cards.Rng, context.Cards.DrawModifier, context.Cards.ExternalInteractions, context.Cards.BonusDraw),
+                context.Cards.Draw, context.Cards.Discard, context.Cards.Rng, context.Cards.DrawModifier, context.Cards.ExternalInteractions, context.Cards.BonusDraw, context.Cards.NextDrawUpgrades, context.Cards.NextUpgradeReferenceId),
                 context.BattleRng, context.Gold, context.NextCardId, context.MaxHandSize, context.StatusRules, context.Statistics, context.CardInstances,
                 context.CardRegistry, context.AllScenarioBossesDead, context.NextAddedTemporaryUpgrades, context.OtherPiles, context.QueryFrame, context.KillCamActivated, context.MagicPower, context.IsolatedBattlePreview, context.EnergyState, context.RoomCapacities, context.AbilityCardCache, context.LastAbilityActivatorUnitId, context.PermanentlyDisabledAbilities, context.LastSpawnedUnitId, context.NextUnitId, context.SpawnPoints, context.SummonCatalog, context.Enchantments, context.PurifyBlockedTriggers, context.Relics, context.TriggerCounts);
             target = new RoomCombatState(target.RoomIndex, target.Deployment, target.Units, target.ExternalInteractions, context, target.Preview);
@@ -455,6 +460,13 @@ namespace MonsterTrain2Poju.Model
                 }
             }
             if (terminal) piles = piles.Select(CardPileModel.Clear).ToArray();
+            CardInstanceState? discardInstance = context.FindCard(card.InstanceId) ?? playingInstance;
+            bool consumedOnPlay = discardInstance != null && CardExhaustModel.ShouldExhaustOnPlayedDiscard(discardInstance);
+            if (consumedOnPlay && rule.HandConsumeInteractions?.Count > 0)
+                return Unsupported(string.Join("; ", rule.HandConsumeInteractions));
+            if (consumedOnPlay && rule.Effect == "SpawnMonster" &&
+                !piles.Any(pile => pile.Name == "Standby" && pile.UnitConditions != null))
+                return Unsupported("Consume summons require captured native unit standby conditions.");
             // Native DiscardCard/PurgeCard remove a naturally played card's retained buffer reference.
             piles = piles.Select(pile => pile.Name == "DiscardBuffer" ? CardPileModel.Remove(pile, card.InstanceId) : pile).ToArray();
             if (terminal && rule.Destination != "Discard" && !(rule.Destination == "Standby" && rule.Effect == "SpawnMonster"))
@@ -475,9 +487,10 @@ namespace MonsterTrain2Poju.Model
             }
             if (rule.Effect == "SpawnMonster" && spawnedId.HasValue && piles.Any(pile => pile.Name == "Standby" && pile.UnitConditions != null))
                 piles = piles.Select(pile => pile.Name == "Standby" ? CardPileModel.BindUnit(pile,
-                    new UnitStandbyCondition(card.InstanceId, spawnedId.Value)) : pile).ToArray();
+                    new UnitStandbyCondition(card.InstanceId, spawnedId.Value,
+                        !train.Rooms.SelectMany(room => room.Units).Any(unit => unit.Id == spawnedId.Value))) : pile).ToArray();
             bool summonRemoved = spawnedId.HasValue && !train.Rooms.SelectMany(room => room.Units).Any(unit => unit.Id == spawnedId.Value);
-            if (summonRemoved && !terminal)
+            if (summonRemoved && !terminal && !consumedOnPlay)
             {
                 CardPileState? standby = piles.FirstOrDefault(pile => pile.Name == "Standby");
                 CardPileState? exhausted = piles.FirstOrDefault(pile => pile.Name == "Exhausted");
@@ -492,16 +505,22 @@ namespace MonsterTrain2Poju.Model
             if (terminal) statistics = statistics?.RefreshOwnedCards(new[] { card.InstanceId });
             statistics = statistics?.Increment(card.InstanceId, "TimesDiscarded").WithPlayedCost(card.InstanceId, null);
             if (!terminal && rule.Destination == "Exhausted") statistics = statistics?.Increment(card.InstanceId, "TimesExhausted");
-            if (summonRemoved && !terminal) statistics = statistics?.Increment(card.InstanceId, "TimesExhausted");
+            if (summonRemoved && !terminal && !consumedOnPlay) statistics = statistics?.Increment(card.InstanceId, "TimesExhausted");
             if (rule.Destination == "Purged") statistics = statistics?.RemoveDeckCard(card.InstanceId);
             context = context.AfterCardEffects();
             context = new CombatContext(new CardCycleState(hand, context.Cards.Draw, discard, context.Cards.Rng,
-                context.Cards.DrawModifier, context.Cards.ExternalInteractions, context.Cards.BonusDraw), context.BattleRng,
+                context.Cards.DrawModifier, context.Cards.ExternalInteractions, context.Cards.BonusDraw, context.Cards.NextDrawUpgrades, context.Cards.NextUpgradeReferenceId), context.BattleRng,
                 context.Gold, context.NextCardId, context.MaxHandSize, context.StatusRules, statistics,
                 terminal ? playingInstance == null ? context.CardInstances : new[] { (context.FindCard(card.InstanceId) ?? playingInstance).OnDiscard(true, paidCost) } :
                 context.CardInstances?.Select(instance => instance.InstanceId == card.InstanceId
                     ? instance.OnDiscard(true, paidCost) : instance).ToArray(), context.CardRegistry, context.AllScenarioBossesDead, context.NextAddedTemporaryUpgrades,
                 context.OtherPiles == null ? null : piles, context.QueryFrame?.With(runningCombat: !terminal), context.KillCamActivated, context.MagicPower, context.IsolatedBattlePreview, context.EnergyState, context.RoomCapacities, context.AbilityCardCache, context.LastAbilityActivatorUnitId, context.PermanentlyDisabledAbilities, context.LastSpawnedUnitId, context.NextUnitId, context.SpawnPoints, context.SummonCatalog, context.Enchantments, context.PurifyBlockedTriggers, context.Relics, context.TriggerCounts);
+            if (consumedOnPlay)
+            {
+                if (context.OtherPiles == null || !context.OtherPiles.Any(pile => pile.Name == "Standby") ||
+                    !context.OtherPiles.Any(pile => pile.Name == "Exhausted")) return Unsupported("Consume requires captured standby and exhausted piles.");
+                context = CardExhaustModel.ReturnReady(CardExhaustModel.MoveConsumedToStandby(context, card));
+            }
             RoomCombatState[] rooms = train.Rooms.Select(room =>
             {
                 return new RoomCombatState(room.RoomIndex, room.Deployment, room.Units, room.ExternalInteractions, context, room.Preview);

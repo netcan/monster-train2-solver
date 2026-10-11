@@ -57,6 +57,9 @@ namespace MonsterTrain2Poju.Model
             CombatUnit? target = source.Units.FirstOrDefault(unit => unit.Id == targetId);
             if (target?.Modifiers == null || source.Context?.CardInstances == null)
                 return Unsupported("Unit upgrades require unit and card instance modifier state.");
+            CardInstanceState? spawnerCard = source.Context.FindCard(target.SpawnerCardId);
+            string? exhaustError = !directApi && lifetime == "Permanent" && spawnerCard != null ? CardExhaustModel.PermanentUpgradeError(spawnerCard, upgrade) : null;
+            if (exhaustError != null) return Unsupported(exhaustError);
             roomCapacity = RoomCapacityModel.Maximum(source.Context, source.RoomIndex, target.Team) ?? roomCapacity;
             if (upgrade.ExternalInteractions.Count > 0) return Unsupported(string.Join("; ", upgrade.ExternalInteractions));
             if (scaleUpgrade && (remove || directApi || upgrade.Unique || upgrade.DataId.Length == 0))
@@ -294,7 +297,7 @@ namespace MonsterTrain2Poju.Model
                 else if (lifetime == "Permanent") permanent = accumulatedExistingUpgrade
                     ? AccumulateExisting(permanent, upgrade) : Add(permanent, upgrade);
                 else temporary = accumulatedExistingUpgrade ? AccumulateExisting(temporary, upgrade) : Add(temporary, upgrade);
-                var changed = new CardInstanceState(card.InstanceId, card.DataId, permanent, temporary, card.LastPlayedCost, card.LastForgedAmount, card.PlayCount, card.ExternalInteractions, card.EffectCounters, card.DamageScalingTraits, card.StatusScalingTraits, card.UnitUpgradeScalingTraits, card.CapacityScalingTraits, card.EquippedUnitId, card.PlayedRoomUnitIds, card.RawPlayedRoomUnitIds, card.MaskDescriptor);
+                var changed = card.WithModifiers(permanent, temporary);
                 CombatContext context = state.Context.WithCard(changed);
                 state = new RoomCombatState(state.RoomIndex, state.Deployment, state.Units, state.ExternalInteractions, context, state.Preview);
             }

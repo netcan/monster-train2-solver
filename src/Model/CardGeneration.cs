@@ -85,6 +85,7 @@ namespace MonsterTrain2Poju.Model
                 creation.CapacityScalingTraits, creation.EquippedUnitId,
                 source.CardRegistry.Any(item => item.PlayedRoomUnitIds != null) ? Array.Empty<int>() : null,
                 source.CardRegistry.Any(item => item.RawPlayedRoomUnitIds != null) ? Array.Empty<int>() : null, creation.MaskDescriptor);
+            card = CardExhaustModel.InitializeCreated(card, source);
             string? error = CardModifierModel.UnsupportedReason(card);
             if (error != null) return Unsupported(error);
             return new CardGenerationResult(source.WithCardRegistry(source.CardRegistry.Concat(new[] { card }).ToArray())
@@ -105,16 +106,20 @@ namespace MonsterTrain2Poju.Model
             if (copying.DataId != creation.DataId) return Unsupported("Detached clone definition differs from its source.");
             string? error = CardModifierModel.UnsupportedReason(copying);
             if (error != null) return Unsupported(error);
+            if (copying.Permanent.Upgrades.Any(upgrade => CardExhaustModel.PermanentUpgradeError(
+                new CardInstanceState(source.NextCardId, creation.DataId, creation.StartingModifiers, CardModifiers.Empty(), 0, 0, 0, [], maskDescriptor: creation.MaskDescriptor), upgrade) != null))
+                return Unsupported("Cloning permanent Consume upgrades requires their installed trait lifecycle.");
             // CopyCardState does not pass an exclusion list. Clone-exclusion flags
             // apply to AddCardImpl copies, while these detached references retain them.
             var ignored = new HashSet<string>(StringComparer.Ordinal);
-            CardModifiers permanent = RefreshClone(Copy(CardModifiers.Empty(), copying.Permanent, ignored));
-            CardModifiers temporary = RefreshClone(Copy(CardModifiers.Empty(), copying.Temporary, ignored));
+            CardModifiers permanent = Copy(CardModifiers.Empty(), copying.Permanent, ignored);
+            CardModifiers temporary = Copy(CardModifiers.Empty(), copying.Temporary, ignored);
             var clone = new CardInstanceState(source.NextCardId, creation.DataId, permanent, temporary, 0, 0, 0,
                 creation.ExternalInteractions, creation.EffectCounters, creation.DamageScalingTraits, creation.StatusScalingTraits,
                 creation.UnitUpgradeScalingTraits, creation.CapacityScalingTraits, creation.EquippedUnitId,
                 copying.PlayedRoomUnitIds == null ? null : Array.Empty<int>(),
                 copying.RawPlayedRoomUnitIds == null ? null : Array.Empty<int>(), creation.MaskDescriptor);
+            clone = CardMagicPowerModel.Refresh(CardExhaustModel.InitializeCreated(clone, source));
             error = CardModifierModel.UnsupportedReason(clone);
             if (error != null) return Unsupported(error);
             CombatContext context = source.WithCardRegistry(source.CardRegistry.Concat(new[] { clone }).ToArray())
@@ -143,11 +148,18 @@ namespace MonsterTrain2Poju.Model
                 if (context.CardInstances == null && (HasModifiers(creation.StartingModifiers) || creation.EffectCounters?.Count > 0 || creation.DamageScalingTraits?.Count > 0 || creation.StatusScalingTraits?.Count > 0 || creation.UnitUpgradeScalingTraits?.Count > 0 ||
                     rule.Upgrade != null || context.NextAddedTemporaryUpgrades?.Count > 0 || rule.CopyModifiers && context.FindCard(sourceCardId) != null))
                     return Unsupported("Modified generation requires complete card instance state.");
-                CardModifiers permanent = creation.StartingModifiers, temporary = CardModifiers.Empty();
+                CardModifiers permanent = Copy(CardModifiers.Empty(), creation.StartingModifiers, new HashSet<string>(StringComparer.Ordinal)),
+                    temporary = CardModifiers.Empty();
                 CardInstanceState candidate = new(context.NextCardId, creation.DataId, permanent, temporary, 0, 0, 0,
                     creation.ExternalInteractions, creation.EffectCounters, creation.DamageScalingTraits, creation.StatusScalingTraits, creation.UnitUpgradeScalingTraits, creation.CapacityScalingTraits, creation.EquippedUnitId,
                     context.CardRegistry?.Any(card => card.PlayedRoomUnitIds != null) == true ? Array.Empty<int>() : null,
                     context.CardRegistry?.Any(card => card.RawPlayedRoomUnitIds != null) == true ? Array.Empty<int>() : null, creation.MaskDescriptor);
+                void RefreshUpgrades()
+                {
+                    context = CardMagicPowerModel.Refresh(context, candidate.WithModifiers(permanent, temporary), out CardInstanceState refreshed);
+                    permanent = refreshed.Permanent; temporary = refreshed.Temporary;
+                }
+                candidate = CardExhaustModel.InitializeCreated(candidate, context);
                 string? error = CardModifierModel.UnsupportedReason(candidate);
                 if (error != null) return Unsupported(error);
                 // AddCardImpl applies the manager's current relics before optional,
@@ -163,7 +175,8 @@ namespace MonsterTrain2Poju.Model
                 if (rule.Upgrade != null)
                 {
                     if (rule.Upgrade.ExternalInteractions.Count > 0) return Unsupported(string.Join("; ", rule.Upgrade.ExternalInteractions));
-                    temporary = UnitModifierModel.Add(temporary, rule.Upgrade);
+                    temporary = UnitModifierModel.Add(temporary, rule.Upgrade.WithSharedReference(null));
+                    RefreshUpgrades();
                 }
                 CardInstanceState? copying = rule.CopyModifiers ? context.FindCard(sourceCardId) : null;
                 if (copying != null)
@@ -176,8 +189,11 @@ namespace MonsterTrain2Poju.Model
                         {
                             CardUpgradeModifier upgrade = conditional.Upgrade;
                             if (upgrade.ExternalInteractions.Count > 0) return Unsupported(string.Join("; ", upgrade.ExternalInteractions));
-                            temporary = UnitModifierModel.Add(temporary, upgrade);
+                            temporary = UnitModifierModel.Add(temporary, upgrade.WithSharedReference(null));
+                            RefreshUpgrades();
                         }
+                    if (copying.Permanent.Upgrades.Any(upgrade => CardExhaustModel.PermanentUpgradeError(candidate, upgrade) != null))
+                        return Unsupported("Generating permanent Consume copies requires their installed trait lifecycle.");
                     // Same-card clones retain their own starting upgrades, rather than copying a second copy.
                     var ignored = new HashSet<string>(copying.DataId == creation.DataId ? permanent.Upgrades.Select(upgrade => upgrade.DataId) :
                         Array.Empty<string>(), StringComparer.Ordinal);
@@ -188,17 +204,15 @@ namespace MonsterTrain2Poju.Model
                         foreach (CardUpgradeModifier upgrade in copying.Temporary.Upgrades.Where(upgrade => upgrade.ExcludeFromClones)) ignored.Add(upgrade.DataId);
                         temporary = Copy(temporary, copying.Temporary, ignored, forAddCardPipeline: true);
                     }
-                    // Native refreshes all existing upgrades after copying. Supported card
-                    // traits have multiplier one; magic multiplier traits are explicit external
-                    // interactions on creation definitions. Anonymous/non-magic-scaled upgrades
-                    // have no reset descriptor and preserve their current values.
-                    permanent = RefreshClone(permanent);
-                    temporary = RefreshClone(temporary);
+                    // Copying and each helper application refresh all installed
+                    // upgrades against the destination card's current traits.
+                    RefreshUpgrades();
                 }
                 foreach (CardUpgradeModifier upgrade in context.NextAddedTemporaryUpgrades ?? Array.Empty<CardUpgradeModifier>())
                 {
                     if (upgrade.ExternalInteractions.Count > 0) return Unsupported(string.Join("; ", upgrade.ExternalInteractions));
                     temporary = UnitModifierModel.Add(temporary, upgrade);
+                    RefreshUpgrades();
                 }
                 var card = new CardToken(context.NextCardId, creation.DataId);
                 var hand = context.Cards.Hand.ToList(); var draw = context.Cards.Draw.ToList(); var discard = context.Cards.Discard.ToList();
@@ -217,8 +231,9 @@ namespace MonsterTrain2Poju.Model
                     creation.ExternalInteractions, creation.EffectCounters, creation.DamageScalingTraits, creation.StatusScalingTraits, creation.UnitUpgradeScalingTraits, creation.CapacityScalingTraits, creation.EquippedUnitId,
                     context.CardRegistry?.Any(card => card.PlayedRoomUnitIds != null) == true ? Array.Empty<int>() : null,
                     context.CardRegistry?.Any(card => card.RawPlayedRoomUnitIds != null) == true ? Array.Empty<int>() : null, creation.MaskDescriptor);
+                candidate = CardExhaustModel.InitializeCreated(candidate, context);
                 context = new CombatContext(new CardCycleState(hand, draw, discard, context.Cards.Rng, context.Cards.DrawModifier,
-                    context.Cards.ExternalInteractions, context.Cards.BonusDraw), rng, context.Gold, checked(context.NextCardId + 1), context.MaxHandSize,
+                    context.Cards.ExternalInteractions, context.Cards.BonusDraw, context.Cards.NextDrawUpgrades, context.Cards.NextUpgradeReferenceId), rng, context.Gold, checked(context.NextCardId + 1), context.MaxHandSize,
                     context.StatusRules, context.Statistics?.TrackCards(new[] { card.InstanceId }),
                     context.CardInstances?.Concat(new[] { candidate }).ToArray(), context.CardRegistry, context.AllScenarioBossesDead,
                     context.NextAddedTemporaryUpgrades == null ? null : Array.Empty<CardUpgradeModifier>(), context.OtherPiles, context.QueryFrame, context.KillCamActivated, context.MagicPower, context.IsolatedBattlePreview, context.EnergyState, context.RoomCapacities, context.AbilityCardCache, context.LastAbilityActivatorUnitId, context.PermanentlyDisabledAbilities, context.LastSpawnedUnitId, context.NextUnitId, context.SpawnPoints, context.SummonCatalog, context.Enchantments, context.PurifyBlockedTriggers, context.Relics, context.TriggerCounts);
@@ -226,7 +241,9 @@ namespace MonsterTrain2Poju.Model
                 // Those native statistic queries refresh deckStats after the new card
                 // enters its pile, even when the displayed scaling value is zero.
                 if (context.QueryFrame?.ActiveBattle == true && context.Statistics?.StoredCards != null &&
-                    (creation.DamageScalingTraits?.Count > 0 || creation.StatusScalingTraits?.Count > 0 || creation.UnitUpgradeScalingTraits?.Count > 0))
+                    (creation.DamageScalingTraits?.Count > 0 || creation.StatusScalingTraits?.Count > 0 || creation.UnitUpgradeScalingTraits?.Count > 0 ||
+                        creation.MaskDescriptor?.BaseTraits.Any(trait => trait.RuntimeType == "CardTraitShowCardTargets") == true &&
+                        creation.MaskDescriptor.Definition.MainEffectNames.Contains("CardEffectDrawType")))
                     context = context.WithStatistics(context.Statistics.RefreshOwnedCards(context.CardInstances!.Select(card => card.InstanceId)));
                 added.Add(card);
             }
@@ -237,11 +254,9 @@ namespace MonsterTrain2Poju.Model
         {
             CardModifiers result = new CardModifiers(source.Offsets, destination.Upgrades, source.PersistentHealth, source.ExternalInteractions);
             foreach (CardUpgradeModifier upgrade in source.Upgrades.Where(upgrade => !ignored.Contains(upgrade.DataId)))
-                result = UnitModifierModel.Add(result, forAddCardPipeline ? upgrade.ForAddCardCopy() : upgrade);
+                result = UnitModifierModel.Add(result, forAddCardPipeline ? upgrade.ForAddCardCopy() : upgrade.WithSharedReference(null));
             return result;
         }
-        private static CardModifiers RefreshClone(CardModifiers modifiers) => new CardModifiers(modifiers.Offsets,
-            modifiers.Upgrades.Select(upgrade => upgrade.RefreshCloneMagicPower()).ToArray(), modifiers.PersistentHealth, modifiers.ExternalInteractions);
         private static bool HasModifiers(CardModifiers modifiers) => modifiers.Upgrades.Count > 0 || modifiers.PersistentHealth != 0 ||
             new[] { "Damage", "Health", "Cost", "Heal", "Size", "XCost", "EquipmentLimit", "UpgradeSlotCount" }
                 .Any(stat => modifiers.Offsets.Value(stat) != 0);

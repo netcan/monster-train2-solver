@@ -56,7 +56,7 @@ namespace MonsterTrain2Poju.Model
                 if (amount != 0) listeners.Add(new BonusDrawListener(key, upgrade));
             }
             return new CardCycleState(cards.Hand, cards.Draw, cards.Discard, cards.Rng, unchecked(cards.DrawModifier + amount),
-                cards.ExternalInteractions, new BonusDrawState(counters.Select(pair => new BonusDrawCounter(pair.Key, pair.Value)).ToArray(), listeners));
+                cards.ExternalInteractions, new BonusDrawState(counters.Select(pair => new BonusDrawCounter(pair.Key, pair.Value)).ToArray(), listeners), cards.NextDrawUpgrades, cards.NextUpgradeReferenceId);
         }
         internal static BonusDrawState? CompleteDraw(BonusDrawState? source, IReadOnlyList<CardToken> drawn,
             int existingHand, int bonusStart, List<BonusUpgradeApplication> applications)
@@ -82,9 +82,8 @@ namespace MonsterTrain2Poju.Model
                 if (card == null || rule == null) { error = "Missing bonus-draw card instance or upgrade definition."; return context; }
                 var interactions = rule.UpgradeInteractions ?? rule.ExternalInteractions;
                 if (interactions.Count > 0) { error = string.Join("; ", interactions); return context; }
-                context = context.WithCard(new CardInstanceState(card.InstanceId, card.DataId, card.Permanent,
-                    UnitModifierModel.Add(card.Temporary, application.Upgrade), card.LastPlayedCost, card.LastForgedAmount, card.PlayCount,
-                    card.ExternalInteractions, card.EffectCounters, card.DamageScalingTraits, card.StatusScalingTraits, card.UnitUpgradeScalingTraits, card.CapacityScalingTraits, card.EquippedUnitId, card.PlayedRoomUnitIds, card.RawPlayedRoomUnitIds, card.MaskDescriptor));
+                context = CardMagicPowerModel.Refresh(context, card.WithModifiers(card.Permanent,
+                    UnitModifierModel.Add(card.Temporary, application.Upgrade.WithSharedReference(null))), out _);
             }
             return context;
         }

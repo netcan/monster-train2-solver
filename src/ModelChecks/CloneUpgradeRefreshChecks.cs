@@ -25,25 +25,28 @@ internal static class CloneUpgradeRefreshChecks
         string parent = JsonSerializer.Serialize(context);
         var result = CardGenerationModel.Apply(context, rule, 1);
         var clone = result.Context!.CardInstances!.Single(card => card.InstanceId == 2);
+        // ProcessAddCardUpgrades and TryAddCardStateImpl both use the upgrade
+        // helper, which refreshes all installed positive authored bases even
+        // without a clone source. Pending upgrades are not exempt from it.
         Require(result.Supported && clone.Permanent.Upgrades[0].Stats.Damage == 1 && clone.Permanent.Upgrades[0].Stats.Heal == 2 &&
             clone.Permanent.Upgrades[0].Stats.Health == 11 && clone.Permanent.Upgrades[1].Stats.Damage == 9 &&
             clone.Permanent.Upgrades[1].Stats.Heal == 7 && clone.Permanent.Offsets.Damage == 7 && clone.Temporary.Offsets.Heal == 6 &&
-            clone.Temporary.Upgrades.Select(upgrade => upgrade.Stats.Damage).SequenceEqual([5, 3, 10]) &&
-            clone.Temporary.Upgrades.Select(upgrade => upgrade.Stats.Heal).SequenceEqual([6, 4, 10]),
+            clone.Temporary.Upgrades.Select(upgrade => upgrade.Stats.Damage).SequenceEqual([5, 3, 1]) &&
+            clone.Temporary.Upgrades.Select(upgrade => upgrade.Stats.Heal).SequenceEqual([6, 4, 2]),
             "Clone refresh lost base damage/heal, protected values, other statistics, offsets or native pending-upgrade order.");
         var ordinary = CardGenerationModel.Apply(context, new("HandPile", 1, [creation], upgrade: optional), 1);
-        Require(ordinary.Context!.CardInstances!.Single(card => card.InstanceId == 2).Temporary.Upgrades[0].Stats.Damage == 8,
-            "Clone-only refresh ran during ordinary generation.");
+        Require(ordinary.Context!.CardInstances!.Single(card => card.InstanceId == 2).Temporary.Upgrades.Select(upgrade => upgrade.Stats.Damage)
+            .SequenceEqual([5, 1]), "The native upgrade helper failed to refresh optional and pending upgrades during ordinary generation.");
         var ignoreTemp = CardGenerationModel.Apply(context, new("HandPile", 1, [creation], copyModifiers: true,
             ignoreTemporaryModifiers: true, upgrade: optional), 1);
         Require(ignoreTemp.Context!.CardInstances!.Single(card => card.InstanceId == 2).Temporary.Upgrades.Select(upgrade => upgrade.Stats.Heal)
-            .SequenceEqual([6, 10]), "Ignoring source temporary upgrades skipped the destination's clone refresh.");
+            .SequenceEqual([6, 2]), "Ignoring source temporary upgrades skipped the destination's helper refresh.");
         var scaled = UnitUpgradeScalingModel.ApplyTrait(context, new(new("AnyCharacter"), "Damage", 3), 1, reset);
         Require(scaled.Supported && scaled.Upgrade!.Stats.Damage == 11 && scaled.Upgrade.CloneDamageBase == 1 && scaled.Upgrade.CloneHealBase == 2,
             "Scaling a unit upgrade discarded its immutable clone refresh definition.");
         var missingSource = CardGenerationModel.Apply(context, new("HandPile", 1, [creation], copyModifiers: true, upgrade: optional), 99);
-        Require(missingSource.Context!.CardInstances!.Single(card => card.InstanceId == 2).Temporary.Upgrades[0].Stats.Damage == 8,
-            "Missing clone source refreshed upgrades despite native early return.");
+        Require(missingSource.Context!.CardInstances!.Single(card => card.InstanceId == 2).Temporary.Upgrades.Select(upgrade => upgrade.Stats.Damage)
+            .SequenceEqual([5, 1]), "A missing clone source skipped independent optional/pending helper refreshes.");
         var unsupported = new CardCreationRule("magic", CardModifiers.Empty(), null, ["Generated card trait setup/callback CardTraitMagicPowerMultiplier"]);
         Require(!CardGenerationModel.Apply(context, new("HandPile", 1, [unsupported], copyModifiers: true), 1).Supported,
             "Unsupported magic multiplier produced a clone search child.");

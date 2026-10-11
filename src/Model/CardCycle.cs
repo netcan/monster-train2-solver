@@ -13,15 +13,22 @@ namespace MonsterTrain2Poju.Model
         public int DrawModifier { get; }
         public IReadOnlyList<string> ExternalInteractions { get; }
         public BonusDrawState? BonusDraw { get; }
+        public IReadOnlyList<NextDrawUpgradeRule>? NextDrawUpgrades { get; }
+        // Allocated only when an original next-draw upgrade enters the queue.
+        // Clones are private objects; surviving shared originals keep their IDs.
+        public int? NextUpgradeReferenceId { get; }
 
         public CardCycleState(IReadOnlyList<CardToken> hand, IReadOnlyList<CardToken> draw,
             IReadOnlyList<CardToken> discard, UnityRng rng, int drawModifier,
-            IReadOnlyList<string> externalInteractions, BonusDrawState? bonusDraw = null)
+            IReadOnlyList<string> externalInteractions, BonusDrawState? bonusDraw = null,
+            IReadOnlyList<NextDrawUpgradeRule>? nextDrawUpgrades = null, int? nextUpgradeReferenceId = null)
         {
             Hand = Array.AsReadOnly(hand.ToArray()); Draw = Array.AsReadOnly(draw.ToArray());
             Discard = Array.AsReadOnly(discard.ToArray()); Rng = rng; DrawModifier = drawModifier;
             ExternalInteractions = Array.AsReadOnly(externalInteractions.ToArray());
             BonusDraw = bonusDraw;
+            NextDrawUpgrades = nextDrawUpgrades == null ? null : Array.AsReadOnly(nextDrawUpgrades.ToArray());
+            NextUpgradeReferenceId = nextUpgradeReferenceId;
         }
     }
 
@@ -65,7 +72,7 @@ namespace MonsterTrain2Poju.Model
             }
             var applications = new List<BonusUpgradeApplication>();
             BonusDrawState? bonus = BonusDrawModel.CompleteDraw(source.BonusDraw, Array.Empty<CardToken>(), source.Hand.Count, -1, applications);
-            return new CardCycleResult(new CardCycleState(hand, draw, discard, rng, source.DrawModifier, source.ExternalInteractions, bonus), upgradeApplications: applications);
+            return new CardCycleResult(new CardCycleState(hand, draw, discard, rng, source.DrawModifier, source.ExternalInteractions, bonus, source.NextDrawUpgrades, source.NextUpgradeReferenceId), upgradeApplications: applications);
         }
 
         public static CardCycleResult DrawHand(CardCycleState source, int handSize, int maxHandSize)
@@ -96,7 +103,7 @@ namespace MonsterTrain2Poju.Model
             }
             var applications = new List<BonusUpgradeApplication>();
             BonusDrawState? bonus = BonusDrawModel.CompleteDraw(source.BonusDraw, drawn, source.Hand.Count, handSize, applications);
-            return new CardCycleResult(new CardCycleState(hand, draw, discard, rng, 0, source.ExternalInteractions, bonus), upgradeApplications: applications);
+            return new CardCycleResult(new CardCycleState(hand, draw, discard, rng, 0, source.ExternalInteractions, bonus, source.NextDrawUpgrades, source.NextUpgradeReferenceId), upgradeApplications: applications);
         }
 
         public static CardCycleResult DiscardHand(CardCycleState source)
@@ -105,7 +112,7 @@ namespace MonsterTrain2Poju.Model
                 return new CardCycleResult(null, string.Join("; ", source.ExternalInteractions));
             return new CardCycleResult(new CardCycleState(Array.Empty<CardToken>(), source.Draw,
                 source.Discard.Concat(source.Hand.Reverse()).ToArray(), source.Rng, source.DrawModifier,
-                source.ExternalInteractions, source.BonusDraw));
+                source.ExternalInteractions, source.BonusDraw, source.NextDrawUpgrades, source.NextUpgradeReferenceId));
         }
     }
 }

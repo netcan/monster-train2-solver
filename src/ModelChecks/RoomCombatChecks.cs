@@ -162,10 +162,12 @@ internal static class RoomCombatChecks
         SpawnEnchantChecks.Native(fixture);
         PersistentEnchantmentChecks.Native(fixture);
         BattleActionChecks.Native(fixture);
+        TypedDrawNativeChecks.Native(fixture);
         CardBranchMaskChecks.Native(fixture);
         if (fixture.TryGetProperty("ModifierScenario", out var relicScenario) && relicScenario.GetString() == "original-relic-batch")
             OriginalRelicBatchChecks.Native(fixture);
-        else RelicCardModifierChecks.Native(fixture);
+        else RelicCardModifierChecks.Native(fixture, requireScenarioCoverage:
+            !fixture.TryGetProperty("ModifierScenario", out var integrationScenario) || integrationScenario.GetString() != "typed-draw");
         UnitIdentityChecks.Native(fixture);
         SpawnPointChecks.Native(fixture);
         BattleSpawnPointChecks.Native(fixture);

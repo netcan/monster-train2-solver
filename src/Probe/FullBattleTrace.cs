@@ -286,7 +286,8 @@ namespace MonsterTrain2Poju.Probe
                     BattleSpawnPointProbe.Decisions.RemoveRange(decisionStart, BattleSpawnPointProbe.Decisions.Count - decisionStart);
             } while (observedCards != projection.KnownCards.Count() || observedUnits != identities.Count);
             var context = new CombatContext(new CardCycleState(state.Hand, state.Draw, state.Discard,
-                new UnityRng(draw[0], draw[1], draw[2], draw[3]), state.DrawModifier, Array.Empty<string>(), bonusDraw),
+                new UnityRng(draw[0], draw[1], draw[2], draw[3]), state.DrawModifier, Array.Empty<string>(), bonusDraw,
+                TypedDrawProbe.CaptureQueue(cards), TypedDrawProbe.NextUpgradeReferenceId),
                 new UnityRng(battle[0], battle[1], battle[2], battle[3]), state.Gold, projection.NextCardId,
                 cards.GetMaxHandSize(), new[] { "armor", "valor", "pyregel", "relentless", "cooldown", "unit_ability", "unit_ability_available", "horde" }.Concat(TriggeredSummonProbe.Enabled || UnitCloneScenario.Enabled || UnitCopyScenario.Enabled || HeroCopyScenario.Enabled ? new[] { "cardless" } : Array.Empty<string>()).Concat(new[] { "undying" }).Select(id => BattleActionProbe.Status(id, 1)).ToArray(),
                 statistics, instances, registry, managers.GetCombatManager()!.AllScenarioBossesDead,
@@ -484,7 +485,7 @@ namespace MonsterTrain2Poju.Probe
             string temporary = path + ".tmp";
             var snapshot = new
             {
-                Schema = SpawnStatusRelicScenario.Prepared ? SpawnStatusRelicScenario.Clones ? 111 : 110 : TriggerCountScenario.Prepared ? 109 : AbilityIncantScenario.Prepared ? 108 : CardAnimationSettlement.Enabled ? 106 : DeathDissolveSettlement.Enabled ? 105 : EnchantmentBattleScenario.Prepared ? 104 : 103,
+                Schema = TypedDrawProbe.Enabled ? 112 : SpawnStatusRelicScenario.Prepared ? SpawnStatusRelicScenario.Clones ? 111 : 110 : TriggerCountScenario.Prepared ? 109 : AbilityIncantScenario.Prepared ? 108 : CardAnimationSettlement.Enabled ? 106 : DeathDissolveSettlement.Enabled ? 105 : EnchantmentBattleScenario.Prepared ? 104 : 103,
                 DeathDissolveSettlementEnabled = DeathDissolveSettlement.Enabled,
                 DeathDissolveSettlements = DeathDissolveSettlement.Records,
                 DeathDissolveCallbacks = DeathDissolveSettlement.Callbacks,
@@ -511,6 +512,9 @@ namespace MonsterTrain2Poju.Probe
                 NumericRanges = NumericRangeScenario.Samples,
                 FilteredTargets = TargetFilterScenario.Targets,
                 HandRemovals = HandRemovalScenario.Records,
+                TypedDrawEffects = TypedDrawProbe.Records,
+                TypedDrawCards = TypedDrawProbe.Draws,
+                TypedDrawClears = TypedDrawProbe.Clears,
                 CardGenerations = GenerationScenario.Records,
                 DamageScaling = DamageScalingScenario.Samples,
                 StatusScaling = StatusScalingScenario.Samples,

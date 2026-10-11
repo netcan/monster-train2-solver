@@ -40,7 +40,7 @@ internal static class CardCycleChecks
                 Require(Comparable(context.Cards) == Comparable(before), "Pre-draw standby context differs from the actual draw input.");
                 var prepared = EquipmentModel.ReturnStandby(context, cycle.GetProperty("LivingUnitIds").Deserialize<int[]>()!).Cards;
                 before = new CardCycleState(prepared.Hand, prepared.Draw, prepared.Discard, prepared.Rng, prepared.DrawModifier,
-                    before.ExternalInteractions, prepared.BonusDraw);
+                    before.ExternalInteractions, prepared.BonusDraw, prepared.NextDrawUpgrades, prepared.NextUpgradeReferenceId);
             }
             CardCycleResult result = cycle.GetProperty("Kind").GetString() == "Draw"
                 ? CardCycleModel.DrawHand(before, cycle.GetProperty("HandSize").GetInt32(),
@@ -59,7 +59,7 @@ internal static class CardCycleChecks
     }
 
     private static string Comparable(CardCycleState state) => JsonSerializer.Serialize(new
-        { state.Hand, state.Draw, state.Discard, state.Rng, state.DrawModifier, state.BonusDraw });
+        { state.Hand, state.Draw, state.Discard, state.Rng, state.DrawModifier, state.BonusDraw, state.NextDrawUpgrades, state.NextUpgradeReferenceId });
     private static CardCycleState Read(FixtureValue state)
     {
         // System.Text.Json needs an explicit adapter for the immutable four-word RNG struct.
@@ -71,7 +71,9 @@ internal static class CardCycleChecks
                 rng.GetProperty("S2").GetUInt32(), rng.GetProperty("S3").GetUInt32()),
             state.GetProperty("DrawModifier").GetInt32(),
             state.GetProperty("ExternalInteractions").Deserialize<string[]>()!,
-            state.TryGetProperty("BonusDraw", out var bonus) ? bonus.Deserialize<BonusDrawState>() : null);
+            state.TryGetProperty("BonusDraw", out var bonus) ? bonus.Deserialize<BonusDrawState>() : null,
+            state.TryGetProperty("NextDrawUpgrades", out var next) ? next.Deserialize<NextDrawUpgradeRule[]>() : null,
+            state.TryGetProperty("NextUpgradeReferenceId", out var reference) ? reference.Deserialize<int?>() : null);
     }
     private static void Require(bool condition, string message)
     { if (!condition) throw new InvalidOperationException(message); }

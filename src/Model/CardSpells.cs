@@ -243,10 +243,10 @@ namespace MonsterTrain2Poju.Model
                     effect = new CardActionEffect(effect.Type, effect.Target, effect.Value, effect.AllowEnemy, effect.AllowPlayer,
                         new[] { effect.Statuses[chosen.Value] }, effect.Upgrade, effect.Lifetime, effect.Tests, effect.Range, effect.Filters,
                         effect.Generation, effect.OnlyIfNoEnemies, effect.CooldownParameter, effect.AbilityChange,
-                        effect.CopyHeroStats, effect.ScaleUpgrade, effect.DoNotFullyRemove, effect.SacrificeSubtype);
+                        effect.CopyHeroStats, effect.ScaleUpgrade, effect.DoNotFullyRemove, effect.SacrificeSubtype, effect.TypedDraw, effect.NextDrawUpgrade, effect.RequiredGold);
                 }
                 UnityRng effectRng = state.Context!.BattleRng;
-                if (effect.Type != "CopyUnits" && effect.Type != "Bump" && effect.Type != "DiscardHand" && effect.Type != "Generate" && effect.Type != "AdjustCapacity" && !AbilityCooldownModel.IsEffect(effect.Type) && !AbilityLifecycleModel.IsEffect(effect.Type)) effect = Sample(effect, ref effectRng);
+                if (effect.Type != "CopyUnits" && effect.Type != "Bump" && effect.Type != "DiscardHand" && effect.Type != "Generate" && effect.Type != "AdjustCapacity" && effect.Type != "ScheduleNextDrawUpgrade" && !AbilityCooldownModel.IsEffect(effect.Type) && !AbilityLifecycleModel.IsEffect(effect.Type)) effect = Sample(effect, ref effectRng);
                 state = WithContext(state, state.Context.WithBattleRng(effectRng));
                 if (effect.Type == "CopyUnits")
                 {
@@ -284,6 +284,19 @@ namespace MonsterTrain2Poju.Model
                         BonusDrawState.CardKey(sourceCardId, index), effect.Value, effect.Upgrade)));
                     continue;
                 }
+                if (effect.Type == "ScheduleNextDrawUpgrade")
+                {
+                    CombatContext context = NextDrawUpgradeModel.Schedule(state.Context!, effect.NextDrawUpgrade!, effect.RequiredGold);
+                    state = WithContext(state, context);
+                    continue;
+                }
+                if (effect.Type == "DrawType")
+                {
+                    TypedDrawResult draw = TypedDrawModel.Draw(state.Context!, effect.TypedDraw!, effect.Value, sourceCardId, definitions);
+                    if (!draw.Supported) return UnsupportedTrain(draw.UnsupportedReason!);
+                    state = WithContext(state, draw.Context!);
+                    continue;
+                }
                 if (EnergyModel.IsEffect(effect.Type))
                 {
                     state = WithContext(state, EnergyModel.Apply(state.Context!, effect.Type, effect.Value));
@@ -317,14 +330,9 @@ namespace MonsterTrain2Poju.Model
                     CombatContext context = state.Context!;
                     // The native -1 mode uses max hand size, despite its starting-hand description.
                     int count = effect.Value == -1 ? Math.Max(0, context.MaxHandSize - context.Cards.Hand.Count + 1) : effect.Value;
-                    CardCycleResult drawn = CardCycleModel.DrawCards(context.Cards, count, context.MaxHandSize, sourceCardId);
+                    TypedDrawResult drawn = NextDrawUpgradeModel.DrawCards(context, count, sourceCardId, definitions);
                     if (!drawn.Supported) return UnsupportedTrain(drawn.UnsupportedReason!);
-                    BattleStatistics? statistics = context.Statistics;
-                    foreach (CardToken card in drawn.State!.Hand.Take(drawn.State.Hand.Count - context.Cards.Hand.Count).Reverse())
-                        statistics = statistics?.Increment(card.InstanceId, "TimesDrawn");
-                    context = BonusDrawModel.ApplyUpgrades(context.WithCards(drawn.State).WithStatistics(statistics), drawn, definitions, out string? bonusError);
-                    if (bonusError != null) return UnsupportedTrain(bonusError);
-                    state = WithContext(state, context);
+                    state = WithContext(state, drawn.Context!);
                     continue;
                 }
                 if (effect.Type == "Sacrifice")
@@ -702,10 +710,10 @@ namespace MonsterTrain2Poju.Model
             {
                 string? filterError = effect.Filters?.Validate();
                 if (filterError != null) return filterError;
-                if (effect.Range != null && effect.Type != "CopyUnits" && effect.Type != "Bump" && effect.Type != "DiscardHand" && effect.Type != "Generate" && effect.Type != "AdjustCapacity" &&
+                if (effect.Range != null && effect.Type != "CopyUnits" && effect.Type != "Bump" && effect.Type != "DiscardHand" && effect.Type != "Generate" && effect.Type != "AdjustCapacity" && effect.Type != "ScheduleNextDrawUpgrade" &&
                     !AbilityLifecycleModel.IsEffect(effect.Type))
                 {
-                    if (!EnergyModel.IsEffect(effect.Type) && !new[] { "Damage", "Heal", "AddStatus", "BuffAttack", "DebuffAttack", "BuffHealth", "DebuffHealth", "Draw", "DrawNextTurn" }.Contains(effect.Type))
+                    if (!EnergyModel.IsEffect(effect.Type) && !new[] { "Damage", "Heal", "AddStatus", "BuffAttack", "DebuffAttack", "BuffHealth", "DebuffHealth", "Draw", "DrawType", "DrawNextTurn" }.Contains(effect.Type))
                         return "Unmodeled range consumer " + effect.Type;
                     string? rangeError = effect.Range.Validate();
                     if (rangeError != null) return rangeError;
@@ -716,7 +724,21 @@ namespace MonsterTrain2Poju.Model
                     if (effect.Target != "Hand" && effect.Target != "Room") return "Unmodeled hand upgrade target collection.";
                     continue;
                 }
-                if (!CardTargetModel.Supports(effect.Target)) return "Unimplemented spell targeting " + effect.Target;
+                if (!CardOnlyDrawTarget(effect) && !CardTargetModel.Supports(effect.Target)) return "Unimplemented spell targeting " + effect.Target;
+                if (effect.Type == "ScheduleNextDrawUpgrade")
+                {
+                    if (effect.NextDrawUpgrade == null) return "Missing next-draw upgrade definition.";
+                    if (source.Context.Cards.NextDrawUpgrades == null) return "Missing captured next-draw upgrade queue.";
+                    if (!source.Context.Cards.NextUpgradeReferenceId.HasValue) return "Missing captured next-draw upgrade reference allocation.";
+                    if (effect.NextDrawUpgrade.Upgrade.ExternalInteractions.Count > 0)
+                        return string.Join("; ", effect.NextDrawUpgrade.Upgrade.ExternalInteractions);
+                    continue;
+                }
+                if (effect.Type == "DrawType")
+                {
+                    if (effect.TypedDraw == null) return "Missing typed-draw definition.";
+                    continue;
+                }
                 if (effect.Type == "RemoveStatus")
                 {
                     string? removalError = StatusRemovalModel.Validate(effect, source);
@@ -781,7 +803,7 @@ namespace MonsterTrain2Poju.Model
 
         private static CardTargets Collect(TrainCombatState state, int roomIndex, CardActionEffect effect, IReadOnlyList<int> last,
             CombatUnit? initial, int dropPosition, int index, BattlePlayRules? definitions, bool isTesting = false,
-            IReadOnlyDictionary<int, int>? pendingDeadRooms = null, IReadOnlyDictionary<int, int>? positions = null, int selfUnitId = 0) => effect.Type == "HandUpgrade" && effect.Target == "Hand"
+            IReadOnlyDictionary<int, int>? pendingDeadRooms = null, IReadOnlyDictionary<int, int>? positions = null, int selfUnitId = 0) => effect.Type == "HandUpgrade" && effect.Target == "Hand" || CardOnlyDrawTarget(effect)
                 ? new CardTargets(Array.Empty<int>()) : CardTargetModel.Collect(state, roomIndex, effect, last, initial?.Team, dropPosition,
                     index == 0, isTesting, definitions?.Rooms.FirstOrDefault(room => room.IsPyre)?.RoomIndex, pendingDeadRooms, positions, selfUnitId);
 
@@ -798,13 +820,14 @@ namespace MonsterTrain2Poju.Model
         {
             if (effect.Type == "AdjustCapacity") return !preview && !bossDead && RoomCapacityModel.Test(room, effect);
             if (EnergyModel.IsEffect(effect.Type)) return !preview && !bossDead && EnergyModel.Test(context!, effect.Type);
-            if (preview && (effect.Type == "Draw" || effect.Type == "DrawNextTurn" || effect.Type == "DiscardHand" || effect.Type == "Generate")) return false;
-            if (bossDead && !(effect.Tests?.CanPlayAfterBossDead ?? (effect.Type != "HandUpgrade" && effect.Type != "Draw" && effect.Type != "DrawNextTurn" && effect.Type != "DiscardHand" && effect.Type != "Generate"))) return false;
+            if (preview && (effect.Type == "Draw" || effect.Type == "DrawType" || effect.Type == "ScheduleNextDrawUpgrade" || effect.Type == "DrawNextTurn" || effect.Type == "DiscardHand" || effect.Type == "Generate")) return false;
+            if (bossDead && !(effect.Tests?.CanPlayAfterBossDead ?? (effect.Type != "HandUpgrade" && effect.Type != "Draw" && effect.Type != "DrawType" && effect.Type != "ScheduleNextDrawUpgrade" && effect.Type != "DrawNextTurn" && effect.Type != "DiscardHand" && effect.Type != "Generate"))) return false;
             if (effect.Type == "Generate" && effect.Generation?.RequireHandSpace == true && context != null && context.Cards.Hand.Count >= context.MaxHandSize) return false;
             switch (effect.Type)
             {
                 case "RemoveStatus": return string.IsNullOrEmpty(effect.Filters?.Subtype) || count > 0;
                 case "Draw": return context != null && context.Cards.Hand.Count - 1 < context.MaxHandSize;
+                case "ScheduleNextDrawUpgrade": return context != null && (Math.Abs(effect.RequiredGold) == 0 || context.Gold >= Math.Abs(effect.RequiredGold));
                 case "Damage": return effect.Value >= 0 && (effect.Range == null || effect.Range.Max > 0) &&
                     (effect.Target != "DropTargetCharacter" || count > 0);
                 case "Heal": return effect.Target == "Room" || count > 0;
@@ -822,6 +845,9 @@ namespace MonsterTrain2Poju.Model
         }
 
         private static bool AttackChange(CardActionEffect effect) => effect.Type == "BuffAttack" || effect.Type == "DebuffAttack";
+        private static bool CardOnlyDrawTarget(CardActionEffect effect) =>
+            (effect.Type == "DrawType" || effect.Type == "ScheduleNextDrawUpgrade") &&
+            (effect.Target == "DrawPile" || effect.Target == "Hand" || effect.Target == "LastDrawnCard");
         private static bool QuantityTest(CardActionEffect effect) => effect.Type == "Damage" || effect.Type == "Draw";
         private static CardActionEffect Sample(CardActionEffect effect, ref UnityRng rng)
         {
@@ -830,7 +856,7 @@ namespace MonsterTrain2Poju.Model
             return new CardActionEffect(effect.Type, effect.Target, draw.Value, effect.AllowEnemy, effect.AllowPlayer,
                 effect.Statuses, effect.Upgrade, effect.Lifetime, effect.Tests, effect.Range, effect.Filters, effect.Generation,
                 effect.OnlyIfNoEnemies, effect.CooldownParameter, effect.AbilityChange, effect.CopyHeroStats, effect.ScaleUpgrade,
-                effect.DoNotFullyRemove, effect.SacrificeSubtype);
+                effect.DoNotFullyRemove, effect.SacrificeSubtype, effect.TypedDraw, effect.NextDrawUpgrade, effect.RequiredGold);
         }
         private static int TestCount(TrainCombatState state, CardActionEffect effect, CardTargets targets) => effect.Type == "RemoveStatus" &&
             !string.IsNullOrEmpty(effect.Filters?.Subtype) ? state.Rooms.SelectMany(room => room.Units).Count(unit =>

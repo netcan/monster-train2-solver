@@ -17,22 +17,27 @@ namespace MonsterTrain2Poju.Model
             if (lifetime != "Permanent" && lifetime != "TemporaryUntilEndOfBattle")
                 return Unsupported("Unimplemented hand upgrade lifetime.");
             CombatContext context = source.Context;
-            var instances = context.CardInstances.ToDictionary(card => card.InstanceId);
             foreach (CardToken token in context.Cards.Hand)
             {
-                if (!instances.TryGetValue(token.InstanceId, out CardInstanceState? card) || card.DataId != token.DataId)
+                CardInstanceState? card = context.FindCard(token.InstanceId);
+                if (card == null || card.DataId != token.DataId)
                     return Unsupported("Missing or mismatched upgraded card instance.");
                 CardPlayRule? rule = definitions.Cards.FirstOrDefault(item => item.DataId == card.DataId);
                 if (rule == null) return Unsupported("Missing upgraded card trait definition.");
                 var interactions = rule.UpgradeInteractions ?? rule.ExternalInteractions;
                 if (interactions.Count > 0) return Unsupported(string.Join("; ", interactions));
-                instances[card.InstanceId] = new CardInstanceState(card.InstanceId, card.DataId,
-                    lifetime == "Permanent" ? UnitModifierModel.Add(card.Permanent, upgrade) : card.Permanent,
-                    lifetime == "TemporaryUntilEndOfBattle" ? UnitModifierModel.Add(card.Temporary, upgrade) : card.Temporary,
-                    card.LastPlayedCost, card.LastForgedAmount, card.PlayCount, card.ExternalInteractions, card.EffectCounters, card.DamageScalingTraits, card.StatusScalingTraits, card.UnitUpgradeScalingTraits, card.CapacityScalingTraits, card.EquippedUnitId, card.PlayedRoomUnitIds, card.RawPlayedRoomUnitIds, card.MaskDescriptor);
+                string? exhaustError = lifetime == "Permanent" ? CardExhaustModel.PermanentUpgradeError(card, upgrade) : null;
+                if (exhaustError != null) return Unsupported(exhaustError);
+                // The CardUpgradeData overload constructs a distinct object for
+                // each hand card; only existing queue originals can be shared.
+                CardUpgradeModifier created = upgrade.WithSharedReference(null);
+                CardUpgradeModifier applied = lifetime == "Permanent" ? CardMagicPowerModel.Scale(created, CardMagicPowerModel.Multiplier(card)) : created;
+                context = CardMagicPowerModel.Refresh(context, card.WithModifiers(
+                    lifetime == "Permanent" ? UnitModifierModel.Add(card.Permanent, applied) : card.Permanent,
+                    lifetime == "TemporaryUntilEndOfBattle" ? UnitModifierModel.Add(card.Temporary, applied) : card.Temporary), out _);
             }
             return new RoomCombatResult(new RoomCombatState(source.RoomIndex, source.Deployment, source.Units,
-                source.ExternalInteractions, context.WithCardInstances(instances.Values.ToArray()), source.Preview),
+                source.ExternalInteractions, context, source.Preview),
                 RoomOutcome.Exchanged, 0, new List<CombatEvent>());
         }
         private static RoomCombatResult Unsupported(string reason) =>

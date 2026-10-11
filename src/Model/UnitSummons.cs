@@ -272,10 +272,7 @@ namespace MonsterTrain2Poju.Model
             RoomCombatResult applied = RoomCombatModel.ApplyDirectUnitUpgrade(source, unitId, upgrade, false, "", null, deferCallbacks);
             if (!applied.Supported || source.Preview || spawnerCardId == 0) return applied;
             CardInstanceState card = applied.State!.Context!.FindCard(spawnerCardId)!;
-            var changed = new CardInstanceState(card.InstanceId, card.DataId, card.Permanent,
-                UnitModifierModel.Add(card.Temporary, upgrade), card.LastPlayedCost, card.LastForgedAmount, card.PlayCount,
-                card.ExternalInteractions, card.EffectCounters, card.DamageScalingTraits, card.StatusScalingTraits,
-                card.UnitUpgradeScalingTraits, card.CapacityScalingTraits, card.EquippedUnitId, card.PlayedRoomUnitIds, card.RawPlayedRoomUnitIds, card.MaskDescriptor);
+            var changed = card.WithModifiers(card.Permanent, UnitModifierModel.Add(card.Temporary, upgrade));
             var state = new RoomCombatState(applied.State.RoomIndex, applied.State.Deployment, applied.State.Units,
                 applied.State.ExternalInteractions, applied.State.Context.WithCard(changed), applied.State.Preview);
             return new RoomCombatResult(state, applied.Outcome, applied.Rounds, applied.Events.ToList(),

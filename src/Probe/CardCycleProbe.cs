@@ -33,7 +33,7 @@ namespace MonsterTrain2Poju.Probe
             string? relicError = RelicModel.Validate(RelicProbe.Capture(managers));
             if (relicError != null) interactions.Add(relicError);
             if (managers.GetSaveManager().GetMutators().Count > 0) interactions.Add("Mutators");
-            foreach (string field in new[] { "nonDrawableCards", "nextDrawnTempCardUpgrades" })
+            foreach (string field in new[] { "nonDrawableCards" })
                 if (drawing && ((ICollection)AccessTools.Field(typeof(CardManager), field).GetValue(cards)).Count > 0)
                     interactions.Add(field);
             var standby = (Dictionary<CardState, RemoveFromStandByCondition>)AccessTools.Field(
@@ -51,8 +51,8 @@ namespace MonsterTrain2Poju.Probe
             {
                 foreach (CardTraitState trait in card.GetTraitStates())
                 {
-                    // SelfPurge acts only when wasPlayed=true; DiscardHand sets it false.
-                    if (!(kind == "Discard" && trait is CardTraitSelfPurge) &&
+                    // SelfPurge and Consume act only when wasPlayed=true; DiscardHand sets it false.
+                    if (!(kind == "Discard" && (trait is CardTraitSelfPurge || trait is CardTraitExhaustState)) &&
                         callbacks.Any(callback => trait.GetType().GetMethod(callback,
                         BindingFlags.Instance | BindingFlags.Public)?.DeclaringType != typeof(CardTraitState)))
                         interactions.Add(trait.GetType().Name + " " + kind + " callback");
@@ -76,7 +76,8 @@ namespace MonsterTrain2Poju.Probe
             uint[] words = RngCalibration.Words(RandomManager.GetState(RngId.CardDraw));
             return new CardCycleState(state.Hand, state.Draw, state.Discard,
                 new UnityRng(words[0], words[1], words[2], words[3]), state.DrawModifier,
-                interactions.Distinct().OrderBy(value => value, StringComparer.Ordinal).ToArray(), BonusDrawProbe.Capture(cards, FullBattleTrace.Active!));
+                interactions.Distinct().OrderBy(value => value, StringComparer.Ordinal).ToArray(), BonusDrawProbe.Capture(cards, FullBattleTrace.Active!),
+                TypedDrawProbe.CaptureQueue(cards), TypedDrawProbe.NextUpgradeReferenceId);
         }
 
         private IEnumerator Wrap(IEnumerator native, CardManager cards, string kind, int handSize)
@@ -94,7 +95,7 @@ namespace MonsterTrain2Poju.Probe
                     int[]? livingIds = kind == "Draw" ? trace.CaptureTrain().Rooms.SelectMany(room => room.Units).Select(unit => unit.Id).ToArray() : null;
                     CardCycleState prepared = standbyContext == null ? before : EquipmentModel.ReturnStandby(standbyContext, livingIds!).Cards;
                     prepared = new CardCycleState(prepared.Hand, prepared.Draw, prepared.Discard, prepared.Rng, prepared.DrawModifier,
-                        before.ExternalInteractions, prepared.BonusDraw);
+                        before.ExternalInteractions, prepared.BonusDraw, prepared.NextDrawUpgrades, prepared.NextUpgradeReferenceId);
                     record = new Record
                     {
                         Index = records.Count, Turn = managers.GetCombatManager()!.GetTurnCount(), Kind = kind,
@@ -126,7 +127,7 @@ namespace MonsterTrain2Poju.Probe
         }
 
         private static JToken Comparable(CardCycleState state) => JToken.FromObject(new
-        { state.Hand, state.Draw, state.Discard, state.Rng, state.DrawModifier, state.BonusDraw });
+        { state.Hand, state.Draw, state.Discard, state.Rng, state.DrawModifier, state.BonusDraw, state.NextDrawUpgrades, state.NextUpgradeReferenceId });
 
         private Record? BeginSpellDraw(CardManager cards, int count, CardState? playedCard, CardType cardType)
         {
@@ -136,7 +137,7 @@ namespace MonsterTrain2Poju.Probe
             CardCycleState before = Capture(cards, "SpellDraw");
             int id = FullBattleTrace.Active.CardId(playedCard);
             if (cardType != CardType.Invalid) before = new CardCycleState(before.Hand, before.Draw, before.Discard,
-                before.Rng, before.DrawModifier, before.ExternalInteractions.Concat(new[] { "Unmodeled typed draw" }).ToArray(), before.BonusDraw);
+                before.Rng, before.DrawModifier, before.ExternalInteractions.Concat(new[] { "Unmodeled typed draw" }).ToArray(), before.BonusDraw, before.NextDrawUpgrades, before.NextUpgradeReferenceId);
             var record = new Record { Index = records.Count, Turn = managers.GetCombatManager()!.GetTurnCount(), Kind = "SpellDraw",
                 HandSize = count, MaxHandSize = cards.GetMaxHandSize(), PlayedCardId = id, Before = before,
                 Predicted = CardCycleModel.DrawCards(before, count, cards.GetMaxHandSize(), id) };

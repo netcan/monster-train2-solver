@@ -57,7 +57,7 @@ namespace MonsterTrain2Poju.Probe
                 }
                 return new CardInstanceState(state.InstanceId, state.DataId, state.Permanent, state.Temporary,
                     state.LastPlayedCost, state.LastForgedAmount, state.PlayCount,
-                    interactions.Distinct().OrderBy(value => value, StringComparer.Ordinal).ToArray(), state.EffectCounters, state.DamageScalingTraits, state.StatusScalingTraits, state.UnitUpgradeScalingTraits, state.CapacityScalingTraits, state.EquippedUnitId, state.PlayedRoomUnitIds, state.RawPlayedRoomUnitIds, CardBranchMaskProbe.Capture(card));
+                    interactions.Distinct().OrderBy(value => value, StringComparer.Ordinal).ToArray(), state.EffectCounters, state.DamageScalingTraits, state.StatusScalingTraits, state.UnitUpgradeScalingTraits, state.CapacityScalingTraits, state.EquippedUnitId, state.PlayedRoomUnitIds, state.RawPlayedRoomUnitIds, CardBranchMaskProbe.Capture(card), CardExhaustProbe.Capture(card, cardId));
             }).OrderBy(card => card.InstanceId).ToArray();
         }
 
@@ -124,7 +124,8 @@ namespace MonsterTrain2Poju.Probe
             CardLifecycleUpgrade lifecycle = CardUpgradeLifecycleProbe.Definition(upgrade);
             bool supportedTraitsOnly = lifecycle.AddedTraits.Count > 0 && lifecycle.AddedTraits.All(trait =>
                 trait.RuntimeType == trait.DeclaredName &&
-                trait.RuntimeType is "CardTraitIgnoreArmor" or "CardTraitSelfPurge") &&
+                (trait.RuntimeType is "CardTraitIgnoreArmor" or "CardTraitSelfPurge" or "CardTraitExhaustState" ||
+                    trait.RuntimeType == "CardTraitStrongerMagicPower" && CardBranchMaskProbe.Enabled)) &&
                 lifecycle.RemovedRuntimeTypes.Count == 0 && lifecycle.ReplacedAssets.Count == 0 && lifecycle.Triggers.Count == 0;
             if ((upgrade.GetTraitDataUpgrades().Count > 0 || upgrade.GetRemoveTraitUpgrades().Count > 0) && !supportedTraitsOnly)
                 interactions.Add("Upgrade traits");
@@ -153,7 +154,8 @@ namespace MonsterTrain2Poju.Probe
                 abilityUpgrade: upgrade.GetUnitAbilityUpgrade() == null ? null : AbilityLifecycleProbe.Change(upgrade.GetUnitAbilityUpgrade()),
                 doNotReplaceExistingAbility: upgrade.GetDoNotReplaceExistingUnitAbility(), maskMetadata: CardBranchMaskProbe.Upgrade(upgrade),
                 copyRemoveOnDiscard: copyDefinition == null ? null : false, copyUnique: copyDefinition?.IsUnique(),
-                copyExcludeFromClones: copyDefinition?.GetExcludeFromClones(), lifecycle: lifecycle);
+                copyExcludeFromClones: copyDefinition?.GetExcludeFromClones(), lifecycle: lifecycle,
+                sharedReferenceId: TypedDrawProbe.SharedReferenceId(upgrade));
         }
     }
 }

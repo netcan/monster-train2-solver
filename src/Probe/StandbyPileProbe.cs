@@ -34,8 +34,11 @@ namespace MonsterTrain2Poju.Probe
                 free = (int)AccessTools.Field(entry.GetType(), "next").GetValue(entry);
             }
             if (holes.Count != freeCount) throw new InvalidOperationException("Native standby free count differs from its chain.");
+            var exhaustConditions = CardBranchMaskProbe.Enabled ? native.Select(pair => CardExhaustProbe.Condition(pair.Key, pair.Value,
+                FullBattleTrace.Active!.CardId)).Where(item => item != null).Cast<CardExhaustStandbyCondition>().ToArray() : null;
             var conditions = new List<EquipmentStandbyCondition>();
-            foreach (var pair in native.Where(item => item.Key.GetCardType() == CardType.Equipment))
+            foreach (var pair in native.Where(item => item.Key.GetCardType() == CardType.Equipment &&
+                exhaustConditions?.Any(condition => condition.CardId == FullBattleTrace.Active!.CardId(item.Key)) != true))
             {
                 if (pair.Value == null) throw new InvalidOperationException("Equipment has no native standby condition.");
                 var callback = (Delegate)AccessTools.Field(typeof(RemoveFromStandByCondition), "conditionFunction").GetValue(pair.Value);
@@ -46,9 +49,10 @@ namespace MonsterTrain2Poju.Probe
                 conditions.Add(new EquipmentStandbyCondition(FullBattleTrace.Active.CardId(pair.Key), FullBattleTrace.Active.UnitId(host),
                     pair.Key.HasTrait<CardTraitReturnToHandEquipment>()));
             }
-            List<UnitStandbyCondition>? unitConditions = MultiSummonScenario.FreshSources ? new List<UnitStandbyCondition>() : null;
+            List<UnitStandbyCondition>? unitConditions = MultiSummonScenario.FreshSources || CardBranchMaskProbe.Enabled ? new List<UnitStandbyCondition>() : null;
             if (unitConditions != null)
-                foreach (var pair in native.Where(item => item.Key.GetCardType() == CardType.Monster))
+                foreach (var pair in native.Where(item => item.Key.GetCardType() == CardType.Monster &&
+                    exhaustConditions?.Any(condition => condition.CardId == FullBattleTrace.Active!.CardId(item.Key)) != true))
                 {
                     var callback = (Delegate)AccessTools.Field(typeof(RemoveFromStandByCondition), "conditionFunction").GetValue(pair.Value);
                     CharacterState? host = Host(callback.Target, unitCard: true);
@@ -58,7 +62,7 @@ namespace MonsterTrain2Poju.Probe
                     unitConditions.Add(new UnitStandbyCondition(FullBattleTrace.Active!.CardId(pair.Key), FullBattleTrace.Active.UnitId(host),
                         location == CardPile.ExhaustedPile));
                 }
-            var result = new CardPileState("Standby", projection.CaptureCards(native.Keys.ToList()), slots, holes, conditions, unitConditions);
+            var result = new CardPileState("Standby", projection.CaptureCards(native.Keys.ToList()), slots, holes, conditions, unitConditions, exhaustConditions);
             string? error = CardPileModel.Validate(result);
             if (error != null) throw new InvalidOperationException(error);
             return result;

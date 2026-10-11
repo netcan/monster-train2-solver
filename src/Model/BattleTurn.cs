@@ -19,9 +19,10 @@ namespace MonsterTrain2Poju.Model
         public IReadOnlyList<int>? FreeSlots { get; }
         public IReadOnlyList<EquipmentStandbyCondition>? EquipmentConditions { get; }
         public IReadOnlyList<UnitStandbyCondition>? UnitConditions { get; }
+        public IReadOnlyList<CardExhaustStandbyCondition>? ExhaustConditions { get; }
         public CardPileState(string name, IReadOnlyList<CardToken> cards, IReadOnlyList<int>? entrySlots = null,
             IReadOnlyList<int>? freeSlots = null, IReadOnlyList<EquipmentStandbyCondition>? equipmentConditions = null,
-            IReadOnlyList<UnitStandbyCondition>? unitConditions = null)
+            IReadOnlyList<UnitStandbyCondition>? unitConditions = null, IReadOnlyList<CardExhaustStandbyCondition>? exhaustConditions = null)
         {
             Name = name; Cards = Array.AsReadOnly(cards.ToArray());
             EntrySlots = entrySlots == null ? null : Array.AsReadOnly(entrySlots.ToArray());
@@ -29,6 +30,8 @@ namespace MonsterTrain2Poju.Model
             EquipmentConditions = equipmentConditions == null ? null : Array.AsReadOnly(equipmentConditions
                 .OrderBy(condition => Array.FindIndex(cards.ToArray(), card => card.InstanceId == condition.CardId)).ToArray());
             UnitConditions = unitConditions == null ? null : Array.AsReadOnly(unitConditions
+                .OrderBy(condition => Array.FindIndex(cards.ToArray(), card => card.InstanceId == condition.CardId)).ToArray());
+            ExhaustConditions = exhaustConditions == null ? null : Array.AsReadOnly(exhaustConditions
                 .OrderBy(condition => Array.FindIndex(cards.ToArray(), card => card.InstanceId == condition.CardId)).ToArray());
         }
     }
@@ -186,10 +189,10 @@ namespace MonsterTrain2Poju.Model
             {
                 ShuffleResult<CardToken> shuffled = cards.Rng.Shuffle(cards.Draw.Concat(cards.Discard).ToArray());
                 cards = new CardCycleState(cards.Hand, shuffled.Items, Array.Empty<CardToken>(), shuffled.State,
-                    cards.DrawModifier, cards.ExternalInteractions, cards.BonusDraw);
+                    cards.DrawModifier, cards.ExternalInteractions, cards.BonusDraw, cards.NextDrawUpgrades, cards.NextUpgradeReferenceId);
             }
             context = WithCards(context, cards);
-            if (discardedIds.Count > 0) context = UnitStandbyModel.ReturnReady(context);
+            if (discardedIds.Count > 0) context = UnitStandbyModel.ReturnReady(CardExhaustModel.ReturnReady(context));
             // Hand callbacks precede the native energy removal; combat sees zero energy.
             context = context.WithQueryFrame(context.QueryFrame?.With(energy: 0));
             context = EnergyModel.SetPhase(context, "Combat");

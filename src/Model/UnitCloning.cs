@@ -186,10 +186,7 @@ namespace MonsterTrain2Poju.Model
                 state = CardSpellModel.WithContext(state, copied.Context!); spawnerCardId = copied.AddedCards.Single().InstanceId;
                 Mark("source-card-copied");
                 CardInstanceState card = state.Context!.FindCard(spawnerCardId)!;
-                card = new CardInstanceState(card.InstanceId, card.DataId, Strip(card.Permanent), Strip(card.Temporary),
-                    card.LastPlayedCost, card.LastForgedAmount, card.PlayCount, card.ExternalInteractions, card.EffectCounters,
-                    card.DamageScalingTraits, card.StatusScalingTraits, card.UnitUpgradeScalingTraits, card.CapacityScalingTraits,
-                    card.EquippedUnitId, card.PlayedRoomUnitIds, card.RawPlayedRoomUnitIds, card.MaskDescriptor);
+                card = card.WithModifiers(Strip(card.Permanent), Strip(card.Temporary));
                 state = CardSpellModel.WithContext(state, state.Context.WithCard(card));
             }
             Mark("before-birth");

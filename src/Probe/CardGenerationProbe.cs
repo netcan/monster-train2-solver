@@ -44,9 +44,12 @@ namespace MonsterTrain2Poju.Probe
             foreach (CardTraitData trait in data.GetTraits())
                 if (!DamageScalingProbe.Known(trait.GetTraitStateName())) interactions.Add("Generated card trait setup/callback " + trait.GetTraitStateName());
             CardModifiers modifiers = CardModifiers.Empty();
+            CardMaskDescriptor? descriptor = CardBranchMaskProbe.Creation(data);
+            int multiplier = CardMagicPowerModel.Multiplier(new CardInstanceState(0, data.GetID(), modifiers, modifiers, 0, 0, 0,
+                Array.Empty<string>(), maskDescriptor: descriptor));
             foreach (CardUpgradeData upgrade in data.GetUpgradeData())
             {
-                CardUpgradeModifier projected = Upgrade(upgrade);
+                CardUpgradeModifier projected = CardMagicPowerModel.Scale(Upgrade(upgrade), multiplier);
                 // SetupStartingUpgrades follows native unique-upgrade insertion order.
                 if (!projected.Unique || projected.DataId.Length == 0 || !modifiers.Upgrades.Any(item => item.DataId == projected.DataId))
                     modifiers = new CardModifiers(modifiers.Offsets, modifiers.Upgrades.Concat(new[] { projected }).ToArray(), 0, modifiers.ExternalInteractions);
@@ -54,7 +57,7 @@ namespace MonsterTrain2Poju.Probe
             CardEffectCounter[] counters = data.GetEffects().Select((effect, index) => new { effect, index })
                 .Where(item => item.effect.GetEffectStateName() == "CardEffectDiscardHand")
                 .Select(item => new CardEffectCounter(item.index, "CardEffectDiscardHand", 0)).ToArray();
-            return new CardCreationRule(data.GetID(), modifiers, counters.Length == 0 ? null : counters, interactions, DamageScalingProbe.Creation(data), StatusScalingProbe.Creation(data), UnitUpgradeScalingProbe.Creation(data), RoomCapacityProbe.Creation(data), 0, CardBranchMaskProbe.Creation(data));
+            return new CardCreationRule(data.GetID(), modifiers, counters.Length == 0 ? null : counters, interactions, DamageScalingProbe.Creation(data), StatusScalingProbe.Creation(data), UnitUpgradeScalingProbe.Creation(data), RoomCapacityProbe.Creation(data), 0, descriptor);
         }
     }
 }
