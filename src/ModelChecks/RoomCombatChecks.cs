@@ -178,6 +178,8 @@ internal static class RoomCombatChecks
             OriginalLifecycleRelicBatchChecks.Native(fixture, required: true);
         else if (fixture.TryGetProperty("ModifierScenario", out relicScenario) && relicScenario.GetString() == "original-decay-relic-batch")
             OriginalDecayRelicBatchChecks.Native(fixture, required: true);
+        else if (fixture.TryGetProperty("ModifierScenario", out relicScenario) && relicScenario.GetString() == "original-resource-relic-batch")
+            OriginalResourceRelicBatchChecks.Native(fixture, required: true);
         else RelicCardModifierChecks.Native(fixture, requireScenarioCoverage:
             !fixture.TryGetProperty("ModifierScenario", out var integrationScenario) || integrationScenario.GetString() != "typed-draw");
         UnitIdentityChecks.Native(fixture);

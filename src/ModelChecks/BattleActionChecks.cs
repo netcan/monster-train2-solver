@@ -304,6 +304,8 @@ internal static class BattleActionChecks
             chooser = OriginalLifecycleRelicBatchChecks.Choose;
         if (fixture.TryGetProperty("ModifierScenario", out var originalDecayRelicPolicy) && originalDecayRelicPolicy.GetString() == "original-decay-relic-batch")
             chooser = OriginalDecayRelicBatchChecks.Choose;
+        if (fixture.TryGetProperty("ModifierScenario", out var originalResourceRelicPolicy) && originalResourceRelicPolicy.GetString() == "original-resource-relic-batch")
+            chooser = OriginalResourceRelicBatchChecks.Choose;
         if (fixture.TryGetProperty("ModifierScenario", out var summonScenario) && summonScenario.GetString()?.StartsWith("multi-summon", StringComparison.Ordinal) == true)
             chooser = BattleActionModel.ChooseMultiSummonThenCards;
         if (fixture.TryGetProperty("ModifierScenario", out var abilityScenario) &&

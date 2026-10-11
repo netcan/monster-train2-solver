@@ -41,11 +41,15 @@ namespace MonsterTrain2Poju.Probe
                     .Where(item => item.Effect is RelicEffectModifyStatusMagnitude).Select(item => StatusMagnitude(item.Effect, item.Index)).ToArray();
                 var decays = effects.Select((effect, index) => new { Effect = effect, Index = index })
                     .Where(item => item.Effect is RelicEffectPreventStatusEffectDecay).Select(item => StatusDecay(item.Effect, item.Index)).ToArray();
+                var resources = effects.Select((effect, index) => new { Effect = effect, Index = index })
+                    .Where(item => RelicResourceModel.IsEffect(item.Effect.GetType().Name))
+                    .Select(item => RelicResourceProbe.Definition(item.Effect, item.Index, managers)).ToArray();
                 return new CombatRelicState(relic.GetRelicDataID(), relic.GetAssetName(), effects.Select(effect => effect.GetType().Name).ToArray(),
                     statuses.Length == 0 ? null : statuses, relic is CovenantState,
                     relic.DisallowedInPlacementPhase, cardModifiers?.Length > 0 ? cardModifiers : null,
                     triggers.Length > 0 ? triggers : null, stackAdditions.Length > 0 ? stackAdditions : null,
-                    magnitudes.Length > 0 ? magnitudes : null, decays.Length > 0 ? decays : null);
+                    magnitudes.Length > 0 ? magnitudes : null, decays.Length > 0 ? decays : null,
+                    resources.Length > 0 ? resources : null);
             }).ToArray();
         }
 

@@ -246,6 +246,8 @@ namespace MonsterTrain2Poju.Probe
                 int section = save.GetCurrentDistance() + 1;
                 if (map != null && map.TryGetBattleNodeUI(section, out MapBattleNodeUI node))
                 {
+                    if (fullBattle && OriginalResourceRelicBatchScenario.Enabled && !OriginalResourceRelicBatchScenario.Prepared)
+                        OriginalResourceRelicBatchScenario.AcquireBeforeBattle(managers!, log);
                     ReplayManager.TryClickButton(node);
                 }
                 return;
@@ -411,6 +413,13 @@ namespace MonsterTrain2Poju.Probe
                 return;
             }
             string? modifierScenario = Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS");
+            if (fullBattle && !numericModifiersPrepared && OriginalResourceRelicBatchScenario.Enabled)
+            {
+                if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Resource relic batch must start on deployment turn.");
+                OriginalResourceRelicBatchScenario.Prepare(managers, log);
+                numericModifiersPrepared = true;
+                return;
+            }
             if (fullBattle && !numericModifiersPrepared && TypedDrawProbe.Enabled)
             {
                 if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Typed draw fixture must start on deployment turn.");
@@ -807,6 +816,7 @@ namespace MonsterTrain2Poju.Probe
                 if (OriginalTriggerRelicBatchScenario.Enabled) pendingPlay = OriginalTriggerRelicBatchScenario.Choose(decision);
                 if (OriginalLifecycleRelicBatchScenario.Enabled) pendingPlay = OriginalLifecycleRelicBatchScenario.Choose(decision);
                 if (OriginalDecayRelicBatchScenario.Enabled) pendingPlay = OriginalDecayRelicBatchScenario.Choose(decision);
+                if (OriginalResourceRelicBatchScenario.Enabled) pendingPlay = OriginalResourceRelicBatchScenario.Choose(decision);
                 if (modifierScenario == "rally-lethal") pendingPlay = LethalRallyScenario.ChooseNativeBossSummon(managers) ?? pendingPlay;
                 if (modifierScenario == "incant" || modifierScenario == "incant-thresholds" || (modifierScenario == "incant-relic" || modifierScenario == "incant-relic-combined")) pendingPlay = BattleActionModel.ChooseEmptySpellThenCards(decision);
                 if (modifierScenario.StartsWith("multi-summon", StringComparison.Ordinal)) pendingPlay = MultiSummonScenario.Choose(managers) ?? pendingPlay;

@@ -7,6 +7,13 @@ if (args.Length == 1 && args[0] == "--relic-resources-pure")
     return;
 }
 
+if (args.Length == 2 && args[0] == "--original-resource-relics-only")
+{
+    using var document = ModelJson.ReadFixture(args[1]);
+    OriginalResourceRelicBatchChecks.Native(document.RootElement, required: true, replayBattle: true);
+    return;
+}
+
 if (args.Length == 1 && args[0] == "--relic-status-decay-pure")
 {
     RelicStatusDecayChecks.Run();
