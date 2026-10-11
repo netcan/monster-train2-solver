@@ -70,6 +70,18 @@ internal static class CompanionBossChecks
             $"The final paired companion death did not end the battle: supported={finalPairDeath.Supported}, outcome={finalPairDeath.Outcome}, " +
             $"bossesDead={finalPairDeath.State?.Context?.AllScenarioBossesDead}, roster={string.Join(',', afterFirstDeath.Rooms[3].ActiveCompanionBossIds ?? Array.Empty<int>())}, " +
             $"boss={afterFirstDeath.Rooms[3].Units.Single().IsBoss}, endFlag={afterFirstDeath.Rooms[3].Units.Single().EndsBattleOnDeath}, error={finalPairDeath.UnsupportedReason}.");
+        var selfDeath = new CombatEffect("CardEffectDamage", 999, 0, "", 0, [], false,
+            action: new("Damage", "Self", 999, true, true, []));
+        var dyingCompanion = new CombatUnit(1, "boss", CombatTeam.Enemy, 7, 125, 125, true, false, true, [],
+            [Trigger("OnTrainRoomLoop", 7, 0, true), Trigger("PostAscension", 11, 1, true),
+                new("OnShift", false, false, true, 1, [selfDeath], false, stateId: 5)],
+            modifiers: new(7, 0, 0, 1, 1, true, false, []), isBoss: true, statusRegistry: [], nextTriggerId: 6);
+        var pairedDeathDuringMove = CompanionBossModel.Resolve(Root(actor: dyingCompanion, paired: true), true);
+        Require(pairedDeathDuringMove.Supported && pairedDeathDuringMove.Outcome != RoomOutcome.BattleWon &&
+            pairedDeathDuringMove.State!.Rooms.SelectMany(room => room.Units).All(unit => unit.Id != 1) &&
+            pairedDeathDuringMove.State.Rooms[3].Units.Single().Id == 3 &&
+            pairedDeathDuringMove.State.Context!.AllScenarioBossesDead == false,
+            "A paired Boss killed during its movement callbacks rejected or terminated the surviving companion phase.");
         var unpairedBoss = new CombatUnit(4, "unpaired-boss", CombatTeam.Enemy, 9, 90, 90, true, false, true, [], isBoss: true);
         Require(!CompanionBossModel.Resolve(Root(otherUnit: unpairedBoss), true).Supported,
             "Mixed companion/non-companion Boss routing was accepted.");

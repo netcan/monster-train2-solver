@@ -34,11 +34,10 @@ namespace MonsterTrain2Poju.Model
             if (relentless == null) return Unsupported("Companion transition requires the native relentless status definition.");
             TrainCombatResult moved = TrainCombatModel.Ascend(source.Train, boss.Id, true);
             if (!moved.Supported) return moved;
-            if (pairedCompanions && moved.Outcome == RoomOutcome.BattleWon)
-                return Unsupported("Paired companion Boss death during movement requires native death and Pyre routing.");
             if (Terminal(moved.Outcome)) return moved;
             TrainCombatState train = moved.State!;
             int index = train.Rooms.ToList().FindIndex(room => room.Units.Any(unit => unit.Id == boss.Id));
+            if (index < 0 && pairedCompanions) return moved;
             if (index < 0) return Unsupported("A companion Boss disappeared before its native phase transition.");
             RoomCombatResult added = StatusApplicationModel.Apply(train.Rooms[index], boss.Id, relentless.WithStacks(1));
             if (!added.Supported) return Unsupported(added.UnsupportedReason!);
@@ -50,8 +49,6 @@ namespace MonsterTrain2Poju.Model
             // AddStatusEffect queues callbacks; the native RemoveDeadCharacters drains
             // them only after RemoveTriggersOnRelentlessChange has removed the gates.
             TrainCombatResult settled = TrainCombatModel.ApplyCharacterQueue(train, added.PendingCallbacks.ToList());
-            if (pairedCompanions && settled.Outcome == RoomOutcome.BattleWon)
-                return Unsupported("Paired companion Boss death during status callbacks requires native death and Pyre routing.");
             return settled.Supported ? new TrainCombatResult(settled.State, settled.Outcome,
                 moved.RoomResults.Concat(settled.RoomResults).ToArray()) : settled;
         }

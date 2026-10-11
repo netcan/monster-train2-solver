@@ -518,8 +518,11 @@ complete policies compare from their initial roots in 16 parallel branches,
 with an actual mid-battle root for the card policy. Raw before/after states and
 pending Unity destruction IDs are retained separately from canonical phase
 boundaries. Independent checks verify that their only projected changes are
-destroyed attacker/equipment references. Paired companions and outer/final
-Boss state machines remain unsupported.
+destroyed attacker/equipment references. Synthetic model checks also cover
+paired-Boss terminal deaths and a companion dying during its movement callback.
+The native captures here still exercise one Boss; paired-Boss group/Pyre
+routing, Boss-specific Bump behavior, and outer/final Boss states remain
+unverified.
 
 `full-battle-sentry.mt2f` and `full-battle-sentry-lethal.mt2f` retain schema 61.
 Both record two native OnSentry dispatches in physical guard order against the
