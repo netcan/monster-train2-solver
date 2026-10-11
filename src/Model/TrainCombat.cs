@@ -442,7 +442,22 @@ namespace MonsterTrain2Poju.Model
 
         private static void SetCompanionBosses(RoomCombatState[] rooms, IReadOnlyList<int>? ids)
         {
-            for (int index = 0; index < rooms.Length; index++) rooms[index] = rooms[index].WithCompanionBosses(ids);
+            if (ids == null)
+            {
+                for (int index = 0; index < rooms.Length; index++) rooms[index] = rooms[index].WithCompanionBosses(null);
+                return;
+            }
+            int[] companionIds = ids.Distinct().ToArray();
+            var activeIds = companionIds.ToHashSet();
+            bool singleSurvivor = companionIds.Length == 1;
+            for (int index = 0; index < rooms.Length; index++)
+            {
+                RoomCombatState room = rooms[index];
+                CombatUnit[] units = room.Units.Select(unit => activeIds.Contains(unit.Id)
+                    ? unit.WithEndsBattleOnDeath(singleSurvivor) : unit).ToArray();
+                rooms[index] = new RoomCombatState(room.RoomIndex, room.Deployment, units,
+                    room.ExternalInteractions, room.Context, room.Preview, companionIds);
+            }
         }
 
         private static RoomCombatState WithContext(RoomCombatState room, CombatContext? context) =>

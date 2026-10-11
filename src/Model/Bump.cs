@@ -63,8 +63,8 @@ namespace MonsterTrain2Poju.Model
                 SpawnPointReference? old = state.Context!.SpawnPoints!.Units.SingleOrDefault(unit => unit.UnitId == id)?.Current;
                 if (actor == null || old == null) continue;
                 if (actor.BumpRules == null) return Fail("Missing native Bump movement properties for actor " + id);
-                if (actor.BumpRules.OuterBoss || actor.BumpRules.CompanionBoss && actor.Status("relentless") != null)
-                    return Fail("Outer and paired companion Boss movement require their dedicated transition model.");
+                if (actor.BumpRules.OuterBoss)
+                    return Fail("Outer Boss movement requires its dedicated transition model.");
                 if (actor.Status("immobile") != null) { attempted.Add(id); continue; }
                 if (actor.Status("rooted") != null)
                 {
@@ -73,6 +73,8 @@ namespace MonsterTrain2Poju.Model
                     attempted.Add(id); continue;
                 }
                 if (actor.IsPyre) continue;
+                if (actor.BumpRules.CompanionBoss && actor.Status("relentless") != null)
+                { attempted.Add(id); continue; }
                 int steps = Math.Max(-pyre, Math.Min(pyre, amount)), direction = steps > 0 ? 1 : -1;
                 bool looping = actor.BumpRules.Loops && actor.Status("relentless") == null && direction > 0 && old.RoomIndex + steps >= pyre;
                 if (looping) { direction = -1; steps = old.RoomIndex; }

@@ -4,6 +4,8 @@ using MonsterTrain2Poju.Model;
 
 internal static class RoomCombatChecks
 {
+    internal static void NativeRoomOnly(string path) => CheckNativeFixture(path, roomOnly: true);
+
     internal static void Run(string[] fixtures)
     {
         RoomCombatResult flatFirst = RoomCombatModel.Exchange(Room(Unit(1, CombatTeam.Enemy, 1, 20),
@@ -115,7 +117,7 @@ internal static class RoomCombatChecks
     private static void Require(bool condition, string error)
     { if (!condition) throw new InvalidOperationException(error); }
 
-    private static void CheckNativeFixture(string path)
+    private static void CheckNativeFixture(string path, bool roomOnly = false)
     {
         using FixtureDocument document = ModelJson.ReadFixture(path);
         FixtureValue fixture = document.RootElement;
@@ -136,20 +138,25 @@ internal static class RoomCombatChecks
             if (!result.Supported) { unsupported++; continue; }
             // The oracle is the captured game state, not the recorded model prediction.
             CombatUnit[] actual = stage.GetProperty("Actual").GetProperty("Units").Deserialize<CombatUnit[]>()!;
-            Require(JsonSerializer.Serialize(result.State!.Units) == JsonSerializer.Serialize(actual),
-                "Native room difference at stage " + stage.GetProperty("Index") + " in " + path);
+            string? unitDifference = ModelJson.Difference(JsonSerializer.Serialize(result.State!.Units),
+                JsonSerializer.Serialize(actual));
+            Require(unitDifference == null, "Native room difference at stage " +
+                stage.GetProperty("Index").GetInt32() + " in " + path + ": " + unitDifference);
             if (state.Context != null)
             {
                 CombatContext actualContext = stage.GetProperty("Actual").GetProperty("Context")
                     .Deserialize<CombatContext>()!;
-                Require(JsonSerializer.Serialize(result.State.Context) == JsonSerializer.Serialize(actualContext),
-                    "Native room context difference at stage " + stage.GetProperty("Index"));
+                string? contextDifference = ModelJson.Difference(JsonSerializer.Serialize(result.State.Context),
+                    JsonSerializer.Serialize(actualContext));
+                Require(contextDifference == null, "Native room context difference at stage " +
+                    stage.GetProperty("Index").GetInt32() + ": " + contextDifference);
             }
             matched++;
         }
         Require(matched > 0, "No native stages were verified.");
         Require(unsupported == 0, "Native room verification skipped unsupported stages in " + path);
         Console.WriteLine($"NATIVE-ROOM-CHECKS PASS: {matched} matched, {unsupported} unsupported; {path}");
+        if (roomOnly) return;
         CardCycleChecks.Native(fixture);
         TrainCombatChecks.Native(fixture);
         EnemySpawningChecks.Native(fixture);

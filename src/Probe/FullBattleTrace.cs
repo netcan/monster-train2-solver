@@ -177,6 +177,7 @@ namespace MonsterTrain2Poju.Probe
             var interactions = new List<string>();
             SaveManager save = managers.GetSaveManager();
             CombatManager combat = managers.GetCombatManager() ?? throw new InvalidOperationException("No combat manager.");
+            RoomManager roomManager = managers.GetRoomManager() ?? throw new InvalidOperationException("No room manager.");
             HeroManager heroes = managers.GetHeroManager() ?? throw new InvalidOperationException("No enemy manager.");
             if (room.IsRoomEnabled() && !room.GetCombatAllowed()) interactions.Add("Disabled room combat");
             string? relicError = RelicModel.Validate(RelicProbe.Capture(managers));
@@ -197,8 +198,17 @@ namespace MonsterTrain2Poju.Probe
                 if (!character.IsAlive || character.IsDestroyed) continue;
                 units.Add(CaptureUnit(character, interactions));
             }
+            var activeCompanionBossIds = new List<int>();
+            for (int index = 0; index < roomManager.GetNumRooms(); index++)
+            {
+                var companions = new List<CharacterState>(); roomManager.GetRoom(index).AddCharactersToList(companions, Team.Type.Heroes);
+                activeCompanionBossIds.AddRange(companions.Where(character => !character.IsDestroyed &&
+                    (character.IsAlive || character.HasStatusEffect("undying")) && character.IsMiniboss() && character.IsCompanionBoss())
+                    .Select(UnitId));
+            }
             return new RoomCombatState(room.GetRoomIndex(), combat.IsPlacementPhase, units,
-                interactions.Distinct().OrderBy(value => value, StringComparer.Ordinal).ToArray(), captureContext ? CaptureContext() : null, preview: save.PreviewMode);
+                interactions.Distinct().OrderBy(value => value, StringComparer.Ordinal).ToArray(), captureContext ? CaptureContext() : null,
+                preview: save.PreviewMode, activeCompanionBossIds: activeCompanionBossIds);
         }
 
         internal CombatUnit CaptureUnit(CharacterState character, List<string>? interactions = null)

@@ -209,6 +209,12 @@ namespace MonsterTrain2Poju.Model
             modifiers, IsBoss, LastAttackerId, StatusRegistry, EquipmentCards, NextTriggerId, Ability, StatusDictionary,
             AbilityRules, HordeDefinition, IsSpawning, SacrificeCardId, DeathState, bumpRules: BumpRules);
 
+        internal CombatUnit WithEndsBattleOnDeath(bool endsBattleOnDeath) => endsBattleOnDeath == EndsBattleOnDeath ? this :
+            new CombatUnit(Id, AssetKey, Team, BaseAttack, Health, MaxHealth, CanAttack, IsPyre, endsBattleOnDeath,
+                Statuses, Triggers, SpawnerCardId, Size, StatusImmunities, Subtypes, Modifiers, IsBoss, LastAttackerId,
+                StatusRegistry, EquipmentCards, NextTriggerId, Ability, StatusDictionary, AbilityRules, HordeDefinition,
+                IsSpawning, SacrificeCardId, DeathState, bumpRules: BumpRules);
+
         internal static CombatStatus[] MergeStatusRegistry(IReadOnlyList<CombatStatus> registry, IReadOnlyList<CombatStatus> statuses)
         {
             var current = statuses.ToDictionary(status => status.Id, StringComparer.Ordinal);
@@ -238,16 +244,12 @@ namespace MonsterTrain2Poju.Model
         public IReadOnlyList<string> ExternalInteractions { get; }
         public CombatContext? Context { get; }
         public bool Preview { get; }
-        internal IReadOnlyList<int>? ActiveCompanionBossIds { get; }
+        public IReadOnlyList<int>? ActiveCompanionBossIds { get; }
 
         // Units are ordered front to back within each team. Identity is separate from asset name.
         public RoomCombatState(int roomIndex, bool deployment, IReadOnlyList<CombatUnit> units,
-            IReadOnlyList<string> externalInteractions, CombatContext? context = null, bool preview = false)
-            : this(roomIndex, deployment, units, externalInteractions, context, preview, null) { }
-
-        internal RoomCombatState(int roomIndex, bool deployment, IReadOnlyList<CombatUnit> units,
-            IReadOnlyList<string> externalInteractions, CombatContext? context, bool preview,
-            IReadOnlyList<int>? activeCompanionBossIds)
+            IReadOnlyList<string> externalInteractions, CombatContext? context = null, bool preview = false,
+            IReadOnlyList<int>? activeCompanionBossIds = null)
         {
             RoomIndex = roomIndex;
             Deployment = deployment;
@@ -1889,6 +1891,12 @@ namespace MonsterTrain2Poju.Model
                 // CheckForDeath runs the terminal kill camera before dispatching death signals.
                 if (!source.Preview && (terminalBossDeath || target.Source.IsPyre)) ClearTerminalCards();
                 activeCompanionBossIds.Remove(target.Source.Id);
+                if (activeCompanionBossIds.Count == 1)
+                {
+                    int remainingId = activeCompanionBossIds.Single();
+                    WorkingUnit? remaining = units.FirstOrDefault(unit => unit.Source.Id == remainingId);
+                    if (remaining != null) remaining.Source = remaining.Source.WithEndsBattleOnDeath(true);
+                }
                 // At the captured StopCombatLoop boundary, Pyre death has no
                 // ordinary unit death accounting/removal; its point stays occupied.
                 if (target.Source.IsPyre) return;

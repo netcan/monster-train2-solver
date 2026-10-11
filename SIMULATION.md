@@ -1,6 +1,6 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-12): 233 binary archives, including 202
+Current accepted inventory (2026-10-12): 234 binary archives, including 203
 full battles and 31 component calibrations. Unchanged original relic evidence
 covers 59/224 catalog entries (26.34%); see
 [the owner evidence table](tests/fixtures/relic-coverage.md). Whole-battle
@@ -5403,10 +5403,12 @@ enemy entry into Pyre. Native Bump reads the fixed authored integer; configured
 integer ranges affect its tooltip but are not sampled by the effect.
 
 A synthetic check covers a non-Relentless companion Boss on the ordinary
-movement path identified in the native effect. Native Relentless Bump now moves
-an unpaired target, disables every crossed room, removes Undying and sacrifices
-the remaining room occupants. Outer Boss displacement and paired companion-
-Boss transitions remain unsupported.
+movement path identified in the native effect. Native Relentless Bump moves an
+unpaired target, disables every crossed room, removes Undying and sacrifices the
+remaining room occupants. A paired companion Boss with Relentless refuses Bump
+ascent and dispatches `PostAttemptedAscension`; after its partner dies, the
+survivor's `EndsBattleOnDeath` flag becomes true. Outer/final Boss displacement
+and broader paired-Boss group/Pyre routing remain unverified.
 
 The same native run exposed missing floor-rearrangement callbacks. That effect
 now visits its drop actor and every crossed actor in native order, fires Shift
@@ -5429,12 +5431,20 @@ dispatch payloads match in 32 independent branches. The subsequent native battle
 completes six turns with 26 card actions and six EndTurns. The muted Instant
 capture takes 62.01 seconds; capture failures, differences,
 unsupported/pending records are zero, and original profile/log signatures are
-intact. The binary archive is 44,030 bytes and 8,475 graph nodes. Replacing the
-earlier archive keeps the current inventory at 233 binaries; the complete
-233-archive regression has not been rerun after this targeted update.
+intact. The binary archive is 44,030 bytes and 8,475 graph nodes; this longer
+six-turn fixture remains unchanged.
 The focused `Check-Models.ps1 -Fixture full-battle-bump.mt2f` passes: 53 room
 phases, 11 train phases, nine spawns, six EndTurns, 26 actions, and seven policy
 plays through a win at Pyre 74; 16 policy branches match.
+
+`full-battle-companion-bump.mt2f` adds a paired Relentless companion Boss
+refusal and its terminal-death handoff without replacing the longer Bump battle.
+The muted Instant run takes 54.04 seconds and wins with 23 room stages, 21 card
+actions and two EndTurns; capture failures, mismatches, unsupported steps and
+pending records are zero. Focused binary replay matches all 20 Bump operations,
+all 23 room stages and all 21 actions. The archive is 32,754 bytes and 6,565
+graph nodes. The inventory is now 234 archives; the complete 234-archive
+regression remains deferred to a milestone.
 
 At the prior 146-archive inventory, the complete regression exited zero across
 137 battles and nine calibrations. That audit verified nineteen

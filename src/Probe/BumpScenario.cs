@@ -160,6 +160,29 @@ namespace MonsterTrain2Poju.Probe
                 yield return Cast("enemy-relentless-up-destroys-room", destroyer, 1);
                 rooms.GetRoom(0).SetRoomEnabled(true);
                 FullBattleTrace.Active!.InvalidateCardRules();
+                CharacterData companionPrototype = waves.SelectMany(wave => ((IEnumerable)AccessTools.Field(typeof(SpawnGroupPoolData), "possibleGroups")
+                    .GetValue(wave)).Cast<SpawnGroupData>()).SelectMany(group => group.GetCharacters(managers.GetSaveManager().GetCovenantsForSpawnPattern(),
+                    managers.GetSaveManager(), managers.GetSaveManager().GetGeneratedBoss())).First(unit => unit.IsMiniboss());
+                CharacterData companionMoverData = UnityEngine.Object.Instantiate(companionPrototype); companionMoverData.name = "PojuBumpCompanionMover";
+                Set(companionMoverData, "id", "c2f6ed7f-18ce-4070-b6f0-7dd9f5200007");
+                Set(companionMoverData, "attackDamage", 1); Set(companionMoverData, "health", 20);
+                Set(companionMoverData, "isCompanionBoss", true); Set(companionMoverData, "loopsBetweenTrainFloors", false);
+                Set(companionMoverData, "startingStatusEffects", new[] { new StatusEffectStackData { statusId = "relentless", count = 1 } });
+                Set(companionMoverData, "triggers", Triggers(zeroReward: true));
+                CharacterData companionVictimData = UnityEngine.Object.Instantiate(companionPrototype); companionVictimData.name = "PojuBumpCompanionVictim";
+                Set(companionVictimData, "id", "c2f6ed7f-18ce-4070-b6f0-7dd9f5200008");
+                Set(companionVictimData, "attackDamage", 1); Set(companionVictimData, "health", 20);
+                Set(companionVictimData, "isCompanionBoss", true); Set(companionVictimData, "loopsBetweenTrainFloors", false);
+                Set(companionVictimData, "startingStatusEffects", Array.Empty<StatusEffectStackData>());
+                Set(companionVictimData, "triggers", Triggers(zeroReward: true));
+                yield return managers.GetHeroManager()!.SpawnHeroInRoom(companionMoverData, 0, null!);
+                yield return managers.GetHeroManager()!.SpawnHeroInRoom(companionVictimData, 0, null!);
+                yield return combat.RunTriggerQueue();
+                var pairedRoom = new List<CharacterState>(); rooms.GetRoom(0).AddCharactersToList(pairedRoom, Team.Type.Heroes);
+                CharacterState companionMover = pairedRoom.Single(unit => unit.GetSourceCharacterData() == companionMoverData);
+                yield return Cast("enemy-companion-relentless-up-refuses-ascension", companionMover, 1);
+                rooms.GetRoom(0).SetRoomEnabled(true);
+                FullBattleTrace.Active!.InvalidateCardRules();
                 // Return the same authored card to a simple down mode for the subsequent ordinary policy.
                 Configure(managers, -1, TargetMode.DropTargetCharacter, Team.Type.Heroes | Team.Type.Monsters, false);
                 Set(combat, "combatStateChanged", true);

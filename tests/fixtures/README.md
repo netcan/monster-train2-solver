@@ -15,8 +15,10 @@ The default command still checks the full curated inventory.
 For routine changes, run only the new and directly affected fixtures with
 `-Fixture`; run the full inventory at completed milestones and before delivery.
 
-Current inventory is 233 archives: 202 accepted battles and 31 component
-calibrations. `full-battle-relic-card-status-upgrades.mt2f` verifies a native
+Current inventory is 234 archives: 203 accepted battles and 31 component
+calibrations. `full-battle-companion-bump.mt2f` covers a paired Relentless
+companion Boss refusal, its attempted-ascension callback and the survivor's
+terminal-death handoff. `full-battle-relic-card-status-upgrades.mt2f` verifies a native
 temporary card status upgrade reaches the unit summoned by that card.
 `full-battle-original-endless-return.mt2f` verifies the original More Rares
 relic's Endless upgrade routes a dead carrier to Draw, preserves its temporary

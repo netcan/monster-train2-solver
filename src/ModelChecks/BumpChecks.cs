@@ -10,13 +10,17 @@ internal static class BumpChecks
         "player-pyre-blocked", "player-zero", "player-clamped-down", "enemy-up", "enemy-down", "enemy-rooted",
         "enemy-immobile-before-rooted", "enemy-loop-up-to-bottom", "enemy-room-multiple-targets",
         "enemy-to-top-before-merge", "player-cross-room-horde-merge", "enemy-cross-room-horde-merge",
-        "enemy-into-pyre", "enemy-full-room-blocked", "enemy-partial-full-room", "enemy-relentless-up-destroys-room"];
+        "enemy-into-pyre", "enemy-full-room-blocked", "enemy-partial-full-room", "enemy-relentless-up-destroys-room",
+        "enemy-companion-relentless-up-refuses-ascension"];
 
     internal static void Native(FixtureValue fixture)
     {
         if (!fixture.TryGetProperty("BumpOperations", out var values) || values.GetArrayLength() == 0) return;
         var records = values.EnumerateArray().ToArray();
-        Require(records.Select(record => record.GetProperty("Label").GetString()).SequenceEqual(Labels), "Missing native Bump boundary cases.");
+        const string pairedRelentlessLabel = "enemy-companion-relentless-up-refuses-ascension";
+        string[] expectedLabels = records.Any(record => record.GetProperty("Label").GetString() == pairedRelentlessLabel)
+            ? Labels : Labels.Where(label => label != pairedRelentlessLabel).ToArray();
+        Require(records.Select(record => record.GetProperty("Label").GetString()!).SequenceEqual(expectedLabels), "Missing native Bump boundary cases.");
         var setup = fixture.GetProperty("Actions").EnumerateArray().Where(action => action.GetProperty("ScenarioAction").GetBoolean()).ToArray();
         Require(setup.Length == records.Length, "Authored paid Bump action inventory differs from the effect observations.");
         for (int index = 0; index < setup.Length; index++)
@@ -82,7 +86,24 @@ internal static class BumpChecks
         int destinationRoom = relentlessAfter.Context!.SpawnPoints!.Units.Single(unit => unit.UnitId == relentlessTarget).Current!.RoomIndex;
         Require(destinationRoom > sourceRoom && relentless.GetProperty("RoomEnabledAfter")[sourceRoom].GetBoolean() == false,
             "Native Relentless Bump did not disable every crossed room.");
-        Console.WriteLine("NATIVE-BUMP-CHECKS PASS: 19 real paid-card effect states including Relentless room destruction, plus a synthetic companion-Boss move; exact dispatch/retained targets, signed/clamped/fixed-range movement, rooting/immobility, looping, simultaneous targets, both-team cross-room Horde removal, Pyre/full/partially blocked rooms and 32 branches.");
+        if (records.Any(record => record.GetProperty("Label").GetString() == pairedRelentlessLabel))
+        {
+            var paired = records.Single(record => record.GetProperty("Label").GetString() == pairedRelentlessLabel);
+            TrainCombatState pairedBefore = paired.GetProperty("Before").Deserialize<TrainCombatState>()!;
+            TrainCombatState pairedAfter = paired.GetProperty("After").Deserialize<TrainCombatState>()!;
+            int pairedTarget = paired.GetProperty("Targets").Deserialize<int[]>()!.Single();
+            int[] companionIds = pairedBefore.Movement.Where(rule => rule.CompanionBoss).Select(rule => rule.UnitId).ToArray();
+            int pairedVictimId = companionIds.Single(id => id != pairedTarget);
+            Require(companionIds.Length == 2 && pairedBefore.Rooms[0].Units.Any(unit => unit.Id == pairedTarget && unit.Status("relentless") != null) &&
+                pairedBefore.Rooms[0].Units.Any(unit => unit.Id == pairedVictimId) &&
+                pairedAfter.Context!.SpawnPoints!.Units.Single(unit => unit.UnitId == pairedTarget).Current!.RoomIndex == 0 &&
+                pairedAfter.Context.SpawnPoints.Units.Single(unit => unit.UnitId == pairedVictimId).Current!.RoomIndex == 0 &&
+                paired.GetProperty("RoomEnabledAfter").EnumerateArray().All(enabled => enabled.GetBoolean()) &&
+                paired.GetProperty("Dispatched").EnumerateArray().Any(callback => callback.GetProperty("ActorId").GetInt32() == pairedTarget &&
+                    callback.GetProperty("Kind").GetString() == "PostAttemptedAscension"),
+                "Native Relentless Bump did not preserve a paired companion and dispatch the attempted-movement callback.");
+        }
+        Console.WriteLine($"NATIVE-BUMP-CHECKS PASS: {records.Length} real paid-card effect states including unpaired Relentless room destruction; paired companion-Boss refusal when recorded; plus a synthetic ordinary companion move, exact dispatch/retained targets, signed/clamped/fixed-range movement, rooting/immobility, looping, simultaneous targets, both-team cross-room Horde removal, Pyre/full/partially blocked rooms and 32 branches.");
     }
 
     private static void VerifyOrdinaryCompanionMovement(FixtureValue record)
