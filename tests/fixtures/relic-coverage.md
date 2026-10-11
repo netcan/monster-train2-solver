@@ -1,18 +1,19 @@
 # Original relic coverage evidence
 
-As of 2026-10-11, **12 distinct original collectable relics / 224 catalog entries
-(5.36%)** have accepted native full-battle evidence. This counts unchanged relic
+As of 2026-10-11, **16 distinct original collectable relics / 224 catalog entries
+(7.14%)** have accepted native full-battle evidence. This counts unchanged relic
 definitions whose effects actually ran, including their original filters and
 conditions. Test cards, unit triggers and carrier subtypes may be authored to
 exercise those effects; the claim covers the recorded paths, not every possible
 combination. Catalog enumeration and the 26 effect-class candidates do not count
 as implemented or validated relics.
 
-All five archives below report game `2.2.1`, module MVID
+All six archives below report game `2.2.1`, module MVID
 `8fb07b96-f4db-4d2b-884d-c00536d6ccf4`, `NativeWon=true`, and zero
 `CaptureFailures`, `Mismatches`, `Unsupported` and `Pending`. Their current byte
 lengths and SHA-256 hashes were checked against [manifest.tsv](manifest.tsv).
-This document audit did not run the game or repeat the regression suite.
+The newest batch includes native sampling, independent replay and focused
+regression; the older evidence was retained without a new full-inventory run.
 
 | AssetKey | DataId | Accepted archive | Actual effect witness |
 | --- | --- | --- | --- |
@@ -28,9 +29,13 @@ This document audit did not run the game or repeat the regression suite.
 | `SpawnWithRage` | `55ca34e9-047b-4b93-b390-d8d228a43261` | [original relic batch][batch] | All five player births gain 3 Rage (`buff`). Example: record 0, unit 2, absent → 3. |
 | `UnitsGainLifesteal` | `a6b0b657-8893-4cc8-bc62-ec09544c4306` | [original relic batch][batch] | All five player births gain 2 Lifesteal (`lifesteal`). Example: record 0, unit 2, absent → 2. |
 | `ContingencyPlans` | `0278309e-d15c-4041-a8dc-b76f360f306b` | [original relic batch][batch] | Two Monstrosity births gain 7 Spikes; the other three player births do not. Records 0–1 accept the authored Monstrosity carrier; record 2 rejects the other carrier. The relic and subtype filter are unchanged. |
+| `ImpDamageBuff` | `94595f3a-4624-4408-977d-b166a98f23d2` | [original unit relic batch][units] | Original unique Demon-filtered upgrade adds Multistrike 1. Twenty-seven native exchange observations contain at least two attacks by a Demon carrier, with complete combat state matching. |
+| `StewardSacrificeDamage` | `f6a4e405-98b9-4eeb-bae1-50cb204d12ed` | [original unit relic batch][units] | Six original `StewardSacrificeDamageAbility` activations remove their own units; three damage enemies. Three paid source cards exhaust and three cardless source copies retire from ownership. All queued callbacks and physical position changes match. |
+| `MorselsGetDamageShield` | `d1daea7e-3346-47df-a756-c839b044e5f3` | [original unit relic batch][units] | Three paid Morsel births retain their starting shield without repeating the spawn effect; three cardless births gain one additional shield. One native exchange consumes a shield while preserving its owner's health. Both original effects and filters remain unchanged. |
+| `ValorTransferOnAngelDeath` | `8c493cd7-8048-4598-bdd5-6cc2801cd842` | [original unit relic batch][units] | Twenty-eight native Shift queries cover player 2, enemy body 1, original enemy equipment 2 and excluded trigger 1. Eight player shifts and one equipped-enemy shift double the moved unit's gold callback and match other same-team callbacks. |
 
 Record indices above are zero-based. Full-battle acceptance and independent
-effect checks are documented in [README.md](README.md); the table's five source
+effect checks are documented in [README.md](README.md); the table's six source
 archives contain these observed battle sizes:
 
 | Archive | Schema | Card plays | EndTurns | Matched stages | Independent relic observations |
@@ -40,12 +45,14 @@ archives contain these observed battle sizes:
 | [starter cost relic][cost] | 105 | 18 | 5 | 42 | 124 modifier calls |
 | [cardless relic upgrades][cardless] | 111 | 1 | 5 | 42 | 22 birth phases |
 | [original relic batch][batch] | 106 | 21 | 5 | 46 | 30 modifier calls, 12 birth phases |
+| [original unit relic batch][units] | 106 | 39 | 7 | 56 | 40 modifier calls, 28 Shift queries, 6 original ability activations |
 
 The checks that enforce these observations are
 [TriggerCountChecks.Native](../../src/ModelChecks/TriggerCountChecks.cs),
 [RelicSpawnStatusChecks.Native](../../src/ModelChecks/RelicSpawnStatusChecks.cs),
 [RelicCardModifierChecks.Native](../../src/ModelChecks/RelicCardModifierChecks.cs),
-and [OriginalRelicBatchChecks.Native](../../src/ModelChecks/OriginalRelicBatchChecks.cs).
+[OriginalRelicBatchChecks.Native](../../src/ModelChecks/OriginalRelicBatchChecks.cs),
+and [OriginalUnitRelicBatchChecks.Native](../../src/ModelChecks/OriginalUnitRelicBatchChecks.cs).
 The cardless archive uses the clone-birth path in `RelicSpawnStatusChecks.Native`
 to compare the complete train, callback queue and dispatched callbacks;
 [RelicCardlessUpgradeChecks](../../src/ModelChecks/RelicCardlessUpgradeChecks.cs)
@@ -57,7 +64,9 @@ unit-ability, OnKill or conditional modifier fixtures. Their preparation in
 `ReduceStarterCost`'s runtime upgrade or adds a condition. In particular,
 `StingBuffPiercing`, `StewardSacrificeDamage_Upgrade` and
 `PyreHeartSavagery_UpgradeData` are useful original **payload** evidence, not
-validation of their complete original owner relics. The ability-Incant fixture's
+validation of their complete original owner relics in those earlier archives.
+The new unit relic batch independently validates the unchanged Steward owner.
+The ability-Incant fixture's
 `PojuNativeAbilityIncantRelic` is authored and is also excluded. The always-present
 `PyreHeartStarter_ArtifactData` with an empty effect list adds no effect witness.
 
@@ -72,3 +81,4 @@ include the starter-cost, cardless or four-artifact batch evidence above.
 [cost]: full-battle-relic-card-modifiers.mt2f
 [cardless]: full-battle-cardless-relic-upgrades.mt2f
 [batch]: full-battle-original-relic-batch.mt2f
+[units]: full-battle-original-unit-relics.mt2f

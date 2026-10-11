@@ -15,7 +15,7 @@ The default command still checks the full curated inventory.
 For routine changes, run only the new and directly affected fixtures with
 `-Fixture`; run the full inventory at completed milestones and before delivery.
 
-Current inventory is 212 archives: 181 accepted battles and 31 component
+Current inventory is 213 archives: 182 accepted battles and 31 component
 calibrations. `full-battle-relic-card-status-upgrades.mt2f` verifies a native
 temporary card status upgrade reaches the unit summoned by that card.
 `full-battle-sacrifice-effects.mt2f` covers native `CardEffectSacrifice` target
@@ -2078,4 +2078,46 @@ Focused commands:
 dotnet run --project src/ModelChecks -c Release -- --typed-draw-pure
 dotnet run --project src/ModelChecks -c Release -- --typed-draw-only tests/fixtures/full-battle-typed-draw.mt2f
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-typed-draw.mt2f
+```
+
+### Original unit relic batch
+
+`full-battle-original-unit-relics.mt2f` exercises four unchanged catalog artifacts
+in one muted Instant battle: `ImpDamageBuff`, `StewardSacrificeDamage`,
+`MorselsGetDamageShield` and `ValorTransferOnAngelDeath`. Only the carrier unit
+subtypes, card effects and equipment trigger are authored. Original relic IDs,
+upgrade IDs, subtype filters and the cardless-only spawn effect are retained.
+
+The strict check compares 40 complete modifier calls, ordered filtering,
+unique rejection, resets and notifications in 32 immutable branches. Three
+paid and three cardless Morsel births distinguish the one starting shield from
+the additional cardless-only shield. Twenty-eight native Shift queries cover
+player count 2, enemy body count 1, enemy equipment count 2 and excluded trigger
+count 1; the exclusion probe restores the original flag and rechecks the count.
+Eight player shifts and one equipped-enemy shift double the moved unit's
+five-gold reward while also matching the other same-team shift callbacks.
+
+Six original Steward abilities actually sacrifice their owners; three damage
+enemies. Paid source cards exhaust, while temporary cardless source copies leave
+ownership and retain only their registry history. Twenty-seven exchange
+observations exercise original Demon Multistrike, and one shield-block
+observation preserves Morsel health while consuming its shield. Complete native
+states additionally cover queued sacrifice callbacks before physical-position
+centering and the lifecycle descriptor on an equipment's anonymous aggregate.
+
+The 39-play/seven-EndTurn policy wins with Pyre health 78. Native sampling takes
+175.91 seconds with zero capture failures, mismatches, unsupported or pending
+records; original installation files are unchanged. The independent full policy,
+mid-battle suffix, 16 policy branches and all recorded component checks pass.
+Eight affected historical fixtures pass across the equipment and sacrifice
+changes. A full 213-archive rerun remains deferred under the incremental workflow.
+
+The byte-identical native archive uses schema 106, has 67,488 bytes/10,703 nodes
+and SHA-256 `8fb8844068a431185ca4cb05d66e91f7b0d41f344bd57e146776c925bc50d76f`.
+There are no JSON companions. See [relic-coverage.md](relic-coverage.md) for the
+16/224 original-relic coverage scope and effect witnesses.
+
+```powershell
+dotnet run --project src/ModelChecks -c Release -- --original-unit-relics-only tests/fixtures/full-battle-original-unit-relics.mt2f
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-unit-relics.mt2f
 ```
