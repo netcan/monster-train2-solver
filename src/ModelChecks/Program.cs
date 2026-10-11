@@ -1,6 +1,13 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
 
+if (args.Length == 2 && args[0] == "--original-unit-relics-only")
+{
+    using var relicDocument = ModelJson.ReadFixture(args[1]);
+    OriginalUnitRelicBatchChecks.Native(relicDocument.RootElement, required: true);
+    return;
+}
+
 if (args.Length == 1 && args[0] == "--typed-draw-pure")
 {
     TypedDrawChecks.Run();

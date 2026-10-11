@@ -166,6 +166,8 @@ internal static class RoomCombatChecks
         CardBranchMaskChecks.Native(fixture);
         if (fixture.TryGetProperty("ModifierScenario", out var relicScenario) && relicScenario.GetString() == "original-relic-batch")
             OriginalRelicBatchChecks.Native(fixture);
+        else if (fixture.TryGetProperty("ModifierScenario", out relicScenario) && relicScenario.GetString() == "original-unit-relic-batch")
+            OriginalUnitRelicBatchChecks.Native(fixture, required: true);
         else RelicCardModifierChecks.Native(fixture, requireScenarioCoverage:
             !fixture.TryGetProperty("ModifierScenario", out var integrationScenario) || integrationScenario.GetString() != "typed-draw");
         UnitIdentityChecks.Native(fixture);

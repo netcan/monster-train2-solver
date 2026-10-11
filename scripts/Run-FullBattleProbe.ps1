@@ -128,6 +128,7 @@ param(
     [switch] $RelicCardAbilityUpgrades,
     [switch] $RelicCardTriggerUpgrades,
     [switch] $OriginalRelicBatch,
+    [switch] $OriginalUnitRelicBatch,
     [switch] $TypedDraw,
     [switch] $IncantRelic,
     [switch] $IncantRelics,
@@ -177,6 +178,7 @@ param(
 
 $ErrorActionPreference = 'Stop'
 if ($TypedDraw) { $BranchCardMasks = $true; $BattleRelicUpgrades = $true; $Policy = 'units-spells-and-junk' }
+if ($OriginalUnitRelicBatch) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($ConditionalBattleRelicUpgrades) { $BattleRelicUpgrades = $true }
 if ($RelicCardStatusUpgrades) { $BattleRelicUpgrades = $true }
 if ($RelicCardPiercingUpgrades) { $BattleRelicUpgrades = $true }
@@ -356,6 +358,7 @@ if ($SacrificeEffects) {
 if ($OriginalRelicBatch) {
     $environment['MT2_PROBE_MODIFIERS'] = 'original-relic-batch'
 }
+if ($OriginalUnitRelicBatch) { $environment['MT2_PROBE_MODIFIERS'] = 'original-unit-relic-batch' }
 if ($TypedDraw) {
     $environment['MT2_PROBE_MODIFIERS'] = 'typed-draw'
     $environment['MT2_PROBE_ISOLATE_UI_RNG'] = '1'

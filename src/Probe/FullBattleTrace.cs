@@ -243,7 +243,7 @@ namespace MonsterTrain2Poju.Probe
                 lastAttacker == null || normalizeDestroyedAttacker && (lastAttacker.IsDestroyed || !lastAttacker.IsAlive) ? 0 : UnitId(lastAttacker), statuses,
                 character.GetEquipment().Select(CardId).ToArray(), TriggerStates(character).Count, AbilityCooldownProbe.Capture(character), AbilityCooldownProbe.CaptureDictionary(character), AbilityLifecycleProbe.Rules(character.GetSourceCharacterData()),
                 new HordeBaseStats(character.GetSourceCharacterData().GetAttackDamage(), character.GetSourceCharacterData().GetHealth()), character.IsSpawning, character.SacrificeCard == null ? 0 : CardId(character.SacrificeCard), DeathSignalProbe.Capture(character),
-                BumpScenario.Enabled ? new UnitBumpRules(character.GetLoopsBetweenTrainFloors(), character.IsCompanionBoss(), character.IsOuterTrainBoss()) : null);
+                BumpScenario.Enabled || OriginalUnitRelicBatchScenario.Enabled ? new UnitBumpRules(character.GetLoopsBetweenTrainFloors(), character.IsCompanionBoss(), character.IsOuterTrainBoss()) : null);
         }
 
         internal CombatContext CaptureContext()
@@ -515,6 +515,7 @@ namespace MonsterTrain2Poju.Probe
                 TypedDrawEffects = TypedDrawProbe.Records,
                 TypedDrawCards = TypedDrawProbe.Draws,
                 TypedDrawClears = TypedDrawProbe.Clears,
+                RelicShiftQueries = OriginalUnitRelicBatchScenario.ShiftQueries,
                 CardGenerations = GenerationScenario.Records,
                 DamageScaling = DamageScalingScenario.Samples,
                 StatusScaling = StatusScalingScenario.Samples,

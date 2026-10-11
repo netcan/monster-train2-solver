@@ -11,9 +11,10 @@ namespace MonsterTrain2Poju.Probe
     internal static class OriginalRelicBatchScenario
     {
         internal const string Name = "original-relic-batch";
-        internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == Name;
-        internal static bool Prepared { get; private set; }
-        internal static bool CaptureReady { get; private set; }
+        internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == Name || OriginalUnitRelicBatchScenario.Enabled;
+        private static bool prepared, captureReady;
+        internal static bool Prepared => prepared || OriginalUnitRelicBatchScenario.Prepared;
+        internal static bool CaptureReady => captureReady || OriginalUnitRelicBatchScenario.CaptureReady;
         internal static readonly string[] ArtifactKeys =
         {
             "MoltenManifold", "SpawnWithRage", "UnitsGainLifesteal", "ContingencyPlans"
@@ -22,6 +23,7 @@ namespace MonsterTrain2Poju.Probe
         internal static void Prepare(AllGameManagers managers, ManualLogSource log)
         {
             if (!Enabled || Prepared) return;
+            if (OriginalUnitRelicBatchScenario.Enabled) { OriginalUnitRelicBatchScenario.Prepare(managers, log); return; }
             CardCostScenario.Prepare(managers, log, lethal: false);
             SaveManager save = managers.GetSaveManager();
             CardState[] owned = managers.GetCardManager()!.GetAllCards(new List<CardState>()).ToArray();
@@ -40,7 +42,7 @@ namespace MonsterTrain2Poju.Probe
 
             // Capture once the complete batch is present. Repeated application and
             // reset exercise native non-unique stacking and rejected non-X filters.
-            CaptureReady = true;
+            captureReady = true;
             CardUpgradeData upgrade = definitions.Single(relic => relic.name == "MoltenManifold")
                 .GetEffects().Single().GetParamCardUpgradeData();
             if (!owned.Any(card => upgrade.GetFilters().All(filter => filter.FilterCard(card, managers.GetRelicManager()))))
@@ -50,7 +52,7 @@ namespace MonsterTrain2Poju.Probe
                 managers.GetRelicManager().ApplyCardStateModifiers(card, resetTempCardModifiers: false);
                 managers.GetRelicManager().ApplyCardStateModifiers(card);
             }
-            Prepared = true;
+            prepared = true;
             AccessTools.Field(typeof(CombatManager), "combatStateChanged").SetValue(managers.GetCombatManager(), true);
             log.LogInfo("ORIGINAL-RELIC-BATCH-PREPARED unchanged " + string.Join(", ", ArtifactKeys) +
                 "; native X-cost cards and paid unit births; original Boss/waves retained.");

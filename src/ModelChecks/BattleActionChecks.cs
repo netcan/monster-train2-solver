@@ -296,6 +296,8 @@ internal static class BattleActionChecks
             chooser = ChooseTypedDrawThenCards;
         if (fixture.TryGetProperty("ModifierScenario", out var incantPolicy) && incantPolicy.GetString() is "incant" or "incant-thresholds" or "incant-relic" or "incant-relic-combined")
             chooser = BattleActionModel.ChooseEmptySpellThenCards;
+        if (fixture.TryGetProperty("ModifierScenario", out var originalUnitRelicPolicy) && originalUnitRelicPolicy.GetString() == "original-unit-relic-batch")
+            chooser = OriginalUnitRelicBatchChecks.Choose;
         if (fixture.TryGetProperty("ModifierScenario", out var summonScenario) && summonScenario.GetString()?.StartsWith("multi-summon", StringComparison.Ordinal) == true)
             chooser = BattleActionModel.ChooseMultiSummonThenCards;
         if (fixture.TryGetProperty("ModifierScenario", out var abilityScenario) &&
