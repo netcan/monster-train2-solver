@@ -299,7 +299,7 @@ internal static class BattleActionChecks
             }
         }
         if (fixture.TryGetProperty("ModifierScenario", out FixtureValue scenario) &&
-            (scenario.GetString() is "dynamic-upgrades" or "sacrifice-upgrades" or "hand-upgrades" or "targeted-hand-upgrades"))
+            (scenario.GetString() is "dynamic-upgrades" or "sacrifice-upgrades" or "hand-upgrades" or "targeted-hand-upgrades" or "permanent-consume-hand-upgrades"))
         {
             var modifiedActions = actions.EnumerateArray().Where(entry =>
             {
@@ -312,7 +312,7 @@ internal static class BattleActionChecks
             bool observed = modifiedActions.Any(entry =>
             {
                 BattleTurnState actual = entry.GetProperty("Actual").Deserialize<BattleTurnState>()!;
-                if (scenario.GetString() is "hand-upgrades" or "targeted-hand-upgrades")
+                if (scenario.GetString() is "hand-upgrades" or "targeted-hand-upgrades" or "permanent-consume-hand-upgrades")
                     return actual.Spawn.Train.Context!.CardInstances!.Any(card => card.Permanent.Upgrades
                         .Any(upgrade => upgrade.AssetKey.StartsWith("PojuHand", StringComparison.Ordinal)));
                 return scenario.GetString() == "sacrifice-upgrades" ? !actual.Spawn.Train.Rooms.SelectMany(room => room.Units)
@@ -322,6 +322,23 @@ internal static class BattleActionChecks
             });
             Require(observed, "The dynamic upgrade fixture never changed the native unit or killed its target.");
             Console.WriteLine($"NATIVE-UPGRADE-COVERAGE PASS: {modifiedActions.Length} modified spell plays, observed native {scenario.GetString()} effects.");
+        }
+        if (fixture.TryGetProperty("ModifierScenario", out FixtureValue permanentConsumeScenario) &&
+            permanentConsumeScenario.GetString() == "permanent-consume-hand-upgrades")
+        {
+            int exhausted = 0;
+            foreach (FixtureValue entry in actions.EnumerateArray())
+            {
+                BattleTurnState actual = entry.GetProperty("Actual").Deserialize<BattleTurnState>()!;
+                int cardId = entry.GetProperty("Action").GetProperty("CardInstanceId").GetInt32();
+                CardInstanceState? card = actual.Spawn.Train.Context!.FindCard(cardId);
+                bool consumed = card?.Permanent.Upgrades.Any(upgrade => upgrade.AssetKey == "PojuHandPermanentConsume") == true &&
+                    card.ExhaustState?.BaseTraits.Any(trait => trait.IsExhausted) == true &&
+                    actual.OtherPiles.Single(pile => pile.Name == "Exhausted").Cards.Any(token => token.InstanceId == cardId);
+                if (consumed) exhausted++;
+            }
+            Require(exhausted > 0, "The native hand-installed permanent Consume card was never played and exhausted.");
+            Console.WriteLine($"NATIVE-PERMANENT-CONSUME PASS: {exhausted} permanently upgraded cards were played into Exhausted.");
         }
         if (!fixture.TryGetProperty("Policy", out FixtureValue policy) ||
             policy.GetString() is not ("units-and-junk" or "units-spells-and-junk")) return;

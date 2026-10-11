@@ -20,6 +20,7 @@ param(
     [switch] $SacrificeEffects,
     [switch] $HandUpgrades,
     [switch] $TargetedHandUpgrades,
+    [switch] $PermanentConsumeHandUpgrades,
     [switch] $Healing,
     [switch] $HealingTriggers,
     [switch] $RoomSpells,
@@ -188,6 +189,7 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+if ($PermanentConsumeHandUpgrades) { $HandUpgrades = $true; $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($TypedDraw) { $BranchCardMasks = $true; $BattleRelicUpgrades = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalUnitRelicBatch) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalStatusRelicBatch) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
@@ -402,6 +404,7 @@ if ($TypedDraw) {
     $environment['MT2_PROBE_MODIFIERS'] = 'typed-draw'
     $environment['MT2_PROBE_ISOLATE_UI_RNG'] = '1'
 }
+if ($PermanentConsumeHandUpgrades) { $environment['MT2_PROBE_MODIFIERS'] = 'permanent-consume-hand-upgrades' }
 $originalBefore = Get-OriginalSignature
 $unityLog = Join-Path $profile 'unity-scenario.log'
 $nativeTimer = [System.Diagnostics.Stopwatch]::StartNew()
@@ -847,6 +850,18 @@ if ($HandUpgrades -or $TargetedHandUpgrades) {
 } elseif ($DynamicUpgrades) {
     $modifierCoverage = $modifierCoverage -and @($modifierActions | Where-Object {
         @($_.Actual.Spawn.Train.Rooms.Units.Modifiers.Upgrades | Where-Object AssetKey -Like 'PojuProbe*').Count -gt 0
+    }).Count -gt 0
+}
+if ($PermanentConsumeHandUpgrades) {
+    $modifierCoverage = $modifierCoverage -and @($trace.Actions | Where-Object {
+        $actionEntry = $_
+        $cardId = $actionEntry.Action.CardInstanceId
+        $card = $actionEntry.Actual.Spawn.Train.Context.CardInstances | Where-Object InstanceId -EQ $cardId
+        $exhausted = $actionEntry.Actual.OtherPiles | Where-Object Name -EQ 'Exhausted' | ForEach-Object Cards |
+            Where-Object InstanceId -EQ $cardId
+        $null -ne $card -and $card.ExhaustState.BaseTraits.Count -gt 0 -and
+            @($card.Permanent.Upgrades | Where-Object AssetKey -EQ 'PojuHandPermanentConsume').Count -gt 0 -and
+            @($exhausted).Count -gt 0
     }).Count -gt 0
 }
 $numericRangeCoverage = -not ($NumericRanges -or $NumericRangesLethal) -or (@($trace.NumericRanges | Where-Object Phase -EQ 'Cast').Count -gt 0 -and

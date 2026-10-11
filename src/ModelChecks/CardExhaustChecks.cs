@@ -27,10 +27,39 @@ internal static class CardExhaustChecks
             "The relic threshold did not use the incremented scenario play count.");
         Require(!delayed.OnDiscard(false).ExhaustState!.BaseTraits.Single().IsExhausted && delayed.OnDiscard(false).PlayCount == 0,
             "Unplayed hand discard must not mark Consume.");
+        var permanentRoot = Battle(Card(1, []));
+        var installed = HandUpgradeModel.Apply(permanentRoot.Spawn.Train.Rooms[0], Upgrade(false), "Permanent", permanentRoot.PlayRules);
+        Require(installed.Supported, installed.UnsupportedReason ?? "Permanent Consume hand upgrade failed.");
+        CardInstanceState installedCard = installed.State!.Context!.FindCard(1)!;
+        Require(installedCard.MaskDescriptor!.BaseTraits.Count(trait => trait.RuntimeType == Consume) == 1 &&
+            installedCard.ExhaustState!.BaseTraits.Single().TraitIndex == 0 && installedCard.ExhaustState.UpgradeTrait == null &&
+            CardExhaustModel.HasConsume(installedCard) && installedCard.Permanent.Upgrades.Any(upgrade => upgrade.AssetKey == "consume-upgrade"),
+            "Permanent hand upgrade must install Consume as a branch-owned base trait.");
+        var installedPlay = BattleActionModel.PlayCard(Battle(installedCard), new(1, 0));
+        Require(installedPlay.Supported, installedPlay.Reason ?? "Permanently upgraded Consume card failed.");
+        CombatContext installedAfter = installedPlay.State!.Spawn.Train.Context!;
+        CardInstanceState exhaustedInstalled = installedAfter.FindCard(1)!;
+        Require(installedAfter.OtherPiles!.Single(pile => pile.Name == "Exhausted").Cards.Single().InstanceId == 1 &&
+            installedAfter.Statistics!.Value(1, "TimesExhausted") == 2 && exhaustedInstalled.ExhaustState!.BaseTraits.Single().IsExhausted,
+            "Permanently installed Consume must use native played-card exhaustion and standby closure.");
+        var existingConsumeRoot = Battle(Card(1, [Consume]));
+        var duplicateInstalled = HandUpgradeModel.Apply(existingConsumeRoot.Spawn.Train.Rooms[0], Upgrade(false), "Permanent", existingConsumeRoot.PlayRules);
+        Require(duplicateInstalled.Supported && duplicateInstalled.State!.Context!.FindCard(1)!.MaskDescriptor!.BaseTraits.Count(trait => trait.RuntimeType == Consume) == 1,
+            "A permanent non-stacking Consume upgrade must not duplicate an already active base trait.");
+        var purgedRoot = Battle(Card(1, [Consume, "CardTraitSelfPurge"]));
+        var purgedInstalled = HandUpgradeModel.Apply(purgedRoot.Spawn.Train.Rooms[0], Upgrade(false), "Permanent", purgedRoot.PlayRules);
+        Require(purgedInstalled.Supported, purgedInstalled.UnsupportedReason ?? "Permanent Consume on SelfPurge card failed.");
+        CardInstanceState hiddenConsume = purgedInstalled.State!.Context!.FindCard(1)!;
+        var unrelatedPermanent = new CardUpgradeModifier("unrelated", "unrelated", new(), [], false, false, false, 0, 0, []);
+        var hiddenRefreshed = hiddenConsume.WithModifiers(UnitModifierModel.Add(hiddenConsume.Permanent, unrelatedPermanent), hiddenConsume.Temporary);
+        Require(hiddenConsume.MaskDescriptor!.BaseTraits.Count(trait => trait.RuntimeType == Consume) == 2 &&
+            hiddenRefreshed.MaskDescriptor!.BaseTraits.Count(trait => trait.RuntimeType == Consume) == 2 &&
+            hiddenRefreshed.ExhaustState!.BaseTraits.Count == 2,
+            "An unrelated permanent upgrade must not reinstall a Consume trait hidden by SelfPurge.");
         foreach (int stackMode in new[] { 1, 2, 3 })
         {
             var permanent = HandUpgradeModel.Apply(root.Spawn.Train.Rooms[0], Upgrade(false, stackMode), "Permanent", root.PlayRules);
-            Require(!permanent.Supported && permanent.UnsupportedReason!.Contains("permanent trait-installation"),
+            Require(!permanent.Supported && permanent.UnsupportedReason!.Contains("not modeled"),
                 "A permanent Consume stack mode that changes native base trait state must remain explicitly unsupported.");
         }
 

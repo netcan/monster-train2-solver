@@ -1,6 +1,6 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-11): 225 binary archives, including 194
+Current accepted inventory (2026-10-11): 226 binary archives, including 195
 full battles and 31 component calibrations. Unchanged original relic evidence
 covers 55/224 catalog entries (24.55%); see
 [the owner evidence table](tests/fixtures/relic-coverage.md). Whole-battle
@@ -14,6 +14,12 @@ and preview-copy lifecycle remain unverified.
 `full-battle-relic-card-exhaust-upgrades.mt2f` validates temporary relic
 Consume upgrades through played-card exhaustion. The fixture reuses a modified
 ReduceStarterCost payload and does not increase original relic-owner coverage.
+
+`full-battle-permanent-consume-hand-upgrades.mt2f` validates permanent Consume
+installation by `CardEffectAddPermanentCardUpgradeToCardsInHand`, including
+deduplication of an already-visible Consume and installation when SelfPurge
+hides the existing trait. A subsequently played upgraded card reaches Exhausted.
+This mechanism fixture does not add original relic-owner evidence.
 
 Fixed native regression inputs live in `tests/fixtures/` and are read by
 `scripts/Check-Models.ps1`. Historical `results/` paths below refer to local
@@ -8055,3 +8061,29 @@ saved modified Pyre base attack, unsupported tower room modifiers and Gold
 range quantities without captured Setup-time metadata remain guarded. This
 batch proves its observed gold/upgrade/status paths and original owners;
 arbitrary combinations, all Bosses and optimal search remain unfinished.
+
+### Permanent hand-upgrade Consume installation (schema 123)
+
+`full-battle-permanent-consume-hand-upgrades.mt2f` records the native
+`CardEffectAddPermanentCardUpgradeToCardsInHand` path with
+`CardTraitExhaustState`. The model installs traits only from newly added
+permanent upgrade objects. Native replay confirms that a visible base Consume
+is not duplicated, while SelfPurge-hidden Consume does not prevent a new base
+trait from being installed. A played upgraded card subsequently moves to
+Exhausted.
+
+The native battle wins at Pyre 80 after 26 card plays and six EndTurns, with 50
+recorded combat stages. Against the corrected model, all 26 policy actions, the
+permanent-Consume exhaustion assertion, and 570 complete card-mask decision
+contexts pass; the latter contains 9,255 exact native card-view queries,
+3,345 upgraded-card observations and 32 immutable query branches. Pure Consume
+checks also cover repeat application and SelfPurge. This is mechanism coverage,
+not evidence for another original relic owner. The binary has 29,840 bytes and
+4,894 unique nodes, SHA-256
+`b0cdbe1fddef6c959facbd58fdfd4e35bc1d9b758a133883e4d6173b20d5b1c2`, with no
+JSON companion.
+
+Inventory is 226 binary archives: 195 battles and 31 component calibrations.
+Original relic evidence remains 55/224 (24.55%). The full 226-archive replay
+remains deferred to a completed milestone. Arbitrary card/relic combinations,
+all Bosses and optimal search remain unfinished.

@@ -15,7 +15,7 @@ The default command still checks the full curated inventory.
 For routine changes, run only the new and directly affected fixtures with
 `-Fixture`; run the full inventory at completed milestones and before delivery.
 
-Current inventory is 225 archives: 194 accepted battles and 31 component
+Current inventory is 226 archives: 195 accepted battles and 31 component
 calibrations. `full-battle-relic-card-status-upgrades.mt2f` verifies a native
 temporary card status upgrade reaches the unit summoned by that card.
 `full-battle-sacrifice-effects.mt2f` covers native `CardEffectSacrifice` target
@@ -2602,4 +2602,29 @@ full 225-archive replay remains deferred to a milestone.
 
 ```powershell
 & ./scripts/Check-Models.ps1 -Fixture full-battle-relic-card-exhaust-upgrades.mt2f
+```
+
+### Permanent hand-upgrade Consume installation
+
+`full-battle-permanent-consume-hand-upgrades.mt2f` records native
+`CardEffectAddPermanentCardUpgradeToCardsInHand` application of
+`CardTraitExhaustState`. It verifies that adding the same permanent upgrade
+does not duplicate an already-visible base Consume, but installs a new trait
+when SelfPurge hides the existing one. A played card with the permanent upgrade
+then reaches Exhausted. This verifies the mechanism, not another unchanged
+original relic owner.
+
+The schema-123 native battle wins at Pyre 80 after 26 card plays, six EndTurns
+and 50 recorded combat stages. Corrected-model replay passes all 26 policy
+actions, the permanent-Consume exhaustion assertion, and 570 card-mask decision
+contexts with 9,255 exact native card-view queries, 3,345 upgraded-card views
+and 32 immutable branches. Pure Consume checks pass as well. The 29,840-byte
+binary has 4,894 unique nodes and SHA-256
+`b0cdbe1fddef6c959facbd58fdfd4e35bc1d9b758a133883e4d6173b20d5b1c2`; there is
+no JSON companion. Inventory is 226 archives: 195 battles and 31 calibrations.
+Original relic coverage remains 55/224 (24.55%). Full-inventory replay remains
+deferred to a completed milestone.
+
+```powershell
+& ./scripts/Check-Models.ps1 -Fixture full-battle-permanent-consume-hand-upgrades.mt2f
 ```

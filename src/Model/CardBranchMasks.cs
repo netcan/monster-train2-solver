@@ -36,6 +36,8 @@ namespace MonsterTrain2Poju.Model
             TemporaryTraits = Array.AsReadOnly((temporaryTraits ?? Array.Empty<CardTraitValue>()).ToArray());
             PermanentReplacements = Array.AsReadOnly((permanentReplacements ?? Array.Empty<CardTraitReplacement>()).ToArray());
             AuthoredCastEffects = Array.AsReadOnly(authoredCastEffects.ToArray()); Purified = purified; PermanentGraft = permanentGraft; }
+        internal CardMaskDescriptor WithBaseTraits(IReadOnlyList<CardTraitValue> traits) => new CardMaskDescriptor(
+            Definition, BaseCost, traits, AuthoredCastEffects, Purified, PermanentGraft, TemporaryTraits, PermanentReplacements);
     }
 
     public static class CardBranchMaskModel

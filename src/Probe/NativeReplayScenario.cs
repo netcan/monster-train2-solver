@@ -660,7 +660,7 @@ namespace MonsterTrain2Poju.Probe
                 }
             }
             if (fullBattle && !numericModifiersPrepared && ((modifierScenario == "spawn-status-relics" || modifierScenario == "spawn-status-relics-clones" || modifierScenario == "spawn-status-relics-mixed-cardless-order" || modifierScenario == "incant" || modifierScenario == "incant-thresholds" || (modifierScenario == "incant-relic" || modifierScenario == "incant-relic-combined") || modifierScenario == "ability-incant") || modifierScenario == "purify" || modifierScenario == "purify-queues" || EnchantmentBattleScenario.IsScenario(modifierScenario) || modifierScenario == "spawn-enchant" || modifierScenario == "hero-copy" || modifierScenario == "unit-copy" || modifierScenario == "unit-clone" || modifierScenario == "bump" || modifierScenario == "horde-merge" || modifierScenario == "revival" || modifierScenario.StartsWith("triggered-summon", StringComparison.Ordinal) || modifierScenario == "spawn-points" || (modifierScenario.StartsWith("multi-summon", StringComparison.Ordinal)) || modifierScenario == "rally-lethal" || modifierScenario == "rally-triggers" || modifierScenario == "dying-horde-upgrades" || modifierScenario == "horde-upgrades" || modifierScenario == "horde-death" || modifierScenario == "horde-removal" || modifierScenario == "harvest-triggers" || modifierScenario == "horde-statuses" || modifierScenario == "ability-effects" || modifierScenario == "ability-lifecycle" || modifierScenario == "ability-activation" || modifierScenario == "ability-activation-x" || modifierScenario == "ability-activation-lethal" || modifierScenario == "ability-cooldown" || modifierScenario == "ability-cache" || modifierScenario == "sentry" || modifierScenario == "sentry-lethal" || modifierScenario == "companion-boss" || modifierScenario == "numeric-upgrades" || modifierScenario == "dynamic-upgrades" ||
-                modifierScenario == "sacrifice-upgrades" || modifierScenario == "hand-upgrades" || modifierScenario == "targeted-hand-upgrades" ||
+                modifierScenario == "sacrifice-upgrades" || modifierScenario == "hand-upgrades" || modifierScenario == "targeted-hand-upgrades" || modifierScenario == "permanent-consume-hand-upgrades" ||
                 modifierScenario == "healing" || modifierScenario == "healing-triggers" || modifierScenario == "room-spells" ||
                 modifierScenario == "terminal-spells" || modifierScenario == "post-kill-spells" || modifierScenario == "random-spells" ||
                 modifierScenario == "random-status" || modifierScenario == "cross-room-spells" || modifierScenario == "cross-room-targets" || modifierScenario == "attack-buffs" ||
@@ -753,8 +753,9 @@ namespace MonsterTrain2Poju.Probe
                 else if (modifierScenario == "room-spells") RoomSpellScenario.Prepare(managers, log);
                 else if (modifierScenario == "healing" || modifierScenario == "healing-triggers")
                     HealingScenario.Prepare(managers, log, modifierScenario == "healing-triggers");
-                else if (modifierScenario == "hand-upgrades" || modifierScenario == "targeted-hand-upgrades")
-                    HandUpgradeScenario.Prepare(managers, log, modifierScenario == "targeted-hand-upgrades");
+                else if (modifierScenario == "hand-upgrades" || modifierScenario == "targeted-hand-upgrades" || modifierScenario == "permanent-consume-hand-upgrades")
+                    HandUpgradeScenario.Prepare(managers, log, modifierScenario == "targeted-hand-upgrades",
+                        modifierScenario == "permanent-consume-hand-upgrades");
                 else if (modifierScenario == "dynamic-upgrades" || modifierScenario == "sacrifice-upgrades")
                     DynamicUpgradeScenario.Prepare(managers, log, modifierScenario == "sacrifice-upgrades");
                 else NumericUpgradeScenario.Prepare(managers, log);
