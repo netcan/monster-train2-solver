@@ -1386,7 +1386,11 @@ namespace MonsterTrain2Poju.Model
                         source.Units.Select(item => item.Id == unit.Id ? target.Freeze() : item).ToArray(),
                         source.ExternalInteractions, context, source.Preview), RoomOutcome.Exchanged, 0, events);
                 }
-                Death(null, target, sourceCardId, sacrifice: true, immediateHarvest: whileRunningQueue,
+                // Native Sacrifice awaits CheckForDeath and its callbacks before
+                // RemoveDeadCharacters clears and centers the physical positions.
+                Death(null, target, sourceCardId,
+                    deferRemoval: returnSpawnerAfterQueue && !doNotFullyRemove && context?.SpawnPoints != null,
+                    sacrifice: true, immediateHarvest: whileRunningQueue,
                     doNotFullyRemove: doNotFullyRemove, returnSpawnerAfterQueue: returnSpawnerAfterQueue);
                 if (whileRunningQueue)
                     foreach (string stage in HarvestModel.Stages(target.Freeze()))

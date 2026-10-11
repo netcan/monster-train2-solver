@@ -32,7 +32,8 @@ internal static class SacrificeChecks
 
         SpawnPointReference point = new(0, CombatTeam.Player, 0);
         BattleSpawnPoints points = new([
-            new SpawnPointGroupState(0, CombatTeam.Player, 1, 1, [1], [false])
+            new SpawnPointGroupState(0, CombatTeam.Player, 1, 1, [1], [false]),
+            new SpawnPointGroupState(0, CombatTeam.Enemy, 1, 1, [0], [false])
         ], [new UnitSpawnPointState(1, point, point)]);
         CombatUnit occupant = Unit(1, CombatTeam.Player);
         var occupiedRoom = new RoomCombatState(0, false, [occupant], [], Context(rng, 2, points));
@@ -49,7 +50,7 @@ internal static class SacrificeChecks
             "Canonical cleanup must clear the retired owner's pointers while retaining its DoNotFullyRemove slot.");
         RoomCombatResult removed = CardSpellModel.Apply(occupiedRoom, [Effect("DropTargetCharacter")], 1, 8);
         Require(removed.Supported && removed.State!.Context!.SpawnPoints!.FirstEmpty(0, CombatTeam.Player) == 0,
-            "Ordinary sacrifice did not release its physical slot.");
+            "Ordinary sacrifice did not release its physical slot: " + removed.UnsupportedReason);
 
         var subtypeRng = UnityRng.Seed(913);
         CombatUnit[] candidates = [Unit(1, CombatTeam.Player, subtypes: ["imp"]), Unit(2, CombatTeam.Player, subtypes: ["imp"]),
