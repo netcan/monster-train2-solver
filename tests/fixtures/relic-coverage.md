@@ -1,7 +1,7 @@
 # Original relic coverage evidence
 
-As of 2026-10-11, **29 distinct original collectable relics / 224 catalog entries
-(12.95%)** have accepted native full-battle evidence. This counts unchanged relic
+As of 2026-10-11, **32 distinct original collectable relics / 224 catalog entries
+(14.29%)** have accepted native full-battle evidence. This counts unchanged relic
 definitions whose effects actually ran, including their original filters and
 conditions. Test cards, unit triggers and carrier subtypes may be authored to
 exercise those effects; the claim covers the recorded paths, not every possible
@@ -12,7 +12,7 @@ entries; nine now have accepted original-owner effect evidence.
 four now have accepted original-owner evidence. Unknown status families and
 other effects on the remaining owners still require modeling and native proof.
 
-All nine archives below report game `2.2.1`, module MVID
+All ten archives below report game `2.2.1`, module MVID
 `8fb07b96-f4db-4d2b-884d-c00536d6ccf4`, `NativeWon=true`, and zero
 `CaptureFailures`, `Mismatches`, `Unsupported` and `Pending`. Their current byte
 lengths and SHA-256 hashes were checked against [manifest.tsv](manifest.tsv).
@@ -50,9 +50,12 @@ regression; the older evidence was retained without a new full-inventory run.
 | `IncreasePyregelStacks` | `f4c76f11-37d9-4bb5-867a-4d99b7cfa270` | [original status relics][statusAdders] | The unchanged Heroes-team first-application rule adds 6 Pyregel. A real first application is 1 → 8 with both original Pyregel relics; repeated application is 1 → 2. Removing this relic changes the first case by exactly 6. |
 | `ExtraValorOnValor` | `74c025fa-ddcb-494b-a790-dcadc5b5772b` | [original status relics][statusAdders] | The unchanged Monsters-team unconditional rule adds 1 Valor, including zero input. Eight distinct real native query cases lose that stack when only this relic is removed. Starting, spell and combat-trigger status paths replay exactly. |
 | `IncreaseArmorStacks` | `ba26070b-4f6b-4af0-a1ec-2af024b6af87` | [original status relics][statusAdders] | The unchanged Monsters-team positive-stack rule adds 4 Armor. Five distinct real native query cases lose exactly 4 stacks when only this relic is removed. Starting, spell, equipment-upgrade and combat status paths replay exactly. |
+| `IncreaseRageDamage` | `b9bddf11-acaa-40fb-bc40-eee83e478424` | [original magnitude relics][magnitudes] | The unchanged Monsters-team buff magnitude adds 1 attack per future added/removed Rage stack. Removing only this owner preserves captured starting attack history but changes subsequent status attack in 21 action/combat witnesses. |
+| `StrongerSpikes` | `aa94ad34-ee09-464e-89ff-2a2c2867c097` | [original magnitude relics][magnitudes] | The unchanged Monsters-team spikes magnitude adds 1 damage per stack at retaliation. Twelve player-owned Spikes event witnesses deal less real damage after removing only this owner. |
+| `AwokenRegen` | `1fd244de-7d7b-4345-974b-4e5bf287a3df` | [original magnitude relics][magnitudes] | The unchanged Monsters-team regen magnitude adds 1 healing per stack at post-combat. Fourteen player-owned Regen event witnesses restore less actual health after removing only this owner. |
 
 Record indices above are zero-based. Full-battle acceptance and independent
-effect checks are documented in [README.md](README.md); the table's nine source
+effect checks are documented in [README.md](README.md); the table's ten source
 archives contain these observed battle sizes:
 
 | Archive | Schema | Card plays | EndTurns | Matched stages | Independent relic observations |
@@ -66,6 +69,7 @@ archives contain these observed battle sizes:
 | [stationary trigger relic deaths][triggerDeaths] | 103 | 13 | 5 | 35 | 14 births, eight required original effect witnesses |
 | [original trigger relics][triggers] | 106 | 28 | 7 | 54 | 14 births, three attachments including one enemy, ten Bump plays, eight required effect witnesses |
 | [original status relics][statusAdders] | 113 | 26 | 5 | 39 | 27 distinct real queries, 192 boundary queries, four positive original effects |
+| [original magnitude relics][magnitudes] | 114 | 18 | 5 | 39 | 20 matrix, seven live and four preview getter cases; three positive original effects |
 
 The checks that enforce these observations are
 [TriggerCountChecks.Native](../../src/ModelChecks/TriggerCountChecks.cs),
@@ -74,7 +78,8 @@ The checks that enforce these observations are
 [OriginalRelicBatchChecks.Native](../../src/ModelChecks/OriginalRelicBatchChecks.cs),
 [OriginalUnitRelicBatchChecks.Native](../../src/ModelChecks/OriginalUnitRelicBatchChecks.cs),
 [OriginalTriggerRelicBatchChecks.Native/Combined](../../src/ModelChecks/OriginalTriggerRelicBatchChecks.cs),
-and [OriginalStatusRelicBatchChecks.Native](../../src/ModelChecks/OriginalStatusRelicBatchChecks.cs).
+[OriginalStatusRelicBatchChecks.Native](../../src/ModelChecks/OriginalStatusRelicBatchChecks.cs),
+and [OriginalMagnitudeRelicBatchChecks.Native](../../src/ModelChecks/OriginalMagnitudeRelicBatchChecks.cs).
 Each new trigger archive has eight positive owner effects; their union covers
 all nine distinct originals. Removing only one original's installed callbacks
 must change health, attack, membership or status stacks, beyond trigger metadata.
@@ -100,6 +105,11 @@ The ability-Incant fixture's
 The original batch was accepted in commit `63d4f07` with focused regression.
 The preceding 210-archive milestone used a passing prefix and a fixed passing
 suffix; it is not a fresh full regression on the final batch implementation.
+The latest magnitude batch passed its complete fixture checks, independent
+full-battle/mid-battle/16-branch replay and three affected old battle fixtures.
+All 217 archive names, sizes and hashes match; a full 217-archive replay remains
+deferred. Mageblade still requires room spell power and its cached coefficient,
+and is excluded from accepted magnitude consumers and original-owner coverage.
 The older `6/224` passage in README describes an earlier milestone; it does not
 include the starter-cost, cardless or four-artifact batch evidence above.
 
@@ -112,3 +122,4 @@ include the starter-cost, cardless or four-artifact batch evidence above.
 [triggerDeaths]: full-battle-original-trigger-relic-deaths.mt2f
 [triggers]: full-battle-original-trigger-relics.mt2f
 [statusAdders]: full-battle-original-status-relics.mt2f
+[magnitudes]: full-battle-original-magnitude-relics.mt2f

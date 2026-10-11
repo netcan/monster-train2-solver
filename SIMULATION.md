@@ -1,5 +1,11 @@
 # Full battle simulation
 
+Current accepted inventory (2026-10-11): 217 binary archives, including 186
+full battles and 31 component calibrations. Unchanged original relic evidence
+covers 32/224 catalog entries (14.29%); see
+[the owner evidence table](tests/fixtures/relic-coverage.md). Whole-battle
+coverage and the optimal solver remain in progress.
+
 Fixed native regression inputs live in `tests/fixtures/` and are read by
 `scripts/Check-Models.ps1`. Historical `results/` paths below refer to local
 investigation logs, catalogs and benchmarks; that output directory is ignored.
@@ -7833,3 +7839,38 @@ mismatches, unsupported transitions or pending records. The focused 1-of-209
 archive regression passes, including 32 immutable branches. The full inventory
 remains deferred to a completed milestone; replacement and room-ability relic
 payloads and broader Boss/effect coverage remain open.
+
+### Native status magnitude and attack history
+
+`RelicStatusMagnitudeModel` models ordered native magnitude getters for
+buff/debuff/spikes/regen rules. Outer conditions run before the status and team
+filters, with native `targetTeam.HasFlag(sourceTeam)` direction, unchecked
+32-bit accumulation and propagated statistical query context. Value getters
+do not notify or record outer conditions. End-duration resets retain these rules.
+
+Units with captured magnitude support also retain the native
+`DamageBuffFromStatusEffects` field. Buff/debuff/valor additions and removals
+update this separate accumulator using the magnitude at the time of each
+operation; later condition changes do not revalue previous stacks. Nonpositive
+attack-change amounts, including negative overflow products, are ignored as in
+native `BuffDamage`/`DebuffDamage`. Birth initialization clears and rebuilds the
+cache, ordinary copies preserve it, and cycle fingerprints include it. Missing
+cache metadata is rejected when a magnitude rule requires native history; older
+captures without these rules retain their prior null metadata.
+
+Spikes and Regen read magnitude at their actual trigger. Modeled Pyregel and
+Poison consumers also call the getter so unrelated outer-condition queries
+retain their native effects, while unvalidated owner rules remain guarded.
+Mageblade remains unsupported: it needs room spell power and a separate cached
+per-stack coefficient, including source changes and preview-copy behavior.
+
+The schema-114 original magnitude archive independently validates three
+unchanged owners across 18 plays, five EndTurns and 39 complete combat stages,
+with terminal Pyre 80 and zero differential failures. Native sampling takes
+49.85 seconds. Pure checks cover condition-dependent attack history, signed
+status changes, overflow, initialization, decay and 32 immutable branches.
+Dedicated native checks preserve captured starting damage during owner
+ablations, and verify actual future attack, retaliation and healing differences.
+New/affected fixture regression and archive integrity pass; the full historical
+inventory remains deferred. Details and commands are in
+[the fixture documentation](tests/fixtures/README.md).

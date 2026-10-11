@@ -15,7 +15,7 @@ The default command still checks the full curated inventory.
 For routine changes, run only the new and directly affected fixtures with
 `-Fixture`; run the full inventory at completed milestones and before delivery.
 
-Current inventory is 216 archives: 185 accepted battles and 31 component
+Current inventory is 217 archives: 186 accepted battles and 31 component
 calibrations. `full-battle-relic-card-status-upgrades.mt2f` verifies a native
 temporary card status upgrade reaches the unit summoned by that card.
 `full-battle-sacrifice-effects.mt2f` covers native `CardEffectSacrifice` target
@@ -2220,4 +2220,43 @@ the exact original definitions and witnesses.
 dotnet run --project src/ModelChecks -c Release -- --relic-status-stacks-pure
 dotnet run --project src/ModelChecks -c Release -- --original-status-relics-only tests/fixtures/full-battle-original-status-relics.mt2f
 & ./scripts/Check-Models.ps1 -Fixture full-battle-original-status-relics.mt2f
+```
+
+### Original status magnitude relics
+
+`full-battle-original-magnitude-relics.mt2f` accepts the unchanged originals
+`IncreaseRageDamage`, `StrongerSpikes` and `AwokenRegen`. Native attack stores a
+separate `DamageBuffFromStatusEffects` accumulator: a later condition change
+does not recalculate older Rage stacks. Starting statuses, live additions,
+explicit removals, natural decay, copying and upgrades preserve this history.
+Spikes and Regen query their current magnitude at each actual trigger.
+
+The Instant native battle takes 49.85 seconds, wins at Pyre 80 after 18 plays
+and five EndTurns, and matches 39 combat stages with zero capture failures,
+mismatches, unsupported transitions and pending records. The independent full
+battle, mid-battle suffix and 16 parallel policy branches pass. All 31 deduplicated
+native getter cases match: 20 status/team matrix, seven live and four preview
+cases. Getter checks also pass 32 immutable parallel branches.
+
+Removing each original preserves the captured starting status attack cache and
+changes only future processing: 21 Rage attack witnesses, 12 player-owned Spikes
+damage witnesses and 14 player-owned Regen actual-healing witnesses. Complete
+fixture checks and focused original-status-relic, post-combat-healing and
+unit-clone regressions pass. The final stricter player-owner filter was checked
+again with the same production `Model.dll`; its SHA-256 is
+`bd5e8766d33f228263723a0f56b0a95126d0107bb0849bb418d7b28e1978623f`.
+
+The binary archive has no JSON source: 26,951 bytes, 4,298 unique nodes, SHA-256
+`5bc2dd6bd19127eb4b93347ee88578d189efca16b658df66fb80bb30eea0a36d`.
+Raw source:
+`.probe-runs/full-battle-units-spells-and-junk-20261011-115413-e2b090f3/full-battle.mt2f`.
+All 217 archive names, sizes and hashes match the curated list and manifest;
+the full 217-archive replay remains deferred to a completed milestone.
+Original relic coverage is 32/224 (14.29%). Mageblade remains guarded until
+room spell power and its cached coefficient have independent native evidence.
+
+```powershell
+dotnet run --project src/ModelChecks -c Release -- --relic-status-magnitudes-pure
+dotnet run --project src/ModelChecks -c Release -- --original-magnitude-relics-only tests/fixtures/full-battle-original-magnitude-relics.mt2f
+& ./scripts/Check-Models.ps1 -Fixture full-battle-original-magnitude-relics.mt2f
 ```
