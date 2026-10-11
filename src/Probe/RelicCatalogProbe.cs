@@ -30,6 +30,20 @@ namespace MonsterTrain2Poju.Probe
                     SourceTeam = effect.GetParamSourceTeam().ToString(), Int = effect.GetParamInt(), Int2 = effect.GetParamInt2(),
                     Bool = effect.GetParamBool(), Bool2 = effect.GetParamBool2(), Str = effect.GetParamString(),
                     Trigger = effect.GetParamTrigger().ToString(), ExcludedCardTriggers = effect.GetCardTriggers().Select(trigger => trigger.ToString()).ToArray(),
+                    RequiredSubtype = effect.GetParamCharacterSubtype()?.Key,
+                    CharacterFilters = effect.GetParamCharacters()?.Select(character => character == null ? null : new { Id = character.GetID(), AssetKey = character.GetAssetKey() }).ToArray(),
+                    AddedTriggers = effect.GetTriggers()?.Select(trigger => new
+                    {
+                        Kind = trigger.GetTrigger().ToString(), Once = trigger.GetTriggerOnce(), IgnoreSilence = trigger.GetHideVisualAndIgnoreSilence(),
+                        OnlyIfEquipped = trigger.GetOnlyTriggerIfEquipped(),
+                        Effects = trigger.GetEffects().Select(action => new
+                        {
+                            Type = action.GetEffectStateName(), Target = action.GetTargetMode().ToString(), Team = action.GetTargetTeamType().ToString(),
+                            Value = action.GetParamInt(), Bool = action.GetParamBool(), Bool2 = action.GetParamBool2(),
+                            Statuses = (action.GetParamStatusEffects() ?? Array.Empty<StatusEffectStackData>()).Select(status => new { status.statusId, status.count }).ToArray(),
+                            Upgrade = action.GetParamCardUpgradeData()?.name
+                        }).ToArray()
+                    }).ToArray(),
                     Statuses = (effect.GetParamStatusEffects() ?? Array.Empty<StatusEffectStackData>()).Select(status => new { status.statusId, status.count }).ToArray(),
                     CardUpgrade = Upgrade(effect.GetParamCardUpgradeData()),
                     Conditions = (effect.GetEffectConditions() ?? new System.Collections.Generic.List<RelicEffectCondition>()).Select(condition => new
