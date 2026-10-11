@@ -6,10 +6,12 @@ namespace MonsterTrain2Poju.Model
 {
     public static class CompanionBossModel
     {
+        private const string PairedBossInteraction = "Paired companion Boss death and Pyre routing";
+
         public static TrainCombatResult Resolve(EnemySpawnState source, bool preCombat)
         {
             string? error = TrainCombatModel.Validate(source.Train);
-            if (error != null || source.ExternalInteractions.Count > 0)
+            if (error != null || source.ExternalInteractions.Any(interaction => interaction != PairedBossInteraction))
                 return Unsupported(error ?? string.Join("; ", source.ExternalInteractions));
             var liveIds = source.Train.Rooms.SelectMany(room => room.Units).Select(unit => unit.Id).ToHashSet();
             if (source.Train.Rooms.SelectMany(room => room.Units)
@@ -17,16 +19,24 @@ namespace MonsterTrain2Poju.Model
                 return Unsupported("Companion phase inputs require settled destroyed-character references.");
             if (!preCombat || source.Phase < source.Waves.Count) return Match(source.Train);
             var companions = source.Train.Movement.Where(rule => rule.CompanionBoss).Select(rule => rule.UnitId).ToHashSet();
+            CombatUnit[] allBosses = source.Train.Rooms.SelectMany(room => room.Units).Where(unit => unit.IsBoss == true).ToArray();
             CombatUnit[] bosses = source.Train.Rooms.SelectMany(room => room.Units).Where(unit => companions.Contains(unit.Id)).ToArray();
             if (bosses.Length == 0) return Match(source.Train);
-            if (bosses.Length > 1 || source.Train.Rooms.SelectMany(room => room.Units).Count(unit => unit.IsBoss == true) > 1)
+            bool pairedCompanions = allBosses.Length > 1 && allBosses.All(unit => companions.Contains(unit.Id));
+            if (allBosses.Length > 1 && !pairedCompanions)
                 return Unsupported("Paired companion Boss death and Pyre routing remain unmodeled.");
+            // FindCompanionBoss walks the rooms from floor zero and returns its first match.
+            // PerformCompanionBossAction does not continue to a second companion if this one
+            // already has relentless.
             CombatUnit boss = bosses[0];
             if (boss.Status("relentless") != null) return Match(source.Train);
             CombatStatus? relentless = source.Train.Context?.StatusRules.FirstOrDefault(rule => rule.Id == "relentless");
             if (relentless == null) return Unsupported("Companion transition requires the native relentless status definition.");
             TrainCombatResult moved = TrainCombatModel.Ascend(source.Train, boss.Id, true);
-            if (!moved.Supported || Terminal(moved.Outcome)) return moved;
+            if (!moved.Supported) return moved;
+            if (pairedCompanions && moved.Outcome == RoomOutcome.BattleWon)
+                return Unsupported("Paired companion Boss death during movement requires native death and Pyre routing.");
+            if (Terminal(moved.Outcome)) return moved;
             TrainCombatState train = moved.State!;
             int index = train.Rooms.ToList().FindIndex(room => room.Units.Any(unit => unit.Id == boss.Id));
             if (index < 0) return Unsupported("A companion Boss disappeared before its native phase transition.");
@@ -40,6 +50,8 @@ namespace MonsterTrain2Poju.Model
             // AddStatusEffect queues callbacks; the native RemoveDeadCharacters drains
             // them only after RemoveTriggersOnRelentlessChange has removed the gates.
             TrainCombatResult settled = TrainCombatModel.ApplyCharacterQueue(train, added.PendingCallbacks.ToList());
+            if (pairedCompanions && settled.Outcome == RoomOutcome.BattleWon)
+                return Unsupported("Paired companion Boss death during status callbacks requires native death and Pyre routing.");
             return settled.Supported ? new TrainCombatResult(settled.State, settled.Outcome,
                 moved.RoomResults.Concat(settled.RoomResults).ToArray()) : settled;
         }

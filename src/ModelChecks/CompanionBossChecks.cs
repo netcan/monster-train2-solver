@@ -18,12 +18,15 @@ internal static class CompanionBossChecks
             isBoss: true, statusRegistry: [], nextTriggerId: 5);
         var other = new CombatUnit(2, "other", CombatTeam.Enemy, 1, 10, 10, true, false, false, []);
         EnemySpawnState Root(int phase = 1, int floor = 2, bool loops = true, CombatUnit? actor = null,
-            CombatUnit? otherUnit = null, IReadOnlyList<int>? pending = null) => new(
+            CombatUnit? otherUnit = null, IReadOnlyList<int>? pending = null, bool paired = false) => new(
             new TrainCombatState(Enumerable.Range(0, 4).Select(index => new RoomCombatState(index, false,
-                index == floor ? [actor ?? boss] : index == 1 ? [otherUnit ?? other] : [], [], context)).ToArray(),
-                [new(1, 1, true, loops, true), new(2, 1, true, false)], 7, context),
+                index == floor ? [actor ?? boss] : index == 1 ? [otherUnit ?? other] : paired && index == 3 ?
+                    [new CombatUnit(3, "paired-boss", CombatTeam.Enemy, 9, 90, 90, true, false, true, [],
+                        [Trigger("OnShift", 19, 5, false)], isBoss: true, nextTriggerId: 6)] : [], [], context)).ToArray(),
+                paired ? [new(1, 1, true, loops, true), new(2, 1, true, false), new(3, 1, true, true, true)] :
+                    [new(1, 1, true, loops, true), new(2, 1, true, false)], 7, context),
             [new EnemyWave([new EnemyGroup([])])], [0], phase, false, rng, pending?.Count > 0 ? pending.Max() + 1 : 3,
-            [], 0, false, 1, 0, 4, [], pendingDestroyedUnitIds: pending);
+            [], 0, false, 1, 0, 4, paired ? ["Paired companion Boss death and Pyre routing"] : [], pendingDestroyedUnitIds: pending);
         var root = Root(); string parent = JsonSerializer.Serialize(root, ModelJson.Options);
         var result = CompanionBossModel.Resolve(root, true);
         Require(result.Supported && result.State!.Rooms[0].Units.Single().Id == 1 && result.State.Rooms[1].Units.Single().Id == 2 &&
@@ -34,6 +37,24 @@ internal static class CompanionBossChecks
         Require(changed.Status("relentless")!.Stacks == 1 && changed.StatusImmunities.Contains("rooted") &&
             changed.Triggers.Select(trigger => trigger.StateId).SequenceEqual([2, 4]) && changed.NextTriggerId == 5,
             "Relentless membership, immunity, trigger order or allocation cursor differs.");
+        var pairedRoot = Root(paired: true);
+        var pairedAction = CompanionBossModel.Resolve(pairedRoot, true);
+        Require(pairedAction.Supported, "Paired companion phase unsupported: " + pairedAction.UnsupportedReason);
+        Require(pairedAction.State!.Rooms[0].Units.Single().Id == 1 &&
+            pairedAction.State.Rooms[3].Units.Single().Id == 3 && pairedAction.State.Rooms[3].Units.Single().Status("relentless") == null &&
+            pairedAction.State.Context!.Gold == 55,
+            "Paired transition changed unexpected state: " + string.Join(",", pairedAction.State.Rooms.SelectMany(room =>
+                room.Units.Select(unit => unit.Id + "@" + room.RoomIndex + ":" + unit.Status("relentless")?.Stacks))) +
+            ", gold=" + pairedAction.State.Context!.Gold);
+        var pairedAlreadyRelentless = CompanionBossModel.Resolve(Root(actor: changed, paired: true), true);
+        Require(pairedAlreadyRelentless.Supported && pairedAlreadyRelentless.State!.Rooms[2].Units.Single().Id == 1 &&
+            pairedAlreadyRelentless.State.Rooms[3].Units.Single().Id == 3 &&
+            pairedAlreadyRelentless.State.Rooms[3].Units.Single().Status("relentless") == null &&
+            pairedAlreadyRelentless.State.Context!.Gold == 0,
+            "Native first-match relentless gate incorrectly advanced to the second paired companion.");
+        var unpairedBoss = new CombatUnit(4, "unpaired-boss", CombatTeam.Enemy, 9, 90, 90, true, false, true, [], isBoss: true);
+        Require(!CompanionBossModel.Resolve(Root(otherUnit: unpairedBoss), true).Supported,
+            "Mixed companion/non-companion Boss routing was accepted.");
         Require(CompanionBossModel.Resolve(Root(0), true).State!.Context!.Gold == 0 &&
             CompanionBossModel.Resolve(root, false).State!.Context!.Gold == 0 &&
             CompanionBossModel.Resolve(Root(actor: changed), true).State!.Rooms[2].Units.Single().Triggers.Count == 2,
