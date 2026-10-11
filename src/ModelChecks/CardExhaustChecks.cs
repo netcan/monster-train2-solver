@@ -42,6 +42,28 @@ internal static class CardExhaustChecks
         Require(installedAfter.OtherPiles!.Single(pile => pile.Name == "Exhausted").Cards.Single().InstanceId == 1 &&
             installedAfter.Statistics!.Value(1, "TimesExhausted") == 2 && exhaustedInstalled.ExhaustState!.BaseTraits.Single().IsExhausted,
             "Permanently installed Consume must use native played-card exhaustion and standby closure.");
+        var temporaryConsumeRoot = Battle(Card(1, [], [Upgrade(false)]));
+        CardInstanceState beforePermanentConsume = temporaryConsumeRoot.Spawn.Train.Context!.FindCard(1)!;
+        Require(beforePermanentConsume.ExhaustState!.UpgradeTrait != null && beforePermanentConsume.MaskDescriptor!.BaseTraits.All(trait => trait.RuntimeType != Consume),
+            "Temporary Consume must begin as an upgrade-contributed trait.");
+        var permanentOverTemporary = HandUpgradeModel.Apply(temporaryConsumeRoot.Spawn.Train.Rooms[0], Upgrade(false),
+            "Permanent", temporaryConsumeRoot.PlayRules);
+        Require(permanentOverTemporary.Supported, permanentOverTemporary.UnsupportedReason ?? "Permanent Consume over temporary Consume failed.");
+        CardInstanceState promotedConsume = permanentOverTemporary.State!.Context!.FindCard(1)!;
+        Require(promotedConsume.Temporary.Upgrades.Count == 1 && promotedConsume.Permanent.Upgrades.Count == 1 &&
+            promotedConsume.MaskDescriptor!.BaseTraits.All(trait => trait.RuntimeType != Consume) &&
+            promotedConsume.ExhaustState!.BaseTraits.Count == 0 && promotedConsume.ExhaustState.UpgradeTrait?.TraitIndex == -1 &&
+            CardExhaustModel.HasConsume(promotedConsume),
+            "Permanent Consume over temporary Consume must retain one active upgrade trait state.");
+        CardInstanceState afterTemporaryRemoval = promotedConsume.WithModifiers(promotedConsume.Permanent, CardModifiers.Empty());
+        Require(CardExhaustModel.HasConsume(afterTemporaryRemoval) && afterTemporaryRemoval.ExhaustState!.BaseTraits.Count == 0 &&
+            afterTemporaryRemoval.ExhaustState.UpgradeTrait?.TraitIndex == -1,
+            "Removing the temporary source must preserve Consume from the permanent upgrade.");
+        var promotedPlay = BattleActionModel.PlayCard(Battle(promotedConsume), new(1, 0));
+        Require(promotedPlay.Supported && promotedPlay.State!.Spawn.Train.Context!.OtherPiles!
+            .Single(pile => pile.Name == "Exhausted").Cards.Single().InstanceId == 1 &&
+            promotedPlay.State.Spawn.Train.Context.FindCard(1)!.ExhaustState!.UpgradeTrait!.IsExhausted,
+            "A promoted permanent Consume trait must exhaust the played card.");
         var unupgradedCreation = new CardCreationRule("consume", CardModifiers.Empty(), null, [], maskDescriptor: Card(2, []).MaskDescriptor);
         CombatContext installedContext = Battle(installedCard).Spawn.Train.Context!;
         var generatedCopy = CardGenerationModel.Apply(installedContext,

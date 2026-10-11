@@ -2634,6 +2634,29 @@ deferred to a completed milestone.
 & ./scripts/Check-Models.ps1 -Fixture full-battle-permanent-consume-hand-upgrades.mt2f
 ```
 
+### Permanent Consume over temporary Consume
+
+`full-battle-permanent-consume-over-temporary.mt2f` records a hand receiving
+temporary `CardTraitExhaustState` and then permanent `CardTraitExhaustState`.
+The native state keeps the active Consume in `ExhaustState.UpgradeTrait` and
+leaves `MaskDescriptor.BaseTraits` empty. The permanent upgrade continues to
+provide Consume after the temporary source is removed by the model. Five played
+cards reach Exhausted.
+
+The schema-125 muted Instant battle wins at Pyre 80 after 26 card plays, six
+EndTurns and 50 combat stages. Strict capture has zero failures, mismatches,
+unsupported transitions or pending records. Offline replay matches all 26
+actions, eight hand-upgrade spell plays, five Consume exhaustions and 570
+card-mask decision contexts. The 29,737-byte archive has 4,863 unique nodes and
+SHA-256 `60a748a680f39e0f7185c5c21499dca9741c13b08bb761a668b1312e57686e93`;
+it has no JSON companion. Inventory is 228 archives: 197 battles and 31
+component calibrations. Original relic evidence remains 55/224 (24.55%).
+Full-inventory replay remains deferred to a milestone.
+
+```powershell
+& ./scripts/Check-Models.ps1 -Fixture @('full-battle-permanent-consume-hand-upgrades.mt2f','full-battle-permanent-consume-over-temporary.mt2f','full-battle-generation-permanent-consume.mt2f')
+```
+
 ### Generation copies retain permanent Consume
 
 `full-battle-generation-permanent-consume.mt2f` records the native

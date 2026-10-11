@@ -21,6 +21,7 @@ param(
     [switch] $HandUpgrades,
     [switch] $TargetedHandUpgrades,
     [switch] $PermanentConsumeHandUpgrades,
+    [switch] $PermanentConsumeOverTemporary,
     [switch] $Healing,
     [switch] $HealingTriggers,
     [switch] $RoomSpells,
@@ -190,7 +191,7 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
-if ($PermanentConsumeHandUpgrades) { $HandUpgrades = $true; $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
+if ($PermanentConsumeHandUpgrades -or $PermanentConsumeOverTemporary) { $HandUpgrades = $true; $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($GenerationPermanentConsume) { $Generation = $true; $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($TypedDraw) { $BranchCardMasks = $true; $BattleRelicUpgrades = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalUnitRelicBatch) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
@@ -407,6 +408,7 @@ if ($TypedDraw) {
     $environment['MT2_PROBE_ISOLATE_UI_RNG'] = '1'
 }
 if ($PermanentConsumeHandUpgrades) { $environment['MT2_PROBE_MODIFIERS'] = 'permanent-consume-hand-upgrades' }
+if ($PermanentConsumeOverTemporary) { $environment['MT2_PROBE_MODIFIERS'] = 'permanent-consume-over-temporary' }
 if ($GenerationPermanentConsume) { $environment['MT2_PROBE_MODIFIERS'] = 'generation-permanent-consume' }
 $originalBefore = Get-OriginalSignature
 $unityLog = Join-Path $profile 'unity-scenario.log'
@@ -855,14 +857,18 @@ if ($HandUpgrades -or $TargetedHandUpgrades) {
         @($_.Actual.Spawn.Train.Rooms.Units.Modifiers.Upgrades | Where-Object AssetKey -Like 'PojuProbe*').Count -gt 0
     }).Count -gt 0
 }
-if ($PermanentConsumeHandUpgrades) {
+if ($PermanentConsumeHandUpgrades -or $PermanentConsumeOverTemporary) {
     $modifierCoverage = $modifierCoverage -and @($trace.Actions | Where-Object {
         $actionEntry = $_
         $cardId = $actionEntry.Action.CardInstanceId
         $card = $actionEntry.Actual.Spawn.Train.Context.CardInstances | Where-Object InstanceId -EQ $cardId
         $exhausted = $actionEntry.Actual.OtherPiles | Where-Object Name -EQ 'Exhausted' | ForEach-Object Cards |
             Where-Object InstanceId -EQ $cardId
-        $null -ne $card -and $card.ExhaustState.BaseTraits.Count -gt 0 -and
+        $null -ne $card -and
+            (($PermanentConsumeOverTemporary -and $card.ExhaustState.BaseTraits.Count -eq 0 -and
+                $null -ne $card.ExhaustState.UpgradeTrait -and $card.ExhaustState.UpgradeTrait.IsExhausted -and
+                @($card.Temporary.Upgrades | Where-Object AssetKey -EQ 'PojuHandTemporaryConsume').Count -gt 0) -or
+             (-not $PermanentConsumeOverTemporary -and $card.ExhaustState.BaseTraits.Count -gt 0)) -and
             @($card.Permanent.Upgrades | Where-Object AssetKey -EQ 'PojuHandPermanentConsume').Count -gt 0 -and
             @($exhausted).Count -gt 0
     }).Count -gt 0
@@ -1940,6 +1946,7 @@ $result = [pscustomobject]@{
     HandRemovalCoverage = $handRemovalCoverage
     GenerationCoverage = $generationCoverage
     PermanentConsumeGenerationCoverage = $permanentConsumeGenerationCoverage
+    PermanentConsumeOverTemporaryCoverage = (-not $PermanentConsumeOverTemporary -or $modifierCoverage)
     DamageScalingCoverage = $scalingCoverage
     StatusScalingCoverage = $statusScalingCoverage
     UnitUpgradeScalingCoverage = $unitUpgradeScalingCoverage
@@ -2100,6 +2107,6 @@ if ($StatisticOverflow) {
         @($zero.Samples | Where-Object Amount -NE 0).Count -ne 0) { throw 'Native zero-increment coverage is incomplete.' }
 }
 if ($null -eq $trace.NativeWon -or $process.ExitCode -ne 0 -or -not $nativePassed -or -not $originalUnchanged -or -not $modifierCoverage -or -not $healingCoverage -or -not $onHealCoverage -or -not $roomSpellCoverage -or -not $terminalSettled -or -not $terminalSpellCoverage -or
-    -not $postKillCoverage -or -not $randomCoverage -or -not $randomStatusCoverage -or -not $crossRoomCoverage -or -not $attackCoverage -or -not $maxHealthCoverage -or -not $numericRangeCoverage -or -not $targetFilterCoverage -or -not $drawCoverage -or -not $handRemovalCoverage -or -not $generationCoverage -or -not $permanentConsumeGenerationCoverage -or -not $scalingCoverage -or -not $statusScalingCoverage -or -not $unitUpgradeScalingCoverage -or -not $unitTriggerUpgradeCoverage -or -not $spawnTriggerCoverage -or -not $unitTurnBeginCoverage -or -not $teamTurnBeginCoverage -or -not $preHandDiscardCoverage -or -not $cloneUpgradeRefreshCoverage -or -not $preCombatCoverage -or -not $triggeredHealingCoverage -or -not $postCombatHealingCoverage -or -not $triggeredDamageCoverage -or -not $damageDeathQueueCoverage -or -not $terminalDeathDamageCoverage -or -not $hitKillCoverage -or -not $dyingUpgradeCoverage -or -not $attackTriggerCoverage -or -not $triggeredStatusCoverage -or -not $statusCallbackCoverage -or -not $energyCoverage -or -not $xCostCoverage -or -not $bonusDrawCoverage -or -not $capacityCoverage -or -not $directUpgradeCoverage -or -not $equipmentCoverage -or $trace.CaptureFailures -ne 0 -or $trace.Mismatches -ne 0 -or $trace.Unsupported -ne 0 -or $trace.Pending -ne 0) {
+    -not $postKillCoverage -or -not $randomCoverage -or -not $randomStatusCoverage -or -not $crossRoomCoverage -or -not $attackCoverage -or -not $maxHealthCoverage -or -not $numericRangeCoverage -or -not $targetFilterCoverage -or -not $drawCoverage -or -not $handRemovalCoverage -or -not $generationCoverage -or -not $permanentConsumeGenerationCoverage -or -not $scalingCoverage -or -not $statusScalingCoverage -or -not $unitUpgradeScalingCoverage -or -not $unitTriggerUpgradeCoverage -or -not $spawnTriggerCoverage -or -not $unitTurnBeginCoverage -or -not $teamTurnBeginCoverage -or -not $preHandDiscardCoverage -or -not $cloneUpgradeRefreshCoverage -or -not $preCombatCoverage -or -not $triggeredHealingCoverage -or -not $postCombatHealingCoverage -or -not $triggeredDamageCoverage -or -not $damageDeathQueueCoverage -or -not $terminalDeathDamageCoverage -or -not $hitKillCoverage -or -not $dyingUpgradeCoverage -or -not $attackTriggerCoverage -or -not $triggeredStatusCoverage -or -not $statusCallbackCoverage -or -not $energyCoverage -or -not $xCostCoverage -or -not $bonusDrawCoverage -or -not $capacityCoverage -or -not $directUpgradeCoverage -or -not $equipmentCoverage -or ($PermanentConsumeOverTemporary -and -not $modifierCoverage) -or $trace.CaptureFailures -ne 0 -or $trace.Mismatches -ne 0 -or $trace.Unsupported -ne 0 -or $trace.Pending -ne 0) {
     throw "Full battle differential probe failed; inspect $tracePath and $unityLog"
 }

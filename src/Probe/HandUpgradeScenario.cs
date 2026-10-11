@@ -9,10 +9,13 @@ namespace MonsterTrain2Poju.Probe
     internal static class HandUpgradeScenario
     {
         internal static bool PermanentConsumePrepared { get; private set; }
+        internal static bool PermanentConsumeOverTemporaryPrepared { get; private set; }
 
-        internal static void Prepare(AllGameManagers managers, ManualLogSource log, bool targeted, bool permanentConsume = false)
+        internal static void Prepare(AllGameManagers managers, ManualLogSource log, bool targeted, bool permanentConsume = false,
+            bool consumeOverTemporary = false)
         {
             PermanentConsumePrepared = permanentConsume;
+            PermanentConsumeOverTemporaryPrepared = consumeOverTemporary;
             SaveManager save = managers.GetSaveManager();
             CardManager cardManager = managers.GetCardManager()!;
             CardState[] cards = cardManager.GetAllCards(new List<CardState>()).Where(card =>
@@ -28,6 +31,7 @@ namespace MonsterTrain2Poju.Probe
             AccessTools.Field(typeof(CardUpgradeData), "costReduction").SetValue(unique, 1);
             var permanent = DynamicUpgradeScenario.Upgrade("PojuHandPermanent", "740ffbaa-6568-48c5-a22b-f67e346e0003", 1, 2, 0, 0, "armor", 1);
             CardUpgradeData? permanentConsumeUpgrade = null;
+            CardUpgradeData? temporaryConsumeUpgrade = null;
             if (permanentConsume)
             {
                 permanentConsumeUpgrade = DynamicUpgradeScenario.Upgrade("PojuHandPermanentConsume", "740ffbaa-6568-48c5-a22b-f67e346e0004", 0, 0, 0, 0, "armor", 0);
@@ -35,9 +39,17 @@ namespace MonsterTrain2Poju.Probe
                 exhaust.Setup("CardTraitExhaustState");
                 AccessTools.Field(typeof(CardUpgradeData), "traitDataUpgrades").SetValue(permanentConsumeUpgrade, new List<CardTraitData> { exhaust });
             }
+            if (consumeOverTemporary)
+            {
+                temporaryConsumeUpgrade = DynamicUpgradeScenario.Upgrade("PojuHandTemporaryConsume", "740ffbaa-6568-48c5-a22b-f67e346e0005", 0, 0, 0, 0, "armor", 0);
+                var exhaust = new CardTraitData();
+                exhaust.Setup("CardTraitExhaustState");
+                AccessTools.Field(typeof(CardUpgradeData), "traitDataUpgrades").SetValue(temporaryConsumeUpgrade, new List<CardTraitData> { exhaust });
+            }
             var effects = data.GetEffects(); effects.Clear();
             if (targeted) effects.AddRange(original);
             var upgrades = new List<CardUpgradeData> { temporary, temporary, unique, unique, permanent };
+            if (temporaryConsumeUpgrade != null) upgrades.Add(temporaryConsumeUpgrade);
             if (permanentConsumeUpgrade != null) upgrades.Add(permanentConsumeUpgrade);
             foreach (var upgrade in upgrades)
             {
@@ -63,6 +75,7 @@ namespace MonsterTrain2Poju.Probe
             foreach (CardState card in cards) card.Setup(data, save);
             NumericUpgradeScenario.Prepare(managers, log);
             log.LogInfo("HAND-UPGRADES-PREPARED targeted=" + targeted + " permanent-consume=" + permanentConsume +
+                " consume-over-temporary=" + consumeOverTemporary +
                 " source-in-hand=" + cardManager.GetHand().Contains(cards[0]) +
                 " repeated temporary, unique, permanent and playing-card exclusion.");
         }

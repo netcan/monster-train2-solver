@@ -300,7 +300,7 @@ internal static class BattleActionChecks
             }
         }
         if (fixture.TryGetProperty("ModifierScenario", out FixtureValue scenario) &&
-            (scenario.GetString() is "dynamic-upgrades" or "sacrifice-upgrades" or "hand-upgrades" or "targeted-hand-upgrades" or "permanent-consume-hand-upgrades"))
+            (scenario.GetString() is "dynamic-upgrades" or "sacrifice-upgrades" or "hand-upgrades" or "targeted-hand-upgrades" or "permanent-consume-hand-upgrades" or "permanent-consume-over-temporary"))
         {
             var modifiedActions = actions.EnumerateArray().Where(entry =>
             {
@@ -313,7 +313,7 @@ internal static class BattleActionChecks
             bool observed = modifiedActions.Any(entry =>
             {
                 BattleTurnState actual = entry.GetProperty("Actual").Deserialize<BattleTurnState>()!;
-                if (scenario.GetString() is "hand-upgrades" or "targeted-hand-upgrades" or "permanent-consume-hand-upgrades")
+                if (scenario.GetString() is "hand-upgrades" or "targeted-hand-upgrades" or "permanent-consume-hand-upgrades" or "permanent-consume-over-temporary")
                     return actual.Spawn.Train.Context!.CardInstances!.Any(card => card.Permanent.Upgrades
                         .Any(upgrade => upgrade.AssetKey.StartsWith("PojuHand", StringComparison.Ordinal)));
                 return scenario.GetString() == "sacrifice-upgrades" ? !actual.Spawn.Train.Rooms.SelectMany(room => room.Units)
@@ -325,7 +325,7 @@ internal static class BattleActionChecks
             Console.WriteLine($"NATIVE-UPGRADE-COVERAGE PASS: {modifiedActions.Length} modified spell plays, observed native {scenario.GetString()} effects.");
         }
         if (fixture.TryGetProperty("ModifierScenario", out FixtureValue permanentConsumeScenario) &&
-            permanentConsumeScenario.GetString() == "permanent-consume-hand-upgrades")
+            permanentConsumeScenario.GetString() is "permanent-consume-hand-upgrades" or "permanent-consume-over-temporary")
         {
             int exhausted = 0;
             foreach (FixtureValue entry in actions.EnumerateArray())
@@ -333,13 +333,17 @@ internal static class BattleActionChecks
                 BattleTurnState actual = entry.GetProperty("Actual").Deserialize<BattleTurnState>()!;
                 int cardId = entry.GetProperty("Action").GetProperty("CardInstanceId").GetInt32();
                 CardInstanceState? card = actual.Spawn.Train.Context!.FindCard(cardId);
+                bool overTemporary = permanentConsumeScenario.GetString() == "permanent-consume-over-temporary";
                 bool consumed = card?.Permanent.Upgrades.Any(upgrade => upgrade.AssetKey == "PojuHandPermanentConsume") == true &&
-                    card.ExhaustState?.BaseTraits.Any(trait => trait.IsExhausted) == true &&
+                    (!overTemporary || (card!.Temporary.Upgrades.Any(upgrade => upgrade.AssetKey == "PojuHandTemporaryConsume") &&
+                        card.MaskDescriptor!.BaseTraits.All(trait => trait.RuntimeType != "CardTraitExhaustState") &&
+                        card.ExhaustState!.BaseTraits.Count == 0 && card.ExhaustState.UpgradeTrait?.IsExhausted == true)) &&
+                    (overTemporary || card!.ExhaustState?.BaseTraits.Any(trait => trait.IsExhausted) == true) &&
                     actual.OtherPiles.Single(pile => pile.Name == "Exhausted").Cards.Any(token => token.InstanceId == cardId);
                 if (consumed) exhausted++;
             }
             Require(exhausted > 0, "The native hand-installed permanent Consume card was never played and exhausted.");
-            Console.WriteLine($"NATIVE-PERMANENT-CONSUME PASS: {exhausted} permanently upgraded cards were played into Exhausted.");
+            Console.WriteLine($"NATIVE-PERMANENT-CONSUME PASS: {exhausted} permanently upgraded cards were played into Exhausted ({permanentConsumeScenario.GetString()}).");
         }
         if (!fixture.TryGetProperty("Policy", out FixtureValue policy) ||
             policy.GetString() is not ("units-and-junk" or "units-spells-and-junk")) return;

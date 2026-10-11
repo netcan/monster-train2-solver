@@ -37,7 +37,7 @@ namespace MonsterTrain2Poju.Model
             CardMaskDescriptor? descriptor = card.MaskDescriptor;
             if (descriptor == null) return Array.Empty<CardTraitValue>();
             return CardTraitCompositionModel.Refresh(new CardTraitCompositionState(descriptor.BaseTraits,
-                descriptor.TemporaryTraits, card.Temporary.Upgrades.Select(upgrade =>
+                descriptor.TemporaryTraits, card.Permanent.Upgrades.Concat(card.Temporary.Upgrades).Select(upgrade =>
                     (IReadOnlyList<CardTraitValue>)(upgrade.Lifecycle?.AddedTraits ?? Array.Empty<CardTraitValue>())).ToArray(),
                 card.Permanent.Upgrades.Concat(card.Temporary.Upgrades).Where(upgrade => upgrade.Lifecycle != null)
                     .SelectMany(upgrade => upgrade.Lifecycle!.RemovedRuntimeTypes).ToArray(),
@@ -52,8 +52,6 @@ namespace MonsterTrain2Poju.Model
                 return "Permanent Consume installation requires branch-owned trait and private-state metadata.";
             if (additions.Any(trait => trait.StackMode != 0))
                 return "Permanent Consume stack modes other than non-stacking installation are not modeled.";
-            if (HasConsume(card) && ActiveBaseIndex(card) < 0)
-                return "Permanent Consume installation over a temporary Consume trait is not modeled.";
             return null;
         }
         internal static CardMaskDescriptor? InstallPermanentConsumeTraits(CardInstanceState source,
@@ -62,7 +60,7 @@ namespace MonsterTrain2Poju.Model
             CardMaskDescriptor? descriptor = source.MaskDescriptor;
             CardTraitValue[] added = addedUpgrades.SelectMany(upgrade => upgrade.Lifecycle?.AddedTraits ?? Array.Empty<CardTraitValue>())
                 .Where(trait => trait.RuntimeType == Trait).ToArray();
-            if (descriptor == null || added.Length == 0 || HasConsume(source) && ActiveBaseIndex(source) >= 0) return descriptor;
+            if (descriptor == null || added.Length == 0 || HasConsume(source)) return descriptor;
             return
                 descriptor.WithBaseTraits(descriptor.BaseTraits.Concat(added).ToArray());
         }

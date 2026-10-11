@@ -1,6 +1,6 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-11): 227 binary archives, including 196
+Current accepted inventory (2026-10-11): 228 binary archives, including 197
 full battles and 31 component calibrations. Unchanged original relic evidence
 covers 55/224 catalog entries (24.55%); see
 [the owner evidence table](tests/fixtures/relic-coverage.md). Whole-battle
@@ -20,6 +20,13 @@ installation by `CardEffectAddPermanentCardUpgradeToCardsInHand`, including
 deduplication of an already-visible Consume and installation when SelfPurge
 hides the existing trait. A subsequently played upgraded card reaches Exhausted.
 This mechanism fixture does not add original relic-owner evidence.
+
+`full-battle-permanent-consume-over-temporary.mt2f` validates a hand first
+receiving temporary Consume and then permanent Consume. Native trait composition
+keeps the active private upgrade-trait slot while the permanent upgrade supplies
+the same trait; it does not move that state into the base-trait list. Five
+upgraded cards are played into Exhausted. This mechanism fixture does not add
+original relic-owner evidence.
 
 `full-battle-generation-permanent-consume.mt2f` validates copying that permanent
 Consume upgrade through `CardEffectAddBattleCard`. Generated cards retain the
@@ -8110,6 +8117,29 @@ five destination checks and the permanent-Consume-copy coverage gate pass. The
 archive is 60,191 bytes with 12,240 unique nodes and has no JSON companion.
 
 Inventory is 227 binary archives: 196 battles and 31 component calibrations.
+Original relic evidence remains 55/224 (24.55%). Full-inventory replay remains
+deferred to a completed milestone. Arbitrary card/relic combinations, all Bosses
+and optimal search remain unfinished.
+
+### Permanent Consume over temporary Consume (schema 125)
+
+`full-battle-permanent-consume-over-temporary.mt2f` records native hand effects
+that first add `CardTraitExhaustState` as a temporary upgrade and then add it as
+a permanent upgrade. Native snapshots retain both upgrade records and keep the
+single active trait in `ExhaustState.UpgradeTrait`; the base trait list remains
+empty. When the temporary source is removed in the model, the permanent upgrade
+continues to provide Consume.
+
+The muted Instant native battle exits zero in 58.79 seconds, wins at Pyre 80,
+and contains 26 card actions, six EndTurns and 50 combat stages. Strict capture
+reports zero failures, mismatches, unsupported transitions and pending records.
+The native action checker matches all 26 actions, observes eight modified spell
+plays and five played cards moved to Exhausted; 570 complete card-mask decision
+contexts also pass. The 29,737-byte archive has 4,863 unique nodes and SHA-256
+`60a748a680f39e0f7185c5c21499dca9741c13b08bb761a668b1312e57686e93`, with no
+JSON companion.
+
+Inventory is now 228 binary archives: 197 battles and 31 component calibrations.
 Original relic evidence remains 55/224 (24.55%). Full-inventory replay remains
 deferred to a completed milestone. Arbitrary card/relic combinations, all Bosses
 and optimal search remain unfinished.
