@@ -1,9 +1,23 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
 
+if (args.Length == 1 && args[0] == "--relic-status-magnitudes-pure")
+{
+    RelicStatusMagnitudeChecks.Run();
+    StatusAttackDamageChecks.Run();
+    return;
+}
+
 if (args.Length == 1 && args[0] == "--relic-status-stacks-pure")
 {
     RelicStatusStackChecks.Run();
+    return;
+}
+
+if (args.Length == 2 && args[0] == "--original-magnitude-relics-only")
+{
+    using var document = ModelJson.ReadFixture(args[1]);
+    OriginalMagnitudeRelicBatchChecks.Native(document.RootElement, required: true, replayBattle: true);
     return;
 }
 
@@ -383,6 +397,8 @@ RelicSpawnStatusChecks.Run();
 RelicCharacterTriggerChecks.Run();
 RelicCardModifierChecks.Run();
 RelicStatusStackChecks.Run();
+RelicStatusMagnitudeChecks.Run();
+StatusAttackDamageChecks.Run();
 TypedDrawChecks.Run();
 CardMagicPowerChecks.Run();
 CardExhaustChecks.Run();

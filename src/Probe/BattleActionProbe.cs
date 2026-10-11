@@ -264,7 +264,8 @@ namespace MonsterTrain2Poju.Probe
             CombatUnit source = definition.Unit;
             UnitModifiers? m = source.Modifiers;
             var modifiers = m == null ? null : new UnitModifiers(m.AttackDamage, m.AttackDamageAdded, m.DamageBuff,
-                m.RawSize, m.EquipmentLimit, m.CanBeHealed, m.IsClone, m.Upgrades, m.HealthFromUpgrades, matchesSource);
+                m.RawSize, m.EquipmentLimit, m.CanBeHealed, m.IsClone, m.Upgrades, m.HealthFromUpgrades, matchesSource,
+                m.DamageBuffFromStatusEffects);
             return new CombatUnit(0, source.AssetKey, CombatTeam.Player, source.BaseAttack, source.Health,
                 source.MaxHealth, source.CanAttack, false, false, source.Statuses, source.Triggers, size: source.Size,
                 statusImmunities: source.StatusImmunities, subtypes: source.Subtypes, modifiers: modifiers, isBoss: source.IsBoss,

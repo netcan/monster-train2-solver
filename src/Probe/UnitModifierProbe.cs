@@ -17,9 +17,11 @@ namespace MonsterTrain2Poju.Probe
                 rawSize, unit.GetEquipmentLimit(), unit.GetCanBeHealed(), unit.GetIsClone(),
                 unit.GetAppliedCardUpgrades().Select(upgrade => FullBattleTrace.Active?.CaptureAppliedUpgrade(upgrade) ?? CardModifierProbe.Upgrade(upgrade)).ToArray(), health.OrderBy(item => item.Key)
                     .Select(item => new StatisticCount(FullBattleTrace.Active?.UpgradeKey(item.Key) ?? item.Key, item.Value)).ToArray(),
-                spawner?.GetSpawnCharacterData() == null || spawner.GetSpawnCharacterData() == unit.GetSourceCharacterData());
+                spawner?.GetSpawnCharacterData() == null || spawner.GetSpawnCharacterData() == unit.GetSourceCharacterData(),
+                RelicProbe.HasStatusMagnitudes(AllGameManagers.Instance!) ? (int?)AccessTools.Property(state.GetType(), "DamageBuffFromStatusEffects").GetValue(state) : null);
         }
         internal static UnitModifiers Definition(CharacterData data) => new UnitModifiers(data.GetAttackDamage(), 0, 0,
-            data.GetSize(), data.GetEquipmentLimit(), data.GetCanBeHealed(), false, System.Array.Empty<CardUpgradeModifier>());
+            data.GetSize(), data.GetEquipmentLimit(), data.GetCanBeHealed(), false, System.Array.Empty<CardUpgradeModifier>(),
+            damageBuffFromStatusEffects: RelicProbe.HasStatusMagnitudes(AllGameManagers.Instance!) ? 0 : (int?)null);
     }
 }
