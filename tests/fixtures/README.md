@@ -15,9 +15,13 @@ The default command still checks the full curated inventory.
 For routine changes, run only the new and directly affected fixtures with
 `-Fixture`; run the full inventory at completed milestones and before delivery.
 
-Current inventory is 232 archives: 201 accepted battles and 31 component
+Current inventory is 233 archives: 202 accepted battles and 31 component
 calibrations. `full-battle-relic-card-status-upgrades.mt2f` verifies a native
 temporary card status upgrade reaches the unit summoned by that card.
+`full-battle-original-endless-return.mt2f` verifies the original More Rares
+relic's Endless upgrade routes a dead carrier to Draw, preserves its temporary
+upgrade and leaves `TimesExhausted` unchanged across a 23-action, seven-turn
+battle with all 62 room stages matched.
 `full-battle-spawn-or-status.mt2f` covers fallback birth and existing-unit
 branches of `CardEffectSpawnMonsterOrAddStatusEffect` across two native skill
 activations.
@@ -2771,4 +2775,19 @@ JSON companion. The result does not increase original relic-owner coverage.
 
 ```powershell
 & ./scripts/Check-Models.ps1 -Fixture full-battle-spawn-status-relics-clones-ungated-capture.mt2f
+```
+
+### Endless unit death return
+
+`full-battle-original-endless-return.mt2f` verifies the unchanged
+`MoreRares_Relic` / `AddEndlessToNonMorsels` effect on a non-Morsel carrier.
+After one actual death, native state places the spawner in Draw regardless of
+free hand space, retains its temporary Endless upgrade, and leaves
+`TimesExhausted` unchanged. The Instant battle wins after 23 card plays and
+seven EndTurns; all 62 room stages, 23 actions and 16 parallel policy branches
+match. The 34,872-byte archive has 5,643 unique nodes and SHA-256
+`8c26f779b64ce8c4bc4f91bb83691d94f2ebabdc274995107478a50049822bae`.
+
+```powershell
+& ./scripts/Check-Models.ps1 -Fixture full-battle-original-endless-return.mt2f
 ```

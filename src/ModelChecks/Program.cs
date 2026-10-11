@@ -557,6 +557,7 @@ HealingTriggerChecks.Run();
 TriggerUpgradeChecks.Run();
 EnemySpawningChecks.Run();
 BattleActionChecks.Run();
+EndlessReturnChecks.Run();
 DecisionReferenceChecks.Run();
 UnitIdentityChecks.Run();
 CardSpellChecks.Run();

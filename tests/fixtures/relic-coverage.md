@@ -1,7 +1,7 @@
 # Original relic coverage evidence
 
-As of 2026-10-11, **58 distinct original collectable relics / 224 catalog entries
-(25.89%)** have accepted native full-battle evidence. This counts unchanged relic
+As of 2026-10-12, **59 distinct original collectable relics / 224 catalog entries
+(26.34%)** have accepted native full-battle evidence. This counts unchanged relic
 definitions whose effects actually ran, including their original filters and
 conditions. Test cards, unit triggers and carrier subtypes may be authored to
 exercise those effects; the claim covers the recorded paths, not every possible
@@ -14,18 +14,18 @@ five now have accepted original-owner evidence. Both catalog owners of
 Rage and Frostbite consumers. Unknown status families and other effects on the
 remaining owners still require modeling and native proof.
 
-All 17 source archives below report game `2.2.1`, module MVID
+All 18 source archives below report game `2.2.1`, module MVID
 `8fb07b96-f4db-4d2b-884d-c00536d6ccf4`, `NativeWon=true`, and zero
 `CaptureFailures`, `Mismatches`, `Unsupported` and `Pending`. Archive provenance,
 byte lengths and SHA-256 hashes are recorded in [manifest.tsv](manifest.tsv).
 The floor-capacity batch passes strict native acceptance, complete-fixture checks,
 independent full-battle replay and six directly affected old-fixture regressions.
-The accepted inventory is 232 archives: 201 battles and 31 component
-calibrations. All 232 archive names, byte lengths and SHA-256 hashes match the
-manifest and curated list, with no JSON companions. A full 232-archive replay
+The accepted inventory is 233 archives: 202 battles and 31 component
+calibrations. All 233 archive names, byte lengths and SHA-256 hashes match the
+manifest and curated list, with no JSON companions. A full 233-archive replay
 remains deferred to a milestone. The Mageblade status/cache/attack path has an
 accepted native battle archive, but Mageblade is not a collectable relic and is
-not included in the 58/224 owner count.
+not included in the 59/224 owner count.
 
 | AssetKey | DataId | Accepted archive | Actual effect witness |
 | --- | --- | --- | --- |
@@ -87,9 +87,10 @@ not included in the 58/224 owner count.
 | `BossCapacity2` | `2d313e11-aa80-4116-b359-7560d3307544` | [floor capacity relics][floorCapacity] | All three original effects have positive witnesses: +2 capacity and its initialized Pyre health/attack table entry. Removing only this relic reduces a new room from 15 to 13. |
 | `BossCapacityDH` | `f7b0c251-7f96-4115-897a-d5b4a40a36ef` | [floor capacity relics][floorCapacity] | All three original effects have positive witnesses: +2 capacity and its initialized Pyre health/attack table entry. Removing only this relic reduces a new room from 15 to 13. |
 | `SilverIncreasedCapacity` | `aab4971f-05c6-430a-8a6a-dfb654a41b0c` | [floor capacity relics][floorCapacity] | Its original +2 capacity effect has positive native query and owner-removal witnesses; the full room fits sizes 6+6 and rejects the next size-2 summon. |
+| `MoreRares_Relic` | `374995fd-7619-4244-9d1f-269429258584` | [Endless return][endless] | Its unchanged Monsters-team `AddEndlessToNonMorsels` upgrade gives the carrier Endless; native death sends the spawner to Draw, preserves the temporary upgrade and does not increment `TimesExhausted`. |
 
 Record indices above are zero-based. Full-battle acceptance and independent
-effect checks are documented in [README.md](README.md); the table's 15 source
+effect checks are documented in [README.md](README.md); the table's 16 source
 archives contain these observed battle sizes:
 
 | Archive | Schema | Card plays | EndTurns | Matched stages | Independent relic observations |
@@ -109,6 +110,7 @@ archives contain these observed battle sizes:
 | [original resource relics][resources] | 117 | 42 | 7 | 50 | Eight real acquisitions, 48 native energy bodies, six empty-hand draw8 applications and six positive Pyre combat stages; all 20 original effects |
 | [Pyre refresh relics][pyreRefresh] | 118 | 1 | 7 | 50 | Three real acquisitions, six actual draw8 applications, Gold0/+5/-5 and two nested refreshes with three notifications each, six positive Pyre combat stages; all nine original effects |
 | [floor capacity relics][floorCapacity] | 119 | 26 | 5 | 51 | Five real acquisitions, all 14 original effects, 21 capacity queries, four room initializations, capacity 15 and legal 6/6/2/1 native deployment |
+| [Endless return][endless] | 126 | 23 | 7 | 62 | Original Endless upgrade survives one actual carrier death; returned to Draw without Exhausted or a `TimesExhausted` increment |
 
 The checks that enforce these observations are
 [TriggerCountChecks.Native](../../src/ModelChecks/TriggerCountChecks.cs),
@@ -123,7 +125,9 @@ The checks that enforce these observations are
 [OriginalDecayRelicBatchChecks.Native](../../src/ModelChecks/OriginalDecayRelicBatchChecks.cs),
 [OriginalResourceRelicBatchChecks.Native](../../src/ModelChecks/OriginalResourceRelicBatchChecks.cs),
 [PyreResourceRefreshChecks.Native](../../src/ModelChecks/PyreResourceRefreshChecks.cs),
-and [OriginalFloorCapacityRelicChecks.Native](../../src/ModelChecks/OriginalFloorCapacityRelicChecks.cs).
+and [OriginalFloorCapacityRelicChecks.Native](../../src/ModelChecks/OriginalFloorCapacityRelicChecks.cs),
+with [EndlessReturnChecks.Native](../../src/ModelChecks/EndlessReturnChecks.cs)
+checking the original relic payload and its death-route witness.
 Each new trigger archive has eight positive owner effects; their union covers
 all nine distinct originals. Removing only one original's installed callbacks
 must change health, attack, membership or status stacks, beyond trigger metadata.
@@ -233,12 +237,12 @@ status/cache/room-power observations and passes all 45 battle stages, eight paid
 actions, six EndTurns and 16 whole-battle/mid-battle policy branches. The test
 injects +15 room power as a controlled input; the natural source and preview-copy
 lifecycle of room power remain outside this evidence. Mageblade is not part of
-the 55/224 original-relic owner count.
+the original-relic owner count.
 The schema-121 mixed cardless-order fixture places `SpawnWithArmor`'s status
 payload before `PyreHeartSon`'s cardless upgrade in a single test relic. Native
 and independent replay verify five non-clone applications and five clone skips.
 This combines two existing payloads for ordering coverage and does not add an
-original relic owner to the 55/224 count.
+original relic owner to the count.
 The older `6/224` passage in README describes an earlier milestone; it does not
 include the starter-cost, cardless or four-artifact batch evidence above.
 
@@ -257,5 +261,6 @@ include the starter-cost, cardless or four-artifact batch evidence above.
 [resources]: full-battle-original-resource-relics.mt2f
 [pyreRefresh]: full-battle-pyre-resource-refresh.mt2f
 [floorCapacity]: full-battle-original-floor-capacity-relics.mt2f
+[endless]: full-battle-original-endless-return.mt2f
 [sting]: full-battle-original-sting-relics.mt2f
 [deployable]: full-battle-original-deployable-relic.mt2f

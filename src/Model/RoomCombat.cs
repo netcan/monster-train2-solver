@@ -343,7 +343,7 @@ namespace MonsterTrain2Poju.Model
         {
             "armor", "damage shield", "dazed", "stealth", "ambush", "multistrike",
             "spikes", "lifesteal", "fragile", "piercing", "immune", "immobile",
-            "relentless", "sweep", "sniper", "rooted", "haste", "untouchable",
+            "relentless", "sweep", "sniper", "rooted", "haste", "untouchable", "endless",
             "buff", "debuff", "regen", "poison", "melee weakness", "silenced", "valor", "pyregel",
             "heal multiplier", "heal immunity", "cooldown", "unit_ability", "unit_ability_available", "horde", "cardless", "undying", "purify", "mageblade"
         };
@@ -1924,10 +1924,11 @@ namespace MonsterTrain2Poju.Model
                 if (source.Preview || unit.Source.Team != CombatTeam.Player) return;
                 if (unit.Source.SpawnerCardId > 0 && !DetachedSpawner(unit))
                 {
-                    if (context?.Statistics != null)
+                    bool endless = unit.Has("endless");
+                    if (!endless && context?.Statistics != null)
                         context = context.WithStatistics(context.LiveStatistics!.Increment(unit.Source.SpawnerCardId, "TimesExhausted",
                             requireTrackedCard: context.CardInstances?.Count == 0));
-                    RouteSpawner(unit);
+                    RouteSpawner(unit, returnEndless: endless);
                 }
                 if (context != null) context = EquipmentModel.ReturnAttached(context, unit.Freeze());
             }
@@ -1939,7 +1940,7 @@ namespace MonsterTrain2Poju.Model
                 !context.CardInstances.Any(card => card.InstanceId == unit.Source.SpawnerCardId) &&
                 (context.KillCamActivated == true || context.CardRegistry?.Any(card => card.InstanceId == unit.Source.SpawnerCardId) == true);
 
-            private void RouteSpawner(WorkingUnit unit)
+            private void RouteSpawner(WorkingUnit unit, bool returnEndless = false)
             {
                 if (unit.Source.Team != CombatTeam.Player || unit.Source.SpawnerCardId <= 0 || context?.OtherPiles == null) return;
                 if (DetachedSpawner(unit)) return;
@@ -1954,6 +1955,11 @@ namespace MonsterTrain2Poju.Model
                     context.OtherPiles.Any(pile => pile.Name == "DiscardBuffer" && pile.Cards.Any(item => item.InstanceId == id))) return;
                 if (standby == null || exhausted == null || card == null)
                 { unsupportedReason = "Missing dead unit spawner card routing."; return; }
+                if (returnEndless)
+                {
+                    context = UnitStandbyModel.ReturnEndless(context, id);
+                    return;
+                }
                 context = context.WithOtherPiles(context.OtherPiles.Select(pile => pile == standby ? CardPileModel.Remove(pile, id) :
                     pile == exhausted ? CardPileModel.Add(CardPileModel.Remove(pile, id), card) : pile).ToArray());
             }

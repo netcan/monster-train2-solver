@@ -856,6 +856,7 @@ namespace MonsterTrain2Poju.Probe
                 if (modifierScenario == "sacrifice-effects") pendingPlay = SacrificeScenario.Choose(decision);
                 if (modifierScenario == "typed-draw") pendingPlay = TypedDrawScenario.Choose(decision);
                 if (OriginalUnitRelicBatchScenario.Enabled) pendingPlay = OriginalUnitRelicBatchScenario.Choose(decision);
+                if (OriginalEndlessReturnScenario.Enabled) pendingPlay = OriginalEndlessReturnScenario.Choose(decision);
                 if (OriginalTriggerRelicBatchScenario.Enabled) pendingPlay = OriginalTriggerRelicBatchScenario.Choose(decision);
                 if (OriginalLifecycleRelicBatchScenario.Enabled) pendingPlay = OriginalLifecycleRelicBatchScenario.Choose(decision);
                 if (OriginalDecayRelicBatchScenario.Enabled) pendingPlay = OriginalDecayRelicBatchScenario.Choose(decision);

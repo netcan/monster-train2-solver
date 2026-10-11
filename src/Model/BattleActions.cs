@@ -472,6 +472,7 @@ namespace MonsterTrain2Poju.Model
                     CardPileState? exhausted = piles.FirstOrDefault(pile => pile.Name == "Exhausted");
                     CardToken? deadCard = standby?.Cards.FirstOrDefault(item => item.InstanceId == dead.SpawnerCardId);
                     if (deadCard == null && (exhausted?.Cards.Any(item => item.InstanceId == dead.SpawnerCardId) == true ||
+                        context.Cards.Hand.Concat(context.Cards.Draw).Concat(context.Cards.Discard).Any(item => item.InstanceId == dead.SpawnerCardId) ||
                         (dead.Status("cardless")?.Stacks > 0 || piles.Any(pile => pile.UnitConditions?.Any(binding => binding.HostUnitId == dead.Id) == true)) && context.CardInstances != null &&
                         !context.CardInstances.Any(item => item.InstanceId == dead.SpawnerCardId) &&
                         context.CardRegistry?.Any(item => item.InstanceId == dead.SpawnerCardId) == true)) continue;
@@ -511,13 +512,17 @@ namespace MonsterTrain2Poju.Model
                     new UnitStandbyCondition(card.InstanceId, spawnedId.Value,
                         !train.Rooms.SelectMany(room => room.Units).Any(unit => unit.Id == spawnedId.Value))) : pile).ToArray();
             bool summonRemoved = spawnedId.HasValue && !train.Rooms.SelectMany(room => room.Units).Any(unit => unit.Id == spawnedId.Value);
+            bool summonedEndless = summonRemoved && rule.SpawnUnit?.Statuses.Any(status => status.Id == "endless" && status.Stacks > 0) == true;
             if (summonRemoved && !terminal && !consumedOnPlay)
             {
-                CardPileState? standby = piles.FirstOrDefault(pile => pile.Name == "Standby");
-                CardPileState? exhausted = piles.FirstOrDefault(pile => pile.Name == "Exhausted");
-                if (standby == null || exhausted == null) return Unsupported("Missing removed summon card routing.");
-                piles = piles.Select(pile => pile == standby ? CardPileModel.Remove(pile, card.InstanceId) :
-                    pile == exhausted ? CardPileModel.Add(pile, card) : pile).ToArray();
+                if (!summonedEndless)
+                {
+                    CardPileState? standby = piles.FirstOrDefault(pile => pile.Name == "Standby");
+                    CardPileState? exhausted = piles.FirstOrDefault(pile => pile.Name == "Exhausted");
+                    if (standby == null || exhausted == null) return Unsupported("Missing removed summon card routing.");
+                    piles = piles.Select(pile => pile == standby ? CardPileModel.Remove(pile, card.InstanceId) :
+                        pile == exhausted ? CardPileModel.Add(pile, card) : pile).ToArray();
+                }
             }
             if (terminal && context.Statistics != null && context.Statistics.DeckCards == null)
                 return Unsupported("Terminal card resolution requires permanent deck membership.");
@@ -526,7 +531,7 @@ namespace MonsterTrain2Poju.Model
             if (terminal) statistics = statistics?.RefreshOwnedCards(new[] { card.InstanceId });
             statistics = statistics?.Increment(card.InstanceId, "TimesDiscarded").WithPlayedCost(card.InstanceId, null);
             if (!terminal && rule.Destination == "Exhausted") statistics = statistics?.Increment(card.InstanceId, "TimesExhausted");
-            if (summonRemoved && !terminal && !consumedOnPlay) statistics = statistics?.Increment(card.InstanceId, "TimesExhausted");
+            if (summonRemoved && !summonedEndless && !terminal && !consumedOnPlay) statistics = statistics?.Increment(card.InstanceId, "TimesExhausted");
             if (rule.Destination == "Purged") statistics = statistics?.RemoveDeckCard(card.InstanceId);
             context = context.AfterCardEffects();
             context = new CombatContext(new CardCycleState(hand, context.Cards.Draw, discard, context.Cards.Rng,
@@ -536,6 +541,8 @@ namespace MonsterTrain2Poju.Model
                 context.CardInstances?.Select(instance => instance.InstanceId == card.InstanceId
                     ? instance.OnDiscard(true, paidCost) : instance).ToArray(), context.CardRegistry, context.AllScenarioBossesDead, context.NextAddedTemporaryUpgrades,
                 context.OtherPiles == null ? null : piles, context.QueryFrame?.With(runningCombat: !terminal), context.KillCamActivated, context.MagicPower, context.IsolatedBattlePreview, context.EnergyState, context.RoomCapacities, context.AbilityCardCache, context.LastAbilityActivatorUnitId, context.PermanentlyDisabledAbilities, context.LastSpawnedUnitId, context.NextUnitId, context.SpawnPoints, context.SummonCatalog, context.Enchantments, context.PurifyBlockedTriggers, context.Relics, context.TriggerCounts, context.Resources);
+            if (summonedEndless && !terminal && !consumedOnPlay)
+                context = UnitStandbyModel.ReturnEndless(context, card.InstanceId);
             if (consumedOnPlay)
             {
                 if (context.OtherPiles == null || !context.OtherPiles.Any(pile => pile.Name == "Standby") ||

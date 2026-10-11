@@ -371,6 +371,11 @@ internal static class BattleActionChecks
             chooser = OriginalDecayRelicBatchChecks.Choose;
         if (fixture.TryGetProperty("ModifierScenario", out var originalResourceRelicPolicy) && originalResourceRelicPolicy.GetString() == "original-resource-relic-batch")
             chooser = OriginalResourceRelicBatchChecks.Choose;
+        if (fixture.TryGetProperty("ModifierScenario", out var endlessReturnPolicy) && endlessReturnPolicy.GetString() == "original-endless-return")
+        {
+            int targetCardId = fixture.GetProperty("EndlessReturnCardId").GetInt32();
+            chooser = source => EndlessReturnChecks.Choose(source, targetCardId);
+        }
         else if (fixture.TryGetProperty("ModifierScenario", out var pyreResourceScenario) && pyreResourceScenario.GetString() == "pyre-resource-refresh")
             chooser = PyreResourceRefreshChecks.Choose;
         else if (fixture.TryGetProperty("ModifierScenario", out var capacityRelicScenario) && capacityRelicScenario.GetString() == "original-floor-capacity-relics")

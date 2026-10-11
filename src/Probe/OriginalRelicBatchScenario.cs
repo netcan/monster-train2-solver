@@ -11,10 +11,10 @@ namespace MonsterTrain2Poju.Probe
     internal static class OriginalRelicBatchScenario
     {
         internal const string Name = "original-relic-batch";
-        internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == Name || OriginalDeployableRelicScenario.Enabled || OriginalStingRelicBatchScenario.Enabled || OriginalUnitRelicBatchScenario.Enabled || OriginalTriggerRelicBatchScenario.Enabled || OriginalStatusRelicBatchScenario.Enabled || OriginalMagnitudeRelicBatchScenario.Enabled || OriginalLifecycleRelicBatchScenario.Enabled || OriginalDecayRelicBatchScenario.Enabled;
+        internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == Name || OriginalDeployableRelicScenario.Enabled || OriginalStingRelicBatchScenario.Enabled || OriginalUnitRelicBatchScenario.Enabled || OriginalEndlessReturnScenario.Enabled || OriginalTriggerRelicBatchScenario.Enabled || OriginalStatusRelicBatchScenario.Enabled || OriginalMagnitudeRelicBatchScenario.Enabled || OriginalLifecycleRelicBatchScenario.Enabled || OriginalDecayRelicBatchScenario.Enabled;
         private static bool prepared, captureReady;
-        internal static bool Prepared => prepared || OriginalDeployableRelicScenario.Prepared || OriginalStingRelicBatchScenario.Prepared || OriginalUnitRelicBatchScenario.Prepared || OriginalTriggerRelicBatchScenario.Prepared || OriginalStatusRelicBatchScenario.Prepared || OriginalMagnitudeRelicBatchScenario.Prepared || OriginalLifecycleRelicBatchScenario.Prepared || OriginalDecayRelicBatchScenario.Prepared;
-        internal static bool CaptureReady => captureReady || OriginalDeployableRelicScenario.CaptureReady || OriginalStingRelicBatchScenario.CaptureReady || OriginalUnitRelicBatchScenario.CaptureReady || OriginalTriggerRelicBatchScenario.CaptureReady || OriginalStatusRelicBatchScenario.CaptureReady || OriginalMagnitudeRelicBatchScenario.CaptureReady || OriginalLifecycleRelicBatchScenario.CaptureReady || OriginalDecayRelicBatchScenario.CaptureReady;
+        internal static bool Prepared => prepared || OriginalDeployableRelicScenario.Prepared || OriginalStingRelicBatchScenario.Prepared || OriginalUnitRelicBatchScenario.Prepared || OriginalEndlessReturnScenario.Prepared || OriginalTriggerRelicBatchScenario.Prepared || OriginalStatusRelicBatchScenario.Prepared || OriginalMagnitudeRelicBatchScenario.Prepared || OriginalLifecycleRelicBatchScenario.Prepared || OriginalDecayRelicBatchScenario.Prepared;
+        internal static bool CaptureReady => captureReady || OriginalDeployableRelicScenario.CaptureReady || OriginalStingRelicBatchScenario.CaptureReady || OriginalUnitRelicBatchScenario.CaptureReady || OriginalEndlessReturnScenario.CaptureReady || OriginalTriggerRelicBatchScenario.CaptureReady || OriginalStatusRelicBatchScenario.CaptureReady || OriginalMagnitudeRelicBatchScenario.CaptureReady || OriginalLifecycleRelicBatchScenario.CaptureReady || OriginalDecayRelicBatchScenario.CaptureReady;
         internal static readonly string[] ArtifactKeys =
         {
             "MoltenManifold", "SpawnWithRage", "UnitsGainLifesteal", "ContingencyPlans"
@@ -30,6 +30,7 @@ namespace MonsterTrain2Poju.Probe
             if (OriginalMagnitudeRelicBatchScenario.Enabled) { OriginalMagnitudeRelicBatchScenario.Prepare(managers, log); return; }
             if (OriginalStatusRelicBatchScenario.Enabled) { OriginalStatusRelicBatchScenario.Prepare(managers, log); return; }
             if (OriginalTriggerRelicBatchScenario.Enabled) { OriginalTriggerRelicBatchScenario.Prepare(managers, log); return; }
+            if (OriginalEndlessReturnScenario.Enabled) { OriginalEndlessReturnScenario.Prepare(managers, log); return; }
             if (OriginalUnitRelicBatchScenario.Enabled) { OriginalUnitRelicBatchScenario.Prepare(managers, log); return; }
             CardCostScenario.Prepare(managers, log, lethal: false);
             SaveManager save = managers.GetSaveManager();

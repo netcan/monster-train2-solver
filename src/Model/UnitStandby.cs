@@ -41,5 +41,21 @@ namespace MonsterTrain2Poju.Model
             }
             return context;
         }
+
+        internal static CombatContext ReturnEndless(CombatContext context, int cardId)
+        {
+            if (context.OtherPiles == null) throw new InvalidOperationException("Endless requires captured card piles.");
+            CardPileState? standby = context.OtherPiles.FirstOrDefault(pile => pile.Name == "Standby");
+            CardToken? card = standby?.Cards.FirstOrDefault(item => item.InstanceId == cardId);
+            if (card == null) return context;
+            CardCycleState cards = new CardCycleState(
+                context.Cards.Hand,
+                context.Cards.Draw.Concat(new[] { card }).ToArray(),
+                context.Cards.Discard, context.Cards.Rng, context.Cards.DrawModifier, context.Cards.ExternalInteractions,
+                context.Cards.BonusDraw, context.Cards.NextDrawUpgrades, context.Cards.NextUpgradeReferenceId);
+            var piles = context.OtherPiles.Select(pile => pile.Name is "Standby" or "Exhausted" or "Eaten"
+                ? CardPileModel.Remove(pile, cardId) : pile).ToArray();
+            return context.WithCards(cards).WithOtherPiles(piles);
+        }
     }
 }

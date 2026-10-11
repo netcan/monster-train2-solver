@@ -136,6 +136,7 @@ param(
     [switch] $OriginalDeployableRelic,
     [switch] $OriginalStingRelicBatch,
     [switch] $OriginalUnitRelicBatch,
+    [switch] $OriginalEndlessReturn,
     [switch] $OriginalTriggerRelicBatch,
     [switch] $OriginalStatusRelicBatch,
     [switch] $OriginalMagnitudeRelicBatch,
@@ -198,7 +199,7 @@ $ErrorActionPreference = 'Stop'
 if ($PermanentConsumeHandUpgrades -or $PermanentConsumeOverTemporary) { $HandUpgrades = $true; $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($GenerationPermanentConsume) { $Generation = $true; $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($TypedDraw) { $BranchCardMasks = $true; $BattleRelicUpgrades = $true; $Policy = 'units-spells-and-junk' }
-if ($OriginalUnitRelicBatch) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
+if ($OriginalUnitRelicBatch -or $OriginalEndlessReturn) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalStingRelicBatch -or $OriginalDeployableRelic) { $BattleRelicUpgrades = $true; $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalStatusRelicBatch) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalMagnitudeRelicBatch) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
@@ -402,6 +403,7 @@ if ($OriginalRelicBatch) {
 if ($OriginalDeployableRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-deployable-relic' }
 if ($OriginalStingRelicBatch) { $environment['MT2_PROBE_MODIFIERS'] = 'original-sting-relics' }
 if ($OriginalUnitRelicBatch) { $environment['MT2_PROBE_MODIFIERS'] = 'original-unit-relic-batch' }
+if ($OriginalEndlessReturn) { $environment['MT2_PROBE_MODIFIERS'] = 'original-endless-return' }
 if ($OriginalTriggerRelicBatch) { $environment['MT2_PROBE_MODIFIERS'] = 'original-trigger-relic-batch' }
 if ($OriginalStatusRelicBatch) { $environment['MT2_PROBE_MODIFIERS'] = 'original-status-relic-batch' }
 if ($OriginalMagnitudeRelicBatch) { $environment['MT2_PROBE_MODIFIERS'] = 'original-magnitude-relic-batch' }

@@ -300,7 +300,7 @@ namespace MonsterTrain2Poju.Probe
                 new UnityRng(draw[0], draw[1], draw[2], draw[3]), state.DrawModifier, Array.Empty<string>(), bonusDraw,
                 TypedDrawProbe.CaptureQueue(cards), TypedDrawProbe.NextUpgradeReferenceId),
                 new UnityRng(battle[0], battle[1], battle[2], battle[3]), state.Gold, projection.NextCardId,
-                cards.GetMaxHandSize(), new[] { "armor", "valor", "pyregel", "relentless", "cooldown", "unit_ability", "unit_ability_available", "horde" }.Concat(TriggeredSummonProbe.Enabled || UnitCloneScenario.Enabled || UnitCopyScenario.Enabled || HeroCopyScenario.Enabled ? new[] { "cardless" } : Array.Empty<string>()).Concat(new[] { "undying" }).Select(id => BattleActionProbe.Status(id, 1)).ToArray(),
+                cards.GetMaxHandSize(), new[] { "armor", "valor", "pyregel", "relentless", "cooldown", "unit_ability", "unit_ability_available", "horde" }.Concat(TriggeredSummonProbe.Enabled || UnitCloneScenario.Enabled || UnitCopyScenario.Enabled || HeroCopyScenario.Enabled ? new[] { "cardless" } : Array.Empty<string>()).Concat(new[] { "undying", "endless" }).Select(id => BattleActionProbe.Status(id, 1)).ToArray(),
                 statistics, instances, registry, managers.GetCombatManager()!.AllScenarioBossesDead,
                 ((IEnumerable<CardUpgradeState>)AccessTools.Field(typeof(CardManager), "nextAddedTempCardUpgrades").GetValue(cards))
                     .Select(CardModifierProbe.Upgrade).ToArray(), otherPiles, CaptureQueryFrame(managers),
@@ -497,7 +497,7 @@ namespace MonsterTrain2Poju.Probe
             string temporary = path + ".tmp";
             var snapshot = new
             {
-                Schema = HandUpgradeScenario.PermanentConsumeOverTemporaryPrepared ? 125 : GenerationScenario.PermanentConsumePrepared ? 124 : HandUpgradeScenario.PermanentConsumePrepared ? 123 : RelicCardModifierScenario.ExhaustUpgrade ? 122 : SpawnStatusRelicScenario.Prepared && SpawnStatusRelicScenario.MixedCardlessOrder ? 121 : MagebladeScenario.Prepared ? 120 : OriginalFloorCapacityRelicScenario.Prepared ? 119 : PyreResourceRefreshScenario.Prepared ? 118 : OriginalResourceRelicBatchScenario.Prepared ? 117 : OriginalDecayRelicBatchScenario.Prepared ? 116 : OriginalLifecycleRelicBatchScenario.Prepared ? 115 : OriginalMagnitudeRelicBatchScenario.Prepared ? 114 : OriginalStatusRelicBatchScenario.Prepared ? 113 : TypedDrawProbe.Enabled ? 112 : SpawnStatusRelicScenario.Prepared ? SpawnStatusRelicScenario.Clones ? 111 : 110 : TriggerCountScenario.Prepared ? 109 : AbilityIncantScenario.Prepared ? 108 : CardAnimationSettlement.Enabled ? 106 : DeathDissolveSettlement.Enabled ? 105 : EnchantmentBattleScenario.Prepared ? 104 : 103,
+                Schema = OriginalEndlessReturnScenario.Prepared ? 126 : HandUpgradeScenario.PermanentConsumeOverTemporaryPrepared ? 125 : GenerationScenario.PermanentConsumePrepared ? 124 : HandUpgradeScenario.PermanentConsumePrepared ? 123 : RelicCardModifierScenario.ExhaustUpgrade ? 122 : SpawnStatusRelicScenario.Prepared && SpawnStatusRelicScenario.MixedCardlessOrder ? 121 : MagebladeScenario.Prepared ? 120 : OriginalFloorCapacityRelicScenario.Prepared ? 119 : PyreResourceRefreshScenario.Prepared ? 118 : OriginalResourceRelicBatchScenario.Prepared ? 117 : OriginalDecayRelicBatchScenario.Prepared ? 116 : OriginalLifecycleRelicBatchScenario.Prepared ? 115 : OriginalMagnitudeRelicBatchScenario.Prepared ? 114 : OriginalStatusRelicBatchScenario.Prepared ? 113 : TypedDrawProbe.Enabled ? 112 : SpawnStatusRelicScenario.Prepared ? SpawnStatusRelicScenario.Clones ? 111 : 110 : TriggerCountScenario.Prepared ? 109 : AbilityIncantScenario.Prepared ? 108 : CardAnimationSettlement.Enabled ? 106 : DeathDissolveSettlement.Enabled ? 105 : EnchantmentBattleScenario.Prepared ? 104 : 103,
                 DeathDissolveSettlementEnabled = DeathDissolveSettlement.Enabled,
                 DeathDissolveSettlements = DeathDissolveSettlement.Records,
                 DeathDissolveCallbacks = DeathDissolveSettlement.Callbacks,
@@ -508,6 +508,7 @@ namespace MonsterTrain2Poju.Probe
                 TerminalEffectsSettled,
                 Policy = Environment.GetEnvironmentVariable("MT2_PROBE_FULL_BATTLE_POLICY"),
                 ModifierScenario = Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS"),
+                EndlessReturnCardId = OriginalEndlessReturnScenario.TargetCardId,
                 RequestedGameSpeed = ProbeGameSpeed.Requested?.ToString(),
                 LiveGameSpeedOverrides = ProbeGameSpeed.LiveOverrides,
                 CaptureFailures,
