@@ -1,7 +1,7 @@
 # Original relic coverage evidence
 
-As of 2026-10-11, **39 distinct original collectable relics / 224 catalog entries
-(17.41%)** have accepted native full-battle evidence. This counts unchanged relic
+As of 2026-10-11, **47 distinct original collectable relics / 224 catalog entries
+(20.98%)** have accepted native full-battle evidence. This counts unchanged relic
 definitions whose effects actually ran, including their original filters and
 conditions. Test cards, unit triggers and carrier subtypes may be authored to
 exercise those effects; the claim covers the recorded paths, not every possible
@@ -14,16 +14,16 @@ five now have accepted original-owner evidence. Both catalog owners of
 Rage and Frostbite consumers. Unknown status families and other effects on the
 remaining owners still require modeling and native proof.
 
-All 12 source archives below report game `2.2.1`, module MVID
+All 13 source archives below report game `2.2.1`, module MVID
 `8fb07b96-f4db-4d2b-884d-c00536d6ccf4`, `NativeWon=true`, and zero
 `CaptureFailures`, `Mismatches`, `Unsupported` and `Pending`. Archive provenance,
 byte lengths and SHA-256 hashes are recorded in [manifest.tsv](manifest.tsv).
-The decay batch and refreshed magnitude archive pass strict native acceptance,
-complete-fixture checks and independent full-battle replay. The directly affected
-original-status and post-combat-healing battles also pass. All 219 archive names,
-byte lengths and SHA-256 hashes match the manifest and curated list, with 188
-battles, 31 component calibrations and no JSON companions. A new full-inventory
-replay remains deferred to a milestone.
+The resource batch passes strict native acceptance, complete-fixture checks and
+independent full-battle replay, as do its directly affected EnergyEffects,
+TypedDraw and NoCards fixtures. The accepted inventory is 220 archives: 189
+battles and 31 component calibrations. All 220 archive names, byte lengths and
+SHA-256 hashes match the manifest and curated list, with no JSON companions.
+A full 220-archive replay remains deferred to a milestone.
 
 | AssetKey | DataId | Accepted archive | Actual effect witness |
 | --- | --- | --- | --- |
@@ -66,9 +66,17 @@ replay remains deferred to a milestone.
 | `LifeInsurer` | `c1ae061c-5f95-4f1d-a8f0-6e027636a81e` | [original lifecycle relics][lifecycles] | One natural Undying revival consumes a stack and restores health 0 → 1, then original OnReanimated grants its actor Armor 14. One positive owner ablation loses that Armor. The native queue preserves Harvest callbacks followed by OnReanimated and OnDeath with parameter 1. |
 | `RagePreservedOnFriendlies` | `b7822614-96ec-4ace-9029-6efc8adef374` | [original decay relics][decays] | The unchanged Monsters-team buff decay rule gives 14 actual player Rage-preservation witnesses. Enemy Rage still decays as a negative team case. Removing only this owner changes future preserved stacks while retaining captured starting attack history. |
 | `IncreaseFrostbiteStacks` | `9cb2b9b2-0308-4f71-92e8-e96a30b87416` | [original decay relics][decays] | Original None-team poison+2 turns real card applications from 1 into 3 stacks on both teams; its second effect prevents natural poison decay. Owner removal gives 25 combined preservation and real-application witnesses, preserving prior attack caches and leaving the card's buff2 and armor30 effects unchanged. |
+| `SilverIncreasedDraw` | `4a51a457-9c50-4623-b8f5-e1bd9aac561a` | [original resource relics][resources] | Original starting-hand rule adds 1 draw. Six real empty-hand draws produce eight cards with the full batch and seven when only this owner is removed. |
+| `SilverIncreasedEmber` | `1a69fbff-9f1d-4c98-92ff-a63e0ac520c5` | [original resource relics][resources] | Original +1 ordinary and +1 deployment callbacks have seven positive future energy witnesses; native signed callback bodies and notification rules match. |
+| `Inkbound_LeakyPen` | `19c5ec66-4dde-4161-8fcf-68caf38a293c` | [original resource relics][resources] | Original -1 ordinary energy and +2 starting-hand rules have 12 combined energy/draw witnesses. Owner removal increases actual energy by 1 and changes real batch draws from eight to six cards. |
+| `LessDeployEmberMoreOtherEmber` | `7bc61ac1-f295-4bf5-a978-1c538c8f2e51` | [original resource relics][resources] | Original -3 deployment and +1 ordinary energy have seven positive callback witnesses. The deployment subtraction is observed before ordinary callbacks, preserving its actual negative contribution. |
+| `MoreDeploymentPhaseEmber` | `83116c76-f5cc-4912-8a56-872731393975` | [original resource relics][resources] | One actual first-deployment callback contributes +3 energy; its owner ablation lowers that intermediate native energy boundary by 3. It is not inferred from a display getter. |
+| `BossEmber` | `780f977e-4007-45ae-900f-c8929b2bf000` | [original resource relics][resources] | All four original effects have positive witnesses: ordinary/deployment +1 energy, native acquisition +20 HP and table-index-0 Pyre attack +30. Fourteen combined witnesses include actual Pyre combat; catalog Int30/10 are not substituted for the initialized HP/attack amounts. |
+| `BossEmber2` | `6eef1e2d-3bd5-4f04-bd88-d0c24d5eb691` | [original resource relics][resources] | All four original effects have positive witnesses: ordinary/deployment +1 energy, acquisition +20 HP and table-index-1 Pyre attack +55. Fourteen combined witnesses use its initialized lookup amount rather than catalog Int10. |
+| `BossEmberDH` | `50e516a6-f27a-4878-9586-c0efce046206` | [original resource relics][resources] | All four original effects have positive witnesses: ordinary/deployment +1 energy, acquisition +20 HP and table-index-1 Pyre attack +55. Fourteen combined witnesses cover actual acquisition, timing and Pyre combat with unchanged original payloads. |
 
 Record indices above are zero-based. Full-battle acceptance and independent
-effect checks are documented in [README.md](README.md); the table's 12 source
+effect checks are documented in [README.md](README.md); the table's 13 source
 archives contain these observed battle sizes:
 
 | Archive | Schema | Card plays | EndTurns | Matched stages | Independent relic observations |
@@ -85,6 +93,7 @@ archives contain these observed battle sizes:
 | [original magnitude relics][magnitudes] | 114 | 24 | 5 | 38 | Refreshed native capture: 20 matrix, seven live and four preview getter cases; three positive original effects |
 | [original lifecycle relics][lifecycles] | 115 | 24 | 5 | 35 | 14 exact birth/train/queue phases, six ability activations, one natural revival, 17 callback phases; five positive original effects |
 | [original decay relics][decays] | 116 | 21 | 5 | 42 | 16 matrix, 11 live and ten preview decay queries; 239 stack queries; two positive original effects |
+| [original resource relics][resources] | 117 | 42 | 7 | 50 | Eight real acquisitions, 48 native energy bodies, six empty-hand draw8 applications and six positive Pyre combat stages; all 20 original effects |
 
 The checks that enforce these observations are
 [TriggerCountChecks.Native](../../src/ModelChecks/TriggerCountChecks.cs),
@@ -96,7 +105,8 @@ The checks that enforce these observations are
 [OriginalStatusRelicBatchChecks.Native](../../src/ModelChecks/OriginalStatusRelicBatchChecks.cs),
 [OriginalMagnitudeRelicBatchChecks.Native](../../src/ModelChecks/OriginalMagnitudeRelicBatchChecks.cs),
 [OriginalLifecycleRelicBatchChecks.Native](../../src/ModelChecks/OriginalLifecycleRelicBatchChecks.cs),
-and [OriginalDecayRelicBatchChecks.Native](../../src/ModelChecks/OriginalDecayRelicBatchChecks.cs).
+[OriginalDecayRelicBatchChecks.Native](../../src/ModelChecks/OriginalDecayRelicBatchChecks.cs),
+and [OriginalResourceRelicBatchChecks.Native](../../src/ModelChecks/OriginalResourceRelicBatchChecks.cs).
 Each new trigger archive has eight positive owner effects; their union covers
 all nine distinct originals. Removing only one original's installed callbacks
 must change health, attack, membership or status stacks, beyond trigger metadata.
@@ -124,6 +134,20 @@ native action/combat states, retaining captured starting accumulators. Live
 getter evidence is required separately from the matrix. Full-battle and
 mid-battle policy replay, 16 parallel policy branches and 32 immutable getter
 branches pass, ending with Pyre health 77.
+
+The resource archive requires positive actual effects for all 20 original
+effects on its eight owners, with owner witness totals 6/7/12/7/1/14/14/14 in
+table order. Fifty-six native resource operations contain eight normal
+acquisitions before battle and 48 ordered energy callback bodies. Captured
+Balance is base energy 3, deployment extra 1, base draw 5, maximum energy 99
+and maximum hand size 10. Deployment energy is 4 → 8, then ordinary callbacks
+produce 12; later ordinary turns produce 7. No native boundary hits the energy
+cap. Six real empty-hand draws produce eight cards, with positive owner
+ablations. Pyre upgrade indices 0/1/1 resolve attack amounts 30/55/55 and health
+amounts 20/20/20 from the selected Pyre tables. Acquisition, initialized birth
+and actual Pyre combat match. Getter checks preserve 32 immutable branches;
+full-battle and mid-battle replay each preserve 16 independent chooser branches,
+ending at Pyre 123. These are policy replay checks, not optimal search results.
 
 No additional original relic is counted for the status, piercing, SelfPurge,
 unit-ability, OnKill or conditional modifier fixtures. Their preparation in
@@ -154,9 +178,18 @@ validation dummy that lacked an attack cache and incorrectly rejected
 that legal card; no historical card exclusion was added. The refreshed battle
 has 24 actions, five EndTurns and 38 stages, with positive owner witnesses
 19/10/12 and Pyre 80. It replaces the same archive name without increasing the
-inventory. The new decay archive brings the inventory to 219; strict and
-complete-fixture checks pass for both captures. A full 219-archive replay
-remains deferred.
+inventory. At the decay milestone, the new archive brought the inventory to
+219; strict and complete-fixture checks passed for both captures. A full
+219-archive replay remained deferred.
+The resource batch brings the accepted inventory to 220 and owner coverage to
+47/224. Its native, pure, strict and complete-fixture checks pass, as do focused
+EnergyEffects (49 stages), TypedDraw (35 stages) and NoCards (52 stages)
+regressions. Card checks match 32,515 native views across 845 decision contexts.
+A full 220-archive replay remains deferred. Interactions between modified live
+Pyre attack and refresh of its attack cache on gold changes have not been
+independently validated;
+nonzero saved modified Pyre base attack remains guarded. The resource batch
+does not establish support for all owners of these five effect classes.
 Mageblade still requires room spell power and its cached coefficient,
 and is excluded from accepted magnitude consumers and original-owner coverage.
 The older `6/224` passage in README describes an earlier milestone; it does not
@@ -174,3 +207,4 @@ include the starter-cost, cardless or four-artifact batch evidence above.
 [magnitudes]: full-battle-original-magnitude-relics.mt2f
 [lifecycles]: full-battle-original-lifecycle-relics.mt2f
 [decays]: full-battle-original-decay-relics.mt2f
+[resources]: full-battle-original-resource-relics.mt2f

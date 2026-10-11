@@ -15,7 +15,7 @@ The default command still checks the full curated inventory.
 For routine changes, run only the new and directly affected fixtures with
 `-Fixture`; run the full inventory at completed milestones and before delivery.
 
-Current inventory is 219 archives: 188 accepted battles and 31 component
+Current inventory is 220 archives: 189 accepted battles and 31 component
 calibrations. `full-battle-relic-card-status-upgrades.mt2f` verifies a native
 temporary card status upgrade reaches the unit summoned by that card.
 `full-battle-sacrifice-effects.mt2f` covers native `CardEffectSacrifice` target
@@ -2364,8 +2364,9 @@ Raw source:
 `.probe-runs/full-battle-units-spells-and-junk-20261011-124340-9b1f1384/full-battle.mt2f`.
 The accepted native and final frozen `Model.dll` SHA-256 is
 `2a4aa15ce74af48c4105ca16b762837470ac4bcf59112ce89079bcc599e17f42`.
-Inventory is 219 archives: 188 battles and 31 component calibrations. Original
-relic coverage is 39/224 (17.41%) across 12 evidence archives; the status-applied
+At the decay milestone, inventory was 219 archives: 188 battles and 31 component
+calibrations. Original relic coverage was 39/224 (17.41%) across 12 evidence
+archives; the status-applied
 effect covers five of eight original owners and decay prevention covers both
 original owners. All 219 archive names, sizes and SHA-256 hashes match the
 curated list and manifest; no JSON companions are present. The full 219-archive
@@ -2376,4 +2377,76 @@ combinations, all Bosses and the optimal solver remain unfinished.
 dotnet run --project src/ModelChecks -c Release -- --relic-status-decay-pure
 dotnet run --project src/ModelChecks -c Release -- --original-decay-relics-only tests/fixtures/full-battle-original-decay-relics.mt2f
 & ./scripts/Check-Models.ps1 -Fixture full-battle-original-decay-relics.mt2f
+```
+
+### Original energy, draw and Pyre relics
+
+`full-battle-original-resource-relics.mt2f` validates eight unchanged originals:
+`SilverIncreasedDraw`, `SilverIncreasedEmber`, `Inkbound_LeakyPen`,
+`LessDeployEmberMoreOtherEmber`, `MoreDeploymentPhaseEmber`, `BossEmber`,
+`BossEmber2` and `BossEmberDH`. All 20 original effects have positive actual
+effect evidence across ordinary/deployment energy, starting-hand rules, Pyre
+health and Pyre attack. Native acquisition happens before the first deployment
+callbacks. Authored cards are free empty spells, with no manual energy setters,
+hand draws or player unit deployment. Original Balance, selected Pyre, Boss
+and wave definitions remain unchanged.
+
+The schema-117 Instant battle takes 88.40 seconds and wins at Pyre 123 after
+42 actions, seven EndTurns and 50 matched combat stages. Capture failures,
+mismatches, unsupported transitions and pending records are zero. Fifty-six
+resource operations compare eight real acquisitions and 48 signed native energy
+callback bodies. Fresh Balance values are ordinary energy 3, deployment extra
+1, base draw 5, maximum energy 99 and maximum hand size 10. Deployment starts
+at 4, becomes 8 after deployment callbacks, then 12 after ordinary callbacks;
+later ordinary turns produce 7. This battle does not reach the energy cap.
+Six actual empty-hand draws produce eight cards; removing the +1/+2 draw
+owners changes the real results to seven/six cards, below the hand cap.
+
+The selected Pyre has raw attack 45 and raw maximum HP 80. Its native upgrade
+tables are attack `[30,55,20]` and health `[20,20,15]`; the three Boss owners use
+indices 0/1/1. Their initialized attack contributions are 30/55/55, producing
+Pyre attack 185, and their normal acquisitions each add 20 HP, producing maximum
+HP 140. Original catalog ParamInt10/30 are not used as these actual bonuses.
+Six positive native Pyre combat stages and complete acquisition/birth/combat
+comparisons validate the consumers. Owner witness totals are 6/7/12/7/1/14/14/14
+in the owner order above, requiring every effect to contribute rather than
+counting only resource metadata.
+
+Native, pure, strict and complete-fixture checks pass. Independent full-battle
+and mid-battle chooser replay each pass 16 parallel branches; immutable getters
+pass 32 branches. These checks reproduce the fixed policy, not optimal search.
+Card checks match 32,515 native views across 845 decision contexts and retain
+32 immutable query branches. Focused EnergyEffects (49 stages), TypedDraw
+(35 stages) and NoCards (52 stages) regressions also pass. NoCards independently
+finishes seven EndTurns at Pyre 49 with 16 branches. Pure checks cover signed
+callback order and caps, ledger rollover, draw-rule rounding and separate
+clamps, notifications, Pyre initialization/acquisition caches and metadata guards.
+
+The binary archive has no text or JSON source: 39,703 bytes, 8,249 unique nodes,
+SHA-256
+`92c7f41e6c7c3f1fb1c6ccb3639e735629d3df9fd8808b8f4a31dc805334c419`.
+Raw source:
+`.probe-runs/full-battle-units-spells-and-junk-20261011-131145-588ea4aa/full-battle.mt2f`.
+The frozen production `Model.dll` matches the native sandbox plugin; SHA-256 is
+`7d441722cf4298383114edbfdb55f6ead1b6f580645ca11341c7a7f448cc9adf`.
+Acceptance uses `.probe-runs/resource-acceptance2/ModelChecks.dll` with
+`resource-pure.log`, `resource-strict2.log`, `resource-full2.log` and
+`resource-native1.log` under `.probe-runs/`.
+Game `2.2.1` and module MVID `8fb07b96-f4db-4d2b-884d-c00536d6ccf4` are fixed
+by the strict checker.
+
+Inventory is 220 archives: 189 battles and 31 component calibrations. Original
+relic coverage is 47/224 (20.98%) across 13 evidence archives. The full
+220-archive replay remains deferred; this batch uses focused regression.
+All 220 archive names, byte lengths and SHA-256 hashes match the manifest and
+curated list; no JSON companions are present. Interactions between modified live
+Pyre attack and attack-cache refresh on gold changes have not been independently
+validated, and nonzero `SaveManager.GetModifiedPyreBaseAttack()` consumers remain
+guarded. This evidence does not establish all resource relics, arbitrary
+card/relic combinations, all Bosses or an optimal solver.
+
+```powershell
+dotnet run --project src/ModelChecks -c Release -- --relic-resources-pure
+dotnet run --project src/ModelChecks -c Release -- --original-resource-relics-only tests/fixtures/full-battle-original-resource-relics.mt2f
+& ./scripts/Check-Models.ps1 -Fixture full-battle-original-resource-relics.mt2f
 ```

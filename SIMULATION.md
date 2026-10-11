@@ -1,8 +1,8 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-11): 219 binary archives, including 188
+Current accepted inventory (2026-10-11): 220 binary archives, including 189
 full battles and 31 component calibrations. Unchanged original relic evidence
-covers 39/224 catalog entries (17.41%); see
+covers 47/224 catalog entries (20.98%); see
 [the owner evidence table](tests/fixtures/relic-coverage.md). Whole-battle
 coverage and the optimal solver remain in progress.
 
@@ -7942,11 +7942,63 @@ refreshed magnitude fixture and affected original-status/post-combat-healing
 battles pass. The binary has 30,547 bytes and 5,228 unique nodes with no JSON
 source; provenance and commands are in the fixture documentation.
 
-The accepted inventory is 219 binary archives: 188 battles and 31 component
-calibrations. Unchanged original relic coverage is 39/224 (17.41%) across 12
+At the decay milestone, accepted inventory was 219 binary archives: 188 battles
+and 31 component calibrations. Unchanged original relic coverage was 39/224
+(17.41%) across 12
 evidence archives; status-applied adders cover five of eight catalog owners
 and decay prevention covers both original owners for the recorded consumers.
 All 219 archive names, sizes and SHA-256 hashes match the curated list and
 manifest, with no JSON companions. Full 219-archive replay remains deferred
 to a completed milestone. Complete simulation of arbitrary card/relic
 combinations, all Bosses and an optimal solver remain unfinished.
+
+### Original resource timing, draw and Pyre effects
+
+The schema-117 resource batch validates eight unchanged original owners and
+all 20 effects across `RelicEffectModifyEnergy`,
+`RelicEffectModifyEnergyDuringDeployment`, `RelicEffectChangeStartingHandSize`,
+`RelicEffectIncreasePyreAttack` and `RelicEffectIncreasePyreHealth`. Native
+acquisition occurs before battle setup. Deployment callbacks run before ordinary
+before-draw callbacks, preserving signed adjustments, ordering and notification
+semantics. Starting-hand rules use their installed native values and separate
+rule/hand clamps. Resource state retains raw Balance and Pyre definition inputs
+so prediction does not reapply bonuses to already modified captured totals.
+
+Fresh native Balance is base energy 3, deployment extra 1, base draw 5, maximum
+energy 99 and maximum hand size 10. Deployment energy is 4 → 8 → 12; subsequent
+ordinary turns produce 7. The actual battle never reaches the energy cap.
+Six empty-hand native draws produce eight cards, with positive +1/+2 owner
+ablations. Fifty-six recorded operations contain eight normal acquisitions
+and 48 energy callback bodies. Authored free empty spells clear the hand;
+no manual resource setters, hand draws or player units produce the evidence.
+Boss, waves and selected Pyre definitions remain original.
+
+The selected Pyre's raw attack/max HP are 45/80. Upgrade tables provide attack
+`[30,55,20]` and health `[20,20,15]`; the original Boss owners use indices 0/1/1.
+Initialized attack becomes 185 and native acquisition raises maximum HP to 140.
+The model retains initialized lookup amounts and distinguishes acquisition,
+birth and future combat. Catalog Int10/30 are not used as the actual bonuses.
+Six positive Pyre combat stages provide consumer evidence. All eight owners
+have positive effect witnesses, with totals 6/7/12/7/1/14/14/14; strict checks
+require every one of the 20 effects to contribute.
+
+The Instant battle takes 88.40 seconds and wins at Pyre 123 after 42 actions,
+seven EndTurns and 50 combat stages, with all differential failure counters
+zero. Native, pure, strict and complete-fixture checks pass. Full-battle and
+mid-battle chooser replay each pass 16 parallel branches; immutable resource
+getters pass 32 branches. These reproduce a fixed policy, not an optimal search.
+Card checks match 32,515 native views across 845 decision contexts and 32
+immutable query branches. Focused EnergyEffects (49 stages), TypedDraw (35)
+and NoCards (52) regressions pass; NoCards independently finishes seven
+EndTurns at Pyre 49. The binary has 39,703 bytes and 8,249 unique nodes with no
+text or JSON source; provenance and commands are in the fixture documentation.
+
+Accepted inventory is 220 binary archives: 189 battles and 31 component
+calibrations. Unchanged original relic coverage is 47/224 (20.98%) across 13
+evidence archives. The full 220-archive replay remains deferred to a milestone.
+Interactions between modified live Pyre attack and attack-cache refresh on gold
+changes have not been independently validated; nonzero saved modified Pyre base
+attack remains guarded.
+The batch does not establish every resource relic or arbitrary card/relic
+combination. Complete simulation across all Bosses and an optimal solver
+remain unfinished.
