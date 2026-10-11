@@ -1,8 +1,8 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-11): 220 binary archives, including 189
+Current accepted inventory (2026-10-11): 221 binary archives, including 190
 full battles and 31 component calibrations. Unchanged original relic evidence
-covers 47/224 catalog entries (20.98%); see
+covers 50/224 catalog entries (22.32%); see
 [the owner evidence table](tests/fixtures/relic-coverage.md). Whole-battle
 coverage and the optimal solver remain in progress.
 
@@ -81,6 +81,7 @@ are copied immutable values; independent child states can run on worker threads.
 | Spawn enchant callbacks | `BattleActionModel`, `UnitBirthModel` and `RoomCombatModel` | Ordinary/repeated paid births retain IsSpawning through player-wide enchant and child queues; fifteen native Horde/armor phases, complete source caches and nine-field child payloads in 32 branches |
 | Unit effects | `CombatTrigger` and `CombatContext` | Generated cards, Battle RNG, treasure escape; gold and once-only trigger checks |
 | Gold rewards | `GoldRewardModel` | 2,200 native calculations, reward minimums, integer/float boundaries, ties to even and preview exclusion |
+| Gold changes and Pyre attack refresh | `GoldModel` and `RelicResourceModel.RefreshPyreAttack` | Real card Gold0/+5/-5 bodies, two synchronous refreshes with three original attack notifications each, raw attack/upgrade/status cache retention, full battle and parallel branches |
 | Card statistics and preview | `BattleStatistics` and `BattlePreviewModel` | Native per-card/Any counters, turn rollover, spawn subtypes, death/exhaust attribution and preview damage statistic |
 | Statistic queries | `StatisticQueryModel` | 17,604 native queries across 40 kinds, three durations and seven card types; membership refresh, type/subtype pile counts, aggregates, costs and resource snapshots |
 | Statistic-driven damage traits | `DamageScalingModel` and `RoomCombatModel` | 63 native callbacks with complete refreshed contexts; trait order, replacement/addition, explicit-source upgrades, per-hit statistics and Boss/Pyre kill previews |
@@ -7993,12 +7994,53 @@ and NoCards (52) regressions pass; NoCards independently finishes seven
 EndTurns at Pyre 49. The binary has 39,703 bytes and 8,249 unique nodes with no
 text or JSON source; provenance and commands are in the fixture documentation.
 
-Accepted inventory is 220 binary archives: 189 battles and 31 component
-calibrations. Unchanged original relic coverage is 47/224 (20.98%) across 13
-evidence archives. The full 220-archive replay remains deferred to a milestone.
-Interactions between modified live Pyre attack and attack-cache refresh on gold
-changes have not been independently validated; nonzero saved modified Pyre base
-attack remains guarded.
+At the resource milestone, accepted inventory was 220 binary archives: 189
+battles and 31 component calibrations. Unchanged original relic coverage was
+47/224 (20.98%) across 13 evidence archives. Full-inventory replay remained
+deferred. The following schema-118 batch adds independent gold/cache-refresh
+evidence; nonzero saved modified Pyre base attack remains guarded.
 The batch does not establish every resource relic or arbitrary card/relic
 combination. Complete simulation across all Bosses and an optimal solver
 remain unfinished.
+
+### Pyre attack refresh and original Boss draw relics
+
+The schema-118 `full-battle-pyre-resource-refresh.mt2f` validates unchanged
+`BossIncreaseTurnDraw`, `BossIncreaseTurnDrawDH` and `BossIncreaseTurnDraw2`.
+Each original has three effects: draw +1, Pyre health and Pyre attack. Native
+acquisition occurs before battle setup. Initialized HP/attack amounts come from
+the selected Pyre's real tables at indices 0/1/1, contributing HP 20/20/20 and
+attack 30/55/55 in this recording. Six actual draws add eight cards; removing
+any one draw owner produces seven. Three acquisitions and six positive Pyre
+combat stages provide the other consumers. All nine effects have positive
+proof, with 13 witnesses per original owner.
+
+One legal native Pyre-room spell applies unique temporary +7/-10 attack
+upgrades, Buff11 and Rage2, then runs Gold0/+5, a further -3 upgrade and Gold-5.
+The applied +7 upgrade selects the one-play policy through captured unit state.
+Gold0 keeps raw attack 182 and its private display cache unchanged. Both
+nonzero gold bodies restore raw attack to the relic-derived base 185 while
+preserving `AttackDamageAdded=0`, the upgrade list, Buff11, Rage2 and its real
+attack accumulator 4. Each synchronous refresh sends three original attack
+notifications. The handler's private cache is 185 at its boundary, then the
+later SetGold display signal records live attack 200. The checks retain actual
+before/after gold and raw inputs; these recording values are not model defaults.
+
+The Instant native battle takes 61 seconds and finishes at Pyre 123 with one
+card action, seven EndTurns and 50 matched combat stages; all differential
+failure counters are zero. The final frozen checker passes strict acceptance,
+the complete new fixture and five directly affected old fixtures. Independent
+whole-battle and mid-battle policies each pass 16 parallel branches; 32 gold
+and refresh operation branches preserve their full source states and RNG.
+The binary has 23,282 bytes and 3,603 unique nodes, with no JSON source.
+The sampling plugin and final model hashes differ after a later Room-only API
+correction; final-model replay against the captured native states is the
+acceptance evidence. Details and hashes are in the fixture documentation.
+
+Accepted inventory is now 221 archives: 190 battles and 31 component
+calibrations. Original relic coverage is 50/224 (22.32%) across 14 evidence
+archives. Full 221-archive replay remains deferred to a milestone. Nonzero
+saved modified Pyre base attack, unsupported tower room modifiers and Gold
+range quantities without captured Setup-time metadata remain guarded. This
+batch proves its observed gold/upgrade/status paths and original owners;
+arbitrary combinations, all Bosses and optimal search remain unfinished.

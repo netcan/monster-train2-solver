@@ -15,7 +15,7 @@ The default command still checks the full curated inventory.
 For routine changes, run only the new and directly affected fixtures with
 `-Fixture`; run the full inventory at completed milestones and before delivery.
 
-Current inventory is 220 archives: 189 accepted battles and 31 component
+Current inventory is 221 archives: 190 accepted battles and 31 component
 calibrations. `full-battle-relic-card-status-upgrades.mt2f` verifies a native
 temporary card status upgrade reaches the unit summoned by that card.
 `full-battle-sacrifice-effects.mt2f` covers native `CardEffectSacrifice` target
@@ -2435,18 +2435,85 @@ Acceptance uses `.probe-runs/resource-acceptance2/ModelChecks.dll` with
 Game `2.2.1` and module MVID `8fb07b96-f4db-4d2b-884d-c00536d6ccf4` are fixed
 by the strict checker.
 
-Inventory is 220 archives: 189 battles and 31 component calibrations. Original
-relic coverage is 47/224 (20.98%) across 13 evidence archives. The full
-220-archive replay remains deferred; this batch uses focused regression.
-All 220 archive names, byte lengths and SHA-256 hashes match the manifest and
-curated list; no JSON companions are present. Interactions between modified live
-Pyre attack and attack-cache refresh on gold changes have not been independently
-validated, and nonzero `SaveManager.GetModifiedPyreBaseAttack()` consumers remain
-guarded. This evidence does not establish all resource relics, arbitrary
+At the resource milestone, inventory was 220 archives: 189 battles and 31
+component calibrations. Original relic coverage was 47/224 (20.98%) across 13
+evidence archives. Full-inventory replay remained deferred; that batch used
+focused regression. All 220 archive names, byte lengths and SHA-256 hashes
+matched the manifest and curated list, with no JSON companions. The next
+schema-118 batch independently validates live gold/cache refresh, while nonzero
+`SaveManager.GetModifiedPyreBaseAttack()` consumers remain guarded.
+This evidence does not establish all resource relics, arbitrary
 card/relic combinations, all Bosses or an optimal solver.
 
 ```powershell
 dotnet run --project src/ModelChecks -c Release -- --relic-resources-pure
 dotnet run --project src/ModelChecks -c Release -- --original-resource-relics-only tests/fixtures/full-battle-original-resource-relics.mt2f
 & ./scripts/Check-Models.ps1 -Fixture full-battle-original-resource-relics.mt2f
+```
+
+### Pyre attack refresh and original Boss draw relics
+
+`full-battle-pyre-resource-refresh.mt2f` validates unchanged originals
+`BossIncreaseTurnDraw`, `BossIncreaseTurnDrawDH` and `BossIncreaseTurnDraw2`.
+Each original keeps its ordered draw +1, Pyre health and Pyre attack effects,
+with no outer conditions or required mutator. The selected Pyre's initialized
+tables supply HP 20/20/20 and attack 30/55/55 at indices 0/1/1 in this recording.
+Three real pre-battle acquisitions each add 20 current/max HP, six real draw8
+applications fall to seven cards under individual owner removal, and six
+positive Pyre combat stages change actual attack results under owner removal.
+All nine original effects require positive evidence, with 13 witnesses per
+owner. No previously accepted draw relic is installed to obscure these +1
+contributions at the ten-card cap.
+
+One real compound Pyre-room spell applies unique temporary attack upgrades
++7/-10, Buff11, Rage2, Gold0/+5, a further -3 upgrade and Gold-5. The +7 upgrade
+is the native state marker for an independent one-play chooser. Gold0 retains
+raw attack 182 and sends no refresh. Gold+5 changes 50 to 55 and Gold-5 restores
+50; both synchronously refresh raw attack 182 to 185, preserving the actual
+upgrade accumulator 0, the upgrades already applied, Buff11 and Rage's attack cache 4.
+Each nested refresh sends three original attack-effect notifications. Its
+private display cache is 185 at the handler boundary, then SetGold's subsequent
+display signal records the live buffed attack 200. Gold0 preserves its earlier
+display cache 193. The checker derives the expected values from captured raw
+save/Balance/definition inputs, rather than assuming a fixed gold balance or
+Pyre table.
+
+The schema-118 Instant battle takes 61 seconds and wins at Pyre 123 after one
+card action, seven EndTurns and 50 matched combat stages. Capture failures,
+mismatches, unsupported transitions and pending records are zero. Five native
+gold/refresh records cover three outer gold bodies and two nested refreshes.
+Complete intermediate trains, actions and combat match the final independent
+model. Whole-battle and mid-battle chooser replays each pass 16 parallel
+branches; 32 operation branches preserve source states, caches and RNG.
+Pure gold/Pyre and engine-room spell checks pass. Complete focused regression
+passes the new archive and five directly affected old fixtures; the full
+221-archive replay remains deferred to a milestone.
+
+The binary has no JSON source: 23,282 bytes, 3,603 unique nodes, SHA-256
+`d6ed8926500ba39d49b5e28c23540d2df73f47173d535ea19a39e3ea82d4a5c2`.
+Raw source:
+`.probe-runs/full-battle-units-spells-and-junk-20261011-135122-a2a11a08/full-battle.mt2f`.
+Native sampling uses `Model.dll` SHA-256
+`8ed16973ba4818f88c2d002ec1853146f356a582bdc960b48a4ed5cf5acda2c6`.
+The final frozen model, after a Room-only API correction, has SHA-256
+`b5c93f54799791d81d60f8f829fc7138926002f9c314ea43f3a59306345c1c91`;
+its `ModelChecks.dll` SHA-256 is
+`04d88771f050f49d749876d5178728cfb616cd1d7d27943609cdbcff985f8227`.
+These are distinct model hashes. Acceptance replays the native archive with
+the final checker in `.probe-runs/pyre-refresh-acceptance3/`; pure, strict and
+complete focused logs are `pyre-refresh-pure3.log`, `pyre-refresh-strict3.log`
+and `pyre-refresh-full3.log`, all retaining successful terminal exit status.
+
+Inventory is now 221 archives: 190 battles and 31 calibrations. Original relic
+coverage is 50/224 (22.32%) across 14 evidence archives. All 221 archive names,
+byte lengths and SHA-256 hashes match the manifest and curated list, with no
+JSON companions. Nonzero saved modified
+Pyre base attack and unsupported tower room modifiers remain guarded. Gold
+range quantities still require captured Setup-time amount metadata. Broader
+card/relic combinations, all Bosses and the optimal solver remain unfinished.
+
+```powershell
+dotnet run --project src/ModelChecks -c Release -- --gold-pyre-pure
+dotnet run --project src/ModelChecks -c Release -- --pyre-resource-refresh-only tests/fixtures/full-battle-pyre-resource-refresh.mt2f
+& ./scripts/Check-Models.ps1 -Fixture full-battle-pyre-resource-refresh.mt2f
 ```
