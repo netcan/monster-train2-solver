@@ -1,10 +1,17 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-11): 231 binary archives, including 200
+Current accepted inventory (2026-10-12): 232 binary archives, including 201
 full battles and 31 component calibrations. Unchanged original relic evidence
 covers 58/224 catalog entries (25.89%); see
 [the owner evidence table](tests/fixtures/relic-coverage.md). Whole-battle
 coverage and the optimal solver remain in progress.
+
+`full-battle-spawn-status-relics-clones-ungated-capture.mt2f` confirms ordinary
+native capture includes the `PyreHeartSon` `RelicEffectAddTempUpgrade` definition
+while the specialized relic-modifier probe is disabled. Its cardless upgrade
+applies to five regular births and skips five clones; the native battle and
+independent five-turn replay pass with 16 parallel policy branches. This adds a
+capture-path regression, not another original relic owner.
 
 Native `CardEffectSpawnMonsterOrAddStatusEffect` fallback births and the
 existing-unit status branch now match in

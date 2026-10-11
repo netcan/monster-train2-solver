@@ -25,14 +25,12 @@ namespace MonsterTrain2Poju.Probe
             // Includes hero blessings, covenants, mutators, Pyre artifacts and souls,
             // in the exact order searched by GetRelicEffect<T>.
             var relics = Current(managers);
-            bool captureCardModifiers = RelicCardModifierProbe.Enabled ||
-                Environment.GetEnvironmentVariable("MT2_PROBE_CARDLESS_RELIC_UPGRADES") == "1";
             return relics.Select(relic => {
                 var effects = relic.GetEffects().ToArray();
                 var statuses = effects.Select((effect, index) => new { Effect = effect, Index = index })
                     .Where(item => item.Effect is RelicEffectAddStatusEffectOnSpawn).Select(item => SpawnStatus(item.Effect, item.Index)).ToArray();
-                var cardModifiers = captureCardModifiers ? effects.Select((effect, index) => new { Effect = effect, Index = index })
-                    .Where(item => item.Effect is RelicEffectAddTempUpgrade).Select(item => RelicCardModifierProbe.Definition(item.Effect, item.Index)).ToArray() : null;
+                var cardModifiers = effects.Select((effect, index) => new { Effect = effect, Index = index })
+                    .Where(item => item.Effect is RelicEffectAddTempUpgrade).Select(item => RelicCardModifierProbe.Definition(item.Effect, item.Index)).ToArray();
                 var triggers = effects.Select((effect, index) => new { Effect = effect, Index = index })
                     .Where(item => item.Effect is RelicEffectAddTrigger).Select(item => AddedTriggers(item.Effect, item.Index)).ToArray();
                 var stackAdditions = effects.Select((effect, index) => new { Effect = effect, Index = index })

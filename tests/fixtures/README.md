@@ -15,7 +15,7 @@ The default command still checks the full curated inventory.
 For routine changes, run only the new and directly affected fixtures with
 `-Fixture`; run the full inventory at completed milestones and before delivery.
 
-Current inventory is 231 archives: 200 accepted battles and 31 component
+Current inventory is 232 archives: 201 accepted battles and 31 component
 calibrations. `full-battle-relic-card-status-upgrades.mt2f` verifies a native
 temporary card status upgrade reaches the unit summoned by that card.
 `full-battle-spawn-or-status.mt2f` covers fallback birth and existing-unit
@@ -2753,4 +2753,22 @@ calibrations. Original relic evidence remains 58/224 (25.89%).
 
 ```powershell
 & ./scripts/Check-Models.ps1 -Fixture @('full-battle-spawn-or-status.mt2f','full-battle-ability-activation.mt2f','full-battle-spawn-status-relics.mt2f')
+```
+
+### Relic modifier definitions in ordinary capture
+
+`full-battle-spawn-status-relics-clones-ungated-capture.mt2f` records the
+cardless `PyreHeartSon` upgrade with `RelicCardModifiersEnabled=false`. Ordinary
+relic capture still includes its upgrade definition, applies it to five regular
+cardless births and skips five cardless clones. The muted Instant native battle
+wins at Pyre 80 with five EndTurns, 13 clone operations and zero capture
+failures, mismatches, unsupported or pending records; the original save files
+remain unchanged. Independent replay matches the complete chain and 16 parallel
+policy branches. The schema-111 archive is 56,902 bytes, has 7,868 unique nodes
+and SHA-256
+`11240d0691ac6745affcd86f771cb203d51902e9164dc62bc090eaf9a80d0a97`; it has no
+JSON companion. The result does not increase original relic-owner coverage.
+
+```powershell
+& ./scripts/Check-Models.ps1 -Fixture full-battle-spawn-status-relics-clones-ungated-capture.mt2f
 ```

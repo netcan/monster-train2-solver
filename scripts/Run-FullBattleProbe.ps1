@@ -329,7 +329,6 @@ $environment = @{
     MT2_PROBE_RELIC_CARD_ABILITY_UPGRADE = $(if ($RelicCardAbilityUpgrades) { '1' } else { '0' })
     MT2_PROBE_RELIC_CARD_TRIGGER_UPGRADE = $(if ($RelicCardTriggerUpgrades) { '1' } else { '0' })
     MT2_PROBE_GENERATION = $(if ($Generation) { '1' } else { '0' })
-    MT2_PROBE_CARDLESS_RELIC_UPGRADES = $(if ($SpawnStatusRelicsClones) { '1' } else { '0' })
     MT2_PROBE_MIXED_CARDLESS_RELIC_ORDER = $(if ($MixedCardlessRelicOrder) { '1' } else { '0' })
     MT2_PROBE_SETTLE_DEATH_DISSOLVES = $(if ($SettleDeathDissolves) { '1' } else { '0' })
     MT2_PROBE_SETTLE_CARD_ANIMATIONS = $(if ($SettleCardAnimations) { '1' } else { '0' })
