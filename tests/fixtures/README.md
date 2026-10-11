@@ -15,7 +15,7 @@ The default command still checks the full curated inventory.
 For routine changes, run only the new and directly affected fixtures with
 `-Fixture`; run the full inventory at completed milestones and before delivery.
 
-Current inventory is 229 archives: 198 accepted battles and 31 component
+Current inventory is 230 archives: 199 accepted battles and 31 component
 calibrations. `full-battle-relic-card-status-upgrades.mt2f` verifies a native
 temporary card status upgrade reaches the unit summoned by that card.
 `full-battle-sacrifice-effects.mt2f` covers native `CardEffectSacrifice` target
