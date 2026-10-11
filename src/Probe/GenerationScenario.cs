@@ -13,8 +13,10 @@ namespace MonsterTrain2Poju.Probe
     internal static class GenerationScenario
     {
         internal static readonly List<Record> Records = new List<Record>();
-        internal static void Prepare(AllGameManagers managers, ManualLogSource log, bool lethal)
+        internal static bool PermanentConsumePrepared { get; private set; }
+        internal static void Prepare(AllGameManagers managers, ManualLogSource log, bool lethal, bool permanentConsume = false)
         {
+            PermanentConsumePrepared = permanentConsume;
             SaveManager save = managers.GetSaveManager(); CardManager cards = managers.GetCardManager()!;
             CardState[] owned = cards.GetAllCards(new List<CardState>()).ToArray();
             CardState[] spells = owned.Where(card => card.GetCardType() == CardType.Spell &&
@@ -24,6 +26,13 @@ namespace MonsterTrain2Poju.Probe
             CardUpgradeData starting = Upgrade("PojuGenerationStarting", "bc8496d3-638a-46c2-9df3-240700000001", 1, 2);
             Set(rally, "startingUpgrades", rally.GetUpgradeData().Concat(new[] { starting }).ToList());
             Set(steward, "startingUpgrades", steward.GetUpgradeData().Concat(new[] { starting }).ToList());
+            CardUpgradeData? consumeUpgrade = null;
+            if (permanentConsume)
+            {
+                consumeUpgrade = Upgrade("PojuGenerationPermanentConsume", "bc8496d3-638a-46c2-9df3-240700000008", 0, 0);
+                var exhaust = new CardTraitData(); exhaust.Setup("CardTraitExhaustState");
+                Set(consumeUpgrade, "traitDataUpgrades", new List<CardTraitData> { exhaust });
+            }
             CardUpgradeData optional = Upgrade("PojuGenerationOptional", "bc8496d3-638a-46c2-9df3-240700000002", 1, 1);
             if (lethal)
             {
@@ -75,6 +84,11 @@ namespace MonsterTrain2Poju.Probe
                 Set(excluded, "excludeFromClones", true); card.ApplyPermanentUpgrade(excluded, save);
                 var temporary = new CardUpgradeState(); temporary.Setup(); temporary.SetAttackDamage(1); temporary.SetRemoveOnDiscard(true);
                 card.ApplyTemporaryUpgrade(temporary, save);
+                if (consumeUpgrade != null)
+                {
+                    var consume = new CardUpgradeState(); consume.Setup(consumeUpgrade);
+                    card.ApplyPermanentUpgrade(consume, save);
+                }
             }
             foreach (CardState card in spells.Take(2)) if (!cards.GetHand().Contains(card)) cards.DrawSpecificCard(card);
             foreach (CardState card in cards.GetHand().Where(card => card.GetCardType() == CardType.Monster).ToArray())
@@ -85,7 +99,7 @@ namespace MonsterTrain2Poju.Probe
             var pending = new CardUpgradeState(); pending.Setup(Upgrade("PojuGenerationNext", "bc8496d3-638a-46c2-9df3-240700000004", 3, 2));
             ((IList)AccessTools.Field(typeof(CardManager), "nextAddedTempCardUpgrades").GetValue(cards)).Add(pending);
             managers.GetPlayerManager().AddEnergy(1); Set(managers.GetCombatManager()!, "combatStateChanged", true);
-            log.LogInfo("GENERATION-PREPARED all five piles, full-hand/duplicate refusals, signed counts, empty pools, starting/optional/copied/pending upgrades and fresh effect counters; lethal=" + lethal);
+            log.LogInfo("GENERATION-PREPARED all five piles, full-hand/duplicate refusals, signed counts, empty pools, starting/optional/copied/pending upgrades and fresh effect counters; permanent-consume=" + permanentConsume + " lethal=" + lethal);
         }
         private static CardUpgradeData Upgrade(string name, string id, int damage, int hp)
         {
@@ -159,7 +173,7 @@ namespace MonsterTrain2Poju.Probe
             private static void Postfix(CardEffectState cardEffectState, CardEffectParams cardEffectParams, ref IEnumerator __result)
             {
                 string? scenario = Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS");
-                if (scenario is "generation" or "generation-lethal" or "spawn-triggers" or "spawn-triggers-lethal" or
+                if (scenario is "generation" or "generation-lethal" or "generation-permanent-consume" or "spawn-triggers" or "spawn-triggers-lethal" or
                     "pre-hand-discard" or "pre-hand-discard-lethal" or "clone-upgrade-refresh" or "pre-combat" or
                     "pre-combat-lethal" or "triggered-healing" or "post-combat-healing" or "triggered-damage" or
                     "damage-death-queue" or "terminal-death-damage" ||

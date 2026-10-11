@@ -114,7 +114,8 @@ internal static class CardGenerationChecks
     }
     internal static void Native(FixtureValue fixture)
     {
-        int records = 0, cards = 0, refused = 0, empty = 0, copied = 0, pending = 0, initialized = 0, discardUpgrades = 0, unitTriggers = 0;
+        int records = 0, cards = 0, refused = 0, empty = 0, copied = 0, pending = 0, initialized = 0, discardUpgrades = 0, unitTriggers = 0,
+            permanentConsumeCopies = 0;
         var piles = new HashSet<string>();
         foreach (FixtureValue record in fixture.GetProperty("CardGenerations").EnumerateArray())
         {
@@ -133,6 +134,17 @@ internal static class CardGenerationChecks
             int sourceId = record.GetProperty("SourceCardId").GetInt32();
             CardInstanceState? copying = before.CardInstances?.FirstOrDefault(card => card.InstanceId == sourceId)
                 ?? before.CardRegistry?.FirstOrDefault(card => card.InstanceId == sourceId);
+            if (fixture.GetProperty("ModifierScenario").GetString() == "generation-permanent-consume" && rule.CopyModifiers &&
+                copying?.Permanent.Upgrades.Any(upgrade => upgrade.AssetKey == "PojuGenerationPermanentConsume") == true)
+                foreach (CardToken token in predicted.AddedCards)
+                {
+                    CardInstanceState? created = actual.CardInstances?.FirstOrDefault(card => card.InstanceId == token.InstanceId)
+                        ?? actual.CardRegistry?.FirstOrDefault(card => card.InstanceId == token.InstanceId);
+                    if (created?.Permanent.Upgrades.Any(upgrade => upgrade.AssetKey == "PojuGenerationPermanentConsume") == true &&
+                        created.MaskDescriptor?.BaseTraits.Count(trait => trait.RuntimeType == "CardTraitExhaustState") > 0 &&
+                        created.ExhaustState?.BaseTraits.Any(trait => !trait.IsExhausted && trait.ExhaustedCardId == null) == true &&
+                        CardExhaustModel.HasConsume(created)) permanentConsumeCopies++;
+                }
             if (rule.CopyModifiers && rule.Destination == "DiscardPile" && copying != null && predicted.AddedCards.Count > 0)
                 discardUpgrades += rule.DiscardCopyUpgrades.Count(item => item.Upgrade.ExternalInteractions.Count == 0 &&
                     (item.RequiredUpgradeId.Length == 0 || copying.Permanent.Upgrades.Concat(copying.Temporary.Upgrades)
@@ -141,12 +153,15 @@ internal static class CardGenerationChecks
             initialized += predicted.AddedCards.Count(token => actual.CardInstances!.Single(card => card.InstanceId == token.InstanceId).EffectCounters?.Any() == true);
         }
         Require(records > 0 && cards > 0 && refused > 0 && empty > 0 && copied > 0 && pending > 0 && initialized > 0 && piles.Count == 5,
-            "Native generation oracle lacks meaningful placement, refusals, empty pools, modifier copies, pending upgrades or fresh effect counters.");
+            $"Native generation oracle lacks required coverage: records={records}, cards={cards}, refused={refused}, empty={empty}, copied={copied}, pending={pending}, initialized={initialized}, destinations={piles.Count}.");
         Require(fixture.GetProperty("ModifierScenario").GetString() != "generation-lethal" || discardUpgrades > 0,
             "Native lethal generation oracle lacks source-dependent discard upgrades.");
-        Require(fixture.GetProperty("ModifierScenario").GetString() != "generation" || unitTriggers > 0,
+        string scenario = fixture.GetProperty("ModifierScenario").GetString()!;
+        Require(scenario != "generation" && scenario != "generation-permanent-consume" || unitTriggers > 0,
             "Native generation oracle lacks modified generation from unit triggers.");
-        Console.WriteLine($"NATIVE-GENERATION-COVERAGE PASS: {records} exact effects, {cards} cards, {refused} refusals, {empty} empty pools, {copied} copy operations, {pending} pending-upgrade consumptions, {initialized} initialized card-effect states, {discardUpgrades} matching discard upgrades and {unitTriggers} unit triggers; all five piles.");
+        Require(scenario != "generation-permanent-consume" || permanentConsumeCopies > 0,
+            "Native generation oracle did not copy a permanent Consume upgrade into a fresh card trait state.");
+        Console.WriteLine($"NATIVE-GENERATION-COVERAGE PASS: {records} exact effects, {cards} cards, {refused} refusals, {empty} empty pools, {copied} copy operations, {pending} pending-upgrade consumptions, {initialized} initialized card-effect states, {discardUpgrades} matching discard upgrades, {unitTriggers} unit triggers and {permanentConsumeCopies} permanent Consume copies; all five piles.");
     }
     private static void Require(bool condition, string message) { if (!condition) throw new InvalidOperationException(message); }
 }

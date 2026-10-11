@@ -666,7 +666,7 @@ namespace MonsterTrain2Poju.Probe
                 modifierScenario == "random-status" || modifierScenario == "cross-room-spells" || modifierScenario == "cross-room-targets" || modifierScenario == "attack-buffs" ||
                 modifierScenario == "room-capacity" || modifierScenario == "room-capacity-lethal" || modifierScenario == "energy-effects" || modifierScenario == "energy-effects-lethal" || modifierScenario == "bonus-draw" || modifierScenario == "bonus-draw-lethal" || modifierScenario == "x-cost" || modifierScenario == "x-cost-lethal" || modifierScenario == "max-health-spells" || modifierScenario == "max-health-lethal" ||
                 modifierScenario == "numeric-ranges" || modifierScenario == "numeric-ranges-lethal" || modifierScenario == "target-filters" || modifierScenario == "drawing" || modifierScenario == "damage-scaling" || modifierScenario == "dynamic-statistics" ||
-                modifierScenario == "hand-removal" || modifierScenario == "hand-removal-lethal" || modifierScenario == "generation" || modifierScenario == "generation-lethal" ||
+                modifierScenario == "hand-removal" || modifierScenario == "hand-removal-lethal" || modifierScenario == "generation" || modifierScenario == "generation-lethal" || modifierScenario == "generation-permanent-consume" ||
                 (modifierScenario == "conditional-relic-card-upgrades" && Environment.GetEnvironmentVariable("MT2_PROBE_GENERATION") == "1") ||
                 (modifierScenario == "relic-card-status-upgrades" && Environment.GetEnvironmentVariable("MT2_PROBE_GENERATION") == "1") ||
                 modifierScenario == "status-scaling" || modifierScenario == "unit-upgrade-scaling" || modifierScenario == "unit-trigger-upgrades" ||
@@ -674,10 +674,11 @@ namespace MonsterTrain2Poju.Probe
             {
                 if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Numeric fixture must start on deployment turn.");
                 numericModifiersPrepared = true;
-                if (modifierScenario == "generation" || modifierScenario == "generation-lethal" ||
+                if (modifierScenario == "generation" || modifierScenario == "generation-lethal" || modifierScenario == "generation-permanent-consume" ||
                     ((modifierScenario == "conditional-relic-card-upgrades" || modifierScenario == "relic-card-status-upgrades") &&
                         Environment.GetEnvironmentVariable("MT2_PROBE_GENERATION") == "1"))
-                    GenerationScenario.Prepare(managers, log, modifierScenario == "generation-lethal");
+                    GenerationScenario.Prepare(managers, log, modifierScenario == "generation-lethal",
+                        modifierScenario == "generation-permanent-consume");
                 else if (modifierScenario == "hand-removal" || modifierScenario == "hand-removal-lethal")
                     HandRemovalScenario.Prepare(managers, log, modifierScenario == "hand-removal-lethal");
                 else if (modifierScenario == "energy-effects" || modifierScenario == "energy-effects-lethal") EnergyScenario.Prepare(managers, log, modifierScenario == "energy-effects-lethal");

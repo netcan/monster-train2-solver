@@ -42,6 +42,23 @@ internal static class CardExhaustChecks
         Require(installedAfter.OtherPiles!.Single(pile => pile.Name == "Exhausted").Cards.Single().InstanceId == 1 &&
             installedAfter.Statistics!.Value(1, "TimesExhausted") == 2 && exhaustedInstalled.ExhaustState!.BaseTraits.Single().IsExhausted,
             "Permanently installed Consume must use native played-card exhaustion and standby closure.");
+        var unupgradedCreation = new CardCreationRule("consume", CardModifiers.Empty(), null, [], maskDescriptor: Card(2, []).MaskDescriptor);
+        CombatContext installedContext = Battle(installedCard).Spawn.Train.Context!;
+        var generatedCopy = CardGenerationModel.Apply(installedContext,
+            new("HandPile", 1, [unupgradedCreation], copyModifiers: true), 1);
+        Require(generatedCopy.Supported, generatedCopy.UnsupportedReason ?? "Generated permanent Consume copy failed.");
+        CardInstanceState generatedConsume = generatedCopy.Context!.FindCard(2)!;
+        Require(generatedConsume.Permanent.Upgrades.Any(upgrade => upgrade.AssetKey == "consume-upgrade") &&
+            generatedConsume.MaskDescriptor!.BaseTraits.Count(trait => trait.RuntimeType == Consume) == 1 &&
+            generatedConsume.ExhaustState!.BaseTraits.Single().TraitIndex == 0 && !generatedConsume.ExhaustState.BaseTraits.Single().IsExhausted &&
+            CardExhaustModel.ShouldExhaustOnPlayedDiscard(generatedConsume),
+            "Generated modifier copy must install a fresh base Consume trait and private state.");
+        var detachedCopy = CardGenerationModel.CloneDetached(installedContext, unupgradedCreation, 1);
+        Require(detachedCopy.Supported, detachedCopy.UnsupportedReason ?? "Detached permanent Consume clone failed.");
+        CardInstanceState detachedConsume = detachedCopy.Context!.FindCard(2)!;
+        Require(detachedConsume.MaskDescriptor!.BaseTraits.Count(trait => trait.RuntimeType == Consume) == 1 &&
+            detachedConsume.ExhaustState!.BaseTraits.Single().TraitIndex == 0 && !detachedConsume.ExhaustState.BaseTraits.Single().IsExhausted,
+            "Detached clone must install a fresh base Consume trait and reset copied private state.");
         var existingConsumeRoot = Battle(Card(1, [Consume]));
         var duplicateInstalled = HandUpgradeModel.Apply(existingConsumeRoot.Spawn.Train.Rooms[0], Upgrade(false), "Permanent", existingConsumeRoot.PlayRules);
         Require(duplicateInstalled.Supported && duplicateInstalled.State!.Context!.FindCard(1)!.MaskDescriptor!.BaseTraits.Count(trait => trait.RuntimeType == Consume) == 1,

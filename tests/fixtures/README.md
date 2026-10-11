@@ -15,7 +15,7 @@ The default command still checks the full curated inventory.
 For routine changes, run only the new and directly affected fixtures with
 `-Fixture`; run the full inventory at completed milestones and before delivery.
 
-Current inventory is 226 archives: 195 accepted battles and 31 component
+Current inventory is 227 archives: 196 accepted battles and 31 component
 calibrations. `full-battle-relic-card-status-upgrades.mt2f` verifies a native
 temporary card status upgrade reaches the unit summoned by that card.
 `full-battle-sacrifice-effects.mt2f` covers native `CardEffectSacrifice` target
@@ -37,6 +37,11 @@ the recorded unit ability.
 `PyreHeartSavagery_UpgradeData` relic payload gives its summoned Train Steward
 the native OnKill trigger and models repeated same-definition unit-upgrade
 accumulation. Its focused battle replay matches all 49 room stages and 28 actions.
+`full-battle-generation-permanent-consume.mt2f` verifies `CardEffectAddBattleCard`
+copies a permanent Consume upgrade into generated cards across all five pile
+destinations, with fresh unexhausted trait state on the new instance. Its 91
+generation effects match, including 60 copied Consume cards and three unit-trigger
+paths; the complete battle and 16 parallel branch replays pass.
 
 The initial Incant model's complete 180-archive regression passes.
 The threshold model's combined181 regression has also completed successfully.
@@ -2627,4 +2632,26 @@ deferred to a completed milestone.
 
 ```powershell
 & ./scripts/Check-Models.ps1 -Fixture full-battle-permanent-consume-hand-upgrades.mt2f
+```
+
+### Generation copies retain permanent Consume
+
+`full-battle-generation-permanent-consume.mt2f` records the native
+`CardEffectAddBattleCard` copy path for permanent Consume upgrades. All five pile
+destinations match, including spell and unit-trigger generation. The checker
+matches 91 generation effects and 112 created cards; 60 copied cards retain the
+base Consume trait with fresh, unexhausted private state. Three unit-trigger
+paths, 39 modifier-copy cases, 12 refusals, 12 empty pools, one pending-upgrade
+consumption and 38 fresh effect states are covered.
+
+The schema-124 muted Instant battle wins at Pyre 80 after 21 card plays, six
+EndTurns and 49 room stages. Capture failures, mismatches, unsupported
+transitions and pending records are all zero. The complete and mid-battle
+policies pass 16 parallel branches. The archive is 60,191 bytes with 12,240
+unique nodes, and has no JSON companion. Original relic evidence remains
+55/224 (24.55%); inventory is 227 archives: 196 battles and 31 calibrations.
+Full-inventory replay remains deferred to a completed milestone.
+
+```powershell
+pwsh -NoProfile -Command "& './scripts/Check-Models.ps1' -Fixture @('full-battle-generation-permanent-consume.mt2f','full-battle-generation.mt2f','full-battle-permanent-consume-hand-upgrades.mt2f')"
 ```

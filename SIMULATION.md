@@ -1,6 +1,6 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-11): 226 binary archives, including 195
+Current accepted inventory (2026-10-11): 227 binary archives, including 196
 full battles and 31 component calibrations. Unchanged original relic evidence
 covers 55/224 catalog entries (24.55%); see
 [the owner evidence table](tests/fixtures/relic-coverage.md). Whole-battle
@@ -20,6 +20,11 @@ installation by `CardEffectAddPermanentCardUpgradeToCardsInHand`, including
 deduplication of an already-visible Consume and installation when SelfPurge
 hides the existing trait. A subsequently played upgraded card reaches Exhausted.
 This mechanism fixture does not add original relic-owner evidence.
+
+`full-battle-generation-permanent-consume.mt2f` validates copying that permanent
+Consume upgrade through `CardEffectAddBattleCard`. Generated cards retain the
+base trait and receive a fresh, unexhausted private state. This mechanism fixture
+does not add original relic-owner evidence.
 
 Fixed native regression inputs live in `tests/fixtures/` and are read by
 `scripts/Check-Models.ps1`. Historical `results/` paths below refer to local
@@ -84,7 +89,7 @@ are copied immutable values; independent child states can run on worker threads.
 | Dynamic room capacities | `RoomCapacityModel`, `BattleActionModel` and `UnitModifierModel` | 220 exact contexts and 2,050 native tests; both team groups, occupied shrinking, bounds/wrap, ignored ranges, statistic-driven quantities, unit triggers, live summons/restricted upgrades and complete policies with parallel branches |
 | Spell draws and hand cycling | `CardCycleModel.DrawCards` and `CardSpellModel` | Signed/zero/max counts, full-hand cast timing, resolving-card exclusion, reshuffle RNG, draw statistics and live membership for later hand upgrades; ranged tests require explicit UI RNG isolation |
 | Spell hand discard and consumption | `HandRemovalModel` and `CardSpellModel` | Forward order, resolving-card exclusion, retained buffer aliases, discard-only upgrade removal, double exhaustion statistics, per-effect counters and nested dead-spawner returns |
-| Modified card generation | `CardGenerationModel`, `CardSpellModel` and `CombatTrigger` | Five destinations, pool/full-hand/duplicate timing, initial upgrades, modifier copies/exclusions, one-shot upgrades and fresh card effect state |
+| Modified card generation | `CardGenerationModel`, `CardSpellModel` and `CombatTrigger` | Five destinations, pool/full-hand/duplicate timing, initial upgrades, modifier copies/exclusions, permanent Consume trait copies, one-shot upgrades and fresh card/effect state |
 | Room attack exchange | `RoomCombatModel.Exchange` | Ordered initiative, target selection, retargeting, shield/armor and retaliation checks |
 | Entire room resolution | `RoomCombatModel.Resolve` | Native normal exchanges, post-combat effects and multiple rounds of boss/Pyre relentless combat |
 | Train combat phase | `TrainCombatModel.ResolveCombat` | Top-to-bottom native phase comparison |
@@ -8087,3 +8092,24 @@ Inventory is 226 binary archives: 195 battles and 31 component calibrations.
 Original relic evidence remains 55/224 (24.55%). The full 226-archive replay
 remains deferred to a completed milestone. Arbitrary card/relic combinations,
 all Bosses and optimal search remain unfinished.
+
+### Generated copies with permanent Consume (schema 124)
+
+`full-battle-generation-permanent-consume.mt2f` records permanent Consume
+upgrades copied by native `CardEffectAddBattleCard`. The copied card retains its
+base `CardTraitExhaustState` and initializes a fresh, unexhausted private trait
+state. The archive exercises all five pile destinations and both spell and unit
+trigger generation paths. Independent checks match 91 effects and 112 cards,
+including 39 modifier copies, 38 fresh effect states and 60 permanent Consume
+copies; 12 attempts are refused and 12 filtered pools are empty.
+
+The muted Instant capture exits zero in 257.44 seconds. Its six-turn battle has
+21 card plays, 49 room stages and wins at Pyre 80. Strict acceptance reports zero
+capture failures, mismatches, unsupported transitions and pending records; all
+five destination checks and the permanent-Consume-copy coverage gate pass. The
+archive is 60,191 bytes with 12,240 unique nodes and has no JSON companion.
+
+Inventory is 227 binary archives: 196 battles and 31 component calibrations.
+Original relic evidence remains 55/224 (24.55%). Full-inventory replay remains
+deferred to a completed milestone. Arbitrary card/relic combinations, all Bosses
+and optimal search remain unfinished.

@@ -106,20 +106,23 @@ namespace MonsterTrain2Poju.Model
             if (copying.DataId != creation.DataId) return Unsupported("Detached clone definition differs from its source.");
             string? error = CardModifierModel.UnsupportedReason(copying);
             if (error != null) return Unsupported(error);
-            if (copying.Permanent.Upgrades.Any(upgrade => CardExhaustModel.PermanentUpgradeError(
-                new CardInstanceState(source.NextCardId, creation.DataId, creation.StartingModifiers, CardModifiers.Empty(), 0, 0, 0, [], maskDescriptor: creation.MaskDescriptor), upgrade) != null))
-                return Unsupported("Cloning permanent Consume upgrades requires their installed trait lifecycle.");
             // CopyCardState does not pass an exclusion list. Clone-exclusion flags
             // apply to AddCardImpl copies, while these detached references retain them.
             var ignored = new HashSet<string>(StringComparer.Ordinal);
             CardModifiers permanent = Copy(CardModifiers.Empty(), copying.Permanent, ignored);
             CardModifiers temporary = Copy(CardModifiers.Empty(), copying.Temporary, ignored);
-            var clone = new CardInstanceState(source.NextCardId, creation.DataId, permanent, temporary, 0, 0, 0,
+            var clone = new CardInstanceState(source.NextCardId, creation.DataId, CardModifiers.Empty(), CardModifiers.Empty(), 0, 0, 0,
                 creation.ExternalInteractions, creation.EffectCounters, creation.DamageScalingTraits, creation.StatusScalingTraits,
                 creation.UnitUpgradeScalingTraits, creation.CapacityScalingTraits, creation.EquippedUnitId,
                 copying.PlayedRoomUnitIds == null ? null : Array.Empty<int>(),
                 copying.RawPlayedRoomUnitIds == null ? null : Array.Empty<int>(), creation.MaskDescriptor);
-            clone = CardMagicPowerModel.Refresh(CardExhaustModel.InitializeCreated(clone, source));
+            clone = CardExhaustModel.InitializeCreated(clone, source);
+            foreach (CardUpgradeModifier upgrade in permanent.Upgrades)
+            {
+                error = CardExhaustModel.PermanentUpgradeError(clone, upgrade);
+                if (error != null) return Unsupported(error);
+            }
+            clone = CardMagicPowerModel.Refresh(clone.WithModifiers(permanent, temporary));
             error = CardModifierModel.UnsupportedReason(clone);
             if (error != null) return Unsupported(error);
             CombatContext context = source.WithCardRegistry(source.CardRegistry.Concat(new[] { clone }).ToArray())
@@ -157,6 +160,7 @@ namespace MonsterTrain2Poju.Model
                 void RefreshUpgrades()
                 {
                     context = CardMagicPowerModel.Refresh(context, candidate.WithModifiers(permanent, temporary), out CardInstanceState refreshed);
+                    candidate = refreshed;
                     permanent = refreshed.Permanent; temporary = refreshed.Temporary;
                 }
                 candidate = CardExhaustModel.InitializeCreated(candidate, context);
@@ -192,8 +196,11 @@ namespace MonsterTrain2Poju.Model
                             temporary = UnitModifierModel.Add(temporary, upgrade.WithSharedReference(null));
                             RefreshUpgrades();
                         }
-                    if (copying.Permanent.Upgrades.Any(upgrade => CardExhaustModel.PermanentUpgradeError(candidate, upgrade) != null))
-                        return Unsupported("Generating permanent Consume copies requires their installed trait lifecycle.");
+                    foreach (CardUpgradeModifier upgrade in copying.Permanent.Upgrades)
+                    {
+                        error = CardExhaustModel.PermanentUpgradeError(candidate, upgrade);
+                        if (error != null) return Unsupported(error);
+                    }
                     // Same-card clones retain their own starting upgrades, rather than copying a second copy.
                     var ignored = new HashSet<string>(copying.DataId == creation.DataId ? permanent.Upgrades.Select(upgrade => upgrade.DataId) :
                         Array.Empty<string>(), StringComparer.Ordinal);
@@ -230,7 +237,7 @@ namespace MonsterTrain2Poju.Model
                 candidate = new CardInstanceState(card.InstanceId, card.DataId, permanent, temporary, 0, 0, 0,
                     creation.ExternalInteractions, creation.EffectCounters, creation.DamageScalingTraits, creation.StatusScalingTraits, creation.UnitUpgradeScalingTraits, creation.CapacityScalingTraits, creation.EquippedUnitId,
                     context.CardRegistry?.Any(card => card.PlayedRoomUnitIds != null) == true ? Array.Empty<int>() : null,
-                    context.CardRegistry?.Any(card => card.RawPlayedRoomUnitIds != null) == true ? Array.Empty<int>() : null, creation.MaskDescriptor);
+                    context.CardRegistry?.Any(card => card.RawPlayedRoomUnitIds != null) == true ? Array.Empty<int>() : null, candidate.MaskDescriptor);
                 candidate = CardExhaustModel.InitializeCreated(candidate, context);
                 context = new CombatContext(new CardCycleState(hand, draw, discard, context.Cards.Rng, context.Cards.DrawModifier,
                     context.Cards.ExternalInteractions, context.Cards.BonusDraw, context.Cards.NextDrawUpgrades, context.Cards.NextUpgradeReferenceId), rng, context.Gold, checked(context.NextCardId + 1), context.MaxHandSize,
