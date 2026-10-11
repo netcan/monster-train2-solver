@@ -131,7 +131,7 @@ namespace MonsterTrain2Poju.Probe
             }
             else if (kind == "CardEffectNULL") kind = "Null";
             else if ((data.GetCardType() == CardType.Spell || data.GetCardType() == CardType.Equipment) && effects.Length > 0 && effects.All(effect =>
-                new[] { "CardEffectCopyUnits", "CardEffectBump", "CardEffectRemoveStatusEffect", "CardEffectSetUnitAbility", "CardEffectRemoveAbility", "CardEffectResetCooldown", "CardEffectAdjustAbilityCooldown", "CardEffectAttachEquipment", "CardEffectRemoveEquipment", "CardEffectGainEnergy", "CardEffectAdjustEnergy", "CardEffectGainEnergyNextTurn", "CardEffectGainEnergyEveryTurn", "CardEffectDamage", "CardEffectDraw", "CardEffectDrawAdditionalNextTurn", "CardEffectAdjustRoomCapacity", "CardEffectDiscardHand", "CardEffectAddBattleCard", "CardEffectHeal", "CardEffectSacrifice", "CardEffectBuffDamage", "CardEffectDebuffDamage", "CardEffectBuffMaxHealth", "CardEffectDebuffMaxHealth", "CardEffectAddStatusEffect", "CardEffectFloorRearrange", "CardEffectAddCardUpgradeToUnits",
+                new[] { "CardEffectCopyUnits", "CardEffectBump", "CardEffectRemoveStatusEffect", "CardEffectSetUnitAbility", "CardEffectRemoveAbility", "CardEffectResetCooldown", "CardEffectAdjustAbilityCooldown", "CardEffectAttachEquipment", "CardEffectRemoveEquipment", "CardEffectRewardGold", "CardEffectGainEnergy", "CardEffectAdjustEnergy", "CardEffectGainEnergyNextTurn", "CardEffectGainEnergyEveryTurn", "CardEffectDamage", "CardEffectDraw", "CardEffectDrawAdditionalNextTurn", "CardEffectAdjustRoomCapacity", "CardEffectDiscardHand", "CardEffectAddBattleCard", "CardEffectHeal", "CardEffectSacrifice", "CardEffectBuffDamage", "CardEffectDebuffDamage", "CardEffectBuffMaxHealth", "CardEffectDebuffMaxHealth", "CardEffectAddStatusEffect", "CardEffectFloorRearrange", "CardEffectAddCardUpgradeToUnits",
                     "CardEffectDrawType", "CardEffectAddTempCardUpgradeToNextDrawnCard",
                     "CardEffectAddTempCardUpgradeToUnits", "CardEffectRemoveTempUpgradeFromUnit",
                     "CardEffectAddTempCardUpgradeToCardsInHand", "CardEffectAddPermanentCardUpgradeToCardsInHand" }.Contains(effect.GetEffectStateName())))
@@ -159,6 +159,7 @@ namespace MonsterTrain2Poju.Probe
                         effect.GetEffectStateName() == "CardEffectBump" ? "Bump" :
                         effect.GetEffectStateName() == "CardEffectAttachEquipment" ? "AttachEquipment" :
                         effect.GetEffectStateName() == "CardEffectRemoveEquipment" ? "RemoveEquipment" :
+                        effect.GetEffectStateName() == "CardEffectRewardGold" ? "RewardGold" :
                         effect.GetEffectStateName() == "CardEffectDamage" ? "Damage" :
                         effect.GetEffectStateName() == "CardEffectAdjustRoomCapacity" ? "AdjustCapacity" :
                         effect.GetEffectStateName() == "CardEffectDraw" ? "Draw" :
@@ -230,7 +231,8 @@ namespace MonsterTrain2Poju.Probe
                         sacrificeSubtype: type == "Sacrifice" && !effect.GetParamSubtype().IsNone ? effect.GetParamSubtype().Key : "",
                         typedDraw: type == "DrawType" ? TypedDrawProbe.DrawRule(effect) : null,
                         nextDrawUpgrade: type == "ScheduleNextDrawUpgrade" ? TypedDrawProbe.UpgradeRule(effect) : null,
-                        requiredGold: type == "ScheduleNextDrawUpgrade" ? effect.GetAdditionalParamInt() : 0));
+                        requiredGold: type == "ScheduleNextDrawUpgrade" ? effect.GetAdditionalParamInt() : 0,
+                        goldCostRequired: type == "RewardGold" ? effect.GetParamBool() : (bool?)null));
                 }
             }
             else interactions.Add("Unimplemented play effect " + kind);
@@ -249,7 +251,9 @@ namespace MonsterTrain2Poju.Probe
                 data.IsUnitAbility() ? new CardAbilityRule("Unit", data.CanAbilityTargetOtherFloors(),
                     data.GetEffects().All(effect => ((ICardEffect)Activator.CreateInstance(typeof(CardState).Assembly
                         .GetType(effect.GetEffectStateName())!)!).CanPlayWhenHandFull)) : null, summon,
-                data.GetCardType().ToString(), data.IsUnitAbility() || data.IsRoomAbility());
+                data.GetCardType().ToString(), data.IsUnitAbility() || data.IsRoomAbility(),
+                effects.All(effect => ((ICardEffect)Activator.CreateInstance(typeof(CardEffectBase).Assembly
+                    .GetType(effect.GetEffectStateName())!)!).CanPlayInEngineRoom));
         }
 
         private static CardData? Fallback(CharacterData unit) => AllGameManagers.Instance!.GetSaveManager().GetAllGameData()

@@ -486,7 +486,7 @@ namespace MonsterTrain2Poju.Probe
             string temporary = path + ".tmp";
             var snapshot = new
             {
-                Schema = OriginalResourceRelicBatchScenario.Prepared ? 117 : OriginalDecayRelicBatchScenario.Prepared ? 116 : OriginalLifecycleRelicBatchScenario.Prepared ? 115 : OriginalMagnitudeRelicBatchScenario.Prepared ? 114 : OriginalStatusRelicBatchScenario.Prepared ? 113 : TypedDrawProbe.Enabled ? 112 : SpawnStatusRelicScenario.Prepared ? SpawnStatusRelicScenario.Clones ? 111 : 110 : TriggerCountScenario.Prepared ? 109 : AbilityIncantScenario.Prepared ? 108 : CardAnimationSettlement.Enabled ? 106 : DeathDissolveSettlement.Enabled ? 105 : EnchantmentBattleScenario.Prepared ? 104 : 103,
+                Schema = PyreResourceRefreshScenario.Prepared ? 118 : OriginalResourceRelicBatchScenario.Prepared ? 117 : OriginalDecayRelicBatchScenario.Prepared ? 116 : OriginalLifecycleRelicBatchScenario.Prepared ? 115 : OriginalMagnitudeRelicBatchScenario.Prepared ? 114 : OriginalStatusRelicBatchScenario.Prepared ? 113 : TypedDrawProbe.Enabled ? 112 : SpawnStatusRelicScenario.Prepared ? SpawnStatusRelicScenario.Clones ? 111 : 110 : TriggerCountScenario.Prepared ? 109 : AbilityIncantScenario.Prepared ? 108 : CardAnimationSettlement.Enabled ? 106 : DeathDissolveSettlement.Enabled ? 105 : EnchantmentBattleScenario.Prepared ? 104 : 103,
                 DeathDissolveSettlementEnabled = DeathDissolveSettlement.Enabled,
                 DeathDissolveSettlements = DeathDissolveSettlement.Records,
                 DeathDissolveCallbacks = DeathDissolveSettlement.Callbacks,
@@ -521,6 +521,7 @@ namespace MonsterTrain2Poju.Probe
                 RelicStatusMagnitudeQueries = RelicStatusMagnitudeProbe.Queries,
                 RelicStatusDecayQueries = RelicStatusDecayProbe.Queries,
                 RelicResourceOperations = RelicResourceProbe.Operations,
+                PyreResourceOperations = PyreResourceRefreshProbe.Operations,
                 CardGenerations = GenerationScenario.Records,
                 DamageScaling = DamageScalingScenario.Samples,
                 StatusScaling = StatusScalingScenario.Samples,

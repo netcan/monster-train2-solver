@@ -12,7 +12,7 @@ namespace MonsterTrain2Poju.Probe
         internal static bool HasTriggerCounts(AllGameManagers managers) =>
             Current(managers).Any(relic => relic.GetEffects().Any(effect => effect is RelicEffectModifyTriggerCount || effect is RelicEffectAddTrigger));
         internal static bool HasStatusAttackHistory(AllGameManagers managers) =>
-            Current(managers).Any(relic => relic.GetEffects().Any(effect => effect is RelicEffectModifyStatusMagnitude ||
+            PyreResourceRefreshScenario.Enabled || Current(managers).Any(relic => relic.GetEffects().Any(effect => effect is RelicEffectModifyStatusMagnitude ||
                 effect is RelicEffectPreventStatusEffectDecay decay && decay.GetStatusEffects().Any(status => status.statusId == "buff")));
         private static List<RelicState> Current(AllGameManagers managers)
         {

@@ -51,7 +51,7 @@ namespace MonsterTrain2Poju.Probe
 
         internal static BattleResourceState? CaptureResources(AllGameManagers managers)
         {
-            if (!OriginalResourceRelicBatchScenario.Enabled &&
+            if (!OriginalResourceRelicBatchScenario.Enabled && !PyreResourceRefreshScenario.Enabled &&
                 !Current(managers).Any(relic => relic.GetEffects().Any(effect => RelicResourceModel.IsEffect(effect.GetType().Name))))
                 return null;
             SaveManager save = managers.GetSaveManager();
@@ -67,7 +67,9 @@ namespace MonsterTrain2Poju.Probe
                 rawSave.GetTowerModifiedBaseAttack(),
                 ((int[])AccessTools.Field(typeof(PyreHeartData), "upgradeAttack").GetValue(pyre)).ToArray(),
                 ((int[])AccessTools.Field(typeof(PyreHeartData), "upgradeHP").GetValue(pyre)).ToArray(),
-                rawSave.GetMutatorIDs().ToArray());
+                rawSave.GetMutatorIDs().ToArray(),
+                ((MutableRules)AccessTools.Field(typeof(SaveManager), "mutableRules").GetValue(save))
+                    .GetRule(MutableRules.Condition.GoldRewardMultiplier, 1f));
         }
 
         internal static RelicResourceEffect Definition(IRelicEffect effect, int index, AllGameManagers managers)
@@ -151,8 +153,8 @@ namespace MonsterTrain2Poju.Probe
             private static void Prefix(RelicData relicData, out Operation? __state)
             {
                 __state = null;
-                if (!OriginalResourceRelicBatchScenario.Enabled ||
-                    !OriginalResourceRelicBatchScenario.Artifacts.Any(item => item.Id == relicData.GetID())) return;
+                if (!(OriginalResourceRelicBatchScenario.Enabled && OriginalResourceRelicBatchScenario.Artifacts.Any(item => item.Id == relicData.GetID())) &&
+                    !(PyreResourceRefreshScenario.Enabled && PyreResourceRefreshScenario.Artifacts.Any(item => item.Id == relicData.GetID()))) return;
                 try
                 {
                     __state = new Operation { Kind = "Acquire", OwnerDataId = relicData.GetID(), Before = Capture() };
@@ -172,14 +174,14 @@ namespace MonsterTrain2Poju.Probe
         private static class EnergyPatch
         {
             private static void Postfix(RelicEffectModifyEnergy __instance, ref IEnumerator __result)
-            { if (OriginalResourceRelicBatchScenario.Prepared) __result = WrapEnergy(__result, __instance, false); }
+            { if (OriginalResourceRelicBatchScenario.Prepared || PyreResourceRefreshScenario.Prepared) __result = WrapEnergy(__result, __instance, false); }
         }
 
         [HarmonyPatch(typeof(RelicEffectModifyEnergyDuringDeployment), nameof(RelicEffectModifyEnergyDuringDeployment.ApplyEffectTurnPhaseTiming))]
         private static class DeploymentPatch
         {
             private static void Postfix(RelicEffectModifyEnergyDuringDeployment __instance, ref IEnumerator __result)
-            { if (OriginalResourceRelicBatchScenario.Prepared) __result = WrapEnergy(__result, __instance, true); }
+            { if (OriginalResourceRelicBatchScenario.Prepared || PyreResourceRefreshScenario.Prepared) __result = WrapEnergy(__result, __instance, true); }
         }
 
         [HarmonyPatch(typeof(RelicManager), nameof(RelicManager.NotifyRelicTriggered))]
