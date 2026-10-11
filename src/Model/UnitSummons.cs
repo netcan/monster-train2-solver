@@ -83,7 +83,8 @@ namespace MonsterTrain2Poju.Model
             {
                 UnitModifiers old = template.Modifiers!;
                 var cloned = new UnitModifiers(old.AttackDamage, old.AttackDamageAdded, old.DamageBuff, old.RawSize, old.EquipmentLimit,
-                    old.CanBeHealed, true, old.Upgrades, old.HealthFromUpgrades, old.SpawnerMatchesDefinition);
+                    old.CanBeHealed, true, old.Upgrades, old.HealthFromUpgrades, old.SpawnerMatchesDefinition,
+                    old.DamageBuffFromStatusEffects);
                 template = UnitCloneModel.Copy(template, cloned, template.BaseAttack, template.Health, template.MaxHealth);
             }
             error = UnitIdentityModel.Validate(context, source.Units);

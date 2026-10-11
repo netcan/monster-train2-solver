@@ -120,11 +120,14 @@ namespace MonsterTrain2Poju.Model
             CombatStatus? existing = target.RegisteredStatus(added.Id);
             int old = existing?.Stacks ?? 0;
             int count = Math.Max(0, Math.Min((existing?.Stackable ?? added.Stackable) == false ? 1 : 9999, unchecked(old + stacks)));
+            CombatUnit changed = CardSpellModel.Copy(target, target.Health, target.Statuses.Where(status => status.Id != added.Id)
+                .Concat(new[] { (existing ?? added).WithStacks(count) }).ToArray());
+            StatusAttackDamageResult attack = StatusAttackDamageModel.Change(context, changed, existing ?? added, count - old, adding: true);
+            if (!attack.Supported) return Unsupported(attack.UnsupportedReason!);
+            changed = attack.Unit!; context = attack.Context;
             if (!source.Preview && sourceCardId > 0 && count > old && context?.Statistics != null)
                 context = context.WithStatistics(context.LiveStatistics!.Increment(sourceCardId, "AnyStatusEffectStacksAdded", count - old,
                     requireTrackedCard: context.CardInstances?.Count == 0));
-            CombatUnit changed = CardSpellModel.Copy(target, target.Health, target.Statuses.Where(status => status.Id != added.Id)
-                .Concat(new[] { (existing ?? added).WithStacks(count) }).ToArray());
             var queue = new List<RoomCombatModel.QueuedCharacterTrigger>();
             if (added.Id == "horde" && count > old)
             {

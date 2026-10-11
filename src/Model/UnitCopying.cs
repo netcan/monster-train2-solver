@@ -54,7 +54,8 @@ namespace MonsterTrain2Poju.Model
                 UnitModifiers old = template.Modifiers;
                 template = UnitCloneModel.Copy(template, new UnitModifiers(old.AttackDamage, old.AttackDamageAdded, old.DamageBuff,
                     old.RawSize, old.EquipmentLimit, old.CanBeHealed, old.IsClone, old.Upgrades, old.HealthFromUpgrades,
-                    actor.Modifiers.SpawnerMatchesDefinition), template.BaseAttack, template.Health, template.MaxHealth);
+                    actor.Modifiers.SpawnerMatchesDefinition, old.DamageBuffFromStatusEffects),
+                    template.BaseAttack, template.Health, template.MaxHealth);
             }
             var rule = new CardPlayRule(source?.DataId ?? "", template.AssetKey, 0, "SpawnMonster", "Standby", template, birth.ExternalInteractions);
             AbilityChangeRule? ability = actor.Ability?.HasAbility == true ? Abilities.SingleOrDefault(item =>

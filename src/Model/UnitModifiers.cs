@@ -9,6 +9,7 @@ namespace MonsterTrain2Poju.Model
         public int AttackDamage { get; }
         public int AttackDamageAdded { get; }
         public int DamageBuff { get; }
+        public int? DamageBuffFromStatusEffects { get; }
         public int RawSize { get; }
         public int EquipmentLimit { get; }
         public bool CanBeHealed { get; }
@@ -18,13 +19,16 @@ namespace MonsterTrain2Poju.Model
         public IReadOnlyList<StatisticCount> HealthFromUpgrades { get; }
         public UnitModifiers(int attackDamage, int attackDamageAdded, int damageBuff, int rawSize, int equipmentLimit,
             bool canBeHealed, bool isClone, IReadOnlyList<CardUpgradeModifier> upgrades, IReadOnlyList<StatisticCount>? healthFromUpgrades = null,
-            bool spawnerMatchesDefinition = true)
+            bool spawnerMatchesDefinition = true, int? damageBuffFromStatusEffects = null)
         {
             AttackDamage = attackDamage; AttackDamageAdded = attackDamageAdded; DamageBuff = damageBuff; RawSize = rawSize;
             EquipmentLimit = equipmentLimit; CanBeHealed = canBeHealed; IsClone = isClone; Upgrades = Array.AsReadOnly(upgrades.ToArray());
             HealthFromUpgrades = Array.AsReadOnly((healthFromUpgrades ?? Array.Empty<StatisticCount>()).ToArray());
             SpawnerMatchesDefinition = spawnerMatchesDefinition;
+            DamageBuffFromStatusEffects = damageBuffFromStatusEffects;
         }
+        internal UnitModifiers WithStatusDamage(int amount) => new UnitModifiers(AttackDamage, AttackDamageAdded, DamageBuff,
+            RawSize, EquipmentLimit, CanBeHealed, IsClone, Upgrades, HealthFromUpgrades, SpawnerMatchesDefinition, amount);
     }
 
     public static class UnitModifierModel
@@ -131,7 +135,7 @@ namespace MonsterTrain2Poju.Model
                 var healthFromUpgrades = modifiers.HealthFromUpgrades.ToList();
                 var statuses = target.Statuses.ToDictionary(status => status.Id);
                 var nextModifiers = new UnitModifiers(damage, added, buff, size, equipment, modifiers.CanBeHealed, modifiers.IsClone, upgrades,
-                    healthFromUpgrades, modifiers.SpawnerMatchesDefinition);
+                    healthFromUpgrades, modifiers.SpawnerMatchesDefinition, modifiers.DamageBuffFromStatusEffects);
                 var statusCallbacks = new List<RoomCombatModel.QueuedCharacterTrigger>();
                 RoomCombatResult? healthFailure = null;
                 ChangeHealth(sign * upgrade.Stats.Health, !(remove && upgrade.Stats.Health > 0), !remove || upgrade.Stats.Health < 0);
@@ -178,7 +182,7 @@ namespace MonsterTrain2Poju.Model
                     triggers = changedTriggers;
                 }
                 nextModifiers = new UnitModifiers(damage, added, buff, size, equipment, modifiers.CanBeHealed, modifiers.IsClone, upgrades,
-                    healthFromUpgrades, modifiers.SpawnerMatchesDefinition);
+                    healthFromUpgrades, modifiers.SpawnerMatchesDefinition, nextModifiers.DamageBuffFromStatusEffects);
                 CombatUnit Snapshot() => new CombatUnit(target.Id, target.AssetKey, target.Team, Math.Max(0, checked(damage + buff)), health, maxHealth,
                     target.CanAttack, target.IsPyre, target.EndsBattleOnDeath, statuses.Values.ToArray(), triggers, target.SpawnerCardId,
                     Math.Max(1, Math.Min(6, size)), target.StatusImmunities, target.Subtypes, nextModifiers, target.IsBoss, target.LastAttackerId, target.StatusRegistry, target.EquipmentCards, nextTriggerId, target.Ability, target.StatusDictionary, target.AbilityRules, target.HordeDefinition, target.IsSpawning, target.SacrificeCardId, target.DeathState, bumpRules: target.BumpRules);
@@ -218,7 +222,8 @@ namespace MonsterTrain2Poju.Model
                         bool removingStatus = remove || status.Stacks < 0;
                         if (removingStatus && existing == null && target.RegisteredStatus(status.Id) == null) continue;
                         if (!removingStatus && (target.StatusImmunities.Contains(status.Id) || target.Status("immune") != null)) continue;
-                        if (!removingStatus && state.Context?.Relics?.Any(relic => relic.StatusStackAdditions?.Count > 0) == true)
+                        if (!removingStatus && (nextModifiers.DamageBuffFromStatusEffects.HasValue ||
+                            state.Context?.Relics?.Any(relic => relic.StatusStackAdditions?.Count > 0) == true))
                         {
                             RoomCombatResult appliedStatus = StatusApplicationModel.ApplyRetained(Stage(), targetId, status, 0);
                             if (!appliedStatus.Supported) return appliedStatus;
@@ -232,6 +237,14 @@ namespace MonsterTrain2Poju.Model
                         int stacks = remove ? (status.Stacks == -1 ? 0 : Math.Min(maximum, Math.Max(0, checked(oldStacks - status.Stacks)))) :
                             Math.Min(maximum, Math.Max(0, checked(oldStacks + status.Stacks)));
                         statuses[status.Id] = (existing ?? target.RegisteredStatus(status.Id) ?? status).WithStacks(Math.Max(0, stacks));
+                        if (removingStatus)
+                        {
+                            StatusAttackDamageResult attack = StatusAttackDamageModel.Change(state.Context, Snapshot(),
+                                existing ?? target.RegisteredStatus(status.Id) ?? status, oldStacks - stacks, adding: false);
+                            if (!attack.Supported) return Unsupported(attack.UnsupportedReason!);
+                            state = new RoomCombatState(state.RoomIndex, state.Deployment, state.Units, state.ExternalInteractions, attack.Context, state.Preview);
+                            Refresh(attack.Unit!);
+                        }
                         if (status.Id == "horde" && (removingStatus ? stacks < oldStacks : stacks > oldStacks))
                         {
                             RoomCombatResult horde = HordeStatusModel.Change(Stage(), beforeStatus, Snapshot(), stacks - oldStacks);

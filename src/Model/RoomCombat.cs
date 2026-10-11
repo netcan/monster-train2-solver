@@ -88,7 +88,9 @@ namespace MonsterTrain2Poju.Model
         public CombatTeam Team { get; }
         public int BaseAttack { get; }
         internal int AttackBeforeStatuses => Modifiers == null ? BaseAttack : unchecked(Modifiers.AttackDamage + Modifiers.DamageBuff);
-        public int Attack => Math.Max(0, AttackBeforeStatuses + StatusAmount("buff") + StatusAmount("valor") - StatusAmount("debuff"));
+        internal int AttackFromStatuses => Modifiers?.DamageBuffFromStatusEffects ??
+            unchecked(StatusAmount("buff") + StatusAmount("valor") - StatusAmount("debuff"));
+        public int Attack => Math.Max(0, unchecked(AttackBeforeStatuses + AttackFromStatuses));
         public int Health { get; }
         public int MaxHealth { get; }
         public bool CanAttack { get; }
@@ -195,6 +197,11 @@ namespace MonsterTrain2Poju.Model
         internal CombatUnit WithTriggerAllocation(IReadOnlyList<CombatTrigger> triggers, int nextTriggerId) => new CombatUnit(Id, AssetKey, Team, BaseAttack, Health, MaxHealth,
             CanAttack, IsPyre, EndsBattleOnDeath, Statuses, triggers, SpawnerCardId, Size, StatusImmunities, Subtypes,
             Modifiers, IsBoss, LastAttackerId, StatusRegistry, EquipmentCards, nextTriggerId, Ability, StatusDictionary,
+            AbilityRules, HordeDefinition, IsSpawning, SacrificeCardId, DeathState, bumpRules: BumpRules);
+
+        internal CombatUnit WithStatusDamage(int amount) => new CombatUnit(Id, AssetKey, Team, BaseAttack, Health, MaxHealth,
+            CanAttack, IsPyre, EndsBattleOnDeath, Statuses, Triggers, SpawnerCardId, Size, StatusImmunities, Subtypes,
+            Modifiers!.WithStatusDamage(amount), IsBoss, LastAttackerId, StatusRegistry, EquipmentCards, NextTriggerId, Ability, StatusDictionary,
             AbilityRules, HordeDefinition, IsSpawning, SacrificeCardId, DeathState, bumpRules: BumpRules);
 
         internal static CombatStatus[] MergeStatusRegistry(IReadOnlyList<CombatStatus> registry, IReadOnlyList<CombatStatus> statuses)
@@ -714,8 +721,11 @@ namespace MonsterTrain2Poju.Model
             }
             if (state.Units.Select(unit => unit.Id).Distinct().Count() != state.Units.Count)
                 return "Unit instance IDs must be unique.";
+            bool requireStatusDamage = state.Context?.Relics?.Any(relic => relic.StatusMagnitudes?.Count > 0) == true;
             foreach (CombatUnit unit in state.Units)
             {
+                if (requireStatusDamage && unit.Modifiers?.DamageBuffFromStatusEffects.HasValue != true)
+                    return "Missing native status attack accumulator.";
                 if (unit.Ability?.CardCreation != null && unit.Ability.DataId != unit.Ability.CardCreation.DataId)
                     return "Unit ability and cached card creation definitions differ.";
                 if (unit.Ability?.Definition != null && (unit.Ability.DataId != unit.Ability.Definition.DataId || !unit.Ability.Definition.IsUnitAbility) ||
@@ -919,7 +929,8 @@ namespace MonsterTrain2Poju.Model
             private readonly Func<CombatContext?>? getContext;
             private readonly Action<string>? reject;
             internal bool Alive => Health > 0 && !Removed && !Despawned;
-            internal int Attack => Math.Max(0, Source.AttackBeforeStatuses + Amount("buff") + Amount("valor") - Amount("debuff"));
+            internal int Attack => Math.Max(0, unchecked(Source.AttackBeforeStatuses +
+                (Source.Modifiers?.DamageBuffFromStatusEffects ?? unchecked(Amount("buff") + Amount("valor") - Amount("debuff")))));
 
             internal WorkingUnit(CombatUnit source, Func<CombatContext?>? getContext = null, Action<string>? reject = null)
             {
@@ -1632,7 +1643,7 @@ namespace MonsterTrain2Poju.Model
                 }
                 if (target.Has("pyregel"))
                 {
-                    damage = checked(damage + target.Amount("pyregel"));
+                    damage = checked(damage + StatusMagnitude(target, "pyregel"));
                     Trigger(target, "pyregel", 1);
                 }
                 // Native applies source traits and flat damage increases before melee weakness.
@@ -1692,7 +1703,7 @@ namespace MonsterTrain2Poju.Model
                 }
                 if (direct && actor != null && actor.Alive && target.Has("spikes"))
                 {
-                    int retaliation = target.Amount("spikes");
+                    int retaliation = StatusMagnitude(target, "spikes");
                     Trigger(target, "spikes", 1);
                     Damage(target, actor, retaliation, "Spikes");
                 }
@@ -1935,13 +1946,13 @@ namespace MonsterTrain2Poju.Model
                     if (!unit.Alive) continue;
                     if (!source.Deployment && unit.Has("regen"))
                     {
-                        int amount = unit.Amount("regen");
+                        int amount = StatusMagnitude(unit, "regen");
                         Trigger(unit, "regen", 1);
                         Heal(unit, amount, "Regen");
                     }
                     if (unit.Alive && unit.Has("poison") && Active(unit.Statuses["poison"]))
                     {
-                        int amount = unit.Amount("poison");
+                        int amount = StatusMagnitude(unit, "poison");
                         Trigger(unit, "poison", 1);
                         Damage(null, unit, amount, "Poison");
                     }
@@ -2663,9 +2674,27 @@ namespace MonsterTrain2Poju.Model
             {
                 CombatUnit before = unit.Freeze();
                 unit.Remove(id, count);
+                CombatUnit after = unit.Freeze();
+                CombatStatus? status = before.RegisteredStatus(id);
+                if (status != null)
+                {
+                    StatusAttackDamageResult changed = StatusAttackDamageModel.Change(context, after, status,
+                        status.Stacks - (after.RegisteredStatus(id)?.Stacks ?? 0), adding: false);
+                    if (!changed.Supported) { unsupportedReason = changed.UnsupportedReason; return; }
+                    context = changed.Context; unit.Apply(changed.Unit!);
+                }
                 var callbacks = new List<QueuedCharacterTrigger>();
                 StatusCallbackModel.Removed(source.RoomIndex, before, unit.Freeze(), id, callbacks);
                 foreach (QueuedCharacterTrigger callback in callbacks) QueueCallback(callback);
+            }
+
+            private int StatusMagnitude(WorkingUnit unit, string id)
+            {
+                if (!unit.Statuses.TryGetValue(id, out CombatStatus? status)) return 0;
+                StatusScalingResult modifier = RelicStatusMagnitudeModel.GetModifier(context, id, unit.Source.Team == CombatTeam.Player ? 2 : 1);
+                if (!modifier.Supported) { unsupportedReason = modifier.UnsupportedReason; return 0; }
+                context = modifier.Context;
+                return unchecked(unchecked(status.ParamInt + modifier.Stacks) * status.Stacks);
             }
 
             private bool Active(CombatStatus status) => !source.Deployment || !status.SkipDuringDeployment;
@@ -2730,7 +2759,8 @@ namespace MonsterTrain2Poju.Model
                     {
                         UnitModifiers modifiers = unit.Source.Modifiers;
                         text.Append(modifiers.AttackDamage).Append(',').Append(modifiers.AttackDamageAdded).Append(',')
-                            .Append(modifiers.DamageBuff).Append(',').Append(modifiers.RawSize).Append(',').Append(modifiers.EquipmentLimit).Append(';');
+                            .Append(modifiers.DamageBuff).Append(',').Append(modifiers.DamageBuffFromStatusEffects?.ToString() ?? "legacy").Append(',')
+                            .Append(modifiers.RawSize).Append(',').Append(modifiers.EquipmentLimit).Append(';');
                         foreach (CardUpgradeModifier upgrade in modifiers.Upgrades)
                             text.Append(upgrade.DataId.Length).Append(':').Append(upgrade.DataId).Append(':')
                                 .Append(upgrade.Stats.Damage).Append(',').Append(upgrade.Stats.Health).Append(',')

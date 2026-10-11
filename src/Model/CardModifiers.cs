@@ -323,7 +323,8 @@ namespace MonsterTrain2Poju.Model
                     UpgradedStat(original.AttackDamage, "Damage", true, modifiers), original.AttackDamageAdded, original.DamageBuff,
                     UpgradedStat(original.RawSize, "Size", false, modifiers),
                     Math.Max(1, Math.Min(4, UpgradedStat(original.EquipmentLimit, "EquipmentLimit", true, modifiers))),
-                    original.CanBeHealed, original.IsClone, original.Upgrades, original.HealthFromUpgrades, original.SpawnerMatchesDefinition);
+                    original.CanBeHealed, original.IsClone, original.Upgrades, original.HealthFromUpgrades, original.SpawnerMatchesDefinition,
+                    original.DamageBuffFromStatusEffects);
                 int? nextTriggerId = unit.NextTriggerId;
                 var triggers = unit.Triggers.ToList();
                 foreach (CombatTrigger definition in modifiers.SelectMany(modifier => modifier.Upgrades)

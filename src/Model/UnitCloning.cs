@@ -116,7 +116,8 @@ namespace MonsterTrain2Poju.Model
                 ? source.Status("armor")?.Stacks ?? 0 : source.Status("equalizer") != null ? source.MaxHealth : source.Modifiers.AttackDamage);
             int buff = unchecked(old.DamageBuff + (special ? 0 : Math.Max(0, source.Modifiers.DamageBuff)));
             var modifiers = new UnitModifiers(attack, old.AttackDamageAdded, buff, old.RawSize, old.EquipmentLimit,
-                old.CanBeHealed, old.IsClone, old.Upgrades, old.HealthFromUpgrades, old.SpawnerMatchesDefinition);
+                old.CanBeHealed, old.IsClone, old.Upgrades, old.HealthFromUpgrades, old.SpawnerMatchesDefinition,
+                old.DamageBuffFromStatusEffects);
             CombatUnit changed = UnitCloneModel.Copy(target, modifiers, Math.Max(0, unchecked(attack + buff)), source.Health, source.MaxHealth);
             state = new RoomCombatState(state.RoomIndex, state.Deployment, state.Units.Select(unit => unit.Id == targetId ? changed : unit).ToArray(),
                 state.ExternalInteractions, state.Context, state.Preview);

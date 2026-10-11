@@ -82,7 +82,8 @@ namespace MonsterTrain2Poju.Model
             // Native installs authored immunities after applying starting statuses.
             CombatUnit empty = new CombatUnit(template.Id, template.AssetKey, template.Team, template.BaseAttack, template.Health,
                 template.MaxHealth, template.CanAttack, template.IsPyre, template.EndsBattleOnDeath, System.Array.Empty<CombatStatus>(), template.Triggers,
-                template.SpawnerCardId, template.Size, System.Array.Empty<string>(), template.Subtypes, template.Modifiers, template.IsBoss,
+                template.SpawnerCardId, template.Size, System.Array.Empty<string>(), template.Subtypes,
+                template.Modifiers?.DamageBuffFromStatusEffects.HasValue == true ? template.Modifiers.WithStatusDamage(0) : template.Modifiers, template.IsBoss,
                 template.LastAttackerId, template.StatusRegistry == null ? null : System.Array.Empty<CombatStatus>(), template.EquipmentCards, template.NextTriggerId, template.Ability, template.StatusDictionary == null ? null : new StatusDictionaryState(System.Array.Empty<string>(), System.Array.Empty<int>()), template.AbilityRules, template.HordeDefinition, template.IsSpawning, template.SacrificeCardId, template.DeathState, bumpRules: template.BumpRules);
             RoomCombatState initializing = new RoomCombatState(source.RoomIndex, source.Deployment, source.Units.Select(unit => unit.Id == template.Id ? empty : unit).ToArray(),
                 System.Array.Empty<string>(), source.Context, source.Preview);
@@ -105,16 +106,17 @@ namespace MonsterTrain2Poju.Model
             }
             bool horde = applications.Any(status => status.Id == "horde" && status.Stacks > 0);
             bool purify = applications.Any(status => status.Id == "purify" && status.Stacks > 0);
-            bool relicStacks = initializing.Context?.Relics?.Any(relic => relic.StatusStackAdditions?.Count > 0) == true;
-            if (horde || purify || relicStacks || initializing.Context?.Enchantments != null)
+            bool relicStacks = initializing.Context?.Relics?.Any(relic => relic.StatusStackAdditions?.Count > 0 || relic.StatusMagnitudes?.Count > 0) == true;
+            bool statusDamage = template.Modifiers?.DamageBuffFromStatusEffects.HasValue == true;
+            if (horde || purify || relicStacks || statusDamage || initializing.Context?.Enchantments != null)
             {
                 CombatUnit value = current;
                 var initialized = new CombatUnit(value.Id, value.AssetKey, value.Team, value.BaseAttack, value.Health, value.MaxHealth,
                     value.CanAttack, value.IsPyre, value.EndsBattleOnDeath, value.Statuses, value.Triggers, value.SpawnerCardId, value.Size,
                     template.StatusImmunities, value.Subtypes, value.Modifiers, value.IsBoss, value.LastAttackerId, value.StatusRegistry,
                     value.EquipmentCards, value.NextTriggerId, value.Ability, value.StatusDictionary, value.AbilityRules, value.HordeDefinition, value.IsSpawning, value.SacrificeCardId, value.DeathState, bumpRules: value.BumpRules);
-                if (horde || purify || relicStacks) update?.Invoke(initialized);
-                if (relicStacks || initializing.Context?.Enchantments != null)
+                if (horde || purify || relicStacks || statusDamage) update?.Invoke(initialized);
+                if (relicStacks || statusDamage || initializing.Context?.Enchantments != null)
                 {
                     initializing = EnchantmentWorldModel.Sync(new RoomCombatState(source.RoomIndex, source.Deployment,
                         initializing.Units.Select(unit => unit.Id == template.Id ? initialized : unit).ToArray(),
