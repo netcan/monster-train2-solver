@@ -44,6 +44,10 @@ internal static class RelicCardModifierChecks
             result.Dispatches[1].Filters.Single().Accepted == false && !result.Dispatches[1].UpgradeAdded &&
             result.Card!.Temporary.Upgrades.Count == 1 && result.Card.Temporary.Upgrades[0].DataId == "temporary-add-piercing",
             "Relic reset lost a permanent removed-trait rule before a later effect filter.");
+        var resetAgain = RelicCardModifierModel.Apply(result.Card!, [relic], resetTemporary: true);
+        Require(resetAgain.Supported && JsonSerializer.Serialize(resetAgain.Card) == JsonSerializer.Serialize(result.Card) &&
+            result.Card!.Permanent.Upgrades[0].Lifecycle?.RemovedRuntimeTypes.SequenceEqual(["CardTraitIgnoreArmor"]) == true,
+            "Repeated relic resets must retain permanent upgrade lifecycle metadata and ordered filter behavior.");
         Console.WriteLine("RELIC-CARD-RESET-CHECKS PASS: permanent removed traits survive reset and constrain later ordered effect filters.");
 
         var abilityDefinition = new UnitAbilityDefinition("steward-sacrifice", true, 1, 1, null);

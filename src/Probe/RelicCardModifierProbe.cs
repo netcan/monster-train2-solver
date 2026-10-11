@@ -10,8 +10,8 @@ namespace MonsterTrain2Poju.Probe
 {
     internal static class RelicCardModifierProbe
     {
-        internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_BATTLE_RELIC_UPGRADES") == "1";
-        internal static bool CaptureReady => RelicCardModifierScenario.CaptureReady;
+        internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_BATTLE_RELIC_UPGRADES") == "1" || OriginalRelicBatchScenario.Enabled;
+        internal static bool CaptureReady => RelicCardModifierScenario.CaptureReady || OriginalRelicBatchScenario.CaptureReady;
         internal static readonly List<Record> Records = new List<Record>();
         private static readonly List<Record> active = new List<Record>();
         internal sealed class Record

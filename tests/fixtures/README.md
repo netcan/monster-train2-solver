@@ -2008,3 +2008,24 @@ five manager calls and 32 immutable branches pass with zero capture failures,
 mismatches, unsupported transitions or pending records. The focused fixture
 passes; the full 208-archive regression remains deferred to a completed
 milestone.
+
+`full-battle-original-relic-batch.mt2f` validates four unchanged catalog artifacts
+in one muted Instant battle: MoltenManifold, SpawnWithRage, UnitsGainLifesteal and
+ContingencyPlans. The fixture authors X-cost spells and gives one Steward type
+the Monstrosity subtype; the other type witnesses rejection. All 30 native relic
+manager calls and 12 births match, including non-unique repeat stacking, reset,
+five Rage applications, five Lifesteal applications and two Spikes applications.
+Sixteen X-cost plays include nine positive payments and twenty independent
+damage-scaling counterfactuals. The complete 21-play/five-EndTurn policy wins at
+80 Pyre health and passes 16 parallel branches; modifier queries pass 32 branches.
+There are zero native capture failures, mismatches, unsupported or pending records.
+The binary-only archive is 29,322 bytes/4,622 nodes, SHA-256
+`e528b4eb5d13637814de158bcc40b9bf36355999ac4c1eee16171e3c03c66d4c`.
+
+The associated reset fix preserves permanent upgrade lifecycle metadata when
+replacing numeric values; repeated resets and the prior piercing-relic fixture
+pass. The prior 210-archive milestone was completed as a 159-fixture passing
+prefix, four affected checks after the retired-owner-pointer fix, and a passing
+51-fixture suffix (20 full battles and 31 calibrations, 765.53 seconds). This is
+split regression evidence, not a fresh 210-fixture run on one final binary.
+The inventory now contains 211 archives; the new batch received focused checks.

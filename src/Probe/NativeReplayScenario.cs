@@ -411,6 +411,13 @@ namespace MonsterTrain2Poju.Probe
                 return;
             }
             string? modifierScenario = Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS");
+            if (fullBattle && !numericModifiersPrepared && OriginalRelicBatchScenario.Enabled)
+            {
+                if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Original relic batch must start on deployment turn.");
+                numericModifiersPrepared = true;
+                OriginalRelicBatchScenario.Prepare(managers, log);
+                return;
+            }
             if (fullBattle && !numericModifiersPrepared && modifierScenario == "sacrifice-effects")
             {
                 if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Sacrifice fixture must start on deployment turn.");
@@ -717,7 +724,7 @@ namespace MonsterTrain2Poju.Probe
                 else NumericUpgradeScenario.Prepare(managers, log);
                 return;
             }
-            if (fullBattle && RelicCardModifierProbe.Enabled && !RelicCardModifierScenario.Prepared)
+            if (fullBattle && RelicCardModifierProbe.Enabled && !OriginalRelicBatchScenario.Enabled && !RelicCardModifierScenario.Prepared)
             {
                 RelicCardModifierScenario.Prepare(managers, log);
                 return;

@@ -127,6 +127,7 @@ param(
     [switch] $RelicCardSelfPurgeUpgrades,
     [switch] $RelicCardAbilityUpgrades,
     [switch] $RelicCardTriggerUpgrades,
+    [switch] $OriginalRelicBatch,
     [switch] $IncantRelic,
     [switch] $IncantRelics,
     [switch] $SpawnStatusRelics,
@@ -180,7 +181,7 @@ if ($RelicCardPiercingUpgrades) { $BattleRelicUpgrades = $true }
 if ($RelicCardSelfPurgeUpgrades) { $BattleRelicUpgrades = $true }
 if ($RelicCardAbilityUpgrades) { $BattleRelicUpgrades = $true }
 if ($RelicCardTriggerUpgrades) { $BattleRelicUpgrades = $true }
-if ($BattleRelicUpgrades -or $SpawnStatusRelicsClones) { $BranchCardMasks = $true }
+if ($BattleRelicUpgrades -or $SpawnStatusRelicsClones -or $OriginalRelicBatch) { $BranchCardMasks = $true }
 if ($SpawnStatusRelicsClones) { $SpawnStatusRelics = $true; $UnitClone = $true }
 if ($EnchantmentWorld) { $EnchantmentCombat = $true }
 if ($PersistentEnchantmentRevivals) { $PersistentEnchantmentDeaths = $true }
@@ -349,6 +350,9 @@ if ($Sentry -or $SentryLethal) {
 }
 if ($SacrificeEffects) {
     $environment['MT2_PROBE_MODIFIERS'] = 'sacrifice-effects'
+}
+if ($OriginalRelicBatch) {
+    $environment['MT2_PROBE_MODIFIERS'] = 'original-relic-batch'
 }
 $originalBefore = Get-OriginalSignature
 $unityLog = Join-Path $profile 'unity-scenario.log'

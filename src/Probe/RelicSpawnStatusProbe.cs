@@ -38,7 +38,7 @@ namespace MonsterTrain2Poju.Probe
         {
             private static void Postfix(CharacterState character, CardState fromCard, bool onlyCovenants, ref IEnumerator __result)
             {
-                if (!SpawnStatusRelicScenario.Prepared || FullBattleTrace.Active == null || AllGameManagers.Instance!.GetSaveManager().PreviewMode || onlyCovenants) return;
+                if ((!SpawnStatusRelicScenario.Prepared && !OriginalRelicBatchScenario.Prepared) || FullBattleTrace.Active == null || AllGameManagers.Instance!.GetSaveManager().PreviewMode || onlyCovenants) return;
                 __result = Observe(__result, character, fromCard, onlyCovenants);
             }
         }
