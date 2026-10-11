@@ -1,7 +1,7 @@
 # Original relic coverage evidence
 
-As of 2026-10-11, **37 distinct original collectable relics / 224 catalog entries
-(16.52%)** have accepted native full-battle evidence. This counts unchanged relic
+As of 2026-10-11, **39 distinct original collectable relics / 224 catalog entries
+(17.41%)** have accepted native full-battle evidence. This counts unchanged relic
 definitions whose effects actually ran, including their original filters and
 conditions. Test cards, unit triggers and carrier subtypes may be authored to
 exercise those effects; the claim covers the recorded paths, not every possible
@@ -9,17 +9,21 @@ combination. Catalog enumeration and other owners of a supported effect class
 do not count as validated relics. `RelicEffectAddTrigger` appears on 26 catalog
 entries; 14 now have accepted original-owner effect evidence.
 `RelicEffectAddStatusEffectOnStatusApplied` appears on eight catalog entries;
-four now have accepted original-owner evidence. Unknown status families and
-other effects on the remaining owners still require modeling and native proof.
+five now have accepted original-owner evidence. Both catalog owners of
+`RelicEffectPreventStatusEffectDecay` have accepted evidence for their original
+Rage and Frostbite consumers. Unknown status families and other effects on the
+remaining owners still require modeling and native proof.
 
-All 11 source archives below report game `2.2.1`, module MVID
+All 12 source archives below report game `2.2.1`, module MVID
 `8fb07b96-f4db-4d2b-884d-c00536d6ccf4`, `NativeWon=true`, and zero
-`CaptureFailures`, `Mismatches`, `Unsupported` and `Pending`. All source archives'
-byte lengths and SHA-256 hashes were checked against [manifest.tsv](manifest.tsv).
-The lifecycle batch passes strict native acceptance, independent replay,
-complete-fixture checks and three affected old battle fixtures. All 218 archive
-names, sizes and hashes match the manifest and curated list. The older evidence
-was retained without a new full-inventory replay.
+`CaptureFailures`, `Mismatches`, `Unsupported` and `Pending`. Archive provenance,
+byte lengths and SHA-256 hashes are recorded in [manifest.tsv](manifest.tsv).
+The decay batch and refreshed magnitude archive pass strict native acceptance,
+complete-fixture checks and independent full-battle replay. The directly affected
+original-status and post-combat-healing battles also pass. All 219 archive names,
+byte lengths and SHA-256 hashes match the manifest and curated list, with 188
+battles, 31 component calibrations and no JSON companions. A new full-inventory
+replay remains deferred to a milestone.
 
 | AssetKey | DataId | Accepted archive | Actual effect witness |
 | --- | --- | --- | --- |
@@ -52,17 +56,19 @@ was retained without a new full-inventory replay.
 | `IncreasePyregelStacks` | `f4c76f11-37d9-4bb5-867a-4d99b7cfa270` | [original status relics][statusAdders] | The unchanged Heroes-team first-application rule adds 6 Pyregel. A real first application is 1 → 8 with both original Pyregel relics; repeated application is 1 → 2. Removing this relic changes the first case by exactly 6. |
 | `ExtraValorOnValor` | `74c025fa-ddcb-494b-a790-dcadc5b5772b` | [original status relics][statusAdders] | The unchanged Monsters-team unconditional rule adds 1 Valor, including zero input. Eight distinct real native query cases lose that stack when only this relic is removed. Starting, spell and combat-trigger status paths replay exactly. |
 | `IncreaseArmorStacks` | `ba26070b-4f6b-4af0-a1ec-2af024b6af87` | [original status relics][statusAdders] | The unchanged Monsters-team positive-stack rule adds 4 Armor. Five distinct real native query cases lose exactly 4 stacks when only this relic is removed. Starting, spell, equipment-upgrade and combat status paths replay exactly. |
-| `IncreaseRageDamage` | `b9bddf11-acaa-40fb-bc40-eee83e478424` | [original magnitude relics][magnitudes] | The unchanged Monsters-team buff magnitude adds 1 attack per future added/removed Rage stack. Removing only this owner preserves captured starting attack history but changes subsequent status attack in 21 action/combat witnesses. |
-| `StrongerSpikes` | `aa94ad34-ee09-464e-89ff-2a2c2867c097` | [original magnitude relics][magnitudes] | The unchanged Monsters-team spikes magnitude adds 1 damage per stack at retaliation. Twelve player-owned Spikes event witnesses deal less real damage after removing only this owner. |
-| `AwokenRegen` | `1fd244de-7d7b-4345-974b-4e5bf287a3df` | [original magnitude relics][magnitudes] | The unchanged Monsters-team regen magnitude adds 1 healing per stack at post-combat. Fourteen player-owned Regen event witnesses restore less actual health after removing only this owner. |
+| `IncreaseRageDamage` | `b9bddf11-acaa-40fb-bc40-eee83e478424` | [original magnitude relics][magnitudes] | The unchanged Monsters-team buff magnitude adds 1 attack per future added/removed Rage stack. Removing only this owner preserves captured starting attack history but changes subsequent status attack in 19 action/combat witnesses in the refreshed archive. |
+| `StrongerSpikes` | `aa94ad34-ee09-464e-89ff-2a2c2867c097` | [original magnitude relics][magnitudes] | The unchanged Monsters-team spikes magnitude adds 1 damage per stack at retaliation. Ten player-owned Spikes event witnesses in the refreshed archive deal less real damage after removing only this owner. |
+| `AwokenRegen` | `1fd244de-7d7b-4345-974b-4e5bf287a3df` | [original magnitude relics][magnitudes] | The unchanged Monsters-team regen magnitude adds 1 healing per stack at post-combat. Twelve player-owned Regen event witnesses in the refreshed archive restore less actual health after removing only this owner. |
 | `IncreaseArmorStacks_DH` | `c9b18f6f-20d1-4228-bfab-b740609db8dc` | [original lifecycle relics][lifecycles] | Original player OnOwnAbilityActivated adds 3 Armor to player units on its floor. Six real ability activations provide 24 positive unit-state witnesses after removing only this owner's installed callback and context relic. The original exclusion flag keeps fire count 1. |
 | `AvariceOnSummon` | `644749c2-6ee3-4ce6-91ed-420077ee0193` | [original lifecycle relics][lifecycles] | Its actual OnOwnAbilityActivated payload applies original `Plus5Attack` (`069b201b-ee72-4daf-99d8-914d56f1bad5`), non-unique and `TemporaryUntilEndOfBattle`, to player units on its floor. Twenty-four positive witnesses lose future +5 attack gains when only this owner is removed; existing applied upgrades, raw attack and shared ability-card caches remain intact. |
 | `ShroomsGainRegen` | `bbe03be9-dae9-40bb-bb46-ab7553a17bd9` | [original lifecycle relics][lifecycles] | The unchanged Shroom installation and target-subtype filters grant Regen 1 on OnAnyUnitDeathOnFloor. Sixteen positive future Regen witnesses differ under owner removal; three Shroom births accept the trigger, four other player births and seven enemy births reject it. |
 | `DamageOnGoingDownFloor` | `19147050-9859-4cf1-b826-f258f6c48c42` | [original lifecycle relics][lifecycles] | Its actual OnDeath payload adds 5 Armor to FrontInRoom on the player team, with original action value 100. A real Undying death/revival gives the front Shroom Armor 5; removing only this owner loses that gain in one positive witness. |
 | `LifeInsurer` | `c1ae061c-5f95-4f1d-a8f0-6e027636a81e` | [original lifecycle relics][lifecycles] | One natural Undying revival consumes a stack and restores health 0 → 1, then original OnReanimated grants its actor Armor 14. One positive owner ablation loses that Armor. The native queue preserves Harvest callbacks followed by OnReanimated and OnDeath with parameter 1. |
+| `RagePreservedOnFriendlies` | `b7822614-96ec-4ace-9029-6efc8adef374` | [original decay relics][decays] | The unchanged Monsters-team buff decay rule gives 14 actual player Rage-preservation witnesses. Enemy Rage still decays as a negative team case. Removing only this owner changes future preserved stacks while retaining captured starting attack history. |
+| `IncreaseFrostbiteStacks` | `9cb2b9b2-0308-4f71-92e8-e96a30b87416` | [original decay relics][decays] | Original None-team poison+2 turns real card applications from 1 into 3 stacks on both teams; its second effect prevents natural poison decay. Owner removal gives 25 combined preservation and real-application witnesses, preserving prior attack caches and leaving the card's buff2 and armor30 effects unchanged. |
 
 Record indices above are zero-based. Full-battle acceptance and independent
-effect checks are documented in [README.md](README.md); the table's 11 source
+effect checks are documented in [README.md](README.md); the table's 12 source
 archives contain these observed battle sizes:
 
 | Archive | Schema | Card plays | EndTurns | Matched stages | Independent relic observations |
@@ -76,8 +82,9 @@ archives contain these observed battle sizes:
 | [stationary trigger relic deaths][triggerDeaths] | 103 | 13 | 5 | 35 | 14 births, eight required original effect witnesses |
 | [original trigger relics][triggers] | 106 | 28 | 7 | 54 | 14 births, three attachments including one enemy, ten Bump plays, eight required effect witnesses |
 | [original status relics][statusAdders] | 113 | 26 | 5 | 39 | 27 distinct real queries, 192 boundary queries, four positive original effects |
-| [original magnitude relics][magnitudes] | 114 | 18 | 5 | 39 | 20 matrix, seven live and four preview getter cases; three positive original effects |
+| [original magnitude relics][magnitudes] | 114 | 24 | 5 | 38 | Refreshed native capture: 20 matrix, seven live and four preview getter cases; three positive original effects |
 | [original lifecycle relics][lifecycles] | 115 | 24 | 5 | 35 | 14 exact birth/train/queue phases, six ability activations, one natural revival, 17 callback phases; five positive original effects |
+| [original decay relics][decays] | 116 | 21 | 5 | 42 | 16 matrix, 11 live and ten preview decay queries; 239 stack queries; two positive original effects |
 
 The checks that enforce these observations are
 [TriggerCountChecks.Native](../../src/ModelChecks/TriggerCountChecks.cs),
@@ -88,7 +95,8 @@ The checks that enforce these observations are
 [OriginalTriggerRelicBatchChecks.Native/Combined](../../src/ModelChecks/OriginalTriggerRelicBatchChecks.cs),
 [OriginalStatusRelicBatchChecks.Native](../../src/ModelChecks/OriginalStatusRelicBatchChecks.cs),
 [OriginalMagnitudeRelicBatchChecks.Native](../../src/ModelChecks/OriginalMagnitudeRelicBatchChecks.cs),
-and [OriginalLifecycleRelicBatchChecks.Native](../../src/ModelChecks/OriginalLifecycleRelicBatchChecks.cs).
+[OriginalLifecycleRelicBatchChecks.Native](../../src/ModelChecks/OriginalLifecycleRelicBatchChecks.cs),
+and [OriginalDecayRelicBatchChecks.Native](../../src/ModelChecks/OriginalDecayRelicBatchChecks.cs).
 Each new trigger archive has eight positive owner effects; their union covers
 all nine distinct originals. Removing only one original's installed callbacks
 must change health, attack, membership or status stacks, beyond trigger metadata.
@@ -109,6 +117,14 @@ queues and dispatches match, with 32 immutable birth branches. Its independent
 policy replay covers the complete battle, a mid-battle continuation and 16
 parallel branches, ending with Pyre health 80.
 
+The decay archive requires real friendly Rage preservation, enemy Rage decay,
+both-team Frostbite preservation and actual card poison3/1 owner ablations.
+Its 14 Rage witnesses and 25 combined Frostbite witnesses compare complete
+native action/combat states, retaining captured starting accumulators. Live
+getter evidence is required separately from the matrix. Full-battle and
+mid-battle policy replay, 16 parallel policy branches and 32 immutable getter
+branches pass, ending with Pyre health 77.
+
 No additional original relic is counted for the status, piercing, SelfPurge,
 unit-ability, OnKill or conditional modifier fixtures. Their preparation in
 [RelicCardModifierScenario](../../src/Probe/RelicCardModifierScenario.cs) replaces
@@ -127,10 +143,20 @@ suffix; it is not a fresh full regression on the final batch implementation.
 The preceding magnitude batch passed its complete fixture checks, independent
 full-battle/mid-battle/16-branch replay and three affected old battle fixtures.
 At that milestone, all 217 archive names, sizes and hashes matched; a full
-217-archive replay remained deferred. The lifecycle batch passes strict native
-acceptance, complete-fixture checks and focused regression; all 218 archives'
-integrity checks pass. Its 24 actions comprise 18 ordinary plays and six unit
-ability activations. A full 218-archive replay remains deferred.
+217-archive replay remained deferred. At the lifecycle milestone, that batch
+passed strict native acceptance, complete-fixture checks and focused regression;
+all 218 archives' integrity checks passed. Its 24 actions comprise 18 ordinary
+plays and six unit ability activations. A full 218-archive replay remained
+deferred at that milestone.
+The current magnitude archive was recaptured after fixing a status-definition
+validation dummy that lacked an attack cache and incorrectly rejected
+`JustCause` (FloorRearrange plus Valor 2). The original generic policy now plays
+that legal card; no historical card exclusion was added. The refreshed battle
+has 24 actions, five EndTurns and 38 stages, with positive owner witnesses
+19/10/12 and Pyre 80. It replaces the same archive name without increasing the
+inventory. The new decay archive brings the inventory to 219; strict and
+complete-fixture checks pass for both captures. A full 219-archive replay
+remains deferred.
 Mageblade still requires room spell power and its cached coefficient,
 and is excluded from accepted magnitude consumers and original-owner coverage.
 The older `6/224` passage in README describes an earlier milestone; it does not
@@ -147,3 +173,4 @@ include the starter-cost, cardless or four-artifact batch evidence above.
 [statusAdders]: full-battle-original-status-relics.mt2f
 [magnitudes]: full-battle-original-magnitude-relics.mt2f
 [lifecycles]: full-battle-original-lifecycle-relics.mt2f
+[decays]: full-battle-original-decay-relics.mt2f

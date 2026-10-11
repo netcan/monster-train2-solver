@@ -15,7 +15,7 @@ The default command still checks the full curated inventory.
 For routine changes, run only the new and directly affected fixtures with
 `-Fixture`; run the full inventory at completed milestones and before delivery.
 
-Current inventory is 218 archives: 187 accepted battles and 31 component
+Current inventory is 219 archives: 188 accepted battles and 31 component
 calibrations. `full-battle-relic-card-status-upgrades.mt2f` verifies a native
 temporary card status upgrade reaches the unit summoned by that card.
 `full-battle-sacrifice-effects.mt2f` covers native `CardEffectSacrifice` target
@@ -2231,29 +2231,51 @@ does not recalculate older Rage stacks. Starting statuses, live additions,
 explicit removals, natural decay, copying and upgrades preserve this history.
 Spikes and Regen query their current magnitude at each actual trigger.
 
-The Instant native battle takes 49.85 seconds, wins at Pyre 80 after 18 plays
-and five EndTurns, and matches 39 combat stages with zero capture failures,
-mismatches, unsupported transitions and pending records. The independent full
-battle, mid-battle suffix and 16 parallel policy branches pass. All 31 deduplicated
-native getter cases match: 20 status/team matrix, seven live and four preview
-cases. Getter checks also pass 32 immutable parallel branches.
+The initial Instant native battle took 49.85 seconds, won at Pyre 80 after
+18 plays and five EndTurns, and matched 39 combat stages with zero capture
+failures, mismatches, unsupported transitions and pending records. The independent
+full battle, mid-battle suffix and 16 parallel policy branches passed. All 31
+deduplicated native getter cases matched: 20 status/team matrix, seven live and
+four preview cases. Getter checks also passed 32 immutable parallel branches.
 
-Removing each original preserves the captured starting status attack cache and
-changes only future processing: 21 Rage attack witnesses, 12 player-owned Spikes
-damage witnesses and 14 player-owned Regen actual-healing witnesses. Complete
-fixture checks and focused original-status-relic, post-combat-healing and
-unit-clone regressions pass. The final stricter player-owner filter was checked
+In that initial capture, removing each original preserved the captured starting
+status attack cache and changed only future processing: 21 Rage attack witnesses,
+12 player-owned Spikes damage witnesses and 14 player-owned Regen actual-healing
+witnesses. Complete fixture checks and focused original-status-relic, post-combat-healing and
+unit-clone regressions passed. The final stricter player-owner filter was checked
 again with the same production `Model.dll`; its SHA-256 is
 `bd5e8766d33f228263723a0f56b0a95126d0107bb0849bb418d7b28e1978623f`.
 
-The binary archive has no JSON source: 26,951 bytes, 4,298 unique nodes, SHA-256
+The initial binary archive had no JSON source: 26,951 bytes, 4,298 unique nodes,
+SHA-256
 `5bc2dd6bd19127eb4b93347ee88578d189efca16b658df66fb80bb30eea0a36d`.
 Raw source:
 `.probe-runs/full-battle-units-spells-and-junk-20261011-115413-e2b090f3/full-battle.mt2f`.
-All 217 archive names, sizes and hashes match the curated list and manifest;
-the full 217-archive replay remains deferred to a completed milestone.
-Original relic coverage is 32/224 (14.29%). Mageblade remains guarded until
+At that initial milestone, all 217 archive names, sizes and hashes matched the
+curated list and manifest; the full 217-archive replay remained deferred.
+Original relic coverage was 32/224 (14.29%). Mageblade remains guarded until
 room spell power and its cached coefficient have independent native evidence.
+
+The current schema-114 archive was refreshed after fixing the status-definition
+validation dummy's missing attack cache. That bug incorrectly excluded
+`JustCause` (FloorRearrange followed by Valor 2) from the generic supported-card
+policy. A new native capture now validates the same policy with that card
+available; no compatibility rule excludes historical cards. Original Boss,
+waves and relic definitions remain unchanged.
+
+The refreshed Instant battle takes 67.79 seconds and wins at Pyre 80 after
+24 actions, five EndTurns and 38 matched combat stages. Complete native
+action/stage checks, full-battle and mid-battle replay, 16 policy branches and
+32 immutable getter branches pass, with all differential failure counters zero.
+Getter cases remain 20 matrix, seven live and four preview. Current owner
+witness counts are 19 Rage attack, ten player Spikes damage and 12 player Regen
+healing, with starting status attack caches retained under each owner removal.
+
+The refreshed archive replaces the same name without adding an inventory entry:
+28,039 bytes, 4,637 unique nodes, no JSON source, SHA-256
+`45fe3b83212147081d5c352e01f01cb826be5715eaf87c40dd0f7965f52ed80c`.
+Current raw source:
+`.probe-runs/full-battle-units-spells-and-junk-20261011-124820-792d54a1/full-battle.mt2f`.
 
 ```powershell
 dotnet run --project src/ModelChecks -c Release -- --relic-status-magnitudes-pure
@@ -2303,4 +2325,55 @@ and Boss coverage remain open.
 dotnet run --project src/ModelChecks -c Release -- --relic-lifecycle-pure
 dotnet run --project src/ModelChecks -c Release -- --original-lifecycle-relics-only tests/fixtures/full-battle-original-lifecycle-relics.mt2f
 & ./scripts/Check-Models.ps1 -Fixture full-battle-original-lifecycle-relics.mt2f
+```
+
+### Original Rage and Frostbite decay relics
+
+`full-battle-original-decay-relics.mt2f` validates the unchanged originals
+`RagePreservedOnFriendlies` and `IncreaseFrostbiteStacks`. The former prevents
+Rage (`buff`) decay only for Monsters, the native player team. The latter adds
+2 Frostbite (`poison`) to positive incoming applications on either team and
+prevents its natural decay. Original Boss, waves and relic definitions are
+retained. Two authored high-health Steward carriers and a native three-effect
+spell apply buff2, poison1 and armor30 as separate singleton effects. The real
+card produces poison3 on both teams; armor allows enemies to survive long
+enough to observe natural status processing.
+
+The schema-116 Instant battle takes 62.55 seconds and wins at Pyre 77 after
+21 actions, five EndTurns and 42 complete combat stages. Capture failures,
+mismatches, unsupported transitions and pending records are zero. Complete
+native action/stage checks, independent full-battle and mid-battle replay and
+16 parallel policy branches pass. All 37 decay getter cases match: 16 matrix,
+11 live and ten preview, alongside 239 stack queries and 32 immutable getter
+branches. Native card views also match: 10,665 views across 460 decision contexts.
+
+Actual player Rage preservation supplies 14 owner-removal witnesses, with
+enemy Rage decay as a negative team case. Frostbite supplies 25 combined
+preservation and real-application witnesses, covering both teams. That count
+includes card poison3 → poison1 when its owner is removed; it is not a count
+of preservation alone. Complete states and prior attack accumulators remain
+unchanged at each counterfactual's starting boundary. Pure checks also cover
+multi-effect status-card validation, cache retention, natural and trigger
+consumption, explicit removal, deployment/relentless and metadata guards.
+The affected original-status (39 stages) and post-combat-healing (43 stages)
+fixtures and the refreshed magnitude fixture pass complete checks.
+
+The binary archive has no JSON source: 30,547 bytes, 5,228 unique nodes, SHA-256
+`34cd0132a74417bb5749f75b9ba4a3d30d18e7cae2b15c2421ca3b71d70d7712`.
+Raw source:
+`.probe-runs/full-battle-units-spells-and-junk-20261011-124340-9b1f1384/full-battle.mt2f`.
+The accepted native and final frozen `Model.dll` SHA-256 is
+`2a4aa15ce74af48c4105ca16b762837470ac4bcf59112ce89079bcc599e17f42`.
+Inventory is 219 archives: 188 battles and 31 component calibrations. Original
+relic coverage is 39/224 (17.41%) across 12 evidence archives; the status-applied
+effect covers five of eight original owners and decay prevention covers both
+original owners. All 219 archive names, sizes and SHA-256 hashes match the
+curated list and manifest; no JSON companions are present. The full 219-archive
+replay remains deferred to a completed milestone. Arbitrary card/relic
+combinations, all Bosses and the optimal solver remain unfinished.
+
+```powershell
+dotnet run --project src/ModelChecks -c Release -- --relic-status-decay-pure
+dotnet run --project src/ModelChecks -c Release -- --original-decay-relics-only tests/fixtures/full-battle-original-decay-relics.mt2f
+& ./scripts/Check-Models.ps1 -Fixture full-battle-original-decay-relics.mt2f
 ```

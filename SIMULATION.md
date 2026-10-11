@@ -1,8 +1,8 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-11): 218 binary archives, including 187
+Current accepted inventory (2026-10-11): 219 binary archives, including 188
 full battles and 31 component calibrations. Unchanged original relic evidence
-covers 37/224 catalog entries (16.52%); see
+covers 39/224 catalog entries (17.41%); see
 [the owner evidence table](tests/fixtures/relic-coverage.md). Whole-battle
 coverage and the optimal solver remain in progress.
 
@@ -7864,9 +7864,9 @@ retain their native effects, while unvalidated owner rules remain guarded.
 Mageblade remains unsupported: it needs room spell power and a separate cached
 per-stack coefficient, including source changes and preview-copy behavior.
 
-The schema-114 original magnitude archive independently validates three
+The initial schema-114 original magnitude capture independently validated three
 unchanged owners across 18 plays, five EndTurns and 39 complete combat stages,
-with terminal Pyre 80 and zero differential failures. Native sampling takes
+with terminal Pyre 80 and zero differential failures. Native sampling took
 49.85 seconds. Pure checks cover condition-dependent attack history, signed
 status changes, overflow, initialization, decay and 32 immutable branches.
 Dedicated native checks preserve captured starting damage during owner
@@ -7874,6 +7874,18 @@ ablations, and verify actual future attack, retaliation and healing differences.
 New/affected fixture regression and archive integrity pass; the full historical
 inventory remains deferred. Details and commands are in
 [the fixture documentation](tests/fixtures/README.md).
+
+The current archive was refreshed after fixing the status-definition validation
+dummy's missing attack cache, which had incorrectly rejected `JustCause`'s
+FloorRearrange plus Valor 2 effects. The original generic policy is retained;
+new native sampling replaces the same archive rather than excluding that card
+through a historical compatibility policy. The refreshed battle takes 67.79
+seconds and independently matches 24 actions, five EndTurns and 38 combat
+stages, ending with Pyre 80. Its three owner-ablation counts are 19 Rage attack,
+ten player Spikes damage and 12 player Regen healing witnesses. Twenty matrix,
+seven live and four preview magnitude getters, 32 immutable getter branches,
+full-battle/mid-battle replay and 16 policy branches pass. Boss, waves and relic
+definitions remain original; the replacement adds no inventory entry.
 
 ### Original ability, death and revival relics
 
@@ -7893,8 +7905,48 @@ All five owners have positive witnesses. Native Reanimated and Death callbacks
 retain their FIFO and physical unit identity. The once-listener regression
 also checks the existing model's retained physical flags and preview metadata.
 
-The new complete fixture and three directly affected old battles pass;
-218 binary archives now include 187 full battles and 31 calibrations.
-Original relic coverage is 37/224 (16.52%). This expands verified paths without
-claiming every combination; broader card/effect/Boss coverage and the optimal
-solver remain open. Full-inventory replay remains scheduled for milestones.
+At the lifecycle milestone, the complete fixture and three directly affected
+old battles passed; 218 binary archives included 187 full battles and 31
+calibrations. Original relic coverage was 37/224 (16.52%). This expanded verified
+paths without claiming every combination; broader card/effect/Boss coverage
+and the optimal solver remain open. Full-inventory replay remains scheduled for milestones.
+
+### Original status decay prevention
+
+`RelicStatusDecayModel` models the native first suppressing relic/effect in
+order. A non-removing context returns before consulting relics. Source team
+None is a wildcard; other teams require equality. Preview uses the same rule,
+and this native getter does not evaluate or record outer conditions. Complete
+consumer support remains restricted to Rage and Frostbite. Natural processing
+and trigger consumption retain status attack history; explicit status removal
+still removes stacks through its own native path.
+
+The schema-116 decay archive independently validates unchanged
+`RagePreservedOnFriendlies` and `IncreaseFrostbiteStacks`. Authored native cards
+give player and enemy units buff2, poison1 and armor30 through three separate
+singleton effects, retaining the original Boss and waves. Actual Frostbite
+applications become 3 stacks on both teams. The complete battle preserves
+player Rage, naturally decays enemy Rage and preserves Frostbite stacks while
+its damage continues. Removing each owner preserves captured starting
+accumulators and changes actual future processing: 14 Rage-preservation
+witnesses and 25 combined Frostbite-preservation/application witnesses.
+
+The Instant capture takes 62.55 seconds and wins at Pyre 77 after 21 actions,
+five EndTurns and 42 complete combat stages. Full native states, independent
+policy replay, mid-battle continuation and 16 parallel branches match, with
+all differential failure counters zero. Sixteen matrix, 11 live and ten
+preview decay queries, 239 stack queries and 32 immutable getter branches
+pass. Card views match 10,665 native observations across 460 decision contexts.
+Pure multi-effect status-card/cache regression, the new complete fixture,
+refreshed magnitude fixture and affected original-status/post-combat-healing
+battles pass. The binary has 30,547 bytes and 5,228 unique nodes with no JSON
+source; provenance and commands are in the fixture documentation.
+
+The accepted inventory is 219 binary archives: 188 battles and 31 component
+calibrations. Unchanged original relic coverage is 39/224 (17.41%) across 12
+evidence archives; status-applied adders cover five of eight catalog owners
+and decay prevention covers both original owners for the recorded consumers.
+All 219 archive names, sizes and SHA-256 hashes match the curated list and
+manifest, with no JSON companions. Full 219-archive replay remains deferred
+to a completed milestone. Complete simulation of arbitrary card/relic
+combinations, all Bosses and an optimal solver remain unfinished.
