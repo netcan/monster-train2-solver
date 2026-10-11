@@ -42,6 +42,23 @@ internal static class CardExhaustChecks
         Require(removed.Cards.Discard.Single().InstanceId == 1 && removed.OtherPiles!.Single(pile => pile.Name == "Exhausted").Cards.Count == 0 &&
             removed.Statistics!.Value(1, "TimesExhausted") == 1 && removed.FindCard(1)!.ExhaustState!.UpgradeTrait == null,
             "RemoveOnDiscard must remove temporary Consume before its old standby closure resolves to discard.");
+
+        CardUpgradeModifier relicConsumeUpgrade = Upgrade(false);
+        CardLifecycleUpgrade relicConsumeLifecycle = relicConsumeUpgrade.Lifecycle!;
+        var relicConsume = new RelicCardModifier(0,
+            new RelicCardUpgradeRule(relicConsumeUpgrade.AssetKey, true, relicConsumeLifecycle, []), relicConsumeUpgrade, false);
+        var relic = new CombatRelicState("consume-relic", "ConsumeRelic", [RelicModel.AddTempUpgrade], cardModifiers: [relicConsume]);
+        RelicCardModifierResult relicApplied = RelicCardModifierModel.Apply(Card(1, []), [relic], resetTemporary: false);
+        Require(relicApplied.Supported && relicApplied.Card!.ExhaustState!.UpgradeTrait != null,
+            "A temporary relic Consume upgrade was rejected or failed to initialize its private state: " + relicApplied.UnsupportedReason);
+        var relicPlayed = BattleActionModel.PlayCard(Battle(relicApplied.Card!), new(1, 0));
+        Require(relicPlayed.Supported, relicPlayed.Reason ?? "Relic Consume card failed.");
+        CombatContext relicAfter = relicPlayed.State!.Spawn.Train.Context!;
+        Require(relicAfter.OtherPiles!.Single(pile => pile.Name == "Exhausted").Cards.Single().InstanceId == 1 &&
+            relicAfter.OtherPiles.Single(pile => pile.Name == "Standby").Cards.Count == 0 &&
+            relicAfter.Statistics!.Value(1, "TimesExhausted") == 2 &&
+            relicAfter.FindCard(1)!.ExhaustState!.UpgradeTrait?.IsExhausted == true,
+            "A temporary relic Consume upgrade did not route the played card through native exhaustion and standby closure.");
         var retainedTemporary = Card(1, [], [Upgrade(false)]).OnDiscard(true);
         Require(retainedTemporary.ExhaustState!.UpgradeTrait!.IsExhausted, "Retained temporary Consume lost callback state.");
         var refreshed = retainedTemporary.WithModifiers(retainedTemporary.Permanent,

@@ -93,6 +93,8 @@ internal static class RelicCardModifierChecks
             scenario.GetString() == "relic-card-piercing-upgrades";
         bool selfPurgeUpgradeScenario = root.TryGetProperty("ModifierScenario", out scenario) &&
             scenario.GetString() == "relic-card-self-purge-upgrades";
+        bool exhaustUpgradeScenario = root.TryGetProperty("ModifierScenario", out scenario) &&
+            scenario.GetString() == "relic-card-exhaust-upgrades";
         bool abilityUpgradeScenario = root.TryGetProperty("ModifierScenario", out scenario) &&
             scenario.GetString() == "relic-card-ability-upgrades";
         bool triggerUpgradeScenario = root.TryGetProperty("ModifierScenario", out scenario) &&
@@ -199,6 +201,30 @@ internal static class RelicCardModifierChecks
             Require(modifierContainsTrait && playedCardContainsTrait,
                 "Native relic piercing trait was not retained on an independently played card.");
         }
+        if (exhaustUpgradeScenario)
+        {
+            int exhaustedPlays = 0;
+            foreach (FixtureValue entry in root.GetProperty("Actions").EnumerateArray())
+            {
+                BattleTurnState before = entry.GetProperty("Before").Deserialize<BattleTurnState>()!;
+                PlayCardAction action = entry.GetProperty("Action").Deserialize<PlayCardAction>()!;
+                CardInstanceState? card = before.Spawn.Train.Context!.FindCard(action.CardInstanceId);
+                if (card?.Temporary.Upgrades.Any(upgrade => upgrade.Lifecycle?.AddedTraits.Any(trait =>
+                    trait.RuntimeType == "CardTraitExhaustState") == true) != true) continue;
+
+                BattleTurnState actual = entry.GetProperty("Actual").Deserialize<BattleTurnState>()!;
+                CombatContext context = actual.Spawn.Train.Context!;
+                CardInstanceState? played = context.FindCard(action.CardInstanceId);
+                Require(played?.ExhaustState?.UpgradeTrait?.IsExhausted == true &&
+                    context.OtherPiles!.Single(pile => pile.Name == "Exhausted").Cards.Any(item => item.InstanceId == action.CardInstanceId) &&
+                    !context.OtherPiles.Single(pile => pile.Name == "Standby").Cards.Any(item => item.InstanceId == action.CardInstanceId) &&
+                    context.Statistics!.Value(action.CardInstanceId, "TimesExhausted") == 2,
+                    "A played relic-upgraded Consume spell did not reach Exhausted with native private state and statistics.");
+                exhaustedPlays++;
+            }
+            Require(exhaustedPlays > 0, "The relic Consume scenario did not play a card carrying its temporary trait.");
+            Console.WriteLine($"NATIVE-RELIC-CARD-EXHAUST-CHECKS PASS: {exhaustedPlays} relic-upgraded cards reached Exhausted with private trait state.");
+        }
         if (abilityUpgradeScenario)
         {
             int abilityUpgradedSummons = 0;
@@ -252,7 +278,8 @@ internal static class RelicCardModifierChecks
             Before: row.GetProperty("Before").Deserialize<CombatContext>()!,
             Actual: row.GetProperty("Actual").Deserialize<CombatContext>()!)).ToArray();
         var births = generated.SelectMany(row => row.Actual.CardInstances!.Where(card => card.InstanceId >= row.Before.NextCardId)).ToArray();
-        if (requireScenarioCoverage && !statusUpgradeScenario && !piercingUpgradeScenario && !selfPurgeUpgradeScenario && !abilityUpgradeScenario && !triggerUpgradeScenario)
+        if (requireScenarioCoverage && !statusUpgradeScenario && !piercingUpgradeScenario && !selfPurgeUpgradeScenario &&
+            !exhaustUpgradeScenario && !abilityUpgradeScenario && !triggerUpgradeScenario)
             Require(births.Any(card => card.Temporary.Upgrades.Any(upgrade => upgrade.AssetKey == "ReduceStarterCost" ||
                 rows.SelectMany(row => row.Relics).SelectMany(relic => relic.CardModifiers ?? []).Any(effect => effect.Upgrade?.DataId == upgrade.DataId))),
                 "No battle-generated eligible card received an original relic upgrade.");
@@ -260,6 +287,7 @@ internal static class RelicCardModifierChecks
             statusUpgradeScenario ? "card status upgrades reached summoned units" :
             piercingUpgradeScenario ? "IgnoreArmor relic traits retained on played cards" :
             selfPurgeUpgradeScenario ? "SelfPurge relic traits retained on played cards" :
+            exhaustUpgradeScenario ? "Consume relic traits routed played cards to Exhausted" :
             abilityUpgradeScenario ? "unit ability upgrades reached summoned units" :
             triggerUpgradeScenario ? "OnKill character triggers reached summoned units" : "eligible battle-generated cards";
         Console.WriteLine($"NATIVE-RELIC-CARD-MODIFIER-CHECKS PASS: {rows.Length} original manager calls, {rows.Sum(row => row.Dispatches.Length)} ordered effect/filter results, " +

@@ -15,7 +15,7 @@ The default command still checks the full curated inventory.
 For routine changes, run only the new and directly affected fixtures with
 `-Fixture`; run the full inventory at completed milestones and before delivery.
 
-Current inventory is 224 archives: 193 accepted battles and 31 component
+Current inventory is 225 archives: 194 accepted battles and 31 component
 calibrations. `full-battle-relic-card-status-upgrades.mt2f` verifies a native
 temporary card status upgrade reaches the unit summoned by that card.
 `full-battle-sacrifice-effects.mt2f` covers native `CardEffectSacrifice` target
@@ -2578,4 +2578,28 @@ temporary-upgrade lifecycle and interaction.
 ```powershell
 dotnet run --project src/ModelChecks -c Release -- --relic-floor-capacity-pure
 & ./scripts/Check-Models.ps1 -Fixture full-battle-original-floor-capacity-relics.mt2f
+```
+
+### Temporary relic Consume routing
+
+`full-battle-relic-card-exhaust-upgrades.mt2f` validates a temporary
+`CardTraitExhaustState` supplied through the native `RelicEffectAddTempUpgrade`
+manager path. The probe substitutes this trait into the `ReduceStarterCost`
+upgrade payload and targets eligible spells, so this is mechanism coverage, not
+evidence for another unchanged original relic owner. Two upgraded cards are
+actually played and reach Exhausted with their private trait state, double
+exhaustion statistic, and standby closure all matching native capture.
+
+The schema-122 muted Instant battle wins after 51 matched stages, 28 card
+actions and six EndTurns. Native capture failures, mismatches, unsupported
+transitions and pending records are all zero. Independent replay passes the
+whole battle, mid-battle continuation and 16 parallel branches. The archive is
+29,854 bytes with 5,068 unique nodes and SHA-256
+`1a620b7384b8d700f48d4c074c88f9a39721b2f17d86156a59963081a3e805b0`; it has
+no JSON companion. Original relic coverage remains 55/224 (24.55%). Accepted
+inventory is now 225 archives: 194 battles and 31 component calibrations. A
+full 225-archive replay remains deferred to a milestone.
+
+```powershell
+& ./scripts/Check-Models.ps1 -Fixture full-battle-relic-card-exhaust-upgrades.mt2f
 ```

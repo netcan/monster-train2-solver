@@ -10,14 +10,15 @@ namespace MonsterTrain2Poju.Probe
     {
         internal static bool Prepared { get; private set; }
         internal static bool CaptureReady { get; private set; }
+        internal static bool ExhaustUpgrade => Environment.GetEnvironmentVariable("MT2_PROBE_RELIC_CARD_EXHAUST_UPGRADE") == "1";
         internal static void Prepare(AllGameManagers managers, ManualLogSource log)
         {
             if (!RelicCardModifierProbe.Enabled || Prepared) return;
             int selectedScenario = new[] { "MT2_PROBE_RELIC_CARD_STATUS_UPGRADE", "MT2_PROBE_RELIC_CARD_PIERCING_UPGRADE",
-                "MT2_PROBE_RELIC_CARD_SELF_PURGE_UPGRADE", "MT2_PROBE_RELIC_CARD_ABILITY_UPGRADE",
+                "MT2_PROBE_RELIC_CARD_SELF_PURGE_UPGRADE", "MT2_PROBE_RELIC_CARD_EXHAUST_UPGRADE", "MT2_PROBE_RELIC_CARD_ABILITY_UPGRADE",
                 "MT2_PROBE_RELIC_CARD_TRIGGER_UPGRADE" }
                 .Count(name => Environment.GetEnvironmentVariable(name) == "1");
-            if (selectedScenario > 1) throw new InvalidOperationException("Relic card status, piercing, self-purge, ability and trigger scenarios are mutually exclusive.");
+            if (selectedScenario > 1) throw new InvalidOperationException("Relic card status, piercing, self-purge, exhaust, ability and trigger scenarios are mutually exclusive.");
             var save = managers.GetSaveManager();
             var original = save.GetAllGameData().GetAllCollectableRelicData().Single(relic => relic.name == "ReduceStarterCost");
             var cards = managers.GetCardManager()!;
@@ -40,12 +41,15 @@ namespace MonsterTrain2Poju.Probe
                 InstallPiercingUpgrade(save.GetAllGameData(), relicEffect);
             if (Environment.GetEnvironmentVariable("MT2_PROBE_RELIC_CARD_SELF_PURGE_UPGRADE") == "1")
                 InstallSelfPurgeUpgrade(relicEffect);
+            if (ExhaustUpgrade) InstallExhaustUpgrade(relicEffect);
             bool abilityScenario = Environment.GetEnvironmentVariable("MT2_PROBE_RELIC_CARD_ABILITY_UPGRADE") == "1";
             if (abilityScenario) InstallStewardAbilityUpgrade(save.GetAllGameData(), relicEffect);
             bool triggerScenario = Environment.GetEnvironmentVariable("MT2_PROBE_RELIC_CARD_TRIGGER_UPGRADE") == "1";
             if (triggerScenario) InstallCharacterTriggerUpgrade(save.GetAllGameData(), relicEffect);
             var filters = UpgradeData(relicEffect).GetFilters();
             var eligible = owned.Where(card => filters.All(filter => filter.FilterCard(card, managers.GetRelicManager())))
+                .Where(card => !ExhaustUpgrade || card.GetTraitStates().All(trait =>
+                    trait is not CardTraitSelfPurge && trait is not CardTraitExhaustState))
                 .Take(abilityScenario || triggerScenario ? 1 : 2).ToArray();
             int requiredEligibleCards = abilityScenario || triggerScenario ? 1 : 2;
             if (eligible.Length != requiredEligibleCards)
@@ -63,7 +67,7 @@ namespace MonsterTrain2Poju.Probe
             log.LogInfo("RELIC-CARD-MODIFIERS-PREPARED unchanged original ReduceStarterCost, native acquire/repeat/reset and battle-generated cards; conditional=" +
                 (Environment.GetEnvironmentVariable("MT2_PROBE_CONDITIONAL_BATTLE_RELIC_UPGRADES") == "1") + ", status=" +
                 (Environment.GetEnvironmentVariable("MT2_PROBE_RELIC_CARD_STATUS_UPGRADE") == "1") + ", ability=" + abilityScenario +
-                ", trigger=" + triggerScenario + ".");
+                ", trigger=" + triggerScenario + ", exhaust=" + ExhaustUpgrade + ".");
 
             static RelicState CurrentRelic(AllGameManagers managers)
             {
@@ -120,6 +124,21 @@ namespace MonsterTrain2Poju.Probe
                 AccessTools.Field(typeof(CardUpgradeData), "traitDataUpgrades").SetValue(clone, new List<CardTraitData> { selfPurge });
                 var spellMask = UnityEngine.ScriptableObject.CreateInstance<CardUpgradeMaskData>();
                 spellMask.name = "PojuRelicSelfPurgeSpellMask";
+                AccessTools.Field(typeof(CardUpgradeMaskData), "cardType").SetValue(spellMask, CardType.Spell);
+                AccessTools.Field(typeof(CardUpgradeData), "filters").SetValue(clone, new List<CardUpgradeMaskData> { spellMask });
+                AccessTools.Field(typeof(CardUpgradeData), "isUnique").SetValue(clone, original.IsUnique());
+                AccessTools.Field(typeof(RelicEffectAddTempUpgrade), "_cardUpgradeData").SetValue(effect, clone);
+            }
+
+            static void InstallExhaustUpgrade(RelicEffectAddTempUpgrade effect)
+            {
+                CardUpgradeData original = UpgradeData(effect);
+                var clone = (CardUpgradeData)AccessTools.Method(typeof(object), "MemberwiseClone").Invoke(original, null)!;
+                var exhaust = new CardTraitData();
+                exhaust.Setup("CardTraitExhaustState");
+                AccessTools.Field(typeof(CardUpgradeData), "traitDataUpgrades").SetValue(clone, new List<CardTraitData> { exhaust });
+                var spellMask = UnityEngine.ScriptableObject.CreateInstance<CardUpgradeMaskData>();
+                spellMask.name = "PojuRelicExhaustSpellMask";
                 AccessTools.Field(typeof(CardUpgradeMaskData), "cardType").SetValue(spellMask, CardType.Spell);
                 AccessTools.Field(typeof(CardUpgradeData), "filters").SetValue(clone, new List<CardUpgradeMaskData> { spellMask });
                 AccessTools.Field(typeof(CardUpgradeData), "isUnique").SetValue(clone, original.IsUnique());

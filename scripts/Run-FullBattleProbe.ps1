@@ -125,6 +125,7 @@ param(
     [switch] $RelicCardStatusUpgrades,
     [switch] $RelicCardPiercingUpgrades,
     [switch] $RelicCardSelfPurgeUpgrades,
+    [switch] $RelicCardExhaustUpgrades,
     [switch] $RelicCardAbilityUpgrades,
     [switch] $RelicCardTriggerUpgrades,
     [switch] $OriginalRelicBatch,
@@ -204,6 +205,7 @@ if ($ConditionalBattleRelicUpgrades) { $BattleRelicUpgrades = $true }
 if ($RelicCardStatusUpgrades) { $BattleRelicUpgrades = $true }
 if ($RelicCardPiercingUpgrades) { $BattleRelicUpgrades = $true }
 if ($RelicCardSelfPurgeUpgrades) { $BattleRelicUpgrades = $true }
+if ($RelicCardExhaustUpgrades) { $BattleRelicUpgrades = $true; $Policy = 'units-spells-and-junk' }
 if ($RelicCardAbilityUpgrades) { $BattleRelicUpgrades = $true }
 if ($RelicCardTriggerUpgrades) { $BattleRelicUpgrades = $true }
 if ($MixedCardlessRelicOrder) { $SpawnStatusRelicsClones = $true }
@@ -312,6 +314,7 @@ $environment = @{
     MT2_PROBE_RELIC_CARD_STATUS_UPGRADE = $(if ($RelicCardStatusUpgrades) { '1' } else { '0' })
     MT2_PROBE_RELIC_CARD_PIERCING_UPGRADE = $(if ($RelicCardPiercingUpgrades) { '1' } else { '0' })
     MT2_PROBE_RELIC_CARD_SELF_PURGE_UPGRADE = $(if ($RelicCardSelfPurgeUpgrades) { '1' } else { '0' })
+    MT2_PROBE_RELIC_CARD_EXHAUST_UPGRADE = $(if ($RelicCardExhaustUpgrades) { '1' } else { '0' })
     MT2_PROBE_RELIC_CARD_ABILITY_UPGRADE = $(if ($RelicCardAbilityUpgrades) { '1' } else { '0' })
     MT2_PROBE_RELIC_CARD_TRIGGER_UPGRADE = $(if ($RelicCardTriggerUpgrades) { '1' } else { '0' })
     MT2_PROBE_GENERATION = $(if ($Generation) { '1' } else { '0' })
@@ -358,6 +361,7 @@ if ($MixedCardlessRelicOrder) {
 }
 if ($RelicCardPiercingUpgrades) { $environment['MT2_PROBE_MODIFIERS'] = 'relic-card-piercing-upgrades' }
 if ($RelicCardSelfPurgeUpgrades) { $environment['MT2_PROBE_MODIFIERS'] = 'relic-card-self-purge-upgrades' }
+if ($RelicCardExhaustUpgrades) { $environment['MT2_PROBE_MODIFIERS'] = 'relic-card-exhaust-upgrades' }
 if ($RelicCardAbilityUpgrades) { $environment['MT2_PROBE_MODIFIERS'] = 'relic-card-ability-upgrades' }
 if ($RelicCardTriggerUpgrades) { $environment['MT2_PROBE_MODIFIERS'] = 'relic-card-trigger-upgrades' }
 if ($IncantRelics) { $IncantRelic = $true }
@@ -524,7 +528,7 @@ if ($BattleRelicUpgrades) {
         @($modifierRows | ForEach-Object Dispatches | Where-Object UpgradeAdded).Count -eq 0) {
         throw 'Incomplete native relic manager card modifier acceptance.'
     }
-    if ($RelicCardStatusUpgrades -or $RelicCardPiercingUpgrades -or $RelicCardSelfPurgeUpgrades -or $RelicCardAbilityUpgrades -or $RelicCardTriggerUpgrades) {
+    if ($RelicCardStatusUpgrades -or $RelicCardPiercingUpgrades -or $RelicCardSelfPurgeUpgrades -or $RelicCardExhaustUpgrades -or $RelicCardAbilityUpgrades -or $RelicCardTriggerUpgrades) {
         Write-Output "NATIVE-RELIC-CARD-UPGRADE-CAPTURE PASS: $($modifierRows.Count) actual manager calls, temporary upgrade payload, reset and failed-eligibility paths."
     } else {
         Write-Output "NATIVE-RELIC-CARD-MODIFIER-CAPTURE PASS: $($modifierRows.Count) actual manager calls, original eligibility, reset/repeat/unique rejection and notifications."
@@ -541,6 +545,9 @@ if ($RelicCardPiercingUpgrades -and $trace.ModifierScenario -ne 'relic-card-pier
 }
 if ($RelicCardSelfPurgeUpgrades -and $trace.ModifierScenario -ne 'relic-card-self-purge-upgrades') {
     throw 'Relic card self-purge upgrade scenario was not recorded.'
+}
+if ($RelicCardExhaustUpgrades -and $trace.ModifierScenario -ne 'relic-card-exhaust-upgrades') {
+    throw 'Relic card exhaust upgrade scenario was not recorded.'
 }
 if ($RelicCardAbilityUpgrades -and $trace.ModifierScenario -ne 'relic-card-ability-upgrades') {
     throw 'Relic card ability upgrade scenario was not recorded.'

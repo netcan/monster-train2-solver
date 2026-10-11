@@ -1,6 +1,6 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-11): 224 binary archives, including 193
+Current accepted inventory (2026-10-11): 225 binary archives, including 194
 full battles and 31 component calibrations. Unchanged original relic evidence
 covers 55/224 catalog entries (24.55%); see
 [the owner evidence table](tests/fixtures/relic-coverage.md). Whole-battle
@@ -10,6 +10,10 @@ coverage and the optimal solver remain in progress.
 attack path through a complete battle and independent mid-battle replay. Its
 +15 room magic power is a controlled probe input; natural room-power sources
 and preview-copy lifecycle remain unverified.
+
+`full-battle-relic-card-exhaust-upgrades.mt2f` validates temporary relic
+Consume upgrades through played-card exhaustion. The fixture reuses a modified
+ReduceStarterCost payload and does not increase original relic-owner coverage.
 
 Fixed native regression inputs live in `tests/fixtures/` and are read by
 `scripts/Check-Models.ps1`. Historical `results/` paths below refer to local
@@ -92,7 +96,7 @@ are copied immutable values; independent child states can run on worker threads.
 | Statistic-driven damage traits | `DamageScalingModel` and `RoomCombatModel` | 63 native callbacks with complete refreshed contexts; trait order, replacement/addition, explicit-source upgrades, per-hit statistics and Boss/Pyre kill previews |
 | Dynamic statistic inputs | `CombatContext.QueryFrame` and turn/card transitions | 255 native damage callbacks and 48 decision boundaries; payment, combat, rollover, previews and settled terminal resources, plus multi-turn and parallel branches |
 | Card instance modifiers | `CardModifierModel` | Permanent/temporary ordered numeric upgrades, unit starting statuses, discard removal, play history and 256 native scalar calculations |
-| Relic card modifiers | `RelicCardModifierModel` and `CardUpgradeLifecycleModel` | Native ordering/conditions, numeric/status/IgnoreArmor/SelfPurge upgrades, unit-ability upgrades, generation and cardless births; reset retains pre-existing permanent and temporary upgrade lifecycle metadata. Other traits, card triggers, replacements and room-ability payloads remain explicitly rejected. |
+| Relic card modifiers | `RelicCardModifierModel` and `CardUpgradeLifecycleModel` | Native ordering/conditions, numeric/status/IgnoreArmor/SelfPurge/Consume upgrades, unit-ability upgrades, generation and cardless births; played Consume cards route to Exhausted. Reset retains pre-existing permanent and temporary upgrade lifecycle metadata. Other traits, card triggers, replacements and room-ability payloads remain explicitly rejected. |
 | Retained card references | `CombatContext.CardRegistry` | Observed card identities survive pile clearing; detached spawner upgrades/removal preserve ownership and parent isolation |
 | Standby dictionary allocation | `CardPileModel` | Captured entry slots and free-list order preserve native hole reuse after unit death; malformed layouts, distinct futures, terminal clear and parallel branches |
 | Shared secondary card piles | `CombatContext.OtherPiles` | Room and spell resolution carry standby/exhausted/eaten/purged/buffer state, immediate and deferred spawner returns, terminal clearing and immutable parallel branches |
