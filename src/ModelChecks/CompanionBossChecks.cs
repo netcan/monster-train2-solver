@@ -8,21 +8,23 @@ internal static class CompanionBossChecks
     {
         var rng = UnityRng.Seed(51);
         var relentless = new CombatStatus("relentless", 1, stackable: false, hidden: false, displayCategory: "Positive");
-        var context = new CombatContext(new([], [], [], rng, 0, []), rng, 0, 1, 10, [relentless]);
+        var context = new CombatContext(new([], [], [], rng, 0, []), rng, 0, 1, 10, [relentless],
+            allScenarioBossesDead: false);
         CombatTrigger Trigger(string kind, int gold, int id, bool remove, bool conditional = false) => new(kind, false, false, true, 1,
             [new("CardEffectRewardGold", gold, 0, "", 0, [], false)], false, stateId: id,
             conditions: conditional ? new(["relentless"], []) : null, removeOnRelentlessChange: remove);
         var boss = new CombatUnit(1, "boss", CombatTeam.Enemy, 7, 125, 125, true, false, true, [],
             [Trigger("OnTrainRoomLoop", 7, 0, true), Trigger("PostAscension", 11, 1, true), Trigger("OnShift", 13, 2, false),
                 Trigger("OnStatusEffectChanged", 17, 3, true, true), Trigger("OnStatusEffectChanged", 23, 4, false, true)],
-            isBoss: true, statusRegistry: [], nextTriggerId: 5);
+            modifiers: new(7, 0, 0, 1, 1, true, false, []), isBoss: true, statusRegistry: [], nextTriggerId: 5);
         var other = new CombatUnit(2, "other", CombatTeam.Enemy, 1, 10, 10, true, false, false, []);
         EnemySpawnState Root(int phase = 1, int floor = 2, bool loops = true, CombatUnit? actor = null,
             CombatUnit? otherUnit = null, IReadOnlyList<int>? pending = null, bool paired = false) => new(
             new TrainCombatState(Enumerable.Range(0, 4).Select(index => new RoomCombatState(index, false,
                 index == floor ? [actor ?? boss] : index == 1 ? [otherUnit ?? other] : paired && index == 3 ?
                     [new CombatUnit(3, "paired-boss", CombatTeam.Enemy, 9, 90, 90, true, false, true, [],
-                        [Trigger("OnShift", 19, 5, false)], isBoss: true, nextTriggerId: 6)] : [], [], context)).ToArray(),
+                        [Trigger("OnShift", 19, 5, false)], modifiers: new(9, 0, 0, 1, 1, true, false, []),
+                        isBoss: true, nextTriggerId: 6)] : [], [], context)).ToArray(),
                 paired ? [new(1, 1, true, loops, true), new(2, 1, true, false), new(3, 1, true, true, true)] :
                     [new(1, 1, true, loops, true), new(2, 1, true, false)], 7, context),
             [new EnemyWave([new EnemyGroup([])])], [0], phase, false, rng, pending?.Count > 0 ? pending.Max() + 1 : 3,
@@ -52,6 +54,22 @@ internal static class CompanionBossChecks
             pairedAlreadyRelentless.State.Rooms[3].Units.Single().Status("relentless") == null &&
             pairedAlreadyRelentless.State.Context!.Gold == 0,
             "Native first-match relentless gate incorrectly advanced to the second paired companion.");
+        var firstPairDeath = UnitHealthModel.Apply(pairedRoot.Train.Rooms[2], 1, 125, debuff: true);
+        Require(firstPairDeath.Supported && firstPairDeath.Outcome != RoomOutcome.BattleWon &&
+            firstPairDeath.State!.Context?.AllScenarioBossesDead != true,
+            "The first paired companion death incorrectly ended the battle.");
+        RoomCombatState[] afterFirstDeathRooms = pairedRoot.Train.Rooms.Select(room =>
+            room.RoomIndex == 2 ? firstPairDeath.State! : room).ToArray();
+        var survivors = afterFirstDeathRooms.SelectMany(room => room.Units).Select(unit => unit.Id).ToHashSet();
+        var afterFirstDeath = new TrainCombatState(afterFirstDeathRooms,
+            pairedRoot.Train.Movement.Where(rule => survivors.Contains(rule.UnitId)).ToArray(), pairedRoot.Train.EnemySlotsPerRoom,
+            firstPairDeath.State!.Context);
+        var finalPairDeath = RoomCombatModel.ApplyCardDamage(afterFirstDeath.Rooms[3], 3, 999);
+        Require(finalPairDeath.Supported && finalPairDeath.Outcome == RoomOutcome.BattleWon &&
+            finalPairDeath.State!.Context?.AllScenarioBossesDead == true,
+            $"The final paired companion death did not end the battle: supported={finalPairDeath.Supported}, outcome={finalPairDeath.Outcome}, " +
+            $"bossesDead={finalPairDeath.State?.Context?.AllScenarioBossesDead}, roster={string.Join(',', afterFirstDeath.Rooms[3].ActiveCompanionBossIds ?? Array.Empty<int>())}, " +
+            $"boss={afterFirstDeath.Rooms[3].Units.Single().IsBoss}, endFlag={afterFirstDeath.Rooms[3].Units.Single().EndsBattleOnDeath}, error={finalPairDeath.UnsupportedReason}.");
         var unpairedBoss = new CombatUnit(4, "unpaired-boss", CombatTeam.Enemy, 9, 90, 90, true, false, true, [], isBoss: true);
         Require(!CompanionBossModel.Resolve(Root(otherUnit: unpairedBoss), true).Supported,
             "Mixed companion/non-companion Boss routing was accepted.");

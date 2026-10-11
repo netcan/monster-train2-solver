@@ -25,15 +25,23 @@ namespace MonsterTrain2Poju.Model
         public TrainCombatState(IReadOnlyList<RoomCombatState> rooms, IReadOnlyList<EnemyMovement> movement,
             int enemySlotsPerRoom, CombatContext? context = null)
         {
-            Rooms = Array.AsReadOnly(rooms.OrderBy(room => room.RoomIndex).ToArray());
+            RoomCombatState[] orderedRooms = rooms.OrderBy(room => room.RoomIndex).ToArray();
             // Native capture enumerates movement by current floor/front-to-back order,
             // including new lower-floor waves before surviving enemies upstairs.
-            var positions = Rooms.SelectMany(room => room.Units.Where(unit => unit.Team == CombatTeam.Enemy))
+            var positions = orderedRooms.SelectMany(room => room.Units.Where(unit => unit.Team == CombatTeam.Enemy))
                 .Select((unit, index) => new { unit.Id, Index = index }).GroupBy(unit => unit.Id)
                 .ToDictionary(group => group.Key, group => group.First().Index);
             Movement = Array.AsReadOnly(movement.OrderBy(rule => positions.TryGetValue(rule.UnitId, out int position) ? position : int.MaxValue).ToArray());
             EnemySlotsPerRoom = enemySlotsPerRoom;
             Context = context;
+            var liveUnits = orderedRooms.SelectMany(room => room.Units).GroupBy(unit => unit.Id)
+                .ToDictionary(group => group.Key, group => group.First());
+            int[] companionBosses = Movement.Where(rule => rule.CompanionBoss).Select(rule => rule.UnitId).Distinct()
+                .Where(id => liveUnits.TryGetValue(id, out CombatUnit? unit) && unit.IsBoss == true &&
+                    (unit.Health > 0 || unit.Status("undying")?.Stacks > 0)).ToArray();
+            IReadOnlyList<int>? roster = companionBosses.Length == 0 ? null : Array.AsReadOnly(companionBosses);
+            Rooms = Array.AsReadOnly(orderedRooms.Select(room => new RoomCombatState(room.RoomIndex, room.Deployment,
+                room.Units, room.ExternalInteractions, room.Context, room.Preview, roster)).ToArray());
         }
     }
 
@@ -159,6 +167,7 @@ namespace MonsterTrain2Poju.Model
                     refreshPyre: (changed, placement) => RelicResourceModel.RefreshPyreAttack(rooms, changed, placement));
                 if (!result.Supported) return Unsupported(result.UnsupportedReason!);
                 rooms[index] = result.State!; context = result.State!.Context; results.Add(result);
+                SetCompanionBosses(rooms, result.State!.ActiveCompanionBossIds);
                 if (Terminal(result.Outcome))
                 { outcome = result.Outcome; break; }
             }
@@ -170,6 +179,7 @@ namespace MonsterTrain2Poju.Model
                     refreshPyre: (changed, placement) => RelicResourceModel.RefreshPyreAttack(rooms, changed, placement));
                 if (!result.Supported) { queueError = result.UnsupportedReason; return false; }
                 rooms[queued.RoomIndex] = result.State!; context = result.State!.Context; results.Add(result);
+                SetCompanionBosses(rooms, result.State!.ActiveCompanionBossIds);
                 if (Terminal(result.Outcome)) outcome = result.Outcome;
                 return true;
             }, queued =>
@@ -178,6 +188,7 @@ namespace MonsterTrain2Poju.Model
                     refreshPyre: (changed, placement) => RelicResourceModel.RefreshPyreAttack(rooms, changed, placement));
                 if (!result.Supported) { queueError = result.UnsupportedReason; return false; }
                 rooms[queued.RoomIndex] = result.State!; context = result.State!.Context; results.Add(result);
+                SetCompanionBosses(rooms, result.State!.ActiveCompanionBossIds);
                 return true;
             }, () =>
             {
@@ -204,6 +215,7 @@ namespace MonsterTrain2Poju.Model
                 if (!result.Supported) return Unsupported(result.UnsupportedReason!);
                 rooms[index] = result.State!; results.Add(result);
                 context = result.State!.Context;
+                SetCompanionBosses(rooms, result.State!.ActiveCompanionBossIds);
                 if (Terminal(result.Outcome))
                     return new TrainCombatResult(Freeze(source, rooms, context), result.Outcome, results);
                 if (context?.SpawnPoints != null)
@@ -403,6 +415,7 @@ namespace MonsterTrain2Poju.Model
                     refreshPyre: (changed, placement) => RelicResourceModel.RefreshPyreAttack(rooms, changed, placement));
                 if (!fired.Supported) { error = fired.UnsupportedReason; return false; }
                 rooms[queued.RoomIndex] = fired.State!; context = fired.State!.Context; results.Add(fired);
+                SetCompanionBosses(rooms, fired.State!.ActiveCompanionBossIds);
                 if (Terminal(fired.Outcome)) outcome = fired.Outcome;
                 return true;
             }, queued =>
@@ -415,7 +428,8 @@ namespace MonsterTrain2Poju.Model
                     : RoomCombatModel.SettleQueuedSpawner(WithContext(rooms[queued.RoomIndex], context), queued.Unit,
                     refreshPyre: (changed, placement) => RelicResourceModel.RefreshPyreAttack(rooms, changed, placement));
                 if (!returned.Supported) { error = returned.UnsupportedReason; return false; }
-                rooms[queued.RoomIndex] = returned.State!; context = returned.State!.Context; results.Add(returned); return true;
+                rooms[queued.RoomIndex] = returned.State!; context = returned.State!.Context; results.Add(returned);
+                SetCompanionBosses(rooms, returned.State!.ActiveCompanionBossIds); return true;
             }, () =>
             {
                 TrainCombatResult updated = EnchantmentWorldModel.UpdateAll(Freeze(source, rooms, context), queue.Add);
@@ -426,8 +440,14 @@ namespace MonsterTrain2Poju.Model
             return drained ? new TrainCombatResult(Freeze(source, rooms, context), outcome, results) : Unsupported(error ?? "Movement callback queue failed.");
         }
 
+        private static void SetCompanionBosses(RoomCombatState[] rooms, IReadOnlyList<int>? ids)
+        {
+            for (int index = 0; index < rooms.Length; index++) rooms[index] = rooms[index].WithCompanionBosses(ids);
+        }
+
         private static RoomCombatState WithContext(RoomCombatState room, CombatContext? context) =>
-            EnchantmentWorldModel.Refresh(new RoomCombatState(room.RoomIndex, room.Deployment, room.Units, room.ExternalInteractions, context, room.Preview));
+            EnchantmentWorldModel.Refresh(new RoomCombatState(room.RoomIndex, room.Deployment, room.Units,
+                room.ExternalInteractions, context, room.Preview, room.ActiveCompanionBossIds));
 
         private static TrainCombatState Freeze(TrainCombatState source, RoomCombatState[] rooms, CombatContext? context)
         {

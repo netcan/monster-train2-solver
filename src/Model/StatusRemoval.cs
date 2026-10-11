@@ -37,7 +37,8 @@ namespace MonsterTrain2Poju.Model
             var callbacks = new List<RoomCombatModel.QueuedCharacterTrigger>();
             if (id == "horde" && count < status.Stacks)
             {
-                var staged = new RoomCombatState(source.RoomIndex, source.Deployment, source.Units, source.ExternalInteractions, context, source.Preview);
+                var staged = new RoomCombatState(source.RoomIndex, source.Deployment, source.Units,
+                    source.ExternalInteractions, context, source.Preview, source.ActiveCompanionBossIds);
                 RoomCombatResult horde = HordeStatusModel.Change(staged, target, changed, count - status.Stacks);
                 if (!horde.Supported) return horde;
                 changed = horde.State!.Units.First(unit => unit.Id == targetId);
@@ -48,7 +49,8 @@ namespace MonsterTrain2Poju.Model
             if (queueError != null) return Unsupported(queueError);
             return EnchantmentWorldModel.StatusChanged(new RoomCombatResult(new RoomCombatState(source.RoomIndex, source.Deployment,
                 source.Units.Select(unit => unit.Id == targetId ? changed : unit)
-                    .Where(unit => unit.Id != targetId || target.Health <= 0 || changed.Health > 0).ToArray(), source.ExternalInteractions, context, source.Preview),
+                    .Where(unit => unit.Id != targetId || target.Health <= 0 || changed.Health > 0).ToArray(),
+                source.ExternalInteractions, context, source.Preview, source.ActiveCompanionBossIds),
                 RoomOutcome.Exchanged, 0, new List<CombatEvent>(), pendingCallbacks: callbacks), id,
                 target.Status("dormant") != null, update: count < status.Stacks);
         }

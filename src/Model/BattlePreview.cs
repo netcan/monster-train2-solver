@@ -75,7 +75,8 @@ namespace MonsterTrain2Poju.Model
             foreach (RoomCombatState room in preDiscard.State.Rooms.Reverse())
             {
                 RoomCombatResult preview = RoomCombatModel.Resolve(EnchantmentWorldModel.Refresh(new RoomCombatState(room.RoomIndex, room.Deployment,
-                    room.Units, room.ExternalInteractions, previewContext, preview: true)));
+                    room.Units, room.ExternalInteractions, previewContext, preview: true,
+                    activeCompanionBossIds: room.ActiveCompanionBossIds)));
                 if (!preview.Supported) return new TrainCombatResult(null, RoomOutcome.Unsupported,
                     Array.Empty<RoomCombatResult>(), "Battle preview: " + preview.UnsupportedReason);
                 ObserveSummons(preview.State!.Units.Concat(preview.RetainedUnits), preview.State.Context);

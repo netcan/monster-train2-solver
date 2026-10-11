@@ -27,7 +27,8 @@ namespace MonsterTrain2Poju.Model
                 var temporary = new CardModifiers(offsets, card.Temporary.Upgrades, card.Temporary.PersistentHealth, card.Temporary.ExternalInteractions);
                 context = context!.WithCard(card.WithModifiers(card.Permanent, temporary, refreshTraits: false));
             }
-            var state = new RoomCombatState(source.RoomIndex, source.Deployment, source.Units, source.ExternalInteractions, context, source.Preview);
+            var state = new RoomCombatState(source.RoomIndex, source.Deployment, source.Units,
+                source.ExternalInteractions, context, source.Preview, source.ActiveCompanionBossIds);
             if (amount <= 0) return new RoomCombatResult(state, RoomOutcome.Exchanged, 0, new List<CombatEvent>());
             int maxHealth = debuff ? Math.Max(0, checked(target.MaxHealth - amount)) : Math.Min(99999, checked(target.MaxHealth + amount));
             int health = debuff ? Math.Max(0, checked(target.Health - amount)) :
@@ -38,7 +39,8 @@ namespace MonsterTrain2Poju.Model
             // Lethal native debuffs sacrifice the unit without attributing damage to the played card.
             if (health <= 0) return RoomCombatModel.ApplyUnitModification(state, changed, refreshPyre: refreshPyre);
             var completed = new RoomCombatState(state.RoomIndex, state.Deployment,
-                state.Units.Select(unit => unit.Id == targetId ? changed : unit).ToArray(), state.ExternalInteractions, state.Context, state.Preview);
+                state.Units.Select(unit => unit.Id == targetId ? changed : unit).ToArray(),
+                state.ExternalInteractions, state.Context, state.Preview, state.ActiveCompanionBossIds);
             return debuff ? HordeStatusModel.SettleHealth(completed, targetId) :
                 new RoomCombatResult(completed, RoomOutcome.Exchanged, 0, new List<CombatEvent>());
         }

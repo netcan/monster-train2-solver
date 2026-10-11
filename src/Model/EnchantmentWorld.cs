@@ -75,7 +75,7 @@ namespace MonsterTrain2Poju.Model
             return Room(source, source.Context!.WithEnchantments(world));
         }
         internal static RoomCombatState Room(RoomCombatState source, CombatContext? context) => new RoomCombatState(source.RoomIndex,
-            source.Deployment, source.Units, source.ExternalInteractions, context, source.Preview);
+            source.Deployment, source.Units, source.ExternalInteractions, context, source.Preview, source.ActiveCompanionBossIds);
 
         internal static TrainCombatState Rebase(TrainCombatState source, bool? allowUpdates = null, bool? preview = null, UnityRng? testRng = null)
         {

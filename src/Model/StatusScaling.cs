@@ -134,7 +134,8 @@ namespace MonsterTrain2Poju.Model
             var queue = new List<RoomCombatModel.QueuedCharacterTrigger>();
             if (added.Id == "horde" && count > old)
             {
-                var staged = new RoomCombatState(source.RoomIndex, source.Deployment, source.Units, source.ExternalInteractions, context, source.Preview);
+                var staged = new RoomCombatState(source.RoomIndex, source.Deployment, source.Units,
+                    source.ExternalInteractions, context, source.Preview, source.ActiveCompanionBossIds);
                 RoomCombatResult horde = HordeStatusModel.Change(staged, target, changed, count - old, suppressHordeSpawnCallbacks);
                 if (!horde.Supported) return horde;
                 changed = horde.State!.Units.First(unit => unit.Id == targetId); context = horde.State.Context;
@@ -145,7 +146,8 @@ namespace MonsterTrain2Poju.Model
             callbackError = StatusCallbackModel.FilterPurifyQueue(context, queue);
             if (callbackError != null) return Unsupported(callbackError);
             RoomCombatResult applied = EnchantmentWorldModel.StatusChanged(new RoomCombatResult(new RoomCombatState(source.RoomIndex, source.Deployment,
-                source.Units.Select(unit => unit.Id == targetId ? changed : unit).ToArray(), source.ExternalInteractions, context, source.Preview),
+                source.Units.Select(unit => unit.Id == targetId ? changed : unit).ToArray(),
+                source.ExternalInteractions, context, source.Preview, source.ActiveCompanionBossIds),
                 RoomOutcome.Exchanged, 0, new List<CombatEvent>(), pendingCallbacks: queue), added.Id, target.Status("dormant") != null, update: true);
             if (applied.Supported && count > old && fromPermanentUpgrade && !spawnEffect)
             {
@@ -177,7 +179,8 @@ namespace MonsterTrain2Poju.Model
             foreach (string id in keys)
             {
                 RoomCombatState scope = inRoom ? state : new RoomCombatState(state.RoomIndex, state.Deployment,
-                    state.Units.Concat(new[] { actor }).ToArray(), state.ExternalInteractions, state.Context, state.Preview);
+                    state.Units.Concat(new[] { actor }).ToArray(), state.ExternalInteractions, state.Context,
+                    state.Preview, state.ActiveCompanionBossIds);
                 RoomCombatResult removed = StatusRemovalModel.Remove(scope, targetId, id, -1);
                 if (!removed.Supported) return removed;
                 actor = removed.State!.Units.FirstOrDefault(unit => unit.Id == targetId) ??
@@ -188,7 +191,7 @@ namespace MonsterTrain2Poju.Model
                 if (!inRoom) retained[targetId] = actor;
                 state = new RoomCombatState(state.RoomIndex, state.Deployment,
                     removed.State.Units.Where(unit => inRoom || unit.Id != targetId).ToArray(),
-                    removed.State.ExternalInteractions, removed.State.Context, state.Preview);
+                    removed.State.ExternalInteractions, removed.State.Context, state.Preview, state.ActiveCompanionBossIds);
                 if (!inRoom) state = EnchantmentWorldModel.Sync(state, retained.Values.ToArray());
                 callbacks.AddRange(removed.PendingCallbacks); events.AddRange(removed.Events);
             }

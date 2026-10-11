@@ -101,7 +101,8 @@ namespace MonsterTrain2Poju.Model
                 UnitUpgradeScalingResult scaled = UnitUpgradeScalingModel.Apply(source.Context, sourceCardId, upgrade, triggerKind);
                 if (!scaled.Supported) return Unsupported(scaled.UnsupportedReason!);
                 upgrade = scaled.Upgrade!;
-                source = new RoomCombatState(source.RoomIndex, source.Deployment, source.Units, source.ExternalInteractions, scaled.Context, source.Preview);
+                source = new RoomCombatState(source.RoomIndex, source.Deployment, source.Units,
+                    source.ExternalInteractions, scaled.Context, source.Preview, source.ActiveCompanionBossIds);
             }
             foreach (CombatStatus status in upgrade.Statuses)
             {
@@ -220,7 +221,8 @@ namespace MonsterTrain2Poju.Model
                     var rule = new AbilityChangeRule(upgrade.AbilityUpgrade.Definition, equipmentSourceCardId > 0, false,
                         upgrade.AbilityUpgrade.CommonTriggers);
                     var staged = new RoomCombatState(state.RoomIndex, state.Deployment,
-                        state.Units.Select(unit => unit.Id == targetId ? Snapshot() : unit).ToArray(), state.ExternalInteractions, state.Context, state.Preview);
+                        state.Units.Select(unit => unit.Id == targetId ? Snapshot() : unit).ToArray(),
+                        state.ExternalInteractions, state.Context, state.Preview, state.ActiveCompanionBossIds);
                     var ability = AbilityLifecycleModel.Apply(staged, targetId, rule, remove, deferCallbacks: deferAbilityCallbacks);
                     if (!ability.Supported) return ability;
                     state = ability.State!; statusCallbacks.AddRange(ability.PendingCallbacks);
@@ -261,7 +263,8 @@ namespace MonsterTrain2Poju.Model
                             StatusAttackDamageResult attack = StatusAttackDamageModel.Change(state.Context, Snapshot(),
                                 existing ?? target.RegisteredStatus(status.Id) ?? status, oldStacks - stacks, adding: false);
                             if (!attack.Supported) return Unsupported(attack.UnsupportedReason!);
-                            state = new RoomCombatState(state.RoomIndex, state.Deployment, state.Units, state.ExternalInteractions, attack.Context, state.Preview);
+                            state = new RoomCombatState(state.RoomIndex, state.Deployment, state.Units,
+                                state.ExternalInteractions, attack.Context, state.Preview, state.ActiveCompanionBossIds);
                             Refresh(attack.Unit!);
                         }
                         if (status.Id == "horde" && (removingStatus ? stacks < oldStacks : stacks > oldStacks))
@@ -290,7 +293,8 @@ namespace MonsterTrain2Poju.Model
                 if (partial && !remove) return Match(state);
 
                 RoomCombatState Stage() => new RoomCombatState(state.RoomIndex, state.Deployment,
-                    state.Units.Select(unit => unit.Id == targetId ? Snapshot() : unit).ToArray(), state.ExternalInteractions, state.Context, state.Preview);
+                    state.Units.Select(unit => unit.Id == targetId ? Snapshot() : unit).ToArray(),
+                    state.ExternalInteractions, state.Context, state.Preview, state.ActiveCompanionBossIds);
                 void Refresh(CombatUnit actor)
                 {
                     target = actor; nextModifiers = actor.Modifiers!;
@@ -339,7 +343,8 @@ namespace MonsterTrain2Poju.Model
                 else temporary = accumulatedExistingUpgrade ? AccumulateExisting(temporary, upgrade) : Add(temporary, upgrade);
                 var changed = card.WithModifiers(permanent, temporary);
                 CombatContext context = state.Context.WithCard(changed);
-                state = new RoomCombatState(state.RoomIndex, state.Deployment, state.Units, state.ExternalInteractions, context, state.Preview);
+                state = new RoomCombatState(state.RoomIndex, state.Deployment, state.Units,
+                    state.ExternalInteractions, context, state.Preview, state.ActiveCompanionBossIds);
             }
             return Match(state);
         }
