@@ -1,7 +1,7 @@
 # Original relic coverage evidence
 
-As of 2026-10-11, **55 distinct original collectable relics / 224 catalog entries
-(24.55%)** have accepted native full-battle evidence. This counts unchanged relic
+As of 2026-10-11, **57 distinct original collectable relics / 224 catalog entries
+(25.45%)** have accepted native full-battle evidence. This counts unchanged relic
 definitions whose effects actually ran, including their original filters and
 conditions. Test cards, unit triggers and carrier subtypes may be authored to
 exercise those effects; the claim covers the recorded paths, not every possible
@@ -14,18 +14,18 @@ five now have accepted original-owner evidence. Both catalog owners of
 Rage and Frostbite consumers. Unknown status families and other effects on the
 remaining owners still require modeling and native proof.
 
-All 15 source archives below report game `2.2.1`, module MVID
+All 16 source archives below report game `2.2.1`, module MVID
 `8fb07b96-f4db-4d2b-884d-c00536d6ccf4`, `NativeWon=true`, and zero
 `CaptureFailures`, `Mismatches`, `Unsupported` and `Pending`. Archive provenance,
 byte lengths and SHA-256 hashes are recorded in [manifest.tsv](manifest.tsv).
 The floor-capacity batch passes strict native acceptance, complete-fixture checks,
 independent full-battle replay and six directly affected old-fixture regressions.
-The accepted inventory is 227 archives: 196 battles and 31 component
-calibrations. All 227 archive names, byte lengths and SHA-256 hashes match the
-manifest and curated list, with no JSON companions. A full 227-archive replay
+The accepted inventory is 229 archives: 198 battles and 31 component
+calibrations. All 229 archive names, byte lengths and SHA-256 hashes match the
+manifest and curated list, with no JSON companions. A full 229-archive replay
 remains deferred to a milestone. The Mageblade status/cache/attack path has an
 accepted native battle archive, but Mageblade is not a collectable relic and is
-not included in the 55/224 owner count.
+not included in the 57/224 owner count.
 
 | AssetKey | DataId | Accepted archive | Actual effect witness |
 | --- | --- | --- | --- |
@@ -41,6 +41,8 @@ not included in the 55/224 owner count.
 | `SpawnWithRage` | `55ca34e9-047b-4b93-b390-d8d228a43261` | [original relic batch][batch] | All five player births gain 3 Rage (`buff`). Example: record 0, unit 2, absent → 3. |
 | `UnitsGainLifesteal` | `a6b0b657-8893-4cc8-bc62-ec09544c4306` | [original relic batch][batch] | All five player births gain 2 Lifesteal (`lifesteal`). Example: record 0, unit 2, absent → 2. |
 | `ContingencyPlans` | `0278309e-d15c-4041-a8dc-b76f360f306b` | [original relic batch][batch] | Two Monstrosity births gain 7 Spikes; the other three player births do not. Records 0–1 accept the authored Monstrosity carrier; record 2 rejects the other carrier. The relic and subtype filter are unchanged. |
+| `StingBuffPower` | `0f6d3edc-d212-4e3a-877f-e9eb2ac78339` | [original Sting relics][sting] | Its unchanged unique `OnlyStings` upgrade adds 20 damage. Three played Sting cards retain the upgrade; all 53 combined native manager calls match repeat/reset/filter behavior and 32 immutable branches. |
+| `StingBuffPiercing` | `2d367bde-7616-4804-a6c9-910060ae5fd7` | [original Sting relics][sting] | Its unchanged unique `OnlyStings` upgrade adds 10 damage and IgnoreArmor. The same three plays resolve to +30 damage with IgnoreArmor; its `RelicEffectAddCardsNull` companion is tooltip-only. |
 | `ImpDamageBuff` | `94595f3a-4624-4408-977d-b166a98f23d2` | [original unit relic batch][units] | Original unique Demon-filtered upgrade adds Multistrike 1. Twenty-seven native exchange observations contain at least two attacks by a Demon carrier, with complete combat state matching. |
 | `StewardSacrificeDamage` | `f6a4e405-98b9-4eeb-bae1-50cb204d12ed` | [original unit relic batch][units] | Six original `StewardSacrificeDamageAbility` activations remove their own units; three damage enemies. Three paid source cards exhaust and three cardless source copies retire from ownership. All queued callbacks and physical position changes match. |
 | `MorselsGetDamageShield` | `d1daea7e-3346-47df-a756-c839b044e5f3` | [original unit relic batch][units] | Three paid Morsel births retain their starting shield without repeating the spawn effect; three cardless births gain one additional shield. One native exchange consumes a shield while preserving its owner's health. Both original effects and filters remain unchanged. |
@@ -176,13 +178,14 @@ The 61-second battle finishes at Pyre 123 with one action, seven EndTurns and
 50 stages. Whole-battle/mid-battle policies each pass 16 parallel branches,
 and 32 operation branches preserve their immutable parents and RNG.
 
-No additional original relic is counted for the status, piercing, SelfPurge,
-unit-ability, OnKill or conditional modifier fixtures. Their preparation in
+No additional original relic is counted for the status, SelfPurge, unit-ability,
+OnKill or conditional modifier fixtures. Their preparation in
 [RelicCardModifierScenario](../../src/Probe/RelicCardModifierScenario.cs) replaces
 `ReduceStarterCost`'s runtime upgrade or adds a condition. In particular,
-`StingBuffPiercing`, `StewardSacrificeDamage_Upgrade` and
-`PyreHeartSavagery_UpgradeData` are useful original **payload** evidence, not
-validation of their complete original owner relics in those earlier archives.
+`StingBuffPiercing` in the earlier piercing archive remains payload evidence,
+not owner evidence; the dedicated archive above now validates both unchanged
+Sting owners. `StewardSacrificeDamage_Upgrade` and `PyreHeartSavagery_UpgradeData`
+remain original payload evidence only.
 The new unit relic batch independently validates the unchanged Steward owner.
 The ability-Incant fixture's
 `PojuNativeAbilityIncantRelic` is authored and is also excluded. The always-present
@@ -253,3 +256,4 @@ include the starter-cost, cardless or four-artifact batch evidence above.
 [resources]: full-battle-original-resource-relics.mt2f
 [pyreRefresh]: full-battle-pyre-resource-refresh.mt2f
 [floorCapacity]: full-battle-original-floor-capacity-relics.mt2f
+[sting]: full-battle-original-sting-relics.mt2f

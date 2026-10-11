@@ -15,7 +15,7 @@ The default command still checks the full curated inventory.
 For routine changes, run only the new and directly affected fixtures with
 `-Fixture`; run the full inventory at completed milestones and before delivery.
 
-Current inventory is 227 archives: 196 accepted battles and 31 component
+Current inventory is 229 archives: 198 accepted battles and 31 component
 calibrations. `full-battle-relic-card-status-upgrades.mt2f` verifies a native
 temporary card status upgrade reaches the unit summoned by that card.
 `full-battle-sacrifice-effects.mt2f` covers native `CardEffectSacrifice` target
@@ -2677,4 +2677,22 @@ Full-inventory replay remains deferred to a completed milestone.
 
 ```powershell
 pwsh -NoProfile -Command "& './scripts/Check-Models.ps1' -Fixture @('full-battle-generation-permanent-consume.mt2f','full-battle-generation.mt2f','full-battle-permanent-consume-hand-upgrades.mt2f')"
+```
+
+### Original Sting relic owners
+
+`full-battle-original-sting-relics.mt2f` acquires the unchanged
+`StingBuffPower` and `StingBuffPiercing` relics, adds a native Sting, and plays
+it three times. The complete battle has 48 matched combat stages, 19 actions,
+six EndTurns and wins at Pyre 79. All 53 relic manager calls match the exact
+upgrade, filter, notification and reset states; the plays retain +30 damage and
+IgnoreArmor. The archive also passes mid-battle replay and 16 immutable policy
+branches. Its 30,258 bytes contain 4,886 unique nodes, SHA-256
+`dbe26dd88f9410ecd2a2b75f441be4ba206beff9c565aea2470de36775aece0a`, and no
+JSON source. The two relic owners bring native full-battle evidence to 57/224
+(25.45%); inventory is 229 archives: 198 battles and 31 component calibrations.
+Full-inventory replay remains deferred to a completed milestone.
+
+```powershell
+pwsh -NoProfile -Command "& './scripts/Check-Models.ps1' -Fixture @('full-battle-original-sting-relics.mt2f','full-battle-relic-card-piercing-upgrades.mt2f','full-battle-original-relic-batch.mt2f')"
 ```
