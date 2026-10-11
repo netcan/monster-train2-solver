@@ -344,57 +344,57 @@ namespace MonsterTrain2Poju.Model
         };
         internal static bool KnowsStatus(string id) => KnownStatuses.Contains(id);
 
-        public static RoomCombatResult Exchange(RoomCombatState state) => Run(state, false);
-        public static RoomCombatResult Resolve(RoomCombatState state) => Run(state, true);
+        public static RoomCombatResult Exchange(RoomCombatState state, Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null) => Run(state, false, refreshPyre: refreshPyre);
+        public static RoomCombatResult Resolve(RoomCombatState state, Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null) => Run(state, true, refreshPyre: refreshPyre);
 
         public static RoomCombatResult ApplyUnitPostCombat(RoomCombatState state, IReadOnlyList<int> cannotAttackOrHeal,
-            IReadOnlyList<int> cannotFireTriggers)
+            IReadOnlyList<int> cannotFireTriggers, Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null)
         {
             string? error = Validate(state);
             if (error != null) return new RoomCombatResult(null, RoomOutcome.Unsupported, 0, new List<CombatEvent>(), error);
-            return new Engine(state, new List<CombatEvent>()).UnitPostCombat(cannotAttackOrHeal, cannotFireTriggers);
+            return new Engine(state, new List<CombatEvent>(), refreshPyre: refreshPyre).UnitPostCombat(cannotAttackOrHeal, cannotFireTriggers);
         }
 
-        public static RoomCombatResult ApplyUnitTurn(RoomCombatState state, int unitId)
+        public static RoomCombatResult ApplyUnitTurn(RoomCombatState state, int unitId, Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null)
         {
             string? error = Validate(state);
             if (error != null || !state.Units.Any(unit => unit.Id == unitId))
                 return new RoomCombatResult(null, RoomOutcome.Unsupported, 0, new List<CombatEvent>(),
                     error ?? "Unit turn requires a living actor in the room.");
-            return new Engine(state, new List<CombatEvent>()).UnitTurn(unitId);
+            return new Engine(state, new List<CombatEvent>(), refreshPyre: refreshPyre).UnitTurn(unitId);
         }
 
-        public static RoomCombatResult ApplyTeamTurnBegin(RoomCombatState state, CombatTeam team)
+        public static RoomCombatResult ApplyTeamTurnBegin(RoomCombatState state, CombatTeam team, Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null)
         {
             string? error = Validate(state);
             if (error != null || team != CombatTeam.Enemy && team != CombatTeam.Player)
                 return new RoomCombatResult(null, RoomOutcome.Unsupported, 0, new List<CombatEvent>(), error ?? "Invalid combat team.");
-            return new Engine(state, new List<CombatEvent>()).TeamTurnBegin(team);
+            return new Engine(state, new List<CombatEvent>(), refreshPyre: refreshPyre).TeamTurnBegin(team);
         }
 
-        public static RoomCombatResult ApplyEndTurnPreHandDiscard(RoomCombatState state, int unitId)
-            => ApplyCharacterPhase(state, unitId, "EndTurnPreHandDiscard");
+        public static RoomCombatResult ApplyEndTurnPreHandDiscard(RoomCombatState state, int unitId, Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null)
+            => ApplyCharacterPhase(state, unitId, "EndTurnPreHandDiscard", refreshPyre: refreshPyre);
 
-        public static RoomCombatResult ApplyPreCombat(RoomCombatState state, int unitId)
-            => ApplyCharacterPhase(state, unitId, "PreCombat");
+        public static RoomCombatResult ApplyPreCombat(RoomCombatState state, int unitId, Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null)
+            => ApplyCharacterPhase(state, unitId, "PreCombat", refreshPyre: refreshPyre);
 
-        private static RoomCombatResult ApplyCharacterPhase(RoomCombatState state, int unitId, string kind)
+        private static RoomCombatResult ApplyCharacterPhase(RoomCombatState state, int unitId, string kind, Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null)
         {
             var queue = new List<QueuedCharacterTrigger>();
-            RoomCombatResult result = ApplyCharacterPhase(state, unitId, kind, queue.Add);
+            RoomCombatResult result = ApplyCharacterPhase(state, unitId, kind, queue.Add, refreshPyre: refreshPyre);
             if (!result.Supported) return result;
             var events = result.Events.ToList();
             RoomOutcome outcome = result.Outcome;
             bool drained = DrainCharacterQueue(queue, queued =>
             {
-                result = ApplyQueuedCharacterTrigger(result.State!, queued, queue.Add);
+                result = ApplyQueuedCharacterTrigger(result.State!, queued, queue.Add, refreshPyre: refreshPyre);
                 if (!result.Supported) return false;
                 events.AddRange(result.Events);
                 if (result.Outcome != RoomOutcome.Exchanged) outcome = result.Outcome;
                 return true;
             }, queued =>
             {
-                result = SettleQueuedSpawner(result.State!, queued.Unit);
+                result = SettleQueuedSpawner(result.State!, queued.Unit, refreshPyre: refreshPyre);
                 return result.Supported;
             }, () =>
             {
@@ -506,22 +506,22 @@ namespace MonsterTrain2Poju.Model
             return Drain();
         }
 
-        internal static RoomCombatResult ApplyCharacterPhase(RoomCombatState state, int unitId, string kind, Action<QueuedCharacterTrigger> enqueue)
+        internal static RoomCombatResult ApplyCharacterPhase(RoomCombatState state, int unitId, string kind, Action<QueuedCharacterTrigger> enqueue, Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null)
         {
             string? error = Validate(state);
             if (error != null || !state.Units.Any(unit => unit.Id == unitId))
                 return new RoomCombatResult(null, RoomOutcome.Unsupported, 0, new List<CombatEvent>(),
                     error ?? "Character phases require a living character actor.");
-            return new Engine(state, new List<CombatEvent>(), enqueueCharacterTrigger: enqueue).CharacterPhase(unitId, kind);
+            return new Engine(state, new List<CombatEvent>(), enqueueCharacterTrigger: enqueue, refreshPyre: refreshPyre).CharacterPhase(unitId, kind);
         }
 
-        internal static RoomCombatResult ApplyQueuedCharacterTrigger(RoomCombatState state, QueuedCharacterTrigger queued, Action<QueuedCharacterTrigger> enqueue)
-            => new Engine(state, new List<CombatEvent>(), enqueueCharacterTrigger: enqueue, resetPreviewTriggers: false).QueuedTrigger(queued);
+        internal static RoomCombatResult ApplyQueuedCharacterTrigger(RoomCombatState state, QueuedCharacterTrigger queued, Action<QueuedCharacterTrigger> enqueue, Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null)
+            => new Engine(state, new List<CombatEvent>(), enqueueCharacterTrigger: enqueue, resetPreviewTriggers: false, refreshPyre: refreshPyre).QueuedTrigger(queued);
 
         // Resume a single native effect after trigger preflight/marking and source
         // caching. Its child callbacks stay queued until the caller resumes.
         internal static RoomCombatResult ApplyNativeTriggeredSummon(RoomCombatState state, CombatUnit actor,
-            int triggerStateId, int effectIndex, out TriggeredSummonRule? resultingRule)
+            int triggerStateId, int effectIndex, out TriggeredSummonRule? resultingRule, Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null)
         {
             resultingRule = null;
             CombatTrigger? trigger = actor.Triggers.FirstOrDefault(item => item.StateId == triggerStateId);
@@ -537,32 +537,32 @@ namespace MonsterTrain2Poju.Model
             if (error != null) return new RoomCombatResult(null, RoomOutcome.Unsupported, 0, new List<CombatEvent>(), error);
             var callbacks = new List<QueuedCharacterTrigger>();
             RoomCombatResult result = new Engine(state, new List<CombatEvent>(), enqueueCharacterTrigger: callbacks.Add,
-                resetPreviewTriggers: false).TriggeredSummonEffect(actor, triggerStateId, effectIndex, out resultingRule);
+                resetPreviewTriggers: false, refreshPyre: refreshPyre).TriggeredSummonEffect(actor, triggerStateId, effectIndex, out resultingRule);
             if (!result.Supported) resultingRule = null;
             return new RoomCombatResult(result.State, result.Outcome, result.Rounds, result.Events.ToList(),
                 result.UnsupportedReason, callbacks, result.RetainedUnits, result.Dispatches);
         }
 
         internal static RoomCombatResult QueueSacrifice(RoomCombatState state, CombatUnit unit, int sourceCardId, Action<QueuedCharacterTrigger> enqueue,
-            bool whileRunningQueue = false, bool doNotFullyRemove = false)
-            => new Engine(state, new List<CombatEvent>(), deferSpawnerExhaustion: !whileRunningQueue, enqueueCharacterTrigger: enqueue, resetPreviewTriggers: false)
+            bool whileRunningQueue = false, bool doNotFullyRemove = false, Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null)
+            => new Engine(state, new List<CombatEvent>(), deferSpawnerExhaustion: !whileRunningQueue, enqueueCharacterTrigger: enqueue, resetPreviewTriggers: false, refreshPyre: refreshPyre)
                 .SacrificeRetained(unit, sourceCardId, whileRunningQueue, doNotFullyRemove, returnSpawnerAfterQueue: !whileRunningQueue);
 
-        internal static RoomCombatResult SettleQueuedSpawner(RoomCombatState state, CombatUnit unit, bool preservePhysicalPoint = false)
-            => new Engine(state, new List<CombatEvent>(), resetPreviewTriggers: false).ReturnQueuedSpawner(unit,
+        internal static RoomCombatResult SettleQueuedSpawner(RoomCombatState state, CombatUnit unit, bool preservePhysicalPoint = false, Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null)
+            => new Engine(state, new List<CombatEvent>(), resetPreviewTriggers: false, refreshPyre: refreshPyre).ReturnQueuedSpawner(unit,
                 preservePhysicalPoint: preservePhysicalPoint);
 
-        internal static RoomCombatResult SettleQueuedSpawnerAndCenter(RoomCombatState state, CombatUnit unit)
-            => new Engine(state, new List<CombatEvent>(), resetPreviewTriggers: false).ReturnQueuedSpawner(unit, true);
+        internal static RoomCombatResult SettleQueuedSpawnerAndCenter(RoomCombatState state, CombatUnit unit, Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null)
+            => new Engine(state, new List<CombatEvent>(), resetPreviewTriggers: false, refreshPyre: refreshPyre).ReturnQueuedSpawner(unit, true);
 
-        internal static RoomCombatResult SettlePendingDeathStatistics(RoomCombatState state, CombatUnit unit)
-            => new Engine(state, new List<CombatEvent>(), resetPreviewTriggers: false).PendingDeathStatistics(unit);
+        internal static RoomCombatResult SettlePendingDeathStatistics(RoomCombatState state, CombatUnit unit, Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null)
+            => new Engine(state, new List<CombatEvent>(), resetPreviewTriggers: false, refreshPyre: refreshPyre).PendingDeathStatistics(unit);
 
         public static RoomCombatResult ApplySpawnTriggers(RoomCombatState state, int unitId, bool fromCard,
-            IReadOnlyList<CombatStatus>? startingApplications = null)
-            => ApplySpawnTriggers(state, unitId, fromCard, startingApplications, null);
+            IReadOnlyList<CombatStatus>? startingApplications = null, Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null)
+            => ApplySpawnTriggers(state, unitId, fromCard, startingApplications, null, refreshPyre: refreshPyre);
         internal static RoomCombatResult ApplySpawnTriggers(RoomCombatState state, int unitId, bool fromCard,
-            IReadOnlyList<CombatStatus>? startingApplications, Action<QueuedCharacterTrigger>? enqueue)
+            IReadOnlyList<CombatStatus>? startingApplications, Action<QueuedCharacterTrigger>? enqueue, Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null)
         {
             string? error = Validate(state);
             CombatUnit? unit = state.Units.FirstOrDefault(item => item.Id == unitId);
@@ -570,11 +570,11 @@ namespace MonsterTrain2Poju.Model
                 return new RoomCombatResult(null, RoomOutcome.Unsupported, 0, new List<CombatEvent>(),
                     error ?? "Spawn triggers require a living new unit and its source card identity.");
             return new Engine(state, new List<CombatEvent>(), pendingSummonCardId: fromCard ? unit.SpawnerCardId : 0,
-                enqueueCharacterTrigger: enqueue).Spawn(unitId, fromCard, startingApplications);
+                enqueueCharacterTrigger: enqueue, refreshPyre: refreshPyre).Spawn(unitId, fromCard, startingApplications);
         }
 
         internal static RoomCombatResult PrepareSpawnTriggers(RoomCombatState state, int unitId, bool fromCard,
-            IReadOnlyList<CombatStatus> startingApplications)
+            IReadOnlyList<CombatStatus> startingApplications, Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null)
         {
             string? error = Validate(state);
             if (error != null || !state.Units.Any(unit => unit.Id == unitId))
@@ -583,20 +583,20 @@ namespace MonsterTrain2Poju.Model
             if (state.Context?.QueryFrame?.MoonPhase is int moon && (moon == 1 || moon == 2))
                 callbacks.Add(new QueuedCharacterTrigger(state.RoomIndex, state.Units.Single(unit => unit.Id == unitId), moon == 1 ? "OnMoonShade" : "OnMoonLit"));
             RoomCombatResult result = new Engine(state, new List<CombatEvent>(), pendingSummonCardId: fromCard ?
-                state.Units.Single(unit => unit.Id == unitId).SpawnerCardId : 0, enqueueCharacterTrigger: callbacks.Add)
+                state.Units.Single(unit => unit.Id == unitId).SpawnerCardId : 0, enqueueCharacterTrigger: callbacks.Add, refreshPyre: refreshPyre)
                 .Spawn(unitId, fromCard, startingApplications, prepareOnly: true);
             return new RoomCombatResult(result.State, result.Outcome, 0, result.Events.ToList(), result.UnsupportedReason, callbacks);
         }
 
         public static RoomCombatResult ApplyCardDamage(RoomCombatState state, int targetId, int damage, int sourceCardId = 0,
-            bool deferSpawnerExhaustion = false, int attackerUnitId = 0) => ApplyCardDamage(state, targetId, damage, sourceCardId, deferSpawnerExhaustion, true, attackerUnitId);
+            bool deferSpawnerExhaustion = false, int attackerUnitId = 0, Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null) => ApplyCardDamage(state, targetId, damage, sourceCardId, deferSpawnerExhaustion, true, attackerUnitId, refreshPyre: refreshPyre);
 
         internal static RoomCombatResult ApplyCardDamageAfterTraits(RoomCombatState state, int targetId, int damage, int sourceCardId,
-            bool deferSpawnerExhaustion, int attackerUnitId = 0) => ApplyCardDamage(state, targetId, damage, sourceCardId, deferSpawnerExhaustion, false, attackerUnitId);
+            bool deferSpawnerExhaustion, int attackerUnitId = 0, Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null) => ApplyCardDamage(state, targetId, damage, sourceCardId, deferSpawnerExhaustion, false, attackerUnitId, refreshPyre: refreshPyre);
 
         internal static RoomCombatResult ApplyNativeCardDamageAfterTraits(RoomCombatState state, int targetId, int damage, int sourceCardId,
             int attackerUnitId = 0,
-            Func<RoomCombatState, RoomCombatResult>? finishDamageQueue = null)
+            Func<RoomCombatState, RoomCombatResult>? finishDamageQueue = null, Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null)
         {
             string? error = Validate(state);
             if (error != null || damage < 0 || state.Preview || state.Context?.SpawnPoints == null ||
@@ -604,27 +604,27 @@ namespace MonsterTrain2Poju.Model
                 attackerUnitId != 0 && !state.Units.Any(unit => unit.Id == attackerUnitId))
                 return new RoomCombatResult(null, RoomOutcome.Unsupported, 0, new List<CombatEvent>(), error ?? "Invalid native spell damage phase.");
             return new Engine(state, new List<CombatEvent>(), nativeCardDamage: true,
-                finishDamageQueue: finishDamageQueue)
+                finishDamageQueue: finishDamageQueue, refreshPyre: refreshPyre)
                 .CardDamage(targetId, damage, sourceCardId, false, attackerUnitId);
         }
 
         private static RoomCombatResult ApplyCardDamage(RoomCombatState state, int targetId, int damage, int sourceCardId,
-            bool deferSpawnerExhaustion, bool applyTraits, int attackerUnitId)
+            bool deferSpawnerExhaustion, bool applyTraits, int attackerUnitId, Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null)
         {
             string? error = Validate(state);
             if (error != null || damage < 0 || !state.Units.Any(unit => unit.Id == targetId))
                 return new RoomCombatResult(null, RoomOutcome.Unsupported, 0, new List<CombatEvent>(), error ?? "Invalid card damage target or amount.");
             if (attackerUnitId != 0 && state.Units.All(unit => unit.Id != attackerUnitId))
                 return new RoomCombatResult(null, RoomOutcome.Unsupported, 0, new List<CombatEvent>(), "Cross-room spell attacker requires a retained source unit.");
-            return new Engine(state, new List<CombatEvent>(), deferSpawnerExhaustion).CardDamage(targetId, damage, sourceCardId, applyTraits, attackerUnitId);
+            return new Engine(state, new List<CombatEvent>(), deferSpawnerExhaustion, refreshPyre: refreshPyre).CardDamage(targetId, damage, sourceCardId, applyTraits, attackerUnitId);
         }
 
-        internal static RoomCombatResult ApplyUnitModification(RoomCombatState state, CombatUnit changed) =>
-            new Engine(state, new List<CombatEvent>()).ModifyUnit(changed);
+        internal static RoomCombatResult ApplyUnitModification(RoomCombatState state, CombatUnit changed, Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null) =>
+            new Engine(state, new List<CombatEvent>(), refreshPyre: refreshPyre).ModifyUnit(changed);
 
         // The native revival API queues callbacks but leaves their execution to its caller.
         public static RoomCombatResult ApplyRevival(RoomCombatState state, int targetId, int sourceCardId = 0, int attackerUnitId = 0,
-            CombatUnit? retainedAttacker = null)
+            CombatUnit? retainedAttacker = null, Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null)
         {
             string? error = Validate(state, targetId);
             if (error != null || !state.Units.Any(unit => unit.Id == targetId))
@@ -636,23 +636,23 @@ namespace MonsterTrain2Poju.Model
                 return new RoomCombatResult(null, RoomOutcome.Unsupported, 0, new List<CombatEvent>(), "Missing revival attacker reference.");
             var callbacks = new List<QueuedCharacterTrigger>();
             RoomCombatResult result = new Engine(state, new List<CombatEvent>(), enqueueCharacterTrigger: callbacks.Add,
-                resetPreviewTriggers: false).Revival(targetId, sourceCardId, attackerUnitId, retainedAttacker);
+                resetPreviewTriggers: false, refreshPyre: refreshPyre).Revival(targetId, sourceCardId, attackerUnitId, retainedAttacker);
             return new RoomCombatResult(result.State, result.Outcome, result.Rounds, result.Events.ToList(),
                 result.UnsupportedReason, callbacks, result.RetainedUnits, result.Dispatches);
         }
 
         internal static RoomCombatResult ApplyUnitUpgrade(RoomCombatState state, int targetId, CardUpgradeModifier upgrade,
-            string lifetime, bool remove, int? roomCapacity, int sourceCardId, string? triggerKind, bool scaleUpgrade = false)
+            string lifetime, bool remove, int? roomCapacity, int sourceCardId, string? triggerKind, bool scaleUpgrade = false, Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null)
         {
             string? error = Validate(state);
             if (error != null || !state.Units.Any(unit => unit.Id == targetId))
                 return new RoomCombatResult(null, RoomOutcome.Unsupported, 0, new List<CombatEvent>(), error ?? "Missing unit upgrade target.");
-            return new Engine(state, new List<CombatEvent>(), resetPreviewTriggers: false)
+            return new Engine(state, new List<CombatEvent>(), resetPreviewTriggers: false, refreshPyre: refreshPyre)
                 .UnitUpgrade(targetId, upgrade, lifetime, remove, roomCapacity, sourceCardId, triggerKind, scaleUpgrade: scaleUpgrade);
         }
 
         internal static RoomCombatResult ApplyDirectUnitUpgrade(RoomCombatState state, int targetId, CardUpgradeModifier upgrade,
-            bool remove, string upgradeId, int? anonymousRemovalIndex, bool deferCallbacks = false, int equipmentSourceCardId = 0, bool captureAllDispatches = false)
+            bool remove, string upgradeId, int? anonymousRemovalIndex, bool deferCallbacks = false, int equipmentSourceCardId = 0, bool captureAllDispatches = false, Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null)
         {
             string? error = Validate(state);
             if (error != null || !state.Units.Any(unit => unit.Id == targetId))
@@ -660,7 +660,7 @@ namespace MonsterTrain2Poju.Model
             var callbacks = new List<QueuedCharacterTrigger>();
             // RemoveCardUpgrade queues callbacks without running them. Additions run the queue.
             RoomCombatResult result = new Engine(state, new List<CombatEvent>(),
-                enqueueCharacterTrigger: remove || deferCallbacks ? callbacks.Add : (Action<QueuedCharacterTrigger>?)null, resetPreviewTriggers: false)
+                enqueueCharacterTrigger: remove || deferCallbacks ? callbacks.Add : (Action<QueuedCharacterTrigger>?)null, resetPreviewTriggers: false, refreshPyre: refreshPyre)
                 .TraceAllDispatches(captureAllDispatches)
                 .UnitUpgrade(targetId, upgrade, "TemporaryUntilUnitDeath", remove, null, 0, null,
                     directApi: true, upgradeId: upgradeId, anonymousRemovalIndex: anonymousRemovalIndex, equipmentSourceCardId: equipmentSourceCardId);
@@ -668,7 +668,7 @@ namespace MonsterTrain2Poju.Model
         }
 
         public static RoomCombatResult ApplyEquipment(RoomCombatState state, int targetId, int cardId, BattlePlayRules definitions, bool remove = false,
-            bool deferAbilityCallbacks = false, bool deferCallbacks = false)
+            bool deferAbilityCallbacks = false, bool deferCallbacks = false, Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null)
         {
             string? error = Validate(state);
             CombatUnit? target = state.Units.FirstOrDefault(unit => unit.Id == targetId);
@@ -678,27 +678,27 @@ namespace MonsterTrain2Poju.Model
                 return new RoomCombatResult(null, RoomOutcome.Unsupported, 0, new List<CombatEvent>(), "Repeated raw attachment of the same equipment object is not modeled.");
             var callbacks = new List<QueuedCharacterTrigger>();
             var result = new Engine(state, new List<CombatEvent>(), enqueueCharacterTrigger: remove || deferCallbacks ? callbacks.Add : (Action<QueuedCharacterTrigger>?)null,
-                resetPreviewTriggers: false, deferAbilityCallbacks: deferAbilityCallbacks).Equipment(targetId, cardId, definitions, remove);
+                resetPreviewTriggers: false, deferAbilityCallbacks: deferAbilityCallbacks, refreshPyre: refreshPyre).Equipment(targetId, cardId, definitions, remove);
             return new RoomCombatResult(result.State, result.Outcome, result.Rounds, result.Events.ToList(), result.UnsupportedReason, callbacks);
         }
 
-        public static RoomCombatResult ApplyCardHeal(RoomCombatState state, int targetId, int amount)
+        public static RoomCombatResult ApplyCardHeal(RoomCombatState state, int targetId, int amount, Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null)
         {
             string? error = Validate(state);
             CombatUnit? target = state.Units.FirstOrDefault(unit => unit.Id == targetId);
             if (error != null || amount < 0 || target?.Modifiers == null)
                 return new RoomCombatResult(null, RoomOutcome.Unsupported, 0, new List<CombatEvent>(),
                     error ?? "Card healing requires a valid amount, target and healability state.");
-            return new Engine(state, new List<CombatEvent>()).CardHeal(targetId, amount);
+            return new Engine(state, new List<CombatEvent>(), refreshPyre: refreshPyre).CardHeal(targetId, amount);
         }
 
-        private static RoomCombatResult Run(RoomCombatState state, bool entireRoom)
+        private static RoomCombatResult Run(RoomCombatState state, bool entireRoom, Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null)
         {
             var events = new List<CombatEvent>();
             string? error = Validate(state);
             if (error != null)
                 return new RoomCombatResult(null, RoomOutcome.Unsupported, 0, events, error);
-            var engine = new Engine(state, events);
+            var engine = new Engine(state, events, refreshPyre: refreshPyre);
             return engine.Run(entireRoom);
         }
 
@@ -933,7 +933,8 @@ namespace MonsterTrain2Poju.Model
             private readonly Action<string>? reject;
             internal bool Alive => Health > 0 && !Removed && !Despawned;
             internal int Attack => Math.Max(0, unchecked(Source.AttackBeforeStatuses +
-                (Source.Modifiers?.DamageBuffFromStatusEffects ?? unchecked(Amount("buff") + Amount("valor") - Amount("debuff")))));
+                (Source.Modifiers?.DamageBuffFromStatusEffects ?? unchecked(Amount("buff") + Amount("valor") - Amount("debuff"))) +
+                (Source.IsPyre ? getContext?.Invoke()?.Resources?.PyreModifiedBaseAttack ?? 0 : 0)));
 
             internal WorkingUnit(CombatUnit source, Func<CombatContext?>? getContext = null, Action<string>? reject = null)
             {
@@ -1009,6 +1010,7 @@ namespace MonsterTrain2Poju.Model
             private readonly bool deferAbilityCallbacks;
             private readonly bool nativeCardDamage;
             private readonly Func<RoomCombatState, RoomCombatResult>? finishDamageQueue;
+            private readonly Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre;
             private readonly Queue<(int RoomIndex, WorkingUnit Unit, string Kind, bool CanFire, int ParamInt, WorkingUnit? OverrideTarget, int ParamInt2, string? ParamString, WorkingUnit? DyingCharacter, int TriggerCount, int LastSpawnedOverrideUnitId)> triggerQueue = new Queue<(int, WorkingUnit, string, bool, int, WorkingUnit?, int, string?, WorkingUnit?, int, int)>();
             private bool runningTriggerQueue;
             private bool stopAfterBossRemoval;
@@ -1023,7 +1025,8 @@ namespace MonsterTrain2Poju.Model
             internal Engine(RoomCombatState source, List<CombatEvent> events, bool deferSpawnerExhaustion = false, int pendingSummonCardId = 0,
                 Action<QueuedCharacterTrigger>? enqueueCharacterTrigger = null, bool resetPreviewTriggers = true, bool deferAbilityCallbacks = false,
                 bool nativeCardDamage = false,
-                Func<RoomCombatState, RoomCombatResult>? finishDamageQueue = null)
+                Func<RoomCombatState, RoomCombatResult>? finishDamageQueue = null,
+                Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null)
             {
                 this.source = source; this.events = events;
                 this.deferSpawnerExhaustion = deferSpawnerExhaustion;
@@ -1032,6 +1035,7 @@ namespace MonsterTrain2Poju.Model
                 this.deferAbilityCallbacks = deferAbilityCallbacks;
                 this.nativeCardDamage = nativeCardDamage;
                 this.finishDamageQueue = finishDamageQueue;
+                this.refreshPyre = refreshPyre;
                 context = source.Context;
                 units = source.Units.Select(unit => NewUnit(unit)).ToList();
                 if (source.Preview && resetPreviewTriggers)
@@ -2178,10 +2182,13 @@ namespace MonsterTrain2Poju.Model
                             else if (effect.Type == "CardEffectRewardGold")
                             {
                                 if (source.Preview) continue;
-                                int reward = GoldRewardModel.Adjust(effect.Value);
-                                context = new CombatContext(context!.Cards, context.BattleRng,
-                                    Math.Max(0, checked(context.Gold + reward)), context.NextCardId, context.MaxHandSize, context.StatusRules, context.Statistics,
-                                    context.CardInstances, context.CardRegistry, context.AllScenarioBossesDead, context.NextAddedTemporaryUpgrades, context.OtherPiles, context.QueryFrame, context.KillCamActivated, context.MagicPower, context.IsolatedBattlePreview, context.EnergyState, context.RoomCapacities, context.AbilityCardCache, context.LastAbilityActivatorUnitId, context.PermanentlyDisabledAbilities, context.LastSpawnedUnitId, context.NextUnitId, context.SpawnPoints, context.SummonCatalog, context.Enchantments, context.PurifyBlockedTriggers, context.Relics, context.TriggerCounts, context.Resources);
+                                int reward = GoldRewardModel.Adjust(effect.Value, multiplier: context!.Resources?.GoldRewardMultiplier ?? 1f);
+                                if (reward != 0)
+                                {
+                                    context = context!.WithGold(Math.Max(0, unchecked(context.Gold + reward)));
+                                    RefreshPyreAfterGold();
+                                    if (unsupportedReason != null) break;
+                                }
                                 Emit("Gold", unit, unit, reward);
                             }
                             else if (effect.Type == "CardEffectAddBattleCard" && !source.Preview && !battleWon && context != null && context.AllScenarioBossesDead != true &&
@@ -2196,6 +2203,18 @@ namespace MonsterTrain2Poju.Model
                 }
                 bool Present(WorkingUnit target, string id) => target.Statuses.Any(pair =>
                     string.Equals(pair.Key, id, StringComparison.OrdinalIgnoreCase) && pair.Value.Stacks > 0);
+            }
+
+            private void RefreshPyreAfterGold()
+            {
+                if (context?.Resources == null) return;
+                WorkingUnit? local = units.FirstOrDefault(unit => unit.Source.IsPyre && !unit.Destroyed);
+                RelicPyreAttackRefreshResult refreshed = local != null
+                    ? RelicResourceModel.RefreshPyreAttack(context, local.Freeze(), source.Deployment)
+                    : refreshPyre?.Invoke(context, source.Deployment) ?? new RelicPyreAttackRefreshResult(context, null);
+                if (!refreshed.Supported) { unsupportedReason = refreshed.UnsupportedReason; return; }
+                context = refreshed.Context;
+                if (local != null && refreshed.Pyre != null) local.Apply(refreshed.Pyre);
             }
 
             private SpawnPointReference? SummonSourcePoint(WorkingUnit actor)

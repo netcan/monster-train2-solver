@@ -34,18 +34,24 @@ namespace MonsterTrain2Poju.Model
     public static class UnitModifierModel
     {
         public static RoomCombatResult Apply(RoomCombatState source, int targetId, CardUpgradeModifier upgrade, string lifetime,
-            bool remove = false, int? roomCapacity = null, int sourceCardId = 0, string? triggerKind = null, bool scaleUpgrade = false)
-            => RoomCombatModel.ApplyUnitUpgrade(source, targetId, upgrade, lifetime, remove, roomCapacity, sourceCardId, triggerKind, scaleUpgrade);
+            bool remove = false, int? roomCapacity = null, int sourceCardId = 0, string? triggerKind = null, bool scaleUpgrade = false,
+            Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null)
+            => RoomCombatModel.ApplyUnitUpgrade(source, targetId, upgrade, lifetime, remove, roomCapacity, sourceCardId, triggerKind,
+                scaleUpgrade, refreshPyre: refreshPyre);
 
         // CharacterState's direct API, used by equipment, changes only the live unit.
         // Anonymous removal needs an explicit applied-list index to represent object identity;
         // a freshly constructed anonymous descriptor reverses stats but leaves the list entry.
         public static RoomCombatResult ApplyDirect(RoomCombatState source, int targetId, CardUpgradeModifier upgrade,
-            bool remove = false, string upgradeId = "", int? anonymousRemovalIndex = null)
-            => RoomCombatModel.ApplyDirectUnitUpgrade(source, targetId, upgrade, remove, upgradeId, anonymousRemovalIndex);
+            bool remove = false, string upgradeId = "", int? anonymousRemovalIndex = null,
+            Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null)
+            => RoomCombatModel.ApplyDirectUnitUpgrade(source, targetId, upgrade, remove, upgradeId, anonymousRemovalIndex,
+                refreshPyre: refreshPyre);
 
-        internal static RoomCombatResult ApplyDirectDeferred(RoomCombatState source, int targetId, CardUpgradeModifier upgrade)
-            => RoomCombatModel.ApplyDirectUnitUpgrade(source, targetId, upgrade, false, upgrade.DataId, null, deferCallbacks: true);
+        internal static RoomCombatResult ApplyDirectDeferred(RoomCombatState source, int targetId, CardUpgradeModifier upgrade,
+            Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null)
+            => RoomCombatModel.ApplyDirectUnitUpgrade(source, targetId, upgrade, false, upgrade.DataId, null, deferCallbacks: true,
+                refreshPyre: refreshPyre);
 
         // A running room engine settles deaths on its existing unit references and trigger flags.
         // Starting another engine here would reset preview triggers and detach combat attackers.

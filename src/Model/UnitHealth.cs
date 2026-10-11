@@ -7,7 +7,7 @@ namespace MonsterTrain2Poju.Model
     public static class UnitHealthModel
     {
         public static RoomCombatResult Apply(RoomCombatState source, int targetId, int amount, bool debuff = false,
-            string lifetime = "TemporaryUntilEndOfBattle")
+            string lifetime = "TemporaryUntilEndOfBattle", Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null)
         {
             string? error = RoomCombatModel.Validate(source);
             CombatUnit? target = source.Units.FirstOrDefault(unit => unit.Id == targetId);
@@ -36,7 +36,7 @@ namespace MonsterTrain2Poju.Model
                 target.CanAttack, target.IsPyre, target.EndsBattleOnDeath, target.Statuses, target.Triggers, target.SpawnerCardId,
                 target.Size, target.StatusImmunities, target.Subtypes, target.Modifiers, target.IsBoss, target.LastAttackerId, target.StatusRegistry, target.EquipmentCards, target.NextTriggerId, target.Ability, target.StatusDictionary, target.AbilityRules, target.HordeDefinition, target.IsSpawning, target.SacrificeCardId, target.DeathState, bumpRules: target.BumpRules);
             // Lethal native debuffs sacrifice the unit without attributing damage to the played card.
-            if (health <= 0) return RoomCombatModel.ApplyUnitModification(state, changed);
+            if (health <= 0) return RoomCombatModel.ApplyUnitModification(state, changed, refreshPyre: refreshPyre);
             var completed = new RoomCombatState(state.RoomIndex, state.Deployment,
                 state.Units.Select(unit => unit.Id == targetId ? changed : unit).ToArray(), state.ExternalInteractions, state.Context, state.Preview);
             return debuff ? HordeStatusModel.SettleHealth(completed, targetId) :

@@ -1,6 +1,13 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
 
+if (args.Length == 1 && args[0] == "--gold-pyre-pure")
+{
+    GoldPyreChecks.Run();
+    RelicResourceChecks.Run();
+    return;
+}
+
 if (args.Length == 1 && args[0] == "--relic-resources-pure")
 {
     RelicResourceChecks.Run();

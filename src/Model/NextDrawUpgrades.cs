@@ -39,6 +39,19 @@ namespace MonsterTrain2Poju.Model
             return context.WithCards(Schedule(context.Cards, rule));
         }
 
+        // The complete-train path settles the gold signal before constructing
+        // the new native upgrade and appending it to the draw queue.
+        public static TrainCombatResult Schedule(TrainCombatState source, NextDrawUpgradeRule rule, int requiredGold = 0)
+        {
+            if (requiredGold == int.MinValue) return GoldModel.Fail("Native next-draw gold cost overflows Math.Abs.");
+            int cost = Math.Abs(requiredGold);
+            TrainCombatResult paid = cost > 0 ? GoldModel.Adjust(source, -cost) : GoldModel.Success(source);
+            if (!paid.Supported) return paid;
+            if (paid.State!.Context == null) return GoldModel.Fail("Next-draw upgrades require shared battle context.");
+            return GoldModel.Success(CardSpellModel.WithContext(paid.State,
+                paid.State.Context.WithCards(Schedule(paid.State.Context.Cards, rule))));
+        }
+
         public static CardCycleState Clear(CardCycleState cards) => cards.NextDrawUpgrades?.Count > 0
             ? WithPending(cards, Array.Empty<NextDrawUpgradeRule>()) : cards;
 

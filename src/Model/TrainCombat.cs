@@ -155,7 +155,8 @@ namespace MonsterTrain2Poju.Model
             {
                 int index = Array.FindIndex(rooms, room => room.Units.Any(unit => unit.Id == actor));
                 if (index < 0) continue; // An earlier queued trigger may remove a later actor.
-                RoomCombatResult result = RoomCombatModel.ApplyCharacterPhase(WithContext(rooms[index], context), actor, kind, queue.Add);
+                RoomCombatResult result = RoomCombatModel.ApplyCharacterPhase(WithContext(rooms[index], context), actor, kind, queue.Add,
+                    refreshPyre: (changed, placement) => RelicResourceModel.RefreshPyreAttack(rooms, changed, placement));
                 if (!result.Supported) return Unsupported(result.UnsupportedReason!);
                 rooms[index] = result.State!; context = result.State!.Context; results.Add(result);
                 if (Terminal(result.Outcome))
@@ -165,14 +166,16 @@ namespace MonsterTrain2Poju.Model
             string? queueError = null;
             bool drained = RoomCombatModel.DrainCharacterQueue(queue, queued =>
             {
-                RoomCombatResult result = RoomCombatModel.ApplyQueuedCharacterTrigger(WithContext(rooms[queued.RoomIndex], context), queued, queue.Add);
+                RoomCombatResult result = RoomCombatModel.ApplyQueuedCharacterTrigger(WithContext(rooms[queued.RoomIndex], context), queued, queue.Add,
+                    refreshPyre: (changed, placement) => RelicResourceModel.RefreshPyreAttack(rooms, changed, placement));
                 if (!result.Supported) { queueError = result.UnsupportedReason; return false; }
                 rooms[queued.RoomIndex] = result.State!; context = result.State!.Context; results.Add(result);
                 if (Terminal(result.Outcome)) outcome = result.Outcome;
                 return true;
             }, queued =>
             {
-                RoomCombatResult result = RoomCombatModel.SettleQueuedSpawner(WithContext(rooms[queued.RoomIndex], context), queued.Unit);
+                RoomCombatResult result = RoomCombatModel.SettleQueuedSpawner(WithContext(rooms[queued.RoomIndex], context), queued.Unit,
+                    refreshPyre: (changed, placement) => RelicResourceModel.RefreshPyreAttack(rooms, changed, placement));
                 if (!result.Supported) { queueError = result.UnsupportedReason; return false; }
                 rooms[queued.RoomIndex] = result.State!; context = result.State!.Context; results.Add(result);
                 return true;
@@ -196,7 +199,8 @@ namespace MonsterTrain2Poju.Model
             var results = new List<RoomCombatResult>();
             for (int index = rooms.Length - 1; index >= 0; index--)
             {
-                RoomCombatResult result = RoomCombatModel.Resolve(WithContext(rooms[index], context));
+                RoomCombatResult result = RoomCombatModel.Resolve(WithContext(rooms[index], context),
+                    refreshPyre: (changed, placement) => RelicResourceModel.RefreshPyreAttack(rooms, changed, placement));
                 if (!result.Supported) return Unsupported(result.UnsupportedReason!);
                 rooms[index] = result.State!; results.Add(result);
                 context = result.State!.Context;
@@ -333,7 +337,8 @@ namespace MonsterTrain2Poju.Model
             {
                 TrainCombatResult enabled = EnchantmentWorldModel.SetAllowUpdates(moving, true);
                 if (!enabled.Supported) return enabled;
-                RoomCombatResult result = RoomCombatModel.Resolve(enabled.State!.Rooms[pyre]);
+                RoomCombatResult result = RoomCombatModel.Resolve(enabled.State!.Rooms[pyre],
+                    refreshPyre: (changed, placement) => RelicResourceModel.RefreshPyreAttack(next, changed, placement));
                 if (!result.Supported) return Unsupported(result.UnsupportedReason!);
                 next[pyre] = result.State!;
                 movementResults.Add(result);
@@ -394,7 +399,8 @@ namespace MonsterTrain2Poju.Model
             var results = new List<RoomCombatResult>(); RoomOutcome outcome = RoomOutcome.Exchanged; string? error = null;
             bool drained = RoomCombatModel.DrainCharacterQueue(queue, queued =>
             {
-                RoomCombatResult fired = RoomCombatModel.ApplyQueuedCharacterTrigger(WithContext(rooms[queued.RoomIndex], context), queued, queue.Add);
+                RoomCombatResult fired = RoomCombatModel.ApplyQueuedCharacterTrigger(WithContext(rooms[queued.RoomIndex], context), queued, queue.Add,
+                    refreshPyre: (changed, placement) => RelicResourceModel.RefreshPyreAttack(rooms, changed, placement));
                 if (!fired.Supported) { error = fired.UnsupportedReason; return false; }
                 rooms[queued.RoomIndex] = fired.State!; context = fired.State!.Context; results.Add(fired);
                 if (Terminal(fired.Outcome)) outcome = fired.Outcome;
@@ -404,8 +410,10 @@ namespace MonsterTrain2Poju.Model
                 bool lastPhysicalDeath = queued.CompletePhysicalRemovalAfterQueue && !queue.Any(item => item.Kind == "OnDeath" &&
                     item.Unit.Team == queued.Unit.Team && item.Unit.Id > queued.Unit.Id);
                 RoomCombatResult returned = lastPhysicalDeath
-                    ? RoomCombatModel.SettleQueuedSpawnerAndCenter(WithContext(rooms[queued.RoomIndex], context), queued.Unit)
-                    : RoomCombatModel.SettleQueuedSpawner(WithContext(rooms[queued.RoomIndex], context), queued.Unit);
+                    ? RoomCombatModel.SettleQueuedSpawnerAndCenter(WithContext(rooms[queued.RoomIndex], context), queued.Unit,
+                        refreshPyre: (changed, placement) => RelicResourceModel.RefreshPyreAttack(rooms, changed, placement))
+                    : RoomCombatModel.SettleQueuedSpawner(WithContext(rooms[queued.RoomIndex], context), queued.Unit,
+                    refreshPyre: (changed, placement) => RelicResourceModel.RefreshPyreAttack(rooms, changed, placement));
                 if (!returned.Supported) { error = returned.UnsupportedReason; return false; }
                 rooms[queued.RoomIndex] = returned.State!; context = returned.State!.Context; results.Add(returned); return true;
             }, () =>

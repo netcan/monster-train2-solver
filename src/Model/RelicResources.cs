@@ -21,14 +21,17 @@ namespace MonsterTrain2Poju.Model
         public IReadOnlyList<int> UpgradeAttack { get; }
         public IReadOnlyList<int> UpgradeHealth { get; }
         public IReadOnlyList<string> MutatorIds { get; }
+        public float GoldRewardMultiplier { get; }
         public BattleResourceState(int baseEnergy, int deploymentExtraEnergy, int baseDraw, int maxEnergy, int maxHandSize,
             string pyreDataId, int pyreBaseAttack, int basePyreMaxHealth, int pyrePersistentDamage, int pyreModifiedBaseAttack,
-            IReadOnlyList<int> upgradeAttack, IReadOnlyList<int> upgradeHealth, IReadOnlyList<string> mutatorIds)
+            IReadOnlyList<int> upgradeAttack, IReadOnlyList<int> upgradeHealth, IReadOnlyList<string> mutatorIds,
+            float goldRewardMultiplier = 1f)
         {
             BaseEnergy = baseEnergy; DeploymentExtraEnergy = deploymentExtraEnergy; BaseDraw = baseDraw;
             MaxEnergy = maxEnergy; MaxHandSize = maxHandSize; PyreDataId = pyreDataId; PyreBaseAttack = pyreBaseAttack;
             BasePyreMaxHealth = basePyreMaxHealth; PyrePersistentDamage = pyrePersistentDamage;
             PyreModifiedBaseAttack = pyreModifiedBaseAttack;
+            GoldRewardMultiplier = goldRewardMultiplier;
             UpgradeAttack = Array.AsReadOnly(upgradeAttack.ToArray()); UpgradeHealth = Array.AsReadOnly(upgradeHealth.ToArray());
             MutatorIds = Array.AsReadOnly(mutatorIds.ToArray());
         }
@@ -95,7 +98,7 @@ namespace MonsterTrain2Poju.Model
         { Context = context; Attack = attack; Health = health; MaxHealth = maxHealth; UnsupportedReason = error; }
     }
 
-    public static class RelicResourceModel
+    public static partial class RelicResourceModel
     {
         public const string Energy = "RelicEffectModifyEnergy";
         public const string DeploymentEnergy = "RelicEffectModifyEnergyDuringDeployment";
@@ -143,7 +146,7 @@ namespace MonsterTrain2Poju.Model
             if (context.Relics == null || raw.BaseEnergy < 0 || raw.BaseDraw < 0 || raw.MaxEnergy < 0 || raw.MaxHandSize < 1 ||
                 raw.BasePyreMaxHealth < 1 || string.IsNullOrEmpty(raw.PyreDataId) || raw.MutatorIds.Any(string.IsNullOrEmpty) ||
                 raw.MutatorIds.Distinct().Count() != raw.MutatorIds.Count || context.MaxHandSize != raw.MaxHandSize ||
-                context.EnergyState?.Maximum != raw.MaxEnergy)
+                context.EnergyState?.Maximum != raw.MaxEnergy || float.IsNaN(raw.GoldRewardMultiplier) || float.IsInfinity(raw.GoldRewardMultiplier))
                 return "Invalid or inconsistent raw native resource inputs.";
             var orders = new List<int>();
             foreach (CombatRelicState relic in context.Relics)
