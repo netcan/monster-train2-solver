@@ -342,7 +342,7 @@ namespace MonsterTrain2Poju.Model
                     }
                 }
                 return new BattleTurnResult(new BattleTurnState(spawn, energy, source.EnergyPerTurn, drawPerTurn,
-                    source.ForgePoints, source.DragonsHoard, phase, streams, piles, source.ExternalInteractions, source.PlayRules,
+                    finalContext.QueryFrame?.ForgePoints ?? source.ForgePoints, source.DragonsHoard, phase, streams, piles, source.ExternalInteractions, source.PlayRules,
                     source.BattlePreviewEnabled, source.UiRngIsolated, source.CanonicalDecisionReferences, source.CanonicalPhysicalReferences,
                     selectedRoom), outcome);
             }

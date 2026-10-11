@@ -672,7 +672,7 @@ namespace MonsterTrain2Poju.Probe
                 modifierScenario == "healing" || modifierScenario == "healing-triggers" || modifierScenario == "room-spells" ||
                 modifierScenario == "terminal-spells" || modifierScenario == "post-kill-spells" || modifierScenario == "random-spells" ||
                 modifierScenario == "random-status" || modifierScenario == "cross-room-spells" || modifierScenario == "cross-room-targets" || modifierScenario == "attack-buffs" ||
-                modifierScenario == "room-capacity" || modifierScenario == "room-capacity-lethal" || modifierScenario == "energy-effects" || modifierScenario == "energy-effects-lethal" || modifierScenario == "bonus-draw" || modifierScenario == "bonus-draw-lethal" || modifierScenario == "x-cost" || modifierScenario == "x-cost-lethal" || modifierScenario == "max-health-spells" || modifierScenario == "max-health-lethal" ||
+                 modifierScenario == "room-capacity" || modifierScenario == "room-capacity-lethal" || modifierScenario == "energy-effects" || modifierScenario == "energy-effects-lethal" || modifierScenario == "forge-points" || modifierScenario == "bonus-draw" || modifierScenario == "bonus-draw-lethal" || modifierScenario == "x-cost" || modifierScenario == "x-cost-lethal" || modifierScenario == "max-health-spells" || modifierScenario == "max-health-lethal" ||
                 modifierScenario == "numeric-ranges" || modifierScenario == "numeric-ranges-lethal" || modifierScenario == "target-filters" || modifierScenario == "drawing" || modifierScenario == "damage-scaling" || modifierScenario == "dynamic-statistics" ||
                 modifierScenario == "hand-removal" || modifierScenario == "hand-removal-lethal" || modifierScenario == "generation" || modifierScenario == "generation-lethal" || modifierScenario == "generation-permanent-consume" ||
                 (modifierScenario == "conditional-relic-card-upgrades" && Environment.GetEnvironmentVariable("MT2_PROBE_GENERATION") == "1") ||
@@ -690,6 +690,7 @@ namespace MonsterTrain2Poju.Probe
                 else if (modifierScenario == "hand-removal" || modifierScenario == "hand-removal-lethal")
                     HandRemovalScenario.Prepare(managers, log, modifierScenario == "hand-removal-lethal");
                 else if (modifierScenario == "energy-effects" || modifierScenario == "energy-effects-lethal") EnergyScenario.Prepare(managers, log, modifierScenario == "energy-effects-lethal");
+                else if (modifierScenario == "forge-points") ForgePointsScenario.Prepare(managers, log);
                 else if (modifierScenario == "room-capacity" || modifierScenario == "room-capacity-lethal") RoomCapacityScenario.Prepare(managers, log, modifierScenario == "room-capacity-lethal");
                 else if (modifierScenario == "x-cost" || modifierScenario == "x-cost-lethal") CardCostScenario.Prepare(managers, log, modifierScenario == "x-cost-lethal");
                 else if (modifierScenario == "bonus-draw" || modifierScenario == "bonus-draw-lethal") BonusDrawScenario.Prepare(managers, log, modifierScenario == "bonus-draw-lethal");

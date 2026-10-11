@@ -856,14 +856,18 @@ namespace MonsterTrain2Poju.Model
                             if (filter != null) return filter;
                             continue;
                         }
-                        if (EnergyModel.IsNativeEffect(effect.Type) || effect.Type == "CardEffectDrawAdditionalNextTurn" || effect.Type == "CardEffectAdjustRoomCapacity")
+                        if (EnergyModel.IsNativeEffect(effect.Type) || effect.Type == "CardEffectDrawAdditionalNextTurn" || effect.Type == "CardEffectAdjustRoomCapacity" || effect.Type == "CardEffectAdjustForgePoints")
                         {
                             CardActionEffect? energy = effect.Action;
-                            if (energy == null || (effect.Type == "CardEffectAdjustRoomCapacity" ? energy.Type != "AdjustCapacity" : effect.Type == "CardEffectDrawAdditionalNextTurn" ? energy.Type != "DrawNextTurn" :
-                                !EnergyModel.IsEffect(energy.Type) || effect.Type != "CardEffect" + (energy.Type == "GainEnergyMonsterTurn" ? "GainEnergy" : energy.Type)))
+                            bool typeMatches = effect.Type == "CardEffectAdjustRoomCapacity" ? energy?.Type == "AdjustCapacity" :
+                                effect.Type == "CardEffectDrawAdditionalNextTurn" ? energy?.Type == "DrawNextTurn" :
+                                effect.Type == "CardEffectAdjustForgePoints" ? energy?.Type == ForgePointsModel.Effect :
+                                energy != null && EnergyModel.IsEffect(energy.Type) &&
+                                    effect.Type == "CardEffect" + (energy.Type == "GainEnergyMonsterTurn" ? "GainEnergy" : energy.Type);
+                            if (energy == null || !typeMatches)
                                 return "Missing or mismatched triggered resource definition.";
                             string? energyError = energy.Type == "AdjustCapacity" ? RoomCapacityModel.Validate(state.Context) : energy.Type == "DrawNextTurn" ? state.Context?.Cards.BonusDraw == null ? "Missing bonus-draw state." :
-                                BonusDrawModel.Validate(state.Context.Cards) : EnergyModel.Validate(state.Context);
+                                BonusDrawModel.Validate(state.Context.Cards) : energy.Type == ForgePointsModel.Effect ? ForgePointsModel.Validate(state.Context) : EnergyModel.Validate(state.Context);
                             energyError = energyError ?? (energy.Type == "AdjustCapacity" ? null : energy.Range?.Validate()) ?? energy.Filters?.Validate();
                             if (energy.Upgrade?.ExternalInteractions.Count > 0) energyError = string.Join("; ", energy.Upgrade.ExternalInteractions);
                             if (energyError != null) return energyError;
@@ -2589,11 +2593,18 @@ namespace MonsterTrain2Poju.Model
                 AbilityCooldownModel.IsEffect(action.Type) || AbilityLifecycleModel.IsEffect(action.Type) ? true :
                 action.Type == "AdjustCapacity" ? !source.Preview && !battleWon && context!.AllScenarioBossesDead != true &&
                     RoomCapacityModel.Test(context, source.RoomIndex, units.Any(unit => unit.InRoom && unit.Source.Team == CombatTeam.Enemy), action.OnlyIfNoEnemies) :
+                action.Type == ForgePointsModel.Effect ? ForgePointsModel.Test(ForgePointsPyreAlive()) :
                 action.Type == "DrawNextTurn" ? !source.Preview && !battleWon && context!.AllScenarioBossesDead != true :
                 EnergyModel.IsEffect(action.Type) ? !source.Preview && !battleWon && context!.AllScenarioBossesDead != true && EnergyModel.Test(context, action.Type) :
                 action.Type == "Damage" ? amount >= 0 && (action.Range == null || action.Range.Max > 0) &&
                     (action.Target != "DropTargetCharacter" || targets.UnitIds.Count > 0) :
                 action.Type == "RemoveUnitUpgrade" || action.Type == "Heal" && action.Target == "Room" || targets.UnitIds.Count > 0;
+
+            private bool? ForgePointsPyreAlive()
+            {
+                WorkingUnit? pyre = units.FirstOrDefault(unit => unit.Source.IsPyre);
+                return pyre == null ? context?.EnergyState?.PyreAlive : pyre.Health > 0;
+            }
 
             private int SampleActionAmount(CardActionEffect action)
             {
@@ -2649,7 +2660,8 @@ namespace MonsterTrain2Poju.Model
                     foreach (CombatEvent item in applied.Events) events.Add(new CombatEvent(round, item.Kind, item.Actor, item.Target, item.Amount));
                     return true;
                 }
-                int amount = action.Type == "AdjustCapacity" ? action.Value : SampleActionAmount(action);
+                int amount = action.Type == "AdjustCapacity" || action.Type == ForgePointsModel.Effect && source.Preview
+                    ? action.Value : SampleActionAmount(action);
                 if (action.Type == "AdjustCapacity")
                 {
                     RoomCapacityResult adjusted = RoomCapacityModel.Apply(context!, source.RoomIndex, action);
@@ -2661,6 +2673,17 @@ namespace MonsterTrain2Poju.Model
                     context = context!.WithCards(BonusDrawModel.Schedule(context.Cards,
                         BonusDrawState.UnitKey(actor.Source.Id, triggerIndex, effectIndex), amount, action.Upgrade));
                     Emit(action.Type, actor, actor, amount); return true;
+                }
+                if (action.Type == ForgePointsModel.Effect)
+                {
+                    if (!source.Preview)
+                    {
+                        ForgePointsResult changed = ForgePointsModel.Apply(context, amount);
+                        if (!changed.Supported) { unsupportedReason = changed.UnsupportedReason; return false; }
+                        context = changed.Context;
+                        Emit(action.Type, actor, actor, amount);
+                    }
+                    return true;
                 }
                 if (EnergyModel.IsEffect(action.Type))
                 {

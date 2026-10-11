@@ -72,6 +72,7 @@ param(
     [switch] $StatusCallbackActions,
     [switch] $EnergyEffects,
     [switch] $EnergyEffectsLethal,
+    [switch] $ForgePointsEffects,
     [switch] $XCost,
     [switch] $XCostLethal,
     [switch] $RoomCapacity,
@@ -348,6 +349,7 @@ $environment = @{
     MT2_PROBE_ENCHANTMENT_WORLD = $(if ($EnchantmentWorld) { '1' } else { '0' })
     MT2_PROBE_TRIGGER_REPEATS = $(if ($TriggerRepeats) { '1' } else { '0' })
 }
+if ($ForgePointsEffects) { $environment['MT2_PROBE_MODIFIERS'] = 'forge-points' }
 if ($TriggeredSummonsRevival) {
     $environment['MT2_PROBE_MODIFIERS'] = 'triggered-summon-equipment-owned-death-revival' + $(if ($TriggeredSummonsFresh) { '-fresh' } else { '' })
 }
@@ -1160,6 +1162,16 @@ if ($EnergyEffects -or $EnergyEffectsLethal) {
     if ($EnergyEffectsLethal) {
         $energyCoverage = $energyCoverage -and @($trace.Actions | Where-Object { $_.Actual.Spawn.Train.Context.AllScenarioBossesDead -eq $true }).Count -eq 1
     }
+}
+$forgePointsCoverage = -not $ForgePointsEffects
+if ($ForgePointsEffects) {
+    $forgePointActions = @($trace.Actions | Where-Object {
+        $instance = @($_.Before.Spawn.Train.Context.CardInstances | Where-Object InstanceId -EQ $_.Action.CardInstanceId)[0]
+        $instance.DataId -eq 'd14a50f3-728d-43e1-87f0-ef1b013f6678' -and $_.Predicted.Supported
+    })
+    $forgePointsCoverage = $forgePointActions.Count -gt 0 -and
+        @($forgePointActions | Where-Object { $_.Before.ForgePoints -ne $_.Actual.ForgePoints }).Count -gt 0
+    if (-not $forgePointsCoverage) { throw 'Forge Points effect did not change the native battle state through a card action.' }
 }
 $xCostCoverage = $true
 if ($XCost -or $XCostLethal) {
@@ -1981,6 +1993,7 @@ $result = [pscustomobject]@{
     StatusCallbackCoverage = $statusCallbackCoverage
     EnergyCoverage = $energyCoverage
     EnergySamples = @($trace.EnergyEffects).Count
+    ForgePointsCoverage = $forgePointsCoverage
     XCostCoverage = $xCostCoverage
     BonusDrawCoverage = $bonusDrawCoverage
     BonusDrawSamples = @($trace.BonusDrawEffects).Count
@@ -2123,6 +2136,6 @@ if ($StatisticOverflow) {
         @($zero.Samples | Where-Object Amount -NE 0).Count -ne 0) { throw 'Native zero-increment coverage is incomplete.' }
 }
 if ($null -eq $trace.NativeWon -or $process.ExitCode -ne 0 -or -not $nativePassed -or -not $originalUnchanged -or -not $modifierCoverage -or -not $healingCoverage -or -not $onHealCoverage -or -not $roomSpellCoverage -or -not $terminalSettled -or -not $terminalSpellCoverage -or
-    -not $postKillCoverage -or -not $randomCoverage -or -not $randomStatusCoverage -or -not $crossRoomCoverage -or -not $attackCoverage -or -not $maxHealthCoverage -or -not $numericRangeCoverage -or -not $targetFilterCoverage -or -not $drawCoverage -or -not $handRemovalCoverage -or -not $generationCoverage -or -not $permanentConsumeGenerationCoverage -or -not $scalingCoverage -or -not $statusScalingCoverage -or -not $unitUpgradeScalingCoverage -or -not $unitTriggerUpgradeCoverage -or -not $spawnTriggerCoverage -or -not $unitTurnBeginCoverage -or -not $teamTurnBeginCoverage -or -not $preHandDiscardCoverage -or -not $cloneUpgradeRefreshCoverage -or -not $preCombatCoverage -or -not $triggeredHealingCoverage -or -not $postCombatHealingCoverage -or -not $triggeredDamageCoverage -or -not $damageDeathQueueCoverage -or -not $terminalDeathDamageCoverage -or -not $hitKillCoverage -or -not $dyingUpgradeCoverage -or -not $attackTriggerCoverage -or -not $triggeredStatusCoverage -or -not $statusCallbackCoverage -or -not $energyCoverage -or -not $xCostCoverage -or -not $bonusDrawCoverage -or -not $capacityCoverage -or -not $directUpgradeCoverage -or -not $equipmentCoverage -or ($PermanentConsumeOverTemporary -and -not $modifierCoverage) -or $trace.CaptureFailures -ne 0 -or $trace.Mismatches -ne 0 -or $trace.Unsupported -ne 0 -or $trace.Pending -ne 0) {
+    -not $postKillCoverage -or -not $randomCoverage -or -not $randomStatusCoverage -or -not $crossRoomCoverage -or -not $attackCoverage -or -not $maxHealthCoverage -or -not $numericRangeCoverage -or -not $targetFilterCoverage -or -not $drawCoverage -or -not $handRemovalCoverage -or -not $generationCoverage -or -not $permanentConsumeGenerationCoverage -or -not $scalingCoverage -or -not $statusScalingCoverage -or -not $unitUpgradeScalingCoverage -or -not $unitTriggerUpgradeCoverage -or -not $spawnTriggerCoverage -or -not $unitTurnBeginCoverage -or -not $teamTurnBeginCoverage -or -not $preHandDiscardCoverage -or -not $cloneUpgradeRefreshCoverage -or -not $preCombatCoverage -or -not $triggeredHealingCoverage -or -not $postCombatHealingCoverage -or -not $triggeredDamageCoverage -or -not $damageDeathQueueCoverage -or -not $terminalDeathDamageCoverage -or -not $hitKillCoverage -or -not $dyingUpgradeCoverage -or -not $attackTriggerCoverage -or -not $triggeredStatusCoverage -or -not $statusCallbackCoverage -or -not $energyCoverage -or -not $forgePointsCoverage -or -not $xCostCoverage -or -not $bonusDrawCoverage -or -not $capacityCoverage -or -not $directUpgradeCoverage -or -not $equipmentCoverage -or ($PermanentConsumeOverTemporary -and -not $modifierCoverage) -or $trace.CaptureFailures -ne 0 -or $trace.Mismatches -ne 0 -or $trace.Unsupported -ne 0 -or $trace.Pending -ne 0) {
     throw "Full battle differential probe failed; inspect $tracePath and $unityLog"
 }

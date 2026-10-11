@@ -38,7 +38,8 @@ namespace MonsterTrain2Poju.Probe
                     Modifiers(card.GetCardStateModifiers()), Modifiers(card.GetTemporaryCardStateModifiers()),
                     card.GetLastPlayedCost(), card.GetLastForgedAmount(), card.GetCurrentScenarioPlayCount(), interactions,
                     Counters(card), DamageScalingProbe.Capture(card), StatusScalingProbe.Capture(card), UnitUpgradeScalingProbe.Capture(card), RoomCapacityProbe.Traits(card),
-                    FullBattleTrace.Active?.EquippedUnitId(card) ?? 0, PlayedRoomUnits(card), RawPlayedRoomUnits(card));
+                    FullBattleTrace.Active?.EquippedUnitId(card) ?? 0, PlayedRoomUnits(card), RawPlayedRoomUnits(card),
+                    forgeCountScalingTraits: ForgeCountScalingTraits(card));
                 CardPlayRule rule = CardModifierModel.Resolve(BattleActionProbe.Definition(data), state);
                 for (int index = 0; index < managers.GetRoomManager()!.GetNumRooms(); index++)
                     if (card.GetCost(managers.GetCardStatistics(), managers.GetMonsterManager(), managers.GetRelicManager(),
@@ -57,7 +58,7 @@ namespace MonsterTrain2Poju.Probe
                 }
                 return new CardInstanceState(state.InstanceId, state.DataId, state.Permanent, state.Temporary,
                     state.LastPlayedCost, state.LastForgedAmount, state.PlayCount,
-                    interactions.Distinct().OrderBy(value => value, StringComparer.Ordinal).ToArray(), state.EffectCounters, state.DamageScalingTraits, state.StatusScalingTraits, state.UnitUpgradeScalingTraits, state.CapacityScalingTraits, state.EquippedUnitId, state.PlayedRoomUnitIds, state.RawPlayedRoomUnitIds, CardBranchMaskProbe.Capture(card), CardExhaustProbe.Capture(card, cardId));
+                    interactions.Distinct().OrderBy(value => value, StringComparer.Ordinal).ToArray(), state.EffectCounters, state.DamageScalingTraits, state.StatusScalingTraits, state.UnitUpgradeScalingTraits, state.CapacityScalingTraits, state.EquippedUnitId, state.PlayedRoomUnitIds, state.RawPlayedRoomUnitIds, CardBranchMaskProbe.Capture(card), CardExhaustProbe.Capture(card, cardId), state.ForgeCountScalingTraits);
             }).OrderBy(card => card.InstanceId).ToArray();
         }
 
@@ -91,6 +92,11 @@ namespace MonsterTrain2Poju.Probe
                     item.index, "CardEffectDiscardHand", ((CardEffectDiscardHand)item.effect.GetCardEffect()).GetNumCardsConsumed())).ToArray();
             return counters.Length == 0 ? null : counters;
         }
+
+        internal static ScalingForgeCountTrait[] ForgeCountScalingTraits(CardState card) => card.GetTraitStates()
+            .OfType<CardTraitScalingAddForged>().Select(trait => new ScalingForgeCountTrait(
+                DamageScalingProbe.Query(trait.StatValueData, (int)AccessTools.Field(typeof(CardState), "cost").GetValue(card),
+                    card.IsConsumeRemainingEnergyCostType()), trait.GetParamInt())).ToArray();
 
         private static CardModifiers Modifiers(CardStateModifiers modifiers)
         {

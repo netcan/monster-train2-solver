@@ -57,7 +57,11 @@ namespace MonsterTrain2Poju.Probe
             CardEffectCounter[] counters = data.GetEffects().Select((effect, index) => new { effect, index })
                 .Where(item => item.effect.GetEffectStateName() == "CardEffectDiscardHand")
                 .Select(item => new CardEffectCounter(item.index, "CardEffectDiscardHand", 0)).ToArray();
-            return new CardCreationRule(data.GetID(), modifiers, counters.Length == 0 ? null : counters, interactions, DamageScalingProbe.Creation(data), StatusScalingProbe.Creation(data), UnitUpgradeScalingProbe.Creation(data), RoomCapacityProbe.Creation(data), 0, descriptor);
+            CardState instance = new CardState();
+            instance.Setup(data, AllGameManagers.Instance!.GetSaveManager());
+            return new CardCreationRule(data.GetID(), modifiers, counters.Length == 0 ? null : counters, interactions,
+                DamageScalingProbe.Creation(data), StatusScalingProbe.Creation(data), UnitUpgradeScalingProbe.Creation(data),
+                RoomCapacityProbe.Creation(data), 0, descriptor, CardModifierProbe.ForgeCountScalingTraits(instance));
         }
     }
 }

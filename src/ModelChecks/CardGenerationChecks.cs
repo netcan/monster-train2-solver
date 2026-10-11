@@ -12,7 +12,9 @@ internal static class CardGenerationChecks
             temporary = Upgrade("temporary", 3), pending = Upgrade("pending", 4), optional = Upgrade("optional", 5);
         var sourceCard = new CardInstanceState(1, "source", new(new(damage: 7), [starting, included, excluded], 0, []),
             new(new(damage: 6), [temporary, Upgrade("excluded", 9)], 0, []), 3, 9, 4, [], [new(0, "CardEffectDiscardHand", 8)]);
-        var creation = new CardCreationRule("source", new(new(), [starting], 0, []), [new(0, "CardEffectDiscardHand", 0)], []);
+        var forgeTrait = new ScalingForgeCountTrait(new CardStatisticQuery("ForgePoints"), 2);
+        var creation = new CardCreationRule("source", new(new(), [starting], 0, []), [new(0, "CardEffectDiscardHand", 0)], [],
+            forgeCountScalingTraits: [forgeTrait]);
         var held = new CardInstanceState(2, "held", CardModifiers.Empty(), CardModifiers.Empty(), 0, 0, 0, []);
         var context = new CombatContext(new([new(2, "held")], [new(3, "held")], [], rng, 2, []), rng, 0, 4, 2,
             statistics: BattleStatistics.Empty().TrackCards([1, 2, 3]), cardInstances: [sourceCard, held, CardInstanceState.Empty(3, "held")],
@@ -28,6 +30,7 @@ internal static class CardGenerationChecks
             second.Temporary.Upgrades.Select(upgrade => upgrade.DataId).SequenceEqual(["optional", "temporary"]) &&
             first.Permanent.Offsets.Damage == 7 && first.Temporary.Offsets.Damage == 6 &&
             first.PlayCount == 0 && first.LastPlayedCost == 0 && first.LastForgedAmount == 0 && first.EffectCounters!.Single().Value == 0 &&
+            first.ForgeCountScalingTraits?.Single().ForgedCountPerStat == 2 && first.ForgeCountScalingTraits.Single().Query.Type == "ForgePoints" &&
             cloned.Context.NextAddedTemporaryUpgrades!.Count == 0 && cloned.Context.Statistics!.Value(4, "TimesDrawn") == 0,
             "Clone initialization lost modifiers/exclusions, consumed pending upgrades more than once, copied history/counters or counted a draw.");
         CardGenerationResult ignoredTemp = CardGenerationModel.Apply(context, new("DiscardPile", 0, [creation], copyModifiers: true,

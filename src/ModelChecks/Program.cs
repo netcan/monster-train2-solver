@@ -529,6 +529,7 @@ DamageScalingChecks.Run();
 StatusScalingChecks.Run();
 DynamicStatisticChecks.Run();
 EnergyChecks.Run();
+ForgePointsChecks.Run();
 CardCostChecks.Run();
 CardModifierChecks.Run();
 TerminalSpellChecks.Run();

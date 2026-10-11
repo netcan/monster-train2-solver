@@ -65,7 +65,8 @@ namespace MonsterTrain2Poju.Model
                 0, 0, 0, creation.ExternalInteractions, creation.EffectCounters, creation.DamageScalingTraits,
                 creation.StatusScalingTraits, creation.UnitUpgradeScalingTraits, creation.CapacityScalingTraits, creation.EquippedUnitId,
                 source.CardRegistry?.Any(card => card.PlayedRoomUnitIds != null) == true ? Array.Empty<int>() : null,
-                source.CardRegistry?.Any(card => card.RawPlayedRoomUnitIds != null) == true ? Array.Empty<int>() : null, creation.MaskDescriptor);
+                source.CardRegistry?.Any(card => card.RawPlayedRoomUnitIds != null) == true ? Array.Empty<int>() : null, creation.MaskDescriptor,
+                forgeCountScalingTraits: creation.ForgeCountScalingTraits);
             card = CardExhaustModel.InitializeCreated(card, source);
             error = CardModifierModel.UnsupportedReason(card);
             if (error != null) return Unsupported(error);

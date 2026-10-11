@@ -181,6 +181,14 @@ namespace MonsterTrain2Poju.Model
         { EffectIndex = effectIndex; Type = type; Value = value; }
     }
 
+    public sealed class ScalingForgeCountTrait
+    {
+        public CardStatisticQuery Query { get; }
+        public int ForgedCountPerStat { get; }
+        public ScalingForgeCountTrait(CardStatisticQuery query, int forgedCountPerStat)
+        { Query = query; ForgedCountPerStat = forgedCountPerStat; }
+    }
+
     public sealed class CardInstanceState
     {
         public int InstanceId { get; }
@@ -196,6 +204,7 @@ namespace MonsterTrain2Poju.Model
         public IReadOnlyList<ScalingStatusTrait>? StatusScalingTraits { get; }
         public IReadOnlyList<ScalingUnitUpgradeTrait>? UnitUpgradeScalingTraits { get; }
         public IReadOnlyList<ScalingCapacityTrait>? CapacityScalingTraits { get; }
+        public IReadOnlyList<ScalingForgeCountTrait>? ForgeCountScalingTraits { get; }
         public int? EquippedUnitId { get; }
         public IReadOnlyList<int>? PlayedRoomUnitIds { get; }
         public IReadOnlyList<int>? RawPlayedRoomUnitIds { get; }
@@ -207,7 +216,7 @@ namespace MonsterTrain2Poju.Model
             IReadOnlyList<ScalingStatusTrait>? statusScalingTraits = null, IReadOnlyList<ScalingUnitUpgradeTrait>? unitUpgradeScalingTraits = null,
             IReadOnlyList<ScalingCapacityTrait>? capacityScalingTraits = null, int? equippedUnitId = null, IReadOnlyList<int>? playedRoomUnitIds = null,
             IReadOnlyList<int>? rawPlayedRoomUnitIds = null, CardMaskDescriptor? maskDescriptor = null,
-            CardExhaustState? exhaustState = null)
+            CardExhaustState? exhaustState = null, IReadOnlyList<ScalingForgeCountTrait>? forgeCountScalingTraits = null)
         { InstanceId = instanceId; DataId = dataId; Permanent = permanent; Temporary = temporary; MaskDescriptor = maskDescriptor; ExhaustState = exhaustState;
             LastPlayedCost = lastPlayedCost; LastForgedAmount = lastForgedAmount; PlayCount = playCount;
             ExternalInteractions = Array.AsReadOnly(externalInteractions.ToArray());
@@ -216,12 +225,13 @@ namespace MonsterTrain2Poju.Model
             StatusScalingTraits = statusScalingTraits == null ? null : Array.AsReadOnly(statusScalingTraits.ToArray());
             UnitUpgradeScalingTraits = unitUpgradeScalingTraits == null ? null : Array.AsReadOnly(unitUpgradeScalingTraits.ToArray());
             CapacityScalingTraits = capacityScalingTraits == null ? null : Array.AsReadOnly(capacityScalingTraits.ToArray());
+            ForgeCountScalingTraits = forgeCountScalingTraits == null ? null : Array.AsReadOnly(forgeCountScalingTraits.ToArray());
             EquippedUnitId = equippedUnitId;
             PlayedRoomUnitIds = playedRoomUnitIds == null ? null : Array.AsReadOnly(playedRoomUnitIds.OrderBy(id => id).ToArray());
             RawPlayedRoomUnitIds = rawPlayedRoomUnitIds == null ? null : Array.AsReadOnly(rawPlayedRoomUnitIds.OrderBy(id => id).ToArray()); }
         internal CardInstanceState WithEquippedUnit(int unitId) => new CardInstanceState(InstanceId, DataId,
             Permanent, Temporary, LastPlayedCost, LastForgedAmount, PlayCount, ExternalInteractions,
-            EffectCounters, DamageScalingTraits, StatusScalingTraits, UnitUpgradeScalingTraits, CapacityScalingTraits, unitId, PlayedRoomUnitIds, RawPlayedRoomUnitIds, MaskDescriptor, ExhaustState);
+            EffectCounters, DamageScalingTraits, StatusScalingTraits, UnitUpgradeScalingTraits, CapacityScalingTraits, unitId, PlayedRoomUnitIds, RawPlayedRoomUnitIds, MaskDescriptor, ExhaustState, ForgeCountScalingTraits);
         internal CardInstanceState WithModifiers(CardModifiers permanent, CardModifiers temporary, bool refreshTraits = true)
         {
             CardMaskDescriptor? descriptor = MaskDescriptor;
@@ -232,37 +242,37 @@ namespace MonsterTrain2Poju.Model
             }
             var changed = new CardInstanceState(InstanceId, DataId,
             permanent, temporary, LastPlayedCost, LastForgedAmount, PlayCount, ExternalInteractions,
-            EffectCounters, DamageScalingTraits, StatusScalingTraits, UnitUpgradeScalingTraits, CapacityScalingTraits, EquippedUnitId, PlayedRoomUnitIds, RawPlayedRoomUnitIds, descriptor, ExhaustState);
+            EffectCounters, DamageScalingTraits, StatusScalingTraits, UnitUpgradeScalingTraits, CapacityScalingTraits, EquippedUnitId, PlayedRoomUnitIds, RawPlayedRoomUnitIds, descriptor, ExhaustState, ForgeCountScalingTraits);
             return refreshTraits && (!Permanent.Upgrades.SequenceEqual(permanent.Upgrades) || !Temporary.Upgrades.SequenceEqual(temporary.Upgrades))
                 ? CardExhaustModel.RefreshUpgradeTrait(changed) : changed;
         }
         internal CardInstanceState WithPlayedRoomUnits(IReadOnlyList<int> units) => new CardInstanceState(InstanceId, DataId,
             Permanent, Temporary, LastPlayedCost, LastForgedAmount, PlayCount, ExternalInteractions,
             EffectCounters, DamageScalingTraits, StatusScalingTraits, UnitUpgradeScalingTraits, CapacityScalingTraits, EquippedUnitId, units,
-            RawPlayedRoomUnitIds == null ? null : units, MaskDescriptor, ExhaustState);
+            RawPlayedRoomUnitIds == null ? null : units, MaskDescriptor, ExhaustState, ForgeCountScalingTraits);
         internal CardInstanceState WithRoomCacheState(IReadOnlyList<int>? visible, IReadOnlyList<int>? raw) => new CardInstanceState(InstanceId, DataId,
             Permanent, Temporary, LastPlayedCost, LastForgedAmount, PlayCount, ExternalInteractions,
-            EffectCounters, DamageScalingTraits, StatusScalingTraits, UnitUpgradeScalingTraits, CapacityScalingTraits, EquippedUnitId, visible, raw, MaskDescriptor, ExhaustState);
+            EffectCounters, DamageScalingTraits, StatusScalingTraits, UnitUpgradeScalingTraits, CapacityScalingTraits, EquippedUnitId, visible, raw, MaskDescriptor, ExhaustState, ForgeCountScalingTraits);
         public static CardInstanceState Empty(int id, string dataId) => new CardInstanceState(id, dataId,
             CardModifiers.Empty(), CardModifiers.Empty(), 0, 0, 0, Array.Empty<string>());
         internal CardInstanceState WithPlayedCost(int cost) => new CardInstanceState(InstanceId, DataId,
             Permanent, Temporary, cost, LastForgedAmount, PlayCount, ExternalInteractions,
-            EffectCounters, DamageScalingTraits, StatusScalingTraits, UnitUpgradeScalingTraits, CapacityScalingTraits, EquippedUnitId, PlayedRoomUnitIds, RawPlayedRoomUnitIds, MaskDescriptor, ExhaustState);
+            EffectCounters, DamageScalingTraits, StatusScalingTraits, UnitUpgradeScalingTraits, CapacityScalingTraits, EquippedUnitId, PlayedRoomUnitIds, RawPlayedRoomUnitIds, MaskDescriptor, ExhaustState, ForgeCountScalingTraits);
         public CardInstanceState OnDiscard(bool played, int cost = 0)
         {
             CardInstanceState callback = played ? CardExhaustModel.MarkPlayedDiscard(this) : this;
             CardModifiers temporary = Temporary.OnDiscard();
             var result = new CardInstanceState(InstanceId, DataId, Permanent, temporary, played ? cost : LastPlayedCost, LastForgedAmount,
-                unchecked(PlayCount + (played ? 1 : 0)), ExternalInteractions, EffectCounters, DamageScalingTraits, StatusScalingTraits, UnitUpgradeScalingTraits, CapacityScalingTraits, EquippedUnitId, PlayedRoomUnitIds, RawPlayedRoomUnitIds, MaskDescriptor, callback.ExhaustState);
+                unchecked(PlayCount + (played ? 1 : 0)), ExternalInteractions, EffectCounters, DamageScalingTraits, StatusScalingTraits, UnitUpgradeScalingTraits, CapacityScalingTraits, EquippedUnitId, PlayedRoomUnitIds, RawPlayedRoomUnitIds, MaskDescriptor, callback.ExhaustState, ForgeCountScalingTraits);
             return Temporary.Upgrades.SequenceEqual(temporary.Upgrades) ? result : CardExhaustModel.RefreshUpgradeTrait(result);
         }
         internal CardInstanceState WithExhaustState(CardExhaustState? state) => new CardInstanceState(InstanceId, DataId,
             Permanent, Temporary, LastPlayedCost, LastForgedAmount, PlayCount, ExternalInteractions, EffectCounters, DamageScalingTraits,
-            StatusScalingTraits, UnitUpgradeScalingTraits, CapacityScalingTraits, EquippedUnitId, PlayedRoomUnitIds, RawPlayedRoomUnitIds, MaskDescriptor, state);
+            StatusScalingTraits, UnitUpgradeScalingTraits, CapacityScalingTraits, EquippedUnitId, PlayedRoomUnitIds, RawPlayedRoomUnitIds, MaskDescriptor, state, ForgeCountScalingTraits);
         internal CardInstanceState WithCounter(int index, string type, int value) => new CardInstanceState(InstanceId, DataId,
             Permanent, Temporary, LastPlayedCost, LastForgedAmount, PlayCount, ExternalInteractions,
             (EffectCounters ?? Array.Empty<CardEffectCounter>()).Where(counter => counter.EffectIndex != index)
-                .Concat(new[] { new CardEffectCounter(index, type, value) }).ToArray(), DamageScalingTraits, StatusScalingTraits, UnitUpgradeScalingTraits, CapacityScalingTraits, EquippedUnitId, PlayedRoomUnitIds, RawPlayedRoomUnitIds, MaskDescriptor, ExhaustState);
+                .Concat(new[] { new CardEffectCounter(index, type, value) }).ToArray(), DamageScalingTraits, StatusScalingTraits, UnitUpgradeScalingTraits, CapacityScalingTraits, EquippedUnitId, PlayedRoomUnitIds, RawPlayedRoomUnitIds, MaskDescriptor, ExhaustState, ForgeCountScalingTraits);
     }
 
     public static class CardModifierModel

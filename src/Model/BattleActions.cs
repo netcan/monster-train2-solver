@@ -570,7 +570,7 @@ namespace MonsterTrain2Poju.Model
                 train.Context?.NextUnitId ?? nextUnitId, spawn.Treasures, spawn.TreasuresRemaining, spawn.TreasureEnabled, spawn.FirstTreasureTurn,
                 spawn.FirstTreasureRoom, spawn.Turn, spawn.ExternalInteractions, spawn.CanonicalDecisionReferences);
             return new BattleActionResult(new BattleTurnState(spawn, context.EnergyState == null ? source.Energy - paidCost : context.QueryFrame!.Energy!.Value, source.EnergyPerTurn,
-                source.DrawPerTurn, source.ForgePoints, source.DragonsHoard, source.MoonPhase,
+                source.DrawPerTurn, context.QueryFrame?.ForgePoints ?? source.ForgePoints, source.DragonsHoard, source.MoonPhase,
                 source.RngStreams.Select(stream => new BattleRngStream(stream.Name, stream.Seed,
                     stream.Name == "Battle" ? context.BattleRng : stream.Name == "CardDraw" ? context.Cards.Rng : stream.State)).ToArray(),
                 piles, source.ExternalInteractions, source.PlayRules, source.BattlePreviewEnabled, source.UiRngIsolated,

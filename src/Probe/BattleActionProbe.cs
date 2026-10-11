@@ -131,7 +131,7 @@ namespace MonsterTrain2Poju.Probe
             }
             else if (kind == "CardEffectNULL") kind = "Null";
             else if ((data.GetCardType() == CardType.Spell || data.GetCardType() == CardType.Equipment) && effects.Length > 0 && effects.All(effect =>
-                    new[] { "CardEffectCopyUnits", "CardEffectBump", "CardEffectAttackWithUnit", "CardEffectRemoveStatusEffect", "CardEffectSetUnitAbility", "CardEffectRemoveAbility", "CardEffectResetCooldown", "CardEffectAdjustAbilityCooldown", "CardEffectAttachEquipment", "CardEffectRemoveEquipment", "CardEffectRewardGold", "CardEffectGainEnergy", "CardEffectAdjustEnergy", "CardEffectGainEnergyNextTurn", "CardEffectGainEnergyEveryTurn", "CardEffectDamage", "CardEffectDamagePerSourceAttack", "CardEffectDraw", "CardEffectDrawAdditionalNextTurn", "CardEffectAdjustRoomCapacity", "CardEffectDiscardHand", "CardEffectAddBattleCard", "CardEffectHeal", "CardEffectSacrifice", "CardEffectBuffDamage", "CardEffectDebuffDamage", "CardEffectBuffMaxHealth", "CardEffectDebuffMaxHealth", "CardEffectAddStatusEffect", "CardEffectAddStatusEffectPerOtherEffect", "CardEffectSpawnMonsterOrAddStatusEffect", "CardEffectFloorRearrange", "CardEffectAddCardUpgradeToUnits",
+                    new[] { "CardEffectCopyUnits", "CardEffectBump", "CardEffectAttackWithUnit", "CardEffectRemoveStatusEffect", "CardEffectSetUnitAbility", "CardEffectRemoveAbility", "CardEffectResetCooldown", "CardEffectAdjustAbilityCooldown", "CardEffectAttachEquipment", "CardEffectRemoveEquipment", "CardEffectRewardGold", "CardEffectGainEnergy", "CardEffectAdjustEnergy", "CardEffectGainEnergyNextTurn", "CardEffectGainEnergyEveryTurn", "CardEffectDamage", "CardEffectDamagePerSourceAttack", "CardEffectDraw", "CardEffectDrawAdditionalNextTurn", "CardEffectAdjustRoomCapacity", "CardEffectAdjustForgePoints", "CardEffectDiscardHand", "CardEffectAddBattleCard", "CardEffectHeal", "CardEffectSacrifice", "CardEffectBuffDamage", "CardEffectDebuffDamage", "CardEffectBuffMaxHealth", "CardEffectDebuffMaxHealth", "CardEffectAddStatusEffect", "CardEffectAddStatusEffectPerOtherEffect", "CardEffectSpawnMonsterOrAddStatusEffect", "CardEffectFloorRearrange", "CardEffectAddCardUpgradeToUnits",
                     "CardEffectDrawType", "CardEffectAddTempCardUpgradeToNextDrawnCard",
                     "CardEffectAddTempCardUpgradeToUnits", "CardEffectRemoveTempUpgradeFromUnit",
                     "CardEffectAddTempCardUpgradeToCardsInHand", "CardEffectAddPermanentCardUpgradeToCardsInHand" }.Contains(effect.GetEffectStateName())))
@@ -156,6 +156,7 @@ namespace MonsterTrain2Poju.Probe
                             !cardOnlyDrawTarget && !CardTargetModel.Supports(effect.GetTargetMode().ToString())))
                         interactions.Add("Spell scaling or target filters");
                     string type = EnergyModel.IsNativeEffect(effect.GetEffectStateName()) ? EnergyEffectProbe.Type(effect) :
+                        effect.GetEffectStateName() == "CardEffectAdjustForgePoints" ? ForgePointsModel.Effect :
                         effect.GetEffectStateName() == "CardEffectCopyUnits" ? "CopyUnits" :
                         effect.GetEffectStateName() == "CardEffectBump" ? "Bump" :
                         effect.GetEffectStateName() == "CardEffectAttackWithUnit" ? "AttackWithUnit" :
@@ -183,7 +184,7 @@ namespace MonsterTrain2Poju.Probe
                         effect.GetEffectStateName() == "CardEffectAddStatusEffect" ? "AddStatus" :
                         handUpgrade ? "HandUpgrade" : effect.GetEffectStateName() == "CardEffectRemoveTempUpgradeFromUnit" ? "RemoveUnitUpgrade" : "UnitUpgrade";
                     CardUpgradeModifier? upgrade = type == "DrawNextTurn" ? BonusDrawProbe.Upgrade(effect) : null;
-                    if (effect.GetUseIntRange() && !EnergyModel.IsEffect(type) && !new[] { "CopyUnits", "Bump", "Damage", "DamagePerSourceAttack", "Heal", "AddStatus", "BuffAttack", "DebuffAttack", "BuffHealth", "DebuffHealth", "Draw", "DrawType", "ScheduleNextDrawUpgrade", "DrawNextTurn", "AdjustCapacity", "DiscardHand", "Generate" }.Contains(type))
+                    if (effect.GetUseIntRange() && !EnergyModel.IsEffect(type) && type != ForgePointsModel.Effect && !new[] { "CopyUnits", "Bump", "Damage", "DamagePerSourceAttack", "Heal", "AddStatus", "BuffAttack", "DebuffAttack", "BuffHealth", "DebuffHealth", "Draw", "DrawType", "ScheduleNextDrawUpgrade", "DrawNextTurn", "AdjustCapacity", "DiscardHand", "Generate" }.Contains(type))
                         interactions.Add("Unimplemented integer range consumer " + type);
                     string lifetime = "";
                     if (type == "BuffHealth") lifetime = ((UnitUpgradeLifetimeTempOnly)effect.GetAdditionalParamInt1()).ToString();

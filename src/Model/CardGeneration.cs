@@ -14,18 +14,21 @@ namespace MonsterTrain2Poju.Model
         public IReadOnlyList<ScalingStatusTrait>? StatusScalingTraits { get; }
         public IReadOnlyList<ScalingUnitUpgradeTrait>? UnitUpgradeScalingTraits { get; }
         public IReadOnlyList<ScalingCapacityTrait>? CapacityScalingTraits { get; }
+        public IReadOnlyList<ScalingForgeCountTrait>? ForgeCountScalingTraits { get; }
         public int? EquippedUnitId { get; }
         public CardMaskDescriptor? MaskDescriptor { get; }
         public CardCreationRule(string dataId, CardModifiers startingModifiers, IReadOnlyList<CardEffectCounter>? effectCounters,
             IReadOnlyList<string> externalInteractions, IReadOnlyList<ScalingDamageTrait>? damageScalingTraits = null,
             IReadOnlyList<ScalingStatusTrait>? statusScalingTraits = null, IReadOnlyList<ScalingUnitUpgradeTrait>? unitUpgradeScalingTraits = null,
-            IReadOnlyList<ScalingCapacityTrait>? capacityScalingTraits = null, int? equippedUnitId = null, CardMaskDescriptor? maskDescriptor = null)
+            IReadOnlyList<ScalingCapacityTrait>? capacityScalingTraits = null, int? equippedUnitId = null, CardMaskDescriptor? maskDescriptor = null,
+            IReadOnlyList<ScalingForgeCountTrait>? forgeCountScalingTraits = null)
         { DataId = dataId; StartingModifiers = startingModifiers; EffectCounters = effectCounters == null ? null : Array.AsReadOnly(effectCounters.ToArray());
             ExternalInteractions = Array.AsReadOnly(externalInteractions.ToArray());
             DamageScalingTraits = damageScalingTraits == null ? null : Array.AsReadOnly(damageScalingTraits.ToArray());
             StatusScalingTraits = statusScalingTraits == null ? null : Array.AsReadOnly(statusScalingTraits.ToArray());
             UnitUpgradeScalingTraits = unitUpgradeScalingTraits == null ? null : Array.AsReadOnly(unitUpgradeScalingTraits.ToArray());
             CapacityScalingTraits = capacityScalingTraits == null ? null : Array.AsReadOnly(capacityScalingTraits.ToArray());
+            ForgeCountScalingTraits = forgeCountScalingTraits == null ? null : Array.AsReadOnly(forgeCountScalingTraits.ToArray());
             EquippedUnitId = equippedUnitId; MaskDescriptor = maskDescriptor; }
     }
 
@@ -84,7 +87,8 @@ namespace MonsterTrain2Poju.Model
                 creation.DamageScalingTraits, creation.StatusScalingTraits, creation.UnitUpgradeScalingTraits,
                 creation.CapacityScalingTraits, creation.EquippedUnitId,
                 source.CardRegistry.Any(item => item.PlayedRoomUnitIds != null) ? Array.Empty<int>() : null,
-                source.CardRegistry.Any(item => item.RawPlayedRoomUnitIds != null) ? Array.Empty<int>() : null, creation.MaskDescriptor);
+                source.CardRegistry.Any(item => item.RawPlayedRoomUnitIds != null) ? Array.Empty<int>() : null, creation.MaskDescriptor,
+                forgeCountScalingTraits: creation.ForgeCountScalingTraits);
             card = CardExhaustModel.InitializeCreated(card, source);
             string? error = CardModifierModel.UnsupportedReason(card);
             if (error != null) return Unsupported(error);
@@ -115,7 +119,8 @@ namespace MonsterTrain2Poju.Model
                 creation.ExternalInteractions, creation.EffectCounters, creation.DamageScalingTraits, creation.StatusScalingTraits,
                 creation.UnitUpgradeScalingTraits, creation.CapacityScalingTraits, creation.EquippedUnitId,
                 copying.PlayedRoomUnitIds == null ? null : Array.Empty<int>(),
-                copying.RawPlayedRoomUnitIds == null ? null : Array.Empty<int>(), creation.MaskDescriptor);
+                copying.RawPlayedRoomUnitIds == null ? null : Array.Empty<int>(), creation.MaskDescriptor,
+                forgeCountScalingTraits: creation.ForgeCountScalingTraits);
             clone = CardExhaustModel.InitializeCreated(clone, source);
             foreach (CardUpgradeModifier upgrade in permanent.Upgrades)
             {
@@ -148,7 +153,7 @@ namespace MonsterTrain2Poju.Model
                     rule.SkipDuplicateInHand && context.Cards.Hand.Any(card => card.DataId == creation.DataId))) continue;
                 string? descriptorError = CardBranchMaskModel.ValidateCreation(context, creation);
                 if (descriptorError != null) return Unsupported(descriptorError);
-                if (context.CardInstances == null && (HasModifiers(creation.StartingModifiers) || creation.EffectCounters?.Count > 0 || creation.DamageScalingTraits?.Count > 0 || creation.StatusScalingTraits?.Count > 0 || creation.UnitUpgradeScalingTraits?.Count > 0 ||
+                if (context.CardInstances == null && (HasModifiers(creation.StartingModifiers) || creation.EffectCounters?.Count > 0 || creation.DamageScalingTraits?.Count > 0 || creation.StatusScalingTraits?.Count > 0 || creation.UnitUpgradeScalingTraits?.Count > 0 || creation.ForgeCountScalingTraits?.Count > 0 ||
                     rule.Upgrade != null || context.NextAddedTemporaryUpgrades?.Count > 0 || rule.CopyModifiers && context.FindCard(sourceCardId) != null))
                     return Unsupported("Modified generation requires complete card instance state.");
                 CardModifiers permanent = Copy(CardModifiers.Empty(), creation.StartingModifiers, new HashSet<string>(StringComparer.Ordinal)),
@@ -156,7 +161,8 @@ namespace MonsterTrain2Poju.Model
                 CardInstanceState candidate = new(context.NextCardId, creation.DataId, permanent, temporary, 0, 0, 0,
                     creation.ExternalInteractions, creation.EffectCounters, creation.DamageScalingTraits, creation.StatusScalingTraits, creation.UnitUpgradeScalingTraits, creation.CapacityScalingTraits, creation.EquippedUnitId,
                     context.CardRegistry?.Any(card => card.PlayedRoomUnitIds != null) == true ? Array.Empty<int>() : null,
-                    context.CardRegistry?.Any(card => card.RawPlayedRoomUnitIds != null) == true ? Array.Empty<int>() : null, creation.MaskDescriptor);
+                    context.CardRegistry?.Any(card => card.RawPlayedRoomUnitIds != null) == true ? Array.Empty<int>() : null, creation.MaskDescriptor,
+                    forgeCountScalingTraits: creation.ForgeCountScalingTraits);
                 void RefreshUpgrades()
                 {
                     context = CardMagicPowerModel.Refresh(context, candidate.WithModifiers(permanent, temporary), out CardInstanceState refreshed);
@@ -237,7 +243,8 @@ namespace MonsterTrain2Poju.Model
                 candidate = new CardInstanceState(card.InstanceId, card.DataId, permanent, temporary, 0, 0, 0,
                     creation.ExternalInteractions, creation.EffectCounters, creation.DamageScalingTraits, creation.StatusScalingTraits, creation.UnitUpgradeScalingTraits, creation.CapacityScalingTraits, creation.EquippedUnitId,
                     context.CardRegistry?.Any(card => card.PlayedRoomUnitIds != null) == true ? Array.Empty<int>() : null,
-                    context.CardRegistry?.Any(card => card.RawPlayedRoomUnitIds != null) == true ? Array.Empty<int>() : null, candidate.MaskDescriptor);
+                    context.CardRegistry?.Any(card => card.RawPlayedRoomUnitIds != null) == true ? Array.Empty<int>() : null, candidate.MaskDescriptor,
+                    forgeCountScalingTraits: creation.ForgeCountScalingTraits);
                 candidate = CardExhaustModel.InitializeCreated(candidate, context);
                 context = new CombatContext(new CardCycleState(hand, draw, discard, context.Cards.Rng, context.Cards.DrawModifier,
                     context.Cards.ExternalInteractions, context.Cards.BonusDraw, context.Cards.NextDrawUpgrades, context.Cards.NextUpgradeReferenceId), rng, context.Gold, checked(context.NextCardId + 1), context.MaxHandSize,
@@ -249,6 +256,7 @@ namespace MonsterTrain2Poju.Model
                 // enters its pile, even when the displayed scaling value is zero.
                 if (context.QueryFrame?.ActiveBattle == true && context.Statistics?.StoredCards != null &&
                     (creation.DamageScalingTraits?.Count > 0 || creation.StatusScalingTraits?.Count > 0 || creation.UnitUpgradeScalingTraits?.Count > 0 ||
+                        creation.ForgeCountScalingTraits?.Count > 0 ||
                         creation.MaskDescriptor?.BaseTraits.Any(trait => trait.RuntimeType == "CardTraitShowCardTargets") == true &&
                         creation.MaskDescriptor.Definition.MainEffectNames.Contains("CardEffectDrawType")))
                     context = context.WithStatistics(context.Statistics.RefreshOwnedCards(context.CardInstances!.Select(card => card.InstanceId)));

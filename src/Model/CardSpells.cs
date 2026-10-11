@@ -329,6 +329,7 @@ namespace MonsterTrain2Poju.Model
                         effect.SacrificeSubtype, effect.TypedDraw, effect.NextDrawUpgrade, effect.RequiredGold,
                         effect.GoldCostRequired, effect.UseCardTraits, effect.RequireEquipment, effect.UseSelectedRoom);
                 }
+                if (effect.Type == ForgePointsModel.Effect && selected.Preview) continue;
                 UnityRng effectRng = state.Context!.BattleRng;
                 if (effect.Type != "CopyUnits" && effect.Type != "Bump" && effect.Type != "DiscardHand" && effect.Type != "Generate" && effect.Type != "AdjustCapacity" && effect.Type != "ScheduleNextDrawUpgrade" && !AbilityCooldownModel.IsEffect(effect.Type) && !AbilityLifecycleModel.IsEffect(effect.Type)) effect = Sample(effect, ref effectRng);
                 state = WithContext(state, state.Context.WithBattleRng(effectRng));
@@ -426,6 +427,13 @@ namespace MonsterTrain2Poju.Model
                 if (EnergyModel.IsEffect(effect.Type))
                 {
                     state = WithContext(state, EnergyModel.Apply(state.Context!, effect.Type, effect.Value));
+                    continue;
+                }
+                if (effect.Type == ForgePointsModel.Effect)
+                {
+                    ForgePointsResult changed = ForgePointsModel.Apply(state.Context!, effect.Value, sourceCardId);
+                    if (!changed.Supported) return UnsupportedTrain(changed.UnsupportedReason!);
+                    state = WithContext(state, changed.Context!);
                     continue;
                 }
                 if (effect.Type == "Generate")
@@ -923,7 +931,7 @@ namespace MonsterTrain2Poju.Model
                 if (effect.Range != null && effect.Type != "CopyUnits" && effect.Type != "Bump" && effect.Type != "DiscardHand" && effect.Type != "Generate" && effect.Type != "AdjustCapacity" && effect.Type != "ScheduleNextDrawUpgrade" &&
                     !AbilityLifecycleModel.IsEffect(effect.Type))
                 {
-                    if (!EnergyModel.IsEffect(effect.Type) && !new[] { "Damage", "Heal", "AddStatus", "BuffAttack", "DebuffAttack", "BuffHealth", "DebuffHealth", "Draw", "DrawType", "DrawNextTurn" }.Contains(effect.Type))
+                    if (!EnergyModel.IsEffect(effect.Type) && effect.Type != ForgePointsModel.Effect && !new[] { "Damage", "Heal", "AddStatus", "BuffAttack", "DebuffAttack", "BuffHealth", "DebuffHealth", "Draw", "DrawType", "DrawNextTurn" }.Contains(effect.Type))
                         return "Unmodeled range consumer " + effect.Type;
                     string? rangeError = effect.Range.Validate();
                     if (rangeError != null) return rangeError;
@@ -996,12 +1004,18 @@ namespace MonsterTrain2Poju.Model
                     if (energyError != null) return energyError;
                     continue;
                 }
+                if (effect.Type == ForgePointsModel.Effect)
+                {
+                    string? forgeError = ForgePointsModel.Validate(source.Context);
+                    if (forgeError != null) return forgeError;
+                    continue;
+                }
                 if (!new[] { "CopyUnits", "Bump", "AttackWithUnit", "Damage", "DamagePerSourceAttack", "Heal", "Sacrifice", "AddStatus", "AddStatusPerOtherEffect", "SpawnOrStatus", "FloorRearrange", "UnitUpgrade", "RemoveUnitUpgrade", "AttachEquipment", "RemoveEquipment", "BuffAttack", "DebuffAttack", "BuffHealth", "DebuffHealth", "Draw", "DiscardHand", "Generate" }.Contains(effect.Type))
                     return "Unimplemented spell effect " + effect.Type;
                 if (effect.Type == "Generate" && effect.Generation == null) return "Missing generated card rules.";
                 if ((effect.Type == "UnitUpgrade" || effect.Type == "RemoveUnitUpgrade") && effect.Upgrade == null)
                     return "Missing unit upgrade definition.";
-                if (effect.Value < 0 && !AttackChange(effect) && !new[] { "CopyUnits", "Bump", "Damage", "DamagePerSourceAttack", "Heal", "AddStatus", "AddStatusPerOtherEffect", "SpawnOrStatus", "BuffHealth", "DebuffHealth", "Draw", "DiscardHand", "Generate" }.Contains(effect.Type) ||
+                if (effect.Value < 0 && !AttackChange(effect) && effect.Type != ForgePointsModel.Effect && !new[] { "CopyUnits", "Bump", "Damage", "DamagePerSourceAttack", "Heal", "AddStatus", "AddStatusPerOtherEffect", "SpawnOrStatus", "BuffHealth", "DebuffHealth", "Draw", "DiscardHand", "Generate" }.Contains(effect.Type) ||
                     effect.Type == "FloorRearrange" && effect.Value > 1) return "Invalid spell effect value.";
                 if (effect.Type == "BuffHealth" && effect.Lifetime != "" && effect.Lifetime != "TemporaryUntilEndOfBattle" &&
                     effect.Lifetime != "TemporaryUntilUnitDeath") return "Unmodeled maximum-health buff lifetime.";
@@ -1074,6 +1088,7 @@ namespace MonsterTrain2Poju.Model
             if (effect.Type == "RewardGold") return context != null && (pyreAlive ?? context.EnergyState?.PyreAlive) == true &&
                 (effect.Value >= 0 || effect.GoldCostRequired == false || context.Gold >= unchecked(-effect.Value));
             if (effect.Type == "AdjustCapacity") return !preview && !bossDead && RoomCapacityModel.Test(room, effect);
+            if (effect.Type == ForgePointsModel.Effect) return ForgePointsModel.Test(pyreAlive ?? context?.EnergyState?.PyreAlive);
             if (EnergyModel.IsEffect(effect.Type)) return !preview && !bossDead && EnergyModel.Test(context!, effect.Type);
             if (preview && (effect.Type == "Draw" || effect.Type == "DrawType" || effect.Type == "ScheduleNextDrawUpgrade" || effect.Type == "DrawNextTurn" || effect.Type == "DiscardHand" || effect.Type == "Generate")) return false;
             if (bossDead && !(effect.Tests?.CanPlayAfterBossDead ?? (effect.Type != "HandUpgrade" && effect.Type != "Draw" && effect.Type != "DrawType" && effect.Type != "ScheduleNextDrawUpgrade" && effect.Type != "DrawNextTurn" && effect.Type != "DiscardHand" && effect.Type != "Generate"))) return false;
