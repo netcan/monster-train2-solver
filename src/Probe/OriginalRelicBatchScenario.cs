@@ -11,10 +11,10 @@ namespace MonsterTrain2Poju.Probe
     internal static class OriginalRelicBatchScenario
     {
         internal const string Name = "original-relic-batch";
-        internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == Name || OriginalUnitRelicBatchScenario.Enabled || OriginalTriggerRelicBatchScenario.Enabled || OriginalStatusRelicBatchScenario.Enabled || OriginalMagnitudeRelicBatchScenario.Enabled || OriginalLifecycleRelicBatchScenario.Enabled;
+        internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == Name || OriginalUnitRelicBatchScenario.Enabled || OriginalTriggerRelicBatchScenario.Enabled || OriginalStatusRelicBatchScenario.Enabled || OriginalMagnitudeRelicBatchScenario.Enabled || OriginalLifecycleRelicBatchScenario.Enabled || OriginalDecayRelicBatchScenario.Enabled;
         private static bool prepared, captureReady;
-        internal static bool Prepared => prepared || OriginalUnitRelicBatchScenario.Prepared || OriginalTriggerRelicBatchScenario.Prepared || OriginalStatusRelicBatchScenario.Prepared || OriginalMagnitudeRelicBatchScenario.Prepared || OriginalLifecycleRelicBatchScenario.Prepared;
-        internal static bool CaptureReady => captureReady || OriginalUnitRelicBatchScenario.CaptureReady || OriginalTriggerRelicBatchScenario.CaptureReady || OriginalStatusRelicBatchScenario.CaptureReady || OriginalMagnitudeRelicBatchScenario.CaptureReady || OriginalLifecycleRelicBatchScenario.CaptureReady;
+        internal static bool Prepared => prepared || OriginalUnitRelicBatchScenario.Prepared || OriginalTriggerRelicBatchScenario.Prepared || OriginalStatusRelicBatchScenario.Prepared || OriginalMagnitudeRelicBatchScenario.Prepared || OriginalLifecycleRelicBatchScenario.Prepared || OriginalDecayRelicBatchScenario.Prepared;
+        internal static bool CaptureReady => captureReady || OriginalUnitRelicBatchScenario.CaptureReady || OriginalTriggerRelicBatchScenario.CaptureReady || OriginalStatusRelicBatchScenario.CaptureReady || OriginalMagnitudeRelicBatchScenario.CaptureReady || OriginalLifecycleRelicBatchScenario.CaptureReady || OriginalDecayRelicBatchScenario.CaptureReady;
         internal static readonly string[] ArtifactKeys =
         {
             "MoltenManifold", "SpawnWithRage", "UnitsGainLifesteal", "ContingencyPlans"
@@ -23,6 +23,7 @@ namespace MonsterTrain2Poju.Probe
         internal static void Prepare(AllGameManagers managers, ManualLogSource log)
         {
             if (!Enabled || Prepared) return;
+            if (OriginalDecayRelicBatchScenario.Enabled) { OriginalDecayRelicBatchScenario.Prepare(managers, log); return; }
             if (OriginalLifecycleRelicBatchScenario.Enabled) { OriginalLifecycleRelicBatchScenario.Prepare(managers, log); return; }
             if (OriginalMagnitudeRelicBatchScenario.Enabled) { OriginalMagnitudeRelicBatchScenario.Prepare(managers, log); return; }
             if (OriginalStatusRelicBatchScenario.Enabled) { OriginalStatusRelicBatchScenario.Prepare(managers, log); return; }

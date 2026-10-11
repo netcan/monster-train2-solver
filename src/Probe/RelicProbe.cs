@@ -11,8 +11,9 @@ namespace MonsterTrain2Poju.Probe
         private static EquipmentTriggerDefinition[]? equipmentDefinitions;
         internal static bool HasTriggerCounts(AllGameManagers managers) =>
             Current(managers).Any(relic => relic.GetEffects().Any(effect => effect is RelicEffectModifyTriggerCount || effect is RelicEffectAddTrigger));
-        internal static bool HasStatusMagnitudes(AllGameManagers managers) =>
-            Current(managers).Any(relic => relic.GetEffects().Any(effect => effect is RelicEffectModifyStatusMagnitude));
+        internal static bool HasStatusAttackHistory(AllGameManagers managers) =>
+            Current(managers).Any(relic => relic.GetEffects().Any(effect => effect is RelicEffectModifyStatusMagnitude ||
+                effect is RelicEffectPreventStatusEffectDecay decay && decay.GetStatusEffects().Any(status => status.statusId == "buff")));
         private static List<RelicState> Current(AllGameManagers managers)
         {
             var relics = new List<RelicState>();
@@ -38,12 +39,22 @@ namespace MonsterTrain2Poju.Probe
                     .Where(item => item.Effect is RelicEffectAddStatusEffectOnStatusApplied).Select(item => StatusStacks(item.Effect, item.Index)).ToArray();
                 var magnitudes = effects.Select((effect, index) => new { Effect = effect, Index = index })
                     .Where(item => item.Effect is RelicEffectModifyStatusMagnitude).Select(item => StatusMagnitude(item.Effect, item.Index)).ToArray();
+                var decays = effects.Select((effect, index) => new { Effect = effect, Index = index })
+                    .Where(item => item.Effect is RelicEffectPreventStatusEffectDecay).Select(item => StatusDecay(item.Effect, item.Index)).ToArray();
                 return new CombatRelicState(relic.GetRelicDataID(), relic.GetAssetName(), effects.Select(effect => effect.GetType().Name).ToArray(),
                     statuses.Length == 0 ? null : statuses, relic is CovenantState,
                     relic.DisallowedInPlacementPhase, cardModifiers?.Length > 0 ? cardModifiers : null,
                     triggers.Length > 0 ? triggers : null, stackAdditions.Length > 0 ? stackAdditions : null,
-                    magnitudes.Length > 0 ? magnitudes : null);
+                    magnitudes.Length > 0 ? magnitudes : null, decays.Length > 0 ? decays : null);
             }).ToArray();
+        }
+
+        private static RelicStatusDecay StatusDecay(IRelicEffect effect, int index)
+        {
+            var data = (RelicEffectData)AccessTools.Field(typeof(RelicEffectBase), "_srcRelicEffectData").GetValue(effect);
+            if (!effect.CanApplyInPreviewMode) throw new InvalidOperationException("Unexpected status decay preview restriction.");
+            return new RelicStatusDecay(index, (int)data.GetParamSourceTeam(),
+                data.GetParamStatusEffects().Select(status => status.statusId).ToArray(), RelicCardModifierProbe.Conditions(effect));
         }
 
         private static RelicStatusMagnitude StatusMagnitude(IRelicEffect effect, int index)

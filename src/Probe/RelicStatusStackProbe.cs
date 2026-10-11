@@ -27,7 +27,7 @@ namespace MonsterTrain2Poju.Probe
         private static bool matrix;
         internal static void Matrix()
         {
-            if (!OriginalStatusRelicBatchScenario.Prepared) return;
+            if (!OriginalStatusRelicBatchScenario.Prepared && !OriginalDecayRelicBatchScenario.Prepared) return;
             AllGameManagers managers = AllGameManagers.Instance!;
             var targets = FullBattleTrace.Active!.KnownUnits.Where(unit => !unit.IsDestroyed && unit.IsAlive)
                 .Cast<CharacterState?>().Concat(new CharacterState?[] { null });
@@ -35,7 +35,7 @@ namespace MonsterTrain2Poju.Probe
             try
             {
                 foreach (CharacterState? target in targets)
-                foreach (string id in new[] { "armor", "valor", "pyregel", "regen" })
+                foreach (string id in OriginalDecayRelicBatchScenario.Prepared ? new[] { "buff", "poison", "armor", "regen" } : new[] { "armor", "valor", "pyregel", "regen" })
                 {
                     foreach (int count in new[] { -1, 0, 1, int.MaxValue }) Get(count, false, false, true, null);
                     Get(1, true, false, true, null); Get(0, true, true, true, null); Get(1, true, true, true, null);
@@ -57,7 +57,7 @@ namespace MonsterTrain2Poju.Probe
             private static void Postfix(StatusEffectStackData statusEffectStackData, CharacterState? onCharacter,
                 Type? fromEffectType, bool includeAdders, bool deferred, int __result)
             {
-                if (!OriginalStatusRelicBatchScenario.Prepared) return;
+                if (!OriginalStatusRelicBatchScenario.Prepared && !OriginalDecayRelicBatchScenario.Prepared) return;
                 CombatTeam? team = onCharacter == null ? (CombatTeam?)null : onCharacter.GetTeamType() == Team.Type.Monsters ? CombatTeam.Player : CombatTeam.Enemy;
                 bool has = onCharacter?.HasStatusEffect(statusEffectStackData.statusId) == true;
                 string key = statusEffectStackData.statusId + "/" + statusEffectStackData.count + "/" + team + "/" + has + "/" +

@@ -133,6 +133,7 @@ param(
     [switch] $OriginalStatusRelicBatch,
     [switch] $OriginalMagnitudeRelicBatch,
     [switch] $OriginalLifecycleRelicBatch,
+    [switch] $OriginalDecayRelicBatch,
     [switch] $TypedDraw,
     [switch] $IncantRelic,
     [switch] $IncantRelics,
@@ -185,6 +186,7 @@ if ($TypedDraw) { $BranchCardMasks = $true; $BattleRelicUpgrades = $true; $Polic
 if ($OriginalUnitRelicBatch) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalStatusRelicBatch) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalMagnitudeRelicBatch) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
+if ($OriginalDecayRelicBatch) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalTriggerRelicBatch -or $OriginalLifecycleRelicBatch) {
     $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $SettleDeathDissolves = $true; $SettleCardAnimations = $true
     $Policy = 'units-spells-and-junk'
@@ -373,6 +375,7 @@ if ($OriginalTriggerRelicBatch) { $environment['MT2_PROBE_MODIFIERS'] = 'origina
 if ($OriginalStatusRelicBatch) { $environment['MT2_PROBE_MODIFIERS'] = 'original-status-relic-batch' }
 if ($OriginalMagnitudeRelicBatch) { $environment['MT2_PROBE_MODIFIERS'] = 'original-magnitude-relic-batch' }
 if ($OriginalLifecycleRelicBatch) { $environment['MT2_PROBE_MODIFIERS'] = 'original-lifecycle-relic-batch' }
+if ($OriginalDecayRelicBatch) { $environment['MT2_PROBE_MODIFIERS'] = 'original-decay-relic-batch' }
 if ($TypedDraw) {
     $environment['MT2_PROBE_MODIFIERS'] = 'typed-draw'
     $environment['MT2_PROBE_ISOLATE_UI_RNG'] = '1'
