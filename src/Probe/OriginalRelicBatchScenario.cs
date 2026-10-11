@@ -11,10 +11,10 @@ namespace MonsterTrain2Poju.Probe
     internal static class OriginalRelicBatchScenario
     {
         internal const string Name = "original-relic-batch";
-        internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == Name || OriginalUnitRelicBatchScenario.Enabled || OriginalTriggerRelicBatchScenario.Enabled;
+        internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == Name || OriginalUnitRelicBatchScenario.Enabled || OriginalTriggerRelicBatchScenario.Enabled || OriginalStatusRelicBatchScenario.Enabled;
         private static bool prepared, captureReady;
-        internal static bool Prepared => prepared || OriginalUnitRelicBatchScenario.Prepared || OriginalTriggerRelicBatchScenario.Prepared;
-        internal static bool CaptureReady => captureReady || OriginalUnitRelicBatchScenario.CaptureReady || OriginalTriggerRelicBatchScenario.CaptureReady;
+        internal static bool Prepared => prepared || OriginalUnitRelicBatchScenario.Prepared || OriginalTriggerRelicBatchScenario.Prepared || OriginalStatusRelicBatchScenario.Prepared;
+        internal static bool CaptureReady => captureReady || OriginalUnitRelicBatchScenario.CaptureReady || OriginalTriggerRelicBatchScenario.CaptureReady || OriginalStatusRelicBatchScenario.CaptureReady;
         internal static readonly string[] ArtifactKeys =
         {
             "MoltenManifold", "SpawnWithRage", "UnitsGainLifesteal", "ContingencyPlans"
@@ -23,6 +23,7 @@ namespace MonsterTrain2Poju.Probe
         internal static void Prepare(AllGameManagers managers, ManualLogSource log)
         {
             if (!Enabled || Prepared) return;
+            if (OriginalStatusRelicBatchScenario.Enabled) { OriginalStatusRelicBatchScenario.Prepare(managers, log); return; }
             if (OriginalTriggerRelicBatchScenario.Enabled) { OriginalTriggerRelicBatchScenario.Prepare(managers, log); return; }
             if (OriginalUnitRelicBatchScenario.Enabled) { OriginalUnitRelicBatchScenario.Prepare(managers, log); return; }
             CardCostScenario.Prepare(managers, log, lethal: false);

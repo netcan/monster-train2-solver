@@ -485,7 +485,7 @@ namespace MonsterTrain2Poju.Probe
             string temporary = path + ".tmp";
             var snapshot = new
             {
-                Schema = TypedDrawProbe.Enabled ? 112 : SpawnStatusRelicScenario.Prepared ? SpawnStatusRelicScenario.Clones ? 111 : 110 : TriggerCountScenario.Prepared ? 109 : AbilityIncantScenario.Prepared ? 108 : CardAnimationSettlement.Enabled ? 106 : DeathDissolveSettlement.Enabled ? 105 : EnchantmentBattleScenario.Prepared ? 104 : 103,
+                Schema = OriginalStatusRelicBatchScenario.Prepared ? 113 : TypedDrawProbe.Enabled ? 112 : SpawnStatusRelicScenario.Prepared ? SpawnStatusRelicScenario.Clones ? 111 : 110 : TriggerCountScenario.Prepared ? 109 : AbilityIncantScenario.Prepared ? 108 : CardAnimationSettlement.Enabled ? 106 : DeathDissolveSettlement.Enabled ? 105 : EnchantmentBattleScenario.Prepared ? 104 : 103,
                 DeathDissolveSettlementEnabled = DeathDissolveSettlement.Enabled,
                 DeathDissolveSettlements = DeathDissolveSettlement.Records,
                 DeathDissolveCallbacks = DeathDissolveSettlement.Callbacks,
@@ -516,6 +516,7 @@ namespace MonsterTrain2Poju.Probe
                 TypedDrawCards = TypedDrawProbe.Draws,
                 TypedDrawClears = TypedDrawProbe.Clears,
                 RelicShiftQueries = OriginalUnitRelicBatchScenario.ShiftQueries,
+                RelicStatusStackQueries = RelicStatusStackProbe.Queries,
                 CardGenerations = GenerationScenario.Records,
                 DamageScaling = DamageScalingScenario.Samples,
                 StatusScaling = StatusScalingScenario.Samples,

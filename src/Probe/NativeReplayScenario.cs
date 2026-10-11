@@ -796,6 +796,7 @@ namespace MonsterTrain2Poju.Probe
             if (IsUnitAndJunkPolicy())
             {
                 BattleTurnState decision = FullBattleTrace.Active!.CaptureDecision();
+                RelicStatusStackProbe.Matrix();
                 pendingPlay = Environment.GetEnvironmentVariable("MT2_PROBE_FULL_BATTLE_POLICY") == "units-spells-and-junk"
                     ? BattleActionModel.ChooseUnitSpellAndJunkPlay(decision) : BattleActionModel.ChooseUnitAndJunkPlay(decision);
                 if (modifierScenario == "sacrifice-effects") pendingPlay = SacrificeScenario.Choose(decision);
