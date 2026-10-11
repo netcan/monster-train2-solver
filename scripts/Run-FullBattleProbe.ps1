@@ -246,6 +246,13 @@ Copy-Item -LiteralPath (Join-Path $workspace 'src\Probe\bin\Release\netstandard2
 Copy-Item -LiteralPath (Join-Path $workspace 'src\Model\bin\Release\netstandard2.1\Model.dll') -Destination $pluginDir -Force
 Copy-Item -LiteralPath (Join-Path $workspace 'src\FixtureArchive\bin\Release\netstandard2.1\FixtureArchive.dll') -Destination $pluginDir -Force
 Copy-Item -LiteralPath (Join-Path $workspace '.probe-baseline') -Destination $profile -Recurse
+$preferencesPath = Join-Path $profile 'preferences.json'
+if (Test-Path -LiteralPath $preferencesPath) {
+    $preferences = Get-Content -LiteralPath $preferencesPath -Raw | ConvertFrom-Json
+    if ($null -eq $preferences.audioSettings) { throw 'Probe profile is missing audio settings.' }
+    $preferences.audioSettings.globalMuted = $true
+    $preferences | ConvertTo-Json -Depth 32 -Compress | Set-Content -LiteralPath $preferencesPath -NoNewline -Encoding utf8
+}
 $environment = @{
     MT2_PROBE_DATA_DIR = $profile
     MT2_PROBE_SCENARIO = 'native-replay'
