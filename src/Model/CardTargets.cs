@@ -17,7 +17,7 @@ namespace MonsterTrain2Poju.Model
     public static class CardTargetModel
     {
         public static bool Supports(string mode) => new[] { "Room", "FrontInRoom", "BackInRoom", "Weakest", "RoomHealTargets",
-            "DropTargetCharacter", "LastTargetedCharacters", "StrongestLastTargetedCharacters", "RandomInRoom", "Self", "LastSpawnedCharacter" }.Contains(mode) || IsCrossRoom(mode);
+            "DropTargetCharacter", "Pyre", "LastTargetedCharacters", "StrongestLastTargetedCharacters", "RandomInRoom", "Self", "LastSpawnedCharacter" }.Contains(mode) || IsCrossRoom(mode);
         public static bool IsCrossRoom(string mode) => new[] { "Tower", "RandomFromAnyRoom", "FrontInAllRooms",
             "FrontInRoomAndRoomAbove", "WeakestAllRooms", "StrongestAllRooms", "StrongestLastTargetedCharactersRoom" }.Contains(mode);
         public static bool IsRandom(string mode) => mode == "RandomInRoom" || mode == "RandomFromAnyRoom";
@@ -29,6 +29,7 @@ namespace MonsterTrain2Poju.Model
         {
             RoomCombatState? room = train.Rooms.FirstOrDefault(item => item.RoomIndex == roomIndex);
             if (room == null) return new CardTargets(Array.Empty<int>(), "The selected target room does not exist.");
+            if (effect.Target == "Pyre") return Pyre(train.Rooms.SelectMany(item => item.Units));
             if (effect.Target == "Self") return Self(train.Rooms.SelectMany(item => item.Units), effect, selfUnitId);
             if (effect.Target == "LastSpawnedCharacter") return LastSpawned(room);
             string? filterError = effect.Filters?.Validate();
@@ -108,6 +109,7 @@ namespace MonsterTrain2Poju.Model
             if (effect.Target == "LastSpawnedCharacter") return LastSpawned(room, lastSpawnedOverrideUnitId);
             if (!Supports(effect.Target)) return new CardTargets(Array.Empty<int>(), "Unmodeled target mode " + effect.Target);
             if (IsCrossRoom(effect.Target)) return new CardTargets(Array.Empty<int>(), "Cross-room targeting requires the complete train.");
+            if (effect.Target == "Pyre") return Pyre(room.Units);
             if (effect.Target == "Self") return Self(room.Units, effect, selfUnitId);
             string? filterError = effect.Filters?.Validate();
             if (filterError != null) return new CardTargets(Array.Empty<int>(), filterError);
@@ -164,6 +166,10 @@ namespace MonsterTrain2Poju.Model
             return new CardTargets(id > 0 && room.Units.Any(unit => unit.Id == id) ? new[] { id.Value } : Array.Empty<int>());
         }
 
+        // Native Pyre selection finds the heart directly and bypasses teams, immunity and character filters.
+        private static CardTargets Pyre(IEnumerable<CombatUnit> units) =>
+            new CardTargets(units.Where(unit => unit.IsPyre).Take(1).Select(unit => unit.Id).ToArray());
+
         private static CardTargets Self(IEnumerable<CombatUnit> units, CardActionEffect effect, int id)
         {
             CombatUnit? actor = units.FirstOrDefault(unit => unit.Id == id);
@@ -181,7 +187,7 @@ namespace MonsterTrain2Poju.Model
             new CardActionEffect(effect.Type, effect.Target == "RandomFromAnyRoom" ? "Tower" : "Room", effect.Value, effect.AllowEnemy,
                 effect.AllowPlayer, effect.Statuses, effect.Upgrade, effect.Lifetime, effect.Tests, effect.Range, effect.Filters,
                 copyHeroStats: effect.CopyHeroStats, scaleUpgrade: effect.ScaleUpgrade,
-                doNotFullyRemove: effect.DoNotFullyRemove, sacrificeSubtype: effect.SacrificeSubtype, typedDraw: effect.TypedDraw, nextDrawUpgrade: effect.NextDrawUpgrade, requiredGold: effect.RequiredGold), Array.Empty<int>());
+                doNotFullyRemove: effect.DoNotFullyRemove, sacrificeSubtype: effect.SacrificeSubtype, typedDraw: effect.TypedDraw, nextDrawUpgrade: effect.NextDrawUpgrade, requiredGold: effect.RequiredGold, goldCostRequired: effect.GoldCostRequired), Array.Empty<int>());
             return result.Supported && effect.Type == "Sacrifice" && effect.Target == "RandomInRoom" && effect.SacrificeSubtype.Length > 0
                 ? new CardTargets(result.UnitIds.Where(id => train.Rooms.SelectMany(room => room.Units)
                     .Any(unit => unit.Id == id && unit.Subtypes.Contains(effect.SacrificeSubtype))).ToArray()) : result;

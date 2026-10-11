@@ -4,6 +4,7 @@ using MonsterTrain2Poju.Model;
 if (args.Length == 1 && args[0] == "--gold-pyre-pure")
 {
     GoldPyreChecks.Run();
+    PyreGoldSpellChecks.Run();
     RelicResourceChecks.Run();
     return;
 }

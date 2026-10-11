@@ -39,17 +39,18 @@ namespace MonsterTrain2Poju.Model
         public TypedDrawRule? TypedDraw { get; }
         public NextDrawUpgradeRule? NextDrawUpgrade { get; }
         public int RequiredGold { get; }
+        public bool? GoldCostRequired { get; }
         public CardActionEffect(string type, string target, int value, bool allowEnemy, bool allowPlayer, IReadOnlyList<CombatStatus> statuses,
             CardUpgradeModifier? upgrade = null, string lifetime = "", CardEffectTests? tests = null, CardEffectRange? range = null, CardTargetFilters? filters = null,
             CardGenerationRule? generation = null, bool onlyIfNoEnemies = false, bool? cooldownParameter = null,
             AbilityChangeRule? abilityChange = null, bool? copyHeroStats = null, bool scaleUpgrade = false,
             bool? doNotFullyRemove = null, string sacrificeSubtype = "", TypedDrawRule? typedDraw = null,
-            NextDrawUpgradeRule? nextDrawUpgrade = null, int requiredGold = 0)
+            NextDrawUpgradeRule? nextDrawUpgrade = null, int requiredGold = 0, bool? goldCostRequired = null)
         { Type = type; Target = target; Value = value; AllowEnemy = allowEnemy; AllowPlayer = allowPlayer; Statuses = Array.AsReadOnly(statuses.ToArray());
             Upgrade = upgrade; Lifetime = lifetime; Tests = tests; Range = range; Filters = filters; Generation = generation; OnlyIfNoEnemies = onlyIfNoEnemies;
             CooldownParameter = cooldownParameter; AbilityChange = abilityChange; CopyHeroStats = copyHeroStats; ScaleUpgrade = scaleUpgrade;
             DoNotFullyRemove = doNotFullyRemove; SacrificeSubtype = sacrificeSubtype;
-            TypedDraw = typedDraw; NextDrawUpgrade = nextDrawUpgrade; RequiredGold = requiredGold; }
+            TypedDraw = typedDraw; NextDrawUpgrade = nextDrawUpgrade; RequiredGold = requiredGold; GoldCostRequired = goldCostRequired; }
     }
     public sealed class RoomPlayRule
     {
@@ -86,6 +87,7 @@ namespace MonsterTrain2Poju.Model
         public CardAbilityRule? Ability { get; }
         public string? CardType { get; }
         public bool? IsAnyAbility { get; }
+        public bool? CanPlayInEngineRoom { get; }
         public string Effect { get; }
         public string Destination { get; }
         public CombatUnit? SpawnUnit { get; }
@@ -99,10 +101,10 @@ namespace MonsterTrain2Poju.Model
             CombatUnit? spawnUnit, IReadOnlyList<string> externalInteractions, IReadOnlyList<CardActionEffect>? effects = null,
             IReadOnlyList<string>? upgradeInteractions = null, IReadOnlyList<string>? handDiscardInteractions = null,
             IReadOnlyList<string>? handConsumeInteractions = null, string costType = "Default", EquipmentDefinition? equipment = null,
-            CardAbilityRule? ability = null, UnitSummonRule? summon = null, string? cardType = null, bool? isAnyAbility = null)
+            CardAbilityRule? ability = null, UnitSummonRule? summon = null, string? cardType = null, bool? isAnyAbility = null, bool? canPlayInEngineRoom = null)
         {
             DataId = dataId; AssetKey = assetKey; Cost = cost; CostType = costType; Effect = effect; Destination = destination;
-            Equipment = equipment; Ability = ability; CardType = cardType; IsAnyAbility = isAnyAbility;
+            Equipment = equipment; Ability = ability; CardType = cardType; IsAnyAbility = isAnyAbility; CanPlayInEngineRoom = canPlayInEngineRoom;
             SpawnUnit = spawnUnit; ExternalInteractions = Array.AsReadOnly(externalInteractions.ToArray());
             Summon = summon;
             Effects = Array.AsReadOnly((effects ?? Array.Empty<CardActionEffect>()).ToArray());
@@ -111,7 +113,7 @@ namespace MonsterTrain2Poju.Model
             HandConsumeInteractions = handConsumeInteractions == null ? null : Array.AsReadOnly(handConsumeInteractions.ToArray());
         }
         internal CardPlayRule WithSpawn(CombatUnit unit) => new CardPlayRule(DataId, AssetKey, Cost, Effect, Destination,
-            unit, ExternalInteractions, Effects, UpgradeInteractions, HandDiscardInteractions, HandConsumeInteractions, CostType, Equipment, Ability, Summon, CardType, IsAnyAbility);
+            unit, ExternalInteractions, Effects, UpgradeInteractions, HandDiscardInteractions, HandConsumeInteractions, CostType, Equipment, Ability, Summon, CardType, IsAnyAbility, CanPlayInEngineRoom);
     }
 
     public sealed class BattlePlayRules
@@ -211,7 +213,8 @@ namespace MonsterTrain2Poju.Model
             RoomPlayRule? targetRule = source.PlayRules.Rooms.FirstOrDefault(item => item.RoomIndex == action.RoomIndex);
             RoomCombatState? target = train.Rooms.FirstOrDefault(item => item.RoomIndex == action.RoomIndex);
             if (targetRule == null || target == null) return Illegal("The target room does not exist.");
-            if (!targetRule.Enabled || targetRule.IsPyre) return Illegal("This card cannot be played in the target room.");
+            if (!targetRule.Enabled || targetRule.IsPyre && (rule.CanPlayInEngineRoom != true || rule.Effect == "SpawnMonster"))
+                return Illegal("This card cannot be played in the target room.");
             string? membershipError = CardPileModel.ValidateMembership(context.Cards, source.OtherPiles, context.NextCardId);
             if (membershipError != null) return Unsupported(membershipError);
             if (source.OtherPiles.Select(pile => pile.Name).Distinct().Count() != source.OtherPiles.Count)
