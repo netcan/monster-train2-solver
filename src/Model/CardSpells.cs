@@ -278,7 +278,8 @@ namespace MonsterTrain2Poju.Model
                     effect = new CardActionEffect(effect.Type, effect.Target, effect.Value, effect.AllowEnemy, effect.AllowPlayer,
                         new[] { effect.Statuses[chosen.Value] }, effect.Upgrade, effect.Lifetime, effect.Tests, effect.Range, effect.Filters,
                         effect.Generation, effect.OnlyIfNoEnemies, effect.CooldownParameter, effect.AbilityChange,
-                        effect.CopyHeroStats, effect.ScaleUpgrade, effect.DoNotFullyRemove, effect.SacrificeSubtype, effect.TypedDraw, effect.NextDrawUpgrade, effect.RequiredGold, effect.GoldCostRequired);
+                        effect.CopyHeroStats, effect.ScaleUpgrade, effect.DoNotFullyRemove, effect.SacrificeSubtype, effect.TypedDraw, effect.NextDrawUpgrade, effect.RequiredGold, effect.GoldCostRequired,
+                        effect.UseCardTraits, effect.RequireEquipment, effect.UseSelectedRoom);
                 }
                 UnityRng effectRng = state.Context!.BattleRng;
                 if (effect.Type != "CopyUnits" && effect.Type != "Bump" && effect.Type != "DiscardHand" && effect.Type != "Generate" && effect.Type != "AdjustCapacity" && effect.Type != "ScheduleNextDrawUpgrade" && !AbilityCooldownModel.IsEffect(effect.Type) && !AbilityLifecycleModel.IsEffect(effect.Type)) effect = Sample(effect, ref effectRng);
@@ -471,6 +472,44 @@ namespace MonsterTrain2Poju.Model
                     if (!upgraded.Supported) return UnsupportedTrain(upgraded.UnsupportedReason!);
                     state = ReplaceRoom(state, upgraded.State!);
                     events.AddRange(upgraded.Events);
+                    continue;
+                }
+                if (effect.Type == "AttackWithUnit")
+                {
+                    if (targets.UnitIds.Count == 0) continue;
+                    RoomCombatState? firstRoom = state.Rooms.FirstOrDefault(item => item.Units.Any(unit => unit.Id == targets.UnitIds[0]));
+                    if (!effect.UseSelectedRoom && firstRoom == null) continue;
+                    // Native Pyre targeting moves room selection to the Pyre floor before this effect runs.
+                    int selectedRoomForEffect = effect.Target == "Pyre" && firstRoom != null ? firstRoom.RoomIndex : roomIndex;
+                    int attackRoom = effect.UseSelectedRoom ? selectedRoomForEffect : firstRoom!.RoomIndex;
+                    foreach (int actorId in targets.UnitIds)
+                    {
+                        CombatUnit? actor = state.Rooms.SelectMany(item => item.Units).FirstOrDefault(unit => unit.Id == actorId);
+                        if (actor == null) continue;
+                        if (effect.RequireEquipment)
+                        {
+                            if (actor.EquipmentCards == null)
+                                return UnsupportedTrain("Equipment-gated unit attack requires captured equipment state.");
+                            if (actor.EquipmentCards.Count == 0) continue;
+                        }
+                        TrainSpellResult turn = ApplyUnitAttackTurn(state, attackRoom, actorId, Refresh);
+                        if (!turn.Supported) return UnsupportedTrain(turn.UnsupportedReason!);
+                        state = turn.State!;
+                        events.AddRange(turn.Events);
+                        foreach (CombatUnit unit in turn.RetainedUnits) retained[unit.Id] = unit;
+                        callbacks.AddRange(turn.PendingCallbacks);
+                        if (turn.Outcome == RoomOutcome.BattleWon || turn.Outcome == RoomOutcome.PlayerDefeated)
+                        {
+                            if (outcome != RoomOutcome.Exchanged && outcome != turn.Outcome)
+                                return UnsupportedTrain("Conflicting terminal results in one spell are not modeled.");
+                            outcome = turn.Outcome;
+                            bossDead |= outcome == RoomOutcome.BattleWon;
+                        }
+                        if (state.Context!.OtherPiles != null) piles = state.Context.OtherPiles.ToArray();
+                        positions = CardTargetModel.Positions(state);
+                        if (callbacks.Count > 0) DrainDeaths();
+                        if (routingError != null) return UnsupportedTrain(routingError);
+                    }
                     continue;
                 }
                 // Keep this effect's collection fixed; triggers may kill a later target.
@@ -772,6 +811,49 @@ namespace MonsterTrain2Poju.Model
                 source.EnemySlotsPerRoom, changed.Context), changed.Context!);
         }
 
+        private static TrainSpellResult ApplyUnitAttackTurn(TrainCombatState source, int roomIndex, int actorId,
+            Func<CombatContext, bool, RelicPyreAttackRefreshResult> refreshPyre)
+        {
+            RoomCombatState? attackRoom = source.Rooms.FirstOrDefault(room => room.RoomIndex == roomIndex);
+            RoomCombatState? actorRoom = source.Rooms.FirstOrDefault(room => room.Units.Any(unit => unit.Id == actorId));
+            CombatUnit? actor = actorRoom?.Units.FirstOrDefault(unit => unit.Id == actorId);
+            if (attackRoom == null || actorRoom == null || actor == null)
+                return UnsupportedTrain("Unit attack requires a live actor and attack room.");
+            bool external = actorRoom.RoomIndex != attackRoom.RoomIndex;
+            RoomCombatResult turn = RoomCombatModel.ApplyUnitTurn(attackRoom, actorId, refreshPyre,
+                ignoreAttackPrevention: true, externalActor: external ? actor : null);
+            if (!turn.Supported) return UnsupportedTrain(turn.UnsupportedReason!);
+
+            TrainCombatState changed;
+            CombatUnit? updatedActor = null;
+            if (!external) changed = ReplaceRoom(source, turn.State!);
+            else
+            {
+                updatedActor = turn.RetainedUnits.FirstOrDefault(unit => unit.Id == actorId);
+                if (updatedActor == null)
+                    return UnsupportedTrain("External unit attack did not retain the actor's updated state.");
+                CombatContext context = turn.State!.Context!;
+                RoomCombatState[] rooms = source.Rooms.Select(room =>
+                {
+                    if (room.RoomIndex == attackRoom.RoomIndex) return turn.State;
+                    if (room.RoomIndex != actorRoom.RoomIndex) return new RoomCombatState(room.RoomIndex, room.Deployment,
+                        room.Units, room.ExternalInteractions, context, room.Preview);
+                    bool actorAlive = updatedActor.Health > 0 && updatedActor.DeathState?.IsDestroyed != true &&
+                        updatedActor.DeathState?.IsDespawned != true;
+                    CombatUnit[] units = room.Units.Select(unit => unit.Id == actorId && actorAlive ? updatedActor : unit)
+                        .Where(unit => unit.Id != actorId || actorAlive).ToArray();
+                    return new RoomCombatState(room.RoomIndex, room.Deployment, units, room.ExternalInteractions, context, room.Preview);
+                }).ToArray();
+                var aliveIds = new HashSet<int>(rooms.SelectMany(room => room.Units).Select(unit => unit.Id));
+                changed = WithContext(new TrainCombatState(rooms, source.Movement.Where(move => aliveIds.Contains(move.UnitId)).ToArray(),
+                    source.EnemySlotsPerRoom, context), context);
+            }
+            IReadOnlyList<CombatUnit> retained = turn.RetainedUnits.Where(unit => !external || unit.Id != actorId ||
+                updatedActor!.Health <= 0 || updatedActor.DeathState?.IsDestroyed == true || updatedActor.DeathState?.IsDespawned == true).ToArray();
+            return new TrainSpellResult(changed, turn.Outcome, turn.Events, otherPiles: changed.Context!.OtherPiles,
+                pendingCallbacks: turn.PendingCallbacks, retainedUnits: retained);
+        }
+
         private static string? Validate(RoomCombatState source, IReadOnlyList<CardActionEffect> effects, int targetId)
         {
             string? error = RoomCombatModel.Validate(source);
@@ -864,7 +946,7 @@ namespace MonsterTrain2Poju.Model
                     if (energyError != null) return energyError;
                     continue;
                 }
-                if (!new[] { "CopyUnits", "Bump", "Damage", "DamagePerSourceAttack", "Heal", "Sacrifice", "AddStatus", "FloorRearrange", "UnitUpgrade", "RemoveUnitUpgrade", "AttachEquipment", "RemoveEquipment", "BuffAttack", "DebuffAttack", "BuffHealth", "DebuffHealth", "Draw", "DiscardHand", "Generate" }.Contains(effect.Type))
+                if (!new[] { "CopyUnits", "Bump", "AttackWithUnit", "Damage", "DamagePerSourceAttack", "Heal", "Sacrifice", "AddStatus", "FloorRearrange", "UnitUpgrade", "RemoveUnitUpgrade", "AttachEquipment", "RemoveEquipment", "BuffAttack", "DebuffAttack", "BuffHealth", "DebuffHealth", "Draw", "DiscardHand", "Generate" }.Contains(effect.Type))
                     return "Unimplemented spell effect " + effect.Type;
                 if (effect.Type == "Generate" && effect.Generation == null) return "Missing generated card rules.";
                 if ((effect.Type == "UnitUpgrade" || effect.Type == "RemoveUnitUpgrade") && effect.Upgrade == null)
@@ -956,7 +1038,7 @@ namespace MonsterTrain2Poju.Model
                 effect.Statuses, effect.Upgrade, effect.Lifetime, effect.Tests, effect.Range, effect.Filters, effect.Generation,
                 effect.OnlyIfNoEnemies, effect.CooldownParameter, effect.AbilityChange, effect.CopyHeroStats, effect.ScaleUpgrade,
                 effect.DoNotFullyRemove, effect.SacrificeSubtype, effect.TypedDraw, effect.NextDrawUpgrade, effect.RequiredGold, effect.GoldCostRequired,
-                effect.UseCardTraits);
+                effect.UseCardTraits, effect.RequireEquipment, effect.UseSelectedRoom);
         }
         private static int TestCount(TrainCombatState state, CardActionEffect effect, CardTargets targets) => effect.Type == "RemoveStatus" &&
             !string.IsNullOrEmpty(effect.Filters?.Subtype) ? state.Rooms.SelectMany(room => room.Units).Count(unit =>

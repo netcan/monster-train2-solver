@@ -3283,14 +3283,17 @@ two natural Stewards share skill card 16 with its real starting damage upgrade,
 and the original Boss retains a distinct skill. Stewards gain 50 HP and lose one
 size only once; Boss attack/health and every original spawn wave stay intact.
 The fixed-cost player skill chains source-attack front-enemy damage, self healing
-and a future draw; the X and lethal scenarios retain ordinary damage.
+and a future draw, then executes `AttackWithUnit` on the activating unit and a
+Pyre target; the X and lethal scenarios retain ordinary damage. A live native
+probe observed selected room 3 during the Pyre effect even though the ability
+action targets room 0, so the model routes that unit turn to the Pyre floor.
 Its pre-own trigger grants gold and deals three self damage; the heal deliberately
 uses an enemy-only team mask. Coverage accounts for armor before requiring real
 self healing, plus actual pre-own/own callbacks and shared card identity.
 
 | Archive | Bytes / nodes | Actions / EndTurns | Skill activations | Native seconds |
 | --- | --- | --- | --- | --- |
-| `full-battle-ability-activation.mt2f` | 30,942 / 4,940 | 17 / 5 | Two fixed-cost source-attack plays | 56.13 |
+| `full-battle-ability-activation.mt2f` | 30,662 / 4,872 | 17 / 5 | Two fixed-cost source-attack and unit-turn plays | 57.49 |
 | `full-battle-ability-activation-x.mt2f` | 26,952 / 4,343 | 16 / 5 | One positive X payment and one zero payment | 47.57 |
 | `full-battle-ability-activation-lethal.mt2f` | 26,047 / 4,213 | 16 / 4 | Two fixed-cost plays; the second kills the Boss | 46.02 |
 
@@ -3302,7 +3305,9 @@ actual mid-battle roots with 16 parallel branches. The lethal fixture explicitly
 requires a skill to finish the battle. It also verifies the later future-draw
 effect does not run after Boss death.
 
-Pure checks cover capped pre-own energy gains after payment, zero/current X
+Pure checks cover `AttackWithUnit` self/Pyre targets, forced unit turns, dazed
+bypass, equipment gates and selected-room handling. They also cover capped
+pre-own energy gains after payment, zero/current X
 payments, fresh cache allocation, cooldown/resolving/silence/muted/deployment/
 hand/cost/identity/floor gates, self-filter bypass, ordinary-card actor reset,
 terminal clearing, search enumeration and parent isolation. General muted

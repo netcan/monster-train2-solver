@@ -189,7 +189,8 @@ namespace MonsterTrain2Poju.Model
                 copyHeroStats: effect.CopyHeroStats, scaleUpgrade: effect.ScaleUpgrade,
                 doNotFullyRemove: effect.DoNotFullyRemove, sacrificeSubtype: effect.SacrificeSubtype, typedDraw: effect.TypedDraw,
                 nextDrawUpgrade: effect.NextDrawUpgrade, requiredGold: effect.RequiredGold,
-                goldCostRequired: effect.GoldCostRequired, useCardTraits: effect.UseCardTraits), Array.Empty<int>());
+                goldCostRequired: effect.GoldCostRequired, useCardTraits: effect.UseCardTraits,
+                requireEquipment: effect.RequireEquipment, useSelectedRoom: effect.UseSelectedRoom), Array.Empty<int>());
             return result.Supported && effect.Type == "Sacrifice" && effect.Target == "RandomInRoom" && effect.SacrificeSubtype.Length > 0
                 ? new CardTargets(result.UnitIds.Where(id => train.Rooms.SelectMany(room => room.Units)
                     .Any(unit => unit.Id == id && unit.Subtypes.Contains(effect.SacrificeSubtype))).ToArray()) : result;

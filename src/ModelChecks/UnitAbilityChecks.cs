@@ -142,6 +142,19 @@ internal static class UnitAbilityChecks
         Require(samples.Length >= 2 && samples.Select(entry => entry.GetProperty("Action").Deserialize<PlayCardAction>()!.ActivatorUnitId)
             .Distinct().Count() >= 2 && samples.Select(entry => entry.GetProperty("Action").Deserialize<PlayCardAction>()!.CardInstanceId)
             .Distinct().Count() == 1, "Native policy did not activate two units sharing one skill card.");
+        if (modifier.GetString() == "ability-activation")
+        {
+            BattleTurnState before = samples[0].GetProperty("Before").Deserialize<BattleTurnState>()!;
+            CombatUnit actor = before.Spawn.Train.Rooms.SelectMany(room => room.Units)
+                .Single(unit => unit.Id == samples[0].GetProperty("Action").Deserialize<PlayCardAction>()!.ActivatorUnitId);
+            CardActionEffect[] attacks = before.PlayRules!.Cards.Single(card => card.DataId == actor.Ability!.DataId).Effects
+                .Where(effect => effect.Type == "AttackWithUnit").ToArray();
+            Require(attacks.Length == 2 && attacks[0].Target == "Self" && !attacks[0].RequireEquipment &&
+                !attacks[0].UseSelectedRoom && attacks[1].Target == "Pyre" && !attacks[1].RequireEquipment &&
+                attacks[1].UseSelectedRoom,
+                "The native ability fixture did not capture both unit-turn effects and their equipment/room parameters.");
+            Console.WriteLine("NATIVE-ATTACK-WITH-UNIT-COVERAGE PASS: Self and Pyre targets, equipment gate and selected-room parameters.");
+        }
         int selfHeals = 0, zero = 0, positive = 0, terminal = 0, kills = 0;
         foreach (var sample in samples)
         {

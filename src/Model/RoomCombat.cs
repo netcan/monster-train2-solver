@@ -360,13 +360,20 @@ namespace MonsterTrain2Poju.Model
             return new Engine(state, new List<CombatEvent>(), refreshPyre: refreshPyre).UnitPostCombat(cannotAttackOrHeal, cannotFireTriggers);
         }
 
-        public static RoomCombatResult ApplyUnitTurn(RoomCombatState state, int unitId, Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null)
+        public static RoomCombatResult ApplyUnitTurn(RoomCombatState state, int unitId,
+            Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null,
+            bool ignoreAttackPrevention = false, CombatUnit? externalActor = null)
         {
             string? error = Validate(state);
-            if (error != null || !state.Units.Any(unit => unit.Id == unitId))
+            bool localActor = state.Units.Any(unit => unit.Id == unitId);
+            if (error != null || localActor == (externalActor != null) || externalActor != null && externalActor.Id != unitId)
                 return new RoomCombatResult(null, RoomOutcome.Unsupported, 0, new List<CombatEvent>(),
-                    error ?? "Unit turn requires a living actor in the room.");
-            return new Engine(state, new List<CombatEvent>(), refreshPyre: refreshPyre).UnitTurn(unitId);
+                    error ?? "Unit turn requires exactly one captured local or external actor.");
+            if (externalActor != null && (externalActor.Health <= 0 || externalActor.DeathState?.IsDestroyed == true))
+                return new RoomCombatResult(null, RoomOutcome.Unsupported, 0, new List<CombatEvent>(),
+                    "External unit turn requires a living actor.");
+            return new Engine(state, new List<CombatEvent>(), refreshPyre: refreshPyre, externalActor: externalActor)
+                .UnitTurn(unitId, ignoreAttackPrevention);
         }
 
         public static RoomCombatResult ApplyTeamTurnBegin(RoomCombatState state, CombatTeam team, Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null)
@@ -1044,13 +1051,15 @@ namespace MonsterTrain2Poju.Model
             private IReadOnlyList<CardInstanceState>? legacyDetachedCards;
             private readonly HashSet<int> cannotAttackOrHeal = new HashSet<int>();
             private readonly HashSet<int> cannotFireTriggers = new HashSet<int>();
+            private readonly HashSet<int> externalTurnActorIds = new HashSet<int>();
             private string? unsupportedReason;
 
             internal Engine(RoomCombatState source, List<CombatEvent> events, bool deferSpawnerExhaustion = false, int pendingSummonCardId = 0,
                 Action<QueuedCharacterTrigger>? enqueueCharacterTrigger = null, bool resetPreviewTriggers = true, bool deferAbilityCallbacks = false,
                 bool nativeCardDamage = false,
                 Func<RoomCombatState, RoomCombatResult>? finishDamageQueue = null,
-                Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null)
+                Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null,
+                CombatUnit? externalActor = null)
             {
                 this.source = source; this.events = events;
                 this.deferSpawnerExhaustion = deferSpawnerExhaustion;
@@ -1062,6 +1071,13 @@ namespace MonsterTrain2Poju.Model
                 this.refreshPyre = refreshPyre;
                 context = source.Context;
                 units = source.Units.Select(unit => NewUnit(unit)).ToList();
+                if (externalActor != null)
+                {
+                    if (units.Any(unit => unit.Source.Id == externalActor.Id))
+                        throw new ArgumentException("External actor already belongs to the combat room.", nameof(externalActor));
+                    units.Add(NewUnit(externalActor));
+                    externalTurnActorIds.Add(externalActor.Id);
+                }
                 if (source.Preview && resetPreviewTriggers)
                     foreach (WorkingUnit unit in units)
                         for (int index = 0; index < unit.Triggers.Count; index++) unit.Triggers[index] = unit.Triggers[index].ForPreview();
@@ -1314,11 +1330,11 @@ namespace MonsterTrain2Poju.Model
                 }
             }
 
-            internal RoomCombatResult UnitTurn(int unitId)
+            internal RoomCombatResult UnitTurn(int unitId, bool ignoreAttackPrevention = false)
             {
                 stopAfterBossRemoval = true;
                 round = 1;
-                Turn(units.Single(unit => unit.Source.Id == unitId));
+                Turn(units.Single(unit => unit.Source.Id == unitId), ignoreAttackPrevention);
                 return Finish(battleWon ? RoomOutcome.BattleWon : units.Any(unit => unit.Source.IsPyre && !unit.Alive)
                     ? RoomOutcome.PlayerDefeated : RoomOutcome.Exchanged);
             }
@@ -1506,7 +1522,7 @@ namespace MonsterTrain2Poju.Model
             private bool CombatPreviewStopped() => source.Preview && units.Any(unit => !unit.Alive &&
                 (unit.Source.EndsBattleOnDeath || unit.Source.IsPyre));
 
-            private void Turn(WorkingUnit actor)
+            private void Turn(WorkingUnit actor, bool ignoreAttackPrevention = false)
             {
                 if (!actor.Alive || !actor.InRoom) return;
                 bool dazed = actor.Has("dazed") && Active(actor.Statuses["dazed"]);
@@ -1519,7 +1535,7 @@ namespace MonsterTrain2Poju.Model
                 // Native queues this after attack/trigger prevention, before attack conditions.
                 // Ignored-silence triggers can run while dazed, without restoring this turn's attack.
                 FireTriggers(actor, "OnTurnBegin", canFireTriggers: !dazed);
-                if (!actor.Alive || dazed || !actor.Source.CanAttack || actor.Attack <= 0) return;
+                if (!actor.Alive || dazed && !ignoreAttackPrevention || !actor.Source.CanAttack || actor.Attack <= 0) return;
                 int strikes = actor.Statuses.TryGetValue("multistrike", out CombatStatus? multi)
                     ? Math.Max(1, multi.ParamInt + multi.Stacks - 1) : 1;
                 for (int strike = 0; strike < strikes && actor.Alive; strike++)
@@ -1549,22 +1565,26 @@ namespace MonsterTrain2Poju.Model
             {
                 if (source.Preview || context?.Statistics == null || !units.Any(unit => unit.Alive && unit.InRoom &&
                     (unit.Source.IsPyre || unit.Source.IsBoss == true || unit.Source.IsBoss == null && unit.Source.EndsBattleOnDeath))) return;
-                var copied = new RoomCombatState(source.RoomIndex, source.Deployment, units.Select(unit => unit.Freeze()).ToArray(),
+                var copied = new RoomCombatState(source.RoomIndex, source.Deployment, units.Where(unit =>
+                    !externalTurnActorIds.Contains(unit.Source.Id)).Select(unit => unit.Freeze()).ToArray(),
                     source.ExternalInteractions, context.SpawnPoints == null ? context :
                         context.WithSpawnPoints(context.SpawnPoints.BeginPreview()), preview: true);
                 EnchantmentWorld? originalWorld = context.Enchantments;
                 if (originalWorld?.AutomaticLifecycle == true)
                 {
-                    RoomCombatState synced = EnchantmentWorldModel.Sync(CurrentRoom(), units.Where(unit => !unit.Alive || !unit.InRoom)
+                    RoomCombatState synced = EnchantmentWorldModel.Sync(PhysicalRoom(), units.Where(unit => !unit.Alive || !unit.InRoom ||
+                        externalTurnActorIds.Contains(unit.Source.Id))
                         .Select(unit => unit.Freeze()).ToArray());
                     context = synced.Context!; originalWorld = context.Enchantments!;
                     EnchantmentCombatState prepared = originalWorld.Frame(context);
-                    foreach (WorkingUnit unit in units.Where(unit => unit.InRoom && !unit.Removed))
+                    foreach (WorkingUnit unit in units.Where(unit => unit.InRoom && !unit.Removed &&
+                        !externalTurnActorIds.Contains(unit.Source.Id)))
                         prepared = EnchantmentCombatModel.PrepareForPreview(prepared, unit.Source.Id);
                     EnchantmentWorld preparedWorld = EnchantmentWorld.From(prepared, true);
                     CombatContext testContext = context.WithEnchantments(preparedWorld);
                     if (testContext.SpawnPoints != null) testContext = testContext.WithSpawnPoints(testContext.SpawnPoints.BeginPreview());
-                    copied = new RoomCombatState(copied.RoomIndex, copied.Deployment, units.Where(unit => unit.InRoom && !unit.Removed)
+                    copied = new RoomCombatState(copied.RoomIndex, copied.Deployment, units.Where(unit => unit.InRoom && !unit.Removed &&
+                        !externalTurnActorIds.Contains(unit.Source.Id))
                         .Select(unit => EnchantmentWorldModel.RestorePreviewEffects(unit.Freeze(), preparedWorld, false)).ToArray(),
                         copied.ExternalInteractions, testContext, true);
                     var train = new TrainCombatState(prepared.Train.Rooms.Select(room => room.RoomIndex == source.RoomIndex ? copied : room).ToArray(),
@@ -1572,7 +1592,8 @@ namespace MonsterTrain2Poju.Model
                     train = EnchantmentWorldModel.Rebase(train, preview: true, testRng: context.IsolatedBattlePreview == true ? context.BattleRng : originalWorld.TestRng);
                     copied = EnchantmentWorldModel.Room(copied, train.Context);
                 }
-                var preview = new Engine(copied, new List<CombatEvent>());
+                CombatUnit? externalActor = externalTurnActorIds.Contains(actor.Source.Id) ? actor.Freeze() : null;
+                var preview = new Engine(copied, new List<CombatEvent>(), externalActor: externalActor);
                 // A sweep preview shares the running-queue gate: its temporary callbacks
                 // stay queued rather than healing or damaging between individual targets.
                 preview.runningTriggerQueue = runningTriggerQueue;
@@ -2401,6 +2422,10 @@ namespace MonsterTrain2Poju.Model
             private RoomCombatState CurrentRoom() => new RoomCombatState(source.RoomIndex, source.Deployment,
                 units.Where(unit => unit.Alive && unit.InRoom).Select(unit => unit.Freeze()).ToArray(), source.ExternalInteractions, context, source.Preview);
 
+            private RoomCombatState PhysicalRoom() => new RoomCombatState(source.RoomIndex, source.Deployment,
+                units.Where(unit => unit.Alive && unit.InRoom && !externalTurnActorIds.Contains(unit.Source.Id))
+                    .Select(unit => unit.Freeze()).ToArray(), source.ExternalInteractions, context, source.Preview);
+
             private void ImportEnchantmentRoom(RoomCombatState state)
             {
                 context = state.Context;
@@ -2890,7 +2915,8 @@ namespace MonsterTrain2Poju.Model
                 if (!source.Preview && context != null)
                     context = UnitStandbyModel.MarkDead(context, units.Where(unit => !unit.Alive).Select(unit => unit.Freeze()).ToArray());
                 var removedIds = new HashSet<int>(units.Where(unit => !unit.Alive || unit.Removed || unit.Despawned).Select(unit => unit.Source.Id));
-                var localIds = units.Select(unit => unit.Source.Id).ToHashSet();
+                var localIds = units.Where(unit => !externalTurnActorIds.Contains(unit.Source.Id))
+                    .Select(unit => unit.Source.Id).ToHashSet();
                 foreach (CardInstanceState card in context?.CardRegistry ?? context?.CardInstances ?? Array.Empty<CardInstanceState>())
                 {
                     if (card.PlayedRoomUnitIds == null) continue;
@@ -2907,9 +2933,8 @@ namespace MonsterTrain2Poju.Model
                     else if (!source.Preview && card.PlayedRoomUnitIds.Any(removedIds.Contains))
                         context = context!.WithCard(card.WithPlayedRoomUnits(card.PlayedRoomUnitIds.Where(id => !removedIds.Contains(id)).ToArray()));
                 }
-                RoomCombatState state = EnchantmentWorldModel.Sync(new RoomCombatState(source.RoomIndex, source.Deployment,
-                    units.Where(unit => unit.Alive && unit.InRoom).Select(unit => unit.Freeze()).ToArray(), source.ExternalInteractions, context, source.Preview),
-                    units.Where(unit => !unit.Alive || !unit.InRoom).Select(unit => unit.Freeze()).ToArray());
+                RoomCombatState state = EnchantmentWorldModel.Sync(PhysicalRoom(), units.Where(unit => !unit.Alive || !unit.InRoom ||
+                    externalTurnActorIds.Contains(unit.Source.Id)).Select(unit => unit.Freeze()).ToArray());
                 context = state.Context;
                 return unsupportedReason != null
                 ? new RoomCombatResult(null, RoomOutcome.Unsupported, round, events, unsupportedReason) : new RoomCombatResult(
@@ -2918,7 +2943,8 @@ namespace MonsterTrain2Poju.Model
                     new QueuedCharacterTrigger(source.RoomIndex, dead.Unit.Freeze(), returnSpawnerAfterQueue: dead.Return,
                         deferUntilRemoval: true, harvestAfterDeath: !dead.Unit.Despawned,
                         completePhysicalRemovalAfterQueue: context?.SpawnPoints != null, removalLifecycle: true)).ToArray() : null,
-                retainedUnits: units.Where(unit => !unit.Alive).Select(unit => unit.Freeze()).ToArray(), dispatches: dispatches);
+                retainedUnits: units.Where(unit => !unit.Alive || externalTurnActorIds.Contains(unit.Source.Id))
+                    .Select(unit => unit.Freeze()).ToArray(), dispatches: dispatches);
             }
         }
     }

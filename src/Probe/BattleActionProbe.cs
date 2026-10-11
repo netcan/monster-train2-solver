@@ -131,7 +131,7 @@ namespace MonsterTrain2Poju.Probe
             }
             else if (kind == "CardEffectNULL") kind = "Null";
             else if ((data.GetCardType() == CardType.Spell || data.GetCardType() == CardType.Equipment) && effects.Length > 0 && effects.All(effect =>
-                new[] { "CardEffectCopyUnits", "CardEffectBump", "CardEffectRemoveStatusEffect", "CardEffectSetUnitAbility", "CardEffectRemoveAbility", "CardEffectResetCooldown", "CardEffectAdjustAbilityCooldown", "CardEffectAttachEquipment", "CardEffectRemoveEquipment", "CardEffectRewardGold", "CardEffectGainEnergy", "CardEffectAdjustEnergy", "CardEffectGainEnergyNextTurn", "CardEffectGainEnergyEveryTurn", "CardEffectDamage", "CardEffectDamagePerSourceAttack", "CardEffectDraw", "CardEffectDrawAdditionalNextTurn", "CardEffectAdjustRoomCapacity", "CardEffectDiscardHand", "CardEffectAddBattleCard", "CardEffectHeal", "CardEffectSacrifice", "CardEffectBuffDamage", "CardEffectDebuffDamage", "CardEffectBuffMaxHealth", "CardEffectDebuffMaxHealth", "CardEffectAddStatusEffect", "CardEffectFloorRearrange", "CardEffectAddCardUpgradeToUnits",
+                new[] { "CardEffectCopyUnits", "CardEffectBump", "CardEffectAttackWithUnit", "CardEffectRemoveStatusEffect", "CardEffectSetUnitAbility", "CardEffectRemoveAbility", "CardEffectResetCooldown", "CardEffectAdjustAbilityCooldown", "CardEffectAttachEquipment", "CardEffectRemoveEquipment", "CardEffectRewardGold", "CardEffectGainEnergy", "CardEffectAdjustEnergy", "CardEffectGainEnergyNextTurn", "CardEffectGainEnergyEveryTurn", "CardEffectDamage", "CardEffectDamagePerSourceAttack", "CardEffectDraw", "CardEffectDrawAdditionalNextTurn", "CardEffectAdjustRoomCapacity", "CardEffectDiscardHand", "CardEffectAddBattleCard", "CardEffectHeal", "CardEffectSacrifice", "CardEffectBuffDamage", "CardEffectDebuffDamage", "CardEffectBuffMaxHealth", "CardEffectDebuffMaxHealth", "CardEffectAddStatusEffect", "CardEffectFloorRearrange", "CardEffectAddCardUpgradeToUnits",
                     "CardEffectDrawType", "CardEffectAddTempCardUpgradeToNextDrawnCard",
                     "CardEffectAddTempCardUpgradeToUnits", "CardEffectRemoveTempUpgradeFromUnit",
                     "CardEffectAddTempCardUpgradeToCardsInHand", "CardEffectAddPermanentCardUpgradeToCardsInHand" }.Contains(effect.GetEffectStateName())))
@@ -157,6 +157,7 @@ namespace MonsterTrain2Poju.Probe
                     string type = EnergyModel.IsNativeEffect(effect.GetEffectStateName()) ? EnergyEffectProbe.Type(effect) :
                         effect.GetEffectStateName() == "CardEffectCopyUnits" ? "CopyUnits" :
                         effect.GetEffectStateName() == "CardEffectBump" ? "Bump" :
+                        effect.GetEffectStateName() == "CardEffectAttackWithUnit" ? "AttackWithUnit" :
                         effect.GetEffectStateName() == "CardEffectAttachEquipment" ? "AttachEquipment" :
                         effect.GetEffectStateName() == "CardEffectRemoveEquipment" ? "RemoveEquipment" :
                         effect.GetEffectStateName() == "CardEffectRewardGold" ? "RewardGold" :
@@ -234,7 +235,9 @@ namespace MonsterTrain2Poju.Probe
                         nextDrawUpgrade: type == "ScheduleNextDrawUpgrade" ? TypedDrawProbe.UpgradeRule(effect) : null,
                         requiredGold: type == "ScheduleNextDrawUpgrade" ? effect.GetAdditionalParamInt() : 0,
                         goldCostRequired: type == "RewardGold" ? effect.GetParamBool() : (bool?)null,
-                        useCardTraits: type == "DamagePerSourceAttack" && effect.GetParamBool()));
+                        useCardTraits: type == "DamagePerSourceAttack" && effect.GetParamBool(),
+                        requireEquipment: type == "AttackWithUnit" && effect.GetParamBool(),
+                        useSelectedRoom: type == "AttackWithUnit" && effect.GetParamBool2()));
                 }
             }
             else interactions.Add("Unimplemented play effect " + kind);

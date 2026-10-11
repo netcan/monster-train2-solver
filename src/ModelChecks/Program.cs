@@ -1,6 +1,12 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
 
+if (args.Length == 1 && args[0] == "--attack-with-unit-pure")
+{
+    AttackWithUnitChecks.Run();
+    return;
+}
+
 if (args.Length == 1 && args[0] == "--unit-ability-pure")
 {
     UnitAbilityChecks.Run();
@@ -547,6 +553,7 @@ BattleActionChecks.Run();
 DecisionReferenceChecks.Run();
 UnitIdentityChecks.Run();
 CardSpellChecks.Run();
+AttackWithUnitChecks.Run();
 SacrificeChecks.Run();
 RoomSpellChecks.Run();
 RandomSpellChecks.Run();

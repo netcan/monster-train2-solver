@@ -603,7 +603,11 @@ callbacks, self healing through an enemy-only team mask, cooldown/marker changes
 and global history without ordinary ownership/discard. The fixed-cost archive
 also exercises native `DamagePerSourceAttack`: the unmodified multiplier uses
 the activating unit's live attack, while its card-traits flag selects whether
-damage traits come from the ability card or attacker. The lethal fixture ends
+damage traits come from the ability card or attacker. It now also executes
+`AttackWithUnit` on both the ability actor and a Pyre target. The live native
+probe observed selected room 3 during the Pyre effect even though the ability
+action targets room 0; replay therefore keeps that attack on the Pyre floor.
+The lethal fixture ends
 when the second skill kills the Boss; ordinary piles clear while skill
 identity/history and permanent-deck statistic fallback remain. Whole policies
 match initial and mid-battle roots with 16 parallel branches, and each

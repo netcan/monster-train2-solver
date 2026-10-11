@@ -8,7 +8,8 @@ namespace MonsterTrain2Poju.Probe
 {
     internal static class AbilityActivationScenario
     {
-        internal static void Prepare(AllGameManagers managers, ManualLogSource log, bool xCost, bool lethal, bool sourceAttack = false)
+        internal static void Prepare(AllGameManagers managers, ManualLogSource log, bool xCost, bool lethal,
+            bool sourceAttack = false, bool attackWithUnit = false)
         {
             AbilityCooldownScenario.Prepare(managers, log, cacheScenario: true);
             SaveManager save = managers.GetSaveManager();
@@ -19,7 +20,19 @@ namespace MonsterTrain2Poju.Probe
                 TargetMode.FrontInRoom, Team.Type.Heroes);
             var heal = Effect("Heal", 1, TargetMode.Self, Team.Type.Heroes);
             var futureDraw = Effect("DrawAdditionalNextTurn", 1, TargetMode.Room, Team.Type.None);
-            Set(ability, "effects", new List<CardEffectData> { damage, heal, futureDraw });
+            var effects = new List<CardEffectData> { damage, heal, futureDraw };
+            if (attackWithUnit)
+            {
+                var unitAttack = Effect("AttackWithUnit", 0, TargetMode.Self, Team.Type.Heroes);
+                Set(unitAttack, "paramBool", false);
+                Set(unitAttack, "paramBool2", false);
+                var pyreAttack = Effect("AttackWithUnit", 0, TargetMode.Pyre, Team.Type.Monsters);
+                Set(pyreAttack, "paramBool", false);
+                Set(pyreAttack, "paramBool2", true);
+                effects.Add(unitAttack);
+                effects.Add(pyreAttack);
+            }
+            Set(ability, "effects", effects);
             CardData steward = save.GetAllGameData().FindCardData("d14a50f3-728d-43e1-87f0-ef1b013f6678")!;
             CharacterData unit = steward.GetSpawnCharacterData()!;
             var triggers = unit.GetTriggers().ToList();
@@ -38,7 +51,7 @@ namespace MonsterTrain2Poju.Probe
             }
             Set(managers.GetCombatManager()!, "combatStateChanged", true);
             log.LogInfo("ABILITY-ACTIVATION-PREPARED natural cached skill, payment, pre/own callbacks and unchanged waves; x=" + xCost +
-                "; lethal=" + lethal + "; sourceAttack=" + sourceAttack);
+                "; lethal=" + lethal + "; sourceAttack=" + sourceAttack + "; attackWithUnit=" + attackWithUnit);
         }
         private static CardEffectData Effect(string kind, int value, TargetMode mode, Team.Type team)
         {
