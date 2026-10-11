@@ -77,10 +77,10 @@ internal static class RelicStatusMagnitudeChecks
             statusMagnitudes: [new(1, 2, "buff", 1), new(0, 2, "buff", 1)])) != null &&
             RelicStatusMagnitudeModel.Validate(new("unexpected", "unexpected", [], statusMagnitudes: [new(0, 2, "buff", 1)])) != null,
             "Unordered or unexpected native magnitude payload was accepted.");
-        foreach (string status in new[] { "", "not-a-status", "armor", "mageblade" })
+        foreach (string status in new[] { "", "not-a-status", "armor" })
             Require(!RelicStatusMagnitudeModel.GetModifier(Context([Relic("unsupported", new(0, 2, status, 1))]), "buff", 2).Supported,
                 "An uncaptured or unmodeled magnitude consumer was accepted: " + status);
-        foreach (string status in new[] { "buff", "debuff", "spikes", "regen" })
+        foreach (string status in new[] { "buff", "debuff", "spikes", "regen", "mageblade" })
             Require(RelicStatusMagnitudeModel.Validate(Relic("known", new(0, 2, status, 1))) == null,
                 "A native modeled magnitude consumer was rejected: " + status);
 

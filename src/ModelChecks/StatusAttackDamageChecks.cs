@@ -46,6 +46,42 @@ internal static class StatusAttackDamageChecks
         Require(Actor(mixed).Modifiers!.DamageBuffFromStatusEffects == 0 && Actor(mixed).Attack == 3,
             "Valor removal failed to restore the original attack accumulator.");
 
+        CombatRelicState magebladeRelic = Relic("mageblade", new(0, 2, "mageblade", 1));
+        CombatContext magebladeContext = Context([magebladeRelic],
+            [new RoomMagicPower(0, CombatTeam.Player, 5), new RoomMagicPower(0, CombatTeam.Enemy, 5)]);
+        RoomCombatState magebladeRoot = Room(Unit(), magebladeContext);
+        string magebladeParent = Serialize(magebladeRoot);
+        RoomCombatResult magebladeAdded = Add(magebladeRoot, new("mageblade", 2, 1));
+        CombatUnit magebladeActor = Actor(magebladeAdded);
+        Require(magebladeActor.Modifiers!.MagebladeDamagePerMagicPower == 4,
+            "Mageblade did not cache total stacks times base plus team relic magnitude.");
+        CombatStatus[] startingMageblade = [new("mageblade", 2, 1)];
+        RoomCombatResult magebladeBirth = RoomCombatModel.ApplySpawnTriggers(
+            Room(Unit(statuses: startingMageblade, magebladeCoefficient: 999), magebladeContext), 1,
+            fromCard: false, startingApplications: startingMageblade);
+        Require(Actor(magebladeBirth).Modifiers!.MagebladeDamagePerMagicPower == 4,
+            "Mageblade birth did not clear the captured cache and rebuild it from starting statuses.");
+        CombatUnit magebladeEnemy = Unit(2, CombatTeam.Enemy, attack: 0, canAttack: false);
+        RoomCombatResult poweredAttack = RoomCombatModel.Exchange(new RoomCombatState(0, false,
+            [magebladeActor, magebladeEnemy], [], magebladeAdded.State!.Context));
+        Require(poweredAttack.Supported && poweredAttack.State!.Units.Single(unit => unit.Id == 2).Health == 77,
+            poweredAttack.UnsupportedReason ?? "Mageblade did not add cached coefficient times captured room magic power to attack damage.");
+        RoomCombatResult magebladeRemoved = StatusRemovalModel.Remove(magebladeAdded.State!, 1, "mageblade", -1);
+        Require(Actor(magebladeRemoved).Modifiers!.MagebladeDamagePerMagicPower == 0,
+            "Mageblade removal did not refresh the cached coefficient to the remaining stack count.");
+        RoomCombatResult unpoweredAttack = RoomCombatModel.Exchange(new RoomCombatState(0, false,
+            [Actor(magebladeRemoved), magebladeEnemy], [], magebladeRemoved.State!.Context));
+        Require(unpoweredAttack.Supported && unpoweredAttack.State!.Units.Single(unit => unit.Id == 2).Health == 97,
+            unpoweredAttack.UnsupportedReason ?? "A removed Mageblade status retained its old attack bonus.");
+        Require(Serialize(magebladeRoot) == magebladeParent, "Mageblade additions or attack branches mutated their parent.");
+
+        CombatUnit missingMagebladeCache = Unit(statuses: [new("mageblade", 1, 1)]);
+        Require(!RoomCombatModel.Exchange(Room(missingMagebladeCache, magebladeContext)).Supported,
+            "Room combat inferred a missing native Mageblade cache.");
+        CombatUnit cachedMageblade = Unit(statuses: [new("mageblade", 1, 1)], magebladeCoefficient: 1);
+        Require(!RoomCombatModel.Exchange(Room(cachedMageblade, Context())).Supported,
+            "Room combat guessed a missing captured Mageblade room-power value.");
+
         foreach (int magnitude in new[] { 0, -1, int.MaxValue })
         {
             RoomCombatResult ignored = Add(Room(Unit(), Context()), new("buff", 2, magnitude));
@@ -104,19 +140,22 @@ internal static class StatusAttackDamageChecks
             "Parallel status-attack histories diverged."));
         Require(Serialize(root) == parent && history.State!.Context!.BattleRng.Equals(root.Context!.BattleRng),
             "Status attack histories mutated their parent or consumed battle RNG.");
-        Console.WriteLine("STATUS-ATTACK-DAMAGE-CHECKS PASS: dynamic magnitude history, signed status changes, ignored nonpositive products, overflow, birth rebuild/copying, rage decay, missing cache guards and 32 immutable branches.");
+        Console.WriteLine("STATUS-ATTACK-DAMAGE-CHECKS PASS: dynamic magnitude history, Mageblade cached coefficients and room-power attacks, signed status changes, ignored nonpositive products, overflow, birth rebuild/copying, rage decay, missing cache guards and 32 immutable branches.");
     }
 
     private static CombatRelicState Relic(string id, RelicStatusMagnitude rule) =>
         new(id, id, [RelicModel.ModifyStatusMagnitude], statusMagnitudes: [rule]);
-    private static CombatContext Context(IReadOnlyList<CombatRelicState>? relics = null) =>
+    private static CombatContext Context(IReadOnlyList<CombatRelicState>? relics = null,
+        IReadOnlyList<RoomMagicPower>? magicPower = null) =>
         new(new([], [], [], UnityRng.Seed(13), 0, []), UnityRng.Seed(13), 0, 1, 10,
             statusRules: [new("armor", 0, 1)], statistics: BattleStatistics.Empty(deckCards: []), otherPiles: [],
-            queryFrame: new(turn: 1), relics: relics ?? []);
+            queryFrame: new(turn: 1), magicPower: magicPower, relics: relics ?? []);
     private static CombatUnit Unit(int id = 1, CombatTeam team = CombatTeam.Player,
-        IReadOnlyList<CombatStatus>? statuses = null, int? cache = 0, int attack = 3, bool canAttack = true) =>
+        IReadOnlyList<CombatStatus>? statuses = null, int? cache = 0, int attack = 3, bool canAttack = true,
+        int? magebladeCoefficient = null) =>
         new(id, "status-attack", team, attack, 100, 100, canAttack, false, false, statuses ?? [], [],
-            modifiers: new(attack, 0, 0, 1, 1, true, false, [], damageBuffFromStatusEffects: cache),
+            modifiers: new(attack, 0, 0, 1, 1, true, false, [], damageBuffFromStatusEffects: cache,
+                magebladeDamagePerMagicPower: magebladeCoefficient),
             isBoss: false, lastAttackerId: 0, statusRegistry: statuses ?? []);
     private static RoomCombatState Room(CombatUnit actor, CombatContext context) => new(0, false, [actor], [], context);
     private static RoomCombatState WithContext(RoomCombatState room, CombatContext context) =>

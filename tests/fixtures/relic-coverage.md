@@ -221,8 +221,11 @@ are distinct after a Room-only API correction; acceptance uses final-model
 replay against the captured native states. Full 221-archive replay remains
 deferred, and unsupported tower room modifiers and uncaptured Setup-time Gold
 range amounts remain guarded.
-Mageblade still requires room spell power and its cached coefficient,
-and is excluded from accepted magnitude consumers and original-owner coverage.
+Mageblade magnitude rules, its captured per-unit cache, and attacks using captured
+room magic power are now modeled and covered by pure checks. The model rejects
+missing cache or room-power evidence, but Mageblade remains outside accepted
+native battle evidence and the 55/224 original-owner count until a full native
+replay validates the mechanic.
 The older `6/224` passage in README describes an earlier milestone; it does not
 include the starter-cost, cardless or four-artifact batch evidence above.
 

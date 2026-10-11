@@ -208,7 +208,7 @@ namespace MonsterTrain2Poju.Probe
             int id = UnitId(character);
             CharacterState? lastAttacker = character.GetLastAttackerCharacter();
             CombatTrigger[] triggers = CaptureTriggers(character, interactions);
-            if (character.GetRoomStateModifiers().Count > 0)
+            if (character.GetRoomStateModifiers().Any(modifier => modifier is not RoomStateSelfDamagePerMagicPowerModifier))
                 interactions.Add(character.GetSourceCharacterData().GetAssetKey() + " room modifiers");
             CardState? card = character.GetSpawnerCard();
             if (card != null && (card.GetTraitStates().Any(trait =>

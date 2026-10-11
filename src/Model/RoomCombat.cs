@@ -204,6 +204,11 @@ namespace MonsterTrain2Poju.Model
             Modifiers!.WithStatusDamage(amount), IsBoss, LastAttackerId, StatusRegistry, EquipmentCards, NextTriggerId, Ability, StatusDictionary,
             AbilityRules, HordeDefinition, IsSpawning, SacrificeCardId, DeathState, bumpRules: BumpRules);
 
+        internal CombatUnit WithModifiers(UnitModifiers modifiers) => new CombatUnit(Id, AssetKey, Team, BaseAttack, Health, MaxHealth,
+            CanAttack, IsPyre, EndsBattleOnDeath, Statuses, Triggers, SpawnerCardId, Size, StatusImmunities, Subtypes,
+            modifiers, IsBoss, LastAttackerId, StatusRegistry, EquipmentCards, NextTriggerId, Ability, StatusDictionary,
+            AbilityRules, HordeDefinition, IsSpawning, SacrificeCardId, DeathState, bumpRules: BumpRules);
+
         internal static CombatStatus[] MergeStatusRegistry(IReadOnlyList<CombatStatus> registry, IReadOnlyList<CombatStatus> statuses)
         {
             var current = statuses.ToDictionary(status => status.Id, StringComparer.Ordinal);
@@ -340,7 +345,7 @@ namespace MonsterTrain2Poju.Model
             "spikes", "lifesteal", "fragile", "piercing", "immune", "immobile",
             "relentless", "sweep", "sniper", "rooted", "haste", "untouchable",
             "buff", "debuff", "regen", "poison", "melee weakness", "silenced", "valor", "pyregel",
-            "heal multiplier", "heal immunity", "cooldown", "unit_ability", "unit_ability_available", "horde", "cardless", "undying", "purify"
+            "heal multiplier", "heal immunity", "cooldown", "unit_ability", "unit_ability_available", "horde", "cardless", "undying", "purify", "mageblade"
         };
         internal static bool KnowsStatus(string id) => KnownStatuses.Contains(id);
 
@@ -725,6 +730,11 @@ namespace MonsterTrain2Poju.Model
                 relic.StatusDecays?.Any(rule => rule.StatusIds.Contains("buff")) == true) == true;
             foreach (CombatUnit unit in state.Units)
             {
+                if (unit.Status("mageblade")?.Stacks > 0 && unit.Modifiers?.MagebladeDamagePerMagicPower == null)
+                    return "Missing native Mageblade cached attack coefficient.";
+                if (unit.Modifiers?.MagebladeDamagePerMagicPower.HasValue == true &&
+                    state.Context?.MagicPower?.Any(power => power.RoomIndex == state.RoomIndex && power.Team == unit.Team) != true)
+                    return "Mageblade requires captured room magic power for this team.";
                 if (unit.IsPyre && state.Context?.Resources?.PyreModifiedBaseAttack is int savedPyreAttack && savedPyreAttack != 0)
                     return "Live saved Pyre attack modifiers require native cached-attack lifecycle integration.";
                 if (requireStatusDamage && unit.Modifiers?.DamageBuffFromStatusEffects.HasValue != true)
@@ -929,16 +939,30 @@ namespace MonsterTrain2Poju.Model
             internal int? LastAttackerId;
             private IReadOnlyList<CombatStatus>? statusRegistry;
             private StatusDictionaryState? dictionary;
+            private readonly int roomIndex;
             private readonly Func<CombatContext?>? getContext;
             private readonly Action<string>? reject;
             internal bool Alive => Health > 0 && !Removed && !Despawned;
-            internal int Attack => Math.Max(0, unchecked(Source.AttackBeforeStatuses +
-                (Source.Modifiers?.DamageBuffFromStatusEffects ?? unchecked(Amount("buff") + Amount("valor") - Amount("debuff"))) +
-                (Source.IsPyre ? getContext?.Invoke()?.Resources?.PyreModifiedBaseAttack ?? 0 : 0)));
-
-            internal WorkingUnit(CombatUnit source, Func<CombatContext?>? getContext = null, Action<string>? reject = null)
+            internal int Attack
             {
-                this.getContext = getContext; this.reject = reject;
+                get
+                {
+                    int mageblade = 0;
+                    if (Source.Modifiers?.MagebladeDamagePerMagicPower is int coefficient)
+                    {
+                        RoomMagicPower? power = getContext?.Invoke()?.MagicPower?.FirstOrDefault(value =>
+                            value.RoomIndex == roomIndex && value.Team == Source.Team);
+                        mageblade = unchecked(coefficient * (power?.Value ?? 0));
+                    }
+                    return Math.Max(0, unchecked(Source.AttackBeforeStatuses +
+                        (Source.Modifiers?.DamageBuffFromStatusEffects ?? unchecked(Amount("buff") + Amount("valor") - Amount("debuff"))) +
+                        mageblade + (Source.IsPyre ? getContext?.Invoke()?.Resources?.PyreModifiedBaseAttack ?? 0 : 0)));
+                }
+            }
+
+            internal WorkingUnit(CombatUnit source, int roomIndex, Func<CombatContext?>? getContext = null, Action<string>? reject = null)
+            {
+                this.roomIndex = roomIndex; this.getContext = getContext; this.reject = reject;
                 Source = source; Health = source.Health; LastAttackerId = source.LastAttackerId;
                 Despawned = source.DeathState?.IsDespawned == true; Destroyed = source.DeathState?.IsDestroyed == true;
                 Removed = Destroyed;
@@ -1046,7 +1070,7 @@ namespace MonsterTrain2Poju.Model
             }
 
             private WorkingUnit NewUnit(CombatUnit unit, bool inRoom = true) =>
-                new WorkingUnit(unit, () => context, error => unsupportedReason = error) { InRoom = inRoom };
+                new WorkingUnit(unit, source.RoomIndex, () => context, error => unsupportedReason = error) { InRoom = inRoom };
 
             internal RoomCombatResult Run(bool entireRoom)
             {

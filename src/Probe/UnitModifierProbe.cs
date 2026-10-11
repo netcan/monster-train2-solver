@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using HarmonyLib;
@@ -13,12 +14,15 @@ namespace MonsterTrain2Poju.Probe
             int rawSize = (int)AccessTools.Property(state.GetType(), "Size").GetValue(state);
             var health = (Dictionary<string, int>)AccessTools.Field(state.GetType(), "maxHpFromUpgrades").GetValue(state);
             CardState? spawner = unit.GetSpawnerCard();
+            RoomStateSelfDamagePerMagicPowerModifier[] mageblade = unit.GetRoomStateModifiers<RoomStateSelfDamagePerMagicPowerModifier>().ToArray();
+            if (mageblade.Length > 1) throw new InvalidOperationException("Multiple Mageblade attack caches were attached to one unit.");
             return new UnitModifiers(unit.GetUnbuffedAttackDamage(), unit.GetAttackDamageAddedFromUpgrades(), unit.GetDamageBuff(),
                 rawSize, unit.GetEquipmentLimit(), unit.GetCanBeHealed(), unit.GetIsClone(),
                 unit.GetAppliedCardUpgrades().Select(upgrade => FullBattleTrace.Active?.CaptureAppliedUpgrade(upgrade) ?? CardModifierProbe.Upgrade(upgrade)).ToArray(), health.OrderBy(item => item.Key)
                     .Select(item => new StatisticCount(FullBattleTrace.Active?.UpgradeKey(item.Key) ?? item.Key, item.Value)).ToArray(),
                 spawner?.GetSpawnCharacterData() == null || spawner.GetSpawnCharacterData() == unit.GetSourceCharacterData(),
-                RelicProbe.HasStatusAttackHistory(AllGameManagers.Instance!) ? (int?)AccessTools.Property(state.GetType(), "DamageBuffFromStatusEffects").GetValue(state) : null);
+                RelicProbe.HasStatusAttackHistory(AllGameManagers.Instance!) ? (int?)AccessTools.Property(state.GetType(), "DamageBuffFromStatusEffects").GetValue(state) : null,
+                mageblade.SingleOrDefault()?.AdditionalDamagePerMagicPower);
         }
         internal static UnitModifiers Definition(CharacterData data) => new UnitModifiers(data.GetAttackDamage(), 0, 0,
             data.GetSize(), data.GetEquipmentLimit(), data.GetCanBeHealed(), false, System.Array.Empty<CardUpgradeModifier>(),

@@ -83,7 +83,7 @@ namespace MonsterTrain2Poju.Model
             CombatUnit empty = new CombatUnit(template.Id, template.AssetKey, template.Team, template.BaseAttack, template.Health,
                 template.MaxHealth, template.CanAttack, template.IsPyre, template.EndsBattleOnDeath, System.Array.Empty<CombatStatus>(), template.Triggers,
                 template.SpawnerCardId, template.Size, System.Array.Empty<string>(), template.Subtypes,
-                template.Modifiers?.DamageBuffFromStatusEffects.HasValue == true ? template.Modifiers.WithStatusDamage(0) : template.Modifiers, template.IsBoss,
+                template.Modifiers?.ResetStartingStatusCaches(), template.IsBoss,
                 template.LastAttackerId, template.StatusRegistry == null ? null : System.Array.Empty<CombatStatus>(), template.EquipmentCards, template.NextTriggerId, template.Ability, template.StatusDictionary == null ? null : new StatusDictionaryState(System.Array.Empty<string>(), System.Array.Empty<int>()), template.AbilityRules, template.HordeDefinition, template.IsSpawning, template.SacrificeCardId, template.DeathState, bumpRules: template.BumpRules);
             RoomCombatState initializing = new RoomCombatState(source.RoomIndex, source.Deployment, source.Units.Select(unit => unit.Id == template.Id ? empty : unit).ToArray(),
                 System.Array.Empty<string>(), source.Context, source.Preview);

@@ -2549,7 +2549,9 @@ sampling used the final model and strict acceptance replays the archived state.
 The inventory is 222 archives (191 battles, 31 calibrations); accepted original
 relic coverage is 55/224 (24.55%) across 15 evidence archives. Broader
 card/relic combinations, unsupported tower room modifiers, all Bosses and the
-optimal solver remain unfinished.
+optimal solver remain unfinished. Mageblade now has pure model checks for its
+cached per-unit coefficient and captured room-power attack bonus; native
+battle replay is still pending, so the accepted coverage count is unchanged.
 
 ```powershell
 dotnet run --project src/ModelChecks -c Release -- --relic-floor-capacity-pure
