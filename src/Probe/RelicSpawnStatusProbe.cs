@@ -63,7 +63,7 @@ namespace MonsterTrain2Poju.Probe
             Records.Add(record);
             RelicBirthResult? world = null;
             RoomCombatResult? predicted = null;
-            if (SpawnStatusRelicScenario.Clones)
+            if (SpawnStatusRelicScenario.Clones || OriginalLifecycleRelicBatchScenario.Enabled)
             {
                 record.BeforeTrain = trace.CaptureTrain();
                 record.QueueRunningBefore = AllGameManagers.Instance!.GetCombatManager()!.IsRunningTriggerQueue;
@@ -83,7 +83,7 @@ namespace MonsterTrain2Poju.Probe
             {
                 observingBirth--;
                 (native as IDisposable)?.Dispose(); record.After = trace.Capture(room);
-                if (SpawnStatusRelicScenario.Clones)
+                if (SpawnStatusRelicScenario.Clones || OriginalLifecycleRelicBatchScenario.Enabled)
                 {
                     active.Remove(record); record.AfterTrain = trace.CaptureTrain(); record.QueuedAfter = Queue(record);
                     record.Difference = record.UnsupportedQueueReason ?? (!world!.Supported ? world.UnsupportedReason :

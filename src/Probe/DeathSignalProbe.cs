@@ -27,8 +27,8 @@ namespace MonsterTrain2Poju.Probe
             return new UnitDeathState(actor.HasFinishedDying, actor.IsBeingRemoved(), listener,
                 pending == null ? null : pending.Source == null ? 0 : FullBattleTrace.Active!.CardId(pending.Source),
                 actor.IsSacrifice, once && !permanent,
-                HordeMergeScenario.Enabled || BumpScenario.Enabled || EnchantmentBattleScenario.Prepared || (OriginalUnitRelicBatchScenario.Enabled || OriginalTriggerRelicBatchScenario.Enabled) ? (bool)AccessTools.Property(typeof(CharacterState), "FiredDespawnEvent").GetValue(actor) : (bool?)null,
-                HordeMergeScenario.Enabled || BumpScenario.Enabled || EnchantmentBattleScenario.Prepared || (OriginalUnitRelicBatchScenario.Enabled || OriginalTriggerRelicBatchScenario.Enabled) ? actor.IsDestroyed : (bool?)null);
+                HordeMergeScenario.Enabled || BumpScenario.Enabled || EnchantmentBattleScenario.Prepared || (OriginalUnitRelicBatchScenario.Enabled || OriginalTriggerRelicBatchScenario.Enabled || OriginalLifecycleRelicBatchScenario.Enabled) ? (bool)AccessTools.Property(typeof(CharacterState), "FiredDespawnEvent").GetValue(actor) : (bool?)null,
+                HordeMergeScenario.Enabled || BumpScenario.Enabled || EnchantmentBattleScenario.Prepared || (OriginalUnitRelicBatchScenario.Enabled || OriginalTriggerRelicBatchScenario.Enabled || OriginalLifecycleRelicBatchScenario.Enabled) ? actor.IsDestroyed : (bool?)null);
         }
         [HarmonyPatch(typeof(CharacterState), "CheckForDeath")]
         private static class CheckPatch

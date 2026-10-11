@@ -49,10 +49,14 @@ internal static class RevivalChecks
         Require(drained.State!.Units.Single(unit => unit.Id == 1).DeathState!.IsBeingRemoved == false,
             "The revival OnDeath callback marked a live actor removed.");
         var onceRoot = new RoomCombatState(root.RoomIndex, root.Deployment, root.Units.Select(unit => unit.Id == 1 ?
-            unit.WithDeathState(new(false, false, true, isSacrifice: false, statisticsListenerOnce: true)) : unit).ToArray(), [], context);
+            unit.WithDeathState(new UnitDeathState(false, false, true, isSacrifice: false, statisticsListenerOnce: true,
+                isDespawned: false, isDestroyed: false).WithPreviewPrimary(root.Units[0])) : unit).ToArray(), [], context);
         var onceResult = RoomCombatModel.ApplyCardDamage(onceRoot, 1, 999);
-        Require(onceResult.Supported && onceResult.State!.Units.Single(unit => unit.Id == 1).DeathState!.HasStatisticsListener == false,
-            "Revival did not consume a one-time death statistics listener.");
+        UnitDeathState? onceDeath = onceResult.State?.Units.Single(unit => unit.Id == 1).DeathState;
+        Require(onceResult.Supported && onceDeath?.HasStatisticsListener == false &&
+            onceDeath.StatisticsListenerOnce == false && onceDeath.IsDespawned == false && onceDeath.IsDestroyed == false &&
+            ReferenceEquals(onceDeath.PreviewPrimary, root.Units[0]),
+            "Revival did not consume a one-time death statistics listener while retaining its physical flags and preview metadata.");
         var missing = new RoomCombatState(root.RoomIndex, root.Deployment, root.Units.Select(unit => unit.Id == 1 ?
             unit.WithDeathState(new(false, false, true)) : unit).ToArray(), [], context);
         Require(!RoomCombatModel.ApplyCardDamage(missing, 1, 999).Supported,
@@ -82,12 +86,19 @@ internal static class RevivalChecks
     }
     internal static void Native(FixtureValue fixture)
     {
-        if (!fixture.TryGetProperty("Revivals", out var entries) || entries.GetArrayLength() == 0) return;
+        string? scenario = fixture.TryGetProperty("ModifierScenario", out var modifierScenario) ? modifierScenario.GetString() : null;
+        bool lifecycleIntegration = scenario == "original-lifecycle-relic-batch";
+        if (!fixture.TryGetProperty("Revivals", out var entries) || entries.GetArrayLength() == 0)
+        {
+            Require(!lifecycleIntegration, "Original lifecycle relics omitted a natural revival boundary.");
+            return;
+        }
         var samples = entries.EnumerateArray().ToArray();
         var operations = fixture.GetProperty("RevivalOperations").EnumerateArray().ToArray();
-        bool auraIntegration = fixture.GetProperty("ModifierScenario").GetString() is "persistent-enchantment-revivals" or "persistent-enchantment-random-revivals";
-        bool summonIntegration = !auraIntegration && fixture.GetProperty("ModifierScenario").GetString()?.Contains("-revival") == true;
-        if (auraIntegration) VerifyAuraCoverage(samples, operations);
+        bool auraIntegration = scenario is "persistent-enchantment-revivals" or "persistent-enchantment-random-revivals";
+        bool summonIntegration = !auraIntegration && !lifecycleIntegration && scenario?.Contains("-revival") == true;
+        if (lifecycleIntegration) VerifyLifecycleCoverage(samples, operations);
+        else if (auraIntegration) VerifyAuraCoverage(samples, operations);
         else if (summonIntegration) VerifySummonCoverage(fixture, samples, operations);
         else Require(operations.Length == 7 && samples.Length >= 7 && samples.Count(sample => sample.GetProperty("QueueRunning").GetBoolean()) >= 2,
             "Native revival omitted direct, last-stack, zero-stack or nested queue paths.");
@@ -95,7 +106,7 @@ internal static class RevivalChecks
         foreach (var sample in operations) VerifyOperation(sample);
         var phases = fixture.GetProperty("HarvestTriggers").EnumerateArray().ToArray();
         foreach (var phase in phases) HarvestChecks.VerifyPhase(phase);
-        if (!summonIntegration && !auraIntegration) Require(samples.Any(sample => sample.GetProperty("AfterActor").Deserialize<CombatUnit>()!.MaxHealth == 1) &&
+        if (!summonIntegration && !auraIntegration && !lifecycleIntegration) Require(samples.Any(sample => sample.GetProperty("AfterActor").Deserialize<CombatUnit>()!.MaxHealth == 1) &&
             samples.Any(sample => sample.GetProperty("Before").Deserialize<RoomCombatState>()!.Units.Single(unit =>
                 unit.Id == sample.GetProperty("ActorId").GetInt32()).Status("undying") == null),
             "Native revival missed zero max health and direct revival without a stack.");
@@ -103,12 +114,41 @@ internal static class RevivalChecks
             .All(sample => sample.GetProperty("AutomaticQueueDeferrals").GetInt32() == 0), "The setup queue guard changed natural battle timing.");
         Parallel.For(0, 16, _ => { foreach (var sample in samples) VerifyRevival(sample); foreach (var sample in operations) VerifyOperation(sample);
             foreach (var phase in phases) HarvestChecks.VerifyPhase(phase); });
-        if (auraIntegration)
+        if (lifecycleIntegration)
+            Console.WriteLine($"NATIVE-REVIVAL-LIFECYCLE-RELIC-CHECKS PASS: {samples.Length} natural revival boundaries, {phases.Length} callback phases, " +
+                "one-stack removal, retained physical life, pending reanimated/death FIFO, exact states and 16 branches.");
+        else if (auraIntegration)
             Console.WriteLine($"NATIVE-REVIVAL-AURA-CHECKS PASS: {samples.Length} natural revival boundaries, {phases.Length} callback phases, " +
                 "first/last stacks, retained source binding, complete world/RNG/queue states and 16 branches.");
         else if (summonIntegration)
             Console.WriteLine($"NATIVE-REVIVAL-SUMMON-CHECKS PASS: {samples.Length} complete revival boundaries, {phases.Length} callback phases, host/child equipment and live-source death births, exact states and 16 branches.");
         else Console.WriteLine($"NATIVE-REVIVAL-CHECKS PASS: {samples.Length} complete revival boundaries, seven direct/removal operations, {phases.Length} callback phases, both teams, queue retention and 16 branches.");
+    }
+    private static void VerifyLifecycleCoverage(FixtureValue[] samples, FixtureValue[] operations)
+    {
+        Require(samples.Length > 0 && operations.Length == 0 && samples.All(sample =>
+            sample.GetProperty("Completed").GetBoolean() && sample.GetProperty("Label").GetString() == "natural:revival" &&
+            sample.GetProperty("AutomaticQueueDeferrals").GetInt32() == 0),
+            "Original lifecycle relics must revive naturally without standalone operations or queue deferrals.");
+        foreach (var sample in samples)
+        {
+            int id = sample.GetProperty("ActorId").GetInt32();
+            CombatUnit before = sample.GetProperty("Before").Deserialize<RoomCombatState>()!.Units.Single(unit => unit.Id == id);
+            CombatUnit after = sample.GetProperty("AfterActor").Deserialize<CombatUnit>()!;
+            int stacks = before.Status("undying")?.Stacks ?? 0;
+            Require(before.Health == 0 && stacks > 0 && after.Id == id && after.Health == 1 &&
+                after.MaxHealth == Math.Max(1, before.MaxHealth) && after.SpawnerCardId == before.SpawnerCardId &&
+                after.Status("undying")?.Stacks == (stacks > 1 ? stacks - 1 : (int?)null) &&
+                after.DeathState?.HasFinishedDying == false && after.DeathState.IsBeingRemoved == false &&
+                after.DeathState.IsDespawned == false && after.DeathState.IsDestroyed == false,
+                "Original lifecycle revival omitted real lethal damage, one undying stack, restored HP or physical identity.");
+            var queued = sample.GetProperty("Queued").Deserialize<Callback[]>()!;
+            Require(queued.TakeLast(2).Select(item => (item.ActorId, item.Kind, item.DyingId, item.ParamInt, item.TriggerCount))
+                .SequenceEqual([(id, "OnReanimated", 0, 0, 1), (id, "OnDeath", 0, 1, 1)]),
+                "Original lifecycle revival lost pending reanimated/death FIFO or native callback payloads.");
+            // This API boundary leaves both callbacks pending; their relic effects
+            // are checked after the native queue drains by the lifecycle validator.
+        }
     }
     private static void VerifyAuraCoverage(FixtureValue[] samples, FixtureValue[] operations)
     {

@@ -1,6 +1,14 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
 
+if (args.Length == 1 && args[0] == "--relic-lifecycle-pure")
+{
+    RelicCharacterTriggerChecks.Run();
+    RevivalChecks.Run();
+    UnitAbilityChecks.Run();
+    return;
+}
+
 if (args.Length == 1 && args[0] == "--relic-status-magnitudes-pure")
 {
     RelicStatusMagnitudeChecks.Run();
@@ -18,6 +26,13 @@ if (args.Length == 2 && args[0] == "--original-magnitude-relics-only")
 {
     using var document = ModelJson.ReadFixture(args[1]);
     OriginalMagnitudeRelicBatchChecks.Native(document.RootElement, required: true, replayBattle: true);
+    return;
+}
+
+if (args.Length == 2 && args[0] == "--original-lifecycle-relics-only")
+{
+    using var document = ModelJson.ReadFixture(args[1]);
+    OriginalLifecycleRelicBatchChecks.Native(document.RootElement, required: true, replayBattle: true);
     return;
 }
 
