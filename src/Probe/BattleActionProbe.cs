@@ -131,7 +131,7 @@ namespace MonsterTrain2Poju.Probe
             }
             else if (kind == "CardEffectNULL") kind = "Null";
             else if ((data.GetCardType() == CardType.Spell || data.GetCardType() == CardType.Equipment) && effects.Length > 0 && effects.All(effect =>
-                new[] { "CardEffectCopyUnits", "CardEffectBump", "CardEffectAttackWithUnit", "CardEffectRemoveStatusEffect", "CardEffectSetUnitAbility", "CardEffectRemoveAbility", "CardEffectResetCooldown", "CardEffectAdjustAbilityCooldown", "CardEffectAttachEquipment", "CardEffectRemoveEquipment", "CardEffectRewardGold", "CardEffectGainEnergy", "CardEffectAdjustEnergy", "CardEffectGainEnergyNextTurn", "CardEffectGainEnergyEveryTurn", "CardEffectDamage", "CardEffectDamagePerSourceAttack", "CardEffectDraw", "CardEffectDrawAdditionalNextTurn", "CardEffectAdjustRoomCapacity", "CardEffectDiscardHand", "CardEffectAddBattleCard", "CardEffectHeal", "CardEffectSacrifice", "CardEffectBuffDamage", "CardEffectDebuffDamage", "CardEffectBuffMaxHealth", "CardEffectDebuffMaxHealth", "CardEffectAddStatusEffect", "CardEffectFloorRearrange", "CardEffectAddCardUpgradeToUnits",
+                    new[] { "CardEffectCopyUnits", "CardEffectBump", "CardEffectAttackWithUnit", "CardEffectRemoveStatusEffect", "CardEffectSetUnitAbility", "CardEffectRemoveAbility", "CardEffectResetCooldown", "CardEffectAdjustAbilityCooldown", "CardEffectAttachEquipment", "CardEffectRemoveEquipment", "CardEffectRewardGold", "CardEffectGainEnergy", "CardEffectAdjustEnergy", "CardEffectGainEnergyNextTurn", "CardEffectGainEnergyEveryTurn", "CardEffectDamage", "CardEffectDamagePerSourceAttack", "CardEffectDraw", "CardEffectDrawAdditionalNextTurn", "CardEffectAdjustRoomCapacity", "CardEffectDiscardHand", "CardEffectAddBattleCard", "CardEffectHeal", "CardEffectSacrifice", "CardEffectBuffDamage", "CardEffectDebuffDamage", "CardEffectBuffMaxHealth", "CardEffectDebuffMaxHealth", "CardEffectAddStatusEffect", "CardEffectAddStatusEffectPerOtherEffect", "CardEffectFloorRearrange", "CardEffectAddCardUpgradeToUnits",
                     "CardEffectDrawType", "CardEffectAddTempCardUpgradeToNextDrawnCard",
                     "CardEffectAddTempCardUpgradeToUnits", "CardEffectRemoveTempUpgradeFromUnit",
                     "CardEffectAddTempCardUpgradeToCardsInHand", "CardEffectAddPermanentCardUpgradeToCardsInHand" }.Contains(effect.GetEffectStateName())))
@@ -177,6 +177,7 @@ namespace MonsterTrain2Poju.Probe
                         effect.GetEffectStateName() == "CardEffectHeal" ? "Heal" :
                         effect.GetEffectStateName() == "CardEffectSacrifice" ? "Sacrifice" :
                         effect.GetEffectStateName() == "CardEffectFloorRearrange" ? "FloorRearrange" :
+                        effect.GetEffectStateName() == "CardEffectAddStatusEffectPerOtherEffect" ? "AddStatusPerOtherEffect" :
                         effect.GetEffectStateName() == "CardEffectAddStatusEffect" ? "AddStatus" :
                         handUpgrade ? "HandUpgrade" : effect.GetEffectStateName() == "CardEffectRemoveTempUpgradeFromUnit" ? "RemoveUnitUpgrade" : "UnitUpgrade";
                     CardUpgradeModifier? upgrade = type == "DrawNextTurn" ? BonusDrawProbe.Upgrade(effect) : null;
@@ -202,7 +203,7 @@ namespace MonsterTrain2Poju.Probe
                             "Permanent" : "TemporaryUntilEndOfBattle" : type == "AttachEquipment" ? "" : ((UnitUpgradeLifetime)effect.GetAdditionalParamInt1()).ToString();
                     }
                     var statuses = new List<CombatStatus>();
-                    if (type == "AddStatus")
+                    if (type == "AddStatus" || type == "AddStatusPerOtherEffect")
                     {
                         if (effect.GetParamStatusEffects().Length == 0) interactions.Add("Empty status effect pool");
                         foreach (StatusEffectStackData status in effect.GetParamStatusEffects())
@@ -210,7 +211,7 @@ namespace MonsterTrain2Poju.Probe
                             // Native unconditionally accepts non-strict room tests.
                             // Strict/drop-target nonstackable tests still need their
                             // independently modeled pre-cast target legality.
-                            if (!StatusEffectManager.Instance.GetStatusEffectDataById(status.statusId)!.IsStackable() &&
+                            if (type == "AddStatus" && !StatusEffectManager.Instance.GetStatusEffectDataById(status.statusId)!.IsStackable() &&
                                 (effect.GetParamBool() || effect.GetTargetMode() == TargetMode.DropTargetCharacter))
                                 interactions.Add("Nonstackable status legality");
                             statuses.Add(Status(status.statusId, status.count));
@@ -237,7 +238,8 @@ namespace MonsterTrain2Poju.Probe
                         goldCostRequired: type == "RewardGold" ? effect.GetParamBool() : (bool?)null,
                         useCardTraits: type == "DamagePerSourceAttack" && effect.GetParamBool(),
                         requireEquipment: type == "AttackWithUnit" && effect.GetParamBool(),
-                        useSelectedRoom: type == "AttackWithUnit" && effect.GetParamBool2()));
+                        useSelectedRoom: type == "AttackWithUnit" && effect.GetParamBool2(),
+                        countStatusOnlyOnTargets: type == "AddStatusPerOtherEffect" && effect.GetParamBool()));
                 }
             }
             else interactions.Add("Unimplemented play effect " + kind);

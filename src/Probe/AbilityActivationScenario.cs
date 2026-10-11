@@ -31,6 +31,16 @@ namespace MonsterTrain2Poju.Probe
                 Set(pyreAttack, "paramBool2", true);
                 effects.Add(unitAttack);
                 effects.Add(pyreAttack);
+                var seedShield = Effect("AddStatusEffect", 0, TargetMode.Self, Team.Type.Monsters);
+                Set(seedShield, "paramStatusEffects", new[] { new StatusEffectStackData { statusId = "damage shield", count = 2 } });
+                var armorPerShield = Effect("AddStatusEffectPerOtherEffect", 3, TargetMode.Self, Team.Type.Monsters);
+                Set(armorPerShield, "paramBool", true);
+                Set(armorPerShield, "paramStatusEffects", new[] {
+                    new StatusEffectStackData { statusId = "armor", count = 1 },
+                    new StatusEffectStackData { statusId = "damage shield", count = 1 }
+                });
+                effects.Add(seedShield);
+                effects.Add(armorPerShield);
             }
             Set(ability, "effects", effects);
             CardData steward = save.GetAllGameData().FindCardData("d14a50f3-728d-43e1-87f0-ef1b013f6678")!;

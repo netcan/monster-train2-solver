@@ -607,6 +607,13 @@ damage traits come from the ability card or attacker. It now also executes
 `AttackWithUnit` on both the ability actor and a Pyre target. The live native
 probe observed selected room 3 during the Pyre effect even though the ability
 action targets room 0; replay therefore keeps that attack on the Pyre floor.
+The fixed-cost archive also seeds 2 Damage Shield before applying native
+`CardEffectAddStatusEffectPerOtherEffect` to the ability actor with multiplier 3
+and target-only counting. Both activations finish with 2 Damage Shield and 6
+Armor. The updated 17-action, five-EndTurn battle wins at Pyre 80 after 41
+matched room states; complete native and offline replay report zero mismatches
+or unsupported operations, and the effect's pure checks cover live sequencing,
+unchecked overflow, empty targets and 32 parallel branches.
 The lethal fixture ends
 when the second skill kills the Boss; ordinary piles clear while skill
 identity/history and permanent-deck statistic fallback remain. Whole policies

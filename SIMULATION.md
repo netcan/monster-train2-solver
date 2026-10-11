@@ -9,7 +9,10 @@ coverage and the optimal solver remain in progress.
 The fixed-cost ability activation archive now exercises native
 `CardEffectDamagePerSourceAttack` inside the full battle. Its unmodified
 multiplier uses the activating unit's live attack, and its card-traits flag
-selects the corresponding damage source.
+selects the corresponding damage source. The same archive now exercises
+`CardEffectAddStatusEffectPerOtherEffect`: two prior Damage Shield stacks and
+multiplier 3 produce 6 Armor on the ability actor in both activations. Native
+capture and independent action replay match with no unsupported operations.
 
 `full-battle-original-sting-relics.mt2f` now exercises both unchanged original
 Sting upgrade owners. Three played Stings retain the combined +30 damage and

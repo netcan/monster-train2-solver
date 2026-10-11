@@ -7,6 +7,12 @@ if (args.Length == 1 && args[0] == "--attack-with-unit-pure")
     return;
 }
 
+if (args.Length == 1 && args[0] == "--status-per-other-effect-pure")
+{
+    StatusPerOtherEffectChecks.Run();
+    return;
+}
+
 if (args.Length == 1 && args[0] == "--unit-ability-pure")
 {
     UnitAbilityChecks.Run();
@@ -556,6 +562,7 @@ CardSpellChecks.Run();
 AttackWithUnitChecks.Run();
 SacrificeChecks.Run();
 RoomSpellChecks.Run();
+StatusPerOtherEffectChecks.Run();
 RandomSpellChecks.Run();
 RandomStatusChecks.Run();
 TrainSpellChecks.Run();

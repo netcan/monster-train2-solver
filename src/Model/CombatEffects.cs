@@ -205,7 +205,7 @@ namespace MonsterTrain2Poju.Model
                 Action.Tests, Action.Range, Action.Filters, Action.Generation, Action.OnlyIfNoEnemies, Action.CooldownParameter,
                 Action.AbilityChange, Action.CopyHeroStats, Action.ScaleUpgrade, Action.DoNotFullyRemove,
                 Action.SacrificeSubtype, Action.TypedDraw, Action.NextDrawUpgrade, Action.RequiredGold, Action.GoldCostRequired,
-                Action.UseCardTraits, Action.RequireEquipment, Action.UseSelectedRoom), DamageStatusMultiplier, StatusScaling, Summon, Enchantment);
+                Action.UseCardTraits, Action.RequireEquipment, Action.UseSelectedRoom, Action.CountStatusOnlyOnTargets), DamageStatusMultiplier, StatusScaling, Summon, Enchantment);
     }
 
     public sealed class CombatTriggerOrigin
