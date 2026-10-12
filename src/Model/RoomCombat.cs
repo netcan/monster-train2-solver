@@ -638,31 +638,55 @@ namespace MonsterTrain2Poju.Model
             bool deferSpawnerExhaustion = false, int attackerUnitId = 0, Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null) => ApplyCardDamage(state, targetId, damage, sourceCardId, deferSpawnerExhaustion, true, attackerUnitId, refreshPyre: refreshPyre);
 
         internal static RoomCombatResult ApplyCardDamageAfterTraits(RoomCombatState state, int targetId, int damage, int sourceCardId,
-            bool deferSpawnerExhaustion, int attackerUnitId = 0, Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null) => ApplyCardDamage(state, targetId, damage, sourceCardId, deferSpawnerExhaustion, false, attackerUnitId, refreshPyre: refreshPyre);
+            bool deferSpawnerExhaustion, int attackerUnitId = 0, Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null,
+            CombatUnit? externalActor = null, int externalActorRoomIndex = -1,
+            Action<QueuedCharacterTrigger>? enqueueCharacterTrigger = null) => ApplyCardDamage(state, targetId, damage, sourceCardId,
+                deferSpawnerExhaustion, false, attackerUnitId, refreshPyre, externalActor, externalActorRoomIndex, enqueueCharacterTrigger);
 
         internal static RoomCombatResult ApplyNativeCardDamageAfterTraits(RoomCombatState state, int targetId, int damage, int sourceCardId,
             int attackerUnitId = 0,
-            Func<RoomCombatState, RoomCombatResult>? finishDamageQueue = null, Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null)
+            Func<RoomCombatState, RoomCombatResult>? finishDamageQueue = null, Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null,
+            CombatUnit? externalActor = null, int externalActorRoomIndex = -1,
+            Action<QueuedCharacterTrigger>? enqueueCharacterTrigger = null)
         {
             string? error = Validate(state);
+            bool localAttacker = state.Units.Any(unit => unit.Id == attackerUnitId);
             if (error != null || damage < 0 || state.Preview || state.Context?.SpawnPoints == null ||
                 !state.Units.Any(unit => unit.Id == targetId) ||
-                attackerUnitId != 0 && !state.Units.Any(unit => unit.Id == attackerUnitId))
+                attackerUnitId != 0 && !localAttacker && (externalActor == null || externalActor.Id != attackerUnitId ||
+                    externalActor.Health <= 0 || externalActorRoomIndex < 0 || externalActorRoomIndex == state.RoomIndex ||
+                    state.Units.Any(unit => unit.Id == externalActor.Id)) ||
+                externalActor != null && (externalActor.Id != attackerUnitId || localAttacker || externalActorRoomIndex < 0 ||
+                    externalActorRoomIndex == state.RoomIndex || externalActor.Health <= 0))
                 return new RoomCombatResult(null, RoomOutcome.Unsupported, 0, new List<CombatEvent>(), error ?? "Invalid native spell damage phase.");
             return new Engine(state, new List<CombatEvent>(), nativeCardDamage: true,
-                finishDamageQueue: finishDamageQueue, refreshPyre: refreshPyre)
+                finishDamageQueue: finishDamageQueue, refreshPyre: refreshPyre,
+                enqueueCharacterTrigger: enqueueCharacterTrigger, externalActor: externalActor,
+                externalActorRoomIndex: externalActorRoomIndex, externalActorInRoom: false)
                 .CardDamage(targetId, damage, sourceCardId, false, attackerUnitId);
         }
 
         private static RoomCombatResult ApplyCardDamage(RoomCombatState state, int targetId, int damage, int sourceCardId,
-            bool deferSpawnerExhaustion, bool applyTraits, int attackerUnitId, Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null)
+            bool deferSpawnerExhaustion, bool applyTraits, int attackerUnitId,
+            Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null,
+            CombatUnit? externalActor = null, int externalActorRoomIndex = -1,
+            Action<QueuedCharacterTrigger>? enqueueCharacterTrigger = null)
         {
             string? error = Validate(state);
             if (error != null || damage < 0 || !state.Units.Any(unit => unit.Id == targetId))
                 return new RoomCombatResult(null, RoomOutcome.Unsupported, 0, new List<CombatEvent>(), error ?? "Invalid card damage target or amount.");
-            if (attackerUnitId != 0 && state.Units.All(unit => unit.Id != attackerUnitId))
+            bool localAttacker = state.Units.Any(unit => unit.Id == attackerUnitId);
+            if (attackerUnitId != 0 && !localAttacker && (externalActor == null || externalActor.Id != attackerUnitId ||
+                externalActor.Health <= 0 || externalActorRoomIndex < 0 || externalActorRoomIndex == state.RoomIndex ||
+                state.Units.Any(unit => unit.Id == externalActor.Id)))
                 return new RoomCombatResult(null, RoomOutcome.Unsupported, 0, new List<CombatEvent>(), "Cross-room spell attacker requires a retained source unit.");
-            return new Engine(state, new List<CombatEvent>(), deferSpawnerExhaustion, refreshPyre: refreshPyre).CardDamage(targetId, damage, sourceCardId, applyTraits, attackerUnitId);
+            if (externalActor != null && (externalActor.Id != attackerUnitId || localAttacker || externalActorRoomIndex < 0 ||
+                externalActorRoomIndex == state.RoomIndex || externalActor.Health <= 0))
+                return new RoomCombatResult(null, RoomOutcome.Unsupported, 0, new List<CombatEvent>(), "Invalid external spell attacker.");
+            return new Engine(state, new List<CombatEvent>(), deferSpawnerExhaustion,
+                enqueueCharacterTrigger: enqueueCharacterTrigger, refreshPyre: refreshPyre,
+                externalActor: externalActor, externalActorRoomIndex: externalActorRoomIndex, externalActorInRoom: false)
+                .CardDamage(targetId, damage, sourceCardId, applyTraits, attackerUnitId);
         }
 
         internal static RoomCombatResult ApplyUnitModification(RoomCombatState state, CombatUnit changed, Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null) =>
@@ -989,6 +1013,7 @@ namespace MonsterTrain2Poju.Model
             private IReadOnlyList<CombatStatus>? statusRegistry;
             private StatusDictionaryState? dictionary;
             private readonly int roomIndex;
+            internal int RoomIndex => roomIndex;
             private readonly Func<CombatContext?>? getContext;
             private readonly Action<string>? reject;
             internal bool Alive => Health > 0 && !Removed && !Despawned;
@@ -1102,7 +1127,7 @@ namespace MonsterTrain2Poju.Model
                 bool nativeCardDamage = false,
                 Func<RoomCombatState, RoomCombatResult>? finishDamageQueue = null,
                 Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null,
-                CombatUnit? externalActor = null)
+                CombatUnit? externalActor = null, int externalActorRoomIndex = -1, bool externalActorInRoom = true)
             {
                 this.source = source; this.events = events;
                 this.deferSpawnerExhaustion = deferSpawnerExhaustion;
@@ -1119,7 +1144,8 @@ namespace MonsterTrain2Poju.Model
                 {
                     if (units.Any(unit => unit.Source.Id == externalActor.Id))
                         throw new ArgumentException("External actor already belongs to the combat room.", nameof(externalActor));
-                    units.Add(NewUnit(externalActor));
+                    units.Add(NewUnit(externalActor, externalActorInRoom,
+                        externalActorRoomIndex >= 0 ? externalActorRoomIndex : source.RoomIndex));
                     externalTurnActorIds.Add(externalActor.Id);
                 }
                 if (source.Preview && resetPreviewTriggers)
@@ -1129,8 +1155,8 @@ namespace MonsterTrain2Poju.Model
                 killCamActivated = context?.KillCamActivated == true;
             }
 
-            private WorkingUnit NewUnit(CombatUnit unit, bool inRoom = true) =>
-                new WorkingUnit(unit, source.RoomIndex, () => context, error => unsupportedReason = error) { InRoom = inRoom };
+            private WorkingUnit NewUnit(CombatUnit unit, bool inRoom = true, int? roomIndex = null) =>
+                new WorkingUnit(unit, roomIndex ?? source.RoomIndex, () => context, error => unsupportedReason = error) { InRoom = inRoom };
 
             private bool HasLivingPairedCompanionBoss(int unitId)
             {
@@ -1963,7 +1989,7 @@ namespace MonsterTrain2Poju.Model
                         isSacrifice: target.Source.DeathState.IsSacrifice,
                         statisticsListenerOnce: target.Source.DeathState.StatisticsListenerOnce.HasValue ? false : (bool?)null)));
                 if (!UpdateEnchantments(target.Source.Id)) return;
-                if (enqueueCharacterTrigger != null) enqueueCharacterTrigger(new QueuedCharacterTrigger(source.RoomIndex, target.Freeze(),
+                if (enqueueCharacterTrigger != null) enqueueCharacterTrigger(new QueuedCharacterTrigger(target.RoomIndex, target.Freeze(),
                     returnSpawnerAfterQueue: deferReturn || returnSpawnerAfterQueue, deferUntilRemoval: deferRemoval, harvestAfterDeath: !target.Despawned && !immediateHarvest,
                     completePhysicalRemovalAfterQueue: deferRemoval && context?.SpawnPoints != null, removalLifecycle: true,
                     preservePhysicalPoint: doNotFullyRemove));
@@ -2147,12 +2173,12 @@ namespace MonsterTrain2Poju.Model
                     if (context.PurifyBlockedTriggers.Contains(kind)) return;
                 }
                 if (!fromQueue && enqueueCharacterTrigger != null)
-                { enqueueCharacterTrigger(new QueuedCharacterTrigger(source.RoomIndex, unit.Freeze(), kind, paramInt: paramInt, overrideTarget: overrideTarget?.Freeze(), paramString: paramString,
+                { enqueueCharacterTrigger(new QueuedCharacterTrigger(unit.RoomIndex, unit.Freeze(), kind, paramInt: paramInt, overrideTarget: overrideTarget?.Freeze(), paramString: paramString,
                     dyingCharacter: dyingCharacter?.Freeze(), canFireTriggers: canFireTriggers, triggerCount: triggerCount, lastSpawnedOverrideUnitId: lastSpawnedOverrideUnitId,
                     admission: CharacterTriggerAdmission.Accepted, exclusiveTriggerStateId: exclusiveTriggerStateId)); return; }
                 if (!fromQueue)
                 {
-                    triggerQueue.Enqueue((source.RoomIndex, unit, kind, canFireTriggers, paramInt, overrideTarget, 0, paramString, dyingCharacter, triggerCount, lastSpawnedOverrideUnitId, exclusiveTriggerStateId));
+                    triggerQueue.Enqueue((unit.RoomIndex, unit, kind, canFireTriggers, paramInt, overrideTarget, 0, paramString, dyingCharacter, triggerCount, lastSpawnedOverrideUnitId, exclusiveTriggerStateId));
                     if (!runningTriggerQueue) DrainLocalTriggerQueue();
                     return;
                 }
@@ -2227,7 +2253,7 @@ namespace MonsterTrain2Poju.Model
                 // Inert callbacks have no effects within the validated status rules.
                 foreach (WorkingUnit actor in units.Where(unit => unit.Alive && unit.InRoom && !unit.Removed &&
                     unit.Source.Team == team && unit.Triggers.Any(trigger => trigger.Kind == kind)).ToArray())
-                    QueueCallback(new QueuedCharacterTrigger(source.RoomIndex, actor.Freeze(), kind,
+                    QueueCallback(new QueuedCharacterTrigger(actor.RoomIndex, actor.Freeze(), kind,
                         dyingCharacter: dying, triggerCount: count));
             }
             private void PhysicalHarvest(WorkingUnit dying)
@@ -2898,7 +2924,7 @@ namespace MonsterTrain2Poju.Model
                     context = changed.Context; unit.Apply(changed.Unit!);
                 }
                 var callbacks = new List<QueuedCharacterTrigger>();
-                StatusCallbackModel.Removed(source.RoomIndex, before, unit.Freeze(), id, callbacks);
+                StatusCallbackModel.Removed(unit.RoomIndex, before, unit.Freeze(), id, callbacks);
                 foreach (QueuedCharacterTrigger callback in callbacks) QueueCallback(callback);
             }
 

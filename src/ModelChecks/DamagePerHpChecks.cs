@@ -16,19 +16,38 @@ internal static class DamagePerHpChecks
             if (cardIds.Count > 0)
             {
                 PlayCardAction? action = BattleActionModel.EnumerateSupportedPlays(source)
-                    .FirstOrDefault(play => cardIds.Contains(play.CardInstanceId) && play.TargetUnitId > 0 &&
-                        source.Spawn.Train.Rooms.SelectMany(room => room.Units)
-                            .Any(unit => unit.Id == play.TargetUnitId && unit.Team == CombatTeam.Player));
+                    .FirstOrDefault(play =>
+                    {
+                        if (!cardIds.Contains(play.CardInstanceId) || play.TargetUnitId <= 0) return false;
+                        CombatUnit? unit = source.Spawn.Train.Rooms.SelectMany(room => room.Units)
+                            .FirstOrDefault(item => item.Id == play.TargetUnitId && item.Team == CombatTeam.Player);
+                        if (unit == null) return false;
+                        string dataId = source.Spawn.Train.Context!.Cards.Hand.Single(card => card.InstanceId == play.CardInstanceId).DataId;
+                        CardActionEffect effect = source.PlayRules!.Cards.Single(rule => rule.DataId == dataId)
+                            .Effects.Single(item => item.Type == "DamagePerHp");
+                        return (!effect.DamagePerHpLastAttacker || unit.LastAttackerId is > 0) &&
+                            (!effect.DamagePerHpIncludeArmor || unit.Statuses.Any(status => status.Id == "armor" && status.Stacks > 0));
+                    });
                 if (action != null) return action;
             }
         }
-        return BattleActionModel.ChooseUnitSpellAndJunkPlay(source);
+        bool hasCapturedTargetRequirement = source.PlayRules != null && source.Spawn.Train.Context != null &&
+            source.Spawn.Train.Context.Cards.Hand.Any(card => source.PlayRules.Cards.Any(rule => rule.DataId == card.DataId &&
+                rule.Effects.Any(effect => effect.Type == "DamagePerHp" &&
+                    (effect.DamagePerHpLastAttacker || effect.DamagePerHpIncludeArmor))));
+        return hasCapturedTargetRequirement
+            ? BattleActionModel.ChooseUnitAndJunkPlay(source)
+            : BattleActionModel.ChooseUnitSpellAndJunkPlay(source);
     }
 
-    internal static void Native(FixtureValue actions)
+    internal static void Native(FixtureValue fixture)
     {
         int plays = 0;
         int opposingDamage = 0;
+        int lastAttackerPlays = 0;
+        int armorPlays = 0;
+        string scenario = fixture.GetProperty("ModifierScenario").GetString()!;
+        FixtureValue actions = fixture.GetProperty("Actions");
         foreach (FixtureValue entry in actions.EnumerateArray())
         {
             BattleTurnState before = entry.GetProperty("Before").Deserialize<BattleTurnState>()!;
@@ -39,23 +58,61 @@ internal static class DamagePerHpChecks
             if (effect == null) continue;
 
             plays++;
-            Require(action.TargetUnitId > 0 && effect.Target == "DropTargetCharacter" && effect.Value == 1 &&
-                !effect.DamagePerHpLastAttacker && !effect.DamagePerHpIncludeArmor,
+            Require(action.TargetUnitId > 0 && effect.Target == "DropTargetCharacter" && effect.Value == 1,
                 "Native DamagePerHp action lost its selected-target multiplier parameters.");
             CombatUnit selected = before.Spawn.Train.Rooms.SelectMany(room => room.Units).Single(unit => unit.Id == action.TargetUnitId);
             Require(selected.Team == CombatTeam.Player, "Native DamagePerHp did not select a friendly source unit.");
             RoomCombatState room = before.Spawn.Train.Rooms.Single(item => item.RoomIndex == action.RoomIndex);
-            CombatUnit? opposingFront = room.Units.FirstOrDefault(unit => unit.Team == CombatTeam.Enemy);
+            if (effect.DamagePerHpIncludeArmor)
+            {
+                armorPlays++;
+                Require(selected.Statuses.Any(status => status.Id == "armor" && status.Stacks > 0),
+                    "Native DamagePerHp Armor flag was not exercised on a unit with Armor.");
+            }
+            int expectedTargetId;
+            if (effect.DamagePerHpLastAttacker)
+            {
+                lastAttackerPlays++;
+                if (action.ActivatorUnitId <= 0) expectedTargetId = 0;
+                else
+                {
+                    CombatUnit source = before.Spawn.Train.Rooms.SelectMany(item => item.Units)
+                        .Single(unit => unit.Id == action.ActivatorUnitId);
+                    expectedTargetId = source.LastAttackerId.GetValueOrDefault();
+                }
+            }
+            else expectedTargetId = room.Units.FirstOrDefault(unit => unit.Team == CombatTeam.Enemy)?.Id ?? 0;
             BattleTurnState actual = entry.GetProperty("Actual").Deserialize<BattleTurnState>()!;
-            if (opposingFront == null) continue;
-            bool changed = !actual.Spawn.Train.Rooms.SelectMany(item => item.Units).Any(unit => unit.Id == opposingFront.Id) ||
+            if (effect.DamagePerHpLastAttacker && expectedTargetId == 0)
+            {
+                Require(selected.LastAttackerId is > 0,
+                    "Native null-selfTarget fixture did not preserve a selected unit with a captured last attacker.");
+                var beforeHealth = before.Spawn.Train.Rooms.SelectMany(item => item.Units)
+                    .ToDictionary(unit => unit.Id, unit => unit.Health);
+                var afterHealth = actual.Spawn.Train.Rooms.SelectMany(item => item.Units)
+                    .ToDictionary(unit => unit.Id, unit => unit.Health);
+                Require(beforeHealth.All(item => afterHealth.TryGetValue(item.Key, out int health) && health == item.Value),
+                    "Native DamagePerHp with null selfTarget changed a unit's health.");
+                continue;
+            }
+            CombatUnit? expectedTarget = before.Spawn.Train.Rooms.SelectMany(item => item.Units)
+                .FirstOrDefault(unit => unit.Id == expectedTargetId);
+            if (expectedTarget == null) continue;
+            bool changed = !actual.Spawn.Train.Rooms.SelectMany(item => item.Units).Any(unit => unit.Id == expectedTarget.Id) ||
                 actual.Spawn.Train.Rooms.SelectMany(item => item.Units)
-                    .Any(unit => unit.Id == opposingFront.Id && unit.Health < opposingFront.Health);
-            if (changed) opposingDamage++;
+                    .Any(unit => unit.Id == expectedTarget.Id && unit.Health < expectedTarget.Health);
+            if (changed)
+            {
+                opposingDamage++;
+            }
         }
-        Require(plays > 0 && opposingDamage > 0,
-            "Native DamagePerHp was not played against a friendly unit with a visible opposing damage result.");
-        Console.WriteLine($"NATIVE-DAMAGE-PER-HP-CHECKS PASS: {plays} effect plays, {opposingDamage} damaged opposing fronts.");
+        Require(plays > 0 && (scenario == "damage-per-hp-last-attacker" ? lastAttackerPlays > 0 : opposingDamage > 0),
+            "Native DamagePerHp did not exercise its expected target behavior.");
+        if (scenario == "damage-per-hp-armor")
+            Require(armorPlays > 0, "Native DamagePerHp Armor scenario did not exercise its parameter.");
+        if (scenario == "damage-per-hp-last-attacker")
+            Require(lastAttackerPlays > 0, "Native DamagePerHp last-attacker scenario did not exercise its parameter.");
+            Console.WriteLine($"NATIVE-DAMAGE-PER-HP-CHECKS PASS: {plays} effect plays, {opposingDamage} expected targets damaged, {lastAttackerPlays} last-attacker plays.");
     }
 
     internal static void Run()
@@ -78,27 +135,77 @@ internal static class DamagePerHpChecks
         Require(withArmor.Supported && Unit(withArmor.State!, 11).Health == 19,
             "Damage-per-HP did not include armor stacks when requested.");
 
-        BattleTurnState attacker = UnitAbilityChecks.Root(enemyHealth: 5, enemyLastAttackerId: 10);
-        TrainSpellResult lastAttacker = CardSpellModel.Apply(attacker.Spawn.Train, 0,
-            [Effect(1, allowEnemy: true, allowPlayer: false, lastAttacker: true)], targetId: 11);
-        Require(lastAttacker.Supported && Unit(lastAttacker.State!, 10).Health == 13 && Unit(lastAttacker.State!, 11).Health == 5,
-            "Damage-per-HP did not redirect damage to the selected unit's last attacker.");
+        CardActionEffect enemyLastAttackerEffect = Effect(1, allowEnemy: true, allowPlayer: false, lastAttacker: true);
+        BattleTurnState selectedLastAttacker = UnitAbilityChecks.Root(enemyHealth: 5, enemyLastAttackerId: 10);
+        SpellCastCheck noSourceTest = CardSpellModel.TestPlay(selectedLastAttacker.Spawn.Train, 0,
+            [enemyLastAttackerEffect], 11);
+        TrainSpellResult noSource = CardSpellModel.Apply(selectedLastAttacker.Spawn.Train, 0,
+            [enemyLastAttackerEffect], targetId: 11);
+        Require(noSourceTest.Supported && noSource.Supported && Unit(noSource.State!, 10).Health == 18 &&
+            Unit(noSource.State!, 11).Health == 5,
+            "A normal spell used the selected target's LastAttackerId despite native selfTarget being null.");
+
+        CardActionEffect actorLastAttackerEffect = Effect(1, allowEnemy: false, allowPlayer: true, lastAttacker: true);
+        BattleTurnState sameRoomRoot = UnitAbilityChecks.Root(actorLastAttackerId: 11);
+        SpellCastCheck sameRoomTest = CardSpellModel.TestPlay(sameRoomRoot.Spawn.Train, 0,
+            [actorLastAttackerEffect], 10, selfUnitId: 10);
+        TrainSpellResult sameRoom = CardSpellModel.Apply(sameRoomRoot.Spawn.Train, 0,
+            [actorLastAttackerEffect], targetId: 10, selfUnitId: 10);
+        Require(sameRoomTest.Supported && sameRoom.Supported && Unit(sameRoom.State!, 11).Health == 22 &&
+            Unit(sameRoom.State!, 10).Health == 18,
+            "Damage-per-HP did not redirect unit-ability damage to its source's last attacker.");
+
+        BattleTurnState crossRoomRoot = UnitAbilityChecks.Root(actorLastAttackerId: 11);
+        TrainCombatState crossRoomTrain = MoveUnitToOtherRoom(crossRoomRoot.Spawn.Train, 10, 1);
+        SpellCastCheck crossRoomTest = CardSpellModel.TestPlay(crossRoomTrain, 1,
+            [actorLastAttackerEffect], 10, selfUnitId: 10);
+        TrainSpellResult crossRoom = CardSpellModel.Apply(crossRoomTrain, 1,
+            [actorLastAttackerEffect], targetId: 10, selfUnitId: 10);
+        Require(crossRoomTest.Supported && crossRoom.Supported && Unit(crossRoom.State!, 11).Health == 22 &&
+            Unit(crossRoom.State!, 10).Health == 18,
+            "Damage-per-HP did not find a live source's last attacker on another floor: test=" +
+            crossRoomTest.UnsupportedReason + ", apply=" + crossRoom.UnsupportedReason + ", enemy=" +
+            (crossRoom.State == null ? -1 : Unit(crossRoom.State, 11).Health) + ", source=" +
+            (crossRoom.State == null ? -1 : Unit(crossRoom.State, 10).Health) + ".");
+
+        BattleTurnState crossRoomKillRoot = UnitAbilityChecks.Root(enemyHealth: 10, actorLastAttackerId: 11);
+        TrainCombatState crossRoomKillTrain = MoveUnitToOtherRoom(crossRoomKillRoot.Spawn.Train, 10, 1);
+        RoomCombatState actorRoom = crossRoomKillTrain.Rooms.Single(room => room.Units.Any(unit => unit.Id == 10));
+        var slay = new CombatTrigger("OnKill", once: true, hasTriggered: false, ignoreSilence: false, fireCount: 1,
+            [new CombatEffect("CardEffectRewardGold", 5, 0, "", 0, [], false)], skipDuringDeployment: false);
+        CombatUnit actorWithSlay = Unit(crossRoomKillTrain, 10).WithTriggers(actorRoom.Units.Single(unit => unit.Id == 10).Triggers.Append(slay).ToArray());
+        RoomCombatState[] killRooms = crossRoomKillTrain.Rooms.Select(room => room.RoomIndex == actorRoom.RoomIndex
+            ? new RoomCombatState(room.RoomIndex, room.Deployment,
+                room.Units.Select(unit => unit.Id == actorWithSlay.Id ? actorWithSlay : unit).ToArray(),
+                room.ExternalInteractions, room.Context, room.Preview, room.ActiveCompanionBossIds)
+            : room).ToArray();
+        crossRoomKillTrain = new TrainCombatState(killRooms, crossRoomKillTrain.Movement,
+            crossRoomKillTrain.EnemySlotsPerRoom, crossRoomKillTrain.Context);
+        int goldBeforeCrossRoomKill = crossRoomKillTrain.Context!.Gold;
+        TrainSpellResult crossRoomKill = CardSpellModel.Apply(crossRoomKillTrain, 1,
+            [actorLastAttackerEffect], targetId: 10, selfUnitId: 10);
+        Require(crossRoomKill.Supported && !crossRoomKill.State!.Rooms.SelectMany(room => room.Units).Any(unit => unit.Id == 11) &&
+            crossRoomKill.State.Context!.Gold == goldBeforeCrossRoomKill + 5 &&
+            Unit(crossRoomKill.State, 10).Triggers.Single(trigger => trigger.Kind == "OnKill").HasTriggered,
+            "Cross-room spell damage failed to route the source actor's lethal OnKill callback to its owning floor.");
 
         BattleTurnState unknownAttacker = UnitAbilityChecks.Root(actorLastAttackerId: null);
-        CardActionEffect lastAttackerEffect = Effect(1, allowEnemy: false, allowPlayer: true, lastAttacker: true);
-        SpellCastCheck unknownTest = CardSpellModel.TestPlay(unknownAttacker.Spawn.Train, 0, [lastAttackerEffect], 10);
+        SpellCastCheck unknownTest = CardSpellModel.TestPlay(unknownAttacker.Spawn.Train, 0,
+            [actorLastAttackerEffect], 10, selfUnitId: 10);
         TrainSpellResult missingRelationship = CardSpellModel.Apply(unknownAttacker.Spawn.Train, 0,
-            [lastAttackerEffect], targetId: 10);
+            [actorLastAttackerEffect], targetId: 10, selfUnitId: 10);
         Require(!unknownTest.Supported && !missingRelationship.Supported &&
-            missingRelationship.UnsupportedReason!.Contains("captured attacker reference", StringComparison.Ordinal),
+            missingRelationship.UnsupportedReason!.Contains("captured source attacker reference", StringComparison.Ordinal),
             "Missing last-attacker state was offered to search or guessed during application.");
 
         BattleTurnState knownNone = UnitAbilityChecks.Root(actorLastAttackerId: 0);
+        SpellCastCheck knownNoneTest = CardSpellModel.TestPlay(knownNone.Spawn.Train, 0,
+            [actorLastAttackerEffect], 10, selfUnitId: 10);
         TrainSpellResult noAttacker = CardSpellModel.Apply(knownNone.Spawn.Train, 0,
-            [lastAttackerEffect], targetId: 10);
-        Require(noAttacker.Supported && Unit(noAttacker.State!, 11).Health == 40,
-            "A captured absence of a last attacker did not resolve to no damage.");
-        Console.WriteLine("DAMAGE-PER-HP-CHECKS PASS: HP multiplier, optional armor, last-attacker redirect and missing-reference rejection.");
+            [actorLastAttackerEffect], targetId: 10, selfUnitId: 10);
+        Require(knownNoneTest.Supported && noAttacker.Supported && Unit(noAttacker.State!, 11).Health == 40,
+            "A captured absence of the source unit's last attacker did not resolve to no damage.");
+        Console.WriteLine("DAMAGE-PER-HP-CHECKS PASS: HP multiplier, optional armor, null-source behavior, source last-attacker redirection, cross-room lookup and missing-reference rejection.");
     }
 
     private static CardActionEffect Effect(int multiplier, bool allowEnemy, bool allowPlayer,
@@ -108,6 +215,20 @@ internal static class DamagePerHpChecks
 
     private static CombatUnit Unit(TrainCombatState state, int id) =>
         state.Rooms.SelectMany(room => room.Units).Single(unit => unit.Id == id);
+
+    private static TrainCombatState MoveUnitToOtherRoom(TrainCombatState source, int unitId, int destinationRoomIndex)
+    {
+        RoomCombatState sourceRoom = source.Rooms.Single(room => room.Units.Any(unit => unit.Id == unitId));
+        CombatUnit moving = sourceRoom.Units.Single(unit => unit.Id == unitId);
+        RoomCombatState[] rooms = source.Rooms.Select(room =>
+        {
+            var units = room.Units.Where(unit => unit.Id != unitId).ToList();
+            if (room.RoomIndex == destinationRoomIndex) units.Add(moving);
+            return new RoomCombatState(room.RoomIndex, room.Deployment, units, room.ExternalInteractions,
+                room.Context, room.Preview, room.ActiveCompanionBossIds);
+        }).ToArray();
+        return new TrainCombatState(rooms, source.Movement, source.EnemySlotsPerRoom, source.Context);
+    }
 
     private static void Require(bool condition, string message)
     {

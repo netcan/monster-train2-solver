@@ -86,7 +86,7 @@ namespace MonsterTrain2Poju.Model
                 if (!targets.Supported) return new SpellCastCheck(false, targets.UnsupportedReason);
                 if (!CardTargetModel.IsRandom(effect.Target))
                 {
-                    string? damageTargetError = DamagePerHpTargetError(source, effect, targets);
+                    string? damageTargetError = DamagePerHpTargetError(source, effect, targets, selfUnitId);
                     if (damageTargetError != null) return new SpellCastCheck(false, damageTargetError);
                 }
                 Remember(effect, index, targets, ref last);
@@ -126,12 +126,20 @@ namespace MonsterTrain2Poju.Model
                 selfUnitId, deferFinalCallbacks: true, targetSpawnPointIndex: targetSpawnPointIndex);
 
         internal static TrainSpellResult ApplyNativeDamageStep(TrainCombatState source, int roomIndex, int targetId, int damage,
-            int sourceCardId, IReadOnlyList<RoomCombatModel.QueuedCharacterTrigger> pendingDeaths, int attackerUnitId = 0)
+            int sourceCardId, IReadOnlyList<RoomCombatModel.QueuedCharacterTrigger> pendingDeaths, int attackerUnitId = 0,
+            Action<RoomCombatModel.QueuedCharacterTrigger>? enqueueCharacterTrigger = null,
+            Func<TrainCombatState, TrainCombatState?>? drainQueuedTriggers = null,
+            Func<int, CombatUnit?>? getRetainedUnit = null)
         {
             TrainCombatState state = source;
             RelicPyreAttackRefreshResult Refresh(CombatContext context, bool placement) => RefreshTrain(ref state, context, placement);
             RoomCombatState? initial = source.Rooms.FirstOrDefault(room => room.RoomIndex == roomIndex);
+            RoomCombatState? attackerRoom = attackerUnitId > 0
+                ? source.Rooms.FirstOrDefault(room => room.Units.Any(unit => unit.Id == attackerUnitId)) : null;
+            CombatUnit? attacker = attackerRoom?.Units.FirstOrDefault(unit => unit.Id == attackerUnitId);
+            bool externalAttacker = attacker != null && attackerRoom!.RoomIndex != roomIndex;
             if (initial == null || source.Context?.SpawnPoints == null || !source.Context.NextUnitId.HasValue ||
+                attackerUnitId > 0 && attacker == null ||
                 pendingDeaths.Any(queued => !source.Rooms.Any(room => room.RoomIndex == queued.RoomIndex) ||
                 queued.Kind != "OnDeath" || !queued.DeferUntilRemoval || queued.Unit.Health > 0 || queued.Unit.Id <= 0 ||
                 queued.Unit.DeathState?.HasFinishedDying != true || queued.Unit.Id >= source.Context.NextUnitId ||
@@ -141,6 +149,13 @@ namespace MonsterTrain2Poju.Model
             RoomCombatResult FinishQueue(RoomCombatState frame)
             {
                 state = ReplaceRoom(state, frame);
+                if (drainQueuedTriggers != null)
+                {
+                    TrainCombatState? drainedState = drainQueuedTriggers(state);
+                    if (drainedState == null)
+                        return new RoomCombatResult(null, RoomOutcome.Unsupported, 0, [], "Queued spell callbacks failed before deferred deaths.");
+                    state = drainedState;
+                }
                 var queue = pendingDeaths.ToList();
                 var events = new List<CombatEvent>();
                 RoomOutcome outcome = RoomOutcome.Exchanged;
@@ -173,16 +188,35 @@ namespace MonsterTrain2Poju.Model
                     if (!updated.Supported) { error = updated.UnsupportedReason; return false; }
                     state = updated.State!; return true;
                 }, () => state.Context, message => error = message);
-                return new RoomCombatResult(drained ? state.Rooms.Single(room => room.RoomIndex == roomIndex) : null,
-                    drained ? outcome : RoomOutcome.Unsupported, 0, events, error);
+                CombatUnit? updatedAttacker = externalAttacker
+                    ? state.Rooms.SelectMany(room => room.Units).FirstOrDefault(unit => unit.Id == attackerUnitId) ?? getRetainedUnit?.Invoke(attackerUnitId)
+                    : null;
+                if (externalAttacker && updatedAttacker == null)
+                    error ??= "External spell attacker was lost while draining deferred deaths.";
+                return new RoomCombatResult(drained && error == null ? state.Rooms.Single(room => room.RoomIndex == roomIndex) : null,
+                    drained && error == null ? outcome : RoomOutcome.Unsupported, 0, events, error,
+                    retainedUnits: updatedAttacker == null ? null : [updatedAttacker]);
             }
             var applied = RoomCombatModel.ApplyNativeCardDamageAfterTraits(initial, targetId, damage, sourceCardId,
                 attackerUnitId,
-                pendingDeaths.Count == 0 ? null : (Func<RoomCombatState, RoomCombatResult>)FinishQueue, refreshPyre: Refresh);
+                pendingDeaths.Count == 0 ? null : (Func<RoomCombatState, RoomCombatResult>)FinishQueue, refreshPyre: Refresh,
+                externalActor: externalAttacker ? attacker : null,
+                externalActorRoomIndex: externalAttacker ? attackerRoom!.RoomIndex : -1,
+                enqueueCharacterTrigger: externalAttacker ? enqueueCharacterTrigger : null);
             if (!applied.Supported) return UnsupportedTrain(applied.UnsupportedReason!);
             state = ReplaceRoom(state, applied.State!);
+            var retainedUnits = applied.RetainedUnits.ToList();
+            if (externalAttacker)
+            {
+                CombatUnit? updatedAttacker = retainedUnits.FirstOrDefault(unit => unit.Id == attackerUnitId);
+                if (updatedAttacker == null)
+                    return UnsupportedTrain("Native spell damage did not retain its remote source actor.");
+                state = ReplaceExternalActor(state, attackerRoom!.RoomIndex, updatedAttacker);
+                retainedUnits.RemoveAll(unit => unit.Id == attackerUnitId);
+                if (!ActorIsLive(updatedAttacker)) retainedUnits.Add(updatedAttacker);
+            }
             return new TrainSpellResult(state, applied.Outcome, applied.Events, otherPiles: state.Context!.OtherPiles,
-                pendingCallbacks: applied.PendingCallbacks);
+                pendingCallbacks: applied.PendingCallbacks, retainedUnits: retainedUnits);
         }
 
         private static RelicPyreAttackRefreshResult RefreshTrain(ref TrainCombatState state, CombatContext context, bool placement)
@@ -260,7 +294,7 @@ namespace MonsterTrain2Poju.Model
                 string? damageTargetError = null;
                 if (!CardTargetModel.IsRandom(effect.Target))
                 {
-                    damageTargetError = DamagePerHpTargetError(state, effect, targets);
+                    damageTargetError = DamagePerHpTargetError(state, effect, targets, selfUnitId);
                     if (damageTargetError != null) return UnsupportedTrain(damageTargetError);
                 }
                 Remember(effect, index, targets, ref last);
@@ -291,7 +325,7 @@ namespace MonsterTrain2Poju.Model
                 targets = Collect(state, collectionRoom, effect, last, initial, dropPosition, index, definitions,
                     pendingDeadRooms: pendingDeadRooms, positions: positions, selfUnitId: selfUnitId);
                 if (!targets.Supported) return UnsupportedTrain(targets.UnsupportedReason!);
-                damageTargetError = DamagePerHpTargetError(state, effect, targets);
+                damageTargetError = DamagePerHpTargetError(state, effect, targets, selfUnitId);
                 if (damageTargetError != null) return UnsupportedTrain(damageTargetError);
                 collections.Add(new SpellTargetCollection(index, targets.UnitIds));
                 Remember(effect, index, targets, ref last);
@@ -389,16 +423,23 @@ namespace MonsterTrain2Poju.Model
                     if (perHpDamage <= 0) targets = new CardTargets(Array.Empty<int>());
                     else if (effect.DamagePerHpLastAttacker)
                     {
-                        if (!selectedUnit.LastAttackerId.HasValue)
-                            return UnsupportedTrain("Damage-per-HP last-attacker targeting requires a captured attacker reference.");
-                        int attackerId = selectedUnit.LastAttackerId.Value;
-                        if (attackerId == 0) targets = new CardTargets(Array.Empty<int>());
+                        CombatUnit? sourceUnit = selfUnitId > 0
+                            ? state.Rooms.SelectMany(room => room.Units).FirstOrDefault(unit => unit.Id == selfUnitId)
+                            : null;
+                        if (selfUnitId <= 0) targets = new CardTargets(Array.Empty<int>());
+                        else if (sourceUnit == null)
+                            return UnsupportedTrain("Damage-per-HP last-attacker source left the captured train before damage resolution.");
+                        else if (!sourceUnit.LastAttackerId.HasValue)
+                            return UnsupportedTrain("Damage-per-HP last-attacker targeting requires a captured source attacker reference.");
+                        else if (sourceUnit.LastAttackerId.Value == 0) targets = new CardTargets(Array.Empty<int>());
                         else
                         {
-                            CombatUnit? attacker = selectedRoom.Units.FirstOrDefault(unit => unit.Id == attackerId);
-                            if (attacker == null || attacker.Team == selectedUnit.Team)
-                                return UnsupportedTrain("Damage-per-HP last attacker is missing or has an unexpected team.");
-                            targets = new CardTargets(new[] { attacker.Id });
+                            CombatUnit? attacker = state.Rooms.SelectMany(room => room.Units)
+                                .FirstOrDefault(unit => unit.Id == sourceUnit.LastAttackerId.Value);
+                            if (attacker == null)
+                                return UnsupportedTrain("Damage-per-HP last attacker is missing from the captured train.");
+                            targets = effect.Filters?.IgnoreBosses == true && attacker.IsBoss == true
+                                ? new CardTargets(Array.Empty<int>()) : new CardTargets(new[] { attacker.Id });
                         }
                     }
                     else
@@ -746,22 +787,53 @@ namespace MonsterTrain2Poju.Model
                         targetRoom = state.Rooms.Single(room => room.RoomIndex == targetRoom!.RoomIndex);
                     }
                     RoomPlayRule? capacity = definitions?.Rooms.FirstOrDefault(item => item.RoomIndex == targetRoom!.RoomIndex);
+                    RoomCombatState? damageActorRoom = damageAttackerId > 0
+                        ? state.Rooms.FirstOrDefault(room => room.Units.Any(unit => unit.Id == damageAttackerId)) : null;
+                    CombatUnit? damageActor = damageActorRoom?.Units.FirstOrDefault(unit => unit.Id == damageAttackerId);
+                    if (damageAttackerId > 0 && damageActor == null)
+                        return UnsupportedTrain("Spell damage source left the captured train before damage resolution.");
+                    CombatUnit? externalDamageActor = damageActorRoom?.RoomIndex != targetRoom!.RoomIndex ? damageActor : null;
                     var priorDeaths = nativeDamagePhase ? callbacks.ToArray() : Array.Empty<RoomCombatModel.QueuedCharacterTrigger>();
                     if (nativeDamagePhase) callbacks.Clear();
                     TrainSpellResult? nativeApplied = nativeDamagePhase ? ApplyNativeDamageStep(state, targetRoom!.RoomIndex, id,
-                        scaledDamage!.Value, sourceCardId, priorDeaths, damageAttackerId) : null;
+                        scaledDamage!.Value, sourceCardId, priorDeaths, damageAttackerId,
+                        enqueueCharacterTrigger: externalDamageActor == null ? null : callbacks.Add,
+                        drainQueuedTriggers: externalDamageActor == null ? null : frame =>
+                        {
+                            state = frame;
+                            DrainDeaths();
+                            return routingError == null ? state : null;
+                        },
+                        getRetainedUnit: retained.GetValueOrDefault) : null;
                     if (nativeApplied != null && !nativeApplied.Supported) return UnsupportedTrain(nativeApplied.UnsupportedReason!);
                     RoomCombatResult applied = nativeApplied != null
                         ? new RoomCombatResult(nativeApplied.State!.Rooms.Single(room => room.RoomIndex == targetRoom!.RoomIndex),
-                            nativeApplied.Outcome, 0, nativeApplied.Events.ToList(), pendingCallbacks: nativeApplied.PendingCallbacks)
+                            nativeApplied.Outcome, 0, nativeApplied.Events.ToList(), pendingCallbacks: nativeApplied.PendingCallbacks,
+                            retainedUnits: nativeApplied.RetainedUnits)
                         : ApplyOne(targetRoom!, effect, target, sourceCardId,
                         RoomCapacityModel.Maximum(state.Context, targetRoom!.RoomIndex, CombatTeam.Player) ?? capacity?.PlayerCapacity ?? playerCapacity,
                         RoomCapacityModel.Maximum(state.Context, targetRoom!.RoomIndex, CombatTeam.Enemy) ?? capacity?.EnemyCapacity ?? enemyCapacity,
                         deferSpawnerExhaustion: piles != null, scaledDamage: scaledDamage, selfUnitId: damageAttackerId,
                         sourceHasDuality: selfUnitId > 0 && state.Rooms.SelectMany(room => room.Units)
-                            .Any(unit => unit.Id == selfUnitId && unit.Status("duality")?.Stacks > 0), refreshPyre: Refresh);
+                            .Any(unit => unit.Id == selfUnitId && unit.Status("duality")?.Stacks > 0), refreshPyre: Refresh,
+                        externalActor: externalDamageActor, externalActorRoomIndex: damageActorRoom?.RoomIndex ?? -1,
+                        enqueueCharacterTrigger: externalDamageActor == null ? null : callbacks.Add);
                     if (!applied.Supported) return UnsupportedTrain(applied.UnsupportedReason!);
                     state = nativeApplied?.State ?? ReplaceRoom(state, applied.State!);
+                    if (externalDamageActor != null)
+                    {
+                        CombatUnit? updatedActor = applied.RetainedUnits.FirstOrDefault(unit => unit.Id == externalDamageActor.Id);
+                        if (nativeApplied == null)
+                        {
+                            if (updatedActor == null)
+                                return UnsupportedTrain("Spell damage did not retain its remote source actor.");
+                            state = ReplaceExternalActor(state, damageActorRoom!.RoomIndex, updatedActor);
+                            if (!ActorIsLive(updatedActor)) retained[updatedActor.Id] = updatedActor;
+                        }
+                    }
+                    foreach (CombatUnit unit in applied.RetainedUnits.Where(unit =>
+                        externalDamageActor == null || unit.Id != externalDamageActor.Id))
+                        retained[unit.Id] = unit;
                     callbacks.AddRange(applied.PendingCallbacks);
                     foreach (var removed in priorDeaths)
                     {
@@ -1025,6 +1097,27 @@ namespace MonsterTrain2Poju.Model
             var alive = new HashSet<int>(rooms.SelectMany(room => room.Units).Select(unit => unit.Id));
             return WithContext(new TrainCombatState(rooms, source.Movement.Where(move => alive.Contains(move.UnitId)).ToArray(),
                 source.EnemySlotsPerRoom, changed.Context), changed.Context!);
+        }
+
+        private static bool ActorIsLive(CombatUnit unit) => unit.Health > 0 && unit.DeathState?.IsDestroyed != true &&
+            unit.DeathState?.IsDespawned != true;
+
+        private static TrainCombatState ReplaceExternalActor(TrainCombatState source, int roomIndex, CombatUnit actor)
+        {
+            CombatContext context = source.Context!;
+            bool live = ActorIsLive(actor);
+            RoomCombatState[] rooms = source.Rooms.Select(room =>
+            {
+                if (room.RoomIndex != roomIndex) return new RoomCombatState(room.RoomIndex, room.Deployment, room.Units,
+                    room.ExternalInteractions, context, room.Preview, room.ActiveCompanionBossIds);
+                CombatUnit[] units = room.Units.Select(unit => unit.Id == actor.Id && live ? actor : unit)
+                    .Where(unit => unit.Id != actor.Id || live).ToArray();
+                return new RoomCombatState(room.RoomIndex, room.Deployment, units, room.ExternalInteractions, context,
+                    room.Preview, room.ActiveCompanionBossIds);
+            }).ToArray();
+            var activeIds = rooms.SelectMany(room => room.Units).Select(unit => unit.Id).ToHashSet();
+            return WithContext(new TrainCombatState(rooms, source.Movement.Where(move => activeIds.Contains(move.UnitId)).ToArray(),
+                source.EnemySlotsPerRoom, context), context);
         }
 
         private static TrainSpellResult ApplyUnitAttackTurn(TrainCombatState source, int roomIndex, int actorId,
@@ -1405,20 +1498,23 @@ namespace MonsterTrain2Poju.Model
             if (effect.StatusAdjustmentFilter != 1 || status.Propagatable != true) return false;
             return unit.Team == CombatTeam.Enemy ? status.ExcludeHeroPropagation == false : status.ExcludeMonsterPropagation == false;
         }
-        private static string? DamagePerHpTargetError(TrainCombatState state, CardActionEffect effect, CardTargets targets)
+        private static string? DamagePerHpTargetError(TrainCombatState state, CardActionEffect effect, CardTargets targets, int selfUnitId)
         {
             if (effect.Type != "DamagePerHp" || !effect.DamagePerHpLastAttacker || targets.UnitIds.Count == 0) return null;
             int targetId = targets.UnitIds[0];
             RoomCombatState? room = state.Rooms.FirstOrDefault(item => item.Units.Any(unit => unit.Id == targetId));
             CombatUnit? target = room?.Units.FirstOrDefault(unit => unit.Id == targetId);
             if (room == null || target == null) return "Damage-per-HP target left the captured train before target validation.";
-            if (!target.LastAttackerId.HasValue)
-                return "Damage-per-HP last-attacker targeting requires a captured attacker reference.";
-            int attackerId = target.LastAttackerId.Value;
+            if (selfUnitId <= 0) return null;
+            CombatUnit? source = state.Rooms.SelectMany(item => item.Units).FirstOrDefault(unit => unit.Id == selfUnitId);
+            if (source == null) return "Damage-per-HP last-attacker source left the captured train before target validation.";
+            if (!source.LastAttackerId.HasValue)
+                return "Damage-per-HP last-attacker targeting requires a captured source attacker reference.";
+            int attackerId = source.LastAttackerId.Value;
             if (attackerId == 0) return null;
-            CombatUnit? attacker = room.Units.FirstOrDefault(unit => unit.Id == attackerId);
-            return attacker == null || attacker.Team == target.Team
-                ? "Damage-per-HP last attacker is missing or has an unexpected team." : null;
+            CombatUnit? attacker = state.Rooms.SelectMany(item => item.Units)
+                .FirstOrDefault(unit => unit.Id == attackerId);
+            return attacker == null ? "Damage-per-HP last attacker is missing from the captured train." : null;
         }
         private static string? AttackTestError(TrainCombatState state, int roomIndex, CardActionEffect effect)
         {
@@ -1432,10 +1528,14 @@ namespace MonsterTrain2Poju.Model
 
         private static RoomCombatResult ApplyOne(RoomCombatState state, CardActionEffect effect, CombatUnit target,
             int sourceCardId, int? playerCapacity, int? enemyCapacity, bool deferSpawnerExhaustion = false, int? scaledDamage = null, int selfUnitId = 0,
-            bool sourceHasDuality = false, Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null)
+            bool sourceHasDuality = false, Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null,
+            CombatUnit? externalActor = null, int externalActorRoomIndex = -1,
+            Action<RoomCombatModel.QueuedCharacterTrigger>? enqueueCharacterTrigger = null)
         {
             if (IsDamage(effect)) return scaledDamage.HasValue
-                ? RoomCombatModel.ApplyCardDamageAfterTraits(state, target.Id, scaledDamage.Value, sourceCardId, deferSpawnerExhaustion, selfUnitId, refreshPyre: refreshPyre)
+                ? RoomCombatModel.ApplyCardDamageAfterTraits(state, target.Id, scaledDamage.Value, sourceCardId,
+                    deferSpawnerExhaustion, selfUnitId, refreshPyre: refreshPyre, externalActor: externalActor,
+                    externalActorRoomIndex: externalActorRoomIndex, enqueueCharacterTrigger: enqueueCharacterTrigger)
                 : RoomCombatModel.ApplyCardDamage(state, target.Id, Math.Max(0, effect.Value), sourceCardId, deferSpawnerExhaustion, selfUnitId, refreshPyre: refreshPyre);
             if (effect.Type == "Heal") return effect.Value < 0 ? Unchanged(state) : RoomCombatModel.ApplyCardHeal(state, target.Id, effect.Value, refreshPyre: refreshPyre);
             if (AttackChange(effect)) return UnitAttackModel.Apply(state, target.Id, effect.Value, effect.Type == "DebuffAttack");

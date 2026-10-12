@@ -679,11 +679,13 @@ namespace MonsterTrain2Poju.Probe
                 numericModifiersPrepared = true;
                 AbilityTeleportScenario.Prepare(managers, log);
             }
-            if (fullBattle && !numericModifiersPrepared && modifierScenario == DamagePerHpScenario.Name)
+            if (fullBattle && !numericModifiersPrepared &&
+                (modifierScenario == DamagePerHpScenario.Name || modifierScenario == DamagePerHpScenario.ArmorName ||
+                 modifierScenario == DamagePerHpScenario.LastAttackerName))
             {
                 if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("DamagePerHp fixture must start on deployment turn.");
                 numericModifiersPrepared = true;
-                DamagePerHpScenario.Prepare(managers, log);
+                DamagePerHpScenario.Prepare(managers, log, modifierScenario);
                 return;
             }
             if (fullBattle && !numericModifiersPrepared && ((modifierScenario == "spawn-status-relics" || modifierScenario == "spawn-status-relics-clones" || modifierScenario == "spawn-status-relics-mixed-cardless-order" || modifierScenario == "incant" || modifierScenario == "incant-thresholds" || (modifierScenario == "incant-relic" || modifierScenario == "incant-relic-combined") || modifierScenario == "ability-incant") || modifierScenario == "purify" || modifierScenario == "purify-queues" || EnchantmentBattleScenario.IsScenario(modifierScenario) || modifierScenario == "spawn-enchant" || modifierScenario == "hero-copy" || modifierScenario == "unit-copy" || modifierScenario == "unit-clone" || modifierScenario == "bump" || modifierScenario == "horde-merge" || modifierScenario == "revival" || modifierScenario.StartsWith("triggered-summon", StringComparison.Ordinal) || modifierScenario == "spawn-points" || (modifierScenario.StartsWith("multi-summon", StringComparison.Ordinal)) || modifierScenario == "rally-lethal" || modifierScenario == "rally-triggers" || modifierScenario == "dying-horde-upgrades" || modifierScenario == "horde-upgrades" || modifierScenario == "horde-death" || modifierScenario == "horde-removal" || modifierScenario == "harvest-triggers" || modifierScenario == "horde-statuses" || modifierScenario == "ability-effects" || modifierScenario == "ability-lifecycle" || modifierScenario == "ability-activation" || modifierScenario == "ability-activation-x" || modifierScenario == "ability-activation-lethal" || modifierScenario == "ability-cooldown" || modifierScenario == "ability-cache" || modifierScenario == "sentry" || modifierScenario == "sentry-lethal" || modifierScenario == "companion-boss" || modifierScenario == "numeric-upgrades" || modifierScenario == "dynamic-upgrades" ||
@@ -877,7 +879,9 @@ namespace MonsterTrain2Poju.Probe
                 if (OriginalDeployableRelicScenario.Enabled) pendingPlay = OriginalDeployableRelicScenario.Choose(decision) ?? pendingPlay;
                 if (modifierScenario == "sacrifice-effects") pendingPlay = SacrificeScenario.Choose(decision);
                 if (modifierScenario == "typed-draw") pendingPlay = TypedDrawScenario.Choose(decision);
-                if (modifierScenario == DamagePerHpScenario.Name) pendingPlay = DamagePerHpScenario.Choose(decision) ?? pendingPlay;
+                if (modifierScenario == DamagePerHpScenario.Name || modifierScenario == DamagePerHpScenario.ArmorName ||
+                    modifierScenario == DamagePerHpScenario.LastAttackerName)
+                    pendingPlay = DamagePerHpScenario.Choose(decision);
                 if (OriginalUnitRelicBatchScenario.Enabled) pendingPlay = OriginalUnitRelicBatchScenario.Choose(decision);
                 if (OriginalEndlessReturnScenario.Enabled) pendingPlay = OriginalEndlessReturnScenario.Choose(decision);
                 if (OriginalTriggerRelicBatchScenario.Enabled) pendingPlay = OriginalTriggerRelicBatchScenario.Choose(decision);

@@ -3092,3 +3092,24 @@ JSON companion. Original relic evidence stays at 60/224 (26.79%). Inventory is
 dotnet run --project src/ModelChecks -c Release -- --unit-teleport-native-only tests/fixtures/full-battle-unit-ability-teleport.mt2f
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-unit-ability-teleport.mt2f
 ```
+
+### DamagePerHp last-attacker spell
+
+`full-battle-damage-per-hp-last-attacker.mt2f` records the native behavior of an
+ordinary spell with `DamagePerHpLastAttacker`: the selected friendly unit has a
+captured `LastAttackerId`, but the spell has no `selfTarget`, so the two effect
+plays do not damage any unit. The native battle won with 13 actions, seven
+EndTurns and 60 room stages, with zero capture failures, mismatches, unsupported
+transitions or pending records. Independent replay matches all 13 actions and
+60 room stages. The schema-103 binary is 27,479 bytes with 4,402 unique nodes
+and SHA-256
+`ecdc252773a79a9a785e90612bf5c7bf42b08c7918356f68fbb97b571f9514cf`; it has no
+JSON companion. Pure model checks additionally cover positive last-attacker
+redirection from same-room and cross-room ability actors, lethal remote OnKill
+dispatch, optional Armor and missing-reference rejection. The curated inventory
+is now 244 archives: 213 battles and 31 component calibrations.
+
+```powershell
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-damage-per-hp-last-attacker.mt2f
+dotnet run --project src/ModelChecks -c Release -- --damage-per-hp-pure
+```

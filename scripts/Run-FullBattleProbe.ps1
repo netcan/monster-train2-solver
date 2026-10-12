@@ -26,6 +26,8 @@ param(
     [switch] $HealingTriggers,
     [switch] $RoomSpells,
     [switch] $DamagePerHp,
+    [switch] $DamagePerHpArmor,
+    [switch] $DamagePerHpLastAttacker,
     [switch] $TerminalSpells,
     [switch] $PostKillSpells,
     [switch] $RandomSpells,
@@ -271,10 +273,15 @@ if ($StatusCallbacks) { $TriggeredStatus = $true }
 if ($PurifyQueues) { $Purify = $true }
 if ($IncantThresholds) { $Incant = $true }
 if ($CaptureJson) { $BinaryCapture = $true }
+$damagePerHpModes = @()
+if ($DamagePerHp) { $damagePerHpModes += 'damage-per-hp' }
+if ($DamagePerHpArmor) { $damagePerHpModes += 'damage-per-hp-armor' }
+if ($DamagePerHpLastAttacker) { $damagePerHpModes += 'damage-per-hp-last-attacker' }
+if ($damagePerHpModes.Count -gt 1) { throw 'Choose one DamagePerHp scenario.' }
 if ($SacrificeEffects) { $Policy = 'units-spells-and-junk' }
 if ($SpawnOrStatus) { $Policy = 'units-and-junk' }
 if ($AbilityTeleport) { $Policy = 'units-and-junk'; $PhysicalSpawnPoints = $true }
-if ($DamagePerHp) { $Policy = 'units-spells-and-junk' }
+if ($damagePerHpModes.Count -gt 0) { $Policy = 'units-spells-and-junk' }
 $workspace = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $gameRoot = Join-Path $workspace '.sandbox-game'
 $runId = (Get-Date -Format 'yyyyMMdd-HHmmss') + '-' + [Guid]::NewGuid().ToString('N').Substring(0, 8)
@@ -450,6 +457,8 @@ if ($SpawnOrStatus) {
     $environment.MT2_PROBE_PHYSICAL_SPAWNPOINTS = '1'
 }
 if ($DamagePerHp) { $environment.MT2_PROBE_MODIFIERS = 'damage-per-hp' }
+if ($DamagePerHpArmor) { $environment.MT2_PROBE_MODIFIERS = 'damage-per-hp-armor' }
+if ($DamagePerHpLastAttacker) { $environment.MT2_PROBE_MODIFIERS = 'damage-per-hp-last-attacker' }
 $process = Start-Process -FilePath (Join-Path $gameRoot 'MonsterTrain2.exe') `
     -WorkingDirectory $gameRoot -ArgumentList @('-logFile', $unityLog) `
     -Environment $environment -WindowStyle Hidden -PassThru
@@ -483,7 +492,8 @@ if ($AllUnitsMultistrikeMutator -and ($trace.ModifierScenario -ne 'all-units-mul
     throw 'AllUnitsMultistrike native mutator setup did not run.'
 }
 $nativePassed = [bool] (Select-String -LiteralPath $unityLog -Pattern 'DEPTH-PASS' -Quiet)
-if ($DamagePerHp -and ($trace.ModifierScenario -ne 'damage-per-hp' -or
+if ($damagePerHpModes.Count -gt 0 -and
+    ($trace.ModifierScenario -ne $damagePerHpModes[0] -or
     -not (Select-String -LiteralPath $unityLog -Pattern 'DAMAGE-PER-HP-PREPARED' -Quiet))) {
     throw 'DamagePerHp native setup did not run.'
 }
@@ -833,15 +843,24 @@ if ($RoomSpells) {
     }).Count -gt 0
     $roomSpellCoverage = $multiHeal -and $multiDamage
 }
-$damagePerHpCoverage = -not $DamagePerHp
-if ($DamagePerHp) {
+$damagePerHpMode = $damagePerHpModes.Count -gt 0
+$damagePerHpCoverage = -not $damagePerHpMode
+if ($damagePerHpMode) {
     $damagePerHpActions = @($trace.Actions | Where-Object {
         $entry = $_
         $card = $entry.Before.Spawn.Train.Context.Cards.Hand | Where-Object InstanceId -EQ $entry.Action.CardInstanceId
         $rule = $entry.Before.PlayRules.Cards | Where-Object DataId -EQ $card.DataId
-        @($rule.Effects | Where-Object Type -EQ 'DamagePerHp').Count -gt 0 -and $entry.Action.TargetUnitId -gt 0
+        $effect = @($rule.Effects | Where-Object Type -EQ 'DamagePerHp')
+        if ($effect.Count -ne 1 -or $entry.Action.TargetUnitId -le 0) { return $false }
+        $selected = $entry.Before.Spawn.Train.Rooms.Units | Where-Object Id -EQ $entry.Action.TargetUnitId
+        if ($null -eq $selected) { return $false }
+        $armor = @($selected.Statuses | Where-Object { $_.Id -eq 'armor' -and $_.Stacks -gt 0 }).Count -gt 0
+        $lastAttacker = $selected.LastAttackerId -gt 0
+        $effect[0].DamagePerHpIncludeArmor -eq [bool]$DamagePerHpArmor -and
+            $effect[0].DamagePerHpLastAttacker -eq [bool]$DamagePerHpLastAttacker -and
+            (-not $DamagePerHpArmor -or $armor) -and (-not $DamagePerHpLastAttacker -or $lastAttacker)
     })
-    $damagePerHpCoverage = $damagePerHpActions.Count -gt 0
+    $damagePerHpCoverage = $trace.ModifierScenario -eq $damagePerHpModes[0] -and $damagePerHpActions.Count -gt 0
 }
 $terminalSpellCoverage = -not ($TerminalSpells -or $PostKillSpells) -or @($trace.Actions | Where-Object ActualOutcome -EQ 3).Count -gt 0
 $postKillCoverage = -not $PostKillSpells

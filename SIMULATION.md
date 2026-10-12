@@ -1,6 +1,6 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-12): 243 binary archives, including 212
+Current accepted inventory (2026-10-12): 244 binary archives, including 213
 full battles and 31 component calibrations. Unchanged original relic evidence
 covers 60/224 catalog entries (26.79%); see
 [the owner evidence table](tests/fixtures/relic-coverage.md). Whole-battle
@@ -17,13 +17,25 @@ and 50 stages. Capture failures, mismatches, unsupported transitions and
 pending records are zero; all 18 actions match independent replay, including 10
 DamagePerHp plays and six observed hits to opposing fronts. Whole-battle and
 mid-battle policy replay pass with 16 parallel branches. Pure checks also cover
-optional Armor, last-attacker redirection and rejection of missing attacker
-references; those variants do not yet have separate native fixtures. This adds
-mechanism coverage, not original relic-owner evidence.
+optional Armor, source-unit last-attacker redirection within and across floors,
+lethal remote OnKill dispatch and rejection of missing attacker references.
+`full-battle-damage-per-hp-last-attacker.mt2f` separately captures the native
+ordinary-spell case: its selected friendly unit has a last attacker, but the
+spell has no `selfTarget`, so neither play damages a unit. The schema-103 archive
+is 27,479 bytes with 4,402 unique nodes and SHA-256
+`ecdc252773a79a9a785e90612bf5c7bf42b08c7918356f68fbb97b571f9514cf`. The muted
+battle won with 13 actions, seven EndTurns and 60 stages; capture failures,
+mismatches, unsupported transitions and pending records are all zero.
+Independent replay matches all 13 actions and 60 room stages. This records native
+null-source behavior; positive cross-floor source-actor redirection remains covered
+by model checks, not a dedicated native fixture. This adds mechanism coverage,
+not original relic-owner evidence.
 
 ```powershell
 pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -DamagePerHp
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-damage-per-hp.mt2f
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy units-spells-and-junk -DamagePerHpLastAttacker
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-damage-per-hp-last-attacker.mt2f
 dotnet run --project src/ModelChecks -c Release -- --damage-per-hp-pure
 ```
 
