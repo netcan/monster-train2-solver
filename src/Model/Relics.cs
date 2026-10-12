@@ -23,6 +23,7 @@ namespace MonsterTrain2Poju.Model
         public IReadOnlyList<RelicResourceEffect>? ResourceEffects { get; }
         public IReadOnlyList<RelicMagicPowerModifier>? MagicPowerModifiers { get; }
         public IReadOnlyList<RelicCardPlayMagicPowerModifier>? CardPlayMagicPowerModifiers { get; }
+        public IReadOnlyList<RelicUnitUpgradeTrigger>? UnitUpgradeTriggers { get; }
         public CombatRelicState(string dataId, string assetKey, IReadOnlyList<string> effectTypes,
             IReadOnlyList<RelicSpawnStatus>? spawnStatuses = null, bool? isCovenant = null, bool? disallowedInPlacementPhase = null,
             IReadOnlyList<RelicCardModifier>? cardModifiers = null, IReadOnlyList<RelicCharacterTriggers>? triggerAdditions = null,
@@ -30,7 +31,8 @@ namespace MonsterTrain2Poju.Model
             IReadOnlyList<RelicStatusDecay>? statusDecays = null, IReadOnlyList<RelicResourceEffect>? resourceEffects = null,
             IReadOnlyList<RelicMagicPowerModifier>? magicPowerModifiers = null,
             IReadOnlyList<RelicCardPlayMagicPowerModifier>? cardPlayMagicPowerModifiers = null,
-            IReadOnlyList<RelicRoomEntryStatus>? roomEntryStatuses = null)
+            IReadOnlyList<RelicRoomEntryStatus>? roomEntryStatuses = null,
+            IReadOnlyList<RelicUnitUpgradeTrigger>? unitUpgradeTriggers = null)
         { DataId = dataId; AssetKey = assetKey; EffectTypes = Array.AsReadOnly(effectTypes.ToArray());
             SpawnStatuses = spawnStatuses == null ? null : Array.AsReadOnly(spawnStatuses.ToArray());
             RoomEntryStatuses = roomEntryStatuses == null ? null : Array.AsReadOnly(roomEntryStatuses.ToArray());
@@ -42,25 +44,28 @@ namespace MonsterTrain2Poju.Model
             StatusDecays = statusDecays == null ? null : Array.AsReadOnly(statusDecays.ToArray());
             ResourceEffects = resourceEffects == null ? null : Array.AsReadOnly(resourceEffects.ToArray());
             MagicPowerModifiers = magicPowerModifiers == null ? null : Array.AsReadOnly(magicPowerModifiers.ToArray());
-            CardPlayMagicPowerModifiers = cardPlayMagicPowerModifiers == null ? null : Array.AsReadOnly(cardPlayMagicPowerModifiers.ToArray()); }
+            CardPlayMagicPowerModifiers = cardPlayMagicPowerModifiers == null ? null : Array.AsReadOnly(cardPlayMagicPowerModifiers.ToArray());
+            UnitUpgradeTriggers = unitUpgradeTriggers == null ? null : Array.AsReadOnly(unitUpgradeTriggers.ToArray()); }
         internal CombatRelicState WithSpawnStatuses(IReadOnlyList<RelicSpawnStatus> rules) =>
-            new CombatRelicState(DataId, AssetKey, EffectTypes, rules, IsCovenant, DisallowedInPlacementPhase, CardModifiers, TriggerAdditions, StatusStackAdditions, StatusMagnitudes, StatusDecays, ResourceEffects, MagicPowerModifiers, CardPlayMagicPowerModifiers, RoomEntryStatuses);
+            new CombatRelicState(DataId, AssetKey, EffectTypes, rules, IsCovenant, DisallowedInPlacementPhase, CardModifiers, TriggerAdditions, StatusStackAdditions, StatusMagnitudes, StatusDecays, ResourceEffects, MagicPowerModifiers, CardPlayMagicPowerModifiers, RoomEntryStatuses, UnitUpgradeTriggers);
         internal CombatRelicState WithRoomEntryStatuses(IReadOnlyList<RelicRoomEntryStatus> rules) =>
-            new CombatRelicState(DataId, AssetKey, EffectTypes, SpawnStatuses, IsCovenant, DisallowedInPlacementPhase, CardModifiers, TriggerAdditions, StatusStackAdditions, StatusMagnitudes, StatusDecays, ResourceEffects, MagicPowerModifiers, CardPlayMagicPowerModifiers, rules);
+            new CombatRelicState(DataId, AssetKey, EffectTypes, SpawnStatuses, IsCovenant, DisallowedInPlacementPhase, CardModifiers, TriggerAdditions, StatusStackAdditions, StatusMagnitudes, StatusDecays, ResourceEffects, MagicPowerModifiers, CardPlayMagicPowerModifiers, rules, UnitUpgradeTriggers);
         internal CombatRelicState WithCardModifiers(IReadOnlyList<RelicCardModifier> modifiers) =>
-            new CombatRelicState(DataId, AssetKey, EffectTypes, SpawnStatuses, IsCovenant, DisallowedInPlacementPhase, modifiers, TriggerAdditions, StatusStackAdditions, StatusMagnitudes, StatusDecays, ResourceEffects, MagicPowerModifiers, CardPlayMagicPowerModifiers, RoomEntryStatuses);
+            new CombatRelicState(DataId, AssetKey, EffectTypes, SpawnStatuses, IsCovenant, DisallowedInPlacementPhase, modifiers, TriggerAdditions, StatusStackAdditions, StatusMagnitudes, StatusDecays, ResourceEffects, MagicPowerModifiers, CardPlayMagicPowerModifiers, RoomEntryStatuses, UnitUpgradeTriggers);
         internal CombatRelicState WithTriggerAdditions(IReadOnlyList<RelicCharacterTriggers> rules) =>
-            new CombatRelicState(DataId, AssetKey, EffectTypes, SpawnStatuses, IsCovenant, DisallowedInPlacementPhase, CardModifiers, rules, StatusStackAdditions, StatusMagnitudes, StatusDecays, ResourceEffects, MagicPowerModifiers, CardPlayMagicPowerModifiers, RoomEntryStatuses);
+            new CombatRelicState(DataId, AssetKey, EffectTypes, SpawnStatuses, IsCovenant, DisallowedInPlacementPhase, CardModifiers, rules, StatusStackAdditions, StatusMagnitudes, StatusDecays, ResourceEffects, MagicPowerModifiers, CardPlayMagicPowerModifiers, RoomEntryStatuses, UnitUpgradeTriggers);
         internal CombatRelicState WithStatusStackAdditions(IReadOnlyList<RelicStatusStacks> rules) =>
-            new CombatRelicState(DataId, AssetKey, EffectTypes, SpawnStatuses, IsCovenant, DisallowedInPlacementPhase, CardModifiers, TriggerAdditions, rules, StatusMagnitudes, StatusDecays, ResourceEffects, MagicPowerModifiers, CardPlayMagicPowerModifiers, RoomEntryStatuses);
+            new CombatRelicState(DataId, AssetKey, EffectTypes, SpawnStatuses, IsCovenant, DisallowedInPlacementPhase, CardModifiers, TriggerAdditions, rules, StatusMagnitudes, StatusDecays, ResourceEffects, MagicPowerModifiers, CardPlayMagicPowerModifiers, RoomEntryStatuses, UnitUpgradeTriggers);
         internal CombatRelicState WithStatusMagnitudes(IReadOnlyList<RelicStatusMagnitude> rules) =>
-            new CombatRelicState(DataId, AssetKey, EffectTypes, SpawnStatuses, IsCovenant, DisallowedInPlacementPhase, CardModifiers, TriggerAdditions, StatusStackAdditions, rules, StatusDecays, ResourceEffects, MagicPowerModifiers, CardPlayMagicPowerModifiers, RoomEntryStatuses);
+            new CombatRelicState(DataId, AssetKey, EffectTypes, SpawnStatuses, IsCovenant, DisallowedInPlacementPhase, CardModifiers, TriggerAdditions, StatusStackAdditions, rules, StatusDecays, ResourceEffects, MagicPowerModifiers, CardPlayMagicPowerModifiers, RoomEntryStatuses, UnitUpgradeTriggers);
         internal CombatRelicState WithResourceEffects(IReadOnlyList<RelicResourceEffect> rules) =>
-            new CombatRelicState(DataId, AssetKey, EffectTypes, SpawnStatuses, IsCovenant, DisallowedInPlacementPhase, CardModifiers, TriggerAdditions, StatusStackAdditions, StatusMagnitudes, StatusDecays, rules, MagicPowerModifiers, CardPlayMagicPowerModifiers, RoomEntryStatuses);
+            new CombatRelicState(DataId, AssetKey, EffectTypes, SpawnStatuses, IsCovenant, DisallowedInPlacementPhase, CardModifiers, TriggerAdditions, StatusStackAdditions, StatusMagnitudes, StatusDecays, rules, MagicPowerModifiers, CardPlayMagicPowerModifiers, RoomEntryStatuses, UnitUpgradeTriggers);
         internal CombatRelicState WithMagicPowerModifiers(IReadOnlyList<RelicMagicPowerModifier> rules) =>
-            new CombatRelicState(DataId, AssetKey, EffectTypes, SpawnStatuses, IsCovenant, DisallowedInPlacementPhase, CardModifiers, TriggerAdditions, StatusStackAdditions, StatusMagnitudes, StatusDecays, ResourceEffects, rules, CardPlayMagicPowerModifiers, RoomEntryStatuses);
+            new CombatRelicState(DataId, AssetKey, EffectTypes, SpawnStatuses, IsCovenant, DisallowedInPlacementPhase, CardModifiers, TriggerAdditions, StatusStackAdditions, StatusMagnitudes, StatusDecays, ResourceEffects, rules, CardPlayMagicPowerModifiers, RoomEntryStatuses, UnitUpgradeTriggers);
         internal CombatRelicState WithCardPlayMagicPowerModifiers(IReadOnlyList<RelicCardPlayMagicPowerModifier> rules) =>
-            new CombatRelicState(DataId, AssetKey, EffectTypes, SpawnStatuses, IsCovenant, DisallowedInPlacementPhase, CardModifiers, TriggerAdditions, StatusStackAdditions, StatusMagnitudes, StatusDecays, ResourceEffects, MagicPowerModifiers, rules, RoomEntryStatuses);
+            new CombatRelicState(DataId, AssetKey, EffectTypes, SpawnStatuses, IsCovenant, DisallowedInPlacementPhase, CardModifiers, TriggerAdditions, StatusStackAdditions, StatusMagnitudes, StatusDecays, ResourceEffects, MagicPowerModifiers, rules, RoomEntryStatuses, UnitUpgradeTriggers);
+        internal CombatRelicState WithUnitUpgradeTriggers(IReadOnlyList<RelicUnitUpgradeTrigger> rules) =>
+            new CombatRelicState(DataId, AssetKey, EffectTypes, SpawnStatuses, IsCovenant, DisallowedInPlacementPhase, CardModifiers, TriggerAdditions, StatusStackAdditions, StatusMagnitudes, StatusDecays, ResourceEffects, MagicPowerModifiers, CardPlayMagicPowerModifiers, RoomEntryStatuses, rules);
     }
 
     internal static class RelicModel
@@ -70,6 +75,7 @@ namespace MonsterTrain2Poju.Model
         internal const string AddStatusOnSpawn = "RelicEffectAddStatusEffectOnSpawn";
         internal const string AddStatusOnRoomEntry = "RelicEffectAddStatusEffectOnEnterRoomIndex";
         internal const string AddTempUpgrade = "RelicEffectAddTempUpgrade";
+        internal const string AddRemoveTempUpgradeOnUnitTrigger = "RelicEffectAddRemoveTempUpgradeOnUnitTrigger";
         // This type only provides generated-card tooltip data and has no battle hook.
         internal const string AddCardsNull = "RelicEffectAddCardsNull";
         internal const string ModifyCardMagicalPower = "RelicEffectModifyCardMagicalPower";
@@ -96,8 +102,8 @@ namespace MonsterTrain2Poju.Model
                 if (string.IsNullOrEmpty(relic.DataId) || string.IsNullOrEmpty(relic.AssetKey))
                     return "Missing captured relic identity.";
                 foreach (string effect in relic.EffectTypes)
-                    if (effect != AbilityIncant && effect != ModifyTriggerCount && effect != AddStatusOnSpawn && effect != AddStatusOnRoomEntry && effect != AddTempUpgrade && effect != AddCardsNull && effect != ModifyCardMagicalPower && effect != ModifyCardMagicPowerOnCardPlayed && effect != AddTrigger && effect != AddStatusOnApplied && effect != ModifyStatusMagnitude && effect != PreventStatusDecay && effect != ModifyCharacterAttackDamage && effect != ModifyCharacterMaxHealth && effect != AllDamageIsPiercing && !RelicResourceModel.IsEffect(effect)) return "Unmodeled relic effect " + effect + " on " + relic.AssetKey + ".";
-                string? error = RelicCardModifierModel.Validate(relic) ?? RelicMagicPowerModel.Validate(relic) ?? RelicCardPlayMagicPowerModel.Validate(relic) ?? RelicSpawnStatusModel.Validate(relic) ?? RelicRoomEntryStatusModel.Validate(relic) ?? RelicCharacterTriggerModel.Validate(relic) ?? RelicStatusStackModel.Validate(relic) ?? RelicStatusMagnitudeModel.Validate(relic) ?? RelicStatusDecayModel.Validate(relic) ?? RelicResourceModel.Validate(relic);
+                    if (effect != AbilityIncant && effect != ModifyTriggerCount && effect != AddStatusOnSpawn && effect != AddStatusOnRoomEntry && effect != AddTempUpgrade && effect != AddRemoveTempUpgradeOnUnitTrigger && effect != AddCardsNull && effect != ModifyCardMagicalPower && effect != ModifyCardMagicPowerOnCardPlayed && effect != AddTrigger && effect != AddStatusOnApplied && effect != ModifyStatusMagnitude && effect != PreventStatusDecay && effect != ModifyCharacterAttackDamage && effect != ModifyCharacterMaxHealth && effect != AllDamageIsPiercing && !RelicResourceModel.IsEffect(effect)) return "Unmodeled relic effect " + effect + " on " + relic.AssetKey + ".";
+                string? error = RelicCardModifierModel.Validate(relic) ?? RelicUnitUpgradeTriggerModel.Validate(relic) ?? RelicMagicPowerModel.Validate(relic) ?? RelicCardPlayMagicPowerModel.Validate(relic) ?? RelicSpawnStatusModel.Validate(relic) ?? RelicRoomEntryStatusModel.Validate(relic) ?? RelicCharacterTriggerModel.Validate(relic) ?? RelicStatusStackModel.Validate(relic) ?? RelicStatusMagnitudeModel.Validate(relic) ?? RelicStatusDecayModel.Validate(relic) ?? RelicResourceModel.Validate(relic);
                 if (error != null) return error;
             }
             return null;

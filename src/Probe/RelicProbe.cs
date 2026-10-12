@@ -36,6 +36,9 @@ namespace MonsterTrain2Poju.Probe
                     .Where(item => item.Effect is RelicEffectAddTempUpgrade).Select(item => RelicCardModifierProbe.Definition(item.Effect, item.Index)).ToArray();
                 var triggers = effects.Select((effect, index) => new { Effect = effect, Index = index })
                     .Where(item => item.Effect is RelicEffectAddTrigger).Select(item => AddedTriggers(item.Effect, item.Index)).ToArray();
+                var unitUpgradeTriggers = effects.Select((effect, index) => new { Effect = effect, Index = index })
+                    .Where(item => item.Effect is RelicEffectAddRemoveTempUpgradeOnUnitTrigger)
+                    .Select(item => UnitUpgradeTrigger(item.Effect, item.Index)).ToArray();
                 var stackAdditions = effects.Select((effect, index) => new { Effect = effect, Index = index })
                     .Where(item => item.Effect is RelicEffectAddStatusEffectOnStatusApplied).Select(item => StatusStacks(item.Effect, item.Index)).ToArray();
                 var magnitudes = effects.Select((effect, index) => new { Effect = effect, Index = index })
@@ -65,8 +68,26 @@ namespace MonsterTrain2Poju.Probe
                     magnitudes.Length > 0 ? magnitudes : null, decays.Length > 0 ? decays : null,
                     resources.Length > 0 ? resources : null, magicPower.Length > 0 ? magicPower : null,
                     cardPlayMagicPower.Length > 0 ? cardPlayMagicPower : null,
-                    roomEntryStatuses.Length > 0 ? roomEntryStatuses : null);
+                    roomEntryStatuses.Length > 0 ? roomEntryStatuses : null,
+                    unitUpgradeTriggers.Length > 0 ? unitUpgradeTriggers : null);
             }).ToArray();
+        }
+
+        private static RelicUnitUpgradeTrigger UnitUpgradeTrigger(IRelicEffect effect, int index)
+        {
+            object Field(string name) => AccessTools.Field(effect.GetType(), name).GetValue(effect);
+            var data = (CardUpgradeData?)Field("upgradeData");
+            CardUpgradeModifier? upgrade = null;
+            if (data != null)
+            {
+                var state = new CardUpgradeState(); state.Setup(data);
+                upgrade = CardModifierProbe.Upgrade(state, false, filtersAlreadyApplied: true);
+            }
+            Team.Type sourceTeam = (Team.Type)Field("sourceTeam");
+            var subtype = (SubtypeData)Field("characterSubtype");
+            return new RelicUnitUpgradeTrigger(index, ((CharacterTriggerData.Trigger)Field("trigger")).ToString(),
+                sourceTeam.HasFlag(Team.Type.Monsters), sourceTeam.HasFlag(Team.Type.Heroes), subtype?.Key,
+                subtype == null || subtype.IsNone, (bool)Field("shouldRemove"), Convert.ToInt32(Field("upgradeLifetime")), upgrade);
         }
 
         private static RelicRoomEntryStatus RoomEntryStatus(IRelicEffect effect, int index)

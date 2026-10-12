@@ -193,6 +193,12 @@ if (args.Length == 1 && args[0] == "--relic-lifecycle-pure")
     return;
 }
 
+if (args.Length == 1 && args[0] == "--relic-unit-upgrade-triggers-pure")
+{
+    RelicUnitUpgradeTriggerChecks.Run();
+    return;
+}
+
 if (args.Length == 1 && args[0] == "--relic-status-magnitudes-pure")
 {
     RelicStatusMagnitudeChecks.Run();
@@ -600,6 +606,7 @@ TriggerCountChecks.Run();
 RelicCardlessUpgradeChecks.Run();
 RelicSpawnStatusChecks.Run();
 RelicCharacterTriggerChecks.Run();
+RelicUnitUpgradeTriggerChecks.Run();
 CovenantCharacterFilterChecks.Run();
 RelicCardModifierChecks.Run();
 RelicMagicPowerChecks.Run();

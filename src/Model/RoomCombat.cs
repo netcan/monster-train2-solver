@@ -2481,8 +2481,54 @@ namespace MonsterTrain2Poju.Model
                     int remainingTriggerIndex = LiveIndex();
                     if (remainingTriggerIndex >= 0) Store(unit.Triggers[remainingTriggerIndex].Fired(unit.Triggers[remainingTriggerIndex].Effects));
                 }
+                if (unsupportedReason == null && !ApplyRelicUnitUpgradeTriggers(unit, kind, paramInt, paramInt2)) return;
                 bool Present(WorkingUnit target, string id) => target.Statuses.Any(pair =>
                     string.Equals(pair.Key, id, StringComparison.OrdinalIgnoreCase) && pair.Value.Stacks > 0);
+            }
+
+            // Native relic unit-upgrade effects run after the character's own trigger effects.
+            private bool ApplyRelicUnitUpgradeTriggers(WorkingUnit unit, string kind, int paramInt, int paramInt2)
+            {
+                if (context?.Relics == null) return true;
+                foreach (CombatRelicState relic in context.Relics)
+                foreach (RelicUnitUpgradeTrigger rule in relic.UnitUpgradeTriggers ?? Array.Empty<RelicUnitUpgradeTrigger>())
+                {
+                    if (rule.Trigger != kind || rule.Upgrade == null || unit.Source.IsPyre ||
+                        !(unit.Source.Team == CombatTeam.Player ? rule.SourcePlayer : rule.SourceEnemy) ||
+                        !rule.SubtypeIsNone && !unit.Source.Subtypes.Contains(rule.RequiredSubtype!) ||
+                        kind == "OnDeath" && unit.Alive && paramInt != 1) continue;
+
+                    int fireCount;
+                    if (kind == "OnTroopAdded" || kind == "OnTroopRemoved") fireCount = paramInt2;
+                    else if (context!.TriggerCounts == null) fireCount = 1;
+                    else
+                    {
+                        var query = new CombatTrigger(kind, false, false, true, 1, Array.Empty<CombatEffect>(), false,
+                            noCountModifiersAllowed: false);
+                        fireCount = TriggerCountModel.Query(context, unit.Freeze(), query, out string? error);
+                        if (error != null) { unsupportedReason = error; return false; }
+                    }
+
+                    string lifetime = rule.UpgradeLifetime == RelicUnitUpgradeTriggerModel.UntilEndOfBattle
+                        ? "TemporaryUntilEndOfBattle" : "TemporaryUntilUnitDeath";
+                    for (int fire = 0; fire < fireCount; fire++)
+                    {
+                        if (!ApplyUpgrade(unit, rule.Upgrade, lifetime, rule.ShouldRemove,
+                            RoomCapacityModel.Maximum(context, source.RoomIndex, unit.Source.Team),
+                            unit.Source.SpawnerCardId, kind, directApi: true, upgradeId: rule.Upgrade.DataId)) return false;
+                        if (rule.UpgradeLifetime != RelicUnitUpgradeTriggerModel.UntilEndOfBattle || source.Preview ||
+                            unit.Source.SpawnerCardId <= 0) continue;
+                        CardInstanceState? spawner = context?.FindCard(unit.Source.SpawnerCardId);
+                        if (spawner == null) continue;
+                        CardModifiers temporary = rule.ShouldRemove
+                            ? new CardModifiers(spawner.Temporary.Offsets,
+                                spawner.Temporary.Upgrades.Where(item => item.DataId != rule.Upgrade.DataId).ToArray(),
+                                spawner.Temporary.PersistentHealth, spawner.Temporary.ExternalInteractions)
+                            : UnitModifierModel.Add(spawner.Temporary, rule.Upgrade);
+                        context = context!.WithCard(spawner.WithModifiers(spawner.Permanent, temporary));
+                    }
+                }
+                return unsupportedReason == null;
             }
 
             private void RefreshPyreAfterGold()
