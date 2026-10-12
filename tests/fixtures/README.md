@@ -2266,37 +2266,36 @@ dotnet run --project src/ModelChecks -c Release -- --original-trigger-relics-com
 
 ### Original status stack relics
 
-`full-battle-original-status-relics.mt2f` accepts four unchanged originals:
-`ApplyExtraPyregel_DH`, `IncreasePyregelStacks`, `ExtraValorOnValor` and
-`IncreaseArmorStacks`. The shared model follows native relic order, exact team
-equality, positive-input and first-application conditions, signed overflow,
+`full-battle-original-status-relics.mt2f` accepts five unchanged originals:
+`ApplyExtraPyregel_DH`, `IncreasePyregelStacks`, `ExtraValorOnValor`,
+`IncreaseArmorStacks` and `ExtraSpellWeakness`. The shared model follows native
+relic order, exact team equality, positive-input and first-application conditions, signed overflow,
 outer-condition notification phases and preview behavior. Starting statuses
 and live equipment upgrades now retain their added stacks and condition state.
 
-The native Instant battle takes 68.03 seconds, wins at Pyre 80 after 26 plays
-and five EndTurns, and has 39 matched stages with zero capture failures,
+The muted native Instant battle takes 151.04 seconds, wins at Pyre 80 after 26
+actions and five EndTurns, and has 39 matched stages with zero capture failures,
 mismatches, unsupported transitions or pending records. Independent replay
 matches the complete battle, a mid-battle suffix and 16 parallel policy branches.
 There are 545 complete decision contexts and 12,005 exact native card views.
-All 219 distinct status queries match: 27 real call cases and 192 read-only
-boundary cases. Removing each original produces its exact missing stack amount
-in real call cases; the four witness counts are 4, 1, 8 and 5. Query checks also
-pass 32 parallel branches without changing their parents.
+All 269 distinct status queries match: 29 real call cases and 240 read-only
+boundary cases. Removing each original loses its exact added stack in real
+call cases; the five witness counts are 4, 1, 8, 5 and 2. Query checks pass
+32 parallel branches without changing their parents.
 
 Permanent/deferred, nullable-target, overflow and transfer/multiply exclusions
 are native value-query evidence. Separate permanent starting-status groups and
 permanent-upgrade status metadata remain guarded; this archive does not claim
 their complete execution paths. Other status families and owners remain open.
 
-The binary archive has no JSON source: 31,714 bytes, 5,477 unique nodes, SHA-256
-`e7000f43231d9ff051f8f2c9f13305b6420692fa4e07f46c20e7697b59b34ba8`.
+The binary archive has no JSON source: 32,935 bytes, 5,654 unique nodes, SHA-256
+`1965dcded188d8ae23b140fc8d1688b97bdaabec2df576911be144cad361aa2a`.
 Its raw native source is
-`.probe-runs/full-battle-units-spells-and-junk-20261011-113334-ebdfc287/full-battle.mt2f`.
-The focused triggered-status and original-trigger-relic battle regressions pass;
-all 216 binary archive names, sizes and hashes match the curated inventory.
-The full 216-archive replay remains deferred to a completed milestone. Original
-relic coverage is now 29/224 (12.95%); [relic-coverage.md](relic-coverage.md) lists
-the exact original definitions and witnesses.
+`.probe-runs/full-battle-units-spells-and-junk-20261013-044528-5081dd10/full-battle.mt2f`.
+The selected fixture checks pass. The current 248-archive inventory's complete
+replay remains deferred to a completed milestone. Original relic coverage is
+now 65/224 (29.02%); [relic-coverage.md](relic-coverage.md) lists the exact
+original definitions and witnesses.
 
 ```powershell
 dotnet run --project src/ModelChecks -c Release -- --relic-status-stacks-pure

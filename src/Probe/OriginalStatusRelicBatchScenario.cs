@@ -59,7 +59,8 @@ namespace MonsterTrain2Poju.Probe
             foreach (CharacterData enemy in waves.SelectMany(wave => ((IEnumerable)AccessTools.Field(typeof(SpawnGroupPoolData), "possibleGroups").GetValue(wave))
                 .Cast<SpawnGroupData>()).SelectMany(group => group.GetCharacters(save.GetCovenantsForSpawnPattern(), save, save.GetGeneratedBoss())).Distinct())
                 Set(enemy, "triggers", enemy.GetTriggers().Concat(new[] { Trigger("OnTurnBegin",
-                    Status(TargetMode.Self, Team.Type.Heroes, "pyregel", 1), Status(TargetMode.Self, Team.Type.Heroes, "armor", 1)) }).ToList());
+                    Status(TargetMode.Self, Team.Type.Heroes, "pyregel", 1), Status(TargetMode.Self, Team.Type.Heroes, "armor", 1),
+                    Status(TargetMode.Self, Team.Type.Heroes, "spell weakness", 1)) }).ToList());
 
             foreach (CardState card in owned) card.Setup(data.FindCardData(card.GetCardDataID())!, save);
             foreach (CardState card in cards.GetHand().ToArray()) cards.MoveCardFromHandToTopOfDeck(card);
@@ -69,10 +70,11 @@ namespace MonsterTrain2Poju.Probe
             Acquire("f4c76f11-37d9-4bb5-867a-4d99b7cfa270", "IncreasePyregelStacks", Team.Type.Heroes, 2, "pyregel", 6);
             Acquire("74c025fa-ddcb-494b-a790-dcadc5b5772b", "ExtraValorOnValor", Team.Type.Monsters, 0, "valor", 1);
             Acquire("ba26070b-4f6b-4af0-a1ec-2af024b6af87", "IncreaseArmorStacks", Team.Type.Monsters, 1, "armor", 4);
+            Acquire("b1d918d8-1fa6-4e6d-b523-5f7f339e5af8", "ExtraSpellWeakness", Team.Type.Heroes, 1, "spell weakness", 1);
             CaptureReady = true;
             foreach (CardState card in cards.GetAllCards(new List<CardState>()).ToArray()) managers.GetRelicManager().ApplyCardStateModifiers(card);
             Prepared = true; Set(managers.GetCombatManager()!, "combatStateChanged", true);
-            log.LogInfo("ORIGINAL-STATUS-RELIC-BATCH-PREPARED four unchanged original status adders; authored starting, spell, equipment and combat status applications; native Boss and wave schedule retained.");
+            log.LogInfo("ORIGINAL-STATUS-RELIC-BATCH-PREPARED five unchanged original status adders; authored starting, spell, equipment and combat status applications; native Boss and wave schedule retained.");
 
             void Acquire(string id, string key, Team.Type team, int condition, string statusId, int count)
             {

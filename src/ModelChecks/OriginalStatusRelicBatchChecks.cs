@@ -9,7 +9,8 @@ internal static class OriginalStatusRelicBatchChecks
         ("ApplyExtraPyregel_DH", "f3e1c306-964c-4373-96c3-61e606379f43", "None", "pyregel", 1, 1),
         ("IncreasePyregelStacks", "f4c76f11-37d9-4bb5-867a-4d99b7cfa270", "Heroes", "pyregel", 6, 2),
         ("ExtraValorOnValor", "74c025fa-ddcb-494b-a790-dcadc5b5772b", "Monsters", "valor", 1, 0),
-        ("IncreaseArmorStacks", "ba26070b-4f6b-4af0-a1ec-2af024b6af87", "Monsters", "armor", 4, 1)
+        ("IncreaseArmorStacks", "ba26070b-4f6b-4af0-a1ec-2af024b6af87", "Monsters", "armor", 4, 1),
+        ("ExtraSpellWeakness", "b1d918d8-1fa6-4e6d-b523-5f7f339e5af8", "Heroes", "spell weakness", 1, 1)
     ];
     private static readonly string[] ExcludedSources =
     ["CardEffectMultiplyStatusEffect", "CardEffectTransferAllStatusEffects", "CardEffectTransferAllStatusEffectsFromUnit"];
@@ -62,7 +63,7 @@ internal static class OriginalStatusRelicBatchChecks
             "Some original status relics lack actual applications: " +
             string.Join(", ", witnesses.Select(item => item.Key + "=" + item.Value)));
         Console.WriteLine("ORIGINAL-STATUS-RELIC-WITNESSES " + string.Join(", ", witnesses.Select(item => item.Key + "=" + item.Value)));
-        Console.WriteLine($"NATIVE-ORIGINAL-STATUS-RELICS PASS: four unchanged originals, {actualQueries} actual/{rows.Length - actualQueries} matrix queries; exact team, nullable target, positive/first-application, overflow and exclusion gates; permanent/deferred value-query gates only; per-relic actual effect ablations and 32 immutable branches.");
+        Console.WriteLine($"NATIVE-ORIGINAL-STATUS-RELICS PASS: five unchanged originals, {actualQueries} actual/{rows.Length - actualQueries} matrix queries; exact team, nullable target, positive/first-application, overflow and exclusion gates; permanent/deferred value-query gates only; per-relic actual effect ablations and 32 immutable branches.");
         return witnesses;
     }
 
@@ -71,7 +72,7 @@ internal static class OriginalStatusRelicBatchChecks
         Query[] rows = allRows.Where(row => row.Matrix).ToArray();
         Require(rows.Length > 0, "Native status-stack boundary matrix is missing.");
         foreach (CombatTeam? team in new CombatTeam?[] { CombatTeam.Player, CombatTeam.Enemy, null })
-        foreach (string id in new[] { "armor", "valor", "pyregel", "regen" })
+        foreach (string id in new[] { "armor", "valor", "pyregel", "spell weakness", "regen" })
         {
             bool Has(int incoming, bool permanent = false, bool deferred = false, bool includeAdders = true, string? type = null) =>
                 rows.Any(row => row.TargetTeam == team && row.StatusId == id && row.Incoming == incoming &&
@@ -107,6 +108,10 @@ internal static class OriginalStatusRelicBatchChecks
         foreach (Query row in firstApplications.Where(row => !row.HasStatus && row.Incoming is -1 or 0))
             Require(row.Actual == row.Incoming + 6, "Native first application incorrectly requires positive incoming stacks.");
         Expect("pyregel", 1, CombatTeam.Player, 2); Expect("pyregel", 1, null, 2);
+        Expect("spell weakness", 1, CombatTeam.Enemy, 2); Expect("spell weakness", 1, CombatTeam.Player, 1);
+        Expect("spell weakness", 1, null, 2); Expect("spell weakness", 0, CombatTeam.Enemy, 0);
+        Expect("spell weakness", -1, CombatTeam.Enemy, -1);
+        Expect("spell weakness", int.MaxValue, CombatTeam.Enemy, unchecked(int.MaxValue + 1));
         Expect("armor", int.MaxValue, CombatTeam.Player, unchecked(int.MaxValue + 4));
         Expect("armor", 1, CombatTeam.Player, 1, permanent: true);
         Expect("armor", 0, CombatTeam.Player, 4, permanent: true, deferred: true);

@@ -35,7 +35,7 @@ namespace MonsterTrain2Poju.Probe
             try
             {
                 foreach (CharacterState? target in targets)
-                foreach (string id in OriginalDecayRelicBatchScenario.Prepared ? new[] { "buff", "poison", "armor", "regen" } : new[] { "armor", "valor", "pyregel", "regen" })
+                foreach (string id in OriginalDecayRelicBatchScenario.Prepared ? new[] { "buff", "poison", "armor", "regen" } : new[] { "armor", "valor", "pyregel", "spell weakness", "regen" })
                 {
                     foreach (int count in new[] { -1, 0, 1, int.MaxValue }) Get(count, false, false, true, null);
                     Get(1, true, false, true, null); Get(0, true, true, true, null); Get(1, true, true, true, null);

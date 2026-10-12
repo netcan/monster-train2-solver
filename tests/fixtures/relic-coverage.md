@@ -1,7 +1,7 @@
 # Original relic coverage evidence
 
-As of 2026-10-13, **64 distinct original collectable relics / 224 catalog entries
-(28.57%)** have accepted native full-battle evidence. This counts unchanged relic
+As of 2026-10-13, **65 distinct original collectable relics / 224 catalog entries
+(29.02%)** have accepted native full-battle evidence. This counts unchanged relic
 definitions whose effects actually ran, including their original filters and
 conditions. Test cards, unit triggers and carrier subtypes may be authored to
 exercise those effects; the claim covers the recorded paths, not every possible
@@ -9,7 +9,7 @@ combination. Catalog enumeration and other owners of a supported effect class
 do not count as validated relics. `RelicEffectAddTrigger` appears on 26 catalog
 entries; 14 now have accepted original-owner effect evidence.
 `RelicEffectAddStatusEffectOnStatusApplied` appears on eight catalog entries;
-five now have accepted original-owner evidence. Both catalog owners of
+six now have accepted original-owner evidence. Both catalog owners of
 `RelicEffectPreventStatusEffectDecay` have accepted evidence for their original
 Rage and Frostbite consumers. Unknown status families and other effects on the
 remaining owners still require modeling and native proof.
@@ -31,7 +31,7 @@ action/turn comparisons and skips an independent legacy policy chain only when
 recomputed EndTurn state confirms that room-rule conflict. Freshness-marked
 archives remain strict. The Mageblade status/cache/attack path has an accepted
 native battle archive, but Mageblade is not a collectable relic and is not
-included in the 64/224 owner count. The `AllUnitsMultistrike` archive
+included in the 65/224 owner count. The `AllUnitsMultistrike` archive
 validates a mutator, not a collectible relic, and is also excluded from that
 owner count.
 
@@ -70,6 +70,7 @@ owner count.
 | `IncreasePyregelStacks` | `f4c76f11-37d9-4bb5-867a-4d99b7cfa270` | [original status relics][statusAdders] | The unchanged Heroes-team first-application rule adds 6 Pyregel. A real first application is 1 → 8 with both original Pyregel relics; repeated application is 1 → 2. Removing this relic changes the first case by exactly 6. |
 | `ExtraValorOnValor` | `74c025fa-ddcb-494b-a790-dcadc5b5772b` | [original status relics][statusAdders] | The unchanged Monsters-team unconditional rule adds 1 Valor, including zero input. Eight distinct real native query cases lose that stack when only this relic is removed. Starting, spell and combat-trigger status paths replay exactly. |
 | `IncreaseArmorStacks` | `ba26070b-4f6b-4af0-a1ec-2af024b6af87` | [original status relics][statusAdders] | The unchanged Monsters-team positive-stack rule adds 4 Armor. Five distinct real native query cases lose exactly 4 stacks when only this relic is removed. Starting, spell, equipment-upgrade and combat status paths replay exactly. |
+| `ExtraSpellWeakness` | `b1d918d8-1fa6-4e6d-b523-5f7f339e5af8` | [original status relics][statusAdders] | The unchanged Heroes-team positive-stack rule adds 1 Spell Weakness on enemies. Two real native query cases lose that layer when only this relic is removed. |
 | `IncreaseRageDamage` | `b9bddf11-acaa-40fb-bc40-eee83e478424` | [original magnitude relics][magnitudes] | The unchanged Monsters-team buff magnitude adds 1 attack per future added/removed Rage stack. Removing only this owner preserves captured starting attack history but changes subsequent status attack in 19 action/combat witnesses in the refreshed archive. |
 | `StrongerSpikes` | `aa94ad34-ee09-464e-89ff-2a2c2867c097` | [original magnitude relics][magnitudes] | The unchanged Monsters-team spikes magnitude adds 1 damage per stack at retaliation. Ten player-owned Spikes event witnesses in the refreshed archive deal less real damage after removing only this owner. |
 | `AwokenRegen` | `1fd244de-7d7b-4345-974b-4e5bf287a3df` | [original magnitude relics][magnitudes] | The unchanged Monsters-team regen magnitude adds 1 healing per stack at post-combat. Twelve player-owned Regen event witnesses in the refreshed archive restore less actual health after removing only this owner. |
@@ -116,7 +117,7 @@ archives contain these observed battle sizes:
 | [original unit relic batch][units] | 103 | 40 | 7 | 55 | 40 modifier calls, 28 Shift queries, 6 original ability activations |
 | [stationary trigger relic deaths][triggerDeaths] | 103 | 13 | 5 | 35 | 14 births, eight required original effect witnesses |
 | [original trigger relics][triggers] | 106 | 28 | 7 | 54 | 14 births, three attachments including one enemy, ten Bump plays, eight required effect witnesses |
-| [original status relics][statusAdders] | 113 | 26 | 5 | 39 | 27 distinct real queries, 192 boundary queries, four positive original effects |
+| [original status relics][statusAdders] | 113 | 26 | 5 | 39 | 29 distinct real queries, 240 boundary queries, five positive original effects |
 | [original magnitude relics][magnitudes] | 114 | 24 | 5 | 38 | Refreshed native capture: 20 matrix, seven live and four preview getter cases; three positive original effects |
 | [original lifecycle relics][lifecycles] | 115 | 24 | 5 | 35 | 14 exact birth/train/queue phases, six ability activations, one natural revival, 17 callback phases; five positive original effects |
 | [original decay relics][decays] | 116 | 21 | 5 | 42 | 16 matrix, 11 live and ten preview decay queries; 239 stack queries; two positive original effects |
@@ -265,8 +266,10 @@ original relic owner to the count.
 The older `6/224` passage in README describes an earlier milestone; it does not
 include the starter-cost, cardless or four-artifact batch evidence above.
 
-The native Horde-triggered unit-upgrade archive brings accepted original-owner
-coverage to 64/224. The previous 246-archive replay attempt remains incomplete;
+The native Horde-triggered unit-upgrade archive brought accepted original-owner
+coverage to 64/224. The subsequent status-stack relic archive adds
+`ExtraSpellWeakness`, bringing the current total to 65/224 (29.02%). The previous
+246-archive replay attempt remains incomplete;
 full replay of the current 248-archive inventory is still deferred.
 
 [counts]: full-battle-incant-relics-combined.mt2f
