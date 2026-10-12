@@ -55,6 +55,11 @@ internal static class StatusCallbackChecks
         var cleared = RoomCombatModel.Resolve(silent);
         Require(cleared.Supported && cleared.State!.Units[0].StatusRegistry!.Count == 0 &&
             cleared.State.Context!.Gold == 10 + GoldRewardModel.Adjust(6), "Cleanup did not remove silence before firing its non-ignoring callback.");
+        var troopTrigger = Unit(7, [], [Gold("OnTroopAdded", 1)]);
+        var troopEvent = RoomCombatModel.ApplyQueuedCharacterTrigger(Room(troopTrigger),
+            new RoomCombatModel.QueuedCharacterTrigger(0, troopTrigger, "OnTroopAdded", paramInt2: 3), _ => { });
+        Require(troopEvent.Supported && troopEvent.Dispatches.Single().ParamInt2 == 3,
+            "Queued paramInt2 did not reach the native character-trigger dispatch.");
         var immune = StatusApplicationModel.Apply(Room(Unit(4, [], [], immunities: ["armor"])), 4, zeroArmor);
         Require(immune.Supported && immune.PendingCallbacks.Count == 0 && immune.State!.Units[0].StatusRegistry!.Count == 0,
             "An immune no-op queued callbacks or created a definition.");

@@ -1554,7 +1554,7 @@ namespace MonsterTrain2Poju.Model
                     }
                     if (!blockedDeath) FireTriggers(actor, queued.Kind, canFireTriggers: queued.CanFireTriggers, fromQueue: true, paramInt: queued.ParamInt,
                         overrideTarget: overridden, dyingCharacter: dying, triggerCount: queued.TriggerCount, lastSpawnedOverrideUnitId: queued.LastSpawnedOverrideUnitId,
-                        exclusiveTriggerStateId: queued.ExclusiveTriggerStateId);
+                        exclusiveTriggerStateId: queued.ExclusiveTriggerStateId, paramInt2: queued.ParamInt2);
                     if (queued.Kind == "OnDeath" && queued.ParamInt != 1 && actor.Source.DeathState != null)
                         actor.Apply(actor.Freeze().WithDeathState(new UnitDeathState(true, true, false,
                             isSacrifice: actor.Source.DeathState.IsSacrifice, statisticsListenerOnce: actor.Source.DeathState.StatisticsListenerOnce.HasValue ? false : (bool?)null)));
@@ -2256,7 +2256,7 @@ namespace MonsterTrain2Poju.Model
 
             private void FireTriggers(WorkingUnit unit, string kind, bool canFireTriggers = true, bool fromQueue = false, int paramInt = 0,
                 WorkingUnit? overrideTarget = null, WorkingUnit? dyingCharacter = null, int triggerCount = 1, int lastSpawnedOverrideUnitId = 0,
-                int? exclusiveTriggerStateId = null)
+                int? exclusiveTriggerStateId = null, int paramInt2 = 0)
             {
                 string? paramString = kind == "OnHeal" || kind == "OnHit" ? "" : null;
                 // CombatManager checks purification when adding to its queue, not
@@ -2267,19 +2267,19 @@ namespace MonsterTrain2Poju.Model
                     if (context.PurifyBlockedTriggers.Contains(kind)) return;
                 }
                 if (!fromQueue && enqueueCharacterTrigger != null)
-                { enqueueCharacterTrigger(new QueuedCharacterTrigger(unit.RoomIndex, unit.Freeze(), kind, paramInt: paramInt, overrideTarget: overrideTarget?.Freeze(), paramString: paramString,
+                { enqueueCharacterTrigger(new QueuedCharacterTrigger(unit.RoomIndex, unit.Freeze(), kind, paramInt: paramInt, overrideTarget: overrideTarget?.Freeze(), paramInt2: paramInt2, paramString: paramString,
                     dyingCharacter: dyingCharacter?.Freeze(), canFireTriggers: canFireTriggers, triggerCount: triggerCount, lastSpawnedOverrideUnitId: lastSpawnedOverrideUnitId,
                     admission: CharacterTriggerAdmission.Accepted, exclusiveTriggerStateId: exclusiveTriggerStateId)); return; }
                 if (!fromQueue)
                 {
-                    triggerQueue.Enqueue((unit.RoomIndex, unit, kind, canFireTriggers, paramInt, overrideTarget, 0, paramString, dyingCharacter, triggerCount, lastSpawnedOverrideUnitId, exclusiveTriggerStateId));
+                    triggerQueue.Enqueue((unit.RoomIndex, unit, kind, canFireTriggers, paramInt, overrideTarget, paramInt2, paramString, dyingCharacter, triggerCount, lastSpawnedOverrideUnitId, exclusiveTriggerStateId));
                     if (!runningTriggerQueue) DrainLocalTriggerQueue();
                     return;
                 }
                 bool startedQueue = !runningTriggerQueue;
                 runningTriggerQueue = true;
                 ExecuteTriggers(unit, kind, canFireTriggers, paramInt, overrideTarget, dyingCharacter, triggerCount, lastSpawnedOverrideUnitId,
-                    paramString: paramString, exclusiveTriggerStateId: exclusiveTriggerStateId);
+                    paramInt2: paramInt2, paramString: paramString, exclusiveTriggerStateId: exclusiveTriggerStateId);
                 if (!startedQueue) return;
                 DrainLocalTriggerQueue();
             }
