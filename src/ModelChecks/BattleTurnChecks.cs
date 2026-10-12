@@ -61,6 +61,9 @@ internal static class BattleTurnChecks
     {
         // Room selection and this allocator belong to UI previews, not battle decisions.
         CombatContext? context = state.Spawn.Train.Context;
+        if (context?.QueryFrame is StatisticQueryFrame frame && frame.SelectedRoomIndex.HasValue)
+            context = context.WithQueryFrame(new StatisticQueryFrame(frame.Energy, frame.RunningCombat, frame.Turn,
+                frame.ForgePoints, frame.DragonsHoard, frame.MoonPhase, frame.PyreResurrectionCount, frame.ActiveBattle));
         if (context?.SpawnPoints?.NextPreviewCopyId.HasValue == true)
         {
             BattleSpawnPoints points = context.SpawnPoints;

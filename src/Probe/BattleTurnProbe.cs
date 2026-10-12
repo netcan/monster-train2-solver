@@ -104,17 +104,24 @@ namespace MonsterTrain2Poju.Probe
             }
             catch (Exception error) { trace.CaptureFailure(error); }
         }
-        internal static JToken Comparable(BattleTurnState state, bool terminal = false) => JToken.FromObject(new
+        internal static JToken Comparable(BattleTurnState state, bool terminal = false)
         {
-            Rooms = state.Spawn.Train.Rooms.Select(room => new { room.RoomIndex, room.Deployment, room.Units }).ToArray(),
-            Movement = state.Spawn.Train.Movement.OrderBy(rule => rule.UnitId).ToArray(), state.Spawn.Train.Context,
-            state.Spawn.Phase, state.Spawn.SelectedGroups, state.Spawn.Rng, state.Spawn.NextUnitId,
-            state.Spawn.TreasuresRemaining, state.Spawn.Turn, state.Energy, state.ForgePoints, state.DragonsHoard,
-            state.EnergyPerTurn, state.DrawPerTurn,
-            state.MoonPhase, state.RngStreams, state.OtherPiles, PlayRules = terminal ? null : state.PlayRules,
-            state.BattlePreviewEnabled, state.UiRngIsolated,
-            state.CanonicalPhysicalReferences
-        });
+            CombatContext? context = state.Spawn.Train.Context;
+            if (context?.QueryFrame is StatisticQueryFrame frame && frame.SelectedRoomIndex.HasValue)
+                context = context.WithQueryFrame(new StatisticQueryFrame(frame.Energy, frame.RunningCombat, frame.Turn,
+                    frame.ForgePoints, frame.DragonsHoard, frame.MoonPhase, frame.PyreResurrectionCount, frame.ActiveBattle));
+            return JToken.FromObject(new
+            {
+                Rooms = state.Spawn.Train.Rooms.Select(room => new { room.RoomIndex, room.Deployment, room.Units }).ToArray(),
+                Movement = state.Spawn.Train.Movement.OrderBy(rule => rule.UnitId).ToArray(), Context = context,
+                state.Spawn.Phase, state.Spawn.SelectedGroups, state.Spawn.Rng, state.Spawn.NextUnitId,
+                state.Spawn.TreasuresRemaining, state.Spawn.Turn, state.Energy, state.ForgePoints, state.DragonsHoard,
+                state.EnergyPerTurn, state.DrawPerTurn,
+                state.MoonPhase, state.RngStreams, state.OtherPiles, PlayRules = terminal ? null : state.PlayRules,
+                state.BattlePreviewEnabled, state.UiRngIsolated,
+                state.CanonicalPhysicalReferences
+            });
+        }
         internal sealed class Record
         {
             public int Index { get; set; }
