@@ -19,7 +19,8 @@ internal static class StatisticQueryChecks
         CardPileState[] piles = [new("Standby", [new(4, "monster")], [4], []), new("Exhausted", [new(5, "monster")]),
             new("Eaten", [new(6, "monster")]), new("Purged", [new(7, "monster")]), new("DiscardBuffer", [new(1, "spell"), new(8, "spell")])];
         var context = new CombatContext(new([new(1, "spell")], [new(2, "monster")], [new(3, "monster")], rng, 0, []),
-            rng, 85, 11, 10, statistics: statistics, cardInstances: registry.Take(8).ToArray(), cardRegistry: registry, otherPiles: piles);
+            rng, 85, 11, 10, statistics: statistics, cardInstances: registry.Take(8).ToArray(), cardRegistry: registry, otherPiles: piles,
+            roomCapacities: [new(0, 7, 11, false), new(1, 15, 4, false), new(2, 30, 3, true)]);
         string parent = JsonSerializer.Serialize(context);
         StatisticQueryResult Query(CardStatisticQuery query, int source = 4, StatisticQueryFrame? frame = null)
         {
@@ -59,6 +60,15 @@ internal static class StatisticQueryChecks
             "Gold ignored the combat loop or the turn-start snapshot.");
         Require(Query(new("NumSpecificCardsInDeck", specificCardDataId: "monster")).Value == 2,
             "Specific-card counting used owned cards instead of the permanent deck.");
+        var capacityFrame = new StatisticQueryFrame(selectedRoomIndex: 1);
+        Require(Query(new("CapacityOfTargetRoom", targetTeam: "None"), frame: capacityFrame).Value == 15 &&
+            Query(new("CapacityOfTargetRoom", targetTeam: "Monsters"), frame: capacityFrame).Value == 15 &&
+            Query(new("CapacityOfTargetRoom", targetTeam: "Heroes, Monsters"), frame: capacityFrame).Value == 15 &&
+            Query(new("CapacityOfTargetRoom", targetTeam: "Heroes"), frame: capacityFrame).Value == 4 &&
+            Query(new("CapacityOfTargetRoom", targetTeam: "Heroes"), frame: capacityFrame.With(selectedRoomIndex: 0)).Value == 11,
+            "Room capacity queries lost the selected room or native exact-Heroes team routing.");
+        Require(!StatisticQueryModel.Evaluate(context, new("CapacityOfTargetRoom")).Supported,
+            "Capacity query without a selected room produced a usable child state.");
         var empty = new CombatContext(new([], [], [], rng, 0, []), rng, 85, 11, 10, statistics: statistics,
             cardInstances: [], cardRegistry: registry, otherPiles: piles.Select(CardPileModel.Clear).ToArray());
         StatisticQueryResult fallback = StatisticQueryModel.Evaluate(empty, new("TypeInDeck", typeMatchDataIds: ["monster"]));
@@ -99,8 +109,12 @@ internal static class StatisticQueryChecks
             }
             Require(JsonSerializer.Serialize(before) == parent, "Native query checks mutated their captured root.");
         }
-        Require(samples > 500 && kinds.Count == 40, "Native statistic calibration lacks supported query kinds.");
-        Console.WriteLine($"NATIVE-STATISTIC-QUERY-CHECKS PASS: {samples} native queries, {kinds.Count} kinds, three durations, masked/null/detached sources, cost fallback and refreshed ownership.");
+        Require(samples > 500 && kinds.Count == 41, "Native statistic calibration lacks supported query kinds.");
+        var capacityQueries = fixture.GetProperty("Batches").EnumerateArray().SelectMany(batch => batch.GetProperty("Samples").EnumerateArray())
+            .Where(sample => sample.GetProperty("Query").GetProperty("Type").GetString() == "CapacityOfTargetRoom").ToArray();
+        Require(capacityQueries.Length >= 20 && capacityQueries.Select(sample => sample.GetProperty("Query").GetProperty("TargetTeam").GetString()).Distinct().Count() == 4,
+            "Native capacity query calibration lacks selected-room and team-flag cases.");
+        Console.WriteLine($"NATIVE-STATISTIC-QUERY-CHECKS PASS: {samples} native queries, {kinds.Count} kinds, selected-room capacity by team, three durations, masked/null/detached sources, cost fallback and refreshed ownership.");
     }
 
     private static void Require(bool condition, string message)

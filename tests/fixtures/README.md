@@ -3002,3 +3002,23 @@ pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -OriginalCardPlayMagicPowe
 dotnet run --project src/ModelChecks -c Release -- --original-card-play-magic-power-only tests/fixtures/full-battle-original-card-play-magic-power.mt2f
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-card-play-magic-power.mt2f
 ```
+
+### Selected-room capacity statistic query
+
+The statistic query calibration now includes `CapacityOfTargetRoom` and stores
+17,892 observations across six native batches and 41 query kinds. Its four
+`Team.Type` cases verify that only the exact `Heroes` flag selects enemy
+capacity; `None`, `Monsters` and the combined flag select player capacity. The
+captured selected-room index advances with room selection and card-play state,
+and missing room metadata remains unsupported. All observations match the
+independent model, including 288 capacity samples across rooms and teams.
+
+The updated binary is 18,597 bytes with 4,053 unique nodes and SHA-256
+`d2edaa62c1d69e17df86bc3ed04c9a12055f57c21998e507dcd6d9daa23ad4c5`; it has
+no tracked JSON dependency. The full inventory remains 240 archives: 209 battles
+and 31 component calibrations.
+
+```powershell
+dotnet run --project src/ModelChecks -c Release -- tests/fixtures/statistic-query-calibration.mt2f
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture statistic-query-calibration.mt2f
+```

@@ -360,7 +360,7 @@ namespace MonsterTrain2Poju.Probe
             return new StatisticQueryFrame(player.GetEnergy(), combat.GetIsRunningCombat(), combat.GetTurnCount(),
                 save.GetForgePoints(), save.GetDragonsHoardAmount(), (int)player.CurrentMoonPhase,
                 resurrection != null && !resurrection.IsResurrectionAllowed(save) ? 1 : 0,
-                save.GetGameSequence() == SaveData.GameSequence.InBattle);
+                save.GetGameSequence() == SaveData.GameSequence.InBattle, managers.GetRoomManager()!.GetSelectedRoom());
         }
 
         internal CardPileState[] CaptureOtherPiles()

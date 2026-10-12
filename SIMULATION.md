@@ -154,7 +154,7 @@ are copied immutable values; independent child states can run on worker threads.
 | Gold rewards | `GoldRewardModel` | 2,200 native calculations, reward minimums, integer/float boundaries, ties to even and preview exclusion |
 | Gold changes and Pyre attack refresh | `GoldModel` and `RelicResourceModel.RefreshPyreAttack` | Real card Gold0/+5/-5 bodies, two synchronous refreshes with three original attack notifications each, raw attack/upgrade/status cache retention, full battle and parallel branches |
 | Card statistics and preview | `BattleStatistics` and `BattlePreviewModel` | Native per-card/Any counters, turn rollover, spawn subtypes, death/exhaust attribution and preview damage statistic |
-| Statistic queries | `StatisticQueryModel` | 17,604 native queries across 40 kinds, three durations and seven card types; membership refresh, type/subtype pile counts, aggregates, costs and resource snapshots |
+| Statistic queries | `StatisticQueryModel` | 17,892 native queries across 41 kinds, three durations and seven card types; membership refresh, type/subtype pile counts, aggregates, costs, resource snapshots and selected-room capacity by team |
 | Statistic-driven damage traits | `DamageScalingModel` and `RoomCombatModel` | 63 native callbacks with complete refreshed contexts; trait order, replacement/addition, explicit-source upgrades, per-hit statistics and Boss/Pyre kill previews |
 | Dynamic statistic inputs | `CombatContext.QueryFrame` and turn/card transitions | 255 native damage callbacks and 48 decision boundaries; payment, combat, rollover, previews and settled terminal resources, plus multi-turn and parallel branches |
 | Card instance modifiers | `CardModifierModel` | Permanent/temporary ordered numeric upgrades, unit starting statuses, discard removal, play history and 256 native scalar calculations |
@@ -1026,19 +1026,22 @@ stops. Dynamic resource inputs are immutable query frames in the shared combat
 context; transitions advance these values as the branch progresses. An explicit
 query frame overrides that shared frame for isolated calibration queries.
 
-`tests/fixtures/statistic-query-calibration.json.gz` preserves 17,604 raw native
+`tests/fixtures/statistic-query-calibration.mt2f` preserves 17,892 native
 observations across six batches: live, distributed and empty piles, each with
 and without stored paid costs. Calibration uses isolated inactive native
 components, synthetic counters and a synthetic variable-cost source. The
 counter inputs include detached entries and signed integer overflow; all seven
 card type filters and all three durations are queried. It verifies membership
 refresh as well as values, and checks that the live combat context is unchanged.
-The independent reader recomputes every query. Pure checks cover retained buffer
-aliases, exhausted subtype counts, missing inputs and 64 isolated parallel
-branches. The query API supports static definition masks and no cardFilter.
-Room/status/magic/corruption/capacity, last-ability-activator and CurrentCost
-queries remain explicit unsupported results. Legacy captures without dynamic
-frames still reject resource-dependent queries whose boundary state is missing.
+The independent reader recomputes every query. Capacity queries also vary the
+selected room and all four team flags; native selects enemy capacity only for
+the exact `Heroes` flag, with other values selecting player capacity. Pure
+checks cover retained buffer aliases, exhausted subtype counts, missing inputs
+and 64 isolated parallel branches. The query API supports static definition
+masks and no cardFilter. Other room/status/magic/corruption, last-ability-
+activator and CurrentCost queries remain explicit unsupported results. Legacy
+captures without dynamic frames still reject resource-dependent queries whose
+boundary state is missing.
 
 Schema 23 captures energy, combat-loop state, raw turn count, forge points,
 Dragon's Hoard, native moon flags and the Pyre resurrection query flag in every

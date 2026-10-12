@@ -34,6 +34,25 @@ internal static class BattleActionChecks
         Require(selected.Supported && selected.State!.SelectedRoom == 1 && root.SelectedRoom == 0 &&
             BattleTurnModel.SelectRoom(selected.State, 1).State == selected.State,
             "Room selection did not produce an immutable, idempotent transition.");
+        var framedContext = context.WithQueryFrame(new StatisticQueryFrame(energy: 3, runningCombat: true,
+            turn: spawn.Turn, forgePoints: 0, dragonsHoard: 0, moonPhase: 1,
+            pyreResurrectionCount: 0, selectedRoomIndex: 0));
+        var framedTrain = new TrainCombatState(train.Rooms.Select(room => new RoomCombatState(room.RoomIndex,
+            room.Deployment, room.Units, room.ExternalInteractions, framedContext, room.Preview,
+            room.ActiveCompanionBossIds)).ToArray(), train.Movement, train.EnemySlotsPerRoom, framedContext);
+        var framedSpawn = new EnemySpawnState(framedTrain, spawn.Waves, spawn.SelectedGroups, spawn.Phase,
+            spawn.Looping, spawn.Rng, spawn.NextUnitId, spawn.Treasures, spawn.TreasuresRemaining,
+            spawn.TreasureEnabled, spawn.FirstTreasureTurn, spawn.FirstTreasureRoom, spawn.Turn,
+            spawn.ExternalInteractions);
+        var framedRoot = new BattleTurnState(framedSpawn, root.Energy, root.EnergyPerTurn, root.DrawPerTurn,
+            root.ForgePoints, root.DragonsHoard, root.MoonPhase, root.RngStreams, root.OtherPiles,
+            root.ExternalInteractions, root.PlayRules, selectedRoom: root.SelectedRoom);
+        BattleTurnResult framedSelection = BattleTurnModel.SelectRoom(framedRoot, 1);
+        BattleActionResult framedPlay = BattleActionModel.PlayCard(framedRoot, new(3, 1));
+        Require(framedSelection.Supported && framedSelection.State!.Spawn.Train.Context!.QueryFrame!.SelectedRoomIndex == 1 &&
+            framedPlay.Supported && framedPlay.State!.SelectedRoom == 1 &&
+            framedPlay.State.Spawn.Train.Context!.QueryFrame!.SelectedRoomIndex == 1,
+            "Room selection or card play left the dynamic statistic query on a stale floor.");
         BattleActionResult first = BattleActionModel.PlayCard(root, new(1, 0, 0));
         Require(first.Supported, first.Reason ?? "First summon rejected");
         Require(first.State!.Spawn.Train.Context!.NextAddedTemporaryUpgrades!.Count == 0 &&

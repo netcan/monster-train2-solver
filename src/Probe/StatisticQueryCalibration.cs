@@ -40,7 +40,8 @@ namespace MonsterTrain2Poju.Probe
                 "AnyHeroKilled", "AnyMonsterDeath", "AnyDiscarded", "AnyCardPlayed", "AnyCardDrawn", "AnyExhausted", "AnyMonsterSpawned",
                 "AnyMonsterSpawnedTopFloor", "MonsterSubtypePlayed", "AnyStatusEffectStacksAdded", "AnyStatusEffectStacksRemoved",
                 "PlayedCost", "UnmodifiedPlayedCost", "Gold", "TurnCount", "ForgePoints", "DragonsHoardAmount", "MoonPhase",
-                "PyreHeartResurrection", "LastAttackDamageDealt", "EnergyRemainingEndOfTurn", "AnyCharacter", "NumSpecificCardsInDeck" };
+                "PyreHeartResurrection", "LastAttackDamageDealt", "EnergyRemainingEndOfTurn", "AnyCharacter", "NumSpecificCardsInDeck",
+                "CapacityOfTargetRoom" };
             var batches = new List<object>();
             var host = new GameObject("Poju statistic query calibration") { hideFlags = HideFlags.HideAndDontSave };
             host.SetActive(false); // These isolated components never register with the real providers.
@@ -103,14 +104,18 @@ namespace MonsterTrain2Poju.Probe
                     var before = new CombatContext(cards, original.BattleRng, original.Gold, ghostId + 2, original.MaxHandSize,
                         original.StatusRules, Snapshot(), empty ? Array.Empty<CardInstanceState>() : original.CardInstances,
                         original.CardRegistry!.Concat(new[] { CardInstanceState.Empty(ghostId + 1, "calibration-variable") }).ToArray(),
-                        original.AllScenarioBossesDead, original.NextAddedTemporaryUpgrades, piles);
+                        original.AllScenarioBossesDead, original.NextAddedTemporaryUpgrades, piles, roomCapacities: original.RoomCapacities);
                     var frame = new StatisticQueryFrame(managers.GetPlayerManager().GetEnergy(), !empty && managers.GetCombatManager()!.GetIsRunningCombat(),
                         empty ? stoppedCombat.GetTurnCount() : managers.GetCombatManager()!.GetTurnCount(), save.GetForgePoints(),
-                        save.GetDragonsHoardAmount(), (int)managers.GetPlayerManager().CurrentMoonPhase, 0, save.GetGameSequence() == SaveData.GameSequence.InBattle);
+                        save.GetDragonsHoardAmount(), (int)managers.GetPlayerManager().CurrentMoonPhase, 0,
+                        save.GetGameSequence() == SaveData.GameSequence.InBattle, managers.GetRoomManager()!.GetSelectedRoom());
                     var samples = new List<object>();
                     BattleStatistics? expectedStatistics = null;
                     string? expectedStatisticsJson = null;
                     foreach (string type in supportedTypes)
+                    foreach (Team.Type targetTeam in type == "CapacityOfTargetRoom"
+                        ? new[] { Team.Type.None, Team.Type.Heroes, Team.Type.Monsters, Team.Type.Heroes | Team.Type.Monsters }
+                        : new[] { Team.Type.None })
                     foreach (CardStatistics.EntryDuration duration in Enum.GetValues(typeof(CardStatistics.EntryDuration)))
                     foreach (CardStatistics.CardTypeTarget targetType in Enum.GetValues(typeof(CardStatistics.CardTypeTarget)))
                     foreach (SubtypeData? subtype in new SubtypeData?[] { null }.Concat(subtypes))
@@ -137,13 +142,15 @@ namespace MonsterTrain2Poju.Probe
                         CardData? specific = type == "NumSpecificCardsInDeck" && subtype == null ? definitions.First(data => data.GetID() == known[0].GetCardDataID()) : null;
                         int? rawCost = sourceCard == null || sourceCard == ghost ? (int?)null : (int)AccessTools.Field(typeof(CardState), "cost").GetValue(sourceCard);
                         var query = new CardStatisticQuery(type, duration.ToString(), typeMask, subtypeMask, subtype == null || subtype.IsNone,
-                            subtype?.Key, specific?.GetID(), rawCost, sourceCard != null && sourceCard != ghost && sourceCard.IsConsumeRemainingEnergyCostType());
+                            subtype?.Key, specific?.GetID(), rawCost, sourceCard != null && sourceCard != ghost && sourceCard.IsConsumeRemainingEnergyCostType(),
+                            targetTeam.ToString());
                         var input = new CardStatistics.StatValueData { cardState = sourceCard!, trackedValue = (CardStatistics.TrackedValueType)Enum.Parse(typeof(CardStatistics.TrackedValueType), type),
-                            entryDuration = duration, cardTypeTarget = targetType, paramSubtype = subtype!, paramCardData = specific!, forPreviewText = false };
+                            entryDuration = duration, cardTypeTarget = targetType, paramSubtype = subtype!, paramCardData = specific!,
+                            paramTeamType = targetTeam, forPreviewText = false };
                         int actual = native.GetStatValue(input);
                         StatisticQueryResult predicted = StatisticQueryModel.Evaluate(before, query, sourceCard == null ? 0 : Id(sourceCard), frame);
                         if (!predicted.Supported || predicted.Value != actual) throw new InvalidOperationException("Native statistic query differs: " + type + "/" + duration + "/" + targetType +
-                            "/" + subtype?.Key + "/" + (sourceCard == null ? 0 : Id(sourceCard)) + " expected=" + actual + " predicted=" + predicted.Value + " " + predicted.UnsupportedReason);
+                            "/" + subtype?.Key + "/" + targetTeam + "/" + (sourceCard == null ? 0 : Id(sourceCard)) + " expected=" + actual + " predicted=" + predicted.Value + " " + predicted.UnsupportedReason);
                         if (expectedStatistics == null) { expectedStatistics = Snapshot(); expectedStatisticsJson = JsonConvert.SerializeObject(expectedStatistics); }
                         if (JsonConvert.SerializeObject(predicted.Context!.Statistics!) != expectedStatisticsJson)
                             throw new InvalidOperationException("Native statistic query membership refresh differs.");

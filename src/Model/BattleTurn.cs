@@ -91,11 +91,12 @@ namespace MonsterTrain2Poju.Model
                 return Unsupported("Missing room-selection rules or battle context.");
             if (!source.PlayRules.Rooms.Any(room => room.RoomIndex == roomIndex))
                 return Unsupported("Selected room is not present in the captured rules.");
-            if (source.SelectedRoom == roomIndex)
+            TrainCombatState train = source.Spawn.Train;
+            int? framedRoom = train.Context!.QueryFrame?.SelectedRoomIndex;
+            if (source.SelectedRoom == roomIndex && (!framedRoom.HasValue || framedRoom == roomIndex))
                 return new BattleTurnResult(source, RoomOutcome.Exchanged);
             if (source.ExternalInteractions.Count > 0)
                 return Unsupported(string.Join("; ", source.ExternalInteractions));
-            TrainCombatState train = source.Spawn.Train;
             if (train.Rooms.Any(room => room.ExternalInteractions.Count > 0))
                 return Unsupported(string.Join("; ", train.Rooms.SelectMany(room => room.ExternalInteractions).Distinct()));
             string? relicError = RelicModel.Validate(train.Context);
@@ -103,7 +104,10 @@ namespace MonsterTrain2Poju.Model
             if (source.SelectedRoom >= 0 && !source.PlayRules.Rooms.Any(room => room.RoomIndex == source.SelectedRoom))
                 return Unsupported("Current selected room is not present in the captured rules.");
 
-            if (source.SelectedRoom >= 0 && source.BattlePreviewEnabled)
+            bool selectionChanged = source.SelectedRoom != roomIndex;
+            if (framedRoom.HasValue)
+                train = CardSpellModel.WithContext(train, train.Context!.WithQueryFrame(train.Context.QueryFrame!.With(selectedRoomIndex: roomIndex)));
+            if (selectionChanged && source.SelectedRoom >= 0 && source.BattlePreviewEnabled)
             {
                 TrainCombatResult preview = BattlePreviewModel.Refresh(train);
                 if (!preview.Supported) return Unsupported(preview.UnsupportedReason!);

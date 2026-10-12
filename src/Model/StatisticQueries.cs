@@ -16,12 +16,13 @@ namespace MonsterTrain2Poju.Model
         public string? SpecificCardDataId { get; }
         public int? SourceRawCost { get; }
         public bool VariableCost { get; }
+        public string TargetTeam { get; }
         public CardStatisticQuery(string type, string duration = "ThisTurn", IReadOnlyList<string>? typeMatchDataIds = null,
             IReadOnlyList<string>? subtypeMatchDataIds = null, bool subtypeIsNone = true, string? subtype = null,
-            string? specificCardDataId = null, int? sourceRawCost = null, bool variableCost = false)
+            string? specificCardDataId = null, int? sourceRawCost = null, bool variableCost = false, string targetTeam = "None")
         { Type = type; Duration = duration; TypeMatchDataIds = Freeze(typeMatchDataIds); SubtypeMatchDataIds = Freeze(subtypeMatchDataIds);
             SubtypeIsNone = subtypeIsNone; Subtype = subtype; SpecificCardDataId = specificCardDataId;
-            SourceRawCost = sourceRawCost; VariableCost = variableCost; }
+            SourceRawCost = sourceRawCost; VariableCost = variableCost; TargetTeam = targetTeam; }
         private static IReadOnlyList<string>? Freeze(IReadOnlyList<string>? source) => source == null ? null :
             Array.AsReadOnly(source.Distinct().OrderBy(id => id, StringComparer.Ordinal).ToArray());
     }
@@ -38,16 +39,19 @@ namespace MonsterTrain2Poju.Model
         // Native PyreHeartResurrection is a consumed/not-allowed flag (0 or 1), not a tally.
         public int? PyreResurrectionCount { get; }
         public bool ActiveBattle { get; }
+        public int? SelectedRoomIndex { get; }
         public StatisticQueryFrame(int? energy = null, bool? runningCombat = null, int? turn = null, int? forgePoints = null,
-            int? dragonsHoard = null, int? moonPhase = null, int? pyreResurrectionCount = null, bool activeBattle = true)
+            int? dragonsHoard = null, int? moonPhase = null, int? pyreResurrectionCount = null, bool activeBattle = true,
+            int? selectedRoomIndex = null)
         { Energy = energy; RunningCombat = runningCombat; Turn = turn; ForgePoints = forgePoints;
-            DragonsHoard = dragonsHoard; MoonPhase = moonPhase; PyreResurrectionCount = pyreResurrectionCount; ActiveBattle = activeBattle; }
+            DragonsHoard = dragonsHoard; MoonPhase = moonPhase; PyreResurrectionCount = pyreResurrectionCount; ActiveBattle = activeBattle;
+            SelectedRoomIndex = selectedRoomIndex; }
         public StatisticQueryFrame With(int? energy = null, bool? runningCombat = null, int? turn = null,
             int? forgePoints = null, int? dragonsHoard = null, int? moonPhase = null,
-            int? pyreResurrectionCount = null, bool? activeBattle = null) => new StatisticQueryFrame(
+            int? pyreResurrectionCount = null, bool? activeBattle = null, int? selectedRoomIndex = null) => new StatisticQueryFrame(
                 energy ?? Energy, runningCombat ?? RunningCombat, turn ?? Turn, forgePoints ?? ForgePoints,
                 dragonsHoard ?? DragonsHoard, moonPhase ?? MoonPhase, pyreResurrectionCount ?? PyreResurrectionCount,
-                activeBattle ?? ActiveBattle);
+                activeBattle ?? ActiveBattle, selectedRoomIndex ?? SelectedRoomIndex);
 
         internal static string? ValidateDecision(BattleTurnState state)
         {
@@ -180,6 +184,15 @@ namespace MonsterTrain2Poju.Model
                 case "DragonsHoardAmount": return Scalar(frame?.DragonsHoard);
                 case "MoonPhase": return Scalar(frame?.MoonPhase);
                 case "PyreHeartResurrection": return Scalar(frame?.PyreResurrectionCount);
+                case "CapacityOfTargetRoom":
+                    if (frame?.SelectedRoomIndex is not int selectedRoom)
+                        return Unsupported("Capacity queries require the current selected room.");
+                    if (context.RoomCapacities == null)
+                        return Unsupported("Capacity queries require captured room capacities.");
+                    RoomCapacityState? room = context.RoomCapacities.FirstOrDefault(item => item.RoomIndex == selectedRoom);
+                    if (room == null) return Finish(0);
+                    // Native RoomState selects the enemy group only for the exact Heroes flag.
+                    return Finish(query.TargetTeam == "Heroes" ? room.EnemyMaximum : room.PlayerMaximum);
                 case "LastAttackDamageDealt": return Finish(statistics.LastAttackDamageDealt);
                 case "EnergyRemainingEndOfTurn": return Finish(statistics.EnergyRemainingEndOfTurn);
                 case "AnyCharacter": return Finish(1);

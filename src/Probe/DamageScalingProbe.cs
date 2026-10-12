@@ -38,7 +38,8 @@ namespace MonsterTrain2Poju.Probe
             string[] subtypeMask = data.paramSubtype == null ? Array.Empty<string>() : definitions.Where(card =>
                 card.GetSpawnCharacterData()?.GetSubtypes().Contains(data.paramSubtype) == true).Select(card => card.GetID()).ToArray();
             return new CardStatisticQuery(data.trackedValue.ToString(), data.entryDuration.ToString(), typeMask, subtypeMask,
-                data.paramSubtype == null || data.paramSubtype.IsNone, data.paramSubtype?.Key, data.paramCardData?.GetID(), rawCost, variable);
+                data.paramSubtype == null || data.paramSubtype.IsNone, data.paramSubtype?.Key, data.paramCardData?.GetID(), rawCost, variable,
+                data.paramTeamType.ToString());
         }
     }
 }
