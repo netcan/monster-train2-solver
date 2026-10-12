@@ -71,6 +71,7 @@ namespace MonsterTrain2Poju.Probe
         private string playbackDescription = string.Empty;
         private List<string>? sourceEntries;
         private PlayCardAction? pendingPlay;
+        private bool damagePerHpAbilityInputPrepared;
 
         internal NativeReplayScenario(ManualLogSource log)
         {
@@ -679,6 +680,12 @@ namespace MonsterTrain2Poju.Probe
                 numericModifiersPrepared = true;
                 AbilityTeleportScenario.Prepare(managers, log);
             }
+            if (fullBattle && !numericModifiersPrepared && modifierScenario == "damage-per-hp-ability")
+            {
+                if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("DamagePerHp ability fixture must start on deployment turn.");
+                numericModifiersPrepared = true;
+                AbilityActivationScenario.Prepare(managers, log, false, false, damagePerHp: true);
+            }
             if (fullBattle && !numericModifiersPrepared &&
                 (modifierScenario == DamagePerHpScenario.Name || modifierScenario == DamagePerHpScenario.ArmorName ||
                  modifierScenario == DamagePerHpScenario.LastAttackerName))
@@ -868,6 +875,8 @@ namespace MonsterTrain2Poju.Probe
                 if (fullBattle && OriginalCardPlayMagicPowerScenario.Enabled && !OriginalCardPlayMagicPowerScenario.Prepared)
                     OriginalCardPlayMagicPowerScenario.Prepare(managers, log);
                 if (OriginalUnitRelicBatchScenario.Enabled) OriginalUnitRelicBatchScenario.PrepareDecision(managers);
+                if (modifierScenario == "damage-per-hp-ability" && !damagePerHpAbilityInputPrepared)
+                    damagePerHpAbilityInputPrepared = DamagePerHpScenario.SeedAbilityLastAttackerInput(managers, log);
                 BattleTurnState decision = FullBattleTrace.Active!.CaptureDecision();
                 RelicStatusStackProbe.Matrix();
                 RelicStatusMagnitudeProbe.Matrix();
@@ -897,6 +906,8 @@ namespace MonsterTrain2Poju.Probe
                 if (modifierScenario.StartsWith("multi-summon", StringComparison.Ordinal)) pendingPlay = MultiSummonScenario.Choose(managers) ?? pendingPlay;
                 if (modifierScenario == "ability-teleport")
                     pendingPlay = AbilityTeleportScenario.Choose(decision);
+                else if (modifierScenario == "damage-per-hp-ability")
+                    pendingPlay = DamagePerHpScenario.ChooseAbility(decision);
                 else if (modifierScenario == "ability-incant" || modifierScenario == "equipment-abilities" || modifierScenario == "ability-effects" || modifierScenario == "spawn-or-status" || modifierScenario == "ability-activation" || modifierScenario == "ability-activation-x" || modifierScenario == "ability-activation-lethal")
                     pendingPlay = UnitAbilityModel.ChooseAbilityThenCards(decision);
                 if (modifierScenario == "equipment-buff")
@@ -1010,12 +1021,14 @@ namespace MonsterTrain2Poju.Probe
         private void PlayPendingPolicyCard(AllGameManagers managers, CardManager cards)
         {
             PlayCardAction action = pendingPlay ?? throw new InvalidOperationException("Missing policy card action.");
+            string modifierScenario = Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") ?? string.Empty;
+            bool scenarioPrelude = (OriginalUnitRelicBatchScenario.Enabled && !OriginalUnitRelicBatchScenario.PolicyCarriersInjected) ||
+                (modifierScenario == "damage-per-hp-ability" && !damagePerHpAbilityInputPrepared);
             PreviewSchedulingProbe.Observe("Play:" + action.CardInstanceId);
             if (action.ActivatorUnitId > 0)
             {
                 CharacterState actor = FullBattleTrace.Active!.KnownUnits.Single(unit => FullBattleTrace.Active.UnitId(unit) == action.ActivatorUnitId);
-                FullBattleTrace.Active.BeginCardPlay(action, scenarioAction: OriginalUnitRelicBatchScenario.Enabled &&
-                    !OriginalUnitRelicBatchScenario.PolicyCarriersInjected);
+                FullBattleTrace.Active.BeginCardPlay(action, scenarioAction: scenarioPrelude);
                 if (action.TargetSpawnPointIndex < 0)
                 {
                     if (!actor.ActivateUnitAbility(cards)) throw new InvalidOperationException("Native unit ability activation failed.");
@@ -1045,12 +1058,11 @@ namespace MonsterTrain2Poju.Probe
             }
             if (!cards.CanPlayHandCard(cards.GetHand()[index], action.RoomIndex, drop, null, null, out var error))
                 throw new InvalidOperationException("The native game rejected a modeled legal play: " + error);
-            FullBattleTrace.Active!.BeginCardPlay(action, scenarioAction: OriginalUnitRelicBatchScenario.Enabled &&
-                !OriginalUnitRelicBatchScenario.PolicyCarriersInjected);
+            FullBattleTrace.Active!.BeginCardPlay(action, scenarioAction: scenarioPrelude);
             if (!cards.PlayCard(index, drop, ref error)) throw new InvalidOperationException("Policy card play failed: " + error);
             log.LogInfo("DEPTH-POLICY-PLAY card=" + action.CardInstanceId + " room=" + action.RoomIndex + " position=" + action.PlayerPosition + " target=" + action.TargetUnitId);
             pendingPlay = null;
-            string summonScenario = Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") ?? "";
+            string summonScenario = modifierScenario;
             Enter(Stage.PlayingCard, summonScenario.StartsWith("multi-summon-additional", StringComparison.Ordinal) ||
                 summonScenario.StartsWith("multi-summon-pool", StringComparison.Ordinal) ? 180f : 30f);
         }

@@ -43,6 +43,41 @@ namespace MonsterTrain2Poju.Probe
             log.LogInfo("DAMAGE-PER-HP-PREPARED lastAttacker=" + lastAttacker + " armor=" + includeArmor + ".");
         }
 
+        internal static bool SeedAbilityLastAttackerInput(AllGameManagers managers, ManualLogSource log)
+        {
+            RoomManager rooms = managers.GetRoomManager()!;
+            var playerUnits = new List<CharacterState>();
+            var enemyUnits = new List<CharacterState>();
+            for (int index = 0; index < rooms.GetNumRooms(); index++)
+            {
+                RoomState room = rooms.GetRoom(index);
+                room.AddCharactersToList(playerUnits, Team.Type.Monsters);
+                room.AddCharactersToList(enemyUnits, Team.Type.Heroes);
+            }
+
+            CharacterState? actor = playerUnits.FirstOrDefault(unit => unit.IsAlive && !unit.IsDestroyed &&
+                unit.GetSourceCharacterData().GetAssetKey() == "TrainStewardBig" &&
+                unit.HasStatusEffect("unit_ability_available") && !unit.HasStatusEffect("cooldown") &&
+                !unit.HasStatusEffect("silenced") && !unit.HasStatusEffect("muted"));
+            if (actor == null) return false;
+
+            CharacterState? attacker = actor.GetLastAttackerCharacter();
+            bool seeded = false;
+            if (attacker == null || attacker.IsDestroyed || !attacker.IsAlive)
+            {
+                attacker = enemyUnits.FirstOrDefault(unit => unit.IsAlive && !unit.IsDestroyed && !unit.IsAnyBoss());
+                if (attacker == null) return false;
+
+                object primary = AccessTools.Property(typeof(CharacterState), "PrimaryStateInformation")!.GetValue(actor)!;
+                AccessTools.Field(primary.GetType(), "lastAttackerCharacter")!.SetValue(primary, attacker);
+                seeded = true;
+            }
+
+            log.LogInfo("DAMAGE-PER-HP-ABILITY-INPUT actor=" + actor.GetSourceCharacterData().GetAssetKey() +
+                " attacker=" + attacker.GetSourceCharacterData().GetAssetKey() + " origin=" + (seeded ? "seeded" : "native-state"));
+            return true;
+        }
+
         private static void AddArmorToOwnedMonsters(SaveManager save, CardState[] owned)
         {
             CharacterData[] definitions = owned.Where(card => card.GetCardType() == CardType.Monster)
@@ -92,6 +127,26 @@ namespace MonsterTrain2Poju.Probe
             return hasCapturedTargetRequirement
                 ? BattleActionModel.ChooseUnitAndJunkPlay(source)
                 : BattleActionModel.ChooseUnitSpellAndJunkPlay(source);
+        }
+
+        internal static PlayCardAction? ChooseAbility(BattleTurnState source)
+        {
+            foreach (PlayCardAction action in UnitAbilityModel.EnumerateSupportedActivations(source))
+            {
+                RoomCombatState? actorRoom = source.Spawn.Train.Rooms.FirstOrDefault(room =>
+                    room.Units.Any(unit => unit.Id == action.ActivatorUnitId));
+                CombatUnit? actor = actorRoom?.Units.FirstOrDefault(unit => unit.Id == action.ActivatorUnitId);
+                if (actor == null || actor.LastAttackerId is not > 0) continue;
+                CombatUnit? attacker = source.Spawn.Train.Rooms.SelectMany(room => room.Units)
+                    .FirstOrDefault(unit => unit.Id == actor.LastAttackerId.Value && unit.Team == CombatTeam.Enemy);
+                if (attacker == null) continue;
+                BattleActionResult result = BattleActionModel.PlayCard(source, action);
+                if (!result.Supported) continue;
+                CombatUnit? after = result.State!.Spawn.Train.Rooms.SelectMany(room => room.Units)
+                    .FirstOrDefault(unit => unit.Id == attacker.Id);
+                if (after == null || after.Health < attacker.Health) return action;
+            }
+            return BattleActionModel.ChooseUnitSpellAndJunkPlay(source);
         }
     }
 }

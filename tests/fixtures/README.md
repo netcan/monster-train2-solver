@@ -3113,3 +3113,26 @@ is now 244 archives: 213 battles and 31 component calibrations.
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-damage-per-hp-last-attacker.mt2f
 dotnet run --project src/ModelChecks -c Release -- --damage-per-hp-pure
 ```
+
+### DamagePerHp unit ability
+
+`full-battle-damage-per-hp-ability.mt2f` records two native unit-ability plays
+whose `DamagePerHpLastAttacker` effects lower their enemy attackers' health.
+The muted Instant battle won with 17 actions, five EndTurns and 48 room stages;
+there were zero capture failures, mismatches, unsupported transitions or
+pending records. Independent policy replay covers the post-input suffix: 12
+card actions and four EndTurns, including 16 parallel policy branches. A separate
+actionwise check matches all 17 native card actions.
+The test seeds one live `LastAttackerId` as a controlled combat input. Actions
+before that input remain individually compared against native state; independent
+policy replay starts from the first decision state containing it. The schema-103
+binary is 31,941 bytes with 5,072 unique nodes and SHA-256
+`7b9726b80ffde51e36672e1d9e7b6d77e3325422cdc708794976a8b3309e47ac`; it has no
+JSON companion. The curated inventory now has 245 archives: 214 battles and 31
+component calibrations.
+
+```powershell
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-damage-per-hp-ability.mt2f
+dotnet run --project src/ModelChecks -c Release -- --unit-ability-pure
+dotnet run --project src/ModelChecks -c Release -- --damage-per-hp-pure
+```

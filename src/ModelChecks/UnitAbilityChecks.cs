@@ -58,6 +58,11 @@ internal static class UnitAbilityChecks
         CombatUnit cardTraitsTarget = cardTraitsAttack.State!.Spawn.Train.Rooms[0].Units.Single(unit => unit.Id == 11);
         Require(cardTraitsAttack.Supported && cardTraitsTarget.Health == 30 && cardTraitsTarget.LastAttackerId == 0,
             "The card-traits flag did not use card traits without a native self-target attacker.");
+        BattleActionResult lastAttackerAbility = UnitAbilityModel.Activate(
+            Root(enemyHealth: 5, actorLastAttackerId: 11, damagePerHpLastAttacker: true), action);
+        Require(lastAttackerAbility.Supported && !lastAttackerAbility.State!.Spawn.Train.Rooms
+                .SelectMany(room => room.Units).Any(unit => unit.Id == 11 && unit.Health > 0),
+            "A unit ability did not route DamagePerHp to its caster's enemy last attacker.");
         var missingCasterEffect = new CardActionEffect("DamagePerSourceAttack", "FrontInRoom", 2, false, true, []);
         Require(!CardSpellModel.TestPlay(sourceAttackRoot.Spawn.Train, 0, [missingCasterEffect], 0, sourceAttackRoot.PlayRules).Supported,
             "A source-attack effect without a captured caster entered the search space.");
@@ -110,7 +115,7 @@ internal static class UnitAbilityChecks
         bool handFull = false, bool allowFull = true, bool xCost = false, bool emptyCache = false, bool otherFloors = false,
         bool terminalEnemy = false, bool typed = true, int actorAttack = 1, bool sourceAttackDamage = false, int damageMultiplier = 4,
         bool useCardTraits = false, int actorArmor = 0, int enemyHealth = 40,
-        int? actorLastAttackerId = null, int? enemyLastAttackerId = 0)
+        int? actorLastAttackerId = null, int? enemyLastAttackerId = 0, bool damagePerHpLastAttacker = false)
     {
         var rng = UnityRng.Seed(84);
         CombatStatus cooldown = new("cooldown", 1, removeStackAtEnd: true, preventRemovalDuringRelentless: true, stackable: true);
@@ -147,8 +152,9 @@ internal static class UnitAbilityChecks
         var rules = new BattlePlayRules([new(0, 5, 7, true, false, false), new(1, 5, 7, true, false, false),
             new(2, 0, 7, true, true, true), new(9, 5, 7, true, false, false)],
             [new("skill", "skill", 1, "Spell", "Discard", null, [],
-                [new(sourceAttackDamage ? "DamagePerSourceAttack" : "Damage", "FrontInRoom",
-                    sourceAttackDamage ? damageMultiplier : 4, true, false, [], useCardTraits: useCardTraits),
+                [new(sourceAttackDamage ? "DamagePerSourceAttack" : damagePerHpLastAttacker ? "DamagePerHp" : "Damage", "FrontInRoom",
+                    sourceAttackDamage ? damageMultiplier : damagePerHpLastAttacker ? 1 : 4, true, false, [],
+                    useCardTraits: useCardTraits, damagePerHpLastAttacker: damagePerHpLastAttacker),
                     new("Heal", "Self", 1, true, false, [])],
                 upgradeInteractions: [], costType: xCost ? "ConsumeRemainingEnergy" : "Default", ability: new("Unit", otherFloors, allowFull),
                 cardType: typed ? "Spell" : null, isAnyAbility: typed ? true : null),
@@ -159,12 +165,13 @@ internal static class UnitAbilityChecks
     internal static void Native(FixtureValue fixture)
     {
         if (!fixture.TryGetProperty("ModifierScenario", out var modifier) ||
-            modifier.GetString() is not ("ability-activation" or "ability-activation-x" or "ability-activation-lethal")) return;
+            modifier.GetString() is not ("ability-activation" or "ability-activation-x" or "ability-activation-lethal" or "damage-per-hp-ability")) return;
         var samples = fixture.GetProperty("Actions").EnumerateArray().Where(entry =>
             entry.GetProperty("Action").Deserialize<PlayCardAction>()!.ActivatorUnitId > 0).ToArray();
+        bool damagePerHpAbility = modifier.GetString() == "damage-per-hp-ability";
         Require(samples.Length >= 2 && samples.Select(entry => entry.GetProperty("Action").Deserialize<PlayCardAction>()!.ActivatorUnitId)
             .Distinct().Count() >= 2 && samples.Select(entry => entry.GetProperty("Action").Deserialize<PlayCardAction>()!.CardInstanceId)
-            .Distinct().Count() == 1, "Native policy did not activate two units sharing one skill card.");
+            .Distinct().Count() == 1, "Native policy did not activate the expected units through one shared skill card.");
         if (modifier.GetString() == "ability-activation")
         {
             BattleTurnState before = samples[0].GetProperty("Before").Deserialize<BattleTurnState>()!;
@@ -196,8 +203,8 @@ internal static class UnitAbilityChecks
                 context.AbilityCardCache!.Single(entry => entry.DataId == actor.Ability!.DataId).InstanceId == cached.InstanceId &&
                 context.Statistics!.CardsPlayedThisTurn.Last() == cached.InstanceId &&
                 context.Statistics.TrackedCards.All(id => id != cached.InstanceId), "Native skill payment, history, actor or detached identity differs.");
-            Require(actualActor.Triggers.Any(trigger => trigger.Kind == "OnPreOwnAbilityActivated" && trigger.HasTriggered) &&
-                actualActor.Triggers.Any(trigger => trigger.Kind == "OnOwnAbilityActivated" && trigger.HasTriggered) &&
+            Require((damagePerHpAbility || actualActor.Triggers.Any(trigger => trigger.Kind == "OnPreOwnAbilityActivated" && trigger.HasTriggered) &&
+                actualActor.Triggers.Any(trigger => trigger.Kind == "OnOwnAbilityActivated" && trigger.HasTriggered)) &&
                 actualActor.Statuses.Any(status => status.Id == "cooldown") &&
                 actualActor.Statuses.All(status => status.Id != "unit_ability_available"), "Native own callbacks did not settle cooldown.");
             int armor = actor.Statuses.FirstOrDefault(status => status.Id == "armor")?.Stacks ?? 0;
@@ -213,7 +220,8 @@ internal static class UnitAbilityChecks
             Verify(before, after, action);
             Parallel.For(0, 32, _ => Verify(before, after, action));
         }
-        Require(selfHeals > 0 && positive > 0, "Native self healing after pre-own damage or paid skill coverage is missing.");
+        Require((damagePerHpAbility || selfHeals > 0) && positive > 0,
+            "Native self healing after pre-own damage or paid skill coverage is missing.");
         if (modifier.GetString() == "ability-activation-x") Require(zero > 0, "Native X skill never paid zero energy.");
         if (modifier.GetString() == "ability-activation-lethal") Require(kills > 0 && terminal == 1, "Native lethal skill did not win by killing the Boss.");
         Console.WriteLine($"NATIVE-UNIT-ABILITY-CHECKS PASS: {samples.Length} complete activations, {selfHeals} self heals, {positive} paid/{zero} zero, {terminal} terminal; shared identity and 32 branches.");

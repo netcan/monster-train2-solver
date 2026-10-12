@@ -40,6 +40,26 @@ internal static class DamagePerHpChecks
             : BattleActionModel.ChooseUnitSpellAndJunkPlay(source);
     }
 
+    internal static PlayCardAction? ChooseAbility(BattleTurnState source)
+    {
+        foreach (PlayCardAction action in UnitAbilityModel.EnumerateSupportedActivations(source))
+        {
+            RoomCombatState? actorRoom = source.Spawn.Train.Rooms.FirstOrDefault(room =>
+                room.Units.Any(unit => unit.Id == action.ActivatorUnitId));
+            CombatUnit? actor = actorRoom?.Units.FirstOrDefault(unit => unit.Id == action.ActivatorUnitId);
+            if (actor == null || actor.LastAttackerId is not > 0) continue;
+            CombatUnit? attacker = source.Spawn.Train.Rooms.SelectMany(room => room.Units)
+                .FirstOrDefault(unit => unit.Id == actor.LastAttackerId.Value && unit.Team == CombatTeam.Enemy);
+            if (attacker == null) continue;
+            BattleActionResult result = BattleActionModel.PlayCard(source, action);
+            if (!result.Supported) continue;
+            CombatUnit? after = result.State!.Spawn.Train.Rooms.SelectMany(room => room.Units)
+                .FirstOrDefault(unit => unit.Id == attacker.Id);
+            if (after == null || after.Health < attacker.Health) return action;
+        }
+        return BattleActionModel.ChooseUnitSpellAndJunkPlay(source);
+    }
+
     internal static void Native(FixtureValue fixture)
     {
         int plays = 0;
@@ -48,6 +68,11 @@ internal static class DamagePerHpChecks
         int armorPlays = 0;
         string scenario = fixture.GetProperty("ModifierScenario").GetString()!;
         FixtureValue actions = fixture.GetProperty("Actions");
+        if (scenario == "damage-per-hp-ability")
+        {
+            NativeAbility(actions);
+            return;
+        }
         foreach (FixtureValue entry in actions.EnumerateArray())
         {
             BattleTurnState before = entry.GetProperty("Before").Deserialize<BattleTurnState>()!;
@@ -115,6 +140,39 @@ internal static class DamagePerHpChecks
             Console.WriteLine($"NATIVE-DAMAGE-PER-HP-CHECKS PASS: {plays} effect plays, {opposingDamage} expected targets damaged, {lastAttackerPlays} last-attacker plays.");
     }
 
+    private static void NativeAbility(FixtureValue actions)
+    {
+        int plays = 0, redirectedHits = 0;
+        foreach (FixtureValue entry in actions.EnumerateArray())
+        {
+            BattleTurnState before = entry.GetProperty("Before").Deserialize<BattleTurnState>()!;
+            PlayCardAction action = entry.GetProperty("Action").Deserialize<PlayCardAction>()!;
+            if (action.ActivatorUnitId <= 0) continue;
+            CombatUnit actor = before.Spawn.Train.Rooms.SelectMany(room => room.Units)
+                .Single(unit => unit.Id == action.ActivatorUnitId);
+            CardPlayRule rule = before.PlayRules!.Cards.Single(item => item.DataId == actor.Ability!.DataId);
+            CardActionEffect? effect = rule.Effects.SingleOrDefault(item => item.Type == "DamagePerHp");
+            if (effect == null) continue;
+            plays++;
+            RoomCombatState actorRoom = before.Spawn.Train.Rooms.Single(room => room.Units.Any(unit => unit.Id == actor.Id));
+            RoomCombatState targetRoom = before.Spawn.Train.Rooms.Single(room => room.RoomIndex == action.RoomIndex);
+            Require(effect.Target == "FrontInRoom" && effect.Value == 1 && effect.DamagePerHpLastAttacker &&
+                !effect.DamagePerHpIncludeArmor && actor.LastAttackerId is > 0 && targetRoom.Units.Any(unit =>
+                    unit.Team == CombatTeam.Enemy && unit.Health > 0),
+                "Native unit ability did not provide a live source actor, a last attacker and a legal target room.");
+            CombatUnit attacker = before.Spawn.Train.Rooms.SelectMany(room => room.Units)
+                .Single(unit => unit.Id == actor.LastAttackerId!.Value);
+            Require(attacker.Team == CombatTeam.Enemy, "Native ability source's last attacker was not an enemy.");
+            BattleTurnState actual = entry.GetProperty("Actual").Deserialize<BattleTurnState>()!;
+            CombatUnit? afterAttacker = actual.Spawn.Train.Rooms.SelectMany(room => room.Units)
+                .FirstOrDefault(unit => unit.Id == attacker.Id);
+            if (afterAttacker == null || afterAttacker.Health < attacker.Health) redirectedHits++;
+        }
+        Require(plays > 0 && redirectedHits > 0,
+            "Native unit ability never dealt positive DamagePerHp to its source actor's last attacker.");
+        Console.WriteLine($"NATIVE-DAMAGE-PER-HP-ABILITY-CHECKS PASS: {plays} ability plays, {redirectedHits} positive last-attacker hits.");
+    }
+
     internal static void Run()
     {
         CardActionEffect configured = Effect(2, allowEnemy: false, allowPlayer: true, lastAttacker: true, includeArmor: true);
@@ -154,6 +212,18 @@ internal static class DamagePerHpChecks
         Require(sameRoomTest.Supported && sameRoom.Supported && Unit(sameRoom.State!, 11).Health == 22 &&
             Unit(sameRoom.State!, 10).Health == 18,
             "Damage-per-HP did not redirect unit-ability damage to its source's last attacker.");
+
+        CardActionEffect enemyTargetAbilityEffect = new("DamagePerHp", "FrontInRoom", 1,
+            allowEnemy: true, allowPlayer: false, [], damagePerHpLastAttacker: true);
+        BattleTurnState enemyTargetSource = UnitAbilityChecks.Root(enemyHealth: 5, actorLastAttackerId: 11);
+        TrainCombatState remoteActorTrain = MoveUnitToOtherRoom(enemyTargetSource.Spawn.Train, 10, 1);
+        SpellCastCheck enemyTargetTest = CardSpellModel.TestPlay(remoteActorTrain, 0,
+            [enemyTargetAbilityEffect], 11, selfUnitId: 10);
+        TrainSpellResult enemyTargetRedirect = CardSpellModel.Apply(remoteActorTrain, 0,
+            [enemyTargetAbilityEffect], targetId: 11, selfUnitId: 10);
+        Require(enemyTargetTest.Supported && enemyTargetRedirect.Supported &&
+            !enemyTargetRedirect.State!.Rooms.SelectMany(room => room.Units).Any(unit => unit.Id == 11),
+            "Damage-per-HP ability did not damage its enemy last attacker when the selected target was also an enemy.");
 
         BattleTurnState crossRoomRoot = UnitAbilityChecks.Root(actorLastAttackerId: 11);
         TrainCombatState crossRoomTrain = MoveUnitToOtherRoom(crossRoomRoot.Spawn.Train, 10, 1);

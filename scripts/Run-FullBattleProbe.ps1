@@ -28,6 +28,7 @@ param(
     [switch] $DamagePerHp,
     [switch] $DamagePerHpArmor,
     [switch] $DamagePerHpLastAttacker,
+    [switch] $DamagePerHpAbility,
     [switch] $TerminalSpells,
     [switch] $PostKillSpells,
     [switch] $RandomSpells,
@@ -278,10 +279,12 @@ if ($DamagePerHp) { $damagePerHpModes += 'damage-per-hp' }
 if ($DamagePerHpArmor) { $damagePerHpModes += 'damage-per-hp-armor' }
 if ($DamagePerHpLastAttacker) { $damagePerHpModes += 'damage-per-hp-last-attacker' }
 if ($damagePerHpModes.Count -gt 1) { throw 'Choose one DamagePerHp scenario.' }
+if ($DamagePerHpAbility -and $damagePerHpModes.Count -gt 0) { throw 'Choose the unit-ability scenario separately from spell scenarios.' }
 if ($SacrificeEffects) { $Policy = 'units-spells-and-junk' }
 if ($SpawnOrStatus) { $Policy = 'units-and-junk' }
 if ($AbilityTeleport) { $Policy = 'units-and-junk'; $PhysicalSpawnPoints = $true }
 if ($damagePerHpModes.Count -gt 0) { $Policy = 'units-spells-and-junk' }
+if ($DamagePerHpAbility) { $Policy = 'units-spells-and-junk' }
 $workspace = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $gameRoot = Join-Path $workspace '.sandbox-game'
 $runId = (Get-Date -Format 'yyyyMMdd-HHmmss') + '-' + [Guid]::NewGuid().ToString('N').Substring(0, 8)
@@ -459,6 +462,7 @@ if ($SpawnOrStatus) {
 if ($DamagePerHp) { $environment.MT2_PROBE_MODIFIERS = 'damage-per-hp' }
 if ($DamagePerHpArmor) { $environment.MT2_PROBE_MODIFIERS = 'damage-per-hp-armor' }
 if ($DamagePerHpLastAttacker) { $environment.MT2_PROBE_MODIFIERS = 'damage-per-hp-last-attacker' }
+if ($DamagePerHpAbility) { $environment.MT2_PROBE_MODIFIERS = 'damage-per-hp-ability' }
 $process = Start-Process -FilePath (Join-Path $gameRoot 'MonsterTrain2.exe') `
     -WorkingDirectory $gameRoot -ArgumentList @('-logFile', $unityLog) `
     -Environment $environment -WindowStyle Hidden -PassThru
@@ -496,6 +500,11 @@ if ($damagePerHpModes.Count -gt 0 -and
     ($trace.ModifierScenario -ne $damagePerHpModes[0] -or
     -not (Select-String -LiteralPath $unityLog -Pattern 'DAMAGE-PER-HP-PREPARED' -Quiet))) {
     throw 'DamagePerHp native setup did not run.'
+}
+if ($DamagePerHpAbility -and ($trace.ModifierScenario -ne 'damage-per-hp-ability' -or
+    -not (Select-String -LiteralPath $unityLog -Pattern 'ABILITY-ACTIVATION-PREPARED .*damagePerHp=True' -Quiet) -or
+    -not (Select-String -LiteralPath $unityLog -Pattern 'DAMAGE-PER-HP-ABILITY-INPUT actor=' -Quiet))) {
+    throw 'DamagePerHp unit-ability native setup did not run.'
 }
 $terminalSettled = $trace.TerminalCaptureBoundary -eq 'AfterStopCombatLoop' -and $trace.TerminalEffectsSettled -eq $true
 $originalUnchanged = (Get-OriginalSignature) -ceq $originalBefore
@@ -861,6 +870,24 @@ if ($damagePerHpMode) {
             (-not $DamagePerHpArmor -or $armor) -and (-not $DamagePerHpLastAttacker -or $lastAttacker)
     })
     $damagePerHpCoverage = $trace.ModifierScenario -eq $damagePerHpModes[0] -and $damagePerHpActions.Count -gt 0
+}
+$damagePerHpAbilityCoverage = -not $DamagePerHpAbility
+if ($DamagePerHpAbility) {
+    $positiveAbilityHits = @($trace.Actions | Where-Object {
+        $entry = $_
+        $action = $entry.Action
+        if ($action.ActivatorUnitId -le 0) { return $false }
+        $actor = @($entry.Before.Spawn.Train.Rooms.Units | Where-Object Id -EQ $action.ActivatorUnitId)[0]
+        if ($null -eq $actor -or $actor.LastAttackerId -le 0) { return $false }
+        $rule = @($entry.Before.PlayRules.Cards | Where-Object DataId -EQ $actor.Ability.DataId)[0]
+        $effect = @($rule.Effects | Where-Object Type -EQ 'DamagePerHp')
+        $attacker = @($entry.Before.Spawn.Train.Rooms.Units | Where-Object Id -EQ $actor.LastAttackerId)[0]
+        $afterAttacker = @($entry.Actual.Spawn.Train.Rooms.Units | Where-Object Id -EQ $actor.LastAttackerId)[0]
+        $effect.Count -eq 1 -and $effect[0].DamagePerHpLastAttacker -and
+            $effect[0].Target -eq 'FrontInRoom' -and $null -ne $attacker -and $attacker.Team -eq 0 -and
+            ($null -eq $afterAttacker -or $afterAttacker.Health -lt $attacker.Health)
+    })
+    $damagePerHpAbilityCoverage = $trace.ModifierScenario -eq 'damage-per-hp-ability' -and $positiveAbilityHits.Count -gt 0
 }
 $terminalSpellCoverage = -not ($TerminalSpells -or $PostKillSpells) -or @($trace.Actions | Where-Object ActualOutcome -EQ 3).Count -gt 0
 $postKillCoverage = -not $PostKillSpells
@@ -1373,7 +1400,7 @@ if ($AbilityLifecycle) {
     $lifecycleCoverage = $lifecycleCoverage -and $laterSummons.Count -gt 0
     if (-not $lifecycleCoverage) { throw 'Requested ability lifecycle operations, duplicate permanent disable list or naturally disabled summons did not execute.' }
 }
-$activationCoverage = -not ($AbilityActivation -or $AbilityActivationX -or $AbilityActivationLethal)
+$activationCoverage = -not ($AbilityActivation -or $AbilityActivationX -or $AbilityActivationLethal -or $DamagePerHpAbility)
 if (-not $activationCoverage) {
     $activations = @($trace.Actions | Where-Object { $_.Action.ActivatorUnitId -gt 0 })
     $activationCoverage = $activations.Count -ge 2 -and
@@ -1389,7 +1416,7 @@ if (-not $activationCoverage) {
             @($actualActor.Triggers | Where-Object { $_.Kind -eq 'OnPreOwnAbilityActivated' -and $_.HasTriggered }).Count -gt 0 -and
             @($actualActor.Triggers | Where-Object { $_.Kind -eq 'OnOwnAbilityActivated' -and $_.HasTriggered }).Count -gt 0
     })
-    $activationCoverage = $activationCoverage -and $selfHeals.Count -gt 0
+    $activationCoverage = $activationCoverage -and ($DamagePerHpAbility -or $selfHeals.Count -gt 0)
     if ($AbilityActivationX) {
         $activationCoverage = $activationCoverage -and
             @($activations | Where-Object { $_.Before.Energy -eq 0 }).Count -gt 0 -and
@@ -2094,6 +2121,7 @@ $result = [pscustomobject]@{
     OnHealCoverage = $onHealCoverage
     RoomSpellCoverage = $roomSpellCoverage
     DamagePerHpCoverage = $damagePerHpCoverage
+    DamagePerHpAbilityCoverage = $damagePerHpAbilityCoverage
     TerminalEffectsSettled = $terminalSettled
     TerminalSpellCoverage = $terminalSpellCoverage
     PostKillCoverage = $postKillCoverage
@@ -2269,7 +2297,7 @@ if ($StatisticOverflow) {
         @($zero.Samples | Where-Object DetachedSource -EQ $true).Count -ne 24 -or
         @($zero.Samples | Where-Object Amount -NE 0).Count -ne 0) { throw 'Native zero-increment coverage is incomplete.' }
 }
-if ($null -eq $trace.NativeWon -or $process.ExitCode -ne 0 -or -not $nativePassed -or -not $originalUnchanged -or -not $modifierCoverage -or -not $healingCoverage -or -not $onHealCoverage -or -not $roomSpellCoverage -or -not $damagePerHpCoverage -or -not $terminalSettled -or -not $terminalSpellCoverage -or
+if ($null -eq $trace.NativeWon -or $process.ExitCode -ne 0 -or -not $nativePassed -or -not $originalUnchanged -or -not $modifierCoverage -or -not $healingCoverage -or -not $onHealCoverage -or -not $roomSpellCoverage -or -not $damagePerHpCoverage -or -not $damagePerHpAbilityCoverage -or -not $terminalSettled -or -not $terminalSpellCoverage -or
     -not $postKillCoverage -or -not $randomCoverage -or -not $randomStatusCoverage -or -not $crossRoomCoverage -or -not $attackCoverage -or -not $maxHealthCoverage -or -not $numericRangeCoverage -or -not $targetFilterCoverage -or -not $drawCoverage -or -not $handRemovalCoverage -or -not $generationCoverage -or -not $permanentConsumeGenerationCoverage -or -not $scalingCoverage -or -not $statusScalingCoverage -or -not $unitUpgradeScalingCoverage -or -not $unitTriggerUpgradeCoverage -or -not $spawnTriggerCoverage -or -not $unitTurnBeginCoverage -or -not $teamTurnBeginCoverage -or -not $preHandDiscardCoverage -or -not $cloneUpgradeRefreshCoverage -or -not $preCombatCoverage -or -not $triggeredHealingCoverage -or -not $postCombatHealingCoverage -or -not $triggeredDamageCoverage -or -not $damageDeathQueueCoverage -or -not $terminalDeathDamageCoverage -or -not $hitKillCoverage -or -not $dyingUpgradeCoverage -or -not $attackTriggerCoverage -or -not $triggeredStatusCoverage -or -not $statusCallbackCoverage -or -not $energyCoverage -or -not $forgePointsCoverage -or -not $xCostCoverage -or -not $bonusDrawCoverage -or -not $capacityCoverage -or -not $directUpgradeCoverage -or -not $equipmentCoverage -or ($PermanentConsumeOverTemporary -and -not $modifierCoverage) -or $trace.CaptureFailures -ne 0 -or $trace.Mismatches -ne 0 -or $trace.Unsupported -ne 0 -or $trace.Pending -ne 0) {
     throw "Full battle differential probe failed; inspect $tracePath and $unityLog"
 }

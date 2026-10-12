@@ -319,7 +319,7 @@ internal static class BattleActionChecks
         if (fixture.TryGetProperty("ModifierScenario", out FixtureValue roomScenario) && roomScenario.GetString() == "room-spells")
             RoomSpellChecks.Native(actions);
         if (fixture.TryGetProperty("ModifierScenario", out FixtureValue damagePerHpScenario) &&
-            damagePerHpScenario.GetString() is "damage-per-hp" or "damage-per-hp-armor" or "damage-per-hp-last-attacker")
+            damagePerHpScenario.GetString() is "damage-per-hp" or "damage-per-hp-armor" or "damage-per-hp-last-attacker" or "damage-per-hp-ability")
             DamagePerHpChecks.Native(fixture);
         if (fixture.TryGetProperty("ModifierScenario", out FixtureValue randomScenario) && randomScenario.GetString() == "random-spells")
             RandomSpellChecks.Native(actions);
@@ -473,8 +473,10 @@ internal static class BattleActionChecks
         if (fixture.TryGetProperty("ModifierScenario", out var summonScenario) && summonScenario.GetString()?.StartsWith("multi-summon", StringComparison.Ordinal) == true)
             chooser = BattleActionModel.ChooseMultiSummonThenCards;
         if (fixture.TryGetProperty("ModifierScenario", out var abilityScenario) &&
-            abilityScenario.GetString() is "ability-incant" or "ability-activation" or "ability-activation-x" or "ability-activation-lethal" or "ability-teleport" or "ability-effects" or "equipment-abilities" or "spawn-or-status")
+            abilityScenario.GetString() is "ability-incant" or "ability-activation" or "ability-activation-x" or "ability-activation-lethal" or "damage-per-hp-ability" or "ability-teleport" or "ability-effects" or "equipment-abilities" or "spawn-or-status")
             chooser = UnitAbilityModel.ChooseAbilityThenCards;
+        if (fixture.TryGetProperty("ModifierScenario", out var damagePerHpAbilityScenario) && damagePerHpAbilityScenario.GetString() == "damage-per-hp-ability")
+            chooser = DamagePerHpChecks.ChooseAbility;
         if (fixture.TryGetProperty("ModifierScenario", out var teleportScenario) && teleportScenario.GetString() == "ability-teleport")
             chooser = UnitAbilityModel.ChooseTeleportCalibrationAction;
         if (fixture.TryGetProperty("ModifierScenario", out var magebladeScenario) && magebladeScenario.GetString() == "mageblade")
@@ -482,8 +484,8 @@ internal static class BattleActionChecks
         if (fixture.TryGetProperty("ModifierScenario", out var equipmentBuffScenario) && equipmentBuffScenario.GetString() == "equipment-buff")
             chooser = ChooseEquipmentBuffThenCards;
         FixtureValue turns = fixture.GetProperty("Turns");
-        // Authored setup plays are checked individually above. The independent policy starts
-        // after that prelude and must reproduce every ordinary policy play and EndTurn.
+        // Scenario prelude actions are checked individually above. The independent policy
+        // starts afterward and must reproduce every remaining policy play and EndTurn.
         FixtureValue[] policyActions = actions.EnumerateArray().Where(entry =>
             !entry.TryGetProperty("ScenarioAction", out var authored) || !authored.GetBoolean()).ToArray();
         Require(policyActions.Length > 0, "The fixture has no subsequent native policy actions.");

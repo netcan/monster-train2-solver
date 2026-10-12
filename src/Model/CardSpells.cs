@@ -438,6 +438,7 @@ namespace MonsterTrain2Poju.Model
                                 .FirstOrDefault(unit => unit.Id == sourceUnit.LastAttackerId.Value);
                             if (attacker == null)
                                 return UnsupportedTrain("Damage-per-HP last attacker is missing from the captured train.");
+                            damagesEnemy = attacker.Team == CombatTeam.Enemy;
                             targets = effect.Filters?.IgnoreBosses == true && attacker.IsBoss == true
                                 ? new CardTargets(Array.Empty<int>()) : new CardTargets(new[] { attacker.Id });
                         }

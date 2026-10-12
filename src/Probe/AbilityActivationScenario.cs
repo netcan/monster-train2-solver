@@ -9,16 +9,18 @@ namespace MonsterTrain2Poju.Probe
     internal static class AbilityActivationScenario
     {
         internal static void Prepare(AllGameManagers managers, ManualLogSource log, bool xCost, bool lethal,
-            bool sourceAttack = false, bool attackWithUnit = false, bool spawnOrStatus = false, bool teleport = false)
+            bool sourceAttack = false, bool attackWithUnit = false, bool spawnOrStatus = false, bool teleport = false,
+            bool damagePerHp = false)
         {
             AbilityCooldownScenario.Prepare(managers, log, cacheScenario: true);
             SaveManager save = managers.GetSaveManager();
             CardData ability = save.GetAllGameData().FindCardData("c2f6ed7f-18ce-4070-b65f-7dd9f5160063")!;
             CardData steward = save.GetAllGameData().FindCardData("d14a50f3-728d-43e1-87f0-ef1b013f6678")!;
             CharacterData unit = steward.GetSpawnCharacterData()!;
+            if (damagePerHp) Set(ability, "cooldownAtSpawn", 0);
             Set(ability, "cost", 1); Set(ability, "targetsRoom", true); Set(ability, "targetless", false);
             Set(ability, "costType", xCost ? CardData.CostType.ConsumeRemainingEnergy : CardData.CostType.Default);
-            if (teleport) Set(ability, "canAbilityTargetOtherFloors", true);
+            if (teleport || damagePerHp) Set(ability, "canAbilityTargetOtherFloors", true);
             var effects = new List<CardEffectData>();
             if (spawnOrStatus)
             {
@@ -44,6 +46,12 @@ namespace MonsterTrain2Poju.Probe
             else if (teleport)
             {
                 effects.Add(Effect("UnitAbilityTeleport", 0, TargetMode.Self, Team.Type.Monsters));
+            }
+            else if (damagePerHp)
+            {
+                CardEffectData damage = Effect("DamagePerHp", 1, TargetMode.FrontInRoom, Team.Type.Heroes);
+                Set(damage, "paramBool", true);
+                effects.Add(damage);
             }
             else
             {
@@ -75,7 +83,7 @@ namespace MonsterTrain2Poju.Probe
             }
             Set(ability, "effects", effects);
             var triggers = unit.GetTriggers().ToList();
-            foreach (var phase in spawnOrStatus ? Array.Empty<CharacterTriggerData.Trigger>() :
+            foreach (var phase in spawnOrStatus || damagePerHp ? Array.Empty<CharacterTriggerData.Trigger>() :
                 new[] { CharacterTriggerData.Trigger.OnPreOwnAbilityActivated, CharacterTriggerData.Trigger.OnOwnAbilityActivated })
             {
                 CharacterTriggerData trigger = HealingScenario.HealGold(phase == CharacterTriggerData.Trigger.OnPreOwnAbilityActivated ? 3 : 13, false, false);
@@ -91,7 +99,9 @@ namespace MonsterTrain2Poju.Probe
             }
             Set(managers.GetCombatManager()!, "combatStateChanged", true);
             log.LogInfo("ABILITY-ACTIVATION-PREPARED natural cached skill, payment, pre/own callbacks and unchanged waves; x=" + xCost +
-                "; lethal=" + lethal + "; sourceAttack=" + sourceAttack + "; attackWithUnit=" + attackWithUnit + "; spawnOrStatus=" + spawnOrStatus);
+                "; lethal=" + lethal + "; sourceAttack=" + sourceAttack + "; attackWithUnit=" + attackWithUnit +
+                "; spawnOrStatus=" + spawnOrStatus + "; damagePerHp=" + damagePerHp +
+                (damagePerHp ? "; cooldownAtSpawn=0 for live last-attacker coverage" : ""));
         }
         private static CardEffectData Effect(string kind, int value, TargetMode mode, Team.Type team)
         {
