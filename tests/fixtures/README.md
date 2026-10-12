@@ -3009,11 +3009,11 @@ The statistic query calibration stores 18,000 observations across six native
 batches and 42 query kinds. Its 288 `CapacityOfTargetRoom` samples cover four
 `Team.Type` cases and verify that only the exact `Heroes` flag selects enemy
 capacity; `None`, `Monsters` and the combined flag select player capacity.
-Selected-room state follows native room combat, post-combat triggers, enemy
-movement, wave spawning and treasure placement. The current-cost query matches
-108 samples when cost is explained by ordered permanent and temporary card
-modifiers. Trait, hand, room and other effect-driven cost changes remain
-explicitly unsupported by this query model.
+Selected-room state follows explicit selection and card play, as well as native
+room combat, post-combat triggers, enemy movement, wave spawning and treasure
+placement. The current-cost query matches 108 samples when ordered permanent
+and temporary card modifiers explain cost. Trait, hand, room and other
+effect-driven cost changes remain explicitly unsupported by this query model.
 
 The updated binary is 19,383 bytes with 4,091 unique nodes and SHA-256
 `677373e3f4099da3fe60e499578e52e8eef6e9e7c069554a838c8a1aa58bdb74`; it has

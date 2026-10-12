@@ -51,11 +51,11 @@ internal static class BattleActionChecks
         BattleActionResult framedCrossRoomPlay = BattleActionModel.PlayCard(framedRoot, new(3, 1));
         BattleActionResult framedSelectedRoomPlay = BattleActionModel.PlayCard(framedSelection.State!, new(3, 1));
         Require(framedSelection.Supported && framedSelection.State!.Spawn.Train.Context!.QueryFrame!.SelectedRoomIndex == 1 &&
-            framedCrossRoomPlay.Supported && framedCrossRoomPlay.State!.SelectedRoom == 0 &&
-            framedCrossRoomPlay.State.Spawn.Train.Context!.QueryFrame!.SelectedRoomIndex == 0 &&
+            framedCrossRoomPlay.Supported && framedCrossRoomPlay.State!.SelectedRoom == 1 &&
+            framedCrossRoomPlay.State.Spawn.Train.Context!.QueryFrame!.SelectedRoomIndex == 1 &&
             framedSelectedRoomPlay.Supported && framedSelectedRoomPlay.State!.SelectedRoom == 1 &&
             framedSelectedRoomPlay.State.Spawn.Train.Context!.QueryFrame!.SelectedRoomIndex == 1,
-            "Cross-room card play changed the selected floor or explicit room selection was not retained.");
+            "Cross-room card play did not select its target floor or explicit room selection was not retained.");
         BattleActionResult first = BattleActionModel.PlayCard(root, new(1, 0, 0));
         Require(first.Supported, first.Reason ?? "First summon rejected");
         Require(first.State!.Spawn.Train.Context!.NextAddedTemporaryUpgrades!.Count == 0 &&
@@ -71,8 +71,8 @@ internal static class BattleActionChecks
             "A summon exceeded capacity.");
         BattleActionResult otherRoom = BattleActionModel.PlayCard(second.State, new(3, 1));
         Require(otherRoom.Supported && otherRoom.State!.Spawn.Train.Rooms[1].Units.Single().Size == 3 &&
-            otherRoom.State.SelectedRoom == 0 && second.State.SelectedRoom == 0,
-            "An arbitrary cross-room summon failed or changed the selected room.");
+            otherRoom.State.SelectedRoom == 1 && second.State.SelectedRoom == 0,
+            "An arbitrary cross-room summon failed to select its target or changed its parent.");
         var legacyRoot = new BattleTurnState(spawn, 3, 3, 5, 0, 0, "New", root.RngStreams,
             root.OtherPiles, [], rules);
         BattleActionResult legacyRoom = BattleActionModel.PlayCard(legacyRoot, new(3, 1));
