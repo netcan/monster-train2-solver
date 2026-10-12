@@ -31,11 +31,14 @@ namespace MonsterTrain2Poju.Probe
             AllGameManagers managers = AllGameManagers.Instance!;
             var targets = FullBattleTrace.Active!.KnownUnits.Where(unit => !unit.IsDestroyed && unit.IsAlive)
                 .Cast<CharacterState?>().Concat(new CharacterState?[] { null });
+            string[] statuses = OriginalDecayRelicBatchScenario.Prepared ? ["buff", "poison", "armor", "regen"] :
+                OriginalStatusRelicBatchScenario.Prepared ? ["armor", "valor", "pyregel", "spell weakness", "regen", "corrupt_poison"] :
+                ["armor", "valor", "pyregel", "spell weakness", "regen"];
             matrix = true;
             try
             {
                 foreach (CharacterState? target in targets)
-                foreach (string id in OriginalDecayRelicBatchScenario.Prepared ? new[] { "buff", "poison", "armor", "regen" } : new[] { "armor", "valor", "pyregel", "spell weakness", "regen" })
+                foreach (string id in statuses)
                 {
                     foreach (int count in new[] { -1, 0, 1, int.MaxValue }) Get(count, false, false, true, null);
                     Get(1, true, false, true, null); Get(0, true, true, true, null); Get(1, true, true, true, null);

@@ -2,7 +2,7 @@
 
 Current accepted inventory (2026-10-13): 249 binary archives, including 218
 full battles and 31 component calibrations. Unchanged original relic evidence
-covers 65/224 catalog entries (29.02%); see
+covers 66/224 catalog entries (29.46%); see
 [the owner evidence table](tests/fixtures/relic-coverage.md). Whole-battle
 coverage and the optimal solver remain in progress.
 
@@ -8529,7 +8529,7 @@ The muted Instant battle won with 27 card actions and six EndTurns. Capture
 failures, mismatches, unsupported transitions and pending records are zero.
 Native actions and the 16-branch policy replay match. This fixture authors an
 Ephemeral payload on the original `ReduceStarterCost` relic for lifecycle
-coverage; it adds no original relic owner to the 65/224 count.
+coverage; it adds no original relic owner to the 66/224 count.
 
 The binary is 31,416 bytes with 5,278 unique nodes and SHA-256
 `e4508851abacb5833012db73253152016365f290a88e81d0f84d55a9015230c4`; it has no

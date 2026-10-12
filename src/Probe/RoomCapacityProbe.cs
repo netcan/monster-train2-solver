@@ -13,7 +13,7 @@ namespace MonsterTrain2Poju.Probe
         {
             RoomState room = rooms.GetRoom(index);
             return new RoomCapacityState(index, room.GetCapacityInfo(Team.Type.Monsters).max,
-                room.GetCapacityInfo(Team.Type.Heroes).max, room.GetIsPyreRoom());
+                room.GetCapacityInfo(Team.Type.Heroes).max, room.GetIsPyreRoom(), room.GetCurrentCorruption());
         }).ToArray();
         internal static ScalingCapacityTrait[]? Traits(CardState card)
         {

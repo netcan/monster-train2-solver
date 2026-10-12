@@ -1,7 +1,7 @@
 # Original relic coverage evidence
 
-As of 2026-10-13, **65 distinct original collectable relics / 224 catalog entries
-(29.02%)** have accepted native full-battle evidence. This counts unchanged relic
+As of 2026-10-13, **66 distinct original collectable relics / 224 catalog entries
+(29.46%)** have accepted native full-battle evidence. This counts unchanged relic
 definitions whose effects actually ran, including their original filters and
 conditions. Test cards, unit triggers and carrier subtypes may be authored to
 exercise those effects; the claim covers the recorded paths, not every possible
@@ -9,7 +9,7 @@ combination. Catalog enumeration and other owners of a supported effect class
 do not count as validated relics. `RelicEffectAddTrigger` appears on 26 catalog
 entries; 14 now have accepted original-owner effect evidence.
 `RelicEffectAddStatusEffectOnStatusApplied` appears on eight catalog entries;
-six now have accepted original-owner evidence. Both catalog owners of
+seven now have accepted original-owner evidence. Both catalog owners of
 `RelicEffectPreventStatusEffectDecay` have accepted evidence for their original
 Rage and Frostbite consumers. Unknown status families and other effects on the
 remaining owners still require modeling and native proof.
@@ -31,7 +31,7 @@ action/turn comparisons and skips an independent legacy policy chain only when
 recomputed EndTurn state confirms that room-rule conflict. Freshness-marked
 archives remain strict. The Mageblade status/cache/attack path has an accepted
 native battle archive, but Mageblade is not a collectable relic and is not
-included in the 65/224 owner count. The `AllUnitsMultistrike` archive
+included in the 66/224 owner count. The `AllUnitsMultistrike` archive
 validates a mutator, not a collectible relic, and is also excluded from that
 owner count.
 
@@ -71,6 +71,7 @@ owner count.
 | `ExtraValorOnValor` | `74c025fa-ddcb-494b-a790-dcadc5b5772b` | [original status relics][statusAdders] | The unchanged Monsters-team unconditional rule adds 1 Valor, including zero input. Eight distinct real native query cases lose that stack when only this relic is removed. Starting, spell and combat-trigger status paths replay exactly. |
 | `IncreaseArmorStacks` | `ba26070b-4f6b-4af0-a1ec-2af024b6af87` | [original status relics][statusAdders] | The unchanged Monsters-team positive-stack rule adds 4 Armor. Five distinct real native query cases lose exactly 4 stacks when only this relic is removed. Starting, spell, equipment-upgrade and combat status paths replay exactly. |
 | `ExtraSpellWeakness` | `b1d918d8-1fa6-4e6d-b523-5f7f339e5af8` | [original status relics][statusAdders] | The unchanged Heroes-team positive-stack rule adds 1 Spell Weakness on enemies. Two real native query cases lose that layer when only this relic is removed. |
+| `IncreaseDecaySlimeStacks` | `55c06c99-7cee-4d7e-ad17-f893722d8071` | [original status relics][statusAdders] | The unchanged None-team rule adds 1 Corrupt Poison stack; two real applications lose exactly 1 when only this relic is removed. Its native `OnAlmostPostRoomCombat` stage matches the model, including corruption-scaled damage, the turn-zero gate and Pyregel interaction in the 39-stage battle. |
 | `IncreaseRageDamage` | `b9bddf11-acaa-40fb-bc40-eee83e478424` | [original magnitude relics][magnitudes] | The unchanged Monsters-team buff magnitude adds 1 attack per future added/removed Rage stack. Removing only this owner preserves captured starting attack history but changes subsequent status attack in 19 action/combat witnesses in the refreshed archive. |
 | `StrongerSpikes` | `aa94ad34-ee09-464e-89ff-2a2c2867c097` | [original magnitude relics][magnitudes] | The unchanged Monsters-team spikes magnitude adds 1 damage per stack at retaliation. Ten player-owned Spikes event witnesses in the refreshed archive deal less real damage after removing only this owner. |
 | `AwokenRegen` | `1fd244de-7d7b-4345-974b-4e5bf287a3df` | [original magnitude relics][magnitudes] | The unchanged Monsters-team regen magnitude adds 1 healing per stack at post-combat. Twelve player-owned Regen event witnesses in the refreshed archive restore less actual health after removing only this owner. |
@@ -268,7 +269,10 @@ include the starter-cost, cardless or four-artifact batch evidence above.
 
 The native Horde-triggered unit-upgrade archive brought accepted original-owner
 coverage to 64/224. The subsequent status-stack relic archive adds
-`ExtraSpellWeakness`, bringing the current total to 65/224 (29.02%). The previous
+`ExtraSpellWeakness`, bringing the total at that milestone to 65/224 (29.02%). The
+refreshed schema-136 status-stack archive now also accepts `IncreaseDecaySlimeStacks`,
+bringing current coverage to 66/224 (29.46%); its 39 battle stages have zero
+mismatches, capture failures, unsupported interactions or pending records. The previous
 246-archive replay attempt remains incomplete;
 full replay of the current 249-archive inventory is still deferred.
 
@@ -276,7 +280,7 @@ The schema-135 `full-battle-relic-card-ephemeral-upgrades.mt2f` archive verifies
 that relic-granted temporary Ephemeral traits purge cards on play and at
 EndTurn. Its test authors a replacement upgrade payload on the original
 `ReduceStarterCost` relic, so it adds battle-mechanism coverage only and does
-not change the accepted 65/224 original-relic count.
+not change the accepted 66/224 original-relic count.
 
 [counts]: full-battle-incant-relics-combined.mt2f
 [statuses]: full-battle-spawn-status-relics.mt2f

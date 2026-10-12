@@ -10,8 +10,9 @@ namespace MonsterTrain2Poju.Model
         public int PlayerMaximum { get; }
         public int EnemyMaximum { get; }
         public bool IsPyre { get; }
-        public RoomCapacityState(int roomIndex, int playerMaximum, int enemyMaximum, bool isPyre)
-        { RoomIndex = roomIndex; PlayerMaximum = playerMaximum; EnemyMaximum = enemyMaximum; IsPyre = isPyre; }
+        public int? Corruption { get; }
+        public RoomCapacityState(int roomIndex, int playerMaximum, int enemyMaximum, bool isPyre, int? corruption = null)
+        { RoomIndex = roomIndex; PlayerMaximum = playerMaximum; EnemyMaximum = enemyMaximum; IsPyre = isPyre; Corruption = corruption; }
     }
     public sealed class ScalingCapacityTrait
     {
@@ -34,7 +35,7 @@ namespace MonsterTrain2Poju.Model
         public static string? Validate(CombatContext? context)
         {
             if (context?.RoomCapacities == null) return "Missing captured room capacity state.";
-            return context.RoomCapacities.Any(room => room.RoomIndex < 0 || room.PlayerMaximum < 0 || room.EnemyMaximum < 0) ||
+            return context.RoomCapacities.Any(room => room.RoomIndex < 0 || room.PlayerMaximum < 0 || room.EnemyMaximum < 0 || room.Corruption < 0) ||
                 context.RoomCapacities.Select(room => room.RoomIndex).Distinct().Count() != context.RoomCapacities.Count
                 ? "Invalid room capacity state." : null;
         }
@@ -72,7 +73,7 @@ namespace MonsterTrain2Poju.Model
             bool enemy = effect.AllowEnemy && !effect.AllowPlayer;
             var changed = new RoomCapacityState(roomIndex,
                 enemy ? selected.PlayerMaximum : AdjustedMaximum(selected.PlayerMaximum, amount),
-                enemy ? AdjustedMaximum(selected.EnemyMaximum, amount) : selected.EnemyMaximum, selected.IsPyre);
+                enemy ? AdjustedMaximum(selected.EnemyMaximum, amount) : selected.EnemyMaximum, selected.IsPyre, selected.Corruption);
             return new RoomCapacityResult(context.WithRoomCapacities(context.RoomCapacities!
                 .Select(room => room.RoomIndex == roomIndex ? changed : room).ToArray()), amount);
         }

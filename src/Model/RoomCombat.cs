@@ -277,6 +277,7 @@ namespace MonsterTrain2Poju.Model
         public CombatContext? Context { get; }
         public bool Preview { get; }
         public IReadOnlyList<int>? ActiveCompanionBossIds { get; }
+        internal int? Corruption => Context?.RoomCapacities?.FirstOrDefault(room => room.RoomIndex == RoomIndex)?.Corruption;
 
         // Units are ordered front to back within each team. Identity is separate from asset name.
         public RoomCombatState(int roomIndex, bool deployment, IReadOnlyList<CombatUnit> units,
@@ -396,7 +397,7 @@ namespace MonsterTrain2Poju.Model
             "armor", "damage shield", "dazed", "stealth", "ambush", "multistrike",
             "spikes", "lifesteal", "fragile", "piercing", "immune", "immobile",
             "relentless", "sweep", "sniper", "rooted", "haste", "untouchable", "endless",
-            "buff", "debuff", "regen", "poison", "melee weakness", "spell weakness", "silenced", "valor", "pyregel",
+            "buff", "debuff", "regen", "poison", "corrupt_poison", "melee weakness", "spell weakness", "silenced", "valor", "pyregel",
             "heal multiplier", "heal immunity", "cooldown", "unit_ability", "unit_ability_available", "horde", "cardless", "undying", "purify", "mageblade", "titanskin", "duality"
         };
         internal static bool KnowsStatus(string id) => KnownStatuses.Contains(id);
@@ -1236,6 +1237,11 @@ namespace MonsterTrain2Poju.Model
                         return Finish(RoomOutcome.PlayerDefeated);
                     Clear(false);
                 } while (relentless && BothTeamsPresent());
+                AlmostPostRoomCombat();
+                if (unsupportedReason != null) return Finish(RoomOutcome.Unsupported);
+                if (battleWon) return Finish(RoomOutcome.BattleWon);
+                if (!source.Preview && units.Any(unit => unit.Source.IsPyre && !unit.Alive))
+                    return Finish(RoomOutcome.PlayerDefeated);
                 RunUnitPostCombat(updateSelectedRoom);
                 if (!source.Deployment)
                     foreach (CombatTeam team in new[] { CombatTeam.Enemy, CombatTeam.Player })
@@ -2238,6 +2244,32 @@ namespace MonsterTrain2Poju.Model
                         int amount = StatusMagnitude(unit, "poison");
                         Trigger(unit, "poison", 1);
                         Damage(null, unit, amount, "Poison");
+                    }
+                }
+            }
+
+            private void AlmostPostRoomCombat()
+            {
+                // Corrupt Poison owns OnAlmostPostRoomCombat, after the final relentless exchange.
+                foreach (WorkingUnit unit in units.Where(unit => unit.InRoom).OrderBy(unit => unit.Source.Team))
+                {
+                    if (unsupportedReason != null || !unit.Alive || !unit.Has("corrupt_poison") ||
+                        !Active(unit.Statuses["corrupt_poison"])) continue;
+                    if (context?.QueryFrame?.Turn is not int turn)
+                    { unsupportedReason = "Corrupt Poison requires the captured battle turn."; return; }
+                    if (turn != 0)
+                    {
+                        if (source.Corruption is not int corruption)
+                        { unsupportedReason = "Corrupt Poison requires captured room corruption."; return; }
+                        StatusScalingResult modifier = RelicStatusMagnitudeModel.GetModifier(context, "corrupt_poison",
+                            unit.Source.Team == CombatTeam.Player ? 2 : 1);
+                        if (!modifier.Supported) { unsupportedReason = modifier.UnsupportedReason; return; }
+                        context = modifier.Context;
+                        CombatStatus status = unit.Statuses["corrupt_poison"];
+                        int amount = unchecked(unchecked(status.ParamInt + modifier.Stacks) * status.Stacks * corruption);
+                        Trigger(unit, "corrupt_poison", 1);
+                        Damage(null, unit, amount, "CorruptPoison");
+                        if (battleWon || !source.Preview && units.Any(candidate => candidate.Source.IsPyre && !candidate.Alive)) return;
                     }
                 }
             }

@@ -45,7 +45,8 @@ namespace MonsterTrain2Poju.Probe
             {
                 Status(TargetMode.DropTargetCharacter, Team.Type.Monsters | Team.Type.Heroes, "armor", 1),
                 Status(TargetMode.DropTargetCharacter, Team.Type.Monsters | Team.Type.Heroes, "valor", 0),
-                Status(TargetMode.DropTargetCharacter, Team.Type.Monsters | Team.Type.Heroes, "pyregel", 1)
+                Status(TargetMode.DropTargetCharacter, Team.Type.Monsters | Team.Type.Heroes, "pyregel", 1),
+                Status(TargetMode.DropTargetCharacter, Team.Type.Monsters | Team.Type.Heroes, "corrupt_poison", 1)
             });
             Set(spell, "traits", new List<CardTraitData>()); Set(spell, "cost", 0);
             CardData gear = data.GetAllCardData().First(card => card.GetCardType() == CardType.Equipment &&
@@ -71,10 +72,17 @@ namespace MonsterTrain2Poju.Probe
             Acquire("74c025fa-ddcb-494b-a790-dcadc5b5772b", "ExtraValorOnValor", Team.Type.Monsters, 0, "valor", 1);
             Acquire("ba26070b-4f6b-4af0-a1ec-2af024b6af87", "IncreaseArmorStacks", Team.Type.Monsters, 1, "armor", 4);
             Acquire("b1d918d8-1fa6-4e6d-b523-5f7f339e5af8", "ExtraSpellWeakness", Team.Type.Heroes, 1, "spell weakness", 1);
+            Acquire("55c06c99-7cee-4d7e-ad17-f893722d8071", "IncreaseDecaySlimeStacks", Team.Type.None, 0, "corrupt_poison", 1);
+            for (int index = 0; index < managers.GetRoomManager()!.GetNumRooms(); index++)
+            {
+                RoomState room = managers.GetRoomManager()!.GetRoom(index);
+                object stats = AccessTools.Field(typeof(RoomState), "corruptionStats").GetValue(room);
+                Set(stats, "currentCorruption", 2);
+            }
             CaptureReady = true;
             foreach (CardState card in cards.GetAllCards(new List<CardState>()).ToArray()) managers.GetRelicManager().ApplyCardStateModifiers(card);
             Prepared = true; Set(managers.GetCombatManager()!, "combatStateChanged", true);
-            log.LogInfo("ORIGINAL-STATUS-RELIC-BATCH-PREPARED five unchanged original status adders; authored starting, spell, equipment and combat status applications; native Boss and wave schedule retained.");
+            log.LogInfo("ORIGINAL-STATUS-RELIC-BATCH-PREPARED six unchanged original status adders; authored starting, spell, equipment and combat status applications; Corrupt Poison tested at room corruption 2; native Boss and wave schedule retained.");
 
             void Acquire(string id, string key, Team.Type team, int condition, string statusId, int count)
             {

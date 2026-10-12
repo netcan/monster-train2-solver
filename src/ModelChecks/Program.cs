@@ -702,6 +702,7 @@ CardGenerationChecks.Run();
 CloneUpgradeRefreshChecks.Run();
 TrainCombatChecks.Run();
 RoomCombatChecks.Run(args.Where(path => !path.Contains("calibration", StringComparison.OrdinalIgnoreCase)).ToArray());
+CorruptPoisonChecks.Run();
 foreach (string path in args.Where(path => path.Contains("card-modifier-calibration", StringComparison.OrdinalIgnoreCase)))
     CardModifierChecks.Native(path);
 foreach (string path in args.Where(path => path.Contains("mageblade", StringComparison.OrdinalIgnoreCase)))

@@ -34,7 +34,8 @@ namespace MonsterTrain2Poju.Model
             foreach (RelicStatusMagnitude rule in relic.StatusMagnitudes ?? Array.Empty<RelicStatusMagnitude>())
                 if (string.IsNullOrEmpty(rule.StatusId) || !RoomCombatModel.KnowsStatus(rule.StatusId) ||
                     rule.StatusId != "buff" && rule.StatusId != "debuff" && rule.StatusId != "spikes" &&
-                    rule.StatusId != "regen" && rule.StatusId != "mageblade" && rule.StatusId != "titanskin")
+                    rule.StatusId != "regen" && rule.StatusId != "mageblade" && rule.StatusId != "titanskin" &&
+                    rule.StatusId != "corrupt_poison")
                     return "Unmodeled relic status-magnitude consumer " + rule.StatusId + " on " + relic.AssetKey + ".";
             return null;
         }

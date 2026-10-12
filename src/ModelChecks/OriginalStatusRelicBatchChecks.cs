@@ -10,7 +10,8 @@ internal static class OriginalStatusRelicBatchChecks
         ("IncreasePyregelStacks", "f4c76f11-37d9-4bb5-867a-4d99b7cfa270", "Heroes", "pyregel", 6, 2),
         ("ExtraValorOnValor", "74c025fa-ddcb-494b-a790-dcadc5b5772b", "Monsters", "valor", 1, 0),
         ("IncreaseArmorStacks", "ba26070b-4f6b-4af0-a1ec-2af024b6af87", "Monsters", "armor", 4, 1),
-        ("ExtraSpellWeakness", "b1d918d8-1fa6-4e6d-b523-5f7f339e5af8", "Heroes", "spell weakness", 1, 1)
+        ("ExtraSpellWeakness", "b1d918d8-1fa6-4e6d-b523-5f7f339e5af8", "Heroes", "spell weakness", 1, 1),
+        ("IncreaseDecaySlimeStacks", "55c06c99-7cee-4d7e-ad17-f893722d8071", "None", "corrupt_poison", 1, 0)
     ];
     private static readonly string[] ExcludedSources =
     ["CardEffectMultiplyStatusEffect", "CardEffectTransferAllStatusEffects", "CardEffectTransferAllStatusEffectsFromUnit"];
@@ -20,7 +21,7 @@ internal static class OriginalStatusRelicBatchChecks
         bool eligible = root.TryGetProperty("ModifierScenario", out var scenario) && scenario.GetString() == "original-status-relic-batch";
         Require(eligible || !required, "Fixture lacks the original status-stack relic batch.");
         if (!eligible) return null;
-        Require(root.GetProperty("Schema").GetInt32() == 113 &&
+        Require(root.GetProperty("Schema").GetInt32() == 136 &&
             root.GetProperty("GameModuleMvid").GetString() == "8fb07b96-f4db-4d2b-884d-c00536d6ccf4",
             "Native status-stack relic schema or build changed.");
         Require(root.GetProperty("NativeWon").GetBoolean() &&
@@ -62,8 +63,15 @@ internal static class OriginalStatusRelicBatchChecks
         Require(actualQueries > 0 && witnesses.Values.All(count => count > 0),
             "Some original status relics lack actual applications: " +
             string.Join(", ", witnesses.Select(item => item.Key + "=" + item.Value)));
+        bool corruptPoisonBattle = root.GetProperty("Stages").EnumerateArray().Any(stage =>
+            stage.GetProperty("Difference").ValueKind == FixtureKind.Null &&
+            stage.GetProperty("Predicted").GetProperty("Events").EnumerateArray().Any(item =>
+                item.GetProperty("Kind").GetString() == "CorruptPoison" && item.GetProperty("Amount").GetInt32() > 0) &&
+            stage.GetProperty("Before").GetProperty("Context").GetProperty("RoomCapacities").EnumerateArray()
+                .Any(room => room.GetProperty("Corruption").GetInt32() == 2));
+        Require(corruptPoisonBattle, "No matched battle stage witnessed Corrupt Poison damage at captured room corruption 2.");
         Console.WriteLine("ORIGINAL-STATUS-RELIC-WITNESSES " + string.Join(", ", witnesses.Select(item => item.Key + "=" + item.Value)));
-        Console.WriteLine($"NATIVE-ORIGINAL-STATUS-RELICS PASS: five unchanged originals, {actualQueries} actual/{rows.Length - actualQueries} matrix queries; exact team, nullable target, positive/first-application, overflow and exclusion gates; permanent/deferred value-query gates only; per-relic actual effect ablations and 32 immutable branches.");
+        Console.WriteLine($"NATIVE-ORIGINAL-STATUS-RELICS PASS: six unchanged originals, {actualQueries} actual/{rows.Length - actualQueries} matrix queries; exact team, nullable target, positive/first-application, overflow and exclusion gates; permanent/deferred value-query gates only; Corrupt Poison battle damage at corruption 2; per-relic actual effect ablations and 32 immutable branches.");
         return witnesses;
     }
 
@@ -72,7 +80,7 @@ internal static class OriginalStatusRelicBatchChecks
         Query[] rows = allRows.Where(row => row.Matrix).ToArray();
         Require(rows.Length > 0, "Native status-stack boundary matrix is missing.");
         foreach (CombatTeam? team in new CombatTeam?[] { CombatTeam.Player, CombatTeam.Enemy, null })
-        foreach (string id in new[] { "armor", "valor", "pyregel", "spell weakness", "regen" })
+        foreach (string id in new[] { "armor", "valor", "pyregel", "spell weakness", "regen", "corrupt_poison" })
         {
             bool Has(int incoming, bool permanent = false, bool deferred = false, bool includeAdders = true, string? type = null) =>
                 rows.Any(row => row.TargetTeam == team && row.StatusId == id && row.Incoming == incoming &&
@@ -96,6 +104,8 @@ internal static class OriginalStatusRelicBatchChecks
         Expect("armor", 1, CombatTeam.Player, 5); Expect("armor", 1, CombatTeam.Enemy, 1); Expect("armor", 1, null, 5);
         Expect("armor", 0, CombatTeam.Player, 0); Expect("armor", -1, CombatTeam.Player, -1);
         Expect("valor", 0, CombatTeam.Player, 1); Expect("valor", -1, CombatTeam.Player, 0);
+        Expect("corrupt_poison", 1, CombatTeam.Enemy, 2); Expect("corrupt_poison", 1, CombatTeam.Player, 2);
+        Expect("corrupt_poison", 1, null, 2); Expect("corrupt_poison", 0, CombatTeam.Enemy, 1);
         Expect("valor", 0, CombatTeam.Enemy, 0); Expect("valor", 0, null, 1);
         // Enemy OnTurnBegin may apply its first Pyregel before a decision
         // matrix runs. Use that real query together with later matrix queries
