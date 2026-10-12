@@ -91,8 +91,6 @@ namespace MonsterTrain2Poju.Probe
             {
                 if (status.fromPermanentUpgrade) interactions.Add("Separate permanent starting-status application group");
                 StatusEffectData rule = StatusEffectManager.Instance.GetStatusEffectDataById(status.statusId)!;
-                if (rule.GetRemoveWhenTriggeredAfterCardPlayed() || rule.GetRemoveAtEndOfTurnIfTriggered())
-                    interactions.Add("Spawned delayed status removal");
                 Type? type = typeof(CardState).Assembly.GetType(rule.GetStatusEffectStateName());
                 if (type?.GetProperty(nameof(StatusEffectState.PreventRemovalDuringRelentlessPhase))?.DeclaringType != typeof(StatusEffectState))
                     interactions.Add("Spawned status has custom relentless removal");
@@ -100,7 +98,8 @@ namespace MonsterTrain2Poju.Probe
                     rule.GetRemoveStackAtEndOfTurn(), rule.GetRemoveAtEndOfTurn(), rule.GetRemoveAtEndOfTurnAfterPostCombat(),
                     false, rule.GetSkipTriggerDuringDeployment(), rule.GetRemoveDuringDeployment(),
                     BattleActionProbe.TriggeredVfx(rule, -1f), BattleActionProbe.TriggeredVfx(rule, 1f), rule.IsStackable(), rule.IsHidden(), rule.GetDisplayCategory().ToString(),
-                    rule.IsPropagatable(), rule.GetExcludeHeroPropagation(), rule.GetExcludeMonsterPropagation());
+                    rule.IsPropagatable(), rule.GetExcludeHeroPropagation(), rule.GetExcludeMonsterPropagation(),
+                    rule.GetRemoveWhenTriggeredAfterCardPlayed(), rule.GetRemoveAtEndOfTurnIfTriggered());
             }).ToArray();
             CardData? abilityData = data.GetUnitAbilityCardData();
             UnitAbilityState? ability = abilityData == null || !abilityData.IsUnitAbility() ? null :

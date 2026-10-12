@@ -510,6 +510,10 @@ namespace MonsterTrain2Poju.Model
             if (!cardPlayMagicPower.Supported) return Unsupported(cardPlayMagicPower.UnsupportedReason!);
             context = cardPlayMagicPower.Context;
             train = CardSpellModel.WithContext(train, context);
+            TrainCombatResult delayedStatusRemovals = TrainCombatModel.ProcessDelayedStatusRemovalsAfterCardPlayed(train);
+            if (!delayedStatusRemovals.Supported) return Unsupported(delayedStatusRemovals.UnsupportedReason!);
+            train = delayedStatusRemovals.State!; context = train.Context!;
+            if (delayedStatusRemovals.Outcome != RoomOutcome.Exchanged) outcome = delayedStatusRemovals.Outcome;
             List<CardToken> hand = context.Cards.Hand.Where(item => item.InstanceId != card.InstanceId).ToList();
             List<CardToken> discard = context.Cards.Discard.ToList();
             if (effectsApplied && !(terminal && context.OtherPiles != null))

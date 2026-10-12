@@ -29,7 +29,7 @@ The default command checks the full curated inventory. For routine changes, run
 the dedicated checks for the new and directly affected scenarios; run the full
 inventory at completed milestones and before delivery.
 
-Current inventory is 242 archives: 211 accepted battles and 31 component
+Current inventory is 246 archives: 215 accepted battles and 31 component
 calibrations. `full-battle-companion-bump.mt2f` covers a paired Relentless
 companion Boss refusal, its attempted-ascension callback and the survivor's
 terminal-death handoff. `full-battle-relic-card-status-upgrades.mt2f` verifies a native
@@ -3128,8 +3128,23 @@ before that input remain individually compared against native state; independent
 policy replay starts from the first decision state containing it. The schema-103
 binary is 31,941 bytes with 5,072 unique nodes and SHA-256
 `7b9726b80ffde51e36672e1d9e7b6d77e3325422cdc708794976a8b3309e47ac`; it has no
-JSON companion. The curated inventory now has 245 archives: 214 battles and 31
+JSON companion. The curated inventory now has 246 archives: 215 battles and 31
 component calibrations.
+
+`full-battle-original-room-entry-status-relics.mt2f` records the unchanged
+`RootBeforePyre`, `SpellWeaknessBelowPyre` and `PyregelOnEnterTopFloor` effects
+on Heroes entering room 2. The Instant battle won with 21 card actions, seven
+EndTurns and 55 matched stages; all three original status payloads have native
+unit witnesses, with zero capture failures, mismatches, unsupported transitions
+or pending records. The schema-132 binary is 31,851 bytes with 5,147 unique
+nodes and SHA-256
+`0a9d0ccc7ce83234efc50cc3221aa16c4c14bb7df69b8cfb62245f11506f12d3`; it has no
+JSON companion.
+
+```powershell
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-room-entry-status-relics.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-room-entry-status-relics-only tests/fixtures/full-battle-original-room-entry-status-relics.mt2f
+```
 
 ```powershell
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-damage-per-hp-ability.mt2f

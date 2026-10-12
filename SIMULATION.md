@@ -1,8 +1,8 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-12): 244 binary archives, including 213
+Current accepted inventory (2026-10-13): 246 binary archives, including 215
 full battles and 31 component calibrations. Unchanged original relic evidence
-covers 60/224 catalog entries (26.79%); see
+covers 63/224 catalog entries (28.13%); see
 [the owner evidence table](tests/fixtures/relic-coverage.md). Whole-battle
 coverage and the optimal solver remain in progress.
 
@@ -8446,4 +8446,29 @@ broader relic/card interaction coverage and the decision solver remain open.
 ```powershell
 dotnet run --project src/ModelChecks -c Release -- --relic-card-modifiers-only tests/fixtures/full-battle-relic-card-replacement-upgrades.mt2f
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-relic-card-replacement-upgrades.mt2f
+```
+
+### Room-entry status relics and Spell Weakness
+
+The schema-132 `full-battle-original-room-entry-status-relics.mt2f` archive
+adds native evidence for three unchanged collectible relics: `RootBeforePyre`
+adds Rooted 1, `SpellWeaknessBelowPyre` adds Spell Weakness 2, and
+`PyregelOnEnterTopFloor` adds Pyregel 10 to Heroes entering room 2. The model
+maps native Heroes to its enemy team and handles the entry trigger's Battle RNG
+selection. Spell Weakness now multiplies spell damage by stacks plus one,
+respects the native shield/piercing gate, and clears its delayed-removal marker
+when its stacks reach zero after card play.
+
+The muted Instant native battle won with 21 card actions, seven EndTurns and 55
+matched stages. All three relics have actual room-2 Heroes witnesses; capture
+failures, mismatches, unsupported transitions and pending records are zero.
+The archive is 31,851 bytes, has 5,147 unique nodes and SHA-256
+`0a9d0ccc7ce83234efc50cc3221aa16c4c14bb7df69b8cfb62245f11506f12d3`. Focused
+native fixture and pure mechanism checks pass; the full 246-archive replay is
+still deferred to a milestone.
+
+```powershell
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -OriginalRoomEntryStatusRelics -GameSpeed Instant
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-room-entry-status-relics.mt2f
+dotnet run --project src/ModelChecks -c Release -- --spell-weakness-pure
 ```

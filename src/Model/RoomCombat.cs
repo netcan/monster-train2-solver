@@ -20,6 +20,9 @@ namespace MonsterTrain2Poju.Model
         public bool PreventRemovalDuringRelentless { get; }
         public bool SkipDuringDeployment { get; }
         public bool RemoveDuringDeployment { get; }
+        public bool RemoveWhenTriggeredAfterCardPlayed { get; }
+        public bool RemoveAtEndOfTurnIfTriggered { get; }
+        public bool MarkedForRemovalAfterCardPlayed { get; }
         public bool? TriggerVfxEnemy { get; }
         public bool? TriggerVfxPlayer { get; }
         public bool? Stackable { get; }
@@ -35,7 +38,9 @@ namespace MonsterTrain2Poju.Model
             bool preventRemovalDuringRelentless = false, bool skipDuringDeployment = false,
             bool removeDuringDeployment = false, bool? triggerVfxEnemy = null, bool? triggerVfxPlayer = null, bool? stackable = null,
             bool? hidden = null, string? displayCategory = null, bool? propagatable = null,
-            bool? excludeHeroPropagation = null, bool? excludeMonsterPropagation = null)
+            bool? excludeHeroPropagation = null, bool? excludeMonsterPropagation = null,
+            bool removeWhenTriggeredAfterCardPlayed = false, bool removeAtEndOfTurnIfTriggered = false,
+            bool markedForRemovalAfterCardPlayed = false)
         {
             Id = id;
             Stacks = stacks;
@@ -47,6 +52,9 @@ namespace MonsterTrain2Poju.Model
             PreventRemovalDuringRelentless = preventRemovalDuringRelentless;
             SkipDuringDeployment = skipDuringDeployment;
             RemoveDuringDeployment = removeDuringDeployment;
+            RemoveWhenTriggeredAfterCardPlayed = removeWhenTriggeredAfterCardPlayed;
+            RemoveAtEndOfTurnIfTriggered = removeAtEndOfTurnIfTriggered;
+            MarkedForRemovalAfterCardPlayed = markedForRemovalAfterCardPlayed;
             TriggerVfxEnemy = triggerVfxEnemy;
             TriggerVfxPlayer = triggerVfxPlayer;
             Stackable = stackable;
@@ -60,7 +68,18 @@ namespace MonsterTrain2Poju.Model
         internal CombatStatus WithStacks(int stacks) => new CombatStatus(Id, stacks, ParamInt,
             RemoveWhenTriggered, RemoveStackAtEnd, RemoveAllAtEnd, RemoveAfterPostCombat,
             PreventRemovalDuringRelentless, SkipDuringDeployment, RemoveDuringDeployment, TriggerVfxEnemy, TriggerVfxPlayer,
-            Stackable, Hidden, DisplayCategory, Propagatable, ExcludeHeroPropagation, ExcludeMonsterPropagation);
+            Stackable, Hidden, DisplayCategory, Propagatable, ExcludeHeroPropagation, ExcludeMonsterPropagation,
+            RemoveWhenTriggeredAfterCardPlayed, RemoveAtEndOfTurnIfTriggered, MarkedForRemovalAfterCardPlayed);
+        internal CombatStatus WithRemoveAllAtEnd(bool value) => new CombatStatus(Id, Stacks, ParamInt,
+            RemoveWhenTriggered, RemoveStackAtEnd, value, RemoveAfterPostCombat, PreventRemovalDuringRelentless,
+            SkipDuringDeployment, RemoveDuringDeployment, TriggerVfxEnemy, TriggerVfxPlayer, Stackable, Hidden,
+            DisplayCategory, Propagatable, ExcludeHeroPropagation, ExcludeMonsterPropagation,
+            RemoveWhenTriggeredAfterCardPlayed, RemoveAtEndOfTurnIfTriggered, MarkedForRemovalAfterCardPlayed);
+        internal CombatStatus WithMarkedForRemovalAfterCardPlayed(bool value) => new CombatStatus(Id, Stacks, ParamInt,
+            RemoveWhenTriggered, RemoveStackAtEnd, RemoveAllAtEnd, RemoveAfterPostCombat, PreventRemovalDuringRelentless,
+            SkipDuringDeployment, RemoveDuringDeployment, TriggerVfxEnemy, TriggerVfxPlayer, Stackable, Hidden,
+            DisplayCategory, Propagatable, ExcludeHeroPropagation, ExcludeMonsterPropagation,
+            RemoveWhenTriggeredAfterCardPlayed, RemoveAtEndOfTurnIfTriggered, value);
     }
 
     public sealed class UnitDeathState
@@ -210,6 +229,11 @@ namespace MonsterTrain2Poju.Model
         internal CombatUnit WithStatusDamage(int amount) => new CombatUnit(Id, AssetKey, Team, BaseAttack, Health, MaxHealth,
             CanAttack, IsPyre, EndsBattleOnDeath, Statuses, Triggers, SpawnerCardId, Size, StatusImmunities, Subtypes,
             Modifiers!.WithStatusDamage(amount), IsBoss, LastAttackerId, StatusRegistry, EquipmentCards, NextTriggerId, Ability, StatusDictionary,
+            AbilityRules, HordeDefinition, IsSpawning, SacrificeCardId, DeathState, bumpRules: BumpRules);
+
+        internal CombatUnit WithStatusRegistry(IReadOnlyList<CombatStatus> statusRegistry) => new CombatUnit(Id, AssetKey, Team, BaseAttack, Health, MaxHealth,
+            CanAttack, IsPyre, EndsBattleOnDeath, Statuses, Triggers, SpawnerCardId, Size, StatusImmunities, Subtypes,
+            Modifiers, IsBoss, LastAttackerId, statusRegistry, EquipmentCards, NextTriggerId, Ability, StatusDictionary,
             AbilityRules, HordeDefinition, IsSpawning, SacrificeCardId, DeathState, bumpRules: BumpRules);
 
         internal CombatUnit WithModifiers(UnitModifiers modifiers) => new CombatUnit(Id, AssetKey, Team, BaseAttack, Health, MaxHealth,
@@ -372,7 +396,7 @@ namespace MonsterTrain2Poju.Model
             "armor", "damage shield", "dazed", "stealth", "ambush", "multistrike",
             "spikes", "lifesteal", "fragile", "piercing", "immune", "immobile",
             "relentless", "sweep", "sniper", "rooted", "haste", "untouchable", "endless",
-            "buff", "debuff", "regen", "poison", "melee weakness", "silenced", "valor", "pyregel",
+            "buff", "debuff", "regen", "poison", "melee weakness", "spell weakness", "silenced", "valor", "pyregel",
             "heal multiplier", "heal immunity", "cooldown", "unit_ability", "unit_ability_available", "horde", "cardless", "undying", "purify", "mageblade", "titanskin", "duality"
         };
         internal static bool KnowsStatus(string id) => KnownStatuses.Contains(id);
@@ -558,7 +582,11 @@ namespace MonsterTrain2Poju.Model
         }
 
         internal static RoomCombatResult ApplyQueuedCharacterTrigger(RoomCombatState state, QueuedCharacterTrigger queued, Action<QueuedCharacterTrigger> enqueue, Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null)
-            => new Engine(state, new List<CombatEvent>(), enqueueCharacterTrigger: enqueue, resetPreviewTriggers: false, refreshPyre: refreshPyre).QueuedTrigger(queued);
+        {
+            RoomCombatResult triggered = new Engine(state, new List<CombatEvent>(), enqueueCharacterTrigger: enqueue,
+                resetPreviewTriggers: false, refreshPyre: refreshPyre).QueuedTrigger(queued);
+            return RelicRoomEntryStatusModel.ApplyAfterEntry(triggered, queued, enqueue);
+        }
 
         // Resume a single native effect after trigger preflight/marking and source
         // caching. Its child callbacks stay queued until the caller resumes.
@@ -1818,6 +1846,26 @@ namespace MonsterTrain2Poju.Model
                     damage = checked(damage * (stacks + 1));
                     if (damage != beforeWeakness) Trigger(target, "melee weakness", stacks);
                 }
+                if (kind == "Spell" && sourceCardId > 0 && damage > 0 && target.Alive && target.Has("spell weakness"))
+                {
+                    CardInstanceState? sourceCard = context?.FindCard(sourceCardId);
+                    if (sourceCard?.MaskDescriptor == null)
+                    {
+                        unsupportedReason = "Spell Weakness requires the native source card type.";
+                        return;
+                    }
+                    string? cardError = CardModifierModel.UnsupportedReason(sourceCard);
+                    if (cardError != null) { unsupportedReason = cardError; return; }
+                    bool isSpell = sourceCard.MaskDescriptor.Definition.CardType == "Spell";
+                    bool hasShield = target.Has("damage shield") || target.Has("spell shield");
+                    if (isSpell && (!hasShield || cardPiercing && !target.Has("untouchable")))
+                    {
+                        int beforeWeakness = damage;
+                        int stacks = target.Count("spell weakness");
+                        damage = checked(damage * (stacks + 1));
+                        if (damage != beforeWeakness) Trigger(target, "spell weakness", stacks);
+                    }
+                }
                 // The native shield stage checks card/relic piercing without an attacker argument.
                 // Unit piercing bypasses armor, but does not bypass this shield stage.
                 if (damage > 0 && target.Has("damage shield") && !cardPiercing)
@@ -2870,13 +2918,21 @@ namespace MonsterTrain2Poju.Model
 
             private void Trigger(WorkingUnit unit, string id, int count)
             {
-                if (unit.Statuses.TryGetValue(id, out CombatStatus? status) && status.RemoveWhenTriggered &&
+                if (unit.Statuses.TryGetValue(id, out CombatStatus? status) &&
+                    (status.RemoveWhenTriggered || status.RemoveWhenTriggeredAfterCardPlayed || status.RemoveAtEndOfTurnIfTriggered) &&
                     (!source.Deployment || status.RemoveDuringDeployment))
                 {
                     RelicStatusDecayResult removal = RelicStatusDecayModel.GetShouldRemove(context, true, id,
                         unit.Source.Team == CombatTeam.Player ? 2 : 1, source.Preview);
                     if (!removal.Supported) { unsupportedReason = removal.UnsupportedReason; return; }
-                    if (removal.ShouldRemove) RemoveStatus(unit, id, count);
+                    if (removal.ShouldRemove)
+                    {
+                        if (status.RemoveWhenTriggeredAfterCardPlayed)
+                            unit.Statuses[id] = status.WithMarkedForRemovalAfterCardPlayed(true);
+                        else if (status.RemoveAtEndOfTurnIfTriggered)
+                            unit.Statuses[id] = status.WithRemoveAllAtEnd(true);
+                        else RemoveStatus(unit, id, count);
+                    }
                 }
             }
 

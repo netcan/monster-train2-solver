@@ -245,15 +245,15 @@ namespace MonsterTrain2Poju.Probe
             {
                 StatusEffectState rule = status.State;
                 StatusEffectData statusData = rule.GetSourceStatusEffectData();
-                if (status.Count > 0 && (rule.GetRemoveWhenTriggeredAfterCardPlayed() || rule.GetRemoveAtEndOfTurnIfTriggered()))
-                    interactions.Add(rule.GetStatusId() + " delayed status removal");
                 statuses.Add(new CombatStatus(rule.GetStatusId(), status.Count, rule.GetParamInt(),
                     rule.GetRemoveWhenTriggered(), rule.GetRemoveStackAtEndOfTurn(), rule.GetRemoveAtEndOfTurn(),
                     rule.GetRemoveAtEndOfTurnAfterPostCombat(), rule.PreventRemovalDuringRelentlessPhase,
                     rule.GetSkipTriggerDuringDeployment(), rule.GetRemoveDuringDeployment(),
                     BattleActionProbe.TriggeredVfx(rule.GetSourceStatusEffectData(), -1f),
                     BattleActionProbe.TriggeredVfx(statusData, 1f), rule.IsStackable(), rule.IsHidden(), rule.GetDisplayCategory().ToString(),
-                    statusData.IsPropagatable(), statusData.GetExcludeHeroPropagation(), statusData.GetExcludeMonsterPropagation()));
+                    statusData.IsPropagatable(), statusData.GetExcludeHeroPropagation(), statusData.GetExcludeMonsterPropagation(),
+                    rule.GetRemoveWhenTriggeredAfterCardPlayed(), rule.GetRemoveAtEndOfTurnIfTriggered(),
+                    rule.GetMarkForRemovalAfterCardPlayed()));
             }
             CombatTeam team = character.GetTeamType() == Team.Type.Heroes ? CombatTeam.Enemy : CombatTeam.Player;
             CharacterState? pairedBoss = heroes.FindPairedCompanionBoss(character);
@@ -529,7 +529,7 @@ namespace MonsterTrain2Poju.Probe
             string temporary = path + ".tmp";
             var snapshot = new
             {
-                Schema = Environment.GetEnvironmentVariable("MT2_PROBE_RELIC_CARD_REPLACEMENT_UPGRADE") == "1" ? 129 : OriginalCardPlayMagicPowerScenario.Acquired ? 128 : OriginalEndlessReturnScenario.Prepared ? 126 : HandUpgradeScenario.PermanentConsumeOverTemporaryPrepared ? 125 : GenerationScenario.PermanentConsumePrepared ? 124 : HandUpgradeScenario.PermanentConsumePrepared ? 123 : RelicCardModifierScenario.ExhaustUpgrade ? 122 : SpawnStatusRelicScenario.Prepared && SpawnStatusRelicScenario.MixedCardlessOrder ? 121 : MagebladeScenario.Prepared ? 127 : OriginalFloorCapacityRelicScenario.Prepared ? 119 : PyreResourceRefreshScenario.Prepared ? 118 : OriginalResourceRelicBatchScenario.Prepared ? 117 : OriginalDecayRelicBatchScenario.Prepared ? 116 : OriginalLifecycleRelicBatchScenario.Prepared ? 115 : OriginalMagnitudeRelicBatchScenario.Prepared ? 114 : OriginalStatusRelicBatchScenario.Prepared ? 113 : TypedDrawProbe.Enabled ? 112 : SpawnStatusRelicScenario.Prepared ? SpawnStatusRelicScenario.Clones ? 111 : 110 : TriggerCountScenario.Prepared ? 109 : AbilityIncantScenario.Prepared ? 108 : CardAnimationSettlement.Enabled ? 106 : DeathDissolveSettlement.Enabled ? 105 : EnchantmentBattleScenario.Prepared ? 104 : 103,
+                Schema = Environment.GetEnvironmentVariable("MT2_PROBE_RELIC_CARD_REPLACEMENT_UPGRADE") == "1" ? 129 : OriginalRoomEntryStatusRelicScenario.Prepared ? 132 : OriginalCardPlayMagicPowerScenario.Acquired ? 128 : OriginalEndlessReturnScenario.Prepared ? 126 : HandUpgradeScenario.PermanentConsumeOverTemporaryPrepared ? 125 : GenerationScenario.PermanentConsumePrepared ? 124 : HandUpgradeScenario.PermanentConsumePrepared ? 123 : RelicCardModifierScenario.ExhaustUpgrade ? 122 : SpawnStatusRelicScenario.Prepared && SpawnStatusRelicScenario.MixedCardlessOrder ? 121 : MagebladeScenario.Prepared ? 127 : OriginalFloorCapacityRelicScenario.Prepared ? 119 : PyreResourceRefreshScenario.Prepared ? 118 : OriginalResourceRelicBatchScenario.Prepared ? 117 : OriginalDecayRelicBatchScenario.Prepared ? 116 : OriginalLifecycleRelicBatchScenario.Prepared ? 115 : OriginalMagnitudeRelicBatchScenario.Prepared ? 114 : OriginalStatusRelicBatchScenario.Prepared ? 113 : TypedDrawProbe.Enabled ? 112 : SpawnStatusRelicScenario.Prepared ? SpawnStatusRelicScenario.Clones ? 111 : 110 : TriggerCountScenario.Prepared ? 109 : AbilityIncantScenario.Prepared ? 108 : CardAnimationSettlement.Enabled ? 106 : DeathDissolveSettlement.Enabled ? 105 : EnchantmentBattleScenario.Prepared ? 104 : 103,
                 DeathDissolveSettlementEnabled = DeathDissolveSettlement.Enabled,
                 DeathDissolveSettlements = DeathDissolveSettlement.Records,
                 DeathDissolveCallbacks = DeathDissolveSettlement.Callbacks,

@@ -27,6 +27,9 @@ namespace MonsterTrain2Poju.Model
             int count = amount == -1 ? 0 : Math.Max(0, Math.Min(status.Stackable == false ? 1 : 9999, unchecked(status.Stacks - amount)));
             CombatUnit changed = CardSpellModel.Copy(target, target.Health, target.Statuses.Where(item => item.Id != id)
                 .Concat(count > 0 ? new[] { status.WithStacks(count) } : Array.Empty<CombatStatus>()).ToArray());
+            if (count == 0 && status.MarkedForRemovalAfterCardPlayed && changed.StatusRegistry != null)
+                changed = changed.WithStatusRegistry(changed.StatusRegistry.Select(item => item.Id == id
+                    ? item.WithStacks(0).WithMarkedForRemovalAfterCardPlayed(false) : item).ToArray());
             CombatContext? context = source.Context;
             StatusAttackDamageResult attack = StatusAttackDamageModel.Change(context, changed, status, status.Stacks - count, adding: false);
             if (!attack.Supported) return Unsupported(attack.UnsupportedReason!);

@@ -493,6 +493,26 @@ namespace MonsterTrain2Poju.Model
             return Freeze(source, rooms, replacement.Context);
         }
 
+        internal static TrainCombatResult ProcessDelayedStatusRemovalsAfterCardPlayed(TrainCombatState source)
+        {
+            TrainCombatState current = source;
+            var callbacks = new List<RoomCombatModel.QueuedCharacterTrigger>();
+            foreach (RoomCombatState initialRoom in source.Rooms)
+            foreach (CombatUnit initialUnit in initialRoom.Units)
+            foreach (CombatStatus status in initialUnit.Statuses.Where(status => status.MarkedForRemovalAfterCardPlayed).ToArray())
+            {
+                RoomCombatState room = current.Rooms.Single(item => item.RoomIndex == initialRoom.RoomIndex);
+                CombatUnit? unit = room.Units.FirstOrDefault(item => item.Id == initialUnit.Id);
+                if (unit?.Status(status.Id) == null) continue;
+                RoomCombatResult removed = StatusRemovalModel.Remove(WithContext(room, current.Context), unit.Id, status.Id, -1);
+                if (!removed.Supported) return new TrainCombatResult(null, RoomOutcome.Unsupported, [], removed.UnsupportedReason);
+                current = ReplaceRoom(current, removed.State!);
+                callbacks.AddRange(removed.PendingCallbacks);
+            }
+            return callbacks.Count == 0 ? new TrainCombatResult(current, RoomOutcome.Exchanged, []) :
+                ApplyCharacterQueue(current, callbacks);
+        }
+
         internal static TrainCombatResult ApplyMovementTriggers(TrainCombatState source, IReadOnlyList<(int UnitId, string Kind)> triggers)
         {
             var queue = new List<RoomCombatModel.QueuedCharacterTrigger>();

@@ -29,6 +29,9 @@ namespace MonsterTrain2Poju.Probe
                 var effects = relic.GetEffects().ToArray();
                 var statuses = effects.Select((effect, index) => new { Effect = effect, Index = index })
                     .Where(item => item.Effect is RelicEffectAddStatusEffectOnSpawn).Select(item => SpawnStatus(item.Effect, item.Index)).ToArray();
+                var roomEntryStatuses = effects.Select((effect, index) => new { Effect = effect, Index = index })
+                    .Where(item => item.Effect is RelicEffectAddStatusEffectOnEnterRoomIndex)
+                    .Select(item => RoomEntryStatus(item.Effect, item.Index)).ToArray();
                 var cardModifiers = effects.Select((effect, index) => new { Effect = effect, Index = index })
                     .Where(item => item.Effect is RelicEffectAddTempUpgrade).Select(item => RelicCardModifierProbe.Definition(item.Effect, item.Index)).ToArray();
                 var triggers = effects.Select((effect, index) => new { Effect = effect, Index = index })
@@ -61,8 +64,20 @@ namespace MonsterTrain2Poju.Probe
                     triggers.Length > 0 ? triggers : null, stackAdditions.Length > 0 ? stackAdditions : null,
                     magnitudes.Length > 0 ? magnitudes : null, decays.Length > 0 ? decays : null,
                     resources.Length > 0 ? resources : null, magicPower.Length > 0 ? magicPower : null,
-                    cardPlayMagicPower.Length > 0 ? cardPlayMagicPower : null);
+                    cardPlayMagicPower.Length > 0 ? cardPlayMagicPower : null,
+                    roomEntryStatuses.Length > 0 ? roomEntryStatuses : null);
             }).ToArray();
+        }
+
+        private static RelicRoomEntryStatus RoomEntryStatus(IRelicEffect effect, int index)
+        {
+            object Field(string name) => AccessTools.Field(effect.GetType(), name).GetValue(effect);
+            Team.Type team = (Team.Type)Field("targetTeamType");
+            bool monsters = team.HasFlag(Team.Type.Monsters), heroes = team.HasFlag(Team.Type.Heroes);
+            if (team == Team.Type.None) { monsters = true; heroes = true; }
+            return new RelicRoomEntryStatus(index, (int)Field("targetRoomIndex"), monsters, heroes,
+                (bool)Field("firstWaveOnly"), ((StatusEffectStackData[])Field("statusEffects"))
+                    .Select(status => BattleActionProbe.Status(status.statusId, status.count)).ToArray());
         }
 
         private static RelicStatusDecay StatusDecay(IRelicEffect effect, int index)

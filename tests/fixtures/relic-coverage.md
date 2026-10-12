@@ -1,7 +1,7 @@
 # Original relic coverage evidence
 
-As of 2026-10-12, **60 distinct original collectable relics / 224 catalog entries
-(26.79%)** have accepted native full-battle evidence. This counts unchanged relic
+As of 2026-10-13, **63 distinct original collectable relics / 224 catalog entries
+(28.13%)** have accepted native full-battle evidence. This counts unchanged relic
 definitions whose effects actually ran, including their original filters and
 conditions. Test cards, unit triggers and carrier subtypes may be authored to
 exercise those effects; the claim covers the recorded paths, not every possible
@@ -14,15 +14,15 @@ five now have accepted original-owner evidence. Both catalog owners of
 Rage and Frostbite consumers. Unknown status families and other effects on the
 remaining owners still require modeling and native proof.
 
-All 19 source archives below report game `2.2.1`, module MVID
+All 20 source archives below report game `2.2.1`, module MVID
 `8fb07b96-f4db-4d2b-884d-c00536d6ccf4`, `NativeWon=true`, and zero
 `CaptureFailures`, `Mismatches`, `Unsupported` and `Pending`. Archive provenance,
 byte lengths and SHA-256 hashes are recorded in [manifest.tsv](manifest.tsv).
 The floor-capacity batch passes strict native acceptance, complete-fixture checks,
 independent full-battle replay and six directly affected old-fixture regressions.
-The accepted inventory is 244 archives: 213 battles and 31 component
-calibrations. All 244 archive names, byte lengths and SHA-256 hashes match the
-manifest and curated list, with no JSON companions. A full 244-archive replay
+The accepted inventory is 246 archives: 215 battles and 31 component
+calibrations. All 246 archive names, byte lengths and SHA-256 hashes match the
+manifest and curated list, with no JSON companions. A full 246-archive replay
 remains deferred to a milestone. The Mageblade status/cache/attack path has an
 accepted native battle archive, but Mageblade is not a collectable relic and is
 not included in the 60/224 owner count. The `AllUnitsMultistrike` archive
@@ -91,9 +91,12 @@ owner count.
 | `SilverIncreasedCapacity` | `aab4971f-05c6-430a-8a6a-dfb654a41b0c` | [floor capacity relics][floorCapacity] | Its original +2 capacity effect has positive native query and owner-removal witnesses; the full room fits sizes 6+6 and rejects the next size-2 summon. |
 | `MoreRares_Relic` | `374995fd-7619-4244-9d1f-269429258584` | [Endless return][endless] | Its unchanged Monsters-team `AddEndlessToNonMorsels` upgrade gives the carrier Endless; native death sends the spawner to Draw, preserves the temporary upgrade and does not increment `TimesExhausted`. |
 | `MagicPowerWhenCardConsumed` | `a4c87eb7-1c4e-4f63-af08-79f910e5a2e8` | [original card-play magic power][cardPlayMagicPower] | Unchanged power-1 effect requires `CardTraitExhaustState` and has no conditions. Two matching carrier plays produce 110 native-matched spell offset updates; the authored test carrier satisfies the original trait filter. |
+| `RootBeforePyre` | `4778bb46-27e4-49ae-aa5d-750813ceb6d0` | [room-entry status relics][roomEntry] | Its unchanged room-2 Heroes effect adds 1 Rooted. Two distinct native Heroes have the exact status after entry. |
+| `SpellWeaknessBelowPyre` | `5a96d89f-d7c0-49fa-88d1-8ec75a8f3140` | [room-entry status relics][roomEntry] | Its unchanged room-2 Heroes effect adds 2 Spell Weakness. Three distinct native Heroes have the exact status; spell damage and post-card removal match through the full battle. |
+| `PyregelOnEnterTopFloor` | `e4be072c-e389-4ae7-acc6-0c8aa4cf0078` | [room-entry status relics][roomEntry] | Its unchanged room-2 Heroes effect adds 10 Pyregel. Three distinct native Heroes have the exact status after entry. |
 
 Record indices above are zero-based. Full-battle acceptance and independent
-effect checks are documented in [README.md](README.md); the table's 17 source
+effect checks are documented in [README.md](README.md); the table's 18 source
 archives contain these observed battle sizes:
 
 | Archive | Schema | Card plays | EndTurns | Matched stages | Independent relic observations |
@@ -115,6 +118,7 @@ archives contain these observed battle sizes:
 | [floor capacity relics][floorCapacity] | 119 | 26 | 5 | 51 | Five real acquisitions, all 14 original effects, 21 capacity queries, four room initializations, capacity 15 and legal 6/6/2/1 native deployment |
 | [Endless return][endless] | 126 | 23 | 7 | 62 | Original Endless upgrade survives one actual carrier death; returned to Draw without Exhausted or a `TimesExhausted` increment |
 | [original card-play magic power][cardPlayMagicPower] | 128 | 11 | 7 | 61 | Two matching carrier plays and 110 spell offset updates for unchanged `MagicPowerWhenCardConsumed` |
+| [room-entry status relics][roomEntry] | 132 | 21 | 7 | 55 | Three unchanged originals, 13 train phases and actual room-2 Heroes status witnesses |
 
 The checks that enforce these observations are
 [TriggerCountChecks.Native](../../src/ModelChecks/TriggerCountChecks.cs),
@@ -133,7 +137,9 @@ and [OriginalFloorCapacityRelicChecks.Native](../../src/ModelChecks/OriginalFloo
 with [EndlessReturnChecks.Native](../../src/ModelChecks/EndlessReturnChecks.cs)
 checking the original relic payload and its death-route witness, and
 [RelicCardPlayMagicPowerChecks.Native](../../src/ModelChecks/RelicCardPlayMagicPowerChecks.cs)
-checking the original trait filter and spell offset updates.
+checking the original trait filter and spell offset updates, and
+[OriginalRoomEntryStatusRelicChecks.Native](../../src/ModelChecks/OriginalRoomEntryStatusRelicChecks.cs)
+checking the three unchanged room-entry payloads and actual Heroes witnesses.
 Each new trigger archive has eight positive owner effects; their union covers
 all nine distinct originals. Removing only one original's installed callbacks
 must change health, attack, membership or status stacks, beyond trigger metadata.
@@ -269,5 +275,6 @@ include the starter-cost, cardless or four-artifact batch evidence above.
 [floorCapacity]: full-battle-original-floor-capacity-relics.mt2f
 [endless]: full-battle-original-endless-return.mt2f
 [cardPlayMagicPower]: full-battle-original-card-play-magic-power.mt2f
+[roomEntry]: full-battle-original-room-entry-status-relics.mt2f
 [sting]: full-battle-original-sting-relics.mt2f
 [deployable]: full-battle-original-deployable-relic.mt2f

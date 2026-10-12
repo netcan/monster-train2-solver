@@ -157,6 +157,7 @@ param(
     [switch] $OriginalFloorCapacityRelics,
     [switch] $Mageblade,
     [switch] $OriginalCardPlayMagicPower,
+    [switch] $OriginalRoomEntryStatusRelics,
     [switch] $TypedDraw,
     [switch] $IncantRelic,
     [switch] $IncantRelics,
@@ -222,6 +223,7 @@ if ($PyreResourceRefresh) { $BranchCardMasks = $true; $Policy = 'units-spells-an
 if ($OriginalFloorCapacityRelics) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($Mageblade) { $BranchCardMasks = $true; $BattleRelicUpgrades = $true; $Policy = 'units-and-junk' }
 if ($OriginalCardPlayMagicPower) { $BranchCardMasks = $true; $Policy = 'units-and-junk' }
+if ($OriginalRoomEntryStatusRelics) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalTriggerRelicBatch -or $OriginalLifecycleRelicBatch) {
     $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $SettleDeathDissolves = $true; $SettleCardAnimations = $true
     $Policy = 'units-spells-and-junk'
@@ -445,6 +447,7 @@ if ($PyreResourceRefresh) { $environment['MT2_PROBE_MODIFIERS'] = 'pyre-resource
 if ($OriginalFloorCapacityRelics) { $environment['MT2_PROBE_MODIFIERS'] = 'original-floor-capacity-relics' }
 if ($Mageblade) { $environment['MT2_PROBE_MODIFIERS'] = 'mageblade' }
 if ($OriginalCardPlayMagicPower) { $environment['MT2_PROBE_MODIFIERS'] = 'original-card-play-magic-power' }
+if ($OriginalRoomEntryStatusRelics) { $environment['MT2_PROBE_MODIFIERS'] = 'original-room-entry-status-relics' }
 if ($TypedDraw) {
     $environment['MT2_PROBE_MODIFIERS'] = 'typed-draw'
     $environment['MT2_PROBE_ISOLATE_UI_RNG'] = '1'
@@ -543,6 +546,12 @@ if ($OriginalCardPlayMagicPower -and ($trace.Schema -ne 128 -or
     -not (Select-String -LiteralPath $unityLog -Pattern 'ORIGINAL-CARD-PLAY-MAGIC-POWER-ACQUIRED unchanged relic=' -Quiet) -or
     @($trace.Actions).Count -eq 0)) {
     throw 'Original card-play magic-power relic was not exercised in the expected full-battle capture.'
+}
+if ($OriginalRoomEntryStatusRelics -and ($trace.Schema -ne 132 -or
+    $trace.ModifierScenario -ne 'original-room-entry-status-relics' -or
+    -not (Select-String -LiteralPath $unityLog -Pattern 'ORIGINAL-ROOM-ENTRY-STATUS-RELICS-ACQUIRED unchanged' -Quiet) -or
+    @($trace.TrainPhases).Count -eq 0 -or @($trace.Actions).Count -eq 0)) {
+    throw 'Original room-entry status relics were not exercised in the expected full-battle capture.'
 }
 if ($RelicCatalog) {
     Add-Type -Path (Join-Path $workspace 'src\FixtureArchive\bin\Release\net8.0\FixtureArchive.dll')
