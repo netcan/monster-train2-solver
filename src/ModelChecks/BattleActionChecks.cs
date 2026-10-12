@@ -98,6 +98,45 @@ internal static class BattleActionChecks
             candidate.Action.CardInstanceId == 1 && candidate.Action.RoomIndex == 0 && candidate.Action.PlayerPosition == 0);
         Require(cachedFirst.Result.Supported && BattleTurnChecks.Comparable(cachedFirst.Result.State) == BattleTurnChecks.Comparable(first.State),
             "The action frontier did not retain the exact immutable successor for a supported play.");
+        double SearchScore(BattleTurnState state, RoomOutcome outcome) => outcome == RoomOutcome.BattleWon ? -1000000 :
+            outcome == RoomOutcome.PlayerDefeated ? 1000000 : state.Energy;
+        var serialSearch = BattleSearchModel.Minimize(root, SearchScore, new BattleSearchOptions(64, 1, 1));
+        var parallelSearch = BattleSearchModel.Minimize(root, SearchScore, new BattleSearchOptions(64, 1, 4));
+        string SearchPath(BattleSearchResult result) => string.Join("|", result.Steps.Select(step => step.IsEndTurn ? "EndTurn" :
+            step.Action!.CardInstanceId + ":" + step.Action.RoomIndex + ":" + step.Action.PlayerPosition + ":" +
+            step.Action.TargetUnitId + ":" + step.Action.ActivatorUnitId));
+        Require(serialSearch.BestState != null && serialSearch.Score.HasValue,
+            "Bounded search failed to return a best-known state.");
+        BattleTurnState replayedSearch = root;
+        foreach (BattleSearchStep step in serialSearch.Steps)
+        {
+            if (step.IsEndTurn)
+            {
+                BattleTurnResult turn = BattleTurnModel.EndTurn(replayedSearch);
+                Require(turn.Supported, turn.UnsupportedReason ?? "A searched EndTurn step failed on replay.");
+                replayedSearch = turn.State!;
+            }
+            else
+            {
+                BattleActionResult action = BattleActionModel.PlayCard(replayedSearch, step.Action!);
+                Require(action.Supported, action.Reason ?? "A searched card action failed on replay.");
+                replayedSearch = action.State!;
+            }
+        }
+        Require(serialSearch.BestState != null && serialSearch.Score.HasValue && serialSearch.HasUnsupportedAttempts &&
+            serialSearch.DecisionStatesVisited <= 64 && serialSearch.Score == parallelSearch.Score &&
+            SearchPath(serialSearch) == SearchPath(parallelSearch) &&
+            BattleTurnChecks.Comparable(replayedSearch) == BattleTurnChecks.Comparable(serialSearch.BestState!) &&
+            JsonSerializer.Serialize(root) == parent,
+            "Bounded parallel search lost unsupported-action diagnostics, exceeded its node budget, changed ordering or mutated its root.");
+        var prunedSearch = BattleSearchModel.Minimize(root, (_, _) => 0, new BattleSearchOptions(128, 0, 1), _ => 0);
+        var cancelledSearch = BattleSearchModel.Minimize(root, SearchScore, new BattleSearchOptions(8, 1, 2),
+            cancellationToken: new System.Threading.CancellationToken(true));
+        Require(prunedSearch.PrunedBranches > 0 && prunedSearch.ReachedTurnLimit && cancelledSearch.Cancelled &&
+            cancelledSearch.BestState != null && cancelledSearch.DecisionStatesVisited == 1,
+            "Search failed to apply an admissible lower bound, expose the turn horizon or preserve cancellation status: pruned=" +
+            prunedSearch.PrunedBranches + ", turnLimit=" + prunedSearch.ReachedTurnLimit + ", cancelled=" + cancelledSearch.Cancelled +
+            ", best=" + (cancelledSearch.BestState != null) + ", nodes=" + cancelledSearch.DecisionStatesVisited + ".");
         string expected = BattleTurnChecks.Comparable(second.State);
         Parallel.For(0, 32, _ =>
         {
