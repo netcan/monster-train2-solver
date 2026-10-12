@@ -2088,8 +2088,11 @@ Sixteen X-cost plays include nine positive payments and twenty independent
 damage-scaling counterfactuals. The complete 21-play/five-EndTurn policy wins at
 80 Pyre health and passes 16 parallel branches; modifier queries pass 32 branches.
 There are zero native capture failures, mismatches, unsupported or pending records.
-The binary-only archive is 29,322 bytes/4,622 nodes, SHA-256
-`e528b4eb5d13637814de158bcc40b9bf36355999ac4c1eee16171e3c03c66d4c`.
+The refreshed schema-103 archive comes from the 2026-10-12 native capture at
+`.probe-runs/full-battle-units-spells-and-junk-20261012-162810-9262b85a`.
+It is 30,061 bytes/4,781 nodes, SHA-256
+`61a94ec4d156357fb850748f42bb26faa7118df184bedf91a5e8033e5e9a7be3`, with no
+JSON companion.
 
 The associated reset fix preserves permanent upgrade lifecycle metadata when
 replacing numeric values; repeated resets and the prior piercing-relic fixture
