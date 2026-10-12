@@ -122,6 +122,8 @@ namespace MonsterTrain2Poju.Model
                 summary.Consider(Leaf(state, RoomOutcome.Exchanged, Array.Empty<BattleSearchStep>(), score));
             }
 
+            PrioritizeBranches(branches, budget, root, score, options, lowerBound);
+
             if (branches.Count == 0)
             {
                 if (summary.Best == null)
@@ -129,9 +131,9 @@ namespace MonsterTrain2Poju.Model
                 return summary;
             }
 
-            int[] childBudgets = root ? AllocateBudget(Math.Max(0, budget - 1), branches) : Array.Empty<int>();
             if (root && options.MaxDegreeOfParallelism > 1)
             {
+                int[] childBudgets = AllocateBudget(Math.Max(0, budget - 1), branches);
                 var results = new SearchSummary[branches.Count];
                 Parallel.For(0, branches.Count, new ParallelOptions { MaxDegreeOfParallelism = options.MaxDegreeOfParallelism }, index =>
                 {
@@ -148,16 +150,14 @@ namespace MonsterTrain2Poju.Model
                 {
                     SearchBranch branch = branches[index];
                     int childBudget = 0;
-                    if (!IsTerminal(branch.Outcome) && root)
-                        childBudget = childBudgets[index];
-                    else if (!IsTerminal(branch.Outcome) && remainingChildren > 0)
+                    if (!IsTerminal(branch.Outcome) && remainingChildren > 0)
                     {
                         childBudget = remaining == 0 ? 0 : (remaining + remainingChildren - 1) / remainingChildren;
                     }
                     SearchSummary child = ExploreBranch(branch, childBudget, score, options, lowerBound,
-                        cancellationToken, root ? null : summary.Best?.Score);
+                        cancellationToken, summary.Best?.Score);
                     summary.Merge(child);
-                    if (!root && !IsTerminal(branch.Outcome))
+                    if (!IsTerminal(branch.Outcome))
                     {
                         remaining -= child.NodesVisited;
                         remainingChildren--;
@@ -166,6 +166,48 @@ namespace MonsterTrain2Poju.Model
             }
             summary.Cancelled |= cancellationToken.IsCancellationRequested;
             return summary;
+        }
+
+        private static void PrioritizeBranches(List<SearchBranch> branches, int budget, bool root,
+            Func<BattleTurnState, RoomOutcome, double> score, BattleSearchOptions options,
+            Func<BattleTurnState, double?>? lowerBound)
+        {
+            int nonterminal = branches.Count(branch => !IsTerminal(branch.Outcome));
+            int remainder = nonterminal == 0 ? 0 : Math.Max(0, budget - 1) % nonterminal;
+            bool canUseBoundForOrdering = lowerBound != null && (!root || options.MaxDegreeOfParallelism == 1);
+            if (remainder == 0 && !canUseBoundForOrdering) return;
+
+            var ordered = branches.Select((branch, index) => new
+                {
+                    Branch = branch,
+                    Index = index,
+                    Priority = Priority(branch)
+                })
+                .OrderBy(item => item.Priority)
+                .ThenBy(item => item.Index)
+                .Select(item => item.Branch)
+                .ToArray();
+            branches.Clear();
+            branches.AddRange(ordered);
+
+            double Priority(SearchBranch branch)
+            {
+                if (IsTerminal(branch.Outcome)) return Score(branch.State, branch.Outcome);
+                double? bound = lowerBound?.Invoke(branch.State);
+                if (bound.HasValue)
+                {
+                    ValidateScore(bound.Value);
+                    return bound.Value;
+                }
+                return Score(branch.State, branch.Outcome);
+            }
+
+            double Score(BattleTurnState state, RoomOutcome outcome)
+            {
+                double value = score(state, outcome);
+                ValidateScore(value);
+                return value;
+            }
         }
 
         private static SearchSummary ExploreBranch(SearchBranch branch, int budget,

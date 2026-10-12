@@ -130,12 +130,25 @@ internal static class BattleActionChecks
             JsonSerializer.Serialize(root) == parent,
             "Bounded parallel search lost unsupported-action diagnostics, exceeded its node budget, changed ordering or mutated its root.");
         var prunedSearch = BattleSearchModel.Minimize(root, (_, _) => 0, new BattleSearchOptions(128, 0, 1), _ => 0);
+        double AttackScore(BattleTurnState state, RoomOutcome outcome)
+        {
+            CombatUnit[] units = state.Spawn.Train.Rooms.SelectMany(room => room.Units)
+                .Where(unit => unit.Team == CombatTeam.Player && !unit.IsPyre).ToArray();
+            int totalAttack = units.Sum(unit => unit.Attack);
+            return -totalAttack + (units.FirstOrDefault()?.AssetKey == "big" ? 0.01 : 0);
+        }
+        BattleSearchResult prioritizedSearch = BattleSearchModel.Minimize(root, AttackScore,
+            new BattleSearchOptions(2, 0, 1));
         var cancelledSearch = BattleSearchModel.Minimize(root, SearchScore, new BattleSearchOptions(8, 1, 2),
             cancellationToken: new System.Threading.CancellationToken(true));
-        Require(prunedSearch.PrunedBranches > 0 && prunedSearch.ReachedTurnLimit && cancelledSearch.Cancelled &&
+        Require(prunedSearch.PrunedBranches > 0 && prunedSearch.DecisionStatesVisited == 1 && prunedSearch.ReachedTurnLimit &&
+            prioritizedSearch.Steps.Count == 2 && prioritizedSearch.Steps[0].Action?.CardInstanceId == 2 &&
+            prioritizedSearch.Score < 0 && cancelledSearch.Cancelled &&
             cancelledSearch.BestState != null && cancelledSearch.DecisionStatesVisited == 1,
             "Search failed to apply an admissible lower bound, expose the turn horizon or preserve cancellation status: pruned=" +
-            prunedSearch.PrunedBranches + ", turnLimit=" + prunedSearch.ReachedTurnLimit + ", cancelled=" + cancelledSearch.Cancelled +
+            prunedSearch.PrunedBranches + ", nodes=" + prunedSearch.DecisionStatesVisited + ", rankedPath=" +
+            string.Join("|", prioritizedSearch.Steps.Select(step => step.IsEndTurn ? "EndTurn" : step.Action!.CardInstanceId.ToString())) +
+            ", score=" + prioritizedSearch.Score + ", turnLimit=" + prunedSearch.ReachedTurnLimit + ", cancelled=" + cancelledSearch.Cancelled +
             ", best=" + (cancelledSearch.BestState != null) + ", nodes=" + cancelledSearch.DecisionStatesVisited + ".");
         string expected = BattleTurnChecks.Comparable(second.State);
         Parallel.For(0, 32, _ =>
