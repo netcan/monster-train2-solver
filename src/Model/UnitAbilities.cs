@@ -126,7 +126,7 @@ namespace MonsterTrain2Poju.Model
 
         internal static BattleActionEnumeration EnumerateActivations(BattleTurnState source)
         {
-            var actions = new List<PlayCardAction>();
+            var actions = new List<SupportedActionCandidate>();
             var unsupported = new List<UnsupportedActionAttempt>();
             CombatContext? context = source.Spawn.Train.Context;
             if (context == null || source.PlayRules == null)
@@ -155,7 +155,7 @@ namespace MonsterTrain2Poju.Model
                 {
                     var action = new PlayCardAction(cached.Card!.InstanceId, target.RoomIndex, activatorUnitId: actor.Id);
                     BattleActionResult attempt = BattleActionModel.PlayCard(source, action);
-                    if (attempt.Supported) actions.Add(action);
+                    if (attempt.Supported) actions.Add(new SupportedActionCandidate(action, attempt));
                     else if (attempt.Rejection == ActionRejection.Unsupported)
                         unsupported.Add(new UnsupportedActionAttempt(action, attempt.Reason ?? "Unsupported unit ability action."));
                 }

@@ -94,6 +94,10 @@ internal static class BattleActionChecks
             frontier.UnsupportedAttempts.Any(attempt => attempt.Action?.CardInstanceId == 5 &&
                 attempt.Reason == "Unimplemented effect"),
             "The action frontier hid an unimplemented hand card instead of reporting the omitted candidate.");
+        SupportedActionCandidate cachedFirst = frontier.SupportedCandidates.Single(candidate =>
+            candidate.Action.CardInstanceId == 1 && candidate.Action.RoomIndex == 0 && candidate.Action.PlayerPosition == 0);
+        Require(cachedFirst.Result.Supported && BattleTurnChecks.Comparable(cachedFirst.Result.State) == BattleTurnChecks.Comparable(first.State),
+            "The action frontier did not retain the exact immutable successor for a supported play.");
         string expected = BattleTurnChecks.Comparable(second.State);
         Parallel.For(0, 32, _ =>
         {
