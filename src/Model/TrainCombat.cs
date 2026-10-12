@@ -53,11 +53,13 @@ namespace MonsterTrain2Poju.Model
         public TrainCombatState? State { get; }
         public RoomOutcome Outcome { get; }
         public IReadOnlyList<RoomCombatResult> RoomResults { get; }
+        public IReadOnlyList<int> DestroyedRoomIndexes { get; }
         public string? UnsupportedReason { get; }
         public bool Supported => State != null;
         internal TrainCombatResult(TrainCombatState? state, RoomOutcome outcome,
-            IReadOnlyList<RoomCombatResult> roomResults, string? reason = null)
-        { State = state; Outcome = outcome; RoomResults = Array.AsReadOnly(roomResults.ToArray()); UnsupportedReason = reason; }
+            IReadOnlyList<RoomCombatResult> roomResults, string? reason = null, IReadOnlyList<int>? destroyedRoomIndexes = null)
+        { State = state; Outcome = outcome; RoomResults = Array.AsReadOnly(roomResults.ToArray());
+            UnsupportedReason = reason; DestroyedRoomIndexes = Array.AsReadOnly((destroyedRoomIndexes ?? Array.Empty<int>()).Distinct().ToArray()); }
     }
 
     public static class TrainCombatModel
@@ -250,6 +252,7 @@ namespace MonsterTrain2Poju.Model
             var looped = new List<int>();
             var shifted = new List<(int Destination, int UnitId)>();
             var movementResults = new List<RoomCombatResult>();
+            var destroyedRooms = new List<int>();
             CombatContext? movementContext = source.Context;
             if (source.Rooms.SelectMany(room => room.Units).Any(unit => unit.Team == CombatTeam.Enemy))
             {
@@ -260,8 +263,10 @@ namespace MonsterTrain2Poju.Model
             // Reserve destinations from the top down; each enemy moves only once.
             for (int index = pyre; index >= 0; index--)
             {
+                int? destroyThroughRoom = null;
                 foreach (CombatUnit enemy in rooms[index].Where(unit => unit.Team == CombatTeam.Enemy).ToArray())
                 {
+                    if (!rooms[index].Any(unit => unit.Id == enemy.Id)) continue;
                     if (onlyUnitId.HasValue && enemy.Id != onlyUnitId) continue;
                     if (!moved.Add(enemy.Id)) continue;
                     if (!movements.TryGetValue(enemy.Id, out EnemyMovement? rule))
@@ -320,9 +325,28 @@ namespace MonsterTrain2Poju.Model
                     rooms[index].Remove(enemy);
                     int playerIndex = rooms[destination].FindIndex(unit => unit.Team == CombatTeam.Player);
                     rooms[destination].Insert(playerIndex < 0 ? rooms[destination].Count : playerIndex, arriving);
+                    if (destination > index && enemy.Status("relentless") != null)
+                        destroyThroughRoom = destination;
                     if (destination < index && rule.Loops && enemy.Status("relentless") == null) looped.Add(enemy.Id);
                     else shifted.Add((destination, enemy.Id));
                     enteredPyre |= destination == pyre;
+                }
+                if (destroyThroughRoom.HasValue)
+                {
+                    for (int floor = index; floor < destroyThroughRoom.Value; floor++)
+                    {
+                        if (destroyedRooms.Contains(floor)) continue;
+                        TrainCombatState current = CurrentMovementState();
+                        TrainCombatResult destroyed = DestroyAscendedRoom(current, floor);
+                        if (!destroyed.Supported) return destroyed;
+                        movementResults.AddRange(destroyed.RoomResults);
+                        destroyedRooms.Add(floor);
+                        if (Terminal(destroyed.Outcome))
+                            return new TrainCombatResult(destroyed.State, destroyed.Outcome, movementResults,
+                                destroyedRoomIndexes: destroyedRooms);
+                        rooms = destroyed.State!.Rooms.Select(room => room.Units.ToList()).ToArray();
+                        movementContext = destroyed.State.Context;
+                    }
                 }
             }
             RoomCombatState[] next = source.Rooms.Select((room, index) => new RoomCombatState(room.RoomIndex,
@@ -337,7 +361,8 @@ namespace MonsterTrain2Poju.Model
                 TrainCombatResult fired = ApplyMovementTriggers(moving, callbacks);
                 if (!fired.Supported) return fired;
                 movementResults.AddRange(fired.RoomResults);
-                if (Terminal(fired.Outcome)) return new TrainCombatResult(fired.State, fired.Outcome, movementResults);
+                if (Terminal(fired.Outcome)) return new TrainCombatResult(fired.State, fired.Outcome, movementResults,
+                    destroyedRoomIndexes: destroyedRooms);
                 moving = fired.State!;
             }
             foreach (var group in shifted.GroupBy(item => item.Destination).OrderByDescending(group => group.Key))
@@ -346,7 +371,8 @@ namespace MonsterTrain2Poju.Model
                     new[] { (item.UnitId, "PostAscension"), (item.UnitId, "OnShift") }).ToArray());
                 if (!fired.Supported) return fired;
                 movementResults.AddRange(fired.RoomResults);
-                if (Terminal(fired.Outcome)) return new TrainCombatResult(fired.State, fired.Outcome, movementResults);
+                if (Terminal(fired.Outcome)) return new TrainCombatResult(fired.State, fired.Outcome, movementResults,
+                    destroyedRoomIndexes: destroyedRooms);
                 moving = fired.State!;
             }
             next = moving.Rooms.ToArray();
@@ -362,8 +388,10 @@ namespace MonsterTrain2Poju.Model
                 movementResults.Add(result);
                 moving = Freeze(enabled.State, next, result.State!.Context);
                 if (moving.Context?.Enchantments?.AutomaticLifecycle != true)
-                    return new TrainCombatResult(moving, result.Outcome, movementResults);
-                if (Terminal(result.Outcome)) return new TrainCombatResult(moving, result.Outcome, movementResults);
+                    return new TrainCombatResult(moving, result.Outcome, movementResults,
+                        destroyedRoomIndexes: destroyedRooms);
+                if (Terminal(result.Outcome)) return new TrainCombatResult(moving, result.Outcome, movementResults,
+                    destroyedRoomIndexes: destroyedRooms);
                 TrainCombatResult disabled = EnchantmentWorldModel.SetAllowUpdates(moving, false);
                 if (!disabled.Supported) return disabled;
                 moving = disabled.State!;
@@ -377,7 +405,81 @@ namespace MonsterTrain2Poju.Model
                 moving = orderChanged.State!;
                 movementResults.AddRange(enabled.RoomResults); movementResults.AddRange(orderChanged.RoomResults);
             }
-            return new TrainCombatResult(moving, RoomOutcome.Cleared, movementResults);
+            return new TrainCombatResult(moving, RoomOutcome.Cleared, movementResults,
+                destroyedRoomIndexes: destroyedRooms);
+
+            TrainCombatState CurrentMovementState()
+            {
+                RoomCombatState[] currentRooms = source.Rooms.Select((room, roomIndex) => new RoomCombatState(room.RoomIndex,
+                    room.Deployment, BattleSpawnPointModel.Order(movementContext?.SpawnPoints, roomIndex, rooms[roomIndex]),
+                    room.ExternalInteractions, movementContext, room.Preview, room.ActiveCompanionBossIds)).ToArray();
+                TrainCombatState current = EnchantmentWorldModel.Rebase(new TrainCombatState(currentRooms,
+                    source.Movement, source.EnemySlotsPerRoom, movementContext));
+                return Freeze(current, current.Rooms.ToArray(), current.Context);
+            }
+        }
+
+        private static TrainCombatResult DestroyAscendedRoom(TrainCombatState source, int roomIndex)
+        {
+            RoomCombatState? originalRoom = source.Rooms.FirstOrDefault(room => room.RoomIndex == roomIndex);
+            if (originalRoom == null) return Unsupported("Missing room destroyed by relentless ascension.");
+            TrainCombatState current = source;
+            var results = new List<RoomCombatResult>();
+            foreach (CombatUnit listed in originalRoom.Units.ToArray())
+            {
+                int currentRoomIndex = Array.FindIndex(current.Rooms.ToArray(), room => room.Units.Any(unit => unit.Id == listed.Id));
+                if (currentRoomIndex < 0) continue;
+                CombatUnit? actor = current.Rooms[currentRoomIndex].Units.FirstOrDefault(unit => unit.Id == listed.Id);
+                if (actor == null || actor.Health <= 0 || actor.DeathState?.IsDestroyed == true || actor.BumpRules?.OuterBoss == true)
+                    continue;
+                CombatStatus? undying = actor.RegisteredStatus("undying");
+                if (undying?.Stacks > 0)
+                {
+                    RoomCombatResult removed = StatusRemovalModel.Remove(WithContext(current.Rooms[currentRoomIndex], current.Context),
+                        actor.Id, "undying", undying.Stacks);
+                    if (!removed.Supported) return Unsupported(removed.UnsupportedReason!);
+                    results.Add(removed);
+                    current = ReplaceRoom(current, removed.State!);
+                    if (removed.PendingCallbacks.Count > 0)
+                    {
+                        TrainCombatResult callbacks = ApplyCharacterQueue(current, removed.PendingCallbacks.ToList());
+                        if (!callbacks.Supported) return callbacks;
+                        results.AddRange(callbacks.RoomResults);
+                        current = callbacks.State!;
+                        if (Terminal(callbacks.Outcome))
+                            return new TrainCombatResult(current, callbacks.Outcome, results);
+                    }
+                    currentRoomIndex = Array.FindIndex(current.Rooms.ToArray(), room => room.Units.Any(unit => unit.Id == listed.Id));
+                    if (currentRoomIndex < 0) continue;
+                    actor = current.Rooms[currentRoomIndex].Units.FirstOrDefault(unit => unit.Id == listed.Id);
+                    if (actor == null || actor.Health <= 0 || actor.DeathState?.IsDestroyed == true) continue;
+                }
+                var queue = new List<RoomCombatModel.QueuedCharacterTrigger>();
+                RoomCombatResult sacrificed = RoomCombatModel.QueueSacrifice(
+                    WithContext(current.Rooms[currentRoomIndex], current.Context), actor, 0, queue.Add);
+                if (!sacrificed.Supported) return Unsupported(sacrificed.UnsupportedReason!);
+                results.Add(sacrificed);
+                current = ReplaceRoom(current, sacrificed.State!);
+                if (queue.Count > 0)
+                {
+                    TrainCombatResult callbacks = ApplyCharacterQueue(current, queue);
+                    if (!callbacks.Supported) return callbacks;
+                    results.AddRange(callbacks.RoomResults);
+                    current = callbacks.State!;
+                    if (Terminal(callbacks.Outcome))
+                        return new TrainCombatResult(current, callbacks.Outcome, results);
+                }
+            }
+            return new TrainCombatResult(current, RoomOutcome.Exchanged, results);
+        }
+
+        private static TrainCombatState ReplaceRoom(TrainCombatState source, RoomCombatState replacement)
+        {
+            RoomCombatState[] rooms = source.Rooms.ToArray();
+            int index = Array.FindIndex(rooms, room => room.RoomIndex == replacement.RoomIndex);
+            if (index < 0) throw new InvalidOperationException("A room result references a missing train room.");
+            rooms[index] = replacement;
+            return Freeze(source, rooms, replacement.Context);
         }
 
         internal static TrainCombatResult ApplyMovementTriggers(TrainCombatState source, IReadOnlyList<(int UnitId, string Kind)> triggers)

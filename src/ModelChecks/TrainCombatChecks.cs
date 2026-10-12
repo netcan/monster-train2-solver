@@ -57,7 +57,27 @@ internal static class TrainCombatChecks
             "Rooted did not prevent movement and consume a stack.");
         Require(TrainCombatModel.Ascend(stayed.State).State!.Rooms[1].Units.Count == 1,
             "A root removed in the previous turn still prevented movement.");
-        Console.WriteLine("TRAIN-CHECKS PASS: floor order, ascension, immediate Pyre combat, parent isolation.");
+        var relentless = new CombatUnit(6, "relentless", CombatTeam.Enemy, 4, 10, 10, true, false, false,
+            [new CombatStatus("relentless", 1)]);
+        var guard = new CombatUnit(7, "guard", CombatTeam.Player, 2, 10, 10, true, false, false,
+            [new CombatStatus("undying", 1)]);
+        var outerBoss = new CombatUnit(8, "outer-boss", CombatTeam.Enemy, 0, 10, 10, false, false, false, [],
+            bumpRules: new UnitBumpRules(loops: false, companionBoss: false, outerBoss: true));
+        var relentlessTrain = new TrainCombatState([
+            new RoomCombatState(0, false, [], []),
+            new RoomCombatState(1, false, [relentless, guard, outerBoss], []),
+            new RoomCombatState(2, false, [], []),
+            new RoomCombatState(3, false, [pyre], [])
+        ], [new EnemyMovement(6, 1, true, false), new EnemyMovement(8, 1, false, false)], 7);
+        TrainCombatResult relentlessAscended = TrainCombatModel.Ascend(relentlessTrain);
+        Require(relentlessAscended.Supported && relentlessAscended.DestroyedRoomIndexes.SequenceEqual([1]) &&
+            relentlessAscended.State!.Rooms[1].Units.Select(unit => unit.Id).SequenceEqual([outerBoss.Id]) &&
+            relentlessAscended.State.Rooms[2].Units.Any(unit => unit.Id == relentless.Id) &&
+            relentlessAscended.RoomResults.SelectMany(result => result.Events).Any(item => item.Kind == "Death" && item.Target == guard.Id),
+            "Relentless ascension did not remove Undying, sacrifice room occupants or preserve the Outer Boss.");
+        Require(relentlessTrain.Rooms[1].Units.Count == 3,
+            "Relentless room destruction mutated its parent.");
+        Console.WriteLine("TRAIN-CHECKS PASS: floor order, ascension, immediate Pyre combat, relentless destruction, Undying and Outer Boss gates, parent isolation.");
     }
 
     private static void Require(bool condition, string message)

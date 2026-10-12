@@ -159,6 +159,7 @@ namespace MonsterTrain2Poju.Model
             BattleRngStream? spawningStream = source.RngStreams.FirstOrDefault(stream => stream.Name == "Spawning");
             if (spawningStream == null) return Unsupported("Missing spawning seed.");
             EnemySpawnState spawn = source.Spawn;
+            BattlePlayRules? outputPlayRules = source.PlayRules;
             string? uiRangeError = CardSpellModel.UnisolatedUiRangeReason(source);
             if (uiRangeError != null) return Unsupported(uiRangeError);
             CardPileState[] otherPiles = source.OtherPiles.ToArray();
@@ -214,6 +215,9 @@ namespace MonsterTrain2Poju.Model
             TrainCombatResult ascended = TrainCombatModel.Ascend(train);
             if (!ascended.Supported) return Unsupported(ascended.UnsupportedReason!);
             if (!RouteDeadUnits(train, ascended)) return Unsupported("Missing unit death event or card routing.");
+            if (outputPlayRules != null && ascended.DestroyedRoomIndexes.Count > 0)
+                outputPlayRules = outputPlayRules.WithRooms(outputPlayRules.Rooms.Select(room =>
+                    ascended.DestroyedRoomIndexes.Contains(room.RoomIndex) ? room.WithEnabled(false) : room).ToArray());
             train = ascended.State!;
             spawn = WithTrain(spawn, train, spawn.Turn, spawn.Rng);
             if (Terminal(ascended.Outcome)) return Finish(ascended.Outcome, 0, source.MoonPhase);
@@ -342,7 +346,7 @@ namespace MonsterTrain2Poju.Model
                     }
                 }
                 return new BattleTurnResult(new BattleTurnState(spawn, energy, source.EnergyPerTurn, drawPerTurn,
-                    finalContext.QueryFrame?.ForgePoints ?? source.ForgePoints, source.DragonsHoard, phase, streams, piles, source.ExternalInteractions, source.PlayRules,
+                    finalContext.QueryFrame?.ForgePoints ?? source.ForgePoints, source.DragonsHoard, phase, streams, piles, source.ExternalInteractions, outputPlayRules,
                     source.BattlePreviewEnabled, source.UiRngIsolated, source.CanonicalDecisionReferences, source.CanonicalPhysicalReferences,
                     selectedRoom), outcome);
             }
