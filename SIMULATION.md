@@ -1,6 +1,6 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-12): 240 binary archives, including 209
+Current accepted inventory (2026-10-12): 241 binary archives, including 210
 full battles and 31 component calibrations. Unchanged original relic evidence
 covers 60/224 catalog entries (26.79%); see
 [the owner evidence table](tests/fixtures/relic-coverage.md). Whole-battle
@@ -158,7 +158,7 @@ are copied immutable values; independent child states can run on worker threads.
 | Statistic-driven damage traits | `DamageScalingModel` and `RoomCombatModel` | 63 native callbacks with complete refreshed contexts; trait order, replacement/addition, explicit-source upgrades, per-hit statistics and Boss/Pyre kill previews |
 | Dynamic statistic inputs | `CombatContext.QueryFrame` and turn/card transitions | 255 native damage callbacks and 48 decision boundaries; payment, combat, rollover, previews and settled terminal resources, plus multi-turn and parallel branches |
 | Card instance modifiers | `CardModifierModel` | Permanent/temporary ordered numeric upgrades, unit starting statuses, discard removal, play history and 256 native scalar calculations |
-| Relic card modifiers | `RelicCardModifierModel` and `CardUpgradeLifecycleModel` | Native ordering/conditions, numeric/status/IgnoreArmor/SelfPurge/Consume upgrades, unit-ability upgrades, generation and cardless births; played Consume cards route to Exhausted. Reset retains pre-existing permanent and temporary upgrade lifecycle metadata. Other traits, card triggers, replacements and room-ability payloads remain explicitly rejected. |
+| Relic card modifiers | `RelicCardModifierModel` and `CardUpgradeLifecycleModel` | Native ordering/conditions, numeric/status/IgnoreArmor/SelfPurge/Consume upgrades, unit-ability upgrades, temporary upgrade replacement, generation and cardless births; played Consume cards route to Exhausted. Replacement keeps lifecycle and battle card modifier lists synchronized. Other traits, card triggers and room-ability payloads remain explicitly rejected. |
 | Relic added-trigger birth effects | `RelicCharacterTriggerModel` | Fresh ordered trigger installs, count modifiers, conditions, team/subtype gates, captured character asset-key filters and Covenant/preview gates; 32 immutable branches. Filtered Covenant behavior has model checks but no accepted native battle archive yet. |
 | Retained card references | `CombatContext.CardRegistry` | Observed card identities survive pile clearing; detached spawner upgrades/removal preserve ownership and parent isolation |
 | Standby dictionary allocation | `CardPileModel` | Captured entry slots and free-list order preserve native hole reuse after unit death; malformed layouts, distinct futures, terminal clear and parallel branches |
@@ -8365,4 +8365,32 @@ dotnet run --project src/ModelChecks -c Release -- --relic-card-play-magic-power
 pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -OriginalCardPlayMagicPower
 dotnet run --project src/ModelChecks -c Release -- --original-card-play-magic-power-only tests/fixtures/full-battle-original-card-play-magic-power.mt2f
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-card-play-magic-power.mt2f
+```
+
+### Temporary relic upgrade replacement
+
+The schema-129 `full-battle-relic-card-replacement-upgrades.mt2f` captures an
+original relic manager call replacing a temporary armor upgrade on an eligible
+card. Native state removes `ArduhnIncant3_Upgrade` and retains the replacement;
+the manager returns success while `UpgradeAdded` stays false because list size
+does not grow. The lifecycle model now synchronizes its temporary-upgrade
+identities with battle card modifiers, so the removed bonus no longer affects
+played-card stats and the replacement is supported during card play.
+
+The muted Instant battle wins after 61 room stages, 13 card cycles, 14 train
+phases, 11 spawns, seven EndTurns and 11 actions. Capture failures, mismatches,
+unsupported transitions and pending records are zero. Native manager replay
+matches the exact removal, replacement payload and return/list-growth flags;
+independent full-battle checks pass across 32 immutable branches. The archive is
+29,523 bytes with 4,619 unique nodes and SHA-256
+`A8EF5A5D8E05A9F2AECFBD081BB34D76A468FF9A2C270AD9C505FE806291D43E`; it has no
+JSON companion. Original relic evidence remains 60/224 (26.79%), and inventory
+is 241 archives: 210 battles and 31 component calibrations. Replacement metadata
+is supported when lifecycle evidence matches; other unmodeled traits, card
+triggers and room-ability payloads remain rejected. Full-inventory replay,
+broader relic/card interaction coverage and the decision solver remain open.
+
+```powershell
+dotnet run --project src/ModelChecks -c Release -- --relic-card-modifiers-only tests/fixtures/full-battle-relic-card-replacement-upgrades.mt2f
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-relic-card-replacement-upgrades.mt2f
 ```

@@ -12,8 +12,8 @@ internal static class RelicCardModifierChecks
         CardUpgradeMaskMetadata Metadata(IReadOnlyList<UpgradeMaskStatus>? statuses = null) =>
             new CardUpgradeMaskMetadata(statuses ?? [], false, false, false, false);
         CardUpgradeModifier Modifier(string id, CardLifecycleUpgrade lifecycle, IReadOnlyList<CombatStatus>? statuses = null,
-            IReadOnlyList<UpgradeMaskStatus>? maskStatuses = null) => new CardUpgradeModifier(id, id,
-                new CardStatModifier(), statuses ?? [], false, false, false, 0, 0, [],
+            IReadOnlyList<UpgradeMaskStatus>? maskStatuses = null, IReadOnlyList<string>? interactions = null, string? assetKey = null) => new CardUpgradeModifier(id, assetKey ?? id,
+                lifecycle.Values.Stats, statuses ?? [], false, false, false, 0, 0, interactions ?? [],
                 maskMetadata: Metadata(maskStatuses), lifecycle: lifecycle);
 
         var permanentLifecycle = new CardLifecycleUpgrade(new CardMaskUpgrade("permanent-remove-piercing",
@@ -68,6 +68,33 @@ internal static class RelicCardModifierChecks
         Require(abilityResult.Supported && abilityResult.Card!.Temporary.Upgrades.Single().AbilityUpgrade?.Definition?.DataId ==
             "steward-sacrifice", "A supported relic unit-ability upgrade was rejected or lost during application: " + abilityResult.UnsupportedReason);
         Console.WriteLine("RELIC-CARD-ABILITY-CHECKS PASS: unit ability upgrade payload survives native relic application.");
+
+        var priorUpgradeLifecycle = new CardLifecycleUpgrade(new CardMaskUpgrade("prior-upgrade", new CardStatModifier(damage: 20), [],
+            false, false, false, false), "prior-upgrade-asset", false, false, [], [], false, [], [], []);
+        var priorUpgrade = Modifier("prior-upgrade", priorUpgradeLifecycle, assetKey: "prior-upgrade-asset");
+        var replacementLifecycle = new CardLifecycleUpgrade(new CardMaskUpgrade("replacement-upgrade", new CardStatModifier(damage: 5), [],
+            false, false, false, false), "replacement-upgrade-asset", false, false, [], [], false, [], ["prior-upgrade-asset"], []);
+        var replacementUpgrade = Modifier("replacement-upgrade", replacementLifecycle, interactions: ["Upgrade replacements"],
+            assetKey: "replacement-upgrade-asset");
+        var replacementRelic = new CombatRelicState("replacement-relic", "ReplacementRelic", [RelicModel.AddTempUpgrade], cardModifiers:
+            [new RelicCardModifier(0, new RelicCardUpgradeRule("replacement-upgrade-asset", true, replacementLifecycle, []), replacementUpgrade, false)]);
+        var replacementCard = new CardInstanceState(3, definition.DataId, CardModifiers.Empty(),
+            new CardModifiers(new CardStatModifier(), [priorUpgrade], 0, []), 0, 0, 0, [], maskDescriptor: descriptor);
+        RelicCardModifierResult replacementResult = RelicCardModifierModel.Apply(replacementCard, [replacementRelic], resetTemporary: false);
+        Require(replacementResult.Supported, "Relic replacement was rejected: " + replacementResult.UnsupportedReason);
+        Require(replacementResult.Card!.Temporary.Upgrades.Count == 1 &&
+            replacementResult.Card.Temporary.Upgrades[0].DataId == "replacement-upgrade",
+            "Relic replacement did not synchronize the prior upgrade: " + JsonSerializer.Serialize(replacementResult.Card.Temporary.Upgrades));
+        Require(replacementResult.Dispatches.Single().Returned && !replacementResult.Dispatches.Single().UpgradeAdded,
+            "Replacement dispatch did not preserve the native returned-versus-list-growth distinction.");
+        string? replacementError = CardModifierModel.UnsupportedReason(replacementResult.Card);
+        Require(replacementError == null, "Installed replacement metadata remained unsupported: " + replacementError);
+        CardPlayRule replacementPlay = CardModifierModel.Resolve(new CardPlayRule(definition.DataId, "Monster", 0, "Unit", "Standby",
+            null, []), replacementResult.Card!);
+        Require(replacementPlay.ExternalInteractions.Count == 0 && CardModifierModel.UpgradedStat(10, "Damage", true,
+            replacementResult.Card.Permanent, replacementResult.Card.Temporary) == 15,
+            "Installed replacement metadata remained unsupported or the removed upgrade still affected card play.");
+        Console.WriteLine("RELIC-CARD-REPLACEMENT-CHECKS PASS: replacement lifecycle and battle card modifiers stay synchronized.");
     }
 
     internal static void Native(FixtureValue root, bool required = false, bool requireScenarioCoverage = true)
@@ -101,11 +128,14 @@ internal static class RelicCardModifierChecks
             scenario.GetString() == "all-units-multistrike-mutator";
         bool triggerUpgradeScenario = root.TryGetProperty("ModifierScenario", out scenario) &&
             scenario.GetString() == "relic-card-trigger-upgrades";
+        bool replacementUpgradeScenario = root.TryGetProperty("ModifierScenario", out scenario) &&
+            scenario.GetString() == "relic-card-replacement-upgrades";
         bool deployableRelicScenario = root.TryGetProperty("ModifierScenario", out scenario) &&
             scenario.GetString() == "original-deployable-relic";
         bool magebladeScenario = root.TryGetProperty("ModifierScenario", out scenario) &&
             scenario.GetString() == "mageblade";
-        bool sawExpectedRejection = statusUpgradeScenario || piercingUpgradeScenario || abilityUpgradeScenario || triggerUpgradeScenario || deployableRelicScenario
+        bool sawExpectedRejection = statusUpgradeScenario || piercingUpgradeScenario || abilityUpgradeScenario || triggerUpgradeScenario ||
+            replacementUpgradeScenario || deployableRelicScenario
             ? rows.Any(row => row.Dispatches.Any(effect => !effect.Returned && !effect.UpgradeAdded))
             : rows.Any(row => !row.Reset && row.Dispatches.Any(effect => effect.Returned && !effect.UpgradeAdded));
         Require(rows.Length > 0, "Native relic manager capture contains no calls.");
@@ -299,6 +329,24 @@ internal static class RelicCardModifierChecks
                 "The native relic trigger scenario did not play and summon from an OnKill-upgraded card.");
             Console.WriteLine($"NATIVE-RELIC-CARD-TRIGGER-CHECKS PASS: {triggerUpgradedSummons} relic-upgraded summons received their native OnKill triggers.");
         }
+        if (replacementUpgradeScenario)
+        {
+            bool replacementObserved = rows.Any(row =>
+            {
+                RelicCardModifier? effect = row.Relics.Where(relic => relic.AssetKey == "ReduceStarterCost")
+                    .SelectMany(relic => relic.CardModifiers ?? Array.Empty<RelicCardModifier>())
+                    .FirstOrDefault(candidate => candidate.Rule.Upgrade?.ReplacedAssets.Count > 0);
+                if (effect?.Rule.Upgrade == null) return false;
+                var replacedAssets = effect.Rule.Upgrade.ReplacedAssets;
+                return !row.Reset && row.Before.Temporary.Upgrades.Any(upgrade => replacedAssets.Contains(upgrade.AssetKey)) &&
+                    row.Actual.Temporary.Upgrades.All(upgrade => !replacedAssets.Contains(upgrade.AssetKey)) &&
+                    row.Actual.Temporary.Upgrades.Any(upgrade => upgrade.DataId == effect.Rule.Upgrade.Values.DataId) &&
+                    row.Dispatches.Any(dispatch => dispatch.Returned && !dispatch.UpgradeAdded);
+            });
+            Require(replacementObserved,
+                "Native relic modifier replay did not replace the targeted temporary armor upgrade while preserving list-growth flags.");
+            Console.WriteLine("NATIVE-RELIC-CARD-REPLACEMENT-CHECKS PASS: native replacement target removed and replacement card upgrade retained.");
+        }
         if (allUnitsMultistrikeScenario)
         {
             var upgradedCardIds = rows.Where(row => row.Relics.Any(relic => relic.AssetKey == "AllUnitsMultistrike"))
@@ -356,7 +404,8 @@ internal static class RelicCardModifierChecks
             Actual: row.GetProperty("Actual").Deserialize<CombatContext>()!)).ToArray();
         var births = generated.SelectMany(row => row.Actual.CardInstances!.Where(card => card.InstanceId >= row.Before.NextCardId)).ToArray();
         if (requireScenarioCoverage && !deployableRelicScenario && !statusUpgradeScenario && !piercingUpgradeScenario && !selfPurgeUpgradeScenario &&
-            !exhaustUpgradeScenario && !abilityUpgradeScenario && !triggerUpgradeScenario && !allUnitsMultistrikeScenario && !magebladeScenario)
+            !exhaustUpgradeScenario && !abilityUpgradeScenario && !triggerUpgradeScenario && !replacementUpgradeScenario &&
+            !allUnitsMultistrikeScenario && !magebladeScenario)
             Require(births.Any(card => card.Temporary.Upgrades.Any(upgrade => upgrade.AssetKey == "ReduceStarterCost" ||
                 rows.SelectMany(row => row.Relics).SelectMany(relic => relic.CardModifiers ?? []).Any(effect => effect.Upgrade?.DataId == upgrade.DataId))),
                 "No battle-generated eligible card received an original relic upgrade.");
@@ -368,6 +417,7 @@ internal static class RelicCardModifierChecks
             exhaustUpgradeScenario ? "Consume relic traits routed played cards to Exhausted" :
             abilityUpgradeScenario ? "unit ability upgrades reached summoned units" :
             triggerUpgradeScenario ? "OnKill character triggers reached summoned units" :
+            replacementUpgradeScenario ? "native temporary card upgrade replacement" :
             allUnitsMultistrikeScenario ? "Multistrike applied to owned and spawned cards" :
             magebladeScenario ? "native magic-power spell offsets" : "eligible battle-generated cards";
         Console.WriteLine($"NATIVE-RELIC-CARD-MODIFIER-CHECKS PASS: {rows.Length} original manager calls, {rows.Sum(row => row.Dispatches.Length)} ordered effect/filter results, " +

@@ -67,14 +67,17 @@ namespace MonsterTrain2Poju.Model
                 bool supportedTraitsOnly = template?.AddedTraits.Count > 0 && template.AddedTraits.All(trait =>
                     trait.RuntimeType == trait.DeclaredName &&
                     trait.RuntimeType is "CardTraitIgnoreArmor" or "CardTraitSelfPurge" or "CardTraitExhaustState" or "CardTraitDrawInDeploymentPhase") &&
-                    template.RemovedRuntimeTypes.Count == 0 && template.ReplacedAssets.Count == 0 && template.Triggers.Count == 0;
+                    template.RemovedRuntimeTypes.Count == 0 && template.Triggers.Count == 0;
                 if (template != null && (template.AddedTraits.Count > 0 && !supportedTraitsOnly ||
-                    template.RemovedRuntimeTypes.Count > 0 || template.ReplacedAssets.Count > 0 || template.Triggers.Count > 0))
+                    template.RemovedRuntimeTypes.Count > 0 || template.Triggers.Count > 0))
                     return "Unmodeled relic upgrade trait/trigger lifecycle in battle.";
                 if (supportedTraitsOnly && (upgrade?.Lifecycle == null || upgrade.Lifecycle.AddedTraits.Count != template!.AddedTraits.Count ||
                     !upgrade.Lifecycle.AddedTraits.Select(trait => trait.DeclaredName).SequenceEqual(template.AddedTraits.Select(trait => trait.DeclaredName))))
                     return "Supported relic upgrade trait lifecycle is missing or differs from its native definition.";
-                if (upgrade != null && (upgrade.MaskMetadata == null || upgrade.ExternalInteractions.Count > 0))
+                if (template?.ReplacedAssets.Count > 0 && (effect.ApplyToCardlessSpawns || upgrade?.Lifecycle == null ||
+                    !upgrade.Lifecycle.ReplacedAssets.SequenceEqual(template.ReplacedAssets)))
+                    return "Relic upgrade replacement metadata is missing, inconsistent or used for a cardless spawn.";
+                if (upgrade != null && (upgrade.MaskMetadata == null || CardModifierModel.UpgradeInteractions(upgrade).Any()))
                     return "Unmodeled relic card upgrade payload: " + string.Join("; ", upgrade.ExternalInteractions);
                 bool expectsAbility = template?.Values.UnitAbility == true;
                 bool hasAbility = upgrade?.AbilityUpgrade?.Definition != null;
@@ -107,22 +110,27 @@ namespace MonsterTrain2Poju.Model
             var card = source;
             var owned = CardBranchMaskModel.OwnedState(card);
             int next = 1;
-            CardLifecycleUpgrade Payload(CardUpgradeModifier upgrade)
+            var temporaryPayloads = new Dictionary<int, CardUpgradeModifier>();
+            CardLifecycleUpgrade Payload(CardUpgradeModifier upgrade, bool trackTemporary = false)
             {
                 CardLifecycleUpgrade? lifecycle = upgrade.Lifecycle;
-                return new CardLifecycleUpgrade(upgrade.MaskMetadata!.Current(upgrade), upgrade.AssetKey, upgrade.Unique,
+                var payload = new CardLifecycleUpgrade(upgrade.MaskMetadata!.Current(upgrade), upgrade.AssetKey, upgrade.Unique,
                     upgrade.RemoveOnDiscard, lifecycle?.AddedTraits ?? Array.Empty<CardTraitValue>(),
                     lifecycle?.RemovedRuntimeTypes ?? Array.Empty<string>(), lifecycle?.AvoidClobbering ?? false,
                     lifecycle?.TraitsModified ?? Array.Empty<string>(), lifecycle?.ReplacedAssets ?? Array.Empty<string>(),
                     lifecycle?.Triggers ?? Array.Empty<CardLifecycleTrigger>(), upgrade.CloneDamageBase ?? lifecycle?.OriginalDamage,
                     upgrade.CloneHealBase ?? lifecycle?.OriginalHeal, next++);
+                if (trackTemporary) temporaryPayloads.Add(payload.InstanceId, upgrade);
+                return payload;
             }
-            var state = new CardUpgradeLifecycleState(owned, card.Permanent.Upgrades.Select(Payload).ToArray(),
-                card.Temporary.Upgrades.Select(Payload).ToArray(), new[] { new CardLifecycleTrigger("OnCast", null, owned.InstalledCastEffects) },
+            var state = new CardUpgradeLifecycleState(owned, card.Permanent.Upgrades.Select(upgrade => Payload(upgrade)).ToArray(),
+                card.Temporary.Upgrades.Select(upgrade => Payload(upgrade, trackTemporary: true)).ToArray(),
+                new[] { new CardLifecycleTrigger("OnCast", null, owned.InstalledCastEffects) },
                 Array.Empty<CardLifecycleTrigger>(), false, "None");
             if (resetTemporary)
             {
                 state = CardUpgradeLifecycleModel.Reset(state).State;
+                temporaryPayloads.Clear();
                 card = card.WithModifiers(new CardModifiers(card.Permanent.Offsets, card.Permanent.Upgrades.Select((upgrade, index) =>
                     upgrade.WithStats(state.Permanent[index].Values.Stats)).ToArray(), card.Permanent.PersistentHealth,
                     card.Permanent.ExternalInteractions), CardModifiers.Empty());
@@ -143,6 +151,8 @@ namespace MonsterTrain2Poju.Model
                         bool returned = card.MaskDescriptor?.Definition.CanScaleWithMagicPower == true;
                         card = RelicMagicPowerModel.ApplyToCard(card, magicEffect!, out error)!;
                         if (card == null) return Fail(error!);
+                        if (!RefreshTemporaryPayloads(card.Temporary, state, temporaryPayloads))
+                            return Fail("Relic magic-power refresh changed the temporary upgrade lifecycle order.");
                         dispatches.Add(new RelicCardModifierDispatch(relicIndex, magicEffect!.EffectIndex, returned,
                             false, Array.Empty<RelicCardFilterResult>()));
                         continue;
@@ -158,9 +168,27 @@ namespace MonsterTrain2Poju.Model
                         context = conditionEvaluation.Context;
                         if (!conditionEvaluation.Passed) continue;
                     }
+                    int addedInstanceId = next;
+                    int temporaryCountBefore = state.Temporary.Count;
                     var applied = RelicCardUpgradeModel.Apply(state, cardEffect.Rule, next);
                     state = applied.State; next = applied.NextUpgradeInstanceId;
-                    if (applied.UpgradeAdded) card = card.WithModifiers(card.Permanent, UnitModifierModel.Add(card.Temporary, cardEffect.Upgrade!));
+                    if (applied.UpgradeAdded)
+                    {
+                        if (state.Temporary.Any(item => item.InstanceId == addedInstanceId))
+                            temporaryPayloads[addedInstanceId] = cardEffect.Upgrade!;
+                        var synchronized = new List<CardUpgradeModifier>(state.Temporary.Count);
+                        foreach (CardLifecycleUpgrade temporary in state.Temporary)
+                        {
+                            if (!temporaryPayloads.TryGetValue(temporary.InstanceId, out CardUpgradeModifier? modifier))
+                                return Fail("Relic replacement lost the matching temporary card modifier payload.");
+                            synchronized.Add(modifier);
+                        }
+                        var modifiers = new CardModifiers(card.Temporary.Offsets, synchronized, card.Temporary.PersistentHealth,
+                            card.Temporary.ExternalInteractions);
+                        card = card.WithModifiers(card.Permanent, modifiers);
+                        if (!RefreshTemporaryPayloads(card.Temporary, state, temporaryPayloads))
+                            return Fail("Relic replacement changed the temporary upgrade lifecycle order.");
+                    }
                     if (applied.Returned && conditionEvaluation != null)
                     {
                         RelicConditionRecord record = RelicConditionModel.Record(context!, cardEffect.Conditions);
@@ -173,10 +201,20 @@ namespace MonsterTrain2Poju.Model
                         workingRelics[relicIndex] = workingRelics[relicIndex].WithCardModifiers(updatedEffects);
                         context = context!.WithRelics(workingRelics);
                     }
-                    dispatches.Add(new RelicCardModifierDispatch(relicIndex, cardEffect.EffectIndex, applied.Returned, applied.UpgradeAdded, applied.Filters));
+                    dispatches.Add(new RelicCardModifierDispatch(relicIndex, cardEffect.EffectIndex, applied.Returned,
+                        state.Temporary.Count > temporaryCountBefore, applied.Filters));
                 }
             }
             return new RelicCardModifierResult(card, dispatches, context: context);
+
+            static bool RefreshTemporaryPayloads(CardModifiers modifiers, CardUpgradeLifecycleState lifecycle,
+                Dictionary<int, CardUpgradeModifier> payloads)
+            {
+                if (modifiers.Upgrades.Count != lifecycle.Temporary.Count) return false;
+                for (int index = 0; index < lifecycle.Temporary.Count; index++)
+                    payloads[lifecycle.Temporary[index].InstanceId] = modifiers.Upgrades[index];
+                return true;
+            }
         }
 
         internal static RoomCombatResult ApplyCardlessSpawn(RoomCombatState source, int unitId, int fromCardId,

@@ -288,6 +288,11 @@ namespace MonsterTrain2Poju.Model
 
     public static class CardModifierModel
     {
+        internal static IEnumerable<string> UpgradeInteractions(CardUpgradeModifier upgrade) =>
+            upgrade.Lifecycle?.ReplacedAssets.Count > 0
+                ? upgrade.ExternalInteractions.Where(interaction => interaction != "Upgrade replacements")
+                : upgrade.ExternalInteractions;
+
         internal static string? UnsupportedReason(CardInstanceState instance)
         {
             string? exhaustError = CardExhaustModel.Validate(instance);
@@ -301,7 +306,7 @@ namespace MonsterTrain2Poju.Model
                 return "Invalid or unmodeled card effect counters.";
             var interactions = instance.ExternalInteractions.Concat(instance.Permanent.ExternalInteractions)
                 .Concat(instance.Temporary.ExternalInteractions).Concat(instance.Permanent.Upgrades.Concat(instance.Temporary.Upgrades)
-                    .SelectMany(upgrade => upgrade.ExternalInteractions)).ToList();
+                    .SelectMany(UpgradeInteractions)).ToList();
             if (instance.Permanent.PersistentHealth != 0 || instance.Temporary.PersistentHealth != 0) interactions.Add("Persistent card health");
             return interactions.Count == 0 ? null : string.Join("; ", interactions.Distinct());
         }
@@ -326,7 +331,7 @@ namespace MonsterTrain2Poju.Model
         {
             var interactions = rule.ExternalInteractions.Concat(instance.ExternalInteractions)
                 .Concat(instance.Permanent.ExternalInteractions).Concat(instance.Temporary.ExternalInteractions)
-                .Concat(instance.Permanent.Upgrades.Concat(instance.Temporary.Upgrades).SelectMany(upgrade => upgrade.ExternalInteractions)).ToList();
+                .Concat(instance.Permanent.Upgrades.Concat(instance.Temporary.Upgrades).SelectMany(UpgradeInteractions)).ToList();
             string? exhaustError = CardExhaustModel.Validate(instance);
             if (exhaustError != null) interactions.Add(exhaustError);
             if (CardExhaustModel.HasConsume(instance) && instance.ExhaustState == null) interactions.Add("Consume requires captured private trait state.");

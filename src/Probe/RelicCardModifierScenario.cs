@@ -19,7 +19,7 @@ namespace MonsterTrain2Poju.Probe
             if (!RelicCardModifierProbe.Enabled || Prepared) return;
             int selectedScenario = new[] { "MT2_PROBE_RELIC_CARD_STATUS_UPGRADE", "MT2_PROBE_RELIC_CARD_PIERCING_UPGRADE",
                 "MT2_PROBE_RELIC_CARD_SELF_PURGE_UPGRADE", "MT2_PROBE_RELIC_CARD_EXHAUST_UPGRADE", "MT2_PROBE_RELIC_CARD_ABILITY_UPGRADE",
-                "MT2_PROBE_RELIC_CARD_TRIGGER_UPGRADE" }
+                "MT2_PROBE_RELIC_CARD_TRIGGER_UPGRADE", "MT2_PROBE_RELIC_CARD_REPLACEMENT_UPGRADE" }
                 .Count(name => Environment.GetEnvironmentVariable(name) == "1");
             if (AllUnitsMultistrikeMutator) selectedScenario++;
             if (selectedScenario > 1) throw new InvalidOperationException("Relic card status, piercing, self-purge, exhaust, ability and trigger scenarios are mutually exclusive.");
@@ -80,14 +80,22 @@ namespace MonsterTrain2Poju.Probe
             if (abilityScenario) InstallStewardAbilityUpgrade(save.GetAllGameData(), relicEffect);
             bool triggerScenario = !AllUnitsMultistrikeMutator && Environment.GetEnvironmentVariable("MT2_PROBE_RELIC_CARD_TRIGGER_UPGRADE") == "1";
             if (triggerScenario) InstallCharacterTriggerUpgrade(save.GetAllGameData(), relicEffect);
+            bool replacementScenario = !AllUnitsMultistrikeMutator && Environment.GetEnvironmentVariable("MT2_PROBE_RELIC_CARD_REPLACEMENT_UPGRADE") == "1";
+            CardUpgradeData? replacementTarget = replacementScenario ? InstallReplacementUpgrade(save.GetAllGameData(), relicEffect) : null;
             var filters = UpgradeData(relicEffect).GetFilters();
             var eligible = owned.Where(card => filters.All(filter => filter.FilterCard(card, managers.GetRelicManager())))
                 .Where(card => !ExhaustUpgrade || card.GetTraitStates().All(trait =>
                     trait is not CardTraitSelfPurge && trait is not CardTraitExhaustState))
-                .Take(AllUnitsMultistrikeMutator || abilityScenario || triggerScenario ? 1 : 2).ToArray();
-            int requiredEligibleCards = AllUnitsMultistrikeMutator || abilityScenario || triggerScenario ? 1 : 2;
+                .Take(AllUnitsMultistrikeMutator || abilityScenario || triggerScenario || replacementScenario ? 1 : 2).ToArray();
+            int requiredEligibleCards = AllUnitsMultistrikeMutator || abilityScenario || triggerScenario || replacementScenario ? 1 : 2;
             if (eligible.Length != requiredEligibleCards)
                 throw new InvalidOperationException("Relic scenario has " + eligible.Length + " eligible owned cards; required " + requiredEligibleCards + ".");
+            if (replacementTarget != null)
+            {
+                var prior = new CardUpgradeState(); prior.Setup(replacementTarget);
+                if (!eligible[0].ApplyTemporaryUpgrade(prior, save))
+                    throw new InvalidOperationException("Could not install the native temporary upgrade selected for replacement.");
+            }
             CaptureReady = true;
             foreach (var card in eligible)
             {
@@ -201,6 +209,25 @@ namespace MonsterTrain2Poju.Probe
                     source.GetRoomModifierUpgrades().Count != 0 || source.GetFilters().Count != 1 || !source.IsUnique())
                     throw new InvalidOperationException("Original PyreHeartSavagery upgrade definition changed.");
                 AccessTools.Field(typeof(RelicEffectAddTempUpgrade), "_cardUpgradeData").SetValue(effect, source);
+            }
+
+            static CardUpgradeData InstallReplacementUpgrade(AllGameData gameData, RelicEffectAddTempUpgrade effect)
+            {
+                CardUpgradeData original = UpgradeData(effect);
+                CardUpgradeData? target = gameData.GetAllCardUpgradeData().FirstOrDefault(upgrade =>
+                    upgrade.GetStatusEffectUpgrades().Count > 0 &&
+                    upgrade.GetStatusEffectUpgrades().All(status => status.statusId == "armor" && status.count > 0) &&
+                    upgrade.GetTraitDataUpgrades().Count == 0 && upgrade.GetRemoveTraitUpgrades().Count == 0 &&
+                    upgrade.GetCharacterTriggerUpgrades().Count == 0 && upgrade.GetCardTriggerUpgrades().Count == 0 &&
+                    upgrade.GetRoomModifierUpgrades().Count == 0 && upgrade.GetUpgradesToRemove().Count == 0 &&
+                    upgrade.GetUnitAbilityUpgrade() == null && upgrade.GetRoomAbilityUpgrade() == null && upgrade.GetBonusSize() == 0);
+                if (target == null || target.GetAssetKey() == original.GetAssetKey())
+                    throw new InvalidOperationException("Game data has no isolated armor upgrade to replace.");
+                var clone = (CardUpgradeData)AccessTools.Method(typeof(object), "MemberwiseClone").Invoke(original, null)!;
+                AccessTools.Field(typeof(CardUpgradeData), "upgradesToRemove").SetValue(clone, new List<CardUpgradeData> { target });
+                AccessTools.Field(typeof(CardUpgradeData), "isUnique").SetValue(clone, false);
+                AccessTools.Field(typeof(RelicEffectAddTempUpgrade), "_cardUpgradeData").SetValue(effect, clone);
+                return target;
             }
 
             static void InstallOncePerTurnCondition(AllGameManagers managers, CardState sample)
