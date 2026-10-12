@@ -2851,8 +2851,18 @@ pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-equipment-bu
 Full-battle preview restoration now clears pending `PreviewTargets.NextAction`
 for Boss identities, including Bosses referenced by preview-born retained aura
 sources. This matches all eight existing persistent-enchantment EndTurn
-snapshots; six archives pass their complete targeted checks. The two
-random-pool summon archives continue past EndTurn and stop at card action 12,
-where a new source's cached status is `buff` in the model and `regen` in native
-state. That cache-selection difference is still open. Inventory remains 236
-archives and accepted original relic evidence remains 59/224 (26.34%).
+snapshots. The two random-pool summon archives exposed one later preview edge:
+model death cleanup recomputed all auras after terminal Boss removal, beyond the
+native preview stop boundary. `RoomCombatModel.Death` now skips that final global
+update while preserving the live battle-won path. Both archives pass all 41 room
+stages, nine card cycles, nine train phases, seven spawns, five EndTurns, 15
+actions and 16 parallel policy branches, with zero unsupported operations. The
+six other persistent-enchantment archives also retain their targeted pass.
+Three adjacent terminal-death fixtures pass 46 more native action checks with no
+unsupported operations. Inventory remains 236 archives and accepted original
+relic evidence remains 59/224 (26.34%); full-inventory replay is still deferred.
+
+```powershell
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-persistent-enchantment-random-summons.mt2f
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-persistent-enchantment-random-summons-fresh.mt2f
+```
