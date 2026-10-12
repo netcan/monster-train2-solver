@@ -39,6 +39,19 @@ internal static class CardSpellChecks
         Require(emptyMultiply.Supported && emptyMultiply.State!.Units.Single().Status("armor") == null &&
             JsonSerializer.Serialize(emptyMultiply.State.Context!.BattleRng) == JsonSerializer.Serialize(multiplyChance.State),
             "Status multiplication changed a target without stacks or skipped the chance draw.");
+        var positive = new CombatStatus("armor", 3, stackable: true, displayCategory: "Positive");
+        var negative = new CombatStatus("pyregel", 2, stackable: true, displayCategory: "Negative");
+        var positiveTarget = Make(4, CombatTeam.Player, 20, positive, negative);
+        var multiplyPositive = new CardActionEffect("MultiplyAllPositiveStatusEffects", "DropTargetCharacter", 2, true, true, []);
+        RoomCombatState positiveRoom = new(0, false, [positiveTarget], [], context);
+        string positiveParent = JsonSerializer.Serialize(positiveRoom);
+        RoomCombatResult positiveResult = CardSpellModel.Apply(positiveRoom, [multiplyPositive], 4);
+        Require(positiveResult.Supported && positiveResult.State!.Units.Single().Status("armor")?.Stacks == 6 &&
+            positiveResult.State.Units.Single().Status("pyregel")?.Stacks == 2 &&
+            JsonSerializer.Serialize(positiveRoom) == positiveParent,
+            "Positive-status multiplication changed a negative status or differed: supported=" + positiveResult.Supported + ", reason=" + positiveResult.UnsupportedReason +
+            ", statuses=" + string.Join(",", positiveResult.State?.Units.Single().Statuses.Select(status => status.Id + ":" + status.Stacks) ?? Array.Empty<string>()) +
+            ", parentUnchanged=" + (JsonSerializer.Serialize(positiveRoom) == positiveParent));
         RoomCombatResult shield = CardSpellModel.Apply(new RoomCombatState(0, false,
             [Make(1, CombatTeam.Enemy, 5, new CombatStatus("damage shield", 1, removeWhenTriggered: true)), front], [], context), damage, 1);
         Require(shield.Supported && shield.State!.Units[0].Health == 5 &&
@@ -197,7 +210,7 @@ internal static class CardSpellChecks
         Parallel.For(0, 32, _ => Require(JsonSerializer.Serialize(CardSpellModel.Apply(room, rally, 3).State) ==
             JsonSerializer.Serialize(moved.State), "Parallel spell branches diverged."));
         Require(JsonSerializer.Serialize(room) == parent, "Spells mutated their parent.");
-        Console.WriteLine("SPELL-CHECKS PASS: status multiplication, armor/shield, flat damage, lethal follow-ups, valor, rearrange, immunity and isolation.");
+        Console.WriteLine("SPELL-CHECKS PASS: status multiplication, positive-status multiplication, armor/shield, flat damage, lethal follow-ups, valor, rearrange, immunity and isolation.");
     }
     private static void Require(bool condition, string message)
     { if (!condition) throw new InvalidOperationException(message); }

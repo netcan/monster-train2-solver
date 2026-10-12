@@ -578,7 +578,8 @@ namespace MonsterTrain2Poju.Model
                 {
                     if (effect.Type == "AttachEquipment" && targetIndex > 0) break;
                     // Native status application runs backwards; damage/healing/upgrades run forwards.
-                    int id = targets.UnitIds[(effect.Type == "AddStatus" || effect.Type == "MultiplyStatus" || effect.Type == "SpawnOrStatus" ||
+                    int id = targets.UnitIds[(effect.Type == "AddStatus" || effect.Type == "MultiplyStatus" ||
+                        effect.Type == "MultiplyAllPositiveStatusEffects" || effect.Type == "SpawnOrStatus" ||
                         AbilityCooldownModel.IsEffect(effect.Type) || AbilityLifecycleModel.IsEffect(effect.Type))
                         ? targets.UnitIds.Count - 1 - targetIndex : targetIndex];
                     RoomCombatState? targetRoom = state.Rooms.FirstOrDefault(item => item.Units.Any(unit => unit.Id == id));
@@ -739,7 +740,8 @@ namespace MonsterTrain2Poju.Model
                         bossDead |= outcome == RoomOutcome.BattleWon;
                     }
                 }
-                if (effect.Type == "AddStatus" || effect.Type == "MultiplyStatus" || effect.Type == "SpawnOrStatus") DrainDeaths();
+                if (effect.Type == "AddStatus" || effect.Type == "MultiplyStatus" ||
+                    effect.Type == "MultiplyAllPositiveStatusEffects" || effect.Type == "SpawnOrStatus") DrainDeaths();
             }
             // Natural play records TimesPlayed before OnCast/unit-play callbacks
             // drain the final queue. Direct effect callers request a settled result.
@@ -946,7 +948,7 @@ namespace MonsterTrain2Poju.Model
                 if (effect.Range != null && effect.Type != "CopyUnits" && effect.Type != "Bump" && effect.Type != "DiscardHand" && effect.Type != "Generate" && effect.Type != "AdjustCapacity" && effect.Type != "ScheduleNextDrawUpgrade" &&
                     !AbilityLifecycleModel.IsEffect(effect.Type))
                 {
-                    if (!EnergyModel.IsEffect(effect.Type) && effect.Type != ForgePointsModel.Effect && !new[] { "Damage", "Heal", "AddStatus", "MultiplyStatus", "BuffAttack", "DebuffAttack", "BuffHealth", "DebuffHealth", "Draw", "DrawType", "DrawNextTurn" }.Contains(effect.Type))
+                    if (!EnergyModel.IsEffect(effect.Type) && effect.Type != ForgePointsModel.Effect && !new[] { "Damage", "Heal", "AddStatus", "MultiplyStatus", "MultiplyAllPositiveStatusEffects", "BuffAttack", "DebuffAttack", "BuffHealth", "DebuffHealth", "Draw", "DrawType", "DrawNextTurn" }.Contains(effect.Type))
                         return "Unmodeled range consumer " + effect.Type;
                     string? rangeError = effect.Range.Validate();
                     if (rangeError != null) return rangeError;
@@ -1025,14 +1027,14 @@ namespace MonsterTrain2Poju.Model
                     if (forgeError != null) return forgeError;
                     continue;
                 }
-                if (!new[] { "CopyUnits", "Bump", "AttackWithUnit", "Damage", "DamagePerSourceAttack", "Heal", "Sacrifice", "AddStatus", "MultiplyStatus", "AddStatusPerOtherEffect", "SpawnOrStatus", "FloorRearrange", "UnitUpgrade", "BuffEquipment", "RemoveUnitUpgrade", "AttachEquipment", "RemoveEquipment", "BuffAttack", "DebuffAttack", "BuffHealth", "DebuffHealth", "Draw", "DiscardHand", "Generate" }.Contains(effect.Type))
+                if (!new[] { "CopyUnits", "Bump", "AttackWithUnit", "Damage", "DamagePerSourceAttack", "Heal", "Sacrifice", "AddStatus", "MultiplyStatus", "MultiplyAllPositiveStatusEffects", "AddStatusPerOtherEffect", "SpawnOrStatus", "FloorRearrange", "UnitUpgrade", "BuffEquipment", "RemoveUnitUpgrade", "AttachEquipment", "RemoveEquipment", "BuffAttack", "DebuffAttack", "BuffHealth", "DebuffHealth", "Draw", "DiscardHand", "Generate" }.Contains(effect.Type))
                     return "Unimplemented spell effect " + effect.Type;
                 if (effect.Type == "Generate" && effect.Generation == null) return "Missing generated card rules.";
                 if ((effect.Type == "UnitUpgrade" || effect.Type == "BuffEquipment" || effect.Type == "RemoveUnitUpgrade") && effect.Upgrade == null)
                     return "Missing unit upgrade definition.";
                 if (effect.Type == "BuffEquipment" && effect.Lifetime != "TemporaryUntilUnitDeath")
                     return "Equipment buffs require the native unit-death lifetime.";
-                if (effect.Value < 0 && !AttackChange(effect) && effect.Type != ForgePointsModel.Effect && !new[] { "CopyUnits", "Bump", "Damage", "DamagePerSourceAttack", "Heal", "AddStatus", "AddStatusPerOtherEffect", "SpawnOrStatus", "BuffHealth", "DebuffHealth", "Draw", "DiscardHand", "Generate" }.Contains(effect.Type) ||
+                if (effect.Value < 0 && !AttackChange(effect) && effect.Type != ForgePointsModel.Effect && !new[] { "CopyUnits", "Bump", "Damage", "DamagePerSourceAttack", "Heal", "AddStatus", "AddStatusPerOtherEffect", "SpawnOrStatus", "MultiplyAllPositiveStatusEffects", "BuffHealth", "DebuffHealth", "Draw", "DiscardHand", "Generate" }.Contains(effect.Type) ||
                     effect.Type == "FloorRearrange" && effect.Value > 1) return "Invalid spell effect value.";
                 if (effect.Type == "BuffHealth" && effect.Lifetime != "" && effect.Lifetime != "TemporaryUntilEndOfBattle" &&
                     effect.Lifetime != "TemporaryUntilUnitDeath") return "Unmodeled maximum-health buff lifetime.";
@@ -1123,6 +1125,7 @@ namespace MonsterTrain2Poju.Model
                 case "Sacrifice": return count > 0;
                 case "AddStatus":
                 case "MultiplyStatus": return effect.Tests?.StrictTargets != true && effect.Target != "DropTargetCharacter" || count > 0;
+                case "MultiplyAllPositiveStatusEffects": return effect.Target != "DropTargetCharacter" || count > 0;
                 case "AddStatusPerOtherEffect": return count > 0;
                 case "SpawnOrStatus": return count > 0 || CanSpawnFallback(context, room, effect);
                 case "FloorRearrange":
@@ -1252,6 +1255,47 @@ namespace MonsterTrain2Poju.Model
                 return UnitModifierModel.Apply(state, target.Id, effect.Upgrade!, effect.Lifetime,
                     effect.Type == "RemoveUnitUpgrade", target.Team == CombatTeam.Player ? playerCapacity : enemyCapacity,
                     sourceCardId, scaleUpgrade: effect.ScaleUpgrade, refreshPyre: refreshPyre);
+            if (effect.Type == "MultiplyAllPositiveStatusEffects")
+            {
+                var events = new List<CombatEvent>();
+                var callbacks = new List<RoomCombatModel.QueuedCharacterTrigger>();
+                var retained = new List<CombatUnit>();
+                var dispatches = new List<CharacterTriggerDispatch>();
+                RoomOutcome outcome = RoomOutcome.Exchanged;
+                foreach (CombatStatus status in target.Statuses)
+                {
+                    if (status.Id == "horde") continue;
+                    if (status.DisplayCategory == null)
+                        return new RoomCombatResult(null, RoomOutcome.Unsupported, 0, events,
+                            "Positive-status multiplication requires captured status display categories.");
+                    if (status.DisplayCategory != "Positive") continue;
+                    int multiplied;
+                    int added;
+                    unchecked
+                    {
+                        multiplied = status.Stacks * effect.Value;
+                        added = multiplied - status.Stacks;
+                    }
+                    if (multiplied <= 0 || added <= 0) continue;
+                    RoomCombatResult applied = StatusApplicationModel.Apply(state, target.Id, status.WithStacks(added), sourceCardId,
+                        overrideImmunity: effect.Target == "Pyre", fromEffectType: "CardEffectMultiplyAllStatusEffects");
+                    if (!applied.Supported) return applied;
+                    state = applied.State!;
+                    events.AddRange(applied.Events);
+                    callbacks.AddRange(applied.PendingCallbacks);
+                    retained.AddRange(applied.RetainedUnits);
+                    dispatches.AddRange(applied.Dispatches);
+                    if (applied.Outcome != RoomOutcome.Exchanged)
+                    {
+                        if (outcome != RoomOutcome.Exchanged && outcome != applied.Outcome)
+                            return new RoomCombatResult(null, RoomOutcome.Unsupported, 0, events,
+                                "Conflicting terminal results in one status multiplication effect are not modeled.");
+                        outcome = applied.Outcome;
+                    }
+                }
+                return new RoomCombatResult(state, outcome, 0, events, pendingCallbacks: callbacks,
+                    retainedUnits: retained, dispatches: dispatches);
+            }
             if (effect.Type == "AddStatus" || effect.Type == "MultiplyStatus" || effect.Type == "SpawnOrStatus")
             {
                 if (effect.Type != "SpawnOrStatus" && effect.Value != 0)
