@@ -105,7 +105,7 @@ namespace MonsterTrain2Poju.Model
         internal static TrainCombatResult UpdateAll(TrainCombatState source, Action<RoomCombatModel.QueuedCharacterTrigger>? enqueueCallback = null)
         {
             if (source.Context?.Enchantments?.AutomaticLifecycle != true)
-                return new TrainCombatResult(source, RoomOutcome.Exchanged, Array.Empty<RoomCombatResult>());
+                return DeathwishModel.UpdateAll(source, enqueueCallback);
             source = Rebase(source);
             RoomCombatResult updated = Update(source.Rooms.First());
             if (!updated.Supported) return new TrainCombatResult(null, RoomOutcome.Unsupported, Array.Empty<RoomCombatResult>(), updated.UnsupportedReason);
@@ -134,7 +134,9 @@ namespace MonsterTrain2Poju.Model
         {
             source = Sync(source);
             EnchantmentWorld? world = source.Context?.Enchantments;
-            if (world == null) return new RoomCombatResult(source, RoomOutcome.Exchanged, 0, new List<CombatEvent>());
+            if (world == null)
+                return onlySourceId.HasValue ? new RoomCombatResult(source, RoomOutcome.Exchanged, 0, new List<CombatEvent>()) :
+                    DeathwishModel.Update(source);
             EnchantmentCombatState frame = world.Frame(source.Context!);
             EnchantmentCombatResult result;
             if (onlySourceId.HasValue)
@@ -247,12 +249,17 @@ namespace MonsterTrain2Poju.Model
         // Other status writes still synchronize the shared actor snapshot.
         internal static RoomCombatResult StatusChanged(RoomCombatResult result, string statusId, bool dormant, bool update)
         {
-            if (!result.Supported || result.State!.Context?.Enchantments == null) return result;
-            RoomCombatState state = Sync(result.State!);
-            if (!update || statusId != "silenced" && statusId != "muted" && (statusId != "spark" || !dormant))
+            if (!result.Supported) return result;
+            RoomCombatState state = result.State!;
+            if (state.Context?.Enchantments != null) state = Sync(state);
+            bool controlStatus = statusId == "silenced" || statusId == "muted";
+            bool auraStatus = controlStatus || statusId == "spark" && dormant;
+            if (!update || !auraStatus)
                 return new RoomCombatResult(state, result.Outcome, result.Rounds, result.Events.ToList(),
                     pendingCallbacks: result.PendingCallbacks, retainedUnits: result.RetainedUnits, dispatches: result.Dispatches);
-            RoomCombatResult refreshed = Update(state);
+            RoomCombatResult refreshed = state.Context?.Enchantments != null
+                ? Update(state) : controlStatus ? DeathwishModel.Update(state) :
+                    new RoomCombatResult(state, RoomOutcome.Exchanged, 0, new List<CombatEvent>());
             return !refreshed.Supported ? refreshed : new RoomCombatResult(refreshed.State, result.Outcome, result.Rounds,
                 result.Events.ToList(), pendingCallbacks: result.PendingCallbacks.Concat(refreshed.PendingCallbacks).ToArray(),
                 retainedUnits: result.RetainedUnits, dispatches: result.Dispatches);

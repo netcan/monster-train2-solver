@@ -14,6 +14,7 @@ internal static class EnchantmentCombatChecks
         foreach (var sample in samples) Verify(sample);
         VerifyBoundaries(samples[0].GetProperty("Before").Deserialize<EnchantmentCombatState>()!);
         VerifyDeathwish(samples);
+        VerifyGenericDeathwish();
         Require(root.GetProperty("Schema").GetInt32() == 1 && root.GetProperty("GameModuleMvid").GetString() ==
             "8fb07b96-f4db-4d2b-884d-c00536d6ccf4" && root.GetProperty("Boundary").GetString() == "RealStatusAndDrainedQueue" &&
             !root.GetProperty("StatusMutationsSuppressed").GetBoolean() && root.GetProperty("LiveContextUnchanged").GetBoolean() &&
@@ -59,6 +60,56 @@ internal static class EnchantmentCombatChecks
         int[] returned = ActiveSources(State("deathwish-front-return", "AfterQueue"));
         Require(muted.Length == 0 && unmuted.Length == 1 && shifted.Length == 1 && returned.SequenceEqual(unmuted) &&
             !shifted.SequenceEqual(unmuted), "Mute or front-line transitions did not move Deathwish source membership.");
+    }
+    private static void VerifyGenericDeathwish()
+    {
+        CombatUnit Actor(int id, bool active, int stateId, IReadOnlyList<CombatStatus>? statuses = null)
+        {
+            CombatTrigger Source(string kind, int triggerId) => new(kind, false, false, false, 1,
+                Array.Empty<CombatEffect>(), stateId: triggerId, deathwishActive: active);
+            return new CombatUnit(id, "deathwish-unit", CombatTeam.Player, 0, 10, 10, true, false, false,
+                statuses ?? Array.Empty<CombatStatus>(), new[] { Source("OnDeathwish", stateId), Source("OnDeathwishLost", stateId + 1) });
+        }
+        CombatUnit WithStatuses(CombatUnit unit, params CombatStatus[] statuses) => new(unit.Id, unit.AssetKey, unit.Team,
+            unit.BaseAttack, unit.Health, unit.MaxHealth, unit.CanAttack, unit.IsPyre, unit.EndsBattleOnDeath,
+            statuses, unit.Triggers, unit.SpawnerCardId, unit.Size, unit.StatusImmunities, unit.Subtypes, unit.Modifiers,
+            unit.IsBoss, unit.LastAttackerId, unit.StatusRegistry, unit.EquipmentCards, unit.NextTriggerId, unit.Ability,
+            unit.StatusDictionary, unit.AbilityRules, unit.HordeDefinition, unit.IsSpawning, unit.SacrificeCardId,
+            unit.DeathState, unit.BumpRules);
+        int[] Active(RoomCombatState state) => state.Units.Where(unit => unit.Triggers.Any(trigger => trigger.DeathwishActive == true))
+            .Select(unit => unit.Id).ToArray();
+        RoomCombatState Room(CombatUnit front, CombatUnit back) => new(2, false, new[] { front, back }, Array.Empty<string>());
+
+        CombatUnit front = Actor(1, false, 10), back = Actor(2, false, 20);
+        RoomCombatResult initial = EnchantmentWorldModel.Update(Room(front, back));
+        Require(initial.Supported && Active(initial.State!).SequenceEqual(new[] { 1 }) &&
+            initial.PendingCallbacks.Count == 2 && initial.PendingCallbacks.All(item => item.Kind == "OnDeathwish" && item.Unit.Id == 1) &&
+            initial.PendingCallbacks.Select(item => item.ExclusiveTriggerStateId).SequenceEqual(new int?[] { 10, 11 }),
+            "A room without an aura world did not activate both front Deathwish sources with exclusive identities.");
+
+        var muted = new RoomCombatResult(Room(WithStatuses(initial.State!.Units[0], new CombatStatus("muted", 1)), initial.State.Units[1]),
+            RoomOutcome.Exchanged, 0, new List<CombatEvent>());
+        RoomCombatResult silenced = EnchantmentWorldModel.StatusChanged(muted, "muted", false, true);
+        Require(silenced.Supported && Active(silenced.State!).Length == 0 && silenced.PendingCallbacks.Count == 2 &&
+            silenced.PendingCallbacks.All(item => item.Kind == "OnDeathwishLost" && item.Unit.Id == 1),
+            "A muted Deathwish source did not lose membership in a room without an aura world.");
+
+        RoomCombatResult unmuted = EnchantmentWorldModel.StatusChanged(new RoomCombatResult(
+            Room(WithStatuses(silenced.State!.Units[0]), silenced.State.Units[1]), RoomOutcome.Exchanged, 0,
+            new List<CombatEvent>()), "muted", false, true);
+        CombatUnit shiftedFront = WithStatuses(unmuted.State!.Units[0], new CombatStatus("untouchable", 1));
+        RoomCombatResult shifted = DeathwishModel.Update(Room(shiftedFront, unmuted.State.Units[1]));
+        Require(unmuted.Supported && shifted.Supported && Active(shifted.State!).SequenceEqual(new[] { 2 }) &&
+            shifted.PendingCallbacks.Select(item => item.Kind).SequenceEqual(new[] { "OnDeathwishLost", "OnDeathwishLost", "OnDeathwish", "OnDeathwish" }) &&
+            shifted.PendingCallbacks.Select(item => item.ExclusiveTriggerStateId).SequenceEqual(new int?[] { 10, 11, 20, 21 }),
+            "A front change did not transfer Deathwish source membership in native actor/trigger order.");
+
+        var trainCallbacks = new List<RoomCombatModel.QueuedCharacterTrigger>();
+        TrainCombatResult global = EnchantmentWorldModel.UpdateAll(new TrainCombatState(new[] { Room(front, back) },
+            Array.Empty<EnemyMovement>(), 0), trainCallbacks.Add);
+        Require(global.Supported && Active(global.State!.Rooms.Single()).SequenceEqual(new[] { 1 }) &&
+            trainCallbacks.Count == 2 && trainCallbacks.All(item => item.Kind == "OnDeathwish"),
+            "The global combat update skipped Deathwish when no persistent aura world was captured.");
     }
     private static void Verify(FixtureValue sample)
     {

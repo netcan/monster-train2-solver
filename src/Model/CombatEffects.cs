@@ -258,7 +258,7 @@ namespace MonsterTrain2Poju.Model
             TriggerAtThreshold = triggerAtThreshold;
             Origin = origin;
             StateId = stateId;
-            DeathwishActive = deathwishActive;
+            DeathwishActive = deathwishActive ?? (kind == "OnDeathwish" || kind == "OnDeathwishLost" ? false : (bool?)null);
             Conditions = conditions;
             RemoveOnRelentlessChange = removeOnRelentlessChange;
             NoCountModifiersAllowed = noCountModifiersAllowed;

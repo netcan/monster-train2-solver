@@ -89,6 +89,12 @@ namespace MonsterTrain2Poju.Model
     public static class EnchantmentCombatModel
     {
         public static EnchantmentCombatResult UpdateAll(EnchantmentCombatState source) => new Engine(source).All();
+        internal static EnchantmentCombatResult UpdateDeathwish(EnchantmentCombatState source)
+        {
+            var frame = new EnchantmentCombatState(source.Train, source.RetainedUnits, Array.Empty<int>(),
+                true, source.Updating, source.Preview, source.TestRng);
+            return new Engine(frame).All();
+        }
         public static EnchantmentCombatResult UpdateEffect(EnchantmentCombatState source, int sourceId, int triggerIndex, int effectIndex)
             => new Engine(source).One(sourceId, triggerIndex, effectIndex);
         public static EnchantmentCombatState PrepareForPreview(EnchantmentCombatState source, int unitId)
@@ -170,7 +176,9 @@ namespace MonsterTrain2Poju.Model
                             positions.Add(new EnchantmentSourcePosition(unit.Id, team, room.RoomIndex, index)); rank++;
                         }
                     }
-                int[] sources = EnchantmentSourceOrderModel.Collect(state.Train.Rooms.Count, positions);
+                int roomCount = Math.Max(state.Train.Rooms.Count,
+                    state.Train.Rooms.Select(room => room.RoomIndex).DefaultIfEmpty(-1).Max() + 1);
+                int[] sources = EnchantmentSourceOrderModel.Collect(roomCount, positions);
                 foreach (int id in sources)
                 {
                     if (!state.EnchanterIds.Contains(id)) continue;

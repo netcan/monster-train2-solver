@@ -2517,7 +2517,6 @@ namespace MonsterTrain2Poju.Model
 
             private bool UpdateEnchantments(int? onlySourceId = null)
             {
-                if (context?.Enchantments?.AutomaticLifecycle != true) return true;
                 RoomCombatState current = EnchantmentWorldModel.Sync(CurrentRoom(), units.Where(unit => !unit.Alive || !unit.InRoom)
                     .Select(unit => unit.Freeze()).ToArray());
                 RoomCombatResult result = EnchantmentWorldModel.Update(current, onlySourceId);
