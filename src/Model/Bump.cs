@@ -45,7 +45,7 @@ namespace MonsterTrain2Poju.Model
 
         internal static BumpResult Apply(TrainCombatState source, IReadOnlyList<int> targets, int amount,
             IReadOnlyList<RoomPlayRule> roomRules, int sourceCardId,
-            IReadOnlyList<RoomCombatModel.QueuedCharacterTrigger>? pending)
+            IReadOnlyList<RoomCombatModel.QueuedCharacterTrigger>? pending, SpawnPointReference? teleportGoal = null)
         {
             string? error = TrainCombatModel.Validate(source);
             var events = new List<CombatEvent>(); var retained = new Dictionary<int, CombatUnit>();
@@ -137,6 +137,7 @@ namespace MonsterTrain2Poju.Model
                 for (int step = 1; step <= Math.Abs(steps); step++)
                 {
                     int floor = Math.Max(0, Math.Min(pyre, old.RoomIndex + step * direction));
+                    if (teleportGoal != null && floor != teleportGoal.RoomIndex) continue;
                     RoomPlayRule rule = updatedRoomRules.Single(item => item.RoomIndex == floor);
                     if (!rule.Enabled || actor.Team == CombatTeam.Player && rule.IsPyre) { blocked = true; break; }
                     int recipient = actor.Team == CombatTeam.Player ? HordeMergeModel.Select(state.Rooms[floor], actor) : 0;
@@ -145,7 +146,8 @@ namespace MonsterTrain2Poju.Model
                     if (point < 0) { blocked = true; break; }
                     destination = new SpawnPointReference(floor, actor.Team, point);
                 }
-                if (destination == null || destination.RoomIndex == old.RoomIndex) { attempted.Add(id); continue; }
+                if (destination == null || destination.RoomIndex == old.RoomIndex ||
+                    teleportGoal != null && destination.RoomIndex != teleportGoal.RoomIndex) { attempted.Add(id); continue; }
                 if (looping && !blocked) queue.Add(new RoomCombatModel.QueuedCharacterTrigger(origin!.RoomIndex, actor, "OnTrainRoomLoop"));
                 if (HordeMergeModel.Select(state.Rooms[destination.RoomIndex], actor) == 0)
                 {
@@ -174,6 +176,22 @@ namespace MonsterTrain2Poju.Model
                         state = CardSpellModel.WithContext(state, state.Context.WithSpawnPoints(centered.State!));
                         Order();
                     }
+            }
+            if (teleportGoal != null)
+            {
+                foreach (var move in moved.Where(move => targets.Count == 1 && move.Id == targets[0] &&
+                    move.NewRoom == teleportGoal.RoomIndex))
+                {
+                    SpawnPointReference? current = state.Context!.SpawnPoints!.Units.Single(unit => unit.UnitId == move.Id).Current;
+                    if (current == null) return Fail("Teleported actor lost its destination spawn point.");
+                    if (current.Index == teleportGoal.Index) continue;
+                    RoomCombatState room = state.Rooms[move.NewRoom];
+                    var rearranged = BattleSpawnPointModel.Apply(state.Context.SpawnPoints!, room, "Rearrange",
+                        current.Team, move.Id, index: current.Index, targetIndex: teleportGoal.Index);
+                    if (!rearranged.Supported) return Fail(rearranged.Error!);
+                    state = CardSpellModel.WithContext(state, state.Context.WithSpawnPoints(rearranged.State!));
+                    Order();
+                }
             }
             foreach (var move in moved)
             {

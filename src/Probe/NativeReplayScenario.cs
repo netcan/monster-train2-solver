@@ -996,8 +996,21 @@ namespace MonsterTrain2Poju.Probe
                 CharacterState actor = FullBattleTrace.Active!.KnownUnits.Single(unit => FullBattleTrace.Active.UnitId(unit) == action.ActivatorUnitId);
                 FullBattleTrace.Active.BeginCardPlay(action, scenarioAction: OriginalUnitRelicBatchScenario.Enabled &&
                     !OriginalUnitRelicBatchScenario.PolicyCarriersInjected);
-                if (!actor.ActivateUnitAbility(cards)) throw new InvalidOperationException("Native unit ability activation failed.");
-                log.LogInfo("DEPTH-POLICY-ABILITY card=" + action.CardInstanceId + " unit=" + action.ActivatorUnitId + " room=" + action.RoomIndex);
+                if (action.TargetSpawnPointIndex < 0)
+                {
+                    if (!actor.ActivateUnitAbility(cards)) throw new InvalidOperationException("Native unit ability activation failed.");
+                }
+                else
+                {
+                    RoomState targetRoom = managers.GetRoomManager()!.GetRoom(action.RoomIndex);
+                    SpawnPoint abilityDrop = targetRoom.GetMonsterPoint(action.TargetSpawnPointIndex);
+                    bool played = cards.PlayAnyCard(actor.GetUnitAbilityCardState(), out CommonSelectionBehavior.SelectionError abilityError,
+                        actor, abilityDrop, ignoreCost: false, discardCard: false, fromDirectPlay: true,
+                        characterThatActivatedAbility: actor);
+                    if (!played) throw new InvalidOperationException("Native targeted unit ability failed: " + abilityError);
+                }
+                log.LogInfo("DEPTH-POLICY-ABILITY card=" + action.CardInstanceId + " unit=" + action.ActivatorUnitId +
+                    " room=" + action.RoomIndex + " targetPoint=" + action.TargetSpawnPointIndex);
                 pendingPlay = null; Enter(Stage.PlayingCard, 30f); return;
             }
             int index = cards.GetHand().FindIndex(card => FullBattleTrace.Active!.CardId(card) == action.CardInstanceId);

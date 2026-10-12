@@ -60,13 +60,13 @@ namespace MonsterTrain2Poju.Model
             => TestPlayCore(SingleRoom(source), source.RoomIndex, effects, targetId, fullTrain: false);
 
         public static SpellCastCheck TestPlay(TrainCombatState source, int roomIndex, IReadOnlyList<CardActionEffect> effects, int targetId,
-            BattlePlayRules? definitions = null, int selfUnitId = 0)
-            => TestPlayCore(source, roomIndex, effects, targetId, fullTrain: true, definitions, selfUnitId);
+            BattlePlayRules? definitions = null, int selfUnitId = 0, int targetSpawnPointIndex = -1)
+            => TestPlayCore(source, roomIndex, effects, targetId, fullTrain: true, definitions, selfUnitId, targetSpawnPointIndex);
 
         private static SpellCastCheck TestPlayCore(TrainCombatState source, int roomIndex, IReadOnlyList<CardActionEffect> effects,
-            int targetId, bool fullTrain, BattlePlayRules? definitions = null, int selfUnitId = 0)
+            int targetId, bool fullTrain, BattlePlayRules? definitions = null, int selfUnitId = 0, int targetSpawnPointIndex = -1)
         {
-            string? error = Validate(source, roomIndex, effects, targetId, fullTrain);
+            string? error = Validate(source, roomIndex, effects, targetId, fullTrain, selfUnitId, targetSpawnPointIndex);
             if (error != null) return new SpellCastCheck(false, error);
             int sourceAttackUnitId = selfUnitId > 0 ? selfUnitId : targetId;
             if (effects.Any(effect => effect.Type == "DamagePerSourceAttack") &&
@@ -91,8 +91,10 @@ namespace MonsterTrain2Poju.Model
                 if (QuantityTest(effect) && effect.Type != "DamagePerSourceAttack") tested = Sample(effect, ref testingRng);
                 int testCount = TestCount(source, effect, targets);
                 if (testCount < 0) return new SpellCastCheck(false, "All-status adjustment requires complete propagation metadata.");
-                bool valid = PassesTest(tested, testCount, source.Context!.AllScenarioBossesDead == true, source.Context, room.Preview, room,
-                    PyreAlive(source, fullTrain));
+                bool valid = effect.Type == "AbilityTeleport"
+                    ? UnitTeleportModel.CanPlay(source, selfUnitId, roomIndex, targetSpawnPointIndex)
+                    : PassesTest(tested, testCount, source.Context!.AllScenarioBossesDead == true, source.Context, room.Preview, room,
+                        PyreAlive(source, fullTrain));
                 if (!valid && effect.Tests?.FailToCast == true) return new SpellCastCheck(false, battleRngAfterTests: testingRng);
                 passed |= valid;
             }
@@ -113,9 +115,10 @@ namespace MonsterTrain2Poju.Model
             => ApplyCore(source, roomIndex, effects, targetId, sourceCardId, null, null, definitions, fullTrain: true, otherPiles, selfUnitId);
 
         internal static TrainSpellResult ApplyForCardPlay(TrainCombatState source, int roomIndex, IReadOnlyList<CardActionEffect> effects,
-            int targetId, int sourceCardId, BattlePlayRules definitions, IReadOnlyList<CardPileState>? otherPiles, int selfUnitId = 0)
+            int targetId, int sourceCardId, BattlePlayRules definitions, IReadOnlyList<CardPileState>? otherPiles, int selfUnitId = 0,
+            int targetSpawnPointIndex = -1)
             => ApplyCore(source, roomIndex, effects, targetId, sourceCardId, null, null, definitions, true, otherPiles,
-                selfUnitId, deferFinalCallbacks: true);
+                selfUnitId, deferFinalCallbacks: true, targetSpawnPointIndex: targetSpawnPointIndex);
 
         internal static TrainSpellResult ApplyNativeDamageStep(TrainCombatState source, int roomIndex, int targetId, int damage,
             int sourceCardId, IReadOnlyList<RoomCombatModel.QueuedCharacterTrigger> pendingDeaths, int attackerUnitId = 0)
@@ -188,9 +191,9 @@ namespace MonsterTrain2Poju.Model
         private static TrainSpellResult ApplyCore(TrainCombatState source, int roomIndex, IReadOnlyList<CardActionEffect> effects,
             int targetId, int sourceCardId, int? playerCapacity, int? enemyCapacity, BattlePlayRules? definitions, bool fullTrain,
             IReadOnlyList<CardPileState>? otherPiles = null, int selfUnitId = 0, bool deferFinalCallbacks = false,
-            Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null)
+            Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null, int targetSpawnPointIndex = -1)
         {
-            string? error = Validate(source, roomIndex, effects, targetId, fullTrain);
+            string? error = Validate(source, roomIndex, effects, targetId, fullTrain, selfUnitId, targetSpawnPointIndex);
             if (error != null) return UnsupportedTrain(error);
             int sourceAttackUnitId = selfUnitId > 0 ? selfUnitId : targetId;
             if (effects.Any(effect => effect.Type == "DamagePerSourceAttack") &&
@@ -261,9 +264,11 @@ namespace MonsterTrain2Poju.Model
                 }
                 int testCount = TestCount(state, effect, targets);
                 if (testCount < 0) return UnsupportedTrain("All-status adjustment requires complete propagation metadata.");
-                if (!PassesTest(tested, testCount, bossDead, state.Context, selected.Preview,
-                    state.Rooms.Single(room => room.RoomIndex == roomIndex),
-                    PyreAlive(state, fullTrain)))
+                bool passes = effect.Type == "AbilityTeleport"
+                    ? UnitTeleportModel.CanPlay(state, selfUnitId, roomIndex, targetSpawnPointIndex)
+                    : PassesTest(tested, testCount, bossDead, state.Context, selected.Preview,
+                        state.Rooms.Single(room => room.RoomIndex == roomIndex), PyreAlive(state, fullTrain));
+                if (!passes)
                 {
                     if (index == 0 && CardTargetModel.IsRandom(effect.Target) && targets.UnitIds.Count > 0 && effect.Tests?.CancelSubsequent != true &&
                         effects.Skip(1).Any(next => next.Target.Contains("LastTargeted")))
@@ -395,6 +400,31 @@ namespace MonsterTrain2Poju.Model
                     positions = CardTargetModel.Positions(state);
                     if (state.Context!.OtherPiles != null) piles = state.Context.OtherPiles.ToArray();
                     continue;
+                }
+                if (effect.Type == "AbilityTeleport")
+                {
+                    if (!fullTrain || definitions == null || targets.UnitIds.Count != 1)
+                        return UnsupportedTrain("Unit teleport requires one activating actor, the complete train and room rules.");
+                    int actorId = targets.UnitIds[0];
+                    RoomCombatState? actorRoom = state.Rooms.FirstOrDefault(room => room.Units.Any(unit => unit.Id == actorId));
+                    CombatUnit? actor = actorRoom?.Units.FirstOrDefault(unit => unit.Id == actorId);
+                    if (actorRoom == null || actor == null)
+                        return UnsupportedTrain("Unit teleport actor left the captured train before movement.");
+                    if (actorRoom.RoomIndex != roomIndex)
+                    {
+                        var destination = new SpawnPointReference(roomIndex, actor.Team, targetSpawnPointIndex);
+                        BumpResult teleported = BumpModel.Apply(state, [actorId], roomIndex - actorRoom.RoomIndex,
+                            definitions.Rooms, sourceCardId, callbacks, destination);
+                        if (!teleported.Supported) return UnsupportedTrain(teleported.UnsupportedReason!);
+                        state = teleported.State!; callbacks.Clear(); callbacks.AddRange(teleported.PendingCallbacks);
+                        events.AddRange(teleported.Events); definitions = definitions.WithRooms(teleported.RoomRules);
+                        foreach (CombatUnit unit in teleported.RetainedUnits) retained[unit.Id] = unit;
+                        if (teleported.Outcome == RoomOutcome.BattleWon || teleported.Outcome == RoomOutcome.PlayerDefeated)
+                            outcome = teleported.Outcome;
+                        positions = CardTargetModel.Positions(state);
+                        if (state.Context!.OtherPiles != null) piles = state.Context.OtherPiles.ToArray();
+                        continue;
+                    }
                 }
                 if (effect.Type == "AdjustCapacity")
                 {
@@ -627,7 +657,7 @@ namespace MonsterTrain2Poju.Model
                         if (outcome == RoomOutcome.BattleWon) bossDead = true;
                         continue;
                     }
-                    if (effect.Type == "FloorRearrange" && pendingDeadRooms.Count > 0)
+                    if ((effect.Type == "FloorRearrange" || effect.Type == "AbilityTeleport") && pendingDeadRooms.Count > 0)
                         return UnsupportedTrain("Rearranging a floor with pending death positions is not modeled.");
                     if (effect.Type == "AttachEquipment" || effect.Type == "RemoveEquipment")
                     {
@@ -669,7 +699,7 @@ namespace MonsterTrain2Poju.Model
                             nativeApplied.Outcome, 0, nativeApplied.Events.ToList(), pendingCallbacks: nativeApplied.PendingCallbacks)
                         : ApplyOne(targetRoom!, effect, target, sourceCardId,
                         RoomCapacityModel.Maximum(state.Context, targetRoom!.RoomIndex, CombatTeam.Player) ?? capacity?.PlayerCapacity ?? playerCapacity,
-                        RoomCapacityModel.Maximum(state.Context, targetRoom.RoomIndex, CombatTeam.Enemy) ?? capacity?.EnemyCapacity ?? enemyCapacity,
+                        RoomCapacityModel.Maximum(state.Context, targetRoom!.RoomIndex, CombatTeam.Enemy) ?? capacity?.EnemyCapacity ?? enemyCapacity,
                         deferSpawnerExhaustion: piles != null, scaledDamage: scaledDamage, selfUnitId: damageAttackerId,
                         sourceHasDuality: selfUnitId > 0 && state.Rooms.SelectMany(room => room.Units)
                             .Any(unit => unit.Id == selfUnitId && unit.Status("duality")?.Stacks > 0), refreshPyre: Refresh);
@@ -683,30 +713,68 @@ namespace MonsterTrain2Poju.Model
                     }
                     if (state.Context!.OtherPiles != null) piles = state.Context.OtherPiles.ToArray();
                     events.AddRange(applied.Events);
-                    if (effect.Type == "FloorRearrange" && target.Status("immobile") == null &&
-                        state.Context!.SpawnPoints?.Units.Single(unit => unit.UnitId == target.Id).OuterBoss != true)
+                    if ((effect.Type == "FloorRearrange" || effect.Type == "AbilityTeleport") &&
+                        target.Status("immobile") == null && state.Context!.SpawnPoints?.Units.SingleOrDefault(unit => unit.UnitId == target.Id)?.OuterBoss != true)
                     {
-                        CombatUnit[] beforeTeam = targetRoom!.Units.Where(unit => unit.Team == target.Team).ToArray();
+                        BattleSpawnPoints? physical = state.Context!.SpawnPoints;
+                        RoomCombatState rearrangeRoom = targetRoom!;
+                        CombatUnit[] orderedTeam = (physical == null ? rearrangeRoom.Units :
+                            BattleSpawnPointModel.Order(physical, rearrangeRoom.RoomIndex, rearrangeRoom.Units)).ToArray();
+                        CombatUnit[] beforeTeam = orderedTeam.Where(unit => unit.Team == target.Team && unit.Health > 0 &&
+                            unit.DeathState?.IsDestroyed != true && physical?.Units.SingleOrDefault(point => point.UnitId == unit.Id)?.OuterBoss != true).ToArray();
                         int oldIndex = Array.FindIndex(beforeTeam, unit => unit.Id == target.Id);
-                        int goal = effect.Value == 0 ? 0 : beforeTeam.Length - 1;
+                        int goal;
+                        if (effect.Type == "AbilityTeleport")
+                        {
+                            if (physical == null || !UnitTeleportModel.TryGoalIndex(physical, target.Id, rearrangeRoom.RoomIndex,
+                                targetSpawnPointIndex, out goal)) return UnsupportedTrain("Unit teleport lost its selected spawn-point destination.");
+                        }
+                        else goal = effect.Value == 0 ? 0 : beforeTeam.Length - 1;
+                        int movementGoal = goal >= 0 && goal < beforeTeam.Length ? goal : oldIndex;
+                        int direction = oldIndex < movementGoal ? 1 : -1;
+                        if (oldIndex >= 0 && physical != null)
+                        {
+                            for (int position = oldIndex; position != movementGoal; position += direction)
+                            {
+                                int firstId = beforeTeam[position].Id, secondId = beforeTeam[position + direction].Id;
+                                SpawnPointReference? first = physical.Units.Single(unit => unit.UnitId == firstId).Current;
+                                SpawnPointReference? second = physical.Units.Single(unit => unit.UnitId == secondId).Current;
+                                if (first == null || second == null || first.RoomIndex != rearrangeRoom.RoomIndex ||
+                                    second.RoomIndex != rearrangeRoom.RoomIndex || first.Team != target.Team || second.Team != target.Team)
+                                    return UnsupportedTrain("Floor rearrangement requires the current physical points for every shifted unit.");
+                                BattleSpawnPointResult swapped = BattleSpawnPointModel.Apply(physical, rearrangeRoom, "Swap", target.Team,
+                                    index: first.Index, targetIndex: second.Index);
+                                if (!swapped.Supported) return UnsupportedTrain(swapped.Error!);
+                                physical = swapped.State!;
+                            }
+                            if (!ReferenceEquals(physical, state.Context!.SpawnPoints))
+                            {
+                                state = WithContext(state, state.Context.WithSpawnPoints(physical));
+                                RoomCombatState currentRoom = state.Rooms.Single(room => room.RoomIndex == rearrangeRoom.RoomIndex);
+                                state = ReplaceRoom(state, new RoomCombatState(currentRoom.RoomIndex, currentRoom.Deployment,
+                                    BattleSpawnPointModel.Order(physical, currentRoom.RoomIndex, currentRoom.Units),
+                                    currentRoom.ExternalInteractions, state.Context, currentRoom.Preview, currentRoom.ActiveCompanionBossIds));
+                            }
+                        }
+                        int callbackGoal = movementGoal;
                         var shiftedIds = new List<int> { target.Id };
-                        int direction = oldIndex < goal ? 1 : -1;
-                        for (int position = oldIndex; position != goal; position += direction)
+                        direction = oldIndex < callbackGoal ? 1 : -1;
+                        for (int position = oldIndex; oldIndex >= 0 && position != callbackGoal; position += direction)
                             shiftedIds.Add(beforeTeam[position + direction].Id);
                         foreach (int shiftedId in shiftedIds)
                         {
                             CombatUnit shifted = state.Rooms.SelectMany(room => room.Units).FirstOrDefault(unit => unit.Id == shiftedId)
                                 ?? retained.GetValueOrDefault(shiftedId) ?? beforeTeam.Single(unit => unit.Id == shiftedId);
-                            if (shiftedId != target.Id || oldIndex != goal)
+                            if (shiftedId != target.Id || oldIndex != movementGoal)
                             {
-                                callbacks.Add(new RoomCombatModel.QueuedCharacterTrigger(targetRoom.RoomIndex, shifted, "OnShift"));
+                                callbacks.Add(new RoomCombatModel.QueuedCharacterTrigger(rearrangeRoom.RoomIndex, shifted, "OnShift"));
                                 DrainDeaths();
                             }
                             shifted = state.Rooms.SelectMany(room => room.Units).FirstOrDefault(unit => unit.Id == shiftedId)
                                 ?? retained.GetValueOrDefault(shiftedId) ?? shifted;
-                            foreach (CombatUnit guard in state.Rooms.Single(room => room.RoomIndex == targetRoom.RoomIndex).Units
+                            foreach (CombatUnit guard in state.Rooms.Single(room => room.RoomIndex == rearrangeRoom.RoomIndex).Units
                                 .Where(unit => unit.Team != shifted.Team))
-                                callbacks.Add(new RoomCombatModel.QueuedCharacterTrigger(targetRoom.RoomIndex, guard, "OnSentry",
+                                callbacks.Add(new RoomCombatModel.QueuedCharacterTrigger(rearrangeRoom.RoomIndex, guard, "OnSentry",
                                     overrideTarget: shifted, paramString: ""));
                             DrainDeaths();
                         }
@@ -737,7 +805,8 @@ namespace MonsterTrain2Poju.Model
                         DrainDeaths();
                         focusedRoom = null; // Sacrifice/removal notification focus is not captured yet.
                     }
-                    if (effect.Type == "FloorRearrange") positions = CardTargetModel.Positions(state);
+                    if (effect.Type == "FloorRearrange" || effect.Type == "AbilityTeleport")
+                        positions = CardTargetModel.Positions(state);
                     if (applied.Outcome == RoomOutcome.BattleWon || applied.Outcome == RoomOutcome.PlayerDefeated)
                     {
                         if (outcome != RoomOutcome.Exchanged && outcome != applied.Outcome)
@@ -843,7 +912,7 @@ namespace MonsterTrain2Poju.Model
         }
 
         private static string? Validate(TrainCombatState source, int roomIndex, IReadOnlyList<CardActionEffect> effects,
-            int targetId, bool fullTrain)
+            int targetId, bool fullTrain, int selfUnitId = 0, int targetSpawnPointIndex = -1)
         {
             if (fullTrain)
             {
@@ -853,6 +922,10 @@ namespace MonsterTrain2Poju.Model
             RoomCombatState? selected = source.Rooms.FirstOrDefault(room => room.RoomIndex == roomIndex);
             if (selected == null) return "The selected spell room does not exist.";
             if (source.Context == null) return "A spell requires shared battle context.";
+            if (effects.Any(effect => effect.Type == "AbilityTeleport") &&
+                (!fullTrain || selfUnitId <= 0 || effects.Any(effect => effect.Type == "AbilityTeleport" && effect.Target != "Self") ||
+                 source.Context.SpawnPoints == null))
+                return "Unit ability teleport requires its activating actor and captured train spawn points.";
             if (!fullTrain && effects.Any(effect => CardTargetModel.IsCrossRoom(effect.Target)))
                 return "Cross-room spells require the complete train state.";
             string? validation = Validate(selected, effects, targetId);
@@ -1040,7 +1113,7 @@ namespace MonsterTrain2Poju.Model
                     if (forgeError != null) return forgeError;
                     continue;
                 }
-                if (!new[] { "CopyUnits", "Bump", "AttackWithUnit", "Damage", "DamagePerSourceAttack", "Heal", "Sacrifice", "AddStatus", "MultiplyStatus", "MultiplyAllPositiveStatusEffects", "AdjustAllStatusEffects", "AddStatusPerOtherEffect", "SpawnOrStatus", "FloorRearrange", "UnitUpgrade", "BuffEquipment", "RemoveUnitUpgrade", "AttachEquipment", "RemoveEquipment", "BuffAttack", "DebuffAttack", "BuffHealth", "DebuffHealth", "Draw", "DiscardHand", "Generate" }.Contains(effect.Type))
+                if (!new[] { "CopyUnits", "Bump", "AbilityTeleport", "AttackWithUnit", "Damage", "DamagePerSourceAttack", "Heal", "Sacrifice", "AddStatus", "MultiplyStatus", "MultiplyAllPositiveStatusEffects", "AdjustAllStatusEffects", "AddStatusPerOtherEffect", "SpawnOrStatus", "FloorRearrange", "UnitUpgrade", "BuffEquipment", "RemoveUnitUpgrade", "AttachEquipment", "RemoveEquipment", "BuffAttack", "DebuffAttack", "BuffHealth", "DebuffHealth", "Draw", "DiscardHand", "Generate" }.Contains(effect.Type))
                     return "Unimplemented spell effect " + effect.Type;
                 if (effect.Type == "Generate" && effect.Generation == null) return "Missing generated card rules.";
                 if ((effect.Type == "UnitUpgrade" || effect.Type == "BuffEquipment" || effect.Type == "RemoveUnitUpgrade") && effect.Upgrade == null)
@@ -1437,6 +1510,7 @@ namespace MonsterTrain2Poju.Model
                         ? "CardEffectSpawnMonsterOrAddStatusEffect" : null,
                     allowStackModifiers: effect.Type != "SpawnOrStatus" || !effect.DisallowStatusStackModifiers);
             }
+            if (effect.Type == "AbilityTeleport") return Unchanged(state);
             if (target.Statuses.Any(status => status.Id == "immobile")) return Unchanged(state);
             var team = state.Units.Where(unit => unit.Team == target.Team).ToList();
             if (state.Context?.SpawnPoints != null)

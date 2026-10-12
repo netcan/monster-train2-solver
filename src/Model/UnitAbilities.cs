@@ -17,8 +17,8 @@ namespace MonsterTrain2Poju.Model
                 return Unsupported(string.Join("; ", source.ExternalInteractions.Concat(source.Spawn.ExternalInteractions)));
             if (source.PlayRules.Cards.Select(rule => rule.DataId).Distinct().Count() != source.PlayRules.Cards.Count)
                 return Unsupported("Duplicate ability play definitions.");
-            if (action.PlayerPosition != -1 || action.TargetUnitId != 0 || action.TargetSpawnPointIndex != -1)
-                return Illegal("This unit ability does not accept a card drop target or destination spawn point.");
+            if (action.PlayerPosition != -1 || action.TargetUnitId != 0)
+                return Illegal("A unit ability does not accept a summon position or card unit target.");
             RoomCombatState? actorRoom = train.Rooms.FirstOrDefault(room => room.Units.Any(unit => unit.Id == action.ActivatorUnitId));
             CombatUnit? actor = actorRoom?.Units.FirstOrDefault(unit => unit.Id == action.ActivatorUnitId);
             if (actor == null || actor.Health <= 0 || actor.Ability?.HasAbility != true) return Illegal("The selected unit has no live ability.");
@@ -49,6 +49,9 @@ namespace MonsterTrain2Poju.Model
             context = cache.Context!.WithOtherPiles(source.OtherPiles);
             rule = CardModifierModel.Resolve(rule, cache.Card);
             if (rule.ExternalInteractions.Count > 0) return Unsupported(string.Join("; ", rule.ExternalInteractions));
+            bool hasTeleport = rule.Effects.Any(effect => effect.Type == "AbilityTeleport");
+            if (action.TargetSpawnPointIndex != -1 && !hasTeleport)
+                return Illegal("This unit ability does not accept a destination spawn point.");
             if (rule.CostType != "Default" && rule.CostType != "ConsumeRemainingEnergy" || rule.Cost < 0 || source.Energy < 0)
                 return Unsupported("Unmodeled ability cost type or negative cost/energy.");
             int paid = rule.CostType == "ConsumeRemainingEnergy" ? source.Energy : rule.Cost;
@@ -56,7 +59,8 @@ namespace MonsterTrain2Poju.Model
             error = CardSpellModel.UnisolatedUiRangeReason(source) ?? CardPileModel.ValidateMembership(context.Cards, source.OtherPiles, context.NextCardId);
             if (error != null) return Unsupported(error);
             train = CardSpellModel.WithContext(train, context);
-            SpellCastCheck cast = CardSpellModel.TestPlay(train, action.RoomIndex, rule.Effects, 0, source.PlayRules, actor.Id);
+            SpellCastCheck cast = CardSpellModel.TestPlay(train, action.RoomIndex, rule.Effects, 0, source.PlayRules,
+                actor.Id, action.TargetSpawnPointIndex);
             if (!cast.Supported) return Unsupported(cast.UnsupportedReason!);
             if (!cast.CanPlay) return Illegal("The ability failed its casting test.");
             context = context.WithBattleRng(cast.BattleRngAfterTests!.Value)
@@ -80,7 +84,7 @@ namespace MonsterTrain2Poju.Model
                 train = CardSpellModel.WithContext(train, train.Context.WithCard(
                     train.Context.FindCard(cache.Card.InstanceId)!.WithPlayedRoomUnits(cachedUnits)));
             TrainSpellResult applied = CardSpellModel.ApplyForCardPlay(train, action.RoomIndex, rule.Effects, 0, cache.Card.InstanceId,
-                source.PlayRules, train.Context!.OtherPiles ?? source.OtherPiles, actor.Id);
+                source.PlayRules, train.Context!.OtherPiles ?? source.OtherPiles, actor.Id, action.TargetSpawnPointIndex);
             if (!applied.Supported) return Unsupported(applied.UnsupportedReason!);
             train = applied.State!; if (Terminal(applied.Outcome)) outcome = applied.Outcome;
             context = train.Context!;
@@ -152,13 +156,27 @@ namespace MonsterTrain2Poju.Model
                         "Unit " + actor.Id + " ability card could not be captured."));
                     continue;
                 }
+                CardPlayRule? abilityRule = source.PlayRules.Cards.FirstOrDefault(item => item.DataId == actor.Ability.DataId);
+                bool hasTeleport = abilityRule != null && CardModifierModel.Resolve(abilityRule, cached.Card!).Effects
+                    .Any(effect => effect.Type == "AbilityTeleport");
                 foreach (RoomPlayRule target in source.PlayRules.Rooms.OrderBy(target => target.RoomIndex == room.RoomIndex ? 0 : 1))
                 {
-                    var action = new PlayCardAction(cached.Card!.InstanceId, target.RoomIndex, activatorUnitId: actor.Id);
-                    BattleActionResult attempt = BattleActionModel.PlayCard(source, action);
-                    if (attempt.Supported) actions.Add(new SupportedActionCandidate(action, attempt));
-                    else if (attempt.Rejection == ActionRejection.Unsupported)
-                        unsupported.Add(new UnsupportedActionAttempt(action, attempt.Reason ?? "Unsupported unit ability action."));
+                    int targetCount = hasTeleport ? context.SpawnPoints?.Group(target.RoomIndex, CombatTeam.Player)?.GroupCount ?? 0 : 1;
+                    if (hasTeleport && targetCount == 0)
+                    {
+                        unsupported.Add(new UnsupportedActionAttempt(null,
+                            "Unit " + actor.Id + " teleport has no captured destination spawn-point group."));
+                        continue;
+                    }
+                    for (int targetIndex = 0; targetIndex < targetCount; targetIndex++)
+                    {
+                        var action = new PlayCardAction(cached.Card!.InstanceId, target.RoomIndex,
+                            activatorUnitId: actor.Id, targetSpawnPointIndex: hasTeleport ? targetIndex : -1);
+                        BattleActionResult attempt = BattleActionModel.PlayCard(source, action);
+                        if (attempt.Supported) actions.Add(new SupportedActionCandidate(action, attempt));
+                        else if (attempt.Rejection == ActionRejection.Unsupported)
+                            unsupported.Add(new UnsupportedActionAttempt(action, attempt.Reason ?? "Unsupported unit ability action."));
+                    }
                 }
             }
             return new BattleActionEnumeration(actions, unsupported);

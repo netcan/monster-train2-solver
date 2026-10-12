@@ -108,6 +108,15 @@ namespace MonsterTrain2Poju.Model
                             { Set(id, Reference(i + 1)); points[i] = 0; }
                         }
                 }
+                else if (operation == "Swap")
+                {
+                    if (index >= 0 && index < group.GroupCount && targetIndex >= 0 && targetIndex < group.GroupCount && index != targetIndex)
+                    {
+                        int first = points[index], second = points[targetIndex];
+                        if (first != 0) Set(first, Reference(targetIndex));
+                        if (second != 0) Set(second, Reference(index));
+                    }
+                }
                 else if (operation == "Rearrange")
                 {
                     if (index >= 0 && index < group.GroupCount && targetIndex >= 0 && targetIndex < group.GroupCount)

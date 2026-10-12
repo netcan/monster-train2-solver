@@ -44,6 +44,12 @@ if (args.Length == 1 && args[0] == "--unit-ability-pure")
     return;
 }
 
+if (args.Length == 1 && args[0] == "--unit-teleport-pure")
+{
+    UnitTeleportChecks.Run();
+    return;
+}
+
 if (args.Length == 2 && args[0] == "--unit-ability-native-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
