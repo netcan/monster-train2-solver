@@ -2899,21 +2899,31 @@ pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-covenant-cha
 
 ### Titan Skin damage soak
 
-The room model now applies passive Titan Skin soak as
+The room model applies passive Titan Skin soak as
 `(ParamInt + relic magnitude) * min(incoming damage, stacks)` on each positive,
-non-piercing hit. Stacks remain present. Damage Shield runs before the soak and
-Armor after it; unit Piercing, card `CardTraitIgnoreArmor`, and the global
-`RelicEffectAllDamageIsPiercing` bypass the soak. The focused pure checks pass
-for soak, cap, ordering, piercing sources, and relic magnitude.
+non-piercing hit. Damage Shield runs before the soak and Armor after it; unit
+Piercing, card `CardTraitIgnoreArmor`, and the global
+`RelicEffectAllDamageIsPiercing` bypass it. The focused pure checks cover soak,
+cap, ordering, piercing sources, and relic magnitude.
 
-The Covenant archive itself has no Titan Skin damage hit, so its 55-stage replay
-does not validate this branch natively. The targeted Covenant regression still
-passes, including archive integrity, 55 room stages, 11 wave decisions and
-eight Covenant births. No fixture or original relic owner was added; inventory
-remains 237 archives (206 battles and 31 calibrations), and original relic
+`full-battle-titan-skin.mt2f` adds two Titan Skin stacks to the in-memory
+`Boss_Level1_Basic` definition in an isolated probe. The native battle wins at
+Pyre 49 with 55 combat stages. Independent room replay matches all 55 stages;
+the Boss carries Titan Skin in 11, takes damage in four, and retains the stacks.
+Capture failures, mismatches, unsupported stages and pending records are zero.
+The schema-103 archive is 20,386 bytes with 3,010 unique nodes and SHA-256
+`3f4cd1dc5ba8619a47cec1c82bcec8f2ac70c5321f458ac562015a1b57b1040f`; it has no
+JSON companion.
+
+This validates the native damage handler, not the natural
+`Boss_Level2_BigStats` spawn path. No original relic owner was added. Inventory
+is 238 archives: 207 battles and 31 component calibrations. Original relic
 evidence remains 59/224 (26.34%).
 
 ```powershell
 dotnet run --project src/ModelChecks -c Release -- --titan-skin-pure
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -TitanSkinCombat
+dotnet run --project src/ModelChecks -c Release -- --room-combat-only tests/fixtures/full-battle-titan-skin.mt2f
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-covenant-character-filter.mt2f
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-titan-skin.mt2f
 ```

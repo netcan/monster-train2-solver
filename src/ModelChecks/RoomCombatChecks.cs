@@ -156,6 +156,8 @@ internal static class RoomCombatChecks
         Require(matched > 0, "No native stages were verified.");
         Require(unsupported == 0, "Native room verification skipped unsupported stages in " + path);
         Console.WriteLine($"NATIVE-ROOM-CHECKS PASS: {matched} matched, {unsupported} unsupported; {path}");
+        if (fixture.GetProperty("ModifierScenario").GetString() == "titan-skin-combat")
+            TitanSkinChecks.Native(fixture);
         if (roomOnly) return;
         CardCycleChecks.Native(fixture);
         TrainCombatChecks.Native(fixture);

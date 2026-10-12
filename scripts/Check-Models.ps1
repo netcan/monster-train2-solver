@@ -6,6 +6,7 @@ $workspace = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $fixtureNames = @('full-battle-steward-once.mt2f', 'full-battle-no-cards.mt2f', 'full-battle-units-and-junk.mt2f',
     'full-battle-units-spells-and-junk.mt2f', 'full-battle-relic-card-modifiers.mt2f', 'full-battle-original-relic-batch.mt2f',
     'full-battle-covenant-character-filter.mt2f',
+    'full-battle-titan-skin.mt2f',
     'full-battle-original-unit-relics.mt2f',
     'full-battle-original-trigger-relics.mt2f', 'full-battle-original-trigger-relic-deaths.mt2f',
     'full-battle-original-status-relics.mt2f',

@@ -141,6 +141,7 @@ param(
     [switch] $OriginalEndlessReturn,
     [switch] $OriginalTriggerRelicBatch,
     [switch] $CovenantCharacterFilter,
+    [switch] $TitanSkinCombat,
     [switch] $OriginalStatusRelicBatch,
     [switch] $OriginalMagnitudeRelicBatch,
     [switch] $OriginalLifecycleRelicBatch,
@@ -411,6 +412,7 @@ if ($OriginalUnitRelicBatch) { $environment['MT2_PROBE_MODIFIERS'] = 'original-u
 if ($OriginalEndlessReturn) { $environment['MT2_PROBE_MODIFIERS'] = 'original-endless-return' }
 if ($OriginalTriggerRelicBatch) { $environment['MT2_PROBE_MODIFIERS'] = 'original-trigger-relic-batch' }
 if ($CovenantCharacterFilter) { $environment['MT2_PROBE_MODIFIERS'] = 'covenant-character-filter' }
+if ($TitanSkinCombat) { $environment['MT2_PROBE_MODIFIERS'] = 'titan-skin-combat' }
 if ($OriginalStatusRelicBatch) { $environment['MT2_PROBE_MODIFIERS'] = 'original-status-relic-batch' }
 if ($OriginalMagnitudeRelicBatch) { $environment['MT2_PROBE_MODIFIERS'] = 'original-magnitude-relic-batch' }
 if ($OriginalLifecycleRelicBatch) { $environment['MT2_PROBE_MODIFIERS'] = 'original-lifecycle-relic-batch' }
@@ -457,6 +459,10 @@ if ($BinaryCapture) {
 }
 $inspectionTimer.Stop()
 Write-Output "FULL-BATTLE-INSPECTION elapsedSeconds=$($inspectionTimer.Elapsed.TotalSeconds.ToString('F3', [Globalization.CultureInfo]::InvariantCulture))"
+if ($TitanSkinCombat -and ($trace.ModifierScenario -ne 'titan-skin-combat' -or
+    -not (Select-String -LiteralPath $unityLog -Pattern 'TITAN-SKIN-COMBAT-PREPARED .*starting titanskin stacks=2' -Quiet))) {
+    throw 'Titan Skin native combat setup did not run.'
+}
 $nativePassed = [bool] (Select-String -LiteralPath $unityLog -Pattern 'DEPTH-PASS' -Quiet)
 $terminalSettled = $trace.TerminalCaptureBoundary -eq 'AfterStopCombatLoop' -and $trace.TerminalEffectsSettled -eq $true
 $originalUnchanged = (Get-OriginalSignature) -ceq $originalBefore

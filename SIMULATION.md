@@ -1,6 +1,6 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-12): 237 binary archives, including 206
+Current accepted inventory (2026-10-12): 238 binary archives, including 207
 full battles and 31 component calibrations. Unchanged original relic evidence
 covers 59/224 catalog entries (26.34%); see
 [the owner evidence table](tests/fixtures/relic-coverage.md). Whole-battle
@@ -9,9 +9,10 @@ coverage and the optimal solver remain in progress.
 The pure model now applies `RelicEffectAddTrigger` character-definition filters
 using captured character asset keys; a nonempty filter overrides the source-team
 mask, matching native behavior. Model checks cover the filtered
-`Boss_Level1_Basic` covenant case and a rejected nonmatching boss. No accepted
-native Covenant battle archive exercises this path yet, so inventory and owner
-evidence counts are unchanged.
+`Boss_Level1_Basic` covenant case and a rejected nonmatching boss. The accepted
+`full-battle-covenant-character-filter.mt2f` archive exercises the filter in an
+isolated native battle: 11 wave decisions and eight Covenant births match, with
+no capture failures or unsupported stages. It adds no original relic owner.
 
 `full-battle-spawn-status-relics-clones-ungated-capture.mt2f` confirms ordinary
 native capture includes the `PyreHeartSon` `RelicEffectAddTempUpgrade` definition
@@ -8259,20 +8260,29 @@ decision solver remain unfinished.
 non-piercing damage: each hit soaks `(ParamInt + relic magnitude) *
 min(damage, stacks)`. The status is passive and its stacks remain unchanged.
 Damage Shield resolves first and Armor after Titan Skin. Unit, card-trait, and
-`RelicEffectAllDamageIsPiercing` sources bypass the soak according to the native
-damage helper. Focused checks cover those paths and relic-modified magnitude;
-the selected Covenant archive integrity check and targeted battle replay pass.
+`RelicEffectAllDamageIsPiercing` sources bypass the soak. Pure checks cover the
+soak, cap, ordering, piercing sources and relic-modified magnitude.
 
-The Covenant archive contains `Boss_Level1_Basic`, not the `Boss_Level2_BigStats`
-that receives Titan Skin. There is not yet a native battle archive with an
-observed Titan Skin hit, so this change has decompiled source/status-data and
-pure-model validation but no native combat differential. It adds no fixture or
-original relic owner: accepted inventory remains 237 archives (206 battles,
-31 calibrations), with 59/224 original relics (26.34%). Full inventory replay,
-complete Boss/status coverage, arbitrary relic/card combinations, and the
-decision solver remain unfinished.
+The schema-103 `full-battle-titan-skin.mt2f` uses an isolated probe to add two
+Titan Skin stacks to the in-memory `Boss_Level1_Basic` definition before battle.
+The native battle wins at Pyre 49 after 55 room stages. Independent replay
+matches all 55 stages; 11 stages retain Titan Skin and four show the Boss taking
+damage while its stacks remain. Capture failures, mismatches, unsupported
+stages and pending records are zero. The fixture is 20,386 bytes with 3,010
+unique nodes and SHA-256
+`3f4cd1dc5ba8619a47cec1c82bcec8f2ac70c5321f458ac562015a1b57b1040f`.
+
+This validates native Titan Skin damage behavior; it does not capture the
+natural `Boss_Level2_BigStats` spawn path that receives the status from
+Covenant. No original relic owner was added. Inventory is 238 archives (207
+battles and 31 calibrations), with original relic evidence still 59/224
+(26.34%). Full inventory replay, complete Boss/status coverage, arbitrary
+relic/card combinations and the decision solver remain unfinished.
 
 ```powershell
 dotnet run --project src/ModelChecks -c Release -- --titan-skin-pure
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -TitanSkinCombat
+dotnet run --project src/ModelChecks -c Release -- --room-combat-only tests/fixtures/full-battle-titan-skin.mt2f
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-covenant-character-filter.mt2f
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-titan-skin.mt2f
 ```

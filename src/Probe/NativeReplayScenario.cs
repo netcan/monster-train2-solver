@@ -248,6 +248,8 @@ namespace MonsterTrain2Poju.Probe
                 {
                     if (fullBattle && CovenantCharacterFilterScenario.Enabled && !CovenantCharacterFilterScenario.Prepared)
                         CovenantCharacterFilterScenario.ConfigureBeforeBattle(managers!, log);
+                    if (fullBattle && TitanSkinScenario.Enabled && !TitanSkinScenario.Prepared)
+                        TitanSkinScenario.ConfigureBeforeBattle(managers!, log);
                     if (fullBattle && MagebladeScenario.Enabled && !MagebladeScenario.Prepared)
                         MagebladeScenario.ConfigureBeforeBattle(managers!, log);
                     if (fullBattle && OriginalResourceRelicBatchScenario.Enabled && !OriginalResourceRelicBatchScenario.Prepared)

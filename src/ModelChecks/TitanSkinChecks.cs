@@ -1,4 +1,5 @@
 using MonsterTrain2Poju.Model;
+using MonsterTrain2Poju.Fixtures;
 
 internal static class TitanSkinChecks
 {
@@ -76,6 +77,39 @@ internal static class TitanSkinChecks
             "CardTraitIgnoreArmor did not bypass Titan Skin.");
 
         Console.WriteLine("TITAN-SKIN-CHECKS PASS: per-hit soak, persistent stacks, shield/armor order, status/card/relic piercing and modified magnitude.");
+    }
+
+    internal static void Native(FixtureValue fixture)
+    {
+        Require(fixture.GetProperty("ModifierScenario").GetString() == "titan-skin-combat" &&
+            fixture.GetProperty("NativeWon").GetBoolean() && fixture.GetProperty("CaptureFailures").GetInt32() == 0 &&
+            fixture.GetProperty("Mismatches").GetInt32() == 0 && fixture.GetProperty("Unsupported").GetInt32() == 0 &&
+            fixture.GetProperty("Pending").GetInt32() == 0,
+            "Titan Skin native battle capture was incomplete.");
+
+        int observed = 0;
+        int damaged = 0;
+        foreach (FixtureValue stage in fixture.GetProperty("Stages").EnumerateArray())
+        {
+            RoomCombatState before = stage.GetProperty("Before").Deserialize<RoomCombatState>()!;
+            RoomCombatState actual = stage.GetProperty("Actual").Deserialize<RoomCombatState>()!;
+            foreach (CombatUnit boss in before.Units.Where(unit => unit.AssetKey == "Boss_Level1_Basic" &&
+                unit.Status("titanskin") != null))
+            {
+                CombatStatus status = boss.Status("titanskin")!;
+                Require(status.Stacks == 2 && status.ParamInt == 1,
+                    "Native Titan Skin started with unexpected stacks or per-stack magnitude.");
+                observed++;
+                CombatUnit? after = actual.Units.FirstOrDefault(unit => unit.Id == boss.Id);
+                if (after == null || after.Health < boss.Health) damaged++;
+                if (after != null)
+                    Require(after.Status("titanskin")?.Stacks == 2,
+                        "Native Titan Skin stacks were consumed by a hit.");
+            }
+        }
+        Require(observed > 0 && damaged > 0,
+            "The native battle did not capture Titan Skin on Boss_Level1_Basic taking damage.");
+        Console.WriteLine($"TITAN-SKIN-NATIVE-CHECKS PASS: {observed} status stages, {damaged} damaged stages, passive stacks retained.");
     }
 
     private static CombatUnit Unit(int id, CombatTeam team, int attack, int health, bool canAttack,
