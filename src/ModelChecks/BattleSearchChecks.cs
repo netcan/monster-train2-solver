@@ -42,10 +42,21 @@ internal static class BattleSearchChecks
             return initialPyre - PyreHealth(state);
         }
 
+        const int maxNodes = 128;
+        const int maxTurns = 1;
+        BattleSearchResult serialSearch = BattleSearchModel.Minimize(searchRoot, Score,
+            new BattleSearchOptions(maxNodes, maxTurns, maxDegreeOfParallelism: 1));
         BattleSearchResult search = BattleSearchModel.Minimize(searchRoot, Score,
-            new BattleSearchOptions(maxNodes: 128, maxTurns: 1, maxDegreeOfParallelism: 4));
+            new BattleSearchOptions(maxNodes, maxTurns, maxDegreeOfParallelism: 4));
         Require(search.BestState != null && search.Score.HasValue && search.Steps.Count > 0,
             "Bounded search returned no result from the native battle decision state.");
+        string Path(BattleSearchResult result) => string.Join("|", result.Steps.Select(step => step.IsEndTurn ? "EndTurn" :
+            step.Action!.CardInstanceId + ":" + step.Action.RoomIndex + ":" + step.Action.PlayerPosition + ":" +
+            step.Action.TargetUnitId + ":" + step.Action.ActivatorUnitId));
+        Require(serialSearch.BestState != null && serialSearch.Score == search.Score &&
+            serialSearch.DecisionStatesVisited == search.DecisionStatesVisited && Path(serialSearch) == Path(search) &&
+            BattleTurnChecks.Comparable(serialSearch.BestState!) == BattleTurnChecks.Comparable(search.BestState!),
+            "Serial and parallel native searches returned different best paths, scores or states.");
         BattleTurnState replayed = searchRoot;
         foreach (BattleSearchStep step in search.Steps)
         {
@@ -63,7 +74,7 @@ internal static class BattleSearchChecks
             }
         }
         Require(BattleTurnChecks.Comparable(replayed) == BattleTurnChecks.Comparable(search.BestState!) &&
-            search.DecisionStatesVisited <= 128,
+            search.DecisionStatesVisited <= maxNodes,
             "The returned native search path did not reproduce its best state within the configured node budget.");
         string limits = string.Join(",", new[]
         {
@@ -75,7 +86,8 @@ internal static class BattleSearchChecks
         Console.WriteLine($"NATIVE-BATTLE-SEARCH-CHECKS PASS: {matchedDecisions} recorded decisions matched, " +
             $"{rootFrontier!.SupportedCandidates.Count} root actions, {unsupportedAttempts} unsupported attempts across recorded decisions, " +
             $"{search.UnsupportedAttempts.Count} in search, " +
-            $"{search.DecisionStatesVisited} states, {search.Steps.Count} replayed steps, stop={limits}, score {search.Score}.");
+            $"{search.DecisionStatesVisited} states, serial/parallel equal, {search.Steps.Count} replayed steps, " +
+            $"stop={limits}, score {search.Score}.");
     }
 
     private static int PyreHealth(BattleTurnState state) => state.Spawn.Train.Rooms
