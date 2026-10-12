@@ -2942,14 +2942,27 @@ unsupported transitions and pending records are zero. The schema-103 archive is
 31,317 bytes with 4,937 unique nodes and SHA-256
 `b41dfa4dbed15f85676b29fe52eb04560daab6437fcf8e1e9f91048125406f54`; it has no
 JSON companion. This is mutator evidence, not a collectible relic owner, so
-original relic coverage remains 59/224 (26.34%). Inventory is 239 archives:
-208 battles and 31 component calibrations.
+original relic coverage remains 59/224 (26.34%). Inventory is 240 archives:
+209 battles and 31 component calibrations.
 
 ```powershell
 pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -AllUnitsMultistrikeMutator
 dotnet run --project src/ModelChecks -c Release -- --relic-card-modifiers-only tests/fixtures/full-battle-all-units-multistrike-mutator.mt2f
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-all-units-multistrike-mutator.mt2f
 ```
+
+### Refreshed units-and-junk full battle (schema 103)
+
+The 2026-10-12 native `full-battle-units-and-junk.mt2f` capture wins after 61
+room stages, 13 card cycles, 14 train phases, 11 spawns, seven EndTurns and 11
+card plays. Capture failures, mismatches, unsupported transitions and pending
+records are zero. Offline checks match all 61 rooms, 13 card cycles, 14 train
+phases, 11 spawns, seven turns and 11 actions; the policy chain also matches all
+card plays, EndTurns and final Pyre 60. The archive is 26,708 bytes with 4,301
+unique nodes and SHA-256
+`6d2f8fa146f94746ad54d999cd8a33c37be48f98e47b8a685828f7c33273b185`; it has
+no JSON companion. This validates the captured seven-turn path, not exhaustive
+card/relic coverage or completion of the full decision search.
 
 ### Native Mageblade magic-power source
 
