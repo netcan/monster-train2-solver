@@ -221,13 +221,8 @@ namespace MonsterTrain2Poju.Model
             if (!RouteDeadUnits(train, ascended)) return Unsupported("Missing unit death event or card routing.");
             if (outputPlayRules != null && ascended.DestroyedRoomIndexes.Count > 0)
             {
-                var playersAtTurnStart = source.Spawn.Train.Rooms
-                    .Where(room => room.Units.Any(unit => unit.Team == CombatTeam.Player))
-                    .Select(room => room.RoomIndex).ToHashSet();
-                var disabledRooms = ascended.DestroyedRoomIndexes.Where(index =>
-                    playersAtTurnStart.Contains(index)).ToHashSet();
                 outputPlayRules = outputPlayRules.WithRooms(outputPlayRules.Rooms.Select(room =>
-                    disabledRooms.Contains(room.RoomIndex) ? room.WithEnabled(false) : room).ToArray());
+                    ascended.DestroyedRoomIndexes.Contains(room.RoomIndex) ? room.WithEnabled(false) : room).ToArray());
             }
             train = ascended.State!;
             spawn = WithTrain(spawn, train, spawn.Turn, spawn.Rng);
