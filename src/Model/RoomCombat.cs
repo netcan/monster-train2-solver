@@ -1899,7 +1899,8 @@ namespace MonsterTrain2Poju.Model
                 bool deferReturn = deferRemoval && target.Source.Team == CombatTeam.Player && target.Source.SpawnerCardId > 0 && !DeferSpawner(target);
                 Emit("Death", actor, target, 0);
                 // Native UpdateHp sets this gate before death triggers are fired.
-                bool terminalBossDeath = !source.Preview && IsTerminalBossDeath(target);
+                bool terminalBossRemoval = IsTerminalBossDeath(target);
+                bool terminalBossDeath = !source.Preview && terminalBossRemoval;
                 if (terminalBossDeath)
                 { battleWon = true; context = context?.WithBossesDead(); }
                 // CheckForDeath runs the terminal kill camera before dispatching death signals.
@@ -1943,7 +1944,7 @@ namespace MonsterTrain2Poju.Model
                     target.Removed = true;
                     if (doNotFullyRemove) target.Destroyed = true;
                     else RemovePhysicalPoint(target);
-                    if (!(stopAfterBossRemoval && terminalBossDeath) && UpdateEnchantments() &&
+                    if (!(stopAfterBossRemoval && terminalBossRemoval) && UpdateEnchantments() &&
                         !runningTriggerQueue && enqueueCharacterTrigger == null) DrainLocalTriggerQueue();
                 }
             }
