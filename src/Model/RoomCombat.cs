@@ -801,8 +801,6 @@ namespace MonsterTrain2Poju.Model
                 foreach (CombatStatus status in unit.Statuses)
                     if (!KnownStatuses.Contains(status.Id))
                         return "Unmodeled status " + status.Id + " on " + unit.AssetKey;
-                if (unit.Status("titanskin") != null)
-                    return "Titan Skin damage soak and stack consumption are not modeled.";
                 if (!state.Deployment && unit.Status("valor") != null &&
                     state.Context?.StatusRules.FirstOrDefault(rule => rule.Id == "armor") == null)
                     return "Valor requires the armor status definition.";
@@ -1744,8 +1742,9 @@ namespace MonsterTrain2Poju.Model
                     context = retainedLegacy ? scaled.Context!.WithCardRegistry(null) : scaled.Context; damage = scaled.Damage;
                 }
                 damage = Math.Max(0, damage);
-                bool cardPiercing = false;
-                if (damage > 0 && (target.Has("damage shield") || target.Has("armor")))
+                bool cardPiercing = context?.Relics?.Any(relic => relic.EffectTypes.Contains(RelicModel.AllDamageIsPiercing)) == true;
+                if (damage > 0 && !cardPiercing &&
+                    (target.Has("damage shield") || target.Has("armor") || target.Has("titanskin")))
                 {
                     int piercingCardId = sourceCardId > 0 ? sourceCardId : actor?.Source.SpawnerCardId ?? 0;
                     CardInstanceState? piercingCard = piercingCardId > 0 ? context?.FindCard(piercingCardId) : null;
@@ -1756,6 +1755,7 @@ namespace MonsterTrain2Poju.Model
                         cardPiercing = CardBranchMaskModel.Resolve(piercingCard).Traits.Contains("CardTraitIgnoreArmor", StringComparer.Ordinal);
                     }
                 }
+                bool unitPiercing = sourceCardId == 0 && actor?.Has("piercing") == true;
                 if (target.Has("pyregel"))
                 {
                     damage = checked(damage + StatusMagnitude(target, "pyregel"));
@@ -1778,7 +1778,18 @@ namespace MonsterTrain2Poju.Model
                     Trigger(target, "damage shield", 1);
                     damage = 0;
                 }
-                if (damage > 0 && target.Has("armor") && !cardPiercing && !(sourceCardId == 0 && (actor?.Has("piercing") ?? false)))
+                if (damage > 0 && target.Has("titanskin") && !cardPiercing && !unitPiercing)
+                {
+                    CombatStatus titanSkin = target.Statuses["titanskin"];
+                    StatusScalingResult modifier = RelicStatusMagnitudeModel.GetModifier(context, "titanskin",
+                        target.Source.Team == CombatTeam.Player ? 2 : 1);
+                    if (!modifier.Supported) { unsupportedReason = modifier.UnsupportedReason; return; }
+                    context = modifier.Context;
+                    int applicableStacks = Math.Min(damage, titanSkin.Stacks);
+                    int damageSoak = unchecked(unchecked(titanSkin.ParamInt + modifier.Stacks) * applicableStacks);
+                    damage = Math.Max(0, unchecked(damage - damageSoak));
+                }
+                if (damage > 0 && target.Has("armor") && !cardPiercing && !unitPiercing)
                 {
                     int armor = target.Amount("armor");
                     int spent = Math.Min(target.Count("armor"), damage);

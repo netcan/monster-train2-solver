@@ -2896,3 +2896,24 @@ calibrations. Original relic evidence remains 59/224 (26.34%).
 dotnet run --project src/ModelChecks -c Release -- --covenant-character-filter-only tests/fixtures/full-battle-covenant-character-filter.mt2f
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-covenant-character-filter.mt2f
 ```
+
+### Titan Skin damage soak
+
+The room model now applies passive Titan Skin soak as
+`(ParamInt + relic magnitude) * min(incoming damage, stacks)` on each positive,
+non-piercing hit. Stacks remain present. Damage Shield runs before the soak and
+Armor after it; unit Piercing, card `CardTraitIgnoreArmor`, and the global
+`RelicEffectAllDamageIsPiercing` bypass the soak. The focused pure checks pass
+for soak, cap, ordering, piercing sources, and relic magnitude.
+
+The Covenant archive itself has no Titan Skin damage hit, so its 55-stage replay
+does not validate this branch natively. The targeted Covenant regression still
+passes, including archive integrity, 55 room stages, 11 wave decisions and
+eight Covenant births. No fixture or original relic owner was added; inventory
+remains 237 archives (206 battles and 31 calibrations), and original relic
+evidence remains 59/224 (26.34%).
+
+```powershell
+dotnet run --project src/ModelChecks -c Release -- --titan-skin-pure
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-covenant-character-filter.mt2f
+```

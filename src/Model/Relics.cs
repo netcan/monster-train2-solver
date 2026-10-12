@@ -64,6 +64,7 @@ namespace MonsterTrain2Poju.Model
         // native enemy definitions are captured for a spawn decision.
         internal const string ModifyCharacterAttackDamage = "RelicEffectModifyCharacterAttackDamage";
         internal const string ModifyCharacterMaxHealth = "RelicEffectModifyCharacterMaxHealth";
+        internal const string AllDamageIsPiercing = "RelicEffectAllDamageIsPiercing";
         internal static bool AbilitiesTriggerIncant(CombatContext? context) =>
             context?.Relics?.Any(relic => relic.EffectTypes.Contains(AbilityIncant)) == true;
         internal static string? Validate(CombatContext? context) => Validate(context?.Relics) ??
@@ -77,7 +78,7 @@ namespace MonsterTrain2Poju.Model
                 if (string.IsNullOrEmpty(relic.DataId) || string.IsNullOrEmpty(relic.AssetKey))
                     return "Missing captured relic identity.";
                 foreach (string effect in relic.EffectTypes)
-                    if (effect != AbilityIncant && effect != ModifyTriggerCount && effect != AddStatusOnSpawn && effect != AddTempUpgrade && effect != AddCardsNull && effect != AddTrigger && effect != AddStatusOnApplied && effect != ModifyStatusMagnitude && effect != PreventStatusDecay && effect != ModifyCharacterAttackDamage && effect != ModifyCharacterMaxHealth && !RelicResourceModel.IsEffect(effect)) return "Unmodeled relic effect " + effect + " on " + relic.AssetKey + ".";
+                    if (effect != AbilityIncant && effect != ModifyTriggerCount && effect != AddStatusOnSpawn && effect != AddTempUpgrade && effect != AddCardsNull && effect != AddTrigger && effect != AddStatusOnApplied && effect != ModifyStatusMagnitude && effect != PreventStatusDecay && effect != ModifyCharacterAttackDamage && effect != ModifyCharacterMaxHealth && effect != AllDamageIsPiercing && !RelicResourceModel.IsEffect(effect)) return "Unmodeled relic effect " + effect + " on " + relic.AssetKey + ".";
                 string? error = RelicCardModifierModel.Validate(relic) ?? RelicSpawnStatusModel.Validate(relic) ?? RelicCharacterTriggerModel.Validate(relic) ?? RelicStatusStackModel.Validate(relic) ?? RelicStatusMagnitudeModel.Validate(relic) ?? RelicStatusDecayModel.Validate(relic) ?? RelicResourceModel.Validate(relic);
                 if (error != null) return error;
             }

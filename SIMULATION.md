@@ -1,6 +1,6 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-12): 236 binary archives, including 205
+Current accepted inventory (2026-10-12): 237 binary archives, including 206
 full battles and 31 component calibrations. Unchanged original relic evidence
 covers 59/224 catalog entries (26.34%); see
 [the owner evidence table](tests/fixtures/relic-coverage.md). Whole-battle
@@ -8252,3 +8252,27 @@ Inventory is 237 binary archives: 206 battles and 31 component calibrations.
 Accepted original relic evidence remains 59/224 (26.34%). Full-inventory replay,
 complete Boss/status coverage, arbitrary relic and card interactions, and the
 decision solver remain unfinished.
+
+### Titan Skin damage soak
+
+`RoomCombatModel` now follows the native Titan Skin handler for positive,
+non-piercing damage: each hit soaks `(ParamInt + relic magnitude) *
+min(damage, stacks)`. The status is passive and its stacks remain unchanged.
+Damage Shield resolves first and Armor after Titan Skin. Unit, card-trait, and
+`RelicEffectAllDamageIsPiercing` sources bypass the soak according to the native
+damage helper. Focused checks cover those paths and relic-modified magnitude;
+the selected Covenant archive integrity check and targeted battle replay pass.
+
+The Covenant archive contains `Boss_Level1_Basic`, not the `Boss_Level2_BigStats`
+that receives Titan Skin. There is not yet a native battle archive with an
+observed Titan Skin hit, so this change has decompiled source/status-data and
+pure-model validation but no native combat differential. It adds no fixture or
+original relic owner: accepted inventory remains 237 archives (206 battles,
+31 calibrations), with 59/224 original relics (26.34%). Full inventory replay,
+complete Boss/status coverage, arbitrary relic/card combinations, and the
+decision solver remain unfinished.
+
+```powershell
+dotnet run --project src/ModelChecks -c Release -- --titan-skin-pure
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-covenant-character-filter.mt2f
+```

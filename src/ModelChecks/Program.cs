@@ -19,6 +19,12 @@ if (args.Length == 1 && args[0] == "--status-per-other-effect-pure")
     return;
 }
 
+if (args.Length == 1 && args[0] == "--titan-skin-pure")
+{
+    TitanSkinChecks.Run();
+    return;
+}
+
 if (args.Length == 1 && args[0] == "--unit-ability-pure")
 {
     UnitAbilityChecks.Run();
@@ -530,6 +536,7 @@ CovenantCharacterFilterChecks.Run();
 RelicCardModifierChecks.Run();
 RelicStatusStackChecks.Run();
 RelicStatusMagnitudeChecks.Run();
+TitanSkinChecks.Run();
 RelicStatusDecayChecks.Run();
 RelicResourceChecks.Run();
 RelicFloorCapacityChecks.Run();

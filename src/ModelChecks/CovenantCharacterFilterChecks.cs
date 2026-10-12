@@ -6,11 +6,13 @@ internal static class CovenantCharacterFilterChecks
 {
     internal static void Run()
     {
-        var titanSkin = new CombatUnit(1, "TitanBoss", CombatTeam.Enemy, 0, 1, 1, false, false, false,
+        var titanSkin = new CombatUnit(1, "TitanBoss", CombatTeam.Enemy, 0, 20, 20, false, false, false,
             [new CombatStatus("titanskin", 2, 2)]);
-        RoomCombatResult result = RoomCombatModel.Resolve(new RoomCombatState(0, false, [titanSkin], []));
-        Require(!result.Supported && result.UnsupportedReason == "Titan Skin damage soak and stack consumption are not modeled.",
-            "Titan Skin combat was not rejected explicitly.");
+        var attacker = new CombatUnit(2, "Striker", CombatTeam.Player, 5, 20, 20, true, false, false, []);
+        RoomCombatResult result = RoomCombatModel.Exchange(new RoomCombatState(0, false, [titanSkin, attacker], []));
+        CombatUnit damagedBoss = result.State!.Units.Single(unit => unit.Id == 1);
+        Require(result.Supported && damagedBoss.Health == 19 && damagedBoss.Status("titanskin")?.Stacks == 2,
+            "Titan Skin was not accepted with persistent soak stacks.");
     }
 
     internal static void Native(FixtureValue fixture)

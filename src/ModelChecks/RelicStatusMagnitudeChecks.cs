@@ -80,7 +80,7 @@ internal static class RelicStatusMagnitudeChecks
         foreach (string status in new[] { "", "not-a-status", "armor" })
             Require(!RelicStatusMagnitudeModel.GetModifier(Context([Relic("unsupported", new(0, 2, status, 1))]), "buff", 2).Supported,
                 "An uncaptured or unmodeled magnitude consumer was accepted: " + status);
-        foreach (string status in new[] { "buff", "debuff", "spikes", "regen", "mageblade" })
+        foreach (string status in new[] { "buff", "debuff", "spikes", "regen", "mageblade", "titanskin" })
             Require(RelicStatusMagnitudeModel.Validate(Relic("known", new(0, 2, status, 1))) == null,
                 "A native modeled magnitude consumer was rejected: " + status);
 
