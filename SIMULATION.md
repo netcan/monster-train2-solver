@@ -1,6 +1,6 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-12): 238 binary archives, including 207
+Current accepted inventory (2026-10-12): 239 binary archives, including 208
 full battles and 31 component calibrations. Unchanged original relic evidence
 covers 59/224 catalog entries (26.34%); see
 [the owner evidence table](tests/fixtures/relic-coverage.md). Whole-battle
@@ -47,10 +47,10 @@ calls, filters, reset behavior, notifications and 32 immutable branches match.
 This captures the native deployment hand before the simulator's first-decision
 input; whole-game relic coverage and the optimal solver remain unfinished.
 
-`full-battle-mageblade.mt2f` now validates the Mageblade cache and room-power
-attack path through a complete battle and independent mid-battle replay. Its
-+15 room magic power is a controlled probe input; natural room-power sources
-and preview-copy lifecycle remain unverified.
+`full-battle-mageblade.mt2f` validates the Mageblade cache and room-power attack
+path through a complete battle and independent mid-battle replay. Its +15 room
+magic power is a controlled probe input; natural room-power sources and
+preview-copy lifecycle remain unverified.
 
 `full-battle-relic-card-exhaust-upgrades.mt2f` validates temporary relic
 Consume upgrades through played-card exhaustion. The fixture reuses a modified
@@ -8286,3 +8286,23 @@ dotnet run --project src/ModelChecks -c Release -- --room-combat-only tests/fixt
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-covenant-character-filter.mt2f
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-titan-skin.mt2f
 ```
+
+### Relentless room availability at decision boundaries
+
+`BattleTurnModel.EndTurn` disables every room reported as destroyed by native
+Relentless ascension. Native decision capture now refreshes room play rules at
+each boundary; the earlier Mageblade archive reused a stale rules snapshot and
+was replaced with a current capture. This makes the cleared floor unavailable
+to subsequent card plays, matching the game's `RoomState.DestroyRoom` behavior.
+
+The refreshed Mageblade battle matches 45 room stages, 11 card-cycle events, 11
+train phases, nine spawns, six EndTurns and eight actions with zero capture
+failures, mismatches, unsupported transitions or pending records. Independent
+replay reaches Pyre 80 through its full policy chain and 16 parallel branches.
+The AllUnitsMultistrike fixture also matches all seven EndTurns after room
+availability is updated.
+
+Inventory is 239 binary archives: 208 battles and 31 component calibrations.
+Original relic evidence remains 59/224 (26.34%). Full-inventory replay,
+complete Boss/status coverage, arbitrary card/relic interactions, natural
+Mageblade power sources and the decision solver remain unfinished.
