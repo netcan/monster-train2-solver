@@ -2984,7 +2984,8 @@ namespace MonsterTrain2Poju.Model
                 {
                     if (!source.Preview)
                     {
-                        ForgePointsResult changed = ForgePointsModel.Apply(context, amount);
+                        ForgePointsResult changed = ForgePointsModel.Apply(context, amount, actor.Source.SpawnerCardId,
+                            placement: source.Deployment, preview: source.Preview);
                         if (!changed.Supported) { unsupportedReason = changed.UnsupportedReason; return false; }
                         context = changed.Context;
                         Emit(action.Type, actor, actor, amount);

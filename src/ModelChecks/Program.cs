@@ -304,6 +304,12 @@ if (args.Length == 2 && args[0] == "--native-actions-only")
     BattleActionChecks.Native(actionDocument.RootElement);
     return;
 }
+if (args.Length == 2 && args[0] == "--forge-points-only")
+{
+    using var forgeDocument = ModelJson.ReadFixture(args[1]);
+    ForgePointsChecks.Native(forgeDocument.RootElement, required: true);
+    return;
+}
 if (args.Length == 2 && args[0] == "--relic-card-modifiers-only")
 {
     using var relicDocument = ModelJson.ReadFixture(args[1]);

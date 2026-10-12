@@ -48,6 +48,11 @@ namespace MonsterTrain2Poju.Probe
                 var resources = effects.Select((effect, index) => new { Effect = effect, Index = index })
                     .Where(item => RelicResourceModel.IsEffect(item.Effect.GetType().Name))
                     .Select(item => RelicResourceProbe.Definition(item.Effect, item.Index, managers)).ToArray();
+                var forgePointModifiers = effects.Select((effect, index) => new { Effect = effect, Index = index })
+                    .Where(item => item.Effect.GetType().Name == ForgePointsModel.AdditionalForgeRelic)
+                    .Select(item => new RelicForgePointModifier(item.Index,
+                        ((RelicEffectData)AccessTools.Field(typeof(RelicEffectBase), "_srcRelicEffectData").GetValue(item.Effect)).GetParamInt(),
+                        item.Effect.CanApplyInPreviewMode, RelicCardModifierProbe.Conditions(item.Effect))).ToArray();
                 var magicPower = effects.Select((effect, index) => new { Effect = effect, Index = index })
                     .Where(item => item.Effect is RelicEffectModifyCardMagicalPower)
                     .Select(item => new RelicMagicPowerModifier(item.Index,
@@ -69,7 +74,8 @@ namespace MonsterTrain2Poju.Probe
                     resources.Length > 0 ? resources : null, magicPower.Length > 0 ? magicPower : null,
                     cardPlayMagicPower.Length > 0 ? cardPlayMagicPower : null,
                     roomEntryStatuses.Length > 0 ? roomEntryStatuses : null,
-                    unitUpgradeTriggers.Length > 0 ? unitUpgradeTriggers : null);
+                    unitUpgradeTriggers.Length > 0 ? unitUpgradeTriggers : null,
+                    forgePointModifiers.Length > 0 ? forgePointModifiers : null);
             }).ToArray();
         }
 

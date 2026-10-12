@@ -1,10 +1,28 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-13): 249 binary archives, including 218
+Current accepted inventory (2026-10-13): 250 binary archives, including 219
 full battles and 31 component calibrations. Unchanged original relic evidence
-covers 66/224 catalog entries (29.46%); see
+covers 67/224 catalog entries (29.91%); see
 [the owner evidence table](tests/fixtures/relic-coverage.md). Whole-battle
 coverage and the optimal solver remain in progress.
+
+### Original Forge Points relic
+
+`full-battle-original-forge-points-relic.mt2f` adds unchanged `HerzalsAnvil`
+(`RelicEffectAdditionalForgePoints`) to the positive Forge Points battle. Native
+capture confirms its `+1` payload, placement eligibility and no conditions. The
+model applies the bonus only to positive adjustments, records conditional
+branches and preserves preview/placement gates. The muted Instant battle won
+with 55 room stages, seven EndTurns and one card action; capture failures,
+mismatches, unsupported interactions and pending records are zero. Independent
+room/action/turn checks and an owner ablation confirm that removing the relic
+removes exactly one point from a positive adjustment. The schema-103 archive is
+21,142 bytes with 3,110 unique nodes and no JSON companion.
+
+```powershell
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -ForgePointsEffects
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-forge-points-relic.mt2f
+```
 
 ### Damage-per-HP spell model
 

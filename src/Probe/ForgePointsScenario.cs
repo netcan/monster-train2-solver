@@ -11,18 +11,24 @@ namespace MonsterTrain2Poju.Probe
         internal static void Prepare(AllGameManagers managers, ManualLogSource log)
         {
             SaveManager save = managers.GetSaveManager();
+            AllGameData gameData = save.GetAllGameData();
             CardState[] stewards = managers.GetCardManager()!.GetAllCards(new List<CardState>())
                 .Where(card => card.GetCardDataID() == "d14a50f3-728d-43e1-87f0-ef1b013f6678").ToArray();
             if (stewards.Length == 0) throw new InvalidOperationException("Forge Points fixture requires an owned Steward.");
-            CardData data = save.GetAllGameData().FindCardData(stewards[0].GetCardDataID())!;
+            CardData data = gameData.FindCardData(stewards[0].GetCardDataID())!;
             CharacterData unit = data.GetEffects().Single(effect => effect.GetEffectStateName() == "CardEffectSpawnMonster").GetParamCharacterData();
             var triggers = unit.GetTriggers().ToList();
             triggers.Add(Trigger(Adjust(3), Adjust(-2), Adjust(-2, 4)));
             Set(unit, "triggers", triggers);
             save.SetForgePoints(3);
+            CollectableRelicData forgeRelic = gameData.GetAllCollectableRelicData()
+                .Where(relic => relic.GetEffects().Any(effect => effect.GetEffectClassName() == "RelicEffectAdditionalForgePoints"))
+                .OrderBy(relic => relic.GetID(), StringComparer.Ordinal).FirstOrDefault() ??
+                throw new InvalidOperationException("Forge Points fixture needs an original Additional Forge Points relic.");
+            save.AddRelic(forgeRelic);
             foreach (CardState card in stewards) card.Setup(data, save);
             Set(managers.GetCombatManager()!, "combatStateChanged", true);
-            log.LogInfo("FORGE-POINTS-PREPARED OnSpawn signed fixed and ranged adjustments from a nonzero starting value.");
+            log.LogInfo("FORGE-POINTS-PREPARED original Additional Forge Points relic; OnSpawn signed fixed and ranged adjustments from a nonzero starting value: " + forgeRelic.name + "/" + forgeRelic.GetID());
         }
 
         private static CardEffectData Adjust(int amount, int? max = null)

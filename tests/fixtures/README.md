@@ -29,7 +29,7 @@ The default command checks the full curated inventory. For routine changes, run
 the dedicated checks for the new and directly affected scenarios; run the full
 inventory at completed milestones and before delivery.
 
-Current inventory is 249 archives: 218 accepted battles and 31 component
+Current inventory is 250 archives: 219 accepted battles and 31 component
 calibrations. `full-battle-companion-bump.mt2f` covers a paired Relentless
 companion Boss refusal, its attempted-ascension callback and the survivor's
 terminal-death handoff. `full-battle-relic-card-status-upgrades.mt2f` verifies a native
@@ -43,6 +43,9 @@ original relic owner to the coverage count.
 relic's Endless upgrade routes a dead carrier to Draw, preserves its temporary
 upgrade and leaves `TimesExhausted` unchanged across a 23-action, seven-turn
 battle with all 62 room stages matched.
+`full-battle-original-forge-points-relic.mt2f` verifies unchanged `HerzalsAnvil`
+adds one point to positive Forge adjustments; independent action/room/turn
+replay and exact owner ablation pass.
 `full-battle-spawn-or-status.mt2f` covers fallback birth and existing-unit
 branches of `CardEffectSpawnMonsterOrAddStatusEffect` across two native skill
 activations.

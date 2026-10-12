@@ -101,6 +101,9 @@ namespace MonsterTrain2Poju.Model
                 if (relic.CardPlayMagicPowerModifiers != null)
                     relic = relic.WithCardPlayMagicPowerModifiers(relic.CardPlayMagicPowerModifiers.Select(rule => rule.WithConditions(
                         rule.Conditions.Select(condition => condition.Reset(duration)).ToArray())).ToArray());
+                if (relic.ForgePointModifiers != null)
+                    relic = relic.WithForgePointModifiers(relic.ForgePointModifiers.Select(rule => rule.WithConditions(
+                        rule.Conditions.Select(condition => condition.Reset(duration)).ToArray())).ToArray());
                 return relic;
             }).ToArray();
             return context.WithRelics(relics);

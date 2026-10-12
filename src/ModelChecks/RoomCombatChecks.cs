@@ -130,12 +130,13 @@ internal static class RoomCombatChecks
             Require(fixture.GetProperty("TerminalCaptureBoundary").GetString() == "AfterStopCombatLoop" &&
                 fixture.GetProperty("TerminalEffectsSettled").GetBoolean(), "Native terminal effects were not settled.");
         int matched = 0, unsupported = 0;
+        string? firstUnsupported = null;
         foreach (FixtureValue stage in fixture.GetProperty("Stages").EnumerateArray())
         {
             RoomCombatState state = stage.GetProperty("Before").Deserialize<RoomCombatState>()!;
             RoomCombatResult result = stage.GetProperty("Kind").GetString() == "Exchange"
                 ? RoomCombatModel.Exchange(state) : RoomCombatModel.Resolve(state);
-            if (!result.Supported) { unsupported++; continue; }
+            if (!result.Supported) { unsupported++; firstUnsupported ??= result.UnsupportedReason; continue; }
             // The oracle is the captured game state, not the recorded model prediction.
             CombatUnit[] actual = stage.GetProperty("Actual").GetProperty("Units").Deserialize<CombatUnit[]>()!;
             string? unitDifference = ModelJson.Difference(JsonSerializer.Serialize(result.State!.Units),
@@ -154,7 +155,8 @@ internal static class RoomCombatChecks
             }
             matched++;
         }
-        Require(matched > 0, "No native stages were verified.");
+        Require(matched > 0, "No native stages were verified; unsupported=" + unsupported +
+            (firstUnsupported == null ? string.Empty : "; first reason: " + firstUnsupported));
         Require(unsupported == 0, "Native room verification skipped unsupported stages in " + path);
         Console.WriteLine($"NATIVE-ROOM-CHECKS PASS: {matched} matched, {unsupported} unsupported; {path}");
         if (fixture.TryGetProperty("ModifierScenario", out FixtureValue scenario) &&
@@ -173,6 +175,7 @@ internal static class RoomCombatChecks
         SpawnEnchantChecks.Native(fixture);
         PersistentEnchantmentChecks.Native(fixture);
         BattleActionChecks.Native(fixture);
+        ForgePointsChecks.Native(fixture);
         TypedDrawNativeChecks.Native(fixture);
         CardBranchMaskChecks.Native(fixture);
         if (fixture.TryGetProperty("ModifierScenario", out var relicScenario) && relicScenario.GetString() == "original-relic-batch")

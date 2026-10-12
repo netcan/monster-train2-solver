@@ -1,7 +1,7 @@
 # Original relic coverage evidence
 
-As of 2026-10-13, **66 distinct original collectable relics / 224 catalog entries
-(29.46%)** have accepted native full-battle evidence. This counts unchanged relic
+As of 2026-10-13, **67 distinct original collectable relics / 224 catalog entries
+(29.91%)** have accepted native full-battle evidence. This counts unchanged relic
 definitions whose effects actually ran, including their original filters and
 conditions. Test cards, unit triggers and carrier subtypes may be authored to
 exercise those effects; the claim covers the recorded paths, not every possible
@@ -14,14 +14,14 @@ seven now have accepted original-owner evidence. Both catalog owners of
 Rage and Frostbite consumers. Unknown status families and other effects on the
 remaining owners still require modeling and native proof.
 
-All 21 source archives below report game `2.2.1`, module MVID
+All 22 source archives below report game `2.2.1`, module MVID
 `8fb07b96-f4db-4d2b-884d-c00536d6ccf4`, `NativeWon=true`, and zero
 `CaptureFailures`, `Mismatches`, `Unsupported` and `Pending`. Archive provenance,
 byte lengths and SHA-256 hashes are recorded in [manifest.tsv](manifest.tsv).
 The floor-capacity batch passes strict native acceptance, complete-fixture checks,
 independent full-battle replay and six directly affected old-fixture regressions.
-The accepted inventory is 249 archives: 218 battles and 31 component
-calibrations. All 249 archive names, byte lengths and SHA-256 hashes match the
+The accepted inventory is 250 archives: 219 battles and 31 component
+calibrations. All 250 archive names, byte lengths and SHA-256 hashes match the
 manifest and curated list, with no JSON companions. A 246-archive replay was
 attempted on 2026-10-13 but has not completed: legacy EndTurn snapshots can
 conflict with the current model's room `Enabled` state. Focused follow-up checks
@@ -31,7 +31,7 @@ action/turn comparisons and skips an independent legacy policy chain only when
 recomputed EndTurn state confirms that room-rule conflict. Freshness-marked
 archives remain strict. The Mageblade status/cache/attack path has an accepted
 native battle archive, but Mageblade is not a collectable relic and is not
-included in the 66/224 owner count. The `AllUnitsMultistrike` archive
+included in the 67/224 owner count. The `AllUnitsMultistrike` archive
 validates a mutator, not a collectible relic, and is also excluded from that
 owner count.
 
@@ -46,6 +46,7 @@ owner count.
 | `ReduceStarterCost` | `d892106c-dbbc-40ac-bf0b-902882cdc69d` | [starter cost relic][cost] | 124 exact manager calls and 49 notifications cover filtering, unique repeat rejection, reset and generated cards. `Actions[0]` actually plays `JustCause` for 1 Ember with base cost 2 and the original `ReduceStarterCost_Upgrade` cost offset −1. |
 | `PyreHeartSon` | `8503360a-26b2-4b71-9334-4c6014ad397f` | [cardless relic upgrades][cardless] | Five ordinary cardless births gain +5 attack/+12 health; five cardless clones skip the upgrade. Example: record 8, unit 10, attack 0 → 5 and max health 1 → 13; record 9's clone remains 0/1. |
 | `MoltenManifold` | `f141d334-b503-48ff-ac21-5f2ad27105dd` | [original relic batch][batch] | Original `TinkerersToolbelt_Upgrade` contributes `XCost=2`. Sixteen X-cost plays include nine positive payments; 20 damage-scaling witnesses match native values and differ when the relic upgrade is removed. Manager calls also exercise repeat stacking, reset and non-X rejection. |
+| `HerzalsAnvil` | `4e0f1e86-f122-4b20-82cf-7c997e4ee84a` | [original Forge Points relic][forge] | Its unchanged `RelicEffectAdditionalForgePoints` adds 1 to positive adjustments. Native battle state changes; independent replay matches and owner ablation removes exactly that point. |
 | `SpawnWithRage` | `55ca34e9-047b-4b93-b390-d8d228a43261` | [original relic batch][batch] | All five player births gain 3 Rage (`buff`). Example: record 0, unit 2, absent → 3. |
 | `UnitsGainLifesteal` | `a6b0b657-8893-4cc8-bc62-ec09544c4306` | [original relic batch][batch] | All five player births gain 2 Lifesteal (`lifesteal`). Example: record 0, unit 2, absent → 2. |
 | `ContingencyPlans` | `0278309e-d15c-4041-a8dc-b76f360f306b` | [original relic batch][batch] | Two Monstrosity births gain 7 Spikes; the other three player births do not. Records 0–1 accept the authored Monstrosity carrier; record 2 rejects the other carrier. The relic and subtype filter are unchanged. |
@@ -271,22 +272,26 @@ The native Horde-triggered unit-upgrade archive brought accepted original-owner
 coverage to 64/224. The subsequent status-stack relic archive adds
 `ExtraSpellWeakness`, bringing the total at that milestone to 65/224 (29.02%). The
 refreshed schema-136 status-stack archive now also accepts `IncreaseDecaySlimeStacks`,
-bringing current coverage to 66/224 (29.46%); its 39 battle stages have zero
+bringing coverage to 66/224 (29.46%); its 39 battle stages have zero
 mismatches, capture failures, unsupported interactions or pending records. The previous
 246-archive replay attempt remains incomplete;
-full replay of the current 249-archive inventory is still deferred.
+full replay of the current 250-archive inventory is still deferred. The
+`HerzalsAnvil` Forge Points battle then brings accepted original-owner coverage
+to 67/224 (29.91%); its positive adjustment, `+1` payload and owner ablation pass
+with zero native mismatches, capture failures, unsupported interactions or pending records.
 
 The schema-135 `full-battle-relic-card-ephemeral-upgrades.mt2f` archive verifies
 that relic-granted temporary Ephemeral traits purge cards on play and at
 EndTurn. Its test authors a replacement upgrade payload on the original
 `ReduceStarterCost` relic, so it adds battle-mechanism coverage only and does
-not change the accepted 66/224 original-relic count.
+not change the accepted 67/224 original-relic count.
 
 [counts]: full-battle-incant-relics-combined.mt2f
 [statuses]: full-battle-spawn-status-relics.mt2f
 [cost]: full-battle-relic-card-modifiers.mt2f
 [cardless]: full-battle-cardless-relic-upgrades.mt2f
 [batch]: full-battle-original-relic-batch.mt2f
+[forge]: full-battle-original-forge-points-relic.mt2f
 [units]: full-battle-original-unit-relics.mt2f
 [triggerDeaths]: full-battle-original-trigger-relic-deaths.mt2f
 [triggers]: full-battle-original-trigger-relics.mt2f

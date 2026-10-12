@@ -569,7 +569,8 @@ namespace MonsterTrain2Poju.Model
                 }
                 if (effect.Type == ForgePointsModel.Effect)
                 {
-                    ForgePointsResult changed = ForgePointsModel.Apply(state.Context!, effect.Value, sourceCardId);
+                    ForgePointsResult changed = ForgePointsModel.Apply(state.Context!, effect.Value, sourceCardId,
+                        placement: selected.Deployment, preview: selected.Preview);
                     if (!changed.Supported) return UnsupportedTrain(changed.UnsupportedReason!);
                     state = WithContext(state, changed.Context!);
                     continue;

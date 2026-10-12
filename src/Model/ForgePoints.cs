@@ -22,18 +22,25 @@ namespace MonsterTrain2Poju.Model
         {
             if (context?.QueryFrame?.ForgePoints == null)
                 return "Forge point effects require the current Forge Points value.";
-            if (context.Relics?.Any(relic => relic.EffectTypes.Contains(AdditionalForgeRelic)) == true)
-                return "Additional Forge Points relic effects are not modeled.";
+            foreach (CombatRelicState relic in context.Relics ?? Array.Empty<CombatRelicState>())
+            {
+                string? relicError = RelicForgePointModel.Validate(relic);
+                if (relicError != null) return relicError;
+            }
             return null;
         }
 
         public static bool Test(bool? pyreAlive) => pyreAlive == true;
 
-        public static ForgePointsResult Apply(CombatContext? source, int amount, int sourceCardId = 0)
+        public static ForgePointsResult Apply(CombatContext? source, int amount, int sourceCardId = 0,
+            bool placement = false, bool preview = false)
         {
             string? error = Validate(source);
             if (error != null) return Unsupported(error);
             CombatContext context = source!;
+            RelicForgePointResult relicPoints = RelicForgePointModel.Apply(context, amount, placement, preview);
+            if (!relicPoints.Supported) return Unsupported(relicPoints.UnsupportedReason!);
+            context = relicPoints.Context!;
             int additional = 0;
             if (sourceCardId > 0)
             {
@@ -49,7 +56,7 @@ namespace MonsterTrain2Poju.Model
                     additional = unchecked(additional + unchecked(trait.ForgedCountPerStat * query.Value));
                 }
             }
-            int adjusted = unchecked(unchecked(context.QueryFrame!.ForgePoints!.Value + amount) + additional);
+            int adjusted = unchecked(unchecked(unchecked(context.QueryFrame!.ForgePoints!.Value + amount) + relicPoints.AdditionalPoints) + additional);
             int result = Math.Max(0, adjusted);
             return new ForgePointsResult(context.WithQueryFrame(context.QueryFrame.With(forgePoints: result)), result);
         }
