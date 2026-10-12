@@ -2885,15 +2885,20 @@ pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-persistent-e
 decisions and eight Covenant birth callbacks match exactly. The character filter
 installs the `OnKill` Rage trigger on the single `Boss_Level1_Basic` match; the
 seven observed nonmatching births retain their original statuses and triggers.
-The muted Instant battle wins after 55 combat stages with zero mismatches,
-unsupported transitions, capture failures or pending records. This fixture does
-not include `Boss_Level2_BigStats`, whose Covenant effect adds Titan Skin; that
-status still stops combat modeling explicitly because damage soak and stack
-consumption are not implemented. The schema-103 archive is 37,261 bytes with
-4,600 unique nodes and SHA-256
-`392e090aac909f2994b0f74ebcde49025d6ef89feae22836bff08572f048390d`; it has no
-JSON companion. Inventory is 237 archives: 206 battles and 31 component
-calibrations. Original relic evidence remains 59/224 (26.34%).
+The 2026-10-12 muted Instant native battle at
+`.probe-runs/full-battle-steward-once-20261012-163709-f52d5f60` wins after 55
+room stages, 13 card cycles, 14 train phases, 11 spawns, seven EndTurns and one
+card play. Capture failures, mismatches, unsupported transitions and pending
+records are zero. Offline replay matches all 55 rooms, 13 card cycles, 14 train
+phases, 11 spawns and seven turns; the policy chain also matches seven EndTurns
+and final Pyre 49 across 16 parallel branches. This fixture does not include
+`Boss_Level2_BigStats`, whose Covenant effect adds Titan Skin; that status still
+stops combat modeling explicitly because damage soak and stack consumption are
+not implemented. The schema-103 archive is 37,647 bytes with 4,648 unique nodes
+and SHA-256
+`ced33a85db5f5525883c0d389c60adebc0f43620cf6eaf5cc9d8d89870df87a8`; it has no
+JSON companion. Inventory is 240 archives: 209 battles and 31 component
+calibrations. Original relic evidence is 60/224 (26.79%).
 
 ```powershell
 dotnet run --project src/ModelChecks -c Release -- --covenant-character-filter-only tests/fixtures/full-battle-covenant-character-filter.mt2f
