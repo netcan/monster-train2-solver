@@ -41,7 +41,8 @@ namespace MonsterTrain2Poju.Probe
                 interactions.Add("Outer or queued final boss spawning");
             string? relicError = RelicModel.Validate(state.Context);
             if (relicError != null) interactions.Add(relicError);
-            if (save.GetMutators().Count > 0) interactions.Add("Spawn mutators");
+            if (save.GetMutators().Count > 0 && !RelicCardModifierScenario.SupportedMutatorContext)
+                interactions.Add("Spawn mutators");
             var cache = (Dictionary<int, SpawnGroupData>)AccessTools.Field(typeof(SpawnPatternData),
                 "groupIndexToGroupData").GetValue(pattern);
             var waves = new List<SpawnGroupPoolData>(); pattern.GetUnlockedWaves(save, waves);

@@ -10,6 +10,9 @@ namespace MonsterTrain2Poju.Probe
     {
         internal static bool Prepared { get; private set; }
         internal static bool CaptureReady { get; private set; }
+        internal static bool AllUnitsMultistrikeMutator =>
+            Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == "all-units-multistrike-mutator";
+        internal static bool SupportedMutatorContext => Prepared && AllUnitsMultistrikeMutator;
         internal static bool ExhaustUpgrade => Environment.GetEnvironmentVariable("MT2_PROBE_RELIC_CARD_EXHAUST_UPGRADE") == "1";
         internal static void Prepare(AllGameManagers managers, ManualLogSource log)
         {
@@ -18,40 +21,71 @@ namespace MonsterTrain2Poju.Probe
                 "MT2_PROBE_RELIC_CARD_SELF_PURGE_UPGRADE", "MT2_PROBE_RELIC_CARD_EXHAUST_UPGRADE", "MT2_PROBE_RELIC_CARD_ABILITY_UPGRADE",
                 "MT2_PROBE_RELIC_CARD_TRIGGER_UPGRADE" }
                 .Count(name => Environment.GetEnvironmentVariable(name) == "1");
+            if (AllUnitsMultistrikeMutator) selectedScenario++;
             if (selectedScenario > 1) throw new InvalidOperationException("Relic card status, piercing, self-purge, exhaust, ability and trigger scenarios are mutually exclusive.");
             var save = managers.GetSaveManager();
-            var original = save.GetAllGameData().GetAllCollectableRelicData().Single(relic => relic.name == "ReduceStarterCost");
+            var data = save.GetAllGameData();
+            CollectableRelicData? originalRelic = null;
+            MutatorData? originalMutator = null;
+            if (AllUnitsMultistrikeMutator)
+            {
+                originalMutator = data.FindMutatorData("626d64ba-8548-4a10-9240-b40d40b26485");
+                if (originalMutator == null || originalMutator.name != "AllUnitsMultistrike")
+                    throw new InvalidOperationException("Original AllUnitsMultistrike mutator identity changed.");
+                string[] expectedEffects = { "RelicEffectAddTempUpgrade", "RelicEffectAddStatusEffectOnSpawn" };
+                if (!originalMutator.GetEffects().Select(effect => effect.GetEffectClassName()).SequenceEqual(expectedEffects))
+                    throw new InvalidOperationException("Original AllUnitsMultistrike effect order changed.");
+                RelicEffectData effect = originalMutator.GetEffects().Single(item => item.GetEffectClassName() == "RelicEffectAddTempUpgrade");
+                CardUpgradeData upgrade = effect.GetParamCardUpgradeData();
+                Team.Type sourceTeam = effect.GetParamSourceTeam();
+                if (sourceTeam != Team.Type.Monsters || upgrade == null || upgrade.name != "Multistrike1" ||
+                    !upgrade.IsUnique() || !upgrade.GetStatusEffectUpgrades().Any(status => status.statusId == "multistrike" && status.count == 1) ||
+                    !upgrade.GetFilters().Any(filter => filter.name == "OnlyUnit"))
+                    throw new InvalidOperationException("Original AllUnitsMultistrike card upgrade changed.");
+            }
+            else
+            {
+                originalRelic = data.GetAllCollectableRelicData().Single(relic => relic.name == "ReduceStarterCost");
+            }
             var cards = managers.GetCardManager()!;
             var owned = cards.GetAllCards(new List<CardState>());
             // The generation fixture creates copies of its casting spell. Keep
             // that authored test spell paid after the unchanged original relic.
-            var generators = owned.Where(card => card.GetEffects().Any(effect => effect.GetEffectStateName() == "CardEffectAddBattleCard"))
-                .Select(card => card.GetCardDataID()).Distinct().ToArray();
+            var generators = AllUnitsMultistrikeMutator ? Array.Empty<string>() :
+                owned.Where(card => card.GetEffects().Any(effect => effect.GetEffectStateName() == "CardEffectAddBattleCard"))
+                    .Select(card => card.GetCardDataID()).Distinct().ToArray();
             foreach (string id in generators)
             {
-                var definition = save.GetAllGameData().FindCardData(id)!;
+                var definition = data.FindCardData(id)!;
                 AccessTools.Field(typeof(CardData), "cost").SetValue(definition, 2);
                 foreach (var card in owned.Where(card => card.GetCardDataID() == id)) AccessTools.Field(typeof(CardState), "cost").SetValue(card, 2);
             }
-            save.AddRelic(original);
+            if (originalMutator != null)
+            {
+                save.AddMutator(originalMutator);
+                var activeMutators = save.GetMutators();
+                if (activeMutators.Count != 1 || activeMutators[0].GetAssetName() != "AllUnitsMultistrike")
+                    throw new InvalidOperationException("The native AllUnitsMultistrike mutator did not install as the only run mutator.");
+            }
+            else save.AddRelic(originalRelic!);
             RelicEffectAddTempUpgrade relicEffect = CurrentRelic(managers).GetEffects().OfType<RelicEffectAddTempUpgrade>().Single();
-            if (Environment.GetEnvironmentVariable("MT2_PROBE_RELIC_CARD_STATUS_UPGRADE") == "1")
+            if (!AllUnitsMultistrikeMutator && Environment.GetEnvironmentVariable("MT2_PROBE_RELIC_CARD_STATUS_UPGRADE") == "1")
                 InstallArmorUpgrade(save.GetAllGameData(), relicEffect);
-            if (Environment.GetEnvironmentVariable("MT2_PROBE_RELIC_CARD_PIERCING_UPGRADE") == "1")
+            if (!AllUnitsMultistrikeMutator && Environment.GetEnvironmentVariable("MT2_PROBE_RELIC_CARD_PIERCING_UPGRADE") == "1")
                 InstallPiercingUpgrade(save.GetAllGameData(), relicEffect);
-            if (Environment.GetEnvironmentVariable("MT2_PROBE_RELIC_CARD_SELF_PURGE_UPGRADE") == "1")
+            if (!AllUnitsMultistrikeMutator && Environment.GetEnvironmentVariable("MT2_PROBE_RELIC_CARD_SELF_PURGE_UPGRADE") == "1")
                 InstallSelfPurgeUpgrade(relicEffect);
-            if (ExhaustUpgrade) InstallExhaustUpgrade(relicEffect);
-            bool abilityScenario = Environment.GetEnvironmentVariable("MT2_PROBE_RELIC_CARD_ABILITY_UPGRADE") == "1";
+            if (!AllUnitsMultistrikeMutator && ExhaustUpgrade) InstallExhaustUpgrade(relicEffect);
+            bool abilityScenario = !AllUnitsMultistrikeMutator && Environment.GetEnvironmentVariable("MT2_PROBE_RELIC_CARD_ABILITY_UPGRADE") == "1";
             if (abilityScenario) InstallStewardAbilityUpgrade(save.GetAllGameData(), relicEffect);
-            bool triggerScenario = Environment.GetEnvironmentVariable("MT2_PROBE_RELIC_CARD_TRIGGER_UPGRADE") == "1";
+            bool triggerScenario = !AllUnitsMultistrikeMutator && Environment.GetEnvironmentVariable("MT2_PROBE_RELIC_CARD_TRIGGER_UPGRADE") == "1";
             if (triggerScenario) InstallCharacterTriggerUpgrade(save.GetAllGameData(), relicEffect);
             var filters = UpgradeData(relicEffect).GetFilters();
             var eligible = owned.Where(card => filters.All(filter => filter.FilterCard(card, managers.GetRelicManager())))
                 .Where(card => !ExhaustUpgrade || card.GetTraitStates().All(trait =>
                     trait is not CardTraitSelfPurge && trait is not CardTraitExhaustState))
-                .Take(abilityScenario || triggerScenario ? 1 : 2).ToArray();
-            int requiredEligibleCards = abilityScenario || triggerScenario ? 1 : 2;
+                .Take(AllUnitsMultistrikeMutator || abilityScenario || triggerScenario ? 1 : 2).ToArray();
+            int requiredEligibleCards = AllUnitsMultistrikeMutator || abilityScenario || triggerScenario ? 1 : 2;
             if (eligible.Length != requiredEligibleCards)
                 throw new InvalidOperationException("Relic scenario has " + eligible.Length + " eligible owned cards; required " + requiredEligibleCards + ".");
             CaptureReady = true;
@@ -64,7 +98,9 @@ namespace MonsterTrain2Poju.Probe
                 InstallOncePerTurnCondition(managers, eligible[0]);
             Prepared = true;
             AccessTools.Field(typeof(CombatManager), "combatStateChanged").SetValue(managers.GetCombatManager(), true);
-            log.LogInfo("RELIC-CARD-MODIFIERS-PREPARED unchanged original ReduceStarterCost, native acquire/repeat/reset and battle-generated cards; conditional=" +
+            log.LogInfo((AllUnitsMultistrikeMutator ? "ALL-UNITS-MULTISTRIKE-MUTATOR-PREPARED original AllUnitsMultistrike; " :
+                "RELIC-CARD-MODIFIERS-PREPARED unchanged original ReduceStarterCost, native acquire/repeat/reset and battle-generated cards; ") +
+                "conditional=" +
                 (Environment.GetEnvironmentVariable("MT2_PROBE_CONDITIONAL_BATTLE_RELIC_UPGRADES") == "1") + ", status=" +
                 (Environment.GetEnvironmentVariable("MT2_PROBE_RELIC_CARD_STATUS_UPGRADE") == "1") + ", ability=" + abilityScenario +
                 ", trigger=" + triggerScenario + ", exhaust=" + ExhaustUpgrade + ".");
@@ -73,7 +109,7 @@ namespace MonsterTrain2Poju.Probe
             {
                 var current = new List<RelicState>();
                 AccessTools.Method(typeof(RelicManager), "GetCurrentRelics").Invoke(managers.GetRelicManager(), new object[] { current });
-                return current.Single(relic => relic.GetAssetName() == "ReduceStarterCost");
+                return current.Single(relic => relic.GetAssetName() == (AllUnitsMultistrikeMutator ? "AllUnitsMultistrike" : "ReduceStarterCost"));
             }
 
             static CardUpgradeData UpgradeData(RelicEffectAddTempUpgrade effect) =>

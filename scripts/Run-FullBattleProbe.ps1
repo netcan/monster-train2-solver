@@ -142,6 +142,7 @@ param(
     [switch] $OriginalTriggerRelicBatch,
     [switch] $CovenantCharacterFilter,
     [switch] $TitanSkinCombat,
+    [switch] $AllUnitsMultistrikeMutator,
     [switch] $OriginalStatusRelicBatch,
     [switch] $OriginalMagnitudeRelicBatch,
     [switch] $OriginalLifecycleRelicBatch,
@@ -204,6 +205,7 @@ if ($PermanentConsumeHandUpgrades -or $PermanentConsumeOverTemporary) { $HandUpg
 if ($GenerationPermanentConsume) { $Generation = $true; $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($TypedDraw) { $BranchCardMasks = $true; $BattleRelicUpgrades = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalUnitRelicBatch -or $OriginalEndlessReturn) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
+if ($AllUnitsMultistrikeMutator) { $BattleRelicUpgrades = $true; $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalStingRelicBatch -or $OriginalDeployableRelic) { $BattleRelicUpgrades = $true; $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalStatusRelicBatch) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalMagnitudeRelicBatch) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
@@ -407,6 +409,7 @@ if ($OriginalRelicBatch) {
     $environment['MT2_PROBE_MODIFIERS'] = 'original-relic-batch'
 }
 if ($OriginalDeployableRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-deployable-relic' }
+if ($AllUnitsMultistrikeMutator) { $environment['MT2_PROBE_MODIFIERS'] = 'all-units-multistrike-mutator' }
 if ($OriginalStingRelicBatch) { $environment['MT2_PROBE_MODIFIERS'] = 'original-sting-relics' }
 if ($OriginalUnitRelicBatch) { $environment['MT2_PROBE_MODIFIERS'] = 'original-unit-relic-batch' }
 if ($OriginalEndlessReturn) { $environment['MT2_PROBE_MODIFIERS'] = 'original-endless-return' }
@@ -462,6 +465,10 @@ Write-Output "FULL-BATTLE-INSPECTION elapsedSeconds=$($inspectionTimer.Elapsed.T
 if ($TitanSkinCombat -and ($trace.ModifierScenario -ne 'titan-skin-combat' -or
     -not (Select-String -LiteralPath $unityLog -Pattern 'TITAN-SKIN-COMBAT-PREPARED .*starting titanskin stacks=2' -Quiet))) {
     throw 'Titan Skin native combat setup did not run.'
+}
+if ($AllUnitsMultistrikeMutator -and ($trace.ModifierScenario -ne 'all-units-multistrike-mutator' -or
+    -not (Select-String -LiteralPath $unityLog -Pattern 'ALL-UNITS-MULTISTRIKE-MUTATOR-PREPARED original AllUnitsMultistrike' -Quiet))) {
+    throw 'AllUnitsMultistrike native mutator setup did not run.'
 }
 $nativePassed = [bool] (Select-String -LiteralPath $unityLog -Pattern 'DEPTH-PASS' -Quiet)
 $terminalSettled = $trace.TerminalCaptureBoundary -eq 'AfterStopCombatLoop' -and $trace.TerminalEffectsSettled -eq $true

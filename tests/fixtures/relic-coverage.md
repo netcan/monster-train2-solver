@@ -20,12 +20,14 @@ All 18 source archives below report game `2.2.1`, module MVID
 byte lengths and SHA-256 hashes are recorded in [manifest.tsv](manifest.tsv).
 The floor-capacity batch passes strict native acceptance, complete-fixture checks,
 independent full-battle replay and six directly affected old-fixture regressions.
-The accepted inventory is 236 archives: 205 battles and 31 component
-calibrations. All 236 archive names, byte lengths and SHA-256 hashes match the
-manifest and curated list, with no JSON companions. A full 236-archive replay
+The accepted inventory is 239 archives: 208 battles and 31 component
+calibrations. All 239 archive names, byte lengths and SHA-256 hashes match the
+manifest and curated list, with no JSON companions. A full 239-archive replay
 remains deferred to a milestone. The Mageblade status/cache/attack path has an
 accepted native battle archive, but Mageblade is not a collectable relic and is
-not included in the 59/224 owner count.
+not included in the 59/224 owner count. The `AllUnitsMultistrike` archive
+validates a mutator, not a collectible relic, and is also excluded from that
+owner count.
 
 | AssetKey | DataId | Accepted archive | Actual effect witness |
 | --- | --- | --- | --- |

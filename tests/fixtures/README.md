@@ -2927,3 +2927,26 @@ dotnet run --project src/ModelChecks -c Release -- --room-combat-only tests/fixt
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-covenant-character-filter.mt2f
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-titan-skin.mt2f
 ```
+
+### AllUnitsMultistrike battle mutator
+
+`AllUnitsMultistrike` is captured from the unchanged native mutator definition.
+Its unique `Multistrike1` upgrade reaches an eligible owned card, which is then
+played and damages enemies in three combat exchanges; all seven observed enemy
+births also receive Multistrike. Four native relic-manager calls match the
+ordered model, including the original effect filters and notifications.
+
+The full battle wins after 55 stages with 13 card cycles, 14 train phases, 11
+spawns, seven EndTurns and 21 card plays. Capture failures, mismatches,
+unsupported transitions and pending records are zero. The schema-103 archive is
+31,317 bytes with 4,937 unique nodes and SHA-256
+`b41dfa4dbed15f85676b29fe52eb04560daab6437fcf8e1e9f91048125406f54`; it has no
+JSON companion. This is mutator evidence, not a collectible relic owner, so
+original relic coverage remains 59/224 (26.34%). Inventory is 239 archives:
+208 battles and 31 component calibrations.
+
+```powershell
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -AllUnitsMultistrikeMutator
+dotnet run --project src/ModelChecks -c Release -- --relic-card-modifiers-only tests/fixtures/full-battle-all-units-multistrike-mutator.mt2f
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-all-units-multistrike-mutator.mt2f
+```

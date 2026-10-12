@@ -191,7 +191,8 @@ namespace MonsterTrain2Poju.Probe
             if (room.IsRoomEnabled() && !room.GetCombatAllowed()) interactions.Add("Disabled room combat");
             string? relicError = RelicModel.Validate(RelicProbe.Capture(managers));
             if (relicError != null) interactions.Add(relicError);
-            if (save.GetMutators().Count != 0) interactions.Add("Mutator effects");
+            if (save.GetMutators().Count != 0 && !RelicCardModifierScenario.SupportedMutatorContext)
+                interactions.Add("Mutator effects");
             if (room.Attachments.Count > 0) interactions.Add("Room attachments");
             if (room.GetCurrentCorruption() > 0) interactions.Add("Room corruption");
             CharacterState? outerBoss = heroes.GetOuterTrainBossCharacter();

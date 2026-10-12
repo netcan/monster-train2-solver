@@ -97,6 +97,8 @@ internal static class RelicCardModifierChecks
             scenario.GetString() == "relic-card-exhaust-upgrades";
         bool abilityUpgradeScenario = root.TryGetProperty("ModifierScenario", out scenario) &&
             scenario.GetString() == "relic-card-ability-upgrades";
+        bool allUnitsMultistrikeScenario = root.TryGetProperty("ModifierScenario", out scenario) &&
+            scenario.GetString() == "all-units-multistrike-mutator";
         bool triggerUpgradeScenario = root.TryGetProperty("ModifierScenario", out scenario) &&
             scenario.GetString() == "relic-card-trigger-upgrades";
         bool deployableRelicScenario = root.TryGetProperty("ModifierScenario", out scenario) &&
@@ -115,9 +117,13 @@ internal static class RelicCardModifierChecks
                 ? "Native manager lacks reset and failed-eligibility rejection."
                 : "Native manager lacks reset/repeat/unique rejection and failed eligibility.");
         string expectedOwner = root.TryGetProperty("ModifierScenario", out var ownerScenario) &&
-            ownerScenario.GetString() == "original-deployable-relic" ? "NonBannerUnitsHaveDeployable" : "ReduceStarterCost";
+            ownerScenario.GetString() == "original-deployable-relic" ? "NonBannerUnitsHaveDeployable" :
+            allUnitsMultistrikeScenario ? "AllUnitsMultistrike" : "ReduceStarterCost";
         Require(rows.Any(row => row.Relics.Any(relic => relic.AssetKey == expectedOwner &&
-            relic.EffectTypes.SequenceEqual(new[] { "RelicEffectAddTempUpgrade" }))), "Expected original relic owner is missing.");
+            (allUnitsMultistrikeScenario
+                ? relic.EffectTypes.SequenceEqual(new[] { "RelicEffectAddTempUpgrade", "RelicEffectAddStatusEffectOnSpawn" })
+                : relic.EffectTypes.SequenceEqual(new[] { "RelicEffectAddTempUpgrade" })))),
+            "Expected original relic owner/effect order is missing.");
         string parent = JsonSerializer.Serialize(rows);
         void Check()
         {
@@ -278,12 +284,64 @@ internal static class RelicCardModifierChecks
                 "The native relic trigger scenario did not play and summon from an OnKill-upgraded card.");
             Console.WriteLine($"NATIVE-RELIC-CARD-TRIGGER-CHECKS PASS: {triggerUpgradedSummons} relic-upgraded summons received their native OnKill triggers.");
         }
+        if (allUnitsMultistrikeScenario)
+        {
+            var upgradedCardIds = rows.Where(row => row.Relics.Any(relic => relic.AssetKey == "AllUnitsMultistrike"))
+                .Where(row => row.Dispatches.Any(dispatch => dispatch.UpgradeAdded))
+                .Select(row => row.Before.InstanceId).ToHashSet();
+            Require(upgradedCardIds.Count > 0 && rows.Where(row => row.Relics.Any(relic => relic.AssetKey == "AllUnitsMultistrike"))
+                .Where(row => row.Dispatches.Any(dispatch => dispatch.UpgradeAdded)).All(row => row.Actual!.Temporary.Upgrades.Any(upgrade =>
+                    upgrade.AssetKey == "Multistrike1" && upgrade.Statuses.Any(status => status.Id == "multistrike" && status.Stacks == 1))),
+                "The AllUnitsMultistrike mutator did not install its exact unique status upgrade.");
+
+            var playedCarriers = new HashSet<int>();
+            foreach (FixtureValue entry in root.GetProperty("Actions").EnumerateArray())
+            {
+                BattleTurnState before = entry.GetProperty("Before").Deserialize<BattleTurnState>()!;
+                PlayCardAction action = entry.GetProperty("Action").Deserialize<PlayCardAction>()!;
+                if (!upgradedCardIds.Contains(action.CardInstanceId)) continue;
+                BattleTurnState actual = entry.GetProperty("Actual").Deserialize<BattleTurnState>()!;
+                if (actual.Spawn.Train.Rooms.SelectMany(room => room.Units).Any(unit =>
+                    unit.SpawnerCardId == action.CardInstanceId && unit.Status("multistrike")?.Stacks == 1))
+                    playedCarriers.Add(action.CardInstanceId);
+            }
+            Require(playedCarriers.Count > 0, "No mutator-upgraded card summoned a Multistrike carrier.");
+
+            int combatHits = 0;
+            foreach (FixtureValue entry in root.GetProperty("Stages").EnumerateArray())
+            {
+                if (entry.GetProperty("Kind").GetString() != "Exchange") continue;
+                RoomCombatState before = entry.GetProperty("Before").Deserialize<RoomCombatState>()!;
+                RoomCombatState actual = entry.GetProperty("Actual").Deserialize<RoomCombatState>()!;
+                var afterById = actual.Units.ToDictionary(unit => unit.Id);
+                bool hit = before.Units.Any(unit => unit.Team == CombatTeam.Player && playedCarriers.Contains(unit.SpawnerCardId) &&
+                    unit.Attacks > 1 && before.Units.Where(enemy => enemy.Team == CombatTeam.Enemy).Any(enemy =>
+                        !afterById.TryGetValue(enemy.Id, out CombatUnit? after) || after.Health < enemy.Health));
+                if (hit) combatHits++;
+            }
+            Require(combatHits > 0, "No native combat exchange shows an AllUnitsMultistrike carrier damaging an enemy.");
+
+            int enemyBirths = 0;
+            foreach (FixtureValue entry in root.GetProperty("RelicSpawnStatuses").EnumerateArray())
+            {
+                if (entry.GetProperty("OnlyCovenants").GetBoolean()) continue;
+                RoomCombatState before = entry.GetProperty("Before").Deserialize<RoomCombatState>()!;
+                RoomCombatState after = entry.GetProperty("After").Deserialize<RoomCombatState>()!;
+                int unitId = entry.GetProperty("UnitId").GetInt32();
+                CombatUnit? initial = before.Units.FirstOrDefault(unit => unit.Id == unitId);
+                CombatUnit? spawned = after.Units.FirstOrDefault(unit => unit.Id == unitId);
+                if (initial?.Team == CombatTeam.Enemy && initial.Status("multistrike") == null && spawned?.Status("multistrike")?.Stacks == 1)
+                    enemyBirths++;
+            }
+            Require(enemyBirths > 0, "The original Heroes-side Multistrike birth effect had no native enemy witness.");
+            Console.WriteLine($"NATIVE-ALL-UNITS-MULTISTRIKE-CHECKS PASS: {upgradedCardIds.Count} upgraded cards, {playedCarriers.Count} played carriers, {combatHits} damaging exchanges, {enemyBirths} enemy births.");
+        }
         var generated = root.GetProperty("CardGenerations").EnumerateArray().Select(row => (
             Before: row.GetProperty("Before").Deserialize<CombatContext>()!,
             Actual: row.GetProperty("Actual").Deserialize<CombatContext>()!)).ToArray();
         var births = generated.SelectMany(row => row.Actual.CardInstances!.Where(card => card.InstanceId >= row.Before.NextCardId)).ToArray();
         if (requireScenarioCoverage && !deployableRelicScenario && !statusUpgradeScenario && !piercingUpgradeScenario && !selfPurgeUpgradeScenario &&
-            !exhaustUpgradeScenario && !abilityUpgradeScenario && !triggerUpgradeScenario)
+            !exhaustUpgradeScenario && !abilityUpgradeScenario && !triggerUpgradeScenario && !allUnitsMultistrikeScenario)
             Require(births.Any(card => card.Temporary.Upgrades.Any(upgrade => upgrade.AssetKey == "ReduceStarterCost" ||
                 rows.SelectMany(row => row.Relics).SelectMany(relic => relic.CardModifiers ?? []).Any(effect => effect.Upgrade?.DataId == upgrade.DataId))),
                 "No battle-generated eligible card received an original relic upgrade.");
@@ -294,7 +352,8 @@ internal static class RelicCardModifierChecks
             selfPurgeUpgradeScenario ? "SelfPurge relic traits retained on played cards" :
             exhaustUpgradeScenario ? "Consume relic traits routed played cards to Exhausted" :
             abilityUpgradeScenario ? "unit ability upgrades reached summoned units" :
-            triggerUpgradeScenario ? "OnKill character triggers reached summoned units" : "eligible battle-generated cards";
+            triggerUpgradeScenario ? "OnKill character triggers reached summoned units" :
+            allUnitsMultistrikeScenario ? "Multistrike applied to owned and spawned cards" : "eligible battle-generated cards";
         Console.WriteLine($"NATIVE-RELIC-CARD-MODIFIER-CHECKS PASS: {rows.Length} original manager calls, {rows.Sum(row => row.Dispatches.Length)} ordered effect/filter results, " +
             $"{rows.Sum(row => row.Notifications.Length)} exact trigger notifications, {coverage} and 32 immutable branches.");
     }
