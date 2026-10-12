@@ -4,6 +4,27 @@ using System.Linq;
 
 namespace MonsterTrain2Poju.Model
 {
+    public sealed class RelicCardHealthModifier
+    {
+        public int EffectIndex { get; }
+        public string CharacterName { get; }
+        public string CharacterSubtypeKey { get; }
+        public int HealthModifier { get; }
+        public int HealthMultiplier { get; }
+        public string CardType { get; }
+        public bool MultiplyByUpgradeCount { get; }
+        public IReadOnlyList<RelicConditionState> Conditions { get; }
+        public int ConditionCount { get; }
+        public RelicCardHealthModifier(int effectIndex, string characterName, string characterSubtypeKey, int healthModifier,
+            int healthMultiplier, string cardType, bool multiplyByUpgradeCount,
+            IReadOnlyList<RelicConditionState>? conditions = null, int conditionCount = 0)
+        { EffectIndex = effectIndex; CharacterName = characterName; CharacterSubtypeKey = characterSubtypeKey;
+            HealthModifier = healthModifier; HealthMultiplier = healthMultiplier; CardType = cardType;
+            MultiplyByUpgradeCount = multiplyByUpgradeCount;
+            Conditions = Array.AsReadOnly((conditions ?? Array.Empty<RelicConditionState>()).ToArray());
+            ConditionCount = conditions?.Count ?? conditionCount; }
+    }
+
     public sealed class RelicCardModifier
     {
         public int EffectIndex { get; }
@@ -101,9 +122,11 @@ namespace MonsterTrain2Poju.Model
             if (context != null) context = context.WithRelics(workingRelics);
             string? error = RelicModel.Validate(relics);
             if (error != null) return Fail(error);
-            if (workingRelics?.Any(relic => relic.CardModifiers?.Any(effect => effect.Conditions.Count > 0) == true) == true && context == null)
+            if (workingRelics?.Any(relic => relic.CardModifiers?.Any(effect => effect.Conditions.Count > 0) == true ||
+                relic.CardHealthModifiers?.Any(effect => effect.Conditions.Count > 0) == true) == true && context == null)
                 return Fail("Relic card modifier conditions require the current combat context.");
-            if (!resetTemporary && workingRelics?.Any(relic => relic.CardModifiers?.Count > 0 || relic.MagicPowerModifiers?.Count > 0) != true)
+            if (!resetTemporary && workingRelics?.Any(relic => relic.CardModifiers?.Count > 0 || relic.CardHealthModifiers?.Count > 0 ||
+                relic.MagicPowerModifiers?.Count > 0) != true)
                 return new RelicCardModifierResult(source, context: context);
             error = CardModifierModel.UnsupportedReason(source);
             if (error != null) return Fail(error);
@@ -141,10 +164,21 @@ namespace MonsterTrain2Poju.Model
             {
                 CombatRelicState relic = workingRelics![relicIndex];
                 var cardEffects = (relic.CardModifiers ?? Array.Empty<RelicCardModifier>()).ToDictionary(effect => effect.EffectIndex);
+                var healthEffects = (relic.CardHealthModifiers ?? Array.Empty<RelicCardHealthModifier>()).ToDictionary(effect => effect.EffectIndex);
                 var magicEffects = (relic.MagicPowerModifiers ?? Array.Empty<RelicMagicPowerModifier>()).ToDictionary(effect => effect.EffectIndex);
                 for (int effectIndex = 0; effectIndex < relic.EffectTypes.Count; effectIndex++)
                 {
                     string type = relic.EffectTypes[effectIndex];
+                    if (type == RelicModel.ModifyCardHealth)
+                    {
+                        if (!healthEffects.TryGetValue(effectIndex, out RelicCardHealthModifier? healthEffect))
+                            return Fail("Missing ordered relic card-health definition.");
+                        card = RelicCardHealthModel.Apply(card, healthEffect!, out bool returned, out error)!;
+                        if (card == null) return Fail(error!);
+                        dispatches.Add(new RelicCardModifierDispatch(relicIndex, healthEffect!.EffectIndex, returned,
+                            false, Array.Empty<RelicCardFilterResult>()));
+                        continue;
+                    }
                     if (type == RelicModel.ModifyCardMagicalPower)
                     {
                         if (!magicEffects.TryGetValue(effectIndex, out RelicMagicPowerModifier? magicEffect))
@@ -271,5 +305,54 @@ namespace MonsterTrain2Poju.Model
         private static RelicCardModifierResult Fail(string error) => new RelicCardModifierResult(null, unsupportedReason: error);
         private static RoomCombatResult FailRoom(string error) =>
             new RoomCombatResult(null, RoomOutcome.Unsupported, 0, new List<CombatEvent>(), error);
+    }
+
+    internal static class RelicCardHealthModel
+    {
+        internal static string? Validate(CombatRelicState relic)
+        {
+            var indices = relic.EffectTypes.Select((type, index) => (type, index))
+                .Where(item => item.type == RelicModel.ModifyCardHealth).Select(item => item.index).ToArray();
+            if (indices.Length == 0) return relic.CardHealthModifiers?.Count > 0
+                ? "Unexpected relic card-health definitions." : null;
+            if (relic.CardHealthModifiers == null || !indices.SequenceEqual(relic.CardHealthModifiers.Select(effect => effect.EffectIndex)))
+                return "Missing ordered native relic card-health definitions.";
+            foreach (RelicCardHealthModifier effect in relic.CardHealthModifiers)
+            {
+                if (effect.ConditionCount != effect.Conditions.Count || effect.Conditions.Count != 0)
+                    return "Relic card-health conditions are not modeled.";
+                if (effect.CharacterName.Length != 0)
+                    return "Relic card-health card-name filters are not modeled.";
+                if (effect.HealthMultiplier != 0 || effect.MultiplyByUpgradeCount)
+                    return "Relic card-health multipliers and upgrade-count scaling are not modeled.";
+                if (effect.CharacterSubtypeKey.Length == 0 && effect.CardType.Length == 0)
+                    return "Relic card-health effect has no supported subtype or card-type filter.";
+            }
+            return null;
+        }
+
+        internal static CardInstanceState? Apply(CardInstanceState source, RelicCardHealthModifier effect,
+            out bool returned, out string? error)
+        {
+            returned = false; error = null;
+            CardMaskDescriptor? descriptor = source.MaskDescriptor;
+            if (descriptor == null)
+            { error = "Relic card-health modifiers require branch-owned mask metadata."; return null; }
+            bool matches;
+            if (effect.CharacterSubtypeKey.Length > 0)
+            {
+                matches = descriptor.Definition.Subtypes.Contains(effect.CharacterSubtypeKey, StringComparer.Ordinal);
+                if (matches && descriptor.Definition.MainEffectNames.Count(name => name == "CardEffectSpawnMonster") != 1)
+                { error = "Subtype-filtered relic health needs exactly one captured spawned character."; return null; }
+            }
+            else matches = descriptor.Definition.CardType == effect.CardType;
+            if (!matches || effect.HealthModifier == 0) return source;
+            returned = true;
+            CardStatModifier offsets = source.Temporary.Offsets;
+            var updated = new CardModifiers(new CardStatModifier(offsets.Damage, unchecked(offsets.Health + effect.HealthModifier),
+                offsets.Cost, offsets.Heal, offsets.Size, offsets.XCost, offsets.EquipmentLimit, offsets.UpgradeSlotCount),
+                source.Temporary.Upgrades, source.Temporary.PersistentHealth, source.Temporary.ExternalInteractions);
+            return source.WithModifiers(source.Permanent, updated);
+        }
     }
 }

@@ -12,8 +12,9 @@ internal static class RelicCardModifierChecks
         CardUpgradeMaskMetadata Metadata(IReadOnlyList<UpgradeMaskStatus>? statuses = null) =>
             new CardUpgradeMaskMetadata(statuses ?? [], false, false, false, false);
         CardUpgradeModifier Modifier(string id, CardLifecycleUpgrade lifecycle, IReadOnlyList<CombatStatus>? statuses = null,
-            IReadOnlyList<UpgradeMaskStatus>? maskStatuses = null, IReadOnlyList<string>? interactions = null, string? assetKey = null) => new CardUpgradeModifier(id, assetKey ?? id,
-                lifecycle.Values.Stats, statuses ?? [], false, false, false, 0, 0, interactions ?? [],
+            IReadOnlyList<UpgradeMaskStatus>? maskStatuses = null, IReadOnlyList<string>? interactions = null, string? assetKey = null,
+            bool unique = false) => new CardUpgradeModifier(id, assetKey ?? id,
+                lifecycle.Values.Stats, statuses ?? [], false, unique, false, 0, 0, interactions ?? [],
                 maskMetadata: Metadata(maskStatuses), lifecycle: lifecycle);
 
         var permanentLifecycle = new CardLifecycleUpgrade(new CardMaskUpgrade("permanent-remove-piercing",
@@ -65,6 +66,49 @@ internal static class RelicCardModifierChecks
         Require(ephemeralPlay.Destination == "Purged" && ephemeralPlay.ExternalInteractions.Count == 0,
             "An Ephemeral relic upgrade did not route a played card to Purged.");
         Console.WriteLine("RELIC-CARD-EPHEMERAL-CHECKS PASS: temporary relic trait is accepted and resolves play destination to Purged.");
+
+        var tombDefinition = new CardMaskDefinition("dregs-tomb", "Monster", "Common", true, true, true,
+            ["SubtypesData_Tomb"], [], [], ["CardEffectSpawnMonster"], null, false, 1, 0, false, false, false);
+        var tombDescriptor = new CardMaskDescriptor(tombDefinition, 1, [], []);
+        var tombCard = new CardInstanceState(5, tombDefinition.DataId, CardModifiers.Empty(),
+            new CardModifiers(new CardStatModifier(health: 4), [], 0, []), 0, 0, 0, [], maskDescriptor: tombDescriptor);
+        var tombHealth = new RelicCardHealthModifier(0, "", "SubtypesData_Tomb", 30, 0, "None", false);
+        var tombBurnoutLifecycle = new CardLifecycleUpgrade(ephemeralLifecycle.Values, "temporary-ephemeral", true, false,
+            ephemeralLifecycle.AddedTraits, [], false, [], [], []);
+        CardUpgradeModifier tombBurnoutUpgrade = Modifier("temporary-ephemeral", tombBurnoutLifecycle, unique: true);
+        var tombRelic = new CombatRelicState("extra-tough-tombs", "ExtraToughTombs",
+            [RelicModel.ModifyCardHealth, RelicModel.AddTempUpgrade], cardModifiers: [new RelicCardModifier(1,
+                new RelicCardUpgradeRule("temporary-ephemeral", true, tombBurnoutLifecycle, []), tombBurnoutUpgrade, false)],
+            cardHealthModifiers: [tombHealth]);
+        RelicCardModifierResult tombResult = RelicCardModifierModel.Apply(tombCard, [tombRelic], resetTemporary: true);
+        Require(tombResult.Supported && tombResult.Card!.Temporary.Offsets.Health == 30 &&
+            tombResult.Card.Temporary.Upgrades.Single().DataId == ephemeralUpgrade.DataId &&
+            tombResult.Dispatches.Select(dispatch => dispatch.EffectIndex).SequenceEqual([0, 1]) &&
+            tombResult.Dispatches[0].Returned && tombResult.Dispatches[1].UpgradeAdded,
+            "ExtraToughTombs did not apply its +30 subtype health effect before the temporary upgrade.");
+        RelicCardModifierResult tombReset = RelicCardModifierModel.Apply(tombResult.Card!, [tombRelic], resetTemporary: true);
+        RelicCardModifierResult tombRepeated = RelicCardModifierModel.Apply(tombResult.Card!, [tombRelic], resetTemporary: false);
+        Require(tombReset.Supported && tombReset.Card!.Temporary.Offsets.Health == 30 &&
+            tombRepeated.Supported && tombRepeated.Card!.Temporary.Offsets.Health == 60 &&
+            !tombRepeated.Dispatches[1].UpgradeAdded,
+            "ExtraToughTombs reset/repeat behavior accumulated the wrong health or unique upgrade: reset=" +
+            (tombReset.Supported ? tombReset.Card!.Temporary.Offsets.Health.ToString() : tombReset.UnsupportedReason) +
+            ", repeated=" + (tombRepeated.Supported ? tombRepeated.Card!.Temporary.Offsets.Health.ToString() : tombRepeated.UnsupportedReason) +
+            ", repeated dispatch=" + JsonSerializer.Serialize(tombRepeated.Dispatches));
+        RelicCardModifierResult otherSubtype = RelicCardModifierModel.Apply(ephemeralCard, [new CombatRelicState(
+            "extra-tough-tombs", "ExtraToughTombs", [RelicModel.ModifyCardHealth], cardHealthModifiers: [tombHealth])]);
+        Require(otherSubtype.Supported && otherSubtype.Card!.Temporary.Offsets.Health == 0 &&
+            !otherSubtype.Dispatches.Single().Returned,
+            "ExtraToughTombs accepted a card whose spawned character is not a Tomb.");
+        RelicCardModifierResult nameFilteredHealth = RelicCardModifierModel.Apply(tombCard, [new CombatRelicState(
+            "name-filtered-health", "NameFilteredHealth", [RelicModel.ModifyCardHealth], cardHealthModifiers: [
+                new RelicCardHealthModifier(0, "DregsTomb", "", 30, 0, "Monster", false)])]);
+        RelicCardModifierResult multipliedHealth = RelicCardModifierModel.Apply(tombCard, [new CombatRelicState(
+            "multiplied-health", "MultipliedHealth", [RelicModel.ModifyCardHealth], cardHealthModifiers: [
+                new RelicCardHealthModifier(0, "", "SubtypesData_Tomb", 0, 2, "None", false)])]);
+        Require(!nameFilteredHealth.Supported && !multipliedHealth.Supported,
+            "Unsupported card-name or multiplier health filters were not rejected.");
+        Console.WriteLine("RELIC-CARD-HEALTH-CHECKS PASS: subtype +30, mixed effect order, reset/repeat, rejection and explicit unsupported guards.");
 
         var abilityDefinition = new UnitAbilityDefinition("steward-sacrifice", true, 1, 1, null);
         var ability = new AbilityChangeRule(abilityDefinition, false, false,
@@ -140,6 +184,8 @@ internal static class RelicCardModifierChecks
             scenario.GetString() == "relic-card-exhaust-upgrades";
         bool ephemeralUpgradeScenario = root.TryGetProperty("ModifierScenario", out scenario) &&
             scenario.GetString() == "relic-card-ephemeral-upgrades";
+        bool extraToughTombsScenario = root.TryGetProperty("ModifierScenario", out scenario) &&
+            scenario.GetString() == "relic-card-health-upgrades";
         bool abilityUpgradeScenario = root.TryGetProperty("ModifierScenario", out scenario) &&
             scenario.GetString() == "relic-card-ability-upgrades";
         bool allUnitsMultistrikeScenario = root.TryGetProperty("ModifierScenario", out scenario) &&
@@ -153,7 +199,7 @@ internal static class RelicCardModifierChecks
         bool magebladeScenario = root.TryGetProperty("ModifierScenario", out scenario) &&
             scenario.GetString() == "mageblade";
         bool sawExpectedRejection = statusUpgradeScenario || piercingUpgradeScenario || abilityUpgradeScenario || triggerUpgradeScenario ||
-            replacementUpgradeScenario || deployableRelicScenario
+            replacementUpgradeScenario || extraToughTombsScenario || deployableRelicScenario
             ? rows.Any(row => row.Dispatches.Any(effect => !effect.Returned && !effect.UpgradeAdded))
             : rows.Any(row => !row.Reset && row.Dispatches.Any(effect => effect.Returned && !effect.UpgradeAdded));
         Require(rows.Length > 0, "Native relic manager capture contains no calls.");
@@ -166,14 +212,17 @@ internal static class RelicCardModifierChecks
             rows.Any(row => row.Dispatches.Any(effect => !effect.Returned)), statusUpgradeScenario
                 ? "Native manager lacks reset and failed-eligibility rejection."
                 : "Native manager lacks reset/repeat/unique rejection and failed eligibility.");
-        string expectedOwner = magebladeScenario ? "PojuMagebladeMagicPowerRelic" :
+        string expectedOwner = magebladeScenario ? "PojuMagebladeMagicPowerRelic" : extraToughTombsScenario ? "ExtraToughTombs" :
             root.TryGetProperty("ModifierScenario", out var ownerScenario) && ownerScenario.GetString() == "original-deployable-relic"
                 ? "NonBannerUnitsHaveDeployable" : allUnitsMultistrikeScenario ? "AllUnitsMultistrike" : "ReduceStarterCost";
         Require(rows.Any(row => row.Relics.Any(relic => relic.AssetKey == expectedOwner &&
             (magebladeScenario
                 ? relic.EffectTypes.SequenceEqual(new[] { RelicModel.ModifyCardMagicalPower }) &&
                     relic.MagicPowerModifiers?.Count == 1
-                : allUnitsMultistrikeScenario
+                : extraToughTombsScenario
+                    ? relic.EffectTypes.SequenceEqual(new[] { RelicModel.ModifyCardHealth, RelicModel.AddTempUpgrade }) &&
+                        relic.CardHealthModifiers?.Count == 1 && relic.CardModifiers?.Count == 1
+                    : allUnitsMultistrikeScenario
                     ? relic.EffectTypes.SequenceEqual(new[] { "RelicEffectAddTempUpgrade", "RelicEffectAddStatusEffectOnSpawn" })
                     : relic.EffectTypes.SequenceEqual(new[] { "RelicEffectAddTempUpgrade" })))),
             "Expected original relic owner/effect order is missing.");
@@ -186,6 +235,28 @@ internal static class RelicCardModifierChecks
                 row.Actual.Temporary.Offsets.Heal == unchecked(row.Relics.Single(relic => relic.AssetKey == expectedOwner)
                     .MagicPowerModifiers!.Single().PowerModifier * CardMagicPowerModel.Multiplier(row.Before)));
             Require(nativeSpellModifier, "Native magic-power relic did not match spell eligibility and trait-scaled temporary offsets.");
+        }
+        if (extraToughTombsScenario)
+        {
+            const string tombSubtype = "SubtypesData_Tomb";
+            string[] tombCarrierIds = rows.Where(row => row.Before.MaskDescriptor?.Definition.Subtypes.Contains(tombSubtype) == true)
+                .Select(row => row.Before.DataId).Distinct().ToArray();
+            bool nativeTombModifier = rows.Any(row => row.Reset &&
+                row.Before.MaskDescriptor?.Definition.Subtypes.Contains(tombSubtype) == true &&
+                row.Actual.Temporary.Offsets.Health == 30 &&
+                row.Dispatches.Any(effect => effect.EffectIndex == 0 && effect.Returned && !effect.UpgradeAdded) &&
+                row.Relics.Single(relic => relic.AssetKey == expectedOwner).CardModifiers!.Single().Upgrade != null &&
+                row.Actual.Temporary.Upgrades.Any(upgrade => upgrade.DataId ==
+                    row.Relics.Single(relic => relic.AssetKey == expectedOwner).CardModifiers!.Single().Upgrade!.DataId));
+            Require(nativeTombModifier, "Original ExtraToughTombs did not add +30 temporary health and its ordered Burnout upgrade to a Tomb carrier.");
+            bool playedTomb = root.GetProperty("Actions").EnumerateArray().Any(record =>
+            {
+                int instanceId = record.GetProperty("Action").GetProperty("CardInstanceId").GetInt32();
+                return record.GetProperty("Before").GetProperty("Spawn").GetProperty("Train").GetProperty("Context")
+                    .GetProperty("Cards").GetProperty("Hand").EnumerateArray().Any(card =>
+                        card.GetProperty("InstanceId").GetInt32() == instanceId && tombCarrierIds.Contains(card.GetProperty("DataId").GetString()));
+            });
+            Require(playedTomb, "The ExtraToughTombs full battle never played its Tomb carrier.");
         }
         string parent = JsonSerializer.Serialize(rows);
         void Check()

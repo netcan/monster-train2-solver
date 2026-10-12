@@ -174,7 +174,8 @@ namespace MonsterTrain2Poju.Model
                 if (error != null) return Unsupported(error);
                 // AddCardImpl applies the manager's current relics before optional,
                 // copied, discard-conditional and pending temporary upgrades.
-                if (context.Relics?.Any(relic => relic.CardModifiers?.Count > 0 || relic.MagicPowerModifiers?.Count > 0) == true)
+                if (context.Relics?.Any(relic => relic.CardModifiers?.Count > 0 || relic.CardHealthModifiers?.Count > 0 ||
+                    relic.MagicPowerModifiers?.Count > 0) == true)
                 {
                     var relicModifiers = RelicCardModifierModel.Apply(candidate, context.Relics, context: context);
                     if (!relicModifiers.Supported) return Unsupported(relicModifiers.UnsupportedReason!);
