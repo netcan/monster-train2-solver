@@ -21,6 +21,7 @@ call its dedicated `ModelChecks` mode directly, for example:
 dotnet run --project src/ModelChecks -c Release -- --bump-only tests/fixtures/full-battle-companion-bump.mt2f
 dotnet run --project src/ModelChecks -c Release -- --room-combat-only tests/fixtures/full-battle-companion-bump.mt2f
 dotnet run --project src/ModelChecks -c Release -- --bump-only tests/fixtures/full-battle-outer-boss-bump.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-mageblade.mt2f
 ```
 
 The default command checks the full curated inventory. For routine changes, run

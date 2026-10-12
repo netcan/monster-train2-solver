@@ -1,6 +1,13 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
 
+if (args.Length == 2 && args[0] == "--battle-search-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    BattleSearchChecks.Native(fixture.RootElement);
+    return;
+}
+
 if (args.Length == 1 && args[0] == "--card-spells-pure")
 {
     CardSpellChecks.Run();
