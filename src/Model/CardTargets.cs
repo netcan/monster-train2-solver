@@ -192,7 +192,9 @@ namespace MonsterTrain2Poju.Model
                 goldCostRequired: effect.GoldCostRequired, useCardTraits: effect.UseCardTraits,
                 requireEquipment: effect.RequireEquipment, useSelectedRoom: effect.UseSelectedRoom,
                 countStatusOnlyOnTargets: effect.CountStatusOnlyOnTargets, spawnFallbackUnit: effect.SpawnFallbackUnit,
-                disallowStatusStackModifiers: effect.DisallowStatusStackModifiers), Array.Empty<int>());
+                disallowStatusStackModifiers: effect.DisallowStatusStackModifiers,
+                damagePerHpLastAttacker: effect.DamagePerHpLastAttacker,
+                damagePerHpIncludeArmor: effect.DamagePerHpIncludeArmor), Array.Empty<int>());
             return result.Supported && effect.Type == "Sacrifice" && effect.Target == "RandomInRoom" && effect.SacrificeSubtype.Length > 0
                 ? new CardTargets(result.UnitIds.Where(id => train.Rooms.SelectMany(room => room.Units)
                     .Any(unit => unit.Id == id && unit.Subtypes.Contains(effect.SacrificeSubtype))).ToArray()) : result;

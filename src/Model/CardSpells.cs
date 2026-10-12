@@ -84,6 +84,11 @@ namespace MonsterTrain2Poju.Model
                 if (effect.Tests?.ShouldTest == false) continue;
                 CardTargets targets = Collect(source, roomIndex, effect, last, initial, dropPosition, index, definitions, isTesting: true, selfUnitId: selfUnitId);
                 if (!targets.Supported) return new SpellCastCheck(false, targets.UnsupportedReason);
+                if (!CardTargetModel.IsRandom(effect.Target))
+                {
+                    string? damageTargetError = DamagePerHpTargetError(source, effect, targets);
+                    if (damageTargetError != null) return new SpellCastCheck(false, damageTargetError);
+                }
                 Remember(effect, index, targets, ref last);
                 string? targetError = AttackTestError(source, roomIndex, effect);
                 if (targetError != null) return new SpellCastCheck(false, targetError);
@@ -241,8 +246,9 @@ namespace MonsterTrain2Poju.Model
                     CardPlayRule? rule = definitions.Cards.FirstOrDefault(item => item.DataId == card?.DataId);
                     if (card == null || rule == null || rule.Effects.Count != effects.Count)
                         return UnsupportedTrain("Missing live spell effect definition.");
-                    // Native DamagePerSourceAttack reads GetUnmodifiedIntInRange, so card damage upgrades do not change its multiplier.
-                    effect = effect.Type == "DamagePerSourceAttack" ? rule.Effects[index] : CardModifierModel.Resolve(rule, card).Effects[index];
+                    // These native effects read GetUnmodifiedIntInRange, so card damage upgrades do not change their multipliers.
+                    effect = effect.Type == "DamagePerSourceAttack" || effect.Type == "DamagePerHp"
+                        ? rule.Effects[index] : CardModifierModel.Resolve(rule, card).Effects[index];
                     resolvingCard = card;
                 }
                 if (effect.Target == "FrontInRoomAndRoomAbove" && !focusedRoom.HasValue)
@@ -251,6 +257,12 @@ namespace MonsterTrain2Poju.Model
                 CardTargets targets = Collect(state, collectionRoom, effect, last, initial, dropPosition, index, definitions, isTesting: true,
                     pendingDeadRooms: pendingDeadRooms, positions: positions, selfUnitId: selfUnitId);
                 if (!targets.Supported) return UnsupportedTrain(targets.UnsupportedReason!);
+                string? damageTargetError = null;
+                if (!CardTargetModel.IsRandom(effect.Target))
+                {
+                    damageTargetError = DamagePerHpTargetError(state, effect, targets);
+                    if (damageTargetError != null) return UnsupportedTrain(damageTargetError);
+                }
                 Remember(effect, index, targets, ref last);
                 // Runtime tests every effect, even if its initial casting test was disabled.
                 string? targetError = AttackTestError(state, collectionRoom, effect);
@@ -279,6 +291,8 @@ namespace MonsterTrain2Poju.Model
                 targets = Collect(state, collectionRoom, effect, last, initial, dropPosition, index, definitions,
                     pendingDeadRooms: pendingDeadRooms, positions: positions, selfUnitId: selfUnitId);
                 if (!targets.Supported) return UnsupportedTrain(targets.UnsupportedReason!);
+                damageTargetError = DamagePerHpTargetError(state, effect, targets);
+                if (damageTargetError != null) return UnsupportedTrain(damageTargetError);
                 collections.Add(new SpellTargetCollection(index, targets.UnitIds));
                 Remember(effect, index, targets, ref last);
                 if (targets.BattleRng.HasValue)
@@ -293,7 +307,8 @@ namespace MonsterTrain2Poju.Model
                         effect.Generation, effect.OnlyIfNoEnemies, effect.CooldownParameter, effect.AbilityChange,
                         effect.CopyHeroStats, effect.ScaleUpgrade, effect.DoNotFullyRemove, effect.SacrificeSubtype, effect.TypedDraw, effect.NextDrawUpgrade, effect.RequiredGold, effect.GoldCostRequired,
                         effect.UseCardTraits, effect.RequireEquipment, effect.UseSelectedRoom, effect.CountStatusOnlyOnTargets,
-                        effect.SpawnFallbackUnit, effect.DisallowStatusStackModifiers, effect.StatusAdjustmentFilter);
+                        effect.SpawnFallbackUnit, effect.DisallowStatusStackModifiers, effect.StatusAdjustmentFilter,
+                        effect.DamagePerHpLastAttacker, effect.DamagePerHpIncludeArmor);
                 }
                 if (effect.Type == "SpawnOrStatus")
                 {
@@ -357,6 +372,48 @@ namespace MonsterTrain2Poju.Model
                     damageValue = unchecked(effect.Value * RelicResourceModel.AttackDamage(caster, state.Context));
                     if (effect.UseCardTraits) damageAttackerId = 0;
                     else damageOwnerCardId = caster.SpawnerCardId > 0 ? caster.SpawnerCardId : sourceCardId;
+                }
+                else if (effect.Type == "DamagePerHp")
+                {
+                    if (targets.UnitIds.Count == 0) continue;
+                    int selectedId = targets.UnitIds[0];
+                    RoomCombatState? selectedRoom = state.Rooms.FirstOrDefault(item => item.Units.Any(unit => unit.Id == selectedId));
+                    CombatUnit? selectedUnit = selectedRoom?.Units.FirstOrDefault(unit => unit.Id == selectedId);
+                    if (selectedRoom == null || selectedUnit == null)
+                        return UnsupportedTrain("Damage-per-HP target left the captured train before damage resolution.");
+                    int armor = effect.DamagePerHpIncludeArmor ? selectedUnit.Status("armor")?.Stacks ?? 0 : 0;
+                    int multiplier = effect.Value;
+                    int perHpDamage;
+                    unchecked { perHpDamage = (selectedUnit.Health + armor) * multiplier; }
+                    bool damagesEnemy = selectedUnit.Team == CombatTeam.Player;
+                    if (perHpDamage <= 0) targets = new CardTargets(Array.Empty<int>());
+                    else if (effect.DamagePerHpLastAttacker)
+                    {
+                        if (!selectedUnit.LastAttackerId.HasValue)
+                            return UnsupportedTrain("Damage-per-HP last-attacker targeting requires a captured attacker reference.");
+                        int attackerId = selectedUnit.LastAttackerId.Value;
+                        if (attackerId == 0) targets = new CardTargets(Array.Empty<int>());
+                        else
+                        {
+                            CombatUnit? attacker = selectedRoom.Units.FirstOrDefault(unit => unit.Id == attackerId);
+                            if (attacker == null || attacker.Team == selectedUnit.Team)
+                                return UnsupportedTrain("Damage-per-HP last attacker is missing or has an unexpected team.");
+                            targets = new CardTargets(new[] { attacker.Id });
+                        }
+                    }
+                    else
+                    {
+                        var front = new CardActionEffect("Damage", "FrontInRoom", perHpDamage,
+                            damagesEnemy, !damagesEnemy, [], filters: effect.Filters);
+                        CardTargets damageTargets = Collect(state, selectedRoom.RoomIndex, front, Array.Empty<int>(), selectedUnit,
+                            DropPosition(selectedRoom, selectedUnit), index: 0, definitions: definitions, positions: positions,
+                            pendingDeadRooms: pendingDeadRooms, selfUnitId: selfUnitId);
+                        if (!damageTargets.Supported) return UnsupportedTrain(damageTargets.UnsupportedReason!);
+                        targets = damageTargets;
+                    }
+                    damageValue = perHpDamage;
+                    effect = new CardActionEffect("Damage", "FrontInRoom", perHpDamage,
+                        damagesEnemy, !damagesEnemy, [], range: null);
                 }
                 if (effect.Type == "RewardGold")
                 {
@@ -1034,7 +1091,7 @@ namespace MonsterTrain2Poju.Model
                     !AbilityLifecycleModel.IsEffect(effect.Type))
                 {
                     if (effect.Type == "AdjustAllStatusEffects") return "Status adjustment effects use a fixed integer value, not an integer range.";
-                    if (!EnergyModel.IsEffect(effect.Type) && effect.Type != ForgePointsModel.Effect && !new[] { "Damage", "Heal", "AddStatus", "MultiplyStatus", "MultiplyAllPositiveStatusEffects", "BuffAttack", "DebuffAttack", "BuffHealth", "DebuffHealth", "Draw", "DrawType", "DrawNextTurn" }.Contains(effect.Type))
+                    if (!EnergyModel.IsEffect(effect.Type) && effect.Type != ForgePointsModel.Effect && !new[] { "Damage", "DamagePerHp", "Heal", "AddStatus", "MultiplyStatus", "MultiplyAllPositiveStatusEffects", "BuffAttack", "DebuffAttack", "BuffHealth", "DebuffHealth", "Draw", "DrawType", "DrawNextTurn" }.Contains(effect.Type))
                         return "Unmodeled range consumer " + effect.Type;
                     string? rangeError = effect.Range.Validate();
                     if (rangeError != null) return rangeError;
@@ -1113,14 +1170,14 @@ namespace MonsterTrain2Poju.Model
                     if (forgeError != null) return forgeError;
                     continue;
                 }
-                if (!new[] { "CopyUnits", "Bump", "AbilityTeleport", "AttackWithUnit", "Damage", "DamagePerSourceAttack", "Heal", "Sacrifice", "AddStatus", "MultiplyStatus", "MultiplyAllPositiveStatusEffects", "AdjustAllStatusEffects", "AddStatusPerOtherEffect", "SpawnOrStatus", "FloorRearrange", "UnitUpgrade", "BuffEquipment", "RemoveUnitUpgrade", "AttachEquipment", "RemoveEquipment", "BuffAttack", "DebuffAttack", "BuffHealth", "DebuffHealth", "Draw", "DiscardHand", "Generate" }.Contains(effect.Type))
+                if (!new[] { "CopyUnits", "Bump", "AbilityTeleport", "AttackWithUnit", "Damage", "DamagePerSourceAttack", "DamagePerHp", "Heal", "Sacrifice", "AddStatus", "MultiplyStatus", "MultiplyAllPositiveStatusEffects", "AdjustAllStatusEffects", "AddStatusPerOtherEffect", "SpawnOrStatus", "FloorRearrange", "UnitUpgrade", "BuffEquipment", "RemoveUnitUpgrade", "AttachEquipment", "RemoveEquipment", "BuffAttack", "DebuffAttack", "BuffHealth", "DebuffHealth", "Draw", "DiscardHand", "Generate" }.Contains(effect.Type))
                     return "Unimplemented spell effect " + effect.Type;
                 if (effect.Type == "Generate" && effect.Generation == null) return "Missing generated card rules.";
                 if ((effect.Type == "UnitUpgrade" || effect.Type == "BuffEquipment" || effect.Type == "RemoveUnitUpgrade") && effect.Upgrade == null)
                     return "Missing unit upgrade definition.";
                 if (effect.Type == "BuffEquipment" && effect.Lifetime != "TemporaryUntilUnitDeath")
                     return "Equipment buffs require the native unit-death lifetime.";
-                if (effect.Value < 0 && !AttackChange(effect) && effect.Type != ForgePointsModel.Effect && !new[] { "CopyUnits", "Bump", "Damage", "DamagePerSourceAttack", "Heal", "AddStatus", "AddStatusPerOtherEffect", "SpawnOrStatus", "MultiplyAllPositiveStatusEffects", "AdjustAllStatusEffects", "BuffHealth", "DebuffHealth", "Draw", "DiscardHand", "Generate" }.Contains(effect.Type) ||
+                if (effect.Value < 0 && !AttackChange(effect) && effect.Type != ForgePointsModel.Effect && !new[] { "CopyUnits", "Bump", "Damage", "DamagePerSourceAttack", "DamagePerHp", "Heal", "AddStatus", "AddStatusPerOtherEffect", "SpawnOrStatus", "MultiplyAllPositiveStatusEffects", "AdjustAllStatusEffects", "BuffHealth", "DebuffHealth", "Draw", "DiscardHand", "Generate" }.Contains(effect.Type) ||
                     effect.Type == "FloorRearrange" && effect.Value > 1) return "Invalid spell effect value.";
                 if (effect.Type == "BuffHealth" && effect.Lifetime != "" && effect.Lifetime != "TemporaryUntilEndOfBattle" &&
                     effect.Lifetime != "TemporaryUntilUnitDeath") return "Unmodeled maximum-health buff lifetime.";
@@ -1209,6 +1266,7 @@ namespace MonsterTrain2Poju.Model
                 case "Damage": return effect.Value >= 0 && (effect.Range == null || effect.Range.Max > 0) &&
                     (effect.Target != "DropTargetCharacter" || count > 0);
                 case "DamagePerSourceAttack": return count > 0;
+                case "DamagePerHp": return count > 0;
                 case "Heal": return effect.Target == "Room" || count > 0;
                 case "Sacrifice": return count > 0;
                 case "AddStatus":
@@ -1312,7 +1370,8 @@ namespace MonsterTrain2Poju.Model
                 effect.OnlyIfNoEnemies, effect.CooldownParameter, effect.AbilityChange, effect.CopyHeroStats, effect.ScaleUpgrade,
                 effect.DoNotFullyRemove, effect.SacrificeSubtype, effect.TypedDraw, effect.NextDrawUpgrade, effect.RequiredGold, effect.GoldCostRequired,
                 effect.UseCardTraits, effect.RequireEquipment, effect.UseSelectedRoom, effect.CountStatusOnlyOnTargets,
-                effect.SpawnFallbackUnit, effect.DisallowStatusStackModifiers, effect.StatusAdjustmentFilter);
+                effect.SpawnFallbackUnit, effect.DisallowStatusStackModifiers, effect.StatusAdjustmentFilter,
+                effect.DamagePerHpLastAttacker, effect.DamagePerHpIncludeArmor);
         }
         private static int TestCount(TrainCombatState state, CardActionEffect effect, CardTargets targets)
         {
@@ -1345,6 +1404,21 @@ namespace MonsterTrain2Poju.Model
                 return effect.Statuses.Count == 0 ? allowEmptyList : effect.Statuses.Any(item => item.Id == status.Id);
             if (effect.StatusAdjustmentFilter != 1 || status.Propagatable != true) return false;
             return unit.Team == CombatTeam.Enemy ? status.ExcludeHeroPropagation == false : status.ExcludeMonsterPropagation == false;
+        }
+        private static string? DamagePerHpTargetError(TrainCombatState state, CardActionEffect effect, CardTargets targets)
+        {
+            if (effect.Type != "DamagePerHp" || !effect.DamagePerHpLastAttacker || targets.UnitIds.Count == 0) return null;
+            int targetId = targets.UnitIds[0];
+            RoomCombatState? room = state.Rooms.FirstOrDefault(item => item.Units.Any(unit => unit.Id == targetId));
+            CombatUnit? target = room?.Units.FirstOrDefault(unit => unit.Id == targetId);
+            if (room == null || target == null) return "Damage-per-HP target left the captured train before target validation.";
+            if (!target.LastAttackerId.HasValue)
+                return "Damage-per-HP last-attacker targeting requires a captured attacker reference.";
+            int attackerId = target.LastAttackerId.Value;
+            if (attackerId == 0) return null;
+            CombatUnit? attacker = room.Units.FirstOrDefault(unit => unit.Id == attackerId);
+            return attacker == null || attacker.Team == target.Team
+                ? "Damage-per-HP last attacker is missing or has an unexpected team." : null;
         }
         private static string? AttackTestError(TrainCombatState state, int roomIndex, CardActionEffect effect)
         {

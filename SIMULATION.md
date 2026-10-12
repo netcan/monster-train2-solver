@@ -6,6 +6,19 @@ covers 60/224 catalog entries (26.79%); see
 [the owner evidence table](tests/fixtures/relic-coverage.md). Whole-battle
 coverage and the optimal solver remain in progress.
 
+### Damage-per-HP spell model (native calibration pending)
+
+The probe and card model now recognize native `CardEffectDamagePerHp`. It uses
+the selected unit's current HP, optionally includes Armor, and routes damage to
+the opposing front or the selected unit's captured last attacker. Missing
+last-attacker state is rejected so search cannot silently guess. Focused pure
+checks cover these branches; no native full-battle fixture has been captured,
+so this work does not change the accepted battle or relic-evidence counts.
+
+```powershell
+dotnet run --project src/ModelChecks -c Release -- --damage-per-hp-pure
+```
+
 ### Native unit ability teleport
 
 `full-battle-unit-ability-teleport.mt2f` uses a native unit ability with

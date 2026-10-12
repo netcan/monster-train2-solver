@@ -44,6 +44,12 @@ if (args.Length == 1 && args[0] == "--unit-ability-pure")
     return;
 }
 
+if (args.Length == 1 && args[0] == "--damage-per-hp-pure")
+{
+    DamagePerHpChecks.Run();
+    return;
+}
+
 if (args.Length == 1 && args[0] == "--unit-teleport-pure")
 {
     UnitTeleportChecks.Run();

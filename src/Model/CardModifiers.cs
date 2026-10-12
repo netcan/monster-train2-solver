@@ -377,7 +377,9 @@ namespace MonsterTrain2Poju.Model
                 effect.CooldownParameter, effect.AbilityChange, effect.CopyHeroStats, effect.ScaleUpgrade,
                 effect.DoNotFullyRemove, effect.SacrificeSubtype, effect.TypedDraw, effect.NextDrawUpgrade, effect.RequiredGold, effect.GoldCostRequired,
                 effect.UseCardTraits, effect.RequireEquipment, effect.UseSelectedRoom, effect.CountStatusOnlyOnTargets,
-                effect.SpawnFallbackUnit, effect.DisallowStatusStackModifiers)).ToArray();
+                effect.SpawnFallbackUnit, effect.DisallowStatusStackModifiers,
+                damagePerHpLastAttacker: effect.DamagePerHpLastAttacker,
+                damagePerHpIncludeArmor: effect.DamagePerHpIncludeArmor)).ToArray();
             string destination = rule.Destination;
             if (destination == "Discard" && instance.MaskDescriptor != null &&
                 CardBranchMaskModel.Resolve(instance).Traits.Contains("CardTraitSelfPurge", StringComparer.Ordinal))

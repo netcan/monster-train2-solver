@@ -47,6 +47,8 @@ namespace MonsterTrain2Poju.Model
         public CombatUnit? SpawnFallbackUnit { get; }
         public bool DisallowStatusStackModifiers { get; }
         public int? StatusAdjustmentFilter { get; }
+        public bool DamagePerHpLastAttacker { get; }
+        public bool DamagePerHpIncludeArmor { get; }
         public CardActionEffect(string type, string target, int value, bool allowEnemy, bool allowPlayer, IReadOnlyList<CombatStatus> statuses,
             CardUpgradeModifier? upgrade = null, string lifetime = "", CardEffectTests? tests = null, CardEffectRange? range = null, CardTargetFilters? filters = null,
             CardGenerationRule? generation = null, bool onlyIfNoEnemies = false, bool? cooldownParameter = null,
@@ -55,7 +57,8 @@ namespace MonsterTrain2Poju.Model
             NextDrawUpgradeRule? nextDrawUpgrade = null, int requiredGold = 0, bool? goldCostRequired = null,
             bool useCardTraits = false, bool requireEquipment = false, bool useSelectedRoom = false,
             bool countStatusOnlyOnTargets = false, CombatUnit? spawnFallbackUnit = null,
-            bool disallowStatusStackModifiers = false, int? statusAdjustmentFilter = null)
+            bool disallowStatusStackModifiers = false, int? statusAdjustmentFilter = null,
+            bool damagePerHpLastAttacker = false, bool damagePerHpIncludeArmor = false)
         { Type = type; Target = target; Value = value; AllowEnemy = allowEnemy; AllowPlayer = allowPlayer; Statuses = Array.AsReadOnly(statuses.ToArray());
             Upgrade = upgrade; Lifetime = lifetime; Tests = tests; Range = range; Filters = filters; Generation = generation; OnlyIfNoEnemies = onlyIfNoEnemies;
             CooldownParameter = cooldownParameter; AbilityChange = abilityChange; CopyHeroStats = copyHeroStats; ScaleUpgrade = scaleUpgrade;
@@ -63,7 +66,8 @@ namespace MonsterTrain2Poju.Model
             TypedDraw = typedDraw; NextDrawUpgrade = nextDrawUpgrade; RequiredGold = requiredGold; GoldCostRequired = goldCostRequired;
             UseCardTraits = useCardTraits; RequireEquipment = requireEquipment; UseSelectedRoom = useSelectedRoom;
             CountStatusOnlyOnTargets = countStatusOnlyOnTargets; SpawnFallbackUnit = spawnFallbackUnit;
-            DisallowStatusStackModifiers = disallowStatusStackModifiers; StatusAdjustmentFilter = statusAdjustmentFilter; }
+            DisallowStatusStackModifiers = disallowStatusStackModifiers; StatusAdjustmentFilter = statusAdjustmentFilter;
+            DamagePerHpLastAttacker = damagePerHpLastAttacker; DamagePerHpIncludeArmor = damagePerHpIncludeArmor; }
     }
     public sealed class RoomPlayRule
     {

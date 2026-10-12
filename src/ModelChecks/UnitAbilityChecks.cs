@@ -109,7 +109,8 @@ internal static class UnitAbilityChecks
     internal static BattleTurnState Root(string? blocked = null, bool resolving = false, bool deployment = false, int energy = 3,
         bool handFull = false, bool allowFull = true, bool xCost = false, bool emptyCache = false, bool otherFloors = false,
         bool terminalEnemy = false, bool typed = true, int actorAttack = 1, bool sourceAttackDamage = false, int damageMultiplier = 4,
-        bool useCardTraits = false)
+        bool useCardTraits = false, int actorArmor = 0, int enemyHealth = 40,
+        int? actorLastAttackerId = null, int? enemyLastAttackerId = 0)
     {
         var rng = UnityRng.Seed(84);
         CombatStatus cooldown = new("cooldown", 1, removeStackAtEnd: true, preventRemovalDuringRelentless: true, stackable: true);
@@ -130,12 +131,14 @@ internal static class UnitAbilityChecks
                 [new("CardEffectResetCooldown", 0, 0, "", 0, [], false, action: new("ResetCooldown", "Self", 0, false, true, [], cooldownParameter: false))], false),
             new CombatTrigger("OnUnitAbilityUnavailable", false, false, true, 1,
                 [new("CardEffectRemoveStatusEffect", -1, 0, "", 0, [], false, action: new("RemoveStatus", "Self", -1, false, true, [marker]))], false) };
+        CombatStatus[] actorStatuses = blocked == null ? [marker] : [marker, new(blocked, 1)];
+        if (actorArmor > 0) actorStatuses = actorStatuses.Append(new CombatStatus("armor", actorArmor)).ToArray();
         var actor = new CombatUnit(10, "actor", CombatTeam.Player, actorAttack, 18, 20, true, false, false,
-            blocked == null ? [marker] : [marker, new(blocked, 1)], triggers, 1, 1,
+            actorStatuses, triggers, 1, 1,
             modifiers: new(actorAttack, 0, 0, 1, 1, true, false, []), isBoss: false,
-            ability: new("skill", 3, 2, resolving: resolving, cardCreation: creation));
-        var enemy = new CombatUnit(11, "enemy", CombatTeam.Enemy, 1, terminalEnemy ? 4 : 40, 40, true, false, terminalEnemy, [],
-            isBoss: terminalEnemy, lastAttackerId: 0);
+            lastAttackerId: actorLastAttackerId, ability: new("skill", 3, 2, resolving: resolving, cardCreation: creation));
+        var enemy = new CombatUnit(11, "enemy", CombatTeam.Enemy, 1, terminalEnemy ? 4 : enemyHealth, enemyHealth, true, false, terminalEnemy, [],
+            isBoss: terminalEnemy, lastAttackerId: enemyLastAttackerId);
         var pyre = new CombatUnit(12, "pyre", CombatTeam.Player, 45, 80, 80, true, true, false, [], isBoss: false);
         var train = new TrainCombatState([new(0, deployment, [actor, enemy], [], context), new(1, deployment, [], [], context),
             new(2, deployment, [pyre], [], context)], [], 7, context);
