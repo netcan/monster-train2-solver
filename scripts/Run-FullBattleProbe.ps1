@@ -29,6 +29,7 @@ param(
     [switch] $DamagePerHpArmor,
     [switch] $DamagePerHpLastAttacker,
     [switch] $DamagePerHpAbility,
+    [switch] $DamageOverflow,
     [switch] $TerminalSpells,
     [switch] $PostKillSpells,
     [switch] $RandomSpells,
@@ -237,6 +238,7 @@ if ($RelicCardAbilityUpgrades) { $BattleRelicUpgrades = $true }
 if ($RelicCardTriggerUpgrades) { $BattleRelicUpgrades = $true }
 if ($RelicCardReplacementUpgrades) { $BattleRelicUpgrades = $true }
 if ($MixedCardlessRelicOrder) { $SpawnStatusRelicsClones = $true }
+if ($DamageOverflow) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($BattleRelicUpgrades -or $SpawnStatusRelicsClones -or $OriginalRelicBatch -or $OriginalStingRelicBatch -or $OriginalDeployableRelic) { $BranchCardMasks = $true }
 if ($SpawnStatusRelicsClones) { $SpawnStatusRelics = $true; $UnitClone = $true }
 if ($EnchantmentWorld) { $EnchantmentCombat = $true }
@@ -466,6 +468,7 @@ if ($DamagePerHp) { $environment.MT2_PROBE_MODIFIERS = 'damage-per-hp' }
 if ($DamagePerHpArmor) { $environment.MT2_PROBE_MODIFIERS = 'damage-per-hp-armor' }
 if ($DamagePerHpLastAttacker) { $environment.MT2_PROBE_MODIFIERS = 'damage-per-hp-last-attacker' }
 if ($DamagePerHpAbility) { $environment.MT2_PROBE_MODIFIERS = 'damage-per-hp-ability' }
+if ($DamageOverflow) { $environment.MT2_PROBE_MODIFIERS = 'damage-overflow' }
 $process = Start-Process -FilePath (Join-Path $gameRoot 'MonsterTrain2.exe') `
     -WorkingDirectory $gameRoot -ArgumentList @('-logFile', $unityLog) `
     -Environment $environment -WindowStyle Hidden -PassThru
@@ -508,6 +511,10 @@ if ($DamagePerHpAbility -and ($trace.ModifierScenario -ne 'damage-per-hp-ability
     -not (Select-String -LiteralPath $unityLog -Pattern 'ABILITY-ACTIVATION-PREPARED .*damagePerHp=True' -Quiet) -or
     -not (Select-String -LiteralPath $unityLog -Pattern 'DAMAGE-PER-HP-ABILITY-INPUT actor=' -Quiet))) {
     throw 'DamagePerHp unit-ability native setup did not run.'
+}
+if ($DamageOverflow -and ($trace.ModifierScenario -ne 'damage-overflow' -or
+    -not (Select-String -LiteralPath $unityLog -Pattern 'DAMAGE-OVERFLOW-PREPARED friendly-team damage=20' -Quiet))) {
+    throw 'Damage overflow native setup did not run.'
 }
 $terminalSettled = $trace.TerminalCaptureBoundary -eq 'AfterStopCombatLoop' -and $trace.TerminalEffectsSettled -eq $true
 $originalUnchanged = (Get-OriginalSignature) -ceq $originalBefore
@@ -897,6 +904,28 @@ if ($DamagePerHpAbility) {
             ($null -eq $afterAttacker -or $afterAttacker.Health -lt $attacker.Health)
     })
     $damagePerHpAbilityCoverage = $trace.ModifierScenario -eq 'damage-per-hp-ability' -and $positiveAbilityHits.Count -gt 0
+}
+$damageOverflowCoverage = -not $DamageOverflow
+if ($DamageOverflow) {
+    $overflowActions = @($trace.Actions | Where-Object {
+        $entry = $_
+        if ($entry.Action.TargetUnitId -le 0) { return $false }
+        $card = @($entry.Before.Spawn.Train.Context.CardInstances | Where-Object InstanceId -EQ $entry.Action.CardInstanceId)[0]
+        $trait = @($card.MaskDescriptor.BaseTraits | Where-Object RuntimeType -EQ 'CardTraitDamageOverflow')[0]
+        if ($null -eq $trait -or $trait.ParamInt -ne 0) { return $false }
+        $room = @($entry.Before.Spawn.Train.Rooms | Where-Object RoomIndex -EQ $entry.Action.RoomIndex)[0]
+        $target = @($room.Units | Where-Object Id -EQ $entry.Action.TargetUnitId)[0]
+        if ($null -eq $target -or $target.Health -ge 20) { return $false }
+        $siblings = @($room.Units | Where-Object { $_.Team -eq $target.Team -and $_.Id -ne $target.Id })
+        if ($siblings.Count -eq 0) { return $false }
+        $afterRoom = @($entry.Actual.Spawn.Train.Rooms | Where-Object RoomIndex -EQ $entry.Action.RoomIndex)[0]
+        @($siblings | Where-Object {
+            $sibling = $_
+            $after = @($afterRoom.Units | Where-Object Id -EQ $sibling.Id)[0]
+            $null -eq $after -or $after.Health -lt $sibling.Health
+        }).Count -gt 0
+    })
+    $damageOverflowCoverage = $trace.ModifierScenario -eq 'damage-overflow' -and $overflowActions.Count -gt 0
 }
 $terminalSpellCoverage = -not ($TerminalSpells -or $PostKillSpells) -or @($trace.Actions | Where-Object ActualOutcome -EQ 3).Count -gt 0
 $postKillCoverage = -not $PostKillSpells
@@ -2131,6 +2160,7 @@ $result = [pscustomobject]@{
     RoomSpellCoverage = $roomSpellCoverage
     DamagePerHpCoverage = $damagePerHpCoverage
     DamagePerHpAbilityCoverage = $damagePerHpAbilityCoverage
+    DamageOverflowCoverage = $damageOverflowCoverage
     TerminalEffectsSettled = $terminalSettled
     TerminalSpellCoverage = $terminalSpellCoverage
     PostKillCoverage = $postKillCoverage
@@ -2306,7 +2336,7 @@ if ($StatisticOverflow) {
         @($zero.Samples | Where-Object DetachedSource -EQ $true).Count -ne 24 -or
         @($zero.Samples | Where-Object Amount -NE 0).Count -ne 0) { throw 'Native zero-increment coverage is incomplete.' }
 }
-if ($null -eq $trace.NativeWon -or $process.ExitCode -ne 0 -or -not $nativePassed -or -not $originalUnchanged -or -not $modifierCoverage -or -not $healingCoverage -or -not $onHealCoverage -or -not $roomSpellCoverage -or -not $damagePerHpCoverage -or -not $damagePerHpAbilityCoverage -or -not $terminalSettled -or -not $terminalSpellCoverage -or
+if ($null -eq $trace.NativeWon -or $process.ExitCode -ne 0 -or -not $nativePassed -or -not $originalUnchanged -or -not $modifierCoverage -or -not $healingCoverage -or -not $onHealCoverage -or -not $roomSpellCoverage -or -not $damagePerHpCoverage -or -not $damagePerHpAbilityCoverage -or -not $damageOverflowCoverage -or -not $terminalSettled -or -not $terminalSpellCoverage -or
     -not $postKillCoverage -or -not $randomCoverage -or -not $randomStatusCoverage -or -not $crossRoomCoverage -or -not $attackCoverage -or -not $maxHealthCoverage -or -not $numericRangeCoverage -or -not $targetFilterCoverage -or -not $drawCoverage -or -not $handRemovalCoverage -or -not $generationCoverage -or -not $permanentConsumeGenerationCoverage -or -not $scalingCoverage -or -not $statusScalingCoverage -or -not $unitUpgradeScalingCoverage -or -not $unitTriggerUpgradeCoverage -or -not $spawnTriggerCoverage -or -not $unitTurnBeginCoverage -or -not $teamTurnBeginCoverage -or -not $preHandDiscardCoverage -or -not $cloneUpgradeRefreshCoverage -or -not $preCombatCoverage -or -not $triggeredHealingCoverage -or -not $postCombatHealingCoverage -or -not $triggeredDamageCoverage -or -not $damageDeathQueueCoverage -or -not $terminalDeathDamageCoverage -or -not $hitKillCoverage -or -not $dyingUpgradeCoverage -or -not $attackTriggerCoverage -or -not $triggeredStatusCoverage -or -not $statusCallbackCoverage -or -not $energyCoverage -or -not $forgePointsCoverage -or -not $xCostCoverage -or -not $bonusDrawCoverage -or -not $capacityCoverage -or -not $directUpgradeCoverage -or -not $equipmentCoverage -or ($PermanentConsumeOverTemporary -and -not $modifierCoverage) -or $trace.CaptureFailures -ne 0 -or $trace.Mismatches -ne 0 -or $trace.Unsupported -ne 0 -or $trace.Pending -ne 0) {
     throw "Full battle differential probe failed; inspect $tracePath and $unityLog"
 }

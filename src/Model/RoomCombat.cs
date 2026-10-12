@@ -1897,6 +1897,8 @@ namespace MonsterTrain2Poju.Model
                 if (target.Has("untouchable")) damage = 0;
                 if (actor != null && context?.Statistics != null)
                     context = context.WithStatistics(context.Statistics.WithLastAttackDamage(checked(damage + blocked)));
+                ApplyDamageOverflow(actor, target, damage, kind, sourceCardId);
+                if (unsupportedReason != null) return;
                 // Native fixes damage and resulting HP before firing the pre-damage
                 // callback. Healing, armor or attack changes there do not recalculate it.
                 int resultingHealth = Math.Max(0, target.Health - damage);
@@ -1948,6 +1950,50 @@ namespace MonsterTrain2Poju.Model
                     if (!TryRevive(actor, target, sourceCardId))
                         Death(actor, target, sourceCardId, deferRemoval: runningTriggerQueue || nativeCardDamage);
                 }
+            }
+
+            private void ApplyDamageOverflow(WorkingUnit? actor, WorkingUnit target, int damage, string kind, int sourceCardId)
+            {
+                const string traitType = "CardTraitDamageOverflow";
+                if (kind == "SpellOverflow" || damage <= target.Health || sourceCardId <= 0) return;
+                CardInstanceState? card = context?.FindCard(sourceCardId);
+                CardMaskDescriptor? descriptor = card?.MaskDescriptor;
+                if (card == null || descriptor == null || !MayHaveDamageOverflow(card, descriptor)) return;
+                string? cardError = CardModifierModel.UnsupportedReason(card);
+                if (cardError != null) { unsupportedReason = cardError; return; }
+
+                IReadOnlyList<CardTraitValue> traits = CardTraitRefreshModel.Ensure(CardBranchMaskModel.OwnedState(card).Traits)
+                    .Composition.CombinedTraits ?? Array.Empty<CardTraitValue>();
+                CardTraitValue? overflow = traits.FirstOrDefault(trait => trait.RuntimeType == traitType);
+                if (overflow == null) return;
+
+                CombatTeam team = overflow.ParamInt switch
+                {
+                    0 => target.Source.Team,
+                    1 => target.Source.Team == CombatTeam.Player ? CombatTeam.Enemy : CombatTeam.Player,
+                    2 => CombatTeam.Enemy,
+                    3 => CombatTeam.Player,
+                    _ => target.Source.Team
+                };
+                int overflowDamage = damage - target.Health;
+                CombatUnit[] room = BattleSpawnPointModel.Order(context?.SpawnPoints, target.RoomIndex, CurrentRoom().Units);
+                foreach (CombatUnit siblingState in room.Where(unit => unit.Team == team && unit.Id != target.Source.Id))
+                {
+                    WorkingUnit? sibling = units.FirstOrDefault(unit => unit.Source.Id == siblingState.Id);
+                    if (sibling == null) continue;
+                    Damage(actor, sibling, overflowDamage, "SpellOverflow", sourceCardId, applyTraits: false);
+                    if (unsupportedReason != null) return;
+                }
+            }
+
+            private static bool MayHaveDamageOverflow(CardInstanceState card, CardMaskDescriptor descriptor)
+            {
+                const string traitType = "CardTraitDamageOverflow";
+                IEnumerable<CardTraitValue> possible = descriptor.BaseTraits.Concat(descriptor.TemporaryTraits).Concat(
+                    card.Permanent.Upgrades.Concat(card.Temporary.Upgrades)
+                        .SelectMany(upgrade => upgrade.Lifecycle?.AddedTraits ?? Array.Empty<CardTraitValue>()));
+                return possible.Any(trait => trait.RuntimeType == traitType) ||
+                    descriptor.PermanentReplacements.Any(replacement => replacement.NewRuntimeType == traitType);
             }
 
             internal RoomCombatResult Revival(int targetId, int sourceCardId, int attackerUnitId, CombatUnit? retainedAttacker)

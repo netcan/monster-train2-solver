@@ -29,7 +29,7 @@ The default command checks the full curated inventory. For routine changes, run
 the dedicated checks for the new and directly affected scenarios; run the full
 inventory at completed milestones and before delivery.
 
-Current inventory is 246 archives: 215 accepted battles and 31 component
+Current inventory is 247 archives: 216 accepted battles and 31 component
 calibrations. `full-battle-companion-bump.mt2f` covers a paired Relentless
 companion Boss refusal, its attempted-ascension callback and the survivor's
 terminal-death handoff. `full-battle-relic-card-status-upgrades.mt2f` verifies a native
@@ -3150,4 +3150,23 @@ dotnet run --project src/ModelChecks -c Release -- --original-room-entry-status-
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-damage-per-hp-ability.mt2f
 dotnet run --project src/ModelChecks -c Release -- --unit-ability-pure
 dotnet run --project src/ModelChecks -c Release -- --damage-per-hp-pure
+```
+
+### Native DamageOverflow spell
+
+`full-battle-damage-overflow.mt2f` records a zero-cost 20-damage spell carrying
+the native `CardTraitDamageOverflow` FriendlyTeam trait. The schema-103 battle
+won with 17 card actions and five EndTurns. Capture failures, mismatches,
+unsupported transitions and pending records are zero. Independent replay
+matches all actions, the policy chain and 16 parallel branches; two played
+overflow spells damage same-team siblings. Pure checks cover all four team
+modes, spill amount/order, exact lethal, armor and recursion suppression. The
+24,704-byte archive has 3,927 unique nodes and SHA-256
+`c0a1c9cde31b0f43d7a1971d1fa4d6c314c3470c7d8caade1257d18312c71ce9`; it has no
+JSON companion. Original relic evidence remains 63/224 (28.13%); this fixture
+adds battle-mechanism coverage only. Inventory is 247 archives: 216 battles and
+31 component calibrations. Full-inventory replay remains deferred.
+
+```powershell
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-damage-overflow.mt2f
 ```

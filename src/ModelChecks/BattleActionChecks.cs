@@ -322,6 +322,7 @@ internal static class BattleActionChecks
         if (fixture.TryGetProperty("ModifierScenario", out FixtureValue damagePerHpScenario) &&
             damagePerHpScenario.GetString() is "damage-per-hp" or "damage-per-hp-armor" or "damage-per-hp-last-attacker" or "damage-per-hp-ability")
             DamagePerHpChecks.Native(fixture);
+        DamageOverflowChecks.Native(fixture);
         if (fixture.TryGetProperty("ModifierScenario", out FixtureValue randomScenario) && randomScenario.GetString() == "random-spells")
             RandomSpellChecks.Native(actions);
         if (fixture.TryGetProperty("ModifierScenario", out FixtureValue randomStatusScenario) && randomStatusScenario.GetString() == "random-status")
@@ -445,6 +446,8 @@ internal static class BattleActionChecks
         if (fixture.TryGetProperty("ModifierScenario", out var damagePerHpPolicy) &&
             damagePerHpPolicy.GetString() is "damage-per-hp" or "damage-per-hp-armor" or "damage-per-hp-last-attacker")
             chooser = DamagePerHpChecks.Choose;
+        if (fixture.TryGetProperty("ModifierScenario", out var damageOverflowPolicy) && damageOverflowPolicy.GetString() == "damage-overflow")
+            chooser = DamageOverflowChecks.Choose;
         if (fixture.TryGetProperty("ModifierScenario", out var scenarioPolicy) && scenarioPolicy.GetString() == "rally-lethal")
             chooser = BattleActionModel.ChooseBossRoomSummonThenCards;
         if (fixture.TryGetProperty("ModifierScenario", out var sacrificeScenario) && sacrificeScenario.GetString() == "sacrifice-effects")
@@ -613,9 +616,19 @@ internal static class BattleActionChecks
         // drives the independent simulation; the policy consumes only its current model state.
         BattleSimulationResult result = BattleSimulator.Resolve(root, chooser);
         Require(result.Supported, "Independent card policy failed: " + result.UnsupportedReason);
-        Require(result.Actions.Count == actions.Length && result.Turns.Count == turns.Length,
-            $"Independent policy action/turn count differed: {result.Actions.Count}/{actions.Length} actions, " +
-            $"{result.Turns.Count}/{turns.Length} EndTurns.");
+        if (result.Actions.Count != actions.Length || result.Turns.Count != turns.Length)
+        {
+            string modeledSequence = string.Join(";", result.Actions.Select(item =>
+                $"{item.Action.CardInstanceId}@{item.Action.RoomIndex}:{item.Action.TargetUnitId}"));
+            string recordedSequence = string.Join(";", actions.Select(entry =>
+            {
+                PlayCardAction action = entry.GetProperty("Action").Deserialize<PlayCardAction>()!;
+                return $"{action.CardInstanceId}@{action.RoomIndex}:{action.TargetUnitId}";
+            }));
+            throw new InvalidOperationException(
+                $"Independent policy action/turn count differed: {result.Actions.Count}/{actions.Length} actions, " +
+                $"{result.Turns.Count}/{turns.Length} EndTurns. Modeled=[{modeledSequence}] Recorded=[{recordedSequence}]");
+        }
         for (int index = 0; index < result.Actions.Count; index++)
         {
             BattleSimulationAction modeled = result.Actions[index];

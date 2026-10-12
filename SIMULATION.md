@@ -1,6 +1,6 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-13): 246 binary archives, including 215
+Current accepted inventory (2026-10-13): 247 binary archives, including 216
 full battles and 31 component calibrations. Unchanged original relic evidence
 covers 63/224 catalog entries (28.13%); see
 [the owner evidence table](tests/fixtures/relic-coverage.md). Whole-battle
@@ -8471,4 +8471,24 @@ still deferred to a milestone.
 pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -OriginalRoomEntryStatusRelics -GameSpeed Instant
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-room-entry-status-relics.mt2f
 dotnet run --project src/ModelChecks -c Release -- --spell-weakness-pure
+```
+
+### Native `CardTraitDamageOverflow`
+
+The schema-103 `full-battle-damage-overflow.mt2f` captures a zero-cost native
+spell with 20 damage and `CardTraitDamageOverflow` set to FriendlyTeam. Its
+muted Instant battle won with 17 card actions and five EndTurns. Capture
+failures, mismatches, unsupported transitions and pending records are zero.
+Independent replay matches all 17 actions, all five EndTurns and the 16-branch
+policy check; two played overflow spells damage same-team siblings. Pure checks
+cover all four team modes, same-floor spill amount/order, exact lethal, armor
+and recursion suppression. The binary is 24,704 bytes with 3,927 unique nodes
+and SHA-256
+`c0a1c9cde31b0f43d7a1971d1fa4d6c314c3470c7d8caade1257d18312c71ce9`; it has no
+JSON companion. This adds combat-mechanism coverage only: original relic
+evidence remains 63/224 (28.13%). Inventory is now 247 archives: 216 full
+battles and 31 component calibrations. Full-inventory replay remains deferred.
+
+```powershell
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-damage-overflow.mt2f
 ```

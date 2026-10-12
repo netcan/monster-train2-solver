@@ -607,6 +607,7 @@ RelicCardPlayMagicPowerChecks.Run();
 RelicStatusStackChecks.Run();
 RelicStatusMagnitudeChecks.Run();
 TitanSkinChecks.Run();
+DamageOverflowChecks.Run();
 RelicStatusDecayChecks.Run();
 RelicResourceChecks.Run();
 RelicFloorCapacityChecks.Run();
