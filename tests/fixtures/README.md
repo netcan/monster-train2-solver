@@ -2915,18 +2915,21 @@ Piercing, card `CardTraitIgnoreArmor`, and the global
 cap, ordering, piercing sources, and relic magnitude.
 
 `full-battle-titan-skin.mt2f` adds two Titan Skin stacks to the in-memory
-`Boss_Level1_Basic` definition in an isolated probe. The native battle wins at
-Pyre 49 with 55 combat stages. Independent room replay matches all 55 stages;
-the Boss carries Titan Skin in 11, takes damage in four, and retains the stacks.
-Capture failures, mismatches, unsupported stages and pending records are zero.
-The schema-103 archive is 20,386 bytes with 3,010 unique nodes and SHA-256
-`3f4cd1dc5ba8619a47cec1c82bcec8f2ac70c5321f458ac562015a1b57b1040f`; it has no
+`Boss_Level1_Basic` definition in an isolated probe. The 2026-10-12 muted
+Instant native battle at
+`.probe-runs/full-battle-steward-once-20261012-164254-f34755f5` wins at Pyre 49
+with 55 room stages, 13 card cycles, 14 train phases, 11 spawns, seven EndTurns
+and one card play. Independent replay matches all 55 rooms and seven turns; the
+Boss carries Titan Skin in 11 stages, takes damage in four and retains the
+stacks. Capture failures, mismatches, unsupported stages and pending records are
+zero. The schema-103 archive is 20,714 bytes with 3,059 unique nodes and SHA-256
+`94941bcd2435b3d7b79b3b47982281b5077a866ec4a9a7039c0906d51660bc62`; it has no
 JSON companion.
 
 This validates the native damage handler, not the natural
 `Boss_Level2_BigStats` spawn path. No original relic owner was added. Inventory
-is 238 archives: 207 battles and 31 component calibrations. Original relic
-evidence remains 59/224 (26.34%).
+is 240 archives: 209 battles and 31 component calibrations. Original relic
+evidence is 60/224 (26.79%).
 
 ```powershell
 dotnet run --project src/ModelChecks -c Release -- --titan-skin-pure
