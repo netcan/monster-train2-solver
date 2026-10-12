@@ -533,6 +533,7 @@ namespace MonsterTrain2Poju.Probe
                 DeathDissolveSettlementEnabled = DeathDissolveSettlement.Enabled,
                 DeathDissolveSettlements = DeathDissolveSettlement.Records,
                 DeathDissolveCallbacks = DeathDissolveSettlement.Callbacks,
+                DecisionPlayRulesSnapshotsFresh = true,
                 GameVersion = Application.version,
                 GameModuleMvid = typeof(CardState).Assembly.ManifestModule.ModuleVersionId,
                 NativeWon,

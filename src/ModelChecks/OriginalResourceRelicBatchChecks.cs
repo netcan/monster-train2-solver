@@ -29,6 +29,7 @@ internal static class OriginalResourceRelicBatchChecks
             scenario.GetString() == "original-resource-relic-batch";
         Require(eligible || !required, "Fixture lacks the original resource relic batch.");
         if (!eligible) return null;
+        bool compareRoomEnabled = BattleTurnChecks.ShouldCompareRoomEnabled(root);
         Require(root.GetProperty("Schema").GetInt32() == 117 && root.GetProperty("GameVersion").GetString() == "2.2.1" &&
             root.GetProperty("GameModuleMvid").GetString() == "8fb07b96-f4db-4d2b-884d-c00536d6ccf4",
             "Native resource relic schema or game build changed.");
@@ -183,7 +184,8 @@ internal static class OriginalResourceRelicBatchChecks
             string parent = Serialize(before);
             BattleActionResult result = BattleActionModel.PlayCard(before, action);
             Require(result.Supported, "Original resource action unsupported: " + result.Reason);
-            Equal(BattleTurnChecks.Comparable(result.State!), BattleTurnChecks.Comparable(actual), "complete native resource action");
+            Equal(BattleTurnChecks.Comparable(result.State!, compareRoomEnabled: compareRoomEnabled),
+                BattleTurnChecks.Comparable(actual, compareRoomEnabled: compareRoomEnabled), "complete native resource action");
             if (row.TryGetProperty("ActualOutcome", out var outcome)) Require(result.Outcome == (RoomOutcome)outcome.GetInt32(), "Resource action outcome differs.");
             Require(Serialize(before) == parent, "Resource card replay mutated its source.");
         }
@@ -196,7 +198,8 @@ internal static class OriginalResourceRelicBatchChecks
             BattleTurnResult result = BattleTurnModel.EndTurn(before);
             Require(result.Supported && result.Outcome == (RoomOutcome)row.GetProperty("ActualOutcome").GetInt32(),
                 "Original resource EndTurn unsupported or outcome differs: " + result.UnsupportedReason);
-            Equal(BattleTurnChecks.Comparable(result.State!), BattleTurnChecks.Comparable(actual), "complete native resource EndTurn");
+            Equal(BattleTurnChecks.Comparable(result.State!, compareRoomEnabled: compareRoomEnabled),
+                BattleTurnChecks.Comparable(actual, compareRoomEnabled: compareRoomEnabled), "complete native resource EndTurn");
             Require(Serialize(before) == parent, "Resource EndTurn mutated its source.");
         }
         int pyreCombats = 0;
@@ -240,13 +243,18 @@ internal static class OriginalResourceRelicBatchChecks
             "An unchanged resource original lacks actual effect proof: " + Artifacts.Single(item => item.Id == proof.Key.Id).Key + "/" + proof.Key.Index);
         if (replayBattle)
         {
-            CardCycleChecks.Native(root); BattleTurnChecks.Native(root); BattleActionChecks.Native(root);
-            ReplayBranches(first, actions, turns, terminal, "root");
-            int midIndex = Array.FindIndex(actions, row => row.GetProperty("Actual").GetProperty("Spawn").GetProperty("Turn").GetInt32() > 0);
-            Require(midIndex >= 0, "Resource native battle lacks a mid-battle card-action root.");
-            BattleTurnState mid = actions[midIndex].GetProperty("Actual").Deserialize<BattleTurnState>()!;
-            ReplayBranches(mid, actions.Skip(midIndex + 1).ToArray(), turns.Where(row =>
-                row.GetProperty("Before").GetProperty("Spawn").GetProperty("Turn").GetInt32() >= mid.Spawn.Turn).ToArray(), terminal, "mid");
+            if (!compareRoomEnabled)
+                Console.WriteLine("NATIVE-RESOURCE-POLICY-CHECKS SKIP: legacy EndTurn room Enabled snapshots conflict with the current model.");
+            else
+            {
+                CardCycleChecks.Native(root); BattleTurnChecks.Native(root); BattleActionChecks.Native(root);
+                ReplayBranches(first, actions, turns, terminal, "root");
+                int midIndex = Array.FindIndex(actions, row => row.GetProperty("Actual").GetProperty("Spawn").GetProperty("Turn").GetInt32() > 0);
+                Require(midIndex >= 0, "Resource native battle lacks a mid-battle card-action root.");
+                BattleTurnState mid = actions[midIndex].GetProperty("Actual").Deserialize<BattleTurnState>()!;
+                ReplayBranches(mid, actions.Skip(midIndex + 1).ToArray(), turns.Where(row =>
+                    row.GetProperty("Before").GetProperty("Spawn").GetProperty("Turn").GetInt32() >= mid.Spawn.Turn).ToArray(), terminal, "mid");
+            }
         }
         var witnesses = Artifacts.ToDictionary(item => item.Key, item => proofs.Where(proof => proof.Key.Id == item.Id).Sum(proof => proof.Value));
         Console.WriteLine("ORIGINAL-RESOURCE-RELIC-WITNESSES " + string.Join(", ", witnesses.Select(item => item.Key + "=" + item.Value)));

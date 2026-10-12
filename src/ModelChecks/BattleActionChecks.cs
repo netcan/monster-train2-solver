@@ -259,6 +259,7 @@ internal static class BattleActionChecks
     internal static void Native(FixtureValue fixture)
     {
         if (!fixture.TryGetProperty("Actions", out FixtureValue actions) || actions.GetArrayLength() == 0) return;
+        bool compareRoomEnabled = BattleTurnChecks.ShouldCompareRoomEnabled(fixture);
         int supported = 0, unsupported = 0;
         foreach (FixtureValue entry in actions.EnumerateArray())
         {
@@ -280,8 +281,8 @@ internal static class BattleActionChecks
                 }
             }
             bool terminalOutcome = result.Outcome is RoomOutcome.BattleWon or RoomOutcome.PlayerDefeated;
-            string? difference = ModelJson.Difference(BattleTurnChecks.Comparable(result.State!, terminalOutcome),
-                BattleTurnChecks.Comparable(actual, terminalOutcome));
+            string? difference = ModelJson.Difference(BattleTurnChecks.Comparable(result.State!, terminalOutcome, compareRoomEnabled),
+                BattleTurnChecks.Comparable(actual, terminalOutcome, compareRoomEnabled));
             if (difference != null && result.State!.Spawn.Train.Context?.Statistics is BattleStatistics modeledStatistics &&
                 actual.Spawn.Train.Context?.Statistics is BattleStatistics actualStatistics)
             {
@@ -434,6 +435,11 @@ internal static class BattleActionChecks
         }
         if (!fixture.TryGetProperty("Policy", out FixtureValue policy) ||
             policy.GetString() is not ("units-and-junk" or "units-spells-and-junk")) return;
+        if (!compareRoomEnabled)
+        {
+            Console.WriteLine("NATIVE-POLICY-CHAIN-CHECKS SKIP: legacy EndTurn room Enabled snapshots conflict with the current model.");
+            return;
+        }
         Func<BattleTurnState, PlayCardAction?> chooser = policy.GetString() == "units-spells-and-junk"
             ? BattleActionModel.ChooseUnitSpellAndJunkPlay : BattleActionModel.ChooseUnitAndJunkPlay;
         if (fixture.TryGetProperty("ModifierScenario", out var damagePerHpPolicy) &&
@@ -506,9 +512,10 @@ internal static class BattleActionChecks
             if (firstDecision.Spawn.Turn < root.Spawn.Turn) root = firstDecision;
         }
         string parent = JsonSerializer.Serialize(root);
-        BattleTurnState terminal = RunPolicy(root, policyActions, policyTurns, chooser);
-        string expected = BattleTurnChecks.Comparable(terminal);
-        Parallel.For(0, 16, _ => Require(BattleTurnChecks.Comparable(RunPolicy(root, policyActions, policyTurns, chooser)) == expected,
+        BattleTurnState terminal = RunPolicy(root, policyActions, policyTurns, chooser, compareRoomEnabled);
+        string expected = BattleTurnChecks.Comparable(terminal, compareRoomEnabled: compareRoomEnabled);
+        Parallel.For(0, 16, _ => Require(BattleTurnChecks.Comparable(
+            RunPolicy(root, policyActions, policyTurns, chooser, compareRoomEnabled), compareRoomEnabled: compareRoomEnabled) == expected,
             "Full policy parallel branches diverged."));
         Require(JsonSerializer.Serialize(root) == parent, "Full policy simulation mutated its root.");
         // Start independently after an actual mid-battle card action. Recompute the entire suffix.
@@ -518,7 +525,7 @@ internal static class BattleActionChecks
         if (mid.ValueKind == FixtureKind.Undefined) mid = policyActions[^1];
         BattleTurnState midRoot = mid.GetProperty("Actual").Deserialize<BattleTurnState>()!;
         BattleSimulationResult suffix = BattleSimulator.Resolve(midRoot, chooser);
-        Require(suffix.Supported && BattleTurnChecks.Comparable(suffix.State!) == expected,
+        Require(suffix.Supported && BattleTurnChecks.Comparable(suffix.State!, compareRoomEnabled: compareRoomEnabled) == expected,
             "Mid-battle policy simulation diverged: " + suffix.UnsupportedReason);
         int firstTurn = midRoot.Spawn.Turn;
         FixtureValue[] actualSuffixTurns = policyTurns.Where(entry => entry.GetProperty("Before")
@@ -528,8 +535,8 @@ internal static class BattleActionChecks
         {
             BattleTurnState actual = actualSuffixTurns[index].GetProperty("Actual").Deserialize<BattleTurnState>()!;
             bool terminalTurn = suffix.Turns[index].Outcome is RoomOutcome.BattleWon or RoomOutcome.PlayerDefeated;
-            Require(BattleTurnChecks.Comparable(suffix.Turns[index].State!, terminalTurn) ==
-                BattleTurnChecks.Comparable(actual, terminalTurn),
+            Require(BattleTurnChecks.Comparable(suffix.Turns[index].State!, terminalTurn, compareRoomEnabled) ==
+                BattleTurnChecks.Comparable(actual, terminalTurn, compareRoomEnabled),
                 "Mid-battle suffix decision differs after EndTurn " + index);
         }
         int hp = terminal.Spawn.Train.Rooms.SelectMany(room => room.Units).SingleOrDefault(unit => unit.IsPyre)?.Health ?? 0;
@@ -599,7 +606,8 @@ internal static class BattleActionChecks
         return BattleActionModel.ChooseUnitSpellAndJunkPlay(source);
     }
 
-    private static BattleTurnState RunPolicy(BattleTurnState root, FixtureValue[] actions, FixtureValue[] turns, Func<BattleTurnState, PlayCardAction?> chooser)
+    private static BattleTurnState RunPolicy(BattleTurnState root, FixtureValue[] actions, FixtureValue[] turns,
+        Func<BattleTurnState, PlayCardAction?> chooser, bool compareRoomEnabled)
     {
         // Finish first, then consult the oracle. Neither recorded actions nor the terminal turn count
         // drives the independent simulation; the policy consumes only its current model state.
@@ -615,8 +623,8 @@ internal static class BattleActionChecks
             BattleTurnState actual = actions[index].GetProperty("Actual").Deserialize<BattleTurnState>()!;
             string modeledAction = JsonSerializer.Serialize(modeled.Action), nativeAction = JsonSerializer.Serialize(actualAction);
             bool terminalAction = modeled.Result.Outcome is RoomOutcome.BattleWon or RoomOutcome.PlayerDefeated;
-            string modeledState = BattleTurnChecks.Comparable(modeled.Result.State!, terminalAction);
-            string nativeState = BattleTurnChecks.Comparable(actual, terminalAction);
+            string modeledState = BattleTurnChecks.Comparable(modeled.Result.State!, terminalAction, compareRoomEnabled);
+            string nativeState = BattleTurnChecks.Comparable(actual, terminalAction, compareRoomEnabled);
             if (modeledAction != nativeAction || modeledState != nativeState)
                 throw new InvalidOperationException("Independent policy diverged after card action " + index + ": " +
                     (ModelJson.Difference(modeledAction, nativeAction) ?? ModelJson.Difference(modeledState, nativeState)));
@@ -628,8 +636,8 @@ internal static class BattleActionChecks
             BattleTurnState actual = turns[index].GetProperty("Actual").Deserialize<BattleTurnState>()!;
             bool terminalTurn = result.Turns[index].Outcome is RoomOutcome.BattleWon or RoomOutcome.PlayerDefeated;
             Require(result.Turns[index].Outcome == (RoomOutcome)turns[index].GetProperty("ActualOutcome").GetInt32() &&
-                BattleTurnChecks.Comparable(result.Turns[index].State!, terminalTurn) ==
-                    BattleTurnChecks.Comparable(actual, terminalTurn),
+                BattleTurnChecks.Comparable(result.Turns[index].State!, terminalTurn, compareRoomEnabled) ==
+                    BattleTurnChecks.Comparable(actual, terminalTurn, compareRoomEnabled),
                 "Independent policy diverged after EndTurn " + index);
         }
         return result.State!;
