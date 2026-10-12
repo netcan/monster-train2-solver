@@ -49,7 +49,7 @@ internal static class AbilityCardChecks
     internal static void Native(FixtureValue fixture)
     {
         string? scenario = fixture.TryGetProperty("ModifierScenario", out var modifier) ? modifier.GetString() : null;
-        bool suite = scenario == "ability-cache" || scenario?.StartsWith("ability-activation", StringComparison.Ordinal) == true;
+        bool suite = scenario == "ability-cache" || scenario == "ability-teleport" || scenario?.StartsWith("ability-activation", StringComparison.Ordinal) == true;
         if (!fixture.TryGetProperty("AbilityCardOperations", out var operations) || operations.GetArrayLength() == 0)
         {
             Require(!suite, "Requested native ability cache scenario did not execute.");

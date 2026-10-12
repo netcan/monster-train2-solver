@@ -146,8 +146,9 @@ internal static class RoomCombatChecks
             {
                 CombatContext actualContext = stage.GetProperty("Actual").GetProperty("Context")
                     .Deserialize<CombatContext>()!;
-                string? contextDifference = ModelJson.Difference(JsonSerializer.Serialize(result.State.Context),
-                    JsonSerializer.Serialize(actualContext));
+                string? contextDifference = ModelJson.Difference(
+                    JsonSerializer.Serialize(BattleTurnChecks.ComparableContext(result.State.Context)),
+                    JsonSerializer.Serialize(BattleTurnChecks.ComparableContext(actualContext)));
                 Require(contextDifference == null, "Native room context difference at stage " +
                     stage.GetProperty("Index").GetInt32() + ": " + contextDifference);
             }

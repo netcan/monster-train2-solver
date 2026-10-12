@@ -104,7 +104,7 @@ internal static class EnemySpawningChecks
     private static string Comparable(EnemySpawnState state) => JsonSerializer.Serialize(new
     {
         Rooms = state.Train.Rooms.Select(room => new { room.RoomIndex, room.Units }).ToArray(),
-        Movement = state.Train.Movement.OrderBy(rule => rule.UnitId).ToArray(), state.Train.Context,
+        Movement = state.Train.Movement.OrderBy(rule => rule.UnitId).ToArray(), Context = BattleTurnChecks.ComparableContext(state.Train.Context),
         state.Phase, state.SelectedGroups, state.Rng, state.NextUnitId, state.TreasuresRemaining, state.CanonicalDecisionReferences
     });
 }

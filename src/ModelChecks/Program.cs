@@ -57,6 +57,13 @@ if (args.Length == 2 && args[0] == "--unit-ability-native-only")
     return;
 }
 
+if (args.Length == 2 && args[0] == "--unit-teleport-native-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    UnitTeleportChecks.Native(fixture.RootElement);
+    return;
+}
+
 if (args.Length == 2 && args[0] == "--equipment-native-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);

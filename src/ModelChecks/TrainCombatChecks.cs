@@ -104,5 +104,5 @@ internal static class TrainCombatChecks
     }
 
     private static string Comparable(TrainCombatState state) => JsonSerializer.Serialize(new
-        { Rooms = state.Rooms.Select(room => new { room.RoomIndex, room.Units }).ToArray(), state.Context });
+        { Rooms = state.Rooms.Select(room => new { room.RoomIndex, room.Units }).ToArray(), Context = BattleTurnChecks.ComparableContext(state.Context) });
 }

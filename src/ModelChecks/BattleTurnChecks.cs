@@ -60,15 +60,7 @@ internal static class BattleTurnChecks
     internal static string Comparable(BattleTurnState state, bool terminal = false)
     {
         // Room selection and this allocator belong to UI previews, not battle decisions.
-        CombatContext? context = state.Spawn.Train.Context;
-        if (context?.QueryFrame is StatisticQueryFrame frame && frame.SelectedRoomIndex.HasValue)
-            context = context.WithQueryFrame(new StatisticQueryFrame(frame.Energy, frame.RunningCombat, frame.Turn,
-                frame.ForgePoints, frame.DragonsHoard, frame.MoonPhase, frame.PyreResurrectionCount, frame.ActiveBattle));
-        if (context?.SpawnPoints?.NextPreviewCopyId.HasValue == true)
-        {
-            BattleSpawnPoints points = context.SpawnPoints;
-            context = context.WithSpawnPoints(new BattleSpawnPoints(points.Groups, points.Units));
-        }
+        CombatContext? context = ComparableContext(state.Spawn.Train.Context);
         return JsonSerializer.Serialize(new
         {
             Rooms = state.Spawn.Train.Rooms.Select(room => new { room.RoomIndex, room.Deployment, room.Units }).ToArray(),
@@ -80,6 +72,18 @@ internal static class BattleTurnChecks
             state.BattlePreviewEnabled, state.UiRngIsolated,
             state.CanonicalPhysicalReferences
         });
+    }
+    internal static CombatContext? ComparableContext(CombatContext? context)
+    {
+        if (context?.QueryFrame is StatisticQueryFrame frame && frame.SelectedRoomIndex.HasValue)
+            context = context.WithQueryFrame(new StatisticQueryFrame(frame.Energy, frame.RunningCombat, frame.Turn,
+                frame.ForgePoints, frame.DragonsHoard, frame.MoonPhase, frame.PyreResurrectionCount, frame.ActiveBattle));
+        if (context?.SpawnPoints?.NextPreviewCopyId.HasValue == true)
+        {
+            BattleSpawnPoints points = context.SpawnPoints;
+            context = context.WithSpawnPoints(new BattleSpawnPoints(points.Groups, points.Units));
+        }
+        return context;
     }
     private static void Require(bool condition, string message)
     { if (!condition) throw new InvalidOperationException(message); }

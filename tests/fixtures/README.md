@@ -29,7 +29,7 @@ The default command checks the full curated inventory. For routine changes, run
 the dedicated checks for the new and directly affected scenarios; run the full
 inventory at completed milestones and before delivery.
 
-Current inventory is 241 archives: 210 accepted battles and 31 component
+Current inventory is 242 archives: 211 accepted battles and 31 component
 calibrations. `full-battle-companion-bump.mt2f` covers a paired Relentless
 companion Boss refusal, its attempted-ascension callback and the survivor's
 terminal-death handoff. `full-battle-relic-card-status-upgrades.mt2f` verifies a native
@@ -3073,4 +3073,22 @@ with zero capture failures, mismatches, unsupported operations or pending work.
 ```powershell
 dotnet run --project src/ModelChecks -c Release -- tests/fixtures/statistic-query-calibration.mt2f
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture statistic-query-calibration.mt2f
+```
+
+### Native unit ability teleport
+
+`full-battle-unit-ability-teleport.mt2f` records a native
+`CardEffectUnitAbilityTeleport` ability. Independent policy replay matches two
+same-room moves and one cross-room move to the chosen spawn point. The muted
+Instant battle wins after 55 room stages, 11 card cycles, 11 train phases, nine
+spawns, six EndTurns and 20 card actions; all 20 actions match, with zero
+capture failures, mismatches, unsupported transitions or pending records.
+The schema-103 archive is 40,329 bytes with 6,786 unique nodes and SHA-256
+`88625d8afbc2e730af31b70406e63468a10c86527baf8191c6d9fb905be7244d`; it has no
+JSON companion. Original relic evidence stays at 60/224 (26.79%). Inventory is
+242 archives: 211 battles and 31 component calibrations.
+
+```powershell
+dotnet run --project src/ModelChecks -c Release -- --unit-teleport-native-only tests/fixtures/full-battle-unit-ability-teleport.mt2f
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-unit-ability-teleport.mt2f
 ```

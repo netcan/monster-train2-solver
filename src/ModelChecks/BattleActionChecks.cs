@@ -294,6 +294,7 @@ internal static class BattleActionChecks
         }
         Require(unsupported == 0, "Native action verification skipped unsupported actions.");
         Console.WriteLine($"NATIVE-ACTION-CHECKS PASS: {supported} matched, {unsupported} unsupported.");
+        UnitTeleportChecks.Native(fixture);
         if (fixture.TryGetProperty("ModifierScenario", out FixtureValue relicScenario) &&
             relicScenario.GetString() == "relic-card-self-purge-upgrades")
         {
@@ -466,8 +467,10 @@ internal static class BattleActionChecks
         if (fixture.TryGetProperty("ModifierScenario", out var summonScenario) && summonScenario.GetString()?.StartsWith("multi-summon", StringComparison.Ordinal) == true)
             chooser = BattleActionModel.ChooseMultiSummonThenCards;
         if (fixture.TryGetProperty("ModifierScenario", out var abilityScenario) &&
-            abilityScenario.GetString() is "ability-incant" or "ability-activation" or "ability-activation-x" or "ability-activation-lethal" or "ability-effects" or "equipment-abilities" or "spawn-or-status")
+            abilityScenario.GetString() is "ability-incant" or "ability-activation" or "ability-activation-x" or "ability-activation-lethal" or "ability-teleport" or "ability-effects" or "equipment-abilities" or "spawn-or-status")
             chooser = UnitAbilityModel.ChooseAbilityThenCards;
+        if (fixture.TryGetProperty("ModifierScenario", out var teleportScenario) && teleportScenario.GetString() == "ability-teleport")
+            chooser = UnitAbilityModel.ChooseTeleportCalibrationAction;
         if (fixture.TryGetProperty("ModifierScenario", out var magebladeScenario) && magebladeScenario.GetString() == "mageblade")
             chooser = ChooseMagebladeThenCards;
         if (fixture.TryGetProperty("ModifierScenario", out var equipmentBuffScenario) && equipmentBuffScenario.GetString() == "equipment-buff")

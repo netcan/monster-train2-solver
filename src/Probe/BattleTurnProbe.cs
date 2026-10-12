@@ -106,10 +106,7 @@ namespace MonsterTrain2Poju.Probe
         }
         internal static JToken Comparable(BattleTurnState state, bool terminal = false)
         {
-            CombatContext? context = state.Spawn.Train.Context;
-            if (context?.QueryFrame is StatisticQueryFrame frame && frame.SelectedRoomIndex.HasValue)
-                context = context.WithQueryFrame(new StatisticQueryFrame(frame.Energy, frame.RunningCombat, frame.Turn,
-                    frame.ForgePoints, frame.DragonsHoard, frame.MoonPhase, frame.PyreResurrectionCount, frame.ActiveBattle));
+            CombatContext? context = ComparableContext(state.Spawn.Train.Context);
             return JToken.FromObject(new
             {
                 Rooms = state.Spawn.Train.Rooms.Select(room => new { room.RoomIndex, room.Deployment, room.Units }).ToArray(),
@@ -121,6 +118,16 @@ namespace MonsterTrain2Poju.Probe
                 state.BattlePreviewEnabled, state.UiRngIsolated,
                 state.CanonicalPhysicalReferences
             });
+        }
+
+        internal static CombatContext? ComparableContext(CombatContext? context)
+        {
+            if (context?.QueryFrame is StatisticQueryFrame frame && frame.SelectedRoomIndex.HasValue)
+                context = context.WithQueryFrame(new StatisticQueryFrame(frame.Energy, frame.RunningCombat, frame.Turn,
+                    frame.ForgePoints, frame.DragonsHoard, frame.MoonPhase, frame.PyreResurrectionCount, frame.ActiveBattle));
+            if (context?.SpawnPoints is BattleSpawnPoints points && points.NextPreviewCopyId.HasValue)
+                context = context.WithSpawnPoints(new BattleSpawnPoints(points.Groups, points.Units));
+            return context;
         }
         internal sealed class Record
         {

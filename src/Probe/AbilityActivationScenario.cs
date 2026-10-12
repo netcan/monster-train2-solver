@@ -9,7 +9,7 @@ namespace MonsterTrain2Poju.Probe
     internal static class AbilityActivationScenario
     {
         internal static void Prepare(AllGameManagers managers, ManualLogSource log, bool xCost, bool lethal,
-            bool sourceAttack = false, bool attackWithUnit = false, bool spawnOrStatus = false)
+            bool sourceAttack = false, bool attackWithUnit = false, bool spawnOrStatus = false, bool teleport = false)
         {
             AbilityCooldownScenario.Prepare(managers, log, cacheScenario: true);
             SaveManager save = managers.GetSaveManager();
@@ -18,6 +18,7 @@ namespace MonsterTrain2Poju.Probe
             CharacterData unit = steward.GetSpawnCharacterData()!;
             Set(ability, "cost", 1); Set(ability, "targetsRoom", true); Set(ability, "targetless", false);
             Set(ability, "costType", xCost ? CardData.CostType.ConsumeRemainingEnergy : CardData.CostType.Default);
+            if (teleport) Set(ability, "canAbilityTargetOtherFloors", true);
             var effects = new List<CardEffectData>();
             if (spawnOrStatus)
             {
@@ -39,6 +40,10 @@ namespace MonsterTrain2Poju.Probe
                 }
                 effects.Add(StatusOrSpawn("armor", 2));
                 effects.Add(StatusOrSpawn("damage shield", 3));
+            }
+            else if (teleport)
+            {
+                effects.Add(Effect("UnitAbilityTeleport", 0, TargetMode.Self, Team.Type.Monsters));
             }
             else
             {

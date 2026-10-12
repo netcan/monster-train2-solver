@@ -1,10 +1,29 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-12): 241 binary archives, including 210
+Current accepted inventory (2026-10-12): 242 binary archives, including 211
 full battles and 31 component calibrations. Unchanged original relic evidence
 covers 60/224 catalog entries (26.79%); see
 [the owner evidence table](tests/fixtures/relic-coverage.md). Whole-battle
 coverage and the optimal solver remain in progress.
+
+### Native unit ability teleport
+
+`full-battle-unit-ability-teleport.mt2f` uses a native unit ability with
+`CardEffectUnitAbilityTeleport`. Independent policy replay makes two real
+same-room position changes and one cross-room move to the selected spawn point.
+The muted Instant battle wins after 55 room stages, 11 card cycles, 11 train
+phases, nine spawns, six EndTurns and 20 card actions. Capture failures,
+mismatches, unsupported transitions and pending records are zero; all 20
+actions match independent replay. The schema-103 binary is 40,329 bytes with
+6,786 unique nodes and SHA-256
+`88625d8afbc2e730af31b70406e63468a10c86527baf8191c6d9fb905be7244d`; it has
+no JSON companion. This adds battle-mechanism coverage, not original relic-owner
+evidence. Wider teleport interactions and full-inventory replay remain open.
+
+```powershell
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -AbilityTeleport
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-unit-ability-teleport.mt2f
+```
 
 The pure model now applies `RelicEffectAddTrigger` character-definition filters
 using captured character asset keys; a nonempty filter overrides the source-team

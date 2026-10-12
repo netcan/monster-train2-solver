@@ -279,7 +279,7 @@ namespace MonsterTrain2Poju.Probe
                 lastAttacker == null || normalizeDestroyedAttacker && (lastAttacker.IsDestroyed || !lastAttacker.IsAlive) ? 0 : UnitId(lastAttacker), statuses,
                 character.GetEquipment().Select(CardId).ToArray(), TriggerStates(character).Count, AbilityCooldownProbe.Capture(character), AbilityCooldownProbe.CaptureDictionary(character), AbilityLifecycleProbe.Rules(character.GetSourceCharacterData()),
                 new HordeBaseStats(character.GetSourceCharacterData().GetAttackDamage(), character.GetSourceCharacterData().GetHealth()), character.IsSpawning, character.SacrificeCard == null ? 0 : CardId(character.SacrificeCard), DeathSignalProbe.Capture(character),
-                BumpScenario.Enabled || (OriginalUnitRelicBatchScenario.Enabled || OriginalTriggerRelicBatchScenario.Enabled || OriginalLifecycleRelicBatchScenario.Enabled)
+                BumpScenario.Enabled || AbilityTeleportScenario.Enabled || (OriginalUnitRelicBatchScenario.Enabled || OriginalTriggerRelicBatchScenario.Enabled || OriginalLifecycleRelicBatchScenario.Enabled)
                     ? new UnitBumpRules(character.GetLoopsBetweenTrainFloors(), character.IsCompanionBoss(), character.IsOuterTrainBoss(),
                         character.IsOuterTrainBoss() && character.GetBossState().GetCurrentAttackPhase() == BossState.AttackPhase.Relentless,
                         pairedBoss == null ? 0 : UnitId(pairedBoss))
@@ -477,8 +477,8 @@ namespace MonsterTrain2Poju.Probe
                     JToken expected = JToken.FromObject(stage.Predicted.State!.Units);
                     JToken actual = JToken.FromObject(stage.Actual.Units);
                     stage.Difference = JToken.DeepEquals(expected, actual) ? null : "Unit states differ";
-                    if (!JToken.DeepEquals(JToken.FromObject(stage.Predicted.State.Context!),
-                        JToken.FromObject(stage.Actual.Context!))) stage.Difference = "Card piles, RNG or gold differ";
+                    if (!JToken.DeepEquals(JToken.FromObject(BattleTurnProbe.ComparableContext(stage.Predicted.State.Context)!),
+                        JToken.FromObject(BattleTurnProbe.ComparableContext(stage.Actual.Context)!))) stage.Difference = "Card piles, RNG or gold differ";
                     log.LogInfo("BATTLE-MODEL-" + (stage.Difference == null ? "MATCH" : "MISMATCH") +
                         " index=" + stage.Index + " kind=" + stage.Kind + " turn=" + stage.Turn +
                         " room=" + stage.Before.RoomIndex + " rounds=" + stage.Predicted.Rounds);

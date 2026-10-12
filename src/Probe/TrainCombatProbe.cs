@@ -97,7 +97,7 @@ namespace MonsterTrain2Poju.Probe
         }
 
         private static JToken Comparable(TrainCombatState state) => JToken.FromObject(new
-            { Rooms = state.Rooms.Select(room => new { room.RoomIndex, room.Units }).ToArray(), state.Context });
+            { Rooms = state.Rooms.Select(room => new { room.RoomIndex, room.Units }).ToArray(), Context = BattleTurnProbe.ComparableContext(state.Context) });
 
         internal sealed class Record
         {

@@ -1,4 +1,5 @@
 using System.Text.Json;
+using MonsterTrain2Poju.Fixtures;
 using MonsterTrain2Poju.Model;
 
 internal static class UnitTeleportChecks
@@ -54,5 +55,43 @@ internal static class UnitTeleportChecks
         {
             if (!condition) throw new InvalidOperationException(message);
         }
+    }
+
+    internal static void Native(FixtureValue fixture)
+    {
+        if (!fixture.TryGetProperty("ModifierScenario", out FixtureValue scenario) || scenario.GetString() != "ability-teleport") return;
+        FixtureValue[] activations = fixture.GetProperty("Actions").EnumerateArray().Where(entry =>
+            entry.GetProperty("Action").Deserialize<PlayCardAction>()!.ActivatorUnitId > 0).ToArray();
+        int sameRoomMoves = 0, crossRoomMoves = 0;
+        foreach (FixtureValue entry in activations)
+        {
+            PlayCardAction action = entry.GetProperty("Action").Deserialize<PlayCardAction>()!;
+            BattleTurnState before = entry.GetProperty("Before").Deserialize<BattleTurnState>()!;
+            BattleTurnState actual = entry.GetProperty("Actual").Deserialize<BattleTurnState>()!;
+            Require(action.TargetSpawnPointIndex >= 0, "A native teleport activation did not record its selected spawn point.");
+            RoomCombatState actorRoom = before.Spawn.Train.Rooms.Single(room => room.Units.Any(unit => unit.Id == action.ActivatorUnitId));
+            SpawnPointReference? beforePoint = before.Spawn.Train.Context!.SpawnPoints?.Units
+                .Single(unit => unit.UnitId == action.ActivatorUnitId).Current;
+            SpawnPointReference? afterPoint = actual.Spawn.Train.Context!.SpawnPoints?.Units
+                .Single(unit => unit.UnitId == action.ActivatorUnitId).Current;
+            if (beforePoint == null || afterPoint == null)
+                throw new InvalidOperationException("A native teleport activation lost a physical point.");
+            if (actorRoom.RoomIndex == action.RoomIndex)
+            {
+                if (afterPoint.RoomIndex == actorRoom.RoomIndex && afterPoint.Index != beforePoint.Index) sameRoomMoves++;
+            }
+            else if (afterPoint.RoomIndex == action.RoomIndex && afterPoint.Index == action.TargetSpawnPointIndex)
+            {
+                crossRoomMoves++;
+            }
+        }
+        Require(sameRoomMoves > 0 && crossRoomMoves > 0,
+            $"Native teleport coverage missed a real same-room reorder or cross-room move: same={sameRoomMoves}, cross={crossRoomMoves}.");
+        Console.WriteLine($"NATIVE-UNIT-TELEPORT-CHECKS PASS: {activations.Length} targeted activations, same-room moves={sameRoomMoves}, cross-room moves={crossRoomMoves}.");
+    }
+
+    private static void Require(bool condition, string message)
+    {
+        if (!condition) throw new InvalidOperationException(message);
     }
 }

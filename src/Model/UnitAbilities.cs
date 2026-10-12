@@ -184,6 +184,45 @@ namespace MonsterTrain2Poju.Model
         public static PlayCardAction? ChooseAbilityThenCards(BattleTurnState source) =>
             EnumerateSupportedActivations(source).FirstOrDefault() ?? BattleActionModel.ChooseUnitSpellAndJunkPlay(source);
 
+        public static PlayCardAction? ChooseTeleportCalibrationAction(BattleTurnState source)
+        {
+            IReadOnlyList<PlayCardAction> actions = EnumerateSupportedActivations(source);
+            BattleSpawnPoints? points = source.Spawn.Train.Context?.SpawnPoints;
+            int lastActivator = source.Spawn.Train.Context?.LastAbilityActivatorUnitId ?? 0;
+            SpawnPointReference? lastPosition = lastActivator > 0
+                ? points?.Units.SingleOrDefault(unit => unit.UnitId == lastActivator)?.Current : null;
+            if (lastActivator == 0)
+            {
+                foreach (PlayCardAction action in actions)
+                {
+                    RoomCombatState? actorRoom = source.Spawn.Train.Rooms.FirstOrDefault(room =>
+                        room.Units.Any(unit => unit.Id == action.ActivatorUnitId));
+                    SpawnPointReference? before = points?.Units.SingleOrDefault(unit => unit.UnitId == action.ActivatorUnitId)?.Current;
+                    if (actorRoom == null || before == null || actorRoom.RoomIndex != action.RoomIndex) continue;
+                    BattleActionResult result = BattleActionModel.PlayCard(source, action);
+                    SpawnPointReference? after = result.State?.Spawn.Train.Context?.SpawnPoints?.Units
+                        .SingleOrDefault(unit => unit.UnitId == action.ActivatorUnitId)?.Current;
+                    if (result.Supported && after != null && after.RoomIndex == before.RoomIndex && after.Index != before.Index)
+                        return action;
+                }
+            }
+            else if (lastPosition?.RoomIndex == 0)
+            {
+                foreach (PlayCardAction action in actions)
+                {
+                    RoomCombatState? actorRoom = source.Spawn.Train.Rooms.FirstOrDefault(room =>
+                        room.Units.Any(unit => unit.Id == action.ActivatorUnitId));
+                    if (actorRoom == null || actorRoom.RoomIndex == action.RoomIndex) continue;
+                    BattleActionResult result = BattleActionModel.PlayCard(source, action);
+                    SpawnPointReference? after = result.State?.Spawn.Train.Context?.SpawnPoints?.Units
+                        .SingleOrDefault(unit => unit.UnitId == action.ActivatorUnitId)?.Current;
+                    if (result.Supported && after?.RoomIndex == action.RoomIndex && after.Index == action.TargetSpawnPointIndex)
+                        return action;
+                }
+            }
+            return ChooseAbilityThenCards(source);
+        }
+
         internal static TrainCombatState Resolving(TrainCombatState train, int id, bool value) => new TrainCombatState(train.Rooms
             .Select(room => new RoomCombatState(room.RoomIndex, room.Deployment, room.Units.Select(unit => unit.Id == id && unit.Ability != null
                 ? AbilityCooldownModel.Copy(unit, AbilityLifecycleModel.Normalize(unit.Ability.WithResolving(value))) : unit).ToArray(), room.ExternalInteractions,
