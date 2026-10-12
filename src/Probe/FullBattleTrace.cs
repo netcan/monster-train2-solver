@@ -244,6 +244,7 @@ namespace MonsterTrain2Poju.Probe
             foreach (CharacterState.StatusEffectStack status in nativeStatuses)
             {
                 StatusEffectState rule = status.State;
+                StatusEffectData statusData = rule.GetSourceStatusEffectData();
                 if (status.Count > 0 && (rule.GetRemoveWhenTriggeredAfterCardPlayed() || rule.GetRemoveAtEndOfTurnIfTriggered()))
                     interactions.Add(rule.GetStatusId() + " delayed status removal");
                 statuses.Add(new CombatStatus(rule.GetStatusId(), status.Count, rule.GetParamInt(),
@@ -251,7 +252,8 @@ namespace MonsterTrain2Poju.Probe
                     rule.GetRemoveAtEndOfTurnAfterPostCombat(), rule.PreventRemovalDuringRelentlessPhase,
                     rule.GetSkipTriggerDuringDeployment(), rule.GetRemoveDuringDeployment(),
                     BattleActionProbe.TriggeredVfx(rule.GetSourceStatusEffectData(), -1f),
-                    BattleActionProbe.TriggeredVfx(rule.GetSourceStatusEffectData(), 1f), rule.IsStackable(), rule.IsHidden(), rule.GetDisplayCategory().ToString()));
+                    BattleActionProbe.TriggeredVfx(statusData, 1f), rule.IsStackable(), rule.IsHidden(), rule.GetDisplayCategory().ToString(),
+                    statusData.IsPropagatable(), statusData.GetExcludeHeroPropagation(), statusData.GetExcludeMonsterPropagation()));
             }
             CombatTeam team = character.GetTeamType() == Team.Type.Heroes ? CombatTeam.Enemy : CombatTeam.Player;
             CharacterState? pairedBoss = heroes.FindPairedCompanionBoss(character);
@@ -327,7 +329,7 @@ namespace MonsterTrain2Poju.Probe
                 new UnityRng(draw[0], draw[1], draw[2], draw[3]), state.DrawModifier, Array.Empty<string>(), bonusDraw,
                 TypedDrawProbe.CaptureQueue(cards), TypedDrawProbe.NextUpgradeReferenceId),
                 new UnityRng(battle[0], battle[1], battle[2], battle[3]), state.Gold, projection.NextCardId,
-                cards.GetMaxHandSize(), new[] { "armor", "valor", "pyregel", "relentless", "cooldown", "unit_ability", "unit_ability_available", "horde" }.Concat(TriggeredSummonProbe.Enabled || UnitCloneScenario.Enabled || UnitCopyScenario.Enabled || HeroCopyScenario.Enabled ? new[] { "cardless" } : Array.Empty<string>()).Concat(new[] { "undying", "endless" }).Select(id => BattleActionProbe.Status(id, 1)).ToArray(),
+                cards.GetMaxHandSize(), new[] { "armor", "valor", "pyregel", "relentless", "cooldown", "unit_ability", "unit_ability_available", "horde", "duality" }.Concat(TriggeredSummonProbe.Enabled || UnitCloneScenario.Enabled || UnitCopyScenario.Enabled || HeroCopyScenario.Enabled ? new[] { "cardless" } : Array.Empty<string>()).Concat(new[] { "undying", "endless" }).Select(id => BattleActionProbe.Status(id, 1)).ToArray(),
                 statistics, instances, registry, managers.GetCombatManager()!.AllScenarioBossesDead,
                 ((IEnumerable<CardUpgradeState>)AccessTools.Field(typeof(CardManager), "nextAddedTempCardUpgrades").GetValue(cards))
                     .Select(CardModifierProbe.Upgrade).ToArray(), otherPiles, CaptureQueryFrame(managers),

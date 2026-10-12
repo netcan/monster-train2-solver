@@ -88,19 +88,20 @@ namespace MonsterTrain2Poju.Model
     {
         public static RoomCombatResult Apply(RoomCombatState source, int targetId, CombatStatus added, int sourceCardId = 0,
             bool overrideImmunity = false, bool allowModification = true, bool fromPermanentUpgrade = false,
-            bool spawnEffect = false, string? fromEffectType = null, bool allowStackModifiers = true)
+            bool spawnEffect = false, string? fromEffectType = null, bool allowStackModifiers = true,
+            bool doubleForDuality = false)
         {
             string? error = RoomCombatModel.Validate(source);
             if (error != null || !RoomCombatModel.KnowsStatus(added.Id)) return Unsupported(error ?? "Unmodeled added status " + added.Id);
             return ApplyRetained(source, targetId, added, sourceCardId, overrideImmunity, allowModification,
                 fromPermanentUpgrade: fromPermanentUpgrade, spawnEffect: spawnEffect, fromEffectType: fromEffectType,
-                allowStackModifiers: allowStackModifiers);
+                allowStackModifiers: allowStackModifiers, doubleForDuality: doubleForDuality);
         }
         // Trigger effects retain their native actor/target objects, including HP-zero victims.
         internal static RoomCombatResult ApplyRetained(RoomCombatState source, int targetId, CombatStatus added, int sourceCardId,
             bool overrideImmunity = false, bool allowModification = true, bool suppressHordeSpawnCallbacks = false,
             bool fromPermanentUpgrade = false, bool spawnEffect = false, string? fromEffectType = null,
-            bool allowStackModifiers = true)
+            bool allowStackModifiers = true, bool doubleForDuality = false)
         {
             CombatUnit? target = source.Units.FirstOrDefault(unit => unit.Id == targetId);
             if (target == null) return Unsupported("Missing status target.");
@@ -113,6 +114,7 @@ namespace MonsterTrain2Poju.Model
                 StatusScalingResult scaled = StatusScalingModel.Apply(context, sourceCardId, target.Team, added.Id, stacks);
                 if (!scaled.Supported) return Unsupported(scaled.UnsupportedReason!);
                 context = scaled.Context; stacks = scaled.Stacks;
+                if (doubleForDuality) stacks = unchecked(stacks * 2);
                 if (allowStackModifiers)
                     stacks = RelicStatusStackModel.GetStacks(context?.Relics, added.Id, stacks, target.Team,
                         target.Status(added.Id)?.Stacks > 0, fromPermanentUpgrade, fromEffectType: fromEffectType);

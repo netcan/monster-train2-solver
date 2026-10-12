@@ -39,7 +39,8 @@ namespace MonsterTrain2Poju.Probe
                     rule.GetRemoveStackAtEndOfTurn(), rule.GetRemoveAtEndOfTurn(), rule.GetRemoveAtEndOfTurnAfterPostCombat(),
                     false, rule.GetSkipTriggerDuringDeployment(), rule.GetRemoveDuringDeployment(),
                     BattleActionProbe.TriggeredVfx(rule, -1f), BattleActionProbe.TriggeredVfx(rule, 1f), rule.IsStackable(),
-                    rule.IsHidden(), rule.GetDisplayCategory().ToString());
+                    rule.IsHidden(), rule.GetDisplayCategory().ToString(), rule.IsPropagatable(),
+                    rule.GetExcludeHeroPropagation(), rule.GetExcludeMonsterPropagation());
             }).ToArray());
 
         internal static string[] Disabled(SaveManager save)

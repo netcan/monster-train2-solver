@@ -99,7 +99,8 @@ namespace MonsterTrain2Poju.Probe
                 return new CombatStatus(status.statusId, status.count, rule.GetParamInt(), rule.GetRemoveWhenTriggered(),
                     rule.GetRemoveStackAtEndOfTurn(), rule.GetRemoveAtEndOfTurn(), rule.GetRemoveAtEndOfTurnAfterPostCombat(),
                     false, rule.GetSkipTriggerDuringDeployment(), rule.GetRemoveDuringDeployment(),
-                    BattleActionProbe.TriggeredVfx(rule, -1f), BattleActionProbe.TriggeredVfx(rule, 1f), rule.IsStackable(), rule.IsHidden(), rule.GetDisplayCategory().ToString());
+                    BattleActionProbe.TriggeredVfx(rule, -1f), BattleActionProbe.TriggeredVfx(rule, 1f), rule.IsStackable(), rule.IsHidden(), rule.GetDisplayCategory().ToString(),
+                    rule.IsPropagatable(), rule.GetExcludeHeroPropagation(), rule.GetExcludeMonsterPropagation());
             }).ToArray();
             CardData? abilityData = data.GetUnitAbilityCardData();
             UnitAbilityState? ability = abilityData == null || !abilityData.IsUnitAbility() ? null :

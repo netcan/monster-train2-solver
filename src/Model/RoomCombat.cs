@@ -25,13 +25,17 @@ namespace MonsterTrain2Poju.Model
         public bool? Stackable { get; }
         public bool? Hidden { get; }
         public string? DisplayCategory { get; }
+        public bool? Propagatable { get; }
+        public bool? ExcludeHeroPropagation { get; }
+        public bool? ExcludeMonsterPropagation { get; }
 
         public CombatStatus(string id, int stacks, int paramInt = 0,
             bool removeWhenTriggered = false, bool removeStackAtEnd = false,
             bool removeAllAtEnd = false, bool removeAfterPostCombat = false,
             bool preventRemovalDuringRelentless = false, bool skipDuringDeployment = false,
             bool removeDuringDeployment = false, bool? triggerVfxEnemy = null, bool? triggerVfxPlayer = null, bool? stackable = null,
-            bool? hidden = null, string? displayCategory = null)
+            bool? hidden = null, string? displayCategory = null, bool? propagatable = null,
+            bool? excludeHeroPropagation = null, bool? excludeMonsterPropagation = null)
         {
             Id = id;
             Stacks = stacks;
@@ -48,11 +52,15 @@ namespace MonsterTrain2Poju.Model
             Stackable = stackable;
             Hidden = hidden;
             DisplayCategory = displayCategory;
+            Propagatable = propagatable;
+            ExcludeHeroPropagation = excludeHeroPropagation;
+            ExcludeMonsterPropagation = excludeMonsterPropagation;
         }
 
         internal CombatStatus WithStacks(int stacks) => new CombatStatus(Id, stacks, ParamInt,
             RemoveWhenTriggered, RemoveStackAtEnd, RemoveAllAtEnd, RemoveAfterPostCombat,
-            PreventRemovalDuringRelentless, SkipDuringDeployment, RemoveDuringDeployment, TriggerVfxEnemy, TriggerVfxPlayer, Stackable, Hidden, DisplayCategory);
+            PreventRemovalDuringRelentless, SkipDuringDeployment, RemoveDuringDeployment, TriggerVfxEnemy, TriggerVfxPlayer,
+            Stackable, Hidden, DisplayCategory, Propagatable, ExcludeHeroPropagation, ExcludeMonsterPropagation);
     }
 
     public sealed class UnitDeathState
@@ -365,7 +373,7 @@ namespace MonsterTrain2Poju.Model
             "spikes", "lifesteal", "fragile", "piercing", "immune", "immobile",
             "relentless", "sweep", "sniper", "rooted", "haste", "untouchable", "endless",
             "buff", "debuff", "regen", "poison", "melee weakness", "silenced", "valor", "pyregel",
-            "heal multiplier", "heal immunity", "cooldown", "unit_ability", "unit_ability_available", "horde", "cardless", "undying", "purify", "mageblade", "titanskin"
+            "heal multiplier", "heal immunity", "cooldown", "unit_ability", "unit_ability_available", "horde", "cardless", "undying", "purify", "mageblade", "titanskin", "duality"
         };
         internal static bool KnowsStatus(string id) => KnownStatuses.Contains(id);
 

@@ -52,6 +52,40 @@ internal static class CardSpellChecks
             "Positive-status multiplication changed a negative status or differed: supported=" + positiveResult.Supported + ", reason=" + positiveResult.UnsupportedReason +
             ", statuses=" + string.Join(",", positiveResult.State?.Units.Single().Statuses.Select(status => status.Id + ":" + status.Stacks) ?? Array.Empty<string>()) +
             ", parentUnchanged=" + (JsonSerializer.Serialize(positiveRoom) == positiveParent));
+        var propagatableArmor = new CombatStatus("armor", 2, stackable: true, displayCategory: "Positive", propagatable: true,
+            excludeHeroPropagation: false, excludeMonsterPropagation: false);
+        var heroExcludedPyregel = new CombatStatus("pyregel", 3, stackable: true, displayCategory: "Negative", propagatable: true,
+            excludeHeroPropagation: true, excludeMonsterPropagation: false);
+        var nonPropagatableValor = new CombatStatus("valor", 1, stackable: true, displayCategory: "Positive", propagatable: false,
+            excludeHeroPropagation: false, excludeMonsterPropagation: false);
+        var adjustmentTarget = Make(5, CombatTeam.Enemy, 20, propagatableArmor, heroExcludedPyregel, nonPropagatableValor);
+        var propagatableAdjustment = new CardActionEffect("AdjustAllStatusEffects", "DropTargetCharacter", 2, true, true, [],
+            statusAdjustmentFilter: 1);
+        RoomCombatResult propagated = CardSpellModel.Apply(new RoomCombatState(0, false, [adjustmentTarget], [], context),
+            [propagatableAdjustment], 5);
+        Require(propagated.Supported && propagated.State!.Units.Single().Status("armor")?.Stacks == 4 &&
+            propagated.State.Units.Single().Status("pyregel")?.Stacks == 3 &&
+            propagated.State.Units.Single().Status("valor")?.Stacks == 1,
+            "Propagatable status adjustment ignored team exclusions or changed an ineligible status.");
+        var uncapturedPropagation = new CardActionEffect("AdjustAllStatusEffects", "DropTargetCharacter", 2, true, true,
+            [new CombatStatus("armor", 1)], statusAdjustmentFilter: 1);
+        RoomCombatResult unknownPropagation = CardSpellModel.Apply(new RoomCombatState(0, false,
+            [Make(7, CombatTeam.Enemy, 20, new CombatStatus("armor", 2))], [], context), [uncapturedPropagation], 7);
+        Require(!unknownPropagation.Supported && unknownPropagation.UnsupportedReason!.Contains("propagation metadata", StringComparison.Ordinal),
+            "Missing propagation metadata silently produced a supported status-adjustment branch.");
+        var listAdjustment = new CardActionEffect("AdjustAllStatusEffects", "DropTargetCharacter", -1, true, true, [positive],
+            statusAdjustmentFilter: 0);
+        RoomCombatResult removedArmor = CardSpellModel.Apply(positiveRoom, [listAdjustment], 4);
+        Require(removedArmor.Supported && removedArmor.State!.Units.Single().Status("armor")?.Stacks == 2 &&
+            removedArmor.State.Units.Single().Status("pyregel")?.Stacks == 2,
+            "Status-list adjustment did not remove only the selected status.");
+        var strictStatusAdjustment = new CardActionEffect("AdjustAllStatusEffects", "DropTargetCharacter", 2, true, true, [positive],
+            tests: new CardEffectTests(true, false, false, true), statusAdjustmentFilter: 0);
+        RoomCombatState strictRoom = new(0, false, [Make(6, CombatTeam.Enemy, 20, negative)], [], context);
+        RoomCombatResult strictNoMatch = CardSpellModel.Apply(strictRoom, [strictStatusAdjustment], 6);
+        Require(strictNoMatch.Supported && strictNoMatch.State!.Units.Single().Status("pyregel")?.Stacks == 2 &&
+            strictNoMatch.State.Units.Single().Status("armor") == null,
+            "Require-valid-target status adjustment applied without a matching status.");
         RoomCombatResult shield = CardSpellModel.Apply(new RoomCombatState(0, false,
             [Make(1, CombatTeam.Enemy, 5, new CombatStatus("damage shield", 1, removeWhenTriggered: true)), front], [], context), damage, 1);
         Require(shield.Supported && shield.State!.Units[0].Health == 5 &&
@@ -210,7 +244,7 @@ internal static class CardSpellChecks
         Parallel.For(0, 32, _ => Require(JsonSerializer.Serialize(CardSpellModel.Apply(room, rally, 3).State) ==
             JsonSerializer.Serialize(moved.State), "Parallel spell branches diverged."));
         Require(JsonSerializer.Serialize(room) == parent, "Spells mutated their parent.");
-        Console.WriteLine("SPELL-CHECKS PASS: status multiplication, positive-status multiplication, armor/shield, flat damage, lethal follow-ups, valor, rearrange, immunity and isolation.");
+        Console.WriteLine("SPELL-CHECKS PASS: status multiplication/adjustment, propagation filters, positive-status multiplication, armor/shield, flat damage, lethal follow-ups, valor, rearrange, immunity and isolation.");
     }
     private static void Require(bool condition, string message)
     { if (!condition) throw new InvalidOperationException(message); }
