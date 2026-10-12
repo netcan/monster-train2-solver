@@ -219,9 +219,7 @@ namespace MonsterTrain2Poju.Model
             TrainCombatResult ascended = TrainCombatModel.Ascend(train);
             if (!ascended.Supported) return Unsupported(ascended.UnsupportedReason!);
             if (!RouteDeadUnits(train, ascended)) return Unsupported("Missing unit death event or card routing.");
-            if (outputPlayRules != null && ascended.DestroyedRoomIndexes.Count > 0)
-                outputPlayRules = outputPlayRules.WithRooms(outputPlayRules.Rooms.Select(room =>
-                    ascended.DestroyedRoomIndexes.Contains(room.RoomIndex) ? room.WithEnabled(false) : room).ToArray());
+            // Relentless ascension clears room occupants, but native play rules keep the floor enabled.
             train = ascended.State!;
             spawn = WithTrain(spawn, train, spawn.Turn, spawn.Rng);
             if (Terminal(ascended.Outcome)) return Finish(ascended.Outcome, 0, source.MoonPhase);
