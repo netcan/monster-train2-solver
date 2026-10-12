@@ -60,6 +60,16 @@ internal static class EnchantmentCombatChecks
         int[] returned = ActiveSources(State("deathwish-front-return", "AfterQueue"));
         Require(muted.Length == 0 && unmuted.Length == 1 && shifted.Length == 1 && returned.SequenceEqual(unmuted) &&
             !shifted.SequenceEqual(unmuted), "Mute or front-line transitions did not move Deathwish source membership.");
+        int GoldDelta(string label)
+        {
+            FixtureValue sample = samples.Single(item => item.GetProperty("Label").GetString() == label);
+            EnchantmentCombatState before = sample.GetProperty("Before").Deserialize<EnchantmentCombatState>()!;
+            EnchantmentCombatState after = sample.GetProperty("AfterQueue").Deserialize<EnchantmentCombatState>()!;
+            return after.Train.Context!.Gold - before.Train.Context!.Gold;
+        }
+        Require(new[] { GoldDelta("deathwish-initial"), GoldDelta("deathwish-muted"), GoldDelta("deathwish-unmuted"),
+            GoldDelta("deathwish-front-shift"), GoldDelta("deathwish-front-return") }.SequenceEqual(new[] { 5, 5, 5, 10, 10 }),
+            "Nonempty Deathwish gold effects did not execute once per matching native callback.");
     }
     private static void VerifyGenericDeathwish()
     {
@@ -68,7 +78,8 @@ internal static class EnchantmentCombatChecks
             CombatTrigger Source(string kind, int triggerId) => new(kind, false, false, false, 1,
                 Array.Empty<CombatEffect>(), stateId: triggerId, deathwishActive: active);
             return new CombatUnit(id, "deathwish-unit", CombatTeam.Player, 0, 10, 10, true, false, false,
-                statuses ?? Array.Empty<CombatStatus>(), new[] { Source("OnDeathwish", stateId), Source("OnDeathwishLost", stateId + 1) });
+                statuses ?? Array.Empty<CombatStatus>(), new[] { Source("OnDeathwish", stateId), Source("OnDeathwishLost", stateId + 1) },
+                nextTriggerId: stateId + 2);
         }
         CombatUnit WithStatuses(CombatUnit unit, params CombatStatus[] statuses) => new(unit.Id, unit.AssetKey, unit.Team,
             unit.BaseAttack, unit.Health, unit.MaxHealth, unit.CanAttack, unit.IsPyre, unit.EndsBattleOnDeath,
@@ -110,6 +121,27 @@ internal static class EnchantmentCombatChecks
         Require(global.Supported && Active(global.State!.Rooms.Single()).SequenceEqual(new[] { 1 }) &&
             trainCallbacks.Count == 2 && trainCallbacks.All(item => item.Kind == "OnDeathwish"),
             "The global combat update skipped Deathwish when no persistent aura world was captured.");
+
+        UnityRng rng = default;
+        var context = new CombatContext(new CardCycleState(Array.Empty<CardToken>(), Array.Empty<CardToken>(),
+            Array.Empty<CardToken>(), rng, 0, Array.Empty<string>()), rng, 40, 1, 10);
+        CombatUnit GoldActor(int id, int stateId) => new CombatUnit(id, "deathwish-unit", CombatTeam.Player, 0, 10, 10,
+            true, false, false, Array.Empty<CombatStatus>(), new[]
+            {
+                new CombatTrigger("OnDeathwish", false, false, true, 1,
+                    new[] { new CombatEffect("CardEffectRewardGold", 1, 0, "", 0, Array.Empty<string>(), false) },
+                    skipDuringDeployment: false, stateId: stateId, deathwishActive: false),
+                new CombatTrigger("OnDeathwishLost", false, false, true, 1,
+                    new[] { new CombatEffect("CardEffectRewardGold", 1, 0, "", 0, Array.Empty<string>(), false) },
+                    skipDuringDeployment: false, stateId: stateId + 1, deathwishActive: false)
+            }, nextTriggerId: stateId + 2);
+        RoomCombatState goldRoom = new RoomCombatState(0, false, new[] { GoldActor(3, 30), GoldActor(4, 40) },
+            Array.Empty<string>(), context);
+        TrainCombatResult drained = EnchantmentWorldModel.UpdateAll(new TrainCombatState(new[] { goldRoom },
+            Array.Empty<EnemyMovement>(), 0, context));
+        Require(drained.Supported && drained.State!.Context!.Gold == 45 &&
+            drained.State.Rooms.Single().Units.Single(unit => unit.Id == 3).Triggers[0].DeathwishActive == true,
+            "A nonempty ordinary-battle Deathwish callback did not execute through the combat queue.");
     }
     private static void Verify(FixtureValue sample)
     {

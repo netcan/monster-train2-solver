@@ -821,7 +821,8 @@ namespace MonsterTrain2Poju.Model
                         trigger.Kind != "OnTrainRoomLoop" && trigger.Kind != "PostAscension" && trigger.Kind != "OnShift" && trigger.Kind != "OnSentry" &&
                         trigger.Kind != "PostDescension" && trigger.Kind != "PostAttemptedAscension" && trigger.Kind != "PostAttemptedDescension" &&
                         trigger.Kind != "OnHit" && trigger.Kind != "OnKill" && trigger.Kind != "OnAttackingBeforeDamage" && trigger.Kind != "OnAttacking" &&
-                        !StatusCallbackModel.Kinds.Contains(trigger.Kind) && !HarvestModel.Kinds.Contains(trigger.Kind))
+                        !StatusCallbackModel.Kinds.Contains(trigger.Kind) && !DeathwishModel.CallbackKinds.Contains(trigger.Kind) &&
+                        !HarvestModel.Kinds.Contains(trigger.Kind))
                         return "Unmodeled trigger " + trigger.Kind;
                     if (trigger.Kind != "OnDeath" && trigger.Kind != "PostCombat" && trigger.SkipDuringDeployment == null)
                         return trigger.Kind + " requires deployment timing state.";
@@ -1442,7 +1443,8 @@ namespace MonsterTrain2Poju.Model
                 if (actor == null && (queued.Unit.DeathState?.IsDespawned == true || queued.Unit.DeathState?.IsDestroyed == true))
                 { actor = NewUnit(queued.Unit, false); units.Add(actor); }
                 if (actor == null && (queued.Kind == "OnDeath" || queued.Kind == "OnHit" || queued.Kind == "OnKill" ||
-                    queued.Kind == "OnAttackingBeforeDamage" || queued.Kind == "OnAttacking" || queued.Kind == "OnSentry" || queued.Kind == "CardSpellPlayed" || StatusCallbackModel.Kinds.Contains(queued.Kind) || HarvestModel.Kinds.Contains(queued.Kind)))
+                    queued.Kind == "OnAttackingBeforeDamage" || queued.Kind == "OnAttacking" || queued.Kind == "OnSentry" || queued.Kind == "CardSpellPlayed" ||
+                    StatusCallbackModel.Kinds.Contains(queued.Kind) || DeathwishModel.CallbackKinds.Contains(queued.Kind) || HarvestModel.Kinds.Contains(queued.Kind)))
                 { actor = NewUnit(queued.Unit, false); units.Add(actor); }
                 // A queued OnHeal on an actor killed by a later phase effect has no live effects.
                 if (actor != null)
@@ -2121,7 +2123,8 @@ namespace MonsterTrain2Poju.Model
                 }
                 bool startedQueue = !runningTriggerQueue;
                 runningTriggerQueue = true;
-                ExecuteTriggers(unit, kind, canFireTriggers, paramInt, overrideTarget, dyingCharacter, triggerCount, lastSpawnedOverrideUnitId, paramString: paramString);
+                ExecuteTriggers(unit, kind, canFireTriggers, paramInt, overrideTarget, dyingCharacter, triggerCount, lastSpawnedOverrideUnitId,
+                    paramString: paramString, exclusiveTriggerStateId: exclusiveTriggerStateId);
                 if (!startedQueue) return;
                 DrainLocalTriggerQueue();
             }

@@ -6,6 +6,8 @@ namespace MonsterTrain2Poju.Model
 {
     internal static class DeathwishModel
     {
+        internal static readonly string[] CallbackKinds = { "OnDeathwish", "OnDeathwishLost" };
+
         internal static RoomCombatResult Update(RoomCombatState source)
         {
             EnchantmentWorld? world = source.Context?.Enchantments;
