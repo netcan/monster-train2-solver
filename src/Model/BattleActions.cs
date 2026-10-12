@@ -199,8 +199,6 @@ namespace MonsterTrain2Poju.Model
             CombatContext context = train.Context;
             string? frameError = StatisticQueryFrame.ValidateDecision(source);
             if (frameError != null) return Unsupported(frameError);
-            if (context.QueryFrame?.SelectedRoomIndex != null)
-                context = context.WithQueryFrame(context.QueryFrame.With(selectedRoomIndex: action.RoomIndex));
             CardToken? card = context.Cards.Hand.FirstOrDefault(item => item.InstanceId == action.CardInstanceId);
             if (card == null) return Illegal("The selected card instance is not in hand.");
             CardPlayRule? rule = source.PlayRules.Cards.FirstOrDefault(item => item.DataId == card.DataId);
@@ -600,7 +598,7 @@ namespace MonsterTrain2Poju.Model
                     stream.Name == "Battle" ? context.BattleRng : stream.Name == "CardDraw" ? context.Cards.Rng : stream.State)).ToArray(),
                 piles, source.ExternalInteractions, outputPlayRules, source.BattlePreviewEnabled, source.UiRngIsolated,
                 source.CanonicalDecisionReferences, source.CanonicalPhysicalReferences,
-                source.SelectedRoom < 0 ? source.SelectedRoom : action.RoomIndex), outcome: outcome);
+                source.SelectedRoom), outcome: outcome);
         }
 
         // Enumerates the implemented legal actions. Unsupported hand cards remain visible to the caller.

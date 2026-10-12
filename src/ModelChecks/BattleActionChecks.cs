@@ -48,11 +48,14 @@ internal static class BattleActionChecks
             root.ForgePoints, root.DragonsHoard, root.MoonPhase, root.RngStreams, root.OtherPiles,
             root.ExternalInteractions, root.PlayRules, selectedRoom: root.SelectedRoom);
         BattleTurnResult framedSelection = BattleTurnModel.SelectRoom(framedRoot, 1);
-        BattleActionResult framedPlay = BattleActionModel.PlayCard(framedRoot, new(3, 1));
+        BattleActionResult framedCrossRoomPlay = BattleActionModel.PlayCard(framedRoot, new(3, 1));
+        BattleActionResult framedSelectedRoomPlay = BattleActionModel.PlayCard(framedSelection.State!, new(3, 1));
         Require(framedSelection.Supported && framedSelection.State!.Spawn.Train.Context!.QueryFrame!.SelectedRoomIndex == 1 &&
-            framedPlay.Supported && framedPlay.State!.SelectedRoom == 1 &&
-            framedPlay.State.Spawn.Train.Context!.QueryFrame!.SelectedRoomIndex == 1,
-            "Room selection or card play left the dynamic statistic query on a stale floor.");
+            framedCrossRoomPlay.Supported && framedCrossRoomPlay.State!.SelectedRoom == 0 &&
+            framedCrossRoomPlay.State.Spawn.Train.Context!.QueryFrame!.SelectedRoomIndex == 0 &&
+            framedSelectedRoomPlay.Supported && framedSelectedRoomPlay.State!.SelectedRoom == 1 &&
+            framedSelectedRoomPlay.State.Spawn.Train.Context!.QueryFrame!.SelectedRoomIndex == 1,
+            "Cross-room card play changed the selected floor or explicit room selection was not retained.");
         BattleActionResult first = BattleActionModel.PlayCard(root, new(1, 0, 0));
         Require(first.Supported, first.Reason ?? "First summon rejected");
         Require(first.State!.Spawn.Train.Context!.NextAddedTemporaryUpgrades!.Count == 0 &&
@@ -68,8 +71,8 @@ internal static class BattleActionChecks
             "A summon exceeded capacity.");
         BattleActionResult otherRoom = BattleActionModel.PlayCard(second.State, new(3, 1));
         Require(otherRoom.Supported && otherRoom.State!.Spawn.Train.Rooms[1].Units.Single().Size == 3 &&
-            otherRoom.State.SelectedRoom == 1 && second.State.SelectedRoom == 0,
-            "An arbitrary decision-turn summon into another room failed or changed its parent selection.");
+            otherRoom.State.SelectedRoom == 0 && second.State.SelectedRoom == 0,
+            "An arbitrary cross-room summon failed or changed the selected room.");
         var legacyRoot = new BattleTurnState(spawn, 3, 3, 5, 0, 0, "New", root.RngStreams,
             root.OtherPiles, [], rules);
         BattleActionResult legacyRoom = BattleActionModel.PlayCard(legacyRoot, new(3, 1));

@@ -264,6 +264,7 @@ namespace MonsterTrain2Poju.Model
             for (int index = pyre; index >= 0; index--)
             {
                 int? destroyThroughRoom = null;
+                int highestRoomIndexMovedInto = -1;
                 foreach (CombatUnit enemy in rooms[index].Where(unit => unit.Team == CombatTeam.Enemy).ToArray())
                 {
                     if (!rooms[index].Any(unit => unit.Id == enemy.Id)) continue;
@@ -328,7 +329,11 @@ namespace MonsterTrain2Poju.Model
                     if (destination > index && enemy.Status("relentless") != null)
                         destroyThroughRoom = destination;
                     if (destination < index && rule.Loops && enemy.Status("relentless") == null) looped.Add(enemy.Id);
-                    else shifted.Add((destination, enemy.Id));
+                    else
+                    {
+                        shifted.Add((destination, enemy.Id));
+                        highestRoomIndexMovedInto = Math.Max(highestRoomIndexMovedInto, destination);
+                    }
                     enteredPyre |= destination == pyre;
                 }
                 if (destroyThroughRoom.HasValue)
@@ -348,6 +353,10 @@ namespace MonsterTrain2Poju.Model
                         movementContext = destroyed.State.Context;
                     }
                 }
+                if (highestRoomIndexMovedInto >= 0 && !source.Rooms[index].Preview &&
+                    movementContext?.QueryFrame?.SelectedRoomIndex != null)
+                    movementContext = movementContext.WithQueryFrame(movementContext.QueryFrame.With(
+                        selectedRoomIndex: highestRoomIndexMovedInto));
             }
             RoomCombatState[] next = source.Rooms.Select((room, index) => new RoomCombatState(room.RoomIndex,
                 room.Deployment, BattleSpawnPointModel.Order(movementContext?.SpawnPoints, index, rooms[index]), room.ExternalInteractions,
@@ -381,8 +390,10 @@ namespace MonsterTrain2Poju.Model
             {
                 TrainCombatResult enabled = EnchantmentWorldModel.SetAllowUpdates(moving, true);
                 if (!enabled.Supported) return enabled;
+                // Tower attacks retain HeroManager's last selected floor.
                 RoomCombatResult result = RoomCombatModel.Resolve(enabled.State!.Rooms[pyre],
-                    refreshPyre: (changed, placement) => RelicResourceModel.RefreshPyreAttack(next, changed, placement));
+                    refreshPyre: (changed, placement) => RelicResourceModel.RefreshPyreAttack(next, changed, placement),
+                    updateSelectedRoom: false);
                 if (!result.Supported) return Unsupported(result.UnsupportedReason!);
                 next[pyre] = result.State!;
                 movementResults.Add(result);

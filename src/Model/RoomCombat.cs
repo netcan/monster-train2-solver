@@ -369,8 +369,10 @@ namespace MonsterTrain2Poju.Model
         };
         internal static bool KnowsStatus(string id) => KnownStatuses.Contains(id);
 
-        public static RoomCombatResult Exchange(RoomCombatState state, Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null) => Run(state, false, refreshPyre: refreshPyre);
-        public static RoomCombatResult Resolve(RoomCombatState state, Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null) => Run(state, true, refreshPyre: refreshPyre);
+        public static RoomCombatResult Exchange(RoomCombatState state, Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null,
+            bool updateSelectedRoom = true) => Run(state, false, refreshPyre: refreshPyre, updateSelectedRoom: updateSelectedRoom);
+        public static RoomCombatResult Resolve(RoomCombatState state, Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null,
+            bool updateSelectedRoom = true) => Run(state, true, refreshPyre: refreshPyre, updateSelectedRoom: updateSelectedRoom);
 
         public static RoomCombatResult ApplyUnitPostCombat(RoomCombatState state, IReadOnlyList<int> cannotAttackOrHeal,
             IReadOnlyList<int> cannotFireTriggers, Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null)
@@ -730,14 +732,15 @@ namespace MonsterTrain2Poju.Model
             return new Engine(state, new List<CombatEvent>(), refreshPyre: refreshPyre).CardHeal(targetId, amount);
         }
 
-        private static RoomCombatResult Run(RoomCombatState state, bool entireRoom, Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null)
+        private static RoomCombatResult Run(RoomCombatState state, bool entireRoom,
+            Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null, bool updateSelectedRoom = true)
         {
             var events = new List<CombatEvent>();
             string? error = Validate(state);
             if (error != null)
                 return new RoomCombatResult(null, RoomOutcome.Unsupported, 0, events, error);
             var engine = new Engine(state, events, refreshPyre: refreshPyre);
-            return engine.Run(entireRoom);
+            return engine.Run(entireRoom, updateSelectedRoom);
         }
 
         internal static string? Validate(RoomCombatState state, int? dyingTargetId = null)
@@ -1142,9 +1145,13 @@ namespace MonsterTrain2Poju.Model
                 return source.ActiveCompanionBossIds == null ? null : Array.Empty<int>();
             }
 
-            internal RoomCombatResult Run(bool entireRoom)
+            internal RoomCombatResult Run(bool entireRoom, bool updateSelectedRoom)
             {
                 stopAfterBossRemoval = true;
+                if (updateSelectedRoom && !source.Preview && context?.QueryFrame?.SelectedRoomIndex != null &&
+                    units.Any(unit => unit.Alive && unit.InRoom && unit.Source.Team == CombatTeam.Enemy) &&
+                    units.Any(unit => unit.Alive && unit.InRoom && unit.Source.Team == CombatTeam.Player && !unit.Source.IsPyre))
+                    context = context.WithQueryFrame(context.QueryFrame.With(selectedRoomIndex: source.RoomIndex));
                 bool relentless = units.Any(unit => unit.InRoom && unit.Has("relentless")) && BothTeamsPresent();
                 var seen = new HashSet<string>(StringComparer.Ordinal);
                 do
@@ -1167,7 +1174,7 @@ namespace MonsterTrain2Poju.Model
                         return Finish(RoomOutcome.PlayerDefeated);
                     Clear(false);
                 } while (relentless && BothTeamsPresent());
-                RunUnitPostCombat();
+                RunUnitPostCombat(updateSelectedRoom);
                 if (!source.Deployment)
                     foreach (CombatTeam team in new[] { CombatTeam.Enemy, CombatTeam.Player })
                     {
@@ -1192,15 +1199,22 @@ namespace MonsterTrain2Poju.Model
             internal RoomCombatResult UnitPostCombat(IReadOnlyList<int> cannotHeal, IReadOnlyList<int> cannotTrigger)
             {
                 cannotAttackOrHeal.UnionWith(cannotHeal); cannotFireTriggers.UnionWith(cannotTrigger);
-                RunUnitPostCombat();
+                RunUnitPostCombat(updateSelectedRoom: true);
                 return Finish(battleWon ? RoomOutcome.BattleWon : units.Any(unit => unit.Source.IsPyre && !unit.Alive)
                     ? RoomOutcome.PlayerDefeated : RoomOutcome.Exchanged);
             }
 
-            private void RunUnitPostCombat()
+            private void RunUnitPostCombat(bool updateSelectedRoom)
             {
                 // Native snapshots enemies then players, preserving front-to-back order.
                 // Each actor finishes its healing queue before its ordinary post-combat queue.
+                bool anyUnitWillTrigger = units.Where(unit => unit.InRoom).OrderBy(unit => unit.Source.Team)
+                    .SelectMany(unit => unit.Triggers.Where(trigger => trigger.Kind == "PostCombatHealing" || trigger.Kind == "PostCombat")
+                        .Select(trigger => (Unit: unit, Trigger: trigger)))
+                    .Any(item => (!source.Deployment || item.Trigger.SkipDuringDeployment != true) &&
+                        ActionTriggerPassesTest(item.Unit, item.Trigger, 0));
+                if (anyUnitWillTrigger && updateSelectedRoom && !source.Preview && context?.QueryFrame?.SelectedRoomIndex != null)
+                    context = context.WithQueryFrame(context.QueryFrame.With(selectedRoomIndex: source.RoomIndex));
                 foreach (WorkingUnit unit in units.Where(unit => unit.InRoom).OrderBy(unit => unit.Source.Team).ToArray())
                 {
                     if (!unit.Alive) continue;

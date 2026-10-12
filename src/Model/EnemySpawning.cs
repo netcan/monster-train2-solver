@@ -109,6 +109,8 @@ namespace MonsterTrain2Poju.Model
                     selected = groups[waveIndex] = choice.Value;
                 }
                 if (selected >= wave.Candidates.Count) return Unsupported("Invalid cached spawn group.");
+                if (wave.Candidates[selected].Units.Count > 0 && context?.QueryFrame?.SelectedRoomIndex != null)
+                    context = context.WithQueryFrame(context.QueryFrame.With(selectedRoomIndex: 0));
                 bool enteredPyre = false;
                 var entered = new List<int>();
                 foreach (EnemyDefinition definition in wave.Candidates[selected].Units.Reverse())
@@ -160,6 +162,8 @@ namespace MonsterTrain2Poju.Model
                 if (eligible.Length > 0)
                 {
                     RngDraw floor = rng.Range(0, eligible.Length); rng = floor.State;
+                    if (context?.QueryFrame?.SelectedRoomIndex != null)
+                        context = context.WithQueryFrame(context.QueryFrame.With(selectedRoomIndex: eligible[floor.Value]));
                     RngDraw chosen = rng.Range(0, source.Treasures.Count); rng = chosen.State;
                     EnemyDefinition definition = source.Treasures[chosen.Value];
                     string? error = Validate(definition, context);
