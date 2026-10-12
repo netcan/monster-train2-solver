@@ -151,9 +151,12 @@ namespace MonsterTrain2Poju.Model
         public int PlayerPosition { get; }
         public int TargetUnitId { get; }
         public int ActivatorUnitId { get; }
-        public PlayCardAction(int cardInstanceId, int roomIndex, int playerPosition = -1, int targetUnitId = 0, int activatorUnitId = 0)
+        // Spawn-point index selected by effects that move an existing unit to a room location.
+        public int TargetSpawnPointIndex { get; }
+        public PlayCardAction(int cardInstanceId, int roomIndex, int playerPosition = -1, int targetUnitId = 0,
+            int activatorUnitId = 0, int targetSpawnPointIndex = -1)
         { CardInstanceId = cardInstanceId; RoomIndex = roomIndex; PlayerPosition = playerPosition; TargetUnitId = targetUnitId;
-            ActivatorUnitId = activatorUnitId; }
+            ActivatorUnitId = activatorUnitId; TargetSpawnPointIndex = targetSpawnPointIndex; }
     }
 
     public enum ActionRejection { None, Illegal, Unsupported }
@@ -210,6 +213,8 @@ namespace MonsterTrain2Poju.Model
                 }
                 return UnitAbilityModel.Activate(source, action);
             }
+            if (action.TargetSpawnPointIndex != -1)
+                return Illegal("This card play does not take a destination spawn point.");
             if (source.PlayRules == null || source.Spawn.Train.Context == null)
                 return Unsupported("Missing card/room play definitions or battle context.");
             if (source.ExternalInteractions.Count > 0 || source.Spawn.ExternalInteractions.Count > 0)

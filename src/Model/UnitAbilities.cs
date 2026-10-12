@@ -17,7 +17,8 @@ namespace MonsterTrain2Poju.Model
                 return Unsupported(string.Join("; ", source.ExternalInteractions.Concat(source.Spawn.ExternalInteractions)));
             if (source.PlayRules.Cards.Select(rule => rule.DataId).Distinct().Count() != source.PlayRules.Cards.Count)
                 return Unsupported("Duplicate ability play definitions.");
-            if (action.PlayerPosition != -1 || action.TargetUnitId != 0) return Illegal("An ability supplies its activator as self, without a card drop target.");
+            if (action.PlayerPosition != -1 || action.TargetUnitId != 0 || action.TargetSpawnPointIndex != -1)
+                return Illegal("This unit ability does not accept a card drop target or destination spawn point.");
             RoomCombatState? actorRoom = train.Rooms.FirstOrDefault(room => room.Units.Any(unit => unit.Id == action.ActivatorUnitId));
             CombatUnit? actor = actorRoom?.Units.FirstOrDefault(unit => unit.Id == action.ActivatorUnitId);
             if (actor == null || actor.Health <= 0 || actor.Ability?.HasAbility != true) return Illegal("The selected unit has no live ability.");

@@ -8,6 +8,12 @@ internal static class UnitAbilityChecks
     {
         var root = Root(); string parent = JsonSerializer.Serialize(root);
         var action = new PlayCardAction(2, 0, activatorUnitId: 10);
+        var positionedAction = new PlayCardAction(2, 0, activatorUnitId: 10, targetSpawnPointIndex: 4);
+        var positionedRoundTrip = JsonSerializer.Deserialize<PlayCardAction>(JsonSerializer.Serialize(positionedAction));
+        var legacyAction = JsonSerializer.Deserialize<PlayCardAction>(
+            "{\"CardInstanceId\":2,\"RoomIndex\":0,\"PlayerPosition\":-1,\"TargetUnitId\":0,\"ActivatorUnitId\":10}");
+        Require(positionedRoundTrip?.TargetSpawnPointIndex == 4 && legacyAction?.TargetSpawnPointIndex == -1,
+            "Selected teleport locations did not round-trip or old action archives lost their default.");
         var snapshotContext = root.Spawn.Train.Context!;
         var explicitEmptyRoom = new RoomCombatState(0, false, [], [], snapshotContext, activeCompanionBossIds: Array.Empty<int>());
         var unknownRoom = new RoomCombatState(0, false, [], [], snapshotContext);
