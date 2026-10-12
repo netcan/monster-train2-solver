@@ -467,6 +467,10 @@ namespace MonsterTrain2Poju.Model
                 piles = context.OtherPiles?.ToArray() ?? piles;
                 terminal = outcome == RoomOutcome.BattleWon || outcome == RoomOutcome.PlayerDefeated;
             }
+            RelicCardPlayMagicPowerResult cardPlayMagicPower = RelicCardPlayMagicPowerModel.Apply(context, card.InstanceId);
+            if (!cardPlayMagicPower.Supported) return Unsupported(cardPlayMagicPower.UnsupportedReason!);
+            context = cardPlayMagicPower.Context;
+            train = CardSpellModel.WithContext(train, context);
             List<CardToken> hand = context.Cards.Hand.Where(item => item.InstanceId != card.InstanceId).ToList();
             List<CardToken> discard = context.Cards.Discard.ToList();
             if (effectsApplied && !(terminal && context.OtherPiles != null))

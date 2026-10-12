@@ -69,6 +69,13 @@ if (args.Length == 2 && args[0] == "--mageblade-only")
     return;
 }
 
+if (args.Length == 2 && args[0] == "--original-card-play-magic-power-only")
+{
+    using var document = ModelJson.ReadFixture(args[1]);
+    RelicCardPlayMagicPowerChecks.Native(document.RootElement);
+    return;
+}
+
 if (args.Length == 1 && args[0] == "--mageblade-pure")
 {
     BattleActionChecks.MagebladeStartingStatusSummon();
@@ -79,6 +86,12 @@ if (args.Length == 1 && args[0] == "--mageblade-pure")
 if (args.Length == 1 && args[0] == "--relic-magic-power-pure")
 {
     RelicMagicPowerChecks.Run();
+    return;
+}
+
+if (args.Length == 1 && args[0] == "--relic-card-play-magic-power-pure")
+{
+    RelicCardPlayMagicPowerChecks.Run();
     return;
 }
 
@@ -541,6 +554,7 @@ RelicCharacterTriggerChecks.Run();
 CovenantCharacterFilterChecks.Run();
 RelicCardModifierChecks.Run();
 RelicMagicPowerChecks.Run();
+RelicCardPlayMagicPowerChecks.Run();
 RelicStatusStackChecks.Run();
 RelicStatusMagnitudeChecks.Run();
 TitanSkinChecks.Run();
@@ -622,6 +636,11 @@ foreach (string path in args.Where(path => path.Contains("mageblade", StringComp
 {
     using var document = ModelJson.ReadFixture(path);
     MagebladeChecks.Native(document.RootElement);
+}
+foreach (string path in args.Where(path => path.Contains("original-card-play-magic-power", StringComparison.OrdinalIgnoreCase)))
+{
+    using var document = ModelJson.ReadFixture(path);
+    RelicCardPlayMagicPowerChecks.Native(document.RootElement);
 }
 foreach (string path in args.Where(path => path.Contains("card-upgrade-mask-calibration", StringComparison.OrdinalIgnoreCase)))
     CardUpgradeMaskChecks.Native(path);

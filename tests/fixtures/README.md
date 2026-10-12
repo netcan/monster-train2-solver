@@ -27,7 +27,7 @@ The default command checks the full curated inventory. For routine changes, run
 the dedicated checks for the new and directly affected scenarios; run the full
 inventory at completed milestones and before delivery.
 
-Current inventory is 236 archives: 205 accepted battles and 31 component
+Current inventory is 240 archives: 209 accepted battles and 31 component
 calibrations. `full-battle-companion-bump.mt2f` covers a paired Relentless
 companion Boss refusal, its attempted-ascension callback and the survivor's
 terminal-death handoff. `full-battle-relic-card-status-upgrades.mt2f` verifies a native
@@ -2974,4 +2974,31 @@ copy lifecycle remain open.
 dotnet run --project src/ModelChecks -c Release -- --relic-magic-power-pure
 pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Mageblade
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-mageblade.mt2f
+```
+
+### Native original card-play magic-power relic
+
+The schema-128 `full-battle-original-card-play-magic-power.mt2f` captures the
+unchanged original `MagicPowerWhenCardConsumed` relic (ID
+`a4c87eb7-1c4e-4f63-af08-79f910e5a2e8`, power 1, no conditions, required
+`CardTraitExhaustState`). The isolated test adds that trait to its TrainSteward
+carrier so the native relic's original filter can run; the relic definition is
+not changed. Independent replay matches two eligible carrier plays and all 110
+spell offset updates, while also checking the rejected nonmatching play. The
+native battle wins after 61 stages, 13 card cycles, 14 train phases, 11 spawns,
+seven EndTurns and 11 card actions. Capture failures, mismatches, unsupported
+transitions and pending records are zero.
+
+The binary is 28,250 bytes with 4,465 unique nodes and SHA-256
+`5f60fa073c94fbcc9a7648fe02897624ec96a3db54803e9e40d49e31137e91de`; it has no
+JSON companion. Original relic evidence is now 60/224 (26.79%), and the
+inventory has 240 archives: 209 battles and 31 component calibrations. Full
+inventory replay, other card-play magic-power owners, broader cross-effect
+coverage and the decision solver remain unfinished.
+
+```powershell
+dotnet run --project src/ModelChecks -c Release -- --relic-card-play-magic-power-pure
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -OriginalCardPlayMagicPower
+dotnet run --project src/ModelChecks -c Release -- --original-card-play-magic-power-only tests/fixtures/full-battle-original-card-play-magic-power.mt2f
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-card-play-magic-power.mt2f
 ```

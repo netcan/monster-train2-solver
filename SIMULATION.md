@@ -1,8 +1,8 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-12): 239 binary archives, including 208
+Current accepted inventory (2026-10-12): 240 binary archives, including 209
 full battles and 31 component calibrations. Unchanged original relic evidence
-covers 59/224 catalog entries (26.34%); see
+covers 60/224 catalog entries (26.79%); see
 [the owner evidence table](tests/fixtures/relic-coverage.md). Whole-battle
 coverage and the optimal solver remain in progress.
 
@@ -8334,4 +8334,31 @@ Boss/status interactions and the decision solver remain unfinished.
 dotnet run --project src/ModelChecks -c Release -- --relic-magic-power-pure
 pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Mageblade
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-mageblade.mt2f
+```
+
+### Native original card-play magic-power relic
+
+The schema-128 `full-battle-original-card-play-magic-power.mt2f` captures the
+unchanged original `MagicPowerWhenCardConsumed` relic (ID
+`a4c87eb7-1c4e-4f63-af08-79f910e5a2e8`, power 1, no conditions, required
+`CardTraitExhaustState`). The isolated test adds that trait to its TrainSteward
+carrier so the native relic's original filter can run; the relic definition is
+not changed. Independent replay matches two eligible carrier plays and all 110
+spell offset updates, while also checking the rejected nonmatching play. The
+native battle wins after 61 stages, 13 card cycles, 14 train phases, 11 spawns,
+seven EndTurns and 11 card actions. Capture failures, mismatches, unsupported
+transitions and pending records are zero.
+
+The archive is 28,250 bytes with 4,465 unique nodes and SHA-256
+`5f60fa073c94fbcc9a7648fe02897624ec96a3db54803e9e40d49e31137e91de`; it has no
+JSON companion. This raises accepted original relic evidence to 60/224
+(26.79%) and the inventory to 240 archives: 209 battles and 31 component
+calibrations. Full-inventory replay, additional card-play magic-power owners,
+broader card/relic interactions and the decision solver remain unfinished.
+
+```powershell
+dotnet run --project src/ModelChecks -c Release -- --relic-card-play-magic-power-pure
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -OriginalCardPlayMagicPower
+dotnet run --project src/ModelChecks -c Release -- --original-card-play-magic-power-only tests/fixtures/full-battle-original-card-play-magic-power.mt2f
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-card-play-magic-power.mt2f
 ```

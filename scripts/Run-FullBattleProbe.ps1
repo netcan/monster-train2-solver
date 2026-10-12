@@ -151,6 +151,7 @@ param(
     [switch] $PyreResourceRefresh,
     [switch] $OriginalFloorCapacityRelics,
     [switch] $Mageblade,
+    [switch] $OriginalCardPlayMagicPower,
     [switch] $TypedDraw,
     [switch] $IncantRelic,
     [switch] $IncantRelics,
@@ -214,6 +215,7 @@ if ($OriginalResourceRelicBatch) { $BranchCardMasks = $true; $Policy = 'units-sp
 if ($PyreResourceRefresh) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalFloorCapacityRelics) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($Mageblade) { $BranchCardMasks = $true; $BattleRelicUpgrades = $true; $Policy = 'units-and-junk' }
+if ($OriginalCardPlayMagicPower) { $BranchCardMasks = $true; $Policy = 'units-and-junk' }
 if ($OriginalTriggerRelicBatch -or $OriginalLifecycleRelicBatch) {
     $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $SettleDeathDissolves = $true; $SettleCardAnimations = $true
     $Policy = 'units-spells-and-junk'
@@ -424,6 +426,7 @@ if ($OriginalResourceRelicBatch) { $environment['MT2_PROBE_MODIFIERS'] = 'origin
 if ($PyreResourceRefresh) { $environment['MT2_PROBE_MODIFIERS'] = 'pyre-resource-refresh' }
 if ($OriginalFloorCapacityRelics) { $environment['MT2_PROBE_MODIFIERS'] = 'original-floor-capacity-relics' }
 if ($Mageblade) { $environment['MT2_PROBE_MODIFIERS'] = 'mageblade' }
+if ($OriginalCardPlayMagicPower) { $environment['MT2_PROBE_MODIFIERS'] = 'original-card-play-magic-power' }
 if ($TypedDraw) {
     $environment['MT2_PROBE_MODIFIERS'] = 'typed-draw'
     $environment['MT2_PROBE_ISOLATE_UI_RNG'] = '1'
@@ -502,6 +505,12 @@ if ($Mageblade) {
         throw 'Mageblade native battle did not capture a cached Mageblade unit in a positive-magic-power room.'
     }
     Write-Output "MAGEBLADE-NATIVE-CAPTURE PASS: $($magebladeProof.Count) stages with stacks=$($magebladeProof[0].Stacks), roomPower=$($magebladeProof[0].Power), cachedCoefficient=$($magebladeProof[0].Cache)."
+}
+if ($OriginalCardPlayMagicPower -and ($trace.Schema -ne 128 -or
+    $trace.ModifierScenario -ne 'original-card-play-magic-power' -or
+    -not (Select-String -LiteralPath $unityLog -Pattern 'ORIGINAL-CARD-PLAY-MAGIC-POWER-ACQUIRED unchanged relic=' -Quiet) -or
+    @($trace.Actions).Count -eq 0)) {
+    throw 'Original card-play magic-power relic was not exercised in the expected full-battle capture.'
 }
 if ($RelicCatalog) {
     Add-Type -Path (Join-Path $workspace 'src\FixtureArchive\bin\Release\net8.0\FixtureArchive.dll')
