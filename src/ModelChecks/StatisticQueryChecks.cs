@@ -8,7 +8,7 @@ internal static class StatisticQueryChecks
     {
         UnityRng rng = UnityRng.Seed(127);
         CardInstanceState[] registry = Enumerable.Range(1, 10).Select(id => id == 1 ?
-            new CardInstanceState(id, "spell", new(new(xCost: 4), [], 0, []), new(new(xCost: -1), [], 0, []), 0, 0, 0, []) :
+            new CardInstanceState(id, "spell", new(new(cost: -1, xCost: 4), [], 0, []), new(new(cost: 2, xCost: -1), [], 0, []), 0, 0, 0, []) :
             CardInstanceState.Empty(id, id == 8 ? "spell" : "monster")).ToArray();
         var statistics = new BattleStatistics([new(1, "ThisTurn", "TimesPlayed", 3), new(4, "ThisTurn", "TimesPlayed", 7),
             new(9, "ThisTurn", "TimesPlayed", 60), new(4, "ThisTurn", "AnyCardPlayed", 999),
@@ -55,6 +55,9 @@ internal static class StatisticQueryChecks
             Query(new("PlayedCost", sourceRawCost: 2, variableCost: true), 8, new(energy: 4)).Value == 6 &&
             Query(new("PlayedCost", sourceRawCost: 2, variableCost: true), 8, new(energy: 4, activeBattle: false)).Value == 0,
             "Paid-cost signed values, intrinsic base cost, X-cost modifiers or energy fallback differ.");
+        Require(Query(new("CurrentCost", sourceRawCost: 2, currentCostCardModifiersOnly: true), 1).Value == 3 &&
+            !StatisticQueryModel.Evaluate(context, new("CurrentCost", sourceRawCost: 2), 1).Supported,
+            "Current cost ignored ordered card modifiers or accepted unmodeled cost inputs.");
         Require(Query(new("Gold"), frame: new(runningCombat: true)).Value == 19 &&
             Query(new("Gold"), frame: new(runningCombat: false)).Value == 85,
             "Gold ignored the combat loop or the turn-start snapshot.");
@@ -109,12 +112,17 @@ internal static class StatisticQueryChecks
             }
             Require(JsonSerializer.Serialize(before) == parent, "Native query checks mutated their captured root.");
         }
-        Require(samples > 500 && kinds.Count == 41, "Native statistic calibration lacks supported query kinds.");
+        Require(samples > 500 && kinds.Count == 42, "Native statistic calibration lacks supported query kinds.");
         var capacityQueries = fixture.GetProperty("Batches").EnumerateArray().SelectMany(batch => batch.GetProperty("Samples").EnumerateArray())
             .Where(sample => sample.GetProperty("Query").GetProperty("Type").GetString() == "CapacityOfTargetRoom").ToArray();
         Require(capacityQueries.Length >= 20 && capacityQueries.Select(sample => sample.GetProperty("Query").GetProperty("TargetTeam").GetString()).Distinct().Count() == 4,
             "Native capacity query calibration lacks selected-room and team-flag cases.");
-        Console.WriteLine($"NATIVE-STATISTIC-QUERY-CHECKS PASS: {samples} native queries, {kinds.Count} kinds, selected-room capacity by team, three durations, masked/null/detached sources, cost fallback and refreshed ownership.");
+        var currentCostQueries = fixture.GetProperty("Batches").EnumerateArray().SelectMany(batch => batch.GetProperty("Samples").EnumerateArray())
+            .Where(sample => sample.GetProperty("Query").GetProperty("Type").GetString() == "CurrentCost").ToArray();
+        Require(currentCostQueries.Length >= 20 && currentCostQueries.All(sample =>
+            sample.GetProperty("Query").GetProperty("CurrentCostCardModifiersOnly").GetBoolean()),
+            "Native current-cost calibration lacks card-modifier-only cases.");
+        Console.WriteLine($"NATIVE-STATISTIC-QUERY-CHECKS PASS: {samples} native queries, {kinds.Count} kinds, selected-room capacity and current cost, three durations, masked/null/detached sources, cost fallback and refreshed ownership.");
     }
 
     private static void Require(bool condition, string message)

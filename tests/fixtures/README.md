@@ -3003,20 +3003,24 @@ dotnet run --project src/ModelChecks -c Release -- --original-card-play-magic-po
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-card-play-magic-power.mt2f
 ```
 
-### Selected-room capacity statistic query
+### Selected-room and current-cost statistic queries
 
-The statistic query calibration now includes `CapacityOfTargetRoom` and stores
-17,892 observations across six native batches and 41 query kinds. Its four
-`Team.Type` cases verify that only the exact `Heroes` flag selects enemy
-capacity; `None`, `Monsters` and the combined flag select player capacity. The
-captured selected-room index advances with room selection and card-play state,
-and missing room metadata remains unsupported. All observations match the
-independent model, including 288 capacity samples across rooms and teams.
+The statistic query calibration stores 18,000 observations across six native
+batches and 42 query kinds. Its 288 `CapacityOfTargetRoom` samples cover four
+`Team.Type` cases and verify that only the exact `Heroes` flag selects enemy
+capacity; `None`, `Monsters` and the combined flag select player capacity.
+Selected-room state follows native room combat, post-combat triggers, enemy
+movement, wave spawning and treasure placement. The current-cost query matches
+108 samples when cost is explained by ordered permanent and temporary card
+modifiers. Trait, hand, room and other effect-driven cost changes remain
+explicitly unsupported by this query model.
 
-The updated binary is 18,597 bytes with 4,053 unique nodes and SHA-256
-`d2edaa62c1d69e17df86bc3ed04c9a12055f57c21998e507dcd6d9daa23ad4c5`; it has
+The updated binary is 19,383 bytes with 4,091 unique nodes and SHA-256
+`677373e3f4099da3fe60e499578e52e8eef6e9e7c069554a838c8a1aa58bdb74`; it has
 no tracked JSON dependency. The full inventory remains 240 archives: 209 battles
-and 31 component calibrations.
+and 31 component calibrations. The muted Instant full-battle sample matched all
+55 room stages, 14 train phases, 11 spawns, seven EndTurns and one card action
+with zero capture failures, mismatches, unsupported operations or pending work.
 
 ```powershell
 dotnet run --project src/ModelChecks -c Release -- tests/fixtures/statistic-query-calibration.mt2f

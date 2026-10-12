@@ -17,12 +17,15 @@ namespace MonsterTrain2Poju.Model
         public int? SourceRawCost { get; }
         public bool VariableCost { get; }
         public string TargetTeam { get; }
+        public bool CurrentCostCardModifiersOnly { get; }
         public CardStatisticQuery(string type, string duration = "ThisTurn", IReadOnlyList<string>? typeMatchDataIds = null,
             IReadOnlyList<string>? subtypeMatchDataIds = null, bool subtypeIsNone = true, string? subtype = null,
-            string? specificCardDataId = null, int? sourceRawCost = null, bool variableCost = false, string targetTeam = "None")
+            string? specificCardDataId = null, int? sourceRawCost = null, bool variableCost = false, string targetTeam = "None",
+            bool currentCostCardModifiersOnly = false)
         { Type = type; Duration = duration; TypeMatchDataIds = Freeze(typeMatchDataIds); SubtypeMatchDataIds = Freeze(subtypeMatchDataIds);
             SubtypeIsNone = subtypeIsNone; Subtype = subtype; SpecificCardDataId = specificCardDataId;
-            SourceRawCost = sourceRawCost; VariableCost = variableCost; TargetTeam = targetTeam; }
+            SourceRawCost = sourceRawCost; VariableCost = variableCost; TargetTeam = targetTeam;
+            CurrentCostCardModifiersOnly = currentCostCardModifiersOnly; }
         private static IReadOnlyList<string>? Freeze(IReadOnlyList<string>? source) => source == null ? null :
             Array.AsReadOnly(source.Distinct().OrderBy(id => id, StringComparer.Ordinal).ToArray());
     }
@@ -177,6 +180,16 @@ namespace MonsterTrain2Poju.Model
                         catch (OverflowException) { return Unsupported("Played-cost modifiers exceed the modeled numeric domain."); }
                     }
                     return Finish(Math.Max(0, amount));
+                case "CurrentCost":
+                    if (!query.CurrentCostCardModifiersOnly)
+                        return Unsupported("Current cost has unmodeled trait, hand, room or card-effect modifiers.");
+                    if (query.SourceRawCost == null || sourceCardId <= 0)
+                        return Unsupported("Current cost requires a captured source card and base cost.");
+                    CardInstanceState? costCard = context.FindCard(sourceCardId);
+                    if (costCard == null) return Unsupported("Current cost requires captured card modifiers.");
+                    try { return Finish(CardModifierModel.UpgradedStat(query.SourceRawCost.Value, "Cost", true,
+                        costCard.Permanent, costCard.Temporary)); }
+                    catch (OverflowException) { return Unsupported("Current cost modifiers exceed the modeled numeric domain."); }
                 case "Gold": return frame?.RunningCombat.HasValue == true ? Finish(frame.RunningCombat.Value ? statistics.GoldStartOfThisTurn : context.Gold) :
                     Unsupported("Gold queries require the current combat-loop state.");
                 case "TurnCount": return Scalar(frame?.Turn);

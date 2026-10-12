@@ -39,7 +39,29 @@ namespace MonsterTrain2Poju.Probe
                 card.GetSpawnCharacterData()?.GetSubtypes().Contains(data.paramSubtype) == true).Select(card => card.GetID()).ToArray();
             return new CardStatisticQuery(data.trackedValue.ToString(), data.entryDuration.ToString(), typeMask, subtypeMask,
                 data.paramSubtype == null || data.paramSubtype.IsNone, data.paramSubtype?.Key, data.paramCardData?.GetID(), rawCost, variable,
-                data.paramTeamType.ToString());
+                data.paramTeamType.ToString(), CurrentCostModifiersOnly(data.cardState));
+        }
+
+        internal static bool CurrentCostModifiersOnly(CardState? card)
+        {
+            if (card == null || card.HasModifyCostEffect()) return false;
+            static bool Overrides(CardTraitState trait, string methodName) => trait.GetType().GetMethods()
+                .Any(method => method.Name == methodName && method.DeclaringType != typeof(CardTraitState));
+            if (card.GetTraitStates().Any(trait => Overrides(trait, nameof(CardTraitState.GetModifiedCost)))) return false;
+            AllGameManagers? managers = AllGameManagers.Instance;
+            if (managers == null) return false;
+            CardManager? cardManager = managers.GetCardManager();
+            if (cardManager == null) return false;
+            if (cardManager.GetHand().SelectMany(item => item.GetTraitStates())
+                .Any(trait => Overrides(trait, nameof(CardTraitState.GetHandModifiedCost)))) return false;
+            RoomManager? roomManager = managers.GetRoomManager();
+            if (roomManager == null) return false;
+            RoomState? room = roomManager.GetRoom(roomManager.GetSelectedRoom());
+            if (room == null) return true;
+            var characters = new List<CharacterState>();
+            room.AddCharactersToList(characters, Team.Type.Heroes | Team.Type.Monsters, allowDead: true);
+            return !characters.SelectMany(character => character.GetRoomStateModifiers<IRoomStateCostModifier>()).Any() &&
+                !room.GetRoomStateModifiersFromTrainRoomAttachments<IRoomStateCostModifier>(Team.Type.Heroes | Team.Type.Monsters).Any();
         }
     }
 }

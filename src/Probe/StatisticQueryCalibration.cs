@@ -41,7 +41,7 @@ namespace MonsterTrain2Poju.Probe
                 "AnyMonsterSpawnedTopFloor", "MonsterSubtypePlayed", "AnyStatusEffectStacksAdded", "AnyStatusEffectStacksRemoved",
                 "PlayedCost", "UnmodifiedPlayedCost", "Gold", "TurnCount", "ForgePoints", "DragonsHoardAmount", "MoonPhase",
                 "PyreHeartResurrection", "LastAttackDamageDealt", "EnergyRemainingEndOfTurn", "AnyCharacter", "NumSpecificCardsInDeck",
-                "CapacityOfTargetRoom" };
+                "CapacityOfTargetRoom", "CurrentCost" };
             var batches = new List<object>();
             var host = new GameObject("Poju statistic query calibration") { hideFlags = HideFlags.HideAndDontSave };
             host.SetActive(false); // These isolated components never register with the real providers.
@@ -122,7 +122,9 @@ namespace MonsterTrain2Poju.Probe
                     foreach (CardState? sourceCard in new CardState?[] { sources[0], sources[1], ghost, null }.Concat(
                         type == "PlayedCost" || type == "UnmodifiedPlayedCost" ? new[] { variable } : Array.Empty<CardState>()))
                     {
-                        if (type == "MonsterSubtypePlayed" && subtype == null || (type == "PlayedCost" || type == "UnmodifiedPlayedCost") &&
+                        if (type == "MonsterSubtypePlayed" && subtype == null || type == "CurrentCost" &&
+                            (sourceCard == null || sourceCard == ghost || !DamageScalingProbe.CurrentCostModifiersOnly(sourceCard)) ||
+                            (type == "PlayedCost" || type == "UnmodifiedPlayedCost") &&
                             (sourceCard == null || sourceCard == ghost)) continue;
                         // A single deliberate mismatched local type verifies that native logging does not reject the query.
                         bool local = new[] { "HeroesKilled", "SpawnedMonsterDeaths", "TimesDiscarded", "TimesPlayed", "TimesDrawn", "TimesExhausted",
@@ -132,7 +134,8 @@ namespace MonsterTrain2Poju.Probe
                             new[] { "AnyHeroKilled", "AnyMonsterDeath", "AnyDiscarded", "AnyCardPlayed", "AnyCardDrawn", "AnyExhausted" }.Contains(type);
                         if (!filtered && targetType != CardStatistics.CardTypeTarget.Any && !(local && type == "TimesPlayed" && duration == CardStatistics.EntryDuration.ThisTurn && subtype == null)) continue;
                         if ((type.Contains("InDeck") || type.Contains("InDrawPile") || type.Contains("InDiscardPile") || type.Contains("InExhaustPile") || type.Contains("InEatenPile") ||
-                            !local && !filtered && type != "AnyMonsterSpawned" && type != "AnyMonsterSpawnedTopFloor" && type != "MonsterSubtypePlayed" && type != "NumSpecificCardsInDeck") && duration != CardStatistics.EntryDuration.ThisTurn) continue;
+                            !local && !filtered && type != "AnyMonsterSpawned" && type != "AnyMonsterSpawnedTopFloor" && type != "MonsterSubtypePlayed" &&
+                            type != "NumSpecificCardsInDeck" && type != "CurrentCost") && duration != CardStatistics.EntryDuration.ThisTurn) continue;
                         if (local && targetType != CardStatistics.CardTypeTarget.Any && sourceCard != null && sourceCard != ghost &&
                             sourceCard.GetCardType().ToString() != targetType.ToString() && (type != "TimesPlayed" || duration != CardStatistics.EntryDuration.ThisTurn || subtype != null)) continue;
                         string[]? typeMask = targetType == CardStatistics.CardTypeTarget.Any ? null : definitions.Where(data => data.GetCardType().ToString() == targetType.ToString())
@@ -143,7 +146,7 @@ namespace MonsterTrain2Poju.Probe
                         int? rawCost = sourceCard == null || sourceCard == ghost ? (int?)null : (int)AccessTools.Field(typeof(CardState), "cost").GetValue(sourceCard);
                         var query = new CardStatisticQuery(type, duration.ToString(), typeMask, subtypeMask, subtype == null || subtype.IsNone,
                             subtype?.Key, specific?.GetID(), rawCost, sourceCard != null && sourceCard != ghost && sourceCard.IsConsumeRemainingEnergyCostType(),
-                            targetTeam.ToString());
+                            targetTeam.ToString(), type == "CurrentCost" && DamageScalingProbe.CurrentCostModifiersOnly(sourceCard));
                         var input = new CardStatistics.StatValueData { cardState = sourceCard!, trackedValue = (CardStatistics.TrackedValueType)Enum.Parse(typeof(CardStatistics.TrackedValueType), type),
                             entryDuration = duration, cardTypeTarget = targetType, paramSubtype = subtype!, paramCardData = specific!,
                             paramTeamType = targetTeam, forPreviewText = false };
