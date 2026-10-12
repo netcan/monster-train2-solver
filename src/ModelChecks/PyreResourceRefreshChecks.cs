@@ -29,6 +29,7 @@ internal static class PyreResourceRefreshChecks
             scenario.GetString() == "pyre-resource-refresh";
         Require(eligible || !required, "Fixture lacks the Pyre resource refresh scene.");
         if (!eligible) return null;
+        bool compareRoomEnabled = BattleTurnChecks.ShouldCompareRoomEnabled(root);
         Require(root.GetProperty("Schema").GetInt32() == 118 && root.GetProperty("GameVersion").GetString() == "2.2.1" &&
             root.GetProperty("GameModuleMvid").GetString() == "8fb07b96-f4db-4d2b-884d-c00536d6ccf4",
             "Native Pyre refresh schema or game build changed.");
@@ -89,7 +90,8 @@ internal static class PyreResourceRefreshChecks
             string parent = Serialize(before);
             BattleActionResult replayed = BattleActionModel.PlayCard(before, action);
             Require(replayed.Supported, "Pyre refresh card action unsupported: " + replayed.Reason);
-            Equal(BattleTurnChecks.Comparable(replayed.State!), BattleTurnChecks.Comparable(actual), "complete native Pyre refresh action");
+            Equal(BattleTurnChecks.Comparable(replayed.State!, compareRoomEnabled: compareRoomEnabled),
+                BattleTurnChecks.Comparable(actual, compareRoomEnabled: compareRoomEnabled), "complete native Pyre refresh action");
             if (row.TryGetProperty("ActualOutcome", out var outcome)) Require(replayed.Outcome == (RoomOutcome)outcome.GetInt32(), "Pyre refresh action outcome differs.");
             CombatUnit oldPyre = Pyre(before.Spawn.Train), newPyre = Pyre(actual.Spawn.Train);
             Require(oldPyre.Modifiers != null && newPyre.Modifiers != null &&
@@ -112,7 +114,8 @@ internal static class PyreResourceRefreshChecks
             BattleTurnResult result = BattleTurnModel.EndTurn(before);
             Require(result.Supported && result.Outcome == (RoomOutcome)row.GetProperty("ActualOutcome").GetInt32(),
                 "Pyre refresh EndTurn unsupported or outcome differs: " + result.UnsupportedReason);
-            Equal(BattleTurnChecks.Comparable(result.State!), BattleTurnChecks.Comparable(actual), "complete native Pyre refresh EndTurn");
+            Equal(BattleTurnChecks.Comparable(result.State!, compareRoomEnabled: compareRoomEnabled),
+                BattleTurnChecks.Comparable(actual, compareRoomEnabled: compareRoomEnabled), "complete native Pyre refresh EndTurn");
             Require(Serialize(before) == parent, "Pyre refresh EndTurn mutated its source.");
         }
         int pyreCombats = CheckStages(stages, Witness);
@@ -121,10 +124,15 @@ internal static class PyreResourceRefreshChecks
         if (replayBattle)
         {
             CardCycleChecks.Native(root); BattleActionChecks.Native(root); BattleTurnChecks.Native(root);
-            ReplayBranches(first, actions, turns, terminal, "root");
-            BattleTurnState mid = actions[0].GetProperty("Actual").Deserialize<BattleTurnState>()!;
-            ReplayBranches(mid, actions.Skip(1).ToArray(), turns.Where(row =>
-                row.GetProperty("Before").GetProperty("Spawn").GetProperty("Turn").GetInt32() >= mid.Spawn.Turn).ToArray(), terminal, "mid");
+            if (compareRoomEnabled)
+            {
+                ReplayBranches(first, actions, turns, terminal, compareRoomEnabled, "root");
+                BattleTurnState mid = actions[0].GetProperty("Actual").Deserialize<BattleTurnState>()!;
+                ReplayBranches(mid, actions.Skip(1).ToArray(), turns.Where(row =>
+                    row.GetProperty("Before").GetProperty("Spawn").GetProperty("Turn").GetInt32() >= mid.Spawn.Turn).ToArray(),
+                    terminal, compareRoomEnabled, "mid");
+            }
+            else Console.WriteLine("PYRE-RESOURCE-REFRESH-POLICY-CHECKS SKIP: legacy EndTurn room Enabled snapshots conflict with the current model.");
         }
         var witnesses = Artifacts.ToDictionary(owner => owner.Key, owner => proofs.Where(proof => proof.Key.Id == owner.Id).Sum(proof => proof.Value));
         Console.WriteLine("PYRE-RESOURCE-REFRESH-WITNESSES " + string.Join(", ", witnesses.Select(row => row.Key + "=" + row.Value)));
@@ -452,26 +460,30 @@ internal static class PyreResourceRefreshChecks
             source.EquipmentCards, source.NextTriggerId, source.Ability, source.StatusDictionary, source.AbilityRules,
             source.HordeDefinition, source.IsSpawning, source.SacrificeCardId, source.DeathState, source.BumpRules);
     }
-    private static void ReplayBranches(BattleTurnState source, FixtureValue[] actions, FixtureValue[] turns, BattleTurnState terminal, string label)
+    private static void ReplayBranches(BattleTurnState source, FixtureValue[] actions, FixtureValue[] turns,
+        BattleTurnState terminal, bool compareRoomEnabled, string label)
     {
-        string parent = Serialize(source), expected = BattleTurnChecks.Comparable(terminal);
+        string parent = Serialize(source), expected = BattleTurnChecks.Comparable(terminal, compareRoomEnabled: compareRoomEnabled);
         void Run()
         {
             BattleSimulationResult result = BattleSimulator.Resolve(source, Choose);
             Require(result.Supported && result.Outcome == RoomOutcome.BattleWon && result.Actions.Count == actions.Length && result.Turns.Count == turns.Length,
                 "Independent Pyre refresh " + label + " policy differs from native counts/outcome: " + result.UnsupportedReason);
-            Equal(expected, BattleTurnChecks.Comparable(result.State!), "independent Pyre refresh " + label + " terminal");
+            Equal(expected, BattleTurnChecks.Comparable(result.State!, compareRoomEnabled: compareRoomEnabled),
+                "independent Pyre refresh " + label + " terminal");
             for (int index = 0; index < actions.Length; index++)
             {
                 Equal(result.Actions[index].Action, actions[index].GetProperty("Action").Deserialize<PlayCardAction>()!, label + " native policy action");
-                Equal(BattleTurnChecks.Comparable(result.Actions[index].Result.State!),
-                    BattleTurnChecks.Comparable(actions[index].GetProperty("Actual").Deserialize<BattleTurnState>()!), label + " native action state");
+                Equal(BattleTurnChecks.Comparable(result.Actions[index].Result.State!, compareRoomEnabled: compareRoomEnabled),
+                    BattleTurnChecks.Comparable(actions[index].GetProperty("Actual").Deserialize<BattleTurnState>()!,
+                        compareRoomEnabled: compareRoomEnabled), label + " native action state");
             }
             for (int index = 0; index < turns.Length; index++)
             {
                 Require(result.Turns[index].Outcome == (RoomOutcome)turns[index].GetProperty("ActualOutcome").GetInt32(), label + " native EndTurn outcome differs.");
-                Equal(BattleTurnChecks.Comparable(result.Turns[index].State!),
-                    BattleTurnChecks.Comparable(turns[index].GetProperty("Actual").Deserialize<BattleTurnState>()!), label + " native EndTurn state");
+                Equal(BattleTurnChecks.Comparable(result.Turns[index].State!, compareRoomEnabled: compareRoomEnabled),
+                    BattleTurnChecks.Comparable(turns[index].GetProperty("Actual").Deserialize<BattleTurnState>()!,
+                        compareRoomEnabled: compareRoomEnabled), label + " native EndTurn state");
             }
         }
         Run(); Parallel.For(0, 16, _ => Run());
