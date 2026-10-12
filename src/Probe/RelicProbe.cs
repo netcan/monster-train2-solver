@@ -85,7 +85,7 @@ namespace MonsterTrain2Poju.Probe
             return new RelicCharacterTriggers(index, team.HasFlag(Team.Type.Monsters), team.HasFlag(Team.Type.Heroes),
                 triggers, (bool)Field("noCountModifiersAllowed"), subtype?.Key, subtype == null || subtype.IsNone,
                 subtype?.IsPyre == true, ((List<CharacterData>)Field("characterFilter"))
-                    .Select(character => character == null ? "<null>" : character.name).ToArray(),
+                    .Where(character => character != null).Select(character => character.GetAssetKey()).ToArray(),
                 RelicCardModifierProbe.Conditions(effect), interactions);
         }
 

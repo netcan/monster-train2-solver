@@ -46,6 +46,20 @@ internal static class RelicCharacterTriggerChecks
                 disallowedInPlacementPhase: false, triggerAdditions: [excluded]), cache);
             Require(Serialize(Add(filtered).State) == Serialize(filtered), "A rejected team/subtype installed triggers or changed RNG.");
         }
+        var boss = new CombatUnit(2, "Boss_Level1_Basic", CombatTeam.Enemy, 2, 20, 20, true, false, false, [], [],
+            equipmentCards: [], nextTriggerId: 0);
+        var bossRule = new RelicCharacterTriggers(0, true, false, [Gold("OnSpawn", 13)], true,
+            characterAssetKeys: ["Boss_Level1_Basic"]);
+        var bossRelic = new CombatRelicState("covenant", "Covenant04_StrongerBosses", [RelicModel.AddTrigger],
+            isCovenant: true, disallowedInPlacementPhase: false, triggerAdditions: [bossRule]);
+        var matchedBoss = RelicSpawnStatusModel.CharacterAdded(State(boss, bossRelic, cache), 2, 0, true);
+        Require(matchedBoss.Supported && matchedBoss.State!.Units.Single().Triggers.Single().Kind == "OnSpawn",
+            "A character-definition filter did not override the source-team mask for its matching Boss.");
+        var wrongBoss = new CombatUnit(2, "Boss_Level1_Alternate", CombatTeam.Enemy, 2, 20, 20, true, false, false, [], [],
+            equipmentCards: [], nextTriggerId: 0);
+        var wrongRoot = State(wrongBoss, bossRelic, cache);
+        Require(Serialize(RelicSpawnStatusModel.CharacterAdded(wrongRoot, 2, 0, true).State) == Serialize(wrongRoot),
+            "A nonmatching character definition passed the native filter.");
         Require(Serialize(RelicSpawnStatusModel.CharacterAdded(root, 1, 0, true).State) == parent,
             "A non-covenant relic ran in the covenant birth phase.");
         var preview = new RoomCombatState(0, false, root.Units, [], root.Context, preview: true);
@@ -53,7 +67,7 @@ internal static class RelicCharacterTriggerChecks
         Require(!Add(State(actor, relic, null)).Supported, "Missing count metadata was guessed.");
         Parallel.For(0, 32, _ => Require(Serialize(Add(root).State) == Serialize(applied.State), "Parallel relic branches differ."));
         Require(Serialize(root) == parent, "Relic installation mutated the source branch.");
-        Console.WriteLine("RELIC-CHARACTER-TRIGGER-CHECKS PASS: ordered fresh installs, count gates, unnotified conditions, team/subtype/covenant/preview filters and 32 immutable branches.");
+        Console.WriteLine("RELIC-CHARACTER-TRIGGER-CHECKS PASS: ordered fresh installs, count gates, team/subtype/definition/covenant/preview filters and 32 immutable branches.");
     }
     private static CombatTrigger Gold(string kind, int amount) => new(kind, false, false, true, 1,
         [new("CardEffectRewardGold", amount, 0, "", 0, [], false)], false, noCountModifiersAllowed: false);

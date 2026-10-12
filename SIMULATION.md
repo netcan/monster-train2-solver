@@ -6,6 +6,13 @@ covers 59/224 catalog entries (26.34%); see
 [the owner evidence table](tests/fixtures/relic-coverage.md). Whole-battle
 coverage and the optimal solver remain in progress.
 
+The pure model now applies `RelicEffectAddTrigger` character-definition filters
+using captured character asset keys; a nonempty filter overrides the source-team
+mask, matching native behavior. Model checks cover the filtered
+`Boss_Level1_Basic` covenant case and a rejected nonmatching boss. No accepted
+native Covenant battle archive exercises this path yet, so inventory and owner
+evidence counts are unchanged.
+
 `full-battle-spawn-status-relics-clones-ungated-capture.mt2f` confirms ordinary
 native capture includes the `PyreHeartSon` `RelicEffectAddTempUpgrade` definition
 while the specialized relic-modifier probe is disabled. Its cardless upgrade
@@ -148,6 +155,7 @@ are copied immutable values; independent child states can run on worker threads.
 | Dynamic statistic inputs | `CombatContext.QueryFrame` and turn/card transitions | 255 native damage callbacks and 48 decision boundaries; payment, combat, rollover, previews and settled terminal resources, plus multi-turn and parallel branches |
 | Card instance modifiers | `CardModifierModel` | Permanent/temporary ordered numeric upgrades, unit starting statuses, discard removal, play history and 256 native scalar calculations |
 | Relic card modifiers | `RelicCardModifierModel` and `CardUpgradeLifecycleModel` | Native ordering/conditions, numeric/status/IgnoreArmor/SelfPurge/Consume upgrades, unit-ability upgrades, generation and cardless births; played Consume cards route to Exhausted. Reset retains pre-existing permanent and temporary upgrade lifecycle metadata. Other traits, card triggers, replacements and room-ability payloads remain explicitly rejected. |
+| Relic added-trigger birth effects | `RelicCharacterTriggerModel` | Fresh ordered trigger installs, count modifiers, conditions, team/subtype gates, captured character asset-key filters and Covenant/preview gates; 32 immutable branches. Filtered Covenant behavior has model checks but no accepted native battle archive yet. |
 | Retained card references | `CombatContext.CardRegistry` | Observed card identities survive pile clearing; detached spawner upgrades/removal preserve ownership and parent isolation |
 | Standby dictionary allocation | `CardPileModel` | Captured entry slots and free-list order preserve native hole reuse after unit death; malformed layouts, distinct futures, terminal clear and parallel branches |
 | Shared secondary card piles | `CombatContext.OtherPiles` | Room and spell resolution carry standby/exhausted/eaten/purged/buffer state, immediate and deferred spawner returns, terminal clearing and immutable parallel branches |

@@ -49,10 +49,9 @@ namespace MonsterTrain2Poju.Model
             {
                 if (rule.ExternalInteractions.Count > 0) return string.Join("; ", rule.ExternalInteractions);
                 if (!rule.SubtypeIsNone && string.IsNullOrEmpty(rule.RequiredSubtype) ||
+                    rule.CharacterAssetKeys.Any(string.IsNullOrEmpty) ||
                     rule.Conditions.Any(condition => condition.Comparator < 0 || condition.Comparator > 7))
                     return "Malformed native relic character trigger definition.";
-                // Definition-ID matching is deliberately guarded until captured independently.
-                if (rule.CharacterAssetKeys.Count > 0) return "Relic added-trigger character definition filters are unmodeled.";
             }
             return null;
         }
@@ -65,10 +64,12 @@ namespace MonsterTrain2Poju.Model
                 source.ExternalInteractions, evaluated.Context, source.Preview, source.ActiveCompanionBossIds);
             CombatUnit? actor = state.Units.FirstOrDefault(unit => unit.Id == unitId);
             if (actor == null) return Fail("Relic trigger installation requires a retained native actor.");
-            bool team = actor.Team == CombatTeam.Player ? rule.SourcePlayer : rule.SourceEnemy;
+            bool character = rule.CharacterAssetKeys.Count == 0
+                ? (actor.Team == CombatTeam.Player ? rule.SourcePlayer : rule.SourceEnemy)
+                : rule.CharacterAssetKeys.Contains(actor.AssetKey, StringComparer.Ordinal);
             bool subtype = rule.SubtypeIsNone ? actor.Team == CombatTeam.Enemy || !actor.IsPyre : actor.Subtypes.Contains(rule.RequiredSubtype!) &&
                 (actor.Team == CombatTeam.Enemy || rule.SubtypeIsPyre == actor.IsPyre);
-            if (!evaluated.Passed || !team || !subtype || state.Preview || rule.Triggers.Count == 0) return Match(state);
+            if (!evaluated.Passed || !character || !subtype || state.Preview || rule.Triggers.Count == 0) return Match(state);
             if (!actor.NextTriggerId.HasValue) return Fail("Missing native trigger allocation for relic installation.");
             var triggers = actor.Triggers.ToList();
             int next = actor.NextTriggerId.Value;
