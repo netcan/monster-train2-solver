@@ -2920,17 +2920,25 @@ namespace MonsterTrain2Poju.Model
                                 if (!removal.Supported) { unsupportedReason = removal.UnsupportedReason; return; }
                                 if (removal.ShouldRemove && !(relentless && status.PreventRemovalDuringRelentless))
                                 {
+                                    FocusRoomForStatusRemoval(status.Id);
                                     RemoveStatus(unit, status.Id, 1);
                                     if (unit.Count(status.Id) == 0) unit.RemoveDefinition(status.Id);
                                 }
                             }
                             else if (!status.RemoveStackAtEnd && status.RemoveAllAtEnd)
                             {
+                                FocusRoomForStatusRemoval(status.Id);
                                 RemoveStatus(unit, status.Id, status.Stacks);
                                 if (unit.Count(status.Id) == 0) unit.RemoveDefinition(status.Id);
                             }
                         }
                 if (enqueueCharacterTrigger == null && !runningTriggerQueue) DrainLocalTriggerQueue();
+            }
+
+            private void FocusRoomForStatusRemoval(string statusId)
+            {
+                if (statusId != "cooldown" && !source.Preview && context?.QueryFrame?.SelectedRoomIndex != null)
+                    context = context.WithQueryFrame(context.QueryFrame.With(selectedRoomIndex: source.RoomIndex));
             }
 
             private bool BothTeamsPresent() => units.Any(unit => unit.Alive && unit.InRoom && unit.Source.Team == CombatTeam.Player &&
