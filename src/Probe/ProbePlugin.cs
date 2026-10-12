@@ -28,6 +28,7 @@ namespace MonsterTrain2Poju.Probe
         private void Awake()
         {
             log = Logger;
+            EnchanterRemovalProbe.Configure(Logger);
             if (AppManager.PlatformServices != null)
             {
                 Abort("AppManager already initialized before the save-root patch.");

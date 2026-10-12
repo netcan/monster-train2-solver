@@ -56,9 +56,14 @@ namespace MonsterTrain2Poju.Probe
         internal IReadOnlyList<CharacterState> KnownUnits => identities.Keys.ToArray();
         internal int UnitId(CharacterState unit)
         {
-            if (!identities.TryGetValue(unit, out int id)) identities.Add(unit, id = nextId++);
+            if (!identities.TryGetValue(unit, out int id))
+            {
+                identities.Add(unit, id = nextId++);
+                EnchanterRemovalProbe.MapUnit(unit.GetInstanceID(), id);
+            }
             return id;
         }
+        internal bool TryGetUnitId(CharacterState unit, out int id) => identities.TryGetValue(unit, out id);
         internal IReadOnlyDictionary<CharacterTriggerState, int> TriggerStates(CharacterState unit)
         {
             if (!triggerIdentities.TryGetValue(unit, out var states))
