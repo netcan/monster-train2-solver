@@ -99,7 +99,7 @@ namespace MonsterTrain2Poju.Probe
                 catch (Exception error) { log?.LogWarning("AURA-RECOMPUTE after capture failed: " + error.Message); }
             }
 
-            private static Observation Capture(CardEffectEnchant effect)
+            internal static Observation Capture(CardEffectEnchant effect)
             {
                 var source = (CharacterState?)AccessTools.Field(EffectType, "enchanterCharacter").GetValue(effect);
                 int sourceInstance = source == null ? 0 : source.GetInstanceID();
@@ -145,6 +145,37 @@ namespace MonsterTrain2Poju.Probe
                     catch { }
                 }
                 return string.Join(",", owners.Distinct().OrderBy(id => id));
+            }
+        }
+
+        [HarmonyPatch]
+        private static class SetEnchanterCharacterPatch
+        {
+            private static System.Reflection.MethodBase? TargetMethod() =>
+                AccessTools.Method(EffectType, "SetEnchanterCharacter");
+
+            private static void Prefix(CardEffectEnchant __instance, out Observation __state)
+            {
+                __state = default;
+                if (!Enabled) return;
+                try { __state = ApplyEffectInternalPatch.Capture(__instance); }
+                catch (Exception error) { log?.LogWarning("AURA-SOURCE-SET capture failed: " + error.Message); }
+            }
+
+            private static void Postfix(CardEffectEnchant __instance, Observation __state)
+            {
+                if (!__state.Enabled) return;
+                try
+                {
+                    Observation after = ApplyEffectInternalPatch.Capture(__instance);
+                    if (__state.Preview || after.Preview || __state.SourcePreviewBorn || after.SourcePreviewBorn ||
+                        __state.Status != after.Status || !__state.Battle.SequenceEqual(after.Battle) ||
+                        !__state.Test.SequenceEqual(after.Test) || !__state.Unity.SequenceEqual(after.Unity))
+                    {
+                        log?.LogInfo("AURA-SOURCE-SET before{" + __state.Format() + "} after{" + after.Format() + "}");
+                    }
+                }
+                catch (Exception error) { log?.LogWarning("AURA-SOURCE-SET after capture failed: " + error.Message); }
             }
         }
     }
