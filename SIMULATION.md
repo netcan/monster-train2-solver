@@ -165,7 +165,7 @@ are copied immutable values; independent child states can run on worker threads.
 | Train combat phase | `TrainCombatModel.ResolveCombat` | Top-to-bottom native phase comparison |
 | Enemy movement phase | `TrainCombatModel.Ascend` | Native movement and immediate Pyre combat, including the terminal boss fight |
 | Bump card movement | `BumpModel`, `CardSpellModel` and `HordeMergeModel.MergeAcrossRooms` | Native paid-card comparisons cover unpaired Relentless room destruction and Undying removal, companion-Boss refusal and paired Relentless Outer Boss movement in native order, Outer Train Boss movement with its reserved physical spawn slot, both-team cross-room Horde merges, signed/clamped/fixed-range quantities, immobility/rooting, loops, simultaneous targets, Pyre and full/partially blocked rooms; previews/rollback remain unsupported |
-| Unit ability teleport | `UnitTeleportModel`, `BumpModel` and `CardSpellModel` | Target selection, same-room order and physical-point swaps have pure checks; native replay calibration is pending and this prototype is not part of the accepted archive inventory |
+| Unit ability teleport | `UnitTeleportModel`, `BumpModel` and `CardSpellModel` | Pure checks plus accepted native full-battle replay: two same-room moves and one cross-room move to the selected physical point; wider interactions remain open |
 | Ordinary unit clone APIs | `UnitCloneModel`, `CharacterCopyModel` and `UnitBirthModel` | Thirteen native operations, 44 exact copied-card/birth/gear/stats/ability boundaries, raw/drained train states and callback payload/order; detached/cardless sources, failed allocations and 32 branches |
 | Paid unit copy spells | `UnitCopyModel`, `UnitCloneModel` and `CardSpellModel` | Fourteen real paid effects, complete raw state and incoming/outgoing queue payload/order, sequential births, full/partial rooms, copied equipment/skills, cardless/Horde sources and 32 branches |
 | Enemy and mixed-team copy spells | `HeroUnitBirthModel`, `UnitCopyModel` and `CardSpellModel` | Sixteen real paid effects, raw/live stats, natural skills, optional equipment, initial hero compaction, full/partial rooms, incoming global callbacks and 32 branches; subsequent paid summon and complete first-turn defeat |
@@ -8405,7 +8405,7 @@ independent full-battle checks pass across 32 immutable branches. The archive is
 29,523 bytes with 4,619 unique nodes and SHA-256
 `A8EF5A5D8E05A9F2AECFBD081BB34D76A468FF9A2C270AD9C505FE806291D43E`; it has no
 JSON companion. Original relic evidence remains 60/224 (26.79%), and inventory
-is 241 archives: 210 battles and 31 component calibrations. Replacement metadata
+is 242 archives: 211 battles and 31 component calibrations. Replacement metadata
 is supported when lifecycle evidence matches; other unmodeled traits, card
 triggers and room-ability payloads remain rejected. Full-inventory replay,
 broader relic/card interaction coverage and the decision solver remain open.
