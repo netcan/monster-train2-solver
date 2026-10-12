@@ -9,7 +9,7 @@ internal static class MagebladeChecks
         Require(eligible || !required, "Fixture lacks the native Mageblade scenario.");
         if (!eligible) return;
 
-        Require(root.GetProperty("Schema").GetInt32() == 120 &&
+        Require(root.GetProperty("Schema").GetInt32() == 127 &&
             root.GetProperty("GameModuleMvid").GetString() == "8fb07b96-f4db-4d2b-884d-c00536d6ccf4" &&
             root.GetProperty("NativeWon").GetBoolean() &&
             root.GetProperty("TerminalCaptureBoundary").GetString() == "AfterStopCombatLoop" &&

@@ -99,7 +99,7 @@ namespace MonsterTrain2Poju.Model
             if (error != null) return Fail(error);
             if (workingRelics?.Any(relic => relic.CardModifiers?.Any(effect => effect.Conditions.Count > 0) == true) == true && context == null)
                 return Fail("Relic card modifier conditions require the current combat context.");
-            if (!resetTemporary && workingRelics?.Any(relic => relic.CardModifiers?.Count > 0) != true)
+            if (!resetTemporary && workingRelics?.Any(relic => relic.CardModifiers?.Count > 0 || relic.MagicPowerModifiers?.Count > 0) != true)
                 return new RelicCardModifierResult(source, context: context);
             error = CardModifierModel.UnsupportedReason(source);
             if (error != null) return Fail(error);
@@ -129,32 +129,52 @@ namespace MonsterTrain2Poju.Model
             }
             var dispatches = new List<RelicCardModifierDispatch>();
             for (int relicIndex = 0; relicIndex < (workingRelics?.Length ?? 0); relicIndex++)
-            foreach (var effect in workingRelics![relicIndex].CardModifiers ?? Array.Empty<RelicCardModifier>())
             {
-                RelicConditionEvaluation? conditionEvaluation = null;
-                if (effect.Conditions.Count > 0)
+                CombatRelicState relic = workingRelics![relicIndex];
+                var cardEffects = (relic.CardModifiers ?? Array.Empty<RelicCardModifier>()).ToDictionary(effect => effect.EffectIndex);
+                var magicEffects = (relic.MagicPowerModifiers ?? Array.Empty<RelicMagicPowerModifier>()).ToDictionary(effect => effect.EffectIndex);
+                for (int effectIndex = 0; effectIndex < relic.EffectTypes.Count; effectIndex++)
                 {
-                    conditionEvaluation = RelicConditionModel.Evaluate(context!, effect.Conditions);
-                    if (!conditionEvaluation.Supported) return Fail(conditionEvaluation.UnsupportedReason!);
-                    context = conditionEvaluation.Context;
-                    if (!conditionEvaluation.Passed) continue;
+                    string type = relic.EffectTypes[effectIndex];
+                    if (type == RelicModel.ModifyCardMagicalPower)
+                    {
+                        if (!magicEffects.TryGetValue(effectIndex, out RelicMagicPowerModifier? magicEffect))
+                            return Fail("Missing ordered relic magic-power definition.");
+                        bool returned = card.MaskDescriptor?.Definition.CanScaleWithMagicPower == true;
+                        card = RelicMagicPowerModel.ApplyToCard(card, magicEffect!, out error)!;
+                        if (card == null) return Fail(error!);
+                        dispatches.Add(new RelicCardModifierDispatch(relicIndex, magicEffect!.EffectIndex, returned,
+                            false, Array.Empty<RelicCardFilterResult>()));
+                        continue;
+                    }
+                    if (type != RelicModel.AddTempUpgrade) continue;
+                    if (!cardEffects.TryGetValue(effectIndex, out RelicCardModifier? cardEffect))
+                        return Fail("Missing ordered relic card-upgrade definition.");
+                    RelicConditionEvaluation? conditionEvaluation = null;
+                    if (cardEffect!.Conditions.Count > 0)
+                    {
+                        conditionEvaluation = RelicConditionModel.Evaluate(context!, cardEffect.Conditions);
+                        if (!conditionEvaluation.Supported) return Fail(conditionEvaluation.UnsupportedReason!);
+                        context = conditionEvaluation.Context;
+                        if (!conditionEvaluation.Passed) continue;
+                    }
+                    var applied = RelicCardUpgradeModel.Apply(state, cardEffect.Rule, next);
+                    state = applied.State; next = applied.NextUpgradeInstanceId;
+                    if (applied.UpgradeAdded) card = card.WithModifiers(card.Permanent, UnitModifierModel.Add(card.Temporary, cardEffect.Upgrade!));
+                    if (applied.Returned && conditionEvaluation != null)
+                    {
+                        RelicConditionRecord record = RelicConditionModel.Record(context!, cardEffect.Conditions);
+                        if (!record.Supported) return Fail(record.UnsupportedReason!);
+                        context = record.Context;
+                        var updatedEffects = workingRelics[relicIndex].CardModifiers!.ToArray();
+                        int effectOffset = Array.FindIndex(updatedEffects, item => item.EffectIndex == cardEffect.EffectIndex);
+                        if (effectOffset < 0) return Fail("Relic card modifier order changed while recording its condition.");
+                        updatedEffects[effectOffset] = cardEffect.WithConditions(record.Conditions);
+                        workingRelics[relicIndex] = workingRelics[relicIndex].WithCardModifiers(updatedEffects);
+                        context = context!.WithRelics(workingRelics);
+                    }
+                    dispatches.Add(new RelicCardModifierDispatch(relicIndex, cardEffect.EffectIndex, applied.Returned, applied.UpgradeAdded, applied.Filters));
                 }
-                var applied = RelicCardUpgradeModel.Apply(state, effect.Rule, next);
-                state = applied.State; next = applied.NextUpgradeInstanceId;
-                if (applied.UpgradeAdded) card = card.WithModifiers(card.Permanent, UnitModifierModel.Add(card.Temporary, effect.Upgrade!));
-                if (applied.Returned && conditionEvaluation != null)
-                {
-                    RelicConditionRecord record = RelicConditionModel.Record(context!, effect.Conditions);
-                    if (!record.Supported) return Fail(record.UnsupportedReason!);
-                    context = record.Context;
-                    var updatedEffects = workingRelics[relicIndex].CardModifiers!.ToArray();
-                    int effectOffset = Array.FindIndex(updatedEffects, item => item.EffectIndex == effect.EffectIndex);
-                    if (effectOffset < 0) return Fail("Relic card modifier order changed while recording its condition.");
-                    updatedEffects[effectOffset] = effect.WithConditions(record.Conditions);
-                    workingRelics[relicIndex] = workingRelics[relicIndex].WithCardModifiers(updatedEffects);
-                    context = context!.WithRelics(workingRelics);
-                }
-                dispatches.Add(new RelicCardModifierDispatch(relicIndex, effect.EffectIndex, applied.Returned, applied.UpgradeAdded, applied.Filters));
             }
             return new RelicCardModifierResult(card, dispatches, context: context);
         }

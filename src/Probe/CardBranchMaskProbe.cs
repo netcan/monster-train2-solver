@@ -21,7 +21,7 @@ namespace MonsterTrain2Poju.Probe
             new CardUpgradeMaskMetadata(upgrade.GetStatusEffectUpgrades().Select(status =>
                 new UpgradeMaskStatus(status.statusId, status.count, status.fromPermanentUpgrade)).ToArray(),
                 upgrade.GetUpgradeIcon() != null, upgrade.GetHideUpgradeIconOnCard(), upgrade.GetIsRegionRunUpgrade(), upgrade.GetUnitAbilityUpgrade() != null);
-        internal static CardMaskDescriptor? Creation(CardData data)
+        internal static CardMaskDescriptor? Creation(CardData data, bool canScaleWithMagicPower)
         {
             if (!Enabled) return null;
             var spawn = data.GetSpawnCharacterData(); var initial = new List<StatusEffectStackData>(); spawn?.GetStartingStatusEffectsCopy(initial);
@@ -33,7 +33,7 @@ namespace MonsterTrain2Poju.Probe
                 effects.Select(effect => (IReadOnlyList<UpgradeMaskStatus>)effect.GetParamStatusEffectStackData().Select(Status).ToArray()).ToArray(),
                 effects.Select(effect => effect.GetEffectStateName()).ToArray(), data.GetLinkedClassID(), data.IsConsumeRemainingEnergyCostType(), spawn?.GetSize() ?? 0,
                 (int)data.GetCardTargetMode(), spawn?.GetUnitAbilityCardData() != null, data.GetCardType() == CardType.Equipment && equipment?.GetUnitAbilityUpgrade() != null,
-                spawn?.GetGraftedEquipment() != null);
+                spawn?.GetGraftedEquipment() != null, canScaleWithMagicPower);
             var traits = CardTraitCompositionModel.Refresh(new CardTraitCompositionState(data.GetTraits().Select(CardTraitCompositionProbe.Definition).ToArray(),
                 Array.Empty<CardTraitValue>(), Array.Empty<IReadOnlyList<CardTraitValue>>(), Array.Empty<string>(), Array.Empty<CardTraitReplacement>())).BaseTraits;
             return new CardMaskDescriptor(definition, data.GetCost(), traits, data.GetCardTriggers().Where(trigger => trigger.GetTrigger() == CardTriggerType.OnCast)

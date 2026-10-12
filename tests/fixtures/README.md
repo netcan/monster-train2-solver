@@ -2950,3 +2950,28 @@ pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -AllUnitsMultistrikeMutato
 dotnet run --project src/ModelChecks -c Release -- --relic-card-modifiers-only tests/fixtures/full-battle-all-units-multistrike-mutator.mt2f
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-all-units-multistrike-mutator.mt2f
 ```
+
+### Native Mageblade magic-power source
+
+The refreshed schema-127 `full-battle-mageblade.mt2f` gives the isolated battle
+a synthetic relic definition with `RelicEffectModifyCardMagicalPower`. Native
+game logic supplies 15 room magic power and applies trait-scaled temporary
+damage/heal offsets to an eligible spell. This replaces the earlier controlled
+room-power input. Mageblade's cached attack coefficient matches in 33
+observations; all six native relic-manager calls, 12 ordered effect results,
+10 notifications and 32 immutable branches match as well.
+
+The muted Instant battle wins at Pyre 80 after 37 room stages, nine card cycles,
+nine train phases, seven spawns, five EndTurns and six actions. Capture failures,
+mismatches, unsupported transitions and pending records are zero. The binary is
+20,617 bytes with 2,952 unique nodes and SHA-256
+`e42cd42f722d2e2e6ccda5808cd8762e9a468210881368e1cf45015916c72aba`; it has no
+JSON companion. The synthetic owner does not add to the 59/224 original relic
+evidence or 239-archive inventory. Conditional magic-power effects and preview
+copy lifecycle remain open.
+
+```powershell
+dotnet run --project src/ModelChecks -c Release -- --relic-magic-power-pure
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Mageblade
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-mageblade.mt2f
+```

@@ -103,6 +103,8 @@ internal static class RelicCardModifierChecks
             scenario.GetString() == "relic-card-trigger-upgrades";
         bool deployableRelicScenario = root.TryGetProperty("ModifierScenario", out scenario) &&
             scenario.GetString() == "original-deployable-relic";
+        bool magebladeScenario = root.TryGetProperty("ModifierScenario", out scenario) &&
+            scenario.GetString() == "mageblade";
         bool sawExpectedRejection = statusUpgradeScenario || piercingUpgradeScenario || abilityUpgradeScenario || triggerUpgradeScenario || deployableRelicScenario
             ? rows.Any(row => row.Dispatches.Any(effect => !effect.Returned && !effect.UpgradeAdded))
             : rows.Any(row => !row.Reset && row.Dispatches.Any(effect => effect.Returned && !effect.UpgradeAdded));
@@ -116,14 +118,27 @@ internal static class RelicCardModifierChecks
             rows.Any(row => row.Dispatches.Any(effect => !effect.Returned)), statusUpgradeScenario
                 ? "Native manager lacks reset and failed-eligibility rejection."
                 : "Native manager lacks reset/repeat/unique rejection and failed eligibility.");
-        string expectedOwner = root.TryGetProperty("ModifierScenario", out var ownerScenario) &&
-            ownerScenario.GetString() == "original-deployable-relic" ? "NonBannerUnitsHaveDeployable" :
-            allUnitsMultistrikeScenario ? "AllUnitsMultistrike" : "ReduceStarterCost";
+        string expectedOwner = magebladeScenario ? "PojuMagebladeMagicPowerRelic" :
+            root.TryGetProperty("ModifierScenario", out var ownerScenario) && ownerScenario.GetString() == "original-deployable-relic"
+                ? "NonBannerUnitsHaveDeployable" : allUnitsMultistrikeScenario ? "AllUnitsMultistrike" : "ReduceStarterCost";
         Require(rows.Any(row => row.Relics.Any(relic => relic.AssetKey == expectedOwner &&
-            (allUnitsMultistrikeScenario
-                ? relic.EffectTypes.SequenceEqual(new[] { "RelicEffectAddTempUpgrade", "RelicEffectAddStatusEffectOnSpawn" })
-                : relic.EffectTypes.SequenceEqual(new[] { "RelicEffectAddTempUpgrade" })))),
+            (magebladeScenario
+                ? relic.EffectTypes.SequenceEqual(new[] { RelicModel.ModifyCardMagicalPower }) &&
+                    relic.MagicPowerModifiers?.Count == 1
+                : allUnitsMultistrikeScenario
+                    ? relic.EffectTypes.SequenceEqual(new[] { "RelicEffectAddTempUpgrade", "RelicEffectAddStatusEffectOnSpawn" })
+                    : relic.EffectTypes.SequenceEqual(new[] { "RelicEffectAddTempUpgrade" })))),
             "Expected original relic owner/effect order is missing.");
+        if (magebladeScenario)
+        {
+            bool nativeSpellModifier = rows.Any(row => row.Reset && row.Before.MaskDescriptor?.Definition.CanScaleWithMagicPower == true &&
+                row.Relics.Any(relic => relic.AssetKey == expectedOwner && relic.MagicPowerModifiers?.Count == 1) &&
+                row.Actual.Temporary.Offsets.Damage == unchecked(row.Relics.Single(relic => relic.AssetKey == expectedOwner)
+                    .MagicPowerModifiers!.Single().PowerModifier * CardMagicPowerModel.Multiplier(row.Before)) &&
+                row.Actual.Temporary.Offsets.Heal == unchecked(row.Relics.Single(relic => relic.AssetKey == expectedOwner)
+                    .MagicPowerModifiers!.Single().PowerModifier * CardMagicPowerModel.Multiplier(row.Before)));
+            Require(nativeSpellModifier, "Native magic-power relic did not match spell eligibility and trait-scaled temporary offsets.");
+        }
         string parent = JsonSerializer.Serialize(rows);
         void Check()
         {
@@ -341,7 +356,7 @@ internal static class RelicCardModifierChecks
             Actual: row.GetProperty("Actual").Deserialize<CombatContext>()!)).ToArray();
         var births = generated.SelectMany(row => row.Actual.CardInstances!.Where(card => card.InstanceId >= row.Before.NextCardId)).ToArray();
         if (requireScenarioCoverage && !deployableRelicScenario && !statusUpgradeScenario && !piercingUpgradeScenario && !selfPurgeUpgradeScenario &&
-            !exhaustUpgradeScenario && !abilityUpgradeScenario && !triggerUpgradeScenario && !allUnitsMultistrikeScenario)
+            !exhaustUpgradeScenario && !abilityUpgradeScenario && !triggerUpgradeScenario && !allUnitsMultistrikeScenario && !magebladeScenario)
             Require(births.Any(card => card.Temporary.Upgrades.Any(upgrade => upgrade.AssetKey == "ReduceStarterCost" ||
                 rows.SelectMany(row => row.Relics).SelectMany(relic => relic.CardModifiers ?? []).Any(effect => effect.Upgrade?.DataId == upgrade.DataId))),
                 "No battle-generated eligible card received an original relic upgrade.");
@@ -353,7 +368,8 @@ internal static class RelicCardModifierChecks
             exhaustUpgradeScenario ? "Consume relic traits routed played cards to Exhausted" :
             abilityUpgradeScenario ? "unit ability upgrades reached summoned units" :
             triggerUpgradeScenario ? "OnKill character triggers reached summoned units" :
-            allUnitsMultistrikeScenario ? "Multistrike applied to owned and spawned cards" : "eligible battle-generated cards";
+            allUnitsMultistrikeScenario ? "Multistrike applied to owned and spawned cards" :
+            magebladeScenario ? "native magic-power spell offsets" : "eligible battle-generated cards";
         Console.WriteLine($"NATIVE-RELIC-CARD-MODIFIER-CHECKS PASS: {rows.Length} original manager calls, {rows.Sum(row => row.Dispatches.Length)} ordered effect/filter results, " +
             $"{rows.Sum(row => row.Notifications.Length)} exact trigger notifications, {coverage} and 32 immutable branches.");
     }

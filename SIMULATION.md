@@ -48,9 +48,12 @@ This captures the native deployment hand before the simulator's first-decision
 input; whole-game relic coverage and the optimal solver remain unfinished.
 
 `full-battle-mageblade.mt2f` validates the Mageblade cache and room-power attack
-path through a complete battle and independent mid-battle replay. Its +15 room
-magic power is a controlled probe input; natural room-power sources and
-preview-copy lifecycle remain unverified.
+path through a complete battle and independent mid-battle replay. Schema 127
+adds a synthetic relic definition whose native `RelicEffectModifyCardMagicalPower`
+adds 15 room power and applies trait-scaled temporary damage/heal offsets to an
+eligible spell. This replaces the old controlled room-power input; it is
+mechanism evidence, not an original relic owner. Conditional effect variants
+and preview-copy lifecycle remain open.
 
 `full-battle-relic-card-exhaust-upgrades.mt2f` validates temporary relic
 Consume upgrades through played-card exhaustion. The fixture reuses a modified
@@ -8305,4 +8308,30 @@ availability is updated.
 Inventory is 239 binary archives: 208 battles and 31 component calibrations.
 Original relic evidence remains 59/224 (26.34%). Full-inventory replay,
 complete Boss/status coverage, arbitrary card/relic interactions, natural
-Mageblade power sources and the decision solver remain unfinished.
+conditional Mageblade power effects and the decision solver remain unfinished.
+
+### Native Mageblade magic-power source
+
+The schema-127 `full-battle-mageblade.mt2f` injects a synthetic relic
+definition into the native data catalog and gives it to the isolated battle.
+The game itself applies `RelicEffectModifyCardMagicalPower`: the captured room
+has 15 magic power, and an eligible spell receives the native trait-scaled
+temporary damage/heal offsets. The native manager comparison matches all six
+calls, 12 ordered effect results, 10 notifications and 32 immutable branches.
+The battle wins at Pyre 80 after 37 room stages, nine card cycles, nine train
+phases, seven spawns, five EndTurns and six actions; capture failures,
+mismatches, unsupported transitions and pending records are zero. Mageblade's
+cache and attack consumer also match across 33 observations.
+
+The archive is 20,617 bytes with 2,952 unique nodes and SHA-256
+`e42cd42f722d2e2e6ccda5808cd8762e9a468210881368e1cf45015916c72aba`; it has no
+JSON companion. This synthetic owner adds no original relic evidence: coverage
+remains 59/224 (26.34%), and inventory remains 239 archives. Conditional magic
+power effects, preview/copy refresh behavior, full-inventory replay, broader
+Boss/status interactions and the decision solver remain unfinished.
+
+```powershell
+dotnet run --project src/ModelChecks -c Release -- --relic-magic-power-pure
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Mageblade
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-mageblade.mt2f
+```

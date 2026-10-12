@@ -213,7 +213,7 @@ if ($OriginalDecayRelicBatch) { $BranchCardMasks = $true; $Policy = 'units-spell
 if ($OriginalResourceRelicBatch) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($PyreResourceRefresh) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalFloorCapacityRelics) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
-if ($Mageblade) { $BranchCardMasks = $true; $Policy = 'units-and-junk' }
+if ($Mageblade) { $BranchCardMasks = $true; $BattleRelicUpgrades = $true; $Policy = 'units-and-junk' }
 if ($OriginalTriggerRelicBatch -or $OriginalLifecycleRelicBatch) {
     $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $SettleDeathDissolves = $true; $SettleCardAnimations = $true
     $Policy = 'units-spells-and-junk'
@@ -497,7 +497,7 @@ if ($Mageblade) {
             }
         }
     )
-    if ($trace.Schema -ne 120 -or $trace.ModifierScenario -ne 'mageblade' -or
+    if ($trace.Schema -ne 127 -or $trace.ModifierScenario -ne 'mageblade' -or
         -not (Select-String -LiteralPath $unityLog -Pattern 'MAGEBLADE-PREPARED' -Quiet) -or $magebladeProof.Count -eq 0) {
         throw 'Mageblade native battle did not capture a cached Mageblade unit in a positive-magic-power room.'
     }

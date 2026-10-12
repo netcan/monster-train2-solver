@@ -76,6 +76,12 @@ if (args.Length == 1 && args[0] == "--mageblade-pure")
     return;
 }
 
+if (args.Length == 1 && args[0] == "--relic-magic-power-pure")
+{
+    RelicMagicPowerChecks.Run();
+    return;
+}
+
 if (args.Length == 1 && args[0] == "--gold-pyre-pure")
 {
     GoldPyreChecks.Run();
@@ -534,6 +540,7 @@ RelicSpawnStatusChecks.Run();
 RelicCharacterTriggerChecks.Run();
 CovenantCharacterFilterChecks.Run();
 RelicCardModifierChecks.Run();
+RelicMagicPowerChecks.Run();
 RelicStatusStackChecks.Run();
 RelicStatusMagnitudeChecks.Run();
 TitanSkinChecks.Run();

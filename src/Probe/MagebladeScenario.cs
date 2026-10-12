@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using BepInEx.Logging;
@@ -10,7 +11,7 @@ namespace MonsterTrain2Poju.Probe
     internal static class MagebladeScenario
     {
         internal const string Name = "mageblade";
-        private const int InjectedRoomMagicPower = 15;
+        private const int RelicRoomMagicPower = 15;
         internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == Name;
         private static bool configured;
         internal static bool Prepared { get; private set; }
@@ -25,8 +26,20 @@ namespace MonsterTrain2Poju.Probe
             if (save.PreviewMode || save.GetGameSequence() == SaveData.GameSequence.InBattle)
                 throw new InvalidOperationException("Mageblade test input must be configured before battle setup.");
             RoomIndex = 1;
+            AllGameData gameData = save.GetAllGameData();
+            CollectableRelicData relic = UnityEngine.Object.Instantiate(gameData.GetAllCollectableRelicData().First());
+            relic.name = "PojuMagebladeMagicPowerRelic";
+            AccessTools.Field(typeof(GameData), "id").SetValue(relic, "0f1d0b70-e71f-4c13-9f11-b9dafbde4232");
+            var effect = new RelicEffectData();
+            Set(effect, "relicEffectClassName", typeof(RelicEffectModifyCardMagicalPower).AssemblyQualifiedName!);
+            Set(effect, "effectConditions", new List<RelicEffectCondition>());
+            Set(effect, "paramInt", RelicRoomMagicPower);
+            Set(relic, "effects", new List<RelicEffectData> { effect });
+            ((IList)AccessTools.Field(typeof(AllGameData), "collectableRelicDatas").GetValue(gameData)).Add(relic);
+            save.AddRelic(relic);
             configured = true;
-            log.LogInfo("MAGEBLADE-POWER-INPUT controlled room magic power=" + InjectedRoomMagicPower + " in isolated room " + RoomIndex + ".");
+            log.LogInfo("MAGEBLADE-POWER-INPUT synthetic native RelicEffectModifyCardMagicalPower=" + RelicRoomMagicPower +
+                " in isolated battle; this is not an original relic owner.");
         }
 
         internal static void Prepare(AllGameManagers managers, ManualLogSource log)
@@ -55,20 +68,23 @@ namespace MonsterTrain2Poju.Probe
 
             foreach (CardState card in owned.Where(card => card.GetCardDataID() == steward.GetID()))
                 card.Setup(steward, save, setupStartingUpgrades: false);
+            CaptureReady = true;
+            CardState? spell = owned.FirstOrDefault(card => card.GetCardType() == CardType.Spell && card.CanScaleWithMagicPower());
+            if (spell == null) throw new InvalidOperationException("Mageblade relic fixture needs an owned spell that scales with magic power.");
+            managers.GetRelicManager().ApplyCardStateModifiers(spell, resetTempCardModifiers: true);
             CardState added = cards.AddNewCard(steward, CardPile.HandPile, false, false, animate: false);
             if (added == null || !cards.GetHand().Contains(added))
                 throw new InvalidOperationException("Mageblade Train Steward did not enter the native hand.");
 
             MagebladeCardId = steward.GetID();
-            CaptureReady = true;
             int magicPower = room.GetRoomStateModifiedMagicPower(Team.Type.Monsters, managers.GetCoreManagers()) +
                 managers.GetRelicManager().GetMagicPowerModification();
-            if (magicPower != InjectedRoomMagicPower)
-                throw new InvalidOperationException("Mageblade test room did not expose the controlled native magic-power input.");
+            if (magicPower != RelicRoomMagicPower)
+                throw new InvalidOperationException("Mageblade test room did not expose the synthetic relic's native magic-power input.");
             Prepared = true;
             Set(managers.GetCombatManager()!, "combatStateChanged", true);
             log.LogInfo("MAGEBLADE-PREPARED card=" + steward.name + " room=" + RoomIndex +
-                " dataId=" + MagebladeCardId + " roomMagicPower=" + magicPower + " startingStacks=2; controlled test input.");
+                " dataId=" + MagebladeCardId + " roomMagicPower=" + magicPower + " startingStacks=2; native synthetic relic.");
         }
 
         internal static PlayCardAction? Choose(BattleTurnState source)
@@ -88,15 +104,5 @@ namespace MonsterTrain2Poju.Probe
         }
 
         private static void Set(object target, string field, object value) => AccessTools.Field(target.GetType(), field).SetValue(target, value);
-
-        [HarmonyPatch(typeof(RoomState), nameof(RoomState.GetRoomStateModifiedMagicPower))]
-        private static class RoomPowerPatch
-        {
-            private static void Postfix(RoomState __instance, ref int __result)
-            {
-                if (Enabled && CaptureReady && __instance.GetRoomIndex() == RoomIndex)
-                    __result = unchecked(__result + InjectedRoomMagicPower);
-            }
-        }
     }
 }
