@@ -2964,6 +2964,20 @@ unique nodes and SHA-256
 no JSON companion. This validates the captured seven-turn path, not exhaustive
 card/relic coverage or completion of the full decision search.
 
+### Refreshed units, spells and junk full battle (schema 103)
+
+The 2026-10-12 native capture at
+`.probe-runs/full-battle-units-spells-and-junk-20261012-161054-b4a12ee9`
+wins after 60 room stages, 13 card cycles, 14 train phases, 11 spawns, seven
+EndTurns and 21 card plays. Capture failures, mismatches, unsupported
+transitions and pending records are zero. Offline checks match all 60 rooms,
+13 card cycles, 14 train phases, 11 spawns, seven turns and 21 actions; the
+policy chain matches all card plays, EndTurns and final Pyre 73. The archive is
+30,256 bytes with 5,002 unique nodes and SHA-256
+`c775daf43ea3c1c93e80dd2f221e20d6d8df829fbc33faa49276db6d6be2292a`; it has
+no JSON companion. This validates the captured seven-turn path, not exhaustive
+card/relic coverage or completion of the full decision search.
+
 ### Native Mageblade magic-power source
 
 The refreshed schema-127 `full-battle-mageblade.mt2f` gives the isolated battle
