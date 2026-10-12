@@ -2177,17 +2177,20 @@ observation preserves Morsel health while consuming its shield. Complete native
 states additionally cover queued sacrifice callbacks before physical-position
 centering and the lifecycle descriptor on an equipment's anonymous aggregate.
 
-The 39-play/seven-EndTurn policy wins with Pyre health 78. Native sampling takes
-175.91 seconds with zero capture failures, mismatches, unsupported or pending
-records; original installation files are unchanged. The independent full policy,
-mid-battle suffix, 16 policy branches and all recorded component checks pass.
-Eight affected historical fixtures pass across the equipment and sacrifice
-changes. A full 213-archive rerun remains deferred under the incremental workflow.
+The 40-action/seven-EndTurn policy battle wins with Pyre health 78. Four opening
+actions are fixture preparation before the native equipment and Bump cards are
+injected; the independent policy starts at that recorded turn-one decision and
+replays 36 card plays and six EndTurns. Native sampling takes 206.00 seconds with
+zero capture failures, mismatches, unsupported or pending records; original
+installation files are unchanged. The independent suffix, 16 policy branches
+and all recorded component checks pass. Eight affected historical fixtures pass
+across the equipment and sacrifice changes. A full 240-archive rerun remains
+deferred under the incremental workflow.
 
-The byte-identical native archive uses schema 106, has 67,488 bytes/10,703 nodes
-and SHA-256 `8fb8844068a431185ca4cb05d66e91f7b0d41f344bd57e146776c925bc50d76f`.
-There are no JSON companions. See [relic-coverage.md](relic-coverage.md) for the
-16/224 original-relic coverage scope and effect witnesses.
+The native archive uses schema 103, has 69,249 bytes/11,309 nodes and SHA-256
+`5f0eb05bb64b8716ee6a28db7d7024e9d61d9e4a02058202262bed761d3e3794`. There are
+no JSON companions. See [relic-coverage.md](relic-coverage.md) for the 60/224
+original-relic coverage scope and effect witnesses.
 
 ```powershell
 dotnet run --project src/ModelChecks -c Release -- --original-unit-relics-only tests/fixtures/full-battle-original-unit-relics.mt2f

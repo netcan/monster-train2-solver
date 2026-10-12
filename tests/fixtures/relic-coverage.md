@@ -103,7 +103,7 @@ archives contain these observed battle sizes:
 | [starter cost relic][cost] | 105 | 18 | 5 | 42 | 124 modifier calls |
 | [cardless relic upgrades][cardless] | 111 | 1 | 5 | 42 | 22 birth phases |
 | [original relic batch][batch] | 106 | 21 | 5 | 46 | 30 modifier calls, 12 birth phases |
-| [original unit relic batch][units] | 106 | 39 | 7 | 56 | 40 modifier calls, 28 Shift queries, 6 original ability activations |
+| [original unit relic batch][units] | 103 | 40 | 7 | 55 | 40 modifier calls, 28 Shift queries, 6 original ability activations |
 | [stationary trigger relic deaths][triggerDeaths] | 103 | 13 | 5 | 35 | 14 births, eight required original effect witnesses |
 | [original trigger relics][triggers] | 106 | 28 | 7 | 54 | 14 births, three attachments including one enemy, ten Bump plays, eight required effect witnesses |
 | [original status relics][statusAdders] | 113 | 26 | 5 | 39 | 27 distinct real queries, 192 boundary queries, four positive original effects |
