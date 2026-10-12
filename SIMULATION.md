@@ -8232,3 +8232,23 @@ Inventory is now 228 binary archives: 197 battles and 31 component calibrations.
 Original relic evidence remains 55/224 (24.55%). Full-inventory replay remains
 deferred to a completed milestone. Arbitrary card/relic combinations, all Bosses
 and optimal search remain unfinished.
+
+### Covenant Boss character filters
+
+The schema-103 `full-battle-covenant-character-filter.mt2f` activates the full
+25-effect `Covenant04_StrongerBosses` definition in an isolated native battle.
+All 11 wave-spawn decisions and eight Covenant-only birth callbacks match. The
+character filter installs its `OnKill` Rage trigger on the single
+`Boss_Level1_Basic` match; the seven observed nonmatches retain their original
+statuses and triggers. The muted Instant battle wins after 55 combat stages,
+with zero mismatches, unsupported transitions, capture failures or pending
+records. `Boss_Level2_BigStats`'s Titan Skin effect remains outside support; a
+unit carrying that status is explicitly rejected until damage soak and stack
+consumption are modeled. The archive is 37,261 bytes with 4,600 unique nodes and SHA-256
+`392e090aac909f2994b0f74ebcde49025d6ef89feae22836bff08572f048390d`, with no
+JSON companion.
+
+Inventory is 237 binary archives: 206 battles and 31 component calibrations.
+Accepted original relic evidence remains 59/224 (26.34%). Full-inventory replay,
+complete Boss/status coverage, arbitrary relic and card interactions, and the
+decision solver remain unfinished.

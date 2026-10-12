@@ -140,6 +140,7 @@ param(
     [switch] $OriginalUnitRelicBatch,
     [switch] $OriginalEndlessReturn,
     [switch] $OriginalTriggerRelicBatch,
+    [switch] $CovenantCharacterFilter,
     [switch] $OriginalStatusRelicBatch,
     [switch] $OriginalMagnitudeRelicBatch,
     [switch] $OriginalLifecycleRelicBatch,
@@ -409,6 +410,7 @@ if ($OriginalStingRelicBatch) { $environment['MT2_PROBE_MODIFIERS'] = 'original-
 if ($OriginalUnitRelicBatch) { $environment['MT2_PROBE_MODIFIERS'] = 'original-unit-relic-batch' }
 if ($OriginalEndlessReturn) { $environment['MT2_PROBE_MODIFIERS'] = 'original-endless-return' }
 if ($OriginalTriggerRelicBatch) { $environment['MT2_PROBE_MODIFIERS'] = 'original-trigger-relic-batch' }
+if ($CovenantCharacterFilter) { $environment['MT2_PROBE_MODIFIERS'] = 'covenant-character-filter' }
 if ($OriginalStatusRelicBatch) { $environment['MT2_PROBE_MODIFIERS'] = 'original-status-relic-batch' }
 if ($OriginalMagnitudeRelicBatch) { $environment['MT2_PROBE_MODIFIERS'] = 'original-magnitude-relic-batch' }
 if ($OriginalLifecycleRelicBatch) { $environment['MT2_PROBE_MODIFIERS'] = 'original-lifecycle-relic-batch' }

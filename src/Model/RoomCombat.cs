@@ -365,7 +365,7 @@ namespace MonsterTrain2Poju.Model
             "spikes", "lifesteal", "fragile", "piercing", "immune", "immobile",
             "relentless", "sweep", "sniper", "rooted", "haste", "untouchable", "endless",
             "buff", "debuff", "regen", "poison", "melee weakness", "silenced", "valor", "pyregel",
-            "heal multiplier", "heal immunity", "cooldown", "unit_ability", "unit_ability_available", "horde", "cardless", "undying", "purify", "mageblade"
+            "heal multiplier", "heal immunity", "cooldown", "unit_ability", "unit_ability_available", "horde", "cardless", "undying", "purify", "mageblade", "titanskin"
         };
         internal static bool KnowsStatus(string id) => KnownStatuses.Contains(id);
 
@@ -801,6 +801,8 @@ namespace MonsterTrain2Poju.Model
                 foreach (CombatStatus status in unit.Statuses)
                     if (!KnownStatuses.Contains(status.Id))
                         return "Unmodeled status " + status.Id + " on " + unit.AssetKey;
+                if (unit.Status("titanskin") != null)
+                    return "Titan Skin damage soak and stack consumption are not modeled.";
                 if (!state.Deployment && unit.Status("valor") != null &&
                     state.Context?.StatusRules.FirstOrDefault(rule => rule.Id == "armor") == null)
                     return "Valor requires the armor status definition.";

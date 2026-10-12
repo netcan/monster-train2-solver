@@ -246,6 +246,8 @@ namespace MonsterTrain2Poju.Probe
                 int section = save.GetCurrentDistance() + 1;
                 if (map != null && map.TryGetBattleNodeUI(section, out MapBattleNodeUI node))
                 {
+                    if (fullBattle && CovenantCharacterFilterScenario.Enabled && !CovenantCharacterFilterScenario.Prepared)
+                        CovenantCharacterFilterScenario.ConfigureBeforeBattle(managers!, log);
                     if (fullBattle && MagebladeScenario.Enabled && !MagebladeScenario.Prepared)
                         MagebladeScenario.ConfigureBeforeBattle(managers!, log);
                     if (fullBattle && OriginalResourceRelicBatchScenario.Enabled && !OriginalResourceRelicBatchScenario.Prepared)

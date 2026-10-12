@@ -400,6 +400,12 @@ if (args.Length == 2 && args[0] == "--relic-spawn-status-only")
     RelicSpawnStatusChecks.Native(fixture.RootElement);
     return;
 }
+if (args.Length == 2 && args[0] == "--covenant-character-filter-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    CovenantCharacterFilterChecks.Native(fixture.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--incant-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
@@ -520,6 +526,7 @@ TriggerCountChecks.Run();
 RelicCardlessUpgradeChecks.Run();
 RelicSpawnStatusChecks.Run();
 RelicCharacterTriggerChecks.Run();
+CovenantCharacterFilterChecks.Run();
 RelicCardModifierChecks.Run();
 RelicStatusStackChecks.Run();
 RelicStatusMagnitudeChecks.Run();

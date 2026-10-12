@@ -2874,3 +2874,25 @@ relic evidence remains 59/224 (26.34%); full-inventory replay is still deferred.
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-persistent-enchantment-random-summons.mt2f
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-persistent-enchantment-random-summons-fresh.mt2f
 ```
+
+### Covenant Boss character filters
+
+`full-battle-covenant-character-filter.mt2f` activates the complete native
+`Covenant04_StrongerBosses` definition in an isolated run. Its 11 wave-spawn
+decisions and eight Covenant birth callbacks match exactly. The character filter
+installs the `OnKill` Rage trigger on the single `Boss_Level1_Basic` match; the
+seven observed nonmatching births retain their original statuses and triggers.
+The muted Instant battle wins after 55 combat stages with zero mismatches,
+unsupported transitions, capture failures or pending records. This fixture does
+not include `Boss_Level2_BigStats`, whose Covenant effect adds Titan Skin; that
+status still stops combat modeling explicitly because damage soak and stack
+consumption are not implemented. The schema-103 archive is 37,261 bytes with
+4,600 unique nodes and SHA-256
+`392e090aac909f2994b0f74ebcde49025d6ef89feae22836bff08572f048390d`; it has no
+JSON companion. Inventory is 237 archives: 206 battles and 31 component
+calibrations. Original relic evidence remains 59/224 (26.34%).
+
+```powershell
+dotnet run --project src/ModelChecks -c Release -- --covenant-character-filter-only tests/fixtures/full-battle-covenant-character-filter.mt2f
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-covenant-character-filter.mt2f
+```

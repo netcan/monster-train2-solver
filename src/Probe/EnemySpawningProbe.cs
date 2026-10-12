@@ -42,7 +42,6 @@ namespace MonsterTrain2Poju.Probe
             string? relicError = RelicModel.Validate(state.Context);
             if (relicError != null) interactions.Add(relicError);
             if (save.GetMutators().Count > 0) interactions.Add("Spawn mutators");
-            if (save.GetCovenantsForSpawnPattern().Count > 0) interactions.Add("Spawn covenant effects");
             var cache = (Dictionary<int, SpawnGroupData>)AccessTools.Field(typeof(SpawnPatternData),
                 "groupIndexToGroupData").GetValue(pattern);
             var waves = new List<SpawnGroupPoolData>(); pattern.GetUnlockedWaves(save, waves);
@@ -53,6 +52,8 @@ namespace MonsterTrain2Poju.Probe
                     "possibleGroups").GetValue(wave)).Cast<SpawnGroupData>().ToArray();
                 selectedGroups.Add(cache.TryGetValue(index, out SpawnGroupData selected)
                     ? Array.IndexOf(groups, selected) : -1);
+                // GetCharacters resolves modeled Covenant spawn definitions before
+                // Definition captures their native stats, statuses and triggers.
                 return new EnemyWave(groups.Select(group => new EnemyGroup(group.GetCharacters(
                     save.GetCovenantsForSpawnPattern(), save, save.GetGeneratedBoss()).Select(Definition).ToArray())).ToArray());
             }).ToArray();

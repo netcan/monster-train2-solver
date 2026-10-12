@@ -5,6 +5,7 @@ $ErrorActionPreference = 'Stop'
 $workspace = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $fixtureNames = @('full-battle-steward-once.mt2f', 'full-battle-no-cards.mt2f', 'full-battle-units-and-junk.mt2f',
     'full-battle-units-spells-and-junk.mt2f', 'full-battle-relic-card-modifiers.mt2f', 'full-battle-original-relic-batch.mt2f',
+    'full-battle-covenant-character-filter.mt2f',
     'full-battle-original-unit-relics.mt2f',
     'full-battle-original-trigger-relics.mt2f', 'full-battle-original-trigger-relic-deaths.mt2f',
     'full-battle-original-status-relics.mt2f',
@@ -220,6 +221,12 @@ if ($generalFixtures.Count -gt 0) {
     dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release
 }
 if ($LASTEXITCODE -ne 0) { throw 'Independent model checks failed.' }
+
+$covenantFixtures = @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 'full-battle-covenant-character-filter.mt2f' })
+foreach ($fixturePath in $covenantFixtures) {
+    dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- --covenant-character-filter-only $fixturePath
+    if ($LASTEXITCODE -ne 0) { throw "Covenant character-filter checks failed: $fixturePath" }
+}
 
 $bumpFixtures = @($fixtures | Where-Object {
     (Split-Path -Leaf $_) -in @('full-battle-bump.mt2f', 'full-battle-companion-bump.mt2f', 'full-battle-outer-boss-bump.mt2f')
