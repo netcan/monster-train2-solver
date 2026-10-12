@@ -38,8 +38,11 @@ namespace MonsterTrain2Poju.Model
         public string? UnsupportedReason { get; }
         public bool Supported => State != null;
         public IReadOnlyList<BonusUpgradeApplication> UpgradeApplications { get; }
-        internal CardCycleResult(CardCycleState? state, string? reason = null, IReadOnlyList<BonusUpgradeApplication>? upgradeApplications = null)
-        { State = state; UnsupportedReason = reason; UpgradeApplications = Array.AsReadOnly((upgradeApplications ?? Array.Empty<BonusUpgradeApplication>()).ToArray()); }
+        public IReadOnlyList<CardToken> PurgedCards { get; }
+        internal CardCycleResult(CardCycleState? state, string? reason = null, IReadOnlyList<BonusUpgradeApplication>? upgradeApplications = null,
+            IReadOnlyList<CardToken>? purgedCards = null)
+        { State = state; UnsupportedReason = reason; UpgradeApplications = Array.AsReadOnly((upgradeApplications ?? Array.Empty<BonusUpgradeApplication>()).ToArray());
+            PurgedCards = Array.AsReadOnly((purgedCards ?? Array.Empty<CardToken>()).ToArray()); }
     }
 
     public static class CardCycleModel
@@ -106,13 +109,19 @@ namespace MonsterTrain2Poju.Model
             return new CardCycleResult(new CardCycleState(hand, draw, discard, rng, 0, source.ExternalInteractions, bonus, source.NextDrawUpgrades, source.NextUpgradeReferenceId), upgradeApplications: applications);
         }
 
-        public static CardCycleResult DiscardHand(CardCycleState source)
+        public static CardCycleResult DiscardHand(CardCycleState source, IReadOnlyCollection<int>? ephemeralCardIds = null)
         {
             if (source.ExternalInteractions.Count > 0)
                 return new CardCycleResult(null, string.Join("; ", source.ExternalInteractions));
+            var ephemeral = new HashSet<int>(ephemeralCardIds ?? Array.Empty<int>());
+            if (ephemeral.Any(id => source.Hand.All(card => card.InstanceId != id)))
+                return new CardCycleResult(null, "An Ephemeral card is not in hand.");
+            var discard = new List<CardToken>(); var purged = new List<CardToken>();
+            foreach (CardToken card in source.Hand.Reverse())
+                (ephemeral.Contains(card.InstanceId) ? purged : discard).Add(card);
             return new CardCycleResult(new CardCycleState(Array.Empty<CardToken>(), source.Draw,
-                source.Discard.Concat(source.Hand.Reverse()).ToArray(), source.Rng, source.DrawModifier,
-                source.ExternalInteractions, source.BonusDraw, source.NextDrawUpgrades, source.NextUpgradeReferenceId));
+                source.Discard.Concat(discard).ToArray(), source.Rng, source.DrawModifier,
+                source.ExternalInteractions, source.BonusDraw, source.NextDrawUpgrades, source.NextUpgradeReferenceId), purgedCards: purged);
         }
     }
 }

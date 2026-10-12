@@ -16,6 +16,16 @@ internal static class CardCycleChecks
         CardCycleState discarded = CardCycleModel.DiscardHand(next).State!;
         Require(discarded.Discard.Select(card => card.InstanceId).SequenceEqual([3, 10, 2]),
             "Native hand discard order differs.");
+        CardCycleResult ephemeral = CardCycleModel.DiscardHand(new CardCycleState(
+            [new CardToken(10, "held"), new CardToken(11, "ephemeral"), new CardToken(12, "held")],
+            [], [new CardToken(3, "prior")], UnityRng.Seed(8), 0, []), [11]);
+        Require(ephemeral.Supported && ephemeral.State!.Discard.Select(card => card.InstanceId).SequenceEqual([3, 12, 10]) &&
+            ephemeral.PurgedCards.Select(card => card.InstanceId).SequenceEqual([11]),
+            "Ephemeral discard routing changed hand order or retained the card in Discard.");
+        var playedEphemeral = new CardToken(1, "ephemeral");
+        Require(CardPileModel.ValidateMembership(new CardCycleState([], [], [], UnityRng.Seed(9), 0, []),
+            [new CardPileState("Purged", [playedEphemeral, playedEphemeral])], 2) == null,
+            "Native's paired Ephemeral play/discard purge callbacks were rejected as duplicate pile membership.");
         CardCycleState full = CardCycleModel.DrawHand(root, 5, 1).State!;
         Require(ReferenceEquals(full, root) && full.DrawModifier == 1,
             "A full hand reset its pending draw modifier.");
@@ -24,7 +34,7 @@ internal static class CardCycleChecks
             "Drawing across a reshuffle lost or duplicated a card.");
         Require(root.Hand.Count == 1 && root.Draw.Count == 2 && root.Discard.Count == 1,
             "Card cycling mutated its parent.");
-        Console.WriteLine("CARD-CYCLE-CHECKS PASS: draw order, discard order, reshuffle, hand limits, parent isolation.");
+        Console.WriteLine("CARD-CYCLE-CHECKS PASS: draw/discard order, Ephemeral purge routing, reshuffle, hand limits, parent isolation.");
     }
 
     internal static void Native(FixtureValue fixture)
@@ -46,11 +56,19 @@ internal static class CardCycleChecks
                 ? CardCycleModel.DrawHand(before, cycle.GetProperty("HandSize").GetInt32(),
                     cycle.GetProperty("MaxHandSize").GetInt32()) : cycle.GetProperty("Kind").GetString() == "SpellDraw"
                     ? CardCycleModel.DrawCards(before, cycle.GetProperty("HandSize").GetInt32(), cycle.GetProperty("MaxHandSize").GetInt32(),
-                        cycle.GetProperty("PlayedCardId").GetInt32()) : CardCycleModel.DiscardHand(before);
+                        cycle.GetProperty("PlayedCardId").GetInt32()) : CardCycleModel.DiscardHand(before,
+                            cycle.TryGetProperty("EphemeralCardIds", out var ephemeralIds) ? ephemeralIds.Deserialize<int[]>() : null);
             if (!result.Supported) { unsupported++; continue; }
             CardCycleState actual = Read(cycle.GetProperty("Actual"));
             Require(Comparable(result.State!) == Comparable(actual),
                 "Native card cycling differs at index " + cycle.GetProperty("Index"));
+            if (cycle.GetProperty("Kind").GetString() == "Discard" && cycle.TryGetProperty("PurgedActual", out var purgedActual))
+            {
+                int[] purgedBefore = cycle.TryGetProperty("PurgedBefore", out var purged) ? purged.Deserialize<int[]>()! : Array.Empty<int>();
+                Require(purgedBefore.Concat(result.PurgedCards.Select(card => card.InstanceId))
+                    .SequenceEqual(purgedActual.Deserialize<int[]>()!),
+                    "Native Ephemeral discard routing differs at index " + cycle.GetProperty("Index"));
+            }
             matched++;
         }
         Require(matched > 0, "No native card cycling stages were verified.");

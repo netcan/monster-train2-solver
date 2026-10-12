@@ -20,8 +20,8 @@ All 21 source archives below report game `2.2.1`, module MVID
 byte lengths and SHA-256 hashes are recorded in [manifest.tsv](manifest.tsv).
 The floor-capacity batch passes strict native acceptance, complete-fixture checks,
 independent full-battle replay and six directly affected old-fixture regressions.
-The accepted inventory is 248 archives: 217 battles and 31 component
-calibrations. All 248 archive names, byte lengths and SHA-256 hashes match the
+The accepted inventory is 249 archives: 218 battles and 31 component
+calibrations. All 249 archive names, byte lengths and SHA-256 hashes match the
 manifest and curated list, with no JSON companions. A 246-archive replay was
 attempted on 2026-10-13 but has not completed: legacy EndTurn snapshots can
 conflict with the current model's room `Enabled` state. Focused follow-up checks
@@ -270,7 +270,13 @@ The native Horde-triggered unit-upgrade archive brought accepted original-owner
 coverage to 64/224. The subsequent status-stack relic archive adds
 `ExtraSpellWeakness`, bringing the current total to 65/224 (29.02%). The previous
 246-archive replay attempt remains incomplete;
-full replay of the current 248-archive inventory is still deferred.
+full replay of the current 249-archive inventory is still deferred.
+
+The schema-135 `full-battle-relic-card-ephemeral-upgrades.mt2f` archive verifies
+that relic-granted temporary Ephemeral traits purge cards on play and at
+EndTurn. Its test authors a replacement upgrade payload on the original
+`ReduceStarterCost` relic, so it adds battle-mechanism coverage only and does
+not change the accepted 65/224 original-relic count.
 
 [counts]: full-battle-incant-relics-combined.mt2f
 [statuses]: full-battle-spawn-status-relics.mt2f

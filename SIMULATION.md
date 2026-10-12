@@ -1,6 +1,6 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-13): 248 binary archives, including 217
+Current accepted inventory (2026-10-13): 249 binary archives, including 218
 full battles and 31 component calibrations. Unchanged original relic evidence
 covers 65/224 catalog entries (29.02%); see
 [the owner evidence table](tests/fixtures/relic-coverage.md). Whole-battle
@@ -8518,4 +8518,26 @@ inventory replay remains deferred.
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-unit-upgrade-trigger-relic.mt2f
 dotnet run --project src/ModelChecks -c Release -- --relic-unit-upgrade-triggers-pure
 dotnet run --project src/ModelChecks -c Release -- --native-actions-only tests/fixtures/full-battle-original-unit-upgrade-trigger-relic.mt2f
+```
+
+### Relic-granted Ephemeral routing
+
+The schema-135 `full-battle-relic-card-ephemeral-upgrades.mt2f` confirms that a
+temporary relic card upgrade adds `CardTraitEphemeral` to spells. One upgraded
+spell is played and purged; another remains in hand and is purged at EndTurn.
+The muted Instant battle won with 27 card actions and six EndTurns. Capture
+failures, mismatches, unsupported transitions and pending records are zero.
+Native actions and the 16-branch policy replay match. This fixture authors an
+Ephemeral payload on the original `ReduceStarterCost` relic for lifecycle
+coverage; it adds no original relic owner to the 65/224 count.
+
+The binary is 31,416 bytes with 5,278 unique nodes and SHA-256
+`e4508851abacb5833012db73253152016365f290a88e81d0f84d55a9015230c4`; it has no
+JSON companion. The curated inventory is now 249 archives: 218 full battles and
+31 component calibrations. Full-inventory replay remains deferred.
+
+```powershell
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-relic-card-ephemeral-upgrades.mt2f
+dotnet run --project src/ModelChecks -c Release -- --relic-card-modifiers-only tests/fixtures/full-battle-relic-card-ephemeral-upgrades.mt2f
+dotnet run --project src/ModelChecks -c Release -- --card-cycle-only tests/fixtures/full-battle-relic-card-ephemeral-upgrades.mt2f
 ```

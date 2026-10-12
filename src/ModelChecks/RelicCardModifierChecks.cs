@@ -50,6 +50,22 @@ internal static class RelicCardModifierChecks
             "Repeated relic resets must retain permanent upgrade lifecycle metadata and ordered filter behavior.");
         Console.WriteLine("RELIC-CARD-RESET-CHECKS PASS: permanent removed traits survive reset and constrain later ordered effect filters.");
 
+        var ephemeralLifecycle = new CardLifecycleUpgrade(new CardMaskUpgrade("temporary-ephemeral",
+            new CardStatModifier(), [], false, false, false, false), "temporary-ephemeral", false, false,
+            [new CardTraitValue("CardTraitEphemeral", "CardTraitEphemeral", 0, 0, true, 0)], [], false, [], [], []);
+        var ephemeralUpgrade = Modifier("temporary-ephemeral", ephemeralLifecycle);
+        var ephemeralRelic = new CombatRelicState("ephemeral-relic", "EphemeralRelic", [RelicModel.AddTempUpgrade], cardModifiers:
+            [new RelicCardModifier(0, new RelicCardUpgradeRule("temporary-ephemeral", true, ephemeralLifecycle, []), ephemeralUpgrade, false)]);
+        var ephemeralCard = new CardInstanceState(4, definition.DataId, CardModifiers.Empty(), CardModifiers.Empty(), 0, 0, 0, [],
+            maskDescriptor: descriptor);
+        RelicCardModifierResult ephemeralResult = RelicCardModifierModel.Apply(ephemeralCard, [ephemeralRelic], resetTemporary: false);
+        Require(ephemeralResult.Supported, "A temporary relic Ephemeral upgrade was rejected: " + ephemeralResult.UnsupportedReason);
+        CardPlayRule ephemeralPlay = CardModifierModel.Resolve(new CardPlayRule(definition.DataId, "Monster", 0, "Unit", "Discard",
+            null, []), ephemeralResult.Card!);
+        Require(ephemeralPlay.Destination == "Purged" && ephemeralPlay.ExternalInteractions.Count == 0,
+            "An Ephemeral relic upgrade did not route a played card to Purged.");
+        Console.WriteLine("RELIC-CARD-EPHEMERAL-CHECKS PASS: temporary relic trait is accepted and resolves play destination to Purged.");
+
         var abilityDefinition = new UnitAbilityDefinition("steward-sacrifice", true, 1, 1, null);
         var ability = new AbilityChangeRule(abilityDefinition, false, false,
             [new CombatTrigger("OnOwnAbilityActivated", false, false, true, 1, [], skipDuringDeployment: false)]);
@@ -122,6 +138,8 @@ internal static class RelicCardModifierChecks
             scenario.GetString() == "relic-card-self-purge-upgrades";
         bool exhaustUpgradeScenario = root.TryGetProperty("ModifierScenario", out scenario) &&
             scenario.GetString() == "relic-card-exhaust-upgrades";
+        bool ephemeralUpgradeScenario = root.TryGetProperty("ModifierScenario", out scenario) &&
+            scenario.GetString() == "relic-card-ephemeral-upgrades";
         bool abilityUpgradeScenario = root.TryGetProperty("ModifierScenario", out scenario) &&
             scenario.GetString() == "relic-card-ability-upgrades";
         bool allUnitsMultistrikeScenario = root.TryGetProperty("ModifierScenario", out scenario) &&
@@ -280,6 +298,39 @@ internal static class RelicCardModifierChecks
             Require(exhaustedPlays > 0, "The relic Consume scenario did not play a card carrying its temporary trait.");
             Console.WriteLine($"NATIVE-RELIC-CARD-EXHAUST-CHECKS PASS: {exhaustedPlays} relic-upgraded cards reached Exhausted with private trait state.");
         }
+        if (ephemeralUpgradeScenario)
+        {
+            bool playedEphemeralWasPurged = root.GetProperty("Actions").EnumerateArray().Any(entry =>
+            {
+                BattleTurnState before = entry.GetProperty("Before").Deserialize<BattleTurnState>()!;
+                PlayCardAction action = entry.GetProperty("Action").Deserialize<PlayCardAction>()!;
+                CardInstanceState? card = before.Spawn.Train.Context!.FindCard(action.CardInstanceId);
+                if (card?.Temporary.Upgrades.Any(upgrade => upgrade.Lifecycle?.AddedTraits.Any(trait =>
+                    trait.RuntimeType == "CardTraitEphemeral") == true) != true) return false;
+                BattleTurnState after = entry.GetProperty("Actual").Deserialize<BattleTurnState>()!;
+                CombatContext context = after.Spawn.Train.Context!;
+                IReadOnlyList<int>? deckCards = context.Statistics?.DeckCards;
+                return context.OtherPiles!.Single(pile => pile.Name == "Purged")
+                    .Cards.Count(item => item.InstanceId == action.CardInstanceId) == 2 &&
+                    deckCards != null && !deckCards.Contains(action.CardInstanceId);
+            });
+            int[] endTurnEphemeralIds = root.GetProperty("CardCycles").EnumerateArray()
+                .Where(cycle => cycle.GetProperty("Kind").GetString() == "Discard")
+                .SelectMany(cycle => cycle.TryGetProperty("EphemeralCardIds", out var ids)
+                    ? ids.Deserialize<int[]>()! : Array.Empty<int>()).ToArray();
+            bool heldEphemeralWasPurged = root.GetProperty("CardCycles").EnumerateArray().Any(cycle =>
+            {
+                if (cycle.GetProperty("Kind").GetString() != "Discard" ||
+                    !cycle.TryGetProperty("EphemeralCardIds", out var ids) || ids.GetArrayLength() == 0 ||
+                    !cycle.TryGetProperty("PurgedActual", out var purged)) return false;
+                int[] actual = purged.Deserialize<int[]>()!;
+                return ids.Deserialize<int[]>()!.All(actual.Contains);
+            });
+            Require(playedEphemeralWasPurged, "A played relic-upgraded Ephemeral spell did not enter Purged.");
+            Require(endTurnEphemeralIds.Length > 0 && heldEphemeralWasPurged,
+                "An unplayed relic-upgraded Ephemeral spell did not enter Purged at end of turn.");
+            Console.WriteLine("NATIVE-RELIC-CARD-EPHEMERAL-CHECKS PASS: played and end-turn-discarded relic upgrades reached Purged.");
+        }
         if (abilityUpgradeScenario)
         {
             int abilityUpgradedSummons = 0;
@@ -404,7 +455,7 @@ internal static class RelicCardModifierChecks
             Actual: row.GetProperty("Actual").Deserialize<CombatContext>()!)).ToArray();
         var births = generated.SelectMany(row => row.Actual.CardInstances!.Where(card => card.InstanceId >= row.Before.NextCardId)).ToArray();
         if (requireScenarioCoverage && !deployableRelicScenario && !statusUpgradeScenario && !piercingUpgradeScenario && !selfPurgeUpgradeScenario &&
-            !exhaustUpgradeScenario && !abilityUpgradeScenario && !triggerUpgradeScenario && !replacementUpgradeScenario &&
+            !exhaustUpgradeScenario && !ephemeralUpgradeScenario && !abilityUpgradeScenario && !triggerUpgradeScenario && !replacementUpgradeScenario &&
             !allUnitsMultistrikeScenario && !magebladeScenario)
             Require(births.Any(card => card.Temporary.Upgrades.Any(upgrade => upgrade.AssetKey == "ReduceStarterCost" ||
                 rows.SelectMany(row => row.Relics).SelectMany(relic => relic.CardModifiers ?? []).Any(effect => effect.Upgrade?.DataId == upgrade.DataId))),
@@ -415,6 +466,7 @@ internal static class RelicCardModifierChecks
             piercingUpgradeScenario ? "IgnoreArmor relic traits retained on played cards" :
             selfPurgeUpgradeScenario ? "SelfPurge relic traits retained on played cards" :
             exhaustUpgradeScenario ? "Consume relic traits routed played cards to Exhausted" :
+            ephemeralUpgradeScenario ? "Ephemeral relic traits purged on play and end-turn discard" :
             abilityUpgradeScenario ? "unit ability upgrades reached summoned units" :
             triggerUpgradeScenario ? "OnKill character triggers reached summoned units" :
             replacementUpgradeScenario ? "native temporary card upgrade replacement" :

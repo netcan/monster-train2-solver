@@ -53,13 +53,13 @@ namespace MonsterTrain2Poju.Probe
                 foreach (CardTraitState trait in card.GetTraitStates())
                 {
                     // SelfPurge and Consume act only when wasPlayed=true; DiscardHand sets it false.
-                    if (!(kind == "Discard" && (trait is CardTraitSelfPurge || trait is CardTraitExhaustState)) &&
+                    if (!(kind == "Discard" && (trait is CardTraitSelfPurge || trait is CardTraitExhaustState || trait is CardTraitEphemeral)) &&
                         callbacks.Any(callback => trait.GetType().GetMethod(callback,
                         BindingFlags.Instance | BindingFlags.Public)?.DeclaringType != typeof(CardTraitState)))
                         interactions.Add(trait.GetType().Name + " " + kind + " callback");
                     if (drawing && trait is CardTraitMagneticState)
                         interactions.Add("Magnetic draw priority");
-                    if (kind == "Discard" && (trait is CardTraitEphemeral || trait is CardTraitInfusion ||
+                    if (kind == "Discard" && (trait is CardTraitInfusion ||
                         trait is CardTraitPersistent)) interactions.Add(trait.GetType().Name + " discard routing");
                 }
                 if (kind == "Discard" && card.GetTriggers().Count > 0) interactions.Add("Card discard triggers");
@@ -93,6 +93,10 @@ namespace MonsterTrain2Poju.Probe
                     managers.GetSaveManager().GetGameSequence() == SaveData.GameSequence.InBattle)
                 {
                     CardCycleState before = Capture(cards, kind);
+                    int[] ephemeralCardIds = kind == "Discard" ? cards.GetHand()
+                        .Where(card => card.GetTraitStates().Any(trait => trait is CardTraitEphemeral))
+                        .Select(trace.CardId).ToArray() : Array.Empty<int>();
+                    int[] purgedBefore = kind == "Discard" ? cards.GetPurgedPile().Select(trace.CardId).ToArray() : Array.Empty<int>();
                     CombatContext? standbyContext = kind == "Draw" ? trace.CaptureContext() : null;
                     int[]? livingIds = kind == "Draw" ? trace.CaptureTrain().Rooms.SelectMany(room => room.Units).Select(unit => unit.Id).ToArray() : null;
                     CardCycleState prepared = standbyContext == null ? before : EquipmentModel.ReturnStandby(standbyContext, livingIds!).Cards;
@@ -103,8 +107,9 @@ namespace MonsterTrain2Poju.Probe
                         Index = records.Count, Turn = managers.GetCombatManager()!.GetTurnCount(), Kind = kind,
                         HandSize = handSize, MaxHandSize = cards.GetMaxHandSize(), Before = before,
                         StandbyContext = standbyContext, LivingUnitIds = livingIds,
+                        EphemeralCardIds = ephemeralCardIds, PurgedBefore = purgedBefore,
                         Predicted = kind == "Draw" ? CardCycleModel.DrawHand(prepared, handSize, cards.GetMaxHandSize())
-                            : CardCycleModel.DiscardHand(before)
+                            : CardCycleModel.DiscardHand(before, ephemeralCardIds)
                     };
                     records.Add(record);
                 }
@@ -115,11 +120,16 @@ namespace MonsterTrain2Poju.Probe
             try
             {
                 record.Actual = Capture(cards, kind);
+                if (kind == "Discard") record.PurgedActual = cards.GetPurgedPile().Select(trace!.CardId).ToArray();
                 if (record.Predicted.Supported)
                 {
                     JToken expected = Comparable(record.Predicted.State!);
                     JToken actual = Comparable(record.Actual);
                     record.Difference = JToken.DeepEquals(expected, actual) ? null : "Card pile, modifier or RNG differs";
+                    if (record.Difference == null && kind == "Discard" &&
+                        !record.PurgedBefore.Concat(record.Predicted.PurgedCards.Select(card => card.InstanceId))
+                            .SequenceEqual(record.PurgedActual))
+                        record.Difference = "Purged card pile differs";
                     log.LogInfo("CARD-CYCLE-" + (record.Difference == null ? "MATCH" : "MISMATCH") +
                         " index=" + record.Index + " kind=" + kind + " turn=" + record.Turn);
                 }
@@ -170,6 +180,9 @@ namespace MonsterTrain2Poju.Probe
             public CardCycleState Before { get; set; } = null!;
             public CombatContext? StandbyContext { get; set; }
             public int[]? LivingUnitIds { get; set; }
+            public int[] EphemeralCardIds { get; set; } = Array.Empty<int>();
+            public int[] PurgedBefore { get; set; } = Array.Empty<int>();
+            public int[] PurgedActual { get; set; } = Array.Empty<int>();
             public CardCycleResult Predicted { get; set; } = null!;
             public CardCycleState? Actual { get; set; }
             public string? Difference { get; set; }

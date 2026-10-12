@@ -188,15 +188,36 @@ namespace MonsterTrain2Poju.Model
                 if (Terminal(triggers.Outcome)) return Finish(triggers.Outcome, source.Energy, source.MoonPhase);
             }
             context = train.Context!;
-            CardCycleResult discard = CardCycleModel.DiscardHand(context.Cards);
+            var ephemeralCardIds = new List<int>();
+            foreach (CardToken card in context.Cards.Hand)
+            {
+                CardInstanceState? instance = context.FindCard(card.InstanceId);
+                if (instance?.MaskDescriptor == null) continue;
+                try
+                {
+                    if (CardBranchMaskModel.Resolve(instance).Traits.Contains("CardTraitEphemeral", StringComparer.Ordinal))
+                        ephemeralCardIds.Add(card.InstanceId);
+                }
+                catch (InvalidOperationException error) { return Unsupported(error.Message); }
+            }
+            CardCycleResult discard = CardCycleModel.DiscardHand(context.Cards, ephemeralCardIds);
             if (!discard.Supported) return Unsupported(discard.UnsupportedReason!);
             BattleStatistics? statistics = context.Statistics;
             foreach (CardToken card in context.Cards.Hand.Reverse()) statistics = statistics?.Increment(card.InstanceId, "TimesDiscarded");
+            foreach (CardToken card in discard.PurgedCards) statistics = statistics?.RemoveDeckCard(card.InstanceId);
             context = context.WithStatistics(statistics?.WithEndTurnEnergy(context.EnergyState == null ? source.Energy : context.QueryFrame!.Energy!.Value));
             var discardedIds = new HashSet<int>(context.Cards.Hand.Select(card => card.InstanceId));
             context = context.WithCardInstances(context.CardInstances?.Select(card => discardedIds.Contains(card.InstanceId)
                 ? card.OnDiscard(false) : card).ToArray());
             CardCycleState cards = discard.State!;
+            if (discard.PurgedCards.Count > 0)
+            {
+                int purgedIndex = Array.FindIndex(otherPiles, pile => pile.Name == "Purged");
+                if (purgedIndex < 0) return Unsupported("Missing purged card pile.");
+                otherPiles[purgedIndex] = new CardPileState("Purged",
+                    otherPiles[purgedIndex].Cards.Concat(discard.PurgedCards).ToArray());
+                context = context.WithOtherPiles(otherPiles);
+            }
             if (spawn.Turn == 0)
             {
                 ShuffleResult<CardToken> shuffled = cards.Rng.Shuffle(cards.Draw.Concat(cards.Discard).ToArray());

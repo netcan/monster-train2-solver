@@ -8,9 +8,24 @@ if (args.Length == 2 && args[0] == "--battle-search-only")
     return;
 }
 
+if (args.Length == 2 && args[0] == "--card-cycle-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    CardCycleChecks.Native(fixture.RootElement);
+    return;
+}
+
 if (args.Length == 1 && args[0] == "--card-spells-pure")
 {
     CardSpellChecks.Run();
+    return;
+}
+
+if (args.Length == 1 && args[0] == "--ephemeral-card-routing-pure")
+{
+    CardModifierChecks.Run();
+    CardCycleChecks.Run();
+    RelicCardModifierChecks.Run();
     return;
 }
 

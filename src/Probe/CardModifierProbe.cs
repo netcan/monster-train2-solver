@@ -33,17 +33,19 @@ namespace MonsterTrain2Poju.Probe
                 CardData data = managers.GetSaveManager().GetAllGameData().FindCardData(card.GetCardDataID())!;
                 if (card.IsConsumeRemainingEnergyCostType() != (data.GetCostType() == CardData.CostType.ConsumeRemainingEnergy) ||
                     card.IsNonPlayableEnergyCostType() != (data.GetCostType() == CardData.CostType.NonPlayable)) interactions.Add("Changed card cost type");
-                if ((int)AccessTools.Field(typeof(CardState), "cost").GetValue(card) != data.GetCost()) interactions.Add("Changed base card cost");
+                int rawCost = (int)AccessTools.Field(typeof(CardState), "cost").GetValue(card);
                 var state = new CardInstanceState(cardId(card), card.GetCardDataID(),
                     Modifiers(card.GetCardStateModifiers()), Modifiers(card.GetTemporaryCardStateModifiers()),
                     card.GetLastPlayedCost(), card.GetLastForgedAmount(), card.GetCurrentScenarioPlayCount(), interactions,
                     Counters(card), DamageScalingProbe.Capture(card), StatusScalingProbe.Capture(card), UnitUpgradeScalingProbe.Capture(card), RoomCapacityProbe.Traits(card),
                     FullBattleTrace.Active?.EquippedUnitId(card) ?? 0, PlayedRoomUnits(card), RawPlayedRoomUnits(card),
-                    forgeCountScalingTraits: ForgeCountScalingTraits(card));
+                    forgeCountScalingTraits: ForgeCountScalingTraits(card),
+                    rawCostOverride: rawCost == data.GetCost() ? null : rawCost);
                 CardPlayRule rule = CardModifierModel.Resolve(BattleActionProbe.Definition(data), state);
                 for (int index = 0; index < managers.GetRoomManager()!.GetNumRooms(); index++)
                     if (card.GetCost(managers.GetCardStatistics(), managers.GetMonsterManager(), managers.GetRelicManager(),
-                        managers.GetRoomManager()!.GetRoom(index)) != rule.Cost) interactions.Add("Unmodeled room/trait/hand card cost");
+                        managers.GetRoomManager()!.GetRoom(index)) != rule.Cost)
+                        interactions.Add("Unmodeled room/trait/hand card cost");
                 if (rule.SpawnUnit != null && (card.GetSize() != rule.SpawnUnit.Size ||
                     card.GetTotalAttackDamage() != rule.SpawnUnit.BaseAttack || (int)Math.Round(card.GetHealth()) != rule.SpawnUnit.MaxHealth))
                     interactions.Add("Unmodeled unit card statistics");
@@ -58,7 +60,7 @@ namespace MonsterTrain2Poju.Probe
                 }
                 return new CardInstanceState(state.InstanceId, state.DataId, state.Permanent, state.Temporary,
                     state.LastPlayedCost, state.LastForgedAmount, state.PlayCount,
-                    interactions.Distinct().OrderBy(value => value, StringComparer.Ordinal).ToArray(), state.EffectCounters, state.DamageScalingTraits, state.StatusScalingTraits, state.UnitUpgradeScalingTraits, state.CapacityScalingTraits, state.EquippedUnitId, state.PlayedRoomUnitIds, state.RawPlayedRoomUnitIds, CardBranchMaskProbe.Capture(card), CardExhaustProbe.Capture(card, cardId), state.ForgeCountScalingTraits);
+                    interactions.Distinct().OrderBy(value => value, StringComparer.Ordinal).ToArray(), state.EffectCounters, state.DamageScalingTraits, state.StatusScalingTraits, state.UnitUpgradeScalingTraits, state.CapacityScalingTraits, state.EquippedUnitId, state.PlayedRoomUnitIds, state.RawPlayedRoomUnitIds, CardBranchMaskProbe.Capture(card), CardExhaustProbe.Capture(card, cardId), state.ForgeCountScalingTraits, state.RawCostOverride);
             }).OrderBy(card => card.InstanceId).ToArray();
         }
 
@@ -130,7 +132,7 @@ namespace MonsterTrain2Poju.Probe
             CardLifecycleUpgrade lifecycle = CardUpgradeLifecycleProbe.Definition(upgrade);
             bool supportedTraitsOnly = lifecycle.AddedTraits.Count > 0 && lifecycle.AddedTraits.All(trait =>
                 trait.RuntimeType == trait.DeclaredName &&
-                (trait.RuntimeType is "CardTraitIgnoreArmor" or "CardTraitSelfPurge" or "CardTraitExhaustState" ||
+                (trait.RuntimeType is "CardTraitIgnoreArmor" or "CardTraitSelfPurge" or "CardTraitExhaustState" or "CardTraitEphemeral" ||
                     trait.RuntimeType == "CardTraitDrawInDeploymentPhase" ||
                     trait.RuntimeType == "CardTraitStrongerMagicPower" && CardBranchMaskProbe.Enabled)) &&
                 lifecycle.RemovedRuntimeTypes.Count == 0 && lifecycle.ReplacedAssets.Count == 0 && lifecycle.Triggers.Count == 0;

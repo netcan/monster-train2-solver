@@ -29,7 +29,7 @@ The default command checks the full curated inventory. For routine changes, run
 the dedicated checks for the new and directly affected scenarios; run the full
 inventory at completed milestones and before delivery.
 
-Current inventory is 248 archives: 217 accepted battles and 31 component
+Current inventory is 249 archives: 218 accepted battles and 31 component
 calibrations. `full-battle-companion-bump.mt2f` covers a paired Relentless
 companion Boss refusal, its attempted-ascension callback and the survivor's
 terminal-death handoff. `full-battle-relic-card-status-upgrades.mt2f` verifies a native
@@ -65,6 +65,9 @@ the recorded unit ability.
 `PyreHeartSavagery_UpgradeData` relic payload gives its summoned Train Steward
 the native OnKill trigger and models repeated same-definition unit-upgrade
 accumulation. Its focused battle replay matches all 49 room stages and 28 actions.
+`full-battle-relic-card-ephemeral-upgrades.mt2f` verifies temporary relic-granted
+Ephemeral traits purge played spells and spells left in hand at EndTurn. Its
+authored payload is synthetic and does not add original relic-owner evidence.
 `full-battle-generation-permanent-consume.mt2f` verifies `CardEffectAddBattleCard`
 copies a permanent Consume upgrade into generated cards across all five pile
 destinations, with fresh unexhausted trait state on the new instance. Its 91
@@ -2292,8 +2295,8 @@ The binary archive has no JSON source: 32,935 bytes, 5,654 unique nodes, SHA-256
 `1965dcded188d8ae23b140fc8d1688b97bdaabec2df576911be144cad361aa2a`.
 Its raw native source is
 `.probe-runs/full-battle-units-spells-and-junk-20261013-044528-5081dd10/full-battle.mt2f`.
-The selected fixture checks pass. The current 248-archive inventory's complete
-replay remains deferred to a completed milestone. Original relic coverage is
+The selected fixture checks pass. At that milestone, the 248-archive
+inventory's complete replay remained deferred. Original relic coverage is
 now 65/224 (29.02%); [relic-coverage.md](relic-coverage.md) lists the exact
 original definitions and witnesses.
 
@@ -3185,4 +3188,28 @@ JSON companion. This brings accepted original relic evidence to 64/224
 ```powershell
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-unit-upgrade-trigger-relic.mt2f
 dotnet run --project src/ModelChecks -c Release -- --relic-unit-upgrade-triggers-pure
+```
+
+### Relic-granted Ephemeral routing
+
+The schema-135 `full-battle-relic-card-ephemeral-upgrades.mt2f` confirms that a
+temporary relic card upgrade adds `CardTraitEphemeral` to spells. One upgraded
+spell is played and purged; another remains in hand and is purged by EndTurn.
+The muted Instant battle won with 27 card actions and six EndTurns. Capture
+failures, mismatches, unsupported transitions and pending records are zero.
+Native checks verify both purge routes, 8 relic manager calls, 8 ordered
+effect/filter results and four exact notifications; the 16-branch policy replay
+matches. This fixture authors an Ephemeral payload on the original
+`ReduceStarterCost` relic for lifecycle coverage, so it adds no original relic
+owner to the 65/224 count.
+
+The binary is 31,416 bytes with 5,278 unique nodes and SHA-256
+`e4508851abacb5833012db73253152016365f290a88e81d0f84d55a9015230c4`; it has no
+JSON companion. The inventory is now 249 archives: 218 battles and 31 component
+calibrations. Full-inventory replay remains deferred.
+
+```powershell
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-relic-card-ephemeral-upgrades.mt2f
+dotnet run --project src/ModelChecks -c Release -- --relic-card-modifiers-only tests/fixtures/full-battle-relic-card-ephemeral-upgrades.mt2f
+dotnet run --project src/ModelChecks -c Release -- --card-cycle-only tests/fixtures/full-battle-relic-card-ephemeral-upgrades.mt2f
 ```

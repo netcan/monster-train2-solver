@@ -541,6 +541,8 @@ namespace MonsterTrain2Poju.Model
             if (terminal) piles = piles.Select(CardPileModel.Clear).ToArray();
             CardInstanceState? discardInstance = context.FindCard(card.InstanceId) ?? playingInstance;
             bool consumedOnPlay = discardInstance != null && CardExhaustModel.ShouldExhaustOnPlayedDiscard(discardInstance);
+            bool ephemeralPurgeCallbacks = rule.Destination == "Purged" && discardInstance?.MaskDescriptor != null &&
+                CardBranchMaskModel.Resolve(discardInstance).Traits.Contains("CardTraitEphemeral", StringComparer.Ordinal);
             if (consumedOnPlay && rule.HandConsumeInteractions?.Count > 0)
                 return Unsupported(string.Join("; ", rule.HandConsumeInteractions));
             if (consumedOnPlay && rule.Effect == "SpawnMonster" &&
@@ -556,7 +558,13 @@ namespace MonsterTrain2Poju.Model
                 CardPileState? destination = piles.FirstOrDefault(pile => pile.Name == rule.Destination);
                 if (destination == null || (rule.Destination != "Standby" && rule.Destination != "Purged" && rule.Destination != "Exhausted"))
                     return Unsupported("Unimplemented card destination " + rule.Destination);
-                piles = piles.Select(pile => pile == destination ? CardPileModel.Add(pile, card) : pile).ToArray();
+                piles = piles.Select(pile =>
+                {
+                    if (pile != destination) return pile;
+                    CardPileState added = CardPileModel.Add(pile, card);
+                    // Native Ephemeral calls PurgeCard from both OnCardPlayed and OnCardDiscarded.
+                    return ephemeralPurgeCallbacks ? CardPileModel.Add(added, card) : added;
+                }).ToArray();
             }
             if (rule.Effect == "Equipment")
             {

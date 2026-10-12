@@ -35,6 +35,9 @@ internal static class CardModifierChecks
         var resolved = CardModifierModel.Resolve(rule, instance);
         Require(resolved.Cost == 0 && resolved.SpawnUnit!.BaseAttack == 18 && resolved.SpawnUnit.MaxHealth == 47 &&
             resolved.SpawnUnit.Size == 3, "Permanent offsets and independent upgrade groups were not applied.");
+        var overriddenCost = new CardInstanceState(2, "unit", permanent, temporary, 0, 0, 0, [], rawCostOverride: 99);
+        Require(CardModifierModel.Resolve(rule, overriddenCost).Cost == 97,
+            "An instance raw-cost override was not applied before its permanent and temporary cost modifiers.");
         var rng = UnityRng.Seed(1);
         var context = new CombatContext(new CardCycleState([new(1, "unit"), new(2, "unit")], [], [], rng, 0, []), rng,
             0, 3, 10, cardInstances: [instance, CardInstanceState.Empty(2, "unit")]);

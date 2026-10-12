@@ -14,15 +14,17 @@ namespace MonsterTrain2Poju.Probe
             Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == "all-units-multistrike-mutator";
         internal static bool SupportedMutatorContext => Prepared && AllUnitsMultistrikeMutator;
         internal static bool ExhaustUpgrade => Environment.GetEnvironmentVariable("MT2_PROBE_RELIC_CARD_EXHAUST_UPGRADE") == "1";
+        internal static bool EphemeralUpgrade => Environment.GetEnvironmentVariable("MT2_PROBE_RELIC_CARD_EPHEMERAL_UPGRADE") == "1";
         internal static void Prepare(AllGameManagers managers, ManualLogSource log)
         {
             if (!RelicCardModifierProbe.Enabled || Prepared) return;
             int selectedScenario = new[] { "MT2_PROBE_RELIC_CARD_STATUS_UPGRADE", "MT2_PROBE_RELIC_CARD_PIERCING_UPGRADE",
                 "MT2_PROBE_RELIC_CARD_SELF_PURGE_UPGRADE", "MT2_PROBE_RELIC_CARD_EXHAUST_UPGRADE", "MT2_PROBE_RELIC_CARD_ABILITY_UPGRADE",
-                "MT2_PROBE_RELIC_CARD_TRIGGER_UPGRADE", "MT2_PROBE_RELIC_CARD_REPLACEMENT_UPGRADE" }
+                "MT2_PROBE_RELIC_CARD_TRIGGER_UPGRADE", "MT2_PROBE_RELIC_CARD_REPLACEMENT_UPGRADE",
+                "MT2_PROBE_RELIC_CARD_EPHEMERAL_UPGRADE" }
                 .Count(name => Environment.GetEnvironmentVariable(name) == "1");
             if (AllUnitsMultistrikeMutator) selectedScenario++;
-            if (selectedScenario > 1) throw new InvalidOperationException("Relic card status, piercing, self-purge, exhaust, ability and trigger scenarios are mutually exclusive.");
+            if (selectedScenario > 1) throw new InvalidOperationException("Relic card status, piercing, self-purge, exhaust, Ephemeral, ability, trigger and replacement scenarios are mutually exclusive.");
             var save = managers.GetSaveManager();
             var data = save.GetAllGameData();
             CollectableRelicData? originalRelic = null;
@@ -76,6 +78,7 @@ namespace MonsterTrain2Poju.Probe
             if (!AllUnitsMultistrikeMutator && Environment.GetEnvironmentVariable("MT2_PROBE_RELIC_CARD_SELF_PURGE_UPGRADE") == "1")
                 InstallSelfPurgeUpgrade(relicEffect);
             if (!AllUnitsMultistrikeMutator && ExhaustUpgrade) InstallExhaustUpgrade(relicEffect);
+            if (!AllUnitsMultistrikeMutator && EphemeralUpgrade) InstallEphemeralUpgrade(relicEffect);
             bool abilityScenario = !AllUnitsMultistrikeMutator && Environment.GetEnvironmentVariable("MT2_PROBE_RELIC_CARD_ABILITY_UPGRADE") == "1";
             if (abilityScenario) InstallStewardAbilityUpgrade(save.GetAllGameData(), relicEffect);
             bool triggerScenario = !AllUnitsMultistrikeMutator && Environment.GetEnvironmentVariable("MT2_PROBE_RELIC_CARD_TRIGGER_UPGRADE") == "1";
@@ -83,9 +86,24 @@ namespace MonsterTrain2Poju.Probe
             bool replacementScenario = !AllUnitsMultistrikeMutator && Environment.GetEnvironmentVariable("MT2_PROBE_RELIC_CARD_REPLACEMENT_UPGRADE") == "1";
             CardUpgradeData? replacementTarget = replacementScenario ? InstallReplacementUpgrade(save.GetAllGameData(), relicEffect) : null;
             var filters = UpgradeData(relicEffect).GetFilters();
-            var eligible = owned.Where(card => filters.All(filter => filter.FilterCard(card, managers.GetRelicManager())))
+            var eligibleCandidates = owned.Where(card => filters.All(filter => filter.FilterCard(card, managers.GetRelicManager())))
                 .Where(card => !ExhaustUpgrade || card.GetTraitStates().All(trait =>
                     trait is not CardTraitSelfPurge && trait is not CardTraitExhaustState))
+                .Where(card => !EphemeralUpgrade || card.GetTraitStates().All(trait =>
+                    trait is not CardTraitEphemeral && trait is not CardTraitSelfPurge && trait is not CardTraitExhaustState)).ToArray();
+            if (EphemeralUpgrade)
+            {
+                CardState[] distinctCandidates = eligibleCandidates.GroupBy(card => card.GetCardDataID())
+                    .Select(group => group.First()).ToArray();
+                if (distinctCandidates.Length < 2) throw new InvalidOperationException("Ephemeral relic scenario needs two distinct eligible spells.");
+                var costField = AccessTools.Field(typeof(CardState), "cost");
+                CardState heldCard = distinctCandidates.OrderByDescending(card => (int)costField.GetValue(card)).First();
+                CardState playableCard = distinctCandidates.Where(card => card.GetCardDataID() != heldCard.GetCardDataID())
+                    .OrderBy(card => (int)costField.GetValue(card)).First();
+                costField.SetValue(heldCard, 99);
+                eligibleCandidates = new[] { heldCard, playableCard };
+            }
+            var eligible = eligibleCandidates
                 .Take(AllUnitsMultistrikeMutator || abilityScenario || triggerScenario || replacementScenario ? 1 : 2).ToArray();
             int requiredEligibleCards = AllUnitsMultistrikeMutator || abilityScenario || triggerScenario || replacementScenario ? 1 : 2;
             if (eligible.Length != requiredEligibleCards)
@@ -183,6 +201,21 @@ namespace MonsterTrain2Poju.Probe
                 AccessTools.Field(typeof(CardUpgradeData), "traitDataUpgrades").SetValue(clone, new List<CardTraitData> { exhaust });
                 var spellMask = UnityEngine.ScriptableObject.CreateInstance<CardUpgradeMaskData>();
                 spellMask.name = "PojuRelicExhaustSpellMask";
+                AccessTools.Field(typeof(CardUpgradeMaskData), "cardType").SetValue(spellMask, CardType.Spell);
+                AccessTools.Field(typeof(CardUpgradeData), "filters").SetValue(clone, new List<CardUpgradeMaskData> { spellMask });
+                AccessTools.Field(typeof(CardUpgradeData), "isUnique").SetValue(clone, original.IsUnique());
+                AccessTools.Field(typeof(RelicEffectAddTempUpgrade), "_cardUpgradeData").SetValue(effect, clone);
+            }
+
+            static void InstallEphemeralUpgrade(RelicEffectAddTempUpgrade effect)
+            {
+                CardUpgradeData original = UpgradeData(effect);
+                var clone = (CardUpgradeData)AccessTools.Method(typeof(object), "MemberwiseClone").Invoke(original, null)!;
+                var ephemeral = new CardTraitData();
+                ephemeral.Setup("CardTraitEphemeral");
+                AccessTools.Field(typeof(CardUpgradeData), "traitDataUpgrades").SetValue(clone, new List<CardTraitData> { ephemeral });
+                var spellMask = UnityEngine.ScriptableObject.CreateInstance<CardUpgradeMaskData>();
+                spellMask.name = "PojuRelicEphemeralSpellMask";
                 AccessTools.Field(typeof(CardUpgradeMaskData), "cardType").SetValue(spellMask, CardType.Spell);
                 AccessTools.Field(typeof(CardUpgradeData), "filters").SetValue(clone, new List<CardUpgradeMaskData> { spellMask });
                 AccessTools.Field(typeof(CardUpgradeData), "isUnique").SetValue(clone, original.IsUnique());
