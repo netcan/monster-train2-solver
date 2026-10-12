@@ -114,19 +114,23 @@ namespace MonsterTrain2Poju.Model
         public static EnchantmentCombatResult Drain(EnchantmentCombatResult result)
         {
             if (!result.Supported || result.PendingCallbacks.Count == 0) return result;
+            EnchantmentCombatState source = result.State!;
+            bool hasPersistentAura = source.EnchanterIds.Count > 0 || source.RetainedUnits.Any(actor => actor.Unit.Triggers
+                .Any(trigger => trigger.Effects.Any(effect => effect.Enchantment != null))) || source.Train.Rooms.SelectMany(room => room.Units)
+                .Any(unit => unit.Triggers.Any(trigger => trigger.Effects.Any(effect => effect.Enchantment != null)));
             // Room engines do not yet refresh the full aura world in the middle of child
-            // effects. Reject those paths rather than returning a stale but supported train.
-            foreach (var callback in result.PendingCallbacks)
+            // effects. Without any captured aura, ordinary character children are safe to drain.
+            if (hasPersistentAura) foreach (var callback in result.PendingCallbacks)
             {
-                CombatUnit unit = result.State!.Train.Rooms.SelectMany(room => room.Units).FirstOrDefault(unit => unit.Id == callback.Unit.Id) ?? callback.Unit;
+                CombatUnit unit = source.Train.Rooms.SelectMany(room => room.Units).FirstOrDefault(unit => unit.Id == callback.Unit.Id) ?? callback.Unit;
                 if (unit.Triggers.Where(trigger => trigger.Kind == callback.Kind).SelectMany(trigger => trigger.Effects)
                     .Any(effect => effect.Type != "CardEffectRewardGold"))
                     return new EnchantmentCombatResult(null, result.Requests, result.PendingCallbacks,
                         "Aura callbacks that change actors/cards require automatic combat lifecycle integration.");
             }
-            TrainCombatResult drained = TrainCombatModel.ApplyCharacterQueue(result.State!.Train, result.PendingCallbacks.ToList());
+            TrainCombatResult drained = TrainCombatModel.ApplyCharacterQueue(source.Train, result.PendingCallbacks.ToList());
             if (!drained.Supported) return new EnchantmentCombatResult(null, result.Requests, result.PendingCallbacks, drained.UnsupportedReason);
-            var state = result.State;
+            var state = source;
             return new EnchantmentCombatResult(new EnchantmentCombatState(drained.State!, state.RetainedUnits,
                 state.EnchanterIds, state.AllowUpdates, state.Updating, state.Preview, state.TestRng), result.Requests,
                 Array.Empty<RoomCombatModel.QueuedCharacterTrigger>());

@@ -228,6 +228,10 @@ namespace MonsterTrain2Poju.Probe
                         CharacterTriggerData.Trigger.OnDeathwishLost })
                     {
                         CharacterTriggerData data = HealingScenario.HealGold(1, false, true); Set(data, "trigger", kind);
+                        var armor = new CardEffectData("CardEffectAddStatusEffect", null!, Team.Type.Monsters);
+                        armor.Cheat_SetTargetMode(TargetMode.Self);
+                        Set(armor, "paramStatusEffects", new[] { new StatusEffectStackData { statusId = "armor", count = 1 } });
+                        Set(data, "effects", data.GetEffects().Concat(new[] { armor }).ToList());
                         var trigger = new CharacterTriggerState(); trigger.Setup(data, host.GetTeamType(), Save); host.GetTriggers().Add(trigger);
                     }
             }

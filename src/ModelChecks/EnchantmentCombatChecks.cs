@@ -33,7 +33,8 @@ internal static class EnchantmentCombatChecks
         int requests = samples.Sum(sample => sample.GetProperty("Requests").GetArrayLength());
         int callbacks = samples.Sum(sample => sample.GetProperty("Callbacks").GetArrayLength());
         Console.WriteLine($"NATIVE-ENCHANTMENT-COMBAT-CHECKS PASS: {samples.Length} real status/train/effect transitions, {requests} status calls, " +
-            $"{callbacks} complete callback payloads, standalone/shared-world effect routing and drained child gold effects, guarded/direct reentry, retained per-effect maps/RNG and 32 isolated branches.");
+            $"{callbacks} complete callback payloads, standalone Deathwish gold/armor drains, shared-world gold drains and guarded actor mutations, " +
+            "guarded/direct reentry, retained per-effect maps/RNG and 32 isolated branches.");
     }
     private static void VerifyDeathwish(FixtureValue[] samples)
     {
@@ -70,6 +71,18 @@ internal static class EnchantmentCombatChecks
         Require(new[] { GoldDelta("deathwish-initial"), GoldDelta("deathwish-muted"), GoldDelta("deathwish-unmuted"),
             GoldDelta("deathwish-front-shift"), GoldDelta("deathwish-front-return") }.SequenceEqual(new[] { 5, 5, 5, 10, 10 }),
             "Nonempty Deathwish gold effects did not execute once per matching native callback.");
+        int ArmorDelta(string label)
+        {
+            FixtureValue sample = samples.Single(item => item.GetProperty("Label").GetString() == label);
+            EnchantmentCombatState before = sample.GetProperty("Before").Deserialize<EnchantmentCombatState>()!;
+            EnchantmentCombatState after = sample.GetProperty("AfterQueue").Deserialize<EnchantmentCombatState>()!;
+            int Armor(EnchantmentCombatState state) => state.Train.Rooms.SelectMany(room => room.Units)
+                .Sum(unit => unit.Status("armor")?.Stacks ?? 0);
+            return Armor(after) - Armor(before);
+        }
+        Require(new[] { ArmorDelta("deathwish-initial"), ArmorDelta("deathwish-muted"), ArmorDelta("deathwish-unmuted"),
+            ArmorDelta("deathwish-front-shift"), ArmorDelta("deathwish-front-return") }.SequenceEqual(new[] { 1, 1, 1, 2, 2 }),
+            "Self-targeted Deathwish Armor effects did not execute once per matching native callback.");
     }
     private static void VerifyGenericDeathwish()
     {
@@ -187,6 +200,20 @@ internal static class EnchantmentCombatChecks
         Compare(result.PendingCallbacks.Select(EnchantmentCallback.From).ToArray(),
             sample.GetProperty("Callbacks").Deserialize<EnchantmentCallback[]>()!, label + " shared-world callbacks");
         var drained = EnchantmentWorldModel.Drain(new EnchantmentCombatResult(actual, Array.Empty<EnchantmentRequest>(), result.PendingCallbacks));
+        bool hasActorMutatingChildren = result.PendingCallbacks.Any(callback =>
+        {
+            CombatUnit unit = actual.Train.Rooms.SelectMany(room => room.Units).FirstOrDefault(actor => actor.Id == callback.Unit.Id) ?? callback.Unit;
+            return unit.Triggers.Where(trigger => trigger.Kind == callback.Kind).SelectMany(trigger => trigger.Effects)
+                .Any(effect => effect.Type != "CardEffectRewardGold");
+        });
+        if (hasActorMutatingChildren)
+        {
+            Require(!drained.Supported && drained.UnsupportedReason ==
+                "Aura callbacks that change actors/cards require automatic combat lifecycle integration.",
+                label + " shared-world actor mutation was not held at the documented boundary.");
+            Require(JsonSerializer.Serialize(train) == parent, label + ": rejected shared-world drain changed its parent state.");
+            return;
+        }
         Require(drained.Supported, label + " shared-world drain: " + drained.UnsupportedReason);
         EnchantmentCombatState after = drained.State!;
         foreach (var id in sample.GetProperty("PreviewPreparedUnitIds").EnumerateArray())

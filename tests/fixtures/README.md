@@ -1324,14 +1324,17 @@ native gameplay/status API is suppressed. Thirty-two aura steps include global
 allow/reentry guards, direct nested global updates, muting/silencing, signed/zero/
 Duality-overflow counts, poison and sixteen pooled random steps; five isolated
 Deathwish steps verify front/mute membership and exclusive activation/loss queues.
-The Deathwish callbacks carry native `CardEffectRewardGold` effects: activation
-and loss produce 5/5/5/10/10 gold across the five transitions, and exclusive
-trigger identities prevent the paired queue records from double-firing. All 70
-API calls and 111 complete callback payloads, per-effect maps, train/context
-states, explicit UI preview preparation events and drained child effects match in
-32 isolated branches. Live captured train/context, every living actor's primary
-state/triggers/identity map, RNG and update flags restore; the queue is empty
-afterwards.
+The Deathwish callbacks carry native `CardEffectRewardGold` and self-targeted
+armor effects: activation and loss produce 5/5/5/10/10 gold across the five
+transitions, while each matching callback adds one Armor. Exclusive trigger
+identities prevent paired queue records from double-firing. The standalone
+combat queue matches both effects; the aura-attached queue continues to reject
+actor/card-mutating callbacks, and the check verifies that rejection leaves its
+parent unchanged. All 70 API calls and 111 complete callback payloads,
+per-effect maps, train/context states, explicit UI preview preparation events
+and supported child drains match in 32 isolated branches. Live captured
+train/context, every living actor's primary state/triggers/identity map, RNG and
+update flags restore; the queue is empty afterwards.
 The isolated profile's run-stat/UI side effects are outside that restoration claim.
 
 The following native and independent ordinary battle win after 21 paid actions,
