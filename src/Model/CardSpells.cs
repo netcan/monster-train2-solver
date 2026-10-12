@@ -274,7 +274,7 @@ namespace MonsterTrain2Poju.Model
                 Remember(effect, index, targets, ref last);
                 if (targets.BattleRng.HasValue)
                     state = WithContext(state, state.Context!.WithBattleRng(targets.BattleRng.Value));
-                if ((effect.Type == "AddStatus" || effect.Type == "SpawnOrStatus") && effect.Statuses.Count > 1)
+                if ((effect.Type == "AddStatus" || effect.Type == "MultiplyStatus" || effect.Type == "SpawnOrStatus") && effect.Statuses.Count > 1)
                 {
                     // Native chooses one status for the whole effect, including an empty collection.
                     RngDraw chosen = state.Context!.BattleRng.Range(0, effect.Statuses.Count);
@@ -578,7 +578,7 @@ namespace MonsterTrain2Poju.Model
                 {
                     if (effect.Type == "AttachEquipment" && targetIndex > 0) break;
                     // Native status application runs backwards; damage/healing/upgrades run forwards.
-                    int id = targets.UnitIds[(effect.Type == "AddStatus" || effect.Type == "SpawnOrStatus" ||
+                    int id = targets.UnitIds[(effect.Type == "AddStatus" || effect.Type == "MultiplyStatus" || effect.Type == "SpawnOrStatus" ||
                         AbilityCooldownModel.IsEffect(effect.Type) || AbilityLifecycleModel.IsEffect(effect.Type))
                         ? targets.UnitIds.Count - 1 - targetIndex : targetIndex];
                     RoomCombatState? targetRoom = state.Rooms.FirstOrDefault(item => item.Units.Any(unit => unit.Id == id));
@@ -739,7 +739,7 @@ namespace MonsterTrain2Poju.Model
                         bossDead |= outcome == RoomOutcome.BattleWon;
                     }
                 }
-                if (effect.Type == "AddStatus" || effect.Type == "SpawnOrStatus") DrainDeaths();
+                if (effect.Type == "AddStatus" || effect.Type == "MultiplyStatus" || effect.Type == "SpawnOrStatus") DrainDeaths();
             }
             // Natural play records TimesPlayed before OnCast/unit-play callbacks
             // drain the final queue. Direct effect callers request a settled result.
@@ -946,7 +946,7 @@ namespace MonsterTrain2Poju.Model
                 if (effect.Range != null && effect.Type != "CopyUnits" && effect.Type != "Bump" && effect.Type != "DiscardHand" && effect.Type != "Generate" && effect.Type != "AdjustCapacity" && effect.Type != "ScheduleNextDrawUpgrade" &&
                     !AbilityLifecycleModel.IsEffect(effect.Type))
                 {
-                    if (!EnergyModel.IsEffect(effect.Type) && effect.Type != ForgePointsModel.Effect && !new[] { "Damage", "Heal", "AddStatus", "BuffAttack", "DebuffAttack", "BuffHealth", "DebuffHealth", "Draw", "DrawType", "DrawNextTurn" }.Contains(effect.Type))
+                    if (!EnergyModel.IsEffect(effect.Type) && effect.Type != ForgePointsModel.Effect && !new[] { "Damage", "Heal", "AddStatus", "MultiplyStatus", "BuffAttack", "DebuffAttack", "BuffHealth", "DebuffHealth", "Draw", "DrawType", "DrawNextTurn" }.Contains(effect.Type))
                         return "Unmodeled range consumer " + effect.Type;
                     string? rangeError = effect.Range.Validate();
                     if (rangeError != null) return rangeError;
@@ -1025,7 +1025,7 @@ namespace MonsterTrain2Poju.Model
                     if (forgeError != null) return forgeError;
                     continue;
                 }
-                if (!new[] { "CopyUnits", "Bump", "AttackWithUnit", "Damage", "DamagePerSourceAttack", "Heal", "Sacrifice", "AddStatus", "AddStatusPerOtherEffect", "SpawnOrStatus", "FloorRearrange", "UnitUpgrade", "BuffEquipment", "RemoveUnitUpgrade", "AttachEquipment", "RemoveEquipment", "BuffAttack", "DebuffAttack", "BuffHealth", "DebuffHealth", "Draw", "DiscardHand", "Generate" }.Contains(effect.Type))
+                if (!new[] { "CopyUnits", "Bump", "AttackWithUnit", "Damage", "DamagePerSourceAttack", "Heal", "Sacrifice", "AddStatus", "MultiplyStatus", "AddStatusPerOtherEffect", "SpawnOrStatus", "FloorRearrange", "UnitUpgrade", "BuffEquipment", "RemoveUnitUpgrade", "AttachEquipment", "RemoveEquipment", "BuffAttack", "DebuffAttack", "BuffHealth", "DebuffHealth", "Draw", "DiscardHand", "Generate" }.Contains(effect.Type))
                     return "Unimplemented spell effect " + effect.Type;
                 if (effect.Type == "Generate" && effect.Generation == null) return "Missing generated card rules.";
                 if ((effect.Type == "UnitUpgrade" || effect.Type == "BuffEquipment" || effect.Type == "RemoveUnitUpgrade") && effect.Upgrade == null)
@@ -1037,7 +1037,8 @@ namespace MonsterTrain2Poju.Model
                 if (effect.Type == "BuffHealth" && effect.Lifetime != "" && effect.Lifetime != "TemporaryUntilEndOfBattle" &&
                     effect.Lifetime != "TemporaryUntilUnitDeath") return "Unmodeled maximum-health buff lifetime.";
                 if (effect.Type == "FloorRearrange" && effect.Target != "DropTargetCharacter") return "Floor rearrangement requires a drop target.";
-                if (effect.Type == "AddStatus" && effect.Statuses.Count == 0) return "A status effect requires at least one status definition.";
+                if ((effect.Type == "AddStatus" || effect.Type == "MultiplyStatus") && effect.Statuses.Count == 0)
+                    return "A status effect requires at least one status definition.";
                 if (effect.Type == "AddStatusPerOtherEffect" && effect.Statuses.Count < 2)
                     return "A per-status effect requires both applied and counted status definitions.";
                 if (effect.Type == "SpawnOrStatus" && (effect.Statuses.Count == 0 || effect.SpawnFallbackUnit == null))
@@ -1120,7 +1121,8 @@ namespace MonsterTrain2Poju.Model
                 case "DamagePerSourceAttack": return count > 0;
                 case "Heal": return effect.Target == "Room" || count > 0;
                 case "Sacrifice": return count > 0;
-                case "AddStatus": return effect.Tests?.StrictTargets != true && effect.Target != "DropTargetCharacter" || count > 0;
+                case "AddStatus":
+                case "MultiplyStatus": return effect.Tests?.StrictTargets != true && effect.Target != "DropTargetCharacter" || count > 0;
                 case "AddStatusPerOtherEffect": return count > 0;
                 case "SpawnOrStatus": return count > 0 || CanSpawnFallback(context, room, effect);
                 case "FloorRearrange":
@@ -1250,15 +1252,30 @@ namespace MonsterTrain2Poju.Model
                 return UnitModifierModel.Apply(state, target.Id, effect.Upgrade!, effect.Lifetime,
                     effect.Type == "RemoveUnitUpgrade", target.Team == CombatTeam.Player ? playerCapacity : enemyCapacity,
                     sourceCardId, scaleUpgrade: effect.ScaleUpgrade, refreshPyre: refreshPyre);
-            if (effect.Type == "AddStatus" || effect.Type == "SpawnOrStatus")
+            if (effect.Type == "AddStatus" || effect.Type == "MultiplyStatus" || effect.Type == "SpawnOrStatus")
             {
-                if (effect.Type == "AddStatus" && effect.Value != 0)
+                if (effect.Type != "SpawnOrStatus" && effect.Value != 0)
                 {
                     // Chance is evaluated for every collected target before status immunity is checked.
                     RngDraw chance = state.Context!.BattleRng.Range(0, 100);
                     state = new RoomCombatState(state.RoomIndex, state.Deployment, state.Units, state.ExternalInteractions,
                         state.Context.WithBattleRng(chance.State), state.Preview, state.ActiveCompanionBossIds);
                     if (chance.Value >= effect.Value) return Unchanged(state);
+                }
+                if (effect.Type == "MultiplyStatus")
+                {
+                    CombatStatus status = effect.Statuses[0];
+                    int current = target.Status(status.Id)?.Stacks ?? 0;
+                    int multiplied;
+                    int added;
+                    unchecked
+                    {
+                        multiplied = current * status.Stacks;
+                        added = multiplied - current;
+                    }
+                    if (multiplied <= 0) return Unchanged(state);
+                    return StatusApplicationModel.Apply(state, target.Id, status.WithStacks(added), sourceCardId,
+                        overrideImmunity: effect.Target == "Pyre", fromEffectType: "CardEffectMultiplyStatusEffect");
                 }
                 return StatusApplicationModel.Apply(state, target.Id, effect.Statuses[0], sourceCardId,
                     overrideImmunity: effect.Target == "Pyre", fromEffectType: effect.Type == "SpawnOrStatus"

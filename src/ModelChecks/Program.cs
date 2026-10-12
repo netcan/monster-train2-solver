@@ -1,6 +1,12 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
 
+if (args.Length == 1 && args[0] == "--card-spells-pure")
+{
+    CardSpellChecks.Run();
+    return;
+}
+
 if (args.Length == 2 && args[0] == "--room-combat-only")
 {
     RoomCombatChecks.NativeRoomOnly(args[1]);

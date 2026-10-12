@@ -24,6 +24,21 @@ internal static class CardSpellChecks
             !hit.State.Units[0].Statuses.Any(status => status.Id == "armor") &&
             hit.State.Units[0].Statuses.Single(status => status.Id == "pyregel").Stacks == 4,
             "Pyregel flat damage, armor consumption or subsequent status stacks differed.");
+        var multiply = new CardActionEffect("MultiplyStatus", "DropTargetCharacter", 100, true, true, [armor.WithStacks(2)]);
+        RngDraw multiplyChance = rng.Range(0, 100);
+        RoomCombatResult doubled = CardSpellModel.Apply(new RoomCombatState(0, false, [enemy], [], context), [multiply], 1);
+        Require(doubled.Supported && doubled.State!.Units.Single().Status("armor")?.Stacks == 6 &&
+            JsonSerializer.Serialize(doubled.State.Context!.BattleRng) == JsonSerializer.Serialize(multiplyChance.State),
+            "Status multiplication did not double existing stacks or consume its per-target chance draw.");
+        var certainMultiply = new CardActionEffect("MultiplyStatus", "DropTargetCharacter", 0, true, true, [armor.WithStacks(2)]);
+        RoomCombatResult certainDoubled = CardSpellModel.Apply(new RoomCombatState(0, false, [enemy], [], context), [certainMultiply], 1);
+        Require(certainDoubled.Supported && certainDoubled.State!.Units.Single().Status("armor")?.Stacks == 6 &&
+            JsonSerializer.Serialize(certainDoubled.State.Context!.BattleRng) == JsonSerializer.Serialize(rng),
+            "A zero-chance-parameter status multiplication was not unconditional or consumed RNG.");
+        RoomCombatResult emptyMultiply = CardSpellModel.Apply(new RoomCombatState(0, false, [front], [], context), [multiply], 2);
+        Require(emptyMultiply.Supported && emptyMultiply.State!.Units.Single().Status("armor") == null &&
+            JsonSerializer.Serialize(emptyMultiply.State.Context!.BattleRng) == JsonSerializer.Serialize(multiplyChance.State),
+            "Status multiplication changed a target without stacks or skipped the chance draw.");
         RoomCombatResult shield = CardSpellModel.Apply(new RoomCombatState(0, false,
             [Make(1, CombatTeam.Enemy, 5, new CombatStatus("damage shield", 1, removeWhenTriggered: true)), front], [], context), damage, 1);
         Require(shield.Supported && shield.State!.Units[0].Health == 5 &&
@@ -182,7 +197,7 @@ internal static class CardSpellChecks
         Parallel.For(0, 32, _ => Require(JsonSerializer.Serialize(CardSpellModel.Apply(room, rally, 3).State) ==
             JsonSerializer.Serialize(moved.State), "Parallel spell branches diverged."));
         Require(JsonSerializer.Serialize(room) == parent, "Spells mutated their parent.");
-        Console.WriteLine("SPELL-CHECKS PASS: armor/shield, flat damage, lethal follow-ups, valor, rearrange, immunity and isolation.");
+        Console.WriteLine("SPELL-CHECKS PASS: status multiplication, armor/shield, flat damage, lethal follow-ups, valor, rearrange, immunity and isolation.");
     }
     private static void Require(bool condition, string message)
     { if (!condition) throw new InvalidOperationException(message); }
