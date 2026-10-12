@@ -29,7 +29,7 @@ The default command checks the full curated inventory. For routine changes, run
 the dedicated checks for the new and directly affected scenarios; run the full
 inventory at completed milestones and before delivery.
 
-Current inventory is 247 archives: 216 accepted battles and 31 component
+Current inventory is 248 archives: 217 accepted battles and 31 component
 calibrations. `full-battle-companion-bump.mt2f` covers a paired Relentless
 companion Boss refusal, its attempted-ascension callback and the survivor's
 terminal-death handoff. `full-battle-relic-card-status-upgrades.mt2f` verifies a native
@@ -3128,8 +3128,8 @@ before that input remain individually compared against native state; independent
 policy replay starts from the first decision state containing it. The schema-103
 binary is 31,941 bytes with 5,072 unique nodes and SHA-256
 `7b9726b80ffde51e36672e1d9e7b6d77e3325422cdc708794976a8b3309e47ac`; it has no
-JSON companion. The curated inventory now has 246 archives: 215 battles and 31
-component calibrations.
+JSON companion. At that capture milestone, the curated inventory had 246
+archives: 215 battles and 31 component calibrations.
 
 `full-battle-original-room-entry-status-relics.mt2f` records the unchanged
 `RootBeforePyre`, `SpellWeaknessBelowPyre` and `PyregelOnEnterTopFloor` effects
@@ -3169,4 +3169,21 @@ adds battle-mechanism coverage only. Inventory is 247 archives: 216 battles and
 
 ```powershell
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-damage-overflow.mt2f
+```
+
+`full-battle-original-unit-upgrade-trigger-relic.mt2f` captures the unchanged
+`AddAttackToFunguy` relic on authored Funguy carriers with two Horde stacks.
+Four native additions each apply +4 attack (2 → 6); four removals include one
+observed -2 attack change (5 → 3). The muted Instant battle won with 23 card
+actions, seven EndTurns and 57 stages, with zero capture failures, mismatches,
+unsupported transitions or pending records. All actions and the 16-branch
+policy replay match. The schema-133 archive is 32,734 bytes with 5,445 unique
+nodes and SHA-256
+`d7a1f6071199f506c53754f109140d5249d56b8e092b00204e77727e0c6743e2`; it has no
+JSON companion. This brings accepted original relic evidence to 64/224
+(28.57%) and the inventory to 248 archives: 217 battles and 31 calibrations.
+
+```powershell
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-unit-upgrade-trigger-relic.mt2f
+dotnet run --project src/ModelChecks -c Release -- --relic-unit-upgrade-triggers-pure
 ```

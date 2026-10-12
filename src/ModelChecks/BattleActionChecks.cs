@@ -295,6 +295,9 @@ internal static class BattleActionChecks
         }
         Require(unsupported == 0, "Native action verification skipped unsupported actions.");
         Console.WriteLine($"NATIVE-ACTION-CHECKS PASS: {supported} matched, {unsupported} unsupported.");
+        if (fixture.TryGetProperty("ModifierScenario", out FixtureValue unitUpgradeTriggerScenario) &&
+            unitUpgradeTriggerScenario.GetString() == "original-unit-upgrade-trigger-relic")
+            OriginalUnitUpgradeTriggerRelicChecks.Native(fixture);
         UnitTeleportChecks.Native(fixture);
         if (fixture.TryGetProperty("ModifierScenario", out FixtureValue relicScenario) &&
             relicScenario.GetString() == "relic-card-self-purge-upgrades")
@@ -470,6 +473,9 @@ internal static class BattleActionChecks
             chooser = OriginalDecayRelicBatchChecks.Choose;
         if (fixture.TryGetProperty("ModifierScenario", out var originalResourceRelicPolicy) && originalResourceRelicPolicy.GetString() == "original-resource-relic-batch")
             chooser = OriginalResourceRelicBatchChecks.Choose;
+        if (fixture.TryGetProperty("ModifierScenario", out var originalUnitUpgradeTriggerPolicy) &&
+            originalUnitUpgradeTriggerPolicy.GetString() == "original-unit-upgrade-trigger-relic")
+            chooser = OriginalUnitUpgradeTriggerRelicChecks.Choose;
         if (fixture.TryGetProperty("ModifierScenario", out var endlessReturnPolicy) && endlessReturnPolicy.GetString() == "original-endless-return")
         {
             int targetCardId = fixture.GetProperty("EndlessReturnCardId").GetInt32();

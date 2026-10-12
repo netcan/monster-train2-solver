@@ -1,7 +1,7 @@
 # Original relic coverage evidence
 
-As of 2026-10-13, **63 distinct original collectable relics / 224 catalog entries
-(28.13%)** have accepted native full-battle evidence. This counts unchanged relic
+As of 2026-10-13, **64 distinct original collectable relics / 224 catalog entries
+(28.57%)** have accepted native full-battle evidence. This counts unchanged relic
 definitions whose effects actually ran, including their original filters and
 conditions. Test cards, unit triggers and carrier subtypes may be authored to
 exercise those effects; the claim covers the recorded paths, not every possible
@@ -14,14 +14,14 @@ five now have accepted original-owner evidence. Both catalog owners of
 Rage and Frostbite consumers. Unknown status families and other effects on the
 remaining owners still require modeling and native proof.
 
-All 20 source archives below report game `2.2.1`, module MVID
+All 21 source archives below report game `2.2.1`, module MVID
 `8fb07b96-f4db-4d2b-884d-c00536d6ccf4`, `NativeWon=true`, and zero
 `CaptureFailures`, `Mismatches`, `Unsupported` and `Pending`. Archive provenance,
 byte lengths and SHA-256 hashes are recorded in [manifest.tsv](manifest.tsv).
 The floor-capacity batch passes strict native acceptance, complete-fixture checks,
 independent full-battle replay and six directly affected old-fixture regressions.
-The accepted inventory is 246 archives: 215 battles and 31 component
-calibrations. All 246 archive names, byte lengths and SHA-256 hashes match the
+The accepted inventory is 248 archives: 217 battles and 31 component
+calibrations. All 248 archive names, byte lengths and SHA-256 hashes match the
 manifest and curated list, with no JSON companions. A 246-archive replay was
 attempted on 2026-10-13 but has not completed: legacy EndTurn snapshots can
 conflict with the current model's room `Enabled` state. Focused follow-up checks
@@ -31,7 +31,7 @@ action/turn comparisons and skips an independent legacy policy chain only when
 recomputed EndTurn state confirms that room-rule conflict. Freshness-marked
 archives remain strict. The Mageblade status/cache/attack path has an accepted
 native battle archive, but Mageblade is not a collectable relic and is not
-included in the 63/224 owner count. The `AllUnitsMultistrike` archive
+included in the 64/224 owner count. The `AllUnitsMultistrike` archive
 validates a mutator, not a collectible relic, and is also excluded from that
 owner count.
 
@@ -54,6 +54,7 @@ owner count.
 | `NonBannerUnitsHaveDeployable` | `fb6332bb-3e1c-44ba-951b-39fbc8d43601` | [original deployment-phase relic][deployable] | Its unchanged temporary upgrade adds `CardTraitDrawInDeploymentPhase`; two eligible non-Banner units enter the first decision hand and both are independently played. All 48 native manager calls match the non-unique repeat, reset and filter behavior. |
 | `ImpDamageBuff` | `94595f3a-4624-4408-977d-b166a98f23d2` | [original unit relic batch][units] | Original unique Demon-filtered upgrade adds Multistrike 1. Twenty-seven native exchange observations contain at least two attacks by a Demon carrier, with complete combat state matching. |
 | `StewardSacrificeDamage` | `f6a4e405-98b9-4eeb-bae1-50cb204d12ed` | [original unit relic batch][units] | Six original `StewardSacrificeDamageAbility` activations remove their own units; three damage enemies. Three paid source cards exhaust and three cardless source copies retire from ownership. All queued callbacks and physical position changes match. |
+| `AddAttackToFunguy` | `25166141-810b-46ae-ac48-b5560083355a` | [unit-upgrade trigger relic][unitUpgradeTrigger] | Four unchanged native `OnTroopAdded` callbacks apply +4 attack for two Horde stacks (2 → 6); four `OnTroopRemoved` callbacks include one observed removal of a +2 upgrade (5 → 3). All 23 card actions match. |
 | `MorselsGetDamageShield` | `d1daea7e-3346-47df-a756-c839b044e5f3` | [original unit relic batch][units] | Three paid Morsel births retain their starting shield without repeating the spawn effect; three cardless births gain one additional shield. One native exchange consumes a shield while preserving its owner's health. Both original effects and filters remain unchanged. |
 | `ValorTransferOnAngelDeath` | `8c493cd7-8048-4598-bdd5-6cc2801cd842` | [original unit relic batch][units] | Twenty-eight native Shift queries cover player 2, enemy body 1, original enemy equipment 2 and excluded trigger 1. Eight player shifts and one equipped-enemy shift double the moved unit's gold callback and match other same-team callbacks. |
 | `EquippedUnitsGainArmor` | `9af0364b-8e05-45d9-be46-7b7dd1e721e7` | [original trigger relics][triggers] | Original OnEquipmentAdded grants 10 Armor and permits count modifiers. An authored native +1 count carrier produces fire count 2; two player attachments give two positive effect counterfactuals. |
@@ -264,6 +265,10 @@ original relic owner to the count.
 The older `6/224` passage in README describes an earlier milestone; it does not
 include the starter-cost, cardless or four-artifact batch evidence above.
 
+The native Horde-triggered unit-upgrade archive brings accepted original-owner
+coverage to 64/224. The previous 246-archive replay attempt remains incomplete;
+full replay of the current 248-archive inventory is still deferred.
+
 [counts]: full-battle-incant-relics-combined.mt2f
 [statuses]: full-battle-spawn-status-relics.mt2f
 [cost]: full-battle-relic-card-modifiers.mt2f
@@ -282,5 +287,6 @@ include the starter-cost, cardless or four-artifact batch evidence above.
 [endless]: full-battle-original-endless-return.mt2f
 [cardPlayMagicPower]: full-battle-original-card-play-magic-power.mt2f
 [roomEntry]: full-battle-original-room-entry-status-relics.mt2f
+[unitUpgradeTrigger]: full-battle-original-unit-upgrade-trigger-relic.mt2f
 [sting]: full-battle-original-sting-relics.mt2f
 [deployable]: full-battle-original-deployable-relic.mt2f

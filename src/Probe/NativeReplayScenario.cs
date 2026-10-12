@@ -257,6 +257,8 @@ namespace MonsterTrain2Poju.Probe
                         OriginalCardPlayMagicPowerScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalRoomEntryStatusRelicScenario.Enabled && !OriginalRoomEntryStatusRelicScenario.Acquired)
                         OriginalRoomEntryStatusRelicScenario.AcquireBeforeBattle(managers!, log);
+                    if (fullBattle && OriginalUnitUpgradeTriggerRelicScenario.Enabled && !OriginalUnitUpgradeTriggerRelicScenario.Acquired)
+                        OriginalUnitUpgradeTriggerRelicScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalResourceRelicBatchScenario.Enabled && !OriginalResourceRelicBatchScenario.Prepared)
                         OriginalResourceRelicBatchScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && PyreResourceRefreshScenario.Enabled && !PyreResourceRefreshScenario.Prepared)
@@ -448,6 +450,13 @@ namespace MonsterTrain2Poju.Probe
             {
                 if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Resource relic batch must start on deployment turn.");
                 OriginalResourceRelicBatchScenario.Prepare(managers, log);
+                numericModifiersPrepared = true;
+                return;
+            }
+            if (fullBattle && !numericModifiersPrepared && OriginalUnitUpgradeTriggerRelicScenario.Enabled)
+            {
+                if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Unit-upgrade relic must start on deployment turn.");
+                OriginalUnitUpgradeTriggerRelicScenario.Prepare(managers, log);
                 numericModifiersPrepared = true;
                 return;
             }
@@ -912,6 +921,7 @@ namespace MonsterTrain2Poju.Probe
                 if (OriginalFloorCapacityRelicScenario.Enabled) pendingPlay = OriginalFloorCapacityRelicScenario.Choose(decision);
                 if (MagebladeScenario.Enabled) pendingPlay = MagebladeScenario.Choose(decision) ?? pendingPlay;
                 if (OriginalCardPlayMagicPowerScenario.Enabled) pendingPlay = OriginalCardPlayMagicPowerScenario.Choose(decision) ?? pendingPlay;
+                if (OriginalUnitUpgradeTriggerRelicScenario.Enabled) pendingPlay = OriginalUnitUpgradeTriggerRelicScenario.Choose(decision) ?? pendingPlay;
                 if (modifierScenario == "rally-lethal") pendingPlay = LethalRallyScenario.ChooseNativeBossSummon(managers) ?? pendingPlay;
                 if (modifierScenario == "incant" || modifierScenario == "incant-thresholds" || (modifierScenario == "incant-relic" || modifierScenario == "incant-relic-combined")) pendingPlay = BattleActionModel.ChooseEmptySpellThenCards(decision);
                 if (modifierScenario.StartsWith("multi-summon", StringComparison.Ordinal)) pendingPlay = MultiSummonScenario.Choose(managers) ?? pendingPlay;

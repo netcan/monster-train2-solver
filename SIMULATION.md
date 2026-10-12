@@ -1,8 +1,8 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-13): 247 binary archives, including 216
+Current accepted inventory (2026-10-13): 248 binary archives, including 217
 full battles and 31 component calibrations. Unchanged original relic evidence
-covers 63/224 catalog entries (28.13%); see
+covers 64/224 catalog entries (28.57%); see
 [the owner evidence table](tests/fixtures/relic-coverage.md). Whole-battle
 coverage and the optimal solver remain in progress.
 
@@ -8485,10 +8485,37 @@ cover all four team modes, same-floor spill amount/order, exact lethal, armor
 and recursion suppression. The binary is 24,704 bytes with 3,927 unique nodes
 and SHA-256
 `c0a1c9cde31b0f43d7a1971d1fa4d6c314c3470c7d8caade1257d18312c71ce9`; it has no
-JSON companion. This adds combat-mechanism coverage only: original relic
-evidence remains 63/224 (28.13%). Inventory is now 247 archives: 216 full
-battles and 31 component calibrations. Full-inventory replay remains deferred.
+JSON companion. At that milestone this added combat-mechanism coverage only:
+original relic evidence remained 63/224 (28.13%), and inventory stood at 247
+archives: 216 full battles and 31 component calibrations. Full-inventory replay
+remained deferred.
 
 ```powershell
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-damage-overflow.mt2f
+```
+
+### Horde-triggered original unit-upgrade relic
+
+The schema-133 `full-battle-original-unit-upgrade-trigger-relic.mt2f` archive
+validates the unchanged `AddAttackToFunguy` relic. The test authors the original
+Funguy subtype and two Horde stacks on Steward carriers, causing real native
+`OnTroopAdded` and `OnTroopRemoved` callbacks. Four additions each apply the
+original +2 attack upgrade twice (2 → 6); the captured removals include one
+matching -2 change (5 → 3). The battle won with 23 card actions, seven EndTurns
+and 57 stages; capture failures, mismatches, unsupported transitions and
+pending records are zero. All 23 card actions and the 16-branch policy replay
+match the model.
+
+The 32,734-byte binary has 5,445 unique nodes and SHA-256
+`d7a1f6071199f506c53754f109140d5249d56b8e092b00204e77727e0c6743e2`; it has no
+JSON companion. Pure checks cover ordered add/remove rules, repeated Horde
+counts, team/subtype filters, death gates, both lifetimes and immutable state.
+This brings accepted original relic evidence to 64/224 (28.57%) and the curated
+inventory to 248 archives: 217 battles and 31 component calibrations. Full
+inventory replay remains deferred.
+
+```powershell
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-unit-upgrade-trigger-relic.mt2f
+dotnet run --project src/ModelChecks -c Release -- --relic-unit-upgrade-triggers-pure
+dotnet run --project src/ModelChecks -c Release -- --native-actions-only tests/fixtures/full-battle-original-unit-upgrade-trigger-relic.mt2f
 ```
