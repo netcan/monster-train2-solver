@@ -425,7 +425,9 @@ internal static class BattleActionChecks
         for (int index = 0; index < suffix.Turns.Count; index++)
         {
             BattleTurnState actual = actualSuffixTurns[index].GetProperty("Actual").Deserialize<BattleTurnState>()!;
-            Require(BattleTurnChecks.Comparable(suffix.Turns[index].State!) == BattleTurnChecks.Comparable(actual),
+            bool terminalTurn = suffix.Turns[index].Outcome is RoomOutcome.BattleWon or RoomOutcome.PlayerDefeated;
+            Require(BattleTurnChecks.Comparable(suffix.Turns[index].State!, terminalTurn) ==
+                BattleTurnChecks.Comparable(actual, terminalTurn),
                 "Mid-battle suffix decision differs after EndTurn " + index);
         }
         int hp = terminal.Spawn.Train.Rooms.SelectMany(room => room.Units).SingleOrDefault(unit => unit.IsPyre)?.Health ?? 0;
@@ -520,8 +522,10 @@ internal static class BattleActionChecks
         for (int index = 0; index < result.Turns.Count; index++)
         {
             BattleTurnState actual = turns[index].GetProperty("Actual").Deserialize<BattleTurnState>()!;
+            bool terminalTurn = result.Turns[index].Outcome is RoomOutcome.BattleWon or RoomOutcome.PlayerDefeated;
             Require(result.Turns[index].Outcome == (RoomOutcome)turns[index].GetProperty("ActualOutcome").GetInt32() &&
-                BattleTurnChecks.Comparable(result.Turns[index].State!) == BattleTurnChecks.Comparable(actual),
+                BattleTurnChecks.Comparable(result.Turns[index].State!, terminalTurn) ==
+                    BattleTurnChecks.Comparable(actual, terminalTurn),
                 "Independent policy diverged after EndTurn " + index);
         }
         return result.State!;

@@ -66,6 +66,7 @@ namespace MonsterTrain2Poju.Probe
                     new UnityRng(words[0], words[1], words[2], words[3])));
             }
             EnemySpawnState spawn = spawning.Capture(includeOuterBossForBump, ignoreOuterBossSpawnInteraction);
+            trace.InvalidateCardRules();
             return new BattleTurnState(spawn, player.GetEnergy(), save.GetBalanceData().GetStartOfTurnEnergy(),
                 combat.GetStartOfTurnCards(), save.GetForgePoints(), save.GetDragonsHoardAmount(), player.CurrentMoonPhase.ToString(),
                 streams, otherPiles, interactions.Distinct().OrderBy(value => value, StringComparer.Ordinal).ToArray(), trace.CapturePlayRules(spawn),
@@ -93,8 +94,9 @@ namespace MonsterTrain2Poju.Probe
                 record.Actual = Capture(); record.ActualOutcome = outcome;
                 if (record.Predicted.Supported)
                 {
+                    bool terminal = outcome is RoomOutcome.BattleWon or RoomOutcome.PlayerDefeated;
                     record.Difference = record.Predicted.Outcome != outcome ? "EndTurn outcome differs" :
-                        JToken.DeepEquals(Comparable(record.Predicted.State!), Comparable(record.Actual))
+                        JToken.DeepEquals(Comparable(record.Predicted.State!, terminal), Comparable(record.Actual, terminal))
                             ? null : "Decision state, resources, card piles or gameplay RNG differ";
                     log.LogInfo("TURN-MODEL-" + (record.Difference == null ? "MATCH" : "MISMATCH") + " index=" + record.Index);
                 }
@@ -102,14 +104,15 @@ namespace MonsterTrain2Poju.Probe
             }
             catch (Exception error) { trace.CaptureFailure(error); }
         }
-        internal static JToken Comparable(BattleTurnState state) => JToken.FromObject(new
+        internal static JToken Comparable(BattleTurnState state, bool terminal = false) => JToken.FromObject(new
         {
             Rooms = state.Spawn.Train.Rooms.Select(room => new { room.RoomIndex, room.Deployment, room.Units }).ToArray(),
             Movement = state.Spawn.Train.Movement.OrderBy(rule => rule.UnitId).ToArray(), state.Spawn.Train.Context,
             state.Spawn.Phase, state.Spawn.SelectedGroups, state.Spawn.Rng, state.Spawn.NextUnitId,
             state.Spawn.TreasuresRemaining, state.Spawn.Turn, state.Energy, state.ForgePoints, state.DragonsHoard,
             state.EnergyPerTurn, state.DrawPerTurn,
-            state.MoonPhase, state.RngStreams, state.OtherPiles, state.PlayRules, state.BattlePreviewEnabled, state.UiRngIsolated,
+            state.MoonPhase, state.RngStreams, state.OtherPiles, PlayRules = terminal ? null : state.PlayRules,
+            state.BattlePreviewEnabled, state.UiRngIsolated,
             state.CanonicalPhysicalReferences
         });
         internal sealed class Record

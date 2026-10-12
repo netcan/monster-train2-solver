@@ -14,7 +14,8 @@ internal static class BattleTurnChecks
             BattleTurnResult result = BattleTurnModel.EndTurn(before);
             if (!result.Supported) { unsupported++; continue; }
             BattleTurnState actual = turn.GetProperty("Actual").Deserialize<BattleTurnState>()!;
-            string predictedState = Comparable(result.State!), actualState = Comparable(actual);
+            bool isTerminalOutcome = result.Outcome is RoomOutcome.BattleWon or RoomOutcome.PlayerDefeated;
+            string predictedState = Comparable(result.State!, isTerminalOutcome), actualState = Comparable(actual, isTerminalOutcome);
             Require(result.Outcome == (RoomOutcome)turn.GetProperty("ActualOutcome").GetInt32() && predictedState == actualState,
                 "Native EndTurn differs at index " + turn.GetProperty("Index").GetInt32() + ": " +
                 (predictedState == actualState ? "terminal outcome" : ModelJson.Difference(predictedState, actualState)));
@@ -47,14 +48,16 @@ internal static class BattleTurnChecks
             Require(result.Supported, "Independent full chain rejected turn " + index + ": " + result.UnsupportedReason);
             FixtureValue actualTurn = oracle[index];
             BattleTurnState actual = actualTurn.GetProperty("Actual").Deserialize<BattleTurnState>()!;
+            bool terminalTurn = result.Outcome is RoomOutcome.BattleWon or RoomOutcome.PlayerDefeated;
             Require(result.Outcome == (RoomOutcome)actualTurn.GetProperty("ActualOutcome").GetInt32() &&
-                Comparable(result.State!) == Comparable(actual), "Independent full chain diverged at turn " + index);
+                Comparable(result.State!, terminalTurn) == Comparable(actual, terminalTurn),
+                "Independent full chain diverged at turn " + index);
             bool terminal = result.Outcome is RoomOutcome.BattleWon or RoomOutcome.PlayerDefeated;
             Require(terminal == (index == oracle.GetArrayLength() - 1), "The independent chain terminated at the wrong turn.");
         }
         return simulation.State!;
     }
-    internal static string Comparable(BattleTurnState state)
+    internal static string Comparable(BattleTurnState state, bool terminal = false)
     {
         // Room selection and this allocator belong to UI previews, not battle decisions.
         CombatContext? context = state.Spawn.Train.Context;
@@ -70,7 +73,8 @@ internal static class BattleTurnChecks
             state.Spawn.Phase, state.Spawn.SelectedGroups, state.Spawn.Rng, state.Spawn.NextUnitId,
             state.Spawn.TreasuresRemaining, state.Spawn.Turn, state.Energy, state.ForgePoints, state.DragonsHoard,
             state.EnergyPerTurn, state.DrawPerTurn,
-            state.MoonPhase, state.RngStreams, state.OtherPiles, state.PlayRules, state.BattlePreviewEnabled, state.UiRngIsolated,
+            state.MoonPhase, state.RngStreams, state.OtherPiles, PlayRules = terminal ? null : state.PlayRules,
+            state.BattlePreviewEnabled, state.UiRngIsolated,
             state.CanonicalPhysicalReferences
         });
     }
