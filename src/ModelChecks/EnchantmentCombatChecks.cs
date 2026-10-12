@@ -13,16 +13,18 @@ internal static class EnchantmentCombatChecks
         // an exact field difference, rather than merely repeating its live comparison label.
         foreach (var sample in samples) Verify(sample);
         VerifyBoundaries(samples[0].GetProperty("Before").Deserialize<EnchantmentCombatState>()!);
+        VerifyDeathwish(samples);
         Require(root.GetProperty("Schema").GetInt32() == 1 && root.GetProperty("GameModuleMvid").GetString() ==
             "8fb07b96-f4db-4d2b-884d-c00536d6ccf4" && root.GetProperty("Boundary").GetString() == "RealStatusAndDrainedQueue" &&
             !root.GetProperty("StatusMutationsSuppressed").GetBoolean() && root.GetProperty("LiveContextUnchanged").GetBoolean() &&
             root.GetProperty("ExternalPreviewPreparationsRecorded").GetBoolean() &&
-            root.GetProperty("Mismatches").GetInt32() == 0 && samples.Length == 32,
+            root.GetProperty("Mismatches").GetInt32() == 0 && samples.Length == 37,
             "Real enchantment combat version, mutation, restoration or matrix gate failed.");
         foreach (var sample in samples)
             Require(sample.GetProperty("Completed").GetBoolean() && sample.GetProperty("Difference").ValueKind == FixtureKind.Null,
                 "Incomplete/mismatched real enchantment combat sample.");
         Require(samples.Count(sample => sample.GetProperty("Label").GetString()!.StartsWith("random-carried-", StringComparison.Ordinal)) == 16 &&
+            samples.Count(sample => sample.GetProperty("Label").GetString()!.StartsWith("deathwish-", StringComparison.Ordinal)) == 5 &&
             samples.Any(sample => sample.GetProperty("Direct").GetBoolean()) &&
             samples.Any(sample => !sample.GetProperty("Before").GetProperty("AllowUpdates").GetBoolean()),
             "Native random, direct reentry or disabled-manager cases are missing.");
@@ -31,6 +33,32 @@ internal static class EnchantmentCombatChecks
         int callbacks = samples.Sum(sample => sample.GetProperty("Callbacks").GetArrayLength());
         Console.WriteLine($"NATIVE-ENCHANTMENT-COMBAT-CHECKS PASS: {samples.Length} real status/train/effect transitions, {requests} status calls, " +
             $"{callbacks} complete callback payloads, standalone/shared-world effect routing and drained child gold effects, guarded/direct reentry, retained per-effect maps/RNG and 32 isolated branches.");
+    }
+    private static void VerifyDeathwish(FixtureValue[] samples)
+    {
+        EnchantmentCombatState State(string label, string field)
+        {
+            FixtureValue sample = samples.Single(item => item.GetProperty("Label").GetString() == label);
+            return sample.GetProperty(field).Deserialize<EnchantmentCombatState>()!;
+        }
+        int[] ActiveSources(EnchantmentCombatState state) => state.Train.Rooms.SelectMany(room => room.Units)
+            .Where(unit => unit.Triggers.Any(trigger => trigger.DeathwishActive == true)).Select(unit => unit.Id).Distinct().ToArray();
+
+        FixtureValue initial = samples.Single(item => item.GetProperty("Label").GetString() == "deathwish-initial");
+        EnchantmentCombatState before = initial.GetProperty("Before").Deserialize<EnchantmentCombatState>()!;
+        EnchantmentCombatResult update = EnchantmentCombatModel.UpdateAll(before);
+        Require(update.Supported, "Deathwish initial update: " + update.UnsupportedReason);
+        int[] active = ActiveSources(update.State!);
+        EnchantmentCallback[] entries = update.Callbacks.Where(item => item.Kind == "OnDeathwish").ToArray();
+        Require(active.Length == 1 && entries.Length == 2 && entries.Select(item => item.UnitId).Distinct().SequenceEqual(active) &&
+            entries.Select(item => item.ExclusiveTriggerStateId).Distinct().Count() == 2,
+            "Initial front activation did not retain separate exclusive Deathwish sources.");
+        int[] muted = ActiveSources(State("deathwish-muted", "AfterQueue"));
+        int[] unmuted = ActiveSources(State("deathwish-unmuted", "AfterQueue"));
+        int[] shifted = ActiveSources(State("deathwish-front-shift", "AfterQueue"));
+        int[] returned = ActiveSources(State("deathwish-front-return", "AfterQueue"));
+        Require(muted.Length == 0 && unmuted.Length == 1 && shifted.Length == 1 && returned.SequenceEqual(unmuted) &&
+            !shifted.SequenceEqual(unmuted), "Mute or front-line transitions did not move Deathwish source membership.");
     }
     private static void Verify(FixtureValue sample)
     {
@@ -45,13 +73,13 @@ internal static class EnchantmentCombatChecks
         Compare(result.State!, sample.GetProperty("Actual").Deserialize<EnchantmentCombatState>()!, label + " state");
         Compare(result.Requests, sample.GetProperty("Requests").Deserialize<EnchantmentRequest[]>()!, label + " requests");
         Compare(result.Callbacks, sample.GetProperty("Callbacks").Deserialize<EnchantmentCallback[]>()!, label + " callbacks");
-        VerifySharedWorld(sample, before);
         var drained = EnchantmentCombatModel.Drain(result);
         Require(drained.Supported, label + " drain: " + drained.UnsupportedReason);
         EnchantmentCombatState afterQueue = drained.State!;
         foreach (var id in sample.GetProperty("PreviewPreparedUnitIds").EnumerateArray())
             afterQueue = EnchantmentCombatModel.PrepareForPreview(afterQueue, id.GetInt32());
         Compare(afterQueue, sample.GetProperty("AfterQueue").Deserialize<EnchantmentCombatState>()!, label + " after queue/preparation events");
+        VerifySharedWorld(sample, before);
         Require(JsonSerializer.Serialize(before) == parent, label + ": parent state changed.");
         foreach (var effect in before.Train.Rooms.SelectMany(room => room.Units).SelectMany(unit => unit.Triggers).SelectMany(trigger => trigger.Effects)
             .Where(effect => effect.Enchantment != null))

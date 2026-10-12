@@ -61,13 +61,15 @@ namespace MonsterTrain2Poju.Model
         public int? OverrideTargetId { get; }
         public int? DyingCharacterId { get; }
         public bool CanFireTriggers { get; }
+        public int? ExclusiveTriggerStateId { get; }
         public EnchantmentCallback(int roomIndex, int unitId, string kind, int paramInt, int paramInt2, string? paramString,
-            int? overrideTargetId, int? dyingCharacterId, bool canFireTriggers)
+            int? overrideTargetId, int? dyingCharacterId, bool canFireTriggers, int? exclusiveTriggerStateId = null)
         { RoomIndex = roomIndex; UnitId = unitId; Kind = kind; ParamInt = paramInt; ParamInt2 = paramInt2;
-            ParamString = paramString; OverrideTargetId = overrideTargetId; DyingCharacterId = dyingCharacterId; CanFireTriggers = canFireTriggers; }
+            ParamString = paramString; OverrideTargetId = overrideTargetId; DyingCharacterId = dyingCharacterId; CanFireTriggers = canFireTriggers;
+            ExclusiveTriggerStateId = exclusiveTriggerStateId; }
         internal static EnchantmentCallback From(RoomCombatModel.QueuedCharacterTrigger item) => new EnchantmentCallback(
             item.RoomIndex, item.Unit.Id, item.Kind, item.ParamInt, item.ParamInt2, item.ParamString,
-            item.OverrideTarget?.Id, item.DyingCharacter?.Id, item.CanFireTriggers);
+            item.OverrideTarget?.Id, item.DyingCharacter?.Id, item.CanFireTriggers, item.ExclusiveTriggerStateId);
     }
 
     public sealed class EnchantmentCombatResult
@@ -179,10 +181,56 @@ namespace MonsterTrain2Poju.Model
                     if (error != null) break;
                 }
                 Set(updating: false);
-                // Deathwish affects combat and must not silently become a no-op.
-                if (state.Train.Rooms.SelectMany(room => room.Units).Any(unit => unit.Triggers.Any(trigger =>
-                    trigger.Kind == "OnDeathwish" || trigger.Kind == "OnDeathwishLost")))
-                    error = "Deathwish after enchantments is not modeled.";
+                if (error == null) UpdateDeathwish(sources);
+            }
+            private void UpdateDeathwish(int[] actorOrder)
+            {
+                var units = state.Train.Rooms.SelectMany(room => room.Units).ToDictionary(unit => unit.Id);
+                foreach (int id in actorOrder)
+                {
+                    if (!units.TryGetValue(id, out CombatUnit? unit)) continue;
+                    RoomCombatState? room = state.Train.Rooms.FirstOrDefault(item => item.Units.Any(actor => actor.Id == id));
+                    if (room == null) continue;
+                    bool eligible = IsDeathwishFront(room, unit) &&
+                        (unit.Status("silenced")?.Stacks ?? 0) <= 0 && (unit.Status("muted")?.Stacks ?? 0) <= 0;
+                    CombatTrigger[] triggers = unit.Triggers.ToArray();
+                    var pending = new List<(string Kind, int StateId)>();
+                    bool changed = false;
+                    for (int index = 0; index < triggers.Length; index++)
+                    {
+                        CombatTrigger trigger = triggers[index];
+                        if (trigger.Kind != "OnDeathwish" && trigger.Kind != "OnDeathwishLost") continue;
+                        if (!trigger.DeathwishActive.HasValue || !trigger.StateId.HasValue)
+                        { error = "Deathwish updates require captured source membership and persistent trigger identity."; return; }
+                        if (trigger.DeathwishActive.Value == eligible) continue;
+                        triggers[index] = trigger.WithDeathwishActive(eligible);
+                        pending.Add((eligible ? "OnDeathwish" : "OnDeathwishLost", trigger.StateId.Value));
+                        changed = true;
+                    }
+                    if (!changed) continue;
+                    unit = unit.WithTriggers(triggers);
+                    units[id] = unit;
+                    Replace(unit);
+                    foreach (var callback in pending)
+                    {
+                        var queued = new RoomCombatModel.QueuedCharacterTrigger(room.RoomIndex, unit, callback.Kind,
+                            canFireTriggers: true, triggerCount: 1, exclusiveTriggerStateId: callback.StateId);
+                        string? admissionError = StatusCallbackModel.Admit(state.Train.Context, queued, out RoomCombatModel.QueuedCharacterTrigger admitted);
+                        if (admissionError != null) { error = admissionError; return; }
+                        if (admitted.Admission != RoomCombatModel.CharacterTriggerAdmission.Rejected) callbacks.Add(admitted);
+                    }
+                }
+            }
+            private bool IsDeathwishFront(RoomCombatState room, CombatUnit actor)
+            {
+                var members = room.Units.Where(unit => unit.Team == actor.Team && unit.Health > 0 && unit.DeathState?.IsDestroyed != true)
+                    .ToDictionary(unit => unit.Id);
+                SpawnPointGroupState? group = state.Train.Context?.SpawnPoints?.SelectedGroup(room.RoomIndex, actor.Team);
+                IEnumerable<CombatUnit> ordered = group == null ? room.Units.Where(unit => unit.Team == actor.Team) :
+                    group.Occupants.Where(members.ContainsKey).Select(id => members[id]).Concat(room.Units.Where(unit =>
+                        unit.Team == actor.Team && members.ContainsKey(unit.Id) && !group.Occupants.Contains(unit.Id)));
+                CombatUnit? front = ordered.FirstOrDefault(unit => (unit.Status("untouchable")?.Stacks ?? 0) <= 0);
+                return front?.Id == actor.Id;
             }
             private EnchantmentRule Rule(int id, int trigger, int effect) => Find(id).Unit.Triggers[trigger].Effects[effect].Enchantment
                 ?? throw new InvalidOperationException("Missing persistent enchantment definition.");

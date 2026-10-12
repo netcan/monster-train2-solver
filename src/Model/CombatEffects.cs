@@ -240,6 +240,8 @@ namespace MonsterTrain2Poju.Model
         public CombatTriggerOrigin? Origin { get; }
         // Per-unit allocation survives list shifts and removal; null denotes a legacy capture.
         public int? StateId { get; }
+        // Native deathWishSources membership is separate from the trigger's one-shot flag.
+        public bool? DeathwishActive { get; }
         public CombatTriggerConditions? Conditions { get; }
         public bool RemoveOnRelentlessChange { get; }
         public bool? NoCountModifiersAllowed { get; }
@@ -249,23 +251,26 @@ namespace MonsterTrain2Poju.Model
         public CombatTrigger(string kind, bool once, bool hasTriggered, bool ignoreSilence,
             int fireCount, IReadOnlyList<CombatEffect> effects, bool? skipDuringDeployment = null, int? triggerAtThreshold = null,
             CombatTriggerOrigin? origin = null, int? stateId = null, CombatTriggerConditions? conditions = null,
-            bool removeOnRelentlessChange = false, bool? noCountModifiersAllowed = null)
+            bool removeOnRelentlessChange = false, bool? noCountModifiersAllowed = null, bool? deathwishActive = null)
         {
             Kind = kind; Once = once; HasTriggered = hasTriggered; IgnoreSilence = ignoreSilence;
             FireCount = fireCount; Effects = Array.AsReadOnly(effects.ToArray()); SkipDuringDeployment = skipDuringDeployment;
             TriggerAtThreshold = triggerAtThreshold;
             Origin = origin;
             StateId = stateId;
+            DeathwishActive = deathwishActive;
             Conditions = conditions;
             RemoveOnRelentlessChange = removeOnRelentlessChange;
             NoCountModifiersAllowed = noCountModifiersAllowed;
             Identity = new object();
         }
-        private CombatTrigger(CombatTrigger source, bool hasTriggered, IReadOnlyList<CombatEffect> effects, int? stateId, int? fireCount = null)
+        private CombatTrigger(CombatTrigger source, bool hasTriggered, IReadOnlyList<CombatEffect> effects, int? stateId,
+            int? fireCount = null, bool? deathwishActive = null)
         {
             Kind = source.Kind; Once = source.Once; HasTriggered = hasTriggered; IgnoreSilence = source.IgnoreSilence;
             FireCount = fireCount ?? source.FireCount; Effects = Array.AsReadOnly(effects.ToArray()); SkipDuringDeployment = source.SkipDuringDeployment;
-            TriggerAtThreshold = source.TriggerAtThreshold; Origin = source.Origin; Identity = source.Identity; StateId = stateId; Conditions = source.Conditions;
+            TriggerAtThreshold = source.TriggerAtThreshold; Origin = source.Origin; Identity = source.Identity; StateId = stateId;
+            DeathwishActive = deathwishActive ?? source.DeathwishActive; Conditions = source.Conditions;
             RemoveOnRelentlessChange = source.RemoveOnRelentlessChange;
             NoCountModifiersAllowed = source.NoCountModifiersAllowed;
         }
@@ -273,6 +278,8 @@ namespace MonsterTrain2Poju.Model
         internal CombatTrigger ForPreview() => new CombatTrigger(this, false, Effects, StateId);
         internal CombatTrigger WithEffects(IReadOnlyList<CombatEffect> effects) => new CombatTrigger(this, HasTriggered, effects, StateId);
         public CombatTrigger WithStateId(int? stateId) => new CombatTrigger(this, HasTriggered, Effects, stateId);
+        internal CombatTrigger WithDeathwishActive(bool active) => new CombatTrigger(this, HasTriggered, Effects, StateId,
+            deathwishActive: active);
         internal CombatTrigger WithFireCount(int fireCount) => new CombatTrigger(this, HasTriggered, Effects, StateId, fireCount);
         internal CombatTrigger WithOrigin(string upgradeId, int equipmentCardId, int? stateId = null) => new CombatTrigger(Kind, Once, false,
             IgnoreSilence, FireCount, Effects, SkipDuringDeployment, TriggerAtThreshold,

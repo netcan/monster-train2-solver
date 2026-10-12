@@ -1320,13 +1320,15 @@ are zero. Persistent aura integration into the combat engine remains open.
 
 `enchantment-combat-calibration.mt2f` captures actual status mutations and drained
 child callbacks for persistent CardEffectEnchant on two real paid units. No
-native gameplay/status API is suppressed. Thirty-two exact steps include global
+native gameplay/status API is suppressed. Thirty-two aura steps include global
 allow/reentry guards, direct nested global updates, muting/silencing, signed/zero/
-Duality-overflow counts, poison and sixteen pooled random steps. All 35 API calls,
-48 complete nine-field callback payloads, per-effect maps, train/context states,
-explicit UI preview preparation events and drained gold effects match in 32
-isolated branches. Live captured train/context, original primary states/triggers/
-identity maps, RNG and update flags restore; the queue is empty afterwards.
+Duality-overflow counts, poison and sixteen pooled random steps; five isolated
+Deathwish steps verify front/mute membership and exclusive activation/loss queues.
+All 70 API calls and 111 complete callback payloads, per-effect maps, train/context
+states, explicit UI preview preparation events and drained child effects match in
+32 isolated branches. Live captured train/context, every living actor's primary
+state/triggers/identity map, RNG and update flags restore; the queue is empty
+afterwards.
 The isolated profile's run-stat/UI side effects are outside that restoration claim.
 
 The following native and independent ordinary battle win after 21 paid actions,

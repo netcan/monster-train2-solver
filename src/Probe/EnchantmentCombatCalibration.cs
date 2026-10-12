@@ -38,8 +38,10 @@ namespace MonsterTrain2Poju.Probe
                 Managers.GetRoomManager()!.GetRoom(floor).AddCharactersToList(actors, Team.Type.Monsters | Team.Type.Heroes);
             return actors.Where(unit => unit.IsAlive && !unit.IsDestroyed).ToArray();
         }
-        internal static bool Eligible => LiveActors().Where(unit => !unit.IsPyreHeart() && unit.GetTeamType() == Team.Type.Monsters)
-            .GroupBy(unit => unit.GetCurrentRoomIndex()).Any(group => group.Count() >= 2);
+        private static CharacterState[] DeathwishHosts() => LiveActors().Where(unit => !unit.IsPyreHeart())
+            .GroupBy(unit => (Room: unit.GetCurrentRoomIndex(), Team: unit.GetTeamType()))
+            .Where(group => group.Count() >= 2).Select(group => group.Take(2).ToArray()).FirstOrDefault() ?? Array.Empty<CharacterState>();
+        internal static bool Eligible => DeathwishHosts().Length == 2;
         internal static void Start(ManualLogSource log)
         { Started = true; Save.StartCoroutine(Protect(Run(), log)); }
         private static IEnumerator Protect(IEnumerator root, ManualLogSource log)
@@ -72,19 +74,20 @@ namespace MonsterTrain2Poju.Probe
             return queue.Select(item => new EnchantmentCallback(item.character.GetCurrentRoomIndex(), Trace.UnitId(item.character), item.trigger.ToString(),
                 item.fireTriggersData?.paramInt ?? 0, item.fireTriggersData?.paramInt2 ?? 0, item.fireTriggersData?.paramString,
                 item.fireTriggersData?.overrideTargetCharacter == null ? (int?)null : Trace.UnitId(item.fireTriggersData.overrideTargetCharacter),
-                item.dyingCharacter == null ? (int?)null : Trace.UnitId(item.dyingCharacter), item.canFireTriggers)).ToArray();
+                item.dyingCharacter == null ? (int?)null : Trace.UnitId(item.dyingCharacter), item.canFireTriggers,
+                item.exclusiveTrigger == null ? (int?)null : Trace.TriggerStateId(item.character, item.exclusiveTrigger))).ToArray();
         }
         private static IEnumerator Run()
         {
             RoomManager rooms = Managers.GetRoomManager()!; CombatManager combat = Managers.GetCombatManager()!;
-            CharacterState[] hosts = LiveActors().Where(unit => !unit.IsPyreHeart() && unit.GetTeamType() == Team.Type.Monsters)
-                .GroupBy(unit => unit.GetCurrentRoomIndex()).First(group => group.Count() >= 2).Take(2).ToArray();
+            CharacterState[] actors = LiveActors();
+            CharacterState[] hosts = DeathwishHosts();
             TrainCombatState originalTrain = Trace.CaptureTrain(); CombatContext originalContext = Trace.CaptureContext();
-            var originalStates = hosts.Select(unit => Get(unit, "_primaryStateInformation")).ToArray();
-            var originalTriggers = hosts.Select(unit => Get(unit, "triggers")).ToArray();
-            bool[] originalEnchanter = hosts.Select(unit => unit.IsEnchanter).ToArray();
+            var originalStates = actors.Select(unit => Get(unit, "_primaryStateInformation")).ToArray();
+            var originalTriggers = actors.Select(unit => Get(unit, "triggers")).ToArray();
+            bool[] originalEnchanter = actors.Select(unit => unit.IsEnchanter).ToArray();
             var identityStore = (Dictionary<CharacterState, Dictionary<CharacterTriggerState, int>>)Get(Trace, "triggerIdentities");
-            var originalIds = hosts.Select(unit => Trace.TriggerStates(unit).ToDictionary(item => item.Key, item => item.Value)).ToArray();
+            var originalIds = actors.Select(unit => Trace.TriggerStates(unit).ToDictionary(item => item.Key, item => item.Value)).ToArray();
             HadesRNG battle = Rng(RngId.Battle), test = Rng(RngId.BattleTest);
             var originalBattle = new HadesRNG(battle); var originalTest = new HadesRNG(test);
             var originalGlobal = UnityEngine.Random.state; int originalGold = Save.GetGold();
@@ -94,10 +97,10 @@ namespace MonsterTrain2Poju.Probe
             try
             {
                 Set(rooms, "_allowEnchantmentUpdates", true);
+                foreach (CharacterState actor in actors)
+                    Set(actor, "_primaryStateInformation", AccessTools.Method(StateType, "DeepCopyForPreview").Invoke(Get(actor, "_primaryStateInformation"), null));
                 for (int i = 0; i < hosts.Length; i++)
                 {
-                    object cloned = AccessTools.Method(StateType, "DeepCopyForPreview").Invoke(originalStates[i], null);
-                    Set(hosts[i], "_primaryStateInformation", cloned);
                     Set(hosts[i], "triggers", new List<CharacterTriggerState>());
                     AccessTools.Property(typeof(CharacterState), "IsEnchanter").SetValue(hosts[i], true);
                     foreach (var callback in new[] { (CharacterTriggerData.Trigger.OnStatusEffectChanged, 3),
@@ -128,6 +131,22 @@ namespace MonsterTrain2Poju.Probe
                 Raw(hosts[0], "duality", 0); Configure("armor", 2, "poison", 1, random: true);
                 for (int i = 0; i < 16; i++)
                 { Raw(hosts[0], "muted", i % 2); yield return Sample("random-carried-" + i); }
+                Raw(hosts[0], "muted", 0); Raw(hosts[0], "untouchable", 0);
+                Raw(hosts[1], "muted", 0); Raw(hosts[1], "silenced", 0);
+                for (int i = 0; i < actors.Length; i++)
+                {
+                    Set(actors[i], "_primaryStateInformation", AccessTools.Method(StateType, "DeepCopyForPreview").Invoke(originalStates[i], null));
+                    Set(actors[i], "triggers", new List<CharacterTriggerState>());
+                    AccessTools.Property(typeof(CharacterState), "IsEnchanter").SetValue(actors[i], false);
+                    identityStore[actors[i]] = new Dictionary<CharacterTriggerState, int>();
+                }
+                Save.SetGold(originalGold); battle.Init(originalBattle); test.Init(originalTest); UnityEngine.Random.state = originalGlobal;
+                AddDeathwishTriggers();
+                yield return Sample("deathwish-initial");
+                Raw(hosts[0], "muted", 1); yield return Sample("deathwish-muted");
+                Raw(hosts[0], "muted", 0); yield return Sample("deathwish-unmuted");
+                Raw(hosts[0], "untouchable", 1); yield return Sample("deathwish-front-shift");
+                Raw(hosts[0], "untouchable", 0); yield return Sample("deathwish-front-return");
                 if (Environment.GetEnvironmentVariable("MT2_PROBE_ENCHANTMENT_WORLD") == "1")
                 {
                     Raw(hosts[0], "muted", 0); Raw(hosts[1], "muted", 0);
@@ -160,11 +179,11 @@ namespace MonsterTrain2Poju.Probe
             {
                 recording = false; currentEffect = null;
                 Set(rooms, "_allowEnchantmentUpdates", false);
-                for (int i = 0; i < hosts.Length; i++)
+                for (int i = 0; i < actors.Length; i++)
                 {
-                    Set(hosts[i], "_primaryStateInformation", originalStates[i]); Set(hosts[i], "triggers", originalTriggers[i]);
-                    AccessTools.Property(typeof(CharacterState), "IsEnchanter").SetValue(hosts[i], originalEnchanter[i]);
-                    identityStore[hosts[i]] = originalIds[i];
+                    Set(actors[i], "_primaryStateInformation", originalStates[i]); Set(actors[i], "triggers", originalTriggers[i]);
+                    AccessTools.Property(typeof(CharacterState), "IsEnchanter").SetValue(actors[i], originalEnchanter[i]);
+                    identityStore[actors[i]] = originalIds[i];
                 }
                 Save.SetGold(originalGold); battle.Init(originalBattle); test.Init(originalTest); UnityEngine.Random.state = originalGlobal;
                 Set(rooms, "_allowEnchantmentUpdates", originalAllow);
@@ -201,6 +220,17 @@ namespace MonsterTrain2Poju.Probe
                     var trigger = new CharacterTriggerState(); trigger.Setup(triggerData, hosts[i].GetTeamType(), Save); hosts[i].GetTriggers().Add(trigger);
                     ((CardEffectEnchant)trigger.GetEffectStates()[0].GetCardEffect()).SetEnchanterCharacter(hosts[i], Managers.GetCoreManagers());
                 }
+            }
+            void AddDeathwishTriggers()
+            {
+                foreach (CharacterState host in hosts)
+                    foreach (CharacterTriggerData.Trigger kind in new[] { CharacterTriggerData.Trigger.OnDeathwish,
+                        CharacterTriggerData.Trigger.OnDeathwishLost })
+                    {
+                        CharacterTriggerData data = HealingScenario.HealGold(1, false, true); Set(data, "trigger", kind);
+                        Set(data, "effects", new List<CardEffectData>());
+                        var trigger = new CharacterTriggerState(); trigger.Setup(data, host.GetTeamType(), Save); host.GetTriggers().Add(trigger);
+                    }
             }
             IEnumerator Sample(string label, bool direct = false)
             {

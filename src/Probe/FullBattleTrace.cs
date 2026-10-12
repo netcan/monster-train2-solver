@@ -375,11 +375,12 @@ namespace MonsterTrain2Poju.Probe
 
         private static CombatTrigger[] CaptureTriggers(CharacterState unit, List<string> interactions)
         {
+            object primary = AccessTools.Property(typeof(CharacterState), "PrimaryStateInformation").GetValue(unit);
+            var deathWishSources = (HashSet<CharacterTriggerState>)AccessTools.Field(primary.GetType(), "deathWishSources").GetValue(primary);
             return unit.GetTriggers().Select(trigger =>
             {
                 if (RelicProbe.HasTriggerCounts(AllGameManagers.Instance!))
                 {
-                    object primary = AccessTools.Property(typeof(CharacterState), "PrimaryStateInformation").GetValue(unit);
                     var point = (SpawnPoint?)AccessTools.Field(primary.GetType(), "spawnPoint").GetValue(primary);
                     if (point?.GetRoomOwner()?.GetRoomStateTriggerCountModification(trigger.GetTrigger(), unit) != 0 && point?.GetRoomOwner() != null)
                         interactions.Add("Unmodeled room trigger count modification");
@@ -423,7 +424,9 @@ namespace MonsterTrain2Poju.Probe
                     AllGameManagers.Instance!.GetSaveManager().GetBalanceData().GetDisallowedDeploymentPhaseCharacterTriggers().Contains(trigger.GetTrigger()),
                     data.GetTriggerAtThreshold(), new CombatTriggerOrigin(Active!.UpgradeKey(trigger.triggerId), equipmentId,
                         trigger.IsFromEquipment, data.GetOnlyTriggerIfEquipped()), Active!.TriggerStateId(unit, trigger), EnemySpawningProbe.TriggerConditions(data), data.GetRemoveOnRelentlessChange(),
-                    RelicProbe.HasTriggerCounts(AllGameManagers.Instance!) ? trigger.isNoCountModifiersAllowed : (bool?)null);
+                    RelicProbe.HasTriggerCounts(AllGameManagers.Instance!) ? trigger.isNoCountModifiersAllowed : (bool?)null,
+                    trigger.GetTrigger() == CharacterTriggerData.Trigger.OnDeathwish || trigger.GetTrigger() == CharacterTriggerData.Trigger.OnDeathwishLost
+                        ? deathWishSources.Contains(trigger) : (bool?)null);
             }).ToArray();
         }
 
