@@ -217,12 +217,6 @@ internal static class OriginalUnitRelicBatchChecks
         if (source.Spawn.Turn >= 2)
             foreach (var action in UnitAbilityModel.EnumerateSupportedActivations(source))
                 if (!rooms.SelectMany(room => room.Units).Single(unit => unit.Id == action.ActivatorUnitId).Subtypes.Contains(Demon)) return action;
-        foreach (string subtype in new[] { Demon, Snack })
-        foreach (var card in context.Cards.Hand.Where(card => source.PlayRules!.Cards.Any(rule => rule.DataId == card.DataId && rule.SpawnUnit?.Subtypes.Contains(subtype) == true)))
-        {
-            var action = plays.FirstOrDefault(action => action.CardInstanceId == card.InstanceId && action.RoomIndex == 0);
-            if (action != null) return action;
-        }
         foreach (var card in context.Cards.Hand.Where(card => source.PlayRules!.Cards.Any(rule => rule.DataId == card.DataId && rule.Equipment != null)))
         {
             var action = plays.FirstOrDefault(action => action.CardInstanceId == card.InstanceId && action.RoomIndex == 0 &&
@@ -235,6 +229,12 @@ internal static class OriginalUnitRelicBatchChecks
                 rooms.SelectMany(room => room.Units).Single(unit => unit.Id == action.TargetUnitId).Team == CombatTeam.Enemy ? 0 : 1)
                 .FirstOrDefault(action => action.RoomIndex == 0 && rooms.Single(room => room.RoomIndex == 0).Units.Any(unit => unit.Id == action.TargetUnitId &&
                     (unit.Team == CombatTeam.Player || unit.EquipmentCards?.Count > 0)));
+            if (action != null) return action;
+        }
+        foreach (string subtype in new[] { Demon, Snack })
+        foreach (var card in context.Cards.Hand.Where(card => source.PlayRules!.Cards.Any(rule => rule.DataId == card.DataId && rule.SpawnUnit?.Subtypes.Contains(subtype) == true)))
+        {
+            var action = plays.FirstOrDefault(action => action.CardInstanceId == card.InstanceId && action.RoomIndex == 0);
             if (action != null) return action;
         }
         return BattleActionModel.ChooseUnitSpellAndJunkPlay(source);

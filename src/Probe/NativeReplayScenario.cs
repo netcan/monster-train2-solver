@@ -852,6 +852,7 @@ namespace MonsterTrain2Poju.Probe
                 }
                 if (fullBattle && OriginalCardPlayMagicPowerScenario.Enabled && !OriginalCardPlayMagicPowerScenario.Prepared)
                     OriginalCardPlayMagicPowerScenario.Prepare(managers, log);
+                if (OriginalUnitRelicBatchScenario.Enabled) OriginalUnitRelicBatchScenario.PrepareDecision(managers);
                 BattleTurnState decision = FullBattleTrace.Active!.CaptureDecision();
                 RelicStatusStackProbe.Matrix();
                 RelicStatusMagnitudeProbe.Matrix();
@@ -993,7 +994,8 @@ namespace MonsterTrain2Poju.Probe
             if (action.ActivatorUnitId > 0)
             {
                 CharacterState actor = FullBattleTrace.Active!.KnownUnits.Single(unit => FullBattleTrace.Active.UnitId(unit) == action.ActivatorUnitId);
-                FullBattleTrace.Active.BeginCardPlay(action);
+                FullBattleTrace.Active.BeginCardPlay(action, scenarioAction: OriginalUnitRelicBatchScenario.Enabled &&
+                    !OriginalUnitRelicBatchScenario.PolicyCarriersInjected);
                 if (!actor.ActivateUnitAbility(cards)) throw new InvalidOperationException("Native unit ability activation failed.");
                 log.LogInfo("DEPTH-POLICY-ABILITY card=" + action.CardInstanceId + " unit=" + action.ActivatorUnitId + " room=" + action.RoomIndex);
                 pendingPlay = null; Enter(Stage.PlayingCard, 30f); return;
@@ -1010,7 +1012,8 @@ namespace MonsterTrain2Poju.Probe
             }
             if (!cards.CanPlayHandCard(cards.GetHand()[index], action.RoomIndex, drop, null, null, out var error))
                 throw new InvalidOperationException("The native game rejected a modeled legal play: " + error);
-            FullBattleTrace.Active!.BeginCardPlay(action);
+            FullBattleTrace.Active!.BeginCardPlay(action, scenarioAction: OriginalUnitRelicBatchScenario.Enabled &&
+                !OriginalUnitRelicBatchScenario.PolicyCarriersInjected);
             if (!cards.PlayCard(index, drop, ref error)) throw new InvalidOperationException("Policy card play failed: " + error);
             log.LogInfo("DEPTH-POLICY-PLAY card=" + action.CardInstanceId + " room=" + action.RoomIndex + " position=" + action.PlayerPosition + " target=" + action.TargetUnitId);
             pendingPlay = null;

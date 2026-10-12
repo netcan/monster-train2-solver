@@ -13,9 +13,13 @@ namespace MonsterTrain2Poju.Probe
         internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == Name;
         internal static bool Prepared { get; private set; }
         internal static bool CaptureReady { get; private set; }
+        internal static bool PolicyCarriersInjected => equipmentInjected && enemyShiftInjected;
         internal const string Demon = "SubtypesData_Demon_fcebd195-f262-4d7a-ac9f-01ffa2007a12";
         internal const string Snack = "SubtypesData_Snack";
         private static string demonCardId = "", snackCardId = "", equipmentCardId = "", shiftCardId = "";
+        private static CardData? equipmentCardData;
+        private static CardData? shiftCardData;
+        private static bool equipmentInjected, enemyShiftInjected;
         private static readonly HashSet<string> queried = new HashSet<string>();
         internal static readonly List<ShiftQuery> ShiftQueries = new List<ShiftQuery>();
 
@@ -57,6 +61,7 @@ namespace MonsterTrain2Poju.Probe
             CardData shiftCard = owned.Select(card => data.FindCardData(card.GetCardDataID())!)
                 .First(card => card.GetEffects().Any(effect => effect.GetEffectStateName() == "CardEffectFloorRearrange"));
             shiftCardId = shiftCard.GetID();
+            shiftCardData = shiftCard;
             var bump = new CardEffectData("CardEffectBump", null!, Team.Type.Monsters | Team.Type.Heroes);
             bump.Cheat_SetTargetMode(TargetMode.DropTargetCharacter); Set(bump, "paramInt", 1);
             Set(shiftCard, "effects", new List<CardEffectData> { bump }); Set(shiftCard, "cost", 0);
@@ -68,6 +73,7 @@ namespace MonsterTrain2Poju.Probe
             CardData equipment = data.GetAllCardData().First(card => card.GetCardType() == CardType.Equipment &&
                 card.GetEffects().Count == 1 && card.GetEffects()[0].GetEffectStateName() == "CardEffectAttachEquipment");
             equipmentCardId = equipment.GetID();
+            equipmentCardData = equipment;
             CardUpgradeData gear = DynamicUpgradeScenario.Upgrade("PojuOriginalRelicShiftGear", "ba710ad2-0000-4000-8000-000000000001", 0, 0, 0, 0, "armor", 0);
             Set(gear, "statusEffectUpgrades", new List<StatusEffectStackData>());
             CharacterTriggerData gearShift = HealingScenario.HealGold(5, false, false);
@@ -83,7 +89,6 @@ namespace MonsterTrain2Poju.Probe
             foreach (CardState card in cards.GetHand().ToArray()) cards.MoveCardFromHandToTopOfDeck(card);
             cards.AddNewCard(stewards[0], CardPile.HandPile, false, false, animate: false);
             cards.AddNewCard(stewards[1], CardPile.HandPile, false, false, animate: false);
-            cards.AddNewCard(equipment, CardPile.HandPile, false, false, animate: false);
             cards.AddNewCard(shiftCard, CardPile.HandPile, false, false, animate: false);
             cards.AddNewCard(shiftCard, CardPile.HandPile, false, false, animate: false);
             Acquire("94595f3a-4624-4408-977d-b166a98f23d2", "ImpDamageBuff", "AddMultistrikeToDemons");
@@ -118,6 +123,19 @@ namespace MonsterTrain2Poju.Probe
             }
         }
 
+        internal static void PrepareDecision(AllGameManagers managers)
+        {
+            if (!Prepared || equipmentInjected && enemyShiftInjected) return;
+            var enemies = new List<CharacterState>();
+            managers.GetRoomManager()!.GetRoom(0).AddCharactersToList(enemies, Team.Type.Heroes);
+            if (!enemies.Any(enemy => enemy.IsAlive && !enemy.IsAnyBoss())) return;
+            CardManager cards = managers.GetCardManager()!;
+            if (!equipmentInjected)
+                equipmentInjected = cards.AddNewCard(equipmentCardData!, CardPile.HandPile, false, false, animate: false) != null;
+            if (equipmentInjected && !enemyShiftInjected)
+                enemyShiftInjected = cards.AddNewCard(shiftCardData!, CardPile.HandPile, false, false, animate: false) != null;
+        }
+
         internal static PlayCardAction? Choose(BattleTurnState source)
         {
             CaptureShiftQueries(source);
@@ -128,12 +146,6 @@ namespace MonsterTrain2Poju.Probe
                 foreach (PlayCardAction ability in UnitAbilityModel.EnumerateSupportedActivations(source))
                     if (!source.Spawn.Train.Rooms.SelectMany(room => room.Units).Single(unit => unit.Id == ability.ActivatorUnitId).Subtypes.Contains(Demon))
                         return ability;
-            foreach (string id in new[] { demonCardId, snackCardId })
-                foreach (CardToken card in context.Cards.Hand.Where(card => card.DataId == id))
-                {
-                    PlayCardAction? play = plays.FirstOrDefault(action => action.CardInstanceId == card.InstanceId && action.RoomIndex == 0);
-                    if (play != null) return play;
-                }
             foreach (CardToken card in context.Cards.Hand.Where(card => card.DataId == equipmentCardId))
             {
                 PlayCardAction? equip = plays.FirstOrDefault(action => action.CardInstanceId == card.InstanceId &&
@@ -149,6 +161,12 @@ namespace MonsterTrain2Poju.Probe
                         (unit.Team == CombatTeam.Player || unit.EquipmentCards?.Count > 0)));
                 if (shift != null) return shift;
             }
+            foreach (string id in new[] { demonCardId, snackCardId })
+                foreach (CardToken card in context.Cards.Hand.Where(card => card.DataId == id))
+                {
+                    PlayCardAction? play = plays.FirstOrDefault(action => action.CardInstanceId == card.InstanceId && action.RoomIndex == 0);
+                    if (play != null) return play;
+                }
             return BattleActionModel.ChooseUnitSpellAndJunkPlay(source);
         }
 
