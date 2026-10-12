@@ -121,24 +121,46 @@ namespace MonsterTrain2Poju.Model
                 source.UiRngIsolated, source.CanonicalDecisionReferences, source.CanonicalPhysicalReferences, source.SelectedRoom), outcome: outcome);
         }
 
-        public static IReadOnlyList<PlayCardAction> EnumerateSupportedActivations(BattleTurnState source)
+        public static IReadOnlyList<PlayCardAction> EnumerateSupportedActivations(BattleTurnState source) =>
+            EnumerateActivations(source).SupportedActions;
+
+        internal static BattleActionEnumeration EnumerateActivations(BattleTurnState source)
         {
             var actions = new List<PlayCardAction>();
+            var unsupported = new List<UnsupportedActionAttempt>();
             CombatContext? context = source.Spawn.Train.Context;
-            if (context == null || source.PlayRules == null) return actions.AsReadOnly();
+            if (context == null || source.PlayRules == null)
+            {
+                unsupported.Add(new UnsupportedActionAttempt(null, "Missing ability play definitions or battle context."));
+                return new BattleActionEnumeration(actions, unsupported);
+            }
             foreach (RoomCombatState room in source.Spawn.Train.Rooms)
             foreach (CombatUnit actor in room.Units.Where(unit => unit.Team == CombatTeam.Player).OrderBy(unit => unit.Id))
             {
-                if (actor.Ability?.HasAbility != true || actor.Ability.CardCreation == null) continue;
+                if (actor.Ability?.HasAbility != true) continue;
+                if (actor.Ability.CardCreation == null)
+                {
+                    unsupported.Add(new UnsupportedActionAttempt(null,
+                        "Unit " + actor.Id + " has an ability without captured card-creation rules."));
+                    continue;
+                }
                 AbilityCardResult cached = AbilityCardModel.Get(context, actor.Ability.CardCreation);
-                if (!cached.Supported) continue;
+                if (!cached.Supported)
+                {
+                    unsupported.Add(new UnsupportedActionAttempt(null, cached.UnsupportedReason ??
+                        "Unit " + actor.Id + " ability card could not be captured."));
+                    continue;
+                }
                 foreach (RoomPlayRule target in source.PlayRules.Rooms.OrderBy(target => target.RoomIndex == room.RoomIndex ? 0 : 1))
                 {
                     var action = new PlayCardAction(cached.Card!.InstanceId, target.RoomIndex, activatorUnitId: actor.Id);
-                    if (Activate(source, action).Supported) actions.Add(action);
+                    BattleActionResult attempt = BattleActionModel.PlayCard(source, action);
+                    if (attempt.Supported) actions.Add(action);
+                    else if (attempt.Rejection == ActionRejection.Unsupported)
+                        unsupported.Add(new UnsupportedActionAttempt(action, attempt.Reason ?? "Unsupported unit ability action."));
                 }
             }
-            return actions.AsReadOnly();
+            return new BattleActionEnumeration(actions, unsupported);
         }
         public static PlayCardAction? ChooseAbilityThenCards(BattleTurnState source) =>
             EnumerateSupportedActivations(source).FirstOrDefault() ?? BattleActionModel.ChooseUnitSpellAndJunkPlay(source);

@@ -167,6 +167,25 @@ namespace MonsterTrain2Poju.Model
         internal BattleActionResult(BattleTurnState? state, ActionRejection rejection = ActionRejection.None, string? reason = null, RoomOutcome outcome = RoomOutcome.Exchanged)
         { State = state; Rejection = rejection; Reason = reason; Outcome = state == null ? RoomOutcome.Unsupported : outcome; }
     }
+    public sealed class UnsupportedActionAttempt
+    {
+        public PlayCardAction? Action { get; }
+        public string Reason { get; }
+        internal UnsupportedActionAttempt(PlayCardAction? action, string reason) { Action = action; Reason = reason; }
+    }
+    // This reports model-generated candidates; an empty diagnostic list does not prove full game action-space coverage.
+    public sealed class BattleActionEnumeration
+    {
+        public IReadOnlyList<PlayCardAction> SupportedActions { get; }
+        public IReadOnlyList<UnsupportedActionAttempt> UnsupportedAttempts { get; }
+        public bool HasUnsupportedAttempts => UnsupportedAttempts.Count > 0;
+        internal BattleActionEnumeration(IReadOnlyList<PlayCardAction> supportedActions,
+            IReadOnlyList<UnsupportedActionAttempt> unsupportedAttempts)
+        {
+            SupportedActions = Array.AsReadOnly(supportedActions.ToArray());
+            UnsupportedAttempts = Array.AsReadOnly(unsupportedAttempts.ToArray());
+        }
+    }
 
     public static class BattleActionModel
     {
@@ -604,22 +623,40 @@ namespace MonsterTrain2Poju.Model
                 source.SelectedRoom < 0 ? source.SelectedRoom : action.RoomIndex), outcome: outcome);
         }
 
-        // Enumerates the implemented legal actions. Unsupported hand cards remain visible to the caller.
-        // This is not a completeness certificate for the full game's action space.
-        public static IReadOnlyList<PlayCardAction> EnumerateSupportedPlays(BattleTurnState source)
+        // Unsupported attempts are kept separate from legal actions so callers can detect an incomplete search frontier.
+        public static BattleActionEnumeration EnumerateActions(BattleTurnState source)
         {
             var actions = new List<PlayCardAction>();
-            if (source.PlayRules == null || source.Spawn.Train.Context == null) return actions.AsReadOnly();
+            var unsupported = new List<UnsupportedActionAttempt>();
+            if (source.PlayRules == null || source.Spawn.Train.Context == null)
+            {
+                unsupported.Add(new UnsupportedActionAttempt(null, "Missing card/room play definitions or battle context."));
+                return new BattleActionEnumeration(actions, unsupported);
+            }
+            if (source.PlayRules.Rooms.Count == 0)
+                unsupported.Add(new UnsupportedActionAttempt(null, "No captured room play definitions."));
+            foreach (RoomCombatState room in source.Spawn.Train.Rooms)
+                if (!source.PlayRules.Rooms.Any(rule => rule.RoomIndex == room.RoomIndex))
+                    unsupported.Add(new UnsupportedActionAttempt(null, "Missing room play definition for room " + room.RoomIndex + "."));
+            foreach (RoomPlayRule room in source.PlayRules.Rooms)
+                if (!source.Spawn.Train.Rooms.Any(state => state.RoomIndex == room.RoomIndex))
+                    unsupported.Add(new UnsupportedActionAttempt(null, "Missing room state for room " + room.RoomIndex + "."));
             foreach (CardToken card in source.Spawn.Train.Context.Cards.Hand)
             foreach (RoomPlayRule room in source.PlayRules.Rooms)
             {
+                if (!source.Spawn.Train.Rooms.Any(state => state.RoomIndex == room.RoomIndex)) continue;
                 CardPlayRule? rule = source.PlayRules.Cards.FirstOrDefault(item => item.DataId == card.DataId);
+                if (rule == null)
+                {
+                    unsupported.Add(new UnsupportedActionAttempt(new PlayCardAction(card.InstanceId, room.RoomIndex),
+                        "Missing captured card play definition; the action target space is unknown."));
+                    continue;
+                }
                 if ((rule?.Effect == "Spell" || rule?.Effect == "Equipment") && CardSpellModel.RequiresUnitTarget(rule.Effects))
                 {
                     foreach (CombatUnit target in source.Spawn.Train.Rooms.First(item => item.RoomIndex == room.RoomIndex).Units)
                     {
-                        var action = new PlayCardAction(card.InstanceId, room.RoomIndex, targetUnitId: target.Id);
-                        if (PlayCard(source, action).Supported) actions.Add(action);
+                        Attempt(new PlayCardAction(card.InstanceId, room.RoomIndex, targetUnitId: target.Id));
                     }
                     continue;
                 }
@@ -628,14 +665,22 @@ namespace MonsterTrain2Poju.Model
                 int first = rule?.Effect == "SpawnMonster" ? 0 : -1;
                 int last = rule?.Effect == "SpawnMonster" ? players : -1;
                 for (int position = first; position <= last; position++)
-                {
-                    var action = new PlayCardAction(card.InstanceId, room.RoomIndex, position);
-                    if (PlayCard(source, action).Supported) actions.Add(action);
-                }
+                    Attempt(new PlayCardAction(card.InstanceId, room.RoomIndex, position));
             }
-            actions.AddRange(UnitAbilityModel.EnumerateSupportedActivations(source));
-            return actions.AsReadOnly();
+            BattleActionEnumeration abilities = UnitAbilityModel.EnumerateActivations(source);
+            actions.AddRange(abilities.SupportedActions);
+            unsupported.AddRange(abilities.UnsupportedAttempts);
+            return new BattleActionEnumeration(actions, unsupported);
+
+            void Attempt(PlayCardAction action)
+            {
+                BattleActionResult result = PlayCard(source, action);
+                if (result.Supported) actions.Add(action);
+                else if (result.Rejection == ActionRejection.Unsupported)
+                    unsupported.Add(new UnsupportedActionAttempt(action, result.Reason ?? "Unsupported card action."));
+            }
         }
+        public static IReadOnlyList<PlayCardAction> EnumerateSupportedPlays(BattleTurnState source) => EnumerateActions(source).SupportedActions;
 
         public static PlayCardAction? ChooseUnitAndJunkPlay(BattleTurnState source)
             => ChoosePlay(source, false);

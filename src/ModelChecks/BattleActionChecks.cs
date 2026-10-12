@@ -89,8 +89,11 @@ internal static class BattleActionChecks
             "An invalid target/position was accepted.");
         Require(BattleActionModel.PlayCard(otherRoom.State!, new(4, 0)).Rejection == ActionRejection.Illegal,
             "An unaffordable card was played.");
-        Require(BattleActionModel.EnumerateSupportedPlays(root).All(action => action.CardInstanceId != 5),
-            "Unsupported effects entered the action enumerator.");
+        BattleActionEnumeration frontier = BattleActionModel.EnumerateActions(root);
+        Require(frontier.SupportedActions.All(action => action.CardInstanceId != 5) &&
+            frontier.UnsupportedAttempts.Any(attempt => attempt.Action?.CardInstanceId == 5 &&
+                attempt.Reason == "Unimplemented effect"),
+            "The action frontier hid an unimplemented hand card instead of reporting the omitted candidate.");
         string expected = BattleTurnChecks.Comparable(second.State);
         Parallel.For(0, 32, _ =>
         {
