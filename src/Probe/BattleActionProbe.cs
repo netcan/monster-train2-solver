@@ -353,6 +353,7 @@ namespace MonsterTrain2Poju.Probe
             try
             {
                 if (records.Any(record => record.Actual == null)) throw new InvalidOperationException("Previous card action is pending.");
+                trace.InvalidateCardRules();
                 BattleTurnState before = trace.CaptureDecision(includeOuterBossForBump, ignoreOuterBossSpawnInteraction);
                 records.Add(new Record { Index = records.Count, ScenarioAction = scenarioAction,
                     IncludeOuterBossForBump = includeOuterBossForBump,
