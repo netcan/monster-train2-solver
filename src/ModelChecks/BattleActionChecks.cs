@@ -220,7 +220,9 @@ internal static class BattleActionChecks
                     else TerminalSpellChecks.Native(entry);
                 }
             }
-            string? difference = ModelJson.Difference(BattleTurnChecks.Comparable(result.State!), BattleTurnChecks.Comparable(actual));
+            bool terminalOutcome = result.Outcome is RoomOutcome.BattleWon or RoomOutcome.PlayerDefeated;
+            string? difference = ModelJson.Difference(BattleTurnChecks.Comparable(result.State!, terminalOutcome),
+                BattleTurnChecks.Comparable(actual, terminalOutcome));
             if (difference != null && result.State!.Spawn.Train.Context?.Statistics is BattleStatistics modeledStatistics &&
                 actual.Spawn.Train.Context?.Statistics is BattleStatistics actualStatistics)
             {
@@ -534,7 +536,9 @@ internal static class BattleActionChecks
             PlayCardAction actualAction = actions[index].GetProperty("Action").Deserialize<PlayCardAction>()!;
             BattleTurnState actual = actions[index].GetProperty("Actual").Deserialize<BattleTurnState>()!;
             string modeledAction = JsonSerializer.Serialize(modeled.Action), nativeAction = JsonSerializer.Serialize(actualAction);
-            string modeledState = BattleTurnChecks.Comparable(modeled.Result.State!), nativeState = BattleTurnChecks.Comparable(actual);
+            bool terminalAction = modeled.Result.Outcome is RoomOutcome.BattleWon or RoomOutcome.PlayerDefeated;
+            string modeledState = BattleTurnChecks.Comparable(modeled.Result.State!, terminalAction);
+            string nativeState = BattleTurnChecks.Comparable(actual, terminalAction);
             if (modeledAction != nativeAction || modeledState != nativeState)
                 throw new InvalidOperationException("Independent policy diverged after card action " + index + ": " +
                     (ModelJson.Difference(modeledAction, nativeAction) ?? ModelJson.Difference(modeledState, nativeState)));
