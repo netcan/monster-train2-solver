@@ -1,21 +1,29 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-12): 242 binary archives, including 211
+Current accepted inventory (2026-10-12): 243 binary archives, including 212
 full battles and 31 component calibrations. Unchanged original relic evidence
 covers 60/224 catalog entries (26.79%); see
 [the owner evidence table](tests/fixtures/relic-coverage.md). Whole-battle
 coverage and the optimal solver remain in progress.
 
-### Damage-per-HP spell model (native calibration pending)
+### Damage-per-HP spell model
 
-The probe and card model now recognize native `CardEffectDamagePerHp`. It uses
-the selected unit's current HP, optionally includes Armor, and routes damage to
-the opposing front or the selected unit's captured last attacker. Missing
-last-attacker state is rejected so search cannot silently guess. Focused pure
-checks cover these branches; no native full-battle fixture has been captured,
-so this work does not change the accepted battle or relic-evidence counts.
+`full-battle-damage-per-hp.mt2f` captures the effect selecting a friendly unit,
+using its current HP as the multiplier, and damaging the opposing front. The
+schema-103 binary is 24,846 bytes with 3,995 unique nodes and SHA-256
+`d810f00b1f3378de4f0d3a6eba606765ffc91c0b86176b584acd9fc93edfc0b7`; it has no
+JSON companion. The muted Instant battle won with 18 card actions, six EndTurns
+and 50 stages. Capture failures, mismatches, unsupported transitions and
+pending records are zero; all 18 actions match independent replay, including 10
+DamagePerHp plays and six observed hits to opposing fronts. Whole-battle and
+mid-battle policy replay pass with 16 parallel branches. Pure checks also cover
+optional Armor, last-attacker redirection and rejection of missing attacker
+references; those variants do not yet have separate native fixtures. This adds
+mechanism coverage, not original relic-owner evidence.
 
 ```powershell
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -DamagePerHp
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-damage-per-hp.mt2f
 dotnet run --project src/ModelChecks -c Release -- --damage-per-hp-pure
 ```
 

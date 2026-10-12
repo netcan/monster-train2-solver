@@ -318,6 +318,9 @@ internal static class BattleActionChecks
         }
         if (fixture.TryGetProperty("ModifierScenario", out FixtureValue roomScenario) && roomScenario.GetString() == "room-spells")
             RoomSpellChecks.Native(actions);
+        if (fixture.TryGetProperty("ModifierScenario", out FixtureValue damagePerHpScenario) &&
+            damagePerHpScenario.GetString() == "damage-per-hp")
+            DamagePerHpChecks.Native(actions);
         if (fixture.TryGetProperty("ModifierScenario", out FixtureValue randomScenario) && randomScenario.GetString() == "random-spells")
             RandomSpellChecks.Native(actions);
         if (fixture.TryGetProperty("ModifierScenario", out FixtureValue randomStatusScenario) && randomStatusScenario.GetString() == "random-status")
@@ -433,6 +436,8 @@ internal static class BattleActionChecks
             policy.GetString() is not ("units-and-junk" or "units-spells-and-junk")) return;
         Func<BattleTurnState, PlayCardAction?> chooser = policy.GetString() == "units-spells-and-junk"
             ? BattleActionModel.ChooseUnitSpellAndJunkPlay : BattleActionModel.ChooseUnitAndJunkPlay;
+        if (fixture.TryGetProperty("ModifierScenario", out var damagePerHpPolicy) && damagePerHpPolicy.GetString() == "damage-per-hp")
+            chooser = DamagePerHpChecks.Choose;
         if (fixture.TryGetProperty("ModifierScenario", out var scenarioPolicy) && scenarioPolicy.GetString() == "rally-lethal")
             chooser = BattleActionModel.ChooseBossRoomSummonThenCards;
         if (fixture.TryGetProperty("ModifierScenario", out var sacrificeScenario) && sacrificeScenario.GetString() == "sacrifice-effects")

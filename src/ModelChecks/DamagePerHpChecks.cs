@@ -1,9 +1,63 @@
 using System;
 using System.Linq;
+using MonsterTrain2Poju.Fixtures;
 using MonsterTrain2Poju.Model;
 
 internal static class DamagePerHpChecks
 {
+    internal static PlayCardAction? Choose(BattleTurnState source)
+    {
+        if (source.PlayRules != null && source.Spawn.Train.Context != null)
+        {
+            var cardIds = source.Spawn.Train.Context.Cards.Hand
+                .Where(card => source.PlayRules.Cards.Any(rule => rule.DataId == card.DataId &&
+                    rule.Effects.Any(effect => effect.Type == "DamagePerHp")))
+                .Select(card => card.InstanceId).ToHashSet();
+            if (cardIds.Count > 0)
+            {
+                PlayCardAction? action = BattleActionModel.EnumerateSupportedPlays(source)
+                    .FirstOrDefault(play => cardIds.Contains(play.CardInstanceId) && play.TargetUnitId > 0 &&
+                        source.Spawn.Train.Rooms.SelectMany(room => room.Units)
+                            .Any(unit => unit.Id == play.TargetUnitId && unit.Team == CombatTeam.Player));
+                if (action != null) return action;
+            }
+        }
+        return BattleActionModel.ChooseUnitSpellAndJunkPlay(source);
+    }
+
+    internal static void Native(FixtureValue actions)
+    {
+        int plays = 0;
+        int opposingDamage = 0;
+        foreach (FixtureValue entry in actions.EnumerateArray())
+        {
+            BattleTurnState before = entry.GetProperty("Before").Deserialize<BattleTurnState>()!;
+            PlayCardAction action = entry.GetProperty("Action").Deserialize<PlayCardAction>()!;
+            CardToken card = before.Spawn.Train.Context!.Cards.Hand.Single(item => item.InstanceId == action.CardInstanceId);
+            CardPlayRule rule = before.PlayRules!.Cards.Single(item => item.DataId == card.DataId);
+            CardActionEffect? effect = rule.Effects.SingleOrDefault(item => item.Type == "DamagePerHp");
+            if (effect == null) continue;
+
+            plays++;
+            Require(action.TargetUnitId > 0 && effect.Target == "DropTargetCharacter" && effect.Value == 1 &&
+                !effect.DamagePerHpLastAttacker && !effect.DamagePerHpIncludeArmor,
+                "Native DamagePerHp action lost its selected-target multiplier parameters.");
+            CombatUnit selected = before.Spawn.Train.Rooms.SelectMany(room => room.Units).Single(unit => unit.Id == action.TargetUnitId);
+            Require(selected.Team == CombatTeam.Player, "Native DamagePerHp did not select a friendly source unit.");
+            RoomCombatState room = before.Spawn.Train.Rooms.Single(item => item.RoomIndex == action.RoomIndex);
+            CombatUnit? opposingFront = room.Units.FirstOrDefault(unit => unit.Team == CombatTeam.Enemy);
+            BattleTurnState actual = entry.GetProperty("Actual").Deserialize<BattleTurnState>()!;
+            if (opposingFront == null) continue;
+            bool changed = !actual.Spawn.Train.Rooms.SelectMany(item => item.Units).Any(unit => unit.Id == opposingFront.Id) ||
+                actual.Spawn.Train.Rooms.SelectMany(item => item.Units)
+                    .Any(unit => unit.Id == opposingFront.Id && unit.Health < opposingFront.Health);
+            if (changed) opposingDamage++;
+        }
+        Require(plays > 0 && opposingDamage > 0,
+            "Native DamagePerHp was not played against a friendly unit with a visible opposing damage result.");
+        Console.WriteLine($"NATIVE-DAMAGE-PER-HP-CHECKS PASS: {plays} effect plays, {opposingDamage} damaged opposing fronts.");
+    }
+
     internal static void Run()
     {
         CardActionEffect configured = Effect(2, allowEnemy: false, allowPlayer: true, lastAttacker: true, includeArmor: true);

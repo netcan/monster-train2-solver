@@ -25,6 +25,7 @@ param(
     [switch] $Healing,
     [switch] $HealingTriggers,
     [switch] $RoomSpells,
+    [switch] $DamagePerHp,
     [switch] $TerminalSpells,
     [switch] $PostKillSpells,
     [switch] $RandomSpells,
@@ -273,6 +274,7 @@ if ($CaptureJson) { $BinaryCapture = $true }
 if ($SacrificeEffects) { $Policy = 'units-spells-and-junk' }
 if ($SpawnOrStatus) { $Policy = 'units-and-junk' }
 if ($AbilityTeleport) { $Policy = 'units-and-junk'; $PhysicalSpawnPoints = $true }
+if ($DamagePerHp) { $Policy = 'units-spells-and-junk' }
 $workspace = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $gameRoot = Join-Path $workspace '.sandbox-game'
 $runId = (Get-Date -Format 'yyyyMMdd-HHmmss') + '-' + [Guid]::NewGuid().ToString('N').Substring(0, 8)
@@ -447,6 +449,7 @@ if ($SpawnOrStatus) {
     $environment.MT2_PROBE_MODIFIERS = 'spawn-or-status'
     $environment.MT2_PROBE_PHYSICAL_SPAWNPOINTS = '1'
 }
+if ($DamagePerHp) { $environment.MT2_PROBE_MODIFIERS = 'damage-per-hp' }
 $process = Start-Process -FilePath (Join-Path $gameRoot 'MonsterTrain2.exe') `
     -WorkingDirectory $gameRoot -ArgumentList @('-logFile', $unityLog) `
     -Environment $environment -WindowStyle Hidden -PassThru
@@ -480,6 +483,10 @@ if ($AllUnitsMultistrikeMutator -and ($trace.ModifierScenario -ne 'all-units-mul
     throw 'AllUnitsMultistrike native mutator setup did not run.'
 }
 $nativePassed = [bool] (Select-String -LiteralPath $unityLog -Pattern 'DEPTH-PASS' -Quiet)
+if ($DamagePerHp -and ($trace.ModifierScenario -ne 'damage-per-hp' -or
+    -not (Select-String -LiteralPath $unityLog -Pattern 'DAMAGE-PER-HP-PREPARED' -Quiet))) {
+    throw 'DamagePerHp native setup did not run.'
+}
 $terminalSettled = $trace.TerminalCaptureBoundary -eq 'AfterStopCombatLoop' -and $trace.TerminalEffectsSettled -eq $true
 $originalUnchanged = (Get-OriginalSignature) -ceq $originalBefore
 if ($EquipmentBuff -and ($trace.ModifierScenario -ne 'equipment-buff' -or
@@ -825,6 +832,16 @@ if ($RoomSpells) {
         }).Count -ge 2
     }).Count -gt 0
     $roomSpellCoverage = $multiHeal -and $multiDamage
+}
+$damagePerHpCoverage = -not $DamagePerHp
+if ($DamagePerHp) {
+    $damagePerHpActions = @($trace.Actions | Where-Object {
+        $entry = $_
+        $card = $entry.Before.Spawn.Train.Context.Cards.Hand | Where-Object InstanceId -EQ $entry.Action.CardInstanceId
+        $rule = $entry.Before.PlayRules.Cards | Where-Object DataId -EQ $card.DataId
+        @($rule.Effects | Where-Object Type -EQ 'DamagePerHp').Count -gt 0 -and $entry.Action.TargetUnitId -gt 0
+    })
+    $damagePerHpCoverage = $damagePerHpActions.Count -gt 0
 }
 $terminalSpellCoverage = -not ($TerminalSpells -or $PostKillSpells) -or @($trace.Actions | Where-Object ActualOutcome -EQ 3).Count -gt 0
 $postKillCoverage = -not $PostKillSpells
@@ -2057,6 +2074,7 @@ $result = [pscustomobject]@{
     HealingCoverage = $healingCoverage
     OnHealCoverage = $onHealCoverage
     RoomSpellCoverage = $roomSpellCoverage
+    DamagePerHpCoverage = $damagePerHpCoverage
     TerminalEffectsSettled = $terminalSettled
     TerminalSpellCoverage = $terminalSpellCoverage
     PostKillCoverage = $postKillCoverage
@@ -2232,7 +2250,7 @@ if ($StatisticOverflow) {
         @($zero.Samples | Where-Object DetachedSource -EQ $true).Count -ne 24 -or
         @($zero.Samples | Where-Object Amount -NE 0).Count -ne 0) { throw 'Native zero-increment coverage is incomplete.' }
 }
-if ($null -eq $trace.NativeWon -or $process.ExitCode -ne 0 -or -not $nativePassed -or -not $originalUnchanged -or -not $modifierCoverage -or -not $healingCoverage -or -not $onHealCoverage -or -not $roomSpellCoverage -or -not $terminalSettled -or -not $terminalSpellCoverage -or
+if ($null -eq $trace.NativeWon -or $process.ExitCode -ne 0 -or -not $nativePassed -or -not $originalUnchanged -or -not $modifierCoverage -or -not $healingCoverage -or -not $onHealCoverage -or -not $roomSpellCoverage -or -not $damagePerHpCoverage -or -not $terminalSettled -or -not $terminalSpellCoverage -or
     -not $postKillCoverage -or -not $randomCoverage -or -not $randomStatusCoverage -or -not $crossRoomCoverage -or -not $attackCoverage -or -not $maxHealthCoverage -or -not $numericRangeCoverage -or -not $targetFilterCoverage -or -not $drawCoverage -or -not $handRemovalCoverage -or -not $generationCoverage -or -not $permanentConsumeGenerationCoverage -or -not $scalingCoverage -or -not $statusScalingCoverage -or -not $unitUpgradeScalingCoverage -or -not $unitTriggerUpgradeCoverage -or -not $spawnTriggerCoverage -or -not $unitTurnBeginCoverage -or -not $teamTurnBeginCoverage -or -not $preHandDiscardCoverage -or -not $cloneUpgradeRefreshCoverage -or -not $preCombatCoverage -or -not $triggeredHealingCoverage -or -not $postCombatHealingCoverage -or -not $triggeredDamageCoverage -or -not $damageDeathQueueCoverage -or -not $terminalDeathDamageCoverage -or -not $hitKillCoverage -or -not $dyingUpgradeCoverage -or -not $attackTriggerCoverage -or -not $triggeredStatusCoverage -or -not $statusCallbackCoverage -or -not $energyCoverage -or -not $forgePointsCoverage -or -not $xCostCoverage -or -not $bonusDrawCoverage -or -not $capacityCoverage -or -not $directUpgradeCoverage -or -not $equipmentCoverage -or ($PermanentConsumeOverTemporary -and -not $modifierCoverage) -or $trace.CaptureFailures -ne 0 -or $trace.Mismatches -ne 0 -or $trace.Unsupported -ne 0 -or $trace.Pending -ne 0) {
     throw "Full battle differential probe failed; inspect $tracePath and $unityLog"
 }
