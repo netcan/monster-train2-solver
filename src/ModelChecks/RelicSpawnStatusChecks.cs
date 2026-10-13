@@ -83,14 +83,16 @@ internal static class RelicSpawnStatusChecks
     internal static void Native(FixtureValue fixture)
     {
         if (!fixture.TryGetProperty("ModifierScenario", out var scenario) || scenario.GetString() is not
-            ("spawn-status-relics" or "spawn-status-relics-clones" or "spawn-status-relics-mixed-cardless-order")) return;
+            ("spawn-status-relics" or "spawn-status-relics-clones" or "spawn-status-relics-mixed-cardless-order" or
+                "spawn-status-relics-stealth-waxers")) return;
+        bool stealthWaxers = scenario.GetString() == "spawn-status-relics-stealth-waxers";
         bool mixedCardlessOrder = scenario.GetString() == "spawn-status-relics-mixed-cardless-order";
         bool clones = scenario.GetString() is "spawn-status-relics-clones" or "spawn-status-relics-mixed-cardless-order";
         int schema = fixture.GetProperty("Schema").GetInt32();
-        Require((mixedCardlessOrder ? schema == 121 : clones ? schema is 110 or 111 : schema is 109 or 110) && fixture.GetProperty("CaptureFailures").GetInt32() == 0 &&
+        Require((stealthWaxers ? schema == 140 : mixedCardlessOrder ? schema == 121 : clones ? schema is 110 or 111 : schema is 109 or 110) && fixture.GetProperty("CaptureFailures").GetInt32() == 0 &&
             fixture.GetProperty("Pending").GetInt32() == 0, "Incomplete relic spawn status native recording.");
         var records = fixture.GetProperty("RelicSpawnStatuses").EnumerateArray().ToArray();
-        int players = 0, enemies = 0, shieldTriggers = 0, shieldSkips = 0;
+        int players = 0, enemies = 0, shieldTriggers = 0, shieldSkips = 0, stealthWaxersWitnesses = 0;
         var turns = new HashSet<int>();
         foreach (var record in records)
         {
@@ -139,6 +141,30 @@ internal static class RelicSpawnStatusChecks
                 relics.Any(relic => relic.AssetKey == "FrostbiteOnEnemies" && relic.DataId == "270356af-16bd-4433-a0b2-3e5bb94ef890"),
                 "Original relic identities were not retained.");
             CombatUnit actor = after.Units.Single(unit => unit.Id == id);
+            if (stealthWaxers)
+            {
+                const string stealthId = "22f5ff29-69be-4043-9fe1-245392ea3c95";
+                CombatRelicState ownerBefore = relics.Single(relic => relic.AssetKey == "StealthWaxers" && relic.DataId == stealthId);
+                CombatRelicState ownerAfter = after.Context!.Relics!.Single(relic => relic.AssetKey == "StealthWaxers" && relic.DataId == stealthId);
+                Require(ownerBefore.EffectTypes.SequenceEqual([RelicModel.AddStatusOnSpawn]) && ownerBefore.SpawnStatuses?.Count == 1 &&
+                    ownerAfter.SpawnStatuses?.Count == 1, "Original StealthWaxers effect identity or order differs.");
+                RelicSpawnStatus rule = ownerBefore.SpawnStatuses![0];
+                Require(rule.TargetPlayer && !rule.TargetEnemy && rule.Statuses.Count == 1 && rule.Statuses[0].Id == "endless" &&
+                    rule.Statuses[0].Stacks == 1 && rule.Conditions.Count == 1 && rule.Conditions[0].Query.Type == "SubtypeInDeck" &&
+                    rule.Conditions[0].Query.Duration == "ThisTurn" && rule.Conditions[0].TrackTriggerCount &&
+                    rule.Conditions[0].Comparator == 6 && rule.Conditions[0].Value == 1 && !rule.Conditions[0].AllowMultiple,
+                    "Original StealthWaxers payload/filter/condition differs.");
+                int beforeConditionCount = rule.Conditions[0].DurationTriggerCount;
+                int afterConditionCount = ownerAfter.SpawnStatuses![0].Conditions[0].DurationTriggerCount;
+                int beforeEndless = before.Units.Single(unit => unit.Id == id).Status("endless")?.Stacks ?? 0;
+                int afterEndless = actor.Status("endless")?.Stacks ?? 0;
+                if (afterConditionCount > beforeConditionCount && afterEndless > beforeEndless)
+                {
+                    Require(actor.Team == CombatTeam.Player && afterConditionCount == beforeConditionCount + 1,
+                        "StealthWaxers trigger was not a single eligible player birth.");
+                    stealthWaxersWitnesses++;
+                }
+            }
             if (actor.Team == CombatTeam.Player)
             {
                 CombatUnit initial = before.Units.Single(unit => unit.Id == id);
@@ -181,6 +207,7 @@ internal static class RelicSpawnStatusChecks
                 "Parallel native relic birth branch differed."));
         }
         Require(players > 1 && enemies > 0 && shieldTriggers > 0 && shieldSkips > 0 &&
+            (!stealthWaxers || stealthWaxersWitnesses > 0) &&
             (clones || shieldTriggers > 1 && turns.Count > 1),
             "Native relic spawn status team/first-unit/turn-reset coverage incomplete.");
         if (clones)

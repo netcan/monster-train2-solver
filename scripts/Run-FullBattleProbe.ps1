@@ -168,6 +168,7 @@ param(
     [switch] $IncantRelic,
     [switch] $IncantRelics,
     [switch] $SpawnStatusRelics,
+    [switch] $OriginalStealthWaxersRelic,
     [switch] $SpawnStatusRelicsClones,
     [switch] $MixedCardlessRelicOrder,
     [switch] $SettleDeathDissolves,
@@ -215,6 +216,7 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+if ($OriginalStealthWaxersRelic) { $SpawnStatusRelics = $true; $Policy = 'units-spells-and-junk' }
 if ($RoomCapacityAttachment) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($PermanentConsumeHandUpgrades -or $PermanentConsumeOverTemporary) { $HandUpgrades = $true; $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($GenerationPermanentConsume) { $Generation = $true; $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
@@ -407,7 +409,7 @@ if ($Purify) {
 }
 
 if ($SpawnStatusRelics) {
-    $environment['MT2_PROBE_MODIFIERS'] = $(if ($SpawnStatusRelicsClones) { 'spawn-status-relics-clones' } else { 'spawn-status-relics' })
+    $environment['MT2_PROBE_MODIFIERS'] = $(if ($OriginalStealthWaxersRelic) { 'spawn-status-relics-stealth-waxers' } elseif ($SpawnStatusRelicsClones) { 'spawn-status-relics-clones' } else { 'spawn-status-relics' })
     $environment['MT2_PROBE_STATUS_CALLBACKS'] = '1'
 }
 if ($MixedCardlessRelicOrder) {
@@ -2031,18 +2033,51 @@ if ($SpawnStatusRelics) {
             } elseif ($oldShield.DurationTriggerCount -eq 1 -and $newShield.DurationTriggerCount -eq 1) { $spawnRelicSkips++ }
         } else { $spawnRelicEnemies++ }
     }
-    $expectedSpawnScenario = if ($MixedCardlessRelicOrder) { 'spawn-status-relics-mixed-cardless-order' } elseif ($SpawnStatusRelicsClones) { 'spawn-status-relics-clones' } else { 'spawn-status-relics' }
-    $expectedSpawnSchema = if ($MixedCardlessRelicOrder) { 121 } elseif ($SpawnStatusRelicsClones) { 111 } else { 110 }
+    $expectedSpawnScenario = if ($OriginalStealthWaxersRelic) { 'spawn-status-relics-stealth-waxers' } elseif ($MixedCardlessRelicOrder) { 'spawn-status-relics-mixed-cardless-order' } elseif ($SpawnStatusRelicsClones) { 'spawn-status-relics-clones' } else { 'spawn-status-relics' }
+    $expectedSpawnSchema = if ($OriginalStealthWaxersRelic) { 140 } elseif ($MixedCardlessRelicOrder) { 121 } elseif ($SpawnStatusRelicsClones) { 111 } else { 110 }
     $requiredSpawnRelics = @('SpawnWithArmor', 'FirstUnitGainDamageShield', 'FrostbiteOnEnemies')
     if ($MixedCardlessRelicOrder) { $requiredSpawnRelics = @('PyreHeartSon', 'FirstUnitGainDamageShield', 'FrostbiteOnEnemies') }
+    if ($OriginalStealthWaxersRelic) { $requiredSpawnRelics += 'StealthWaxers' }
     $observedSpawnRelics = @($trace.Actions[0].Before.Spawn.Train.Context.Relics | Where-Object { $_.AssetKey -in $requiredSpawnRelics }).Count
     if ($trace.Schema -ne $expectedSpawnSchema -or $trace.ModifierScenario -ne $expectedSpawnScenario -or $births.Count -lt 3 -or
         $spawnRelicPlayers -lt 2 -or $spawnRelicEnemies -lt 1 -or $spawnRelicFirsts -lt 1 -or $spawnRelicSkips -lt 1 -or
         (-not $SpawnStatusRelicsClones -and ($spawnRelicFirsts -lt 2 -or $spawnRelicTurns.Count -lt 2)) -or
         ($SpawnStatusRelicsClones -and (-not $cardlessUpgradeId -or $cardlessUpgradeApplied -lt 1 -or $cardlessCloneSkipped -lt 1)) -or
         @($births | Where-Object { -not $_.Completed -or -not $_.After -or $_.Difference }).Count -ne 0 -or
-        $observedSpawnRelics -ne 3) {
+        $observedSpawnRelics -ne $requiredSpawnRelics.Count) {
         throw 'Native original spawn-status relic coverage is incomplete or failed.'
+    }
+    if ($OriginalStealthWaxersRelic) {
+        $stealthId = '22f5ff29-69be-4043-9fe1-245392ea3c95'
+        $stealthRelic = @($trace.Actions[0].Before.Spawn.Train.Context.Relics | Where-Object { $_.AssetKey -eq 'StealthWaxers' -and $_.DataId -eq $stealthId })
+        if ($stealthRelic.Count -ne 1 -or $stealthRelic[0].EffectTypes.Count -ne 1 -or
+            $stealthRelic[0].EffectTypes[0] -ne 'RelicEffectAddStatusEffectOnSpawn' -or
+            $stealthRelic[0].SpawnStatuses.Count -ne 1 -or $stealthRelic[0].SpawnStatuses[0].Statuses.Count -ne 1 -or
+            $stealthRelic[0].SpawnStatuses[0].Statuses[0].Id -ne 'endless' -or
+            $stealthRelic[0].SpawnStatuses[0].Statuses[0].Stacks -ne 1) {
+            throw 'Original StealthWaxers identity or Endless payload is missing.'
+        }
+        $condition = $stealthRelic[0].SpawnStatuses[0].Conditions
+        if ($condition.Count -ne 1 -or $condition[0].Query.Type -ne 'SubtypeInDeck' -or
+            $condition[0].Query.Duration -ne 'ThisTurn' -or $condition[0].Comparator -ne 6 -or
+            $condition[0].Value -ne 1 -or -not $condition[0].TrackTriggerCount -or $condition[0].AllowMultiple) {
+            throw 'Original StealthWaxers native condition was not preserved.'
+        }
+        $stealthWitnesses = 0
+        foreach ($birth in $births) {
+            $beforeActor = @($birth.Before.Units | Where-Object { $_.Id -eq $birth.UnitId })[0]
+            $afterActor = @($birth.After.Units | Where-Object { $_.Id -eq $birth.UnitId })[0]
+            $beforeRule = @($birth.Before.Context.Relics | Where-Object { $_.DataId -eq $stealthId })[0].SpawnStatuses[0]
+            $afterRule = @($birth.After.Context.Relics | Where-Object { $_.DataId -eq $stealthId })[0].SpawnStatuses[0]
+            $beforeEndlessStatus = @($beforeActor.Statuses | Where-Object { $_.Id -eq 'endless' })
+            $afterEndlessStatus = @($afterActor.Statuses | Where-Object { $_.Id -eq 'endless' })
+            $beforeEndless = if ($beforeEndlessStatus.Count -gt 0) { [int]$beforeEndlessStatus[0].Stacks } else { 0 }
+            $afterEndless = if ($afterEndlessStatus.Count -gt 0) { [int]$afterEndlessStatus[0].Stacks } else { 0 }
+            if ($afterRule.Conditions[0].DurationTriggerCount -gt $beforeRule.Conditions[0].DurationTriggerCount -and
+                $afterEndless -gt $beforeEndless) { $stealthWitnesses++ }
+        }
+        if ($stealthWitnesses -eq 0) { throw 'Original StealthWaxers produced no positive Endless birth witness.' }
+        Write-Output "ORIGINAL-STEALTH-WAXERS PASS: original Endless-on-spawn condition changed $stealthWitnesses eligible birth states."
     }
     if ($MixedCardlessRelicOrder) {
         $mixedRelic = @($trace.Actions[0].Before.Spawn.Train.Context.Relics | Where-Object AssetKey -EQ 'PyreHeartSon')

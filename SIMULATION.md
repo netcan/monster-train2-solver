@@ -1,10 +1,31 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-13): 253 binary archives, including 222
+Current accepted inventory (2026-10-13): 254 binary archives, including 223
 full battles and 31 component calibrations. Unchanged original relic evidence
-covers 68/224 catalog entries (30.36%); see
+covers 69/224 catalog entries (30.80%); see
 [the owner evidence table](tests/fixtures/relic-coverage.md). Whole-battle
 coverage and the optimal solver remain in progress.
+
+### Original StealthWaxers relic
+
+`full-battle-original-stealth-waxers.mt2f` captures the unchanged original
+`StealthWaxers` relic. Its `SubtypeInDeck >= 1` condition grants one Endless
+stack to an eligible player unit on the first qualifying birth each turn. The
+muted Instant battle wins with 52 room stages, 18 card actions and six EndTurns;
+four births provide positive Endless and condition-counter witnesses. Native
+capture has zero failures, mismatches, unsupported transitions or pending
+records. Independent replay matches all 13 relic birth phases across 32 isolated
+branches. This raises accepted original relic evidence to 69/224 (30.80%).
+
+The schema-140 archive is 36,271 bytes with 5,528 unique nodes and SHA-256
+`70ad72b86200398a787b573e4b607b0ad95026de2fd2078de056fa656466536b`; it has no
+JSON companion. The inventory is now 254 archives: 223 battles and 31 component
+calibrations. Full-inventory replay remains open.
+
+```powershell
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -OriginalStealthWaxersRelic -GameSpeed Instant
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-stealth-waxers.mt2f
+```
 
 ### Pure room capacity attachment
 

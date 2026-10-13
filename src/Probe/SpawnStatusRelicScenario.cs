@@ -9,6 +9,8 @@ namespace MonsterTrain2Poju.Probe
     internal static class SpawnStatusRelicScenario
     {
         internal static bool Prepared { get; private set; }
+        internal static bool OriginalStealthWaxersRelic =>
+            Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == "spawn-status-relics-stealth-waxers";
         internal static bool Clones => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") is
             "spawn-status-relics-clones" or "spawn-status-relics-mixed-cardless-order";
         internal static bool MixedCardlessOrder => Environment.GetEnvironmentVariable("MT2_PROBE_MIXED_CARDLESS_RELIC_ORDER") == "1";
@@ -28,6 +30,7 @@ namespace MonsterTrain2Poju.Probe
             if (!MixedCardlessOrder) Acquire("68ef2523-5c2e-4660-b96d-00b1c0485f54", "SpawnWithArmor");
             Acquire("60a2a8a3-5f7a-4a9d-b427-5f261145fa1f", "FirstUnitGainDamageShield");
             Acquire("270356af-16bd-4433-a0b2-3e5bb94ef890", "FrostbiteOnEnemies");
+            if (OriginalStealthWaxersRelic) AcquireStealthWaxers();
             if (Clones) AcquireCardlessUpgrade();
             if (Clones)
             {
@@ -40,7 +43,7 @@ namespace MonsterTrain2Poju.Probe
             }
             Prepared = true;
             AccessTools.Field(typeof(CombatManager), "combatStateChanged").SetValue(managers.GetCombatManager(), true);
-            log.LogInfo("SPAWN-STATUS-RELICS-PREPARED original armor, first-unit shield and enemy frostbite acquired without definition changes; clones/extra-spawn=" + Clones + "; native Boss/waves retained.");
+            log.LogInfo("SPAWN-STATUS-RELICS-PREPARED original armor, first-unit shield and enemy frostbite acquired without definition changes; StealthWaxers=" + OriginalStealthWaxersRelic + "; clones/extra-spawn=" + Clones + "; native Boss/waves retained.");
 
             void Acquire(string id, string key)
             {
@@ -65,6 +68,26 @@ namespace MonsterTrain2Poju.Probe
                     relic.GetEffects().Insert(0, statusCopy);
                 }
                 save.AddRelic(relic);
+            }
+
+            void AcquireStealthWaxers()
+            {
+                CollectableRelicData relic = save.GetAllGameData().GetAllCollectableRelicData().Single(item =>
+                    item.GetID() == "22f5ff29-69be-4043-9fe1-245392ea3c95");
+                RelicEffectData effect = relic.GetEffects().Single();
+                var statuses = effect.GetParamStatusEffects();
+                var conditions = effect.GetEffectConditions();
+                if (relic.name != "StealthWaxers" || effect.GetEffectClassName() != "RelicEffectAddStatusEffectOnSpawn" ||
+                    !effect.GetParamSourceTeam().HasFlag(Team.Type.Monsters) || effect.GetParamCharacterSubtype()?.IsNone != true ||
+                    statuses.Length != 1 || statuses[0].statusId != "endless" || statuses[0].count != 1 || conditions.Count != 1 ||
+                    Field(conditions[0], "paramTrackedValue").ToString() != "SubtypeInDeck" ||
+                    Field(conditions[0], "paramEntryDuration").ToString() != "ThisTurn" ||
+                    Convert.ToInt32(Field(conditions[0], "paramComparator")) != 6 || (int)Field(conditions[0], "paramInt") != 1 ||
+                    !(bool)Field(conditions[0], "paramTrackTriggerCount") || (bool)Field(conditions[0], "allowMultipleTriggersPerDuration"))
+                    throw new InvalidOperationException("Original StealthWaxers status/condition definition changed.");
+                save.AddRelic(relic);
+
+                static object Field(object source, string name) => AccessTools.Field(source.GetType(), name).GetValue(source);
             }
         }
     }
