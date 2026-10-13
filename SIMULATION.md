@@ -6,28 +6,27 @@ covers 71/224 catalog entries (31.70%); see
 [the owner evidence table](tests/fixtures/relic-coverage.md). Whole-battle
 coverage and the optimal solver remain in progress.
 
-### Persistent Horde aura growth and nonlethal removal
+### Persistent Horde aura growth and simulated deaths
 
-`enchantment-combat-calibration.mt2f` covers real Horde aura addition and
-nonlethal removal through `CardEffectEnchant`. A native player Train Steward
-starts with one Horde stack; the aura adds two (1 to 3 stacks, 8 to 24 attack,
-25 to 75 health/max health). Muting the source removes those two troops (3 to 1,
-24 to 8 attack, 75 to 25 health/max health). Native simulated-death statistics,
-`OnTroopRemoved`, `OnAnyMonsterDeathOnFloor` and `OnAnyUnitDeathOnFloor` callbacks
-match the model. The muted Instant calibration took 46.10 seconds. All 39
-status/train/effect transitions replay with 72 status calls, 124 complete
-callback payloads and 32 isolated parallel branches. The 13,113-byte binary has
-2,349 unique nodes and SHA-256
-`24c3d025e734bed9db2d12c3ad04d88e766961c5154d9706cdbf9be6564c0f74`.
+`enchantment-combat-calibration.mt2f` captures two native `CardEffectEnchant`
+sources growing and removing Horde. A player Train Steward starts at 8 attack,
+25 health and zero Horde; the first source adds two stacks (8 to 16 attack, 25
+to 50 health), then the second adds one (2 to 3 stacks, 16 to 24 attack, 50 to
+75 health). Muting the first source removes two stacks and two simulated deaths
+(3 to 1, 24 to 8 attack, 75 to 25 health). Muting the second removes the final
+stack: the zero-HP unit leaves the live train and simulated deaths rise by one.
+Both removals match `OnTroopRemoved`, `OnAnyMonsterDeathOnFloor` and
+`OnAnyUnitDeathOnFloor`; neither runs physical `OnDeath` settlement.
 
-The retained-unit model accepts partial Horde aura removals only when the target
-survives with positive HP. Any removal that reduces the target to zero HP,
-including final-stack removal, still requires physical death settlement;
-nonpositive changes and aura callbacks that mutate actors/cards still need
-broader combat lifecycle integration. Native card statistics, simulated-death
-counters and the FunGuy run stat are isolated/restored during calibration. This
-adds no original relic evidence: relic coverage remains 71/224 (31.70%), and the
-accepted inventory remains 256 archives.
+The muted Instant calibration took 45.55 seconds. All 41 status/train/effect
+transitions replay with 74 status calls, 135 complete callback payloads and 32
+isolated parallel branches. The 13,514-byte binary has 2,452 unique nodes and
+SHA-256 `1a18b97b4c4b6434bd2c9de008b9951f5550d620abb5babaf5678e3ce12b7618`;
+it has no JSON companion. Native card statistics, simulated-death counters and
+the FunGuy run stat are isolated/restored during calibration. Nonpositive Horde
+changes and aura callbacks that mutate actors/cards still need broader combat
+lifecycle integration. This adds no original relic evidence: coverage remains
+71/224 (31.70%), and inventory remains 256 archives.
 
 ### Original DoubleMagebladeDamage relic
 

@@ -31,13 +31,17 @@ the dedicated checks for the new and directly affected scenarios; run the full
 inventory at completed milestones and before delivery.
 
 Current inventory is 256 archives: 225 accepted battles and 31 component
-calibrations. `enchantment-combat-calibration.mt2f` covers persistent Horde
-aura growth from one baseline stack to three (8 to 24 attack, 25 to 75 health)
-and nonlethal removal back to one. Native status, troop and simulated-death
-callbacks match. The 13,113-byte archive has 2,349 unique nodes and SHA-256
-`24c3d025e734bed9db2d12c3ad04d88e766961c5154d9706cdbf9be6564c0f74`; removal
-that reduces target health to zero, including final-stack removal, still
-requires physical death settlement. `full-battle-companion-bump.mt2f`
+calibrations. `enchantment-combat-calibration.mt2f` captures two native
+`CardEffectEnchant` sources growing a player Train Steward from zero to three
+Horde stacks (8 to 24 attack, 25 to 75 health). Muting the sources removes two
+stacks and then the final stack. The final removal takes HP to zero and removes
+the unit from the live train; simulated-death statistics and
+`OnTroopRemoved`/`OnAnyMonsterDeathOnFloor`/`OnAnyUnitDeathOnFloor` callbacks
+match, with no physical `OnDeath`. The 41-transition replay covers 74 status
+calls, 135 callback payloads and 32 immutable branches. The 13,514-byte archive
+has 2,452 unique nodes and SHA-256
+`1a18b97b4c4b6434bd2c9de008b9951f5550d620abb5babaf5678e3ce12b7618`; it has
+no JSON companion. `full-battle-companion-bump.mt2f`
 covers a paired Relentless
 companion Boss refusal, its attempted-ascension callback and the survivor's
 terminal-death handoff. `full-battle-relic-card-status-upgrades.mt2f` verifies a native

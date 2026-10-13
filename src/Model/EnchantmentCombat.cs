@@ -303,10 +303,8 @@ namespace MonsterTrain2Poju.Model
             private bool Status(EnchantmentRequest request, EnchantmentRule rule)
             {
                 EnchantmentRetainedUnit actor = Find(request.UnitId);
-                int hordeStacks = actor.Unit.Status("horde")?.Stacks ?? 0;
-                if (request.StatusId == "horde" && (request.Count <= 0 ||
-                    request.Operation == "Remove" && hordeStacks <= request.Count))
-                { error = "Horde aura removal that kills the target requires physical death settlement."; return false; }
+                if (request.StatusId == "horde" && request.Count <= 0)
+                { error = "Horde aura changes require a positive stack count."; return false; }
                 RoomCombatState? liveRoom = state.Train.Rooms.FirstOrDefault(room => room.Units.Any(unit => unit.Id == request.UnitId));
                 IReadOnlyList<int>? companionBossIds = state.Train.Rooms.FirstOrDefault(room => room.RoomIndex == actor.RoomIndex)?.ActiveCompanionBossIds;
                 var room = liveRoom ?? new RoomCombatState(actor.RoomIndex, false, new[] { actor.Unit }, Array.Empty<string>(),
@@ -316,13 +314,20 @@ namespace MonsterTrain2Poju.Model
                     : StatusRemovalModel.Remove(room, request.UnitId, request.StatusId, request.Count);
                 if (!changed.Supported) { error = changed.UnsupportedReason; return false; }
                 CombatUnit? target = changed.State!.Units.FirstOrDefault(unit => unit.Id == request.UnitId);
-                if (request.StatusId == "horde" && request.Operation == "Remove" &&
-                    (target == null || target.Health <= 0))
-                { error = "Horde aura removal that kills the target requires physical death settlement."; return false; }
                 if (target == null) target = changed.PendingCallbacks.LastOrDefault(item => item.Unit.Id == request.UnitId)?.Unit;
                 if (target == null) { error = "Status removal lost its retained enchantment target."; return false; }
                 Replace(target);
-                Set(train: WithContext(state.Train, changed.State.Context)); callbacks.AddRange(changed.PendingCallbacks);
+                TrainCombatState train = state.Train;
+                IReadOnlyList<EnchantmentRetainedUnit> retained = state.RetainedUnits;
+                if (liveRoom != null)
+                {
+                    train = new TrainCombatState(state.Train.Rooms.Select(room => room.RoomIndex == liveRoom.RoomIndex ? changed.State! : room).ToArray(),
+                        state.Train.Movement, state.Train.EnemySlotsPerRoom, state.Train.Context);
+                    if (!changed.State.Units.Any(unit => unit.Id == request.UnitId) &&
+                        !retained.Any(actor => actor.Unit.Id == request.UnitId))
+                        retained = retained.Append(new EnchantmentRetainedUnit(target, liveRoom.RoomIndex, liveRoom.Preview)).ToArray();
+                }
+                Set(train: WithContext(train, changed.State.Context), retained: retained); callbacks.AddRange(changed.PendingCallbacks);
                 bool registered = actor.Unit.RegisteredStatus(request.StatusId) != null;
                 bool removed = (actor.Unit.RegisteredStatus(request.StatusId)?.Stacks ?? 0) > (target.RegisteredStatus(request.StatusId)?.Stacks ?? 0);
                 bool added = request.Operation == "Add" && changed.PendingCallbacks.Count > 0;

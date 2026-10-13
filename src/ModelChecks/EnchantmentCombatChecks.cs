@@ -19,7 +19,7 @@ internal static class EnchantmentCombatChecks
             "8fb07b96-f4db-4d2b-884d-c00536d6ccf4" && root.GetProperty("Boundary").GetString() == "RealStatusAndDrainedQueue" &&
             !root.GetProperty("StatusMutationsSuppressed").GetBoolean() && root.GetProperty("LiveContextUnchanged").GetBoolean() &&
             root.GetProperty("ExternalPreviewPreparationsRecorded").GetBoolean() &&
-            root.GetProperty("Mismatches").GetInt32() == 0 && samples.Length == 39,
+            root.GetProperty("Mismatches").GetInt32() == 0 && samples.Length == 41,
             "Real enchantment combat version, mutation, restoration or matrix gate failed.");
         foreach (var sample in samples)
             Require(sample.GetProperty("Completed").GetBoolean() && sample.GetProperty("Difference").ValueKind == FixtureKind.Null,
@@ -31,6 +31,7 @@ internal static class EnchantmentCombatChecks
             "Native random, direct reentry or disabled-manager cases are missing.");
         VerifyHordeGrowth(samples.Single(sample => sample.GetProperty("Label").GetString() == "horde-aura-growth"));
         VerifyHordeRemoval(samples.Single(sample => sample.GetProperty("Label").GetString() == "horde-aura-muted-removal"));
+        VerifyHordeLastStackRemoval(samples.Single(sample => sample.GetProperty("Label").GetString() == "horde-aura-last-stack-removal"));
         Parallel.For(0, 32, _ => { foreach (var sample in samples) Verify(sample); });
         int requests = samples.Sum(sample => sample.GetProperty("Requests").GetArrayLength());
         int callbacks = samples.Sum(sample => sample.GetProperty("Callbacks").GetArrayLength());
@@ -79,9 +80,32 @@ internal static class EnchantmentCombatChecks
             callbackKinds.Contains("OnAnyMonsterDeathOnFloor") && callbackKinds.Contains("OnAnyUnitDeathOnFloor"),
             "Partial Horde aura removal did not preserve troop stats and simulated-death callbacks.");
         CombatUnit woundedTarget = CardSpellModel.Copy(oldTarget, definition.Health * 2, oldTarget.Statuses);
+        int beforeDeaths = before.Train.Context!.Statistics!.MonstersDeadThisBattle;
         EnchantmentCombatResult lethalRemoval = EnchantmentCombatModel.UpdateAll(ReplaceUnit(before, woundedTarget));
-        Require(!lethalRemoval.Supported && lethalRemoval.UnsupportedReason!.Contains("physical death settlement", StringComparison.Ordinal),
-            "A partial Horde aura removal that reduces wounded health to zero bypassed physical death settlement.");
+        Require(lethalRemoval.Supported, "A lethal partial Horde aura removal was rejected: " + lethalRemoval.UnsupportedReason);
+        int afterDeaths = lethalRemoval.State!.Train.Context!.Statistics!.MonstersDeadThisBattle;
+        string[] lethalKinds = lethalRemoval.PendingCallbacks.Select(item => item.Kind).Distinct().ToArray();
+        Require(lethalRemoval.Supported && !lethalRemoval.State.Train.Rooms.SelectMany(room => room.Units).Any(unit => unit.Id == request.UnitId) &&
+            afterDeaths - beforeDeaths == 2 && lethalKinds.Contains("OnTroopRemoved") &&
+            lethalKinds.Contains("OnAnyMonsterDeathOnFloor") && lethalKinds.Contains("OnAnyUnitDeathOnFloor") && !lethalKinds.Contains("OnDeath"),
+            "A lethal partial Horde aura removal did not match simulated-death semantics.");
+    }
+    private static void VerifyHordeLastStackRemoval(FixtureValue sample)
+    {
+        EnchantmentCombatState before = sample.GetProperty("Before").Deserialize<EnchantmentCombatState>()!;
+        EnchantmentCombatState after = sample.GetProperty("AfterQueue").Deserialize<EnchantmentCombatState>()!;
+        EnchantmentRequest request = sample.GetProperty("Requests").Deserialize<EnchantmentRequest[]>()!
+            .Single(item => item.StatusId == "horde" && item.Operation == "Remove");
+        CombatUnit oldTarget = before.Train.Rooms.SelectMany(room => room.Units).Single(unit => unit.Id == request.UnitId);
+        int beforeDeaths = before.Train.Context!.Statistics!.MonstersDeadThisBattle;
+        int afterDeaths = after.Train.Context!.Statistics!.MonstersDeadThisBattle;
+        string[] callbackKinds = sample.GetProperty("Callbacks").EnumerateArray()
+            .Select(item => item.GetProperty("Kind").GetString()!).Distinct().ToArray();
+        Require(request.Count == 1 && (oldTarget.Status("horde")?.Stacks ?? 0) == 1 && oldTarget.Health == oldTarget.HordeDefinition!.Health &&
+            !after.Train.Rooms.SelectMany(room => room.Units).Any(unit => unit.Id == request.UnitId) && afterDeaths - beforeDeaths == 1 &&
+            callbackKinds.Contains("OnTroopRemoved") && callbackKinds.Contains("OnAnyMonsterDeathOnFloor") &&
+            callbackKinds.Contains("OnAnyUnitDeathOnFloor") && !callbackKinds.Contains("OnDeath"),
+            "Last-stack Horde aura removal did not preserve native simulated-death semantics.");
     }
     private static void VerifyDeathwish(FixtureValue[] samples)
     {
@@ -213,7 +237,7 @@ internal static class EnchantmentCombatChecks
                 sample.GetProperty("TriggerIndex").GetInt32(), sample.GetProperty("EffectIndex").GetInt32())
             : EnchantmentCombatModel.UpdateAll(before);
         Require(result.Supported, label + ": " + result.UnsupportedReason);
-        Compare(result.State!, sample.GetProperty("Actual").Deserialize<EnchantmentCombatState>()!, label + " state");
+        Compare(NativeProjection(result.State!), sample.GetProperty("Actual").Deserialize<EnchantmentCombatState>()!, label + " state");
         Compare(result.Requests, sample.GetProperty("Requests").Deserialize<EnchantmentRequest[]>()!, label + " requests");
         Compare(result.Callbacks, sample.GetProperty("Callbacks").Deserialize<EnchantmentCallback[]>()!, label + " callbacks");
         var drained = EnchantmentCombatModel.Drain(result);
@@ -221,7 +245,7 @@ internal static class EnchantmentCombatChecks
         EnchantmentCombatState afterQueue = drained.State!;
         foreach (var id in sample.GetProperty("PreviewPreparedUnitIds").EnumerateArray())
             afterQueue = EnchantmentCombatModel.PrepareForPreview(afterQueue, id.GetInt32());
-        Compare(afterQueue, sample.GetProperty("AfterQueue").Deserialize<EnchantmentCombatState>()!, label + " after queue/preparation events");
+        Compare(NativeProjection(afterQueue), sample.GetProperty("AfterQueue").Deserialize<EnchantmentCombatState>()!, label + " after queue/preparation events");
         VerifySharedWorld(sample, before);
         Require(JsonSerializer.Serialize(before) == parent, label + ": parent state changed.");
         foreach (var effect in before.Train.Rooms.SelectMany(room => room.Units).SelectMany(unit => unit.Triggers).SelectMany(trigger => trigger.Effects)
@@ -243,7 +267,7 @@ internal static class EnchantmentCombatChecks
             : EnchantmentWorldModel.Update(input);
         Require(result.Supported, label + " shared-world update: " + result.UnsupportedReason);
         EnchantmentCombatState actual = result.State!.Context!.Enchantments!.Frame(result.State.Context);
-        Compare(actual, sample.GetProperty("Actual").Deserialize<EnchantmentCombatState>()!, label + " shared-world state");
+        Compare(NativeProjection(actual), sample.GetProperty("Actual").Deserialize<EnchantmentCombatState>()!, label + " shared-world state");
         Compare(result.PendingCallbacks.Select(EnchantmentCallback.From).ToArray(),
             sample.GetProperty("Callbacks").Deserialize<EnchantmentCallback[]>()!, label + " shared-world callbacks");
         var drained = EnchantmentWorldModel.Drain(new EnchantmentCombatResult(actual, Array.Empty<EnchantmentRequest>(), result.PendingCallbacks));
@@ -265,12 +289,14 @@ internal static class EnchantmentCombatChecks
         EnchantmentCombatState after = drained.State!;
         foreach (var id in sample.GetProperty("PreviewPreparedUnitIds").EnumerateArray())
             after = EnchantmentCombatModel.PrepareForPreview(after, id.GetInt32());
-        Compare(after, sample.GetProperty("AfterQueue").Deserialize<EnchantmentCombatState>()!, label + " shared-world after queue");
+        Compare(NativeProjection(after), sample.GetProperty("AfterQueue").Deserialize<EnchantmentCombatState>()!, label + " shared-world after queue");
         Require(JsonSerializer.Serialize(train) == parent, label + ": shared-world parent state changed.");
         Require(!EnchantmentWorldModel.UpdateEffect(input, int.MaxValue, 0, 0).Supported &&
             !EnchantmentWorldModel.UpdateEffect(input, sample.GetProperty("SourceId").GetInt32(), -1, 0).Supported,
             "Invalid shared-world enchantment effect identity was accepted.");
     }
+    private static EnchantmentCombatState NativeProjection(EnchantmentCombatState state) => new(state.Train,
+        Array.Empty<EnchantmentRetainedUnit>(), state.EnchanterIds, state.AllowUpdates, state.Updating, state.Preview, state.TestRng);
     private static void Compare<T>(T actual, T expected, string label)
     {
         string? difference = ModelJson.Difference(JsonSerializer.Serialize(actual), JsonSerializer.Serialize(expected));
@@ -303,17 +329,19 @@ internal static class EnchantmentCombatChecks
         var roomResult = RoomCombatModel.Resolve(source.Train.Rooms.Single(room => room.Units.Any(unit => unit.Id == owner.Id)));
         Require(!roomResult.Supported && roomResult.UnsupportedReason!.Contains("CardEffectEnchant", StringComparison.Ordinal),
             "The standalone aura kernel silently enabled incomplete generic combat support.");
-        CombatUnit WithoutNewStatusCallback(CombatUnit unit) => unit.WithTriggers(unit.Triggers
-            .Where(trigger => trigger.Kind != "OnNewStatusEffectAdded").ToArray());
+        CombatUnit ForHordeBoundary(CombatUnit unit) => unit.WithTriggers(unit.Triggers.Where(trigger =>
+            trigger.Kind != "OnNewStatusEffectAdded" && (unit.Id == owner.Id || !trigger.Effects.Any(effect => effect.Enchantment != null))).ToArray());
         var hordeBase = new EnchantmentCombatState(new TrainCombatState(source.Train.Rooms.Select(room => new RoomCombatState(
-            room.RoomIndex, room.Deployment, room.Units.Select(WithoutNewStatusCallback).ToArray(), room.ExternalInteractions,
+            room.RoomIndex, room.Deployment, room.Units.Select(ForHordeBoundary).ToArray(), room.ExternalInteractions,
             room.Context, room.Preview, room.ActiveCompanionBossIds)).ToArray(), source.Train.Movement,
             source.Train.EnemySlotsPerRoom, source.Train.Context), source.RetainedUnits.Select(actor =>
-                new EnchantmentRetainedUnit(WithoutNewStatusCallback(actor.Unit), actor.RoomIndex, actor.Preview)).ToArray(),
-            source.EnchanterIds, source.AllowUpdates, source.Updating, source.Preview, source.TestRng);
+                new EnchantmentRetainedUnit(ForHordeBoundary(actor.Unit), actor.RoomIndex, actor.Preview)).ToArray(),
+            new[] { owner.Id }, source.AllowUpdates, source.Updating, source.Preview, source.TestRng);
         CombatUnit hordeBaseOwner = hordeBase.Train.Rooms.SelectMany(room => room.Units).Single(unit => unit.Id == owner.Id);
+        var hordeTargeting = new CardActionEffect("Enchant", "Room", 0, false, true, [],
+            filters: new CardTargetFilters("Both", [], [], false, "SubtypesData_TrainSteward", []));
         var hordeOwner = hordeBaseOwner.WithTriggers(hordeBaseOwner.Triggers.Select(trigger => trigger.WithEffects(trigger.Effects.Select(effect =>
-            effect.Enchantment == null ? effect : effect.WithEnchantment(new EnchantmentRule(effect.Enchantment.Targeting,
+            effect.Enchantment == null ? effect : effect.WithEnchantment(new EnchantmentRule(hordeTargeting,
                 new[] { new CombatStatus("horde", 1) }, new EnchantmentState(), true, effect.Enchantment.HasParentCard))).ToArray())).ToArray());
         result = EnchantmentCombatModel.UpdateAll(Replace(hordeOwner, hordeBase));
         Require(result.Supported && result.Requests.Any(item => item.StatusId == "horde" && item.Operation == "Add" && item.Count > 0),
@@ -322,9 +350,18 @@ internal static class EnchantmentCombatChecks
         CombatUnit updatedOwner = result.State!.Train.Rooms.SelectMany(room => room.Units).Single(unit => unit.Id == owner.Id);
         CombatUnit mutedOwner = CardSpellModel.Copy(updatedOwner, updatedOwner.Health,
             updatedOwner.Statuses.Where(status => status.Id != "muted").Append(new CombatStatus("muted", 1)).ToArray());
+        int[] hordeTargetIds = result.Requests.Where(item => item.StatusId == "horde" && item.Operation == "Add")
+            .Select(item => item.UnitId).Distinct().ToArray();
+        Require(hordeTargetIds.Length > 0, "Horde aura growth had no target for the removal boundary.");
+        int deathsBefore = result.State!.Train.Context!.Statistics!.MonstersDeadThisBattle;
         EnchantmentCombatResult hordeRemoval = EnchantmentCombatModel.UpdateAll(ReplaceUnit(result.State, mutedOwner));
-        Require(!hordeRemoval.Supported && hordeRemoval.UnsupportedReason!.Contains("physical death settlement", StringComparison.Ordinal),
-            "Horde aura removals/casualties silently bypassed the explicit lifecycle guard.");
+        Require(hordeRemoval.Supported, "Last-stack Horde aura removal was rejected: " + hordeRemoval.UnsupportedReason);
+        int deathsAfter = hordeRemoval.State!.Train.Context!.Statistics!.MonstersDeadThisBattle;
+        string[] removalKinds = hordeRemoval.PendingCallbacks.Select(item => item.Kind).Distinct().ToArray();
+        Require(hordeTargetIds.All(id => !hordeRemoval.State.Train.Rooms.SelectMany(room => room.Units).Any(unit => unit.Id == id)) &&
+            deathsAfter - deathsBefore == hordeTargetIds.Length && removalKinds.Contains("OnTroopRemoved") &&
+            removalKinds.Contains("OnAnyMonsterDeathOnFloor") && removalKinds.Contains("OnAnyUnitDeathOnFloor") && !removalKinds.Contains("OnDeath"),
+            "Last-stack Horde aura removal did not model native simulated-death callbacks and statistics.");
         int origin = source.Train.Rooms.Single(room => room.Units.Any(unit => unit.Id == owner.Id)).RoomIndex;
         int destination = source.Train.Rooms.First(room => room.RoomIndex != origin).RoomIndex;
         var moved = new TrainCombatState(source.Train.Rooms.Select(room => new RoomCombatState(room.RoomIndex, room.Deployment,

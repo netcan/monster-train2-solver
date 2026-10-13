@@ -82,6 +82,8 @@ namespace MonsterTrain2Poju.Probe
                 actors.Where(unit => unit.IsEnchanter).Select(Trace.UnitId).ToArray(), Managers.GetRoomManager()!.AllowEnchantmentUpdates,
                 (bool)Get(Managers.GetRoomManager()!, "_updatingEnchantments"), Save.PreviewMode, SnapshotRng(RngId.BattleTest));
         }
+        private static EnchantmentCombatState NativeProjection(EnchantmentCombatState state) => new(state.Train,
+            Array.Empty<EnchantmentRetainedUnit>(), state.EnchanterIds, state.AllowUpdates, state.Updating, state.Preview, state.TestRng);
         private static EnchantmentCallback[] Queue()
         {
             var queue = (Queue<CombatManager.TriggerQueueData>)AccessTools.Property(typeof(CombatManager), "TriggerQueue").GetValue(Managers.GetCombatManager());
@@ -163,14 +165,16 @@ namespace MonsterTrain2Poju.Probe
                 AccessTools.Field(typeof(CardStatistics), "deckStats").SetValue(statistics, CopyDeckStats(originalDeckStats));
                 try
                 {
-                    CharacterState hordeTarget = LiveActors().Single(unit => unit.GetTeamType() == Team.Type.Monsters &&
-                        !unit.IsPyreHeart() && unit.GetCurrentRoomIndex() == hosts[0].GetCurrentRoomIndex());
-                    hordeTarget.AddStatusEffect("horde", 1, new CharacterState.AddStatusEffectParams());
-                    yield return combat.RunTriggerQueue();
-                    ConfigureHordeAura();
-                    yield return Sample("horde-aura-growth", direct: true);
+                    Raw(hosts[1], "muted", 1);
+                    ConfigureHordeAura(hosts[0], 2);
+                    ConfigureHordeAura(hosts[1], 1);
+                    yield return Sample("horde-aura-growth", direct: true, source: hosts[0]);
+                    Raw(hosts[1], "muted", 0);
+                    yield return Sample("horde-aura-second-growth", source: hosts[1]);
                     Raw(hosts[0], "muted", 1);
-                    yield return Sample("horde-aura-muted-removal");
+                    yield return Sample("horde-aura-muted-removal", source: hosts[0]);
+                    Raw(hosts[1], "muted", 1);
+                    yield return Sample("horde-aura-last-stack-removal", source: hosts[1]);
                 }
                 finally
                 {
@@ -271,19 +275,19 @@ namespace MonsterTrain2Poju.Probe
                     ((CardEffectEnchant)trigger.GetEffectStates()[0].GetCardEffect()).SetEnchanterCharacter(hosts[i], Managers.GetCoreManagers());
                 }
             }
-            void ConfigureHordeAura()
+            void ConfigureHordeAura(CharacterState source, int count)
             {
                 var data = new CardEffectData("CardEffectEnchant", null!, Team.Type.Monsters);
                 data.Cheat_SetTargetMode(TargetMode.Room);
-                Set(data, "paramStatusEffects", new[] { new StatusEffectStackData { statusId = "horde", count = 2 } });
+                Set(data, "paramStatusEffects", new[] { new StatusEffectStackData { statusId = "horde", count = count } });
                 CharacterTriggerData triggerData = HealingScenario.HealGold(0, false, true);
                 Set(triggerData, "trigger", CharacterTriggerData.Trigger.OnSpawn);
                 Set(triggerData, "effects", new List<CardEffectData> { data });
                 var trigger = new CharacterTriggerState();
-                trigger.Setup(triggerData, hosts[0].GetTeamType(), Save);
-                hosts[0].GetTriggers().Add(trigger);
-                ((CardEffectEnchant)trigger.GetEffectStates()[0].GetCardEffect()).SetEnchanterCharacter(hosts[0], Managers.GetCoreManagers());
-                AccessTools.Property(typeof(CharacterState), "IsEnchanter").SetValue(hosts[0], true);
+                trigger.Setup(triggerData, source.GetTeamType(), Save);
+                source.GetTriggers().Add(trigger);
+                ((CardEffectEnchant)trigger.GetEffectStates()[0].GetCardEffect()).SetEnchanterCharacter(source, Managers.GetCoreManagers());
+                AccessTools.Property(typeof(CharacterState), "IsEnchanter").SetValue(source, true);
             }
             void AddDeathwishTriggers()
             {
@@ -299,21 +303,22 @@ namespace MonsterTrain2Poju.Probe
                         var trigger = new CharacterTriggerState(); trigger.Setup(data, host.GetTeamType(), Save); host.GetTriggers().Add(trigger);
                     }
             }
-            IEnumerator Sample(string label, bool direct = false)
+            IEnumerator Sample(string label, bool direct = false, CharacterState? source = null)
             {
                 if (Queue().Length != 0) throw new InvalidOperationException("Calibration requires an empty starting trigger queue.");
-                EnchantmentCombatState before = Snapshot(); int id = Trace.UnitId(hosts[0]); int triggerIndex = hosts[0].GetTriggers().Count - 1;
+                source ??= hosts[0];
+                EnchantmentCombatState before = Snapshot(); int id = Trace.UnitId(source); int triggerIndex = source.GetTriggers().Count - 1;
                 EnchantmentCombatResult predicted = direct ? EnchantmentCombatModel.UpdateEffect(before, id, triggerIndex, 0) : EnchantmentCombatModel.UpdateAll(before);
                 requests.Clear(); previewPreparedUnits.Clear(); recordPreviewPreparation = true; recording = true;
                 try
                 {
-                    if (direct) ((CardEffectEnchant)hosts[0].GetTriggers().Last().GetEffectStates()[0].GetCardEffect()).OnUpdateEnchantments();
+                    if (direct) ((CardEffectEnchant)source.GetTriggers().Last().GetEffectStates()[0].GetCardEffect()).OnUpdateEnchantments();
                     else rooms.UpdateEnchantments();
                 }
                 finally { recording = false; }
                 EnchantmentCombatState actual = Snapshot(); EnchantmentCallback[] queued = Queue();
                 EnchantmentRequest[] nativeRequests = requests.ToArray();
-                string? difference = !predicted.Supported ? predicted.UnsupportedReason : !Equal(predicted.State!, actual) ? "Status/train/effect state differs" :
+                string? difference = !predicted.Supported ? predicted.UnsupportedReason : !Equal(NativeProjection(predicted.State!), actual) ? "Status/train/effect state differs" :
                     !Equal(predicted.Requests, nativeRequests) ? "Status API requests differ" : !Equal(predicted.Callbacks, queued) ? "Queued callback payloads differ" : null;
                 EnchantmentCombatResult drained = EnchantmentCombatModel.Drain(predicted);
                 yield return combat.RunTriggerQueue();
@@ -322,7 +327,8 @@ namespace MonsterTrain2Poju.Probe
                 EnchantmentCombatState? modeledAfterQueue = drained.State;
                 if (modeledAfterQueue != null)
                     foreach (int preparedId in previewPreparedUnits) modeledAfterQueue = EnchantmentCombatModel.PrepareForPreview(modeledAfterQueue, preparedId);
-                if (difference == null && (!drained.Supported || !Equal(modeledAfterQueue!, afterQueue))) difference = drained.UnsupportedReason ?? "Drained child effects/preview preparations differ";
+                if (difference == null && (!drained.Supported || !Equal(NativeProjection(modeledAfterQueue!), afterQueue)))
+                    difference = drained.UnsupportedReason ?? "Drained child effects/preview preparations differ";
                 if (difference != null) mismatches++;
                 samples.Add(new { Label = label, Direct = direct, SourceId = id, TriggerIndex = triggerIndex, EffectIndex = 0,
                     Before = before, Actual = actual, Requests = nativeRequests, Callbacks = queued, AfterQueue = afterQueue,
