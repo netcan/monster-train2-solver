@@ -62,6 +62,8 @@ namespace MonsterTrain2Poju.Probe
                     3, 0, 0, 0, "armor", 0);
                 if (upgradeReplacementChooseMode)
                 {
+                    CardTraitData ephemeral = new CardTraitData(); ephemeral.Setup("CardTraitEphemeral");
+                    temporaryUpgrade.GetTraitDataUpgrades().Add(ephemeral);
                     CardUpgradeData priorUpgrade = DynamicUpgradeScenario.Upgrade("PojuRecursionPriorUpgrade",
                         "f2f8c03b-327d-4f3d-8cc1-f9b2a20e4ff7", 2, 0, 0, 0, "armor", 0);
                     temporaryUpgrade.GetUpgradesToRemove().Add(priorUpgrade);

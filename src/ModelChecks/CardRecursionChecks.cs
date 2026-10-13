@@ -81,8 +81,13 @@ internal static class CardRecursionChecks
                 {
                     bool priorRemains = result.CardRegistry!.Any(card => card.InstanceId == 3 &&
                         card.Temporary.Upgrades.Any(upgrade => upgrade.DataId == replacedUpgradeId));
-                    Require(priorRemains == (selectedId != 3),
-                        "A replacement recursion branch removed the prior upgrade on the wrong selected-card branch.");
+                    CardInstanceState selectedCard = result.CardRegistry!.Single(card => card.InstanceId == selectedId);
+                    bool onlySelectedIsEphemeral = eligible.All(id =>
+                        CardBranchMaskModel.Resolve(result.CardRegistry!.Single(card => card.InstanceId == id)).Traits
+                            .Contains("CardTraitEphemeral", StringComparer.Ordinal) == (id == selectedId));
+                    Require(priorRemains == (selectedId != 3) && onlySelectedIsEphemeral,
+                        "A replacement recursion branch changed the prior upgrade or Ephemeral trait on the wrong selected-card branch: selected=" +
+                        selectedId + " priorRemains=" + priorRemains + ".");
                 }
             }
         }
@@ -136,6 +141,7 @@ internal static class CardRecursionChecks
             recursionEffect.Upgrade?.DataId == upgradeId && recursionEffect.Recursion.RequiresRoomInHand == toHand &&
             recursionEffect.Recursion.DisallowOverflowToDrawPile == toHand &&
             (!replacementChoice || recursionEffect.Upgrade.Lifecycle?.ReplacedAssets.Contains("PojuRecursionPriorUpgrade") == true &&
+                recursionEffect.Upgrade.Lifecycle?.AddedTraits.Any(trait => trait.RuntimeType == "CardTraitEphemeral") == true &&
                 priorCard?.Temporary.Upgrades.Any(upgrade => upgrade.DataId == priorUpgradeId && upgrade.Stats.Damage == 2) == true),
             "The captured action does not contain the expected native recursion-upgrade mode.");
         Require(!toHand || root.Spawn.Train.Context!.Cards.Hand.Count == root.Spawn.Train.Context.MaxHandSize,
@@ -175,11 +181,39 @@ internal static class CardRecursionChecks
             CardInstanceState selectedCard = actual.Spawn.Train.Context!.FindCard(3)!;
             Require(returned.SequenceEqual([3]) &&
                 selectedCard.Temporary.Upgrades.Count(upgrade => upgrade.DataId == upgradeId && upgrade.Stats.Damage == 3) == 1 &&
-                selectedCard.Temporary.Upgrades.All(upgrade => upgrade.DataId != priorUpgradeId),
-                "Native recursion did not replace the selected card's earlier temporary upgrade by asset key.");
+                selectedCard.Temporary.Upgrades.All(upgrade => upgrade.DataId != priorUpgradeId) &&
+                CardBranchMaskModel.Resolve(selectedCard).Traits.Contains("CardTraitEphemeral", StringComparer.Ordinal),
+                "Native recursion did not replace the selected card's earlier upgrade and add Ephemeral by the new temporary upgrade.");
+            VerifyEphemeralPlay(fixture, upgradeId);
         }
         if (chooseToDeck) SearchChoices(fixture, "ChooseToDeck", expectedCandidateCount: filteredChoice ? 5 : 6);
         Console.WriteLine($"CARD-RECURSION-UPGRADE-CHECKS PASS: native {(chooseToDeck ? "chosen" : "random")} selection, {(toHand ? "hand plus draw-pile overflow" : "draw pile")} destination, temporary +3 Damage, returned-card identity, and untouched candidates.");
+    }
+
+    private static void VerifyEphemeralPlay(FixtureValue fixture, string upgradeId)
+    {
+        foreach (FixtureValue entry in fixture.GetProperty("Actions").EnumerateArray())
+        {
+            BattleTurnState before = entry.GetProperty("Before").Deserialize<BattleTurnState>()!;
+            PlayCardAction action = entry.GetProperty("Action").Deserialize<PlayCardAction>()!;
+            if (action.CardInstanceId != 3) continue;
+            CardInstanceState? card = before.Spawn.Train.Context!.FindCard(3);
+            if (card?.Temporary.Upgrades.Any(upgrade => upgrade.DataId == upgradeId) != true) continue;
+            bool ephemeral = CardBranchMaskModel.Resolve(card).Traits.Contains("CardTraitEphemeral", StringComparer.Ordinal);
+            BattleActionResult predicted = BattleActionModel.PlayCard(before, action);
+            Require(predicted.Supported, "The recursion-upgraded Ephemeral card play was rejected: " + predicted.Reason);
+            int[] predictedPurged = predicted.State!.Spawn.Train.Context!.OtherPiles!
+                .Single(pile => pile.Name == "Purged").Cards.Where(token => token.InstanceId == 3)
+                .Select(token => token.InstanceId).ToArray();
+            BattleTurnState actual = entry.GetProperty("Actual").Deserialize<BattleTurnState>()!;
+            int[] actualPurged = actual.Spawn.Train.Context!.OtherPiles!
+                .Single(pile => pile.Name == "Purged").Cards.Where(token => token.InstanceId == 3)
+                .Select(token => token.InstanceId).ToArray();
+            Require(ephemeral && predictedPurged.SequenceEqual([3, 3]) && actualPurged.SequenceEqual(predictedPurged),
+                "Playing the recursion-upgraded Ephemeral card did not match native duplicate Purged callbacks.");
+            return;
+        }
+        throw new InvalidOperationException("The native battle did not play the recursion-upgraded Ephemeral card.");
     }
 
     public static void Run()

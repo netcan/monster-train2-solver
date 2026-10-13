@@ -229,14 +229,16 @@ dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fi
 
 `full-battle-card-recursion-upgrade-replacement-choice.mt2f` captures a chosen
 recursion where the selected card already has a temporary +2 Damage upgrade.
-The native +3 Damage upgrade replaces the prior upgrade by AssetKey. Search
-emits all six legal card choices; only the branch selecting the upgraded card
-removes the prior upgrade, and every branch preserves Battle RNG. The muted
-Instant battle wins with 63 stages, 22 actions and seven EndTurns, with zero
-capture failures, mismatches, unsupported transitions or pending records.
-Native replay and 128-state serial/parallel search match. The archive is 36,279
-bytes with 6,195 unique nodes and SHA-256
-`4647d131b3156b7222dbc08ab9065f0f60a432299656f29d5a048f4c8deb35cb`; it has no
+The native +3 Damage upgrade replaces the prior upgrade by AssetKey and adds
+`CardTraitEphemeral`. Search emits all six legal card choices; only the selected
+card receives the upgrade and trait, and only the branch selecting card 3 removes
+the prior upgrade. Every branch preserves Battle RNG. The muted Instant battle
+wins with 52 stages, 19 actions and six EndTurns, with zero capture failures,
+mismatches, unsupported transitions or pending records. The native battle later
+plays card 3 and sends it to Purged through both native callbacks; predicted and
+captured piles match. Native replay and 128-state serial/parallel search match.
+The archive is 33,101 bytes with 5,635 unique nodes and SHA-256
+`daa9034d3db6ac809ca427f0b910262051bc67bbbe1fed10c0880b9f89fea0e3`; it has no
 JSON companion. Inventory: 270 archives, comprising 239 battles and 31
 component calibrations.
 

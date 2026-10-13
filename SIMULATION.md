@@ -48,11 +48,12 @@ consuming Battle RNG. Controlled native calibrations below verify each mode's
 destination and the full-battle replay. Captured native card filters now use
 branch-owned card mask metadata when enumerating candidates. Temporary upgrades
 are modeled for random-to-deck, random-to-hand-with-upgrades, chosen and filtered
-chosen recursion, including replacement by upgrade AssetKey. Source piles other
-than Exhaust/Eaten and uncalibrated upgrade interactions such as traits, triggers
-and abilities remain unsupported. The native `RequiresRoomInHand` gate for
-upgraded recursion is calibrated; it checks eligible pile counts rather than
-free hand slots.
+chosen recursion, including replacement by upgrade AssetKey and adding
+`CardTraitEphemeral` to the returned card. The battle later plays that card and
+matches its native Purged routing. Source piles other than Exhaust/Eaten and
+other uncalibrated trait, trigger and ability interactions remain unsupported.
+The native `RequiresRoomInHand` gate for upgraded recursion is calibrated; it
+checks eligible pile counts rather than free hand slots.
 
 ```powershell
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-card-recursion.mt2f
@@ -8884,21 +8885,22 @@ archive is 36,331 bytes with 6,207 unique nodes and SHA-256
 JSON companion.
 
 The schema-153 `full-battle-card-recursion-upgrade-replacement-choice.mt2f`
-captures a chosen recursion where the selected card already has temporary +2
-Damage. Native application of the +3 Damage upgrade removes the earlier
-temporary upgrade with the same AssetKey. Search emits all six legal choices;
-only the branch selecting that card performs the replacement, with Battle RNG
-unchanged. The muted Instant battle has 63 matched stages, 22 actions and seven
-EndTurns, with zero capture failures, mismatches, unsupported transitions or
-pending records. Replay matches, and the 128-state search is equal in serial and
-parallel runs. The archive is 36,279 bytes with 6,195 unique nodes and SHA-256
-`4647d131b3156b7222dbc08ab9065f0f60a432299656f29d5a048f4c8deb35cb`; it has no
+captures a chosen recursion where card 3 already has temporary +2 Damage. The
+native +3 Damage upgrade removes that modifier by AssetKey and adds
+`CardTraitEphemeral`. Search emits all six legal choices; each branch applies
+the upgrade and trait only to its selected card, and only the card-3 branch
+replaces the prior upgrade. All branches preserve Battle RNG. The muted Instant
+battle has 52 matched stages, 19 actions and six EndTurns, with zero capture
+failures, mismatches, unsupported transitions or pending records. The battle
+later plays card 3 and matches the two native Purged callbacks. Replay matches,
+and the 128-state search is equal in serial and parallel runs. The archive is
+33,101 bytes with 5,635 unique nodes and SHA-256
+`daa9034d3db6ac809ca427f0b910262051bc67bbbe1fed10c0880b9f89fea0e3`; it has no
 JSON companion.
 
-The curated inventory is now 270 archives: 239 full battles and 31 component
-calibrations. Source piles other than Exhaust/Eaten and recursion upgrades that
-change traits, triggers, abilities or other uncalibrated behavior still need
-native calibration.
+The curated inventory remains 270 archives: 239 full battles and 31 component
+calibrations. Source piles other than Exhaust/Eaten and other uncalibrated
+recursion upgrade interactions, such as trigger and ability changes, remain open.
 
 ```powershell
 pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -CardRecursionUpgrade -GameSpeed Instant
