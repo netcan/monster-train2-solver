@@ -20,8 +20,8 @@ All 23 source archives below report game `2.2.1`, module MVID
 byte lengths and SHA-256 hashes are recorded in [manifest.tsv](manifest.tsv).
 The floor-capacity batch passes strict native acceptance, complete-fixture checks,
 independent full-battle replay and six directly affected old-fixture regressions.
-The accepted inventory is 252 archives: 221 battles and 31 component
-calibrations. All 252 archive names, byte lengths and SHA-256 hashes match the
+The accepted inventory is 253 archives: 222 battles and 31 component
+calibrations. All 253 archive names, byte lengths and SHA-256 hashes match the
 manifest and curated list, with no JSON companions. A 246-archive replay was
 attempted on 2026-10-13 but has not completed: legacy EndTurn snapshots can
 conflict with the current model's room `Enabled` state. Focused follow-up checks
@@ -31,7 +31,7 @@ action/turn comparisons and skips an independent legacy policy chain only when
 recomputed EndTurn state confirms that room-rule conflict. Freshness-marked
 archives remain strict. The Mageblade status/cache/attack path has an accepted
 native battle archive, but Mageblade is not a collectable relic and is not
-included in the 67/224 owner count. The `AllUnitsMultistrike` archive
+included in the 68/224 owner count. The `AllUnitsMultistrike` archive
 validates a mutator, not a collectible relic, and is also excluded from that
 owner count.
 
@@ -301,7 +301,7 @@ Coverage is now 68/224 (30.36%).
 
 The archive is 33,356 bytes with 5,388 unique nodes and SHA-256
 `1551a614cb42645e926c6637629d2d4a33320cdc7afdf52ea10b6920bb2a8ad2`; there is
-no JSON companion. The inventory is 252 archives: 221 battles and 31 component
+no JSON companion. The inventory is 253 archives: 222 battles and 31 component
 calibrations. Full-inventory replay remains deferred.
 
 [counts]: full-battle-incant-relics-combined.mt2f

@@ -258,6 +258,18 @@ internal static class BattleActionChecks
 
     internal static void Native(FixtureValue fixture)
     {
+        if (fixture.TryGetProperty("ModifierScenario", out FixtureValue attachmentScenario) &&
+            attachmentScenario.GetString() == "room-capacity-attachment")
+        {
+            FixtureValue evidence = fixture.GetProperty("RoomCapacityAttachmentCoverage");
+            Require(evidence.GetProperty("Prepared").GetBoolean() && evidence.GetProperty("Selected").GetBoolean() &&
+                evidence.GetProperty("Completed").GetBoolean() && evidence.GetProperty("Error").ValueKind == FixtureKind.Null &&
+                evidence.GetProperty("AssetKey").GetString() == "IncreaseRoomCapacity" &&
+                evidence.GetProperty("AfterCapacity").GetInt32() == evidence.GetProperty("BeforeCapacity").GetInt32() + 4 &&
+                evidence.GetProperty("ActiveAttachmentCount").GetInt32() == 1 &&
+                evidence.GetProperty("AttachedCardDataId").GetString() == evidence.GetProperty("CardDataId").GetString(),
+                "Native IncreaseRoomCapacity did not remain attached with its +4 capacity effect.");
+        }
         if (!fixture.TryGetProperty("Actions", out FixtureValue actions) || actions.GetArrayLength() == 0) return;
         bool compareRoomEnabled = BattleTurnChecks.ShouldCompareRoomEnabled(fixture);
         int supported = 0, unsupported = 0;
@@ -487,6 +499,11 @@ internal static class BattleActionChecks
             chooser = PyreResourceRefreshChecks.Choose;
         else if (fixture.TryGetProperty("ModifierScenario", out var capacityRelicScenario) && capacityRelicScenario.GetString() == "original-floor-capacity-relics")
             chooser = OriginalFloorCapacityRelicChecks.Choose;
+        if (fixture.TryGetProperty("ModifierScenario", out var attachmentPolicy) && attachmentPolicy.GetString() == "room-capacity-attachment")
+        {
+            string cardDataId = fixture.GetProperty("RoomCapacityAttachmentCoverage").GetProperty("CardDataId").GetString()!;
+            chooser = source => ChooseRoomCapacityAttachmentThenCards(source, cardDataId);
+        }
         if (fixture.TryGetProperty("ModifierScenario", out var summonScenario) && summonScenario.GetString()?.StartsWith("multi-summon", StringComparison.Ordinal) == true)
             chooser = BattleActionModel.ChooseMultiSummonThenCards;
         if (fixture.TryGetProperty("ModifierScenario", out var abilityScenario) &&
@@ -562,6 +579,24 @@ internal static class BattleActionChecks
         {
             var action = new PlayCardAction(card.InstanceId, 0);
             if (BattleActionModel.PlayCard(source, action).Supported) return action;
+        }
+        return BattleActionModel.ChooseUnitSpellAndJunkPlay(source);
+    }
+
+    private static PlayCardAction? ChooseRoomCapacityAttachmentThenCards(BattleTurnState source, string cardDataId)
+    {
+        if (source.Spawn.Train.Context?.RoomCapacities?.Any(room =>
+            room.Attachments?.Any(item => item.DataId == cardDataId) == true) == true) return null;
+        if (source.PlayRules != null && source.Spawn.Train.Context != null)
+        {
+            CardToken? card = source.Spawn.Train.Context.Cards.Hand.FirstOrDefault(item => item.DataId == cardDataId);
+            if (card != null)
+            foreach (RoomCombatState room in source.Spawn.Train.Rooms.Where(item =>
+                source.PlayRules.Rooms.Single(rule => rule.RoomIndex == item.RoomIndex).IsPyre == false).OrderBy(item => item.RoomIndex))
+            {
+                var action = new PlayCardAction(card.InstanceId, room.RoomIndex);
+                if (BattleActionModel.PlayCard(source, action).Supported) return action;
+            }
         }
         return BattleActionModel.ChooseUnitSpellAndJunkPlay(source);
     }

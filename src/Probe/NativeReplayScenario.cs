@@ -423,6 +423,7 @@ namespace MonsterTrain2Poju.Probe
                 {
                     PreviewSchedulingProbe.Observe("PlayReady");
                     if (fullBattle) FullBattleTrace.Active?.CompleteCardPlay();
+                    RoomCapacityAttachmentScenario.CompleteCardPlay(managers);
                     log.LogInfo("DEPTH-PLAYED pass=" + pass + " turn=" + (combat!.GetTurnCount() - initialTurn));
                     if (IsUnitAndJunkPolicy()) Enter(Stage.Battle, 60f);
                     else AdvanceTurn(combat);
@@ -434,6 +435,13 @@ namespace MonsterTrain2Poju.Probe
                 return;
             }
             string? modifierScenario = Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS");
+            if (fullBattle && !numericModifiersPrepared && RoomCapacityAttachmentScenario.Enabled)
+            {
+                if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Capacity attachment fixture must start on deployment turn.");
+                RoomCapacityAttachmentScenario.Prepare(managers, log);
+                numericModifiersPrepared = true;
+                return;
+            }
             if (fullBattle && !numericModifiersPrepared && OriginalFloorCapacityRelicScenario.Enabled)
             {
                 if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Floor capacity originals must start on deployment turn.");
@@ -907,6 +915,9 @@ namespace MonsterTrain2Poju.Probe
                     ? OriginalStingRelicBatchScenario.Choose(decision)
                     : Environment.GetEnvironmentVariable("MT2_PROBE_FULL_BATTLE_POLICY") == "units-spells-and-junk"
                         ? BattleActionModel.ChooseUnitSpellAndJunkPlay(decision) : BattleActionModel.ChooseUnitAndJunkPlay(decision);
+                if (RoomCapacityAttachmentScenario.Enabled)
+                    pendingPlay = RoomCapacityAttachmentScenario.Evidence.Completed
+                        ? null : RoomCapacityAttachmentScenario.Choose(decision) ?? pendingPlay;
                 if (RelicCardModifierScenario.ExtraToughTombs)
                     pendingPlay = RelicCardModifierScenario.ChooseTombCarrier(decision) ?? pendingPlay;
                 if (OriginalDeployableRelicScenario.Enabled) pendingPlay = OriginalDeployableRelicScenario.Choose(decision) ?? pendingPlay;

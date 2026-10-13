@@ -83,6 +83,7 @@ param(
     [switch] $XCostLethal,
     [switch] $RoomCapacity,
     [switch] $RoomCapacityLethal,
+    [switch] $RoomCapacityAttachment,
     [switch] $DirectUnitUpgrades,
     [switch] $Equipment,
     [switch] $EquipmentBuff,
@@ -214,6 +215,7 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+if ($RoomCapacityAttachment) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($PermanentConsumeHandUpgrades -or $PermanentConsumeOverTemporary) { $HandUpgrades = $true; $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($GenerationPermanentConsume) { $Generation = $true; $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($TypedDraw) { $BranchCardMasks = $true; $BattleRelicUpgrades = $true; $Policy = 'units-spells-and-junk' }
@@ -379,7 +381,7 @@ $environment = @{
     MT2_PROBE_CAPTURE_JSON = $(if ($CaptureJson) { '1' } else { '0' })
     MT2_PROBE_NO_TIMEOUT = '1'
     MT2_PROBE_ISOLATE_PREVIEW_RNG = $(if ($TriggeredStatus -or $PersistentEnchantments) { '1' } else { '0' })
-    MT2_PROBE_ISOLATE_UI_RNG = $(if ($CompanionBoss -or $ConditionalTriggers -or $DetachedBonusDraw -or $RoomCapacity -or $RoomCapacityLethal -or $BonusDraw -or $BonusDrawLethal -or $NumericRanges -or $NumericRangesLethal -or $Drawing -or $TriggeredHealing -or $PostCombatHealing -or $TriggeredDamage -or $DamageDeathQueue -or $TerminalDeathDamage -or $HitKill -or $DyingUpgrades -or $AttackTriggers -or $TriggeredStatus) { '1' } else { '0' })
+    MT2_PROBE_ISOLATE_UI_RNG = $(if ($CompanionBoss -or $ConditionalTriggers -or $DetachedBonusDraw -or $RoomCapacity -or $RoomCapacityLethal -or $RoomCapacityAttachment -or $BonusDraw -or $BonusDrawLethal -or $NumericRanges -or $NumericRangesLethal -or $Drawing -or $TriggeredHealing -or $PostCombatHealing -or $TriggeredDamage -or $DamageDeathQueue -or $TerminalDeathDamage -or $HitKill -or $DyingUpgrades -or $AttackTriggers -or $TriggeredStatus) { '1' } else { '0' })
     MT2_PROBE_STATISTIC_QUERIES = $(if ($StatisticQueries) { '1' } else { '0' })
     MT2_PROBE_STATISTIC_OVERFLOW = $(if ($StatisticOverflow) { '1' } else { '0' })
     MT2_PROBE_HORDE_STATS = $(if ($HordeStats) { '1' } else { '0' })
@@ -485,6 +487,7 @@ if ($RandomDiscard) {
     $environment.MT2_PROBE_MODIFIERS = 'random-discard'
     $environment.MT2_PROBE_BRANCH_CARD_MASKS = '1'
 }
+if ($RoomCapacityAttachment) { $environment['MT2_PROBE_MODIFIERS'] = 'room-capacity-attachment' }
 $process = Start-Process -FilePath (Join-Path $gameRoot 'MonsterTrain2.exe') `
     -WorkingDirectory $gameRoot -ArgumentList @('-logFile', $unityLog) `
     -Environment $environment -WindowStyle Hidden -PassThru
@@ -1410,6 +1413,15 @@ if ($RoomCapacity -or $RoomCapacityLethal) {
         @($trace.CapacityTests | Where-Object { -not $_.Actual }).Count -gt 0
     if ($RoomCapacityLethal) { $capacityCoverage = $capacityCoverage -and @($trace.Actions | Where-Object ActualOutcome -EQ 3).Count -eq 1 }
 }
+$roomCapacityAttachmentCoverage = -not $RoomCapacityAttachment
+if ($RoomCapacityAttachment) {
+    $attachment = $trace.RoomCapacityAttachmentCoverage
+    $roomCapacityAttachmentCoverage = $trace.Schema -eq 139 -and $trace.ModifierScenario -eq 'room-capacity-attachment' -and
+        $attachment.Prepared -and $attachment.Selected -and $attachment.Completed -and $null -eq $attachment.Error -and
+        $attachment.AssetKey -eq 'IncreaseRoomCapacity' -and $attachment.AfterCapacity -eq ($attachment.BeforeCapacity + 4) -and
+        $attachment.ActiveAttachmentCount -eq 1 -and $attachment.AttachedCardDataId -eq $attachment.CardDataId
+    if (-not $roomCapacityAttachmentCoverage) { throw 'Native room-capacity attachment was not played and retained.' }
+}
 $companionCoverage = -not $CompanionBoss
 if ($CompanionBoss) {
     $companionCoverage = @($trace.CompanionBossActions).Count -gt 0 -and @($trace.RelentlessTriggerRemovals).Count -eq 1 -and
@@ -2236,6 +2248,8 @@ $result = [pscustomobject]@{
     CapacityCoverage = $capacityCoverage
     CapacitySamples = @($trace.CapacityEffects).Count
     CapacityTests = @($trace.CapacityTests).Count
+    RoomCapacityAttachmentCoverage = $roomCapacityAttachmentCoverage
+    RoomCapacityAttachment = $trace.RoomCapacityAttachmentCoverage
     TriggeredStatusSamples = @($trace.TriggeredStatuses).Count
     AttackTriggerCoverage = $attackTriggerCoverage
     AttackTriggerSamples = @($trace.AttackTriggers).Count

@@ -33,7 +33,7 @@ namespace MonsterTrain2Poju.Model
             RelicResourceResult capacity = GetFloorCapacity(source);
             if (!capacity.Supported) return new RoomCapacityResult(null, 0, capacity.UnsupportedReason);
             RoomCapacityState[] rooms = source.RoomCapacities!.Select(room => new RoomCapacityState(
-                room.RoomIndex, capacity.Value, capacity.Value, room.IsPyre)).ToArray();
+                room.RoomIndex, capacity.Value, capacity.Value, room.IsPyre, room.Corruption, room.Attachments)).ToArray();
             return new RoomCapacityResult(source.WithRoomCapacities(rooms), capacity.Value);
         }
     }

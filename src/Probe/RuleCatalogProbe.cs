@@ -142,6 +142,8 @@ namespace MonsterTrain2Poju.Probe
                             { Type = nested.GetEffectStateName(), Target = nested.GetTargetMode().ToString(), Value = nested.GetParamInt() }).ToArray()
                         }).ToArray() });
                 }
+            CardUpgradeData? attachmentUpgrade = effect.GetEffectStateName() == "CardEffectAttachTrainRoomAttachment"
+                ? effect.GetParamCardUpgradeData() : null;
             return new
             {
                 Type = effect.GetEffectStateName(), Target = effect.GetTargetMode().ToString(),
@@ -156,7 +158,47 @@ namespace MonsterTrain2Poju.Probe
                 Statuses = effect.GetParamStatusEffectStackData(), Card = effect.GetParamCardData()?.GetID(),
                 Character = effect.GetParamCharacterData()?.GetAssetKey(),
                 CardPool = candidates, HasCardFilter = effect.GetParamCardFilter() != null,
-                HasUpgrade = effect.GetParamCardUpgradeData() != null
+                HasUpgrade = effect.GetParamCardUpgradeData() != null,
+                AttachmentUpgrade = attachmentUpgrade == null ? null : Upgrade(attachmentUpgrade)
+            };
+        }
+
+        private static object Upgrade(CardUpgradeData upgrade)
+        {
+            var state = new CardUpgradeState();
+            state.Setup(upgrade);
+            return new
+            {
+                DataId = state.GetCardUpgradeDataId(),
+                AssetKey = state.GetAssetName(),
+                Damage = state.GetAttackDamage(),
+                Health = state.GetAdditionalHP(),
+                Size = state.GetAdditionalSize(),
+                Statuses = state.GetStatusEffectUpgrades(),
+                RoomModifiers = upgrade.GetRoomModifierUpgrades().Select(modifier => new
+                {
+                    Type = modifier.GetRoomStateModifierClassName(),
+                    Int = modifier.GetParamInt(),
+                    Int2 = modifier.GetParamInt2(),
+                    Float = modifier.GetParamFloat(),
+                    Trigger = modifier.GetParamTrigger().ToString(),
+                    Subtype = modifier.GetParamSubtype().IsNone ? "" : modifier.GetParamSubtype().Key,
+                    Card = modifier.GetParamCardData()?.GetID(),
+                    Upgrade = modifier.GetParamCardUpgradeData()?.GetID(),
+                    Statuses = (modifier.GetParamStatusEffects() ?? Array.Empty<StatusEffectStackData>())
+                        .Select(status => new { status.statusId, status.count, status.fromPermanentUpgrade }).ToArray(),
+                    Effects = modifier.GetParamCardEffectData().Select(nested => new
+                    {
+                        Type = nested.GetEffectStateName(),
+                        Target = nested.GetTargetMode().ToString(),
+                        Team = nested.GetTargetTeamType().ToString(),
+                        Int = nested.GetParamInt(),
+                        Bool = nested.GetParamBool(),
+                        Statuses = nested.GetParamStatusEffectStackData(),
+                        Card = nested.GetParamCardData()?.GetID(),
+                        Character = nested.GetParamCharacterData()?.GetAssetKey()
+                    }).ToArray()
+                }).ToArray()
             };
         }
 

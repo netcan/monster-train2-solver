@@ -33,6 +33,39 @@ internal static class RoomCapacityChecks
         Require(!RoomCapacityModel.Test(new(0, false, [foe], [], context), conditional) &&
             RoomCapacityModel.Test(new(0, false, [], [], context), conditional) && !RoomCapacityModel.Test(new(1, false, [], [], context), grow),
             "Capacity test ignored retained dying enemies or the Pyre room.");
+        var capacityAttachment = new RoomCapacityAttachmentState("increase", "IncreaseRoomCapacity", 0, 4);
+        var attach = new CardActionEffect("AttachRoomCapacity", "Room", 0, false, true, [], roomAttachment: capacityAttachment);
+        var attachContext = new CombatContext(context.Cards, rng, 0, 4, 10,
+            roomCapacities: [new(0, 5, 5, false, attachments: []), new(1, 0, 0, true, attachments: [])]);
+        var attachmentRoom = new RoomCombatState(0, false, [], [], attachContext);
+        RoomCombatResult attachmentSpell = CardSpellModel.Apply(attachmentRoom, [attach], 0, 1);
+        Require(RoomCapacityModel.TestAttachment(attachmentRoom, attach) && attachmentSpell.Supported &&
+            attachmentSpell.State!.Context!.RoomCapacities![0].PlayerMaximum == 9 &&
+            attachmentSpell.State.Context.RoomCapacities[0].Attachments!.Single().DataId == "increase",
+            "Native capacity attachment did not alter the monster floor capacity or persist its identity.");
+        var attachmentCards = new CardCycleState([new(1, "increase")], [], [], rng, 0, []);
+        var attachmentContext = new CombatContext(attachmentCards, rng, 0, 4, 10,
+            cardInstances: [CardInstanceState.Empty(1, "increase")],
+            otherPiles: [new("Standby", []), new("Exhausted", []), new("Purged", []), new("Eaten", [])],
+            roomCapacities: [new(0, 5, 5, false, attachments: []), new(1, 0, 0, true, attachments: [])]);
+        var attachmentTrain = new TrainCombatState([new(0, false, [], [], attachmentContext), new(1, false, [], [], attachmentContext)], [], 7, attachmentContext);
+        var attachmentSpawn = new EnemySpawnState(attachmentTrain, [new([new([])])], [-1], 0, false, rng, 1, [], 0, false, 0, 0, 1, []);
+        var attachmentRules = new BattlePlayRules([new(0, 5, 7, true, false, false, 5), new(1, 0, 7, true, true, true)],
+            [new("increase", "IncreaseRoomCapacity", 2, "Spell", "Standby", null, [], [attach], cardType: "TrainRoomAttachment")]);
+        var attachmentRoot = new BattleTurnState(attachmentSpawn, 4, 3, 5, 0, 0, "New", [],
+            [new("Standby", []), new("Exhausted", []), new("Purged", []), new("Eaten", [])], [], attachmentRules);
+        BattleActionResult attachedCard = BattleActionModel.PlayCard(attachmentRoot, new(1, 0));
+        Require(attachedCard.Supported && attachedCard.State!.PlayRules!.Rooms.Single(room => room.RoomIndex == 0).PlayerCapacity == 9 &&
+            attachedCard.State.PlayRules.Rooms.Single(room => room.RoomIndex == 0).EnemyCapacity == 5,
+            "Room attachment did not refresh the live play-rule capacities: " + attachedCard.Reason);
+        var replacement = new RoomCapacityAttachmentState("decrease", "EngineUpgrade", 0, -2);
+        RoomCapacityResult replaced = RoomCapacityModel.Attach(attachmentSpell.State!.Context!, 0, replacement);
+        Require(replaced.Supported && replaced.Context!.RoomCapacities![0].PlayerMaximum == 3 &&
+            replaced.Context.RoomCapacities[0].Attachments!.Single().DataId == "decrease" &&
+            attachContext.RoomCapacities![0].PlayerMaximum == 5,
+            "Replacing a primary attachment failed to reverse the old modifier or mutated its parent.");
+        Require(!RoomCapacityModel.TestAttachment(new(1, false, [], [], attachContext), attach),
+            "Pyre room accepted a capacity attachment.");
         var room = new RoomCombatState(0, false, [], [], context);
         Require(CardSpellModel.Apply(room, [grow], 0, 1).State!.Context!.RoomCapacities![0].PlayerMaximum == 7 &&
             CardSpellModel.Apply(new(0, false, [], [], context, true), [grow], 0, 1).State!.Context!.RoomCapacities![0].PlayerMaximum == 5,

@@ -130,8 +130,8 @@ namespace MonsterTrain2Poju.Probe
                 }
             }
             else if (kind == "CardEffectNULL") kind = "Null";
-            else if ((data.GetCardType() == CardType.Spell || data.GetCardType() == CardType.Equipment) && effects.Length > 0 && effects.All(effect =>
-                    new[] { "CardEffectCopyUnits", "CardEffectBump", "CardEffectUnitAbilityTeleport", "CardEffectAttackWithUnit", "CardEffectRemoveStatusEffect", "CardEffectSetUnitAbility", "CardEffectRemoveAbility", "CardEffectResetCooldown", "CardEffectAdjustAbilityCooldown", "CardEffectAttachEquipment", "CardEffectBuffEquipment", "CardEffectRemoveEquipment", "CardEffectRewardGold", "CardEffectGainEnergy", "CardEffectAdjustEnergy", "CardEffectGainEnergyNextTurn", "CardEffectGainEnergyEveryTurn", "CardEffectDamage", "CardEffectDamagePerSourceAttack", "CardEffectDamagePerHp", "CardEffectDraw", "CardEffectDrawAdditionalNextTurn", "CardEffectAdjustRoomCapacity", "CardEffectAdjustForgePoints", "CardEffectDiscardHand", "CardEffectRandomDiscard", "CardEffectAddBattleCard", "CardEffectHeal", "CardEffectSacrifice", "CardEffectBuffDamage", "CardEffectDebuffDamage", "CardEffectBuffMaxHealth", "CardEffectDebuffMaxHealth", "CardEffectAddStatusEffect", "CardEffectMultiplyStatusEffect", "CardEffectMultiplyAllPositiveStatusEffects", "CardEffectAdjustAllStatusEffects", "CardEffectAddStatusEffectPerOtherEffect", "CardEffectSpawnMonsterOrAddStatusEffect", "CardEffectFloorRearrange", "CardEffectAddCardUpgradeToUnits",
+            else if ((data.GetCardType() == CardType.Spell || data.GetCardType() == CardType.Equipment || data.GetCardType() == CardType.TrainRoomAttachment) && effects.Length > 0 && effects.All(effect =>
+                    new[] { "CardEffectCopyUnits", "CardEffectBump", "CardEffectUnitAbilityTeleport", "CardEffectAttackWithUnit", "CardEffectRemoveStatusEffect", "CardEffectSetUnitAbility", "CardEffectRemoveAbility", "CardEffectResetCooldown", "CardEffectAdjustAbilityCooldown", "CardEffectAttachEquipment", "CardEffectAttachTrainRoomAttachment", "CardEffectBuffEquipment", "CardEffectRemoveEquipment", "CardEffectRewardGold", "CardEffectGainEnergy", "CardEffectAdjustEnergy", "CardEffectGainEnergyNextTurn", "CardEffectGainEnergyEveryTurn", "CardEffectDamage", "CardEffectDamagePerSourceAttack", "CardEffectDamagePerHp", "CardEffectDraw", "CardEffectDrawAdditionalNextTurn", "CardEffectAdjustRoomCapacity", "CardEffectAdjustForgePoints", "CardEffectDiscardHand", "CardEffectRandomDiscard", "CardEffectAddBattleCard", "CardEffectHeal", "CardEffectSacrifice", "CardEffectBuffDamage", "CardEffectDebuffDamage", "CardEffectBuffMaxHealth", "CardEffectDebuffMaxHealth", "CardEffectAddStatusEffect", "CardEffectMultiplyStatusEffect", "CardEffectMultiplyAllPositiveStatusEffects", "CardEffectAdjustAllStatusEffects", "CardEffectAddStatusEffectPerOtherEffect", "CardEffectSpawnMonsterOrAddStatusEffect", "CardEffectFloorRearrange", "CardEffectAddCardUpgradeToUnits",
                     "CardEffectDrawType", "CardEffectAddTempCardUpgradeToNextDrawnCard",
                     "CardEffectAddTempCardUpgradeToUnits", "CardEffectRemoveTempUpgradeFromUnit",
                     "CardEffectAddTempCardUpgradeToCardsInHand", "CardEffectAddPermanentCardUpgradeToCardsInHand" }.Contains(effect.GetEffectStateName())))
@@ -158,6 +158,7 @@ namespace MonsterTrain2Poju.Probe
                             !cardOnlyDrawTarget && !randomDiscardHandTarget && !CardTargetModel.Supports(effect.GetTargetMode().ToString())))
                         interactions.Add("Spell scaling or target filters");
                     string type = EnergyModel.IsNativeEffect(effect.GetEffectStateName()) ? EnergyEffectProbe.Type(effect) :
+                        effect.GetEffectStateName() == "CardEffectAttachTrainRoomAttachment" ? "AttachRoomCapacity" :
                         effect.GetEffectStateName() == "CardEffectAdjustForgePoints" ? ForgePointsModel.Effect :
                         effect.GetEffectStateName() == "CardEffectCopyUnits" ? "CopyUnits" :
                         effect.GetEffectStateName() == "CardEffectBump" ? "Bump" :
@@ -241,6 +242,8 @@ namespace MonsterTrain2Poju.Probe
                         if (fallback == null) interactions.Add("Missing spawn-or-status fallback character.");
                         else spawnFallbackUnit = SpawnTemplate(fallback, true, interactions);
                     }
+                    RoomCapacityAttachmentState? roomAttachment = type == "AttachRoomCapacity"
+                        ? CapacityAttachment(data, effect, interactions) : null;
                     spellEffects.Add(new CardActionEffect(type, effect.GetTargetMode().ToString(), effect.GetParamInt(),
                         type == "SpawnOrStatus" || effect.GetTargetTeamType().HasFlag(Team.Type.Heroes),
                         type != "SpawnOrStatus" && effect.GetTargetTeamType().HasFlag(Team.Type.Monsters), statuses,
@@ -270,7 +273,8 @@ namespace MonsterTrain2Poju.Probe
                         disallowStatusStackModifiers: type == "SpawnOrStatus" && effect.GetDisallowStatusEffectStackModifiers(),
                         statusAdjustmentFilter: type == "AdjustAllStatusEffects" ? (int?)effect.GetAdditionalParamInt() : null,
                         damagePerHpLastAttacker: type == "DamagePerHp" && effect.GetParamBool(),
-                        damagePerHpIncludeArmor: type == "DamagePerHp" && effect.GetParamBool2()));
+                        damagePerHpIncludeArmor: type == "DamagePerHp" && effect.GetParamBool2(),
+                        roomAttachment: roomAttachment));
                 }
             }
             else interactions.Add("Unimplemented play effect " + kind);
@@ -283,6 +287,7 @@ namespace MonsterTrain2Poju.Probe
                 interactions.AddRange(upgrades.SelectMany(upgrade => upgrade.ExternalInteractions));
                 if (data.GetCardType() == CardType.Equipment) { kind = "Equipment"; destination = "Standby"; }
             }
+            if (data.GetCardType() == CardType.TrainRoomAttachment) destination = "Standby";
             return new CardPlayRule(data.GetID(), data.name, data.GetCost(), kind, destination, template,
                 interactions.Distinct().OrderBy(value => value, StringComparer.Ordinal).ToArray(), spellEffects, upgradeInteractions,
                 HandInteractions(data, false), HandInteractions(data, true), data.GetCostType().ToString(), equipment,
@@ -292,6 +297,35 @@ namespace MonsterTrain2Poju.Probe
                 data.GetCardType().ToString(), data.IsUnitAbility() || data.IsRoomAbility(),
                 effects.All(effect => ((ICardEffect)Activator.CreateInstance(typeof(CardEffectBase).Assembly
                     .GetType(effect.GetEffectStateName())!)!).CanPlayInEngineRoom));
+        }
+
+        private static RoomCapacityAttachmentState? CapacityAttachment(CardData card, CardEffectData effect,
+            List<string> interactions)
+        {
+            CardUpgradeData? definition = effect.GetParamCardUpgradeData();
+            if (definition == null || effect.GetAdditionalParamInt() != 0)
+            {
+                interactions.Add("Unmodeled room attachment definition or type");
+                return null;
+            }
+            var upgrade = new CardUpgradeState();
+            upgrade.Setup(definition);
+            RoomModifierData[] modifiers = definition.GetRoomModifierUpgrades().ToArray();
+            bool supported = modifiers.Length == 1 && modifiers[0].GetRoomStateModifierClassName() == "RoomStateCapacityModifier" &&
+                upgrade.GetAttackDamage() == 0 && upgrade.GetAttackDamageBuff() == 0 && upgrade.GetAdditionalHP() == 0 &&
+                upgrade.GetAdditionalUnhealedHP() == 0 && upgrade.GetCostReduction() == 0 && upgrade.GetAdditionalSize() == 0 &&
+                upgrade.GetAdditionalEquipmentLimit() == 0 && upgrade.GetStatusEffectUpgrades().Count == 0 &&
+                upgrade.GetTraitDataUpgrades().Count == 0 && upgrade.GetRemoveTraitUpgrades().Count == 0 &&
+                upgrade.GetTriggerUpgrades().Count == 0 && upgrade.GetCardTriggerUpgrades().Count == 0 &&
+                upgrade.GetUpgradesToRemove().Count == 0 && upgrade.GetFilters().Count == 0 &&
+                upgrade.GetUnitAbilityUpgrade() == null && upgrade.GetRoomAbilityUpgrade() == null && !upgrade.IsUnique();
+            if (!supported)
+            {
+                interactions.Add("Unmodeled mixed room attachment payload");
+                return null;
+            }
+            return new RoomCapacityAttachmentState(card.GetID(), card.name, effect.GetAdditionalParamInt(),
+                modifiers[0].GetParamInt());
         }
 
         private static CardData? Fallback(CharacterData unit) => AllGameManagers.Instance!.GetSaveManager().GetAllGameData()

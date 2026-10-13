@@ -194,7 +194,8 @@ namespace MonsterTrain2Poju.Model
                 countStatusOnlyOnTargets: effect.CountStatusOnlyOnTargets, spawnFallbackUnit: effect.SpawnFallbackUnit,
                 disallowStatusStackModifiers: effect.DisallowStatusStackModifiers,
                 damagePerHpLastAttacker: effect.DamagePerHpLastAttacker,
-                damagePerHpIncludeArmor: effect.DamagePerHpIncludeArmor), Array.Empty<int>());
+                damagePerHpIncludeArmor: effect.DamagePerHpIncludeArmor,
+                roomAttachment: effect.RoomAttachment), Array.Empty<int>());
             return result.Supported && effect.Type == "Sacrifice" && effect.Target == "RandomInRoom" && effect.SacrificeSubtype.Length > 0
                 ? new CardTargets(result.UnitIds.Where(id => train.Rooms.SelectMany(room => room.Units)
                     .Any(unit => unit.Id == id && unit.Subtypes.Contains(effect.SacrificeSubtype))).ToArray()) : result;

@@ -344,7 +344,7 @@ namespace MonsterTrain2Poju.Model
                         effect.CopyHeroStats, effect.ScaleUpgrade, effect.DoNotFullyRemove, effect.SacrificeSubtype, effect.TypedDraw, effect.NextDrawUpgrade, effect.RequiredGold, effect.GoldCostRequired,
                         effect.UseCardTraits, effect.RequireEquipment, effect.UseSelectedRoom, effect.CountStatusOnlyOnTargets,
                         effect.SpawnFallbackUnit, effect.DisallowStatusStackModifiers, effect.StatusAdjustmentFilter,
-                        effect.DamagePerHpLastAttacker, effect.DamagePerHpIncludeArmor);
+                        effect.DamagePerHpLastAttacker, effect.DamagePerHpIncludeArmor, effect.RoomAttachment);
                 }
                 if (effect.Type == "SpawnOrStatus")
                 {
@@ -395,7 +395,7 @@ namespace MonsterTrain2Poju.Model
                 }
                 if (effect.Type == ForgePointsModel.Effect && selected.Preview) continue;
                 UnityRng effectRng = state.Context!.BattleRng;
-                if (effect.Type != "CopyUnits" && effect.Type != "Bump" && effect.Type != "DiscardHand" && effect.Type != "Generate" && effect.Type != "AdjustCapacity" && effect.Type != "ScheduleNextDrawUpgrade" && !AbilityCooldownModel.IsEffect(effect.Type) && !AbilityLifecycleModel.IsEffect(effect.Type)) effect = Sample(effect, ref effectRng);
+                if (effect.Type != "CopyUnits" && effect.Type != "Bump" && effect.Type != "DiscardHand" && effect.Type != "Generate" && effect.Type != "AdjustCapacity" && effect.Type != "AttachRoomCapacity" && effect.Type != "ScheduleNextDrawUpgrade" && !AbilityCooldownModel.IsEffect(effect.Type) && !AbilityLifecycleModel.IsEffect(effect.Type)) effect = Sample(effect, ref effectRng);
                 state = WithContext(state, state.Context.WithBattleRng(effectRng));
                 int damageAttackerId = selfUnitId;
                 int damageOwnerCardId = sourceCardId;
@@ -532,6 +532,12 @@ namespace MonsterTrain2Poju.Model
                     RoomCapacityResult capacity = RoomCapacityModel.Apply(state.Context!, roomIndex, effect, sourceCardId);
                     if (!capacity.Supported) return UnsupportedTrain(capacity.UnsupportedReason!);
                     state = WithContext(state, capacity.Context!); continue;
+                }
+                if (effect.Type == "AttachRoomCapacity")
+                {
+                    RoomCapacityResult attachment = RoomCapacityModel.Attach(state.Context!, roomIndex, effect.RoomAttachment!);
+                    if (!attachment.Supported) return UnsupportedTrain(attachment.UnsupportedReason!);
+                    state = WithContext(state, attachment.Context!); continue;
                 }
                 if (effect.Type == "DrawNextTurn")
                 {
@@ -1200,7 +1206,7 @@ namespace MonsterTrain2Poju.Model
             {
                 string? filterError = effect.Target == "Pyre" ? null : effect.Filters?.Validate();
                 if (filterError != null) return filterError;
-                if (effect.Range != null && effect.Type != "CopyUnits" && effect.Type != "Bump" && effect.Type != "DiscardHand" && effect.Type != "RandomDiscard" && effect.Type != "Generate" && effect.Type != "AdjustCapacity" && effect.Type != "ScheduleNextDrawUpgrade" &&
+                if (effect.Range != null && effect.Type != "CopyUnits" && effect.Type != "Bump" && effect.Type != "DiscardHand" && effect.Type != "RandomDiscard" && effect.Type != "Generate" && effect.Type != "AdjustCapacity" && effect.Type != "AttachRoomCapacity" && effect.Type != "ScheduleNextDrawUpgrade" &&
                     !AbilityLifecycleModel.IsEffect(effect.Type))
                 {
                     if (effect.Type == "AdjustAllStatusEffects") return "Status adjustment effects use a fixed integer value, not an integer range.";
@@ -1259,6 +1265,14 @@ namespace MonsterTrain2Poju.Model
                 }
                 if (effect.Type == "AdjustCapacity")
                 {
+                    string? capacityError = RoomCapacityModel.Validate(source.Context);
+                    if (capacityError != null) return capacityError;
+                    continue;
+                }
+                if (effect.Type == "AttachRoomCapacity")
+                {
+                    if (effect.RoomAttachment == null || effect.RoomAttachment.AttachmentType != 0)
+                        return "Missing supported primary capacity attachment definition.";
                     string? capacityError = RoomCapacityModel.Validate(source.Context);
                     if (capacityError != null) return capacityError;
                     continue;
@@ -1366,6 +1380,7 @@ namespace MonsterTrain2Poju.Model
             if (effect.Type == "RewardGold") return context != null && (pyreAlive ?? context.EnergyState?.PyreAlive) == true &&
                 (effect.Value >= 0 || effect.GoldCostRequired == false || context.Gold >= unchecked(-effect.Value));
             if (effect.Type == "AdjustCapacity") return !preview && !bossDead && RoomCapacityModel.Test(room, effect);
+            if (effect.Type == "AttachRoomCapacity") return !preview && !bossDead && RoomCapacityModel.TestAttachment(room, effect);
             if (effect.Type == ForgePointsModel.Effect) return ForgePointsModel.Test(pyreAlive ?? context?.EnergyState?.PyreAlive);
             if (EnergyModel.IsEffect(effect.Type)) return !preview && !bossDead && EnergyModel.Test(context!, effect.Type);
             if (preview && (effect.Type == "Draw" || effect.Type == "DrawType" || effect.Type == "ScheduleNextDrawUpgrade" || effect.Type == "DrawNextTurn" || effect.Type == "DiscardHand" || effect.Type == "RandomDiscard" || effect.Type == "Generate")) return false;
@@ -1488,7 +1503,7 @@ namespace MonsterTrain2Poju.Model
                 effect.DoNotFullyRemove, effect.SacrificeSubtype, effect.TypedDraw, effect.NextDrawUpgrade, effect.RequiredGold, effect.GoldCostRequired,
                 effect.UseCardTraits, effect.RequireEquipment, effect.UseSelectedRoom, effect.CountStatusOnlyOnTargets,
                 effect.SpawnFallbackUnit, effect.DisallowStatusStackModifiers, effect.StatusAdjustmentFilter,
-                effect.DamagePerHpLastAttacker, effect.DamagePerHpIncludeArmor);
+                effect.DamagePerHpLastAttacker, effect.DamagePerHpIncludeArmor, effect.RoomAttachment);
         }
         private static int TestCount(TrainCombatState state, CardActionEffect effect, CardTargets targets)
         {

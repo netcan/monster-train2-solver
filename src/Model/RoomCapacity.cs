@@ -4,6 +4,16 @@ using System.Linq;
 
 namespace MonsterTrain2Poju.Model
 {
+    public sealed class RoomCapacityAttachmentState
+    {
+        public string DataId { get; }
+        public string AssetKey { get; }
+        public int AttachmentType { get; }
+        public int CapacityDelta { get; }
+        public RoomCapacityAttachmentState(string dataId, string assetKey, int attachmentType, int capacityDelta)
+        { DataId = dataId; AssetKey = assetKey; AttachmentType = attachmentType; CapacityDelta = capacityDelta; }
+    }
+
     public sealed class RoomCapacityState
     {
         public int RoomIndex { get; }
@@ -11,8 +21,11 @@ namespace MonsterTrain2Poju.Model
         public int EnemyMaximum { get; }
         public bool IsPyre { get; }
         public int? Corruption { get; }
-        public RoomCapacityState(int roomIndex, int playerMaximum, int enemyMaximum, bool isPyre, int? corruption = null)
-        { RoomIndex = roomIndex; PlayerMaximum = playerMaximum; EnemyMaximum = enemyMaximum; IsPyre = isPyre; Corruption = corruption; }
+        public IReadOnlyList<RoomCapacityAttachmentState>? Attachments { get; }
+        public RoomCapacityState(int roomIndex, int playerMaximum, int enemyMaximum, bool isPyre, int? corruption = null,
+            IReadOnlyList<RoomCapacityAttachmentState>? attachments = null)
+        { RoomIndex = roomIndex; PlayerMaximum = playerMaximum; EnemyMaximum = enemyMaximum; IsPyre = isPyre; Corruption = corruption;
+            Attachments = attachments == null ? null : Array.AsReadOnly(attachments.ToArray()); }
     }
     public sealed class ScalingCapacityTrait
     {
@@ -36,7 +49,9 @@ namespace MonsterTrain2Poju.Model
         {
             if (context?.RoomCapacities == null) return "Missing captured room capacity state.";
             return context.RoomCapacities.Any(room => room.RoomIndex < 0 || room.PlayerMaximum < 0 || room.EnemyMaximum < 0 || room.Corruption < 0) ||
-                context.RoomCapacities.Select(room => room.RoomIndex).Distinct().Count() != context.RoomCapacities.Count
+                context.RoomCapacities.Select(room => room.RoomIndex).Distinct().Count() != context.RoomCapacities.Count ||
+                context.RoomCapacities.Any(room => room.Attachments?.Any(attachment => string.IsNullOrEmpty(attachment.DataId) ||
+                    string.IsNullOrEmpty(attachment.AssetKey) || attachment.AttachmentType != 0) == true)
                 ? "Invalid room capacity state." : null;
         }
         public static int? Maximum(CombatContext? context, int room, CombatTeam team) =>
@@ -44,6 +59,33 @@ namespace MonsterTrain2Poju.Model
                 ? team == CombatTeam.Player ? capacity.PlayerMaximum : capacity.EnemyMaximum : (int?)null;
         public static bool Test(RoomCombatState? room, CardActionEffect effect) => room != null &&
             Test(room.Context, room.RoomIndex, room.Units.Any(unit => unit.Team == CombatTeam.Enemy), effect.OnlyIfNoEnemies);
+
+        public static bool TestAttachment(RoomCombatState? room, CardActionEffect effect)
+        {
+            if (room == null || room.Preview || effect.RoomAttachment?.AttachmentType != 0) return false;
+            RoomCapacityState? capacity = room.Context?.RoomCapacities?.FirstOrDefault(item => item.RoomIndex == room.RoomIndex);
+            return capacity?.IsPyre == false && capacity.Attachments != null;
+        }
+
+        public static RoomCapacityResult Attach(CombatContext context, int roomIndex, RoomCapacityAttachmentState attachment)
+        {
+            string? error = Validate(context);
+            if (error != null) return new RoomCapacityResult(null, 0, error);
+            RoomCapacityState? selected = context.RoomCapacities!.FirstOrDefault(room => room.RoomIndex == roomIndex);
+            if (selected == null || selected.IsPyre || selected.Attachments == null || attachment.AttachmentType != 0)
+                return new RoomCapacityResult(null, 0, "Invalid capacity attachment target or type.");
+            RoomCapacityAttachmentState[] attachments = selected.Attachments?.ToArray() ?? Array.Empty<RoomCapacityAttachmentState>();
+            RoomCapacityAttachmentState? previous = attachments.FirstOrDefault(item => item.AttachmentType == 0);
+            if (previous != null)
+                attachments = attachments.Where(item => !ReferenceEquals(item, previous)).ToArray();
+            int maximum = selected.PlayerMaximum;
+            if (previous != null) maximum = AdjustedMaximum(maximum, unchecked(-previous.CapacityDelta));
+            maximum = AdjustedMaximum(maximum, attachment.CapacityDelta);
+            var changed = new RoomCapacityState(roomIndex, maximum, selected.EnemyMaximum, selected.IsPyre,
+                selected.Corruption, attachments.Concat(new[] { attachment }).ToArray());
+            return new RoomCapacityResult(context.WithRoomCapacities(context.RoomCapacities!
+                .Select(room => room.RoomIndex == roomIndex ? changed : room).ToArray()), attachment.CapacityDelta);
+        }
         internal static bool Test(CombatContext? context, int room, bool enemiesPresent, bool onlyIfNoEnemies) =>
             context?.RoomCapacities?.FirstOrDefault(item => item.RoomIndex == room)?.IsPyre == false && (!onlyIfNoEnemies || !enemiesPresent);
         public static int AdjustedMaximum(int maximum, int amount)
@@ -73,7 +115,8 @@ namespace MonsterTrain2Poju.Model
             bool enemy = effect.AllowEnemy && !effect.AllowPlayer;
             var changed = new RoomCapacityState(roomIndex,
                 enemy ? selected.PlayerMaximum : AdjustedMaximum(selected.PlayerMaximum, amount),
-                enemy ? AdjustedMaximum(selected.EnemyMaximum, amount) : selected.EnemyMaximum, selected.IsPyre, selected.Corruption);
+                enemy ? AdjustedMaximum(selected.EnemyMaximum, amount) : selected.EnemyMaximum, selected.IsPyre,
+                selected.Corruption, selected.Attachments);
             return new RoomCapacityResult(context.WithRoomCapacities(context.RoomCapacities!
                 .Select(room => room.RoomIndex == roomIndex ? changed : room).ToArray()), amount);
         }

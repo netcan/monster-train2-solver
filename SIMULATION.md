@@ -1,10 +1,31 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-13): 252 binary archives, including 221
+Current accepted inventory (2026-10-13): 253 binary archives, including 222
 full battles and 31 component calibrations. Unchanged original relic evidence
 covers 68/224 catalog entries (30.36%); see
 [the owner evidence table](tests/fixtures/relic-coverage.md). Whole-battle
 coverage and the optimal solver remain in progress.
+
+### Pure room capacity attachment
+
+`full-battle-room-capacity-attachment.mt2f` verifies the unchanged native
+`IncreaseRoomCapacity` attachment in a complete battle. The capacity rises from
+5 to 9, the attachment remains active on its floor, and the card routes to
+`Standby`. The muted Instant run wins with 52 room stages, 13 card cycles, 14
+train phases, 11 spawns, seven EndTurns and one card play. Capture failures,
+mismatches, unsupported transitions and pending records are zero. Independent
+replay matches all recorded transitions and the one-play/seven-turn policy in
+16 parallel branches. This mechanism fixture does not add an original relic
+owner.
+
+The schema-139 archive is 21,259 bytes with 3,052 unique nodes and SHA-256
+`ab9df0a218eb253025b46384faed92bc6e5a4cd3e1351d21a5fd0c8ed3b36f96`; it has no
+JSON source or companion.
+
+```powershell
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -RoomCapacityAttachment -GameSpeed Instant
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-room-capacity-attachment.mt2f
+```
 
 ### Original Forge Points relic
 

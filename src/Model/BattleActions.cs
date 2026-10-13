@@ -49,6 +49,7 @@ namespace MonsterTrain2Poju.Model
         public int? StatusAdjustmentFilter { get; }
         public bool DamagePerHpLastAttacker { get; }
         public bool DamagePerHpIncludeArmor { get; }
+        public RoomCapacityAttachmentState? RoomAttachment { get; }
         public CardActionEffect(string type, string target, int value, bool allowEnemy, bool allowPlayer, IReadOnlyList<CombatStatus> statuses,
             CardUpgradeModifier? upgrade = null, string lifetime = "", CardEffectTests? tests = null, CardEffectRange? range = null, CardTargetFilters? filters = null,
             CardGenerationRule? generation = null, bool onlyIfNoEnemies = false, bool? cooldownParameter = null,
@@ -58,7 +59,8 @@ namespace MonsterTrain2Poju.Model
             bool useCardTraits = false, bool requireEquipment = false, bool useSelectedRoom = false,
             bool countStatusOnlyOnTargets = false, CombatUnit? spawnFallbackUnit = null,
             bool disallowStatusStackModifiers = false, int? statusAdjustmentFilter = null,
-            bool damagePerHpLastAttacker = false, bool damagePerHpIncludeArmor = false)
+            bool damagePerHpLastAttacker = false, bool damagePerHpIncludeArmor = false,
+            RoomCapacityAttachmentState? roomAttachment = null)
         { Type = type; Target = target; Value = value; AllowEnemy = allowEnemy; AllowPlayer = allowPlayer; Statuses = Array.AsReadOnly(statuses.ToArray());
             Upgrade = upgrade; Lifetime = lifetime; Tests = tests; Range = range; Filters = filters; Generation = generation; OnlyIfNoEnemies = onlyIfNoEnemies;
             CooldownParameter = cooldownParameter; AbilityChange = abilityChange; CopyHeroStats = copyHeroStats; ScaleUpgrade = scaleUpgrade;
@@ -67,7 +69,8 @@ namespace MonsterTrain2Poju.Model
             UseCardTraits = useCardTraits; RequireEquipment = requireEquipment; UseSelectedRoom = useSelectedRoom;
             CountStatusOnlyOnTargets = countStatusOnlyOnTargets; SpawnFallbackUnit = spawnFallbackUnit;
             DisallowStatusStackModifiers = disallowStatusStackModifiers; StatusAdjustmentFilter = statusAdjustmentFilter;
-            DamagePerHpLastAttacker = damagePerHpLastAttacker; DamagePerHpIncludeArmor = damagePerHpIncludeArmor; }
+            DamagePerHpLastAttacker = damagePerHpLastAttacker; DamagePerHpIncludeArmor = damagePerHpIncludeArmor;
+            RoomAttachment = roomAttachment; }
     }
     public sealed class RoomPlayRule
     {
@@ -83,6 +86,8 @@ namespace MonsterTrain2Poju.Model
             EnemyCapacity = enemyCapacity; }
         internal RoomPlayRule WithEnabled(bool enabled) => new(RoomIndex, PlayerCapacity, PlayerSlots, enabled,
             SummonBlocked, IsPyre, EnemyCapacity);
+        internal RoomPlayRule WithCapacities(int playerCapacity, int enemyCapacity) => new(RoomIndex, playerCapacity,
+            PlayerSlots, Enabled, SummonBlocked, IsPyre, enemyCapacity);
     }
 
     // Rules copied from definitions at the root, including reachable generated card definitions.
@@ -145,6 +150,11 @@ namespace MonsterTrain2Poju.Model
             UnitCopyCatalog? unitCopyCatalog = null)
         { Rooms = Array.AsReadOnly(rooms.ToArray()); Cards = Array.AsReadOnly(cards.ToArray()); StatusRules = Array.AsReadOnly((statusRules ?? Array.Empty<CombatStatus>()).ToArray()); UnitCopyCatalog = unitCopyCatalog; }
         internal BattlePlayRules WithRooms(IReadOnlyList<RoomPlayRule> rooms) => new(rooms, Cards, StatusRules, UnitCopyCatalog);
+        internal BattlePlayRules WithCapacities(IReadOnlyList<RoomCapacityState> capacities) => WithRooms(Rooms.Select(room =>
+        {
+            RoomCapacityState? capacity = capacities.FirstOrDefault(item => item.RoomIndex == room.RoomIndex);
+            return capacity == null ? room : room.WithCapacities(capacity.PlayerMaximum, capacity.EnemyMaximum);
+        }).ToArray());
     }
 
     public sealed class PlayCardAction
@@ -643,6 +653,7 @@ namespace MonsterTrain2Poju.Model
             spawn = new EnemySpawnState(train, spawn.Waves, spawn.SelectedGroups, spawn.Phase, spawn.Looping, spawn.Rng,
                 train.Context?.NextUnitId ?? nextUnitId, spawn.Treasures, spawn.TreasuresRemaining, spawn.TreasureEnabled, spawn.FirstTreasureTurn,
                 spawn.FirstTreasureRoom, spawn.Turn, spawn.ExternalInteractions, spawn.CanonicalDecisionReferences);
+            if (context.RoomCapacities != null) outputPlayRules = outputPlayRules.WithCapacities(context.RoomCapacities);
             return new BattleActionResult(new BattleTurnState(spawn, context.EnergyState == null ? source.Energy - paidCost : context.QueryFrame!.Energy!.Value, source.EnergyPerTurn,
                 source.DrawPerTurn, context.QueryFrame?.ForgePoints ?? source.ForgePoints, source.DragonsHoard, source.MoonPhase,
                 source.RngStreams.Select(stream => new BattleRngStream(stream.Name, stream.Seed,

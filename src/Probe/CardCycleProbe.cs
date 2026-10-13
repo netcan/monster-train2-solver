@@ -70,7 +70,7 @@ namespace MonsterTrain2Poju.Probe
                 RoomState room = rooms.GetRoom(index);
                 var units = new List<CharacterState>();
                 room.AddCharactersToList(units, Team.Type.Heroes | Team.Type.Monsters);
-                if (room.Attachments.Count > 0 ||
+                if (!RoomCapacityProbe.SupportsAttachments(room) ||
                     units.Any(unit => unit.GetRoomStateModifiers().Any(modifier => modifier is not RoomStateSelfDamagePerMagicPowerModifier)))
                     interactions.Add("Room card-manager modifiers");
             }

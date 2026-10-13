@@ -29,7 +29,7 @@ The default command checks the full curated inventory. For routine changes, run
 the dedicated checks for the new and directly affected scenarios; run the full
 inventory at completed milestones and before delivery.
 
-Current inventory is 252 archives: 221 accepted battles and 31 component
+Current inventory is 253 archives: 222 accepted battles and 31 component
 calibrations. `full-battle-companion-bump.mt2f` covers a paired Relentless
 companion Boss refusal, its attempted-ascension callback and the survivor's
 terminal-death handoff. `full-battle-relic-card-status-upgrades.mt2f` verifies a native
@@ -46,6 +46,12 @@ battle with all 62 room stages matched.
 `full-battle-original-forge-points-relic.mt2f` verifies unchanged `HerzalsAnvil`
 adds one point to positive Forge adjustments; independent action/room/turn
 replay and exact owner ablation pass.
+`full-battle-room-capacity-attachment.mt2f` verifies native
+`IncreaseRoomCapacity`: the played card remains active on its floor, raises
+capacity from 5 to 9, and routes to `Standby`. The muted Instant battle has zero
+capture failures, mismatches, unsupported transitions and pending records;
+independent replay matches 52 room stages and seven EndTurns. This is card and
+room mechanism coverage, not original relic-owner evidence.
 `full-battle-spawn-or-status.mt2f` covers fallback birth and existing-unit
 branches of `CardEffectSpawnMonsterOrAddStatusEffect` across two native skill
 activations.
@@ -3258,11 +3264,24 @@ decisions and 128 states, with serial and parallel results equal.
 
 The binary archive is 34,323 bytes with 5,558 unique nodes and SHA-256
 `5df2094729c61edfd97c47cb9b80d92ef0b24f5308e8cef4c3201a0eb49c58e8`; it has no
-JSON companion. The inventory is now 252 archives: 221 battles and 31 component
+JSON companion. The inventory is now 253 archives: 222 battles and 31 component
 calibrations. Full-inventory replay remains deferred.
 
 ```powershell
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-random-discard.mt2f
 dotnet run --project src/ModelChecks -c Release -- --native-actions-only tests/fixtures/full-battle-random-discard.mt2f
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-random-discard.mt2f
+```
+
+### Pure room capacity attachment (schema 139)
+
+The binary archive has 21,259 bytes, 3,052 unique nodes and SHA-256
+`ab9df0a218eb253025b46384faed92bc6e5a4cd3e1351d21a5fd0c8ed3b36f96`. It has no
+JSON source or companion. Native evidence confirms the capacity change from 5 to
+9, one active attachment with the expected card ID, and successful full-battle
+completion. Independent replay matches all 52 room stages, 13 card cycles, 14
+train phases, 11 spawns, seven EndTurns and the single card action.
+
+```powershell
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-room-capacity-attachment.mt2f
 ```

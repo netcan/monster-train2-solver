@@ -382,7 +382,8 @@ namespace MonsterTrain2Poju.Model
                 effect.UseCardTraits, effect.RequireEquipment, effect.UseSelectedRoom, effect.CountStatusOnlyOnTargets,
                 effect.SpawnFallbackUnit, effect.DisallowStatusStackModifiers,
                 damagePerHpLastAttacker: effect.DamagePerHpLastAttacker,
-                damagePerHpIncludeArmor: effect.DamagePerHpIncludeArmor)).ToArray();
+                damagePerHpIncludeArmor: effect.DamagePerHpIncludeArmor,
+                roomAttachment: effect.RoomAttachment)).ToArray();
             string destination = rule.Destination;
             if (destination == "Discard" && instance.MaskDescriptor != null &&
                 CardBranchMaskModel.Resolve(instance).Traits.Any(trait => trait is "CardTraitSelfPurge" or "CardTraitEphemeral"))

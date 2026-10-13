@@ -13,8 +13,40 @@ namespace MonsterTrain2Poju.Probe
         {
             RoomState room = rooms.GetRoom(index);
             return new RoomCapacityState(index, room.GetCapacityInfo(Team.Type.Monsters).max,
-                room.GetCapacityInfo(Team.Type.Heroes).max, room.GetIsPyreRoom(), room.GetCurrentCorruption());
+                room.GetCapacityInfo(Team.Type.Heroes).max, room.GetIsPyreRoom(), room.GetCurrentCorruption(),
+                CaptureAttachments(room));
         }).ToArray();
+
+        internal static bool SupportsAttachments(RoomState room) => CaptureAttachments(room) != null;
+
+        private static RoomCapacityAttachmentState[]? CaptureAttachments(RoomState room)
+        {
+            var result = new List<RoomCapacityAttachmentState>();
+            foreach (TrainRoomAttachmentState attachment in room.Attachments)
+            {
+                if (!attachment.IsActive || (int)attachment.AttachType != 0 || attachment.CardState == null ||
+                    attachment.UpgradeStates.Count == 0) return null;
+                int delta = 0;
+                foreach (var (state, definition) in attachment.UpgradeStates)
+                {
+                    var capacityModifiers = definition.GetRoomModifierUpgrades();
+                    bool supported = capacityModifiers.Count == 1 && capacityModifiers[0].GetRoomStateModifierClassName() == "RoomStateCapacityModifier" &&
+                        state.GetAttackDamage() == 0 && state.GetAttackDamageBuff() == 0 && state.GetAdditionalHP() == 0 &&
+                        state.GetAdditionalUnhealedHP() == 0 && state.GetCostReduction() == 0 && state.GetAdditionalSize() == 0 &&
+                        state.GetAdditionalEquipmentLimit() == 0 && state.GetStatusEffectUpgrades().Count == 0 &&
+                        state.GetTraitDataUpgrades().Count == 0 && state.GetRemoveTraitUpgrades().Count == 0 &&
+                        state.GetTriggerUpgrades().Count == 0 && state.GetCardTriggerUpgrades().Count == 0 &&
+                        state.GetUpgradesToRemove().Count == 0 && state.GetFilters().Count == 0 &&
+                        state.GetUnitAbilityUpgrade() == null && state.GetRoomAbilityUpgrade() == null && !state.IsUnique();
+                    if (!supported) return null;
+                    delta = unchecked(delta + capacityModifiers[0].GetParamInt());
+                }
+                string dataId = attachment.CardState.GetCardDataID();
+                string assetKey = AllGameManagers.Instance!.GetSaveManager().GetAllGameData().FindCardData(dataId)!.name;
+                result.Add(new RoomCapacityAttachmentState(dataId, assetKey, (int)attachment.AttachType, delta));
+            }
+            return result.ToArray();
+        }
         internal static ScalingCapacityTrait[]? Traits(CardState card)
         {
             ScalingCapacityTrait[] traits = card.GetTraitStates().OfType<CardTraitScalingAdjustCapacity>().Select(trait =>

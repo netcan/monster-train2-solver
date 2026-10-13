@@ -208,7 +208,8 @@ namespace MonsterTrain2Poju.Model
                 Action.UseCardTraits, Action.RequireEquipment, Action.UseSelectedRoom, Action.CountStatusOnlyOnTargets,
                 Action.SpawnFallbackUnit, Action.DisallowStatusStackModifiers,
                 damagePerHpLastAttacker: Action.DamagePerHpLastAttacker,
-                damagePerHpIncludeArmor: Action.DamagePerHpIncludeArmor), DamageStatusMultiplier, StatusScaling, Summon, Enchantment);
+                damagePerHpIncludeArmor: Action.DamagePerHpIncludeArmor,
+                roomAttachment: Action.RoomAttachment), DamageStatusMultiplier, StatusScaling, Summon, Enchantment);
     }
 
     public sealed class CombatTriggerOrigin
