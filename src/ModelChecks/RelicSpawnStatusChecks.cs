@@ -110,16 +110,17 @@ internal static class RelicSpawnStatusChecks
     {
         if (!fixture.TryGetProperty("ModifierScenario", out var scenario) || scenario.GetString() is not
             ("spawn-status-relics" or "spawn-status-relics-clones" or "spawn-status-relics-mixed-cardless-order" or
-                "spawn-status-relics-stealth-waxers" or "spawn-status-relics-team-wide")) return;
+                "spawn-status-relics-stealth-waxers" or "spawn-status-relics-team-wide" or "spawn-status-relics-tuned-gear")) return;
         bool stealthWaxers = scenario.GetString() == "spawn-status-relics-stealth-waxers";
         bool teamWide = scenario.GetString() == "spawn-status-relics-team-wide";
+        bool tunedGear = scenario.GetString() == "spawn-status-relics-tuned-gear";
         bool mixedCardlessOrder = scenario.GetString() == "spawn-status-relics-mixed-cardless-order";
         bool clones = scenario.GetString() is "spawn-status-relics-clones" or "spawn-status-relics-mixed-cardless-order" or "spawn-status-relics-team-wide";
         int schema = fixture.GetProperty("Schema").GetInt32();
-        Require((teamWide ? schema == 144 : stealthWaxers ? schema == 140 : mixedCardlessOrder ? schema == 121 : clones ? schema is 110 or 111 : schema is 109 or 110) && fixture.GetProperty("CaptureFailures").GetInt32() == 0 &&
+        Require((tunedGear ? schema == 155 : teamWide ? schema == 144 : stealthWaxers ? schema == 140 : mixedCardlessOrder ? schema == 121 : clones ? schema is 110 or 111 : schema is 109 or 110) && fixture.GetProperty("CaptureFailures").GetInt32() == 0 &&
             fixture.GetProperty("Pending").GetInt32() == 0, "Incomplete relic spawn status native recording.");
         var records = fixture.GetProperty("RelicSpawnStatuses").EnumerateArray().ToArray();
-        int players = 0, enemies = 0, shieldTriggers = 0, shieldSkips = 0, stealthWaxersWitnesses = 0, teamWideWitnesses = 0;
+        int players = 0, enemies = 0, shieldTriggers = 0, shieldSkips = 0, stealthWaxersWitnesses = 0, teamWideWitnesses = 0, tunedGearWitnesses = 0;
         var turns = new HashSet<int>();
         foreach (var record in records)
         {
@@ -190,6 +191,20 @@ internal static class RelicSpawnStatusChecks
                 }
             }
             CombatUnit actor = after.Units.Single(unit => unit.Id == id);
+            if (tunedGear)
+            {
+                const string tunedGearId = "f12924bc-0600-4de0-ae2a-93534f251eb1";
+                CombatRelicState owner = relics.Single(relic => relic.AssetKey == "TunedGear" && relic.DataId == tunedGearId);
+                RelicSpawnStatus rule = owner.SpawnStatuses!.Single();
+                Require(owner.EffectTypes.SequenceEqual([RelicModel.AddStatusOnSpawn]) && rule.TargetPlayer && !rule.TargetEnemy &&
+                    rule.Statuses.Count == 1 && rule.Statuses[0].Id == "burst" && rule.Statuses[0].Stacks == 1 &&
+                    rule.SubtypeIsNone && rule.Conditions.Count == 0,
+                    "Original TunedGear identity, team, status or filter differs.");
+                CombatUnit beforeActor = before.Units.Single(unit => unit.Id == id);
+                int beforeBurst = beforeActor.Status("burst")?.Stacks ?? 0;
+                int afterBurst = actor.Status("burst")?.Stacks ?? 0;
+                if (beforeActor.Team == CombatTeam.Player && afterBurst == beforeBurst + 1) tunedGearWitnesses++;
+            }
             if (stealthWaxers)
             {
                 const string stealthId = "22f5ff29-69be-4043-9fe1-245392ea3c95";
@@ -258,6 +273,7 @@ internal static class RelicSpawnStatusChecks
         Require(players > 1 && enemies > 0 && shieldTriggers > 0 && shieldSkips > 0 &&
             (!stealthWaxers || stealthWaxersWitnesses > 0) &&
             (!teamWide || teamWideWitnesses > 0) &&
+            (!tunedGear || tunedGearWitnesses > 0) &&
             (clones || shieldTriggers > 1 && turns.Count > 1),
             "Native relic spawn status team/first-unit/turn-reset coverage incomplete.");
         if (clones)
@@ -271,7 +287,7 @@ internal static class RelicSpawnStatusChecks
                 records.Any(record => record.GetProperty("DeferCallbacks").GetBoolean() && record.GetProperty("QueuedAfter").GetArrayLength() > 0),
                 "Native relic birth lacks both settled and deferred queue boundaries.");
         }
-        Console.WriteLine($"NATIVE-RELIC-SPAWN-STATUS-CHECKS PASS: {records.Length} exact birth phases, {players} player/{enemies} enemy births, {shieldTriggers} first-unit triggers/{shieldSkips} skips across {turns.Count} turns, {teamWideWitnesses} team-wide witnesses and 32 isolated branches.");
+        Console.WriteLine($"NATIVE-RELIC-SPAWN-STATUS-CHECKS PASS: {records.Length} exact birth phases, {players} player/{enemies} enemy births, {shieldTriggers} first-unit triggers/{shieldSkips} skips across {turns.Count} turns, {teamWideWitnesses} team-wide witnesses, {tunedGearWitnesses} TunedGear witnesses and 32 isolated branches.");
     }
     private static string Serialize<T>(T value) => JsonSerializer.Serialize(value, ModelJson.Options);
     private static void Require(bool condition, string message) { if (!condition) throw new InvalidDataException(message); }

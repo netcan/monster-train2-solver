@@ -1,8 +1,8 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-13): 271 binary archives, including 240
+Current accepted inventory (2026-10-13): 272 binary archives, including 241
 full battles and 31 component calibrations. Unchanged original relic evidence
-covers 74/224 catalog entries (33.04%); see
+covers 75/224 catalog entries (33.48%); see
 [the owner evidence table](tests/fixtures/relic-coverage.md). Whole-battle
 coverage and the optimal solver remain in progress.
 
@@ -148,6 +148,28 @@ JSON companion.
 ```powershell
 pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -OriginalTeamSpawnStatusRelic -GameSpeed Instant
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-team-spawn-status.mt2f
+```
+
+### Original TunedGear spawn-status relic
+
+`full-battle-spawn-status-relics-tuned-gear.mt2f` captures unchanged original
+`TunedGear` adding one Burst to each player unit on spawn. Five player births
+gain the status; seven enemy births do not. Independent replay matches all 12
+birth phases and 32 branches. Native Burst semantics add one attack per stack
+after ordinary Multistrike attacks, then consume one stack before each Burst
+attack; the focused model checks cover Burst alone, combined with Multistrike,
+and the no-target case. The muted Instant full battle wins with 51 stages, 18
+actions and six EndTurns, with zero capture failures, mismatches, unsupported
+transitions or pending records.
+
+The schema-155 archive is 35,926 bytes with 5,518 unique nodes and SHA-256
+`1b067d579d9786ebb44cb1473b922c46633f94700a0a86297cca52947431b6a9`; it has no
+JSON companion. Original relic evidence is now 75/224 (33.48%).
+
+```powershell
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-spawn-status-relics-tuned-gear.mt2f
+dotnet run --project src/ModelChecks -c Release -- --relic-spawn-status-only tests/fixtures/full-battle-spawn-status-relics-tuned-gear.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-spawn-status-relics-tuned-gear.mt2f
 ```
 
 ### Relic temporary DamageOverflow trait
@@ -8950,4 +8972,25 @@ component calibrations.
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-card-recursion-discard-choice.mt2f
 dotnet run --project src/ModelChecks -c Release -- --card-recursion-discard-only tests/fixtures/full-battle-card-recursion-discard-choice.mt2f
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-card-recursion-discard-choice.mt2f
+```
+
+### TunedGear Burst relic (schema 155)
+
+`full-battle-spawn-status-relics-tuned-gear.mt2f` records the original relic
+adding one Burst to five player units while leaving all seven enemy births
+unchanged. Twelve native birth phases match independent replay, as do the full
+51-stage battle and the 32 focused branches. The model includes Burst's extra
+attack count and per-attack stack consumption after ordinary Multistrike. The
+muted Instant battle wins with 18 actions and six EndTurns; all native failure,
+mismatch, unsupported and pending counters are zero.
+
+The 35,926-byte archive has 5,518 unique nodes and SHA-256
+`1b067d579d9786ebb44cb1473b922c46633f94700a0a86297cca52947431b6a9`; no JSON
+companion is tracked. The inventory is now 272 archives: 241 accepted battles
+and 31 component calibrations. Original relic evidence is 75/224 (33.48%).
+
+```powershell
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-spawn-status-relics-tuned-gear.mt2f
+dotnet run --project src/ModelChecks -c Release -- --relic-spawn-status-only tests/fixtures/full-battle-spawn-status-relics-tuned-gear.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-spawn-status-relics-tuned-gear.mt2f
 ```

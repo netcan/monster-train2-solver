@@ -29,6 +29,22 @@ internal static class RoomCombatChecks
             Unit(2, CombatTeam.Enemy, 0, 9), Unit(3, CombatTeam.Player, 6, 25, multi)));
         Require(retarget.State!.Units.Count == 2 && retarget.State.Units[0].Id == 2 &&
             retarget.State.Units[0].Health == 3, "Multistrike did not retarget after a kill.");
+        var burstStatus = new CombatStatus("burst", 1, 2);
+        CombatUnit burstActor = Unit(2, CombatTeam.Player, 6, 100, burstStatus);
+        RoomCombatResult burstOnly = RoomCombatModel.Exchange(Room(Unit(1, CombatTeam.Enemy, 0, 100), burstActor));
+        Require(burstActor.Attacks == 2 && burstOnly.Supported && burstOnly.Events.Count(item => item.Kind == "Attack" && item.Actor == 2) == 2 &&
+            burstOnly.State!.Units.Single(unit => unit.Id == 1).Health == 88 && burstOnly.State.Units.Single(unit => unit.Id == 2).Status("burst") == null,
+            "Burst did not add and consume one attack.");
+        RoomCombatResult burstWithMultistrike = RoomCombatModel.Exchange(Room(Unit(1, CombatTeam.Enemy, 0, 100),
+            Unit(2, CombatTeam.Player, 6, 100, multi, burstStatus)));
+        Require(burstWithMultistrike.Supported && burstWithMultistrike.Events.Count(item => item.Kind == "Attack" && item.Actor == 2) == 3 &&
+            burstWithMultistrike.State!.Units.Single(unit => unit.Id == 1).Health == 82 &&
+            burstWithMultistrike.State.Units.Single(unit => unit.Id == 2).Status("burst") == null &&
+            burstWithMultistrike.State.Units.Single(unit => unit.Id == 2).Status("multistrike")?.Stacks == 1,
+            "Burst did not add an attack after ordinary Multistrike and consume at the correct threshold.");
+        RoomCombatResult burstWithoutTarget = RoomCombatModel.Exchange(Room(Unit(2, CombatTeam.Player, 6, 100, burstStatus)));
+        Require(burstWithoutTarget.Supported && burstWithoutTarget.State!.Units.Single().Status("burst")?.Stacks == 1,
+            "Burst was consumed without a target for its attack.");
         RoomCombatResult quick = RoomCombatModel.Exchange(Room(Unit(1, CombatTeam.Enemy, 99, 5),
             Unit(2, CombatTeam.Player, 8, 25, new CombatStatus("ambush", 1))));
         Require(quick.State!.Units.Count == 1 && quick.State.Units[0].Health == 25,

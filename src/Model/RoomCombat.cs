@@ -146,8 +146,19 @@ namespace MonsterTrain2Poju.Model
         public int? SacrificeCardId { get; }
         public UnitDeathState? DeathState { get; }
         public UnitBumpRules? BumpRules { get; }
-        public int Attacks => Math.Max(1, Status("multistrike") is CombatStatus multi
-            ? multi.ParamInt + multi.Stacks - 1 : 1);
+        public int Attacks => AttackCount(Statuses);
+
+        internal static int AttackCount(IEnumerable<CombatStatus> statuses)
+        {
+            int attacks = 1;
+            foreach (CombatStatus status in statuses)
+                if (status.Id is "multistrike" or "burst")
+                    attacks = unchecked(attacks + AdditionalAttacks(status));
+            return Math.Max(1, attacks);
+        }
+
+        internal static int AdditionalAttacks(CombatStatus status) =>
+            Math.Max(0, unchecked(status.ParamInt + status.Stacks - 2));
 
         public CombatUnit(int id, string assetKey, CombatTeam team, int baseAttack,
             int health, int maxHealth, bool canAttack, bool isPyre, bool endsBattleOnDeath,
@@ -394,7 +405,7 @@ namespace MonsterTrain2Poju.Model
         }
         private static readonly HashSet<string> KnownStatuses = new HashSet<string>(StringComparer.Ordinal)
         {
-            "armor", "damage shield", "dazed", "stealth", "ambush", "multistrike",
+            "armor", "damage shield", "dazed", "stealth", "ambush", "multistrike", "burst",
             "spikes", "lifesteal", "fragile", "piercing", "immune", "immobile",
             "relentless", "sweep", "sniper", "rooted", "haste", "untouchable", "endless",
             "buff", "debuff", "regen", "poison", "corrupt_poison", "melee weakness", "spell weakness", "silenced", "valor", "pyregel",
@@ -1061,6 +1072,7 @@ namespace MonsterTrain2Poju.Model
                         mageblade + (Source.IsPyre ? getContext?.Invoke()?.Resources?.PyreModifiedBaseAttack ?? 0 : 0)));
                 }
             }
+            internal int Attacks => CombatUnit.AttackCount(Statuses.Values);
 
             internal WorkingUnit(CombatUnit source, int roomIndex, Func<CombatContext?>? getContext = null, Action<string>? reject = null)
             {
@@ -1679,8 +1691,9 @@ namespace MonsterTrain2Poju.Model
                 // Ignored-silence triggers can run while dazed, without restoring this turn's attack.
                 FireTriggers(actor, "OnTurnBegin", canFireTriggers: !dazed);
                 if (!actor.Alive || dazed && !ignoreAttackPrevention || !actor.Source.CanAttack || actor.Attack <= 0) return;
-                int strikes = actor.Statuses.TryGetValue("multistrike", out CombatStatus? multi)
-                    ? Math.Max(1, multi.ParamInt + multi.Stacks - 1) : 1;
+                int multistrikeExtraAttacks = actor.Statuses.TryGetValue("multistrike", out CombatStatus? multi)
+                    ? CombatUnit.AdditionalAttacks(multi) : 0;
+                int strikes = actor.Attacks;
                 for (int strike = 0; strike < strikes && actor.Alive; strike++)
                 {
                     WorkingUnit[] targets = units.Where(unit => unit.Alive && unit.InRoom && unit.Source.Team != actor.Source.Team &&
@@ -1688,7 +1701,12 @@ namespace MonsterTrain2Poju.Model
                     if (targets.Length == 0) continue;
                     bool sweep = actor.Has("sweep");
                     if (!sweep) targets = new[] { actor.Has("sniper") ? targets.Last() : targets.First() };
-                    if (strike > 0) Trigger(actor, "multistrike", 1);
+                    if (strike > 0)
+                    {
+                        Trigger(actor, "multistrike", 1);
+                        if (strike > multistrikeExtraAttacks) RemoveStatus(actor, "burst", 1);
+                        if (unsupportedReason != null) return;
+                    }
                     // Sweep fixes its target list before damage. Each hit has its own native boss-kill preview.
                     if (sweep) runningTriggerQueue = true;
                     foreach (WorkingUnit target in targets)

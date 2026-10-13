@@ -30,8 +30,9 @@ The default command checks the full curated inventory. For routine changes, run
 the dedicated checks for the new and directly affected scenarios; run the full
 inventory at completed milestones and before delivery.
 
-Current inventory is 265 archives: 234 accepted battles and 31 component
-calibrations. The schema-146 `full-battle-original-moon-phase-energy-relic.mt2f`
+Current inventory is 272 archives: 241 accepted battles and 31 component
+calibrations. Original relic evidence is 75/224 (33.48%). The schema-146
+`full-battle-original-moon-phase-energy-relic.mt2f`
 archive adds accepted native evidence for the unchanged `MoonPhaseModifyEmber`
 relic: three Full callbacks add one Ember and notify; three New callbacks are
 no-ops. It also verifies exact moon markers across 24 plays, seven EndTurns and
@@ -3621,4 +3622,24 @@ JSON companion.
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-card-recursion-discard-choice.mt2f
 dotnet run --project src/ModelChecks -c Release -- --card-recursion-discard-only tests/fixtures/full-battle-card-recursion-discard-choice.mt2f
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-card-recursion-discard-choice.mt2f
+```
+
+### TunedGear Burst relic (schema 155)
+
+`full-battle-spawn-status-relics-tuned-gear.mt2f` records the unchanged original
+`TunedGear` granting Burst to five player births; seven enemy births remain
+unaffected. All 12 native birth phases and 32 focused branches match. The
+independent full battle wins with 51 matched stages, 18 actions and six EndTurns,
+with zero capture failures, mismatches, unsupported transitions or pending
+records. Burst adds attacks after ordinary Multistrike and consumes one stack
+before each such attack. Original relic evidence is now 75/224 (33.48%).
+
+The 35,926-byte archive contains 5,518 unique nodes and has SHA-256
+`1b067d579d9786ebb44cb1473b922c46633f94700a0a86297cca52947431b6a9`; no JSON
+companion is tracked.
+
+```powershell
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-spawn-status-relics-tuned-gear.mt2f
+dotnet run --project src/ModelChecks -c Release -- --relic-spawn-status-only tests/fixtures/full-battle-spawn-status-relics-tuned-gear.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-spawn-status-relics-tuned-gear.mt2f
 ```
