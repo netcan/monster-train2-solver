@@ -291,7 +291,7 @@ namespace MonsterTrain2Poju.Model
 
     public static class CardModifierModel
     {
-        internal static IEnumerable<string> UpgradeInteractions(CardUpgradeModifier upgrade) =>
+        public static IEnumerable<string> UpgradeInteractions(CardUpgradeModifier upgrade) =>
             upgrade.Lifecycle?.ReplacedAssets.Count > 0
                 ? upgrade.ExternalInteractions.Where(interaction => interaction != "Upgrade replacements")
                 : upgrade.ExternalInteractions;

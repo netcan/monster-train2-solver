@@ -207,7 +207,7 @@ namespace MonsterTrain2Poju.Probe
                         var upgradeState = new CardUpgradeState();
                         upgradeState.Setup(effect.GetParamCardUpgradeData());
                         upgrade = CardModifierProbe.Upgrade(upgradeState);
-                        interactions.AddRange(upgrade.ExternalInteractions);
+                        interactions.AddRange(CardModifierModel.UpgradeInteractions(upgrade));
                     }
                     if (effect.GetUseIntRange() && !EnergyModel.IsEffect(type) && type != ForgePointsModel.Effect && !new[] { "CopyUnits", "Bump", "Damage", "DamagePerSourceAttack", "DamagePerHp", "Heal", "AddStatus", "MultiplyStatus", "MultiplyAllPositiveStatusEffects", "BuffAttack", "DebuffAttack", "BuffHealth", "DebuffHealth", "Draw", "DrawType", "ScheduleNextDrawUpgrade", "DrawNextTurn", "AdjustCapacity", "DiscardHand", "RandomDiscard", "Generate" }.Contains(type))
                         interactions.Add("Unimplemented integer range consumer " + type);

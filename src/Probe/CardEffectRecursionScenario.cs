@@ -24,12 +24,14 @@ namespace MonsterTrain2Poju.Probe
         private static bool upgradeToHandMode;
         private static bool upgradeChooseMode;
         private static bool upgradeFilterChooseMode;
+        private static bool upgradeReplacementChooseMode;
         private static bool choiceSubmitted;
         internal static bool FilterMode => filterMode;
         internal static bool UpgradeMode => upgradeMode;
         internal static bool UpgradeToHandMode => upgradeToHandMode;
         internal static bool UpgradeChooseMode => upgradeChooseMode;
         internal static bool UpgradeFilterChooseMode => upgradeFilterChooseMode;
+        internal static bool UpgradeReplacementChooseMode => upgradeReplacementChooseMode;
 
         internal static void Prepare(AllGameManagers managers, ManualLogSource log)
         {
@@ -42,7 +44,9 @@ namespace MonsterTrain2Poju.Probe
             upgradeMode = modifierScenario == "card-effect-recursion-upgrade";
             upgradeToHandMode = modifierScenario == "card-effect-recursion-upgrade-hand";
             upgradeFilterChooseMode = modifierScenario == "card-effect-recursion-upgrade-filter-choice";
-            upgradeChooseMode = modifierScenario is "card-effect-recursion-upgrade-choice" or "card-effect-recursion-upgrade-filter-choice";
+            upgradeReplacementChooseMode = modifierScenario == "card-effect-recursion-upgrade-replacement-choice";
+            upgradeChooseMode = modifierScenario is "card-effect-recursion-upgrade-choice" or "card-effect-recursion-upgrade-filter-choice" ||
+                upgradeReplacementChooseMode;
             chooseMode = (modifierScenario is "card-effect-recursion-choice" or "card-effect-recursion-choose-to-hand") || filterMode || upgradeChooseMode;
             choiceSubmitted = false;
             CardManager cards = managers.GetCardManager()!;
@@ -56,6 +60,12 @@ namespace MonsterTrain2Poju.Probe
             {
                 CardUpgradeData temporaryUpgrade = DynamicUpgradeScenario.Upgrade("PojuRecursionDamage", "f2f8c03b-327d-4f3d-8cc1-f9b2a20e4ff6",
                     3, 0, 0, 0, "armor", 0);
+                if (upgradeReplacementChooseMode)
+                {
+                    CardUpgradeData priorUpgrade = DynamicUpgradeScenario.Upgrade("PojuRecursionPriorUpgrade",
+                        "f2f8c03b-327d-4f3d-8cc1-f9b2a20e4ff7", 2, 0, 0, 0, "armor", 0);
+                    temporaryUpgrade.GetUpgradesToRemove().Add(priorUpgrade);
+                }
                 (AccessTools.Field(typeof(CardUpgradeData), "statusEffectUpgrades") ??
                     throw new MissingFieldException(typeof(CardUpgradeData).FullName, "statusEffectUpgrades"))
                     .SetValue(temporaryUpgrade, new List<StatusEffectStackData>());
@@ -122,6 +132,14 @@ namespace MonsterTrain2Poju.Probe
                 CardState added = cards.AddNewCard(candidate, CardPile.HandPile, false, false, animate: false);
                 if (added == null || !cards.GetHand().Contains(added))
                     throw new InvalidOperationException("Recursion fixture could not create StarterFireStarter in hand.");
+                if (upgradeReplacementChooseMode && index == 2)
+                {
+                    CardUpgradeData priorUpgrade = DynamicUpgradeScenario.Upgrade("PojuRecursionPriorUpgrade",
+                        "f2f8c03b-327d-4f3d-8cc1-f9b2a20e4ff7", 2, 0, 0, 0, "armor", 0);
+                    var priorState = new CardUpgradeState(); priorState.Setup(priorUpgrade);
+                    if (!added.ApplyTemporaryUpgrade(priorState, save))
+                        throw new InvalidOperationException("Recursion replacement fixture could not install its prior temporary upgrade.");
+                }
                 var condition = new RemoveFromStandByCondition(() => CardPile.KeepInStandBy);
                 cards.MoveToStandByPile(added, wasPlayed: false, wasExhausted: true, condition: condition);
                 if (added == null || !cards.IsCardInExhaustPile(added))
@@ -142,7 +160,8 @@ namespace MonsterTrain2Poju.Probe
             }
             if (upgradeToHandMode && cards.GetBelowHandSize())
                 throw new InvalidOperationException("Recursion fixture failed to fill the hand.");
-            string selection = upgradeFilterChooseMode ? "ChooseToDeck+SpellFilter+TemporaryUpgrade" :
+            string selection = upgradeReplacementChooseMode ? "ChooseToDeck+TemporaryUpgradeReplacement" :
+                upgradeFilterChooseMode ? "ChooseToDeck+SpellFilter+TemporaryUpgrade" :
                 filterMode ? "ChooseToDeck+SpellFilter" :
                 upgradeChooseMode ? "ChooseToDeck+TemporaryUpgrade" :
                 upgradeToHandMode ? "RandomToHandWithUpgrades" :
@@ -151,6 +170,7 @@ namespace MonsterTrain2Poju.Probe
             log.LogInfo("CARD-RECURSION-PREPARED WurmkinEtchings exhaustedSpellCopies=" + (filterMode ? 5 : 6) +
                 (filterMode ? " excludedCandidates=1 totalCandidates=6" : string.Empty) + " selection=" +
                 selection + (upgradeMode || upgradeToHandMode || upgradeChooseMode ? " temporaryUpgrade=+3Damage" : string.Empty) +
+                (upgradeReplacementChooseMode ? " replaces=PojuRecursionPriorUpgrade" : string.Empty) +
                 (upgradeToHandMode ? " requiresRoomInHand=True disallowOverflowToDrawPile=True hand=" +
                     cards.GetHand().Count + "/" + cards.GetMaxHandSize() + " handFillers=" + handFillers : string.Empty) +
                 " selectedCard=" + selectedCardInstanceId);

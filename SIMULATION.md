@@ -1,6 +1,6 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-13): 269 binary archives, including 238
+Current accepted inventory (2026-10-13): 270 binary archives, including 239
 full battles and 31 component calibrations. Unchanged original relic evidence
 covers 74/224 catalog entries (33.04%); see
 [the owner evidence table](tests/fixtures/relic-coverage.md). Whole-battle
@@ -46,9 +46,13 @@ JSON companion. Pure checks also cover random-to-hand, Eaten restoration and
 Battle RNG. ChooseToHand and ChooseToDeck now branch on one eligible card without
 consuming Battle RNG. Controlled native calibrations below verify each mode's
 destination and the full-battle replay. Captured native card filters now use
-branch-owned card mask metadata when enumerating candidates. Recursion upgrades
-and source piles other than Exhaust/Eaten remain explicitly unsupported;
-random-to-hand hand-space requirements also remain unsupported.
+branch-owned card mask metadata when enumerating candidates. Temporary upgrades
+are modeled for random-to-deck, random-to-hand-with-upgrades, chosen and filtered
+chosen recursion, including replacement by upgrade AssetKey. Source piles other
+than Exhaust/Eaten and uncalibrated upgrade interactions such as traits, triggers
+and abilities remain unsupported. The native `RequiresRoomInHand` gate for
+upgraded recursion is calibrated; it checks eligible pile counts rather than
+free hand slots.
 
 ```powershell
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-card-recursion.mt2f
@@ -8879,25 +8883,42 @@ archive is 36,331 bytes with 6,207 unique nodes and SHA-256
 `1a4056a0e372146d01bbb91a65c629e133cdcde003464a565a2639e3630650da`; it has no
 JSON companion.
 
-The curated inventory is now 269 archives: 238 full battles and 31 component
-calibrations. Random hand-space requirements and recursion upgrades with other
-filters, replacements, traits, or triggers still need native calibration.
+The schema-153 `full-battle-card-recursion-upgrade-replacement-choice.mt2f`
+captures a chosen recursion where the selected card already has temporary +2
+Damage. Native application of the +3 Damage upgrade removes the earlier
+temporary upgrade with the same AssetKey. Search emits all six legal choices;
+only the branch selecting that card performs the replacement, with Battle RNG
+unchanged. The muted Instant battle has 63 matched stages, 22 actions and seven
+EndTurns, with zero capture failures, mismatches, unsupported transitions or
+pending records. Replay matches, and the 128-state search is equal in serial and
+parallel runs. The archive is 36,279 bytes with 6,195 unique nodes and SHA-256
+`4647d131b3156b7222dbc08ab9065f0f60a432299656f29d5a048f4c8deb35cb`; it has no
+JSON companion.
+
+The curated inventory is now 270 archives: 239 full battles and 31 component
+calibrations. Source piles other than Exhaust/Eaten and recursion upgrades that
+change traits, triggers, abilities or other uncalibrated behavior still need
+native calibration.
 
 ```powershell
 pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -CardRecursionUpgrade -GameSpeed Instant
 pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -CardRecursionUpgradeToHand -GameSpeed Instant
 pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -CardRecursionUpgradeChoose -GameSpeed Instant
 pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -CardRecursionUpgradeFilterChoose -GameSpeed Instant
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -CardRecursionUpgradeReplacementChoose -GameSpeed Instant
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-card-recursion-upgrade.mt2f
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-card-recursion-upgrade-hand.mt2f
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-card-recursion-upgrade-choice.mt2f
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-card-recursion-upgrade-filter-choice.mt2f
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-card-recursion-upgrade-replacement-choice.mt2f
 dotnet run --project src/ModelChecks -c Release -- --card-recursion-upgrade-only tests/fixtures/full-battle-card-recursion-upgrade.mt2f
 dotnet run --project src/ModelChecks -c Release -- --card-recursion-upgrade-only tests/fixtures/full-battle-card-recursion-upgrade-hand.mt2f
 dotnet run --project src/ModelChecks -c Release -- --card-recursion-upgrade-only tests/fixtures/full-battle-card-recursion-upgrade-choice.mt2f
 dotnet run --project src/ModelChecks -c Release -- --card-recursion-upgrade-only tests/fixtures/full-battle-card-recursion-upgrade-filter-choice.mt2f
+dotnet run --project src/ModelChecks -c Release -- --card-recursion-upgrade-only tests/fixtures/full-battle-card-recursion-upgrade-replacement-choice.mt2f
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-card-recursion-upgrade.mt2f
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-card-recursion-upgrade-hand.mt2f
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-card-recursion-upgrade-choice.mt2f
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-card-recursion-upgrade-filter-choice.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-card-recursion-upgrade-replacement-choice.mt2f
 ```

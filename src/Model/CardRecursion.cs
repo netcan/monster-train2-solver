@@ -161,6 +161,22 @@ namespace MonsterTrain2Poju.Model
                     if (card.ExhaustState != null && card.MaskDescriptor == null)
                         return new CardRecursionResult(null, null, null, "Card recursion upgrade cannot refresh traits without branch-owned card mask metadata.");
                     CardModifiers temporary = UnitModifierModel.Add(card.Temporary, effect.Upgrade);
+                    if (!ReferenceEquals(temporary, card.Temporary))
+                    {
+                        // Native ApplyTemporaryUpgrade adds first, then removes the first upgrade matching each asset key.
+                        foreach (string asset in effect.Upgrade.Lifecycle?.ReplacedAssets ?? Array.Empty<string>())
+                        {
+                            List<CardUpgradeModifier> upgrades = temporary.Upgrades.ToList();
+                            CardUpgradeModifier? replaced = upgrades.FirstOrDefault(item => item.AssetKey == asset);
+                            if (replaced == null) continue;
+                            int removeIndex = replaced.DataId.Length == 0 ? upgrades.IndexOf(replaced) :
+                                upgrades.FindIndex(item => item.DataId == replaced.DataId);
+                            if (removeIndex < 0) continue;
+                            upgrades.RemoveAt(removeIndex);
+                            temporary = new CardModifiers(temporary.Offsets, upgrades, temporary.PersistentHealth,
+                                temporary.ExternalInteractions);
+                        }
+                    }
                     changedCards.Add(card.WithModifiers(card.Permanent, temporary));
                 }
             }
@@ -203,8 +219,8 @@ namespace MonsterTrain2Poju.Model
                 return "Random-to-hand-with-upgrades recursion requires its temporary card-upgrade definition.";
             if (rule.HasUpgrade != (effect.Upgrade != null))
                 return "Card recursion requires its temporary card-upgrade definition.";
-            if (effect.Upgrade?.ExternalInteractions.Count > 0)
-                return string.Join("; ", effect.Upgrade.ExternalInteractions);
+            if (effect.Upgrade != null && CardModifierModel.UpgradeInteractions(effect.Upgrade).Any())
+                return string.Join("; ", CardModifierModel.UpgradeInteractions(effect.Upgrade).Distinct());
             if (effect.Target != "Exhaust" && effect.Target != "Eaten")
                 return "Unmodeled card-recursion source pile " + effect.Target + ".";
             if (otherPiles == null || !otherPiles.Any(pile => pile.Name == (effect.Target == "Exhaust" ? "Exhausted" : "Eaten")))
