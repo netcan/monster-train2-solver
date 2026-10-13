@@ -93,6 +93,38 @@ internal static class RoomCombatChecks
                 new CombatStatus("regen", 3, 1, removeStackAtEnd: true))));
         Require(regen.State!.Units[1].Health == 17 && regen.State.Units[1].Statuses[0].Stacks == 2,
             "Regeneration and decay order differed.");
+        var burnout = new CombatTrigger("OnBurnout", false, false, false, 1, Array.Empty<CombatEffect>(), skipDuringDeployment: false);
+        var death = new CombatTrigger("OnDeath", false, false, false, 1, Array.Empty<CombatEffect>());
+        CombatUnit ephemeralUnit = new(3, "ephemeral-unit", CombatTeam.Player, 0, 4, 4, true, false, false,
+            [new CombatStatus("ephemeral", 1, removeWhenTriggered: true)], [burnout, death],
+            deathState: new UnitDeathState(false, false, true, isSacrifice: false, statisticsListenerOnce: true,
+                isDespawned: false, isDestroyed: false));
+        RoomCombatResult burnedOut = RoomCombatModel.Resolve(Room(ephemeralUnit));
+        Require(burnedOut.Supported && burnedOut.State!.Units.Count == 0 &&
+            burnedOut.Dispatches.Select(item => item.Kind).SequenceEqual(["OnBurnout", "OnDeath"]) &&
+            burnedOut.Events.Any(item => item.Kind == "Death" && item.Target == ephemeralUnit.Id),
+            $"Ephemeral did not run OnBurnout before its sacrifice death: supported={burnedOut.Supported}, " +
+            $"outcome={burnedOut.Outcome}, units={string.Join(',', burnedOut.State?.Units.Select(item => item.Id) ?? [])}, " +
+            $"triggers={string.Join(',', burnedOut.Dispatches.Select(item => item.Kind))}, " +
+            $"events={string.Join(',', burnedOut.Events.Select(item => item.Kind))}, reason={burnedOut.UnsupportedReason}");
+        RoomCombatResult layeredEphemeral = RoomCombatModel.Resolve(Room(Unit(4, CombatTeam.Player, 0, 4,
+            new CombatStatus("ephemeral", 2, removeWhenTriggered: true))));
+        Require(layeredEphemeral.Supported && layeredEphemeral.State!.Units.Single().Status("ephemeral")?.Stacks == 1,
+            "Ephemeral did not consume one stack per post-combat trigger.");
+        CombatUnit poisonedEphemeral = new(5, "poisoned-ephemeral", CombatTeam.Player, 0, 1, 1, true, false, false,
+            [new CombatStatus("poison", 1, 1), new CombatStatus("ephemeral", 1, removeWhenTriggered: true)], [burnout]);
+        RoomCombatResult poisonDeath = RoomCombatModel.Resolve(Room(poisonedEphemeral));
+        Require(poisonDeath.Supported && !poisonDeath.Dispatches.Any(item => item.Kind == "OnBurnout"),
+            "A unit killed by poison still triggered Ephemeral.");
+        CombatUnit undyingEphemeral = new(6, "undying-ephemeral", CombatTeam.Player, 0, 4, 4, true, false, false,
+            [new CombatStatus("undying", 1), new CombatStatus("ephemeral", 1, removeWhenTriggered: true)],
+            [new CombatTrigger("OnReanimated", false, false, false, 1, Array.Empty<CombatEffect>(), skipDuringDeployment: false), death]);
+        RoomCombatResult revivedEphemeral = RoomCombatModel.Resolve(Room(undyingEphemeral));
+        CombatUnit revivedUnit = revivedEphemeral.State!.Units.Single();
+        Require(revivedEphemeral.Supported && revivedUnit.Health == 1 && revivedUnit.Status("undying") == null &&
+            revivedUnit.Status("ephemeral")?.Stacks == 1 && revivedEphemeral.Dispatches.Any(item => item.Kind == "OnReanimated") &&
+            revivedEphemeral.Dispatches.Any(item => item.Kind == "OnDeath" && item.ParamInt == 1),
+            "Undying did not revive an ephemeral unit and restore one Ephemeral stack.");
         Require(!RoomCombatModel.Resolve(Room(Unit(1, CombatTeam.Enemy, 1, 5,
             new CombatStatus("unknown", 1)), player)).Supported, "An unmodeled status was silently accepted.");
         Require(!RoomCombatModel.Resolve(new RoomCombatState(0, false, new[] { enemy, player },

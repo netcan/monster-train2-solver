@@ -398,7 +398,7 @@ namespace MonsterTrain2Poju.Model
             "spikes", "lifesteal", "fragile", "piercing", "immune", "immobile",
             "relentless", "sweep", "sniper", "rooted", "haste", "untouchable", "endless",
             "buff", "debuff", "regen", "poison", "corrupt_poison", "melee weakness", "spell weakness", "silenced", "valor", "pyregel",
-            "heal multiplier", "heal immunity", "cooldown", "unit_ability", "unit_ability_available", "horde", "cardless", "undying", "purify", "mageblade", "titanskin", "duality"
+            "heal multiplier", "heal immunity", "cooldown", "unit_ability", "unit_ability_available", "horde", "cardless", "undying", "ephemeral", "purify", "mageblade", "titanskin", "duality"
         };
         internal static bool KnowsStatus(string id) => KnownStatuses.Contains(id);
 
@@ -877,7 +877,7 @@ namespace MonsterTrain2Poju.Model
                     if (trigger.Origin != null && (trigger.Origin.EquipmentCardId < 0 ||
                         trigger.Origin.IsFromEquipment != (trigger.Origin.EquipmentCardId > 0)))
                         return "Invalid equipment trigger origin.";
-                    if (trigger.Kind != "OnDeath" && trigger.Kind != "OnReanimated" && trigger.Kind != "PostCombat" && trigger.Kind != "PostCombatHealing" && trigger.Kind != "OnHeal" &&
+                    if (trigger.Kind != "OnDeath" && trigger.Kind != "OnReanimated" && trigger.Kind != "OnBurnout" && trigger.Kind != "PostCombat" && trigger.Kind != "PostCombatHealing" && trigger.Kind != "OnHeal" &&
                         trigger.Kind != "CardMonsterPlayed" && trigger.Kind != "CardSpellPlayed" && trigger.Kind != "OnOwnAbilityActivated" && trigger.Kind != "OnPreOwnAbilityActivated" &&
                         trigger.Kind != "OnEquipmentAdded" && trigger.Kind != "OnEquipmentAddedToAny" && trigger.Kind != "OnEquipmentRemoved" &&
                         trigger.Kind != "OnSpawn" && trigger.Kind != "OnUnscaledSpawn" && trigger.Kind != "OnSpawnNotFromCard" && trigger.Kind != "AfterSpawnEnchant" &&
@@ -2245,7 +2245,57 @@ namespace MonsterTrain2Poju.Model
                         Trigger(unit, "poison", 1);
                         Damage(null, unit, amount, "Poison");
                     }
+                    if (unit.Alive && unit.Has("ephemeral") && Active(unit.Statuses["ephemeral"]))
+                        TriggerEphemeral(unit);
+                    if (unsupportedReason != null) return;
                 }
+            }
+
+            private void TriggerEphemeral(WorkingUnit unit)
+            {
+                CombatStatus ephemeral = unit.Statuses["ephemeral"];
+                Trigger(unit, "ephemeral", 1);
+                if (unsupportedReason != null || !unit.Alive || unit.Count("ephemeral") > 0) return;
+                if (unit.Count("undying") > 0)
+                {
+                    ReviveFromEphemeral(unit);
+                    if (unsupportedReason != null) return;
+                    RoomCombatResult reapplied = StatusApplicationModel.ApplyRetained(CurrentRoom(), unit.Source.Id,
+                        ephemeral.WithStacks(1), 0);
+                    if (!reapplied.Supported) { unsupportedReason = reapplied.UnsupportedReason; return; }
+                    context = reapplied.State!.Context;
+                    foreach (CombatUnit changed in reapplied.State.Units)
+                        units.First(actor => actor.Source.Id == changed.Id).Apply(changed);
+                    foreach (QueuedCharacterTrigger callback in reapplied.PendingCallbacks) QueueCallback(callback);
+                    DrainLocalTriggerQueue();
+                    return;
+                }
+
+                FireTriggers(unit, "OnBurnout");
+                if (unsupportedReason != null || !unit.Alive) return;
+                unit.Apply(unit.Freeze().WithSacrifice(0));
+                unit.Health = 0;
+                if (!TryRevive(null, unit, 0)) Death(null, unit, 0, sacrifice: true);
+            }
+
+            private void ReviveFromEphemeral(WorkingUnit target)
+            {
+                target.Health = 1;
+                target.DeathFinished = false;
+                RemoveStatus(target, "undying", 1);
+                if (target.Source.DeathState is UnitDeathState death)
+                    target.Apply(target.Freeze().WithDeathState(new UnitDeathState(false, death.IsBeingRemoved,
+                        death.HasStatisticsListener, death.PendingStatisticsCardId, isSacrifice: false,
+                        statisticsListenerOnce: death.StatisticsListenerOnce, isDespawned: death.IsDespawned,
+                        isDestroyed: death.IsDestroyed)));
+                CombatUnit revived = target.Freeze();
+                foreach (string stage in HarvestModel.Stages(revived))
+                {
+                    HarvestModel.Stage(stage, out string kind, out CombatTeam team);
+                    QueueHarvestGroup(revived, kind, team, HarvestModel.Count(revived, kind));
+                }
+                QueueCallback(new QueuedCharacterTrigger(source.RoomIndex, revived, "OnReanimated"));
+                QueueCallback(new QueuedCharacterTrigger(source.RoomIndex, revived, "OnDeath", paramInt: 1));
             }
 
             private void AlmostPostRoomCombat()
