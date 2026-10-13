@@ -203,6 +203,9 @@ namespace MonsterTrain2Poju.Model
                 prior == null ? null : DrainBirthQueue);
             if (!born.Supported) return Fail(born.Result.UnsupportedReason!);
             unitId = born.UnitId; if (!Accept(born.Result)) return Fail(born.Result.UnsupportedReason!);
+            if (original.SpawnerCardId > 0 && state.Context?.QueryFrame?.SelectedRoomIndex != null)
+                state = CardSpellModel.WithContext(state, state.Context.WithQueryFrame(
+                    state.Context.QueryFrame.With(selectedRoomIndex: roomIndex)));
             Mark("after-birth");
             if (Get(unitId) == null) return Fail("Cloning an actor removed during birth requires retained birth-object transitions.");
             original = Get(sourceId);
@@ -287,8 +290,14 @@ namespace MonsterTrain2Poju.Model
             var dispatched = input.Dispatched.ToList();
             RoomOutcome outcome = input.Outcome; string? error = null;
             bool okay = RoomCombatModel.DrainCharacterQueue(queue, callback =>
-                { dispatched.Add(UnitCloneCallback.From(callback)); return Accept(RoomCombatModel.ApplyQueuedCharacterTrigger(
-                    state.Rooms.Single(room => room.RoomIndex == callback.RoomIndex), callback, queue.Add)); },
+                {
+                    dispatched.Add(UnitCloneCallback.From(callback));
+                    if (input.UnitId == 0 && state.Context?.QueryFrame?.SelectedRoomIndex != null)
+                        state = CardSpellModel.WithContext(state, state.Context.WithQueryFrame(
+                            state.Context.QueryFrame.With(selectedRoomIndex: callback.RoomIndex)));
+                    return Accept(RoomCombatModel.ApplyQueuedCharacterTrigger(
+                        state.Rooms.Single(room => room.RoomIndex == callback.RoomIndex), callback, queue.Add));
+                },
                 callback => Accept(RoomCombatModel.SettleQueuedSpawnerAndCenter(state.Rooms.Single(room => room.RoomIndex == callback.RoomIndex), callback.Unit)),
                 () =>
                 {
