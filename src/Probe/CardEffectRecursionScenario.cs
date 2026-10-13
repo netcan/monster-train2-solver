@@ -27,7 +27,8 @@ namespace MonsterTrain2Poju.Probe
             candidateLogged = false;
             recursionCardInstanceId = null;
             selectedCardInstanceId = 0;
-            chooseMode = Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == "card-effect-recursion-choice";
+            string modifierScenario = Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") ?? string.Empty;
+            chooseMode = modifierScenario is "card-effect-recursion-choice" or "card-effect-recursion-choose-to-hand";
             choiceSubmitted = false;
             CardManager cards = managers.GetCardManager()!;
             var gameData = managers.GetSaveManager().GetAllGameData();
@@ -40,7 +41,9 @@ namespace MonsterTrain2Poju.Probe
                 FieldInfo selectionMode = typeof(CardEffectData).GetField("targetCardSelectionMode",
                     BindingFlags.Instance | BindingFlags.NonPublic) ??
                     throw new MissingFieldException(typeof(CardEffectData).FullName, "targetCardSelectionMode");
-                selectionMode.SetValue(recursionEffect, CardEffectData.CardSelectionMode.ChooseToDeck);
+                CardEffectData.CardSelectionMode mode = modifierScenario == "card-effect-recursion-choose-to-hand"
+                    ? CardEffectData.CardSelectionMode.ChooseToHand : CardEffectData.CardSelectionMode.ChooseToDeck;
+                selectionMode.SetValue(recursionEffect, mode);
             }
             CardData exhaustedSpell = gameData.FindCardData(ExhaustedSpellId) ??
                 throw new InvalidOperationException("Recursion fixture requires native StarterFireStarter.");
@@ -61,7 +64,8 @@ namespace MonsterTrain2Poju.Probe
                 throw new InvalidOperationException("Recursion fixture could not place WurmkinEtchings in hand.");
             recursionCardInstanceId = FullBattleTrace.Active!.CardId(played);
             log.LogInfo("CARD-RECURSION-PREPARED WurmkinEtchings exhaustedSpellCopies=6 selection=" +
-                (chooseMode ? "ChooseToDeck" : "RandomToDeck") + " selectedCard=" + selectedCardInstanceId);
+                (modifierScenario == "card-effect-recursion-choose-to-hand" ? "ChooseToHand" :
+                    chooseMode ? "ChooseToDeck" : "RandomToDeck") + " selectedCard=" + selectedCardInstanceId);
         }
 
         internal static bool IsScenarioPrelude(PlayCardAction action) => recursionCardInstanceId == action.CardInstanceId;

@@ -5,7 +5,7 @@ using MonsterTrain2Poju.Model;
 
 internal static class CardRecursionChecks
 {
-    public static void SearchChoices(FixtureValue fixture)
+    public static void SearchChoices(FixtureValue fixture, string selectionMode)
     {
         const string recursionCardId = "0e50f7bc-c7c4-46b5-98a4-33d32194d7b8";
         BattleTurnState? captured = null;
@@ -27,7 +27,7 @@ internal static class CardRecursionChecks
         CardActionEffect[] effects = original.Effects.Select(effect => effect.Type != "Recursion" ? effect :
             new CardActionEffect(effect.Type, effect.Target, effect.Value, effect.AllowEnemy, effect.AllowPlayer,
                 effect.Statuses, effect.Upgrade, effect.Lifetime, effect.Tests, effect.Range, effect.Filters,
-                recursion: new CardRecursionRule("ChooseToDeck", effect.Recursion!.CardType, effect.Recursion.Subtype,
+                recursion: new CardRecursionRule(selectionMode, effect.Recursion!.CardType, effect.Recursion.Subtype,
                     false, false, effect.Recursion.HasCardFilter, effect.Recursion.HasUpgrade))).ToArray();
         var selectedRule = new CardPlayRule(original.DataId, original.AssetKey, original.Cost, original.Effect,
             original.Destination, original.SpawnUnit, original.ExternalInteractions, effects, original.UpgradeInteractions,
@@ -56,12 +56,17 @@ internal static class CardRecursionChecks
         {
             int selectedId = branch.Action.RecursionSelections.Single().CardInstanceIds.Single();
             CombatContext result = branch.Result.State!.Spawn.Train.Context!;
-            Require(result.Cards.Draw.Any(card => card.InstanceId == selectedId) &&
+            bool destinationMatches = selectionMode == "ChooseToDeck"
+                ? result.Cards.Draw.Any(card => card.InstanceId == selectedId) &&
+                    !result.Cards.Hand.Any(card => card.InstanceId == selectedId)
+                : selectionMode == "ChooseToHand" && result.Cards.Hand.Any(card => card.InstanceId == selectedId) &&
+                    !result.Cards.Draw.Any(card => card.InstanceId == selectedId);
+            Require(destinationMatches &&
                 !result.OtherPiles!.Single(pile => pile.Name == "Exhausted").Cards.Any(card => card.InstanceId == selectedId) &&
                 result.BattleRng.Equals(choiceRoot.Spawn.Train.Context.BattleRng),
-                "A chosen recursion action did not restore exactly its selected card without consuming Battle RNG.");
+                "A chosen recursion action did not restore exactly its selected card to the correct pile without consuming Battle RNG.");
         }
-        Console.WriteLine($"CARD-RECURSION-CHOICE-CHECKS PASS: {branches.Length} distinct choice actions from a native decision state.");
+        Console.WriteLine($"CARD-RECURSION-CHOICE-CHECKS PASS: {selectionMode}, {branches.Length} distinct choice actions from a native decision state.");
     }
 
     public static void Run()

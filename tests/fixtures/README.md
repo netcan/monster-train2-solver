@@ -30,7 +30,7 @@ The default command checks the full curated inventory. For routine changes, run
 the dedicated checks for the new and directly affected scenarios; run the full
 inventory at completed milestones and before delivery.
 
-Current inventory is 263 archives: 232 accepted battles and 31 component
+Current inventory is 264 archives: 233 accepted battles and 31 component
 calibrations. The schema-146 `full-battle-original-moon-phase-energy-relic.mt2f`
 archive adds accepted native evidence for the unchanged `MoonPhaseModifyEmber`
 relic: three Full callbacks add one Ember and notify; three New callbacks are
@@ -100,6 +100,23 @@ JSON companion.
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-card-recursion-choice.mt2f
 dotnet run --project src/ModelChecks -c Release -- --card-recursion-choice-only tests/fixtures/full-battle-card-recursion-choice.mt2f
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-card-recursion-choice.mt2f
+```
+
+`full-battle-card-recursion-choose-to-hand.mt2f` is a controlled native
+calibration of `WurmkinEtchings` with mode `ChooseToHand`. Six exhausted Spells
+are eligible; the native selection screen chooses instance 3 and returns it to
+Hand. The battle wins with 63 matched stages, 22 actions and seven EndTurns,
+with zero capture or replay failures. Action replay includes the native
+`TimesDrawn` and `AnyCardDrawn` updates; search emits six distinct choices and
+preserves Battle RNG. The schema-103 archive is 36,391 bytes with 6,227 unique
+nodes and SHA-256
+`8db0d52a13c6c28aae41de5821593c7295a3b5ae606d77db069a32be31beca28`; it has no
+JSON companion.
+
+```powershell
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-card-recursion-choose-to-hand.mt2f
+dotnet run --project src/ModelChecks -c Release -- --card-recursion-hand-choice-only tests/fixtures/full-battle-card-recursion-choose-to-hand.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-card-recursion-choose-to-hand.mt2f
 ```
 
 `full-battle-relic-card-negative-unhealed.mt2f` (schema 145)

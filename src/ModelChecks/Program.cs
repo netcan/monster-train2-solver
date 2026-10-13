@@ -56,7 +56,14 @@ if (args.Length == 1 && args[0] == "--card-recursion-pure")
 if (args.Length == 2 && args[0] == "--card-recursion-choice-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
-    CardRecursionChecks.SearchChoices(fixture.RootElement);
+    CardRecursionChecks.SearchChoices(fixture.RootElement, "ChooseToDeck");
+    return;
+}
+
+if (args.Length == 2 && args[0] == "--card-recursion-hand-choice-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    CardRecursionChecks.SearchChoices(fixture.RootElement, "ChooseToHand");
     return;
 }
 

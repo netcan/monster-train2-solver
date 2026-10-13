@@ -358,8 +358,12 @@ namespace MonsterTrain2Poju.Model
                     CardRecursionResult recursion = CardRecursionModel.Apply(state.Context!.Cards, piles,
                         state.Context.BattleRng, effect, definitions, sourceCardId, state.Context.MaxHandSize, selectedCardIds);
                     if (!recursion.Supported) return UnsupportedTrain(recursion.UnsupportedReason!);
+                    BattleStatistics? statistics = state.Context.Statistics;
+                    foreach (int cardId in recursion.RestoredCardIds.Where(id =>
+                        recursion.Cards!.Hand.Any(card => card.InstanceId == id)))
+                        statistics = statistics?.Increment(cardId, "TimesDrawn");
                     CombatContext changed = state.Context.WithCards(recursion.Cards!).WithOtherPiles(recursion.OtherPiles!)
-                        .WithBattleRng(recursion.BattleRng!.Value);
+                        .WithBattleRng(recursion.BattleRng!.Value).WithStatistics(statistics);
                     foreach (int restoredCardId in recursion.RestoredCardIds)
                     {
                         CardInstanceState? restoredCard = changed.FindCard(restoredCardId);

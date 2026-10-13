@@ -1,6 +1,6 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-13): 263 binary archives, including 232
+Current accepted inventory (2026-10-13): 264 binary archives, including 233
 full battles and 31 component calibrations. Unchanged original relic evidence
 covers 74/224 catalog entries (33.04%); see
 [the owner evidence table](tests/fixtures/relic-coverage.md). Whole-battle
@@ -44,10 +44,10 @@ The schema-103 archive is 36,006 bytes with 6,025 unique nodes and SHA-256
 `a1c9997717e630c84e3766efd8bc1ce9ad52e3823e26bb50bdc6644eff67c4a8`; it has no
 JSON companion. Pure checks also cover random-to-hand, Eaten restoration and
 Battle RNG. ChooseToHand and ChooseToDeck now branch on one eligible card without
-consuming Battle RNG. The controlled ChooseToDeck calibration below confirms the
-native selection screen and full-battle replay; ChooseToHand currently has pure
-model coverage. Random-to-hand hand-space requirements, card filters, recursion
-upgrades and source piles other than Exhaust/Eaten remain explicitly unsupported.
+consuming Battle RNG. Controlled native calibrations below verify each mode's
+destination and the full-battle replay. Random-to-hand hand-space requirements,
+card filters, recursion upgrades and source piles other than Exhaust/Eaten remain
+explicitly unsupported.
 
 ```powershell
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-card-recursion.mt2f
@@ -70,6 +70,25 @@ companion is tracked.
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-card-recursion-choice.mt2f
 dotnet run --project src/ModelChecks -c Release -- --card-recursion-choice-only tests/fixtures/full-battle-card-recursion-choice.mt2f
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-card-recursion-choice.mt2f
+```
+
+`full-battle-card-recursion-choose-to-hand.mt2f` uses the same controlled native
+spell with runtime selection mode `ChooseToHand`. Six exhausted Spells are
+eligible; the native screen selects instance 3 and returns it to Hand. The muted
+Instant battle wins with 63 matched stages, 22 card actions and seven EndTurns;
+capture failures, mismatches, unsupported transitions and pending records are
+zero. Independent action replay matches all actions, including the `TimesDrawn`
+and `AnyCardDrawn` updates. Search emits six distinct selection actions from the
+captured decision state, preserves Battle RNG and places the selected instance
+in Hand on each branch. The schema-103 binary is 36,391 bytes with 6,227 unique
+nodes and SHA-256
+`8db0d52a13c6c28aae41de5821593c7295a3b5ae606d77db069a32be31beca28`; no JSON
+companion is tracked.
+
+```powershell
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-card-recursion-choose-to-hand.mt2f
+dotnet run --project src/ModelChecks -c Release -- --card-recursion-hand-choice-only tests/fixtures/full-battle-card-recursion-choose-to-hand.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-card-recursion-choose-to-hand.mt2f
 ```
 
 ### Original MoonPhaseModifyEmber relic
