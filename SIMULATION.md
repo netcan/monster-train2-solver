@@ -8865,21 +8865,37 @@ is 36,151 bytes with 6,180 unique nodes and SHA-256
 `ab01c1b813b8790019c630f88ed03ddb14863296dbd54963700bd9d200a19482`; it has no
 JSON companion.
 
-The curated inventory is now 268 archives: 237 full battles and 31 component
-calibrations. Random hand-space requirements and recursion upgrades with
+The schema-152 `full-battle-card-recursion-upgrade-filter-choice.mt2f` combines
+the Spell-only filter, `ChooseToDeck` and a temporary +3 Damage upgrade. The
+native chooser excludes one Monster from six Exhaust candidates and returns its
+selected Spell with the upgrade. Search emits five legal choices; each branch
+upgrades only its selected card and preserves Battle RNG. The muted Instant
+battle has 63 matched stages, 22 actions and seven EndTurns, with zero capture
+failures, mismatches, unsupported transitions or pending records. Action replay
+matches, and the 128-state search is equal in serial and parallel runs. The
+archive is 36,331 bytes with 6,207 unique nodes and SHA-256
+`1a4056a0e372146d01bbb91a65c629e133cdcde003464a565a2639e3630650da`; it has no
+JSON companion.
+
+The curated inventory is now 269 archives: 238 full battles and 31 component
+calibrations. Random hand-space requirements and recursion upgrades with other
 filters, replacements, traits, or triggers still need native calibration.
 
 ```powershell
 pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -CardRecursionUpgrade -GameSpeed Instant
 pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -CardRecursionUpgradeToHand -GameSpeed Instant
 pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -CardRecursionUpgradeChoose -GameSpeed Instant
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -CardRecursionUpgradeFilterChoose -GameSpeed Instant
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-card-recursion-upgrade.mt2f
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-card-recursion-upgrade-hand.mt2f
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-card-recursion-upgrade-choice.mt2f
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-card-recursion-upgrade-filter-choice.mt2f
 dotnet run --project src/ModelChecks -c Release -- --card-recursion-upgrade-only tests/fixtures/full-battle-card-recursion-upgrade.mt2f
 dotnet run --project src/ModelChecks -c Release -- --card-recursion-upgrade-only tests/fixtures/full-battle-card-recursion-upgrade-hand.mt2f
 dotnet run --project src/ModelChecks -c Release -- --card-recursion-upgrade-only tests/fixtures/full-battle-card-recursion-upgrade-choice.mt2f
+dotnet run --project src/ModelChecks -c Release -- --card-recursion-upgrade-only tests/fixtures/full-battle-card-recursion-upgrade-filter-choice.mt2f
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-card-recursion-upgrade.mt2f
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-card-recursion-upgrade-hand.mt2f
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-card-recursion-upgrade-choice.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-card-recursion-upgrade-filter-choice.mt2f
 ```

@@ -23,11 +23,13 @@ namespace MonsterTrain2Poju.Probe
         private static bool upgradeMode;
         private static bool upgradeToHandMode;
         private static bool upgradeChooseMode;
+        private static bool upgradeFilterChooseMode;
         private static bool choiceSubmitted;
         internal static bool FilterMode => filterMode;
         internal static bool UpgradeMode => upgradeMode;
         internal static bool UpgradeToHandMode => upgradeToHandMode;
         internal static bool UpgradeChooseMode => upgradeChooseMode;
+        internal static bool UpgradeFilterChooseMode => upgradeFilterChooseMode;
 
         internal static void Prepare(AllGameManagers managers, ManualLogSource log)
         {
@@ -36,10 +38,11 @@ namespace MonsterTrain2Poju.Probe
             recursionCardInstanceId = null;
             selectedCardInstanceId = 0;
             string modifierScenario = Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") ?? string.Empty;
-            filterMode = modifierScenario == "card-effect-recursion-filter-choice";
+            filterMode = modifierScenario is "card-effect-recursion-filter-choice" or "card-effect-recursion-upgrade-filter-choice";
             upgradeMode = modifierScenario == "card-effect-recursion-upgrade";
             upgradeToHandMode = modifierScenario == "card-effect-recursion-upgrade-hand";
-            upgradeChooseMode = modifierScenario == "card-effect-recursion-upgrade-choice";
+            upgradeFilterChooseMode = modifierScenario == "card-effect-recursion-upgrade-filter-choice";
+            upgradeChooseMode = modifierScenario is "card-effect-recursion-upgrade-choice" or "card-effect-recursion-upgrade-filter-choice";
             chooseMode = (modifierScenario is "card-effect-recursion-choice" or "card-effect-recursion-choose-to-hand") || filterMode || upgradeChooseMode;
             choiceSubmitted = false;
             CardManager cards = managers.GetCardManager()!;
@@ -118,7 +121,8 @@ namespace MonsterTrain2Poju.Probe
             if (played == null || !cards.GetHand().Contains(played))
                 throw new InvalidOperationException("Recursion fixture could not place WurmkinEtchings in hand.");
             recursionCardInstanceId = FullBattleTrace.Active!.CardId(played);
-            string selection = filterMode ? "ChooseToDeck+SpellFilter" :
+            string selection = upgradeFilterChooseMode ? "ChooseToDeck+SpellFilter+TemporaryUpgrade" :
+                filterMode ? "ChooseToDeck+SpellFilter" :
                 upgradeChooseMode ? "ChooseToDeck+TemporaryUpgrade" :
                 upgradeToHandMode ? "RandomToHandWithUpgrades" :
                 modifierScenario == "card-effect-recursion-choose-to-hand" ? "ChooseToHand" :

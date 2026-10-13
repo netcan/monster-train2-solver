@@ -84,11 +84,13 @@ internal static class CardRecursionChecks
     public static void SearchUpgrade(FixtureValue fixture)
     {
         string scenario = fixture.GetProperty("ModifierScenario").GetString()!;
-        bool chooseToDeck = scenario == "card-effect-recursion-upgrade-choice";
+        bool filteredChoice = scenario == "card-effect-recursion-upgrade-filter-choice";
+        bool chooseToDeck = scenario is "card-effect-recursion-upgrade-choice" or "card-effect-recursion-upgrade-filter-choice";
         bool toHand = scenario == "card-effect-recursion-upgrade-hand";
-        int expectedSchema = chooseToDeck ? 151 : toHand ? 150 : 149;
+        int expectedSchema = filteredChoice ? 152 : chooseToDeck ? 151 : toHand ? 150 : 149;
         Require(fixture.GetProperty("Schema").GetInt32() == expectedSchema &&
-            scenario == (chooseToDeck ? "card-effect-recursion-upgrade-choice" :
+            scenario == (filteredChoice ? "card-effect-recursion-upgrade-filter-choice" :
+                chooseToDeck ? "card-effect-recursion-upgrade-choice" :
                 toHand ? "card-effect-recursion-upgrade-hand" : "card-effect-recursion-upgrade"),
             "The fixture is not the native recursion-upgrade scenario.");
         const string recursionCardId = "0e50f7bc-c7c4-46b5-98a4-33d32194d7b8";
@@ -146,7 +148,7 @@ internal static class CardRecursionChecks
             (!chooseToDeck || actionToPlay.RecursionSelections.Count == 1 &&
                 actionToPlay.RecursionSelections[0].CardInstanceIds.SequenceEqual([returned[0]])),
             "Native recursion did not upgrade exactly the returned Spell or match the chosen card identity.");
-        if (chooseToDeck) SearchChoices(fixture, "ChooseToDeck");
+        if (chooseToDeck) SearchChoices(fixture, "ChooseToDeck", expectedCandidateCount: filteredChoice ? 5 : 6);
         Console.WriteLine($"CARD-RECURSION-UPGRADE-CHECKS PASS: native {(chooseToDeck ? "chosen" : "random")} selection, {(toHand ? "hand" : "draw pile")} destination, temporary +3 Damage, returned-card identity, and untouched candidates.");
     }
 
@@ -222,12 +224,17 @@ internal static class CardRecursionChecks
         CardRecursionResult unsupportedFilter = CardRecursionModel.Apply(cards, piles, cards.Rng, filtered, definitions, 50, 4);
         CardRecursionResult unsupportedHandSpace = CardRecursionModel.Apply(cards, piles, cards.Rng, requiresHandSpace, definitions, 50, 4);
         var recursionUpgrade = new CardUpgradeModifier("recursion-damage", "RecursionDamage",
-            new CardStatModifier(damage: 3), [], false, false, false, 0, 0, []);
+            new CardStatModifier(damage: 3), [], false, false, false, 0, 0, [],
+            maskMetadata: new CardUpgradeMaskMetadata([], false, false, false, false));
+        CardActionEffect filteredChoiceUpgrade = new("Recursion", "Exhaust", 1, false, false, [], recursionUpgrade,
+            recursion: new CardRecursionRule("ChooseToDeck", "Invalid", "", false, false, true, true, spellMask));
         CardActionEffect randomDeckUpgrade = new("Recursion", "Exhaust", 1, false, false, [], recursionUpgrade,
             recursion: new CardRecursionRule("RandomToDeck", "Spell", "", false, false, false, true));
         CardActionEffect chosenDeckUpgrade = new("Recursion", "Exhaust", 1, false, false, [], recursionUpgrade,
             recursion: new CardRecursionRule("ChooseToDeck", "Spell", "", false, false, false, true));
         CardInstanceState[] upgradeRegistry = exhausted.Select(card => CardInstanceState.Empty(card.InstanceId, card.DataId)).ToArray();
+        CardRecursionResult filteredUpgradedDeck = CardRecursionModel.Apply(cards, piles, cards.Rng,
+            filteredChoiceUpgrade, definitions, 50, 4, [3], maskRegistry);
         ShuffleResult<int> expectedUpgradeChoice = cards.Rng.Shuffle([1, 3, 4]);
         CardRecursionResult upgradedDeck = CardRecursionModel.Apply(cards, piles, cards.Rng, randomDeckUpgrade,
             definitions, 50, 4, cardRegistry: upgradeRegistry);
@@ -255,6 +262,10 @@ internal static class CardRecursionChecks
             filteredDeck.Cards!.Draw.Select(card => card.InstanceId).SequenceEqual([20, 3]) &&
             filteredDeck.OtherPiles!.Single(pile => pile.Name == "Exhausted").Cards.Select(card => card.InstanceId)
                 .SequenceEqual([1, 2, 4]) && filteredDeck.BattleRng!.Value.Equals(cards.Rng) &&
+            filteredUpgradedDeck.Supported && filteredUpgradedDeck.RestoredCardIds.SequenceEqual([3]) &&
+            filteredUpgradedDeck.ChangedCards.Single().InstanceId == 3 &&
+            filteredUpgradedDeck.ChangedCards.Single().Temporary.Upgrades.Single().Stats.Damage == 3 &&
+            filteredUpgradedDeck.BattleRng!.Value.Equals(cards.Rng) &&
             missingMaskMetadata.Count == 0 && missingMaskError?.Contains("mask metadata", StringComparison.Ordinal) == true,
             "Choose recursion did not enumerate eligible single-card branches, restore the selected card, or preserve RNG.");
         Require(
