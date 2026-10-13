@@ -159,6 +159,9 @@ namespace MonsterTrain2Poju.Probe
                 Character = effect.GetParamCharacterData()?.GetAssetKey(),
                 CardPool = candidates, HasCardFilter = effect.GetParamCardFilter() != null,
                 HasUpgrade = effect.GetParamCardUpgradeData() != null,
+                CardSelectionMode = effect.GetTargetCardSelectionMode().ToString(),
+                CardType = effect.GetTargetCardType().ToString(),
+                CardSubtype = effect.GetTargetCharacterSubtype().IsNone ? "" : effect.GetTargetCharacterSubtype().Key,
                 AttachmentUpgrade = attachmentUpgrade == null ? null : Upgrade(attachmentUpgrade)
             };
         }

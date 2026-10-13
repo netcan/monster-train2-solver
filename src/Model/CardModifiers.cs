@@ -400,7 +400,7 @@ namespace MonsterTrain2Poju.Model
                 effect.SpawnFallbackUnit, effect.DisallowStatusStackModifiers,
                 damagePerHpLastAttacker: effect.DamagePerHpLastAttacker,
                 damagePerHpIncludeArmor: effect.DamagePerHpIncludeArmor,
-                roomAttachment: effect.RoomAttachment)).ToArray();
+                roomAttachment: effect.RoomAttachment, recursion: effect.Recursion)).ToArray();
             string destination = rule.Destination;
             if (destination == "Discard" && instance.MaskDescriptor != null &&
                 CardBranchMaskModel.Resolve(instance).Traits.Any(trait => trait is "CardTraitSelfPurge" or "CardTraitEphemeral"))

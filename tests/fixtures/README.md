@@ -30,7 +30,7 @@ The default command checks the full curated inventory. For routine changes, run
 the dedicated checks for the new and directly affected scenarios; run the full
 inventory at completed milestones and before delivery.
 
-Current inventory is 261 archives: 230 accepted battles and 31 component
+Current inventory is 262 archives: 231 accepted battles and 31 component
 calibrations. The schema-146 `full-battle-original-moon-phase-energy-relic.mt2f`
 archive adds accepted native evidence for the unchanged `MoonPhaseModifyEmber`
 relic: three Full callbacks add one Ember and notify; three New callbacks are
@@ -69,6 +69,20 @@ companion is tracked.
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-card-effect-kill.mt2f
 dotnet run --project src/ModelChecks -c Release -- --native-actions-only tests/fixtures/full-battle-card-effect-kill.mt2f
 dotnet run --project src/ModelChecks -c Release -- --sacrifice-pure
+```
+
+`full-battle-card-recursion.mt2f` captures `WurmkinEtchings` returning five of
+six exhausted Spells to Draw through `RandomToDeck`. The native battle and
+independent action replay match all 61 stages and 22 actions with zero
+unsupported transitions. The binary is 36,006 bytes, contains 6,025 unique
+nodes and has SHA-256
+`a1c9997717e630c84e3766efd8bc1ce9ad52e3823e26bb50bdc6644eff67c4a8`; no JSON
+companion is tracked.
+
+```powershell
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-card-recursion.mt2f
+dotnet run --project src/ModelChecks -c Release -- --native-actions-only tests/fixtures/full-battle-card-recursion.mt2f
+dotnet run --project src/ModelChecks -c Release -- --card-recursion-pure
 ```
 
 `full-battle-relic-card-negative-unhealed.mt2f` (schema 145)

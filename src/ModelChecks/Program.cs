@@ -47,6 +47,12 @@ if (args.Length == 1 && args[0] == "--card-spells-pure")
     return;
 }
 
+if (args.Length == 1 && args[0] == "--card-recursion-pure")
+{
+    CardRecursionChecks.Run();
+    return;
+}
+
 if (args.Length == 1 && args[0] == "--ephemeral-card-routing-pure")
 {
     CardModifierChecks.Run();
@@ -734,6 +740,7 @@ EndlessReturnChecks.Run();
 DecisionReferenceChecks.Run();
 UnitIdentityChecks.Run();
 CardSpellChecks.Run();
+CardRecursionChecks.Run();
 AttackWithUnitChecks.Run();
 SacrificeChecks.Run();
 RoomSpellChecks.Run();

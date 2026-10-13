@@ -34,7 +34,9 @@ namespace MonsterTrain2Poju.Model
         {
             if (source.ExhaustConditions != null && (source.Name != "Standby" ||
                 source.ExhaustConditions.Select(item => item.CardId).Distinct().Count() != source.ExhaustConditions.Count ||
-                source.ExhaustConditions.Any(item => item.ExhaustedCardId <= 0 || !source.Cards.Any(card => card.InstanceId == item.CardId) ||
+                source.ExhaustConditions.Any(item => (item.KeepInStandBy ? item.ExhaustedCardId.HasValue :
+                        item.ExhaustedCardId.GetValueOrDefault() <= 0) ||
+                    !source.Cards.Any(card => card.InstanceId == item.CardId) ||
                     source.UnitConditions?.Any(binding => binding.CardId == item.CardId) == true ||
                     source.EquipmentConditions?.Any(binding => binding.CardId == item.CardId) == true))) return "Invalid Consume standby conditions.";
             if (source.UnitConditions != null && (source.Name != "Standby" ||

@@ -26,8 +26,9 @@ namespace MonsterTrain2Poju.Model
     {
         public int CardId { get; }
         public int? ExhaustedCardId { get; }
-        public CardExhaustStandbyCondition(int cardId, int? exhaustedCardId)
-        { CardId = cardId; ExhaustedCardId = exhaustedCardId; }
+        public bool KeepInStandBy { get; }
+        public CardExhaustStandbyCondition(int cardId, int? exhaustedCardId, bool keepInStandBy = false)
+        { CardId = cardId; ExhaustedCardId = exhaustedCardId; KeepInStandBy = keepInStandBy; }
     }
     public static class CardExhaustModel
     {
@@ -156,6 +157,7 @@ namespace MonsterTrain2Poju.Model
             CardPileState? standby = context.OtherPiles?.SingleOrDefault(pile => pile.Name == "Standby");
             foreach (CardExhaustStandbyCondition condition in standby?.ExhaustConditions ?? Array.Empty<CardExhaustStandbyCondition>())
             {
+                if (condition.KeepInStandBy) continue;
                 CardToken card = standby!.Cards.Single(item => item.InstanceId == condition.CardId);
                 CardInstanceState? retained = condition.ExhaustedCardId.HasValue ? context.FindCard(condition.ExhaustedCardId.Value) : null;
                 if (condition.ExhaustedCardId.HasValue && retained == null) throw new InvalidOperationException("Missing retained Consume standby card.");

@@ -52,6 +52,7 @@ namespace MonsterTrain2Poju.Model
         public bool DamagePerHpLastAttacker { get; }
         public bool DamagePerHpIncludeArmor { get; }
         public RoomCapacityAttachmentState? RoomAttachment { get; }
+        public CardRecursionRule? Recursion { get; }
         public CardActionEffect(string type, string target, int value, bool allowEnemy, bool allowPlayer, IReadOnlyList<CombatStatus> statuses,
             CardUpgradeModifier? upgrade = null, string lifetime = "", CardEffectTests? tests = null, CardEffectRange? range = null, CardTargetFilters? filters = null,
             CardGenerationRule? generation = null, bool onlyIfNoEnemies = false, bool? cooldownParameter = null,
@@ -62,7 +63,7 @@ namespace MonsterTrain2Poju.Model
             bool countStatusOnlyOnTargets = false, CombatUnit? spawnFallbackUnit = null,
             bool disallowStatusStackModifiers = false, int? statusAdjustmentFilter = null,
             bool damagePerHpLastAttacker = false, bool damagePerHpIncludeArmor = false,
-            RoomCapacityAttachmentState? roomAttachment = null)
+            RoomCapacityAttachmentState? roomAttachment = null, CardRecursionRule? recursion = null)
         { Type = type; Target = target; Value = value; AllowEnemy = allowEnemy; AllowPlayer = allowPlayer; Statuses = Array.AsReadOnly(statuses.ToArray());
             Upgrade = upgrade; Lifetime = lifetime; Tests = tests; Range = range; Filters = filters; Generation = generation; OnlyIfNoEnemies = onlyIfNoEnemies;
             CooldownParameter = cooldownParameter; AbilityChange = abilityChange; CopyHeroStats = copyHeroStats; ScaleUpgrade = scaleUpgrade;
@@ -72,7 +73,25 @@ namespace MonsterTrain2Poju.Model
             CountStatusOnlyOnTargets = countStatusOnlyOnTargets; SpawnFallbackUnit = spawnFallbackUnit;
             DisallowStatusStackModifiers = disallowStatusStackModifiers; StatusAdjustmentFilter = statusAdjustmentFilter;
             DamagePerHpLastAttacker = damagePerHpLastAttacker; DamagePerHpIncludeArmor = damagePerHpIncludeArmor;
-            RoomAttachment = roomAttachment; }
+            RoomAttachment = roomAttachment; Recursion = recursion; }
+    }
+
+    public sealed class CardRecursionRule
+    {
+        public string SelectionMode { get; }
+        public string CardType { get; }
+        public string Subtype { get; }
+        public bool RequiresRoomInHand { get; }
+        public bool DisallowOverflowToDrawPile { get; }
+        public bool HasCardFilter { get; }
+        public bool HasUpgrade { get; }
+        public CardRecursionRule(string selectionMode, string cardType, string subtype,
+            bool requiresRoomInHand, bool disallowOverflowToDrawPile, bool hasCardFilter, bool hasUpgrade)
+        {
+            SelectionMode = selectionMode; CardType = cardType; Subtype = subtype;
+            RequiresRoomInHand = requiresRoomInHand; DisallowOverflowToDrawPile = disallowOverflowToDrawPile;
+            HasCardFilter = hasCardFilter; HasUpgrade = hasUpgrade;
+        }
     }
     public sealed class RoomPlayRule
     {

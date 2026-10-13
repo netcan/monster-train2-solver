@@ -84,7 +84,8 @@ namespace MonsterTrain2Poju.Model
             {
                 CardActionEffect effect = effects[index];
                 if (effect.Tests?.ShouldTest == false) continue;
-                CardTargets targets = Collect(source, roomIndex, effect, last, initial, dropPosition, index, definitions, isTesting: true, selfUnitId: selfUnitId);
+                CardTargets targets = Collect(source, roomIndex, effect, last, initial, dropPosition, index, definitions,
+                    isTesting: true, selfUnitId: selfUnitId, sourceCardId: sourceCardId);
                 if (!targets.Supported) return new SpellCastCheck(false, targets.UnsupportedReason);
                 if (!CardTargetModel.IsRandom(effect.Target))
                 {
@@ -291,7 +292,7 @@ namespace MonsterTrain2Poju.Model
                     return UnsupportedTrain("Room-and-above selection requires uncaptured trigger focus rules.");
                 int collectionRoom = effect.Target == "FrontInRoomAndRoomAbove" ? focusedRoom!.Value : roomIndex;
                 CardTargets targets = Collect(state, collectionRoom, effect, last, initial, dropPosition, index, definitions, isTesting: true,
-                    pendingDeadRooms: pendingDeadRooms, positions: positions, selfUnitId: selfUnitId);
+                    pendingDeadRooms: pendingDeadRooms, positions: positions, selfUnitId: selfUnitId, sourceCardId: sourceCardId);
                 if (!targets.Supported) return UnsupportedTrain(targets.UnsupportedReason!);
                 string? damageTargetError = null;
                 if (!CardTargetModel.IsRandom(effect.Target))
@@ -325,7 +326,7 @@ namespace MonsterTrain2Poju.Model
                     continue;
                 }
                 targets = Collect(state, collectionRoom, effect, last, initial, dropPosition, index, definitions,
-                    pendingDeadRooms: pendingDeadRooms, positions: positions, selfUnitId: selfUnitId);
+                    pendingDeadRooms: pendingDeadRooms, positions: positions, selfUnitId: selfUnitId, sourceCardId: sourceCardId);
                 if (!targets.Supported) return UnsupportedTrain(targets.UnsupportedReason!);
                 damageTargetError = DamagePerHpTargetError(state, effect, targets, selfUnitId);
                 if (damageTargetError != null) return UnsupportedTrain(damageTargetError);
@@ -344,7 +345,24 @@ namespace MonsterTrain2Poju.Model
                         effect.CopyHeroStats, effect.ScaleUpgrade, effect.DoNotFullyRemove, effect.SacrificeSubtype, effect.TypedDraw, effect.NextDrawUpgrade, effect.RequiredGold, effect.GoldCostRequired,
                         effect.UseCardTraits, effect.RequireEquipment, effect.UseSelectedRoom, effect.CountStatusOnlyOnTargets,
                         effect.SpawnFallbackUnit, effect.DisallowStatusStackModifiers, effect.StatusAdjustmentFilter,
-                        effect.DamagePerHpLastAttacker, effect.DamagePerHpIncludeArmor, effect.RoomAttachment);
+                        effect.DamagePerHpLastAttacker, effect.DamagePerHpIncludeArmor, effect.RoomAttachment, effect.Recursion);
+                }
+                if (effect.Type == "Recursion")
+                {
+                    CardRecursionResult recursion = CardRecursionModel.Apply(state.Context!.Cards, piles,
+                        state.Context.BattleRng, effect, definitions, sourceCardId, state.Context.MaxHandSize);
+                    if (!recursion.Supported) return UnsupportedTrain(recursion.UnsupportedReason!);
+                    CombatContext changed = state.Context.WithCards(recursion.Cards!).WithOtherPiles(recursion.OtherPiles!)
+                        .WithBattleRng(recursion.BattleRng!.Value);
+                    foreach (int restoredCardId in recursion.RestoredCardIds)
+                    {
+                        CardInstanceState? restoredCard = changed.FindCard(restoredCardId);
+                        if (restoredCard?.ExhaustState != null)
+                            changed = changed.WithCard(CardExhaustModel.ResetTraits(restoredCard));
+                    }
+                    state = WithContext(state, changed);
+                    piles = recursion.OtherPiles!.ToArray();
+                    continue;
                 }
                 if (effect.Type == "SpawnOrStatus")
                 {
@@ -1228,6 +1246,12 @@ namespace MonsterTrain2Poju.Model
                     if (effect.Target != "Hand" && effect.Target != "Room") return "Unmodeled hand upgrade target collection.";
                     continue;
                 }
+                if (effect.Type == "Recursion")
+                {
+                    string? recursionError = CardRecursionModel.Validate(effect, source.Context.OtherPiles);
+                    if (recursionError != null) return recursionError;
+                    continue;
+                }
                 if (!CardOnlyPileTarget(effect) && !CardTargetModel.Supports(effect.Target)) return "Unimplemented spell targeting " + effect.Target;
                 if (effect.Type == "ScheduleNextDrawUpgrade")
                 {
@@ -1334,8 +1358,15 @@ namespace MonsterTrain2Poju.Model
 
         private static CardTargets Collect(TrainCombatState state, int roomIndex, CardActionEffect effect, IReadOnlyList<int> last,
             CombatUnit? initial, int dropPosition, int index, BattlePlayRules? definitions, bool isTesting = false,
-            IReadOnlyDictionary<int, int>? pendingDeadRooms = null, IReadOnlyDictionary<int, int>? positions = null, int selfUnitId = 0)
+            IReadOnlyDictionary<int, int>? pendingDeadRooms = null, IReadOnlyDictionary<int, int>? positions = null, int selfUnitId = 0,
+            int sourceCardId = 0)
         {
+            if (effect.Type == "Recursion")
+            {
+                IReadOnlyList<int> cardIds = CardRecursionModel.EligibleCards(state.Context!.Cards,
+                    state.Context.OtherPiles, effect, definitions, sourceCardId, out string? error);
+                return new CardTargets(Array.Empty<int>(), error, cardIds: cardIds);
+            }
             if (effect.Type == "SpawnOrStatus")
             {
                 RoomCombatState? room = state.Rooms.FirstOrDefault(item => item.RoomIndex == roomIndex);
@@ -1400,6 +1431,7 @@ namespace MonsterTrain2Poju.Model
                 case "Heal": return effect.Target == "Room" || count > 0;
                 case "Sacrifice": return count > 0;
                 case "Kill": return effect.Tests?.MustHaveValidTargets != true || count > 0;
+                case "Recursion": return count > 0 && effect.Value > 0;
                 case "AddStatus":
                 case "MultiplyStatus": return effect.Tests?.StrictTargets != true && effect.Target != "DropTargetCharacter" || count > 0;
                 case "MultiplyAllPositiveStatusEffects": return effect.Target != "DropTargetCharacter" || count > 0;
@@ -1488,7 +1520,7 @@ namespace MonsterTrain2Poju.Model
 
         private static bool AttackChange(CardActionEffect effect) => effect.Type == "BuffAttack" || effect.Type == "DebuffAttack";
         private static bool CardOnlyPileTarget(CardActionEffect effect) =>
-            effect.Type == "RandomDiscard" && effect.Target == "Hand" || CardOnlyDrawTarget(effect);
+            effect.Type == "RandomDiscard" && effect.Target == "Hand" || effect.Type == "Recursion" || CardOnlyDrawTarget(effect);
         private static bool CardOnlyDrawTarget(CardActionEffect effect) =>
             (effect.Type == "DrawType" || effect.Type == "ScheduleNextDrawUpgrade") &&
             (effect.Target == "DrawPile" || effect.Target == "Hand" || effect.Target == "LastDrawnCard");
@@ -1504,10 +1536,11 @@ namespace MonsterTrain2Poju.Model
                 effect.DoNotFullyRemove, effect.SacrificeSubtype, effect.TypedDraw, effect.NextDrawUpgrade, effect.RequiredGold, effect.GoldCostRequired,
                 effect.UseCardTraits, effect.RequireEquipment, effect.UseSelectedRoom, effect.CountStatusOnlyOnTargets,
                 effect.SpawnFallbackUnit, effect.DisallowStatusStackModifiers, effect.StatusAdjustmentFilter,
-                effect.DamagePerHpLastAttacker, effect.DamagePerHpIncludeArmor, effect.RoomAttachment);
+                effect.DamagePerHpLastAttacker, effect.DamagePerHpIncludeArmor, effect.RoomAttachment, effect.Recursion);
         }
         private static int TestCount(TrainCombatState state, CardActionEffect effect, CardTargets targets)
         {
+            if (effect.Type == "Recursion") return targets.CardIds.Count;
             if (effect.Type == "AdjustAllStatusEffects")
             {
                 if (effect.StatusAdjustmentFilter == 0 && effect.Statuses.Count == 0) return 0;

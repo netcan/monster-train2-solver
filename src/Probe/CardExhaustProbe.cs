@@ -31,7 +31,15 @@ namespace MonsterTrain2Poju.Probe
         {
             if (condition == null) return null;
             var callback = (Delegate)AccessTools.Field(typeof(RemoveFromStandByCondition), "conditionFunction").GetValue(condition);
-            if (!(callback.Target is CardTraitExhaustState trait)) return null;
+            if (!(callback.Target is CardTraitExhaustState trait))
+            {
+                if (!AllGameManagers.Instance!.GetCardManager()!.IsCardInExhaustPile(card)) return null;
+                CardPile location = condition.GetReturnLocation();
+                return location == CardPile.ExhaustedPile
+                    ? new CardExhaustStandbyCondition(cardId(card), cardId(card))
+                    : location == CardPile.KeepInStandBy
+                        ? new CardExhaustStandbyCondition(cardId(card), null, keepInStandBy: true) : null;
+            }
             var exhaustedCard = (CardState?)AccessTools.Field(typeof(CardTraitExhaustState), "exhaustedCard").GetValue(trait);
             if (callback.Method.Name != "StandByCondition") throw new InvalidOperationException("Unmodeled Consume standby callback.");
             return new CardExhaustStandbyCondition(cardId(card), exhaustedCard == null ? null : (int?)cardId(exhaustedCard));

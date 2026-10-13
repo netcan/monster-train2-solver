@@ -7,11 +7,14 @@ namespace MonsterTrain2Poju.Model
     public sealed class CardTargets
     {
         public IReadOnlyList<int> UnitIds { get; }
+        public IReadOnlyList<int> CardIds { get; }
         public string? UnsupportedReason { get; }
         public UnityRng? BattleRng { get; }
         public bool Supported => UnsupportedReason == null;
-        internal CardTargets(IReadOnlyList<int> ids, string? error = null, UnityRng? battleRng = null)
-        { UnitIds = Array.AsReadOnly(ids.ToArray()); UnsupportedReason = error; BattleRng = battleRng; }
+        internal CardTargets(IReadOnlyList<int> ids, string? error = null, UnityRng? battleRng = null,
+            IReadOnlyList<int>? cardIds = null)
+        { UnitIds = Array.AsReadOnly(ids.ToArray()); CardIds = Array.AsReadOnly((cardIds ?? Array.Empty<int>()).ToArray());
+            UnsupportedReason = error; BattleRng = battleRng; }
     }
 
     public static class CardTargetModel
@@ -195,7 +198,7 @@ namespace MonsterTrain2Poju.Model
                 disallowStatusStackModifiers: effect.DisallowStatusStackModifiers,
                 damagePerHpLastAttacker: effect.DamagePerHpLastAttacker,
                 damagePerHpIncludeArmor: effect.DamagePerHpIncludeArmor,
-                roomAttachment: effect.RoomAttachment), Array.Empty<int>());
+                roomAttachment: effect.RoomAttachment, recursion: effect.Recursion), Array.Empty<int>());
             return result.Supported && effect.Type == "Sacrifice" && effect.Target == "RandomInRoom" && effect.SacrificeSubtype.Length > 0
                 ? new CardTargets(result.UnitIds.Where(id => train.Rooms.SelectMany(room => room.Units)
                     .Any(unit => unit.Id == id && unit.Subtypes.Contains(effect.SacrificeSubtype))).ToArray()) : result;

@@ -19,6 +19,7 @@ param(
     [switch] $SacrificeUpgrades,
     [switch] $SacrificeEffects,
     [switch] $CardEffectKill,
+    [switch] $CardRecursion,
     [switch] $HandUpgrades,
     [switch] $TargetedHandUpgrades,
     [switch] $PermanentConsumeHandUpgrades,
@@ -308,6 +309,7 @@ if ($damagePerHpModes.Count -gt 1) { throw 'Choose one DamagePerHp scenario.' }
 if ($DamagePerHpAbility -and $damagePerHpModes.Count -gt 0) { throw 'Choose the unit-ability scenario separately from spell scenarios.' }
 if ($SacrificeEffects) { $Policy = 'units-spells-and-junk' }
 if ($CardEffectKill) { $Policy = 'units-spells-and-junk' }
+if ($CardRecursion) { $Policy = 'units-spells-and-junk'; $BranchCardMasks = $true }
 if ($SpawnOrStatus) { $Policy = 'units-and-junk' }
 if ($AbilityTeleport) { $Policy = 'units-and-junk'; $PhysicalSpawnPoints = $true }
 if ($damagePerHpModes.Count -gt 0) { $Policy = 'units-spells-and-junk' }
@@ -460,6 +462,9 @@ if ($SacrificeEffects) {
 if ($CardEffectKill) {
     $environment['MT2_PROBE_MODIFIERS'] = 'card-effect-kill'
 }
+if ($CardRecursion) {
+    $environment['MT2_PROBE_MODIFIERS'] = 'card-effect-recursion'
+}
 if ($OriginalRelicBatch) {
     $environment['MT2_PROBE_MODIFIERS'] = 'original-relic-batch'
 }
@@ -566,6 +571,10 @@ if ($EquipmentBuff -and ($trace.ModifierScenario -ne 'equipment-buff' -or
 if ($CardEffectKill -and ($trace.ModifierScenario -ne 'card-effect-kill' -or
     -not (Select-String -LiteralPath $unityLog -Pattern 'CARD-EFFECT-KILL-PREPARED native KillRandomUnit' -Quiet))) {
     throw 'CardEffectKill native setup did not run.'
+}
+if ($CardRecursion -and ($trace.ModifierScenario -ne 'card-effect-recursion' -or
+    -not (Select-String -LiteralPath $unityLog -Pattern 'CARD-RECURSION-PREPARED WurmkinEtchings exhaustedSpellCopies=6' -Quiet))) {
+    throw 'Card recursion native setup did not run.'
 }
 if ($SpawnOrStatus -and ($trace.ModifierScenario -ne 'spawn-or-status' -or
     -not (Select-String -LiteralPath $unityLog -Pattern 'ABILITY-ACTIVATION-PREPARED .*spawnOrStatus=True' -Quiet) -or
@@ -924,6 +933,22 @@ $cardEffectKillCoverage = -not $CardEffectKill -or @($cardEffectKillActions | Wh
             @($actualRoom.Units | Where-Object Id -EQ $beforeUnit.Id).Count -eq 0
     }).Count
     $enemyDeaths -gt 0 -and $playerDeaths -gt 0
+}).Count -gt 0
+$cardRecursionActions = @($trace.Actions | Where-Object {
+    $actionEntry = $_
+    $playedCard = $actionEntry.Before.Spawn.Train.Context.Cards.Hand |
+        Where-Object InstanceId -EQ $actionEntry.Action.CardInstanceId
+    $definition = $actionEntry.Before.PlayRules.Cards | Where-Object DataId -EQ $playedCard.DataId
+    @($definition.Effects | Where-Object Type -EQ 'Recursion').Count -gt 0
+})
+$cardRecursionCoverage = -not $CardRecursion -or @($cardRecursionActions | Where-Object {
+    $actionEntry = $_
+    $candidateIds = @($actionEntry.Before.OtherPiles | Where-Object Name -EQ 'Exhausted' |
+        ForEach-Object Cards | Where-Object DataId -EQ 'fb0683b1-20ac-4dd2-b580-14b502e182f4' |
+        ForEach-Object InstanceId)
+    $afterDrawIds = @($actionEntry.Actual.Spawn.Train.Context.Cards.Draw | ForEach-Object InstanceId)
+    $returned = @($candidateIds | Where-Object { $afterDrawIds -contains $_ })
+    -not $_.Difference -and $_.Predicted.Supported -and $returned.Count -eq 5
 }).Count -gt 0
 $healActions = @($trace.Actions | Where-Object {
     $entry = $_
@@ -2341,6 +2366,8 @@ $result = [pscustomobject]@{
     SacrificeEffectCoverage = $sacrificeEffectCoverage
     CardEffectKillActions = $cardEffectKillActions.Count
     CardEffectKillCoverage = $cardEffectKillCoverage
+    CardRecursionActions = $cardRecursionActions.Count
+    CardRecursionCoverage = $cardRecursionCoverage
     HealActions = $healActions.Count
     HealingCoverage = $healingCoverage
     OnHealCoverage = $onHealCoverage
@@ -2418,6 +2445,7 @@ $result = [pscustomobject]@{
 }
 if (-not $sacrificeEffectCoverage) { throw 'Native CardEffectSacrifice was not exercised through a full battle action.' }
 if (-not $cardEffectKillCoverage) { throw 'Native CardEffectKill did not kill one enemy and one player unit in a full battle action.' }
+if (-not $cardRecursionCoverage) { throw 'Native WurmkinEtchings did not return five exhausted spells to the draw pile in a matched full battle action.' }
 $result | ConvertTo-Json
 if ($SettleDeathDissolves) {
     if (-not $trace.DeathDissolveSettlementEnabled -or $trace.Schema -ne $(if ($OriginalFloorCapacityRelics) { 119 } elseif ($PyreResourceRefresh) { 118 } elseif ($OriginalResourceRelicBatch) { 117 } elseif ($OriginalLifecycleRelicBatch) { 115 } elseif ($TypedDraw) { 112 } elseif ($SpawnStatusRelicsClones) { 111 } elseif ($SpawnStatusRelics) { 110 } elseif ($IncantRelic) { 109 } elseif ($AbilityIncant) { 108 } elseif ($SettleCardAnimations) { 106 } else { 105 }) -or

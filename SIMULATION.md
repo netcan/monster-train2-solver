@@ -1,6 +1,6 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-13): 261 binary archives, including 230
+Current accepted inventory (2026-10-13): 262 binary archives, including 231
 full battles and 31 component calibrations. Unchanged original relic evidence
 covers 74/224 catalog entries (33.04%); see
 [the owner evidence table](tests/fixtures/relic-coverage.md). Whole-battle
@@ -27,6 +27,29 @@ JSON companion.
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-card-effect-kill.mt2f
 dotnet run --project src/ModelChecks -c Release -- --native-actions-only tests/fixtures/full-battle-card-effect-kill.mt2f
 dotnet run --project src/ModelChecks -c Release -- --sacrifice-pure
+```
+
+### CardEffectRecursion
+
+`full-battle-card-recursion.mt2f` records the unchanged `WurmkinEtchings` spell
+with six native Spell cards in Exhaust. Its `RandomToDeck` effect selects five
+cards using the Battle RNG, removes each selected identity from both Exhausted
+and Standby, and restores the cards to Draw. The muted Instant battle wins with
+61 matched stages, 22 card actions and seven EndTurns; capture failures,
+mismatches, unsupported transitions and pending records are zero. Independent
+action replay matches every play, and the scenario gate confirms that five of
+the six original candidates return to Draw.
+
+The schema-103 archive is 36,006 bytes with 6,025 unique nodes and SHA-256
+`a1c9997717e630c84e3766efd8bc1ce9ad52e3823e26bb50bdc6644eff67c4a8`; it has no
+JSON companion. Pure checks also cover random-to-hand, Eaten restoration and
+Battle RNG, while choose modes, hand-space requirements, card filters and
+recursion upgrades remain explicitly unsupported pending native calibration.
+
+```powershell
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-card-recursion.mt2f
+dotnet run --project src/ModelChecks -c Release -- --native-actions-only tests/fixtures/full-battle-card-recursion.mt2f
+dotnet run --project src/ModelChecks -c Release -- --card-recursion-pure
 ```
 
 ### Original MoonPhaseModifyEmber relic
