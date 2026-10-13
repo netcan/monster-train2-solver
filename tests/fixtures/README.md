@@ -29,7 +29,7 @@ The default command checks the full curated inventory. For routine changes, run
 the dedicated checks for the new and directly affected scenarios; run the full
 inventory at completed milestones and before delivery.
 
-Current inventory is 250 archives: 219 accepted battles and 31 component
+Current inventory is 251 archives: 220 accepted battles and 31 component
 calibrations. `full-battle-companion-bump.mt2f` covers a paired Relentless
 companion Boss refusal, its attempted-ascension callback and the survivor's
 terminal-death handoff. `full-battle-relic-card-status-upgrades.mt2f` verifies a native
@@ -3215,4 +3215,30 @@ calibrations. Full-inventory replay remains deferred.
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-relic-card-ephemeral-upgrades.mt2f
 dotnet run --project src/ModelChecks -c Release -- --relic-card-modifiers-only tests/fixtures/full-battle-relic-card-ephemeral-upgrades.mt2f
 dotnet run --project src/ModelChecks -c Release -- --card-cycle-only tests/fixtures/full-battle-relic-card-ephemeral-upgrades.mt2f
+```
+
+### Original ExtraToughTombs relic
+
+`full-battle-relic-extra-tough-tombs.mt2f` records the unchanged original
+`ExtraToughTombs` relic. Its native `OnlyTombs` filter accepts the pre-battle
+Tomb carrier, applies +30 health and the unique `AddBurnoutToTombs` temporary
+upgrade, and the battle plays that carrier. The summoned Train Steward is
+55/55 with one `ephemeral` stack; native `OnPostCombatPoison` consumes it,
+fires `OnBurnout`, then sacrifices the unit. The muted Instant battle won with
+22 card actions, seven EndTurns and 59 stages. Capture failures, mismatches,
+unsupported transitions and pending records are zero. Independent replay
+matches all 59 room stages and 22 actions; battle search matches 22 decisions,
+128 states and serial/parallel results.
+
+This accepts `ExtraToughTombs`, bringing original relic evidence to 68/224
+(30.36%). The schema-137 archive is 33,356 bytes with 5,388 unique nodes and
+SHA-256
+`1551a614cb42645e926c6637629d2d4a33320cdc7afdf52ea10b6920bb2a8ad2`; it has no
+JSON companion. The inventory is now 251 archives: 220 battles and 31 component
+calibrations. Full-inventory replay remains deferred.
+
+```powershell
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-relic-extra-tough-tombs.mt2f
+dotnet run --project src/ModelChecks -c Release -- --relic-card-modifiers-only tests/fixtures/full-battle-relic-extra-tough-tombs.mt2f
+dotnet run --project src/ModelChecks -c Release -- --room-combat-only tests/fixtures/full-battle-relic-extra-tough-tombs.mt2f
 ```

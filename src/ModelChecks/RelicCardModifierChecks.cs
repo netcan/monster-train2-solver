@@ -249,14 +249,24 @@ internal static class RelicCardModifierChecks
                 row.Actual.Temporary.Upgrades.Any(upgrade => upgrade.DataId ==
                     row.Relics.Single(relic => relic.AssetKey == expectedOwner).CardModifiers!.Single().Upgrade!.DataId));
             Require(nativeTombModifier, "Original ExtraToughTombs did not add +30 temporary health and its ordered Burnout upgrade to a Tomb carrier.");
-            bool playedTomb = root.GetProperty("Actions").EnumerateArray().Any(record =>
+            bool playedTomb = false;
+            bool summonedWithBurnout = false;
+            foreach (FixtureValue record in root.GetProperty("Actions").EnumerateArray())
             {
-                int instanceId = record.GetProperty("Action").GetProperty("CardInstanceId").GetInt32();
-                return record.GetProperty("Before").GetProperty("Spawn").GetProperty("Train").GetProperty("Context")
-                    .GetProperty("Cards").GetProperty("Hand").EnumerateArray().Any(card =>
-                        card.GetProperty("InstanceId").GetInt32() == instanceId && tombCarrierIds.Contains(card.GetProperty("DataId").GetString()));
-            });
-            Require(playedTomb, "The ExtraToughTombs full battle never played its Tomb carrier.");
+                BattleTurnState before = record.GetProperty("Before").Deserialize<BattleTurnState>()!;
+                PlayCardAction action = record.GetProperty("Action").Deserialize<PlayCardAction>()!;
+                bool tombInHand = before.Spawn.Train.Context!.Cards.Hand.Any(card =>
+                    card.InstanceId == action.CardInstanceId && tombCarrierIds.Contains(card.DataId));
+                if (!tombInHand) continue;
+                playedTomb = true;
+                BattleTurnState actual = record.GetProperty("Actual").Deserialize<BattleTurnState>()!;
+                CombatUnit? summoned = actual.Spawn.Train.Rooms.SelectMany(room => room.Units)
+                    .FirstOrDefault(unit => unit.SpawnerCardId == action.CardInstanceId);
+                summonedWithBurnout |= summoned?.MaxHealth == 55 && summoned.Health == 55 &&
+                    summoned.Status("ephemeral")?.Stacks == 1;
+            }
+            Require(playedTomb && summonedWithBurnout,
+                "ExtraToughTombs did not play its carrier and summon it at 55 health with one Ephemeral stack.");
         }
         string parent = JsonSerializer.Serialize(rows);
         void Check()
@@ -527,7 +537,7 @@ internal static class RelicCardModifierChecks
         var births = generated.SelectMany(row => row.Actual.CardInstances!.Where(card => card.InstanceId >= row.Before.NextCardId)).ToArray();
         if (requireScenarioCoverage && !deployableRelicScenario && !statusUpgradeScenario && !piercingUpgradeScenario && !selfPurgeUpgradeScenario &&
             !exhaustUpgradeScenario && !ephemeralUpgradeScenario && !abilityUpgradeScenario && !triggerUpgradeScenario && !replacementUpgradeScenario &&
-            !allUnitsMultistrikeScenario && !magebladeScenario)
+            !allUnitsMultistrikeScenario && !magebladeScenario && !extraToughTombsScenario)
             Require(births.Any(card => card.Temporary.Upgrades.Any(upgrade => upgrade.AssetKey == "ReduceStarterCost" ||
                 rows.SelectMany(row => row.Relics).SelectMany(relic => relic.CardModifiers ?? []).Any(effect => effect.Upgrade?.DataId == upgrade.DataId))),
                 "No battle-generated eligible card received an original relic upgrade.");
@@ -542,7 +552,8 @@ internal static class RelicCardModifierChecks
             triggerUpgradeScenario ? "OnKill character triggers reached summoned units" :
             replacementUpgradeScenario ? "native temporary card upgrade replacement" :
             allUnitsMultistrikeScenario ? "Multistrike applied to owned and spawned cards" :
-            magebladeScenario ? "native magic-power spell offsets" : "eligible battle-generated cards";
+            magebladeScenario ? "native magic-power spell offsets" :
+            extraToughTombsScenario ? "the original Tomb carrier was modified and played" : "eligible battle-generated cards";
         Console.WriteLine($"NATIVE-RELIC-CARD-MODIFIER-CHECKS PASS: {rows.Length} original manager calls, {rows.Sum(row => row.Dispatches.Length)} ordered effect/filter results, " +
             $"{rows.Sum(row => row.Notifications.Length)} exact trigger notifications, {coverage} and 32 immutable branches.");
     }

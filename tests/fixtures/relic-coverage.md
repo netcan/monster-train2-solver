@@ -1,7 +1,7 @@
 # Original relic coverage evidence
 
-As of 2026-10-13, **67 distinct original collectable relics / 224 catalog entries
-(29.91%)** have accepted native full-battle evidence. This counts unchanged relic
+As of 2026-10-13, **68 distinct original collectable relics / 224 catalog entries
+(30.36%)** have accepted native full-battle evidence. This counts unchanged relic
 definitions whose effects actually ran, including their original filters and
 conditions. Test cards, unit triggers and carrier subtypes may be authored to
 exercise those effects; the claim covers the recorded paths, not every possible
@@ -14,14 +14,14 @@ seven now have accepted original-owner evidence. Both catalog owners of
 Rage and Frostbite consumers. Unknown status families and other effects on the
 remaining owners still require modeling and native proof.
 
-All 22 source archives below report game `2.2.1`, module MVID
+All 23 source archives below report game `2.2.1`, module MVID
 `8fb07b96-f4db-4d2b-884d-c00536d6ccf4`, `NativeWon=true`, and zero
 `CaptureFailures`, `Mismatches`, `Unsupported` and `Pending`. Archive provenance,
 byte lengths and SHA-256 hashes are recorded in [manifest.tsv](manifest.tsv).
 The floor-capacity batch passes strict native acceptance, complete-fixture checks,
 independent full-battle replay and six directly affected old-fixture regressions.
-The accepted inventory is 250 archives: 219 battles and 31 component
-calibrations. All 250 archive names, byte lengths and SHA-256 hashes match the
+The accepted inventory is 251 archives: 220 battles and 31 component
+calibrations. All 251 archive names, byte lengths and SHA-256 hashes match the
 manifest and curated list, with no JSON companions. A 246-archive replay was
 attempted on 2026-10-13 but has not completed: legacy EndTurn snapshots can
 conflict with the current model's room `Enabled` state. Focused follow-up checks
@@ -44,6 +44,7 @@ owner count.
 | `FirstUnitGainDamageShield` | `60a2a8a3-5f7a-4a9d-b427-5f261145fa1f` | [spawn status relics][statuses] | The first player birth receives 2 Damage Shield on three different turns; two same-turn births skip it. Captured condition counters and turn resets match. |
 | `FrostbiteOnEnemies` | `270356af-16bd-4433-a0b2-3e5bb94ef890` | [spawn status relics][statuses] | All seven enemy births receive 2 Frostbite, serialized by the native game as status ID `poison`; player births do not. Example: record 3, unit 5. |
 | `ReduceStarterCost` | `d892106c-dbbc-40ac-bf0b-902882cdc69d` | [starter cost relic][cost] | 124 exact manager calls and 49 notifications cover filtering, unique repeat rejection, reset and generated cards. `Actions[0]` actually plays `JustCause` for 1 Ember with base cost 2 and the original `ReduceStarterCost_Upgrade` cost offset −1. |
+| `ExtraToughTombs` | `61fdeafd-21c5-4009-a448-a5c286ac3fc0` | [ExtraToughTombs battle][extraToughTombs] | The original `OnlyTombs` filter adds 30 health and its unique `AddBurnoutToTombs` upgrade. The played Tomb carrier summons at 55/55 with one `ephemeral` stack; post-combat burns it out and all 59 room stages match. |
 | `PyreHeartSon` | `8503360a-26b2-4b71-9334-4c6014ad397f` | [cardless relic upgrades][cardless] | Five ordinary cardless births gain +5 attack/+12 health; five cardless clones skip the upgrade. Example: record 8, unit 10, attack 0 → 5 and max health 1 → 13; record 9's clone remains 0/1. |
 | `MoltenManifold` | `f141d334-b503-48ff-ac21-5f2ad27105dd` | [original relic batch][batch] | Original `TinkerersToolbelt_Upgrade` contributes `XCost=2`. Sixteen X-cost plays include nine positive payments; 20 damage-scaling witnesses match native values and differ when the relic upgrade is removed. Manager calls also exercise repeat stacking, reset and non-X rejection. |
 | `HerzalsAnvil` | `4e0f1e86-f122-4b20-82cf-7c997e4ee84a` | [original Forge Points relic][forge] | Its unchanged `RelicEffectAdditionalForgePoints` adds 1 to positive adjustments. Native battle state changes; independent replay matches and owner ablation removes exactly that point. |
@@ -275,7 +276,7 @@ refreshed schema-136 status-stack archive now also accepts `IncreaseDecaySlimeSt
 bringing coverage to 66/224 (29.46%); its 39 battle stages have zero
 mismatches, capture failures, unsupported interactions or pending records. The previous
 246-archive replay attempt remains incomplete;
-full replay of the current 250-archive inventory is still deferred. The
+full replay of the current 251-archive inventory is still deferred. The
 `HerzalsAnvil` Forge Points battle then brings accepted original-owner coverage
 to 67/224 (29.91%); its positive adjustment, `+1` payload and owner ablation pass
 with zero native mismatches, capture failures, unsupported interactions or pending records.
@@ -285,6 +286,23 @@ that relic-granted temporary Ephemeral traits purge cards on play and at
 EndTurn. Its test authors a replacement upgrade payload on the original
 `ReduceStarterCost` relic, so it adds battle-mechanism coverage only and does
 not change the accepted 67/224 original-relic count.
+
+The schema-137 `full-battle-relic-extra-tough-tombs.mt2f` archive accepts the
+unchanged original `ExtraToughTombs` relic (DataId
+`61fdeafd-21c5-4009-a448-a5c286ac3fc0`). Its native `OnlyTombs` filter accepts
+the pre-battle carrier, applies +30 health and the unique `AddBurnoutToTombs`
+upgrade, and the card is played. The summoned Train Steward is 55/55 with one
+`ephemeral` stack. At `OnPostCombatPoison`, that status is consumed, `OnBurnout`
+fires, and the unit is sacrificed. The muted Instant battle won with 22 actions,
+seven EndTurns and 59 stages; native capture has zero failures, mismatches,
+unsupported transitions or pending records. Independent model checks match all
+59 room stages and 22 actions; search matches 22 decisions and 128 states.
+Coverage is now 68/224 (30.36%).
+
+The archive is 33,356 bytes with 5,388 unique nodes and SHA-256
+`1551a614cb42645e926c6637629d2d4a33320cdc7afdf52ea10b6920bb2a8ad2`; there is
+no JSON companion. The inventory is 251 archives: 220 battles and 31 component
+calibrations. Full-inventory replay remains deferred.
 
 [counts]: full-battle-incant-relics-combined.mt2f
 [statuses]: full-battle-spawn-status-relics.mt2f
@@ -306,5 +324,6 @@ not change the accepted 67/224 original-relic count.
 [cardPlayMagicPower]: full-battle-original-card-play-magic-power.mt2f
 [roomEntry]: full-battle-original-room-entry-status-relics.mt2f
 [unitUpgradeTrigger]: full-battle-original-unit-upgrade-trigger-relic.mt2f
+[extraToughTombs]: full-battle-relic-extra-tough-tombs.mt2f
 [sting]: full-battle-original-sting-relics.mt2f
 [deployable]: full-battle-original-deployable-relic.mt2f
