@@ -41,6 +41,20 @@ namespace MonsterTrain2Poju.Probe
         private static CharacterState[] DeathwishHosts() => LiveActors().Where(unit => !unit.IsPyreHeart())
             .GroupBy(unit => (Room: unit.GetCurrentRoomIndex(), Team: unit.GetTeamType()))
             .Where(group => group.Count() >= 2).Select(group => group.Take(2).ToArray()).FirstOrDefault() ?? Array.Empty<CharacterState>();
+        private static Dictionary<CardState, CardStatsEntry> CopyDeckStats(Dictionary<CardState, CardStatsEntry> source)
+        {
+            var copy = new Dictionary<CardState, CardStatsEntry>();
+            foreach (var item in source)
+            {
+                var entry = new CardStatsEntry();
+                var values = (Dictionary<CardStatistics.EntryDuration, Dictionary<CardStatistics.TrackedValueType, int>>)
+                    AccessTools.Field(typeof(CardStatsEntry), "entryValues").GetValue(item.Value);
+                foreach (var duration in values)
+                foreach (var counter in duration.Value) entry.IncrementValue(counter.Key, counter.Value, duration.Key);
+                copy.Add(item.Key, entry);
+            }
+            return copy;
+        }
         internal static bool Eligible => DeathwishHosts().Length == 2;
         internal static void Start(ManualLogSource log)
         { Started = true; Save.StartCoroutine(Protect(Run(), log)); }
@@ -91,6 +105,11 @@ namespace MonsterTrain2Poju.Probe
             HadesRNG battle = Rng(RngId.Battle), test = Rng(RngId.BattleTest);
             var originalBattle = new HadesRNG(battle); var originalTest = new HadesRNG(test);
             var originalGlobal = UnityEngine.Random.state; int originalGold = Save.GetGold();
+            CardStatistics statistics = Managers.GetCardStatistics();
+            var originalDeckStats = (Dictionary<CardState, CardStatsEntry>)AccessTools.Field(typeof(CardStatistics), "deckStats").GetValue(statistics);
+            int originalMonstersDeadThisTurn = (int)Get(statistics, "numMonstersDeadThisTurn");
+            int originalMonstersDeadThisBattle = (int)Get(statistics, "numMonstersDeadThisBattle");
+            int originalFunGuy = Save.GetRunStat(RunStat.StatType.FunGuy);
             bool originalAllow = rooms.AllowEnchantmentUpdates;
             var samples = new List<object>(); int mismatches = 0;
             var worldSamples = new List<object>(); int worldMismatches = 0;
@@ -141,8 +160,25 @@ namespace MonsterTrain2Poju.Probe
                     identityStore[actors[i]] = new Dictionary<CharacterTriggerState, int>();
                 }
                 Save.SetGold(originalGold); battle.Init(originalBattle); test.Init(originalTest); UnityEngine.Random.state = originalGlobal;
-                ConfigureHordeAura();
-                yield return Sample("horde-aura-growth", direct: true);
+                AccessTools.Field(typeof(CardStatistics), "deckStats").SetValue(statistics, CopyDeckStats(originalDeckStats));
+                try
+                {
+                    CharacterState hordeTarget = LiveActors().Single(unit => unit.GetTeamType() == Team.Type.Monsters &&
+                        !unit.IsPyreHeart() && unit.GetCurrentRoomIndex() == hosts[0].GetCurrentRoomIndex());
+                    hordeTarget.AddStatusEffect("horde", 1, new CharacterState.AddStatusEffectParams());
+                    yield return combat.RunTriggerQueue();
+                    ConfigureHordeAura();
+                    yield return Sample("horde-aura-growth", direct: true);
+                    Raw(hosts[0], "muted", 1);
+                    yield return Sample("horde-aura-muted-removal");
+                }
+                finally
+                {
+                    AccessTools.Field(typeof(CardStatistics), "deckStats").SetValue(statistics, originalDeckStats);
+                    Set(statistics, "numMonstersDeadThisTurn", originalMonstersDeadThisTurn);
+                    Set(statistics, "numMonstersDeadThisBattle", originalMonstersDeadThisBattle);
+                    Save.SetRunStat(RunStat.StatType.FunGuy, originalFunGuy);
+                }
                 for (int i = 0; i < actors.Length; i++)
                 {
                     Set(actors[i], "_primaryStateInformation", AccessTools.Method(StateType, "DeepCopyForPreview").Invoke(originalStates[i], null));
@@ -196,6 +232,10 @@ namespace MonsterTrain2Poju.Probe
                     identityStore[actors[i]] = originalIds[i];
                 }
                 Save.SetGold(originalGold); battle.Init(originalBattle); test.Init(originalTest); UnityEngine.Random.state = originalGlobal;
+                AccessTools.Field(typeof(CardStatistics), "deckStats").SetValue(statistics, originalDeckStats);
+                Set(statistics, "numMonstersDeadThisTurn", originalMonstersDeadThisTurn);
+                Set(statistics, "numMonstersDeadThisBattle", originalMonstersDeadThisBattle);
+                Save.SetRunStat(RunStat.StatType.FunGuy, originalFunGuy);
                 Set(rooms, "_allowEnchantmentUpdates", originalAllow);
             }
             bool restored = Equal(originalTrain, Trace.CaptureTrain()) && Equal(originalContext, Trace.CaptureContext()) &&

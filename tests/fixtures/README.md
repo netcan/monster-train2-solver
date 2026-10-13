@@ -31,13 +31,13 @@ the dedicated checks for the new and directly affected scenarios; run the full
 inventory at completed milestones and before delivery.
 
 Current inventory is 256 archives: 225 accepted battles and 31 component
-calibrations. `enchantment-combat-calibration.mt2f` now also covers positive
-persistent Horde aura growth (0 to 2 stacks, 8 to 16 attack, 25 to 50 maximum
-health) with native `OnStatusEffectChanged`, `OnTroopAdded`,
-`OnNewStatusEffectAdded` and `CardMonsterPlayed` callbacks. Its 12,684-byte
-archive has 2,266 unique nodes and SHA-256
-`3b3528c98525f68e07e051c7359cfa868f9e5c62598de39994fcfa00b2c621c0`; Horde
-removal/casualty paths remain unsupported. `full-battle-companion-bump.mt2f`
+calibrations. `enchantment-combat-calibration.mt2f` covers persistent Horde
+aura growth from one baseline stack to three (8 to 24 attack, 25 to 75 health)
+and nonlethal removal back to one. Native status, troop and simulated-death
+callbacks match. The 13,113-byte archive has 2,349 unique nodes and SHA-256
+`24c3d025e734bed9db2d12c3ad04d88e766961c5154d9706cdbf9be6564c0f74`; removal
+that reduces target health to zero, including final-stack removal, still
+requires physical death settlement. `full-battle-companion-bump.mt2f`
 covers a paired Relentless
 companion Boss refusal, its attempted-ascension callback and the survivor's
 terminal-death handoff. `full-battle-relic-card-status-upgrades.mt2f` verifies a native
@@ -1352,22 +1352,24 @@ are zero. Persistent aura integration into the combat engine remains open.
 
 `enchantment-combat-calibration.mt2f` captures actual status mutations and drained
 child callbacks for persistent CardEffectEnchant on two real paid units. No
-native gameplay/status API is suppressed. Thirty-two aura steps include global
-allow/reentry guards, direct nested global updates, muting/silencing, signed/zero/
-Duality-overflow counts, poison and sixteen pooled random steps; five isolated
-Deathwish steps verify front/mute membership and exclusive activation/loss queues.
+native gameplay/status API is suppressed. Thirty-four aura/control samples cover
+global allow/reentry guards, direct nested global updates, muting/silencing,
+signed/zero/Duality-overflow counts, poison, sixteen pooled random steps and
+Horde growth plus nonlethal removal; five isolated Deathwish steps verify
+front/mute membership and exclusive activation/loss queues.
 The Deathwish callbacks carry native `CardEffectRewardGold` and self-targeted
 armor effects: activation and loss produce 5/5/5/10/10 gold across the five
 transitions, while each matching callback adds one Armor. Exclusive trigger
 identities prevent paired queue records from double-firing. The standalone
 combat queue matches both effects; the aura-attached queue continues to reject
 actor/card-mutating callbacks, and the check verifies that rejection leaves its
-parent unchanged. All 70 API calls and 111 complete callback payloads,
+parent unchanged. All 72 API calls and 124 complete callback payloads,
 per-effect maps, train/context states, explicit UI preview preparation events
 and supported child drains match in 32 isolated branches. Live captured
 train/context, every living actor's primary state/triggers/identity map, RNG and
-update flags restore; the queue is empty afterwards.
-The isolated profile's run-stat/UI side effects are outside that restoration claim.
+update flags restore; the queue is empty afterwards. The Horde probe isolates
+native card statistics and restores the simulated-death counters and FunGuy run
+stat after recording the matching state transition.
 
 The following native and independent ordinary battle win after 21 paid actions,
 seven EndTurns, Pyre 73; original profile/log file gates pass. Muted Instant native

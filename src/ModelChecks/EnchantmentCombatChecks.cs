@@ -19,7 +19,7 @@ internal static class EnchantmentCombatChecks
             "8fb07b96-f4db-4d2b-884d-c00536d6ccf4" && root.GetProperty("Boundary").GetString() == "RealStatusAndDrainedQueue" &&
             !root.GetProperty("StatusMutationsSuppressed").GetBoolean() && root.GetProperty("LiveContextUnchanged").GetBoolean() &&
             root.GetProperty("ExternalPreviewPreparationsRecorded").GetBoolean() &&
-            root.GetProperty("Mismatches").GetInt32() == 0 && samples.Length == 38,
+            root.GetProperty("Mismatches").GetInt32() == 0 && samples.Length == 39,
             "Real enchantment combat version, mutation, restoration or matrix gate failed.");
         foreach (var sample in samples)
             Require(sample.GetProperty("Completed").GetBoolean() && sample.GetProperty("Difference").ValueKind == FixtureKind.Null,
@@ -30,6 +30,7 @@ internal static class EnchantmentCombatChecks
             samples.Any(sample => !sample.GetProperty("Before").GetProperty("AllowUpdates").GetBoolean()),
             "Native random, direct reentry or disabled-manager cases are missing.");
         VerifyHordeGrowth(samples.Single(sample => sample.GetProperty("Label").GetString() == "horde-aura-growth"));
+        VerifyHordeRemoval(samples.Single(sample => sample.GetProperty("Label").GetString() == "horde-aura-muted-removal"));
         Parallel.For(0, 32, _ => { foreach (var sample in samples) Verify(sample); });
         int requests = samples.Sum(sample => sample.GetProperty("Requests").GetArrayLength());
         int callbacks = samples.Sum(sample => sample.GetProperty("Callbacks").GetArrayLength());
@@ -57,6 +58,30 @@ internal static class EnchantmentCombatChecks
             $"Positive Horde aura growth mismatch: request={request.Count}; stacks={oldStacks}->{newStacks}; " +
             $"attack={newAttack} base={oldTarget.HordeDefinition!.Attack}; " +
             $"maxHealth={newMaxHealth} base={oldTarget.HordeDefinition.Health}; callbacks={string.Join(',', callbackKinds)}.");
+    }
+    private static void VerifyHordeRemoval(FixtureValue sample)
+    {
+        EnchantmentCombatState before = sample.GetProperty("Before").Deserialize<EnchantmentCombatState>()!;
+        EnchantmentCombatState after = sample.GetProperty("AfterQueue").Deserialize<EnchantmentCombatState>()!;
+        EnchantmentRequest request = sample.GetProperty("Requests").Deserialize<EnchantmentRequest[]>()!
+            .Single(item => item.StatusId == "horde" && item.Operation == "Remove");
+        CombatUnit oldTarget = before.Train.Rooms.SelectMany(room => room.Units).Single(unit => unit.Id == request.UnitId);
+        CombatUnit newTarget = after.Train.Rooms.SelectMany(room => room.Units).Single(unit => unit.Id == request.UnitId);
+        HordeBaseStats definition = oldTarget.HordeDefinition!;
+        string[] callbackKinds = sample.GetProperty("Callbacks").EnumerateArray()
+            .Select(item => item.GetProperty("Kind").GetString()!).Distinct().ToArray();
+        Require(request.Count > 0 && (oldTarget.Status("horde")?.Stacks ?? 0) == 3 &&
+            (newTarget.Status("horde")?.Stacks ?? 0) == 1 && oldTarget.Modifiers!.AttackDamage == definition.Attack * 3 &&
+            newTarget.Modifiers!.AttackDamage == definition.Attack &&
+            oldTarget.Health == definition.Health * 3 && oldTarget.MaxHealth == definition.Health * 3 &&
+            newTarget.Health == definition.Health && newTarget.MaxHealth == definition.Health &&
+            callbackKinds.Contains("OnTroopRemoved") &&
+            callbackKinds.Contains("OnAnyMonsterDeathOnFloor") && callbackKinds.Contains("OnAnyUnitDeathOnFloor"),
+            "Partial Horde aura removal did not preserve troop stats and simulated-death callbacks.");
+        CombatUnit woundedTarget = CardSpellModel.Copy(oldTarget, definition.Health * 2, oldTarget.Statuses);
+        EnchantmentCombatResult lethalRemoval = EnchantmentCombatModel.UpdateAll(ReplaceUnit(before, woundedTarget));
+        Require(!lethalRemoval.Supported && lethalRemoval.UnsupportedReason!.Contains("physical death settlement", StringComparison.Ordinal),
+            "A partial Horde aura removal that reduces wounded health to zero bypassed physical death settlement.");
     }
     private static void VerifyDeathwish(FixtureValue[] samples)
     {
@@ -298,7 +323,7 @@ internal static class EnchantmentCombatChecks
         CombatUnit mutedOwner = CardSpellModel.Copy(updatedOwner, updatedOwner.Health,
             updatedOwner.Statuses.Where(status => status.Id != "muted").Append(new CombatStatus("muted", 1)).ToArray());
         EnchantmentCombatResult hordeRemoval = EnchantmentCombatModel.UpdateAll(ReplaceUnit(result.State, mutedOwner));
-        Require(!hordeRemoval.Supported && hordeRemoval.UnsupportedReason!.Contains("Horde aura removals", StringComparison.Ordinal),
+        Require(!hordeRemoval.Supported && hordeRemoval.UnsupportedReason!.Contains("physical death settlement", StringComparison.Ordinal),
             "Horde aura removals/casualties silently bypassed the explicit lifecycle guard.");
         int origin = source.Train.Rooms.Single(room => room.Units.Any(unit => unit.Id == owner.Id)).RoomIndex;
         int destination = source.Train.Rooms.First(room => room.RoomIndex != origin).RoomIndex;

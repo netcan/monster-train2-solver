@@ -302,9 +302,11 @@ namespace MonsterTrain2Poju.Model
             }
             private bool Status(EnchantmentRequest request, EnchantmentRule rule)
             {
-                if (request.StatusId == "horde" && (request.Operation != "Add" || request.Count <= 0))
-                { error = "Horde aura removals and nonpositive changes require casualty lifecycle integration."; return false; }
                 EnchantmentRetainedUnit actor = Find(request.UnitId);
+                int hordeStacks = actor.Unit.Status("horde")?.Stacks ?? 0;
+                if (request.StatusId == "horde" && (request.Count <= 0 ||
+                    request.Operation == "Remove" && hordeStacks <= request.Count))
+                { error = "Horde aura removal that kills the target requires physical death settlement."; return false; }
                 RoomCombatState? liveRoom = state.Train.Rooms.FirstOrDefault(room => room.Units.Any(unit => unit.Id == request.UnitId));
                 IReadOnlyList<int>? companionBossIds = state.Train.Rooms.FirstOrDefault(room => room.RoomIndex == actor.RoomIndex)?.ActiveCompanionBossIds;
                 var room = liveRoom ?? new RoomCombatState(actor.RoomIndex, false, new[] { actor.Unit }, Array.Empty<string>(),
@@ -314,6 +316,9 @@ namespace MonsterTrain2Poju.Model
                     : StatusRemovalModel.Remove(room, request.UnitId, request.StatusId, request.Count);
                 if (!changed.Supported) { error = changed.UnsupportedReason; return false; }
                 CombatUnit? target = changed.State!.Units.FirstOrDefault(unit => unit.Id == request.UnitId);
+                if (request.StatusId == "horde" && request.Operation == "Remove" &&
+                    (target == null || target.Health <= 0))
+                { error = "Horde aura removal that kills the target requires physical death settlement."; return false; }
                 if (target == null) target = changed.PendingCallbacks.LastOrDefault(item => item.Unit.Id == request.UnitId)?.Unit;
                 if (target == null) { error = "Status removal lost its retained enchantment target."; return false; }
                 Replace(target);
