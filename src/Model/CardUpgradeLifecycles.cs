@@ -10,9 +10,14 @@ namespace MonsterTrain2Poju.Model
         public string? DescriptionKey { get; }
         public IReadOnlyList<string> Effects { get; }
         public string Id { get; }
-        public CardLifecycleTrigger(string type, string? descriptionKey, IReadOnlyList<string> effects, string id = "")
-        { Type = type; DescriptionKey = descriptionKey; Effects = Array.AsReadOnly(effects.ToArray()); Id = id; }
-        internal CardLifecycleTrigger WithId(string? id) => new CardLifecycleTrigger(Type, DescriptionKey, Effects, id ?? "");
+        public IReadOnlyList<CardActionEffect> Actions { get; }
+        public IReadOnlyList<string> ExternalInteractions { get; }
+        public CardLifecycleTrigger(string type, string? descriptionKey, IReadOnlyList<string> effects, string id = "",
+            IReadOnlyList<CardActionEffect>? actions = null, IReadOnlyList<string>? externalInteractions = null)
+        { Type = type; DescriptionKey = descriptionKey; Effects = Array.AsReadOnly(effects.ToArray()); Id = id;
+            Actions = Array.AsReadOnly((actions ?? Array.Empty<CardActionEffect>()).ToArray());
+            ExternalInteractions = Array.AsReadOnly((externalInteractions ?? Array.Empty<string>()).ToArray()); }
+        internal CardLifecycleTrigger WithId(string? id) => new CardLifecycleTrigger(Type, DescriptionKey, Effects, id ?? "", Actions, ExternalInteractions);
     }
     public sealed class CardLifecycleUpgrade
     {
@@ -56,6 +61,9 @@ namespace MonsterTrain2Poju.Model
             AvoidClobbering, TraitsModified, ReplacedAssets, Triggers, OriginalDamage, OriginalHeal, instanceId);
         internal CardLifecycleUpgrade WithValues(CardMaskUpgrade values) => new CardLifecycleUpgrade(values, AssetKey, Unique, RemoveOnDiscard,
             AddedTraits, RemovedRuntimeTypes, AvoidClobbering, TraitsModified, ReplacedAssets, Triggers, OriginalDamage, OriginalHeal, InstanceId);
+        internal CardLifecycleUpgrade WithTriggers(IReadOnlyList<CardLifecycleTrigger> triggers) => new CardLifecycleUpgrade(Values, AssetKey, Unique,
+            RemoveOnDiscard, AddedTraits, RemovedRuntimeTypes, AvoidClobbering, TraitsModified, ReplacedAssets, triggers,
+            OriginalDamage, OriginalHeal, InstanceId);
     }
     public sealed class CardUpgradeLifecycleState
     {

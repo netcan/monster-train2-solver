@@ -41,7 +41,8 @@ namespace MonsterTrain2Poju.Probe
                     FullBattleTrace.Active?.EquippedUnitId(card) ?? 0, PlayedRoomUnits(card), RawPlayedRoomUnits(card),
                     forgeCountScalingTraits: ForgeCountScalingTraits(card),
                     rawCostOverride: rawCost == data.GetCost() ? null : rawCost);
-                CardPlayRule rule = CardModifierModel.Resolve(BattleActionProbe.Definition(data), state);
+                CardPlayRule definition = BattleActionProbe.Definition(data);
+                CardPlayRule rule = CardModifierModel.Resolve(definition, state);
                 for (int index = 0; index < managers.GetRoomManager()!.GetNumRooms(); index++)
                     if (card.GetCost(managers.GetCardStatistics(), managers.GetMonsterManager(), managers.GetRelicManager(),
                         managers.GetRoomManager()!.GetRoom(index)) != rule.Cost)
@@ -52,7 +53,7 @@ namespace MonsterTrain2Poju.Probe
                 if (rule.Effect == "Spell")
                 {
                     var effects = card.GetEffectStates();
-                    if (effects.Count != rule.Effects.Count) interactions.Add("Changed card effect sequence");
+                    if (effects.Count != definition.Effects.Count) interactions.Add("Changed card effect sequence");
                     else for (int index = 0; index < effects.Count; index++)
                         if ((rule.Effects[index].Type == "Damage" || rule.Effects[index].Type == "Heal") &&
                             effects[index].GetParamInt() != rule.Effects[index].Value)
@@ -130,15 +131,16 @@ namespace MonsterTrain2Poju.Probe
             bool refresh = source != null && !source.GetUpgradeWillBeScaledByNonMagicPowerTrait();
             if (upgrade.GetRoomAbilityUpgrade() != null) interactions.Add("Upgrade room ability");
             CardLifecycleUpgrade lifecycle = CardUpgradeLifecycleProbe.Definition(upgrade);
-            bool supportedTraitsOnly = (lifecycle.AddedTraits.Count > 0 || lifecycle.RemovedRuntimeTypes.Count > 0) && lifecycle.AddedTraits.All(trait =>
+            bool supportedTraitLifecycle = (lifecycle.AddedTraits.Count > 0 || lifecycle.RemovedRuntimeTypes.Count > 0) && lifecycle.AddedTraits.All(trait =>
                 trait.RuntimeType == trait.DeclaredName &&
                 (trait.RuntimeType is "CardTraitIgnoreArmor" or "CardTraitSelfPurge" or "CardTraitExhaustState" or "CardTraitEphemeral" ||
                     trait.RuntimeType == "CardTraitDrawInDeploymentPhase" ||
                     trait.RuntimeType == "CardTraitStrongerMagicPower" && CardBranchMaskProbe.Enabled)) &&
-                lifecycle.RemovedRuntimeTypes.All(type => type is "CardTraitIgnoreArmor" or "CardTraitExhaustState") && lifecycle.Triggers.Count == 0;
-            if ((upgrade.GetTraitDataUpgrades().Count > 0 || upgrade.GetRemoveTraitUpgrades().Count > 0) && !supportedTraitsOnly)
+                lifecycle.RemovedRuntimeTypes.All(type => type is "CardTraitIgnoreArmor" or "CardTraitExhaustState");
+            if ((upgrade.GetTraitDataUpgrades().Count > 0 || upgrade.GetRemoveTraitUpgrades().Count > 0) && !supportedTraitLifecycle)
                 interactions.Add("Upgrade traits");
-            if (upgrade.GetCardTriggerUpgrades().Count > 0) interactions.Add("Upgrade card triggers");
+            if (upgrade.GetCardTriggerUpgrades().Count > 0)
+                interactions.AddRange(lifecycle.Triggers.SelectMany(trigger => trigger.ExternalInteractions));
             CombatTrigger[]? triggers = null;
             if (upgrade.GetTriggerUpgrades().Count > 0)
             {

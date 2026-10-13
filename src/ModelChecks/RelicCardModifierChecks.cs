@@ -17,6 +17,70 @@ internal static class RelicCardModifierChecks
                 lifecycle.Values.Stats, statuses ?? [], false, unique, false, unhealedHealth, damageBuff, interactions ?? [],
                 maskMetadata: Metadata(maskStatuses), lifecycle: lifecycle);
 
+        var spellDefinition = new CardMaskDefinition("trigger-spell", "Spell", "Common", false, false, false,
+            [], [], [], [], null, false, 0, 0, false, false, false);
+        var spellDescriptor = new CardMaskDescriptor(spellDefinition, 1, [], []);
+        var baseDraw = new CardActionEffect("Draw", "Room", 1, false, false, []);
+        var triggeredDraw = new CardActionEffect("Draw", "Room", 2, false, false, []);
+        var onCast = new CardLifecycleTrigger("OnCast", "draw", ["CardEffectDraw"], actions: [triggeredDraw]);
+        var triggerLifecycle = new CardLifecycleUpgrade(new CardMaskUpgrade("trigger-draw-upgrade",
+            new CardStatModifier(), [], false, false, false, false), "trigger-draw-upgrade", false, false,
+            [], [], false, [], [], [onCast]);
+        var triggerUpgrade = Modifier("trigger-draw-upgrade", triggerLifecycle);
+        var triggerRelic = new CombatRelicState("trigger-draw-relic", "TriggerDrawRelic", [RelicModel.AddTempUpgrade],
+            cardModifiers: [new RelicCardModifier(0,
+                new RelicCardUpgradeRule("trigger-draw-upgrade", true, triggerLifecycle, []), triggerUpgrade, false)]);
+        var triggerCard = new CardInstanceState(1, spellDefinition.DataId, CardModifiers.Empty(), CardModifiers.Empty(),
+            0, 0, 0, [], maskDescriptor: spellDescriptor);
+        RelicCardModifierResult triggerApplied = RelicCardModifierModel.Apply(triggerCard, [triggerRelic], resetTemporary: false);
+        Require(triggerApplied.Supported && triggerApplied.Card!.MaskDescriptor!.AuthoredCastEffects.SequenceEqual(["CardEffectDraw"]),
+            "A supported OnCast relic upgrade was rejected or its installed cast-effect mask was not updated: " + triggerApplied.UnsupportedReason);
+        var spellRule = new CardPlayRule(spellDefinition.DataId, "trigger-spell", 1, "Spell", "Discard", null, [], [baseDraw]);
+        CardPlayRule triggeredRule = CardModifierModel.Resolve(spellRule, triggerApplied.Card!);
+        Require(triggerApplied.Supported && triggeredRule.Effects.Count == 2 && triggeredRule.Effects[0].Value == 1 &&
+            triggeredRule.Effects[1].Value == 2 && triggeredRule.Effects[1].Type == "Draw",
+            "An installed OnCast upgrade did not append its captured effect after the card's authored effects.");
+
+        var baseDamage = new CardActionEffect("Damage", "DropTargetCharacter", 1, true, false, []);
+        var triggeredDamage = new CardActionEffect("Damage", "DropTargetCharacter", 2, true, false, []);
+        var damageLifecycle = new CardLifecycleUpgrade(new CardMaskUpgrade("trigger-damage-upgrade",
+            new CardStatModifier(), [], false, false, false, false), "trigger-damage-upgrade", false, false,
+            [], [], false, [], [], [new CardLifecycleTrigger("OnCast", "damage", ["CardEffectDamage"], actions: [triggeredDamage])]);
+        CardUpgradeModifier damageUpgrade = Modifier("trigger-damage-upgrade", damageLifecycle);
+        var damageCard = new CardInstanceState(91, spellDefinition.DataId, CardModifiers.Empty(),
+            new CardModifiers(new CardStatModifier(), [damageUpgrade], 0, []), 0, 0, 0, [],
+            maskDescriptor: new CardMaskDescriptor(spellDefinition, 1, [], ["CardEffectDamage"]));
+        var damageRule = new CardPlayRule(spellDefinition.DataId, "trigger-spell", 1, "Spell", "Discard",
+            null, [], [baseDamage]);
+        CardPlayRule resolvedDamageRule = CardModifierModel.Resolve(damageRule, damageCard);
+        var triggerRng = UnityRng.Seed(711);
+        var triggerContext = new CombatContext(new CardCycleState([], [], [], triggerRng, 0, []), triggerRng,
+            0, 92, 10, cardInstances: [damageCard]);
+        var triggerTarget = new CombatUnit(77, "trigger-target", CombatTeam.Enemy, 0, 10, 10,
+            true, false, false, []);
+        var triggerPyre = new CombatUnit(78, "pyre", CombatTeam.Player, 0, 40, 40, true, true, false, []);
+        var triggerTrain = new TrainCombatState([
+            new RoomCombatState(0, false, [triggerTarget], [], triggerContext),
+            new RoomCombatState(1, false, [], [], triggerContext),
+            new RoomCombatState(2, false, [triggerPyre], [], triggerContext)
+        ], [], 1, triggerContext);
+        TrainSpellResult triggerCast = CardSpellModel.Apply(triggerTrain, 0, resolvedDamageRule.Effects, 77,
+            sourceCardId: damageCard.InstanceId,
+            definitions: new BattlePlayRules([new RoomPlayRule(0, 0, 0, true, false, false, 1)], [damageRule]));
+        Require(triggerCast.Supported && triggerCast.State!.Rooms[0].Units.Single().Health == 7,
+            "Card play did not resolve and apply both authored and appended OnCast effects: " + triggerCast.UnsupportedReason);
+        RelicCardModifierResult triggerReset = RelicCardModifierModel.Apply(triggerApplied.Card!, Array.Empty<CombatRelicState>(), resetTemporary: true);
+        CardPlayRule resetRule = CardModifierModel.Resolve(spellRule, triggerReset.Card!);
+        Require(triggerReset.Supported && resetRule.Effects.Count == 1 && resetRule.Effects[0].Value == 1 &&
+            triggerReset.Card!.MaskDescriptor!.AuthoredCastEffects.Count == 0,
+            "Resetting a temporary OnCast upgrade retained its card-play effect or installed cast-effect mask.");
+        var unsupportedTriggerLifecycle = new CardLifecycleUpgrade(new CardMaskUpgrade("unsupported-trigger-upgrade",
+            new CardStatModifier(), [], false, false, false, false), "unsupported-trigger-upgrade", false, false,
+            [], [], false, [], [], [new CardLifecycleTrigger("OnDeath", null, ["CardEffectDraw"], actions: [triggeredDraw])]);
+        Require(CardModifierModel.UpgradeInteractions(Modifier("unsupported-trigger-upgrade", unsupportedTriggerLifecycle))
+            .Contains("Unsupported card upgrade trigger OnDeath"),
+            "An unmodeled non-OnCast card trigger escaped the explicit interaction guard.");
+
         var permanentLifecycle = new CardLifecycleUpgrade(new CardMaskUpgrade("permanent-remove-piercing",
             new CardStatModifier(), [], false, false, false, false), "permanent-remove-piercing", false, false,
             [], ["CardTraitIgnoreArmor"], false, [], [], []);
@@ -314,13 +378,15 @@ internal static class RelicCardModifierChecks
             scenario.GetString() == "all-units-multistrike-mutator";
         bool triggerUpgradeScenario = root.TryGetProperty("ModifierScenario", out scenario) &&
             scenario.GetString() == "relic-card-trigger-upgrades";
+        bool castTriggerUpgradeScenario = root.TryGetProperty("ModifierScenario", out scenario) &&
+            scenario.GetString() == "relic-card-cast-trigger-upgrades";
         bool replacementUpgradeScenario = root.TryGetProperty("ModifierScenario", out scenario) &&
             scenario.GetString() == "relic-card-replacement-upgrades";
         bool deployableRelicScenario = root.TryGetProperty("ModifierScenario", out scenario) &&
             scenario.GetString() == "original-deployable-relic";
         bool magebladeScenario = root.TryGetProperty("ModifierScenario", out scenario) &&
             scenario.GetString() is "mageblade" or "original-mageblade-magnitude";
-        bool sawExpectedRejection = statusUpgradeScenario || unhealedHealthUpgradeScenario || piercingUpgradeScenario || abilityUpgradeScenario || triggerUpgradeScenario ||
+        bool sawExpectedRejection = statusUpgradeScenario || unhealedHealthUpgradeScenario || piercingUpgradeScenario || abilityUpgradeScenario || triggerUpgradeScenario || castTriggerUpgradeScenario ||
             replacementUpgradeScenario || extraToughTombsScenario || deployableRelicScenario
             ? rows.Any(row => row.Dispatches.Any(effect => !effect.Returned && !effect.UpgradeAdded))
             : rows.Any(row => !row.Reset && row.Dispatches.Any(effect => effect.Returned && !effect.UpgradeAdded));
@@ -604,6 +670,31 @@ internal static class RelicCardModifierChecks
                 "The native relic trigger scenario did not play and summon from an OnKill-upgraded card.");
             Console.WriteLine($"NATIVE-RELIC-CARD-TRIGGER-CHECKS PASS: {triggerUpgradedSummons} relic-upgraded summons received their native OnKill triggers.");
         }
+        if (castTriggerUpgradeScenario)
+        {
+            int playedCards = 0;
+            foreach (FixtureValue entry in root.GetProperty("Actions").EnumerateArray())
+            {
+                BattleTurnState before = entry.GetProperty("Before").Deserialize<BattleTurnState>()!;
+                PlayCardAction action = entry.GetProperty("Action").Deserialize<PlayCardAction>()!;
+                CardInstanceState? card = before.Spawn.Train.Context!.FindCard(action.CardInstanceId);
+                if (card == null) continue;
+                CardActionEffect[] triggerActions = card.Permanent.Upgrades.Concat(card.Temporary.Upgrades)
+                    .SelectMany(upgrade => upgrade.Lifecycle?.Triggers.Where(trigger => trigger.Type == "OnCast") ?? Array.Empty<CardLifecycleTrigger>())
+                    .SelectMany(trigger => trigger.Actions).ToArray();
+                if (triggerActions.Length == 0) continue;
+                CardPlayRule? baseRule = before.PlayRules?.Cards.FirstOrDefault(rule => rule.DataId == card.DataId);
+                Require(baseRule != null, "Native OnCast-upgraded card has no captured play rule.");
+                CardPlayRule resolved = CardModifierModel.Resolve(baseRule!, card);
+                Require(resolved.ExternalInteractions.Count == 0 && resolved.Effects.Count == baseRule!.Effects.Count + triggerActions.Length &&
+                    triggerActions.Select((effect, index) => resolved.Effects[baseRule.Effects.Count + index].Type == effect.Type &&
+                        resolved.Effects[baseRule.Effects.Count + index].Target == effect.Target).All(matches => matches),
+                    "OnCast upgrade effects were not appended after the card's authored effects in native order.");
+                playedCards++;
+            }
+            Require(playedCards > 0, "The native battle never played a card with an installed OnCast upgrade effect.");
+            Console.WriteLine($"NATIVE-RELIC-CARD-ONCAST-CHECKS PASS: {playedCards} relic-upgraded card plays carried ordered OnCast effects into action replay.");
+        }
         if (replacementUpgradeScenario)
         {
             bool replacementObserved = rows.Any(row =>
@@ -680,7 +771,7 @@ internal static class RelicCardModifierChecks
         var births = generated.SelectMany(row => row.Actual.CardInstances!.Where(card => card.InstanceId >= row.Before.NextCardId)).ToArray();
         if (requireScenarioCoverage && !deployableRelicScenario && !statusUpgradeScenario && !piercingUpgradeScenario && !selfPurgeUpgradeScenario &&
             !exhaustUpgradeScenario && !ephemeralUpgradeScenario && !abilityUpgradeScenario && !triggerUpgradeScenario && !replacementUpgradeScenario &&
-            !allUnitsMultistrikeScenario && !magebladeScenario && !extraToughTombsScenario && !unhealedHealthUpgradeScenario)
+            !castTriggerUpgradeScenario && !allUnitsMultistrikeScenario && !magebladeScenario && !extraToughTombsScenario && !unhealedHealthUpgradeScenario)
             Require(births.Any(card => card.Temporary.Upgrades.Any(upgrade => upgrade.AssetKey == "ReduceStarterCost" ||
                 rows.SelectMany(row => row.Relics).SelectMany(relic => relic.CardModifiers ?? []).Any(effect => effect.Upgrade?.DataId == upgrade.DataId))),
                 "No battle-generated eligible card received an original relic upgrade.");

@@ -195,7 +195,7 @@ namespace MonsterTrain2Poju.Probe
                 completeFtue.Invoke(null, null);
                 setSeed.Invoke(null, new object[] { Seed.ToString(CultureInfo.InvariantCulture) });
                 newRun.Invoke(null, null);
-                Enter(Stage.NewRun, 90f);
+                Enter(Stage.NewRun, 240f);
                 return;
             }
             if (stage == Stage.NewRun)
@@ -952,6 +952,8 @@ namespace MonsterTrain2Poju.Probe
                 if (modifierScenario == "damage-per-hp-ability" && !damagePerHpAbilityInputPrepared)
                     damagePerHpAbilityInputPrepared = DamagePerHpScenario.SeedAbilityLastAttackerInput(managers, log);
                 BattleTurnState decision = FullBattleTrace.Active!.CaptureDecision();
+                if (fullBattle && RelicCardModifierScenario.CastTriggerUpgrade)
+                    decision = RelicCardModifierScenario.PrepareCastTriggerCardInHand(decision, managers, cards!, log);
                 RelicStatusStackProbe.Matrix();
                 RelicStatusMagnitudeProbe.Matrix();
                 RelicStatusDecayProbe.Matrix();
@@ -964,6 +966,8 @@ namespace MonsterTrain2Poju.Probe
                         ? null : RoomCapacityAttachmentScenario.Choose(decision) ?? pendingPlay;
                 if (RelicCardModifierScenario.ExtraToughTombs)
                     pendingPlay = RelicCardModifierScenario.ChooseTombCarrier(decision) ?? pendingPlay;
+                if (RelicCardModifierScenario.CastTriggerUpgrade)
+                    pendingPlay = RelicCardModifierScenario.ChooseCastTriggerCard(decision) ?? pendingPlay;
                 if (OriginalDeployableRelicScenario.Enabled) pendingPlay = OriginalDeployableRelicScenario.Choose(decision) ?? pendingPlay;
                 if (modifierScenario == "sacrifice-effects") pendingPlay = SacrificeScenario.Choose(decision);
                 if (modifierScenario == "card-effect-kill") pendingPlay = CardEffectKillScenario.Choose(decision);

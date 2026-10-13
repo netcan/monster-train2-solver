@@ -283,6 +283,10 @@ namespace MonsterTrain2Poju.Model
         internal CardInstanceState WithExhaustState(CardExhaustState? state) => new CardInstanceState(InstanceId, DataId,
             Permanent, Temporary, LastPlayedCost, LastForgedAmount, PlayCount, ExternalInteractions, EffectCounters, DamageScalingTraits,
             StatusScalingTraits, UnitUpgradeScalingTraits, CapacityScalingTraits, EquippedUnitId, PlayedRoomUnitIds, RawPlayedRoomUnitIds, MaskDescriptor, state, ForgeCountScalingTraits, RawCostOverride);
+        internal CardInstanceState WithMaskDescriptor(CardMaskDescriptor? descriptor) => new CardInstanceState(InstanceId, DataId,
+            Permanent, Temporary, LastPlayedCost, LastForgedAmount, PlayCount, ExternalInteractions, EffectCounters, DamageScalingTraits,
+            StatusScalingTraits, UnitUpgradeScalingTraits, CapacityScalingTraits, EquippedUnitId, PlayedRoomUnitIds, RawPlayedRoomUnitIds,
+            descriptor, ExhaustState, ForgeCountScalingTraits, RawCostOverride);
         internal CardInstanceState WithCounter(int index, string type, int value) => new CardInstanceState(InstanceId, DataId,
             Permanent, Temporary, LastPlayedCost, LastForgedAmount, PlayCount, ExternalInteractions,
             (EffectCounters ?? Array.Empty<CardEffectCounter>()).Where(counter => counter.EffectIndex != index)
@@ -292,9 +296,13 @@ namespace MonsterTrain2Poju.Model
     public static class CardModifierModel
     {
         public static IEnumerable<string> UpgradeInteractions(CardUpgradeModifier upgrade) =>
-            upgrade.Lifecycle?.ReplacedAssets.Count > 0
+            (upgrade.Lifecycle?.ReplacedAssets.Count > 0
                 ? upgrade.ExternalInteractions.Where(interaction => interaction != "Upgrade replacements")
-                : upgrade.ExternalInteractions;
+                : upgrade.ExternalInteractions)
+            .Concat((upgrade.Lifecycle?.Triggers ?? Array.Empty<CardLifecycleTrigger>()).SelectMany(trigger =>
+                trigger.Type != "OnCast" ? new[] { "Unsupported card upgrade trigger " + trigger.Type } :
+                trigger.Effects.Count != trigger.Actions.Count ? new[] { "Card upgrade trigger effects are not fully captured" } :
+                trigger.ExternalInteractions));
 
         internal static string? UnsupportedReason(CardInstanceState instance)
         {
@@ -341,10 +349,10 @@ namespace MonsterTrain2Poju.Model
             if (rule.DataId != instance.DataId) interactions.Add("Card instance definition differs.");
             if (instance.Permanent.PersistentHealth != 0 || instance.Temporary.PersistentHealth != 0) interactions.Add("Persistent card health");
             CardModifiers[] modifiers = { instance.Permanent, instance.Temporary };
+            CardUpgradeModifier[] cardUpgrades = modifiers.SelectMany(modifier => modifier.Upgrades).ToArray();
             CombatUnit? unit = rule.SpawnUnit;
             if (unit != null)
             {
-                CardUpgradeModifier[] cardUpgrades = modifiers.SelectMany(modifier => modifier.Upgrades).ToArray();
                 var statuses = unit.Statuses.ToDictionary(status => status.Id);
                 foreach (CombatStatus added in cardUpgrades.SelectMany(upgrade => upgrade.Statuses))
                 {
@@ -390,7 +398,9 @@ namespace MonsterTrain2Poju.Model
                     statuses.Values.Where(status => status.Stacks > 0).ToArray(), triggers,
                     unit.SpawnerCardId, Math.Max(1, UpgradedStat(unit.Size, "Size", false, modifiers)), unit.StatusImmunities, unit.Subtypes, unitModifiers, unit.IsBoss, unit.LastAttackerId, unit.StatusRegistry, unit.EquipmentCards, nextTriggerId, unit.Ability, unit.StatusDictionary, unit.AbilityRules, unit.HordeDefinition, unit.IsSpawning, unit.SacrificeCardId, unit.DeathState, bumpRules: unit.BumpRules);
             }
-            CardActionEffect[] effects = rule.Effects.Select(effect => new CardActionEffect(effect.Type, effect.Target,
+            CardActionEffect[] triggerEffects = cardUpgrades.SelectMany(upgrade => upgrade.Lifecycle?.Triggers ?? Array.Empty<CardLifecycleTrigger>())
+                .Where(trigger => trigger.Type == "OnCast").SelectMany(trigger => trigger.Actions).ToArray();
+            CardActionEffect[] effects = rule.Effects.Concat(triggerEffects).Select(effect => new CardActionEffect(effect.Type, effect.Target,
                 ResolveValue(effect, effect.Value), effect.AllowEnemy, effect.AllowPlayer, effect.Statuses, effect.Upgrade, effect.Lifetime, effect.Tests,
                 effect.Range == null ? null : new CardEffectRange(ResolveValue(effect, effect.Range.Min),
                     ResolveValue(effect, effect.Range.Max), effect.Range.Multiplier), effect.Filters, effect.Generation, effect.OnlyIfNoEnemies,

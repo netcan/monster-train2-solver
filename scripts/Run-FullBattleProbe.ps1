@@ -155,6 +155,7 @@ param(
     [switch] $RelicCardUnhealedHealthUpgrades,
     [switch] $RelicCardAbilityUpgrades,
     [switch] $RelicCardTriggerUpgrades,
+    [switch] $RelicCardCastTriggerUpgrades,
     [switch] $RelicCardReplacementUpgrades,
     [switch] $OriginalRelicBatch,
     [switch] $OriginalDeployableRelic,
@@ -278,6 +279,7 @@ if ($RelicCardHealthUpgrades) { $BattleRelicUpgrades = $true; $BranchCardMasks =
 if ($RelicCardUnhealedHealthUpgrades) { $BattleRelicUpgrades = $true; $Policy = 'units-spells-and-junk' }
 if ($RelicCardAbilityUpgrades) { $BattleRelicUpgrades = $true }
 if ($RelicCardTriggerUpgrades) { $BattleRelicUpgrades = $true }
+if ($RelicCardCastTriggerUpgrades) { $BattleRelicUpgrades = $true; $BranchCardMasks = $true; $Policy = 'units-and-junk' }
 if ($RelicCardReplacementUpgrades) { $BattleRelicUpgrades = $true }
 if ($MixedCardlessRelicOrder) { $SpawnStatusRelicsClones = $true }
 if ($DamageOverflow) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
@@ -408,6 +410,7 @@ $environment = @{
     MT2_PROBE_RELIC_CARD_UNHEALED_UPGRADE = $(if ($RelicCardUnhealedHealthUpgrades) { '1' } else { '0' })
     MT2_PROBE_RELIC_CARD_ABILITY_UPGRADE = $(if ($RelicCardAbilityUpgrades) { '1' } else { '0' })
     MT2_PROBE_RELIC_CARD_TRIGGER_UPGRADE = $(if ($RelicCardTriggerUpgrades) { '1' } else { '0' })
+    MT2_PROBE_RELIC_CARD_CAST_TRIGGER_UPGRADE = $(if ($RelicCardCastTriggerUpgrades) { '1' } else { '0' })
     MT2_PROBE_RELIC_CARD_REPLACEMENT_UPGRADE = $(if ($RelicCardReplacementUpgrades) { '1' } else { '0' })
     MT2_PROBE_GENERATION = $(if ($Generation) { '1' } else { '0' })
     MT2_PROBE_MIXED_CARDLESS_RELIC_ORDER = $(if ($MixedCardlessRelicOrder) { '1' } else { '0' })
@@ -459,6 +462,7 @@ if ($RelicCardEphemeralUpgrades) { $environment['MT2_PROBE_MODIFIERS'] = 'relic-
 if ($RelicCardHealthUpgrades) { $environment['MT2_PROBE_MODIFIERS'] = 'relic-card-health-upgrades' }
 if ($RelicCardAbilityUpgrades) { $environment['MT2_PROBE_MODIFIERS'] = 'relic-card-ability-upgrades' }
 if ($RelicCardTriggerUpgrades) { $environment['MT2_PROBE_MODIFIERS'] = 'relic-card-trigger-upgrades' }
+if ($RelicCardCastTriggerUpgrades) { $environment['MT2_PROBE_MODIFIERS'] = 'relic-card-cast-trigger-upgrades' }
 if ($RelicCardReplacementUpgrades) { $environment['MT2_PROBE_MODIFIERS'] = 'relic-card-replacement-upgrades' }
 if ($IncantRelics) { $IncantRelic = $true }
 if ($IncantRelic) { $Incant = $true }
@@ -731,7 +735,7 @@ if ($RelicCardUpgrades) {
 }
 if ($BattleRelicUpgrades) {
     $modifierRows = @($trace.RelicCardModifiers)
-    $rejectedDispatches = if ($RelicCardStatusUpgrades -or $RelicCardUnhealedHealthUpgrades -or $RelicCardPiercingUpgrades -or $RelicCardAbilityUpgrades -or $RelicCardTriggerUpgrades -or $RelicCardReplacementUpgrades -or $RelicCardHealthUpgrades -or $OriginalDeployableRelic) {
+    $rejectedDispatches = if ($RelicCardStatusUpgrades -or $RelicCardUnhealedHealthUpgrades -or $RelicCardPiercingUpgrades -or $RelicCardAbilityUpgrades -or $RelicCardTriggerUpgrades -or $RelicCardCastTriggerUpgrades -or $RelicCardReplacementUpgrades -or $RelicCardHealthUpgrades -or $OriginalDeployableRelic) {
         @($modifierRows | ForEach-Object Dispatches | Where-Object { -not $_.Returned -and -not $_.UpgradeAdded }).Count
     } else {
         @($modifierRows | ForEach-Object Dispatches | Where-Object { $_.Returned -and -not $_.UpgradeAdded }).Count
@@ -743,7 +747,7 @@ if ($BattleRelicUpgrades) {
         @($modifierRows | ForEach-Object Dispatches | Where-Object UpgradeAdded).Count -eq 0) {
         throw 'Incomplete native relic manager card modifier acceptance.'
     }
-    if ($RelicCardStatusUpgrades -or $RelicCardUnhealedHealthUpgrades -or $RelicCardPiercingUpgrades -or $RelicCardSelfPurgeUpgrades -or $RelicCardExhaustUpgrades -or $RelicCardEphemeralUpgrades -or $RelicCardAbilityUpgrades -or $RelicCardTriggerUpgrades -or $RelicCardReplacementUpgrades) {
+    if ($RelicCardStatusUpgrades -or $RelicCardUnhealedHealthUpgrades -or $RelicCardPiercingUpgrades -or $RelicCardSelfPurgeUpgrades -or $RelicCardExhaustUpgrades -or $RelicCardEphemeralUpgrades -or $RelicCardAbilityUpgrades -or $RelicCardTriggerUpgrades -or $RelicCardCastTriggerUpgrades -or $RelicCardReplacementUpgrades) {
         Write-Output "NATIVE-RELIC-CARD-UPGRADE-CAPTURE PASS: $($modifierRows.Count) actual manager calls, temporary upgrade payload, reset and failed-eligibility paths."
     } else {
         Write-Output "NATIVE-RELIC-CARD-MODIFIER-CAPTURE PASS: $($modifierRows.Count) actual manager calls, original eligibility, reset/repeat/unique rejection and notifications."
@@ -778,6 +782,13 @@ if ($RelicCardAbilityUpgrades -and $trace.ModifierScenario -ne 'relic-card-abili
 }
 if ($RelicCardTriggerUpgrades -and $trace.ModifierScenario -ne 'relic-card-trigger-upgrades') {
     throw 'Relic card trigger upgrade scenario was not recorded.'
+}
+if ($RelicCardCastTriggerUpgrades -and $trace.ModifierScenario -ne 'relic-card-cast-trigger-upgrades') {
+    throw 'Relic card OnCast trigger upgrade scenario was not recorded.'
+}
+if ($RelicCardCastTriggerUpgrades) {
+    dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release -- --relic-card-modifiers-only $tracePath
+    if ($LASTEXITCODE -ne 0) { throw 'Native OnCast card play replay did not pass its focused model check.' }
 }
 if ($RelicCardReplacementUpgrades -and $trace.ModifierScenario -ne 'relic-card-replacement-upgrades') {
     throw 'Relic card replacement upgrade scenario was not recorded.'

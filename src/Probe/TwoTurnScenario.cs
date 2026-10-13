@@ -184,7 +184,7 @@ namespace MonsterTrain2Poju.Probe
                 Invoke(setSeed, Seed.ToString());
                 Invoke(newRun);
                 log.LogInfo("Smoke: fixed seed " + Seed + "; new run requested.");
-                Enter(Stage.NewRun, 90f);
+                Enter(Stage.NewRun, 240f);
                 return;
             }
 

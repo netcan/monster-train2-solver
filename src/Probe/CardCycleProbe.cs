@@ -62,7 +62,9 @@ namespace MonsterTrain2Poju.Probe
                     if (kind == "Discard" && (trait is CardTraitInfusion ||
                         trait is CardTraitPersistent)) interactions.Add(trait.GetType().Name + " discard routing");
                 }
-                if (kind == "Discard" && card.GetTriggers().Count > 0) interactions.Add("Card discard triggers");
+                if (kind == "Discard" && card.GetTriggers().Any(trigger =>
+                    trigger.GetTrigger().ToString().IndexOf("Discard", StringComparison.OrdinalIgnoreCase) >= 0))
+                    interactions.Add("Card discard triggers");
             }
             RoomManager rooms = managers.GetRoomManager()!;
             for (int index = 0; index < rooms.GetNumRooms(); index++)

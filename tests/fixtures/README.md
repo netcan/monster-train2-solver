@@ -30,7 +30,7 @@ The default command checks the full curated inventory. For routine changes, run
 the dedicated checks for the new and directly affected scenarios; run the full
 inventory at completed milestones and before delivery.
 
-Current inventory is 273 archives: 242 accepted battles and 31 component
+Current inventory is 274 archives: 243 accepted battles and 31 component
 calibrations. Original relic evidence is 76/224 (33.93%). The schema-146
 `full-battle-original-moon-phase-energy-relic.mt2f`
 archive adds accepted native evidence for the unchanged `MoonPhaseModifyEmber`
@@ -340,6 +340,10 @@ the recorded unit ability.
 `PyreHeartSavagery_UpgradeData` relic payload gives its summoned Train Steward
 the native OnKill trigger and models repeated same-definition unit-upgrade
 accumulation. Its focused battle replay matches all 49 room stages and 28 actions.
+`full-battle-relic-card-cast-trigger-upgrades.mt2f` verifies an installed
+temporary card upgrade carries its ordered OnCast card effect through replay
+and applies it on both native plays. The authored relic payload is synthetic and
+does not add original relic-owner evidence.
 `full-battle-relic-card-ephemeral-upgrades.mt2f` verifies temporary relic-granted
 Ephemeral traits purge played spells and spells left in hand at EndTurn. Its
 authored payload is synthetic and does not add original relic-owner evidence.
@@ -3669,4 +3673,27 @@ and 31 component calibrations.
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-spawn-status-relics-boss-mute.mt2f
 dotnet run --project src/ModelChecks -c Release -- --relic-spawn-status-only tests/fixtures/full-battle-spawn-status-relics-boss-mute.mt2f
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-spawn-status-relics-boss-mute.mt2f
+```
+
+### Relic card OnCast effects (schema 157)
+
+`full-battle-relic-card-cast-trigger-upgrades.mt2f` uses a synthetic
+`RelicEffectAddTempUpgrade` payload that installs an ordered `CardEffectDamage`
+OnCast effect. The native check confirms five ordered relic-manager results,
+two trigger notifications and two plays of the upgraded card. The native battle
+wins with 49 matched stages and 10 actions; capture failures, mismatches,
+unsupported transitions and pending records are zero. Search checks 128 states
+with equal serial and parallel results and no unsupported actions.
+
+This establishes the OnCast card-effect path for temporary relic upgrades. It
+does not establish an original relic owner or cover other trigger and room
+ability payloads. The 26,109-byte binary has 3,990 unique nodes and SHA-256
+`f83469ddd3c598088eaf28bcadf2fee99bae7f9be22d4ad50d8993fe43ebeb7a`; it has no
+JSON companion. Inventory is now 274 archives: 243 battles and 31 component
+calibrations. Original relic evidence remains 76/224 (33.93%).
+
+```powershell
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-relic-card-cast-trigger-upgrades.mt2f
+dotnet run --project src/ModelChecks -c Release -- --relic-card-modifiers-only tests/fixtures/full-battle-relic-card-cast-trigger-upgrades.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-relic-card-cast-trigger-upgrades.mt2f
 ```

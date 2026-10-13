@@ -1,6 +1,6 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-13): 273 binary archives, including 242
+Current accepted inventory (2026-10-14): 274 binary archives, including 243
 full battles and 31 component calibrations. Unchanged original relic evidence
 covers 76/224 catalog entries (33.93%); see
 [the owner evidence table](tests/fixtures/relic-coverage.md). Whole-battle
@@ -190,6 +190,24 @@ calibrations. Original relic evidence covers 76/224 owners (33.93%).
 ```powershell
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-spawn-status-relics-boss-mute.mt2f
 ```
+
+### Relic card OnCast effects (schema 157)
+
+`full-battle-relic-card-cast-trigger-upgrades.mt2f` captures a synthetic
+`RelicEffectAddTempUpgrade` payload that appends an ordered `CardEffectDamage`
+OnCast effect. The target card is played twice with the effect installed; five
+relic-manager results, ordered filters and two trigger notifications match the
+native trace. The muted Instant battle wins with 49 matched stages and 10
+actions, with zero capture failures, mismatches, unsupported transitions or
+pending records. Battle search checks 128 states with equal serial and parallel
+results and zero unsupported actions.
+
+The 26,109-byte binary archive has 3,990 unique nodes and SHA-256
+`f83469ddd3c598088eaf28bcadf2fee99bae7f9be22d4ad50d8993fe43ebeb7a`; no JSON
+companion is tracked. Inventory is now 274 archives: 243 battles and 31
+component calibrations. Original relic evidence remains 76/224 (33.93%). This
+validates the modeled OnCast card-effect path only; other card-trigger and room
+ability payloads remain unsupported.
 
 ### Relic temporary DamageOverflow trait
 
@@ -540,7 +558,7 @@ are copied immutable values; independent child states can run on worker threads.
 | Statistic-driven damage traits | `DamageScalingModel` and `RoomCombatModel` | 63 native callbacks with complete refreshed contexts; trait order, replacement/addition, explicit-source upgrades, per-hit statistics and Boss/Pyre kill previews |
 | Dynamic statistic inputs | `CombatContext.QueryFrame` and turn/card transitions | 255 native damage callbacks and 48 decision boundaries; payment, combat, rollover, previews and settled terminal resources, plus multi-turn and parallel branches |
 | Card instance modifiers | `CardModifierModel` | Permanent/temporary ordered numeric upgrades, unit starting statuses, discard removal, play history and 256 native scalar calculations |
-| Relic card modifiers | `RelicCardModifierModel` and `CardUpgradeLifecycleModel` | Native ordering/conditions, numeric/status/IgnoreArmor/SelfPurge/Consume/DamageOverflow upgrades, calibrated IgnoreArmor/Consume add/remove suppression, summon DamageBuff/positive UnhealedHealth, unit-ability upgrades, temporary upgrade replacement, generation and cardless births; played Consume cards route to Exhausted. DamageOverflow and summon DamageBuff/UnhealedHealth are mechanism-tested without a native relic-manager capture. Replacement keeps lifecycle and battle card modifier lists synchronized. Other trait removals, card triggers and room-ability payloads remain explicitly rejected. |
+| Relic card modifiers | `RelicCardModifierModel` and `CardUpgradeLifecycleModel` | Native ordering/conditions, numeric/status/IgnoreArmor/SelfPurge/Consume/DamageOverflow upgrades, calibrated IgnoreArmor/Consume add/remove suppression, summon DamageBuff/positive UnhealedHealth, unit-ability upgrades, temporary upgrade replacement, generation and cardless births; played Consume cards route to Exhausted. Captured OnCast card-effect actions append in native order and resolve during play. DamageOverflow and summon DamageBuff/UnhealedHealth are mechanism-tested without a native relic-manager capture. Replacement keeps lifecycle and battle card modifier lists synchronized. Other non-OnCast card triggers, trait-removal behavior and room-ability payloads remain explicitly rejected. |
 | Relic added-trigger birth effects | `RelicCharacterTriggerModel` | Fresh ordered trigger installs, count modifiers, conditions, team/subtype gates, captured character asset-key filters and Covenant/preview gates; 32 immutable branches. Filtered Covenant behavior has model checks but no accepted native battle archive yet. |
 | Retained card references | `CombatContext.CardRegistry` | Observed card identities survive pile clearing; detached spawner upgrades/removal preserve ownership and parent isolation |
 | Standby dictionary allocation | `CardPileModel` | Captured entry slots and free-list order preserve native hole reuse after unit death; malformed layouts, distinct futures, terminal clear and parallel branches |

@@ -30,16 +30,24 @@ namespace MonsterTrain2Poju.Probe
                 upgrade.GetTraitDataUpgrades().Select(CardTraitCompositionProbe.Definition).ToArray(),
                 upgrade.GetRemoveTraitUpgrades().Select(name => TypeNameCache.GetType(name).FullName).ToArray(), upgrade.GetAvoidClobberingExistingTraits(),
                 ((List<string>)AccessTools.Field(typeof(CardUpgradeState), "traitsModified").GetValue(upgrade)).ToArray(),
-                upgrade.GetUpgradesToRemove().Select(data => data.GetAssetKey()).ToArray(), upgrade.GetCardTriggerUpgrades().Select(Trigger).ToArray(),
+                upgrade.GetUpgradesToRemove().Select(data => data.GetAssetKey()).ToArray(), upgrade.GetCardTriggerUpgrades().Select(trigger => Trigger(trigger)).ToArray(),
                 rescale && source!.GetBonusDamage() > 0 ? (int?)source.GetBonusDamage() : null,
                 rescale && source!.GetBonusHeal() > 0 ? (int?)source.GetBonusHeal() : null, id);
         }
-        private static CardLifecycleTrigger Trigger(CardTriggerEffectData data) => new CardLifecycleTrigger(data.GetTrigger().ToString(), data.GetDescriptionKey(),
-            data.GetCardEffects().Select(effect => effect.GetEffectStateName()).ToArray());
+        private static CardLifecycleTrigger Trigger(CardTriggerEffectData data, string id = "")
+        {
+            var interactions = new List<string>();
+            CardEffectData[] effects = data.GetCardEffects().ToArray();
+            CardActionEffect[] actions = effects.Select(effect => BattleActionProbe.DescribeTriggerEffect(effect, interactions)).ToArray();
+            if (data.GetTrigger().ToString() != "OnCast") interactions.Add("Unsupported card upgrade trigger " + data.GetTrigger());
+            return new CardLifecycleTrigger(data.GetTrigger().ToString(), data.GetDescriptionKey(),
+                effects.Select(effect => effect.GetEffectStateName()).ToArray(), id, actions, interactions.Distinct().ToArray());
+        }
+        internal static CardLifecycleTrigger TriggerDefinition(CardTriggerEffectData data) => Trigger(data);
         private static CardLifecycleTrigger Trigger(CardTriggerEffectState state)
         {
             var data = state.GetCardTriggerEffectData();
-            return new CardLifecycleTrigger(state.GetTrigger().ToString(), state.GetDescriptionKey(), data.GetCardEffects().Select(effect => effect.GetEffectStateName()).ToArray(), state.GetTriggerId());
+            return Trigger(data, state.GetTriggerId());
         }
         internal CardUpgradeLifecycleState Capture(CardState card)
         {

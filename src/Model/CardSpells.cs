@@ -285,11 +285,12 @@ namespace MonsterTrain2Poju.Model
                 {
                     CardInstanceState? card = state.Context.FindCard(sourceCardId) ?? resolvingCard;
                     CardPlayRule? rule = definitions.Cards.FirstOrDefault(item => item.DataId == card?.DataId);
-                    if (card == null || rule == null || rule.Effects.Count != effects.Count)
+                    CardPlayRule? resolvedRule = card == null || rule == null ? null : CardModifierModel.Resolve(rule, card);
+                    if (resolvedRule == null || resolvedRule.Effects.Count != effects.Count)
                         return UnsupportedTrain("Missing live spell effect definition.");
                     // These native effects read GetUnmodifiedIntInRange, so card damage upgrades do not change their multipliers.
-                    effect = effect.Type == "DamagePerSourceAttack" || effect.Type == "DamagePerHp"
-                        ? rule.Effects[index] : CardModifierModel.Resolve(rule, card).Effects[index];
+                    effect = index < rule!.Effects.Count && (effect.Type == "DamagePerSourceAttack" || effect.Type == "DamagePerHp")
+                        ? rule.Effects[index] : resolvedRule.Effects[index];
                     resolvingCard = card;
                 }
                 if (effect.Target == "FrontInRoomAndRoomAbove" && !focusedRoom.HasValue)

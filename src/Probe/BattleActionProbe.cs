@@ -9,6 +9,21 @@ namespace MonsterTrain2Poju.Probe
 {
     internal sealed class BattleActionProbe
     {
+        private static readonly HashSet<string> SpellEffectTypes = new HashSet<string>(new[]
+        {
+            "CardEffectCopyUnits", "CardEffectBump", "CardEffectUnitAbilityTeleport", "CardEffectAttackWithUnit", "CardEffectRemoveStatusEffect",
+            "CardEffectSetUnitAbility", "CardEffectRemoveAbility", "CardEffectResetCooldown", "CardEffectAdjustAbilityCooldown",
+            "CardEffectAttachEquipment", "CardEffectAttachTrainRoomAttachment", "CardEffectBuffEquipment", "CardEffectRemoveEquipment",
+            "CardEffectRewardGold", "CardEffectGainEnergy", "CardEffectAdjustEnergy", "CardEffectGainEnergyNextTurn", "CardEffectGainEnergyEveryTurn",
+            "CardEffectDamage", "CardEffectDamagePerSourceAttack", "CardEffectDamagePerHp", "CardEffectDraw", "CardEffectDrawAdditionalNextTurn",
+            "CardEffectAdjustRoomCapacity", "CardEffectAdjustForgePoints", "CardEffectDiscardHand", "CardEffectRandomDiscard", "CardEffectAddBattleCard",
+            "CardEffectHeal", "CardEffectSacrifice", "CardEffectKill", "CardEffectRecursion", "CardEffectBuffDamage", "CardEffectDebuffDamage",
+            "CardEffectBuffMaxHealth", "CardEffectDebuffMaxHealth", "CardEffectAddStatusEffect", "CardEffectMultiplyStatusEffect",
+            "CardEffectMultiplyAllPositiveStatusEffects", "CardEffectAdjustAllStatusEffects", "CardEffectAddStatusEffectPerOtherEffect",
+            "CardEffectSpawnMonsterOrAddStatusEffect", "CardEffectFloorRearrange", "CardEffectAddCardUpgradeToUnits", "CardEffectDrawType",
+            "CardEffectAddTempCardUpgradeToNextDrawnCard", "CardEffectAddTempCardUpgradeToUnits", "CardEffectRemoveTempUpgradeFromUnit",
+            "CardEffectAddTempCardUpgradeToCardsInHand", "CardEffectAddPermanentCardUpgradeToCardsInHand"
+        }, StringComparer.Ordinal);
         private readonly FullBattleTrace trace;
         private readonly UnitPlayModelProbe projection;
         private readonly ManualLogSource log;
@@ -130,175 +145,11 @@ namespace MonsterTrain2Poju.Probe
                 }
             }
             else if (kind == "CardEffectNULL") kind = "Null";
-            else if ((data.GetCardType() == CardType.Spell || data.GetCardType() == CardType.Equipment || data.GetCardType() == CardType.TrainRoomAttachment) && effects.Length > 0 && effects.All(effect =>
-                    new[] { "CardEffectCopyUnits", "CardEffectBump", "CardEffectUnitAbilityTeleport", "CardEffectAttackWithUnit", "CardEffectRemoveStatusEffect", "CardEffectSetUnitAbility", "CardEffectRemoveAbility", "CardEffectResetCooldown", "CardEffectAdjustAbilityCooldown", "CardEffectAttachEquipment", "CardEffectAttachTrainRoomAttachment", "CardEffectBuffEquipment", "CardEffectRemoveEquipment", "CardEffectRewardGold", "CardEffectGainEnergy", "CardEffectAdjustEnergy", "CardEffectGainEnergyNextTurn", "CardEffectGainEnergyEveryTurn", "CardEffectDamage", "CardEffectDamagePerSourceAttack", "CardEffectDamagePerHp", "CardEffectDraw", "CardEffectDrawAdditionalNextTurn", "CardEffectAdjustRoomCapacity", "CardEffectAdjustForgePoints", "CardEffectDiscardHand", "CardEffectRandomDiscard", "CardEffectAddBattleCard", "CardEffectHeal", "CardEffectSacrifice", "CardEffectKill", "CardEffectRecursion", "CardEffectBuffDamage", "CardEffectDebuffDamage", "CardEffectBuffMaxHealth", "CardEffectDebuffMaxHealth", "CardEffectAddStatusEffect", "CardEffectMultiplyStatusEffect", "CardEffectMultiplyAllPositiveStatusEffects", "CardEffectAdjustAllStatusEffects", "CardEffectAddStatusEffectPerOtherEffect", "CardEffectSpawnMonsterOrAddStatusEffect", "CardEffectFloorRearrange", "CardEffectAddCardUpgradeToUnits",
-                    "CardEffectDrawType", "CardEffectAddTempCardUpgradeToNextDrawnCard",
-                    "CardEffectAddTempCardUpgradeToUnits", "CardEffectRemoveTempUpgradeFromUnit",
-                    "CardEffectAddTempCardUpgradeToCardsInHand", "CardEffectAddPermanentCardUpgradeToCardsInHand" }.Contains(effect.GetEffectStateName())))
+            else if ((data.GetCardType() == CardType.Spell || data.GetCardType() == CardType.Equipment || data.GetCardType() == CardType.TrainRoomAttachment) && effects.Length > 0 && effects.All(SupportedSpellEffect))
             {
                 kind = "Spell";
-                for (int index = 0; index < effects.Length; index++)
-                {
-                    CardEffectData effect = effects[index];
-                    if (AbilityLifecycleProbe.Known(effect.GetEffectStateName())) { spellEffects.Add(AbilityLifecycleProbe.Describe(effect)); continue; }
-                    if (AbilityCooldownProbe.Known(effect.GetEffectStateName())) { spellEffects.Add(AbilityCooldownProbe.Describe(effect, effect.GetParamInt(), effect.GetParamBool())); continue; }
-                    bool handUpgrade = effect.GetEffectStateName() == "CardEffectAddTempCardUpgradeToCardsInHand" ||
-                        effect.GetEffectStateName() == "CardEffectAddPermanentCardUpgradeToCardsInHand";
-                    bool cardOnlyDrawTarget = (effect.GetEffectStateName() == "CardEffectDrawType" ||
-                        effect.GetEffectStateName() == "CardEffectAddTempCardUpgradeToNextDrawnCard") &&
-                        (effect.GetTargetMode() == TargetMode.DrawPile || effect.GetTargetMode() == TargetMode.Hand ||
-                         effect.GetTargetMode() == TargetMode.LastDrawnCard);
-                    bool randomDiscardHandTarget = effect.GetEffectStateName() == "CardEffectRandomDiscard" &&
-                        effect.GetTargetMode() == TargetMode.Hand;
-                    bool recursionCardPileTarget = effect.GetEffectStateName() == "CardEffectRecursion" &&
-                        (effect.GetTargetMode() == TargetMode.Exhaust || effect.GetTargetMode() == TargetMode.Eaten ||
-                         effect.GetTargetMode() == TargetMode.Discard);
-                    var excluded = new List<SubtypeData>(); effect.GetTargetCharacterExcludedSubtypes(excluded);
-                    if (effect.GetUseStatusEffectStackMultiplier() || effect.GetUseHealthMissingStackMultiplier() ||
-                        effect.GetUseMagicPowerMultiplier() || effect.GetEffectStateName() != "CardEffectSacrifice" &&
-                        effect.GetEffectStateName() != "CardEffectKill" &&
-                        effect.GetEffectStateName() != "CardEffectRecursion" &&
-                        effect.GetEffectStateName() != "CardEffectSpawnMonsterOrAddStatusEffect" && !effect.GetParamSubtype().IsNone ||
-                        (handUpgrade ? effect.GetTargetMode() != TargetMode.Hand && effect.GetTargetMode() != TargetMode.Room :
-                            !cardOnlyDrawTarget && !randomDiscardHandTarget && !recursionCardPileTarget && !CardTargetModel.Supports(effect.GetTargetMode().ToString())))
-                        interactions.Add("Spell scaling or target filters");
-                    if (effect.GetEffectStateName() == "CardEffectKill" && !effect.GetParamSubtype().IsNone)
-                        interactions.Add("CardEffectKill subtype target validation");
-                    string type = EnergyModel.IsNativeEffect(effect.GetEffectStateName()) ? EnergyEffectProbe.Type(effect) :
-                        effect.GetEffectStateName() == "CardEffectAttachTrainRoomAttachment" ? "AttachRoomCapacity" :
-                        effect.GetEffectStateName() == "CardEffectAdjustForgePoints" ? ForgePointsModel.Effect :
-                        effect.GetEffectStateName() == "CardEffectCopyUnits" ? "CopyUnits" :
-                        effect.GetEffectStateName() == "CardEffectBump" ? "Bump" :
-                        effect.GetEffectStateName() == "CardEffectUnitAbilityTeleport" ? "AbilityTeleport" :
-                        effect.GetEffectStateName() == "CardEffectAttackWithUnit" ? "AttackWithUnit" :
-                        effect.GetEffectStateName() == "CardEffectAttachEquipment" ? "AttachEquipment" :
-                        effect.GetEffectStateName() == "CardEffectBuffEquipment" ? "BuffEquipment" :
-                        effect.GetEffectStateName() == "CardEffectRemoveEquipment" ? "RemoveEquipment" :
-                        effect.GetEffectStateName() == "CardEffectRewardGold" ? "RewardGold" :
-                        effect.GetEffectStateName() == "CardEffectDamage" ? "Damage" :
-                        effect.GetEffectStateName() == "CardEffectDamagePerSourceAttack" ? "DamagePerSourceAttack" :
-                        effect.GetEffectStateName() == "CardEffectDamagePerHp" ? "DamagePerHp" :
-                        effect.GetEffectStateName() == "CardEffectAdjustRoomCapacity" ? "AdjustCapacity" :
-                        effect.GetEffectStateName() == "CardEffectDraw" ? "Draw" :
-                        effect.GetEffectStateName() == "CardEffectDrawType" ? "DrawType" :
-                        effect.GetEffectStateName() == "CardEffectAddTempCardUpgradeToNextDrawnCard" ? "ScheduleNextDrawUpgrade" :
-                        effect.GetEffectStateName() == "CardEffectDrawAdditionalNextTurn" ? "DrawNextTurn" :
-                        effect.GetEffectStateName() == "CardEffectDiscardHand" ? "DiscardHand" :
-                        effect.GetEffectStateName() == "CardEffectRandomDiscard" ? "RandomDiscard" :
-                        effect.GetEffectStateName() == "CardEffectAddBattleCard" ? "Generate" :
-                        effect.GetEffectStateName() == "CardEffectBuffDamage" ? "BuffAttack" :
-                        effect.GetEffectStateName() == "CardEffectDebuffDamage" ? "DebuffAttack" :
-                        effect.GetEffectStateName() == "CardEffectBuffMaxHealth" ? "BuffHealth" :
-                        effect.GetEffectStateName() == "CardEffectDebuffMaxHealth" ? "DebuffHealth" :
-                        effect.GetEffectStateName() == "CardEffectHeal" ? "Heal" :
-                        effect.GetEffectStateName() == "CardEffectSacrifice" ? "Sacrifice" :
-                        effect.GetEffectStateName() == "CardEffectKill" ? "Kill" :
-                        effect.GetEffectStateName() == "CardEffectRecursion" ? "Recursion" :
-                        effect.GetEffectStateName() == "CardEffectFloorRearrange" ? "FloorRearrange" :
-                        effect.GetEffectStateName() == "CardEffectAddStatusEffectPerOtherEffect" ? "AddStatusPerOtherEffect" :
-                        effect.GetEffectStateName() == "CardEffectMultiplyStatusEffect" ? "MultiplyStatus" :
-                        effect.GetEffectStateName() == "CardEffectMultiplyAllPositiveStatusEffects" ? "MultiplyAllPositiveStatusEffects" :
-                        effect.GetEffectStateName() == "CardEffectAdjustAllStatusEffects" ? "AdjustAllStatusEffects" :
-                        effect.GetEffectStateName() == "CardEffectSpawnMonsterOrAddStatusEffect" ? "SpawnOrStatus" :
-                        effect.GetEffectStateName() == "CardEffectAddStatusEffect" ? "AddStatus" :
-                        handUpgrade ? "HandUpgrade" : effect.GetEffectStateName() == "CardEffectRemoveTempUpgradeFromUnit" ? "RemoveUnitUpgrade" : "UnitUpgrade";
-                    CardUpgradeModifier? upgrade = type == "DrawNextTurn" ? BonusDrawProbe.Upgrade(effect) : null;
-                    if (type == "Recursion" && effect.GetParamCardUpgradeData() != null)
-                    {
-                        var upgradeState = new CardUpgradeState();
-                        upgradeState.Setup(effect.GetParamCardUpgradeData());
-                        upgrade = CardModifierProbe.Upgrade(upgradeState);
-                        interactions.AddRange(CardModifierModel.UpgradeInteractions(upgrade));
-                    }
-                    if (effect.GetUseIntRange() && !EnergyModel.IsEffect(type) && type != ForgePointsModel.Effect && !new[] { "CopyUnits", "Bump", "Damage", "DamagePerSourceAttack", "DamagePerHp", "Heal", "AddStatus", "MultiplyStatus", "MultiplyAllPositiveStatusEffects", "BuffAttack", "DebuffAttack", "BuffHealth", "DebuffHealth", "Draw", "DrawType", "ScheduleNextDrawUpgrade", "DrawNextTurn", "AdjustCapacity", "DiscardHand", "RandomDiscard", "Generate" }.Contains(type))
-                        interactions.Add("Unimplemented integer range consumer " + type);
-                    string lifetime = "";
-                    if (type == "BuffHealth") lifetime = ((UnitUpgradeLifetimeTempOnly)effect.GetAdditionalParamInt1()).ToString();
-                    bool scaleUpgrade = (effect.GetEffectStateName() == "CardEffectAddCardUpgradeToUnits" ||
-                        effect.GetEffectStateName() == "CardEffectBuffEquipment") && effect.GetParamBool();
-                    if (type == "UnitUpgrade" || type == "RemoveUnitUpgrade" || type == "AttachEquipment" ||
-                        type == "BuffEquipment" || handUpgrade)
-                    {
-                        if (effect.GetParamCardUpgradeData() == null) interactions.Add("Missing unit upgrade data");
-                        else
-                        {
-                            CardUpgradeData upgradeData = effect.GetParamCardUpgradeData();
-                            var upgradeState = new CardUpgradeState(); upgradeState.Setup(upgradeData);
-                            bool filtersIgnoredByEffect = effect.GetEffectStateName() == "CardEffectAddCardUpgradeToUnits";
-                            upgrade = CardModifierProbe.Upgrade(upgradeState, false, filtersAlreadyApplied: filtersIgnoredByEffect);
-                            interactions.AddRange(upgrade.ExternalInteractions);
-                            if (scaleUpgrade && !upgradeData.CanScaleUpgradeToSingleInstance())
-                                interactions.Add("Invalid scaled unit upgrade definition");
-                        }
-                        lifetime = type == "BuffEquipment" ? "TemporaryUntilUnitDeath" : handUpgrade ?
-                            effect.GetEffectStateName() == "CardEffectAddPermanentCardUpgradeToCardsInHand" ? "Permanent" : "TemporaryUntilEndOfBattle" :
-                            type == "AttachEquipment" ? "" : ((UnitUpgradeLifetime)effect.GetAdditionalParamInt1()).ToString();
-                    }
-                    var statuses = new List<CombatStatus>();
-                    if (type == "AddStatus" || type == "MultiplyStatus" || type == "AdjustAllStatusEffects" || type == "AddStatusPerOtherEffect" || type == "SpawnOrStatus")
-                    {
-                        if (type != "AdjustAllStatusEffects" && effect.GetParamStatusEffects().Length == 0) interactions.Add("Empty status effect pool");
-                        foreach (StatusEffectStackData status in effect.GetParamStatusEffects())
-                        {
-                            // Native unconditionally accepts non-strict room tests.
-                            // Strict/drop-target nonstackable tests still need their
-                            // independently modeled pre-cast target legality.
-                            if (type == "AddStatus" && !StatusEffectManager.Instance.GetStatusEffectDataById(status.statusId)!.IsStackable() &&
-                                (effect.GetParamBool() || effect.GetTargetMode() == TargetMode.DropTargetCharacter))
-                                interactions.Add("Nonstackable status legality");
-                            statuses.Add(Status(status.statusId, status.count));
-                        }
-                    }
-                    if (type == "AdjustAllStatusEffects" && effect.GetAdditionalParamInt() != 0 && effect.GetAdditionalParamInt() != 1)
-                        interactions.Add("Unknown all-status adjustment filter");
-                    CombatUnit? spawnFallbackUnit = null;
-                    if (type == "SpawnOrStatus")
-                    {
-                        CharacterData? fallback = effect.GetParamCharacterData();
-                        if (fallback == null) interactions.Add("Missing spawn-or-status fallback character.");
-                        else spawnFallbackUnit = SpawnTemplate(fallback, true, interactions);
-                    }
-                    RoomCapacityAttachmentState? roomAttachment = type == "AttachRoomCapacity"
-                        ? CapacityAttachment(data, effect, interactions) : null;
-                    spellEffects.Add(new CardActionEffect(type, effect.GetTargetMode().ToString(), effect.GetParamInt(),
-                        type == "SpawnOrStatus" || effect.GetTargetTeamType().HasFlag(Team.Type.Heroes),
-                        type != "SpawnOrStatus" && effect.GetTargetTeamType().HasFlag(Team.Type.Monsters), statuses,
-                        upgrade, lifetime, new CardEffectTests(effect.GetShouldTest(), effect.GetShouldFailToCastIfTestFails(),
-                            effect.GetShouldCancelSubsequentEffectsIfTestFails(),
-                            (type == "AddStatus" || type == "AdjustAllStatusEffects") && effect.GetParamBool(),
-                            ((ICardEffect)Activator.CreateInstance(typeof(CardEffectBase).Assembly.GetType(effect.GetEffectStateName())!)!).CanPlayAfterBossDead,
-                            mustHaveValidTargets: type == "Kill" && effect.GetParamBool3()),
-                        effect.GetUseIntRange() ? new CardEffectRange(effect.GetParamMinInt(), effect.GetParamMaxInt(), effect.GetParamMultiplier()) : null,
-                        new CardTargetFilters(effect.GetTargetModeHealthFilter().ToString(), effect.GetTargetModeStatusEffectsFilter(),
-                            effect.GetTargetModeStatusEffectsExcludedFilter(), effect.GetTargetIgnoreBosses(),
-                            effect.GetTargetCharacterSubtype().IsNone ? "" : effect.GetTargetCharacterSubtype().Key,
-                            excluded.Select(subtype => subtype.IsNone ? "" : subtype.Key).ToArray()),
-                        type == "Generate" ? CardGenerationProbe.Definition(effect) : null, type == "AdjustCapacity" && effect.GetParamBool(),
-                        copyHeroStats: type == "CopyUnits" ? effect.GetParamBool() : (bool?)null,
-                        scaleUpgrade: scaleUpgrade,
-                        doNotFullyRemove: type == "Sacrifice" ? effect.GetParamBool() : (bool?)null,
-                        sacrificeSubtype: type == "Sacrifice" && !effect.GetParamSubtype().IsNone ? effect.GetParamSubtype().Key : "",
-                        typedDraw: type == "DrawType" ? TypedDrawProbe.DrawRule(effect) : null,
-                        nextDrawUpgrade: type == "ScheduleNextDrawUpgrade" ? TypedDrawProbe.UpgradeRule(effect) : null,
-                        requiredGold: type == "ScheduleNextDrawUpgrade" ? effect.GetAdditionalParamInt() : 0,
-                        goldCostRequired: type == "RewardGold" ? effect.GetParamBool() : (bool?)null,
-                        useCardTraits: type == "DamagePerSourceAttack" && effect.GetParamBool(),
-                        requireEquipment: type == "AttackWithUnit" && effect.GetParamBool(),
-                        useSelectedRoom: type == "AttackWithUnit" && effect.GetParamBool2(),
-                        countStatusOnlyOnTargets: type == "AddStatusPerOtherEffect" && effect.GetParamBool(),
-                        spawnFallbackUnit: spawnFallbackUnit,
-                        disallowStatusStackModifiers: type == "SpawnOrStatus" && effect.GetDisallowStatusEffectStackModifiers(),
-                        statusAdjustmentFilter: type == "AdjustAllStatusEffects" ? (int?)effect.GetAdditionalParamInt() : null,
-                        damagePerHpLastAttacker: type == "DamagePerHp" && effect.GetParamBool(),
-                        damagePerHpIncludeArmor: type == "DamagePerHp" && effect.GetParamBool2(),
-                        roomAttachment: roomAttachment,
-                        recursion: type == "Recursion" ? new CardRecursionRule(
-                            effect.GetTargetCardSelectionMode().ToString(), effect.GetTargetCardType().ToString(),
-                            effect.GetTargetCharacterSubtype().IsNone ? "" : effect.GetTargetCharacterSubtype().Key,
-                            effect.GetParamBool(), effect.GetParamBool2(), effect.GetParamCardFilter() != null,
-                            effect.GetParamCardUpgradeData() != null,
-                            effect.GetParamCardFilter() == null ? null : CardUpgradeMaskProbe.Rule(effect.GetParamCardFilter())) : null));
-                }
+                foreach (CardEffectData effect in effects)
+                    spellEffects.Add(DescribeSpellEffect(data, effect, interactions));
             }
             else interactions.Add("Unimplemented play effect " + kind);
             EquipmentDefinition? equipment = null;
@@ -320,6 +171,174 @@ namespace MonsterTrain2Poju.Probe
                 data.GetCardType().ToString(), data.IsUnitAbility() || data.IsRoomAbility(),
                 effects.All(effect => ((ICardEffect)Activator.CreateInstance(typeof(CardEffectBase).Assembly
                     .GetType(effect.GetEffectStateName())!)!).CanPlayInEngineRoom));
+        }
+
+        private static bool SupportedSpellEffect(CardEffectData effect) =>
+            AbilityLifecycleProbe.Known(effect.GetEffectStateName()) || AbilityCooldownProbe.Known(effect.GetEffectStateName()) ||
+            SpellEffectTypes.Contains(effect.GetEffectStateName());
+        internal static bool SupportsCardActionEffect(CardEffectData effect) => SupportedSpellEffect(effect);
+
+        internal static CardActionEffect DescribeTriggerEffect(CardEffectData effect, List<string> interactions)
+        {
+            if (!SupportedSpellEffect(effect))
+            {
+                interactions.Add("Unimplemented card-trigger effect " + effect.GetEffectStateName());
+                return new CardActionEffect("Unsupported", "None", 0, false, false, Array.Empty<CombatStatus>());
+            }
+            return DescribeSpellEffect(null, effect, interactions);
+        }
+
+        private static CardActionEffect DescribeSpellEffect(CardData? data, CardEffectData effect, List<string> interactions)
+        {
+            if (AbilityLifecycleProbe.Known(effect.GetEffectStateName())) return AbilityLifecycleProbe.Describe(effect);
+            if (AbilityCooldownProbe.Known(effect.GetEffectStateName())) return AbilityCooldownProbe.Describe(effect, effect.GetParamInt(), effect.GetParamBool());
+            bool handUpgrade = effect.GetEffectStateName() == "CardEffectAddTempCardUpgradeToCardsInHand" ||
+                effect.GetEffectStateName() == "CardEffectAddPermanentCardUpgradeToCardsInHand";
+            bool cardOnlyDrawTarget = (effect.GetEffectStateName() == "CardEffectDrawType" ||
+                effect.GetEffectStateName() == "CardEffectAddTempCardUpgradeToNextDrawnCard") &&
+                (effect.GetTargetMode() == TargetMode.DrawPile || effect.GetTargetMode() == TargetMode.Hand ||
+                 effect.GetTargetMode() == TargetMode.LastDrawnCard);
+            bool randomDiscardHandTarget = effect.GetEffectStateName() == "CardEffectRandomDiscard" && effect.GetTargetMode() == TargetMode.Hand;
+            bool recursionCardPileTarget = effect.GetEffectStateName() == "CardEffectRecursion" &&
+                (effect.GetTargetMode() == TargetMode.Exhaust || effect.GetTargetMode() == TargetMode.Eaten || effect.GetTargetMode() == TargetMode.Discard);
+            var excluded = new List<SubtypeData>(); effect.GetTargetCharacterExcludedSubtypes(excluded);
+            if (effect.GetUseStatusEffectStackMultiplier() || effect.GetUseHealthMissingStackMultiplier() || effect.GetUseMagicPowerMultiplier() ||
+                effect.GetEffectStateName() != "CardEffectSacrifice" && effect.GetEffectStateName() != "CardEffectKill" &&
+                effect.GetEffectStateName() != "CardEffectRecursion" && effect.GetEffectStateName() != "CardEffectSpawnMonsterOrAddStatusEffect" &&
+                !effect.GetParamSubtype().IsNone ||
+                (handUpgrade ? effect.GetTargetMode() != TargetMode.Hand && effect.GetTargetMode() != TargetMode.Room :
+                    !cardOnlyDrawTarget && !randomDiscardHandTarget && !recursionCardPileTarget && !CardTargetModel.Supports(effect.GetTargetMode().ToString())))
+                interactions.Add("Spell scaling or target filters");
+            if (effect.GetEffectStateName() == "CardEffectKill" && !effect.GetParamSubtype().IsNone)
+                interactions.Add("CardEffectKill subtype target validation");
+            string type = EnergyModel.IsNativeEffect(effect.GetEffectStateName()) ? EnergyEffectProbe.Type(effect) :
+                effect.GetEffectStateName() == "CardEffectAttachTrainRoomAttachment" ? "AttachRoomCapacity" :
+                effect.GetEffectStateName() == "CardEffectAdjustForgePoints" ? ForgePointsModel.Effect :
+                effect.GetEffectStateName() == "CardEffectCopyUnits" ? "CopyUnits" :
+                effect.GetEffectStateName() == "CardEffectBump" ? "Bump" :
+                effect.GetEffectStateName() == "CardEffectUnitAbilityTeleport" ? "AbilityTeleport" :
+                effect.GetEffectStateName() == "CardEffectAttackWithUnit" ? "AttackWithUnit" :
+                effect.GetEffectStateName() == "CardEffectAttachEquipment" ? "AttachEquipment" :
+                effect.GetEffectStateName() == "CardEffectBuffEquipment" ? "BuffEquipment" :
+                effect.GetEffectStateName() == "CardEffectRemoveEquipment" ? "RemoveEquipment" :
+                effect.GetEffectStateName() == "CardEffectRewardGold" ? "RewardGold" :
+                effect.GetEffectStateName() == "CardEffectDamage" ? "Damage" :
+                effect.GetEffectStateName() == "CardEffectDamagePerSourceAttack" ? "DamagePerSourceAttack" :
+                effect.GetEffectStateName() == "CardEffectDamagePerHp" ? "DamagePerHp" :
+                effect.GetEffectStateName() == "CardEffectAdjustRoomCapacity" ? "AdjustCapacity" :
+                effect.GetEffectStateName() == "CardEffectDraw" ? "Draw" :
+                effect.GetEffectStateName() == "CardEffectDrawType" ? "DrawType" :
+                effect.GetEffectStateName() == "CardEffectAddTempCardUpgradeToNextDrawnCard" ? "ScheduleNextDrawUpgrade" :
+                effect.GetEffectStateName() == "CardEffectDrawAdditionalNextTurn" ? "DrawNextTurn" :
+                effect.GetEffectStateName() == "CardEffectDiscardHand" ? "DiscardHand" :
+                effect.GetEffectStateName() == "CardEffectRandomDiscard" ? "RandomDiscard" :
+                effect.GetEffectStateName() == "CardEffectAddBattleCard" ? "Generate" :
+                effect.GetEffectStateName() == "CardEffectBuffDamage" ? "BuffAttack" :
+                effect.GetEffectStateName() == "CardEffectDebuffDamage" ? "DebuffAttack" :
+                effect.GetEffectStateName() == "CardEffectBuffMaxHealth" ? "BuffHealth" :
+                effect.GetEffectStateName() == "CardEffectDebuffMaxHealth" ? "DebuffHealth" :
+                effect.GetEffectStateName() == "CardEffectHeal" ? "Heal" :
+                effect.GetEffectStateName() == "CardEffectSacrifice" ? "Sacrifice" :
+                effect.GetEffectStateName() == "CardEffectKill" ? "Kill" :
+                effect.GetEffectStateName() == "CardEffectRecursion" ? "Recursion" :
+                effect.GetEffectStateName() == "CardEffectFloorRearrange" ? "FloorRearrange" :
+                effect.GetEffectStateName() == "CardEffectAddStatusEffectPerOtherEffect" ? "AddStatusPerOtherEffect" :
+                effect.GetEffectStateName() == "CardEffectMultiplyStatusEffect" ? "MultiplyStatus" :
+                effect.GetEffectStateName() == "CardEffectMultiplyAllPositiveStatusEffects" ? "MultiplyAllPositiveStatusEffects" :
+                effect.GetEffectStateName() == "CardEffectAdjustAllStatusEffects" ? "AdjustAllStatusEffects" :
+                effect.GetEffectStateName() == "CardEffectSpawnMonsterOrAddStatusEffect" ? "SpawnOrStatus" :
+                effect.GetEffectStateName() == "CardEffectAddStatusEffect" ? "AddStatus" :
+                handUpgrade ? "HandUpgrade" : effect.GetEffectStateName() == "CardEffectRemoveTempUpgradeFromUnit" ? "RemoveUnitUpgrade" : "UnitUpgrade";
+            CardUpgradeModifier? upgrade = type == "DrawNextTurn" ? BonusDrawProbe.Upgrade(effect) : null;
+            if (type == "Recursion" && effect.GetParamCardUpgradeData() != null)
+            {
+                var upgradeState = new CardUpgradeState(); upgradeState.Setup(effect.GetParamCardUpgradeData());
+                upgrade = CardModifierProbe.Upgrade(upgradeState);
+                interactions.AddRange(CardModifierModel.UpgradeInteractions(upgrade));
+            }
+            if (effect.GetUseIntRange() && !EnergyModel.IsEffect(type) && type != ForgePointsModel.Effect &&
+                !new[] { "CopyUnits", "Bump", "Damage", "DamagePerSourceAttack", "DamagePerHp", "Heal", "AddStatus", "MultiplyStatus",
+                    "MultiplyAllPositiveStatusEffects", "BuffAttack", "DebuffAttack", "BuffHealth", "DebuffHealth", "Draw", "DrawType",
+                    "ScheduleNextDrawUpgrade", "DrawNextTurn", "AdjustCapacity", "DiscardHand", "RandomDiscard", "Generate" }.Contains(type))
+                interactions.Add("Unimplemented integer range consumer " + type);
+            string lifetime = "";
+            if (type == "BuffHealth") lifetime = ((UnitUpgradeLifetimeTempOnly)effect.GetAdditionalParamInt1()).ToString();
+            bool scaleUpgrade = (effect.GetEffectStateName() == "CardEffectAddCardUpgradeToUnits" ||
+                effect.GetEffectStateName() == "CardEffectBuffEquipment") && effect.GetParamBool();
+            if (type == "UnitUpgrade" || type == "RemoveUnitUpgrade" || type == "AttachEquipment" || type == "BuffEquipment" || handUpgrade)
+            {
+                if (effect.GetParamCardUpgradeData() == null) interactions.Add("Missing unit upgrade data");
+                else
+                {
+                    CardUpgradeData upgradeData = effect.GetParamCardUpgradeData();
+                    var upgradeState = new CardUpgradeState(); upgradeState.Setup(upgradeData);
+                    bool filtersIgnoredByEffect = effect.GetEffectStateName() == "CardEffectAddCardUpgradeToUnits";
+                    upgrade = CardModifierProbe.Upgrade(upgradeState, false, filtersAlreadyApplied: filtersIgnoredByEffect);
+                    interactions.AddRange(upgrade.ExternalInteractions);
+                    if (scaleUpgrade && !upgradeData.CanScaleUpgradeToSingleInstance()) interactions.Add("Invalid scaled unit upgrade definition");
+                }
+                lifetime = type == "BuffEquipment" ? "TemporaryUntilUnitDeath" : handUpgrade ?
+                    effect.GetEffectStateName() == "CardEffectAddPermanentCardUpgradeToCardsInHand" ? "Permanent" : "TemporaryUntilEndOfBattle" :
+                    type == "AttachEquipment" ? "" : ((UnitUpgradeLifetime)effect.GetAdditionalParamInt1()).ToString();
+            }
+            var statuses = new List<CombatStatus>();
+            if (type == "AddStatus" || type == "MultiplyStatus" || type == "AdjustAllStatusEffects" || type == "AddStatusPerOtherEffect" || type == "SpawnOrStatus")
+            {
+                if (type != "AdjustAllStatusEffects" && effect.GetParamStatusEffects().Length == 0) interactions.Add("Empty status effect pool");
+                foreach (StatusEffectStackData status in effect.GetParamStatusEffects())
+                {
+                    if (type == "AddStatus" && !StatusEffectManager.Instance.GetStatusEffectDataById(status.statusId)!.IsStackable() &&
+                        (effect.GetParamBool() || effect.GetTargetMode() == TargetMode.DropTargetCharacter))
+                        interactions.Add("Nonstackable status legality");
+                    statuses.Add(Status(status.statusId, status.count));
+                }
+            }
+            if (type == "AdjustAllStatusEffects" && effect.GetAdditionalParamInt() != 0 && effect.GetAdditionalParamInt() != 1)
+                interactions.Add("Unknown all-status adjustment filter");
+            CombatUnit? spawnFallbackUnit = null;
+            if (type == "SpawnOrStatus")
+            {
+                CharacterData? fallback = effect.GetParamCharacterData();
+                if (fallback == null) interactions.Add("Missing spawn-or-status fallback character.");
+                else spawnFallbackUnit = SpawnTemplate(fallback, true, interactions);
+            }
+            RoomCapacityAttachmentState? roomAttachment = null;
+            if (type == "AttachRoomCapacity")
+            {
+                if (data == null) interactions.Add("Room attachment trigger requires card ownership.");
+                else roomAttachment = CapacityAttachment(data, effect, interactions);
+            }
+            return new CardActionEffect(type, effect.GetTargetMode().ToString(), effect.GetParamInt(),
+                type == "SpawnOrStatus" || effect.GetTargetTeamType().HasFlag(Team.Type.Heroes),
+                type != "SpawnOrStatus" && effect.GetTargetTeamType().HasFlag(Team.Type.Monsters), statuses, upgrade, lifetime,
+                new CardEffectTests(effect.GetShouldTest(), effect.GetShouldFailToCastIfTestFails(), effect.GetShouldCancelSubsequentEffectsIfTestFails(),
+                    (type == "AddStatus" || type == "AdjustAllStatusEffects") && effect.GetParamBool(),
+                    ((ICardEffect)Activator.CreateInstance(typeof(CardEffectBase).Assembly.GetType(effect.GetEffectStateName())!)!).CanPlayAfterBossDead,
+                    mustHaveValidTargets: type == "Kill" && effect.GetParamBool3()),
+                effect.GetUseIntRange() ? new CardEffectRange(effect.GetParamMinInt(), effect.GetParamMaxInt(), effect.GetParamMultiplier()) : null,
+                new CardTargetFilters(effect.GetTargetModeHealthFilter().ToString(), effect.GetTargetModeStatusEffectsFilter(),
+                    effect.GetTargetModeStatusEffectsExcludedFilter(), effect.GetTargetIgnoreBosses(),
+                    effect.GetTargetCharacterSubtype().IsNone ? "" : effect.GetTargetCharacterSubtype().Key,
+                    excluded.Select(subtype => subtype.IsNone ? "" : subtype.Key).ToArray()),
+                type == "Generate" ? CardGenerationProbe.Definition(effect) : null, type == "AdjustCapacity" && effect.GetParamBool(),
+                copyHeroStats: type == "CopyUnits" ? effect.GetParamBool() : (bool?)null,
+                scaleUpgrade: scaleUpgrade, doNotFullyRemove: type == "Sacrifice" ? effect.GetParamBool() : (bool?)null,
+                sacrificeSubtype: type == "Sacrifice" && !effect.GetParamSubtype().IsNone ? effect.GetParamSubtype().Key : "",
+                typedDraw: type == "DrawType" ? TypedDrawProbe.DrawRule(effect) : null,
+                nextDrawUpgrade: type == "ScheduleNextDrawUpgrade" ? TypedDrawProbe.UpgradeRule(effect) : null,
+                requiredGold: type == "ScheduleNextDrawUpgrade" ? effect.GetAdditionalParamInt() : 0,
+                goldCostRequired: type == "RewardGold" ? effect.GetParamBool() : (bool?)null,
+                useCardTraits: type == "DamagePerSourceAttack" && effect.GetParamBool(),
+                requireEquipment: type == "AttackWithUnit" && effect.GetParamBool(), useSelectedRoom: type == "AttackWithUnit" && effect.GetParamBool2(),
+                countStatusOnlyOnTargets: type == "AddStatusPerOtherEffect" && effect.GetParamBool(), spawnFallbackUnit: spawnFallbackUnit,
+                disallowStatusStackModifiers: type == "SpawnOrStatus" && effect.GetDisallowStatusEffectStackModifiers(),
+                statusAdjustmentFilter: type == "AdjustAllStatusEffects" ? (int?)effect.GetAdditionalParamInt() : null,
+                damagePerHpLastAttacker: type == "DamagePerHp" && effect.GetParamBool(),
+                damagePerHpIncludeArmor: type == "DamagePerHp" && effect.GetParamBool2(), roomAttachment: roomAttachment,
+                recursion: type == "Recursion" ? new CardRecursionRule(effect.GetTargetCardSelectionMode().ToString(), effect.GetTargetCardType().ToString(),
+                    effect.GetTargetCharacterSubtype().IsNone ? "" : effect.GetTargetCharacterSubtype().Key, effect.GetParamBool(), effect.GetParamBool2(),
+                    effect.GetParamCardFilter() != null, effect.GetParamCardUpgradeData() != null,
+                    effect.GetParamCardFilter() == null ? null : CardUpgradeMaskProbe.Rule(effect.GetParamCardFilter())) : null);
         }
 
         private static RoomCapacityAttachmentState? CapacityAttachment(CardData card, CardEffectData effect,
