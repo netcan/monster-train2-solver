@@ -40,8 +40,13 @@ matched action removes a unit from each team. The muted Instant battle wins with
 mismatches, unsupported transitions or pending records. Independent action
 replay matches all 22 plays, and the 16-branch policy check passes.
 Native `paramBool3` controls whether a missing valid target fails the cast;
-that distinction is represented in the model. Kill subtype filtering remains
-explicitly unsupported.
+that distinction is represented in the model. Native `CardEffectKill.TestEffect`
+checks every selected target against `paramSubtype`; unlike Sacrifice, it does
+not filter random candidates before selection. The model now preserves that
+validation, with focused matching and mismatching target checks. A live native
+assertion returned true for a matching `MonsterBanishedChampion1` and false for
+`TrainStewardBig`. The accepted full-battle archive remains unfiltered, so an
+end-to-end archive with a subtype-bearing Kill effect is still outstanding.
 
 The schema-103 binary is 31,129 bytes with 5,100 unique nodes and SHA-256
 `fec1eb5dec554ab93d398c51c273012073aa5b521f3a52268fa593de42221f4a`; it has no

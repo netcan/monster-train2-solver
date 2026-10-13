@@ -219,8 +219,6 @@ namespace MonsterTrain2Poju.Probe
                 (handUpgrade ? effect.GetTargetMode() != TargetMode.Hand && effect.GetTargetMode() != TargetMode.Room :
                     !cardOnlyDrawTarget && !randomDiscardHandTarget && !recursionCardPileTarget && !CardTargetModel.Supports(effect.GetTargetMode().ToString())))
                 interactions.Add("Spell scaling or target filters");
-            if (effect.GetEffectStateName() == "CardEffectKill" && !effect.GetParamSubtype().IsNone)
-                interactions.Add("CardEffectKill subtype target validation");
             string type = EnergyModel.IsNativeEffect(effect.GetEffectStateName()) ? EnergyEffectProbe.Type(effect) :
                 effect.GetEffectStateName() == "CardEffectAttachTrainRoomAttachment" ? "AttachRoomCapacity" :
                 effect.GetEffectStateName() == "CardEffectAdjustForgePoints" ? ForgePointsModel.Effect :
@@ -333,7 +331,7 @@ namespace MonsterTrain2Poju.Probe
                 type == "Generate" ? CardGenerationProbe.Definition(effect) : null, type == "AdjustCapacity" && effect.GetParamBool(),
                 copyHeroStats: type == "CopyUnits" ? effect.GetParamBool() : (bool?)null,
                 scaleUpgrade: scaleUpgrade, doNotFullyRemove: type == "Sacrifice" ? effect.GetParamBool() : (bool?)null,
-                sacrificeSubtype: type == "Sacrifice" && !effect.GetParamSubtype().IsNone ? effect.GetParamSubtype().Key : "",
+                targetSubtype: (type == "Sacrifice" || type == "Kill") && !effect.GetParamSubtype().IsNone ? effect.GetParamSubtype().Key : "",
                 typedDraw: type == "DrawType" ? TypedDrawProbe.DrawRule(effect) : null,
                 nextDrawUpgrade: type == "ScheduleNextDrawUpgrade" ? TypedDrawProbe.UpgradeRule(effect) : null,
                 requiredGold: type == "ScheduleNextDrawUpgrade" ? effect.GetAdditionalParamInt() : 0,

@@ -17,7 +17,7 @@ internal static class SacrificeChecks
                 deathState: new UnitDeathState(false, false, true, isSacrifice: false, statisticsListenerOnce: true,
                     isDespawned: false, isDestroyed: false));
         CardActionEffect Effect(string target, bool doNotFullyRemove = false, string subtype = "") => new(
-            "Sacrifice", target, 0, false, true, [], doNotFullyRemove: doNotFullyRemove, sacrificeSubtype: subtype);
+            "Sacrifice", target, 0, false, true, [], doNotFullyRemove: doNotFullyRemove, targetSubtype: subtype);
 
         var death = new CombatTrigger("OnDeath", true, false, false, 1,
             [new("CardEffectRewardGold", 7, 0, "", 0, [], false)]);
@@ -49,6 +49,20 @@ internal static class SacrificeChecks
         Require(emptyKillAllowed.CanPlay && !emptyKillRejected.CanPlay && emptyKill.Supported && emptyKill.State!.Units.Count == 0,
             $"CardEffectKill no-target flag mismatch: optional={emptyKillAllowed.CanPlay}, required={emptyKillRejected.CanPlay}, " +
             $"apply-supported={emptyKill.Supported}, reason={emptyKill.UnsupportedReason}");
+
+        var subtypeRoom = new RoomCombatState(0, false,
+            [Unit(1, CombatTeam.Enemy), Unit(2, CombatTeam.Player, subtypes: ["imp"]), Unit(3, CombatTeam.Player, subtypes: ["steward"])],
+            [], Context(rng, 4));
+        CardActionEffect subtypeKill = new("Kill", "DropTargetCharacter", 0, false, true, [],
+            tests: new CardEffectTests(true, false, false, false), targetSubtype: "imp");
+        SpellCastCheck matchingSubtype = CardSpellModel.TestPlay(subtypeRoom, [subtypeKill], 2);
+        SpellCastCheck mismatchingSubtype = CardSpellModel.TestPlay(subtypeRoom, [subtypeKill], 3);
+        RoomCombatResult skippedSubtypeKill = CardSpellModel.Apply(subtypeRoom, [subtypeKill], 3, 8);
+        RoomCombatResult matchingSubtypeKill = CardSpellModel.Apply(subtypeRoom, [subtypeKill], 2, 8);
+        Require(matchingSubtype.CanPlay && !mismatchingSubtype.CanPlay && skippedSubtypeKill.Supported &&
+            skippedSubtypeKill.State!.Units.Any(unit => unit.Id == 3) && matchingSubtypeKill.Supported &&
+            matchingSubtypeKill.State!.Units.All(unit => unit.Id != 2),
+            "CardEffectKill paramSubtype did not validate selected targets before applying the kill.");
 
         SpawnPointReference point = new(0, CombatTeam.Player, 0);
         BattleSpawnPoints points = new([

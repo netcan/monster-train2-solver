@@ -103,7 +103,7 @@ namespace MonsterTrain2Poju.Model
                 bool valid = effect.Type == "AbilityTeleport"
                     ? UnitTeleportModel.CanPlay(source, selfUnitId, roomIndex, targetSpawnPointIndex)
                     : PassesTest(tested, testCount, source.Context!.AllScenarioBossesDead == true, source.Context, room.Preview, room,
-                        PyreAlive(source, fullTrain), sourceCardId);
+                        PyreAlive(source, fullTrain), sourceCardId) && PassesTargetSubtype(source, effect, targets);
                 if (!valid && effect.Tests?.FailToCast == true) return new SpellCastCheck(false, battleRngAfterTests: testingRng);
                 passed |= valid;
             }
@@ -324,7 +324,8 @@ namespace MonsterTrain2Poju.Model
                 bool passes = effect.Type == "AbilityTeleport"
                     ? UnitTeleportModel.CanPlay(state, selfUnitId, roomIndex, targetSpawnPointIndex)
                     : PassesTest(tested, testCount, bossDead, state.Context, selected.Preview,
-                        state.Rooms.Single(room => room.RoomIndex == roomIndex), PyreAlive(state, fullTrain), sourceCardId);
+                        state.Rooms.Single(room => room.RoomIndex == roomIndex), PyreAlive(state, fullTrain), sourceCardId) &&
+                        PassesTargetSubtype(state, effect, targets);
                 if (!passes)
                 {
                     if (index == 0 && CardTargetModel.IsRandom(effect.Target) && targets.UnitIds.Count > 0 && effect.Tests?.CancelSubsequent != true &&
@@ -350,7 +351,7 @@ namespace MonsterTrain2Poju.Model
                     effect = new CardActionEffect(effect.Type, effect.Target, effect.Value, effect.AllowEnemy, effect.AllowPlayer,
                         new[] { effect.Statuses[chosen.Value] }, effect.Upgrade, effect.Lifetime, effect.Tests, effect.Range, effect.Filters,
                         effect.Generation, effect.OnlyIfNoEnemies, effect.CooldownParameter, effect.AbilityChange,
-                        effect.CopyHeroStats, effect.ScaleUpgrade, effect.DoNotFullyRemove, effect.SacrificeSubtype, effect.TypedDraw, effect.NextDrawUpgrade, effect.RequiredGold, effect.GoldCostRequired,
+                        effect.CopyHeroStats, effect.ScaleUpgrade, effect.DoNotFullyRemove, effect.TargetSubtype, effect.TypedDraw, effect.NextDrawUpgrade, effect.RequiredGold, effect.GoldCostRequired,
                         effect.UseCardTraits, effect.RequireEquipment, effect.UseSelectedRoom, effect.CountStatusOnlyOnTargets,
                         effect.SpawnFallbackUnit, effect.DisallowStatusStackModifiers, effect.StatusAdjustmentFilter,
                         effect.DamagePerHpLastAttacker, effect.DamagePerHpIncludeArmor, effect.RoomAttachment, effect.Recursion);
@@ -426,7 +427,7 @@ namespace MonsterTrain2Poju.Model
                         new[] { effect.Statuses[0].WithStacks(stackCount) }, effect.Upgrade, effect.Lifetime, effect.Tests,
                         effect.Range, effect.Filters, effect.Generation, effect.OnlyIfNoEnemies, effect.CooldownParameter,
                         effect.AbilityChange, effect.CopyHeroStats, effect.ScaleUpgrade, effect.DoNotFullyRemove,
-                        effect.SacrificeSubtype, effect.TypedDraw, effect.NextDrawUpgrade, effect.RequiredGold,
+                        effect.TargetSubtype, effect.TypedDraw, effect.NextDrawUpgrade, effect.RequiredGold,
                         effect.GoldCostRequired, effect.UseCardTraits, effect.RequireEquipment, effect.UseSelectedRoom);
                 }
                 if (effect.Type == ForgePointsModel.Effect && selected.Preview) continue;
@@ -1470,6 +1471,13 @@ namespace MonsterTrain2Poju.Model
             }
         }
 
+        private static bool PassesTargetSubtype(TrainCombatState source, CardActionEffect effect, CardTargets targets)
+        {
+            if (effect.Type != "Kill" || effect.TargetSubtype.Length == 0) return true;
+            CombatUnit[] units = source.Rooms.SelectMany(room => room.Units).ToArray();
+            return targets.UnitIds.All(id => units.Any(unit => unit.Id == id && unit.Subtypes.Contains(effect.TargetSubtype)));
+        }
+
         private static bool? PyreAlive(TrainCombatState state, bool fullTrain)
         {
             CombatUnit? pyre = state.Rooms.SelectMany(room => room.Units).FirstOrDefault(unit => unit.IsPyre);
@@ -1553,7 +1561,7 @@ namespace MonsterTrain2Poju.Model
             return new CardActionEffect(effect.Type, effect.Target, draw.Value, effect.AllowEnemy, effect.AllowPlayer,
                 effect.Statuses, effect.Upgrade, effect.Lifetime, effect.Tests, effect.Range, effect.Filters, effect.Generation,
                 effect.OnlyIfNoEnemies, effect.CooldownParameter, effect.AbilityChange, effect.CopyHeroStats, effect.ScaleUpgrade,
-                effect.DoNotFullyRemove, effect.SacrificeSubtype, effect.TypedDraw, effect.NextDrawUpgrade, effect.RequiredGold, effect.GoldCostRequired,
+                effect.DoNotFullyRemove, effect.TargetSubtype, effect.TypedDraw, effect.NextDrawUpgrade, effect.RequiredGold, effect.GoldCostRequired,
                 effect.UseCardTraits, effect.RequireEquipment, effect.UseSelectedRoom, effect.CountStatusOnlyOnTargets,
                 effect.SpawnFallbackUnit, effect.DisallowStatusStackModifiers, effect.StatusAdjustmentFilter,
                 effect.DamagePerHpLastAttacker, effect.DamagePerHpIncludeArmor, effect.RoomAttachment, effect.Recursion);

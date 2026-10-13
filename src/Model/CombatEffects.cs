@@ -204,7 +204,7 @@ namespace MonsterTrain2Poju.Model
                 Action.Target, value, Action.AllowEnemy, Action.AllowPlayer, Action.Statuses, Action.Upgrade, Action.Lifetime,
                 Action.Tests, Action.Range, Action.Filters, Action.Generation, Action.OnlyIfNoEnemies, Action.CooldownParameter,
                 Action.AbilityChange, Action.CopyHeroStats, Action.ScaleUpgrade, Action.DoNotFullyRemove,
-                Action.SacrificeSubtype, Action.TypedDraw, Action.NextDrawUpgrade, Action.RequiredGold, Action.GoldCostRequired,
+                Action.TargetSubtype, Action.TypedDraw, Action.NextDrawUpgrade, Action.RequiredGold, Action.GoldCostRequired,
                 Action.UseCardTraits, Action.RequireEquipment, Action.UseSelectedRoom, Action.CountStatusOnlyOnTargets,
                 Action.SpawnFallbackUnit, Action.DisallowStatusStackModifiers,
                 damagePerHpLastAttacker: Action.DamagePerHpLastAttacker,
