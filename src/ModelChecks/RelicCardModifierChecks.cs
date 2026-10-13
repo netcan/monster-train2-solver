@@ -13,8 +13,8 @@ internal static class RelicCardModifierChecks
             new CardUpgradeMaskMetadata(statuses ?? [], false, false, false, false);
         CardUpgradeModifier Modifier(string id, CardLifecycleUpgrade lifecycle, IReadOnlyList<CombatStatus>? statuses = null,
             IReadOnlyList<UpgradeMaskStatus>? maskStatuses = null, IReadOnlyList<string>? interactions = null, string? assetKey = null,
-            bool unique = false) => new CardUpgradeModifier(id, assetKey ?? id,
-                lifecycle.Values.Stats, statuses ?? [], false, unique, false, 0, 0, interactions ?? [],
+            bool unique = false, int unhealedHealth = 0, int damageBuff = 0) => new CardUpgradeModifier(id, assetKey ?? id,
+                lifecycle.Values.Stats, statuses ?? [], false, unique, false, unhealedHealth, damageBuff, interactions ?? [],
                 maskMetadata: Metadata(maskStatuses), lifecycle: lifecycle);
 
         var permanentLifecycle = new CardLifecycleUpgrade(new CardMaskUpgrade("permanent-remove-piercing",
@@ -98,6 +98,45 @@ internal static class RelicCardModifierChecks
         Require(overflowReset.Supported && !CardBranchMaskModel.Resolve(overflowReset.Card!).Traits.Contains("CardTraitDamageOverflow"),
             "Reset retained the relic-granted DamageOverflow trait.");
         Console.WriteLine("RELIC-CARD-DAMAGE-OVERFLOW-CHECKS PASS: temporary relic trait reaches spell resolution and clears on reset.");
+
+        var fortifiedValues = new CardMaskUpgrade("relic-fortified-summon", new CardStatModifier(damage: 2, health: 3),
+            [], false, false, false, false);
+        var fortifiedLifecycle = new CardLifecycleUpgrade(fortifiedValues, fortifiedValues.DataId, false, false,
+            [], [], false, [], [], []);
+        CardUpgradeModifier fortifiedUpgrade = Modifier(fortifiedValues.DataId, fortifiedLifecycle,
+            unhealedHealth: 5, damageBuff: 4);
+        var fortifiedRelic = new CombatRelicState("fortified-relic", "FortifiedRelic", [RelicModel.AddTempUpgrade],
+            cardModifiers: [new RelicCardModifier(0,
+                new RelicCardUpgradeRule(fortifiedUpgrade.AssetKey, true, fortifiedLifecycle, []), fortifiedUpgrade, false)]);
+        var fortifiedCard = new CardInstanceState(93, definition.DataId, CardModifiers.Empty(), CardModifiers.Empty(),
+            0, 0, 0, [], maskDescriptor: descriptor);
+        RelicCardModifierResult fortifiedResult = RelicCardModifierModel.Apply(fortifiedCard, [fortifiedRelic], resetTemporary: false);
+        Require(fortifiedResult.Supported, "A relic summon upgrade with damage buff/unhealed health was rejected: " +
+            fortifiedResult.UnsupportedReason);
+        var fortifiedRng = UnityRng.Seed(704);
+        var fortifiedContext = new CombatContext(new CardCycleState([], [], [], fortifiedRng, 0, []), fortifiedRng,
+            0, 1, 100, cardInstances: [fortifiedResult.Card!], nextUnitId: 1);
+        var fortifiedTemplate = new CombatUnit(1, "fortified-summon", CombatTeam.Player, 6, 20, 20,
+            true, false, false, [], size: 2, modifiers: new UnitModifiers(6, 0, 0, 2, 0, true, false, []));
+        var fortifiedRule = new CardPlayRule(definition.DataId, "Monster", 0, "Unit", "Discard", fortifiedTemplate, []);
+        UnitBirthResult fortifiedBirth = UnitBirthModel.Spawn(new RoomCombatState(0, false, [], [], fortifiedContext),
+            fortifiedRule, fortifiedCard.InstanceId, 0, false);
+        Require(fortifiedBirth.Supported, "Relic-upgraded summon birth was unsupported: " + fortifiedBirth.Result.UnsupportedReason);
+        CombatUnit fortifiedUnit = fortifiedBirth.Result.State!.Units.Single();
+        Require(fortifiedUnit.Attack == 12 && fortifiedUnit.Modifiers!.DamageBuff == 4 &&
+            fortifiedUnit.Health == 23 && fortifiedUnit.MaxHealth == 28,
+            "A relic summon upgrade did not carry damage buff and unhealed health into the born unit.");
+        var negativeUnhealedLifecycle = new CardLifecycleUpgrade(new CardMaskUpgrade("negative-unhealed",
+            new CardStatModifier(), [], false, false, false, false), "negative-unhealed", false, false,
+            [], [], false, [], [], []);
+        CardUpgradeModifier negativeUnhealedUpgrade = Modifier("negative-unhealed", negativeUnhealedLifecycle, unhealedHealth: -1);
+        var negativeUnhealedRelic = new CombatRelicState("negative-unhealed-relic", "NegativeUnhealedRelic",
+            [RelicModel.AddTempUpgrade], cardModifiers: [new RelicCardModifier(0,
+                new RelicCardUpgradeRule(negativeUnhealedUpgrade.AssetKey, true, negativeUnhealedLifecycle, []),
+                negativeUnhealedUpgrade, false)]);
+        Require(!RelicCardModifierModel.Apply(fortifiedCard, [negativeUnhealedRelic], resetTemporary: false).Supported,
+            "Negative unhealed relic health bypassed the native birth-order guard.");
+        Console.WriteLine("RELIC-CARD-SUMMON-STAT-CHECKS PASS: temporary damage buff and unhealed health reach summoned units; negative unhealed health remains guarded.");
 
         var tombDefinition = new CardMaskDefinition("dregs-tomb", "Monster", "Common", true, true, true,
             ["SubtypesData_Tomb"], [], [], ["CardEffectSpawnMonster"], null, false, 1, 0, false, false, false);

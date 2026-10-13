@@ -344,8 +344,9 @@ namespace MonsterTrain2Poju.Model
             CombatUnit? unit = rule.SpawnUnit;
             if (unit != null)
             {
+                CardUpgradeModifier[] cardUpgrades = modifiers.SelectMany(modifier => modifier.Upgrades).ToArray();
                 var statuses = unit.Statuses.ToDictionary(status => status.Id);
-                foreach (CombatStatus added in modifiers.SelectMany(modifier => modifier.Upgrades).SelectMany(upgrade => upgrade.Statuses))
+                foreach (CombatStatus added in cardUpgrades.SelectMany(upgrade => upgrade.Statuses))
                 {
                     if (unit.StatusImmunities.Contains(added.Id)) continue;
                     statuses.TryGetValue(added.Id, out CombatStatus? existing);
@@ -353,23 +354,43 @@ namespace MonsterTrain2Poju.Model
                     statuses[added.Id] = (existing ?? unit.RegisteredStatus(added.Id) ?? added).WithStacks(Math.Max(0, count));
                 }
                 int health = UpgradedStat(unit.MaxHealth, "Health", true, modifiers);
+                int maxHealth = health;
+                foreach (CardUpgradeModifier upgrade in cardUpgrades)
+                {
+                    if (upgrade.UnhealedHealth < 0)
+                    {
+                        maxHealth = Math.Max(0, checked(maxHealth + upgrade.UnhealedHealth));
+                        health = Math.Max(0, checked(health + upgrade.UnhealedHealth));
+                    }
+                    else if (upgrade.UnhealedHealth > 0)
+                        maxHealth = Math.Min(99999, checked(maxHealth + upgrade.UnhealedHealth));
+                }
                 UnitModifiers? original = unit.Modifiers;
+                int attackDamage = UpgradedStat(original?.AttackDamage ?? unit.BaseAttack, "Damage", true, modifiers);
+                int damageBuff = original?.DamageBuff ?? 0;
+                int baseAttack = UpgradedStat(unit.BaseAttack, "Damage", true, modifiers);
+                foreach (CardUpgradeModifier upgrade in cardUpgrades)
+                {
+                    damageBuff = checked(damageBuff + upgrade.DamageBuff);
+                    baseAttack = checked(baseAttack + upgrade.DamageBuff);
+                }
+                baseAttack = Math.Max(0, baseAttack);
                 UnitModifiers? unitModifiers = original == null ? null : new UnitModifiers(
-                    UpgradedStat(original.AttackDamage, "Damage", true, modifiers), original.AttackDamageAdded, original.DamageBuff,
+                    attackDamage, original.AttackDamageAdded, damageBuff,
                     UpgradedStat(original.RawSize, "Size", false, modifiers),
                     Math.Max(1, Math.Min(4, UpgradedStat(original.EquipmentLimit, "EquipmentLimit", true, modifiers))),
                     original.CanBeHealed, original.IsClone, original.Upgrades, original.HealthFromUpgrades, original.SpawnerMatchesDefinition,
                     original.DamageBuffFromStatusEffects, original.MagebladeDamagePerMagicPower);
                 int? nextTriggerId = unit.NextTriggerId;
                 var triggers = unit.Triggers.ToList();
-                foreach (CombatTrigger definition in modifiers.SelectMany(modifier => modifier.Upgrades)
-                    .SelectMany(upgrade => upgrade.TriggerUpgrades ?? Array.Empty<CombatTrigger>()))
+                foreach (CombatTrigger definition in cardUpgrades.SelectMany(upgrade =>
+                    upgrade.TriggerUpgrades ?? Array.Empty<CombatTrigger>()))
                 {
                     triggers.Add(definition.WithOrigin("", 0, nextTriggerId));
                     if (nextTriggerId.HasValue) nextTriggerId = checked(nextTriggerId.Value + 1);
                 }
-                unit = new CombatUnit(unit.Id, unit.AssetKey, unit.Team, UpgradedStat(unit.BaseAttack, "Damage", true, modifiers),
-                    health, health, unit.CanAttack, unit.IsPyre, unit.EndsBattleOnDeath,
+                unit = new CombatUnit(unit.Id, unit.AssetKey, unit.Team, baseAttack,
+                    health, maxHealth, unit.CanAttack, unit.IsPyre, unit.EndsBattleOnDeath,
                     statuses.Values.Where(status => status.Stacks > 0).ToArray(), triggers,
                     unit.SpawnerCardId, Math.Max(1, UpgradedStat(unit.Size, "Size", false, modifiers)), unit.StatusImmunities, unit.Subtypes, unitModifiers, unit.IsBoss, unit.LastAttackerId, unit.StatusRegistry, unit.EquipmentCards, nextTriggerId, unit.Ability, unit.StatusDictionary, unit.AbilityRules, unit.HordeDefinition, unit.IsSpawning, unit.SacrificeCardId, unit.DeathState, bumpRules: unit.BumpRules);
             }
