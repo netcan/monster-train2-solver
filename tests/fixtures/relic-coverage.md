@@ -1,7 +1,7 @@
 # Original relic coverage evidence
 
-As of 2026-10-13, **76 distinct original collectable relics / 224 catalog entries
-(33.93%)** have accepted native full-battle evidence. This counts unchanged relic
+As of 2026-10-14, **77 distinct original collectable relics / 224 catalog entries
+(34.38%)** have accepted native full-battle evidence. This counts unchanged relic
 definitions whose effects actually ran, including their original filters and
 conditions. Test cards, unit triggers and carrier subtypes may be authored to
 exercise those effects; the claim covers the recorded paths, not every possible
@@ -22,9 +22,8 @@ All 31 source archives below report game `2.2.1`, module MVID
 byte lengths and SHA-256 hashes are recorded in [manifest.tsv](manifest.tsv).
 The floor-capacity batch passes strict native acceptance, complete-fixture checks,
 independent full-battle replay and six directly affected old-fixture regressions.
-The accepted inventory is 273 archives: 242 battles and 31 component
-calibrations. All 273 archive names, byte lengths and SHA-256 hashes match the
-manifest and curated list, with no JSON companions. A 246-archive replay was
+The accepted inventory is 276 archives: 245 battles and 31 component
+calibrations, with no JSON companions. A 246-archive replay was
 attempted on 2026-10-13 but has not completed: legacy EndTurn snapshots can
 conflict with the current model's room `Enabled` state. Focused follow-up checks
 pass for the affected resource and Sting archives and for a fresh trigger
@@ -115,9 +114,10 @@ owner count.
 | `PyregelOnEnterTopFloor` | `e4be072c-e389-4ae7-acc6-0c8aa4cf0078` | [room-entry status relics][roomEntry] | Its unchanged room-2 Heroes effect adds 10 Pyregel. Three distinct native Heroes have the exact status after entry. |
 | `MoonPhaseModifyEmber` | `70096a91-220a-4ab3-b8d0-b8fe8f3a819c` | [original moon-phase energy relic][moonPhase] | Three Full callbacks add 1 Ember and notify; three New callbacks change nothing. Original once-per-turn condition and exact hidden moon markers match. |
 | `WhelpDragonAttack_DH` | `72706202-526e-4377-9745-7df40a26ba7d` | [original card-attack relic][cardAttack] | Two unchanged +8 effects match Whelp and Dragon spawn subtypes in order. Four native manager observations cover both subtype outcomes and reset/reapply; dynamic scaling and cardless callbacks remain separately bounded. |
+| `CardDrawOnCardPlay` | `f3f07b9b-1349-41d0-abab-bd5ec04d81e4` | [original card-draw-on-play][cardDraw] | The unchanged one-card effect has `AnyCardPlayed >= 3`; it does not fire on the initial deployment turn, then draws on the third play in each of six active turns. All six native activations and draws match. |
 
 Record indices above are zero-based. Full-battle acceptance and independent
-effect checks are documented in [README.md](README.md); the table's 20 source
+effect checks are documented in [README.md](README.md); the table's 21 source
 archives contain these observed battle sizes:
 
 | Archive | Schema | Card plays | EndTurns | Matched stages | Independent relic observations |
@@ -143,6 +143,7 @@ archives contain these observed battle sizes:
 | [room-entry status relics][roomEntry] | 132 | 21 | 7 | 55 | Three unchanged originals, 13 train phases and actual room-2 Heroes status witnesses |
 | [original moon-phase energy relic][moonPhase] | 146 | 24 | 7 | 57 | Three Full +1/notification callbacks and three New no-op callbacks with exact unit markers |
 | [original card-attack relic][cardAttack] | 147 | 21 | 7 | 60 | Four native manager observations; Whelp/Dragon subtype dispatch, +8 offset and reset/reapply |
+| [original card-draw-on-play][cardDraw] | 159 | 21 | 7 | 61 | Six condition activations and six cards drawn on active-turn third plays |
 
 The checks that enforce these observations are
 [TriggerCountChecks.Native](../../src/ModelChecks/TriggerCountChecks.cs),
@@ -389,6 +390,7 @@ dotnet run --project src/ModelChecks -c Release -- --original-card-attack-only t
 [roomEntry]: full-battle-original-room-entry-status-relics.mt2f
 [moonPhase]: full-battle-original-moon-phase-energy-relic.mt2f
 [cardAttack]: full-battle-original-card-attack-relic.mt2f
+[cardDraw]: full-battle-original-card-draw-on-card-play.mt2f
 [unitUpgradeTrigger]: full-battle-original-unit-upgrade-trigger-relic.mt2f
 [extraToughTombs]: full-battle-relic-extra-tough-tombs.mt2f
 [stealthWaxers]: full-battle-original-stealth-waxers.mt2f

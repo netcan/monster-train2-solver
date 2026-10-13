@@ -30,8 +30,17 @@ The default command checks the full curated inventory. For routine changes, run
 the dedicated checks for the new and directly affected scenarios; run the full
 inventory at completed milestones and before delivery.
 
-Current inventory is 275 archives: 244 accepted battles and 31 component
-calibrations. Original relic evidence is 76/224 (33.93%). The schema-146
+Current inventory is 276 archives: 245 accepted battles and 31 component
+calibrations. Original relic evidence is 77/224 (34.38%). The schema-159
+`full-battle-original-card-draw-on-card-play.mt2f` archive captures the
+unchanged `CardDrawOnCardPlay` owner: its `AnyCardPlayed >= 3` condition draws
+one card on the third play in each of six active turns, and does not fire during
+the initial deployment turn. All 61 stages, 21 card actions and seven EndTurns
+match; the focused native check confirms six condition activations and six card
+draws, and the 128-state serial/parallel search checks agree. The 32,453-byte
+binary has 5,310 unique nodes and SHA-256
+`b11c627944ae042b49d3d19b49698f5eeedb90c3a357acb27597daa09df20618`, with no
+JSON companion. The schema-146
 `full-battle-original-moon-phase-energy-relic.mt2f`
 archive adds accepted native evidence for the unchanged `MoonPhaseModifyEmber`
 relic: three Full callbacks add one Ember and notify; three New callbacks are

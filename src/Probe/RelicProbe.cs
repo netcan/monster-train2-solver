@@ -89,6 +89,13 @@ namespace MonsterTrain2Poju.Probe
                             data.GetTraits().Select(trait => trait.GetTraitStateName()).ToArray(),
                             RelicCardModifierProbe.Conditions(item.Effect));
                     }).ToArray();
+                var cardDrawOnCardPlay = effects.Select((effect, index) => new { Effect = effect, Index = index })
+                    .Where(item => item.Effect is RelicEffectCardDrawOnCardPlay)
+                    .Select(item => {
+                        var data = (RelicEffectData)AccessTools.Field(typeof(RelicEffectBase), "_srcRelicEffectData").GetValue(item.Effect);
+                        return new RelicCardDrawOnCardPlayModifier(item.Index, data.GetParamInt(),
+                            data.GetParamCardType().ToString(), RelicCardModifierProbe.Conditions(item.Effect));
+                    }).ToArray();
                 return new CombatRelicState(relic.GetRelicDataID(), relic.GetAssetName(), effects.Select(effect => effect.GetType().Name).ToArray(),
                     statuses.Length == 0 ? null : statuses, relic is CovenantState,
                     relic.DisallowedInPlacementPhase, cardModifiers?.Length > 0 ? cardModifiers : null,
@@ -100,7 +107,8 @@ namespace MonsterTrain2Poju.Probe
                     unitUpgradeTriggers.Length > 0 ? unitUpgradeTriggers : null,
                     forgePointModifiers.Length > 0 ? forgePointModifiers : null,
                     cardHealthModifiers.Length > 0 ? cardHealthModifiers : null,
-                    cardAttackModifiers.Length > 0 ? cardAttackModifiers : null);
+                    cardAttackModifiers.Length > 0 ? cardAttackModifiers : null,
+                    cardDrawOnCardPlay.Length > 0 ? cardDrawOnCardPlay : null);
             }).ToArray();
         }
 

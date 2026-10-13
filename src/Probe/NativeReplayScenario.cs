@@ -255,6 +255,8 @@ namespace MonsterTrain2Poju.Probe
                         MagebladeScenario.ConfigureBeforeBattle(managers!, log);
                     if (fullBattle && OriginalCardPlayMagicPowerScenario.Enabled && !OriginalCardPlayMagicPowerScenario.Acquired)
                         OriginalCardPlayMagicPowerScenario.AcquireBeforeBattle(managers!, log);
+                    if (fullBattle && OriginalCardDrawOnCardPlayScenario.Enabled && !OriginalCardDrawOnCardPlayScenario.Acquired)
+                        OriginalCardDrawOnCardPlayScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalCardAttackRelicScenario.Enabled && !OriginalCardAttackRelicScenario.Acquired)
                         OriginalCardAttackRelicScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalRoomEntryStatusRelicScenario.Enabled && !OriginalRoomEntryStatusRelicScenario.Acquired)

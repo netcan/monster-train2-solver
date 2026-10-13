@@ -66,26 +66,37 @@ namespace MonsterTrain2Poju.Model
             return null;
         }
 
-        internal static RelicCardPlayMagicPowerResult Apply(CombatContext source, int playedCardId)
+        internal static RelicCardPlayMagicPowerResult Apply(CombatContext source, int playedCardId,
+            BattlePlayRules? definitions = null, int currentTurn = -1)
         {
-            if (source.Relics == null || !source.Relics.Any(relic => relic.EffectTypes.Contains(RelicModel.ModifyCardMagicPowerOnCardPlayed)))
+            bool hasMagicPower = source.Relics?.Any(relic => relic.EffectTypes.Contains(RelicModel.ModifyCardMagicPowerOnCardPlayed)) == true;
+            bool hasCardDraw = source.Relics?.Any(relic => relic.EffectTypes.Contains(RelicModel.CardDrawOnCardPlay)) == true;
+            if (!hasMagicPower && !hasCardDraw)
                 return new RelicCardPlayMagicPowerResult(source);
-            if (source.CardInstances == null)
+            if (hasMagicPower && source.CardInstances == null)
                 return Fail(source, "Native card-play magic-power effects require the current owned-card list.");
-            if (!source.CardInstances.Any(card => card.InstanceId == playedCardId))
+            if (hasMagicPower && !source.CardInstances!.Any(card => card.InstanceId == playedCardId))
                 return Fail(source, "Native card-play magic-power effects require the played card in the owned-card list.");
 
             CombatContext context = source;
             var dispatches = new List<RelicCardPlayMagicPowerDispatch>();
             for (int relicIndex = 0; relicIndex < context.Relics!.Count; relicIndex++)
             {
-                CombatRelicState relic = context.Relics[relicIndex];
-                var definitions = (relic.CardPlayMagicPowerModifiers ?? Array.Empty<RelicCardPlayMagicPowerModifier>())
-                    .ToDictionary(effect => effect.EffectIndex);
-                for (int effectIndex = 0; effectIndex < relic.EffectTypes.Count; effectIndex++)
+                for (int effectIndex = 0; effectIndex < context.Relics![relicIndex].EffectTypes.Count; effectIndex++)
                 {
+                    CombatRelicState relic = context.Relics[relicIndex];
+                    if (relic.EffectTypes[effectIndex] == RelicModel.CardDrawOnCardPlay)
+                    {
+                        RelicCardDrawOnCardPlayResult drawn = RelicCardDrawOnCardPlayModel.ApplyOne(
+                            context, playedCardId, definitions, relicIndex, effectIndex, currentTurn);
+                        if (!drawn.Supported) return Fail(context, drawn.UnsupportedReason!);
+                        context = drawn.Context;
+                        continue;
+                    }
                     if (relic.EffectTypes[effectIndex] != RelicModel.ModifyCardMagicPowerOnCardPlayed) continue;
-                    if (!definitions.TryGetValue(effectIndex, out RelicCardPlayMagicPowerModifier? effect))
+                    var magicDefinitions = (relic.CardPlayMagicPowerModifiers ?? Array.Empty<RelicCardPlayMagicPowerModifier>())
+                        .ToDictionary(effect => effect.EffectIndex);
+                    if (!magicDefinitions.TryGetValue(effectIndex, out RelicCardPlayMagicPowerModifier? effect))
                         return Fail(context, "Missing ordered native card-play magic-power definition.");
                     if (effect!.Conditions.Count > 0)
                     {
