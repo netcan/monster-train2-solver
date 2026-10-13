@@ -290,8 +290,12 @@ namespace MonsterTrain2Poju.Probe
                 selfPurge.Setup("CardTraitSelfPurge");
                 var ignoredArmor = new CardTraitData();
                 ignoredArmor.Setup("CardTraitIgnoreArmor");
-                AccessTools.Field(typeof(CardUpgradeData), "traitDataUpgrades").SetValue(clone, new List<CardTraitData> { selfPurge, ignoredArmor });
-                AccessTools.Field(typeof(CardUpgradeData), "removeTraitUpgrades").SetValue(clone, new List<string> { "CardTraitIgnoreArmor" });
+                var exhaust = new CardTraitData();
+                exhaust.Setup("CardTraitExhaustState");
+                AccessTools.Field(typeof(CardUpgradeData), "traitDataUpgrades").SetValue(clone,
+                    new List<CardTraitData> { selfPurge, ignoredArmor, exhaust });
+                AccessTools.Field(typeof(CardUpgradeData), "removeTraitUpgrades").SetValue(clone,
+                    new List<string> { "CardTraitIgnoreArmor", "CardTraitExhaustState" });
                 var spellMask = UnityEngine.ScriptableObject.CreateInstance<CardUpgradeMaskData>();
                 spellMask.name = "PojuRelicSelfPurgeSpellMask";
                 AccessTools.Field(typeof(CardUpgradeMaskData), "cardType").SetValue(spellMask, CardType.Spell);
