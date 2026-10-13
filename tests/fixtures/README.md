@@ -177,6 +177,28 @@ dotnet run --project src/ModelChecks -c Release -- --card-recursion-upgrade-only
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-card-recursion-upgrade-hand.mt2f
 ```
 
+### Chosen recursion with a temporary upgrade (schema 151)
+
+`full-battle-card-recursion-upgrade-choice.mt2f` captures `ChooseToDeck`
+recursion with a synthetic temporary +3 Damage upgrade. The native chooser
+returns the selected Spell to Draw with the upgrade. Search expands all six
+eligible Exhaust cards into separate choices; each branch upgrades only its
+selected card and leaves Battle RNG unchanged. The muted Instant battle wins
+with 63 stages, 22 actions and seven EndTurns; capture failures, mismatches,
+unsupported transitions and pending records are zero. Replay matches, and the
+128-state search is equal in serial and parallel runs. The archive is 36,151
+bytes with 6,180 unique nodes and SHA-256
+`ab01c1b813b8790019c630f88ed03ddb14863296dbd54963700bd9d200a19482`; it has no
+JSON source. Inventory: 268 archives, comprising 237 battles and 31 component
+calibrations.
+
+```powershell
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -CardRecursionUpgradeChoose -GameSpeed Instant
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-card-recursion-upgrade-choice.mt2f
+dotnet run --project src/ModelChecks -c Release -- --card-recursion-upgrade-only tests/fixtures/full-battle-card-recursion-upgrade-choice.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-card-recursion-upgrade-choice.mt2f
+```
+
 `full-battle-relic-card-negative-unhealed.mt2f` (schema 145)
 captures a temporary `UnhealedHealth=-1` upgrade installed by the native relic
 manager. The upgrade remains on the played Train Steward, but the summoned unit

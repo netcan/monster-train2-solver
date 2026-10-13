@@ -8853,18 +8853,33 @@ and SHA-256
 `6607eb203098f2b0ca795481951a37d9ed727ddd1fea0700d047bf30c82dcc61`; it has no
 JSON companion.
 
-The curated inventory is now 267 archives: 236 full battles and 31 component
-calibrations. Chosen recursion with upgrades, random hand-space requirements,
-and upgrades with filters, replacements, traits, or triggers still need native
-calibration.
+The schema-151 `full-battle-card-recursion-upgrade-choice.mt2f` captures
+`ChooseToDeck` with a temporary +3 Damage upgrade. The native chooser returns
+the selected Spell to Draw with that upgrade. From the captured decision state,
+search emits all six eligible cards as separate actions; each branch upgrades
+only its selected card and preserves Battle RNG. The muted Instant battle has
+63 matched stages, 22 actions and seven EndTurns, with zero capture failures,
+mismatches, unsupported transitions or pending records. Action replay matches,
+and the 128-state search has identical serial and parallel results. The archive
+is 36,151 bytes with 6,180 unique nodes and SHA-256
+`ab01c1b813b8790019c630f88ed03ddb14863296dbd54963700bd9d200a19482`; it has no
+JSON companion.
+
+The curated inventory is now 268 archives: 237 full battles and 31 component
+calibrations. Random hand-space requirements and recursion upgrades with
+filters, replacements, traits, or triggers still need native calibration.
 
 ```powershell
 pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -CardRecursionUpgrade -GameSpeed Instant
 pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -CardRecursionUpgradeToHand -GameSpeed Instant
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -CardRecursionUpgradeChoose -GameSpeed Instant
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-card-recursion-upgrade.mt2f
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-card-recursion-upgrade-hand.mt2f
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-card-recursion-upgrade-choice.mt2f
 dotnet run --project src/ModelChecks -c Release -- --card-recursion-upgrade-only tests/fixtures/full-battle-card-recursion-upgrade.mt2f
 dotnet run --project src/ModelChecks -c Release -- --card-recursion-upgrade-only tests/fixtures/full-battle-card-recursion-upgrade-hand.mt2f
+dotnet run --project src/ModelChecks -c Release -- --card-recursion-upgrade-only tests/fixtures/full-battle-card-recursion-upgrade-choice.mt2f
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-card-recursion-upgrade.mt2f
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-card-recursion-upgrade-hand.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-card-recursion-upgrade-choice.mt2f
 ```
