@@ -31,7 +31,7 @@ The default command checks the full curated inventory. For routine changes, run
 the dedicated checks for the new and directly affected scenarios; run the full
 inventory at completed milestones and before delivery.
 
-Current inventory is 280 archives: 249 accepted battles and 31 component
+Current inventory is 281 archives: 250 accepted battles and 31 component
 calibrations. Original relic evidence is 78/224 (34.82%). The schema-162
 `full-battle-dragon-hoard.mt2f` archive captures Alchemy changing the hoard from
 2 to 4. The Instant native battle wins with 61 matched stages, 21 card actions
@@ -42,6 +42,22 @@ resource-scaled upgrade refresh. This 33,090-byte archive has 5,405 unique nodes
 and SHA-256
 `d22b5e5975c8b1b1ad9795c65aa7827b3714f5403b9d0478bcad61396c5fe633`; it has
 no JSON companion.
+
+The schema-164 `full-battle-remove-all-status-effects.mt2f` archive records two
+marked native `ResinRemoval` casts: one removes all visible Positive and
+Negative statuses, and the second removes half, rounding removals up. The
+native battle wins with 50 matched stages, 22 card actions and six EndTurns;
+capture failures, mismatches, unsupported transitions and pending records are
+zero. Focused checks verify exact native action replay, full and half removal,
+and preservation of hidden and Persistent statuses. The 30,154-byte binary has
+5,012 unique nodes and SHA-256
+`4f91c877366cce01dd9c84932736ff323394fc081163ab63cdf181ddcd3c98a3`; it has
+no JSON companion.
+
+```powershell
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-remove-all-status-effects.mt2f
+dotnet run --project src/ModelChecks -c Release -- --remove-all-status-only tests/fixtures/full-battle-remove-all-status-effects.mt2f
+```
 
 The schema-161
 `full-battle-unplayed-card-pyre-damage.mt2f` archive leaves all five original

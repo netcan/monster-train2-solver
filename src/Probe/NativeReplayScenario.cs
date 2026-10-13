@@ -515,6 +515,12 @@ namespace MonsterTrain2Poju.Probe
                 numericModifiersPrepared = true;
                 CardEffectKillScenario.Prepare(managers, log, modifierScenario == "card-effect-kill-subtype");
             }
+            if (fullBattle && !numericModifiersPrepared && modifierScenario == "remove-all-status-effects")
+            {
+                if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Remove-all status fixture must start on deployment turn.");
+                numericModifiersPrepared = true;
+                CardEffectRemoveAllStatusScenario.Prepare(log);
+            }
             if (fullBattle && !numericModifiersPrepared && DragonHoardScenario.Enabled)
             {
                 if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Dragon's Hoard fixture must start on deployment turn.");
@@ -999,6 +1005,8 @@ namespace MonsterTrain2Poju.Probe
                 if (modifierScenario == "sacrifice-effects") pendingPlay = SacrificeScenario.Choose(decision);
                 if (modifierScenario is "card-effect-kill" or "card-effect-kill-subtype")
                     pendingPlay = CardEffectKillScenario.Choose(decision);
+                if (modifierScenario == "remove-all-status-effects")
+                    pendingPlay = CardEffectRemoveAllStatusScenario.Choose(decision) ?? pendingPlay;
                 if (DragonHoardScenario.Enabled) pendingPlay = DragonHoardScenario.Choose(decision);
                 if (modifierScenario is "card-effect-recursion" or "card-effect-recursion-choice" or "card-effect-recursion-choose-to-hand" or "card-effect-recursion-filter-choice" or "card-effect-recursion-discard-choice" or "card-effect-recursion-upgrade" or "card-effect-recursion-upgrade-hand" or "card-effect-recursion-upgrade-choice" or "card-effect-recursion-upgrade-filter-choice" or "card-effect-recursion-upgrade-replacement-choice")
                     pendingPlay = CardEffectRecursionScenario.Choose(decision);
@@ -1145,6 +1153,7 @@ namespace MonsterTrain2Poju.Probe
                 (modifierScenario == "damage-per-hp-ability" && !damagePerHpAbilityInputPrepared) ||
                 (modifierScenario == "dragon-hoard" && DragonHoardScenario.IsScenarioAction(action)) ||
                 (modifierScenario == "card-effect-kill-subtype" && CardEffectKillScenario.IsScenarioPrelude(action)) ||
+                (modifierScenario == "remove-all-status-effects" && CardEffectRemoveAllStatusScenario.ConsumeScenarioActionMark(action)) ||
                 (modifierScenario is "card-effect-recursion" or "card-effect-recursion-choice" or "card-effect-recursion-choose-to-hand" or "card-effect-recursion-filter-choice" or "card-effect-recursion-discard-choice" or "card-effect-recursion-upgrade" or "card-effect-recursion-upgrade-hand" or "card-effect-recursion-upgrade-choice" or "card-effect-recursion-upgrade-filter-choice" or "card-effect-recursion-upgrade-replacement-choice" &&
                     CardEffectRecursionScenario.IsScenarioPrelude(action));
             PreviewSchedulingProbe.Observe("Play:" + action.CardInstanceId);

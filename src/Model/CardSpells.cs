@@ -375,7 +375,7 @@ namespace MonsterTrain2Poju.Model
                         effect.UseCardTraits, effect.RequireEquipment, effect.UseSelectedRoom, effect.CountStatusOnlyOnTargets,
                         effect.SpawnFallbackUnit, effect.DisallowStatusStackModifiers, effect.StatusAdjustmentFilter,
                         effect.DamagePerHpLastAttacker, effect.DamagePerHpIncludeArmor, effect.RoomAttachment, effect.Recursion,
-                        effect.CardFilter, effect.UpgradeFilters);
+                        effect.CardFilter, effect.UpgradeFilters, effect.RemoveHalfStatusEffects);
                 }
                 if (effect.Type == "Recursion")
                 {
@@ -810,7 +810,7 @@ namespace MonsterTrain2Poju.Model
                     RoomCombatState? targetRoom = state.Rooms.FirstOrDefault(item => item.Units.Any(unit => unit.Id == id));
                     CombatUnit? target = targetRoom?.Units.FirstOrDefault(unit => unit.Id == id);
                     if (target == null) continue;
-                    if (effect.Type == "RemoveStatus")
+                    if (effect.Type == "RemoveStatus" || effect.Type == "RemoveAllStatusEffects")
                     {
                         RoomCombatResult removed = StatusRemovalModel.Effect(targetRoom!, id, effect, sourceCardId);
                         if (!removed.Supported) return UnsupportedTrain(removed.UnsupportedReason!);
@@ -1366,6 +1366,12 @@ namespace MonsterTrain2Poju.Model
                     if (removalError != null) return removalError;
                     continue;
                 }
+                if (effect.Type == "RemoveAllStatusEffects")
+                {
+                    string? removalError = StatusRemovalModel.ValidateAll(effect);
+                    if (removalError != null) return removalError;
+                    continue;
+                }
                 if (effect.Type == "Sacrifice" && !effect.DoNotFullyRemove.HasValue)
                     return "Missing native do-not-fully-remove sacrifice parameter.";
                 if (AbilityLifecycleModel.IsEffect(effect.Type))
@@ -1414,7 +1420,7 @@ namespace MonsterTrain2Poju.Model
                     if (forgeError != null) return forgeError;
                     continue;
                 }
-                if (!new[] { "CopyUnits", "Bump", "AbilityTeleport", "AttackWithUnit", "Damage", "DamagePerSourceAttack", "DamagePerHp", "Heal", "Sacrifice", "Kill", "AddStatus", "MultiplyStatus", "MultiplyAllPositiveStatusEffects", "AdjustAllStatusEffects", "AddStatusPerOtherEffect", "SpawnOrStatus", "FloorRearrange", "UnitUpgrade", "BuffEquipment", "RemoveUnitUpgrade", "AttachEquipment", "RemoveEquipment", "BuffAttack", "DebuffAttack", "BuffHealth", "DebuffHealth", "Draw", "DiscardHand", "RandomDiscard", "Generate" }.Contains(effect.Type))
+                if (!new[] { "CopyUnits", "Bump", "AbilityTeleport", "AttackWithUnit", "Damage", "DamagePerSourceAttack", "DamagePerHp", "Heal", "Sacrifice", "Kill", "AddStatus", "RemoveAllStatusEffects", "MultiplyStatus", "MultiplyAllPositiveStatusEffects", "AdjustAllStatusEffects", "AddStatusPerOtherEffect", "SpawnOrStatus", "FloorRearrange", "UnitUpgrade", "BuffEquipment", "RemoveUnitUpgrade", "AttachEquipment", "RemoveEquipment", "BuffAttack", "DebuffAttack", "BuffHealth", "DebuffHealth", "Draw", "DiscardHand", "RandomDiscard", "Generate" }.Contains(effect.Type))
                     return "Unimplemented spell effect " + effect.Type;
                 if (effect.Type == "Generate" && effect.Generation == null) return "Missing generated card rules.";
                 if ((effect.Type == "UnitUpgrade" || effect.Type == "BuffEquipment" || effect.Type == "RemoveUnitUpgrade") && effect.Upgrade == null)
@@ -1656,7 +1662,7 @@ namespace MonsterTrain2Poju.Model
                 effect.UseCardTraits, effect.RequireEquipment, effect.UseSelectedRoom, effect.CountStatusOnlyOnTargets,
                 effect.SpawnFallbackUnit, effect.DisallowStatusStackModifiers, effect.StatusAdjustmentFilter,
                 effect.DamagePerHpLastAttacker, effect.DamagePerHpIncludeArmor, effect.RoomAttachment, effect.Recursion,
-                effect.CardFilter, effect.UpgradeFilters);
+                effect.CardFilter, effect.UpgradeFilters, effect.RemoveHalfStatusEffects);
         }
         private static int TestCount(TrainCombatState state, CardActionEffect effect, CardTargets targets)
         {

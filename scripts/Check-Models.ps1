@@ -39,7 +39,7 @@ $fixtureNames = @('full-battle-steward-once.mt2f', 'full-battle-no-cards.mt2f', 
     'full-battle-relic-card-cast-trigger-unit-upgrades.mt2f',
     'full-battle-relic-card-replacement-upgrades.mt2f',
     'full-battle-conditional-relic-card-upgrades.mt2f', 'full-battle-statistics.mt2f', 'full-battle-numeric-upgrades.mt2f',
-    'full-battle-dynamic-upgrades.mt2f', 'full-battle-sacrifice-effects.mt2f', 'full-battle-card-effect-kill.mt2f', 'full-battle-card-effect-kill-subtype.mt2f', 'full-battle-dragon-hoard.mt2f', 'full-battle-card-recursion.mt2f', 'full-battle-card-recursion-choice.mt2f', 'full-battle-card-recursion-choose-to-hand.mt2f', 'full-battle-card-recursion-filter-choice.mt2f', 'full-battle-card-recursion-discard-choice.mt2f', 'full-battle-card-recursion-upgrade.mt2f', 'full-battle-card-recursion-upgrade-hand.mt2f', 'full-battle-card-recursion-upgrade-choice.mt2f', 'full-battle-card-recursion-upgrade-filter-choice.mt2f', 'full-battle-card-recursion-upgrade-replacement-choice.mt2f', 'full-battle-sacrifice-upgrades.mt2f',
+    'full-battle-dynamic-upgrades.mt2f', 'full-battle-sacrifice-effects.mt2f', 'full-battle-card-effect-kill.mt2f', 'full-battle-card-effect-kill-subtype.mt2f', 'full-battle-dragon-hoard.mt2f', 'full-battle-remove-all-status-effects.mt2f', 'full-battle-card-recursion.mt2f', 'full-battle-card-recursion-choice.mt2f', 'full-battle-card-recursion-choose-to-hand.mt2f', 'full-battle-card-recursion-filter-choice.mt2f', 'full-battle-card-recursion-discard-choice.mt2f', 'full-battle-card-recursion-upgrade.mt2f', 'full-battle-card-recursion-upgrade-hand.mt2f', 'full-battle-card-recursion-upgrade-choice.mt2f', 'full-battle-card-recursion-upgrade-filter-choice.mt2f', 'full-battle-card-recursion-upgrade-replacement-choice.mt2f', 'full-battle-sacrifice-upgrades.mt2f',
     'full-battle-hand-upgrades.mt2f', 'full-battle-targeted-hand-upgrades.mt2f', 'full-battle-permanent-consume-hand-upgrades.mt2f',
     'full-battle-permanent-consume-over-temporary.mt2f',
     'full-battle-healing.mt2f', 'full-battle-healing-triggers.mt2f', 'full-battle-room-spells.mt2f',
@@ -304,6 +304,14 @@ $unplayedCardEffectsFixtures = @($fixtures | Where-Object {
 foreach ($fixturePath in $unplayedCardEffectsFixtures) {
     dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- --unplayed-card-effects-only $fixturePath
     if ($LASTEXITCODE -ne 0) { throw "Unplayed-card effect checks failed: $fixturePath" }
+}
+
+$removeAllStatusFixtures = @($fixtures | Where-Object {
+    (Split-Path -Leaf $_) -eq 'full-battle-remove-all-status-effects.mt2f'
+})
+foreach ($fixturePath in $removeAllStatusFixtures) {
+    dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- --remove-all-status-only $fixturePath
+    if ($LASTEXITCODE -ne 0) { throw "Remove-all-status checks failed: $fixturePath" }
 }
 
 $recursionChoiceFixtures = @($fixtures | Where-Object {

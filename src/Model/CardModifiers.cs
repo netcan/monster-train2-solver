@@ -429,7 +429,8 @@ namespace MonsterTrain2Poju.Model
                 effect.SpawnFallbackUnit, effect.DisallowStatusStackModifiers,
                 damagePerHpLastAttacker: effect.DamagePerHpLastAttacker,
                 damagePerHpIncludeArmor: effect.DamagePerHpIncludeArmor,
-                roomAttachment: effect.RoomAttachment, recursion: effect.Recursion);
+                roomAttachment: effect.RoomAttachment, recursion: effect.Recursion,
+                removeHalfStatusEffects: effect.RemoveHalfStatusEffects);
 
             int ResolveValue(CardActionEffect effect, int value) => effect.Type == "Damage" || effect.Type == "Heal"
                 ? UpgradedStat(UpgradedStat(value, effect.Type, true, instance.Permanent), effect.Type, true, instance.Temporary) : value;

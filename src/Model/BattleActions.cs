@@ -49,6 +49,7 @@ namespace MonsterTrain2Poju.Model
         public CombatUnit? SpawnFallbackUnit { get; }
         public bool DisallowStatusStackModifiers { get; }
         public int? StatusAdjustmentFilter { get; }
+        public bool? RemoveHalfStatusEffects { get; }
         public bool DamagePerHpLastAttacker { get; }
         public bool DamagePerHpIncludeArmor { get; }
         public RoomCapacityAttachmentState? RoomAttachment { get; }
@@ -66,7 +67,8 @@ namespace MonsterTrain2Poju.Model
             bool disallowStatusStackModifiers = false, int? statusAdjustmentFilter = null,
             bool damagePerHpLastAttacker = false, bool damagePerHpIncludeArmor = false,
             RoomCapacityAttachmentState? roomAttachment = null, CardRecursionRule? recursion = null,
-            CardUpgradeMaskRule? cardFilter = null, IReadOnlyList<CardUpgradeMaskRule>? upgradeFilters = null)
+            CardUpgradeMaskRule? cardFilter = null, IReadOnlyList<CardUpgradeMaskRule>? upgradeFilters = null,
+            bool? removeHalfStatusEffects = null)
         { Type = type; Target = target; Value = value; AllowEnemy = allowEnemy; AllowPlayer = allowPlayer; Statuses = Array.AsReadOnly(statuses.ToArray());
             Upgrade = upgrade; Lifetime = lifetime; Tests = tests; Range = range; Filters = filters; Generation = generation; OnlyIfNoEnemies = onlyIfNoEnemies;
             CooldownParameter = cooldownParameter; AbilityChange = abilityChange; CopyHeroStats = copyHeroStats; ScaleUpgrade = scaleUpgrade;
@@ -75,6 +77,7 @@ namespace MonsterTrain2Poju.Model
             UseCardTraits = useCardTraits; RequireEquipment = requireEquipment; UseSelectedRoom = useSelectedRoom;
             CountStatusOnlyOnTargets = countStatusOnlyOnTargets; SpawnFallbackUnit = spawnFallbackUnit;
             DisallowStatusStackModifiers = disallowStatusStackModifiers; StatusAdjustmentFilter = statusAdjustmentFilter;
+            RemoveHalfStatusEffects = removeHalfStatusEffects;
             DamagePerHpLastAttacker = damagePerHpLastAttacker; DamagePerHpIncludeArmor = damagePerHpIncludeArmor;
             RoomAttachment = roomAttachment; Recursion = recursion; CardFilter = cardFilter;
             UpgradeFilters = Array.AsReadOnly((upgradeFilters ?? Array.Empty<CardUpgradeMaskRule>()).ToArray()); }

@@ -26,6 +26,14 @@ if (args.Length == 2 && args[0] == "--unplayed-card-effects-only")
     return;
 }
 
+if (args.Length == 2 && args[0] == "--remove-all-status-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    RemoveAllStatusChecks.Native(fixture.RootElement);
+    Console.WriteLine($"NATIVE-FIXTURE-METADATA schema={fixture.RootElement.GetProperty("Schema").GetInt32()} bytes={new FileInfo(args[1]).Length} uniqueNodes={fixture.UniqueNodeCount}");
+    return;
+}
+
 if (args.Length == 2 && args[0] == "--explain-frontier")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);

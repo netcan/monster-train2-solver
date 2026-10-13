@@ -6,10 +6,19 @@ namespace MonsterTrain2Poju.Model
 {
     public static class StatusRemovalModel
     {
+        private static readonly string[] DisplayCategories = { "Positive", "Negative", "Persistent", "Ability" };
+
         internal static string? Validate(CardActionEffect effect, RoomCombatState room)
         {
             if (effect.Statuses.Count != 1) return "Status removal requires one status definition.";
             return RoomCombatModel.KnowsStatus(effect.Statuses[0].Id) ? null : "Unmodeled removed status definition.";
+        }
+        internal static string? ValidateAll(CardActionEffect effect)
+        {
+            if (effect.RemoveHalfStatusEffects == null) return "Missing native remove-half status parameter.";
+            if (effect.Value < 0 || effect.Value >= DisplayCategories.Length) return "Unknown status display category.";
+            if (effect.Statuses.Count != 0) return "Remove-all status effect unexpectedly contains a status list.";
+            return null;
         }
         internal static bool Test(RoomCombatState room, CardActionEffect effect, IReadOnlyList<int> targets) =>
             string.IsNullOrEmpty(effect.Filters?.Subtype) || room.Units.Any(unit => targets.Contains(unit.Id) && unit.Subtypes.Contains(effect.Filters!.Subtype));
@@ -61,6 +70,7 @@ namespace MonsterTrain2Poju.Model
         // status and explicitly sacrifices a Horde whose final count becomes zero.
         internal static RoomCombatResult Effect(RoomCombatState source, int targetId, CardActionEffect effect, int sourceCardId = 0, bool whileRunningQueue = false)
         {
+            if (effect.Type == "RemoveAllStatusEffects") return RemoveAll(source, targetId, effect, sourceCardId);
             CombatUnit? target = source.Units.FirstOrDefault(unit => unit.Id == targetId);
             if (target == null) return Match(source);
             if (!string.IsNullOrEmpty(effect.Filters?.Subtype) && !target.Subtypes.Contains(effect.Filters!.Subtype)) return Match(source);
@@ -81,6 +91,35 @@ namespace MonsterTrain2Poju.Model
             RoomCombatResult sacrificed = RoomCombatModel.QueueSacrifice(raw.State!, changed, sourceCardId, callbacks.Add, whileRunningQueue);
             return new RoomCombatResult(sacrificed.State, sacrificed.Outcome, sacrificed.Rounds, sacrificed.Events.ToList(),
                 sacrificed.UnsupportedReason, callbacks);
+        }
+        private static RoomCombatResult RemoveAll(RoomCombatState source, int targetId, CardActionEffect effect, int sourceCardId)
+        {
+            string? error = ValidateAll(effect);
+            if (error != null) return Unsupported(error);
+            RoomCombatState state = source;
+            var callbacks = new List<RoomCombatModel.QueuedCharacterTrigger>();
+            var events = new List<CombatEvent>();
+            RoomOutcome outcome = RoomOutcome.Exchanged;
+            CombatUnit? initial = state.Units.FirstOrDefault(unit => unit.Id == targetId);
+            if (initial == null) return Match(source);
+            string category = DisplayCategories[effect.Value];
+            foreach (CombatStatus status in initial.Statuses.Where(status => status.Stacks > 0).ToArray())
+            {
+                if (!status.Hidden.HasValue || status.DisplayCategory == null)
+                    return Unsupported("Remove-all status effect requires captured visibility and display-category metadata.");
+                if (status.Hidden.Value || status.DisplayCategory != category) continue;
+                CombatUnit? current = state.Units.FirstOrDefault(unit => unit.Id == targetId);
+                int stacks = current?.RegisteredStatus(status.Id)?.Stacks ?? 0;
+                if (stacks <= 0) continue;
+                int amount = effect.RemoveHalfStatusEffects == true ? (stacks / 2) + (stacks % 2) : stacks;
+                RoomCombatResult removed = Remove(state, targetId, status.Id, amount, sourceCardId);
+                if (!removed.Supported) return removed;
+                state = removed.State!;
+                callbacks.AddRange(removed.PendingCallbacks);
+                events.AddRange(removed.Events);
+                if (removed.Outcome != RoomOutcome.Exchanged) outcome = removed.Outcome;
+            }
+            return new RoomCombatResult(state, outcome, 0, events, pendingCallbacks: callbacks);
         }
         internal static RoomCombatResult Drain(RoomCombatResult result, bool settleSpawner = true)
         {

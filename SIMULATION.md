@@ -1,10 +1,31 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-14): 280 binary archives, including 249
+Current accepted inventory (2026-10-14): 281 binary archives, including 250
 full battles and 31 component calibrations. Unchanged original relic evidence
 covers 78/224 catalog entries (34.82%); see
 [the owner evidence table](tests/fixtures/relic-coverage.md). Whole-battle
 coverage and the optimal solver remain in progress.
+
+### Remove all visible status effects (schema 164)
+
+`full-battle-remove-all-status-effects.mt2f` captures two marked casts of the
+unchanged `ResinRemoval` card. Its native effects select the Positive and
+Negative display categories. The first cast removes every matching visible
+stack; the second removes half, rounding the removed amount up, so three Poison
+stacks become one. Hidden statuses and the Persistent category remain. The
+muted Instant battle wins with 50 matched stages, 22 card actions and six
+EndTurns, with zero capture failures, mismatches, unsupported transitions or
+pending records. The focused native check validates both casts against their
+actual snapshots and checks each affected or preserved status stack.
+
+The 30,154-byte archive has 5,012 unique nodes and SHA-256
+`4f91c877366cce01dd9c84932736ff323394fc081163ab63cdf181ddcd3c98a3`; no JSON
+companion is tracked.
+
+```powershell
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-remove-all-status-effects.mt2f
+dotnet run --project src/ModelChecks -c Release -- --remove-all-status-only tests/fixtures/full-battle-remove-all-status-effects.mt2f
+```
 
 ### Fixed unplayed Pyre-damage triggers (schema 161)
 

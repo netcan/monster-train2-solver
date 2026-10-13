@@ -17,6 +17,7 @@ namespace MonsterTrain2Poju.Probe
             "CardEffectRewardGold", "CardEffectGainEnergy", "CardEffectAdjustEnergy", "CardEffectGainEnergyNextTurn", "CardEffectGainEnergyEveryTurn",
             "CardEffectAdjustDragonsHoard", "CardEffectRewardGoldPerDragonHoard",
             "CardEffectDamage", "CardEffectDamagePerSourceAttack", "CardEffectDamagePerHp", "CardEffectDraw", "CardEffectDrawAdditionalNextTurn",
+            "CardEffectRemoveAllStatusEffects",
             "CardEffectAdjustRoomCapacity", "CardEffectAdjustForgePoints", "CardEffectDiscardHand", "CardEffectRandomDiscard", "CardEffectAddBattleCard",
             "CardEffectHeal", "CardEffectSacrifice", "CardEffectKill", "CardEffectRecursion", "CardEffectBuffDamage", "CardEffectDebuffDamage",
             "CardEffectBuffMaxHealth", "CardEffectDebuffMaxHealth", "CardEffectAddStatusEffect", "CardEffectMultiplyStatusEffect",
@@ -300,6 +301,7 @@ namespace MonsterTrain2Poju.Probe
                 effect.GetEffectStateName() == "CardEffectAdjustAllStatusEffects" ? "AdjustAllStatusEffects" :
                 effect.GetEffectStateName() == "CardEffectSpawnMonsterOrAddStatusEffect" ? "SpawnOrStatus" :
                 effect.GetEffectStateName() == "CardEffectAddStatusEffect" ? "AddStatus" :
+                effect.GetEffectStateName() == "CardEffectRemoveAllStatusEffects" ? "RemoveAllStatusEffects" :
                 handUpgrade ? "HandUpgrade" : effect.GetEffectStateName() == "CardEffectRemoveTempUpgradeFromUnit" ? "RemoveUnitUpgrade" : "UnitUpgrade";
             CardUpgradeModifier? upgrade = type == "DrawNextTurn" ? BonusDrawProbe.Upgrade(effect) : null;
             IReadOnlyList<CardUpgradeMaskRule> upgradeFilters = Array.Empty<CardUpgradeMaskRule>();
@@ -410,7 +412,8 @@ namespace MonsterTrain2Poju.Probe
                     effect.GetTargetCharacterSubtype().IsNone ? "" : effect.GetTargetCharacterSubtype().Key, effect.GetParamBool(), effect.GetParamBool2(),
                     effect.GetParamCardFilter() != null, effect.GetParamCardUpgradeData() != null,
                     effect.GetParamCardFilter() == null ? null : CardUpgradeMaskProbe.Rule(effect.GetParamCardFilter())) : null,
-                upgradeFilters: upgradeFilters);
+                upgradeFilters: upgradeFilters,
+                removeHalfStatusEffects: type == "RemoveAllStatusEffects" ? (bool?)effect.GetParamBool() : null);
         }
 
         private static RoomCapacityAttachmentState? CapacityAttachment(CardData card, CardEffectData effect,
