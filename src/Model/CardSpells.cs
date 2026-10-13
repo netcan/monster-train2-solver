@@ -363,8 +363,9 @@ namespace MonsterTrain2Poju.Model
                     foreach (int cardId in recursion.RestoredCardIds.Where(id =>
                         recursion.Cards!.Hand.Any(card => card.InstanceId == id)))
                         statistics = statistics?.Increment(cardId, "TimesDrawn");
-                    CombatContext changed = state.Context.WithCards(recursion.Cards!).WithOtherPiles(recursion.OtherPiles!)
-                        .WithBattleRng(recursion.BattleRng!.Value).WithStatistics(statistics);
+                    CombatContext changed = state.Context.WithCards(recursion.Cards!);
+                    if (recursion.OtherPiles != null) changed = changed.WithOtherPiles(recursion.OtherPiles);
+                    changed = changed.WithBattleRng(recursion.BattleRng!.Value).WithStatistics(statistics);
                     foreach (CardInstanceState changedCard in recursion.ChangedCards)
                         changed = changed.WithCard(changedCard);
                     foreach (int restoredCardId in recursion.RestoredCardIds)
@@ -374,7 +375,7 @@ namespace MonsterTrain2Poju.Model
                             changed = changed.WithCard(CardExhaustModel.ResetTraits(restoredCard));
                     }
                     state = WithContext(state, changed);
-                    piles = recursion.OtherPiles!.ToArray();
+                    if (recursion.OtherPiles != null) piles = recursion.OtherPiles.ToArray();
                     continue;
                 }
                 if (effect.Type == "SpawnOrStatus")
@@ -1261,7 +1262,7 @@ namespace MonsterTrain2Poju.Model
                 }
                 if (effect.Type == "Recursion")
                 {
-                    string? recursionError = CardRecursionModel.Validate(effect, source.Context.OtherPiles);
+                    string? recursionError = CardRecursionModel.Validate(effect, source.Context.OtherPiles, source.Context.Cards);
                     if (recursionError != null) return recursionError;
                     continue;
                 }

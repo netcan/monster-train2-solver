@@ -151,7 +151,8 @@ namespace MonsterTrain2Poju.Probe
                     bool randomDiscardHandTarget = effect.GetEffectStateName() == "CardEffectRandomDiscard" &&
                         effect.GetTargetMode() == TargetMode.Hand;
                     bool recursionCardPileTarget = effect.GetEffectStateName() == "CardEffectRecursion" &&
-                        (effect.GetTargetMode() == TargetMode.Exhaust || effect.GetTargetMode() == TargetMode.Eaten);
+                        (effect.GetTargetMode() == TargetMode.Exhaust || effect.GetTargetMode() == TargetMode.Eaten ||
+                         effect.GetTargetMode() == TargetMode.Discard);
                     var excluded = new List<SubtypeData>(); effect.GetTargetCharacterExcludedSubtypes(excluded);
                     if (effect.GetUseStatusEffectStackMultiplier() || effect.GetUseHealthMissingStackMultiplier() ||
                         effect.GetUseMagicPowerMultiplier() || effect.GetEffectStateName() != "CardEffectSacrifice" &&

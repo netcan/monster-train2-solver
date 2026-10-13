@@ -74,6 +74,13 @@ if (args.Length == 2 && args[0] == "--card-recursion-filter-choice-only")
     return;
 }
 
+if (args.Length == 2 && args[0] == "--card-recursion-discard-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    CardRecursionChecks.SearchChoices(fixture.RootElement, "ChooseToHand", sourceTarget: "Discard");
+    return;
+}
+
 if (args.Length == 2 && args[0] == "--card-recursion-upgrade-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);

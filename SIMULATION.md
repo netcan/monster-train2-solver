@@ -1,6 +1,6 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-13): 270 binary archives, including 239
+Current accepted inventory (2026-10-13): 271 binary archives, including 240
 full battles and 31 component calibrations. Unchanged original relic evidence
 covers 74/224 catalog entries (33.04%); see
 [the owner evidence table](tests/fixtures/relic-coverage.md). Whole-battle
@@ -8898,9 +8898,10 @@ and the 128-state search is equal in serial and parallel runs. The archive is
 `daa9034d3db6ac809ca427f0b910262051bc67bbbe1fed10c0880b9f89fea0e3`; it has no
 JSON companion.
 
-The curated inventory remains 270 archives: 239 full battles and 31 component
-calibrations. Source piles other than Exhaust/Eaten and other uncalibrated
-recursion upgrade interactions, such as trigger and ability changes, remain open.
+The curated inventory is now 271 archives: 240 full battles and 31 component
+calibrations. Discard-to-Hand recursion is covered; Discard-to-Deck and other
+uncalibrated recursion upgrade interactions, such as trigger and ability
+changes, remain open.
 
 ```powershell
 pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -CardRecursionUpgrade -GameSpeed Instant
@@ -8923,4 +8924,30 @@ dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fi
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-card-recursion-upgrade-choice.mt2f
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-card-recursion-upgrade-filter-choice.mt2f
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-card-recursion-upgrade-replacement-choice.mt2f
+```
+
+### Discard recursion to hand (schema 154)
+
+`full-battle-card-recursion-discard-choice.mt2f` captures native
+`WurmkinEtchings` with six Spell candidates in Discard and `ChooseToHand`. The
+selected card leaves Discard and returns to Hand. The 64.47-second muted Instant
+battle wins with 49 matched stages and 19 card actions; capture failures,
+mismatches, unsupported transitions and pending records are zero. All 465
+branch decision contexts were captured. Search emits six distinct selected
+card actions, checks 128 states, and gives equal serial and parallel results.
+
+Native `ChooseToDeck` from Discard does not restore the card: the game routes
+that operation through its Exhaust/Eaten restoration path. The model therefore
+rejects that source/mode combination. Original relic evidence remains 74/224
+(33.04%); this card mechanism adds no relic owner.
+
+The schema-154 archive is 31,848 bytes with 5,331 unique nodes and SHA-256
+`881ff052f7f22304759a8736bbe392cc4412d27d1c32490cdb85671efaf0d8ef`; it has no
+JSON companion. The accepted inventory is now 271 archives: 240 battles and 31
+component calibrations.
+
+```powershell
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-card-recursion-discard-choice.mt2f
+dotnet run --project src/ModelChecks -c Release -- --card-recursion-discard-only tests/fixtures/full-battle-card-recursion-discard-choice.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-card-recursion-discard-choice.mt2f
 ```

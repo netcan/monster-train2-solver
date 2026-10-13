@@ -22,8 +22,8 @@ All 29 source archives below report game `2.2.1`, module MVID
 byte lengths and SHA-256 hashes are recorded in [manifest.tsv](manifest.tsv).
 The floor-capacity batch passes strict native acceptance, complete-fixture checks,
 independent full-battle replay and six directly affected old-fixture regressions.
-The accepted inventory is 270 archives: 239 battles and 31 component
-calibrations. All 270 archive names, byte lengths and SHA-256 hashes match the
+The accepted inventory is 271 archives: 240 battles and 31 component
+calibrations. All 271 archive names, byte lengths and SHA-256 hashes match the
 manifest and curated list, with no JSON companions. A 246-archive replay was
 attempted on 2026-10-13 but has not completed: legacy EndTurn snapshots can
 conflict with the current model's room `Enabled` state. Focused follow-up checks

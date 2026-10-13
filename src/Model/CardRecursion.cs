@@ -39,10 +39,11 @@ namespace MonsterTrain2Poju.Model
             CardActionEffect effect, BattlePlayRules? definitions, int sourceCardId, out string? error,
             IReadOnlyList<CardInstanceState>? cardRegistry = null)
         {
-            error = Validate(effect, otherPiles);
+            error = Validate(effect, otherPiles, cards);
             if (error != null) return Array.Empty<int>();
             IEnumerable<CardToken> candidates = effect.Target switch
             {
+                "Discard" => cards.Discard,
                 "Exhaust" => otherPiles!.Single(pile => pile.Name == "Exhausted").Cards,
                 "Eaten" => otherPiles!.Single(pile => pile.Name == "Eaten").Cards,
                 _ => Array.Empty<CardToken>()
@@ -117,10 +118,12 @@ namespace MonsterTrain2Poju.Model
             var restoredCardIds = new List<int>();
             var hand = cards.Hand.ToList();
             var draw = cards.Draw.ToList();
-            CardPileState[] piles = otherPiles!.ToArray();
-            string sourcePileName = effect.Target == "Exhaust" ? "Exhausted" : "Eaten";
-            CardPileState sourcePile = piles.Single(pile => pile.Name == sourcePileName);
-            Dictionary<int, CardToken> selectedTokens = sourcePile.Cards.Where(card => selected.Contains(card.InstanceId))
+            var discard = cards.Discard.ToList();
+            CardPileState[]? piles = otherPiles?.ToArray();
+            string? sourcePileName = effect.Target == "Exhaust" ? "Exhausted" : effect.Target == "Eaten" ? "Eaten" : null;
+            CardPileState? sourcePile = sourcePileName == null ? null : piles!.Single(pile => pile.Name == sourcePileName);
+            IReadOnlyList<CardToken> sourceCards = sourcePile?.Cards ?? discard;
+            Dictionary<int, CardToken> selectedTokens = sourceCards.Where(card => selected.Contains(card.InstanceId))
                 .ToDictionary(card => card.InstanceId);
             int capacity = maxHandSize - hand.Count;
             for (int index = selected.Length - 1; index >= 0; index--)
@@ -131,9 +134,19 @@ namespace MonsterTrain2Poju.Model
                 int cardId = selected[index];
                 if (!selectedTokens.TryGetValue(cardId, out CardToken? token))
                     return new CardRecursionResult(null, null, null, "A selected recursion card left its source pile.");
-                sourcePile = CardPileModel.Remove(sourcePile, cardId);
-                int standbyIndex = Array.FindIndex(piles, pile => pile.Name == "Standby");
-                if (standbyIndex >= 0) piles[standbyIndex] = CardPileModel.Remove(piles[standbyIndex], cardId);
+                if (sourcePile != null)
+                {
+                    sourcePile = CardPileModel.Remove(sourcePile, cardId);
+                    int standbyIndex = Array.FindIndex(piles!, pile => pile.Name == "Standby");
+                    if (standbyIndex >= 0) piles![standbyIndex] = CardPileModel.Remove(piles[standbyIndex], cardId);
+                }
+                else
+                {
+                    int discardIndex = discard.FindIndex(card => card.InstanceId == cardId);
+                    if (discardIndex < 0)
+                        return new CardRecursionResult(null, null, null, "A selected recursion card left its discard pile.");
+                    discard.RemoveAt(discardIndex);
+                }
                 restoredCardIds.Add(cardId);
                 if (effect.Recursion.SelectionMode is "RandomToDeck" or "ChooseToDeck")
                     draw.Add(token);
@@ -145,7 +158,8 @@ namespace MonsterTrain2Poju.Model
                 else
                     draw.Add(token);
             }
-            piles = piles.Select(pile => pile.Name == sourcePileName ? sourcePile : pile).ToArray();
+            if (sourcePileName != null)
+                piles = piles!.Select(pile => pile.Name == sourcePileName ? sourcePile! : pile).ToArray();
             var changedCards = new List<CardInstanceState>();
             if (effect.Upgrade != null && restoredCardIds.Count > 0)
             {
@@ -180,7 +194,7 @@ namespace MonsterTrain2Poju.Model
                     changedCards.Add(card.WithModifiers(card.Permanent, temporary));
                 }
             }
-            var updatedCards = new CardCycleState(hand, draw, cards.Discard, cards.Rng, cards.DrawModifier,
+            var updatedCards = new CardCycleState(hand, draw, discard, cards.Rng, cards.DrawModifier,
                 cards.ExternalInteractions, cards.BonusDraw, cards.NextDrawUpgrades, cards.NextUpgradeReferenceId);
             return new CardRecursionResult(updatedCards, piles, nextBattleRng, restoredCardIds: restoredCardIds,
                 changedCards: changedCards);
@@ -205,7 +219,8 @@ namespace MonsterTrain2Poju.Model
             return null;
         }
 
-        internal static string? Validate(CardActionEffect effect, IReadOnlyList<CardPileState>? otherPiles)
+        internal static string? Validate(CardActionEffect effect, IReadOnlyList<CardPileState>? otherPiles,
+            CardCycleState? cards = null)
         {
             CardRecursionRule? rule = effect.Recursion;
             if (rule == null) return "Missing native card-recursion definition.";
@@ -221,6 +236,13 @@ namespace MonsterTrain2Poju.Model
                 return "Card recursion requires its temporary card-upgrade definition.";
             if (effect.Upgrade != null && CardModifierModel.UpgradeInteractions(effect.Upgrade).Any())
                 return string.Join("; ", CardModifierModel.UpgradeInteractions(effect.Upgrade).Distinct());
+            if (effect.Target == "Discard")
+            {
+                if (cards == null) return "Card recursion requires its captured discard pile.";
+                if (rule.SelectionMode != "ChooseToHand")
+                    return "Unmodeled Discard card-recursion selection mode " + rule.SelectionMode + ".";
+                return null;
+            }
             if (effect.Target != "Exhaust" && effect.Target != "Eaten")
                 return "Unmodeled card-recursion source pile " + effect.Target + ".";
             if (otherPiles == null || !otherPiles.Any(pile => pile.Name == (effect.Target == "Exhaust" ? "Exhausted" : "Eaten")))

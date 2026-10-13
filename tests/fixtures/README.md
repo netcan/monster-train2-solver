@@ -3596,3 +3596,29 @@ pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -OriginalStatusRelicBatchB
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-burnout-stacks.mt2f
 dotnet run --project src/ModelChecks -c Release -- --original-status-relics-only tests/fixtures/full-battle-original-burnout-stacks.mt2f
 ```
+
+### Recursion from Discard to Hand (schema 154)
+
+`full-battle-card-recursion-discard-choice.mt2f` captures native
+`WurmkinEtchings` with six Spell candidates in Discard and `ChooseToHand`. The
+selected card leaves Discard and returns to Hand. The muted Instant battle wins
+with 49 matched stages and 19 card actions; capture failures, mismatches,
+unsupported transitions and pending records are zero. All 465 branch decision
+contexts were captured. Search emits six distinct choices and checks 128 states
+with identical serial and parallel results.
+
+The game does not restore a Discard card through `ChooseToDeck`; that path calls
+the Exhaust/Eaten restoration API, so the model explicitly rejects it. This
+fixture adds no original relic owner. The accepted inventory is now 271 archives:
+240 battles and 31 component calibrations, while original relic evidence remains
+74/224 (33.04%).
+
+The archive is 31,848 bytes with 5,331 unique nodes and SHA-256
+`881ff052f7f22304759a8736bbe392cc4412d27d1c32490cdb85671efaf0d8ef`; it has no
+JSON companion.
+
+```powershell
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-card-recursion-discard-choice.mt2f
+dotnet run --project src/ModelChecks -c Release -- --card-recursion-discard-only tests/fixtures/full-battle-card-recursion-discard-choice.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-card-recursion-discard-choice.mt2f
+```

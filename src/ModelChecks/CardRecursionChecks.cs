@@ -5,7 +5,8 @@ using MonsterTrain2Poju.Model;
 
 internal static class CardRecursionChecks
 {
-    public static void SearchChoices(FixtureValue fixture, string selectionMode, int expectedCandidateCount = 6)
+    public static void SearchChoices(FixtureValue fixture, string selectionMode, int expectedCandidateCount = 6,
+        string sourceTarget = "Exhaust")
     {
         const string recursionCardId = "0e50f7bc-c7c4-46b5-98a4-33d32194d7b8";
         const string replacedUpgradeId = "f2f8c03b-327d-4f3d-8cc1-f9b2a20e4ff7";
@@ -13,15 +14,17 @@ internal static class CardRecursionChecks
         foreach (FixtureValue action in fixture.GetProperty("Actions").EnumerateArray())
         {
             BattleTurnState before = action.GetProperty("Before").Deserialize<BattleTurnState>()!;
-            if (before.PlayRules?.Cards.Any(rule => rule.DataId == recursionCardId) == true &&
+            if (before.PlayRules?.Cards.Any(rule => rule.DataId == recursionCardId &&
+                rule.Effects.Any(effect => effect.Type == "Recursion" && effect.Target == sourceTarget)) == true &&
                 before.Spawn.Train.Context!.Cards.Hand.Any(card => card.DataId == recursionCardId) &&
-                before.Spawn.Train.Context.OtherPiles?.Any(pile => pile.Name == "Exhausted" && pile.Cards.Count > 1) == true)
+                (sourceTarget == "Discard" ? before.Spawn.Train.Context.Cards.Discard.Count > 1 :
+                    before.Spawn.Train.Context.OtherPiles?.Any(pile => pile.Name == "Exhausted" && pile.Cards.Count > 1) == true))
             {
                 captured = before;
                 break;
             }
         }
-        Require(captured != null, "The native recursion fixture has no captured decision with eligible cards in hand and Exhaust.");
+        Require(captured != null, "The native recursion fixture has no captured decision with eligible cards in hand and " + sourceTarget + ".");
 
         BattleTurnState root = captured!;
         CardPlayRule original = root.PlayRules!.Cards.Single(rule => rule.DataId == recursionCardId);
@@ -66,8 +69,11 @@ internal static class CardRecursionChecks
                     !result.Cards.Hand.Any(card => card.InstanceId == selectedId)
                 : selectionMode == "ChooseToHand" && result.Cards.Hand.Any(card => card.InstanceId == selectedId) &&
                     !result.Cards.Draw.Any(card => card.InstanceId == selectedId);
+            bool removedFromSource = sourceTarget == "Discard"
+                ? !result.Cards.Discard.Any(card => card.InstanceId == selectedId)
+                : !result.OtherPiles!.Single(pile => pile.Name == "Exhausted").Cards.Any(card => card.InstanceId == selectedId);
             Require(destinationMatches &&
-                !result.OtherPiles!.Single(pile => pile.Name == "Exhausted").Cards.Any(card => card.InstanceId == selectedId) &&
+                removedFromSource &&
                 result.BattleRng.Equals(choiceRoot.Spawn.Train.Context.BattleRng),
                 "A chosen recursion action did not restore exactly its selected card to the correct pile without consuming Battle RNG.");
             if (recursion.Upgrade != null)
@@ -91,7 +97,7 @@ internal static class CardRecursionChecks
                 }
             }
         }
-        Console.WriteLine($"CARD-RECURSION-CHOICE-CHECKS PASS: {selectionMode}, {branches.Length} distinct choice actions from a native decision state.");
+        Console.WriteLine($"CARD-RECURSION-CHOICE-CHECKS PASS: {selectionMode} from {sourceTarget}, {branches.Length} distinct choice actions from a native decision state.");
     }
 
     public static void SearchUpgrade(FixtureValue fixture)
@@ -263,6 +269,16 @@ internal static class CardRecursionChecks
         CardRecursionResult chosenHand = CardRecursionModel.Apply(cards, standby, cards.Rng, chosen, definitions, 50, 4, [3]);
         CardActionEffect chosenDeck = Effect("ChooseToDeck", "Eaten", "Invalid", value: 0);
         CardRecursionResult chosenToDeck = CardRecursionModel.Apply(cards, piles, cards.Rng, chosenDeck, definitions, 50, 4, [5]);
+        var discardCards = new CardCycleState(cards.Hand, cards.Draw,
+            [new CardToken(6, "spell-a"), new CardToken(7, "unit"), new CardToken(8, "spell-b")], cards.Rng, 2, []);
+        CardActionEffect discardChoice = Effect("ChooseToHand", "Discard", "Spell", value: 0);
+        IReadOnlyList<int> discardEligible = CardRecursionModel.EligibleCards(discardCards, null, discardChoice,
+            definitions, 50, out string? discardError);
+        CardRecursionResult returnedFromDiscard = CardRecursionModel.Apply(discardCards, null, cards.Rng,
+            discardChoice, definitions, 50, 4, [8]);
+        CardActionEffect unsupportedDiscardDeckChoice = Effect("ChooseToDeck", "Discard", "Spell", value: 0);
+        CardRecursionResult returnedToDeckFromDiscard = CardRecursionModel.Apply(discardCards, null, cards.Rng,
+            unsupportedDiscardDeckChoice, definitions, 50, 4, [8]);
         var spellMask = new CardUpgradeMaskRule(cardType: "Spell");
         CardActionEffect filteredChoice = new("Recursion", "Exhaust", 1, false, false, [],
             recursion: new CardRecursionRule("ChooseToDeck", "Invalid", "", false, false, true, false, spellMask));
@@ -359,6 +375,12 @@ internal static class CardRecursionChecks
             chosenHand.OtherPiles!.Single(pile => pile.Name == "Standby").Cards.Select(card => card.InstanceId).SequenceEqual([1, 2, 4]) &&
             chosenToDeck.Supported && chosenToDeck.Cards!.Draw.Select(card => card.InstanceId).SequenceEqual([20, 5]) &&
             chosenToDeck.BattleRng!.Value.Equals(cards.Rng) &&
+            discardError == null && discardEligible.SequenceEqual([6, 8]) && returnedFromDiscard.Supported &&
+            returnedFromDiscard.OtherPiles == null && returnedFromDiscard.Cards!.Hand.Select(card => card.InstanceId).SequenceEqual([8, 50]) &&
+            returnedFromDiscard.Cards.Draw.Select(card => card.InstanceId).SequenceEqual([20]) &&
+            returnedFromDiscard.Cards.Discard.Select(card => card.InstanceId).SequenceEqual([6, 7]) &&
+            !returnedToDeckFromDiscard.Supported && returnedToDeckFromDiscard.UnsupportedReason!.Contains("Unmodeled Discard", StringComparison.Ordinal) &&
+            returnedFromDiscard.BattleRng!.Value.Equals(cards.Rng) && discardCards.Discard.Count == 3 &&
             filteredEligible.SequenceEqual([1, 3, 4]) && filteredDeck.Supported &&
             filteredDeck.Cards!.Draw.Select(card => card.InstanceId).SequenceEqual([20, 3]) &&
             filteredDeck.OtherPiles!.Single(pile => pile.Name == "Exhausted").Cards.Select(card => card.InstanceId)
@@ -421,7 +443,7 @@ internal static class CardRecursionChecks
         Require(CardPileModel.Validate(malformedKeepStandby) != null,
             "KeepInStandBy must not carry a Consume exhaustion reference.");
 
-        Console.WriteLine("PASS random and chosen card recursion, candidate branches, pile restoration, temporary upgrades, and RequiresRoomInHand");
+        Console.WriteLine("PASS random and chosen card recursion, Discard source, candidate branches, pile restoration, temporary upgrades, and RequiresRoomInHand");
     }
 
     private static CardPlayRule Rule(string dataId, string cardType) =>
