@@ -1,10 +1,30 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-13): 255 binary archives, including 224
+Current accepted inventory (2026-10-13): 256 binary archives, including 225
 full battles and 31 component calibrations. Unchanged original relic evidence
-covers 70/224 catalog entries (31.25%); see
+covers 71/224 catalog entries (31.70%); see
 [the owner evidence table](tests/fixtures/relic-coverage.md). Whole-battle
 coverage and the optimal solver remain in progress.
+
+### Original DoubleMagebladeDamage relic
+
+`full-battle-original-mageblade-magnitude.mt2f` captures the unchanged original
+`DoubleMagebladeDamage` relic and verifies its Monsters-team `mageblade +1`
+magnitude. A real positive native query, the None/Heroes/Monsters/combined team
+masks, and removal of only this owner all match. Two starting Mageblade stacks
+produce the native cached per-unit coefficient 4. The muted Instant battle wins
+with 36 stages, six actions and five EndTurns; capture failures, mismatches,
+unsupported transitions and pending records are zero. The focused model check
+also runs 32 immutable parallel branches. The schema-143 archive is 21,251
+bytes with 3,050 unique nodes and SHA-256
+`c5cf18868aaa27bddc2b5f427b0dae87d403aa3fcd8b554316dead7984c235ad`; it has no
+JSON companion. This raises original relic evidence to 71/224 (31.70%) and the
+accepted inventory to 256 archives: 225 battles and 31 component calibrations.
+
+```powershell
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -OriginalMagebladeMagnitudeRelic -GameSpeed Instant
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-mageblade-magnitude.mt2f
+```
 
 ### Original IncreaseBurnoutStacks relic
 

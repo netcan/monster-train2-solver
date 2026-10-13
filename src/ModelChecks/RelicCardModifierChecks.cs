@@ -197,7 +197,7 @@ internal static class RelicCardModifierChecks
         bool deployableRelicScenario = root.TryGetProperty("ModifierScenario", out scenario) &&
             scenario.GetString() == "original-deployable-relic";
         bool magebladeScenario = root.TryGetProperty("ModifierScenario", out scenario) &&
-            scenario.GetString() == "mageblade";
+            scenario.GetString() is "mageblade" or "original-mageblade-magnitude";
         bool sawExpectedRejection = statusUpgradeScenario || piercingUpgradeScenario || abilityUpgradeScenario || triggerUpgradeScenario ||
             replacementUpgradeScenario || extraToughTombsScenario || deployableRelicScenario
             ? rows.Any(row => row.Dispatches.Any(effect => !effect.Returned && !effect.UpgradeAdded))

@@ -11,8 +11,11 @@ namespace MonsterTrain2Poju.Probe
     internal static class MagebladeScenario
     {
         internal const string Name = "mageblade";
+        internal const string OriginalMagnitudeName = "original-mageblade-magnitude";
         private const int RelicRoomMagicPower = 15;
-        internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == Name;
+        internal static bool OriginalMagnitudeRelic => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == OriginalMagnitudeName;
+        internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == Name || OriginalMagnitudeRelic;
+        internal static bool CaptureMagnitudeQueries => OriginalMagnitudeRelic && Prepared;
         private static bool configured;
         internal static bool Prepared { get; private set; }
         internal static bool CaptureReady { get; private set; }
@@ -37,9 +40,24 @@ namespace MonsterTrain2Poju.Probe
             Set(relic, "effects", new List<RelicEffectData> { effect });
             ((IList)AccessTools.Field(typeof(AllGameData), "collectableRelicDatas").GetValue(gameData)).Add(relic);
             save.AddRelic(relic);
+            if (OriginalMagnitudeRelic)
+            {
+                CollectableRelicData original = gameData.GetAllCollectableRelicData()
+                    .Single(item => item.GetID() == "622860d3-b2ca-45b0-991a-b7745e1dcd5c");
+                RelicEffectData originalEffect = original.GetEffects().Single();
+                StatusEffectStackData[] statuses = originalEffect.GetParamStatusEffects();
+                if (original.name != "DoubleMagebladeDamage" ||
+                    originalEffect.GetEffectClassName() != "RelicEffectModifyStatusMagnitude" ||
+                    originalEffect.GetParamSourceTeam() != Team.Type.Monsters || originalEffect.GetParamInt() != 1 ||
+                    originalEffect.GetEffectConditions().Count != 0 || statuses.Length != 1 ||
+                    statuses[0].statusId != "mageblade" || statuses[0].count != 0)
+                    throw new InvalidOperationException("Original DoubleMagebladeDamage definition changed.");
+                save.AddRelic(original);
+            }
             configured = true;
             log.LogInfo("MAGEBLADE-POWER-INPUT synthetic native RelicEffectModifyCardMagicalPower=" + RelicRoomMagicPower +
-                " in isolated battle; this is not an original relic owner.");
+                " in isolated battle; this is not an original relic owner." +
+                (OriginalMagnitudeRelic ? " Acquired unchanged original DoubleMagebladeDamage for combat evidence." : string.Empty));
         }
 
         internal static void Prepare(AllGameManagers managers, ManualLogSource log)

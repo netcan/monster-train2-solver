@@ -513,7 +513,8 @@ internal static class BattleActionChecks
             chooser = DamagePerHpChecks.ChooseAbility;
         if (fixture.TryGetProperty("ModifierScenario", out var teleportScenario) && teleportScenario.GetString() == "ability-teleport")
             chooser = UnitAbilityModel.ChooseTeleportCalibrationAction;
-        if (fixture.TryGetProperty("ModifierScenario", out var magebladeScenario) && magebladeScenario.GetString() == "mageblade")
+        if (fixture.TryGetProperty("ModifierScenario", out var magebladeScenario) &&
+            magebladeScenario.GetString() is "mageblade" or "original-mageblade-magnitude")
             chooser = ChooseMagebladeThenCards;
         if (fixture.TryGetProperty("ModifierScenario", out var equipmentBuffScenario) && equipmentBuffScenario.GetString() == "equipment-buff")
             chooser = ChooseEquipmentBuffThenCards;

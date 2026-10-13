@@ -162,6 +162,7 @@ param(
     [switch] $PyreResourceRefresh,
     [switch] $OriginalFloorCapacityRelics,
     [switch] $Mageblade,
+    [switch] $OriginalMagebladeMagnitudeRelic,
     [switch] $OriginalCardPlayMagicPower,
     [switch] $OriginalRoomEntryStatusRelics,
     [switch] $OriginalUnitUpgradeTriggerRelic,
@@ -231,7 +232,7 @@ if ($OriginalDecayRelicBatch) { $BranchCardMasks = $true; $Policy = 'units-spell
 if ($OriginalResourceRelicBatch) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($PyreResourceRefresh) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalFloorCapacityRelics) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
-if ($Mageblade) { $BranchCardMasks = $true; $BattleRelicUpgrades = $true; $Policy = 'units-and-junk' }
+if ($Mageblade -or $OriginalMagebladeMagnitudeRelic) { $BranchCardMasks = $true; $BattleRelicUpgrades = $true; $Policy = 'units-and-junk' }
 if ($OriginalCardPlayMagicPower) { $BranchCardMasks = $true; $Policy = 'units-and-junk' }
 if ($OriginalRoomEntryStatusRelics) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalUnitUpgradeTriggerRelic) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
@@ -465,6 +466,7 @@ if ($OriginalResourceRelicBatch) { $environment['MT2_PROBE_MODIFIERS'] = 'origin
 if ($PyreResourceRefresh) { $environment['MT2_PROBE_MODIFIERS'] = 'pyre-resource-refresh' }
 if ($OriginalFloorCapacityRelics) { $environment['MT2_PROBE_MODIFIERS'] = 'original-floor-capacity-relics' }
 if ($Mageblade) { $environment['MT2_PROBE_MODIFIERS'] = 'mageblade' }
+if ($OriginalMagebladeMagnitudeRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-mageblade-magnitude' }
 if ($OriginalCardPlayMagicPower) { $environment['MT2_PROBE_MODIFIERS'] = 'original-card-play-magic-power' }
 if ($OriginalRoomEntryStatusRelics) { $environment['MT2_PROBE_MODIFIERS'] = 'original-room-entry-status-relics' }
 if ($OriginalUnitUpgradeTriggerRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-unit-upgrade-trigger-relic' }

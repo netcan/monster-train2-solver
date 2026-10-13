@@ -22,6 +22,7 @@ dotnet run --project src/ModelChecks -c Release -- --bump-only tests/fixtures/fu
 dotnet run --project src/ModelChecks -c Release -- --room-combat-only tests/fixtures/full-battle-companion-bump.mt2f
 dotnet run --project src/ModelChecks -c Release -- --bump-only tests/fixtures/full-battle-outer-boss-bump.mt2f
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-mageblade.mt2f
+dotnet run --project src/ModelChecks -c Release -- --mageblade-only tests/fixtures/full-battle-original-mageblade-magnitude.mt2f
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-units-spells-and-junk.mt2f
 ```
 
@@ -29,7 +30,7 @@ The default command checks the full curated inventory. For routine changes, run
 the dedicated checks for the new and directly affected scenarios; run the full
 inventory at completed milestones and before delivery.
 
-Current inventory is 255 archives: 224 accepted battles and 31 component
+Current inventory is 256 archives: 225 accepted battles and 31 component
 calibrations. `full-battle-companion-bump.mt2f` covers a paired Relentless
 companion Boss refusal, its attempted-ascension callback and the survivor's
 terminal-death handoff. `full-battle-relic-card-status-upgrades.mt2f` verifies a native
@@ -39,6 +40,11 @@ manager call replaces an existing temporary armor upgrade, keeps the native
 returned/list-growth distinction, and carries the replacement through a
 complete independently replayed battle. Its synthetic payload does not add an
 original relic owner to the coverage count.
+`full-battle-original-mageblade-magnitude.mt2f` captures the unchanged original
+`DoubleMagebladeDamage` relic. Its positive Monsters-team query, all four team
+masks, exact owner ablation and resulting cached coefficient pass; original
+relic evidence is now 71/224 (31.70%). The schema-143 binary has 21,251 bytes,
+3,050 unique nodes and no JSON companion.
 `full-battle-original-endless-return.mt2f` verifies the original More Rares
 relic's Endless upgrade routes a dead carrier to Draw, preserves its temporary
 upgrade and leaves `TimesExhausted` unchanged across a 23-action, seven-turn

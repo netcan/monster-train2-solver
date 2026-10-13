@@ -29,7 +29,8 @@ namespace MonsterTrain2Poju.Probe
 
         internal static void Matrix()
         {
-            if (!OriginalMagnitudeRelicBatchScenario.Prepared || FullBattleTrace.Active == null) return;
+            if ((!OriginalMagnitudeRelicBatchScenario.Prepared && !MagebladeScenario.CaptureMagnitudeQueries) ||
+                FullBattleTrace.Active == null) return;
             conditionalRules = null;
             matrix = true;
             try
@@ -47,7 +48,8 @@ namespace MonsterTrain2Poju.Probe
         {
             private static void Postfix(RelicManager __instance, string statusId, Team.Type characterTeam, int __result)
             {
-                if (!OriginalMagnitudeRelicBatchScenario.Prepared || capturing || FullBattleTrace.Active == null) return;
+                if ((!OriginalMagnitudeRelicBatchScenario.Prepared && !MagebladeScenario.CaptureMagnitudeQueries) ||
+                    capturing || FullBattleTrace.Active == null) return;
                 capturing = true;
                 try
                 {
