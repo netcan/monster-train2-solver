@@ -1,11 +1,29 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-14): 277 binary archives, including 246
+Current accepted inventory (2026-10-14): 278 binary archives, including 247
 full battles and 31 component calibrations. Unchanged original relic evidence
 covers 78/224 catalog entries (34.82%); see
 [the owner evidence table](tests/fixtures/relic-coverage.md). Whole-battle
 coverage and the optimal solver remain in progress.
 
+### Fixed unplayed Pyre-damage triggers (schema 161)
+
+`full-battle-unplayed-card-pyre-damage.mt2f` leaves the original `ScourgeT2`
+unplayed in hand. Its fixed `OnUnplayedNegative` `Damage` effect targets Pyre
+for 3 damage during EndTurn, after which the card follows its purge behavior.
+The Instant native battle matches all 61 stages, 21 card actions and seven
+EndTurns, with zero capture failures, mismatches, unsupported transitions or
+pending records. The focused checks cover one and multiple fixed Pyre-damage
+triggers and parent-state isolation. Other unplayed trigger effect types remain
+unsupported; no relic owner coverage changes.
+
+The 33,049-byte native binary has its unique-node count and SHA-256 recorded in
+`tests/fixtures/manifest.tsv`; no JSON companion is tracked.
+
+```powershell
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-unplayed-card-pyre-damage.mt2f
+dotnet run --project src/ModelChecks -c Release -- --unplayed-card-trigger-only tests/fixtures/full-battle-unplayed-card-pyre-damage.mt2f
+```
 ### Original card-draw relics (schema 160)
 
 `full-battle-original-card-draw-on-card-play.mt2f` captures unchanged

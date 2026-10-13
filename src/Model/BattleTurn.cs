@@ -195,6 +195,53 @@ namespace MonsterTrain2Poju.Model
                 if (Terminal(triggers.Outcome)) return Finish(triggers.Outcome, source.Energy, source.MoonPhase);
             }
             context = train.Context!;
+            if (outputPlayRules != null)
+            {
+                var unplayed = context.Cards.Hand.Select((card, handIndex) =>
+                {
+                    CardPlayRule? rule = outputPlayRules.Cards.FirstOrDefault(item => item.DataId == card.DataId);
+                    return (Card: card, HandIndex: handIndex, Rule: rule);
+                }).Where(item => item.Rule?.OnUnplayedNegativeEffects.Count > 0)
+                    .OrderBy(item => item.Rule!.UnplayedNegativeOrder.HasValue ? 0 : 1)
+                    .ThenBy(item => item.Rule!.UnplayedNegativeOrder ?? item.HandIndex)
+                    .ThenBy(item => item.HandIndex).ToArray();
+                foreach (var item in unplayed)
+                {
+                    CardInstanceState? instance = context.FindCard(item.Card.InstanceId);
+                    if (instance == null) return Unsupported("Unplayed card trigger has no captured card instance.");
+                    CardPlayRule resolved = CardModifierModel.Resolve(item.Rule!, instance);
+                    if (resolved.HasUnsupportedUnplayedTriggers || resolved.OnUnplayedNegativeEffects.Count == 0 ||
+                        resolved.OnUnplayedNegativeEffects.Any(effect => effect.Type != "Damage" || effect.Target != "Pyre" || effect.Range != null))
+                        return Unsupported("Unmodeled unplayed card trigger: " + item.Card.DataId);
+                    int triggerRoom = source.SelectedRoom >= 0 ? source.SelectedRoom :
+                        outputPlayRules.Rooms.FirstOrDefault(room => room.IsPyre)?.RoomIndex ?? -1;
+                    if (triggerRoom < 0) return Unsupported("Unplayed Pyre damage requires a captured selected room.");
+                    TrainSpellResult spell = CardSpellModel.ApplyForCardPlay(train, triggerRoom,
+                        resolved.OnUnplayedNegativeEffects, 0, item.Card.InstanceId, outputPlayRules, otherPiles,
+                        onUnplayedNegativeEffects: true);
+                    if (!spell.Supported) return Unsupported(spell.UnsupportedReason!);
+                    train = spell.State!;
+                    RoomOutcome triggerOutcome = spell.Outcome;
+                    outputPlayRules = spell.PlayRules ?? outputPlayRules;
+                    otherPiles = spell.OtherPiles?.ToArray() ?? train.Context?.OtherPiles?.ToArray() ?? otherPiles;
+                    train = WithContext(train, train.Context!.WithOtherPiles(otherPiles), spawn.Turn == 0);
+                    spawn = WithTrain(spawn, train, spawn.Turn, spawn.Rng);
+                    if (spell.PendingCallbacks.Count > 0)
+                    {
+                        TrainCombatResult completed = TrainCombatModel.ApplyCharacterQueue(train, spell.PendingCallbacks.ToList());
+                        if (!completed.Supported) return Unsupported(completed.UnsupportedReason!);
+                        if (!RouteDeadUnits(train, completed)) return Unsupported("Unplayed card trigger death requires missing card routing.");
+                        train = completed.State!;
+                        otherPiles = train.Context!.OtherPiles?.ToArray() ?? otherPiles;
+                        train = WithContext(train, train.Context!.WithOtherPiles(otherPiles), spawn.Turn == 0);
+                        spawn = WithTrain(spawn, train, spawn.Turn, spawn.Rng);
+                        if (completed.Outcome != RoomOutcome.Exchanged) triggerOutcome = completed.Outcome;
+                    }
+                    context = train.Context!;
+                    if (Terminal(triggerOutcome)) return Finish(triggerOutcome, source.Energy, source.MoonPhase);
+                }
+            }
+            context = train.Context!;
             var ephemeralCardIds = new List<int>();
             foreach (CardToken card in context.Cards.Hand)
             {

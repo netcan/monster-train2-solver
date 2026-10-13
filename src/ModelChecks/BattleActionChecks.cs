@@ -518,6 +518,21 @@ internal static class BattleActionChecks
             chooser = ChooseMagebladeThenCards;
         if (fixture.TryGetProperty("ModifierScenario", out var equipmentBuffScenario) && equipmentBuffScenario.GetString() == "equipment-buff")
             chooser = ChooseEquipmentBuffThenCards;
+        if (fixture.TryGetProperty("ModifierScenario", out var unplayedTriggerScenario) &&
+            unplayedTriggerScenario.GetString() == "unplayed-card-trigger")
+        {
+            Func<BattleTurnState, PlayCardAction?> ordinaryChooser = chooser;
+            chooser = source =>
+            {
+                PlayCardAction? selected = ordinaryChooser(source);
+                CardInstanceState? selectedCard = selected == null ? null : source.Spawn.Train.Context?.FindCard(selected.CardInstanceId);
+                bool hasUnplayedTrigger = selectedCard != null && source.PlayRules?.Cards.Any(rule =>
+                    rule.DataId == selectedCard.DataId && rule.OnUnplayedNegativeEffects.Count > 0) == true;
+                if (!hasUnplayedTrigger) return selected;
+                return BattleActionModel.EnumerateSupportedPlays(source).FirstOrDefault(action =>
+                    source.Spawn.Train.Context?.FindCard(action.CardInstanceId)?.DataId != selectedCard!.DataId);
+            };
+        }
         FixtureValue turns = fixture.GetProperty("Turns");
         // Scenario prelude actions are checked individually above. The independent policy
         // starts afterward and must reproduce every remaining policy play and EndTurn.

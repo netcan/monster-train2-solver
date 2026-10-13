@@ -180,6 +180,7 @@ param(
     [switch] $OriginalMagebladeMagnitudeRelic,
     [switch] $OriginalCardPlayMagicPower,
     [switch] $OriginalCardDrawOnCardPlay,
+    [switch] $UnplayedCardTrigger,
     [switch] $OriginalRoomEntryStatusRelics,
     [switch] $OriginalMoonPhaseEnergyRelic,
     [switch] $OriginalCardAttackRelic,
@@ -265,6 +266,7 @@ if ($OriginalFloorCapacityRelics) { $BranchCardMasks = $true; $Policy = 'units-s
 if ($Mageblade -or $OriginalMagebladeMagnitudeRelic) { $BranchCardMasks = $true; $BattleRelicUpgrades = $true; $Policy = 'units-and-junk' }
 if ($OriginalCardPlayMagicPower) { $BranchCardMasks = $true; $Policy = 'units-and-junk' }
 if ($OriginalCardDrawOnCardPlay) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
+if ($UnplayedCardTrigger) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalRoomEntryStatusRelics) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalMoonPhaseEnergyRelic) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalCardAttackRelic) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
@@ -522,6 +524,7 @@ if ($Mageblade) { $environment['MT2_PROBE_MODIFIERS'] = 'mageblade' }
 if ($OriginalMagebladeMagnitudeRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-mageblade-magnitude' }
 if ($OriginalCardPlayMagicPower) { $environment['MT2_PROBE_MODIFIERS'] = 'original-card-play-magic-power' }
 if ($OriginalCardDrawOnCardPlay) { $environment['MT2_PROBE_MODIFIERS'] = 'original-card-draw-on-card-play' }
+if ($UnplayedCardTrigger) { $environment['MT2_PROBE_MODIFIERS'] = 'unplayed-card-trigger' }
 if ($OriginalRoomEntryStatusRelics) { $environment['MT2_PROBE_MODIFIERS'] = 'original-room-entry-status-relics' }
 if ($OriginalMoonPhaseEnergyRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-moon-phase-energy-relic' }
 if ($OriginalCardAttackRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-card-attack-relic' }
@@ -653,6 +656,18 @@ if ($OriginalCardDrawOnCardPlay -and ($trace.Schema -ne 160 -or
     -not (Select-String -LiteralPath $unityLog -Pattern 'ORIGINAL-CARD-DRAW-RELICS-ACQUIRED unchanged relics=' -Quiet) -or
     @($trace.Actions).Count -eq 0)) {
     throw 'Original card-draw-on-play relic was not exercised in the expected full-battle capture.'
+}
+if ($UnplayedCardTrigger) {
+    $triggerTurns = @($trace.Turns | Where-Object {
+        @($_.Before.Spawn.Train.Context.Cards.Hand | Where-Object DataId -EQ '2785cc8e-d0e8-46c0-84ab-9c1d602525d4').Count -gt 0
+    })
+    $matchedTriggerTurns = @($triggerTurns | Where-Object { $_.Predicted.Supported -and $null -eq $_.Difference })
+    if ($trace.Schema -ne 161 -or $trace.ModifierScenario -ne 'unplayed-card-trigger' -or
+        -not (Select-String -LiteralPath $unityLog -Pattern 'UNPLAYED-CARD-TRIGGER-PREPARED original=ScourgeT2' -Quiet) -or
+        $matchedTriggerTurns.Count -eq 0 -or $matchedTriggerTurns[0].Before.Spawn.Turn -ne 0 -or
+        $trace.CaptureFailures -ne 0 -or $trace.Mismatches -ne 0 -or $trace.Unsupported -ne 0 -or -not $trace.NativeWon) {
+        throw 'Original ScourgeT2 did not match the modeled unplayed Pyre-damage EndTurn in a complete battle.'
+    }
 }
 if ($OriginalRoomEntryStatusRelics -and ($trace.Schema -ne 132 -or
     $trace.ModifierScenario -ne 'original-room-entry-status-relics' -or

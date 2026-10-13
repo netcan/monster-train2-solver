@@ -54,6 +54,14 @@ namespace MonsterTrain2Poju.Probe
             definitions = definitions.Concat(nativeCards.SelectMany(card => card.GetCardStateModifiers().GetCardUpgrades()
                 .Concat(card.GetTemporaryCardStateModifiers().GetCardUpgrades())).Select(upgrade => upgrade.GetUnitAbilityUpgrade())
                 .Where(ability => ability != null).Select(ability => ability!.GetID())).Distinct().ToArray();
+            var unplayedOrder = new Dictionary<string, int>(StringComparer.Ordinal);
+            IReadOnlyList<CardData> simultaneousUnplayed = save.GetAllGameData().GetBalanceData()
+                .GetCardsThatResolveSimultaneouslyOnUnplayed();
+            for (int index = 0; index < simultaneousUnplayed.Count; index++)
+            {
+                CardData? card = simultaneousUnplayed[index];
+                if (card != null && !unplayedOrder.ContainsKey(card.GetID())) unplayedOrder.Add(card.GetID(), index);
+            }
             RoomManager rooms = managers.GetRoomManager()!;
             var roomRules = new List<RoomPlayRule>();
             for (int index = 0; index < rooms.GetNumRooms(); index++)
@@ -69,7 +77,7 @@ namespace MonsterTrain2Poju.Probe
             while (pending.Count > 0)
             {
                 string id = pending.Dequeue(); if (reachable.ContainsKey(id)) continue;
-                CardPlayRule rule = Definition(save.GetAllGameData().FindCardData(id)!); reachable.Add(id, rule);
+                CardPlayRule rule = Definition(save.GetAllGameData().FindCardData(id)!, unplayedOrder); reachable.Add(id, rule);
                 CombatUnit[] spawned = new[] { rule.SpawnUnit, rule.Summon?.Additional?.Unit }
                     .Where(unit => unit != null).Cast<CombatUnit>()
                     .Concat(rule.Summon?.Pool.Select(choice => choice.Unit) ?? Array.Empty<CombatUnit>()).ToArray();
@@ -90,21 +98,49 @@ namespace MonsterTrain2Poju.Probe
             return rules;
         }
 
-        internal static CardPlayRule Definition(CardData data)
+        internal static CardPlayRule Definition(CardData data, IReadOnlyDictionary<string, int>? unplayedOrder = null)
         {
             var interactions = new List<string>();
             var onCastEffects = new List<CardActionEffect>();
+            var onUnplayedNegativeEffects = new List<CardActionEffect>();
+            bool hasUnsupportedUnplayedTriggers = false;
+            int? unplayedNegativeOrder = unplayedOrder != null && unplayedOrder.TryGetValue(data.GetID(), out int triggerOrder)
+                ? triggerOrder : (int?)null;
             var upgradeInteractions = data.GetTraits().Where(trait => !DamageScalingProbe.Known(trait.GetTraitStateName()))
                 .Select(trait => "Upgrade trait " + trait.GetTraitStateName()).ToArray();
             foreach (CardTriggerEffectData trigger in data.GetCardTriggers())
             {
-                if (trigger.GetTrigger().ToString() != "OnCast" || trigger.GetTriggerEffects().Count > 0)
+                string triggerType = trigger.GetTrigger().ToString();
+                if (trigger.GetTriggerEffects().Count > 0)
                 {
                     interactions.Add("Card triggers");
+                    if (triggerType.StartsWith("OnUnplayed", StringComparison.Ordinal)) hasUnsupportedUnplayedTriggers = true;
                     continue;
                 }
-                foreach (CardEffectData effect in trigger.GetCardEffects())
-                    onCastEffects.Add(DescribeTriggerEffect(effect, interactions, data));
+                if (triggerType == "OnCast")
+                {
+                    foreach (CardEffectData effect in trigger.GetCardEffects())
+                        onCastEffects.Add(DescribeTriggerEffect(effect, interactions, data));
+                }
+                else if (triggerType == "OnUnplayedNegative")
+                {
+                    int priorInteractions = interactions.Count;
+                    CardActionEffect[] actions = trigger.GetCardEffects()
+                        .Select(effect => DescribeTriggerEffect(effect, interactions, data)).ToArray();
+                    if (actions.Length > 0 && interactions.Count == priorInteractions && actions.All(effect =>
+                        effect.Type == "Damage" && effect.Target == "Pyre" && effect.Range == null))
+                        onUnplayedNegativeEffects.AddRange(actions);
+                    else
+                    {
+                        hasUnsupportedUnplayedTriggers = true;
+                        interactions.Add("Card triggers");
+                    }
+                }
+                else
+                {
+                    interactions.Add("Card triggers");
+                    if (triggerType.StartsWith("OnUnplayed", StringComparison.Ordinal)) hasUnsupportedUnplayedTriggers = true;
+                }
             }
             if (data.GetTraits().Any(trait => !DamageScalingProbe.Known(trait.GetTraitStateName()))) interactions.Add("Card traits");
             bool selfPurge = data.GetTraits().Any(trait => trait.GetTraitStateName() == "CardTraitSelfPurge");
@@ -180,7 +216,9 @@ namespace MonsterTrain2Poju.Probe
                         .GetType(effect.GetEffectStateName())!)!).CanPlayWhenHandFull)) : null, summon,
                 data.GetCardType().ToString(), data.IsUnitAbility() || data.IsRoomAbility(),
                 effects.All(effect => ((ICardEffect)Activator.CreateInstance(typeof(CardEffectBase).Assembly
-                    .GetType(effect.GetEffectStateName())!)!).CanPlayInEngineRoom), onCastEffects: onCastEffects);
+                    .GetType(effect.GetEffectStateName())!)!).CanPlayInEngineRoom), onCastEffects: onCastEffects,
+                onUnplayedNegativeEffects: onUnplayedNegativeEffects, unplayedNegativeOrder: unplayedNegativeOrder,
+                hasUnsupportedUnplayedTriggers: hasUnsupportedUnplayedTriggers);
         }
 
         private static bool SupportedSpellEffect(CardEffectData effect) =>
@@ -409,7 +447,8 @@ namespace MonsterTrain2Poju.Probe
             return new CardPlayRule(rule.DataId, rule.AssetKey, rule.Cost, rule.Effect, rule.Destination, unit,
                 interactions.Distinct().OrderBy(item => item, StringComparer.Ordinal).ToArray(), rule.Effects,
                 rule.UpgradeInteractions, rule.HandDiscardInteractions, rule.HandConsumeInteractions, rule.CostType,
-                rule.Equipment, rule.Ability, rule.Summon, rule.CardType, rule.IsAnyAbility, rule.CanPlayInEngineRoom, rule.OnCastEffects);
+                rule.Equipment, rule.Ability, rule.Summon, rule.CardType, rule.IsAnyAbility, rule.CanPlayInEngineRoom, rule.OnCastEffects,
+                rule.OnUnplayedNegativeEffects, rule.UnplayedNegativeOrder, rule.HasUnsupportedUnplayedTriggers);
         }
 
         private static string[] HandInteractions(CardData data, bool consume)

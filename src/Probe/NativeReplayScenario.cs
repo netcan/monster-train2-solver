@@ -952,6 +952,8 @@ namespace MonsterTrain2Poju.Probe
                     OriginalCardPlayMagicPowerScenario.Prepare(managers, log);
                 if (fullBattle && OriginalCardDrawOnCardPlayScenario.Enabled && !OriginalCardDrawOnCardPlayScenario.Prepared)
                     OriginalCardDrawOnCardPlayScenario.Prepare(managers, log);
+                if (fullBattle && UnplayedCardTriggerScenario.Enabled && !UnplayedCardTriggerScenario.Prepared)
+                    UnplayedCardTriggerScenario.Prepare(managers, log);
                 if (OriginalUnitRelicBatchScenario.Enabled) OriginalUnitRelicBatchScenario.PrepareDecision(managers);
                 if (modifierScenario == "damage-per-hp-ability" && !damagePerHpAbilityInputPrepared)
                     damagePerHpAbilityInputPrepared = DamagePerHpScenario.SeedAbilityLastAttackerInput(managers, log);
@@ -967,6 +969,8 @@ namespace MonsterTrain2Poju.Probe
                         ? BattleActionModel.ChooseUnitSpellAndJunkPlay(decision) : BattleActionModel.ChooseUnitAndJunkPlay(decision);
                 if (fullBattle && OriginalCardDrawOnCardPlayScenario.Enabled)
                     pendingPlay = OriginalCardDrawOnCardPlayScenario.ChooseSnack(decision) ?? pendingPlay;
+                if (fullBattle && UnplayedCardTriggerScenario.Enabled)
+                    pendingPlay = UnplayedCardTriggerScenario.AvoidPlaying(decision, pendingPlay);
                 if (RoomCapacityAttachmentScenario.Enabled)
                     pendingPlay = RoomCapacityAttachmentScenario.Evidence.Completed
                         ? null : RoomCapacityAttachmentScenario.Choose(decision) ?? pendingPlay;

@@ -145,12 +145,17 @@ namespace MonsterTrain2Poju.Model
         public IReadOnlyList<string>? HandDiscardInteractions { get; }
         public IReadOnlyList<string>? HandConsumeInteractions { get; }
         public IReadOnlyList<CardActionEffect> OnCastEffects { get; }
+        public IReadOnlyList<CardActionEffect> OnUnplayedNegativeEffects { get; }
+        public int? UnplayedNegativeOrder { get; }
+        public bool HasUnsupportedUnplayedTriggers { get; }
         public CardPlayRule(string dataId, string assetKey, int cost, string effect, string destination,
             CombatUnit? spawnUnit, IReadOnlyList<string> externalInteractions, IReadOnlyList<CardActionEffect>? effects = null,
             IReadOnlyList<string>? upgradeInteractions = null, IReadOnlyList<string>? handDiscardInteractions = null,
             IReadOnlyList<string>? handConsumeInteractions = null, string costType = "Default", EquipmentDefinition? equipment = null,
             CardAbilityRule? ability = null, UnitSummonRule? summon = null, string? cardType = null, bool? isAnyAbility = null,
-            bool? canPlayInEngineRoom = null, IReadOnlyList<CardActionEffect>? onCastEffects = null)
+            bool? canPlayInEngineRoom = null, IReadOnlyList<CardActionEffect>? onCastEffects = null,
+            IReadOnlyList<CardActionEffect>? onUnplayedNegativeEffects = null, int? unplayedNegativeOrder = null,
+            bool hasUnsupportedUnplayedTriggers = false)
         {
             DataId = dataId; AssetKey = assetKey; Cost = cost; CostType = costType; Effect = effect; Destination = destination;
             Equipment = equipment; Ability = ability; CardType = cardType; IsAnyAbility = isAnyAbility; CanPlayInEngineRoom = canPlayInEngineRoom;
@@ -158,13 +163,17 @@ namespace MonsterTrain2Poju.Model
             Summon = summon;
             Effects = Array.AsReadOnly((effects ?? Array.Empty<CardActionEffect>()).ToArray());
             OnCastEffects = Array.AsReadOnly((onCastEffects ?? Array.Empty<CardActionEffect>()).ToArray());
+            OnUnplayedNegativeEffects = Array.AsReadOnly((onUnplayedNegativeEffects ?? Array.Empty<CardActionEffect>()).ToArray());
+            UnplayedNegativeOrder = unplayedNegativeOrder;
+            HasUnsupportedUnplayedTriggers = hasUnsupportedUnplayedTriggers;
             UpgradeInteractions = upgradeInteractions == null ? null : Array.AsReadOnly(upgradeInteractions.ToArray());
             HandDiscardInteractions = handDiscardInteractions == null ? null : Array.AsReadOnly(handDiscardInteractions.ToArray());
             HandConsumeInteractions = handConsumeInteractions == null ? null : Array.AsReadOnly(handConsumeInteractions.ToArray());
         }
         internal CardPlayRule WithSpawn(CombatUnit unit) => new CardPlayRule(DataId, AssetKey, Cost, Effect, Destination,
             unit, ExternalInteractions, Effects, UpgradeInteractions, HandDiscardInteractions, HandConsumeInteractions, CostType, Equipment, Ability, Summon,
-            CardType, IsAnyAbility, CanPlayInEngineRoom, OnCastEffects);
+            CardType, IsAnyAbility, CanPlayInEngineRoom, OnCastEffects, OnUnplayedNegativeEffects, UnplayedNegativeOrder,
+            HasUnsupportedUnplayedTriggers);
     }
 
     public sealed class BattlePlayRules

@@ -49,7 +49,7 @@ namespace MonsterTrain2Poju.Model
     public static class CardSpellModel
     {
         internal static string? UnisolatedUiRangeReason(BattleTurnState state) => !state.UiRngIsolated &&
-            state.PlayRules?.Cards.Any(card => card.Effects.Concat(card.OnCastEffects)
+            state.PlayRules?.Cards.Any(card => card.Effects.Concat(card.OnCastEffects).Concat(card.OnUnplayedNegativeEffects)
                 .Any(effect => QuantityTest(effect) && effect.Range != null && effect.Tests?.ShouldTest != false)) == true
                 ? "Vanilla UI quantity tests consume Battle RNG at uncaptured frame boundaries; isolate UI RNG before battle simulation." : null;
         public static bool RequiresUnitTarget(IReadOnlyList<CardActionEffect> effects) =>
@@ -125,10 +125,12 @@ namespace MonsterTrain2Poju.Model
 
         internal static TrainSpellResult ApplyForCardPlay(TrainCombatState source, int roomIndex, IReadOnlyList<CardActionEffect> effects,
             int targetId, int sourceCardId, BattlePlayRules definitions, IReadOnlyList<CardPileState>? otherPiles, int selfUnitId = 0,
-            int targetSpawnPointIndex = -1, IReadOnlyList<CardRecursionSelection>? recursionSelections = null, bool onCastEffects = false)
+            int targetSpawnPointIndex = -1, IReadOnlyList<CardRecursionSelection>? recursionSelections = null, bool onCastEffects = false,
+            bool onUnplayedNegativeEffects = false)
             => ApplyCore(source, roomIndex, effects, targetId, sourceCardId, null, null, definitions, true, otherPiles,
                 selfUnitId, deferFinalCallbacks: true, targetSpawnPointIndex: targetSpawnPointIndex,
-                recursionSelections: recursionSelections, onCastEffects: onCastEffects);
+                recursionSelections: recursionSelections, onCastEffects: onCastEffects,
+                onUnplayedNegativeEffects: onUnplayedNegativeEffects);
 
         internal static TrainSpellResult ApplyNativeDamageStep(TrainCombatState source, int roomIndex, int targetId, int damage,
             int sourceCardId, IReadOnlyList<RoomCombatModel.QueuedCharacterTrigger> pendingDeaths, int attackerUnitId = 0,
@@ -236,7 +238,8 @@ namespace MonsterTrain2Poju.Model
             int targetId, int sourceCardId, int? playerCapacity, int? enemyCapacity, BattlePlayRules? definitions, bool fullTrain,
             IReadOnlyList<CardPileState>? otherPiles = null, int selfUnitId = 0, bool deferFinalCallbacks = false,
             Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null, int targetSpawnPointIndex = -1,
-            IReadOnlyList<CardRecursionSelection>? recursionSelections = null, bool onCastEffects = false)
+            IReadOnlyList<CardRecursionSelection>? recursionSelections = null, bool onCastEffects = false,
+            bool onUnplayedNegativeEffects = false)
         {
             string? selectionError = CardRecursionModel.ValidateSelections(effects, recursionSelections);
             if (selectionError != null) return UnsupportedTrain(selectionError);
@@ -287,8 +290,10 @@ namespace MonsterTrain2Poju.Model
                     CardInstanceState? card = state.Context.FindCard(sourceCardId) ?? resolvingCard;
                     CardPlayRule? rule = definitions.Cards.FirstOrDefault(item => item.DataId == card?.DataId);
                     CardPlayRule? resolvedRule = card == null || rule == null ? null : CardModifierModel.Resolve(rule, card);
-                    IReadOnlyList<CardActionEffect>? sourceEffects = onCastEffects ? rule?.OnCastEffects : rule?.Effects;
-                    IReadOnlyList<CardActionEffect>? resolvedEffects = onCastEffects ? resolvedRule?.OnCastEffects : resolvedRule?.Effects;
+                    IReadOnlyList<CardActionEffect>? sourceEffects = onUnplayedNegativeEffects ? rule?.OnUnplayedNegativeEffects :
+                        onCastEffects ? rule?.OnCastEffects : rule?.Effects;
+                    IReadOnlyList<CardActionEffect>? resolvedEffects = onUnplayedNegativeEffects ? resolvedRule?.OnUnplayedNegativeEffects :
+                        onCastEffects ? resolvedRule?.OnCastEffects : resolvedRule?.Effects;
                     if (sourceEffects == null || resolvedEffects == null || resolvedEffects.Count != effects.Count)
                         return UnsupportedTrain("Missing live spell effect definition.");
                     // These native effects read GetUnmodifiedIntInRange, so card damage upgrades do not change their multipliers.

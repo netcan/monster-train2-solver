@@ -47,9 +47,9 @@ namespace MonsterTrain2Poju.Probe
             var interactions = new List<string>();
             interactions.AddRange(cardCycles.Capture(cards, "Draw").ExternalInteractions);
             interactions.AddRange(cardCycles.Capture(cards, "Discard").ExternalInteractions);
-            foreach (CardState card in cards.GetHand().Concat(cards.GetDrawPile()).Concat(cards.GetDiscardPile()))
+            CardState[] nativeHand = cards.GetHand().ToArray();
+            foreach (CardState card in nativeHand.Concat(cards.GetDrawPile()).Concat(cards.GetDiscardPile()))
             {
-                if (card.TriggersOnUnplayed()) interactions.Add("Unplayed card triggers: " + card.GetCardDataID());
                 if (card.GetTraitStates().Any(trait => trait.GetType().GetMethod("OnPreOpeningHand",
                     BindingFlags.Public | BindingFlags.Instance)?.DeclaringType != typeof(CardTraitState)))
                     interactions.Add("Opening hand trait callback");
@@ -69,9 +69,30 @@ namespace MonsterTrain2Poju.Probe
             }
             EnemySpawnState spawn = spawning.Capture(includeOuterBossForBump, ignoreOuterBossSpawnInteraction);
             trace.InvalidateCardRules();
+            BattlePlayRules playRules = trace.CapturePlayRules(spawn);
+            IReadOnlyList<CardToken> handTokens = spawn.Train.Context!.Cards.Hand;
+            if (nativeHand.Length != handTokens.Count)
+                interactions.Add("Unplayed card hand projection differs.");
+            for (int index = 0; index < Math.Min(nativeHand.Length, handTokens.Count); index++)
+            {
+                CardState card = nativeHand[index];
+                if (!card.TriggersOnUnplayed()) continue;
+                CardToken token = handTokens[index];
+                CardInstanceState? instance = spawn.Train.Context.FindCard(token.InstanceId);
+                CardPlayRule? definition = playRules.Cards.FirstOrDefault(rule => rule.DataId == token.DataId);
+                if (token.DataId != card.GetCardDataID() || instance == null || definition == null)
+                {
+                    interactions.Add("Unplayed card trigger definition missing: " + card.GetCardDataID());
+                    continue;
+                }
+                CardPlayRule resolved = CardModifierModel.Resolve(definition, instance);
+                if (resolved.HasUnsupportedUnplayedTriggers || resolved.OnUnplayedNegativeEffects.Count == 0 ||
+                    resolved.OnUnplayedNegativeEffects.Any(effect => effect.Type != "Damage" || effect.Target != "Pyre" || effect.Range != null))
+                    interactions.Add("Unplayed card triggers: " + card.GetCardDataID());
+            }
             return new BattleTurnState(spawn, player.GetEnergy(), save.GetBalanceData().GetStartOfTurnEnergy(),
                 combat.GetStartOfTurnCards(), save.GetForgePoints(), save.GetDragonsHoardAmount(), player.CurrentMoonPhase.ToString(),
-                streams, otherPiles, interactions.Distinct().OrderBy(value => value, StringComparer.Ordinal).ToArray(), trace.CapturePlayRules(spawn),
+                streams, otherPiles, interactions.Distinct().OrderBy(value => value, StringComparer.Ordinal).ToArray(), playRules,
                 save.GetBattlePreviewEnabled(), UiRngIsolation.Enabled, canonicalDecisionReferences: true,
                 canonicalPhysicalReferences: BattleSpawnPointProbe.Enabled, selectedRoom: managers.GetRoomManager()!.GetSelectedRoom(),
                 moonPhaseTrackingActive: moonPhaseTrackingActive);

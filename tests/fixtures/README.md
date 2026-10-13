@@ -30,8 +30,25 @@ The default command checks the full curated inventory. For routine changes, run
 the dedicated checks for the new and directly affected scenarios; run the full
 inventory at completed milestones and before delivery.
 
-Current inventory is 277 archives: 246 accepted battles and 31 component
-calibrations. Original relic evidence is 78/224 (34.82%). The schema-160
+Current inventory is 278 archives: 247 accepted battles and 31 component
+calibrations. Original relic evidence is 78/224 (34.82%). The schema-161
+`full-battle-unplayed-card-pyre-damage.mt2f` archive records the unchanged
+`ScourgeT2` left in hand and unplayed; its fixed `OnUnplayedNegative` damage
+reduces Pyre health by 3 at EndTurn, then the card purges. The Instant native
+battle wins with 61 matched stages, 21 card actions and seven EndTurns, with
+zero capture failures, mismatches, unsupported transitions or pending records.
+The focused check covers fixed Pyre damage, multiple triggers and parent-state
+isolation. Support is limited to captured fixed `Damage` effects targeting
+Pyre; other unplayed trigger types remain unsupported. The binary archive is
+33,049 bytes; its node count and SHA-256 are recorded in `manifest.tsv`, and
+it has no JSON companion.
+
+```powershell
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-unplayed-card-pyre-damage.mt2f
+dotnet run --project src/ModelChecks -c Release -- --unplayed-card-trigger-only tests/fixtures/full-battle-unplayed-card-pyre-damage.mt2f
+```
+
+The schema-160
 `full-battle-original-card-draw-on-card-play.mt2f` archive captures the
 unchanged `CardDrawOnCardPlay` and `DrawOnSnackPlayed` owners. The first owner's
 `AnyCardPlayed >= 3` condition draws on five active-turn third plays, not during

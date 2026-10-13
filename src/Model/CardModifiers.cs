@@ -400,6 +400,12 @@ namespace MonsterTrain2Poju.Model
             }
             CardActionEffect[] triggerEffects = cardUpgrades.SelectMany(upgrade => upgrade.Lifecycle?.Triggers ?? Array.Empty<CardLifecycleTrigger>())
                 .Where(trigger => trigger.Type == "OnCast").SelectMany(trigger => trigger.Actions).ToArray();
+            CardLifecycleTrigger[] unplayedTriggers = cardUpgrades.SelectMany(upgrade => upgrade.Lifecycle?.Triggers ?? Array.Empty<CardLifecycleTrigger>())
+                .Where(trigger => trigger.Type.StartsWith("OnUnplayed", StringComparison.Ordinal)).ToArray();
+            CardActionEffect[] onUnplayedNegativeEffects = rule.OnUnplayedNegativeEffects
+                .Concat(unplayedTriggers.Where(trigger => trigger.Type == "OnUnplayedNegative").SelectMany(trigger => trigger.Actions))
+                .Select(ResolveEffect).ToArray();
+            bool unsupportedUnplayedTriggers = rule.HasUnsupportedUnplayedTriggers || unplayedTriggers.Length > 0;
             CardActionEffect[] effects = rule.Effects.Select(ResolveEffect).ToArray();
             CardActionEffect[] onCastEffects = rule.OnCastEffects.Concat(triggerEffects).Select(ResolveEffect).ToArray();
             string destination = rule.Destination;
@@ -409,7 +415,8 @@ namespace MonsterTrain2Poju.Model
             return new CardPlayRule(rule.DataId, rule.AssetKey, UpgradedStat(instance.RawCostOverride ?? rule.Cost, "Cost", true, modifiers), rule.Effect,
                 destination, unit, interactions.Distinct().OrderBy(value => value, StringComparer.Ordinal).ToArray(), effects, rule.UpgradeInteractions,
                 rule.HandDiscardInteractions, rule.HandConsumeInteractions, rule.CostType, rule.Equipment, rule.Ability, rule.Summon, rule.CardType,
-                rule.IsAnyAbility, rule.CanPlayInEngineRoom, onCastEffects);
+                rule.IsAnyAbility, rule.CanPlayInEngineRoom, onCastEffects, onUnplayedNegativeEffects,
+                rule.UnplayedNegativeOrder, unsupportedUnplayedTriggers);
 
             CardActionEffect ResolveEffect(CardActionEffect effect) => new CardActionEffect(effect.Type, effect.Target,
                 ResolveValue(effect, effect.Value), effect.AllowEnemy, effect.AllowPlayer, effect.Statuses, effect.Upgrade, effect.Lifetime, effect.Tests,

@@ -39,6 +39,74 @@ internal static class BattleTurnChecks
         Console.WriteLine($"NATIVE-FULL-CHAIN-CHECKS PASS: {turns.GetArrayLength()} EndTurns, final Pyre {hp}, independent root and 16 parallel branches.");
     }
 
+    internal static void UnplayedCardTrigger(FixtureValue fixture)
+    {
+        if (!fixture.TryGetProperty("Turns", out FixtureValue turns) || turns.GetArrayLength() == 0)
+            throw new InvalidOperationException("Unplayed-card trigger check requires a battle turn snapshot.");
+        BattleTurnState root = turns[0].GetProperty("Before").Deserialize<BattleTurnState>()!;
+        if (root.PlayRules == null || root.Spawn.Train.Context == null)
+            throw new InvalidOperationException("Unplayed-card trigger check requires captured rules and context.");
+        string parent = JsonSerializer.Serialize(root);
+        BattleTurnResult baseline = BattleTurnModel.EndTurn(root);
+        Require(baseline.Supported, "Baseline EndTurn failed: " + baseline.UnsupportedReason);
+        int baselinePyreHealth = PyreHealth(baseline.State!);
+        BattleTurnResult single = BattleTurnModel.EndTurn(AddUnplayedCards(root, ("test-unplayed-2", 2, 1)));
+        Require(single.Supported, "Single unplayed Pyre-damage card failed: " + single.UnsupportedReason);
+        Require(PyreHealth(single.State!) == baselinePyreHealth - 2,
+            "One unplayed negative trigger did not deal its captured Pyre damage exactly once.");
+        BattleTurnResult multiple = BattleTurnModel.EndTurn(AddUnplayedCards(root,
+            ("test-unplayed-2", 2, 1), ("test-unplayed-3", 3, 0)));
+        Require(multiple.Supported, "Multiple unplayed Pyre-damage cards failed: " + multiple.UnsupportedReason);
+        Require(PyreHealth(multiple.State!) == baselinePyreHealth - 5,
+            "Multiple unplayed negative triggers did not accumulate their Pyre damage.");
+        Require(JsonSerializer.Serialize(root) == parent, "Unplayed trigger resolution mutated its parent decision state.");
+        Console.WriteLine("UNPLAYED-CARD-TRIGGER-CHECKS PASS: fixed Pyre damage, multiple hand triggers and parent isolation.");
+
+        static int PyreHealth(BattleTurnState state) => state.Spawn.Train.Rooms.SelectMany(room => room.Units)
+            .Single(unit => unit.IsPyre).Health;
+
+        static BattleTurnState AddUnplayedCards(BattleTurnState source, params (string DataId, int Damage, int Order)[] specs)
+        {
+            CombatContext context = source.Spawn.Train.Context!;
+            var tokens = new List<CardToken>(context.Cards.Hand);
+            var instances = new List<CardInstanceState>();
+            var rules = new List<CardPlayRule>();
+            int nextId = context.NextCardId;
+            foreach ((string dataId, int damage, int order) in specs)
+            {
+                tokens.Add(new CardToken(nextId, dataId));
+                instances.Add(CardInstanceState.Empty(nextId, dataId));
+                rules.Add(new CardPlayRule(dataId, dataId, 0, "Null", "Discard", null, Array.Empty<string>(),
+                    onUnplayedNegativeEffects: new[]
+                    {
+                        new CardActionEffect("Damage", "Pyre", damage, false, true, Array.Empty<CombatStatus>())
+                    }, unplayedNegativeOrder: order));
+                nextId++;
+            }
+            var cards = new CardCycleState(tokens, context.Cards.Draw, context.Cards.Discard, context.Cards.Rng,
+                context.Cards.DrawModifier, context.Cards.ExternalInteractions, context.Cards.BonusDraw,
+                context.Cards.NextDrawUpgrades, context.Cards.NextUpgradeReferenceId);
+            CardInstanceState[]? registered = context.CardInstances?.Concat(instances).ToArray();
+            CardInstanceState[]? registry = context.CardRegistry?.Concat(instances).ToArray();
+            if (registered == null && registry == null) registry = instances.ToArray();
+            context = context.WithCards(cards).WithNextCardId(nextId).WithCardInstances(registered).WithCardRegistry(registry);
+            TrainCombatState train = CardSpellModel.WithContext(source.Spawn.Train, context);
+            EnemySpawnState old = source.Spawn;
+            var spawn = new EnemySpawnState(train, old.Waves, old.SelectedGroups, old.Phase, old.Looping, old.Rng,
+                train.Context?.NextUnitId ?? old.NextUnitId, old.Treasures, old.TreasuresRemaining, old.TreasureEnabled,
+                old.FirstTreasureTurn, old.FirstTreasureRoom, old.Turn, old.ExternalInteractions,
+                old.CanonicalDecisionReferences, old.PendingDestroyedUnitIds);
+            BattlePlayRules oldRules = source.PlayRules!;
+            var playRules = new BattlePlayRules(oldRules.Rooms, oldRules.Cards.Concat(rules).ToArray(), oldRules.StatusRules,
+                oldRules.UnitCopyCatalog);
+            return new BattleTurnState(spawn, source.Energy, source.EnergyPerTurn, source.DrawPerTurn,
+                source.ForgePoints, source.DragonsHoard, source.MoonPhase, source.RngStreams, source.OtherPiles,
+                source.ExternalInteractions, playRules, source.BattlePreviewEnabled, source.UiRngIsolated,
+                source.CanonicalDecisionReferences, source.CanonicalPhysicalReferences, source.SelectedRoom,
+                source.MoonPhaseTrackingActive);
+        }
+    }
+
     internal static bool HasRoomEnabledSnapshotConflict(FixtureValue fixture)
     {
         if (!fixture.TryGetProperty("Turns", out FixtureValue turns) || turns.ValueKind != FixtureKind.Array ||
