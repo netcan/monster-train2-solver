@@ -15,12 +15,12 @@ internal static class RelicCardDrawOnCardPlayChecks
             cardDrawOnCardPlayModifiers: [new RelicCardDrawOnCardPlayModifier(0, 1, "Invalid", [condition])]);
         Require(RelicModel.Validate([relic]) == null, "Valid card-draw-on-play relic was rejected.");
 
-        CardInstanceState Card(int id, string type) => new(id, "card-" + id, CardModifiers.Empty(), CardModifiers.Empty(),
+        CardInstanceState Card(int id, string type, string[]? subtypes = null) => new(id, "card-" + id, CardModifiers.Empty(), CardModifiers.Empty(),
             0, 0, 0, [], maskDescriptor: new CardMaskDescriptor(new CardMaskDefinition("card-" + id,
-                type, "Common", false, false, false, [], [], [], [], null, false, 0, 0, false, false, false),
+                type, "Common", false, false, false, subtypes ?? [], [], [], [], null, false, 0, 0, false, false, false),
                 1, [], []));
         CombatRelicState[] relics = [relic];
-        CardInstanceState[] instances = [Card(1, "Monster"), Card(2, "Spell"), Card(3, "Spell")];
+        CardInstanceState[] instances = [Card(1, "Monster", ["SubtypesData_Snack"]), Card(2, "Spell"), Card(3, "Spell"), Card(4, "Monster")];
         BattleStatistics stats = new([new CardStatisticValue(1, "ThisTurn", "TimesPlayed", 2)], [], [], [], [], [], [],
             0, 0, 0, 0, 0, [1, 2, 3], [1, 2, 3], [1, 2, 3]);
         CombatContext Context(BattleStatistics statistics, CombatRelicState[] currentRelics) => new(
@@ -69,15 +69,28 @@ internal static class RelicCardDrawOnCardPlayChecks
             spellPlay.Supported && spellPlay.Context.Cards.Hand.Count == 0,
             "The relic's native played-card type filter was not respected.");
 
+        var trackedThisTurn = new RelicConditionState(new CardStatisticQuery("TimesPlayed", "ThisTurn"), true, 6, 1, false);
+        var snackOnly = new CombatRelicState("snack-only", "DrawOnSnackPlayed",
+            [RelicModel.CardDrawOnCardPlay], cardDrawOnCardPlayModifiers: [
+                new RelicCardDrawOnCardPlayModifier(0, 1, "Monster", [trackedThisTurn], requiredSubtype: "SubtypesData_Snack")]);
+        RelicCardPlayMagicPowerResult snackPlay = RelicCardPlayMagicPowerModel.Apply(Context(stats, [snackOnly]), 1, currentTurn: 0);
+        RelicCardPlayMagicPowerResult otherMonsterPlay = RelicCardPlayMagicPowerModel.Apply(Context(stats, [snackOnly]), 4);
+        RelicCardPlayMagicPowerResult otherTypePlay = RelicCardPlayMagicPowerModel.Apply(Context(stats, [snackOnly]), 2);
+        Require(snackPlay.Supported && snackPlay.Context.Cards.Hand.Count == 1 &&
+            snackPlay.Context.Relics![0].CardDrawOnCardPlayModifiers![0].Conditions[0].Triggered &&
+            otherMonsterPlay.Supported && otherMonsterPlay.Context.Cards.Hand.Count == 0 &&
+            otherTypePlay.Supported && otherTypePlay.Context.Cards.Hand.Count == 0,
+            "The relic's native played-card subtype or trigger-count condition was not respected.");
+
         var missingDefinition = new CombatRelicState("bad", "MissingCardDrawDefinition", [RelicModel.CardDrawOnCardPlay]);
         Require(RelicModel.Validate([missingDefinition])?.Contains("card-draw-on-card-play", StringComparison.Ordinal) == true,
             "An uncaptured native card-draw-on-play payload passed validation.");
-        Console.WriteLine("RELIC-CARD-DRAW-ON-PLAY-CHECKS PASS: threshold, once-per-duration, reset, type filtering, draw statistics and explicit missing definitions.");
+        Console.WriteLine("RELIC-CARD-DRAW-ON-PLAY-CHECKS PASS: threshold, once-per-duration, reset, type/subtype filtering, draw statistics and explicit missing definitions.");
     }
 
     internal static void Native(FixtureValue root)
     {
-        Require(root.GetProperty("Schema").GetInt32() == 159 &&
+        Require(root.GetProperty("Schema").GetInt32() == 160 &&
             root.GetProperty("ModifierScenario").GetString() == "original-card-draw-on-card-play" &&
             root.GetProperty("NativeWon").GetBoolean() && root.GetProperty("CaptureFailures").GetInt32() == 0 &&
             root.GetProperty("Mismatches").GetInt32() == 0 && root.GetProperty("Unsupported").GetInt32() == 0 &&
@@ -87,6 +100,7 @@ internal static class RelicCardDrawOnCardPlayChecks
         int matched = 0;
         int triggered = 0;
         int draws = 0;
+        int snackTriggered = 0;
         foreach (FixtureValue entry in root.GetProperty("Actions").EnumerateArray())
         {
             BattleTurnState before = entry.GetProperty("Before").Deserialize<BattleTurnState>()!;
@@ -97,11 +111,24 @@ internal static class RelicCardDrawOnCardPlayChecks
             Require(relic.AssetKey == RelicKey && relic.EffectTypes.SequenceEqual([RelicModel.CardDrawOnCardPlay]) &&
                 relic.CardDrawOnCardPlayModifiers?.Count == 1 && relic.CardDrawOnCardPlayModifiers[0].Count == 1 &&
                 relic.CardDrawOnCardPlayModifiers[0].CardType == "Invalid" &&
+                relic.CardDrawOnCardPlayModifiers[0].RequiredSubtype == null &&
                 relic.CardDrawOnCardPlayModifiers[0].Conditions.Count == 1 &&
                 relic.CardDrawOnCardPlayModifiers[0].Conditions[0].Query.Type == "AnyCardPlayed" &&
                 relic.CardDrawOnCardPlayModifiers[0].Conditions[0].Comparator == 6 &&
                 relic.CardDrawOnCardPlayModifiers[0].Conditions[0].Value == 3,
                 "The battle did not retain the unchanged original relic effect payload.");
+
+            const string snackRelicId = "8b00c46d-374e-4afb-aa27-526873e242d1";
+            CombatRelicState snackRelic = beforeContext.Relics.Single(item => item.DataId == snackRelicId);
+            Require(snackRelic.AssetKey == "DrawOnSnackPlayed" && snackRelic.EffectTypes.SequenceEqual([RelicModel.CardDrawOnCardPlay]) &&
+                snackRelic.CardDrawOnCardPlayModifiers?.Count == 1 &&
+                snackRelic.CardDrawOnCardPlayModifiers[0].CardType == "Monster" &&
+                snackRelic.CardDrawOnCardPlayModifiers[0].RequiredSubtype == "SubtypesData_Snack" &&
+                snackRelic.CardDrawOnCardPlayModifiers[0].Conditions.Count == 1 &&
+                snackRelic.CardDrawOnCardPlayModifiers[0].Conditions[0].Query.Type == "TimesPlayed" &&
+                snackRelic.CardDrawOnCardPlayModifiers[0].Conditions[0].Comparator == 6 &&
+                snackRelic.CardDrawOnCardPlayModifiers[0].Conditions[0].Value == 1,
+                "The battle did not retain the unchanged original DrawOnSnackPlayed payload.");
 
             RelicConditionState beforeCondition = relic.CardDrawOnCardPlayModifiers[0].Conditions[0];
             RelicConditionState afterCondition = actualContext.Relics!.Single(item => item.DataId == RelicId)
@@ -116,12 +143,21 @@ internal static class RelicCardDrawOnCardPlayChecks
                 draws += afterDrawn - beforeDrawn;
                 Require(afterDrawn > beforeDrawn, "The native relic recorded its threshold without drawing a card.");
             }
+            RelicConditionState snackBeforeCondition = snackRelic.CardDrawOnCardPlayModifiers[0].Conditions[0];
+            RelicConditionState snackAfterCondition = actualContext.Relics!.Single(item => item.DataId == snackRelicId)
+                .CardDrawOnCardPlayModifiers![0].Conditions[0];
+            if (!snackBeforeCondition.Triggered && snackAfterCondition.Triggered)
+            {
+                snackTriggered++;
+                Require(afterDrawn > beforeDrawn, "The original Snack relic recorded its trigger without drawing a card.");
+            }
             matched++;
         }
         Require(matched > 0 && triggered > 0 && draws >= triggered,
             "The full battle did not observe the original relic draw after its threshold.");
+        Require(snackTriggered > 0, "The full battle did not trigger the unchanged DrawOnSnackPlayed relic.");
         BattleActionChecks.Native(root);
-        Console.WriteLine($"NATIVE-CARD-DRAW-ON-PLAY-CHECKS PASS: {matched} actions, {triggered} condition activations and {draws} drawn cards; unchanged owner {RelicKey}.");
+        Console.WriteLine($"NATIVE-CARD-DRAW-ON-PLAY-CHECKS PASS: {matched} actions, {triggered} threshold draws, {snackTriggered} Snack activations; unchanged owners {RelicKey} and DrawOnSnackPlayed.");
     }
 
     private static void Require(bool condition, string message)

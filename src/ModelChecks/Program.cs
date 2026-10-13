@@ -195,6 +195,11 @@ if (args.Length == 2 && args[0] == "--original-card-draw-on-card-play-only")
     RelicCardDrawOnCardPlayChecks.Native(document.RootElement);
     return;
 }
+if (args.Length == 1 && args[0] == "--relic-card-draw-on-card-play-model-only")
+{
+    RelicCardDrawOnCardPlayChecks.Run();
+    return;
+}
 if (args.Length == 2 && args[0] == "--original-room-entry-status-relics-only")
 {
     using var document = ModelJson.ReadFixture(args[1]);

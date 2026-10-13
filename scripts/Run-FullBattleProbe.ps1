@@ -644,9 +644,9 @@ if ($OriginalCardPlayMagicPower -and ($trace.Schema -ne 128 -or
     @($trace.Actions).Count -eq 0)) {
     throw 'Original card-play magic-power relic was not exercised in the expected full-battle capture.'
 }
-if ($OriginalCardDrawOnCardPlay -and ($trace.Schema -ne 159 -or
+if ($OriginalCardDrawOnCardPlay -and ($trace.Schema -ne 160 -or
     $trace.ModifierScenario -ne 'original-card-draw-on-card-play' -or
-    -not (Select-String -LiteralPath $unityLog -Pattern 'ORIGINAL-CARD-DRAW-ON-CARD-PLAY-ACQUIRED unchanged relic=' -Quiet) -or
+    -not (Select-String -LiteralPath $unityLog -Pattern 'ORIGINAL-CARD-DRAW-RELICS-ACQUIRED unchanged relics=' -Quiet) -or
     @($trace.Actions).Count -eq 0)) {
     throw 'Original card-draw-on-play relic was not exercised in the expected full-battle capture.'
 }

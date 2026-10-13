@@ -9,21 +9,23 @@ namespace MonsterTrain2Poju.Model
         public int EffectIndex { get; }
         public int Count { get; }
         public string CardType { get; }
+        public string? RequiredSubtype { get; }
         public int ConditionCount { get; }
         public IReadOnlyList<RelicConditionState> Conditions { get; }
 
         public RelicCardDrawOnCardPlayModifier(int effectIndex, int count, string cardType,
-            IReadOnlyList<RelicConditionState>? conditions = null, int conditionCount = 0)
+            IReadOnlyList<RelicConditionState>? conditions = null, int conditionCount = 0, string? requiredSubtype = null)
         {
             EffectIndex = effectIndex;
             Count = count;
             CardType = cardType;
+            RequiredSubtype = requiredSubtype;
             Conditions = Array.AsReadOnly((conditions ?? Array.Empty<RelicConditionState>()).ToArray());
             ConditionCount = conditions?.Count ?? conditionCount;
         }
 
         internal RelicCardDrawOnCardPlayModifier WithConditions(IReadOnlyList<RelicConditionState> conditions) =>
-            new RelicCardDrawOnCardPlayModifier(EffectIndex, Count, CardType, conditions);
+            new RelicCardDrawOnCardPlayModifier(EffectIndex, Count, CardType, conditions, requiredSubtype: RequiredSubtype);
     }
 
     internal sealed class RelicCardDrawOnCardPlayResult
@@ -66,16 +68,20 @@ namespace MonsterTrain2Poju.Model
             if (effect == null) return Fail(source, "Missing ordered native card-draw-on-card-play definition.");
 
             CombatContext context = source;
-            if (effect.CardType != "Invalid")
+            if (effect.CardType != "Invalid" || !string.IsNullOrEmpty(effect.RequiredSubtype))
             {
                 CardInstanceState? played = context.FindCard(playedCardId);
                 if (played?.MaskDescriptor == null || played.MaskDescriptor.Definition.DataId != played.DataId)
-                    return Fail(context, "Card-type-filtered relic draws require matching played-card metadata.");
-                if (played.MaskDescriptor.Definition.CardType != effect.CardType)
+                    return Fail(context, "Filtered relic draws require matching played-card metadata.");
+                if (effect.CardType != "Invalid" && played.MaskDescriptor.Definition.CardType != effect.CardType)
+                    return new RelicCardDrawOnCardPlayResult(context);
+                if (!string.IsNullOrEmpty(effect.RequiredSubtype) &&
+                    !played.MaskDescriptor.Definition.Subtypes.Contains(effect.RequiredSubtype))
                     return new RelicCardDrawOnCardPlayResult(context);
             }
 
-            if (currentTurn == 0 && effect.Conditions.Any(condition => condition.Query.Duration == "ThisTurn"))
+            if (currentTurn == 0 && effect.Conditions.Any(condition =>
+                condition.Query.Duration == "ThisTurn" && !condition.TrackTriggerCount))
                 return new RelicCardDrawOnCardPlayResult(context);
 
             if (effect.Conditions.Count > 0)

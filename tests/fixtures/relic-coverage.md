@@ -1,7 +1,7 @@
 # Original relic coverage evidence
 
-As of 2026-10-14, **77 distinct original collectable relics / 224 catalog entries
-(34.38%)** have accepted native full-battle evidence. This counts unchanged relic
+As of 2026-10-14, **78 distinct original collectable relics / 224 catalog entries
+(34.82%)** have accepted native full-battle evidence. This counts unchanged relic
 definitions whose effects actually ran, including their original filters and
 conditions. Test cards, unit triggers and carrier subtypes may be authored to
 exercise those effects; the claim covers the recorded paths, not every possible
@@ -114,7 +114,8 @@ owner count.
 | `PyregelOnEnterTopFloor` | `e4be072c-e389-4ae7-acc6-0c8aa4cf0078` | [room-entry status relics][roomEntry] | Its unchanged room-2 Heroes effect adds 10 Pyregel. Three distinct native Heroes have the exact status after entry. |
 | `MoonPhaseModifyEmber` | `70096a91-220a-4ab3-b8d0-b8fe8f3a819c` | [original moon-phase energy relic][moonPhase] | Three Full callbacks add 1 Ember and notify; three New callbacks change nothing. Original once-per-turn condition and exact hidden moon markers match. |
 | `WhelpDragonAttack_DH` | `72706202-526e-4377-9745-7df40a26ba7d` | [original card-attack relic][cardAttack] | Two unchanged +8 effects match Whelp and Dragon spawn subtypes in order. Four native manager observations cover both subtype outcomes and reset/reapply; dynamic scaling and cardless callbacks remain separately bounded. |
-| `CardDrawOnCardPlay` | `f3f07b9b-1349-41d0-abab-bd5ec04d81e4` | [original card-draw-on-play][cardDraw] | The unchanged one-card effect has `AnyCardPlayed >= 3`; it does not fire on the initial deployment turn, then draws on the third play in each of six active turns. All six native activations and draws match. |
+| `CardDrawOnCardPlay` | `f3f07b9b-1349-41d0-abab-bd5ec04d81e4` | [original card-draw-on-play][cardDraw] | The unchanged one-card effect has `AnyCardPlayed >= 3`; it skips deployment and draws on the third play in five active turns. All five native activations and draws match. |
+| `DrawOnSnackPlayed` | `8b00c46d-374e-4afb-aa27-526873e242d1` | [original card-draw-on-play][cardDraw] | Its unchanged Monster / Snack filter and tracked `ThisTurn` condition draw once on deployment. A synthetic Train Steward carrier with the Snack subtype provides the native positive witness without invoking its unrelated `OnEaten` behavior. |
 
 Record indices above are zero-based. Full-battle acceptance and independent
 effect checks are documented in [README.md](README.md); the table's 21 source
@@ -143,7 +144,7 @@ archives contain these observed battle sizes:
 | [room-entry status relics][roomEntry] | 132 | 21 | 7 | 55 | Three unchanged originals, 13 train phases and actual room-2 Heroes status witnesses |
 | [original moon-phase energy relic][moonPhase] | 146 | 24 | 7 | 57 | Three Full +1/notification callbacks and three New no-op callbacks with exact unit markers |
 | [original card-attack relic][cardAttack] | 147 | 21 | 7 | 60 | Four native manager observations; Whelp/Dragon subtype dispatch, +8 offset and reset/reapply |
-| [original card-draw-on-play][cardDraw] | 159 | 21 | 7 | 61 | Six condition activations and six cards drawn on active-turn third plays |
+| [original card-draw-on-play][cardDraw] | 160 | 20 | 6 | 52 | Five threshold draws plus one deployment-turn Snack activation/draw |
 
 The checks that enforce these observations are
 [TriggerCountChecks.Native](../../src/ModelChecks/TriggerCountChecks.cs),

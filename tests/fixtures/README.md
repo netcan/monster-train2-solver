@@ -31,15 +31,17 @@ the dedicated checks for the new and directly affected scenarios; run the full
 inventory at completed milestones and before delivery.
 
 Current inventory is 276 archives: 245 accepted battles and 31 component
-calibrations. Original relic evidence is 77/224 (34.38%). The schema-159
+calibrations. Original relic evidence is 78/224 (34.82%). The schema-160
 `full-battle-original-card-draw-on-card-play.mt2f` archive captures the
-unchanged `CardDrawOnCardPlay` owner: its `AnyCardPlayed >= 3` condition draws
-one card on the third play in each of six active turns, and does not fire during
-the initial deployment turn. All 61 stages, 21 card actions and seven EndTurns
-match; the focused native check confirms six condition activations and six card
-draws, and the 128-state serial/parallel search checks agree. The 32,453-byte
-binary has 5,310 unique nodes and SHA-256
-`b11c627944ae042b49d3d19b49698f5eeedb90c3a357acb27597daa09df20618`, with no
+unchanged `CardDrawOnCardPlay` and `DrawOnSnackPlayed` owners. The first owner's
+`AnyCardPlayed >= 3` condition draws on five active-turn third plays, not during
+deployment. The second retains its Monster / Snack filter and draws once during
+deployment when a synthetic Train Steward carrier with the Snack subtype is
+played. All 52 stages, 20 card actions and six EndTurns match; the focused native
+check confirms five threshold draws and one Snack draw, and the 128-state
+serial/parallel search checks agree. The 30,781-byte binary has 5,043 unique
+nodes and SHA-256
+`9faa1a94d9283a366dfe2c591dcd9e0b72b792ab516b2ac14017026aceaf574b`, with no
 JSON companion. The schema-146
 `full-battle-original-moon-phase-energy-relic.mt2f`
 archive adds accepted native evidence for the unchanged `MoonPhaseModifyEmber`

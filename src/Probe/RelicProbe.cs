@@ -93,8 +93,11 @@ namespace MonsterTrain2Poju.Probe
                     .Where(item => item.Effect is RelicEffectCardDrawOnCardPlay)
                     .Select(item => {
                         var data = (RelicEffectData)AccessTools.Field(typeof(RelicEffectBase), "_srcRelicEffectData").GetValue(item.Effect);
+                        SubtypeData? subtype = data.GetParamCharacterSubtype();
+                        string? requiredSubtype = subtype == null || subtype.IsNone ? null : subtype.Key;
                         return new RelicCardDrawOnCardPlayModifier(item.Index, data.GetParamInt(),
-                            data.GetParamCardType().ToString(), RelicCardModifierProbe.Conditions(item.Effect));
+                            data.GetParamCardType().ToString(), RelicCardModifierProbe.Conditions(item.Effect),
+                            requiredSubtype: requiredSubtype);
                     }).ToArray();
                 return new CombatRelicState(relic.GetRelicDataID(), relic.GetAssetName(), effects.Select(effect => effect.GetType().Name).ToArray(),
                     statuses.Length == 0 ? null : statuses, relic is CovenantState,

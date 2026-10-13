@@ -2,28 +2,31 @@
 
 Current accepted inventory (2026-10-14): 276 binary archives, including 245
 full battles and 31 component calibrations. Unchanged original relic evidence
-covers 77/224 catalog entries (34.38%); see
+covers 78/224 catalog entries (34.82%); see
 [the owner evidence table](tests/fixtures/relic-coverage.md). Whole-battle
 coverage and the optimal solver remain in progress.
 
-### Original CardDrawOnCardPlay relic (schema 159)
+### Original card-draw relics (schema 160)
 
-`full-battle-original-card-draw-on-card-play.mt2f` captures the unchanged
-`CardDrawOnCardPlay` relic with its one-card payload and `AnyCardPlayed >= 3`
-condition. The condition does not activate during the initial deployment turn;
-it activates on the third play in each of the following six turns and draws one
-card each time. All 61 battle stages, 21 card actions and seven EndTurns match,
-with zero capture failures, mismatches, unsupported transitions or pending
-records. Independent action replay and the focused relic check pass. Battle
-search checks 128 states with equal serial and parallel results.
+`full-battle-original-card-draw-on-card-play.mt2f` captures unchanged
+`CardDrawOnCardPlay` and `DrawOnSnackPlayed` owners. The first uses its one-card
+payload and `AnyCardPlayed >= 3` condition: it skips the initial deployment turn
+and draws on five later third plays. The second retains its original Monster /
+Snack subtype filter and tracked `ThisTurn` condition; a synthetic Train Steward
+carrier with the Snack subtype triggers it once during deployment and draws one
+card. All 52 battle stages, 20 card actions and six EndTurns match, with zero
+capture failures, mismatches, unsupported transitions or pending records.
+Independent action replay matches all 20 plays, the focused relic check passes,
+and battle search checks 128 states with equal serial and parallel results.
 
-The 32,453-byte binary archive has 5,310 unique nodes and SHA-256
-`b11c627944ae042b49d3d19b49698f5eeedb90c3a357acb27597daa09df20618`; no JSON
+The 30,781-byte binary archive has 5,043 unique nodes and SHA-256
+`9faa1a94d9283a366dfe2c591dcd9e0b72b792ab516b2ac14017026aceaf574b`; no JSON
 companion is tracked.
 
 ```powershell
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-card-draw-on-card-play.mt2f
 dotnet run --project src/ModelChecks -c Release -- --native-actions-only tests/fixtures/full-battle-original-card-draw-on-card-play.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-card-draw-on-card-play-only tests/fixtures/full-battle-original-card-draw-on-card-play.mt2f
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-card-draw-on-card-play.mt2f
 ```
 

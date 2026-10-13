@@ -950,6 +950,8 @@ namespace MonsterTrain2Poju.Probe
                 }
                 if (fullBattle && OriginalCardPlayMagicPowerScenario.Enabled && !OriginalCardPlayMagicPowerScenario.Prepared)
                     OriginalCardPlayMagicPowerScenario.Prepare(managers, log);
+                if (fullBattle && OriginalCardDrawOnCardPlayScenario.Enabled && !OriginalCardDrawOnCardPlayScenario.Prepared)
+                    OriginalCardDrawOnCardPlayScenario.Prepare(managers, log);
                 if (OriginalUnitRelicBatchScenario.Enabled) OriginalUnitRelicBatchScenario.PrepareDecision(managers);
                 if (modifierScenario == "damage-per-hp-ability" && !damagePerHpAbilityInputPrepared)
                     damagePerHpAbilityInputPrepared = DamagePerHpScenario.SeedAbilityLastAttackerInput(managers, log);
@@ -963,6 +965,8 @@ namespace MonsterTrain2Poju.Probe
                     ? OriginalStingRelicBatchScenario.Choose(decision)
                     : Environment.GetEnvironmentVariable("MT2_PROBE_FULL_BATTLE_POLICY") == "units-spells-and-junk"
                         ? BattleActionModel.ChooseUnitSpellAndJunkPlay(decision) : BattleActionModel.ChooseUnitAndJunkPlay(decision);
+                if (fullBattle && OriginalCardDrawOnCardPlayScenario.Enabled)
+                    pendingPlay = OriginalCardDrawOnCardPlayScenario.ChooseSnack(decision) ?? pendingPlay;
                 if (RoomCapacityAttachmentScenario.Enabled)
                     pendingPlay = RoomCapacityAttachmentScenario.Evidence.Completed
                         ? null : RoomCapacityAttachmentScenario.Choose(decision) ?? pendingPlay;
