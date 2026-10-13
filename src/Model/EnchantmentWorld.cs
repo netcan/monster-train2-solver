@@ -235,8 +235,7 @@ namespace MonsterTrain2Poju.Model
             {
                 CombatUnit unit = result.State!.Train.Rooms.SelectMany(room => room.Units)
                     .FirstOrDefault(actor => actor.Id == callback.Unit.Id) ?? callback.Unit;
-                if (unit.Triggers.Where(trigger => trigger.Kind == callback.Kind).SelectMany(trigger => trigger.Effects)
-                    .Any(effect => effect.Type != "CardEffectRewardGold"))
+                if (!EnchantmentCombatModel.CanDrainWorldCallback(unit, callback.Kind))
                     return new EnchantmentCombatResult(null, result.Requests, result.PendingCallbacks,
                         "Aura callbacks that change actors/cards require automatic combat lifecycle integration.");
             }

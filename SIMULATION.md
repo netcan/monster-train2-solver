@@ -44,10 +44,12 @@ transitions replay with 74 status calls, 135 complete callback payloads and 32
 isolated parallel branches. The 13,514-byte binary has 2,452 unique nodes and
 SHA-256 `1a18b97b4c4b6434bd2c9de008b9951f5550d620abb5babaf5678e3ce12b7618`;
 it has no JSON companion. Native card statistics, simulated-death counters and
-the FunGuy run stat are isolated/restored during calibration. Nonpositive Horde
-changes and aura callbacks that mutate actors/cards still need broader combat
-lifecycle integration. This adds no original relic evidence: coverage remains
-71/224 (31.70%), and inventory remains 256 archives.
+the FunGuy run stat are isolated/restored during calibration. Shared-world
+callback draining now supports the five recorded Deathwish transitions whose
+callbacks add Armor; each matches native `AfterQueue`. Nonpositive Horde changes
+and other actor/card-mutating aura callback payloads still need broader combat
+lifecycle integration. At the capture milestone this added no original relic
+evidence: coverage was 71/224 (31.70%), with 256 archives in the inventory.
 
 ### Original DoubleMagebladeDamage relic
 

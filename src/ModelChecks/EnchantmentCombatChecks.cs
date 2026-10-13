@@ -36,7 +36,7 @@ internal static class EnchantmentCombatChecks
         int requests = samples.Sum(sample => sample.GetProperty("Requests").GetArrayLength());
         int callbacks = samples.Sum(sample => sample.GetProperty("Callbacks").GetArrayLength());
         Console.WriteLine($"NATIVE-ENCHANTMENT-COMBAT-CHECKS PASS: {samples.Length} real status/train/effect transitions, {requests} status calls, " +
-            $"{callbacks} complete callback payloads, standalone Deathwish gold/armor drains, shared-world gold drains and guarded actor mutations, " +
+            $"{callbacks} complete callback payloads, standalone Deathwish gold/armor drains, shared-world gold/armor drains and guarded unsupported mutations, " +
             "guarded/direct reentry, retained per-effect maps/RNG and 32 isolated branches.");
     }
     private static void VerifyHordeGrowth(FixtureValue sample)
@@ -279,10 +279,19 @@ internal static class EnchantmentCombatChecks
         });
         if (hasActorMutatingChildren)
         {
-            Require(!drained.Supported && drained.UnsupportedReason ==
-                "Aura callbacks that change actors/cards require automatic combat lifecycle integration.",
-                label + " shared-world actor mutation was not held at the documented boundary.");
-            Require(JsonSerializer.Serialize(train) == parent, label + ": rejected shared-world drain changed its parent state.");
+            bool unsupported = result.PendingCallbacks.Any(callback =>
+            {
+                CombatUnit unit = actual.Train.Rooms.SelectMany(room => room.Units).FirstOrDefault(actor => actor.Id == callback.Unit.Id) ?? callback.Unit;
+                return !EnchantmentCombatModel.CanDrainWorldCallback(unit, callback.Kind);
+            });
+            Require(!unsupported, label + " shared-world capture contains an unmodeled actor-mutating child callback.");
+            Require(drained.Supported, label + " shared-world status drain: " + drained.UnsupportedReason);
+            EnchantmentCombatState afterStatus = drained.State!;
+            foreach (var id in sample.GetProperty("PreviewPreparedUnitIds").EnumerateArray())
+                afterStatus = EnchantmentCombatModel.PrepareForPreview(afterStatus, id.GetInt32());
+            Compare(NativeProjection(afterStatus), sample.GetProperty("AfterQueue").Deserialize<EnchantmentCombatState>()!,
+                label + " shared-world after status callbacks");
+            Require(JsonSerializer.Serialize(train) == parent, label + ": shared-world drain changed its parent state.");
             return;
         }
         Require(drained.Supported, label + " shared-world drain: " + drained.UnsupportedReason);
@@ -326,6 +335,12 @@ internal static class EnchantmentCombatChecks
         result = EnchantmentCombatModel.Drain(EnchantmentCombatModel.UpdateAll(Replace(harmfulCallback)));
         Require(!result.Supported && result.UnsupportedReason!.Contains("automatic combat lifecycle", StringComparison.Ordinal),
             "A mutating child callback silently bypassed automatic aura updates.");
+        EnchantmentCombatResult harmfulWorldUpdate = EnchantmentCombatModel.UpdateAll(Replace(harmfulCallback));
+        string harmfulWorldParent = JsonSerializer.Serialize(harmfulWorldUpdate.State);
+        EnchantmentCombatResult harmfulWorldDrain = EnchantmentWorldModel.Drain(harmfulWorldUpdate);
+        Require(!harmfulWorldDrain.Supported && harmfulWorldDrain.UnsupportedReason!.Contains("automatic combat lifecycle", StringComparison.Ordinal) &&
+            JsonSerializer.Serialize(harmfulWorldUpdate.State) == harmfulWorldParent,
+            "The shared-world drain accepted an incomplete child action or mutated its parent state.");
         var roomResult = RoomCombatModel.Resolve(source.Train.Rooms.Single(room => room.Units.Any(unit => unit.Id == owner.Id)));
         Require(!roomResult.Supported && roomResult.UnsupportedReason!.Contains("CardEffectEnchant", StringComparison.Ordinal),
             "The standalone aura kernel silently enabled incomplete generic combat support.");

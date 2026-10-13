@@ -41,7 +41,9 @@ match, with no physical `OnDeath`. The 41-transition replay covers 74 status
 calls, 135 callback payloads and 32 immutable branches. The 13,514-byte archive
 has 2,452 unique nodes and SHA-256
 `1a18b97b4c4b6434bd2c9de008b9951f5550d620abb5babaf5678e3ce12b7618`; it has
-no JSON companion. `full-battle-companion-bump.mt2f`
+no JSON companion. Shared-world drain matches native `AfterQueue` for all five
+Deathwish transitions whose callbacks add Armor; other actor/card-mutating
+callback payloads remain guarded. `full-battle-companion-bump.mt2f`
 covers a paired Relentless
 companion Boss refusal, its attempted-ascension callback and the survivor's
 terminal-death handoff. `full-battle-relic-card-status-upgrades.mt2f` verifies a native

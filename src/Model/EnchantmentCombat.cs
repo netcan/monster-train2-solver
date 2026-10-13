@@ -89,6 +89,14 @@ namespace MonsterTrain2Poju.Model
     public static class EnchantmentCombatModel
     {
         public static EnchantmentCombatResult UpdateAll(EnchantmentCombatState source) => new Engine(source).All();
+        internal static bool CanDrainWorldCallback(CombatUnit unit, string kind) => unit.Triggers
+            .Where(trigger => trigger.Kind == kind).SelectMany(trigger => trigger.Effects).All(effect =>
+                effect.Type == "CardEffectRewardGold" || effect.Type == "CardEffectAddStatusEffect" &&
+                effect.Action?.Type == "AddStatus" && effect.Action.Statuses.Count == 1 &&
+                effect.Action.Statuses[0].Id == "armor" && (effect.StatusScaling == null ||
+                    effect.StatusScaling.ActorStatus == null && !effect.StatusScaling.MissingHealth &&
+                    !effect.StatusScaling.MagicPower && !effect.StatusScaling.IgnoreDualism &&
+                    effect.StatusScaling.Subtype.Length == 0));
         internal static EnchantmentCombatResult UpdateDeathwish(EnchantmentCombatState source)
         {
             var frame = new EnchantmentCombatState(source.Train, source.RetainedUnits, Array.Empty<int>(),
@@ -118,13 +126,11 @@ namespace MonsterTrain2Poju.Model
             bool hasPersistentAura = source.EnchanterIds.Count > 0 || source.RetainedUnits.Any(actor => actor.Unit.Triggers
                 .Any(trigger => trigger.Effects.Any(effect => effect.Enchantment != null))) || source.Train.Rooms.SelectMany(room => room.Units)
                 .Any(unit => unit.Triggers.Any(trigger => trigger.Effects.Any(effect => effect.Enchantment != null)));
-            // Room engines do not yet refresh the full aura world in the middle of child
-            // effects. Without any captured aura, ordinary character children are safe to drain.
+            // Only captured reward and Armor callbacks have a validated complete drain path.
             if (hasPersistentAura) foreach (var callback in result.PendingCallbacks)
             {
                 CombatUnit unit = source.Train.Rooms.SelectMany(room => room.Units).FirstOrDefault(unit => unit.Id == callback.Unit.Id) ?? callback.Unit;
-                if (unit.Triggers.Where(trigger => trigger.Kind == callback.Kind).SelectMany(trigger => trigger.Effects)
-                    .Any(effect => effect.Type != "CardEffectRewardGold"))
+                if (!CanDrainWorldCallback(unit, callback.Kind))
                     return new EnchantmentCombatResult(null, result.Requests, result.PendingCallbacks,
                         "Aura callbacks that change actors/cards require automatic combat lifecycle integration.");
             }
