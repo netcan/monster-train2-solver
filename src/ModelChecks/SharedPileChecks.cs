@@ -178,13 +178,13 @@ internal static class SharedPileChecks
             Require(JsonSerializer.Serialize(modeled.Spawn.Train.Context!.OtherPiles) == JsonSerializer.Serialize(modeled.OtherPiles),
                 "Migrated model exposes inconsistent shared and outer piles.");
             BattleTurnState actual = native.Deserialize<BattleTurnState>()!;
-            // Older native records lack only the new shared copy. Keep every captured field,
-            // including the authoritative outer piles, in the comparison.
-            JsonNode view = JsonNode.Parse(BattleTurnChecks.Comparable(modeled))!;
+            // Legacy EndTurn decisions retain a stale room-enabled flag; room stages check it separately.
+            JsonNode view = JsonNode.Parse(BattleTurnChecks.Comparable(modeled, compareRoomEnabled: false))!;
             view["Context"]!.AsObject().Remove("OtherPiles");
-            JsonNode oracle = JsonNode.Parse(BattleTurnChecks.Comparable(actual))!;
+            JsonNode oracle = JsonNode.Parse(BattleTurnChecks.Comparable(actual, compareRoomEnabled: false))!;
             oracle["Context"]!.AsObject().Remove("OtherPiles");
-            Require(JsonNode.DeepEquals(view, oracle), "Migrated shared-pile policy differs from a native legacy decision.");
+            string? difference = ModelJson.Difference(view.ToJsonString(), oracle.ToJsonString());
+            Require(difference == null, "Migrated shared-pile policy differs from a native legacy decision: " + difference);
         }
     }
 
