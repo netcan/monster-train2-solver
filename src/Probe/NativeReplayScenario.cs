@@ -967,7 +967,14 @@ namespace MonsterTrain2Poju.Probe
                 if (RelicCardModifierScenario.ExtraToughTombs)
                     pendingPlay = RelicCardModifierScenario.ChooseTombCarrier(decision) ?? pendingPlay;
                 if (RelicCardModifierScenario.CastTriggerUpgrade)
-                    pendingPlay = RelicCardModifierScenario.ChooseCastTriggerCard(decision) ?? pendingPlay;
+                {
+                    PlayCardAction? castTriggerPlay = RelicCardModifierScenario.ChooseCastTriggerCard(decision);
+                    if (castTriggerPlay != null) pendingPlay = castTriggerPlay;
+                    else if (RelicCardModifierScenario.CastTriggerUnitUpgrade &&
+                        pendingPlay?.CardInstanceId == RelicCardModifierScenario.CastTriggerUpgradeInstanceId)
+                        pendingPlay = BattleActionModel.EnumerateSupportedPlays(decision)
+                            .FirstOrDefault(action => action.CardInstanceId != RelicCardModifierScenario.CastTriggerUpgradeInstanceId);
+                }
                 if (OriginalDeployableRelicScenario.Enabled) pendingPlay = OriginalDeployableRelicScenario.Choose(decision) ?? pendingPlay;
                 if (modifierScenario == "sacrifice-effects") pendingPlay = SacrificeScenario.Choose(decision);
                 if (modifierScenario == "card-effect-kill") pendingPlay = CardEffectKillScenario.Choose(decision);

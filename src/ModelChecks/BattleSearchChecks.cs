@@ -18,7 +18,14 @@ internal static class BattleSearchChecks
             BattleActionEnumeration frontier = BattleActionModel.EnumerateActions(before);
             SupportedActionCandidate? nativeCandidate = frontier.SupportedCandidates
                 .FirstOrDefault(candidate => SameAction(candidate.Action, nativeAction));
-            Require(nativeCandidate != null, "Recorded native action " + index + " is missing from the searchable supported frontier.");
+            if (nativeCandidate == null)
+            {
+                BattleActionResult replay = BattleActionModel.PlayCard(before, nativeAction);
+                Require(false, "Recorded native action " + index + " is missing from the searchable supported frontier: card=" +
+                    nativeAction.CardInstanceId + ", room=" + nativeAction.RoomIndex + ", position=" + nativeAction.PlayerPosition +
+                    ", target=" + nativeAction.TargetUnitId + ", recursion=" + nativeAction.RecursionSelections.Count +
+                    ", replay=" + replay.Rejection + " (" + replay.Reason + ").");
+            }
             BattleTurnState nativeActual = entry.GetProperty("Actual").Deserialize<BattleTurnState>()!;
             bool terminal = nativeCandidate!.Result.Outcome is RoomOutcome.BattleWon or RoomOutcome.PlayerDefeated;
             Require(nativeCandidate.Result.Outcome == (RoomOutcome)entry.GetProperty("ActualOutcome").GetInt32() &&

@@ -33,6 +33,7 @@ $fixtureNames = @('full-battle-steward-once.mt2f', 'full-battle-no-cards.mt2f', 
     'full-battle-relic-card-ability-upgrades.mt2f',
     'full-battle-relic-card-trigger-upgrades.mt2f',
     'full-battle-relic-card-cast-trigger-upgrades.mt2f',
+    'full-battle-relic-card-cast-trigger-unit-upgrades.mt2f',
     'full-battle-relic-card-replacement-upgrades.mt2f',
     'full-battle-conditional-relic-card-upgrades.mt2f', 'full-battle-statistics.mt2f', 'full-battle-numeric-upgrades.mt2f',
     'full-battle-dynamic-upgrades.mt2f', 'full-battle-sacrifice-effects.mt2f', 'full-battle-card-effect-kill.mt2f', 'full-battle-card-recursion.mt2f', 'full-battle-card-recursion-choice.mt2f', 'full-battle-card-recursion-choose-to-hand.mt2f', 'full-battle-card-recursion-filter-choice.mt2f', 'full-battle-card-recursion-discard-choice.mt2f', 'full-battle-card-recursion-upgrade.mt2f', 'full-battle-card-recursion-upgrade-hand.mt2f', 'full-battle-card-recursion-upgrade-choice.mt2f', 'full-battle-card-recursion-upgrade-filter-choice.mt2f', 'full-battle-card-recursion-upgrade-replacement-choice.mt2f', 'full-battle-sacrifice-upgrades.mt2f',
@@ -238,7 +239,8 @@ $focusedTeamSpawnStatusFixtures = @($fixtures | Where-Object {
 })
 $generalFixtures = @($fixtures | Where-Object {
     (Split-Path -Leaf $_) -notin @('full-battle-companion-bump.mt2f', 'full-battle-outer-boss-bump.mt2f',
-        'full-battle-original-team-spawn-status.mt2f', 'full-battle-relic-card-cast-trigger-upgrades.mt2f')
+        'full-battle-original-team-spawn-status.mt2f', 'full-battle-relic-card-cast-trigger-upgrades.mt2f',
+        'full-battle-relic-card-cast-trigger-unit-upgrades.mt2f')
 })
 if ($generalFixtures.Count -gt 0) {
     dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release -- @generalFixtures
@@ -265,7 +267,8 @@ foreach ($fixturePath in $focusedChicotFixtures) {
 }
 
 $relicCardCastTriggerFixtures = @($fixtures | Where-Object {
-    (Split-Path -Leaf $_) -eq 'full-battle-relic-card-cast-trigger-upgrades.mt2f'
+    (Split-Path -Leaf $_) -in @('full-battle-relic-card-cast-trigger-upgrades.mt2f',
+        'full-battle-relic-card-cast-trigger-unit-upgrades.mt2f')
 })
 foreach ($fixturePath in $relicCardCastTriggerFixtures) {
     foreach ($mode in @('--relic-card-modifiers-only', '--battle-search-only')) {

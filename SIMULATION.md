@@ -1,6 +1,6 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-14): 274 binary archives, including 243
+Current accepted inventory (2026-10-14): 275 binary archives, including 244
 full battles and 31 component calibrations. Unchanged original relic evidence
 covers 76/224 catalog entries (33.93%); see
 [the owner evidence table](tests/fixtures/relic-coverage.md). Whole-battle
@@ -208,6 +208,22 @@ companion is tracked. Inventory is now 274 archives: 243 battles and 31
 component calibrations. Original relic evidence remains 76/224 (33.93%). This
 validates the modeled OnCast card-effect path only; other card-trigger and room
 ability payloads remain unsupported.
+
+### Relic card OnCast effects on Monster cards (schema 158)
+
+`full-battle-relic-card-cast-trigger-unit-upgrades.mt2f` extends the synthetic
+temporary `RelicEffectAddTempUpgrade` OnCast damage scenario to a playable
+Monster card. The muted Instant native battle wins with 57 matched stages and
+nine card actions, with zero capture failures, mismatches, unsupported
+transitions or pending records. All 355 branch decision contexts are captured.
+Focused checks confirm the OnCast damage reaches the enemy front and battle
+search checks 128 states with equal serial and parallel results.
+
+The 28,581-byte archive has 4,389 unique nodes and SHA-256
+`43ff4ed402996d5b94050423a4101a794e3ab11a7052336fb932f71b1bfa183c`; no JSON
+companion is tracked. Inventory is now 275 archives: 244 battles and 31
+component calibrations. Original relic evidence remains 76/224 (33.93%): this
+synthetic owner validates a card mechanism, not another original relic.
 
 ### Relic temporary DamageOverflow trait
 

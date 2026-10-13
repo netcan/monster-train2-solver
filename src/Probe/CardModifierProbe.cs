@@ -53,7 +53,7 @@ namespace MonsterTrain2Poju.Probe
                 if (rule.Effect == "Spell")
                 {
                     var effects = card.GetEffectStates();
-                    if (effects.Count != definition.Effects.Count) interactions.Add("Changed card effect sequence");
+                    if (effects.Count != data.GetEffects().Count) interactions.Add("Changed card effect sequence");
                     else for (int index = 0; index < effects.Count; index++)
                         if ((rule.Effects[index].Type == "Damage" || rule.Effects[index].Type == "Heal") &&
                             effects[index].GetParamInt() != rule.Effects[index].Value)

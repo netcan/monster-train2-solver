@@ -93,9 +93,19 @@ namespace MonsterTrain2Poju.Probe
         internal static CardPlayRule Definition(CardData data)
         {
             var interactions = new List<string>();
+            var onCastEffects = new List<CardActionEffect>();
             var upgradeInteractions = data.GetTraits().Where(trait => !DamageScalingProbe.Known(trait.GetTraitStateName()))
                 .Select(trait => "Upgrade trait " + trait.GetTraitStateName()).ToArray();
-            if (data.GetCardTriggers().Count > 0) interactions.Add("Card triggers");
+            foreach (CardTriggerEffectData trigger in data.GetCardTriggers())
+            {
+                if (trigger.GetTrigger().ToString() != "OnCast" || trigger.GetTriggerEffects().Count > 0)
+                {
+                    interactions.Add("Card triggers");
+                    continue;
+                }
+                foreach (CardEffectData effect in trigger.GetCardEffects())
+                    onCastEffects.Add(DescribeTriggerEffect(effect, interactions, data));
+            }
             if (data.GetTraits().Any(trait => !DamageScalingProbe.Known(trait.GetTraitStateName()))) interactions.Add("Card traits");
             bool selfPurge = data.GetTraits().Any(trait => trait.GetTraitStateName() == "CardTraitSelfPurge");
             CardEffectData[] effects = data.GetEffects().ToArray();
@@ -170,7 +180,7 @@ namespace MonsterTrain2Poju.Probe
                         .GetType(effect.GetEffectStateName())!)!).CanPlayWhenHandFull)) : null, summon,
                 data.GetCardType().ToString(), data.IsUnitAbility() || data.IsRoomAbility(),
                 effects.All(effect => ((ICardEffect)Activator.CreateInstance(typeof(CardEffectBase).Assembly
-                    .GetType(effect.GetEffectStateName())!)!).CanPlayInEngineRoom));
+                    .GetType(effect.GetEffectStateName())!)!).CanPlayInEngineRoom), onCastEffects: onCastEffects);
         }
 
         private static bool SupportedSpellEffect(CardEffectData effect) =>
@@ -178,14 +188,14 @@ namespace MonsterTrain2Poju.Probe
             SpellEffectTypes.Contains(effect.GetEffectStateName());
         internal static bool SupportsCardActionEffect(CardEffectData effect) => SupportedSpellEffect(effect);
 
-        internal static CardActionEffect DescribeTriggerEffect(CardEffectData effect, List<string> interactions)
+        internal static CardActionEffect DescribeTriggerEffect(CardEffectData effect, List<string> interactions, CardData? source = null)
         {
             if (!SupportedSpellEffect(effect))
             {
                 interactions.Add("Unimplemented card-trigger effect " + effect.GetEffectStateName());
                 return new CardActionEffect("Unsupported", "None", 0, false, false, Array.Empty<CombatStatus>());
             }
-            return DescribeSpellEffect(null, effect, interactions);
+            return DescribeSpellEffect(source, effect, interactions);
         }
 
         private static CardActionEffect DescribeSpellEffect(CardData? data, CardEffectData effect, List<string> interactions)
@@ -401,13 +411,14 @@ namespace MonsterTrain2Poju.Probe
             return new CardPlayRule(rule.DataId, rule.AssetKey, rule.Cost, rule.Effect, rule.Destination, unit,
                 interactions.Distinct().OrderBy(item => item, StringComparer.Ordinal).ToArray(), rule.Effects,
                 rule.UpgradeInteractions, rule.HandDiscardInteractions, rule.HandConsumeInteractions, rule.CostType,
-                rule.Equipment, rule.Ability, rule.Summon, rule.CardType, rule.IsAnyAbility);
+                rule.Equipment, rule.Ability, rule.Summon, rule.CardType, rule.IsAnyAbility, rule.CanPlayInEngineRoom, rule.OnCastEffects);
         }
 
         private static string[] HandInteractions(CardData data, bool consume)
         {
             var interactions = new List<string>();
-            if (data.GetCardTriggers().Count > 0) interactions.Add("Hand removal card triggers");
+            if (data.GetCardTriggers().Any(trigger => trigger.GetTrigger().ToString().IndexOf("Discard", StringComparison.OrdinalIgnoreCase) >= 0))
+                interactions.Add("Hand removal card triggers");
             foreach (var trait in data.GetTraits())
             {
                 Type? type = typeof(CardTraitState).Assembly.GetType(trait.GetTraitStateName());

@@ -81,7 +81,8 @@ internal static class MissingSourceSummonChecks
             summon.NativeBaseSize, summon.TriggersPaidRally);
         var changed = new CardPlayRule(rule.DataId, rule.AssetKey, rule.Cost, rule.Effect, rule.Destination,
             rule.SpawnUnit, rule.ExternalInteractions, rule.Effects, rule.UpgradeInteractions, rule.HandDiscardInteractions,
-            rule.HandConsumeInteractions, rule.CostType, rule.Equipment, rule.Ability, unknown);
+            rule.HandConsumeInteractions, rule.CostType, rule.Equipment, rule.Ability, unknown, rule.CardType,
+            rule.IsAnyAbility, rule.CanPlayInEngineRoom, rule.OnCastEffects);
         var rules = new BattlePlayRules(before.PlayRules!.Rooms,
             before.PlayRules.Cards.Select(item => item.DataId == rule.DataId ? changed : item).ToArray(), before.PlayRules.StatusRules);
         var uncaptured = new BattleTurnState(before.Spawn, before.Energy, before.EnergyPerTurn, before.DrawPerTurn,

@@ -18,7 +18,8 @@ namespace MonsterTrain2Poju.Probe
         internal static bool EphemeralUpgrade => Environment.GetEnvironmentVariable("MT2_PROBE_RELIC_CARD_EPHEMERAL_UPGRADE") == "1";
         internal static bool ExtraToughTombs => Environment.GetEnvironmentVariable("MT2_PROBE_RELIC_CARD_HEALTH_UPGRADE") == "1";
         internal static bool UnhealedHealthUpgrade => Environment.GetEnvironmentVariable("MT2_PROBE_RELIC_CARD_UNHEALED_UPGRADE") == "1";
-        internal static bool CastTriggerUpgrade => Environment.GetEnvironmentVariable("MT2_PROBE_RELIC_CARD_CAST_TRIGGER_UPGRADE") == "1";
+        internal static bool CastTriggerUnitUpgrade => Environment.GetEnvironmentVariable("MT2_PROBE_RELIC_CARD_CAST_TRIGGER_UNIT_UPGRADE") == "1";
+        internal static bool CastTriggerUpgrade => Environment.GetEnvironmentVariable("MT2_PROBE_RELIC_CARD_CAST_TRIGGER_UPGRADE") == "1" || CastTriggerUnitUpgrade;
         internal static int CastTriggerUpgradeInstanceId { get; private set; }
         internal const string TombSubtypeKey = "SubtypesData_Tomb";
         internal static string? TombCarrierCardId { get; private set; }
@@ -34,8 +35,10 @@ namespace MonsterTrain2Poju.Probe
             CardInstanceState? card = state.Spawn.Train.Context?.Cards.Hand.Select(token => state.Spawn.Train.Context!.FindCard(token.InstanceId))
                 .FirstOrDefault(instance => instance != null && instance.InstanceId == CastTriggerUpgradeInstanceId &&
                     instance.Temporary.Upgrades.Any(upgrade => upgrade.Lifecycle?.Triggers.Any(trigger => trigger.Type == "OnCast") == true));
-            return card == null ? null : BattleActionModel.EnumerateSupportedPlays(state)
-                .FirstOrDefault(action => action.CardInstanceId == card.InstanceId);
+            if (card == null) return null;
+            return BattleActionModel.EnumerateSupportedPlays(state).Where(action => action.CardInstanceId == card.InstanceId)
+                .FirstOrDefault(action => !CastTriggerUnitUpgrade || state.Spawn.Train.Rooms
+                    .First(room => room.RoomIndex == action.RoomIndex).Units.Any(unit => unit.Team == CombatTeam.Enemy));
         }
         internal static BattleTurnState PrepareCastTriggerCardInHand(BattleTurnState decision,
             AllGameManagers managers, CardManager cards, ManualLogSource log)
@@ -47,8 +50,15 @@ namespace MonsterTrain2Poju.Probe
             CardState? card = cards.GetHand().FirstOrDefault(candidate =>
             {
                 CardData? definition = gameData.FindCardData(candidate.GetCardDataID());
-                return playableIds.Contains(trace.CardId(candidate)) && definition != null && candidate.GetCardType() == CardType.Spell && definition.GetCardTriggers().Count == 0 &&
-                    definition.GetEffects().All(BattleActionProbe.SupportsCardActionEffect);
+                bool unitCard = CastTriggerUnitUpgrade;
+                return playableIds.Contains(trace.CardId(candidate)) && definition != null &&
+                    candidate.GetCardType() == (unitCard ? CardType.Monster : CardType.Spell) &&
+                    definition.GetCardType() == (unitCard ? CardType.Monster : CardType.Spell) && definition.GetCardTriggers().Count == 0 &&
+                    (unitCard
+                        ? definition.GetEffects().Any(effect => effect.GetEffectStateName() == "CardEffectSpawnMonster") &&
+                            definition.GetEffects().All(effect => effect.GetEffectStateName() == "CardEffectSpawnMonster" ||
+                                BattleActionProbe.SupportsCardActionEffect(effect))
+                        : definition.GetEffects().All(BattleActionProbe.SupportsCardActionEffect));
             });
             if (card == null) return decision;
             CaptureReady = true;
@@ -67,6 +77,7 @@ namespace MonsterTrain2Poju.Probe
                 " inHand=" + refreshed.Spawn.Train.Context!.Cards.Hand.Any(token => token.InstanceId == CastTriggerUpgradeInstanceId) +
                 " available=" + frontier.SupportedActions.Any(action => action.CardInstanceId == CastTriggerUpgradeInstanceId) +
                 " cost=" + (resolved?.Cost.ToString() ?? "missing") + " effects=" + (resolved?.Effects.Count.ToString() ?? "missing") +
+                " onCastEffects=" + (resolved?.OnCastEffects.Count.ToString() ?? "missing") +
                 " interactions=" + string.Join(";", resolved?.ExternalInteractions ?? Array.Empty<string>()) +
                 " rejected=" + rejected + ".");
             return refreshed;
@@ -125,7 +136,8 @@ namespace MonsterTrain2Poju.Probe
             if (!RelicCardModifierProbe.Enabled || Prepared) return;
             int selectedScenario = new[] { "MT2_PROBE_RELIC_CARD_STATUS_UPGRADE", "MT2_PROBE_RELIC_CARD_PIERCING_UPGRADE",
                 "MT2_PROBE_RELIC_CARD_SELF_PURGE_UPGRADE", "MT2_PROBE_RELIC_CARD_EXHAUST_UPGRADE", "MT2_PROBE_RELIC_CARD_ABILITY_UPGRADE",
-                "MT2_PROBE_RELIC_CARD_TRIGGER_UPGRADE", "MT2_PROBE_RELIC_CARD_CAST_TRIGGER_UPGRADE", "MT2_PROBE_RELIC_CARD_REPLACEMENT_UPGRADE",
+                "MT2_PROBE_RELIC_CARD_TRIGGER_UPGRADE", "MT2_PROBE_RELIC_CARD_CAST_TRIGGER_UPGRADE",
+                "MT2_PROBE_RELIC_CARD_CAST_TRIGGER_UNIT_UPGRADE", "MT2_PROBE_RELIC_CARD_REPLACEMENT_UPGRADE",
                 "MT2_PROBE_RELIC_CARD_EPHEMERAL_UPGRADE", "MT2_PROBE_RELIC_CARD_HEALTH_UPGRADE",
                 "MT2_PROBE_RELIC_CARD_UNHEALED_UPGRADE" }
                 .Count(name => Environment.GetEnvironmentVariable(name) == "1");
@@ -205,7 +217,8 @@ namespace MonsterTrain2Poju.Probe
             bool triggerScenario = !AllUnitsMultistrikeMutator && Environment.GetEnvironmentVariable("MT2_PROBE_RELIC_CARD_TRIGGER_UPGRADE") == "1";
             if (triggerScenario) InstallCharacterTriggerUpgrade(save.GetAllGameData(), relicEffect);
             bool castTriggerScenario = !AllUnitsMultistrikeMutator && CastTriggerUpgrade;
-            if (castTriggerScenario) InstallCardCastTriggerUpgrade(save.GetAllGameData(), relicEffect);
+            bool castTriggerUnitScenario = !AllUnitsMultistrikeMutator && CastTriggerUnitUpgrade;
+            if (castTriggerScenario) InstallCardCastTriggerUpgrade(save.GetAllGameData(), relicEffect, castTriggerUnitScenario);
             bool replacementScenario = !AllUnitsMultistrikeMutator && Environment.GetEnvironmentVariable("MT2_PROBE_RELIC_CARD_REPLACEMENT_UPGRADE") == "1";
             CardUpgradeData? replacementTarget = replacementScenario ? InstallReplacementUpgrade(save.GetAllGameData(), relicEffect) : null;
             var filters = UpgradeData(relicEffect).GetFilters();
@@ -225,8 +238,12 @@ namespace MonsterTrain2Poju.Probe
                 {
                     if (!castTriggerScenario) return true;
                     CardData? definition = data.FindCardData(card.GetCardDataID());
-                    return definition != null && definition.GetCardTriggers().Count == 0 &&
-                        definition.GetEffects().All(BattleActionProbe.SupportsCardActionEffect);
+                    return definition != null && definition.GetCardType() == (castTriggerUnitScenario ? CardType.Monster : CardType.Spell) &&
+                        definition.GetCardTriggers().Count == 0 && (castTriggerUnitScenario
+                            ? definition.GetEffects().Any(effect => effect.GetEffectStateName() == "CardEffectSpawnMonster") &&
+                                definition.GetEffects().All(effect => effect.GetEffectStateName() == "CardEffectSpawnMonster" ||
+                                    BattleActionProbe.SupportsCardActionEffect(effect))
+                            : definition.GetEffects().All(BattleActionProbe.SupportsCardActionEffect));
                 })
                 .Where(card => !ExtraToughTombs || card.GetCardDataID() == TombCarrierCardId)
                 .Where(card => !UnhealedHealthUpgrade || card.IsSpawnerCard())
@@ -412,24 +429,40 @@ namespace MonsterTrain2Poju.Probe
                 AccessTools.Field(typeof(RelicEffectAddTempUpgrade), "_cardUpgradeData").SetValue(effect, source);
             }
 
-            void InstallCardCastTriggerUpgrade(AllGameData gameData, RelicEffectAddTempUpgrade effect)
+            void InstallCardCastTriggerUpgrade(AllGameData gameData, RelicEffectAddTempUpgrade effect, bool unitScenario)
             {
                 CardTriggerEffectData? selected = gameData.GetAllCardUpgradeData().SelectMany(upgrade => upgrade.GetCardTriggerUpgrades())
                     .Where(trigger => trigger.GetTrigger().ToString() == "OnCast" && trigger.GetCardEffects().Count > 0)
-                    .FirstOrDefault(trigger => CardUpgradeLifecycleProbe.TriggerDefinition(trigger).ExternalInteractions.Count == 0);
+                    .FirstOrDefault(trigger => CardUpgradeLifecycleProbe.TriggerDefinition(trigger).ExternalInteractions.Count == 0 &&
+                        (!unitScenario || trigger.GetCardEffects().All(cardEffect => cardEffect.GetEffectStateName() == "CardEffectDamage")));
                 if (selected == null)
                     throw new InvalidOperationException("Game data has no OnCast card-upgrade trigger with fully modeled effects.");
+                if (unitScenario)
+                {
+                    var unitTrigger = (CardTriggerEffectData)AccessTools.Method(typeof(object), "MemberwiseClone").Invoke(selected, null)!;
+                    var unitEffects = selected.GetCardEffects().Select(cardEffect =>
+                    {
+                        var unitEffect = (CardEffectData)AccessTools.Method(typeof(object), "MemberwiseClone").Invoke(cardEffect, null)!;
+                        AccessTools.Field(typeof(CardEffectData), "targetMode").SetValue(unitEffect, TargetMode.FrontInRoom);
+                        AccessTools.Field(typeof(CardEffectData), "targetTeamType").SetValue(unitEffect, Team.Type.Heroes);
+                        return unitEffect;
+                    }).ToList();
+                    AccessTools.Field(typeof(CardTriggerEffectData), "cardEffects").SetValue(unitTrigger, unitEffects);
+                    selected = unitTrigger;
+                }
                 var clone = (CardUpgradeData)AccessTools.Method(typeof(object), "MemberwiseClone").Invoke(UpgradeData(effect), null)!;
-                var spellMask = UnityEngine.ScriptableObject.CreateInstance<CardUpgradeMaskData>();
-                spellMask.name = "PojuRelicOnCastSpellMask";
-                AccessTools.Field(typeof(CardUpgradeMaskData), "cardType").SetValue(spellMask, CardType.Spell);
-                AccessTools.Field(typeof(CardUpgradeData), "filters").SetValue(clone, new List<CardUpgradeMaskData> { spellMask });
+                var cardMask = UnityEngine.ScriptableObject.CreateInstance<CardUpgradeMaskData>();
+                cardMask.name = unitScenario ? "PojuRelicOnCastUnitMask" : "PojuRelicOnCastSpellMask";
+                AccessTools.Field(typeof(CardUpgradeMaskData), "cardType").SetValue(cardMask,
+                    unitScenario ? CardType.Monster : CardType.Spell);
+                AccessTools.Field(typeof(CardUpgradeData), "filters").SetValue(clone, new List<CardUpgradeMaskData> { cardMask });
                 AccessTools.Field(typeof(CardUpgradeData), "cardTriggerUpgrades").SetValue(clone, new List<CardTriggerEffectData> { selected });
                 AccessTools.Field(typeof(CardUpgradeData), "isUnique").SetValue(clone, false);
                 AccessTools.Field(typeof(RelicEffectAddTempUpgrade), "_cardUpgradeData").SetValue(effect, clone);
                 CardLifecycleTrigger captured = CardUpgradeLifecycleProbe.TriggerDefinition(selected);
                 log.LogInfo("RELIC-ONCAST-UPGRADE-SOURCE effects=" + string.Join(",", captured.Effects) +
-                    "; actionTypes=" + string.Join(",", captured.Actions.Select(action => action.Type)) + ".");
+                    "; actionTypes=" + string.Join(",", captured.Actions.Select(action => action.Type)) +
+                    "; unitScenario=" + unitScenario + ".");
             }
 
             static CardUpgradeData InstallReplacementUpgrade(AllGameData gameData, RelicEffectAddTempUpgrade effect)

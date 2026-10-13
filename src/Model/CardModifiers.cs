@@ -400,7 +400,18 @@ namespace MonsterTrain2Poju.Model
             }
             CardActionEffect[] triggerEffects = cardUpgrades.SelectMany(upgrade => upgrade.Lifecycle?.Triggers ?? Array.Empty<CardLifecycleTrigger>())
                 .Where(trigger => trigger.Type == "OnCast").SelectMany(trigger => trigger.Actions).ToArray();
-            CardActionEffect[] effects = rule.Effects.Concat(triggerEffects).Select(effect => new CardActionEffect(effect.Type, effect.Target,
+            CardActionEffect[] effects = rule.Effects.Select(ResolveEffect).ToArray();
+            CardActionEffect[] onCastEffects = rule.OnCastEffects.Concat(triggerEffects).Select(ResolveEffect).ToArray();
+            string destination = rule.Destination;
+            if (destination == "Discard" && instance.MaskDescriptor != null &&
+                CardBranchMaskModel.Resolve(instance).Traits.Any(trait => trait is "CardTraitSelfPurge" or "CardTraitEphemeral"))
+                destination = "Purged";
+            return new CardPlayRule(rule.DataId, rule.AssetKey, UpgradedStat(instance.RawCostOverride ?? rule.Cost, "Cost", true, modifiers), rule.Effect,
+                destination, unit, interactions.Distinct().OrderBy(value => value, StringComparer.Ordinal).ToArray(), effects, rule.UpgradeInteractions,
+                rule.HandDiscardInteractions, rule.HandConsumeInteractions, rule.CostType, rule.Equipment, rule.Ability, rule.Summon, rule.CardType,
+                rule.IsAnyAbility, rule.CanPlayInEngineRoom, onCastEffects);
+
+            CardActionEffect ResolveEffect(CardActionEffect effect) => new CardActionEffect(effect.Type, effect.Target,
                 ResolveValue(effect, effect.Value), effect.AllowEnemy, effect.AllowPlayer, effect.Statuses, effect.Upgrade, effect.Lifetime, effect.Tests,
                 effect.Range == null ? null : new CardEffectRange(ResolveValue(effect, effect.Range.Min),
                     ResolveValue(effect, effect.Range.Max), effect.Range.Multiplier), effect.Filters, effect.Generation, effect.OnlyIfNoEnemies,
@@ -410,14 +421,7 @@ namespace MonsterTrain2Poju.Model
                 effect.SpawnFallbackUnit, effect.DisallowStatusStackModifiers,
                 damagePerHpLastAttacker: effect.DamagePerHpLastAttacker,
                 damagePerHpIncludeArmor: effect.DamagePerHpIncludeArmor,
-                roomAttachment: effect.RoomAttachment, recursion: effect.Recursion)).ToArray();
-            string destination = rule.Destination;
-            if (destination == "Discard" && instance.MaskDescriptor != null &&
-                CardBranchMaskModel.Resolve(instance).Traits.Any(trait => trait is "CardTraitSelfPurge" or "CardTraitEphemeral"))
-                destination = "Purged";
-            return new CardPlayRule(rule.DataId, rule.AssetKey, UpgradedStat(instance.RawCostOverride ?? rule.Cost, "Cost", true, modifiers), rule.Effect,
-                destination, unit, interactions.Distinct().OrderBy(value => value, StringComparer.Ordinal).ToArray(), effects, rule.UpgradeInteractions,
-                rule.HandDiscardInteractions, rule.HandConsumeInteractions, rule.CostType, rule.Equipment, rule.Ability, rule.Summon, rule.CardType, rule.IsAnyAbility, rule.CanPlayInEngineRoom);
+                roomAttachment: effect.RoomAttachment, recursion: effect.Recursion);
 
             int ResolveValue(CardActionEffect effect, int value) => effect.Type == "Damage" || effect.Type == "Heal"
                 ? UpgradedStat(UpgradedStat(value, effect.Type, true, instance.Permanent), effect.Type, true, instance.Temporary) : value;

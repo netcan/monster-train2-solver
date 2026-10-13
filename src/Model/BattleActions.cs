@@ -144,23 +144,27 @@ namespace MonsterTrain2Poju.Model
         public IReadOnlyList<string>? UpgradeInteractions { get; }
         public IReadOnlyList<string>? HandDiscardInteractions { get; }
         public IReadOnlyList<string>? HandConsumeInteractions { get; }
+        public IReadOnlyList<CardActionEffect> OnCastEffects { get; }
         public CardPlayRule(string dataId, string assetKey, int cost, string effect, string destination,
             CombatUnit? spawnUnit, IReadOnlyList<string> externalInteractions, IReadOnlyList<CardActionEffect>? effects = null,
             IReadOnlyList<string>? upgradeInteractions = null, IReadOnlyList<string>? handDiscardInteractions = null,
             IReadOnlyList<string>? handConsumeInteractions = null, string costType = "Default", EquipmentDefinition? equipment = null,
-            CardAbilityRule? ability = null, UnitSummonRule? summon = null, string? cardType = null, bool? isAnyAbility = null, bool? canPlayInEngineRoom = null)
+            CardAbilityRule? ability = null, UnitSummonRule? summon = null, string? cardType = null, bool? isAnyAbility = null,
+            bool? canPlayInEngineRoom = null, IReadOnlyList<CardActionEffect>? onCastEffects = null)
         {
             DataId = dataId; AssetKey = assetKey; Cost = cost; CostType = costType; Effect = effect; Destination = destination;
             Equipment = equipment; Ability = ability; CardType = cardType; IsAnyAbility = isAnyAbility; CanPlayInEngineRoom = canPlayInEngineRoom;
             SpawnUnit = spawnUnit; ExternalInteractions = Array.AsReadOnly(externalInteractions.ToArray());
             Summon = summon;
             Effects = Array.AsReadOnly((effects ?? Array.Empty<CardActionEffect>()).ToArray());
+            OnCastEffects = Array.AsReadOnly((onCastEffects ?? Array.Empty<CardActionEffect>()).ToArray());
             UpgradeInteractions = upgradeInteractions == null ? null : Array.AsReadOnly(upgradeInteractions.ToArray());
             HandDiscardInteractions = handDiscardInteractions == null ? null : Array.AsReadOnly(handDiscardInteractions.ToArray());
             HandConsumeInteractions = handConsumeInteractions == null ? null : Array.AsReadOnly(handConsumeInteractions.ToArray());
         }
         internal CardPlayRule WithSpawn(CombatUnit unit) => new CardPlayRule(DataId, AssetKey, Cost, Effect, Destination,
-            unit, ExternalInteractions, Effects, UpgradeInteractions, HandDiscardInteractions, HandConsumeInteractions, CostType, Equipment, Ability, Summon, CardType, IsAnyAbility, CanPlayInEngineRoom);
+            unit, ExternalInteractions, Effects, UpgradeInteractions, HandDiscardInteractions, HandConsumeInteractions, CostType, Equipment, Ability, Summon,
+            CardType, IsAnyAbility, CanPlayInEngineRoom, OnCastEffects);
     }
 
     public sealed class BattlePlayRules
@@ -310,6 +314,17 @@ namespace MonsterTrain2Poju.Model
             if (targetRule == null || target == null) return Illegal("The target room does not exist.");
             if (!targetRule.Enabled || targetRule.IsPyre && (rule.CanPlayInEngineRoom != true || rule.Effect == "SpawnMonster"))
                 return Illegal("This card cannot be played in the target room.");
+            CardActionEffect[] actionEffects = rule.Effects.Concat(rule.OnCastEffects).ToArray();
+            if (CardSpellModel.RequiresUnitTarget(actionEffects))
+            {
+                CombatUnit? victim = target.Units.FirstOrDefault(unit => unit.Id == action.TargetUnitId);
+                if (victim == null || victim.IsPyre || victim.Statuses.Any(status => status.Id == "untouchable"))
+                    return Illegal("The card has no legal unit target in the selected room.");
+                CardActionEffect? targeted = actionEffects.FirstOrDefault(effect => effect.Target == "DropTargetCharacter" && effect.Type != "HandUpgrade");
+                if (targeted != null && (victim.Team == CombatTeam.Enemy && !targeted.AllowEnemy ||
+                    victim.Team == CombatTeam.Player && !targeted.AllowPlayer)) return Illegal("The card excludes the target team.");
+            }
+            else if (action.TargetUnitId != 0) return Illegal("This card does not take a unit target.");
             string? membershipError = CardPileModel.ValidateMembership(context.Cards, source.OtherPiles, context.NextCardId);
             if (membershipError != null) return Unsupported(membershipError);
             if (source.OtherPiles.Select(pile => pile.Name).Distinct().Count() != source.OtherPiles.Count)
@@ -461,16 +476,6 @@ namespace MonsterTrain2Poju.Model
             else if (rule.Effect == "Spell" || rule.Effect == "Equipment")
             {
                 if (action.PlayerPosition != -1) return Illegal("A spell does not take a summon position.");
-                if (CardSpellModel.RequiresUnitTarget(rule.Effects))
-                {
-                    CombatUnit? victim = target.Units.FirstOrDefault(unit => unit.Id == action.TargetUnitId);
-                    if (victim == null || victim.IsPyre || victim.Statuses.Any(status => status.Id == "untouchable"))
-                        return Illegal("The spell has no legal unit target in the selected room.");
-                    CardActionEffect? targeted = rule.Effects.FirstOrDefault(effect => effect.Target == "DropTargetCharacter" && effect.Type != "HandUpgrade");
-                    if (targeted != null && (victim.Team == CombatTeam.Enemy && !targeted.AllowEnemy ||
-                        victim.Team == CombatTeam.Player && !targeted.AllowPlayer)) return Illegal("The spell excludes the target team.");
-                }
-                else if (action.TargetUnitId != 0) return Illegal("A room or hand spell does not take a unit target.");
                 TrainCombatState spellInput = CardSpellModel.WithContext(train, context);
                 SpellCastCheck cast = CardSpellModel.TestPlay(CardSpellModel.WithContext(train, castingContext), action.RoomIndex,
                     rule.Effects, action.TargetUnitId, source.PlayRules, sourceCardId: card.InstanceId);
@@ -478,7 +483,8 @@ namespace MonsterTrain2Poju.Model
                 if (!cast.CanPlay) return Illegal("Every effect failed its cast test or a required effect failed.");
                 spellInput = CardSpellModel.WithContext(spellInput, context.WithBattleRng(cast.BattleRngAfterTests!.Value));
                 TrainSpellResult result = CardSpellModel.ApplyForCardPlay(spellInput, action.RoomIndex, rule.Effects, action.TargetUnitId,
-                    card.InstanceId, source.PlayRules, piles, recursionSelections: action.RecursionSelections);
+                    card.InstanceId, source.PlayRules, piles, recursionSelections: action.RecursionSelections
+                        .Where(selection => selection.EffectIndex < rule.Effects.Count).ToArray());
                 if (!result.Supported) return Unsupported(result.UnsupportedReason!);
                 piles = result.OtherPiles?.ToArray() ?? piles;
                 train = result.State!; context = train.Context!; outcome = result.Outcome; effectsApplied = true;
@@ -487,7 +493,7 @@ namespace MonsterTrain2Poju.Model
                 retainedSpellUnits = result.RetainedUnits;
             }
             else if (rule.Effect != "Null") return Unsupported("Unimplemented card effect " + rule.Effect);
-            else if (action.PlayerPosition != -1 || action.TargetUnitId != 0) return Illegal("A no-target card does not take a target or position.");
+            else if (action.PlayerPosition != -1) return Illegal("A no-target card does not take a summon position.");
 
             bool terminal = outcome == RoomOutcome.BattleWon || outcome == RoomOutcome.PlayerDefeated;
             if (terminal && context.Statistics != null && context.Statistics.DeckCards == null)
@@ -499,6 +505,25 @@ namespace MonsterTrain2Poju.Model
                 ? playedStatistics.RecordPlayedCard(card.InstanceId) : playedStatistics?.Increment(card.InstanceId, "TimesPlayed");
             context = context.WithStatistics(playedStatistics);
             train = CardSpellModel.WithContext(train, context);
+            if (rule.OnCastEffects.Count > 0)
+            {
+                CardRecursionSelection[] onCastSelections = action.RecursionSelections
+                    .Where(selection => selection.EffectIndex >= rule.Effects.Count)
+                    .Select(selection => new CardRecursionSelection(selection.EffectIndex - rule.Effects.Count, selection.CardInstanceIds)).ToArray();
+                TrainSpellResult result = CardSpellModel.ApplyForCardPlay(train, action.RoomIndex, rule.OnCastEffects,
+                    action.TargetUnitId, card.InstanceId, source.PlayRules, piles, recursionSelections: onCastSelections,
+                    onCastEffects: true);
+                if (!result.Supported) return Unsupported(result.UnsupportedReason!);
+                piles = result.OtherPiles?.ToArray() ?? piles;
+                train = result.State!; context = train.Context!;
+                outputPlayRules = result.PlayRules ?? outputPlayRules;
+                outcome = result.Outcome == RoomOutcome.Exchanged ? outcome : result.Outcome;
+                pendingSpellCallbacks = pendingSpellCallbacks.Concat(result.PendingCallbacks).ToArray();
+                retainedSpellUnits = retainedSpellUnits.Concat(result.RetainedUnits)
+                    .GroupBy(unit => unit.Id).Select(group => group.Last()).ToArray();
+                effectsApplied = true;
+                terminal = outcome == RoomOutcome.BattleWon || outcome == RoomOutcome.PlayerDefeated;
+            }
             bool prefixConsumed = false;
             bool incantObserved = train.Rooms.SelectMany(room => room.Units).Any(unit => unit.Triggers.Any(trigger => trigger.Kind == "CardSpellPlayed"));
             if (incantObserved && (rule.CardType == null || rule.CardType == "Spell" && !rule.IsAnyAbility.HasValue && rule.Ability == null))
@@ -722,12 +747,17 @@ namespace MonsterTrain2Poju.Model
                         "Missing captured card play definition; the action target space is unknown."));
                     continue;
                 }
-                if ((rule?.Effect == "Spell" || rule?.Effect == "Equipment") && CardSpellModel.RequiresUnitTarget(rule.Effects))
+            if (CardSpellModel.RequiresUnitTarget(rule.Effects.Concat(rule.OnCastEffects).ToArray()))
                 {
-                    foreach (CombatUnit target in source.Spawn.Train.Rooms.First(item => item.RoomIndex == room.RoomIndex).Units)
+                RoomCombatState targetRoom = source.Spawn.Train.Rooms.First(item => item.RoomIndex == room.RoomIndex);
+                int targetedPlayerCount = targetRoom.Units.Count(unit => unit.Team == CombatTeam.Player);
+                int firstTargetPosition = rule.Effect == "SpawnMonster" ? 0 : -1;
+                int lastTargetPosition = rule.Effect == "SpawnMonster" ? targetedPlayerCount : -1;
+                foreach (CombatUnit target in targetRoom.Units)
+                for (int position = firstTargetPosition; position <= lastTargetPosition; position++)
                     {
                         foreach (PlayCardAction branch in EnumerateRecursionChoices(source,
-                            new PlayCardAction(card.InstanceId, room.RoomIndex, targetUnitId: target.Id), rule))
+                        new PlayCardAction(card.InstanceId, room.RoomIndex, position, target.Id), rule))
                             Attempt(branch);
                     }
                     continue;
@@ -758,7 +788,7 @@ namespace MonsterTrain2Poju.Model
         private static IEnumerable<PlayCardAction> EnumerateRecursionChoices(BattleTurnState source,
             PlayCardAction action, CardPlayRule rule)
         {
-            var choiceEffects = rule.Effects.Select((effect, index) => (effect, index))
+            var choiceEffects = rule.Effects.Concat(rule.OnCastEffects).Select((effect, index) => (effect, index))
                 .Where(item => item.effect.Type == "Recursion" &&
                     item.effect.Recursion?.SelectionMode is "ChooseToHand" or "ChooseToDeck").ToArray();
             if (choiceEffects.Length == 0)

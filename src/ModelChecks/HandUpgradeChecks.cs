@@ -48,14 +48,16 @@ internal static class HandUpgradeChecks
         var enemy = new CombatUnit(1, "enemy", CombatTeam.Enemy, 1, 20, 20, true, false, false, []);
         var damageEffects = effects.Concat([new CardActionEffect("Damage", "DropTargetCharacter", 1, true, false, [])]).ToArray();
         var damageRules = new BattlePlayRules(rules.Rooms, rules.Cards.Select(rule => rule.DataId == "boost" ?
-            new CardPlayRule(rule.DataId, rule.AssetKey, rule.Cost, rule.Effect, rule.Destination, null, [], damageEffects, []) : rule).ToArray());
+            new CardPlayRule(rule.DataId, rule.AssetKey, rule.Cost, rule.Effect, rule.Destination, null, [], damageEffects, [],
+                onCastEffects: rule.OnCastEffects) : rule).ToArray());
         var damaged = CardSpellModel.Apply(new(0, false, [enemy], [], context), damageEffects, 1, 1, definitions: damageRules);
         Require(damaged.Supported && damaged.State!.Units.Single().Health == 13,
             "Later spell damage did not read the source card's new upgrades.");
         var lastEffects = damageEffects.Concat([new CardActionEffect("AddStatus", "LastTargetedCharacters", 0, true, false,
             [new("pyregel", 2, 1)])]).ToArray();
         var lastRules = new BattlePlayRules(rules.Rooms, damageRules.Cards.Select(rule => rule.DataId == "boost" ?
-            new CardPlayRule(rule.DataId, rule.AssetKey, rule.Cost, rule.Effect, rule.Destination, null, [], lastEffects, []) : rule).ToArray());
+            new CardPlayRule(rule.DataId, rule.AssetKey, rule.Cost, rule.Effect, rule.Destination, null, [], lastEffects, [],
+                onCastEffects: rule.OnCastEffects) : rule).ToArray());
         var last = CardSpellModel.Apply(new(0, false, [enemy], [], context), lastEffects, 1, 1, definitions: lastRules);
         Require(last.Supported && last.State!.Units.Single().Statuses.Single().Id == "pyregel",
             "A later drop target did not replace the native last-target collection.");

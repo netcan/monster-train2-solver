@@ -30,7 +30,7 @@ The default command checks the full curated inventory. For routine changes, run
 the dedicated checks for the new and directly affected scenarios; run the full
 inventory at completed milestones and before delivery.
 
-Current inventory is 274 archives: 243 accepted battles and 31 component
+Current inventory is 275 archives: 244 accepted battles and 31 component
 calibrations. Original relic evidence is 76/224 (33.93%). The schema-146
 `full-battle-original-moon-phase-energy-relic.mt2f`
 archive adds accepted native evidence for the unchanged `MoonPhaseModifyEmber`
@@ -3696,4 +3696,27 @@ calibrations. Original relic evidence remains 76/224 (33.93%).
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-relic-card-cast-trigger-upgrades.mt2f
 dotnet run --project src/ModelChecks -c Release -- --relic-card-modifiers-only tests/fixtures/full-battle-relic-card-cast-trigger-upgrades.mt2f
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-relic-card-cast-trigger-upgrades.mt2f
+```
+
+### Relic card OnCast effects on Monster cards (schema 158)
+
+`full-battle-relic-card-cast-trigger-unit-upgrades.mt2f` exercises the same
+temporary `RelicEffectAddTempUpgrade` OnCast damage on a playable Monster card.
+The muted Instant native battle wins with 57 matched stages and nine card
+actions. Capture failures, mismatches, unsupported transitions and pending
+records are zero; all 355 branch decision contexts are captured. The focused
+check confirms enemy-front damage, and battle search checks 128 states with
+equal serial and parallel results.
+
+This extends supported OnCast handling to Monster cards; it is synthetic
+mechanism evidence and adds no original relic owner. The 28,581-byte binary has
+4,389 unique nodes and SHA-256
+`43ff4ed402996d5b94050423a4101a794e3ab11a7052336fb932f71b1bfa183c`; no JSON
+companion is tracked. Inventory is now 275 archives: 244 accepted battles and
+31 component calibrations. Original relic evidence remains 76/224 (33.93%).
+
+```powershell
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-relic-card-cast-trigger-unit-upgrades.mt2f
+dotnet run --project src/ModelChecks -c Release -- --relic-card-modifiers-only tests/fixtures/full-battle-relic-card-cast-trigger-unit-upgrades.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-relic-card-cast-trigger-unit-upgrades.mt2f
 ```
