@@ -537,10 +537,15 @@ internal static class BattleActionChecks
             };
         }
         FixtureValue turns = fixture.GetProperty("Turns");
-        // Scenario prelude actions are checked individually above. The independent policy
-        // starts afterward and must reproduce every remaining policy play and EndTurn.
-        FixtureValue[] policyActions = actions.EnumerateArray().Where(entry =>
-            !entry.TryGetProperty("ScenarioAction", out var authored) || !authored.GetBoolean()).ToArray();
+        // Scenario actions are checked individually above. Start the independent policy
+        // after the last one, including when a scenario injects actions mid-turn.
+        FixtureValue[] allActions = actions.EnumerateArray().ToArray();
+        int lastScenarioAction = allActions.Where(entry =>
+                entry.TryGetProperty("ScenarioAction", out var authored) && authored.GetBoolean())
+            .Select(entry => entry.GetProperty("Index").GetInt32()).DefaultIfEmpty(-1).Max();
+        FixtureValue[] policyActions = allActions.Where(entry =>
+            entry.GetProperty("Index").GetInt32() > lastScenarioAction &&
+            (!entry.TryGetProperty("ScenarioAction", out var authored) || !authored.GetBoolean())).ToArray();
         Require(policyActions.Length > 0, "The fixture has no subsequent native policy actions.");
         BattleTurnState root = policyActions[0].GetProperty("Before").Deserialize<BattleTurnState>()!;
         FixtureValue[] policyTurns = turns.EnumerateArray().ToArray();
