@@ -20,6 +20,7 @@ param(
     [switch] $SacrificeEffects,
     [switch] $CardEffectKill,
     [switch] $CardEffectKillSubtype,
+    [switch] $DragonHoard,
     [switch] $CardRecursion,
     [switch] $CardRecursionDiscard,
     [switch] $CardRecursionChoose,
@@ -341,6 +342,7 @@ if ($cardRecursionModes.Count -gt 1) { throw 'Choose one CardRecursion scenario.
 if ($SacrificeEffects) { $Policy = 'units-spells-and-junk' }
 if ($CardEffectKill -and $CardEffectKillSubtype) { throw 'Choose either -CardEffectKill or -CardEffectKillSubtype.' }
 if ($CardEffectKill -or $CardEffectKillSubtype) { $Policy = 'units-spells-and-junk' }
+if ($DragonHoard) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($CardRecursion -or $CardRecursionDiscard -or $CardRecursionChoose -or $CardRecursionChooseToHand -or $CardRecursionChooseFilter -or $CardRecursionUpgrade -or $CardRecursionUpgradeToHand -or $CardRecursionUpgradeChoose -or $CardRecursionUpgradeFilterChoose -or $CardRecursionUpgradeReplacementChoose) { $Policy = 'units-spells-and-junk'; $BranchCardMasks = $true }
 if ($SpawnOrStatus) { $Policy = 'units-and-junk' }
 if ($AbilityTeleport) { $Policy = 'units-and-junk'; $PhysicalSpawnPoints = $true }
@@ -498,6 +500,7 @@ if ($SacrificeEffects) {
 if ($CardEffectKill -or $CardEffectKillSubtype) {
     $environment['MT2_PROBE_MODIFIERS'] = if ($CardEffectKillSubtype) { 'card-effect-kill-subtype' } else { 'card-effect-kill' }
 }
+if ($DragonHoard) { $environment['MT2_PROBE_MODIFIERS'] = 'dragon-hoard' }
 if ($CardRecursion -or $CardRecursionDiscard -or $CardRecursionChoose -or $CardRecursionChooseToHand -or $CardRecursionChooseFilter -or $CardRecursionUpgrade -or $CardRecursionUpgradeToHand -or $CardRecursionUpgradeChoose -or $CardRecursionUpgradeFilterChoose -or $CardRecursionUpgradeReplacementChoose) {
     $environment['MT2_PROBE_MODIFIERS'] = if ($CardRecursionDiscard) { 'card-effect-recursion-discard-choice' } elseif ($CardRecursionUpgradeReplacementChoose) { 'card-effect-recursion-upgrade-replacement-choice' } elseif ($CardRecursionUpgradeFilterChoose) { 'card-effect-recursion-upgrade-filter-choice' } elseif ($CardRecursionUpgradeChoose) { 'card-effect-recursion-upgrade-choice' } elseif ($CardRecursionUpgradeToHand) { 'card-effect-recursion-upgrade-hand' } elseif ($CardRecursionUpgrade) { 'card-effect-recursion-upgrade' } elseif ($CardRecursionChooseFilter) { 'card-effect-recursion-filter-choice' } elseif ($CardRecursionChooseToHand) { 'card-effect-recursion-choose-to-hand' } elseif ($CardRecursionChoose) { 'card-effect-recursion-choice' } else { 'card-effect-recursion' }
 }
@@ -611,6 +614,12 @@ if (($CardEffectKill -or $CardEffectKillSubtype) -and ($trace.ModifierScenario -
     -not (Select-String -LiteralPath $unityLog -Pattern 'CARD-EFFECT-KILL-SUBTYPE-NATIVE .*result=true/false' -Quiet) -or
     ($CardEffectKillSubtype -and -not (Select-String -LiteralPath $unityLog -Pattern 'CARD-EFFECT-KILL-SUBTYPE-PLAY targets=.* result=supported' -Quiet)))) {
     throw 'CardEffectKill native setup did not run.'
+}
+if ($DragonHoard -and ($trace.Schema -ne 162 -or $trace.ModifierScenario -ne 'dragon-hoard' -or
+    -not (Select-String -LiteralPath $unityLog -Pattern 'DRAGON-HOARD-PREPARED native Alchemy start=2 cap=' -Quiet) -or
+    -not (Select-String -LiteralPath $unityLog -Pattern 'DRAGON-HOARD-CANDIDATE supported=True before=2 after=4' -Quiet) -or
+    @($trace.Actions).Count -eq 0)) {
+    throw "Dragon's Hoard native setup did not complete a supported Alchemy play."
 }
 if (($CardRecursion -or $CardRecursionDiscard -or $CardRecursionChoose -or $CardRecursionChooseToHand -or $CardRecursionChooseFilter -or $CardRecursionUpgrade -or $CardRecursionUpgradeToHand -or $CardRecursionUpgradeChoose -or $CardRecursionUpgradeFilterChoose -or $CardRecursionUpgradeReplacementChoose) -and ($trace.ModifierScenario -ne $(if ($CardRecursionDiscard) { 'card-effect-recursion-discard-choice' } elseif ($CardRecursionUpgradeReplacementChoose) { 'card-effect-recursion-upgrade-replacement-choice' } elseif ($CardRecursionUpgradeFilterChoose) { 'card-effect-recursion-upgrade-filter-choice' } elseif ($CardRecursionUpgradeChoose) { 'card-effect-recursion-upgrade-choice' } elseif ($CardRecursionUpgradeToHand) { 'card-effect-recursion-upgrade-hand' } elseif ($CardRecursionUpgrade) { 'card-effect-recursion-upgrade' } elseif ($CardRecursionChooseFilter) { 'card-effect-recursion-filter-choice' } elseif ($CardRecursionChooseToHand) { 'card-effect-recursion-choose-to-hand' } elseif ($CardRecursionChoose) { 'card-effect-recursion-choice' } else { 'card-effect-recursion' }) -or
     -not (Select-String -LiteralPath $unityLog -Pattern $(if ($CardRecursionDiscard) { 'CARD-RECURSION-PREPARED WurmkinEtchings discardSpellCopies=6 .*selection=ChooseToHand from Discard' } elseif ($CardRecursionUpgradeReplacementChoose) { 'CARD-RECURSION-PREPARED WurmkinEtchings exhaustedSpellCopies=6 .*temporaryUpgrade=\+3Damage replaces=PojuRecursionPriorUpgrade' } elseif ($CardRecursionUpgradeFilterChoose) { 'CARD-RECURSION-PREPARED WurmkinEtchings exhaustedSpellCopies=5 excludedCandidates=1 totalCandidates=6 .*temporaryUpgrade=\+3Damage' } elseif ($CardRecursionChooseFilter) { 'CARD-RECURSION-PREPARED WurmkinEtchings exhaustedSpellCopies=5 excludedCandidates=1 totalCandidates=6' } elseif ($CardRecursionUpgradeToHand) { 'CARD-RECURSION-PREPARED WurmkinEtchings exhaustedSpellCopies=6 .*temporaryUpgrade=\+3Damage requiresRoomInHand=True disallowOverflowToDrawPile=True hand=\d+/\d+ handFillers=\d+' } elseif ($CardRecursionUpgrade -or $CardRecursionUpgradeChoose) { 'CARD-RECURSION-PREPARED WurmkinEtchings exhaustedSpellCopies=6 .*temporaryUpgrade=\+3Damage' } else { 'CARD-RECURSION-PREPARED WurmkinEtchings exhaustedSpellCopies=6' }) -Quiet))) {

@@ -24,14 +24,26 @@ dotnet run --project src/ModelChecks -c Release -- --bump-only tests/fixtures/fu
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-mageblade.mt2f
 dotnet run --project src/ModelChecks -c Release -- --mageblade-only tests/fixtures/full-battle-original-mageblade-magnitude.mt2f
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-units-spells-and-junk.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-dragon-hoard.mt2f
 ```
 
 The default command checks the full curated inventory. For routine changes, run
 the dedicated checks for the new and directly affected scenarios; run the full
 inventory at completed milestones and before delivery.
 
-Current inventory is 278 archives: 247 accepted battles and 31 component
-calibrations. Original relic evidence is 78/224 (34.82%). The schema-161
+Current inventory is 279 archives: 248 accepted battles and 31 component
+calibrations. Original relic evidence is 78/224 (34.82%). The schema-162
+`full-battle-dragon-hoard.mt2f` archive captures Alchemy changing the hoard from
+2 to 4. The Instant native battle wins with 61 matched stages, 21 card actions
+and seven EndTurns, with zero capture failures, mismatches, unsupported
+transitions or pending records. The focused checks cover cap clamping, hoard
+based gold, immutable branch propagation and rejection when active units need
+resource-scaled upgrade refresh. This 33,090-byte archive has 5,405 unique nodes
+and SHA-256
+`d22b5e5975c8b1b1ad9795c65aa7827b3714f5403b9d0478bcad61396c5fe633`; it has
+no JSON companion.
+
+The schema-161
 `full-battle-unplayed-card-pyre-damage.mt2f` archive leaves all five original
 fixed-damage negative-trigger cards in hand: `BlightPyreDamageInHand` (1),
 `ScourgeT2` (3), `TFB_EntropyScourge` (3), `DantesCandle` (3) and `ScourgeT3`

@@ -8,6 +8,7 @@ internal static class PyreGoldSpellChecks
         PyreTargets();
         EnginePermission();
         GoldEffects();
+        DragonHoardEffects();
         LocalGoldDispatch();
         MissingInputs();
         Console.WriteLine("PYRE-GOLD-SPELL-CHECKS PASS: dedicated Pyre targets, captured engine permission, signed gold affordability and runtime gates, preview/zero exclusions, remote refresh and initialized-range guards.");
@@ -123,6 +124,51 @@ internal static class PyreGoldSpellChecks
         }
     }
 
+    private static void DragonHoardEffects()
+    {
+        TrainCombatState root = Train(Context(gold: 4, dragonsHoard: 2, dragonsHoardCap: 6), Pyre());
+        string parent = Serialize(root);
+        var increase = new CardActionEffect("AdjustDragonsHoard", "Room", 9, false, false, []);
+        TrainSpellResult capped = CardSpellModel.Apply(root, 0, [increase], 0);
+        Require(capped.Supported && capped.State!.Context!.QueryFrame!.DragonsHoard == 6,
+            "Dragon's Hoard increase did not clamp to the captured save cap.");
+        TrainSpellResult depleted = CardSpellModel.Apply(root, 0,
+            [new("AdjustDragonsHoard", "Room", -9, false, false, [])], 0);
+        Require(depleted.Supported && depleted.State!.Context!.QueryFrame!.DragonsHoard == 0,
+            "Dragon's Hoard decrease did not clamp at zero.");
+
+        var reward = new CardActionEffect("RewardGoldPerDragonHoard", "Room", 5, false, false, []);
+        SpellCastCheck cast = CardSpellModel.TestPlay(root, 0, [reward], 0);
+        TrainSpellResult paid = CardSpellModel.Apply(root, 0, [reward], 0);
+        Require(cast.Supported && cast.CanPlay && paid.Supported && paid.State!.Context!.Gold == 14,
+            "Dragon's Hoard gold reward did not multiply by the current amount and use reward gold rules.");
+
+        TrainCombatState preview = Train(Context(gold: 4, dragonsHoard: 2, dragonsHoardCap: 6), Pyre(), preview: true);
+        TrainSpellResult previewed = CardSpellModel.Apply(preview, 0, [increase], 0);
+        Require(previewed.Supported && previewed.State!.Context!.QueryFrame!.DragonsHoard == 2,
+            "Preview applied a Dragon's Hoard change that the native iterator skips.");
+        TrainCombatState missingCap = Train(Context(gold: 4, dragonsHoard: 2, dragonsHoardCap: null), Pyre());
+        Require(!CardSpellModel.Apply(missingCap, 0, [increase], 0).Supported,
+            "A Dragon's Hoard change guessed an uncaptured cap.");
+
+        var hoardScaledSpawner = new CardInstanceState(9, "hoard-scaled-unit", CardModifiers.Empty(), CardModifiers.Empty(), 0, 0, 0, [],
+            unitUpgradeScalingTraits: [new(new("DragonsHoardAmount"), "Damage", 1)]);
+        CombatContext activeContext = Context(gold: 4, dragonsHoard: 2, dragonsHoardCap: 6).WithCardRegistry([hoardScaledSpawner]);
+        CombatUnit activeUnit = new(2, "hoard-scaled-unit", CombatTeam.Player, 1, 10, 10, true, false, false, [], spawnerCardId: 9);
+        TrainCombatState activeScaledUnit = Train(activeContext, Pyre(), roomZeroUnits: [activeUnit]);
+        TrainSpellResult staleUnitStats = CardSpellModel.Apply(activeScaledUnit, 0, [increase], 0);
+        Require(!staleUnitStats.Supported && staleUnitStats.UnsupportedReason!.Contains("native stat refresh", StringComparison.Ordinal),
+            "Dragon's Hoard changed under a live unit without modeling its resource-scaled upgrade refresh.");
+
+        BattleTurnState decision = Decision(true, effects: [increase]);
+        string decisionParent = Serialize(decision);
+        BattleActionResult played = BattleActionModel.PlayCard(decision, new(1, 0));
+        Require(played.Supported && played.State!.DragonsHoard == 8 &&
+            played.State.Spawn.Train.Context!.QueryFrame!.DragonsHoard == 8 && Serialize(decision) == decisionParent,
+            "Dragon's Hoard action did not carry its child resource through the branch state immutably: " + played.Reason);
+        Require(Serialize(root) == parent, "Dragon's Hoard actions mutated their parent state.");
+    }
+
     private static void MissingInputs()
     {
         TrainCombatState root = Train(Context(), Pyre());
@@ -153,29 +199,31 @@ internal static class PyreGoldSpellChecks
         new("RewardGold", target, amount, false, false, [], tests: tests, range: range, goldCostRequired: required);
 
     private static CombatContext Context(int gold = 4, bool hand = false, float multiplier = 1f, bool pyreAlive = true,
-        bool resources = true) => new(
+        bool resources = true, int dragonsHoard = 0, int? dragonsHoardCap = 8) => new(
         new(hand ? [new(1, "spell")] : [], [], [], UnityRng.Seed(17), 0, []), UnityRng.Seed(17), gold, hand ? 2 : 1, 10,
         cardInstances: hand ? [new(1, "spell", CardModifiers.Empty(), CardModifiers.Empty(), 0, 0, 0, [])] : null,
-        otherPiles: [], queryFrame: new(energy: 3, runningCombat: true, turn: 1, forgePoints: 0, dragonsHoard: 0,
+        otherPiles: [], queryFrame: new(energy: 3, runningCombat: true, turn: 1, forgePoints: 0, dragonsHoard: dragonsHoard,
             moonPhase: 1, pyreResurrectionCount: 0), energyState: new(10, 0, 0, "MonsterTurn", pyreAlive), relics: [],
-        resources: resources ? new(3, 1, 5, 10, 10, "pyre", 20, 80, 0, 0, [], [], [], goldRewardMultiplier: multiplier) : null);
+        resources: resources ? new(3, 1, 5, 10, 10, "pyre", 20, 80, 0, 0, [], [], [],
+            goldRewardMultiplier: multiplier, dragonsHoardCap: dragonsHoardCap) : null);
 
     private static CombatUnit Pyre(int health = 80, IReadOnlyList<CombatStatus>? statuses = null) =>
         new(1, "pyre", CombatTeam.Player, 17, health, 80, true, true, false, statuses ?? [],
             modifiers: new(17, 0, 0, 0, 0, true, false, [], damageBuffFromStatusEffects: 0));
-    private static TrainCombatState Train(CombatContext context, CombatUnit? heart, bool preview = false) =>
-        new([new(0, false, [], [], context, preview), new(1, false, heart == null ? [] : [heart], [], context, preview)], [], 7, context);
+    private static TrainCombatState Train(CombatContext context, CombatUnit? heart, bool preview = false,
+        IReadOnlyList<CombatUnit>? roomZeroUnits = null) =>
+        new([new(0, false, roomZeroUnits ?? [], [], context, preview), new(1, false, heart == null ? [] : [heart], [], context, preview)], [], 7, context);
     private static CombatUnit Heart(TrainCombatState train) => train.Rooms.SelectMany(room => room.Units).Single(unit => unit.IsPyre);
 
-    private static BattleTurnState Decision(bool? permission, bool summon = false)
+    private static BattleTurnState Decision(bool? permission, bool summon = false, IReadOnlyList<CardActionEffect>? effects = null)
     {
         CombatContext context = Context(hand: true);
         TrainCombatState train = Train(context, Pyre());
         var spawn = new EnemySpawnState(train, [new([new([])])], [-1], 0, false, context.BattleRng, 2, [], 0, false, 2, 0, 1, []);
         var unit = new CombatUnit(0, "unit", CombatTeam.Player, 1, 1, 1, true, false, false, [], size: 1);
         var rule = new CardPlayRule("spell", "spell", 0, summon ? "SpawnMonster" : "Spell", summon ? "Standby" : "Discard",
-            summon ? unit : null, [], [new("BuffAttack", "Pyre", 3, false, false, [])],
-            canPlayInEngineRoom: permission);
+            summon ? unit : null, [], effects ?? [new("BuffAttack", "Pyre", 3, false, false, [])],
+            canPlayInEngineRoom: permission, cardType: summon ? "Monster" : "Spell");
         var rules = new BattlePlayRules([new(0, 5, 7, true, false, false), new(1, 0, 7, true, true, true)], [rule]);
         return new(spawn, 3, 3, 5, 0, 0, "New", [], [new("Standby", []), new("Exhausted", []), new("Purged", [])], [], rules);
     }

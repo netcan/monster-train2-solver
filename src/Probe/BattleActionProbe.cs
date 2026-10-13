@@ -15,6 +15,7 @@ namespace MonsterTrain2Poju.Probe
             "CardEffectSetUnitAbility", "CardEffectRemoveAbility", "CardEffectResetCooldown", "CardEffectAdjustAbilityCooldown",
             "CardEffectAttachEquipment", "CardEffectAttachTrainRoomAttachment", "CardEffectBuffEquipment", "CardEffectRemoveEquipment",
             "CardEffectRewardGold", "CardEffectGainEnergy", "CardEffectAdjustEnergy", "CardEffectGainEnergyNextTurn", "CardEffectGainEnergyEveryTurn",
+            "CardEffectAdjustDragonsHoard", "CardEffectRewardGoldPerDragonHoard",
             "CardEffectDamage", "CardEffectDamagePerSourceAttack", "CardEffectDamagePerHp", "CardEffectDraw", "CardEffectDrawAdditionalNextTurn",
             "CardEffectAdjustRoomCapacity", "CardEffectAdjustForgePoints", "CardEffectDiscardHand", "CardEffectRandomDiscard", "CardEffectAddBattleCard",
             "CardEffectHeal", "CardEffectSacrifice", "CardEffectKill", "CardEffectRecursion", "CardEffectBuffDamage", "CardEffectDebuffDamage",
@@ -267,6 +268,8 @@ namespace MonsterTrain2Poju.Probe
                 effect.GetEffectStateName() == "CardEffectAttachEquipment" ? "AttachEquipment" :
                 effect.GetEffectStateName() == "CardEffectBuffEquipment" ? "BuffEquipment" :
                 effect.GetEffectStateName() == "CardEffectRemoveEquipment" ? "RemoveEquipment" :
+                effect.GetEffectStateName() == "CardEffectAdjustDragonsHoard" ? "AdjustDragonsHoard" :
+                effect.GetEffectStateName() == "CardEffectRewardGoldPerDragonHoard" ? "RewardGoldPerDragonHoard" :
                 effect.GetEffectStateName() == "CardEffectRewardGold" ? "RewardGold" :
                 effect.GetEffectStateName() == "CardEffectDamage" ? "Damage" :
                 effect.GetEffectStateName() == "CardEffectDamagePerSourceAttack" ? "DamagePerSourceAttack" :

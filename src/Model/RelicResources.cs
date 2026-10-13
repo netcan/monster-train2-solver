@@ -23,10 +23,11 @@ namespace MonsterTrain2Poju.Model
         public IReadOnlyList<string> MutatorIds { get; }
         public float GoldRewardMultiplier { get; }
         public int? BaseFloorCapacity { get; }
+        public int? DragonsHoardCap { get; }
         public BattleResourceState(int baseEnergy, int deploymentExtraEnergy, int baseDraw, int maxEnergy, int maxHandSize,
             string pyreDataId, int pyreBaseAttack, int basePyreMaxHealth, int pyrePersistentDamage, int pyreModifiedBaseAttack,
             IReadOnlyList<int> upgradeAttack, IReadOnlyList<int> upgradeHealth, IReadOnlyList<string> mutatorIds,
-            float goldRewardMultiplier = 1f, int? baseFloorCapacity = null)
+            float goldRewardMultiplier = 1f, int? baseFloorCapacity = null, int? dragonsHoardCap = null)
         {
             BaseEnergy = baseEnergy; DeploymentExtraEnergy = deploymentExtraEnergy; BaseDraw = baseDraw;
             MaxEnergy = maxEnergy; MaxHandSize = maxHandSize; PyreDataId = pyreDataId; PyreBaseAttack = pyreBaseAttack;
@@ -34,6 +35,7 @@ namespace MonsterTrain2Poju.Model
             PyreModifiedBaseAttack = pyreModifiedBaseAttack;
             GoldRewardMultiplier = goldRewardMultiplier;
             BaseFloorCapacity = baseFloorCapacity;
+            DragonsHoardCap = dragonsHoardCap;
             UpgradeAttack = Array.AsReadOnly(upgradeAttack.ToArray()); UpgradeHealth = Array.AsReadOnly(upgradeHealth.ToArray());
             MutatorIds = Array.AsReadOnly(mutatorIds.ToArray());
         }

@@ -501,21 +501,37 @@ namespace MonsterTrain2Poju.Model
                     effect = new CardActionEffect("Damage", "FrontInRoom", perHpDamage,
                         damagesEnemy, !damagesEnemy, [], range: null);
                 }
-                if (effect.Type == "RewardGold")
+                if (effect.Type == "RewardGold" || effect.Type == "RewardGoldPerDragonHoard")
                 {
                     // Native previews test the effect but skip its iterator body.
                     if (!selected.Preview)
                     {
-                        TrainCombatResult gold = GoldModel.Adjust(state, effect.Value, isReward: true);
+                        int amount = effect.Type == "RewardGoldPerDragonHoard"
+                            ? unchecked(effect.Value * state.Context!.QueryFrame!.DragonsHoard!.Value)
+                            : effect.Value;
+                        TrainCombatResult gold = GoldModel.Adjust(state, amount, isReward: true);
                         if (!gold.Supported) return UnsupportedTrain(gold.UnsupportedReason!);
                         state = gold.State!;
-                        if (effect.Value != 0 && !fullTrain && refreshPyre != null &&
+                        if (amount != 0 && !fullTrain && refreshPyre != null &&
                             !state.Rooms.SelectMany(room => room.Units).Any(unit => unit.IsPyre))
                         {
                             RelicPyreAttackRefreshResult refreshed = Refresh(state.Context!, selected.Deployment);
                             if (!refreshed.Supported) return UnsupportedTrain(refreshed.UnsupportedReason!);
                             state = WithContext(state, refreshed.Context!);
                         }
+                    }
+                    continue;
+                }
+                if (effect.Type == "AdjustDragonsHoard")
+                {
+                    if (!selected.Preview)
+                    {
+                        CombatContext context = state.Context!;
+                        StatisticQueryFrame frame = context.QueryFrame!;
+                        int cap = context.Resources!.DragonsHoardCap!.Value;
+                        int amount = Math.Clamp(unchecked(frame.DragonsHoard!.Value + effect.Value), 0, cap);
+                        if (amount != frame.DragonsHoard.Value)
+                            state = WithContext(state, context.WithQueryFrame(frame.With(dragonsHoard: amount)));
                     }
                     continue;
                 }
@@ -1125,6 +1141,11 @@ namespace MonsterTrain2Poju.Model
                 return "Unit ability teleport requires its activating actor and captured train spawn points.";
             if (!fullTrain && effects.Any(effect => CardTargetModel.IsCrossRoom(effect.Target)))
                 return "Cross-room spells require the complete train state.";
+            if (fullTrain)
+            {
+                string? hoardRefreshError = ValidateHoardRefresh(source.Rooms.SelectMany(room => room.Units), source.Context, effects);
+                if (hoardRefreshError != null) return hoardRefreshError;
+            }
             string? validation = Validate(selected, effects, targetId);
             if (validation != null) return validation;
             if (CardTargetModel.IsRandom(effects[0].Target))
@@ -1264,6 +1285,23 @@ namespace MonsterTrain2Poju.Model
                     if (source.Context.Resources == null) return "Gold rewards require captured Pyre and gold resource rules.";
                     continue;
                 }
+                if (effect.Type == "AdjustDragonsHoard")
+                {
+                    if (effect.Range != null) return "Dragon's Hoard adjustments with setup-time ranges require captured runtime amounts.";
+                    if (source.Context.QueryFrame?.DragonsHoard == null || source.Context.Resources?.DragonsHoardCap == null)
+                        return "Dragon's Hoard adjustments require captured current amount and cap.";
+                    if (source.Context.Resources.DragonsHoardCap < 0) return "Invalid Dragon's Hoard cap.";
+                    string? hoardRefreshError = ValidateHoardRefresh(source.Units, source.Context, [effect]);
+                    if (hoardRefreshError != null) return hoardRefreshError;
+                    continue;
+                }
+                if (effect.Type == "RewardGoldPerDragonHoard")
+                {
+                    if (effect.Range != null) return "Dragon's Hoard gold rewards with setup-time ranges require captured runtime amounts.";
+                    if (source.Context.QueryFrame?.DragonsHoard == null || source.Context.Resources == null)
+                        return "Dragon's Hoard gold rewards require captured amount and gold resource rules.";
+                    continue;
+                }
                 if (effect.Type == "HandUpgrade")
                 {
                     if (effect.Upgrade == null) return "Missing hand upgrade definition.";
@@ -1352,7 +1390,7 @@ namespace MonsterTrain2Poju.Model
                     return "Missing unit upgrade definition.";
                 if (effect.Type == "BuffEquipment" && effect.Lifetime != "TemporaryUntilUnitDeath")
                     return "Equipment buffs require the native unit-death lifetime.";
-                if (effect.Value < 0 && !AttackChange(effect) && effect.Type != ForgePointsModel.Effect && !new[] { "CopyUnits", "Bump", "Damage", "DamagePerSourceAttack", "DamagePerHp", "Heal", "AddStatus", "AddStatusPerOtherEffect", "SpawnOrStatus", "MultiplyAllPositiveStatusEffects", "AdjustAllStatusEffects", "BuffHealth", "DebuffHealth", "Draw", "DiscardHand", "Generate" }.Contains(effect.Type) ||
+                if (effect.Value < 0 && !AttackChange(effect) && effect.Type != ForgePointsModel.Effect && !new[] { "CopyUnits", "Bump", "Damage", "DamagePerSourceAttack", "DamagePerHp", "Heal", "AddStatus", "AddStatusPerOtherEffect", "SpawnOrStatus", "MultiplyAllPositiveStatusEffects", "AdjustAllStatusEffects", "AdjustDragonsHoard", "BuffHealth", "DebuffHealth", "Draw", "DiscardHand", "Generate" }.Contains(effect.Type) ||
                     effect.Type == "FloorRearrange" && effect.Value > 1) return "Invalid spell effect value.";
                 if (effect.Type == "BuffHealth" && effect.Lifetime != "" && effect.Lifetime != "TemporaryUntilEndOfBattle" &&
                     effect.Lifetime != "TemporaryUntilUnitDeath") return "Unmodeled maximum-health buff lifetime.";
@@ -1378,6 +1416,21 @@ namespace MonsterTrain2Poju.Model
                 }
             }
             return null;
+        }
+
+        private static string? ValidateHoardRefresh(IEnumerable<CombatUnit> units, CombatContext? context,
+            IReadOnlyList<CardActionEffect> effects)
+        {
+            if (context?.QueryFrame?.DragonsHoard is not int current || context.Resources?.DragonsHoardCap is not int cap || cap < 0)
+                return null;
+            bool changes = effects.Where(effect => effect.Type == "AdjustDragonsHoard")
+                .Any(effect => Math.Clamp(unchecked(current + effect.Value), 0, cap) != current);
+            if (!changes) return null;
+            return units.Where(unit => unit.Team == CombatTeam.Player && unit.SpawnerCardId > 0)
+                .Any(unit => context.FindCard(unit.SpawnerCardId)?.UnitUpgradeScalingTraits?
+                    .Any(trait => trait.Query.Type == "DragonsHoardAmount") == true)
+                ? "Dragon's Hoard changes with active resource-scaled unit upgrades require native stat refresh."
+                : null;
         }
 
         private static CardTargets Collect(TrainCombatState state, int roomIndex, CardActionEffect effect, IReadOnlyList<int> last,
@@ -1435,6 +1488,8 @@ namespace MonsterTrain2Poju.Model
         {
             if (effect.Type == "RewardGold") return context != null && (pyreAlive ?? context.EnergyState?.PyreAlive) == true &&
                 (effect.Value >= 0 || effect.GoldCostRequired == false || context.Gold >= unchecked(-effect.Value));
+            if (effect.Type == "AdjustDragonsHoard") return (pyreAlive ?? context?.EnergyState?.PyreAlive) == true;
+            if (effect.Type == "RewardGoldPerDragonHoard") return effect.Value > 0;
             if (effect.Type == "AdjustCapacity") return !preview && !bossDead && RoomCapacityModel.Test(room, effect);
             if (effect.Type == "AttachRoomCapacity") return !preview && !bossDead && RoomCapacityModel.TestAttachment(room, effect);
             if (effect.Type == ForgePointsModel.Effect) return ForgePointsModel.Test(pyreAlive ?? context?.EnergyState?.PyreAlive);
