@@ -30,8 +30,8 @@ The default command checks the full curated inventory. For routine changes, run
 the dedicated checks for the new and directly affected scenarios; run the full
 inventory at completed milestones and before delivery.
 
-Current inventory is 272 archives: 241 accepted battles and 31 component
-calibrations. Original relic evidence is 75/224 (33.48%). The schema-146
+Current inventory is 273 archives: 242 accepted battles and 31 component
+calibrations. Original relic evidence is 76/224 (33.93%). The schema-146
 `full-battle-original-moon-phase-energy-relic.mt2f`
 archive adds accepted native evidence for the unchanged `MoonPhaseModifyEmber`
 relic: three Full callbacks add one Ember and notify; three New callbacks are
@@ -3642,4 +3642,26 @@ companion is tracked.
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-spawn-status-relics-tuned-gear.mt2f
 dotnet run --project src/ModelChecks -c Release -- --relic-spawn-status-only tests/fixtures/full-battle-spawn-status-relics-tuned-gear.mt2f
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-spawn-status-relics-tuned-gear.mt2f
+```
+
+### BalatroEventChicot Mute relic (schema 156)
+
+`full-battle-spawn-status-relics-boss-mute.mt2f` records the unchanged original
+`BalatroEventChicot` relic applying 3 Muted to an enemy BossAll birth. The native
+replay matches all 52 battle stages, 18 actions and six EndTurns, with zero
+capture failures, mismatches, unsupported transitions or pending records. The
+focused relic check verifies the exact owner/filter/payload, one BossAll witness,
+and 32 isolated birth branches. The model's trigger checks preserve
+IgnoreSilence callbacks and ordinary attacks while suppressing other triggers on
+Muted units. Original relic evidence is now 76/224 (33.93%).
+
+The schema-156 binary is 36,240 bytes with 5,566 unique nodes and SHA-256
+`9bc308cd45b8a6984544b01bfd5a44567c66accf0e54c01c078007d99b197d0d`; no JSON
+companion is tracked. The inventory is now 273 archives: 242 accepted battles
+and 31 component calibrations.
+
+```powershell
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-spawn-status-relics-boss-mute.mt2f
+dotnet run --project src/ModelChecks -c Release -- --relic-spawn-status-only tests/fixtures/full-battle-spawn-status-relics-boss-mute.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-spawn-status-relics-boss-mute.mt2f
 ```

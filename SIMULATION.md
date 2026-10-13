@@ -1,8 +1,8 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-13): 272 binary archives, including 241
+Current accepted inventory (2026-10-13): 273 binary archives, including 242
 full battles and 31 component calibrations. Unchanged original relic evidence
-covers 75/224 catalog entries (33.48%); see
+covers 76/224 catalog entries (33.93%); see
 [the owner evidence table](tests/fixtures/relic-coverage.md). Whole-battle
 coverage and the optimal solver remain in progress.
 
@@ -170,6 +170,25 @@ JSON companion. Original relic evidence is now 75/224 (33.48%).
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-spawn-status-relics-tuned-gear.mt2f
 dotnet run --project src/ModelChecks -c Release -- --relic-spawn-status-only tests/fixtures/full-battle-spawn-status-relics-tuned-gear.mt2f
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-spawn-status-relics-tuned-gear.mt2f
+```
+
+### BalatroEventChicot Mute relic (schema 156)
+
+`full-battle-spawn-status-relics-boss-mute.mt2f` captures the unchanged Chicot
+relic adding 3 Muted to an enemy BossAll birth. The native battle replay matches
+52 stages, 18 actions and six EndTurns; capture failures, mismatches, unsupported
+transitions and pending records are zero. The focused native check confirms the
+relic owner, enemy BossAll filter and status payload, then matches 32 isolated
+birth branches. Model checks confirm Muted suppresses ordinary character
+triggers, permits IgnoreSilence callbacks, and does not cancel attacks.
+
+The 36,240-byte schema-156 archive has 5,566 unique nodes and SHA-256
+`9bc308cd45b8a6984544b01bfd5a44567c66accf0e54c01c078007d99b197d0d`, with no
+JSON companion. Inventory is now 273 archives: 242 battles and 31 component
+calibrations. Original relic evidence covers 76/224 owners (33.93%).
+
+```powershell
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-spawn-status-relics-boss-mute.mt2f
 ```
 
 ### Relic temporary DamageOverflow trait

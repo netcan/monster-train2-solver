@@ -93,6 +93,7 @@ $fixtureNames = @('full-battle-steward-once.mt2f', 'full-battle-no-cards.mt2f', 
     'full-battle-original-stealth-waxers.mt2f',
     'full-battle-original-team-spawn-status.mt2f',
     'full-battle-spawn-status-relics-tuned-gear.mt2f',
+    'full-battle-spawn-status-relics-boss-mute.mt2f',
     'full-battle-original-mageblade-magnitude.mt2f',
     'full-battle-cardless-relic-upgrades.mt2f',
     'full-battle-energy-effects.mt2f',
@@ -249,6 +250,16 @@ foreach ($fixturePath in $focusedTeamSpawnStatusFixtures) {
     foreach ($mode in @('--room-combat-only', '--native-actions-only', '--unit-clone-only')) {
         dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- $mode $fixturePath
         if ($LASTEXITCODE -ne 0) { throw "Team-wide spawn status checks failed ($mode): $fixturePath" }
+    }
+}
+
+$focusedChicotFixtures = @($fixtures | Where-Object {
+    (Split-Path -Leaf $_) -eq 'full-battle-spawn-status-relics-boss-mute.mt2f'
+})
+foreach ($fixturePath in $focusedChicotFixtures) {
+    foreach ($mode in @('--relic-spawn-status-only', '--battle-search-only')) {
+        dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- $mode $fixturePath
+        if ($LASTEXITCODE -ne 0) { throw "Chicot Mute checks failed ($mode): $fixturePath" }
     }
 }
 

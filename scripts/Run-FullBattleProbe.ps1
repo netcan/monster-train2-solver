@@ -185,6 +185,7 @@ param(
     [switch] $IncantRelics,
     [switch] $SpawnStatusRelics,
     [switch] $OriginalTunedGearRelic,
+    [switch] $OriginalChicotRelic,
     [switch] $OriginalStealthWaxersRelic,
     [switch] $OriginalTeamSpawnStatusRelic,
     [switch] $SpawnStatusRelicsClones,
@@ -237,7 +238,11 @@ $ErrorActionPreference = 'Stop'
 if ($OriginalTunedGearRelic -and ($OriginalStealthWaxersRelic -or $OriginalTeamSpawnStatusRelic -or $SpawnStatusRelicsClones -or $MixedCardlessRelicOrder)) {
     throw 'OriginalTunedGearRelic is an isolated spawn-status scenario.'
 }
+if ($OriginalChicotRelic -and ($OriginalTunedGearRelic -or $OriginalStealthWaxersRelic -or $OriginalTeamSpawnStatusRelic -or $SpawnStatusRelicsClones -or $MixedCardlessRelicOrder)) {
+    throw 'OriginalChicotRelic is an isolated spawn-status scenario.'
+}
 if ($OriginalTunedGearRelic) { $SpawnStatusRelics = $true; $Policy = 'units-spells-and-junk' }
+if ($OriginalChicotRelic) { $SpawnStatusRelics = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalStealthWaxersRelic) { $SpawnStatusRelics = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalTeamSpawnStatusRelic) { $SpawnStatusRelics = $true; $SpawnStatusRelicsClones = $true; $Policy = 'units-spells-and-junk' }
 if ($RoomCapacityAttachment) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
@@ -441,7 +446,7 @@ if ($Purify) {
 }
 
 if ($SpawnStatusRelics) {
-    $environment['MT2_PROBE_MODIFIERS'] = $(if ($OriginalTunedGearRelic) { 'spawn-status-relics-tuned-gear' } elseif ($OriginalTeamSpawnStatusRelic) { 'spawn-status-relics-team-wide' } elseif ($OriginalStealthWaxersRelic) { 'spawn-status-relics-stealth-waxers' } elseif ($SpawnStatusRelicsClones) { 'spawn-status-relics-clones' } else { 'spawn-status-relics' })
+    $environment['MT2_PROBE_MODIFIERS'] = $(if ($OriginalChicotRelic) { 'spawn-status-relics-boss-mute' } elseif ($OriginalTunedGearRelic) { 'spawn-status-relics-tuned-gear' } elseif ($OriginalTeamSpawnStatusRelic) { 'spawn-status-relics-team-wide' } elseif ($OriginalStealthWaxersRelic) { 'spawn-status-relics-stealth-waxers' } elseif ($SpawnStatusRelicsClones) { 'spawn-status-relics-clones' } else { 'spawn-status-relics' })
     $environment['MT2_PROBE_STATUS_CALLBACKS'] = '1'
 }
 if ($MixedCardlessRelicOrder) {
@@ -2237,11 +2242,12 @@ if ($SpawnStatusRelics) {
             } elseif ($oldShield.DurationTriggerCount -eq 1 -and $newShield.DurationTriggerCount -eq 1) { $spawnRelicSkips++ }
         } else { $spawnRelicEnemies++ }
     }
-    $expectedSpawnScenario = if ($OriginalTunedGearRelic) { 'spawn-status-relics-tuned-gear' } elseif ($OriginalTeamSpawnStatusRelic) { 'spawn-status-relics-team-wide' } elseif ($OriginalStealthWaxersRelic) { 'spawn-status-relics-stealth-waxers' } elseif ($MixedCardlessRelicOrder) { 'spawn-status-relics-mixed-cardless-order' } elseif ($SpawnStatusRelicsClones) { 'spawn-status-relics-clones' } else { 'spawn-status-relics' }
-    $expectedSpawnSchema = if ($OriginalTunedGearRelic) { 155 } elseif ($OriginalTeamSpawnStatusRelic) { 144 } elseif ($OriginalStealthWaxersRelic) { 140 } elseif ($MixedCardlessRelicOrder) { 121 } elseif ($SpawnStatusRelicsClones) { 111 } else { 110 }
+    $expectedSpawnScenario = if ($OriginalChicotRelic) { 'spawn-status-relics-boss-mute' } elseif ($OriginalTunedGearRelic) { 'spawn-status-relics-tuned-gear' } elseif ($OriginalTeamSpawnStatusRelic) { 'spawn-status-relics-team-wide' } elseif ($OriginalStealthWaxersRelic) { 'spawn-status-relics-stealth-waxers' } elseif ($MixedCardlessRelicOrder) { 'spawn-status-relics-mixed-cardless-order' } elseif ($SpawnStatusRelicsClones) { 'spawn-status-relics-clones' } else { 'spawn-status-relics' }
+    $expectedSpawnSchema = if ($OriginalChicotRelic) { 156 } elseif ($OriginalTunedGearRelic) { 155 } elseif ($OriginalTeamSpawnStatusRelic) { 144 } elseif ($OriginalStealthWaxersRelic) { 140 } elseif ($MixedCardlessRelicOrder) { 121 } elseif ($SpawnStatusRelicsClones) { 111 } else { 110 }
     $requiredSpawnRelics = @('SpawnWithArmor', 'FirstUnitGainDamageShield', 'FrostbiteOnEnemies')
     if ($MixedCardlessRelicOrder) { $requiredSpawnRelics = @('PyreHeartSon', 'FirstUnitGainDamageShield', 'FrostbiteOnEnemies') }
     if ($OriginalStealthWaxersRelic) { $requiredSpawnRelics += 'StealthWaxers' }
+    if ($OriginalChicotRelic) { $requiredSpawnRelics += 'BalatroEventChicot' }
     if ($OriginalTeamSpawnStatusRelic) { $requiredSpawnRelics += 'HymnistsApplyValorOnSummon' }
     if ($OriginalTunedGearRelic) { $requiredSpawnRelics += 'TunedGear' }
     $observedSpawnRelics = @($trace.Actions[0].Before.Spawn.Train.Context.Relics | Where-Object { $_.AssetKey -in $requiredSpawnRelics }).Count
@@ -2252,6 +2258,38 @@ if ($SpawnStatusRelics) {
         @($births | Where-Object { -not $_.Completed -or -not $_.After -or $_.Difference }).Count -ne 0 -or
         $observedSpawnRelics -ne $requiredSpawnRelics.Count) {
         throw 'Native original spawn-status relic coverage is incomplete or failed.'
+    }
+    if ($OriginalChicotRelic) {
+        $chicotId = '92d66578-b148-49f8-9880-edb67f8b18de'
+        $chicotRelic = @($trace.Actions[0].Before.Spawn.Train.Context.Relics | Where-Object {
+            $_.AssetKey -eq 'BalatroEventChicot' -and $_.DataId -eq $chicotId
+        })
+        if ($chicotRelic.Count -ne 1 -or $chicotRelic[0].EffectTypes.Count -ne 1 -or
+            $chicotRelic[0].EffectTypes[0] -ne 'RelicEffectAddStatusEffectOnSpawn' -or
+            $chicotRelic[0].SpawnStatuses.Count -ne 1 -or $chicotRelic[0].SpawnStatuses[0].TargetPlayer -or
+            -not $chicotRelic[0].SpawnStatuses[0].TargetEnemy -or
+            $chicotRelic[0].SpawnStatuses[0].RequiredSubtype -ne 'SubtypesData_BossAll' -or
+            $chicotRelic[0].SpawnStatuses[0].Statuses.Count -ne 1 -or
+            $chicotRelic[0].SpawnStatuses[0].Statuses[0].Id -ne 'muted' -or
+            $chicotRelic[0].SpawnStatuses[0].Statuses[0].Stacks -ne 3 -or
+            $chicotRelic[0].SpawnStatuses[0].Conditions.Count -ne 0) {
+            throw 'Original BalatroEventChicot identity, Boss filter or Mute payload is missing.'
+        }
+        $chicotWitnesses = 0
+        foreach ($birth in $births) {
+            $beforeActor = @($birth.Before.Units | Where-Object { $_.Id -eq $birth.UnitId })[0]
+            $afterActor = @($birth.After.Units | Where-Object { $_.Id -eq $birth.UnitId })[0]
+            $beforeMute = @($beforeActor.Statuses | Where-Object Id -EQ 'muted')
+            $afterMute = @($afterActor.Statuses | Where-Object Id -EQ 'muted')
+            $beforeStacks = if ($beforeMute.Count) { [int]$beforeMute[0].Stacks } else { 0 }
+            $afterStacks = if ($afterMute.Count) { [int]$afterMute[0].Stacks } else { 0 }
+            if ($beforeActor.Team -eq 0 -and $beforeActor.IsBoss -eq $true -and
+                $beforeActor.Subtypes -contains 'SubtypesData_BossAll' -and $afterStacks -eq ($beforeStacks + 3)) {
+                $chicotWitnesses++
+            }
+        }
+        if ($chicotWitnesses -eq 0) { throw 'Original BalatroEventChicot produced no positive Boss mute birth witness.' }
+        Write-Output "ORIGINAL-CHICOT-MUTE PASS: BossAll birth states gained three Mute stacks in $chicotWitnesses native witness."
     }
     if ($OriginalStealthWaxersRelic) {
         $stealthId = '22f5ff29-69be-4043-9fe1-245392ea3c95'

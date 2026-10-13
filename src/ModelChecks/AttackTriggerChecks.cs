@@ -72,6 +72,12 @@ internal static class AttackTriggerChecks
              Trigger("OnAttacking", [Gold(99)], threshold: 1)], [new("silenced", 1)]), Unit(4, CombatTeam.Enemy, 0, 10, 10)), 1);
         Require(silent.Supported && silent.State!.Context!.Gold == 5 && !silent.State.Units[0].Triggers[2].HasTriggered,
             "Attack callbacks ignored silence or supplied an HP threshold argument instead of native zero.");
+        var muted = RoomCombatModel.ApplyUnitTurn(Room(Unit(1, CombatTeam.Player, 4, 10, 10,
+            [Trigger("OnAttackingBeforeDamage", [Gold(1)], ignored: true), Trigger("OnAttacking", [Gold(2)], ignored: false)],
+            [new("muted", 3)]), Unit(4, CombatTeam.Enemy, 0, 10, 10)), 1);
+        Require(muted.Supported && muted.State!.Context!.Gold == 5 && !muted.State.Units[0].Triggers[1].HasTriggered &&
+            muted.State.Units[1].Health == 6,
+            "Mute did not suppress ordinary triggers while preserving IgnoreSilence callbacks and attacks.");
 
         var fallback = RoomCombatModel.ApplyUnitTurn(Room(Unit(1, CombatTeam.Player, 0, 10, 10,
             [Trigger("OnTurnBegin", [Up(Upgrade("fallback", 0, 0, 2), "LastAttackedCharacter", enemy: true, player: false,

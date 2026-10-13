@@ -408,7 +408,7 @@ namespace MonsterTrain2Poju.Model
             "armor", "damage shield", "dazed", "stealth", "ambush", "multistrike", "burst",
             "spikes", "lifesteal", "fragile", "piercing", "immune", "immobile",
             "relentless", "sweep", "sniper", "rooted", "haste", "untouchable", "endless",
-            "buff", "debuff", "regen", "poison", "corrupt_poison", "melee weakness", "spell weakness", "silenced", "valor", "pyregel",
+            "buff", "debuff", "regen", "poison", "corrupt_poison", "melee weakness", "spell weakness", "silenced", "muted", "valor", "pyregel",
             "heal multiplier", "heal immunity", "cooldown", "unit_ability", "unit_ability_available", "horde", "cardless", "undying", "ephemeral", "purify", "mageblade", "titanskin", "duality",
             "newmoon", "fullmoon"
         };
@@ -2487,7 +2487,7 @@ namespace MonsterTrain2Poju.Model
                         trigger.TriggerAtThreshold > 0 && paramInt < trigger.TriggerAtThreshold ||
                         source.Deployment && trigger.SkipDuringDeployment == true ||
                         !canFireTriggers && !trigger.IgnoreSilence ||
-                        unit.Has("silenced") && !trigger.IgnoreSilence) continue;
+                        (unit.Has("silenced") || unit.Has("muted")) && !trigger.IgnoreSilence) continue;
                     if (trigger.Conditions != null && (trigger.Conditions.RequiredStatuses.Any(id => !Present(unit, id)) ||
                         dyingCharacter != null && trigger.Conditions.RequiredDyingStatuses.Any(id => !Present(dyingCharacter, id)))) continue;
                     // Removed native characters have no spawn point and skip trigger

@@ -212,7 +212,7 @@ internal static class StatusCallbackChecks
                 "Native Purify status notification coverage incomplete.");
         else if (fixture.TryGetProperty("ModifierScenario", out var spawnRelicScenario) && spawnRelicScenario.GetString() is
             "spawn-status-relics" or "spawn-status-relics-clones" or "spawn-status-relics-mixed-cardless-order" or
-            "spawn-status-relics-stealth-waxers" or "spawn-status-relics-tuned-gear")
+            "spawn-status-relics-stealth-waxers" or "spawn-status-relics-tuned-gear" or "spawn-status-relics-boss-mute")
             Require(kinds.IsSupersetOf(["OnStatusEffectChanged", "OnArmorAdded", "OnNewStatusEffectAdded"]) && reward > 0 && enemy > 0,
                 "Native relic spawn status callback coverage incomplete.");
         else

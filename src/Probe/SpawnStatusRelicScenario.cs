@@ -15,6 +15,8 @@ namespace MonsterTrain2Poju.Probe
             Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == "spawn-status-relics-team-wide";
         internal static bool OriginalTunedGearRelic =>
             Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == "spawn-status-relics-tuned-gear";
+        internal static bool OriginalChicotRelic =>
+            Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == "spawn-status-relics-boss-mute";
         internal static bool Clones => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") is
             "spawn-status-relics-clones" or "spawn-status-relics-mixed-cardless-order" or "spawn-status-relics-team-wide";
         internal static bool MixedCardlessOrder => Environment.GetEnvironmentVariable("MT2_PROBE_MIXED_CARDLESS_RELIC_ORDER") == "1";
@@ -40,6 +42,7 @@ namespace MonsterTrain2Poju.Probe
             Acquire("60a2a8a3-5f7a-4a9d-b427-5f261145fa1f", "FirstUnitGainDamageShield");
             Acquire("270356af-16bd-4433-a0b2-3e5bb94ef890", "FrostbiteOnEnemies");
             if (OriginalTunedGearRelic) Acquire("f12924bc-0600-4de0-ae2a-93534f251eb1", "TunedGear");
+            if (OriginalChicotRelic) Acquire("92d66578-b148-49f8-9880-edb67f8b18de", "BalatroEventChicot");
             if (OriginalStealthWaxersRelic) AcquireStealthWaxers();
             if (OriginalTeamSpawnStatusRelic) AcquireTeamSpawnStatus();
             if (Clones) AcquireCardlessUpgrade();
@@ -54,7 +57,7 @@ namespace MonsterTrain2Poju.Probe
             }
             Prepared = true;
             AccessTools.Field(typeof(CombatManager), "combatStateChanged").SetValue(managers.GetCombatManager(), true);
-            log.LogInfo("SPAWN-STATUS-RELICS-PREPARED original relic definitions unchanged; TunedGear=" + OriginalTunedGearRelic + "; Hymnist carrier test=" + OriginalTeamSpawnStatusRelic + "; StealthWaxers=" + OriginalStealthWaxersRelic + "; clones/extra-spawn=" + Clones + "; native Boss/waves retained.");
+            log.LogInfo("SPAWN-STATUS-RELICS-PREPARED original relic definitions unchanged; TunedGear=" + OriginalTunedGearRelic + "; Chicot=" + OriginalChicotRelic + "; Hymnist carrier test=" + OriginalTeamSpawnStatusRelic + "; StealthWaxers=" + OriginalStealthWaxersRelic + "; clones/extra-spawn=" + Clones + "; native Boss/waves retained.");
 
             void Acquire(string id, string key)
             {
