@@ -17,6 +17,7 @@ namespace MonsterTrain2Poju.Probe
         internal static bool ExhaustUpgrade => Environment.GetEnvironmentVariable("MT2_PROBE_RELIC_CARD_EXHAUST_UPGRADE") == "1";
         internal static bool EphemeralUpgrade => Environment.GetEnvironmentVariable("MT2_PROBE_RELIC_CARD_EPHEMERAL_UPGRADE") == "1";
         internal static bool ExtraToughTombs => Environment.GetEnvironmentVariable("MT2_PROBE_RELIC_CARD_HEALTH_UPGRADE") == "1";
+        internal static bool UnhealedHealthUpgrade => Environment.GetEnvironmentVariable("MT2_PROBE_RELIC_CARD_UNHEALED_UPGRADE") == "1";
         internal const string TombSubtypeKey = "SubtypesData_Tomb";
         internal static string? TombCarrierCardId { get; private set; }
         internal static bool TombCarrierPrepared { get; private set; }
@@ -81,10 +82,11 @@ namespace MonsterTrain2Poju.Probe
             int selectedScenario = new[] { "MT2_PROBE_RELIC_CARD_STATUS_UPGRADE", "MT2_PROBE_RELIC_CARD_PIERCING_UPGRADE",
                 "MT2_PROBE_RELIC_CARD_SELF_PURGE_UPGRADE", "MT2_PROBE_RELIC_CARD_EXHAUST_UPGRADE", "MT2_PROBE_RELIC_CARD_ABILITY_UPGRADE",
                 "MT2_PROBE_RELIC_CARD_TRIGGER_UPGRADE", "MT2_PROBE_RELIC_CARD_REPLACEMENT_UPGRADE",
-                "MT2_PROBE_RELIC_CARD_EPHEMERAL_UPGRADE", "MT2_PROBE_RELIC_CARD_HEALTH_UPGRADE" }
+                "MT2_PROBE_RELIC_CARD_EPHEMERAL_UPGRADE", "MT2_PROBE_RELIC_CARD_HEALTH_UPGRADE",
+                "MT2_PROBE_RELIC_CARD_UNHEALED_UPGRADE" }
                 .Count(name => Environment.GetEnvironmentVariable(name) == "1");
             if (AllUnitsMultistrikeMutator) selectedScenario++;
-            if (selectedScenario > 1) throw new InvalidOperationException("Relic card status, piercing, self-purge, exhaust, Ephemeral, health, ability, trigger and replacement scenarios are mutually exclusive.");
+            if (selectedScenario > 1) throw new InvalidOperationException("Relic card status, piercing, self-purge, exhaust, Ephemeral, health, unhealed-health, ability, trigger and replacement scenarios are mutually exclusive.");
             var save = managers.GetSaveManager();
             var data = save.GetAllGameData();
             CollectableRelicData? originalRelic = null;
@@ -153,6 +155,7 @@ namespace MonsterTrain2Poju.Probe
                 InstallSelfPurgeUpgrade(relicEffect);
             if (!AllUnitsMultistrikeMutator && ExhaustUpgrade) InstallExhaustUpgrade(relicEffect);
             if (!AllUnitsMultistrikeMutator && EphemeralUpgrade) InstallEphemeralUpgrade(relicEffect);
+            if (!AllUnitsMultistrikeMutator && UnhealedHealthUpgrade) InstallUnhealedHealthUpgrade(relicEffect);
             bool abilityScenario = !AllUnitsMultistrikeMutator && Environment.GetEnvironmentVariable("MT2_PROBE_RELIC_CARD_ABILITY_UPGRADE") == "1";
             if (abilityScenario) InstallStewardAbilityUpgrade(save.GetAllGameData(), relicEffect);
             bool triggerScenario = !AllUnitsMultistrikeMutator && Environment.GetEnvironmentVariable("MT2_PROBE_RELIC_CARD_TRIGGER_UPGRADE") == "1";
@@ -173,6 +176,7 @@ namespace MonsterTrain2Poju.Probe
             }
             var eligibleCandidates = owned.Where(card => filters.All(filter => filter.FilterCard(card, managers.GetRelicManager())))
                 .Where(card => !ExtraToughTombs || card.GetCardDataID() == TombCarrierCardId)
+                .Where(card => !UnhealedHealthUpgrade || card.IsSpawnerCard())
                 .Where(card => !ExhaustUpgrade || card.GetTraitStates().All(trait =>
                     trait is not CardTraitSelfPurge && trait is not CardTraitExhaustState))
                 .Where(card => !EphemeralUpgrade || card.GetTraitStates().All(trait =>
@@ -190,8 +194,8 @@ namespace MonsterTrain2Poju.Probe
                 eligibleCandidates = new[] { heldCard, playableCard };
             }
             var eligible = eligibleCandidates
-                .Take(AllUnitsMultistrikeMutator || abilityScenario || triggerScenario || replacementScenario || ExtraToughTombs ? 1 : 2).ToArray();
-            int requiredEligibleCards = AllUnitsMultistrikeMutator || abilityScenario || triggerScenario || replacementScenario || ExtraToughTombs ? 1 : 2;
+                .Take(AllUnitsMultistrikeMutator || abilityScenario || triggerScenario || replacementScenario || ExtraToughTombs || UnhealedHealthUpgrade ? 1 : 2).ToArray();
+            int requiredEligibleCards = AllUnitsMultistrikeMutator || abilityScenario || triggerScenario || replacementScenario || ExtraToughTombs || UnhealedHealthUpgrade ? 1 : 2;
             if (eligible.Length != requiredEligibleCards)
                 throw new InvalidOperationException("Relic scenario has " + eligible.Length + " eligible owned cards; required " + requiredEligibleCards + ".");
             if (replacementTarget != null)
@@ -206,8 +210,8 @@ namespace MonsterTrain2Poju.Probe
                 managers.GetRelicManager().ApplyCardStateModifiers(card, resetTempCardModifiers: false);
                 managers.GetRelicManager().ApplyCardStateModifiers(card);
             }
-            if (ExtraToughTombs && !cards.GetHand().Contains(eligible[0]) && !cards.DrawSpecificCard(eligible[0]))
-                throw new InvalidOperationException("Could not draw the ExtraToughTombs carrier into the battle hand.");
+            if ((ExtraToughTombs || UnhealedHealthUpgrade) && !cards.GetHand().Contains(eligible[0]) && !cards.DrawSpecificCard(eligible[0]))
+                throw new InvalidOperationException("Could not draw the relic-upgraded carrier into the battle hand.");
             if (Environment.GetEnvironmentVariable("MT2_PROBE_CONDITIONAL_BATTLE_RELIC_UPGRADES") == "1")
                 InstallOncePerTurnCondition(managers, eligible[0]);
             Prepared = true;
@@ -249,6 +253,17 @@ namespace MonsterTrain2Poju.Probe
                 AccessTools.Field(typeof(CardUpgradeData), "filters").SetValue(clone, new List<CardUpgradeMaskData> { monsterMask });
                 AccessTools.Field(typeof(CardUpgradeData), "isUnique").SetValue(clone, original.IsUnique());
                 AccessTools.Field(typeof(RelicEffectAddTempUpgrade), "_cardUpgradeData").SetValue(effect, clone);
+            }
+
+            static void InstallUnhealedHealthUpgrade(RelicEffectAddTempUpgrade effect)
+            {
+                CardUpgradeData upgrade = DynamicUpgradeScenario.Upgrade("PojuRelicCardUnhealedMinusOne",
+                    "7f9d616e-6ca2-4c8a-a470-0c4ca1000001", 0, 0, 0, -1, "armor", 0);
+                var monsterMask = UnityEngine.ScriptableObject.CreateInstance<CardUpgradeMaskData>();
+                monsterMask.name = "PojuRelicCardUnhealedMonsterMask";
+                AccessTools.Field(typeof(CardUpgradeMaskData), "cardType").SetValue(monsterMask, CardType.Monster);
+                AccessTools.Field(typeof(CardUpgradeData), "filters").SetValue(upgrade, new List<CardUpgradeMaskData> { monsterMask });
+                AccessTools.Field(typeof(RelicEffectAddTempUpgrade), "_cardUpgradeData").SetValue(effect, upgrade);
             }
 
             static void InstallPiercingUpgrade(AllGameData gameData, RelicEffectAddTempUpgrade effect)

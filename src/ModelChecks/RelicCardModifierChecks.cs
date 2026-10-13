@@ -134,9 +134,23 @@ internal static class RelicCardModifierChecks
             [RelicModel.AddTempUpgrade], cardModifiers: [new RelicCardModifier(0,
                 new RelicCardUpgradeRule(negativeUnhealedUpgrade.AssetKey, true, negativeUnhealedLifecycle, []),
                 negativeUnhealedUpgrade, false)]);
-        Require(!RelicCardModifierModel.Apply(fortifiedCard, [negativeUnhealedRelic], resetTemporary: false).Supported,
-            "Negative unhealed relic health bypassed the native birth-order guard.");
-        Console.WriteLine("RELIC-CARD-SUMMON-STAT-CHECKS PASS: temporary damage buff and unhealed health reach summoned units; negative unhealed health remains guarded.");
+        RelicCardModifierResult negativeUnhealedResult = RelicCardModifierModel.Apply(fortifiedCard,
+            [negativeUnhealedRelic], resetTemporary: false);
+        Require(negativeUnhealedResult.Supported, "A nonlethal negative unhealed relic upgrade was rejected: " +
+            negativeUnhealedResult.UnsupportedReason);
+        var negativeRng = UnityRng.Seed(705);
+        var negativeContext = new CombatContext(new CardCycleState([], [], [], negativeRng, 0, []), negativeRng,
+            0, 1, 100, cardInstances: [negativeUnhealedResult.Card!], nextUnitId: 2);
+        var negativeTemplate = new CombatUnit(2, "negative-unhealed-summon", CombatTeam.Player, 6, 20, 20,
+            true, false, false, [], size: 2, modifiers: new UnitModifiers(6, 0, 0, 2, 0, true, false, []));
+        var negativeRule = new CardPlayRule(definition.DataId, "Monster", 0, "Unit", "Discard", negativeTemplate, []);
+        UnitBirthResult negativeBirth = UnitBirthModel.Spawn(new RoomCombatState(0, false, [], [], negativeContext),
+            negativeRule, fortifiedCard.InstanceId, 0, false);
+        Require(negativeBirth.Supported && negativeBirth.Result.State!.Units.Single().Health == 20 &&
+            negativeBirth.Result.State.Units.Single().MaxHealth == 20,
+            "A negative unhealed upgrade changed a summoned unit's current/max health: " +
+            negativeBirth.Result.UnsupportedReason);
+        Console.WriteLine("RELIC-CARD-SUMMON-STAT-CHECKS PASS: damage buffs and positive unhealed health reach card-born units; negative unhealed health is ignored.");
 
         var tombDefinition = new CardMaskDefinition("dregs-tomb", "Monster", "Common", true, true, true,
             ["SubtypesData_Tomb"], [], [], ["CardEffectSpawnMonster"], null, false, 1, 0, false, false, false);
@@ -247,6 +261,8 @@ internal static class RelicCardModifierChecks
                 (Relic: item.GetProperty("RelicIndex").GetInt32(), Effect: item.GetProperty("EffectIndex").GetInt32())).ToArray())).ToArray();
         bool statusUpgradeScenario = root.TryGetProperty("ModifierScenario", out var scenario) &&
             scenario.GetString() == "relic-card-status-upgrades";
+        bool unhealedHealthUpgradeScenario = root.TryGetProperty("ModifierScenario", out scenario) &&
+            scenario.GetString() == "relic-card-unhealed-upgrades";
         bool piercingUpgradeScenario = root.TryGetProperty("ModifierScenario", out scenario) &&
             scenario.GetString() == "relic-card-piercing-upgrades";
         bool selfPurgeUpgradeScenario = root.TryGetProperty("ModifierScenario", out scenario) &&
@@ -269,7 +285,7 @@ internal static class RelicCardModifierChecks
             scenario.GetString() == "original-deployable-relic";
         bool magebladeScenario = root.TryGetProperty("ModifierScenario", out scenario) &&
             scenario.GetString() is "mageblade" or "original-mageblade-magnitude";
-        bool sawExpectedRejection = statusUpgradeScenario || piercingUpgradeScenario || abilityUpgradeScenario || triggerUpgradeScenario ||
+        bool sawExpectedRejection = statusUpgradeScenario || unhealedHealthUpgradeScenario || piercingUpgradeScenario || abilityUpgradeScenario || triggerUpgradeScenario ||
             replacementUpgradeScenario || extraToughTombsScenario || deployableRelicScenario
             ? rows.Any(row => row.Dispatches.Any(effect => !effect.Returned && !effect.UpgradeAdded))
             : rows.Any(row => !row.Reset && row.Dispatches.Any(effect => effect.Returned && !effect.UpgradeAdded));
@@ -411,6 +427,27 @@ internal static class RelicCardModifierChecks
             });
             Require(statusReachedSummonedUnit,
                 "A native card-side relic armor upgrade did not reach the summoned unit in the independent policy.");
+        }
+        if (unhealedHealthUpgradeScenario)
+        {
+            bool managerAppliedNegativeUnhealed = rows.Any(row => row.Reset &&
+                row.Actual.Temporary.Upgrades.Any(upgrade => upgrade.UnhealedHealth == -1));
+            bool negativeUnhealedSummonMatchedNative = root.GetProperty("Actions").EnumerateArray().Any(entry =>
+            {
+                BattleTurnState before = entry.GetProperty("Before").Deserialize<BattleTurnState>()!;
+                int cardId = entry.GetProperty("Action").GetProperty("CardInstanceId").GetInt32();
+                CardInstanceState? card = before.Spawn.Train.Context!.FindCard(cardId);
+                if (card?.Temporary.Upgrades.Any(upgrade => upgrade.UnhealedHealth == -1) != true) return false;
+                CombatUnit? baseline = before.PlayRules?.Cards.FirstOrDefault(rule => rule.DataId == card.DataId)?.SpawnUnit;
+                if (baseline == null) return false;
+                BattleTurnState after = entry.GetProperty("Actual").Deserialize<BattleTurnState>()!;
+                CombatUnit? summoned = after.Spawn.Train.Rooms.SelectMany(room => room.Units)
+                    .FirstOrDefault(unit => unit.SpawnerCardId == cardId);
+                return summoned?.Health == baseline.Health && summoned.MaxHealth == baseline.MaxHealth;
+            });
+            Require(managerAppliedNegativeUnhealed && negativeUnhealedSummonMatchedNative,
+                "Native negative unhealed card upgrade did not match its manager payload and summoned-unit health.");
+            Console.WriteLine("NATIVE-RELIC-CARD-UNHEALED-CHECKS PASS: -1 UnhealedHealth remains on the played card and is ignored by the summoned unit.");
         }
         if (piercingUpgradeScenario)
         {
@@ -608,7 +645,7 @@ internal static class RelicCardModifierChecks
         var births = generated.SelectMany(row => row.Actual.CardInstances!.Where(card => card.InstanceId >= row.Before.NextCardId)).ToArray();
         if (requireScenarioCoverage && !deployableRelicScenario && !statusUpgradeScenario && !piercingUpgradeScenario && !selfPurgeUpgradeScenario &&
             !exhaustUpgradeScenario && !ephemeralUpgradeScenario && !abilityUpgradeScenario && !triggerUpgradeScenario && !replacementUpgradeScenario &&
-            !allUnitsMultistrikeScenario && !magebladeScenario && !extraToughTombsScenario)
+            !allUnitsMultistrikeScenario && !magebladeScenario && !extraToughTombsScenario && !unhealedHealthUpgradeScenario)
             Require(births.Any(card => card.Temporary.Upgrades.Any(upgrade => upgrade.AssetKey == "ReduceStarterCost" ||
                 rows.SelectMany(row => row.Relics).SelectMany(relic => relic.CardModifiers ?? []).Any(effect => effect.Upgrade?.DataId == upgrade.DataId))),
                 "No battle-generated eligible card received an original relic upgrade.");
@@ -622,6 +659,7 @@ internal static class RelicCardModifierChecks
             abilityUpgradeScenario ? "unit ability upgrades reached summoned units" :
             triggerUpgradeScenario ? "OnKill character triggers reached summoned units" :
             replacementUpgradeScenario ? "native temporary card upgrade replacement" :
+            unhealedHealthUpgradeScenario ? "negative unhealed-health no-op on the played summon" :
             allUnitsMultistrikeScenario ? "Multistrike applied to owned and spawned cards" :
             magebladeScenario ? "native magic-power spell offsets" :
             extraToughTombsScenario ? "the original Tomb carrier was modified and played" : "eligible battle-generated cards";

@@ -30,8 +30,27 @@ The default command checks the full curated inventory. For routine changes, run
 the dedicated checks for the new and directly affected scenarios; run the full
 inventory at completed milestones and before delivery.
 
-Current inventory is 257 archives: 226 accepted battles and 31 component
-calibrations. `enchantment-combat-calibration.mt2f` captures two native
+Current inventory is 258 archives: 227 accepted battles and 31 component
+calibrations. `full-battle-relic-card-negative-unhealed.mt2f` (schema 145)
+captures a temporary `UnhealedHealth=-1` upgrade installed by the native relic
+manager. The upgrade remains on the played Train Steward, but the summoned unit
+keeps its baseline current and maximum health. The muted Instant battle wins
+with 49 stages, 28 actions, 11 card cycles and six EndTurns; capture failures,
+mismatches, unsupported transitions and pending records are zero. Independent
+action replay matches all 28 plays; search matches 128 states with equal serial
+and parallel results. This verifies the -1 card-birth case and adds no original
+relic owner to the coverage count. The binary archive is 30,548 bytes with
+5,134 unique nodes and SHA-256
+`aeca84685bb2c0444c669901245236ecdbd837fa283c36a2d7598d29eeabccb2`; it has no
+JSON companion.
+
+```powershell
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-relic-card-negative-unhealed.mt2f
+dotnet run --project src/ModelChecks -c Release -- --relic-card-modifiers-only tests/fixtures/full-battle-relic-card-negative-unhealed.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-relic-card-negative-unhealed.mt2f
+```
+
+`enchantment-combat-calibration.mt2f` captures two native
 `CardEffectEnchant` sources growing a player Train Steward from zero to three
 Horde stacks (8 to 24 attack, 25 to 75 health). Muting the sources removes two
 stacks and then the final stack. The final removal takes HP to zero and removes

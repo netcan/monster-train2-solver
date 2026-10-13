@@ -106,8 +106,6 @@ namespace MonsterTrain2Poju.Model
                 if (expectsAbility != hasAbility || hasAbility && (upgrade!.AbilityUpgrade!.Definition!.IsUnitAbility != true ||
                     upgrade.AbilityUpgrade.CommonTriggers.Count == 0))
                     return "Relic unit ability upgrade definition or common triggers are missing or inconsistent.";
-                if (upgrade?.UnhealedHealth < 0)
-                    return "Negative relic unhealed health requires native card-birth death-order evidence.";
                 if (template != null && upgrade != null && new[] { "Damage", "Health", "Cost", "Heal", "Size", "XCost", "EquipmentLimit", "UpgradeSlotCount" }
                     .Any(stat => template.Values.Stats.Value(stat) != upgrade.Stats.Value(stat))) return "Relic card upgrade numeric payload differs.";
             }

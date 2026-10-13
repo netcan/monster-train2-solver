@@ -357,12 +357,8 @@ namespace MonsterTrain2Poju.Model
                 int maxHealth = health;
                 foreach (CardUpgradeModifier upgrade in cardUpgrades)
                 {
-                    if (upgrade.UnhealedHealth < 0)
-                    {
-                        maxHealth = Math.Max(0, checked(maxHealth + upgrade.UnhealedHealth));
-                        health = Math.Max(0, checked(health + upgrade.UnhealedHealth));
-                    }
-                    else if (upgrade.UnhealedHealth > 0)
+                    // Native card births apply positive unhealed-health bonuses; negative values are ignored.
+                    if (upgrade.UnhealedHealth > 0)
                         maxHealth = Math.Min(99999, checked(maxHealth + upgrade.UnhealedHealth));
                 }
                 UnitModifiers? original = unit.Modifiers;
