@@ -1,6 +1,6 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-14): 276 binary archives, including 245
+Current accepted inventory (2026-10-14): 277 binary archives, including 246
 full battles and 31 component calibrations. Unchanged original relic evidence
 covers 78/224 catalog entries (34.82%); see
 [the owner evidence table](tests/fixtures/relic-coverage.md). Whole-battle
@@ -45,8 +45,20 @@ checks every selected target against `paramSubtype`; unlike Sacrifice, it does
 not filter random candidates before selection. The model now preserves that
 validation, with focused matching and mismatching target checks. A live native
 assertion returned true for a matching `MonsterBanishedChampion1` and false for
-`TrainStewardBig`. The accepted full-battle archive remains unfiltered, so an
-end-to-end archive with a subtype-bearing Kill effect is still outstanding.
+`TrainStewardBig`. The separate
+`full-battle-card-effect-kill-subtype.mt2f` archive now exercises the rule during
+a native cast. The isolated scenario first predicts the random target with the
+unfiltered rule, then assigns that target's subtype to the corresponding native
+effect state and captured definition. The native cast removes the matching
+Train Steward, and the archive gate checks that a killed unit carries the
+recorded subtype. The muted Instant battle wins with 58 stages, 22 actions and
+seven EndTurns, with zero capture failures, mismatches, unsupported transitions
+or pending records. This is a synthetic runtime configuration because no
+original card definition has a nonempty `CardEffectKill.paramSubtype`.
+
+The schema-103 subtype archive is 31,054 bytes with 5,040 unique nodes and
+SHA-256 `e80d34ba3fae893410072619056f9a29918cf235908f78cc466ef394f1c5ca5a`;
+it has no JSON companion.
 
 The schema-103 binary is 31,129 bytes with 5,100 unique nodes and SHA-256
 `fec1eb5dec554ab93d398c51c273012073aa5b521f3a52268fa593de42221f4a`; it has no
@@ -56,6 +68,12 @@ JSON companion.
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-card-effect-kill.mt2f
 dotnet run --project src/ModelChecks -c Release -- --native-actions-only tests/fixtures/full-battle-card-effect-kill.mt2f
 dotnet run --project src/ModelChecks -c Release -- --sacrifice-pure
+```
+
+```powershell
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-card-effect-kill-subtype.mt2f
+dotnet run --project src/ModelChecks -c Release -- --native-actions-only tests/fixtures/full-battle-card-effect-kill-subtype.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-card-effect-kill-subtype.mt2f
 ```
 
 ### CardEffectRecursion

@@ -19,6 +19,7 @@ param(
     [switch] $SacrificeUpgrades,
     [switch] $SacrificeEffects,
     [switch] $CardEffectKill,
+    [switch] $CardEffectKillSubtype,
     [switch] $CardRecursion,
     [switch] $CardRecursionDiscard,
     [switch] $CardRecursionChoose,
@@ -336,7 +337,8 @@ $cardRecursionModes = @($CardRecursion, $CardRecursionDiscard, $CardRecursionCho
     Where-Object { $_ }
 if ($cardRecursionModes.Count -gt 1) { throw 'Choose one CardRecursion scenario.' }
 if ($SacrificeEffects) { $Policy = 'units-spells-and-junk' }
-if ($CardEffectKill) { $Policy = 'units-spells-and-junk' }
+if ($CardEffectKill -and $CardEffectKillSubtype) { throw 'Choose either -CardEffectKill or -CardEffectKillSubtype.' }
+if ($CardEffectKill -or $CardEffectKillSubtype) { $Policy = 'units-spells-and-junk' }
 if ($CardRecursion -or $CardRecursionDiscard -or $CardRecursionChoose -or $CardRecursionChooseToHand -or $CardRecursionChooseFilter -or $CardRecursionUpgrade -or $CardRecursionUpgradeToHand -or $CardRecursionUpgradeChoose -or $CardRecursionUpgradeFilterChoose -or $CardRecursionUpgradeReplacementChoose) { $Policy = 'units-spells-and-junk'; $BranchCardMasks = $true }
 if ($SpawnOrStatus) { $Policy = 'units-and-junk' }
 if ($AbilityTeleport) { $Policy = 'units-and-junk'; $PhysicalSpawnPoints = $true }
@@ -491,8 +493,8 @@ if ($Sentry -or $SentryLethal) {
 if ($SacrificeEffects) {
     $environment['MT2_PROBE_MODIFIERS'] = 'sacrifice-effects'
 }
-if ($CardEffectKill) {
-    $environment['MT2_PROBE_MODIFIERS'] = 'card-effect-kill'
+if ($CardEffectKill -or $CardEffectKillSubtype) {
+    $environment['MT2_PROBE_MODIFIERS'] = if ($CardEffectKillSubtype) { 'card-effect-kill-subtype' } else { 'card-effect-kill' }
 }
 if ($CardRecursion -or $CardRecursionDiscard -or $CardRecursionChoose -or $CardRecursionChooseToHand -or $CardRecursionChooseFilter -or $CardRecursionUpgrade -or $CardRecursionUpgradeToHand -or $CardRecursionUpgradeChoose -or $CardRecursionUpgradeFilterChoose -or $CardRecursionUpgradeReplacementChoose) {
     $environment['MT2_PROBE_MODIFIERS'] = if ($CardRecursionDiscard) { 'card-effect-recursion-discard-choice' } elseif ($CardRecursionUpgradeReplacementChoose) { 'card-effect-recursion-upgrade-replacement-choice' } elseif ($CardRecursionUpgradeFilterChoose) { 'card-effect-recursion-upgrade-filter-choice' } elseif ($CardRecursionUpgradeChoose) { 'card-effect-recursion-upgrade-choice' } elseif ($CardRecursionUpgradeToHand) { 'card-effect-recursion-upgrade-hand' } elseif ($CardRecursionUpgrade) { 'card-effect-recursion-upgrade' } elseif ($CardRecursionChooseFilter) { 'card-effect-recursion-filter-choice' } elseif ($CardRecursionChooseToHand) { 'card-effect-recursion-choose-to-hand' } elseif ($CardRecursionChoose) { 'card-effect-recursion-choice' } else { 'card-effect-recursion' }
@@ -601,9 +603,10 @@ if ($EquipmentBuff -and ($trace.ModifierScenario -ne 'equipment-buff' -or
     -not (Select-String -LiteralPath $unityLog -Pattern 'EQUIPMENT-PREPARED .*buff=True' -Quiet))) {
     throw 'Equipment buff scenario setup did not run.'
 }
-if ($CardEffectKill -and ($trace.ModifierScenario -ne 'card-effect-kill' -or
+if (($CardEffectKill -or $CardEffectKillSubtype) -and ($trace.ModifierScenario -ne $(if ($CardEffectKillSubtype) { 'card-effect-kill-subtype' } else { 'card-effect-kill' }) -or
     -not (Select-String -LiteralPath $unityLog -Pattern 'CARD-EFFECT-KILL-PREPARED native KillRandomUnit' -Quiet) -or
-    -not (Select-String -LiteralPath $unityLog -Pattern 'CARD-EFFECT-KILL-SUBTYPE-NATIVE .*result=true/false' -Quiet))) {
+    -not (Select-String -LiteralPath $unityLog -Pattern 'CARD-EFFECT-KILL-SUBTYPE-NATIVE .*result=true/false' -Quiet) -or
+    ($CardEffectKillSubtype -and -not (Select-String -LiteralPath $unityLog -Pattern 'CARD-EFFECT-KILL-SUBTYPE-PLAY targets=.* result=supported' -Quiet)))) {
     throw 'CardEffectKill native setup did not run.'
 }
 if (($CardRecursion -or $CardRecursionDiscard -or $CardRecursionChoose -or $CardRecursionChooseToHand -or $CardRecursionChooseFilter -or $CardRecursionUpgrade -or $CardRecursionUpgradeToHand -or $CardRecursionUpgradeChoose -or $CardRecursionUpgradeFilterChoose -or $CardRecursionUpgradeReplacementChoose) -and ($trace.ModifierScenario -ne $(if ($CardRecursionDiscard) { 'card-effect-recursion-discard-choice' } elseif ($CardRecursionUpgradeReplacementChoose) { 'card-effect-recursion-upgrade-replacement-choice' } elseif ($CardRecursionUpgradeFilterChoose) { 'card-effect-recursion-upgrade-filter-choice' } elseif ($CardRecursionUpgradeChoose) { 'card-effect-recursion-upgrade-choice' } elseif ($CardRecursionUpgradeToHand) { 'card-effect-recursion-upgrade-hand' } elseif ($CardRecursionUpgrade) { 'card-effect-recursion-upgrade' } elseif ($CardRecursionChooseFilter) { 'card-effect-recursion-filter-choice' } elseif ($CardRecursionChooseToHand) { 'card-effect-recursion-choose-to-hand' } elseif ($CardRecursionChoose) { 'card-effect-recursion-choice' } else { 'card-effect-recursion' }) -or
@@ -975,7 +978,7 @@ $cardEffectKillActions = @($trace.Actions | Where-Object {
     $definition = $actionEntry.Before.PlayRules.Cards | Where-Object DataId -EQ $playedCard.DataId
     @($definition.Effects | Where-Object Type -EQ 'Kill').Count -eq 2
 })
-$cardEffectKillCoverage = -not $CardEffectKill -or @($cardEffectKillActions | Where-Object {
+$cardEffectKillCoverage = -not ($CardEffectKill -or $CardEffectKillSubtype) -or @($cardEffectKillActions | Where-Object {
     $actionEntry = $_
     $beforeRoom = $actionEntry.Before.Spawn.Train.Rooms | Where-Object RoomIndex -EQ $actionEntry.Action.RoomIndex
     $actualRoom = $actionEntry.Actual.Spawn.Train.Rooms | Where-Object RoomIndex -EQ $actionEntry.Action.RoomIndex
@@ -990,6 +993,23 @@ $cardEffectKillCoverage = -not $CardEffectKill -or @($cardEffectKillActions | Wh
             @($actualRoom.Units | Where-Object Id -EQ $beforeUnit.Id).Count -eq 0
     }).Count
     $enemyDeaths -gt 0 -and $playerDeaths -gt 0
+}).Count -gt 0
+$cardEffectKillSubtypeCoverage = -not $CardEffectKillSubtype -or @($cardEffectKillActions | Where-Object {
+    $actionEntry = $_
+    $playedCard = $actionEntry.Before.Spawn.Train.Context.Cards.Hand |
+        Where-Object InstanceId -EQ $actionEntry.Action.CardInstanceId
+    $definition = $actionEntry.Before.PlayRules.Cards | Where-Object DataId -EQ $playedCard.DataId
+    $subtypedKills = @($definition.Effects | Where-Object { $_.Type -EQ 'Kill' -and $_.TargetSubtype })
+    $beforeRoom = $actionEntry.Before.Spawn.Train.Rooms | Where-Object RoomIndex -EQ $actionEntry.Action.RoomIndex
+    $actualRoom = $actionEntry.Actual.Spawn.Train.Rooms | Where-Object RoomIndex -EQ $actionEntry.Action.RoomIndex
+    @($subtypedKills | Where-Object {
+        $subtype = $_.TargetSubtype
+        @($beforeRoom.Units | Where-Object {
+            $beforeUnit = $_
+            $beforeUnit.Subtypes -contains $subtype -and
+                @($actualRoom.Units | Where-Object Id -EQ $beforeUnit.Id).Count -eq 0
+        }).Count -gt 0
+    }).Count -gt 0
 }).Count -gt 0
 $cardRecursionActions = @($trace.Actions | Where-Object {
     $actionEntry = $_
@@ -2543,6 +2563,7 @@ $result = [pscustomobject]@{
     SacrificeEffectCoverage = $sacrificeEffectCoverage
     CardEffectKillActions = $cardEffectKillActions.Count
     CardEffectKillCoverage = $cardEffectKillCoverage
+    CardEffectKillSubtypeCoverage = $cardEffectKillSubtypeCoverage
     CardRecursionActions = $cardRecursionActions.Count
     CardRecursionCoverage = $cardRecursionCoverage
     CardRecursionUpgradeCoverage = if ($CardRecursionUpgrade -or $CardRecursionUpgradeToHand -or $CardRecursionUpgradeChoose -or $CardRecursionUpgradeFilterChoose -or $CardRecursionUpgradeReplacementChoose) { $cardRecursionCoverage } else { $null }
@@ -2623,6 +2644,7 @@ $result = [pscustomobject]@{
 }
 if (-not $sacrificeEffectCoverage) { throw 'Native CardEffectSacrifice was not exercised through a full battle action.' }
 if (-not $cardEffectKillCoverage) { throw 'Native CardEffectKill did not kill one enemy and one player unit in a full battle action.' }
+if (-not $cardEffectKillSubtypeCoverage) { throw 'Native CardEffectKill did not kill a matching subtype target in a full battle action.' }
 if (-not $cardRecursionCoverage) { throw 'Native WurmkinEtchings recursion did not restore the expected cards in a matched full battle action.' }
 $result | ConvertTo-Json
 if ($SettleDeathDissolves) {

@@ -509,11 +509,11 @@ namespace MonsterTrain2Poju.Probe
                 numericModifiersPrepared = true;
                 SacrificeScenario.Prepare(managers, log);
             }
-            if (fullBattle && !numericModifiersPrepared && modifierScenario == "card-effect-kill")
+            if (fullBattle && !numericModifiersPrepared && modifierScenario is "card-effect-kill" or "card-effect-kill-subtype")
             {
                 if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("CardEffectKill fixture must start on deployment turn.");
                 numericModifiersPrepared = true;
-                CardEffectKillScenario.Prepare(managers, log);
+                CardEffectKillScenario.Prepare(managers, log, modifierScenario == "card-effect-kill-subtype");
             }
             if (fullBattle && !numericModifiersPrepared && modifierScenario is "card-effect-recursion" or "card-effect-recursion-choice" or "card-effect-recursion-choose-to-hand" or "card-effect-recursion-filter-choice" or "card-effect-recursion-discard-choice" or "card-effect-recursion-upgrade" or "card-effect-recursion-upgrade-hand" or "card-effect-recursion-upgrade-choice" or "card-effect-recursion-upgrade-filter-choice" or "card-effect-recursion-upgrade-replacement-choice")
             {
@@ -983,7 +983,8 @@ namespace MonsterTrain2Poju.Probe
                 }
                 if (OriginalDeployableRelicScenario.Enabled) pendingPlay = OriginalDeployableRelicScenario.Choose(decision) ?? pendingPlay;
                 if (modifierScenario == "sacrifice-effects") pendingPlay = SacrificeScenario.Choose(decision);
-                if (modifierScenario == "card-effect-kill") pendingPlay = CardEffectKillScenario.Choose(decision);
+                if (modifierScenario is "card-effect-kill" or "card-effect-kill-subtype")
+                    pendingPlay = CardEffectKillScenario.Choose(decision);
                 if (modifierScenario is "card-effect-recursion" or "card-effect-recursion-choice" or "card-effect-recursion-choose-to-hand" or "card-effect-recursion-filter-choice" or "card-effect-recursion-discard-choice" or "card-effect-recursion-upgrade" or "card-effect-recursion-upgrade-hand" or "card-effect-recursion-upgrade-choice" or "card-effect-recursion-upgrade-filter-choice" or "card-effect-recursion-upgrade-replacement-choice")
                     pendingPlay = CardEffectRecursionScenario.Choose(decision);
                 if (modifierScenario == "typed-draw") pendingPlay = TypedDrawScenario.Choose(decision);
@@ -1127,6 +1128,7 @@ namespace MonsterTrain2Poju.Probe
             string modifierScenario = Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") ?? string.Empty;
             bool scenarioPrelude = (OriginalUnitRelicBatchScenario.Enabled && !OriginalUnitRelicBatchScenario.PolicyCarriersInjected) ||
                 (modifierScenario == "damage-per-hp-ability" && !damagePerHpAbilityInputPrepared) ||
+                (modifierScenario == "card-effect-kill-subtype" && CardEffectKillScenario.IsScenarioPrelude(action)) ||
                 (modifierScenario is "card-effect-recursion" or "card-effect-recursion-choice" or "card-effect-recursion-choose-to-hand" or "card-effect-recursion-filter-choice" or "card-effect-recursion-discard-choice" or "card-effect-recursion-upgrade" or "card-effect-recursion-upgrade-hand" or "card-effect-recursion-upgrade-choice" or "card-effect-recursion-upgrade-filter-choice" or "card-effect-recursion-upgrade-replacement-choice" &&
                     CardEffectRecursionScenario.IsScenarioPrelude(action));
             PreviewSchedulingProbe.Observe("Play:" + action.CardInstanceId);

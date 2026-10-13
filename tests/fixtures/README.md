@@ -30,7 +30,7 @@ The default command checks the full curated inventory. For routine changes, run
 the dedicated checks for the new and directly affected scenarios; run the full
 inventory at completed milestones and before delivery.
 
-Current inventory is 276 archives: 245 accepted battles and 31 component
+Current inventory is 277 archives: 246 accepted battles and 31 component
 calibrations. Original relic evidence is 78/224 (34.82%). The schema-160
 `full-battle-original-card-draw-on-card-play.mt2f` archive captures the
 unchanged `CardDrawOnCardPlay` and `DrawOnSnackPlayed` owners. The first owner's
@@ -81,6 +81,23 @@ companion is tracked.
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-card-effect-kill.mt2f
 dotnet run --project src/ModelChecks -c Release -- --native-actions-only tests/fixtures/full-battle-card-effect-kill.mt2f
 dotnet run --project src/ModelChecks -c Release -- --sacrifice-pure
+```
+
+`full-battle-card-effect-kill-subtype.mt2f` validates the native subtype check
+end to end. The isolated scenario assigns a subtype to one `KillRandomUnit`
+effect based on its Battle-RNG-selected target, then runs the actual native cast;
+the killed Train Steward matches the captured subtype. The direct native check
+also retains a matching/mismatching pair. The muted Instant battle wins with 58
+stages, 22 actions and seven EndTurns, with zero capture failures, mismatches,
+unsupported transitions or pending records. The schema-103 binary is 31,054
+bytes with 5,040 unique nodes and SHA-256
+`e80d34ba3fae893410072619056f9a29918cf235908f78cc466ef394f1c5ca5a`; no JSON
+companion is tracked.
+
+```powershell
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-card-effect-kill-subtype.mt2f
+dotnet run --project src/ModelChecks -c Release -- --native-actions-only tests/fixtures/full-battle-card-effect-kill-subtype.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-card-effect-kill-subtype.mt2f
 ```
 
 `full-battle-card-recursion.mt2f` captures `WurmkinEtchings` returning five of
