@@ -28,7 +28,10 @@ namespace MonsterTrain2Poju.Probe
                 {
                     ClassName = effect.GetEffectClassName(), RuntimeType = TypeNameCache.GetType(effect.GetEffectClassName())?.Name,
                     SourceTeam = effect.GetParamSourceTeam().ToString(), Int = effect.GetParamInt(), Int2 = effect.GetParamInt2(),
-                    Bool = effect.GetParamBool(), Bool2 = effect.GetParamBool2(), Str = effect.GetParamString(),
+                    Float = effect.GetParamFloat(), Bool = effect.GetParamBool(), Bool2 = effect.GetParamBool2(),
+                    Bool3 = effect.GetParamBool3(), Bool4 = effect.GetParamBool4(), Str = effect.GetParamString(),
+                    CardType = effect.GetParamCardType().ToString(),
+                    CardFilter = effect.GetParamCardFilter() == null ? null : CardUpgradeMaskProbe.Definition(effect.GetParamCardFilter()),
                     Trigger = effect.GetParamTrigger().ToString(), ExcludedCardTriggers = effect.GetCardTriggers().Select(trigger => trigger.ToString()).ToArray(),
                     RequiredSubtype = effect.GetParamCharacterSubtype()?.Key,
                     CharacterFilters = effect.GetParamCharacters()?.Select(character => character == null ? null : new { Id = character.GetID(), AssetKey = character.GetAssetKey() }).ToArray(),
@@ -60,7 +63,7 @@ namespace MonsterTrain2Poju.Probe
                 throw new InvalidOperationException("Relic definition inspection changed native RNG or frame.");
             using (var document = NativeFixtureCapture.Capture(new
             {
-                Schema = 4, GameVersion = UnityEngine.Application.version,
+                Schema = 5, GameVersion = UnityEngine.Application.version,
                 GameModuleMvid = typeof(RelicState).Assembly.ManifestModule.ModuleVersionId,
                 FrameBefore = frame, FrameAfter = UnityEngine.Time.frameCount, RngBefore = before, RngAfter = after, Relics = relics
             }))

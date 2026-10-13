@@ -124,6 +124,7 @@ namespace MonsterTrain2Poju.Model
                 relic.CardHealthModifiers?.Any(effect => effect.Conditions.Count > 0) == true) == true && context == null)
                 return Fail("Relic card modifier conditions require the current combat context.");
             if (!resetTemporary && workingRelics?.Any(relic => relic.CardModifiers?.Count > 0 || relic.CardHealthModifiers?.Count > 0 ||
+                relic.CardAttackModifiers?.Count > 0 ||
                 relic.MagicPowerModifiers?.Count > 0) != true)
                 return new RelicCardModifierResult(source, context: context);
             error = CardModifierModel.UnsupportedReason(source);
@@ -163,6 +164,7 @@ namespace MonsterTrain2Poju.Model
                 CombatRelicState relic = workingRelics![relicIndex];
                 var cardEffects = (relic.CardModifiers ?? Array.Empty<RelicCardModifier>()).ToDictionary(effect => effect.EffectIndex);
                 var healthEffects = (relic.CardHealthModifiers ?? Array.Empty<RelicCardHealthModifier>()).ToDictionary(effect => effect.EffectIndex);
+                var attackEffects = (relic.CardAttackModifiers ?? Array.Empty<RelicCardAttackModifier>()).ToDictionary(effect => effect.EffectIndex);
                 var magicEffects = (relic.MagicPowerModifiers ?? Array.Empty<RelicMagicPowerModifier>()).ToDictionary(effect => effect.EffectIndex);
                 for (int effectIndex = 0; effectIndex < relic.EffectTypes.Count; effectIndex++)
                 {
@@ -187,6 +189,16 @@ namespace MonsterTrain2Poju.Model
                         if (!RefreshTemporaryPayloads(card.Temporary, state, temporaryPayloads))
                             return Fail("Relic magic-power refresh changed the temporary upgrade lifecycle order.");
                         dispatches.Add(new RelicCardModifierDispatch(relicIndex, magicEffect!.EffectIndex, returned,
+                            false, Array.Empty<RelicCardFilterResult>()));
+                        continue;
+                    }
+                    if (type == RelicModel.ModifyCardAttack)
+                    {
+                        if (!attackEffects.TryGetValue(effectIndex, out RelicCardAttackModifier? attackEffect))
+                            return Fail("Missing ordered relic card-attack definition.");
+                        card = RelicCardAttackModel.Apply(card, attackEffect!, out bool returned, out error)!;
+                        if (card == null) return Fail(error!);
+                        dispatches.Add(new RelicCardModifierDispatch(relicIndex, attackEffect!.EffectIndex, returned,
                             false, Array.Empty<RelicCardFilterResult>()));
                         continue;
                     }

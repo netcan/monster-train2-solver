@@ -30,13 +30,30 @@ The default command checks the full curated inventory. For routine changes, run
 the dedicated checks for the new and directly affected scenarios; run the full
 inventory at completed milestones and before delivery.
 
-Current inventory is 259 archives: 228 accepted battles and 31 component
+Current inventory is 260 archives: 229 accepted battles and 31 component
 calibrations. The schema-146 `full-battle-original-moon-phase-energy-relic.mt2f`
 archive adds accepted native evidence for the unchanged `MoonPhaseModifyEmber`
 relic: three Full callbacks add one Ember and notify; three New callbacks are
 no-ops. It also verifies exact moon markers across 24 plays, seven EndTurns and
 57 matched battle stages. The binary has no JSON companion. See
 [relic coverage](relic-coverage.md) for its owner evidence and replay details.
+
+The schema-147 `full-battle-original-card-attack-relic.mt2f` archive adds
+accepted native evidence for the unchanged `WhelpDragonAttack_DH` relic. Its two
+fixed +8 effects match Whelp and Dragon spawn subtypes; native manager returns,
+temporary attack offsets and reset behavior agree on both samples. The muted
+Instant full battle wins with 60 matched stages, 21 card actions and seven
+EndTurns, with zero capture failures, mismatches, unsupported transitions or
+pending records. Cardless birth behavior has a focused model check; the native
+archive covers card-state application. This brings accepted original relic
+owners to 74/224 (33.04%). The 32,904-byte binary has 5,327 unique nodes and
+SHA-256 `051f518a1e7dae9e2818a5bf940651dce35afde5cbc86943e4ebcf36bc7f3208`;
+there is no JSON companion.
+
+```powershell
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-card-attack-relic.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-card-attack-only tests/fixtures/full-battle-original-card-attack-relic.mt2f
+```
 
 `full-battle-relic-card-negative-unhealed.mt2f` (schema 145)
 captures a temporary `UnhealedHealth=-1` upgrade installed by the native relic

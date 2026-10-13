@@ -167,6 +167,7 @@ param(
     [switch] $OriginalCardPlayMagicPower,
     [switch] $OriginalRoomEntryStatusRelics,
     [switch] $OriginalMoonPhaseEnergyRelic,
+    [switch] $OriginalCardAttackRelic,
     [switch] $OriginalUnitUpgradeTriggerRelic,
     [switch] $TypedDraw,
     [switch] $IncantRelic,
@@ -240,6 +241,7 @@ if ($Mageblade -or $OriginalMagebladeMagnitudeRelic) { $BranchCardMasks = $true;
 if ($OriginalCardPlayMagicPower) { $BranchCardMasks = $true; $Policy = 'units-and-junk' }
 if ($OriginalRoomEntryStatusRelics) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalMoonPhaseEnergyRelic) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
+if ($OriginalCardAttackRelic) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalUnitUpgradeTriggerRelic) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalTriggerRelicBatch -or $OriginalLifecycleRelicBatch) {
     $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $SettleDeathDissolves = $true; $SettleCardAnimations = $true
@@ -477,6 +479,7 @@ if ($OriginalMagebladeMagnitudeRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'o
 if ($OriginalCardPlayMagicPower) { $environment['MT2_PROBE_MODIFIERS'] = 'original-card-play-magic-power' }
 if ($OriginalRoomEntryStatusRelics) { $environment['MT2_PROBE_MODIFIERS'] = 'original-room-entry-status-relics' }
 if ($OriginalMoonPhaseEnergyRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-moon-phase-energy-relic' }
+if ($OriginalCardAttackRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-card-attack-relic' }
 if ($OriginalUnitUpgradeTriggerRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-unit-upgrade-trigger-relic' }
 if ($TypedDraw) {
     $environment['MT2_PROBE_MODIFIERS'] = 'typed-draw'
@@ -607,6 +610,15 @@ if ($OriginalMoonPhaseEnergyRelic) {
         throw 'Original moon-phase energy relic lacks the expected Full/New native callback witnesses.'
     }
 }
+if ($OriginalCardAttackRelic) {
+    $attackRecords = @($trace.RelicCardModifiers | Where-Object { $_.Before.DataId -in @('fc119000-0000-4000-8000-000000000201', 'fc119000-0000-4000-8000-000000000202') })
+    if ($trace.Schema -ne 147 -or $trace.ModifierScenario -ne 'original-card-attack-relic' -or
+        -not (Select-String -LiteralPath $unityLog -Pattern 'ORIGINAL-CARD-ATTACK-RELIC-PREPARED native Whelp and Dragon' -Quiet) -or
+        @($trace.Actions).Count -eq 0 -or $attackRecords.Count -lt 4 -or
+        @($attackRecords | Where-Object { $_.Difference -ne $null }).Count -gt 0) {
+        throw 'Original Whelp/Dragon card-attack relic was not exercised against native cards and effects.'
+    }
+}
 if ($OriginalUnitUpgradeTriggerRelic -and ($trace.Schema -ne 133 -or
     $trace.ModifierScenario -ne 'original-unit-upgrade-trigger-relic' -or
     -not (Select-String -LiteralPath $unityLog -Pattern 'ORIGINAL-UNIT-UPGRADE-TRIGGER-RELIC-PREPARED' -Quiet) -or
@@ -619,7 +631,7 @@ if ($RelicCatalog) {
     try {
         $catalog = $catalogArchive.RootElement
         $catalogRecords = @($catalog.GetProperty('Relics').EnumerateArray())
-        if ($catalog.GetProperty('Schema').GetInt32() -ne 4 -or
+        if ($catalog.GetProperty('Schema').GetInt32() -ne 5 -or
             $catalog.GetProperty('GameModuleMvid').GetString() -ne $trace.GameModuleMvid -or
             $catalog.GetProperty('FrameBefore').GetInt32() -ne $catalog.GetProperty('FrameAfter').GetInt32() -or
             -not $catalog.GetProperty('RngBefore').ContentEquals($catalog.GetProperty('RngAfter')) -or

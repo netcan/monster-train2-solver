@@ -255,6 +255,8 @@ namespace MonsterTrain2Poju.Probe
                         MagebladeScenario.ConfigureBeforeBattle(managers!, log);
                     if (fullBattle && OriginalCardPlayMagicPowerScenario.Enabled && !OriginalCardPlayMagicPowerScenario.Acquired)
                         OriginalCardPlayMagicPowerScenario.AcquireBeforeBattle(managers!, log);
+                    if (fullBattle && OriginalCardAttackRelicScenario.Enabled && !OriginalCardAttackRelicScenario.Acquired)
+                        OriginalCardAttackRelicScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalRoomEntryStatusRelicScenario.Enabled && !OriginalRoomEntryStatusRelicScenario.Acquired)
                         OriginalRoomEntryStatusRelicScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalMoonPhaseEnergyRelicScenario.Enabled && !OriginalMoonPhaseEnergyRelicScenario.Acquired)
@@ -461,6 +463,13 @@ namespace MonsterTrain2Poju.Probe
             if (fullBattle && !numericModifiersPrepared && OriginalMoonPhaseEnergyRelicScenario.Enabled)
             {
                 OriginalMoonPhaseEnergyRelicScenario.Prepare(managers, log);
+                numericModifiersPrepared = true;
+                return;
+            }
+            if (fullBattle && !numericModifiersPrepared && OriginalCardAttackRelicScenario.Enabled)
+            {
+                if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Card-attack relic must start on deployment turn.");
+                OriginalCardAttackRelicScenario.Prepare(managers, log);
                 numericModifiersPrepared = true;
                 return;
             }
@@ -841,7 +850,8 @@ namespace MonsterTrain2Poju.Probe
                 else NumericUpgradeScenario.Prepare(managers, log);
                 return;
             }
-            if (fullBattle && RelicCardModifierProbe.Enabled && !OriginalRelicBatchScenario.Enabled && !RelicCardModifierScenario.Prepared)
+            if (fullBattle && RelicCardModifierProbe.Enabled && !OriginalRelicBatchScenario.Enabled &&
+                !OriginalCardAttackRelicScenario.Enabled && !RelicCardModifierScenario.Prepared)
             {
                 RelicCardModifierScenario.Prepare(managers, log);
                 return;
@@ -946,6 +956,7 @@ namespace MonsterTrain2Poju.Probe
                 if (OriginalFloorCapacityRelicScenario.Enabled) pendingPlay = OriginalFloorCapacityRelicScenario.Choose(decision);
                 if (MagebladeScenario.Enabled) pendingPlay = MagebladeScenario.Choose(decision) ?? pendingPlay;
                 if (OriginalCardPlayMagicPowerScenario.Enabled) pendingPlay = OriginalCardPlayMagicPowerScenario.Choose(decision) ?? pendingPlay;
+                if (OriginalCardAttackRelicScenario.Enabled) pendingPlay = OriginalCardAttackRelicScenario.Choose(decision) ?? pendingPlay;
                 if (OriginalUnitUpgradeTriggerRelicScenario.Enabled) pendingPlay = OriginalUnitUpgradeTriggerRelicScenario.Choose(decision) ?? pendingPlay;
                 if (modifierScenario == "rally-lethal") pendingPlay = LethalRallyScenario.ChooseNativeBossSummon(managers) ?? pendingPlay;
                 if (modifierScenario == "incant" || modifierScenario == "incant-thresholds" || (modifierScenario == "incant-relic" || modifierScenario == "incant-relic-combined")) pendingPlay = BattleActionModel.ChooseEmptySpellThenCards(decision);

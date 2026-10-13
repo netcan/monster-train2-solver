@@ -135,6 +135,12 @@ if (args.Length == 2 && args[0] == "--original-moon-phase-energy-only")
     Console.WriteLine($"NATIVE-MOON-PHASE-FIXTURE bytes={new FileInfo(args[1]).Length} uniqueNodes={document.UniqueNodeCount}");
     return;
 }
+if (args.Length == 2 && args[0] == "--original-card-attack-only")
+{
+    using var document = ModelJson.ReadFixture(args[1]);
+    RelicCardAttackChecks.Native(document.RootElement);
+    return;
+}
 
 if (args.Length == 1 && args[0] == "--mageblade-pure")
 {
@@ -152,6 +158,11 @@ if (args.Length == 1 && args[0] == "--relic-magic-power-pure")
 if (args.Length == 1 && args[0] == "--relic-card-play-magic-power-pure")
 {
     RelicCardPlayMagicPowerChecks.Run();
+    return;
+}
+if (args.Length == 1 && args[0] == "--relic-card-attack-pure")
+{
+    RelicCardAttackChecks.Run();
     return;
 }
 
@@ -637,6 +648,7 @@ RelicCharacterTriggerChecks.Run();
 RelicUnitUpgradeTriggerChecks.Run();
 CovenantCharacterFilterChecks.Run();
 RelicCardModifierChecks.Run();
+    RelicCardAttackChecks.Run();
 RelicMagicPowerChecks.Run();
 RelicCardPlayMagicPowerChecks.Run();
 RelicStatusStackChecks.Run();

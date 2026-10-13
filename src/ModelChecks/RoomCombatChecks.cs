@@ -236,6 +236,8 @@ internal static class RoomCombatChecks
             OriginalFloorCapacityRelicChecks.Native(fixture, required: true);
         else if (fixture.TryGetProperty("ModifierScenario", out relicScenario) && relicScenario.GetString() == "original-endless-return")
             EndlessReturnChecks.Native(fixture);
+        else if (fixture.TryGetProperty("ModifierScenario", out relicScenario) && relicScenario.GetString() == "original-card-attack-relic")
+            RelicCardAttackChecks.Native(fixture);
         else RelicCardModifierChecks.Native(fixture, requireScenarioCoverage:
             !fixture.TryGetProperty("ModifierScenario", out var integrationScenario) || integrationScenario.GetString() != "typed-draw");
         UnitIdentityChecks.Native(fixture);

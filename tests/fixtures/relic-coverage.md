@@ -1,7 +1,7 @@
 # Original relic coverage evidence
 
-As of 2026-10-13, **73 distinct original collectable relics / 224 catalog entries
-(32.59%)** have accepted native full-battle evidence. This counts unchanged relic
+As of 2026-10-13, **74 distinct original collectable relics / 224 catalog entries
+(33.04%)** have accepted native full-battle evidence. This counts unchanged relic
 definitions whose effects actually ran, including their original filters and
 conditions. Test cards, unit triggers and carrier subtypes may be authored to
 exercise those effects; the claim covers the recorded paths, not every possible
@@ -16,13 +16,13 @@ Rage and Frostbite consumers. All four catalog owners of
 families and other effects on the remaining owners still require modeling and
 native proof.
 
-All 28 source archives below report game `2.2.1`, module MVID
+All 29 source archives below report game `2.2.1`, module MVID
 `8fb07b96-f4db-4d2b-884d-c00536d6ccf4`, `NativeWon=true`, and zero
 `CaptureFailures`, `Mismatches`, `Unsupported` and `Pending`. Archive provenance,
 byte lengths and SHA-256 hashes are recorded in [manifest.tsv](manifest.tsv).
 The floor-capacity batch passes strict native acceptance, complete-fixture checks,
 independent full-battle replay and six directly affected old-fixture regressions.
-The accepted inventory is 259 archives: 228 battles and 31 component
+The accepted inventory is 260 archives: 229 battles and 31 component
 calibrations. All 259 archive names, byte lengths and SHA-256 hashes match the
 manifest and curated list, with no JSON companions. A 246-archive replay was
 attempted on 2026-10-13 but has not completed: legacy EndTurn snapshots can
@@ -112,6 +112,7 @@ owner count.
 | `SpellWeaknessBelowPyre` | `5a96d89f-d7c0-49fa-88d1-8ec75a8f3140` | [room-entry status relics][roomEntry] | Its unchanged room-2 Heroes effect adds 2 Spell Weakness. Three distinct native Heroes have the exact status; spell damage and post-card removal match through the full battle. |
 | `PyregelOnEnterTopFloor` | `e4be072c-e389-4ae7-acc6-0c8aa4cf0078` | [room-entry status relics][roomEntry] | Its unchanged room-2 Heroes effect adds 10 Pyregel. Three distinct native Heroes have the exact status after entry. |
 | `MoonPhaseModifyEmber` | `70096a91-220a-4ab3-b8d0-b8fe8f3a819c` | [original moon-phase energy relic][moonPhase] | Three Full callbacks add 1 Ember and notify; three New callbacks change nothing. Original once-per-turn condition and exact hidden moon markers match. |
+| `WhelpDragonAttack_DH` | `72706202-526e-4377-9745-7df40a26ba7d` | [original card-attack relic][cardAttack] | Two unchanged +8 effects match Whelp and Dragon spawn subtypes in order. Four native manager observations cover both subtype outcomes and reset/reapply; dynamic scaling and cardless callbacks remain separately bounded. |
 
 Record indices above are zero-based. Full-battle acceptance and independent
 effect checks are documented in [README.md](README.md); the table's 20 source
@@ -139,6 +140,7 @@ archives contain these observed battle sizes:
 | [original card-play magic power][cardPlayMagicPower] | 128 | 11 | 7 | 61 | Two matching carrier plays and 110 spell offset updates for unchanged `MagicPowerWhenCardConsumed` |
 | [room-entry status relics][roomEntry] | 132 | 21 | 7 | 55 | Three unchanged originals, 13 train phases and actual room-2 Heroes status witnesses |
 | [original moon-phase energy relic][moonPhase] | 146 | 24 | 7 | 57 | Three Full +1/notification callbacks and three New no-op callbacks with exact unit markers |
+| [original card-attack relic][cardAttack] | 147 | 21 | 7 | 60 | Four native manager observations; Whelp/Dragon subtype dispatch, +8 offset and reset/reapply |
 
 The checks that enforce these observations are
 [TriggerCountChecks.Native](../../src/ModelChecks/TriggerCountChecks.cs),
@@ -162,7 +164,10 @@ checking the original trait filter and spell offset updates, and
 checking the three unchanged room-entry payloads and actual Heroes witnesses,
 and [OriginalMoonPhaseEnergyRelicChecks.Native](../../src/ModelChecks/OriginalMoonPhaseEnergyRelicChecks.cs)
 checking the unchanged moon-phase payload, both phase outcomes and unit markers
-across all recorded decisions.
+across all recorded decisions, and [RelicCardAttackChecks.Native](../../src/ModelChecks/RelicCardAttackChecks.cs)
+checking the two unchanged attack payloads, ordered subtype matches and native
+temporary offsets. Its pure checks also cover cardless births and reject dynamic
+attack scaling, which is not included in this original-owner evidence.
 Each new trigger archive has eight positive owner effects; their union covers
 all nine distinct originals. Removing only one original's installed callbacks
 must change health, attack, membership or status stacks, beyond trigger metadata.
@@ -337,6 +342,28 @@ pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-moo
 dotnet run --project src/ModelChecks -c Release -- --original-moon-phase-energy-only tests/fixtures/full-battle-original-moon-phase-energy-relic.mt2f
 ```
 
+The schema-147 `full-battle-original-card-attack-relic.mt2f` archive accepts the
+unchanged `WhelpDragonAttack_DH` owner. Its original effect data has `CardType=Spell`,
+but native code checks the spawned subtype first when one is configured. Two
+controlled Monster card states therefore exercise the same subtype branch: Whelp
+returns effect 0 and Dragon returns effect 1, each with a +8 temporary attack
+offset. Both non-reset and reset manager calls agree. The battle won with 60
+matched stages, 21 plays and seven EndTurns; all failure, mismatch, unsupported
+and pending counts are zero. The archive does not include a live cardless birth;
+the pure model check covers that branch. Dynamic multipliers, upgrade/relic-count
+scaling, name/card filters and champion/starter exclusions remain rejected.
+Coverage is now 74/224 (33.04%).
+
+The binary is 32,904 bytes with 5,327 unique nodes and SHA-256
+`051f518a1e7dae9e2818a5bf940651dce35afde5cbc86943e4ebcf36bc7f3208`; it has no
+JSON companion. Inventory is 260 archives: 229 battles and 31 component
+calibrations.
+
+```powershell
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-card-attack-relic.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-card-attack-only tests/fixtures/full-battle-original-card-attack-relic.mt2f
+```
+
 [counts]: full-battle-incant-relics-combined.mt2f
 [statuses]: full-battle-spawn-status-relics.mt2f
 [cost]: full-battle-relic-card-modifiers.mt2f
@@ -359,6 +386,7 @@ dotnet run --project src/ModelChecks -c Release -- --original-moon-phase-energy-
 [cardPlayMagicPower]: full-battle-original-card-play-magic-power.mt2f
 [roomEntry]: full-battle-original-room-entry-status-relics.mt2f
 [moonPhase]: full-battle-original-moon-phase-energy-relic.mt2f
+[cardAttack]: full-battle-original-card-attack-relic.mt2f
 [unitUpgradeTrigger]: full-battle-original-unit-upgrade-trigger-relic.mt2f
 [extraToughTombs]: full-battle-relic-extra-tough-tombs.mt2f
 [stealthWaxers]: full-battle-original-stealth-waxers.mt2f
