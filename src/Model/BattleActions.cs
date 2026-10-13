@@ -84,13 +84,15 @@ namespace MonsterTrain2Poju.Model
         public bool RequiresRoomInHand { get; }
         public bool DisallowOverflowToDrawPile { get; }
         public bool HasCardFilter { get; }
+        public CardUpgradeMaskRule? CardFilter { get; }
         public bool HasUpgrade { get; }
         public CardRecursionRule(string selectionMode, string cardType, string subtype,
-            bool requiresRoomInHand, bool disallowOverflowToDrawPile, bool hasCardFilter, bool hasUpgrade)
+            bool requiresRoomInHand, bool disallowOverflowToDrawPile, bool hasCardFilter, bool hasUpgrade,
+            CardUpgradeMaskRule? cardFilter = null)
         {
             SelectionMode = selectionMode; CardType = cardType; Subtype = subtype;
             RequiresRoomInHand = requiresRoomInHand; DisallowOverflowToDrawPile = disallowOverflowToDrawPile;
-            HasCardFilter = hasCardFilter; HasUpgrade = hasUpgrade;
+            HasCardFilter = hasCardFilter; CardFilter = cardFilter; HasUpgrade = hasUpgrade;
         }
     }
     public sealed class RoomPlayRule
@@ -780,7 +782,8 @@ namespace MonsterTrain2Poju.Model
 
                 (CardActionEffect effect, int effectIndex) = choiceEffects[choiceIndex];
                 IReadOnlyList<int> eligible = CardRecursionModel.EligibleCards(source.Spawn.Train.Context!.Cards,
-                    source.Spawn.Train.Context.OtherPiles, effect, source.PlayRules, action.CardInstanceId, out string? error);
+                    source.Spawn.Train.Context.OtherPiles, effect, source.PlayRules, action.CardInstanceId,
+                    out string? error, source.Spawn.Train.Context.CardRegistry);
                 if (error != null || eligible.Count == 0)
                 {
                     foreach (PlayCardAction branch in Expand(choiceIndex + 1)) yield return branch;

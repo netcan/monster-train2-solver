@@ -5,7 +5,7 @@ using MonsterTrain2Poju.Model;
 
 internal static class CardRecursionChecks
 {
-    public static void SearchChoices(FixtureValue fixture, string selectionMode)
+    public static void SearchChoices(FixtureValue fixture, string selectionMode, int expectedCandidateCount = 6)
     {
         const string recursionCardId = "0e50f7bc-c7c4-46b5-98a4-33d32194d7b8";
         BattleTurnState? captured = null;
@@ -28,7 +28,8 @@ internal static class CardRecursionChecks
             new CardActionEffect(effect.Type, effect.Target, effect.Value, effect.AllowEnemy, effect.AllowPlayer,
                 effect.Statuses, effect.Upgrade, effect.Lifetime, effect.Tests, effect.Range, effect.Filters,
                 recursion: new CardRecursionRule(selectionMode, effect.Recursion!.CardType, effect.Recursion.Subtype,
-                    false, false, effect.Recursion.HasCardFilter, effect.Recursion.HasUpgrade))).ToArray();
+                    false, false, effect.Recursion.HasCardFilter, effect.Recursion.HasUpgrade,
+                    effect.Recursion.CardFilter))).ToArray();
         var selectedRule = new CardPlayRule(original.DataId, original.AssetKey, original.Cost, original.Effect,
             original.Destination, original.SpawnUnit, original.ExternalInteractions, effects, original.UpgradeInteractions,
             original.HandDiscardInteractions, original.HandConsumeInteractions, original.CostType, original.Equipment,
@@ -43,15 +44,18 @@ internal static class CardRecursionChecks
         CardToken sourceCard = choiceRoot.Spawn.Train.Context!.Cards.Hand.Single(card => card.DataId == recursionCardId);
         CardActionEffect recursion = selectedRule.Effects.Single(effect => effect.Type == "Recursion");
         IReadOnlyList<int> eligible = CardRecursionModel.EligibleCards(choiceRoot.Spawn.Train.Context.Cards,
-            choiceRoot.Spawn.Train.Context.OtherPiles, recursion, rules, sourceCard.InstanceId, out string? error);
-        Require(error == null && eligible.Count > 1, "The native recursion fixture did not provide multiple eligible cards.");
+            choiceRoot.Spawn.Train.Context.OtherPiles, recursion, rules, sourceCard.InstanceId, out string? error,
+            choiceRoot.Spawn.Train.Context.CardRegistry);
+        Require(error == null && eligible.Count == expectedCandidateCount,
+            $"The native recursion fixture exposed {eligible.Count} eligible cards; expected {expectedCandidateCount}.");
 
         BattleActionEnumeration frontier = BattleActionModel.EnumerateActions(choiceRoot);
         SupportedActionCandidate[] branches = frontier.SupportedCandidates.Where(candidate =>
             candidate.Action.CardInstanceId == sourceCard.InstanceId && candidate.Action.RoomIndex == 0 &&
             candidate.Action.RecursionSelections.Count == 1).ToArray();
         int[] selectedIds = branches.Select(candidate => candidate.Action.RecursionSelections.Single().CardInstanceIds.Single()).ToArray();
-        Require(selectedIds.SequenceEqual(eligible), "The search frontier did not emit one ordered action for every eligible recursion card.");
+        Require(selectedIds.SequenceEqual(eligible) && branches.Length == expectedCandidateCount,
+            "The search frontier did not emit one ordered action for every filter-eligible recursion card.");
         foreach (SupportedActionCandidate branch in branches)
         {
             int selectedId = branch.Action.RecursionSelections.Single().CardInstanceIds.Single();
@@ -116,6 +120,24 @@ internal static class CardRecursionChecks
         CardRecursionResult chosenHand = CardRecursionModel.Apply(cards, standby, cards.Rng, chosen, definitions, 50, 4, [3]);
         CardActionEffect chosenDeck = Effect("ChooseToDeck", "Eaten", "Invalid", value: 0);
         CardRecursionResult chosenToDeck = CardRecursionModel.Apply(cards, piles, cards.Rng, chosenDeck, definitions, 50, 4, [5]);
+        var spellMask = new CardUpgradeMaskRule(cardType: "Spell");
+        CardActionEffect filteredChoice = new("Recursion", "Exhaust", 1, false, false, [],
+            recursion: new CardRecursionRule("ChooseToDeck", "Invalid", "", false, false, true, false, spellMask));
+        CardInstanceState[] maskRegistry = exhausted.Select(card =>
+        {
+            bool monster = card.DataId == "unit";
+            var descriptor = new CardMaskDescriptor(new CardMaskDefinition(card.DataId, monster ? "Monster" : "Spell",
+                "Common", monster, monster, monster, [], [], [], [], null, false, monster ? 1 : 0, 0, false, false, false),
+                1, [], []);
+            return new CardInstanceState(card.InstanceId, card.DataId, CardModifiers.Empty(), CardModifiers.Empty(),
+                0, 0, 0, [], maskDescriptor: descriptor);
+        }).ToArray();
+        IReadOnlyList<int> filteredEligible = CardRecursionModel.EligibleCards(cards, piles, filteredChoice,
+            definitions, 50, out error, maskRegistry);
+        CardRecursionResult filteredDeck = CardRecursionModel.Apply(cards, piles, cards.Rng, filteredChoice,
+            definitions, 50, 4, [3], maskRegistry);
+        IReadOnlyList<int> missingMaskMetadata = CardRecursionModel.EligibleCards(cards, piles, filteredChoice,
+            definitions, 50, out string? missingMaskError);
         CardActionEffect filtered = new("Recursion", "Exhaust", 1, false, false, [],
             recursion: new CardRecursionRule("RandomToHand", "Invalid", "", false, false, true, false));
         CardActionEffect requiresHandSpace = new("Recursion", "Exhaust", 1, false, false, [],
@@ -129,7 +151,12 @@ internal static class CardRecursionChecks
             chosenHand.OtherPiles!.Single(pile => pile.Name == "Exhausted").Cards.Select(card => card.InstanceId).SequenceEqual([1, 2, 4]) &&
             chosenHand.OtherPiles!.Single(pile => pile.Name == "Standby").Cards.Select(card => card.InstanceId).SequenceEqual([1, 2, 4]) &&
             chosenToDeck.Supported && chosenToDeck.Cards!.Draw.Select(card => card.InstanceId).SequenceEqual([20, 5]) &&
-            chosenToDeck.BattleRng!.Value.Equals(cards.Rng),
+            chosenToDeck.BattleRng!.Value.Equals(cards.Rng) &&
+            filteredEligible.SequenceEqual([1, 3, 4]) && filteredDeck.Supported &&
+            filteredDeck.Cards!.Draw.Select(card => card.InstanceId).SequenceEqual([20, 3]) &&
+            filteredDeck.OtherPiles!.Single(pile => pile.Name == "Exhausted").Cards.Select(card => card.InstanceId)
+                .SequenceEqual([1, 2, 4]) && filteredDeck.BattleRng!.Value.Equals(cards.Rng) &&
+            missingMaskMetadata.Count == 0 && missingMaskError?.Contains("mask metadata", StringComparison.Ordinal) == true,
             "Choose recursion did not enumerate eligible single-card branches, restore the selected card, or preserve RNG.");
         Require(
             !unsupportedFilter.Supported && unsupportedFilter.UnsupportedReason!.Contains("card-filter", StringComparison.Ordinal) &&

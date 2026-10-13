@@ -67,6 +67,13 @@ if (args.Length == 2 && args[0] == "--card-recursion-hand-choice-only")
     return;
 }
 
+if (args.Length == 2 && args[0] == "--card-recursion-filter-choice-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    CardRecursionChecks.SearchChoices(fixture.RootElement, "ChooseToDeck", expectedCandidateCount: 5);
+    return;
+}
+
 if (args.Length == 1 && args[0] == "--ephemeral-card-routing-pure")
 {
     CardModifierChecks.Run();

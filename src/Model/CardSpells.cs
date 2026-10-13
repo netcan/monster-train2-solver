@@ -356,7 +356,8 @@ namespace MonsterTrain2Poju.Model
                     IReadOnlyList<int>? selectedCardIds = recursionSelections?.FirstOrDefault(selection =>
                         selection.EffectIndex == index)?.CardInstanceIds;
                     CardRecursionResult recursion = CardRecursionModel.Apply(state.Context!.Cards, piles,
-                        state.Context.BattleRng, effect, definitions, sourceCardId, state.Context.MaxHandSize, selectedCardIds);
+                        state.Context.BattleRng, effect, definitions, sourceCardId, state.Context.MaxHandSize,
+                        selectedCardIds, state.Context.CardRegistry);
                     if (!recursion.Supported) return UnsupportedTrain(recursion.UnsupportedReason!);
                     BattleStatistics? statistics = state.Context.Statistics;
                     foreach (int cardId in recursion.RestoredCardIds.Where(id =>
@@ -1374,7 +1375,8 @@ namespace MonsterTrain2Poju.Model
             if (effect.Type == "Recursion")
             {
                 IReadOnlyList<int> cardIds = CardRecursionModel.EligibleCards(state.Context!.Cards,
-                    state.Context.OtherPiles, effect, definitions, sourceCardId, out string? error);
+                    state.Context.OtherPiles, effect, definitions, sourceCardId, out string? error,
+                    state.Context.CardRegistry);
                 return new CardTargets(Array.Empty<int>(), error, cardIds: cardIds);
             }
             if (effect.Type == "SpawnOrStatus")

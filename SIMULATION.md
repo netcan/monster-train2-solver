@@ -1,6 +1,6 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-13): 264 binary archives, including 233
+Current accepted inventory (2026-10-13): 265 binary archives, including 234
 full battles and 31 component calibrations. Unchanged original relic evidence
 covers 74/224 catalog entries (33.04%); see
 [the owner evidence table](tests/fixtures/relic-coverage.md). Whole-battle
@@ -45,9 +45,10 @@ The schema-103 archive is 36,006 bytes with 6,025 unique nodes and SHA-256
 JSON companion. Pure checks also cover random-to-hand, Eaten restoration and
 Battle RNG. ChooseToHand and ChooseToDeck now branch on one eligible card without
 consuming Battle RNG. Controlled native calibrations below verify each mode's
-destination and the full-battle replay. Random-to-hand hand-space requirements,
-card filters, recursion upgrades and source piles other than Exhaust/Eaten remain
-explicitly unsupported.
+destination and the full-battle replay. Captured native card filters now use
+branch-owned card mask metadata when enumerating candidates. Recursion upgrades
+and source piles other than Exhaust/Eaten remain explicitly unsupported;
+random-to-hand hand-space requirements also remain unsupported.
 
 ```powershell
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-card-recursion.mt2f
@@ -89,6 +90,23 @@ companion is tracked.
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-card-recursion-choose-to-hand.mt2f
 dotnet run --project src/ModelChecks -c Release -- --card-recursion-hand-choice-only tests/fixtures/full-battle-card-recursion-choose-to-hand.mt2f
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-card-recursion-choose-to-hand.mt2f
+```
+
+`full-battle-card-recursion-filter-choice.mt2f` captures `ChooseToDeck` with a
+native Spell-only card filter. Exhaust contains five Spells and one Monster;
+the native choice screen excludes the Monster and selects Spell instance 3.
+The muted Instant battle wins with 63 stages, 22 actions and seven EndTurns,
+with zero capture failures, mismatches, unsupported transitions or pending
+records. Branch-owned card views filter the six identities to five search
+actions; each returns only its selected card to Draw without consuming Battle
+RNG. The schema-148 binary is 36,379 bytes with 6,194 unique nodes and SHA-256
+`542c5bf2c4511cb3fa27549946e716bca56a7fe21428621ed3b2574ee8c0ff32`; no JSON
+companion is tracked.
+
+```powershell
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-card-recursion-filter-choice.mt2f
+dotnet run --project src/ModelChecks -c Release -- --card-recursion-filter-choice-only tests/fixtures/full-battle-card-recursion-filter-choice.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-card-recursion-filter-choice.mt2f
 ```
 
 ### Original MoonPhaseModifyEmber relic

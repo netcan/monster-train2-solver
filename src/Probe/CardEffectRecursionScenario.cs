@@ -19,7 +19,9 @@ namespace MonsterTrain2Poju.Probe
         private static int? recursionCardInstanceId;
         private static int selectedCardInstanceId;
         private static bool chooseMode;
+        private static bool filterMode;
         private static bool choiceSubmitted;
+        internal static bool FilterMode => filterMode;
 
         internal static void Prepare(AllGameManagers managers, ManualLogSource log)
         {
@@ -28,10 +30,12 @@ namespace MonsterTrain2Poju.Probe
             recursionCardInstanceId = null;
             selectedCardInstanceId = 0;
             string modifierScenario = Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") ?? string.Empty;
-            chooseMode = modifierScenario is "card-effect-recursion-choice" or "card-effect-recursion-choose-to-hand";
+            filterMode = modifierScenario == "card-effect-recursion-filter-choice";
+            chooseMode = (modifierScenario is "card-effect-recursion-choice" or "card-effect-recursion-choose-to-hand") || filterMode;
             choiceSubmitted = false;
             CardManager cards = managers.GetCardManager()!;
-            var gameData = managers.GetSaveManager().GetAllGameData();
+            SaveManager save = managers.GetSaveManager();
+            var gameData = save.GetAllGameData();
             CardData recursion = gameData.FindCardData(RecursionCardId) ??
                 throw new InvalidOperationException("Recursion fixture requires native WurmkinEtchings.");
             if (chooseMode)
@@ -44,13 +48,37 @@ namespace MonsterTrain2Poju.Probe
                 CardEffectData.CardSelectionMode mode = modifierScenario == "card-effect-recursion-choose-to-hand"
                     ? CardEffectData.CardSelectionMode.ChooseToHand : CardEffectData.CardSelectionMode.ChooseToDeck;
                 selectionMode.SetValue(recursionEffect, mode);
+                if (filterMode)
+                {
+                    FieldInfo targetCardType = typeof(CardEffectData).GetField("targetCardType",
+                        BindingFlags.Instance | BindingFlags.NonPublic) ??
+                        throw new MissingFieldException(typeof(CardEffectData).FullName, "targetCardType");
+                    FieldInfo cardFilter = typeof(CardEffectData).GetField("paramCardFilter",
+                        BindingFlags.Instance | BindingFlags.NonPublic) ??
+                        throw new MissingFieldException(typeof(CardEffectData).FullName, "paramCardFilter");
+                    FieldInfo maskCardType = AccessTools.Field(typeof(CardUpgradeMaskData), "cardType") ??
+                        throw new MissingFieldException(typeof(CardUpgradeMaskData).FullName, "cardType");
+                    CardUpgradeMaskData filter = UnityEngine.ScriptableObject.CreateInstance<CardUpgradeMaskData>();
+                    filter.name = "recursion-spell-filter";
+                    maskCardType.SetValue(filter, CardType.Spell);
+                    targetCardType.SetValue(recursionEffect, CardType.Invalid);
+                    cardFilter.SetValue(recursionEffect, filter);
+                }
             }
             CardData exhaustedSpell = gameData.FindCardData(ExhaustedSpellId) ??
                 throw new InvalidOperationException("Recursion fixture requires native StarterFireStarter.");
+            CardData? excludedCandidate = filterMode ? save.GetDeckState()
+                .Select(card => gameData.FindCardData(card.GetCardDataID()))
+                .FirstOrDefault(card => card != null && card.GetCardType() == CardType.Monster) : null;
+            if (filterMode && excludedCandidate == null)
+                throw new InvalidOperationException("Card-filter recursion requires a Monster card candidate in the starting deck.");
+            if (filterMode && exhaustedSpell.GetCardType() != CardType.Spell)
+                throw new InvalidOperationException("Card-filter recursion requires StarterFireStarter to be a Spell.");
             if (!cards.GetBelowHandSize()) throw new InvalidOperationException("Recursion fixture requires one free hand slot.");
             for (int index = 0; index < 6; index++)
             {
-                CardState added = cards.AddNewCard(exhaustedSpell, CardPile.HandPile, false, false, animate: false);
+                CardData candidate = filterMode && index == 5 ? excludedCandidate! : exhaustedSpell;
+                CardState added = cards.AddNewCard(candidate, CardPile.HandPile, false, false, animate: false);
                 if (added == null || !cards.GetHand().Contains(added))
                     throw new InvalidOperationException("Recursion fixture could not create StarterFireStarter in hand.");
                 var condition = new RemoveFromStandByCondition(() => CardPile.KeepInStandBy);
@@ -63,8 +91,9 @@ namespace MonsterTrain2Poju.Probe
             if (played == null || !cards.GetHand().Contains(played))
                 throw new InvalidOperationException("Recursion fixture could not place WurmkinEtchings in hand.");
             recursionCardInstanceId = FullBattleTrace.Active!.CardId(played);
-            log.LogInfo("CARD-RECURSION-PREPARED WurmkinEtchings exhaustedSpellCopies=6 selection=" +
-                (modifierScenario == "card-effect-recursion-choose-to-hand" ? "ChooseToHand" :
+            log.LogInfo("CARD-RECURSION-PREPARED WurmkinEtchings exhaustedSpellCopies=" + (filterMode ? 5 : 6) +
+                (filterMode ? " excludedCandidates=1 totalCandidates=6" : string.Empty) + " selection=" +
+                (filterMode ? "ChooseToDeck+SpellFilter" : modifierScenario == "card-effect-recursion-choose-to-hand" ? "ChooseToHand" :
                     chooseMode ? "ChooseToDeck" : "RandomToDeck") + " selectedCard=" + selectedCardInstanceId);
         }
 
@@ -85,7 +114,7 @@ namespace MonsterTrain2Poju.Probe
                         return BattleActionModel.ChooseUnitSpellAndJunkPlay(source);
                     IReadOnlyList<int> eligible = CardRecursionModel.EligibleCards(source.Spawn.Train.Context.Cards,
                         source.Spawn.Train.Context.OtherPiles, recursion.Value.effect, source.PlayRules,
-                        card.InstanceId, out string? error);
+                        card.InstanceId, out string? error, source.Spawn.Train.Context.CardRegistry);
                     if (error != null || !eligible.Contains(selectedCardInstanceId))
                         return BattleActionModel.ChooseUnitSpellAndJunkPlay(source);
                     selections = [new CardRecursionSelection(recursion.Value.index, [selectedCardInstanceId])];

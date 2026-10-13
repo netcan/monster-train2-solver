@@ -288,7 +288,8 @@ namespace MonsterTrain2Poju.Probe
                             effect.GetTargetCardSelectionMode().ToString(), effect.GetTargetCardType().ToString(),
                             effect.GetTargetCharacterSubtype().IsNone ? "" : effect.GetTargetCharacterSubtype().Key,
                             effect.GetParamBool(), effect.GetParamBool2(), effect.GetParamCardFilter() != null,
-                            effect.GetParamCardUpgradeData() != null) : null));
+                            effect.GetParamCardUpgradeData() != null,
+                            effect.GetParamCardFilter() == null ? null : CardUpgradeMaskProbe.Rule(effect.GetParamCardFilter())) : null));
                 }
             }
             else interactions.Add("Unimplemented play effect " + kind);

@@ -34,7 +34,7 @@ $fixtureNames = @('full-battle-steward-once.mt2f', 'full-battle-no-cards.mt2f', 
     'full-battle-relic-card-trigger-upgrades.mt2f',
     'full-battle-relic-card-replacement-upgrades.mt2f',
     'full-battle-conditional-relic-card-upgrades.mt2f', 'full-battle-statistics.mt2f', 'full-battle-numeric-upgrades.mt2f',
-    'full-battle-dynamic-upgrades.mt2f', 'full-battle-sacrifice-effects.mt2f', 'full-battle-card-effect-kill.mt2f', 'full-battle-card-recursion.mt2f', 'full-battle-card-recursion-choice.mt2f', 'full-battle-card-recursion-choose-to-hand.mt2f', 'full-battle-sacrifice-upgrades.mt2f',
+    'full-battle-dynamic-upgrades.mt2f', 'full-battle-sacrifice-effects.mt2f', 'full-battle-card-effect-kill.mt2f', 'full-battle-card-recursion.mt2f', 'full-battle-card-recursion-choice.mt2f', 'full-battle-card-recursion-choose-to-hand.mt2f', 'full-battle-card-recursion-filter-choice.mt2f', 'full-battle-sacrifice-upgrades.mt2f',
     'full-battle-hand-upgrades.mt2f', 'full-battle-targeted-hand-upgrades.mt2f', 'full-battle-permanent-consume-hand-upgrades.mt2f',
     'full-battle-permanent-consume-over-temporary.mt2f',
     'full-battle-healing.mt2f', 'full-battle-healing-triggers.mt2f', 'full-battle-room-spells.mt2f',
@@ -252,13 +252,13 @@ foreach ($fixturePath in $focusedTeamSpawnStatusFixtures) {
 }
 
 $recursionChoiceFixtures = @($fixtures | Where-Object {
-    (Split-Path -Leaf $_) -in @('full-battle-card-recursion-choice.mt2f', 'full-battle-card-recursion-choose-to-hand.mt2f')
+    (Split-Path -Leaf $_) -in @('full-battle-card-recursion-choice.mt2f', 'full-battle-card-recursion-choose-to-hand.mt2f', 'full-battle-card-recursion-filter-choice.mt2f')
 })
 foreach ($fixturePath in $recursionChoiceFixtures) {
-    $selectionMode = if ((Split-Path -Leaf $fixturePath) -eq 'full-battle-card-recursion-choose-to-hand.mt2f') {
-        '--card-recursion-hand-choice-only'
-    } else {
-        '--card-recursion-choice-only'
+    $selectionMode = switch (Split-Path -Leaf $fixturePath) {
+        'full-battle-card-recursion-choose-to-hand.mt2f' { '--card-recursion-hand-choice-only' }
+        'full-battle-card-recursion-filter-choice.mt2f' { '--card-recursion-filter-choice-only' }
+        default { '--card-recursion-choice-only' }
     }
     foreach ($mode in @($selectionMode, '--battle-search-only')) {
         dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- $mode $fixturePath

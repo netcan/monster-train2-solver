@@ -30,7 +30,7 @@ The default command checks the full curated inventory. For routine changes, run
 the dedicated checks for the new and directly affected scenarios; run the full
 inventory at completed milestones and before delivery.
 
-Current inventory is 264 archives: 233 accepted battles and 31 component
+Current inventory is 265 archives: 234 accepted battles and 31 component
 calibrations. The schema-146 `full-battle-original-moon-phase-energy-relic.mt2f`
 archive adds accepted native evidence for the unchanged `MoonPhaseModifyEmber`
 relic: three Full callbacks add one Ember and notify; three New callbacks are
@@ -117,6 +117,23 @@ JSON companion.
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-card-recursion-choose-to-hand.mt2f
 dotnet run --project src/ModelChecks -c Release -- --card-recursion-hand-choice-only tests/fixtures/full-battle-card-recursion-choose-to-hand.mt2f
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-card-recursion-choose-to-hand.mt2f
+```
+
+`full-battle-card-recursion-filter-choice.mt2f` is a controlled native
+`ChooseToDeck` calibration with a Spell-only `CardUpgradeMask`. Five exhausted
+Spells remain eligible while one Monster is excluded; the native screen selects
+Spell instance 3. The muted Instant battle wins with 63 stages, 22 actions and
+seven EndTurns, with zero capture failures, mismatches, unsupported transitions
+or pending records. Search emits five card choices from the captured decision
+state and preserves Battle RNG. The schema-148 binary is 36,379 bytes with 6,194
+unique nodes and SHA-256
+`542c5bf2c4511cb3fa27549946e716bca56a7fe21428621ed3b2574ee8c0ff32`; it has no
+JSON companion.
+
+```powershell
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-card-recursion-filter-choice.mt2f
+dotnet run --project src/ModelChecks -c Release -- --card-recursion-filter-choice-only tests/fixtures/full-battle-card-recursion-filter-choice.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-card-recursion-filter-choice.mt2f
 ```
 
 `full-battle-relic-card-negative-unhealed.mt2f` (schema 145)

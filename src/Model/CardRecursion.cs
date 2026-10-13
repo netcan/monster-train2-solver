@@ -33,7 +33,8 @@ namespace MonsterTrain2Poju.Model
     public static class CardRecursionModel
     {
         public static IReadOnlyList<int> EligibleCards(CardCycleState cards, IReadOnlyList<CardPileState>? otherPiles,
-            CardActionEffect effect, BattlePlayRules? definitions, int sourceCardId, out string? error)
+            CardActionEffect effect, BattlePlayRules? definitions, int sourceCardId, out string? error,
+            IReadOnlyList<CardInstanceState>? cardRegistry = null)
         {
             error = Validate(effect, otherPiles);
             if (error != null) return Array.Empty<int>();
@@ -57,6 +58,23 @@ namespace MonsterTrain2Poju.Model
                     rule.CardType != effect.Recursion.CardType) continue;
                 if (effect.Recursion.Subtype.Length > 0 && rule.SpawnUnit?.Subtypes.Contains(effect.Recursion.Subtype) != true)
                     continue;
+                if (effect.Recursion.CardFilter != null)
+                {
+                    CardInstanceState? instance = cardRegistry?.FirstOrDefault(item => item.InstanceId == card.InstanceId);
+                    if (instance?.MaskDescriptor == null)
+                    {
+                        error = "Recursion card filtering requires branch-owned card mask metadata for card " + card.InstanceId + ".";
+                        return Array.Empty<int>();
+                    }
+                    CardUpgradeMaskCard maskCard;
+                    try { maskCard = CardBranchMaskModel.Resolve(instance); }
+                    catch (InvalidOperationException exception)
+                    {
+                        error = "Recursion card filtering cannot resolve card " + card.InstanceId + ": " + exception.Message;
+                        return Array.Empty<int>();
+                    }
+                    if (!CardUpgradeMaskModel.FilterCard(effect.Recursion.CardFilter, maskCard)) continue;
+                }
                 eligible.Add(card.InstanceId);
             }
             return Array.AsReadOnly(eligible.ToArray());
@@ -64,9 +82,10 @@ namespace MonsterTrain2Poju.Model
 
         public static CardRecursionResult Apply(CardCycleState cards, IReadOnlyList<CardPileState>? otherPiles,
             UnityRng battleRng, CardActionEffect effect, BattlePlayRules? definitions, int sourceCardId, int maxHandSize,
-            IReadOnlyList<int>? selectedCardIds = null)
+            IReadOnlyList<int>? selectedCardIds = null, IReadOnlyList<CardInstanceState>? cardRegistry = null)
         {
-            IReadOnlyList<int> eligible = EligibleCards(cards, otherPiles, effect, definitions, sourceCardId, out string? error);
+            IReadOnlyList<int> eligible = EligibleCards(cards, otherPiles, effect, definitions, sourceCardId,
+                out string? error, cardRegistry);
             if (error != null) return new CardRecursionResult(null, null, null, error);
             if (maxHandSize < cards.Hand.Count) return new CardRecursionResult(null, null, null, "Invalid hand size.");
             int[] selected;
@@ -156,7 +175,8 @@ namespace MonsterTrain2Poju.Model
                 return "Unmodeled card-recursion selection mode " + rule.SelectionMode + ".";
             if (rule.RequiresRoomInHand && rule.SelectionMode == "RandomToHand")
                 return "Random card recursion requiring hand space is not modeled.";
-            if (rule.HasCardFilter) return "Card recursion requires its native card-filter definition.";
+            if (rule.HasCardFilter && rule.CardFilter == null) return "Card recursion requires its native card-filter definition.";
+            if (!rule.HasCardFilter && rule.CardFilter != null) return "Card recursion has unexpected card-filter metadata.";
             if (rule.HasUpgrade) return "Card recursion requires its temporary card-upgrade definition.";
             if (effect.Target != "Exhaust" && effect.Target != "Eaten")
                 return "Unmodeled card-recursion source pile " + effect.Target + ".";
