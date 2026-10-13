@@ -21,9 +21,11 @@ namespace MonsterTrain2Poju.Probe
         private static bool chooseMode;
         private static bool filterMode;
         private static bool upgradeMode;
+        private static bool upgradeToHandMode;
         private static bool choiceSubmitted;
         internal static bool FilterMode => filterMode;
         internal static bool UpgradeMode => upgradeMode;
+        internal static bool UpgradeToHandMode => upgradeToHandMode;
 
         internal static void Prepare(AllGameManagers managers, ManualLogSource log)
         {
@@ -34,6 +36,7 @@ namespace MonsterTrain2Poju.Probe
             string modifierScenario = Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") ?? string.Empty;
             filterMode = modifierScenario == "card-effect-recursion-filter-choice";
             upgradeMode = modifierScenario == "card-effect-recursion-upgrade";
+            upgradeToHandMode = modifierScenario == "card-effect-recursion-upgrade-hand";
             chooseMode = (modifierScenario is "card-effect-recursion-choice" or "card-effect-recursion-choose-to-hand") || filterMode;
             choiceSubmitted = false;
             CardManager cards = managers.GetCardManager()!;
@@ -43,7 +46,7 @@ namespace MonsterTrain2Poju.Probe
                 throw new InvalidOperationException("Recursion fixture requires native WurmkinEtchings.");
             CardEffectData recursionEffect = recursion.GetEffects().Single(effect =>
                 effect.GetEffectStateName() == typeof(CardEffectRecursion).Name);
-            if (upgradeMode)
+            if (upgradeMode || upgradeToHandMode)
             {
                 CardUpgradeData temporaryUpgrade = DynamicUpgradeScenario.Upgrade("PojuRecursionDamage", "f2f8c03b-327d-4f3d-8cc1-f9b2a20e4ff6",
                     3, 0, 0, 0, "armor", 0);
@@ -57,6 +60,10 @@ namespace MonsterTrain2Poju.Probe
                     throw new MissingFieldException(typeof(CardEffectData).FullName, "paramInt"))
                     .SetValue(recursionEffect, 1);
             }
+            if (upgradeToHandMode)
+                (AccessTools.Field(typeof(CardEffectData), "targetCardSelectionMode") ??
+                    throw new MissingFieldException(typeof(CardEffectData).FullName, "targetCardSelectionMode"))
+                    .SetValue(recursionEffect, CardEffectData.CardSelectionMode.RandomToHandWithUpgrades);
             if (chooseMode)
             {
                 FieldInfo selectionMode = typeof(CardEffectData).GetField("targetCardSelectionMode",
@@ -108,10 +115,13 @@ namespace MonsterTrain2Poju.Probe
             if (played == null || !cards.GetHand().Contains(played))
                 throw new InvalidOperationException("Recursion fixture could not place WurmkinEtchings in hand.");
             recursionCardInstanceId = FullBattleTrace.Active!.CardId(played);
+            string selection = filterMode ? "ChooseToDeck+SpellFilter" :
+                upgradeToHandMode ? "RandomToHandWithUpgrades" :
+                modifierScenario == "card-effect-recursion-choose-to-hand" ? "ChooseToHand" :
+                chooseMode ? "ChooseToDeck" : "RandomToDeck";
             log.LogInfo("CARD-RECURSION-PREPARED WurmkinEtchings exhaustedSpellCopies=" + (filterMode ? 5 : 6) +
                 (filterMode ? " excludedCandidates=1 totalCandidates=6" : string.Empty) + " selection=" +
-                (filterMode ? "ChooseToDeck+SpellFilter" : modifierScenario == "card-effect-recursion-choose-to-hand" ? "ChooseToHand" :
-                    chooseMode ? "ChooseToDeck" : "RandomToDeck") + (upgradeMode ? " temporaryUpgrade=+3Damage" : string.Empty) +
+                selection + (upgradeMode || upgradeToHandMode ? " temporaryUpgrade=+3Damage" : string.Empty) +
                 " selectedCard=" + selectedCardInstanceId);
         }
 

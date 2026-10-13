@@ -513,7 +513,7 @@ namespace MonsterTrain2Poju.Probe
                 numericModifiersPrepared = true;
                 CardEffectKillScenario.Prepare(managers, log);
             }
-            if (fullBattle && !numericModifiersPrepared && modifierScenario is "card-effect-recursion" or "card-effect-recursion-choice" or "card-effect-recursion-choose-to-hand" or "card-effect-recursion-filter-choice" or "card-effect-recursion-upgrade")
+            if (fullBattle && !numericModifiersPrepared && modifierScenario is "card-effect-recursion" or "card-effect-recursion-choice" or "card-effect-recursion-choose-to-hand" or "card-effect-recursion-filter-choice" or "card-effect-recursion-upgrade" or "card-effect-recursion-upgrade-hand")
             {
                 if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Card recursion fixture must start on deployment turn.");
                 numericModifiersPrepared = true;

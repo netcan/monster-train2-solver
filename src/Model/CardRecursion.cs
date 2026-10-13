@@ -126,7 +126,7 @@ namespace MonsterTrain2Poju.Model
             for (int index = selected.Length - 1; index >= 0; index--)
             {
                 if (effect.Recursion.DisallowOverflowToDrawPile &&
-                    effect.Recursion.SelectionMode == "RandomToHand" && capacity <= 0) break;
+                    (effect.Recursion.SelectionMode is "RandomToHand" or "RandomToHandWithUpgrades") && capacity <= 0) break;
                 int cardId = selected[index];
                 if (!selectedTokens.TryGetValue(cardId, out CardToken? token))
                     return new CardRecursionResult(null, null, null, "A selected recursion card left its source pile.");
@@ -193,12 +193,16 @@ namespace MonsterTrain2Poju.Model
             CardRecursionRule? rule = effect.Recursion;
             if (rule == null) return "Missing native card-recursion definition.";
             if (rule.SelectionMode != "ChooseToHand" && rule.SelectionMode != "ChooseToDeck" &&
-                rule.SelectionMode != "RandomToHand" && rule.SelectionMode != "RandomToDeck")
+                rule.SelectionMode != "RandomToHand" && rule.SelectionMode != "RandomToDeck" &&
+                rule.SelectionMode != "RandomToHandWithUpgrades")
                 return "Unmodeled card-recursion selection mode " + rule.SelectionMode + ".";
-            if (rule.RequiresRoomInHand && rule.SelectionMode == "RandomToHand")
+            if (rule.RequiresRoomInHand &&
+                (rule.SelectionMode is "RandomToHand" or "RandomToHandWithUpgrades"))
                 return "Random card recursion requiring hand space is not modeled.";
             if (rule.HasCardFilter && rule.CardFilter == null) return "Card recursion requires its native card-filter definition.";
             if (!rule.HasCardFilter && rule.CardFilter != null) return "Card recursion has unexpected card-filter metadata.";
+            if (rule.SelectionMode == "RandomToHandWithUpgrades" && !rule.HasUpgrade)
+                return "Random-to-hand-with-upgrades recursion requires its temporary card-upgrade definition.";
             if (rule.HasUpgrade != (effect.Upgrade != null))
                 return "Card recursion requires its temporary card-upgrade definition.";
             if (effect.Upgrade?.ExternalInteractions.Count > 0)

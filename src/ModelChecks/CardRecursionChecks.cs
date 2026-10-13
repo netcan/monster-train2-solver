@@ -75,8 +75,10 @@ internal static class CardRecursionChecks
 
     public static void SearchUpgrade(FixtureValue fixture)
     {
-        Require(fixture.GetProperty("Schema").GetInt32() == 149 &&
-            fixture.GetProperty("ModifierScenario").GetString() == "card-effect-recursion-upgrade",
+        string scenario = fixture.GetProperty("ModifierScenario").GetString()!;
+        bool toHand = scenario == "card-effect-recursion-upgrade-hand";
+        Require(fixture.GetProperty("Schema").GetInt32() == (toHand ? 150 : 149) &&
+            scenario == (toHand ? "card-effect-recursion-upgrade-hand" : "card-effect-recursion-upgrade"),
             "The fixture is not the native recursion-upgrade scenario.");
         const string recursionCardId = "0e50f7bc-c7c4-46b5-98a4-33d32194d7b8";
         const string upgradeId = "f2f8c03b-327d-4f3d-8cc1-f9b2a20e4ff6";
@@ -98,6 +100,13 @@ internal static class CardRecursionChecks
 
         FixtureValue entry = evidence!.Value;
         BattleTurnState root = entry.GetProperty("Before").Deserialize<BattleTurnState>()!;
+        CardToken sourceToken = root.Spawn.Train.Context!.Cards.Hand.Single(card =>
+            card.DataId == recursionCardId && card.InstanceId == entry.GetProperty("Action").GetProperty("CardInstanceId").GetInt32());
+        CardActionEffect recursionEffect = root.PlayRules!.Cards.Single(rule => rule.DataId == sourceToken.DataId)
+            .Effects.Single(effect => effect.Type == "Recursion");
+        Require(recursionEffect.Recursion!.SelectionMode == (toHand ? "RandomToHandWithUpgrades" : "RandomToDeck") &&
+            recursionEffect.Upgrade?.DataId == upgradeId,
+            "The captured action does not contain the expected native recursion-upgrade mode.");
         PlayCardAction actionToPlay = entry.GetProperty("Action").Deserialize<PlayCardAction>()!;
         BattleActionResult predicted = BattleActionModel.PlayCard(root, actionToPlay);
         BattleTurnState actual = entry.GetProperty("Actual").Deserialize<BattleTurnState>()!;
@@ -112,14 +121,18 @@ internal static class CardRecursionChecks
             .SelectMany(pile => pile.GetProperty("Cards").EnumerateArray())
             .Where(card => card.GetProperty("DataId").GetString() == spellId)
             .Select(card => card.GetProperty("InstanceId").GetInt32()).ToArray();
-        int[] returned = candidates.Where(id => actual.Spawn.Train.Context!.Cards.Draw.Any(card => card.InstanceId == id)).ToArray();
+        int[] destinationIds = (toHand ? actual.Spawn.Train.Context!.Cards.Hand : actual.Spawn.Train.Context!.Cards.Draw)
+            .Select(card => card.InstanceId).ToArray();
+        int[] otherDestinationIds = (toHand ? actual.Spawn.Train.Context!.Cards.Draw : actual.Spawn.Train.Context!.Cards.Hand)
+            .Select(card => card.InstanceId).ToArray();
+        int[] returned = candidates.Where(destinationIds.Contains).ToArray();
         CardInstanceState[] upgraded = candidates.Select(id => actual.Spawn.Train.Context!.FindCard(id)!)
             .Where(card => card.Temporary.Upgrades.Any(upgrade => upgrade.DataId == upgradeId && upgrade.Stats.Damage == 3)).ToArray();
-        Require(returned.Length == 1 && upgraded.Length == 1 && upgraded[0].InstanceId == returned[0] &&
+        Require(returned.Length == 1 && !otherDestinationIds.Contains(returned[0]) && upgraded.Length == 1 && upgraded[0].InstanceId == returned[0] &&
             candidates.Where(id => id != returned[0]).All(id => actual.Spawn.Train.Context!.FindCard(id)!.Temporary.Upgrades
                 .All(upgrade => upgrade.DataId != upgradeId)),
-            "Native recursion did not upgrade exactly the one Spell it returned to the draw pile.");
-        Console.WriteLine("CARD-RECURSION-UPGRADE-CHECKS PASS: native random selection, temporary +3 Damage, returned-card identity, and untouched candidates.");
+            "Native recursion did not upgrade exactly the one Spell it returned to the expected destination.");
+        Console.WriteLine($"CARD-RECURSION-UPGRADE-CHECKS PASS: native random selection, {(toHand ? "hand" : "draw pile")} destination, temporary +3 Damage, returned-card identity, and untouched candidates.");
     }
 
     public static void Run()
@@ -202,6 +215,10 @@ internal static class CardRecursionChecks
         CardRecursionResult upgradedDeck = CardRecursionModel.Apply(cards, piles, cards.Rng, randomDeckUpgrade,
             definitions, 50, 4, cardRegistry: upgradeRegistry);
         CardInstanceState upgradedInstance = upgradedDeck.ChangedCards.Single();
+        CardActionEffect randomHandWithUpgrade = new("Recursion", "Exhaust", 1, false, false, [], recursionUpgrade,
+            recursion: new CardRecursionRule("RandomToHandWithUpgrades", "Spell", "", false, false, false, true));
+        CardRecursionResult upgradedHand = CardRecursionModel.Apply(cards, standby, cards.Rng, randomHandWithUpgrade,
+            definitions, 50, 4, cardRegistry: upgradeRegistry);
         CardRecursionResult missingUpgradeRegistry = CardRecursionModel.Apply(cards, piles, cards.Rng, randomDeckUpgrade,
             definitions, 50, 4);
         CardRecursionResult emptyUpgradeTarget = CardRecursionModel.Apply(cards,
@@ -228,6 +245,9 @@ internal static class CardRecursionChecks
         Require(upgradedDeck.Supported && upgradedDeck.RestoredCardIds.SequenceEqual([expectedUpgradeChoice.Items[0]]) &&
             upgradedDeck.Cards!.Draw.Select(card => card.InstanceId).SequenceEqual([20, expectedUpgradeChoice.Items[0]]) &&
             upgradedInstance.InstanceId == expectedUpgradeChoice.Items[0] && upgradedInstance.Temporary.Upgrades.Single().Stats.Damage == 3 &&
+            upgradedHand.Supported && upgradedHand.Cards!.Hand.Select(card => card.InstanceId)
+                .SequenceEqual([expectedUpgradeChoice.Items[0], 50]) && upgradedHand.Cards.Draw.Single().InstanceId == 20 &&
+            upgradedHand.ChangedCards.Single().InstanceId == expectedUpgradeChoice.Items[0] &&
             upgradedInstance.Permanent.Upgrades.Count == 0 && upgradeRegistry.All(card => card.Temporary.Upgrades.Count == 0) &&
             !missingUpgradeRegistry.Supported && missingUpgradeRegistry.UnsupportedReason!.Contains("card registry", StringComparison.Ordinal) &&
             emptyUpgradeTarget.Supported && emptyUpgradeTarget.RestoredCardIds.Count == 0 && emptyUpgradeTarget.ChangedCards.Count == 0,

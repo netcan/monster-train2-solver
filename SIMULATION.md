@@ -1,6 +1,6 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-13): 266 binary archives, including 235
+Current accepted inventory (2026-10-13): 267 binary archives, including 236
 full battles and 31 component calibrations. Unchanged original relic evidence
 covers 74/224 catalog entries (33.04%); see
 [the owner evidence table](tests/fixtures/relic-coverage.md). Whole-battle
@@ -8838,14 +8838,33 @@ decision search expands 128 states with identical serial and parallel results.
 
 The archive is 36,170 bytes with 6,185 unique nodes and SHA-256
 `6fcfa4e9fcdda9ab4b71e24dcc52301820c8f949f88d5c22320721016a9ceccd`; it has no
-JSON companion. The curated inventory is now 266 archives: 235 full battles and
-31 component calibrations. This validates random-to-deck recursion with a simple
-temporary upgrade; chosen modes, random-to-hand upgrades, and upgrades with
-filters, replacements, traits, or triggers still need native calibration.
+JSON companion. This validates random-to-deck recursion with a simple temporary
+upgrade.
+
+The schema-150 `full-battle-card-recursion-upgrade-hand.mt2f` captures the
+dedicated native `RandomToHandWithUpgrades` mode. The same randomly selected
+Spell returns to Hand with temporary +3 Damage; other Exhaust candidates remain
+unchanged. The muted Instant battle wins with 63 stages, 22 actions and seven
+EndTurns, with zero capture failures, mismatches, unsupported transitions or
+pending records. Native action replay matches including the card's hand
+destination and draw statistics. Search again expands 128 states with identical
+serial and parallel results. The archive is 36,571 bytes with 6,247 unique nodes
+and SHA-256
+`6607eb203098f2b0ca795481951a37d9ed727ddd1fea0700d047bf30c82dcc61`; it has no
+JSON companion.
+
+The curated inventory is now 267 archives: 236 full battles and 31 component
+calibrations. Chosen recursion with upgrades, random hand-space requirements,
+and upgrades with filters, replacements, traits, or triggers still need native
+calibration.
 
 ```powershell
 pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -CardRecursionUpgrade -GameSpeed Instant
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -CardRecursionUpgradeToHand -GameSpeed Instant
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-card-recursion-upgrade.mt2f
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-card-recursion-upgrade-hand.mt2f
 dotnet run --project src/ModelChecks -c Release -- --card-recursion-upgrade-only tests/fixtures/full-battle-card-recursion-upgrade.mt2f
+dotnet run --project src/ModelChecks -c Release -- --card-recursion-upgrade-only tests/fixtures/full-battle-card-recursion-upgrade-hand.mt2f
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-card-recursion-upgrade.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-card-recursion-upgrade-hand.mt2f
 ```

@@ -156,6 +156,27 @@ dotnet run --project src/ModelChecks -c Release -- --card-recursion-upgrade-only
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-card-recursion-upgrade.mt2f
 ```
 
+### `RandomToHandWithUpgrades` recursion (schema 150)
+
+`full-battle-card-recursion-upgrade-hand.mt2f` verifies the dedicated native
+`RandomToHandWithUpgrades` mode. Exactly one returned Spell receives a temporary
+upgrade with 3 additional Damage and enters Hand; the other Exhaust candidates
+remain unchanged. The
+muted Instant battle wins with 63 stages and 22 actions, with zero capture
+failures, mismatches, unsupported transitions or pending records. Replay
+matches hand placement and draw statistics; the 128-state search matches in
+serial and parallel. The archive is 36,571 bytes with 6,247 unique nodes and
+SHA-256 `6607eb203098f2b0ca795481951a37d9ed727ddd1fea0700d047bf30c82dcc61`;
+no JSON companion is tracked. Inventory: 267 archives, comprising 236 battles
+and 31 component calibrations.
+
+```powershell
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -CardRecursionUpgradeToHand -GameSpeed Instant
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-card-recursion-upgrade-hand.mt2f
+dotnet run --project src/ModelChecks -c Release -- --card-recursion-upgrade-only tests/fixtures/full-battle-card-recursion-upgrade-hand.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-card-recursion-upgrade-hand.mt2f
+```
+
 `full-battle-relic-card-negative-unhealed.mt2f` (schema 145)
 captures a temporary `UnhealedHealth=-1` upgrade installed by the native relic
 manager. The upgrade remains on the played Train Steward, but the summoned unit
