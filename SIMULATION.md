@@ -1,8 +1,8 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-13): 250 binary archives, including 219
+Current accepted inventory (2026-10-13): 252 binary archives, including 221
 full battles and 31 component calibrations. Unchanged original relic evidence
-covers 67/224 catalog entries (29.91%); see
+covers 68/224 catalog entries (30.36%); see
 [the owner evidence table](tests/fixtures/relic-coverage.md). Whole-battle
 coverage and the optimal solver remain in progress.
 
@@ -210,6 +210,7 @@ are copied immutable values; independent child states can run on worker threads.
 | Dynamic room capacities | `RoomCapacityModel`, `BattleActionModel` and `UnitModifierModel` | 220 exact contexts and 2,050 native tests; both team groups, occupied shrinking, bounds/wrap, ignored ranges, statistic-driven quantities, unit triggers, live summons/restricted upgrades and complete policies with parallel branches |
 | Spell draws and hand cycling | `CardCycleModel.DrawCards` and `CardSpellModel` | Signed/zero/max counts, full-hand cast timing, resolving-card exclusion, reshuffle RNG, draw statistics and live membership for later hand upgrades; ranged tests require explicit UI RNG isolation |
 | Spell hand discard and consumption | `HandRemovalModel` and `CardSpellModel` | Forward order, resolving-card exclusion, retained buffer aliases, discard-only upgrade removal, double exhaustion statistics, per-effect counters and nested dead-spawner returns |
+| Random spell discard | `RandomDiscardModel` and `CardSpellModel` | Resolving-card exclusion, Infusion/Persistent mask filters, exact battle-RNG selection, native discard routing and full hand/pile replay |
 | Modified card generation | `CardGenerationModel`, `CardSpellModel` and `CombatTrigger` | Five destinations, pool/full-hand/duplicate timing, initial upgrades, modifier copies/exclusions, permanent Consume trait copies, one-shot upgrades and fresh card/effect state |
 | Room attack exchange | `RoomCombatModel.Exchange` | Ordered initiative, target selection, retargeting, shield/armor and retaliation checks |
 | Entire room resolution | `RoomCombatModel.Resolve` | Native normal exchanges, post-combat effects and multiple rounds of boss/Pyre relentless combat |

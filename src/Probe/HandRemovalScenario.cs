@@ -78,7 +78,7 @@ namespace MonsterTrain2Poju.Probe
             public int ConsumedCount { get; set; }
             public string? Difference { get; set; }
         }
-        private static Snapshot Capture()
+        internal static Snapshot Capture()
         {
             FullBattleTrace trace = FullBattleTrace.Active!;
             AllGameManagers managers = AllGameManagers.Instance!;
@@ -90,7 +90,7 @@ namespace MonsterTrain2Poju.Probe
                 PendingExhaustedCards = standby.Where(pair => pair.Value?.GetReturnLocation() == CardPile.ExhaustedPile)
                     .Select(pair => trace.CardId(pair.Key)).ToArray(), ExhaustionRunsTriggerQueue = units.Count > 0 };
         }
-        private static JToken Comparable(CombatContext context, IReadOnlyList<CardPileState>? piles) => JToken.FromObject(new
+        internal static JToken Comparable(CombatContext context, IReadOnlyList<CardPileState>? piles) => JToken.FromObject(new
         { Context = context, OtherPiles = piles });
         private static IEnumerator Wrap(IEnumerator native, CardEffectState effect, CardEffectParams parameters)
         {

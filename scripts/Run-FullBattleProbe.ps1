@@ -45,6 +45,7 @@ param(
     [switch] $Drawing,
     [switch] $HandRemoval,
     [switch] $HandRemovalLethal,
+    [switch] $RandomDiscard,
     [switch] $Generation,
     [switch] $GenerationPermanentConsume,
     [switch] $GenerationLethal,
@@ -480,6 +481,10 @@ if ($DamagePerHpArmor) { $environment.MT2_PROBE_MODIFIERS = 'damage-per-hp-armor
 if ($DamagePerHpLastAttacker) { $environment.MT2_PROBE_MODIFIERS = 'damage-per-hp-last-attacker' }
 if ($DamagePerHpAbility) { $environment.MT2_PROBE_MODIFIERS = 'damage-per-hp-ability' }
 if ($DamageOverflow) { $environment.MT2_PROBE_MODIFIERS = 'damage-overflow' }
+if ($RandomDiscard) {
+    $environment.MT2_PROBE_MODIFIERS = 'random-discard'
+    $environment.MT2_PROBE_BRANCH_CARD_MASKS = '1'
+}
 $process = Start-Process -FilePath (Join-Path $gameRoot 'MonsterTrain2.exe') `
     -WorkingDirectory $gameRoot -ArgumentList @('-logFile', $unityLog) `
     -Environment $environment -WindowStyle Hidden -PassThru
@@ -1094,6 +1099,8 @@ $drawCoverage = -not $Drawing -or (@($trace.CardCycles | Where-Object Kind -EQ '
     @($trace.NumericRanges | Where-Object Phase -EQ 'Apply').Count -gt 0)
 $handRemovalCoverage = -not ($HandRemoval -or $HandRemovalLethal) -or (@($trace.HandRemovals | Where-Object Mode -EQ 0).Count -gt 0 -and
     @($trace.HandRemovals | Where-Object Mode -EQ 1).Count -gt 0 -and @($trace.HandRemovals | Where-Object Difference -NE $null).Count -eq 0)
+$randomDiscardCoverage = -not $RandomDiscard -or (@($trace.RandomDiscards).Count -gt 0 -and
+    @($trace.RandomDiscards | Where-Object { $_.Difference -ne $null -or $null -eq $_.Actual -or $_.Predicted.RemovedCards.Count -eq 0 }).Count -eq 0)
 $generationCoverage = -not ($Generation -or $GenerationLethal) -or (@($trace.CardGenerations | ForEach-Object { $_.Rule.Destination } | Sort-Object -Unique).Count -eq 5 -and
     @($trace.CardGenerations | Where-Object { $_.Predicted.AddedCards.Count -gt 0 }).Count -gt 0 -and
     @($trace.CardGenerations | Where-Object Difference -NE $null).Count -eq 0)
@@ -2196,6 +2203,8 @@ $result = [pscustomobject]@{
     TargetFilterCoverage = $targetFilterCoverage
     DrawCoverage = $drawCoverage
     HandRemovalCoverage = $handRemovalCoverage
+    RandomDiscardCoverage = $randomDiscardCoverage
+    RandomDiscardApplications = @($trace.RandomDiscards).Count
     GenerationCoverage = $generationCoverage
     PermanentConsumeGenerationCoverage = $permanentConsumeGenerationCoverage
     PermanentConsumeOverTemporaryCoverage = (-not $PermanentConsumeOverTemporary -or $modifierCoverage)
@@ -2360,6 +2369,6 @@ if ($StatisticOverflow) {
         @($zero.Samples | Where-Object Amount -NE 0).Count -ne 0) { throw 'Native zero-increment coverage is incomplete.' }
 }
 if ($null -eq $trace.NativeWon -or $process.ExitCode -ne 0 -or -not $nativePassed -or -not $originalUnchanged -or -not $modifierCoverage -or -not $healingCoverage -or -not $onHealCoverage -or -not $roomSpellCoverage -or -not $damagePerHpCoverage -or -not $damagePerHpAbilityCoverage -or -not $damageOverflowCoverage -or -not $terminalSettled -or -not $terminalSpellCoverage -or
-    -not $postKillCoverage -or -not $randomCoverage -or -not $randomStatusCoverage -or -not $crossRoomCoverage -or -not $attackCoverage -or -not $maxHealthCoverage -or -not $numericRangeCoverage -or -not $targetFilterCoverage -or -not $drawCoverage -or -not $handRemovalCoverage -or -not $generationCoverage -or -not $permanentConsumeGenerationCoverage -or -not $scalingCoverage -or -not $statusScalingCoverage -or -not $unitUpgradeScalingCoverage -or -not $unitTriggerUpgradeCoverage -or -not $spawnTriggerCoverage -or -not $unitTurnBeginCoverage -or -not $teamTurnBeginCoverage -or -not $preHandDiscardCoverage -or -not $cloneUpgradeRefreshCoverage -or -not $preCombatCoverage -or -not $triggeredHealingCoverage -or -not $postCombatHealingCoverage -or -not $triggeredDamageCoverage -or -not $damageDeathQueueCoverage -or -not $terminalDeathDamageCoverage -or -not $hitKillCoverage -or -not $dyingUpgradeCoverage -or -not $attackTriggerCoverage -or -not $triggeredStatusCoverage -or -not $statusCallbackCoverage -or -not $energyCoverage -or -not $forgePointsCoverage -or -not $xCostCoverage -or -not $bonusDrawCoverage -or -not $capacityCoverage -or -not $directUpgradeCoverage -or -not $equipmentCoverage -or ($PermanentConsumeOverTemporary -and -not $modifierCoverage) -or $trace.CaptureFailures -ne 0 -or $trace.Mismatches -ne 0 -or $trace.Unsupported -ne 0 -or $trace.Pending -ne 0) {
+    -not $postKillCoverage -or -not $randomCoverage -or -not $randomStatusCoverage -or -not $crossRoomCoverage -or -not $attackCoverage -or -not $maxHealthCoverage -or -not $numericRangeCoverage -or -not $targetFilterCoverage -or -not $drawCoverage -or -not $handRemovalCoverage -or -not $randomDiscardCoverage -or -not $generationCoverage -or -not $permanentConsumeGenerationCoverage -or -not $scalingCoverage -or -not $statusScalingCoverage -or -not $unitUpgradeScalingCoverage -or -not $unitTriggerUpgradeCoverage -or -not $spawnTriggerCoverage -or -not $unitTurnBeginCoverage -or -not $teamTurnBeginCoverage -or -not $preHandDiscardCoverage -or -not $cloneUpgradeRefreshCoverage -or -not $preCombatCoverage -or -not $triggeredHealingCoverage -or -not $postCombatHealingCoverage -or -not $triggeredDamageCoverage -or -not $damageDeathQueueCoverage -or -not $terminalDeathDamageCoverage -or -not $hitKillCoverage -or -not $dyingUpgradeCoverage -or -not $attackTriggerCoverage -or -not $triggeredStatusCoverage -or -not $statusCallbackCoverage -or -not $energyCoverage -or -not $forgePointsCoverage -or -not $xCostCoverage -or -not $bonusDrawCoverage -or -not $capacityCoverage -or -not $directUpgradeCoverage -or -not $equipmentCoverage -or ($PermanentConsumeOverTemporary -and -not $modifierCoverage) -or $trace.CaptureFailures -ne 0 -or $trace.Mismatches -ne 0 -or $trace.Unsupported -ne 0 -or $trace.Pending -ne 0) {
     throw "Full battle differential probe failed; inspect $tracePath and $unityLog"
 }

@@ -344,6 +344,8 @@ internal static class BattleActionChecks
             DrawSpellChecks.Native(fixture);
         if (fixture.TryGetProperty("ModifierScenario", out FixtureValue removalScenario) && removalScenario.GetString() is "hand-removal" or "hand-removal-lethal")
             HandRemovalChecks.Native(fixture);
+        if (fixture.TryGetProperty("ModifierScenario", out FixtureValue randomDiscardScenario) && randomDiscardScenario.GetString() == "random-discard")
+            RandomDiscardChecks.Native(fixture);
         if (fixture.TryGetProperty("ModifierScenario", out FixtureValue generationScenario) &&
             generationScenario.GetString() is "generation" or "generation-lethal" or "generation-permanent-consume")
             CardGenerationChecks.Native(fixture);

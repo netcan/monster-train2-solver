@@ -703,6 +703,7 @@ NumericRangeChecks.Run();
 TargetFilterChecks.Run();
 DrawSpellChecks.Run();
 HandRemovalChecks.Run();
+RandomDiscardChecks.Run();
 SharedPileChecks.Run();
 CardGenerationChecks.Run();
 CloneUpgradeRefreshChecks.Run();

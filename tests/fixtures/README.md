@@ -29,7 +29,7 @@ The default command checks the full curated inventory. For routine changes, run
 the dedicated checks for the new and directly affected scenarios; run the full
 inventory at completed milestones and before delivery.
 
-Current inventory is 251 archives: 220 accepted battles and 31 component
+Current inventory is 252 archives: 221 accepted battles and 31 component
 calibrations. `full-battle-companion-bump.mt2f` covers a paired Relentless
 companion Boss refusal, its attempted-ascension callback and the survivor's
 terminal-death handoff. `full-battle-relic-card-status-upgrades.mt2f` verifies a native
@@ -3241,4 +3241,28 @@ calibrations. Full-inventory replay remains deferred.
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-relic-extra-tough-tombs.mt2f
 dotnet run --project src/ModelChecks -c Release -- --relic-card-modifiers-only tests/fixtures/full-battle-relic-extra-tough-tombs.mt2f
 dotnet run --project src/ModelChecks -c Release -- --room-combat-only tests/fixtures/full-battle-relic-extra-tough-tombs.mt2f
+```
+
+### Random hand discard (schema 138)
+
+`full-battle-random-discard.mt2f` records a targetless spell that randomly
+discards one eligible card from hand. The model advances battle RNG by randomly
+removing the cards that stay in hand, then routes the remaining candidates
+through native discard callbacks. It excludes the resolving spell and cards
+whose captured branch masks make them Infusion or Persistent. The muted Instant
+battle won with 21 card actions, seven EndTurns and 63 stages. All seven native
+applications discarded one card and matched the complete hand, pile and battle
+RNG state. Capture failures, mismatches, unsupported transitions and pending
+records are zero. Independent replay matches all 21 actions; search matches 21
+decisions and 128 states, with serial and parallel results equal.
+
+The binary archive is 34,323 bytes with 5,558 unique nodes and SHA-256
+`5df2094729c61edfd97c47cb9b80d92ef0b24f5308e8cef4c3201a0eb49c58e8`; it has no
+JSON companion. The inventory is now 252 archives: 221 battles and 31 component
+calibrations. Full-inventory replay remains deferred.
+
+```powershell
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-random-discard.mt2f
+dotnet run --project src/ModelChecks -c Release -- --native-actions-only tests/fixtures/full-battle-random-discard.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-random-discard.mt2f
 ```

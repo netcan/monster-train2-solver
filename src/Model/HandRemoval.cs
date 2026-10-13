@@ -22,11 +22,22 @@ namespace MonsterTrain2Poju.Model
     {
         public static HandRemovalResult Apply(CombatContext source, int mode, int sourceCardId, int effectIndex,
             BattlePlayRules? definitions, IReadOnlyList<CardPileState>? otherPiles = null,
-            IReadOnlyList<int>? pendingExhaustedCards = null, bool exhaustionRunsTriggerQueue = false)
+            IReadOnlyList<int>? pendingExhaustedCards = null, bool exhaustionRunsTriggerQueue = false,
+            IReadOnlyList<int>? selectedCardIds = null, string? effectCounterType = "CardEffectDiscardHand")
         {
             if (source.Cards.ExternalInteractions.Count > 0) return Unsupported(string.Join("; ", source.Cards.ExternalInteractions));
-            CardToken[] targets = mode == 0 || mode == 1
+            CardToken[] handTargets = mode == 0 || mode == 1
                 ? source.Cards.Hand.Where(card => card.InstanceId != sourceCardId).ToArray() : Array.Empty<CardToken>();
+            CardToken[] targets;
+            if (selectedCardIds == null) targets = handTargets;
+            else
+            {
+                var selected = selectedCardIds.ToHashSet();
+                if (selected.Count != selectedCardIds.Count || selected.Contains(sourceCardId) ||
+                    selected.Any(id => handTargets.All(card => card.InstanceId != id)))
+                    return Unsupported("Selected hand-removal cards are duplicated or absent from the current hand.");
+                targets = handTargets.Where(card => selected.Contains(card.InstanceId)).ToArray();
+            }
             CardPileState[]? piles = (otherPiles ?? source.OtherPiles)?.ToArray();
             if (source.OtherPiles == null && piles?.Any(pile => pile.ExhaustConditions?.Count > 0) == true)
                 return Unsupported("Consume standby callbacks require captured context piles.");
@@ -96,8 +107,8 @@ namespace MonsterTrain2Poju.Model
                 }
             }
             int consumed = mode == 1 ? targets.Length : 0;
-            CardInstanceState? resolving = context.FindCard(sourceCardId);
-            if (resolving != null) context = context.WithCard(resolving.WithCounter(effectIndex, "CardEffectDiscardHand", consumed));
+            CardInstanceState? resolving = effectCounterType == null ? null : context.FindCard(sourceCardId);
+            if (resolving != null) context = context.WithCard(resolving.WithCounter(effectIndex, effectCounterType!, consumed));
             return new HandRemovalResult(piles == null ? context : context.WithOtherPiles(piles), piles, targets, consumed);
 
             void CheckStandby(int consumedId)
