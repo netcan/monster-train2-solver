@@ -22,12 +22,15 @@ namespace MonsterTrain2Poju.Model
         public IReadOnlyList<CardPileState>? OtherPiles { get; }
         public UnityRng? BattleRng { get; }
         public IReadOnlyList<int> RestoredCardIds { get; }
+        public IReadOnlyList<CardInstanceState> ChangedCards { get; }
         public string? UnsupportedReason { get; }
         public bool Supported => Cards != null;
         internal CardRecursionResult(CardCycleState? cards, IReadOnlyList<CardPileState>? otherPiles,
-            UnityRng? battleRng, string? error = null, IReadOnlyList<int>? restoredCardIds = null)
+            UnityRng? battleRng, string? error = null, IReadOnlyList<int>? restoredCardIds = null,
+            IReadOnlyList<CardInstanceState>? changedCards = null)
         { Cards = cards; OtherPiles = otherPiles == null ? null : Array.AsReadOnly(otherPiles.ToArray());
-            BattleRng = battleRng; RestoredCardIds = Array.AsReadOnly((restoredCardIds ?? Array.Empty<int>()).ToArray()); UnsupportedReason = error; }
+            BattleRng = battleRng; RestoredCardIds = Array.AsReadOnly((restoredCardIds ?? Array.Empty<int>()).ToArray());
+            ChangedCards = Array.AsReadOnly((changedCards ?? Array.Empty<CardInstanceState>()).ToArray()); UnsupportedReason = error; }
     }
 
     public static class CardRecursionModel
@@ -142,9 +145,28 @@ namespace MonsterTrain2Poju.Model
                     draw.Add(token);
             }
             piles = piles.Select(pile => pile.Name == sourcePileName ? sourcePile : pile).ToArray();
+            var changedCards = new List<CardInstanceState>();
+            if (effect.Upgrade != null && restoredCardIds.Count > 0)
+            {
+                if (cardRegistry == null)
+                    return new CardRecursionResult(null, null, null, "Card recursion upgrades require the captured card registry.");
+                foreach (int cardId in restoredCardIds)
+                {
+                    CardInstanceState? card = cardRegistry.FirstOrDefault(item => item.InstanceId == cardId);
+                    if (card == null)
+                        return new CardRecursionResult(null, null, null, "Missing card instance for recursion upgrade " + cardId + ".");
+                    if (card.MaskDescriptor != null && effect.Upgrade.MaskMetadata == null)
+                        return new CardRecursionResult(null, null, null, "Card recursion upgrade requires branch-owned upgrade mask metadata.");
+                    if (card.ExhaustState != null && card.MaskDescriptor == null)
+                        return new CardRecursionResult(null, null, null, "Card recursion upgrade cannot refresh traits without branch-owned card mask metadata.");
+                    CardModifiers temporary = UnitModifierModel.Add(card.Temporary, effect.Upgrade);
+                    changedCards.Add(card.WithModifiers(card.Permanent, temporary));
+                }
+            }
             var updatedCards = new CardCycleState(hand, draw, cards.Discard, cards.Rng, cards.DrawModifier,
                 cards.ExternalInteractions, cards.BonusDraw, cards.NextDrawUpgrades, cards.NextUpgradeReferenceId);
-            return new CardRecursionResult(updatedCards, piles, nextBattleRng, restoredCardIds: restoredCardIds);
+            return new CardRecursionResult(updatedCards, piles, nextBattleRng, restoredCardIds: restoredCardIds,
+                changedCards: changedCards);
         }
 
         public static IReadOnlyList<IReadOnlyList<int>> EnumerateChosenCards(IReadOnlyList<int> eligibleCardIds) =>
@@ -177,7 +199,10 @@ namespace MonsterTrain2Poju.Model
                 return "Random card recursion requiring hand space is not modeled.";
             if (rule.HasCardFilter && rule.CardFilter == null) return "Card recursion requires its native card-filter definition.";
             if (!rule.HasCardFilter && rule.CardFilter != null) return "Card recursion has unexpected card-filter metadata.";
-            if (rule.HasUpgrade) return "Card recursion requires its temporary card-upgrade definition.";
+            if (rule.HasUpgrade != (effect.Upgrade != null))
+                return "Card recursion requires its temporary card-upgrade definition.";
+            if (effect.Upgrade?.ExternalInteractions.Count > 0)
+                return string.Join("; ", effect.Upgrade.ExternalInteractions);
             if (effect.Target != "Exhaust" && effect.Target != "Eaten")
                 return "Unmodeled card-recursion source pile " + effect.Target + ".";
             if (otherPiles == null || !otherPiles.Any(pile => pile.Name == (effect.Target == "Exhaust" ? "Exhausted" : "Eaten")))

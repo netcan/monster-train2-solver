@@ -365,6 +365,8 @@ namespace MonsterTrain2Poju.Model
                         statistics = statistics?.Increment(cardId, "TimesDrawn");
                     CombatContext changed = state.Context.WithCards(recursion.Cards!).WithOtherPiles(recursion.OtherPiles!)
                         .WithBattleRng(recursion.BattleRng!.Value).WithStatistics(statistics);
+                    foreach (CardInstanceState changedCard in recursion.ChangedCards)
+                        changed = changed.WithCard(changedCard);
                     foreach (int restoredCardId in recursion.RestoredCardIds)
                     {
                         CardInstanceState? restoredCard = changed.FindCard(restoredCardId);

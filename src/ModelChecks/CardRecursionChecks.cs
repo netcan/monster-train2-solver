@@ -73,6 +73,55 @@ internal static class CardRecursionChecks
         Console.WriteLine($"CARD-RECURSION-CHOICE-CHECKS PASS: {selectionMode}, {branches.Length} distinct choice actions from a native decision state.");
     }
 
+    public static void SearchUpgrade(FixtureValue fixture)
+    {
+        Require(fixture.GetProperty("Schema").GetInt32() == 149 &&
+            fixture.GetProperty("ModifierScenario").GetString() == "card-effect-recursion-upgrade",
+            "The fixture is not the native recursion-upgrade scenario.");
+        const string recursionCardId = "0e50f7bc-c7c4-46b5-98a4-33d32194d7b8";
+        const string upgradeId = "f2f8c03b-327d-4f3d-8cc1-f9b2a20e4ff6";
+        FixtureValue? evidence = null;
+        foreach (FixtureValue action in fixture.GetProperty("Actions").EnumerateArray())
+        {
+            BattleTurnState before = action.GetProperty("Before").Deserialize<BattleTurnState>()!;
+            CardToken? played = before.Spawn.Train.Context!.Cards.Hand.FirstOrDefault(card =>
+                card.InstanceId == action.GetProperty("Action").GetProperty("CardInstanceId").GetInt32());
+            CardPlayRule? definition = played == null ? null : before.PlayRules?.Cards.FirstOrDefault(rule => rule.DataId == played.DataId);
+            if (played?.DataId == recursionCardId && definition?.Effects.Any(effect =>
+                effect.Type == "Recursion" && effect.Upgrade?.DataId == upgradeId) == true)
+            {
+                evidence = action;
+                break;
+            }
+        }
+        Require(evidence != null, "The native recursion-upgrade fixture has no matching WurmkinEtchings action.");
+
+        FixtureValue entry = evidence!.Value;
+        BattleTurnState root = entry.GetProperty("Before").Deserialize<BattleTurnState>()!;
+        PlayCardAction actionToPlay = entry.GetProperty("Action").Deserialize<PlayCardAction>()!;
+        BattleActionResult predicted = BattleActionModel.PlayCard(root, actionToPlay);
+        BattleTurnState actual = entry.GetProperty("Actual").Deserialize<BattleTurnState>()!;
+        Require(predicted.Supported, "Recursion with a simple temporary upgrade was rejected: " + predicted.Reason);
+        string? difference = ModelJson.Difference(BattleTurnChecks.Comparable(predicted.State!),
+            BattleTurnChecks.Comparable(actual));
+        Require(difference == null, "Recursion-upgrade prediction differs from native action: " + difference);
+
+        string spellId = "fb0683b1-20ac-4dd2-b580-14b502e182f4";
+        int[] candidates = entry.GetProperty("Before").GetProperty("OtherPiles").EnumerateArray()
+            .Where(pile => pile.GetProperty("Name").GetString() == "Exhausted")
+            .SelectMany(pile => pile.GetProperty("Cards").EnumerateArray())
+            .Where(card => card.GetProperty("DataId").GetString() == spellId)
+            .Select(card => card.GetProperty("InstanceId").GetInt32()).ToArray();
+        int[] returned = candidates.Where(id => actual.Spawn.Train.Context!.Cards.Draw.Any(card => card.InstanceId == id)).ToArray();
+        CardInstanceState[] upgraded = candidates.Select(id => actual.Spawn.Train.Context!.FindCard(id)!)
+            .Where(card => card.Temporary.Upgrades.Any(upgrade => upgrade.DataId == upgradeId && upgrade.Stats.Damage == 3)).ToArray();
+        Require(returned.Length == 1 && upgraded.Length == 1 && upgraded[0].InstanceId == returned[0] &&
+            candidates.Where(id => id != returned[0]).All(id => actual.Spawn.Train.Context!.FindCard(id)!.Temporary.Upgrades
+                .All(upgrade => upgrade.DataId != upgradeId)),
+            "Native recursion did not upgrade exactly the one Spell it returned to the draw pile.");
+        Console.WriteLine("CARD-RECURSION-UPGRADE-CHECKS PASS: native random selection, temporary +3 Damage, returned-card identity, and untouched candidates.");
+    }
+
     public static void Run()
     {
         var cards = new CardCycleState([new(50, "played")], [new(20, "drawn")], [], UnityRng.Seed(41), 2, []);
@@ -144,6 +193,20 @@ internal static class CardRecursionChecks
             recursion: new CardRecursionRule("RandomToHand", "Invalid", "", true, false, false, false));
         CardRecursionResult unsupportedFilter = CardRecursionModel.Apply(cards, piles, cards.Rng, filtered, definitions, 50, 4);
         CardRecursionResult unsupportedHandSpace = CardRecursionModel.Apply(cards, piles, cards.Rng, requiresHandSpace, definitions, 50, 4);
+        var recursionUpgrade = new CardUpgradeModifier("recursion-damage", "RecursionDamage",
+            new CardStatModifier(damage: 3), [], false, false, false, 0, 0, []);
+        CardActionEffect randomDeckUpgrade = new("Recursion", "Exhaust", 1, false, false, [], recursionUpgrade,
+            recursion: new CardRecursionRule("RandomToDeck", "Spell", "", false, false, false, true));
+        CardInstanceState[] upgradeRegistry = exhausted.Select(card => CardInstanceState.Empty(card.InstanceId, card.DataId)).ToArray();
+        ShuffleResult<int> expectedUpgradeChoice = cards.Rng.Shuffle([1, 3, 4]);
+        CardRecursionResult upgradedDeck = CardRecursionModel.Apply(cards, piles, cards.Rng, randomDeckUpgrade,
+            definitions, 50, 4, cardRegistry: upgradeRegistry);
+        CardInstanceState upgradedInstance = upgradedDeck.ChangedCards.Single();
+        CardRecursionResult missingUpgradeRegistry = CardRecursionModel.Apply(cards, piles, cards.Rng, randomDeckUpgrade,
+            definitions, 50, 4);
+        CardRecursionResult emptyUpgradeTarget = CardRecursionModel.Apply(cards,
+            [new CardPileState("Exhausted", []), new CardPileState("Eaten", [new CardToken(5, "spell-d")])],
+            cards.Rng, randomDeckUpgrade, definitions, 50, 4);
         Require(chooseEligible.SequenceEqual([1, 3, 4]) && choices.Select(choice => choice.Single()).SequenceEqual([1, 3, 4]) &&
             !missingChoice.Supported && missingChoice.UnsupportedReason!.Contains("selected card", StringComparison.Ordinal) &&
             chosenHand.Supported && chosenHand.Cards!.Hand.Select(card => card.InstanceId).SequenceEqual([3, 50]) &&
@@ -162,6 +225,13 @@ internal static class CardRecursionChecks
             !unsupportedFilter.Supported && unsupportedFilter.UnsupportedReason!.Contains("card-filter", StringComparison.Ordinal) &&
             !unsupportedHandSpace.Supported && unsupportedHandSpace.UnsupportedReason!.Contains("hand space", StringComparison.Ordinal),
             "Unsupported recursion filters or random hand-space conditions were silently accepted.");
+        Require(upgradedDeck.Supported && upgradedDeck.RestoredCardIds.SequenceEqual([expectedUpgradeChoice.Items[0]]) &&
+            upgradedDeck.Cards!.Draw.Select(card => card.InstanceId).SequenceEqual([20, expectedUpgradeChoice.Items[0]]) &&
+            upgradedInstance.InstanceId == expectedUpgradeChoice.Items[0] && upgradedInstance.Temporary.Upgrades.Single().Stats.Damage == 3 &&
+            upgradedInstance.Permanent.Upgrades.Count == 0 && upgradeRegistry.All(card => card.Temporary.Upgrades.Count == 0) &&
+            !missingUpgradeRegistry.Supported && missingUpgradeRegistry.UnsupportedReason!.Contains("card registry", StringComparison.Ordinal) &&
+            emptyUpgradeTarget.Supported && emptyUpgradeTarget.RestoredCardIds.Count == 0 && emptyUpgradeTarget.ChangedCards.Count == 0,
+            "Recursion did not add its temporary upgrade only to the selected returned branch card.");
 
         CardToken retained = new(6, "retained-spell");
         var keepStandby = new CardPileState("Standby", [retained], exhaustConditions:
@@ -180,7 +250,7 @@ internal static class CardRecursionChecks
         Require(CardPileModel.Validate(malformedKeepStandby) != null,
             "KeepInStandBy must not carry a Consume exhaustion reference.");
 
-        Console.WriteLine("PASS random and chosen card recursion, candidate branches, pile restoration, and guarded modes");
+        Console.WriteLine("PASS random and chosen card recursion, candidate branches, pile restoration, temporary upgrades, and guarded modes");
     }
 
     private static CardPlayRule Rule(string dataId, string cardType) =>

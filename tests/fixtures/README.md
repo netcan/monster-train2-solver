@@ -136,6 +136,26 @@ dotnet run --project src/ModelChecks -c Release -- --card-recursion-filter-choic
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-card-recursion-filter-choice.mt2f
 ```
 
+### Random recursion with a temporary upgrade (schema 149)
+
+`full-battle-card-recursion-upgrade.mt2f` captures native random-to-deck
+recursion with a synthetic temporary +3 Damage upgrade. Exactly one returned
+Spell carries the upgrade; the remaining Exhaust candidates do not. The muted
+Instant battle wins with 63 stages and 22 actions, with zero capture failures,
+mismatches, unsupported transitions or pending records. Action replay matches,
+and the 128-state search is equal in serial and parallel runs. The archive is
+36,170 bytes with 6,185 unique nodes and SHA-256
+`6fcfa4e9fcdda9ab4b71e24dcc52301820c8f949f88d5c22320721016a9ceccd`; no JSON
+companion is tracked. Inventory: 266 archives, comprising 235 battles and 31
+component calibrations.
+
+```powershell
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -CardRecursionUpgrade -GameSpeed Instant
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-card-recursion-upgrade.mt2f
+dotnet run --project src/ModelChecks -c Release -- --card-recursion-upgrade-only tests/fixtures/full-battle-card-recursion-upgrade.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-card-recursion-upgrade.mt2f
+```
+
 `full-battle-relic-card-negative-unhealed.mt2f` (schema 145)
 captures a temporary `UnhealedHealth=-1` upgrade installed by the native relic
 manager. The upgrade remains on the played Train Steward, but the summoned unit

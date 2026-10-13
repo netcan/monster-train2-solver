@@ -1,6 +1,6 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-13): 265 binary archives, including 234
+Current accepted inventory (2026-10-13): 266 binary archives, including 235
 full battles and 31 component calibrations. Unchanged original relic evidence
 covers 74/224 catalog entries (33.04%); see
 [the owner evidence table](tests/fixtures/relic-coverage.md). Whole-battle
@@ -8823,4 +8823,29 @@ JSON companion. The curated inventory is now 249 archives: 218 full battles and
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-relic-card-ephemeral-upgrades.mt2f
 dotnet run --project src/ModelChecks -c Release -- --relic-card-modifiers-only tests/fixtures/full-battle-relic-card-ephemeral-upgrades.mt2f
 dotnet run --project src/ModelChecks -c Release -- --card-cycle-only tests/fixtures/full-battle-relic-card-ephemeral-upgrades.mt2f
+```
+
+### Random recursion with a temporary upgrade
+
+The schema-149 `full-battle-card-recursion-upgrade.mt2f` exercises the native
+`HandleRandomCardWithUpgrades` path. `WurmkinEtchings` returns one exhausted
+Spell to the draw pile and applies a synthetic temporary +3 Damage upgrade to
+that same card instance. The other exhausted candidates remain unmodified. The
+muted Instant battle won with 63 matched stages, 22 card actions and seven
+EndTurns; capture failures, mismatches, unsupported transitions and pending
+records are zero. Independent card-action replay matches, and the native
+decision search expands 128 states with identical serial and parallel results.
+
+The archive is 36,170 bytes with 6,185 unique nodes and SHA-256
+`6fcfa4e9fcdda9ab4b71e24dcc52301820c8f949f88d5c22320721016a9ceccd`; it has no
+JSON companion. The curated inventory is now 266 archives: 235 full battles and
+31 component calibrations. This validates random-to-deck recursion with a simple
+temporary upgrade; chosen modes, random-to-hand upgrades, and upgrades with
+filters, replacements, traits, or triggers still need native calibration.
+
+```powershell
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -CardRecursionUpgrade -GameSpeed Instant
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-card-recursion-upgrade.mt2f
+dotnet run --project src/ModelChecks -c Release -- --card-recursion-upgrade-only tests/fixtures/full-battle-card-recursion-upgrade.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-card-recursion-upgrade.mt2f
 ```
