@@ -27,6 +27,17 @@ pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -OriginalTeamSpawnStatusRe
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-team-spawn-status.mt2f
 ```
 
+### Relic temporary DamageOverflow trait
+
+`RelicCardModifierModel` now accepts `CardTraitDamageOverflow` on a temporary
+relic card upgrade. The integrated model check installs the trait, resolves a
+spell hit that spills excess damage to a same-team sibling, and confirms a
+temporary reset removes the trait. This combines the calibrated DamageOverflow
+combat path with the generic relic-upgrade lifecycle; it is synthetic mechanism
+coverage, not native evidence for another relic owner. Coverage remains 72/224
+and inventory remains 257 archives. Other unmodeled trait, trigger and room-
+ability payloads remain rejected.
+
 ### Persistent Horde aura growth and simulated deaths
 
 `enchantment-combat-calibration.mt2f` captures two native `CardEffectEnchant`
@@ -354,7 +365,7 @@ are copied immutable values; independent child states can run on worker threads.
 | Statistic-driven damage traits | `DamageScalingModel` and `RoomCombatModel` | 63 native callbacks with complete refreshed contexts; trait order, replacement/addition, explicit-source upgrades, per-hit statistics and Boss/Pyre kill previews |
 | Dynamic statistic inputs | `CombatContext.QueryFrame` and turn/card transitions | 255 native damage callbacks and 48 decision boundaries; payment, combat, rollover, previews and settled terminal resources, plus multi-turn and parallel branches |
 | Card instance modifiers | `CardModifierModel` | Permanent/temporary ordered numeric upgrades, unit starting statuses, discard removal, play history and 256 native scalar calculations |
-| Relic card modifiers | `RelicCardModifierModel` and `CardUpgradeLifecycleModel` | Native ordering/conditions, numeric/status/IgnoreArmor/SelfPurge/Consume upgrades, unit-ability upgrades, temporary upgrade replacement, generation and cardless births; played Consume cards route to Exhausted. Replacement keeps lifecycle and battle card modifier lists synchronized. Other traits, card triggers and room-ability payloads remain explicitly rejected. |
+| Relic card modifiers | `RelicCardModifierModel` and `CardUpgradeLifecycleModel` | Native ordering/conditions, numeric/status/IgnoreArmor/SelfPurge/Consume/DamageOverflow upgrades, unit-ability upgrades, temporary upgrade replacement, generation and cardless births; played Consume cards route to Exhausted. DamageOverflow is mechanism-tested through relic trait installation and reset, without a native relic-manager capture. Replacement keeps lifecycle and battle card modifier lists synchronized. Other traits, card triggers and room-ability payloads remain explicitly rejected. |
 | Relic added-trigger birth effects | `RelicCharacterTriggerModel` | Fresh ordered trigger installs, count modifiers, conditions, team/subtype gates, captured character asset-key filters and Covenant/preview gates; 32 immutable branches. Filtered Covenant behavior has model checks but no accepted native battle archive yet. |
 | Retained card references | `CombatContext.CardRegistry` | Observed card identities survive pile clearing; detached spawner upgrades/removal preserve ownership and parent isolation |
 | Standby dictionary allocation | `CardPileModel` | Captured entry slots and free-list order preserve native hole reuse after unit death; malformed layouts, distinct futures, terminal clear and parallel branches |

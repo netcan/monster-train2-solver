@@ -67,6 +67,38 @@ internal static class RelicCardModifierChecks
             "An Ephemeral relic upgrade did not route a played card to Purged.");
         Console.WriteLine("RELIC-CARD-EPHEMERAL-CHECKS PASS: temporary relic trait is accepted and resolves play destination to Purged.");
 
+        var overflowTrait = new CardTraitValue("CardTraitDamageOverflow", "CardTraitDamageOverflow", 0, 0, true, 0);
+        var overflowLifecycle = new CardLifecycleUpgrade(new CardMaskUpgrade("temporary-overflow",
+            new CardStatModifier(), [], false, false, false, false), "temporary-overflow", false, false,
+            [overflowTrait], [], false, [], [], []);
+        var overflowUpgrade = Modifier("temporary-overflow", overflowLifecycle);
+        var overflowRelic = new CombatRelicState("overflow-relic", "OverflowRelic", [RelicModel.AddTempUpgrade],
+            cardModifiers: [new RelicCardModifier(0,
+                new RelicCardUpgradeRule("temporary-overflow", true, overflowLifecycle, []), overflowUpgrade, false)]);
+        var overflowDefinition = new CardMaskDefinition("relic-overflow-spell", "Spell", "Common", false, false, false,
+            [], [], [], [], null, false, 0, 0, false, false, false);
+        var overflowDescriptor = new CardMaskDescriptor(overflowDefinition, 0, [], []);
+        var overflowCard = new CardInstanceState(90, overflowDefinition.DataId, CardModifiers.Empty(), CardModifiers.Empty(),
+            0, 0, 0, [], maskDescriptor: overflowDescriptor);
+        RelicCardModifierResult overflowResult = RelicCardModifierModel.Apply(overflowCard, [overflowRelic], resetTemporary: false);
+        Require(overflowResult.Supported && CardBranchMaskModel.Resolve(overflowResult.Card!).Traits.Contains("CardTraitDamageOverflow"),
+            "A relic-granted DamageOverflow trait was rejected or lost from the owned card mask: " + overflowResult.UnsupportedReason);
+        var overflowRng = UnityRng.Seed(321);
+        var overflowContext = new CombatContext(new CardCycleState([], [], [], overflowRng, 0, []), overflowRng, 0, 91, 10,
+            cardInstances: [overflowResult.Card!]);
+        var overflowRoom = new RoomCombatState(0, false, [
+            new CombatUnit(10, "overflow-target", CombatTeam.Enemy, 0, 10, 10, true, false, false, []),
+            new CombatUnit(11, "overflow-sibling", CombatTeam.Enemy, 0, 30, 30, true, false, false, [])
+        ], [], overflowContext);
+        RoomCombatResult overflowHit = RoomCombatModel.ApplyCardDamage(overflowRoom, 10, 12, overflowCard.InstanceId);
+        Require(overflowHit.Supported && overflowHit.State!.Units.Single(unit => unit.Id == 11).Health == 28,
+            "DamageOverflow from a relic temporary upgrade did not spill excess damage to the same-team sibling: " +
+            overflowHit.UnsupportedReason);
+        RelicCardModifierResult overflowReset = RelicCardModifierModel.Apply(overflowResult.Card!, Array.Empty<CombatRelicState>(), resetTemporary: true);
+        Require(overflowReset.Supported && !CardBranchMaskModel.Resolve(overflowReset.Card!).Traits.Contains("CardTraitDamageOverflow"),
+            "Reset retained the relic-granted DamageOverflow trait.");
+        Console.WriteLine("RELIC-CARD-DAMAGE-OVERFLOW-CHECKS PASS: temporary relic trait reaches spell resolution and clears on reset.");
+
         var tombDefinition = new CardMaskDefinition("dregs-tomb", "Monster", "Common", true, true, true,
             ["SubtypesData_Tomb"], [], [], ["CardEffectSpawnMonster"], null, false, 1, 0, false, false, false);
         var tombDescriptor = new CardMaskDescriptor(tombDefinition, 1, [], []);
