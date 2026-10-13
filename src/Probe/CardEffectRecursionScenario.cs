@@ -74,6 +74,12 @@ namespace MonsterTrain2Poju.Probe
                 (AccessTools.Field(typeof(CardEffectData), "paramBool") ??
                     throw new MissingFieldException(typeof(CardEffectData).FullName, "paramBool"))
                     .SetValue(recursionEffect, true);
+                (AccessTools.Field(typeof(CardEffectData), "paramInt") ??
+                    throw new MissingFieldException(typeof(CardEffectData).FullName, "paramInt"))
+                    .SetValue(recursionEffect, 2);
+                (AccessTools.Field(typeof(CardEffectData), "paramBool2") ??
+                    throw new MissingFieldException(typeof(CardEffectData).FullName, "paramBool2"))
+                    .SetValue(recursionEffect, true);
             }
             if (chooseMode)
             {
@@ -126,6 +132,16 @@ namespace MonsterTrain2Poju.Probe
             if (played == null || !cards.GetHand().Contains(played))
                 throw new InvalidOperationException("Recursion fixture could not place WurmkinEtchings in hand.");
             recursionCardInstanceId = FullBattleTrace.Active!.CardId(played);
+            int handFillers = 0;
+            while (upgradeToHandMode && cards.GetBelowHandSize())
+            {
+                CardState filler = cards.AddNewCard(exhaustedSpell, CardPile.HandPile, false, false, animate: false);
+                if (filler == null || !cards.GetHand().Contains(filler))
+                    throw new InvalidOperationException("Recursion fixture could not fill the hand for overflow coverage.");
+                handFillers++;
+            }
+            if (upgradeToHandMode && cards.GetBelowHandSize())
+                throw new InvalidOperationException("Recursion fixture failed to fill the hand.");
             string selection = upgradeFilterChooseMode ? "ChooseToDeck+SpellFilter+TemporaryUpgrade" :
                 filterMode ? "ChooseToDeck+SpellFilter" :
                 upgradeChooseMode ? "ChooseToDeck+TemporaryUpgrade" :
@@ -135,7 +151,8 @@ namespace MonsterTrain2Poju.Probe
             log.LogInfo("CARD-RECURSION-PREPARED WurmkinEtchings exhaustedSpellCopies=" + (filterMode ? 5 : 6) +
                 (filterMode ? " excludedCandidates=1 totalCandidates=6" : string.Empty) + " selection=" +
                 selection + (upgradeMode || upgradeToHandMode || upgradeChooseMode ? " temporaryUpgrade=+3Damage" : string.Empty) +
-                (upgradeToHandMode ? " requiresRoomInHand=True" : string.Empty) +
+                (upgradeToHandMode ? " requiresRoomInHand=True disallowOverflowToDrawPile=True hand=" +
+                    cards.GetHand().Count + "/" + cards.GetMaxHandSize() + " handFillers=" + handFillers : string.Empty) +
                 " selectedCard=" + selectedCardInstanceId);
         }
 

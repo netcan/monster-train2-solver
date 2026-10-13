@@ -8842,17 +8842,17 @@ JSON companion. This validates random-to-deck recursion with a simple temporary
 upgrade.
 
 The schema-150 `full-battle-card-recursion-upgrade-hand.mt2f` captures the
-dedicated native `RandomToHandWithUpgrades` mode. The same randomly selected
-Spell returns to Hand with temporary +3 Damage; other Exhaust candidates remain
-unchanged. Its `RequiresRoomInHand` flag is enabled, and the native gate's
-positive draw count and six-card Exhaust pile are captured. The flag gates
-availability for random hand recursion; it does not test hand capacity. The
-muted Instant battle wins with 63 stages, 22 actions and seven EndTurns, with
-zero capture failures, mismatches, unsupported transitions or pending records.
-Native action replay matches including the card's hand destination and draw
-statistics. Search again expands 128 states with identical serial and parallel
-results. The archive is 36,375 bytes with 6,244 unique nodes and SHA-256
-`bc2f8e6ff50094d2c2850956963fa4e51bc2c4fd1c9c81ce5550e1ee3011f268`; it has no
+native `RandomToHandWithUpgrades` mode with a full hand. It selects two of six
+Exhaust Spells and applies temporary +3 Damage to both. One enters Hand; the
+other stays in Draw after native `DrawSpecificCard` rejects the full hand. This
+mode ignores `DisallowOverflowToDrawPile`, even when set. `RequiresRoomInHand`
+is enabled too; its positive gate checks draw count and cards in Exhaust/Eaten,
+not free hand capacity. The muted Instant battle wins with 50 stages, 19 actions
+and six EndTurns, with zero capture failures, mismatches, unsupported
+transitions or pending records. Native replay matches both destinations and
+upgrades; 128-state search has identical serial and parallel results. The archive
+is 34,875 bytes with 6,042 unique nodes and SHA-256
+`6f4fd6829758f1eaa1e01a87f21b08b4c3079e1e1dcb46dc6d24a84570d6e255`; it has no
 JSON companion.
 
 The schema-151 `full-battle-card-recursion-upgrade-choice.mt2f` captures

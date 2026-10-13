@@ -583,7 +583,7 @@ if ($CardEffectKill -and ($trace.ModifierScenario -ne 'card-effect-kill' -or
     throw 'CardEffectKill native setup did not run.'
 }
 if (($CardRecursion -or $CardRecursionChoose -or $CardRecursionChooseToHand -or $CardRecursionChooseFilter -or $CardRecursionUpgrade -or $CardRecursionUpgradeToHand -or $CardRecursionUpgradeChoose -or $CardRecursionUpgradeFilterChoose) -and ($trace.ModifierScenario -ne $(if ($CardRecursionUpgradeFilterChoose) { 'card-effect-recursion-upgrade-filter-choice' } elseif ($CardRecursionUpgradeChoose) { 'card-effect-recursion-upgrade-choice' } elseif ($CardRecursionUpgradeToHand) { 'card-effect-recursion-upgrade-hand' } elseif ($CardRecursionUpgrade) { 'card-effect-recursion-upgrade' } elseif ($CardRecursionChooseFilter) { 'card-effect-recursion-filter-choice' } elseif ($CardRecursionChooseToHand) { 'card-effect-recursion-choose-to-hand' } elseif ($CardRecursionChoose) { 'card-effect-recursion-choice' } else { 'card-effect-recursion' }) -or
-    -not (Select-String -LiteralPath $unityLog -Pattern $(if ($CardRecursionUpgradeFilterChoose) { 'CARD-RECURSION-PREPARED WurmkinEtchings exhaustedSpellCopies=5 excludedCandidates=1 totalCandidates=6 .*temporaryUpgrade=\+3Damage' } elseif ($CardRecursionChooseFilter) { 'CARD-RECURSION-PREPARED WurmkinEtchings exhaustedSpellCopies=5 excludedCandidates=1 totalCandidates=6' } elseif ($CardRecursionUpgradeToHand) { 'CARD-RECURSION-PREPARED WurmkinEtchings exhaustedSpellCopies=6 .*temporaryUpgrade=\+3Damage requiresRoomInHand=True' } elseif ($CardRecursionUpgrade -or $CardRecursionUpgradeChoose) { 'CARD-RECURSION-PREPARED WurmkinEtchings exhaustedSpellCopies=6 .*temporaryUpgrade=\+3Damage' } else { 'CARD-RECURSION-PREPARED WurmkinEtchings exhaustedSpellCopies=6' }) -Quiet))) {
+    -not (Select-String -LiteralPath $unityLog -Pattern $(if ($CardRecursionUpgradeFilterChoose) { 'CARD-RECURSION-PREPARED WurmkinEtchings exhaustedSpellCopies=5 excludedCandidates=1 totalCandidates=6 .*temporaryUpgrade=\+3Damage' } elseif ($CardRecursionChooseFilter) { 'CARD-RECURSION-PREPARED WurmkinEtchings exhaustedSpellCopies=5 excludedCandidates=1 totalCandidates=6' } elseif ($CardRecursionUpgradeToHand) { 'CARD-RECURSION-PREPARED WurmkinEtchings exhaustedSpellCopies=6 .*temporaryUpgrade=\+3Damage requiresRoomInHand=True disallowOverflowToDrawPile=True hand=\d+/\d+ handFillers=\d+' } elseif ($CardRecursionUpgrade -or $CardRecursionUpgradeChoose) { 'CARD-RECURSION-PREPARED WurmkinEtchings exhaustedSpellCopies=6 .*temporaryUpgrade=\+3Damage' } else { 'CARD-RECURSION-PREPARED WurmkinEtchings exhaustedSpellCopies=6' }) -Quiet))) {
     throw 'Card recursion native setup did not run.'
 }
 if (($CardRecursionChoose -or $CardRecursionChooseToHand -or $CardRecursionChooseFilter -or $CardRecursionUpgradeChoose -or $CardRecursionUpgradeFilterChoose) -and -not (Select-String -LiteralPath $unityLog -Pattern 'CARD-RECURSION-CHOOSE-AUTOSELECT card=' -Quiet)) {
@@ -1011,9 +1011,16 @@ if ($CardRecursionUpgrade -or $CardRecursionUpgradeToHand -or $CardRecursionUpgr
         $candidateIds = @($actionEntry.Before.OtherPiles | Where-Object Name -EQ 'Exhausted' |
             ForEach-Object Cards | Where-Object DataId -EQ 'fb0683b1-20ac-4dd2-b580-14b502e182f4' |
             ForEach-Object InstanceId)
-        $destination = if ($CardRecursionUpgradeToHand) { $actionEntry.Actual.Spawn.Train.Context.Cards.Hand } else { $actionEntry.Actual.Spawn.Train.Context.Cards.Draw }
-        $destinationIds = @($destination | ForEach-Object InstanceId)
-        $returned = @($candidateIds | Where-Object { $destinationIds -contains $_ })
+        $handIds = @($actionEntry.Actual.Spawn.Train.Context.Cards.Hand | ForEach-Object InstanceId)
+        $drawIds = @($actionEntry.Actual.Spawn.Train.Context.Cards.Draw | ForEach-Object InstanceId)
+        $returnedHand = @($candidateIds | Where-Object { $handIds -contains $_ })
+        $returnedDraw = @($candidateIds | Where-Object { $drawIds -contains $_ })
+        $returned = if ($CardRecursionUpgradeToHand) { @($returnedHand + $returnedDraw | Sort-Object -Unique) } else { $returnedDraw }
+        $expectedReturned = if ($CardRecursionUpgradeToHand) { 2 } else { 1 }
+        $destinationCoverage = if ($CardRecursionUpgradeToHand) {
+            $actionEntry.Before.Spawn.Train.Context.Cards.Hand.Count -eq $actionEntry.Before.Spawn.Train.Context.MaxHandSize -and
+                $returnedHand.Count -eq 1 -and $returnedDraw.Count -eq 1
+        } else { $returnedHand.Count -eq 0 -and $returnedDraw.Count -eq 1 }
         $selectedIds = @($actionEntry.Action.RecursionSelections | ForEach-Object CardInstanceIds | ForEach-Object { $_ })
         $upgraded = @($actionEntry.Actual.Spawn.Train.Context.CardRegistry | Where-Object {
             $_.InstanceId -in $returned -and @($_.Temporary.Upgrades | Where-Object {
@@ -1023,9 +1030,10 @@ if ($CardRecursionUpgrade -or $CardRecursionUpgradeToHand -or $CardRecursionUpgr
         $allUpgradeIds = @($actionEntry.Actual.Spawn.Train.Context.CardRegistry | Where-Object {
             $_.Temporary.Upgrades.DataId -contains 'f2f8c03b-327d-4f3d-8cc1-f9b2a20e4ff6'
         } | ForEach-Object InstanceId)
-        -not $_.Difference -and $_.Predicted.Supported -and $returned.Count -eq 1 -and
+        -not $_.Difference -and $_.Predicted.Supported -and $returned.Count -eq $expectedReturned -and $destinationCoverage -and
             (-not ($CardRecursionUpgradeChoose -or $CardRecursionUpgradeFilterChoose) -or ($selectedIds.Count -eq 1 -and $selectedIds[0] -eq $returned[0])) -and
-            $upgraded.Count -eq 1 -and $allUpgradeIds.Count -eq 1 -and $allUpgradeIds[0] -eq $returned[0]
+            $upgraded.Count -eq $expectedReturned -and $allUpgradeIds.Count -eq $expectedReturned -and
+            (@($allUpgradeIds | Sort-Object) -join ',') -eq (@($returned | Sort-Object) -join ',')
     }).Count -gt 0
 }
 $healActions = @($trace.Actions | Where-Object {

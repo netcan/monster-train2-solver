@@ -119,8 +119,11 @@ internal static class CardRecursionChecks
             .Effects.Single(effect => effect.Type == "Recursion");
         Require(recursionEffect.Recursion!.SelectionMode == (chooseToDeck ? "ChooseToDeck" :
                 toHand ? "RandomToHandWithUpgrades" : "RandomToDeck") &&
-            recursionEffect.Upgrade?.DataId == upgradeId && recursionEffect.Recursion.RequiresRoomInHand == toHand,
+            recursionEffect.Upgrade?.DataId == upgradeId && recursionEffect.Recursion.RequiresRoomInHand == toHand &&
+            recursionEffect.Recursion.DisallowOverflowToDrawPile == toHand,
             "The captured action does not contain the expected native recursion-upgrade mode.");
+        Require(!toHand || root.Spawn.Train.Context!.Cards.Hand.Count == root.Spawn.Train.Context.MaxHandSize,
+            "The native upgraded-recursion overflow case did not start with a full hand.");
         PlayCardAction actionToPlay = entry.GetProperty("Action").Deserialize<PlayCardAction>()!;
         BattleActionResult predicted = BattleActionModel.PlayCard(root, actionToPlay);
         BattleTurnState actual = entry.GetProperty("Actual").Deserialize<BattleTurnState>()!;
@@ -135,21 +138,24 @@ internal static class CardRecursionChecks
             .SelectMany(pile => pile.GetProperty("Cards").EnumerateArray())
             .Where(card => card.GetProperty("DataId").GetString() == spellId)
             .Select(card => card.GetProperty("InstanceId").GetInt32()).ToArray();
-        int[] destinationIds = (toHand ? actual.Spawn.Train.Context!.Cards.Hand : actual.Spawn.Train.Context!.Cards.Draw)
-            .Select(card => card.InstanceId).ToArray();
-        int[] otherDestinationIds = (toHand ? actual.Spawn.Train.Context!.Cards.Draw : actual.Spawn.Train.Context!.Cards.Hand)
-            .Select(card => card.InstanceId).ToArray();
-        int[] returned = candidates.Where(destinationIds.Contains).ToArray();
+        int[] handIds = actual.Spawn.Train.Context!.Cards.Hand.Select(card => card.InstanceId).ToArray();
+        int[] drawIds = actual.Spawn.Train.Context!.Cards.Draw.Select(card => card.InstanceId).ToArray();
+        int[] returnedHand = candidates.Where(handIds.Contains).ToArray();
+        int[] returnedDraw = candidates.Where(drawIds.Contains).ToArray();
+        int[] returned = toHand ? returnedHand.Concat(returnedDraw).Distinct().ToArray() : returnedDraw;
+        int expectedReturned = toHand ? 2 : 1;
         CardInstanceState[] upgraded = candidates.Select(id => actual.Spawn.Train.Context!.FindCard(id)!)
             .Where(card => card.Temporary.Upgrades.Any(upgrade => upgrade.DataId == upgradeId && upgrade.Stats.Damage == 3)).ToArray();
-        Require(returned.Length == 1 && !otherDestinationIds.Contains(returned[0]) && upgraded.Length == 1 && upgraded[0].InstanceId == returned[0] &&
-            candidates.Where(id => id != returned[0]).All(id => actual.Spawn.Train.Context!.FindCard(id)!.Temporary.Upgrades
+        Require(returned.Length == expectedReturned &&
+            (toHand ? returnedHand.Length == 1 && returnedDraw.Length == 1 : returnedHand.Length == 0 && returnedDraw.Length == 1) &&
+            upgraded.Length == expectedReturned && upgraded.Select(card => card.InstanceId).OrderBy(id => id).SequenceEqual(returned.OrderBy(id => id)) &&
+            candidates.Where(id => !returned.Contains(id)).All(id => actual.Spawn.Train.Context!.FindCard(id)!.Temporary.Upgrades
                 .All(upgrade => upgrade.DataId != upgradeId)) &&
             (!chooseToDeck || actionToPlay.RecursionSelections.Count == 1 &&
                 actionToPlay.RecursionSelections[0].CardInstanceIds.SequenceEqual([returned[0]])),
             "Native recursion did not upgrade exactly the returned Spell or match the chosen card identity.");
         if (chooseToDeck) SearchChoices(fixture, "ChooseToDeck", expectedCandidateCount: filteredChoice ? 5 : 6);
-        Console.WriteLine($"CARD-RECURSION-UPGRADE-CHECKS PASS: native {(chooseToDeck ? "chosen" : "random")} selection, {(toHand ? "hand" : "draw pile")} destination, temporary +3 Damage, returned-card identity, and untouched candidates.");
+        Console.WriteLine($"CARD-RECURSION-UPGRADE-CHECKS PASS: native {(chooseToDeck ? "chosen" : "random")} selection, {(toHand ? "hand plus draw-pile overflow" : "draw pile")} destination, temporary +3 Damage, returned-card identity, and untouched candidates.");
     }
 
     public static void Run()
@@ -247,6 +253,11 @@ internal static class CardRecursionChecks
             recursion: new CardRecursionRule("RandomToHandWithUpgrades", "Spell", "", false, false, false, true));
         CardRecursionResult upgradedHand = CardRecursionModel.Apply(cards, standby, cards.Rng, randomHandWithUpgrade,
             definitions, 50, 4, cardRegistry: upgradeRegistry);
+        CardActionEffect upgradedHandNoOverflow = new("Recursion", "Exhaust", 1, false, false, [], recursionUpgrade,
+            recursion: new CardRecursionRule("RandomToHandWithUpgrades", "Spell", "", true, true, false, true));
+        ShuffleResult<int> expectedFullHandUpgrade = cards.Rng.Shuffle([1, 3, 4]);
+        CardRecursionResult upgradedFullHand = CardRecursionModel.Apply(cards, standby, cards.Rng,
+            upgradedHandNoOverflow, definitions, 50, 1, cardRegistry: upgradeRegistry);
         CardRecursionResult missingUpgradeRegistry = CardRecursionModel.Apply(cards, piles, cards.Rng, randomDeckUpgrade,
             definitions, 50, 4);
         CardRecursionResult emptyUpgradeTarget = CardRecursionModel.Apply(cards,
@@ -282,6 +293,11 @@ internal static class CardRecursionChecks
             upgradedHand.Supported && upgradedHand.Cards!.Hand.Select(card => card.InstanceId)
                 .SequenceEqual([expectedUpgradeChoice.Items[0], 50]) && upgradedHand.Cards.Draw.Single().InstanceId == 20 &&
             upgradedHand.ChangedCards.Single().InstanceId == expectedUpgradeChoice.Items[0] &&
+            upgradedFullHand.Supported && upgradedFullHand.RestoredCardIds.SequenceEqual([expectedFullHandUpgrade.Items[0]]) &&
+            upgradedFullHand.Cards!.Hand.Select(card => card.InstanceId).SequenceEqual([50]) &&
+            upgradedFullHand.Cards.Draw.Select(card => card.InstanceId).SequenceEqual([20, expectedFullHandUpgrade.Items[0]]) &&
+            upgradedFullHand.ChangedCards.Single().InstanceId == expectedFullHandUpgrade.Items[0] &&
+            upgradedFullHand.ChangedCards.Single().Temporary.Upgrades.Single().Stats.Damage == 3 &&
             chosenUpgradedDeck.Supported && chosenUpgradedDeck.RestoredCardIds.SequenceEqual([3]) &&
             chosenUpgradedDeck.Cards!.Draw.Select(card => card.InstanceId).SequenceEqual([20, 3]) &&
             chosenUpgradedDeck.ChangedCards.Single().InstanceId == 3 &&

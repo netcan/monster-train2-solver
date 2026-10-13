@@ -125,8 +125,9 @@ namespace MonsterTrain2Poju.Model
             int capacity = maxHandSize - hand.Count;
             for (int index = selected.Length - 1; index >= 0; index--)
             {
+                // The upgraded native path ignores ParamBool2; a full-hand draw leaves restored cards in Draw.
                 if (effect.Recursion.DisallowOverflowToDrawPile &&
-                    (effect.Recursion.SelectionMode is "RandomToHand" or "RandomToHandWithUpgrades") && capacity <= 0) break;
+                    effect.Recursion.SelectionMode == "RandomToHand" && capacity <= 0) break;
                 int cardId = selected[index];
                 if (!selectedTokens.TryGetValue(cardId, out CardToken? token))
                     return new CardRecursionResult(null, null, null, "A selected recursion card left its source pile.");
