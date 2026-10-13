@@ -42,6 +42,31 @@ internal static class RelicSpawnStatusChecks
         }
         var percentage = RelicSpawnStatusModel.CharacterAdded(Room(actor, Relic(new(0, true, false, [armor], hpPercentAsStacks: 33))), 1, 0, false);
         Require(percentage.State!.Units[0].Status("armor")!.Stacks == 6, "Native single-precision max-HP percentage differed.");
+        var ally = new CombatUnit(2, "ally", CombatTeam.Player, 1, 20, 20, true, false, false, [], statusRegistry: [], statusDictionary: new([], []));
+        var enemy = new CombatUnit(3, "enemy", CombatTeam.Enemy, 1, 20, 20, true, false, false, [], statusRegistry: [], statusDictionary: new([], []));
+        var dead = new CombatUnit(4, "dead", CombatTeam.Player, 1, 0, 20, true, false, false, [], statusRegistry: [], statusDictionary: new([], []));
+        var destroyed = new CombatUnit(5, "destroyed", CombatTeam.Player, 1, 20, 20, true, false, false, [],
+            deathState: new(false, false, false, null, isDestroyed: true), statusRegistry: [], statusDictionary: new([], []));
+        var teamRule = new RelicSpawnStatus(0, true, false,
+            [new CombatStatus("valor", 5, hidden: false, displayCategory: "Positive")], applyToTeam: true);
+        var teamRelic = Relic(teamRule, RelicModel.AddStatusOnTeamSpawn);
+        RoomCombatState unorderedTeam = Room(actor, teamRelic);
+        unorderedTeam = new RoomCombatState(0, false, [actor, ally, enemy, dead, destroyed], [], unorderedTeam.Context);
+        Require(!RelicSpawnStatusModel.CharacterAdded(unorderedTeam, 1, 0, false).Supported,
+            "Team-wide relic guessed recipient order without native spawn points.");
+        var points = new BattleSpawnPoints([
+            new SpawnPointGroupState(0, CombatTeam.Enemy, 1, 1, [3], [false]),
+            new SpawnPointGroupState(0, CombatTeam.Player, 4, 4, [2, 1, 4, 5], [false, false, false, false])
+        ], new[] { 1, 2, 3, 4, 5 }.Select(id => new UnitSpawnPointState(id, null, null)).ToArray());
+        RoomCombatState orderedTeam = new(0, false, [actor, ally, enemy, dead, destroyed], [], unorderedTeam.Context!.WithSpawnPoints(points));
+        RoomCombatResult teamAdded = RelicSpawnStatusModel.CharacterAdded(orderedTeam, 1, 0, false);
+        Require(teamAdded.Supported && teamAdded.State!.Units.Single(unit => unit.Id == 1).Status("valor")?.Stacks == 5 &&
+            teamAdded.State.Units.Single(unit => unit.Id == 2).Status("valor")?.Stacks == 5 &&
+            teamAdded.State.Units.Single(unit => unit.Id == 3).Status("valor") == null &&
+            teamAdded.State.Units.Single(unit => unit.Id == 4).Status("valor") == null &&
+            teamAdded.State.Units.Single(unit => unit.Id == 5).Status("valor") == null &&
+            teamAdded.State.Context!.BattleRng.Equals(orderedTeam.Context!.BattleRng.Next()),
+            "Team-wide relic did not apply one selected payload to living allied recipients.");
         var immune = new CombatUnit(1, "player", CombatTeam.Player, 2, 20, 20, true, false, false, [], statusImmunities: ["armor"],
             statusRegistry: [], statusDictionary: new([], []));
         var immuneResult = RelicSpawnStatusModel.CharacterAdded(Room(immune, Relic(new(0, true, false, [armor], conditions: [limit]))), 1, 0, false);
@@ -75,7 +100,8 @@ internal static class RelicSpawnStatusChecks
         Require(Serialize(birthTrain) == trainParent, "Settling a relic birth changed its parent.");
         Console.WriteLine("RELIC-SPAWN-STATUS-CHECKS PASS: native selection/gating order, immutable condition counters, duration reset, immunity notification, HP percentage, queued callbacks and 32 branches.");
 
-        static CombatRelicState Relic(RelicSpawnStatus rule) => new("spawn", "spawn", ["RelicEffectAddStatusEffectOnSpawn"], [rule], false, false);
+        static CombatRelicState Relic(RelicSpawnStatus rule, string effectType = "RelicEffectAddStatusEffectOnSpawn") =>
+            new("spawn", "spawn", [effectType], [rule], false, false);
         static RoomCombatState Room(CombatUnit actor, CombatRelicState relic) => new(0, false, [actor], [],
             new(new([], [], [], UnityRng.Seed(13), 0, []), UnityRng.Seed(13), 0, 1, 10, relics: [relic]));
     }
@@ -84,15 +110,16 @@ internal static class RelicSpawnStatusChecks
     {
         if (!fixture.TryGetProperty("ModifierScenario", out var scenario) || scenario.GetString() is not
             ("spawn-status-relics" or "spawn-status-relics-clones" or "spawn-status-relics-mixed-cardless-order" or
-                "spawn-status-relics-stealth-waxers")) return;
+                "spawn-status-relics-stealth-waxers" or "spawn-status-relics-team-wide")) return;
         bool stealthWaxers = scenario.GetString() == "spawn-status-relics-stealth-waxers";
+        bool teamWide = scenario.GetString() == "spawn-status-relics-team-wide";
         bool mixedCardlessOrder = scenario.GetString() == "spawn-status-relics-mixed-cardless-order";
-        bool clones = scenario.GetString() is "spawn-status-relics-clones" or "spawn-status-relics-mixed-cardless-order";
+        bool clones = scenario.GetString() is "spawn-status-relics-clones" or "spawn-status-relics-mixed-cardless-order" or "spawn-status-relics-team-wide";
         int schema = fixture.GetProperty("Schema").GetInt32();
-        Require((stealthWaxers ? schema == 140 : mixedCardlessOrder ? schema == 121 : clones ? schema is 110 or 111 : schema is 109 or 110) && fixture.GetProperty("CaptureFailures").GetInt32() == 0 &&
+        Require((teamWide ? schema == 144 : stealthWaxers ? schema == 140 : mixedCardlessOrder ? schema == 121 : clones ? schema is 110 or 111 : schema is 109 or 110) && fixture.GetProperty("CaptureFailures").GetInt32() == 0 &&
             fixture.GetProperty("Pending").GetInt32() == 0, "Incomplete relic spawn status native recording.");
         var records = fixture.GetProperty("RelicSpawnStatuses").EnumerateArray().ToArray();
-        int players = 0, enemies = 0, shieldTriggers = 0, shieldSkips = 0, stealthWaxersWitnesses = 0;
+        int players = 0, enemies = 0, shieldTriggers = 0, shieldSkips = 0, stealthWaxersWitnesses = 0, teamWideWitnesses = 0;
         var turns = new HashSet<int>();
         foreach (var record in records)
         {
@@ -140,6 +167,28 @@ internal static class RelicSpawnStatusChecks
                 relics.Any(relic => relic.AssetKey == "FirstUnitGainDamageShield" && relic.DataId == "60a2a8a3-5f7a-4a9d-b427-5f261145fa1f") &&
                 relics.Any(relic => relic.AssetKey == "FrostbiteOnEnemies" && relic.DataId == "270356af-16bd-4433-a0b2-3e5bb94ef890"),
                 "Original relic identities were not retained.");
+            if (teamWide)
+            {
+                const string teamStatusId = "55cf29f3-bc0d-4b5f-929e-07d4629141b3";
+                CombatRelicState owner = relics.Single(relic => relic.AssetKey == "HymnistsApplyValorOnSummon" && relic.DataId == teamStatusId);
+                Require(owner.EffectTypes.SequenceEqual([RelicModel.AddStatusOnTeamSpawn]) && owner.SpawnStatuses?.Count == 1 &&
+                    owner.SpawnStatuses[0].ApplyToTeam && owner.SpawnStatuses[0].TargetPlayer && !owner.SpawnStatuses[0].TargetEnemy &&
+                    owner.SpawnStatuses[0].Statuses.Count == 1 && owner.SpawnStatuses[0].Statuses[0].Id == "valor" &&
+                    owner.SpawnStatuses[0].Statuses[0].Stacks == 5 && owner.SpawnStatuses[0].RequiredSubtype == "SubtypesData_Hymnist" &&
+                    owner.SpawnStatuses[0].Conditions.Count == 0,
+                    "Original HymnistsApplyValorOnSummon identity or team Valor payload differs.");
+                CombatUnit beforeActor = before.Units.Single(unit => unit.Id == id);
+                foreach (CombatUnit member in before.Units.Where(unit => unit.Id != id && unit.Team == beforeActor.Team && unit.Health > 0 &&
+                    unit.DeathState?.IsDespawned != true && unit.DeathState?.IsDestroyed != true))
+                {
+                    CombatUnit? afterMember = after.Units.FirstOrDefault(unit => unit.Id == member.Id);
+                    if (afterMember == null || afterMember.Health <= 0 || afterMember.DeathState?.IsDespawned == true ||
+                        afterMember.DeathState?.IsDestroyed == true) continue;
+                    int beforeValor = member.Status("valor")?.Stacks ?? 0;
+                    int afterValor = afterMember.Status("valor")?.Stacks ?? 0;
+                    if (afterValor == beforeValor + 5) teamWideWitnesses++;
+                }
+            }
             CombatUnit actor = after.Units.Single(unit => unit.Id == id);
             if (stealthWaxers)
             {
@@ -208,6 +257,7 @@ internal static class RelicSpawnStatusChecks
         }
         Require(players > 1 && enemies > 0 && shieldTriggers > 0 && shieldSkips > 0 &&
             (!stealthWaxers || stealthWaxersWitnesses > 0) &&
+            (!teamWide || teamWideWitnesses > 0) &&
             (clones || shieldTriggers > 1 && turns.Count > 1),
             "Native relic spawn status team/first-unit/turn-reset coverage incomplete.");
         if (clones)
@@ -221,7 +271,7 @@ internal static class RelicSpawnStatusChecks
                 records.Any(record => record.GetProperty("DeferCallbacks").GetBoolean() && record.GetProperty("QueuedAfter").GetArrayLength() > 0),
                 "Native relic birth lacks both settled and deferred queue boundaries.");
         }
-        Console.WriteLine($"NATIVE-RELIC-SPAWN-STATUS-CHECKS PASS: {records.Length} exact birth phases, {players} player/{enemies} enemy births, {shieldTriggers} first-unit triggers/{shieldSkips} skips across {turns.Count} turns and 32 isolated branches.");
+        Console.WriteLine($"NATIVE-RELIC-SPAWN-STATUS-CHECKS PASS: {records.Length} exact birth phases, {players} player/{enemies} enemy births, {shieldTriggers} first-unit triggers/{shieldSkips} skips across {turns.Count} turns, {teamWideWitnesses} team-wide witnesses and 32 isolated branches.");
     }
     private static string Serialize<T>(T value) => JsonSerializer.Serialize(value, ModelJson.Options);
     private static void Require(bool condition, string message) { if (!condition) throw new InvalidDataException(message); }

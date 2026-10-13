@@ -88,6 +88,7 @@ $fixtureNames = @('full-battle-steward-once.mt2f', 'full-battle-no-cards.mt2f', 
     'full-battle-spawn-status-relics-clones-ungated-capture.mt2f',
     'full-battle-spawn-status-relics-mixed-cardless-order.mt2f',
     'full-battle-original-stealth-waxers.mt2f',
+    'full-battle-original-team-spawn-status.mt2f',
     'full-battle-original-mageblade-magnitude.mt2f',
     'full-battle-cardless-relic-upgrades.mt2f',
     'full-battle-energy-effects.mt2f',
@@ -226,8 +227,12 @@ if ($Fixture.Count -gt 0) {
 $focusedBumpFixtures = @($fixtures | Where-Object {
     (Split-Path -Leaf $_) -in @('full-battle-companion-bump.mt2f', 'full-battle-outer-boss-bump.mt2f')
 })
+$focusedTeamSpawnStatusFixtures = @($fixtures | Where-Object {
+    (Split-Path -Leaf $_) -eq 'full-battle-original-team-spawn-status.mt2f'
+})
 $generalFixtures = @($fixtures | Where-Object {
-    (Split-Path -Leaf $_) -notin @('full-battle-companion-bump.mt2f', 'full-battle-outer-boss-bump.mt2f')
+    (Split-Path -Leaf $_) -notin @('full-battle-companion-bump.mt2f', 'full-battle-outer-boss-bump.mt2f',
+        'full-battle-original-team-spawn-status.mt2f')
 })
 if ($generalFixtures.Count -gt 0) {
     dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release -- @generalFixtures
@@ -235,6 +240,13 @@ if ($generalFixtures.Count -gt 0) {
     dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release
 }
 if ($LASTEXITCODE -ne 0) { throw 'Independent model checks failed.' }
+
+foreach ($fixturePath in $focusedTeamSpawnStatusFixtures) {
+    foreach ($mode in @('--room-combat-only', '--native-actions-only', '--unit-clone-only')) {
+        dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- $mode $fixturePath
+        if ($LASTEXITCODE -ne 0) { throw "Team-wide spawn status checks failed ($mode): $fixturePath" }
+    }
+}
 
 $covenantFixtures = @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 'full-battle-covenant-character-filter.mt2f' })
 foreach ($fixturePath in $covenantFixtures) {

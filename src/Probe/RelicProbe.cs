@@ -28,7 +28,9 @@ namespace MonsterTrain2Poju.Probe
             return relics.Select(relic => {
                 var effects = relic.GetEffects().ToArray();
                 var statuses = effects.Select((effect, index) => new { Effect = effect, Index = index })
-                    .Where(item => item.Effect is RelicEffectAddStatusEffectOnSpawn).Select(item => SpawnStatus(item.Effect, item.Index)).ToArray();
+                    .Where(item => item.Effect is RelicEffectAddStatusEffectOnSpawn ||
+                        item.Effect.GetType().Name == RelicModel.AddStatusOnTeamSpawn)
+                    .Select(item => SpawnStatus(item.Effect, item.Index)).ToArray();
                 var roomEntryStatuses = effects.Select((effect, index) => new { Effect = effect, Index = index })
                     .Where(item => item.Effect is RelicEffectAddStatusEffectOnEnterRoomIndex)
                     .Select(item => RoomEntryStatus(item.Effect, item.Index)).ToArray();
@@ -159,6 +161,7 @@ namespace MonsterTrain2Poju.Probe
         {
             object Field(string name) => AccessTools.Field(effect.GetType(), name).GetValue(effect);
             var conditions = RelicCardModifierProbe.Conditions(effect);
+            bool applyToTeam = effect.GetType().Name == RelicModel.AddStatusOnTeamSpawn;
             Team.Type team = (Team.Type)Field("targetTeam");
             var subtype = (SubtypeData)Field("characterSubtype");
             bool allowFromCard = (bool)Field("allowFromCard"), onlyFromCard = (bool)Field("onlyAllowedFromCard");
@@ -166,9 +169,10 @@ namespace MonsterTrain2Poju.Probe
                 ((StatusEffectStackData[])Field("statusEffects")).Select(status => BattleActionProbe.Status(status.statusId, status.count)).ToArray(),
                 subtype?.Key, subtype == null || subtype.IsNone, subtype?.IsPyre == true,
                 ((SubtypeData[])Field("excludeCharacterSubtypes")).Select(item => item.Key).ToArray(),
-                (bool)Field("restrictToRoom") ? (int?)Field("restrictedRoomIndex") : null, (int)Field("hpPercentAsStacks"),
-                onlyFromCard ? "OnlyFromCard" : allowFromCard ? "" : "NoCard", (bool)Field("requireGraft"),
-                ((List<CharacterData>)Field("characterFilter")).Select(character => character == null ? "<null>" : character.name).ToArray(), conditions);
+                (bool)Field("restrictToRoom") ? (int?)Field("restrictedRoomIndex") : null, applyToTeam ? 0 : (int)Field("hpPercentAsStacks"),
+                onlyFromCard ? "OnlyFromCard" : allowFromCard ? "" : "NoCard", !applyToTeam && (bool)Field("requireGraft"),
+                applyToTeam ? System.Array.Empty<string>() : ((List<CharacterData>)Field("characterFilter"))
+                    .Select(character => character == null ? "<null>" : character.name).ToArray(), conditions, applyToTeam);
         }
 
         internal static TriggerCountState? TriggerCounts(AllGameManagers managers)

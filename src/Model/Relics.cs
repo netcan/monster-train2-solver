@@ -83,6 +83,7 @@ namespace MonsterTrain2Poju.Model
         internal const string AbilityIncant = "RelicEffectIncantTriggeredByUnitAbilities";
         internal const string ModifyTriggerCount = "RelicEffectModifyTriggerCount";
         internal const string AddStatusOnSpawn = "RelicEffectAddStatusEffectOnSpawn";
+        internal const string AddStatusOnTeamSpawn = "RelicEffectAddStatusEffectToTeamOnSpawn";
         internal const string AddStatusOnRoomEntry = "RelicEffectAddStatusEffectOnEnterRoomIndex";
         internal const string AddTempUpgrade = "RelicEffectAddTempUpgrade";
         internal const string ModifyCardHealth = "RelicEffectModifyCardHealth";
@@ -114,7 +115,7 @@ namespace MonsterTrain2Poju.Model
                 if (string.IsNullOrEmpty(relic.DataId) || string.IsNullOrEmpty(relic.AssetKey))
                     return "Missing captured relic identity.";
                 foreach (string effect in relic.EffectTypes)
-                    if (effect != AbilityIncant && effect != ModifyTriggerCount && effect != AddStatusOnSpawn && effect != AddStatusOnRoomEntry && effect != AddTempUpgrade && effect != ModifyCardHealth && effect != AddRemoveTempUpgradeOnUnitTrigger && effect != AddCardsNull && effect != ModifyCardMagicalPower && effect != ModifyCardMagicPowerOnCardPlayed && effect != AddTrigger && effect != AddStatusOnApplied && effect != ModifyStatusMagnitude && effect != PreventStatusDecay && effect != ModifyCharacterAttackDamage && effect != ModifyCharacterMaxHealth && effect != AllDamageIsPiercing && effect != AdditionalForgePoints && !RelicResourceModel.IsEffect(effect)) return "Unmodeled relic effect " + effect + " on " + relic.AssetKey + ".";
+                    if (effect != AbilityIncant && effect != ModifyTriggerCount && effect != AddStatusOnSpawn && effect != AddStatusOnTeamSpawn && effect != AddStatusOnRoomEntry && effect != AddTempUpgrade && effect != ModifyCardHealth && effect != AddRemoveTempUpgradeOnUnitTrigger && effect != AddCardsNull && effect != ModifyCardMagicalPower && effect != ModifyCardMagicPowerOnCardPlayed && effect != AddTrigger && effect != AddStatusOnApplied && effect != ModifyStatusMagnitude && effect != PreventStatusDecay && effect != ModifyCharacterAttackDamage && effect != ModifyCharacterMaxHealth && effect != AllDamageIsPiercing && effect != AdditionalForgePoints && !RelicResourceModel.IsEffect(effect)) return "Unmodeled relic effect " + effect + " on " + relic.AssetKey + ".";
                 string? error = RelicCardModifierModel.Validate(relic) ?? RelicCardHealthModel.Validate(relic) ?? RelicUnitUpgradeTriggerModel.Validate(relic) ?? RelicMagicPowerModel.Validate(relic) ?? RelicCardPlayMagicPowerModel.Validate(relic) ?? RelicSpawnStatusModel.Validate(relic) ?? RelicRoomEntryStatusModel.Validate(relic) ?? RelicCharacterTriggerModel.Validate(relic) ?? RelicStatusStackModel.Validate(relic) ?? RelicStatusMagnitudeModel.Validate(relic) ?? RelicStatusDecayModel.Validate(relic) ?? RelicForgePointModel.Validate(relic) ?? RelicResourceModel.Validate(relic);
                 if (error != null) return error;
             }

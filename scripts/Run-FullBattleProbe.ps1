@@ -171,6 +171,7 @@ param(
     [switch] $IncantRelics,
     [switch] $SpawnStatusRelics,
     [switch] $OriginalStealthWaxersRelic,
+    [switch] $OriginalTeamSpawnStatusRelic,
     [switch] $SpawnStatusRelicsClones,
     [switch] $MixedCardlessRelicOrder,
     [switch] $SettleDeathDissolves,
@@ -219,6 +220,7 @@ param(
 
 $ErrorActionPreference = 'Stop'
 if ($OriginalStealthWaxersRelic) { $SpawnStatusRelics = $true; $Policy = 'units-spells-and-junk' }
+if ($OriginalTeamSpawnStatusRelic) { $SpawnStatusRelics = $true; $SpawnStatusRelicsClones = $true; $Policy = 'units-spells-and-junk' }
 if ($RoomCapacityAttachment) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($PermanentConsumeHandUpgrades -or $PermanentConsumeOverTemporary) { $HandUpgrades = $true; $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($GenerationPermanentConsume) { $Generation = $true; $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
@@ -411,7 +413,7 @@ if ($Purify) {
 }
 
 if ($SpawnStatusRelics) {
-    $environment['MT2_PROBE_MODIFIERS'] = $(if ($OriginalStealthWaxersRelic) { 'spawn-status-relics-stealth-waxers' } elseif ($SpawnStatusRelicsClones) { 'spawn-status-relics-clones' } else { 'spawn-status-relics' })
+    $environment['MT2_PROBE_MODIFIERS'] = $(if ($OriginalTeamSpawnStatusRelic) { 'spawn-status-relics-team-wide' } elseif ($OriginalStealthWaxersRelic) { 'spawn-status-relics-stealth-waxers' } elseif ($SpawnStatusRelicsClones) { 'spawn-status-relics-clones' } else { 'spawn-status-relics' })
     $environment['MT2_PROBE_STATUS_CALLBACKS'] = '1'
 }
 if ($MixedCardlessRelicOrder) {
@@ -2037,11 +2039,12 @@ if ($SpawnStatusRelics) {
             } elseif ($oldShield.DurationTriggerCount -eq 1 -and $newShield.DurationTriggerCount -eq 1) { $spawnRelicSkips++ }
         } else { $spawnRelicEnemies++ }
     }
-    $expectedSpawnScenario = if ($OriginalStealthWaxersRelic) { 'spawn-status-relics-stealth-waxers' } elseif ($MixedCardlessRelicOrder) { 'spawn-status-relics-mixed-cardless-order' } elseif ($SpawnStatusRelicsClones) { 'spawn-status-relics-clones' } else { 'spawn-status-relics' }
-    $expectedSpawnSchema = if ($OriginalStealthWaxersRelic) { 140 } elseif ($MixedCardlessRelicOrder) { 121 } elseif ($SpawnStatusRelicsClones) { 111 } else { 110 }
+    $expectedSpawnScenario = if ($OriginalTeamSpawnStatusRelic) { 'spawn-status-relics-team-wide' } elseif ($OriginalStealthWaxersRelic) { 'spawn-status-relics-stealth-waxers' } elseif ($MixedCardlessRelicOrder) { 'spawn-status-relics-mixed-cardless-order' } elseif ($SpawnStatusRelicsClones) { 'spawn-status-relics-clones' } else { 'spawn-status-relics' }
+    $expectedSpawnSchema = if ($OriginalTeamSpawnStatusRelic) { 144 } elseif ($OriginalStealthWaxersRelic) { 140 } elseif ($MixedCardlessRelicOrder) { 121 } elseif ($SpawnStatusRelicsClones) { 111 } else { 110 }
     $requiredSpawnRelics = @('SpawnWithArmor', 'FirstUnitGainDamageShield', 'FrostbiteOnEnemies')
     if ($MixedCardlessRelicOrder) { $requiredSpawnRelics = @('PyreHeartSon', 'FirstUnitGainDamageShield', 'FrostbiteOnEnemies') }
     if ($OriginalStealthWaxersRelic) { $requiredSpawnRelics += 'StealthWaxers' }
+    if ($OriginalTeamSpawnStatusRelic) { $requiredSpawnRelics += 'HymnistsApplyValorOnSummon' }
     $observedSpawnRelics = @($trace.Actions[0].Before.Spawn.Train.Context.Relics | Where-Object { $_.AssetKey -in $requiredSpawnRelics }).Count
     if ($trace.Schema -ne $expectedSpawnSchema -or $trace.ModifierScenario -ne $expectedSpawnScenario -or $births.Count -lt 3 -or
         $spawnRelicPlayers -lt 2 -or $spawnRelicEnemies -lt 1 -or $spawnRelicFirsts -lt 1 -or $spawnRelicSkips -lt 1 -or
@@ -2082,6 +2085,40 @@ if ($SpawnStatusRelics) {
         }
         if ($stealthWitnesses -eq 0) { throw 'Original StealthWaxers produced no positive Endless birth witness.' }
         Write-Output "ORIGINAL-STEALTH-WAXERS PASS: original Endless-on-spawn condition changed $stealthWitnesses eligible birth states."
+    }
+    if ($OriginalTeamSpawnStatusRelic) {
+        $teamStatusId = '55cf29f3-bc0d-4b5f-929e-07d4629141b3'
+        $teamStatusRelic = @($trace.Actions[0].Before.Spawn.Train.Context.Relics | Where-Object {
+            $_.AssetKey -eq 'HymnistsApplyValorOnSummon' -and $_.DataId -eq $teamStatusId
+        })
+        if ($teamStatusRelic.Count -ne 1 -or $teamStatusRelic[0].EffectTypes.Count -ne 1 -or
+            $teamStatusRelic[0].EffectTypes[0] -ne 'RelicEffectAddStatusEffectToTeamOnSpawn' -or
+            $teamStatusRelic[0].SpawnStatuses.Count -ne 1 -or -not $teamStatusRelic[0].SpawnStatuses[0].ApplyToTeam -or
+            $teamStatusRelic[0].SpawnStatuses[0].Statuses.Count -ne 1 -or
+            $teamStatusRelic[0].SpawnStatuses[0].Statuses[0].Id -ne 'valor' -or
+            $teamStatusRelic[0].SpawnStatuses[0].Statuses[0].Stacks -ne 5 -or
+            $teamStatusRelic[0].SpawnStatuses[0].RequiredSubtype -ne 'SubtypesData_Hymnist') {
+            throw 'Original HymnistsApplyValorOnSummon identity or team Valor payload is missing.'
+        }
+        $teamWideWitnesses = 0
+        foreach ($birth in $births) {
+            $born = @($birth.Before.Units | Where-Object { $_.Id -eq $birth.UnitId })[0]
+            if (-not $born -or $born.Team -ne 1) { continue }
+            foreach ($member in @($birth.Before.Units | Where-Object {
+                $_.Team -eq $born.Team -and $_.Id -ne $born.Id -and $_.Health -gt 0 -and
+                $_.DeathState.IsDespawned -ne $true -and $_.DeathState.IsDestroyed -ne $true
+            })) {
+                $afterMember = @($birth.After.Units | Where-Object { $_.Id -eq $member.Id })[0]
+                if (-not $afterMember) { continue }
+                $beforeValor = @($member.Statuses | Where-Object { $_.Id -eq 'valor' })
+                $afterValor = @($afterMember.Statuses | Where-Object { $_.Id -eq 'valor' })
+                $oldStacks = if ($beforeValor.Count) { [int]$beforeValor[0].Stacks } else { 0 }
+                $newStacks = if ($afterValor.Count) { [int]$afterValor[0].Stacks } else { 0 }
+                if ($newStacks -eq ($oldStacks + 5)) { $teamWideWitnesses++ }
+            }
+        }
+        if ($teamWideWitnesses -lt 1) { throw 'Original team-wide spawn relic has no living ally Valor witness.' }
+        Write-Output "ORIGINAL-TEAM-SPAWN-STATUS PASS: $teamWideWitnesses living ally states gained five Valor from a summon."
     }
     if ($MixedCardlessRelicOrder) {
         $mixedRelic = @($trace.Actions[0].Before.Spawn.Train.Context.Relics | Where-Object AssetKey -EQ 'PyreHeartSon')

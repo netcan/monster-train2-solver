@@ -30,7 +30,7 @@ The default command checks the full curated inventory. For routine changes, run
 the dedicated checks for the new and directly affected scenarios; run the full
 inventory at completed milestones and before delivery.
 
-Current inventory is 256 archives: 225 accepted battles and 31 component
+Current inventory is 257 archives: 226 accepted battles and 31 component
 calibrations. `enchantment-combat-calibration.mt2f` captures two native
 `CardEffectEnchant` sources growing a player Train Steward from zero to three
 Horde stacks (8 to 24 attack, 25 to 75 health). Muting the sources removes two
@@ -53,9 +53,17 @@ complete independently replayed battle. Its synthetic payload does not add an
 original relic owner to the coverage count.
 `full-battle-original-mageblade-magnitude.mt2f` captures the unchanged original
 `DoubleMagebladeDamage` relic. Its positive Monsters-team query, all four team
-masks, exact owner ablation and resulting cached coefficient pass; original
-relic evidence is now 71/224 (31.70%). The schema-143 binary has 21,251 bytes,
-3,050 unique nodes and no JSON companion.
+masks, exact owner ablation and resulting cached coefficient pass; at that
+stage original relic evidence was 71/224 (31.70%). The schema-143 binary has
+21,251 bytes, 3,050 unique nodes and no JSON companion.
+`full-battle-original-team-spawn-status.mt2f` captures the unchanged original
+`HymnistsApplyValorOnSummon` relic. A test carrier with the native Hymnist
+subtype and a same-room clone produce 33 living teammate +5 Valor witnesses
+across 22 birth phases; all 13 clone operations and 32 branches match. The
+muted Instant battle wins with 41 stages, 14 actions and five EndTurns, with
+zero capture failures, mismatches, unsupported transitions or pending records.
+The schema-144 binary has 71,648 bytes, 10,516 unique nodes and no JSON
+companion; original relic evidence is now 72/224 (32.14%).
 `full-battle-original-endless-return.mt2f` verifies the original More Rares
 relic's Endless upgrade routes a dead carrier to Draw, preserves its temporary
 upgrade and leaves `TimesExhausted` unchanged across a 23-action, seven-turn

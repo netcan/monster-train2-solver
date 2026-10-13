@@ -38,23 +38,25 @@ namespace MonsterTrain2Poju.Model
         public int HpPercentAsStacks { get; }
         public string SourceKind { get; }
         public bool RequireGraft { get; }
+        public bool ApplyToTeam { get; }
         public IReadOnlyList<string> CharacterAssetKeys { get; }
         public IReadOnlyList<RelicConditionState> Conditions { get; }
         public RelicSpawnStatus(int effectIndex, bool targetPlayer, bool targetEnemy, IReadOnlyList<CombatStatus> statuses,
             string? requiredSubtype = null, bool subtypeIsNone = true, bool subtypeIsPyre = false,
             IReadOnlyList<string>? excludedSubtypes = null, int? restrictedRoom = null, int hpPercentAsStacks = 0,
             string sourceKind = "", bool requireGraft = false, IReadOnlyList<string>? characterAssetKeys = null,
-            IReadOnlyList<RelicConditionState>? conditions = null)
+            IReadOnlyList<RelicConditionState>? conditions = null, bool applyToTeam = false)
         { EffectIndex = effectIndex; TargetPlayer = targetPlayer; TargetEnemy = targetEnemy;
             Statuses = Array.AsReadOnly(statuses.ToArray()); RequiredSubtype = requiredSubtype;
             SubtypeIsNone = subtypeIsNone; SubtypeIsPyre = subtypeIsPyre;
             ExcludedSubtypes = Array.AsReadOnly((excludedSubtypes ?? Array.Empty<string>()).ToArray());
             RestrictedRoom = restrictedRoom; HpPercentAsStacks = hpPercentAsStacks; SourceKind = sourceKind; RequireGraft = requireGraft;
+            ApplyToTeam = applyToTeam;
             CharacterAssetKeys = Array.AsReadOnly((characterAssetKeys ?? Array.Empty<string>()).ToArray());
             Conditions = Array.AsReadOnly((conditions ?? Array.Empty<RelicConditionState>()).ToArray()); }
         internal RelicSpawnStatus WithConditions(IReadOnlyList<RelicConditionState> conditions) =>
             new RelicSpawnStatus(EffectIndex, TargetPlayer, TargetEnemy, Statuses, RequiredSubtype, SubtypeIsNone, SubtypeIsPyre,
-                ExcludedSubtypes, RestrictedRoom, HpPercentAsStacks, SourceKind, RequireGraft, CharacterAssetKeys, conditions);
+                ExcludedSubtypes, RestrictedRoom, HpPercentAsStacks, SourceKind, RequireGraft, CharacterAssetKeys, conditions, ApplyToTeam);
     }
 
     public static class RelicSpawnStatusModel
@@ -62,13 +64,16 @@ namespace MonsterTrain2Poju.Model
         internal static string? Validate(CombatRelicState relic)
         {
             int[] indices = relic.EffectTypes.Select((type, index) => (type, index))
-                .Where(item => item.type == RelicModel.AddStatusOnSpawn).Select(item => item.index).ToArray();
+                .Where(item => item.type == RelicModel.AddStatusOnSpawn || item.type == RelicModel.AddStatusOnTeamSpawn)
+                .Select(item => item.index).ToArray();
             if (indices.Length == 0) return relic.SpawnStatuses?.Count > 0 ? "Unexpected relic spawn status definitions." : null;
             if (relic.IsCovenant == null || relic.DisallowedInPlacementPhase == null || relic.SpawnStatuses == null ||
                 !indices.SequenceEqual(relic.SpawnStatuses.Select(rule => rule.EffectIndex)))
                 return "Missing ordered native relic spawn status definitions.";
             foreach (RelicSpawnStatus rule in relic.SpawnStatuses)
             {
+                bool teamEffect = relic.EffectTypes[rule.EffectIndex] == RelicModel.AddStatusOnTeamSpawn;
+                if (rule.ApplyToTeam != teamEffect) return "Relic spawn status target scope does not match its native effect.";
                 if (!rule.SubtypeIsNone && string.IsNullOrEmpty(rule.RequiredSubtype) ||
                     rule.ExcludedSubtypes.Any(string.IsNullOrEmpty) || rule.CharacterAssetKeys.Any(string.IsNullOrEmpty) ||
                     rule.Conditions.Any(condition => condition.Comparator < 0 || condition.Comparator > 7))
@@ -129,7 +134,8 @@ namespace MonsterTrain2Poju.Model
                         if (!onlyCovenants && !DrainYield()) return failed!;
                         continue;
                     }
-                    if (relic.EffectTypes[effectIndex] != RelicModel.AddStatusOnSpawn) continue;
+                    bool applyToTeam = relic.EffectTypes[effectIndex] == RelicModel.AddStatusOnTeamSpawn;
+                    if (relic.EffectTypes[effectIndex] != RelicModel.AddStatusOnSpawn && !applyToTeam) continue;
                     int ruleIndex = relic.SpawnStatuses!.ToList().FindIndex(rule => rule.EffectIndex == effectIndex);
                     RelicSpawnStatus rule = relic.SpawnStatuses![ruleIndex];
                     RelicConditionEvaluation conditionEvaluation = RelicConditionModel.Evaluate(state.Context!, rule.Conditions);
@@ -159,10 +165,26 @@ namespace MonsterTrain2Poju.Model
                     if (!onlyCovenants && !DrainYield()) return failed!;
                     relic = state.Context!.Relics![relicIndex];
                     rule = relic.SpawnStatuses![ruleIndex];
-                    RoomCombatResult added = StatusApplicationModel.ApplyRetained(state, actor.Id,
-                        rule.Statuses[draw.Value].WithStacks(stacks), 0, overrideImmunity: rule.SubtypeIsPyre);
-                    if (!added.Supported) return added;
-                    state = added.State!; callbacks.AddRange(added.PendingCallbacks); events.AddRange(added.Events);
+                    CombatUnit[] recipients;
+                    if (applyToTeam)
+                    {
+                        recipients = state.Units.Where(unit => unit.Team == actor.Team && unit.Health > 0 &&
+                            unit.DeathState?.IsDespawned != true && unit.DeathState?.IsDestroyed != true).ToArray();
+                        if (state.Context.SpawnPoints == null && recipients.Length > 1)
+                            return Fail("Team-wide relic birth requires native physical order for multiple living recipients.");
+                        recipients = state.Context.SpawnPoints == null ? recipients :
+                            BattleSpawnPointModel.Order(state.Context.SpawnPoints, state.RoomIndex, state.Units).Where(unit =>
+                                unit.Team == actor.Team && unit.Health > 0 && unit.DeathState?.IsDespawned != true &&
+                                unit.DeathState?.IsDestroyed != true).ToArray();
+                    }
+                    else recipients = [actor];
+                    foreach (CombatUnit recipient in recipients)
+                    {
+                        RoomCombatResult added = StatusApplicationModel.ApplyRetained(state, recipient.Id,
+                            rule.Statuses[draw.Value].WithStacks(stacks), 0, overrideImmunity: rule.SubtypeIsPyre);
+                        if (!added.Supported) return added;
+                        state = added.State!; callbacks.AddRange(added.PendingCallbacks); events.AddRange(added.Events);
+                    }
                     RelicConditionRecord record = RelicConditionModel.Record(state.Context!, rule.Conditions);
                     if (!record.Supported) return Fail(record.UnsupportedReason!);
                     SetContext(record.Context);

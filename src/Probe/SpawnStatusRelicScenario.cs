@@ -11,8 +11,10 @@ namespace MonsterTrain2Poju.Probe
         internal static bool Prepared { get; private set; }
         internal static bool OriginalStealthWaxersRelic =>
             Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == "spawn-status-relics-stealth-waxers";
+        internal static bool OriginalTeamSpawnStatusRelic =>
+            Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == "spawn-status-relics-team-wide";
         internal static bool Clones => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") is
-            "spawn-status-relics-clones" or "spawn-status-relics-mixed-cardless-order";
+            "spawn-status-relics-clones" or "spawn-status-relics-mixed-cardless-order" or "spawn-status-relics-team-wide";
         internal static bool MixedCardlessOrder => Environment.GetEnvironmentVariable("MT2_PROBE_MIXED_CARDLESS_RELIC_ORDER") == "1";
         internal static void Prepare(AllGameManagers managers, ManualLogSource log)
         {
@@ -23,6 +25,11 @@ namespace MonsterTrain2Poju.Probe
                 card.GetCardDataID() == "d14a50f3-728d-43e1-87f0-ef1b013f6678").ToArray();
             CardData data = save.GetAllGameData().FindCardData(cards[0].GetCardDataID())!;
             CharacterData unit = data.GetEffects().Single(effect => effect.GetEffectStateName() == "CardEffectSpawnMonster").GetParamCharacterData();
+            if (OriginalTeamSpawnStatusRelic)
+            {
+                var subtypeKeys = (List<string>)AccessTools.Field(typeof(CharacterData), "subtypeKeys").GetValue(unit);
+                if (!subtypeKeys.Contains("SubtypesData_Hymnist")) subtypeKeys.Add("SubtypesData_Hymnist");
+            }
             var armor = HealingScenario.HealGold(11, false, true);
             AccessTools.Field(typeof(CharacterTriggerData), "trigger").SetValue(armor, CharacterTriggerData.Trigger.OnArmorAdded);
             AccessTools.Field(typeof(CharacterData), "triggers").SetValue(unit, unit.GetTriggers().Concat(new[] { armor }).ToList());
@@ -31,6 +38,7 @@ namespace MonsterTrain2Poju.Probe
             Acquire("60a2a8a3-5f7a-4a9d-b427-5f261145fa1f", "FirstUnitGainDamageShield");
             Acquire("270356af-16bd-4433-a0b2-3e5bb94ef890", "FrostbiteOnEnemies");
             if (OriginalStealthWaxersRelic) AcquireStealthWaxers();
+            if (OriginalTeamSpawnStatusRelic) AcquireTeamSpawnStatus();
             if (Clones) AcquireCardlessUpgrade();
             if (Clones)
             {
@@ -43,7 +51,7 @@ namespace MonsterTrain2Poju.Probe
             }
             Prepared = true;
             AccessTools.Field(typeof(CombatManager), "combatStateChanged").SetValue(managers.GetCombatManager(), true);
-            log.LogInfo("SPAWN-STATUS-RELICS-PREPARED original armor, first-unit shield and enemy frostbite acquired without definition changes; StealthWaxers=" + OriginalStealthWaxersRelic + "; clones/extra-spawn=" + Clones + "; native Boss/waves retained.");
+            log.LogInfo("SPAWN-STATUS-RELICS-PREPARED original relic definitions unchanged; Hymnist carrier test=" + OriginalTeamSpawnStatusRelic + "; StealthWaxers=" + OriginalStealthWaxersRelic + "; clones/extra-spawn=" + Clones + "; native Boss/waves retained.");
 
             void Acquire(string id, string key)
             {
@@ -88,6 +96,21 @@ namespace MonsterTrain2Poju.Probe
                 save.AddRelic(relic);
 
                 static object Field(object source, string name) => AccessTools.Field(source.GetType(), name).GetValue(source);
+            }
+
+            void AcquireTeamSpawnStatus()
+            {
+                CollectableRelicData relic = save.GetAllGameData().GetAllCollectableRelicData().Single(item =>
+                    item.GetID() == "55cf29f3-bc0d-4b5f-929e-07d4629141b3");
+                RelicEffectData effect = relic.GetEffects().Single();
+                StatusEffectStackData[] statuses = effect.GetParamStatusEffects();
+                if (relic.name != "HymnistsApplyValorOnSummon" ||
+                    effect.GetEffectClassName() != "RelicEffectAddStatusEffectToTeamOnSpawn" ||
+                    !effect.GetParamSourceTeam().HasFlag(Team.Type.Monsters) ||
+                    statuses.Length != 1 || statuses[0].statusId != "valor" || statuses[0].count != 5 ||
+                    effect.GetEffectConditions().Count != 0)
+                    throw new InvalidOperationException("Original HymnistsApplyValorOnSummon definition changed.");
+                save.AddRelic(relic);
             }
         }
     }

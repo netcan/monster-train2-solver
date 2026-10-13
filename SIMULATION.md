@@ -1,10 +1,31 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-13): 256 binary archives, including 225
+Current accepted inventory (2026-10-13): 257 binary archives, including 226
 full battles and 31 component calibrations. Unchanged original relic evidence
-covers 71/224 catalog entries (31.70%); see
+covers 72/224 catalog entries (32.14%); see
 [the owner evidence table](tests/fixtures/relic-coverage.md). Whole-battle
 coverage and the optimal solver remain in progress.
+
+### Original HymnistsApplyValorOnSummon relic
+
+`full-battle-original-team-spawn-status.mt2f` captures the unchanged original
+`HymnistsApplyValorOnSummon` relic and its `Hymnist` source filter. In the
+isolated scenario, a test Train Steward is authored as a Hymnist and cloned into
+the same room; 22 birth phases include 33 existing living teammates gaining the
+native +5 Valor payload. All 13 clone operations and 32 immutable branches
+match. The muted Instant battle wins with 41 stages, 14 actions and five
+EndTurns; capture failures, mismatches, unsupported transitions and pending
+records are zero. This verifies the new team-wide recipient model and adds one
+original relic owner.
+
+The schema-144 binary is 71,648 bytes with 10,516 unique nodes and SHA-256
+`81bc98bacf8797ce83bf19cfb49754f3aaf446f4a8ac09e3e42a5116734c2296`; it has no
+JSON companion.
+
+```powershell
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -OriginalTeamSpawnStatusRelic -GameSpeed Instant
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-team-spawn-status.mt2f
+```
 
 ### Persistent Horde aura growth and simulated deaths
 
