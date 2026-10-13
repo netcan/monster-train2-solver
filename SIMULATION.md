@@ -1,6 +1,6 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-14): 278 binary archives, including 247
+Current accepted inventory (2026-10-14): 280 binary archives, including 249
 full battles and 31 component calibrations. Unchanged original relic evidence
 covers 78/224 catalog entries (34.82%); see
 [the owner evidence table](tests/fixtures/relic-coverage.md). Whole-battle
@@ -15,9 +15,7 @@ Pyre-damage cards in hand: `BlightPyreDamageInHand` (1), `ScourgeT2` (3),
 native battle matches all 62 stages, 21 card actions and seven EndTurns, with
 zero capture failures, mismatches, unsupported transitions or pending records.
 The focused checks verify each captured definition, the combined damage,
-synthetic multiple triggers and parent-state isolation. The other two original
-negative-trigger cards, `TitanCurse` and `Scourge_SoulSavior`, use different
-upgrade/copy effects and remain unsupported; no relic owner coverage changes.
+synthetic multiple triggers and parent-state isolation.
 
 The 34,660-byte native binary has its unique-node count and SHA-256 recorded in
 `tests/fixtures/manifest.tsv`; no JSON companion is tracked.
@@ -25,6 +23,24 @@ The 34,660-byte native binary has its unique-node count and SHA-256 recorded in
 ```powershell
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-unplayed-card-pyre-damage.mt2f
 dotnet run --project src/ModelChecks -c Release -- --unplayed-card-trigger-only tests/fixtures/full-battle-unplayed-card-pyre-damage.mt2f
+```
+
+### Unplayed upgrade and copy triggers (schema 163)
+
+`full-battle-unplayed-card-effects.mt2f` captures the other two original
+negative-trigger cards. TitanCurse adds its temporary upgrade to eligible deck
+spells; Scourge_SoulSavior is natively copyable and creates one deterministic
+copy in the discard pile. The muted Instant battle wins with 63 matched stages,
+11 card actions and seven EndTurns, with zero capture failures, mismatches,
+unsupported transitions or pending records. Focused checks verify the captured
+effect definitions, spell upgrade, copyability and generated-card count. The
+31,641-byte archive has 5,000 unique nodes and SHA-256
+`ab5dd7fe0a2dcab0dbce146a632c2e7def068c802e63118572c27948e082ee81`; no JSON
+companion is tracked.
+
+```powershell
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-unplayed-card-effects.mt2f
+dotnet run --project src/ModelChecks -c Release -- --unplayed-card-effects-only tests/fixtures/full-battle-unplayed-card-effects.mt2f
 ```
 ### Original card-draw relics (schema 160)
 

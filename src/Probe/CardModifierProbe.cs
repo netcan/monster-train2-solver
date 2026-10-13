@@ -40,7 +40,7 @@ namespace MonsterTrain2Poju.Probe
                     Counters(card), DamageScalingProbe.Capture(card), StatusScalingProbe.Capture(card), UnitUpgradeScalingProbe.Capture(card), RoomCapacityProbe.Traits(card),
                     FullBattleTrace.Active?.EquippedUnitId(card) ?? 0, PlayedRoomUnits(card), RawPlayedRoomUnits(card),
                     forgeCountScalingTraits: ForgeCountScalingTraits(card),
-                    rawCostOverride: rawCost == data.GetCost() ? null : rawCost);
+                    rawCostOverride: rawCost == data.GetCost() ? null : rawCost, canBeCopied: card.CanBeCopied());
                 CardPlayRule definition = BattleActionProbe.Definition(data);
                 CardPlayRule rule = CardModifierModel.Resolve(definition, state);
                 for (int index = 0; index < managers.GetRoomManager()!.GetNumRooms(); index++)
@@ -61,7 +61,7 @@ namespace MonsterTrain2Poju.Probe
                 }
                 return new CardInstanceState(state.InstanceId, state.DataId, state.Permanent, state.Temporary,
                     state.LastPlayedCost, state.LastForgedAmount, state.PlayCount,
-                    interactions.Distinct().OrderBy(value => value, StringComparer.Ordinal).ToArray(), state.EffectCounters, state.DamageScalingTraits, state.StatusScalingTraits, state.UnitUpgradeScalingTraits, state.CapacityScalingTraits, state.EquippedUnitId, state.PlayedRoomUnitIds, state.RawPlayedRoomUnitIds, CardBranchMaskProbe.Capture(card), CardExhaustProbe.Capture(card, cardId), state.ForgeCountScalingTraits, state.RawCostOverride);
+                    interactions.Distinct().OrderBy(value => value, StringComparer.Ordinal).ToArray(), state.EffectCounters, state.DamageScalingTraits, state.StatusScalingTraits, state.UnitUpgradeScalingTraits, state.CapacityScalingTraits, state.EquippedUnitId, state.PlayedRoomUnitIds, state.RawPlayedRoomUnitIds, CardBranchMaskProbe.Capture(card), CardExhaustProbe.Capture(card, cardId), state.ForgeCountScalingTraits, state.RawCostOverride, card.CanBeCopied());
             }).OrderBy(card => card.InstanceId).ToArray();
         }
 

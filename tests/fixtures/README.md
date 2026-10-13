@@ -31,7 +31,7 @@ The default command checks the full curated inventory. For routine changes, run
 the dedicated checks for the new and directly affected scenarios; run the full
 inventory at completed milestones and before delivery.
 
-Current inventory is 279 archives: 248 accepted battles and 31 component
+Current inventory is 280 archives: 249 accepted battles and 31 component
 calibrations. Original relic evidence is 78/224 (34.82%). The schema-162
 `full-battle-dragon-hoard.mt2f` archive captures Alchemy changing the hoard from
 2 to 4. The Instant native battle wins with 61 matched stages, 21 card actions
@@ -51,9 +51,8 @@ fixed-damage negative-trigger cards in hand: `BlightPyreDamageInHand` (1),
 battle wins with 62 matched stages, 21 card actions and seven EndTurns, with
 zero capture failures, mismatches, unsupported transitions or pending records.
 The focused check verifies each captured effect and the combined damage, plus
-synthetic multiple-card resolution and parent-state isolation. The two other
-original negative-trigger cards, `TitanCurse` and `Scourge_SoulSavior`, use
-upgrade and copy effects and remain unsupported. The 34,660-byte archive has
+synthetic multiple-card resolution and parent-state isolation. The 34,660-byte
+archive has
 5,822 unique nodes and SHA-256
 `74ca21e8cca5fb78f582b46db5e3a4737054833c13374e1f3499b473b87179a5`; it has
 no JSON companion.
@@ -61,6 +60,22 @@ no JSON companion.
 ```powershell
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-unplayed-card-pyre-damage.mt2f
 dotnet run --project src/ModelChecks -c Release -- --unplayed-card-trigger-only tests/fixtures/full-battle-unplayed-card-pyre-damage.mt2f
+```
+
+The schema-163 `full-battle-unplayed-card-effects.mt2f` archive captures the
+other two original negative-trigger cards. TitanCurse gives eligible deck
+spells its temporary upgrade, and Scourge_SoulSavior is natively copyable and
+creates one copy in the discard pile. The muted Instant battle wins with 63
+matched stages, 11 card actions and seven EndTurns; capture failures, mismatches,
+unsupported transitions and pending records are zero. The focused check
+validates both effect definitions, the spell upgrade and the copied card. This
+31,641-byte binary has 5,000 unique nodes and SHA-256
+`ab5dd7fe0a2dcab0dbce146a632c2e7def068c802e63118572c27948e082ee81`, with no
+JSON companion.
+
+```powershell
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-unplayed-card-effects.mt2f
+dotnet run --project src/ModelChecks -c Release -- --unplayed-card-effects-only tests/fixtures/full-battle-unplayed-card-effects.mt2f
 ```
 
 The schema-160

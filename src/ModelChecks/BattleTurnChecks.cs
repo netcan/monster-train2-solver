@@ -127,6 +127,81 @@ internal static class BattleTurnChecks
         }
     }
 
+    internal static void UnplayedCardEffects(FixtureValue fixture)
+    {
+        if (!fixture.TryGetProperty("Turns", out FixtureValue turns) || turns.GetArrayLength() == 0)
+            throw new InvalidOperationException("Unplayed-card effects check requires a battle turn snapshot.");
+        BattleTurnState root = turns[0].GetProperty("Before").Deserialize<BattleTurnState>()!;
+        if (root.PlayRules == null || root.Spawn.Train.Context == null)
+            throw new InvalidOperationException("Unplayed-card effects check requires captured rules and context.");
+
+        const string titanCurseId = "17fef621-2bb7-4847-b41d-52a89795c784";
+        const string soulSaviorId = "4d1f27af-3122-4a08-87e3-5ef5a14ced94";
+        CardPlayRule titanRule = root.PlayRules.Cards.Single(rule => rule.DataId == titanCurseId);
+        CardPlayRule soulRule = root.PlayRules.Cards.Single(rule => rule.DataId == soulSaviorId);
+        Require(root.Spawn.Train.Context.Cards.Hand.Any(card => card.DataId == titanCurseId) &&
+            root.Spawn.Train.Context.Cards.Hand.Any(card => card.DataId == soulSaviorId),
+            "The two original unplayed-effect cards are missing from the deployment hand.");
+        Require(titanRule.OnUnplayedNegativeEffects.Count == 1 &&
+            titanRule.OnUnplayedNegativeEffects[0].Type == "UpgradeDeckSpells" &&
+            titanRule.OnUnplayedNegativeEffects[0].Upgrade != null &&
+            titanRule.OnUnplayedNegativeEffects[0].Lifetime == "TemporaryUntilEndOfBattle",
+            "TitanCurse's deck-spell upgrade definition was not captured.");
+        CardActionEffect copyEffect = soulRule.OnUnplayedNegativeEffects.Single();
+        Require(copyEffect.Type == "GenerateUpgradedCopy" && copyEffect.Generation?.RequireCopyableSource == true &&
+            copyEffect.Generation.DeterministicPoolSelection && copyEffect.Generation.Destination == "DiscardPile",
+            "Scourge_SoulSavior's copy definition was not captured.");
+
+        CombatContext beforeContext = root.Spawn.Train.Context;
+        CardInstanceState soul = beforeContext.FindCard(beforeContext.Cards.Hand.Single(card => card.DataId == soulSaviorId).InstanceId)!;
+        Require(soul.CanBeCopied == true, "Scourge_SoulSavior's native copyability state was not captured as true.");
+        CardToken[] cardsBefore = AllCards(beforeContext).GroupBy(card => card.InstanceId).Select(group => group.First()).ToArray();
+        var spellTargets = cardsBefore.Select(token => new
+            {
+                Token = token,
+                Rule = root.PlayRules.Cards.FirstOrDefault(rule => rule.DataId == token.DataId),
+                Instance = beforeContext.FindCard(token.InstanceId)
+            })
+            .Where(item => item.Rule?.CardType == "Spell" && item.Instance != null).ToArray();
+        Require(spellTargets.Length > 0, "The native deployment snapshot has no modeled spell in its card piles.");
+
+        CardActionEffect deckEffect = titanRule.OnUnplayedNegativeEffects[0];
+        var eligibleSpells = spellTargets.Where(item =>
+        {
+            if (deckEffect.CardFilter == null && deckEffect.UpgradeFilters.Count == 0) return true;
+            if (item.Instance!.MaskDescriptor == null) return false;
+            CardUpgradeMaskCard view = CardBranchMaskModel.Resolve(item.Instance);
+            return (deckEffect.CardFilter == null || CardUpgradeMaskModel.FilterCard(deckEffect.CardFilter, view)) &&
+                deckEffect.UpgradeFilters.All(filter => CardUpgradeMaskModel.FilterCard(filter, view));
+        }).ToArray();
+        Require(eligibleSpells.Length > 0, "No captured spell passes TitanCurse's native upgrade filters.");
+
+        BattleTurnResult result = BattleTurnModel.EndTurn(root);
+        Require(result.Supported, "Native EndTurn with unplayed effects failed: " + result.UnsupportedReason);
+        CombatContext afterContext = result.State!.Spawn.Train.Context!;
+        Require(afterContext.CardRegistry?.Count == beforeContext.CardRegistry?.Count + 1 &&
+            AllCards(afterContext).Count(card => card.DataId == soulSaviorId) == AllCards(beforeContext).Count(card => card.DataId == soulSaviorId) + 1,
+            "Scourge_SoulSavior did not create exactly one copy of its copyable source card.");
+        bool upgradedSpell = eligibleSpells.Any(item =>
+        {
+            CardInstanceState? after = afterContext.FindCard(item.Token.InstanceId);
+            if (after == null) return false;
+            string dataId = deckEffect.Upgrade!.DataId;
+            string assetKey = deckEffect.Upgrade.AssetKey;
+            return after.Temporary.Upgrades.Any(upgrade => upgrade.DataId == dataId && upgrade.AssetKey == assetKey);
+        });
+        Require(upgradedSpell, "TitanCurse did not add its captured temporary upgrade to an eligible deck spell.");
+        Console.WriteLine("UNPLAYED-CARD-EFFECTS-CHECKS PASS: TitanCurse upgrades eligible spells and Soul Savior creates one deterministic copy.");
+
+        static IEnumerable<CardToken> AllCards(CombatContext context)
+        {
+            foreach (CardToken card in context.Cards.Hand) yield return card;
+            foreach (CardToken card in context.Cards.Discard) yield return card;
+            foreach (CardToken card in context.Cards.Draw) yield return card;
+            foreach (CardToken card in context.OtherPiles!.SelectMany(pile => pile.Cards)) yield return card;
+        }
+    }
+
     internal static bool HasRoomEnabledSnapshotConflict(FixtureValue fixture)
     {
         if (!fixture.TryGetProperty("Turns", out FixtureValue turns) || turns.ValueKind != FixtureKind.Array ||

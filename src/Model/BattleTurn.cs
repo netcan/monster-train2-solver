@@ -210,8 +210,7 @@ namespace MonsterTrain2Poju.Model
                     CardInstanceState? instance = context.FindCard(item.Card.InstanceId);
                     if (instance == null) return Unsupported("Unplayed card trigger has no captured card instance.");
                     CardPlayRule resolved = CardModifierModel.Resolve(item.Rule!, instance);
-                    if (resolved.HasUnsupportedUnplayedTriggers || resolved.OnUnplayedNegativeEffects.Count == 0 ||
-                        resolved.OnUnplayedNegativeEffects.Any(effect => effect.Type != "Damage" || effect.Target != "Pyre" || effect.Range != null))
+                    if (resolved.HasUnsupportedUnplayedTriggers || resolved.OnUnplayedNegativeEffects.Count == 0)
                         return Unsupported("Unmodeled unplayed card trigger: " + item.Card.DataId);
                     int triggerRoom = source.SelectedRoom >= 0 ? source.SelectedRoom :
                         outputPlayRules.Rooms.FirstOrDefault(room => room.IsPyre)?.RoomIndex ?? -1;

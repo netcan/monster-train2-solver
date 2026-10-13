@@ -960,6 +960,8 @@ namespace MonsterTrain2Poju.Probe
                     OriginalCardDrawOnCardPlayScenario.Prepare(managers, log);
                 if (fullBattle && UnplayedCardTriggerScenario.Enabled && !UnplayedCardTriggerScenario.Prepared)
                     UnplayedCardTriggerScenario.Prepare(managers, log);
+                if (fullBattle && UnplayedCardEffectsScenario.Enabled && !UnplayedCardEffectsScenario.Prepared)
+                    UnplayedCardEffectsScenario.Prepare(managers, log);
                 if (OriginalUnitRelicBatchScenario.Enabled) OriginalUnitRelicBatchScenario.PrepareDecision(managers);
                 if (modifierScenario == "damage-per-hp-ability" && !damagePerHpAbilityInputPrepared)
                     damagePerHpAbilityInputPrepared = DamagePerHpScenario.SeedAbilityLastAttackerInput(managers, log);
@@ -977,6 +979,8 @@ namespace MonsterTrain2Poju.Probe
                     pendingPlay = OriginalCardDrawOnCardPlayScenario.ChooseSnack(decision) ?? pendingPlay;
                 if (fullBattle && UnplayedCardTriggerScenario.Enabled)
                     pendingPlay = UnplayedCardTriggerScenario.AvoidPlaying(decision, pendingPlay);
+                if (fullBattle && UnplayedCardEffectsScenario.Enabled)
+                    pendingPlay = UnplayedCardEffectsScenario.AvoidPlaying(decision, pendingPlay);
                 if (RoomCapacityAttachmentScenario.Enabled)
                     pendingPlay = RoomCapacityAttachmentScenario.Evidence.Completed
                         ? null : RoomCapacityAttachmentScenario.Choose(decision) ?? pendingPlay;

@@ -301,6 +301,21 @@ namespace MonsterTrain2Poju.Model
                         ? sourceEffects[index] : resolvedEffects[index];
                     resolvingCard = card;
                 }
+                if (effect.Type == "UpgradeDeckSpells")
+                {
+                    DeckSpellUpgradeResult upgraded = DeckSpellUpgradeModel.Apply(state.Context!, effect, definitions);
+                    if (!upgraded.Supported) return UnsupportedTrain(upgraded.UnsupportedReason!);
+                    state = WithContext(state, upgraded.Context!);
+                    continue;
+                }
+                if (effect.Type == "GenerateUpgradedCopy")
+                {
+                    if (effect.Generation == null) return UnsupportedTrain("Missing upgraded-copy generation definition.");
+                    CardGenerationResult copied = CardGenerationModel.Apply(state.Context!, effect.Generation, sourceCardId);
+                    if (!copied.Supported) return UnsupportedTrain(copied.UnsupportedReason!);
+                    state = WithContext(state, copied.Context!);
+                    continue;
+                }
                 if (effect.Target == "FrontInRoomAndRoomAbove" && !focusedRoom.HasValue)
                     return UnsupportedTrain("Room-and-above selection requires uncaptured trigger focus rules.");
                 int collectionRoom = effect.Target == "FrontInRoomAndRoomAbove" ? focusedRoom!.Value : roomIndex;
@@ -359,7 +374,8 @@ namespace MonsterTrain2Poju.Model
                         effect.CopyHeroStats, effect.ScaleUpgrade, effect.DoNotFullyRemove, effect.TargetSubtype, effect.TypedDraw, effect.NextDrawUpgrade, effect.RequiredGold, effect.GoldCostRequired,
                         effect.UseCardTraits, effect.RequireEquipment, effect.UseSelectedRoom, effect.CountStatusOnlyOnTargets,
                         effect.SpawnFallbackUnit, effect.DisallowStatusStackModifiers, effect.StatusAdjustmentFilter,
-                        effect.DamagePerHpLastAttacker, effect.DamagePerHpIncludeArmor, effect.RoomAttachment, effect.Recursion);
+                        effect.DamagePerHpLastAttacker, effect.DamagePerHpIncludeArmor, effect.RoomAttachment, effect.Recursion,
+                        effect.CardFilter, effect.UpgradeFilters);
                 }
                 if (effect.Type == "Recursion")
                 {
@@ -1308,6 +1324,21 @@ namespace MonsterTrain2Poju.Model
                     if (effect.Target != "Hand" && effect.Target != "Room") return "Unmodeled hand upgrade target collection.";
                     continue;
                 }
+                if (effect.Type == "UpgradeDeckSpells")
+                {
+                    if (effect.Upgrade == null) return "Missing deck spell upgrade definition.";
+                    if (effect.Lifetime != "TemporaryUntilEndOfBattle") return "Deck spell upgrade has an unsupported lifetime.";
+                    if (source.Context.CardInstances == null || source.Context.CardRegistry == null || source.Context.OtherPiles == null)
+                        return "Deck spell upgrade requires captured card definitions, instances and all piles.";
+                    if (effect.Upgrade.ExternalInteractions.Count > 0) return string.Join("; ", effect.Upgrade.ExternalInteractions);
+                    continue;
+                }
+                if (effect.Type == "GenerateUpgradedCopy")
+                {
+                    if (effect.Generation == null || !effect.Generation.RequireCopyableSource)
+                        return "Missing upgraded-copy source or generation rules.";
+                    continue;
+                }
                 if (effect.Type == "Recursion")
                 {
                     string? recursionError = CardRecursionModel.Validate(effect, source.Context.OtherPiles, source.Context.Cards);
@@ -1624,7 +1655,8 @@ namespace MonsterTrain2Poju.Model
                 effect.DoNotFullyRemove, effect.TargetSubtype, effect.TypedDraw, effect.NextDrawUpgrade, effect.RequiredGold, effect.GoldCostRequired,
                 effect.UseCardTraits, effect.RequireEquipment, effect.UseSelectedRoom, effect.CountStatusOnlyOnTargets,
                 effect.SpawnFallbackUnit, effect.DisallowStatusStackModifiers, effect.StatusAdjustmentFilter,
-                effect.DamagePerHpLastAttacker, effect.DamagePerHpIncludeArmor, effect.RoomAttachment, effect.Recursion);
+                effect.DamagePerHpLastAttacker, effect.DamagePerHpIncludeArmor, effect.RoomAttachment, effect.Recursion,
+                effect.CardFilter, effect.UpgradeFilters);
         }
         private static int TestCount(TrainCombatState state, CardActionEffect effect, CardTargets targets)
         {

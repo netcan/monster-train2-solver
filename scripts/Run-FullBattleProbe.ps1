@@ -182,6 +182,7 @@ param(
     [switch] $OriginalCardPlayMagicPower,
     [switch] $OriginalCardDrawOnCardPlay,
     [switch] $UnplayedCardTrigger,
+    [switch] $UnplayedCardEffects,
     [switch] $OriginalRoomEntryStatusRelics,
     [switch] $OriginalMoonPhaseEnergyRelic,
     [switch] $OriginalCardAttackRelic,
@@ -268,6 +269,7 @@ if ($Mageblade -or $OriginalMagebladeMagnitudeRelic) { $BranchCardMasks = $true;
 if ($OriginalCardPlayMagicPower) { $BranchCardMasks = $true; $Policy = 'units-and-junk' }
 if ($OriginalCardDrawOnCardPlay) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($UnplayedCardTrigger) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
+if ($UnplayedCardEffects) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalRoomEntryStatusRelics) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalMoonPhaseEnergyRelic) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalCardAttackRelic) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
@@ -528,6 +530,7 @@ if ($OriginalMagebladeMagnitudeRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'o
 if ($OriginalCardPlayMagicPower) { $environment['MT2_PROBE_MODIFIERS'] = 'original-card-play-magic-power' }
 if ($OriginalCardDrawOnCardPlay) { $environment['MT2_PROBE_MODIFIERS'] = 'original-card-draw-on-card-play' }
 if ($UnplayedCardTrigger) { $environment['MT2_PROBE_MODIFIERS'] = 'unplayed-card-trigger' }
+if ($UnplayedCardEffects) { $environment['MT2_PROBE_MODIFIERS'] = 'unplayed-card-effects' }
 if ($OriginalRoomEntryStatusRelics) { $environment['MT2_PROBE_MODIFIERS'] = 'original-room-entry-status-relics' }
 if ($OriginalMoonPhaseEnergyRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-moon-phase-energy-relic' }
 if ($OriginalCardAttackRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-card-attack-relic' }
@@ -684,6 +687,23 @@ if ($UnplayedCardTrigger) {
         $matchedTriggerTurns.Count -eq 0 -or $matchedTriggerTurns[0].Before.Spawn.Turn -ne 0 -or
         $trace.CaptureFailures -ne 0 -or $trace.Mismatches -ne 0 -or $trace.Unsupported -ne 0 -or -not $trace.NativeWon) {
         throw 'The five original Pyre-damage trigger cards did not match the modeled EndTurn in a complete battle.'
+    }
+}
+if ($UnplayedCardEffects) {
+    $effectCardIds = @(
+        '17fef621-2bb7-4847-b41d-52a89795c784',
+        '4d1f27af-3122-4a08-87e3-5ef5a14ced94'
+    )
+    $effectTurns = @($trace.Turns | Where-Object {
+        $handCardIds = @($_.Before.Spawn.Train.Context.Cards.Hand | ForEach-Object { $_.DataId })
+        @($effectCardIds | Where-Object { $_ -notin $handCardIds }).Count -eq 0
+    })
+    $matchedEffectTurns = @($effectTurns | Where-Object { $_.Predicted.Supported -and $null -eq $_.Difference })
+    if ($trace.Schema -ne 163 -or $trace.ModifierScenario -ne 'unplayed-card-effects' -or
+        -not (Select-String -LiteralPath $unityLog -Pattern 'UNPLAYED-CARD-EFFECTS-PREPARED originals=2 cards=TitanCurse,Scourge_SoulSavior soulSaviorCopyable=true' -Quiet) -or
+        $matchedEffectTurns.Count -eq 0 -or $matchedEffectTurns[0].Before.Spawn.Turn -ne 0 -or
+        $trace.CaptureFailures -ne 0 -or $trace.Mismatches -ne 0 -or $trace.Unsupported -ne 0 -or -not $trace.NativeWon) {
+        throw 'The original TitanCurse and Scourge_SoulSavior triggers did not match modeled EndTurn in a complete battle.'
     }
 }
 if ($OriginalRoomEntryStatusRelics -and ($trace.Schema -ne 132 -or

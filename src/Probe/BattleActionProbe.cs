@@ -23,7 +23,8 @@ namespace MonsterTrain2Poju.Probe
             "CardEffectMultiplyAllPositiveStatusEffects", "CardEffectAdjustAllStatusEffects", "CardEffectAddStatusEffectPerOtherEffect",
             "CardEffectSpawnMonsterOrAddStatusEffect", "CardEffectFloorRearrange", "CardEffectAddCardUpgradeToUnits", "CardEffectDrawType",
             "CardEffectAddTempCardUpgradeToNextDrawnCard", "CardEffectAddTempCardUpgradeToUnits", "CardEffectRemoveTempUpgradeFromUnit",
-            "CardEffectAddTempCardUpgradeToCardsInHand", "CardEffectAddPermanentCardUpgradeToCardsInHand"
+            "CardEffectAddTempCardUpgradeToCardsInHand", "CardEffectAddPermanentCardUpgradeToCardsInHand",
+            "CardEffectAddTempCardUpgradeToSpellsInDeck", "CardEffectAddUpgradedCopy"
         }, StringComparer.Ordinal);
         private readonly FullBattleTrace trace;
         private readonly UnitPlayModelProbe projection;
@@ -128,8 +129,7 @@ namespace MonsterTrain2Poju.Probe
                     int priorInteractions = interactions.Count;
                     CardActionEffect[] actions = trigger.GetCardEffects()
                         .Select(effect => DescribeTriggerEffect(effect, interactions, data)).ToArray();
-                    if (actions.Length > 0 && interactions.Count == priorInteractions && actions.All(effect =>
-                        effect.Type == "Damage" && effect.Target == "Pyre" && effect.Range == null))
+                    if (actions.Length > 0 && interactions.Count == priorInteractions && actions.All(effect => effect.Type != "Unsupported"))
                         onUnplayedNegativeEffects.AddRange(actions);
                     else
                     {
@@ -243,6 +243,8 @@ namespace MonsterTrain2Poju.Probe
             if (AbilityCooldownProbe.Known(effect.GetEffectStateName())) return AbilityCooldownProbe.Describe(effect, effect.GetParamInt(), effect.GetParamBool());
             bool handUpgrade = effect.GetEffectStateName() == "CardEffectAddTempCardUpgradeToCardsInHand" ||
                 effect.GetEffectStateName() == "CardEffectAddPermanentCardUpgradeToCardsInHand";
+            bool deckSpellUpgrade = effect.GetEffectStateName() == "CardEffectAddTempCardUpgradeToSpellsInDeck";
+            bool upgradedCopy = effect.GetEffectStateName() == "CardEffectAddUpgradedCopy";
             bool cardOnlyDrawTarget = (effect.GetEffectStateName() == "CardEffectDrawType" ||
                 effect.GetEffectStateName() == "CardEffectAddTempCardUpgradeToNextDrawnCard") &&
                 (effect.GetTargetMode() == TargetMode.DrawPile || effect.GetTargetMode() == TargetMode.Hand ||
@@ -282,6 +284,7 @@ namespace MonsterTrain2Poju.Probe
                 effect.GetEffectStateName() == "CardEffectDiscardHand" ? "DiscardHand" :
                 effect.GetEffectStateName() == "CardEffectRandomDiscard" ? "RandomDiscard" :
                 effect.GetEffectStateName() == "CardEffectAddBattleCard" ? "Generate" :
+                deckSpellUpgrade ? "UpgradeDeckSpells" : upgradedCopy ? "GenerateUpgradedCopy" :
                 effect.GetEffectStateName() == "CardEffectBuffDamage" ? "BuffAttack" :
                 effect.GetEffectStateName() == "CardEffectDebuffDamage" ? "DebuffAttack" :
                 effect.GetEffectStateName() == "CardEffectBuffMaxHealth" ? "BuffHealth" :
@@ -299,6 +302,24 @@ namespace MonsterTrain2Poju.Probe
                 effect.GetEffectStateName() == "CardEffectAddStatusEffect" ? "AddStatus" :
                 handUpgrade ? "HandUpgrade" : effect.GetEffectStateName() == "CardEffectRemoveTempUpgradeFromUnit" ? "RemoveUnitUpgrade" : "UnitUpgrade";
             CardUpgradeModifier? upgrade = type == "DrawNextTurn" ? BonusDrawProbe.Upgrade(effect) : null;
+            IReadOnlyList<CardUpgradeMaskRule> upgradeFilters = Array.Empty<CardUpgradeMaskRule>();
+            CardGenerationRule? generation = null;
+            if (upgradedCopy)
+            {
+                CardUpgradeData? copyUpgradeData = effect.GetParamCardUpgradeData();
+                if (copyUpgradeData != null)
+                {
+                    var upgradeState = new CardUpgradeState(); upgradeState.Setup(copyUpgradeData);
+                    upgrade = CardModifierProbe.Upgrade(upgradeState);
+                    interactions.AddRange(CardModifierModel.UpgradeInteractions(upgrade));
+                }
+                if (data == null) interactions.Add("Upgraded-copy trigger requires its source card definition");
+                else generation = new CardGenerationRule(((CardPile)effect.GetParamInt()).ToString(), 1,
+                    new[] { CardGenerationProbe.Creation(data) }, copyModifiers: effect.GetCopyModifiersFromSource(),
+                    ignoreTemporaryModifiers: effect.GetIgnoreTempModifiersFromSource(), upgrade: upgrade,
+                    deterministicPoolSelection: true, requireCopyableSource: true,
+                    upgradeIsPermanent: effect.GetParamBool());
+            }
             if (type == "Recursion" && effect.GetParamCardUpgradeData() != null)
             {
                 var upgradeState = new CardUpgradeState(); upgradeState.Setup(effect.GetParamCardUpgradeData());
@@ -314,19 +335,20 @@ namespace MonsterTrain2Poju.Probe
             if (type == "BuffHealth") lifetime = ((UnitUpgradeLifetimeTempOnly)effect.GetAdditionalParamInt1()).ToString();
             bool scaleUpgrade = (effect.GetEffectStateName() == "CardEffectAddCardUpgradeToUnits" ||
                 effect.GetEffectStateName() == "CardEffectBuffEquipment") && effect.GetParamBool();
-            if (type == "UnitUpgrade" || type == "RemoveUnitUpgrade" || type == "AttachEquipment" || type == "BuffEquipment" || handUpgrade)
+            if (type == "UnitUpgrade" || type == "RemoveUnitUpgrade" || type == "AttachEquipment" || type == "BuffEquipment" || handUpgrade || deckSpellUpgrade)
             {
                 if (effect.GetParamCardUpgradeData() == null) interactions.Add("Missing unit upgrade data");
                 else
                 {
                     CardUpgradeData upgradeData = effect.GetParamCardUpgradeData();
                     var upgradeState = new CardUpgradeState(); upgradeState.Setup(upgradeData);
-                    bool filtersIgnoredByEffect = effect.GetEffectStateName() == "CardEffectAddCardUpgradeToUnits";
+                    bool filtersIgnoredByEffect = effect.GetEffectStateName() == "CardEffectAddCardUpgradeToUnits" || deckSpellUpgrade;
                     upgrade = CardModifierProbe.Upgrade(upgradeState, false, filtersAlreadyApplied: filtersIgnoredByEffect);
                     interactions.AddRange(upgrade.ExternalInteractions);
+                    if (deckSpellUpgrade) upgradeFilters = upgradeData.GetFilters().Select(CardUpgradeMaskProbe.Rule).ToArray();
                     if (scaleUpgrade && !upgradeData.CanScaleUpgradeToSingleInstance()) interactions.Add("Invalid scaled unit upgrade definition");
                 }
-                lifetime = type == "BuffEquipment" ? "TemporaryUntilUnitDeath" : handUpgrade ?
+                lifetime = type == "BuffEquipment" ? "TemporaryUntilUnitDeath" : deckSpellUpgrade ? "TemporaryUntilEndOfBattle" : handUpgrade ?
                     effect.GetEffectStateName() == "CardEffectAddPermanentCardUpgradeToCardsInHand" ? "Permanent" : "TemporaryUntilEndOfBattle" :
                     type == "AttachEquipment" ? "" : ((UnitUpgradeLifetime)effect.GetAdditionalParamInt1()).ToString();
             }
@@ -369,7 +391,7 @@ namespace MonsterTrain2Poju.Probe
                     effect.GetTargetModeStatusEffectsExcludedFilter(), effect.GetTargetIgnoreBosses(),
                     effect.GetTargetCharacterSubtype().IsNone ? "" : effect.GetTargetCharacterSubtype().Key,
                     excluded.Select(subtype => subtype.IsNone ? "" : subtype.Key).ToArray()),
-                type == "Generate" ? CardGenerationProbe.Definition(effect) : null, type == "AdjustCapacity" && effect.GetParamBool(),
+                type == "Generate" ? CardGenerationProbe.Definition(effect) : generation, type == "AdjustCapacity" && effect.GetParamBool(),
                 copyHeroStats: type == "CopyUnits" ? effect.GetParamBool() : (bool?)null,
                 scaleUpgrade: scaleUpgrade, doNotFullyRemove: type == "Sacrifice" ? effect.GetParamBool() : (bool?)null,
                 targetSubtype: (type == "Sacrifice" || type == "Kill") && !effect.GetParamSubtype().IsNone ? effect.GetParamSubtype().Key : "",
@@ -387,7 +409,8 @@ namespace MonsterTrain2Poju.Probe
                 recursion: type == "Recursion" ? new CardRecursionRule(effect.GetTargetCardSelectionMode().ToString(), effect.GetTargetCardType().ToString(),
                     effect.GetTargetCharacterSubtype().IsNone ? "" : effect.GetTargetCharacterSubtype().Key, effect.GetParamBool(), effect.GetParamBool2(),
                     effect.GetParamCardFilter() != null, effect.GetParamCardUpgradeData() != null,
-                    effect.GetParamCardFilter() == null ? null : CardUpgradeMaskProbe.Rule(effect.GetParamCardFilter())) : null);
+                    effect.GetParamCardFilter() == null ? null : CardUpgradeMaskProbe.Rule(effect.GetParamCardFilter())) : null,
+                upgradeFilters: upgradeFilters);
         }
 
         private static RoomCapacityAttachmentState? CapacityAttachment(CardData card, CardEffectData effect,

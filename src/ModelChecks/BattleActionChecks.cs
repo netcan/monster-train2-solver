@@ -519,7 +519,7 @@ internal static class BattleActionChecks
         if (fixture.TryGetProperty("ModifierScenario", out var equipmentBuffScenario) && equipmentBuffScenario.GetString() == "equipment-buff")
             chooser = ChooseEquipmentBuffThenCards;
         if (fixture.TryGetProperty("ModifierScenario", out var unplayedTriggerScenario) &&
-            unplayedTriggerScenario.GetString() == "unplayed-card-trigger")
+            unplayedTriggerScenario.GetString() is "unplayed-card-trigger" or "unplayed-card-effects")
         {
             Func<BattleTurnState, PlayCardAction?> ordinaryChooser = chooser;
             chooser = source =>

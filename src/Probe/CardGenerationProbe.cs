@@ -61,7 +61,7 @@ namespace MonsterTrain2Poju.Probe
                 .Select(item => new CardEffectCounter(item.index, "CardEffectDiscardHand", 0)).ToArray();
             return new CardCreationRule(data.GetID(), modifiers, counters.Length == 0 ? null : counters, interactions,
                 DamageScalingProbe.Creation(data), StatusScalingProbe.Creation(data), UnitUpgradeScalingProbe.Creation(data),
-                RoomCapacityProbe.Creation(data), 0, descriptor, CardModifierProbe.ForgeCountScalingTraits(instance));
+                RoomCapacityProbe.Creation(data), 0, descriptor, CardModifierProbe.ForgeCountScalingTraits(instance), instance.CanBeCopied());
         }
     }
 }

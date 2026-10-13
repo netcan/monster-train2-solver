@@ -87,7 +87,9 @@ namespace MonsterTrain2Poju.Probe
                 }
                 CardPlayRule resolved = CardModifierModel.Resolve(definition, instance);
                 if (resolved.HasUnsupportedUnplayedTriggers || resolved.OnUnplayedNegativeEffects.Count == 0 ||
-                    resolved.OnUnplayedNegativeEffects.Any(effect => effect.Type != "Damage" || effect.Target != "Pyre" || effect.Range != null))
+                    resolved.OnUnplayedNegativeEffects.Any(effect =>
+                        !(effect.Type == "Damage" && effect.Target == "Pyre" && effect.Range == null) &&
+                        effect.Type != "UpgradeDeckSpells" && effect.Type != "GenerateUpgradedCopy"))
                     interactions.Add("Unplayed card triggers: " + card.GetCardDataID());
             }
             return new BattleTurnState(spawn, player.GetEnergy(), save.GetBalanceData().GetStartOfTurnEnergy(),
