@@ -34,6 +34,15 @@ namespace MonsterTrain2Poju.Probe
                     .Select(item => RoomEntryStatus(item.Effect, item.Index)).ToArray();
                 var cardModifiers = effects.Select((effect, index) => new { Effect = effect, Index = index })
                     .Where(item => item.Effect is RelicEffectAddTempUpgrade).Select(item => RelicCardModifierProbe.Definition(item.Effect, item.Index)).ToArray();
+                var cardHealthModifiers = effects.Select((effect, index) => new { Effect = effect, Index = index })
+                    .Where(item => item.Effect is RelicEffectModifyCardHealth).Select(item => {
+                        object Field(string name) => AccessTools.Field(item.Effect.GetType(), name).GetValue(item.Effect);
+                        var subtype = (SubtypeData)Field("characterSubtype");
+                        return new RelicCardHealthModifier(item.Index, (string)Field("characterName"),
+                            subtype == null || subtype.IsNone ? "" : subtype.Key, (int)Field("healthModifier"),
+                            (int)Field("healthMultiplier"), Field("cardType").ToString(), (bool)Field("multiplyByUpgradeCount"),
+                            RelicCardModifierProbe.Conditions(item.Effect));
+                    }).ToArray();
                 var triggers = effects.Select((effect, index) => new { Effect = effect, Index = index })
                     .Where(item => item.Effect is RelicEffectAddTrigger).Select(item => AddedTriggers(item.Effect, item.Index)).ToArray();
                 var unitUpgradeTriggers = effects.Select((effect, index) => new { Effect = effect, Index = index })
@@ -75,7 +84,8 @@ namespace MonsterTrain2Poju.Probe
                     cardPlayMagicPower.Length > 0 ? cardPlayMagicPower : null,
                     roomEntryStatuses.Length > 0 ? roomEntryStatuses : null,
                     unitUpgradeTriggers.Length > 0 ? unitUpgradeTriggers : null,
-                    forgePointModifiers.Length > 0 ? forgePointModifiers : null);
+                    forgePointModifiers.Length > 0 ? forgePointModifiers : null,
+                    cardHealthModifiers.Length > 0 ? cardHealthModifiers : null);
             }).ToArray();
         }
 

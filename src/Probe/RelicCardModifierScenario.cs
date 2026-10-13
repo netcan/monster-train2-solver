@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using BepInEx.Logging;
 using HarmonyLib;
+using MonsterTrain2Poju.Model;
 
 namespace MonsterTrain2Poju.Probe
 {
@@ -15,16 +16,75 @@ namespace MonsterTrain2Poju.Probe
         internal static bool SupportedMutatorContext => Prepared && AllUnitsMultistrikeMutator;
         internal static bool ExhaustUpgrade => Environment.GetEnvironmentVariable("MT2_PROBE_RELIC_CARD_EXHAUST_UPGRADE") == "1";
         internal static bool EphemeralUpgrade => Environment.GetEnvironmentVariable("MT2_PROBE_RELIC_CARD_EPHEMERAL_UPGRADE") == "1";
+        internal static bool ExtraToughTombs => Environment.GetEnvironmentVariable("MT2_PROBE_RELIC_CARD_HEALTH_UPGRADE") == "1";
+        internal const string TombSubtypeKey = "SubtypesData_Tomb";
+        internal static string? TombCarrierCardId { get; private set; }
+        internal static bool TombCarrierPrepared { get; private set; }
+        internal static PlayCardAction? ChooseTombCarrier(BattleTurnState state)
+        {
+            CardToken? tomb = state.Spawn.Train.Context?.Cards.Hand.FirstOrDefault(card => card.DataId == TombCarrierCardId);
+            return tomb == null ? null : BattleActionModel.EnumerateSupportedPlays(state)
+                .FirstOrDefault(action => action.CardInstanceId == tomb.InstanceId);
+        }
+        private static void AuthorTombCarrier(CardData card)
+        {
+            Set(card, "cardType", CardType.Monster); Set(card, "cost", 0);
+            Set(card, "costType", CardData.CostType.Default); Set(card, "targetless", false);
+            Set(card, "targetsRoom", true); Set(card, "isUnitAbility", false); Set(card, "isRoomAbility", false);
+            Set(card, "traits", new List<CardTraitData>()); Set(card, "effectTriggers", new List<CharacterTriggerData>());
+            Set(card, "triggers", new List<CardTriggerEffectData>()); Set(card, "startingUpgrades", new List<CardUpgradeData>());
+        }
+        private static void Set(object target, string field, object? value) =>
+            AccessTools.Field(target.GetType(), field).SetValue(target, value);
+
+        internal static void AcquireTombCarrierBeforeBattle(AllGameManagers managers, ManualLogSource log)
+        {
+            if (!ExtraToughTombs || TombCarrierPrepared) return;
+            SaveManager save = managers.GetSaveManager();
+            if (save.PreviewMode || save.GetGameSequence() == SaveData.GameSequence.InBattle)
+                throw new InvalidOperationException("ExtraToughTombs carrier must be added before native battle setup.");
+            AllGameData data = save.GetAllGameData();
+            CardData template = save.GetDeckState().Select(card => data.FindCardData(card.GetCardDataID())!)
+                .First(card => card.GetSpawnCharacterData()?.name.StartsWith("TrainSteward", StringComparison.Ordinal) == true);
+            CharacterData steward = template.GetSpawnCharacterData()!;
+            CharacterData tomb = UnityEngine.Object.Instantiate(steward);
+            tomb.name = "TrainStewardPojuTomb";
+            Set(tomb, "id", "fc119000-0000-4000-8000-000000000098");
+            var subtypes = steward.GetSubtypes().Select(subtype => subtype.Key).ToList();
+            if (!subtypes.Contains(TombSubtypeKey, StringComparer.Ordinal)) subtypes.Add(TombSubtypeKey);
+            Set(tomb, "subtypeKeys", subtypes);
+            Set(tomb, "startingStatusEffects", Array.Empty<StatusEffectStackData>());
+            Set(tomb, "triggers", new List<CharacterTriggerData>());
+            Set(tomb, "unitAbility", null);
+            ((List<CharacterData>)AccessTools.Field(typeof(AllGameData), "characterDatas").GetValue(data)).Add(tomb);
+            CardData carrier = UnityEngine.Object.Instantiate(template);
+            carrier.name = "PojuExtraToughTombsCarrier";
+            TombCarrierCardId = "fc119000-0000-4000-8000-000000000099";
+            Set(carrier, "id", TombCarrierCardId);
+            AuthorTombCarrier(carrier);
+            var spawn = new CardEffectData("CardEffectSpawnMonster", null!, Team.Type.Monsters);
+            spawn.Cheat_SetTargetMode(TargetMode.Room);
+            Set(spawn, "paramInt", 1);
+            Set(spawn, "paramCharacterData", tomb);
+            Set(carrier, "effects", new List<CardEffectData> { spawn });
+            ((List<CardData>)AccessTools.Field(typeof(AllGameData), "cardDatas").GetValue(data)).Add(carrier);
+            save.AddCardToDeck(carrier, applyExistingRelicModifiers: false, extraCopies: 0,
+                applyExtraCopiesMutator: false, showAnimation: false, setupStartingUpgrades: true, notifyDeckCount: false);
+            TombCarrierPrepared = true;
+            log.LogInfo("EXTRA-TOUGH-TOMBS-CARRIER-ACQUIRED testCharacter=" + tomb.GetAssetKey() +
+                " subtype=" + TombSubtypeKey + " card=" + TombCarrierCardId + "; cloned from original TrainSteward and added before native deck initialization.");
+        }
+
         internal static void Prepare(AllGameManagers managers, ManualLogSource log)
         {
             if (!RelicCardModifierProbe.Enabled || Prepared) return;
             int selectedScenario = new[] { "MT2_PROBE_RELIC_CARD_STATUS_UPGRADE", "MT2_PROBE_RELIC_CARD_PIERCING_UPGRADE",
                 "MT2_PROBE_RELIC_CARD_SELF_PURGE_UPGRADE", "MT2_PROBE_RELIC_CARD_EXHAUST_UPGRADE", "MT2_PROBE_RELIC_CARD_ABILITY_UPGRADE",
                 "MT2_PROBE_RELIC_CARD_TRIGGER_UPGRADE", "MT2_PROBE_RELIC_CARD_REPLACEMENT_UPGRADE",
-                "MT2_PROBE_RELIC_CARD_EPHEMERAL_UPGRADE" }
+                "MT2_PROBE_RELIC_CARD_EPHEMERAL_UPGRADE", "MT2_PROBE_RELIC_CARD_HEALTH_UPGRADE" }
                 .Count(name => Environment.GetEnvironmentVariable(name) == "1");
             if (AllUnitsMultistrikeMutator) selectedScenario++;
-            if (selectedScenario > 1) throw new InvalidOperationException("Relic card status, piercing, self-purge, exhaust, Ephemeral, ability, trigger and replacement scenarios are mutually exclusive.");
+            if (selectedScenario > 1) throw new InvalidOperationException("Relic card status, piercing, self-purge, exhaust, Ephemeral, health, ability, trigger and replacement scenarios are mutually exclusive.");
             var save = managers.GetSaveManager();
             var data = save.GetAllGameData();
             CollectableRelicData? originalRelic = null;
@@ -47,9 +107,23 @@ namespace MonsterTrain2Poju.Probe
             }
             else
             {
-                originalRelic = data.GetAllCollectableRelicData().Single(relic => relic.name == "ReduceStarterCost");
+                originalRelic = data.GetAllCollectableRelicData().Single(relic =>
+                    relic.name == (ExtraToughTombs ? "ExtraToughTombs" : "ReduceStarterCost"));
             }
             var cards = managers.GetCardManager()!;
+            if (ExtraToughTombs)
+            {
+                if (!TombCarrierPrepared || string.IsNullOrEmpty(TombCarrierCardId))
+                    throw new InvalidOperationException("ExtraToughTombs carrier was not added before native battle setup.");
+                StatusEffectData ephemeral = StatusEffectManager.Instance?.GetStatusEffectDataById("ephemeral") ??
+                    throw new InvalidOperationException("Native Ephemeral status metadata is unavailable.");
+                log.LogInfo("EXTRA-TOUGH-TOMBS-EPHEMERAL-DATA stage=" + ephemeral.GetPrimaryTriggerStage() +
+                    " additionalStages=" + string.Join(",", ephemeral.GetAdditionalTriggerStages()) +
+                    " removeWhenTriggered=" + ephemeral.GetRemoveWhenTriggered() +
+                    " removeStackAtEnd=" + ephemeral.GetRemoveStackAtEndOfTurn() +
+                    " removeAtEnd=" + ephemeral.GetRemoveAtEndOfTurn() +
+                    " removeAfterPostCombat=" + ephemeral.GetRemoveAtEndOfTurnAfterPostCombat());
+            }
             var owned = cards.GetAllCards(new List<CardState>());
             // The generation fixture creates copies of its casting spell. Keep
             // that authored test spell paid after the unchanged original relic.
@@ -86,7 +160,19 @@ namespace MonsterTrain2Poju.Probe
             bool replacementScenario = !AllUnitsMultistrikeMutator && Environment.GetEnvironmentVariable("MT2_PROBE_RELIC_CARD_REPLACEMENT_UPGRADE") == "1";
             CardUpgradeData? replacementTarget = replacementScenario ? InstallReplacementUpgrade(save.GetAllGameData(), relicEffect) : null;
             var filters = UpgradeData(relicEffect).GetFilters();
+            if (ExtraToughTombs)
+            {
+                CardState? carrier = owned.SingleOrDefault(card => card.GetCardDataID() == TombCarrierCardId);
+                CharacterData? spawn = carrier?.GetSpawnCharacterData();
+                log.LogInfo("EXTRA-TOUGH-TOMBS-FILTER cardFound=" + (carrier != null) + " type=" + carrier?.GetCardType() +
+                    " rarity=" + carrier?.GetRarity() + " cost=" + (carrier == null ? "<missing>" : AccessTools.Field(typeof(CardState), "cost").GetValue(carrier)) +
+                    " isSpawner=" + carrier?.IsSpawnerCard() +
+                    " spawn=" + spawn?.GetAssetKey() + " subtypes=" + string.Join(",", spawn?.GetSubtypes().Select(subtype => subtype.Key) ?? Array.Empty<string>()) +
+                    " filters=" + string.Join(",", filters.Select(filter => filter.name + ":" +
+                        (carrier == null ? false : filter.FilterCard(carrier, managers.GetRelicManager())))));
+            }
             var eligibleCandidates = owned.Where(card => filters.All(filter => filter.FilterCard(card, managers.GetRelicManager())))
+                .Where(card => !ExtraToughTombs || card.GetCardDataID() == TombCarrierCardId)
                 .Where(card => !ExhaustUpgrade || card.GetTraitStates().All(trait =>
                     trait is not CardTraitSelfPurge && trait is not CardTraitExhaustState))
                 .Where(card => !EphemeralUpgrade || card.GetTraitStates().All(trait =>
@@ -104,8 +190,8 @@ namespace MonsterTrain2Poju.Probe
                 eligibleCandidates = new[] { heldCard, playableCard };
             }
             var eligible = eligibleCandidates
-                .Take(AllUnitsMultistrikeMutator || abilityScenario || triggerScenario || replacementScenario ? 1 : 2).ToArray();
-            int requiredEligibleCards = AllUnitsMultistrikeMutator || abilityScenario || triggerScenario || replacementScenario ? 1 : 2;
+                .Take(AllUnitsMultistrikeMutator || abilityScenario || triggerScenario || replacementScenario || ExtraToughTombs ? 1 : 2).ToArray();
+            int requiredEligibleCards = AllUnitsMultistrikeMutator || abilityScenario || triggerScenario || replacementScenario || ExtraToughTombs ? 1 : 2;
             if (eligible.Length != requiredEligibleCards)
                 throw new InvalidOperationException("Relic scenario has " + eligible.Length + " eligible owned cards; required " + requiredEligibleCards + ".");
             if (replacementTarget != null)
@@ -120,11 +206,14 @@ namespace MonsterTrain2Poju.Probe
                 managers.GetRelicManager().ApplyCardStateModifiers(card, resetTempCardModifiers: false);
                 managers.GetRelicManager().ApplyCardStateModifiers(card);
             }
+            if (ExtraToughTombs && !cards.GetHand().Contains(eligible[0]) && !cards.DrawSpecificCard(eligible[0]))
+                throw new InvalidOperationException("Could not draw the ExtraToughTombs carrier into the battle hand.");
             if (Environment.GetEnvironmentVariable("MT2_PROBE_CONDITIONAL_BATTLE_RELIC_UPGRADES") == "1")
                 InstallOncePerTurnCondition(managers, eligible[0]);
             Prepared = true;
             AccessTools.Field(typeof(CombatManager), "combatStateChanged").SetValue(managers.GetCombatManager(), true);
             log.LogInfo((AllUnitsMultistrikeMutator ? "ALL-UNITS-MULTISTRIKE-MUTATOR-PREPARED original AllUnitsMultistrike; " :
+                ExtraToughTombs ? "EXTRA-TOUGH-TOMBS-PREPARED unchanged original relic and pre-battle Tomb carrier; " :
                 "RELIC-CARD-MODIFIERS-PREPARED unchanged original ReduceStarterCost, native acquire/repeat/reset and battle-generated cards; ") +
                 "conditional=" +
                 (Environment.GetEnvironmentVariable("MT2_PROBE_CONDITIONAL_BATTLE_RELIC_UPGRADES") == "1") + ", status=" +
@@ -135,7 +224,8 @@ namespace MonsterTrain2Poju.Probe
             {
                 var current = new List<RelicState>();
                 AccessTools.Method(typeof(RelicManager), "GetCurrentRelics").Invoke(managers.GetRelicManager(), new object[] { current });
-                return current.Single(relic => relic.GetAssetName() == (AllUnitsMultistrikeMutator ? "AllUnitsMultistrike" : "ReduceStarterCost"));
+                return current.Single(relic => relic.GetAssetName() == (AllUnitsMultistrikeMutator ? "AllUnitsMultistrike" :
+                    ExtraToughTombs ? "ExtraToughTombs" : "ReduceStarterCost"));
             }
 
             static CardUpgradeData UpgradeData(RelicEffectAddTempUpgrade effect) =>

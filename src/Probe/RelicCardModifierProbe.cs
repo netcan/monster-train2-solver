@@ -142,6 +142,19 @@ namespace MonsterTrain2Poju.Probe
                 __state.UpgradeAdded = cardState.GetTemporaryCardStateModifiers().GetCardUpgrades().Count > __state.UpgradeCount;
             }
         }
+        [HarmonyPatch(typeof(RelicEffectModifyCardHealth), nameof(RelicEffectModifyCardHealth.ApplyCardStateModifiers))]
+        private static class HealthEffectPatch
+        {
+            private static void Prefix(RelicEffectModifyCardHealth __instance, out Dispatch? __state)
+            {
+                __state = null; if (active.Count == 0) return;
+                var record = active[active.Count - 1]; var index = Index(record, __instance);
+                __state = new Dispatch { RelicIndex = index.Relic, EffectIndex = index.Effect };
+                record.Dispatches.Add(__state);
+            }
+            private static void Postfix(bool __result, Dispatch? __state)
+            { if (__state != null) __state.Returned = __result; }
+        }
         [HarmonyPatch(typeof(RelicEffectModifyCardMagicalPower), nameof(RelicEffectModifyCardMagicalPower.ApplyCardStateModifiers))]
         private static class MagicPowerEffectPatch
         {

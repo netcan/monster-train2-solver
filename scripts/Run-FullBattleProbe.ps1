@@ -138,6 +138,7 @@ param(
     [switch] $RelicCardSelfPurgeUpgrades,
     [switch] $RelicCardExhaustUpgrades,
     [switch] $RelicCardEphemeralUpgrades,
+    [switch] $RelicCardHealthUpgrades,
     [switch] $RelicCardAbilityUpgrades,
     [switch] $RelicCardTriggerUpgrades,
     [switch] $RelicCardReplacementUpgrades,
@@ -238,6 +239,7 @@ if ($RelicCardPiercingUpgrades) { $BattleRelicUpgrades = $true }
 if ($RelicCardSelfPurgeUpgrades) { $BattleRelicUpgrades = $true }
 if ($RelicCardExhaustUpgrades) { $BattleRelicUpgrades = $true; $Policy = 'units-spells-and-junk' }
 if ($RelicCardEphemeralUpgrades) { $BattleRelicUpgrades = $true; $Policy = 'units-spells-and-junk' }
+if ($RelicCardHealthUpgrades) { $BattleRelicUpgrades = $true; $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($RelicCardAbilityUpgrades) { $BattleRelicUpgrades = $true }
 if ($RelicCardTriggerUpgrades) { $BattleRelicUpgrades = $true }
 if ($RelicCardReplacementUpgrades) { $BattleRelicUpgrades = $true }
@@ -361,6 +363,7 @@ $environment = @{
     MT2_PROBE_RELIC_CARD_SELF_PURGE_UPGRADE = $(if ($RelicCardSelfPurgeUpgrades) { '1' } else { '0' })
     MT2_PROBE_RELIC_CARD_EXHAUST_UPGRADE = $(if ($RelicCardExhaustUpgrades) { '1' } else { '0' })
     MT2_PROBE_RELIC_CARD_EPHEMERAL_UPGRADE = $(if ($RelicCardEphemeralUpgrades) { '1' } else { '0' })
+    MT2_PROBE_RELIC_CARD_HEALTH_UPGRADE = $(if ($RelicCardHealthUpgrades) { '1' } else { '0' })
     MT2_PROBE_RELIC_CARD_ABILITY_UPGRADE = $(if ($RelicCardAbilityUpgrades) { '1' } else { '0' })
     MT2_PROBE_RELIC_CARD_TRIGGER_UPGRADE = $(if ($RelicCardTriggerUpgrades) { '1' } else { '0' })
     MT2_PROBE_RELIC_CARD_REPLACEMENT_UPGRADE = $(if ($RelicCardReplacementUpgrades) { '1' } else { '0' })
@@ -411,6 +414,7 @@ if ($RelicCardPiercingUpgrades) { $environment['MT2_PROBE_MODIFIERS'] = 'relic-c
 if ($RelicCardSelfPurgeUpgrades) { $environment['MT2_PROBE_MODIFIERS'] = 'relic-card-self-purge-upgrades' }
 if ($RelicCardExhaustUpgrades) { $environment['MT2_PROBE_MODIFIERS'] = 'relic-card-exhaust-upgrades' }
 if ($RelicCardEphemeralUpgrades) { $environment['MT2_PROBE_MODIFIERS'] = 'relic-card-ephemeral-upgrades' }
+if ($RelicCardHealthUpgrades) { $environment['MT2_PROBE_MODIFIERS'] = 'relic-card-health-upgrades' }
 if ($RelicCardAbilityUpgrades) { $environment['MT2_PROBE_MODIFIERS'] = 'relic-card-ability-upgrades' }
 if ($RelicCardTriggerUpgrades) { $environment['MT2_PROBE_MODIFIERS'] = 'relic-card-trigger-upgrades' }
 if ($RelicCardReplacementUpgrades) { $environment['MT2_PROBE_MODIFIERS'] = 'relic-card-replacement-upgrades' }
@@ -636,7 +640,7 @@ if ($RelicCardUpgrades) {
 }
 if ($BattleRelicUpgrades) {
     $modifierRows = @($trace.RelicCardModifiers)
-    $rejectedDispatches = if ($RelicCardStatusUpgrades -or $RelicCardPiercingUpgrades -or $RelicCardAbilityUpgrades -or $RelicCardTriggerUpgrades -or $RelicCardReplacementUpgrades -or $OriginalDeployableRelic) {
+    $rejectedDispatches = if ($RelicCardStatusUpgrades -or $RelicCardPiercingUpgrades -or $RelicCardAbilityUpgrades -or $RelicCardTriggerUpgrades -or $RelicCardReplacementUpgrades -or $RelicCardHealthUpgrades -or $OriginalDeployableRelic) {
         @($modifierRows | ForEach-Object Dispatches | Where-Object { -not $_.Returned -and -not $_.UpgradeAdded }).Count
     } else {
         @($modifierRows | ForEach-Object Dispatches | Where-Object { $_.Returned -and -not $_.UpgradeAdded }).Count
@@ -671,6 +675,9 @@ if ($RelicCardExhaustUpgrades -and $trace.ModifierScenario -ne 'relic-card-exhau
 }
 if ($RelicCardEphemeralUpgrades -and $trace.ModifierScenario -ne 'relic-card-ephemeral-upgrades') {
     throw 'Relic card Ephemeral upgrade scenario was not recorded.'
+}
+if ($RelicCardHealthUpgrades -and $trace.ModifierScenario -ne 'relic-card-health-upgrades') {
+    throw 'Relic card health upgrade scenario was not recorded.'
 }
 if ($RelicCardAbilityUpgrades -and $trace.ModifierScenario -ne 'relic-card-ability-upgrades') {
     throw 'Relic card ability upgrade scenario was not recorded.'
