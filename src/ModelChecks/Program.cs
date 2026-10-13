@@ -8,6 +8,32 @@ if (args.Length == 2 && args[0] == "--battle-search-only")
     return;
 }
 
+if (args.Length == 2 && args[0] == "--explain-frontier")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    var rejected = new SortedDictionary<string, int>(StringComparer.Ordinal);
+    int decisions = fixture.RootElement.GetProperty("Actions").GetArrayLength();
+    foreach (var entry in fixture.RootElement.GetProperty("Actions").EnumerateArray())
+    {
+        BattleTurnState before = entry.GetProperty("Before").Deserialize<BattleTurnState>()!;
+        BattleActionEnumeration frontier = BattleActionModel.EnumerateActions(before);
+        foreach (UnsupportedActionAttempt attempt in frontier.UnsupportedAttempts)
+        {
+            PlayCardAction? action = attempt.Action;
+            CardToken? card = action == null ? null : before.Spawn.Train.Context!.Cards.Hand
+                .FirstOrDefault(item => item.InstanceId == action.CardInstanceId);
+            CardPlayRule? rule = card == null ? null : before.PlayRules!.Cards
+                .FirstOrDefault(item => item.DataId == card.DataId);
+            string identity = rule?.AssetKey ?? (action?.ActivatorUnitId > 0 ? "<unit ability>" : "<frontier>");
+            string key = identity + " | " + attempt.Reason;
+            rejected[key] = rejected.TryGetValue(key, out int count) ? count + 1 : 1;
+        }
+    }
+    Console.WriteLine($"ACTION-FRONTIER actionSnapshots={decisions} rejectedKinds={rejected.Count}");
+    foreach (var item in rejected) Console.WriteLine($"REJECTED x{item.Value} {item.Key}");
+    return;
+}
+
 if (args.Length == 2 && args[0] == "--card-cycle-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
