@@ -141,6 +141,16 @@ namespace MonsterTrain2Poju.Probe
                     identityStore[actors[i]] = new Dictionary<CharacterTriggerState, int>();
                 }
                 Save.SetGold(originalGold); battle.Init(originalBattle); test.Init(originalTest); UnityEngine.Random.state = originalGlobal;
+                ConfigureHordeAura();
+                yield return Sample("horde-aura-growth", direct: true);
+                for (int i = 0; i < actors.Length; i++)
+                {
+                    Set(actors[i], "_primaryStateInformation", AccessTools.Method(StateType, "DeepCopyForPreview").Invoke(originalStates[i], null));
+                    Set(actors[i], "triggers", new List<CharacterTriggerState>());
+                    AccessTools.Property(typeof(CharacterState), "IsEnchanter").SetValue(actors[i], false);
+                    identityStore[actors[i]] = new Dictionary<CharacterTriggerState, int>();
+                }
+                Save.SetGold(originalGold); battle.Init(originalBattle); test.Init(originalTest); UnityEngine.Random.state = originalGlobal;
                 AddDeathwishTriggers();
                 yield return Sample("deathwish-initial");
                 Raw(hosts[0], "muted", 1); yield return Sample("deathwish-muted");
@@ -220,6 +230,20 @@ namespace MonsterTrain2Poju.Probe
                     var trigger = new CharacterTriggerState(); trigger.Setup(triggerData, hosts[i].GetTeamType(), Save); hosts[i].GetTriggers().Add(trigger);
                     ((CardEffectEnchant)trigger.GetEffectStates()[0].GetCardEffect()).SetEnchanterCharacter(hosts[i], Managers.GetCoreManagers());
                 }
+            }
+            void ConfigureHordeAura()
+            {
+                var data = new CardEffectData("CardEffectEnchant", null!, Team.Type.Monsters);
+                data.Cheat_SetTargetMode(TargetMode.Room);
+                Set(data, "paramStatusEffects", new[] { new StatusEffectStackData { statusId = "horde", count = 2 } });
+                CharacterTriggerData triggerData = HealingScenario.HealGold(0, false, true);
+                Set(triggerData, "trigger", CharacterTriggerData.Trigger.OnSpawn);
+                Set(triggerData, "effects", new List<CardEffectData> { data });
+                var trigger = new CharacterTriggerState();
+                trigger.Setup(triggerData, hosts[0].GetTeamType(), Save);
+                hosts[0].GetTriggers().Add(trigger);
+                ((CardEffectEnchant)trigger.GetEffectStates()[0].GetCardEffect()).SetEnchanterCharacter(hosts[0], Managers.GetCoreManagers());
+                AccessTools.Property(typeof(CharacterState), "IsEnchanter").SetValue(hosts[0], true);
             }
             void AddDeathwishTriggers()
             {

@@ -2376,7 +2376,7 @@ if ($EnchantmentCombat) {
     if (-not $enchantment.LiveContextUnchanged -or $enchantment.Mismatches -ne 0 -or
         $enchantment.Boundary -ne 'RealStatusAndDrainedQueue' -or $enchantment.StatusMutationsSuppressed -or
         -not $enchantment.ExternalPreviewPreparationsRecorded -or
-        @($enchantment.Samples).Count -ne 37 -or @($enchantment.Samples | Where-Object Completed -NE $true).Count -gt 0 -or
+        @($enchantment.Samples).Count -ne 38 -or @($enchantment.Samples | Where-Object Completed -NE $true).Count -gt 0 -or
         @($enchantment.Samples | Where-Object { $null -ne $_.Difference }).Count -gt 0) {
         throw 'Native real-status enchantment combat coverage is incomplete or differs.'
     }

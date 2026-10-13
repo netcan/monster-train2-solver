@@ -31,7 +31,14 @@ the dedicated checks for the new and directly affected scenarios; run the full
 inventory at completed milestones and before delivery.
 
 Current inventory is 256 archives: 225 accepted battles and 31 component
-calibrations. `full-battle-companion-bump.mt2f` covers a paired Relentless
+calibrations. `enchantment-combat-calibration.mt2f` now also covers positive
+persistent Horde aura growth (0 to 2 stacks, 8 to 16 attack, 25 to 50 maximum
+health) with native `OnStatusEffectChanged`, `OnTroopAdded`,
+`OnNewStatusEffectAdded` and `CardMonsterPlayed` callbacks. Its 12,684-byte
+archive has 2,266 unique nodes and SHA-256
+`3b3528c98525f68e07e051c7359cfa868f9e5c62598de39994fcfa00b2c621c0`; Horde
+removal/casualty paths remain unsupported. `full-battle-companion-bump.mt2f`
+covers a paired Relentless
 companion Boss refusal, its attempted-ascension callback and the survivor's
 terminal-death handoff. `full-battle-relic-card-status-upgrades.mt2f` verifies a native
 temporary card status upgrade reaches the unit summoned by that card.

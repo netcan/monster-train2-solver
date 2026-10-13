@@ -19,7 +19,7 @@ internal static class EnchantmentCombatChecks
             "8fb07b96-f4db-4d2b-884d-c00536d6ccf4" && root.GetProperty("Boundary").GetString() == "RealStatusAndDrainedQueue" &&
             !root.GetProperty("StatusMutationsSuppressed").GetBoolean() && root.GetProperty("LiveContextUnchanged").GetBoolean() &&
             root.GetProperty("ExternalPreviewPreparationsRecorded").GetBoolean() &&
-            root.GetProperty("Mismatches").GetInt32() == 0 && samples.Length == 37,
+            root.GetProperty("Mismatches").GetInt32() == 0 && samples.Length == 38,
             "Real enchantment combat version, mutation, restoration or matrix gate failed.");
         foreach (var sample in samples)
             Require(sample.GetProperty("Completed").GetBoolean() && sample.GetProperty("Difference").ValueKind == FixtureKind.Null,
@@ -29,12 +29,34 @@ internal static class EnchantmentCombatChecks
             samples.Any(sample => sample.GetProperty("Direct").GetBoolean()) &&
             samples.Any(sample => !sample.GetProperty("Before").GetProperty("AllowUpdates").GetBoolean()),
             "Native random, direct reentry or disabled-manager cases are missing.");
+        VerifyHordeGrowth(samples.Single(sample => sample.GetProperty("Label").GetString() == "horde-aura-growth"));
         Parallel.For(0, 32, _ => { foreach (var sample in samples) Verify(sample); });
         int requests = samples.Sum(sample => sample.GetProperty("Requests").GetArrayLength());
         int callbacks = samples.Sum(sample => sample.GetProperty("Callbacks").GetArrayLength());
         Console.WriteLine($"NATIVE-ENCHANTMENT-COMBAT-CHECKS PASS: {samples.Length} real status/train/effect transitions, {requests} status calls, " +
             $"{callbacks} complete callback payloads, standalone Deathwish gold/armor drains, shared-world gold drains and guarded actor mutations, " +
             "guarded/direct reentry, retained per-effect maps/RNG and 32 isolated branches.");
+    }
+    private static void VerifyHordeGrowth(FixtureValue sample)
+    {
+        EnchantmentCombatState before = sample.GetProperty("Before").Deserialize<EnchantmentCombatState>()!;
+        EnchantmentCombatState after = sample.GetProperty("AfterQueue").Deserialize<EnchantmentCombatState>()!;
+        EnchantmentRequest request = sample.GetProperty("Requests").Deserialize<EnchantmentRequest[]>()!
+            .Single(item => item.StatusId == "horde" && item.Operation == "Add");
+        CombatUnit oldTarget = before.Train.Rooms.SelectMany(room => room.Units).Single(unit => unit.Id == request.UnitId);
+        CombatUnit newTarget = after.Train.Rooms.SelectMany(room => room.Units).Single(unit => unit.Id == request.UnitId);
+        int oldStacks = oldTarget.Status("horde")?.Stacks ?? 0;
+        int newStacks = newTarget.Status("horde")?.Stacks ?? 0;
+        int newAttack = newTarget.Modifiers!.AttackDamage;
+        int newMaxHealth = newTarget.MaxHealth;
+        string[] callbackKinds = sample.GetProperty("Callbacks").EnumerateArray()
+            .Select(item => item.GetProperty("Kind").GetString()!).Distinct().ToArray();
+        Require(request.Count > 0 && newStacks - oldStacks == request.Count &&
+            newAttack == oldTarget.HordeDefinition!.Attack * newStacks &&
+            newMaxHealth == oldTarget.HordeDefinition.Health * newStacks && callbackKinds.Contains("CardMonsterPlayed"),
+            $"Positive Horde aura growth mismatch: request={request.Count}; stacks={oldStacks}->{newStacks}; " +
+            $"attack={newAttack} base={oldTarget.HordeDefinition!.Attack}; " +
+            $"maxHealth={newMaxHealth} base={oldTarget.HordeDefinition.Health}; callbacks={string.Join(',', callbackKinds)}.");
     }
     private static void VerifyDeathwish(FixtureValue[] samples)
     {
@@ -233,13 +255,15 @@ internal static class EnchantmentCombatChecks
     {
         CombatUnit owner = source.Train.Rooms.SelectMany(room => room.Units).First(unit => unit.Triggers.Any(trigger =>
             trigger.Effects.Any(effect => effect.Enchantment != null)));
-        EnchantmentCombatState Replace(CombatUnit unit)
+        EnchantmentCombatState Replace(CombatUnit unit, EnchantmentCombatState? frame = null)
         {
-            var train = new TrainCombatState(source.Train.Rooms.Select(room => new RoomCombatState(room.RoomIndex,
+            frame ??= source;
+            var train = new TrainCombatState(frame.Train.Rooms.Select(room => new RoomCombatState(room.RoomIndex,
                 room.Deployment, room.Units.Select(old => old.Id == unit.Id ? unit : old).ToArray(), room.ExternalInteractions,
-                room.Context, room.Preview)).ToArray(), source.Train.Movement, source.Train.EnemySlotsPerRoom, source.Train.Context);
-            return new EnchantmentCombatState(train, source.RetainedUnits, source.EnchanterIds, source.AllowUpdates,
-                source.Updating, source.Preview, source.TestRng);
+                room.Context, room.Preview, room.ActiveCompanionBossIds)).ToArray(), frame.Train.Movement,
+                frame.Train.EnemySlotsPerRoom, frame.Train.Context);
+            return new EnchantmentCombatState(train, frame.RetainedUnits, frame.EnchanterIds, frame.AllowUpdates,
+                frame.Updating, frame.Preview, frame.TestRng);
         }
         var deathwish = owner.WithTriggers(owner.Triggers.Concat(new[] { new CombatTrigger("OnDeathwish", false, false, false, 1,
             new[] { new CombatEffect("CardEffectRewardGold", 1, 0, "", 0, [], false) }) }).ToArray());
@@ -254,12 +278,28 @@ internal static class EnchantmentCombatChecks
         var roomResult = RoomCombatModel.Resolve(source.Train.Rooms.Single(room => room.Units.Any(unit => unit.Id == owner.Id)));
         Require(!roomResult.Supported && roomResult.UnsupportedReason!.Contains("CardEffectEnchant", StringComparison.Ordinal),
             "The standalone aura kernel silently enabled incomplete generic combat support.");
-        var hordeOwner = owner.WithTriggers(owner.Triggers.Select(trigger => trigger.WithEffects(trigger.Effects.Select(effect =>
+        CombatUnit WithoutNewStatusCallback(CombatUnit unit) => unit.WithTriggers(unit.Triggers
+            .Where(trigger => trigger.Kind != "OnNewStatusEffectAdded").ToArray());
+        var hordeBase = new EnchantmentCombatState(new TrainCombatState(source.Train.Rooms.Select(room => new RoomCombatState(
+            room.RoomIndex, room.Deployment, room.Units.Select(WithoutNewStatusCallback).ToArray(), room.ExternalInteractions,
+            room.Context, room.Preview, room.ActiveCompanionBossIds)).ToArray(), source.Train.Movement,
+            source.Train.EnemySlotsPerRoom, source.Train.Context), source.RetainedUnits.Select(actor =>
+                new EnchantmentRetainedUnit(WithoutNewStatusCallback(actor.Unit), actor.RoomIndex, actor.Preview)).ToArray(),
+            source.EnchanterIds, source.AllowUpdates, source.Updating, source.Preview, source.TestRng);
+        CombatUnit hordeBaseOwner = hordeBase.Train.Rooms.SelectMany(room => room.Units).Single(unit => unit.Id == owner.Id);
+        var hordeOwner = hordeBaseOwner.WithTriggers(hordeBaseOwner.Triggers.Select(trigger => trigger.WithEffects(trigger.Effects.Select(effect =>
             effect.Enchantment == null ? effect : effect.WithEnchantment(new EnchantmentRule(effect.Enchantment.Targeting,
-                new[] { new CombatStatus("horde", 1) }, effect.Enchantment.State, true))).ToArray())).ToArray());
-        result = EnchantmentCombatModel.UpdateAll(Replace(hordeOwner));
-        Require(!result.Supported && result.UnsupportedReason!.Contains("Horde aura", StringComparison.Ordinal),
-            "Horde aura casualties silently bypassed retained-actor/birth hooks.");
+                new[] { new CombatStatus("horde", 1) }, new EnchantmentState(), true, effect.Enchantment.HasParentCard))).ToArray())).ToArray());
+        result = EnchantmentCombatModel.UpdateAll(Replace(hordeOwner, hordeBase));
+        Require(result.Supported && result.Requests.Any(item => item.StatusId == "horde" && item.Operation == "Add" && item.Count > 0),
+            "Positive Horde aura growth was not applied through the native status boundary: " +
+            (result.UnsupportedReason ?? string.Join(";", result.Requests.Select(item => item.StatusId + "/" + item.Operation + "/" + item.Count))));
+        CombatUnit updatedOwner = result.State!.Train.Rooms.SelectMany(room => room.Units).Single(unit => unit.Id == owner.Id);
+        CombatUnit mutedOwner = CardSpellModel.Copy(updatedOwner, updatedOwner.Health,
+            updatedOwner.Statuses.Where(status => status.Id != "muted").Append(new CombatStatus("muted", 1)).ToArray());
+        EnchantmentCombatResult hordeRemoval = EnchantmentCombatModel.UpdateAll(ReplaceUnit(result.State, mutedOwner));
+        Require(!hordeRemoval.Supported && hordeRemoval.UnsupportedReason!.Contains("Horde aura removals", StringComparison.Ordinal),
+            "Horde aura removals/casualties silently bypassed the explicit lifecycle guard.");
         int origin = source.Train.Rooms.Single(room => room.Units.Any(unit => unit.Id == owner.Id)).RoomIndex;
         int destination = source.Train.Rooms.First(room => room.RoomIndex != origin).RoomIndex;
         var moved = new TrainCombatState(source.Train.Rooms.Select(room => new RoomCombatState(room.RoomIndex, room.Deployment,
@@ -270,6 +310,17 @@ internal static class EnchantmentCombatChecks
             source.AllowUpdates, source.Updating, source.Preview, source.TestRng));
         Require(!result.Supported && result.UnsupportedReason!.Contains("physical points", StringComparison.Ordinal),
             "Cross-room aura sources silently used room traversal instead of captured physical ordering.");
+    }
+    private static EnchantmentCombatState ReplaceUnit(EnchantmentCombatState source, CombatUnit replacement)
+    {
+        var train = new TrainCombatState(source.Train.Rooms.Select(room => new RoomCombatState(room.RoomIndex, room.Deployment,
+            room.Units.Select(unit => unit.Id == replacement.Id ? replacement : unit).ToArray(), room.ExternalInteractions,
+            room.Context, room.Preview, room.ActiveCompanionBossIds)).ToArray(), source.Train.Movement,
+            source.Train.EnemySlotsPerRoom, source.Train.Context);
+        var retained = source.RetainedUnits.Select(actor => actor.Unit.Id == replacement.Id
+            ? new EnchantmentRetainedUnit(replacement, actor.RoomIndex, actor.Preview) : actor).ToArray();
+        return new EnchantmentCombatState(train, retained, source.EnchanterIds, source.AllowUpdates, source.Updating,
+            source.Preview, source.TestRng);
     }
     private static void Require(bool value, string message) { if (!value) throw new InvalidDataException(message); }
 }

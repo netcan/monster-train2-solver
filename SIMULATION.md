@@ -6,6 +6,24 @@ covers 71/224 catalog entries (31.70%); see
 [the owner evidence table](tests/fixtures/relic-coverage.md). Whole-battle
 coverage and the optimal solver remain in progress.
 
+### Positive persistent Horde aura growth
+
+`enchantment-combat-calibration.mt2f` now includes a real positive Horde aura
+addition through `CardEffectEnchant`. The native sample adds two stacks to a
+player unit: Horde changes from 0 to 2, attack from 8 to 16, and maximum health
+from 25 to 50; the status-change, troop-added, new-status and `CardMonsterPlayed`
+callbacks also match. The muted Instant calibration took 45.41 seconds. Its 38
+status/train/effect transitions replay with 71 status calls, 116 complete
+callback payloads and 32 isolated parallel branches. The 12,684-byte binary has
+2,266 unique nodes and SHA-256
+`3b3528c98525f68e07e051c7359cfa868f9e5c62598de39994fcfa00b2c621c0`.
+
+Positive Horde additions now pass through the retained-unit status model.
+Removals, nonpositive changes and casualty settlement remain guarded; aura
+callbacks that mutate actors/cards still need full combat lifecycle integration.
+This adds no original relic evidence: relic coverage remains 71/224 (31.70%),
+and the accepted inventory remains 256 archives.
+
 ### Original DoubleMagebladeDamage relic
 
 `full-battle-original-mageblade-magnitude.mt2f` captures the unchanged original

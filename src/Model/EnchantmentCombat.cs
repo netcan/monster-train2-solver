@@ -262,8 +262,6 @@ namespace MonsterTrain2Poju.Model
                 if (state.Train.Context == null) { error = "Enchantment updates require shared combat context."; return; }
                 if (state.Train.Rooms.Any(item => item.ExternalInteractions.Count != 0))
                 { error = "Enchantment updates require modeled room/relic interactions."; return; }
-                if (rule.StatusPool.Any(status => status.Id == "horde"))
-                { error = "Horde aura births/casualties require automatic combat lifecycle integration."; return; }
                 int room = Find(id).RoomIndex;
                 // Status selection precedes target collection in the native effect.
                 var input = new EnchantmentInput("Update", id, true, state.Preview, state.Train.Context.BattleRng, state.TestRng,
@@ -304,6 +302,8 @@ namespace MonsterTrain2Poju.Model
             }
             private bool Status(EnchantmentRequest request, EnchantmentRule rule)
             {
+                if (request.StatusId == "horde" && (request.Operation != "Add" || request.Count <= 0))
+                { error = "Horde aura removals and nonpositive changes require casualty lifecycle integration."; return false; }
                 EnchantmentRetainedUnit actor = Find(request.UnitId);
                 RoomCombatState? liveRoom = state.Train.Rooms.FirstOrDefault(room => room.Units.Any(unit => unit.Id == request.UnitId));
                 IReadOnlyList<int>? companionBossIds = state.Train.Rooms.FirstOrDefault(room => room.RoomIndex == actor.RoomIndex)?.ActiveCompanionBossIds;

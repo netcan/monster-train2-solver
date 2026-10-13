@@ -904,8 +904,6 @@ namespace MonsterTrain2Poju.Model
                         {
                             if (state.Context?.Enchantments?.AutomaticLifecycle != true || effect.Enchantment == null)
                                 return "CardEffectEnchant requires a captured automatic lifecycle world and effect definition.";
-                            if (effect.Enchantment.StatusPool.Any(status => status.Id == "horde"))
-                                return "Horde aura automatic lifecycle is not modeled.";
                             continue;
                         }
                         if (effect.Type == "CardEffectSpawnMonster")
