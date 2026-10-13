@@ -10,7 +10,9 @@ namespace MonsterTrain2Poju.Probe
     internal static class OriginalStatusRelicBatchScenario
     {
         internal const string Name = "original-status-relic-batch";
-        internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == Name;
+        internal const string BurnoutStacksName = "original-status-relic-batch-burnout";
+        internal static bool BurnoutStacks => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == BurnoutStacksName;
+        internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == Name || BurnoutStacks;
         internal static bool Prepared { get; private set; }
         internal static bool CaptureReady { get; private set; }
         internal static void Prepare(AllGameManagers managers, ManualLogSource log)
@@ -28,7 +30,9 @@ namespace MonsterTrain2Poju.Probe
                 CharacterData unit = card.GetSpawnCharacterData()!;
                 Set(unit, "health", 80); Set(unit, "attackDamage", 2); Set(unit, "size", 1); Set(unit, "equipmentLimit", 2);
                 Set(card, "cost", 0);
-                Set(unit, "startingStatusEffects", new[] { Stack("armor", 2), Stack("valor", 1) });
+                Set(unit, "startingStatusEffects", BurnoutStacks && ReferenceEquals(card, stewards[0])
+                    ? new[] { Stack("armor", 2), Stack("valor", 1), Stack("ephemeral", 1) }
+                    : new[] { Stack("armor", 2), Stack("valor", 1) });
                 Set(unit, "triggers", unit.GetTriggers().Concat(new[]
                 {
                     Trigger("OnSpawn", Status(TargetMode.Self, Team.Type.Monsters, "armor", 0),
@@ -73,6 +77,8 @@ namespace MonsterTrain2Poju.Probe
             Acquire("ba26070b-4f6b-4af0-a1ec-2af024b6af87", "IncreaseArmorStacks", Team.Type.Monsters, 1, "armor", 4);
             Acquire("b1d918d8-1fa6-4e6d-b523-5f7f339e5af8", "ExtraSpellWeakness", Team.Type.Heroes, 1, "spell weakness", 1);
             Acquire("55c06c99-7cee-4d7e-ad17-f893722d8071", "IncreaseDecaySlimeStacks", Team.Type.None, 0, "corrupt_poison", 1);
+            if (BurnoutStacks)
+                Acquire("dc32326b-0952-4b3b-8bc8-cec909476c5f", "IncreaseBurnoutStacks", Team.Type.Monsters, 1, "ephemeral", 3);
             for (int index = 0; index < managers.GetRoomManager()!.GetNumRooms(); index++)
             {
                 RoomState room = managers.GetRoomManager()!.GetRoom(index);
@@ -82,7 +88,9 @@ namespace MonsterTrain2Poju.Probe
             CaptureReady = true;
             foreach (CardState card in cards.GetAllCards(new List<CardState>()).ToArray()) managers.GetRelicManager().ApplyCardStateModifiers(card);
             Prepared = true; Set(managers.GetCombatManager()!, "combatStateChanged", true);
-            log.LogInfo("ORIGINAL-STATUS-RELIC-BATCH-PREPARED six unchanged original status adders; authored starting, spell, equipment and combat status applications; Corrupt Poison tested at room corruption 2; native Boss and wave schedule retained.");
+            log.LogInfo(BurnoutStacks
+                ? "ORIGINAL-STATUS-RELIC-BATCH-PREPARED seven unchanged original status adders including IncreaseBurnoutStacks; one Steward starts with Ephemeral; authored spell, equipment and combat status applications; Corrupt Poison tested at room corruption 2; native Boss and wave schedule retained."
+                : "ORIGINAL-STATUS-RELIC-BATCH-PREPARED six unchanged original status adders; authored starting, spell, equipment and combat status applications; Corrupt Poison tested at room corruption 2; native Boss and wave schedule retained.");
 
             void Acquire(string id, string key, Team.Type team, int condition, string statusId, int count)
             {

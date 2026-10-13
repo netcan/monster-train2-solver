@@ -29,7 +29,7 @@ The default command checks the full curated inventory. For routine changes, run
 the dedicated checks for the new and directly affected scenarios; run the full
 inventory at completed milestones and before delivery.
 
-Current inventory is 254 archives: 223 accepted battles and 31 component
+Current inventory is 255 archives: 224 accepted battles and 31 component
 calibrations. `full-battle-companion-bump.mt2f` covers a paired Relentless
 companion Boss refusal, its attempted-ascension callback and the survivor's
 terminal-death handoff. `full-battle-relic-card-status-upgrades.mt2f` verifies a native
@@ -3305,4 +3305,28 @@ calibrations. Full-inventory replay remains deferred.
 ```powershell
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-stealth-waxers.mt2f
 dotnet run --project src/ModelChecks -c Release -- --relic-spawn-status-only tests/fixtures/full-battle-original-stealth-waxers.mt2f
+```
+
+### Original IncreaseBurnoutStacks relic (schema 142)
+
+`full-battle-original-burnout-stacks.mt2f` exercises the unchanged original
+`IncreaseBurnoutStacks` definition. Its Monsters-team positive-stack rule adds
+3 Ephemeral to a real player application; owner ablation proves 1 → 4 with the
+relic and 1 without it. The 73.42-second muted Instant battle wins at Pyre 80
+with 41 matched room stages, 26 card actions and five EndTurns. Capture failures,
+mismatches, unsupported transitions and pending records are zero. Independent
+replay matches the policy chain, a mid-battle root and 16 parallel branches.
+The status-stack batch checks 35 actual and 336 boundary queries, including the
+Ephemeral team, overflow, exclusion and permanent/deferred cases.
+
+The binary archive is 35,966 bytes with 6,271 unique nodes and SHA-256
+`591ea715e5ff5d7774941e17261e4fb02195e17c7a830806c6e49db8d933c79a`; it has no
+JSON companion. The inventory is now 255 archives: 224 battles and 31 component
+calibrations. Original relic evidence is 70/224 (31.25%). Full-inventory replay
+remains deferred.
+
+```powershell
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -OriginalStatusRelicBatchBurnout -GameSpeed Instant
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-burnout-stacks.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-status-relics-only tests/fixtures/full-battle-original-burnout-stacks.mt2f
 ```

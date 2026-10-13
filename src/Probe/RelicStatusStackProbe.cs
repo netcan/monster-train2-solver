@@ -32,6 +32,7 @@ namespace MonsterTrain2Poju.Probe
             var targets = FullBattleTrace.Active!.KnownUnits.Where(unit => !unit.IsDestroyed && unit.IsAlive)
                 .Cast<CharacterState?>().Concat(new CharacterState?[] { null });
             string[] statuses = OriginalDecayRelicBatchScenario.Prepared ? ["buff", "poison", "armor", "regen"] :
+                OriginalStatusRelicBatchScenario.BurnoutStacks ? ["armor", "valor", "pyregel", "spell weakness", "regen", "corrupt_poison", "ephemeral"] :
                 OriginalStatusRelicBatchScenario.Prepared ? ["armor", "valor", "pyregel", "spell weakness", "regen", "corrupt_poison"] :
                 ["armor", "valor", "pyregel", "spell weakness", "regen"];
             matrix = true;

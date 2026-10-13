@@ -4,6 +4,7 @@ using MonsterTrain2Poju.Model;
 
 internal static class OriginalStatusRelicBatchChecks
 {
+    private const string BurnoutOwnerId = "dc32326b-0952-4b3b-8bc8-cec909476c5f";
     private static readonly (string Key, string Id, string Team, string Status, int Stacks, int Condition)[] Artifacts =
     [
         ("ApplyExtraPyregel_DH", "f3e1c306-964c-4373-96c3-61e606379f43", "None", "pyregel", 1, 1),
@@ -18,10 +19,12 @@ internal static class OriginalStatusRelicBatchChecks
 
     internal static IReadOnlyDictionary<string, int>? Native(FixtureValue root, bool required = false)
     {
-        bool eligible = root.TryGetProperty("ModifierScenario", out var scenario) && scenario.GetString() == "original-status-relic-batch";
+        string scenario = root.TryGetProperty("ModifierScenario", out var scenarioValue) ? scenarioValue.GetString() ?? "" : "";
+        bool burnoutScenario = scenario == "original-status-relic-batch-burnout";
+        bool eligible = scenario == "original-status-relic-batch" || burnoutScenario;
         Require(eligible || !required, "Fixture lacks the original status-stack relic batch.");
         if (!eligible) return null;
-        Require(root.GetProperty("Schema").GetInt32() == 136 &&
+        Require(root.GetProperty("Schema").GetInt32() == (burnoutScenario ? 142 : 136) &&
             root.GetProperty("GameModuleMvid").GetString() == "8fb07b96-f4db-4d2b-884d-c00536d6ccf4",
             "Native status-stack relic schema or build changed.");
         Require(root.GetProperty("NativeWon").GetBoolean() &&
@@ -35,6 +38,7 @@ internal static class OriginalStatusRelicBatchChecks
         Query[] rows = root.GetProperty("RelicStatusStackQueries").EnumerateArray().Select(Read).ToArray();
         Require(rows.Length > 0, "Native status-stack relic queries are missing.");
         foreach (Query row in rows) CheckDefinitions(row.Relics);
+        if (burnoutScenario) CheckBurnoutDefinition(rows[0].Relics);
         string parent = Serialize(rows);
         void CheckQueries()
         {
@@ -44,7 +48,7 @@ internal static class OriginalStatusRelicBatchChecks
         CheckQueries();
         Parallel.For(0, 32, _ => CheckQueries());
         Require(Serialize(rows) == parent, "Parallel status-stack queries mutated their parent relics.");
-        CheckMatrix(rows);
+        CheckMatrix(rows, burnoutScenario);
 
         var witnesses = Artifacts.ToDictionary(item => item.Key, _ => 0);
         int actualQueries = 0;
@@ -63,6 +67,19 @@ internal static class OriginalStatusRelicBatchChecks
         Require(actualQueries > 0 && witnesses.Values.All(count => count > 0),
             "Some original status relics lack actual applications: " +
             string.Join(", ", witnesses.Select(item => item.Key + "=" + item.Value)));
+        int burnoutWitnesses = 0;
+        if (burnoutScenario)
+        {
+            foreach (Query row in rows.Where(row => !row.Matrix && row.StatusId == "ephemeral" && row.Incoming > 0 &&
+                row.TargetTeam == CombatTeam.Player && !row.Permanent && !row.Deferred && row.IncludeAdders && row.EffectType == null))
+            {
+                int without = Get(row, row.Relics.Where(relic => relic.DataId != BurnoutOwnerId).ToArray());
+                Require(row.Actual == row.Incoming + 3 && without == row.Incoming && row.Actual - without == 3,
+                    "IncreaseBurnoutStacks did not add exactly three stacks to a real positive player Ephemeral application: " + Label(row));
+                burnoutWitnesses++;
+            }
+            Require(burnoutWitnesses > 0, "IncreaseBurnoutStacks lacks an actual positive player Ephemeral application.");
+        }
         bool corruptPoisonBattle = root.GetProperty("Stages").EnumerateArray().Any(stage =>
             stage.GetProperty("Difference").ValueKind == FixtureKind.Null &&
             stage.GetProperty("Predicted").GetProperty("Events").EnumerateArray().Any(item =>
@@ -71,16 +88,19 @@ internal static class OriginalStatusRelicBatchChecks
                 .Any(room => room.GetProperty("Corruption").GetInt32() == 2));
         Require(corruptPoisonBattle, "No matched battle stage witnessed Corrupt Poison damage at captured room corruption 2.");
         Console.WriteLine("ORIGINAL-STATUS-RELIC-WITNESSES " + string.Join(", ", witnesses.Select(item => item.Key + "=" + item.Value)));
-        Console.WriteLine($"NATIVE-ORIGINAL-STATUS-RELICS PASS: six unchanged originals, {actualQueries} actual/{rows.Length - actualQueries} matrix queries; exact team, nullable target, positive/first-application, overflow and exclusion gates; permanent/deferred value-query gates only; Corrupt Poison battle damage at corruption 2; per-relic actual effect ablations and 32 immutable branches.");
+        Console.WriteLine($"NATIVE-ORIGINAL-STATUS-RELICS PASS: {Artifacts.Length + (burnoutScenario ? 1 : 0)} unchanged originals, {actualQueries} actual/{rows.Length - actualQueries} matrix queries; exact team, nullable target, positive/first-application, overflow and exclusion gates; permanent/deferred value-query gates only; Corrupt Poison battle damage at corruption 2; per-relic actual effect ablations and 32 immutable branches; IncreaseBurnoutStacks witnesses={burnoutWitnesses}.");
         return witnesses;
     }
 
-    private static void CheckMatrix(Query[] allRows)
+    private static void CheckMatrix(Query[] allRows, bool burnoutScenario)
     {
         Query[] rows = allRows.Where(row => row.Matrix).ToArray();
         Require(rows.Length > 0, "Native status-stack boundary matrix is missing.");
+        string[] statuses = burnoutScenario
+            ? ["armor", "valor", "pyregel", "spell weakness", "regen", "corrupt_poison", "ephemeral"]
+            : ["armor", "valor", "pyregel", "spell weakness", "regen", "corrupt_poison"];
         foreach (CombatTeam? team in new CombatTeam?[] { CombatTeam.Player, CombatTeam.Enemy, null })
-        foreach (string id in new[] { "armor", "valor", "pyregel", "spell weakness", "regen", "corrupt_poison" })
+        foreach (string id in statuses)
         {
             bool Has(int incoming, bool permanent = false, bool deferred = false, bool includeAdders = true, string? type = null) =>
                 rows.Any(row => row.TargetTeam == team && row.StatusId == id && row.Incoming == incoming &&
@@ -123,6 +143,13 @@ internal static class OriginalStatusRelicBatchChecks
         Expect("spell weakness", -1, CombatTeam.Enemy, -1);
         Expect("spell weakness", int.MaxValue, CombatTeam.Enemy, unchecked(int.MaxValue + 1));
         Expect("armor", int.MaxValue, CombatTeam.Player, unchecked(int.MaxValue + 4));
+        if (burnoutScenario)
+        {
+            Expect("ephemeral", 1, CombatTeam.Player, 4); Expect("ephemeral", 1, null, 4);
+            Expect("ephemeral", 1, CombatTeam.Enemy, 1); Expect("ephemeral", 0, CombatTeam.Player, 0);
+            Expect("ephemeral", -1, CombatTeam.Player, -1);
+            Expect("ephemeral", int.MaxValue, CombatTeam.Player, unchecked(int.MaxValue + 3));
+        }
         Expect("armor", 1, CombatTeam.Player, 1, permanent: true);
         Expect("armor", 0, CombatTeam.Player, 4, permanent: true, deferred: true);
         Expect("pyregel", 0, CombatTeam.Enemy, 7, permanent: true, deferred: true);
@@ -150,6 +177,19 @@ internal static class OriginalStatusRelicBatchChecks
                 rule.AdditionalStacks == item.Stacks && rule.AddCondition == item.Condition && rule.Conditions.Count == 0,
                 "Original status relic payload changed: " + item.Key);
         }
+    }
+    private static void CheckBurnoutDefinition(IReadOnlyList<CombatRelicState> relics)
+    {
+        CombatRelicState[] matches = relics.Where(relic => relic.DataId == BurnoutOwnerId).ToArray();
+        Require(matches.Length == 1, "Missing or duplicated original IncreaseBurnoutStacks relic.");
+        CombatRelicState relic = matches[0];
+        Require(relic.AssetKey == "IncreaseBurnoutStacks" && relic.EffectTypes.SequenceEqual([RelicModel.AddStatusOnApplied]) &&
+            relic.IsCovenant == false && relic.DisallowedInPlacementPhase == false && relic.StatusStackAdditions?.Count == 1,
+            "Original IncreaseBurnoutStacks identity or effect type changed.");
+        RelicStatusStacks rule = relic.StatusStackAdditions![0];
+        Require(rule.EffectIndex == 0 && rule.SourceTeam == "Monsters" && rule.StatusId == "ephemeral" &&
+            rule.AdditionalStacks == 3 && rule.AddCondition == 1 && rule.Conditions.Count == 0,
+            "Original IncreaseBurnoutStacks payload changed.");
     }
     private sealed record Query(string StatusId, int Incoming, CombatTeam? TargetTeam, bool HasStatus,
         bool Permanent, bool Deferred, bool IncludeAdders, string? EffectType, CombatRelicState[] Relics, int Actual, bool Matrix);

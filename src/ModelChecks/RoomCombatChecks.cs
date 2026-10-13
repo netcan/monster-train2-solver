@@ -220,7 +220,7 @@ internal static class RoomCombatChecks
             OriginalUnitRelicBatchChecks.Native(fixture, required: true);
         else if (fixture.TryGetProperty("ModifierScenario", out relicScenario) && relicScenario.GetString() == "original-trigger-relic-batch")
             OriginalTriggerRelicBatchChecks.Native(fixture, required: true);
-        else if (fixture.TryGetProperty("ModifierScenario", out relicScenario) && relicScenario.GetString() == "original-status-relic-batch")
+        else if (fixture.TryGetProperty("ModifierScenario", out relicScenario) && relicScenario.GetString() is "original-status-relic-batch" or "original-status-relic-batch-burnout")
             OriginalStatusRelicBatchChecks.Native(fixture, required: true);
         else if (fixture.TryGetProperty("ModifierScenario", out relicScenario) && relicScenario.GetString() == "original-magnitude-relic-batch")
             OriginalMagnitudeRelicBatchChecks.Native(fixture, required: true);

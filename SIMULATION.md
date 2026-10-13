@@ -1,10 +1,27 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-13): 254 binary archives, including 223
+Current accepted inventory (2026-10-13): 255 binary archives, including 224
 full battles and 31 component calibrations. Unchanged original relic evidence
-covers 69/224 catalog entries (30.80%); see
+covers 70/224 catalog entries (31.25%); see
 [the owner evidence table](tests/fixtures/relic-coverage.md). Whole-battle
 coverage and the optimal solver remain in progress.
+
+### Original IncreaseBurnoutStacks relic
+
+`full-battle-original-burnout-stacks.mt2f` captures the unchanged original
+`IncreaseBurnoutStacks` relic. Its Monsters-team positive-stack rule adds 3
+Ephemeral to a real player application; removing only this owner changes the
+captured result from 4 back to 1. The muted Instant battle wins with 41 matched
+stages, 26 card actions and five EndTurns. Capture failures, mismatches,
+unsupported transitions and pending records are zero. The 35 actual status
+queries and 336 boundary queries pass, as do full replay, the mid-battle suffix
+and 16 parallel policy branches.
+
+The schema-142 archive is 35,966 bytes with 6,271 unique nodes and SHA-256
+`591ea715e5ff5d7774941e17261e4fb02195e17c7a830806c6e49db8d933c79a`; it has no
+JSON companion. This raises relic evidence to 70/224 (31.25%) and the accepted
+inventory to 255 archives: 224 battles and 31 component calibrations. Full
+inventory replay remains open.
 
 ### Original StealthWaxers relic
 
