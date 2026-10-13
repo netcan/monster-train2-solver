@@ -513,7 +513,7 @@ namespace MonsterTrain2Poju.Probe
                 numericModifiersPrepared = true;
                 CardEffectKillScenario.Prepare(managers, log);
             }
-            if (fullBattle && !numericModifiersPrepared && modifierScenario == "card-effect-recursion")
+            if (fullBattle && !numericModifiersPrepared && modifierScenario is "card-effect-recursion" or "card-effect-recursion-choice")
             {
                 if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Card recursion fixture must start on deployment turn.");
                 numericModifiersPrepared = true;
@@ -953,7 +953,8 @@ namespace MonsterTrain2Poju.Probe
                 if (OriginalDeployableRelicScenario.Enabled) pendingPlay = OriginalDeployableRelicScenario.Choose(decision) ?? pendingPlay;
                 if (modifierScenario == "sacrifice-effects") pendingPlay = SacrificeScenario.Choose(decision);
                 if (modifierScenario == "card-effect-kill") pendingPlay = CardEffectKillScenario.Choose(decision);
-                if (modifierScenario == "card-effect-recursion") pendingPlay = CardEffectRecursionScenario.Choose(decision);
+                if (modifierScenario is "card-effect-recursion" or "card-effect-recursion-choice")
+                    pendingPlay = CardEffectRecursionScenario.Choose(decision);
                 if (modifierScenario == "typed-draw") pendingPlay = TypedDrawScenario.Choose(decision);
                 if (modifierScenario == DamagePerHpScenario.Name || modifierScenario == DamagePerHpScenario.ArmorName ||
                     modifierScenario == DamagePerHpScenario.LastAttackerName)
@@ -1095,7 +1096,8 @@ namespace MonsterTrain2Poju.Probe
             string modifierScenario = Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") ?? string.Empty;
             bool scenarioPrelude = (OriginalUnitRelicBatchScenario.Enabled && !OriginalUnitRelicBatchScenario.PolicyCarriersInjected) ||
                 (modifierScenario == "damage-per-hp-ability" && !damagePerHpAbilityInputPrepared) ||
-                (modifierScenario == "card-effect-recursion" && CardEffectRecursionScenario.IsScenarioPrelude(action));
+                (modifierScenario is "card-effect-recursion" or "card-effect-recursion-choice" &&
+                    CardEffectRecursionScenario.IsScenarioPrelude(action));
             PreviewSchedulingProbe.Observe("Play:" + action.CardInstanceId);
             if (action.ActivatorUnitId > 0)
             {

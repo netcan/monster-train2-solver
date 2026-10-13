@@ -124,9 +124,10 @@ namespace MonsterTrain2Poju.Model
 
         internal static TrainSpellResult ApplyForCardPlay(TrainCombatState source, int roomIndex, IReadOnlyList<CardActionEffect> effects,
             int targetId, int sourceCardId, BattlePlayRules definitions, IReadOnlyList<CardPileState>? otherPiles, int selfUnitId = 0,
-            int targetSpawnPointIndex = -1)
+            int targetSpawnPointIndex = -1, IReadOnlyList<CardRecursionSelection>? recursionSelections = null)
             => ApplyCore(source, roomIndex, effects, targetId, sourceCardId, null, null, definitions, true, otherPiles,
-                selfUnitId, deferFinalCallbacks: true, targetSpawnPointIndex: targetSpawnPointIndex);
+                selfUnitId, deferFinalCallbacks: true, targetSpawnPointIndex: targetSpawnPointIndex,
+                recursionSelections: recursionSelections);
 
         internal static TrainSpellResult ApplyNativeDamageStep(TrainCombatState source, int roomIndex, int targetId, int damage,
             int sourceCardId, IReadOnlyList<RoomCombatModel.QueuedCharacterTrigger> pendingDeaths, int attackerUnitId = 0,
@@ -233,8 +234,11 @@ namespace MonsterTrain2Poju.Model
         private static TrainSpellResult ApplyCore(TrainCombatState source, int roomIndex, IReadOnlyList<CardActionEffect> effects,
             int targetId, int sourceCardId, int? playerCapacity, int? enemyCapacity, BattlePlayRules? definitions, bool fullTrain,
             IReadOnlyList<CardPileState>? otherPiles = null, int selfUnitId = 0, bool deferFinalCallbacks = false,
-            Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null, int targetSpawnPointIndex = -1)
+            Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null, int targetSpawnPointIndex = -1,
+            IReadOnlyList<CardRecursionSelection>? recursionSelections = null)
         {
+            string? selectionError = CardRecursionModel.ValidateSelections(effects, recursionSelections);
+            if (selectionError != null) return UnsupportedTrain(selectionError);
             string? error = Validate(source, roomIndex, effects, targetId, fullTrain, selfUnitId, targetSpawnPointIndex, sourceCardId);
             if (error != null) return UnsupportedTrain(error);
             int sourceAttackUnitId = selfUnitId > 0 ? selfUnitId : targetId;
@@ -349,8 +353,10 @@ namespace MonsterTrain2Poju.Model
                 }
                 if (effect.Type == "Recursion")
                 {
+                    IReadOnlyList<int>? selectedCardIds = recursionSelections?.FirstOrDefault(selection =>
+                        selection.EffectIndex == index)?.CardInstanceIds;
                     CardRecursionResult recursion = CardRecursionModel.Apply(state.Context!.Cards, piles,
-                        state.Context.BattleRng, effect, definitions, sourceCardId, state.Context.MaxHandSize);
+                        state.Context.BattleRng, effect, definitions, sourceCardId, state.Context.MaxHandSize, selectedCardIds);
                     if (!recursion.Supported) return UnsupportedTrain(recursion.UnsupportedReason!);
                     CombatContext changed = state.Context.WithCards(recursion.Cards!).WithOtherPiles(recursion.OtherPiles!)
                         .WithBattleRng(recursion.BattleRng!.Value);
@@ -1431,7 +1437,8 @@ namespace MonsterTrain2Poju.Model
                 case "Heal": return effect.Target == "Room" || count > 0;
                 case "Sacrifice": return count > 0;
                 case "Kill": return effect.Tests?.MustHaveValidTargets != true || count > 0;
-                case "Recursion": return count > 0 && effect.Value > 0;
+                case "Recursion": return count > 0 &&
+                    (effect.Recursion?.SelectionMode is "ChooseToHand" or "ChooseToDeck" || effect.Value > 0);
                 case "AddStatus":
                 case "MultiplyStatus": return effect.Tests?.StrictTargets != true && effect.Target != "DropTargetCharacter" || count > 0;
                 case "MultiplyAllPositiveStatusEffects": return effect.Target != "DropTargetCharacter" || count > 0;

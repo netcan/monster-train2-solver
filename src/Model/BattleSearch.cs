@@ -326,6 +326,9 @@ namespace MonsterTrain2Poju.Model
                 PlayCardAction? action = attempt.Action;
                 string key = action == null ? "-" : string.Join(",", action.CardInstanceId, action.RoomIndex,
                     action.PlayerPosition, action.TargetUnitId, action.ActivatorUnitId, action.TargetSpawnPointIndex);
+                if (action != null && action.RecursionSelections.Count > 0)
+                    key += "|" + string.Join(";", action.RecursionSelections.Select(selection =>
+                        selection.EffectIndex + ":" + string.Join(",", selection.CardInstanceIds)));
                 key += "|" + attempt.Reason;
                 if (unsupportedKeys.Add(key)) UnsupportedAttempts.Add(attempt);
             }

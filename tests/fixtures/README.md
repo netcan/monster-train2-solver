@@ -30,7 +30,7 @@ The default command checks the full curated inventory. For routine changes, run
 the dedicated checks for the new and directly affected scenarios; run the full
 inventory at completed milestones and before delivery.
 
-Current inventory is 262 archives: 231 accepted battles and 31 component
+Current inventory is 263 archives: 232 accepted battles and 31 component
 calibrations. The schema-146 `full-battle-original-moon-phase-energy-relic.mt2f`
 archive adds accepted native evidence for the unchanged `MoonPhaseModifyEmber`
 relic: three Full callbacks add one Ember and notify; three New callbacks are
@@ -83,6 +83,23 @@ companion is tracked.
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-card-recursion.mt2f
 dotnet run --project src/ModelChecks -c Release -- --native-actions-only tests/fixtures/full-battle-card-recursion.mt2f
 dotnet run --project src/ModelChecks -c Release -- --card-recursion-pure
+```
+
+`full-battle-card-recursion-choice.mt2f` is a controlled native calibration of
+`WurmkinEtchings` with its recursion mode changed to `ChooseToDeck`. Six
+exhausted Spells are eligible and the native choice screen selects instance 3.
+The battle wins with 63 matched stages, 22 actions and seven EndTurns; all
+capture and replay failure counters are zero. Search emits six distinct selected
+card actions from that recorded decision state, and each branch restores only
+its selected card without consuming Battle RNG. The schema-103 archive is
+36,004 bytes with 6,165 unique nodes and SHA-256
+`7be5784f3da5bd72f18cc212651772d891a2378d096fca9edc5d70785e0e6821`; it has no
+JSON companion.
+
+```powershell
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-card-recursion-choice.mt2f
+dotnet run --project src/ModelChecks -c Release -- --card-recursion-choice-only tests/fixtures/full-battle-card-recursion-choice.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-card-recursion-choice.mt2f
 ```
 
 `full-battle-relic-card-negative-unhealed.mt2f` (schema 145)

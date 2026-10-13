@@ -4,6 +4,18 @@ using System.Linq;
 
 namespace MonsterTrain2Poju.Model
 {
+    public sealed class CardRecursionSelection
+    {
+        public int EffectIndex { get; }
+        public IReadOnlyList<int> CardInstanceIds { get; }
+
+        public CardRecursionSelection(int effectIndex, IReadOnlyList<int> cardInstanceIds)
+        {
+            EffectIndex = effectIndex;
+            CardInstanceIds = Array.AsReadOnly(cardInstanceIds.ToArray());
+        }
+    }
+
     public sealed class CardRecursionResult
     {
         public CardCycleState? Cards { get; }
@@ -51,14 +63,35 @@ namespace MonsterTrain2Poju.Model
         }
 
         public static CardRecursionResult Apply(CardCycleState cards, IReadOnlyList<CardPileState>? otherPiles,
-            UnityRng battleRng, CardActionEffect effect, BattlePlayRules? definitions, int sourceCardId, int maxHandSize)
+            UnityRng battleRng, CardActionEffect effect, BattlePlayRules? definitions, int sourceCardId, int maxHandSize,
+            IReadOnlyList<int>? selectedCardIds = null)
         {
             IReadOnlyList<int> eligible = EligibleCards(cards, otherPiles, effect, definitions, sourceCardId, out string? error);
             if (error != null) return new CardRecursionResult(null, null, null, error);
             if (maxHandSize < cards.Hand.Count) return new CardRecursionResult(null, null, null, "Invalid hand size.");
-            ShuffleResult<int> shuffled = battleRng.Shuffle(eligible);
-            int count = Math.Min(eligible.Count, Math.Max(0, effect.Value));
-            int[] selected = shuffled.Items.Take(count).ToArray();
+            int[] selected;
+            UnityRng nextBattleRng;
+            if (IsChoiceMode(effect.Recursion!.SelectionMode))
+            {
+                if (eligible.Count == 0 && selectedCardIds == null)
+                    selected = Array.Empty<int>();
+                else if (selectedCardIds == null || selectedCardIds.Count != 1 ||
+                    selectedCardIds.Distinct().Count() != selectedCardIds.Count ||
+                    !eligible.Contains(selectedCardIds[0]))
+                    return new CardRecursionResult(null, null, null, "Card recursion requires exactly one eligible selected card.");
+                else
+                    selected = [selectedCardIds[0]];
+                nextBattleRng = battleRng;
+            }
+            else
+            {
+                if (selectedCardIds != null)
+                    return new CardRecursionResult(null, null, null, "Random card recursion cannot take a selected card.");
+                ShuffleResult<int> shuffled = battleRng.Shuffle(eligible);
+                int count = Math.Min(eligible.Count, Math.Max(0, effect.Value));
+                selected = shuffled.Items.Take(count).ToArray();
+                nextBattleRng = shuffled.State;
+            }
             var restoredCardIds = new List<int>();
             var hand = cards.Hand.ToList();
             var draw = cards.Draw.ToList();
@@ -70,7 +103,8 @@ namespace MonsterTrain2Poju.Model
             int capacity = maxHandSize - hand.Count;
             for (int index = selected.Length - 1; index >= 0; index--)
             {
-                if (effect.Recursion!.DisallowOverflowToDrawPile && capacity <= 0) break;
+                if (effect.Recursion.DisallowOverflowToDrawPile &&
+                    effect.Recursion.SelectionMode == "RandomToHand" && capacity <= 0) break;
                 int cardId = selected[index];
                 if (!selectedTokens.TryGetValue(cardId, out CardToken? token))
                     return new CardRecursionResult(null, null, null, "A selected recursion card left its source pile.");
@@ -78,7 +112,7 @@ namespace MonsterTrain2Poju.Model
                 int standbyIndex = Array.FindIndex(piles, pile => pile.Name == "Standby");
                 if (standbyIndex >= 0) piles[standbyIndex] = CardPileModel.Remove(piles[standbyIndex], cardId);
                 restoredCardIds.Add(cardId);
-                if (effect.Recursion.SelectionMode == "RandomToDeck")
+                if (effect.Recursion.SelectionMode is "RandomToDeck" or "ChooseToDeck")
                     draw.Add(token);
                 else if (capacity > 0)
                 {
@@ -91,16 +125,37 @@ namespace MonsterTrain2Poju.Model
             piles = piles.Select(pile => pile.Name == sourcePileName ? sourcePile : pile).ToArray();
             var updatedCards = new CardCycleState(hand, draw, cards.Discard, cards.Rng, cards.DrawModifier,
                 cards.ExternalInteractions, cards.BonusDraw, cards.NextDrawUpgrades, cards.NextUpgradeReferenceId);
-            return new CardRecursionResult(updatedCards, piles, shuffled.State, restoredCardIds: restoredCardIds);
+            return new CardRecursionResult(updatedCards, piles, nextBattleRng, restoredCardIds: restoredCardIds);
+        }
+
+        public static IReadOnlyList<IReadOnlyList<int>> EnumerateChosenCards(IReadOnlyList<int> eligibleCardIds) =>
+            Array.AsReadOnly(eligibleCardIds.Select(id => (IReadOnlyList<int>)Array.AsReadOnly(new[] { id })).ToArray());
+
+        public static string? ValidateSelections(IReadOnlyList<CardActionEffect> effects,
+            IReadOnlyList<CardRecursionSelection>? selections)
+        {
+            if (selections == null || selections.Count == 0) return null;
+            if (selections.Select(selection => selection.EffectIndex).Distinct().Count() != selections.Count)
+                return "Card recursion has duplicate effect selections.";
+            foreach (CardRecursionSelection selection in selections)
+            {
+                if (selection.EffectIndex < 0 || selection.EffectIndex >= effects.Count ||
+                    effects[selection.EffectIndex].Type != "Recursion" ||
+                    !IsChoiceMode(effects[selection.EffectIndex].Recursion?.SelectionMode ?? string.Empty))
+                    return "Card recursion selection does not match a choose-mode effect.";
+            }
+            return null;
         }
 
         internal static string? Validate(CardActionEffect effect, IReadOnlyList<CardPileState>? otherPiles)
         {
             CardRecursionRule? rule = effect.Recursion;
             if (rule == null) return "Missing native card-recursion definition.";
-            if (rule.SelectionMode != "RandomToHand" && rule.SelectionMode != "RandomToDeck")
+            if (rule.SelectionMode != "ChooseToHand" && rule.SelectionMode != "ChooseToDeck" &&
+                rule.SelectionMode != "RandomToHand" && rule.SelectionMode != "RandomToDeck")
                 return "Unmodeled card-recursion selection mode " + rule.SelectionMode + ".";
-            if (rule.RequiresRoomInHand) return "Card recursion requiring hand space is not modeled.";
+            if (rule.RequiresRoomInHand && rule.SelectionMode == "RandomToHand")
+                return "Random card recursion requiring hand space is not modeled.";
             if (rule.HasCardFilter) return "Card recursion requires its native card-filter definition.";
             if (rule.HasUpgrade) return "Card recursion requires its temporary card-upgrade definition.";
             if (effect.Target != "Exhaust" && effect.Target != "Eaten")
@@ -109,5 +164,7 @@ namespace MonsterTrain2Poju.Model
                 return "Card recursion requires its captured source pile.";
             return null;
         }
+
+        private static bool IsChoiceMode(string mode) => mode == "ChooseToHand" || mode == "ChooseToDeck";
     }
 }

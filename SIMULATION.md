@@ -1,6 +1,6 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-13): 262 binary archives, including 231
+Current accepted inventory (2026-10-13): 263 binary archives, including 232
 full battles and 31 component calibrations. Unchanged original relic evidence
 covers 74/224 catalog entries (33.04%); see
 [the owner evidence table](tests/fixtures/relic-coverage.md). Whole-battle
@@ -43,13 +43,33 @@ the six original candidates return to Draw.
 The schema-103 archive is 36,006 bytes with 6,025 unique nodes and SHA-256
 `a1c9997717e630c84e3766efd8bc1ce9ad52e3823e26bb50bdc6644eff67c4a8`; it has no
 JSON companion. Pure checks also cover random-to-hand, Eaten restoration and
-Battle RNG, while choose modes, hand-space requirements, card filters and
-recursion upgrades remain explicitly unsupported pending native calibration.
+Battle RNG. ChooseToHand and ChooseToDeck now branch on one eligible card without
+consuming Battle RNG. The controlled ChooseToDeck calibration below confirms the
+native selection screen and full-battle replay; ChooseToHand currently has pure
+model coverage. Random-to-hand hand-space requirements, card filters, recursion
+upgrades and source piles other than Exhaust/Eaten remain explicitly unsupported.
 
 ```powershell
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-card-recursion.mt2f
 dotnet run --project src/ModelChecks -c Release -- --native-actions-only tests/fixtures/full-battle-card-recursion.mt2f
 dotnet run --project src/ModelChecks -c Release -- --card-recursion-pure
+```
+
+`full-battle-card-recursion-choice.mt2f` uses the same WurmkinEtchings spell
+with its runtime selection mode changed to `ChooseToDeck`. Six exhausted Spells
+are eligible, and the native choice screen selects card instance 3. The muted
+Instant battle wins with 63 matched stages, 22 card actions and seven EndTurns;
+capture failures, mismatches, unsupported transitions and pending records are
+zero. The model exposes six distinct selection actions from the captured native
+decision state and preserves Battle RNG for each branch. The schema-103 binary
+is 36,004 bytes with 6,165 unique nodes and SHA-256
+`7be5784f3da5bd72f18cc212651772d891a2378d096fca9edc5d70785e0e6821`; no JSON
+companion is tracked.
+
+```powershell
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-card-recursion-choice.mt2f
+dotnet run --project src/ModelChecks -c Release -- --card-recursion-choice-only tests/fixtures/full-battle-card-recursion-choice.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-card-recursion-choice.mt2f
 ```
 
 ### Original MoonPhaseModifyEmber relic

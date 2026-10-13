@@ -52,7 +52,9 @@ internal static class BattleSearchChecks
             "Bounded search returned no result from the native battle decision state.");
         string Path(BattleSearchResult result) => string.Join("|", result.Steps.Select(step => step.IsEndTurn ? "EndTurn" :
             step.Action!.CardInstanceId + ":" + step.Action.RoomIndex + ":" + step.Action.PlayerPosition + ":" +
-            step.Action.TargetUnitId + ":" + step.Action.ActivatorUnitId));
+            step.Action.TargetUnitId + ":" + step.Action.ActivatorUnitId + ":" + string.Join(";",
+                step.Action.RecursionSelections.Select(selection => selection.EffectIndex + "=" +
+                    string.Join(",", selection.CardInstanceIds)))));
         Require(serialSearch.BestState != null && serialSearch.Score == search.Score &&
             serialSearch.DecisionStatesVisited == search.DecisionStatesVisited && Path(serialSearch) == Path(search) &&
             BattleTurnChecks.Comparable(serialSearch.BestState!) == BattleTurnChecks.Comparable(search.BestState!),
@@ -96,7 +98,11 @@ internal static class BattleSearchChecks
     private static bool SameAction(PlayCardAction first, PlayCardAction second) =>
         first.CardInstanceId == second.CardInstanceId && first.RoomIndex == second.RoomIndex &&
         first.PlayerPosition == second.PlayerPosition && first.TargetUnitId == second.TargetUnitId &&
-        first.ActivatorUnitId == second.ActivatorUnitId;
+        first.ActivatorUnitId == second.ActivatorUnitId &&
+        first.RecursionSelections.Count == second.RecursionSelections.Count &&
+        first.RecursionSelections.Zip(second.RecursionSelections).All(pair =>
+            pair.First.EffectIndex == pair.Second.EffectIndex &&
+            pair.First.CardInstanceIds.SequenceEqual(pair.Second.CardInstanceIds));
 
     private static void Require(bool condition, string message)
     {

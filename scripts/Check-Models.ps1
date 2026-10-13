@@ -34,7 +34,7 @@ $fixtureNames = @('full-battle-steward-once.mt2f', 'full-battle-no-cards.mt2f', 
     'full-battle-relic-card-trigger-upgrades.mt2f',
     'full-battle-relic-card-replacement-upgrades.mt2f',
     'full-battle-conditional-relic-card-upgrades.mt2f', 'full-battle-statistics.mt2f', 'full-battle-numeric-upgrades.mt2f',
-    'full-battle-dynamic-upgrades.mt2f', 'full-battle-sacrifice-effects.mt2f', 'full-battle-card-effect-kill.mt2f', 'full-battle-card-recursion.mt2f', 'full-battle-sacrifice-upgrades.mt2f',
+    'full-battle-dynamic-upgrades.mt2f', 'full-battle-sacrifice-effects.mt2f', 'full-battle-card-effect-kill.mt2f', 'full-battle-card-recursion.mt2f', 'full-battle-card-recursion-choice.mt2f', 'full-battle-sacrifice-upgrades.mt2f',
     'full-battle-hand-upgrades.mt2f', 'full-battle-targeted-hand-upgrades.mt2f', 'full-battle-permanent-consume-hand-upgrades.mt2f',
     'full-battle-permanent-consume-over-temporary.mt2f',
     'full-battle-healing.mt2f', 'full-battle-healing-triggers.mt2f', 'full-battle-room-spells.mt2f',
@@ -248,6 +248,16 @@ foreach ($fixturePath in $focusedTeamSpawnStatusFixtures) {
     foreach ($mode in @('--room-combat-only', '--native-actions-only', '--unit-clone-only')) {
         dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- $mode $fixturePath
         if ($LASTEXITCODE -ne 0) { throw "Team-wide spawn status checks failed ($mode): $fixturePath" }
+    }
+}
+
+$recursionChoiceFixtures = @($fixtures | Where-Object {
+    (Split-Path -Leaf $_) -eq 'full-battle-card-recursion-choice.mt2f'
+})
+foreach ($fixturePath in $recursionChoiceFixtures) {
+    foreach ($mode in @('--card-recursion-choice-only', '--battle-search-only')) {
+        dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- $mode $fixturePath
+        if ($LASTEXITCODE -ne 0) { throw "Chosen card recursion checks failed ($mode): $fixturePath" }
     }
 }
 

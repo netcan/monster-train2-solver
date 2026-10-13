@@ -53,6 +53,13 @@ if (args.Length == 1 && args[0] == "--card-recursion-pure")
     return;
 }
 
+if (args.Length == 2 && args[0] == "--card-recursion-choice-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    CardRecursionChecks.SearchChoices(fixture.RootElement);
+    return;
+}
+
 if (args.Length == 1 && args[0] == "--ephemeral-card-routing-pure")
 {
     CardModifierChecks.Run();

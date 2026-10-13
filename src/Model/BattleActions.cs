@@ -188,10 +188,13 @@ namespace MonsterTrain2Poju.Model
         public int ActivatorUnitId { get; }
         // Spawn-point index selected by effects that move an existing unit to a room location.
         public int TargetSpawnPointIndex { get; }
+        public IReadOnlyList<CardRecursionSelection> RecursionSelections { get; }
         public PlayCardAction(int cardInstanceId, int roomIndex, int playerPosition = -1, int targetUnitId = 0,
-            int activatorUnitId = 0, int targetSpawnPointIndex = -1)
+            int activatorUnitId = 0, int targetSpawnPointIndex = -1,
+            IReadOnlyList<CardRecursionSelection>? recursionSelections = null)
         { CardInstanceId = cardInstanceId; RoomIndex = roomIndex; PlayerPosition = playerPosition; TargetUnitId = targetUnitId;
-            ActivatorUnitId = activatorUnitId; TargetSpawnPointIndex = targetSpawnPointIndex; }
+            ActivatorUnitId = activatorUnitId; TargetSpawnPointIndex = targetSpawnPointIndex;
+            RecursionSelections = Array.AsReadOnly((recursionSelections ?? Array.Empty<CardRecursionSelection>()).ToArray()); }
     }
 
     public enum ActionRejection { None, Illegal, Unsupported }
@@ -473,7 +476,7 @@ namespace MonsterTrain2Poju.Model
                 if (!cast.CanPlay) return Illegal("Every effect failed its cast test or a required effect failed.");
                 spellInput = CardSpellModel.WithContext(spellInput, context.WithBattleRng(cast.BattleRngAfterTests!.Value));
                 TrainSpellResult result = CardSpellModel.ApplyForCardPlay(spellInput, action.RoomIndex, rule.Effects, action.TargetUnitId,
-                    card.InstanceId, source.PlayRules, piles);
+                    card.InstanceId, source.PlayRules, piles, recursionSelections: action.RecursionSelections);
                 if (!result.Supported) return Unsupported(result.UnsupportedReason!);
                 piles = result.OtherPiles?.ToArray() ?? piles;
                 train = result.State!; context = train.Context!; outcome = result.Outcome; effectsApplied = true;
@@ -721,7 +724,9 @@ namespace MonsterTrain2Poju.Model
                 {
                     foreach (CombatUnit target in source.Spawn.Train.Rooms.First(item => item.RoomIndex == room.RoomIndex).Units)
                     {
-                        Attempt(new PlayCardAction(card.InstanceId, room.RoomIndex, targetUnitId: target.Id));
+                        foreach (PlayCardAction branch in EnumerateRecursionChoices(source,
+                            new PlayCardAction(card.InstanceId, room.RoomIndex, targetUnitId: target.Id), rule))
+                            Attempt(branch);
                     }
                     continue;
                 }
@@ -730,7 +735,9 @@ namespace MonsterTrain2Poju.Model
                 int first = rule?.Effect == "SpawnMonster" ? 0 : -1;
                 int last = rule?.Effect == "SpawnMonster" ? players : -1;
                 for (int position = first; position <= last; position++)
-                    Attempt(new PlayCardAction(card.InstanceId, room.RoomIndex, position));
+                    foreach (PlayCardAction branch in EnumerateRecursionChoices(source,
+                        new PlayCardAction(card.InstanceId, room.RoomIndex, position), rule!))
+                        Attempt(branch);
             }
             BattleActionEnumeration abilities = UnitAbilityModel.EnumerateActivations(source);
             actions.AddRange(abilities.SupportedCandidates);
@@ -745,6 +752,53 @@ namespace MonsterTrain2Poju.Model
                     unsupported.Add(new UnsupportedActionAttempt(action, result.Reason ?? "Unsupported card action."));
             }
         }
+
+        private static IEnumerable<PlayCardAction> EnumerateRecursionChoices(BattleTurnState source,
+            PlayCardAction action, CardPlayRule rule)
+        {
+            var choiceEffects = rule.Effects.Select((effect, index) => (effect, index))
+                .Where(item => item.effect.Type == "Recursion" &&
+                    item.effect.Recursion?.SelectionMode is "ChooseToHand" or "ChooseToDeck").ToArray();
+            if (choiceEffects.Length == 0)
+            {
+                yield return action;
+                yield break;
+            }
+
+            var selections = new List<CardRecursionSelection>();
+            var usedCards = new HashSet<int>();
+            foreach (PlayCardAction branch in Expand(0)) yield return branch;
+
+            IEnumerable<PlayCardAction> Expand(int choiceIndex)
+            {
+                if (choiceIndex == choiceEffects.Length)
+                {
+                    yield return new PlayCardAction(action.CardInstanceId, action.RoomIndex, action.PlayerPosition,
+                        action.TargetUnitId, action.ActivatorUnitId, action.TargetSpawnPointIndex, selections);
+                    yield break;
+                }
+
+                (CardActionEffect effect, int effectIndex) = choiceEffects[choiceIndex];
+                IReadOnlyList<int> eligible = CardRecursionModel.EligibleCards(source.Spawn.Train.Context!.Cards,
+                    source.Spawn.Train.Context.OtherPiles, effect, source.PlayRules, action.CardInstanceId, out string? error);
+                if (error != null || eligible.Count == 0)
+                {
+                    foreach (PlayCardAction branch in Expand(choiceIndex + 1)) yield return branch;
+                    yield break;
+                }
+
+                foreach (IReadOnlyList<int> choice in CardRecursionModel.EnumerateChosenCards(eligible))
+                {
+                    if (choice.Any(usedCards.Contains)) continue;
+                    selections.Add(new CardRecursionSelection(effectIndex, choice));
+                    foreach (int id in choice) usedCards.Add(id);
+                    foreach (PlayCardAction branch in Expand(choiceIndex + 1)) yield return branch;
+                    foreach (int id in choice) usedCards.Remove(id);
+                    selections.RemoveAt(selections.Count - 1);
+                }
+            }
+        }
+
         public static IReadOnlyList<PlayCardAction> EnumerateSupportedPlays(BattleTurnState source) => EnumerateActions(source).SupportedActions;
 
         public static PlayCardAction? ChooseUnitAndJunkPlay(BattleTurnState source)

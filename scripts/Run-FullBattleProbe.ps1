@@ -20,6 +20,7 @@ param(
     [switch] $SacrificeEffects,
     [switch] $CardEffectKill,
     [switch] $CardRecursion,
+    [switch] $CardRecursionChoose,
     [switch] $HandUpgrades,
     [switch] $TargetedHandUpgrades,
     [switch] $PermanentConsumeHandUpgrades,
@@ -309,7 +310,7 @@ if ($damagePerHpModes.Count -gt 1) { throw 'Choose one DamagePerHp scenario.' }
 if ($DamagePerHpAbility -and $damagePerHpModes.Count -gt 0) { throw 'Choose the unit-ability scenario separately from spell scenarios.' }
 if ($SacrificeEffects) { $Policy = 'units-spells-and-junk' }
 if ($CardEffectKill) { $Policy = 'units-spells-and-junk' }
-if ($CardRecursion) { $Policy = 'units-spells-and-junk'; $BranchCardMasks = $true }
+if ($CardRecursion -or $CardRecursionChoose) { $Policy = 'units-spells-and-junk'; $BranchCardMasks = $true }
 if ($SpawnOrStatus) { $Policy = 'units-and-junk' }
 if ($AbilityTeleport) { $Policy = 'units-and-junk'; $PhysicalSpawnPoints = $true }
 if ($damagePerHpModes.Count -gt 0) { $Policy = 'units-spells-and-junk' }
@@ -462,8 +463,8 @@ if ($SacrificeEffects) {
 if ($CardEffectKill) {
     $environment['MT2_PROBE_MODIFIERS'] = 'card-effect-kill'
 }
-if ($CardRecursion) {
-    $environment['MT2_PROBE_MODIFIERS'] = 'card-effect-recursion'
+if ($CardRecursion -or $CardRecursionChoose) {
+    $environment['MT2_PROBE_MODIFIERS'] = if ($CardRecursionChoose) { 'card-effect-recursion-choice' } else { 'card-effect-recursion' }
 }
 if ($OriginalRelicBatch) {
     $environment['MT2_PROBE_MODIFIERS'] = 'original-relic-batch'
@@ -572,9 +573,12 @@ if ($CardEffectKill -and ($trace.ModifierScenario -ne 'card-effect-kill' -or
     -not (Select-String -LiteralPath $unityLog -Pattern 'CARD-EFFECT-KILL-PREPARED native KillRandomUnit' -Quiet))) {
     throw 'CardEffectKill native setup did not run.'
 }
-if ($CardRecursion -and ($trace.ModifierScenario -ne 'card-effect-recursion' -or
+if (($CardRecursion -or $CardRecursionChoose) -and ($trace.ModifierScenario -ne $(if ($CardRecursionChoose) { 'card-effect-recursion-choice' } else { 'card-effect-recursion' }) -or
     -not (Select-String -LiteralPath $unityLog -Pattern 'CARD-RECURSION-PREPARED WurmkinEtchings exhaustedSpellCopies=6' -Quiet))) {
     throw 'Card recursion native setup did not run.'
+}
+if ($CardRecursionChoose -and -not (Select-String -LiteralPath $unityLog -Pattern 'CARD-RECURSION-CHOOSE-AUTOSELECT card=' -Quiet)) {
+    throw 'Card recursion did not complete its native chosen-card interaction.'
 }
 if ($SpawnOrStatus -and ($trace.ModifierScenario -ne 'spawn-or-status' -or
     -not (Select-String -LiteralPath $unityLog -Pattern 'ABILITY-ACTIVATION-PREPARED .*spawnOrStatus=True' -Quiet) -or
@@ -941,7 +945,9 @@ $cardRecursionActions = @($trace.Actions | Where-Object {
     $definition = $actionEntry.Before.PlayRules.Cards | Where-Object DataId -EQ $playedCard.DataId
     @($definition.Effects | Where-Object Type -EQ 'Recursion').Count -gt 0
 })
-$cardRecursionCoverage = -not $CardRecursion -or @($cardRecursionActions | Where-Object {
+$cardRecursionCoverage = -not ($CardRecursion -or $CardRecursionChoose)
+if ($CardRecursion) {
+    $cardRecursionCoverage = @($cardRecursionActions | Where-Object {
     $actionEntry = $_
     $candidateIds = @($actionEntry.Before.OtherPiles | Where-Object Name -EQ 'Exhausted' |
         ForEach-Object Cards | Where-Object DataId -EQ 'fb0683b1-20ac-4dd2-b580-14b502e182f4' |
@@ -949,7 +955,21 @@ $cardRecursionCoverage = -not $CardRecursion -or @($cardRecursionActions | Where
     $afterDrawIds = @($actionEntry.Actual.Spawn.Train.Context.Cards.Draw | ForEach-Object InstanceId)
     $returned = @($candidateIds | Where-Object { $afterDrawIds -contains $_ })
     -not $_.Difference -and $_.Predicted.Supported -and $returned.Count -eq 5
-}).Count -gt 0
+    }).Count -gt 0
+}
+if ($CardRecursionChoose) {
+    $cardRecursionCoverage = @($cardRecursionActions | Where-Object {
+        $actionEntry = $_
+        $candidateIds = @($actionEntry.Before.OtherPiles | Where-Object Name -EQ 'Exhausted' |
+            ForEach-Object Cards | Where-Object DataId -EQ 'fb0683b1-20ac-4dd2-b580-14b502e182f4' |
+            ForEach-Object InstanceId)
+        $selectedIds = @($actionEntry.Action.RecursionSelections | ForEach-Object CardInstanceIds | ForEach-Object { $_ })
+        $afterDrawIds = @($actionEntry.Actual.Spawn.Train.Context.Cards.Draw | ForEach-Object InstanceId)
+        $returned = @($candidateIds | Where-Object { $afterDrawIds -contains $_ })
+        -not $_.Difference -and $_.Predicted.Supported -and $selectedIds.Count -eq 1 -and
+            $candidateIds -contains $selectedIds[0] -and $returned.Count -eq 1 -and $returned[0] -eq $selectedIds[0]
+    }).Count -gt 0
+}
 $healActions = @($trace.Actions | Where-Object {
     $entry = $_
     $card = $entry.Before.Spawn.Train.Context.Cards.Hand | Where-Object InstanceId -EQ $entry.Action.CardInstanceId
