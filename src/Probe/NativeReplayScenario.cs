@@ -507,6 +507,12 @@ namespace MonsterTrain2Poju.Probe
                 numericModifiersPrepared = true;
                 SacrificeScenario.Prepare(managers, log);
             }
+            if (fullBattle && !numericModifiersPrepared && modifierScenario == "card-effect-kill")
+            {
+                if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("CardEffectKill fixture must start on deployment turn.");
+                numericModifiersPrepared = true;
+                CardEffectKillScenario.Prepare(managers, log);
+            }
             if (fullBattle && Environment.GetEnvironmentVariable("MT2_PROBE_ENCHANTMENT_COMBAT") == "1")
             {
                 if (EnchantmentCombatCalibration.Error != null) throw new InvalidOperationException(EnchantmentCombatCalibration.Error);
@@ -940,6 +946,7 @@ namespace MonsterTrain2Poju.Probe
                     pendingPlay = RelicCardModifierScenario.ChooseTombCarrier(decision) ?? pendingPlay;
                 if (OriginalDeployableRelicScenario.Enabled) pendingPlay = OriginalDeployableRelicScenario.Choose(decision) ?? pendingPlay;
                 if (modifierScenario == "sacrifice-effects") pendingPlay = SacrificeScenario.Choose(decision);
+                if (modifierScenario == "card-effect-kill") pendingPlay = CardEffectKillScenario.Choose(decision);
                 if (modifierScenario == "typed-draw") pendingPlay = TypedDrawScenario.Choose(decision);
                 if (modifierScenario == DamagePerHpScenario.Name || modifierScenario == DamagePerHpScenario.ArmorName ||
                     modifierScenario == DamagePerHpScenario.LastAttackerName)

@@ -30,6 +30,26 @@ internal static class SacrificeChecks
             $"units={string.Join(',', killed.State?.Units.Select(unit => unit.Id) ?? [])}, " +
             $"gold={killed.State?.Context?.Gold}, last-sacrifice={killed.State?.Context?.Statistics?.Value(8, "LastSacrificedMonsterStats")}");
 
+        CardActionEffect killEffect = new("Kill", "DropTargetCharacter", 0, false, true, [],
+            tests: new CardEffectTests(true, false, false, false, mustHaveValidTargets: true));
+        RoomCombatResult killedByKill = CardSpellModel.Apply(room, [killEffect], target.Id, 8);
+        Require(killedByKill.Supported && killedByKill.State!.Units.Select(unit => unit.Id).SequenceEqual([1]) &&
+            killedByKill.State.Context!.Gold == 5 && killedByKill.State.Context.Statistics!.Value(8, "LastSacrificedMonsterStats") == 1,
+            $"CardEffectKill death mismatch: supported={killedByKill.Supported}, reason={killedByKill.UnsupportedReason}, " +
+            $"units={string.Join(',', killedByKill.State?.Units.Select(unit => unit.Id) ?? [])}, gold={killedByKill.State?.Context?.Gold}");
+
+        var emptyRoom = new RoomCombatState(0, false, [], [], Context(rng, 1));
+        CardActionEffect optionalTargetKill = new("Kill", "Room", 0, true, true, [],
+            tests: new CardEffectTests(true, false, false, false));
+        CardActionEffect requiredTargetKill = new("Kill", "Room", 0, true, true, [],
+            tests: new CardEffectTests(true, false, false, false, mustHaveValidTargets: true));
+        SpellCastCheck emptyKillAllowed = CardSpellModel.TestPlay(emptyRoom, [optionalTargetKill], 0);
+        SpellCastCheck emptyKillRejected = CardSpellModel.TestPlay(emptyRoom, [requiredTargetKill], 0);
+        RoomCombatResult emptyKill = CardSpellModel.Apply(emptyRoom, [optionalTargetKill], 0, 8);
+        Require(emptyKillAllowed.CanPlay && !emptyKillRejected.CanPlay && emptyKill.Supported && emptyKill.State!.Units.Count == 0,
+            $"CardEffectKill no-target flag mismatch: optional={emptyKillAllowed.CanPlay}, required={emptyKillRejected.CanPlay}, " +
+            $"apply-supported={emptyKill.Supported}, reason={emptyKill.UnsupportedReason}");
+
         SpawnPointReference point = new(0, CombatTeam.Player, 0);
         BattleSpawnPoints points = new([
             new SpawnPointGroupState(0, CombatTeam.Player, 1, 1, [1], [false]),

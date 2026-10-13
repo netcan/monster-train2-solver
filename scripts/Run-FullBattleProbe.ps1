@@ -18,6 +18,7 @@ param(
     [switch] $DynamicUpgrades,
     [switch] $SacrificeUpgrades,
     [switch] $SacrificeEffects,
+    [switch] $CardEffectKill,
     [switch] $HandUpgrades,
     [switch] $TargetedHandUpgrades,
     [switch] $PermanentConsumeHandUpgrades,
@@ -306,6 +307,7 @@ if ($DamagePerHpLastAttacker) { $damagePerHpModes += 'damage-per-hp-last-attacke
 if ($damagePerHpModes.Count -gt 1) { throw 'Choose one DamagePerHp scenario.' }
 if ($DamagePerHpAbility -and $damagePerHpModes.Count -gt 0) { throw 'Choose the unit-ability scenario separately from spell scenarios.' }
 if ($SacrificeEffects) { $Policy = 'units-spells-and-junk' }
+if ($CardEffectKill) { $Policy = 'units-spells-and-junk' }
 if ($SpawnOrStatus) { $Policy = 'units-and-junk' }
 if ($AbilityTeleport) { $Policy = 'units-and-junk'; $PhysicalSpawnPoints = $true }
 if ($damagePerHpModes.Count -gt 0) { $Policy = 'units-spells-and-junk' }
@@ -455,6 +457,9 @@ if ($Sentry -or $SentryLethal) {
 if ($SacrificeEffects) {
     $environment['MT2_PROBE_MODIFIERS'] = 'sacrifice-effects'
 }
+if ($CardEffectKill) {
+    $environment['MT2_PROBE_MODIFIERS'] = 'card-effect-kill'
+}
 if ($OriginalRelicBatch) {
     $environment['MT2_PROBE_MODIFIERS'] = 'original-relic-batch'
 }
@@ -557,6 +562,10 @@ $originalUnchanged = (Get-OriginalSignature) -ceq $originalBefore
 if ($EquipmentBuff -and ($trace.ModifierScenario -ne 'equipment-buff' -or
     -not (Select-String -LiteralPath $unityLog -Pattern 'EQUIPMENT-PREPARED .*buff=True' -Quiet))) {
     throw 'Equipment buff scenario setup did not run.'
+}
+if ($CardEffectKill -and ($trace.ModifierScenario -ne 'card-effect-kill' -or
+    -not (Select-String -LiteralPath $unityLog -Pattern 'CARD-EFFECT-KILL-PREPARED native KillRandomUnit' -Quiet))) {
+    throw 'CardEffectKill native setup did not run.'
 }
 if ($SpawnOrStatus -and ($trace.ModifierScenario -ne 'spawn-or-status' -or
     -not (Select-String -LiteralPath $unityLog -Pattern 'ABILITY-ACTIVATION-PREPARED .*spawnOrStatus=True' -Quiet) -or
@@ -892,6 +901,29 @@ $sacrificeEffectCoverage = -not $SacrificeEffects -or @($sacrificeEffectActions 
     $actionEntry = $_
     $room = $actionEntry.Actual.Spawn.Train.Rooms | Where-Object RoomIndex -EQ $actionEntry.Action.RoomIndex
     $actionEntry.Action.TargetUnitId -gt 0 -and @($room.Units | Where-Object Id -EQ $actionEntry.Action.TargetUnitId).Count -eq 0
+}).Count -gt 0
+$cardEffectKillActions = @($trace.Actions | Where-Object {
+    $actionEntry = $_
+    $playedCard = $actionEntry.Before.Spawn.Train.Context.Cards.Hand |
+        Where-Object InstanceId -EQ $actionEntry.Action.CardInstanceId
+    $definition = $actionEntry.Before.PlayRules.Cards | Where-Object DataId -EQ $playedCard.DataId
+    @($definition.Effects | Where-Object Type -EQ 'Kill').Count -eq 2
+})
+$cardEffectKillCoverage = -not $CardEffectKill -or @($cardEffectKillActions | Where-Object {
+    $actionEntry = $_
+    $beforeRoom = $actionEntry.Before.Spawn.Train.Rooms | Where-Object RoomIndex -EQ $actionEntry.Action.RoomIndex
+    $actualRoom = $actionEntry.Actual.Spawn.Train.Rooms | Where-Object RoomIndex -EQ $actionEntry.Action.RoomIndex
+    $enemyDeaths = @($beforeRoom.Units | Where-Object {
+        $beforeUnit = $_
+        $beforeUnit.Team -eq 0 -and -not $beforeUnit.IsPyre -and
+            @($actualRoom.Units | Where-Object Id -EQ $beforeUnit.Id).Count -eq 0
+    }).Count
+    $playerDeaths = @($beforeRoom.Units | Where-Object {
+        $beforeUnit = $_
+        $beforeUnit.Team -eq 1 -and -not $beforeUnit.IsPyre -and
+            @($actualRoom.Units | Where-Object Id -EQ $beforeUnit.Id).Count -eq 0
+    }).Count
+    $enemyDeaths -gt 0 -and $playerDeaths -gt 0
 }).Count -gt 0
 $healActions = @($trace.Actions | Where-Object {
     $entry = $_
@@ -2307,6 +2339,8 @@ $result = [pscustomobject]@{
     ModifierCoverage = $modifierCoverage
     SacrificeEffectActions = $sacrificeEffectActions.Count
     SacrificeEffectCoverage = $sacrificeEffectCoverage
+    CardEffectKillActions = $cardEffectKillActions.Count
+    CardEffectKillCoverage = $cardEffectKillCoverage
     HealActions = $healActions.Count
     HealingCoverage = $healingCoverage
     OnHealCoverage = $onHealCoverage
@@ -2383,6 +2417,7 @@ $result = [pscustomobject]@{
     CharacterRemovalCalibration = $(if ($CharacterRemoval) { Join-Path $profile 'character-removal-calibration.mt2f' } else { $null })
 }
 if (-not $sacrificeEffectCoverage) { throw 'Native CardEffectSacrifice was not exercised through a full battle action.' }
+if (-not $cardEffectKillCoverage) { throw 'Native CardEffectKill did not kill one enemy and one player unit in a full battle action.' }
 $result | ConvertTo-Json
 if ($SettleDeathDissolves) {
     if (-not $trace.DeathDissolveSettlementEnabled -or $trace.Schema -ne $(if ($OriginalFloorCapacityRelics) { 119 } elseif ($PyreResourceRefresh) { 118 } elseif ($OriginalResourceRelicBatch) { 117 } elseif ($OriginalLifecycleRelicBatch) { 115 } elseif ($TypedDraw) { 112 } elseif ($SpawnStatusRelicsClones) { 111 } elseif ($SpawnStatusRelics) { 110 } elseif ($IncantRelic) { 109 } elseif ($AbilityIncant) { 108 } elseif ($SettleCardAnimations) { 106 } else { 105 }) -or

@@ -30,7 +30,7 @@ The default command checks the full curated inventory. For routine changes, run
 the dedicated checks for the new and directly affected scenarios; run the full
 inventory at completed milestones and before delivery.
 
-Current inventory is 260 archives: 229 accepted battles and 31 component
+Current inventory is 261 archives: 230 accepted battles and 31 component
 calibrations. The schema-146 `full-battle-original-moon-phase-energy-relic.mt2f`
 archive adds accepted native evidence for the unchanged `MoonPhaseModifyEmber`
 relic: three Full callbacks add one Ember and notify; three New callbacks are
@@ -53,6 +53,22 @@ there is no JSON companion.
 ```powershell
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-card-attack-relic.mt2f
 dotnet run --project src/ModelChecks -c Release -- --original-card-attack-only tests/fixtures/full-battle-original-card-attack-relic.mt2f
+```
+
+`full-battle-card-effect-kill.mt2f` records the native `KillRandomUnit` spell's
+two ordered random kills, one against an enemy and one against a player unit.
+The muted Instant battle wins with 60 stages, 22 card actions and seven
+EndTurns. The card is played twice; one matched action removes an enemy and a
+player unit from the room, with zero capture failures, mismatches, unsupported
+transitions or pending records. The 31,129-byte schema-103 binary
+has 5,100 unique nodes and SHA-256
+`fec1eb5dec554ab93d398c51c273012073aa5b521f3a52268fa593de42221f4a`; no JSON
+companion is tracked.
+
+```powershell
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-card-effect-kill.mt2f
+dotnet run --project src/ModelChecks -c Release -- --native-actions-only tests/fixtures/full-battle-card-effect-kill.mt2f
+dotnet run --project src/ModelChecks -c Release -- --sacrifice-pure
 ```
 
 `full-battle-relic-card-negative-unhealed.mt2f` (schema 145)

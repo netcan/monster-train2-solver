@@ -1,10 +1,33 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-13): 259 binary archives, including 228
+Current accepted inventory (2026-10-13): 261 binary archives, including 230
 full battles and 31 component calibrations. Unchanged original relic evidence
-covers 73/224 catalog entries (32.59%); see
+covers 74/224 catalog entries (33.04%); see
 [the owner evidence table](tests/fixtures/relic-coverage.md). Whole-battle
 coverage and the optimal solver remain in progress.
+
+### Original CardEffectKill spell
+
+`full-battle-card-effect-kill.mt2f` records the unchanged `KillRandomUnit` card
+with its two ordered `CardEffectKill` effects. The isolated policy waits until
+both sides have a unit in the selected room. The card is played twice; one
+matched action removes a unit from each team. The muted Instant battle wins with
+60 stages, 22 actions and seven EndTurns, with zero capture failures,
+mismatches, unsupported transitions or pending records. Independent action
+replay matches all 22 plays, and the 16-branch policy check passes.
+Native `paramBool3` controls whether a missing valid target fails the cast;
+that distinction is represented in the model. Kill subtype filtering remains
+explicitly unsupported.
+
+The schema-103 binary is 31,129 bytes with 5,100 unique nodes and SHA-256
+`fec1eb5dec554ab93d398c51c273012073aa5b521f3a52268fa593de42221f4a`; it has no
+JSON companion.
+
+```powershell
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-card-effect-kill.mt2f
+dotnet run --project src/ModelChecks -c Release -- --native-actions-only tests/fixtures/full-battle-card-effect-kill.mt2f
+dotnet run --project src/ModelChecks -c Release -- --sacrifice-pure
+```
 
 ### Original MoonPhaseModifyEmber relic
 

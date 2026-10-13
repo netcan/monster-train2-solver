@@ -11,9 +11,11 @@ namespace MonsterTrain2Poju.Model
         public bool CancelSubsequent { get; }
         public bool StrictTargets { get; }
         public bool? CanPlayAfterBossDead { get; }
-        public CardEffectTests(bool shouldTest, bool failToCast, bool cancelSubsequent, bool strictTargets, bool? canPlayAfterBossDead = null)
+        public bool MustHaveValidTargets { get; }
+        public CardEffectTests(bool shouldTest, bool failToCast, bool cancelSubsequent, bool strictTargets,
+            bool? canPlayAfterBossDead = null, bool mustHaveValidTargets = false)
         { ShouldTest = shouldTest; FailToCast = failToCast; CancelSubsequent = cancelSubsequent; StrictTargets = strictTargets;
-            CanPlayAfterBossDead = canPlayAfterBossDead; }
+            CanPlayAfterBossDead = canPlayAfterBossDead; MustHaveValidTargets = mustHaveValidTargets; }
     }
     public sealed class CardActionEffect
     {
