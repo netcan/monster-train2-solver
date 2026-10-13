@@ -398,7 +398,8 @@ namespace MonsterTrain2Poju.Model
             "spikes", "lifesteal", "fragile", "piercing", "immune", "immobile",
             "relentless", "sweep", "sniper", "rooted", "haste", "untouchable", "endless",
             "buff", "debuff", "regen", "poison", "corrupt_poison", "melee weakness", "spell weakness", "silenced", "valor", "pyregel",
-            "heal multiplier", "heal immunity", "cooldown", "unit_ability", "unit_ability_available", "horde", "cardless", "undying", "ephemeral", "purify", "mageblade", "titanskin", "duality"
+            "heal multiplier", "heal immunity", "cooldown", "unit_ability", "unit_ability_available", "horde", "cardless", "undying", "ephemeral", "purify", "mageblade", "titanskin", "duality",
+            "newmoon", "fullmoon"
         };
         internal static bool KnowsStatus(string id) => KnownStatuses.Contains(id);
 
@@ -1431,6 +1432,9 @@ namespace MonsterTrain2Poju.Model
                 }
                 if (spawned.Source.Team == CombatTeam.Player) spawned.Apply(HordeStatusModel.WithSpawning(spawned.Freeze(), true));
                 if (!ApplyBirthRelics(true)) return Finish(RoomOutcome.Unsupported);
+                if (context?.QueryFrame?.MoonPhase is int moon &&
+                    MoonPhaseStatusModel.IsTracking(context, units.Select(unit => unit.Freeze())))
+                    spawned.Apply(MoonPhaseStatusModel.WithPhase(spawned.Freeze(), moon));
                 if (!prepareOnly || spawned.Source.Team == CombatTeam.Player)
                 {
                     if (!UpdateEnchantments()) return Finish(RoomOutcome.Unsupported);

@@ -257,6 +257,8 @@ namespace MonsterTrain2Poju.Probe
                         OriginalCardPlayMagicPowerScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalRoomEntryStatusRelicScenario.Enabled && !OriginalRoomEntryStatusRelicScenario.Acquired)
                         OriginalRoomEntryStatusRelicScenario.AcquireBeforeBattle(managers!, log);
+                    if (fullBattle && OriginalMoonPhaseEnergyRelicScenario.Enabled && !OriginalMoonPhaseEnergyRelicScenario.Acquired)
+                        OriginalMoonPhaseEnergyRelicScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalUnitUpgradeTriggerRelicScenario.Enabled && !OriginalUnitUpgradeTriggerRelicScenario.Acquired)
                         OriginalUnitUpgradeTriggerRelicScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalResourceRelicBatchScenario.Enabled && !OriginalResourceRelicBatchScenario.Prepared)
@@ -453,6 +455,12 @@ namespace MonsterTrain2Poju.Probe
             {
                 if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Pyre resource refresh must start on deployment turn.");
                 PyreResourceRefreshScenario.Prepare(managers, log);
+                numericModifiersPrepared = true;
+                return;
+            }
+            if (fullBattle && !numericModifiersPrepared && OriginalMoonPhaseEnergyRelicScenario.Enabled)
+            {
+                OriginalMoonPhaseEnergyRelicScenario.Prepare(managers, log);
                 numericModifiersPrepared = true;
                 return;
             }

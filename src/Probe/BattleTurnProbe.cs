@@ -54,7 +54,9 @@ namespace MonsterTrain2Poju.Probe
                     BindingFlags.Public | BindingFlags.Instance)?.DeclaringType != typeof(CardTraitState)))
                     interactions.Add("Opening hand trait callback");
             }
-            if (player.GetHasMoonPhaseCardEffect()) interactions.Add("Moon phase unit/card effects");
+            bool moonPhaseTrackingActive = (bool)AccessTools.Field(typeof(PlayerManager), "isMoonPhaseTrackingActive").GetValue(player);
+            if (player.GetHasMoonPhaseCardEffect() && !OriginalMoonPhaseEnergyRelicScenario.IsolatedTrackingEnabled)
+                interactions.Add("Moon phase unit/card effects");
             var streams = new List<BattleRngStream>();
             foreach (RngId id in Enum.GetValues(typeof(RngId)))
             {
@@ -71,7 +73,8 @@ namespace MonsterTrain2Poju.Probe
                 combat.GetStartOfTurnCards(), save.GetForgePoints(), save.GetDragonsHoardAmount(), player.CurrentMoonPhase.ToString(),
                 streams, otherPiles, interactions.Distinct().OrderBy(value => value, StringComparer.Ordinal).ToArray(), trace.CapturePlayRules(spawn),
                 save.GetBattlePreviewEnabled(), UiRngIsolation.Enabled, canonicalDecisionReferences: true,
-                canonicalPhysicalReferences: BattleSpawnPointProbe.Enabled, selectedRoom: managers.GetRoomManager()!.GetSelectedRoom());
+                canonicalPhysicalReferences: BattleSpawnPointProbe.Enabled, selectedRoom: managers.GetRoomManager()!.GetSelectedRoom(),
+                moonPhaseTrackingActive: moonPhaseTrackingActive);
         }
 
         internal void Begin()
@@ -114,7 +117,7 @@ namespace MonsterTrain2Poju.Probe
                 state.Spawn.Phase, state.Spawn.SelectedGroups, state.Spawn.Rng, state.Spawn.NextUnitId,
                 state.Spawn.TreasuresRemaining, state.Spawn.Turn, state.Energy, state.ForgePoints, state.DragonsHoard,
                 state.EnergyPerTurn, state.DrawPerTurn,
-                state.MoonPhase, state.RngStreams, state.OtherPiles, PlayRules = terminal ? null : state.PlayRules,
+                state.MoonPhase, state.MoonPhaseTrackingActive, state.RngStreams, state.OtherPiles, PlayRules = terminal ? null : state.PlayRules,
                 state.BattlePreviewEnabled, state.UiRngIsolated,
                 state.CanonicalPhysicalReferences
             });
@@ -122,7 +125,8 @@ namespace MonsterTrain2Poju.Probe
 
         internal static CombatContext? ComparableContext(CombatContext? context)
         {
-            if (context?.QueryFrame is StatisticQueryFrame frame && frame.SelectedRoomIndex.HasValue)
+            if (context?.QueryFrame is StatisticQueryFrame frame &&
+                (frame.SelectedRoomIndex.HasValue || frame.MoonPhaseTrackingActive.HasValue))
                 context = context.WithQueryFrame(new StatisticQueryFrame(frame.Energy, frame.RunningCombat, frame.Turn,
                     frame.ForgePoints, frame.DragonsHoard, frame.MoonPhase, frame.PyreResurrectionCount, frame.ActiveBattle));
             if (context?.SpawnPoints is BattleSpawnPoints points && points.NextPreviewCopyId.HasValue)

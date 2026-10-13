@@ -112,8 +112,9 @@ namespace MonsterTrain2Poju.Model
         public const string PyreAttack = "RelicEffectIncreasePyreAttack";
         public const string PyreHealth = "RelicEffectIncreasePyreHealth";
         public const string FloorCapacity = "RelicEffectChangeFloorCapacity";
+        public const string MoonPhaseEnergy = "RelicEffectModifyEnergyOnMoonPhase";
         public static bool IsEffect(string type) => type == Energy || type == DeploymentEnergy || type == Draw ||
-            type == PyreAttack || type == PyreHealth || type == FloorCapacity;
+            type == PyreAttack || type == PyreHealth || type == FloorCapacity || type == MoonPhaseEnergy;
 
         internal static string? Validate(CombatRelicState relic)
         {
@@ -128,6 +129,8 @@ namespace MonsterTrain2Poju.Model
                 if (rule.RequiredMutatorId == "") return "Empty required resource mutator identity.";
                 if ((rule.Type == Energy || rule.Type == DeploymentEnergy) && rule.Amount != rule.ParamInt)
                     return "Relic energy initialized amount differs from its original parameter.";
+                if (rule.Type == MoonPhaseEnergy && (rule.Amount != rule.ParamInt || rule.ParamInt2 <= 0 || (rule.ParamInt2 & ~7) != 0))
+                    return "Moon-phase energy amount or phase mask differs from its original parameters.";
                 if (rule.Type == Draw)
                 {
                     if (!rule.DrawValue.HasValue || rule.DrawValue.Value != (float)rule.ParamInt ||
@@ -146,7 +149,8 @@ namespace MonsterTrain2Poju.Model
                     return "Unexpected native floor capacity metadata on a different resource effect.";
                 if ((rule.Type == Energy || rule.Type == DeploymentEnergy || rule.Type == Draw || rule.Type == FloorCapacity) && rule.RequiredMutatorId != null)
                     return "Unexpected required mutator on a resource effect without that native gate.";
-                if ((rule.Type == Energy || rule.Type == DeploymentEnergy || rule.Type == PyreAttack || rule.Type == PyreHealth) &&
+                if ((rule.Type == Energy || rule.Type == DeploymentEnergy || rule.Type == PyreAttack || rule.Type == PyreHealth ||
+                    rule.Type == MoonPhaseEnergy) &&
                     !relic.DisallowedInPlacementPhase.HasValue)
                     return "Missing native resource owner placement restriction.";
             }
@@ -262,6 +266,42 @@ namespace MonsterTrain2Poju.Model
                         context = ReplaceConditions(recorded.Context, relicIndex, ruleIndex, recorded.Conditions);
                     }
                     events.Add(new RelicResourceEvent(owner.DataId, rule.EffectIndex, before, after, notify));
+                }
+            }
+            return new RelicResourceResult(context, context.QueryFrame!.Energy!.Value, events: events);
+        }
+
+        public static RelicResourceResult ApplyMoonPhaseEnergy(CombatContext source, string moonPhase,
+            bool preview = false, bool placement = false)
+        {
+            string? error = Ready(source) ?? EnergyModel.Validate(source);
+            if (error != null) return Fail(error);
+            int phaseMask = moonPhase switch { "New" => 1, "Full" => 2, _ => 0 };
+            if (phaseMask == 0) return Fail("Unmodeled moon phase energy transition.");
+            CombatContext context = source;
+            var events = new List<RelicResourceEvent>();
+            for (int relicIndex = 0; relicIndex < context.Relics!.Count; relicIndex++)
+            {
+                CombatRelicState owner = context.Relics[relicIndex];
+                if (placement && owner.DisallowedInPlacementPhase == true) continue;
+                for (int ruleIndex = 0; ruleIndex < (owner.ResourceEffects?.Count ?? 0); ruleIndex++)
+                {
+                    RelicResourceEffect rule = context.Relics[relicIndex].ResourceEffects![ruleIndex];
+                    if (rule.Type != MoonPhaseEnergy || preview && !rule.CanApplyInPreviewMode) continue;
+                    RelicConditionEvaluation evaluation = RelicConditionModel.Evaluate(context, rule.Conditions);
+                    if (!evaluation.Supported) return Fail(evaluation.UnsupportedReason!);
+                    context = evaluation.Context;
+                    if (!evaluation.Passed || (rule.ParamInt2 & phaseMask) == 0) continue;
+                    if (rule.Amount == int.MinValue)
+                        return Fail("Native moon-phase energy removal overflows Int32 minimum.");
+                    int before = context.QueryFrame!.Energy!.Value;
+                    int after = rule.Amount > 0 ? Math.Min(context.Resources!.MaxEnergy, unchecked(before + rule.Amount)) :
+                        Math.Max(0, unchecked(before - Math.Abs(rule.Amount)));
+                    context = context.WithQueryFrame(context.QueryFrame.With(energy: after));
+                    RelicConditionRecord recorded = RelicConditionModel.Record(context, rule.Conditions);
+                    if (!recorded.Supported) return Fail(recorded.UnsupportedReason!);
+                    context = ReplaceConditions(recorded.Context, relicIndex, ruleIndex, recorded.Conditions);
+                    events.Add(new RelicResourceEvent(owner.DataId, rule.EffectIndex, before, after, true));
                 }
             }
             return new RelicResourceResult(context, context.QueryFrame!.Energy!.Value, events: events);

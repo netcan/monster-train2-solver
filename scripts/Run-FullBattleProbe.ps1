@@ -166,6 +166,7 @@ param(
     [switch] $OriginalMagebladeMagnitudeRelic,
     [switch] $OriginalCardPlayMagicPower,
     [switch] $OriginalRoomEntryStatusRelics,
+    [switch] $OriginalMoonPhaseEnergyRelic,
     [switch] $OriginalUnitUpgradeTriggerRelic,
     [switch] $TypedDraw,
     [switch] $IncantRelic,
@@ -238,6 +239,7 @@ if ($OriginalFloorCapacityRelics) { $BranchCardMasks = $true; $Policy = 'units-s
 if ($Mageblade -or $OriginalMagebladeMagnitudeRelic) { $BranchCardMasks = $true; $BattleRelicUpgrades = $true; $Policy = 'units-and-junk' }
 if ($OriginalCardPlayMagicPower) { $BranchCardMasks = $true; $Policy = 'units-and-junk' }
 if ($OriginalRoomEntryStatusRelics) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
+if ($OriginalMoonPhaseEnergyRelic) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalUnitUpgradeTriggerRelic) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalTriggerRelicBatch -or $OriginalLifecycleRelicBatch) {
     $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $SettleDeathDissolves = $true; $SettleCardAnimations = $true
@@ -474,6 +476,7 @@ if ($Mageblade) { $environment['MT2_PROBE_MODIFIERS'] = 'mageblade' }
 if ($OriginalMagebladeMagnitudeRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-mageblade-magnitude' }
 if ($OriginalCardPlayMagicPower) { $environment['MT2_PROBE_MODIFIERS'] = 'original-card-play-magic-power' }
 if ($OriginalRoomEntryStatusRelics) { $environment['MT2_PROBE_MODIFIERS'] = 'original-room-entry-status-relics' }
+if ($OriginalMoonPhaseEnergyRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-moon-phase-energy-relic' }
 if ($OriginalUnitUpgradeTriggerRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-unit-upgrade-trigger-relic' }
 if ($TypedDraw) {
     $environment['MT2_PROBE_MODIFIERS'] = 'typed-draw'
@@ -589,6 +592,20 @@ if ($OriginalRoomEntryStatusRelics -and ($trace.Schema -ne 132 -or
     -not (Select-String -LiteralPath $unityLog -Pattern 'ORIGINAL-ROOM-ENTRY-STATUS-RELICS-ACQUIRED unchanged' -Quiet) -or
     @($trace.TrainPhases).Count -eq 0 -or @($trace.Actions).Count -eq 0)) {
     throw 'Original room-entry status relics were not exercised in the expected full-battle capture.'
+}
+if ($OriginalMoonPhaseEnergyRelic) {
+    $moonPhaseCallbacks = @($trace.RelicResourceOperations | Where-Object { $_.Kind -eq 'MoonPhaseEnergy' })
+    $fullMoonCallbacks = @($moonPhaseCallbacks | Where-Object { $_.Before.MoonPhase -eq 'Full' })
+    $newMoonCallbacks = @($moonPhaseCallbacks | Where-Object { $_.Before.MoonPhase -eq 'New' })
+    if ($trace.Schema -ne 146 -or $trace.ModifierScenario -ne 'original-moon-phase-energy-relic' -or
+        -not (Select-String -LiteralPath $unityLog -Pattern 'ORIGINAL-MOON-PHASE-ENERGY-RELIC-PREPARED isolated native tracking enabled' -Quiet) -or
+        @($trace.Turns).Count -lt 2 -or $moonPhaseCallbacks.Count -ne 6 -or
+        @($moonPhaseCallbacks | Where-Object { $_.OwnerDataId -ne '70096a91-220a-4ab3-b8d0-b8fe8f3a819c' -or $_.EffectIndex -ne 0 }).Count -gt 0 -or
+        $fullMoonCallbacks.Count -ne 3 -or $newMoonCallbacks.Count -ne 3 -or
+        @($fullMoonCallbacks | Where-Object { $_.Notifications -ne 1 -or $_.After.Energy -ne [Math]::Min($_.Before.Resources.MaxEnergy, $_.Before.Energy + 1) }).Count -gt 0 -or
+        @($newMoonCallbacks | Where-Object { $_.Notifications -ne 0 -or $_.After.Energy -ne $_.Before.Energy }).Count -gt 0) {
+        throw 'Original moon-phase energy relic lacks the expected Full/New native callback witnesses.'
+    }
 }
 if ($OriginalUnitUpgradeTriggerRelic -and ($trace.Schema -ne 133 -or
     $trace.ModifierScenario -ne 'original-unit-upgrade-trigger-relic' -or

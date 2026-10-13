@@ -128,6 +128,13 @@ if (args.Length == 2 && args[0] == "--original-room-entry-status-relics-only")
     OriginalRoomEntryStatusRelicChecks.Native(document.RootElement, required: true);
     return;
 }
+if (args.Length == 2 && args[0] == "--original-moon-phase-energy-only")
+{
+    using var document = ModelJson.ReadFixture(args[1]);
+    OriginalMoonPhaseEnergyRelicChecks.Native(document.RootElement);
+    Console.WriteLine($"NATIVE-MOON-PHASE-FIXTURE bytes={new FileInfo(args[1]).Length} uniqueNodes={document.UniqueNodeCount}");
+    return;
+}
 
 if (args.Length == 1 && args[0] == "--mageblade-pure")
 {
@@ -726,6 +733,11 @@ foreach (string path in args.Where(path => path.Contains("original-room-entry-st
 {
     using var document = ModelJson.ReadFixture(path);
     OriginalRoomEntryStatusRelicChecks.Native(document.RootElement, required: true);
+}
+foreach (string path in args.Where(path => path.Contains("original-moon-phase-energy-relic", StringComparison.OrdinalIgnoreCase)))
+{
+    using var document = ModelJson.ReadFixture(path);
+    OriginalMoonPhaseEnergyRelicChecks.Native(document.RootElement);
 }
 foreach (string path in args.Where(path => path.Contains("card-upgrade-mask-calibration", StringComparison.OrdinalIgnoreCase)))
     CardUpgradeMaskChecks.Native(path);

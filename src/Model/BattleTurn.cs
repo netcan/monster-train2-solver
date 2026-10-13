@@ -44,6 +44,7 @@ namespace MonsterTrain2Poju.Model
         public int ForgePoints { get; }
         public int DragonsHoard { get; }
         public string MoonPhase { get; }
+        public bool? MoonPhaseTrackingActive { get; }
         public IReadOnlyList<BattleRngStream> RngStreams { get; }
         public IReadOnlyList<CardPileState> OtherPiles { get; }
         public IReadOnlyList<string> ExternalInteractions { get; }
@@ -57,10 +58,11 @@ namespace MonsterTrain2Poju.Model
             int forgePoints, int dragonsHoard, string moonPhase, IReadOnlyList<BattleRngStream> rngStreams,
             IReadOnlyList<CardPileState> otherPiles, IReadOnlyList<string> externalInteractions, BattlePlayRules? playRules = null,
             bool battlePreviewEnabled = false, bool uiRngIsolated = false, bool canonicalDecisionReferences = false,
-            bool canonicalPhysicalReferences = false, int selectedRoom = -1)
+            bool canonicalPhysicalReferences = false, int selectedRoom = -1, bool? moonPhaseTrackingActive = null)
         {
             Spawn = spawn; Energy = energy; EnergyPerTurn = energyPerTurn; DrawPerTurn = drawPerTurn;
             ForgePoints = forgePoints; DragonsHoard = dragonsHoard; MoonPhase = moonPhase;
+            MoonPhaseTrackingActive = moonPhaseTrackingActive;
             RngStreams = Array.AsReadOnly(rngStreams.ToArray()); OtherPiles = Array.AsReadOnly(otherPiles.ToArray());
             ExternalInteractions = Array.AsReadOnly(externalInteractions.ToArray());
             PlayRules = playRules;
@@ -123,7 +125,8 @@ namespace MonsterTrain2Poju.Model
             return new BattleTurnResult(new BattleTurnState(spawn, source.Energy, source.EnergyPerTurn,
                 source.DrawPerTurn, source.ForgePoints, source.DragonsHoard, source.MoonPhase, streams,
                 source.OtherPiles, source.ExternalInteractions, source.PlayRules, source.BattlePreviewEnabled,
-                source.UiRngIsolated, source.CanonicalDecisionReferences, source.CanonicalPhysicalReferences, roomIndex),
+                source.UiRngIsolated, source.CanonicalDecisionReferences, source.CanonicalPhysicalReferences, roomIndex,
+                source.MoonPhaseTrackingActive),
                 RoomOutcome.Exchanged);
         }
 
@@ -169,6 +172,10 @@ namespace MonsterTrain2Poju.Model
             CardPileState[] otherPiles = source.OtherPiles.ToArray();
             TrainCombatState train = spawn.Train;
             CombatContext context = train.Context!.WithOtherPiles(otherPiles);
+            if (source.MoonPhaseTrackingActive.HasValue && context.QueryFrame != null)
+                context = context.WithQueryFrame(context.QueryFrame.With(
+                    moonPhaseTrackingActive: source.MoonPhaseTrackingActive));
+            train = WithContext(train, context, spawn.Turn == 0);
             int drawPerTurn = source.DrawPerTurn;
             if (context.Resources != null)
             {
@@ -259,11 +266,23 @@ namespace MonsterTrain2Poju.Model
             }
             string moon = source.MoonPhase == "Full" ? "New" : "Full";
             context = train.Context!;
-            train = WithContext(train, RelicSpawnStatusModel.EndDuration(RelicSpawnStatusModel.EndDuration(context.WithStatistics(context.Statistics?.NextTurn(context.Gold)), "PreviousTurn"), "ThisTurn"), false);
-            train = TrainCombatModel.ProcessRemovals(train);
             int turn = checked(spawn.Turn + 1);
-            train = WithContext(train, train.Context!.WithQueryFrame(train.Context.QueryFrame?.With(
-                turn: turn, moonPhase: moon == "New" ? 1 : 2)), false);
+            train = WithContext(train, context.WithQueryFrame(context.QueryFrame?.With(
+                turn: turn, moonPhase: moon == "New" ? 1 : 2,
+                moonPhaseTrackingActive: source.MoonPhaseTrackingActive)), false);
+            if (source.MoonPhaseTrackingActive == true)
+                train = MoonPhaseStatusModel.WithPhase(train, moon == "New" ? 1 : 2);
+            if ((source.MoonPhaseTrackingActive ?? true) && train.Context!.Resources != null)
+            {
+                RelicResourceResult moonEnergy = RelicResourceModel.ApplyMoonPhaseEnergy(train.Context, moon,
+                    preview: train.Rooms.Any(room => room.Preview));
+                if (!moonEnergy.Supported) return Unsupported(moonEnergy.UnsupportedReason!);
+                train = WithContext(train, moonEnergy.Context!, false);
+            }
+            context = train.Context!;
+            train = WithContext(train, RelicSpawnStatusModel.EndDuration(RelicSpawnStatusModel.EndDuration(
+                context.WithStatistics(context.Statistics?.NextTurn(context.Gold)), "PreviousTurn"), "ThisTurn"), false);
+            train = TrainCombatModel.ProcessRemovals(train);
             // RunCombat settles room order after incrementing the turn counter,
             // before the next turn's initial spawn and Spawning RNG reset.
             TrainCombatResult turnOrder = EnchantmentWorldModel.UpdateAll(train);
@@ -375,7 +394,7 @@ namespace MonsterTrain2Poju.Model
                 return new BattleTurnResult(new BattleTurnState(spawn, energy, source.EnergyPerTurn, drawPerTurn,
                     finalContext.QueryFrame?.ForgePoints ?? source.ForgePoints, source.DragonsHoard, phase, streams, piles, source.ExternalInteractions, outputPlayRules,
                     source.BattlePreviewEnabled, source.UiRngIsolated, source.CanonicalDecisionReferences, source.CanonicalPhysicalReferences,
-                    selectedRoom), outcome);
+                    selectedRoom, source.MoonPhaseTrackingActive), outcome);
             }
 
             bool RouteDeadUnits(TrainCombatState before, TrainCombatResult result)

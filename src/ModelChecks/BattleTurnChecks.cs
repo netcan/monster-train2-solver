@@ -97,7 +97,7 @@ internal static class BattleTurnChecks
             state.Spawn.Phase, state.Spawn.SelectedGroups, state.Spawn.Rng, state.Spawn.NextUnitId,
             state.Spawn.TreasuresRemaining, state.Spawn.Turn, state.Energy, state.ForgePoints, state.DragonsHoard,
             state.EnergyPerTurn, state.DrawPerTurn,
-            state.MoonPhase, state.RngStreams, state.OtherPiles,
+            state.MoonPhase, state.MoonPhaseTrackingActive, state.RngStreams, state.OtherPiles,
             PlayRules = terminal ? null : ComparablePlayRules(state.PlayRules, compareRoomEnabled),
             state.BattlePreviewEnabled, state.UiRngIsolated,
             state.CanonicalPhysicalReferences
@@ -125,7 +125,8 @@ internal static class BattleTurnChecks
     }
     internal static CombatContext? ComparableContext(CombatContext? context)
     {
-        if (context?.QueryFrame is StatisticQueryFrame frame && frame.SelectedRoomIndex.HasValue)
+        if (context?.QueryFrame is StatisticQueryFrame frame &&
+            (frame.SelectedRoomIndex.HasValue || frame.MoonPhaseTrackingActive.HasValue))
             context = context.WithQueryFrame(new StatisticQueryFrame(frame.Energy, frame.RunningCombat, frame.Turn,
                 frame.ForgePoints, frame.DragonsHoard, frame.MoonPhase, frame.PyreResurrectionCount, frame.ActiveBattle));
         if (context?.SpawnPoints?.NextPreviewCopyId.HasValue == true)

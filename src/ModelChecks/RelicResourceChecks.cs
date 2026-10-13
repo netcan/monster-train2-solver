@@ -58,6 +58,33 @@ internal static class RelicResourceChecks
             Start(Context([], next: -5)).Value == 0,
             "Deployment incorrectly lower-clamped signed AddEnergy, or ordinary nonpositive income was added.");
 
+        RelicResourceEffect fullMoon = new(0, RelicResourceModel.MoonPhaseEnergy, 1, 2, 1, false, conditions: [once]);
+        CombatContext moonSource = Context([Owner("full-moon", fullMoon)]);
+        RelicResourceResult skippedNew = RelicResourceModel.ApplyMoonPhaseEnergy(moonSource, "New");
+        RelicResourceResult gainedFull = RelicResourceModel.ApplyMoonPhaseEnergy(skippedNew.Context!, "Full");
+        RelicResourceResult duplicateFull = RelicResourceModel.ApplyMoonPhaseEnergy(gainedFull.Context!, "Full");
+        RelicResourceResult nextTurnFull = RelicResourceModel.ApplyMoonPhaseEnergy(
+            RelicConditionModel.EndDuration(duplicateFull.Context!, "ThisTurn"), "Full");
+        Require(skippedNew.Supported && skippedNew.Value == 0 && skippedNew.Events.Count == 0 &&
+            gainedFull.Supported && gainedFull.Value == 1 && gainedFull.Events.Single().Notified &&
+            gainedFull.Events.Single().Before == 0 && gainedFull.Events.Single().After == 1 &&
+            gainedFull.Context!.Relics![0].ResourceEffects![0].Conditions[0].Triggered &&
+            gainedFull.Context.Relics[0].ResourceEffects![0].Conditions[0].DurationTriggerCount == 1 &&
+            duplicateFull.Supported && duplicateFull.Value == 1 && duplicateFull.Events.Count == 0 &&
+            nextTurnFull.Supported && nextTurnFull.Value == 2 && nextTurnFull.Events.Count == 1 &&
+            GetEnergy(moonSource).Value == 0,
+            "Moon-phase energy did not honor phase masks, once-per-turn trigger recording, next-turn reset or the separate static energy query.");
+        RelicResourceEffect newMoonLoss = new(0, RelicResourceModel.MoonPhaseEnergy, -2, 1, -2, false);
+        RelicResourceResult removedMoonEnergy = RelicResourceModel.ApplyMoonPhaseEnergy(
+            Context([Owner("new-moon", newMoonLoss)], energy: 1), "New");
+        RelicResourceResult cappedMoonEnergy = RelicResourceModel.ApplyMoonPhaseEnergy(
+            Context([Owner("full-moon-cap", new(0, RelicResourceModel.MoonPhaseEnergy, 3, 2, 3, false))], energy: 9), "Full");
+        Require(removedMoonEnergy.Supported && removedMoonEnergy.Value == 0 &&
+            cappedMoonEnergy.Supported && cappedMoonEnergy.Value == 10 && cappedMoonEnergy.Events.Single().After == 10 &&
+            !RelicResourceModel.ApplyMoonPhaseEnergy(Context([Owner("preview-moon",
+                new(0, RelicResourceModel.MoonPhaseEnergy, 1, 2, 1, false))]), "Full", preview: true).Events.Any(),
+            "Moon-phase energy ignored native zero/max clamps or preview restrictions.");
+
         CombatRelicState[] mutations = [Rule("draw-later", RelicResourceModel.Draw, 2, order: 1),
             Rule("draw-earlier", RelicResourceModel.Draw, 1, order: 0, conditions: [spent], disallowed: true),
             Rule("draw-not-installed", RelicResourceModel.Draw, 99)];
@@ -144,6 +171,13 @@ internal static class RelicResourceChecks
             "Mismatched initialized payload, duplicate registration or missing raw resource inputs were accepted.");
         Require(!RelicResourceModel.GetEnergyModification(Context([new("unknown", "unknown", ["UnknownResourceEffect"])] )).Supported,
             "Adding resources bypassed the unknown native owner/effect guard.");
+        Require(!RelicResourceModel.ApplyMoonPhaseEnergy(Context([new("bad-moon-mask", "bad-moon-mask",
+                [RelicResourceModel.MoonPhaseEnergy], disallowedInPlacementPhase: false,
+                resourceEffects: [new(0, RelicResourceModel.MoonPhaseEnergy, 1, 8, 1, false)])]), "Full").Supported &&
+            !RelicResourceModel.ApplyMoonPhaseEnergy(Context([Owner("moon-minimum", new(0,
+                RelicResourceModel.MoonPhaseEnergy, int.MinValue, 1, int.MinValue, false))]), "New").Supported &&
+            !RelicResourceModel.ApplyMoonPhaseEnergy(Context([]), "None").Supported,
+            "Invalid moon masks, minimum-int removal or unsupported phase transitions became guessed results.");
         CombatRelicState badCondition = Rule("bad-query", RelicResourceModel.Energy, 1,
             conditions: [new(new("NotCaptured"), false, 2, 0, true)]);
         Require(!RelicResourceModel.GetEnergyModification(Context([badCondition])).Supported &&

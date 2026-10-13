@@ -220,6 +220,12 @@ namespace MonsterTrain2Poju.Model
                     rooms[index], original.ExternalInteractions, context, original.Preview, original.ActiveCompanionBossIds), unit.Id, 0, true);
                 if (!relics.Supported) return relics.UnsupportedReason;
                 ImportRoom(relics.State!); callbacks.AddRange(relics.PendingCallbacks);
+                if (context?.QueryFrame?.MoonPhase is int moon &&
+                    MoonPhaseStatusModel.IsTracking(context, rooms.SelectMany(room => room)))
+                {
+                    int liveIndex = rooms[index].FindIndex(actor => actor.Id == unit.Id);
+                    if (liveIndex >= 0) rooms[index][liveIndex] = MoonPhaseStatusModel.WithPhase(rooms[index][liveIndex], moon);
+                }
                 return null;
             }
 

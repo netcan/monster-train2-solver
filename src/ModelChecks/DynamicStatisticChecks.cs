@@ -52,6 +52,51 @@ internal static class DynamicStatisticChecks
             following.State.Spawn.Train.Context!.QueryFrame!.MoonPhase == 1 &&
             following.State.Spawn.Train.Rooms[0].Units.Single(unit => unit.Id == 12).Health == 185,
             "A second independent turn reused past-root statistic inputs.");
+        BattleTurnState inactiveTracking = new(root.Spawn, root.Energy, root.EnergyPerTurn, root.DrawPerTurn,
+            root.ForgePoints, root.DragonsHoard, root.MoonPhase, root.RngStreams, root.OtherPiles,
+            root.ExternalInteractions, root.PlayRules, root.BattlePreviewEnabled, root.UiRngIsolated,
+            root.CanonicalDecisionReferences, root.CanonicalPhysicalReferences, root.SelectedRoom,
+            moonPhaseTrackingActive: false);
+        BattleActionResult inactivePlayed = BattleActionModel.PlayCard(inactiveTracking, new(1, 0));
+        Require(inactivePlayed.Supported, "Inactive-tracking card branch failed: " + inactivePlayed.Reason);
+        BattleTurnResult inactiveNext = BattleTurnModel.EndTurn(inactivePlayed.State!);
+        Require(inactiveNext.Supported && inactiveNext.State!.MoonPhase == "Full" &&
+            inactiveNext.State.MoonPhaseTrackingActive == false &&
+            inactiveNext.State.Spawn.Train.Context!.QueryFrame!.MoonPhase == 2,
+            "Inactive native moon tracking stopped the unconditional phase assignment or was lost across card/turn branches.");
+        var newMoon = new CombatStatus("newmoon", 1, 1, triggerVfxEnemy: false, triggerVfxPlayer: false,
+            stackable: false, hidden: true, displayCategory: "Persistent", propagatable: false,
+            excludeHeroPropagation: false, excludeMonsterPropagation: false);
+        var trackedContext = Context(frame.With(moonPhaseTrackingActive: true));
+        var trackedAttacker = new CombatUnit(11, "unit", CombatTeam.Player, 1, 50, 50, true, false, false,
+            [newMoon], spawnerCardId: 3, statusRegistry: [newMoon],
+            statusDictionary: new StatusDictionaryState(["newmoon"], []));
+        var trackedEnemy = new CombatUnit(12, "enemy", CombatTeam.Enemy, 0, 200, 200, true, false, false,
+            [newMoon], statusRegistry: [newMoon], statusDictionary: new StatusDictionaryState(["newmoon"], []));
+        var trackedPyre = new CombatUnit(10, "pyre", CombatTeam.Player, 45, 80, 80, true, true, false, []);
+        var trackedTrain = new TrainCombatState(Enumerable.Range(0, 4).Select(index => new RoomCombatState(index, false,
+            index == 0 ? [trackedEnemy, trackedAttacker] : index == 3 ? [trackedPyre] : [], [], trackedContext)).ToArray(),
+            [new(12, 1, false, false)], 7, trackedContext);
+        var trackedSpawn = new EnemySpawnState(trackedTrain, spawn.Waves, spawn.SelectedGroups, spawn.Phase, spawn.Looping,
+            spawn.Rng, spawn.NextUnitId, spawn.Treasures, spawn.TreasuresRemaining, spawn.TreasureEnabled,
+            spawn.FirstTreasureTurn, spawn.FirstTreasureRoom, spawn.Turn, []);
+        var trackedRoot = new BattleTurnState(trackedSpawn, 3, 3, 5, 7, 9, "New", root.RngStreams, piles, [], rules,
+            moonPhaseTrackingActive: true);
+        BattleTurnResult trackedNext = BattleTurnModel.EndTurn(trackedRoot);
+        CombatUnit? nextEnemy = trackedNext.State?.Spawn.Train.Rooms.SelectMany(room => room.Units)
+            .SingleOrDefault(unit => unit.Id == 12);
+        CombatUnit? nextAttacker = trackedNext.State?.Spawn.Train.Rooms.SelectMany(room => room.Units)
+            .SingleOrDefault(unit => unit.Id == 11);
+        CombatUnit? nextPyre = trackedNext.State?.Spawn.Train.Rooms.SelectMany(room => room.Units)
+            .SingleOrDefault(unit => unit.Id == 10);
+        Require(trackedNext.Supported && trackedNext.State!.MoonPhase == "Full" &&
+            nextEnemy?.Status("newmoon") == null && nextEnemy?.Status("fullmoon")?.ParamInt == 1 &&
+            nextEnemy?.RegisteredStatus("newmoon")?.Stacks == 0 && nextEnemy?.StatusDictionary?.Slots.Contains("newmoon") == true &&
+            nextAttacker?.Status("fullmoon")?.Hidden == true && nextAttacker?.Status("newmoon") == null &&
+            nextPyre?.Status("fullmoon") == null,
+            "Tracked moon phase did not replace unit markers, retain the removed definition or exclude the Pyre: " +
+            JsonSerializer.Serialize(new { trackedNext.Supported, trackedNext.UnsupportedReason, trackedNext.State?.MoonPhase,
+                Enemy = nextEnemy?.StatusRegistry, Attacker = nextAttacker?.StatusRegistry, Pyre = nextPyre?.StatusRegistry }));
         foreach (StatisticQueryFrame bad in new[] { frame.With(energy: 9), frame.With(turn: 9), frame.With(moonPhase: 2),
             frame.With(forgePoints: 9), frame.With(dragonsHoard: 11), frame.With(runningCombat: false), frame.With(activeBattle: false) })
         {
@@ -71,7 +116,7 @@ internal static class DynamicStatisticChecks
         Require(JsonSerializer.Serialize(root) == parent && context.QueryFrame!.Energy == 3 && context.QueryFrame.Turn == 2,
             "A child changed its parent's dynamic inputs.");
         Terminal(rng);
-        Console.WriteLine("DYNAMIC-STATISTIC-CHECKS PASS: payment, current-turn damage, energy removal/replenishment, multi-turn moon flags, gold-loop selection, inconsistent-input rejection and 32 parallel branches.");
+        Console.WriteLine("DYNAMIC-STATISTIC-CHECKS PASS: payment, current-turn damage, energy removal/replenishment, active/inactive moon tracking, gold-loop selection, inconsistent-input rejection and 32 parallel branches.");
     }
 
     private static void Terminal(UnityRng rng)

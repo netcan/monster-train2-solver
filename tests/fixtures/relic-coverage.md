@@ -1,7 +1,7 @@
 # Original relic coverage evidence
 
-As of 2026-10-13, **72 distinct original collectable relics / 224 catalog entries
-(32.14%)** have accepted native full-battle evidence. This counts unchanged relic
+As of 2026-10-13, **73 distinct original collectable relics / 224 catalog entries
+(32.59%)** have accepted native full-battle evidence. This counts unchanged relic
 definitions whose effects actually ran, including their original filters and
 conditions. Test cards, unit triggers and carrier subtypes may be authored to
 exercise those effects; the claim covers the recorded paths, not every possible
@@ -16,14 +16,14 @@ Rage and Frostbite consumers. All four catalog owners of
 families and other effects on the remaining owners still require modeling and
 native proof.
 
-All 27 source archives below report game `2.2.1`, module MVID
+All 28 source archives below report game `2.2.1`, module MVID
 `8fb07b96-f4db-4d2b-884d-c00536d6ccf4`, `NativeWon=true`, and zero
 `CaptureFailures`, `Mismatches`, `Unsupported` and `Pending`. Archive provenance,
 byte lengths and SHA-256 hashes are recorded in [manifest.tsv](manifest.tsv).
 The floor-capacity batch passes strict native acceptance, complete-fixture checks,
 independent full-battle replay and six directly affected old-fixture regressions.
-The accepted inventory is 258 archives: 227 battles and 31 component
-calibrations. All 258 archive names, byte lengths and SHA-256 hashes match the
+The accepted inventory is 259 archives: 228 battles and 31 component
+calibrations. All 259 archive names, byte lengths and SHA-256 hashes match the
 manifest and curated list, with no JSON companions. A 246-archive replay was
 attempted on 2026-10-13 but has not completed: legacy EndTurn snapshots can
 conflict with the current model's room `Enabled` state. Focused follow-up checks
@@ -33,7 +33,7 @@ action/turn comparisons and skips an independent legacy policy chain only when
 recomputed EndTurn state confirms that room-rule conflict. Freshness-marked
 archives remain strict. The Mageblade status/cache/attack path has an accepted
 native battle archive, but Mageblade is not a collectable relic and is not
-included in the 72/224 owner count. The `AllUnitsMultistrike` archive
+included in the 73/224 owner count. The `AllUnitsMultistrike` archive
 validates a mutator, not a collectible relic, and is also excluded from that
 owner count.
 
@@ -111,9 +111,10 @@ owner count.
 | `RootBeforePyre` | `4778bb46-27e4-49ae-aa5d-750813ceb6d0` | [room-entry status relics][roomEntry] | Its unchanged room-2 Heroes effect adds 1 Rooted. Two distinct native Heroes have the exact status after entry. |
 | `SpellWeaknessBelowPyre` | `5a96d89f-d7c0-49fa-88d1-8ec75a8f3140` | [room-entry status relics][roomEntry] | Its unchanged room-2 Heroes effect adds 2 Spell Weakness. Three distinct native Heroes have the exact status; spell damage and post-card removal match through the full battle. |
 | `PyregelOnEnterTopFloor` | `e4be072c-e389-4ae7-acc6-0c8aa4cf0078` | [room-entry status relics][roomEntry] | Its unchanged room-2 Heroes effect adds 10 Pyregel. Three distinct native Heroes have the exact status after entry. |
+| `MoonPhaseModifyEmber` | `70096a91-220a-4ab3-b8d0-b8fe8f3a819c` | [original moon-phase energy relic][moonPhase] | Three Full callbacks add 1 Ember and notify; three New callbacks change nothing. Original once-per-turn condition and exact hidden moon markers match. |
 
 Record indices above are zero-based. Full-battle acceptance and independent
-effect checks are documented in [README.md](README.md); the table's 18 source
+effect checks are documented in [README.md](README.md); the table's 20 source
 archives contain these observed battle sizes:
 
 | Archive | Schema | Card plays | EndTurns | Matched stages | Independent relic observations |
@@ -137,6 +138,7 @@ archives contain these observed battle sizes:
 | [Endless return][endless] | 126 | 23 | 7 | 62 | Original Endless upgrade survives one actual carrier death; returned to Draw without Exhausted or a `TimesExhausted` increment |
 | [original card-play magic power][cardPlayMagicPower] | 128 | 11 | 7 | 61 | Two matching carrier plays and 110 spell offset updates for unchanged `MagicPowerWhenCardConsumed` |
 | [room-entry status relics][roomEntry] | 132 | 21 | 7 | 55 | Three unchanged originals, 13 train phases and actual room-2 Heroes status witnesses |
+| [original moon-phase energy relic][moonPhase] | 146 | 24 | 7 | 57 | Three Full +1/notification callbacks and three New no-op callbacks with exact unit markers |
 
 The checks that enforce these observations are
 [TriggerCountChecks.Native](../../src/ModelChecks/TriggerCountChecks.cs),
@@ -157,7 +159,10 @@ checking the original relic payload and its death-route witness, and
 [RelicCardPlayMagicPowerChecks.Native](../../src/ModelChecks/RelicCardPlayMagicPowerChecks.cs)
 checking the original trait filter and spell offset updates, and
 [OriginalRoomEntryStatusRelicChecks.Native](../../src/ModelChecks/OriginalRoomEntryStatusRelicChecks.cs)
-checking the three unchanged room-entry payloads and actual Heroes witnesses.
+checking the three unchanged room-entry payloads and actual Heroes witnesses,
+and [OriginalMoonPhaseEnergyRelicChecks.Native](../../src/ModelChecks/OriginalMoonPhaseEnergyRelicChecks.cs)
+checking the unchanged moon-phase payload, both phase outcomes and unit markers
+across all recorded decisions.
 Each new trigger archive has eight positive owner effects; their union covers
 all nine distinct originals. Removing only one original's installed callbacks
 must change health, attack, membership or status stacks, beyond trigger metadata.
@@ -311,6 +316,27 @@ The archive is 33,356 bytes with 5,388 unique nodes and SHA-256
 no JSON companion. The inventory is 253 archives: 222 battles and 31 component
 calibrations. Full-inventory replay remains deferred.
 
+The schema-146 `full-battle-original-moon-phase-energy-relic.mt2f` archive
+accepts the unchanged `MoonPhaseModifyEmber` owner (DataId
+`70096a91-220a-4ab3-b8d0-b8fe8f3a819c`). Three Full callbacks each add one Ember
+and notify once; three New callbacks leave Ember unchanged and do not notify.
+The original once-per-turn condition remains intact. Hidden `newmoon`/`fullmoon`
+markers match every action and EndTurn state, including newly spawned units. The
+muted Instant battle wins with 57 matched stages, 24 card plays and seven
+EndTurns; capture failures, mismatches, unsupported transitions and pending
+records are zero. Independent replay matches all transitions and the whole-battle,
+mid-battle and 16-branch policy checks. Coverage is now 73/224 (32.59%).
+
+The binary is 34,311 bytes with 5,595 unique nodes and SHA-256
+`e04a9a7be21b1e82270b1d4182db0ba9eccd7ceda96171b84d6946d2a3e19764`; it has no
+JSON companion. The inventory is 259 archives: 228 battles and 31 component
+calibrations. Full-inventory replay remains deferred.
+
+```powershell
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-moon-phase-energy-relic.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-moon-phase-energy-only tests/fixtures/full-battle-original-moon-phase-energy-relic.mt2f
+```
+
 [counts]: full-battle-incant-relics-combined.mt2f
 [statuses]: full-battle-spawn-status-relics.mt2f
 [cost]: full-battle-relic-card-modifiers.mt2f
@@ -332,6 +358,7 @@ calibrations. Full-inventory replay remains deferred.
 [endless]: full-battle-original-endless-return.mt2f
 [cardPlayMagicPower]: full-battle-original-card-play-magic-power.mt2f
 [roomEntry]: full-battle-original-room-entry-status-relics.mt2f
+[moonPhase]: full-battle-original-moon-phase-energy-relic.mt2f
 [unitUpgradeTrigger]: full-battle-original-unit-upgrade-trigger-relic.mt2f
 [extraToughTombs]: full-battle-relic-extra-tough-tombs.mt2f
 [stealthWaxers]: full-battle-original-stealth-waxers.mt2f

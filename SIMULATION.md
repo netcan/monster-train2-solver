@@ -1,10 +1,25 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-13): 257 binary archives, including 226
+Current accepted inventory (2026-10-13): 259 binary archives, including 228
 full battles and 31 component calibrations. Unchanged original relic evidence
-covers 72/224 catalog entries (32.14%); see
+covers 73/224 catalog entries (32.59%); see
 [the owner evidence table](tests/fixtures/relic-coverage.md). Whole-battle
 coverage and the optimal solver remain in progress.
+
+### Original MoonPhaseModifyEmber relic
+
+`full-battle-original-moon-phase-energy-relic.mt2f` captures the unchanged
+`MoonPhaseModifyEmber` relic across a complete winning battle. The original
+once-per-turn Full-moon effect adds one energy and notifies three times; three
+New-moon callbacks leave energy unchanged and do not notify. All six callbacks,
+the moon marker on every action/EndTurn state, 57 battle stages, 24 card plays
+and seven EndTurns match native behavior. The archive is binary-only and the
+dedicated relic check plus full battle policy replay pass.
+
+```powershell
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-moon-phase-energy-relic.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-moon-phase-energy-only tests/fixtures/full-battle-original-moon-phase-energy-relic.mt2f
+```
 
 ### Original HymnistsApplyValorOnSummon relic
 
@@ -34,8 +49,8 @@ relic card upgrade. The integrated model check installs the trait, resolves a
 spell hit that spills excess damage to a same-team sibling, and confirms a
 temporary reset removes the trait. This combines the calibrated DamageOverflow
 combat path with the generic relic-upgrade lifecycle; it is synthetic mechanism
-coverage, not native evidence for another relic owner. Coverage remains 72/224
-and inventory remains 257 archives. Other unmodeled trait, trigger and room-
+coverage, not native evidence for another relic owner. Coverage remains 73/224
+and inventory remains 259 archives. Other unmodeled trait, trigger and room-
 ability payloads remain rejected.
 
 ### Relic summon damage and unhealed health
@@ -47,7 +62,7 @@ and +5 unhealed health through the complete card-to-unit birth path; the unit
 enters at 12 attack and 23/28 health. Negative unhealed health remains rejected
 until its lethal card-birth ordering is validated against native behavior. This
 is synthetic mechanism coverage and adds no original relic owner evidence;
-coverage remains 72/224.
+coverage remains 73/224.
 
 ### Persistent Horde aura growth and simulated deaths
 

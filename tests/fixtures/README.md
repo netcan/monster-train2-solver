@@ -30,8 +30,15 @@ The default command checks the full curated inventory. For routine changes, run
 the dedicated checks for the new and directly affected scenarios; run the full
 inventory at completed milestones and before delivery.
 
-Current inventory is 258 archives: 227 accepted battles and 31 component
-calibrations. `full-battle-relic-card-negative-unhealed.mt2f` (schema 145)
+Current inventory is 259 archives: 228 accepted battles and 31 component
+calibrations. The schema-146 `full-battle-original-moon-phase-energy-relic.mt2f`
+archive adds accepted native evidence for the unchanged `MoonPhaseModifyEmber`
+relic: three Full callbacks add one Ember and notify; three New callbacks are
+no-ops. It also verifies exact moon markers across 24 plays, seven EndTurns and
+57 matched battle stages. The binary has no JSON companion. See
+[relic coverage](relic-coverage.md) for its owner evidence and replay details.
+
+`full-battle-relic-card-negative-unhealed.mt2f` (schema 145)
 captures a temporary `UnhealedHealth=-1` upgrade installed by the native relic
 manager. The upgrade remains on the played Train Steward, but the summoned unit
 keeps its baseline current and maximum health. The muted Instant battle wins

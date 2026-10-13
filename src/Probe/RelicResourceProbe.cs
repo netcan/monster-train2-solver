@@ -23,6 +23,7 @@ namespace MonsterTrain2Poju.Probe
             public int EnergyModification { get; set; }
             public int DeploymentModification { get; set; }
             public string Phase { get; set; } = "";
+            public string MoonPhase { get; set; } = "";
             public int Turn { get; set; }
             public bool Preview { get; set; }
             public int Gold { get; set; }
@@ -53,6 +54,7 @@ namespace MonsterTrain2Poju.Probe
         internal static BattleResourceState? CaptureResources(AllGameManagers managers)
         {
             if (!OriginalResourceRelicBatchScenario.Enabled && !PyreResourceRefreshScenario.Enabled && !OriginalFloorCapacityRelicScenario.Enabled &&
+                !OriginalMoonPhaseEnergyRelicScenario.Enabled &&
                 !Current(managers).Any(relic => relic.GetEffects().Any(effect => RelicResourceModel.IsEffect(effect.GetType().Name))))
                 return null;
             SaveManager save = managers.GetSaveManager();
@@ -141,18 +143,19 @@ namespace MonsterTrain2Poju.Probe
                 EnergyModification = managers.GetRelicManager().GetEnergyPerTurnModification(),
                 DeploymentModification = managers.GetRelicManager().GetEnergyPerDeploymentPhaseModification(),
                 Phase = combat?.GetCombatPhase().ToString() ?? "UNUSED", Turn = combat?.GetTurnCount() ?? 0,
+                MoonPhase = managers.GetPlayerManager().CurrentMoonPhase.ToString(),
                 Preview = save.PreviewMode, Gold = save.GetGold(), Capacity = save.GetCharacterCapacityPerFloor()
             };
         }
 
-        private static IEnumerator WrapEnergy(IEnumerator native, IRelicEffect effect, bool deployment)
+        private static IEnumerator WrapEnergy(IEnumerator native, IRelicEffect effect, bool deployment, string kind = "Energy")
         {
             Operation? record = null;
             try
             {
                 var managers = AllGameManagers.Instance!;
                 RelicState owner = Current(managers).Single(relic => relic.GetEffects().Any(item => ReferenceEquals(item, effect)));
-                record = new Operation { Kind = "Energy", OwnerDataId = owner.GetRelicDataID(), Deployment = deployment,
+                record = new Operation { Kind = kind, OwnerDataId = owner.GetRelicDataID(), Deployment = deployment,
                     EffectIndex = owner.GetEffects().FindIndex(item => ReferenceEquals(item, effect)), Before = Capture() };
                 Operations.Add(record);
                 energyOperation = record;
@@ -176,7 +179,8 @@ namespace MonsterTrain2Poju.Probe
                 __state = null;
                 if (!(OriginalResourceRelicBatchScenario.Enabled && OriginalResourceRelicBatchScenario.Artifacts.Any(item => item.Id == relicData.GetID())) &&
                     !(PyreResourceRefreshScenario.Enabled && PyreResourceRefreshScenario.Artifacts.Any(item => item.Id == relicData.GetID())) &&
-                    !(OriginalFloorCapacityRelicScenario.Enabled && OriginalFloorCapacityRelicScenario.Artifacts.Any(item => item.Id == relicData.GetID()))) return;
+                    !(OriginalFloorCapacityRelicScenario.Enabled && OriginalFloorCapacityRelicScenario.Artifacts.Any(item => item.Id == relicData.GetID())) &&
+                    !(OriginalMoonPhaseEnergyRelicScenario.Enabled && relicData.GetID() == OriginalMoonPhaseEnergyRelicScenario.DataId)) return;
                 try
                 {
                     __state = new Operation { Kind = "Acquire", OwnerDataId = relicData.GetID(), Before = Capture() };
@@ -204,6 +208,16 @@ namespace MonsterTrain2Poju.Probe
         {
             private static void Postfix(RelicEffectModifyEnergyDuringDeployment __instance, ref IEnumerator __result)
             { if (OriginalResourceRelicBatchScenario.Prepared || PyreResourceRefreshScenario.Prepared || OriginalFloorCapacityRelicScenario.Prepared) __result = WrapEnergy(__result, __instance, true); }
+        }
+
+        [HarmonyPatch(typeof(RelicEffectModifyEnergyOnMoonPhase), nameof(RelicEffectModifyEnergyOnMoonPhase.ApplyEffectMoonPhase))]
+        private static class MoonPhaseEnergyPatch
+        {
+            private static void Postfix(RelicEffectModifyEnergyOnMoonPhase __instance, ref IEnumerator __result)
+            {
+                if (OriginalMoonPhaseEnergyRelicScenario.Prepared)
+                    __result = WrapEnergy(__result, __instance, false, "MoonPhaseEnergy");
+            }
         }
 
         [HarmonyPatch(typeof(RelicManager), nameof(RelicManager.NotifyRelicTriggered))]

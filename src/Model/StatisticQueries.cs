@@ -39,22 +39,25 @@ namespace MonsterTrain2Poju.Model
         public int? ForgePoints { get; }
         public int? DragonsHoard { get; }
         public int? MoonPhase { get; }
+        public bool? MoonPhaseTrackingActive { get; }
         // Native PyreHeartResurrection is a consumed/not-allowed flag (0 or 1), not a tally.
         public int? PyreResurrectionCount { get; }
         public bool ActiveBattle { get; }
         public int? SelectedRoomIndex { get; }
         public StatisticQueryFrame(int? energy = null, bool? runningCombat = null, int? turn = null, int? forgePoints = null,
             int? dragonsHoard = null, int? moonPhase = null, int? pyreResurrectionCount = null, bool activeBattle = true,
-            int? selectedRoomIndex = null)
+            int? selectedRoomIndex = null, bool? moonPhaseTrackingActive = null)
         { Energy = energy; RunningCombat = runningCombat; Turn = turn; ForgePoints = forgePoints;
             DragonsHoard = dragonsHoard; MoonPhase = moonPhase; PyreResurrectionCount = pyreResurrectionCount; ActiveBattle = activeBattle;
-            SelectedRoomIndex = selectedRoomIndex; }
+            SelectedRoomIndex = selectedRoomIndex; MoonPhaseTrackingActive = moonPhaseTrackingActive; }
         public StatisticQueryFrame With(int? energy = null, bool? runningCombat = null, int? turn = null,
             int? forgePoints = null, int? dragonsHoard = null, int? moonPhase = null,
-            int? pyreResurrectionCount = null, bool? activeBattle = null, int? selectedRoomIndex = null) => new StatisticQueryFrame(
+            int? pyreResurrectionCount = null, bool? activeBattle = null, int? selectedRoomIndex = null,
+            bool? moonPhaseTrackingActive = null) => new StatisticQueryFrame(
                 energy ?? Energy, runningCombat ?? RunningCombat, turn ?? Turn, forgePoints ?? ForgePoints,
                 dragonsHoard ?? DragonsHoard, moonPhase ?? MoonPhase, pyreResurrectionCount ?? PyreResurrectionCount,
-                activeBattle ?? ActiveBattle, selectedRoomIndex ?? SelectedRoomIndex);
+                activeBattle ?? ActiveBattle, selectedRoomIndex ?? SelectedRoomIndex,
+                moonPhaseTrackingActive ?? MoonPhaseTrackingActive);
 
         internal static string? ValidateDecision(BattleTurnState state)
         {
@@ -70,7 +73,9 @@ namespace MonsterTrain2Poju.Model
             if (frame == null) return null; // Old captures retain their explicitly incomplete inputs.
             int moon = state.MoonPhase == "New" ? 1 : state.MoonPhase == "Full" ? 2 : 0;
             if (moon == 0 || frame.Energy != state.Energy || frame.Turn != state.Spawn.Turn ||
-                frame.ForgePoints != state.ForgePoints || frame.DragonsHoard != state.DragonsHoard || frame.MoonPhase != moon)
+                frame.ForgePoints != state.ForgePoints || frame.DragonsHoard != state.DragonsHoard || frame.MoonPhase != moon ||
+                frame.MoonPhaseTrackingActive.HasValue && state.MoonPhaseTrackingActive.HasValue &&
+                frame.MoonPhaseTrackingActive != state.MoonPhaseTrackingActive)
                 return "Dynamic statistic inputs disagree with the current decision state.";
             if (frame.RunningCombat != true || !frame.ActiveBattle || frame.PyreResurrectionCount == null)
                 return "Dynamic statistic inputs do not describe an active player decision.";
