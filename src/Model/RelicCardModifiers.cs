@@ -85,16 +85,18 @@ namespace MonsterTrain2Poju.Model
                 if (template == null ? upgrade != null : upgrade == null || template.Values.DataId != upgrade.DataId ||
                     template.AssetKey != upgrade.AssetKey || template.Unique != upgrade.Unique || template.RemoveOnDiscard != upgrade.RemoveOnDiscard)
                     return "Relic card upgrade payload identity differs.";
-                bool supportedTraitsOnly = template?.AddedTraits.Count > 0 && template.AddedTraits.All(trait =>
-                    trait.RuntimeType == trait.DeclaredName &&
-                    trait.RuntimeType is "CardTraitIgnoreArmor" or "CardTraitSelfPurge" or "CardTraitExhaustState" or "CardTraitDamageOverflow" or
-                        "CardTraitEphemeral" or "CardTraitDrawInDeploymentPhase") &&
-                    template.RemovedRuntimeTypes.Count == 0 && template.Triggers.Count == 0;
-                if (template != null && (template.AddedTraits.Count > 0 && !supportedTraitsOnly ||
-                    template.RemovedRuntimeTypes.Count > 0 || template.Triggers.Count > 0))
+                bool supportedTraitsOnly = template != null &&
+                    (template.AddedTraits.Count > 0 || template.RemovedRuntimeTypes.Count > 0) &&
+                    template.AddedTraits.All(trait => trait.RuntimeType == trait.DeclaredName &&
+                        trait.RuntimeType is "CardTraitIgnoreArmor" or "CardTraitSelfPurge" or "CardTraitExhaustState" or "CardTraitDamageOverflow" or
+                            "CardTraitEphemeral" or "CardTraitDrawInDeploymentPhase") &&
+                    template.RemovedRuntimeTypes.All(type => type == "CardTraitIgnoreArmor") && template.Triggers.Count == 0;
+                if (template != null && (template.AddedTraits.Count > 0 || template.RemovedRuntimeTypes.Count > 0 || template.Triggers.Count > 0) &&
+                    !supportedTraitsOnly)
                     return "Unmodeled relic upgrade trait/trigger lifecycle in battle.";
                 if (supportedTraitsOnly && (upgrade?.Lifecycle == null || upgrade.Lifecycle.AddedTraits.Count != template!.AddedTraits.Count ||
-                    !upgrade.Lifecycle.AddedTraits.Select(trait => trait.DeclaredName).SequenceEqual(template.AddedTraits.Select(trait => trait.DeclaredName))))
+                    !upgrade.Lifecycle.AddedTraits.Select(trait => trait.DeclaredName).SequenceEqual(template.AddedTraits.Select(trait => trait.DeclaredName)) ||
+                    !upgrade.Lifecycle.RemovedRuntimeTypes.SequenceEqual(template.RemovedRuntimeTypes)))
                     return "Supported relic upgrade trait lifecycle is missing or differs from its native definition.";
                 if (template?.ReplacedAssets.Count > 0 && (effect.ApplyToCardlessSpawns || upgrade?.Lifecycle == null ||
                     !upgrade.Lifecycle.ReplacedAssets.SequenceEqual(template.ReplacedAssets)))

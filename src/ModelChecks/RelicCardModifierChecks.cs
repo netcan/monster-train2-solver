@@ -67,6 +67,39 @@ internal static class RelicCardModifierChecks
             "An Ephemeral relic upgrade did not route a played card to Purged.");
         Console.WriteLine("RELIC-CARD-EPHEMERAL-CHECKS PASS: temporary relic trait is accepted and resolves play destination to Purged.");
 
+        var ignoredArmorTrait = new CardTraitValue("CardTraitIgnoreArmor", "CardTraitIgnoreArmor", 0, 0, true, 0);
+        var purgeTrait = new CardTraitValue("CardTraitSelfPurge", "CardTraitSelfPurge", 0, 0, true, 0);
+        var removalLifecycle = new CardLifecycleUpgrade(new CardMaskUpgrade("temporary-purge-with-removed-trait",
+            new CardStatModifier(), [], false, false, false, false), "temporary-purge-with-removed-trait", false, false,
+            [purgeTrait, ignoredArmorTrait], ["CardTraitIgnoreArmor"], false, [], [], []);
+        var removalUpgrade = Modifier("temporary-purge-with-removed-trait", removalLifecycle);
+        var removalRelic = new CombatRelicState("trait-removal-relic", "TraitRemovalRelic", [RelicModel.AddTempUpgrade],
+            cardModifiers: [new RelicCardModifier(0,
+                new RelicCardUpgradeRule("temporary-purge-with-removed-trait", true, removalLifecycle, []), removalUpgrade, false)]);
+        var removalResult = RelicCardModifierModel.Apply(ephemeralCard, [removalRelic], resetTemporary: false);
+        Require(removalResult.Supported && CardBranchMaskModel.Resolve(removalResult.Card!).Traits.SequenceEqual(["CardTraitSelfPurge"]) &&
+            removalResult.Card!.Temporary.Upgrades.Single().Lifecycle!.RemovedRuntimeTypes.SequenceEqual(["CardTraitIgnoreArmor"]),
+            "A calibrated relic remove-trait definition failed to suppress the matching temporary trait while retaining SelfPurge: " +
+            removalResult.UnsupportedReason);
+        var removalReset = RelicCardModifierModel.Apply(removalResult.Card!, Array.Empty<CombatRelicState>(), resetTemporary: true);
+        Require(removalReset.Supported && removalReset.Card!.Temporary.Upgrades.Count == 0 &&
+            CardBranchMaskModel.Resolve(removalReset.Card).Traits.Count == 0,
+            "Resetting a temporary relic remove-trait upgrade retained its temporary trait lifecycle.");
+        var uncalibratedRemovalLifecycle = new CardLifecycleUpgrade(new CardMaskUpgrade("uncalibrated-remove-trait",
+            new CardStatModifier(), [], false, false, false, false), "uncalibrated-remove-trait", false, false,
+            [], ["CardTraitExhaustState"], false, [], [], []);
+        var uncalibratedRemovalUpgrade = Modifier("uncalibrated-remove-trait", uncalibratedRemovalLifecycle);
+        var uncalibratedRemovalRelic = new CombatRelicState("uncalibrated-trait-removal-relic", "UncalibratedTraitRemovalRelic",
+            [RelicModel.AddTempUpgrade], cardModifiers: [new RelicCardModifier(0,
+                new RelicCardUpgradeRule("uncalibrated-remove-trait", true, uncalibratedRemovalLifecycle, []),
+                uncalibratedRemovalUpgrade, false)]);
+        RelicCardModifierResult uncalibratedRemoval = RelicCardModifierModel.Apply(ephemeralCard,
+            [uncalibratedRemovalRelic], resetTemporary: false);
+        Require(!uncalibratedRemoval.Supported && uncalibratedRemoval.UnsupportedReason ==
+            "Unmodeled relic upgrade trait/trigger lifecycle in battle.",
+            "An uncalibrated relic trait removal escaped the explicit support guard.");
+        Console.WriteLine("RELIC-CARD-REMOVE-TRAIT-CHECKS PASS: native-calibrated removal suppresses the matching temporary trait and reset clears both.");
+
         var overflowTrait = new CardTraitValue("CardTraitDamageOverflow", "CardTraitDamageOverflow", 0, 0, true, 0);
         var overflowLifecycle = new CardLifecycleUpgrade(new CardMaskUpgrade("temporary-overflow",
             new CardStatModifier(), [], false, false, false, false), "temporary-overflow", false, false,

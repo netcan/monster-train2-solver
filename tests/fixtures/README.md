@@ -331,7 +331,8 @@ modifier cases, 107 relic-manager calls and 74 notifications match with no
 differential failures. Its focused native and model checks pass; the next
 milestone full regression will include it.
 `full-battle-relic-card-self-purge-upgrades.mt2f` verifies temporary relic
-SelfPurge traits route played spells into Purged and remove them from deck counts.
+SelfPurge routing and native suppression of an IgnoreArmor trait listed in both
+the same upgrade's add/remove sets.
 `full-battle-relic-card-ability-upgrades.mt2f` verifies the real
 `StewardSacrificeDamage_Upgrade` relic payload gives its summoned Train Steward
 the recorded unit ability.
@@ -2346,11 +2347,14 @@ deferred to a completed milestone.
 ### Temporary relic SelfPurge routing
 
 `full-battle-relic-card-self-purge-upgrades.mt2f` captures native
-`RelicEffectAddTempUpgrade` adding `CardTraitSelfPurge` to eligible spells. Two
-played cards enter the Purged pile and leave permanent deck membership. The
-full native battle wins with 51 stages, 28 actions, zero mismatches, unsupported
-transitions, capture failures or pending records. The focused fixture and model
-checks pass; the full 207-archive regression remained deferred at that milestone.
+`RelicEffectAddTempUpgrade` adding `CardTraitSelfPurge` to eligible spells while
+the same upgrade both adds and removes `CardTraitIgnoreArmor`. Native trait
+composition suppresses IgnoreArmor and retains SelfPurge. Two played cards
+enter the Purged pile and leave permanent deck membership. The full native
+battle wins with 51 stages and 28 actions, zero mismatches, unsupported
+transitions, capture failures or pending records. Seven relic-manager calls,
+600 decision contexts, 32 immutable search branches and the focused card-cycle,
+relic and battle-search checks pass.
 
 ### Temporary relic unit-ability upgrades
 

@@ -540,7 +540,7 @@ are copied immutable values; independent child states can run on worker threads.
 | Statistic-driven damage traits | `DamageScalingModel` and `RoomCombatModel` | 63 native callbacks with complete refreshed contexts; trait order, replacement/addition, explicit-source upgrades, per-hit statistics and Boss/Pyre kill previews |
 | Dynamic statistic inputs | `CombatContext.QueryFrame` and turn/card transitions | 255 native damage callbacks and 48 decision boundaries; payment, combat, rollover, previews and settled terminal resources, plus multi-turn and parallel branches |
 | Card instance modifiers | `CardModifierModel` | Permanent/temporary ordered numeric upgrades, unit starting statuses, discard removal, play history and 256 native scalar calculations |
-| Relic card modifiers | `RelicCardModifierModel` and `CardUpgradeLifecycleModel` | Native ordering/conditions, numeric/status/IgnoreArmor/SelfPurge/Consume/DamageOverflow upgrades, summon DamageBuff/positive UnhealedHealth, unit-ability upgrades, temporary upgrade replacement, generation and cardless births; played Consume cards route to Exhausted. DamageOverflow and summon DamageBuff/UnhealedHealth are mechanism-tested without a native relic-manager capture. Replacement keeps lifecycle and battle card modifier lists synchronized. Other traits, card triggers and room-ability payloads remain explicitly rejected. |
+| Relic card modifiers | `RelicCardModifierModel` and `CardUpgradeLifecycleModel` | Native ordering/conditions, numeric/status/IgnoreArmor/SelfPurge/Consume/DamageOverflow upgrades, calibrated IgnoreArmor add/remove suppression, summon DamageBuff/positive UnhealedHealth, unit-ability upgrades, temporary upgrade replacement, generation and cardless births; played Consume cards route to Exhausted. DamageOverflow and summon DamageBuff/UnhealedHealth are mechanism-tested without a native relic-manager capture. Replacement keeps lifecycle and battle card modifier lists synchronized. Other trait removals, card triggers and room-ability payloads remain explicitly rejected. |
 | Relic added-trigger birth effects | `RelicCharacterTriggerModel` | Fresh ordered trigger installs, count modifiers, conditions, team/subtype gates, captured character asset-key filters and Covenant/preview gates; 32 immutable branches. Filtered Covenant behavior has model checks but no accepted native battle archive yet. |
 | Retained card references | `CombatContext.CardRegistry` | Observed card identities survive pile clearing; detached spawner upgrades/removal preserve ownership and parent isolation |
 | Standby dictionary allocation | `CardPileModel` | Captured entry slots and free-list order preserve native hole reuse after unit death; malformed layouts, distinct futures, terminal clear and parallel branches |
@@ -8303,18 +8303,22 @@ the 206-archive regression remains deferred to a completed milestone.
 
 ### Temporary relic SelfPurge routing
 
-`RelicCardModifierModel` now accepts a temporary `CardTraitSelfPurge` upgrade
-payload when it has no unmodeled removals, replacements or triggers. Card play
-resolves the current branch trait composition before routing: eligible spells
-enter Purged and are removed from permanent deck membership, while older states
-without a branch-owned mask descriptor keep their captured destination.
+`RelicCardModifierModel` accepts a temporary `CardTraitSelfPurge` upgrade and the
+native-calibrated `CardTraitIgnoreArmor` removal marker. When one upgrade both
+adds and removes IgnoreArmor, native trait composition suppresses that addition
+while retaining SelfPurge. Card play resolves the branch trait composition:
+eligible spells enter Purged and leave permanent deck membership, while older
+states without a branch-owned mask descriptor keep their captured destination.
 
 `full-battle-relic-card-self-purge-upgrades.mt2f` records two played relic-upgraded
 spells reaching Purged and leaving deck counts. The native battle wins with 51
-stages and 28 actions; capture failures, mismatches, unsupported transitions and
-pending records are zero. Its focused model/native regression passes. The full
-207-archive run remained deferred at that milestone; other traits,
-card-trigger, replacement and room-ability relic payloads are still unsupported.
+stages and 28 actions; seven relic-manager calls, 600 decision contexts and 32
+search branches match with zero capture failures, mismatches, unsupported
+transitions or pending records. Its focused model/native regression passes. The
+full 273-archive run remains deferred; uncalibrated trait removals, card-trigger,
+replacement and room-ability relic payloads are still unsupported. The archive
+is 30,895 bytes/5,227 nodes, SHA-256
+`ba2b5e86f95c188969b8e60c57cae930f32dfc1284f01576030b6080fd755250`.
 
 ### Temporary relic unit-ability upgrades
 
