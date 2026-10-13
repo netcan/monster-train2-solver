@@ -658,15 +658,23 @@ if ($OriginalCardDrawOnCardPlay -and ($trace.Schema -ne 160 -or
     throw 'Original card-draw-on-play relic was not exercised in the expected full-battle capture.'
 }
 if ($UnplayedCardTrigger) {
+    $triggerCardIds = @(
+        '186180e9-94e9-47d0-b69c-865b9a6d27a4',
+        '2785cc8e-d0e8-46c0-84ab-9c1d602525d4',
+        '3b603b7f-300c-4022-9fc2-275448446e58',
+        '913694e9-bace-4480-8691-24f699ae583e',
+        'fbf74ec4-2781-4b99-b6f7-b7d75236da60'
+    )
     $triggerTurns = @($trace.Turns | Where-Object {
-        @($_.Before.Spawn.Train.Context.Cards.Hand | Where-Object DataId -EQ '2785cc8e-d0e8-46c0-84ab-9c1d602525d4').Count -gt 0
+        $handCardIds = @($_.Before.Spawn.Train.Context.Cards.Hand | ForEach-Object { $_.DataId })
+        @($triggerCardIds | Where-Object { $_ -notin $handCardIds }).Count -eq 0
     })
     $matchedTriggerTurns = @($triggerTurns | Where-Object { $_.Predicted.Supported -and $null -eq $_.Difference })
     if ($trace.Schema -ne 161 -or $trace.ModifierScenario -ne 'unplayed-card-trigger' -or
-        -not (Select-String -LiteralPath $unityLog -Pattern 'UNPLAYED-CARD-TRIGGER-PREPARED original=ScourgeT2' -Quiet) -or
+        -not (Select-String -LiteralPath $unityLog -Pattern 'UNPLAYED-CARD-TRIGGER-PREPARED originals=5 totalDamage=15' -Quiet) -or
         $matchedTriggerTurns.Count -eq 0 -or $matchedTriggerTurns[0].Before.Spawn.Turn -ne 0 -or
         $trace.CaptureFailures -ne 0 -or $trace.Mismatches -ne 0 -or $trace.Unsupported -ne 0 -or -not $trace.NativeWon) {
-        throw 'Original ScourgeT2 did not match the modeled unplayed Pyre-damage EndTurn in a complete battle.'
+        throw 'The five original Pyre-damage trigger cards did not match the modeled EndTurn in a complete battle.'
     }
 }
 if ($OriginalRoomEntryStatusRelics -and ($trace.Schema -ne 132 -or

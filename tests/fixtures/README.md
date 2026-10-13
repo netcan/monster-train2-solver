@@ -32,16 +32,19 @@ inventory at completed milestones and before delivery.
 
 Current inventory is 278 archives: 247 accepted battles and 31 component
 calibrations. Original relic evidence is 78/224 (34.82%). The schema-161
-`full-battle-unplayed-card-pyre-damage.mt2f` archive records the unchanged
-`ScourgeT2` left in hand and unplayed; its fixed `OnUnplayedNegative` damage
-reduces Pyre health by 3 at EndTurn, then the card purges. The Instant native
-battle wins with 61 matched stages, 21 card actions and seven EndTurns, with
+`full-battle-unplayed-card-pyre-damage.mt2f` archive leaves all five original
+fixed-damage negative-trigger cards in hand: `BlightPyreDamageInHand` (1),
+`ScourgeT2` (3), `TFB_EntropyScourge` (3), `DantesCandle` (3) and `ScourgeT3`
+(5). Their EndTurn effects reduce Pyre health by 15 total. The Instant native
+battle wins with 62 matched stages, 21 card actions and seven EndTurns, with
 zero capture failures, mismatches, unsupported transitions or pending records.
-The focused check covers fixed Pyre damage, multiple triggers and parent-state
-isolation. Support is limited to captured fixed `Damage` effects targeting
-Pyre; other unplayed trigger types remain unsupported. The binary archive is
-33,049 bytes; its node count and SHA-256 are recorded in `manifest.tsv`, and
-it has no JSON companion.
+The focused check verifies each captured effect and the combined damage, plus
+synthetic multiple-card resolution and parent-state isolation. The two other
+original negative-trigger cards, `TitanCurse` and `Scourge_SoulSavior`, use
+upgrade and copy effects and remain unsupported. The 34,660-byte archive has
+5,822 unique nodes and SHA-256
+`74ca21e8cca5fb78f582b46db5e3a4737054833c13374e1f3499b473b87179a5`; it has
+no JSON companion.
 
 ```powershell
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-unplayed-card-pyre-damage.mt2f

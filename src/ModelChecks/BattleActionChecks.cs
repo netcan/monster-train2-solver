@@ -526,11 +526,14 @@ internal static class BattleActionChecks
             {
                 PlayCardAction? selected = ordinaryChooser(source);
                 CardInstanceState? selectedCard = selected == null ? null : source.Spawn.Train.Context?.FindCard(selected.CardInstanceId);
-                bool hasUnplayedTrigger = selectedCard != null && source.PlayRules?.Cards.Any(rule =>
-                    rule.DataId == selectedCard.DataId && rule.OnUnplayedNegativeEffects.Count > 0) == true;
-                if (!hasUnplayedTrigger) return selected;
+                string[] unplayedTriggerIds = source.PlayRules?.Cards.Where(rule => rule.OnUnplayedNegativeEffects.Count > 0)
+                    .Select(rule => rule.DataId).Distinct(StringComparer.Ordinal).ToArray() ?? Array.Empty<string>();
+                if (selectedCard == null || !unplayedTriggerIds.Contains(selectedCard.DataId, StringComparer.Ordinal)) return selected;
                 return BattleActionModel.EnumerateSupportedPlays(source).FirstOrDefault(action =>
-                    source.Spawn.Train.Context?.FindCard(action.CardInstanceId)?.DataId != selectedCard!.DataId);
+                {
+                    string? candidateId = source.Spawn.Train.Context?.FindCard(action.CardInstanceId)?.DataId;
+                    return candidateId != null && !unplayedTriggerIds.Contains(candidateId, StringComparer.Ordinal);
+                });
             };
         }
         FixtureValue turns = fixture.GetProperty("Turns");

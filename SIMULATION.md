@@ -8,16 +8,18 @@ coverage and the optimal solver remain in progress.
 
 ### Fixed unplayed Pyre-damage triggers (schema 161)
 
-`full-battle-unplayed-card-pyre-damage.mt2f` leaves the original `ScourgeT2`
-unplayed in hand. Its fixed `OnUnplayedNegative` `Damage` effect targets Pyre
-for 3 damage during EndTurn, after which the card follows its purge behavior.
-The Instant native battle matches all 61 stages, 21 card actions and seven
-EndTurns, with zero capture failures, mismatches, unsupported transitions or
-pending records. The focused checks cover one and multiple fixed Pyre-damage
-triggers and parent-state isolation. Other unplayed trigger effect types remain
-unsupported; no relic owner coverage changes.
+`full-battle-unplayed-card-pyre-damage.mt2f` leaves the five original fixed
+Pyre-damage cards in hand: `BlightPyreDamageInHand` (1), `ScourgeT2` (3),
+`TFB_EntropyScourge` (3), `DantesCandle` (3) and `ScourgeT3` (5). Their
+`OnUnplayedNegative` effects apply 15 total Pyre damage at EndTurn. The Instant
+native battle matches all 62 stages, 21 card actions and seven EndTurns, with
+zero capture failures, mismatches, unsupported transitions or pending records.
+The focused checks verify each captured definition, the combined damage,
+synthetic multiple triggers and parent-state isolation. The other two original
+negative-trigger cards, `TitanCurse` and `Scourge_SoulSavior`, use different
+upgrade/copy effects and remain unsupported; no relic owner coverage changes.
 
-The 33,049-byte native binary has its unique-node count and SHA-256 recorded in
+The 34,660-byte native binary has its unique-node count and SHA-256 recorded in
 `tests/fixtures/manifest.tsv`; no JSON companion is tracked.
 
 ```powershell

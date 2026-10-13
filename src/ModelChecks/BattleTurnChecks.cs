@@ -46,10 +46,30 @@ internal static class BattleTurnChecks
         BattleTurnState root = turns[0].GetProperty("Before").Deserialize<BattleTurnState>()!;
         if (root.PlayRules == null || root.Spawn.Train.Context == null)
             throw new InvalidOperationException("Unplayed-card trigger check requires captured rules and context.");
+        var originalCards = new[]
+        {
+            (Id: "186180e9-94e9-47d0-b69c-865b9a6d27a4", Damage: 1),
+            (Id: "2785cc8e-d0e8-46c0-84ab-9c1d602525d4", Damage: 3),
+            (Id: "3b603b7f-300c-4022-9fc2-275448446e58", Damage: 3),
+            (Id: "913694e9-bace-4480-8691-24f699ae583e", Damage: 3),
+            (Id: "fbf74ec4-2781-4b99-b6f7-b7d75236da60", Damage: 5)
+        };
+        foreach (var original in originalCards)
+        {
+            Require(root.Spawn.Train.Context.Cards.Hand.Any(card => card.DataId == original.Id),
+                "An original unplayed Pyre-damage card is missing from the captured EndTurn hand: " + original.Id);
+            CardPlayRule? rule = root.PlayRules.Cards.SingleOrDefault(card => card.DataId == original.Id);
+            Require(rule?.OnUnplayedNegativeEffects.Count == 1 && rule.OnUnplayedNegativeEffects[0].Type == "Damage" &&
+                rule.OnUnplayedNegativeEffects[0].Target == "Pyre" && rule.OnUnplayedNegativeEffects[0].Value == original.Damage &&
+                rule.OnUnplayedNegativeEffects[0].Range == null,
+                "The captured original unplayed Pyre-damage definition changed: " + original.Id);
+        }
         string parent = JsonSerializer.Serialize(root);
         BattleTurnResult baseline = BattleTurnModel.EndTurn(root);
         Require(baseline.Supported, "Baseline EndTurn failed: " + baseline.UnsupportedReason);
         int baselinePyreHealth = PyreHealth(baseline.State!);
+        Require(PyreHealth(root) - baselinePyreHealth == 15,
+            "The five original unplayed Pyre-damage cards did not apply their 1+3+3+3+5 damage.");
         BattleTurnResult single = BattleTurnModel.EndTurn(AddUnplayedCards(root, ("test-unplayed-2", 2, 1)));
         Require(single.Supported, "Single unplayed Pyre-damage card failed: " + single.UnsupportedReason);
         Require(PyreHealth(single.State!) == baselinePyreHealth - 2,
