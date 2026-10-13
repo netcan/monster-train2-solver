@@ -1,6 +1,6 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-13): 267 binary archives, including 236
+Current accepted inventory (2026-10-13): 269 binary archives, including 238
 full battles and 31 component calibrations. Unchanged original relic evidence
 covers 74/224 catalog entries (33.04%); see
 [the owner evidence table](tests/fixtures/relic-coverage.md). Whole-battle
@@ -8844,13 +8844,15 @@ upgrade.
 The schema-150 `full-battle-card-recursion-upgrade-hand.mt2f` captures the
 dedicated native `RandomToHandWithUpgrades` mode. The same randomly selected
 Spell returns to Hand with temporary +3 Damage; other Exhaust candidates remain
-unchanged. The muted Instant battle wins with 63 stages, 22 actions and seven
-EndTurns, with zero capture failures, mismatches, unsupported transitions or
-pending records. Native action replay matches including the card's hand
-destination and draw statistics. Search again expands 128 states with identical
-serial and parallel results. The archive is 36,571 bytes with 6,247 unique nodes
-and SHA-256
-`6607eb203098f2b0ca795481951a37d9ed727ddd1fea0700d047bf30c82dcc61`; it has no
+unchanged. Its `RequiresRoomInHand` flag is enabled, and the native gate's
+positive draw count and six-card Exhaust pile are captured. The flag gates
+availability for random hand recursion; it does not test hand capacity. The
+muted Instant battle wins with 63 stages, 22 actions and seven EndTurns, with
+zero capture failures, mismatches, unsupported transitions or pending records.
+Native action replay matches including the card's hand destination and draw
+statistics. Search again expands 128 states with identical serial and parallel
+results. The archive is 36,375 bytes with 6,244 unique nodes and SHA-256
+`bc2f8e6ff50094d2c2850956963fa4e51bc2c4fd1c9c81ce5550e1ee3011f268`; it has no
 JSON companion.
 
 The schema-151 `full-battle-card-recursion-upgrade-choice.mt2f` captures

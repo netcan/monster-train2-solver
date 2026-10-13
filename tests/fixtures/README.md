@@ -161,13 +161,15 @@ dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fi
 `full-battle-card-recursion-upgrade-hand.mt2f` verifies the dedicated native
 `RandomToHandWithUpgrades` mode. Exactly one returned Spell receives a temporary
 upgrade with 3 additional Damage and enters Hand; the other Exhaust candidates
-remain unchanged. The
-muted Instant battle wins with 63 stages and 22 actions, with zero capture
-failures, mismatches, unsupported transitions or pending records. Replay
-matches hand placement and draw statistics; the 128-state search matches in
-serial and parallel. The archive is 36,571 bytes with 6,247 unique nodes and
-SHA-256 `6607eb203098f2b0ca795481951a37d9ed727ddd1fea0700d047bf30c82dcc61`;
-no JSON companion is tracked. Inventory: 267 archives, comprising 236 battles
+remain unchanged. The native `RequiresRoomInHand` flag is enabled; the captured
+gate has a positive draw count and six cards in Exhaust. Native code uses this
+flag to gate random hand recursion on available cards, not on hand capacity.
+The muted Instant battle wins with 63 stages, 22 actions and seven EndTurns,
+with zero capture failures, mismatches, unsupported transitions or pending
+records. Replay matches hand placement and draw statistics; the 128-state
+search matches in serial and parallel. The archive is 36,375 bytes with 6,244
+unique nodes and SHA-256 `bc2f8e6ff50094d2c2850956963fa4e51bc2c4fd1c9c81ce5550e1ee3011f268`;
+no JSON companion is tracked. Inventory: 269 archives, comprising 238 battles
 and 31 component calibrations.
 
 ```powershell

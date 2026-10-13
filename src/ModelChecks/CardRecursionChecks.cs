@@ -119,7 +119,7 @@ internal static class CardRecursionChecks
             .Effects.Single(effect => effect.Type == "Recursion");
         Require(recursionEffect.Recursion!.SelectionMode == (chooseToDeck ? "ChooseToDeck" :
                 toHand ? "RandomToHandWithUpgrades" : "RandomToDeck") &&
-            recursionEffect.Upgrade?.DataId == upgradeId,
+            recursionEffect.Upgrade?.DataId == upgradeId && recursionEffect.Recursion.RequiresRoomInHand == toHand,
             "The captured action does not contain the expected native recursion-upgrade mode.");
         PlayCardAction actionToPlay = entry.GetProperty("Action").Deserialize<PlayCardAction>()!;
         BattleActionResult predicted = BattleActionModel.PlayCard(root, actionToPlay);
@@ -222,7 +222,9 @@ internal static class CardRecursionChecks
         CardActionEffect requiresHandSpace = new("Recursion", "Exhaust", 1, false, false, [],
             recursion: new CardRecursionRule("RandomToHand", "Invalid", "", true, false, false, false));
         CardRecursionResult unsupportedFilter = CardRecursionModel.Apply(cards, piles, cards.Rng, filtered, definitions, 50, 4);
-        CardRecursionResult unsupportedHandSpace = CardRecursionModel.Apply(cards, piles, cards.Rng, requiresHandSpace, definitions, 50, 4);
+        ShuffleResult<int> requiresHandSpaceShuffle = cards.Rng.Shuffle([1, 2, 3, 4]);
+        CardRecursionResult requiresHandSpaceResult = CardRecursionModel.Apply(cards, piles, cards.Rng,
+            requiresHandSpace, definitions, 50, 4);
         var recursionUpgrade = new CardUpgradeModifier("recursion-damage", "RecursionDamage",
             new CardStatModifier(damage: 3), [], false, false, false, 0, 0, [],
             maskMetadata: new CardUpgradeMaskMetadata([], false, false, false, false));
@@ -270,8 +272,10 @@ internal static class CardRecursionChecks
             "Choose recursion did not enumerate eligible single-card branches, restore the selected card, or preserve RNG.");
         Require(
             !unsupportedFilter.Supported && unsupportedFilter.UnsupportedReason!.Contains("card-filter", StringComparison.Ordinal) &&
-            !unsupportedHandSpace.Supported && unsupportedHandSpace.UnsupportedReason!.Contains("hand space", StringComparison.Ordinal),
-            "Unsupported recursion filters or random hand-space conditions were silently accepted.");
+            requiresHandSpaceResult.Supported && requiresHandSpaceResult.RestoredCardIds.SequenceEqual([requiresHandSpaceShuffle.Items[0]]) &&
+            requiresHandSpaceResult.Cards!.Hand[0].InstanceId == requiresHandSpaceShuffle.Items[0] &&
+            requiresHandSpaceResult.BattleRng!.Value.Equals(requiresHandSpaceShuffle.State),
+            "Random-to-hand recursion with the native RequiresRoomInHand gate did not restore its selected card.");
         Require(upgradedDeck.Supported && upgradedDeck.RestoredCardIds.SequenceEqual([expectedUpgradeChoice.Items[0]]) &&
             upgradedDeck.Cards!.Draw.Select(card => card.InstanceId).SequenceEqual([20, expectedUpgradeChoice.Items[0]]) &&
             upgradedInstance.InstanceId == expectedUpgradeChoice.Items[0] && upgradedInstance.Temporary.Upgrades.Single().Stats.Damage == 3 &&
@@ -305,7 +309,7 @@ internal static class CardRecursionChecks
         Require(CardPileModel.Validate(malformedKeepStandby) != null,
             "KeepInStandBy must not carry a Consume exhaustion reference.");
 
-        Console.WriteLine("PASS random and chosen card recursion, candidate branches, pile restoration, temporary upgrades, and guarded modes");
+        Console.WriteLine("PASS random and chosen card recursion, candidate branches, pile restoration, temporary upgrades, and RequiresRoomInHand");
     }
 
     private static CardPlayRule Rule(string dataId, string cardType) =>

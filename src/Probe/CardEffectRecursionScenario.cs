@@ -67,9 +67,14 @@ namespace MonsterTrain2Poju.Probe
                     .SetValue(recursionEffect, 1);
             }
             if (upgradeToHandMode)
+            {
                 (AccessTools.Field(typeof(CardEffectData), "targetCardSelectionMode") ??
                     throw new MissingFieldException(typeof(CardEffectData).FullName, "targetCardSelectionMode"))
                     .SetValue(recursionEffect, CardEffectData.CardSelectionMode.RandomToHandWithUpgrades);
+                (AccessTools.Field(typeof(CardEffectData), "paramBool") ??
+                    throw new MissingFieldException(typeof(CardEffectData).FullName, "paramBool"))
+                    .SetValue(recursionEffect, true);
+            }
             if (chooseMode)
             {
                 FieldInfo selectionMode = typeof(CardEffectData).GetField("targetCardSelectionMode",
@@ -130,6 +135,7 @@ namespace MonsterTrain2Poju.Probe
             log.LogInfo("CARD-RECURSION-PREPARED WurmkinEtchings exhaustedSpellCopies=" + (filterMode ? 5 : 6) +
                 (filterMode ? " excludedCandidates=1 totalCandidates=6" : string.Empty) + " selection=" +
                 selection + (upgradeMode || upgradeToHandMode || upgradeChooseMode ? " temporaryUpgrade=+3Damage" : string.Empty) +
+                (upgradeToHandMode ? " requiresRoomInHand=True" : string.Empty) +
                 " selectedCard=" + selectedCardInstanceId);
         }
 

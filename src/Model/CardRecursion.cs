@@ -196,9 +196,6 @@ namespace MonsterTrain2Poju.Model
                 rule.SelectionMode != "RandomToHand" && rule.SelectionMode != "RandomToDeck" &&
                 rule.SelectionMode != "RandomToHandWithUpgrades")
                 return "Unmodeled card-recursion selection mode " + rule.SelectionMode + ".";
-            if (rule.RequiresRoomInHand &&
-                (rule.SelectionMode is "RandomToHand" or "RandomToHandWithUpgrades"))
-                return "Random card recursion requiring hand space is not modeled.";
             if (rule.HasCardFilter && rule.CardFilter == null) return "Card recursion requires its native card-filter definition.";
             if (!rule.HasCardFilter && rule.CardFilter != null) return "Card recursion has unexpected card-filter metadata.";
             if (rule.SelectionMode == "RandomToHandWithUpgrades" && !rule.HasUpgrade)
