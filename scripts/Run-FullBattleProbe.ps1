@@ -27,6 +27,7 @@ param(
     [switch] $Corruption,
     [switch] $PermanentCorruption,
     [switch] $MoonPhaseCard,
+    [switch] $MoonPhaseAdvance,
     [switch] $SoulSiphon,
     [switch] $StatusUpgrade,
     [switch] $CardRecursion,
@@ -359,6 +360,7 @@ if ($Overheal) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($Corruption) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($PermanentCorruption) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($MoonPhaseCard) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
+if ($MoonPhaseAdvance) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($SoulSiphon) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($StatusUpgrade) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($CardRecursion -or $CardRecursionDiscard -or $CardRecursionChoose -or $CardRecursionChooseToHand -or $CardRecursionChooseFilter -or $CardRecursionUpgrade -or $CardRecursionUpgradeToHand -or $CardRecursionUpgradeChoose -or $CardRecursionUpgradeFilterChoose -or $CardRecursionUpgradeReplacementChoose) { $Policy = 'units-spells-and-junk'; $BranchCardMasks = $true }
@@ -525,6 +527,7 @@ if ($Overheal) { $environment['MT2_PROBE_MODIFIERS'] = 'overheal' }
 if ($Corruption) { $environment['MT2_PROBE_MODIFIERS'] = 'corruption' }
 if ($PermanentCorruption) { $environment['MT2_PROBE_MODIFIERS'] = 'permanent-corruption' }
 if ($MoonPhaseCard) { $environment['MT2_PROBE_MODIFIERS'] = 'moon-phase-card' }
+if ($MoonPhaseAdvance) { $environment['MT2_PROBE_MODIFIERS'] = 'moon-phase-advance' }
 if ($SoulSiphon) { $environment['MT2_PROBE_MODIFIERS'] = 'soul-siphon' }
 if ($StatusUpgrade) { $environment['MT2_PROBE_MODIFIERS'] = 'status-upgrade' }
 if ($CardRecursion -or $CardRecursionDiscard -or $CardRecursionChoose -or $CardRecursionChooseToHand -or $CardRecursionChooseFilter -or $CardRecursionUpgrade -or $CardRecursionUpgradeToHand -or $CardRecursionUpgradeChoose -or $CardRecursionUpgradeFilterChoose -or $CardRecursionUpgradeReplacementChoose) {
@@ -683,6 +686,12 @@ if ($MoonPhaseCard -and ($trace.ModifierScenario -ne 'moon-phase-card' -or
     -not (Select-String -LiteralPath $unityLog -Pattern 'MOON-PHASE-CARD-CANDIDATE supported=True phase=New->Full energy=\d+->\d+ fullmoon=1' -Quiet) -or
     @($trace.Actions | Where-Object { $_.ScenarioAction }).Count -ne 1)) {
     throw 'Original Moonrise phase-shift action was not captured.'
+}
+if ($MoonPhaseAdvance -and ($trace.ModifierScenario -ne 'moon-phase-advance' -or
+    -not (Select-String -LiteralPath $unityLog -Pattern 'MOON-PHASE-ADVANCE-PREPARED steward=\d+ moonrise=\d+ fae=\d+ phase=New tracking=True' -Quiet) -or
+    -not (Select-String -LiteralPath $unityLog -Pattern 'MOON-PHASE-ADVANCE-CANDIDATE supported=True phase=Full->New newmoon=1' -Quiet) -or
+    @($trace.Actions | Where-Object { $_.ScenarioAction }).Count -ne 1)) {
+    throw 'Original Fae Meddler moon-phase advance was not captured.'
 }
 if ($SoulSiphon -and ($trace.ModifierScenario -ne 'soul-siphon' -or
     -not (Select-String -LiteralPath $unityLog -Pattern 'SOUL-SIPHON-STATUS stage=' -Quiet) -or

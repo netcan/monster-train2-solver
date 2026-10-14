@@ -7,7 +7,7 @@ $fixtureNames = @('full-battle-steward-once.mt2f', 'full-battle-no-cards.mt2f', 
     'full-battle-unplayed-card-pyre-damage.mt2f',
     'full-battle-unplayed-card-effects.mt2f', 'full-battle-train-heal.mt2f', 'full-battle-status-upgrade.mt2f',
     'full-battle-overheal.mt2f', 'full-battle-corruption.mt2f', 'full-battle-permanent-corruption.mt2f',
-    'full-battle-soul-siphon.mt2f', 'full-battle-moon-phase-card.mt2f',
+    'full-battle-soul-siphon.mt2f', 'full-battle-moon-phase-card.mt2f', 'full-battle-moon-phase-advance.mt2f',
     'full-battle-units-spells-and-junk.mt2f', 'full-battle-relic-card-modifiers.mt2f', 'full-battle-original-relic-batch.mt2f',
     'full-battle-covenant-character-filter.mt2f',
     'full-battle-titan-skin.mt2f',
@@ -354,6 +354,14 @@ $moonPhaseCardFixtures = @($fixtures | Where-Object {
 foreach ($fixturePath in $moonPhaseCardFixtures) {
     dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- --moon-phase-transition-only $fixturePath
     if ($LASTEXITCODE -ne 0) { throw "Moon-phase transition checks failed: $fixturePath" }
+}
+
+$moonPhaseAdvanceFixtures = @($fixtures | Where-Object {
+    (Split-Path -Leaf $_) -eq 'full-battle-moon-phase-advance.mt2f'
+})
+foreach ($fixturePath in $moonPhaseAdvanceFixtures) {
+    dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- --moon-phase-advance-only $fixturePath
+    if ($LASTEXITCODE -ne 0) { throw "Moon-phase advance checks failed: $fixturePath" }
 }
 
 $scorchFixtures = @($fixtures | Where-Object {

@@ -647,11 +647,13 @@ namespace MonsterTrain2Poju.Model
             => new Engine(state, new List<CombatEvent>(), resetPreviewTriggers: false, refreshPyre: refreshPyre).PendingDeathStatistics(unit);
 
         public static RoomCombatResult ApplySpawnTriggers(RoomCombatState state, int unitId, bool fromCard,
-            IReadOnlyList<CombatStatus>? startingApplications = null, Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null)
-            => ApplySpawnTriggers(state, unitId, fromCard, startingApplications, null, refreshPyre);
+            IReadOnlyList<CombatStatus>? startingApplications = null, Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null,
+            Func<RoomCombatState, CardActionEffect, int, MoonPhaseTransitionResult>? moonPhase = null)
+            => ApplySpawnTriggers(state, unitId, fromCard, startingApplications, null, refreshPyre, moonPhase: moonPhase);
         internal static RoomCombatResult ApplySpawnTriggers(RoomCombatState state, int unitId, bool fromCard,
             IReadOnlyList<CombatStatus>? startingApplications, Action<QueuedCharacterTrigger>? enqueue,
-            Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null, SpawnStatusApplication? additionalStatus = null)
+            Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null, SpawnStatusApplication? additionalStatus = null,
+            Func<RoomCombatState, CardActionEffect, int, MoonPhaseTransitionResult>? moonPhase = null)
         {
             string? error = Validate(state);
             CombatUnit? unit = state.Units.FirstOrDefault(item => item.Id == unitId);
@@ -659,7 +661,7 @@ namespace MonsterTrain2Poju.Model
                 return new RoomCombatResult(null, RoomOutcome.Unsupported, 0, new List<CombatEvent>(),
                     error ?? "Spawn triggers require a living new unit and its source card identity.");
             return new Engine(state, new List<CombatEvent>(), pendingSummonCardId: fromCard ? unit.SpawnerCardId : 0,
-                enqueueCharacterTrigger: enqueue, refreshPyre: refreshPyre).Spawn(unitId, fromCard, startingApplications,
+                enqueueCharacterTrigger: enqueue, refreshPyre: refreshPyre, moonPhase: moonPhase).Spawn(unitId, fromCard, startingApplications,
                     additionalStatus: additionalStatus);
         }
 
@@ -977,6 +979,13 @@ namespace MonsterTrain2Poju.Model
                                 return "Unmodeled triggered energy target " + energy.Target;
                             continue;
                         }
+                        if (effect.Type == "CardEffectAdvanceMoonPhase")
+                        {
+                            if (effect.Action?.Type != "AdvanceMoonPhase" || effect.Action.Target != "Self" ||
+                                effect.Action.Range != null || effect.Action.Value != effect.Value)
+                                return "Missing or mismatched triggered moon-phase definition.";
+                            continue;
+                        }
                         if (effect.Action != null && effect.Type != "CardEffectHeal" && effect.Type != "CardEffectDamage" && effect.Type != "CardEffectAddStatusEffect")
                             return "Mismatched triggered action definition.";
                         if (effect.DamageStatusMultiplier != null && effect.Type != "CardEffectDamage")
@@ -1153,6 +1162,7 @@ namespace MonsterTrain2Poju.Model
             private readonly bool nativeCardDamage;
             private readonly Func<RoomCombatState, RoomCombatResult>? finishDamageQueue;
             private readonly Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre;
+            private readonly Func<RoomCombatState, CardActionEffect, int, MoonPhaseTransitionResult>? moonPhase;
             private readonly Queue<(int RoomIndex, WorkingUnit Unit, string Kind, bool CanFire, int ParamInt, WorkingUnit? OverrideTarget, int ParamInt2, string? ParamString, WorkingUnit? DyingCharacter, int TriggerCount, int LastSpawnedOverrideUnitId, int? ExclusiveTriggerStateId)> triggerQueue = new Queue<(int, WorkingUnit, string, bool, int, WorkingUnit?, int, string?, WorkingUnit?, int, int, int?)>();
             private bool runningTriggerQueue;
             private bool stopAfterBossRemoval;
@@ -1171,7 +1181,8 @@ namespace MonsterTrain2Poju.Model
                 bool nativeCardDamage = false,
                 Func<RoomCombatState, RoomCombatResult>? finishDamageQueue = null,
                 Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null,
-                CombatUnit? externalActor = null, int externalActorRoomIndex = -1, bool externalActorInRoom = true)
+                CombatUnit? externalActor = null, int externalActorRoomIndex = -1, bool externalActorInRoom = true,
+                Func<RoomCombatState, CardActionEffect, int, MoonPhaseTransitionResult>? moonPhase = null)
             {
                 this.source = source; this.events = events;
                 this.deferSpawnerExhaustion = deferSpawnerExhaustion;
@@ -1181,6 +1192,7 @@ namespace MonsterTrain2Poju.Model
                 this.nativeCardDamage = nativeCardDamage;
                 this.finishDamageQueue = finishDamageQueue;
                 this.refreshPyre = refreshPyre;
+                this.moonPhase = moonPhase;
                 context = source.Context;
                 activeCompanionBossIds = new HashSet<int>(source.ActiveCompanionBossIds ?? Array.Empty<int>());
                 units = source.Units.Select(unit => NewUnit(unit)).ToList();
@@ -2540,6 +2552,18 @@ namespace MonsterTrain2Poju.Model
                                 if (!ApplyTriggeredSummon(unit, effect.Summon, out int firstId)) break;
                                 if (firstId > 0)
                                 { effects[effectIndex] = effect.WithSummon(effect.Summon.WithFirstSpawned(firstId)); Store(retained.Fired(effects)); }
+                            }
+                            else if (effect.Type == "CardEffectAdvanceMoonPhase")
+                            {
+                                if (moonPhase == null || effect.Action == null)
+                                { unsupportedReason = "Triggered moon-phase advance requires a complete train callback."; break; }
+                                MoonPhaseTransitionResult shifted = moonPhase(CurrentRoom(), effect.Action, unit.Source.SpawnerCardId);
+                                if (!shifted.Supported)
+                                { unsupportedReason = shifted.UnsupportedReason; break; }
+                                RoomCombatState changed = shifted.State!.Rooms.Single(room => room.RoomIndex == source.RoomIndex);
+                                context = changed.Context;
+                                foreach (CombatUnit actor in changed.Units)
+                                    units.First(item => item.Source.Id == actor.Id).Apply(actor);
                             }
                             else if (effect.Action != null)
                             {

@@ -1,10 +1,28 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-14): 288 binary archives, including 257
+Current accepted inventory (2026-10-14): 289 binary archives, including 258
 full battles and 31 component calibrations. Unchanged original relic evidence
 covers 78/224 catalog entries (34.82%); see
 [the owner evidence table](tests/fixtures/relic-coverage.md). Whole-battle
 coverage and the optimal solver remain in progress.
+
+### Original Fae Meddler spawn advance
+
+`full-battle-moon-phase-advance.mt2f` plays unchanged Train Steward on room 1 and Moonrise,
+then summons unchanged `FaeMeddler`. Its `OnSpawn` trigger contains one
+`CardEffectAdvanceMoonPhase` targeting itself; the effect advances Full Moon to
+New Moon during the spawn queue. The train-level callback updates every active
+floor before later trigger effects. The muted Instant native battle wins with
+24 matched actions, seven EndTurns, and zero capture failures, mismatches,
+unsupported transitions or pending records. The 36,741-byte binary has 6,069
+unique nodes and SHA-256
+`8fff01b73b3437f29e9920e0dcf796cc026f80845879ea4d7e577f30570701ad`.
+Other moon-phase unit callbacks and trait/relic combinations remain guarded.
+
+```powershell
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-moon-phase-advance.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-moon-phase-advance.mt2f
+```
 
 ### Original Moonrise phase transition
 
@@ -17,8 +35,9 @@ mismatches, unsupported transitions or pending records. Search replays all 23
 decisions with matching serial and parallel results. The 36,207-byte binary
 has 5,928 unique nodes and SHA-256
 `4ab7d9a5f2e9e2373f752114762eddc1b615905d0036dcd814db1abf4af01e94`.
-The source-derived `AdvanceMoonPhase` path has pure branch checks, but native
-triggered advances and moon-phase callbacks still need calibration.
+The source-derived `AdvanceMoonPhase` path also has pure branch checks; the
+original triggered spawn advance is calibrated in the section above. Other
+moon-phase callbacks still need calibration.
 
 ```powershell
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-moon-phase-card.mt2f

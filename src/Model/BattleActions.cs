@@ -469,7 +469,18 @@ namespace MonsterTrain2Poju.Model
                     var entered = new RoomCombatState(target.RoomIndex, target.Deployment,
                         target.Units.Where(unit => unit.Team == CombatTeam.Enemy).Concat(nextPlayers).ToArray(),
                         target.ExternalInteractions, context, target.Preview, target.ActiveCompanionBossIds);
-                    spawnTriggers = RoomCombatModel.ApplySpawnTriggers(entered, spawned.Id, fromCard: true, startingApplications: initialStatuses);
+                    MoonPhaseTransitionResult AdvanceFromSpawn(RoomCombatState frame, CardActionEffect effect, int sourceCardId)
+                    {
+                        RoomCombatState[] phaseRooms = train.Rooms.Select(room => room.RoomIndex == frame.RoomIndex ? frame :
+                            new RoomCombatState(room.RoomIndex, room.Deployment, room.Units, room.ExternalInteractions,
+                                frame.Context, room.Preview, room.ActiveCompanionBossIds)).ToArray();
+                        var phaseTrain = new TrainCombatState(phaseRooms, train.Movement, train.EnemySlotsPerRoom, frame.Context);
+                        MoonPhaseTransitionResult shifted = MoonPhaseTransitionModel.Apply(phaseTrain, effect, sourceCardId);
+                        if (shifted.Supported) train = shifted.State!;
+                        return shifted;
+                    }
+                    spawnTriggers = RoomCombatModel.ApplySpawnTriggers(entered, spawned.Id, fromCard: true,
+                        startingApplications: initialStatuses, moonPhase: AdvanceFromSpawn);
                     if (!spawnTriggers.Supported) return Unsupported(spawnTriggers.UnsupportedReason!);
                     // Ordinary paid births have the same player-wide enchant phase
                     // as repeated and cloned births, before the post-play Rally.

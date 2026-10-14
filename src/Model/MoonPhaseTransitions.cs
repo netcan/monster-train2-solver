@@ -24,8 +24,11 @@ namespace MonsterTrain2Poju.Model
         {
             if (effect.Type != "SetMoonPhase" && effect.Type != "AdvanceMoonPhase")
                 return "Unknown moon-phase effect.";
-            if (effect.Target != "Room" || effect.Range != null)
-                return "Moon-phase effects require a fixed room-targeted amount.";
+            if (effect.Target is not ("Room" or "Self") || effect.Range != null)
+                return "Moon-phase effects require a fixed room or self-targeted amount.";
+            if (source.Context?.EnergyState == null)
+                return "Moon-phase effects require the captured combat phase.";
+            if (source.Context.EnergyState.Phase != "MonsterTurn") return null;
             if (effect.Type == "SetMoonPhase" && effect.Value != 1 && effect.Value != 2)
                 return "Unmodeled moon-phase assignment.";
             StatisticQueryFrame? frame = source.Context?.QueryFrame;
@@ -69,6 +72,7 @@ namespace MonsterTrain2Poju.Model
         {
             string? error = Validate(source, effect, sourceCardId);
             if (error != null) return new MoonPhaseTransitionResult(null, error);
+            if (source.Context!.EnergyState!.Phase != "MonsterTurn") return new MoonPhaseTransitionResult(source);
             TrainCombatState state = source;
             int phase = state.Context!.QueryFrame!.MoonPhase!.Value;
             int count = effect.Type == "SetMoonPhase" ? 1 : Math.Max(0, effect.Value);
