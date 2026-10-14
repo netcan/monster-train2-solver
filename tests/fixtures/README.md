@@ -211,8 +211,15 @@ The default command checks the full curated inventory. For routine changes, run
 the dedicated checks for the new and directly affected scenarios; run the full
 inventory at completed milestones and before delivery.
 
-Current inventory is 322 archives: 291 accepted battles and 31 component
+Current inventory is 323 archives: 292 accepted battles and 31 component
 calibrations. Original relic evidence is 81/224 (36.16%). The binary-only
+`full-battle-corruption-unit-trigger.mt2f` records original Glugsider healing
+from 94/100 to 100/100 when original Unearthed Remains raises room corruption
+from 0 to 1. Its 70 stages, 17 actions and seven EndTurns match native play;
+serial and parallel bounded searches agree. The generated Corrupt Restricted
+unit ability remains unsupported and contributes no executable search action.
+Run `--corruption-unit-trigger-only` for the positive callback and search gate.
+This battle adds no original relic owner. The binary-only
 `full-battle-egg-transformation.mt2f` captures four original `EggHatchRemoval`
 births (Hatch 5 to 2, Armor +30) on authored Steward carriers. Two unchanged
 `MonsterKinhostVessel` OnHatched trigger chains sacrifice their carrier and

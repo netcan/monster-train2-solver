@@ -1,10 +1,17 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-15): 322 binary archives, including 291
+Current accepted inventory (2026-10-15): 323 binary archives, including 292
 full battles and 31 component calibrations. Unchanged original relic evidence
 covers 81/224 catalog entries (36.16%); see
 [the owner evidence table](tests/fixtures/relic-coverage.md). Whole-battle
 coverage and the optimal solver remain in progress.
+
+The latest original-unit witness plays Glugsider, lets it take combat damage,
+then plays Unearthed Remains. Its `CorruptionAdded` callback heals the unit from
+94/100 to 100/100 before room corruption rises from 0 to 1. The 70-stage native
+battle, 17 actions and seven EndTurns match; bounded serial and parallel searches
+agree. The unit's Corrupt Restricted ability remains outside supported search
+actions. Original relic coverage is unchanged.
 
 The latest original-card witness plays unchanged `KinhostVessel` and follows its
 Hatch 8 unit through natural `OnHatched` sacrifice and Pupa summoning. Its

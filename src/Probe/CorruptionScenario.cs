@@ -10,6 +10,7 @@ namespace MonsterTrain2Poju.Probe
     {
         internal const string UnearthedId = "17fb5276-2311-44c9-b662-b73581d9af56";
         internal const string EchoesId = "78996030-e8d1-4731-897e-ee4b809fa26c";
+        internal const string GlugsiderId = "e83182b1-ae94-4f7e-b7fe-aea5b825ecbe";
         private const string StewardId = "d14a50f3-728d-43e1-87f0-ef1b013f6678";
         private static ManualLogSource? logger;
         private static int stewardCardId;
@@ -18,7 +19,8 @@ namespace MonsterTrain2Poju.Probe
         private static int nextSpell;
         private static readonly bool[] marked = new bool[2];
 
-        internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == "corruption";
+        internal static bool UnitTrigger => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == "corruption-unit-trigger";
+        internal static bool Enabled => UnitTrigger || Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == "corruption";
         internal static bool IsScenarioAction(PlayCardAction action)
         {
             if (!Enabled) return false;
@@ -44,8 +46,20 @@ namespace MonsterTrain2Poju.Probe
                 throw new InvalidOperationException("Original Unearthed Remains corruption effects changed.");
             CardData echoes = data.FindCardData(EchoesId) ??
                 throw new InvalidOperationException("Original Echoes of the Past is missing.");
-            CardData steward = data.FindCardData(StewardId) ??
-                throw new InvalidOperationException("Original Train Steward is missing.");
+            CardData steward = data.FindCardData(UnitTrigger ? GlugsiderId : StewardId) ??
+                throw new InvalidOperationException("Original corruption carrier is missing.");
+            if (UnitTrigger)
+            {
+                CharacterData glugsider = steward.GetSpawnCharacterData()!;
+                CharacterTriggerData callback = glugsider.GetTriggers().Single(trigger =>
+                    trigger.GetTrigger() == CharacterTriggerData.Trigger.CorruptionAdded);
+                if (steward.GetAssetKey() != "Glugsider" || glugsider.GetAssetKey() != "MonsterGlugsider" ||
+                    callback.GetEffects().Count != 1 || callback.GetEffects()[0].GetEffectStateName() != "CardEffectHeal")
+                    throw new InvalidOperationException("Original Glugsider corruption-heal definition changed.");
+                CardEffectData heal = callback.GetEffects()[0];
+                log.LogInfo("CORRUPTION-UNIT-DEFINITION cost=" + steward.GetCost() + " hp=" + glugsider.GetHealth() +
+                    " heal=" + heal.GetParamInt() + " target=" + heal.GetTargetMode() + " team=" + heal.GetTargetTeamType());
+            }
             if (echoes.GetEffects().Count != 2 || echoes.GetEffects()[1].GetEffectStateName() != "CardEffectAdjustCorruption" ||
                 echoes.GetEffects()[1].GetParamInt() != -1 || echoes.GetEffects()[1].GetParamBool())
                 throw new InvalidOperationException("Original remove-corruption definition changed.");
@@ -64,7 +78,7 @@ namespace MonsterTrain2Poju.Probe
             unearthedCardId = FullBattleTrace.Active.CardId(added);
             echoesCardId = FullBattleTrace.Active.CardId(remove);
             RoomState room = managers.GetRoomManager()!.GetRoom(0);
-            log.LogInfo("CORRUPTION-PREPARED steward=" + stewardCardId + " unearthed=" + unearthedCardId +
+            log.LogInfo("CORRUPTION-PREPARED " + (UnitTrigger ? "carrier=" : "steward=") + stewardCardId + " unearthed=" + unearthedCardId +
                 " echoes=" + echoesCardId + " room=0 current=" +
                 room.GetCurrentCorruption() + " max=" + room.GetMaxCorruption() + " permanent=" + room.GetPermanentCorruption());
         }
@@ -77,6 +91,7 @@ namespace MonsterTrain2Poju.Probe
                 .FirstOrDefault(unit => unit.SpawnerCardId == stewardCardId);
             if (steward == null) return plays.FirstOrDefault(item => item.CardInstanceId == stewardCardId && item.RoomIndex == 0)
                 ?? BattleActionModel.ChooseUnitSpellAndJunkPlay(source);
+            if (UnitTrigger && nextSpell == 0 && steward.Health == steward.MaxHealth) return null;
             int cardId = nextSpell == 0 ? unearthedCardId : echoesCardId;
             PlayCardAction? action = plays.FirstOrDefault(item => item.CardInstanceId == cardId && item.RoomIndex == 0 &&
                 (nextSpell != 1 || item.TargetUnitId == steward.Id));

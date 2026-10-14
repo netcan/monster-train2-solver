@@ -41,6 +41,7 @@ param(
     [switch] $TrainHeal,
     [switch] $Overheal,
     [switch] $Corruption,
+    [switch] $CorruptionUnitTrigger,
     [switch] $PermanentCorruption,
     [switch] $MoonPhaseCard,
     [switch] $MoonPhaseAdvance,
@@ -421,6 +422,7 @@ if ($DragonHoard) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' 
 if ($TrainHeal) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($Overheal) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($Corruption) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
+if ($CorruptionUnitTrigger) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($PermanentCorruption) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($MoonPhaseCard) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($MoonPhaseAdvance) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
@@ -621,6 +623,7 @@ if ($DragonHoard) { $environment['MT2_PROBE_MODIFIERS'] = 'dragon-hoard' }
 if ($TrainHeal) { $environment['MT2_PROBE_MODIFIERS'] = 'train-heal' }
 if ($Overheal) { $environment['MT2_PROBE_MODIFIERS'] = 'overheal' }
 if ($Corruption) { $environment['MT2_PROBE_MODIFIERS'] = 'corruption' }
+if ($CorruptionUnitTrigger) { $environment['MT2_PROBE_MODIFIERS'] = 'corruption-unit-trigger' }
 if ($PermanentCorruption) { $environment['MT2_PROBE_MODIFIERS'] = 'permanent-corruption' }
 if ($MoonPhaseCard) { $environment['MT2_PROBE_MODIFIERS'] = 'moon-phase-card' }
 if ($MoonPhaseAdvance) { $environment['MT2_PROBE_MODIFIERS'] = 'moon-phase-advance' }
@@ -838,6 +841,30 @@ if ($Corruption -and ($trace.ModifierScenario -ne 'corruption' -or
     @(Select-String -LiteralPath $unityLog -Pattern 'CORRUPTION-CANDIDATE spell=\d+ supported=True current=\d+->\d+ max=\d+->\d+').Count -ne 2 -or
     @($trace.Actions | Where-Object { $_.ScenarioAction }).Count -ne 2)) {
     throw 'Original Unearthed Remains and Echoes of the Past actions were not captured.'
+}
+if ($CorruptionUnitTrigger) {
+    $healedActions = @($trace.Actions | Where-Object {
+        $entry = $_
+        $before = $entry.Before.Spawn.Train
+        $after = $entry.Actual.Spawn.Train
+        $card = @($before.Context.Cards.Hand | Where-Object InstanceId -EQ $entry.Action.CardInstanceId)
+        $oldUnit = @($before.Rooms.Units | Where-Object AssetKey -EQ 'MonsterGlugsider')
+        $newUnit = @($after.Rooms.Units | Where-Object Id -EQ $oldUnit[0].Id)
+        $oldRoom = @($before.Context.RoomCapacities | Where-Object RoomIndex -EQ 0)
+        $newRoom = @($after.Context.RoomCapacities | Where-Object RoomIndex -EQ 0)
+        $card.Count -eq 1 -and $card[0].DataId -eq '17fb5276-2311-44c9-b662-b73581d9af56' -and
+            $oldUnit.Count -eq 1 -and $newUnit.Count -eq 1 -and
+            $oldUnit[0].Health -gt 0 -and $oldUnit[0].Health -lt $oldUnit[0].MaxHealth -and
+            $newUnit[0].Health -eq [Math]::Min($oldUnit[0].MaxHealth, $oldUnit[0].Health + 10) -and
+            $oldRoom.Count -eq 1 -and $newRoom.Count -eq 1 -and
+            $oldRoom[0].Corruption -eq 0 -and $newRoom[0].Corruption -eq 1 -and
+            $newRoom[0].MaxCorruption -eq ($oldRoom[0].MaxCorruption + 1)
+    })
+    if ($trace.ModifierScenario -ne 'corruption-unit-trigger' -or $healedActions.Count -ne 1 -or
+        -not (Select-String -LiteralPath $unityLog -Pattern 'CORRUPTION-UNIT-DEFINITION cost=1 hp=100 heal=10' -Quiet)) {
+        throw 'Original wounded Glugsider did not heal on the Unearthed Remains corruption addition.'
+    }
+    Write-Output 'NATIVE-CORRUPTION-UNIT-TRIGGER PASS: wounded original Glugsider healed on corruption addition.'
 }
 if ($PermanentCorruption -and ($trace.ModifierScenario -ne 'permanent-corruption' -or
     -not (Select-String -LiteralPath $unityLog -Pattern 'PERMANENT-CORRUPTION-PREPARED card=\d+ room=0 current=\d+ max=\d+ permanent=\d+' -Quiet) -or

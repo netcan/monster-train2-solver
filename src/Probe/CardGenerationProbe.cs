@@ -42,7 +42,9 @@ namespace MonsterTrain2Poju.Probe
         {
             var interactions = new List<string>();
             foreach (CardTraitData trait in data.GetTraits())
-                if (!DamageScalingProbe.Known(trait.GetTraitStateName())) interactions.Add("Generated card trait setup/callback " + trait.GetTraitStateName());
+                if (!DamageScalingProbe.Known(trait.GetTraitStateName()) &&
+                    !(data.IsUnitAbility() && trait.GetTraitStateName() == "CardTraitCorruptRestricted"))
+                    interactions.Add("Generated card trait setup/callback " + trait.GetTraitStateName());
             CardState instance = new CardState();
             instance.Setup(data, AllGameManagers.Instance!.GetSaveManager());
             CardModifiers modifiers = CardModifiers.Empty();

@@ -6,6 +6,7 @@ internal static class RoomCorruptionChecks
 {
     private const string UnearthedId = "17fb5276-2311-44c9-b662-b73581d9af56";
     private const string EchoesId = "78996030-e8d1-4731-897e-ee4b809fa26c";
+    private const string GlugsiderId = "e83182b1-ae94-4f7e-b7fe-aea5b825ecbe";
 
     internal static void Run()
     {
@@ -41,7 +42,8 @@ internal static class RoomCorruptionChecks
             !RoomCorruptionModel.Test(source.Rooms[0], Effect("AdjustCorruption", 3, false)),
             "Remove-all ignored the permanent floor or native cast test.");
         RoomCorruptionResult beyondMax = RoomCorruptionModel.Apply(source, 0, Effect("AdjustCorruption", 8, true));
-        Require(beyondMax.Supported && Room(beyondMax.Context!).Corruption == 10 && Room(beyondMax.Context!).MaxCorruption == 4,
+        Require(beyondMax.Supported && Room(beyondMax.Context!).Corruption == 10 && Room(beyondMax.Context!).MaxCorruption == 4 &&
+            beyondMax.Additions.Count == 1 && beyondMax.Additions[0].RoomIndex == 0 && beyondMax.Additions[0].Count == 8,
             "Fixed corruption addition was incorrectly capped by the maximum.");
         RoomCorruptionResult permanent = RoomCorruptionModel.Apply(source, 0, Effect("AddPermanentCorruption", 1));
         Require(permanent.Supported && Room(permanent.Context!).PermanentCorruption == 2 &&
@@ -120,6 +122,60 @@ internal static class RoomCorruptionChecks
                 "Original corruption action differs from the native replay: " + difference);
         }
         Console.WriteLine("NATIVE-ROOM-CORRUPTION-CHECKS PASS: ordered increase and corruption-scaled removal in a complete battle.");
+    }
+
+    internal static void NativeUnitTrigger(FixtureValue fixture)
+    {
+        Require(fixture.GetProperty("ModifierScenario").GetString() == "corruption-unit-trigger" &&
+            fixture.GetProperty("NativeWon").GetBoolean() &&
+            new[] { "CaptureFailures", "Mismatches", "Unsupported", "Pending" }
+                .All(name => fixture.GetProperty(name).GetInt32() == 0),
+            "Original Glugsider battle did not finish with a complete native match.");
+        FixtureValue[] actions = fixture.GetProperty("Actions").EnumerateArray().ToArray();
+        Require(actions.Length > 0 && fixture.GetProperty("Stages").GetArrayLength() > 0,
+            "Glugsider battle has no recorded decisions or stages.");
+        FixtureValue? witness = actions.Cast<FixtureValue?>().SingleOrDefault(record =>
+            record.Value.GetProperty("Before").Deserialize<BattleTurnState>()!.Spawn.Train.Context!
+                .FindCard(record.Value.GetProperty("Action").Deserialize<PlayCardAction>()!.CardInstanceId)?.DataId == UnearthedId);
+        Require(witness.HasValue, "No original Unearthed Remains corruption callback action was recorded.");
+        BattleTurnState before = witness.Value.GetProperty("Before").Deserialize<BattleTurnState>()!;
+        BattleTurnState actual = witness.Value.GetProperty("Actual").Deserialize<BattleTurnState>()!;
+        PlayCardAction action = witness.Value.GetProperty("Action").Deserialize<PlayCardAction>()!;
+        RoomCombatState oldRoom = before.Spawn.Train.Rooms.Single(room => room.RoomIndex == action.RoomIndex);
+        RoomCombatState newRoom = actual.Spawn.Train.Rooms.Single(room => room.RoomIndex == action.RoomIndex);
+        CombatUnit oldUnit = oldRoom.Units.Single(unit => unit.AssetKey == "MonsterGlugsider");
+        CombatUnit newUnit = newRoom.Units.Single(unit => unit.Id == oldUnit.Id);
+        CombatTrigger trigger = oldUnit.Triggers.Single(item => item.Kind == "CorruptionAdded");
+        CardPlayRule spell = before.PlayRules!.Cards.Single(rule => rule.DataId == UnearthedId);
+        RoomCapacityState oldCapacity = before.Spawn.Train.Context!.RoomCapacities!.Single(room => room.RoomIndex == action.RoomIndex);
+        RoomCapacityState newCapacity = actual.Spawn.Train.Context!.RoomCapacities!.Single(room => room.RoomIndex == action.RoomIndex);
+        AbilityCardResult ability = AbilityCardModel.Get(before.Spawn.Train.Context, oldUnit.Ability!.CardCreation!);
+        Require(before.Spawn.Train.Context.FindCard(oldUnit.SpawnerCardId)?.DataId == GlugsiderId &&
+            action.RoomIndex == 0 && spell.Effects.Count == 2 &&
+            spell.Effects[0].Type == "AdjustMaxCorruption" && spell.Effects[0].Value == 1 &&
+            spell.Effects[1].Type == "AdjustCorruption" && spell.Effects[1].Value == 1 &&
+            trigger.Effects.Count == 1 && trigger.Effects[0].Type == "CardEffectHeal" && trigger.Effects[0].Value == 10 &&
+            oldUnit.Health > 0 && oldUnit.Health < oldUnit.MaxHealth &&
+            newUnit.Health == Math.Min(oldUnit.MaxHealth, oldUnit.Health + 10) &&
+            oldCapacity.Corruption == 0 && newCapacity.Corruption == 1 &&
+            newCapacity.MaxCorruption == oldCapacity.MaxCorruption + 1 &&
+            ability.Supported && ability.Card!.MaskDescriptor?.BaseTraits.Any(trait =>
+                trait.RuntimeType == "CardTraitCorruptRestricted" && trait.ParamInt == 4) == true,
+            "Recorded action lacks the original wounded Glugsider healing witness.");
+        PlayCardAction activation = new(ability.Card!.InstanceId, action.RoomIndex,
+            activatorUnitId: oldUnit.Id);
+        BattleActionResult rejected = UnitAbilityModel.Activate(before, activation);
+        Require(!rejected.Supported &&
+            !BattleActionModel.EnumerateActions(before).SupportedCandidates.Any(candidate =>
+                candidate.Action.ActivatorUnitId == oldUnit.Id),
+            "Corrupt Restricted ability became an executable search branch.");
+        BattleActionResult replay = BattleActionModel.PlayCard(before, action);
+        Require(replay.Supported && ModelJson.Difference(BattleTurnChecks.Comparable(replay.State!),
+            BattleTurnChecks.Comparable(actual)) == null,
+            "Original corruption-trigger heal differs from the native action.");
+        BattleTurnChecks.Native(fixture);
+        BattleSearchChecks.Native(fixture);
+        Console.WriteLine("NATIVE-CORRUPTION-UNIT-TRIGGER PASS: original Glugsider healed on corruption addition; ability guarded.");
     }
 
     internal static void NativePermanent(FixtureValue fixture)

@@ -754,9 +754,37 @@ namespace MonsterTrain2Poju.Model
                 if (effect.Type == "AdjustMaxCorruption" || effect.Type == "AdjustCorruption" ||
                     effect.Type == "AddPermanentCorruption")
                 {
-                    RoomCorruptionResult changed = RoomCorruptionModel.Apply(state, collectionRoom, effect);
+                    CombatContext beforeCorruption = state.Context!;
+                    RoomCorruptionResult changed = RoomCorruptionModel.Apply(state, collectionRoom, effect,
+                        runUnitCallbacks: true);
                     if (!changed.Supported) return UnsupportedTrain(changed.UnsupportedReason!);
-                    state = WithContext(state, changed.Context!);
+                    foreach (RoomCorruptionAddition addition in changed.Additions)
+                    {
+                        RoomCombatState triggerRoom = state.Rooms.Single(room => room.RoomIndex == addition.RoomIndex);
+                        int[] actorIds = triggerRoom.Units.Where(unit => unit.Health > 0 &&
+                            unit.Triggers.Any(trigger => trigger.Kind == "CorruptionAdded")).Select(unit => unit.Id).ToArray();
+                        foreach (int actorId in actorIds)
+                            for (int stack = 0; stack < addition.Count; stack++)
+                            {
+                                RoomCombatState currentRoom = state.Rooms.Single(room => room.RoomIndex == addition.RoomIndex);
+                                CombatUnit? actor = currentRoom.Units.FirstOrDefault(unit => unit.Id == actorId && unit.Health > 0);
+                                if (actor == null) break;
+                                callbacks.Add(new RoomCombatModel.QueuedCharacterTrigger(addition.RoomIndex, actor,
+                                    "CorruptionAdded"));
+                                DrainDeaths();
+                                if (routingError != null) return UnsupportedTrain(routingError);
+                            }
+                    }
+                    if (changed.Additions.Any(addition => state.Context!.RoomCapacities!.Any(room =>
+                        room.RoomIndex == addition.RoomIndex &&
+                        (room.Corruption != beforeCorruption.RoomCapacities!.Single(before =>
+                            before.RoomIndex == addition.RoomIndex).Corruption ||
+                         room.MaxCorruption != beforeCorruption.RoomCapacities!.Single(before =>
+                            before.RoomIndex == addition.RoomIndex).MaxCorruption ||
+                         room.PermanentCorruption != beforeCorruption.RoomCapacities!.Single(before =>
+                            before.RoomIndex == addition.RoomIndex).PermanentCorruption))))
+                        return UnsupportedTrain("Nested corruption callbacks require a fresh native ordering calibration.");
+                    state = WithContext(state, state.Context!.WithRoomCapacities(changed.Context!.RoomCapacities!));
                     continue;
                 }
                 if (effect.Type == "Generate")

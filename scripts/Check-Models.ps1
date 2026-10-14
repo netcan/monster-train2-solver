@@ -6,7 +6,7 @@ $workspace = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $fixtureNames = @('full-battle-steward-once.mt2f', 'full-battle-no-cards.mt2f', 'full-battle-units-and-junk.mt2f',
     'full-battle-unplayed-card-pyre-damage.mt2f',
     'full-battle-unplayed-card-effects.mt2f', 'full-battle-train-heal.mt2f', 'full-battle-status-upgrade.mt2f',
-    'full-battle-overheal.mt2f', 'full-battle-corruption.mt2f', 'full-battle-permanent-corruption.mt2f',
+    'full-battle-overheal.mt2f', 'full-battle-corruption.mt2f', 'full-battle-corruption-unit-trigger.mt2f', 'full-battle-permanent-corruption.mt2f',
     'full-battle-soul-siphon.mt2f', 'full-battle-moon-phase-card.mt2f', 'full-battle-moon-phase-advance.mt2f',
     'full-battle-moon-phase-callbacks.mt2f',
     'full-battle-conditional-no-player-status.mt2f',
@@ -268,6 +268,7 @@ $focusedTeamSpawnStatusFixtures = @($fixtures | Where-Object {
 $generalFixtures = @($fixtures | Where-Object {
     (Split-Path -Leaf $_) -notin @('full-battle-companion-bump.mt2f', 'full-battle-outer-boss-bump.mt2f',
         'full-battle-original-team-spawn-status.mt2f', 'full-battle-egg-transformation.mt2f',
+        'full-battle-corruption-unit-trigger.mt2f',
         'full-battle-original-kinhost-vessel.mt2f',
         'full-battle-original-kinhost-vessel-delayed.mt2f',
         'full-battle-relic-card-cast-trigger-upgrades.mt2f',
@@ -380,6 +381,16 @@ $corruptionFixtures = @($fixtures | Where-Object {
 foreach ($fixturePath in $corruptionFixtures) {
     dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- --room-corruption-only $fixturePath
     if ($LASTEXITCODE -ne 0) { throw "Room-corruption checks failed: $fixturePath" }
+}
+
+$corruptionUnitFixtures = @($fixtures | Where-Object {
+    (Split-Path -Leaf $_) -eq 'full-battle-corruption-unit-trigger.mt2f'
+})
+foreach ($fixturePath in $corruptionUnitFixtures) {
+    foreach ($mode in @('--room-combat-only', '--corruption-unit-trigger-only')) {
+        dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- $mode $fixturePath
+        if ($LASTEXITCODE -ne 0) { throw "Corruption unit-trigger checks failed ($mode): $fixturePath" }
+    }
 }
 
 $permanentCorruptionFixtures = @($fixtures | Where-Object {

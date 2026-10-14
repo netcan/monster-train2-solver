@@ -7,10 +7,20 @@ namespace MonsterTrain2Poju.Model
     public sealed class RoomCorruptionResult
     {
         public CombatContext? Context { get; }
+        public IReadOnlyList<RoomCorruptionAddition> Additions { get; }
         public string? UnsupportedReason { get; }
         public bool Supported => UnsupportedReason == null;
-        internal RoomCorruptionResult(CombatContext? context, string? error = null)
-        { Context = context; UnsupportedReason = error; }
+        internal RoomCorruptionResult(CombatContext? context, string? error = null,
+            IReadOnlyList<RoomCorruptionAddition>? additions = null)
+        { Context = context; UnsupportedReason = error;
+            Additions = Array.AsReadOnly((additions ?? Array.Empty<RoomCorruptionAddition>()).ToArray()); }
+    }
+
+    public sealed class RoomCorruptionAddition
+    {
+        public int RoomIndex { get; }
+        public int Count { get; }
+        internal RoomCorruptionAddition(int roomIndex, int count) { RoomIndex = roomIndex; Count = count; }
     }
 
     public static class RoomCorruptionModel
@@ -50,11 +60,16 @@ namespace MonsterTrain2Poju.Model
                 current.Value >= effect.Value);
         }
 
-        public static RoomCorruptionResult Apply(TrainCombatState source, int selectedRoomIndex, CardActionEffect effect)
+        public static RoomCorruptionResult Apply(TrainCombatState source, int selectedRoomIndex, CardActionEffect effect) =>
+            Apply(source, selectedRoomIndex, effect, false);
+
+        internal static RoomCorruptionResult Apply(TrainCombatState source, int selectedRoomIndex, CardActionEffect effect,
+            bool runUnitCallbacks)
         {
             string? error = Validate(source.Context, effect);
             if (error != null) return new RoomCorruptionResult(null, error);
             CombatContext context = source.Context!;
+            var additions = new List<RoomCorruptionAddition>();
             int[] indices = effect.Target == "Tower" ? source.Rooms.Select(room => room.RoomIndex).ToArray() : new[] { selectedRoomIndex };
             foreach (int index in indices)
             {
@@ -80,10 +95,12 @@ namespace MonsterTrain2Poju.Model
                     }
                     if (requested > current)
                     {
-                        if (combatRoom.Units.Any(unit => unit.Triggers.Any(trigger => trigger.Kind == "CorruptionAdded")))
+                        if (combatRoom.Units.Any(unit => unit.Triggers.Any(trigger => trigger.Kind == "CorruptionAdded")) &&
+                            (!runUnitCallbacks || effect.Target == "Tower"))
                             return new RoomCorruptionResult(null, "CorruptionAdded unit callbacks are not modeled.");
                         if (context.Relics?.Any(relic => relic.EffectTypes.Any(RelicCallbacks.Contains)) == true)
                             return new RoomCorruptionResult(null, "CorruptionAdded relic callbacks are not modeled.");
+                        additions.Add(new RoomCorruptionAddition(index, requested - current));
                     }
                     nextCurrent = Math.Max(requested, permanent);
                 }
@@ -91,7 +108,7 @@ namespace MonsterTrain2Poju.Model
                     nextCurrent, room.Attachments, nextMaximum, permanent);
                 context = context.WithRoomCapacities(context.RoomCapacities.Select(item => item.RoomIndex == index ? changed : item).ToArray());
             }
-            return new RoomCorruptionResult(context);
+            return new RoomCorruptionResult(context, additions: additions);
         }
     }
 }
