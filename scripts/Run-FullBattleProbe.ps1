@@ -23,6 +23,7 @@ param(
     [switch] $NullForwarding,
     [switch] $NullTriggers,
     [switch] $NullTargetless,
+    [switch] $OriginalTrample,
     [switch] $RemoveAllStatusEffects,
     [switch] $DragonHoard,
     [switch] $TrainHeal,
@@ -363,6 +364,7 @@ if ($CardEffectKill -or $CardEffectKillSubtype) { $Policy = 'units-spells-and-ju
 if ($NullForwarding) { $Policy = 'units-spells-and-junk' }
 if ($NullTriggers) { $Policy = 'units-spells-and-junk' }
 if ($NullTargetless) { $Policy = 'units-spells-and-junk' }
+if ($OriginalTrample) { $Policy = 'units-spells-and-junk' }
 if ($RemoveAllStatusEffects) { $Policy = 'units-spells-and-junk' }
 if ($DragonHoard) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($TrainHeal) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
@@ -537,6 +539,7 @@ if ($CardEffectKill -or $CardEffectKillSubtype) {
 if ($NullForwarding) { $environment['MT2_PROBE_MODIFIERS'] = 'null-forwarding' }
 if ($NullTriggers) { $environment['MT2_PROBE_MODIFIERS'] = 'null-triggers' }
 if ($NullTargetless) { $environment['MT2_PROBE_MODIFIERS'] = 'null-targetless' }
+if ($OriginalTrample) { $environment['MT2_PROBE_MODIFIERS'] = 'original-trample' }
 if ($RemoveAllStatusEffects) { $environment['MT2_PROBE_MODIFIERS'] = 'remove-all-status-effects' }
 if ($DragonHoard) { $environment['MT2_PROBE_MODIFIERS'] = 'dragon-hoard' }
 if ($TrainHeal) { $environment['MT2_PROBE_MODIFIERS'] = 'train-heal' }
@@ -689,6 +692,12 @@ if ($NullTargetless -and ($trace.ModifierScenario -ne 'null-targetless' -or
     }).Count -ne 0 -or
     @($trace.Actions | Where-Object ScenarioAction).Count -ne 2)) {
     throw 'Original targetless null effects did not resolve in the native battle.'
+}
+if ($OriginalTrample -and ($trace.ModifierScenario -ne 'original-trample' -or
+    -not (Select-String -LiteralPath $unityLog -Pattern 'TRAMPLE-PREPARED original=Basher unit=MonsterBasher stacks=1' -Quiet) -or
+    -not (Select-String -LiteralPath $unityLog -Pattern 'TRAMPLE-PLAY original=Basher room=0' -Quiet) -or
+    -not (Select-String -LiteralPath (Join-Path $profile 'logfile.log') -Pattern 'Attacker .* dealing [1-9][0-9]* damage .* with damage type Trample' -Quiet))) {
+    throw 'Original Basher did not deliver Trample damage in the native battle.'
 }
 if ($RemoveAllStatusEffects -and ($trace.Schema -ne 164 -or $trace.ModifierScenario -ne 'remove-all-status-effects' -or
     -not (Select-String -LiteralPath $unityLog -Pattern 'REMOVE-ALL-STATUS-SEEDED card=.* hidden=' -Quiet) -or

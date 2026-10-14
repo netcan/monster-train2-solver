@@ -1,10 +1,29 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-14): 296 binary archives, including 265
+Current accepted inventory (2026-10-14): 297 binary archives, including 266
 full battles and 31 component calibrations. Unchanged original relic evidence
 covers 78/224 catalog entries (34.82%); see
 [the owner evidence table](tests/fixtures/relic-coverage.md). Whole-battle
 coverage and the optimal solver remain in progress.
+
+### Original Trample damage chain
+
+`full-battle-original-trample-basher.mt2f` deploys unchanged `Basher`, whose
+`MonsterBasher` starts with Trample. Native combat deals three Trample hits of
+39, 25 and 40 damage behind the first defender. The model carries post-defense
+excess through physical room order after OnKill and Lifesteal, with normal
+attacking callbacks and Spikes on each later hit. The muted Instant battle
+wins with 14 matched actions, five EndTurns, 38 room stages, and zero capture
+failures, mismatches, unsupported transitions or pending records. The
+22,585-byte binary has 3,438 unique nodes and SHA-256
+`4a0c39e4315040c9e56039efec3e1431d9318eb261ed0d7bad4fdfe5b179fb83`.
+Search matches all 14 decisions and 128 serial/parallel states. Other original
+Trample owners, LifeLink interactions and specialized Boss cases remain open.
+
+```powershell
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-trample-basher.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-trample-basher.mt2f
+```
 
 ### Original null-effect target forwarding
 

@@ -29,6 +29,37 @@ internal static class RoomCombatChecks
             Unit(2, CombatTeam.Enemy, 0, 9), Unit(3, CombatTeam.Player, 6, 25, multi)));
         Require(retarget.State!.Units.Count == 2 && retarget.State.Units[0].Id == 2 &&
             retarget.State.Units[0].Health == 3, "Multistrike did not retarget after a kill.");
+        var trample = new CombatStatus("trample", 1);
+        RoomCombatResult trampleChain = RoomCombatModel.Exchange(Room(Unit(1, CombatTeam.Enemy, 0, 3),
+            Unit(2, CombatTeam.Enemy, 0, 4), Unit(3, CombatTeam.Enemy, 0, 20),
+            Unit(4, CombatTeam.Player, 10, 30, trample)));
+        Require(trampleChain.Supported && trampleChain.State!.Units.Single(unit => unit.Id == 3).Health == 17 &&
+            trampleChain.Events.Where(item => item.Kind is "Attack" or "Trample").Select(item => item.Target)
+                .SequenceEqual([1, 2, 3]), "Trample did not recursively carry excess damage through physical order.");
+        RoomCombatResult trampleBlocked = RoomCombatModel.Exchange(Room(Unit(1, CombatTeam.Enemy, 0, 3,
+            new CombatStatus("armor", 10, 1, removeWhenTriggered: true)), Unit(2, CombatTeam.Enemy, 0, 20),
+            Unit(3, CombatTeam.Player, 10, 30, trample)));
+        Require(trampleBlocked.Supported && trampleBlocked.State!.Units.Single(unit => unit.Id == 2).Health == 20 &&
+            !trampleBlocked.Events.Any(item => item.Kind == "Trample"),
+            "Armor-blocked damage incorrectly trampled into the next unit.");
+        RoomCombatResult trampleStealth = RoomCombatModel.Exchange(Room(Unit(1, CombatTeam.Enemy, 0, 3),
+            Unit(2, CombatTeam.Enemy, 0, 4, new CombatStatus("stealth", 1)),
+            Unit(3, CombatTeam.Enemy, 0, 20), Unit(4, CombatTeam.Player, 10, 30, trample)));
+        Require(trampleStealth.Supported && trampleStealth.State!.Units.Single(unit => unit.Id == 2).Health == 4 &&
+            trampleStealth.State.Units.Single(unit => unit.Id == 3).Health == 13,
+            "Trample did not skip a stealthed unit behind the original target.");
+        RoomCombatResult enemyTrample = RoomCombatModel.Exchange(Room(Unit(1, CombatTeam.Enemy, 9, 30, trample),
+            Unit(2, CombatTeam.Player, 0, 3), Unit(3, CombatTeam.Player, 0, 4),
+            Unit(4, CombatTeam.Player, 0, 20)));
+        Require(enemyTrample.Supported && enemyTrample.State!.Units.Single(unit => unit.Id == 4).Health == 18 &&
+            enemyTrample.Events.Count(item => item.Kind == "Trample") == 2,
+            "Enemy Trample did not recurse through player defenders.");
+        RoomCombatResult trampleSpikes = RoomCombatModel.Exchange(Room(Unit(1, CombatTeam.Enemy, 0, 3),
+            Unit(2, CombatTeam.Enemy, 0, 20, new CombatStatus("spikes", 1, 2)),
+            Unit(3, CombatTeam.Player, 10, 30, trample)));
+        Require(trampleSpikes.Supported && trampleSpikes.State!.Units.Single(unit => unit.Id == 2).Health == 13 &&
+            trampleSpikes.State.Units.Single(unit => unit.Id == 3).Health == 28,
+            "Trample damage failed to trigger the second defender's Spikes.");
         var burstStatus = new CombatStatus("burst", 1, 2);
         CombatUnit burstActor = Unit(2, CombatTeam.Player, 6, 100, burstStatus);
         RoomCombatResult burstOnly = RoomCombatModel.Exchange(Room(Unit(1, CombatTeam.Enemy, 0, 100), burstActor));

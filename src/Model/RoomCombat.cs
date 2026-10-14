@@ -414,7 +414,7 @@ namespace MonsterTrain2Poju.Model
             "relentless", "sweep", "sniper", "rooted", "haste", "untouchable", "endless",
             "buff", "debuff", "regen", "poison", "corrupt_poison", "melee weakness", "spell weakness", "silenced", "muted", "valor", "pyregel",
             "heal multiplier", "heal immunity", "cooldown", "unit_ability", "unit_ability_available", "horde", "cardless", "undying", "ephemeral", "purify", "mageblade", "titanskin", "duality",
-            "newmoon", "fullmoon", "stygian_blessing", "scorch"
+            "newmoon", "fullmoon", "stygian_blessing", "scorch", "trample"
         };
         internal static bool KnowsStatus(string id) => KnownStatuses.Contains(id);
 
@@ -1880,6 +1880,7 @@ namespace MonsterTrain2Poju.Model
                 int raw = damage;
                 int blocked = 0;
                 bool direct = kind == "Attack";
+                bool attackingTrigger = direct || kind == "Trample";
                 if (applyTraits)
                 {
                     bool retainedLegacy = context?.CardRegistry == null && legacyDetachedCards != null;
@@ -1972,8 +1973,9 @@ namespace MonsterTrain2Poju.Model
                 if (unsupportedReason != null) return;
                 // Native fixes damage and resulting HP before firing the pre-damage
                 // callback. Healing, armor or attack changes there do not recalculate it.
-                int resultingHealth = Math.Max(0, target.Health - damage);
-                if (direct && actor != null && actor != target)
+                int previousHealth = target.Health;
+                int resultingHealth = Math.Max(0, previousHealth - damage);
+                if (attackingTrigger && actor != null && actor != target)
                     FireTriggers(actor, "OnAttackingBeforeDamage", overrideTarget: target);
                 if (unsupportedReason != null) return;
                 target.Health = resultingHealth;
@@ -1982,7 +1984,7 @@ namespace MonsterTrain2Poju.Model
                 if (!source.Preview && !target.Alive && IsTerminalBossDeath(target))
                 { battleWon = true; context = context?.WithBossesDead(); }
                 Emit(kind, actor, target, damage);
-                if (direct && actor != null && actor != target)
+                if (attackingTrigger && actor != null && actor != target)
                     FireTriggers(actor, "OnAttacking", overrideTarget: target);
                 // Native queues Slay before lifesteal and retaliation, for every damage type
                 // with a character attacker, including damage from a character effect.
@@ -1996,7 +1998,15 @@ namespace MonsterTrain2Poju.Model
                     Trigger(actor, "lifesteal", 1);
                     Heal(actor, raw, "Lifesteal");
                 }
-                if (direct && actor != null && actor.Alive && target.Has("spikes"))
+                if (attackingTrigger && actor?.Destroyed == false && actor.Count("trample") > 0 &&
+                    damage > previousHealth)
+                {
+                    WorkingUnit? next = NextTrampleTarget(target);
+                    if (next?.Alive == true)
+                        Damage(actor, next, damage - previousHealth, "Trample");
+                    if (unsupportedReason != null) return;
+                }
+                if (attackingTrigger && actor != null && actor.Alive && target.Has("spikes"))
                 {
                     int retaliation = StatusMagnitude(target, "spikes");
                     Trigger(target, "spikes", 1);
@@ -2021,6 +2031,21 @@ namespace MonsterTrain2Poju.Model
                     if (!TryRevive(actor, target, sourceCardId))
                         Death(actor, target, sourceCardId, deferRemoval: runningTriggerQueue || nativeCardDamage);
                 }
+            }
+
+            private WorkingUnit? NextTrampleTarget(WorkingUnit attacked)
+            {
+                CombatUnit[] ordered = BattleSpawnPointModel.Order(context?.SpawnPoints, attacked.RoomIndex,
+                    units.Where(unit => unit.InRoom && !unit.Removed).Select(unit => unit.Source).ToArray());
+                int index = Array.FindIndex(ordered, unit => unit.Id == attacked.Source.Id);
+                if (index < 0) return null;
+                foreach (CombatUnit unit in ordered.Skip(index + 1).Where(unit => unit.Team == attacked.Source.Team))
+                {
+                    WorkingUnit? candidate = units.FirstOrDefault(item => item.Source.Id == unit.Id);
+                    if (candidate != null && !candidate.Has("stealth") && !candidate.Has("untouchable"))
+                        return candidate;
+                }
+                return null;
             }
 
             private void ApplyDamageOverflow(WorkingUnit? actor, WorkingUnit target, int damage, string kind, int sourceCardId)
