@@ -1,5 +1,17 @@
 # Native regression fixtures
 
+`full-battle-mix-unstable.mt2f` plays original Mixology's `01` BlastInfusion
+with Unstable 5 and Frostbite 6 on a Train Steward. On the deployment EndTurn,
+Frostbite does not trigger because its consume-on-trigger removal is disabled
+there. Later Frostbite leaves the steward at 2 HP and Unstable sacrifices it;
+the room has no enemy at that death boundary, so explosion damage has no native
+target witness. The native Instant battle wins
+with 8 matched actions, 13 card cycles, seven EndTurns and 54 room stages, and
+zero capture failures, mismatches, unsupported transitions or pending records.
+Independent policy replay and bounded serial/four-worker search also match.
+The 28,989-byte binary proves this ordinary no-relic lethal path; actual
+explosion damage and combinations with other statuses or relics remain open.
+
 `full-battle-mix-01.mt2f` and `full-battle-mix-10.mt2f` cover the two remaining
 first-play Mix draft combinations. Both native battles win with 63 matched
 stages and zero capture failures, mismatches, unsupported transitions or pending
@@ -7,8 +19,8 @@ records. The `01` path chooses BlastInfusion with Unstable and then Frostbite,
 but does not play the resulting elixir; it proves draft and upgrade routing only.
 The `10` path chooses MadmanInfusion with Regen and then Reanimate and plays the
 elixir. Their 19/21 actions and 36,318/37,330-byte archives match independent
-replay and bounded serial/four-worker search. The Unstable combat effect still
-requires a separate played-card native calibration.
+replay and bounded serial/four-worker search. The played-card Unstable
+calibration is recorded above.
 
 `full-battle-mix-alternate.mt2f` selects the second original Mix recipe and
 second upgrade, then plays the resulting Regen/Spikes infusion. The native
@@ -173,7 +185,7 @@ The default command checks the full curated inventory. For routine changes, run
 the dedicated checks for the new and directly affected scenarios; run the full
 inventory at completed milestones and before delivery.
 
-Current inventory is 315 archives: 284 accepted battles and 31 component
+Current inventory is 316 archives: 285 accepted battles and 31 component
 calibrations. Original relic evidence is 78/224 (34.82%). The schema-162
 `full-battle-dragon-hoard.mt2f` archive captures Alchemy changing the hoard from
 2 to 4. The Instant native battle wins with 61 matched stages, 21 card actions

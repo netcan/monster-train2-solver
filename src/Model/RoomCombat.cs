@@ -414,7 +414,7 @@ namespace MonsterTrain2Poju.Model
             "relentless", "sweep", "sniper", "rooted", "haste", "untouchable", "endless",
             "buff", "debuff", "regen", "poison", "corrupt_poison", "melee weakness", "spell weakness", "silenced", "muted", "valor", "pyregel",
             "heal multiplier", "heal immunity", "cooldown", "unit_ability", "unit_ability_available", "horde", "cardless", "undying", "ephemeral", "purify", "mageblade", "titanskin", "duality",
-            "newmoon", "fullmoon", "stygian_blessing", "scorch", "trample", "spell shield"
+            "newmoon", "fullmoon", "stygian_blessing", "scorch", "trample", "spell shield", "unstable"
         };
         internal static bool KnowsStatus(string id) => KnownStatuses.Contains(id);
 
@@ -2187,6 +2187,17 @@ namespace MonsterTrain2Poju.Model
                 // ordinary unit death accounting/removal; its point stays occupied.
                 if (target.Source.IsPyre) return;
                 DispatchDeathStatistics(actor, target, sourceCardId, sacrifice);
+                if (target.Count("unstable") > 0)
+                {
+                    int explosion = target.Count("unstable");
+                    foreach (WorkingUnit enemy in units.Where(unit => unit.InRoom && unit.Source.Team == CombatTeam.Enemy &&
+                        unit.Source.Id != target.Source.Id && !unit.Destroyed && !unit.Source.IsPyre &&
+                        !unit.Has("blastresistant")).ToArray())
+                    {
+                        Damage(null, enemy, explosion, "Poison");
+                        if (unsupportedReason != null) return;
+                    }
+                }
                 if (target.Source.DeathState != null)
                     target.Apply(target.Freeze().WithDeathState(new UnitDeathState(true,
                         target.Source.DeathState.IsBeingRemoved || !deferRemoval || sacrifice,
@@ -2345,14 +2356,29 @@ namespace MonsterTrain2Poju.Model
                         Heal(unit, amount, "Regen");
                     }
                     // Stealth shares the native post-combat poison stage and is consumed even without an opponent.
-                    foreach (CombatStatus status in unit.RegisteredStatuses().ToArray())
+                    foreach (CombatStatus status in unit.RegisteredStatuses().OrderBy(status => status.Id == "unstable" ? 4 : 0).ToArray())
                     {
                         if (!unit.Alive || !unit.Has(status.Id) || !Active(status)) continue;
                         if (status.Id == "poison")
                         {
+                            if (source.Deployment && status.RemoveWhenTriggered && !status.RemoveDuringDeployment)
+                            {
+                                RelicStatusDecayResult removal = RelicStatusDecayModel.GetShouldRemove(context, true,
+                                    status.Id, unit.Source.Team == CombatTeam.Player ? 2 : 1, source.Preview);
+                                if (!removal.Supported) { unsupportedReason = removal.UnsupportedReason; return; }
+                                context = removal.Context;
+                                if (removal.ShouldRemove) continue;
+                            }
                             int amount = StatusMagnitude(unit, "poison");
                             Trigger(unit, "poison", 1);
                             Damage(null, unit, amount, "Poison");
+                        }
+                        else if (status.Id == "unstable" && !unit.Has("blastresistant") &&
+                            unit.Count("unstable") >= unit.Health && !unit.Has("untouchable"))
+                        {
+                            unit.Apply(unit.Freeze().WithSacrifice(0));
+                            unit.Health = 0;
+                            if (!TryRevive(null, unit, 0)) Death(null, unit, 0, sacrifice: true);
                         }
                         else if (status.Id == "stealth") Trigger(unit, "stealth", 1);
                     }

@@ -13,9 +13,11 @@ namespace MonsterTrain2Poju.Probe
     {
         internal const string Name = "card-effect-mix";
         private const string MixologyId = "9582724d-2d5e-4349-a642-9720bbb833e9";
+        private const string BlastInfusionId = "3cf25a9b-daa1-42cd-8174-eb0f59cd590f";
         private static ManualLogSource? logger;
         private static int sourceId;
         private static bool played;
+        private static int playedOpeningElixirId;
         private static int drafts;
         private static int firstOpeningChoice;
         private static int secondOpeningChoice;
@@ -26,6 +28,7 @@ namespace MonsterTrain2Poju.Probe
         {
             logger = log;
             played = false;
+            playedOpeningElixirId = 0;
             drafts = 0;
             string opening = Environment.GetEnvironmentVariable("MT2_PROBE_MIX_CHOICES") ?? "00";
             if (opening.Length != 2 || opening.Any(choice => choice != '0' && choice != '1'))
@@ -47,7 +50,8 @@ namespace MonsterTrain2Poju.Probe
             log.LogInfo("MIX-PREPARED original Mixology card=" + sourceId);
         }
 
-        internal static bool IsScenarioPrelude(PlayCardAction action) => action.CardInstanceId == sourceId;
+        internal static bool IsScenarioPrelude(PlayCardAction action) =>
+            action.CardInstanceId == sourceId || action.CardInstanceId == playedOpeningElixirId;
 
         internal static PlayCardAction? Choose(BattleTurnState state)
         {
@@ -62,6 +66,24 @@ namespace MonsterTrain2Poju.Probe
                         new ElixirMixSelection(1, 0, secondOpeningChoice) });
                 }
             }
+            if (playedOpeningElixirId == 0 && firstOpeningChoice == 0 && secondOpeningChoice == 1)
+            {
+                CardToken? elixir = state.Spawn.Train.Context!.Cards.Hand.FirstOrDefault(card => card.DataId == BlastInfusionId);
+                if (elixir != null)
+                {
+                    var target = state.Spawn.Train.Rooms
+                        .SelectMany(room => room.Units.Select(unit => (room.RoomIndex, unit)))
+                        .FirstOrDefault(item => item.unit.Team == CombatTeam.Player && !item.unit.IsPyre && item.unit.Health > 5);
+                    if (target.unit != null)
+                    {
+                        playedOpeningElixirId = elixir.InstanceId;
+                        return new PlayCardAction(elixir.InstanceId, target.RoomIndex, targetUnitId: target.unit.Id);
+                    }
+                }
+            }
+            if (playedOpeningElixirId != 0 && state.Spawn.Train.Rooms.SelectMany(room => room.Units)
+                .Any(unit => unit.Team == CombatTeam.Player && unit.Status("unstable")?.Stacks > 0))
+                return null;
             return BattleActionModel.ChooseUnitSpellAndJunkPlay(state);
         }
 

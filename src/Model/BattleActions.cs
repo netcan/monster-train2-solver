@@ -986,6 +986,8 @@ namespace MonsterTrain2Poju.Model
             => ChoosePlay(source, false);
         public static PlayCardAction? ChooseUnitSpellAndJunkPlay(BattleTurnState source)
             => ChoosePlay(source, true);
+        public static PlayCardAction? ChooseUnitSpellAndJunkPlay(BattleTurnState source, Func<CardToken, bool> includeCard)
+            => ChoosePlay(source, true, includeCard);
         public static PlayCardAction? ChooseEmptySpellThenCards(BattleTurnState source)
         {
             PlayCardAction? ordinary = ChooseUnitSpellAndJunkPlay(source);
@@ -1034,7 +1036,7 @@ namespace MonsterTrain2Poju.Model
                 }
             return ChooseUnitSpellAndJunkPlay(source);
         }
-        private static PlayCardAction? ChoosePlay(BattleTurnState source, bool spells)
+        private static PlayCardAction? ChoosePlay(BattleTurnState source, bool spells, Func<CardToken, bool>? includeCard = null)
         {
             if (source.PlayRules == null) return null;
             IReadOnlyList<PlayCardAction> plays = EnumerateSupportedPlays(source);
@@ -1045,6 +1047,7 @@ namespace MonsterTrain2Poju.Model
             foreach (string effect in spells ? new[] { "SpawnMonster", "Equipment", "Spell", "Null" } : new[] { "SpawnMonster", "Null" })
             foreach (CardToken card in source.Spawn.Train.Context!.Cards.Hand)
             {
+                if (includeCard != null && !includeCard(card)) continue;
                 CardPlayRule? rule = source.PlayRules.Cards.FirstOrDefault(item => item.DataId == card.DataId);
                 if (rule?.Effect != effect) continue;
                 IEnumerable<int> roomOrder = Enumerable.Range(0, roomCount).Select(offset => (source.Spawn.Turn + offset) % roomCount);

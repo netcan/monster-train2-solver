@@ -499,6 +499,23 @@ internal static class BattleActionChecks
             chooser = ChooseBrainTransferThenCards;
         if (fixture.TryGetProperty("ModifierScenario", out var frostChannelingScenario) && frostChannelingScenario.GetString() == "frost-channeling")
             chooser = ChooseFrostChannelingThenCards;
+        if (fixture.TryGetProperty("ModifierScenario", out var mixScenario) && mixScenario.GetString() == "card-effect-mix")
+        {
+            FixtureValue mixChoices = actions[0].GetProperty("Action").GetProperty("MixSelections");
+            if (mixChoices.GetArrayLength() == 2 && mixChoices[0].GetProperty("ChoiceIndex").GetInt32() == 0)
+            {
+                bool playedElixirPrelude = actions.EnumerateArray().Skip(1).Any(entry =>
+                    entry.TryGetProperty("ScenarioAction", out var authored) && authored.GetBoolean() &&
+                    entry.GetProperty("Action").GetProperty("MixSelections").GetArrayLength() == 0);
+                if (playedElixirPrelude && mixChoices[1].GetProperty("ChoiceIndex").GetInt32() == 1)
+                    chooser = source => source.Spawn.Train.Rooms.SelectMany(room => room.Units).Any(unit =>
+                        unit.Team == CombatTeam.Player && unit.Status("unstable")?.Stacks > 0)
+                        ? null : BattleActionModel.ChooseUnitSpellAndJunkPlay(source);
+                else if (!playedElixirPrelude)
+                    chooser = source => BattleActionModel.ChooseUnitSpellAndJunkPlay(source,
+                        card => card.DataId != "3cf25a9b-daa1-42cd-8174-eb0f59cd590f");
+            }
+        }
         if (fixture.TryGetProperty("ModifierScenario", out var transferAbilityScenario) && transferAbilityScenario.GetString() == "transfer-attack-ability")
             chooser = UnitAbilityModel.ChooseAbilityThenCards;
         if (fixture.TryGetProperty("ModifierScenario", out var killedUnitsScenario) && killedUnitsScenario.GetString() == "damage-by-units-killed")
