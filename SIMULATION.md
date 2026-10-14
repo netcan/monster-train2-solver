@@ -705,6 +705,14 @@ cycles also match. The old FrostChanneling archive still matches 22 actions,
 seven EndTurns and its policy chain. The experimental Mix battle remains one
 unsupported action short of strict acceptance.
 
+The pure Mix draft model now reproduces the original no-replacement Battle RNG
+sampling for new elixirs and upgrades. Against the native `Mixology` action,
+both ordered new-elixir offers, their base upgrades, both ordered upgrade offers
+and the final Battle RNG state match exactly. The implementation also follows
+the original previous-card exclusion and shared random-initial-upgrade pool when
+a recipe has no base upgrade. Card allocation and upgrade replacement remain
+unmodeled, so the action is still unsupported.
+
 ### BalatroEventChicot Mute relic (schema 156)
 
 `full-battle-spawn-status-relics-boss-mute.mt2f` captures the unchanged Chicot
