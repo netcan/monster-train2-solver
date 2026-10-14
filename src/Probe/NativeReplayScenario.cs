@@ -919,7 +919,8 @@ namespace MonsterTrain2Poju.Probe
                 return;
             }
             if (fullBattle && !numericModifiersPrepared && (modifierScenario == "spawn-status-relics-tuned-gear" ||
-                modifierScenario == "spawn-status-relics-combat" || modifierScenario == "spawn-status-relics-egg-hatch"))
+                modifierScenario == "spawn-status-relics-combat" || modifierScenario == "spawn-status-relics-egg-hatch" ||
+                modifierScenario == "spawn-status-relics-egg-transformation"))
             {
                 if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Spawn-status relic fixture must start on deployment turn.");
                 numericModifiersPrepared = true;

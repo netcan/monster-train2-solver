@@ -17,6 +17,8 @@ namespace MonsterTrain2Poju.Probe
             Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == "spawn-status-relics-tuned-gear";
         internal static bool OriginalEggHatchRelic =>
             Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == "spawn-status-relics-egg-hatch";
+        internal static bool OriginalEggTransformation =>
+            Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == "spawn-status-relics-egg-transformation";
         internal static bool OriginalChicotRelic =>
             Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == "spawn-status-relics-boss-mute";
         internal static bool OriginalCombatRelics =>
@@ -54,30 +56,62 @@ namespace MonsterTrain2Poju.Probe
             else HealingScenario.Prepare(managers, log, withTriggers: true);
             SaveManager save = managers.GetSaveManager();
             CardState[] cards = managers.GetCardManager()!.GetAllCards(new List<CardState>()).Where(card =>
-                card.GetCardDataID() == "d14a50f3-728d-43e1-87f0-ef1b013f6678").ToArray();
-            CardData data = save.GetAllGameData().FindCardData(cards[0].GetCardDataID())!;
+                card.GetCardDataID() == "d14a50f3-728d-43e1-87f0-ef1b013f6678" ||
+                OriginalEggTransformation && card.GetCardDataID() == "38e70e6a-20f3-4e36-8d31-c5110be07f87").ToArray();
+            CardData data = save.GetAllGameData().FindCardData("d14a50f3-728d-43e1-87f0-ef1b013f6678")!;
             CharacterData unit = data.GetEffects().Single(effect => effect.GetEffectStateName() == "CardEffectSpawnMonster").GetParamCharacterData();
             if (OriginalTeamSpawnStatusRelic)
             {
                 var subtypeKeys = (List<string>)AccessTools.Field(typeof(CharacterData), "subtypeKeys").GetValue(unit);
                 if (!subtypeKeys.Contains("SubtypesData_Hymnist")) subtypeKeys.Add("SubtypesData_Hymnist");
             }
-            if (OriginalEggHatchRelic)
+            if (OriginalEggHatchRelic || OriginalEggTransformation)
             {
-                var subtypeKeys = (List<string>)AccessTools.Field(typeof(CharacterData), "subtypeKeys").GetValue(unit);
-                if (!subtypeKeys.Contains("SubtypesData_Egg")) subtypeKeys.Add("SubtypesData_Egg");
-                AccessTools.Field(typeof(CharacterData), "startingStatusEffects").SetValue(unit,
-                    unit.GetStartingStatusEffects().Concat(new[] { new StatusEffectStackData { statusId = "hatch", count = 3 } }).ToArray());
+                CharacterData? originalEgg = null;
+                if (OriginalEggTransformation)
+                {
+                    originalEgg = save.GetAllGameData().GetAllCharacterData()
+                        .Single(item => item.GetAssetKey() == "MonsterKinhostVessel");
+                    foreach (CardEffectData summon in originalEgg.GetTriggers()
+                        .SelectMany(trigger => trigger.GetEffects())
+                        .Where(effect => effect.GetEffectStateName() == "CardEffectSpawnMonster"))
+                        TriggeredSummonProbe.Definition(summon);
+                    CharacterData small = save.GetAllGameData()
+                        .FindCardData("38e70e6a-20f3-4e36-8d31-c5110be07f87")!
+                        .GetEffects().Single(effect => effect.GetEffectStateName() == "CardEffectSpawnMonster")
+                        .GetParamCharacterData();
+                    PrepareEgg(small);
+                    for (int roomIndex = 0; roomIndex < managers.GetRoomManager()!.GetNumRooms(); roomIndex++)
+                    {
+                        RoomState room = managers.GetRoomManager().GetRoom(roomIndex);
+                        object stats = AccessTools.Field(typeof(RoomState), "corruptionStats").GetValue(room);
+                        AccessTools.Field(stats.GetType(), "currentCorruption").SetValue(stats, 2);
+                    }
+                }
+                PrepareEgg(unit);
+
+                void PrepareEgg(CharacterData carrier)
+                {
+                    var subtypeKeys = (List<string>)AccessTools.Field(typeof(CharacterData), "subtypeKeys").GetValue(carrier);
+                    if (!subtypeKeys.Contains("SubtypesData_Egg")) subtypeKeys.Add("SubtypesData_Egg");
+                    AccessTools.Field(typeof(CharacterData), "startingStatusEffects").SetValue(carrier,
+                        carrier.GetStartingStatusEffects().Concat(new[] { new StatusEffectStackData {
+                            statusId = "hatch", count = OriginalEggTransformation ? 5 : 3 } }).ToArray());
+                    if (originalEgg != null)
+                        AccessTools.Field(typeof(CharacterData), "triggers").SetValue(carrier,
+                            carrier.GetTriggers().Concat(originalEgg.GetTriggers()).ToList());
+                }
             }
             var armor = HealingScenario.HealGold(11, false, true);
             AccessTools.Field(typeof(CharacterTriggerData), "trigger").SetValue(armor, CharacterTriggerData.Trigger.OnArmorAdded);
             AccessTools.Field(typeof(CharacterData), "triggers").SetValue(unit, unit.GetTriggers().Concat(new[] { armor }).ToList());
-            foreach (CardState card in cards) card.Setup(data, save);
+            foreach (CardState card in cards)
+                card.Setup(save.GetAllGameData().FindCardData(card.GetCardDataID())!, save);
             if (!MixedCardlessOrder) Acquire("68ef2523-5c2e-4660-b96d-00b1c0485f54", "SpawnWithArmor");
             Acquire("60a2a8a3-5f7a-4a9d-b427-5f261145fa1f", "FirstUnitGainDamageShield");
             Acquire("270356af-16bd-4433-a0b2-3e5bb94ef890", "FrostbiteOnEnemies");
             if (OriginalTunedGearRelic) Acquire("f12924bc-0600-4de0-ae2a-93534f251eb1", "TunedGear");
-            if (OriginalEggHatchRelic) AcquireEggHatch();
+            if (OriginalEggHatchRelic || OriginalEggTransformation) AcquireEggHatch();
             if (OriginalChicotRelic) Acquire("92d66578-b148-49f8-9880-edb67f8b18de", "BalatroEventChicot");
             if (OriginalCombatRelics)
             {
@@ -186,6 +220,17 @@ namespace MonsterTrain2Poju.Probe
                     effect.GetEffectConditions().Count != 0)
                     throw new InvalidOperationException("Original HymnistsApplyValorOnSummon definition changed.");
                 save.AddRelic(relic);
+            }
+        }
+
+        [HarmonyPatch(typeof(SaveManager), nameof(SaveManager.GetBattlePreviewEnabled))]
+        private static class EggPreviewIsolation
+        {
+            private static bool Prefix(ref bool __result)
+            {
+                if (!OriginalEggTransformation) return true;
+                __result = false;
+                return false;
             }
         }
 

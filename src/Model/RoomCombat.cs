@@ -908,7 +908,7 @@ namespace MonsterTrain2Poju.Model
                         trigger.Kind != "PostDescension" && trigger.Kind != "PostAttemptedAscension" && trigger.Kind != "PostAttemptedDescension" &&
                         trigger.Kind != "OnHit" && trigger.Kind != "OnKill" && trigger.Kind != "OnAttackingBeforeDamage" && trigger.Kind != "OnAttacking" &&
                         !StatusCallbackModel.Kinds.Contains(trigger.Kind) && !DeathwishModel.CallbackKinds.Contains(trigger.Kind) &&
-                        !HarvestModel.Kinds.Contains(trigger.Kind) &&
+                        !HarvestModel.Kinds.Contains(trigger.Kind) && trigger.Kind is not ("OnRemoveHatch" or "OnHatched") &&
                         trigger.Kind is not ("OnMoonLit" or "OnMoonlitLost" or "OnMoonShade" or "OnMoonshadeLost" or "OnMoonPhaseShift"))
                         return "Unmodeled trigger " + trigger.Kind;
                     if (trigger.Kind != "OnDeath" && trigger.Kind != "PostCombat" && trigger.SkipDuringDeployment == null)
@@ -933,6 +933,26 @@ namespace MonsterTrain2Poju.Model
                         {
                             string? summonError = TriggeredSummonModel.Validate(state, effect.Summon);
                             if (summonError != null) return summonError;
+                            continue;
+                        }
+                        if (effect.Type is "CardEffectRemoveStatusEffectPerCorrupt" or "CardEffectSacrifice" or "CardEffectForceHatchCheck")
+                        {
+                            CardActionEffect? hatch = effect.Action;
+                            CardTargetFilters? filter = hatch?.Filters;
+                            if (hatch == null || hatch.Range != null || filter != null &&
+                                (filter.Health != "Both" || filter.RequiredStatuses.Count != 0 ||
+                                 filter.ExcludedStatuses.Count != 0 || filter.IgnoreBosses || filter.Subtype.Length != 0 ||
+                                 filter.ExcludedSubtypes.Count != 0) ||
+                                effect.Type == "CardEffectRemoveStatusEffectPerCorrupt" &&
+                                (hatch.Type != "RemoveStatusPerCorrupt" || hatch.Target != "Self" || hatch.Statuses.Count != 1 ||
+                                 hatch.Statuses[0].Id != "hatch" || hatch.Value != 1 || state.Context?.RoomCapacities == null) ||
+                                effect.Type == "CardEffectSacrifice" &&
+                                (hatch.Type != "Sacrifice" || hatch.Target != "Self" || hatch.DoNotFullyRemove != true ||
+                                 hatch.Statuses.Count != 0 || hatch.Value != 0) ||
+                                effect.Type == "CardEffectForceHatchCheck" &&
+                                (hatch.Type != "ForceHatchCheck" || hatch.Target != "DropTargetCharacter" ||
+                                 hatch.Statuses.Count != 0 || hatch.Value != 0))
+                                return "Unsupported hatch trigger effect definition.";
                             continue;
                         }
                         if (effect.Type == "CardEffectSetUnitAbility" || effect.Type == "CardEffectRemoveAbility")
@@ -1287,6 +1307,8 @@ namespace MonsterTrain2Poju.Model
                     if (battleWon) return Finish(RoomOutcome.BattleWon);
                     if (!source.Preview && units.Any(unit => unit.Source.IsPyre && !unit.Alive))
                         return Finish(RoomOutcome.PlayerDefeated);
+                    RemoveHatch();
+                    if (unsupportedReason != null) return Finish(RoomOutcome.Unsupported);
                     PostCombat();
                     if (battleWon) return Finish(RoomOutcome.BattleWon);
                     if (!source.Preview && units.Any(unit => unit.Source.IsPyre && !unit.Alive))
@@ -2343,6 +2365,17 @@ namespace MonsterTrain2Poju.Model
                 }
             }
 
+            private void RemoveHatch()
+            {
+                foreach (WorkingUnit unit in units.Where(unit => unit.InRoom && unit.Alive &&
+                    unit.Source.Team == CombatTeam.Player && unit.Triggers.Any(trigger => trigger.Kind == "OnRemoveHatch")).ToArray())
+                {
+                    if (!unit.Alive) continue;
+                    FireTriggers(unit, "OnRemoveHatch");
+                    if (unsupportedReason != null) return;
+                }
+            }
+
             private void PostCombat()
             {
                 // Enemy post-combat runs before player post-combat, each front to back.
@@ -3139,6 +3172,44 @@ namespace MonsterTrain2Poju.Model
             private bool ApplyTriggeredAction(WorkingUnit actor, CombatEffect effect, WorkingUnit? overrideTarget, int triggerIndex, int effectIndex, string triggerKind, int lastSpawnedOverrideUnitId)
             {
                 CardActionEffect action = effect.Action!;
+                if (action.Type == "ForceHatchCheck")
+                {
+                    if (actor.Alive && actor.Count("hatch") == 0)
+                        QueueCallback(new QueuedCharacterTrigger(source.RoomIndex, actor.Freeze(), "OnHatched"));
+                    return unsupportedReason == null;
+                }
+                if (action.Type == "Sacrifice")
+                {
+                    RoomCombatResult sacrificed = SacrificeRetained(actor.Freeze(), actor.Source.SpawnerCardId,
+                        whileRunningQueue: true, doNotFullyRemove: action.DoNotFullyRemove == true,
+                        returnSpawnerAfterQueue: false);
+                    if (!sacrificed.Supported) unsupportedReason = sacrificed.UnsupportedReason;
+                    return sacrificed.Supported;
+                }
+                if (action.Type == "RemoveStatusPerCorrupt")
+                {
+                    RoomCapacityState? capacity = context?.RoomCapacities?.FirstOrDefault(room => room.RoomIndex == source.RoomIndex);
+                    if (capacity?.Corruption is not int corruption || capacity.PermanentCorruption is not int permanent)
+                    { unsupportedReason = "Hatch removal requires captured room corruption."; return false; }
+                    int removedStacks = Math.Min(actor.Count("hatch"), corruption);
+                    if (removedStacks > 0)
+                    {
+                        RoomCombatResult removed = StatusRemovalModel.Remove(RetainedStatusRoom(actor, new[] { actor.Source.Id }),
+                            actor.Source.Id, "hatch", removedStacks, actor.Source.SpawnerCardId);
+                        if (!removed.Supported) { unsupportedReason = removed.UnsupportedReason; return false; }
+                        context = removed.State!.Context;
+                        foreach (CombatUnit changed in removed.State.Units)
+                            units.First(unit => unit.Source.Id == changed.Id).Apply(changed);
+                        foreach (QueuedCharacterTrigger callback in removed.PendingCallbacks) QueueCallback(callback);
+                    }
+                    capacity = context!.RoomCapacities!.First(room => room.RoomIndex == source.RoomIndex);
+                    var changedCapacity = new RoomCapacityState(source.RoomIndex, capacity.PlayerMaximum, capacity.EnemyMaximum,
+                        capacity.IsPyre, Math.Max(permanent, corruption - removedStacks), capacity.Attachments,
+                        capacity.MaxCorruption, permanent);
+                    context = context.WithRoomCapacities(context.RoomCapacities.Select(room => room.RoomIndex == source.RoomIndex
+                        ? changedCapacity : room).ToArray());
+                    return unsupportedReason == null;
+                }
                 CardTargets tested = TriggerTargets(actor, action, testing: true, overrideTarget, lastSpawnedOverrideUnitId);
                 if (!tested.Supported) { unsupportedReason = tested.UnsupportedReason; return false; }
                 if (tested.BattleRng.HasValue) context = context!.WithBattleRng(tested.BattleRng.Value);

@@ -61,9 +61,15 @@ namespace MonsterTrain2Poju.Probe
             public string? Error { get; set; }
         }
         internal static readonly List<DamageRecord> Damages = new List<DamageRecord>();
-        internal static bool Enabled => (Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") ?? "").StartsWith("triggered-summon", StringComparison.Ordinal) || EnchantmentBattleScenario.ChildSummons;
+        internal static bool Enabled => (Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") ?? "").StartsWith("triggered-summon", StringComparison.Ordinal) ||
+            SpawnStatusRelicScenario.OriginalEggTransformation || EnchantmentBattleScenario.ChildSummons;
         private static string Register(CharacterData? unit)
-        { if (unit == null) return ""; characters[unit.GetID()] = unit; return unit.GetID(); }
+        {
+            if (unit == null) return "";
+            if (!characters.ContainsKey(unit.GetID())) catalog = null;
+            characters[unit.GetID()] = unit;
+            return unit.GetID();
+        }
         internal static TriggeredSummonRule? Definition(CardEffectData effect)
         {
             if (effect.GetEffectStateName() != "CardEffectSpawnMonster") return null;

@@ -211,8 +211,24 @@ The default command checks the full curated inventory. For routine changes, run
 the dedicated checks for the new and directly affected scenarios; run the full
 inventory at completed milestones and before delivery.
 
-Current inventory is 319 archives: 288 accepted battles and 31 component
-calibrations. Original relic evidence is 81/224 (36.16%). The Pyre spawn-status
+Current inventory is 320 archives: 289 accepted battles and 31 component
+calibrations. Original relic evidence is 81/224 (36.16%). The binary-only
+`full-battle-egg-transformation.mt2f` captures four original `EggHatchRemoval`
+births (Hatch 5 to 2, Armor +30) on authored Steward carriers. Two unchanged
+`MonsterKinhostVessel` OnHatched trigger chains sacrifice their carrier and
+summon `MonsterKinhostPupa`; room Corruption 2 is consumed during combat.
+The native Instant battle wins with 39 matched stages, 15 actions and five
+EndTurns, and zero capture failures, mismatches, unsupported or pending records.
+The focused command below checks the birth/summon witnesses, all five EndTurns,
+room stages and serial/parallel search. Combat previews are disabled for this
+scene to isolate live battle state from preview-born references. This adds
+mechanism evidence, not another original relic owner.
+
+```powershell
+dotnet run --project src/ModelChecks -c Release -- --egg-transformation-only tests/fixtures/full-battle-egg-transformation.mt2f
+```
+
+The Pyre spawn-status
 archive calibrates the unchanged `DantesCandelabra` and `PressurizedBoiler`
 effects. Both relics are acquired before battle, and the game's natural Pyre
 creation adds 2 Titan Skin and 4 Burst in its first recorded birth phase. The

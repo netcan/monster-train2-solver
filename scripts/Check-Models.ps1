@@ -121,6 +121,7 @@ $fixtureNames = @('full-battle-steward-once.mt2f', 'full-battle-no-cards.mt2f', 
     'full-battle-spawn-status-relics-boss-mute.mt2f',
     'full-battle-spawn-status-relics-pyre.mt2f',
     'full-battle-spawn-status-relics-egg-hatch.mt2f',
+    'full-battle-egg-transformation.mt2f',
     'full-battle-original-mageblade-magnitude.mt2f',
     'full-battle-cardless-relic-upgrades.mt2f',
     'full-battle-energy-effects.mt2f',
@@ -264,7 +265,8 @@ $focusedTeamSpawnStatusFixtures = @($fixtures | Where-Object {
 })
 $generalFixtures = @($fixtures | Where-Object {
     (Split-Path -Leaf $_) -notin @('full-battle-companion-bump.mt2f', 'full-battle-outer-boss-bump.mt2f',
-        'full-battle-original-team-spawn-status.mt2f', 'full-battle-relic-card-cast-trigger-upgrades.mt2f',
+        'full-battle-original-team-spawn-status.mt2f', 'full-battle-egg-transformation.mt2f',
+        'full-battle-relic-card-cast-trigger-upgrades.mt2f',
         'full-battle-relic-card-cast-trigger-unit-upgrades.mt2f')
 })
 if ($generalFixtures.Count -gt 0) {
@@ -290,6 +292,11 @@ foreach ($fixturePath in $focusedSpawnStatusFixtures) {
         dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- $mode $fixturePath
         if ($LASTEXITCODE -ne 0) { throw "Spawn-status relic checks failed ($mode): $fixturePath" }
     }
+}
+
+foreach ($fixturePath in @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 'full-battle-egg-transformation.mt2f' })) {
+    dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- --egg-transformation-only $fixturePath
+    if ($LASTEXITCODE -ne 0) { throw "Egg transformation checks failed: $fixturePath" }
 }
 
 $relicCardCastTriggerFixtures = @($fixtures | Where-Object {

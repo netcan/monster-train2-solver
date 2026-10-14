@@ -171,6 +171,12 @@ if (args.Length == 2 && args[0] == "--battle-search-only")
     return;
 }
 
+if (args.Length == 2 && args[0] == "--egg-transformation-only")
+{
+    EggTransformationChecks.Native(args[1]);
+    return;
+}
+
 if (args.Length == 2 && args[0] == "--unplayed-card-trigger-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
