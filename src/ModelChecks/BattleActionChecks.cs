@@ -490,6 +490,10 @@ internal static class BattleActionChecks
             chooser = ChooseSacrificeEffectsThenCards;
         if (fixture.TryGetProperty("ModifierScenario", out var setHealthScenario) && setHealthScenario.GetString() == "set-health")
             chooser = ChooseSetHealthThenCards;
+        if (fixture.TryGetProperty("ModifierScenario", out var transferAttackScenario) && transferAttackScenario.GetString() == "transfer-attack")
+            chooser = ChooseTransferAttackThenCards;
+        if (fixture.TryGetProperty("ModifierScenario", out var transferAbilityScenario) && transferAbilityScenario.GetString() == "transfer-attack-ability")
+            chooser = UnitAbilityModel.ChooseAbilityThenCards;
         if (fixture.TryGetProperty("ModifierScenario", out var killedUnitsScenario) && killedUnitsScenario.GetString() == "damage-by-units-killed")
             chooser = ChooseDamageByUnitsKilledThenCards;
         if (fixture.TryGetProperty("ModifierScenario", out var typedDrawScenario) && typedDrawScenario.GetString() == "typed-draw")
@@ -719,6 +723,49 @@ internal static class BattleActionChecks
             {
                 var action = new PlayCardAction(card.InstanceId, 0, targetUnitId: target.Id);
                 if (BattleActionModel.PlayCard(source, action).Supported) return action;
+            }
+        }
+        return BattleActionModel.ChooseUnitSpellAndJunkPlay(source);
+    }
+
+    private static PlayCardAction? ChooseTransferAttackThenCards(BattleTurnState source)
+    {
+        if (source.Spawn.Turn == 0)
+        {
+            const string stewardDataId = "d14a50f3-728d-43e1-87f0-ef1b013f6678";
+            const string impDataId = "d76be2d0-f851-4d43-bdc0-7c7a7779724f";
+            const string spellDataId = "1450e56b-ca09-453a-937a-97bd44bcb3de";
+            var hand = source.Spawn.Train.Context!.Cards.Hand;
+            RoomCombatState room = source.Spawn.Train.Rooms.Single(item => item.RoomIndex == 0);
+            CardToken? spell = hand.FirstOrDefault(card => card.DataId == spellDataId);
+            CardToken? imp = hand.FirstOrDefault(card => card.DataId == impDataId);
+            if (spell != null && imp != null)
+            {
+                if (room.Units.All(unit => unit.Team != CombatTeam.Player))
+                {
+                    CardToken? steward = hand.Where(card => card.DataId == stewardDataId)
+                        .OrderBy(card => card.InstanceId).FirstOrDefault();
+                    if (steward != null)
+                    {
+                        var summon = new PlayCardAction(steward.InstanceId, 0, playerPosition: 0);
+                        if (BattleActionModel.PlayCard(source, summon).Supported) return summon;
+                    }
+                }
+                else
+                {
+                    var summon = new PlayCardAction(imp.InstanceId, 0, playerPosition: 1);
+                    if (BattleActionModel.PlayCard(source, summon).Supported) return summon;
+                }
+            }
+            if (spell != null)
+            {
+                CombatUnit? target = room.Units.FirstOrDefault(unit => unit.Team == CombatTeam.Player &&
+                    unit.AssetKey == "MonsterQueensImp");
+                if (target != null)
+                {
+                    var cast = new PlayCardAction(spell.InstanceId, 0, targetUnitId: target.Id);
+                    if (BattleActionModel.PlayCard(source, cast).Supported) return cast;
+                }
             }
         }
         return BattleActionModel.ChooseUnitSpellAndJunkPlay(source);

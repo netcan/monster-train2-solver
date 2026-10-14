@@ -16,7 +16,7 @@ namespace MonsterTrain2Poju.Probe
             "CardEffectAttachEquipment", "CardEffectAttachTrainRoomAttachment", "CardEffectBuffEquipment", "CardEffectRemoveEquipment",
             "CardEffectRewardGold", "CardEffectGainEnergy", "CardEffectAdjustEnergy", "CardEffectGainEnergyNextTurn", "CardEffectGainEnergyEveryTurn",
             "CardEffectAdjustDragonsHoard", "CardEffectRewardGoldPerDragonHoard",
-            "CardEffectDamage", "CardEffectDamagePerSourceAttack", "CardEffectDamagePerHp", "CardEffectDamageByUnitsKilled", "CardEffectDraw", "CardEffectDrawAdditionalNextTurn",
+            "CardEffectDamage", "CardEffectDamagePerSourceAttack", "CardEffectDamagePerHp", "CardEffectDamageByUnitsKilled", "CardEffectTransferAttackFromUnit", "CardEffectDraw", "CardEffectDrawAdditionalNextTurn",
             "CardEffectRemoveAllStatusEffects",
             "CardEffectAdjustRoomCapacity", "CardEffectAdjustRoomMaxCorruption", "CardEffectAdjustCorruption",
             "CardEffectAddPermanentCorruption",
@@ -287,6 +287,7 @@ namespace MonsterTrain2Poju.Probe
                 effect.GetEffectStateName() == "CardEffectDamagePerSourceAttack" ? "DamagePerSourceAttack" :
                 effect.GetEffectStateName() == "CardEffectDamagePerHp" ? "DamagePerHp" :
                 effect.GetEffectStateName() == "CardEffectDamageByUnitsKilled" ? "DamageByUnitsKilled" :
+                effect.GetEffectStateName() == "CardEffectTransferAttackFromUnit" ? "TransferAttackFromUnit" :
                 effect.GetEffectStateName() == "CardEffectAdjustRoomCapacity" ? "AdjustCapacity" :
                 effect.GetEffectStateName() == "CardEffectAdjustRoomMaxCorruption" ? "AdjustMaxCorruption" :
                 effect.GetEffectStateName() == "CardEffectAdjustCorruption" ? "AdjustCorruption" :
@@ -445,7 +446,8 @@ namespace MonsterTrain2Poju.Probe
                 nullTargetless: type == "Null" && effect.GetParamBool2(),
                 nullForwardSelf: type == "Null" && effect.GetAdditionalParamInt() == 1,
                 chooseDiscard: type == "ChooseDiscard" ? new CardChooseDiscardRule(effect.GetAdditionalParamInt(),
-                    effect.GetParamBool(), effect.GetParamBool2(), effect.GetParamCardPool() != null) : null);
+                    effect.GetParamBool(), effect.GetParamBool2(), effect.GetParamCardPool() != null) : null,
+                transferAttackMultiplier: type == "TransferAttackFromUnit" ? effect.GetAdditionalParamInt() : 0);
         }
 
         private static RoomCapacityAttachmentState? CapacityAttachment(CardData card, CardEffectData effect,

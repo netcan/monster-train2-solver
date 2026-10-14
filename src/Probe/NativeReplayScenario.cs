@@ -521,6 +521,12 @@ namespace MonsterTrain2Poju.Probe
                 numericModifiersPrepared = true;
                 DamageByUnitsKilledScenario.Prepare(managers, log);
             }
+            if (fullBattle && !numericModifiersPrepared && modifierScenario == TransferAttackScenario.Name)
+            {
+                if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Transfer-attack fixture must start on deployment turn.");
+                numericModifiersPrepared = true;
+                TransferAttackScenario.Prepare(managers, log);
+            }
             if (fullBattle && !numericModifiersPrepared && modifierScenario is "card-effect-kill" or "card-effect-kill-subtype")
             {
                 if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("CardEffectKill fixture must start on deployment turn.");
@@ -870,6 +876,12 @@ namespace MonsterTrain2Poju.Probe
                 numericModifiersPrepared = true;
                 AbilityActivationScenario.Prepare(managers, log, false, false, damagePerHp: true);
             }
+            if (fullBattle && !numericModifiersPrepared && modifierScenario == "transfer-attack-ability")
+            {
+                if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Transfer ability fixture must start on deployment turn.");
+                numericModifiersPrepared = true;
+                AbilityActivationScenario.Prepare(managers, log, false, false, transferAttack: true);
+            }
             if (fullBattle && !numericModifiersPrepared &&
                 (modifierScenario == DamagePerHpScenario.Name || modifierScenario == DamagePerHpScenario.ArmorName ||
                  modifierScenario == DamagePerHpScenario.LastAttackerName))
@@ -1125,6 +1137,7 @@ namespace MonsterTrain2Poju.Probe
                 if (modifierScenario == "sacrifice-effects") pendingPlay = SacrificeScenario.Choose(decision);
                 if (modifierScenario == "set-health") pendingPlay = SetHealthScenario.Choose(decision);
                 if (modifierScenario == "damage-by-units-killed") pendingPlay = DamageByUnitsKilledScenario.Choose(decision);
+                if (modifierScenario == TransferAttackScenario.Name) pendingPlay = TransferAttackScenario.Choose(decision);
                 if (modifierScenario is "card-effect-kill" or "card-effect-kill-subtype")
                     pendingPlay = CardEffectKillScenario.Choose(decision);
                 if (NullForwardingScenario.Enabled) pendingPlay = NullForwardingScenario.Choose(decision, log);
@@ -1173,6 +1186,8 @@ namespace MonsterTrain2Poju.Probe
                 if (modifierScenario.StartsWith("multi-summon", StringComparison.Ordinal)) pendingPlay = MultiSummonScenario.Choose(managers) ?? pendingPlay;
                 if (modifierScenario == "ability-teleport")
                     pendingPlay = AbilityTeleportScenario.Choose(decision);
+                else if (modifierScenario == "transfer-attack-ability")
+                    pendingPlay = UnitAbilityModel.ChooseAbilityThenCards(decision);
                 else if (modifierScenario == "damage-per-hp-ability")
                     pendingPlay = DamagePerHpScenario.ChooseAbility(decision);
                 else if (modifierScenario == "ability-incant" || modifierScenario == "equipment-abilities" || modifierScenario == "ability-effects" || modifierScenario == "spawn-or-status" || modifierScenario == "ability-activation" || modifierScenario == "ability-activation-x" || modifierScenario == "ability-activation-lethal")

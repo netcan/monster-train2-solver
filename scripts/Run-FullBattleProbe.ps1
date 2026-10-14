@@ -20,6 +20,8 @@ param(
     [switch] $SacrificeEffects,
     [switch] $SetHealth,
     [switch] $DamageByUnitsKilled,
+    [switch] $TransferAttack,
+    [switch] $TransferAttackAbility,
     [switch] $CardEffectKill,
     [switch] $CardEffectKillSubtype,
     [switch] $NullForwarding,
@@ -369,6 +371,8 @@ if ($cardRecursionModes.Count -gt 1) { throw 'Choose one CardRecursion scenario.
 if ($SacrificeEffects) { $Policy = 'units-spells-and-junk' }
 if ($SetHealth) { $Policy = 'units-spells-and-junk' }
 if ($DamageByUnitsKilled) { $Policy = 'units-spells-and-junk' }
+if ($TransferAttack) { $Policy = 'units-spells-and-junk' }
+if ($TransferAttackAbility) { $Policy = 'units-spells-and-junk' }
 if ($CardEffectKill -and $CardEffectKillSubtype) { throw 'Choose either -CardEffectKill or -CardEffectKillSubtype.' }
 if ($CardEffectKill -or $CardEffectKillSubtype) { $Policy = 'units-spells-and-junk' }
 if ($NullForwarding) { $Policy = 'units-spells-and-junk' }
@@ -551,6 +555,8 @@ if ($SacrificeEffects) {
 }
 if ($SetHealth) { $environment['MT2_PROBE_MODIFIERS'] = 'set-health' }
 if ($DamageByUnitsKilled) { $environment['MT2_PROBE_MODIFIERS'] = 'damage-by-units-killed' }
+if ($TransferAttack) { $environment['MT2_PROBE_MODIFIERS'] = 'transfer-attack' }
+if ($TransferAttackAbility) { $environment['MT2_PROBE_MODIFIERS'] = 'transfer-attack-ability' }
 if ($CardEffectKill -or $CardEffectKillSubtype) {
     $environment['MT2_PROBE_MODIFIERS'] = if ($CardEffectKillSubtype) { 'card-effect-kill-subtype' } else { 'card-effect-kill' }
 }
@@ -1244,6 +1250,45 @@ $setHealthCoverage = -not $SetHealth -or @($setHealthActions | Where-Object {
     $beforeUnit = $entry.Before.Spawn.Train.Rooms.Units | Where-Object Id -EQ $entry.Action.TargetUnitId
     $afterUnit = $entry.Actual.Spawn.Train.Rooms.Units | Where-Object Id -EQ $entry.Action.TargetUnitId
     $beforeUnit.Health -gt 1 -and $afterUnit.Health -eq 1 -and -not $entry.Difference -and $entry.Predicted.Supported
+}).Count -gt 0
+$transferAttackActions = @($trace.Actions | Where-Object {
+    $entry = $_
+    $played = $entry.Before.Spawn.Train.Context.Cards.Hand | Where-Object InstanceId -EQ $entry.Action.CardInstanceId
+    $definition = $entry.Before.PlayRules.Cards | Where-Object DataId -EQ $played.DataId
+    @($definition.Effects | Where-Object Type -EQ 'TransferAttackFromUnit').Count -gt 0
+})
+$transferAttackCoverage = -not $TransferAttack -or @($transferAttackActions | Where-Object {
+    $entry = $_
+    $beforeRoom = $entry.Before.Spawn.Train.Rooms | Where-Object RoomIndex -EQ $entry.Action.RoomIndex
+    $afterRoom = $entry.Actual.Spawn.Train.Rooms | Where-Object RoomIndex -EQ $entry.Action.RoomIndex
+    $source = $beforeRoom.Units | Where-Object Id -EQ $entry.Action.TargetUnitId
+    $recipient = $beforeRoom.Units | Where-Object {
+        $_.Team -eq $source.Team -and @($_.Statuses | Where-Object Id -EQ 'untouchable').Count -eq 0
+    } | Select-Object -First 1
+    $afterRecipient = $afterRoom.Units | Where-Object Id -EQ $recipient.Id
+    $beforeSpawner = $entry.Before.Spawn.Train.Context.CardInstances |
+        Where-Object InstanceId -EQ $recipient.SpawnerCardId
+    $afterSpawner = $entry.Actual.Spawn.Train.Context.CardInstances |
+        Where-Object InstanceId -EQ $recipient.SpawnerCardId
+    $source -and $recipient -and $recipient.Id -ne $source.Id -and $source.Attack -gt 0 -and
+        $afterRecipient.Attack -eq $recipient.Attack + 2 * $source.Attack -and
+        @($afterSpawner.Temporary.Upgrades).Count -eq @($beforeSpawner.Temporary.Upgrades).Count + 1 -and
+        -not $entry.Difference -and $entry.Predicted.Supported
+}).Count -gt 0
+$transferAbilityActions = @($trace.Actions | Where-Object { $_.Action.ActivatorUnitId -gt 0 })
+$transferAbilityCoverage = -not $TransferAttackAbility -or @($transferAbilityActions | Where-Object {
+    $entry = $_
+    $actorId = $entry.Action.ActivatorUnitId
+    $beforeActor = $entry.Before.Spawn.Train.Rooms.Units | Where-Object Id -EQ $actorId
+    $afterActor = $entry.Actual.Spawn.Train.Rooms.Units | Where-Object Id -EQ $actorId
+    $beforeSpawner = $entry.Before.Spawn.Train.Context.CardInstances |
+        Where-Object InstanceId -EQ $beforeActor.SpawnerCardId
+    $afterSpawner = $entry.Actual.Spawn.Train.Context.CardInstances |
+        Where-Object InstanceId -EQ $beforeActor.SpawnerCardId
+    $beforeActor.Attack -gt 0 -and $afterActor.Attack -eq 3 * $beforeActor.Attack -and
+        @($afterActor.Modifiers.Upgrades).Count -eq @($beforeActor.Modifiers.Upgrades).Count + 1 -and
+        @($afterSpawner.Temporary.Upgrades).Count -eq @($beforeSpawner.Temporary.Upgrades).Count + 1 -and
+        -not $entry.Difference -and $entry.Predicted.Supported
 }).Count -gt 0
 $damageByUnitsKilledActions = @($trace.Actions | Where-Object {
     $entry = $_
@@ -2860,6 +2905,10 @@ $result = [pscustomobject]@{
     SacrificeEffectCoverage = $sacrificeEffectCoverage
     SetHealthActions = $setHealthActions.Count
     SetHealthCoverage = $setHealthCoverage
+    TransferAttackActions = $transferAttackActions.Count
+    TransferAttackCoverage = $transferAttackCoverage
+    TransferAbilityActions = $transferAbilityActions.Count
+    TransferAbilityCoverage = $transferAbilityCoverage
     DamageByUnitsKilledActions = $damageByUnitsKilledActions.Count
     DamageByUnitsKilledCoverage = $damageByUnitsKilledCoverage
     CardEffectKillActions = $cardEffectKillActions.Count
@@ -2945,6 +2994,8 @@ $result = [pscustomobject]@{
 }
 if (-not $sacrificeEffectCoverage) { throw 'Native CardEffectSacrifice was not exercised through a full battle action.' }
 if (-not $setHealthCoverage) { throw 'Native CardEffectSetHealth did not set a living player unit to one health in a matched action.' }
+if (-not $transferAttackCoverage) { throw 'Native attack transfer did not buff a front unit and its spawner card in a matched action.' }
+if (-not $transferAbilityCoverage) { throw 'Native ability-user transfer did not buff its actor and spawner card in a matched action.' }
 if (-not $damageByUnitsKilledCoverage) { throw 'Original Shardtail effect did not sacrifice an Imp and damage an enemy in a matched action.' }
 if (-not $cardEffectKillCoverage) { throw 'Native CardEffectKill did not kill one enemy and one player unit in a full battle action.' }
 if (-not $cardEffectKillSubtypeCoverage) { throw 'Native CardEffectKill did not kill a matching subtype target in a full battle action.' }

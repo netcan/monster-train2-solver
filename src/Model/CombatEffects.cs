@@ -210,7 +210,8 @@ namespace MonsterTrain2Poju.Model
                 damagePerHpLastAttacker: Action.DamagePerHpLastAttacker,
                 damagePerHpIncludeArmor: Action.DamagePerHpIncludeArmor,
                 roomAttachment: Action.RoomAttachment, recursion: Action.Recursion, overheal: Action.Overheal,
-                corruptionAdd: Action.CorruptionAdd, chooseDiscard: Action.ChooseDiscard), DamageStatusMultiplier, StatusScaling, Summon, Enchantment);
+                corruptionAdd: Action.CorruptionAdd, chooseDiscard: Action.ChooseDiscard,
+                transferAttackMultiplier: Action.TransferAttackMultiplier), DamageStatusMultiplier, StatusScaling, Summon, Enchantment);
     }
 
     public sealed class CombatTriggerOrigin

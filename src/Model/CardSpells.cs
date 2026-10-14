@@ -429,7 +429,7 @@ namespace MonsterTrain2Poju.Model
                         effect.SpawnFallbackUnit, effect.DisallowStatusStackModifiers, effect.StatusAdjustmentFilter,
                         effect.DamagePerHpLastAttacker, effect.DamagePerHpIncludeArmor, effect.RoomAttachment, effect.Recursion,
                         effect.CardFilter, effect.UpgradeFilters, effect.RemoveHalfStatusEffects, effect.Overheal, effect.CorruptionAdd,
-                        chooseDiscard: effect.ChooseDiscard);
+                        chooseDiscard: effect.ChooseDiscard, transferAttackMultiplier: effect.TransferAttackMultiplier);
                 }
                 if (effect.Type == "ChooseDiscard")
                 {
@@ -951,6 +951,50 @@ namespace MonsterTrain2Poju.Model
                         if (callbacks.Count > 0) DrainDeaths();
                         if (routingError != null) return UnsupportedTrain(routingError);
                     }
+                    continue;
+                }
+                if (effect.Type == "TransferAttackFromUnit")
+                {
+                    if (targets.UnitIds.Count == 0) continue;
+                    CombatUnit? sourceUnit = state.Rooms.SelectMany(room => room.Units)
+                        .FirstOrDefault(unit => unit.Id == targets.UnitIds[0]) ?? retained.GetValueOrDefault(targets.UnitIds[0]);
+                    if (sourceUnit == null) continue;
+                    RoomCombatState? sourceRoom = state.Rooms.FirstOrDefault(room => room.Units.Any(unit => unit.Id == sourceUnit.Id));
+                    RoomCombatState? recipientRoom = sourceRoom ?? state.Rooms.FirstOrDefault(room => room.RoomIndex == roomIndex);
+                    if (recipientRoom == null) continue;
+                    CombatUnit? recipient = effect.Value == 0
+                        ? recipientRoom.Units.FirstOrDefault(unit => unit.Team == sourceUnit.Team && unit.Status("untouchable") == null)
+                        : state.Rooms.SelectMany(room => room.Units)
+                            .FirstOrDefault(unit => unit.Id == state.Context!.LastAbilityActivatorUnitId);
+                    if (recipient == null || effect.Value == 0 && recipient.Id == sourceUnit.Id ||
+                        recipient.Status("equalizer") != null || recipient.Status("fixedattack") != null ||
+                        recipient.Status("armorattack") != null) continue;
+                    int amount = unchecked(RelicResourceModel.AttackDamage(sourceUnit, state.Context) *
+                        Math.Max(1, effect.TransferAttackMultiplier));
+                    if (amount <= 0) continue;
+                    var stats = new CardStatModifier(damage: amount);
+                    var lifecycle = new CardLifecycleUpgrade(new CardMaskUpgrade("", stats,
+                        Array.Empty<UpgradeMaskStatus>(), false, false, false, false), "", false, false,
+                        Array.Empty<CardTraitValue>(), Array.Empty<string>(), false, Array.Empty<string>(),
+                        Array.Empty<string>(), Array.Empty<CardLifecycleTrigger>());
+                    var upgrade = new CardUpgradeModifier("", "", stats, Array.Empty<CombatStatus>(),
+                        false, false, false, 0, 0, Array.Empty<string>(), lifecycle: lifecycle);
+                    RoomCombatState targetRoom = state.Rooms.Single(room => room.Units.Any(unit => unit.Id == recipient.Id));
+                    RoomCombatResult applied = UnitModifierModel.ApplyDirectDeferred(targetRoom, recipient.Id, upgrade, Refresh);
+                    if (!applied.Supported) return UnsupportedTrain(applied.UnsupportedReason!);
+                    state = ReplaceRoom(state, applied.State!);
+                    events.AddRange(applied.Events); callbacks.AddRange(applied.PendingCallbacks);
+                    if (applied.Outcome != RoomOutcome.Exchanged) outcome = applied.Outcome;
+                    if (!targetRoom.Preview && state.Context!.IsolatedBattlePreview != true &&
+                        recipient.Status("cardless") == null && recipient.SpawnerCardId > 0)
+                    {
+                        CardInstanceState? spawner = state.Context.FindCard(recipient.SpawnerCardId);
+                        if (spawner == null) return UnsupportedTrain("Transfer attack lost its recipient's spawner card.");
+                        state = WithContext(state, state.Context.WithCard(spawner.WithModifiers(spawner.Permanent,
+                            spawner.Temporary.WithPermanentUpgrade(upgrade, false))));
+                    }
+                    if (callbacks.Count > 0) DrainDeaths();
+                    if (routingError != null) return UnsupportedTrain(routingError);
                     continue;
                 }
                 if (effect.Type == "UnitUpgradePerStatus")
@@ -1678,8 +1722,10 @@ namespace MonsterTrain2Poju.Model
                     if (forgeError != null) return forgeError;
                     continue;
                 }
-                if (!new[] { "Null", "CopyUnits", "Bump", "AbilityTeleport", "AttackWithUnit", "Damage", "DamagePerSourceAttack", "DamagePerHp", "DamageByUnitsKilled", "Heal", "HealOverheal", "SetHealth", "Sacrifice", "Kill", "AddStatus", "RemoveAllStatusEffects", "MultiplyStatus", "MultiplyAllPositiveStatusEffects", "AdjustAllStatusEffects", "AddStatusPerOtherEffect", "SpawnOrStatus", "FloorRearrange", "UnitUpgrade", "UnitUpgradePerStatus", "BuffEquipment", "RemoveUnitUpgrade", "AttachEquipment", "RemoveEquipment", "BuffAttack", "DebuffAttack", "BuffHealth", "DebuffHealth", "Draw", "DiscardHand", "RandomDiscard", "Generate" }.Contains(effect.Type))
+                if (!new[] { "Null", "CopyUnits", "Bump", "AbilityTeleport", "AttackWithUnit", "Damage", "DamagePerSourceAttack", "DamagePerHp", "DamageByUnitsKilled", "TransferAttackFromUnit", "Heal", "HealOverheal", "SetHealth", "Sacrifice", "Kill", "AddStatus", "RemoveAllStatusEffects", "MultiplyStatus", "MultiplyAllPositiveStatusEffects", "AdjustAllStatusEffects", "AddStatusPerOtherEffect", "SpawnOrStatus", "FloorRearrange", "UnitUpgrade", "UnitUpgradePerStatus", "BuffEquipment", "RemoveUnitUpgrade", "AttachEquipment", "RemoveEquipment", "BuffAttack", "DebuffAttack", "BuffHealth", "DebuffHealth", "Draw", "DiscardHand", "RandomDiscard", "Generate" }.Contains(effect.Type))
                     return "Unimplemented spell effect " + effect.Type;
+                if (effect.Type == "TransferAttackFromUnit" && (effect.Value < 0 || effect.Value > 1))
+                    return "Unknown attack transfer recipient mode.";
                 if (effect.Type == "SetHealth" && effect.Value <= 0)
                     return "SetHealth requires a positive health value.";
                 if (effect.Type == "Generate" && effect.Generation == null) return "Missing generated card rules.";
@@ -1822,6 +1868,7 @@ namespace MonsterTrain2Poju.Model
                 case "DamagePerSourceAttack": return count > 0;
                 case "DamagePerHp": return count > 0;
                 case "DamageByUnitsKilled": return count > 0;
+                case "TransferAttackFromUnit": return count > 0;
                 case "Heal": return effect.Target == "Room" || count > 0;
                 case "HealOverheal": return count > 0;
                 case "HealTrain": return count > 0;
@@ -1944,7 +1991,7 @@ namespace MonsterTrain2Poju.Model
                 effect.SpawnFallbackUnit, effect.DisallowStatusStackModifiers, effect.StatusAdjustmentFilter,
                 effect.DamagePerHpLastAttacker, effect.DamagePerHpIncludeArmor, effect.RoomAttachment, effect.Recursion,
                 effect.CardFilter, effect.UpgradeFilters, effect.RemoveHalfStatusEffects, effect.Overheal, effect.CorruptionAdd,
-                chooseDiscard: effect.ChooseDiscard);
+                chooseDiscard: effect.ChooseDiscard, transferAttackMultiplier: effect.TransferAttackMultiplier);
         }
         private static int TestCount(TrainCombatState state, CardActionEffect effect, CardTargets targets)
         {

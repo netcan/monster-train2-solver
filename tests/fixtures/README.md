@@ -1,5 +1,23 @@
 # Native regression fixtures
 
+`full-battle-transfer-attack-ability.mt2f` calibrates the ability-user target
+of the native `CardEffectTransferAttackFromUnit` class on a prepared unit
+ability. Six ability actions match, including a Train Steward rising from 8 to
+24 attack and gaining a temporary spawner-card upgrade. The muted Instant
+battle wins with 38 matched stages, 17 actions and five EndTurns, with zero
+capture failures, mismatches, unsupported transitions or pending records.
+
+`full-battle-transfer-attack.mt2f` calibrates the native
+`CardEffectTransferAttackFromUnit` class on a temporary VineGrasp definition.
+A front Train Steward receives twice a rear Imp's current attack; both its live
+unit and spawner card gain anonymous upgrades. This is effect-class evidence,
+not unchanged-owner evidence for the four catalog cards. The muted Instant
+battle wins with 67 matched stages, 26 actions and seven EndTurns, with zero
+capture failures, mismatches, unsupported transitions or pending records.
+`full-battle-transfer-attack-physical.mt2f` repeats the front-unit transfer
+with physical spawn points; its 67 stages, 26 actions and seven EndTurns also
+match, including 305 physical compaction checks.
+
 `full-battle-damage-by-units-killed.mt2f` uses unchanged `StarterImp` and
 `ShardtailSacrificeImps1` definitions. The Imp is summoned behind a Train
 Steward; the spell is drawn next turn and sacrifices it while damaging enemies
@@ -106,7 +124,7 @@ The default command checks the full curated inventory. For routine changes, run
 the dedicated checks for the new and directly affected scenarios; run the full
 inventory at completed milestones and before delivery.
 
-Current inventory is 306 archives: 275 accepted battles and 31 component
+Current inventory is 309 archives: 278 accepted battles and 31 component
 calibrations. Original relic evidence is 78/224 (34.82%). The schema-162
 `full-battle-dragon-hoard.mt2f` archive captures Alchemy changing the hoard from
 2 to 4. The Instant native battle wins with 61 matched stages, 21 card actions
