@@ -20,6 +20,7 @@ param(
     [switch] $SacrificeEffects,
     [switch] $CardEffectKill,
     [switch] $CardEffectKillSubtype,
+    [switch] $NullForwarding,
     [switch] $RemoveAllStatusEffects,
     [switch] $DragonHoard,
     [switch] $TrainHeal,
@@ -357,6 +358,7 @@ if ($cardRecursionModes.Count -gt 1) { throw 'Choose one CardRecursion scenario.
 if ($SacrificeEffects) { $Policy = 'units-spells-and-junk' }
 if ($CardEffectKill -and $CardEffectKillSubtype) { throw 'Choose either -CardEffectKill or -CardEffectKillSubtype.' }
 if ($CardEffectKill -or $CardEffectKillSubtype) { $Policy = 'units-spells-and-junk' }
+if ($NullForwarding) { $Policy = 'units-spells-and-junk' }
 if ($RemoveAllStatusEffects) { $Policy = 'units-spells-and-junk' }
 if ($DragonHoard) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($TrainHeal) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
@@ -528,6 +530,7 @@ if ($SacrificeEffects) {
 if ($CardEffectKill -or $CardEffectKillSubtype) {
     $environment['MT2_PROBE_MODIFIERS'] = if ($CardEffectKillSubtype) { 'card-effect-kill-subtype' } else { 'card-effect-kill' }
 }
+if ($NullForwarding) { $environment['MT2_PROBE_MODIFIERS'] = 'null-forwarding' }
 if ($RemoveAllStatusEffects) { $environment['MT2_PROBE_MODIFIERS'] = 'remove-all-status-effects' }
 if ($DragonHoard) { $environment['MT2_PROBE_MODIFIERS'] = 'dragon-hoard' }
 if ($TrainHeal) { $environment['MT2_PROBE_MODIFIERS'] = 'train-heal' }
@@ -656,6 +659,12 @@ if (($CardEffectKill -or $CardEffectKillSubtype) -and ($trace.ModifierScenario -
     -not (Select-String -LiteralPath $unityLog -Pattern 'CARD-EFFECT-KILL-SUBTYPE-NATIVE .*result=true/false' -Quiet) -or
     ($CardEffectKillSubtype -and -not (Select-String -LiteralPath $unityLog -Pattern 'CARD-EFFECT-KILL-SUBTYPE-PLAY targets=.* result=supported' -Quiet)))) {
     throw 'CardEffectKill native setup did not run.'
+}
+if ($NullForwarding -and ($trace.ModifierScenario -ne 'null-forwarding' -or
+    -not (Select-String -LiteralPath $unityLog -Pattern 'NULL-FORWARDING-PREPARED original=Cleave' -Quiet) -or
+    -not (Select-String -LiteralPath $unityLog -Pattern 'NULL-FORWARDING-PLAY room=' -Quiet) -or
+    -not (Select-String -LiteralPath (Join-Path $profile 'logfile.log') -Pattern 'Attacker Cleave dealing [1-9][0-9]* damage' -Quiet))) {
+    throw 'Original Cleave did not deal damage in the native battle.'
 }
 if ($RemoveAllStatusEffects -and ($trace.Schema -ne 164 -or $trace.ModifierScenario -ne 'remove-all-status-effects' -or
     -not (Select-String -LiteralPath $unityLog -Pattern 'REMOVE-ALL-STATUS-SEEDED card=.* hidden=' -Quiet) -or

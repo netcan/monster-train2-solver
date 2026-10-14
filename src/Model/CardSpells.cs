@@ -73,6 +73,8 @@ namespace MonsterTrain2Poju.Model
             if (error != null) return new SpellCastCheck(false, error);
             int sourceAttackUnitId = selfUnitId > 0 ? selfUnitId : targetId;
             if (effects.Any(effect => effect.Type == "DamagePerSourceAttack") &&
+                !effects.TakeWhile(effect => effect.Type != "DamagePerSourceAttack")
+                    .Any(effect => effect.Type == "Null" && effect.NullForwardSelf) &&
                 (sourceAttackUnitId <= 0 || source.Rooms.SelectMany(item => item.Units).All(unit => unit.Id != sourceAttackUnitId)))
                 return new SpellCastCheck(false, "Source-attack damage requires a captured caster unit.");
             RoomCombatState room = source.Rooms.Single(item => item.RoomIndex == roomIndex);
@@ -102,8 +104,10 @@ namespace MonsterTrain2Poju.Model
                 if (testCount < 0) return new SpellCastCheck(false, "All-status adjustment requires complete propagation metadata.");
                 bool valid = effect.Type == "AbilityTeleport"
                     ? UnitTeleportModel.CanPlay(source, selfUnitId, roomIndex, targetSpawnPointIndex)
-                    : PassesTest(tested, testCount, source.Context!.AllScenarioBossesDead == true, source.Context, room.Preview, room,
-                        PyreAlive(source, fullTrain), sourceCardId) && PassesTargetSubtype(source, effect, targets);
+                    : (effect.Type != "DamagePerSourceAttack" || sourceAttackUnitId > 0 &&
+                        source.Rooms.SelectMany(item => item.Units).Any(unit => unit.Id == sourceAttackUnitId)) &&
+                        PassesTest(tested, testCount, source.Context!.AllScenarioBossesDead == true, source.Context, room.Preview, room,
+                            PyreAlive(source, fullTrain), sourceCardId) && PassesTargetSubtype(source, effect, targets);
                 if (!valid && effect.Tests?.FailToCast == true) return new SpellCastCheck(false, battleRngAfterTests: testingRng);
                 passed |= valid;
             }
@@ -247,6 +251,8 @@ namespace MonsterTrain2Poju.Model
             if (error != null) return UnsupportedTrain(error);
             int sourceAttackUnitId = selfUnitId > 0 ? selfUnitId : targetId;
             if (effects.Any(effect => effect.Type == "DamagePerSourceAttack") &&
+                !effects.TakeWhile(effect => effect.Type != "DamagePerSourceAttack")
+                    .Any(effect => effect.Type == "Null" && effect.NullForwardSelf) &&
                 (sourceAttackUnitId <= 0 || source.Rooms.SelectMany(item => item.Units).All(unit => unit.Id != sourceAttackUnitId)))
                 return UnsupportedTrain("Source-attack damage requires a captured caster unit.");
             RoomCombatState selected = source.Rooms.Single(item => item.RoomIndex == roomIndex);
@@ -363,6 +369,16 @@ namespace MonsterTrain2Poju.Model
                 Remember(effect, index, targets, ref last);
                 if (targets.BattleRng.HasValue)
                     state = WithContext(state, state.Context!.WithBattleRng(targets.BattleRng.Value));
+                if (effect.Type == "Null")
+                {
+                    if (effect.NullForwardSelf)
+                    {
+                        if (targets.UnitIds.Count == 0)
+                            return UnsupportedTrain("Null target forwarding requires a collected unit.");
+                        selfUnitId = targets.UnitIds[0];
+                    }
+                    continue;
+                }
                 if (effect.Type == "HealTrain")
                 {
                     if (targets.UnitIds.Count != 1) return UnsupportedTrain("Train healing requires one live Pyre target.");
@@ -1558,7 +1574,7 @@ namespace MonsterTrain2Poju.Model
                     if (forgeError != null) return forgeError;
                     continue;
                 }
-                if (!new[] { "CopyUnits", "Bump", "AbilityTeleport", "AttackWithUnit", "Damage", "DamagePerSourceAttack", "DamagePerHp", "Heal", "HealOverheal", "Sacrifice", "Kill", "AddStatus", "RemoveAllStatusEffects", "MultiplyStatus", "MultiplyAllPositiveStatusEffects", "AdjustAllStatusEffects", "AddStatusPerOtherEffect", "SpawnOrStatus", "FloorRearrange", "UnitUpgrade", "UnitUpgradePerStatus", "BuffEquipment", "RemoveUnitUpgrade", "AttachEquipment", "RemoveEquipment", "BuffAttack", "DebuffAttack", "BuffHealth", "DebuffHealth", "Draw", "DiscardHand", "RandomDiscard", "Generate" }.Contains(effect.Type))
+                if (!new[] { "Null", "CopyUnits", "Bump", "AbilityTeleport", "AttackWithUnit", "Damage", "DamagePerSourceAttack", "DamagePerHp", "Heal", "HealOverheal", "Sacrifice", "Kill", "AddStatus", "RemoveAllStatusEffects", "MultiplyStatus", "MultiplyAllPositiveStatusEffects", "AdjustAllStatusEffects", "AddStatusPerOtherEffect", "SpawnOrStatus", "FloorRearrange", "UnitUpgrade", "UnitUpgradePerStatus", "BuffEquipment", "RemoveUnitUpgrade", "AttachEquipment", "RemoveEquipment", "BuffAttack", "DebuffAttack", "BuffHealth", "DebuffHealth", "Draw", "DiscardHand", "RandomDiscard", "Generate" }.Contains(effect.Type))
                     return "Unimplemented spell effect " + effect.Type;
                 if (effect.Type == "Generate" && effect.Generation == null) return "Missing generated card rules.";
                 if ((effect.Type == "UnitUpgrade" || effect.Type == "UnitUpgradePerStatus" ||
@@ -1684,6 +1700,7 @@ namespace MonsterTrain2Poju.Model
             if (effect.Type == "Generate" && effect.Generation?.RequireHandSpace == true && context != null && context.Cards.Hand.Count >= context.MaxHandSize) return false;
             switch (effect.Type)
             {
+                case "Null": return count > 0 || effect.NullTargetless;
                 case "RemoveStatus": return string.IsNullOrEmpty(effect.Filters?.Subtype) || count > 0;
                 case "Draw": return context != null && context.Cards.Hand.Count - 1 < context.MaxHandSize;
                 case "ScheduleNextDrawUpgrade": return context != null && (Math.Abs(effect.RequiredGold) == 0 || context.Gold >= Math.Abs(effect.RequiredGold));
