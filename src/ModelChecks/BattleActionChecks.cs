@@ -488,6 +488,8 @@ internal static class BattleActionChecks
             chooser = BattleActionModel.ChooseBossRoomSummonThenCards;
         if (fixture.TryGetProperty("ModifierScenario", out var sacrificeScenario) && sacrificeScenario.GetString() == "sacrifice-effects")
             chooser = ChooseSacrificeEffectsThenCards;
+        if (fixture.TryGetProperty("ModifierScenario", out var setHealthScenario) && setHealthScenario.GetString() == "set-health")
+            chooser = ChooseSetHealthThenCards;
         if (fixture.TryGetProperty("ModifierScenario", out var typedDrawScenario) && typedDrawScenario.GetString() == "typed-draw")
             chooser = ChooseTypedDrawThenCards;
         if (fixture.TryGetProperty("ModifierScenario", out var incantPolicy) && incantPolicy.GetString() is "incant" or "incant-thresholds" or "incant-relic" or "incant-relic-combined")
@@ -697,6 +699,23 @@ internal static class BattleActionChecks
             if (target != null)
             {
                 var action = new PlayCardAction(sacrifice.InstanceId, 0, targetUnitId: target.Id);
+                if (BattleActionModel.PlayCard(source, action).Supported) return action;
+            }
+        }
+        return BattleActionModel.ChooseUnitSpellAndJunkPlay(source);
+    }
+
+    private static PlayCardAction? ChooseSetHealthThenCards(BattleTurnState source)
+    {
+        const string cardId = "4c0f6e0e-ac05-4e0c-a478-590ac06d646f";
+        CardToken? card = source.Spawn.Train.Context!.Cards.Hand.FirstOrDefault(item => item.DataId == cardId);
+        if (card != null)
+        {
+            RoomCombatState room = source.Spawn.Train.Rooms.Single(item => item.RoomIndex == 0);
+            CombatUnit? target = room.Units.LastOrDefault(unit => unit.Team == CombatTeam.Player && !unit.IsPyre && unit.Health > 1);
+            if (target != null)
+            {
+                var action = new PlayCardAction(card.InstanceId, 0, targetUnitId: target.Id);
                 if (BattleActionModel.PlayCard(source, action).Supported) return action;
             }
         }

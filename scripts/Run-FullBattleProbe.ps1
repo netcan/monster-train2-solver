@@ -18,6 +18,7 @@ param(
     [switch] $DynamicUpgrades,
     [switch] $SacrificeUpgrades,
     [switch] $SacrificeEffects,
+    [switch] $SetHealth,
     [switch] $CardEffectKill,
     [switch] $CardEffectKillSubtype,
     [switch] $NullForwarding,
@@ -365,6 +366,7 @@ $cardRecursionModes = @($CardRecursion, $CardRecursionDiscard, $CardRecursionCho
     Where-Object { $_ }
 if ($cardRecursionModes.Count -gt 1) { throw 'Choose one CardRecursion scenario.' }
 if ($SacrificeEffects) { $Policy = 'units-spells-and-junk' }
+if ($SetHealth) { $Policy = 'units-spells-and-junk' }
 if ($CardEffectKill -and $CardEffectKillSubtype) { throw 'Choose either -CardEffectKill or -CardEffectKillSubtype.' }
 if ($CardEffectKill -or $CardEffectKillSubtype) { $Policy = 'units-spells-and-junk' }
 if ($NullForwarding) { $Policy = 'units-spells-and-junk' }
@@ -545,6 +547,7 @@ if ($Sentry -or $SentryLethal) {
 if ($SacrificeEffects) {
     $environment['MT2_PROBE_MODIFIERS'] = 'sacrifice-effects'
 }
+if ($SetHealth) { $environment['MT2_PROBE_MODIFIERS'] = 'set-health' }
 if ($CardEffectKill -or $CardEffectKillSubtype) {
     $environment['MT2_PROBE_MODIFIERS'] = if ($CardEffectKillSubtype) { 'card-effect-kill-subtype' } else { 'card-effect-kill' }
 }
@@ -1227,6 +1230,17 @@ $sacrificeEffectCoverage = -not $SacrificeEffects -or @($sacrificeEffectActions 
     $actionEntry = $_
     $room = $actionEntry.Actual.Spawn.Train.Rooms | Where-Object RoomIndex -EQ $actionEntry.Action.RoomIndex
     $actionEntry.Action.TargetUnitId -gt 0 -and @($room.Units | Where-Object Id -EQ $actionEntry.Action.TargetUnitId).Count -eq 0
+}).Count -gt 0
+$setHealthActions = @($trace.Actions | Where-Object {
+    $entry = $_
+    $playedCard = $entry.Before.Spawn.Train.Context.Cards.Hand | Where-Object InstanceId -EQ $entry.Action.CardInstanceId
+    $playedCard.DataId -eq '4c0f6e0e-ac05-4e0c-a478-590ac06d646f'
+})
+$setHealthCoverage = -not $SetHealth -or @($setHealthActions | Where-Object {
+    $entry = $_
+    $beforeUnit = $entry.Before.Spawn.Train.Rooms.Units | Where-Object Id -EQ $entry.Action.TargetUnitId
+    $afterUnit = $entry.Actual.Spawn.Train.Rooms.Units | Where-Object Id -EQ $entry.Action.TargetUnitId
+    $beforeUnit.Health -gt 1 -and $afterUnit.Health -eq 1 -and -not $entry.Difference -and $entry.Predicted.Supported
 }).Count -gt 0
 $cardEffectKillActions = @($trace.Actions | Where-Object {
     $actionEntry = $_
@@ -2818,6 +2832,8 @@ $result = [pscustomobject]@{
     ModifierCoverage = $modifierCoverage
     SacrificeEffectActions = $sacrificeEffectActions.Count
     SacrificeEffectCoverage = $sacrificeEffectCoverage
+    SetHealthActions = $setHealthActions.Count
+    SetHealthCoverage = $setHealthCoverage
     CardEffectKillActions = $cardEffectKillActions.Count
     CardEffectKillCoverage = $cardEffectKillCoverage
     CardEffectKillSubtypeCoverage = $cardEffectKillSubtypeCoverage
@@ -2900,6 +2916,7 @@ $result = [pscustomobject]@{
     CharacterRemovalCalibration = $(if ($CharacterRemoval) { Join-Path $profile 'character-removal-calibration.mt2f' } else { $null })
 }
 if (-not $sacrificeEffectCoverage) { throw 'Native CardEffectSacrifice was not exercised through a full battle action.' }
+if (-not $setHealthCoverage) { throw 'Native CardEffectSetHealth did not set a living player unit to one health in a matched action.' }
 if (-not $cardEffectKillCoverage) { throw 'Native CardEffectKill did not kill one enemy and one player unit in a full battle action.' }
 if (-not $cardEffectKillSubtypeCoverage) { throw 'Native CardEffectKill did not kill a matching subtype target in a full battle action.' }
 if (-not $cardRecursionCoverage) { throw 'Native WurmkinEtchings recursion did not restore the expected cards in a matched full battle action.' }

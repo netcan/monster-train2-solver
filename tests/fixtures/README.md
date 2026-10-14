@@ -1,5 +1,11 @@
 # Native regression fixtures
 
+`full-battle-set-health.mt2f` plays original `RiskyOperation` twice, setting a
+living player's health directly to one before its upgrade and Lifesteal effects.
+The muted Instant native battle won with 51 matched stages, 19 card actions and
+six EndTurns. Capture failures, mismatches, unsupported transitions and pending
+records were zero. Its binary-only archive is 29,333 bytes in `manifest.tsv`.
+
 `full-battle-choose-discard-persistent.mt2f` keeps original `ScrapMetal` after
 `FoundryLine` and verifies that it remains in hand over six nonterminal turns.
 Its one action, 13 card cycles, seven EndTurns and 52 room stages match native
@@ -89,7 +95,7 @@ The default command checks the full curated inventory. For routine changes, run
 the dedicated checks for the new and directly affected scenarios; run the full
 inventory at completed milestones and before delivery.
 
-Current inventory is 299 archives: 268 accepted battles and 31 component
+Current inventory is 304 archives: 273 accepted battles and 31 component
 calibrations. Original relic evidence is 78/224 (34.82%). The schema-162
 `full-battle-dragon-hoard.mt2f` archive captures Alchemy changing the hoard from
 2 to 4. The Instant native battle wins with 61 matched stages, 21 card actions

@@ -22,7 +22,7 @@ namespace MonsterTrain2Poju.Probe
             "CardEffectAddPermanentCorruption",
             "CardEffectSetMoonPhase", "CardEffectAdvanceMoonPhase",
             "CardEffectAdjustForgePoints", "CardEffectDiscardHand", "CardEffectRandomDiscard", "CardEffectChooseDiscard", "CardEffectAddBattleCard",
-            "CardEffectHeal", "CardEffectHealAndOverheal", "CardEffectHealTrain", "CardEffectSacrifice", "CardEffectKill", "CardEffectRecursion", "CardEffectBuffDamage", "CardEffectDebuffDamage",
+            "CardEffectHeal", "CardEffectHealAndOverheal", "CardEffectHealTrain", "CardEffectSetHealth", "CardEffectSacrifice", "CardEffectKill", "CardEffectRecursion", "CardEffectBuffDamage", "CardEffectDebuffDamage",
             "CardEffectBuffMaxHealth", "CardEffectDebuffMaxHealth", "CardEffectAddStatusEffect", "CardEffectMultiplyStatusEffect",
             "CardEffectMultiplyAllPositiveStatusEffects", "CardEffectAdjustAllStatusEffects", "CardEffectAddStatusEffectPerOtherEffect",
             "CardEffectSpawnMonsterOrAddStatusEffect", "CardEffectFloorRearrange", "CardEffectAddCardUpgradeToUnits", "CardEffectDrawType",
@@ -308,6 +308,7 @@ namespace MonsterTrain2Poju.Probe
                 effect.GetEffectStateName() == "CardEffectHeal" ? "Heal" :
                 effect.GetEffectStateName() == "CardEffectHealAndOverheal" ? "HealOverheal" :
                 effect.GetEffectStateName() == "CardEffectHealTrain" ? "HealTrain" :
+                effect.GetEffectStateName() == "CardEffectSetHealth" ? "SetHealth" :
                 effect.GetEffectStateName() == "CardEffectSacrifice" ? "Sacrifice" :
                 effect.GetEffectStateName() == "CardEffectKill" ? "Kill" :
                 effect.GetEffectStateName() == "CardEffectRecursion" ? "Recursion" :

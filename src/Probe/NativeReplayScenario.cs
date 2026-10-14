@@ -509,6 +509,12 @@ namespace MonsterTrain2Poju.Probe
                 numericModifiersPrepared = true;
                 SacrificeScenario.Prepare(managers, log);
             }
+            if (fullBattle && !numericModifiersPrepared && modifierScenario == "set-health")
+            {
+                if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("SetHealth fixture must start on deployment turn.");
+                numericModifiersPrepared = true;
+                SetHealthScenario.Prepare(managers, log);
+            }
             if (fullBattle && !numericModifiersPrepared && modifierScenario is "card-effect-kill" or "card-effect-kill-subtype")
             {
                 if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("CardEffectKill fixture must start on deployment turn.");
@@ -1111,6 +1117,7 @@ namespace MonsterTrain2Poju.Probe
                 }
                 if (OriginalDeployableRelicScenario.Enabled) pendingPlay = OriginalDeployableRelicScenario.Choose(decision) ?? pendingPlay;
                 if (modifierScenario == "sacrifice-effects") pendingPlay = SacrificeScenario.Choose(decision);
+                if (modifierScenario == "set-health") pendingPlay = SetHealthScenario.Choose(decision);
                 if (modifierScenario is "card-effect-kill" or "card-effect-kill-subtype")
                     pendingPlay = CardEffectKillScenario.Choose(decision);
                 if (NullForwardingScenario.Enabled) pendingPlay = NullForwardingScenario.Choose(decision, log);
