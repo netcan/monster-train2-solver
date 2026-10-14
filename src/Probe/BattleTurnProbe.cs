@@ -55,7 +55,8 @@ namespace MonsterTrain2Poju.Probe
                     interactions.Add("Opening hand trait callback");
             }
             bool moonPhaseTrackingActive = (bool)AccessTools.Field(typeof(PlayerManager), "isMoonPhaseTrackingActive").GetValue(player);
-            if (player.GetHasMoonPhaseCardEffect() && !OriginalMoonPhaseEnergyRelicScenario.IsolatedTrackingEnabled)
+            if (player.GetHasMoonPhaseCardEffect() && !OriginalMoonPhaseEnergyRelicScenario.IsolatedTrackingEnabled &&
+                !MoonPhaseCardScenario.Enabled)
                 interactions.Add("Moon phase unit/card effects");
             var streams = new List<BattleRngStream>();
             foreach (RngId id in Enum.GetValues(typeof(RngId)))

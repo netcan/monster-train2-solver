@@ -26,6 +26,7 @@ param(
     [switch] $Overheal,
     [switch] $Corruption,
     [switch] $PermanentCorruption,
+    [switch] $MoonPhaseCard,
     [switch] $SoulSiphon,
     [switch] $StatusUpgrade,
     [switch] $CardRecursion,
@@ -357,6 +358,7 @@ if ($TrainHeal) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($Overheal) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($Corruption) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($PermanentCorruption) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
+if ($MoonPhaseCard) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($SoulSiphon) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($StatusUpgrade) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($CardRecursion -or $CardRecursionDiscard -or $CardRecursionChoose -or $CardRecursionChooseToHand -or $CardRecursionChooseFilter -or $CardRecursionUpgrade -or $CardRecursionUpgradeToHand -or $CardRecursionUpgradeChoose -or $CardRecursionUpgradeFilterChoose -or $CardRecursionUpgradeReplacementChoose) { $Policy = 'units-spells-and-junk'; $BranchCardMasks = $true }
@@ -522,6 +524,7 @@ if ($TrainHeal) { $environment['MT2_PROBE_MODIFIERS'] = 'train-heal' }
 if ($Overheal) { $environment['MT2_PROBE_MODIFIERS'] = 'overheal' }
 if ($Corruption) { $environment['MT2_PROBE_MODIFIERS'] = 'corruption' }
 if ($PermanentCorruption) { $environment['MT2_PROBE_MODIFIERS'] = 'permanent-corruption' }
+if ($MoonPhaseCard) { $environment['MT2_PROBE_MODIFIERS'] = 'moon-phase-card' }
 if ($SoulSiphon) { $environment['MT2_PROBE_MODIFIERS'] = 'soul-siphon' }
 if ($StatusUpgrade) { $environment['MT2_PROBE_MODIFIERS'] = 'status-upgrade' }
 if ($CardRecursion -or $CardRecursionDiscard -or $CardRecursionChoose -or $CardRecursionChooseToHand -or $CardRecursionChooseFilter -or $CardRecursionUpgrade -or $CardRecursionUpgradeToHand -or $CardRecursionUpgradeChoose -or $CardRecursionUpgradeFilterChoose -or $CardRecursionUpgradeReplacementChoose) {
@@ -674,6 +677,12 @@ if ($PermanentCorruption -and ($trace.ModifierScenario -ne 'permanent-corruption
     -not (Select-String -LiteralPath $unityLog -Pattern 'PERMANENT-CORRUPTION-CANDIDATE supported=True current=\d+->\d+ permanent=\d+->\d+' -Quiet) -or
     @($trace.Actions | Where-Object { $_.ScenarioAction }).Count -ne 1)) {
     throw 'Original Eternal Kinstone action was not captured.'
+}
+if ($MoonPhaseCard -and ($trace.ModifierScenario -ne 'moon-phase-card' -or
+    -not (Select-String -LiteralPath $unityLog -Pattern 'MOON-PHASE-CARD-PREPARED steward=\d+ moonrise=\d+ phase=New tracking=True' -Quiet) -or
+    -not (Select-String -LiteralPath $unityLog -Pattern 'MOON-PHASE-CARD-CANDIDATE supported=True phase=New->Full energy=\d+->\d+ fullmoon=1' -Quiet) -or
+    @($trace.Actions | Where-Object { $_.ScenarioAction }).Count -ne 1)) {
+    throw 'Original Moonrise phase-shift action was not captured.'
 }
 if ($SoulSiphon -and ($trace.ModifierScenario -ne 'soul-siphon' -or
     -not (Select-String -LiteralPath $unityLog -Pattern 'SOUL-SIPHON-STATUS stage=' -Quiet) -or

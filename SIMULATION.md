@@ -1,10 +1,29 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-14): 287 binary archives, including 256
+Current accepted inventory (2026-10-14): 288 binary archives, including 257
 full battles and 31 component calibrations. Unchanged original relic evidence
 covers 78/224 catalog entries (34.82%); see
 [the owner evidence table](tests/fixtures/relic-coverage.md). Whole-battle
 coverage and the optimal solver remain in progress.
+
+### Original Moonrise phase transition
+
+`full-battle-moon-phase-card.mt2f` plays an unchanged Train Steward followed by
+the unchanged `Moonrise`. Following `PlayerManager.SetMoonPhase`, the model
+changes New Moon to Full Moon, updates active units' hidden moon status, and
+applies the card's one-energy effect in order. The muted Instant native battle
+wins with 23 matched actions, seven EndTurns, and zero capture failures,
+mismatches, unsupported transitions or pending records. Search replays all 23
+decisions with matching serial and parallel results. The 36,207-byte binary
+has 5,928 unique nodes and SHA-256
+`4ab7d9a5f2e9e2373f752114762eddc1b615905d0036dcd814db1abf4af01e94`.
+The source-derived `AdvanceMoonPhase` path has pure branch checks, but native
+triggered advances and moon-phase callbacks still need calibration.
+
+```powershell
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-moon-phase-card.mt2f
+dotnet run --project src/ModelChecks -c Release -- --moon-phase-transition-pure
+```
 
 ### Original Eternal Kinstone permanent corruption
 

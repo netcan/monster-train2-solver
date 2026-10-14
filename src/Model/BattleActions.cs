@@ -739,7 +739,8 @@ namespace MonsterTrain2Poju.Model
             if (context.RoomCapacities != null) outputPlayRules = outputPlayRules.WithCapacities(context.RoomCapacities);
             return new BattleActionResult(new BattleTurnState(spawn, context.EnergyState == null ? source.Energy - paidCost : context.QueryFrame!.Energy!.Value, source.EnergyPerTurn,
                 source.DrawPerTurn, context.QueryFrame?.ForgePoints ?? source.ForgePoints,
-                context.QueryFrame?.DragonsHoard ?? source.DragonsHoard, source.MoonPhase,
+                context.QueryFrame?.DragonsHoard ?? source.DragonsHoard,
+                context.QueryFrame?.MoonPhase == 1 ? "New" : context.QueryFrame?.MoonPhase == 2 ? "Full" : source.MoonPhase,
                 source.RngStreams.Select(stream => new BattleRngStream(stream.Name, stream.Seed,
                     stream.Name == "Battle" ? context.BattleRng : stream.Name == "CardDraw" ? context.Cards.Rng : stream.State)).ToArray(),
                 piles, source.ExternalInteractions, outputPlayRules, source.BattlePreviewEnabled, source.UiRngIsolated,

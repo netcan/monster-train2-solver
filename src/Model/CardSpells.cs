@@ -686,6 +686,13 @@ namespace MonsterTrain2Poju.Model
                     state = WithContext(state, EnergyModel.Apply(state.Context!, effect.Type, effect.Value));
                     continue;
                 }
+                if (effect.Type == "SetMoonPhase" || effect.Type == "AdvanceMoonPhase")
+                {
+                    MoonPhaseTransitionResult shifted = MoonPhaseTransitionModel.Apply(state, effect, sourceCardId);
+                    if (!shifted.Supported) return UnsupportedTrain(shifted.UnsupportedReason!);
+                    state = shifted.State!;
+                    continue;
+                }
                 if (effect.Type == ForgePointsModel.Effect)
                 {
                     ForgePointsResult changed = ForgePointsModel.Apply(state.Context!, effect.Value, sourceCardId,
@@ -1270,6 +1277,12 @@ namespace MonsterTrain2Poju.Model
                 string? hoardRefreshError = ValidateHoardRefresh(source.Rooms.SelectMany(room => room.Units), source.Context, effects);
                 if (hoardRefreshError != null) return hoardRefreshError;
             }
+            foreach (CardActionEffect effect in effects.Where(effect => effect.Type == "SetMoonPhase" ||
+                effect.Type == "AdvanceMoonPhase"))
+            {
+                string? moonError = MoonPhaseTransitionModel.Validate(source, effect, sourceCardId);
+                if (moonError != null) return moonError;
+            }
             string? validation = Validate(selected, effects, targetId);
             if (validation != null) return validation;
             if (CardTargetModel.IsRandom(effects[0].Target))
@@ -1537,6 +1550,8 @@ namespace MonsterTrain2Poju.Model
                     if (energyError != null) return energyError;
                     continue;
                 }
+                if (effect.Type == "SetMoonPhase" || effect.Type == "AdvanceMoonPhase")
+                    continue;
                 if (effect.Type == ForgePointsModel.Effect)
                 {
                     string? forgeError = ForgePointsModel.Validate(source.Context);

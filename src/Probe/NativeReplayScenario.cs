@@ -551,6 +551,12 @@ namespace MonsterTrain2Poju.Probe
                 numericModifiersPrepared = true;
                 PermanentCorruptionScenario.Prepare(managers, log);
             }
+            if (fullBattle && !numericModifiersPrepared && MoonPhaseCardScenario.Enabled)
+            {
+                if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Moonrise fixture must start on deployment turn.");
+                numericModifiersPrepared = true;
+                MoonPhaseCardScenario.Prepare(managers, log);
+            }
             if (fullBattle && !numericModifiersPrepared && SoulSiphonScenario.Enabled)
             {
                 if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Soul Siphon fixture must start on deployment turn.");
@@ -1048,6 +1054,7 @@ namespace MonsterTrain2Poju.Probe
                 if (OverhealScenario.Enabled) pendingPlay = OverhealScenario.Choose(decision);
                 if (CorruptionScenario.Enabled) pendingPlay = CorruptionScenario.Choose(decision);
                 if (PermanentCorruptionScenario.Enabled) pendingPlay = PermanentCorruptionScenario.Choose(decision);
+                if (MoonPhaseCardScenario.Enabled) pendingPlay = MoonPhaseCardScenario.Choose(decision);
                 if (SoulSiphonScenario.Enabled) pendingPlay = SoulSiphonScenario.Choose(decision);
                 if (StatusUpgradeScenario.Enabled) pendingPlay = StatusUpgradeScenario.Choose(decision);
                 if (modifierScenario is "card-effect-recursion" or "card-effect-recursion-choice" or "card-effect-recursion-choose-to-hand" or "card-effect-recursion-filter-choice" or "card-effect-recursion-discard-choice" or "card-effect-recursion-upgrade" or "card-effect-recursion-upgrade-hand" or "card-effect-recursion-upgrade-choice" or "card-effect-recursion-upgrade-filter-choice" or "card-effect-recursion-upgrade-replacement-choice")
@@ -1198,6 +1205,7 @@ namespace MonsterTrain2Poju.Probe
                 (modifierScenario == "overheal" && OverhealScenario.IsScenarioAction(action)) ||
                 (modifierScenario == "corruption" && CorruptionScenario.IsScenarioAction(action)) ||
                 (modifierScenario == "permanent-corruption" && PermanentCorruptionScenario.IsScenarioAction(action)) ||
+                (modifierScenario == "moon-phase-card" && MoonPhaseCardScenario.IsScenarioAction(action)) ||
                 (modifierScenario == "soul-siphon" && SoulSiphonScenario.IsScenarioAction(action)) ||
                 (modifierScenario == "status-upgrade" && StatusUpgradeScenario.IsScenarioAction(action)) ||
                 (modifierScenario == "card-effect-kill-subtype" && CardEffectKillScenario.IsScenarioPrelude(action)) ||

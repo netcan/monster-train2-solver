@@ -9,6 +9,19 @@ if (args.Length == 1 && args[0] == "--room-corruption-pure")
     return;
 }
 
+if (args.Length == 1 && args[0] == "--moon-phase-transition-pure")
+{
+    MoonPhaseTransitionChecks.Run();
+    return;
+}
+
+if (args.Length == 2 && args[0] == "--moon-phase-transition-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    MoonPhaseTransitionChecks.Native(fixture.RootElement);
+    return;
+}
+
 if (args.Length == 2 && args[0] == "--room-corruption-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
@@ -821,6 +834,7 @@ AbilityCardChecks.Run();
 StatusUpgradeChecks.Run();
 OverhealChecks.Run();
 RoomCorruptionChecks.Run();
+MoonPhaseTransitionChecks.Run();
 ScorchStatusChecks.Run();
 UnitAbilityChecks.Run();
 RelicChecks.Run();

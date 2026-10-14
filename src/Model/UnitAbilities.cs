@@ -119,7 +119,8 @@ namespace MonsterTrain2Poju.Model
                 old.Treasures, old.TreasuresRemaining, old.TreasureEnabled, old.FirstTreasureTurn, old.FirstTreasureRoom,
                 old.Turn, old.ExternalInteractions, old.CanonicalDecisionReferences);
             return new BattleActionResult(new BattleTurnState(spawn, context.QueryFrame?.Energy ?? source.Energy - paid,
-                source.EnergyPerTurn, source.DrawPerTurn, context.QueryFrame?.ForgePoints ?? source.ForgePoints, source.DragonsHoard, source.MoonPhase,
+                source.EnergyPerTurn, source.DrawPerTurn, context.QueryFrame?.ForgePoints ?? source.ForgePoints, source.DragonsHoard,
+                context.QueryFrame?.MoonPhase == 1 ? "New" : context.QueryFrame?.MoonPhase == 2 ? "Full" : source.MoonPhase,
                 source.RngStreams.Select(stream => new BattleRngStream(stream.Name, stream.Seed,
                     stream.Name == "Battle" ? context.BattleRng : stream.Name == "CardDraw" ? context.Cards.Rng : stream.State)).ToArray(),
                 context.OtherPiles ?? source.OtherPiles, source.ExternalInteractions, source.PlayRules, source.BattlePreviewEnabled,
