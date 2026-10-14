@@ -29,6 +29,7 @@ param(
     [switch] $MoonPhaseCard,
     [switch] $MoonPhaseAdvance,
     [switch] $MoonPhaseCallbacks,
+    [switch] $ConditionalNoPlayerStatus,
     [switch] $SoulSiphon,
     [switch] $StatusUpgrade,
     [switch] $CardRecursion,
@@ -363,6 +364,7 @@ if ($PermanentCorruption) { $BranchCardMasks = $true; $Policy = 'units-spells-an
 if ($MoonPhaseCard) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($MoonPhaseAdvance) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($MoonPhaseCallbacks) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
+if ($ConditionalNoPlayerStatus) { $Policy = 'units-spells-and-junk' }
 if ($SoulSiphon) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($StatusUpgrade) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($CardRecursion -or $CardRecursionDiscard -or $CardRecursionChoose -or $CardRecursionChooseToHand -or $CardRecursionChooseFilter -or $CardRecursionUpgrade -or $CardRecursionUpgradeToHand -or $CardRecursionUpgradeChoose -or $CardRecursionUpgradeFilterChoose -or $CardRecursionUpgradeReplacementChoose) { $Policy = 'units-spells-and-junk'; $BranchCardMasks = $true }
@@ -531,6 +533,7 @@ if ($PermanentCorruption) { $environment['MT2_PROBE_MODIFIERS'] = 'permanent-cor
 if ($MoonPhaseCard) { $environment['MT2_PROBE_MODIFIERS'] = 'moon-phase-card' }
 if ($MoonPhaseAdvance) { $environment['MT2_PROBE_MODIFIERS'] = 'moon-phase-advance' }
 if ($MoonPhaseCallbacks) { $environment['MT2_PROBE_MODIFIERS'] = 'moon-phase-callbacks' }
+if ($ConditionalNoPlayerStatus) { $environment['MT2_PROBE_MODIFIERS'] = 'conditional-no-player-status' }
 if ($SoulSiphon) { $environment['MT2_PROBE_MODIFIERS'] = 'soul-siphon' }
 if ($StatusUpgrade) { $environment['MT2_PROBE_MODIFIERS'] = 'status-upgrade' }
 if ($CardRecursion -or $CardRecursionDiscard -or $CardRecursionChoose -or $CardRecursionChooseToHand -or $CardRecursionChooseFilter -or $CardRecursionUpgrade -or $CardRecursionUpgradeToHand -or $CardRecursionUpgradeChoose -or $CardRecursionUpgradeFilterChoose -or $CardRecursionUpgradeReplacementChoose) {
@@ -701,6 +704,10 @@ if ($MoonPhaseCallbacks -and ($trace.ModifierScenario -ne 'moon-phase-callbacks'
     -not (Select-String -LiteralPath $unityLog -Pattern 'MOON-PHASE-CALLBACKS-CANDIDATE supported=True phase=Full->New' -Quiet) -or
     @($trace.Actions | Where-Object { $_.ScenarioAction }).Count -ne 1)) {
     throw 'Original Selene Acolyte moon-phase callbacks were not captured.'
+}
+if ($ConditionalNoPlayerStatus -and ($trace.ModifierScenario -ne 'conditional-no-player-status' -or
+    -not (Select-String -LiteralPath $unityLog -Pattern 'NO-PLAYER-STATUS-PREPARED original=R4_Heavy_ArmorIfUnblocked_Ver2 firstWaveGroups=\d+' -Quiet))) {
+    throw 'Original conditional Armor enemy was not prepared.'
 }
 if ($SoulSiphon -and ($trace.ModifierScenario -ne 'soul-siphon' -or
     -not (Select-String -LiteralPath $unityLog -Pattern 'SOUL-SIPHON-STATUS stage=' -Quiet) -or

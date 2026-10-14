@@ -15,6 +15,19 @@ if (args.Length == 1 && args[0] == "--moon-phase-transition-pure")
     return;
 }
 
+if (args.Length == 1 && args[0] == "--no-player-units-status-pure")
+{
+    ConditionalNoPlayerUnitChecks.Run();
+    return;
+}
+
+if (args.Length == 2 && args[0] == "--no-player-units-status-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    ConditionalNoPlayerUnitChecks.Native(fixture.RootElement);
+    return;
+}
+
 if (args.Length == 2 && args[0] == "--moon-phase-transition-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
@@ -909,6 +922,7 @@ HitKillChecks.Run();
 DyingUpgradeChecks.Run();
 AttackTriggerChecks.Run();
 TriggeredStatusChecks.Run();
+ConditionalNoPlayerUnitChecks.Run();
 HandUpgradeChecks.Run();
 HealingChecks.Run();
 GoldRewardChecks.Run();

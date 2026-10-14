@@ -9,6 +9,7 @@ $fixtureNames = @('full-battle-steward-once.mt2f', 'full-battle-no-cards.mt2f', 
     'full-battle-overheal.mt2f', 'full-battle-corruption.mt2f', 'full-battle-permanent-corruption.mt2f',
     'full-battle-soul-siphon.mt2f', 'full-battle-moon-phase-card.mt2f', 'full-battle-moon-phase-advance.mt2f',
     'full-battle-moon-phase-callbacks.mt2f',
+    'full-battle-conditional-no-player-status.mt2f',
     'full-battle-units-spells-and-junk.mt2f', 'full-battle-relic-card-modifiers.mt2f', 'full-battle-original-relic-batch.mt2f',
     'full-battle-covenant-character-filter.mt2f',
     'full-battle-titan-skin.mt2f',
@@ -371,6 +372,14 @@ $moonPhaseCallbackFixtures = @($fixtures | Where-Object {
 foreach ($fixturePath in $moonPhaseCallbackFixtures) {
     dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- --moon-phase-callbacks-only $fixturePath
     if ($LASTEXITCODE -ne 0) { throw "Moon-phase callback checks failed: $fixturePath" }
+}
+
+$conditionalNoPlayerFixtures = @($fixtures | Where-Object {
+    (Split-Path -Leaf $_) -eq 'full-battle-conditional-no-player-status.mt2f'
+})
+foreach ($fixturePath in $conditionalNoPlayerFixtures) {
+    dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- --no-player-units-status-only $fixturePath
+    if ($LASTEXITCODE -ne 0) { throw "Conditional no-player status checks failed: $fixturePath" }
 }
 
 $scorchFixtures = @($fixtures | Where-Object {

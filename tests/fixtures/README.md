@@ -1,5 +1,10 @@
 # Native regression fixtures
 
+`full-battle-conditional-no-player-status.mt2f` records an unchanged enemy
+gaining Armor after combat without player units on its floor, then keeping the
+same Armor after combat with a defender present. The focused check verifies
+both branches. The archive is binary only.
+
 `full-battle-moon-phase-callbacks.mt2f` records unchanged Selene Acolyte,
 Moonrise and Fae Meddler. Its focused check verifies temporary upgrade addition
 on Full Moon and removal on New Moon; the complete battle also covers natural

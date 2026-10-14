@@ -987,13 +987,15 @@ namespace MonsterTrain2Poju.Model
                                 return "Missing or mismatched triggered moon-phase definition.";
                             continue;
                         }
-                        if (effect.Action != null && effect.Type != "CardEffectHeal" && effect.Type != "CardEffectDamage" && effect.Type != "CardEffectAddStatusEffect")
+                        if (effect.Action != null && effect.Type != "CardEffectHeal" && effect.Type != "CardEffectDamage" && effect.Type != "CardEffectAddStatusEffect" &&
+                            effect.Type != "CardEffectAddStatusEffectIfNoPlayerUnits")
                             return "Mismatched triggered action definition.";
                         if (effect.DamageStatusMultiplier != null && effect.Type != "CardEffectDamage")
                             return "Mismatched triggered damage multiplier.";
-                        if (effect.StatusScaling != null && effect.Type != "CardEffectAddStatusEffect") return "Mismatched triggered status scaling.";
+                        if (effect.StatusScaling != null && effect.Type is not ("CardEffectAddStatusEffect" or "CardEffectAddStatusEffectIfNoPlayerUnits")) return "Mismatched triggered status scaling.";
                         if (effect.Type == "CardEffectDespawnCharacter") continue;
-                        if (effect.Type == "CardEffectHeal" || effect.Type == "CardEffectDamage" || effect.Type == "CardEffectAddStatusEffect")
+                        if (effect.Type == "CardEffectHeal" || effect.Type == "CardEffectDamage" ||
+                            effect.Type is "CardEffectAddStatusEffect" or "CardEffectAddStatusEffectIfNoPlayerUnits")
                         {
                             CardActionEffect? action = effect.Action;
                             if (action?.Type != (effect.Type == "CardEffectHeal" ? "Heal" : effect.Type == "CardEffectDamage" ? "Damage" : "AddStatus")) return "Missing triggered action definition.";
@@ -2965,7 +2967,9 @@ namespace MonsterTrain2Poju.Model
                     CardTargets targets = TriggerTargets(actor, action, testing: true, lastSpawnedOverrideUnitId: lastSpawnedOverrideUnitId);
                     if (!targets.Supported) { unsupportedReason = targets.UnsupportedReason; return false; }
                     if (targets.BattleRng.HasValue) context = context!.WithBattleRng(targets.BattleRng.Value);
-                    bool valid = action.Type == "AddStatus" ? StatusTest(actor, effect, targets) : ActionTestValid(action, targets, TestActionAmount(action));
+                    bool valid = effect.Type == "CardEffectAddStatusEffectIfNoPlayerUnits"
+                        ? NoPlayerUnitsInActorRoom(actor)
+                        : action.Type == "AddStatus" ? StatusTest(actor, effect, targets) : ActionTestValid(action, targets, TestActionAmount(action));
                     if (!valid && action.Tests?.FailToCast == true) return false;
                     passed |= valid;
                 }
@@ -3005,6 +3009,9 @@ namespace MonsterTrain2Poju.Model
                     (action.Target != "DropTargetCharacter" || targets.UnitIds.Count > 0) :
                 action.Type == "RemoveUnitUpgrade" || action.Type == "Heal" && action.Target == "Room" || targets.UnitIds.Count > 0;
 
+            private bool NoPlayerUnitsInActorRoom(WorkingUnit actor) => actor.InRoom &&
+                !units.Any(unit => unit.InRoom && unit.Alive && unit.Source.Team == CombatTeam.Player);
+
             private bool? ForgePointsPyreAlive()
             {
                 WorkingUnit? pyre = units.FirstOrDefault(unit => unit.Source.IsPyre);
@@ -3026,7 +3033,9 @@ namespace MonsterTrain2Poju.Model
                 CardTargets tested = TriggerTargets(actor, action, testing: true, overrideTarget, lastSpawnedOverrideUnitId);
                 if (!tested.Supported) { unsupportedReason = tested.UnsupportedReason; return false; }
                 if (tested.BattleRng.HasValue) context = context!.WithBattleRng(tested.BattleRng.Value);
-                bool valid = action.Type == "AddStatus" ? StatusTest(actor, effect, tested) : ActionTestValid(action, tested, TestActionAmount(action));
+                bool valid = effect.Type == "CardEffectAddStatusEffectIfNoPlayerUnits"
+                    ? NoPlayerUnitsInActorRoom(actor)
+                    : action.Type == "AddStatus" ? StatusTest(actor, effect, tested) : ActionTestValid(action, tested, TestActionAmount(action));
                 if (unsupportedReason != null) return false;
                 if (!valid) return action.Tests?.CancelSubsequent != true;
                 CardTargets targets = TriggerTargets(actor, action, testing: false, overrideTarget, lastSpawnedOverrideUnitId);

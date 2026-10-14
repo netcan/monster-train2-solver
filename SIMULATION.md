@@ -1,10 +1,28 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-14): 290 binary archives, including 259
+Current accepted inventory (2026-10-14): 291 binary archives, including 260
 full battles and 31 component calibrations. Unchanged original relic evidence
 covers 78/224 catalog entries (34.82%); see
 [the owner evidence table](tests/fixtures/relic-coverage.md). Whole-battle
 coverage and the optimal solver remain in progress.
+
+### Original conditional status after an unblocked floor
+
+`full-battle-conditional-no-player-status.mt2f` places the unchanged
+`R4_Heavy_ArmorIfUnblocked_Ver2` in the first enemy wave. Its original
+`CardEffectAddStatusEffectIfNoPlayerUnits` adds 50 Armor after combat on an
+empty player floor. When the enemy ascends into a defended floor, another
+PostCombat leaves the 50 stacks unchanged. The muted Instant native battle wins
+with 17 matched actions and seven EndTurns, with zero capture failures,
+mismatches, unsupported transitions or pending records. The 30,152-byte binary
+has 4,808 unique nodes and SHA-256
+`0421c7b1ce9e7ffb7adfd28aff2bb2bbe8327660ce1ca86f86f2bb30b33ed096`.
+The related Pyre-damage effect still needs whole-train targeting.
+
+```powershell
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-conditional-no-player-status.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-conditional-no-player-status.mt2f
+```
 
 ### Original moon-phase unit callbacks
 
