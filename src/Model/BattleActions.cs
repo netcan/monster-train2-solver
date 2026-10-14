@@ -293,8 +293,9 @@ namespace MonsterTrain2Poju.Model
                 return Illegal("This card play does not take a destination spawn point.");
             if (source.PlayRules == null || source.Spawn.Train.Context == null)
                 return Unsupported("Missing card/room play definitions or battle context.");
-            if (source.ExternalInteractions.Count > 0 || source.Spawn.ExternalInteractions.Count > 0)
-                return Unsupported(string.Join("; ", source.ExternalInteractions.Concat(source.Spawn.ExternalInteractions)));
+            IReadOnlyList<string> actionInteractions = BattleTurnModel.ActionInteractions(source);
+            if (actionInteractions.Count > 0 || source.Spawn.ExternalInteractions.Count > 0)
+                return Unsupported(string.Join("; ", actionInteractions.Concat(source.Spawn.ExternalInteractions)));
             if (source.PlayRules.Cards.Select(card => card.DataId).Distinct().Count() != source.PlayRules.Cards.Count ||
                 source.PlayRules.Rooms.Select(room => room.RoomIndex).Distinct().Count() != source.PlayRules.Rooms.Count)
                 return Unsupported("Duplicate play definitions.");
@@ -759,7 +760,7 @@ namespace MonsterTrain2Poju.Model
                 context.QueryFrame?.MoonPhase == 1 ? "New" : context.QueryFrame?.MoonPhase == 2 ? "Full" : source.MoonPhase,
                 source.RngStreams.Select(stream => new BattleRngStream(stream.Name, stream.Seed,
                     stream.Name == "Battle" ? context.BattleRng : stream.Name == "CardDraw" ? context.Cards.Rng : stream.State)).ToArray(),
-                piles, source.ExternalInteractions, outputPlayRules, source.BattlePreviewEnabled, source.UiRngIsolated,
+                piles, BattleTurnModel.AfterActionInteractions(source, context), outputPlayRules, source.BattlePreviewEnabled, source.UiRngIsolated,
                 source.CanonicalDecisionReferences, source.CanonicalPhysicalReferences,
                 source.SelectedRoom < 0 ? source.SelectedRoom : action.RoomIndex, source.MoonPhaseTrackingActive), outcome: outcome);
         }

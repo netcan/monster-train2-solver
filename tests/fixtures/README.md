@@ -1,5 +1,11 @@
 # Native regression fixtures
 
+`full-battle-choose-discard-refine.mt2f` records unchanged `FoundryLine`
+consuming original Refine-3 `ScrapMetal`. The original action, six keep-one
+branches, 52 stages and seven EndTurns match, with zero native differences.
+Its 23,022-byte binary and SHA-256 are recorded in `manifest.tsv`. The bounded
+serial/parallel global-search check still diverges on this wider frontier.
+
 `full-battle-choose-discard-others-policy.mt2f` records unchanged `FoundryLine`
 followed by 18 policy plays. Its 55 stages, seven EndTurns and 19 card actions
 match; a focused check also proves empty-floor post-combat `Stealth` decay and

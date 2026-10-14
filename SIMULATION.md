@@ -1,10 +1,27 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-15): 301 binary archives, including 270
+Current accepted inventory (2026-10-15): 302 binary archives, including 271
 full battles and 31 component calibrations. Unchanged original relic evidence
 covers 78/224 catalog entries (34.82%); see
 [the owner evidence table](tests/fixtures/relic-coverage.md). Whole-battle
 coverage and the optimal solver remain in progress.
+
+### Original ScrapMetal Refine during bulk smelt
+
+`full-battle-choose-discard-refine.mt2f` plays unchanged `FoundryLine` with
+unchanged, unupgraded `ScrapMetal` in hand. Its zero base cost plus Refine 3
+adds three Forge Points and three Ember when consumed. The independent action
+matches native state, and all six ordered keep-one choices preserve the correct
+Forge amount. `Persistent` blocks unsupported EndTurn discard while ScrapMetal
+remains in hand, but does not block a card play that consumes it. The muted
+Instant battle matches one action, seven EndTurns and 52 stages with zero
+capture failures, mismatches, unsupported transitions or pending records.
+The 23,022-byte binary has 3,293 unique nodes and SHA-256
+`17a4a9ca3437e7df53986399a179164a7587a93b417a8111d7d97d8991faaf1c`.
+The 128-node serial/parallel global-search check diverges on this wider
+frontier, so this fixture validates branch enumeration and successors only.
+Upgrade-added Refine, room modifiers and additional-smelt Ember relics remain
+unmodeled.
 
 ### Post-combat Stealth in a full policy battle
 
@@ -29,8 +46,8 @@ EndTurns with zero capture failures, mismatches, unsupported transitions or
 pending records. The 22,301-byte binary has 3,230 unique nodes and SHA-256
 `9b1ad9686793814f38924f86236d7a77c5b9923fc1ae4309a85a5f859cb573c6`.
 The scenario makes no further card plays so the later battle does not depend on
-unrelated card combinations. Refine bonuses, room cost modifiers and additional
-smelt Ember relics remain guarded until separately calibrated.
+unrelated card combinations. Room cost modifiers and additional smelt Ember
+relics remain guarded until separately calibrated.
 
 ### Original hand-selected smelt
 
@@ -44,9 +61,9 @@ matches 22 actions, seven EndTurns and 16 parallel replays. Capture failures,
 mismatches, unsupported transitions and pending records are zero. The
 34,048-byte binary has 5,532 unique nodes and SHA-256
 `bd9ec8d7f47652f475bd75465ebb6a67e53013eba3a7c10e3c19015d851a62d5`.
-Choose-discard modes 0, 1 and 3 use the shared hand-removal path; batch mode 2,
-Refine, replacement pools, room cost modifiers and extra-smelt Ember relics
-remain uncalibrated or explicitly unsupported.
+Choose-discard modes 0, 1 and 3 use the shared hand-removal path; batch mode 2
+and original base Refine 3 have dedicated evidence. Replacement pools, room
+cost modifiers and extra-smelt Ember relics remain uncalibrated or unsupported.
 
 ### Original Spell Shield damage
 

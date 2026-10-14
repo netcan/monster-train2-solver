@@ -7,6 +7,7 @@ internal static class ChooseDiscardChecks
 {
     private const string ScrapId = "bc4cd099-93df-4771-ae72-4984fc50ab9f";
     private const string FoundryLineId = "26651f53-95d0-4802-b710-51d23bf89bbd";
+    private const string ScrapMetalId = "d4f0ff05-1fe1-483c-adda-928a8b05808c";
     private const string OneCostId = "fb0683b1-20ac-4dd2-b580-14b502e182f4";
     private const string TwoCostId = "25f84315-da10-4915-aa5d-e3f1a38124b4";
 
@@ -71,8 +72,10 @@ internal static class ChooseDiscardChecks
 
     public static void NativeOthers(FixtureValue root)
     {
-        Require(root.GetProperty("ModifierScenario").GetString() is "card-effect-choose-discard-others" or
-            "card-effect-choose-discard-others-policy",
+        string scenario = root.GetProperty("ModifierScenario").GetString()!;
+        bool refined = scenario == "card-effect-choose-discard-refine";
+        Require(scenario is "card-effect-choose-discard-others" or
+            "card-effect-choose-discard-others-policy" or "card-effect-choose-discard-refine",
             "This fixture did not run the original keep-one smelt scenario.");
         FixtureValue[] actions = root.GetProperty("Actions").EnumerateArray().ToArray();
         Require(actions.Length > 0 && actions[0].GetProperty("ScenarioAction").GetBoolean(),
@@ -95,12 +98,30 @@ internal static class ChooseDiscardChecks
         Require(effect.Type == "ChooseDiscard" && effect.Value == 2 && effect.ChooseDiscard?.Condition == 5 &&
             effect.ChooseDiscard.GainEmberForCost && !effect.ChooseDiscard.HasReplacementPool,
             "The captured card differs from the original FoundryLine definition.");
+        if (refined)
+        {
+            CardToken scrap = input.Cards.Hand.Single(card => card.DataId == ScrapMetalId);
+            CardInstanceState original = input.FindCard(scrap.InstanceId)!;
+            Require(original.MaskDescriptor?.BaseCost == 0 &&
+                original.MaskDescriptor.BaseTraits.Single(trait => trait.RuntimeType == "CardTraitRefine").ParamInt == 3 &&
+                original.Permanent.Upgrades.Count == 0 && original.Temporary.Upgrades.Count == 0,
+                "The original unupgraded ScrapMetal Refine=3 witness changed.");
+            Require(before.ExternalInteractions.Contains("CardTraitPersistent Discard callback") &&
+                before.ExternalInteractions.Contains("CardTraitPersistent discard routing") &&
+                BattleTurnModel.EndTurn(before).Supported == false &&
+                actual.ExternalInteractions.All(interaction => !interaction.StartsWith("CardTraitPersistent", StringComparison.Ordinal)),
+                "Persistent discard handling was not deferred until EndTurn or cleared after smelting ScrapMetal.");
+        }
+        int SmeltCost(CardToken card) => (input.FindCard(card.InstanceId)!.RawCostOverride ??
+            input.FindCard(card.InstanceId)!.MaskDescriptor!.BaseCost) +
+            (refined && card.DataId == ScrapMetalId ? 3 : 0);
         CardToken[] consumed = input.Cards.Hand.Where(card => card.InstanceId != action.CardInstanceId &&
             card.InstanceId != keptId).ToArray();
-        int forge = consumed.Sum(card => input.FindCard(card.InstanceId)!.RawCostOverride ??
-            input.FindCard(card.InstanceId)!.MaskDescriptor!.BaseCost);
+        int forge = consumed.Sum(SmeltCost);
+        int playedCost = before.PlayRules.Cards.Single(card => card.DataId == FoundryLineId).Cost;
         Require(consumed.Length >= 2 && forge > 0 &&
             output.QueryFrame?.ForgePoints == input.QueryFrame?.ForgePoints + forge &&
+            output.QueryFrame?.Energy == input.QueryFrame?.Energy - playedCost + forge &&
             output.Cards.Hand.Any(card => card.InstanceId == keptId) &&
             consumed.All(card => output.Cards.Hand.All(item => item.InstanceId != card.InstanceId) &&
                 output.OtherPiles?.Single(pile => pile.Name == "Exhausted").Cards.Any(item =>
@@ -123,11 +144,19 @@ internal static class ChooseDiscardChecks
             int kept = choice.Action.RecursionSelections[0].CardInstanceIds.Single();
             CombatContext branch = choice.Result.State!.Spawn.Train.Context!;
             int expected = input.Cards.Hand.Where(card => card.InstanceId != action.CardInstanceId &&
-                card.InstanceId != kept).Sum(card => input.FindCard(card.InstanceId)!.RawCostOverride ??
-                    input.FindCard(card.InstanceId)!.MaskDescriptor!.BaseCost);
+                card.InstanceId != kept).Sum(SmeltCost);
             Require(branch.QueryFrame?.ForgePoints == input.QueryFrame?.ForgePoints + expected &&
                 branch.Cards.Hand.Any(card => card.InstanceId == kept),
                 "A FoundryLine branch kept the wrong card or granted the wrong Forge amount.");
+        }
+        if (refined)
+        {
+            int scrapId = input.Cards.Hand.Single(card => card.DataId == ScrapMetalId).InstanceId;
+            BattleTurnState keptScrap = choices.Single(choice =>
+                choice.Action.RecursionSelections[0].CardInstanceIds.Single() == scrapId).Result.State!;
+            Require(keptScrap.ExternalInteractions.Contains("CardTraitPersistent discard routing") &&
+                !BattleTurnModel.EndTurn(keptScrap).Supported,
+                "Keeping ScrapMetal cleared its unresolved EndTurn discard behavior.");
         }
         if (root.GetProperty("ModifierScenario").GetString() == "card-effect-choose-discard-others-policy")
         {
@@ -150,7 +179,8 @@ internal static class ChooseDiscardChecks
                 "The independent post-combat model did not consume one Stealth stack and focus its floor.");
         }
         Console.WriteLine("CHOOSE-DISCARD-OTHERS-NATIVE PASS: original FoundryLine kept one card, consumed " +
-            consumed.Length + " others and enumerated " + choices.Length + " ordered search branches.");
+            consumed.Length + " others" + (refined ? " including Refine-3 ScrapMetal" : "") +
+            " and enumerated " + choices.Length + " ordered search branches.");
     }
 
     private static void Require(bool condition, string message)

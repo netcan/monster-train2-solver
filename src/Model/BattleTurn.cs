@@ -85,6 +85,32 @@ namespace MonsterTrain2Poju.Model
 
     public static class BattleTurnModel
     {
+        internal static bool IsDeferredPersistentDiscard(string interaction) =>
+            interaction is "CardTraitPersistent Discard callback" or "CardTraitPersistent discard routing";
+
+        internal static IReadOnlyList<string> ActionInteractions(BattleTurnState source) =>
+            source.ExternalInteractions.Where(interaction => !IsDeferredPersistentDiscard(interaction)).ToArray();
+
+        internal static IReadOnlyList<string> AfterActionInteractions(BattleTurnState source, CombatContext context)
+        {
+            if (!source.ExternalInteractions.Any(IsDeferredPersistentDiscard)) return source.ExternalInteractions;
+            foreach (CardToken token in context.Cards.Hand)
+            {
+                CardInstanceState? instance = context.FindCard(token.InstanceId);
+                if (instance?.MaskDescriptor == null) return source.ExternalInteractions;
+                try
+                {
+                    if (CardBranchMaskModel.Resolve(instance).Traits.Contains("CardTraitPersistent"))
+                        return source.ExternalInteractions;
+                }
+                catch (InvalidOperationException)
+                {
+                    return source.ExternalInteractions;
+                }
+            }
+            return ActionInteractions(source);
+        }
+
         // Room changes refresh the native combat preview before the selected action.
         // Older captures without a selected room remain explicitly unknown.
         public static BattleTurnResult SelectRoom(BattleTurnState source, int roomIndex)
@@ -97,8 +123,9 @@ namespace MonsterTrain2Poju.Model
             int? framedRoom = train.Context!.QueryFrame?.SelectedRoomIndex;
             if (source.SelectedRoom == roomIndex && (!framedRoom.HasValue || framedRoom == roomIndex))
                 return new BattleTurnResult(source, RoomOutcome.Exchanged);
-            if (source.ExternalInteractions.Count > 0)
-                return Unsupported(string.Join("; ", source.ExternalInteractions));
+            IReadOnlyList<string> actionInteractions = ActionInteractions(source);
+            if (actionInteractions.Count > 0)
+                return Unsupported(string.Join("; ", actionInteractions));
             if (train.Rooms.Any(room => room.ExternalInteractions.Count > 0))
                 return Unsupported(string.Join("; ", train.Rooms.SelectMany(room => room.ExternalInteractions).Distinct()));
             string? relicError = RelicModel.Validate(train.Context);

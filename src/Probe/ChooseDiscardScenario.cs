@@ -12,8 +12,10 @@ namespace MonsterTrain2Poju.Probe
         internal const string Name = "card-effect-choose-discard";
         internal const string OthersName = "card-effect-choose-discard-others";
         internal const string OthersPolicyName = "card-effect-choose-discard-others-policy";
+        internal const string RefineName = "card-effect-choose-discard-refine";
         private const string ScrapId = "bc4cd099-93df-4771-ae72-4984fc50ab9f";
         private const string FoundryLineId = "26651f53-95d0-4802-b710-51d23bf89bbd";
+        private const string ScrapMetalId = "d4f0ff05-1fe1-483c-adda-928a8b05808c";
         private const string OneCostId = "fb0683b1-20ac-4dd2-b580-14b502e182f4";
         private const string TwoCostId = "25f84315-da10-4915-aa5d-e3f1a38124b4";
         private static int sourceId;
@@ -21,8 +23,9 @@ namespace MonsterTrain2Poju.Probe
         private static bool chosenOnce;
         private static ManualLogSource? logger;
         internal static bool OthersPolicyMode => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == OthersPolicyName;
-        internal static bool OthersMode => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") is OthersName or OthersPolicyName;
-        internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") is Name or OthersName or OthersPolicyName;
+        internal static bool RefineMode => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == RefineName;
+        internal static bool OthersMode => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") is OthersName or OthersPolicyName or RefineName;
+        internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") is Name or OthersName or OthersPolicyName or RefineName;
 
         internal static void Prepare(AllGameManagers managers, ManualLogSource log)
         {
@@ -55,6 +58,16 @@ namespace MonsterTrain2Poju.Probe
             }
             Add(one);
             CardState selected = Add(two);
+            if (RefineMode)
+            {
+                CardData scrapMetal = save.GetAllGameData().FindCardData(ScrapMetalId) ??
+                    throw new InvalidOperationException("Original ScrapMetal is missing.");
+                if (scrapMetal.name != "ScrapMetal" || scrapMetal.GetCost() != 0 ||
+                    scrapMetal.GetTraits().Single(trait => trait.GetTraitStateName() == "CardTraitRefine").GetParamInt() != 3)
+                    throw new InvalidOperationException("Original ScrapMetal Refine definition changed.");
+                CardState refined = Add(scrapMetal);
+                log.LogInfo("CHOOSE-DISCARD-REFINE card=" + FullBattleTrace.Active!.CardId(refined) + " bonus=3");
+            }
             CardState source = Add(sourceData);
             selectedId = FullBattleTrace.Active!.CardId(selected);
             sourceId = FullBattleTrace.Active.CardId(source);

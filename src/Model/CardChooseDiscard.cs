@@ -120,8 +120,10 @@ namespace MonsterTrain2Poju.Model
                     CardInstanceState? instance = context.FindCard(id);
                     if (instance?.MaskDescriptor == null) return Unsupported("Missing consumed card cost metadata.");
                     CardUpgradeMaskCard card = CardBranchMaskModel.Resolve(instance);
-                    if (card.Traits.Contains("CardTraitRefine")) return Unsupported("Smelt Refine bonus is not modeled.");
-                    int amount = instance.RawCostOverride ?? instance.MaskDescriptor.BaseCost;
+                    int bonus = RefineBonus(instance, card, out string? refineError);
+                    if (refineError != null) return Unsupported(refineError);
+                    int rawCost = instance.RawCostOverride ?? instance.MaskDescriptor.BaseCost;
+                    int amount = unchecked(rawCost + bonus);
                     if (amount < 0) return Unsupported("Negative smelt cost requires native calibration.");
                     if (amount > 0)
                     {
@@ -147,11 +149,12 @@ namespace MonsterTrain2Poju.Model
                 CardInstanceState instance = context.FindCard(selectedCardId.Value)!;
                 if (instance.MaskDescriptor == null) return Unsupported("Missing selected card cost metadata.");
                 CardUpgradeMaskCard card = CardBranchMaskModel.Resolve(instance);
-                if (card.Traits.Contains("CardTraitRefine")) return Unsupported("Smelt Refine bonus is not modeled.");
+                int bonus = RefineBonus(instance, card, out string? refineError);
+                if (refineError != null) return Unsupported(refineError);
                 if (context.Enchantments != null || context.RoomCapacities?.FirstOrDefault(room =>
                     room.RoomIndex == roomIndex)?.Attachments?.Count > 0)
                     return Unsupported("Room smelt modifiers require native room-state calibration.");
-                int amount = instance.RawCostOverride ?? instance.MaskDescriptor.BaseCost;
+                int amount = unchecked((instance.RawCostOverride ?? instance.MaskDescriptor.BaseCost) + bonus);
                 if (amount < 0) return Unsupported("Negative smelt cost requires native calibration.");
                 if (effect.Value == 3 && amount > 0)
                 {
@@ -167,6 +170,27 @@ namespace MonsterTrain2Poju.Model
                 effectCounterType: null);
             return removed.Supported ? new CardChooseDiscardResult(removed.Context, removed.OtherPiles) :
                 Unsupported(removed.UnsupportedReason!);
+        }
+
+        private static int RefineBonus(CardInstanceState instance, CardUpgradeMaskCard card, out string? error)
+        {
+            error = null;
+            if (!card.Traits.Contains("CardTraitRefine")) return 0;
+            if (instance.Permanent.Upgrades.Concat(instance.Temporary.Upgrades).Any(upgrade =>
+                upgrade.Lifecycle?.AddedTraits.Any(trait => trait.RuntimeType == "CardTraitRefine") == true))
+            {
+                error = "Upgrade-added Refine requires captured trait resource identities.";
+                return 0;
+            }
+            CardTraitValue[] traits = CardOwnedMaskModel.Resolve(CardBranchMaskModel.OwnedState(instance))
+                .State.Traits.Composition.CombinedTraits?.Where(trait =>
+                    trait.RuntimeType == "CardTraitRefine").ToArray() ?? Array.Empty<CardTraitValue>();
+            if (traits.Length != 1 || !traits[0].HasData)
+            {
+                error = "Multiple or anonymous Refine traits require captured trait resource identities.";
+                return 0;
+            }
+            return traits[0].ParamInt;
         }
 
         private static CardChooseDiscardResult Unsupported(string reason) => new(null, null, reason);
