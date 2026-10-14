@@ -283,7 +283,8 @@ internal static class BattleTurnChecks
             }),
             rules.Cards,
             rules.StatusRules,
-            rules.UnitCopyCatalog
+            rules.UnitCopyCatalog,
+            rules.Elixirs
         };
     }
     internal static CombatContext? ComparableContext(CombatContext? context)

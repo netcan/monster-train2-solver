@@ -75,7 +75,7 @@ namespace MonsterTrain2Poju.Model
                 context.QueryFrame, context.KillCamActivated, context.MagicPower, context.IsolatedBattlePreview, context.EnergyState,
                 context.RoomCapacities, context.AbilityCardCache, context.LastAbilityActivatorUnitId, context.PermanentlyDisabledAbilities,
                 context.LastSpawnedUnitId, context.NextUnitId, context.SpawnPoints, context.SummonCatalog, context.Enchantments,
-                context.PurifyBlockedTriggers, context.Relics, context.TriggerCounts, context.Resources);
+                context.PurifyBlockedTriggers, context.Relics, context.TriggerCounts, context.Resources, context.MixState);
         }
 
         private static CardUpgradeModifier WithValues(CardUpgradeModifier upgrade, int damage, int heal)

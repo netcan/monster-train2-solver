@@ -354,7 +354,9 @@ namespace MonsterTrain2Poju.Probe
                 TriggeredSummonProbe.Catalog(), enchantments,
                 managers.GetSaveManager().GetBalanceData().GetDisallowedPurifyCharacterTriggers().Select(kind => kind.ToString()).ToArray(),
                 RelicProbe.Capture(managers), RelicProbe.TriggerCounts(managers),
-                resources: RelicResourceProbe.CaptureResources(managers));
+                resources: RelicResourceProbe.CaptureResources(managers),
+                mixState: new MixRuntimeState(managers.GetCombatManager()!.LastMixCardSelected?.GetID(),
+                    managers.GetCombatManager()!.LastMixUpgradeSelected?.GetID()));
             CardBranchMaskProbe.Observe(this, context);
             return context;
         }

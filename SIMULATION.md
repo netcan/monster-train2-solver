@@ -694,6 +694,17 @@ recipe identities before and after the Mix play and finds the generated card in
 that catalog. This records inputs for branch simulation; it does not yet model
 draft RNG, player choice or the Mix card action.
 
+The Mix runtime state now records the native `LastMixCardSelected` and
+`LastMixUpgradeSelected` identities and survives all immutable combat-context
+copies. The native archive at
+`.probe-runs/full-battle-units-spells-and-junk-20261015-030029-fe77f0d3`
+starts with both selections empty. After `Mixology`, the selected card is the
+generated elixir in hand, and the selected upgrade belongs to its captured
+recipe. An independent catalog check passes; its six EndTurns and 11 card
+cycles also match. The old FrostChanneling archive still matches 22 actions,
+seven EndTurns and its policy chain. The experimental Mix battle remains one
+unsupported action short of strict acceptance.
+
 ### BalatroEventChicot Mute relic (schema 156)
 
 `full-battle-spawn-status-relics-boss-mute.mt2f` captures the unchanged Chicot

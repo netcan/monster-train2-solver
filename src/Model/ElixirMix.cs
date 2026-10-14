@@ -26,4 +26,16 @@ namespace MonsterTrain2Poju.Model
         public ElixirCatalog(IReadOnlyList<ElixirRecipe> recipes) =>
             Recipes = Array.AsReadOnly(recipes.ToArray());
     }
+
+    public sealed class MixRuntimeState
+    {
+        public string? LastCardDataId { get; }
+        public string? LastUpgradeDataId { get; }
+
+        public MixRuntimeState(string? lastCardDataId, string? lastUpgradeDataId)
+        {
+            LastCardDataId = lastCardDataId;
+            LastUpgradeDataId = lastUpgradeDataId;
+        }
+    }
 }
