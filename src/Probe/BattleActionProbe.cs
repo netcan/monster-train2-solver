@@ -202,7 +202,7 @@ namespace MonsterTrain2Poju.Probe
                         data.GetSpawnCharacterData() != null, effect.GetParamBool());
                 }
             }
-            else if (kind == "CardEffectNULL") kind = "Null";
+            else if (kind == "CardEffectNULL" && effects.Length == 0) kind = "Null";
             else if ((data.GetCardType() == CardType.Spell || data.GetCardType() == CardType.Equipment || data.GetCardType() == CardType.TrainRoomAttachment) && effects.Length > 0 && effects.All(SupportedSpellEffect))
             {
                 kind = "Spell";

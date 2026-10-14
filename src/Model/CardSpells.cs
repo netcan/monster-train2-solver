@@ -130,11 +130,13 @@ namespace MonsterTrain2Poju.Model
         internal static TrainSpellResult ApplyForCardPlay(TrainCombatState source, int roomIndex, IReadOnlyList<CardActionEffect> effects,
             int targetId, int sourceCardId, BattlePlayRules definitions, IReadOnlyList<CardPileState>? otherPiles, int selfUnitId = 0,
             int targetSpawnPointIndex = -1, IReadOnlyList<CardRecursionSelection>? recursionSelections = null, bool onCastEffects = false,
-            bool onUnplayedNegativeEffects = false, IReadOnlyList<ElixirMixSelection>? mixSelections = null)
+            bool onUnplayedNegativeEffects = false, IReadOnlyList<ElixirMixSelection>? mixSelections = null,
+            IReadOnlyList<int>? priorTargets = null)
             => ApplyCore(source, roomIndex, effects, targetId, sourceCardId, null, null, definitions, true, otherPiles,
                 selfUnitId, deferFinalCallbacks: true, targetSpawnPointIndex: targetSpawnPointIndex,
                 recursionSelections: recursionSelections, onCastEffects: onCastEffects,
-                onUnplayedNegativeEffects: onUnplayedNegativeEffects, mixSelections: mixSelections);
+                onUnplayedNegativeEffects: onUnplayedNegativeEffects, mixSelections: mixSelections,
+                priorTargets: priorTargets);
 
         internal static TrainSpellResult ApplyNativeDamageStep(TrainCombatState source, int roomIndex, int targetId, int damage,
             int sourceCardId, IReadOnlyList<RoomCombatModel.QueuedCharacterTrigger> pendingDeaths, int attackerUnitId = 0,
@@ -243,7 +245,8 @@ namespace MonsterTrain2Poju.Model
             IReadOnlyList<CardPileState>? otherPiles = null, int selfUnitId = 0, bool deferFinalCallbacks = false,
             Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null, int targetSpawnPointIndex = -1,
             IReadOnlyList<CardRecursionSelection>? recursionSelections = null, bool onCastEffects = false,
-            bool onUnplayedNegativeEffects = false, IReadOnlyList<ElixirMixSelection>? mixSelections = null)
+            bool onUnplayedNegativeEffects = false, IReadOnlyList<ElixirMixSelection>? mixSelections = null,
+            IReadOnlyList<int>? priorTargets = null)
         {
             string? selectionError = CardRecursionModel.ValidateSelections(effects, recursionSelections);
             if (selectionError != null) return UnsupportedTrain(selectionError);
@@ -264,7 +267,7 @@ namespace MonsterTrain2Poju.Model
             CombatUnit? initial = selected.Units.FirstOrDefault(unit => unit.Id == targetId);
             int dropPosition = DropPosition(selected, initial);
             TrainCombatState state = WithContext(source, source.Context!);
-            IReadOnlyList<int> last = Array.Empty<int>();
+            IReadOnlyList<int> last = priorTargets ?? Array.Empty<int>();
             var events = new List<CombatEvent>();
             var collections = new List<SpellTargetCollection>();
             var pendingDeadRooms = new Dictionary<int, int>();
@@ -344,7 +347,7 @@ namespace MonsterTrain2Poju.Model
                 int collectionRoom = effect.Target == "FrontInRoomAndRoomAbove" ? focusedRoom!.Value : roomIndex;
                 CardTargets targets = Collect(state, collectionRoom, effect, last, initial, dropPosition, index, definitions, isTesting: true,
                     pendingDeadRooms: pendingDeadRooms, positions: positions, selfUnitId: selfUnitId, sourceCardId: sourceCardId,
-                    lastSacrificedUnitId: lastSacrificedUnitId);
+                    lastSacrificedUnitId: lastSacrificedUnitId, hasPriorTargets: priorTargets != null);
                 if (!targets.Supported) return UnsupportedTrain(targets.UnsupportedReason!);
                 string? damageTargetError = null;
                 if (!CardTargetModel.IsRandom(effect.Target))
@@ -380,7 +383,7 @@ namespace MonsterTrain2Poju.Model
                 }
                 targets = Collect(state, collectionRoom, effect, last, initial, dropPosition, index, definitions,
                     pendingDeadRooms: pendingDeadRooms, positions: positions, selfUnitId: selfUnitId, sourceCardId: sourceCardId,
-                    lastSacrificedUnitId: lastSacrificedUnitId);
+                    lastSacrificedUnitId: lastSacrificedUnitId, hasPriorTargets: priorTargets != null);
                 if (!targets.Supported) return UnsupportedTrain(targets.UnsupportedReason!);
                 damageTargetError = DamagePerHpTargetError(state, effect, targets, selfUnitId);
                 if (damageTargetError != null) return UnsupportedTrain(damageTargetError);
@@ -1891,7 +1894,7 @@ namespace MonsterTrain2Poju.Model
         private static CardTargets Collect(TrainCombatState state, int roomIndex, CardActionEffect effect, IReadOnlyList<int> last,
             CombatUnit? initial, int dropPosition, int index, BattlePlayRules? definitions, bool isTesting = false,
             IReadOnlyDictionary<int, int>? pendingDeadRooms = null, IReadOnlyDictionary<int, int>? positions = null, int selfUnitId = 0,
-            int sourceCardId = 0, int lastSacrificedUnitId = 0)
+            int sourceCardId = 0, int lastSacrificedUnitId = 0, bool hasPriorTargets = false)
         {
             if (effect.Type == "ChooseDiscard")
             {
@@ -1932,7 +1935,7 @@ namespace MonsterTrain2Poju.Model
             }
             return effect.Type == "Mix" || effect.Type == "HandUpgrade" && effect.Target == "Hand" || CardOnlyPileTarget(effect)
                 ? new CardTargets(Array.Empty<int>()) : CardTargetModel.Collect(state, roomIndex, effect, last, initial?.Team, dropPosition,
-                    index == 0, isTesting, definitions?.Rooms.FirstOrDefault(room => room.IsPyre)?.RoomIndex, pendingDeadRooms,
+                    index == 0 && !hasPriorTargets, isTesting, definitions?.Rooms.FirstOrDefault(room => room.IsPyre)?.RoomIndex, pendingDeadRooms,
                     positions, selfUnitId, lastSacrificedUnitId: lastSacrificedUnitId);
         }
 

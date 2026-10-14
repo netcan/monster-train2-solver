@@ -416,6 +416,7 @@ namespace MonsterTrain2Poju.Model
             RoomOutcome outcome = RoomOutcome.Exchanged;
             IReadOnlyList<RoomCombatModel.QueuedCharacterTrigger> pendingSpellCallbacks = Array.Empty<RoomCombatModel.QueuedCharacterTrigger>();
             IReadOnlyList<CombatUnit> retainedSpellUnits = Array.Empty<CombatUnit>();
+            IReadOnlyList<int>? lastMainTargets = null;
             int nextUnitId = source.Spawn.NextUnitId;
             string? identityError = UnitIdentityModel.Validate(context, train.Rooms.SelectMany(room => room.Units), nextUnitId);
             if (identityError != null) return Unsupported(identityError);
@@ -552,6 +553,9 @@ namespace MonsterTrain2Poju.Model
                 outputPlayRules = result.PlayRules ?? outputPlayRules;
                 pendingSpellCallbacks = result.PendingCallbacks;
                 retainedSpellUnits = result.RetainedUnits;
+                foreach (SpellTargetCollection collection in result.TargetCollections)
+                    if (collection.EffectIndex == 0 || rule.Effects[collection.EffectIndex].Target == "DropTargetCharacter")
+                        lastMainTargets = collection.UnitIds;
             }
             else if (rule.Effect != "Null") return Unsupported("Unimplemented card effect " + rule.Effect);
             else if (action.PlayerPosition != -1) return Illegal("A no-target card does not take a summon position.");
@@ -573,7 +577,7 @@ namespace MonsterTrain2Poju.Model
                     .Select(selection => new CardRecursionSelection(selection.EffectIndex - rule.Effects.Count, selection.CardInstanceIds)).ToArray();
                 TrainSpellResult result = CardSpellModel.ApplyForCardPlay(train, action.RoomIndex, rule.OnCastEffects,
                     action.TargetUnitId, card.InstanceId, source.PlayRules, piles, recursionSelections: onCastSelections,
-                    onCastEffects: true);
+                    onCastEffects: true, priorTargets: lastMainTargets);
                 if (!result.Supported) return Unsupported(result.UnsupportedReason!);
                 piles = result.OtherPiles?.ToArray() ?? piles;
                 train = result.State!; context = train.Context!;
@@ -667,8 +671,11 @@ namespace MonsterTrain2Poju.Model
             }
             if (terminal) piles = piles.Select(CardPileModel.Clear).ToArray();
             CardInstanceState? discardInstance = context.FindCard(card.InstanceId) ?? playingInstance;
-            bool consumedOnPlay = discardInstance != null && CardExhaustModel.ShouldExhaustOnPlayedDiscard(discardInstance);
-            bool ephemeralPurgeCallbacks = rule.Destination == "Purged" && discardInstance?.MaskDescriptor != null &&
+            bool skipNaturalDiscard = discardInstance?.MaskDescriptor != null &&
+                CardBranchMaskModel.Resolve(discardInstance).Traits.Any(trait =>
+                    trait is "CardTraitInfusion" or "CardTraitPersistent");
+            bool consumedOnPlay = !skipNaturalDiscard && discardInstance != null && CardExhaustModel.ShouldExhaustOnPlayedDiscard(discardInstance);
+            bool ephemeralPurgeCallbacks = !skipNaturalDiscard && rule.Destination == "Purged" && discardInstance?.MaskDescriptor != null &&
                 CardBranchMaskModel.Resolve(discardInstance).Traits.Contains("CardTraitEphemeral", StringComparer.Ordinal);
             if (consumedOnPlay && rule.HandConsumeInteractions?.Count > 0)
                 return Unsupported(string.Join("; ", rule.HandConsumeInteractions));
@@ -676,11 +683,12 @@ namespace MonsterTrain2Poju.Model
                 !piles.Any(pile => pile.Name == "Standby" && pile.UnitConditions != null))
                 return Unsupported("Consume summons require captured native unit standby conditions.");
             // Native DiscardCard/PurgeCard remove a naturally played card's retained buffer reference.
-            piles = piles.Select(pile => pile.Name == "DiscardBuffer" ? CardPileModel.Remove(pile, card.InstanceId) : pile).ToArray();
+            if (!skipNaturalDiscard)
+                piles = piles.Select(pile => pile.Name == "DiscardBuffer" ? CardPileModel.Remove(pile, card.InstanceId) : pile).ToArray();
             if (terminal && rule.Destination != "Discard" && !(rule.Destination == "Standby" && rule.Effect == "SpawnMonster"))
                 return Unsupported("Terminal routing for this card effect/destination is not validated.");
-            if (rule.Destination == "Discard") discard.Add(card);
-            else
+            if (!skipNaturalDiscard && rule.Destination == "Discard") discard.Add(card);
+            else if (!skipNaturalDiscard)
             {
                 CardPileState? destination = piles.FirstOrDefault(pile => pile.Name == rule.Destination);
                 if (destination == null || (rule.Destination != "Standby" && rule.Destination != "Purged" && rule.Destination != "Exhausted"))
@@ -721,17 +729,20 @@ namespace MonsterTrain2Poju.Model
             // Discard restores the resolving card after terminal clearing.
             BattleStatistics? statistics = context.Statistics;
             if (terminal) statistics = statistics?.RefreshOwnedCards(new[] { card.InstanceId });
-            statistics = statistics?.Increment(card.InstanceId, "TimesDiscarded").WithPlayedCost(card.InstanceId, null);
-            if (!terminal && rule.Destination == "Exhausted") statistics = statistics?.Increment(card.InstanceId, "TimesExhausted");
-            if (summonRemoved && !summonedEndless && !terminal && !consumedOnPlay) statistics = statistics?.Increment(card.InstanceId, "TimesExhausted");
-            if (rule.Destination == "Purged") statistics = statistics?.RemoveDeckCard(card.InstanceId);
+            if (!skipNaturalDiscard) statistics = statistics?.Increment(card.InstanceId, "TimesDiscarded");
+            statistics = statistics?.WithPlayedCost(card.InstanceId, null);
+            if (!skipNaturalDiscard && !terminal && rule.Destination == "Exhausted") statistics = statistics?.Increment(card.InstanceId, "TimesExhausted");
+            if (!skipNaturalDiscard && summonRemoved && !summonedEndless && !terminal && !consumedOnPlay)
+                statistics = statistics?.Increment(card.InstanceId, "TimesExhausted");
+            if (!skipNaturalDiscard && rule.Destination == "Purged") statistics = statistics?.RemoveDeckCard(card.InstanceId);
             context = context.AfterCardEffects();
             context = new CombatContext(new CardCycleState(hand, context.Cards.Draw, discard, context.Cards.Rng,
                 context.Cards.DrawModifier, context.Cards.ExternalInteractions, context.Cards.BonusDraw, context.Cards.NextDrawUpgrades, context.Cards.NextUpgradeReferenceId), context.BattleRng,
                 context.Gold, context.NextCardId, context.MaxHandSize, context.StatusRules, statistics,
-                terminal ? playingInstance == null ? context.CardInstances : new[] { (context.FindCard(card.InstanceId) ?? playingInstance).OnDiscard(true, paidCost) } :
+                terminal ? playingInstance == null ? context.CardInstances : new[] { skipNaturalDiscard
+                    ? context.FindCard(card.InstanceId) ?? playingInstance : (context.FindCard(card.InstanceId) ?? playingInstance).OnDiscard(true, paidCost) } :
                 context.CardInstances?.Select(instance => instance.InstanceId == card.InstanceId
-                    ? instance.OnDiscard(true, paidCost) : instance).ToArray(), context.CardRegistry, context.AllScenarioBossesDead, context.NextAddedTemporaryUpgrades,
+                    ? skipNaturalDiscard ? instance : instance.OnDiscard(true, paidCost) : instance).ToArray(), context.CardRegistry, context.AllScenarioBossesDead, context.NextAddedTemporaryUpgrades,
                 context.OtherPiles == null ? null : piles, context.QueryFrame?.With(runningCombat: !terminal), context.KillCamActivated, context.MagicPower, context.IsolatedBattlePreview, context.EnergyState, context.RoomCapacities, context.AbilityCardCache, context.LastAbilityActivatorUnitId, context.PermanentlyDisabledAbilities, context.LastSpawnedUnitId, context.NextUnitId, context.SpawnPoints, context.SummonCatalog, context.Enchantments, context.PurifyBlockedTriggers, context.Relics, context.TriggerCounts, context.Resources, context.MixState);
             if (summonedEndless && !terminal && !consumedOnPlay)
                 context = UnitStandbyModel.ReturnEndless(context, card.InstanceId);

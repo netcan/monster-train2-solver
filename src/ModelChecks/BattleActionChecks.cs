@@ -299,8 +299,11 @@ internal static class BattleActionChecks
                 actual.Spawn.Train.Context?.Statistics is BattleStatistics actualStatistics)
             {
                 var modeledKeys = modeledStatistics.Values.Select(value => (value.CardId, value.Duration, value.Type)).ToHashSet();
+                var actualKeys = actualStatistics.Values.Select(value => (value.CardId, value.Duration, value.Type)).ToHashSet();
                 foreach (CardStatisticValue missing in actualStatistics.Values.Where(value => !modeledKeys.Contains((value.CardId, value.Duration, value.Type))))
                     Console.WriteLine($"ACTION-STAT-MISSING index={entry.GetProperty("Index").GetInt32()} card={missing.CardId} duration={missing.Duration} type={missing.Type} actual={missing.Value}");
+                foreach (CardStatisticValue extra in modeledStatistics.Values.Where(value => !actualKeys.Contains((value.CardId, value.Duration, value.Type))))
+                    Console.WriteLine($"ACTION-STAT-EXTRA index={entry.GetProperty("Index").GetInt32()} card={extra.CardId} duration={extra.Duration} type={extra.Type} modeled={extra.Value}");
             }
             Require(difference == null, "Native card action differs at index " + entry.GetProperty("Index").GetInt32() + ": " + difference);
             supported++;
