@@ -209,6 +209,12 @@ if (args.Length == 2 && args[0] == "--explain-frontier")
     return;
 }
 
+if (args.Length == 1 && args[0] == "--card-cycle-pure")
+{
+    CardCycleChecks.Run();
+    return;
+}
+
 if (args.Length == 2 && args[0] == "--card-cycle-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);

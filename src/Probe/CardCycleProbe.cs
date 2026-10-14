@@ -53,14 +53,14 @@ namespace MonsterTrain2Poju.Probe
                 foreach (CardTraitState trait in card.GetTraitStates())
                 {
                     // SelfPurge and Consume act only when wasPlayed=true; DiscardHand sets it false.
-                    if (!(kind == "Discard" && (trait is CardTraitSelfPurge || trait is CardTraitExhaustState || trait is CardTraitEphemeral)) &&
+                    if (!(kind == "Discard" && (trait is CardTraitSelfPurge || trait is CardTraitExhaustState || trait is CardTraitEphemeral || trait is CardTraitInfusion)) &&
                         callbacks.Any(callback => trait.GetType().GetMethod(callback,
                         BindingFlags.Instance | BindingFlags.Public)?.DeclaringType != typeof(CardTraitState)))
                         interactions.Add(trait.GetType().Name + " " + kind + " callback");
                     if (drawing && trait is CardTraitMagneticState)
                         interactions.Add("Magnetic draw priority");
-                    if (kind == "Discard" && (trait is CardTraitInfusion ||
-                        trait is CardTraitPersistent)) interactions.Add(trait.GetType().Name + " discard routing");
+                    if (kind == "Discard" && trait is CardTraitPersistent)
+                        interactions.Add(trait.GetType().Name + " discard routing");
                 }
                 if (kind == "Discard" && card.GetTriggers().Any(trigger =>
                     trigger.GetTrigger().ToString().IndexOf("Discard", StringComparison.OrdinalIgnoreCase) >= 0))
@@ -101,6 +101,9 @@ namespace MonsterTrain2Poju.Probe
                     int[] persistentCardIds = kind == "Discard" ? cards.GetHand()
                         .Where(card => card.GetTraitStates().Any(trait => trait is CardTraitPersistent))
                         .Select(trace.CardId).ToArray() : Array.Empty<int>();
+                    int[] infusionCardIds = kind == "Discard" ? cards.GetHand()
+                        .Where(card => card.GetTraitStates().Any(trait => trait is CardTraitInfusion))
+                        .Select(trace.CardId).ToArray() : Array.Empty<int>();
                     int[] purgedBefore = kind == "Discard" ? cards.GetPurgedPile().Select(trace.CardId).ToArray() : Array.Empty<int>();
                     CombatContext? standbyContext = kind == "Draw" ? trace.CaptureContext() : null;
                     int[]? livingIds = kind == "Draw" ? trace.CaptureTrain().Rooms.SelectMany(room => room.Units).Select(unit => unit.Id).ToArray() : null;
@@ -112,9 +115,10 @@ namespace MonsterTrain2Poju.Probe
                         Index = records.Count, Turn = managers.GetCombatManager()!.GetTurnCount(), Kind = kind,
                         HandSize = handSize, MaxHandSize = cards.GetMaxHandSize(), Before = before,
                         StandbyContext = standbyContext, LivingUnitIds = livingIds,
-                        EphemeralCardIds = ephemeralCardIds, PersistentCardIds = persistentCardIds, PurgedBefore = purgedBefore,
+                        EphemeralCardIds = ephemeralCardIds, PersistentCardIds = persistentCardIds,
+                        InfusionCardIds = infusionCardIds, PurgedBefore = purgedBefore,
                         Predicted = kind == "Draw" ? CardCycleModel.DrawHand(prepared, handSize, cards.GetMaxHandSize())
-                            : CardCycleModel.DiscardHand(before, ephemeralCardIds, persistentCardIds)
+                            : CardCycleModel.DiscardHand(before, ephemeralCardIds, persistentCardIds, infusionCardIds)
                     };
                     records.Add(record);
                 }
@@ -187,6 +191,7 @@ namespace MonsterTrain2Poju.Probe
             public int[]? LivingUnitIds { get; set; }
             public int[] EphemeralCardIds { get; set; } = Array.Empty<int>();
             public int[] PersistentCardIds { get; set; } = Array.Empty<int>();
+            public int[] InfusionCardIds { get; set; } = Array.Empty<int>();
             public int[] PurgedBefore { get; set; } = Array.Empty<int>();
             public int[] PurgedActual { get; set; } = Array.Empty<int>();
             public CardCycleResult Predicted { get; set; } = null!;

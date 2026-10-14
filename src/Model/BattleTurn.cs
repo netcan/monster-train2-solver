@@ -271,6 +271,7 @@ namespace MonsterTrain2Poju.Model
             context = train.Context!;
             var ephemeralCardIds = new List<int>();
             var persistentCardIds = new List<int>();
+            var infusionCardIds = new List<int>();
             foreach (CardToken card in context.Cards.Hand)
             {
                 CardInstanceState? instance = context.FindCard(card.InstanceId);
@@ -287,13 +288,15 @@ namespace MonsterTrain2Poju.Model
                         ephemeralCardIds.Add(card.InstanceId);
                     if (traits.Contains("CardTraitPersistent", StringComparer.Ordinal))
                         persistentCardIds.Add(card.InstanceId);
+                    if (traits.Contains("CardTraitInfusion", StringComparer.Ordinal))
+                        infusionCardIds.Add(card.InstanceId);
                 }
                 catch (InvalidOperationException error) { return Unsupported(error.Message); }
             }
-            CardCycleResult discard = CardCycleModel.DiscardHand(context.Cards, ephemeralCardIds, persistentCardIds);
+            CardCycleResult discard = CardCycleModel.DiscardHand(context.Cards, ephemeralCardIds, persistentCardIds, infusionCardIds);
             if (!discard.Supported) return Unsupported(discard.UnsupportedReason!);
             BattleStatistics? statistics = context.Statistics;
-            var retainedIds = new HashSet<int>(persistentCardIds);
+            var retainedIds = new HashSet<int>(persistentCardIds.Concat(infusionCardIds));
             foreach (CardToken card in context.Cards.Hand.Reverse().Where(card => !retainedIds.Contains(card.InstanceId)))
                 statistics = statistics?.Increment(card.InstanceId, "TimesDiscarded");
             foreach (CardToken card in discard.PurgedCards) statistics = statistics?.RemoveDeckCard(card.InstanceId);

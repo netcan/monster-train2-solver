@@ -32,6 +32,12 @@ internal static class CardCycleChecks
             !CardCycleModel.DiscardHand(new CardCycleState([new CardToken(11, "persistent")], [], [],
                 UnityRng.Seed(8), 0, ["CardTraitPersistent discard routing"])).Supported,
             "Persistent discard did not retain the card or require its captured identity.");
+        CardCycleResult infusion = CardCycleModel.DiscardHand(new CardCycleState(
+            [new CardToken(10, "held"), new CardToken(11, "infusion"), new CardToken(12, "persistent")],
+            [], [], UnityRng.Seed(8), 0, []), persistentCardIds: [12], infusionCardIds: [11]);
+        Require(infusion.Supported && infusion.State!.Hand.Select(card => card.InstanceId).SequenceEqual([11, 12]) &&
+            infusion.State.Discard.Select(card => card.InstanceId).SequenceEqual([10]),
+            "Infusion discard routing did not retain the card in native hand order.");
         var playedEphemeral = new CardToken(1, "ephemeral");
         Require(CardPileModel.ValidateMembership(new CardCycleState([], [], [], UnityRng.Seed(9), 0, []),
             [new CardPileState("Purged", [playedEphemeral, playedEphemeral])], 2) == null,
@@ -44,7 +50,7 @@ internal static class CardCycleChecks
             "Drawing across a reshuffle lost or duplicated a card.");
         Require(root.Hand.Count == 1 && root.Draw.Count == 2 && root.Discard.Count == 1,
             "Card cycling mutated its parent.");
-        Console.WriteLine("CARD-CYCLE-CHECKS PASS: draw/discard order, Ephemeral purge, Persistent retention, reshuffle, hand limits and parent isolation.");
+        Console.WriteLine("CARD-CYCLE-CHECKS PASS: draw/discard order, Ephemeral purge, Persistent and Infusion retention, reshuffle, hand limits and parent isolation.");
     }
 
     internal static void Native(FixtureValue fixture)
@@ -68,7 +74,8 @@ internal static class CardCycleChecks
                     ? CardCycleModel.DrawCards(before, cycle.GetProperty("HandSize").GetInt32(), cycle.GetProperty("MaxHandSize").GetInt32(),
                         cycle.GetProperty("PlayedCardId").GetInt32()) : CardCycleModel.DiscardHand(before,
                         cycle.TryGetProperty("EphemeralCardIds", out var ephemeralIds) ? ephemeralIds.Deserialize<int[]>() : null,
-                        cycle.TryGetProperty("PersistentCardIds", out var persistentIds) ? persistentIds.Deserialize<int[]>() : null);
+                        cycle.TryGetProperty("PersistentCardIds", out var persistentIds) ? persistentIds.Deserialize<int[]>() : null,
+                        cycle.TryGetProperty("InfusionCardIds", out var infusionIds) ? infusionIds.Deserialize<int[]>() : null);
             if (!result.Supported) { unsupported++; continue; }
             CardCycleState actual = Read(cycle.GetProperty("Actual"));
             Require(Comparable(result.State!) == Comparable(actual),

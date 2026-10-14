@@ -675,6 +675,15 @@ claim. The original Mix code also draws offers and initial upgrades from Battle
 RNG, retains the previous selected card/upgrade, and lets relics change draft
 count and size; those rules still require model state and native comparison.
 
+The following native run at
+`.probe-runs/full-battle-units-spells-and-junk-20261015-025004-2903481c`
+calibrates the separate `CardTraitInfusion` end-turn rule. Native `DiscardCard`
+returns before removing an Infusion from hand; the model now retains it by
+captured instance ID, separately from Persistent. All 11 card cycles and six
+EndTurns in this Mix battle match native state, as do 13 cycles and seven
+EndTurns in the older accepted Persistent fixture. The experimental Mix battle
+still fails strict acceptance with one unsupported record: the Mix play itself.
+
 ### BalatroEventChicot Mute relic (schema 156)
 
 `full-battle-spawn-status-relics-boss-mute.mt2f` captures the unchanged Chicot
