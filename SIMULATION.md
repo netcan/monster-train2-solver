@@ -1,10 +1,30 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-14): 291 binary archives, including 260
+Current accepted inventory (2026-10-14): 292 binary archives, including 261
 full battles and 31 component calibrations. Unchanged original relic evidence
 covers 78/224 catalog entries (34.82%); see
 [the owner evidence table](tests/fixtures/relic-coverage.md). Whole-battle
 coverage and the optimal solver remain in progress.
+
+### Original self-attack-scaled status
+
+`full-battle-self-attack-status.mt2f` places unchanged Monster Weldling in the
+first wave and plays a Train Steward on its floor. Weldling's original
+`CardEffectAddStatusEffectPerSelfAttack` gives the player's front unit three
+Armor after combat: six live attack divided by two. The source class uses its
+integer parameter as a divisor, not the base status effect's chance. The muted
+Instant native battle wins with 20 matched actions, seven EndTurns and 60 room
+stages; capture failures, mismatches, unsupported transitions and pending
+records are zero. The 30,582-byte binary has 4,904 unique nodes and SHA-256
+`6224fbba8ef47a3e0d86275019a6b359558571553dea118ba0a77d7cf9d4a080`.
+Pure checks cover the live attack buff, zero-divisor fallback and immutable
+parallel branches. The other original owner, a Soul Savior boss, has not yet
+been calibrated in a native battle.
+
+```powershell
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-self-attack-status.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-self-attack-status.mt2f
+```
 
 ### Original conditional status after an unblocked floor
 

@@ -988,14 +988,15 @@ namespace MonsterTrain2Poju.Model
                             continue;
                         }
                         if (effect.Action != null && effect.Type != "CardEffectHeal" && effect.Type != "CardEffectDamage" && effect.Type != "CardEffectAddStatusEffect" &&
-                            effect.Type != "CardEffectAddStatusEffectIfNoPlayerUnits")
+                            effect.Type is not ("CardEffectAddStatusEffectIfNoPlayerUnits" or "CardEffectAddStatusEffectPerSelfAttack"))
                             return "Mismatched triggered action definition.";
                         if (effect.DamageStatusMultiplier != null && effect.Type != "CardEffectDamage")
                             return "Mismatched triggered damage multiplier.";
-                        if (effect.StatusScaling != null && effect.Type is not ("CardEffectAddStatusEffect" or "CardEffectAddStatusEffectIfNoPlayerUnits")) return "Mismatched triggered status scaling.";
+                        if (effect.StatusScaling != null && effect.Type is not ("CardEffectAddStatusEffect" or "CardEffectAddStatusEffectIfNoPlayerUnits" or
+                            "CardEffectAddStatusEffectPerSelfAttack")) return "Mismatched triggered status scaling.";
                         if (effect.Type == "CardEffectDespawnCharacter") continue;
                         if (effect.Type == "CardEffectHeal" || effect.Type == "CardEffectDamage" ||
-                            effect.Type is "CardEffectAddStatusEffect" or "CardEffectAddStatusEffectIfNoPlayerUnits")
+                            effect.Type is "CardEffectAddStatusEffect" or "CardEffectAddStatusEffectIfNoPlayerUnits" or "CardEffectAddStatusEffectPerSelfAttack")
                         {
                             CardActionEffect? action = effect.Action;
                             if (action?.Type != (effect.Type == "CardEffectHeal" ? "Heal" : effect.Type == "CardEffectDamage" ? "Damage" : "AddStatus")) return "Missing triggered action definition.";

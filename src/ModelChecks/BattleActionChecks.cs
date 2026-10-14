@@ -463,6 +463,9 @@ internal static class BattleActionChecks
         if (fixture.TryGetProperty("ModifierScenario", out var noPlayerUnitPolicy) &&
             noPlayerUnitPolicy.GetString() == "conditional-no-player-status")
             chooser = ConditionalNoPlayerUnitChecks.Choose;
+        if (fixture.TryGetProperty("ModifierScenario", out var selfAttackStatusPolicy) &&
+            selfAttackStatusPolicy.GetString() == "self-attack-status")
+            chooser = SelfAttackStatusChecks.Choose;
         if (fixture.TryGetProperty("ModifierScenario", out var damagePerHpPolicy) &&
             damagePerHpPolicy.GetString() is "damage-per-hp" or "damage-per-hp-armor" or "damage-per-hp-last-attacker")
             chooser = DamagePerHpChecks.Choose;

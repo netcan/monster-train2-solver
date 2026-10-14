@@ -21,10 +21,23 @@ if (args.Length == 1 && args[0] == "--no-player-units-status-pure")
     return;
 }
 
+if (args.Length == 1 && args[0] == "--self-attack-status-pure")
+{
+    SelfAttackStatusChecks.Run();
+    return;
+}
+
 if (args.Length == 2 && args[0] == "--no-player-units-status-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
     ConditionalNoPlayerUnitChecks.Native(fixture.RootElement);
+    return;
+}
+
+if (args.Length == 2 && args[0] == "--self-attack-status-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    SelfAttackStatusChecks.Native(fixture.RootElement);
     return;
 }
 
@@ -923,6 +936,7 @@ DyingUpgradeChecks.Run();
 AttackTriggerChecks.Run();
 TriggeredStatusChecks.Run();
 ConditionalNoPlayerUnitChecks.Run();
+SelfAttackStatusChecks.Run();
 HandUpgradeChecks.Run();
 HealingChecks.Run();
 GoldRewardChecks.Run();

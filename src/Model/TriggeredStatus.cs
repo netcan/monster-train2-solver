@@ -68,8 +68,10 @@ namespace MonsterTrain2Poju.Model
             if (error != null || actor == null || source.Context == null || targetIds.Any(id => source.Units.All(unit => unit.Id != id)))
                 return Unsupported(error ?? "Triggered status requires captured actor, targets and battle context.");
             CardActionEffect action = effect.Action!;
+            bool perSelfAttack = effect.Type == "CardEffectAddStatusEffectPerSelfAttack";
             if (source.Preview && source.Context.IsolatedBattlePreview != true &&
-                (action.Range != null || action.Value != 0 || action.Statuses.Count > 1 || CardTargetModel.IsRandom(action.Target)))
+                (!perSelfAttack && (action.Range != null || action.Value != 0) ||
+                    action.Statuses.Count > 1 || CardTargetModel.IsRandom(action.Target)))
                 return Unsupported("Randomized status previews require the explicit isolated preview RNG protocol.");
             CombatContext context = source.Context;
             CombatStatus status = action.Statuses[0];
@@ -93,8 +95,22 @@ namespace MonsterTrain2Poju.Model
                 }
                 status = status.WithStacks(unchecked(status.Stacks * multiplier));
             }
-            int chance = action.Value;
-            if (action.Range != null)
+            if (perSelfAttack)
+            {
+                int divisor = action.Value == 0 ? 1 : action.Value;
+                int mageblade = 0;
+                if (actor.Modifiers?.MagebladeDamagePerMagicPower is int coefficient)
+                {
+                    RoomMagicPower? power = context.MagicPower?.FirstOrDefault(value =>
+                        value.RoomIndex == source.RoomIndex && value.Team == actor.Team);
+                    mageblade = unchecked(coefficient * (power?.Value ?? 0));
+                }
+                int pyre = actor.IsPyre ? context.Resources?.PyreModifiedBaseAttack ?? 0 : 0;
+                int attack = Math.Max(0, unchecked(actor.AttackBeforeStatuses + actor.AttackFromStatuses + mageblade + pyre));
+                status = status.WithStacks(attack / divisor);
+            }
+            int chance = perSelfAttack ? 0 : action.Value;
+            if (!perSelfAttack && action.Range != null)
             {
                 RngDraw draw = action.Range.Sample(context.BattleRng); context = context.WithBattleRng(draw.State); chance = draw.Value;
             }

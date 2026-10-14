@@ -1,5 +1,10 @@
 # Native regression fixtures
 
+`full-battle-self-attack-status.mt2f` records unchanged Weldling applying
+three Armor to a player Train Steward after combat: its attack is six and the
+effect's divisor is two. The focused check proves the original target team,
+positive status change and exact EndTurn. The archive is binary only.
+
 `full-battle-conditional-no-player-status.mt2f` records an unchanged enemy
 gaining Armor after combat without player units on its floor, then keeping the
 same Armor after combat with a defender present. The focused check verifies
