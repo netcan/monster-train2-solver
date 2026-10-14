@@ -414,7 +414,7 @@ namespace MonsterTrain2Poju.Model
             "relentless", "sweep", "sniper", "rooted", "haste", "untouchable", "endless",
             "buff", "debuff", "regen", "poison", "corrupt_poison", "melee weakness", "spell weakness", "silenced", "muted", "valor", "pyregel",
             "heal multiplier", "heal immunity", "cooldown", "unit_ability", "unit_ability_available", "horde", "cardless", "undying", "ephemeral", "purify", "mageblade", "titanskin", "duality",
-            "newmoon", "fullmoon", "stygian_blessing", "scorch", "trample"
+            "newmoon", "fullmoon", "stygian_blessing", "scorch", "trample", "spell shield"
         };
         internal static bool KnowsStatus(string id) => KnownStatuses.Contains(id);
 
@@ -1892,7 +1892,8 @@ namespace MonsterTrain2Poju.Model
                 damage = Math.Max(0, damage);
                 bool cardPiercing = context?.Relics?.Any(relic => relic.EffectTypes.Contains(RelicModel.AllDamageIsPiercing)) == true;
                 if (damage > 0 && !cardPiercing &&
-                    (target.Has("damage shield") || target.Has("armor") || target.Has("titanskin")))
+                    (target.Has("damage shield") || target.Has("spell shield") ||
+                     target.Has("armor") || target.Has("titanskin")))
                 {
                     int piercingCardId = sourceCardId > 0 ? sourceCardId : actor?.Source.SpawnerCardId ?? 0;
                     CardInstanceState? piercingCard = piercingCardId > 0 ? context?.FindCard(piercingCardId) : null;
@@ -1945,6 +1946,20 @@ namespace MonsterTrain2Poju.Model
                     blocked += damage;
                     Trigger(target, "damage shield", 1);
                     damage = 0;
+                }
+                if (damage > 0 && kind == "Spell" && sourceCardId > 0 && target.Has("spell shield") && !cardPiercing)
+                {
+                    CardInstanceState? sourceCard = context?.FindCard(sourceCardId);
+                    if (sourceCard?.MaskDescriptor == null)
+                    {
+                        unsupportedReason = "Spell Shield requires the native source card type.";
+                        return;
+                    }
+                    if (sourceCard.MaskDescriptor.Definition.CardType == "Spell")
+                    {
+                        Trigger(target, "spell shield", 1);
+                        damage = 0;
+                    }
                 }
                 if (damage > 0 && target.Has("titanskin") && !cardPiercing && !unitPiercing)
                 {

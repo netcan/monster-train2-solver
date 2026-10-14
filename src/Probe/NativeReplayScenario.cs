@@ -539,6 +539,12 @@ namespace MonsterTrain2Poju.Probe
                 numericModifiersPrepared = true;
                 TrampleScenario.Prepare(managers, log);
             }
+            if (fullBattle && !numericModifiersPrepared && SpellShieldScenario.Enabled)
+            {
+                if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Spell Shield fixture must start on deployment turn.");
+                numericModifiersPrepared = true;
+                SpellShieldScenario.Prepare(managers, log);
+            }
             if (fullBattle && !numericModifiersPrepared && modifierScenario == "remove-all-status-effects")
             {
                 if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Remove-all status fixture must start on deployment turn.");
@@ -1105,6 +1111,7 @@ namespace MonsterTrain2Poju.Probe
                 if (NullTriggerScenario.Enabled) pendingPlay = NullTriggerScenario.Choose(decision, log);
                 if (NullTargetlessScenario.Enabled) pendingPlay = NullTargetlessScenario.Choose(decision, log);
                 if (TrampleScenario.Enabled) pendingPlay = TrampleScenario.Choose(decision, log);
+                if (SpellShieldScenario.Enabled) pendingPlay = SpellShieldScenario.Choose(decision, log);
                 if (modifierScenario == "remove-all-status-effects")
                     pendingPlay = CardEffectRemoveAllStatusScenario.Choose(decision) ?? pendingPlay;
                 if (DragonHoardScenario.Enabled) pendingPlay = DragonHoardScenario.Choose(decision);
@@ -1278,6 +1285,7 @@ namespace MonsterTrain2Poju.Probe
                 (NullTriggerScenario.Enabled && NullTriggerScenario.ConsumeScenarioActionMark(action)) ||
                 (NullTargetlessScenario.Enabled && NullTargetlessScenario.ConsumeScenarioActionMark(action)) ||
                 (TrampleScenario.Enabled && TrampleScenario.ConsumeScenarioActionMark(action)) ||
+                (SpellShieldScenario.Enabled && SpellShieldScenario.ConsumeScenarioActionMark(action)) ||
                 (modifierScenario == "remove-all-status-effects" && CardEffectRemoveAllStatusScenario.ConsumeScenarioActionMark(action)) ||
                 (modifierScenario is "card-effect-recursion" or "card-effect-recursion-choice" or "card-effect-recursion-choose-to-hand" or "card-effect-recursion-filter-choice" or "card-effect-recursion-discard-choice" or "card-effect-recursion-upgrade" or "card-effect-recursion-upgrade-hand" or "card-effect-recursion-upgrade-choice" or "card-effect-recursion-upgrade-filter-choice" or "card-effect-recursion-upgrade-replacement-choice" &&
                     CardEffectRecursionScenario.IsScenarioPrelude(action));

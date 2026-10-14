@@ -90,6 +90,12 @@ internal static class RoomCombatChecks
                 new CombatStatus("armor", 4, 1, removeWhenTriggered: true))));
         Require(shield.State!.Units[1].Health == 23 && shield.State.Units[1].Statuses.Count == 0,
             "Shield did not precede armor across successive attacks.");
+        RoomCombatResult spellShieldMelee = RoomCombatModel.Exchange(Room(
+            Unit(1, CombatTeam.Enemy, 0, 20, new CombatStatus("spell shield", 2, removeWhenTriggered: true)),
+            Unit(2, CombatTeam.Player, 6, 20)));
+        Require(spellShieldMelee.Supported && spellShieldMelee.State!.Units[0].Health == 14 &&
+            spellShieldMelee.State.Units[0].Status("spell shield")?.Stacks == 2,
+            "A normal attack consumed Spell Shield.");
         RoomCombatResult dazed = RoomCombatModel.Exchange(Room(
             Unit(1, CombatTeam.Enemy, 6, 20, new CombatStatus("dazed", 2, removeWhenTriggered: true)), player));
         Require(dazed.State!.Units[0].Statuses[0].Stacks == 1 && dazed.State.Units[1].Health == 25,

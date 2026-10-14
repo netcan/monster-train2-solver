@@ -1,10 +1,27 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-14): 297 binary archives, including 266
+Current accepted inventory (2026-10-14): 298 binary archives, including 267
 full battles and 31 component calibrations. Unchanged original relic evidence
 covers 78/224 catalog entries (34.82%); see
 [the owner evidence table](tests/fixtures/relic-coverage.md). Whole-battle
 coverage and the optimal solver remain in progress.
+
+### Original Spell Shield damage
+
+`full-battle-original-spell-shield.mt2f` places unchanged `HordeT3_PureSouls`
+in both ordinary slots of the first enemy wave and plays two unchanged `Flicker`
+room-damage Spells. Both enemies retain 1 HP while Spell Shield drops from two
+stacks to one, then zero; a normal melee attack does not consume this shield.
+The muted Instant native battle wins with 19 matched actions, seven EndTurns
+and 58 room stages. Capture failures, mismatches, unsupported transitions and
+pending records are zero. The 31,460-byte binary has 5,044 unique nodes and
+SHA-256 `7848c623843fd4ba820630b1a2660e2ba2d00defe8fc8f4db375d8d084d8bfb5`.
+Other Spell Shield owners and piercing combinations remain uncalibrated.
+
+```powershell
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-spell-shield.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-spell-shield.mt2f
+```
 
 ### Original Trample damage chain
 

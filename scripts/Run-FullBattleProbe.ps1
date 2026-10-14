@@ -24,6 +24,7 @@ param(
     [switch] $NullTriggers,
     [switch] $NullTargetless,
     [switch] $OriginalTrample,
+    [switch] $OriginalSpellShield,
     [switch] $RemoveAllStatusEffects,
     [switch] $DragonHoard,
     [switch] $TrainHeal,
@@ -365,6 +366,7 @@ if ($NullForwarding) { $Policy = 'units-spells-and-junk' }
 if ($NullTriggers) { $Policy = 'units-spells-and-junk' }
 if ($NullTargetless) { $Policy = 'units-spells-and-junk' }
 if ($OriginalTrample) { $Policy = 'units-spells-and-junk' }
+if ($OriginalSpellShield) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($RemoveAllStatusEffects) { $Policy = 'units-spells-and-junk' }
 if ($DragonHoard) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($TrainHeal) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
@@ -540,6 +542,7 @@ if ($NullForwarding) { $environment['MT2_PROBE_MODIFIERS'] = 'null-forwarding' }
 if ($NullTriggers) { $environment['MT2_PROBE_MODIFIERS'] = 'null-triggers' }
 if ($NullTargetless) { $environment['MT2_PROBE_MODIFIERS'] = 'null-targetless' }
 if ($OriginalTrample) { $environment['MT2_PROBE_MODIFIERS'] = 'original-trample' }
+if ($OriginalSpellShield) { $environment['MT2_PROBE_MODIFIERS'] = 'original-spell-shield' }
 if ($RemoveAllStatusEffects) { $environment['MT2_PROBE_MODIFIERS'] = 'remove-all-status-effects' }
 if ($DragonHoard) { $environment['MT2_PROBE_MODIFIERS'] = 'dragon-hoard' }
 if ($TrainHeal) { $environment['MT2_PROBE_MODIFIERS'] = 'train-heal' }
@@ -698,6 +701,13 @@ if ($OriginalTrample -and ($trace.ModifierScenario -ne 'original-trample' -or
     -not (Select-String -LiteralPath $unityLog -Pattern 'TRAMPLE-PLAY original=Basher room=0' -Quiet) -or
     -not (Select-String -LiteralPath (Join-Path $profile 'logfile.log') -Pattern 'Attacker .* dealing [1-9][0-9]* damage .* with damage type Trample' -Quiet))) {
     throw 'Original Basher did not deliver Trample damage in the native battle.'
+}
+if ($OriginalSpellShield -and ($trace.ModifierScenario -ne 'original-spell-shield' -or
+    -not (Select-String -LiteralPath $unityLog -Pattern 'SPELL-SHIELD-PREPARED original=HordeT3_PureSouls stacks=2' -Quiet) -or
+    -not (Select-String -LiteralPath $unityLog -Pattern 'SPELL-SHIELD-PLAY target=.* stacks=2 spell=' -Quiet) -or
+    -not (Select-String -LiteralPath $unityLog -Pattern 'SPELL-SHIELD-PLAY target=.* stacks=1 spell=' -Quiet) -or
+    @($trace.Actions | Where-Object ScenarioAction).Count -ne 2)) {
+    throw 'Original Pure Souls did not consume both Spell Shield stacks in the native battle.'
 }
 if ($RemoveAllStatusEffects -and ($trace.Schema -ne 164 -or $trace.ModifierScenario -ne 'remove-all-status-effects' -or
     -not (Select-String -LiteralPath $unityLog -Pattern 'REMOVE-ALL-STATUS-SEEDED card=.* hidden=' -Quiet) -or
