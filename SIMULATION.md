@@ -1,6 +1,6 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-15): 321 binary archives, including 290
+Current accepted inventory (2026-10-15): 322 binary archives, including 291
 full battles and 31 component calibrations. Unchanged original relic evidence
 covers 81/224 catalog entries (36.16%); see
 [the owner evidence table](tests/fixtures/relic-coverage.md). Whole-battle
@@ -8,8 +8,10 @@ coverage and the optimal solver remain in progress.
 
 The latest original-card witness plays unchanged `KinhostVessel` and follows its
 Hatch 8 unit through natural `OnHatched` sacrifice and Pupa summoning. Its
-57-stage battle and independent search replay match; details and the binary
-hash are in [the fixture inventory](tests/fixtures/README.md).
+57-stage battle and independent search replay match. A second original-card
+capture follows Hatch 8 to 4 across one combat, then hatches in the next using
+a permanent Corruption floor of 4; details and binary hashes are in
+[the fixture inventory](tests/fixtures/README.md).
 
 ### Original Egg Hatch removal on spawn
 

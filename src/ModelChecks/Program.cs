@@ -183,6 +183,12 @@ if (args.Length == 2 && args[0] == "--original-egg-card-only")
     return;
 }
 
+if (args.Length == 2 && args[0] == "--original-egg-card-delayed-only")
+{
+    OriginalEggCardChecks.Native(args[1], delayed: true);
+    return;
+}
+
 if (args.Length == 2 && args[0] == "--unplayed-card-trigger-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);

@@ -10,8 +10,10 @@ namespace MonsterTrain2Poju.Probe
     internal static class OriginalEggCardScenario
     {
         internal const string Name = "original-egg-card";
+        internal const string DelayedName = "original-egg-card-delayed";
         private const string CardId = "057f7f77-df4b-4981-9e6d-533a6e667f39";
-        internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == Name;
+        internal static bool Delayed => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == DelayedName;
+        internal static bool Enabled => Delayed || Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == Name;
         internal static bool Prepared { get; private set; }
 
         internal static void Prepare(AllGameManagers managers, ManualLogSource log)
@@ -34,14 +36,16 @@ namespace MonsterTrain2Poju.Probe
 
             RoomState top = managers.GetRoomManager()!.GetRoom(2);
             object stats = AccessTools.Field(typeof(RoomState), "corruptionStats").GetValue(top);
-            AccessTools.Field(stats.GetType(), "maxCorruption").SetValue(stats, 8);
-            AccessTools.Field(stats.GetType(), "currentCorruption").SetValue(stats, 8);
+            int corruption = Delayed ? 4 : 8;
+            AccessTools.Field(stats.GetType(), "maxCorruption").SetValue(stats, corruption);
+            AccessTools.Field(stats.GetType(), "currentCorruption").SetValue(stats, corruption);
+            if (Delayed) AccessTools.Field(stats.GetType(), "permanentCorruption").SetValue(stats, corruption);
             if (cards.AddNewCard(card, CardPile.HandPile, false, false, animate: false) == null)
                 throw new InvalidOperationException("Original Kinhost Vessel could not enter the initial hand.");
 
             Prepared = true;
             AccessTools.Field(typeof(CombatManager), "combatStateChanged").SetValue(managers.GetCombatManager(), true);
-            log.LogInfo("ORIGINAL-EGG-CARD-PREPARED unchanged Kinhost Vessel in hand; upper room Corruption 8/8.");
+            log.LogInfo("ORIGINAL-EGG-CARD-PREPARED unchanged Kinhost Vessel in hand; upper room Corruption " + corruption + "/" + corruption + "; permanent=" + (Delayed ? corruption : 0) + ".");
         }
 
         internal static PlayCardAction? Choose(BattleTurnState source)

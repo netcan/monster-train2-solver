@@ -229,6 +229,7 @@ param(
     [switch] $OriginalEggHatchRelic,
     [switch] $OriginalEggTransformation,
     [switch] $OriginalEggCard,
+    [switch] $OriginalEggCardDelayed,
     [switch] $OriginalChicotRelic,
     [switch] $OriginalSpawnCombatRelics,
     [switch] $OriginalStealthWaxersRelic,
@@ -295,13 +296,14 @@ if ($OriginalEggHatchRelic -and ($OriginalSpawnCombatRelics -or $OriginalChicotR
 if ($OriginalEggTransformation -and ($OriginalEggHatchRelic -or $OriginalSpawnCombatRelics -or $OriginalChicotRelic -or $OriginalTunedGearRelic -or $OriginalStealthWaxersRelic -or $OriginalTeamSpawnStatusRelic -or $SpawnStatusRelicsClones -or $MixedCardlessRelicOrder)) {
     throw 'OriginalEggTransformation is an isolated spawn-status scenario.'
 }
-if ($OriginalEggCard -and ($OriginalEggTransformation -or $SpawnStatusRelics -or $OriginalEggHatchRelic)) {
+if (($OriginalEggCard -or $OriginalEggCardDelayed) -and
+    ($OriginalEggTransformation -or $SpawnStatusRelics -or $OriginalEggHatchRelic -or ($OriginalEggCard -and $OriginalEggCardDelayed))) {
     throw 'OriginalEggCard is an isolated original-card scenario.'
 }
 if ($OriginalTunedGearRelic) { $SpawnStatusRelics = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalEggHatchRelic) { $SpawnStatusRelics = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalEggTransformation) { $SpawnStatusRelics = $true; $Policy = 'units-spells-and-junk'; $PhysicalSpawnPoints = $true }
-if ($OriginalEggCard) { $Policy = 'units-spells-and-junk'; $PhysicalSpawnPoints = $true }
+if ($OriginalEggCard -or $OriginalEggCardDelayed) { $Policy = 'units-spells-and-junk'; $PhysicalSpawnPoints = $true }
 if ($OriginalChicotRelic) { $SpawnStatusRelics = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalSpawnCombatRelics) { $SpawnStatusRelics = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalStealthWaxersRelic) { $SpawnStatusRelics = $true; $Policy = 'units-spells-and-junk' }
@@ -554,8 +556,8 @@ if ($SpawnStatusRelics) {
     $environment['MT2_PROBE_MODIFIERS'] = $(if ($OriginalSpawnCombatRelics) { 'spawn-status-relics-combat' } elseif ($OriginalChicotRelic) { 'spawn-status-relics-boss-mute' } elseif ($OriginalTunedGearRelic) { 'spawn-status-relics-tuned-gear' } elseif ($OriginalEggTransformation) { 'spawn-status-relics-egg-transformation' } elseif ($OriginalEggHatchRelic) { 'spawn-status-relics-egg-hatch' } elseif ($OriginalTeamSpawnStatusRelic) { 'spawn-status-relics-team-wide' } elseif ($OriginalStealthWaxersRelic) { 'spawn-status-relics-stealth-waxers' } elseif ($SpawnStatusRelicsClones) { 'spawn-status-relics-clones' } else { 'spawn-status-relics' })
     $environment['MT2_PROBE_STATUS_CALLBACKS'] = '1'
 }
-if ($OriginalEggCard) {
-    $environment['MT2_PROBE_MODIFIERS'] = 'original-egg-card'
+if ($OriginalEggCard -or $OriginalEggCardDelayed) {
+    $environment['MT2_PROBE_MODIFIERS'] = $(if ($OriginalEggCardDelayed) { 'original-egg-card-delayed' } else { 'original-egg-card' })
     $environment['MT2_PROBE_STATUS_CALLBACKS'] = '1'
 }
 if ($MixedCardlessRelicOrder) {
@@ -2928,8 +2930,9 @@ if ($SpawnStatusRelics) {
         Write-Output "NATIVE-CARDLESS-RELIC-UPGRADE PASS: upgrade applied to $cardlessUpgradeApplied non-clone cardless births and skipped on $cardlessCloneSkipped cardless clones."
     }
 }
-if ($OriginalEggCard) {
+if ($OriginalEggCard -or $OriginalEggCardDelayed) {
     $first = @($trace.Actions)[0]
+    $expectedCorruption = if ($OriginalEggCardDelayed) { 4 } else { 8 }
     $cardId = '057f7f77-df4b-4981-9e6d-533a6e667f39'
     $playedCard = @($first.Before.Spawn.Train.Context.Cards.Hand | Where-Object {
         $_.InstanceId -eq $first.Action.CardInstanceId -and $_.DataId -eq $cardId
@@ -2946,12 +2949,13 @@ if ($OriginalEggCard) {
         $_.ActorAfter.SacrificeCardId -eq $_.SourceCardId -and $_.Completed -and $null -eq $_.Error -and
         @($_.After.Units | Where-Object AssetKey -EQ 'MonsterKinhostPupa').Count -gt 0
     })
-    if ($trace.ModifierScenario -ne 'original-egg-card' -or $trace.Schema -ne 103 -or
+    if ($trace.ModifierScenario -ne $(if ($OriginalEggCardDelayed) { 'original-egg-card-delayed' } else { 'original-egg-card' }) -or $trace.Schema -ne 103 -or
         -not $trace.NativeWon -or $trace.CaptureFailures -ne 0 -or $trace.Mismatches -ne 0 -or
         $trace.Unsupported -ne 0 -or $trace.Pending -ne 0 -or
         $first.Before.BattlePreviewEnabled -or $first.Action.RoomIndex -ne 2 -or
         $playedCard.Count -ne 1 -or $registryCard.Count -ne 1 -or $room.Count -ne 1 -or
-        $room[0].Corruption -ne 8 -or $room[0].MaxCorruption -ne 8 -or $egg.Count -ne 1 -or
+        $room[0].Corruption -ne $expectedCorruption -or $room[0].MaxCorruption -ne $expectedCorruption -or
+        $room[0].PermanentCorruption -ne $(if ($OriginalEggCardDelayed) { 4 } else { 0 }) -or $egg.Count -ne 1 -or
         @($egg[0].Statuses | Where-Object { $_.Id -eq 'hatch' -and $_.Stacks -eq 8 }).Count -ne 1 -or
         @($egg[0].Triggers | Where-Object Kind -EQ 'OnRemoveHatch').Count -ne 1 -or
         @($egg[0].Triggers | Where-Object Kind -EQ 'OnHatched').Count -ne 1 -or
@@ -2959,6 +2963,19 @@ if ($OriginalEggCard) {
         throw 'Original Kinhost Vessel card play and natural hatch witness incomplete.'
     }
     Write-Output "NATIVE-ORIGINAL-EGG-CARD PASS: unchanged Kinhost Vessel played in room 2; $($hatches.Count) original Pupa hatch."
+    if ($OriginalEggCardDelayed) {
+        $firstCombat = @($trace.Turns | Where-Object Index -EQ 1)
+        $secondCombat = @($trace.Turns | Where-Object Index -EQ 2)
+        $partial = @($firstCombat[0].Actual.Spawn.Train.Rooms[2].Units | Where-Object AssetKey -EQ 'MonsterKinhostVessel')
+        $pupa = @($secondCombat[0].Actual.Spawn.Train.Rooms[2].Units | Where-Object AssetKey -EQ 'MonsterKinhostPupa')
+        if ($firstCombat.Count -ne 1 -or $secondCombat.Count -ne 1 -or $partial.Count -ne 1 -or
+            @($partial[0].Statuses | Where-Object { $_.Id -eq 'hatch' -and $_.Stacks -eq 4 }).Count -ne 1 -or
+            $firstCombat[0].Actual.Spawn.Train.Context.RoomCapacities[2].Corruption -ne 4 -or
+            $pupa.Count -ne 1) {
+            throw 'Delayed Kinhost Vessel lacks two-combat partial Hatch and Pupa witness.'
+        }
+        Write-Output 'NATIVE-ORIGINAL-EGG-DELAYED PASS: first combat leaves Hatch 4; second combat summons Pupa.'
+    }
 }
 if ($IncantRelic) {
     $players = @($incantFires | Where-Object { $_.Actor.Team -eq 1 })
