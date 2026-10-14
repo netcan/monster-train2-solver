@@ -22,6 +22,16 @@ internal static class CardCycleChecks
         Require(ephemeral.Supported && ephemeral.State!.Discard.Select(card => card.InstanceId).SequenceEqual([3, 12, 10]) &&
             ephemeral.PurgedCards.Select(card => card.InstanceId).SequenceEqual([11]),
             "Ephemeral discard routing changed hand order or retained the card in Discard.");
+        CardCycleResult persistent = CardCycleModel.DiscardHand(new CardCycleState(
+            [new CardToken(10, "held"), new CardToken(11, "persistent"), new CardToken(12, "ephemeral")],
+            [], [new CardToken(3, "prior")], UnityRng.Seed(8), 0,
+            ["CardTraitPersistent Discard callback", "CardTraitPersistent discard routing"]), [11, 12], [11]);
+        Require(persistent.Supported && persistent.State!.Hand.Select(card => card.InstanceId).SequenceEqual([11]) &&
+            persistent.State.Discard.Select(card => card.InstanceId).SequenceEqual([3, 10]) &&
+            persistent.PurgedCards.Select(card => card.InstanceId).SequenceEqual([12]) &&
+            !CardCycleModel.DiscardHand(new CardCycleState([new CardToken(11, "persistent")], [], [],
+                UnityRng.Seed(8), 0, ["CardTraitPersistent discard routing"])).Supported,
+            "Persistent discard did not retain the card or require its captured identity.");
         var playedEphemeral = new CardToken(1, "ephemeral");
         Require(CardPileModel.ValidateMembership(new CardCycleState([], [], [], UnityRng.Seed(9), 0, []),
             [new CardPileState("Purged", [playedEphemeral, playedEphemeral])], 2) == null,
@@ -34,7 +44,7 @@ internal static class CardCycleChecks
             "Drawing across a reshuffle lost or duplicated a card.");
         Require(root.Hand.Count == 1 && root.Draw.Count == 2 && root.Discard.Count == 1,
             "Card cycling mutated its parent.");
-        Console.WriteLine("CARD-CYCLE-CHECKS PASS: draw/discard order, Ephemeral purge routing, reshuffle, hand limits, parent isolation.");
+        Console.WriteLine("CARD-CYCLE-CHECKS PASS: draw/discard order, Ephemeral purge, Persistent retention, reshuffle, hand limits and parent isolation.");
     }
 
     internal static void Native(FixtureValue fixture)
@@ -57,7 +67,8 @@ internal static class CardCycleChecks
                     cycle.GetProperty("MaxHandSize").GetInt32()) : cycle.GetProperty("Kind").GetString() == "SpellDraw"
                     ? CardCycleModel.DrawCards(before, cycle.GetProperty("HandSize").GetInt32(), cycle.GetProperty("MaxHandSize").GetInt32(),
                         cycle.GetProperty("PlayedCardId").GetInt32()) : CardCycleModel.DiscardHand(before,
-                            cycle.TryGetProperty("EphemeralCardIds", out var ephemeralIds) ? ephemeralIds.Deserialize<int[]>() : null);
+                        cycle.TryGetProperty("EphemeralCardIds", out var ephemeralIds) ? ephemeralIds.Deserialize<int[]>() : null,
+                        cycle.TryGetProperty("PersistentCardIds", out var persistentIds) ? persistentIds.Deserialize<int[]>() : null);
             if (!result.Supported) { unsupported++; continue; }
             CardCycleState actual = Read(cycle.GetProperty("Actual"));
             Require(Comparable(result.State!) == Comparable(actual),

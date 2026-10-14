@@ -160,7 +160,8 @@ namespace MonsterTrain2Poju.Model
         // One quiet player decision point through EndTurn to the next decision or terminal battle.
         public static BattleTurnResult EndTurn(BattleTurnState source)
         {
-            if (source.ExternalInteractions.Count > 0) return Unsupported(string.Join("; ", source.ExternalInteractions));
+            IReadOnlyList<string> turnInteractions = ActionInteractions(source);
+            if (turnInteractions.Count > 0) return Unsupported(string.Join("; ", turnInteractions));
             if (source.Spawn.Train.Context == null) return Unsupported("Missing shared battle context.");
             string? identityError = UnitIdentityModel.Validate(source.Spawn.Train.Context,
                 source.Spawn.Train.Rooms.SelectMany(room => room.Units), source.Spawn.NextUnitId);
@@ -269,24 +270,36 @@ namespace MonsterTrain2Poju.Model
             }
             context = train.Context!;
             var ephemeralCardIds = new List<int>();
+            var persistentCardIds = new List<int>();
             foreach (CardToken card in context.Cards.Hand)
             {
                 CardInstanceState? instance = context.FindCard(card.InstanceId);
-                if (instance?.MaskDescriptor == null) continue;
+                if (instance?.MaskDescriptor == null)
+                {
+                    if (source.ExternalInteractions.Any(IsDeferredPersistentDiscard))
+                        return Unsupported("Persistent discard requires captured hand traits.");
+                    continue;
+                }
                 try
                 {
-                    if (CardBranchMaskModel.Resolve(instance).Traits.Contains("CardTraitEphemeral", StringComparer.Ordinal))
+                    IReadOnlyList<string> traits = CardBranchMaskModel.Resolve(instance).Traits;
+                    if (traits.Contains("CardTraitEphemeral", StringComparer.Ordinal))
                         ephemeralCardIds.Add(card.InstanceId);
+                    if (traits.Contains("CardTraitPersistent", StringComparer.Ordinal))
+                        persistentCardIds.Add(card.InstanceId);
                 }
                 catch (InvalidOperationException error) { return Unsupported(error.Message); }
             }
-            CardCycleResult discard = CardCycleModel.DiscardHand(context.Cards, ephemeralCardIds);
+            CardCycleResult discard = CardCycleModel.DiscardHand(context.Cards, ephemeralCardIds, persistentCardIds);
             if (!discard.Supported) return Unsupported(discard.UnsupportedReason!);
             BattleStatistics? statistics = context.Statistics;
-            foreach (CardToken card in context.Cards.Hand.Reverse()) statistics = statistics?.Increment(card.InstanceId, "TimesDiscarded");
+            var retainedIds = new HashSet<int>(persistentCardIds);
+            foreach (CardToken card in context.Cards.Hand.Reverse().Where(card => !retainedIds.Contains(card.InstanceId)))
+                statistics = statistics?.Increment(card.InstanceId, "TimesDiscarded");
             foreach (CardToken card in discard.PurgedCards) statistics = statistics?.RemoveDeckCard(card.InstanceId);
             context = context.WithStatistics(statistics?.WithEndTurnEnergy(context.EnergyState == null ? source.Energy : context.QueryFrame!.Energy!.Value));
-            var discardedIds = new HashSet<int>(context.Cards.Hand.Select(card => card.InstanceId));
+            var discardedIds = new HashSet<int>(context.Cards.Hand.Where(card => !retainedIds.Contains(card.InstanceId))
+                .Select(card => card.InstanceId));
             context = context.WithCardInstances(context.CardInstances?.Select(card => discardedIds.Contains(card.InstanceId)
                 ? card.OnDiscard(false) : card).ToArray());
             CardCycleState cards = discard.State!;

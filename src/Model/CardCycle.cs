@@ -109,17 +109,26 @@ namespace MonsterTrain2Poju.Model
             return new CardCycleResult(new CardCycleState(hand, draw, discard, rng, 0, source.ExternalInteractions, bonus, source.NextDrawUpgrades, source.NextUpgradeReferenceId), upgradeApplications: applications);
         }
 
-        public static CardCycleResult DiscardHand(CardCycleState source, IReadOnlyCollection<int>? ephemeralCardIds = null)
+        public static CardCycleResult DiscardHand(CardCycleState source, IReadOnlyCollection<int>? ephemeralCardIds = null,
+            IReadOnlyCollection<int>? persistentCardIds = null)
         {
-            if (source.ExternalInteractions.Count > 0)
-                return new CardCycleResult(null, string.Join("; ", source.ExternalInteractions));
+            string[] unknown = source.ExternalInteractions.Where(interaction =>
+                !BattleTurnModel.IsDeferredPersistentDiscard(interaction)).ToArray();
+            if (unknown.Length > 0)
+                return new CardCycleResult(null, string.Join("; ", unknown));
             var ephemeral = new HashSet<int>(ephemeralCardIds ?? Array.Empty<int>());
-            if (ephemeral.Any(id => source.Hand.All(card => card.InstanceId != id)))
-                return new CardCycleResult(null, "An Ephemeral card is not in hand.");
+            var persistent = new HashSet<int>(persistentCardIds ?? Array.Empty<int>());
+            if (source.ExternalInteractions.Any(BattleTurnModel.IsDeferredPersistentDiscard) && persistent.Count == 0)
+                return new CardCycleResult(null, "Persistent discard requires captured hand identities.");
+            if (ephemeral.Concat(persistent).Any(id => source.Hand.All(card => card.InstanceId != id)))
+                return new CardCycleResult(null, "An Ephemeral or Persistent card is not in hand.");
             var discard = new List<CardToken>(); var purged = new List<CardToken>();
             foreach (CardToken card in source.Hand.Reverse())
+            {
+                if (persistent.Contains(card.InstanceId)) continue;
                 (ephemeral.Contains(card.InstanceId) ? purged : discard).Add(card);
-            return new CardCycleResult(new CardCycleState(Array.Empty<CardToken>(), source.Draw,
+            }
+            return new CardCycleResult(new CardCycleState(source.Hand.Where(card => persistent.Contains(card.InstanceId)).ToArray(), source.Draw,
                 source.Discard.Concat(discard).ToArray(), source.Rng, source.DrawModifier,
                 source.ExternalInteractions, source.BonusDraw, source.NextDrawUpgrades, source.NextUpgradeReferenceId), purgedCards: purged);
         }

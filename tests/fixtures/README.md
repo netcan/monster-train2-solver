@@ -1,13 +1,19 @@
 # Native regression fixtures
 
+`full-battle-choose-discard-persistent.mt2f` keeps original `ScrapMetal` after
+`FoundryLine` and verifies that it remains in hand over six nonterminal turns.
+Its one action, 13 card cycles, seven EndTurns and 52 room stages match native
+state; six choice branches and bounded serial/four-worker search pass with zero
+unsupported transitions. The 22,534-byte binary is listed in `manifest.tsv`.
+
 `full-battle-choose-discard-refine.mt2f` records unchanged `FoundryLine`
 consuming original Refine-3 `ScrapMetal`. The original action, six keep-one
 branches, 52 stages and seven EndTurns match, with zero native differences.
 Its 23,022-byte binary and SHA-256 are recorded in `manifest.tsv`. Bounded
 serial/four-worker search agrees on the best score, path and replayed state;
-the two modes use 128 and 117 nodes, respectively. The four room-play attempts
+the two modes now use 128 nodes each. The four room-play attempts
 for Unplayable `ScrapMetal` are illegal, leaving zero unsupported root actions.
-A deeper Persistent EndTurn and the search limits leave optimality unproven.
+The search limits still leave optimality unproven.
 
 `full-battle-choose-discard-others-policy.mt2f` records unchanged `FoundryLine`
 followed by 18 policy plays. Its 55 stages, seven EndTurns and 19 card actions

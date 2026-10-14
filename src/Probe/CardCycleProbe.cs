@@ -98,6 +98,9 @@ namespace MonsterTrain2Poju.Probe
                     int[] ephemeralCardIds = kind == "Discard" ? cards.GetHand()
                         .Where(card => card.GetTraitStates().Any(trait => trait is CardTraitEphemeral))
                         .Select(trace.CardId).ToArray() : Array.Empty<int>();
+                    int[] persistentCardIds = kind == "Discard" ? cards.GetHand()
+                        .Where(card => card.GetTraitStates().Any(trait => trait is CardTraitPersistent))
+                        .Select(trace.CardId).ToArray() : Array.Empty<int>();
                     int[] purgedBefore = kind == "Discard" ? cards.GetPurgedPile().Select(trace.CardId).ToArray() : Array.Empty<int>();
                     CombatContext? standbyContext = kind == "Draw" ? trace.CaptureContext() : null;
                     int[]? livingIds = kind == "Draw" ? trace.CaptureTrain().Rooms.SelectMany(room => room.Units).Select(unit => unit.Id).ToArray() : null;
@@ -109,9 +112,9 @@ namespace MonsterTrain2Poju.Probe
                         Index = records.Count, Turn = managers.GetCombatManager()!.GetTurnCount(), Kind = kind,
                         HandSize = handSize, MaxHandSize = cards.GetMaxHandSize(), Before = before,
                         StandbyContext = standbyContext, LivingUnitIds = livingIds,
-                        EphemeralCardIds = ephemeralCardIds, PurgedBefore = purgedBefore,
+                        EphemeralCardIds = ephemeralCardIds, PersistentCardIds = persistentCardIds, PurgedBefore = purgedBefore,
                         Predicted = kind == "Draw" ? CardCycleModel.DrawHand(prepared, handSize, cards.GetMaxHandSize())
-                            : CardCycleModel.DiscardHand(before, ephemeralCardIds)
+                            : CardCycleModel.DiscardHand(before, ephemeralCardIds, persistentCardIds)
                     };
                     records.Add(record);
                 }
@@ -183,6 +186,7 @@ namespace MonsterTrain2Poju.Probe
             public CombatContext? StandbyContext { get; set; }
             public int[]? LivingUnitIds { get; set; }
             public int[] EphemeralCardIds { get; set; } = Array.Empty<int>();
+            public int[] PersistentCardIds { get; set; } = Array.Empty<int>();
             public int[] PurgedBefore { get; set; } = Array.Empty<int>();
             public int[] PurgedActual { get; set; } = Array.Empty<int>();
             public CardCycleResult Predicted { get; set; } = null!;

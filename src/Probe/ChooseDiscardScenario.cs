@@ -13,6 +13,7 @@ namespace MonsterTrain2Poju.Probe
         internal const string OthersName = "card-effect-choose-discard-others";
         internal const string OthersPolicyName = "card-effect-choose-discard-others-policy";
         internal const string RefineName = "card-effect-choose-discard-refine";
+        internal const string PersistentName = "card-effect-choose-discard-persistent";
         private const string ScrapId = "bc4cd099-93df-4771-ae72-4984fc50ab9f";
         private const string FoundryLineId = "26651f53-95d0-4802-b710-51d23bf89bbd";
         private const string ScrapMetalId = "d4f0ff05-1fe1-483c-adda-928a8b05808c";
@@ -24,8 +25,9 @@ namespace MonsterTrain2Poju.Probe
         private static ManualLogSource? logger;
         internal static bool OthersPolicyMode => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == OthersPolicyName;
         internal static bool RefineMode => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == RefineName;
-        internal static bool OthersMode => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") is OthersName or OthersPolicyName or RefineName;
-        internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") is Name or OthersName or OthersPolicyName or RefineName;
+        internal static bool PersistentMode => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == PersistentName;
+        internal static bool OthersMode => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") is OthersName or OthersPolicyName or RefineName or PersistentName;
+        internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") is Name or OthersName or OthersPolicyName or RefineName or PersistentName;
 
         internal static void Prepare(AllGameManagers managers, ManualLogSource log)
         {
@@ -58,22 +60,23 @@ namespace MonsterTrain2Poju.Probe
             }
             Add(one);
             CardState selected = Add(two);
-            if (RefineMode)
+            CardState? persistent = null;
+            if (RefineMode || PersistentMode)
             {
                 CardData scrapMetal = save.GetAllGameData().FindCardData(ScrapMetalId) ??
                     throw new InvalidOperationException("Original ScrapMetal is missing.");
                 if (scrapMetal.name != "ScrapMetal" || scrapMetal.GetCost() != 0 ||
                     scrapMetal.GetTraits().Single(trait => trait.GetTraitStateName() == "CardTraitRefine").GetParamInt() != 3)
                     throw new InvalidOperationException("Original ScrapMetal Refine definition changed.");
-                CardState refined = Add(scrapMetal);
-                log.LogInfo("CHOOSE-DISCARD-REFINE card=" + FullBattleTrace.Active!.CardId(refined) + " bonus=3");
+                persistent = Add(scrapMetal);
+                log.LogInfo("CHOOSE-DISCARD-REFINE card=" + FullBattleTrace.Active!.CardId(persistent) + " bonus=3");
             }
             CardState source = Add(sourceData);
-            selectedId = FullBattleTrace.Active!.CardId(selected);
+            selectedId = FullBattleTrace.Active!.CardId(PersistentMode ? persistent! : selected);
             sourceId = FullBattleTrace.Active.CardId(source);
             chosenOnce = false;
             log.LogInfo("CHOOSE-DISCARD-PREPARED " + sourceName + "=" + sourceId + " selected=" + selectedId +
-                " selectedCost=2 otherCost=1");
+                " selectedCost=" + (PersistentMode ? 0 : 2) + " otherCost=1");
         }
 
         internal static PlayCardAction? Choose(BattleTurnState state)

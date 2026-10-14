@@ -74,8 +74,10 @@ internal static class ChooseDiscardChecks
     {
         string scenario = root.GetProperty("ModifierScenario").GetString()!;
         bool refined = scenario == "card-effect-choose-discard-refine";
+        bool persistent = scenario == "card-effect-choose-discard-persistent";
         Require(scenario is "card-effect-choose-discard-others" or
-            "card-effect-choose-discard-others-policy" or "card-effect-choose-discard-refine",
+            "card-effect-choose-discard-others-policy" or "card-effect-choose-discard-refine" or
+            "card-effect-choose-discard-persistent",
             "This fixture did not run the original keep-one smelt scenario.");
         FixtureValue[] actions = root.GetProperty("Actions").EnumerateArray().ToArray();
         Require(actions.Length > 0 && actions[0].GetProperty("ScenarioAction").GetBoolean(),
@@ -91,14 +93,15 @@ internal static class ChooseDiscardChecks
             action.RecursionSelections[0].CardInstanceIds.Count == 1,
             "The original FoundryLine choice was not captured by card identity.");
         int keptId = action.RecursionSelections[0].CardInstanceIds[0];
-        Require(input.Cards.Hand.Single(card => card.InstanceId == keptId).DataId == TwoCostId &&
+        Require(input.Cards.Hand.Single(card => card.InstanceId == keptId).DataId ==
+                (persistent ? ScrapMetalId : TwoCostId) &&
             input.Cards.Hand.Any(card => card.DataId == OneCostId),
             "The native keep-one choice did not distinguish the candidate costs.");
         CardActionEffect effect = before.PlayRules!.Cards.Single(card => card.DataId == FoundryLineId).Effects.Single();
         Require(effect.Type == "ChooseDiscard" && effect.Value == 2 && effect.ChooseDiscard?.Condition == 5 &&
             effect.ChooseDiscard.GainEmberForCost && !effect.ChooseDiscard.HasReplacementPool,
             "The captured card differs from the original FoundryLine definition.");
-        if (refined)
+        if (refined || persistent)
         {
             CardToken scrap = input.Cards.Hand.Single(card => card.DataId == ScrapMetalId);
             CardInstanceState original = input.FindCard(scrap.InstanceId)!;
@@ -117,13 +120,14 @@ internal static class ChooseDiscardChecks
                 "Original Unplayable ScrapMetal leaked into the supported or unmodeled action frontier.");
             Require(before.ExternalInteractions.Contains("CardTraitPersistent Discard callback") &&
                 before.ExternalInteractions.Contains("CardTraitPersistent discard routing") &&
-                BattleTurnModel.EndTurn(before).Supported == false &&
-                actual.ExternalInteractions.All(interaction => !interaction.StartsWith("CardTraitPersistent", StringComparison.Ordinal)),
-                "Persistent discard handling was not deferred until EndTurn or cleared after smelting ScrapMetal.");
+                (persistent ? actual.ExternalInteractions.Contains("CardTraitPersistent discard routing") :
+                    actual.ExternalInteractions.All(interaction =>
+                        !interaction.StartsWith("CardTraitPersistent", StringComparison.Ordinal))),
+                "Persistent discard metadata did not follow ScrapMetal's hand membership.");
         }
         int SmeltCost(CardToken card) => (input.FindCard(card.InstanceId)!.RawCostOverride ??
             input.FindCard(card.InstanceId)!.MaskDescriptor!.BaseCost) +
-            (refined && card.DataId == ScrapMetalId ? 3 : 0);
+            (card.DataId == ScrapMetalId ? 3 : 0);
         CardToken[] consumed = input.Cards.Hand.Where(card => card.InstanceId != action.CardInstanceId &&
             card.InstanceId != keptId).ToArray();
         int forge = consumed.Sum(SmeltCost);
@@ -158,14 +162,24 @@ internal static class ChooseDiscardChecks
                 branch.Cards.Hand.Any(card => card.InstanceId == kept),
                 "A FoundryLine branch kept the wrong card or granted the wrong Forge amount.");
         }
-        if (refined)
+        if (refined || persistent)
         {
             int scrapId = input.Cards.Hand.Single(card => card.DataId == ScrapMetalId).InstanceId;
             BattleTurnState keptScrap = choices.Single(choice =>
                 choice.Action.RecursionSelections[0].CardInstanceIds.Single() == scrapId).Result.State!;
+            BattleTurnResult retained = BattleTurnModel.EndTurn(keptScrap);
             Require(keptScrap.ExternalInteractions.Contains("CardTraitPersistent discard routing") &&
-                !BattleTurnModel.EndTurn(keptScrap).Supported,
-                "Keeping ScrapMetal cleared its unresolved EndTurn discard behavior.");
+                retained.Supported && retained.State!.Spawn.Train.Context!.Cards.Hand.Any(card =>
+                    card.InstanceId == scrapId),
+                "Keeping ScrapMetal failed to retain it through EndTurn: " + retained.UnsupportedReason);
+        }
+        if (persistent)
+        {
+            FixtureValue[] turns = root.GetProperty("Turns").EnumerateArray().ToArray();
+            Require(turns.Length == 7 && turns.Take(6).All(turn =>
+                turn.GetProperty("Actual").Deserialize<BattleTurnState>()!.Spawn.Train.Context!.Cards.Hand
+                    .Any(card => card.InstanceId == keptId)),
+                "Original Persistent ScrapMetal did not remain in hand across the native decision turns.");
         }
         if (root.GetProperty("ModifierScenario").GetString() == "card-effect-choose-discard-others-policy")
         {
@@ -188,7 +202,8 @@ internal static class ChooseDiscardChecks
                 "The independent post-combat model did not consume one Stealth stack and focus its floor.");
         }
         Console.WriteLine("CHOOSE-DISCARD-OTHERS-NATIVE PASS: original FoundryLine kept one card, consumed " +
-            consumed.Length + " others" + (refined ? " including Refine-3 ScrapMetal" : "") +
+            consumed.Length + " others" + (refined ? " including Refine-3 ScrapMetal" :
+                persistent ? " while keeping Persistent ScrapMetal" : "") +
             " and enumerated " + choices.Length + " ordered search branches.");
     }
 

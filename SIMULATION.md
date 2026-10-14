@@ -1,10 +1,26 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-15): 302 binary archives, including 271
+Current accepted inventory (2026-10-15): 303 binary archives, including 272
 full battles and 31 component calibrations. Unchanged original relic evidence
 covers 78/224 catalog entries (34.82%); see
 [the owner evidence table](tests/fixtures/relic-coverage.md). Whole-battle
 coverage and the optimal solver remain in progress.
+
+### Original Persistent hand retention across turns
+
+`full-battle-choose-discard-persistent.mt2f` plays unchanged `FoundryLine` and
+keeps unchanged `ScrapMetal` in hand. Native `DiscardHand` skips the Persistent
+card before discard callbacks, so the model retains its hand membership without
+calling `OnDiscard` or incrementing discard statistics. The independent model
+matches the original action, 13 card cycles, seven EndTurns and 52 room stages; the card
+remains in hand through the six nonterminal turns. Six ordered keep-one branches
+and the 128-node serial/four-worker search agree on the replayed best state,
+with zero unsupported search transitions. The muted Instant capture has zero
+failures, mismatches, unsupported transitions or pending records. The 22,534-byte
+archive has 3,258 unique nodes and SHA-256
+`70728d328414fa0b3f5a7e4863888cf5d0227392407f74d5a12e2872b097f7be`.
+The search still reaches its node/turn limit, so optimality is unproven.
+Temporarily upgraded Persistent cards still need native evidence.
 
 ### Original ScrapMetal Refine during bulk smelt
 
@@ -12,18 +28,16 @@ coverage and the optimal solver remain in progress.
 unchanged, unupgraded `ScrapMetal` in hand. Its zero base cost plus Refine 3
 adds three Forge Points and three Ember when consumed. The independent action
 matches native state, and all six ordered keep-one choices preserve the correct
-Forge amount. `Persistent` blocks unsupported EndTurn discard while ScrapMetal
-remains in hand, but does not block a card play that consumes it. The muted
+Forge amount. `Persistent` would retain ScrapMetal at EndTurn, but does not
+block a card play that consumes it. The muted
 Instant battle matches one action, seven EndTurns and 52 stages with zero
 capture failures, mismatches, unsupported transitions or pending records.
 The 23,022-byte binary has 3,293 unique nodes and SHA-256
 `17a4a9ca3437e7df53986399a179164a7587a93b417a8111d7d97d8991faaf1c`.
 The 128-node serial/four-worker search agrees on best score, path and replayed
-state. Serial search visits 128 nodes while parallel search visits 117 because
-its root budgets are allocated independently; their node counts need not match.
+state. Both modes now visit 128 nodes after Persistent EndTurn became modeled.
 Original `ScrapMetal` is Unplayable, so its four room-play attempts are illegal
-and no longer appear as unsupported root actions. A deeper branch that keeps
-its Persistent trait still has an unsupported EndTurn, and both searches hit
+and no longer appear as unsupported root actions. Both searches still hit
 their horizon or node limit, so this does not establish global optimality.
 Upgrade-added Refine, room modifiers and additional-smelt Ember relics remain
 unmodeled.

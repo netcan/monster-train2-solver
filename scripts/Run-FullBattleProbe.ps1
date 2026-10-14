@@ -29,6 +29,7 @@ param(
     [switch] $ChooseDiscardOthers,
     [switch] $ChooseDiscardOthersPolicy,
     [switch] $ChooseDiscardRefine,
+    [switch] $ChooseDiscardPersistent,
     [switch] $RemoveAllStatusEffects,
     [switch] $DragonHoard,
     [switch] $TrainHeal,
@@ -375,6 +376,7 @@ if ($ChooseDiscard) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk
 if ($ChooseDiscardOthers) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($ChooseDiscardOthersPolicy) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($ChooseDiscardRefine) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
+if ($ChooseDiscardPersistent) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($RemoveAllStatusEffects) { $Policy = 'units-spells-and-junk' }
 if ($DragonHoard) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($TrainHeal) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
@@ -555,6 +557,7 @@ if ($ChooseDiscard) { $environment['MT2_PROBE_MODIFIERS'] = 'card-effect-choose-
 if ($ChooseDiscardOthers) { $environment['MT2_PROBE_MODIFIERS'] = 'card-effect-choose-discard-others' }
 if ($ChooseDiscardOthersPolicy) { $environment['MT2_PROBE_MODIFIERS'] = 'card-effect-choose-discard-others-policy' }
 if ($ChooseDiscardRefine) { $environment['MT2_PROBE_MODIFIERS'] = 'card-effect-choose-discard-refine' }
+if ($ChooseDiscardPersistent) { $environment['MT2_PROBE_MODIFIERS'] = 'card-effect-choose-discard-persistent' }
 if ($RemoveAllStatusEffects) { $environment['MT2_PROBE_MODIFIERS'] = 'remove-all-status-effects' }
 if ($DragonHoard) { $environment['MT2_PROBE_MODIFIERS'] = 'dragon-hoard' }
 if ($TrainHeal) { $environment['MT2_PROBE_MODIFIERS'] = 'train-heal' }
@@ -741,6 +744,12 @@ if ($ChooseDiscardRefine -and ($trace.ModifierScenario -ne 'card-effect-choose-d
     -not (Select-String -LiteralPath $unityLog -Pattern 'CHOOSE-DISCARD-AUTOSELECT card=\d+ cost=2' -Quiet) -or
     @($trace.Actions | Where-Object ScenarioAction).Count -ne 1)) {
     throw 'Original FoundryLine did not consume the Refine-3 ScrapMetal card in the native battle.'
+}
+if ($ChooseDiscardPersistent -and ($trace.ModifierScenario -ne 'card-effect-choose-discard-persistent' -or
+    -not (Select-String -LiteralPath $unityLog -Pattern 'CHOOSE-DISCARD-REFINE card=\d+ bonus=3' -Quiet) -or
+    -not (Select-String -LiteralPath $unityLog -Pattern 'CHOOSE-DISCARD-AUTOSELECT card=\d+ cost=0' -Quiet) -or
+    @($trace.Actions | Where-Object ScenarioAction).Count -ne 1)) {
+    throw 'Original FoundryLine did not keep the Persistent ScrapMetal card in the native battle.'
 }
 if ($RemoveAllStatusEffects -and ($trace.Schema -ne 164 -or $trace.ModifierScenario -ne 'remove-all-status-effects' -or
     -not (Select-String -LiteralPath $unityLog -Pattern 'REMOVE-ALL-STATUS-SEEDED card=.* hidden=' -Quiet) -or
