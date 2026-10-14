@@ -60,6 +60,7 @@ param(
     [switch] $CardRecursionUpgradeChoose,
     [switch] $CardRecursionUpgradeFilterChoose,
     [switch] $CardRecursionUpgradeReplacementChoose,
+    [switch] $Mix,
     [switch] $HandUpgrades,
     [switch] $TargetedHandUpgrades,
     [switch] $PermanentConsumeHandUpgrades,
@@ -404,6 +405,7 @@ if ($ConditionalPyreDamage) { $Policy = 'units-spells-and-junk' }
 if ($SoulSiphon) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($StatusUpgrade) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($CardRecursion -or $CardRecursionDiscard -or $CardRecursionChoose -or $CardRecursionChooseToHand -or $CardRecursionChooseFilter -or $CardRecursionUpgrade -or $CardRecursionUpgradeToHand -or $CardRecursionUpgradeChoose -or $CardRecursionUpgradeFilterChoose -or $CardRecursionUpgradeReplacementChoose) { $Policy = 'units-spells-and-junk'; $BranchCardMasks = $true }
+if ($Mix) { $Policy = 'units-spells-and-junk'; $BranchCardMasks = $true }
 if ($SpawnOrStatus) { $Policy = 'units-and-junk' }
 if ($AbilityTeleport) { $Policy = 'units-and-junk'; $PhysicalSpawnPoints = $true }
 if ($damagePerHpModes.Count -gt 0) { $Policy = 'units-spells-and-junk' }
@@ -562,6 +564,7 @@ if ($DamageByUnitsKilled) { $environment['MT2_PROBE_MODIFIERS'] = 'damage-by-uni
 if ($TransferAttack) { $environment['MT2_PROBE_MODIFIERS'] = 'transfer-attack' }
 if ($BrainTransfer) { $environment['MT2_PROBE_MODIFIERS'] = 'brain-transfer' }
 if ($FrostChanneling) { $environment['MT2_PROBE_MODIFIERS'] = 'frost-channeling' }
+if ($Mix) { $environment['MT2_PROBE_MODIFIERS'] = 'card-effect-mix' }
 if ($TransferAttackAbility) { $environment['MT2_PROBE_MODIFIERS'] = 'transfer-attack-ability' }
 if ($CardEffectKill -or $CardEffectKillSubtype) {
     $environment['MT2_PROBE_MODIFIERS'] = if ($CardEffectKillSubtype) { 'card-effect-kill-subtype' } else { 'card-effect-kill' }

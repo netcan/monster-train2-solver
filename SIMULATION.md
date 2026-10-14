@@ -657,6 +657,24 @@ dotnet run --project src/ModelChecks -c Release -- --relic-spawn-status-only tes
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-spawn-status-relics-tuned-gear.mt2f
 ```
 
+### Mix draft native evidence (model pending)
+
+`pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Mix` plays the unchanged
+`Mixology` definition in the isolated, muted Instant battle. The probe chooses
+the first original UI option at each of its two Mix effects and logs every
+offered card/upgrade plus the card actually added to hand. The 2026-10-15 run
+under `.probe-runs/full-battle-units-spells-and-junk-20261015-024659-64db1f8f`
+observed two new-elixir offers followed by two upgrade offers. The first choice
+created card 17 with one `Infusion_UnstableSingle` upgrade; the second moved that
+card out of hand and created card 18 with two copies of the upgrade. The native
+battle won, with zero capture failures and mismatches, but the differential run
+failed with 15 unsupported records: the Mix play is not modeled and the resulting
+`CardTraitInfusion` has unsupported discard behavior. This capture is evidence
+for the next implementation, not an accepted regression fixture or card-coverage
+claim. The original Mix code also draws offers and initial upgrades from Battle
+RNG, retains the previous selected card/upgrade, and lets relics change draft
+count and size; those rules still require model state and native comparison.
+
 ### BalatroEventChicot Mute relic (schema 156)
 
 `full-battle-spawn-status-relics-boss-mute.mt2f` captures the unchanged Chicot
