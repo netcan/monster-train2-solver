@@ -43,6 +43,7 @@ param(
     [switch] $Corruption,
     [switch] $CorruptionUnitTrigger,
     [switch] $CorruptionCarverTrigger,
+    [switch] $CorruptionKeeperTrigger,
     [switch] $PermanentCorruption,
     [switch] $MoonPhaseCard,
     [switch] $MoonPhaseAdvance,
@@ -425,6 +426,7 @@ if ($Overheal) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($Corruption) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($CorruptionUnitTrigger) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($CorruptionCarverTrigger) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
+if ($CorruptionKeeperTrigger) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($PermanentCorruption) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($MoonPhaseCard) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($MoonPhaseAdvance) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
@@ -627,6 +629,7 @@ if ($Overheal) { $environment['MT2_PROBE_MODIFIERS'] = 'overheal' }
 if ($Corruption) { $environment['MT2_PROBE_MODIFIERS'] = 'corruption' }
 if ($CorruptionUnitTrigger) { $environment['MT2_PROBE_MODIFIERS'] = 'corruption-unit-trigger' }
 if ($CorruptionCarverTrigger) { $environment['MT2_PROBE_MODIFIERS'] = 'corruption-carver-trigger' }
+if ($CorruptionKeeperTrigger) { $environment['MT2_PROBE_MODIFIERS'] = 'corruption-keeper-trigger' }
 if ($PermanentCorruption) { $environment['MT2_PROBE_MODIFIERS'] = 'permanent-corruption' }
 if ($MoonPhaseCard) { $environment['MT2_PROBE_MODIFIERS'] = 'moon-phase-card' }
 if ($MoonPhaseAdvance) { $environment['MT2_PROBE_MODIFIERS'] = 'moon-phase-advance' }
@@ -895,6 +898,37 @@ if ($CorruptionCarverTrigger) {
         throw 'Original Shardsoul Carver did not receive its corruption-triggered attack upgrade and Armor.'
     }
     Write-Output 'NATIVE-CORRUPTION-CARVER-TRIGGER PASS: original Carver gained temporary +3 attack and +3 Armor.'
+}
+if ($CorruptionKeeperTrigger) {
+    $keeperActions = @($trace.Actions | Where-Object { $_.ScenarioAction })
+    $roomUpgrade = @($keeperActions | Where-Object {
+        $entry = $_
+        $before = $entry.Before.Spawn.Train
+        $after = $entry.Actual.Spawn.Train
+        $card = @($before.Context.Cards.Hand | Where-Object InstanceId -EQ $entry.Action.CardInstanceId)
+        $keeper = @($before.Rooms.Units | Where-Object AssetKey -EQ 'MonsterKeeperOfEchoes')
+        $teammate = @($before.Rooms.Units | Where-Object { $_.AssetKey -like 'TrainSteward*' })
+        if ($card.Count -ne 1 -or $keeper.Count -ne 1 -or $teammate.Count -ne 1) { return $false }
+        $trigger = @($keeper[0].Triggers | Where-Object Kind -EQ 'CorruptionAdded')
+        if ($trigger.Count -ne 1) { return $false }
+        $upgradeId = $trigger[0].Effects[0].UnitUpgrade.Upgrade.DataId
+        if (-not $upgradeId) { return $false }
+        $oldUnits = @($keeper[0], $teammate[0])
+        $newUnits = @($oldUnits | ForEach-Object {
+            $id = $_.Id
+            $after.Rooms.Units | Where-Object Id -EQ $id
+        })
+        $card[0].DataId -eq '17fb5276-2311-44c9-b662-b73581d9af56' -and
+            $newUnits.Count -eq 2 -and
+            @($oldUnits | Where-Object { @($_.Modifiers.Upgrades | Where-Object DataId -EQ $upgradeId).Count -ne 0 }).Count -eq 0 -and
+            @($newUnits | Where-Object { @($_.Modifiers.Upgrades | Where-Object DataId -EQ $upgradeId).Count -ne 1 }).Count -eq 0
+    })
+    if ($trace.ModifierScenario -ne 'corruption-keeper-trigger' -or
+        $keeperActions.Count -ne 2 -or $roomUpgrade.Count -ne 1 -or
+        -not (Select-String -LiteralPath $unityLog -Pattern 'CORRUPTION-KEEPER-DEFINITION cost=2 attack=5 hp=20 upgrade=WurmTransfuserTrigger' -Quiet)) {
+        throw 'Original Keeper of Echoes did not upgrade both same-room units on corruption addition.'
+    }
+    Write-Output 'NATIVE-CORRUPTION-KEEPER-TRIGGER PASS: original Keeper upgraded itself and Train Steward.'
 }
 if ($PermanentCorruption -and ($trace.ModifierScenario -ne 'permanent-corruption' -or
     -not (Select-String -LiteralPath $unityLog -Pattern 'PERMANENT-CORRUPTION-PREPARED card=\d+ room=0 current=\d+ max=\d+ permanent=\d+' -Quiet) -or

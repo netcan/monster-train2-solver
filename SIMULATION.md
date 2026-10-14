@@ -1,12 +1,19 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-15): 324 binary archives, including 293
+Current accepted inventory (2026-10-15): 325 binary archives, including 294
 full battles and 31 component calibrations. Unchanged original relic evidence
 covers 81/224 catalog entries (36.16%); see
 [the owner evidence table](tests/fixtures/relic-coverage.md). Whole-battle
 coverage and the optimal solver remain in progress.
 
-The latest original-unit witness plays unchanged Shardsoul Carver, then raises
+The latest original-unit witness plays unchanged Keeper of Echoes and Train
+Steward in the same room. Unearthed Remains raises Corruption and triggers the
+Keeper's room-targeted `WurmTransfuserTrigger` temporary upgrade on both units;
+Echoes of the Past removes Corruption without reapplying it. The 54-stage native
+battle has 21 matched actions and six EndTurns, and bounded serial/parallel
+searches agree. This adds unit-trigger evidence, not an original relic owner.
+
+The preceding original-unit witness plays unchanged Shardsoul Carver, then raises
 Corruption with Unearthed Remains. Before Corruption changes from 0 to 1, its
 `CorruptionAdded` callback installs a temporary +3 Attack upgrade and adds
 3 Armor; removing Corruption does not reapply the callback. The 41-stage native

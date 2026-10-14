@@ -8,6 +8,8 @@ internal static class RoomCorruptionChecks
     private const string EchoesId = "78996030-e8d1-4731-897e-ee4b809fa26c";
     private const string GlugsiderId = "e83182b1-ae94-4f7e-b7fe-aea5b825ecbe";
     private const string CarverId = "8cd475e4-6e39-4306-b544-026bf30f4eac";
+    private const string KeeperId = "1acb9146-44b9-476c-a30e-5778750710a1";
+    private const string StewardId = "d14a50f3-728d-43e1-87f0-ef1b013f6678";
 
     internal static void Run()
     {
@@ -235,6 +237,70 @@ internal static class RoomCorruptionChecks
         BattleTurnChecks.Native(fixture);
         BattleSearchChecks.Native(fixture);
         Console.WriteLine("NATIVE-CORRUPTION-CARVER-TRIGGER PASS: original temporary +3 attack and +3 armor callback.");
+    }
+
+    internal static void NativeKeeper(FixtureValue fixture)
+    {
+        Require(fixture.GetProperty("Schema").GetInt32() == 103 &&
+            fixture.GetProperty("ModifierScenario").GetString() == "corruption-keeper-trigger" &&
+            fixture.GetProperty("NativeWon").GetBoolean() &&
+            new[] { "CaptureFailures", "Mismatches", "Unsupported", "Pending" }
+                .All(name => fixture.GetProperty(name).GetInt32() == 0),
+            "Original Keeper of Echoes battle did not finish with a complete native match.");
+        FixtureValue[] marked = fixture.GetProperty("Actions").EnumerateArray()
+            .Where(record => record.GetProperty("ScenarioAction").GetBoolean()).ToArray();
+        Require(marked.Length == 2, "Expected original corruption addition and removal actions.");
+        BattleTurnState before = marked[0].GetProperty("Before").Deserialize<BattleTurnState>()!;
+        BattleTurnState actual = marked[0].GetProperty("Actual").Deserialize<BattleTurnState>()!;
+        PlayCardAction action = marked[0].GetProperty("Action").Deserialize<PlayCardAction>()!;
+        CombatUnit[] oldUnits = before.Spawn.Train.Rooms.Single(room => room.RoomIndex == 0).Units
+            .Where(unit => unit.AssetKey == "MonsterKeeperOfEchoes" ||
+                unit.AssetKey.StartsWith("TrainSteward", StringComparison.Ordinal)).ToArray();
+        CombatUnit[] newUnits = actual.Spawn.Train.Rooms.Single(room => room.RoomIndex == 0).Units
+            .Where(unit => oldUnits.Any(old => old.Id == unit.Id)).ToArray();
+        CombatUnit keeper = oldUnits.Single(unit => unit.AssetKey == "MonsterKeeperOfEchoes");
+        CombatUnit teammate = oldUnits.Single(unit => unit.AssetKey.StartsWith("TrainSteward", StringComparison.Ordinal));
+        CombatTrigger callback = keeper.Triggers.Single(trigger => trigger.Kind == "CorruptionAdded");
+        CardActionEffect? upgradeEffect = callback.Effects.Single().UnitUpgrade;
+        string? upgradeId = upgradeEffect?.Upgrade?.DataId;
+        RoomCapacityState oldCapacity = before.Spawn.Train.Context!.RoomCapacities!.Single(room => room.RoomIndex == 0);
+        RoomCapacityState newCapacity = actual.Spawn.Train.Context!.RoomCapacities!.Single(room => room.RoomIndex == 0);
+        Require(action.RoomIndex == 0 && oldUnits.Length == 2 && newUnits.Length == 2 &&
+            before.Spawn.Train.Context.FindCard(action.CardInstanceId)?.DataId == UnearthedId &&
+            before.Spawn.Train.Context.FindCard(keeper.SpawnerCardId)?.DataId == KeeperId &&
+            before.Spawn.Train.Context.FindCard(teammate.SpawnerCardId)?.DataId == StewardId &&
+            callback.Effects[0].Type == "CardEffectAddTempCardUpgradeToUnits" &&
+            upgradeEffect?.Target == "Room" && upgradeId is { Length: > 0 } &&
+            oldUnits.All(unit => unit.Modifiers!.Upgrades.All(upgrade => upgrade.DataId != upgradeId)) &&
+            newUnits.All(unit => unit.Modifiers!.Upgrades.Any(upgrade =>
+                upgrade.DataId == upgradeId && upgrade.Lifecycle != null)) &&
+            oldCapacity.Corruption == 0 && newCapacity.Corruption == 1 &&
+            oldCapacity.MaxCorruption == 4 && newCapacity.MaxCorruption == 5,
+            "Original Keeper callback did not give its room-wide temporary upgrade to both units: " +
+            $"upgrade={upgradeId}, units={oldUnits.Length}->{newUnits.Length}, " +
+            $"owned={string.Join(',', newUnits.Select(unit => unit.AssetKey + ':' +
+                string.Join('/', unit.Modifiers?.Upgrades.Select(upgrade => upgrade.DataId) ?? Array.Empty<string>())))}.");
+        BattleTurnState removeBefore = marked[1].GetProperty("Before").Deserialize<BattleTurnState>()!;
+        BattleTurnState removeAfter = marked[1].GetProperty("Actual").Deserialize<BattleTurnState>()!;
+        PlayCardAction removeAction = marked[1].GetProperty("Action").Deserialize<PlayCardAction>()!;
+        Require(removeBefore.Spawn.Train.Context!.FindCard(removeAction.CardInstanceId)?.DataId == EchoesId &&
+            removeBefore.Spawn.Train.Context.RoomCapacities!.Single(room => room.RoomIndex == 0).Corruption == 1 &&
+            removeAfter.Spawn.Train.Context!.RoomCapacities!.Single(room => room.RoomIndex == 0).Corruption == 0 &&
+            newUnits.All(unit =>
+            {
+                CombatUnit old = removeBefore.Spawn.Train.Rooms.Single(room => room.RoomIndex == 0).Units.Single(actor => actor.Id == unit.Id);
+                CombatUnit next = removeAfter.Spawn.Train.Rooms.Single(room => room.RoomIndex == 0).Units.Single(actor => actor.Id == unit.Id);
+                return old.Modifiers!.Upgrades.Count(upgrade => upgrade.DataId == upgradeId) ==
+                    next.Modifiers!.Upgrades.Count(upgrade => upgrade.DataId == upgradeId);
+            }),
+            "Removing corruption unexpectedly repeated the Keeper room-wide callback.");
+        BattleActionResult replay = BattleActionModel.PlayCard(before, action);
+        Require(replay.Supported && ModelJson.Difference(BattleTurnChecks.Comparable(replay.State!),
+            BattleTurnChecks.Comparable(actual)) == null,
+            "Original Keeper room-wide corruption callback differs from the native action.");
+        BattleTurnChecks.Native(fixture);
+        BattleSearchChecks.Native(fixture);
+        Console.WriteLine("NATIVE-CORRUPTION-KEEPER-TRIGGER PASS: two original units received the same temporary room upgrade.");
     }
 
     internal static void NativePermanent(FixtureValue fixture)

@@ -1343,7 +1343,7 @@ namespace MonsterTrain2Poju.Probe
                 (modifierScenario == "dragon-hoard" && DragonHoardScenario.IsScenarioAction(action)) ||
                 (modifierScenario == "train-heal" && TrainHealScenario.IsScenarioAction(action)) ||
                 (modifierScenario == "overheal" && OverhealScenario.IsScenarioAction(action)) ||
-                (modifierScenario is "corruption" or "corruption-unit-trigger" or "corruption-carver-trigger" &&
+                (modifierScenario is "corruption" or "corruption-unit-trigger" or "corruption-carver-trigger" or "corruption-keeper-trigger" &&
                     CorruptionScenario.IsScenarioAction(action)) ||
                 (modifierScenario == "permanent-corruption" && PermanentCorruptionScenario.IsScenarioAction(action)) ||
                 (modifierScenario == "moon-phase-card" && MoonPhaseCardScenario.IsScenarioAction(action)) ||

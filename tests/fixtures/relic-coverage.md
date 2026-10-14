@@ -22,7 +22,7 @@ All 33 source archives below report game `2.2.1`, module MVID
 byte lengths and SHA-256 hashes are recorded in [manifest.tsv](manifest.tsv).
 The floor-capacity batch passes strict native acceptance, complete-fixture checks,
 independent full-battle replay and six directly affected old-fixture regressions.
-The accepted inventory is 324 archives: 293 battles and 31 component
+The accepted inventory is 325 archives: 294 battles and 31 component
 calibrations, with no JSON companions. A 246-archive replay was
 attempted on 2026-10-13 but has not completed: legacy EndTurn snapshots can
 conflict with the current model's room `Enabled` state. Focused follow-up checks
@@ -34,8 +34,8 @@ archives remain strict. The Egg transformation archive now proves two native
 OnHatched sacrifice/summon chains after the already counted `EggHatchRemoval`
 effect. The original `KinhostVessel` card now has a separate native Hatch 8
 play/sacrifice/Pupa witness, including a separate two-combat path with permanent
-Corruption 4. Original Glugsider and Shardsoul Carver now have separate
-`CorruptionAdded` callback battles; neither adds a relic owner. The relic-owner
+Corruption 4. Original Glugsider, Shardsoul Carver and Keeper of Echoes now have
+separate `CorruptionAdded` callback battles; none adds a relic owner. The relic-owner
 count remains 81/224. The Mageblade
 status/cache/attack path has an accepted
 native battle archive, but Mageblade is not a collectable relic and is not
