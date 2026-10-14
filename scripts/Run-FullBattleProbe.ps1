@@ -62,6 +62,7 @@ param(
     [switch] $CardRecursionUpgradeReplacementChoose,
     [switch] $Mix,
     [switch] $MixAlternate,
+    [switch] $MixUnstableExplosion,
     [ValidateSet('00', '01', '10', '11')]
     [string] $MixChoices,
     [switch] $HandUpgrades,
@@ -410,6 +411,8 @@ if ($StatusUpgrade) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk
 if ($CardRecursion -or $CardRecursionDiscard -or $CardRecursionChoose -or $CardRecursionChooseToHand -or $CardRecursionChooseFilter -or $CardRecursionUpgrade -or $CardRecursionUpgradeToHand -or $CardRecursionUpgradeChoose -or $CardRecursionUpgradeFilterChoose -or $CardRecursionUpgradeReplacementChoose) { $Policy = 'units-spells-and-junk'; $BranchCardMasks = $true }
 if ($MixAlternate -and $MixChoices) { throw 'Choose either -MixAlternate or -MixChoices.' }
 if ($MixAlternate) { $MixChoices = '11' }
+if ($MixUnstableExplosion -and $MixChoices -and $MixChoices -ne '01') { throw 'Unstable explosion requires Mix choices 01.' }
+if ($MixUnstableExplosion) { $MixChoices = '01' }
 if ($MixChoices) { $Mix = $true }
 if ($Mix) { $Policy = 'units-spells-and-junk'; $BranchCardMasks = $true }
 if ($SpawnOrStatus) { $Policy = 'units-and-junk' }
@@ -572,6 +575,7 @@ if ($BrainTransfer) { $environment['MT2_PROBE_MODIFIERS'] = 'brain-transfer' }
 if ($FrostChanneling) { $environment['MT2_PROBE_MODIFIERS'] = 'frost-channeling' }
 if ($Mix) { $environment['MT2_PROBE_MODIFIERS'] = 'card-effect-mix' }
 if ($Mix) { $environment['MT2_PROBE_MIX_CHOICES'] = if ($MixChoices) { $MixChoices } else { '00' } }
+if ($MixUnstableExplosion) { $environment['MT2_PROBE_MIX_UNSTABLE_EXPLOSION'] = '1' }
 if ($TransferAttackAbility) { $environment['MT2_PROBE_MODIFIERS'] = 'transfer-attack-ability' }
 if ($CardEffectKill -or $CardEffectKillSubtype) {
     $environment['MT2_PROBE_MODIFIERS'] = if ($CardEffectKillSubtype) { 'card-effect-kill-subtype' } else { 'card-effect-kill' }

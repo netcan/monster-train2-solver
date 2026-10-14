@@ -21,6 +21,8 @@ namespace MonsterTrain2Poju.Probe
         private static int drafts;
         private static int firstOpeningChoice;
         private static int secondOpeningChoice;
+        private static bool explosionWitness;
+        private static bool seededPoison;
         private static IReadOnlyList<ElixirMixSelection> pendingSelections = Array.Empty<ElixirMixSelection>();
         private static int pendingSelectionIndex;
 
@@ -29,12 +31,16 @@ namespace MonsterTrain2Poju.Probe
             logger = log;
             played = false;
             playedOpeningElixirId = 0;
+            seededPoison = false;
             drafts = 0;
             string opening = Environment.GetEnvironmentVariable("MT2_PROBE_MIX_CHOICES") ?? "00";
             if (opening.Length != 2 || opening.Any(choice => choice != '0' && choice != '1'))
                 throw new InvalidOperationException("Mix opening choices must contain two binary indices.");
             firstOpeningChoice = opening[0] - '0';
             secondOpeningChoice = opening[1] - '0';
+            explosionWitness = Environment.GetEnvironmentVariable("MT2_PROBE_MIX_UNSTABLE_EXPLOSION") == "1";
+            if (explosionWitness && opening != "01")
+                throw new InvalidOperationException("Unstable explosion fixture requires Mix choices 01.");
             pendingSelections = Array.Empty<ElixirMixSelection>();
             pendingSelectionIndex = 0;
             CardManager cards = managers.GetCardManager()!;
@@ -80,6 +86,27 @@ namespace MonsterTrain2Poju.Probe
                         return new PlayCardAction(elixir.InstanceId, target.RoomIndex, targetUnitId: target.unit.Id);
                     }
                 }
+            }
+            if (explosionWitness && !seededPoison && playedOpeningElixirId != 0 && state.Spawn.Turn == 1)
+            {
+                RoomCombatState room = state.Spawn.Train.Rooms.Single(item => item.RoomIndex == 0);
+                CombatUnit target = room.Units.Single(unit => unit.Team == CombatTeam.Player &&
+                    unit.Status("unstable")?.Stacks == 5);
+                if (!room.Units.Any(unit => unit.Team == CombatTeam.Enemy))
+                    throw new InvalidOperationException("Unstable explosion fixture requires an enemy in the target room.");
+                var nativeUnits = new List<CharacterState>();
+                AllGameManagers.Instance!.GetRoomManager()!.GetRoom(0).AddCharactersToList(nativeUnits,
+                    Team.Type.Heroes | Team.Type.Monsters);
+                CharacterState nativeTarget = nativeUnits.Single(unit => FullBattleTrace.Active!.UnitId(unit) == target.Id);
+                int prior = nativeTarget.GetStatusEffectStacks("poison");
+                nativeTarget.AddStatusEffect("poison", 12, triggeredByCharacter: null,
+                    allowModification: false, isFromHiddenTrigger: true);
+                if (nativeTarget.GetStatusEffectStacks("poison") != prior + 12)
+                    throw new InvalidOperationException("Original Frostbite seeding did not add twelve stacks.");
+                seededPoison = true;
+                logger!.LogInfo("MIX-UNSTABLE-EXPLOSION-SEEDED unit=" + target.Id +
+                    " room=0 poison=" + prior + "->" + nativeTarget.GetStatusEffectStacks("poison") +
+                    " enemies=" + room.Units.Count(unit => unit.Team == CombatTeam.Enemy));
             }
             if (playedOpeningElixirId != 0 && state.Spawn.Train.Rooms.SelectMany(room => room.Units)
                 .Any(unit => unit.Team == CombatTeam.Player && unit.Status("unstable")?.Stacks > 0))

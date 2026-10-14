@@ -1,6 +1,13 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
 
+if (args.Length == 2 && args[0] == "--unstable-explosion-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    UnstableExplosionChecks.Native(fixture.RootElement);
+    return;
+}
+
 if (args.Length == 2 && args[0] == "--mix-catalog-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
