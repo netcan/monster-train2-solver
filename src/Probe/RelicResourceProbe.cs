@@ -44,6 +44,7 @@ namespace MonsterTrain2Poju.Probe
         internal static readonly List<Operation> Operations = new List<Operation>();
         private static Operation? energyOperation;
         private static bool dragonHoardResourceObserved;
+        private static bool trainHealResourceObserved;
 
         private static RelicState[] Current(AllGameManagers managers)
         {
@@ -54,15 +55,18 @@ namespace MonsterTrain2Poju.Probe
 
         internal static BattleResourceState? CaptureResources(AllGameManagers managers)
         {
-            bool dragonHoardCards = managers.GetCardManager()!.GetAllCards(new List<CardState>())
-                .SelectMany(card => card.GetEffectStates())
+            CardEffectState[] cardEffects = managers.GetCardManager()!.GetAllCards(new List<CardState>())
+                .SelectMany(card => card.GetEffectStates()).ToArray();
+            bool dragonHoardCards = cardEffects
                 .Any(effect => effect.GetCardEffect() is IDragonsHoardCardEffect ||
                     effect.GetCardEffect() is CardEffectRewardGoldPerDragonHoard);
+            bool trainHealCards = cardEffects.Any(effect => effect.GetCardEffect() is CardEffectHealTrain);
             dragonHoardResourceObserved |= dragonHoardCards;
+            trainHealResourceObserved |= trainHealCards;
             if (!OriginalResourceRelicBatchScenario.Enabled && !PyreResourceRefreshScenario.Enabled && !OriginalFloorCapacityRelicScenario.Enabled &&
                 !OriginalMoonPhaseEnergyRelicScenario.Enabled &&
                 !Current(managers).Any(relic => relic.GetEffects().Any(effect => RelicResourceModel.IsEffect(effect.GetType().Name))) &&
-                !dragonHoardResourceObserved)
+                !dragonHoardResourceObserved && !trainHealResourceObserved)
                 return null;
             SaveManager save = managers.GetSaveManager();
             BalanceData balance = save.GetBalanceData();
@@ -80,7 +84,8 @@ namespace MonsterTrain2Poju.Probe
                 rawSave.GetMutatorIDs().ToArray(),
                 ((MutableRules)AccessTools.Field(typeof(SaveManager), "mutableRules").GetValue(save))
                     .GetRule(MutableRules.Condition.GoldRewardMultiplier, 1f),
-                baseFloorCapacity: balance.GetCharacterCapacityPerFloor(), dragonsHoardCap: save.GetDragonsHoardCap());
+                baseFloorCapacity: balance.GetCharacterCapacityPerFloor(), dragonsHoardCap: save.GetDragonsHoardCap(),
+                towerHealingDisabled: save.GetRelicModifiedRules().GetTowerHealingDisabled());
         }
 
         internal static RelicResourceEffect Definition(IRelicEffect effect, int index, AllGameManagers managers)

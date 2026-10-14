@@ -1,10 +1,29 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-14): 281 binary archives, including 250
+Current accepted inventory (2026-10-14): 282 binary archives, including 251
 full battles and 31 component calibrations. Unchanged original relic evidence
 covers 78/224 catalog entries (34.82%); see
 [the owner evidence table](tests/fixtures/relic-coverage.md). Whole-battle
 coverage and the optimal solver remain in progress.
+
+### Train healing from original PayOff
+
+`full-battle-train-heal.mt2f` plays the unchanged `PayOff` effect and scaling
+trait at two Dragon's Hoard. Native and modeled Pyre health both rise from
+70/80 to 74/80. The muted Instant battle wins with 61 matched stages, 21
+actions and seven EndTurns; capture failures, mismatches, unsupported
+transitions and pending records are zero. The model also captures the native
+tower-healing-disabled rule and keeps its resource snapshot after PayOff is
+exhausted. Preview-mode train healing remains unsupported.
+
+The 33,285-byte binary has 5,439 unique nodes and SHA-256
+`e30cd60c703ab36b3f8ac8561298275f02fa39426ecb39c7bfce622e4580e0c6`.
+
+```powershell
+dotnet run --project src/ModelChecks -c Release -- --train-heal-pure
+dotnet run --project src/ModelChecks -c Release -- --train-heal-only tests/fixtures/full-battle-train-heal.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-train-heal.mt2f
+```
 
 ### Remove all visible status effects (schema 164)
 

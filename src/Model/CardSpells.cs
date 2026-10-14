@@ -363,6 +363,43 @@ namespace MonsterTrain2Poju.Model
                 Remember(effect, index, targets, ref last);
                 if (targets.BattleRng.HasValue)
                     state = WithContext(state, state.Context!.WithBattleRng(targets.BattleRng.Value));
+                if (effect.Type == "HealTrain")
+                {
+                    if (targets.UnitIds.Count != 1) return UnsupportedTrain("Train healing requires one live Pyre target.");
+                    RoomCombatState? pyreRoom = state.Rooms.FirstOrDefault(room => room.Units.Any(unit => unit.Id == targets.UnitIds[0]));
+                    CombatUnit? pyre = pyreRoom?.Units.FirstOrDefault(unit => unit.Id == targets.UnitIds[0] && unit.IsPyre);
+                    if (pyre == null) return UnsupportedTrain("Train healing target is not the Pyre heart.");
+                    RelicResourceResult maximum = RelicResourceModel.GetPyreMaxHealth(state.Context!);
+                    if (!maximum.Supported) return UnsupportedTrain(maximum.UnsupportedReason!);
+                    int amount = 0;
+                    if (effect.UseCardTraits)
+                    {
+                        CardInstanceState? card = state.Context!.FindCard(sourceCardId) ?? resolvingCard;
+                        if (card == null) return UnsupportedTrain("Train healing requires its source card traits.");
+                        foreach (ScalingTrainHealTrait trait in card.TrainHealScalingTraits ?? Array.Empty<ScalingTrainHealTrait>())
+                        {
+                            StatisticQueryResult statistic = StatisticQueryModel.Evaluate(state.Context!, trait.Query, sourceCardId);
+                            if (!statistic.Supported) return UnsupportedTrain(statistic.UnsupportedReason!);
+                            state = WithContext(state, statistic.Context!);
+                            float scaled = (float)unchecked(trait.HealPerStat * statistic.Value) * trait.Multiplier;
+                            double floor = Math.Floor(scaled);
+                            if (double.IsNaN(floor) || floor < int.MinValue || floor > int.MaxValue)
+                                return UnsupportedTrain("Train healing scaling exceeds the modeled numeric domain.");
+                            amount = (int)floor;
+                        }
+                    }
+                    amount = unchecked(amount + effect.Value);
+                    if (amount > 0 && state.Context!.Resources!.TowerHealingDisabled != true)
+                    {
+                        int healed = Math.Min(amount, maximum.Value - pyre.Health);
+                        if (healed > 0)
+                        {
+                            state = ReplaceRoom(state, pyreRoom!.WithUnits(pyreRoom.Units.Select(unit => unit.Id == pyre.Id
+                                ? unit.WithHealth(unchecked(unit.Health + healed)) : unit).ToArray()));
+                        }
+                    }
+                    continue;
+                }
                 if ((effect.Type == "AddStatus" || effect.Type == "MultiplyStatus" || effect.Type == "SpawnOrStatus") && effect.Statuses.Count > 1)
                 {
                     // Native chooses one status for the whole effect, including an empty collection.
@@ -1318,6 +1355,14 @@ namespace MonsterTrain2Poju.Model
                         return "Dragon's Hoard gold rewards require captured amount and gold resource rules.";
                     continue;
                 }
+                if (effect.Type == "HealTrain")
+                {
+                    if (effect.Target != "Pyre" || source.Preview || effect.Range != null)
+                        return "Train healing requires a fixed Pyre target outside preview.";
+                    if (source.Context.Resources?.TowerHealingDisabled == null)
+                        return "Train healing requires captured tower-healing rules.";
+                    continue;
+                }
                 if (effect.Type == "HandUpgrade")
                 {
                     if (effect.Upgrade == null) return "Missing hand upgrade definition.";
@@ -1546,6 +1591,7 @@ namespace MonsterTrain2Poju.Model
                 case "DamagePerSourceAttack": return count > 0;
                 case "DamagePerHp": return count > 0;
                 case "Heal": return effect.Target == "Room" || count > 0;
+                case "HealTrain": return count > 0;
                 case "Sacrifice": return count > 0;
                 case "Kill": return effect.Tests?.MustHaveValidTargets != true || count > 0;
                 case "Recursion": return count > 0 &&

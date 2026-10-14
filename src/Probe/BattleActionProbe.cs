@@ -19,7 +19,7 @@ namespace MonsterTrain2Poju.Probe
             "CardEffectDamage", "CardEffectDamagePerSourceAttack", "CardEffectDamagePerHp", "CardEffectDraw", "CardEffectDrawAdditionalNextTurn",
             "CardEffectRemoveAllStatusEffects",
             "CardEffectAdjustRoomCapacity", "CardEffectAdjustForgePoints", "CardEffectDiscardHand", "CardEffectRandomDiscard", "CardEffectAddBattleCard",
-            "CardEffectHeal", "CardEffectSacrifice", "CardEffectKill", "CardEffectRecursion", "CardEffectBuffDamage", "CardEffectDebuffDamage",
+            "CardEffectHeal", "CardEffectHealTrain", "CardEffectSacrifice", "CardEffectKill", "CardEffectRecursion", "CardEffectBuffDamage", "CardEffectDebuffDamage",
             "CardEffectBuffMaxHealth", "CardEffectDebuffMaxHealth", "CardEffectAddStatusEffect", "CardEffectMultiplyStatusEffect",
             "CardEffectMultiplyAllPositiveStatusEffects", "CardEffectAdjustAllStatusEffects", "CardEffectAddStatusEffectPerOtherEffect",
             "CardEffectSpawnMonsterOrAddStatusEffect", "CardEffectFloorRearrange", "CardEffectAddCardUpgradeToUnits", "CardEffectDrawType",
@@ -291,6 +291,7 @@ namespace MonsterTrain2Poju.Probe
                 effect.GetEffectStateName() == "CardEffectBuffMaxHealth" ? "BuffHealth" :
                 effect.GetEffectStateName() == "CardEffectDebuffMaxHealth" ? "DebuffHealth" :
                 effect.GetEffectStateName() == "CardEffectHeal" ? "Heal" :
+                effect.GetEffectStateName() == "CardEffectHealTrain" ? "HealTrain" :
                 effect.GetEffectStateName() == "CardEffectSacrifice" ? "Sacrifice" :
                 effect.GetEffectStateName() == "CardEffectKill" ? "Kill" :
                 effect.GetEffectStateName() == "CardEffectRecursion" ? "Recursion" :
@@ -401,7 +402,7 @@ namespace MonsterTrain2Poju.Probe
                 nextDrawUpgrade: type == "ScheduleNextDrawUpgrade" ? TypedDrawProbe.UpgradeRule(effect) : null,
                 requiredGold: type == "ScheduleNextDrawUpgrade" ? effect.GetAdditionalParamInt() : 0,
                 goldCostRequired: type == "RewardGold" ? effect.GetParamBool() : (bool?)null,
-                useCardTraits: type == "DamagePerSourceAttack" && effect.GetParamBool(),
+                useCardTraits: (type == "DamagePerSourceAttack" || type == "HealTrain") && effect.GetParamBool(),
                 requireEquipment: type == "AttackWithUnit" && effect.GetParamBool(), useSelectedRoom: type == "AttackWithUnit" && effect.GetParamBool2(),
                 countStatusOnlyOnTargets: type == "AddStatusPerOtherEffect" && effect.GetParamBool(), spawnFallbackUnit: spawnFallbackUnit,
                 disallowStatusStackModifiers: type == "SpawnOrStatus" && effect.GetDisallowStatusEffectStackModifiers(),

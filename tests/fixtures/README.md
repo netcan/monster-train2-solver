@@ -1,5 +1,10 @@
 # Native regression fixtures
 
+`full-battle-train-heal.mt2f` records an unchanged PayOff cast at two Dragon's
+Hoard, healing the Pyre from 70/80 to 74/80. All 61 native battle stages match
+the model; focused checks use `--train-heal-only`, and the SHA-256 is recorded
+in `manifest.tsv`. The archive is binary only.
+
 These fixed inputs reproduce the independently modeled battle and calibration
 checks. Run `pwsh -NoProfile -File scripts/Check-Models.ps1` from the repository
 root. The script reads the curated fixture list in this directory.
