@@ -3,8 +3,10 @@
 `full-battle-choose-discard-refine.mt2f` records unchanged `FoundryLine`
 consuming original Refine-3 `ScrapMetal`. The original action, six keep-one
 branches, 52 stages and seven EndTurns match, with zero native differences.
-Its 23,022-byte binary and SHA-256 are recorded in `manifest.tsv`. The bounded
-serial/parallel global-search check still diverges on this wider frontier.
+Its 23,022-byte binary and SHA-256 are recorded in `manifest.tsv`. Bounded
+serial/four-worker search agrees on the best score, path and replayed state;
+the two modes use 128 and 117 nodes, respectively. Four unsupported root
+attempts and the search limits leave global optimality unproven.
 
 `full-battle-choose-discard-others-policy.mt2f` records unchanged `FoundryLine`
 followed by 18 policy plays. Its 55 stages, seven EndTurns and 19 card actions

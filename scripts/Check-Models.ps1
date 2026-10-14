@@ -457,8 +457,10 @@ foreach ($fixturePath in @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 
     }
 }
 foreach ($fixturePath in @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 'full-battle-choose-discard-refine.mt2f' })) {
-    dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- --choose-discard-others-only $fixturePath
-    if ($LASTEXITCODE -ne 0) { throw "Choose-discard Refine checks failed: $fixturePath" }
+    foreach ($mode in @('--choose-discard-others-only', '--battle-search-only')) {
+        dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- $mode $fixturePath
+        if ($LASTEXITCODE -ne 0) { throw "Choose-discard Refine checks failed ($mode): $fixturePath" }
+    }
 }
 foreach ($fixturePath in $recursionUpgradeFixtures) {
     foreach ($mode in @('--card-recursion-upgrade-only', '--battle-search-only')) {

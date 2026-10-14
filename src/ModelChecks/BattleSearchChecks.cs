@@ -62,10 +62,14 @@ internal static class BattleSearchChecks
             step.Action.TargetUnitId + ":" + step.Action.ActivatorUnitId + ":" + string.Join(";",
                 step.Action.RecursionSelections.Select(selection => selection.EffectIndex + "=" +
                     string.Join(",", selection.CardInstanceIds)))));
-        Require(serialSearch.BestState != null && serialSearch.Score == search.Score &&
-            serialSearch.DecisionStatesVisited == search.DecisionStatesVisited && Path(serialSearch) == Path(search) &&
+        Require(serialSearch.BestState != null && serialSearch.Outcome == search.Outcome &&
+            serialSearch.Score == search.Score &&
+            serialSearch.DecisionStatesVisited <= maxNodes && search.DecisionStatesVisited <= maxNodes &&
+            Path(serialSearch) == Path(search) &&
             BattleTurnChecks.Comparable(serialSearch.BestState!) == BattleTurnChecks.Comparable(search.BestState!),
-            "Serial and parallel native searches returned different best paths, scores or states.");
+            "Serial and parallel native searches returned different best paths, scores or states: " +
+            $"serial score={serialSearch.Score} nodes={serialSearch.DecisionStatesVisited} path={Path(serialSearch)}; " +
+            $"parallel score={search.Score} nodes={search.DecisionStatesVisited} path={Path(search)}.");
         BattleTurnState replayed = searchRoot;
         foreach (BattleSearchStep step in search.Steps)
         {
@@ -94,8 +98,8 @@ internal static class BattleSearchChecks
         if (limits.Length == 0) limits = search.HasUnsupportedAttempts ? "unsupported-frontier" : "enumerated-frontier-exhausted";
         Console.WriteLine($"NATIVE-BATTLE-SEARCH-CHECKS PASS: {matchedDecisions} recorded decisions matched, " +
             $"{rootFrontier!.SupportedCandidates.Count} root actions, {unsupportedAttempts} unsupported attempts across recorded decisions, " +
-            $"{search.UnsupportedAttempts.Count} in search, " +
-            $"{search.DecisionStatesVisited} states, serial/parallel equal, {search.Steps.Count} replayed steps, " +
+            $"{search.UnsupportedAttempts.Count} in search, serial/parallel best equal, " +
+            $"{serialSearch.DecisionStatesVisited}/{search.DecisionStatesVisited} states, {search.Steps.Count} replayed steps, " +
             $"stop={limits}, score {search.Score}.");
     }
 

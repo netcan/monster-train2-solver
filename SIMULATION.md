@@ -18,8 +18,11 @@ Instant battle matches one action, seven EndTurns and 52 stages with zero
 capture failures, mismatches, unsupported transitions or pending records.
 The 23,022-byte binary has 3,293 unique nodes and SHA-256
 `17a4a9ca3437e7df53986399a179164a7587a93b417a8111d7d97d8991faaf1c`.
-The 128-node serial/parallel global-search check diverges on this wider
-frontier, so this fixture validates branch enumeration and successors only.
+The 128-node serial/four-worker search agrees on best score, path and replayed
+state. Serial search visits 128 nodes while parallel search visits 117 because
+its root budgets are allocated independently; their node counts need not match.
+The root still reports four unsupported action attempts, and both searches hit
+their horizon or node limit, so this does not establish global optimality.
 Upgrade-added Refine, room modifiers and additional-smelt Ember relics remain
 unmodeled.
 
