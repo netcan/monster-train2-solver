@@ -43,9 +43,6 @@ namespace MonsterTrain2Poju.Model
             if (effect.Target is not ("Hand" or "Room")) return "Unmodeled choose-discard target.";
             if (effect.Range != null) return "Choose-discard does not support integer ranges.";
             if (context?.CardRegistry == null) return "Choose-discard requires captured card instances.";
-            if (rule.GainEmberForCost && context.Relics?.Any(relic =>
-                relic.EffectTypes.Contains("RelicEffectAdditionalSmeltEmber")) == true)
-                return "Additional smelt Ember relic effects require native calibration.";
             if (effect.Value is 2 or 3)
             {
                 string? forgeError = ForgePointsModel.Validate(context);
@@ -128,7 +125,13 @@ namespace MonsterTrain2Poju.Model
                     if (amount > 0)
                     {
                         forge = unchecked(forge + amount);
-                        if (effect.ChooseDiscard!.GainEmberForCost) ember = unchecked(ember + amount);
+                    }
+                    if (effect.ChooseDiscard!.GainEmberForCost)
+                    {
+                        RelicResourceResult extra = RelicResourceModel.GetAdditionalSmeltEmber(context);
+                        if (!extra.Supported) return Unsupported(extra.UnsupportedReason!);
+                        context = extra.Context!;
+                        ember = unchecked(ember + Math.Max(0, amount) + extra.Value);
                     }
                     HandRemovalResult consumed = HandRemovalModel.Apply(context, 1, sourceCardId, effectIndex,
                         definitions, context.OtherPiles, selectedCardIds: [id], effectCounterType: null);
@@ -162,8 +165,14 @@ namespace MonsterTrain2Poju.Model
                     if (!forge.Supported) return Unsupported(forge.UnsupportedReason!);
                     context = forge.Context!;
                 }
-                if (effect.ChooseDiscard!.GainEmberForCost && amount > 0)
-                    context = EnergyModel.Apply(context, "GainEnergy", amount);
+                if (effect.ChooseDiscard!.GainEmberForCost)
+                {
+                    RelicResourceResult extra = RelicResourceModel.GetAdditionalSmeltEmber(context);
+                    if (!extra.Supported) return Unsupported(extra.UnsupportedReason!);
+                    context = extra.Context!;
+                    int ember = unchecked(Math.Max(0, amount) + extra.Value);
+                    if (ember > 0) context = EnergyModel.Apply(context, "GainEnergy", ember);
+                }
             }
             HandRemovalResult removed = HandRemovalModel.Apply(context, effect.Value == 0 ? 0 : 1,
                 sourceCardId, effectIndex, definitions, context.OtherPiles, selectedCardIds: [selectedCardId.Value],

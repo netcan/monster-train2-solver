@@ -36,6 +36,9 @@ param(
     [switch] $ChooseDiscardOthersPolicy,
     [switch] $ChooseDiscardRefine,
     [switch] $ChooseDiscardPersistent,
+    [switch] $OriginalSmeltEmberRelic,
+    [switch] $OriginalSmeltEmberRelicZero,
+    [switch] $OriginalSmeltEmberRelicBulk,
     [switch] $RemoveAllStatusEffects,
     [switch] $DragonHoard,
     [switch] $TrainHeal,
@@ -420,6 +423,8 @@ if ($ChooseDiscardOthers) { $BranchCardMasks = $true; $Policy = 'units-spells-an
 if ($ChooseDiscardOthersPolicy) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($ChooseDiscardRefine) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($ChooseDiscardPersistent) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
+if ($OriginalSmeltEmberRelic) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
+if ($OriginalSmeltEmberRelicZero -or $OriginalSmeltEmberRelicBulk) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($RemoveAllStatusEffects) { $Policy = 'units-spells-and-junk' }
 if ($DragonHoard) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($TrainHeal) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
@@ -624,6 +629,9 @@ if ($ChooseDiscardOthers) { $environment['MT2_PROBE_MODIFIERS'] = 'card-effect-c
 if ($ChooseDiscardOthersPolicy) { $environment['MT2_PROBE_MODIFIERS'] = 'card-effect-choose-discard-others-policy' }
 if ($ChooseDiscardRefine) { $environment['MT2_PROBE_MODIFIERS'] = 'card-effect-choose-discard-refine' }
 if ($ChooseDiscardPersistent) { $environment['MT2_PROBE_MODIFIERS'] = 'card-effect-choose-discard-persistent' }
+if ($OriginalSmeltEmberRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-smelt-ember-relic' }
+if ($OriginalSmeltEmberRelicZero) { $environment['MT2_PROBE_MODIFIERS'] = 'original-smelt-ember-relic-zero' }
+if ($OriginalSmeltEmberRelicBulk) { $environment['MT2_PROBE_MODIFIERS'] = 'original-smelt-ember-relic-bulk' }
 if ($RemoveAllStatusEffects) { $environment['MT2_PROBE_MODIFIERS'] = 'remove-all-status-effects' }
 if ($DragonHoard) { $environment['MT2_PROBE_MODIFIERS'] = 'dragon-hoard' }
 if ($TrainHeal) { $environment['MT2_PROBE_MODIFIERS'] = 'train-heal' }
@@ -820,6 +828,23 @@ if ($ChooseDiscardPersistent -and ($trace.ModifierScenario -ne 'card-effect-choo
     -not (Select-String -LiteralPath $unityLog -Pattern 'CHOOSE-DISCARD-AUTOSELECT card=\d+ cost=0' -Quiet) -or
     @($trace.Actions | Where-Object ScenarioAction).Count -ne 1)) {
     throw 'Original FoundryLine did not keep the Persistent ScrapMetal card in the native battle.'
+}
+if ($OriginalSmeltEmberRelic -or $OriginalSmeltEmberRelicZero -or $OriginalSmeltEmberRelicBulk) {
+    $expectedScenario = if ($OriginalSmeltEmberRelicBulk) { 'original-smelt-ember-relic-bulk' } elseif ($OriginalSmeltEmberRelicZero) { 'original-smelt-ember-relic-zero' } else { 'original-smelt-ember-relic' }
+    $first = @($trace.Actions)[0]
+    $before = $first.Before.Spawn.Train.Context
+    $after = $first.Actual.Spawn.Train.Context
+    $smeltRelic = @($before.Relics | Where-Object DataId -EQ 'a034e00f-3a12-4c19-b626-4b8fd17c412a')
+    $consumed = if ($OriginalSmeltEmberRelicBulk) { 4 } else { 1 }
+    $cost = if ($OriginalSmeltEmberRelicBulk) { 3 } elseif ($OriginalSmeltEmberRelicZero) { 0 } else { 2 }
+    if ($trace.ModifierScenario -ne $expectedScenario -or
+        -not (Select-String -LiteralPath $unityLog -Pattern 'ORIGINAL-SMELT-RELIC-ACQUIRED unchanged EmberFoundryCrucible additionalEmber=1' -Quiet) -or
+        @($trace.Actions | Where-Object ScenarioAction).Count -ne 1 -or $smeltRelic.Count -ne 1 -or
+        @($smeltRelic[0].ResourceEffects).Count -ne 1 -or $smeltRelic[0].ResourceEffects[0].Amount -ne 1 -or
+        $after.QueryFrame.ForgePoints -ne ($before.QueryFrame.ForgePoints + $cost) -or
+        $after.QueryFrame.Energy -ne ($before.QueryFrame.Energy - 1 + $cost + $consumed)) {
+        throw 'Original EmberFoundryCrucible did not grant its expected per-card smelt Ember in native combat.'
+    }
 }
 if ($RemoveAllStatusEffects -and ($trace.Schema -ne 164 -or $trace.ModifierScenario -ne 'remove-all-status-effects' -or
     -not (Select-String -LiteralPath $unityLog -Pattern 'REMOVE-ALL-STATUS-SEEDED card=.* hidden=' -Quiet) -or

@@ -118,8 +118,10 @@ namespace MonsterTrain2Poju.Model
         public const string PyreHealth = "RelicEffectIncreasePyreHealth";
         public const string FloorCapacity = "RelicEffectChangeFloorCapacity";
         public const string MoonPhaseEnergy = "RelicEffectModifyEnergyOnMoonPhase";
+        public const string AdditionalSmeltEmber = "RelicEffectAdditionalSmeltEmber";
         public static bool IsEffect(string type) => type == Energy || type == DeploymentEnergy || type == Draw ||
-            type == PyreAttack || type == PyreHealth || type == FloorCapacity || type == MoonPhaseEnergy;
+            type == PyreAttack || type == PyreHealth || type == FloorCapacity || type == MoonPhaseEnergy ||
+            type == AdditionalSmeltEmber;
 
         internal static string? Validate(CombatRelicState relic)
         {
@@ -136,6 +138,8 @@ namespace MonsterTrain2Poju.Model
                     return "Relic energy initialized amount differs from its original parameter.";
                 if (rule.Type == MoonPhaseEnergy && (rule.Amount != rule.ParamInt || rule.ParamInt2 <= 0 || (rule.ParamInt2 & ~7) != 0))
                     return "Moon-phase energy amount or phase mask differs from its original parameters.";
+                if (rule.Type == AdditionalSmeltEmber && rule.Amount != rule.ParamInt)
+                    return "Additional smelt Ember amount differs from its original parameter.";
                 if (rule.Type == Draw)
                 {
                     if (!rule.DrawValue.HasValue || rule.DrawValue.Value != (float)rule.ParamInt ||
@@ -204,6 +208,29 @@ namespace MonsterTrain2Poju.Model
         private static RelicPyreResourceResult PyreFail(string error) => new RelicPyreResourceResult(null, 0, 0, 0, error);
         private static bool MutatorMatches(CombatContext context, RelicResourceEffect rule) => rule.RequiredMutatorId == null ||
             context.Resources!.MutatorIds.Contains(rule.RequiredMutatorId);
+
+        public static RelicResourceResult GetAdditionalSmeltEmber(CombatContext source, bool preview = false, bool placement = false)
+        {
+            if (source.Relics?.Any(relic => relic.EffectTypes.Contains(AdditionalSmeltEmber)) != true)
+                return new RelicResourceResult(source, 0);
+            string? error = Ready(source);
+            if (error != null) return Fail(error);
+            CombatContext context = source;
+            int total = 0;
+            foreach (CombatRelicState relic in source.Relics!)
+            {
+                if (placement && relic.DisallowedInPlacementPhase == true) continue;
+                foreach (RelicResourceEffect rule in relic.ResourceEffects ?? Array.Empty<RelicResourceEffect>())
+                {
+                    if (rule.Type != AdditionalSmeltEmber || preview && !rule.CanApplyInPreviewMode) continue;
+                    RelicConditionEvaluation evaluation = RelicConditionModel.Evaluate(context, rule.Conditions);
+                    if (!evaluation.Supported) return Fail(evaluation.UnsupportedReason!);
+                    context = evaluation.Context;
+                    if (evaluation.Passed && rule.Amount > 0) total = unchecked(total + rule.Amount);
+                }
+            }
+            return new RelicResourceResult(context, total);
+        }
 
         // This getter models the display/query contract, not the ordered timing
         // effects. It evaluates conditions without notifying or recording them.

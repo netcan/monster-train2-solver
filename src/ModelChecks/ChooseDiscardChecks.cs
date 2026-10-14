@@ -10,6 +10,60 @@ internal static class ChooseDiscardChecks
     private const string ScrapMetalId = "d4f0ff05-1fe1-483c-adda-928a8b05808c";
     private const string OneCostId = "fb0683b1-20ac-4dd2-b580-14b502e182f4";
     private const string TwoCostId = "25f84315-da10-4915-aa5d-e3f1a38124b4";
+    private const string StingId = "356a00a4-010b-462b-b683-2ef296d076a8";
+    private const string SmeltRelicId = "a034e00f-3a12-4c19-b626-4b8fd17c412a";
+
+    public static void NativeSmeltRelic(FixtureValue root)
+    {
+        string scenario = root.GetProperty("ModifierScenario").GetString()!;
+        bool zero = scenario == "original-smelt-ember-relic-zero";
+        bool bulk = scenario == "original-smelt-ember-relic-bulk";
+        Require(scenario is "original-smelt-ember-relic" or "original-smelt-ember-relic-zero" or
+            "original-smelt-ember-relic-bulk", "This is not an original smelt-Ember relic battle.");
+        Require(root.GetProperty("NativeWon").GetBoolean() && root.GetProperty("CaptureFailures").GetInt32() == 0 &&
+            root.GetProperty("Mismatches").GetInt32() == 0 && root.GetProperty("Unsupported").GetInt32() == 0 &&
+            root.GetProperty("Pending").GetInt32() == 0, "The original smelt-Ember battle was not fully accepted.");
+        FixtureValue entry = root.GetProperty("Actions").EnumerateArray().First();
+        Require(entry.GetProperty("ScenarioAction").GetBoolean(), "The original smelt action was not first.");
+        BattleTurnState before = entry.GetProperty("Before").Deserialize<BattleTurnState>()!;
+        BattleTurnState actual = entry.GetProperty("Actual").Deserialize<BattleTurnState>()!;
+        PlayCardAction action = entry.GetProperty("Action").Deserialize<PlayCardAction>()!;
+        CombatContext input = before.Spawn.Train.Context!;
+        CombatContext output = actual.Spawn.Train.Context!;
+        CombatRelicState relic = input.Relics!.Single(item => item.DataId == SmeltRelicId);
+        RelicResourceEffect modifier = relic.ResourceEffects!.Single();
+        Require(relic.AssetKey == "EmberFoundryCrucible" &&
+            relic.EffectTypes.SequenceEqual([RelicResourceModel.AdditionalSmeltEmber]) &&
+            modifier.EffectIndex == 0 && modifier.Type == RelicResourceModel.AdditionalSmeltEmber &&
+            modifier.ParamInt == 1 && modifier.Amount == 1 && modifier.Conditions.Count == 0,
+            "The original relic identity, effect or native amount changed.");
+        RelicResourceResult extra = RelicResourceModel.GetAdditionalSmeltEmber(input);
+        Require(extra.Supported && extra.Value == 1 && ReferenceEquals(extra.Context, input),
+            "The original smelt relic did not supply its captured per-card bonus.");
+        string sourceId = bulk ? FoundryLineId : ScrapId;
+        Require(input.Cards.Hand.Single(card => card.InstanceId == action.CardInstanceId).DataId == sourceId &&
+            action.RecursionSelections.Count == 1 && action.RecursionSelections[0].CardInstanceIds.Count == 1,
+            "The original smelt card or selected card identity is missing.");
+        int selectedId = action.RecursionSelections[0].CardInstanceIds[0];
+        Require(input.Cards.Hand.Single(card => card.InstanceId == selectedId).DataId == (zero ? StingId : TwoCostId),
+            "The original smelt target changed.");
+        CardToken[] consumed = input.Cards.Hand.Where(card => bulk
+            ? card.InstanceId != action.CardInstanceId && card.InstanceId != selectedId
+            : card.InstanceId == selectedId).ToArray();
+        int cost = consumed.Sum(card => input.FindCard(card.InstanceId)!.RawCostOverride ??
+            input.FindCard(card.InstanceId)!.MaskDescriptor!.BaseCost);
+        Require(consumed.Length == (bulk ? 4 : 1) && (zero ? cost == 0 : cost > 0) &&
+            output.QueryFrame?.ForgePoints == input.QueryFrame?.ForgePoints + cost &&
+            output.QueryFrame?.Energy == input.QueryFrame?.Energy - 1 + cost + consumed.Length &&
+            consumed.All(card => output.OtherPiles!.Single(pile => pile.Name == "Exhausted").Cards
+                .Any(exhausted => exhausted.InstanceId == card.InstanceId)),
+            "Native smelting did not grant one additional Ember per consumed card, including zero-cost cards.");
+        BattleActionResult replay = BattleActionModel.PlayCard(before, action);
+        Require(replay.Supported && BattleTurnChecks.Comparable(replay.State!) == BattleTurnChecks.Comparable(actual),
+            "Original smelt relic action does not replay to native state: " + replay.Reason);
+        Console.WriteLine("ORIGINAL-SMELT-EMBER-NATIVE PASS: " + scenario + " consumed=" + consumed.Length +
+            " baseCost=" + cost + " bonusEmber=" + consumed.Length + ".");
+    }
 
     public static void Native(FixtureValue root)
     {

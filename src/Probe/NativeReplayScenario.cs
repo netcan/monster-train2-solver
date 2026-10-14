@@ -259,6 +259,8 @@ namespace MonsterTrain2Poju.Probe
                         OriginalCardDrawOnCardPlayScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalCardAttackRelicScenario.Enabled && !OriginalCardAttackRelicScenario.Acquired)
                         OriginalCardAttackRelicScenario.AcquireBeforeBattle(managers!, log);
+                    if (fullBattle && ChooseDiscardScenario.OriginalSmeltRelicMode && !ChooseDiscardScenario.RelicAcquired)
+                        ChooseDiscardScenario.AcquireRelicBeforeBattle(managers!, log);
                     if (fullBattle && OriginalRoomEntryStatusRelicScenario.Enabled && !OriginalRoomEntryStatusRelicScenario.Acquired)
                         OriginalRoomEntryStatusRelicScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && CorruptionScenario.RelicTrigger && !CorruptionScenario.RelicAcquired)

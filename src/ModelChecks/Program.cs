@@ -652,6 +652,12 @@ if (args.Length == 2 && args[0] == "--choose-discard-only")
     ChooseDiscardChecks.Native(choiceDocument.RootElement);
     return;
 }
+if (args.Length == 2 && args[0] == "--original-smelt-ember-only")
+{
+    using var smeltDocument = ModelJson.ReadFixture(args[1]);
+    ChooseDiscardChecks.NativeSmeltRelic(smeltDocument.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--choose-discard-others-only")
 {
     using var choiceDocument = ModelJson.ReadFixture(args[1]);

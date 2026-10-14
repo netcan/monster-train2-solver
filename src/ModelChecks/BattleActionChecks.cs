@@ -464,14 +464,15 @@ internal static class BattleActionChecks
         Func<BattleTurnState, PlayCardAction?> chooser = policy.GetString() == "units-spells-and-junk"
             ? BattleActionModel.ChooseUnitSpellAndJunkPlay : BattleActionModel.ChooseUnitAndJunkPlay;
         if (fixture.TryGetProperty("ModifierScenario", out var chooseDiscardPolicy) &&
-            chooseDiscardPolicy.GetString() is "card-effect-choose-discard" or "card-effect-choose-discard-others" or "card-effect-choose-discard-others-policy" or "card-effect-choose-discard-refine" or "card-effect-choose-discard-persistent")
+            chooseDiscardPolicy.GetString() is "card-effect-choose-discard" or "card-effect-choose-discard-others" or "card-effect-choose-discard-others-policy" or "card-effect-choose-discard-refine" or "card-effect-choose-discard-persistent" or
+                "original-smelt-ember-relic" or "original-smelt-ember-relic-zero" or "original-smelt-ember-relic-bulk")
         {
             int scenarioCardId = actions[0].GetProperty("Action").GetProperty("CardInstanceId").GetInt32();
             chooser = source => BattleActionModel.EnumerateSupportedPlays(source)
                 .FirstOrDefault(action => action.CardInstanceId != scenarioCardId);
         }
         if (fixture.TryGetProperty("ModifierScenario", out var keepOneSmeltPolicy) &&
-            keepOneSmeltPolicy.GetString() is "card-effect-choose-discard-others" or "card-effect-choose-discard-refine" or "card-effect-choose-discard-persistent")
+            keepOneSmeltPolicy.GetString() is "card-effect-choose-discard-others" or "card-effect-choose-discard-refine" or "card-effect-choose-discard-persistent" or "original-smelt-ember-relic-bulk")
             chooser = _ => null;
         if (fixture.TryGetProperty("ModifierScenario", out var noPlayerUnitPolicy) &&
             noPlayerUnitPolicy.GetString() == "conditional-no-player-status")
@@ -598,7 +599,7 @@ internal static class BattleActionChecks
             entry.GetProperty("Index").GetInt32() > lastScenarioAction &&
             (!entry.TryGetProperty("ScenarioAction", out var authored) || !authored.GetBoolean())).ToArray();
         if (fixture.TryGetProperty("ModifierScenario", out var keepOneOnly) &&
-            keepOneOnly.GetString() is "card-effect-choose-discard-others" or "card-effect-choose-discard-refine" or "card-effect-choose-discard-persistent")
+            keepOneOnly.GetString() is "card-effect-choose-discard-others" or "card-effect-choose-discard-refine" or "card-effect-choose-discard-persistent" or "original-smelt-ember-relic-bulk")
         {
             Require(allActions.Length == 1 && policyActions.Length == 0 && turns.GetArrayLength() > 0,
                 "The keep-one smelt fixture unexpectedly contains later card plays or no completed turns.");

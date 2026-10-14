@@ -211,8 +211,12 @@ The default command checks the full curated inventory. For routine changes, run
 the dedicated checks for the new and directly affected scenarios; run the full
 inventory at completed milestones and before delivery.
 
-Current inventory is 326 archives: 295 accepted battles and 31 component
-calibrations. Original relic evidence is 82/224 (36.61%). The binary-only
+Current inventory is 329 archives: 298 accepted battles and 31 component
+calibrations. Original relic evidence is 83/224 (37.05%). The binary-only
+`full-battle-original-smelt-ember*.mt2f` archives acquire unchanged original
+`EmberFoundryCrucible`. Single cost-2 and zero-cost smelts and a four-card bulk
+smelt verify one additional Ember per consumed card; all three native battles,
+dedicated effect checks and bounded serial/parallel searches match. The binary-only
 `full-battle-corruption-relic-trigger.mt2f` acquires unchanged original
 `DamageOnCorruptPlay` before battle. When two enemies occupy room 0, original
 Unearthed Remains raises Corruption and the relic's two RandomInRoom callbacks

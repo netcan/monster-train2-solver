@@ -1,12 +1,21 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-15): 326 binary archives, including 295
+Current accepted inventory (2026-10-15): 329 binary archives, including 298
 full battles and 31 component calibrations. Unchanged original relic evidence
-covers 82/224 catalog entries (36.61%); see
+covers 83/224 catalog entries (37.05%); see
 [the owner evidence table](tests/fixtures/relic-coverage.md). Whole-battle
 coverage and the optimal solver remain in progress.
 
-The latest original-relic witness acquires unchanged `DamageOnCorruptPlay`
+The latest original-relic witness acquires unchanged `EmberFoundryCrucible`
+before battle. Original Starter Scrap smelts cost-2 and zero-cost cards in
+separate full battles; original Foundry Line consumes four cards in a third.
+The native Ember gain is the printed cost plus one per consumed card, including
+the zero-cost case. All three battles match 52-56 stages without capture
+failures, mismatches, unsupported actions or pending records. Their recorded
+actions and bounded serial/parallel searches agree. Other smelt modifiers and
+conditional relic variants remain open.
+
+The preceding original-relic witness acquires unchanged `DamageOnCorruptPlay`
 before battle. During the player action phase, original Unearthed Remains raises
 room Corruption 0 to 1 while two enemies are present. The relic's two ordered
 RandomInRoom callbacks each add one Corrupt Poison stack; Echoes of the Past
