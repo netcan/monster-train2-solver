@@ -42,6 +42,7 @@ param(
     [switch] $Overheal,
     [switch] $Corruption,
     [switch] $CorruptionUnitTrigger,
+    [switch] $CorruptionCarverTrigger,
     [switch] $PermanentCorruption,
     [switch] $MoonPhaseCard,
     [switch] $MoonPhaseAdvance,
@@ -423,6 +424,7 @@ if ($TrainHeal) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($Overheal) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($Corruption) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($CorruptionUnitTrigger) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
+if ($CorruptionCarverTrigger) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($PermanentCorruption) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($MoonPhaseCard) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($MoonPhaseAdvance) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
@@ -624,6 +626,7 @@ if ($TrainHeal) { $environment['MT2_PROBE_MODIFIERS'] = 'train-heal' }
 if ($Overheal) { $environment['MT2_PROBE_MODIFIERS'] = 'overheal' }
 if ($Corruption) { $environment['MT2_PROBE_MODIFIERS'] = 'corruption' }
 if ($CorruptionUnitTrigger) { $environment['MT2_PROBE_MODIFIERS'] = 'corruption-unit-trigger' }
+if ($CorruptionCarverTrigger) { $environment['MT2_PROBE_MODIFIERS'] = 'corruption-carver-trigger' }
 if ($PermanentCorruption) { $environment['MT2_PROBE_MODIFIERS'] = 'permanent-corruption' }
 if ($MoonPhaseCard) { $environment['MT2_PROBE_MODIFIERS'] = 'moon-phase-card' }
 if ($MoonPhaseAdvance) { $environment['MT2_PROBE_MODIFIERS'] = 'moon-phase-advance' }
@@ -865,6 +868,33 @@ if ($CorruptionUnitTrigger) {
         throw 'Original wounded Glugsider did not heal on the Unearthed Remains corruption addition.'
     }
     Write-Output 'NATIVE-CORRUPTION-UNIT-TRIGGER PASS: wounded original Glugsider healed on corruption addition.'
+}
+if ($CorruptionCarverTrigger) {
+    $carverActions = @($trace.Actions | Where-Object { $_.ScenarioAction })
+    $upgradedActions = @($carverActions | Where-Object {
+        $entry = $_
+        $before = $entry.Before.Spawn.Train
+        $after = $entry.Actual.Spawn.Train
+        $card = @($before.Context.Cards.Hand | Where-Object InstanceId -EQ $entry.Action.CardInstanceId)
+        $oldUnit = @($before.Rooms.Units | Where-Object AssetKey -EQ 'MonsterShardsoulCarver')
+        if ($card.Count -ne 1 -or $oldUnit.Count -ne 1) { return $false }
+        $newUnit = @($after.Rooms.Units | Where-Object Id -EQ $oldUnit[0].Id)
+        if ($newUnit.Count -ne 1) { return $false }
+        $oldArmor = @($oldUnit[0].Statuses | Where-Object Id -EQ 'armor')
+        $newArmor = @($newUnit[0].Statuses | Where-Object Id -EQ 'armor')
+        $oldStacks = if ($oldArmor.Count -eq 0) { 0 } else { $oldArmor[0].Stacks }
+        $added = @($newUnit[0].Modifiers.Upgrades | Where-Object { $_.DataId -notin @($oldUnit[0].Modifiers.Upgrades.DataId) })
+        $card[0].DataId -eq '17fb5276-2311-44c9-b662-b73581d9af56' -and
+            $newUnit[0].BaseAttack -eq ($oldUnit[0].BaseAttack + 3) -and
+            $newArmor.Count -eq 1 -and $newArmor[0].Stacks -eq ($oldStacks + 3) -and
+            $added.Count -eq 1 -and $added[0].Stats.Damage -eq 3
+    })
+    if ($trace.ModifierScenario -ne 'corruption-carver-trigger' -or
+        $carverActions.Count -ne 2 -or $upgradedActions.Count -ne 1 -or
+        -not (Select-String -LiteralPath $unityLog -Pattern 'CORRUPTION-CARVER-DEFINITION cost=1 attack=20 hp=30 upgrade=Plus3Attack armor=3' -Quiet)) {
+        throw 'Original Shardsoul Carver did not receive its corruption-triggered attack upgrade and Armor.'
+    }
+    Write-Output 'NATIVE-CORRUPTION-CARVER-TRIGGER PASS: original Carver gained temporary +3 attack and +3 Armor.'
 }
 if ($PermanentCorruption -and ($trace.ModifierScenario -ne 'permanent-corruption' -or
     -not (Select-String -LiteralPath $unityLog -Pattern 'PERMANENT-CORRUPTION-PREPARED card=\d+ room=0 current=\d+ max=\d+ permanent=\d+' -Quiet) -or

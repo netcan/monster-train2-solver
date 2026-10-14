@@ -7,6 +7,7 @@ internal static class RoomCorruptionChecks
     private const string UnearthedId = "17fb5276-2311-44c9-b662-b73581d9af56";
     private const string EchoesId = "78996030-e8d1-4731-897e-ee4b809fa26c";
     private const string GlugsiderId = "e83182b1-ae94-4f7e-b7fe-aea5b825ecbe";
+    private const string CarverId = "8cd475e4-6e39-4306-b544-026bf30f4eac";
 
     internal static void Run()
     {
@@ -176,6 +177,64 @@ internal static class RoomCorruptionChecks
         BattleTurnChecks.Native(fixture);
         BattleSearchChecks.Native(fixture);
         Console.WriteLine("NATIVE-CORRUPTION-UNIT-TRIGGER PASS: original Glugsider healed on corruption addition; ability guarded.");
+    }
+
+    internal static void NativeCarver(FixtureValue fixture)
+    {
+        Require(fixture.GetProperty("Schema").GetInt32() == 103 &&
+            fixture.GetProperty("ModifierScenario").GetString() == "corruption-carver-trigger" &&
+            fixture.GetProperty("NativeWon").GetBoolean() &&
+            new[] { "CaptureFailures", "Mismatches", "Unsupported", "Pending" }
+                .All(name => fixture.GetProperty(name).GetInt32() == 0),
+            "Original Shardsoul Carver battle did not finish with a complete native match.");
+        FixtureValue[] marked = fixture.GetProperty("Actions").EnumerateArray()
+            .Where(record => record.GetProperty("ScenarioAction").GetBoolean()).ToArray();
+        Require(marked.Length == 2, "Expected original corruption addition and removal actions.");
+        BattleTurnState before = marked[0].GetProperty("Before").Deserialize<BattleTurnState>()!;
+        BattleTurnState actual = marked[0].GetProperty("Actual").Deserialize<BattleTurnState>()!;
+        PlayCardAction action = marked[0].GetProperty("Action").Deserialize<PlayCardAction>()!;
+        CombatUnit oldUnit = before.Spawn.Train.Rooms.Single(room => room.RoomIndex == 0).Units
+            .Single(unit => unit.AssetKey == "MonsterShardsoulCarver");
+        CombatUnit newUnit = actual.Spawn.Train.Rooms.Single(room => room.RoomIndex == 0).Units
+            .Single(unit => unit.Id == oldUnit.Id);
+        CombatTrigger callback = oldUnit.Triggers.Single(trigger => trigger.Kind == "CorruptionAdded");
+        RoomCapacityState oldCapacity = before.Spawn.Train.Context!.RoomCapacities!.Single(room => room.RoomIndex == 0);
+        RoomCapacityState newCapacity = actual.Spawn.Train.Context!.RoomCapacities!.Single(room => room.RoomIndex == 0);
+        CardUpgradeModifier[] added = newUnit.Modifiers!.Upgrades
+            .Where(upgrade => oldUnit.Modifiers!.Upgrades.All(existing => existing.DataId != upgrade.DataId)).ToArray();
+        Require(action.RoomIndex == 0 &&
+            before.Spawn.Train.Context.FindCard(action.CardInstanceId)?.DataId == UnearthedId &&
+            before.Spawn.Train.Context.FindCard(oldUnit.SpawnerCardId)?.DataId == CarverId &&
+            callback.Effects.Count == 2 &&
+            callback.Effects[0].Type == "CardEffectAddTempCardUpgradeToUnits" &&
+            callback.Effects[1].Type == "CardEffectAddStatusEffect" &&
+            oldUnit.BaseAttack == 20 && newUnit.BaseAttack == 23 &&
+            newUnit.Status("armor")?.Stacks == (oldUnit.Status("armor")?.Stacks ?? 0) + 3 &&
+            added.Length == 1 && added[0].Stats.Damage == 3 && added[0].Lifecycle != null &&
+            oldCapacity.Corruption == 0 && newCapacity.Corruption == 1 &&
+            oldCapacity.MaxCorruption == 4 && newCapacity.MaxCorruption == 5,
+            "Original Shardsoul Carver lacks a positive upgrade and armor callback witness: " +
+            $"attack={oldUnit.BaseAttack}->{newUnit.BaseAttack}, armor={oldUnit.Status("armor")?.Stacks}->{newUnit.Status("armor")?.Stacks}, " +
+            $"upgrades={oldUnit.Modifiers?.Upgrades.Count}->{newUnit.Modifiers?.Upgrades.Count}, added={added.Length}.");
+        BattleActionResult replay = BattleActionModel.PlayCard(before, action);
+        Require(replay.Supported && ModelJson.Difference(BattleTurnChecks.Comparable(replay.State!),
+            BattleTurnChecks.Comparable(actual)) == null,
+            "Original Shardsoul Carver corruption callback differs from the native action.");
+        BattleTurnState removeBefore = marked[1].GetProperty("Before").Deserialize<BattleTurnState>()!;
+        BattleTurnState removeAfter = marked[1].GetProperty("Actual").Deserialize<BattleTurnState>()!;
+        PlayCardAction removeAction = marked[1].GetProperty("Action").Deserialize<PlayCardAction>()!;
+        CombatUnit beforeRemoval = removeBefore.Spawn.Train.Rooms.Single(room => room.RoomIndex == 0).Units
+            .Single(unit => unit.Id == oldUnit.Id);
+        CombatUnit afterRemoval = removeAfter.Spawn.Train.Rooms.Single(room => room.RoomIndex == 0).Units
+            .Single(unit => unit.Id == oldUnit.Id);
+        Require(removeBefore.Spawn.Train.Context!.FindCard(removeAction.CardInstanceId)?.DataId == EchoesId &&
+            removeBefore.Spawn.Train.Context.RoomCapacities!.Single(room => room.RoomIndex == 0).Corruption == 1 &&
+            removeAfter.Spawn.Train.Context!.RoomCapacities!.Single(room => room.RoomIndex == 0).Corruption == 0 &&
+            afterRemoval.Status("armor")?.Stacks == beforeRemoval.Status("armor")?.Stacks,
+            "Removing corruption unexpectedly fired the Carver status callback.");
+        BattleTurnChecks.Native(fixture);
+        BattleSearchChecks.Native(fixture);
+        Console.WriteLine("NATIVE-CORRUPTION-CARVER-TRIGGER PASS: original temporary +3 attack and +3 armor callback.");
     }
 
     internal static void NativePermanent(FixtureValue fixture)

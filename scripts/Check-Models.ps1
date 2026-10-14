@@ -6,7 +6,8 @@ $workspace = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $fixtureNames = @('full-battle-steward-once.mt2f', 'full-battle-no-cards.mt2f', 'full-battle-units-and-junk.mt2f',
     'full-battle-unplayed-card-pyre-damage.mt2f',
     'full-battle-unplayed-card-effects.mt2f', 'full-battle-train-heal.mt2f', 'full-battle-status-upgrade.mt2f',
-    'full-battle-overheal.mt2f', 'full-battle-corruption.mt2f', 'full-battle-corruption-unit-trigger.mt2f', 'full-battle-permanent-corruption.mt2f',
+    'full-battle-overheal.mt2f', 'full-battle-corruption.mt2f', 'full-battle-corruption-unit-trigger.mt2f',
+    'full-battle-corruption-carver-trigger.mt2f', 'full-battle-permanent-corruption.mt2f',
     'full-battle-soul-siphon.mt2f', 'full-battle-moon-phase-card.mt2f', 'full-battle-moon-phase-advance.mt2f',
     'full-battle-moon-phase-callbacks.mt2f',
     'full-battle-conditional-no-player-status.mt2f',
@@ -391,6 +392,14 @@ foreach ($fixturePath in $corruptionUnitFixtures) {
         dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- $mode $fixturePath
         if ($LASTEXITCODE -ne 0) { throw "Corruption unit-trigger checks failed ($mode): $fixturePath" }
     }
+}
+
+$corruptionCarverFixtures = @($fixtures | Where-Object {
+    (Split-Path -Leaf $_) -eq 'full-battle-corruption-carver-trigger.mt2f'
+})
+foreach ($fixturePath in $corruptionCarverFixtures) {
+    dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- --corruption-carver-trigger-only $fixturePath
+    if ($LASTEXITCODE -ne 0) { throw "Corruption Carver trigger checks failed: $fixturePath" }
 }
 
 $permanentCorruptionFixtures = @($fixtures | Where-Object {

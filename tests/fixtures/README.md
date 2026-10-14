@@ -211,8 +211,16 @@ The default command checks the full curated inventory. For routine changes, run
 the dedicated checks for the new and directly affected scenarios; run the full
 inventory at completed milestones and before delivery.
 
-Current inventory is 323 archives: 292 accepted battles and 31 component
+Current inventory is 324 archives: 293 accepted battles and 31 component
 calibrations. Original relic evidence is 81/224 (36.16%). The binary-only
+`full-battle-corruption-carver-trigger.mt2f` plays original Shardsoul Carver
+and Unearthed Remains: `CorruptionAdded` installs the original temporary
+`Plus3Attack` upgrade and adds 3 Armor before room Corruption becomes 1.
+Echoes of the Past then removes Corruption without firing the callback again.
+The 41 native stages, 19 actions, five EndTurns, independent policy suffix and
+bounded serial/parallel searches match. Run `--corruption-carver-trigger-only`
+for the positive original-unit and removal checks. This adds no relic owner.
+The binary-only
 `full-battle-corruption-unit-trigger.mt2f` records original Glugsider healing
 from 94/100 to 100/100 when original Unearthed Remains raises room corruption
 from 0 to 1. Its 70 stages, 17 actions and seven EndTurns match native play;
