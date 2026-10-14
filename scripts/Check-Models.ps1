@@ -47,6 +47,8 @@ $fixtureNames = @('full-battle-steward-once.mt2f', 'full-battle-no-cards.mt2f', 
     'full-battle-conditional-relic-card-upgrades.mt2f', 'full-battle-statistics.mt2f', 'full-battle-numeric-upgrades.mt2f',
     'full-battle-dynamic-upgrades.mt2f', 'full-battle-sacrifice-effects.mt2f', 'full-battle-card-effect-kill.mt2f', 'full-battle-card-effect-kill-subtype.mt2f', 'full-battle-null-forwarding-cleave.mt2f', 'full-battle-null-unit-triggers.mt2f', 'full-battle-null-targetless-scourges.mt2f', 'full-battle-original-trample-basher.mt2f', 'full-battle-original-spell-shield.mt2f', 'full-battle-choose-discard.mt2f', 'full-battle-dragon-hoard.mt2f', 'full-battle-remove-all-status-effects.mt2f', 'full-battle-card-recursion.mt2f', 'full-battle-card-recursion-choice.mt2f', 'full-battle-card-recursion-choose-to-hand.mt2f', 'full-battle-card-recursion-filter-choice.mt2f', 'full-battle-card-recursion-discard-choice.mt2f', 'full-battle-card-recursion-upgrade.mt2f', 'full-battle-card-recursion-upgrade-hand.mt2f', 'full-battle-card-recursion-upgrade-choice.mt2f', 'full-battle-card-recursion-upgrade-filter-choice.mt2f', 'full-battle-card-recursion-upgrade-replacement-choice.mt2f', 'full-battle-sacrifice-upgrades.mt2f',
     'full-battle-set-health.mt2f',
+    'full-battle-damage-by-units-killed.mt2f',
+    'full-battle-damage-by-units-killed-physical.mt2f',
     'full-battle-hand-upgrades.mt2f', 'full-battle-targeted-hand-upgrades.mt2f', 'full-battle-permanent-consume-hand-upgrades.mt2f',
     'full-battle-permanent-consume-over-temporary.mt2f',
     'full-battle-choose-discard-others.mt2f',
@@ -474,6 +476,15 @@ foreach ($fixturePath in @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 
     foreach ($mode in @('--native-actions-only', '--battle-search-only')) {
         dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- $mode $fixturePath
         if ($LASTEXITCODE -ne 0) { throw "SetHealth checks failed ($mode): $fixturePath" }
+    }
+}
+foreach ($fixturePath in @($fixtures | Where-Object {
+    (Split-Path -Leaf $_) -in @('full-battle-damage-by-units-killed.mt2f',
+        'full-battle-damage-by-units-killed-physical.mt2f')
+})) {
+    foreach ($mode in @('--damage-by-units-killed-only', '--native-actions-only', '--battle-search-only')) {
+        dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- $mode $fixturePath
+        if ($LASTEXITCODE -ne 0) { throw "Damage-by-units-killed checks failed ($mode): $fixturePath" }
     }
 }
 foreach ($fixturePath in $recursionUpgradeFixtures) {

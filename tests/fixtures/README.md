@@ -1,5 +1,16 @@
 # Native regression fixtures
 
+`full-battle-damage-by-units-killed.mt2f` uses unchanged `StarterImp` and
+`ShardtailSacrificeImps1` definitions. The Imp is summoned behind a Train
+Steward; the spell is drawn next turn and sacrifices it while damaging enemies
+on the same floor. The muted Instant battle wins with 57 matched stages, eight
+actions and seven EndTurns, with zero capture failures, mismatches, unsupported
+transitions or pending records. The binary-only archive is 24,616 bytes.
+
+`full-battle-damage-by-units-killed-physical.mt2f` repeats the original effect
+with physical spawn points captured; its 57 stages, eight actions and seven
+EndTurns also match. The archive is 28,562 bytes.
+
 `full-battle-set-health.mt2f` plays original `RiskyOperation` twice, setting a
 living player's health directly to one before its upgrade and Lifesteal effects.
 The muted Instant native battle won with 51 matched stages, 19 card actions and
@@ -95,7 +106,7 @@ The default command checks the full curated inventory. For routine changes, run
 the dedicated checks for the new and directly affected scenarios; run the full
 inventory at completed milestones and before delivery.
 
-Current inventory is 304 archives: 273 accepted battles and 31 component
+Current inventory is 306 archives: 275 accepted battles and 31 component
 calibrations. Original relic evidence is 78/224 (34.82%). The schema-162
 `full-battle-dragon-hoard.mt2f` archive captures Alchemy changing the hoard from
 2 to 4. The Instant native battle wins with 61 matched stages, 21 card actions

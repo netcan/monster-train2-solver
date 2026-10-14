@@ -19,6 +19,7 @@ param(
     [switch] $SacrificeUpgrades,
     [switch] $SacrificeEffects,
     [switch] $SetHealth,
+    [switch] $DamageByUnitsKilled,
     [switch] $CardEffectKill,
     [switch] $CardEffectKillSubtype,
     [switch] $NullForwarding,
@@ -367,6 +368,7 @@ $cardRecursionModes = @($CardRecursion, $CardRecursionDiscard, $CardRecursionCho
 if ($cardRecursionModes.Count -gt 1) { throw 'Choose one CardRecursion scenario.' }
 if ($SacrificeEffects) { $Policy = 'units-spells-and-junk' }
 if ($SetHealth) { $Policy = 'units-spells-and-junk' }
+if ($DamageByUnitsKilled) { $Policy = 'units-spells-and-junk' }
 if ($CardEffectKill -and $CardEffectKillSubtype) { throw 'Choose either -CardEffectKill or -CardEffectKillSubtype.' }
 if ($CardEffectKill -or $CardEffectKillSubtype) { $Policy = 'units-spells-and-junk' }
 if ($NullForwarding) { $Policy = 'units-spells-and-junk' }
@@ -548,6 +550,7 @@ if ($SacrificeEffects) {
     $environment['MT2_PROBE_MODIFIERS'] = 'sacrifice-effects'
 }
 if ($SetHealth) { $environment['MT2_PROBE_MODIFIERS'] = 'set-health' }
+if ($DamageByUnitsKilled) { $environment['MT2_PROBE_MODIFIERS'] = 'damage-by-units-killed' }
 if ($CardEffectKill -or $CardEffectKillSubtype) {
     $environment['MT2_PROBE_MODIFIERS'] = if ($CardEffectKillSubtype) { 'card-effect-kill-subtype' } else { 'card-effect-kill' }
 }
@@ -1241,6 +1244,29 @@ $setHealthCoverage = -not $SetHealth -or @($setHealthActions | Where-Object {
     $beforeUnit = $entry.Before.Spawn.Train.Rooms.Units | Where-Object Id -EQ $entry.Action.TargetUnitId
     $afterUnit = $entry.Actual.Spawn.Train.Rooms.Units | Where-Object Id -EQ $entry.Action.TargetUnitId
     $beforeUnit.Health -gt 1 -and $afterUnit.Health -eq 1 -and -not $entry.Difference -and $entry.Predicted.Supported
+}).Count -gt 0
+$damageByUnitsKilledActions = @($trace.Actions | Where-Object {
+    $entry = $_
+    $playedCard = $entry.Before.Spawn.Train.Context.Cards.Hand | Where-Object InstanceId -EQ $entry.Action.CardInstanceId
+    $playedCard.DataId -eq 'd9c0c510-ccb5-4a89-9f3b-99799e765540'
+})
+$damageByUnitsKilledCoverage = -not $DamageByUnitsKilled -or @($damageByUnitsKilledActions | Where-Object {
+    $entry = $_
+    $beforeRoom = $entry.Before.Spawn.Train.Rooms | Where-Object RoomIndex -EQ $entry.Action.RoomIndex
+    $afterRoom = $entry.Actual.Spawn.Train.Rooms | Where-Object RoomIndex -EQ $entry.Action.RoomIndex
+    $imps = @($beforeRoom.Units | Where-Object {
+        $_.Team -eq 1 -and $_.Subtypes -contains 'SubtypesData_Imp_0f9b989f-15b5-4b16-8378-5d8ed8691e7c'
+    })
+    $enemyDamage = @($beforeRoom.Units | Where-Object {
+        $enemy = $_
+        $enemy.Team -eq 0 -and @($afterRoom.Units | Where-Object Id -EQ $enemy.Id |
+            Where-Object { $_.Health -ge $enemy.Health }).Count -eq 0
+    })
+    $imps.Count -gt 0 -and @($imps | Where-Object {
+        $imp = $_
+        @($afterRoom.Units | Where-Object Id -EQ $imp.Id).Count -eq 0
+    }).Count -eq $imps.Count -and $enemyDamage.Count -gt 0 -and
+        -not $entry.Difference -and $entry.Predicted.Supported
 }).Count -gt 0
 $cardEffectKillActions = @($trace.Actions | Where-Object {
     $actionEntry = $_
@@ -2834,6 +2860,8 @@ $result = [pscustomobject]@{
     SacrificeEffectCoverage = $sacrificeEffectCoverage
     SetHealthActions = $setHealthActions.Count
     SetHealthCoverage = $setHealthCoverage
+    DamageByUnitsKilledActions = $damageByUnitsKilledActions.Count
+    DamageByUnitsKilledCoverage = $damageByUnitsKilledCoverage
     CardEffectKillActions = $cardEffectKillActions.Count
     CardEffectKillCoverage = $cardEffectKillCoverage
     CardEffectKillSubtypeCoverage = $cardEffectKillSubtypeCoverage
@@ -2917,6 +2945,7 @@ $result = [pscustomobject]@{
 }
 if (-not $sacrificeEffectCoverage) { throw 'Native CardEffectSacrifice was not exercised through a full battle action.' }
 if (-not $setHealthCoverage) { throw 'Native CardEffectSetHealth did not set a living player unit to one health in a matched action.' }
+if (-not $damageByUnitsKilledCoverage) { throw 'Original Shardtail effect did not sacrifice an Imp and damage an enemy in a matched action.' }
 if (-not $cardEffectKillCoverage) { throw 'Native CardEffectKill did not kill one enemy and one player unit in a full battle action.' }
 if (-not $cardEffectKillSubtypeCoverage) { throw 'Native CardEffectKill did not kill a matching subtype target in a full battle action.' }
 if (-not $cardRecursionCoverage) { throw 'Native WurmkinEtchings recursion did not restore the expected cards in a matched full battle action.' }

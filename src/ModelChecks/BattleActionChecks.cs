@@ -490,6 +490,8 @@ internal static class BattleActionChecks
             chooser = ChooseSacrificeEffectsThenCards;
         if (fixture.TryGetProperty("ModifierScenario", out var setHealthScenario) && setHealthScenario.GetString() == "set-health")
             chooser = ChooseSetHealthThenCards;
+        if (fixture.TryGetProperty("ModifierScenario", out var killedUnitsScenario) && killedUnitsScenario.GetString() == "damage-by-units-killed")
+            chooser = ChooseDamageByUnitsKilledThenCards;
         if (fixture.TryGetProperty("ModifierScenario", out var typedDrawScenario) && typedDrawScenario.GetString() == "typed-draw")
             chooser = ChooseTypedDrawThenCards;
         if (fixture.TryGetProperty("ModifierScenario", out var incantPolicy) && incantPolicy.GetString() is "incant" or "incant-thresholds" or "incant-relic" or "incant-relic-combined")
@@ -718,6 +720,41 @@ internal static class BattleActionChecks
                 var action = new PlayCardAction(card.InstanceId, 0, targetUnitId: target.Id);
                 if (BattleActionModel.PlayCard(source, action).Supported) return action;
             }
+        }
+        return BattleActionModel.ChooseUnitSpellAndJunkPlay(source);
+    }
+
+    private static PlayCardAction? ChooseDamageByUnitsKilledThenCards(BattleTurnState source)
+    {
+        const string impCardId = "d76be2d0-f851-4d43-bdc0-7c7a7779724f";
+        const string spellCardId = "d9c0c510-ccb5-4a89-9f3b-99799e765540";
+        const string impSubtype = "SubtypesData_Imp_0f9b989f-15b5-4b16-8378-5d8ed8691e7c";
+        CardToken? imp = source.Spawn.Train.Context!.Cards.Hand.FirstOrDefault(card => card.DataId == impCardId);
+        if (imp != null)
+        {
+            RoomCombatState floor = source.Spawn.Train.Rooms.Single(item => item.RoomIndex == 0);
+            int friendlyCount = floor.Units.Count(unit => unit.Team == CombatTeam.Player && !unit.IsPyre);
+            if (friendlyCount == 0)
+            {
+                PlayCardAction? defender = BattleActionModel.EnumerateSupportedPlays(source).FirstOrDefault(action =>
+                    action.RoomIndex == 0 && source.Spawn.Train.Context.Cards.Hand.Any(card =>
+                        card.InstanceId == action.CardInstanceId && card.InstanceId != imp.InstanceId &&
+                        source.PlayRules?.Cards.Any(rule => rule.DataId == card.DataId && rule.CardType == "Monster") == true));
+                if (defender != null) return defender;
+            }
+            else
+            {
+                var summon = new PlayCardAction(imp.InstanceId, 0, playerPosition: friendlyCount);
+                if (BattleActionModel.PlayCard(source, summon).Supported) return summon;
+            }
+        }
+        RoomCombatState room = source.Spawn.Train.Rooms.Single(item => item.RoomIndex == 0);
+        CardToken? spell = source.Spawn.Train.Context.Cards.Hand.FirstOrDefault(card => card.DataId == spellCardId);
+        if (spell != null && room.Units.Any(unit => unit.Team == CombatTeam.Player && unit.Subtypes.Contains(impSubtype)) &&
+            room.Units.Any(unit => unit.Team == CombatTeam.Enemy))
+        {
+            var action = new PlayCardAction(spell.InstanceId, 0);
+            if (BattleActionModel.PlayCard(source, action).Supported) return action;
         }
         return BattleActionModel.ChooseUnitSpellAndJunkPlay(source);
     }

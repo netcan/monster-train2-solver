@@ -1,6 +1,13 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
 
+if (args.Length == 2 && args[0] == "--damage-by-units-killed-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    DamageByUnitsKilledChecks.Native(fixture.RootElement);
+    return;
+}
+
 if (args.Length == 1 && args[0] == "--room-corruption-pure")
 {
     RoomCorruptionChecks.Run();

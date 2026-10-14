@@ -16,7 +16,7 @@ namespace MonsterTrain2Poju.Probe
             "CardEffectAttachEquipment", "CardEffectAttachTrainRoomAttachment", "CardEffectBuffEquipment", "CardEffectRemoveEquipment",
             "CardEffectRewardGold", "CardEffectGainEnergy", "CardEffectAdjustEnergy", "CardEffectGainEnergyNextTurn", "CardEffectGainEnergyEveryTurn",
             "CardEffectAdjustDragonsHoard", "CardEffectRewardGoldPerDragonHoard",
-            "CardEffectDamage", "CardEffectDamagePerSourceAttack", "CardEffectDamagePerHp", "CardEffectDraw", "CardEffectDrawAdditionalNextTurn",
+            "CardEffectDamage", "CardEffectDamagePerSourceAttack", "CardEffectDamagePerHp", "CardEffectDamageByUnitsKilled", "CardEffectDraw", "CardEffectDrawAdditionalNextTurn",
             "CardEffectRemoveAllStatusEffects",
             "CardEffectAdjustRoomCapacity", "CardEffectAdjustRoomMaxCorruption", "CardEffectAdjustCorruption",
             "CardEffectAddPermanentCorruption",
@@ -286,6 +286,7 @@ namespace MonsterTrain2Poju.Probe
                 effect.GetEffectStateName() == "CardEffectDamage" ? "Damage" :
                 effect.GetEffectStateName() == "CardEffectDamagePerSourceAttack" ? "DamagePerSourceAttack" :
                 effect.GetEffectStateName() == "CardEffectDamagePerHp" ? "DamagePerHp" :
+                effect.GetEffectStateName() == "CardEffectDamageByUnitsKilled" ? "DamageByUnitsKilled" :
                 effect.GetEffectStateName() == "CardEffectAdjustRoomCapacity" ? "AdjustCapacity" :
                 effect.GetEffectStateName() == "CardEffectAdjustRoomMaxCorruption" ? "AdjustMaxCorruption" :
                 effect.GetEffectStateName() == "CardEffectAdjustCorruption" ? "AdjustCorruption" :
@@ -420,7 +421,8 @@ namespace MonsterTrain2Poju.Probe
                 type == "Generate" ? CardGenerationProbe.Definition(effect) : generation, type == "AdjustCapacity" && effect.GetParamBool(),
                 copyHeroStats: type == "CopyUnits" ? effect.GetParamBool() : (bool?)null,
                 scaleUpgrade: scaleUpgrade, doNotFullyRemove: type == "Sacrifice" ? effect.GetParamBool() : (bool?)null,
-                targetSubtype: (type == "Sacrifice" || type == "Kill") && !effect.GetParamSubtype().IsNone ? effect.GetParamSubtype().Key : "",
+                targetSubtype: type == "DamageByUnitsKilled" ? effect.GetParamStr() :
+                    (type == "Sacrifice" || type == "Kill") && !effect.GetParamSubtype().IsNone ? effect.GetParamSubtype().Key : "",
                 typedDraw: type == "DrawType" ? TypedDrawProbe.DrawRule(effect) : null,
                 nextDrawUpgrade: type == "ScheduleNextDrawUpgrade" ? TypedDrawProbe.UpgradeRule(effect) : null,
                 requiredGold: type == "ScheduleNextDrawUpgrade" ? effect.GetAdditionalParamInt() : 0,
