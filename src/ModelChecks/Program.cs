@@ -569,6 +569,12 @@ if (args.Length == 2 && args[0] == "--native-actions-only")
     BattleActionChecks.Native(actionDocument.RootElement);
     return;
 }
+if (args.Length == 2 && args[0] == "--choose-discard-only")
+{
+    using var choiceDocument = ModelJson.ReadFixture(args[1]);
+    ChooseDiscardChecks.Native(choiceDocument.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--forge-points-only")
 {
     using var forgeDocument = ModelJson.ReadFixture(args[1]);

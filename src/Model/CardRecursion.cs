@@ -212,9 +212,11 @@ namespace MonsterTrain2Poju.Model
             foreach (CardRecursionSelection selection in selections)
             {
                 if (selection.EffectIndex < 0 || selection.EffectIndex >= effects.Count ||
-                    effects[selection.EffectIndex].Type != "Recursion" ||
-                    !IsChoiceMode(effects[selection.EffectIndex].Recursion?.SelectionMode ?? string.Empty))
-                    return "Card recursion selection does not match a choose-mode effect.";
+                    !(effects[selection.EffectIndex].Type == "Recursion" &&
+                        IsChoiceMode(effects[selection.EffectIndex].Recursion?.SelectionMode ?? string.Empty) ||
+                        effects[selection.EffectIndex].Type == "ChooseDiscard") ||
+                    selection.CardInstanceIds.Count != 1)
+                    return "Card selection does not match a single-card choose-mode effect.";
             }
             return null;
         }

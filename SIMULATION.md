@@ -1,10 +1,26 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-14): 298 binary archives, including 267
+Current accepted inventory (2026-10-15): 299 binary archives, including 268
 full battles and 31 component calibrations. Unchanged original relic evidence
 covers 78/224 catalog entries (34.82%); see
 [the owner evidence table](tests/fixtures/relic-coverage.md). Whole-battle
 coverage and the optimal solver remain in progress.
+
+### Original hand-selected smelt
+
+`full-battle-choose-discard.mt2f` plays unchanged `StarterScrap` with one-cost
+`StarterFireStarter` and two-cost `EngulfedInSmoke` in hand. The native choice
+consumes the latter, adds two Forge Points and two Ember, and matches the
+independent model through 23 actions, seven EndTurns and 55 stages. Search
+enumerates five distinct eligible card identities; the recorded choice and
+128-state serial/parallel searches match. The independent post-choice policy
+matches 22 actions, seven EndTurns and 16 parallel replays. Capture failures,
+mismatches, unsupported transitions and pending records are zero. The
+34,048-byte binary has 5,532 unique nodes and SHA-256
+`bd9ec8d7f47652f475bd75465ebb6a67e53013eba3a7c10e3c19015d851a62d5`.
+Choose-discard modes 0, 1 and 3 use the shared hand-removal path; batch mode 2,
+Refine, replacement pools, room cost modifiers and extra-smelt Ember relics
+remain uncalibrated or explicitly unsupported.
 
 ### Original Spell Shield damage
 

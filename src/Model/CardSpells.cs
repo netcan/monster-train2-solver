@@ -428,7 +428,19 @@ namespace MonsterTrain2Poju.Model
                         effect.UseCardTraits, effect.RequireEquipment, effect.UseSelectedRoom, effect.CountStatusOnlyOnTargets,
                         effect.SpawnFallbackUnit, effect.DisallowStatusStackModifiers, effect.StatusAdjustmentFilter,
                         effect.DamagePerHpLastAttacker, effect.DamagePerHpIncludeArmor, effect.RoomAttachment, effect.Recursion,
-                        effect.CardFilter, effect.UpgradeFilters, effect.RemoveHalfStatusEffects, effect.Overheal, effect.CorruptionAdd);
+                        effect.CardFilter, effect.UpgradeFilters, effect.RemoveHalfStatusEffects, effect.Overheal, effect.CorruptionAdd,
+                        chooseDiscard: effect.ChooseDiscard);
+                }
+                if (effect.Type == "ChooseDiscard")
+                {
+                    IReadOnlyList<int>? selectedIds = recursionSelections?.FirstOrDefault(selection =>
+                        selection.EffectIndex == index)?.CardInstanceIds;
+                    CardChooseDiscardResult chosen = CardChooseDiscardModel.Apply(state.Context!, effect, sourceCardId,
+                        index, definitions, roomIndex, selectedIds?.Count == 1 ? selectedIds[0] : null);
+                    if (!chosen.Supported) return UnsupportedTrain(chosen.UnsupportedReason!);
+                    state = WithContext(state, chosen.Context!);
+                    piles = chosen.OtherPiles?.ToArray() ?? piles;
+                    continue;
                 }
                 if (effect.Type == "Recursion")
                 {
@@ -1484,6 +1496,12 @@ namespace MonsterTrain2Poju.Model
                         return "Missing upgraded-copy source or generation rules.";
                     continue;
                 }
+                if (effect.Type == "ChooseDiscard")
+                {
+                    string? chooseError = CardChooseDiscardModel.Validate(effect, source.Context);
+                    if (chooseError != null) return chooseError;
+                    continue;
+                }
                 if (effect.Type == "Recursion")
                 {
                     string? recursionError = CardRecursionModel.Validate(effect, source.Context.OtherPiles, source.Context.Cards);
@@ -1634,6 +1652,12 @@ namespace MonsterTrain2Poju.Model
             IReadOnlyDictionary<int, int>? pendingDeadRooms = null, IReadOnlyDictionary<int, int>? positions = null, int selfUnitId = 0,
             int sourceCardId = 0)
         {
+            if (effect.Type == "ChooseDiscard")
+            {
+                IReadOnlyList<int> cardIds = CardChooseDiscardModel.EligibleCards(state.Context!, effect,
+                    sourceCardId, out string? error);
+                return new CardTargets(Array.Empty<int>(), error, cardIds: cardIds);
+            }
             if (effect.Type == "Recursion")
             {
                 IReadOnlyList<int> cardIds = CardRecursionModel.EligibleCards(state.Context!.Cards,
@@ -1693,10 +1717,11 @@ namespace MonsterTrain2Poju.Model
             if (effect.Type == "AttachRoomCapacity") return !preview && !bossDead && RoomCapacityModel.TestAttachment(room, effect);
             if (effect.Type == ForgePointsModel.Effect) return ForgePointsModel.Test(pyreAlive ?? context?.EnergyState?.PyreAlive);
             if (EnergyModel.IsEffect(effect.Type)) return !preview && !bossDead && EnergyModel.Test(context!, effect.Type);
-            if (preview && (effect.Type == "Draw" || effect.Type == "DrawType" || effect.Type == "ScheduleNextDrawUpgrade" || effect.Type == "DrawNextTurn" || effect.Type == "DiscardHand" || effect.Type == "RandomDiscard" || effect.Type == "Generate")) return false;
+            if (preview && (effect.Type == "Draw" || effect.Type == "DrawType" || effect.Type == "ScheduleNextDrawUpgrade" || effect.Type == "DrawNextTurn" || effect.Type == "DiscardHand" || effect.Type == "RandomDiscard" || effect.Type == "ChooseDiscard" || effect.Type == "Generate")) return false;
             if (bossDead && !(effect.Tests?.CanPlayAfterBossDead ?? (effect.Type != "HandUpgrade" && effect.Type != "Draw" && effect.Type != "DrawType" && effect.Type != "ScheduleNextDrawUpgrade" && effect.Type != "DrawNextTurn" && effect.Type != "DiscardHand" && effect.Type != "RandomDiscard" && effect.Type != "Generate"))) return false;
             if (effect.Type == "RandomDiscard") return context != null &&
                 RandomDiscardModel.EligibleCount(context, sourceCardId, out _) is int eligible && eligible > 0;
+            if (effect.Type == "ChooseDiscard") return effect.ChooseDiscard?.Condition == 5 || count > 0;
             if (effect.Type == "Generate" && effect.Generation?.RequireHandSpace == true && context != null && context.Cards.Hand.Count >= context.MaxHandSize) return false;
             switch (effect.Type)
             {
@@ -1811,7 +1836,8 @@ namespace MonsterTrain2Poju.Model
 
         private static bool AttackChange(CardActionEffect effect) => effect.Type == "BuffAttack" || effect.Type == "DebuffAttack";
         private static bool CardOnlyPileTarget(CardActionEffect effect) =>
-            effect.Type == "RandomDiscard" && effect.Target == "Hand" || effect.Type == "Recursion" || CardOnlyDrawTarget(effect);
+            effect.Type == "RandomDiscard" && effect.Target == "Hand" || effect.Type == "Recursion" ||
+            effect.Type == "ChooseDiscard" || CardOnlyDrawTarget(effect);
         private static bool CardOnlyDrawTarget(CardActionEffect effect) =>
             (effect.Type == "DrawType" || effect.Type == "ScheduleNextDrawUpgrade") &&
             (effect.Target == "DrawPile" || effect.Target == "Hand" || effect.Target == "LastDrawnCard");
@@ -1828,11 +1854,12 @@ namespace MonsterTrain2Poju.Model
                 effect.UseCardTraits, effect.RequireEquipment, effect.UseSelectedRoom, effect.CountStatusOnlyOnTargets,
                 effect.SpawnFallbackUnit, effect.DisallowStatusStackModifiers, effect.StatusAdjustmentFilter,
                 effect.DamagePerHpLastAttacker, effect.DamagePerHpIncludeArmor, effect.RoomAttachment, effect.Recursion,
-                effect.CardFilter, effect.UpgradeFilters, effect.RemoveHalfStatusEffects, effect.Overheal, effect.CorruptionAdd);
+                effect.CardFilter, effect.UpgradeFilters, effect.RemoveHalfStatusEffects, effect.Overheal, effect.CorruptionAdd,
+                chooseDiscard: effect.ChooseDiscard);
         }
         private static int TestCount(TrainCombatState state, CardActionEffect effect, CardTargets targets)
         {
-            if (effect.Type == "Recursion") return targets.CardIds.Count;
+            if (effect.Type is "Recursion" or "ChooseDiscard") return targets.CardIds.Count;
             if (effect.Type == "AdjustAllStatusEffects")
             {
                 if (effect.StatusAdjustmentFilter == 0 && effect.Statuses.Count == 0) return 0;

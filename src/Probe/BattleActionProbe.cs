@@ -21,7 +21,7 @@ namespace MonsterTrain2Poju.Probe
             "CardEffectAdjustRoomCapacity", "CardEffectAdjustRoomMaxCorruption", "CardEffectAdjustCorruption",
             "CardEffectAddPermanentCorruption",
             "CardEffectSetMoonPhase", "CardEffectAdvanceMoonPhase",
-            "CardEffectAdjustForgePoints", "CardEffectDiscardHand", "CardEffectRandomDiscard", "CardEffectAddBattleCard",
+            "CardEffectAdjustForgePoints", "CardEffectDiscardHand", "CardEffectRandomDiscard", "CardEffectChooseDiscard", "CardEffectAddBattleCard",
             "CardEffectHeal", "CardEffectHealAndOverheal", "CardEffectHealTrain", "CardEffectSacrifice", "CardEffectKill", "CardEffectRecursion", "CardEffectBuffDamage", "CardEffectDebuffDamage",
             "CardEffectBuffMaxHealth", "CardEffectDebuffMaxHealth", "CardEffectAddStatusEffect", "CardEffectMultiplyStatusEffect",
             "CardEffectMultiplyAllPositiveStatusEffects", "CardEffectAdjustAllStatusEffects", "CardEffectAddStatusEffectPerOtherEffect",
@@ -254,7 +254,8 @@ namespace MonsterTrain2Poju.Probe
                 effect.GetEffectStateName() == "CardEffectAddTempCardUpgradeToNextDrawnCard") &&
                 (effect.GetTargetMode() == TargetMode.DrawPile || effect.GetTargetMode() == TargetMode.Hand ||
                  effect.GetTargetMode() == TargetMode.LastDrawnCard);
-            bool randomDiscardHandTarget = effect.GetEffectStateName() == "CardEffectRandomDiscard" && effect.GetTargetMode() == TargetMode.Hand;
+            bool randomDiscardHandTarget = (effect.GetEffectStateName() == "CardEffectRandomDiscard" ||
+                effect.GetEffectStateName() == "CardEffectChooseDiscard") && effect.GetTargetMode() == TargetMode.Hand;
             bool recursionCardPileTarget = effect.GetEffectStateName() == "CardEffectRecursion" &&
                 (effect.GetTargetMode() == TargetMode.Exhaust || effect.GetTargetMode() == TargetMode.Eaten || effect.GetTargetMode() == TargetMode.Discard);
             var excluded = new List<SubtypeData>(); effect.GetTargetCharacterExcludedSubtypes(excluded);
@@ -297,6 +298,7 @@ namespace MonsterTrain2Poju.Probe
                 effect.GetEffectStateName() == "CardEffectDrawAdditionalNextTurn" ? "DrawNextTurn" :
                 effect.GetEffectStateName() == "CardEffectDiscardHand" ? "DiscardHand" :
                 effect.GetEffectStateName() == "CardEffectRandomDiscard" ? "RandomDiscard" :
+                effect.GetEffectStateName() == "CardEffectChooseDiscard" ? "ChooseDiscard" :
                 effect.GetEffectStateName() == "CardEffectAddBattleCard" ? "Generate" :
                 deckSpellUpgrade ? "UpgradeDeckSpells" : upgradedCopy ? "GenerateUpgradedCopy" :
                 effect.GetEffectStateName() == "CardEffectBuffDamage" ? "BuffAttack" :
@@ -438,7 +440,9 @@ namespace MonsterTrain2Poju.Probe
                 overheal: type == "HealOverheal" ? new OverhealRule(effect.GetAdditionalParamInt(), effect.GetAdditionalParamInt1()) : null,
                 corruptionAdd: type == "AdjustCorruption" ? (bool?)effect.GetParamBool() : null,
                 nullTargetless: type == "Null" && effect.GetParamBool2(),
-                nullForwardSelf: type == "Null" && effect.GetAdditionalParamInt() == 1);
+                nullForwardSelf: type == "Null" && effect.GetAdditionalParamInt() == 1,
+                chooseDiscard: type == "ChooseDiscard" ? new CardChooseDiscardRule(effect.GetAdditionalParamInt(),
+                    effect.GetParamBool(), effect.GetParamBool2(), effect.GetParamCardPool() != null) : null);
         }
 
         private static RoomCapacityAttachmentState? CapacityAttachment(CardData card, CardEffectData effect,

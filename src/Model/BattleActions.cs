@@ -60,6 +60,7 @@ namespace MonsterTrain2Poju.Model
         public IReadOnlyList<CardUpgradeMaskRule> UpgradeFilters { get; }
         public bool NullTargetless { get; }
         public bool NullForwardSelf { get; }
+        public CardChooseDiscardRule? ChooseDiscard { get; }
         public CardActionEffect(string type, string target, int value, bool allowEnemy, bool allowPlayer, IReadOnlyList<CombatStatus> statuses,
             CardUpgradeModifier? upgrade = null, string lifetime = "", CardEffectTests? tests = null, CardEffectRange? range = null, CardTargetFilters? filters = null,
             CardGenerationRule? generation = null, bool onlyIfNoEnemies = false, bool? cooldownParameter = null,
@@ -73,7 +74,7 @@ namespace MonsterTrain2Poju.Model
             RoomCapacityAttachmentState? roomAttachment = null, CardRecursionRule? recursion = null,
             CardUpgradeMaskRule? cardFilter = null, IReadOnlyList<CardUpgradeMaskRule>? upgradeFilters = null,
             bool? removeHalfStatusEffects = null, OverhealRule? overheal = null, bool? corruptionAdd = null,
-            bool nullTargetless = false, bool nullForwardSelf = false)
+            bool nullTargetless = false, bool nullForwardSelf = false, CardChooseDiscardRule? chooseDiscard = null)
         { Type = type; Target = target; Value = value; AllowEnemy = allowEnemy; AllowPlayer = allowPlayer; Statuses = Array.AsReadOnly(statuses.ToArray());
             Upgrade = upgrade; Lifetime = lifetime; Tests = tests; Range = range; Filters = filters; Generation = generation; OnlyIfNoEnemies = onlyIfNoEnemies;
             CooldownParameter = cooldownParameter; AbilityChange = abilityChange; CopyHeroStats = copyHeroStats; ScaleUpgrade = scaleUpgrade;
@@ -87,7 +88,7 @@ namespace MonsterTrain2Poju.Model
             RoomAttachment = roomAttachment; Recursion = recursion; CardFilter = cardFilter;
             UpgradeFilters = Array.AsReadOnly((upgradeFilters ?? Array.Empty<CardUpgradeMaskRule>()).ToArray());
             Overheal = overheal; CorruptionAdd = corruptionAdd;
-            NullTargetless = nullTargetless; NullForwardSelf = nullForwardSelf; }
+            NullTargetless = nullTargetless; NullForwardSelf = nullForwardSelf; ChooseDiscard = chooseDiscard; }
     }
 
     public sealed class OverhealRule
@@ -834,7 +835,7 @@ namespace MonsterTrain2Poju.Model
             PlayCardAction action, CardPlayRule rule)
         {
             var choiceEffects = rule.Effects.Concat(rule.OnCastEffects).Select((effect, index) => (effect, index))
-                .Where(item => item.effect.Type == "Recursion" &&
+                .Where(item => item.effect.Type == "ChooseDiscard" || item.effect.Type == "Recursion" &&
                     item.effect.Recursion?.SelectionMode is "ChooseToHand" or "ChooseToDeck").ToArray();
             if (choiceEffects.Length == 0)
             {
@@ -856,9 +857,12 @@ namespace MonsterTrain2Poju.Model
                 }
 
                 (CardActionEffect effect, int effectIndex) = choiceEffects[choiceIndex];
-                IReadOnlyList<int> eligible = CardRecursionModel.EligibleCards(source.Spawn.Train.Context!.Cards,
-                    source.Spawn.Train.Context.OtherPiles, effect, source.PlayRules, action.CardInstanceId,
-                    out string? error, source.Spawn.Train.Context.CardRegistry);
+                CombatContext context = source.Spawn.Train.Context!;
+                string? error;
+                IReadOnlyList<int> eligible = effect.Type == "ChooseDiscard"
+                    ? CardChooseDiscardModel.EligibleCards(context, effect, action.CardInstanceId, out error)
+                    : CardRecursionModel.EligibleCards(context.Cards, context.OtherPiles, effect, source.PlayRules,
+                        action.CardInstanceId, out error, context.CardRegistry);
                 if (error != null || eligible.Count == 0)
                 {
                     foreach (PlayCardAction branch in Expand(choiceIndex + 1)) yield return branch;

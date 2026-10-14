@@ -62,7 +62,7 @@ The default command checks the full curated inventory. For routine changes, run
 the dedicated checks for the new and directly affected scenarios; run the full
 inventory at completed milestones and before delivery.
 
-Current inventory is 297 archives: 266 accepted battles and 31 component
+Current inventory is 299 archives: 268 accepted battles and 31 component
 calibrations. Original relic evidence is 78/224 (34.82%). The schema-162
 `full-battle-dragon-hoard.mt2f` archive captures Alchemy changing the hoard from
 2 to 4. The Instant native battle wins with 61 matched stages, 21 card actions
@@ -73,6 +73,14 @@ resource-scaled upgrade refresh. This 33,090-byte archive has 5,405 unique nodes
 and SHA-256
 `d22b5e5975c8b1b1ad9795c65aa7827b3714f5403b9d0478bcad61396c5fe633`; it has
 no JSON companion.
+
+`full-battle-choose-discard.mt2f` records original `StarterScrap` choosing a
+two-cost card over a one-cost alternative. The native battle and independent
+model match 23 actions, seven EndTurns, five legal choice branches, two Forge
+Points and two Ember; 128-state serial/parallel search and the post-choice
+policy chain match. Run `scripts/Check-Models.ps1 -Fixture
+full-battle-choose-discard.mt2f` for the focused regression. The archive is
+binary only; its SHA-256 is in `manifest.tsv`.
 
 The schema-164 `full-battle-remove-all-status-effects.mt2f` archive records two
 marked native `ResinRemoval` casts: one removes all visible Positive and

@@ -635,6 +635,12 @@ namespace MonsterTrain2Poju.Probe
                 numericModifiersPrepared = true;
                 CardEffectRecursionScenario.Prepare(managers, log);
             }
+            if (fullBattle && !numericModifiersPrepared && ChooseDiscardScenario.Enabled)
+            {
+                if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Choose-discard fixture must start on deployment turn.");
+                numericModifiersPrepared = true;
+                ChooseDiscardScenario.Prepare(managers, log);
+            }
             if (fullBattle && Environment.GetEnvironmentVariable("MT2_PROBE_ENCHANTMENT_COMBAT") == "1")
             {
                 if (EnchantmentCombatCalibration.Error != null) throw new InvalidOperationException(EnchantmentCombatCalibration.Error);
@@ -1129,6 +1135,7 @@ namespace MonsterTrain2Poju.Probe
                 if (StatusUpgradeScenario.Enabled) pendingPlay = StatusUpgradeScenario.Choose(decision);
                 if (modifierScenario is "card-effect-recursion" or "card-effect-recursion-choice" or "card-effect-recursion-choose-to-hand" or "card-effect-recursion-filter-choice" or "card-effect-recursion-discard-choice" or "card-effect-recursion-upgrade" or "card-effect-recursion-upgrade-hand" or "card-effect-recursion-upgrade-choice" or "card-effect-recursion-upgrade-filter-choice" or "card-effect-recursion-upgrade-replacement-choice")
                     pendingPlay = CardEffectRecursionScenario.Choose(decision);
+                if (ChooseDiscardScenario.Enabled) pendingPlay = ChooseDiscardScenario.Choose(decision);
                 if (modifierScenario == "typed-draw") pendingPlay = TypedDrawScenario.Choose(decision);
                 if (modifierScenario == DamagePerHpScenario.Name || modifierScenario == DamagePerHpScenario.ArmorName ||
                     modifierScenario == DamagePerHpScenario.LastAttackerName)
@@ -1288,7 +1295,8 @@ namespace MonsterTrain2Poju.Probe
                 (SpellShieldScenario.Enabled && SpellShieldScenario.ConsumeScenarioActionMark(action)) ||
                 (modifierScenario == "remove-all-status-effects" && CardEffectRemoveAllStatusScenario.ConsumeScenarioActionMark(action)) ||
                 (modifierScenario is "card-effect-recursion" or "card-effect-recursion-choice" or "card-effect-recursion-choose-to-hand" or "card-effect-recursion-filter-choice" or "card-effect-recursion-discard-choice" or "card-effect-recursion-upgrade" or "card-effect-recursion-upgrade-hand" or "card-effect-recursion-upgrade-choice" or "card-effect-recursion-upgrade-filter-choice" or "card-effect-recursion-upgrade-replacement-choice" &&
-                    CardEffectRecursionScenario.IsScenarioPrelude(action));
+                    CardEffectRecursionScenario.IsScenarioPrelude(action)) ||
+                (ChooseDiscardScenario.Enabled && ChooseDiscardScenario.IsScenarioPrelude(action));
             PreviewSchedulingProbe.Observe("Play:" + action.CardInstanceId);
             if (action.ActivatorUnitId > 0)
             {
