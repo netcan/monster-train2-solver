@@ -1,5 +1,10 @@
 # Native regression fixtures
 
+`full-battle-moon-phase-callbacks.mt2f` records unchanged Selene Acolyte,
+Moonrise and Fae Meddler. Its focused check verifies temporary upgrade addition
+on Full Moon and removal on New Moon; the complete battle also covers natural
+phase advances. The archive is binary only.
+
 `full-battle-train-heal.mt2f` records an unchanged PayOff cast at two Dragon's
 Hoard, healing the Pyre from 70/80 to 74/80. All 61 native battle stages match
 the model; focused checks use `--train-heal-only`, and the SHA-256 is recorded

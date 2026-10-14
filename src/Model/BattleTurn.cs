@@ -313,17 +313,27 @@ namespace MonsterTrain2Poju.Model
             string moon = source.MoonPhase == "Full" ? "New" : "Full";
             context = train.Context!;
             int turn = checked(spawn.Turn + 1);
-            train = WithContext(train, context.WithQueryFrame(context.QueryFrame?.With(
-                turn: turn, moonPhase: moon == "New" ? 1 : 2,
-                moonPhaseTrackingActive: source.MoonPhaseTrackingActive)), false);
-            if (source.MoonPhaseTrackingActive == true)
-                train = MoonPhaseStatusModel.WithPhase(train, moon == "New" ? 1 : 2);
-            if ((source.MoonPhaseTrackingActive ?? true) && train.Context!.Resources != null)
+            if (source.MoonPhaseTrackingActive.HasValue)
             {
-                RelicResourceResult moonEnergy = RelicResourceModel.ApplyMoonPhaseEnergy(train.Context, moon,
-                    preview: train.Rooms.Any(room => room.Preview));
-                if (!moonEnergy.Supported) return Unsupported(moonEnergy.UnsupportedReason!);
-                train = WithContext(train, moonEnergy.Context!, false);
+                train = WithContext(train, context.WithQueryFrame(context.QueryFrame?.With(
+                    turn: turn, moonPhaseTrackingActive: source.MoonPhaseTrackingActive)), false);
+                MoonPhaseTransitionResult advanced = MoonPhaseTransitionModel.Apply(train,
+                    new CardActionEffect("AdvanceMoonPhase", "Room", 1, false, false, []),
+                    playerActionOnly: false);
+                if (!advanced.Supported) return Unsupported(advanced.UnsupportedReason!);
+                train = advanced.State!;
+            }
+            else
+            {
+                train = WithContext(train, context.WithQueryFrame(context.QueryFrame?.With(
+                    turn: turn, moonPhase: moon == "New" ? 1 : 2)), false);
+                if (train.Context!.Resources != null)
+                {
+                    RelicResourceResult moonEnergy = RelicResourceModel.ApplyMoonPhaseEnergy(train.Context, moon,
+                        preview: train.Rooms.Any(room => room.Preview));
+                    if (!moonEnergy.Supported) return Unsupported(moonEnergy.UnsupportedReason!);
+                    train = WithContext(train, moonEnergy.Context!, false);
+                }
             }
             context = train.Context!;
             train = WithContext(train, RelicSpawnStatusModel.EndDuration(RelicSpawnStatusModel.EndDuration(

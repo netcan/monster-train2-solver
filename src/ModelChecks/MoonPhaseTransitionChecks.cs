@@ -6,6 +6,7 @@ internal static class MoonPhaseTransitionChecks
 {
     private const string MoonriseId = "fe6dfafa-9712-484c-9bb4-145c0989e667";
     private const string FaeMeddlerId = "d10e2dac-fa58-4509-b0ee-112b3bf78800";
+    private const string SeleneAcolyteId = "2b7a187f-da0b-4c34-b8c5-b18755911b43";
 
     internal static void Run()
     {
@@ -130,6 +131,53 @@ internal static class MoonPhaseTransitionChecks
         Require(!roomOnly.Supported && roomOnly.UnsupportedReason?.Contains("complete train callback") == true,
             "Room-only trigger execution silently skipped the whole-train moon-phase transition.");
         Console.WriteLine("NATIVE-MOON-PHASE-ADVANCE-CHECKS PASS: original OnSpawn advance updates the whole train in a complete battle.");
+    }
+
+    internal static void NativeCallbacks(FixtureValue fixture)
+    {
+        Require(fixture.GetProperty("Schema").GetInt32() == 103 &&
+            fixture.GetProperty("ModifierScenario").GetString() == "moon-phase-callbacks" &&
+            fixture.GetProperty("NativeWon").GetBoolean() &&
+            fixture.GetProperty("CaptureFailures").GetInt32() == 0 &&
+            fixture.GetProperty("Mismatches").GetInt32() == 0 &&
+            fixture.GetProperty("Unsupported").GetInt32() == 0 &&
+            fixture.GetProperty("Pending").GetInt32() == 0,
+            "Native Selene Acolyte battle did not finish with a complete match.");
+        FixtureValue[] actions = fixture.GetProperty("Actions").EnumerateArray().ToArray();
+        Require(actions.Length >= 3 && actions[2].GetProperty("ScenarioAction").GetBoolean(),
+            "Original moon-phase callback actions are missing.");
+        string[] cardIds = [SeleneAcolyteId, MoonriseId, FaeMeddlerId];
+        for (int index = 0; index < cardIds.Length; index++)
+        {
+            BattleTurnState before = actions[index].GetProperty("Before").Deserialize<BattleTurnState>()!;
+            BattleTurnState actual = actions[index].GetProperty("Actual").Deserialize<BattleTurnState>()!;
+            PlayCardAction action = actions[index].GetProperty("Action").Deserialize<PlayCardAction>()!;
+            Require(before.Spawn.Train.Context!.FindCard(action.CardInstanceId)?.DataId == cardIds[index],
+                "Original moon-phase callback card order changed at action " + index);
+            BattleActionResult predicted = BattleActionModel.PlayCard(before, action);
+            string? difference = predicted.State == null ? predicted.Reason :
+                ModelJson.Difference(BattleTurnChecks.Comparable(predicted.State), BattleTurnChecks.Comparable(actual));
+            Require(predicted.Supported && difference == null,
+                "Original moon-phase callback action " + index + " differs: " + difference);
+        }
+        BattleTurnState full = actions[1].GetProperty("Actual").Deserialize<BattleTurnState>()!;
+        BattleTurnState newMoon = actions[2].GetProperty("Actual").Deserialize<BattleTurnState>()!;
+        CardPlayRule acolyteRule = full.PlayRules!.Cards.Single(card => card.DataId == SeleneAcolyteId);
+        CombatTrigger[] callbacks = acolyteRule.SpawnUnit!.Triggers.Where(trigger =>
+            trigger.Kind is "OnMoonLit" or "OnMoonlitLost").ToArray();
+        Require(callbacks.Length == 2 &&
+            callbacks.Single(trigger => trigger.Kind == "OnMoonLit").Effects.Single().Type == "CardEffectAddTempCardUpgradeToUnits" &&
+            callbacks.Single(trigger => trigger.Kind == "OnMoonlitLost").Effects.Single().Type == "CardEffectRemoveTempUpgradeFromUnit",
+            "Original Selene Acolyte moon-phase trigger definitions changed.");
+        CombatUnit? fullAcolyte = full.Spawn.Train.Rooms.SelectMany(room => room.Units)
+            .SingleOrDefault(unit => unit.SpawnerCardId == actions[0].GetProperty("Action").Deserialize<PlayCardAction>()!.CardInstanceId);
+        CombatUnit? newAcolyte = newMoon.Spawn.Train.Rooms.SelectMany(room => room.Units)
+            .SingleOrDefault(unit => unit.Id == fullAcolyte?.Id);
+        Require(full.MoonPhase == "Full" && newMoon.MoonPhase == "New" &&
+            fullAcolyte?.Modifiers?.Upgrades.Count == 1 && newAcolyte?.Modifiers?.Upgrades.Count == 0 &&
+            fullAcolyte.Status("fullmoon")?.Stacks == 1 && newAcolyte.Status("newmoon")?.Stacks == 1,
+            "Original Selene Acolyte temporary upgrade did not follow the moon-phase callback lifecycle.");
+        Console.WriteLine("NATIVE-MOON-PHASE-CALLBACK-CHECKS PASS: original temporary upgrade add/remove and three exact action replays.");
     }
 
     private static void Require(bool condition, string message)

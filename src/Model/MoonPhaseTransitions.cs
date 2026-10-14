@@ -20,15 +20,16 @@ namespace MonsterTrain2Poju.Model
             "OnMoonLit", "OnMoonlitLost", "OnMoonShade", "OnMoonshadeLost", "OnMoonPhaseShift"
         };
 
-        public static string? Validate(TrainCombatState source, CardActionEffect effect, int sourceCardId)
+        public static string? Validate(TrainCombatState source, CardActionEffect effect, int sourceCardId,
+            bool playerActionOnly = true)
         {
             if (effect.Type != "SetMoonPhase" && effect.Type != "AdvanceMoonPhase")
                 return "Unknown moon-phase effect.";
             if (effect.Target is not ("Room" or "Self") || effect.Range != null)
                 return "Moon-phase effects require a fixed room or self-targeted amount.";
-            if (source.Context?.EnergyState == null)
+            if (playerActionOnly && source.Context?.EnergyState == null)
                 return "Moon-phase effects require the captured combat phase.";
-            if (source.Context.EnergyState.Phase != "MonsterTurn") return null;
+            if (playerActionOnly && source.Context!.EnergyState!.Phase != "MonsterTurn") return null;
             if (effect.Type == "SetMoonPhase" && effect.Value != 1 && effect.Value != 2)
                 return "Unmodeled moon-phase assignment.";
             StatisticQueryFrame? frame = source.Context?.QueryFrame;
@@ -44,9 +45,18 @@ namespace MonsterTrain2Poju.Model
             }
             if (effect.Type == "AdvanceMoonPhase" && effect.Value <= 0) return null;
             if (frame.MoonPhaseTrackingActive != true) return null;
-            if (source.Rooms.SelectMany(room => room.Units)
-                .Any(unit => unit.Triggers.Any(trigger => UnitCallbacks.Contains(trigger.Kind))))
-                return "Moon-phase unit callbacks require native ordering calibration.";
+            if (source.Rooms.SelectMany(room => room.Units).Any(unit => unit.Triggers.Any(trigger =>
+                    UnitCallbacks.Contains(trigger.Kind))))
+            {
+                int oldPhase = frame.MoonPhase.Value;
+                string oldStatus = oldPhase == 1 ? "newmoon" : "fullmoon";
+                string otherStatus = oldPhase == 1 ? "fullmoon" : "newmoon";
+                if (source.Rooms.SelectMany(room => room.Units).Where(unit => !unit.IsPyre && unit.Health > 0)
+                    .Any(unit => unit.Status(oldStatus)?.Stacks != 1 || unit.Status(otherStatus) != null))
+                    return "Moon-phase callbacks require known prior unit phase masks.";
+                string? trainError = TrainCombatModel.Validate(source);
+                if (trainError != null) return trainError;
+            }
             if (source.Context!.Relics?.Any(relic => relic.EffectTypes.Any(type =>
                     type.Contains("MoonPhase", StringComparison.Ordinal) &&
                     type != RelicResourceModel.MoonPhaseEnergy)) == true)
@@ -68,28 +78,59 @@ namespace MonsterTrain2Poju.Model
             return null;
         }
 
-        public static MoonPhaseTransitionResult Apply(TrainCombatState source, CardActionEffect effect, int sourceCardId = 0)
+        public static MoonPhaseTransitionResult Apply(TrainCombatState source, CardActionEffect effect, int sourceCardId = 0,
+            bool playerActionOnly = true)
         {
-            string? error = Validate(source, effect, sourceCardId);
+            string? error = Validate(source, effect, sourceCardId, playerActionOnly);
             if (error != null) return new MoonPhaseTransitionResult(null, error);
-            if (source.Context!.EnergyState!.Phase != "MonsterTurn") return new MoonPhaseTransitionResult(source);
+            if (playerActionOnly && source.Context!.EnergyState!.Phase != "MonsterTurn") return new MoonPhaseTransitionResult(source);
             TrainCombatState state = source;
             int phase = state.Context!.QueryFrame!.MoonPhase!.Value;
             int count = effect.Type == "SetMoonPhase" ? 1 : Math.Max(0, effect.Value);
             for (int index = 0; index < count; index++)
             {
+                int oldPhase = phase;
                 phase = effect.Type == "SetMoonPhase" ? effect.Value : phase == 1 ? 2 : 1;
                 state = CardSpellModel.WithContext(state, state.Context!.WithQueryFrame(
                     state.Context.QueryFrame!.With(moonPhase: phase)));
                 if (state.Context!.QueryFrame!.MoonPhaseTrackingActive != true) continue;
                 state = MoonPhaseStatusModel.WithPhase(state, phase);
-                if (state.Context!.Relics?.Any(relic => relic.EffectTypes.Contains(RelicResourceModel.MoonPhaseEnergy)) != true)
-                    continue;
-                RelicResourceResult energy = RelicResourceModel.ApplyMoonPhaseEnergy(state.Context,
-                    phase == 1 ? "New" : "Full", preview: state.Rooms.Any(room => room.Preview),
-                    placement: state.Rooms.Any(room => room.Deployment));
-                if (!energy.Supported) return new MoonPhaseTransitionResult(null, energy.UnsupportedReason);
-                state = CardSpellModel.WithContext(state, energy.Context!);
+                if (state.Context!.Relics?.Any(relic => relic.EffectTypes.Contains(RelicResourceModel.MoonPhaseEnergy)) == true)
+                {
+                    RelicResourceResult energy = RelicResourceModel.ApplyMoonPhaseEnergy(state.Context,
+                        phase == 1 ? "New" : "Full", preview: state.Rooms.Any(room => room.Preview),
+                        placement: state.Rooms.Any(room => room.Deployment));
+                    if (!energy.Supported) return new MoonPhaseTransitionResult(null, energy.UnsupportedReason);
+                    state = CardSpellModel.WithContext(state, energy.Context!);
+                }
+                foreach (CombatTeam team in new[] { CombatTeam.Player, CombatTeam.Enemy })
+                {
+                    var callbacks = new List<RoomCombatModel.QueuedCharacterTrigger>();
+                    foreach (var member in state.Rooms.SelectMany(room => room.Units.Select(unit => (room, unit)))
+                        .Where(member => member.unit.Team == team && member.unit.Health > 0)
+                        .OrderBy(member => member.unit.Id))
+                    {
+                        RoomCombatState room = member.room;
+                        CombatUnit unit = member.unit;
+                        string gained = phase == 2 ? "OnMoonLit" : "OnMoonShade";
+                        string lost = oldPhase == 2 ? "OnMoonlitLost" : "OnMoonshadeLost";
+                        if (oldPhase != phase)
+                        {
+                            string first = phase == 2 ? gained : lost;
+                            string second = phase == 2 ? lost : gained;
+                            if (unit.Triggers.Any(trigger => trigger.Kind == first))
+                                callbacks.Add(new RoomCombatModel.QueuedCharacterTrigger(room.RoomIndex, unit, first));
+                            if (unit.Triggers.Any(trigger => trigger.Kind == second))
+                                callbacks.Add(new RoomCombatModel.QueuedCharacterTrigger(room.RoomIndex, unit, second));
+                        }
+                        if (unit.Triggers.Any(trigger => trigger.Kind == "OnMoonPhaseShift"))
+                            callbacks.Add(new RoomCombatModel.QueuedCharacterTrigger(room.RoomIndex, unit, "OnMoonPhaseShift"));
+                    }
+                    if (callbacks.Count == 0) continue;
+                    TrainCombatResult triggered = TrainCombatModel.ApplyCharacterQueue(state, callbacks);
+                    if (!triggered.Supported) return new MoonPhaseTransitionResult(null, triggered.UnsupportedReason);
+                    state = triggered.State!;
+                }
             }
             return new MoonPhaseTransitionResult(state);
         }

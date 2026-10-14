@@ -1,10 +1,27 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-14): 289 binary archives, including 258
+Current accepted inventory (2026-10-14): 290 binary archives, including 259
 full battles and 31 component calibrations. Unchanged original relic evidence
 covers 78/224 catalog entries (34.82%); see
 [the owner evidence table](tests/fixtures/relic-coverage.md). Whole-battle
 coverage and the optimal solver remain in progress.
+
+### Original moon-phase unit callbacks
+
+`full-battle-moon-phase-callbacks.mt2f` summons unchanged Selene Acolyte, plays
+Moonrise, then summons Fae Meddler. The original `OnMoonLit` trigger adds its
+temporary unit upgrade on Full Moon; `OnMoonlitLost` removes it on New Moon.
+Natural phase advances add it again on later turns. The muted Instant native
+battle wins with 24 matched actions and seven EndTurns, with zero capture
+failures, mismatches, unsupported transitions or pending records. The
+36,499-byte archive has 5,969 unique nodes and SHA-256
+`0a1cbd72d79e8f1fa43db8a3f06d93fa476d0aa883bb16a0b998a85c637c1de5`.
+Other moon-phase card traits and relic callback combinations remain guarded.
+
+```powershell
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-moon-phase-callbacks.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-moon-phase-callbacks.mt2f
+```
 
 ### Original Fae Meddler spawn advance
 
@@ -17,7 +34,7 @@ floor before later trigger effects. The muted Instant native battle wins with
 unsupported transitions or pending records. The 36,741-byte binary has 6,069
 unique nodes and SHA-256
 `8fff01b73b3437f29e9920e0dcf796cc026f80845879ea4d7e577f30570701ad`.
-Other moon-phase unit callbacks and trait/relic combinations remain guarded.
+Other moon-phase trait/relic combinations remain guarded.
 
 ```powershell
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-moon-phase-advance.mt2f
