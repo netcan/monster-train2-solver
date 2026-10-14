@@ -21,6 +21,7 @@ param(
     [switch] $SetHealth,
     [switch] $DamageByUnitsKilled,
     [switch] $TransferAttack,
+    [switch] $BrainTransfer,
     [switch] $TransferAttackAbility,
     [switch] $CardEffectKill,
     [switch] $CardEffectKillSubtype,
@@ -372,6 +373,7 @@ if ($SacrificeEffects) { $Policy = 'units-spells-and-junk' }
 if ($SetHealth) { $Policy = 'units-spells-and-junk' }
 if ($DamageByUnitsKilled) { $Policy = 'units-spells-and-junk' }
 if ($TransferAttack) { $Policy = 'units-spells-and-junk' }
+if ($BrainTransfer) { $Policy = 'units-spells-and-junk' }
 if ($TransferAttackAbility) { $Policy = 'units-spells-and-junk' }
 if ($CardEffectKill -and $CardEffectKillSubtype) { throw 'Choose either -CardEffectKill or -CardEffectKillSubtype.' }
 if ($CardEffectKill -or $CardEffectKillSubtype) { $Policy = 'units-spells-and-junk' }
@@ -556,6 +558,7 @@ if ($SacrificeEffects) {
 if ($SetHealth) { $environment['MT2_PROBE_MODIFIERS'] = 'set-health' }
 if ($DamageByUnitsKilled) { $environment['MT2_PROBE_MODIFIERS'] = 'damage-by-units-killed' }
 if ($TransferAttack) { $environment['MT2_PROBE_MODIFIERS'] = 'transfer-attack' }
+if ($BrainTransfer) { $environment['MT2_PROBE_MODIFIERS'] = 'brain-transfer' }
 if ($TransferAttackAbility) { $environment['MT2_PROBE_MODIFIERS'] = 'transfer-attack-ability' }
 if ($CardEffectKill -or $CardEffectKillSubtype) {
     $environment['MT2_PROBE_MODIFIERS'] = if ($CardEffectKillSubtype) { 'card-effect-kill-subtype' } else { 'card-effect-kill' }
@@ -1272,6 +1275,30 @@ $transferAttackCoverage = -not $TransferAttack -or @($transferAttackActions | Wh
         Where-Object InstanceId -EQ $recipient.SpawnerCardId
     $source -and $recipient -and $recipient.Id -ne $source.Id -and $source.Attack -gt 0 -and
         $afterRecipient.Attack -eq $recipient.Attack + 2 * $source.Attack -and
+        @($afterSpawner.Temporary.Upgrades).Count -eq @($beforeSpawner.Temporary.Upgrades).Count + 1 -and
+        -not $entry.Difference -and $entry.Predicted.Supported
+}).Count -gt 0
+$brainTransferActions = @($trace.Actions | Where-Object {
+    $entry = $_
+    $played = $entry.Before.Spawn.Train.Context.Cards.Hand | Where-Object InstanceId -EQ $entry.Action.CardInstanceId
+    $played.DataId -eq '560b9623-f130-4848-9f9f-56cc6e8bf19e'
+})
+$brainTransferCoverage = -not $BrainTransfer -or @($brainTransferActions | Where-Object {
+    $entry = $_
+    $beforeRoom = $entry.Before.Spawn.Train.Rooms | Where-Object RoomIndex -EQ 0
+    $afterRoom = $entry.Actual.Spawn.Train.Rooms | Where-Object RoomIndex -EQ 0
+    $source = $beforeRoom.Units | Where-Object Id -EQ $entry.Action.TargetUnitId
+    $recipient = $beforeRoom.Units | Where-Object { $_.Team -eq 1 -and $_.Id -ne $source.Id } | Select-Object -First 1
+    $afterRecipient = $afterRoom.Units | Where-Object Id -EQ $recipient.Id
+    $beforeSpawner = $entry.Before.Spawn.Train.Context.CardInstances | Where-Object InstanceId -EQ $recipient.SpawnerCardId
+    $afterSpawner = $entry.Actual.Spawn.Train.Context.CardInstances | Where-Object InstanceId -EQ $recipient.SpawnerCardId
+    $source.AssetKey -eq 'MonsterQueensImp' -and $recipient.AssetKey -eq 'TrainStewardBig' -and
+        @($source.Statuses | Where-Object { $_.Id -eq 'buff' -and $_.Stacks -eq 3 }).Count -eq 1 -and
+        @($source.Statuses | Where-Object { $_.Id -eq 'scorch' -and $_.Stacks -eq 2 }).Count -eq 1 -and
+        @($afterRoom.Units | Where-Object Id -EQ $source.Id).Count -eq 0 -and
+        @($afterRecipient.Statuses | Where-Object { $_.Id -eq 'buff' -and $_.Stacks -eq 3 }).Count -eq 1 -and
+        @($afterRecipient.Statuses | Where-Object { $_.Id -eq 'scorch' -and $_.Stacks -eq 2 }).Count -eq 1 -and
+        $afterRecipient.Attack -eq $recipient.Attack + $source.Attack -and
         @($afterSpawner.Temporary.Upgrades).Count -eq @($beforeSpawner.Temporary.Upgrades).Count + 1 -and
         -not $entry.Difference -and $entry.Predicted.Supported
 }).Count -gt 0
@@ -2907,6 +2934,8 @@ $result = [pscustomobject]@{
     SetHealthCoverage = $setHealthCoverage
     TransferAttackActions = $transferAttackActions.Count
     TransferAttackCoverage = $transferAttackCoverage
+    BrainTransferActions = $brainTransferActions.Count
+    BrainTransferCoverage = $brainTransferCoverage
     TransferAbilityActions = $transferAbilityActions.Count
     TransferAbilityCoverage = $transferAbilityCoverage
     DamageByUnitsKilledActions = $damageByUnitsKilledActions.Count
@@ -2995,6 +3024,7 @@ $result = [pscustomobject]@{
 if (-not $sacrificeEffectCoverage) { throw 'Native CardEffectSacrifice was not exercised through a full battle action.' }
 if (-not $setHealthCoverage) { throw 'Native CardEffectSetHealth did not set a living player unit to one health in a matched action.' }
 if (-not $transferAttackCoverage) { throw 'Native attack transfer did not buff a front unit and its spawner card in a matched action.' }
+if (-not $brainTransferCoverage) { throw 'Original BrainTransfer did not transfer Rage, Scorch and attack in a matched action.' }
 if (-not $transferAbilityCoverage) { throw 'Native ability-user transfer did not buff its actor and spawner card in a matched action.' }
 if (-not $damageByUnitsKilledCoverage) { throw 'Original Shardtail effect did not sacrifice an Imp and damage an enemy in a matched action.' }
 if (-not $cardEffectKillCoverage) { throw 'Native CardEffectKill did not kill one enemy and one player unit in a full battle action.' }

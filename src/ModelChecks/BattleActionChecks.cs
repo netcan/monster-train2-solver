@@ -492,6 +492,8 @@ internal static class BattleActionChecks
             chooser = ChooseSetHealthThenCards;
         if (fixture.TryGetProperty("ModifierScenario", out var transferAttackScenario) && transferAttackScenario.GetString() == "transfer-attack")
             chooser = ChooseTransferAttackThenCards;
+        if (fixture.TryGetProperty("ModifierScenario", out var brainTransferScenario) && brainTransferScenario.GetString() == "brain-transfer")
+            chooser = ChooseBrainTransferThenCards;
         if (fixture.TryGetProperty("ModifierScenario", out var transferAbilityScenario) && transferAbilityScenario.GetString() == "transfer-attack-ability")
             chooser = UnitAbilityModel.ChooseAbilityThenCards;
         if (fixture.TryGetProperty("ModifierScenario", out var killedUnitsScenario) && killedUnitsScenario.GetString() == "damage-by-units-killed")
@@ -768,6 +770,42 @@ internal static class BattleActionChecks
                 }
             }
         }
+        return BattleActionModel.ChooseUnitSpellAndJunkPlay(source);
+    }
+
+    private static PlayCardAction? ChooseBrainTransferThenCards(BattleTurnState source)
+    {
+        if (source.Spawn.Turn > 0) return BattleActionModel.ChooseUnitSpellAndJunkPlay(source);
+        const string stewardId = "d14a50f3-728d-43e1-87f0-ef1b013f6678";
+        const string impId = "d76be2d0-f851-4d43-bdc0-7c7a7779724f";
+        const string perilsId = "4ca4ed47-9867-4004-acf0-171c3282751f";
+        const string transferId = "560b9623-f130-4848-9f9f-56cc6e8bf19e";
+        var hand = source.Spawn.Train.Context!.Cards.Hand;
+        RoomCombatState room = source.Spawn.Train.Rooms.Single(item => item.RoomIndex == 0);
+        CardToken? steward = hand.FirstOrDefault(card => card.DataId == stewardId);
+        CardToken? imp = hand.FirstOrDefault(card => card.DataId == impId);
+        CardToken? perils = hand.FirstOrDefault(card => card.DataId == perilsId);
+        CardToken? transfer = hand.FirstOrDefault(card => card.DataId == transferId);
+        if (steward != null && room.Units.All(unit => unit.Team != CombatTeam.Player))
+        {
+            var summon = new PlayCardAction(steward.InstanceId, 0, playerPosition: 0);
+            if (BattleActionModel.PlayCard(source, summon).Supported) return summon;
+        }
+        if (imp != null && room.Units.Any(unit => unit.Team == CombatTeam.Player) &&
+            room.Units.All(unit => unit.AssetKey != "MonsterQueensImp"))
+        {
+            var summon = new PlayCardAction(imp.InstanceId, 0, playerPosition: 1);
+            if (BattleActionModel.PlayCard(source, summon).Supported) return summon;
+        }
+        CombatUnit? target = room.Units.FirstOrDefault(unit => unit.AssetKey == "MonsterQueensImp");
+        if (perils != null && target != null && target.Status("buff") == null)
+        {
+            var cast = new PlayCardAction(perils.InstanceId, 0, targetUnitId: target.Id);
+            if (BattleActionModel.PlayCard(source, cast).Supported) return cast;
+        }
+        if (transfer != null)
+            return target?.Status("buff")?.Stacks > 0 && room.Units.Any(unit => unit.Team == CombatTeam.Player && unit.Id != target.Id)
+                ? new PlayCardAction(transfer.InstanceId, 0, targetUnitId: target.Id) : null;
         return BattleActionModel.ChooseUnitSpellAndJunkPlay(source);
     }
 

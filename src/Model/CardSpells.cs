@@ -273,6 +273,7 @@ namespace MonsterTrain2Poju.Model
             var deferredExhaustion = new HashSet<int>();
             var callbacks = new List<RoomCombatModel.QueuedCharacterTrigger>();
             var retained = new Dictionary<int, CombatUnit>();
+            int lastSacrificedUnitId = 0;
             string? routingError = null;
             RelicPyreAttackRefreshResult Refresh(CombatContext context, bool placement)
             {
@@ -326,7 +327,8 @@ namespace MonsterTrain2Poju.Model
                     return UnsupportedTrain("Room-and-above selection requires uncaptured trigger focus rules.");
                 int collectionRoom = effect.Target == "FrontInRoomAndRoomAbove" ? focusedRoom!.Value : roomIndex;
                 CardTargets targets = Collect(state, collectionRoom, effect, last, initial, dropPosition, index, definitions, isTesting: true,
-                    pendingDeadRooms: pendingDeadRooms, positions: positions, selfUnitId: selfUnitId, sourceCardId: sourceCardId);
+                    pendingDeadRooms: pendingDeadRooms, positions: positions, selfUnitId: selfUnitId, sourceCardId: sourceCardId,
+                    lastSacrificedUnitId: lastSacrificedUnitId);
                 if (!targets.Supported) return UnsupportedTrain(targets.UnsupportedReason!);
                 string? damageTargetError = null;
                 if (!CardTargetModel.IsRandom(effect.Target))
@@ -361,7 +363,8 @@ namespace MonsterTrain2Poju.Model
                     continue;
                 }
                 targets = Collect(state, collectionRoom, effect, last, initial, dropPosition, index, definitions,
-                    pendingDeadRooms: pendingDeadRooms, positions: positions, selfUnitId: selfUnitId, sourceCardId: sourceCardId);
+                    pendingDeadRooms: pendingDeadRooms, positions: positions, selfUnitId: selfUnitId, sourceCardId: sourceCardId,
+                    lastSacrificedUnitId: lastSacrificedUnitId);
                 if (!targets.Supported) return UnsupportedTrain(targets.UnsupportedReason!);
                 damageTargetError = DamagePerHpTargetError(state, effect, targets, selfUnitId);
                 if (damageTargetError != null) return UnsupportedTrain(damageTargetError);
@@ -896,6 +899,7 @@ namespace MonsterTrain2Poju.Model
                         if (!sacrificed.Supported) return UnsupportedTrain(sacrificed.UnsupportedReason!);
                         state = ReplaceRoom(state, sacrificed.State!);
                         retained[id] = target;
+                        if (effect.Type == "Sacrifice") lastSacrificedUnitId = id;
                         events.AddRange(sacrificed.Events);
                         if (sacrificed.Outcome == RoomOutcome.BattleWon || sacrificed.Outcome == RoomOutcome.PlayerDefeated)
                             outcome = sacrificed.Outcome;
@@ -948,6 +952,49 @@ namespace MonsterTrain2Poju.Model
                         }
                         if (state.Context!.OtherPiles != null) piles = state.Context.OtherPiles.ToArray();
                         positions = CardTargetModel.Positions(state);
+                        if (callbacks.Count > 0) DrainDeaths();
+                        if (routingError != null) return UnsupportedTrain(routingError);
+                    }
+                    continue;
+                }
+                if (effect.Type == "TransferAllStatusesFromUnit")
+                {
+                    if (targets.UnitIds.Count == 0) continue;
+                    CombatUnit? sourceUnit = state.Rooms.SelectMany(room => room.Units)
+                        .FirstOrDefault(unit => unit.Id == targets.UnitIds[0]) ?? retained.GetValueOrDefault(targets.UnitIds[0]);
+                    if (sourceUnit == null) return UnsupportedTrain("Status transfer lost its sacrificed source unit.");
+                    int sourceRoomIndex = state.Rooms.FirstOrDefault(room => room.Units.Any(unit => unit.Id == sourceUnit.Id))?.RoomIndex ??
+                        pendingDeadRooms.GetValueOrDefault(sourceUnit.Id, roomIndex);
+                    RoomCombatState transferRoom = state.Rooms.Single(room => room.RoomIndex == sourceRoomIndex);
+                    CombatUnit? recipient = transferRoom.Units.FirstOrDefault(unit => unit.Team == sourceUnit.Team &&
+                        unit.Status("untouchable") == null);
+                    if (recipient == null || recipient.Id == sourceUnit.Id) continue;
+                    if (sourceUnit.Statuses.Any(status => status.Stacks > 0 && status.Id != "horde" &&
+                        (!status.Hidden.HasValue || status.DisplayCategory == null)))
+                        return UnsupportedTrain("Status transfer requires visible-category metadata on its source statuses.");
+                    CombatStatus[] moved = sourceUnit.Statuses.Where(status => status.Stacks > 0 && status.Id != "horde" &&
+                        status.Hidden == false && status.DisplayCategory is "Positive" or "Negative").ToArray();
+                    foreach (CombatStatus status in moved)
+                    {
+                        RoomCombatState removalRoom = new(transferRoom.RoomIndex, transferRoom.Deployment,
+                            transferRoom.Units.Any(unit => unit.Id == sourceUnit.Id) ? transferRoom.Units :
+                                transferRoom.Units.Concat(new[] { sourceUnit }).ToArray(),
+                            transferRoom.ExternalInteractions, transferRoom.Context, transferRoom.Preview,
+                            transferRoom.ActiveCompanionBossIds);
+                        RoomCombatResult removed = StatusRemovalModel.Remove(removalRoom, sourceUnit.Id, status.Id, -1, sourceCardId);
+                        if (!removed.Supported) return UnsupportedTrain(removed.UnsupportedReason!);
+                        sourceUnit = removed.State!.Units.FirstOrDefault(unit => unit.Id == sourceUnit.Id) ?? sourceUnit;
+                        retained[sourceUnit.Id] = sourceUnit;
+                        state = ReplaceRoom(state, removed.State.WithUnits(removed.State.Units.Where(unit =>
+                            unit.Id != sourceUnit.Id || transferRoom.Units.Any(live => live.Id == unit.Id)).ToArray()));
+                        events.AddRange(removed.Events); callbacks.AddRange(removed.PendingCallbacks);
+                        transferRoom = state.Rooms.Single(room => room.RoomIndex == sourceRoomIndex);
+                        RoomCombatResult added = StatusApplicationModel.Apply(transferRoom, recipient.Id, status, sourceCardId,
+                            allowModification: false, fromEffectType: "CardEffectTransferAllStatusEffectsFromUnit");
+                        if (!added.Supported) return UnsupportedTrain(added.UnsupportedReason!);
+                        state = ReplaceRoom(state, added.State!);
+                        events.AddRange(added.Events); callbacks.AddRange(added.PendingCallbacks);
+                        transferRoom = added.State!;
                         if (callbacks.Count > 0) DrainDeaths();
                         if (routingError != null) return UnsupportedTrain(routingError);
                     }
@@ -1722,8 +1769,11 @@ namespace MonsterTrain2Poju.Model
                     if (forgeError != null) return forgeError;
                     continue;
                 }
-                if (!new[] { "Null", "CopyUnits", "Bump", "AbilityTeleport", "AttackWithUnit", "Damage", "DamagePerSourceAttack", "DamagePerHp", "DamageByUnitsKilled", "TransferAttackFromUnit", "Heal", "HealOverheal", "SetHealth", "Sacrifice", "Kill", "AddStatus", "RemoveAllStatusEffects", "MultiplyStatus", "MultiplyAllPositiveStatusEffects", "AdjustAllStatusEffects", "AddStatusPerOtherEffect", "SpawnOrStatus", "FloorRearrange", "UnitUpgrade", "UnitUpgradePerStatus", "BuffEquipment", "RemoveUnitUpgrade", "AttachEquipment", "RemoveEquipment", "BuffAttack", "DebuffAttack", "BuffHealth", "DebuffHealth", "Draw", "DiscardHand", "RandomDiscard", "Generate" }.Contains(effect.Type))
+                if (!new[] { "Null", "CopyUnits", "Bump", "AbilityTeleport", "AttackWithUnit", "Damage", "DamagePerSourceAttack", "DamagePerHp", "DamageByUnitsKilled", "TransferAttackFromUnit", "TransferAllStatusesFromUnit", "Heal", "HealOverheal", "SetHealth", "Sacrifice", "Kill", "AddStatus", "RemoveAllStatusEffects", "MultiplyStatus", "MultiplyAllPositiveStatusEffects", "AdjustAllStatusEffects", "AddStatusPerOtherEffect", "SpawnOrStatus", "FloorRearrange", "UnitUpgrade", "UnitUpgradePerStatus", "BuffEquipment", "RemoveUnitUpgrade", "AttachEquipment", "RemoveEquipment", "BuffAttack", "DebuffAttack", "BuffHealth", "DebuffHealth", "Draw", "DiscardHand", "RandomDiscard", "Generate" }.Contains(effect.Type))
                     return "Unimplemented spell effect " + effect.Type;
+                if (effect.Type == "TransferAllStatusesFromUnit" &&
+                    (effect.Target != "LastSacrificedCharacter" || effect.Value != 2 || effect.Statuses.Count != 0))
+                    return "Unmodeled status-transfer configuration.";
                 if (effect.Type == "TransferAttackFromUnit" && (effect.Value < 0 || effect.Value > 1))
                     return "Unknown attack transfer recipient mode.";
                 if (effect.Type == "SetHealth" && effect.Value <= 0)
@@ -1784,7 +1834,7 @@ namespace MonsterTrain2Poju.Model
         private static CardTargets Collect(TrainCombatState state, int roomIndex, CardActionEffect effect, IReadOnlyList<int> last,
             CombatUnit? initial, int dropPosition, int index, BattlePlayRules? definitions, bool isTesting = false,
             IReadOnlyDictionary<int, int>? pendingDeadRooms = null, IReadOnlyDictionary<int, int>? positions = null, int selfUnitId = 0,
-            int sourceCardId = 0)
+            int sourceCardId = 0, int lastSacrificedUnitId = 0)
         {
             if (effect.Type == "ChooseDiscard")
             {
@@ -1825,7 +1875,8 @@ namespace MonsterTrain2Poju.Model
             }
             return effect.Type == "HandUpgrade" && effect.Target == "Hand" || CardOnlyPileTarget(effect)
                 ? new CardTargets(Array.Empty<int>()) : CardTargetModel.Collect(state, roomIndex, effect, last, initial?.Team, dropPosition,
-                    index == 0, isTesting, definitions?.Rooms.FirstOrDefault(room => room.IsPyre)?.RoomIndex, pendingDeadRooms, positions, selfUnitId);
+                    index == 0, isTesting, definitions?.Rooms.FirstOrDefault(room => room.IsPyre)?.RoomIndex, pendingDeadRooms,
+                    positions, selfUnitId, lastSacrificedUnitId: lastSacrificedUnitId);
         }
 
         private static void Remember(CardActionEffect effect, int index, CardTargets targets, ref IReadOnlyList<int> last)
@@ -1869,6 +1920,7 @@ namespace MonsterTrain2Poju.Model
                 case "DamagePerHp": return count > 0;
                 case "DamageByUnitsKilled": return count > 0;
                 case "TransferAttackFromUnit": return count > 0;
+                case "TransferAllStatusesFromUnit": return count > 0;
                 case "Heal": return effect.Target == "Room" || count > 0;
                 case "HealOverheal": return count > 0;
                 case "HealTrain": return count > 0;

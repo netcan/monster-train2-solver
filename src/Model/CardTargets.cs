@@ -20,7 +20,7 @@ namespace MonsterTrain2Poju.Model
     public static class CardTargetModel
     {
         public static bool Supports(string mode) => new[] { "Room", "FrontInRoom", "BackInRoom", "Weakest", "RoomHealTargets",
-            "DropTargetCharacter", "Pyre", "LastTargetedCharacters", "StrongestLastTargetedCharacters", "RandomInRoom", "Self", "LastSpawnedCharacter" }.Contains(mode) || IsCrossRoom(mode);
+            "DropTargetCharacter", "Pyre", "LastTargetedCharacters", "StrongestLastTargetedCharacters", "RandomInRoom", "Self", "LastSpawnedCharacter", "LastSacrificedCharacter" }.Contains(mode) || IsCrossRoom(mode);
         public static bool IsCrossRoom(string mode) => new[] { "Tower", "RandomFromAnyRoom", "FrontInAllRooms",
             "FrontInRoomAndRoomAbove", "WeakestAllRooms", "StrongestAllRooms", "StrongestLastTargetedCharactersRoom" }.Contains(mode);
         public static bool IsRandom(string mode) => mode == "RandomInRoom" || mode == "RandomFromAnyRoom";
@@ -28,13 +28,14 @@ namespace MonsterTrain2Poju.Model
         public static CardTargets Collect(TrainCombatState train, int roomIndex, CardActionEffect effect, IReadOnlyList<int> lastTargets,
             CombatTeam? dropTeam = null, int dropPosition = -1, bool firstEffect = false, bool isTesting = false, int? pyreRoomIndex = null,
             IReadOnlyDictionary<int, int>? pendingDeadRooms = null, IReadOnlyDictionary<int, int>? unitPositions = null, int selfUnitId = 0,
-            bool ignorePyre = true)
+            bool ignorePyre = true, int lastSacrificedUnitId = 0)
         {
             RoomCombatState? room = train.Rooms.FirstOrDefault(item => item.RoomIndex == roomIndex);
             if (room == null) return new CardTargets(Array.Empty<int>(), "The selected target room does not exist.");
             if (effect.Target == "Pyre") return Pyre(train.Rooms.SelectMany(item => item.Units));
             if (effect.Target == "Self") return Self(train.Rooms.SelectMany(item => item.Units), effect, selfUnitId);
             if (effect.Target == "LastSpawnedCharacter") return LastSpawned(room);
+            if (effect.Target == "LastSacrificedCharacter") return new CardTargets(lastSacrificedUnitId > 0 ? new[] { lastSacrificedUnitId } : Array.Empty<int>());
             string? filterError = effect.Filters?.Validate();
             if (filterError != null) return new CardTargets(Array.Empty<int>(), filterError);
             if (IsCrossRoom(effect.Target))
@@ -102,14 +103,16 @@ namespace MonsterTrain2Poju.Model
             if (effect.Target == "LastTargetedCharacters" || effect.Target == "StrongestLastTargetedCharacters")
                 room = new RoomCombatState(roomIndex, room.Deployment, train.Rooms.SelectMany(item => item.Units).ToArray(),
                     Array.Empty<string>(), train.Context, room.Preview, room.ActiveCompanionBossIds);
-            return Collect(room, effect, lastTargets, dropTeam, dropPosition, firstEffect, isTesting, ignorePyre: ignorePyre);
+            return Collect(room, effect, lastTargets, dropTeam, dropPosition, firstEffect, isTesting,
+                ignorePyre: ignorePyre, lastSacrificedUnitId: lastSacrificedUnitId);
         }
 
         public static CardTargets Collect(RoomCombatState room, CardActionEffect effect, IReadOnlyList<int> lastTargets,
             CombatTeam? dropTeam = null, int dropPosition = -1, bool firstEffect = false, bool isTesting = false, int selfUnitId = 0,
-            int lastSpawnedOverrideUnitId = 0, bool ignorePyre = true)
+            int lastSpawnedOverrideUnitId = 0, bool ignorePyre = true, int lastSacrificedUnitId = 0)
         {
             if (effect.Target == "LastSpawnedCharacter") return LastSpawned(room, lastSpawnedOverrideUnitId);
+            if (effect.Target == "LastSacrificedCharacter") return new CardTargets(lastSacrificedUnitId > 0 ? new[] { lastSacrificedUnitId } : Array.Empty<int>());
             if (!Supports(effect.Target)) return new CardTargets(Array.Empty<int>(), "Unmodeled target mode " + effect.Target);
             if (IsCrossRoom(effect.Target)) return new CardTargets(Array.Empty<int>(), "Cross-room targeting requires the complete train.");
             if (effect.Target == "Pyre") return Pyre(room.Units);

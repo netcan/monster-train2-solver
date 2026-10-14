@@ -1,5 +1,15 @@
 # Native regression fixtures
 
+`full-battle-brain-transfer.mt2f` plays unchanged `PerilsOfProduction` and
+`BrainTransfer` on a rear original Imp behind a Train Steward. The Imp has Rage
+3 and Scorch 2 when sacrificed; the Steward receives both statuses and rises
+from 8 to 15 attack with a temporary spawner-card upgrade. The muted Instant
+battle wins with 56 matched stages, 24 actions and seven EndTurns, with zero
+capture failures, mismatches, unsupported transitions or pending records.
+This is original-owner evidence for `CardEffectTransferAllStatusEffectsFromUnit`
+and the `LastSacrificedCharacter` target chain. The binary-only archive is
+34,440 bytes and has 5,754 unique nodes.
+
 `full-battle-transfer-attack-ability.mt2f` calibrates the ability-user target
 of the native `CardEffectTransferAttackFromUnit` class on a prepared unit
 ability. Six ability actions match, including a Train Steward rising from 8 to

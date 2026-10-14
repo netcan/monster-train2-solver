@@ -1,6 +1,6 @@
 # Original relic coverage evidence
 
-As of 2026-10-14, **78 distinct original collectable relics / 224 catalog entries
+As of 2026-10-15, **78 distinct original collectable relics / 224 catalog entries
 (34.82%)** have accepted native full-battle evidence. This counts unchanged relic
 definitions whose effects actually ran, including their original filters and
 conditions. Test cards, unit triggers and carrier subtypes may be authored to
@@ -22,7 +22,7 @@ All 31 source archives below report game `2.2.1`, module MVID
 byte lengths and SHA-256 hashes are recorded in [manifest.tsv](manifest.tsv).
 The floor-capacity batch passes strict native acceptance, complete-fixture checks,
 independent full-battle replay and six directly affected old-fixture regressions.
-The accepted inventory is 309 archives: 278 battles and 31 component
+The accepted inventory is 310 archives: 279 battles and 31 component
 calibrations, with no JSON companions. A 246-archive replay was
 attempted on 2026-10-13 but has not completed: legacy EndTurn snapshots can
 conflict with the current model's room `Enabled` state. Focused follow-up checks
