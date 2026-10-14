@@ -17,12 +17,18 @@ namespace MonsterTrain2Poju.Probe
         private static int sourceId;
         private static bool played;
         private static int drafts;
+        private static bool alternateOpening;
+        private static IReadOnlyList<ElixirMixSelection> pendingSelections = Array.Empty<ElixirMixSelection>();
+        private static int pendingSelectionIndex;
 
         internal static void Prepare(AllGameManagers managers, ManualLogSource log)
         {
             logger = log;
             played = false;
             drafts = 0;
+            alternateOpening = Environment.GetEnvironmentVariable("MT2_PROBE_MIX_ALTERNATE") == "1";
+            pendingSelections = Array.Empty<ElixirMixSelection>();
+            pendingSelectionIndex = 0;
             CardManager cards = managers.GetCardManager()!;
             CardData definition = managers.GetSaveManager().GetAllGameData().FindCardData(MixologyId) ??
                 throw new InvalidOperationException("Mix fixture requires original Mixology.");
@@ -46,25 +52,35 @@ namespace MonsterTrain2Poju.Probe
                 if (source != null && state.Energy >= 2)
                 {
                     played = true;
+                    int choice = alternateOpening ? 1 : 0;
                     return new PlayCardAction(sourceId, 0, mixSelections: new[] {
-                        new ElixirMixSelection(0, 0, 0), new ElixirMixSelection(1, 0, 0) });
+                        new ElixirMixSelection(0, 0, choice), new ElixirMixSelection(1, 0, choice) });
                 }
             }
             return BattleActionModel.ChooseUnitSpellAndJunkPlay(state);
         }
 
-        private static IEnumerator SelectFirst(ElixirDraftScreen screen, string kind)
+        internal static void Expect(PlayCardAction action)
+        {
+            pendingSelections = action.MixSelections;
+            pendingSelectionIndex = 0;
+        }
+
+        private static IEnumerator SelectDraft(ElixirDraftScreen screen, string kind)
         {
             yield return null;
             FieldInfo itemsField = AccessTools.Field(typeof(ElixirDraftScreen), "draftItems") ??
                 throw new MissingFieldException(typeof(ElixirDraftScreen).FullName, "draftItems");
             IList items = (IList)itemsField.GetValue(screen);
-            if (items.Count == 0 || items[0] is not CardUI selected)
-                throw new InvalidOperationException("Original Mix draft has no first card choice.");
+            if (pendingSelectionIndex >= pendingSelections.Count)
+                throw new InvalidOperationException("Native Mix opened a draft without a modeled choice.");
+            int choiceIndex = pendingSelections[pendingSelectionIndex++].ChoiceIndex;
+            if (choiceIndex < 0 || choiceIndex >= items.Count || items[choiceIndex] is not CardUI selected)
+                throw new InvalidOperationException("Original Mix draft lacks its modeled card choice.");
             string choices = string.Join(",", items.Cast<CardUI>().Select(item =>
                 item.GetCardState().GetCardDataID() + ":" + (item.GetCardUpgrade()?.GetID() ?? "none")));
             drafts++;
-            logger!.LogInfo("MIX-DRAFT index=" + drafts + " kind=" + kind + " choices=" + choices +
+            logger!.LogInfo("MIX-DRAFT index=" + drafts + " kind=" + kind + " choice=" + choiceIndex + " choices=" + choices +
                 " selected=" + selected.GetCardState().GetCardDataID() +
                 " upgrade=" + (selected.GetCardUpgrade()?.GetID() ?? "none"));
             MethodInfo apply = AccessTools.Method(typeof(ElixirDraftScreen), "ApplyDraft") ??
@@ -85,7 +101,7 @@ namespace MonsterTrain2Poju.Probe
             [HarmonyPostfix]
             private static void Postfix(ElixirDraftScreen __instance)
             {
-                if (logger != null && sourceId > 0) __instance.StartCoroutine(SelectFirst(__instance, "new"));
+                if (logger != null && sourceId > 0) __instance.StartCoroutine(SelectDraft(__instance, "new"));
             }
         }
 
@@ -95,7 +111,7 @@ namespace MonsterTrain2Poju.Probe
             [HarmonyPostfix]
             private static void Postfix(ElixirDraftScreen __instance)
             {
-                if (logger != null && sourceId > 0) __instance.StartCoroutine(SelectFirst(__instance, "upgrade"));
+                if (logger != null && sourceId > 0) __instance.StartCoroutine(SelectDraft(__instance, "upgrade"));
             }
         }
     }

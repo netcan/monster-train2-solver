@@ -1,5 +1,14 @@
 # Native regression fixtures
 
+`full-battle-mix-alternate.mt2f` selects the second original Mix recipe and
+second upgrade, then plays the resulting Regen/Spikes infusion. The native
+DiscardCard path leaves Infusion/Persistent in DiscardBuffer without a discard
+callback or count. Its 21 actions, 13 card cycles, seven EndTurns and 63 room
+stages match, with zero capture failures, mismatches, unsupported transitions
+or pending records. The four draft choices remain distinct in bounded search;
+serial and four-worker results agree, but the node limit does not prove a global
+optimum. The binary archive is 37,869 bytes.
+
 `full-battle-mix.mt2f` plays original Mixology twice. The first play drafts a
 new elixir and upgrades it; the second adds two more upgrades to the same
 recipe, moving each previous card to Standby. Native and model match 21 actions,
@@ -154,7 +163,7 @@ The default command checks the full curated inventory. For routine changes, run
 the dedicated checks for the new and directly affected scenarios; run the full
 inventory at completed milestones and before delivery.
 
-Current inventory is 312 archives: 281 accepted battles and 31 component
+Current inventory is 313 archives: 282 accepted battles and 31 component
 calibrations. Original relic evidence is 78/224 (34.82%). The schema-162
 `full-battle-dragon-hoard.mt2f` archive captures Alchemy changing the hoard from
 2 to 4. The Instant native battle wins with 61 matched stages, 21 card actions

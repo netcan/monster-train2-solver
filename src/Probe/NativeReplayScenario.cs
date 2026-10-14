@@ -1349,6 +1349,7 @@ namespace MonsterTrain2Poju.Probe
                 (modifierScenario == MixScenario.Name && MixScenario.IsScenarioPrelude(action)) ||
                 (ChooseDiscardScenario.Enabled && ChooseDiscardScenario.IsScenarioPrelude(action));
             PreviewSchedulingProbe.Observe("Play:" + action.CardInstanceId);
+            if (modifierScenario == MixScenario.Name) MixScenario.Expect(action);
             if (action.ActivatorUnitId > 0)
             {
                 CharacterState actor = FullBattleTrace.Active!.KnownUnits.Single(unit => FullBattleTrace.Active.UnitId(unit) == action.ActivatorUnitId);
