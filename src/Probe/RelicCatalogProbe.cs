@@ -27,7 +27,8 @@ namespace MonsterTrain2Poju.Probe
                 Effects = entry.Data.GetEffects().Select(effect => new
                 {
                     ClassName = effect.GetEffectClassName(), RuntimeType = TypeNameCache.GetType(effect.GetEffectClassName())?.Name,
-                    SourceTeam = effect.GetParamSourceTeam().ToString(), Int = effect.GetParamInt(), Int2 = effect.GetParamInt2(),
+                    SourceTeam = effect.GetParamSourceTeam().ToString(), TargetMode = effect.GetTargetMode().ToString(),
+                    Int = effect.GetParamInt(), Int2 = effect.GetParamInt2(),
                     Float = effect.GetParamFloat(), Bool = effect.GetParamBool(), Bool2 = effect.GetParamBool2(),
                     Bool3 = effect.GetParamBool3(), Bool4 = effect.GetParamBool4(), Str = effect.GetParamString(),
                     CardType = effect.GetParamCardType().ToString(),
