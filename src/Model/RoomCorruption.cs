@@ -98,7 +98,8 @@ namespace MonsterTrain2Poju.Model
                         if (combatRoom.Units.Any(unit => unit.Triggers.Any(trigger => trigger.Kind == "CorruptionAdded")) &&
                             (!runUnitCallbacks || effect.Target == "Tower"))
                             return new RoomCorruptionResult(null, "CorruptionAdded unit callbacks are not modeled.");
-                        if (context.Relics?.Any(relic => relic.EffectTypes.Any(RelicCallbacks.Contains)) == true)
+                        if (context.Relics?.Any(relic => relic.EffectTypes.Any(type => RelicCallbacks.Contains(type) &&
+                            (!runUnitCallbacks || type != RelicModel.AddStatusOnCorruption))) == true)
                             return new RoomCorruptionResult(null, "CorruptionAdded relic callbacks are not modeled.");
                         additions.Add(new RoomCorruptionAddition(index, requested - current));
                     }

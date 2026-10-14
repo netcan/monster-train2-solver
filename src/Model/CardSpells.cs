@@ -136,7 +136,7 @@ namespace MonsterTrain2Poju.Model
                 selfUnitId, deferFinalCallbacks: true, targetSpawnPointIndex: targetSpawnPointIndex,
                 recursionSelections: recursionSelections, onCastEffects: onCastEffects,
                 onUnplayedNegativeEffects: onUnplayedNegativeEffects, mixSelections: mixSelections,
-                priorTargets: priorTargets);
+                priorTargets: priorTargets, playerActionPhase: true);
 
         internal static TrainSpellResult ApplyNativeDamageStep(TrainCombatState source, int roomIndex, int targetId, int damage,
             int sourceCardId, IReadOnlyList<RoomCombatModel.QueuedCharacterTrigger> pendingDeaths, int attackerUnitId = 0,
@@ -246,7 +246,7 @@ namespace MonsterTrain2Poju.Model
             Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null, int targetSpawnPointIndex = -1,
             IReadOnlyList<CardRecursionSelection>? recursionSelections = null, bool onCastEffects = false,
             bool onUnplayedNegativeEffects = false, IReadOnlyList<ElixirMixSelection>? mixSelections = null,
-            IReadOnlyList<int>? priorTargets = null)
+            IReadOnlyList<int>? priorTargets = null, bool playerActionPhase = false)
         {
             string? selectionError = CardRecursionModel.ValidateSelections(effects, recursionSelections);
             if (selectionError != null) return UnsupportedTrain(selectionError);
@@ -774,6 +774,32 @@ namespace MonsterTrain2Poju.Model
                                 DrainDeaths();
                                 if (routingError != null) return UnsupportedTrain(routingError);
                             }
+                        if (state.Context!.Relics != null)
+                            foreach (CombatRelicState relic in state.Context.Relics)
+                                foreach (RelicCorruptionStatus rule in relic.CorruptionStatuses ?? Array.Empty<RelicCorruptionStatus>())
+                                {
+                                    RoomCombatState room = state.Rooms.Single(item => item.RoomIndex == addition.RoomIndex);
+                                    if (rule.OnlyDuringMonsterTurn && (!playerActionPhase || room.Deployment) ||
+                                        room.Preview && !rule.CanApplyInPreview) continue;
+                                    CardTargets relicTargets = RelicCorruptionStatusModel.Collect(room, rule);
+                                    if (!relicTargets.Supported) return UnsupportedTrain(relicTargets.UnsupportedReason!);
+                                    if (relicTargets.BattleRng.HasValue)
+                                        state = WithContext(state, state.Context!.WithBattleRng(relicTargets.BattleRng.Value));
+                                    foreach (int id in relicTargets.UnitIds)
+                                        foreach (CombatStatus status in rule.Statuses)
+                                        {
+                                            room = state.Rooms.Single(item => item.RoomIndex == addition.RoomIndex);
+                                            if (!room.Units.Any(unit => unit.Id == id && unit.Health > 0)) continue;
+                                            RoomCombatResult applied = StatusApplicationModel.ApplyRetained(room, id,
+                                                status.WithStacks(Math.Max(1, status.Stacks)), 0);
+                                            if (!applied.Supported) return UnsupportedTrain(applied.UnsupportedReason!);
+                                            state = ReplaceRoom(state, applied.State!);
+                                            callbacks.AddRange(applied.PendingCallbacks);
+                                            events.AddRange(applied.Events);
+                                        }
+                                    DrainDeaths();
+                                    if (routingError != null) return UnsupportedTrain(routingError);
+                                }
                     }
                     if (changed.Additions.Any(addition => state.Context!.RoomCapacities!.Any(room =>
                         room.RoomIndex == addition.RoomIndex &&

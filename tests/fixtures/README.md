@@ -211,8 +211,15 @@ The default command checks the full curated inventory. For routine changes, run
 the dedicated checks for the new and directly affected scenarios; run the full
 inventory at completed milestones and before delivery.
 
-Current inventory is 325 archives: 294 accepted battles and 31 component
-calibrations. Original relic evidence is 81/224 (36.16%). The binary-only
+Current inventory is 326 archives: 295 accepted battles and 31 component
+calibrations. Original relic evidence is 82/224 (36.61%). The binary-only
+`full-battle-corruption-relic-trigger.mt2f` acquires unchanged original
+`DamageOnCorruptPlay` before battle. When two enemies occupy room 0, original
+Unearthed Remains raises Corruption and the relic's two RandomInRoom callbacks
+add one Corrupt Poison stack each. Echoes of the Past removes Corruption without
+repeating either callback. Its 50 native stages, 19 actions, six EndTurns and
+bounded serial/parallel searches match. Run `--corruption-relic-trigger-only`
+for original-owner status changes and independent replay. The binary-only
 `full-battle-corruption-keeper-trigger.mt2f` plays original Keeper of Echoes
 and Train Steward in one room. Original Unearthed Remains raises Corruption,
 and Keeper's `CorruptionAdded` callback gives both units the original temporary

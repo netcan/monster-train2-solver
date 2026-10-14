@@ -1,7 +1,7 @@
 # Original relic coverage evidence
 
-As of 2026-10-15, **81 distinct original collectable relics / 224 catalog entries
-(36.16%)** have accepted native full-battle evidence. This counts unchanged relic
+As of 2026-10-15, **82 distinct original collectable relics / 224 catalog entries
+(36.61%)** have accepted native full-battle evidence. This counts unchanged relic
 definitions whose effects actually ran, including their original filters and
 conditions. Test cards, unit triggers and carrier subtypes may be authored to
 exercise those effects; the claim covers the recorded paths, not every possible
@@ -16,13 +16,13 @@ Rage and Frostbite consumers. All four catalog owners of
 families and other effects on the remaining owners still require modeling and
 native proof.
 
-All 33 source archives below report game `2.2.1`, module MVID
+The source archives cited below report game `2.2.1`, module MVID
 `8fb07b96-f4db-4d2b-884d-c00536d6ccf4`, `NativeWon=true`, and zero
 `CaptureFailures`, `Mismatches`, `Unsupported` and `Pending`. Archive provenance,
 byte lengths and SHA-256 hashes are recorded in [manifest.tsv](manifest.tsv).
 The floor-capacity batch passes strict native acceptance, complete-fixture checks,
 independent full-battle replay and six directly affected old-fixture regressions.
-The accepted inventory is 325 archives: 294 battles and 31 component
+The accepted inventory is 326 archives: 295 battles and 31 component
 calibrations, with no JSON companions. A 246-archive replay was
 attempted on 2026-10-13 but has not completed: legacy EndTurn snapshots can
 conflict with the current model's room `Enabled` state. Focused follow-up checks
@@ -35,11 +35,12 @@ OnHatched sacrifice/summon chains after the already counted `EggHatchRemoval`
 effect. The original `KinhostVessel` card now has a separate native Hatch 8
 play/sacrifice/Pupa witness, including a separate two-combat path with permanent
 Corruption 4. Original Glugsider, Shardsoul Carver and Keeper of Echoes now have
-separate `CorruptionAdded` callback battles; none adds a relic owner. The relic-owner
-count remains 81/224. The Mageblade
-status/cache/attack path has an accepted
+separate `CorruptionAdded` callback battles; none adds a relic owner. The original
+`DamageOnCorruptPlay` battle adds one relic owner: its two ordered RandomInRoom
+effects each add one Corrupt Poison stack to an enemy on corruption increase.
+The Mageblade status/cache/attack path has an accepted
 native battle archive, but Mageblade is not a collectable relic and is not
-included in the 81/224 owner count. The `AllUnitsMultistrike` archive
+included in the 82/224 owner count. The `AllUnitsMultistrike` archive
 validates a mutator, not a collectible relic, and is also excluded from that
 owner count.
 
@@ -89,6 +90,7 @@ owner count.
 | `IncreaseArmorStacks` | `ba26070b-4f6b-4af0-a1ec-2af024b6af87` | [original status relics][statusAdders] | The unchanged Monsters-team positive-stack rule adds 4 Armor. Five distinct real native query cases lose exactly 4 stacks when only this relic is removed. Starting, spell, equipment-upgrade and combat status paths replay exactly. |
 | `ExtraSpellWeakness` | `b1d918d8-1fa6-4e6d-b523-5f7f339e5af8` | [original status relics][statusAdders] | The unchanged Heroes-team positive-stack rule adds 1 Spell Weakness on enemies. Two real native query cases lose that layer when only this relic is removed. |
 | `IncreaseDecaySlimeStacks` | `55c06c99-7cee-4d7e-ad17-f893722d8071` | [original status relics][statusAdders] | The unchanged None-team rule adds 1 Corrupt Poison stack; two real applications lose exactly 1 when only this relic is removed. Its native `OnAlmostPostRoomCombat` stage matches the model, including corruption-scaled damage, the turn-zero gate and Pyregel interaction in the 39-stage battle. |
+| `DamageOnCorruptPlay` | `f302d4a1-13ba-4907-a26d-f0d8eead6f2e` | [corruption relic battle](full-battle-corruption-relic-trigger.mt2f) | Original Unearthed Remains raises room Corruption 0 to 1 during MonsterTurn. The unchanged relic's two ordered RandomInRoom effects each add 1 Corrupt Poison to an enemy, producing two positive enemy-status changes; Echoes of the Past removes Corruption without repeating them. All 50 native stages, 19 actions and bounded serial/parallel searches match. |
 | `IncreaseBurnoutStacks` | `dc32326b-0952-4b3b-8bc8-cec909476c5f` | [original burnout stacks][burnoutStacks] | The unchanged Monsters-team positive-stack rule adds 3 Ephemeral. A real player application is 1 → 4; removing only this relic returns it to 1. The complete 41-stage battle and 336-query Ephemeral boundary matrix match. |
 | `IncreaseRageDamage` | `b9bddf11-acaa-40fb-bc40-eee83e478424` | [original magnitude relics][magnitudes] | The unchanged Monsters-team buff magnitude adds 1 attack per future added/removed Rage stack. Removing only this owner preserves captured starting attack history but changes subsequent status attack in 19 action/combat witnesses in the refreshed archive. |
 | `StrongerSpikes` | `aa94ad34-ee09-464e-89ff-2a2c2867c097` | [original magnitude relics][magnitudes] | The unchanged Monsters-team spikes magnitude adds 1 damage per stack at retaliation. Ten player-owned Spikes event witnesses in the refreshed archive deal less real damage after removing only this owner. |

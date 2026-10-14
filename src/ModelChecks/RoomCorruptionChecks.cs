@@ -9,6 +9,7 @@ internal static class RoomCorruptionChecks
     private const string GlugsiderId = "e83182b1-ae94-4f7e-b7fe-aea5b825ecbe";
     private const string CarverId = "8cd475e4-6e39-4306-b544-026bf30f4eac";
     private const string KeeperId = "1acb9146-44b9-476c-a30e-5778750710a1";
+    private const string CorruptionRelicId = "f302d4a1-13ba-4907-a26d-f0d8eead6f2e";
     private const string StewardId = "d14a50f3-728d-43e1-87f0-ef1b013f6678";
 
     internal static void Run()
@@ -67,6 +68,21 @@ internal static class RoomCorruptionChecks
             Effect("AddPermanentCorruption", 1));
         Require(!rejectedPermanent.Supported && rejectedPermanent.UnsupportedReason!.Contains("relic callbacks", StringComparison.Ordinal),
             "Permanent corruption skipped the native corruption-added callback guard.");
+        var missingCorruptionRule = new CombatRelicState("missing", "missing",
+            ["RelicEffectAddStatusEffectOnCorruptionAdded"]);
+        Require(RelicModel.Validate([missingCorruptionRule])?.Contains("Missing ordered native", StringComparison.Ordinal) == true,
+            "Uncaptured corruption relic parameters were accepted.");
+        var statusRule = new RelicCorruptionStatus(0, "RandomInRoom", false, true, true, false, false,
+            [new CombatStatus("corrupt_poison", 1)]);
+        var excluded = new CombatUnit(1, "excluded", CombatTeam.Enemy, 0, 1, 1, false, false, false,
+            [new CombatStatus("pyrebane", 1), new CombatStatus("lifelink", 1)]);
+        var eligible = new CombatUnit(2, "eligible", CombatTeam.Enemy, 0, 2, 2, false, false, false, []);
+        RoomCombatState targetRoom = Train(0, 4).Rooms[0].WithUnits([excluded, eligible]);
+        string targetParent = JsonSerializer.Serialize(targetRoom);
+        CardTargets selected = RelicCorruptionStatusModel.Collect(targetRoom, statusRule);
+        Require(selected.Supported && selected.UnitIds.SequenceEqual([eligible.Id]) &&
+            selected.BattleRng.HasValue && JsonSerializer.Serialize(targetRoom) == targetParent,
+            "Corruption relic RandomInRoom selected the native pyrebane/lifelink exclusion or mutated its parent.");
         string expected = JsonSerializer.Serialize(paired.State);
         Parallel.For(0, 16, _ => Require(JsonSerializer.Serialize(CardSpellModel.Apply(source, 0,
             [Effect("AdjustMaxCorruption", 1), Effect("AdjustCorruption", 1, true)], 0).State) == expected,
@@ -301,6 +317,59 @@ internal static class RoomCorruptionChecks
         BattleTurnChecks.Native(fixture);
         BattleSearchChecks.Native(fixture);
         Console.WriteLine("NATIVE-CORRUPTION-KEEPER-TRIGGER PASS: two original units received the same temporary room upgrade.");
+    }
+
+    internal static void NativeRelicTrigger(FixtureValue fixture)
+    {
+        Require(fixture.GetProperty("Schema").GetInt32() == 103 &&
+            fixture.GetProperty("ModifierScenario").GetString() == "corruption-relic-trigger" &&
+            fixture.GetProperty("NativeWon").GetBoolean() &&
+            new[] { "CaptureFailures", "Mismatches", "Unsupported", "Pending" }
+                .All(name => fixture.GetProperty(name).GetInt32() == 0),
+            "Original DamageOnCorruptPlay battle did not finish with a complete native match.");
+        FixtureValue[] marked = fixture.GetProperty("Actions").EnumerateArray()
+            .Where(record => record.GetProperty("ScenarioAction").GetBoolean()).ToArray();
+        Require(marked.Length == 2, "Expected original corruption addition and removal actions.");
+        BattleTurnState before = marked[0].GetProperty("Before").Deserialize<BattleTurnState>()!;
+        BattleTurnState actual = marked[0].GetProperty("Actual").Deserialize<BattleTurnState>()!;
+        PlayCardAction action = marked[0].GetProperty("Action").Deserialize<PlayCardAction>()!;
+        CombatRelicState relic = before.Spawn.Train.Context!.Relics!.Single(item => item.DataId == CorruptionRelicId);
+        RelicCorruptionStatus[] effects = relic.CorruptionStatuses!.ToArray();
+        RoomCombatState oldRoom = before.Spawn.Train.Rooms.Single(room => room.RoomIndex == 0);
+        RoomCombatState newRoom = actual.Spawn.Train.Rooms.Single(room => room.RoomIndex == 0);
+        CombatUnit[] oldEnemies = oldRoom.Units.Where(unit => unit.Team == CombatTeam.Enemy).ToArray();
+        CombatUnit[] newEnemies = newRoom.Units.Where(unit => unit.Team == CombatTeam.Enemy).ToArray();
+        int OldStacks(CombatUnit unit) => unit.Status("corrupt_poison")?.Stacks ?? 0;
+        Require(action.RoomIndex == 0 &&
+            before.Spawn.Train.Context.FindCard(action.CardInstanceId)?.DataId == UnearthedId &&
+            relic.AssetKey == "DamageOnCorruptPlay" && effects.Length == 2 &&
+            effects.All(effect => effect.TargetMode == "RandomInRoom" && effect.TargetHeroes &&
+                !effect.TargetMonsters && effect.OnlyDuringMonsterTurn && !effect.HasConditions &&
+                effect.Statuses.Count == 1 && effect.Statuses[0].Id == "corrupt_poison" &&
+                effect.Statuses[0].Stacks == 1) &&
+            oldEnemies.Length >= 2 && newEnemies.Length == oldEnemies.Length &&
+            newEnemies.Sum(OldStacks) == oldEnemies.Sum(OldStacks) + 2 &&
+            before.Spawn.Train.Context.RoomCapacities!.Single(room => room.RoomIndex == 0).Corruption == 0 &&
+            actual.Spawn.Train.Context!.RoomCapacities!.Single(room => room.RoomIndex == 0).Corruption == 1,
+            "Original relic did not add exactly two corrupt_poison stacks to enemies before room corruption changed.");
+        BattleTurnState removeBefore = marked[1].GetProperty("Before").Deserialize<BattleTurnState>()!;
+        BattleTurnState removeAfter = marked[1].GetProperty("Actual").Deserialize<BattleTurnState>()!;
+        PlayCardAction removeAction = marked[1].GetProperty("Action").Deserialize<PlayCardAction>()!;
+        Require(removeBefore.Spawn.Train.Context!.FindCard(removeAction.CardInstanceId)?.DataId == EchoesId &&
+            removeBefore.Spawn.Train.Context.RoomCapacities!.Single(room => room.RoomIndex == 0).Corruption == 1 &&
+            removeAfter.Spawn.Train.Context!.RoomCapacities!.Single(room => room.RoomIndex == 0).Corruption == 0 &&
+            removeAfter.Spawn.Train.Rooms.Single(room => room.RoomIndex == 0).Units
+                .Where(unit => unit.Team == CombatTeam.Enemy).Sum(OldStacks) ==
+            removeBefore.Spawn.Train.Rooms.Single(room => room.RoomIndex == 0).Units
+                .Where(unit => unit.Team == CombatTeam.Enemy).Sum(OldStacks),
+            "Removing corruption unexpectedly repeated the relic callback.");
+        BattleActionResult replay = BattleActionModel.PlayCard(before, action);
+        Require(replay.Supported && ModelJson.Difference(BattleTurnChecks.Comparable(replay.State!),
+            BattleTurnChecks.Comparable(actual)) == null,
+            "Original random corruption relic callback differs from native action: " + replay.Reason);
+        BattleTurnChecks.Native(fixture);
+        BattleSearchChecks.Native(fixture);
+        Console.WriteLine("NATIVE-CORRUPTION-RELIC-TRIGGER PASS: two original random enemy statuses and complete battle replay.");
     }
 
     internal static void NativePermanent(FixtureValue fixture)

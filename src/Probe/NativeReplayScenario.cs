@@ -261,6 +261,8 @@ namespace MonsterTrain2Poju.Probe
                         OriginalCardAttackRelicScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalRoomEntryStatusRelicScenario.Enabled && !OriginalRoomEntryStatusRelicScenario.Acquired)
                         OriginalRoomEntryStatusRelicScenario.AcquireBeforeBattle(managers!, log);
+                    if (fullBattle && CorruptionScenario.RelicTrigger && !CorruptionScenario.RelicAcquired)
+                        CorruptionScenario.AcquireRelicBeforeBattle(managers!, log);
                     if (fullBattle && OriginalMoonPhaseEnergyRelicScenario.Enabled && !OriginalMoonPhaseEnergyRelicScenario.Acquired)
                         OriginalMoonPhaseEnergyRelicScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalUnitUpgradeTriggerRelicScenario.Enabled && !OriginalUnitUpgradeTriggerRelicScenario.Acquired)
@@ -1130,6 +1132,7 @@ namespace MonsterTrain2Poju.Probe
                 if (fullBattle && UnplayedCardEffectsScenario.Enabled && !UnplayedCardEffectsScenario.Prepared)
                     UnplayedCardEffectsScenario.Prepare(managers, log);
                 if (OriginalUnitRelicBatchScenario.Enabled) OriginalUnitRelicBatchScenario.PrepareDecision(managers);
+                if (CorruptionScenario.RelicTrigger) CorruptionScenario.PrepareRelicDecision(managers, log);
                 if (modifierScenario == "damage-per-hp-ability" && !damagePerHpAbilityInputPrepared)
                     damagePerHpAbilityInputPrepared = DamagePerHpScenario.SeedAbilityLastAttackerInput(managers, log);
                 BattleTurnState decision = FullBattleTrace.Active!.CaptureDecision();
@@ -1343,7 +1346,7 @@ namespace MonsterTrain2Poju.Probe
                 (modifierScenario == "dragon-hoard" && DragonHoardScenario.IsScenarioAction(action)) ||
                 (modifierScenario == "train-heal" && TrainHealScenario.IsScenarioAction(action)) ||
                 (modifierScenario == "overheal" && OverhealScenario.IsScenarioAction(action)) ||
-                (modifierScenario is "corruption" or "corruption-unit-trigger" or "corruption-carver-trigger" or "corruption-keeper-trigger" &&
+                (modifierScenario is "corruption" or "corruption-unit-trigger" or "corruption-carver-trigger" or "corruption-keeper-trigger" or "corruption-relic-trigger" &&
                     CorruptionScenario.IsScenarioAction(action)) ||
                 (modifierScenario == "permanent-corruption" && PermanentCorruptionScenario.IsScenarioAction(action)) ||
                 (modifierScenario == "moon-phase-card" && MoonPhaseCardScenario.IsScenarioAction(action)) ||

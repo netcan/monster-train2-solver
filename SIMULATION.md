@@ -1,10 +1,18 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-15): 325 binary archives, including 294
+Current accepted inventory (2026-10-15): 326 binary archives, including 295
 full battles and 31 component calibrations. Unchanged original relic evidence
-covers 81/224 catalog entries (36.16%); see
+covers 82/224 catalog entries (36.61%); see
 [the owner evidence table](tests/fixtures/relic-coverage.md). Whole-battle
 coverage and the optimal solver remain in progress.
+
+The latest original-relic witness acquires unchanged `DamageOnCorruptPlay`
+before battle. During the player action phase, original Unearthed Remains raises
+room Corruption 0 to 1 while two enemies are present. The relic's two ordered
+RandomInRoom callbacks each add one Corrupt Poison stack; Echoes of the Past
+removes Corruption without firing them again. The 50-stage native battle has
+19 matched actions and bounded serial/parallel searches agree. Other corruption
+relic callback classes and non-player-phase status callbacks remain open.
 
 The latest original-unit witness plays unchanged Keeper of Echoes and Train
 Steward in the same room. Unearthed Remains raises Corruption and triggers the

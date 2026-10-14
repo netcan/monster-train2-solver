@@ -44,6 +44,7 @@ param(
     [switch] $CorruptionUnitTrigger,
     [switch] $CorruptionCarverTrigger,
     [switch] $CorruptionKeeperTrigger,
+    [switch] $CorruptionRelicTrigger,
     [switch] $PermanentCorruption,
     [switch] $MoonPhaseCard,
     [switch] $MoonPhaseAdvance,
@@ -427,6 +428,7 @@ if ($Corruption) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($CorruptionUnitTrigger) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($CorruptionCarverTrigger) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($CorruptionKeeperTrigger) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
+if ($CorruptionRelicTrigger) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($PermanentCorruption) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($MoonPhaseCard) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($MoonPhaseAdvance) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
@@ -630,6 +632,7 @@ if ($Corruption) { $environment['MT2_PROBE_MODIFIERS'] = 'corruption' }
 if ($CorruptionUnitTrigger) { $environment['MT2_PROBE_MODIFIERS'] = 'corruption-unit-trigger' }
 if ($CorruptionCarverTrigger) { $environment['MT2_PROBE_MODIFIERS'] = 'corruption-carver-trigger' }
 if ($CorruptionKeeperTrigger) { $environment['MT2_PROBE_MODIFIERS'] = 'corruption-keeper-trigger' }
+if ($CorruptionRelicTrigger) { $environment['MT2_PROBE_MODIFIERS'] = 'corruption-relic-trigger' }
 if ($PermanentCorruption) { $environment['MT2_PROBE_MODIFIERS'] = 'permanent-corruption' }
 if ($MoonPhaseCard) { $environment['MT2_PROBE_MODIFIERS'] = 'moon-phase-card' }
 if ($MoonPhaseAdvance) { $environment['MT2_PROBE_MODIFIERS'] = 'moon-phase-advance' }
@@ -929,6 +932,39 @@ if ($CorruptionKeeperTrigger) {
         throw 'Original Keeper of Echoes did not upgrade both same-room units on corruption addition.'
     }
     Write-Output 'NATIVE-CORRUPTION-KEEPER-TRIGGER PASS: original Keeper upgraded itself and Train Steward.'
+}
+if ($CorruptionRelicTrigger) {
+    $relicActions = @($trace.Actions | Where-Object ScenarioAction)
+    $poisonActions = @($relicActions | Where-Object {
+        $entry = $_
+        $before = $entry.Before.Spawn.Train
+        $after = $entry.Actual.Spawn.Train
+        $card = @($before.Context.Cards.Hand | Where-Object InstanceId -EQ $entry.Action.CardInstanceId)
+        $oldRoom = @($before.Rooms | Where-Object RoomIndex -EQ 0)
+        $newRoom = @($after.Rooms | Where-Object RoomIndex -EQ 0)
+        if ($card.Count -ne 1 -or $oldRoom.Count -ne 1 -or $newRoom.Count -ne 1 -or
+            $card[0].DataId -ne '17fb5276-2311-44c9-b662-b73581d9af56') { return $false }
+        $oldEnemies = @($oldRoom[0].Units | Where-Object Team -EQ 0)
+        $newEnemies = @($newRoom[0].Units | Where-Object Team -EQ 0)
+        $oldPoison = 0
+        $newPoison = 0
+        foreach ($unit in $oldEnemies) {
+            foreach ($status in $unit.Statuses) { if ($status.Id -eq 'corrupt_poison') { $oldPoison += $status.Stacks } }
+        }
+        foreach ($unit in $newEnemies) {
+            foreach ($status in $unit.Statuses) { if ($status.Id -eq 'corrupt_poison') { $newPoison += $status.Stacks } }
+        }
+        $oldEnemies.Count -ge 2 -and $newEnemies.Count -eq $oldEnemies.Count -and
+            $newPoison -eq ($oldPoison + 2) -and
+            @($before.Context.Relics | Where-Object DataId -EQ 'f302d4a1-13ba-4907-a26d-f0d8eead6f2e').Count -eq 1 -and
+            @($before.Context.RoomCapacities | Where-Object RoomIndex -EQ 0)[0].Corruption -eq 0 -and
+            @($after.Context.RoomCapacities | Where-Object RoomIndex -EQ 0)[0].Corruption -eq 1
+    })
+    if ($trace.ModifierScenario -ne 'corruption-relic-trigger' -or $relicActions.Count -ne 2 -or
+        $poisonActions.Count -ne 1 -or -not (Select-String -LiteralPath $unityLog -Pattern 'CORRUPTION-RELIC-ACQUIRED unchanged DamageOnCorruptPlay' -Quiet)) {
+        throw 'Original DamageOnCorruptPlay did not add two total corrupt_poison stacks to room enemies.'
+    }
+    Write-Output 'NATIVE-CORRUPTION-RELIC-TRIGGER PASS: original relic added two corrupt_poison stacks to room enemies.'
 }
 if ($PermanentCorruption -and ($trace.ModifierScenario -ne 'permanent-corruption' -or
     -not (Select-String -LiteralPath $unityLog -Pattern 'PERMANENT-CORRUPTION-PREPARED card=\d+ room=0 current=\d+ max=\d+ permanent=\d+' -Quiet) -or

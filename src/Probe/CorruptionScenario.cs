@@ -13,6 +13,7 @@ namespace MonsterTrain2Poju.Probe
         internal const string GlugsiderId = "e83182b1-ae94-4f7e-b7fe-aea5b825ecbe";
         internal const string CarverId = "8cd475e4-6e39-4306-b544-026bf30f4eac";
         internal const string KeeperId = "1acb9146-44b9-476c-a30e-5778750710a1";
+        internal const string CorruptionRelicId = "f302d4a1-13ba-4907-a26d-f0d8eead6f2e";
         private const string StewardId = "d14a50f3-728d-43e1-87f0-ef1b013f6678";
         private static ManualLogSource? logger;
         private static int stewardCardId;
@@ -21,11 +22,37 @@ namespace MonsterTrain2Poju.Probe
         private static int echoesCardId;
         private static int nextSpell;
         private static readonly bool[] marked = new bool[2];
+        internal static bool RelicTrigger => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == "corruption-relic-trigger";
+        internal static bool RelicAcquired { get; private set; }
 
         internal static bool UnitTrigger => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == "corruption-unit-trigger";
         internal static bool CarverTrigger => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == "corruption-carver-trigger";
         internal static bool KeeperTrigger => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == "corruption-keeper-trigger";
-        internal static bool Enabled => UnitTrigger || CarverTrigger || KeeperTrigger || Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == "corruption";
+        internal static bool Enabled => UnitTrigger || CarverTrigger || KeeperTrigger || RelicTrigger ||
+            Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == "corruption";
+        internal static void AcquireRelicBeforeBattle(AllGameManagers managers, ManualLogSource log)
+        {
+            if (!RelicTrigger || RelicAcquired) return;
+            SaveManager save = managers.GetSaveManager();
+            if (save.PreviewMode || save.GetGameSequence() == SaveData.GameSequence.InBattle)
+                throw new InvalidOperationException("Corruption relic must be acquired before battle setup.");
+            CollectableRelicData relic = save.GetAllGameData().GetAllCollectableRelicData()
+                .Single(item => item.GetID() == CorruptionRelicId);
+            RelicEffectData[] effects = relic.GetEffects().ToArray();
+            if (relic.name != "DamageOnCorruptPlay" || effects.Length != 2 || effects.Any(effect =>
+                effect.GetEffectClassName() != "RelicEffectAddStatusEffectOnCorruptionAdded" ||
+                effect.GetTargetMode() != TargetMode.RandomInRoom ||
+                effect.GetParamSourceTeam() != Team.Type.Heroes || !effect.GetParamBool() ||
+                effect.GetEffectConditions().Count != 0 || effect.GetParamStatusEffects().Length != 1 ||
+                effect.GetParamStatusEffects()[0].statusId != "corrupt_poison" ||
+                effect.GetParamStatusEffects()[0].count != 1))
+                throw new InvalidOperationException("Original DamageOnCorruptPlay definition changed.");
+            if (save.GetCollectedRelics().Any(item => item.GetRelicDataID() == CorruptionRelicId))
+                throw new InvalidOperationException("Corruption relic is already present.");
+            save.AddRelic(relic);
+            RelicAcquired = true;
+            log.LogInfo("CORRUPTION-RELIC-ACQUIRED unchanged DamageOnCorruptPlay; two RandomInRoom Heroes corrupt_poison+1 effects.");
+        }
         internal static bool IsScenarioAction(PlayCardAction action)
         {
             if (!Enabled) return false;
@@ -40,6 +67,7 @@ namespace MonsterTrain2Poju.Probe
         {
             logger = log;
             nextSpell = 0;
+            stewardCardId = teammateCardId = unearthedCardId = echoesCardId = 0;
             Array.Clear(marked, 0, marked.Length);
             SaveManager save = managers.GetSaveManager();
             AllGameData data = save.GetAllGameData();
@@ -107,23 +135,41 @@ namespace MonsterTrain2Poju.Probe
             CardState unit = cards.AddNewCard(steward, CardPile.HandPile, false, false, animate: false);
             CardState? teammate = KeeperTrigger ? cards.AddNewCard(data.FindCardData(StewardId)!,
                 CardPile.HandPile, false, false, animate: false) : null;
-            CardState added = cards.AddNewCard(definition, CardPile.HandPile, false, false, animate: false);
-            CardState remove = cards.AddNewCard(echoes, CardPile.HandPile, false, false, animate: false);
-            if (unit == null || added == null || remove == null ||
+            CardState? added = RelicTrigger ? null : cards.AddNewCard(definition, CardPile.HandPile, false, false, animate: false);
+            CardState? remove = RelicTrigger ? null : cards.AddNewCard(echoes, CardPile.HandPile, false, false, animate: false);
+            if (unit == null || (!RelicTrigger && (added == null || remove == null)) ||
                 !cards.GetHand().Contains(unit) || (KeeperTrigger && (teammate == null || !cards.GetHand().Contains(teammate))) ||
-                !cards.GetHand().Contains(added) ||
-                !cards.GetHand().Contains(remove))
+                (added != null && !cards.GetHand().Contains(added)) ||
+                (remove != null && !cards.GetHand().Contains(remove)))
                 throw new InvalidOperationException("Corruption fixture could not add its original cards.");
-            AccessTools.Field(typeof(CardState), "cost").SetValue(added, 0);
-            AccessTools.Field(typeof(CardState), "cost").SetValue(remove, 0);
+            if (added != null) AccessTools.Field(typeof(CardState), "cost").SetValue(added, 0);
+            if (remove != null) AccessTools.Field(typeof(CardState), "cost").SetValue(remove, 0);
             stewardCardId = FullBattleTrace.Active!.CardId(unit);
             teammateCardId = teammate == null ? 0 : FullBattleTrace.Active.CardId(teammate);
-            unearthedCardId = FullBattleTrace.Active.CardId(added);
-            echoesCardId = FullBattleTrace.Active.CardId(remove);
+            unearthedCardId = added == null ? 0 : FullBattleTrace.Active.CardId(added);
+            echoesCardId = remove == null ? 0 : FullBattleTrace.Active.CardId(remove);
             RoomState room = managers.GetRoomManager()!.GetRoom(0);
             log.LogInfo("CORRUPTION-PREPARED " + (UnitTrigger || CarverTrigger || KeeperTrigger ? "carrier=" : "steward=") + stewardCardId + " unearthed=" + unearthedCardId +
                 " echoes=" + echoesCardId + " room=0 current=" +
                 room.GetCurrentCorruption() + " max=" + room.GetMaxCorruption() + " permanent=" + room.GetPermanentCorruption());
+        }
+
+        internal static void PrepareRelicDecision(AllGameManagers managers, ManualLogSource log)
+        {
+            if (!RelicTrigger || unearthedCardId != 0 ||
+                managers.GetRoomManager()!.GetRoom(0).GetNumLivingCharacters(Team.Type.Heroes) == 0) return;
+            CardManager cards = managers.GetCardManager()!;
+            if (cards.GetHand().Count > 7) throw new InvalidOperationException("Corruption relic fixture requires two hand slots.");
+            AllGameData data = managers.GetSaveManager().GetAllGameData();
+            CardState added = cards.AddNewCard(data.FindCardData(UnearthedId)!, CardPile.HandPile, false, false, animate: false);
+            CardState remove = cards.AddNewCard(data.FindCardData(EchoesId)!, CardPile.HandPile, false, false, animate: false);
+            if (added == null || remove == null || !cards.GetHand().Contains(added) || !cards.GetHand().Contains(remove))
+                throw new InvalidOperationException("Corruption relic fixture could not add its original spells.");
+            AccessTools.Field(typeof(CardState), "cost").SetValue(added, 0);
+            AccessTools.Field(typeof(CardState), "cost").SetValue(remove, 0);
+            unearthedCardId = FullBattleTrace.Active!.CardId(added);
+            echoesCardId = FullBattleTrace.Active.CardId(remove);
+            log.LogInfo("CORRUPTION-RELIC-SPELLS unearthed=" + unearthedCardId + " echoes=" + echoesCardId + " enemyRoom=0");
         }
 
         internal static PlayCardAction? Choose(BattleTurnState source)
@@ -139,6 +185,7 @@ namespace MonsterTrain2Poju.Probe
                 return plays.FirstOrDefault(item => item.CardInstanceId == teammateCardId && item.RoomIndex == 0)
                     ?? BattleActionModel.ChooseUnitSpellAndJunkPlay(source);
             if (UnitTrigger && nextSpell == 0 && steward.Health == steward.MaxHealth) return null;
+            if (RelicTrigger && unearthedCardId == 0) return null;
             int cardId = nextSpell == 0 ? unearthedCardId : echoesCardId;
             PlayCardAction? action = plays.FirstOrDefault(item => item.CardInstanceId == cardId && item.RoomIndex == 0 &&
                 (nextSpell != 1 || item.TargetUnitId == steward.Id));

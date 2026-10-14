@@ -7,7 +7,8 @@ $fixtureNames = @('full-battle-steward-once.mt2f', 'full-battle-no-cards.mt2f', 
     'full-battle-unplayed-card-pyre-damage.mt2f',
     'full-battle-unplayed-card-effects.mt2f', 'full-battle-train-heal.mt2f', 'full-battle-status-upgrade.mt2f',
     'full-battle-overheal.mt2f', 'full-battle-corruption.mt2f', 'full-battle-corruption-unit-trigger.mt2f',
-    'full-battle-corruption-carver-trigger.mt2f', 'full-battle-corruption-keeper-trigger.mt2f', 'full-battle-permanent-corruption.mt2f',
+    'full-battle-corruption-carver-trigger.mt2f', 'full-battle-corruption-keeper-trigger.mt2f',
+    'full-battle-corruption-relic-trigger.mt2f', 'full-battle-permanent-corruption.mt2f',
     'full-battle-soul-siphon.mt2f', 'full-battle-moon-phase-card.mt2f', 'full-battle-moon-phase-advance.mt2f',
     'full-battle-moon-phase-callbacks.mt2f',
     'full-battle-conditional-no-player-status.mt2f',
@@ -408,6 +409,14 @@ $corruptionKeeperFixtures = @($fixtures | Where-Object {
 foreach ($fixturePath in $corruptionKeeperFixtures) {
     dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- --corruption-keeper-trigger-only $fixturePath
     if ($LASTEXITCODE -ne 0) { throw "Corruption Keeper trigger checks failed: $fixturePath" }
+}
+
+$corruptionRelicFixtures = @($fixtures | Where-Object {
+    (Split-Path -Leaf $_) -eq 'full-battle-corruption-relic-trigger.mt2f'
+})
+foreach ($fixturePath in $corruptionRelicFixtures) {
+    dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- --corruption-relic-trigger-only $fixturePath
+    if ($LASTEXITCODE -ne 0) { throw "Corruption relic trigger checks failed: $fixturePath" }
 }
 
 $permanentCorruptionFixtures = @($fixtures | Where-Object {

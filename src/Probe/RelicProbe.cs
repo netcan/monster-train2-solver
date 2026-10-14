@@ -34,6 +34,9 @@ namespace MonsterTrain2Poju.Probe
                 var roomEntryStatuses = effects.Select((effect, index) => new { Effect = effect, Index = index })
                     .Where(item => item.Effect is RelicEffectAddStatusEffectOnEnterRoomIndex)
                     .Select(item => RoomEntryStatus(item.Effect, item.Index)).ToArray();
+                var corruptionStatuses = effects.Select((effect, index) => new { Effect = effect, Index = index })
+                    .Where(item => item.Effect is RelicEffectAddStatusEffectOnCorruptionAdded)
+                    .Select(item => CorruptionStatus(item.Effect, item.Index)).ToArray();
                 var cardModifiers = effects.Select((effect, index) => new { Effect = effect, Index = index })
                     .Where(item => item.Effect is RelicEffectAddTempUpgrade).Select(item => RelicCardModifierProbe.Definition(item.Effect, item.Index)).ToArray();
                 var cardHealthModifiers = effects.Select((effect, index) => new { Effect = effect, Index = index })
@@ -111,7 +114,8 @@ namespace MonsterTrain2Poju.Probe
                     forgePointModifiers.Length > 0 ? forgePointModifiers : null,
                     cardHealthModifiers.Length > 0 ? cardHealthModifiers : null,
                     cardAttackModifiers.Length > 0 ? cardAttackModifiers : null,
-                    cardDrawOnCardPlay.Length > 0 ? cardDrawOnCardPlay : null);
+                    cardDrawOnCardPlay.Length > 0 ? cardDrawOnCardPlay : null,
+                    corruptionStatuses.Length > 0 ? corruptionStatuses : null);
             }).ToArray();
         }
 
@@ -141,6 +145,17 @@ namespace MonsterTrain2Poju.Probe
             return new RelicRoomEntryStatus(index, (int)Field("targetRoomIndex"), monsters, heroes,
                 (bool)Field("firstWaveOnly"), ((StatusEffectStackData[])Field("statusEffects"))
                     .Select(status => BattleActionProbe.Status(status.statusId, status.count)).ToArray());
+        }
+
+        private static RelicCorruptionStatus CorruptionStatus(IRelicEffect effect, int index)
+        {
+            var data = (RelicEffectData)AccessTools.Field(typeof(RelicEffectBase), "_srcRelicEffectData").GetValue(effect);
+            Team.Type team = data.GetParamSourceTeam();
+            if (team == Team.Type.None) team = Team.Type.Heroes | Team.Type.Monsters;
+            return new RelicCorruptionStatus(index, data.GetTargetMode().ToString(),
+                team.HasFlag(Team.Type.Monsters), team.HasFlag(Team.Type.Heroes), data.GetParamBool(),
+                effect.CanApplyInPreviewMode, data.GetEffectConditions().Count > 0,
+                data.GetParamStatusEffects().Select(status => BattleActionProbe.Status(status.statusId, status.count)).ToArray());
         }
 
         private static RelicStatusDecay StatusDecay(IRelicEffect effect, int index)
