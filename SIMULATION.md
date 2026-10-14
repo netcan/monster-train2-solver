@@ -1,10 +1,26 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-14): 285 binary archives, including 254
+Current accepted inventory (2026-10-14): 286 binary archives, including 255
 full battles and 31 component calibrations. Unchanged original relic evidence
 covers 78/224 catalog entries (34.82%); see
 [the owner evidence table](tests/fixtures/relic-coverage.md). Whole-battle
 coverage and the optimal solver remain in progress.
+
+### Original Soul Siphon and Scorch
+
+`full-battle-soul-siphon.mt2f` plays the unchanged `SoulSiphon` on a room 0
+Train Steward. The card fills corruption from 0/4 to 4/4 and applies one
+`scorch` stack. At the next player turn, native `OnMonsterTeamTurnBegin` removes
+the stack before the status callback deducts one energy, leaving two energy.
+The model matches all 22 actions and seven EndTurns in the muted Instant battle,
+with zero capture failures, mismatches, unsupported transitions or pending
+records. The 35,164-byte binary has 5,727 unique nodes and SHA-256
+`33e70e9fdf5d3da5b66589ec3e7e54d8aad12f140f7160431464c993157d0fd8`.
+
+```powershell
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-soul-siphon.mt2f
+dotnet run --project src/ModelChecks -c Release -- --scorch-pure
+```
 
 ### Original room corruption effects
 
@@ -20,9 +36,8 @@ failures, mismatches, unsupported transitions or pending records. The binary is
 The model follows the decompiled `CardEffectAdjustCorruption`,
 `CardEffectAdjustRoomMaxCorruption`, `RoomState` and `CardStatistics` paths.
 Pure checks cover fill-to-max, remove-all, permanent floors, values above the
-maximum, branch isolation and parallel results. `SoulSiphon` remains outside
-the searchable frontier because its `scorch` status is not modeled; corruption
-trigger callbacks on units and relics also remain unsupported.
+maximum, branch isolation and parallel results. Corruption trigger callbacks
+on units and relics remain unsupported.
 
 ```powershell
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-corruption.mt2f

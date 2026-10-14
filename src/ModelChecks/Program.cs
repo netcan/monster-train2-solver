@@ -16,6 +16,19 @@ if (args.Length == 2 && args[0] == "--room-corruption-only")
     return;
 }
 
+if (args.Length == 1 && args[0] == "--scorch-pure")
+{
+    ScorchStatusChecks.Run();
+    return;
+}
+
+if (args.Length == 2 && args[0] == "--scorch-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    ScorchStatusChecks.Native(fixture.RootElement);
+    return;
+}
+
 if (args.Length == 1 && args[0] == "--overheal-pure")
 {
     OverhealChecks.Run();
@@ -801,6 +814,7 @@ AbilityCardChecks.Run();
 StatusUpgradeChecks.Run();
 OverhealChecks.Run();
 RoomCorruptionChecks.Run();
+ScorchStatusChecks.Run();
 UnitAbilityChecks.Run();
 RelicChecks.Run();
 TriggerCountChecks.Run();

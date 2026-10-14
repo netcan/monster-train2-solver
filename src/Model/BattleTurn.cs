@@ -391,6 +391,9 @@ namespace MonsterTrain2Poju.Model
             context = BonusDrawModel.ApplyUpgrades(context, drawn, source.PlayRules, out string? bonusError);
             if (bonusError != null) return Unsupported(bonusError);
             train = WithContext(train, context, false);
+            ScorchStatusResult scorched = ScorchStatusModel.StartTurn(train);
+            if (!scorched.Supported) return Unsupported(scorched.UnsupportedReason!);
+            train = scorched.State!;
             spawn = WithTrain(spawn, train, turn, spawn.Rng);
             return Finish(RoomOutcome.Exchanged, source.EnergyPerTurn, moon);
 
