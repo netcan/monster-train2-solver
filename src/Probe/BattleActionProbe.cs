@@ -29,7 +29,7 @@ namespace MonsterTrain2Poju.Probe
             "CardEffectAddTempCardUpgradeToNextDrawnCard", "CardEffectAddTempCardUpgradeToUnits", "CardEffectRemoveTempUpgradeFromUnit",
             "CardEffectAddCardUpgradeToUnitsPerStatusEffect",
             "CardEffectAddTempCardUpgradeToCardsInHand", "CardEffectAddPermanentCardUpgradeToCardsInHand",
-            "CardEffectAddTempCardUpgradeToSpellsInDeck", "CardEffectAddUpgradedCopy"
+            "CardEffectAddTempCardUpgradeToSpellsInDeck", "CardEffectAddUpgradedCopy", "CardEffectMix"
         }, StringComparer.Ordinal);
         private readonly FullBattleTrace trace;
         private readonly UnitPlayModelProbe projection;
@@ -252,6 +252,9 @@ namespace MonsterTrain2Poju.Probe
         {
             if (AbilityLifecycleProbe.Known(effect.GetEffectStateName())) return AbilityLifecycleProbe.Describe(effect);
             if (AbilityCooldownProbe.Known(effect.GetEffectStateName())) return AbilityCooldownProbe.Describe(effect, effect.GetParamInt(), effect.GetParamBool());
+            if (effect.GetEffectStateName() == "CardEffectMix")
+                return new CardActionEffect("Mix", "None", effect.GetParamInt(), false, false,
+                    Array.Empty<CombatStatus>(), tests: new CardEffectTests(true, false, false, false, true));
             bool handUpgrade = effect.GetEffectStateName() == "CardEffectAddTempCardUpgradeToCardsInHand" ||
                 effect.GetEffectStateName() == "CardEffectAddPermanentCardUpgradeToCardsInHand";
             bool deckSpellUpgrade = effect.GetEffectStateName() == "CardEffectAddTempCardUpgradeToSpellsInDeck";

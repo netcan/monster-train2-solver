@@ -1,5 +1,14 @@
 # Native regression fixtures
 
+`full-battle-mix.mt2f` plays original Mixology twice. The first play drafts a
+new elixir and upgrades it; the second adds two more upgrades to the same
+recipe, moving each previous card to Standby. Native and model match 21 actions,
+13 card cycles and seven EndTurns, with zero capture failures, mismatches,
+unsupported transitions or pending records. The original catalog has four
+elixirs and 12 upgrade choices. All four first-play two-draft selections enter
+the search frontier; bounded serial and four-worker search agree on the result.
+The binary archive is 37,089 bytes and its SHA-256 is in [manifest.tsv](manifest.tsv).
+
 `full-battle-frost-channeling.mt2f` plays unchanged `PerilsOfProduction`, two
 `FlashFreeze` cards and `FrostChanneling`. An enemy and a friendly unit each
 carry Poison 8 before the original FrostChanneling spell; afterward the enemy
@@ -145,7 +154,7 @@ The default command checks the full curated inventory. For routine changes, run
 the dedicated checks for the new and directly affected scenarios; run the full
 inventory at completed milestones and before delivery.
 
-Current inventory is 309 archives: 278 accepted battles and 31 component
+Current inventory is 312 archives: 281 accepted battles and 31 component
 calibrations. Original relic evidence is 78/224 (34.82%). The schema-162
 `full-battle-dragon-hoard.mt2f` archive captures Alchemy changing the hoard from
 2 to 4. The Instant native battle wins with 61 matched stages, 21 card actions

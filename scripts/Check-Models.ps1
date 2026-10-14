@@ -52,6 +52,7 @@ $fixtureNames = @('full-battle-steward-once.mt2f', 'full-battle-no-cards.mt2f', 
     'full-battle-transfer-attack-ability.mt2f',
     'full-battle-brain-transfer.mt2f',
     'full-battle-frost-channeling.mt2f',
+    'full-battle-mix.mt2f',
     'full-battle-damage-by-units-killed.mt2f',
     'full-battle-damage-by-units-killed-physical.mt2f',
     'full-battle-hand-upgrades.mt2f', 'full-battle-targeted-hand-upgrades.mt2f', 'full-battle-permanent-consume-hand-upgrades.mt2f',
@@ -481,6 +482,12 @@ foreach ($fixturePath in @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 
     foreach ($mode in @('--native-actions-only', '--battle-search-only')) {
         dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- $mode $fixturePath
         if ($LASTEXITCODE -ne 0) { throw "SetHealth checks failed ($mode): $fixturePath" }
+    }
+}
+foreach ($fixturePath in @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 'full-battle-mix.mt2f' })) {
+    foreach ($mode in @('--mix-catalog-only', '--battle-search-only')) {
+        dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- $mode $fixturePath
+        if ($LASTEXITCODE -ne 0) { throw "Mix checks failed ($mode): $fixturePath" }
     }
 }
 foreach ($fixturePath in @($fixtures | Where-Object {

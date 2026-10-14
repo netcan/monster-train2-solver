@@ -61,7 +61,9 @@ internal static class BattleSearchChecks
             step.Action!.CardInstanceId + ":" + step.Action.RoomIndex + ":" + step.Action.PlayerPosition + ":" +
             step.Action.TargetUnitId + ":" + step.Action.ActivatorUnitId + ":" + string.Join(";",
                 step.Action.RecursionSelections.Select(selection => selection.EffectIndex + "=" +
-                    string.Join(",", selection.CardInstanceIds)))));
+                    string.Join(",", selection.CardInstanceIds))) + ":" + string.Join(";",
+                step.Action.MixSelections.Select(selection => selection.EffectIndex + "=" +
+                    selection.MixNumber + "," + selection.ChoiceIndex))));
         Require(serialSearch.BestState != null && serialSearch.Outcome == search.Outcome &&
             serialSearch.Score == search.Score &&
             serialSearch.DecisionStatesVisited <= maxNodes && search.DecisionStatesVisited <= maxNodes &&
@@ -113,7 +115,12 @@ internal static class BattleSearchChecks
         first.RecursionSelections.Count == second.RecursionSelections.Count &&
         first.RecursionSelections.Zip(second.RecursionSelections).All(pair =>
             pair.First.EffectIndex == pair.Second.EffectIndex &&
-            pair.First.CardInstanceIds.SequenceEqual(pair.Second.CardInstanceIds));
+            pair.First.CardInstanceIds.SequenceEqual(pair.Second.CardInstanceIds)) &&
+        first.MixSelections.Count == second.MixSelections.Count &&
+        first.MixSelections.Zip(second.MixSelections).All(pair =>
+            pair.First.EffectIndex == pair.Second.EffectIndex &&
+            pair.First.MixNumber == pair.Second.MixNumber &&
+            pair.First.ChoiceIndex == pair.Second.ChoiceIndex);
 
     private static void Require(bool condition, string message)
     {

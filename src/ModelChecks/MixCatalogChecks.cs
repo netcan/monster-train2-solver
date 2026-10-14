@@ -56,8 +56,22 @@ internal static class MixCatalogChecks
             !upgradeDraft.Rng.Equals(play.GetProperty("Actual").GetProperty("Spawn").GetProperty("Train")
                 .GetProperty("Context").GetProperty("BattleRng").Deserialize<UnityRng>()))
             throw new InvalidDataException("Modeled upgrade offers or Battle RNG differ from native Mix.");
+        BattleTurnState firstDecision = play.GetProperty("Before").Deserialize<BattleTurnState>()!;
+        PlayCardAction nativeAction = play.GetProperty("Action").Deserialize<PlayCardAction>()!;
+        if (BattleActionModel.PlayCard(firstDecision,
+                new PlayCardAction(nativeAction.CardInstanceId, nativeAction.RoomIndex)).Rejection != ActionRejection.Unsupported)
+            throw new InvalidDataException("A Mix draft without a choice was accepted or treated as an illegal card.");
+        var branches = BattleActionModel.EnumerateActions(firstDecision).SupportedCandidates
+            .Where(candidate => candidate.Action.CardInstanceId == nativeAction.CardInstanceId &&
+                candidate.Action.RoomIndex == nativeAction.RoomIndex && candidate.Action.MixSelections.Count == 2).ToArray();
+        string[] choices = branches.Select(branch => string.Join(",", branch.Action.MixSelections
+            .Select(selection => selection.ChoiceIndex))).OrderBy(value => value, StringComparer.Ordinal).ToArray();
+        if (!choices.SequenceEqual(new[] { "0,0", "0,1", "1,0", "1,1" }) ||
+            branches.Select(branch => branch.Result.State!.Spawn.Train.Context!.MixState!.LastCardDataId + ":" +
+                branch.Result.State.Spawn.Train.Context.MixState.LastUpgradeDataId).Distinct().Count() != 4)
+            throw new InvalidDataException("Mix search omitted or merged one of the four two-draft choices.");
         Console.WriteLine("NATIVE-MIX-CATALOG PASS: " + ids.Length + " recipes, " +
             before.EnumerateArray().Sum(recipe => recipe.GetProperty("Upgrades").GetArrayLength()) +
-            " upgrade choices, generated=" + generated[0] + " lastUpgrade=" + selectedUpgrade);
+            " upgrade choices, four search branches, generated=" + generated[0] + " lastUpgrade=" + selectedUpgrade);
     }
 }

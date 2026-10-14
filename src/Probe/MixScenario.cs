@@ -46,7 +46,8 @@ namespace MonsterTrain2Poju.Probe
                 if (source != null && state.Energy >= 2)
                 {
                     played = true;
-                    return new PlayCardAction(sourceId, 0);
+                    return new PlayCardAction(sourceId, 0, mixSelections: new[] {
+                        new ElixirMixSelection(0, 0, 0), new ElixirMixSelection(1, 0, 0) });
                 }
             }
             return BattleActionModel.ChooseUnitSpellAndJunkPlay(state);

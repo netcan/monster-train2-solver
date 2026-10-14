@@ -130,11 +130,11 @@ namespace MonsterTrain2Poju.Model
         internal static TrainSpellResult ApplyForCardPlay(TrainCombatState source, int roomIndex, IReadOnlyList<CardActionEffect> effects,
             int targetId, int sourceCardId, BattlePlayRules definitions, IReadOnlyList<CardPileState>? otherPiles, int selfUnitId = 0,
             int targetSpawnPointIndex = -1, IReadOnlyList<CardRecursionSelection>? recursionSelections = null, bool onCastEffects = false,
-            bool onUnplayedNegativeEffects = false)
+            bool onUnplayedNegativeEffects = false, IReadOnlyList<ElixirMixSelection>? mixSelections = null)
             => ApplyCore(source, roomIndex, effects, targetId, sourceCardId, null, null, definitions, true, otherPiles,
                 selfUnitId, deferFinalCallbacks: true, targetSpawnPointIndex: targetSpawnPointIndex,
                 recursionSelections: recursionSelections, onCastEffects: onCastEffects,
-                onUnplayedNegativeEffects: onUnplayedNegativeEffects);
+                onUnplayedNegativeEffects: onUnplayedNegativeEffects, mixSelections: mixSelections);
 
         internal static TrainSpellResult ApplyNativeDamageStep(TrainCombatState source, int roomIndex, int targetId, int damage,
             int sourceCardId, IReadOnlyList<RoomCombatModel.QueuedCharacterTrigger> pendingDeaths, int attackerUnitId = 0,
@@ -243,10 +243,15 @@ namespace MonsterTrain2Poju.Model
             IReadOnlyList<CardPileState>? otherPiles = null, int selfUnitId = 0, bool deferFinalCallbacks = false,
             Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null, int targetSpawnPointIndex = -1,
             IReadOnlyList<CardRecursionSelection>? recursionSelections = null, bool onCastEffects = false,
-            bool onUnplayedNegativeEffects = false)
+            bool onUnplayedNegativeEffects = false, IReadOnlyList<ElixirMixSelection>? mixSelections = null)
         {
             string? selectionError = CardRecursionModel.ValidateSelections(effects, recursionSelections);
             if (selectionError != null) return UnsupportedTrain(selectionError);
+            if (mixSelections?.Any(selection => selection.MixNumber != 0 || selection.ChoiceIndex < 0 ||
+                    selection.EffectIndex < 0 || selection.EffectIndex >= effects.Count ||
+                    effects[selection.EffectIndex].Type != "Mix") == true ||
+                mixSelections?.GroupBy(selection => selection.EffectIndex).Any(group => group.Count() != 1) == true)
+                return UnsupportedTrain("Mix requires one captured draft choice per effect.");
             string? error = Validate(source, roomIndex, effects, targetId, fullTrain, selfUnitId, targetSpawnPointIndex, sourceCardId);
             if (error != null) return UnsupportedTrain(error);
             int sourceAttackUnitId = selfUnitId > 0 ? selfUnitId : targetId;
@@ -313,6 +318,17 @@ namespace MonsterTrain2Poju.Model
                     DeckSpellUpgradeResult upgraded = DeckSpellUpgradeModel.Apply(state.Context!, effect, definitions);
                     if (!upgraded.Supported) return UnsupportedTrain(upgraded.UnsupportedReason!);
                     state = WithContext(state, upgraded.Context!);
+                    continue;
+                }
+                if (effect.Type == "Mix")
+                {
+                    if (selected.Preview) continue;
+                    ElixirMixSelection? choice = mixSelections?.FirstOrDefault(selection => selection.EffectIndex == index);
+                    CardGenerationResult mixed = ElixirMixModel.Apply(state.Context!, definitions?.Elixirs,
+                        effect.Value, choice?.ChoiceIndex ?? -1);
+                    if (!mixed.Supported) return UnsupportedTrain(mixed.UnsupportedReason!);
+                    state = WithContext(state, mixed.Context!);
+                    piles = state.Context!.OtherPiles?.ToArray();
                     continue;
                 }
                 if (effect.Type == "GenerateUpgradedCopy")
@@ -1712,7 +1728,8 @@ namespace MonsterTrain2Poju.Model
                     if (recursionError != null) return recursionError;
                     continue;
                 }
-                if (!CardOnlyPileTarget(effect) && !CardTargetModel.Supports(effect.Target)) return "Unimplemented spell targeting " + effect.Target;
+                if (effect.Type != "Mix" && !CardOnlyPileTarget(effect) && !CardTargetModel.Supports(effect.Target))
+                    return "Unimplemented spell targeting " + effect.Target;
                 if (effect.Type == "ScheduleNextDrawUpgrade")
                 {
                     if (effect.NextDrawUpgrade == null) return "Missing next-draw upgrade definition.";
@@ -1798,6 +1815,12 @@ namespace MonsterTrain2Poju.Model
                 {
                     string? forgeError = ForgePointsModel.Validate(source.Context);
                     if (forgeError != null) return forgeError;
+                    continue;
+                }
+                if (effect.Type == "Mix")
+                {
+                    if (effect.Value < 1 || source.Context.MixState == null || source.Context.OtherPiles == null)
+                        return "Mix requires a positive draft size and captured elixir state.";
                     continue;
                 }
                 if (!new[] { "Null", "CopyUnits", "Bump", "AbilityTeleport", "AttackWithUnit", "Damage", "DamagePerSourceAttack", "DamagePerHp", "DamageByUnitsKilled", "TransferAttackFromUnit", "TransferAllStatusesFromUnit", "TransferAllStatuses", "Heal", "HealOverheal", "SetHealth", "Sacrifice", "Kill", "AddStatus", "RemoveAllStatusEffects", "MultiplyStatus", "MultiplyAllPositiveStatusEffects", "AdjustAllStatusEffects", "AddStatusPerOtherEffect", "SpawnOrStatus", "FloorRearrange", "UnitUpgrade", "UnitUpgradePerStatus", "BuffEquipment", "RemoveUnitUpgrade", "AttachEquipment", "RemoveEquipment", "BuffAttack", "DebuffAttack", "BuffHealth", "DebuffHealth", "Draw", "DiscardHand", "RandomDiscard", "Generate" }.Contains(effect.Type))
@@ -1907,7 +1930,7 @@ namespace MonsterTrain2Poju.Model
                     return new CardTargets(Array.Empty<int>(), "Spawn-or-status fallback requires captured spawn points.");
                 return new CardTargets(Array.Empty<int>());
             }
-            return effect.Type == "HandUpgrade" && effect.Target == "Hand" || CardOnlyPileTarget(effect)
+            return effect.Type == "Mix" || effect.Type == "HandUpgrade" && effect.Target == "Hand" || CardOnlyPileTarget(effect)
                 ? new CardTargets(Array.Empty<int>()) : CardTargetModel.Collect(state, roomIndex, effect, last, initial?.Team, dropPosition,
                     index == 0, isTesting, definitions?.Rooms.FirstOrDefault(room => room.IsPyre)?.RoomIndex, pendingDeadRooms,
                     positions, selfUnitId, lastSacrificedUnitId: lastSacrificedUnitId);

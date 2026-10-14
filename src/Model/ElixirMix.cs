@@ -57,8 +57,83 @@ namespace MonsterTrain2Poju.Model
         { Offers = Array.AsReadOnly(offers.ToArray()); Rng = rng; }
     }
 
+    public sealed class ElixirMixSelection
+    {
+        public int EffectIndex { get; }
+        public int MixNumber { get; }
+        public int ChoiceIndex { get; }
+
+        public ElixirMixSelection(int effectIndex, int mixNumber, int choiceIndex)
+        { EffectIndex = effectIndex; MixNumber = mixNumber; ChoiceIndex = choiceIndex; }
+    }
+
     public static class ElixirMixModel
     {
+        public static CardGenerationResult Apply(CombatContext source, ElixirCatalog? catalog, int amount, int choiceIndex)
+        {
+            if (catalog == null || source.MixState == null || source.OtherPiles == null || source.CardInstances == null ||
+                source.CardRegistry == null || amount < 1)
+                return Unsupported("Mix requires the original elixir catalog, selection state and complete card piles.");
+            if (source.Relics?.Any(relic => relic.EffectTypes.Contains("RelicEffectAdjustMixAmount")) == true)
+                return Unsupported("Relic-adjusted Mix amounts and repetitions are not modeled.");
+            CardToken? current = source.Cards.Hand.FirstOrDefault(card =>
+                catalog.Recipes.Any(recipe => recipe.Creation.DataId == card.DataId));
+            if (current == null && source.Cards.Hand.Count >= source.MaxHandSize)
+                return new CardGenerationResult(source, Array.Empty<CardToken>());
+            ElixirRecipe? recipe = current == null ? null : catalog.Recipes.First(item => item.Creation.DataId == current.DataId);
+            ElixirDraftOptions draft = recipe == null
+                ? NewDraft(catalog, source.BattleRng, amount, source.MixState.LastCardDataId)
+                : UpgradeDraft(recipe, source.BattleRng, amount);
+            if (choiceIndex < 0 || choiceIndex >= draft.Offers.Count)
+                return Unsupported("Mix draft selection is missing or outside its offers.");
+            ElixirDraftOption chosen = draft.Offers[choiceIndex];
+            CombatContext context = source.WithBattleRng(draft.Rng);
+            int sourceCardId = 0;
+            if (current != null)
+            {
+                CardPileState? standby = context.OtherPiles!.FirstOrDefault(pile => pile.Name == "Standby");
+                if (standby == null) return Unsupported("Mix upgrade requires the Standby pile.");
+                context = context.WithCards(new CardCycleState(context.Cards.Hand.Where(card => card.InstanceId != current.InstanceId).ToArray(),
+                    context.Cards.Draw, context.Cards.Discard, context.Cards.Rng, context.Cards.DrawModifier,
+                    context.Cards.ExternalInteractions, context.Cards.BonusDraw, context.Cards.NextDrawUpgrades,
+                    context.Cards.NextUpgradeReferenceId));
+                context = context.WithOtherPiles(context.OtherPiles!.Select(pile => pile.Name == "Standby"
+                    ? CardPileModel.Add(pile, current) : pile).ToArray());
+                sourceCardId = current.InstanceId;
+            }
+            var rule = new CardGenerationRule("HandPile", 1, new[] { chosen.Recipe.Creation },
+                copyModifiers: current != null, upgrade: current == null ? chosen.Upgrade : null,
+                deterministicPoolSelection: true, upgradeIsPermanent: true);
+            CardGenerationResult generated = CardGenerationModel.Apply(context, rule, sourceCardId);
+            if (!generated.Supported) return generated;
+            context = generated.Context!;
+            if (current != null && chosen.Upgrade != null)
+            {
+                CardInstanceState card = context.FindCard(generated.AddedCards.Single().InstanceId)!;
+                string? error = CardExhaustModel.PermanentUpgradeError(card, chosen.Upgrade);
+                if (error != null) return Unsupported(error);
+                context = CardMagicPowerModel.Refresh(context,
+                    card.WithPermanentUpgrade(chosen.Upgrade.WithSharedReference(null), false), out CardInstanceState refreshed);
+                context = context.WithCard(refreshed);
+            }
+            CardInstanceState completed = context.FindCard(generated.AddedCards.Single().InstanceId)!;
+            if (completed.MaskDescriptor != null)
+            {
+                string[] castEffects = completed.MaskDescriptor.AuthoredCastEffects.Concat(completed.Permanent.Upgrades
+                    .GroupBy(upgrade => upgrade.DataId, StringComparer.Ordinal).Select(group => group.First())
+                    .SelectMany(upgrade => upgrade.Lifecycle?.Triggers ?? Array.Empty<CardLifecycleTrigger>())
+                    .Where(trigger => trigger.Type == "OnCast").SelectMany(trigger => trigger.Effects)).ToArray();
+                context = context.WithCard(completed.WithMaskDescriptor(
+                    completed.MaskDescriptor.WithAuthoredCastEffects(castEffects)));
+            }
+            return new CardGenerationResult(context.WithMixState(new MixRuntimeState(
+                current == null ? chosen.Recipe.Creation.DataId : source.MixState.LastCardDataId,
+                chosen.Upgrade?.DataId)), generated.AddedCards);
+        }
+
+        private static CardGenerationResult Unsupported(string reason) =>
+            new CardGenerationResult(null, Array.Empty<CardToken>(), reason);
+
         public static ElixirDraftOptions NewDraft(ElixirCatalog catalog, UnityRng rng, int amount,
             string? lastCardDataId)
         {

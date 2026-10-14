@@ -231,12 +231,15 @@ namespace MonsterTrain2Poju.Model
         // Spawn-point index selected by effects that move an existing unit to a room location.
         public int TargetSpawnPointIndex { get; }
         public IReadOnlyList<CardRecursionSelection> RecursionSelections { get; }
+        public IReadOnlyList<ElixirMixSelection> MixSelections { get; }
         public PlayCardAction(int cardInstanceId, int roomIndex, int playerPosition = -1, int targetUnitId = 0,
             int activatorUnitId = 0, int targetSpawnPointIndex = -1,
-            IReadOnlyList<CardRecursionSelection>? recursionSelections = null)
+            IReadOnlyList<CardRecursionSelection>? recursionSelections = null,
+            IReadOnlyList<ElixirMixSelection>? mixSelections = null)
         { CardInstanceId = cardInstanceId; RoomIndex = roomIndex; PlayerPosition = playerPosition; TargetUnitId = targetUnitId;
             ActivatorUnitId = activatorUnitId; TargetSpawnPointIndex = targetSpawnPointIndex;
-            RecursionSelections = Array.AsReadOnly((recursionSelections ?? Array.Empty<CardRecursionSelection>()).ToArray()); }
+            RecursionSelections = Array.AsReadOnly((recursionSelections ?? Array.Empty<CardRecursionSelection>()).ToArray());
+            MixSelections = Array.AsReadOnly((mixSelections ?? Array.Empty<ElixirMixSelection>()).ToArray()); }
     }
 
     public enum ActionRejection { None, Illegal, Unsupported }
@@ -541,7 +544,8 @@ namespace MonsterTrain2Poju.Model
                 spellInput = CardSpellModel.WithContext(spellInput, context.WithBattleRng(cast.BattleRngAfterTests!.Value));
                 TrainSpellResult result = CardSpellModel.ApplyForCardPlay(spellInput, action.RoomIndex, rule.Effects, action.TargetUnitId,
                     card.InstanceId, source.PlayRules, piles, recursionSelections: action.RecursionSelections
-                        .Where(selection => selection.EffectIndex < rule.Effects.Count).ToArray());
+                        .Where(selection => selection.EffectIndex < rule.Effects.Count).ToArray(),
+                    mixSelections: action.MixSelections.Where(selection => selection.EffectIndex < rule.Effects.Count).ToArray());
                 if (!result.Supported) return Unsupported(result.UnsupportedReason!);
                 piles = result.OtherPiles?.ToArray() ?? piles;
                 train = result.State!; context = train.Context!; outcome = result.Outcome; effectsApplied = true;
@@ -853,7 +857,7 @@ namespace MonsterTrain2Poju.Model
                     item.effect.Recursion?.SelectionMode is "ChooseToHand" or "ChooseToDeck").ToArray();
             if (choiceEffects.Length == 0)
             {
-                yield return action;
+                foreach (PlayCardAction branch in EnumerateMixChoices(source, action, rule)) yield return branch;
                 yield break;
             }
 
@@ -865,8 +869,9 @@ namespace MonsterTrain2Poju.Model
             {
                 if (choiceIndex == choiceEffects.Length)
                 {
-                    yield return new PlayCardAction(action.CardInstanceId, action.RoomIndex, action.PlayerPosition,
+                    var chosen = new PlayCardAction(action.CardInstanceId, action.RoomIndex, action.PlayerPosition,
                         action.TargetUnitId, action.ActivatorUnitId, action.TargetSpawnPointIndex, selections);
+                    foreach (PlayCardAction branch in EnumerateMixChoices(source, chosen, rule)) yield return branch;
                     yield break;
                 }
 
@@ -891,6 +896,75 @@ namespace MonsterTrain2Poju.Model
                     foreach (PlayCardAction branch in Expand(choiceIndex + 1)) yield return branch;
                     foreach (int id in choice) usedCards.Remove(id);
                     selections.RemoveAt(selections.Count - 1);
+                }
+            }
+        }
+
+        private static IEnumerable<PlayCardAction> EnumerateMixChoices(BattleTurnState source,
+            PlayCardAction action, CardPlayRule rule)
+        {
+            if (rule.Effects.All(effect => effect.Type != "Mix"))
+            {
+                yield return action;
+                yield break;
+            }
+            // Other effects can change the hand or Battle RNG before the next draft.
+            if (rule.Effects.Any(effect => effect.Type != "Mix" || effect.Value < 1) ||
+                rule.OnCastEffects.Any(effect => effect.Type == "Mix") ||
+                source.PlayRules?.Elixirs == null || source.Spawn.Train.Context?.MixState == null)
+            {
+                yield return action;
+                yield break;
+            }
+            CombatContext context = source.Spawn.Train.Context;
+            context = context.WithCards(new CardCycleState(context.Cards.Hand.Where(card => card.InstanceId != action.CardInstanceId).ToArray(),
+                context.Cards.Draw, context.Cards.Discard, context.Cards.Rng, context.Cards.DrawModifier,
+                context.Cards.ExternalInteractions, context.Cards.BonusDraw, context.Cards.NextDrawUpgrades,
+                context.Cards.NextUpgradeReferenceId));
+            var choices = new List<ElixirMixSelection>();
+            foreach (PlayCardAction branch in Expand(0, context)) yield return branch;
+
+            IEnumerable<PlayCardAction> Expand(int effectIndex, CombatContext currentContext)
+            {
+                if (effectIndex == rule.Effects.Count)
+                {
+                    yield return new PlayCardAction(action.CardInstanceId, action.RoomIndex, action.PlayerPosition,
+                        action.TargetUnitId, action.ActivatorUnitId, action.TargetSpawnPointIndex,
+                        action.RecursionSelections, choices);
+                    yield break;
+                }
+                CardActionEffect effect = rule.Effects[effectIndex];
+                ElixirCatalog catalog = source.PlayRules.Elixirs;
+                CardToken? current = currentContext.Cards.Hand.FirstOrDefault(card =>
+                    catalog.Recipes.Any(recipe => recipe.Creation.DataId == card.DataId));
+                if (current == null && currentContext.Cards.Hand.Count >= currentContext.MaxHandSize)
+                {
+                    foreach (PlayCardAction branch in Expand(effectIndex + 1, currentContext)) yield return branch;
+                    yield break;
+                }
+                ElixirDraftOptions draft = current == null
+                    ? ElixirMixModel.NewDraft(catalog, currentContext.BattleRng, effect.Value,
+                        currentContext.MixState!.LastCardDataId)
+                    : ElixirMixModel.UpgradeDraft(catalog.Recipes.First(recipe => recipe.Creation.DataId == current.DataId),
+                        currentContext.BattleRng, effect.Value);
+                if (draft.Offers.Count == 0)
+                {
+                    yield return new PlayCardAction(action.CardInstanceId, action.RoomIndex, action.PlayerPosition,
+                        action.TargetUnitId, action.ActivatorUnitId, action.TargetSpawnPointIndex,
+                        action.RecursionSelections, choices);
+                    yield break;
+                }
+                for (int index = 0; index < draft.Offers.Count; index++)
+                {
+                    CardGenerationResult applied = ElixirMixModel.Apply(currentContext, catalog, effect.Value, index);
+                    choices.Add(new ElixirMixSelection(effectIndex, 0, index));
+                    if (applied.Supported)
+                        foreach (PlayCardAction branch in Expand(effectIndex + 1, applied.Context!)) yield return branch;
+                    else
+                        yield return new PlayCardAction(action.CardInstanceId, action.RoomIndex, action.PlayerPosition,
+                            action.TargetUnitId, action.ActivatorUnitId, action.TargetSpawnPointIndex,
+                            action.RecursionSelections, choices);
+                    choices.RemoveAt(choices.Count - 1);
                 }
             }
         }
