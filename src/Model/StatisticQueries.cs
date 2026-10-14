@@ -202,6 +202,14 @@ namespace MonsterTrain2Poju.Model
                 case "DragonsHoardAmount": return Scalar(frame?.DragonsHoard);
                 case "MoonPhase": return Scalar(frame?.MoonPhase);
                 case "PyreHeartResurrection": return Scalar(frame?.PyreResurrectionCount);
+                case "CorruptionInTargetRoom":
+                    if (frame?.SelectedRoomIndex is not int corruptionRoom)
+                        return Unsupported("Corruption queries require the current selected room.");
+                    if (context.RoomCapacities == null)
+                        return Unsupported("Corruption queries require captured room state.");
+                    RoomCapacityState? corrupted = context.RoomCapacities.FirstOrDefault(item => item.RoomIndex == corruptionRoom);
+                    return corrupted?.Corruption is int corruption ? Finish(corruption) :
+                        Unsupported("Corruption queries require the selected room's current corruption.");
                 case "CapacityOfTargetRoom":
                     if (frame?.SelectedRoomIndex is not int selectedRoom)
                         return Unsupported("Capacity queries require the current selected room.");

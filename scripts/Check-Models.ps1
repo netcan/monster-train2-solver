@@ -6,7 +6,7 @@ $workspace = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $fixtureNames = @('full-battle-steward-once.mt2f', 'full-battle-no-cards.mt2f', 'full-battle-units-and-junk.mt2f',
     'full-battle-unplayed-card-pyre-damage.mt2f',
     'full-battle-unplayed-card-effects.mt2f', 'full-battle-train-heal.mt2f', 'full-battle-status-upgrade.mt2f',
-    'full-battle-overheal.mt2f',
+    'full-battle-overheal.mt2f', 'full-battle-corruption.mt2f',
     'full-battle-units-spells-and-junk.mt2f', 'full-battle-relic-card-modifiers.mt2f', 'full-battle-original-relic-batch.mt2f',
     'full-battle-covenant-character-filter.mt2f',
     'full-battle-titan-skin.mt2f',
@@ -329,6 +329,14 @@ $overhealFixtures = @($fixtures | Where-Object {
 foreach ($fixturePath in $overhealFixtures) {
     dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- --overheal-only $fixturePath
     if ($LASTEXITCODE -ne 0) { throw "Overheal checks failed: $fixturePath" }
+}
+
+$corruptionFixtures = @($fixtures | Where-Object {
+    (Split-Path -Leaf $_) -eq 'full-battle-corruption.mt2f'
+})
+foreach ($fixturePath in $corruptionFixtures) {
+    dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- --room-corruption-only $fixturePath
+    if ($LASTEXITCODE -ne 0) { throw "Room-corruption checks failed: $fixturePath" }
 }
 
 $statusUpgradeFixtures = @($fixtures | Where-Object {

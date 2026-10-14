@@ -539,6 +539,12 @@ namespace MonsterTrain2Poju.Probe
                 numericModifiersPrepared = true;
                 OverhealScenario.Prepare(managers, log);
             }
+            if (fullBattle && !numericModifiersPrepared && CorruptionScenario.Enabled)
+            {
+                if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Corruption fixture must start on deployment turn.");
+                numericModifiersPrepared = true;
+                CorruptionScenario.Prepare(managers, log);
+            }
             if (fullBattle && !numericModifiersPrepared && StatusUpgradeScenario.Enabled)
             {
                 if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Status upgrade fixture must start on deployment turn.");
@@ -1028,6 +1034,7 @@ namespace MonsterTrain2Poju.Probe
                 if (DragonHoardScenario.Enabled) pendingPlay = DragonHoardScenario.Choose(decision);
                 if (TrainHealScenario.Enabled) pendingPlay = TrainHealScenario.Choose(decision);
                 if (OverhealScenario.Enabled) pendingPlay = OverhealScenario.Choose(decision);
+                if (CorruptionScenario.Enabled) pendingPlay = CorruptionScenario.Choose(decision);
                 if (StatusUpgradeScenario.Enabled) pendingPlay = StatusUpgradeScenario.Choose(decision);
                 if (modifierScenario is "card-effect-recursion" or "card-effect-recursion-choice" or "card-effect-recursion-choose-to-hand" or "card-effect-recursion-filter-choice" or "card-effect-recursion-discard-choice" or "card-effect-recursion-upgrade" or "card-effect-recursion-upgrade-hand" or "card-effect-recursion-upgrade-choice" or "card-effect-recursion-upgrade-filter-choice" or "card-effect-recursion-upgrade-replacement-choice")
                     pendingPlay = CardEffectRecursionScenario.Choose(decision);
@@ -1175,6 +1182,7 @@ namespace MonsterTrain2Poju.Probe
                 (modifierScenario == "dragon-hoard" && DragonHoardScenario.IsScenarioAction(action)) ||
                 (modifierScenario == "train-heal" && TrainHealScenario.IsScenarioAction(action)) ||
                 (modifierScenario == "overheal" && OverhealScenario.IsScenarioAction(action)) ||
+                (modifierScenario == "corruption" && CorruptionScenario.IsScenarioAction(action)) ||
                 (modifierScenario == "status-upgrade" && StatusUpgradeScenario.IsScenarioAction(action)) ||
                 (modifierScenario == "card-effect-kill-subtype" && CardEffectKillScenario.IsScenarioPrelude(action)) ||
                 (modifierScenario == "remove-all-status-effects" && CardEffectRemoveAllStatusScenario.ConsumeScenarioActionMark(action)) ||

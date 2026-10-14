@@ -51,6 +51,7 @@ namespace MonsterTrain2Poju.Model
         public int? StatusAdjustmentFilter { get; }
         public bool? RemoveHalfStatusEffects { get; }
         public OverhealRule? Overheal { get; }
+        public bool? CorruptionAdd { get; }
         public bool DamagePerHpLastAttacker { get; }
         public bool DamagePerHpIncludeArmor { get; }
         public RoomCapacityAttachmentState? RoomAttachment { get; }
@@ -69,7 +70,7 @@ namespace MonsterTrain2Poju.Model
             bool damagePerHpLastAttacker = false, bool damagePerHpIncludeArmor = false,
             RoomCapacityAttachmentState? roomAttachment = null, CardRecursionRule? recursion = null,
             CardUpgradeMaskRule? cardFilter = null, IReadOnlyList<CardUpgradeMaskRule>? upgradeFilters = null,
-            bool? removeHalfStatusEffects = null, OverhealRule? overheal = null)
+            bool? removeHalfStatusEffects = null, OverhealRule? overheal = null, bool? corruptionAdd = null)
         { Type = type; Target = target; Value = value; AllowEnemy = allowEnemy; AllowPlayer = allowPlayer; Statuses = Array.AsReadOnly(statuses.ToArray());
             Upgrade = upgrade; Lifetime = lifetime; Tests = tests; Range = range; Filters = filters; Generation = generation; OnlyIfNoEnemies = onlyIfNoEnemies;
             CooldownParameter = cooldownParameter; AbilityChange = abilityChange; CopyHeroStats = copyHeroStats; ScaleUpgrade = scaleUpgrade;
@@ -82,7 +83,7 @@ namespace MonsterTrain2Poju.Model
             DamagePerHpLastAttacker = damagePerHpLastAttacker; DamagePerHpIncludeArmor = damagePerHpIncludeArmor;
             RoomAttachment = roomAttachment; Recursion = recursion; CardFilter = cardFilter;
             UpgradeFilters = Array.AsReadOnly((upgradeFilters ?? Array.Empty<CardUpgradeMaskRule>()).ToArray());
-            Overheal = overheal; }
+            Overheal = overheal; CorruptionAdd = corruptionAdd; }
     }
 
     public sealed class OverhealRule

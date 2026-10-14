@@ -412,7 +412,7 @@ namespace MonsterTrain2Poju.Model
                         effect.UseCardTraits, effect.RequireEquipment, effect.UseSelectedRoom, effect.CountStatusOnlyOnTargets,
                         effect.SpawnFallbackUnit, effect.DisallowStatusStackModifiers, effect.StatusAdjustmentFilter,
                         effect.DamagePerHpLastAttacker, effect.DamagePerHpIncludeArmor, effect.RoomAttachment, effect.Recursion,
-                        effect.CardFilter, effect.UpgradeFilters, effect.RemoveHalfStatusEffects, effect.Overheal);
+                        effect.CardFilter, effect.UpgradeFilters, effect.RemoveHalfStatusEffects, effect.Overheal, effect.CorruptionAdd);
                 }
                 if (effect.Type == "Recursion")
                 {
@@ -690,6 +690,13 @@ namespace MonsterTrain2Poju.Model
                 {
                     ForgePointsResult changed = ForgePointsModel.Apply(state.Context!, effect.Value, sourceCardId,
                         placement: selected.Deployment, preview: selected.Preview);
+                    if (!changed.Supported) return UnsupportedTrain(changed.UnsupportedReason!);
+                    state = WithContext(state, changed.Context!);
+                    continue;
+                }
+                if (effect.Type == "AdjustMaxCorruption" || effect.Type == "AdjustCorruption")
+                {
+                    RoomCorruptionResult changed = RoomCorruptionModel.Apply(state, collectionRoom, effect);
                     if (!changed.Supported) return UnsupportedTrain(changed.UnsupportedReason!);
                     state = WithContext(state, changed.Context!);
                     continue;
@@ -1500,6 +1507,12 @@ namespace MonsterTrain2Poju.Model
                     if (capacityError != null) return capacityError;
                     continue;
                 }
+                if (effect.Type == "AdjustMaxCorruption" || effect.Type == "AdjustCorruption")
+                {
+                    string? corruptionError = RoomCorruptionModel.Validate(source.Context, effect);
+                    if (corruptionError != null) return corruptionError;
+                    continue;
+                }
                 if (effect.Type == "AttachRoomCapacity")
                 {
                     if (effect.RoomAttachment == null || effect.RoomAttachment.AttachmentType != 0)
@@ -1641,6 +1654,8 @@ namespace MonsterTrain2Poju.Model
             if (effect.Type == "AdjustDragonsHoard") return (pyreAlive ?? context?.EnergyState?.PyreAlive) == true;
             if (effect.Type == "RewardGoldPerDragonHoard") return effect.Value > 0;
             if (effect.Type == "AdjustCapacity") return !preview && !bossDead && RoomCapacityModel.Test(room, effect);
+            if (effect.Type == "AdjustMaxCorruption") return !preview && !bossDead && RoomCorruptionModel.Test(room, effect);
+            if (effect.Type == "AdjustCorruption") return RoomCorruptionModel.Test(room, effect);
             if (effect.Type == "AttachRoomCapacity") return !preview && !bossDead && RoomCapacityModel.TestAttachment(room, effect);
             if (effect.Type == ForgePointsModel.Effect) return ForgePointsModel.Test(pyreAlive ?? context?.EnergyState?.PyreAlive);
             if (EnergyModel.IsEffect(effect.Type)) return !preview && !bossDead && EnergyModel.Test(context!, effect.Type);
@@ -1778,7 +1793,7 @@ namespace MonsterTrain2Poju.Model
                 effect.UseCardTraits, effect.RequireEquipment, effect.UseSelectedRoom, effect.CountStatusOnlyOnTargets,
                 effect.SpawnFallbackUnit, effect.DisallowStatusStackModifiers, effect.StatusAdjustmentFilter,
                 effect.DamagePerHpLastAttacker, effect.DamagePerHpIncludeArmor, effect.RoomAttachment, effect.Recursion,
-                effect.CardFilter, effect.UpgradeFilters, effect.RemoveHalfStatusEffects, effect.Overheal);
+                effect.CardFilter, effect.UpgradeFilters, effect.RemoveHalfStatusEffects, effect.Overheal, effect.CorruptionAdd);
         }
         private static int TestCount(TrainCombatState state, CardActionEffect effect, CardTargets targets)
         {

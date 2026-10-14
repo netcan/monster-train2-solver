@@ -24,6 +24,7 @@ param(
     [switch] $DragonHoard,
     [switch] $TrainHeal,
     [switch] $Overheal,
+    [switch] $Corruption,
     [switch] $StatusUpgrade,
     [switch] $CardRecursion,
     [switch] $CardRecursionDiscard,
@@ -352,6 +353,7 @@ if ($RemoveAllStatusEffects) { $Policy = 'units-spells-and-junk' }
 if ($DragonHoard) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($TrainHeal) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($Overheal) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
+if ($Corruption) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($StatusUpgrade) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($CardRecursion -or $CardRecursionDiscard -or $CardRecursionChoose -or $CardRecursionChooseToHand -or $CardRecursionChooseFilter -or $CardRecursionUpgrade -or $CardRecursionUpgradeToHand -or $CardRecursionUpgradeChoose -or $CardRecursionUpgradeFilterChoose -or $CardRecursionUpgradeReplacementChoose) { $Policy = 'units-spells-and-junk'; $BranchCardMasks = $true }
 if ($SpawnOrStatus) { $Policy = 'units-and-junk' }
@@ -514,6 +516,7 @@ if ($RemoveAllStatusEffects) { $environment['MT2_PROBE_MODIFIERS'] = 'remove-all
 if ($DragonHoard) { $environment['MT2_PROBE_MODIFIERS'] = 'dragon-hoard' }
 if ($TrainHeal) { $environment['MT2_PROBE_MODIFIERS'] = 'train-heal' }
 if ($Overheal) { $environment['MT2_PROBE_MODIFIERS'] = 'overheal' }
+if ($Corruption) { $environment['MT2_PROBE_MODIFIERS'] = 'corruption' }
 if ($StatusUpgrade) { $environment['MT2_PROBE_MODIFIERS'] = 'status-upgrade' }
 if ($CardRecursion -or $CardRecursionDiscard -or $CardRecursionChoose -or $CardRecursionChooseToHand -or $CardRecursionChooseFilter -or $CardRecursionUpgrade -or $CardRecursionUpgradeToHand -or $CardRecursionUpgradeChoose -or $CardRecursionUpgradeFilterChoose -or $CardRecursionUpgradeReplacementChoose) {
     $environment['MT2_PROBE_MODIFIERS'] = if ($CardRecursionDiscard) { 'card-effect-recursion-discard-choice' } elseif ($CardRecursionUpgradeReplacementChoose) { 'card-effect-recursion-upgrade-replacement-choice' } elseif ($CardRecursionUpgradeFilterChoose) { 'card-effect-recursion-upgrade-filter-choice' } elseif ($CardRecursionUpgradeChoose) { 'card-effect-recursion-upgrade-choice' } elseif ($CardRecursionUpgradeToHand) { 'card-effect-recursion-upgrade-hand' } elseif ($CardRecursionUpgrade) { 'card-effect-recursion-upgrade' } elseif ($CardRecursionChooseFilter) { 'card-effect-recursion-filter-choice' } elseif ($CardRecursionChooseToHand) { 'card-effect-recursion-choose-to-hand' } elseif ($CardRecursionChoose) { 'card-effect-recursion-choice' } else { 'card-effect-recursion' }
@@ -653,6 +656,12 @@ if ($Overheal -and ($trace.ModifierScenario -ne 'overheal' -or
     -not (Select-String -LiteralPath $unityLog -Pattern 'OVERHEAL-PREPARED steward=\d+ tidal=\d+ fae=\d+' -Quiet) -or
     @($trace.Actions | Where-Object { $_.ScenarioAction }).Count -ne 2)) {
     throw 'Original room and targeted overheal actions were not captured.'
+}
+if ($Corruption -and ($trace.ModifierScenario -ne 'corruption' -or
+    -not (Select-String -LiteralPath $unityLog -Pattern 'CORRUPTION-PREPARED steward=\d+ unearthed=\d+ echoes=\d+ room=0 current=\d+ max=\d+' -Quiet) -or
+    @(Select-String -LiteralPath $unityLog -Pattern 'CORRUPTION-CANDIDATE spell=\d+ supported=True current=\d+->\d+ max=\d+->\d+').Count -ne 2 -or
+    @($trace.Actions | Where-Object { $_.ScenarioAction }).Count -ne 2)) {
+    throw 'Original Unearthed Remains and Echoes of the Past actions were not captured.'
 }
 if ($StatusUpgrade -and ($trace.ModifierScenario -ne 'status-upgrade' -or
     -not (Select-String -LiteralPath $unityLog -Pattern 'STATUS-UPGRADE-PREPARED originalAbility=.* blessing=2' -Quiet) -or

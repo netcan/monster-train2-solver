@@ -1,10 +1,33 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-14): 284 binary archives, including 253
+Current accepted inventory (2026-10-14): 285 binary archives, including 254
 full battles and 31 component calibrations. Unchanged original relic evidence
 covers 78/224 catalog entries (34.82%); see
 [the owner evidence table](tests/fixtures/relic-coverage.md). Whole-battle
 coverage and the optimal solver remain in progress.
+
+### Original room corruption effects
+
+`full-battle-corruption.mt2f` plays unchanged `UnearthedRemains` and
+`EchoesOfThePast` on a Train Steward. The first card changes room 0 corruption
+from 0/4 to 1/5. The second grants +8 attack from the pre-removal corruption,
+then clears it to 0/5. Both the live unit and its stored upgrade record match
+the native game. The muted Instant battle wins with 26 actions and zero capture
+failures, mismatches, unsupported transitions or pending records. The binary is
+36,472 bytes, has 6,036 unique nodes, and SHA-256
+`c5ff2a3c6ce9161c074a5f85b7fa37a5e892bf119a9384e792007ed3a76d4521`.
+
+The model follows the decompiled `CardEffectAdjustCorruption`,
+`CardEffectAdjustRoomMaxCorruption`, `RoomState` and `CardStatistics` paths.
+Pure checks cover fill-to-max, remove-all, permanent floors, values above the
+maximum, branch isolation and parallel results. `SoulSiphon` remains outside
+the searchable frontier because its `scorch` status is not modeled; corruption
+trigger callbacks on units and relics also remain unsupported.
+
+```powershell
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-corruption.mt2f
+dotnet run --project src/ModelChecks -c Release -- --room-corruption-pure
+```
 
 ### Original overheal effect
 

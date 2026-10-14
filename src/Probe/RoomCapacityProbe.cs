@@ -14,7 +14,7 @@ namespace MonsterTrain2Poju.Probe
             RoomState room = rooms.GetRoom(index);
             return new RoomCapacityState(index, room.GetCapacityInfo(Team.Type.Monsters).max,
                 room.GetCapacityInfo(Team.Type.Heroes).max, room.GetIsPyreRoom(), room.GetCurrentCorruption(),
-                CaptureAttachments(room));
+                CaptureAttachments(room), room.GetMaxCorruption(), room.GetPermanentCorruption());
         }).ToArray();
 
         internal static bool SupportsAttachments(RoomState room) => CaptureAttachments(room) != null;

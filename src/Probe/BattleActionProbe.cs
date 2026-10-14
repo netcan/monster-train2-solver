@@ -18,7 +18,8 @@ namespace MonsterTrain2Poju.Probe
             "CardEffectAdjustDragonsHoard", "CardEffectRewardGoldPerDragonHoard",
             "CardEffectDamage", "CardEffectDamagePerSourceAttack", "CardEffectDamagePerHp", "CardEffectDraw", "CardEffectDrawAdditionalNextTurn",
             "CardEffectRemoveAllStatusEffects",
-            "CardEffectAdjustRoomCapacity", "CardEffectAdjustForgePoints", "CardEffectDiscardHand", "CardEffectRandomDiscard", "CardEffectAddBattleCard",
+            "CardEffectAdjustRoomCapacity", "CardEffectAdjustRoomMaxCorruption", "CardEffectAdjustCorruption",
+            "CardEffectAdjustForgePoints", "CardEffectDiscardHand", "CardEffectRandomDiscard", "CardEffectAddBattleCard",
             "CardEffectHeal", "CardEffectHealAndOverheal", "CardEffectHealTrain", "CardEffectSacrifice", "CardEffectKill", "CardEffectRecursion", "CardEffectBuffDamage", "CardEffectDebuffDamage",
             "CardEffectBuffMaxHealth", "CardEffectDebuffMaxHealth", "CardEffectAddStatusEffect", "CardEffectMultiplyStatusEffect",
             "CardEffectMultiplyAllPositiveStatusEffects", "CardEffectAdjustAllStatusEffects", "CardEffectAddStatusEffectPerOtherEffect",
@@ -279,6 +280,8 @@ namespace MonsterTrain2Poju.Probe
                 effect.GetEffectStateName() == "CardEffectDamagePerSourceAttack" ? "DamagePerSourceAttack" :
                 effect.GetEffectStateName() == "CardEffectDamagePerHp" ? "DamagePerHp" :
                 effect.GetEffectStateName() == "CardEffectAdjustRoomCapacity" ? "AdjustCapacity" :
+                effect.GetEffectStateName() == "CardEffectAdjustRoomMaxCorruption" ? "AdjustMaxCorruption" :
+                effect.GetEffectStateName() == "CardEffectAdjustCorruption" ? "AdjustCorruption" :
                 effect.GetEffectStateName() == "CardEffectDraw" ? "Draw" :
                 effect.GetEffectStateName() == "CardEffectDrawType" ? "DrawType" :
                 effect.GetEffectStateName() == "CardEffectAddTempCardUpgradeToNextDrawnCard" ? "ScheduleNextDrawUpgrade" :
@@ -423,7 +426,8 @@ namespace MonsterTrain2Poju.Probe
                     effect.GetParamCardFilter() == null ? null : CardUpgradeMaskProbe.Rule(effect.GetParamCardFilter())) : null,
                 upgradeFilters: upgradeFilters,
                 removeHalfStatusEffects: type == "RemoveAllStatusEffects" ? (bool?)effect.GetParamBool() : null,
-                overheal: type == "HealOverheal" ? new OverhealRule(effect.GetAdditionalParamInt(), effect.GetAdditionalParamInt1()) : null);
+                overheal: type == "HealOverheal" ? new OverhealRule(effect.GetAdditionalParamInt(), effect.GetAdditionalParamInt1()) : null,
+                corruptionAdd: type == "AdjustCorruption" ? (bool?)effect.GetParamBool() : null);
         }
 
         private static RoomCapacityAttachmentState? CapacityAttachment(CardData card, CardEffectData effect,

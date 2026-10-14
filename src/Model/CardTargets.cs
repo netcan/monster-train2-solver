@@ -199,7 +199,8 @@ namespace MonsterTrain2Poju.Model
                 damagePerHpLastAttacker: effect.DamagePerHpLastAttacker,
                 damagePerHpIncludeArmor: effect.DamagePerHpIncludeArmor,
                 roomAttachment: effect.RoomAttachment, recursion: effect.Recursion,
-                removeHalfStatusEffects: effect.RemoveHalfStatusEffects, overheal: effect.Overheal), Array.Empty<int>());
+                removeHalfStatusEffects: effect.RemoveHalfStatusEffects, overheal: effect.Overheal,
+                corruptionAdd: effect.CorruptionAdd), Array.Empty<int>());
             return result.Supported && effect.Type == "Sacrifice" && effect.Target == "RandomInRoom" && effect.TargetSubtype.Length > 0
                 ? new CardTargets(result.UnitIds.Where(id => train.Rooms.SelectMany(room => room.Units)
                     .Any(unit => unit.Id == id && unit.Subtypes.Contains(effect.TargetSubtype))).ToArray()) : result;

@@ -21,10 +21,13 @@ namespace MonsterTrain2Poju.Model
         public int EnemyMaximum { get; }
         public bool IsPyre { get; }
         public int? Corruption { get; }
+        public int? MaxCorruption { get; }
+        public int? PermanentCorruption { get; }
         public IReadOnlyList<RoomCapacityAttachmentState>? Attachments { get; }
         public RoomCapacityState(int roomIndex, int playerMaximum, int enemyMaximum, bool isPyre, int? corruption = null,
-            IReadOnlyList<RoomCapacityAttachmentState>? attachments = null)
+            IReadOnlyList<RoomCapacityAttachmentState>? attachments = null, int? maxCorruption = null, int? permanentCorruption = null)
         { RoomIndex = roomIndex; PlayerMaximum = playerMaximum; EnemyMaximum = enemyMaximum; IsPyre = isPyre; Corruption = corruption;
+            MaxCorruption = maxCorruption; PermanentCorruption = permanentCorruption;
             Attachments = attachments == null ? null : Array.AsReadOnly(attachments.ToArray()); }
     }
     public sealed class ScalingCapacityTrait
@@ -82,7 +85,8 @@ namespace MonsterTrain2Poju.Model
             if (previous != null) maximum = AdjustedMaximum(maximum, unchecked(-previous.CapacityDelta));
             maximum = AdjustedMaximum(maximum, attachment.CapacityDelta);
             var changed = new RoomCapacityState(roomIndex, maximum, selected.EnemyMaximum, selected.IsPyre,
-                selected.Corruption, attachments.Concat(new[] { attachment }).ToArray());
+                selected.Corruption, attachments.Concat(new[] { attachment }).ToArray(),
+                selected.MaxCorruption, selected.PermanentCorruption);
             return new RoomCapacityResult(context.WithRoomCapacities(context.RoomCapacities!
                 .Select(room => room.RoomIndex == roomIndex ? changed : room).ToArray()), attachment.CapacityDelta);
         }
@@ -116,7 +120,7 @@ namespace MonsterTrain2Poju.Model
             var changed = new RoomCapacityState(roomIndex,
                 enemy ? selected.PlayerMaximum : AdjustedMaximum(selected.PlayerMaximum, amount),
                 enemy ? AdjustedMaximum(selected.EnemyMaximum, amount) : selected.EnemyMaximum, selected.IsPyre,
-                selected.Corruption, selected.Attachments);
+                selected.Corruption, selected.Attachments, selected.MaxCorruption, selected.PermanentCorruption);
             return new RoomCapacityResult(context.WithRoomCapacities(context.RoomCapacities!
                 .Select(room => room.RoomIndex == roomIndex ? changed : room).ToArray()), amount);
         }

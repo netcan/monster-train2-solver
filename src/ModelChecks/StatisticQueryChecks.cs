@@ -20,7 +20,8 @@ internal static class StatisticQueryChecks
             new("Eaten", [new(6, "monster")]), new("Purged", [new(7, "monster")]), new("DiscardBuffer", [new(1, "spell"), new(8, "spell")])];
         var context = new CombatContext(new([new(1, "spell")], [new(2, "monster")], [new(3, "monster")], rng, 0, []),
             rng, 85, 11, 10, statistics: statistics, cardInstances: registry.Take(8).ToArray(), cardRegistry: registry, otherPiles: piles,
-            roomCapacities: [new(0, 7, 11, false), new(1, 15, 4, false), new(2, 30, 3, true)]);
+            roomCapacities: [new(0, 7, 11, false, 1, [], 4, 0),
+                new(1, 15, 4, false, 3, [], 5, 0), new(2, 30, 3, true, 0, [], 4, 0)]);
         string parent = JsonSerializer.Serialize(context);
         StatisticQueryResult Query(CardStatisticQuery query, int source = 4, StatisticQueryFrame? frame = null)
         {
@@ -72,6 +73,10 @@ internal static class StatisticQueryChecks
             "Room capacity queries lost the selected room or native exact-Heroes team routing.");
         Require(!StatisticQueryModel.Evaluate(context, new("CapacityOfTargetRoom")).Supported,
             "Capacity query without a selected room produced a usable child state.");
+        Require(Query(new("CorruptionInTargetRoom"), frame: capacityFrame).Value == 3 &&
+            Query(new("CorruptionInTargetRoom"), frame: capacityFrame.With(selectedRoomIndex: 0)).Value == 1 &&
+            !StatisticQueryModel.Evaluate(context, new("CorruptionInTargetRoom")).Supported,
+            "Corruption query ignored the selected room or accepted an absent room.");
         var empty = new CombatContext(new([], [], [], rng, 0, []), rng, 85, 11, 10, statistics: statistics,
             cardInstances: [], cardRegistry: registry, otherPiles: piles.Select(CardPileModel.Clear).ToArray());
         StatisticQueryResult fallback = StatisticQueryModel.Evaluate(empty, new("TypeInDeck", typeMatchDataIds: ["monster"]));

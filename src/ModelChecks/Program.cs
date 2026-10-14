@@ -1,6 +1,21 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
 
+if (args.Length == 1 && args[0] == "--room-corruption-pure")
+{
+    RoomCorruptionChecks.Run();
+    StatisticQueryChecks.Run();
+    UnitUpgradeScalingChecks.Run();
+    return;
+}
+
+if (args.Length == 2 && args[0] == "--room-corruption-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    RoomCorruptionChecks.Native(fixture.RootElement);
+    return;
+}
+
 if (args.Length == 1 && args[0] == "--overheal-pure")
 {
     OverhealChecks.Run();
@@ -785,6 +800,7 @@ HordeDeathChecks.Run();
 AbilityCardChecks.Run();
 StatusUpgradeChecks.Run();
 OverhealChecks.Run();
+RoomCorruptionChecks.Run();
 UnitAbilityChecks.Run();
 RelicChecks.Run();
 TriggerCountChecks.Run();
