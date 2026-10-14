@@ -50,7 +50,7 @@ namespace MonsterTrain2Poju.Probe
         {
             private static void Postfix(CharacterState character, CardState fromCard, bool onlyCovenants, ref IEnumerator __result)
             {
-                bool ordinaryBirthCapture = !onlyCovenants && (SpawnStatusRelicScenario.Prepared || OriginalRelicBatchScenario.Prepared ||
+                bool ordinaryBirthCapture = !onlyCovenants && (SpawnStatusRelicScenario.Prepared || SpawnStatusRelicScenario.OriginalCombatRelicsAcquired || OriginalRelicBatchScenario.Prepared ||
                     RelicCardModifierScenario.Prepared && RelicCardModifierScenario.AllUnitsMultistrikeMutator);
                 bool covenantBirthCapture = onlyCovenants && CovenantCharacterFilterScenario.Prepared;
                 if ((!ordinaryBirthCapture && !covenantBirthCapture) || FullBattleTrace.Active == null || AllGameManagers.Instance!.GetSaveManager().PreviewMode) return;

@@ -202,10 +202,9 @@ inventory at completed milestones and before delivery.
 Current inventory is 318 archives: 287 accepted battles and 31 component
 calibrations. Original relic evidence is 80/224 (35.71%). The Pyre spawn-status
 archive calibrates the unchanged `DantesCandelabra` and `PressurizedBoiler`
-effects using the native `CharacterAdded` callback on an already spawned Pyre.
-The controlled callback adds 2 Titan Skin and 4 Burst in one exact birth phase;
-it does not establish the timing of natural Pyre creation with those relics.
-The schema-162
+effects. Both relics are acquired before battle, and the game's natural Pyre
+creation adds 2 Titan Skin and 4 Burst in its first recorded birth phase. The
+schema-162
 `full-battle-dragon-hoard.mt2f` archive captures Alchemy changing the hoard from
 2 to 4. The Instant native battle wins with 61 matched stages, 21 card actions
 and seven EndTurns, with zero capture failures, mismatches, unsupported

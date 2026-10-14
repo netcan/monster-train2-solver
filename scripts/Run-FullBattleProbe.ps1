@@ -2698,6 +2698,7 @@ if ($SpawnStatusRelics) {
                 if ($MixedCardlessRelicOrder -and @($actor[0].Statuses | Where-Object Id -EQ 'armor').Count -gt 0) { $mixedOrderWitnesses++ }
             }
         }
+        if ($actor[0].IsPyre -and $OriginalSpawnCombatRelics) { continue }
         if ($actor[0].Team -eq 1) {
             $spawnRelicPlayers++
             $oldShield = @($birth.Before.Context.Relics | Where-Object AssetKey -EQ 'FirstUnitGainDamageShield')[0].SpawnStatuses[0].Conditions[0]
@@ -2825,6 +2826,10 @@ if ($SpawnStatusRelics) {
         Write-Output "ORIGINAL-TEAM-SPAWN-STATUS PASS: $teamWideWitnesses living ally states gained five Valor from a summon."
     }
     if ($OriginalSpawnCombatRelics) {
+        if (-not $births[0].Before.Units[0].IsPyre -or
+            @($births[0].Before.Context.Relics | Where-Object { $_.AssetKey -in @('SpawnWithArmor', 'FirstUnitGainDamageShield', 'FrostbiteOnEnemies') }).Count -ne 0) {
+            throw 'Original Pyre spawn effects were not captured during native battle setup.'
+        }
         foreach ($owner in @(
             @{ Key = 'DantesCandelabra'; Id = 'a3dde0d6-0aa3-44e5-a6a4-0e993a5d9a15'; Status = 'titanskin'; Stacks = 2 },
             @{ Key = 'PressurizedBoiler'; Id = 'fda361aa-fecc-4adf-b19c-f92af04e0e19'; Status = 'burst'; Stacks = 4 }

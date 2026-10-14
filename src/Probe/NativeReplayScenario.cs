@@ -269,6 +269,8 @@ namespace MonsterTrain2Poju.Probe
                         OriginalResourceRelicBatchScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && PyreResourceRefreshScenario.Enabled && !PyreResourceRefreshScenario.Prepared)
                         PyreResourceRefreshScenario.AcquireBeforeBattle(managers!, log);
+                    if (fullBattle && SpawnStatusRelicScenario.OriginalCombatRelics && !SpawnStatusRelicScenario.OriginalCombatRelicsAcquired)
+                        SpawnStatusRelicScenario.AcquireCombatBeforeBattle(managers!, log);
                     if (fullBattle && OriginalFloorCapacityRelicScenario.Enabled && !OriginalFloorCapacityRelicScenario.Prepared)
                         OriginalFloorCapacityRelicScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalDeployableRelicScenario.Enabled && !OriginalDeployableRelicScenario.Acquired)

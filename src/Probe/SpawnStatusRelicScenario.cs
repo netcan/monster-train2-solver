@@ -1,5 +1,4 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using BepInEx.Logging;
@@ -20,9 +19,33 @@ namespace MonsterTrain2Poju.Probe
             Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == "spawn-status-relics-boss-mute";
         internal static bool OriginalCombatRelics =>
             Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == "spawn-status-relics-combat";
+        internal static bool OriginalCombatRelicsAcquired { get; private set; }
+        private static readonly (string Id, string Key, string StatusId, int Stacks)[] CombatRelics =
+        {
+            ("a3dde0d6-0aa3-44e5-a6a4-0e993a5d9a15", "DantesCandelabra", "titanskin", 2),
+            ("fda361aa-fecc-4adf-b19c-f92af04e0e19", "PressurizedBoiler", "burst", 4)
+        };
         internal static bool Clones => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") is
             "spawn-status-relics-clones" or "spawn-status-relics-mixed-cardless-order" or "spawn-status-relics-team-wide";
         internal static bool MixedCardlessOrder => Environment.GetEnvironmentVariable("MT2_PROBE_MIXED_CARDLESS_RELIC_ORDER") == "1";
+        internal static void AcquireCombatBeforeBattle(AllGameManagers managers, ManualLogSource log)
+        {
+            if (OriginalCombatRelicsAcquired) return;
+            SaveManager save = managers.GetSaveManager();
+            if (!OriginalCombatRelics || save.PreviewMode || save.GetGameSequence() == SaveData.GameSequence.InBattle)
+                throw new InvalidOperationException("Original Pyre spawn relics must be acquired before native battle setup.");
+            foreach (var (id, key, statusId, stacks) in CombatRelics)
+            {
+                CollectableRelicData relic = save.GetAllGameData().GetAllCollectableRelicData().Single(item => item.GetID() == id);
+                CheckCombatRelic(relic, key, statusId, stacks);
+                if (save.GetCollectedRelics().Any(owned => owned.GetRelicDataID() == id))
+                    throw new InvalidOperationException("Original Pyre spawn relic already owned: " + key);
+                save.AddRelic(relic);
+            }
+            OriginalCombatRelicsAcquired = true;
+            log.LogInfo("ORIGINAL-PYRE-SPAWN-RELICS-ACQUIRED before native battle setup; unchanged Pyre-only effects.");
+        }
+
         internal static void Prepare(AllGameManagers managers, ManualLogSource log)
         {
             if (Clones) UnitCloneScenario.Prepare(managers, log);
@@ -48,8 +71,14 @@ namespace MonsterTrain2Poju.Probe
             if (OriginalChicotRelic) Acquire("92d66578-b148-49f8-9880-edb67f8b18de", "BalatroEventChicot");
             if (OriginalCombatRelics)
             {
-                AcquireCombat("a3dde0d6-0aa3-44e5-a6a4-0e993a5d9a15", "DantesCandelabra", "titanskin", 2);
-                AcquireCombat("fda361aa-fecc-4adf-b19c-f92af04e0e19", "PressurizedBoiler", "burst", 4);
+                if (!OriginalCombatRelicsAcquired) throw new InvalidOperationException("Original Pyre spawn relics missed pre-battle acquisition.");
+                foreach (var (id, key, statusId, stacks) in CombatRelics)
+                {
+                    if (save.GetCollectedRelics().Count(owned => owned.GetRelicDataID() == id) != 1)
+                        throw new InvalidOperationException("Original Pyre spawn relic missing or duplicated: " + key);
+                    CheckCombatRelic(save.GetAllGameData().GetAllCollectableRelicData().Single(item => item.GetID() == id),
+                        key, statusId, stacks);
+                }
             }
             if (OriginalStealthWaxersRelic) AcquireStealthWaxers();
             if (OriginalTeamSpawnStatusRelic) AcquireTeamSpawnStatus();
@@ -64,14 +93,6 @@ namespace MonsterTrain2Poju.Probe
                 save.AddRelic(extraSpawn);
             }
             Prepared = true;
-            if (OriginalCombatRelics)
-            {
-                // The battle Pyre predates fixture preparation; settle its native birth callback before card draws resume.
-                var pyres = new List<CharacterState>();
-                managers.GetRoomManager()!.GetPyreRoom().AddCharactersToList(pyres, Team.Type.Monsters);
-                CharacterState pyre = pyres.Single();
-                Drain(managers.GetRelicManager().CharacterAdded(pyre, null, false));
-            }
             AccessTools.Field(typeof(CombatManager), "combatStateChanged").SetValue(managers.GetCombatManager(), true);
             log.LogInfo("SPAWN-STATUS-RELICS-PREPARED original relic definitions unchanged; TunedGear=" + OriginalTunedGearRelic + "; Chicot=" + OriginalChicotRelic + "; combat=" + OriginalCombatRelics + "; Hymnist carrier test=" + OriginalTeamSpawnStatusRelic + "; StealthWaxers=" + OriginalStealthWaxersRelic + "; clones/extra-spawn=" + Clones + "; native Boss/waves retained.");
 
@@ -80,19 +101,6 @@ namespace MonsterTrain2Poju.Probe
                 CollectableRelicData relic = save.GetAllGameData().GetAllCollectableRelicData().Single(item => item.GetID() == id);
                 if (relic.name != key || relic.GetEffects().Count != 1 || relic.GetEffects()[0].GetEffectClassName() != "RelicEffectAddStatusEffectOnSpawn")
                     throw new InvalidOperationException("Original spawn status relic changed: " + key);
-                save.AddRelic(relic);
-            }
-
-            void AcquireCombat(string id, string key, string statusId, int stacks)
-            {
-                CollectableRelicData relic = save.GetAllGameData().GetAllCollectableRelicData().Single(item => item.GetID() == id);
-                RelicEffectData effect = relic.GetEffects().Single();
-                StatusEffectStackData[] statuses = effect.GetParamStatusEffects();
-                if (relic.name != key || effect.GetEffectClassName() != "RelicEffectAddStatusEffectOnSpawn" ||
-                    !effect.GetParamSourceTeam().HasFlag(Team.Type.Monsters) ||
-                    statuses.Length != 1 || statuses[0].statusId != statusId || statuses[0].count != stacks ||
-                    effect.GetEffectConditions().Count != 0)
-                    throw new InvalidOperationException("Original combat spawn relic changed: " + key);
                 save.AddRelic(relic);
             }
 
@@ -149,14 +157,15 @@ namespace MonsterTrain2Poju.Probe
             }
         }
 
-        private static void Drain(IEnumerator routine)
+        private static void CheckCombatRelic(CollectableRelicData relic, string key, string statusId, int stacks)
         {
-            try
-            {
-                while (routine.MoveNext())
-                    if (routine.Current is IEnumerator nested) Drain(nested);
-            }
-            finally { (routine as IDisposable)?.Dispose(); }
+            RelicEffectData effect = relic.GetEffects().Single();
+            StatusEffectStackData[] statuses = effect.GetParamStatusEffects();
+            if (relic.name != key || effect.GetEffectClassName() != "RelicEffectAddStatusEffectOnSpawn" ||
+                !effect.GetParamSourceTeam().HasFlag(Team.Type.Monsters) ||
+                statuses.Length != 1 || statuses[0].statusId != statusId || statuses[0].count != stacks ||
+                effect.GetEffectConditions().Count != 0)
+                throw new InvalidOperationException("Original Pyre spawn relic changed: " + key);
         }
     }
 }

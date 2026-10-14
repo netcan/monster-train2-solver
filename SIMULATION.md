@@ -9,16 +9,16 @@ coverage and the optimal solver remain in progress.
 ### Original Pyre-only spawn relics
 
 `full-battle-spawn-status-relics-pyre.mt2f` acquires unchanged
-`DantesCandelabra` and `PressurizedBoiler`, then settles one controlled native
-`RelicManager.CharacterAdded` callback on the already spawned Pyre. The exact
-birth phase adds 2 Titan Skin and 4 Burst; both original Pyre subtype filters
-and the independent model agree. The muted Instant battle wins with 52 matched
+`DantesCandelabra` and `PressurizedBoiler` before entering battle. The game's
+ordinary `CreatePyreHeart` path then fires its native `CharacterAdded` callback:
+the first birth phase adds 2 Titan Skin and 4 Burst before any authored battle
+relics are acquired. Both original Pyre subtype filters and the independent
+model agree. The muted Instant battle wins with 52 matched
 room stages, 18 actions and six EndTurns. Capture failures, mismatches,
-unsupported transitions and pending records are zero. The 36,570-byte binary
+unsupported transitions and pending records are zero. The 36,526-byte binary
 has 5,593 unique nodes and SHA-256
-`105017d70d99dc739e223a0b7550d56d18ce33c71467f0dade3663f334e978ea`.
-This calibrates the native callback, not the timing of Pyre creation in a
-natural battle. Search matches recorded decisions and 128 serial/parallel
+`56cd99d7593af290b2775bfca19532c4eb18f723de7d935b81f3cd03e4105b99`.
+Search matches recorded decisions and 128 serial/parallel
 states, but stops at its node/turn limit; optimality remains unproven.
 
 ```powershell

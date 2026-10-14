@@ -164,13 +164,16 @@ internal static class RelicSpawnStatusChecks
             Require(record.GetProperty("Completed").GetBoolean() && record.GetProperty("Difference").ValueKind == FixtureKind.Null,
                 "Native relic birth observation was incomplete or differed.");
             var relics = before.Context!.Relics!;
-            Require((mixedCardlessOrder
+            if (!actor.IsPyre) Require((mixedCardlessOrder
                     ? relics.Any(relic => relic.AssetKey == "PyreHeartSon" && relic.SpawnStatuses?.Count == 1 && relic.CardModifiers?.Count == 1 &&
                         relic.EffectTypes.SequenceEqual([RelicModel.AddStatusOnSpawn, RelicModel.AddTempUpgrade]))
                     : relics.Any(relic => relic.AssetKey == "SpawnWithArmor" && relic.DataId == "68ef2523-5c2e-4660-b96d-00b1c0485f54")) &&
                 relics.Any(relic => relic.AssetKey == "FirstUnitGainDamageShield" && relic.DataId == "60a2a8a3-5f7a-4a9d-b427-5f261145fa1f") &&
                 relics.Any(relic => relic.AssetKey == "FrostbiteOnEnemies" && relic.DataId == "270356af-16bd-4433-a0b2-3e5bb94ef890"),
                 "Original relic identities were not retained.");
+            else Require(combatRelics && records[0].GetProperty("UnitId").GetInt32() == id &&
+                !relics.Any(relic => relic.AssetKey is "SpawnWithArmor" or "FirstUnitGainDamageShield" or "FrostbiteOnEnemies"),
+                "Pyre relic callback was not observed during native battle setup.");
             if (bossMute)
             {
                 const string chicotId = "92d66578-b148-49f8-9880-edb67f8b18de";
@@ -204,8 +207,14 @@ internal static class RelicSpawnStatusChecks
                         rule.Conditions.Count == 0 && rule.CharacterAssetKeys.Count == 0,
                         "Original combat spawn relic identity or payload differs: " + key);
                     CombatUnit beforeActor = before.Units.Single(unit => unit.Id == id);
-                    if (!beforeActor.IsPyre ||
-                        (actor.Status(statusId)?.Stacks ?? 0) != (beforeActor.Status(statusId)?.Stacks ?? 0) + stacks) continue;
+                    int beforeStacks = beforeActor.Status(statusId)?.Stacks ?? 0;
+                    int afterStacks = actor.Status(statusId)?.Stacks ?? 0;
+                    if (!beforeActor.IsPyre)
+                    {
+                        Require(afterStacks == beforeStacks, "Pyre-only spawn relic affected another unit: " + key);
+                        continue;
+                    }
+                    if (afterStacks != beforeStacks + stacks) continue;
                     if (statusId == "titanskin") titanSkinWitnesses++;
                     else burstWitnesses++;
                 }
@@ -317,7 +326,7 @@ internal static class RelicSpawnStatusChecks
             (!teamWide || teamWideWitnesses > 0) &&
             (!tunedGear || tunedGearWitnesses > 0) &&
             (!bossMute || bossMuteWitnesses > 0) &&
-            (!combatRelics || titanSkinWitnesses > 0 && burstWitnesses > 0) &&
+            (!combatRelics || titanSkinWitnesses == 1 && burstWitnesses == 1) &&
             (clones || shieldTriggers > 1 && turns.Count > 1),
             $"Native relic spawn status team/first-unit/turn-reset coverage incomplete: players={players}, enemies={enemies}, shield={shieldTriggers}/{shieldSkips}, turns={turns.Count}, titanSkin={titanSkinWitnesses}, burst={burstWitnesses}.");
         if (clones)
