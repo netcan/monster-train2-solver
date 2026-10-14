@@ -79,8 +79,13 @@ namespace MonsterTrain2Poju.Probe
                     room.IsRoomEnabled(), room.IsRoomSummonBlocked(managers.GetRelicManager()), room.GetIsPyreRoom(),
                     room.GetCapacityInfo(Team.Type.Heroes).max));
             }
+            bool hasMix = definitions.Any(id => save.GetAllGameData().FindCardData(id)?.GetEffects().Any(effect =>
+                effect.GetEffectStateName() is "CardEffectMix" or "CardEffectMixRandom") == true);
+            ElixirCatalog? elixirs = hasMix ? ElixirCatalogProbe.Capture(AllGameManagers.Instance!) : null;
             var reachable = new Dictionary<string, CardPlayRule>(StringComparer.Ordinal);
             var pending = new Queue<string>(definitions);
+            if (elixirs != null)
+                foreach (ElixirRecipe recipe in elixirs.Recipes) pending.Enqueue(recipe.Creation.DataId);
             while (pending.Count > 0)
             {
                 string id = pending.Dequeue(); if (reachable.ContainsKey(id)) continue;
@@ -101,7 +106,8 @@ namespace MonsterTrain2Poju.Probe
             }
             rules = new BattlePlayRules(roomRules, reachable.Values.OrderBy(rule => rule.DataId, StringComparer.Ordinal).ToArray(),
                 new[] { "armor", "valor", "pyregel", "duality" }.Select(id => Status(id, 1)).ToArray(),
-                reachable.Values.Any(rule => rule.Effects.Any(effect => effect.Type == "CopyUnits")) ? UnitCopyCatalogProbe.Capture(reachable.Values.ToArray(), spawn) : null);
+                reachable.Values.Any(rule => rule.Effects.Any(effect => effect.Type == "CopyUnits")) ? UnitCopyCatalogProbe.Capture(reachable.Values.ToArray(), spawn) : null,
+                elixirs);
             return rules;
         }
 

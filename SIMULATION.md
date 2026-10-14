@@ -684,6 +684,16 @@ EndTurns in this Mix battle match native state, as do 13 cycles and seven
 EndTurns in the older accepted Persistent fixture. The experimental Mix battle
 still fails strict acceptance with one unsupported record: the Mix play itself.
 
+The original Elixir configuration is now captured into `BattlePlayRules` when a
+reachable card uses `CardEffectMix` or `CardEffectMixRandom`. Each recipe carries
+its card creation rule, optional base upgrade and ordered upgrade choices; all
+recipe cards are also included in the reachable play-rule closure. The native
+archive at `.probe-runs/full-battle-units-spells-and-junk-20261015-025456-41663de8`
+has four recipes and 12 upgrade choices. `--mix-catalog-only` verifies identical
+recipe identities before and after the Mix play and finds the generated card in
+that catalog. This records inputs for branch simulation; it does not yet model
+draft RNG, player choice or the Mix card action.
+
 ### BalatroEventChicot Mute relic (schema 156)
 
 `full-battle-spawn-status-relics-boss-mute.mt2f` captures the unchanged Chicot

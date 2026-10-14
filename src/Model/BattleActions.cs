@@ -208,10 +208,11 @@ namespace MonsterTrain2Poju.Model
         public IReadOnlyList<CardPlayRule> Cards { get; }
         public IReadOnlyList<CombatStatus> StatusRules { get; }
         public UnitCopyCatalog? UnitCopyCatalog { get; }
+        public ElixirCatalog? Elixirs { get; }
         public BattlePlayRules(IReadOnlyList<RoomPlayRule> rooms, IReadOnlyList<CardPlayRule> cards, IReadOnlyList<CombatStatus>? statusRules = null,
-            UnitCopyCatalog? unitCopyCatalog = null)
-        { Rooms = Array.AsReadOnly(rooms.ToArray()); Cards = Array.AsReadOnly(cards.ToArray()); StatusRules = Array.AsReadOnly((statusRules ?? Array.Empty<CombatStatus>()).ToArray()); UnitCopyCatalog = unitCopyCatalog; }
-        internal BattlePlayRules WithRooms(IReadOnlyList<RoomPlayRule> rooms) => new(rooms, Cards, StatusRules, UnitCopyCatalog);
+            UnitCopyCatalog? unitCopyCatalog = null, ElixirCatalog? elixirs = null)
+        { Rooms = Array.AsReadOnly(rooms.ToArray()); Cards = Array.AsReadOnly(cards.ToArray()); StatusRules = Array.AsReadOnly((statusRules ?? Array.Empty<CombatStatus>()).ToArray()); UnitCopyCatalog = unitCopyCatalog; Elixirs = elixirs; }
+        internal BattlePlayRules WithRooms(IReadOnlyList<RoomPlayRule> rooms) => new(rooms, Cards, StatusRules, UnitCopyCatalog, Elixirs);
         internal BattlePlayRules WithCapacities(IReadOnlyList<RoomCapacityState> capacities) => WithRooms(Rooms.Select(room =>
         {
             RoomCapacityState? capacity = capacities.FirstOrDefault(item => item.RoomIndex == room.RoomIndex);
