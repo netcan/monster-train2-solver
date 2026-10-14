@@ -1,6 +1,6 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-14): 295 binary archives, including 264
+Current accepted inventory (2026-10-14): 296 binary archives, including 265
 full battles and 31 component calibrations. Unchanged original relic evidence
 covers 78/224 catalog entries (34.82%); see
 [the owner evidence table](tests/fixtures/relic-coverage.md). Whole-battle
@@ -17,8 +17,7 @@ transitions or pending records. The 31,785-byte binary has 5,158 unique nodes
 and SHA-256 `5fba30c233e3df83508aeab9678e77cee1029a527ed2d7320c859ad0db68f8d7`.
 Independent checks replay 10 later policy actions, four EndTurns and 16 parallel
 branches; search matches all 21 decisions and 128 serial/parallel states.
-Other null-effect uses, including targetless scourges, still need original-owner
-calibration.
+Other null-effect uses still need original-owner calibration.
 
 ```powershell
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-null-forwarding-cleave.mt2f
@@ -43,6 +42,24 @@ its null-effect trigger can receive original-owner evidence.
 ```powershell
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-null-unit-triggers.mt2f
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-null-unit-triggers.mt2f
+```
+
+### Original targetless scourges
+
+`full-battle-null-targetless-scourges.mt2f` plays unchanged `ScourgeT1` and
+`SelfPurgeBlight` into an empty room. Both original `CardEffectNULL` definitions
+have no target team and enable `targetless`; native `TestEffect` returns true
+with zero targets for each. The two cards self-purge after play. The muted
+Instant battle wins with 21 matched actions, seven EndTurns, 61 stages, and
+zero capture failures, mismatches, unsupported transitions or pending records.
+The 32,615-byte archive has 5,349 unique nodes and SHA-256
+`16cb8068488943c39b6c4cb7bda7dff13a45af0211b071fe28c86c81db3935d3`.
+Search matches all 21 decisions and 128 serial/parallel states. This validates
+the recorded original cards and targetless path, not every null-effect owner.
+
+```powershell
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-null-targetless-scourges.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-null-targetless-scourges.mt2f
 ```
 
 ### Original self-attack-scaled status

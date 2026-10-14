@@ -22,6 +22,7 @@ param(
     [switch] $CardEffectKillSubtype,
     [switch] $NullForwarding,
     [switch] $NullTriggers,
+    [switch] $NullTargetless,
     [switch] $RemoveAllStatusEffects,
     [switch] $DragonHoard,
     [switch] $TrainHeal,
@@ -361,6 +362,7 @@ if ($CardEffectKill -and $CardEffectKillSubtype) { throw 'Choose either -CardEff
 if ($CardEffectKill -or $CardEffectKillSubtype) { $Policy = 'units-spells-and-junk' }
 if ($NullForwarding) { $Policy = 'units-spells-and-junk' }
 if ($NullTriggers) { $Policy = 'units-spells-and-junk' }
+if ($NullTargetless) { $Policy = 'units-spells-and-junk' }
 if ($RemoveAllStatusEffects) { $Policy = 'units-spells-and-junk' }
 if ($DragonHoard) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($TrainHeal) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
@@ -534,6 +536,7 @@ if ($CardEffectKill -or $CardEffectKillSubtype) {
 }
 if ($NullForwarding) { $environment['MT2_PROBE_MODIFIERS'] = 'null-forwarding' }
 if ($NullTriggers) { $environment['MT2_PROBE_MODIFIERS'] = 'null-triggers' }
+if ($NullTargetless) { $environment['MT2_PROBE_MODIFIERS'] = 'null-targetless' }
 if ($RemoveAllStatusEffects) { $environment['MT2_PROBE_MODIFIERS'] = 'remove-all-status-effects' }
 if ($DragonHoard) { $environment['MT2_PROBE_MODIFIERS'] = 'dragon-hoard' }
 if ($TrainHeal) { $environment['MT2_PROBE_MODIFIERS'] = 'train-heal' }
@@ -677,6 +680,15 @@ if ($NullTriggers -and ($trace.ModifierScenario -ne 'null-triggers' -or
     -not (Select-String -LiteralPath $unityLog -Pattern 'NULL-TRIGGER-TEST actor=MonsterChampionLunaCoven1 targets=1 result=True' -Quiet) -or
     -not (Select-String -LiteralPath $unityLog -Pattern 'NULL-TRIGGER-TEST actor=MonsterChampionLunaCoven2 targets=0 result=False' -Quiet))) {
     throw 'Original null-trigger target tests did not run in the native battle.'
+}
+if ($NullTargetless -and ($trace.ModifierScenario -ne 'null-targetless' -or
+    -not (Select-String -LiteralPath $unityLog -Pattern 'NULL-TARGETLESS-PREPARED originals=ScourgeT1,SelfPurgeBlight' -Quiet) -or
+    @(@('ScourgeT1', 'SelfPurgeBlight') | Where-Object {
+        -not (Select-String -LiteralPath $unityLog -Pattern "NULL-TARGETLESS-PLAY original=$_ room=0" -Quiet) -or
+        -not (Select-String -LiteralPath $unityLog -Pattern "NULL-TARGETLESS-TEST original=$_ targets=0 result=True" -Quiet)
+    }).Count -ne 0 -or
+    @($trace.Actions | Where-Object ScenarioAction).Count -ne 2)) {
+    throw 'Original targetless null effects did not resolve in the native battle.'
 }
 if ($RemoveAllStatusEffects -and ($trace.Schema -ne 164 -or $trace.ModifierScenario -ne 'remove-all-status-effects' -or
     -not (Select-String -LiteralPath $unityLog -Pattern 'REMOVE-ALL-STATUS-SEEDED card=.* hidden=' -Quiet) -or
