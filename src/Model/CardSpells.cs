@@ -835,6 +835,38 @@ namespace MonsterTrain2Poju.Model
                     }
                     continue;
                 }
+                if (effect.Type == "UnitUpgradePerStatus")
+                {
+                    if (targets.UnitIds.Count != 1) return UnsupportedTrain("Status-scaled unit upgrades require one self target.");
+                    int id = targets.UnitIds[0];
+                    RoomCombatState? targetRoom = state.Rooms.FirstOrDefault(room => room.Units.Any(unit => unit.Id == id));
+                    CombatUnit? target = targetRoom?.Units.FirstOrDefault(unit => unit.Id == id);
+                    if (target == null) return UnsupportedTrain("Status-scaled upgrade target left the train.");
+                    long stackCount = effect.Statuses.Sum(filter => (long)(target.Status(filter.Id)?.Stacks ?? 0));
+                    if (stackCount > int.MaxValue) return UnsupportedTrain("Status-scaled upgrade repeat count exceeds the modeled range.");
+                    int repeats = (int)stackCount;
+                    for (int repeat = 0; repeat < repeats; repeat++)
+                    {
+                        targetRoom = state.Rooms.FirstOrDefault(room => room.Units.Any(unit => unit.Id == id));
+                        target = targetRoom?.Units.FirstOrDefault(unit => unit.Id == id);
+                        if (target == null) return UnsupportedTrain("Status-scaled upgrade target died before all native repeats.");
+                        RoomPlayRule? capacity = definitions?.Rooms.FirstOrDefault(room => room.RoomIndex == targetRoom!.RoomIndex);
+                        RoomCombatResult applied = UnitModifierModel.Apply(targetRoom!, id, effect.Upgrade!, effect.Lifetime,
+                            roomCapacity: RoomCapacityModel.Maximum(state.Context, targetRoom!.RoomIndex, target.Team)
+                                ?? (target.Team == CombatTeam.Player ? capacity?.PlayerCapacity ?? playerCapacity
+                                    : capacity?.EnemyCapacity ?? enemyCapacity),
+                            sourceCardId: sourceCardId, scaleUpgrade: effect.ScaleUpgrade, refreshPyre: Refresh);
+                        if (!applied.Supported) return UnsupportedTrain(applied.UnsupportedReason!);
+                        state = ReplaceRoom(state, applied.State!);
+                        events.AddRange(applied.Events);
+                        callbacks.AddRange(applied.PendingCallbacks);
+                        if (applied.Outcome != RoomOutcome.Exchanged) outcome = applied.Outcome;
+                        if (state.Context!.OtherPiles != null) piles = state.Context.OtherPiles.ToArray();
+                        if (applied.PendingCallbacks.Count > 0) DrainDeaths();
+                        if (routingError != null) return UnsupportedTrain(routingError);
+                    }
+                    continue;
+                }
                 // Keep this effect's collection fixed; triggers may kill a later target.
                 for (int targetIndex = 0; targetIndex < targets.UnitIds.Count; targetIndex++)
                 {
@@ -1465,11 +1497,14 @@ namespace MonsterTrain2Poju.Model
                     if (forgeError != null) return forgeError;
                     continue;
                 }
-                if (!new[] { "CopyUnits", "Bump", "AbilityTeleport", "AttackWithUnit", "Damage", "DamagePerSourceAttack", "DamagePerHp", "Heal", "Sacrifice", "Kill", "AddStatus", "RemoveAllStatusEffects", "MultiplyStatus", "MultiplyAllPositiveStatusEffects", "AdjustAllStatusEffects", "AddStatusPerOtherEffect", "SpawnOrStatus", "FloorRearrange", "UnitUpgrade", "BuffEquipment", "RemoveUnitUpgrade", "AttachEquipment", "RemoveEquipment", "BuffAttack", "DebuffAttack", "BuffHealth", "DebuffHealth", "Draw", "DiscardHand", "RandomDiscard", "Generate" }.Contains(effect.Type))
+                if (!new[] { "CopyUnits", "Bump", "AbilityTeleport", "AttackWithUnit", "Damage", "DamagePerSourceAttack", "DamagePerHp", "Heal", "Sacrifice", "Kill", "AddStatus", "RemoveAllStatusEffects", "MultiplyStatus", "MultiplyAllPositiveStatusEffects", "AdjustAllStatusEffects", "AddStatusPerOtherEffect", "SpawnOrStatus", "FloorRearrange", "UnitUpgrade", "UnitUpgradePerStatus", "BuffEquipment", "RemoveUnitUpgrade", "AttachEquipment", "RemoveEquipment", "BuffAttack", "DebuffAttack", "BuffHealth", "DebuffHealth", "Draw", "DiscardHand", "RandomDiscard", "Generate" }.Contains(effect.Type))
                     return "Unimplemented spell effect " + effect.Type;
                 if (effect.Type == "Generate" && effect.Generation == null) return "Missing generated card rules.";
-                if ((effect.Type == "UnitUpgrade" || effect.Type == "BuffEquipment" || effect.Type == "RemoveUnitUpgrade") && effect.Upgrade == null)
+                if ((effect.Type == "UnitUpgrade" || effect.Type == "UnitUpgradePerStatus" ||
+                    effect.Type == "BuffEquipment" || effect.Type == "RemoveUnitUpgrade") && effect.Upgrade == null)
                     return "Missing unit upgrade definition.";
+                if (effect.Type == "UnitUpgradePerStatus" && (effect.Target != "Self" || effect.Statuses.Count == 0))
+                    return "Status-scaled unit upgrades require a captured self target and status filters.";
                 if (effect.Type == "BuffEquipment" && effect.Lifetime != "TemporaryUntilUnitDeath")
                     return "Equipment buffs require the native unit-death lifetime.";
                 if (effect.Value < 0 && !AttackChange(effect) && effect.Type != ForgePointsModel.Effect && !new[] { "CopyUnits", "Bump", "Damage", "DamagePerSourceAttack", "DamagePerHp", "Heal", "AddStatus", "AddStatusPerOtherEffect", "SpawnOrStatus", "MultiplyAllPositiveStatusEffects", "AdjustAllStatusEffects", "AdjustDragonsHoard", "BuffHealth", "DebuffHealth", "Draw", "DiscardHand", "Generate" }.Contains(effect.Type) ||
@@ -1607,6 +1642,7 @@ namespace MonsterTrain2Poju.Model
                 case "BuffAttack":
                 case "DebuffAttack":
                 case "UnitUpgrade":
+                case "UnitUpgradePerStatus":
                 case "BuffEquipment":
                 case "AttachEquipment":
                 case "RemoveEquipment": return count > 0;

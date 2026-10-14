@@ -24,6 +24,7 @@ namespace MonsterTrain2Poju.Probe
             "CardEffectMultiplyAllPositiveStatusEffects", "CardEffectAdjustAllStatusEffects", "CardEffectAddStatusEffectPerOtherEffect",
             "CardEffectSpawnMonsterOrAddStatusEffect", "CardEffectFloorRearrange", "CardEffectAddCardUpgradeToUnits", "CardEffectDrawType",
             "CardEffectAddTempCardUpgradeToNextDrawnCard", "CardEffectAddTempCardUpgradeToUnits", "CardEffectRemoveTempUpgradeFromUnit",
+            "CardEffectAddCardUpgradeToUnitsPerStatusEffect",
             "CardEffectAddTempCardUpgradeToCardsInHand", "CardEffectAddPermanentCardUpgradeToCardsInHand",
             "CardEffectAddTempCardUpgradeToSpellsInDeck", "CardEffectAddUpgradedCopy"
         }, StringComparer.Ordinal);
@@ -303,7 +304,8 @@ namespace MonsterTrain2Poju.Probe
                 effect.GetEffectStateName() == "CardEffectSpawnMonsterOrAddStatusEffect" ? "SpawnOrStatus" :
                 effect.GetEffectStateName() == "CardEffectAddStatusEffect" ? "AddStatus" :
                 effect.GetEffectStateName() == "CardEffectRemoveAllStatusEffects" ? "RemoveAllStatusEffects" :
-                handUpgrade ? "HandUpgrade" : effect.GetEffectStateName() == "CardEffectRemoveTempUpgradeFromUnit" ? "RemoveUnitUpgrade" : "UnitUpgrade";
+                handUpgrade ? "HandUpgrade" : effect.GetEffectStateName() == "CardEffectRemoveTempUpgradeFromUnit" ? "RemoveUnitUpgrade" :
+                effect.GetEffectStateName() == "CardEffectAddCardUpgradeToUnitsPerStatusEffect" ? "UnitUpgradePerStatus" : "UnitUpgrade";
             CardUpgradeModifier? upgrade = type == "DrawNextTurn" ? BonusDrawProbe.Upgrade(effect) : null;
             IReadOnlyList<CardUpgradeMaskRule> upgradeFilters = Array.Empty<CardUpgradeMaskRule>();
             CardGenerationRule? generation = null;
@@ -337,15 +339,18 @@ namespace MonsterTrain2Poju.Probe
             string lifetime = "";
             if (type == "BuffHealth") lifetime = ((UnitUpgradeLifetimeTempOnly)effect.GetAdditionalParamInt1()).ToString();
             bool scaleUpgrade = (effect.GetEffectStateName() == "CardEffectAddCardUpgradeToUnits" ||
+                effect.GetEffectStateName() == "CardEffectAddCardUpgradeToUnitsPerStatusEffect" ||
                 effect.GetEffectStateName() == "CardEffectBuffEquipment") && effect.GetParamBool();
-            if (type == "UnitUpgrade" || type == "RemoveUnitUpgrade" || type == "AttachEquipment" || type == "BuffEquipment" || handUpgrade || deckSpellUpgrade)
+            if (type == "UnitUpgrade" || type == "UnitUpgradePerStatus" || type == "RemoveUnitUpgrade" ||
+                type == "AttachEquipment" || type == "BuffEquipment" || handUpgrade || deckSpellUpgrade)
             {
                 if (effect.GetParamCardUpgradeData() == null) interactions.Add("Missing unit upgrade data");
                 else
                 {
                     CardUpgradeData upgradeData = effect.GetParamCardUpgradeData();
                     var upgradeState = new CardUpgradeState(); upgradeState.Setup(upgradeData);
-                    bool filtersIgnoredByEffect = effect.GetEffectStateName() == "CardEffectAddCardUpgradeToUnits" || deckSpellUpgrade;
+                    bool filtersIgnoredByEffect = effect.GetEffectStateName() == "CardEffectAddCardUpgradeToUnits" ||
+                        effect.GetEffectStateName() == "CardEffectAddCardUpgradeToUnitsPerStatusEffect" || deckSpellUpgrade;
                     upgrade = CardModifierProbe.Upgrade(upgradeState, false, filtersAlreadyApplied: filtersIgnoredByEffect);
                     interactions.AddRange(upgrade.ExternalInteractions);
                     if (deckSpellUpgrade) upgradeFilters = upgradeData.GetFilters().Select(CardUpgradeMaskProbe.Rule).ToArray();
@@ -356,7 +361,8 @@ namespace MonsterTrain2Poju.Probe
                     type == "AttachEquipment" ? "" : ((UnitUpgradeLifetime)effect.GetAdditionalParamInt1()).ToString();
             }
             var statuses = new List<CombatStatus>();
-            if (type == "AddStatus" || type == "MultiplyStatus" || type == "AdjustAllStatusEffects" || type == "AddStatusPerOtherEffect" || type == "SpawnOrStatus")
+            if (type == "AddStatus" || type == "MultiplyStatus" || type == "AdjustAllStatusEffects" ||
+                type == "AddStatusPerOtherEffect" || type == "SpawnOrStatus" || type == "UnitUpgradePerStatus")
             {
                 if (type != "AdjustAllStatusEffects" && effect.GetParamStatusEffects().Length == 0) interactions.Add("Empty status effect pool");
                 foreach (StatusEffectStackData status in effect.GetParamStatusEffects())

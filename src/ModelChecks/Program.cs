@@ -1,6 +1,19 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
 
+if (args.Length == 1 && args[0] == "--status-upgrade-pure")
+{
+    StatusUpgradeChecks.Run();
+    return;
+}
+
+if (args.Length == 2 && args[0] == "--status-upgrade-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    StatusUpgradeChecks.Native(fixture.RootElement);
+    return;
+}
+
 if (args.Length == 1 && args[0] == "--train-heal-pure")
 {
     TrainHealingChecks.Run();
@@ -757,6 +770,7 @@ RevivalChecks.Run();
 HordeRemovalChecks.Run();
 HordeDeathChecks.Run();
 AbilityCardChecks.Run();
+StatusUpgradeChecks.Run();
 UnitAbilityChecks.Run();
 RelicChecks.Run();
 TriggerCountChecks.Run();

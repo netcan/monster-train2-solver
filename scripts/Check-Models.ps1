@@ -5,7 +5,7 @@ $ErrorActionPreference = 'Stop'
 $workspace = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $fixtureNames = @('full-battle-steward-once.mt2f', 'full-battle-no-cards.mt2f', 'full-battle-units-and-junk.mt2f',
     'full-battle-unplayed-card-pyre-damage.mt2f',
-    'full-battle-unplayed-card-effects.mt2f', 'full-battle-train-heal.mt2f',
+    'full-battle-unplayed-card-effects.mt2f', 'full-battle-train-heal.mt2f', 'full-battle-status-upgrade.mt2f',
     'full-battle-units-spells-and-junk.mt2f', 'full-battle-relic-card-modifiers.mt2f', 'full-battle-original-relic-batch.mt2f',
     'full-battle-covenant-character-filter.mt2f',
     'full-battle-titan-skin.mt2f',
@@ -320,6 +320,14 @@ $trainHealFixtures = @($fixtures | Where-Object {
 foreach ($fixturePath in $trainHealFixtures) {
     dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- --train-heal-only $fixturePath
     if ($LASTEXITCODE -ne 0) { throw "Train-heal checks failed: $fixturePath" }
+}
+
+$statusUpgradeFixtures = @($fixtures | Where-Object {
+    (Split-Path -Leaf $_) -eq 'full-battle-status-upgrade.mt2f'
+})
+foreach ($fixturePath in $statusUpgradeFixtures) {
+    dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- --status-upgrade-only $fixturePath
+    if ($LASTEXITCODE -ne 0) { throw "Status-upgrade checks failed: $fixturePath" }
 }
 
 $recursionChoiceFixtures = @($fixtures | Where-Object {

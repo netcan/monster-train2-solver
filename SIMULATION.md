@@ -1,10 +1,31 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-14): 282 binary archives, including 251
+Current accepted inventory (2026-10-14): 283 binary archives, including 252
 full battles and 31 component calibrations. Unchanged original relic evidence
 covers 78/224 catalog entries (34.82%); see
 [the owner evidence table](tests/fixtures/relic-coverage.md). Whole-battle
 coverage and the optimal solver remain in progress.
+
+### Status-scaled unit upgrades from Solgard Stasis
+
+`full-battle-status-upgrade.mt2f` activates the unchanged
+`SolgardStasisGoodStatsAbility1` effect on a Train Steward carrying two
+`stygian_blessing` stacks. Native and modeled attack rise from 8 to 24,
+health/max health from 25/25 to 41/41, with two unit and two spawner-card
+upgrades. The Instant, muted battle wins with 53 matched stages, 20 actions and
+six EndTurns; capture failures, mismatches, unsupported transitions and pending
+records are zero. The original ability also removes itself after activation.
+Only its observed single-self-target form is modeled; multi-target repetition
+and other effect families remain open.
+
+The 31,026-byte binary has 4,957 unique nodes and SHA-256
+`366ee83e59665d50e24352ff038a274ded0033a286140a9387148afe53376f2c`.
+
+```powershell
+dotnet run --project src/ModelChecks -c Release -- --status-upgrade-pure
+dotnet run --project src/ModelChecks -c Release -- --status-upgrade-only tests/fixtures/full-battle-status-upgrade.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-status-upgrade.mt2f
+```
 
 ### Train healing from original PayOff
 
