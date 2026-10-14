@@ -215,11 +215,24 @@ namespace MonsterTrain2Poju.Model
             var results = new List<RoomCombatResult>();
             for (int index = rooms.Length - 1; index >= 0; index--)
             {
+                int pyreRoomIndex = rooms.Length - 1;
+                bool targetsPyre = index != pyreRoomIndex && rooms[index].Units.Any(unit =>
+                    unit.Triggers.Any(trigger => trigger.Effects.Any(effect =>
+                        effect.Type == "CardEffectPyreDamageIfNoPlayerUnits")));
+                CombatUnit? externalPyre = targetsPyre ? rooms[pyreRoomIndex].Units.FirstOrDefault(unit => unit.IsPyre) : null;
+                if (targetsPyre && externalPyre == null) return Unsupported("Conditional Pyre damage requires a Pyre unit.");
                 RoomCombatResult result = RoomCombatModel.Resolve(WithContext(rooms[index], context),
-                    refreshPyre: (changed, placement) => RelicResourceModel.RefreshPyreAttack(rooms, changed, placement));
+                    refreshPyre: (changed, placement) => RelicResourceModel.RefreshPyreAttack(rooms, changed, placement),
+                    externalPyre: externalPyre, externalPyreRoomIndex: externalPyre == null ? -1 : pyreRoomIndex);
                 if (!result.Supported) return Unsupported(result.UnsupportedReason!);
                 rooms[index] = result.State!; results.Add(result);
                 context = result.State!.Context;
+                if (externalPyre != null)
+                {
+                    CombatUnit changedPyre = result.RetainedUnits.Single(unit => unit.Id == externalPyre.Id);
+                    rooms[pyreRoomIndex] = rooms[pyreRoomIndex].WithUnits(rooms[pyreRoomIndex].Units.Select(unit =>
+                        unit.Id == changedPyre.Id ? changedPyre : unit).ToArray());
+                }
                 SetCompanionBosses(rooms, result.State!.ActiveCompanionBossIds);
                 if (Terminal(result.Outcome))
                     return new TrainCombatResult(Freeze(source, rooms, context), result.Outcome, results);

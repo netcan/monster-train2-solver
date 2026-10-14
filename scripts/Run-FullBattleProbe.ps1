@@ -31,6 +31,7 @@ param(
     [switch] $MoonPhaseCallbacks,
     [switch] $ConditionalNoPlayerStatus,
     [switch] $SelfAttackStatus,
+    [switch] $ConditionalPyreDamage,
     [switch] $SoulSiphon,
     [switch] $StatusUpgrade,
     [switch] $CardRecursion,
@@ -367,6 +368,7 @@ if ($MoonPhaseAdvance) { $BranchCardMasks = $true; $Policy = 'units-spells-and-j
 if ($MoonPhaseCallbacks) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($ConditionalNoPlayerStatus) { $Policy = 'units-spells-and-junk' }
 if ($SelfAttackStatus) { $Policy = 'units-spells-and-junk' }
+if ($ConditionalPyreDamage) { $Policy = 'units-spells-and-junk' }
 if ($SoulSiphon) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($StatusUpgrade) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($CardRecursion -or $CardRecursionDiscard -or $CardRecursionChoose -or $CardRecursionChooseToHand -or $CardRecursionChooseFilter -or $CardRecursionUpgrade -or $CardRecursionUpgradeToHand -or $CardRecursionUpgradeChoose -or $CardRecursionUpgradeFilterChoose -or $CardRecursionUpgradeReplacementChoose) { $Policy = 'units-spells-and-junk'; $BranchCardMasks = $true }
@@ -537,6 +539,7 @@ if ($MoonPhaseAdvance) { $environment['MT2_PROBE_MODIFIERS'] = 'moon-phase-advan
 if ($MoonPhaseCallbacks) { $environment['MT2_PROBE_MODIFIERS'] = 'moon-phase-callbacks' }
 if ($ConditionalNoPlayerStatus) { $environment['MT2_PROBE_MODIFIERS'] = 'conditional-no-player-status' }
 if ($SelfAttackStatus) { $environment['MT2_PROBE_MODIFIERS'] = 'self-attack-status' }
+if ($ConditionalPyreDamage) { $environment['MT2_PROBE_MODIFIERS'] = 'conditional-pyre-damage' }
 if ($SoulSiphon) { $environment['MT2_PROBE_MODIFIERS'] = 'soul-siphon' }
 if ($StatusUpgrade) { $environment['MT2_PROBE_MODIFIERS'] = 'status-upgrade' }
 if ($CardRecursion -or $CardRecursionDiscard -or $CardRecursionChoose -or $CardRecursionChooseToHand -or $CardRecursionChooseFilter -or $CardRecursionUpgrade -or $CardRecursionUpgradeToHand -or $CardRecursionUpgradeChoose -or $CardRecursionUpgradeFilterChoose -or $CardRecursionUpgradeReplacementChoose) {
@@ -715,6 +718,10 @@ if ($ConditionalNoPlayerStatus -and ($trace.ModifierScenario -ne 'conditional-no
 if ($SelfAttackStatus -and ($trace.ModifierScenario -ne 'self-attack-status' -or
     -not (Select-String -LiteralPath $unityLog -Pattern 'SELF-ATTACK-STATUS-PREPARED original=MonsterWeldling firstWaveGroups=\d+' -Quiet))) {
     throw 'Original Weldling status enemy was not prepared.'
+}
+if ($ConditionalPyreDamage -and ($trace.ModifierScenario -ne 'conditional-pyre-damage' -or
+    -not (Select-String -LiteralPath $unityLog -Pattern 'CONDITIONAL-PYRE-DAMAGE-PREPARED original=HeavyT3_PyreDamageIfUnblocked firstWaveGroups=\d+' -Quiet))) {
+    throw 'Original conditional Pyre damage enemy was not prepared.'
 }
 if ($SoulSiphon -and ($trace.ModifierScenario -ne 'soul-siphon' -or
     -not (Select-String -LiteralPath $unityLog -Pattern 'SOUL-SIPHON-STATUS stage=' -Quiet) -or

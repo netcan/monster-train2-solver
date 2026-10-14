@@ -581,6 +581,12 @@ namespace MonsterTrain2Poju.Probe
                 numericModifiersPrepared = true;
                 SelfAttackStatusScenario.Prepare(managers, log);
             }
+            if (fullBattle && !numericModifiersPrepared && ConditionalPyreDamageScenario.Enabled)
+            {
+                if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Conditional Pyre fixture must start on deployment turn.");
+                numericModifiersPrepared = true;
+                ConditionalPyreDamageScenario.Prepare(managers, log);
+            }
             if (fullBattle && !numericModifiersPrepared && SoulSiphonScenario.Enabled)
             {
                 if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Soul Siphon fixture must start on deployment turn.");
@@ -1083,6 +1089,7 @@ namespace MonsterTrain2Poju.Probe
                 if (MoonPhaseCallbackScenario.Enabled) pendingPlay = MoonPhaseCallbackScenario.Choose(decision);
                 if (ConditionalNoPlayerUnitScenario.Enabled) pendingPlay = ConditionalNoPlayerUnitScenario.Choose(decision);
                 if (SelfAttackStatusScenario.Enabled) pendingPlay = SelfAttackStatusScenario.Choose(decision);
+                if (ConditionalPyreDamageScenario.Enabled) pendingPlay = ConditionalPyreDamageScenario.Choose(decision);
                 if (SoulSiphonScenario.Enabled) pendingPlay = SoulSiphonScenario.Choose(decision);
                 if (StatusUpgradeScenario.Enabled) pendingPlay = StatusUpgradeScenario.Choose(decision);
                 if (modifierScenario is "card-effect-recursion" or "card-effect-recursion-choice" or "card-effect-recursion-choose-to-hand" or "card-effect-recursion-filter-choice" or "card-effect-recursion-discard-choice" or "card-effect-recursion-upgrade" or "card-effect-recursion-upgrade-hand" or "card-effect-recursion-upgrade-choice" or "card-effect-recursion-upgrade-filter-choice" or "card-effect-recursion-upgrade-replacement-choice")

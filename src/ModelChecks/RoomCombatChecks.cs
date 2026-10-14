@@ -182,8 +182,12 @@ internal static class RoomCombatChecks
         foreach (FixtureValue stage in fixture.GetProperty("Stages").EnumerateArray())
         {
             RoomCombatState state = stage.GetProperty("Before").Deserialize<RoomCombatState>()!;
+            CombatUnit? externalPyre = stage.TryGetProperty("ExternalPyre", out FixtureValue pyreValue) &&
+                pyreValue.ValueKind != FixtureKind.Null ? pyreValue.Deserialize<CombatUnit>() : null;
+            int externalPyreRoomIndex = externalPyre == null ? -1 : stage.GetProperty("ExternalPyreRoomIndex").GetInt32();
             RoomCombatResult result = stage.GetProperty("Kind").GetString() == "Exchange"
-                ? RoomCombatModel.Exchange(state) : RoomCombatModel.Resolve(state);
+                ? RoomCombatModel.Exchange(state) : RoomCombatModel.Resolve(state,
+                    externalPyre: externalPyre, externalPyreRoomIndex: externalPyreRoomIndex);
             if (!result.Supported) { unsupported++; firstUnsupported ??= result.UnsupportedReason; continue; }
             // The oracle is the captured game state, not the recorded model prediction.
             CombatUnit[] actual = stage.GetProperty("Actual").GetProperty("Units").Deserialize<CombatUnit[]>()!;
@@ -191,6 +195,14 @@ internal static class RoomCombatChecks
                 JsonSerializer.Serialize(actual));
             Require(unitDifference == null, "Native room difference at stage " +
                 stage.GetProperty("Index").GetInt32() + " in " + path + ": " + unitDifference);
+            if (externalPyre != null)
+            {
+                CombatUnit actualPyre = stage.GetProperty("ActualExternalPyre").Deserialize<CombatUnit>()!;
+                string? pyreDifference = ModelJson.Difference(JsonSerializer.Serialize(result.RetainedUnits
+                    .Single(unit => unit.Id == externalPyre.Id)), JsonSerializer.Serialize(actualPyre));
+                Require(pyreDifference == null, "Native external Pyre difference at stage " +
+                    stage.GetProperty("Index").GetInt32() + ": " + pyreDifference);
+            }
             if (state.Context != null)
             {
                 CombatContext actualContext = stage.GetProperty("Actual").GetProperty("Context")

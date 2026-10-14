@@ -73,13 +73,22 @@ namespace MonsterTrain2Poju.Model
             CombatContext previewContext = preDiscard.State!.Context!;
             CarryRoomCaches(previewContext);
             ObserveSummons(preDiscard.State.Rooms.SelectMany(room => room.Units), previewContext);
+            int pyreRoomIndex = preDiscard.State.Rooms.Count - 1;
+            CombatUnit? previewPyre = preDiscard.State.Rooms[pyreRoomIndex].Units.FirstOrDefault(unit => unit.IsPyre);
             foreach (RoomCombatState room in preDiscard.State.Rooms.Reverse())
             {
+                bool targetsPyre = room.RoomIndex != pyreRoomIndex && room.Units.Any(unit =>
+                    unit.Triggers.Any(trigger => trigger.Effects.Any(effect =>
+                        effect.Type == "CardEffectPyreDamageIfNoPlayerUnits")));
                 RoomCombatResult preview = RoomCombatModel.Resolve(EnchantmentWorldModel.Refresh(new RoomCombatState(room.RoomIndex, room.Deployment,
                     room.Units, room.ExternalInteractions, previewContext, preview: true,
-                    activeCompanionBossIds: room.ActiveCompanionBossIds)));
+                    activeCompanionBossIds: room.ActiveCompanionBossIds)),
+                    externalPyre: targetsPyre ? previewPyre : null,
+                    externalPyreRoomIndex: targetsPyre && previewPyre != null ? pyreRoomIndex : -1);
                 if (!preview.Supported) return new TrainCombatResult(null, RoomOutcome.Unsupported,
                     Array.Empty<RoomCombatResult>(), "Battle preview: " + preview.UnsupportedReason);
+                if (targetsPyre && previewPyre != null)
+                    previewPyre = preview.RetainedUnits.Single(unit => unit.Id == previewPyre.Id);
                 ObserveSummons(preview.State!.Units.Concat(preview.RetainedUnits), preview.State.Context);
                 CarryRoomCaches(preview.State.Context!);
                 foreach (CardInstanceState card in previewContext.CardRegistry ?? previewContext.CardInstances ?? Array.Empty<CardInstanceState>())

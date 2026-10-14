@@ -10,6 +10,8 @@ namespace MonsterTrain2Poju.Probe
         private static bool StatusEffect(string type) =>
             type is "CardEffectAddStatusEffect" or "CardEffectAddStatusEffectIfNoPlayerUnits" or
                 "CardEffectAddStatusEffectPerSelfAttack";
+        private static bool DamageEffect(string type) =>
+            type is "CardEffectDamage" or "CardEffectPyreDamageIfNoPlayerUnits";
 
         internal static CardActionEffect? Capture(CardEffectState state)
         {
@@ -28,7 +30,7 @@ namespace MonsterTrain2Poju.Probe
         internal static CardActionEffect? Definition(CardEffectData effect) =>
             AbilityLifecycleProbe.Known(effect.GetEffectStateName()) ? AbilityLifecycleProbe.Describe(effect) :
             AbilityCooldownProbe.Known(effect.GetEffectStateName()) ? AbilityCooldownProbe.Describe(effect, effect.GetParamInt(), effect.GetParamBool()) :
-            effect.GetEffectStateName() != "CardEffectHeal" && effect.GetEffectStateName() != "CardEffectDamage" && !StatusEffect(effect.GetEffectStateName()) &&
+            effect.GetEffectStateName() != "CardEffectHeal" && !DamageEffect(effect.GetEffectStateName()) && !StatusEffect(effect.GetEffectStateName()) &&
                 !EnergyModel.IsNativeEffect(effect.GetEffectStateName()) && effect.GetEffectStateName() != "CardEffectDrawAdditionalNextTurn" && effect.GetEffectStateName() != "CardEffectAdjustRoomCapacity" && effect.GetEffectStateName() != "CardEffectAdjustForgePoints" &&
                 effect.GetEffectStateName() != "CardEffectAdvanceMoonPhase" ? null :
             // Effect states have no parent card; native damage/heal getters still clamp endpoints.
@@ -53,7 +55,7 @@ namespace MonsterTrain2Poju.Probe
             bool drawNext = effect.GetEffectStateName() == "CardEffectDrawAdditionalNextTurn";
             bool forgePoints = effect.GetEffectStateName() == "CardEffectAdjustForgePoints";
             bool moonAdvance = effect.GetEffectStateName() == "CardEffectAdvanceMoonPhase";
-            return new CardActionEffect(capacity ? "AdjustCapacity" : drawNext ? "DrawNextTurn" : forgePoints ? ForgePointsModel.Effect : moonAdvance ? "AdvanceMoonPhase" : energy ? EnergyEffectProbe.Type(effect) : effect.GetEffectStateName() == "CardEffectDamage" ? "Damage" : effect.GetEffectStateName() == "CardEffectHeal" ? "Heal" : "AddStatus", effect.GetTargetMode().ToString(), value,
+            return new CardActionEffect(capacity ? "AdjustCapacity" : drawNext ? "DrawNextTurn" : forgePoints ? ForgePointsModel.Effect : moonAdvance ? "AdvanceMoonPhase" : energy ? EnergyEffectProbe.Type(effect) : DamageEffect(effect.GetEffectStateName()) ? "Damage" : effect.GetEffectStateName() == "CardEffectHeal" ? "Heal" : "AddStatus", effect.GetTargetMode().ToString(), value,
                 effect.GetTargetTeamType().HasFlag(Team.Type.Heroes), effect.GetTargetTeamType().HasFlag(Team.Type.Monsters),
                 statuses ?? (StatusEffect(effect.GetEffectStateName()) ? effect.GetParamStatusEffects().Select(status => BattleActionProbe.Status(status.statusId, status.count)).ToArray() : Array.Empty<CombatStatus>()),
                 upgrade: drawNext ? BonusDrawProbe.Upgrade(effect) : null, tests: new CardEffectTests(effect.GetShouldTest(), effect.GetShouldFailToCastIfTestFails(),

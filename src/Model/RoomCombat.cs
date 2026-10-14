@@ -421,7 +421,9 @@ namespace MonsterTrain2Poju.Model
         public static RoomCombatResult Exchange(RoomCombatState state, Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null,
             bool updateSelectedRoom = true) => Run(state, false, refreshPyre: refreshPyre, updateSelectedRoom: updateSelectedRoom);
         public static RoomCombatResult Resolve(RoomCombatState state, Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null,
-            bool updateSelectedRoom = true) => Run(state, true, refreshPyre: refreshPyre, updateSelectedRoom: updateSelectedRoom);
+            bool updateSelectedRoom = true, CombatUnit? externalPyre = null, int externalPyreRoomIndex = -1) =>
+            Run(state, true, refreshPyre: refreshPyre, updateSelectedRoom: updateSelectedRoom,
+                externalPyre: externalPyre, externalPyreRoomIndex: externalPyreRoomIndex);
 
         public static RoomCombatResult ApplyUnitPostCombat(RoomCombatState state, IReadOnlyList<int> cannotAttackOrHeal,
             IReadOnlyList<int> cannotFireTriggers, Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null)
@@ -812,13 +814,15 @@ namespace MonsterTrain2Poju.Model
         }
 
         private static RoomCombatResult Run(RoomCombatState state, bool entireRoom,
-            Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null, bool updateSelectedRoom = true)
+            Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null, bool updateSelectedRoom = true,
+            CombatUnit? externalPyre = null, int externalPyreRoomIndex = -1)
         {
             var events = new List<CombatEvent>();
             string? error = Validate(state);
             if (error != null)
                 return new RoomCombatResult(null, RoomOutcome.Unsupported, 0, events, error);
-            var engine = new Engine(state, events, refreshPyre: refreshPyre);
+            var engine = new Engine(state, events, refreshPyre: refreshPyre,
+                externalPyre: externalPyre, externalPyreRoomIndex: externalPyreRoomIndex);
             return engine.Run(entireRoom, updateSelectedRoom);
         }
 
@@ -987,19 +991,21 @@ namespace MonsterTrain2Poju.Model
                                 return "Missing or mismatched triggered moon-phase definition.";
                             continue;
                         }
-                        if (effect.Action != null && effect.Type != "CardEffectHeal" && effect.Type != "CardEffectDamage" && effect.Type != "CardEffectAddStatusEffect" &&
+                        if (effect.Action != null && effect.Type != "CardEffectHeal" && effect.Type != "CardEffectDamage" && effect.Type != "CardEffectPyreDamageIfNoPlayerUnits" && effect.Type != "CardEffectAddStatusEffect" &&
                             effect.Type is not ("CardEffectAddStatusEffectIfNoPlayerUnits" or "CardEffectAddStatusEffectPerSelfAttack"))
                             return "Mismatched triggered action definition.";
-                        if (effect.DamageStatusMultiplier != null && effect.Type != "CardEffectDamage")
+                        if (effect.DamageStatusMultiplier != null && effect.Type is not ("CardEffectDamage" or "CardEffectPyreDamageIfNoPlayerUnits"))
                             return "Mismatched triggered damage multiplier.";
                         if (effect.StatusScaling != null && effect.Type is not ("CardEffectAddStatusEffect" or "CardEffectAddStatusEffectIfNoPlayerUnits" or
                             "CardEffectAddStatusEffectPerSelfAttack")) return "Mismatched triggered status scaling.";
                         if (effect.Type == "CardEffectDespawnCharacter") continue;
-                        if (effect.Type == "CardEffectHeal" || effect.Type == "CardEffectDamage" ||
+                        if (effect.Type == "CardEffectHeal" || effect.Type == "CardEffectDamage" || effect.Type == "CardEffectPyreDamageIfNoPlayerUnits" ||
                             effect.Type is "CardEffectAddStatusEffect" or "CardEffectAddStatusEffectIfNoPlayerUnits" or "CardEffectAddStatusEffectPerSelfAttack")
                         {
                             CardActionEffect? action = effect.Action;
-                            if (action?.Type != (effect.Type == "CardEffectHeal" ? "Heal" : effect.Type == "CardEffectDamage" ? "Damage" : "AddStatus")) return "Missing triggered action definition.";
+                            if (action?.Type != (effect.Type == "CardEffectHeal" ? "Heal" : effect.Type is "CardEffectDamage" or "CardEffectPyreDamageIfNoPlayerUnits" ? "Damage" : "AddStatus")) return "Missing triggered action definition.";
+                            if (effect.Type == "CardEffectPyreDamageIfNoPlayerUnits" && action.Target != "Pyre")
+                                return "Conditional Pyre damage requires a Pyre target.";
                             if (action.Type == "AddStatus")
                             {
                                 string? statusError = TriggeredStatusModel.Validate(effect);
@@ -1008,7 +1014,7 @@ namespace MonsterTrain2Poju.Model
                             }
                             if (action.Type == "Heal" && state.Units.Any(target => target.Modifiers == null))
                                 return "Triggered healing requires unit healability state.";
-                            if (!new[] { "Self", "Room", "FrontInRoom", "BackInRoom", "Weakest", "RoomHealTargets", "RandomInRoom", "LastAttackedCharacter", "LastSpawnedCharacter" }.Contains(action.Target))
+                            if (!new[] { "Self", "Room", "FrontInRoom", "BackInRoom", "Weakest", "RoomHealTargets", "RandomInRoom", "LastAttackedCharacter", "LastSpawnedCharacter", "Pyre" }.Contains(action.Target))
                                 return "Unmodeled triggered action target " + action.Target;
                             if ((action.Range != null || action.Target == "RandomInRoom") && state.Context == null)
                                 return "Triggered action randomness requires shared battle context.";
@@ -1186,7 +1192,8 @@ namespace MonsterTrain2Poju.Model
                 Func<RoomCombatState, RoomCombatResult>? finishDamageQueue = null,
                 Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null,
                 CombatUnit? externalActor = null, int externalActorRoomIndex = -1, bool externalActorInRoom = true,
-                Func<RoomCombatState, CardActionEffect, int, MoonPhaseTransitionResult>? moonPhase = null)
+                Func<RoomCombatState, CardActionEffect, int, MoonPhaseTransitionResult>? moonPhase = null,
+                CombatUnit? externalPyre = null, int externalPyreRoomIndex = -1)
             {
                 this.source = source; this.events = events;
                 this.deferSpawnerExhaustion = deferSpawnerExhaustion;
@@ -1207,6 +1214,14 @@ namespace MonsterTrain2Poju.Model
                     units.Add(NewUnit(externalActor, externalActorInRoom,
                         externalActorRoomIndex >= 0 ? externalActorRoomIndex : source.RoomIndex));
                     externalTurnActorIds.Add(externalActor.Id);
+                }
+                if (externalPyre != null)
+                {
+                    if (!externalPyre.IsPyre || externalPyreRoomIndex < 0 ||
+                        units.Any(unit => unit.Source.Id == externalPyre.Id))
+                        throw new ArgumentException("Invalid external Pyre target.", nameof(externalPyre));
+                    units.Add(NewUnit(externalPyre, false, externalPyreRoomIndex));
+                    externalTurnActorIds.Add(externalPyre.Id);
                 }
                 if (source.Preview && resetPreviewTriggers)
                     foreach (WorkingUnit unit in units)
@@ -2418,7 +2433,14 @@ namespace MonsterTrain2Poju.Model
                             .Select(unit => unit.Freeze()).ToArray());
                         context = synced.Context;
                         RoomCombatState? remote = context?.Enchantments?.Rooms.FirstOrDefault(room => room.RoomIndex == queued.RoomIndex);
-                        if (remote == null) { unsupportedReason = "A cross-room character callback requires the captured shared world."; break; }
+                        if (remote == null)
+                        {
+                            if (queued.Unit.Source.IsPyre && !traceAllDispatches &&
+                                !queued.Unit.Triggers.Any(trigger => trigger.Kind == queued.Kind) &&
+                                (queued.Kind != "OnHit" || !queued.Unit.Has("horde"))) continue;
+                            unsupportedReason = "A cross-room character callback requires the captured shared world.";
+                            break;
+                        }
                         var callback = new QueuedCharacterTrigger(queued.RoomIndex, queued.Unit.Freeze(), queued.Kind,
                             paramInt: queued.ParamInt, overrideTarget: queued.OverrideTarget?.Freeze(), paramInt2: queued.ParamInt2,
                             paramString: queued.ParamString, dyingCharacter: queued.DyingCharacter?.Freeze(), canFireTriggers: queued.CanFire,
@@ -2921,6 +2943,9 @@ namespace MonsterTrain2Poju.Model
 
             private CardTargets TriggerTargets(WorkingUnit actor, CardActionEffect action, bool testing, WorkingUnit? overrideTarget = null, int lastSpawnedOverrideUnitId = 0)
             {
+                if (action.Target == "Pyre")
+                    return new CardTargets(units.Where(unit => unit.Source.IsPyre).Take(1)
+                        .Select(unit => unit.Source.Id).ToArray());
                 if (action.Target == "LastAttackedCharacter")
                 {
                     // The override bypasses every team/status/health/subtype/boss filter,
@@ -2968,7 +2993,7 @@ namespace MonsterTrain2Poju.Model
                     CardTargets targets = TriggerTargets(actor, action, testing: true, lastSpawnedOverrideUnitId: lastSpawnedOverrideUnitId);
                     if (!targets.Supported) { unsupportedReason = targets.UnsupportedReason; return false; }
                     if (targets.BattleRng.HasValue) context = context!.WithBattleRng(targets.BattleRng.Value);
-                    bool valid = effect.Type == "CardEffectAddStatusEffectIfNoPlayerUnits"
+                    bool valid = effect.Type is "CardEffectAddStatusEffectIfNoPlayerUnits" or "CardEffectPyreDamageIfNoPlayerUnits"
                         ? NoPlayerUnitsInActorRoom(actor)
                         : action.Type == "AddStatus" ? StatusTest(actor, effect, targets) : ActionTestValid(action, targets, TestActionAmount(action));
                     if (!valid && action.Tests?.FailToCast == true) return false;
@@ -3034,7 +3059,7 @@ namespace MonsterTrain2Poju.Model
                 CardTargets tested = TriggerTargets(actor, action, testing: true, overrideTarget, lastSpawnedOverrideUnitId);
                 if (!tested.Supported) { unsupportedReason = tested.UnsupportedReason; return false; }
                 if (tested.BattleRng.HasValue) context = context!.WithBattleRng(tested.BattleRng.Value);
-                bool valid = effect.Type == "CardEffectAddStatusEffectIfNoPlayerUnits"
+                bool valid = effect.Type is "CardEffectAddStatusEffectIfNoPlayerUnits" or "CardEffectPyreDamageIfNoPlayerUnits"
                     ? NoPlayerUnitsInActorRoom(actor)
                     : action.Type == "AddStatus" ? StatusTest(actor, effect, tested) : ActionTestValid(action, tested, TestActionAmount(action));
                 if (unsupportedReason != null) return false;

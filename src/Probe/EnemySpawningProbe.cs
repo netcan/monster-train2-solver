@@ -125,7 +125,7 @@ namespace MonsterTrain2Poju.Probe
         {
             CombatEffect[] effects = trigger.GetEffects().Select(effect =>
             {
-                if (effect.GetUseIntRange() && !AbilityLifecycleProbe.Known(effect.GetEffectStateName()) && effect.GetEffectStateName() != "CardEffectHeal" && effect.GetEffectStateName() != "CardEffectDamage" && effect.GetEffectStateName() != "CardEffectAddStatusEffect" &&
+                if (effect.GetUseIntRange() && !AbilityLifecycleProbe.Known(effect.GetEffectStateName()) && effect.GetEffectStateName() != "CardEffectHeal" && effect.GetEffectStateName() is not ("CardEffectDamage" or "CardEffectPyreDamageIfNoPlayerUnits") && effect.GetEffectStateName() != "CardEffectAddStatusEffect" &&
                     !EnergyModel.IsNativeEffect(effect.GetEffectStateName()) && effect.GetEffectStateName() != "CardEffectDrawAdditionalNextTurn" && effect.GetEffectStateName() != "CardEffectAdjustRoomCapacity" && effect.GetEffectStateName() != "CardEffectAdjustForgePoints") interactions.Add("Spawned random effect initialization");
                 if (effect.GetEffectStateName() == "CardEffectRewardGold" &&
                     AllGameManagers.Instance!.GetSaveManager().GetAdjustedGoldAmount(effect.GetParamInt(), isReward: true) != GoldRewardModel.Adjust(effect.GetParamInt()))
@@ -137,13 +137,13 @@ namespace MonsterTrain2Poju.Probe
                 var pool = new List<CardData>();
                 CardEffectState.GetFilteredCardListFromPool(effect.GetParamCardPool(), effect.GetParamCardFilter(),
                     AllGameManagers.Instance!.GetRelicManager(), ref pool);
-                return new CombatEffect(effect.GetEffectStateName(), AbilityLifecycleProbe.Known(effect.GetEffectStateName()) ? 0 : effect.GetEffectStateName() is "CardEffectHeal" or "CardEffectDamage" ? Math.Max(0, effect.GetParamInt()) : effect.GetParamInt(),
+                return new CombatEffect(effect.GetEffectStateName(), AbilityLifecycleProbe.Known(effect.GetEffectStateName()) ? 0 : effect.GetEffectStateName() is "CardEffectHeal" or "CardEffectDamage" or "CardEffectPyreDamageIfNoPlayerUnits" ? Math.Max(0, effect.GetParamInt()) : effect.GetParamInt(),
                     effect.GetEffectStateName() == "CardEffectDespawnCharacter" ? Math.Max(1, effect.GetParamInt()) : 0,
                     ((CardPile)effect.GetParamInt()).ToString(), effect.GetAdditionalParamInt(),
                     pool.Select(card => card.GetID()).ToArray(), effect.GetParamBool2(),
                     effect.GetEffectStateName() == "CardEffectAddBattleCard" ? CardGenerationProbe.Definition(effect) : null,
                     UnitTriggerUpgradeProbe.Definition(effect, interactions), UnitTriggerActionProbe.Definition(effect),
-                    effect.GetEffectStateName() == "CardEffectDamage" && effect.GetUseStatusEffectStackMultiplier() ? effect.GetStatusEffectStackMultiplier() : null, UnitTriggerActionProbe.Scaling(effect),
+                    effect.GetEffectStateName() is "CardEffectDamage" or "CardEffectPyreDamageIfNoPlayerUnits" && effect.GetUseStatusEffectStackMultiplier() ? effect.GetStatusEffectStackMultiplier() : null, UnitTriggerActionProbe.Scaling(effect),
                     TriggeredSummonProbe.Definition(effect), EnchantmentCombatProbe.Definition(effect));
             }).ToArray();
             return new CombatTrigger(trigger.GetTrigger().ToString(), trigger.GetTriggerOnce(), false,

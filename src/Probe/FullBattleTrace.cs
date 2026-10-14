@@ -422,7 +422,7 @@ namespace MonsterTrain2Poju.Probe
                         effect.GetAdditionalParamInt(), pool.Select(card => card.GetID()).ToArray(), effect.GetParamBool2(),
                         type == "CardEffectAddBattleCard" ? CardGenerationProbe.Definition(effect) : null,
                         UnitTriggerUpgradeProbe.Capture(effect, interactions), UnitTriggerActionProbe.Capture(effect),
-                        type == "CardEffectDamage" && effect.GetUseStatusEffectStackMultiplier() ? effect.GetStatusEffectStackMultiplier() : null, UnitTriggerActionProbe.Scaling(effect),
+                        type is "CardEffectDamage" or "CardEffectPyreDamageIfNoPlayerUnits" && effect.GetUseStatusEffectStackMultiplier() ? effect.GetStatusEffectStackMultiplier() : null, UnitTriggerActionProbe.Scaling(effect),
                         TriggeredSummonProbe.Capture(effect), EnchantmentCombatProbe.Capture(effect));
                 }).ToArray();
                 int[] boundEquipment = trigger.GetEffectStates().Select(effect => effect.GetParentEquipment() == null ? 0 : Active!.CardId(effect.GetParentEquipment()!)).Distinct().ToArray();
@@ -449,6 +449,13 @@ namespace MonsterTrain2Poju.Probe
                 if (managers != null && !managers.GetSaveManager().PreviewMode && NativeWon == null)
                 {
                     RoomCombatState before = Capture(room);
+                    RoomManager roomManager = managers.GetRoomManager()!;
+                    int pyreRoomIndex = roomManager.GetNumRooms() - 1;
+                    bool externalPyreTarget = kind != "Exchange" && room.GetRoomIndex() != pyreRoomIndex &&
+                        before.Units.Any(unit => unit.Triggers.Any(trigger => trigger.Effects.Any(effect =>
+                            effect.Type == "CardEffectPyreDamageIfNoPlayerUnits")));
+                    CombatUnit? pyre = externalPyreTarget ? Capture(roomManager.GetRoom(pyreRoomIndex),
+                        captureContext: false).Units.FirstOrDefault(unit => unit.IsPyre) : null;
                     record = new StageRecord
                     {
                         Index = stages.Count,
@@ -456,7 +463,11 @@ namespace MonsterTrain2Poju.Probe
                         Kind = kind,
                         Room = room,
                         Before = before,
-                        Predicted = kind == "Exchange" ? RoomCombatModel.Exchange(before) : RoomCombatModel.Resolve(before)
+                        ExternalPyre = pyre,
+                        ExternalPyreRoomIndex = pyre == null ? -1 : pyreRoomIndex,
+                        Predicted = kind == "Exchange" ? RoomCombatModel.Exchange(before) :
+                            RoomCombatModel.Resolve(before, externalPyre: pyre,
+                                externalPyreRoomIndex: pyre == null ? -1 : pyreRoomIndex)
                     };
                     stages.Add(record);
                 }
@@ -479,11 +490,18 @@ namespace MonsterTrain2Poju.Probe
             try
             {
                 stage.Actual = Capture(stage.Room);
+                if (stage.ExternalPyre != null)
+                    stage.ActualExternalPyre = Capture(AllGameManagers.Instance!.GetRoomManager()!
+                        .GetRoom(stage.ExternalPyreRoomIndex), captureContext: false).Units
+                        .FirstOrDefault(unit => unit.IsPyre);
                 if (stage.Predicted.Supported)
                 {
                     JToken expected = JToken.FromObject(stage.Predicted.State!.Units);
                     JToken actual = JToken.FromObject(stage.Actual.Units);
                     stage.Difference = JToken.DeepEquals(expected, actual) ? null : "Unit states differ";
+                    if (stage.ExternalPyre != null && !JToken.DeepEquals(JToken.FromObject(stage.Predicted.RetainedUnits
+                        .Single(unit => unit.Id == stage.ExternalPyre.Id)), JToken.FromObject(stage.ActualExternalPyre!)))
+                        stage.Difference = "External Pyre state differs";
                     if (!JToken.DeepEquals(JToken.FromObject(BattleTurnProbe.ComparableContext(stage.Predicted.State.Context)!),
                         JToken.FromObject(BattleTurnProbe.ComparableContext(stage.Actual.Context)!))) stage.Difference = "Card piles, RNG or gold differ";
                     log.LogInfo("BATTLE-MODEL-" + (stage.Difference == null ? "MATCH" : "MISMATCH") +
@@ -726,8 +744,11 @@ namespace MonsterTrain2Poju.Probe
             public string Kind { get; set; } = "";
             [JsonIgnore] public RoomState Room { get; set; } = null!;
             public RoomCombatState Before { get; set; } = null!;
+            public CombatUnit? ExternalPyre { get; set; }
+            public int ExternalPyreRoomIndex { get; set; } = -1;
             public RoomCombatResult Predicted { get; set; } = null!;
             public RoomCombatState? Actual { get; set; }
+            public CombatUnit? ActualExternalPyre { get; set; }
             public string? Difference { get; set; }
         }
 

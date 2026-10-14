@@ -1,5 +1,16 @@
 # Native regression fixtures
 
+`full-battle-conditional-pyre-damage.mt2f` records the unchanged
+`HeavyT3_PyreDamageIfUnblocked` enemy. Its PostCombat effect deals five damage
+to the Pyre on an empty floor and none when a player unit blocks that floor.
+The binary fixture verifies the remote target, preview statistics and seven
+exact EndTurns; the full muted Instant battle has 67 matched stages and no
+mismatches or unsupported transitions.
+The 30,123-byte archive has 4,792 unique nodes and SHA-256
+`40416639a3ef18295a7de007e8c6c784c66cc69465c984c249967c2976635e46`.
+Run `scripts/Check-Models.ps1 -Fixture full-battle-conditional-pyre-damage.mt2f`
+for the focused regression.
+
 `full-battle-self-attack-status.mt2f` records unchanged Weldling applying
 three Armor to a player Train Steward after combat: its attack is six and the
 effect's divisor is two. The focused check proves the original target team,

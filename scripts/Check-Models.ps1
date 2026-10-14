@@ -10,6 +10,7 @@ $fixtureNames = @('full-battle-steward-once.mt2f', 'full-battle-no-cards.mt2f', 
     'full-battle-soul-siphon.mt2f', 'full-battle-moon-phase-card.mt2f', 'full-battle-moon-phase-advance.mt2f',
     'full-battle-moon-phase-callbacks.mt2f',
     'full-battle-conditional-no-player-status.mt2f',
+    'full-battle-conditional-pyre-damage.mt2f',
     'full-battle-self-attack-status.mt2f',
     'full-battle-units-spells-and-junk.mt2f', 'full-battle-relic-card-modifiers.mt2f', 'full-battle-original-relic-batch.mt2f',
     'full-battle-covenant-character-filter.mt2f',
@@ -381,6 +382,14 @@ $conditionalNoPlayerFixtures = @($fixtures | Where-Object {
 foreach ($fixturePath in $conditionalNoPlayerFixtures) {
     dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- --no-player-units-status-only $fixturePath
     if ($LASTEXITCODE -ne 0) { throw "Conditional no-player status checks failed: $fixturePath" }
+}
+
+$conditionalPyreDamageFixtures = @($fixtures | Where-Object {
+    (Split-Path -Leaf $_) -eq 'full-battle-conditional-pyre-damage.mt2f'
+})
+foreach ($fixturePath in $conditionalPyreDamageFixtures) {
+    dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- --conditional-pyre-damage-only $fixturePath
+    if ($LASTEXITCODE -ne 0) { throw "Conditional Pyre damage checks failed: $fixturePath" }
 }
 
 $selfAttackStatusFixtures = @($fixtures | Where-Object {
