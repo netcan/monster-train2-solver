@@ -228,7 +228,7 @@ namespace MonsterTrain2Poju.Probe
         {
             private static bool Prefix(ref bool __result)
             {
-                if (!OriginalEggTransformation) return true;
+                if (!OriginalEggTransformation && !OriginalEggCardScenario.Enabled) return true;
                 __result = false;
                 return false;
             }

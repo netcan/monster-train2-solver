@@ -177,6 +177,12 @@ if (args.Length == 2 && args[0] == "--egg-transformation-only")
     return;
 }
 
+if (args.Length == 2 && args[0] == "--original-egg-card-only")
+{
+    OriginalEggCardChecks.Native(args[1]);
+    return;
+}
+
 if (args.Length == 2 && args[0] == "--unplayed-card-trigger-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);

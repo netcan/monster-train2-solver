@@ -927,6 +927,13 @@ namespace MonsterTrain2Poju.Probe
                 SpawnStatusRelicScenario.Prepare(managers, log);
                 return;
             }
+            if (fullBattle && !numericModifiersPrepared && OriginalEggCardScenario.Enabled)
+            {
+                if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Original Egg card must be prepared on the deployment turn.");
+                numericModifiersPrepared = true;
+                OriginalEggCardScenario.Prepare(managers, log);
+                return;
+            }
             if (fullBattle && !numericModifiersPrepared && modifierScenario == "spawn-status-relics-boss-mute")
             {
                 if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Spawn-status relic fixture must start on deployment turn.");
@@ -1135,6 +1142,8 @@ namespace MonsterTrain2Poju.Probe
                     ? OriginalStingRelicBatchScenario.Choose(decision)
                     : Environment.GetEnvironmentVariable("MT2_PROBE_FULL_BATTLE_POLICY") == "units-spells-and-junk"
                         ? BattleActionModel.ChooseUnitSpellAndJunkPlay(decision) : BattleActionModel.ChooseUnitAndJunkPlay(decision);
+                if (OriginalEggCardScenario.Enabled)
+                    pendingPlay = OriginalEggCardScenario.Choose(decision) ?? pendingPlay;
                 if (fullBattle && OriginalCardDrawOnCardPlayScenario.Enabled)
                     pendingPlay = OriginalCardDrawOnCardPlayScenario.ChooseSnack(decision) ?? pendingPlay;
                 if (fullBattle && UnplayedCardTriggerScenario.Enabled)

@@ -211,7 +211,7 @@ The default command checks the full curated inventory. For routine changes, run
 the dedicated checks for the new and directly affected scenarios; run the full
 inventory at completed milestones and before delivery.
 
-Current inventory is 320 archives: 289 accepted battles and 31 component
+Current inventory is 321 archives: 290 accepted battles and 31 component
 calibrations. Original relic evidence is 81/224 (36.16%). The binary-only
 `full-battle-egg-transformation.mt2f` captures four original `EggHatchRemoval`
 births (Hatch 5 to 2, Armor +30) on authored Steward carriers. Two unchanged
@@ -226,6 +226,22 @@ mechanism evidence, not another original relic owner.
 
 ```powershell
 dotnet run --project src/ModelChecks -c Release -- --egg-transformation-only tests/fixtures/full-battle-egg-transformation.mt2f
+```
+
+`full-battle-original-kinhost-vessel.mt2f` plays the unchanged `KinhostVessel`
+card from hand in the upper room. Its original `MonsterKinhostVessel` spawns
+with Hatch 8; native room Corruption 8/8 removes the Hatch in combat, then its
+`OnHatched` trigger sacrifices the vessel and summons the original
+`MonsterKinhostPupa`. The muted Instant battle wins with 57 matched room stages,
+21 actions and seven EndTurns, with zero capture failures, mismatches,
+unsupported transitions or pending records. The focused checker verifies this
+positive witness and independent turn, room and serial/parallel search replay.
+The binary-only archive is 45,011 bytes with 7,309 unique nodes and SHA-256
+`001c8c777123f26d635e2509e1ca1b6fbfe6044ba5fb29614dfc648b918a2c46`.
+This adds original-card evidence, not another relic owner.
+
+```powershell
+dotnet run --project src/ModelChecks -c Release -- --original-egg-card-only tests/fixtures/full-battle-original-kinhost-vessel.mt2f
 ```
 
 The Pyre spawn-status
