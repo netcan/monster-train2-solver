@@ -11,7 +11,8 @@ internal static class AbilityCardChecks
         var stats = new BattleStatistics([], [], [], [], [], [], [], 0, 0, 0, 0, 0, [1], [1], [1]);
         var pending = new CardUpgradeModifier("pending", "pending", new(damage: 4), [], false, false, false, 0, 0, []);
         var upgrade = new CardUpgradeModifier("start", "start", new(damage: 2), [], false, true, false, 0, 0, []);
-        var creation = new CardCreationRule("skill", new(new(), [upgrade], 0, []), [new(0, "CardEffectDiscardHand", 0)], []);
+        var creation = new CardCreationRule("skill", new(new(), [upgrade], 0, []), [new(0, "CardEffectDiscardHand", 0)], [],
+            canBeCopied: true);
         var root = new CombatContext(new([new(1, "skill")], [], [], rng, 0, []), rng, 19, 2, 10, statistics: stats,
             cardInstances: [owned], cardRegistry: [owned], nextAddedTemporaryUpgrades: [pending], otherPiles: [], abilityCardCache: []);
         string parent = JsonSerializer.Serialize(root, ModelJson.Options);
@@ -21,7 +22,8 @@ internal static class AbilityCardChecks
         Require(first.Context!.CardInstances!.Count == 1 && first.Context.CardRegistry!.Count == 2 &&
             first.Context.Statistics!.TrackedCards.SequenceEqual([1]) && first.Context.Statistics.StoredCards!.SequenceEqual([1]) &&
             first.Context.NextAddedTemporaryUpgrades!.Count == 1 && first.Card!.Permanent.Upgrades.Count == 1 &&
-            first.Card.Temporary.Upgrades.Count == 0 && first.Card.EffectCounters![0].Value == 0,
+            first.Card.Temporary.Upgrades.Count == 0 && first.Card.EffectCounters![0].Value == 0 &&
+            first.Card.CanBeCopied == true,
             "Cache creation changed ownership/statistics, consumed pending upgrades or lost starting state.");
         AbilityCardResult second = AbilityCardModel.Get(first.Context, creation);
         Require(second.Supported && !second.Created && ReferenceEquals(second.Context, first.Context) &&

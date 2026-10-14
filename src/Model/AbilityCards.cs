@@ -66,7 +66,7 @@ namespace MonsterTrain2Poju.Model
                 creation.StatusScalingTraits, creation.UnitUpgradeScalingTraits, creation.CapacityScalingTraits, creation.EquippedUnitId,
                 source.CardRegistry?.Any(card => card.PlayedRoomUnitIds != null) == true ? Array.Empty<int>() : null,
                 source.CardRegistry?.Any(card => card.RawPlayedRoomUnitIds != null) == true ? Array.Empty<int>() : null, creation.MaskDescriptor,
-                forgeCountScalingTraits: creation.ForgeCountScalingTraits,
+                forgeCountScalingTraits: creation.ForgeCountScalingTraits, canBeCopied: creation.CanBeCopied,
                 trainHealScalingTraits: creation.TrainHealScalingTraits);
             card = CardExhaustModel.InitializeCreated(card, source);
             error = CardModifierModel.UnsupportedReason(card);
