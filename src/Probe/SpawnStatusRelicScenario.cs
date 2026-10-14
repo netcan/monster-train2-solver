@@ -15,6 +15,8 @@ namespace MonsterTrain2Poju.Probe
             Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == "spawn-status-relics-team-wide";
         internal static bool OriginalTunedGearRelic =>
             Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == "spawn-status-relics-tuned-gear";
+        internal static bool OriginalEggHatchRelic =>
+            Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == "spawn-status-relics-egg-hatch";
         internal static bool OriginalChicotRelic =>
             Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == "spawn-status-relics-boss-mute";
         internal static bool OriginalCombatRelics =>
@@ -60,6 +62,13 @@ namespace MonsterTrain2Poju.Probe
                 var subtypeKeys = (List<string>)AccessTools.Field(typeof(CharacterData), "subtypeKeys").GetValue(unit);
                 if (!subtypeKeys.Contains("SubtypesData_Hymnist")) subtypeKeys.Add("SubtypesData_Hymnist");
             }
+            if (OriginalEggHatchRelic)
+            {
+                var subtypeKeys = (List<string>)AccessTools.Field(typeof(CharacterData), "subtypeKeys").GetValue(unit);
+                if (!subtypeKeys.Contains("SubtypesData_Egg")) subtypeKeys.Add("SubtypesData_Egg");
+                AccessTools.Field(typeof(CharacterData), "startingStatusEffects").SetValue(unit,
+                    unit.GetStartingStatusEffects().Concat(new[] { new StatusEffectStackData { statusId = "hatch", count = 3 } }).ToArray());
+            }
             var armor = HealingScenario.HealGold(11, false, true);
             AccessTools.Field(typeof(CharacterTriggerData), "trigger").SetValue(armor, CharacterTriggerData.Trigger.OnArmorAdded);
             AccessTools.Field(typeof(CharacterData), "triggers").SetValue(unit, unit.GetTriggers().Concat(new[] { armor }).ToList());
@@ -68,6 +77,7 @@ namespace MonsterTrain2Poju.Probe
             Acquire("60a2a8a3-5f7a-4a9d-b427-5f261145fa1f", "FirstUnitGainDamageShield");
             Acquire("270356af-16bd-4433-a0b2-3e5bb94ef890", "FrostbiteOnEnemies");
             if (OriginalTunedGearRelic) Acquire("f12924bc-0600-4de0-ae2a-93534f251eb1", "TunedGear");
+            if (OriginalEggHatchRelic) AcquireEggHatch();
             if (OriginalChicotRelic) Acquire("92d66578-b148-49f8-9880-edb67f8b18de", "BalatroEventChicot");
             if (OriginalCombatRelics)
             {
@@ -94,13 +104,35 @@ namespace MonsterTrain2Poju.Probe
             }
             Prepared = true;
             AccessTools.Field(typeof(CombatManager), "combatStateChanged").SetValue(managers.GetCombatManager(), true);
-            log.LogInfo("SPAWN-STATUS-RELICS-PREPARED original relic definitions unchanged; TunedGear=" + OriginalTunedGearRelic + "; Chicot=" + OriginalChicotRelic + "; combat=" + OriginalCombatRelics + "; Hymnist carrier test=" + OriginalTeamSpawnStatusRelic + "; StealthWaxers=" + OriginalStealthWaxersRelic + "; clones/extra-spawn=" + Clones + "; native Boss/waves retained.");
+            log.LogInfo("SPAWN-STATUS-RELICS-PREPARED original relic definitions unchanged; TunedGear=" + OriginalTunedGearRelic + "; EggHatch=" + OriginalEggHatchRelic + "; Chicot=" + OriginalChicotRelic + "; combat=" + OriginalCombatRelics + "; Hymnist carrier test=" + OriginalTeamSpawnStatusRelic + "; StealthWaxers=" + OriginalStealthWaxersRelic + "; clones/extra-spawn=" + Clones + "; native Boss/waves retained.");
 
             void Acquire(string id, string key)
             {
                 CollectableRelicData relic = save.GetAllGameData().GetAllCollectableRelicData().Single(item => item.GetID() == id);
                 if (relic.name != key || relic.GetEffects().Count != 1 || relic.GetEffects()[0].GetEffectClassName() != "RelicEffectAddStatusEffectOnSpawn")
                     throw new InvalidOperationException("Original spawn status relic changed: " + key);
+                save.AddRelic(relic);
+            }
+
+            void AcquireEggHatch()
+            {
+                const string id = "8c8a2a2c-500c-4b77-90fd-0d309b94bb2c";
+                CollectableRelicData relic = save.GetAllGameData().GetAllCollectableRelicData().Single(item => item.GetID() == id);
+                RelicEffectData[] effects = relic.GetEffects().ToArray();
+                if (relic.name != "EggHatchRemoval" || effects.Length != 2 ||
+                    effects[0].GetEffectClassName() != "RelicEffectRemoveStatusEffectOnSpawn" ||
+                    effects[1].GetEffectClassName() != "RelicEffectAddStatusEffectOnSpawn" ||
+                    effects[0].GetParamSourceTeam() != Team.Type.Monsters ||
+                    effects[1].GetParamSourceTeam() != Team.Type.Monsters ||
+                    effects[0].GetParamStatusEffects().Length != 1 ||
+                    effects[0].GetParamStatusEffects()[0].statusId != "hatch" ||
+                    effects[0].GetParamStatusEffects()[0].count != 3 ||
+                    effects[1].GetParamStatusEffects().Length != 1 ||
+                    effects[1].GetParamStatusEffects()[0].statusId != "armor" ||
+                    effects[1].GetParamStatusEffects()[0].count != 30 ||
+                    effects.Any(effect => effect.GetParamCharacterSubtype()?.Key != "SubtypesData_Egg") ||
+                    effects.Any(effect => effect.GetEffectConditions().Count != 0))
+                    throw new InvalidOperationException("Original EggHatchRemoval effect order or payload changed.");
                 save.AddRelic(relic);
             }
 

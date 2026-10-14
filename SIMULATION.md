@@ -1,10 +1,29 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-15): 318 binary archives, including 287
+Current accepted inventory (2026-10-15): 319 binary archives, including 288
 full battles and 31 component calibrations. Unchanged original relic evidence
-covers 80/224 catalog entries (35.71%); see
+covers 81/224 catalog entries (36.16%); see
 [the owner evidence table](tests/fixtures/relic-coverage.md). Whole-battle
 coverage and the optimal solver remain in progress.
+
+### Original Egg Hatch removal on spawn
+
+`full-battle-spawn-status-relics-egg-hatch.mt2f` equips unchanged
+`EggHatchRemoval`, whose ordered effects remove 3 Hatch and add 30 Armor to
+Egg units on birth. Two authored Egg-subtype Train Stewards start with 3 Hatch;
+both native birth phases remove Hatch and finish with 35 Armor after the separate
+original `SpawnWithArmor` relic contributes 5. The native Instant battle wins
+with 55 matched room stages, 18 actions and six EndTurns. Twelve birth records,
+32 isolated birth branches, and 128 serial/parallel search states pass with zero
+capture failures, mismatches, unsupported transitions or pending records. The
+37,006-byte binary has 5,668 unique nodes and SHA-256
+`e4758089f069985953bd7b425ad61e7ca6f524a972d1fb20f04a4117e193a4d4`.
+This carrier has no `OnHatched` trigger; natural Egg transformation remains
+outside this evidence.
+
+```powershell
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-spawn-status-relics-egg-hatch.mt2f
+```
 
 ### Original Pyre-only spawn relics
 

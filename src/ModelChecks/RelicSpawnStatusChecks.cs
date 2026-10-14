@@ -75,6 +75,37 @@ internal static class RelicSpawnStatusChecks
         Parallel.For(0, 32, _ => Require(Serialize(RelicSpawnStatusModel.CharacterAdded(room, 1, 0, false).State) == Serialize(first.State),
             "Relic spawn status parallel branch diverged."));
         Require(Serialize(room) == parent, "Relic spawn status branches mutated their parent.");
+        var hatching = new CombatUnit(1, "hatching", CombatTeam.Player, 2, 20, 20, true, false, false,
+            [new CombatStatus("hatch", 3, hidden: false, displayCategory: "Negative")],
+            statusRegistry: [], statusDictionary: new([], []));
+        var hatchRule = new RelicSpawnStatus(0, true, false,
+            [new CombatStatus("hatch", 3, hidden: false, displayCategory: "Negative")]);
+        var hatchRoom = Room(hatching, Relic(hatchRule, RelicModel.RemoveStatusOnSpawn));
+        string hatchParent = Serialize(hatchRoom);
+        RoomCombatResult hatched = RelicSpawnStatusModel.CharacterAdded(hatchRoom, 1, 0, false);
+        Require(hatched.Supported && hatched.State!.Units[0].Status("hatch") == null &&
+            hatched.State.Context!.BattleRng.Equals(hatchRoom.Context!.BattleRng.Next()) &&
+            hatched.PendingCallbacks.Select(item => item.Kind).SequenceEqual(["OnHatched", "OnStatusEffectChanged"]),
+            "Original spawn removal lost Hatch zero-stack callbacks or RNG order.");
+        Require(Serialize(hatchRoom) == hatchParent, "Spawn removal mutated its parent state.");
+        foreach (bool sourceMatches in new[] { true, false })
+        {
+            CombatUnit sourced = hatching.WithModifiers(new UnitModifiers(2, 0, 0, 1, 1, true, false, [],
+                spawnerMatchesDefinition: sourceMatches));
+            RoomCombatState baseRoom = Room(sourced, Relic(hatchRule, RelicModel.RemoveStatusOnSpawn));
+            var sourceCard = new CardInstanceState(3, "unit", CardModifiers.Empty(), CardModifiers.Empty(), 0, 0, 0, []);
+            var sourceRoom = new RoomCombatState(0, false, baseRoom.Units, [],
+                baseRoom.Context!.WithCardInstances([sourceCard]).WithStatistics(BattleStatistics.Empty().TrackCards([3])));
+            RoomCombatResult removed = RelicSpawnStatusModel.CharacterAdded(sourceRoom, 1, 3, false);
+            Require(removed.Supported && removed.State!.Units[0].Status("hatch") == null &&
+                removed.State.Context!.Statistics!.Value(3, "AnyStatusEffectStacksRemoved") == (sourceMatches ? 3 : 0),
+                $"Spawn removal source={sourceMatches} supported={removed.Supported} stats=" +
+                removed.State?.Context?.Statistics?.Value(3, "AnyStatusEffectStacksRemoved") +
+                " reason=" + removed.UnsupportedReason);
+        }
+        var untouched = RelicSpawnStatusModel.CharacterAdded(Room(actor, Relic(hatchRule, RelicModel.RemoveStatusOnSpawn)), 1, 0, false);
+        Require(untouched.Supported && untouched.State!.Units[0].Status("hatch") == null &&
+            untouched.PendingCallbacks.Count == 0, "Removing an absent Hatch status produced callbacks.");
         Require(!RelicSpawnStatusModel.CharacterAdded(Room(actor, new("bad", "bad", ["RelicEffectAddStatusEffectOnSpawn"])), 1, 0, false).Supported,
             "Missing native effect parameters were guessed.");
         var callbackActor = actor.WithTriggers([new("OnStatusEffectChanged", false, false, true, 1,
@@ -110,10 +141,11 @@ internal static class RelicSpawnStatusChecks
     {
         if (!fixture.TryGetProperty("ModifierScenario", out var scenario) || scenario.GetString() is not
             ("spawn-status-relics" or "spawn-status-relics-clones" or "spawn-status-relics-mixed-cardless-order" or
-                "spawn-status-relics-stealth-waxers" or "spawn-status-relics-team-wide" or "spawn-status-relics-tuned-gear" or "spawn-status-relics-boss-mute" or "spawn-status-relics-combat")) return;
+                "spawn-status-relics-stealth-waxers" or "spawn-status-relics-team-wide" or "spawn-status-relics-tuned-gear" or "spawn-status-relics-egg-hatch" or "spawn-status-relics-boss-mute" or "spawn-status-relics-combat")) return;
         bool stealthWaxers = scenario.GetString() == "spawn-status-relics-stealth-waxers";
         bool teamWide = scenario.GetString() == "spawn-status-relics-team-wide";
         bool tunedGear = scenario.GetString() == "spawn-status-relics-tuned-gear";
+        bool eggHatch = scenario.GetString() == "spawn-status-relics-egg-hatch";
         bool bossMute = scenario.GetString() == "spawn-status-relics-boss-mute";
         bool combatRelics = scenario.GetString() == "spawn-status-relics-combat";
         bool mixedCardlessOrder = scenario.GetString() == "spawn-status-relics-mixed-cardless-order";
@@ -122,7 +154,7 @@ internal static class RelicSpawnStatusChecks
         Require((bossMute ? schema == 156 : tunedGear ? schema == 155 : teamWide ? schema == 144 : stealthWaxers ? schema == 140 : mixedCardlessOrder ? schema == 121 : clones ? schema is 110 or 111 : schema is 109 or 110) && fixture.GetProperty("CaptureFailures").GetInt32() == 0 &&
             fixture.GetProperty("Pending").GetInt32() == 0, "Incomplete relic spawn status native recording.");
         var records = fixture.GetProperty("RelicSpawnStatuses").EnumerateArray().ToArray();
-        int players = 0, enemies = 0, shieldTriggers = 0, shieldSkips = 0, stealthWaxersWitnesses = 0, teamWideWitnesses = 0, tunedGearWitnesses = 0, bossMuteWitnesses = 0, titanSkinWitnesses = 0, burstWitnesses = 0;
+        int players = 0, enemies = 0, shieldTriggers = 0, shieldSkips = 0, stealthWaxersWitnesses = 0, teamWideWitnesses = 0, tunedGearWitnesses = 0, eggHatchWitnesses = 0, bossMuteWitnesses = 0, titanSkinWitnesses = 0, burstWitnesses = 0;
         var turns = new HashSet<int>();
         foreach (var record in records)
         {
@@ -164,6 +196,25 @@ internal static class RelicSpawnStatusChecks
             Require(record.GetProperty("Completed").GetBoolean() && record.GetProperty("Difference").ValueKind == FixtureKind.Null,
                 "Native relic birth observation was incomplete or differed.");
             var relics = before.Context!.Relics!;
+            if (eggHatch)
+            {
+                CombatRelicState owner = relics.Single(relic => relic.AssetKey == "EggHatchRemoval" &&
+                    relic.DataId == "8c8a2a2c-500c-4b77-90fd-0d309b94bb2c");
+                Require(owner.EffectTypes.SequenceEqual([RelicModel.RemoveStatusOnSpawn, RelicModel.AddStatusOnSpawn]) &&
+                    owner.SpawnStatuses?.Count == 2 && owner.SpawnStatuses[0].EffectIndex == 0 &&
+                    owner.SpawnStatuses[0].TargetPlayer && !owner.SpawnStatuses[0].TargetEnemy &&
+                    owner.SpawnStatuses[0].RequiredSubtype == "SubtypesData_Egg" && !owner.SpawnStatuses[0].SubtypeIsNone &&
+                    owner.SpawnStatuses[0].Statuses.Count == 1 && owner.SpawnStatuses[0].Statuses[0].Id == "hatch" &&
+                    owner.SpawnStatuses[0].Statuses[0].Stacks == 3 && owner.SpawnStatuses[1].EffectIndex == 1 &&
+                    owner.SpawnStatuses[1].RequiredSubtype == "SubtypesData_Egg" && !owner.SpawnStatuses[1].SubtypeIsNone &&
+                    owner.SpawnStatuses[1].Statuses.Count == 1 && owner.SpawnStatuses[1].Statuses[0].Id == "armor" &&
+                    owner.SpawnStatuses[1].Statuses[0].Stacks == 30 && owner.SpawnStatuses.All(rule => rule.Conditions.Count == 0),
+                    "Original EggHatchRemoval effect order, team or status payload differs.");
+                CombatUnit prior = before.Units.Single(unit => unit.Id == id);
+                if (prior.Team == CombatTeam.Player && prior.Status("hatch")?.Stacks == 3 &&
+                    actor.Status("hatch") == null && actor.Status("armor")?.Stacks == (prior.Status("armor")?.Stacks ?? 0) + 35)
+                    eggHatchWitnesses++;
+            }
             if (!actor.IsPyre) Require((mixedCardlessOrder
                     ? relics.Any(relic => relic.AssetKey == "PyreHeartSon" && relic.SpawnStatuses?.Count == 1 && relic.CardModifiers?.Count == 1 &&
                         relic.EffectTypes.SequenceEqual([RelicModel.AddStatusOnSpawn, RelicModel.AddTempUpgrade]))
@@ -283,8 +334,10 @@ internal static class RelicSpawnStatusChecks
             else if (actor.Team == CombatTeam.Player)
             {
                 CombatUnit initial = before.Units.Single(unit => unit.Id == id);
-                players++; Require(actor.Status("armor")?.Stacks == Math.Min(9999, (initial.Status("armor")?.Stacks ?? 0) + 5),
-                    "Original armor relic did not add five stacks.");
+                int expectedArmor = eggHatch && initial.Subtypes.Contains("SubtypesData_Egg") &&
+                    initial.Status("hatch")?.Stacks == 3 ? 35 : 5;
+                players++; Require(actor.Status("armor")?.Stacks == Math.Min(9999, (initial.Status("armor")?.Stacks ?? 0) + expectedArmor),
+                    "Original spawn relic Armor stack total differed.");
                 int oldCount = before.Context.Relics!.Single(relic => relic.AssetKey == "FirstUnitGainDamageShield").SpawnStatuses![0].Conditions[0].DurationTriggerCount;
                 int newCount = after.Context!.Relics!.Single(relic => relic.AssetKey == "FirstUnitGainDamageShield").SpawnStatuses![0].Conditions[0].DurationTriggerCount;
                 if (oldCount == 0) { shieldTriggers++; turns.Add(before.Context.QueryFrame!.Turn!.Value); Require(newCount == 1 && actor.Status("damage shield")?.Stacks == 2, "First-unit shield failed."); }
@@ -325,6 +378,7 @@ internal static class RelicSpawnStatusChecks
             (!stealthWaxers || stealthWaxersWitnesses > 0) &&
             (!teamWide || teamWideWitnesses > 0) &&
             (!tunedGear || tunedGearWitnesses > 0) &&
+            (!eggHatch || eggHatchWitnesses > 1) &&
             (!bossMute || bossMuteWitnesses > 0) &&
             (!combatRelics || titanSkinWitnesses == 1 && burstWitnesses == 1) &&
             (clones || shieldTriggers > 1 && turns.Count > 1),
@@ -340,7 +394,7 @@ internal static class RelicSpawnStatusChecks
                 records.Any(record => record.GetProperty("DeferCallbacks").GetBoolean() && record.GetProperty("QueuedAfter").GetArrayLength() > 0),
                 "Native relic birth lacks both settled and deferred queue boundaries.");
         }
-        Console.WriteLine($"NATIVE-RELIC-SPAWN-STATUS-CHECKS PASS: {records.Length} exact birth phases, {players} player/{enemies} enemy births, {shieldTriggers} first-unit triggers/{shieldSkips} skips across {turns.Count} turns, {teamWideWitnesses} team-wide witnesses, {tunedGearWitnesses} TunedGear witnesses, {bossMuteWitnesses} Chicot witnesses, {titanSkinWitnesses} Titan Skin witnesses, {burstWitnesses} Burst witnesses and 32 isolated branches.");
+        Console.WriteLine($"NATIVE-RELIC-SPAWN-STATUS-CHECKS PASS: {records.Length} exact birth phases, {players} player/{enemies} enemy births, {shieldTriggers} first-unit triggers/{shieldSkips} skips across {turns.Count} turns, {teamWideWitnesses} team-wide witnesses, {tunedGearWitnesses} TunedGear witnesses, {eggHatchWitnesses} Egg Hatch witnesses, {bossMuteWitnesses} Chicot witnesses, {titanSkinWitnesses} Titan Skin witnesses, {burstWitnesses} Burst witnesses and 32 isolated branches.");
     }
     private static string Serialize<T>(T value) => JsonSerializer.Serialize(value, ModelJson.Options);
     private static void Require(bool condition, string message) { if (!condition) throw new InvalidDataException(message); }

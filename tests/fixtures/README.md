@@ -1,5 +1,17 @@
 # Native regression fixtures
 
+`full-battle-spawn-status-relics-egg-hatch.mt2f` exercises unchanged
+`EggHatchRemoval` on two authored Egg-subtype units with 3 starting Hatch.
+Each native birth removes all Hatch and gains 30 Armor from that relic, for 35
+total with the separately acquired original +5 Armor relic. Twelve native birth
+phases, 55 combat stages,
+18 actions and six EndTurns match the model; 128 serial/parallel search states
+agree. The muted Instant battle wins with zero capture failures, mismatches,
+unsupported transitions or pending records. The 37,006-byte binary has 5,668
+unique nodes and SHA-256
+`e4758089f069985953bd7b425ad61e7ca6f524a972d1fb20f04a4117e193a4d4`.
+Natural Egg transformation is not covered by this carrier.
+
 `full-battle-mix-unstable-explosion.mt2f` plays unchanged Mixology and its
 Unstable/Frostbite BlastInfusion on a Train Steward. At the first ordinary turn,
 the probe adds 12 original Frostbite stacks so the holder dies while two native
@@ -199,8 +211,8 @@ The default command checks the full curated inventory. For routine changes, run
 the dedicated checks for the new and directly affected scenarios; run the full
 inventory at completed milestones and before delivery.
 
-Current inventory is 318 archives: 287 accepted battles and 31 component
-calibrations. Original relic evidence is 80/224 (35.71%). The Pyre spawn-status
+Current inventory is 319 archives: 288 accepted battles and 31 component
+calibrations. Original relic evidence is 81/224 (36.16%). The Pyre spawn-status
 archive calibrates the unchanged `DantesCandelabra` and `PressurizedBoiler`
 effects. Both relics are acquired before battle, and the game's natural Pyre
 creation adds 2 Titan Skin and 4 Burst in its first recorded birth phase. The

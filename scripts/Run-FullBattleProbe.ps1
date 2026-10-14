@@ -226,6 +226,7 @@ param(
     [switch] $IncantRelics,
     [switch] $SpawnStatusRelics,
     [switch] $OriginalTunedGearRelic,
+    [switch] $OriginalEggHatchRelic,
     [switch] $OriginalChicotRelic,
     [switch] $OriginalSpawnCombatRelics,
     [switch] $OriginalStealthWaxersRelic,
@@ -286,7 +287,11 @@ if ($OriginalChicotRelic -and ($OriginalTunedGearRelic -or $OriginalStealthWaxer
 if ($OriginalSpawnCombatRelics -and ($OriginalChicotRelic -or $OriginalTunedGearRelic -or $OriginalStealthWaxersRelic -or $OriginalTeamSpawnStatusRelic -or $SpawnStatusRelicsClones -or $MixedCardlessRelicOrder)) {
     throw 'OriginalSpawnCombatRelics is an isolated spawn-status scenario.'
 }
+if ($OriginalEggHatchRelic -and ($OriginalSpawnCombatRelics -or $OriginalChicotRelic -or $OriginalTunedGearRelic -or $OriginalStealthWaxersRelic -or $OriginalTeamSpawnStatusRelic -or $SpawnStatusRelicsClones -or $MixedCardlessRelicOrder)) {
+    throw 'OriginalEggHatchRelic is an isolated spawn-status scenario.'
+}
 if ($OriginalTunedGearRelic) { $SpawnStatusRelics = $true; $Policy = 'units-spells-and-junk' }
+if ($OriginalEggHatchRelic) { $SpawnStatusRelics = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalChicotRelic) { $SpawnStatusRelics = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalSpawnCombatRelics) { $SpawnStatusRelics = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalStealthWaxersRelic) { $SpawnStatusRelics = $true; $Policy = 'units-spells-and-junk' }
@@ -536,7 +541,7 @@ if ($Purify) {
 }
 
 if ($SpawnStatusRelics) {
-    $environment['MT2_PROBE_MODIFIERS'] = $(if ($OriginalSpawnCombatRelics) { 'spawn-status-relics-combat' } elseif ($OriginalChicotRelic) { 'spawn-status-relics-boss-mute' } elseif ($OriginalTunedGearRelic) { 'spawn-status-relics-tuned-gear' } elseif ($OriginalTeamSpawnStatusRelic) { 'spawn-status-relics-team-wide' } elseif ($OriginalStealthWaxersRelic) { 'spawn-status-relics-stealth-waxers' } elseif ($SpawnStatusRelicsClones) { 'spawn-status-relics-clones' } else { 'spawn-status-relics' })
+    $environment['MT2_PROBE_MODIFIERS'] = $(if ($OriginalSpawnCombatRelics) { 'spawn-status-relics-combat' } elseif ($OriginalChicotRelic) { 'spawn-status-relics-boss-mute' } elseif ($OriginalTunedGearRelic) { 'spawn-status-relics-tuned-gear' } elseif ($OriginalEggHatchRelic) { 'spawn-status-relics-egg-hatch' } elseif ($OriginalTeamSpawnStatusRelic) { 'spawn-status-relics-team-wide' } elseif ($OriginalStealthWaxersRelic) { 'spawn-status-relics-stealth-waxers' } elseif ($SpawnStatusRelicsClones) { 'spawn-status-relics-clones' } else { 'spawn-status-relics' })
     $environment['MT2_PROBE_STATUS_CALLBACKS'] = '1'
 }
 if ($MixedCardlessRelicOrder) {
@@ -2709,7 +2714,7 @@ if ($SpawnStatusRelics) {
             } elseif ($oldShield.DurationTriggerCount -eq 1 -and $newShield.DurationTriggerCount -eq 1) { $spawnRelicSkips++ }
         } else { $spawnRelicEnemies++ }
     }
-    $expectedSpawnScenario = if ($OriginalSpawnCombatRelics) { 'spawn-status-relics-combat' } elseif ($OriginalChicotRelic) { 'spawn-status-relics-boss-mute' } elseif ($OriginalTunedGearRelic) { 'spawn-status-relics-tuned-gear' } elseif ($OriginalTeamSpawnStatusRelic) { 'spawn-status-relics-team-wide' } elseif ($OriginalStealthWaxersRelic) { 'spawn-status-relics-stealth-waxers' } elseif ($MixedCardlessRelicOrder) { 'spawn-status-relics-mixed-cardless-order' } elseif ($SpawnStatusRelicsClones) { 'spawn-status-relics-clones' } else { 'spawn-status-relics' }
+    $expectedSpawnScenario = if ($OriginalSpawnCombatRelics) { 'spawn-status-relics-combat' } elseif ($OriginalChicotRelic) { 'spawn-status-relics-boss-mute' } elseif ($OriginalTunedGearRelic) { 'spawn-status-relics-tuned-gear' } elseif ($OriginalEggHatchRelic) { 'spawn-status-relics-egg-hatch' } elseif ($OriginalTeamSpawnStatusRelic) { 'spawn-status-relics-team-wide' } elseif ($OriginalStealthWaxersRelic) { 'spawn-status-relics-stealth-waxers' } elseif ($MixedCardlessRelicOrder) { 'spawn-status-relics-mixed-cardless-order' } elseif ($SpawnStatusRelicsClones) { 'spawn-status-relics-clones' } else { 'spawn-status-relics' }
     $expectedSpawnSchema = if ($OriginalChicotRelic) { 156 } elseif ($OriginalTunedGearRelic) { 155 } elseif ($OriginalTeamSpawnStatusRelic) { 144 } elseif ($OriginalStealthWaxersRelic) { 140 } elseif ($MixedCardlessRelicOrder) { 121 } elseif ($SpawnStatusRelicsClones) { 111 } else { 110 }
     $requiredSpawnRelics = @('SpawnWithArmor', 'FirstUnitGainDamageShield', 'FrostbiteOnEnemies')
     if ($MixedCardlessRelicOrder) { $requiredSpawnRelics = @('PyreHeartSon', 'FirstUnitGainDamageShield', 'FrostbiteOnEnemies') }
@@ -2717,6 +2722,7 @@ if ($SpawnStatusRelics) {
     if ($OriginalChicotRelic) { $requiredSpawnRelics += 'BalatroEventChicot' }
     if ($OriginalTeamSpawnStatusRelic) { $requiredSpawnRelics += 'HymnistsApplyValorOnSummon' }
     if ($OriginalTunedGearRelic) { $requiredSpawnRelics += 'TunedGear' }
+    if ($OriginalEggHatchRelic) { $requiredSpawnRelics += 'EggHatchRemoval' }
     if ($OriginalSpawnCombatRelics) { $requiredSpawnRelics += @('DantesCandelabra', 'PressurizedBoiler') }
     $observedSpawnRelics = @($trace.Actions[0].Before.Spawn.Train.Context.Relics | Where-Object { $_.AssetKey -in $requiredSpawnRelics }).Count
     if ($trace.Schema -ne $expectedSpawnSchema -or $trace.ModifierScenario -ne $expectedSpawnScenario -or $births.Count -lt 3 -or
@@ -2726,6 +2732,32 @@ if ($SpawnStatusRelics) {
         @($births | Where-Object { -not $_.Completed -or -not $_.After -or $_.Difference }).Count -ne 0 -or
         $observedSpawnRelics -ne $requiredSpawnRelics.Count) {
         throw 'Native original spawn-status relic coverage is incomplete or failed.'
+    }
+    if ($OriginalEggHatchRelic) {
+        $egg = @($births[0].Before.Context.Relics | Where-Object { $_.AssetKey -eq 'EggHatchRemoval' -and $_.DataId -eq '8c8a2a2c-500c-4b77-90fd-0d309b94bb2c' })
+        if ($egg.Count -ne 1 -or (@($egg[0].EffectTypes) -join ',') -ne 'RelicEffectRemoveStatusEffectOnSpawn,RelicEffectAddStatusEffectOnSpawn' -or
+            $egg[0].SpawnStatuses.Count -ne 2 -or $egg[0].SpawnStatuses[0].Statuses[0].Id -ne 'hatch' -or
+            $egg[0].SpawnStatuses[0].Statuses[0].Stacks -ne 3 -or $egg[0].SpawnStatuses[1].Statuses[0].Id -ne 'armor' -or
+            $egg[0].SpawnStatuses[1].Statuses[0].Stacks -ne 30 -or
+            $egg[0].SpawnStatuses[0].RequiredSubtype -ne 'SubtypesData_Egg' -or
+            $egg[0].SpawnStatuses[1].RequiredSubtype -ne 'SubtypesData_Egg') {
+            throw 'Original EggHatchRemoval effect order or payload is missing.'
+        }
+        $eggWitnesses = 0
+        foreach ($birth in $births) {
+            $beforeActor = @($birth.Before.Units | Where-Object Id -EQ $birth.UnitId)[0]
+            $afterActor = @($birth.After.Units | Where-Object Id -EQ $birth.UnitId)[0]
+            if ($beforeActor.Team -ne 1) { continue }
+            $beforeHatch = @($beforeActor.Statuses | Where-Object Id -EQ 'hatch')
+            $afterHatch = @($afterActor.Statuses | Where-Object Id -EQ 'hatch')
+            $beforeArmor = @($beforeActor.Statuses | Where-Object Id -EQ 'armor')
+            $afterArmor = @($afterActor.Statuses | Where-Object Id -EQ 'armor')
+            $oldArmor = if ($beforeArmor.Count) { [int]$beforeArmor[0].Stacks } else { 0 }
+            if ($beforeHatch.Count -eq 1 -and $beforeHatch[0].Stacks -eq 3 -and $afterHatch.Count -eq 0 -and
+                $afterArmor.Count -eq 1 -and $afterArmor[0].Stacks -eq ($oldArmor + 35)) { $eggWitnesses++ }
+        }
+        if ($eggWitnesses -lt 2) { throw "Original EggHatchRemoval produced only $eggWitnesses complete birth witnesses." }
+        Write-Output "ORIGINAL-EGG-HATCH PASS: $eggWitnesses native births remove Hatch 3 and add Armor 30."
     }
     if ($OriginalChicotRelic) {
         $chicotId = '92d66578-b148-49f8-9880-edb67f8b18de'

@@ -800,7 +800,7 @@ if (args.Length == 2 && args[0] == "--ability-incant-only")
 if (args.Length == 2 && args[0] == "--relic-spawn-status-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
-    if (fixture.RootElement.GetProperty("ModifierScenario").GetString() is not ("spawn-status-relics" or "spawn-status-relics-clones" or "spawn-status-relics-mixed-cardless-order" or "spawn-status-relics-stealth-waxers" or "spawn-status-relics-team-wide" or "spawn-status-relics-tuned-gear" or "spawn-status-relics-boss-mute" or "spawn-status-relics-combat"))
+    if (fixture.RootElement.GetProperty("ModifierScenario").GetString() is not ("spawn-status-relics" or "spawn-status-relics-clones" or "spawn-status-relics-mixed-cardless-order" or "spawn-status-relics-stealth-waxers" or "spawn-status-relics-team-wide" or "spawn-status-relics-tuned-gear" or "spawn-status-relics-egg-hatch" or "spawn-status-relics-boss-mute" or "spawn-status-relics-combat"))
         throw new InvalidDataException("The requested fixture has no native relic spawn status observations.");
     RelicSpawnStatusChecks.Native(fixture.RootElement);
     return;

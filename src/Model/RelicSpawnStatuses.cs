@@ -64,7 +64,8 @@ namespace MonsterTrain2Poju.Model
         internal static string? Validate(CombatRelicState relic)
         {
             int[] indices = relic.EffectTypes.Select((type, index) => (type, index))
-                .Where(item => item.type == RelicModel.AddStatusOnSpawn || item.type == RelicModel.AddStatusOnTeamSpawn)
+                .Where(item => item.type == RelicModel.AddStatusOnSpawn || item.type == RelicModel.RemoveStatusOnSpawn ||
+                    item.type == RelicModel.AddStatusOnTeamSpawn)
                 .Select(item => item.index).ToArray();
             if (indices.Length == 0) return relic.SpawnStatuses?.Count > 0 ? "Unexpected relic spawn status definitions." : null;
             if (relic.IsCovenant == null || relic.DisallowedInPlacementPhase == null || relic.SpawnStatuses == null ||
@@ -73,7 +74,10 @@ namespace MonsterTrain2Poju.Model
             foreach (RelicSpawnStatus rule in relic.SpawnStatuses)
             {
                 bool teamEffect = relic.EffectTypes[rule.EffectIndex] == RelicModel.AddStatusOnTeamSpawn;
+                bool removal = relic.EffectTypes[rule.EffectIndex] == RelicModel.RemoveStatusOnSpawn;
                 if (rule.ApplyToTeam != teamEffect) return "Relic spawn status target scope does not match its native effect.";
+                if (removal && (rule.HpPercentAsStacks != 0 || rule.RequireGraft || rule.CharacterAssetKeys.Count != 0))
+                    return "Status-removal relic contains add-only parameters.";
                 if (!rule.SubtypeIsNone && string.IsNullOrEmpty(rule.RequiredSubtype) ||
                     rule.ExcludedSubtypes.Any(string.IsNullOrEmpty) || rule.CharacterAssetKeys.Any(string.IsNullOrEmpty) ||
                     rule.Conditions.Any(condition => condition.Comparator < 0 || condition.Comparator > 7))
@@ -144,7 +148,8 @@ namespace MonsterTrain2Poju.Model
                         continue;
                     }
                     bool applyToTeam = relic.EffectTypes[effectIndex] == RelicModel.AddStatusOnTeamSpawn;
-                    if (relic.EffectTypes[effectIndex] != RelicModel.AddStatusOnSpawn && !applyToTeam) continue;
+                    bool remove = relic.EffectTypes[effectIndex] == RelicModel.RemoveStatusOnSpawn;
+                    if (relic.EffectTypes[effectIndex] != RelicModel.AddStatusOnSpawn && !applyToTeam && !remove) continue;
                     int ruleIndex = relic.SpawnStatuses!.ToList().FindIndex(rule => rule.EffectIndex == effectIndex);
                     RelicSpawnStatus rule = relic.SpawnStatuses![ruleIndex];
                     RelicConditionEvaluation conditionEvaluation = RelicConditionModel.Evaluate(state.Context!, rule.Conditions);
@@ -155,10 +160,15 @@ namespace MonsterTrain2Poju.Model
                     if (actor == null) return Fail("Relic birth removal requires a retained native actor.");
                     if (rule.CharacterAssetKeys.Count > 0 && !rule.CharacterAssetKeys.Contains(actor.AssetKey)) continue;
                     if (fromCardId > 0 && actor.Modifiers == null) return Fail("Relic birth requires source-definition matching metadata.");
-                    bool fromCard = fromCardId > 0 && actor.Modifiers!.SpawnerMatchesDefinition && actor.Status("cardless") == null;
+                    bool fromCard = fromCardId > 0 && actor.Modifiers!.SpawnerMatchesDefinition &&
+                        (remove || actor.Status("cardless") == null);
+                    bool teamMatches = remove
+                        ? actor.Team == CombatTeam.Player && rule.TargetPlayer && !rule.TargetEnemy ||
+                          actor.Team == CombatTeam.Enemy && rule.TargetEnemy && !rule.TargetPlayer
+                        : actor.Team == CombatTeam.Player && rule.TargetPlayer || actor.Team == CombatTeam.Enemy && rule.TargetEnemy;
                     if (fromCard && rule.SourceKind == "NoCard" || !fromCard && rule.SourceKind == "OnlyFromCard" ||
-                        actor.Team == CombatTeam.Player && !rule.TargetPlayer || actor.Team == CombatTeam.Enemy && !rule.TargetEnemy ||
-                        !rule.SubtypeIsPyre && actor.Status("immune") != null || actor.Status("purify") != null || actor.Status("untouchable") != null)
+                        !teamMatches || !rule.SubtypeIsPyre && actor.Status("immune") != null ||
+                        actor.Status("purify") != null || !remove && actor.Status("untouchable") != null)
                         continue;
                     if (rule.RequireGraft) return Fail("Relic birth requires native graft definition and source-card graft metadata.");
                     if (rule.ExcludedSubtypes.Any(actor.Subtypes.Contains) || rule.RestrictedRoom.HasValue && rule.RestrictedRoom != state.RoomIndex ||
@@ -168,7 +178,7 @@ namespace MonsterTrain2Poju.Model
                     int stacks = rule.HpPercentAsStacks > 0 ? (int)Math.Floor((float)actor.MaxHealth * ((float)rule.HpPercentAsStacks / 100f)) :
                         Math.Max(1, rule.Statuses[draw.Value].Stacks);
                     // Selection is before the required-subtype test, including a one-element list.
-                    bool matches = rule.SubtypeIsNone ? actor.Team == CombatTeam.Enemy || !actor.IsPyre :
+                    bool matches = rule.SubtypeIsNone ? remove || actor.Team == CombatTeam.Enemy || !actor.IsPyre :
                         actor.Subtypes.Contains(rule.RequiredSubtype!) && (actor.Team == CombatTeam.Enemy || (rule.SubtypeIsPyre == actor.IsPyre));
                     if (!matches) continue;
                     if (!onlyCovenants && !DrainYield()) return failed!;
@@ -189,8 +199,11 @@ namespace MonsterTrain2Poju.Model
                     else recipients = [actor];
                     foreach (CombatUnit recipient in recipients)
                     {
-                        RoomCombatResult added = StatusApplicationModel.ApplyRetained(state, recipient.Id,
-                            rule.Statuses[draw.Value].WithStacks(stacks), 0, overrideImmunity: rule.SubtypeIsPyre);
+                        RoomCombatResult added = remove
+                            ? StatusRemovalModel.Remove(state, recipient.Id, rule.Statuses[draw.Value].Id, stacks,
+                                fromCard ? fromCardId : 0)
+                            : StatusApplicationModel.ApplyRetained(state, recipient.Id,
+                                rule.Statuses[draw.Value].WithStacks(stacks), 0, overrideImmunity: rule.SubtypeIsPyre);
                         if (!added.Supported) return added;
                         state = added.State!; callbacks.AddRange(added.PendingCallbacks); events.AddRange(added.Events);
                     }

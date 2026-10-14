@@ -120,6 +120,7 @@ $fixtureNames = @('full-battle-steward-once.mt2f', 'full-battle-no-cards.mt2f', 
     'full-battle-spawn-status-relics-tuned-gear.mt2f',
     'full-battle-spawn-status-relics-boss-mute.mt2f',
     'full-battle-spawn-status-relics-pyre.mt2f',
+    'full-battle-spawn-status-relics-egg-hatch.mt2f',
     'full-battle-original-mageblade-magnitude.mt2f',
     'full-battle-cardless-relic-upgrades.mt2f',
     'full-battle-energy-effects.mt2f',
@@ -281,7 +282,8 @@ foreach ($fixturePath in $focusedTeamSpawnStatusFixtures) {
 }
 
 $focusedSpawnStatusFixtures = @($fixtures | Where-Object {
-    (Split-Path -Leaf $_) -in @('full-battle-spawn-status-relics-boss-mute.mt2f', 'full-battle-spawn-status-relics-pyre.mt2f')
+    (Split-Path -Leaf $_) -in @('full-battle-spawn-status-relics-boss-mute.mt2f',
+        'full-battle-spawn-status-relics-pyre.mt2f', 'full-battle-spawn-status-relics-egg-hatch.mt2f')
 })
 foreach ($fixturePath in $focusedSpawnStatusFixtures) {
     foreach ($mode in @('--relic-spawn-status-only', '--battle-search-only')) {

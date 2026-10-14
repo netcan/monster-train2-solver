@@ -151,6 +151,8 @@ namespace MonsterTrain2Poju.Model
             int old = before.RegisteredStatus(id)?.Stacks ?? 0;
             int count = after.RegisteredStatus(id)?.Stacks ?? 0;
             if (old <= count) return;
+            if (id == "hatch" && count == 0)
+                queue.Add(new RoomCombatModel.QueuedCharacterTrigger(room, after, "OnHatched"));
             queue.Add(new RoomCombatModel.QueuedCharacterTrigger(room, after, "OnStatusEffectChanged",
                 paramInt: count, paramInt2: count - old, paramString: id));
             if (id == "horde") queue.Add(new RoomCombatModel.QueuedCharacterTrigger(room, after, "OnTroopRemoved",
