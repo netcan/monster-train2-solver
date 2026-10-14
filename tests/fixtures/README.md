@@ -211,8 +211,14 @@ The default command checks the full curated inventory. For routine changes, run
 the dedicated checks for the new and directly affected scenarios; run the full
 inventory at completed milestones and before delivery.
 
-Current inventory is 329 archives: 298 accepted battles and 31 component
-calibrations. Original relic evidence is 83/224 (37.05%). The binary-only
+Current inventory is 331 archives: 300 accepted battles and 31 component
+calibrations. Original relic evidence is 85/224 (37.95%). The binary-only
+`full-battle-original-tinkermaster-mix.mt2f` and
+`full-battle-original-progress-pacemaker-mix.mt2f` archives acquire unchanged
+original Mix relics. The former expands two-choice drafts to three; the latter
+adds a two-choice follow-up once per turn. Both have two original Mixology
+casts, native draft witnesses, exact action/turn replay and bounded
+serial/parallel search agreement. The binary-only
 `full-battle-original-smelt-ember*.mt2f` archives acquire unchanged original
 `EmberFoundryCrucible`. Single cost-2 and zero-cost smelts and a four-card bulk
 smelt verify one additional Ember per consumed card; all three native battles,

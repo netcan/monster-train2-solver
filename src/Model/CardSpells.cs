@@ -250,11 +250,12 @@ namespace MonsterTrain2Poju.Model
         {
             string? selectionError = CardRecursionModel.ValidateSelections(effects, recursionSelections);
             if (selectionError != null) return UnsupportedTrain(selectionError);
-            if (mixSelections?.Any(selection => selection.MixNumber != 0 || selection.ChoiceIndex < 0 ||
+            if (mixSelections?.Any(selection => selection.MixNumber < 0 || selection.ChoiceIndex < 0 ||
                     selection.EffectIndex < 0 || selection.EffectIndex >= effects.Count ||
                     effects[selection.EffectIndex].Type != "Mix") == true ||
-                mixSelections?.GroupBy(selection => selection.EffectIndex).Any(group => group.Count() != 1) == true)
-                return UnsupportedTrain("Mix requires one captured draft choice per effect.");
+                mixSelections?.GroupBy(selection => (selection.EffectIndex, selection.MixNumber))
+                    .Any(group => group.Count() != 1) == true)
+                return UnsupportedTrain("Mix requires one captured draft choice per effect and repetition.");
             string? error = Validate(source, roomIndex, effects, targetId, fullTrain, selfUnitId, targetSpawnPointIndex, sourceCardId);
             if (error != null) return UnsupportedTrain(error);
             int sourceAttackUnitId = selfUnitId > 0 ? selfUnitId : targetId;
@@ -326,12 +327,19 @@ namespace MonsterTrain2Poju.Model
                 if (effect.Type == "Mix")
                 {
                     if (selected.Preview) continue;
-                    ElixirMixSelection? choice = mixSelections?.FirstOrDefault(selection => selection.EffectIndex == index);
-                    CardGenerationResult mixed = ElixirMixModel.Apply(state.Context!, definitions?.Elixirs,
-                        effect.Value, choice?.ChoiceIndex ?? -1);
-                    if (!mixed.Supported) return UnsupportedTrain(mixed.UnsupportedReason!);
-                    state = WithContext(state, mixed.Context!);
-                    piles = state.Context!.OtherPiles?.ToArray();
+                    ElixirMixPlan plan = ElixirMixModel.Plan(state.Context!, effect.Value);
+                    if (!plan.Supported) return UnsupportedTrain(plan.UnsupportedReason!);
+                    state = WithContext(state, plan.Context!);
+                    for (int mixNumber = 0; mixNumber < plan.Amounts.Count; mixNumber++)
+                    {
+                        ElixirMixSelection? choice = mixSelections?.FirstOrDefault(selection =>
+                            selection.EffectIndex == index && selection.MixNumber == mixNumber);
+                        CardGenerationResult mixed = ElixirMixModel.Apply(state.Context!, definitions?.Elixirs,
+                            plan.Amounts[mixNumber], choice?.ChoiceIndex ?? -1);
+                        if (!mixed.Supported) return UnsupportedTrain(mixed.UnsupportedReason!);
+                        state = WithContext(state, mixed.Context!);
+                        piles = state.Context!.OtherPiles?.ToArray();
+                    }
                     continue;
                 }
                 if (effect.Type == "GenerateUpgradedCopy")

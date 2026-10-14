@@ -68,6 +68,8 @@ param(
     [switch] $CardRecursionUpgradeFilterChoose,
     [switch] $CardRecursionUpgradeReplacementChoose,
     [switch] $Mix,
+    [switch] $OriginalTinkermasterMix,
+    [switch] $OriginalProgressPacemakerMix,
     [switch] $MixAlternate,
     [switch] $MixUnstableExplosion,
     [ValidateSet('00', '01', '10', '11')]
@@ -450,6 +452,7 @@ if ($MixUnstableExplosion -and $MixChoices -and $MixChoices -ne '01') { throw 'U
 if ($MixUnstableExplosion) { $MixChoices = '01' }
 if ($MixChoices) { $Mix = $true }
 if ($Mix) { $Policy = 'units-spells-and-junk'; $BranchCardMasks = $true }
+if ($OriginalTinkermasterMix -or $OriginalProgressPacemakerMix) { $Policy = 'units-spells-and-junk'; $BranchCardMasks = $true }
 if ($SpawnOrStatus) { $Policy = 'units-and-junk' }
 if ($AbilityTeleport) { $Policy = 'units-and-junk'; $PhysicalSpawnPoints = $true }
 if ($damagePerHpModes.Count -gt 0) { $Policy = 'units-spells-and-junk' }
@@ -613,6 +616,8 @@ if ($TransferAttack) { $environment['MT2_PROBE_MODIFIERS'] = 'transfer-attack' }
 if ($BrainTransfer) { $environment['MT2_PROBE_MODIFIERS'] = 'brain-transfer' }
 if ($FrostChanneling) { $environment['MT2_PROBE_MODIFIERS'] = 'frost-channeling' }
 if ($Mix) { $environment['MT2_PROBE_MODIFIERS'] = 'card-effect-mix' }
+if ($OriginalTinkermasterMix) { $environment['MT2_PROBE_MODIFIERS'] = 'original-tinkermaster-mix' }
+if ($OriginalProgressPacemakerMix) { $environment['MT2_PROBE_MODIFIERS'] = 'original-progress-pacemaker-mix' }
 if ($Mix) { $environment['MT2_PROBE_MIX_CHOICES'] = if ($MixChoices) { $MixChoices } else { '00' } }
 if ($MixUnstableExplosion) { $environment['MT2_PROBE_MIX_UNSTABLE_EXPLOSION'] = '1' }
 if ($TransferAttackAbility) { $environment['MT2_PROBE_MODIFIERS'] = 'transfer-attack-ability' }
@@ -844,6 +849,31 @@ if ($OriginalSmeltEmberRelic -or $OriginalSmeltEmberRelicZero -or $OriginalSmelt
         $after.QueryFrame.ForgePoints -ne ($before.QueryFrame.ForgePoints + $cost) -or
         $after.QueryFrame.Energy -ne ($before.QueryFrame.Energy - 1 + $cost + $consumed)) {
         throw 'Original EmberFoundryCrucible did not grant its expected per-card smelt Ember in native combat.'
+    }
+}
+if ($OriginalTinkermasterMix -or $OriginalProgressPacemakerMix) {
+    $progress = [bool] $OriginalProgressPacemakerMix
+    $expectedScenario = if ($progress) { 'original-progress-pacemaker-mix' } else { 'original-tinkermaster-mix' }
+    $expectedId = if ($progress) { '4446fd0c-f7c3-4a9d-96c3-bd12e4426a76' } else { 'db2193eb-a476-4cc4-9a26-2d0e35f46b74' }
+    $draftLines = @(Select-String -LiteralPath $unityLog -Pattern 'MIX-DRAFT index=')
+    $offerCounts = @($draftLines | ForEach-Object {
+        if ($_.Line -match ' choices=(\S+) selected=') { $Matches[1].Split(',').Length } else { 0 }
+    })
+    $mixActions = @($trace.Actions | Where-Object { @($_.Action.MixSelections).Count -gt 0 })
+    $owner = if ($mixActions.Count -gt 0) {
+        @($mixActions[0].Before.Spawn.Train.Context.Relics | Where-Object DataId -EQ $expectedId)
+    } else { @() }
+    $effect = if ($owner.Count -eq 1) { @($owner[0].ResourceEffects)[0] } else { $null }
+    if ($trace.ModifierScenario -ne $expectedScenario -or
+        -not (Select-String -LiteralPath $unityLog -Pattern "ORIGINAL-MIX-RELIC-ACQUIRED unchanged $(if ($progress) { 'ProgressPacemaker' } else { 'TinkermasterTools' })" -Quiet) -or
+        $mixActions.Count -ne 2 -or $owner.Count -ne 1 -or $effect -eq $null -or
+        $effect.ParamInt -ne $(if ($progress) { 0 } else { 1 }) -or
+        $effect.ParamInt2 -ne $(if ($progress) { 1 } else { 0 }) -or
+        $effect.ParamMinInt -ne $(if ($progress) { 2 } else { 0 }) -or
+        $draftLines.Count -ne $(if ($progress) { 6 } else { 4 }) -or
+        @($offerCounts | Where-Object { $_ -ne $(if ($progress) { 2 } else { 3 }) }).Count -gt 0 -or
+        @($mixActions | Where-Object { @($_.Action.MixSelections).Count -ne $(if ($progress) { 3 } else { 2 }) }).Count -gt 0) {
+        throw 'Original Mix relic did not produce the expected native draft amounts and repetitions.'
     }
 }
 if ($RemoveAllStatusEffects -and ($trace.Schema -ne 164 -or $trace.ModifierScenario -ne 'remove-all-status-effects' -or

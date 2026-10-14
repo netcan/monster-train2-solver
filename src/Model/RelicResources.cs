@@ -50,6 +50,7 @@ namespace MonsterTrain2Poju.Model
         public string Type { get; }
         public int ParamInt { get; }
         public int ParamInt2 { get; }
+        public int ParamMinInt { get; }
         public int Amount { get; }
         public bool CanApplyInPreviewMode { get; }
         public string? RequiredMutatorId { get; }
@@ -61,9 +62,10 @@ namespace MonsterTrain2Poju.Model
         public RelicResourceEffect(int effectIndex, string type, int paramInt, int paramInt2, int amount,
             bool canApplyInPreviewMode, string? requiredMutatorId = null, IReadOnlyList<RelicConditionState>? conditions = null,
             float? drawValue = null, int? drawMutationOrder = null,
-            float? capacityValue = null, int? capacityMutationOrder = null)
+            float? capacityValue = null, int? capacityMutationOrder = null, int paramMinInt = 0)
         {
             EffectIndex = effectIndex; Type = type; ParamInt = paramInt; ParamInt2 = paramInt2; Amount = amount;
+            ParamMinInt = paramMinInt;
             CanApplyInPreviewMode = canApplyInPreviewMode; RequiredMutatorId = requiredMutatorId;
             Conditions = Array.AsReadOnly((conditions ?? Array.Empty<RelicConditionState>()).ToArray());
             DrawValue = drawValue; DrawMutationOrder = drawMutationOrder;
@@ -71,7 +73,7 @@ namespace MonsterTrain2Poju.Model
         }
         internal RelicResourceEffect WithConditions(IReadOnlyList<RelicConditionState> conditions) =>
             new RelicResourceEffect(EffectIndex, Type, ParamInt, ParamInt2, Amount, CanApplyInPreviewMode,
-                RequiredMutatorId, conditions, DrawValue, DrawMutationOrder, CapacityValue, CapacityMutationOrder);
+                RequiredMutatorId, conditions, DrawValue, DrawMutationOrder, CapacityValue, CapacityMutationOrder, ParamMinInt);
     }
 
     public sealed class RelicResourceEvent
@@ -119,9 +121,10 @@ namespace MonsterTrain2Poju.Model
         public const string FloorCapacity = "RelicEffectChangeFloorCapacity";
         public const string MoonPhaseEnergy = "RelicEffectModifyEnergyOnMoonPhase";
         public const string AdditionalSmeltEmber = "RelicEffectAdditionalSmeltEmber";
+        public const string AdjustMixAmount = "RelicEffectAdjustMixAmount";
         public static bool IsEffect(string type) => type == Energy || type == DeploymentEnergy || type == Draw ||
             type == PyreAttack || type == PyreHealth || type == FloorCapacity || type == MoonPhaseEnergy ||
-            type == AdditionalSmeltEmber;
+            type == AdditionalSmeltEmber || type == AdjustMixAmount;
 
         internal static string? Validate(CombatRelicState relic)
         {
@@ -140,6 +143,8 @@ namespace MonsterTrain2Poju.Model
                     return "Moon-phase energy amount or phase mask differs from its original parameters.";
                 if (rule.Type == AdditionalSmeltEmber && rule.Amount != rule.ParamInt)
                     return "Additional smelt Ember amount differs from its original parameter.";
+                if (rule.Type == AdjustMixAmount && rule.Amount != rule.ParamInt)
+                    return "Mix adjustment differs from its original parameter.";
                 if (rule.Type == Draw)
                 {
                     if (!rule.DrawValue.HasValue || rule.DrawValue.Value != (float)rule.ParamInt ||

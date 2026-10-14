@@ -12,6 +12,10 @@ namespace MonsterTrain2Poju.Probe
     internal static class MixScenario
     {
         internal const string Name = "card-effect-mix";
+        internal const string TinkermasterName = "original-tinkermaster-mix";
+        internal const string ProgressName = "original-progress-pacemaker-mix";
+        private const string TinkermasterId = "db2193eb-a476-4cc4-9a26-2d0e35f46b74";
+        private const string ProgressId = "4446fd0c-f7c3-4a9d-96c3-bd12e4426a76";
         private const string MixologyId = "9582724d-2d5e-4349-a642-9720bbb833e9";
         private const string BlastInfusionId = "3cf25a9b-daa1-42cd-8174-eb0f59cd590f";
         private static ManualLogSource? logger;
@@ -25,9 +29,40 @@ namespace MonsterTrain2Poju.Probe
         private static bool seededPoison;
         private static IReadOnlyList<ElixirMixSelection> pendingSelections = Array.Empty<ElixirMixSelection>();
         private static int pendingSelectionIndex;
+        internal static bool Acquired { get; private set; }
+        internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") is Name or TinkermasterName or ProgressName;
+        internal static bool TinkermasterMode => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == TinkermasterName;
+        internal static bool ProgressMode => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == ProgressName;
+
+        internal static void AcquireBeforeBattle(AllGameManagers managers, ManualLogSource log)
+        {
+            if (Acquired) return;
+            SaveManager save = managers.GetSaveManager();
+            if (save.PreviewMode || save.GetGameSequence() == SaveData.GameSequence.InBattle)
+                throw new InvalidOperationException("Original Mix relic must be acquired before battle setup.");
+            string id = TinkermasterMode ? TinkermasterId : ProgressId;
+            string key = TinkermasterMode ? "TinkermasterTools" : "ProgressPacemaker";
+            CollectableRelicData relic = save.GetAllGameData().GetAllCollectableRelicData().Single(item => item.GetID() == id);
+            RelicEffectData effect = relic.GetEffects().Single();
+            if (relic.name != key || relic.DisallowInDeploymentPhase ||
+                effect.GetEffectClassName() != "RelicEffectAdjustMixAmount" ||
+                effect.GetParamInt() != (TinkermasterMode ? 1 : 0) ||
+                effect.GetParamInt2() != (TinkermasterMode ? 0 : 1) ||
+                effect.GetEffectConditions().Count != (TinkermasterMode ? 0 : 1) ||
+                save.GetCollectedRelics().Any(item => item.GetRelicDataID() == id))
+                throw new InvalidOperationException("Original Mix relic definition or acquisition changed.");
+            save.AddRelic(relic);
+            Acquired = true;
+            log.LogInfo("ORIGINAL-MIX-RELIC-ACQUIRED unchanged " + key + " amount=" + effect.GetParamInt() +
+                " extraMixes=" + effect.GetParamInt2() + " followupAmount=" + effect.GetParamMinInt());
+        }
 
         internal static void Prepare(AllGameManagers managers, ManualLogSource log)
         {
+            if ((TinkermasterMode || ProgressMode) && (!Acquired ||
+                managers.GetSaveManager().GetCollectedRelics().Count(item => item.GetRelicDataID() ==
+                    (TinkermasterMode ? TinkermasterId : ProgressId)) != 1))
+                throw new InvalidOperationException("Original Mix relic is missing or duplicated at battle setup.");
             logger = log;
             played = false;
             playedOpeningElixirId = 0;
@@ -67,9 +102,11 @@ namespace MonsterTrain2Poju.Probe
                 if (source != null && state.Energy >= 2)
                 {
                     played = true;
-                    return new PlayCardAction(sourceId, 0, mixSelections: new[] {
-                        new ElixirMixSelection(0, 0, firstOpeningChoice),
-                        new ElixirMixSelection(1, 0, secondOpeningChoice) });
+                    var selections = new List<ElixirMixSelection> {
+                        new ElixirMixSelection(0, 0, firstOpeningChoice) };
+                    if (ProgressMode) selections.Add(new ElixirMixSelection(0, 1, 0));
+                    selections.Add(new ElixirMixSelection(1, 0, secondOpeningChoice));
+                    return new PlayCardAction(sourceId, 0, mixSelections: selections);
                 }
             }
             if (playedOpeningElixirId == 0 && firstOpeningChoice == 0 && secondOpeningChoice == 1)

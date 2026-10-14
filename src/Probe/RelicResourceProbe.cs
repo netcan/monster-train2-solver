@@ -137,11 +137,13 @@ namespace MonsterTrain2Poju.Probe
             }
             else if (effect is RelicEffectAdditionalSmeltEmber)
                 amount = (int)AccessTools.Field(effect.GetType(), "_additionalSmeltEmber").GetValue(effect);
+            else if (effect is RelicEffectAdjustMixAmount)
+                amount = (int)AccessTools.Field(effect.GetType(), "additionalAmount").GetValue(effect);
             else
                 amount = (int)AccessTools.Field(effect.GetType(), "energyChange").GetValue(effect);
             return new RelicResourceEffect(index, type, data.GetParamInt(), data.GetParamInt2(), amount,
                 effect.CanApplyInPreviewMode, required?.GetID(), RelicCardModifierProbe.Conditions(effect), value, registration,
-                capacityValue, capacityRegistration);
+                capacityValue, capacityRegistration, data.GetParamMinInt());
         }
 
         internal static ResourceSnapshot Capture()

@@ -946,36 +946,53 @@ namespace MonsterTrain2Poju.Model
                 }
                 CardActionEffect effect = rule.Effects[effectIndex];
                 ElixirCatalog catalog = source.PlayRules.Elixirs;
-                CardToken? current = currentContext.Cards.Hand.FirstOrDefault(card =>
-                    catalog.Recipes.Any(recipe => recipe.Creation.DataId == card.DataId));
-                if (current == null && currentContext.Cards.Hand.Count >= currentContext.MaxHandSize)
-                {
-                    foreach (PlayCardAction branch in Expand(effectIndex + 1, currentContext)) yield return branch;
-                    yield break;
-                }
-                ElixirDraftOptions draft = current == null
-                    ? ElixirMixModel.NewDraft(catalog, currentContext.BattleRng, effect.Value,
-                        currentContext.MixState!.LastCardDataId)
-                    : ElixirMixModel.UpgradeDraft(catalog.Recipes.First(recipe => recipe.Creation.DataId == current.DataId),
-                        currentContext.BattleRng, effect.Value);
-                if (draft.Offers.Count == 0)
+                ElixirMixPlan plan = ElixirMixModel.Plan(currentContext, effect.Value);
+                if (!plan.Supported)
                 {
                     yield return new PlayCardAction(action.CardInstanceId, action.RoomIndex, action.PlayerPosition,
                         action.TargetUnitId, action.ActivatorUnitId, action.TargetSpawnPointIndex,
                         action.RecursionSelections, choices);
                     yield break;
                 }
-                for (int index = 0; index < draft.Offers.Count; index++)
+                foreach (PlayCardAction branch in ExpandMix(0, plan.Context!)) yield return branch;
+
+                IEnumerable<PlayCardAction> ExpandMix(int mixNumber, CombatContext mixedContext)
                 {
-                    CardGenerationResult applied = ElixirMixModel.Apply(currentContext, catalog, effect.Value, index);
-                    choices.Add(new ElixirMixSelection(effectIndex, 0, index));
-                    if (applied.Supported)
-                        foreach (PlayCardAction branch in Expand(effectIndex + 1, applied.Context!)) yield return branch;
-                    else
-                        yield return new PlayCardAction(action.CardInstanceId, action.RoomIndex, action.PlayerPosition,
+                    if (mixNumber == plan.Amounts.Count)
+                    {
+                        foreach (PlayCardAction branch in Expand(effectIndex + 1, mixedContext)) yield return branch;
+                        yield break;
+                    }
+                    CardToken? current = mixedContext.Cards.Hand.FirstOrDefault(card =>
+                        catalog.Recipes.Any(recipe => recipe.Creation.DataId == card.DataId));
+                    if (current == null && mixedContext.Cards.Hand.Count >= mixedContext.MaxHandSize)
+                    {
+                        foreach (PlayCardAction branch in ExpandMix(mixNumber + 1, mixedContext)) yield return branch;
+                        yield break;
+                    }
+                    int amount = plan.Amounts[mixNumber];
+                    ElixirDraftOptions draft = current == null
+                        ? ElixirMixModel.NewDraft(catalog, mixedContext.BattleRng, amount,
+                            mixedContext.MixState!.LastCardDataId)
+                        : ElixirMixModel.UpgradeDraft(catalog.Recipes.First(recipe => recipe.Creation.DataId == current.DataId),
+                            mixedContext.BattleRng, amount);
+                    if (draft.Offers.Count == 0)
+                    {
+                        foreach (PlayCardAction branch in ExpandMix(mixNumber + 1, mixedContext)) yield return branch;
+                        yield break;
+                    }
+                    for (int choiceIndex = 0; choiceIndex < draft.Offers.Count; choiceIndex++)
+                    {
+                        CardGenerationResult applied = ElixirMixModel.Apply(mixedContext, catalog, amount, choiceIndex);
+                        choices.Add(new ElixirMixSelection(effectIndex, mixNumber, choiceIndex));
+                        if (applied.Supported)
+                            foreach (PlayCardAction branch in ExpandMix(mixNumber + 1, applied.Context!)) yield return branch;
+                        else
+                            yield return new PlayCardAction(action.CardInstanceId, action.RoomIndex, action.PlayerPosition,
                             action.TargetUnitId, action.ActivatorUnitId, action.TargetSpawnPointIndex,
                             action.RecursionSelections, choices);
-                    choices.RemoveAt(choices.Count - 1);
+                        choices.RemoveAt(choices.Count - 1);
+                    }
                 }
             }
         }

@@ -67,15 +67,71 @@ namespace MonsterTrain2Poju.Model
         { EffectIndex = effectIndex; MixNumber = mixNumber; ChoiceIndex = choiceIndex; }
     }
 
+    public sealed class ElixirMixPlan
+    {
+        public CombatContext? Context { get; }
+        public IReadOnlyList<int> Amounts { get; }
+        public string? UnsupportedReason { get; }
+        public bool Supported => Context != null;
+        internal ElixirMixPlan(CombatContext? context, IReadOnlyList<int> amounts, string? unsupportedReason = null)
+        { Context = context; Amounts = Array.AsReadOnly(amounts.ToArray()); UnsupportedReason = unsupportedReason; }
+    }
+
     public static class ElixirMixModel
     {
+        public static ElixirMixPlan Plan(CombatContext source, int baseAmount)
+        {
+            if (baseAmount < 1) return new ElixirMixPlan(null, Array.Empty<int>(), "Mix requires a positive base choice count.");
+            if (source.Relics?.Any(relic => relic.EffectTypes.Contains(RelicResourceModel.AdjustMixAmount)) != true)
+                return new ElixirMixPlan(source, new[] { baseAmount });
+            string? error = RelicModel.Validate(source);
+            if (error != null) return new ElixirMixPlan(null, Array.Empty<int>(), error);
+            CombatContext context = source;
+            int count = 1;
+            foreach (int relicIndex in Enumerable.Range(0, context.Relics!.Count))
+            {
+                CombatRelicState owner = context.Relics[relicIndex];
+                for (int ruleIndex = 0; ruleIndex < (owner.ResourceEffects?.Count ?? 0); ruleIndex++)
+                {
+                    RelicResourceEffect rule = context.Relics[relicIndex].ResourceEffects![ruleIndex];
+                    if (rule.Type != RelicResourceModel.AdjustMixAmount) continue;
+                    RelicConditionEvaluation evaluation = RelicConditionModel.Evaluate(context, rule.Conditions);
+                    if (!evaluation.Supported) return new ElixirMixPlan(null, Array.Empty<int>(), evaluation.UnsupportedReason);
+                    context = evaluation.Context;
+                    if (!evaluation.Passed) continue;
+                    count = unchecked(count + rule.ParamInt2);
+                    RelicConditionRecord record = RelicConditionModel.Record(context, rule.Conditions);
+                    if (!record.Supported) return new ElixirMixPlan(null, Array.Empty<int>(), record.UnsupportedReason);
+                    context = record.Context;
+                    RelicResourceEffect[] rules = context.Relics![relicIndex].ResourceEffects!.ToArray();
+                    rules[ruleIndex] = rule.WithConditions(record.Conditions);
+                    CombatRelicState[] owners = context.Relics.ToArray();
+                    owners[relicIndex] = owners[relicIndex].WithResourceEffects(rules);
+                    context = context.WithRelics(owners);
+                }
+            }
+            RelicResourceEffect[] adjustments = context.Relics!.SelectMany(relic =>
+                relic.ResourceEffects ?? Array.Empty<RelicResourceEffect>())
+                .Where(rule => rule.Type == RelicResourceModel.AdjustMixAmount).ToArray();
+            var amounts = new int[Math.Max(0, count)];
+            for (int mixNumber = 0; mixNumber < amounts.Length; mixNumber++)
+            {
+                int amount = mixNumber == 0 ? baseAmount : 0;
+                if (mixNumber > 0)
+                    foreach (RelicResourceEffect rule in adjustments)
+                        if (rule.ParamMinInt != 0) amount = rule.ParamMinInt;
+                foreach (RelicResourceEffect rule in adjustments)
+                    amount = unchecked(amount + rule.Amount);
+                amounts[mixNumber] = Math.Max(amount, 1);
+            }
+            return new ElixirMixPlan(context, amounts);
+        }
+
         public static CardGenerationResult Apply(CombatContext source, ElixirCatalog? catalog, int amount, int choiceIndex)
         {
             if (catalog == null || source.MixState == null || source.OtherPiles == null || source.CardInstances == null ||
                 source.CardRegistry == null || amount < 1)
                 return Unsupported("Mix requires the original elixir catalog, selection state and complete card piles.");
-            if (source.Relics?.Any(relic => relic.EffectTypes.Contains("RelicEffectAdjustMixAmount")) == true)
-                return Unsupported("Relic-adjusted Mix amounts and repetitions are not modeled.");
             CardToken? current = source.Cards.Hand.FirstOrDefault(card =>
                 catalog.Recipes.Any(recipe => recipe.Creation.DataId == card.DataId));
             if (current == null && source.Cards.Hand.Count >= source.MaxHandSize)

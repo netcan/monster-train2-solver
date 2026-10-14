@@ -261,6 +261,8 @@ namespace MonsterTrain2Poju.Probe
                         OriginalCardAttackRelicScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && ChooseDiscardScenario.OriginalSmeltRelicMode && !ChooseDiscardScenario.RelicAcquired)
                         ChooseDiscardScenario.AcquireRelicBeforeBattle(managers!, log);
+                    if (fullBattle && (MixScenario.TinkermasterMode || MixScenario.ProgressMode) && !MixScenario.Acquired)
+                        MixScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalRoomEntryStatusRelicScenario.Enabled && !OriginalRoomEntryStatusRelicScenario.Acquired)
                         OriginalRoomEntryStatusRelicScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && CorruptionScenario.RelicTrigger && !CorruptionScenario.RelicAcquired)
@@ -671,7 +673,7 @@ namespace MonsterTrain2Poju.Probe
                 numericModifiersPrepared = true;
                 CardEffectRecursionScenario.Prepare(managers, log);
             }
-            if (fullBattle && !numericModifiersPrepared && modifierScenario == MixScenario.Name)
+            if (fullBattle && !numericModifiersPrepared && MixScenario.Enabled)
             {
                 if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Mix fixture must start on deployment turn.");
                 numericModifiersPrepared = true;
@@ -1200,7 +1202,7 @@ namespace MonsterTrain2Poju.Probe
                 if (StatusUpgradeScenario.Enabled) pendingPlay = StatusUpgradeScenario.Choose(decision);
                 if (modifierScenario is "card-effect-recursion" or "card-effect-recursion-choice" or "card-effect-recursion-choose-to-hand" or "card-effect-recursion-filter-choice" or "card-effect-recursion-discard-choice" or "card-effect-recursion-upgrade" or "card-effect-recursion-upgrade-hand" or "card-effect-recursion-upgrade-choice" or "card-effect-recursion-upgrade-filter-choice" or "card-effect-recursion-upgrade-replacement-choice")
                     pendingPlay = CardEffectRecursionScenario.Choose(decision);
-                if (modifierScenario == MixScenario.Name) pendingPlay = MixScenario.Choose(decision);
+                if (MixScenario.Enabled) pendingPlay = MixScenario.Choose(decision);
                 if (ChooseDiscardScenario.Enabled) pendingPlay = ChooseDiscardScenario.Choose(decision);
                 if (modifierScenario == "typed-draw") pendingPlay = TypedDrawScenario.Choose(decision);
                 if (modifierScenario == DamagePerHpScenario.Name || modifierScenario == DamagePerHpScenario.ArmorName ||
@@ -1365,10 +1367,10 @@ namespace MonsterTrain2Poju.Probe
                 (modifierScenario == "remove-all-status-effects" && CardEffectRemoveAllStatusScenario.ConsumeScenarioActionMark(action)) ||
                 (modifierScenario is "card-effect-recursion" or "card-effect-recursion-choice" or "card-effect-recursion-choose-to-hand" or "card-effect-recursion-filter-choice" or "card-effect-recursion-discard-choice" or "card-effect-recursion-upgrade" or "card-effect-recursion-upgrade-hand" or "card-effect-recursion-upgrade-choice" or "card-effect-recursion-upgrade-filter-choice" or "card-effect-recursion-upgrade-replacement-choice" &&
                     CardEffectRecursionScenario.IsScenarioPrelude(action)) ||
-                (modifierScenario == MixScenario.Name && MixScenario.IsScenarioPrelude(action)) ||
+                (MixScenario.Enabled && MixScenario.IsScenarioPrelude(action)) ||
                 (ChooseDiscardScenario.Enabled && ChooseDiscardScenario.IsScenarioPrelude(action));
             PreviewSchedulingProbe.Observe("Play:" + action.CardInstanceId);
-            if (modifierScenario == MixScenario.Name) MixScenario.Expect(action);
+            if (MixScenario.Enabled) MixScenario.Expect(action);
             if (action.ActivatorUnitId > 0)
             {
                 CharacterState actor = FullBattleTrace.Active!.KnownUnits.Single(unit => FullBattleTrace.Active.UnitId(unit) == action.ActivatorUnitId);

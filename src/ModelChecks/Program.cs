@@ -14,6 +14,12 @@ if (args.Length == 2 && args[0] == "--mix-catalog-only")
     MixCatalogChecks.Native(fixture.RootElement);
     return;
 }
+if (args.Length == 2 && args[0] == "--original-mix-relic-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    OriginalMixRelicChecks.Native(fixture.RootElement);
+    return;
+}
 
 if (args.Length == 2 && args[0] == "--damage-by-units-killed-only")
 {

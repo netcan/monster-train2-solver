@@ -1,12 +1,23 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-15): 329 binary archives, including 298
+Current accepted inventory (2026-10-15): 331 binary archives, including 300
 full battles and 31 component calibrations. Unchanged original relic evidence
-covers 83/224 catalog entries (37.05%); see
+covers 85/224 catalog entries (37.95%); see
 [the owner evidence table](tests/fixtures/relic-coverage.md). Whole-battle
 coverage and the optimal solver remain in progress.
 
-The latest original-relic witness acquires unchanged `EmberFoundryCrucible`
+The latest original Mix witnesses acquire unchanged `TinkermasterTools` and
+`ProgressPacemaker` before battle in separate scenes. The former raises both
+original Mixology drafts from two choices to three. The latter adds a
+two-choice follow-up mix once per turn: each of two Mixology plays in different
+turns yields the ordered draft sequence (new, follow-up upgrade, ordinary
+upgrade), while its condition is triggered after each play and reset by the
+next turn. Both complete native battles match 60-62 stages without capture
+failures, mismatches, unsupported actions or pending records. Their bounded
+serial/parallel searches agree. Other relic/card combinations and Mix variants
+remain open.
+
+The preceding original-relic witness acquires unchanged `EmberFoundryCrucible`
 before battle. Original Starter Scrap smelts cost-2 and zero-cost cards in
 separate full battles; original Foundry Line consumes four cards in a third.
 The native Ember gain is the printed cost plus one per consumed card, including
@@ -15,7 +26,7 @@ failures, mismatches, unsupported actions or pending records. Their recorded
 actions and bounded serial/parallel searches agree. Other smelt modifiers and
 conditional relic variants remain open.
 
-The preceding original-relic witness acquires unchanged `DamageOnCorruptPlay`
+An earlier original-relic witness acquires unchanged `DamageOnCorruptPlay`
 before battle. During the player action phase, original Unearthed Remains raises
 room Corruption 0 to 1 while two enemies are present. The relic's two ordered
 RandomInRoom callbacks each add one Corrupt Poison stack; Echoes of the Past
