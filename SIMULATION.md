@@ -21,7 +21,9 @@ The 23,022-byte binary has 3,293 unique nodes and SHA-256
 The 128-node serial/four-worker search agrees on best score, path and replayed
 state. Serial search visits 128 nodes while parallel search visits 117 because
 its root budgets are allocated independently; their node counts need not match.
-The root still reports four unsupported action attempts, and both searches hit
+Original `ScrapMetal` is Unplayable, so its four room-play attempts are illegal
+and no longer appear as unsupported root actions. A deeper branch that keeps
+its Persistent trait still has an unsupported EndTurn, and both searches hit
 their horizon or node limit, so this does not establish global optimality.
 Upgrade-added Refine, room modifiers and additional-smelt Ember relics remain
 unmodeled.

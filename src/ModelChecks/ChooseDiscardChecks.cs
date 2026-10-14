@@ -104,8 +104,17 @@ internal static class ChooseDiscardChecks
             CardInstanceState original = input.FindCard(scrap.InstanceId)!;
             Require(original.MaskDescriptor?.BaseCost == 0 &&
                 original.MaskDescriptor.BaseTraits.Single(trait => trait.RuntimeType == "CardTraitRefine").ParamInt == 3 &&
+                original.MaskDescriptor.BaseTraits.Any(trait => trait.RuntimeType == "CardTraitUnplayable") &&
                 original.Permanent.Upgrades.Count == 0 && original.Temporary.Upgrades.Count == 0,
                 "The original unupgraded ScrapMetal Refine=3 witness changed.");
+            BattleActionEnumeration frontier = BattleActionModel.EnumerateActions(before);
+            Require(before.PlayRules.Rooms.All(room => BattleActionModel.PlayCard(before,
+                    new PlayCardAction(scrap.InstanceId, room.RoomIndex)).Rejection == ActionRejection.Illegal) &&
+                frontier.UnsupportedAttempts.All(attempt =>
+                    attempt.Action?.CardInstanceId != scrap.InstanceId) &&
+                frontier.SupportedActions.All(candidate =>
+                    candidate.CardInstanceId != scrap.InstanceId),
+                "Original Unplayable ScrapMetal leaked into the supported or unmodeled action frontier.");
             Require(before.ExternalInteractions.Contains("CardTraitPersistent Discard callback") &&
                 before.ExternalInteractions.Contains("CardTraitPersistent discard routing") &&
                 BattleTurnModel.EndTurn(before).Supported == false &&

@@ -335,6 +335,15 @@ namespace MonsterTrain2Poju.Model
                 if (playingInstance == null) return Unsupported("Missing card instance modifiers.");
                 rule = CardModifierModel.Resolve(rule, playingInstance);
             }
+            if (rule.ExternalInteractions.Contains("Card traits") && playingInstance?.MaskDescriptor != null)
+            {
+                CardUpgradeMaskCard mask;
+                try { mask = CardBranchMaskModel.Resolve(playingInstance); }
+                catch (InvalidOperationException exception)
+                { return Unsupported("Cannot resolve card play traits: " + exception.Message); }
+                if (mask.Traits.Contains("CardTraitUnplayable"))
+                    return Illegal("The card has an Unplayable trait.");
+            }
             if (rule.ExternalInteractions.Count > 0) return Unsupported(string.Join("; ", rule.ExternalInteractions));
             if (rule.CostType != "Default" && rule.CostType != "ConsumeRemainingEnergy")
                 return Unsupported("Unmodeled card cost type " + rule.CostType);
