@@ -1,6 +1,6 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-14): 292 binary archives, including 261
+Current accepted inventory (2026-10-14): 293 binary archives, including 262
 full battles and 31 component calibrations. Unchanged original relic evidence
 covers 78/224 catalog entries (34.82%); see
 [the owner evidence table](tests/fixtures/relic-coverage.md). Whole-battle
