@@ -16,6 +16,13 @@ if (args.Length == 2 && args[0] == "--room-corruption-only")
     return;
 }
 
+if (args.Length == 2 && args[0] == "--permanent-corruption-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    RoomCorruptionChecks.NativePermanent(fixture.RootElement);
+    return;
+}
+
 if (args.Length == 1 && args[0] == "--scorch-pure")
 {
     ScorchStatusChecks.Run();

@@ -19,6 +19,7 @@ namespace MonsterTrain2Poju.Probe
             "CardEffectDamage", "CardEffectDamagePerSourceAttack", "CardEffectDamagePerHp", "CardEffectDraw", "CardEffectDrawAdditionalNextTurn",
             "CardEffectRemoveAllStatusEffects",
             "CardEffectAdjustRoomCapacity", "CardEffectAdjustRoomMaxCorruption", "CardEffectAdjustCorruption",
+            "CardEffectAddPermanentCorruption",
             "CardEffectAdjustForgePoints", "CardEffectDiscardHand", "CardEffectRandomDiscard", "CardEffectAddBattleCard",
             "CardEffectHeal", "CardEffectHealAndOverheal", "CardEffectHealTrain", "CardEffectSacrifice", "CardEffectKill", "CardEffectRecursion", "CardEffectBuffDamage", "CardEffectDebuffDamage",
             "CardEffectBuffMaxHealth", "CardEffectDebuffMaxHealth", "CardEffectAddStatusEffect", "CardEffectMultiplyStatusEffect",
@@ -282,6 +283,7 @@ namespace MonsterTrain2Poju.Probe
                 effect.GetEffectStateName() == "CardEffectAdjustRoomCapacity" ? "AdjustCapacity" :
                 effect.GetEffectStateName() == "CardEffectAdjustRoomMaxCorruption" ? "AdjustMaxCorruption" :
                 effect.GetEffectStateName() == "CardEffectAdjustCorruption" ? "AdjustCorruption" :
+                effect.GetEffectStateName() == "CardEffectAddPermanentCorruption" ? "AddPermanentCorruption" :
                 effect.GetEffectStateName() == "CardEffectDraw" ? "Draw" :
                 effect.GetEffectStateName() == "CardEffectDrawType" ? "DrawType" :
                 effect.GetEffectStateName() == "CardEffectAddTempCardUpgradeToNextDrawnCard" ? "ScheduleNextDrawUpgrade" :

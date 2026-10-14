@@ -1,10 +1,29 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-14): 286 binary archives, including 255
+Current accepted inventory (2026-10-14): 287 binary archives, including 256
 full battles and 31 component calibrations. Unchanged original relic evidence
 covers 78/224 catalog entries (34.82%); see
 [the owner evidence table](tests/fixtures/relic-coverage.md). Whole-battle
 coverage and the optimal solver remain in progress.
+
+### Original Eternal Kinstone permanent corruption
+
+`full-battle-permanent-corruption.mt2f` plays the unchanged `EternalKinstone`
+in room 0. Its native effect first raises the permanent corruption floor from
+0 to 1, then requests one current corruption, which also rises from 0 to 1.
+The model follows `CardEffectAddPermanentCorruption` and `RoomState` ordering,
+including the maximum clamp on the permanent floor and the existing guard for
+unmodeled corruption-added callbacks. The muted Instant battle wins with 22
+matched actions, seven EndTurns, and zero capture failures, mismatches,
+unsupported transitions or pending records. Search replays all 22 decisions
+and agrees between serial and parallel workers. The 33,316-byte binary has
+5,446 unique nodes and SHA-256
+`ec996b45d5dfd0d59432c06b7616f5e6d44e6de11f8e62d97675335b74cd404d`.
+
+```powershell
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-permanent-corruption.mt2f
+dotnet run --project src/ModelChecks -c Release -- --room-corruption-pure
+```
 
 ### Original Soul Siphon and Scorch
 

@@ -43,12 +43,25 @@ internal static class RoomCorruptionChecks
         RoomCorruptionResult beyondMax = RoomCorruptionModel.Apply(source, 0, Effect("AdjustCorruption", 8, true));
         Require(beyondMax.Supported && Room(beyondMax.Context!).Corruption == 10 && Room(beyondMax.Context!).MaxCorruption == 4,
             "Fixed corruption addition was incorrectly capped by the maximum.");
+        RoomCorruptionResult permanent = RoomCorruptionModel.Apply(source, 0, Effect("AddPermanentCorruption", 1));
+        Require(permanent.Supported && Room(permanent.Context!).PermanentCorruption == 2 &&
+            Room(permanent.Context!).Corruption == 3 && Room(permanent.Context!).MaxCorruption == 4,
+            "Permanent corruption did not update its floor before adding one current corruption.");
+        RoomCorruptionResult cappedPermanent = RoomCorruptionModel.Apply(Train(2, 2, 2), 0,
+            Effect("AddPermanentCorruption", 3));
+        Require(cappedPermanent.Supported && Room(cappedPermanent.Context!).PermanentCorruption == 2 &&
+            Room(cappedPermanent.Context!).Corruption == 3,
+            "Permanent corruption exceeded the native room maximum.");
         var callback = new CombatRelicState("callback", "callback", ["RelicEffectDrawOnCorruptionAdded"]);
         RoomCorruptionResult rejected = RoomCorruptionModel.Apply(Train(0, 4, relic: callback), 0,
             Effect("AdjustCorruption", 1, true));
         Require(!rejected.Supported && rejected.UnsupportedReason!.Contains("relic callbacks", StringComparison.Ordinal) &&
             JsonSerializer.Serialize(source) == parent,
             "Unmodeled corruption callback was accepted or a parent branch changed.");
+        RoomCorruptionResult rejectedPermanent = RoomCorruptionModel.Apply(Train(0, 4, relic: callback), 0,
+            Effect("AddPermanentCorruption", 1));
+        Require(!rejectedPermanent.Supported && rejectedPermanent.UnsupportedReason!.Contains("relic callbacks", StringComparison.Ordinal),
+            "Permanent corruption skipped the native corruption-added callback guard.");
         string expected = JsonSerializer.Serialize(paired.State);
         Parallel.For(0, 16, _ => Require(JsonSerializer.Serialize(CardSpellModel.Apply(source, 0,
             [Effect("AdjustMaxCorruption", 1), Effect("AdjustCorruption", 1, true)], 0).State) == expected,
@@ -107,6 +120,39 @@ internal static class RoomCorruptionChecks
                 "Original corruption action differs from the native replay: " + difference);
         }
         Console.WriteLine("NATIVE-ROOM-CORRUPTION-CHECKS PASS: ordered increase and corruption-scaled removal in a complete battle.");
+    }
+
+    internal static void NativePermanent(FixtureValue fixture)
+    {
+        Require(fixture.GetProperty("Schema").GetInt32() == 103 &&
+            fixture.GetProperty("ModifierScenario").GetString() == "permanent-corruption" &&
+            fixture.GetProperty("NativeWon").GetBoolean() &&
+            fixture.GetProperty("CaptureFailures").GetInt32() == 0 &&
+            fixture.GetProperty("Mismatches").GetInt32() == 0 &&
+            fixture.GetProperty("Unsupported").GetInt32() == 0 &&
+            fixture.GetProperty("Pending").GetInt32() == 0,
+            "Native Eternal Kinstone battle did not finish with a complete match.");
+        FixtureValue[] actions = fixture.GetProperty("Actions").EnumerateArray()
+            .Where(record => record.GetProperty("ScenarioAction").GetBoolean()).ToArray();
+        Require(actions.Length == 1, "Expected one original Eternal Kinstone action.");
+        BattleTurnState before = actions[0].GetProperty("Before").Deserialize<BattleTurnState>()!;
+        BattleTurnState actual = actions[0].GetProperty("Actual").Deserialize<BattleTurnState>()!;
+        PlayCardAction action = actions[0].GetProperty("Action").Deserialize<PlayCardAction>()!;
+        CardPlayRule rule = before.PlayRules!.Cards.Single(card => card.DataId == "c354dd2c-0087-4eae-82d9-d4ab17b15f19");
+        RoomCapacityState oldRoom = before.Spawn.Train.Context!.RoomCapacities!.Single(room => room.RoomIndex == 0);
+        RoomCapacityState newRoom = actual.Spawn.Train.Context!.RoomCapacities!.Single(room => room.RoomIndex == 0);
+        BattleActionResult predicted = BattleActionModel.PlayCard(before, action);
+        string? difference = predicted.State == null ? predicted.Reason :
+            ModelJson.Difference(BattleTurnChecks.Comparable(predicted.State), BattleTurnChecks.Comparable(actual));
+        Require(before.Spawn.Train.Context.FindCard(action.CardInstanceId)?.DataId == rule.DataId &&
+            rule.Effects.Count == 1 && rule.Effects[0].Type == "AddPermanentCorruption" &&
+            rule.Effects[0].Value == 1 && action.RoomIndex == 0 &&
+            newRoom.MaxCorruption == oldRoom.MaxCorruption &&
+            newRoom.PermanentCorruption == Math.Min(oldRoom.PermanentCorruption!.Value + 1, oldRoom.MaxCorruption!.Value) &&
+            newRoom.Corruption == Math.Max(oldRoom.Corruption!.Value + 1, newRoom.PermanentCorruption!.Value) &&
+            predicted.Supported && difference == null,
+            "Original Eternal Kinstone differs from the native replay: " + difference);
+        Console.WriteLine("NATIVE-PERMANENT-CORRUPTION-CHECKS PASS: original room floor and current corruption in a complete battle.");
     }
 
     private static void Require(bool condition, string message)

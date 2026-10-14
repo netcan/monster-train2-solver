@@ -694,7 +694,8 @@ namespace MonsterTrain2Poju.Model
                     state = WithContext(state, changed.Context!);
                     continue;
                 }
-                if (effect.Type == "AdjustMaxCorruption" || effect.Type == "AdjustCorruption")
+                if (effect.Type == "AdjustMaxCorruption" || effect.Type == "AdjustCorruption" ||
+                    effect.Type == "AddPermanentCorruption")
                 {
                     RoomCorruptionResult changed = RoomCorruptionModel.Apply(state, collectionRoom, effect);
                     if (!changed.Supported) return UnsupportedTrain(changed.UnsupportedReason!);
@@ -1507,7 +1508,8 @@ namespace MonsterTrain2Poju.Model
                     if (capacityError != null) return capacityError;
                     continue;
                 }
-                if (effect.Type == "AdjustMaxCorruption" || effect.Type == "AdjustCorruption")
+                if (effect.Type == "AdjustMaxCorruption" || effect.Type == "AdjustCorruption" ||
+                    effect.Type == "AddPermanentCorruption")
                 {
                     string? corruptionError = RoomCorruptionModel.Validate(source.Context, effect);
                     if (corruptionError != null) return corruptionError;
@@ -1655,7 +1657,8 @@ namespace MonsterTrain2Poju.Model
             if (effect.Type == "RewardGoldPerDragonHoard") return effect.Value > 0;
             if (effect.Type == "AdjustCapacity") return !preview && !bossDead && RoomCapacityModel.Test(room, effect);
             if (effect.Type == "AdjustMaxCorruption") return !preview && !bossDead && RoomCorruptionModel.Test(room, effect);
-            if (effect.Type == "AdjustCorruption") return RoomCorruptionModel.Test(room, effect);
+            if (effect.Type == "AdjustCorruption" || effect.Type == "AddPermanentCorruption")
+                return RoomCorruptionModel.Test(room, effect);
             if (effect.Type == "AttachRoomCapacity") return !preview && !bossDead && RoomCapacityModel.TestAttachment(room, effect);
             if (effect.Type == ForgePointsModel.Effect) return ForgePointsModel.Test(pyreAlive ?? context?.EnergyState?.PyreAlive);
             if (EnergyModel.IsEffect(effect.Type)) return !preview && !bossDead && EnergyModel.Test(context!, effect.Type);

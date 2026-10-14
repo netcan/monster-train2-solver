@@ -24,7 +24,8 @@ namespace MonsterTrain2Poju.Model
         public static string? Validate(CombatContext? context, CardActionEffect effect)
         {
             if (context?.RoomCapacities == null) return "Corruption requires captured room state.";
-            if (effect.Type != "AdjustMaxCorruption" && effect.Type != "AdjustCorruption")
+            if (effect.Type != "AdjustMaxCorruption" && effect.Type != "AdjustCorruption" &&
+                effect.Type != "AddPermanentCorruption")
                 return "Unknown corruption effect.";
             if (effect.Type == "AdjustCorruption" && !effect.CorruptionAdd.HasValue)
                 return "Missing corruption add/remove mode.";
@@ -32,6 +33,8 @@ namespace MonsterTrain2Poju.Model
                 return "Unsupported corruption target mode.";
             if (effect.Type == "AdjustMaxCorruption" && effect.Target == "Tower")
                 return "Maximum-corruption adjustment requires a selected room.";
+            if (effect.Type == "AddPermanentCorruption" && effect.Target != "Room")
+                return "Permanent corruption requires a selected room.";
             if (effect.Range != null) return "Corruption effects use fixed integer parameters.";
             if (context.RoomCapacities.Any(room => !room.Corruption.HasValue || !room.MaxCorruption.HasValue ||
                 !room.PermanentCorruption.HasValue || room.Corruption < 0 || room.MaxCorruption < 1 || room.PermanentCorruption < 0))
@@ -64,8 +67,17 @@ namespace MonsterTrain2Poju.Model
                 if (effect.Type == "AdjustMaxCorruption") nextMaximum = Math.Max(1, unchecked(maximum + effect.Value));
                 else
                 {
-                    int amount = effect.Value < 0 ? effect.CorruptionAdd == true ? Math.Max(0, maximum - current) : current : effect.Value;
-                    int requested = effect.CorruptionAdd == true ? unchecked(current + amount) : unchecked(current - amount);
+                    int requested;
+                    if (effect.Type == "AddPermanentCorruption")
+                    {
+                        permanent = Math.Min(unchecked(permanent + effect.Value), maximum);
+                        requested = unchecked(current + 1);
+                    }
+                    else
+                    {
+                        int amount = effect.Value < 0 ? effect.CorruptionAdd == true ? Math.Max(0, maximum - current) : current : effect.Value;
+                        requested = effect.CorruptionAdd == true ? unchecked(current + amount) : unchecked(current - amount);
+                    }
                     if (requested > current)
                     {
                         if (combatRoom.Units.Any(unit => unit.Triggers.Any(trigger => trigger.Kind == "CorruptionAdded")))
