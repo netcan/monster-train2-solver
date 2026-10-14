@@ -73,11 +73,8 @@ namespace MonsterTrain2Poju.Model
             Stats, Statuses, RemoveOnDiscard, Unique, ExcludeFromClones, UnhealedHealth, DamageBuff, ExternalInteractions,
             RestrictSizeToRoomCapacity, MagicPowerTraitScalingOnly, CloneDamageBase, CloneHealBase, cardId, upgradeIndex, TriggerUpgrades, AbilityUpgrade, DoNotReplaceExistingAbility, MaskMetadata,
             CopyRemoveOnDiscard, CopyUnique, CopyExcludeFromClones, Lifecycle, SharedReferenceId);
-        internal CardUpgradeModifier WithScaledStats(int damage, int health) => new CardUpgradeModifier(DataId, AssetKey,
-            new CardStatModifier(damage, health, Stats.Cost, Stats.Heal, Stats.Size, Stats.XCost, Stats.EquipmentLimit, Stats.UpgradeSlotCount),
-            Statuses, RemoveOnDiscard, Unique, ExcludeFromClones, UnhealedHealth, DamageBuff, ExternalInteractions,
-            RestrictSizeToRoomCapacity, MagicPowerTraitScalingOnly, CloneDamageBase, CloneHealBase, EquipmentSourceCardId, EquipmentSourceUpgradeIndex, TriggerUpgrades, AbilityUpgrade, DoNotReplaceExistingAbility, MaskMetadata,
-            CopyRemoveOnDiscard, CopyUnique, CopyExcludeFromClones, Lifecycle, SharedReferenceId);
+        internal CardUpgradeModifier WithScaledStats(int damage, int health) => WithStats(
+            new CardStatModifier(damage, health, Stats.Cost, Stats.Heal, Stats.Size, Stats.XCost, Stats.EquipmentLimit, Stats.UpgradeSlotCount));
         internal CardUpgradeModifier WithStats(CardStatModifier stats) => new CardUpgradeModifier(DataId, AssetKey,
             stats, Statuses, RemoveOnDiscard, Unique, ExcludeFromClones, UnhealedHealth, DamageBuff, ExternalInteractions,
             RestrictSizeToRoomCapacity, MagicPowerTraitScalingOnly, CloneDamageBase, CloneHealBase, EquipmentSourceCardId, EquipmentSourceUpgradeIndex, TriggerUpgrades, AbilityUpgrade, DoNotReplaceExistingAbility, MaskMetadata,
@@ -442,7 +439,8 @@ namespace MonsterTrain2Poju.Model
                 damagePerHpLastAttacker: effect.DamagePerHpLastAttacker,
                 damagePerHpIncludeArmor: effect.DamagePerHpIncludeArmor,
                 roomAttachment: effect.RoomAttachment, recursion: effect.Recursion,
-                removeHalfStatusEffects: effect.RemoveHalfStatusEffects, overheal: effect.Overheal);
+                removeHalfStatusEffects: effect.RemoveHalfStatusEffects, overheal: effect.Overheal,
+                corruptionAdd: effect.CorruptionAdd);
 
             int ResolveValue(CardActionEffect effect, int value) => effect.Type == "Damage" || effect.Type == "Heal" || effect.Type == "HealOverheal"
                 ? UpgradedStat(UpgradedStat(value, effect.Type == "HealOverheal" ? "Heal" : effect.Type, true, instance.Permanent),

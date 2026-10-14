@@ -29,6 +29,12 @@ internal static class UnitUpgradeScalingChecks
         Require(scaled.Supported && scaled.Upgrade!.Stats.Damage == 9 && scaled.Upgrade.Stats.Health == 4 &&
             scaled.Upgrade.Stats.Cost == -1 && scaled.Upgrade.UnhealedHealth == 3 && scaled.Context!.Statistics!.TrackedCards.SequenceEqual([1, 2]),
             "Mixed traits, signed bonuses, source numeric modifiers, untouched upgrade fields or membership refresh differ.");
+        var lifecycle = new CardLifecycleUpgrade(new("upgrade", upgrade.Stats, [], false, false, false, false),
+            "upgrade", false, false, [], [], false, [], [], []);
+        UnitUpgradeScalingResult recorded = UnitUpgradeScalingModel.Apply(context, 1, upgrade.WithLifecycle(lifecycle));
+        Require(recorded.Supported && recorded.Upgrade!.Lifecycle?.Values.Stats.Damage == 9 &&
+            recorded.Upgrade.Lifecycle.Values.Stats.Health == 4 && recorded.Upgrade.Stats.Damage == 9,
+            "Scaled upgrade values diverged from its card lifecycle record.");
         Require(UnitUpgradeScalingModel.Apply(context, 1, upgrade, "OnSpawn").Upgrade!.Stats.Health == 4 &&
             UnitUpgradeScalingModel.Apply(context, 1, upgrade, "OnHeal").Upgrade!.Stats.Damage == 7 &&
             UnitUpgradeScalingModel.Apply(context, 1, upgrade, "OnHeal").Upgrade!.Stats.Health == 2,
