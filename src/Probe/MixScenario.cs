@@ -17,7 +17,8 @@ namespace MonsterTrain2Poju.Probe
         private static int sourceId;
         private static bool played;
         private static int drafts;
-        private static bool alternateOpening;
+        private static int firstOpeningChoice;
+        private static int secondOpeningChoice;
         private static IReadOnlyList<ElixirMixSelection> pendingSelections = Array.Empty<ElixirMixSelection>();
         private static int pendingSelectionIndex;
 
@@ -26,7 +27,11 @@ namespace MonsterTrain2Poju.Probe
             logger = log;
             played = false;
             drafts = 0;
-            alternateOpening = Environment.GetEnvironmentVariable("MT2_PROBE_MIX_ALTERNATE") == "1";
+            string opening = Environment.GetEnvironmentVariable("MT2_PROBE_MIX_CHOICES") ?? "00";
+            if (opening.Length != 2 || opening.Any(choice => choice != '0' && choice != '1'))
+                throw new InvalidOperationException("Mix opening choices must contain two binary indices.");
+            firstOpeningChoice = opening[0] - '0';
+            secondOpeningChoice = opening[1] - '0';
             pendingSelections = Array.Empty<ElixirMixSelection>();
             pendingSelectionIndex = 0;
             CardManager cards = managers.GetCardManager()!;
@@ -52,9 +57,9 @@ namespace MonsterTrain2Poju.Probe
                 if (source != null && state.Energy >= 2)
                 {
                     played = true;
-                    int choice = alternateOpening ? 1 : 0;
                     return new PlayCardAction(sourceId, 0, mixSelections: new[] {
-                        new ElixirMixSelection(0, 0, choice), new ElixirMixSelection(1, 0, choice) });
+                        new ElixirMixSelection(0, 0, firstOpeningChoice),
+                        new ElixirMixSelection(1, 0, secondOpeningChoice) });
                 }
             }
             return BattleActionModel.ChooseUnitSpellAndJunkPlay(state);

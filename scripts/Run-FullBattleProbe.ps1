@@ -62,6 +62,8 @@ param(
     [switch] $CardRecursionUpgradeReplacementChoose,
     [switch] $Mix,
     [switch] $MixAlternate,
+    [ValidateSet('00', '01', '10', '11')]
+    [string] $MixChoices,
     [switch] $HandUpgrades,
     [switch] $TargetedHandUpgrades,
     [switch] $PermanentConsumeHandUpgrades,
@@ -406,7 +408,9 @@ if ($ConditionalPyreDamage) { $Policy = 'units-spells-and-junk' }
 if ($SoulSiphon) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($StatusUpgrade) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($CardRecursion -or $CardRecursionDiscard -or $CardRecursionChoose -or $CardRecursionChooseToHand -or $CardRecursionChooseFilter -or $CardRecursionUpgrade -or $CardRecursionUpgradeToHand -or $CardRecursionUpgradeChoose -or $CardRecursionUpgradeFilterChoose -or $CardRecursionUpgradeReplacementChoose) { $Policy = 'units-spells-and-junk'; $BranchCardMasks = $true }
-if ($MixAlternate) { $Mix = $true }
+if ($MixAlternate -and $MixChoices) { throw 'Choose either -MixAlternate or -MixChoices.' }
+if ($MixAlternate) { $MixChoices = '11' }
+if ($MixChoices) { $Mix = $true }
 if ($Mix) { $Policy = 'units-spells-and-junk'; $BranchCardMasks = $true }
 if ($SpawnOrStatus) { $Policy = 'units-and-junk' }
 if ($AbilityTeleport) { $Policy = 'units-and-junk'; $PhysicalSpawnPoints = $true }
@@ -567,7 +571,7 @@ if ($TransferAttack) { $environment['MT2_PROBE_MODIFIERS'] = 'transfer-attack' }
 if ($BrainTransfer) { $environment['MT2_PROBE_MODIFIERS'] = 'brain-transfer' }
 if ($FrostChanneling) { $environment['MT2_PROBE_MODIFIERS'] = 'frost-channeling' }
 if ($Mix) { $environment['MT2_PROBE_MODIFIERS'] = 'card-effect-mix' }
-if ($MixAlternate) { $environment['MT2_PROBE_MIX_ALTERNATE'] = '1' }
+if ($Mix) { $environment['MT2_PROBE_MIX_CHOICES'] = if ($MixChoices) { $MixChoices } else { '00' } }
 if ($TransferAttackAbility) { $environment['MT2_PROBE_MODIFIERS'] = 'transfer-attack-ability' }
 if ($CardEffectKill -or $CardEffectKillSubtype) {
     $environment['MT2_PROBE_MODIFIERS'] = if ($CardEffectKillSubtype) { 'card-effect-kill-subtype' } else { 'card-effect-kill' }
