@@ -1,10 +1,29 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-15): 303 binary archives, including 272
+Current accepted inventory (2026-10-15): 318 binary archives, including 287
 full battles and 31 component calibrations. Unchanged original relic evidence
-covers 78/224 catalog entries (34.82%); see
+covers 80/224 catalog entries (35.71%); see
 [the owner evidence table](tests/fixtures/relic-coverage.md). Whole-battle
 coverage and the optimal solver remain in progress.
+
+### Original Pyre-only spawn relics
+
+`full-battle-spawn-status-relics-pyre.mt2f` acquires unchanged
+`DantesCandelabra` and `PressurizedBoiler`, then settles one controlled native
+`RelicManager.CharacterAdded` callback on the already spawned Pyre. The exact
+birth phase adds 2 Titan Skin and 4 Burst; both original Pyre subtype filters
+and the independent model agree. The muted Instant battle wins with 52 matched
+room stages, 18 actions and six EndTurns. Capture failures, mismatches,
+unsupported transitions and pending records are zero. The 36,570-byte binary
+has 5,593 unique nodes and SHA-256
+`105017d70d99dc739e223a0b7550d56d18ce33c71467f0dade3663f334e978ea`.
+This calibrates the native callback, not the timing of Pyre creation in a
+natural battle. Search matches recorded decisions and 128 serial/parallel
+states, but stops at its node/turn limit; optimality remains unproven.
+
+```powershell
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-spawn-status-relics-pyre.mt2f
+```
 
 ### Original Persistent hand retention across turns
 

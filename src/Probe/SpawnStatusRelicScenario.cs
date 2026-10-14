@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using BepInEx.Logging;
@@ -17,6 +18,8 @@ namespace MonsterTrain2Poju.Probe
             Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == "spawn-status-relics-tuned-gear";
         internal static bool OriginalChicotRelic =>
             Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == "spawn-status-relics-boss-mute";
+        internal static bool OriginalCombatRelics =>
+            Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == "spawn-status-relics-combat";
         internal static bool Clones => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") is
             "spawn-status-relics-clones" or "spawn-status-relics-mixed-cardless-order" or "spawn-status-relics-team-wide";
         internal static bool MixedCardlessOrder => Environment.GetEnvironmentVariable("MT2_PROBE_MIXED_CARDLESS_RELIC_ORDER") == "1";
@@ -43,6 +46,11 @@ namespace MonsterTrain2Poju.Probe
             Acquire("270356af-16bd-4433-a0b2-3e5bb94ef890", "FrostbiteOnEnemies");
             if (OriginalTunedGearRelic) Acquire("f12924bc-0600-4de0-ae2a-93534f251eb1", "TunedGear");
             if (OriginalChicotRelic) Acquire("92d66578-b148-49f8-9880-edb67f8b18de", "BalatroEventChicot");
+            if (OriginalCombatRelics)
+            {
+                AcquireCombat("a3dde0d6-0aa3-44e5-a6a4-0e993a5d9a15", "DantesCandelabra", "titanskin", 2);
+                AcquireCombat("fda361aa-fecc-4adf-b19c-f92af04e0e19", "PressurizedBoiler", "burst", 4);
+            }
             if (OriginalStealthWaxersRelic) AcquireStealthWaxers();
             if (OriginalTeamSpawnStatusRelic) AcquireTeamSpawnStatus();
             if (Clones) AcquireCardlessUpgrade();
@@ -56,14 +64,35 @@ namespace MonsterTrain2Poju.Probe
                 save.AddRelic(extraSpawn);
             }
             Prepared = true;
+            if (OriginalCombatRelics)
+            {
+                // The battle Pyre predates fixture preparation; settle its native birth callback before card draws resume.
+                var pyres = new List<CharacterState>();
+                managers.GetRoomManager()!.GetPyreRoom().AddCharactersToList(pyres, Team.Type.Monsters);
+                CharacterState pyre = pyres.Single();
+                Drain(managers.GetRelicManager().CharacterAdded(pyre, null, false));
+            }
             AccessTools.Field(typeof(CombatManager), "combatStateChanged").SetValue(managers.GetCombatManager(), true);
-            log.LogInfo("SPAWN-STATUS-RELICS-PREPARED original relic definitions unchanged; TunedGear=" + OriginalTunedGearRelic + "; Chicot=" + OriginalChicotRelic + "; Hymnist carrier test=" + OriginalTeamSpawnStatusRelic + "; StealthWaxers=" + OriginalStealthWaxersRelic + "; clones/extra-spawn=" + Clones + "; native Boss/waves retained.");
+            log.LogInfo("SPAWN-STATUS-RELICS-PREPARED original relic definitions unchanged; TunedGear=" + OriginalTunedGearRelic + "; Chicot=" + OriginalChicotRelic + "; combat=" + OriginalCombatRelics + "; Hymnist carrier test=" + OriginalTeamSpawnStatusRelic + "; StealthWaxers=" + OriginalStealthWaxersRelic + "; clones/extra-spawn=" + Clones + "; native Boss/waves retained.");
 
             void Acquire(string id, string key)
             {
                 CollectableRelicData relic = save.GetAllGameData().GetAllCollectableRelicData().Single(item => item.GetID() == id);
                 if (relic.name != key || relic.GetEffects().Count != 1 || relic.GetEffects()[0].GetEffectClassName() != "RelicEffectAddStatusEffectOnSpawn")
                     throw new InvalidOperationException("Original spawn status relic changed: " + key);
+                save.AddRelic(relic);
+            }
+
+            void AcquireCombat(string id, string key, string statusId, int stacks)
+            {
+                CollectableRelicData relic = save.GetAllGameData().GetAllCollectableRelicData().Single(item => item.GetID() == id);
+                RelicEffectData effect = relic.GetEffects().Single();
+                StatusEffectStackData[] statuses = effect.GetParamStatusEffects();
+                if (relic.name != key || effect.GetEffectClassName() != "RelicEffectAddStatusEffectOnSpawn" ||
+                    !effect.GetParamSourceTeam().HasFlag(Team.Type.Monsters) ||
+                    statuses.Length != 1 || statuses[0].statusId != statusId || statuses[0].count != stacks ||
+                    effect.GetEffectConditions().Count != 0)
+                    throw new InvalidOperationException("Original combat spawn relic changed: " + key);
                 save.AddRelic(relic);
             }
 
@@ -118,6 +147,16 @@ namespace MonsterTrain2Poju.Probe
                     throw new InvalidOperationException("Original HymnistsApplyValorOnSummon definition changed.");
                 save.AddRelic(relic);
             }
+        }
+
+        private static void Drain(IEnumerator routine)
+        {
+            try
+            {
+                while (routine.MoveNext())
+                    if (routine.Current is IEnumerator nested) Drain(nested);
+            }
+            finally { (routine as IDisposable)?.Dispose(); }
         }
     }
 }

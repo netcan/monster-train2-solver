@@ -916,7 +916,7 @@ namespace MonsterTrain2Poju.Probe
                 DamageOverflowScenario.Prepare(managers, log);
                 return;
             }
-            if (fullBattle && !numericModifiersPrepared && modifierScenario == "spawn-status-relics-tuned-gear")
+            if (fullBattle && !numericModifiersPrepared && (modifierScenario == "spawn-status-relics-tuned-gear" || modifierScenario == "spawn-status-relics-combat"))
             {
                 if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Spawn-status relic fixture must start on deployment turn.");
                 numericModifiersPrepared = true;

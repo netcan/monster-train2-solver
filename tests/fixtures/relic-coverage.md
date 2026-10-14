@@ -1,7 +1,7 @@
 # Original relic coverage evidence
 
-As of 2026-10-15, **78 distinct original collectable relics / 224 catalog entries
-(34.82%)** have accepted native full-battle evidence. This counts unchanged relic
+As of 2026-10-15, **80 distinct original collectable relics / 224 catalog entries
+(35.71%)** have accepted native full-battle evidence. This counts unchanged relic
 definitions whose effects actually ran, including their original filters and
 conditions. Test cards, unit triggers and carrier subtypes may be authored to
 exercise those effects; the claim covers the recorded paths, not every possible
@@ -16,13 +16,13 @@ Rage and Frostbite consumers. All four catalog owners of
 families and other effects on the remaining owners still require modeling and
 native proof.
 
-All 31 source archives below report game `2.2.1`, module MVID
+All 32 source archives below report game `2.2.1`, module MVID
 `8fb07b96-f4db-4d2b-884d-c00536d6ccf4`, `NativeWon=true`, and zero
 `CaptureFailures`, `Mismatches`, `Unsupported` and `Pending`. Archive provenance,
 byte lengths and SHA-256 hashes are recorded in [manifest.tsv](manifest.tsv).
 The floor-capacity batch passes strict native acceptance, complete-fixture checks,
 independent full-battle replay and six directly affected old-fixture regressions.
-The accepted inventory is 317 archives: 286 battles and 31 component
+The accepted inventory is 318 archives: 287 battles and 31 component
 calibrations, with no JSON companions. A 246-archive replay was
 attempted on 2026-10-13 but has not completed: legacy EndTurn snapshots can
 conflict with the current model's room `Enabled` state. Focused follow-up checks
@@ -48,6 +48,8 @@ owner count.
 | `HymnistsApplyValorOnSummon` | `55cf29f3-bc0d-4b5f-929e-07d4629141b3` | [team-wide spawn status][teamSpawnStatus] | The unchanged Hymnist-filtered effect adds 5 Valor to all living same-team units in the room. A same-room clone battle records 33 existing teammate witnesses across 22 exact birth phases; all 13 clone operations and 32 branches match. |
 | `TunedGear` | `f12924bc-0600-4de0-ae2a-93534f251eb1` | [TunedGear Burst battle][tunedGear] | Five player births gain one Burst; seven enemy births do not. The 12 native birth phases, Burst attack count/consumption, 51 full-battle stages and 32 focused branches match. |
 | `BalatroEventChicot` | `92d66578-b148-49f8-9880-edb67f8b18de` | [Chicot Mute battle][chicot] | One native BossAll birth gains 3 Muted; the schema-156 replay matches all 52 battle stages and 32 isolated birth branches. |
+| `DantesCandelabra` | `a3dde0d6-0aa3-44e5-a6a4-0e993a5d9a15` | [Pyre spawn-status battle][pyreSpawn] | Its unchanged Pyre-only spawn effect adds 2 Titan Skin in a controlled native `CharacterAdded` callback on the already spawned Pyre; the exact birth state and subsequent battle replay match. Natural Pyre creation timing remains untested. |
+| `PressurizedBoiler` | `fda361aa-fecc-4adf-b19c-f92af04e0e19` | [Pyre spawn-status battle][pyreSpawn] | Its unchanged Pyre-only spawn effect adds 4 Burst in the same controlled native callback. The model matches the birth state, 52 room stages and 18 actions; natural Pyre creation timing remains untested. |
 | `ReduceStarterCost` | `d892106c-dbbc-40ac-bf0b-902882cdc69d` | [starter cost relic][cost] | 124 exact manager calls and 49 notifications cover filtering, unique repeat rejection, reset and generated cards. `Actions[0]` actually plays `JustCause` for 1 Ember with base cost 2 and the original `ReduceStarterCost_Upgrade` cost offset −1. |
 | `ExtraToughTombs` | `61fdeafd-21c5-4009-a448-a5c286ac3fc0` | [ExtraToughTombs battle][extraToughTombs] | The original `OnlyTombs` filter adds 30 health and its unique `AddBurnoutToTombs` upgrade. The played Tomb carrier summons at 55/55 with one `ephemeral` stack; post-combat burns it out and all 59 room stages match. |
 | `PyreHeartSon` | `8503360a-26b2-4b71-9334-4c6014ad397f` | [cardless relic upgrades][cardless] | Five ordinary cardless births gain +5 attack/+12 health; five cardless clones skip the upgrade. Example: record 8, unit 10, attack 0 → 5 and max health 1 → 13; record 9's clone remains 0/1. |
@@ -398,5 +400,6 @@ dotnet run --project src/ModelChecks -c Release -- --original-card-attack-only t
 [teamSpawnStatus]: full-battle-original-team-spawn-status.mt2f
 [tunedGear]: full-battle-spawn-status-relics-tuned-gear.mt2f
 [chicot]: full-battle-spawn-status-relics-boss-mute.mt2f
+[pyreSpawn]: full-battle-spawn-status-relics-pyre.mt2f
 [sting]: full-battle-original-sting-relics.mt2f
 [deployable]: full-battle-original-deployable-relic.mt2f

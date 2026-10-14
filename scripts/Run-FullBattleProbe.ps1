@@ -227,6 +227,7 @@ param(
     [switch] $SpawnStatusRelics,
     [switch] $OriginalTunedGearRelic,
     [switch] $OriginalChicotRelic,
+    [switch] $OriginalSpawnCombatRelics,
     [switch] $OriginalStealthWaxersRelic,
     [switch] $OriginalTeamSpawnStatusRelic,
     [switch] $SpawnStatusRelicsClones,
@@ -282,8 +283,12 @@ if ($OriginalTunedGearRelic -and ($OriginalStealthWaxersRelic -or $OriginalTeamS
 if ($OriginalChicotRelic -and ($OriginalTunedGearRelic -or $OriginalStealthWaxersRelic -or $OriginalTeamSpawnStatusRelic -or $SpawnStatusRelicsClones -or $MixedCardlessRelicOrder)) {
     throw 'OriginalChicotRelic is an isolated spawn-status scenario.'
 }
+if ($OriginalSpawnCombatRelics -and ($OriginalChicotRelic -or $OriginalTunedGearRelic -or $OriginalStealthWaxersRelic -or $OriginalTeamSpawnStatusRelic -or $SpawnStatusRelicsClones -or $MixedCardlessRelicOrder)) {
+    throw 'OriginalSpawnCombatRelics is an isolated spawn-status scenario.'
+}
 if ($OriginalTunedGearRelic) { $SpawnStatusRelics = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalChicotRelic) { $SpawnStatusRelics = $true; $Policy = 'units-spells-and-junk' }
+if ($OriginalSpawnCombatRelics) { $SpawnStatusRelics = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalStealthWaxersRelic) { $SpawnStatusRelics = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalTeamSpawnStatusRelic) { $SpawnStatusRelics = $true; $SpawnStatusRelicsClones = $true; $Policy = 'units-spells-and-junk' }
 if ($RoomCapacityAttachment) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
@@ -531,7 +536,7 @@ if ($Purify) {
 }
 
 if ($SpawnStatusRelics) {
-    $environment['MT2_PROBE_MODIFIERS'] = $(if ($OriginalChicotRelic) { 'spawn-status-relics-boss-mute' } elseif ($OriginalTunedGearRelic) { 'spawn-status-relics-tuned-gear' } elseif ($OriginalTeamSpawnStatusRelic) { 'spawn-status-relics-team-wide' } elseif ($OriginalStealthWaxersRelic) { 'spawn-status-relics-stealth-waxers' } elseif ($SpawnStatusRelicsClones) { 'spawn-status-relics-clones' } else { 'spawn-status-relics' })
+    $environment['MT2_PROBE_MODIFIERS'] = $(if ($OriginalSpawnCombatRelics) { 'spawn-status-relics-combat' } elseif ($OriginalChicotRelic) { 'spawn-status-relics-boss-mute' } elseif ($OriginalTunedGearRelic) { 'spawn-status-relics-tuned-gear' } elseif ($OriginalTeamSpawnStatusRelic) { 'spawn-status-relics-team-wide' } elseif ($OriginalStealthWaxersRelic) { 'spawn-status-relics-stealth-waxers' } elseif ($SpawnStatusRelicsClones) { 'spawn-status-relics-clones' } else { 'spawn-status-relics' })
     $environment['MT2_PROBE_STATUS_CALLBACKS'] = '1'
 }
 if ($MixedCardlessRelicOrder) {
@@ -2703,7 +2708,7 @@ if ($SpawnStatusRelics) {
             } elseif ($oldShield.DurationTriggerCount -eq 1 -and $newShield.DurationTriggerCount -eq 1) { $spawnRelicSkips++ }
         } else { $spawnRelicEnemies++ }
     }
-    $expectedSpawnScenario = if ($OriginalChicotRelic) { 'spawn-status-relics-boss-mute' } elseif ($OriginalTunedGearRelic) { 'spawn-status-relics-tuned-gear' } elseif ($OriginalTeamSpawnStatusRelic) { 'spawn-status-relics-team-wide' } elseif ($OriginalStealthWaxersRelic) { 'spawn-status-relics-stealth-waxers' } elseif ($MixedCardlessRelicOrder) { 'spawn-status-relics-mixed-cardless-order' } elseif ($SpawnStatusRelicsClones) { 'spawn-status-relics-clones' } else { 'spawn-status-relics' }
+    $expectedSpawnScenario = if ($OriginalSpawnCombatRelics) { 'spawn-status-relics-combat' } elseif ($OriginalChicotRelic) { 'spawn-status-relics-boss-mute' } elseif ($OriginalTunedGearRelic) { 'spawn-status-relics-tuned-gear' } elseif ($OriginalTeamSpawnStatusRelic) { 'spawn-status-relics-team-wide' } elseif ($OriginalStealthWaxersRelic) { 'spawn-status-relics-stealth-waxers' } elseif ($MixedCardlessRelicOrder) { 'spawn-status-relics-mixed-cardless-order' } elseif ($SpawnStatusRelicsClones) { 'spawn-status-relics-clones' } else { 'spawn-status-relics' }
     $expectedSpawnSchema = if ($OriginalChicotRelic) { 156 } elseif ($OriginalTunedGearRelic) { 155 } elseif ($OriginalTeamSpawnStatusRelic) { 144 } elseif ($OriginalStealthWaxersRelic) { 140 } elseif ($MixedCardlessRelicOrder) { 121 } elseif ($SpawnStatusRelicsClones) { 111 } else { 110 }
     $requiredSpawnRelics = @('SpawnWithArmor', 'FirstUnitGainDamageShield', 'FrostbiteOnEnemies')
     if ($MixedCardlessRelicOrder) { $requiredSpawnRelics = @('PyreHeartSon', 'FirstUnitGainDamageShield', 'FrostbiteOnEnemies') }
@@ -2711,6 +2716,7 @@ if ($SpawnStatusRelics) {
     if ($OriginalChicotRelic) { $requiredSpawnRelics += 'BalatroEventChicot' }
     if ($OriginalTeamSpawnStatusRelic) { $requiredSpawnRelics += 'HymnistsApplyValorOnSummon' }
     if ($OriginalTunedGearRelic) { $requiredSpawnRelics += 'TunedGear' }
+    if ($OriginalSpawnCombatRelics) { $requiredSpawnRelics += @('DantesCandelabra', 'PressurizedBoiler') }
     $observedSpawnRelics = @($trace.Actions[0].Before.Spawn.Train.Context.Relics | Where-Object { $_.AssetKey -in $requiredSpawnRelics }).Count
     if ($trace.Schema -ne $expectedSpawnSchema -or $trace.ModifierScenario -ne $expectedSpawnScenario -or $births.Count -lt 3 -or
         $spawnRelicPlayers -lt 2 -or $spawnRelicEnemies -lt 1 -or $spawnRelicFirsts -lt 1 -or $spawnRelicSkips -lt 1 -or
@@ -2817,6 +2823,34 @@ if ($SpawnStatusRelics) {
         }
         if ($teamWideWitnesses -lt 1) { throw 'Original team-wide spawn relic has no living ally Valor witness.' }
         Write-Output "ORIGINAL-TEAM-SPAWN-STATUS PASS: $teamWideWitnesses living ally states gained five Valor from a summon."
+    }
+    if ($OriginalSpawnCombatRelics) {
+        foreach ($owner in @(
+            @{ Key = 'DantesCandelabra'; Id = 'a3dde0d6-0aa3-44e5-a6a4-0e993a5d9a15'; Status = 'titanskin'; Stacks = 2 },
+            @{ Key = 'PressurizedBoiler'; Id = 'fda361aa-fecc-4adf-b19c-f92af04e0e19'; Status = 'burst'; Stacks = 4 }
+        )) {
+            $matching = @($trace.Actions[0].Before.Spawn.Train.Context.Relics | Where-Object {
+                $_.AssetKey -eq $owner.Key -and $_.DataId -eq $owner.Id -and $_.EffectTypes.Count -eq 1 -and
+                $_.EffectTypes[0] -eq 'RelicEffectAddStatusEffectOnSpawn' -and $_.SpawnStatuses.Count -eq 1 -and
+                $_.SpawnStatuses[0].TargetPlayer -and -not $_.SpawnStatuses[0].TargetEnemy -and
+                $_.SpawnStatuses[0].Statuses.Count -eq 1 -and $_.SpawnStatuses[0].Statuses[0].Id -eq $owner.Status -and
+                $_.SpawnStatuses[0].Statuses[0].Stacks -eq $owner.Stacks -and $_.SpawnStatuses[0].Conditions.Count -eq 0
+            })
+            if ($matching.Count -ne 1) { throw "Original combat spawn relic payload missing: $($owner.Key)" }
+            $witnesses = 0
+            foreach ($birth in $births) {
+                $beforeActor = @($birth.Before.Units | Where-Object Id -EQ $birth.UnitId)[0]
+                $afterActor = @($birth.After.Units | Where-Object Id -EQ $birth.UnitId)[0]
+                if (-not $beforeActor -or -not $afterActor -or $beforeActor.Team -ne 1) { continue }
+                $oldStatus = @($beforeActor.Statuses | Where-Object Id -EQ $owner.Status)
+                $newStatus = @($afterActor.Statuses | Where-Object Id -EQ $owner.Status)
+                $oldStacks = if ($oldStatus.Count) { [int]$oldStatus[0].Stacks } else { 0 }
+                $newStacks = if ($newStatus.Count) { [int]$newStatus[0].Stacks } else { 0 }
+                if ($newStacks -eq ($oldStacks + $owner.Stacks)) { $witnesses++ }
+            }
+            if ($witnesses -eq 0) { throw "Original combat spawn relic has no positive birth witness: $($owner.Key)" }
+            Write-Output "ORIGINAL-COMBAT-SPAWN PASS: $($owner.Key) applied $($owner.Stacks) $($owner.Status) on $witnesses births."
+        }
     }
     if ($MixedCardlessRelicOrder) {
         $mixedRelic = @($trace.Actions[0].Before.Spawn.Train.Context.Relics | Where-Object AssetKey -EQ 'PyreHeartSon')
