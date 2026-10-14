@@ -35,7 +35,7 @@ namespace MonsterTrain2Poju.Model
         {
             CardChooseDiscardRule? rule = effect.ChooseDiscard;
             if (rule == null) return "Missing choose-discard parameters.";
-            if (effect.Value is < 0 or > 3 || effect.Value == 2)
+            if (effect.Value is < 0 or > 3)
                 return "Unmodeled choose-discard mode " + effect.Value + ".";
             if (rule.Condition != 0 && rule.Condition != 5)
                 return "Unmodeled choose-discard condition " + rule.Condition + ".";
@@ -46,12 +46,12 @@ namespace MonsterTrain2Poju.Model
             if (rule.GainEmberForCost && context.Relics?.Any(relic =>
                 relic.EffectTypes.Contains("RelicEffectAdditionalSmeltEmber")) == true)
                 return "Additional smelt Ember relic effects require native calibration.";
-            if (effect.Value == 3)
+            if (effect.Value is 2 or 3)
             {
                 string? forgeError = ForgePointsModel.Validate(context);
                 if (forgeError != null) return forgeError;
             }
-            if ((effect.Value is 1 or 3) && rule.GainEmberForCost)
+            if ((effect.Value is 1 or 2 or 3) && rule.GainEmberForCost)
             {
                 string? energyError = EnergyModel.Validate(context);
                 if (energyError != null) return energyError;
@@ -106,6 +106,42 @@ namespace MonsterTrain2Poju.Model
             if (!selectedCardId.HasValue || !eligible.Contains(selectedCardId.Value))
                 return Unsupported("Choose-discard requires one eligible selected card.");
             CombatContext context = source;
+            if (effect.Value == 2)
+            {
+                if (context.Enchantments != null || context.RoomCapacities?.FirstOrDefault(room =>
+                    room.RoomIndex == roomIndex)?.Attachments?.Count > 0)
+                    return Unsupported("Room smelt modifiers require native room-state calibration.");
+                int forge = 0;
+                int ember = 0;
+                int[] consumedIds = context.Cards.Hand.Where(card => card.InstanceId != sourceCardId &&
+                    card.InstanceId != selectedCardId.Value).Reverse().Select(card => card.InstanceId).ToArray();
+                foreach (int id in consumedIds)
+                {
+                    CardInstanceState? instance = context.FindCard(id);
+                    if (instance?.MaskDescriptor == null) return Unsupported("Missing consumed card cost metadata.");
+                    CardUpgradeMaskCard card = CardBranchMaskModel.Resolve(instance);
+                    if (card.Traits.Contains("CardTraitRefine")) return Unsupported("Smelt Refine bonus is not modeled.");
+                    int amount = instance.RawCostOverride ?? instance.MaskDescriptor.BaseCost;
+                    if (amount < 0) return Unsupported("Negative smelt cost requires native calibration.");
+                    if (amount > 0)
+                    {
+                        forge = unchecked(forge + amount);
+                        if (effect.ChooseDiscard!.GainEmberForCost) ember = unchecked(ember + amount);
+                    }
+                    HandRemovalResult consumed = HandRemovalModel.Apply(context, 1, sourceCardId, effectIndex,
+                        definitions, context.OtherPiles, selectedCardIds: [id], effectCounterType: null);
+                    if (!consumed.Supported) return Unsupported(consumed.UnsupportedReason!);
+                    context = consumed.Context!;
+                }
+                if (forge > 0)
+                {
+                    ForgePointsResult points = ForgePointsModel.Apply(context, forge);
+                    if (!points.Supported) return Unsupported(points.UnsupportedReason!);
+                    context = points.Context!;
+                }
+                if (ember > 0) context = EnergyModel.Apply(context, "GainEnergy", ember);
+                return new CardChooseDiscardResult(context, context.OtherPiles);
+            }
             if (effect.Value is 1 or 3)
             {
                 CardInstanceState instance = context.FindCard(selectedCardId.Value)!;

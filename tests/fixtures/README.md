@@ -1,5 +1,11 @@
 # Native regression fixtures
 
+`full-battle-choose-discard-others.mt2f` records unchanged `FoundryLine` keeping
+one cost-two card and consuming four other hand cards for Forge Points and
+Ember. Its 52-stage battle, seven EndTurns, five search choices and serial/parallel
+search checks pass. The binary-only archive is 22,301 bytes; its SHA-256 is in
+`manifest.tsv`.
+
 `full-battle-conditional-pyre-damage.mt2f` records the unchanged
 `HeavyT3_PyreDamageIfUnblocked` enemy. Its PostCombat effect deals five damage
 to the Pyre on an empty floor and none when a player unit blocks that floor.

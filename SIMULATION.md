@@ -1,10 +1,23 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-15): 299 binary archives, including 268
+Current accepted inventory (2026-10-15): 300 binary archives, including 269
 full battles and 31 component calibrations. Unchanged original relic evidence
 covers 78/224 catalog entries (34.82%); see
 [the owner evidence table](tests/fixtures/relic-coverage.md). Whole-battle
 coverage and the optimal solver remain in progress.
+
+### Original keep-one bulk smelt
+
+`full-battle-choose-discard-others.mt2f` plays unchanged `FoundryLine`, keeps
+the selected cost-two card and consumes four other hand cards in reverse hand
+order. The native action matches the independent model and exposes five ordered
+choice branches. The muted Instant battle completes 52 matched stages and seven
+EndTurns with zero capture failures, mismatches, unsupported transitions or
+pending records. The 22,301-byte binary has 3,230 unique nodes and SHA-256
+`9b1ad9686793814f38924f86236d7a77c5b9923fc1ae4309a85a5f859cb573c6`.
+The scenario makes no further card plays so the later battle does not depend on
+unrelated card combinations. Refine bonuses, room cost modifiers and additional
+smelt Ember relics remain guarded until separately calibrated.
 
 ### Original hand-selected smelt
 

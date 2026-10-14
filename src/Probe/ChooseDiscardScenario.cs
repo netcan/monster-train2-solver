@@ -10,28 +10,33 @@ namespace MonsterTrain2Poju.Probe
     internal static class ChooseDiscardScenario
     {
         internal const string Name = "card-effect-choose-discard";
+        internal const string OthersName = "card-effect-choose-discard-others";
         private const string ScrapId = "bc4cd099-93df-4771-ae72-4984fc50ab9f";
+        private const string FoundryLineId = "26651f53-95d0-4802-b710-51d23bf89bbd";
         private const string OneCostId = "fb0683b1-20ac-4dd2-b580-14b502e182f4";
         private const string TwoCostId = "25f84315-da10-4915-aa5d-e3f1a38124b4";
         private static int sourceId;
         private static int selectedId;
         private static bool chosenOnce;
         private static ManualLogSource? logger;
-        internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == Name;
+        internal static bool OthersMode => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == OthersName;
+        internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") is Name or OthersName;
 
         internal static void Prepare(AllGameManagers managers, ManualLogSource log)
         {
             logger = log;
             SaveManager save = managers.GetSaveManager();
             CardManager cards = managers.GetCardManager()!;
-            CardData scrap = save.GetAllGameData().FindCardData(ScrapId) ??
-                throw new InvalidOperationException("Original StarterScrap is missing.");
-            CardEffectData effect = scrap.GetEffects().Single();
-            if (scrap.name != "StarterScrap" || scrap.GetCost() != 1 ||
-                effect.GetEffectStateName() != "CardEffectChooseDiscard" || effect.GetParamInt() != 3 ||
+            string sourceDataId = OthersMode ? FoundryLineId : ScrapId;
+            string sourceName = OthersMode ? "FoundryLine" : "StarterScrap";
+            CardData sourceData = save.GetAllGameData().FindCardData(sourceDataId) ??
+                throw new InvalidOperationException("Original " + sourceName + " is missing.");
+            CardEffectData effect = sourceData.GetEffects().Single();
+            if (sourceData.name != sourceName || sourceData.GetCost() != 1 ||
+                effect.GetEffectStateName() != "CardEffectChooseDiscard" || effect.GetParamInt() != (OthersMode ? 2 : 3) ||
                 effect.GetAdditionalParamInt() != 5 || effect.GetParamBool() || !effect.GetParamBool2() ||
                 effect.GetParamCardPool() != null)
-                throw new InvalidOperationException("Original StarterScrap smelt definition changed.");
+                throw new InvalidOperationException("Original " + sourceName + " smelt definition changed.");
             CardData one = save.GetAllGameData().FindCardData(OneCostId) ??
                 throw new InvalidOperationException("Original StarterFireStarter is missing.");
             CardData two = save.GetAllGameData().FindCardData(TwoCostId) ??
@@ -48,18 +53,18 @@ namespace MonsterTrain2Poju.Probe
             }
             Add(one);
             CardState selected = Add(two);
-            CardState source = Add(scrap);
+            CardState source = Add(sourceData);
             selectedId = FullBattleTrace.Active!.CardId(selected);
             sourceId = FullBattleTrace.Active.CardId(source);
             chosenOnce = false;
-            log.LogInfo("CHOOSE-DISCARD-PREPARED StarterScrap=" + sourceId + " selected=" + selectedId +
+            log.LogInfo("CHOOSE-DISCARD-PREPARED " + sourceName + "=" + sourceId + " selected=" + selectedId +
                 " selectedCost=2 otherCost=1");
         }
 
         internal static PlayCardAction? Choose(BattleTurnState state)
         {
             if (chosenOnce)
-                return BattleActionModel.EnumerateSupportedPlays(state)
+                return OthersMode ? null : BattleActionModel.EnumerateSupportedPlays(state)
                     .FirstOrDefault(action => action.CardInstanceId != sourceId);
             CardToken? source = state.Spawn.Train.Context!.Cards.Hand.FirstOrDefault(card => card.InstanceId == sourceId);
             if (source != null)

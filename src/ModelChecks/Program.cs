@@ -575,6 +575,12 @@ if (args.Length == 2 && args[0] == "--choose-discard-only")
     ChooseDiscardChecks.Native(choiceDocument.RootElement);
     return;
 }
+if (args.Length == 2 && args[0] == "--choose-discard-others-only")
+{
+    using var choiceDocument = ModelJson.ReadFixture(args[1]);
+    ChooseDiscardChecks.NativeOthers(choiceDocument.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--forge-points-only")
 {
     using var forgeDocument = ModelJson.ReadFixture(args[1]);
