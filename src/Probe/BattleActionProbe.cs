@@ -17,7 +17,7 @@ namespace MonsterTrain2Poju.Probe
             "CardEffectRewardGold", "CardEffectGainEnergy", "CardEffectAdjustEnergy", "CardEffectGainEnergyNextTurn", "CardEffectGainEnergyEveryTurn",
             "CardEffectAdjustDragonsHoard", "CardEffectRewardGoldPerDragonHoard",
             "CardEffectDamage", "CardEffectDamagePerSourceAttack", "CardEffectDamagePerHp", "CardEffectDamageByUnitsKilled", "CardEffectTransferAttackFromUnit", "CardEffectDraw", "CardEffectDrawAdditionalNextTurn",
-            "CardEffectRemoveAllStatusEffects", "CardEffectTransferAllStatusEffectsFromUnit",
+            "CardEffectRemoveAllStatusEffects", "CardEffectTransferAllStatusEffectsFromUnit", "CardEffectTransferAllStatusEffects",
             "CardEffectAdjustRoomCapacity", "CardEffectAdjustRoomMaxCorruption", "CardEffectAdjustCorruption",
             "CardEffectAddPermanentCorruption",
             "CardEffectSetMoonPhase", "CardEffectAdvanceMoonPhase",
@@ -267,6 +267,9 @@ namespace MonsterTrain2Poju.Probe
                  effect.GetAdditionalParamInt() != 0 || effect.GetAdditionalParamInt1() != 0 ||
                  effect.GetParamBool() || effect.GetParamBool2()))
                 interactions.Add("Unmodeled status-transfer mode or parameters");
+            if (effect.GetEffectStateName() == "CardEffectTransferAllStatusEffects" &&
+                (effect.GetTargetMode() != TargetMode.DropTargetCharacter || effect.GetParamStatusEffects().Length != 1))
+                interactions.Add("Unmodeled room-status transfer targets or status pool");
             if (effect.GetUseStatusEffectStackMultiplier() || effect.GetUseHealthMissingStackMultiplier() || effect.GetUseMagicPowerMultiplier() ||
                 effect.GetEffectStateName() != "CardEffectSacrifice" && effect.GetEffectStateName() != "CardEffectKill" &&
                 effect.GetEffectStateName() != "CardEffectRecursion" && effect.GetEffectStateName() != "CardEffectSpawnMonsterOrAddStatusEffect" &&
@@ -294,6 +297,7 @@ namespace MonsterTrain2Poju.Probe
                 effect.GetEffectStateName() == "CardEffectDamageByUnitsKilled" ? "DamageByUnitsKilled" :
                 effect.GetEffectStateName() == "CardEffectTransferAttackFromUnit" ? "TransferAttackFromUnit" :
                 effect.GetEffectStateName() == "CardEffectTransferAllStatusEffectsFromUnit" ? "TransferAllStatusesFromUnit" :
+                effect.GetEffectStateName() == "CardEffectTransferAllStatusEffects" ? "TransferAllStatuses" :
                 effect.GetEffectStateName() == "CardEffectAdjustRoomCapacity" ? "AdjustCapacity" :
                 effect.GetEffectStateName() == "CardEffectAdjustRoomMaxCorruption" ? "AdjustMaxCorruption" :
                 effect.GetEffectStateName() == "CardEffectAdjustCorruption" ? "AdjustCorruption" :
@@ -386,6 +390,7 @@ namespace MonsterTrain2Poju.Probe
             }
             var statuses = new List<CombatStatus>();
             if (type == "AddStatus" || type == "HealOverheal" || type == "MultiplyStatus" || type == "AdjustAllStatusEffects" ||
+                type == "TransferAllStatuses" ||
                 type == "AddStatusPerOtherEffect" || type == "SpawnOrStatus" || type == "UnitUpgradePerStatus")
             {
                 if (type != "AdjustAllStatusEffects" && type != "HealOverheal" &&

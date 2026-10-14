@@ -1,5 +1,16 @@
 # Native regression fixtures
 
+`full-battle-frost-channeling.mt2f` plays unchanged `PerilsOfProduction`, two
+`FlashFreeze` cards and `FrostChanneling`. An enemy and a friendly unit each
+carry Poison 8 before the original FrostChanneling spell; afterward the enemy
+has Poison 32 and the friendly unit has none. This exercises same-room,
+cross-team collection, removal, redistribution and the card's subsequent
+status multiplication. The muted Instant battle wins with 62 matched stages,
+22 actions and seven EndTurns, with zero capture failures, mismatches,
+unsupported transitions or pending records. The binary-only archive is
+32,517 bytes and has 5,316 unique nodes. The evidence covers the unchanged
+FrostChanneling owner, not every other use of this effect class.
+
 `full-battle-brain-transfer.mt2f` plays unchanged `PerilsOfProduction` and
 `BrainTransfer` on a rear original Imp behind a Train Steward. The Imp has Rage
 3 and Scorch 2 when sacrificed; the Steward receives both statuses and rises

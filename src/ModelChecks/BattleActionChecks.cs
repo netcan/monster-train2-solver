@@ -494,6 +494,8 @@ internal static class BattleActionChecks
             chooser = ChooseTransferAttackThenCards;
         if (fixture.TryGetProperty("ModifierScenario", out var brainTransferScenario) && brainTransferScenario.GetString() == "brain-transfer")
             chooser = ChooseBrainTransferThenCards;
+        if (fixture.TryGetProperty("ModifierScenario", out var frostChannelingScenario) && frostChannelingScenario.GetString() == "frost-channeling")
+            chooser = ChooseFrostChannelingThenCards;
         if (fixture.TryGetProperty("ModifierScenario", out var transferAbilityScenario) && transferAbilityScenario.GetString() == "transfer-attack-ability")
             chooser = UnitAbilityModel.ChooseAbilityThenCards;
         if (fixture.TryGetProperty("ModifierScenario", out var killedUnitsScenario) && killedUnitsScenario.GetString() == "damage-by-units-killed")
@@ -806,6 +808,53 @@ internal static class BattleActionChecks
         if (transfer != null)
             return target?.Status("buff")?.Stacks > 0 && room.Units.Any(unit => unit.Team == CombatTeam.Player && unit.Id != target.Id)
                 ? new PlayCardAction(transfer.InstanceId, 0, targetUnitId: target.Id) : null;
+        return BattleActionModel.ChooseUnitSpellAndJunkPlay(source);
+    }
+
+    private static PlayCardAction? ChooseFrostChannelingThenCards(BattleTurnState source)
+    {
+        const string stewardId = "d14a50f3-728d-43e1-87f0-ef1b013f6678";
+        const string perilsId = "4ca4ed47-9867-4004-acf0-171c3282751f";
+        const string flashId = "a6c8ce76-3c82-47ca-a6e0-8a20e84558dd";
+        const string frostId = "a82b7b1b-31f1-4634-9cf3-197d17d61ba3";
+        var hand = source.Spawn.Train.Context!.Cards.Hand;
+        RoomCombatState room = source.Spawn.Train.Rooms.Single(item => item.RoomIndex == 0);
+        if (source.Spawn.Turn == 0)
+        {
+            CardToken? steward = hand.FirstOrDefault(card => card.DataId == stewardId);
+            if (steward != null && room.Units.All(unit => unit.Team != CombatTeam.Player))
+            {
+                var summon = new PlayCardAction(steward.InstanceId, 0, playerPosition: 0);
+                if (BattleActionModel.PlayCard(source, summon).Supported) return summon;
+            }
+            return BattleActionModel.ChooseUnitSpellAndJunkPlay(source);
+        }
+        if (source.Spawn.Turn == 1)
+        {
+            CombatUnit? friendly = room.Units.FirstOrDefault(unit => unit.Team == CombatTeam.Player);
+            CombatUnit? enemy = room.Units.FirstOrDefault(unit => unit.Team == CombatTeam.Enemy);
+            CardToken? perils = hand.FirstOrDefault(card => card.DataId == perilsId);
+            if (perils != null && friendly != null && friendly.Status("buff") == null)
+            {
+                var cast = new PlayCardAction(perils.InstanceId, 0, targetUnitId: friendly.Id);
+                if (BattleActionModel.PlayCard(source, cast).Supported) return cast;
+            }
+            CardToken? flash = hand.FirstOrDefault(card => card.DataId == flashId);
+            if (flash != null && enemy != null && enemy.Status("poison") == null)
+            {
+                var cast = new PlayCardAction(flash.InstanceId, 0, targetUnitId: enemy.Id);
+                if (BattleActionModel.PlayCard(source, cast).Supported) return cast;
+            }
+            if (flash != null && friendly != null && enemy?.Status("poison")?.Stacks > 0 &&
+                friendly.Status("poison") == null)
+            {
+                var cast = new PlayCardAction(flash.InstanceId, 0, targetUnitId: friendly.Id);
+                if (BattleActionModel.PlayCard(source, cast).Supported) return cast;
+            }
+            CardToken? frost = hand.FirstOrDefault(card => card.DataId == frostId);
+            if (frost != null && enemy?.Status("poison")?.Stacks > 0 && friendly?.Status("poison")?.Stacks > 0)
+                return new PlayCardAction(frost.InstanceId, 0, targetUnitId: enemy.Id);
+        }
         return BattleActionModel.ChooseUnitSpellAndJunkPlay(source);
     }
 

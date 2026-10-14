@@ -533,6 +533,12 @@ namespace MonsterTrain2Poju.Probe
                 numericModifiersPrepared = true;
                 BrainTransferScenario.Prepare(managers, log);
             }
+            if (fullBattle && !numericModifiersPrepared && modifierScenario == FrostChannelingScenario.Name)
+            {
+                if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("FrostChanneling fixture must start on deployment turn.");
+                numericModifiersPrepared = true;
+                FrostChannelingScenario.Prepare(managers, log);
+            }
             if (fullBattle && !numericModifiersPrepared && modifierScenario is "card-effect-kill" or "card-effect-kill-subtype")
             {
                 if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("CardEffectKill fixture must start on deployment turn.");
@@ -1145,6 +1151,7 @@ namespace MonsterTrain2Poju.Probe
                 if (modifierScenario == "damage-by-units-killed") pendingPlay = DamageByUnitsKilledScenario.Choose(decision);
                 if (modifierScenario == TransferAttackScenario.Name) pendingPlay = TransferAttackScenario.Choose(decision);
                 if (modifierScenario == BrainTransferScenario.Name) pendingPlay = BrainTransferScenario.Choose(decision);
+                if (modifierScenario == FrostChannelingScenario.Name) pendingPlay = FrostChannelingScenario.Choose(decision);
                 if (modifierScenario is "card-effect-kill" or "card-effect-kill-subtype")
                     pendingPlay = CardEffectKillScenario.Choose(decision);
                 if (NullForwardingScenario.Enabled) pendingPlay = NullForwardingScenario.Choose(decision, log);

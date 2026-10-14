@@ -957,6 +957,37 @@ namespace MonsterTrain2Poju.Model
                     }
                     continue;
                 }
+                if (effect.Type == "TransferAllStatuses")
+                {
+                    if (targets.UnitIds.Count != 1) continue;
+                    RoomCombatState? transferRoom = state.Rooms.FirstOrDefault(room =>
+                        room.Units.Any(unit => unit.Id == targets.UnitIds[0]));
+                    if (transferRoom == null) continue;
+                    string statusId = effect.Statuses[0].Id;
+                    int total = 0;
+                    foreach (int id in transferRoom.Units.Select(unit => unit.Id).ToArray())
+                    {
+                        RoomCombatState liveRoom = state.Rooms.Single(room => room.RoomIndex == transferRoom.RoomIndex);
+                        CombatUnit? unit = liveRoom.Units.FirstOrDefault(item => item.Id == id);
+                        int stacks = unit?.Status(statusId)?.Stacks ?? 0;
+                        total = unchecked(total + stacks);
+                        if (stacks <= 0) continue;
+                        RoomCombatResult removed = StatusRemovalModel.Remove(liveRoom, id, statusId, stacks, sourceCardId);
+                        if (!removed.Supported) return UnsupportedTrain(removed.UnsupportedReason!);
+                        state = ReplaceRoom(state, removed.State!);
+                        events.AddRange(removed.Events); callbacks.AddRange(removed.PendingCallbacks);
+                    }
+                    transferRoom = state.Rooms.Single(room => room.RoomIndex == transferRoom.RoomIndex);
+                    RoomCombatResult added = StatusApplicationModel.Apply(transferRoom, targets.UnitIds[0],
+                        effect.Statuses[0].WithStacks(total), 0, allowModification: false,
+                        fromEffectType: "CardEffectTransferAllStatusEffects");
+                    if (!added.Supported) return UnsupportedTrain(added.UnsupportedReason!);
+                    state = ReplaceRoom(state, added.State!);
+                    events.AddRange(added.Events); callbacks.AddRange(added.PendingCallbacks);
+                    if (callbacks.Count > 0) DrainDeaths();
+                    if (routingError != null) return UnsupportedTrain(routingError);
+                    continue;
+                }
                 if (effect.Type == "TransferAllStatusesFromUnit")
                 {
                     if (targets.UnitIds.Count == 0) continue;
@@ -1769,8 +1800,11 @@ namespace MonsterTrain2Poju.Model
                     if (forgeError != null) return forgeError;
                     continue;
                 }
-                if (!new[] { "Null", "CopyUnits", "Bump", "AbilityTeleport", "AttackWithUnit", "Damage", "DamagePerSourceAttack", "DamagePerHp", "DamageByUnitsKilled", "TransferAttackFromUnit", "TransferAllStatusesFromUnit", "Heal", "HealOverheal", "SetHealth", "Sacrifice", "Kill", "AddStatus", "RemoveAllStatusEffects", "MultiplyStatus", "MultiplyAllPositiveStatusEffects", "AdjustAllStatusEffects", "AddStatusPerOtherEffect", "SpawnOrStatus", "FloorRearrange", "UnitUpgrade", "UnitUpgradePerStatus", "BuffEquipment", "RemoveUnitUpgrade", "AttachEquipment", "RemoveEquipment", "BuffAttack", "DebuffAttack", "BuffHealth", "DebuffHealth", "Draw", "DiscardHand", "RandomDiscard", "Generate" }.Contains(effect.Type))
+                if (!new[] { "Null", "CopyUnits", "Bump", "AbilityTeleport", "AttackWithUnit", "Damage", "DamagePerSourceAttack", "DamagePerHp", "DamageByUnitsKilled", "TransferAttackFromUnit", "TransferAllStatusesFromUnit", "TransferAllStatuses", "Heal", "HealOverheal", "SetHealth", "Sacrifice", "Kill", "AddStatus", "RemoveAllStatusEffects", "MultiplyStatus", "MultiplyAllPositiveStatusEffects", "AdjustAllStatusEffects", "AddStatusPerOtherEffect", "SpawnOrStatus", "FloorRearrange", "UnitUpgrade", "UnitUpgradePerStatus", "BuffEquipment", "RemoveUnitUpgrade", "AttachEquipment", "RemoveEquipment", "BuffAttack", "DebuffAttack", "BuffHealth", "DebuffHealth", "Draw", "DiscardHand", "RandomDiscard", "Generate" }.Contains(effect.Type))
                     return "Unimplemented spell effect " + effect.Type;
+                if (effect.Type == "TransferAllStatuses" &&
+                    (effect.Target != "DropTargetCharacter" || effect.Statuses.Count != 1))
+                    return "Room-status transfer requires one selected target and status definition.";
                 if (effect.Type == "TransferAllStatusesFromUnit" &&
                     (effect.Target != "LastSacrificedCharacter" || effect.Value != 2 || effect.Statuses.Count != 0))
                     return "Unmodeled status-transfer configuration.";
@@ -1921,6 +1955,7 @@ namespace MonsterTrain2Poju.Model
                 case "DamageByUnitsKilled": return count > 0;
                 case "TransferAttackFromUnit": return count > 0;
                 case "TransferAllStatusesFromUnit": return count > 0;
+                case "TransferAllStatuses": return count > 0;
                 case "Heal": return effect.Target == "Room" || count > 0;
                 case "HealOverheal": return count > 0;
                 case "HealTrain": return count > 0;

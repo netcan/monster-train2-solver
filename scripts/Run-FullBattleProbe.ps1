@@ -22,6 +22,7 @@ param(
     [switch] $DamageByUnitsKilled,
     [switch] $TransferAttack,
     [switch] $BrainTransfer,
+    [switch] $FrostChanneling,
     [switch] $TransferAttackAbility,
     [switch] $CardEffectKill,
     [switch] $CardEffectKillSubtype,
@@ -374,6 +375,7 @@ if ($SetHealth) { $Policy = 'units-spells-and-junk' }
 if ($DamageByUnitsKilled) { $Policy = 'units-spells-and-junk' }
 if ($TransferAttack) { $Policy = 'units-spells-and-junk' }
 if ($BrainTransfer) { $Policy = 'units-spells-and-junk' }
+if ($FrostChanneling) { $Policy = 'units-spells-and-junk' }
 if ($TransferAttackAbility) { $Policy = 'units-spells-and-junk' }
 if ($CardEffectKill -and $CardEffectKillSubtype) { throw 'Choose either -CardEffectKill or -CardEffectKillSubtype.' }
 if ($CardEffectKill -or $CardEffectKillSubtype) { $Policy = 'units-spells-and-junk' }
@@ -559,6 +561,7 @@ if ($SetHealth) { $environment['MT2_PROBE_MODIFIERS'] = 'set-health' }
 if ($DamageByUnitsKilled) { $environment['MT2_PROBE_MODIFIERS'] = 'damage-by-units-killed' }
 if ($TransferAttack) { $environment['MT2_PROBE_MODIFIERS'] = 'transfer-attack' }
 if ($BrainTransfer) { $environment['MT2_PROBE_MODIFIERS'] = 'brain-transfer' }
+if ($FrostChanneling) { $environment['MT2_PROBE_MODIFIERS'] = 'frost-channeling' }
 if ($TransferAttackAbility) { $environment['MT2_PROBE_MODIFIERS'] = 'transfer-attack-ability' }
 if ($CardEffectKill -or $CardEffectKillSubtype) {
     $environment['MT2_PROBE_MODIFIERS'] = if ($CardEffectKillSubtype) { 'card-effect-kill-subtype' } else { 'card-effect-kill' }
@@ -1300,6 +1303,29 @@ $brainTransferCoverage = -not $BrainTransfer -or @($brainTransferActions | Where
         @($afterRecipient.Statuses | Where-Object { $_.Id -eq 'scorch' -and $_.Stacks -eq 2 }).Count -eq 1 -and
         $afterRecipient.Attack -eq $recipient.Attack + $source.Attack -and
         @($afterSpawner.Temporary.Upgrades).Count -eq @($beforeSpawner.Temporary.Upgrades).Count + 1 -and
+        -not $entry.Difference -and $entry.Predicted.Supported
+}).Count -gt 0
+$frostChannelingActions = @($trace.Actions | Where-Object {
+    $entry = $_
+    $played = $entry.Before.Spawn.Train.Context.Cards.Hand | Where-Object InstanceId -EQ $entry.Action.CardInstanceId
+    $played.DataId -eq 'a82b7b1b-31f1-4634-9cf3-197d17d61ba3'
+})
+$frostChannelingCoverage = -not $FrostChanneling -or @($frostChannelingActions | Where-Object {
+    $entry = $_
+    $beforeRoom = $entry.Before.Spawn.Train.Rooms | Where-Object RoomIndex -EQ $entry.Action.RoomIndex
+    $afterRoom = $entry.Actual.Spawn.Train.Rooms | Where-Object RoomIndex -EQ $entry.Action.RoomIndex
+    $enemy = $beforeRoom.Units | Where-Object Id -EQ $entry.Action.TargetUnitId
+    $friend = $beforeRoom.Units | Where-Object {
+        $_.Team -eq 1 -and @($_.Statuses | Where-Object { $_.Id -eq 'poison' -and $_.Stacks -eq 8 }).Count -eq 1
+    } | Select-Object -First 1
+    $afterEnemy = $afterRoom.Units | Where-Object Id -EQ $enemy.Id
+    $afterFriend = $afterRoom.Units | Where-Object Id -EQ $friend.Id
+    $definition = $entry.Before.PlayRules.Cards | Where-Object DataId -EQ 'a82b7b1b-31f1-4634-9cf3-197d17d61ba3'
+    $enemy.Team -eq 0 -and $friend -and
+        @($enemy.Statuses | Where-Object { $_.Id -eq 'poison' -and $_.Stacks -eq 8 }).Count -eq 1 -and
+        @($afterEnemy.Statuses | Where-Object { $_.Id -eq 'poison' -and $_.Stacks -eq 32 }).Count -eq 1 -and
+        @($afterFriend.Statuses | Where-Object { $_.Id -eq 'poison' -and $_.Stacks -gt 0 }).Count -eq 0 -and
+        (@($definition.Effects | ForEach-Object Type) -join ',') -eq 'TransferAllStatuses,MultiplyStatus' -and
         -not $entry.Difference -and $entry.Predicted.Supported
 }).Count -gt 0
 $transferAbilityActions = @($trace.Actions | Where-Object { $_.Action.ActivatorUnitId -gt 0 })
@@ -2936,6 +2962,8 @@ $result = [pscustomobject]@{
     TransferAttackCoverage = $transferAttackCoverage
     BrainTransferActions = $brainTransferActions.Count
     BrainTransferCoverage = $brainTransferCoverage
+    FrostChannelingActions = $frostChannelingActions.Count
+    FrostChannelingCoverage = $frostChannelingCoverage
     TransferAbilityActions = $transferAbilityActions.Count
     TransferAbilityCoverage = $transferAbilityCoverage
     DamageByUnitsKilledActions = $damageByUnitsKilledActions.Count
@@ -3025,6 +3053,7 @@ if (-not $sacrificeEffectCoverage) { throw 'Native CardEffectSacrifice was not e
 if (-not $setHealthCoverage) { throw 'Native CardEffectSetHealth did not set a living player unit to one health in a matched action.' }
 if (-not $transferAttackCoverage) { throw 'Native attack transfer did not buff a front unit and its spawner card in a matched action.' }
 if (-not $brainTransferCoverage) { throw 'Original BrainTransfer did not transfer Rage, Scorch and attack in a matched action.' }
+if (-not $frostChannelingCoverage) { throw 'Original FrostChanneling did not combine cross-team poison stacks in a matched action.' }
 if (-not $transferAbilityCoverage) { throw 'Native ability-user transfer did not buff its actor and spawner card in a matched action.' }
 if (-not $damageByUnitsKilledCoverage) { throw 'Original Shardtail effect did not sacrifice an Imp and damage an enemy in a matched action.' }
 if (-not $cardEffectKillCoverage) { throw 'Native CardEffectKill did not kill one enemy and one player unit in a full battle action.' }
