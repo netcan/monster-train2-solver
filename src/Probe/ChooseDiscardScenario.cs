@@ -11,6 +11,7 @@ namespace MonsterTrain2Poju.Probe
     {
         internal const string Name = "card-effect-choose-discard";
         internal const string OthersName = "card-effect-choose-discard-others";
+        internal const string OthersPolicyName = "card-effect-choose-discard-others-policy";
         private const string ScrapId = "bc4cd099-93df-4771-ae72-4984fc50ab9f";
         private const string FoundryLineId = "26651f53-95d0-4802-b710-51d23bf89bbd";
         private const string OneCostId = "fb0683b1-20ac-4dd2-b580-14b502e182f4";
@@ -19,8 +20,9 @@ namespace MonsterTrain2Poju.Probe
         private static int selectedId;
         private static bool chosenOnce;
         private static ManualLogSource? logger;
-        internal static bool OthersMode => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == OthersName;
-        internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") is Name or OthersName;
+        internal static bool OthersPolicyMode => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == OthersPolicyName;
+        internal static bool OthersMode => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") is OthersName or OthersPolicyName;
+        internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") is Name or OthersName or OthersPolicyName;
 
         internal static void Prepare(AllGameManagers managers, ManualLogSource log)
         {
@@ -64,7 +66,7 @@ namespace MonsterTrain2Poju.Probe
         internal static PlayCardAction? Choose(BattleTurnState state)
         {
             if (chosenOnce)
-                return OthersMode ? null : BattleActionModel.EnumerateSupportedPlays(state)
+                return OthersMode && !OthersPolicyMode ? null : BattleActionModel.EnumerateSupportedPlays(state)
                     .FirstOrDefault(action => action.CardInstanceId != sourceId);
             CardToken? source = state.Spawn.Train.Context!.Cards.Hand.FirstOrDefault(card => card.InstanceId == sourceId);
             if (source != null)

@@ -2344,11 +2344,17 @@ namespace MonsterTrain2Poju.Model
                         Trigger(unit, "regen", 1);
                         Heal(unit, amount, "Regen");
                     }
-                    if (unit.Alive && unit.Has("poison") && Active(unit.Statuses["poison"]))
+                    // Stealth shares the native post-combat poison stage and is consumed even without an opponent.
+                    foreach (CombatStatus status in unit.RegisteredStatuses().ToArray())
                     {
-                        int amount = StatusMagnitude(unit, "poison");
-                        Trigger(unit, "poison", 1);
-                        Damage(null, unit, amount, "Poison");
+                        if (!unit.Alive || !unit.Has(status.Id) || !Active(status)) continue;
+                        if (status.Id == "poison")
+                        {
+                            int amount = StatusMagnitude(unit, "poison");
+                            Trigger(unit, "poison", 1);
+                            Damage(null, unit, amount, "Poison");
+                        }
+                        else if (status.Id == "stealth") Trigger(unit, "stealth", 1);
                     }
                     if (unit.Alive && unit.Has("ephemeral") && Active(unit.Statuses["ephemeral"]))
                         TriggerEphemeral(unit);
@@ -3242,7 +3248,12 @@ namespace MonsterTrain2Poju.Model
                             unit.Statuses[id] = status.WithMarkedForRemovalAfterCardPlayed(true);
                         else if (status.RemoveAtEndOfTurnIfTriggered)
                             unit.Statuses[id] = status.WithRemoveAllAtEnd(true);
-                        else RemoveStatus(unit, id, count);
+                        else
+                        {
+                            if (!source.Preview && context?.QueryFrame?.SelectedRoomIndex != null)
+                                context = context.WithQueryFrame(context.QueryFrame.With(selectedRoomIndex: source.RoomIndex));
+                            RemoveStatus(unit, id, count);
+                        }
                     }
                 }
             }

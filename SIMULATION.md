@@ -1,10 +1,23 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-15): 300 binary archives, including 269
+Current accepted inventory (2026-10-15): 301 binary archives, including 270
 full battles and 31 component calibrations. Unchanged original relic evidence
 covers 78/224 catalog entries (34.82%); see
 [the owner evidence table](tests/fixtures/relic-coverage.md). Whole-battle
 coverage and the optimal solver remain in progress.
+
+### Post-combat Stealth in a full policy battle
+
+`full-battle-choose-discard-others-policy.mt2f` starts with the unchanged
+`FoundryLine` choice, then plays 18 ordinary cards across seven turns. Its 55
+native room stages and all 19 actions match independent replay; the recorded
+policy chain and 16 parallel branches reach the same final Pyre health (27).
+The game consumes one `Stealth` stack in an empty room's post-combat poison
+stage, even without an opposing unit, and focuses that room before removing
+the stack. This fixes a previously observed nine-mismatch battle trace.
+The muted Instant capture has zero failures, mismatches, unsupported transitions
+or pending records. The 31,447-byte archive has 5,093 unique nodes and SHA-256
+`ed41d4d334d6eaeccebd7cd4f4f1b60ba0a1da92cfe46f9dafec128b001d98b5`.
 
 ### Original keep-one bulk smelt
 

@@ -461,7 +461,7 @@ internal static class BattleActionChecks
         Func<BattleTurnState, PlayCardAction?> chooser = policy.GetString() == "units-spells-and-junk"
             ? BattleActionModel.ChooseUnitSpellAndJunkPlay : BattleActionModel.ChooseUnitAndJunkPlay;
         if (fixture.TryGetProperty("ModifierScenario", out var chooseDiscardPolicy) &&
-            chooseDiscardPolicy.GetString() is "card-effect-choose-discard" or "card-effect-choose-discard-others")
+            chooseDiscardPolicy.GetString() is "card-effect-choose-discard" or "card-effect-choose-discard-others" or "card-effect-choose-discard-others-policy")
         {
             int scenarioCardId = actions[0].GetProperty("Action").GetProperty("CardInstanceId").GetInt32();
             chooser = source => BattleActionModel.EnumerateSupportedPlays(source)

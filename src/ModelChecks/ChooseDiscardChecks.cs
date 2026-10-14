@@ -71,7 +71,8 @@ internal static class ChooseDiscardChecks
 
     public static void NativeOthers(FixtureValue root)
     {
-        Require(root.GetProperty("ModifierScenario").GetString() == "card-effect-choose-discard-others",
+        Require(root.GetProperty("ModifierScenario").GetString() is "card-effect-choose-discard-others" or
+            "card-effect-choose-discard-others-policy",
             "This fixture did not run the original keep-one smelt scenario.");
         FixtureValue[] actions = root.GetProperty("Actions").EnumerateArray().ToArray();
         Require(actions.Length > 0 && actions[0].GetProperty("ScenarioAction").GetBoolean(),
@@ -127,6 +128,26 @@ internal static class ChooseDiscardChecks
             Require(branch.QueryFrame?.ForgePoints == input.QueryFrame?.ForgePoints + expected &&
                 branch.Cards.Hand.Any(card => card.InstanceId == kept),
                 "A FoundryLine branch kept the wrong card or granted the wrong Forge amount.");
+        }
+        if (root.GetProperty("ModifierScenario").GetString() == "card-effect-choose-discard-others-policy")
+        {
+            FixtureValue stealthStage = root.GetProperty("Stages").EnumerateArray()
+                .Single(stage => stage.GetProperty("Index").GetInt32() == 24);
+            RoomCombatState start = stealthStage.GetProperty("Before").Deserialize<RoomCombatState>()!;
+            RoomCombatState end = stealthStage.GetProperty("Actual").Deserialize<RoomCombatState>()!;
+            Require(stealthStage.GetProperty("Kind").GetString() == "Room" &&
+                start.Units.Count == 1 && start.Units[0].AssetKey == "TrainStewardSmall" &&
+                start.Units[0].Status("stealth")?.Stacks == 2 &&
+                end.Units.Single().Status("stealth")?.Stacks == 1 &&
+                start.Context?.QueryFrame?.SelectedRoomIndex == 1 &&
+                end.Context?.QueryFrame?.SelectedRoomIndex == 0,
+                "Native empty-floor post-combat Stealth consumption or room focus changed.");
+            RoomCombatResult stealth = RoomCombatModel.Resolve(start);
+            Require(stealth.Supported &&
+                System.Text.Json.JsonSerializer.Serialize(stealth.State!.Units) ==
+                System.Text.Json.JsonSerializer.Serialize(end.Units) &&
+                stealth.State.Context?.QueryFrame?.SelectedRoomIndex == 0,
+                "The independent post-combat model did not consume one Stealth stack and focus its floor.");
         }
         Console.WriteLine("CHOOSE-DISCARD-OTHERS-NATIVE PASS: original FoundryLine kept one card, consumed " +
             consumed.Length + " others and enumerated " + choices.Length + " ordered search branches.");

@@ -49,6 +49,7 @@ $fixtureNames = @('full-battle-steward-once.mt2f', 'full-battle-no-cards.mt2f', 
     'full-battle-hand-upgrades.mt2f', 'full-battle-targeted-hand-upgrades.mt2f', 'full-battle-permanent-consume-hand-upgrades.mt2f',
     'full-battle-permanent-consume-over-temporary.mt2f',
     'full-battle-choose-discard-others.mt2f',
+    'full-battle-choose-discard-others-policy.mt2f',
     'full-battle-healing.mt2f', 'full-battle-healing-triggers.mt2f', 'full-battle-room-spells.mt2f',
     'full-battle-damage-per-hp.mt2f', 'full-battle-damage-per-hp-last-attacker.mt2f',
     'full-battle-damage-per-hp-ability.mt2f', 'full-battle-damage-overflow.mt2f',
@@ -446,6 +447,12 @@ foreach ($fixturePath in @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 
     foreach ($mode in @('--choose-discard-others-only', '--battle-search-only')) {
         dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- $mode $fixturePath
         if ($LASTEXITCODE -ne 0) { throw "Choose-discard others checks failed ($mode): $fixturePath" }
+    }
+}
+foreach ($fixturePath in @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 'full-battle-choose-discard-others-policy.mt2f' })) {
+    foreach ($mode in @('--choose-discard-others-only', '--battle-search-only')) {
+        dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- $mode $fixturePath
+        if ($LASTEXITCODE -ne 0) { throw "Choose-discard others policy checks failed ($mode): $fixturePath" }
     }
 }
 foreach ($fixturePath in $recursionUpgradeFixtures) {

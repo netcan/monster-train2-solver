@@ -27,6 +27,7 @@ param(
     [switch] $OriginalSpellShield,
     [switch] $ChooseDiscard,
     [switch] $ChooseDiscardOthers,
+    [switch] $ChooseDiscardOthersPolicy,
     [switch] $RemoveAllStatusEffects,
     [switch] $DragonHoard,
     [switch] $TrainHeal,
@@ -371,6 +372,7 @@ if ($OriginalTrample) { $Policy = 'units-spells-and-junk' }
 if ($OriginalSpellShield) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($ChooseDiscard) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($ChooseDiscardOthers) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
+if ($ChooseDiscardOthersPolicy) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($RemoveAllStatusEffects) { $Policy = 'units-spells-and-junk' }
 if ($DragonHoard) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($TrainHeal) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
@@ -549,6 +551,7 @@ if ($OriginalTrample) { $environment['MT2_PROBE_MODIFIERS'] = 'original-trample'
 if ($OriginalSpellShield) { $environment['MT2_PROBE_MODIFIERS'] = 'original-spell-shield' }
 if ($ChooseDiscard) { $environment['MT2_PROBE_MODIFIERS'] = 'card-effect-choose-discard' }
 if ($ChooseDiscardOthers) { $environment['MT2_PROBE_MODIFIERS'] = 'card-effect-choose-discard-others' }
+if ($ChooseDiscardOthersPolicy) { $environment['MT2_PROBE_MODIFIERS'] = 'card-effect-choose-discard-others-policy' }
 if ($RemoveAllStatusEffects) { $environment['MT2_PROBE_MODIFIERS'] = 'remove-all-status-effects' }
 if ($DragonHoard) { $environment['MT2_PROBE_MODIFIERS'] = 'dragon-hoard' }
 if ($TrainHeal) { $environment['MT2_PROBE_MODIFIERS'] = 'train-heal' }
@@ -724,6 +727,11 @@ if ($ChooseDiscardOthers -and ($trace.ModifierScenario -ne 'card-effect-choose-d
     -not (Select-String -LiteralPath $unityLog -Pattern 'CHOOSE-DISCARD-AUTOSELECT card=\d+ cost=2' -Quiet) -or
     @($trace.Actions | Where-Object ScenarioAction).Count -ne 1)) {
     throw 'Original FoundryLine did not preserve the selected cost-2 card in the native battle.'
+}
+if ($ChooseDiscardOthersPolicy -and ($trace.ModifierScenario -ne 'card-effect-choose-discard-others-policy' -or
+    -not (Select-String -LiteralPath $unityLog -Pattern 'CHOOSE-DISCARD-AUTOSELECT card=\d+ cost=2' -Quiet) -or
+    @($trace.Actions | Where-Object ScenarioAction).Count -ne 1 -or $trace.Actions.Count -le 1)) {
+    throw 'Original FoundryLine did not continue into the high-action native policy battle.'
 }
 if ($RemoveAllStatusEffects -and ($trace.Schema -ne 164 -or $trace.ModifierScenario -ne 'remove-all-status-effects' -or
     -not (Select-String -LiteralPath $unityLog -Pattern 'REMOVE-ALL-STATUS-SEEDED card=.* hidden=' -Quiet) -or

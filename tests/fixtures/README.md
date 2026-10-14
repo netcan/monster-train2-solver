@@ -1,5 +1,11 @@
 # Native regression fixtures
 
+`full-battle-choose-discard-others-policy.mt2f` records unchanged `FoundryLine`
+followed by 18 policy plays. Its 55 stages, seven EndTurns and 19 card actions
+match; a focused check also proves empty-floor post-combat `Stealth` decay and
+room focus. The binary-only archive is 31,447 bytes; its SHA-256 is in
+`manifest.tsv`.
+
 `full-battle-choose-discard-others.mt2f` records unchanged `FoundryLine` keeping
 one cost-two card and consuming four other hand cards for Forge Points and
 Ember. Its 52-stage battle, seven EndTurns, five search choices and serial/parallel
