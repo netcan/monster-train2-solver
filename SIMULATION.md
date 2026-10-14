@@ -1,6 +1,6 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-14): 294 binary archives, including 263
+Current accepted inventory (2026-10-14): 295 binary archives, including 264
 full battles and 31 component calibrations. Unchanged original relic evidence
 covers 78/224 catalog entries (34.82%); see
 [the owner evidence table](tests/fixtures/relic-coverage.md). Whole-battle
@@ -17,12 +17,32 @@ transitions or pending records. The 31,785-byte binary has 5,158 unique nodes
 and SHA-256 `5fba30c233e3df83508aeab9678e77cee1029a527ed2d7320c859ad0db68f8d7`.
 Independent checks replay 10 later policy actions, four EndTurns and 16 parallel
 branches; search matches all 21 decisions and 128 serial/parallel states.
-Other null-effect uses, including targetless scourges and character triggers,
-still need original-owner calibration.
+Other null-effect uses, including targetless scourges, still need original-owner
+calibration.
 
 ```powershell
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-null-forwarding-cleave.mt2f
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-null-forwarding-cleave.mt2f
+```
+
+### Original null-effect unit triggers
+
+`full-battle-null-unit-triggers.mt2f` plays unchanged `LunaCovenChamp1` and
+`LunaCovenChamp2`. A native `CardEffectNULL.TestEffect` probe confirms the
+second champion's `OnSpawn/Room` effect collects no targets and fails its test.
+When the first champion dies, its `OnDeath/Self` effect collects one target and
+passes. The muted Instant battle wins with 23 matched actions, seven EndTurns,
+and zero capture failures, mismatches, unsupported transitions or pending
+records. The 31,169-byte binary has 5,066 unique nodes and SHA-256
+`8abed0490b381b38f44b051f8622472f66879f22d7118b72cfff3830d49ee11b`.
+Independent policy replay covers 21 later plays and 16 parallel branches;
+search matches all 23 decisions and 128 serial/parallel states. The original
+`MagicPowerAcolyte` still needs its separate status-conduit mechanism before
+its null-effect trigger can receive original-owner evidence.
+
+```powershell
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-null-unit-triggers.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-null-unit-triggers.mt2f
 ```
 
 ### Original self-attack-scaled status

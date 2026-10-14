@@ -991,6 +991,16 @@ namespace MonsterTrain2Poju.Model
                                 return "Missing or mismatched triggered moon-phase definition.";
                             continue;
                         }
+                        if (effect.Type == "CardEffectNULL")
+                        {
+                            CardActionEffect? action = effect.Action;
+                            if (action?.Type != "Null" || action.NullForwardSelf || effect.Count != 0 ||
+                                action.Target is not ("Self" or "Room"))
+                                return "Unmodeled triggered null-effect target forwarding.";
+                            string? filter = action.Target == "Self" ? null : action.Filters?.Validate();
+                            if (filter != null) return filter;
+                            continue;
+                        }
                         if (effect.Action != null && effect.Type != "CardEffectHeal" && effect.Type != "CardEffectDamage" && effect.Type != "CardEffectPyreDamageIfNoPlayerUnits" && effect.Type != "CardEffectAddStatusEffect" &&
                             effect.Type is not ("CardEffectAddStatusEffectIfNoPlayerUnits" or "CardEffectAddStatusEffectPerSelfAttack"))
                             return "Mismatched triggered action definition.";
@@ -3024,6 +3034,7 @@ namespace MonsterTrain2Poju.Model
             }
 
             private bool ActionTestValid(CardActionEffect action, CardTargets targets, int amount = 0) =>
+                action.Type == "Null" ? targets.UnitIds.Count > 0 || action.NullTargetless :
                 action.Type == "RemoveStatus" ? StatusRemovalModel.Test(CurrentRoom(), action, targets.UnitIds) :
                 AbilityCooldownModel.IsEffect(action.Type) || AbilityLifecycleModel.IsEffect(action.Type) ? true :
                 action.Type == "AdjustCapacity" ? !source.Preview && !battleWon && context!.AllScenarioBossesDead != true &&
@@ -3067,6 +3078,7 @@ namespace MonsterTrain2Poju.Model
                 CardTargets targets = TriggerTargets(actor, action, testing: false, overrideTarget, lastSpawnedOverrideUnitId);
                 if (!targets.Supported) { unsupportedReason = targets.UnsupportedReason; return false; }
                 if (targets.BattleRng.HasValue) context = context!.WithBattleRng(targets.BattleRng.Value);
+                if (action.Type == "Null") return true;
                 if (AbilityCooldownModel.IsEffect(action.Type) || action.Type == "RemoveStatus" || AbilityLifecycleModel.IsEffect(action.Type))
                 {
                     IEnumerable<int> ordered = action.Type == "RemoveStatus" ? targets.UnitIds : targets.UnitIds.Reverse();

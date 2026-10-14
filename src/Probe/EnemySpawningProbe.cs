@@ -132,6 +132,9 @@ namespace MonsterTrain2Poju.Probe
                     interactions.Add("Spawned modified gold reward rules");
                 if (effect.GetEffectStateName() == "CardEffectDespawnCharacter" && effect.GetParamInt() > 1)
                     interactions.Add("Native preview mutation of a delayed despawn counter");
+                if (effect.GetEffectStateName() == "CardEffectNULL" &&
+                    (effect.GetParamBool() || effect.GetAdditionalParamInt() != 0))
+                    interactions.Add("Unmodeled triggered null-effect forwarding or targeting");
                 if (effect.GetEffectStateName() != "CardEffectAddBattleCard" && (effect.GetCopyModifiersFromSource() || effect.GetFilterBasedOnMainSubClass() ||
                     effect.GetParamCardUpgradeData() != null && !UnitTriggerUpgradeProbe.Known(effect.GetEffectStateName()) && effect.GetEffectStateName() != "CardEffectDrawAdditionalNextTurn" && effect.GetEffectStateName() != "CardEffectSpawnMonster")) interactions.Add("Spawned effect modifiers");
                 var pool = new List<CardData>();

@@ -21,6 +21,7 @@ param(
     [switch] $CardEffectKill,
     [switch] $CardEffectKillSubtype,
     [switch] $NullForwarding,
+    [switch] $NullTriggers,
     [switch] $RemoveAllStatusEffects,
     [switch] $DragonHoard,
     [switch] $TrainHeal,
@@ -359,6 +360,7 @@ if ($SacrificeEffects) { $Policy = 'units-spells-and-junk' }
 if ($CardEffectKill -and $CardEffectKillSubtype) { throw 'Choose either -CardEffectKill or -CardEffectKillSubtype.' }
 if ($CardEffectKill -or $CardEffectKillSubtype) { $Policy = 'units-spells-and-junk' }
 if ($NullForwarding) { $Policy = 'units-spells-and-junk' }
+if ($NullTriggers) { $Policy = 'units-spells-and-junk' }
 if ($RemoveAllStatusEffects) { $Policy = 'units-spells-and-junk' }
 if ($DragonHoard) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($TrainHeal) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
@@ -531,6 +533,7 @@ if ($CardEffectKill -or $CardEffectKillSubtype) {
     $environment['MT2_PROBE_MODIFIERS'] = if ($CardEffectKillSubtype) { 'card-effect-kill-subtype' } else { 'card-effect-kill' }
 }
 if ($NullForwarding) { $environment['MT2_PROBE_MODIFIERS'] = 'null-forwarding' }
+if ($NullTriggers) { $environment['MT2_PROBE_MODIFIERS'] = 'null-triggers' }
 if ($RemoveAllStatusEffects) { $environment['MT2_PROBE_MODIFIERS'] = 'remove-all-status-effects' }
 if ($DragonHoard) { $environment['MT2_PROBE_MODIFIERS'] = 'dragon-hoard' }
 if ($TrainHeal) { $environment['MT2_PROBE_MODIFIERS'] = 'train-heal' }
@@ -665,6 +668,15 @@ if ($NullForwarding -and ($trace.ModifierScenario -ne 'null-forwarding' -or
     -not (Select-String -LiteralPath $unityLog -Pattern 'NULL-FORWARDING-PLAY room=' -Quiet) -or
     -not (Select-String -LiteralPath (Join-Path $profile 'logfile.log') -Pattern 'Attacker Cleave dealing [1-9][0-9]* damage' -Quiet))) {
     throw 'Original Cleave did not deal damage in the native battle.'
+}
+if ($NullTriggers -and ($trace.ModifierScenario -ne 'null-triggers' -or
+    -not (Select-String -LiteralPath $unityLog -Pattern 'NULL-TRIGGERS-PREPARED originals=' -Quiet) -or
+    @(@('LunaCovenChamp1', 'LunaCovenChamp2') | Where-Object {
+        -not (Select-String -LiteralPath $unityLog -Pattern "NULL-TRIGGERS-PLAY original=$_" -Quiet)
+    }).Count -ne 0 -or
+    -not (Select-String -LiteralPath $unityLog -Pattern 'NULL-TRIGGER-TEST actor=MonsterChampionLunaCoven1 targets=1 result=True' -Quiet) -or
+    -not (Select-String -LiteralPath $unityLog -Pattern 'NULL-TRIGGER-TEST actor=MonsterChampionLunaCoven2 targets=0 result=False' -Quiet))) {
+    throw 'Original null-trigger target tests did not run in the native battle.'
 }
 if ($RemoveAllStatusEffects -and ($trace.Schema -ne 164 -or $trace.ModifierScenario -ne 'remove-all-status-effects' -or
     -not (Select-String -LiteralPath $unityLog -Pattern 'REMOVE-ALL-STATUS-SEEDED card=.* hidden=' -Quiet) -or

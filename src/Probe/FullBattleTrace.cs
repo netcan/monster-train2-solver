@@ -402,6 +402,9 @@ namespace MonsterTrain2Poju.Probe
                 var effects = trigger.GetEffectStates().Select(effect =>
                 {
                     string type = effect.GetCardEffect().GetType().Name;
+                    if (type == "CardEffectNULL" &&
+                        (effect.GetParamBool() || effect.GetAdditionalParamInt() != 0))
+                        interactions.Add("Unmodeled triggered null-effect forwarding or targeting");
                     int value = AbilityLifecycleProbe.Known(type) ? 0 : effect.GetParamInt(), counter = 0;
                     if (type == "CardEffectDespawnCharacter")
                         counter = (int)AccessTools.Field(typeof(CardEffectDespawnCharacter), "despawnCounter")

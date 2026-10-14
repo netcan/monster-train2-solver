@@ -17,7 +17,7 @@ namespace MonsterTrain2Poju.Probe
         {
             if (AbilityLifecycleProbe.Known(state.GetCardEffect().GetType().Name)) return AbilityLifecycleProbe.Capture(state);
             if (AbilityCooldownProbe.Known(state.GetCardEffect().GetType().Name)) return AbilityCooldownProbe.Describe(state.GetSourceCardEffectData(), state.GetParamInt(), state.GetParamBool());
-            if (!(state.GetCardEffect() is CardEffectHeal) && !(state.GetCardEffect() is CardEffectDamage) && !(state.GetCardEffect() is CardEffectAddStatusEffect) &&
+            if (!(state.GetCardEffect() is CardEffectNULL) && !(state.GetCardEffect() is CardEffectHeal) && !(state.GetCardEffect() is CardEffectDamage) && !(state.GetCardEffect() is CardEffectAddStatusEffect) &&
                 !EnergyModel.IsNativeEffect(state.GetCardEffect().GetType().Name) && !(state.GetCardEffect() is CardEffectDrawAdditionalNextTurn) &&
                 !(state.GetCardEffect() is CardEffectAdjustRoomCapacity) && !(state.GetCardEffect() is CardEffectAdjustForgePoints) &&
                 !(state.GetCardEffect() is CardEffectAdvanceMoonPhase)) return null;
@@ -30,7 +30,7 @@ namespace MonsterTrain2Poju.Probe
         internal static CardActionEffect? Definition(CardEffectData effect) =>
             AbilityLifecycleProbe.Known(effect.GetEffectStateName()) ? AbilityLifecycleProbe.Describe(effect) :
             AbilityCooldownProbe.Known(effect.GetEffectStateName()) ? AbilityCooldownProbe.Describe(effect, effect.GetParamInt(), effect.GetParamBool()) :
-            effect.GetEffectStateName() != "CardEffectHeal" && !DamageEffect(effect.GetEffectStateName()) && !StatusEffect(effect.GetEffectStateName()) &&
+            effect.GetEffectStateName() != "CardEffectNULL" && effect.GetEffectStateName() != "CardEffectHeal" && !DamageEffect(effect.GetEffectStateName()) && !StatusEffect(effect.GetEffectStateName()) &&
                 !EnergyModel.IsNativeEffect(effect.GetEffectStateName()) && effect.GetEffectStateName() != "CardEffectDrawAdditionalNextTurn" && effect.GetEffectStateName() != "CardEffectAdjustRoomCapacity" && effect.GetEffectStateName() != "CardEffectAdjustForgePoints" &&
                 effect.GetEffectStateName() != "CardEffectAdvanceMoonPhase" ? null :
             // Effect states have no parent card; native damage/heal getters still clamp endpoints.
@@ -44,7 +44,7 @@ namespace MonsterTrain2Poju.Probe
             new TriggeredStatusScaling(effect.GetUseStatusEffectStackMultiplier() ? effect.GetStatusEffectStackMultiplier() : null,
                 effect.GetUseHealthMissingStackMultiplier(), effect.GetUseMagicPowerMultiplier(), effect.GetParamBool2(),
                 effect.GetParamSubtype().IsNone ? "" : effect.GetParamSubtype().Key) : null;
-        private static int Numeric(CardEffectData effect, int value) => StatusEffect(effect.GetEffectStateName()) || effect.GetEffectStateName() == "CardEffectAdjustForgePoints" ||
+        private static int Numeric(CardEffectData effect, int value) => effect.GetEffectStateName() == "CardEffectNULL" || StatusEffect(effect.GetEffectStateName()) || effect.GetEffectStateName() == "CardEffectAdjustForgePoints" ||
             EnergyModel.IsNativeEffect(effect.GetEffectStateName()) || (effect.GetEffectStateName() == "CardEffectDrawAdditionalNextTurn" || effect.GetEffectStateName() == "CardEffectAdjustRoomCapacity" ||
                 effect.GetEffectStateName() == "CardEffectAdvanceMoonPhase") ? value : Math.Max(0, value);
         private static CardActionEffect Describe(CardEffectData effect, int value, CardEffectRange? range, CombatStatus[]? statuses = null)
@@ -55,7 +55,8 @@ namespace MonsterTrain2Poju.Probe
             bool drawNext = effect.GetEffectStateName() == "CardEffectDrawAdditionalNextTurn";
             bool forgePoints = effect.GetEffectStateName() == "CardEffectAdjustForgePoints";
             bool moonAdvance = effect.GetEffectStateName() == "CardEffectAdvanceMoonPhase";
-            return new CardActionEffect(capacity ? "AdjustCapacity" : drawNext ? "DrawNextTurn" : forgePoints ? ForgePointsModel.Effect : moonAdvance ? "AdvanceMoonPhase" : energy ? EnergyEffectProbe.Type(effect) : DamageEffect(effect.GetEffectStateName()) ? "Damage" : effect.GetEffectStateName() == "CardEffectHeal" ? "Heal" : "AddStatus", effect.GetTargetMode().ToString(), value,
+            bool nullEffect = effect.GetEffectStateName() == "CardEffectNULL";
+            return new CardActionEffect(nullEffect ? "Null" : capacity ? "AdjustCapacity" : drawNext ? "DrawNextTurn" : forgePoints ? ForgePointsModel.Effect : moonAdvance ? "AdvanceMoonPhase" : energy ? EnergyEffectProbe.Type(effect) : DamageEffect(effect.GetEffectStateName()) ? "Damage" : effect.GetEffectStateName() == "CardEffectHeal" ? "Heal" : "AddStatus", effect.GetTargetMode().ToString(), value,
                 effect.GetTargetTeamType().HasFlag(Team.Type.Heroes), effect.GetTargetTeamType().HasFlag(Team.Type.Monsters),
                 statuses ?? (StatusEffect(effect.GetEffectStateName()) ? effect.GetParamStatusEffects().Select(status => BattleActionProbe.Status(status.statusId, status.count)).ToArray() : Array.Empty<CombatStatus>()),
                 upgrade: drawNext ? BonusDrawProbe.Upgrade(effect) : null, tests: new CardEffectTests(effect.GetShouldTest(), effect.GetShouldFailToCastIfTestFails(),
@@ -63,8 +64,9 @@ namespace MonsterTrain2Poju.Probe
                 range: range,
                 filters: new CardTargetFilters(effect.GetTargetModeHealthFilter().ToString(), effect.GetTargetModeStatusEffectsFilter(),
                     effect.GetTargetModeStatusEffectsExcludedFilter(), effect.GetTargetIgnoreBosses(),
-                    effect.GetTargetCharacterSubtype().IsNone ? "" : effect.GetTargetCharacterSubtype().Key,
-                    excluded.Select(subtype => subtype.IsNone ? "" : subtype.Key).ToArray()), onlyIfNoEnemies: capacity && effect.GetParamBool());
+                effect.GetTargetCharacterSubtype().IsNone ? "" : effect.GetTargetCharacterSubtype().Key,
+                    excluded.Select(subtype => subtype.IsNone ? "" : subtype.Key).ToArray()), onlyIfNoEnemies: capacity && effect.GetParamBool(),
+                nullTargetless: nullEffect && effect.GetParamBool2(), nullForwardSelf: nullEffect && effect.GetAdditionalParamInt() == 1);
         }
     }
 }
