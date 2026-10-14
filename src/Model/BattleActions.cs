@@ -50,6 +50,7 @@ namespace MonsterTrain2Poju.Model
         public bool DisallowStatusStackModifiers { get; }
         public int? StatusAdjustmentFilter { get; }
         public bool? RemoveHalfStatusEffects { get; }
+        public OverhealRule? Overheal { get; }
         public bool DamagePerHpLastAttacker { get; }
         public bool DamagePerHpIncludeArmor { get; }
         public RoomCapacityAttachmentState? RoomAttachment { get; }
@@ -68,7 +69,7 @@ namespace MonsterTrain2Poju.Model
             bool damagePerHpLastAttacker = false, bool damagePerHpIncludeArmor = false,
             RoomCapacityAttachmentState? roomAttachment = null, CardRecursionRule? recursion = null,
             CardUpgradeMaskRule? cardFilter = null, IReadOnlyList<CardUpgradeMaskRule>? upgradeFilters = null,
-            bool? removeHalfStatusEffects = null)
+            bool? removeHalfStatusEffects = null, OverhealRule? overheal = null)
         { Type = type; Target = target; Value = value; AllowEnemy = allowEnemy; AllowPlayer = allowPlayer; Statuses = Array.AsReadOnly(statuses.ToArray());
             Upgrade = upgrade; Lifetime = lifetime; Tests = tests; Range = range; Filters = filters; Generation = generation; OnlyIfNoEnemies = onlyIfNoEnemies;
             CooldownParameter = cooldownParameter; AbilityChange = abilityChange; CopyHeroStats = copyHeroStats; ScaleUpgrade = scaleUpgrade;
@@ -80,7 +81,16 @@ namespace MonsterTrain2Poju.Model
             RemoveHalfStatusEffects = removeHalfStatusEffects;
             DamagePerHpLastAttacker = damagePerHpLastAttacker; DamagePerHpIncludeArmor = damagePerHpIncludeArmor;
             RoomAttachment = roomAttachment; Recursion = recursion; CardFilter = cardFilter;
-            UpgradeFilters = Array.AsReadOnly((upgradeFilters ?? Array.Empty<CardUpgradeMaskRule>()).ToArray()); }
+            UpgradeFilters = Array.AsReadOnly((upgradeFilters ?? Array.Empty<CardUpgradeMaskRule>()).ToArray());
+            Overheal = overheal; }
+    }
+
+    public sealed class OverhealRule
+    {
+        public int AttackPerPoint { get; }
+        public int MaxHealthPerPoint { get; }
+        public OverhealRule(int attackPerPoint, int maxHealthPerPoint)
+        { AttackPerPoint = attackPerPoint; MaxHealthPerPoint = maxHealthPerPoint; }
     }
 
     public sealed class CardRecursionRule

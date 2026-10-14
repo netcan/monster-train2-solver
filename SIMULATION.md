@@ -1,10 +1,31 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-14): 283 binary archives, including 252
+Current accepted inventory (2026-10-14): 284 binary archives, including 253
 full battles and 31 component calibrations. Unchanged original relic evidence
 covers 78/224 catalog entries (34.82%); see
 [the owner evidence table](tests/fixtures/relic-coverage.md). Whole-battle
 coverage and the optimal solver remain in progress.
+
+### Original overheal effect
+
+`full-battle-overheal.mt2f` plays the unchanged `TidalTurning` and
+`FaesBlessing` on a full-health Train Steward. Native and modeled results add
+ten Armor stacks from the room-targeted card, then five more from the
+selected-unit card. The muted Instant battle wins with 26 actions and zero
+capture failures, mismatches, unsupported transitions or pending records.
+The effect is modeled from
+`CardEffectHealAndOverheal`: it computes excess from pre-heal HP, settles healing
+callbacks, then applies attack, maximum-health and status rewards in that order.
+Pure checks cover nonzero multipliers, exact healing, heal immunity and parallel
+branches. `FaesBlessing` also replays later in the battle and remains matched.
+
+The 36,229-byte binary has 6,038 unique nodes and SHA-256
+`da063368a450d40e678143b2b9d7c869f1efd5c3f1b0ce97857207f560bd0c88`.
+
+```powershell
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-overheal.mt2f
+dotnet run --project src/ModelChecks -c Release -- --overheal-pure
+```
 
 ### Status-scaled unit upgrades from Solgard Stasis
 

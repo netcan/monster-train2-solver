@@ -19,7 +19,7 @@ namespace MonsterTrain2Poju.Probe
             "CardEffectDamage", "CardEffectDamagePerSourceAttack", "CardEffectDamagePerHp", "CardEffectDraw", "CardEffectDrawAdditionalNextTurn",
             "CardEffectRemoveAllStatusEffects",
             "CardEffectAdjustRoomCapacity", "CardEffectAdjustForgePoints", "CardEffectDiscardHand", "CardEffectRandomDiscard", "CardEffectAddBattleCard",
-            "CardEffectHeal", "CardEffectHealTrain", "CardEffectSacrifice", "CardEffectKill", "CardEffectRecursion", "CardEffectBuffDamage", "CardEffectDebuffDamage",
+            "CardEffectHeal", "CardEffectHealAndOverheal", "CardEffectHealTrain", "CardEffectSacrifice", "CardEffectKill", "CardEffectRecursion", "CardEffectBuffDamage", "CardEffectDebuffDamage",
             "CardEffectBuffMaxHealth", "CardEffectDebuffMaxHealth", "CardEffectAddStatusEffect", "CardEffectMultiplyStatusEffect",
             "CardEffectMultiplyAllPositiveStatusEffects", "CardEffectAdjustAllStatusEffects", "CardEffectAddStatusEffectPerOtherEffect",
             "CardEffectSpawnMonsterOrAddStatusEffect", "CardEffectFloorRearrange", "CardEffectAddCardUpgradeToUnits", "CardEffectDrawType",
@@ -292,6 +292,7 @@ namespace MonsterTrain2Poju.Probe
                 effect.GetEffectStateName() == "CardEffectBuffMaxHealth" ? "BuffHealth" :
                 effect.GetEffectStateName() == "CardEffectDebuffMaxHealth" ? "DebuffHealth" :
                 effect.GetEffectStateName() == "CardEffectHeal" ? "Heal" :
+                effect.GetEffectStateName() == "CardEffectHealAndOverheal" ? "HealOverheal" :
                 effect.GetEffectStateName() == "CardEffectHealTrain" ? "HealTrain" :
                 effect.GetEffectStateName() == "CardEffectSacrifice" ? "Sacrifice" :
                 effect.GetEffectStateName() == "CardEffectKill" ? "Kill" :
@@ -361,10 +362,11 @@ namespace MonsterTrain2Poju.Probe
                     type == "AttachEquipment" ? "" : ((UnitUpgradeLifetime)effect.GetAdditionalParamInt1()).ToString();
             }
             var statuses = new List<CombatStatus>();
-            if (type == "AddStatus" || type == "MultiplyStatus" || type == "AdjustAllStatusEffects" ||
+            if (type == "AddStatus" || type == "HealOverheal" || type == "MultiplyStatus" || type == "AdjustAllStatusEffects" ||
                 type == "AddStatusPerOtherEffect" || type == "SpawnOrStatus" || type == "UnitUpgradePerStatus")
             {
-                if (type != "AdjustAllStatusEffects" && effect.GetParamStatusEffects().Length == 0) interactions.Add("Empty status effect pool");
+                if (type != "AdjustAllStatusEffects" && type != "HealOverheal" &&
+                    effect.GetParamStatusEffects().Length == 0) interactions.Add("Empty status effect pool");
                 foreach (StatusEffectStackData status in effect.GetParamStatusEffects())
                 {
                     if (type == "AddStatus" && !StatusEffectManager.Instance.GetStatusEffectDataById(status.statusId)!.IsStackable() &&
@@ -420,7 +422,8 @@ namespace MonsterTrain2Poju.Probe
                     effect.GetParamCardFilter() != null, effect.GetParamCardUpgradeData() != null,
                     effect.GetParamCardFilter() == null ? null : CardUpgradeMaskProbe.Rule(effect.GetParamCardFilter())) : null,
                 upgradeFilters: upgradeFilters,
-                removeHalfStatusEffects: type == "RemoveAllStatusEffects" ? (bool?)effect.GetParamBool() : null);
+                removeHalfStatusEffects: type == "RemoveAllStatusEffects" ? (bool?)effect.GetParamBool() : null,
+                overheal: type == "HealOverheal" ? new OverhealRule(effect.GetAdditionalParamInt(), effect.GetAdditionalParamInt1()) : null);
         }
 
         private static RoomCapacityAttachmentState? CapacityAttachment(CardData card, CardEffectData effect,

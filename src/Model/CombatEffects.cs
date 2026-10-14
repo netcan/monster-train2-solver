@@ -209,7 +209,7 @@ namespace MonsterTrain2Poju.Model
                 Action.SpawnFallbackUnit, Action.DisallowStatusStackModifiers,
                 damagePerHpLastAttacker: Action.DamagePerHpLastAttacker,
                 damagePerHpIncludeArmor: Action.DamagePerHpIncludeArmor,
-                roomAttachment: Action.RoomAttachment, recursion: Action.Recursion), DamageStatusMultiplier, StatusScaling, Summon, Enchantment);
+                roomAttachment: Action.RoomAttachment, recursion: Action.Recursion, overheal: Action.Overheal), DamageStatusMultiplier, StatusScaling, Summon, Enchantment);
     }
 
     public sealed class CombatTriggerOrigin

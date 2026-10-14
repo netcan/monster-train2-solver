@@ -1,6 +1,19 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
 
+if (args.Length == 1 && args[0] == "--overheal-pure")
+{
+    OverhealChecks.Run();
+    return;
+}
+
+if (args.Length == 2 && args[0] == "--overheal-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    OverhealChecks.Native(fixture.RootElement);
+    return;
+}
+
 if (args.Length == 1 && args[0] == "--status-upgrade-pure")
 {
     StatusUpgradeChecks.Run();
@@ -771,6 +784,7 @@ HordeRemovalChecks.Run();
 HordeDeathChecks.Run();
 AbilityCardChecks.Run();
 StatusUpgradeChecks.Run();
+OverhealChecks.Run();
 UnitAbilityChecks.Run();
 RelicChecks.Run();
 TriggerCountChecks.Run();

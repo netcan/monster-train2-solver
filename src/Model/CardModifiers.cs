@@ -442,10 +442,11 @@ namespace MonsterTrain2Poju.Model
                 damagePerHpLastAttacker: effect.DamagePerHpLastAttacker,
                 damagePerHpIncludeArmor: effect.DamagePerHpIncludeArmor,
                 roomAttachment: effect.RoomAttachment, recursion: effect.Recursion,
-                removeHalfStatusEffects: effect.RemoveHalfStatusEffects);
+                removeHalfStatusEffects: effect.RemoveHalfStatusEffects, overheal: effect.Overheal);
 
-            int ResolveValue(CardActionEffect effect, int value) => effect.Type == "Damage" || effect.Type == "Heal"
-                ? UpgradedStat(UpgradedStat(value, effect.Type, true, instance.Permanent), effect.Type, true, instance.Temporary) : value;
+            int ResolveValue(CardActionEffect effect, int value) => effect.Type == "Damage" || effect.Type == "Heal" || effect.Type == "HealOverheal"
+                ? UpgradedStat(UpgradedStat(value, effect.Type == "HealOverheal" ? "Heal" : effect.Type, true, instance.Permanent),
+                    effect.Type == "HealOverheal" ? "Heal" : effect.Type, true, instance.Temporary) : value;
         }
     }
 }

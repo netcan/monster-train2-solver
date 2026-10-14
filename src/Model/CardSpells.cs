@@ -412,7 +412,7 @@ namespace MonsterTrain2Poju.Model
                         effect.UseCardTraits, effect.RequireEquipment, effect.UseSelectedRoom, effect.CountStatusOnlyOnTargets,
                         effect.SpawnFallbackUnit, effect.DisallowStatusStackModifiers, effect.StatusAdjustmentFilter,
                         effect.DamagePerHpLastAttacker, effect.DamagePerHpIncludeArmor, effect.RoomAttachment, effect.Recursion,
-                        effect.CardFilter, effect.UpgradeFilters, effect.RemoveHalfStatusEffects);
+                        effect.CardFilter, effect.UpgradeFilters, effect.RemoveHalfStatusEffects, effect.Overheal);
                 }
                 if (effect.Type == "Recursion")
                 {
@@ -932,6 +932,7 @@ namespace MonsterTrain2Poju.Model
                         if (effect.Type == "AttachEquipment") DrainDeaths();
                         continue;
                     }
+                    if (effect.Type == "HealOverheal" && target.Status("heal immunity")?.Stacks > 0) continue;
                     int? scaledDamage = null;
                     bool nativeDamagePhase = IsDamage(effect) && targetRoom!.Context?.SpawnPoints != null && !targetRoom.Preview;
                     // Native calculates trait damage and defensive status focus before its trigger
@@ -1074,7 +1075,7 @@ namespace MonsterTrain2Poju.Model
                         if (!rearrangedOrder.Supported) return UnsupportedTrain(rearrangedOrder.UnsupportedReason!);
                         state = rearrangedOrder.State!;
                     }
-                    if ((effect.Type == "Heal" && effect.Value >= 0 || effect.Type == "UnitUpgrade" || effect.Type == "BuffEquipment") && target.Triggers.Any(trigger => trigger.Kind == "OnHeal" &&
+                    if (((effect.Type == "Heal" || effect.Type == "HealOverheal") && effect.Value >= 0 || effect.Type == "UnitUpgrade" || effect.Type == "BuffEquipment") && target.Triggers.Any(trigger => trigger.Kind == "OnHeal" &&
                         (!trigger.Once || !trigger.HasTriggered) && (!targetRoom!.Deployment || trigger.SkipDuringDeployment != true) &&
                         (trigger.IgnoreSilence || target.Statuses.All(status => status.Id != "silenced"))))
                         focusedRoom = null; // Trigger notification suppression/focus is not captured yet.
@@ -1088,7 +1089,37 @@ namespace MonsterTrain2Poju.Model
                     CombatUnit? afterTarget = applied.State!.Units.FirstOrDefault(unit => unit.Id == id);
                     bool upgradeApplied = (effect.Type == "UnitUpgrade" || effect.Type == "BuffEquipment") && (afterTarget == null ||
                         afterTarget.Modifiers!.Upgrades.Count > target.Modifiers!.Upgrades.Count);
-                    if (effect.Type == "Heal" && effect.Value >= 0 && target.Modifiers?.CanBeHealed == true || upgradeApplied) DrainDeaths();
+                    if ((effect.Type == "Heal" || effect.Type == "HealOverheal") && effect.Value >= 0 && target.Modifiers?.CanBeHealed == true || upgradeApplied) DrainDeaths();
+                    if (effect.Type == "HealOverheal" && effect.Value >= 0)
+                    {
+                        int excess = Math.Max(0, unchecked(target.Health + effect.Value - target.MaxHealth));
+                        if (excess > 0)
+                        {
+                            targetRoom = state.Rooms.FirstOrDefault(room => room.Units.Any(unit => unit.Id == id));
+                            if (targetRoom == null) return UnsupportedTrain("Overheal target left the train during healing callbacks.");
+                            RoomCombatResult attack = UnitAttackModel.Apply(targetRoom, id,
+                                unchecked(excess * effect.Overheal!.AttackPerPoint));
+                            if (!attack.Supported) return UnsupportedTrain(attack.UnsupportedReason!);
+                            state = ReplaceRoom(state, attack.State!);
+                            targetRoom = state.Rooms.Single(room => room.RoomIndex == targetRoom.RoomIndex);
+                            RoomCombatResult health = UnitHealthModel.Apply(targetRoom, id,
+                                unchecked(excess * effect.Overheal.MaxHealthPerPoint), refreshPyre: Refresh);
+                            if (!health.Supported) return UnsupportedTrain(health.UnsupportedReason!);
+                            state = ReplaceRoom(state, health.State!);
+                            events.AddRange(health.Events); callbacks.AddRange(health.PendingCallbacks);
+                            foreach (CombatStatus status in effect.Statuses)
+                            {
+                                targetRoom = state.Rooms.FirstOrDefault(room => room.Units.Any(unit => unit.Id == id));
+                                if (targetRoom == null) return UnsupportedTrain("Overheal target left the train before status application.");
+                                RoomCombatResult added = StatusApplicationModel.Apply(targetRoom, id,
+                                    status.WithStacks(unchecked(excess * status.Stacks)));
+                                if (!added.Supported) return UnsupportedTrain(added.UnsupportedReason!);
+                                state = ReplaceRoom(state, added.State!);
+                                events.AddRange(added.Events); callbacks.AddRange(added.PendingCallbacks);
+                            }
+                            DrainDeaths();
+                        }
+                    }
                     if (effect.Type == "BuffHealth" && effect.Value > 0 && target.Modifiers?.CanBeHealed == true &&
                         HealingModel.ModifiedAmount(effect.Value, target.Statuses, fromMaxHealthChange: true) >= 0) DrainDeaths();
                     if (effect.Type == "DebuffHealth" && afterTarget == null)
@@ -1358,7 +1389,7 @@ namespace MonsterTrain2Poju.Model
                     !AbilityLifecycleModel.IsEffect(effect.Type))
                 {
                     if (effect.Type == "AdjustAllStatusEffects") return "Status adjustment effects use a fixed integer value, not an integer range.";
-                    if (!EnergyModel.IsEffect(effect.Type) && effect.Type != ForgePointsModel.Effect && !new[] { "Damage", "DamagePerHp", "Heal", "AddStatus", "MultiplyStatus", "MultiplyAllPositiveStatusEffects", "BuffAttack", "DebuffAttack", "BuffHealth", "DebuffHealth", "Draw", "DrawType", "DrawNextTurn" }.Contains(effect.Type))
+                    if (!EnergyModel.IsEffect(effect.Type) && effect.Type != ForgePointsModel.Effect && !new[] { "Damage", "DamagePerHp", "Heal", "HealOverheal", "AddStatus", "MultiplyStatus", "MultiplyAllPositiveStatusEffects", "BuffAttack", "DebuffAttack", "BuffHealth", "DebuffHealth", "Draw", "DrawType", "DrawNextTurn" }.Contains(effect.Type))
                         return "Unmodeled range consumer " + effect.Type;
                     string? rangeError = effect.Range.Validate();
                     if (rangeError != null) return rangeError;
@@ -1497,7 +1528,7 @@ namespace MonsterTrain2Poju.Model
                     if (forgeError != null) return forgeError;
                     continue;
                 }
-                if (!new[] { "CopyUnits", "Bump", "AbilityTeleport", "AttackWithUnit", "Damage", "DamagePerSourceAttack", "DamagePerHp", "Heal", "Sacrifice", "Kill", "AddStatus", "RemoveAllStatusEffects", "MultiplyStatus", "MultiplyAllPositiveStatusEffects", "AdjustAllStatusEffects", "AddStatusPerOtherEffect", "SpawnOrStatus", "FloorRearrange", "UnitUpgrade", "UnitUpgradePerStatus", "BuffEquipment", "RemoveUnitUpgrade", "AttachEquipment", "RemoveEquipment", "BuffAttack", "DebuffAttack", "BuffHealth", "DebuffHealth", "Draw", "DiscardHand", "RandomDiscard", "Generate" }.Contains(effect.Type))
+                if (!new[] { "CopyUnits", "Bump", "AbilityTeleport", "AttackWithUnit", "Damage", "DamagePerSourceAttack", "DamagePerHp", "Heal", "HealOverheal", "Sacrifice", "Kill", "AddStatus", "RemoveAllStatusEffects", "MultiplyStatus", "MultiplyAllPositiveStatusEffects", "AdjustAllStatusEffects", "AddStatusPerOtherEffect", "SpawnOrStatus", "FloorRearrange", "UnitUpgrade", "UnitUpgradePerStatus", "BuffEquipment", "RemoveUnitUpgrade", "AttachEquipment", "RemoveEquipment", "BuffAttack", "DebuffAttack", "BuffHealth", "DebuffHealth", "Draw", "DiscardHand", "RandomDiscard", "Generate" }.Contains(effect.Type))
                     return "Unimplemented spell effect " + effect.Type;
                 if (effect.Type == "Generate" && effect.Generation == null) return "Missing generated card rules.";
                 if ((effect.Type == "UnitUpgrade" || effect.Type == "UnitUpgradePerStatus" ||
@@ -1507,7 +1538,7 @@ namespace MonsterTrain2Poju.Model
                     return "Status-scaled unit upgrades require a captured self target and status filters.";
                 if (effect.Type == "BuffEquipment" && effect.Lifetime != "TemporaryUntilUnitDeath")
                     return "Equipment buffs require the native unit-death lifetime.";
-                if (effect.Value < 0 && !AttackChange(effect) && effect.Type != ForgePointsModel.Effect && !new[] { "CopyUnits", "Bump", "Damage", "DamagePerSourceAttack", "DamagePerHp", "Heal", "AddStatus", "AddStatusPerOtherEffect", "SpawnOrStatus", "MultiplyAllPositiveStatusEffects", "AdjustAllStatusEffects", "AdjustDragonsHoard", "BuffHealth", "DebuffHealth", "Draw", "DiscardHand", "Generate" }.Contains(effect.Type) ||
+                if (effect.Value < 0 && !AttackChange(effect) && effect.Type != ForgePointsModel.Effect && !new[] { "CopyUnits", "Bump", "Damage", "DamagePerSourceAttack", "DamagePerHp", "Heal", "HealOverheal", "AddStatus", "AddStatusPerOtherEffect", "SpawnOrStatus", "MultiplyAllPositiveStatusEffects", "AdjustAllStatusEffects", "AdjustDragonsHoard", "BuffHealth", "DebuffHealth", "Draw", "DiscardHand", "Generate" }.Contains(effect.Type) ||
                     effect.Type == "FloorRearrange" && effect.Value > 1) return "Invalid spell effect value.";
                 if (effect.Type == "BuffHealth" && effect.Lifetime != "" && effect.Lifetime != "TemporaryUntilEndOfBattle" &&
                     effect.Lifetime != "TemporaryUntilUnitDeath") return "Unmodeled maximum-health buff lifetime.";
@@ -1516,6 +1547,8 @@ namespace MonsterTrain2Poju.Model
                     return "Unmodeled all-status adjustment filter.";
                 if ((effect.Type == "AddStatus" || effect.Type == "MultiplyStatus") && effect.Statuses.Count == 0)
                     return "A status effect requires at least one status definition.";
+                if (effect.Type == "HealOverheal" && (effect.Overheal == null || effect.Value < 0 || effect.Range?.Min < 0))
+                    return "Overheal requires its captured multipliers and a nonnegative healing amount.";
                 if (effect.Type == "AddStatusPerOtherEffect" && effect.Statuses.Count < 2)
                     return "A per-status effect requires both applied and counted status definitions.";
                 if (effect.Type == "SpawnOrStatus" && (effect.Statuses.Count == 0 || effect.SpawnFallbackUnit == null))
@@ -1626,6 +1659,7 @@ namespace MonsterTrain2Poju.Model
                 case "DamagePerSourceAttack": return count > 0;
                 case "DamagePerHp": return count > 0;
                 case "Heal": return effect.Target == "Room" || count > 0;
+                case "HealOverheal": return count > 0;
                 case "HealTrain": return count > 0;
                 case "Sacrifice": return count > 0;
                 case "Kill": return effect.Tests?.MustHaveValidTargets != true || count > 0;
@@ -1744,7 +1778,7 @@ namespace MonsterTrain2Poju.Model
                 effect.UseCardTraits, effect.RequireEquipment, effect.UseSelectedRoom, effect.CountStatusOnlyOnTargets,
                 effect.SpawnFallbackUnit, effect.DisallowStatusStackModifiers, effect.StatusAdjustmentFilter,
                 effect.DamagePerHpLastAttacker, effect.DamagePerHpIncludeArmor, effect.RoomAttachment, effect.Recursion,
-                effect.CardFilter, effect.UpgradeFilters, effect.RemoveHalfStatusEffects);
+                effect.CardFilter, effect.UpgradeFilters, effect.RemoveHalfStatusEffects, effect.Overheal);
         }
         private static int TestCount(TrainCombatState state, CardActionEffect effect, CardTargets targets)
         {
@@ -1818,7 +1852,7 @@ namespace MonsterTrain2Poju.Model
                     deferSpawnerExhaustion, selfUnitId, refreshPyre: refreshPyre, externalActor: externalActor,
                     externalActorRoomIndex: externalActorRoomIndex, enqueueCharacterTrigger: enqueueCharacterTrigger)
                 : RoomCombatModel.ApplyCardDamage(state, target.Id, Math.Max(0, effect.Value), sourceCardId, deferSpawnerExhaustion, selfUnitId, refreshPyre: refreshPyre);
-            if (effect.Type == "Heal") return effect.Value < 0 ? Unchanged(state) : RoomCombatModel.ApplyCardHeal(state, target.Id, effect.Value, refreshPyre: refreshPyre);
+            if (effect.Type == "Heal" || effect.Type == "HealOverheal") return effect.Value < 0 ? Unchanged(state) : RoomCombatModel.ApplyCardHeal(state, target.Id, effect.Value, refreshPyre: refreshPyre);
             if (AttackChange(effect)) return UnitAttackModel.Apply(state, target.Id, effect.Value, effect.Type == "DebuffAttack");
             if (effect.Type == "BuffHealth" || effect.Type == "DebuffHealth")
                 return UnitHealthModel.Apply(state, target.Id, effect.Value, effect.Type == "DebuffHealth", effect.Lifetime, refreshPyre: refreshPyre);
