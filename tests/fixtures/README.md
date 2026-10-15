@@ -1,5 +1,14 @@
 # Native regression fixtures
 
+Legacy replay refresh (2026-10-15): 10 of the 30 recordings with disabled-floor
+policy plays have fresh native replacements. The resumed attack-trigger and
+branch-mask clone-upgrade recordings both pass their complete independent policy
+chains, including mid-battle roots and 16 immutable branches. Their original
+scenario and capture flags are preserved. Twenty replacements and the complete
+inventory regression remain pending. Byte counts and hashes in older entries
+below describe their historical captures; [manifest.tsv](manifest.tsv) records
+the current accepted binaries.
+
 `full-battle-original-conserve-ember.mt2f` acquires unchanged `ConserveEmber`
 before battle, retaining the natural deck, Pyre and enemy waves. Seven native
 end-turn conservation queries retain all remaining Ember. Banking the first two
