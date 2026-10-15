@@ -66,7 +66,8 @@ namespace MonsterTrain2Poju.Probe
                             (float)Field("_attackMultiplier"), (int)Field("_unmodifiedAttackMultiplier"),
                             Field("_cardType").ToString(), (bool)Field("_multiplyByUpgradeCount"),
                             (bool)Field("_multiplyByRelicCount"), (bool)Field("_excludeChampions"),
-                            (bool)Field("_excludeStartRelics"), filter == null ? null : CardUpgradeMaskProbe.Rule(filter));
+                            (bool)Field("_excludeStartRelics"), filter == null ? null : CardUpgradeMaskProbe.Rule(filter),
+                            (bool)Field("_multiplyByRelicCount") ? CountRoles(managers) : null);
                     }).ToArray();
                 var triggers = effects.Select((effect, index) => new { Effect = effect, Index = index })
                     .Where(item => item.Effect is RelicEffectAddTrigger).Select(item => AddedTriggers(item.Effect, item.Index)).ToArray();
@@ -128,6 +129,12 @@ namespace MonsterTrain2Poju.Probe
             }).ToArray();
         }
 
+        private static RelicCountRole[] CountRoles(AllGameManagers managers)
+        {
+            var save = managers.GetSaveManager(); var collected = save.GetCollectedRelics();
+            return Current(managers).Select(owner => new RelicCountRole(owner.GetRelicDataID(), collected.Contains(owner), owner.IsBossGivenRelic(), owner.IsSoulSaviorScalingRelic(),
+                (save.GetMainClass()?.IsStarterRelic(owner.GetRelicDataID()) ?? false) || (save.GetSubClass()?.IsStarterRelic(owner.GetRelicDataID()) ?? false))).ToArray();
+        }
         private static RelicUnitUpgradeTrigger UnitUpgradeTrigger(IRelicEffect effect, int index)
         {
             object Field(string name) => AccessTools.Field(effect.GetType(), name).GetValue(effect);

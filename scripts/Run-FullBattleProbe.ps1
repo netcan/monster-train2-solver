@@ -260,6 +260,7 @@ param(
     [switch] $OriginalUnitPhaseUpgradeRelics,
     [switch] $OriginalNullRelic,
     [switch] $OriginalNullRelicBaseline,
+    [switch] $OriginalRelicCountAttack,
     [switch] $OriginalUnitUpgradeTriggerRelic,
     [switch] $TypedDraw,
     [switch] $IncantRelic,
@@ -385,6 +386,7 @@ if ($OriginalOpeningDrawRelics) { $BranchCardMasks = $true; $Policy = 'units-spe
 if ($OriginalTurnDrawRelics) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalUnitPhaseUpgradeRelics) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalNullRelic -or $OriginalNullRelicBaseline) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
+if ($OriginalRelicCountAttack) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalUnitUpgradeTriggerRelic) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalTriggerRelicBatch -or $OriginalLifecycleRelicBatch) {
     $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $SettleDeathDissolves = $true; $SettleCardAnimations = $true
@@ -777,6 +779,7 @@ if ($OriginalTurnDrawRelics) { $environment['MT2_PROBE_MODIFIERS'] = 'original-t
 if ($OriginalUnitPhaseUpgradeRelics) { $environment['MT2_PROBE_MODIFIERS'] = 'original-unit-phase-upgrade-relics' }
 if ($OriginalNullRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-null-relic' }
 if ($OriginalNullRelicBaseline) { $environment['MT2_PROBE_MODIFIERS'] = 'original-null-relic-baseline' }
+if ($OriginalRelicCountAttack) { $environment['MT2_PROBE_MODIFIERS'] = 'original-relic-count-attack' }
 if ($OriginalUnitUpgradeTriggerRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-unit-upgrade-trigger-relic' }
 if ($TypedDraw) {
     $environment['MT2_PROBE_MODIFIERS'] = 'typed-draw'
@@ -1436,6 +1439,11 @@ if ($CampaignPostBattleCalibration) {
             throw 'Post-battle original-owner matrix or recorded state restoration is incomplete.'
         }
     } finally { $postBattleDocument.Dispose() }
+}
+if ($OriginalRelicCountAttack -and ($trace.ModifierScenario -ne 'original-relic-count-attack' -or
+    @($trace.RelicCountAttackControls).Count -ne 45 -or
+    -not (Select-String -LiteralPath $unityLog -Pattern 'ORIGINAL-RELIC-COUNT-PREPARED actual foreign/active starter' -Quiet))) {
+    throw 'Original relic-count attack owner lacks native classification controls.'
 }
 if (($OriginalNullRelic -or $OriginalNullRelicBaseline) -and ($null -eq $trace.OriginalNullRelic -or
     $trace.OriginalNullRelic.Present -ne $(if ($OriginalNullRelicBaseline) { 0 } else { 1 }) -or

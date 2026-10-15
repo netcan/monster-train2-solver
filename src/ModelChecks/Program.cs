@@ -629,6 +629,14 @@ if (args.Length == 1 && args[0] == "--campaign-relics-pure")
     CampaignRelicChecks.Run();
     return;
 }
+if (args.Length == 2 && args[0] == "--original-relic-count-attack-only")
+{
+    using var document = ModelJson.ReadFixture(args[1]);
+    OriginalRelicCountAttackChecks.Native(document.RootElement);
+    BattleTurnChecks.Native(document.RootElement);
+    BattleActionChecks.Native(document.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--original-card-attack-only")
 {
     using var document = ModelJson.ReadFixture(args[1]);

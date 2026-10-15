@@ -242,7 +242,7 @@ namespace MonsterTrain2Poju.Model
                     {
                         if (!attackEffects.TryGetValue(effectIndex, out RelicCardAttackModifier? attackEffect))
                             return Fail("Missing ordered relic card-attack definition.");
-                        card = RelicCardAttackModel.Apply(card, attackEffect!, out bool returned, out error, out var filters)!;
+                        card = RelicCardAttackModel.Apply(card, attackEffect!, out bool returned, out error, out var filters, workingRelics)!;
                         if (card == null) return Fail(error!);
                         dispatches.Add(new RelicCardModifierDispatch(relicIndex, attackEffect!.EffectIndex, returned,
                             false, filters));

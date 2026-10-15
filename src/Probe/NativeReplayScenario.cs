@@ -282,6 +282,8 @@ namespace MonsterTrain2Poju.Probe
                         OriginalTurnDrawScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalNullRelicScenario.Enabled && !OriginalNullRelicScenario.Acquired)
                         OriginalNullRelicScenario.AcquireBeforeBattle(managers!, log);
+                    if (fullBattle && OriginalRelicCountAttackScenario.Enabled && !OriginalRelicCountAttackScenario.Acquired)
+                        OriginalRelicCountAttackScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalSpellPlayThresholdScenario.Enabled && !OriginalSpellPlayThresholdScenario.Acquired)
                         OriginalSpellPlayThresholdScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalConserveEmberScenario.Enabled && !OriginalConserveEmberScenario.Acquired)
@@ -559,6 +561,11 @@ namespace MonsterTrain2Poju.Probe
             if (fullBattle && !numericModifiersPrepared && OriginalAfterDrawGenerationScenario.Enabled)
             {
                 OriginalAfterDrawGenerationScenario.Prepare(managers, log);
+                numericModifiersPrepared = true;
+            }
+            if (fullBattle && !numericModifiersPrepared && OriginalRelicCountAttackScenario.Enabled)
+            {
+                OriginalRelicCountAttackScenario.Prepare(managers, log);
                 numericModifiersPrepared = true;
             }
             if (fullBattle && !numericModifiersPrepared && OriginalUnitPhaseUpgradeScenario.Enabled)

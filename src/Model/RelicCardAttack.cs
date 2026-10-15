@@ -4,6 +4,16 @@ using System.Linq;
 
 namespace MonsterTrain2Poju.Model
 {
+    public sealed class RelicCountRole
+    {
+        public string Id { get; }
+        public bool Collected { get; }
+        public bool BossGiven { get; }
+        public bool SoulSavior { get; }
+        public bool ActiveStarter { get; }
+        public RelicCountRole(string id, bool collected, bool bossGiven, bool soulSavior, bool activeStarter)
+        { Id = id; Collected = collected; BossGiven = bossGiven; SoulSavior = soulSavior; ActiveStarter = activeStarter; }
+    }
     public sealed class RelicCardAttackModifier
     {
         public int EffectIndex { get; }
@@ -18,17 +28,19 @@ namespace MonsterTrain2Poju.Model
         public bool ExcludeChampions { get; }
         public bool ExcludeStartRelics { get; }
         public CardUpgradeMaskRule? CardFilter { get; }
+        public IReadOnlyList<RelicCountRole>? CountRoles { get; }
 
         public RelicCardAttackModifier(int effectIndex, string characterName, string characterSubtypeKey,
             int attackModifier, float attackMultiplier, int unmodifiedAttackMultiplier, string cardType,
             bool multiplyByUpgradeCount, bool multiplyByRelicCount, bool excludeChampions, bool excludeStartRelics,
-            CardUpgradeMaskRule? cardFilter = null)
+            CardUpgradeMaskRule? cardFilter = null, IReadOnlyList<RelicCountRole>? countRoles = null)
         {
             EffectIndex = effectIndex; CharacterName = characterName; CharacterSubtypeKey = characterSubtypeKey;
             AttackModifier = attackModifier; AttackMultiplier = attackMultiplier;
             UnmodifiedAttackMultiplier = unmodifiedAttackMultiplier; CardType = cardType;
             MultiplyByUpgradeCount = multiplyByUpgradeCount; MultiplyByRelicCount = multiplyByRelicCount;
             ExcludeChampions = excludeChampions; ExcludeStartRelics = excludeStartRelics; CardFilter = cardFilter;
+            CountRoles = countRoles == null ? null : Array.AsReadOnly(countRoles.ToArray());
         }
     }
 
@@ -48,10 +60,11 @@ namespace MonsterTrain2Poju.Model
                     return "Relic card-attack modifier exceeds supported signed attack range.";
                 if (effect.CharacterName.Length > 0)
                     return "Relic card-attack card-name filters are not modeled.";
-                if (effect.AttackModifier == 0 || effect.AttackMultiplier != 0 || effect.UnmodifiedAttackMultiplier != 0 ||
-                    effect.MultiplyByRelicCount || effect.ExcludeChampions ||
-                    effect.ExcludeStartRelics)
+                if (effect.AttackModifier == 0 || float.IsNaN(effect.AttackMultiplier) || float.IsInfinity(effect.AttackMultiplier) || effect.ExcludeChampions)
                     return "Relic card-attack multipliers, scaling and advanced filters are not modeled.";
+                if (effect.MultiplyByRelicCount && (effect.CountRoles == null || effect.CountRoles.Any(role => string.IsNullOrEmpty(role.Id)) ||
+                    effect.CountRoles.Select(role => role.Id).Distinct().Count() != effect.CountRoles.Count))
+                    return "Relic-count scaling requires captured native collection classifications.";
                 if (effect.CharacterSubtypeKey.Length == 0 && effect.CardType.Length == 0)
                     return "Relic card-attack effect has no supported subtype or card-type filter.";
             }
@@ -59,7 +72,7 @@ namespace MonsterTrain2Poju.Model
         }
 
         internal static CardInstanceState? Apply(CardInstanceState source, RelicCardAttackModifier effect,
-            out bool returned, out string? error, out IReadOnlyList<RelicCardFilterResult> filters)
+            out bool returned, out string? error, out IReadOnlyList<RelicCardFilterResult> filters, IReadOnlyList<CombatRelicState>? owners = null)
         {
             returned = false; error = null;
             filters = Array.Empty<RelicCardFilterResult>();
@@ -70,6 +83,11 @@ namespace MonsterTrain2Poju.Model
             if (effect.MultiplyByUpgradeCount)
             {
                 if (!RelicCardUpgradeCount.TryCount(source, out int count, out error)) return null;
+                amount = unchecked(amount * count);
+            }
+            if (effect.MultiplyByRelicCount)
+            {
+                if (!TryCount(effect, owners, out int count, out error)) return null;
                 amount = unchecked(amount * count);
             }
             if (amount == 0) return source;
@@ -110,7 +128,25 @@ namespace MonsterTrain2Poju.Model
                     return Fail(error!);
                 amount = unchecked(amount * count);
             }
+            if (effect.MultiplyByRelicCount)
+            {
+                if (!TryCount(effect, source.Context?.Relics, out int count, out string? error)) return Fail(error!);
+                amount = unchecked(amount * count);
+            }
             return UnitAttackModel.Apply(source, unitId, amount < 0 ? -amount : amount, debuff: amount < 0);
+        }
+
+        private static bool TryCount(RelicCardAttackModifier effect, IReadOnlyList<CombatRelicState>? owners, out int count, out string? error)
+        {
+            count = 0; error = null;
+            if (owners == null || effect.CountRoles == null) { error = "Missing native collection roles for branch relic count."; return false; }
+            foreach (var owner in owners)
+            {
+                var role = effect.CountRoles.SingleOrDefault(item => item.Id == owner.DataId);
+                if (role == null) { error = "New relic ownership requires its native collection classification."; return false; }
+                if (role.Collected && !role.BossGiven && !role.SoulSavior && !(effect.ExcludeStartRelics && role.ActiveStarter)) count++;
+            }
+            return true;
         }
 
         private static RoomCombatResult Match(RoomCombatState state) =>
