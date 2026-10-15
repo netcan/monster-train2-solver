@@ -414,11 +414,12 @@ namespace MonsterTrain2Poju.Model
                 TrainCombatResult initialOrder = EnchantmentWorldModel.UpdateAll(train);
                 if (!initialOrder.Supported) return Unsupported(initialOrder.UnsupportedReason!);
                 train = initialOrder.State!;
-                if (train.Context!.Relics?.Any(relic => relic.EffectTypes.Contains(RelicResourceModel.StartCombatEnergy)) == true)
+                if (train.Context!.Relics?.Any(relic => relic.EffectTypes.Any(type =>
+                    RelicResourceModel.IsOpeningCorruption(type) || type == RelicResourceModel.StartCombatEnergy)) == true)
                 {
-                    RelicResourceResult firstCombat = RelicResourceModel.ApplyEnergyTiming(train.Context, startOfCombat: true);
-                    if (!firstCombat.Supported) return Unsupported(firstCombat.UnsupportedReason!);
-                    train = WithContext(train, firstCombat.Context!, false);
+                    TrainCombatResult opening = RelicResourceModel.ApplyOpeningCorruption(train);
+                    if (!opening.Supported) return Unsupported(opening.UnsupportedReason!);
+                    train = opening.State!;
                 }
             }
             spawn = WithTrain(spawn, train, turn, UnityRng.Seed(unchecked(spawningStream.Seed + turn)));
@@ -466,6 +467,12 @@ namespace MonsterTrain2Poju.Model
             context = BonusDrawModel.ApplyUpgrades(context, drawn, source.PlayRules, out string? bonusError);
             if (bonusError != null) return Unsupported(bonusError);
             train = WithContext(train, context, false);
+            if (turn == 1 && train.Context!.Relics?.Any(relic => relic.EffectTypes.Any(RelicResourceModel.IsOpeningCorruption)) == true)
+            {
+                TrainCombatResult opening = RelicResourceModel.ApplyOpeningCorruption(train, postDraw: true);
+                if (!opening.Supported) return Unsupported(opening.UnsupportedReason!);
+                train = opening.State!;
+            }
             ScorchStatusResult scorched = ScorchStatusModel.StartTurn(train);
             if (!scorched.Supported) return Unsupported(scorched.UnsupportedReason!);
             train = scorched.State!;

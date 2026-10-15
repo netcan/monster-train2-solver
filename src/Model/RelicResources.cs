@@ -59,13 +59,15 @@ namespace MonsterTrain2Poju.Model
         public int? DrawMutationOrder { get; }
         public float? CapacityValue { get; }
         public int? CapacityMutationOrder { get; }
+        public float ParamFloat { get; }
         public RelicResourceEffect(int effectIndex, string type, int paramInt, int paramInt2, int amount,
             bool canApplyInPreviewMode, string? requiredMutatorId = null, IReadOnlyList<RelicConditionState>? conditions = null,
             float? drawValue = null, int? drawMutationOrder = null,
-            float? capacityValue = null, int? capacityMutationOrder = null, int paramMinInt = 0)
+            float? capacityValue = null, int? capacityMutationOrder = null, int paramMinInt = 0, float paramFloat = 0)
         {
             EffectIndex = effectIndex; Type = type; ParamInt = paramInt; ParamInt2 = paramInt2; Amount = amount;
             ParamMinInt = paramMinInt;
+            ParamFloat = paramFloat;
             CanApplyInPreviewMode = canApplyInPreviewMode; RequiredMutatorId = requiredMutatorId;
             Conditions = Array.AsReadOnly((conditions ?? Array.Empty<RelicConditionState>()).ToArray());
             DrawValue = drawValue; DrawMutationOrder = drawMutationOrder;
@@ -73,7 +75,7 @@ namespace MonsterTrain2Poju.Model
         }
         internal RelicResourceEffect WithConditions(IReadOnlyList<RelicConditionState> conditions) =>
             new RelicResourceEffect(EffectIndex, Type, ParamInt, ParamInt2, Amount, CanApplyInPreviewMode,
-                RequiredMutatorId, conditions, DrawValue, DrawMutationOrder, CapacityValue, CapacityMutationOrder, ParamMinInt);
+                RequiredMutatorId, conditions, DrawValue, DrawMutationOrder, CapacityValue, CapacityMutationOrder, ParamMinInt, ParamFloat);
     }
 
     public sealed class RelicResourceEvent
@@ -126,7 +128,7 @@ namespace MonsterTrain2Poju.Model
         public const string ConserveEnergyEndOfTurn = "RelicEffectConserveEnergyEndOfTurn";
         public static bool IsEffect(string type) => type == Energy || type == DeploymentEnergy || type == StartCombatEnergy || type == Draw ||
             type == PyreAttack || type == PyreHealth || type == FloorCapacity || type == MoonPhaseEnergy ||
-            type == AdditionalSmeltEmber || type == AdjustMixAmount || type == ConserveEnergyEndOfTurn || type == ConserveForgePoints;
+            type == AdditionalSmeltEmber || type == AdjustMixAmount || type == ConserveEnergyEndOfTurn || type == ConserveForgePoints || IsOpeningCorruption(type);
 
         internal static string? Validate(CombatRelicState relic)
         {
@@ -147,6 +149,9 @@ namespace MonsterTrain2Poju.Model
                     return "Additional smelt Ember amount differs from its original parameter.";
                 if (rule.Type == AdjustMixAmount && rule.Amount != rule.ParamInt)
                     return "Mix adjustment differs from its original parameter.";
+                if (IsOpeningCorruption(rule.Type) && (rule.Amount != rule.ParamInt || !relic.DisallowedInPlacementPhase.HasValue ||
+                    rule.RequiredMutatorId != null || float.IsNaN(rule.ParamFloat) || float.IsInfinity(rule.ParamFloat)))
+                    return "Opening corruption payload or placement restriction is incomplete.";
                 if (rule.Type == ConserveForgePoints && (rule.Amount != (rule.ParamInt2 == 0 ? Math.Max(0, rule.ParamInt) :
                     Math.Min(100, Math.Max(0, rule.ParamInt))) || rule.RequiredMutatorId != null))
                     return "Initialized forge conservation cap/percentage differs from its native parameter.";

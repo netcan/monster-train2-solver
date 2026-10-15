@@ -6,6 +6,7 @@ internal static class RelicResourceChecks
     internal static void Run()
     {
         RelicForgeConservationChecks.Run();
+        RelicOpeningCorruptionChecks.Run();
         var once = new RelicConditionState(new("AnyCardPlayed"), true, 6, 1, false);
         var firstCombat = Context([Rule("first", RelicResourceModel.StartCombatEnergy, 2, disallowed: true, conditions: [once])], energy: 9);
         string firstFrozen = Serialize(firstCombat);
