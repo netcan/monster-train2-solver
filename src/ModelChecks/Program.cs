@@ -563,6 +563,12 @@ if (args.Length == 2 && args[0] == "--original-health-choice-only")
     OriginalHealthChoiceChecks.Native(fixture.RootElement);
     return;
 }
+if (args.Length == 2 && args[0] == "--original-after-draw-generation-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    OriginalAfterDrawGenerationChecks.Native(fixture.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--original-combat-trigger-relics-only")
 {
     using var document = ModelJson.ReadFixture(args[1]);

@@ -550,6 +550,11 @@ namespace MonsterTrain2Poju.Probe
                 OriginalHealthChoiceScenario.Prepare(managers, log);
                 numericModifiersPrepared = true;
             }
+            if (fullBattle && !numericModifiersPrepared && OriginalAfterDrawGenerationScenario.Enabled)
+            {
+                OriginalAfterDrawGenerationScenario.Prepare(managers, log);
+                numericModifiersPrepared = true;
+            }
             if (fullBattle && !numericModifiersPrepared && OriginalConduitScenario.Enabled)
             {
                 OriginalConduitScenario.Prepare(managers, log);

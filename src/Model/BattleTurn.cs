@@ -475,6 +475,12 @@ namespace MonsterTrain2Poju.Model
                 if (!opening.Supported) return Unsupported(opening.UnsupportedReason!);
                 train = opening.State!;
             }
+            if (train.Context!.Relics?.Any(relic => relic.EffectTypes.Contains(RelicCardGenerationModel.AfterDraw)) == true)
+            {
+                var generated = RelicCardGenerationModel.Apply(train.Context);
+                if (!generated.Supported) return Unsupported(generated.UnsupportedReason!);
+                train = WithContext(train, generated.Context!, false);
+            }
             ScorchStatusResult scorched = ScorchStatusModel.StartTurn(train);
             if (!scorched.Supported) return Unsupported(scorched.UnsupportedReason!);
             train = scorched.State!;

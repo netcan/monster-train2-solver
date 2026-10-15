@@ -249,6 +249,7 @@ param(
     [switch] $OriginalConduitRelics,
     [switch] $OriginalEquipmentGrowthRelics,
     [switch] $OriginalHealthChoiceRelic,
+    [switch] $OriginalAfterDrawGenerationRelics,
     [switch] $OriginalUnitUpgradeTriggerRelic,
     [switch] $TypedDraw,
     [switch] $IncantRelic,
@@ -368,6 +369,7 @@ if ($OriginalCombatTriggerRelics) { $BranchCardMasks = $true; $Policy = 'units-s
 if ($OriginalConduitRelics) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalEquipmentGrowthRelics) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalHealthChoiceRelic) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
+if ($OriginalAfterDrawGenerationRelics) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalUnitUpgradeTriggerRelic) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalTriggerRelicBatch -or $OriginalLifecycleRelicBatch) {
     $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $SettleDeathDissolves = $true; $SettleCardAnimations = $true
@@ -749,6 +751,7 @@ if ($OriginalCombatTriggerRelics) { $environment['MT2_PROBE_MODIFIERS'] = 'origi
 if ($OriginalConduitRelics) { $environment['MT2_PROBE_MODIFIERS'] = 'original-conduit-relics' }
 if ($OriginalEquipmentGrowthRelics) { $environment['MT2_PROBE_MODIFIERS'] = 'original-equipment-growth-relics' }
 if ($OriginalHealthChoiceRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-health-choice-relic' }
+if ($OriginalAfterDrawGenerationRelics) { $environment['MT2_PROBE_MODIFIERS'] = 'original-after-draw-generation-relics' }
 if ($OriginalUnitUpgradeTriggerRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-unit-upgrade-trigger-relic' }
 if ($TypedDraw) {
     $environment['MT2_PROBE_MODIFIERS'] = 'typed-draw'
@@ -1358,6 +1361,11 @@ if ($CampaignRelicCalibration) {
             throw 'Campaign original-owner matrix or recorded state restoration is incomplete.'
         }
     } finally { $campaignDocument.Dispose() }
+}
+if ($OriginalAfterDrawGenerationRelics -and ($trace.ModifierScenario -ne 'original-after-draw-generation-relics' -or
+    @($trace.RelicAfterDrawGeneration).Count -lt 8 -or
+    -not (Select-String -LiteralPath $unityLog -Pattern 'ORIGINAL-AFTER-DRAW-GENERATION-PREPARED four unchanged owners' -Quiet))) {
+    throw 'Original after-draw generation lacks unchanged owners or actual Test/Apply consumers.'
 }
 if ($OriginalHealthChoiceRelic -and ($trace.ModifierScenario -ne 'original-health-choice-relic' -or
     @($trace.RelicSpawnStatuses).Count -eq 0 -or @($trace.TriggeredStatuses).Count -lt 4 -or

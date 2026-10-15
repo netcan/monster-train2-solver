@@ -61,6 +61,13 @@ namespace MonsterTrain2Poju.Probe
             definitions = definitions.Concat(nativeCards.SelectMany(card => card.GetCardStateModifiers().GetCardUpgrades()
                 .Concat(card.GetTemporaryCardStateModifiers().GetCardUpgrades())).Select(upgrade => upgrade.GetUnitAbilityUpgrade())
                 .Where(ability => ability != null).Select(ability => ability!.GetID())).Distinct().ToArray();
+            // These unchanged relics can create pool members after drawing the
+            // next hand. Include their whole native filtered pool before selection,
+            // so branch definitions do not depend on which card happened to spawn.
+            definitions = definitions.Concat(save.GetAllRelics().SelectMany(relic => relic.GetEffects())
+                .OfType<RelicEffectAddBattleCardToHand>().SelectMany(effect =>
+                    effect.SourceRelicEffectData.GetParamCardPool()?.GetFilteredChoices() ?? new List<CardData>())
+                .Select(card => card.GetID())).Distinct().ToArray();
             var unplayedOrder = new Dictionary<string, int>(StringComparer.Ordinal);
             IReadOnlyList<CardData> simultaneousUnplayed = save.GetAllGameData().GetBalanceData()
                 .GetCardsThatResolveSimultaneouslyOnUnplayed();

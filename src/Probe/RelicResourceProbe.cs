@@ -102,7 +102,17 @@ namespace MonsterTrain2Poju.Probe
             float? capacityValue = null;
             int? capacityRegistration = null;
             MutatorData? required = null;
-            if (effect is RelicEffectChangeStartingHandSize draw)
+            CardGenerationRule? generation = null;
+            if (effect is RelicEffectAddBattleCardToHand)
+            {
+                var upgradeData = data.GetParamCardUpgradeData();
+                CardUpgradeModifier? upgrade = null;
+                if (upgradeData != null) { var state = new CardUpgradeState(); state.Setup(upgradeData); upgrade = CardModifierProbe.Upgrade(state); }
+                generation = new CardGenerationRule("HandPile", 1,
+                    (data.GetParamCardPool()?.GetFilteredChoices() ?? new List<CardData>()).Select(CardGenerationProbe.Creation).ToArray(), upgrade: upgrade);
+                amount = data.GetParamInt();
+            }
+            else if (effect is RelicEffectChangeStartingHandSize draw)
             {
                 value = draw.Value;
                 amount = UnityEngine.Mathf.RoundToInt(draw.Value);
@@ -161,7 +171,7 @@ namespace MonsterTrain2Poju.Probe
             return new RelicResourceEffect(index, type, data.GetParamInt(), data.GetParamInt2(), amount,
                 effect.CanApplyInPreviewMode, required?.GetID(), RelicCardModifierProbe.Conditions(effect), value, registration,
                 capacityValue, capacityRegistration, data.GetParamMinInt(),
-                effect is RelicEffectAddPermanentCorruptionStartOfCombat ? data.GetParamFloat() : 0);
+                effect is RelicEffectAddPermanentCorruptionStartOfCombat ? data.GetParamFloat() : 0, generation);
         }
 
         internal static ResourceSnapshot Capture()
