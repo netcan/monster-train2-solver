@@ -67,7 +67,7 @@ namespace MonsterTrain2Poju.Probe
                 Looping = pattern.GetIsLoopingScenario(),
                 Waves = waveDefinitions,
                 Specials = specialDefinitions,
-                StatusRules = new[] { "armor", "valor", "pyregel" }.Select(id =>
+                StatusRules = new[] { "armor", "valor", "pyregel", "decay", "conduit" }.Select(id =>
                 {
                     StatusEffectData rule = StatusEffectManager.Instance.GetStatusEffectDataById(id)!;
                     return new { Id = id, Type = rule.GetStatusEffectStateName(), Value = rule.GetParamInt(),

@@ -414,7 +414,7 @@ namespace MonsterTrain2Poju.Model
             "armor", "damage shield", "dazed", "stealth", "ambush", "multistrike", "burst",
             "spikes", "lifesteal", "fragile", "piercing", "immune", "immobile",
             "relentless", "sweep", "sniper", "rooted", "haste", "untouchable", "endless",
-            "buff", "debuff", "regen", "poison", "corrupt_poison", "melee weakness", "spell weakness", "silenced", "muted", "valor", "pyregel",
+            "buff", "debuff", "regen", "poison", "decay", "corrupt_poison", "melee weakness", "spell weakness", "silenced", "muted", "valor", "pyregel",
             "heal multiplier", "heal immunity", "cooldown", "unit_ability", "unit_ability_available", "horde", "cardless", "undying", "ephemeral", "purify", "mageblade", "titanskin", "duality",
             "newmoon", "fullmoon", "stygian_blessing", "scorch", "trample", "spell shield", "unstable", "hatch"
         };
@@ -2422,7 +2422,7 @@ namespace MonsterTrain2Poju.Model
                     foreach (CombatStatus status in unit.RegisteredStatuses().OrderBy(status => status.Id == "unstable" ? 4 : 0).ToArray())
                     {
                         if (!unit.Alive || !unit.Has(status.Id) || !Active(status)) continue;
-                        if (status.Id == "poison")
+                        if (status.Id == "poison" || status.Id == "decay")
                         {
                             if (source.Deployment && status.RemoveWhenTriggered && !status.RemoveDuringDeployment)
                             {
@@ -2432,9 +2432,9 @@ namespace MonsterTrain2Poju.Model
                                 context = removal.Context;
                                 if (removal.ShouldRemove) continue;
                             }
-                            int amount = StatusMagnitude(unit, "poison");
-                            Trigger(unit, "poison", 1);
-                            Damage(null, unit, amount, "Poison");
+                            int amount = StatusMagnitude(unit, status.Id);
+                            Trigger(unit, status.Id, 1);
+                            Damage(null, unit, amount, status.Id == "decay" ? "Decay" : "Poison");
                         }
                         else if (status.Id == "unstable" && !unit.Has("blastresistant") &&
                             unit.Count("unstable") >= unit.Health && !unit.Has("untouchable"))
