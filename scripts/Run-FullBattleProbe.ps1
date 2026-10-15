@@ -190,6 +190,7 @@ param(
     [switch] $RelicCatalog,
     [switch] $CampaignRelicCalibration,
     [switch] $CampaignDraftCalibration,
+    [switch] $CampaignPostBattleCalibration,
     [switch] $FullRuleCatalog,
     [switch] $UpgradeMasks,
     [switch] $ModifierOverflow,
@@ -561,6 +562,7 @@ $environment = @{
     MT2_PROBE_RELIC_CATALOG = $(if ($RelicCatalog) { '1' } else { '0' })
     MT2_PROBE_CAMPAIGN_RELICS = $(if ($CampaignRelicCalibration) { '1' } else { '0' })
     MT2_PROBE_CAMPAIGN_DRAFTS = $(if ($CampaignDraftCalibration) { '1' } else { '0' })
+    MT2_PROBE_CAMPAIGN_POST_BATTLE = $(if ($CampaignPostBattleCalibration) { '1' } else { '0' })
     MT2_PROBE_FULL_RULE_CATALOG = $(if ($FullRuleCatalog) { '1' } else { '0' })
     MT2_PROBE_UPGRADE_MASKS = $(if ($UpgradeMasks) { '1' } else { '0' })
     MT2_PROBE_MODIFIER_OVERFLOW = $(if ($ModifierOverflow) { '1' } else { '0' })
@@ -1361,6 +1363,21 @@ if ($CampaignRelicCalibration) {
             throw 'Campaign original-owner matrix or recorded state restoration is incomplete.'
         }
     } finally { $campaignDocument.Dispose() }
+}
+if ($CampaignPostBattleCalibration) {
+    Add-Type -Path (Join-Path $workspace 'src\FixtureArchive\bin\Release\net8.0\FixtureArchive.dll')
+    $postBattlePath = Join-Path $profile 'campaign-post-battle-calibration.mt2f'
+    if (-not (Test-Path -LiteralPath $postBattlePath)) { throw 'Missing current post-battle reward calibration.' }
+    $postBattleDocument = [MonsterTrain2Poju.Fixtures.FixtureDocument]::Read($postBattlePath)
+    try {
+        $postBattleRoot = $postBattleDocument.RootElement
+        if ($postBattleRoot.GetProperty('Schema').GetInt32() -ne 1 -or
+            $postBattleRoot.GetProperty('Owners').GetArrayLength() -ne 2 -or
+            $postBattleRoot.GetProperty('Rows').GetArrayLength() -ne 108 -or
+            -not $postBattleRoot.GetProperty('Before').ContentEquals($postBattleRoot.GetProperty('After'))) {
+            throw 'Post-battle original-owner matrix or recorded state restoration is incomplete.'
+        }
+    } finally { $postBattleDocument.Dispose() }
 }
 if ($OriginalAfterDrawGenerationRelics -and ($trace.ModifierScenario -ne 'original-after-draw-generation-relics' -or
     @($trace.RelicAfterDrawGeneration).Count -lt 8 -or
