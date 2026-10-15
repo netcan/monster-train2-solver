@@ -1,10 +1,20 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-15): 336 binary archives, including 305
+Current accepted inventory (2026-10-15): 338 binary archives, including 307
 full battles and 31 component calibrations. Unchanged original relic evidence
-covers 89/224 catalog entries (39.73%); see
+covers 91/224 catalog entries (40.63%); see
 [the owner evidence table](tests/fixtures/relic-coverage.md). Whole-battle
 coverage and the optimal solver remain in progress.
+
+`IncreaseSpellHealing` now applies +10 healing only to every Spell, including
+native cards that cannot scale with magic power; fivefold trait scaling and
+non-spell controls match 22 native manager refreshes and an actual healing play.
+`OneEmberFirstTurn_DH` retains its original +2 amount and deployment restriction:
+one native callback runs after initial enemy spawn, before first-turn income,
+with no relic notification. Both winning captures have zero error counters.
+Their independent policy replay, immutable branches and bounded search are
+included in the eight-fixture affected regression recorded in
+[validation provenance](tests/fixtures/validation-20261015.md).
 
 The new unchanged `GiveSpellStatsForUpgrades_DH` and
 `GiveUnitStatsForUpgrades_DH` battle validates +3 attack/health per visible

@@ -1,8 +1,51 @@
 # Inventory validation, 2026-10-15
 
+## Healing and first-combat energy extension
+
+Current inventory: 338 archives (307 battles, 31 calibrations), with 91/224
+original collectible owners (40.63%). Two new battles and six affected older
+archives pass the current general/focused gates, independent complete policy
+replay, mid-battle roots, immutable branches and bounded serial/parallel search.
+This is an affected-fixture regression, not a rerun of all 338 archives.
+Summary: `.probe-runs/model-checks-20261015-181031-83a8154d/summary.json`.
+
+Native healing source:
+`.probe-runs/full-battle-units-spells-and-junk-20261015-180525-27638795/full-battle.mt2f`.
+The unmodified `IncreaseSpellHealing` owner adds healing to Spell cards without
+checking `CanScaleWithMagicPower`. Twenty-two manager refreshes exactly match
+card state, dispatch returns/order, relic state and statistics. Detached original
+scalable/non-scalable Spells and Monster/Blight controls, an isolated stronger
+trait carrier, reset/repeat and owner ablations pass. A synthetic damage-then-heal
+carrier supplies actual healing evidence without modifying the original relic.
+Later policy plays also exercise a damage-killed target and an empty room.
+The game wins: 62 stages, 24 plays, seven EndTurns, zero four error counters.
+Archive: 35,541 bytes, 5,785 nodes, SHA-256
+`81ecefc25b3d3bc5d21bbd69eaca2ab9563198685d846ce34477d6dc4b8051e0`.
+
+Native first-combat energy source:
+`.probe-runs/full-battle-units-spells-and-junk-20261015-180756-b70c6dc2/full-battle.mt2f`.
+The unmodified `OneEmberFirstTurn_DH` has native amount +2 and disallows
+deployment. Acquisition does not add energy. Its single natural callback runs
+on turn one with zero notifications. Model integration follows initial enemy
+spawn and precedes the Spawning RNG reset, PreCombat and normal energy income.
+Deployment/owner-ablation controls and all seven complete EndTurns pass.
+The game wins: 61 stages, 23 plays, seven EndTurns, zero four error counters.
+Archive: 33,624 bytes, 5,474 nodes, SHA-256
+`9389f51971af3275850362950c39673c768ce3d02ac8c7f23e8acc6b0b832836`.
+Both archives have direct binary provenance, source length zero, build 2.2.1,
+the catalog's native module MVID, and unchanged original Steam files.
+
+Frozen binaries for the eight-fixture run:
+
+| Runtime binary | SHA-256 |
+| --- | --- |
+| Model | `DD14198A27CF9BA991E645DEEDAFA3A4DA2D5E4C9B15DEDBDB57662B490EB7FD` |
+| FixtureArchive | `99DEA27564B943461E8BACFC10C3F3664452C85000A1D5382D04F666664FBE7E` |
+| Checker | `38B1EF7132476CC6E41B96749A1A6D097744834317D95D7A66C00F34B7E64C4F` |
+
 ## Upgrade-count relic extension
 
-The current inventory is 336 archives (305 battles and 31 calibrations), with
+The previous inventory was 336 archives (305 battles and 31 calibrations), with
 89/224 original collectible relic owners (39.73%). This extension validates the
 new upgrade-count battle and six affected older archives with the current
 model/checker; the complete 335-archive baseline below used the earlier model.

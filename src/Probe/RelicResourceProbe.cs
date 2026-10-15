@@ -207,7 +207,8 @@ namespace MonsterTrain2Poju.Probe
                 if (!(OriginalResourceRelicBatchScenario.Enabled && OriginalResourceRelicBatchScenario.Artifacts.Any(item => item.Id == relicData.GetID())) &&
                     !(PyreResourceRefreshScenario.Enabled && PyreResourceRefreshScenario.Artifacts.Any(item => item.Id == relicData.GetID())) &&
                     !(OriginalFloorCapacityRelicScenario.Enabled && OriginalFloorCapacityRelicScenario.Artifacts.Any(item => item.Id == relicData.GetID())) &&
-                    !(OriginalMoonPhaseEnergyRelicScenario.Enabled && relicData.GetID() == OriginalMoonPhaseEnergyRelicScenario.DataId)) return;
+                    !(OriginalMoonPhaseEnergyRelicScenario.Enabled && relicData.GetID() == OriginalMoonPhaseEnergyRelicScenario.DataId) &&
+                    !(OriginalStartCombatEnergyScenario.Enabled && relicData.GetID() == OriginalStartCombatEnergyScenario.DataId)) return;
                 try
                 {
                     __state = new Operation { Kind = "Acquire", OwnerDataId = relicData.GetID(), Before = Capture() };
@@ -247,6 +248,15 @@ namespace MonsterTrain2Poju.Probe
             }
         }
 
+        [HarmonyPatch(typeof(RelicEffectModifyEnergyStartOfCombat), nameof(RelicEffectModifyEnergyStartOfCombat.ApplyEffectStartOfBattle))]
+        private static class StartCombatEnergyPatch
+        {
+            private static void Postfix(RelicEffectModifyEnergyStartOfCombat __instance, ref IEnumerator __result)
+            {
+                if (OriginalStartCombatEnergyScenario.Acquired)
+                    __result = WrapEnergy(__result, __instance, AllGameManagers.Instance!.GetCombatManager()!.IsPlacementPhase, "StartCombatEnergy");
+            }
+        }
         [HarmonyPatch(typeof(RelicManager), nameof(RelicManager.NotifyRelicTriggered))]
         private static class NotifyPatch
         {

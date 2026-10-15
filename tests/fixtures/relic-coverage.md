@@ -1,7 +1,7 @@
 # Original relic coverage evidence
 
-As of 2026-10-15, **89 distinct original collectable relics / 224 catalog entries
-(39.73%)** have accepted native full-battle evidence. This counts unchanged relic
+As of 2026-10-15, **91 distinct original collectable relics / 224 catalog entries
+(40.63%)** have accepted native full-battle evidence. This counts unchanged relic
 definitions whose effects actually ran, including their original filters and
 conditions. Test cards, unit triggers and carrier subtypes may be authored to
 exercise those effects; the claim covers the recorded paths, not every possible
@@ -20,9 +20,10 @@ The source archives cited below report game `2.2.1`, module MVID
 `8fb07b96-f4db-4d2b-884d-c00536d6ccf4`, `NativeWon=true`, and zero
 `CaptureFailures`, `Mismatches`, `Unsupported` and `Pending`. Archive provenance,
 byte lengths and SHA-256 hashes are recorded in [manifest.tsv](manifest.tsv).
-The accepted inventory is 336 archives: 305 battles and 31 component
-calibrations, with no JSON companions. The latest battle adds both original
-upgrade-count stat relics, including the spell owner's original excluded pool.
+The accepted inventory is 338 archives: 307 battles and 31 component
+calibrations, with no JSON companions. The latest two battles add original
+spell healing and first-combat energy; eight affected archives pass current
+general/focused regression, independent policy replay and bounded search.
 The complete previous 335-archive general/focused regression passes; this
 extension has a focused regression over its new battle and six affected older
 archives. [Validation provenance](validation-20261015.md) distinguishes
@@ -44,13 +45,15 @@ separate `CorruptionAdded` callback battles; none adds a relic owner. The origin
 effects each add one Corrupt Poison stack to an enemy on corruption increase.
 The Mageblade status/cache/attack path has an accepted
 native battle archive, but Mageblade is not a collectable relic and is not
-included in the 89/224 owner count. The `AllUnitsMultistrike` archive
+included in the 91/224 owner count. The `AllUnitsMultistrike` archive
 validates a mutator, not a collectible relic, and is also excluded from that
 owner count.
 
 | AssetKey | DataId | Accepted archive | Actual effect witness |
 | --- | --- | --- | --- |
 | `GiveSpellStatsForUpgrades_DH` | `4200307a-616d-4cbb-a54e-527c5dc0f492` | [upgrade-count relics][upgradeCounts] | Original +3 damage per permanent upgrade with a visible icon: 0/1/2 yield 0/3/6. Hidden, no-icon and temporary upgrades are excluded; a visible region upgrade counts. Original `DevilishDetails` exclusion rejects the upgraded spell. The damage spell is played and redrawn with its bonus intact. |
+| `IncreaseSpellHealing` | `03613302-e55a-4e6c-99a1-c198c8d3175c` | [original healing power][healingPower] | Unchanged +10 healing to every Spell, independently of native magic-power eligibility. Non-scalable Spell, Monster/Blight rejection, fivefold trait multiplier, reset/repeat and owner ablations pass all 22 manager calls. A controlled damage-then-heal spell actually restores health; damage remains unchanged. |
+| `OneEmberFirstTurn_DH` | `c5a68f6d-671d-4db3-999f-120b5febf41b` | [original first-combat energy][firstCombatEnergy] | Original amount is +2 despite the asset name. Acquisition does not add energy; the natural first-combat callback runs once on turn one after initial enemy spawn and before regular income, with zero notifications. Deployment/owner-ablation controls and all seven EndTurns match. |
 | `GiveUnitStatsForUpgrades_DH` | `fc1f6104-b3c1-4714-ac0f-9c76a6fb1a77` | [upgrade-count relics][upgradeCounts] | Ordered original health then attack effects give 0/3/6 to both temporary offsets for 0/1/2 visible permanent upgrades. A real Train Steward summons with +6 attack/+6 max health. All 44 manager refreshes match, including reset/repeat, card-type controls and independent owner ablations. |
 | `ExtraSpellCastTrigger` | `410ba540-7c4f-4dc5-a84f-b1d8af508891` | [combined trigger relics][counts] | `IncantTriggers`: 65 player `CardSpellPlayed` queries have `FireCount=2`; five enemy queries remain 1. Full callbacks and the 21-play policy match. |
 | `ExtraSpawnTrigger` | `9e0deb69-6196-44a6-8220-85bd0df25f77` | [combined trigger relics][counts] | 26 player `OnSpawn` queries have `FireCount=2`; five enemy queries remain 1. The battle contains new paid unit births. |
@@ -442,3 +445,5 @@ dotnet run --project src/ModelChecks -c Release -- --original-card-attack-only t
 [cardTypeCost]: full-battle-original-card-type-cost-relic.mt2f
 [conserveEmber]: full-battle-original-conserve-ember.mt2f
 [upgradeCounts]: full-battle-original-upgrade-count-relics.mt2f
+[healingPower]: full-battle-original-healing-power-relic.mt2f
+[firstCombatEnergy]: full-battle-original-start-combat-energy-relic.mt2f

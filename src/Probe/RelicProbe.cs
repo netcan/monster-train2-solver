@@ -88,7 +88,7 @@ namespace MonsterTrain2Poju.Probe
                         ((RelicEffectData)AccessTools.Field(typeof(RelicEffectBase), "_srcRelicEffectData").GetValue(item.Effect)).GetParamInt(),
                         item.Effect.CanApplyInPreviewMode, RelicCardModifierProbe.Conditions(item.Effect))).ToArray();
                 var magicPower = effects.Select((effect, index) => new { Effect = effect, Index = index })
-                    .Where(item => item.Effect is RelicEffectModifyCardMagicalPower)
+                    .Where(item => item.Effect is RelicEffectModifyCardMagicalPower || item.Effect is RelicEffectModifyCardHealingPower)
                     .Select(item => new RelicMagicPowerModifier(item.Index,
                         ((RelicEffectData)AccessTools.Field(typeof(RelicEffectBase), "_srcRelicEffectData").GetValue(item.Effect)).GetParamInt(),
                         RelicCardModifierProbe.Conditions(item.Effect))).ToArray();

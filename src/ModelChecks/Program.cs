@@ -505,6 +505,18 @@ if (args.Length == 2 && args[0] == "--original-upgrade-count-only")
     RelicUpgradeCountChecks.Native(document.RootElement);
     return;
 }
+if (args.Length == 2 && args[0] == "--original-healing-power-only")
+{
+    using var document = ModelJson.ReadFixture(args[1]);
+    OriginalHealingPowerChecks.Native(document.RootElement);
+    return;
+}
+if (args.Length == 2 && args[0] == "--original-start-combat-energy-only")
+{
+    using var document = ModelJson.ReadFixture(args[1]);
+    OriginalStartCombatEnergyChecks.Native(document.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--original-card-attack-only")
 {
     using var document = ModelJson.ReadFixture(args[1]);

@@ -263,6 +263,10 @@ namespace MonsterTrain2Poju.Probe
                         OriginalCardTypeCostScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalUpgradeCountRelicsScenario.Enabled && !OriginalUpgradeCountRelicsScenario.Acquired)
                         OriginalUpgradeCountRelicsScenario.AcquireBeforeBattle(managers!, log);
+                    if (fullBattle && OriginalHealingPowerScenario.Enabled && !OriginalHealingPowerScenario.Acquired)
+                        OriginalHealingPowerScenario.AcquireBeforeBattle(managers!, log);
+                    if (fullBattle && OriginalStartCombatEnergyScenario.Enabled && !OriginalStartCombatEnergyScenario.Acquired)
+                        OriginalStartCombatEnergyScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalConserveEmberScenario.Enabled && !OriginalConserveEmberScenario.Acquired)
                         OriginalConserveEmberScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && ChooseDiscardScenario.OriginalSmeltRelicMode && !ChooseDiscardScenario.RelicAcquired)
@@ -498,6 +502,18 @@ namespace MonsterTrain2Poju.Probe
             if (fullBattle && !numericModifiersPrepared && OriginalUpgradeCountRelicsScenario.Enabled)
             {
                 OriginalUpgradeCountRelicsScenario.Prepare(managers, log);
+                numericModifiersPrepared = true;
+                return;
+            }
+            if (fullBattle && !numericModifiersPrepared && OriginalHealingPowerScenario.Enabled)
+            {
+                OriginalHealingPowerScenario.Prepare(managers, log);
+                numericModifiersPrepared = true;
+                return;
+            }
+            if (fullBattle && !numericModifiersPrepared && OriginalStartCombatEnergyScenario.Enabled)
+            {
+                OriginalStartCombatEnergyScenario.Prepare(managers, log);
                 numericModifiersPrepared = true;
                 return;
             }
@@ -1081,7 +1097,7 @@ namespace MonsterTrain2Poju.Probe
                 else NumericUpgradeScenario.Prepare(managers, log);
                 return;
             }
-            if (fullBattle && RelicCardModifierProbe.Enabled && !OriginalRelicBatchScenario.Enabled &&
+            if (fullBattle && RelicCardModifierProbe.Enabled && !OriginalRelicBatchScenario.Enabled && !OriginalHealingPowerScenario.Enabled &&
                 !OriginalCardAttackRelicScenario.Enabled && !OriginalCardTypeCostScenario.Enabled && !OriginalUpgradeCountRelicsScenario.Enabled &&
                 !RelicCardModifierScenario.Prepared)
             {
@@ -1248,6 +1264,7 @@ namespace MonsterTrain2Poju.Probe
                 if (OriginalCardAttackRelicScenario.Enabled) pendingPlay = OriginalCardAttackRelicScenario.Choose(decision) ?? pendingPlay;
                 if (OriginalCardTypeCostScenario.Enabled) pendingPlay = OriginalCardTypeCostScenario.Choose(decision) ?? pendingPlay;
                 if (OriginalUpgradeCountRelicsScenario.Enabled) pendingPlay = OriginalUpgradeCountRelicsScenario.Choose(decision) ?? pendingPlay;
+                if (OriginalHealingPowerScenario.Enabled) pendingPlay = OriginalHealingPowerScenario.Choose(decision) ?? pendingPlay;
                 if (OriginalConserveEmberScenario.Enabled) pendingPlay = OriginalConserveEmberScenario.Choose(decision);
                 if (OriginalUnitUpgradeTriggerRelicScenario.Enabled) pendingPlay = OriginalUnitUpgradeTriggerRelicScenario.Choose(decision) ?? pendingPlay;
                 if (modifierScenario == "rally-lethal") pendingPlay = LethalRallyScenario.ChooseNativeBossSummon(managers) ?? pendingPlay;
@@ -1398,6 +1415,7 @@ namespace MonsterTrain2Poju.Probe
                 (MixScenario.Enabled && MixScenario.IsScenarioPrelude(action)) ||
                 (OriginalCardTypeCostScenario.Enabled && OriginalCardTypeCostScenario.IsScenarioPrelude(action)) ||
                 (OriginalUpgradeCountRelicsScenario.Enabled && OriginalUpgradeCountRelicsScenario.IsScenarioPrelude(action)) ||
+                (OriginalHealingPowerScenario.Enabled && OriginalHealingPowerScenario.IsScenarioPrelude(action)) ||
                 (ChooseDiscardScenario.Enabled && ChooseDiscardScenario.IsScenarioPrelude(action));
             PreviewSchedulingProbe.Observe("Play:" + action.CardInstanceId);
             if (MixScenario.Enabled) MixScenario.Expect(action);

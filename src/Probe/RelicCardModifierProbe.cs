@@ -10,9 +10,9 @@ namespace MonsterTrain2Poju.Probe
 {
     internal static class RelicCardModifierProbe
     {
-        internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_BATTLE_RELIC_UPGRADES") == "1" ||
+        internal static bool Enabled => OriginalHealingPowerScenario.Enabled || Environment.GetEnvironmentVariable("MT2_PROBE_BATTLE_RELIC_UPGRADES") == "1" ||
             OriginalRelicBatchScenario.Enabled || OriginalCardAttackRelicScenario.Enabled || OriginalCardTypeCostScenario.Enabled || OriginalUpgradeCountRelicsScenario.Enabled;
-        internal static bool CaptureReady => RelicCardModifierScenario.CaptureReady || OriginalRelicBatchScenario.CaptureReady ||
+        internal static bool CaptureReady => OriginalHealingPowerScenario.CaptureReady || RelicCardModifierScenario.CaptureReady || OriginalRelicBatchScenario.CaptureReady ||
             MagebladeScenario.CaptureReady || OriginalCardAttackRelicScenario.CaptureReady || OriginalCardTypeCostScenario.CaptureReady || OriginalUpgradeCountRelicsScenario.CaptureReady;
         internal static readonly List<Record> Records = new List<Record>();
         private static readonly List<Record> active = new List<Record>();
@@ -209,6 +209,19 @@ namespace MonsterTrain2Poju.Probe
         private static class MagicPowerEffectPatch
         {
             private static void Prefix(RelicEffectModifyCardMagicalPower __instance, out Dispatch? __state)
+            {
+                __state = null; if (active.Count == 0) return;
+                var record = active[active.Count - 1]; var index = Index(record, __instance);
+                __state = new Dispatch { RelicIndex = index.Relic, EffectIndex = index.Effect };
+                record.Dispatches.Add(__state);
+            }
+            private static void Postfix(bool __result, Dispatch? __state)
+            { if (__state != null) __state.Returned = __result; }
+        }
+        [HarmonyPatch(typeof(RelicEffectModifyCardHealingPower), nameof(RelicEffectModifyCardHealingPower.ApplyCardStateModifiers))]
+        private static class HealingPowerEffectPatch
+        {
+            private static void Prefix(RelicEffectModifyCardHealingPower __instance, out Dispatch? __state)
             {
                 __state = null; if (active.Count == 0) return;
                 var record = active[active.Count - 1]; var index = Index(record, __instance);

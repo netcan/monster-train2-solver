@@ -43,7 +43,7 @@ try {
         }
     })
     if ($OutputPath) {
-        $rows | ConvertTo-Csv -Delimiter "`t" -NoTypeInformation -UseQuotes AsNeeded |
+        $rows | ConvertTo-Csv -Delimiter "`t" -NoTypeInformation -UseQuotes Always |
             Set-Content -LiteralPath $OutputPath -Encoding utf8NoBOM
     }
     [pscustomobject]@{

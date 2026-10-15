@@ -1,6 +1,17 @@
 # Native regression fixtures
 
-Original upgrade-count relics (2026-10-15): the inventory is now 336 archives
+Healing/start-combat energy extension (2026-10-15): 338 archives, comprising
+307 full battles and 31 calibrations; 91/224 original relic owners (40.63%).
+The unchanged `IncreaseSpellHealing` has 22 exact native manager refreshes,
+scalable/non-scalable Spell controls, Monster/Blight rejections, fivefold traits,
+reset/repeat, owner ablations and actual healing. The unchanged
+`OneEmberFirstTurn_DH` adds its original +2 once between initial spawning and
+first-turn income; deployment, acquisition and later-turn controls pass with
+zero notifications. Both battles win with zero error counters. Eight affected
+archives pass general/focused checks, independent policy replay and bounded
+search; see [validation provenance](validation-20261015.md).
+
+Previous upgrade-count checkpoint (2026-10-15): the inventory was 336 archives
 (305 full battles and 31 calibrations), with 89/224 original collectible relic
 owners (39.73%). `full-battle-original-upgrade-count-relics.mt2f` keeps both
 original relic definitions and the spell owner's original excluded pool intact.

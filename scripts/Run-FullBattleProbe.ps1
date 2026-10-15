@@ -238,6 +238,8 @@ param(
     [switch] $OriginalMoonPhaseEnergyRelic,
     [switch] $OriginalCardAttackRelic,
     [switch] $OriginalUpgradeCountRelics,
+    [switch] $OriginalHealingPowerRelic,
+    [switch] $OriginalStartCombatEnergyRelic,
     [switch] $OriginalUnitUpgradeTriggerRelic,
     [switch] $TypedDraw,
     [switch] $IncantRelic,
@@ -348,6 +350,8 @@ if ($OriginalRoomEntryStatusRelics) { $BranchCardMasks = $true; $Policy = 'units
 if ($OriginalMoonPhaseEnergyRelic) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalCardAttackRelic) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalUpgradeCountRelics) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
+if ($OriginalHealingPowerRelic) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
+if ($OriginalStartCombatEnergyRelic) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalUnitUpgradeTriggerRelic) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalTriggerRelicBatch -or $OriginalLifecycleRelicBatch) {
     $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $SettleDeathDissolves = $true; $SettleCardAnimations = $true
@@ -718,6 +722,8 @@ if ($OriginalRoomEntryStatusRelics) { $environment['MT2_PROBE_MODIFIERS'] = 'ori
 if ($OriginalMoonPhaseEnergyRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-moon-phase-energy-relic' }
 if ($OriginalCardAttackRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-card-attack-relic' }
 if ($OriginalUpgradeCountRelics) { $environment['MT2_PROBE_MODIFIERS'] = 'original-upgrade-count-relics' }
+if ($OriginalHealingPowerRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-healing-power-relic' }
+if ($OriginalStartCombatEnergyRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-start-combat-energy-relic' }
 if ($OriginalUnitUpgradeTriggerRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-unit-upgrade-trigger-relic' }
 if ($TypedDraw) {
     $environment['MT2_PROBE_MODIFIERS'] = 'typed-draw'
@@ -1249,6 +1255,22 @@ if ($OriginalUpgradeCountRelics) {
         @($trace.RelicCardModifiers).Count -lt 38 -or @($trace.Actions).Count -lt 2 -or
         @($trace.RelicCardModifiers | Where-Object { $_.Difference -ne $null }).Count -gt 0) {
         throw 'Original upgrade-count relics lack native manager and played-card witnesses.'
+    }
+}
+if ($OriginalHealingPowerRelic) {
+    if ($trace.ModifierScenario -ne 'original-healing-power-relic' -or
+        -not (Select-String -LiteralPath $unityLog -Pattern 'ORIGINAL-HEALING-POWER-PREPARED 15 detached refreshes' -Quiet) -or
+        @($trace.RelicCardModifiers).Count -lt 16 -or
+        @($trace.RelicCardModifiers | Where-Object { $_.Difference -ne $null }).Count -gt 0) {
+        throw 'Original healing-power relic lacks native manager observations.'
+    }
+}
+if ($OriginalStartCombatEnergyRelic) {
+    $callbacks = @($trace.RelicResourceOperations | Where-Object Kind -eq 'StartCombatEnergy')
+    if ($trace.ModifierScenario -ne 'original-start-combat-energy-relic' -or $callbacks.Count -ne 1 -or
+        $callbacks[0].Before.Turn -ne 1 -or $callbacks[0].Deployment -or $callbacks[0].Notifications -ne 0 -or
+        $callbacks[0].After.Energy -ne [Math]::Min($callbacks[0].Before.Resources.MaxEnergy, $callbacks[0].Before.Energy + 2)) {
+        throw 'Original start-combat energy relic lacks its unique turn-one callback.'
     }
 }
 if ($OriginalCardAttackRelic) {
