@@ -55,8 +55,12 @@ namespace MonsterTrain2Poju.Probe
 
         internal static BattleResourceState? CaptureResources(AllGameManagers managers)
         {
-            CardEffectState[] cardEffects = managers.GetCardManager()!.GetAllCards(new List<CardState>())
-                .SelectMany(card => card.GetEffectStates()).ToArray();
+            // Relics can be acquired before battle creates the card manager.
+            // Resource balance/save inputs already exist; there are no live cards
+            // to inspect for Hoard or train-healing effects at that boundary.
+            CardManager? cards = managers.GetCardManager();
+            CardEffectState[] cardEffects = cards == null ? Array.Empty<CardEffectState>() :
+                cards.GetAllCards(new List<CardState>()).SelectMany(card => card.GetEffectStates()).ToArray();
             bool dragonHoardCards = cardEffects
                 .Any(effect => effect.GetCardEffect() is IDragonsHoardCardEffect ||
                     effect.GetCardEffect() is CardEffectRewardGoldPerDragonHoard);

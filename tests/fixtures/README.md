@@ -1,6 +1,6 @@
 # Native regression fixtures
 
-Legacy replay refresh (2026-10-15): 20 of the 30 recordings with disabled-floor
+Legacy replay refresh (2026-10-15): 23 of the 30 recordings with disabled-floor
 policy plays have fresh native replacements. The resumed attack-trigger and
 branch-mask clone-upgrade recordings both pass their complete independent policy
 chains, including mid-battle roots and 16 immutable branches. Their original
@@ -9,10 +9,20 @@ original Endless return and ordinary clone upgrade refresh are also replaced;
 the Endless recording retains relic modifier capture with seven actual records.
 The conditional relic upgrade recording, UI-isolated drawing, lethal pre-hand
 discard, sacrifice effects/upgrades and dying upgrades are also replaced.
-Ten replacements and the complete
+Status callbacks, permanent consume generation and original resource relics are
+also refreshed. Seven replacements and the complete
 inventory regression remain pending. Byte counts and hashes in older entries
 below describe their historical captures; [manifest.tsv](manifest.tsv) records
 the current accepted binaries.
+
+The original resource-relic refresh records all eight pre-battle acquisitions,
+50 matched stages, 42 policy plays and seven EndTurns, ending with Pyre health
+123. All capture counters are zero and the complete independent policy plus
+16 immutable branches pass. Acquisition snapshots can precede creation of the
+card manager: the probe now treats that boundary as an empty live card set,
+while still capturing the complete raw resource balance/save inputs and actual
+before/after acquisition state. This fixes the eight capture exceptions in the
+rejected earlier attempt without dropping any acquisition observations.
 
 The refreshed `full-battle-conditional-relic-card-upgrades.mt2f` wins with 49
 matched stages, 18 policy plays and six EndTurns, retaining Pyre health 80.

@@ -76,6 +76,11 @@ its full 18-play/six-EndTurn policy and 16 parallel branches pass. Projection
 log rows fall from 496,455 in the earlier incomplete run to 4,404 in the complete
 run. Native runtime is 541.55 seconds under concurrent native/regression load,
 versus an earlier 600-second timeout; this is not a controlled timing benchmark.
+Resource relic acquisition snapshots can run before the card manager exists.
+The probe now inspects an empty live card set at that boundary while retaining
+complete raw resource/save inputs. The refreshed original resource battle
+captures all eight acquisitions and passes 50 native stages, 42 policy plays,
+seven EndTurns and 16 independent branches, with zero capture counters.
 
 `scripts/Check-Models.ps1 -Workers 4` runs the existing complete checks in four
 processes after one build. Per-worker inputs, stdout/stderr, terminal exit
@@ -89,8 +94,8 @@ other state comparisons remain enforced, and fresh recordings compare every
 field. An independent audit of the 97 previously skipped chains passes 67 and
 identifies 30 recordings that played on a disabled floor. Native UI selection
 rejects those actions even though the low-level card manager accepts them.
-The probe now enforces that UI gate. Twenty of those 30 recordings now have fresh
-native replacements with their original scenario coverage; ten remain to be
+The probe now enforces that UI gate. Twenty-three of those 30 recordings now have fresh
+native replacements with their original scenario coverage; seven remain to be
 recaptured before the final inventory regression.
 The two isolated native workers use separate game/plugin directories and
 unique run profiles; each verifies the original Steam files remain unchanged.
