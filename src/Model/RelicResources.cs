@@ -126,7 +126,7 @@ namespace MonsterTrain2Poju.Model
         public const string ConserveEnergyEndOfTurn = "RelicEffectConserveEnergyEndOfTurn";
         public static bool IsEffect(string type) => type == Energy || type == DeploymentEnergy || type == StartCombatEnergy || type == Draw ||
             type == PyreAttack || type == PyreHealth || type == FloorCapacity || type == MoonPhaseEnergy ||
-            type == AdditionalSmeltEmber || type == AdjustMixAmount || type == ConserveEnergyEndOfTurn;
+            type == AdditionalSmeltEmber || type == AdjustMixAmount || type == ConserveEnergyEndOfTurn || type == ConserveForgePoints;
 
         internal static string? Validate(CombatRelicState relic)
         {
@@ -147,6 +147,9 @@ namespace MonsterTrain2Poju.Model
                     return "Additional smelt Ember amount differs from its original parameter.";
                 if (rule.Type == AdjustMixAmount && rule.Amount != rule.ParamInt)
                     return "Mix adjustment differs from its original parameter.";
+                if (rule.Type == ConserveForgePoints && (rule.Amount != (rule.ParamInt2 == 0 ? Math.Max(0, rule.ParamInt) :
+                    Math.Min(100, Math.Max(0, rule.ParamInt))) || rule.RequiredMutatorId != null))
+                    return "Initialized forge conservation cap/percentage differs from its native parameter.";
                 if (rule.Type == ConserveEnergyEndOfTurn && (rule.ParamInt != 0 || rule.ParamInt2 != 0 ||
                     rule.ParamMinInt != 0 || rule.Amount != 0 || rule.RequiredMutatorId != null || rule.CanApplyInPreviewMode))
                     return "End-of-turn conservation differs from the native conserve-all payload.";
