@@ -1,5 +1,39 @@
 # Inventory validation, 2026-10-15
 
+## Fixed post-battle reward extension
+
+Current inventory: 349 archives (315 battles, 34 calibrations), 120/224 original
+owners (53.57%): 109 battle owners and eleven campaign-interface owners.
+
+Native source:
+`.probe-runs/full-battle-steward-once-20261015-203624-2a8015bd/campaign-post-battle-calibration.mt2f`.
+The unchanged VoidPortal and MothersRemnant2Relic are acquired/removed through
+SaveManager. Actual RelicManager.ApplyPostBattleRelicRewards runs 108 times:
+six ownership phases, three original scenarios, three prefix counts and two
+repetitions. All 108 appended references are the original reward objects;
+18 reversed-order cases and 36 duplicate-prefix controls pass. Collection
+preserves existing offers and does not consume RNG. Only direct PurgeRewardData
+and EnhancerRewardData are modeled; granting rewards, UI choice and reward pools
+remain excluded. Notifications/run statistics execute in the isolated save.
+Recorded owner IDs, deck IDs, gold, raw/visible/max health, frame and deterministic
+RNG are restored. This does not claim restoration of every native save field.
+
+The host battle wins after 55 stages, one play and seven EndTurns with all four
+error counters zero; Steam files are unchanged. The schema-1 component has
+2309 bytes, 303 unique nodes, source length 0 and SHA-256
+`da7b4d57d6866ef1800be6a35ec15161258f52c972284b90a4ccf3e5db420772`.
+Focused validation and four affected fixtures pass with three workers, all
+terminal exits zero, without reruns:
+`.probe-runs/model-checks-20261015-203853-c6251ce4/summary.json`.
+The set includes post-battle collection, drafts, prior campaign consumers and
+the Steward host battle. This is not a complete 349-archive rerun.
+
+| Frozen runtime binary | SHA-256 |
+| --- | --- |
+| Model | `B89006E1FDD9B07E868FDA65E26E66B385E8DF3362ED3F8C27A41CDE45E344A2` |
+| FixtureArchive | `3E02AFA3332ABD0725C4E75A883A76F789F363BF0F6934BF297BA2F81F70A20E` |
+| Checker | `FD8B6BA31AE643DFFFC51DA95C724AB8891348732F4DD340876E7874E4DB9FD2` |
+
 ## After-draw relic generation extension
 
 Current inventory: 348 archives (315 battles, 33 calibrations), 118/224 original

@@ -1,5 +1,14 @@
 # Native regression fixtures
 
+Post-battle reward extension (2026-10-15): 349 archives (315 battles and 34
+calibrations), 120/224 original owners (53.57%): 109 battle owners plus eleven
+campaign-interface owners. VoidPortal and MothersRemnant2Relic pass 108 actual
+native reward-list calls across six ownership phases, three scenarios, three
+prefix counts and two repetitions. Original reward references, duplicate offers,
+owner order and unchanged RNG match. This validates collecting reward offers;
+UI choice and granting the rewards remain outside the claim. Four affected
+archives pass regression; see the validation record for provenance.
+
 After-draw generation extension (2026-10-15): 348 archives (315 battles and 33
 calibrations), 118/224 original owners (52.68%): 109 battle owners plus nine
 campaign-interface owners. All four unchanged after-draw generators pass 16
