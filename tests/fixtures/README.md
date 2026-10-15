@@ -1,5 +1,16 @@
 # Native regression fixtures
 
+Conduit extension (2026-10-15): 344 archives (312 battles and 32 calibrations),
+107/224 original owners (47.77%): 101 battle owners plus six campaign-interface
+owners. Three unchanged originals have positive first-summon, slay and equipment
+ablations. Fourteen exact births include first/later/enemy controls; 12 upgraded
+card plays exercise temporary damage/heal upgrades and room selection. The native
+battle wins with 42 stages, 21 plays, five EndTurns, Pyre 80 and zero error counters.
+Random tracker GUIDs are normalized only in snapshots; native state is untouched.
+Physical Conduit movement remains fail-closed pending independent calibration.
+Six affected archives pass general/focused gates and bounded serial/parallel search;
+the accepted recapture and frozen runtime hashes are in the validation record.
+
 Shroom Decay extension (2026-10-15): 343 archives (311 battles and 32
 calibrations), 104/224 original owners (46.43%): 98 battle owners plus six
 campaign-interface owners. The unchanged Shroom owner has 14 exact birth

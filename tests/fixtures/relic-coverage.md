@@ -1,14 +1,14 @@
 # Original relic coverage evidence
 
-As of 2026-10-15, **104 distinct original collectable relics / 224 catalog entries
-(46.43%)** have accepted native evidence: 98 have full-battle effect evidence,
+As of 2026-10-15, **107 distinct original collectable relics / 224 catalog entries
+(47.77%)** have accepted native evidence: 101 have full-battle effect evidence,
 and six have their campaign consumer interfaces validated below. This counts unchanged relic
 definitions whose effects actually ran, including their original filters and
 conditions. Test cards, unit triggers and carrier subtypes may be authored to
 exercise those effects; the claim covers the recorded paths, not every possible
 combination. Catalog enumeration and other owners of a supported effect class
 do not count as validated relics. `RelicEffectAddTrigger` appears on 26 catalog
-entries; 15 now have accepted original-owner effect evidence.
+entries; 17 now have accepted original-owner effect evidence.
 `RelicEffectAddStatusEffectOnStatusApplied` appears on eight catalog entries;
 all eight now have accepted original-owner evidence. Both catalog owners of
 `RelicEffectPreventStatusEffectDecay` have accepted evidence for their original
@@ -21,9 +21,12 @@ The battle archives cited below report game `2.2.1`, module MVID
 `8fb07b96-f4db-4d2b-884d-c00536d6ccf4`, `NativeWon=true`, and zero
 `CaptureFailures`, `Mismatches`, `Unsupported` and `Pending`. Archive provenance,
 byte lengths and SHA-256 hashes are recorded in [manifest.tsv](manifest.tsv).
-The accepted inventory is 343 archives: 311 battles and 32 component
-calibrations, with no JSON companions. The newest battle proves original
-Shroom summon Decay with positive damage and team/subtype controls; six affected archives pass.
+The accepted inventory is 344 archives: 312 battles and 32 component
+calibrations, with no JSON companions. The newest battle proves three original
+Conduit owners through first-summon, slay and equipment callbacks, native temporary
+upgrades, room selection and independent policy replay. The previous battle proves
+Shroom summon Decay with positive damage and team/subtype controls.
+Six affected archives pass the Conduit extension's general/focused gates and bounded search.
 The previous two battles add original
 spell healing and first-combat energy; eight affected archives pass current
 general/focused regression, independent policy replay and bounded search.
@@ -141,6 +144,9 @@ owner count.
 | `IncreaseMagicPowerOnSpellsPlayed` | `76166da7-d9aa-4c68-9a78-64914ec49f81` | [original spell-play thresholds][spellThresholds] | Five third-spell activations, including deployment, produce 65 exact damage/heal offset increments. Once-per-turn conditions reset correctly; passive status/birth condition queries retain the native card-statistic cache semantics. |
 | `DrawCardWhenConsumePlayed` | `4fbb0cca-26cd-4510-af02-66694c7edfd3` | [original spell-play thresholds][spellThresholds] | The original Spell and Exhaust trait filters yield one actual deployment draw, with 15 non-consuming controls. Its tracked condition limits activation to once per turn; trait requirements survive condition recording. |
 | `ShroomsGainSapDecay` | `3accd42e-3f82-4bf1-9026-29a624d3dde5` | [original Shroom Decay][shroomDecay] | Fourteen exact births include seven enemy and four non-Shroom controls; three Shroom births install the unchanged summon trigger. Five enemy status witnesses disappear on owner ablation; three combat stages deal actual Decay damage. Full native state and independent targeted-policy replay match. |
+| `Inkbound_Clepsydranium` | `b0972732-ea21-42d0-844d-05fb5ff028e6` | [original Conduit relics][conduit] | Original player OnKill adds Conduit 1; nine positive stage witnesses disappear under removal of this owner and its installed triggers. Full room power and temporary hand upgrades match. |
+| `EquipmentBoon_DH` | `394a559b-0c45-4bac-880a-522b04f1780c` | [original Conduit relics][conduit] | Original OnEquipmentAdded adds Conduit 4 with IgnoreDualism; two real equipment attachments have positive removed-owner controls. No original owner definition is modified. |
+| `AddConduitOnSpawn` | `357c7265-74d0-4567-b793-d2fbac464d82` | [original Conduit relics][conduit] | Original tracked once-per-turn condition gives Conduit 4 on four first summons; three later player births and seven enemy births are controls. Fourteen full birth transitions and 12 Conduit-upgraded card plays match. |
 | `SpellWeaknessBelowPyre` | `5a96d89f-d7c0-49fa-88d1-8ec75a8f3140` | [room-entry status relics][roomEntry] | Its unchanged room-2 Heroes effect adds 2 Spell Weakness. Three distinct native Heroes have the exact status; spell damage and post-card removal match through the full battle. |
 | `PyregelOnEnterTopFloor` | `e4be072c-e389-4ae7-acc6-0c8aa4cf0078` | [room-entry status relics][roomEntry] | Its unchanged room-2 Heroes effect adds 10 Pyregel. Three distinct native Heroes have the exact status after entry. |
 | `MoonPhaseModifyEmber` | `70096a91-220a-4ab3-b8d0-b8fe8f3a819c` | [original moon-phase energy relic][moonPhase] | Three Full callbacks add 1 Ember and notify; three New callbacks change nothing. Original once-per-turn condition and exact hidden moon markers match. |
@@ -157,7 +163,7 @@ owner count.
 
 These six unchanged original owners are validated by their actual native
 campaign consumers, with baseline and removed-owner controls. This table is
-separate from the 95 battle owners. It does not claim whole-battle integration
+separate from the 101 battle owners. It does not claim whole-battle integration
 for these effect classes. The capture's recorded relic IDs, gold, hoard cap and
 amount, deck IDs, frame and RNG match before/after; reward grants still execute
 their native run-stat side effects in the isolated save. Catalog enumeration
@@ -483,3 +489,4 @@ dotnet run --project src/ModelChecks -c Release -- --original-card-attack-only t
 [openingCorruption]: full-battle-original-opening-corruption-relics.mt2f
 [spellThresholds]: full-battle-original-spell-play-threshold-relics.mt2f
 [shroomDecay]: full-battle-original-shroom-decay-relic.mt2f
+[conduit]: full-battle-original-conduit-relics.mt2f

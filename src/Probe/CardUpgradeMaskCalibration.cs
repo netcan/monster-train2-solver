@@ -52,7 +52,7 @@ namespace MonsterTrain2Poju.Probe
                 state != null && ((!state.IsPurified && spawn?.GetGraftedEquipment() != null) || state.GetCardStateModifiers().GraftedEquipmentCardState != null),
                 state?.GetVisibleUpgradeCount(true, false) ?? 0,
                 state == null ? Array.Empty<string>() : state.GetCardStateModifiers().GetCardUpgrades()
-                    .Concat(state.GetTemporaryCardStateModifiers().GetCardUpgrades()).Select(upgrade => upgrade.GetCardUpgradeDataId()).ToArray());
+                    .Concat(state.GetTemporaryCardStateModifiers().GetCardUpgrades()).Select(upgrade => ConduitProbe.Normalize(upgrade.GetCardUpgradeDataId())).ToArray());
         }
 
         internal static CardUpgradeMaskCharacter Character(CharacterState character)

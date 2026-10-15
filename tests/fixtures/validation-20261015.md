@@ -1,5 +1,43 @@
 # Inventory validation, 2026-10-15
 
+## Conduit extension
+
+Current inventory: 344 archives (312 battles, 32 calibrations), 107/224 original
+owners (47.77%): 101 battle owners and six campaign-interface owners.
+
+Native source:
+`.probe-runs/full-battle-units-spells-and-junk-20261015-193707-ffc54f39/full-battle.mt2f`.
+Three unchanged originals add Conduit through first-summon, slay and equipment
+callbacks. Fourteen complete birth/train/queue transitions include four first
+summons, three later player summons and seven enemy controls. Nine slay-stage
+and two equipment witnesses disappear when removing the corresponding owner
+and installed triggers. Twelve card plays carry actual Conduit upgrades.
+The battle wins with 42 stages, 21 plays, five EndTurns, Pyre 80 and zero error
+counters; Steam files remain unchanged. Independent root/mid-battle/16-branch
+policy replay matches.
+
+The model follows native per-unit card tracking, temporary upgrade damage/heal
+values, trait multipliers, draw/discard, selected-room refresh and reorder.
+Pure controls cover unselected-room stack-removal reapplication, preview,
+death/removal, missing eligibility and immutable parallel branches. Physical
+Conduit movement is rejected pending independent calibration. Snapshot-only
+normalization replaces random tracker GUIDs with canonical unit IDs without
+changing native getters, comparisons or effects. The first general regression
+identified a raw GUID left in the independent mask view; that capture and failed
+run `.probe-runs/model-checks-20261015-193435-7197d683` are excluded. The accepted
+recapture includes the independent native mask view normalization.
+
+Six affected fixtures pass all general/focused gates and bounded search with
+three workers and no reruns:
+`.probe-runs/model-checks-20261015-193908-0abe8803/summary.json`.
+This is an affected regression, not a complete 344-archive rerun.
+
+| Frozen runtime binary | SHA-256 |
+| --- | --- |
+| Model | `1817D0F44F9462B41812D69B4635F9F769726C125C4596CEA2CA8EFE358703DD` |
+| FixtureArchive | `7044FB864F59407B22DB7579AFAE4B6D737A9D422430C928FDFC7FDC3219C30F` |
+| Checker | `2F0FE2A12C17864FFB9251CD645C45B596875B9316F8D8DC895D64F9A1539399` |
+
 ## Shroom Decay extension
 
 Current inventory: 343 archives (311 battles, 32 calibrations), 104/224 original

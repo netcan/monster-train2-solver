@@ -540,6 +540,11 @@ namespace MonsterTrain2Poju.Probe
                 numericModifiersPrepared = true;
                 return;
             }
+            if (fullBattle && !numericModifiersPrepared && OriginalConduitScenario.Enabled)
+            {
+                OriginalConduitScenario.Prepare(managers, log);
+                numericModifiersPrepared = true;
+            }
             if (fullBattle && !numericModifiersPrepared && OriginalCombatTriggerBatchScenario.Enabled)
             {
                 OriginalCombatTriggerBatchScenario.Prepare(managers, log);

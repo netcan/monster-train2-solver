@@ -50,7 +50,7 @@ namespace MonsterTrain2Poju.Probe
         {
             private static void Postfix(CharacterState character, CardState fromCard, bool onlyCovenants, ref IEnumerator __result)
             {
-                bool ordinaryBirthCapture = !onlyCovenants && (OriginalCombatTriggerBatchScenario.Prepared || SpawnStatusRelicScenario.Prepared || SpawnStatusRelicScenario.OriginalCombatRelicsAcquired || OriginalRelicBatchScenario.Prepared ||
+                bool ordinaryBirthCapture = !onlyCovenants && (OriginalConduitScenario.Prepared || OriginalCombatTriggerBatchScenario.Prepared || SpawnStatusRelicScenario.Prepared || SpawnStatusRelicScenario.OriginalCombatRelicsAcquired || OriginalRelicBatchScenario.Prepared ||
                     RelicCardModifierScenario.Prepared && RelicCardModifierScenario.AllUnitsMultistrikeMutator);
                 bool covenantBirthCapture = onlyCovenants && CovenantCharacterFilterScenario.Prepared;
                 if ((!ordinaryBirthCapture && !covenantBirthCapture) || FullBattleTrace.Active == null || AllGameManagers.Instance!.GetSaveManager().PreviewMode) return;
@@ -66,7 +66,7 @@ namespace MonsterTrain2Poju.Probe
             Records.Add(record);
             RelicBirthResult? world = null;
             RoomCombatResult? predicted = null;
-            if (SpawnStatusRelicScenario.Clones || OriginalLifecycleRelicBatchScenario.Enabled || OriginalCombatTriggerBatchScenario.Enabled)
+            if (SpawnStatusRelicScenario.Clones || OriginalLifecycleRelicBatchScenario.Enabled || OriginalCombatTriggerBatchScenario.Enabled || OriginalConduitScenario.Enabled)
             {
                 record.BeforeTrain = trace.CaptureTrain();
                 record.QueueRunningBefore = AllGameManagers.Instance!.GetCombatManager()!.IsRunningTriggerQueue;
@@ -86,7 +86,7 @@ namespace MonsterTrain2Poju.Probe
             {
                 observingBirth--;
                 (native as IDisposable)?.Dispose(); record.After = trace.Capture(room);
-                if (SpawnStatusRelicScenario.Clones || OriginalLifecycleRelicBatchScenario.Enabled || OriginalCombatTriggerBatchScenario.Enabled)
+                if (SpawnStatusRelicScenario.Clones || OriginalLifecycleRelicBatchScenario.Enabled || OriginalCombatTriggerBatchScenario.Enabled || OriginalConduitScenario.Enabled)
                 {
                     active.Remove(record); record.AfterTrain = trace.CaptureTrain(); record.QueuedAfter = Queue(record);
                     record.Difference = record.UnsupportedQueueReason ?? (!world!.Supported ? world.UnsupportedReason :

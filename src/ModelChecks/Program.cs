@@ -540,6 +540,12 @@ if (args.Length == 2 && args[0] == "--original-spell-play-thresholds-only")
     OriginalSpellPlayThresholdChecks.Native(document.RootElement);
     return;
 }
+if (args.Length == 2 && args[0] == "--original-conduit-relics-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    OriginalConduitChecks.Native(fixture.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--original-combat-trigger-relics-only")
 {
     using var document = ModelJson.ReadFixture(args[1]);
