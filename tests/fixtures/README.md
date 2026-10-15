@@ -1,5 +1,15 @@
 # Native regression fixtures
 
+After-draw generation extension (2026-10-15): 348 archives (315 battles and 33
+calibrations), 118/224 original owners (52.68%): 109 battle owners plus nine
+campaign-interface owners. All four unchanged after-draw generators pass 16
+actual Test/Apply callbacks with exact Battle RNG and context, positive hand
+additions 4/4/4/3, one native full-hand rejection and four temporary Ephemeral
+upgrades. Whole candidate pools enter the initial branch rules before selection.
+The 39-stage/25-play/five-EndTurn battle wins with Pyre 80 and zero counters;
+complete independent root/mid-battle/16-branch policy replay passes. See the
+validation record for affected regression and excluded diagnostic capture.
+
 Health-dependent equipment extension (2026-10-15): 347 archives (314 battles and
 33 calibrations), 114/224 original owners (50.89%): 105 battle owners plus nine
 campaign-interface owners. Unchanged HairOfTheHybrid has four exact natural

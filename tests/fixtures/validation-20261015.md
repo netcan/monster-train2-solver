@@ -1,5 +1,50 @@
 # Inventory validation, 2026-10-15
 
+## After-draw relic generation extension
+
+Current inventory: 348 archives (315 battles, 33 calibrations), 118/224 original
+owners (52.68%): 109 battle owners and nine campaign-interface owners.
+
+Native source:
+`.probe-runs/full-battle-units-spells-and-junk-20261015-203040-99d5d2e5/full-battle.mt2f`.
+All four unchanged RelicEffectAddBattleCardToHand owners run their actual native
+TestEffectTurnPhaseTiming and ApplyEffectTurnPhaseTiming methods. Sixteen exact
+consumer transitions match selected original card ID, Battle RNG and complete
+context. Positive hand additions are 4 Imp, 4 Vine Grasp, 4 Snack and 3 Sting.
+The fourth Sting selection encounters a native full hand: RNG still advances,
+while no fresh identity is allocated. All four Vine Grasp additions receive
+the original AddEphemeral upgrade temporarily. Pure controls exercise placement,
+preview and full-hand rejection without mutating parent state.
+
+Initial decision rules include the entire original filtered relic pools before
+random selection, including recursively reachable card definitions. The earlier
+`full-battle-units-spells-and-junk-20261015-202656-8c6ea9c0` diagnostic won but
+had four EndTurn mismatches from late candidate-rule discovery; it is excluded.
+No native card selection or pool definition was modified to fix this capture gap.
+
+The accepted battle wins with 39 stages, 25 plays, five EndTurns, Pyre 80 and all
+four native error counters zero; Steam files remain unchanged. Independent
+root/mid-battle/16-branch policy replay passes. The schema-103 archive is
+38727 bytes, 6492 nodes, SHA-256
+`3b66b1794ac58683fec8aa4570b7ae40f9083bb7f95a59c11d73219dd83d538d`.
+Bounded serial/parallel search agrees over 128 states; it rejects 487 unsupported
+alternative attempts across recorded decisions and 13 inside search. This proves
+generation and the recorded supported policy, not every generated card mechanic
+or an unrestricted optimal search.
+
+Six affected archives pass all general/focused gates with three workers, exit 0,
+and no reruns:
+`.probe-runs/model-checks-20261015-203302-44ebc6a4/summary.json`.
+The set covers generation with relic/status upgrades, Ephemeral modifiers, raw
+resource owners, opening corruption and branch card-mask generation. This is
+an affected regression, not a complete 348-archive rerun.
+
+| Frozen runtime binary | SHA-256 |
+| --- | --- |
+| Model | `D60396B5FCDC53561562165BFD7520978250E36873DD89A3501044FFD14A742F` |
+| FixtureArchive | `DB12DDB09EDB9A1BDCBC91344BFC453E2BF8083A114F04B90F464B7468361A2E` |
+| Checker | `A01CF08286C23A6DC63C116D036A8B1C90E4430515405DD516726E6142D41D2A` |
+
 ## Health-dependent equipment extension
 
 Current inventory: 347 archives (314 battles, 33 calibrations), 114/224 original
