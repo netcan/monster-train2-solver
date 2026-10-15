@@ -1,5 +1,42 @@
 # Inventory validation, 2026-10-15
 
+## Pre-opening draw extension
+
+Current inventory: 352 archives (317 battles, 35 calibrations), 128/224 original
+owners (57.14%): 115 battle owners and thirteen campaign-interface owners.
+Native source:
+`.probe-runs/full-battle-units-spells-and-junk-20261015-211711-5ad28bc9/full-battle.mt2f`.
+RandomEquipmentCardFirstTurn, RandomTrainRoomCardFirstTurn and
+DrawSpellOnDeployment retain their original definitions. Three natural callbacks
+and two controlled positive cascade fallbacks match complete combat contexts.
+The primary Equipment/room masks exclude deployment-draw traits; the secondary
+masks allow those same card types with the trait. Authored carriers exercise
+both paths; the inert room card is not played by the recorded policy.
+
+Native selection uses CardDraw RNG, expands the draw modifier before selection,
+and applies temporary cost upgrades before attempting hand insertion. Three
+full-hand cases are pure model controls. Preview, nondeployment, owner removal
+and sixteen parallel branches preserve their expected state. The 38-stage,
+19-play, five-EndTurn battle wins at Pyre 80 in 54.26 seconds, with all four
+error counters zero and unchanged Steam files. Independent root, mid-battle
+and parallel policy replay passes. The policy begins after initial opening draw;
+this does not claim a pre-battle search or arbitrary carrier support.
+
+The earlier `20261015-211303-2540473a` diagnostic has zero native error counters
+but lacks a positive secondary-filter fallback and is excluded. The accepted
+schema-103 archive has 29665 bytes, 4730 nodes, source length 0 and SHA-256
+`3cac564d19ede5dabd7bc050450dd0e715f18baabc1d3044a0d2d713c3f751fe`.
+Five affected archives pass general/focused regression:
+`.probe-runs/model-checks-20261015-212000-ef4ebf58/summary.json`.
+All workers exit zero with frozen Model/Archive/Checker hashes
+`ECA9D4605129CEBB00F78B6CD29CE2678E458E419B1AA9ECDE8852F1B66679EC`,
+`A959B6AF64EA29239B8E48BBE7CD3CC7F6C4A16F10FDC688FAEB0D4DCB3E93B6`,
+`7551AFD0EC556607C376170EF66586A45102CE8C1F813F89BCEFC069E2EEE5CD`.
+Bounded search replays all 19 recorded decisions, with 90 unsupported alternative
+attempts across them and 12 within its 128-state search. Serial and parallel best
+results agree, three best-path steps replay, and the parent remains unchanged.
+Unsupported alternatives remain explicit; this is not unrestricted optimization.
+
 ## Unit-trigger gold and Ember extension
 
 Current inventory: 351 archives (316 battles, 35 calibrations), 125/224 original

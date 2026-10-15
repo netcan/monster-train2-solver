@@ -1,5 +1,14 @@
 # Native regression fixtures
 
+Pre-opening draw extension (2026-10-15): 352 archives (317 battles and 35
+calibrations), 128/224 original owners (57.14%): 115 battle owners plus thirteen
+campaign-interface owners. Three unchanged owners match five exact native
+callbacks, including two controlled positive secondary-filter fallbacks.
+CardDraw RNG, temporary cost upgrades and draw-count expansion match. The
+38-stage/19-play/five-EndTurn battle wins with Pyre 80 and zero counters;
+independent policy replay and five affected archives pass. Three full-hand
+cases are pure model controls. See validation provenance for bounded search.
+
 Unit-trigger resource extension (2026-10-15): 351 archives (316 battles and 35
 calibrations), 125/224 original owners (55.80%): 112 battle owners plus thirteen
 campaign-interface owners. GoldOnDeath, EmberOnTombDeath and Frenzystesia match

@@ -1,7 +1,7 @@
 # Original relic coverage evidence
 
-As of 2026-10-15, **125 distinct original collectable relics / 224 catalog entries
-(55.80%)** have accepted native evidence: 112 have full-battle effect evidence,
+As of 2026-10-15, **128 distinct original collectable relics / 224 catalog entries
+(57.14%)** have accepted native evidence: 115 have full-battle effect evidence,
 and thirteen have their campaign consumer interfaces validated below. This counts unchanged relic
 definitions whose effects actually ran, including their original filters and
 conditions. Test cards, unit triggers and carrier subtypes may be authored to
@@ -21,8 +21,13 @@ The battle archives cited below report game `2.2.1`, module MVID
 `8fb07b96-f4db-4d2b-884d-c00536d6ccf4`, `NativeWon=true`, and zero
 `CaptureFailures`, `Mismatches`, `Unsupported` and `Pending`. Archive provenance,
 byte lengths and SHA-256 hashes are recorded in [manifest.tsv](manifest.tsv).
-The accepted inventory is 351 archives: 316 battles and 35 component
+The accepted inventory is 352 archives: 317 battles and 35 component
 calibrations, with no JSON companions. The newest battle proves three original
+pre-opening draw owners through five exact callbacks: three natural primary
+draws and two controlled native secondary-filter fallbacks. Temporary upgrades,
+draw-count expansion and CardDraw RNG match. Independent policy replay and five
+affected archives pass; three full-hand cases are pure model controls only.
+The previous battle proves three original
 unit resource owners through 505 exact manager contexts, actual Tomb/ordinary
 sacrifices and two equipment additions. Gold, Ember and twice-recorded trigger
 conditions match; enemy/subtype/repeat controls and four positive ablations pass.
@@ -80,6 +85,9 @@ owner count.
 | `GoldOnDeath` | `265d9fb6-934f-4b7d-ba12-d3a06c48b610` | [unit resource relics][unitResources] | Original +5 reward gold on actual friendly death: two positive native callbacks. Both Tomb and ordinary sacrifice qualify; six enemy deaths do not. Gold's living-death override is preserved separately from Ember's strict dead-only gate. |
 | `EmberOnTombDeath` | `4a5b1613-568c-4bf6-8bf7-15f8bf013345` | [unit resource relics][unitResources] | Original +5 Ember after actual Tomb sacrifice; ordinary friendly sacrifice and enemy deaths do not qualify. Complete manager contexts and exact resource/RNG state match. |
 | `Frenzystesia` | `56316fc2-b41a-41ae-aba8-e83fb668e8e1` | [unit resource relics][unitResources] | Original +1 Ember on the first equipment callback this turn. Two actual equipment additions prove the first-only condition, with notification count recorded once by the effect and again by RelicManager. Full 22-play/five-EndTurn policy matches, including native duration resets. |
+| `RandomEquipmentCardFirstTurn` | `7a1d5b5d-cd08-4935-b629-d3d441905100` | [original opening draw][openingDraw] | Natural Equipment primary draw plus controlled native fallback to an Equipment with the deployment-draw trait. Original temporary -99 cost, count expansion and CardDraw RNG match. |
+| `RandomTrainRoomCardFirstTurn` | `d245f9d5-e966-4a8e-a125-4aa5b48f1e7c` | [original opening draw][openingDraw] | Natural room-card primary draw plus controlled native fallback to a room card with the deployment-draw trait. Both original masks, temporary -99 cost and count expansion match; the inert room carrier is not played. |
+| `DrawSpellOnDeployment` | `69d88251-cfed-4fd0-a355-cba2e10e09d4` | [original opening draw][openingDraw] | Natural original-mask Spell draw and temporary -1 cost/+1 X-cost reduction, without draw-count expansion. Full native contexts, preview/nondeployment/removed-owner controls and independent 19-play policy match. |
 | `GiveSpellStatsForUpgrades_DH` | `4200307a-616d-4cbb-a54e-527c5dc0f492` | [upgrade-count relics][upgradeCounts] | Original +3 damage per permanent upgrade with a visible icon: 0/1/2 yield 0/3/6. Hidden, no-icon and temporary upgrades are excluded; a visible region upgrade counts. Original `DevilishDetails` exclusion rejects the upgraded spell. The damage spell is played and redrawn with its bonus intact. |
 | `IncreaseSpellHealing` | `03613302-e55a-4e6c-99a1-c198c8d3175c` | [original healing power][healingPower] | Unchanged +10 healing to every Spell, independently of native magic-power eligibility. Non-scalable Spell, Monster/Blight rejection, fivefold trait multiplier, reset/repeat and owner ablations pass all 22 manager calls. A controlled damage-then-heal spell actually restores health; damage remains unchanged. |
 | `OneEmberFirstTurn_DH` | `c5a68f6d-671d-4db3-999f-120b5febf41b` | [original first-combat energy][firstCombatEnergy] | Original amount is +2 despite the asset name. Acquisition does not add energy; the natural first-combat callback runs once on turn one after initial enemy spawn and before regular income, with zero notifications. Deployment/owner-ablation controls and all seven EndTurns match. |
@@ -547,3 +555,4 @@ dotnet run --project src/ModelChecks -c Release -- --original-card-attack-only t
 [equipmentGrowth]: full-battle-original-equipment-growth-relics.mt2f
 [healthChoice]: full-battle-original-health-choice-relic.mt2f
 [afterDrawGeneration]: full-battle-original-after-draw-generation-relics.mt2f
+[openingDraw]: full-battle-original-opening-draw-relics.mt2f
