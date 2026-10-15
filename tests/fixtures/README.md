@@ -1,13 +1,15 @@
 # Native regression fixtures
 
-Legacy replay refresh (2026-10-15): 15 of the 30 recordings with disabled-floor
+Legacy replay refresh (2026-10-15): 20 of the 30 recordings with disabled-floor
 policy plays have fresh native replacements. The resumed attack-trigger and
 branch-mask clone-upgrade recordings both pass their complete independent policy
 chains, including mid-battle roots and 16 immutable branches. Their original
 scenario and capture flags are preserved. Incant, the base binary recording,
 original Endless return and ordinary clone upgrade refresh are also replaced;
 the Endless recording retains relic modifier capture with seven actual records.
-The conditional relic upgrade recording is also replaced. Fifteen replacements and the complete
+The conditional relic upgrade recording, UI-isolated drawing, lethal pre-hand
+discard, sacrifice effects/upgrades and dying upgrades are also replaced.
+Ten replacements and the complete
 inventory regression remain pending. Byte counts and hashes in older entries
 below describe their historical captures; [manifest.tsv](manifest.tsv) records
 the current accepted binaries.
