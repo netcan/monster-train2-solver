@@ -246,6 +246,7 @@ param(
     [switch] $OriginalSpellPlayThresholdRelics,
     [switch] $OriginalCombatTriggerRelics,
     [switch] $OriginalConduitRelics,
+    [switch] $OriginalEquipmentGrowthRelics,
     [switch] $OriginalUnitUpgradeTriggerRelic,
     [switch] $TypedDraw,
     [switch] $IncantRelic,
@@ -363,6 +364,7 @@ if ($OriginalOpeningCorruptionRelics) { $BranchCardMasks = $true; $Policy = 'uni
 if ($OriginalSpellPlayThresholdRelics) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalCombatTriggerRelics) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalConduitRelics) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
+if ($OriginalEquipmentGrowthRelics) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalUnitUpgradeTriggerRelic) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalTriggerRelicBatch -or $OriginalLifecycleRelicBatch) {
     $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $SettleDeathDissolves = $true; $SettleCardAnimations = $true
@@ -741,6 +743,7 @@ if ($OriginalOpeningCorruptionRelics) { $environment['MT2_PROBE_MODIFIERS'] = 'o
 if ($OriginalSpellPlayThresholdRelics) { $environment['MT2_PROBE_MODIFIERS'] = 'original-spell-play-threshold-relics' }
 if ($OriginalCombatTriggerRelics) { $environment['MT2_PROBE_MODIFIERS'] = 'original-combat-trigger-relics' }
 if ($OriginalConduitRelics) { $environment['MT2_PROBE_MODIFIERS'] = 'original-conduit-relics' }
+if ($OriginalEquipmentGrowthRelics) { $environment['MT2_PROBE_MODIFIERS'] = 'original-equipment-growth-relics' }
 if ($OriginalUnitUpgradeTriggerRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-unit-upgrade-trigger-relic' }
 if ($TypedDraw) {
     $environment['MT2_PROBE_MODIFIERS'] = 'typed-draw'
@@ -1324,6 +1327,13 @@ if ($OriginalConduitRelics) {
         @($trace.RelicSpawnStatuses).Count -eq 0 -or @($trace.Actions).Count -eq 0 -or
         -not (Select-String -LiteralPath $unityLog -Pattern 'ORIGINAL-CONDUIT-RELICS-PREPARED three unchanged owners' -Quiet)) {
         throw 'Original Conduit relics lack their unchanged owners, birth records and carrier setup.'
+    }
+}
+if ($OriginalEquipmentGrowthRelics) {
+    if ($trace.ModifierScenario -ne 'original-equipment-growth-relics' -or
+        @($trace.RelicSpawnStatuses).Count -eq 0 -or @($trace.Actions).Count -eq 0 -or
+        -not (Select-String -LiteralPath $unityLog -Pattern 'ORIGINAL-EQUIPMENT-GROWTH-PREPARED three unchanged owners' -Quiet)) {
+        throw 'Original equipment growth relics lack unchanged owners, birth records or carrier setup.'
     }
 }
 if ($CampaignRelicCalibration) {

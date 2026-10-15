@@ -540,6 +540,11 @@ namespace MonsterTrain2Poju.Probe
                 numericModifiersPrepared = true;
                 return;
             }
+            if (fullBattle && !numericModifiersPrepared && OriginalEquipmentGrowthScenario.Enabled)
+            {
+                OriginalEquipmentGrowthScenario.Prepare(managers, log);
+                numericModifiersPrepared = true;
+            }
             if (fullBattle && !numericModifiersPrepared && OriginalConduitScenario.Enabled)
             {
                 OriginalConduitScenario.Prepare(managers, log);
@@ -1239,6 +1244,8 @@ namespace MonsterTrain2Poju.Probe
                     pendingPlay = OriginalEggCardScenario.Choose(decision) ?? pendingPlay;
                 if (OriginalCombatTriggerBatchScenario.Enabled)
                     pendingPlay = OriginalCombatTriggerBatchScenario.Choose(decision);
+                if (OriginalEquipmentGrowthScenario.Enabled)
+                    pendingPlay = OriginalEquipmentGrowthScenario.Choose(decision);
                 if (fullBattle && OriginalCardDrawOnCardPlayScenario.Enabled)
                     pendingPlay = OriginalCardDrawOnCardPlayScenario.ChooseSnack(decision) ?? pendingPlay;
                 if (fullBattle && UnplayedCardTriggerScenario.Enabled)

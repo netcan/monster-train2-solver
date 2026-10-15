@@ -50,7 +50,7 @@ namespace MonsterTrain2Poju.Probe
         {
             private static void Postfix(CharacterState character, CardState fromCard, bool onlyCovenants, ref IEnumerator __result)
             {
-                bool ordinaryBirthCapture = !onlyCovenants && (OriginalConduitScenario.Prepared || OriginalCombatTriggerBatchScenario.Prepared || SpawnStatusRelicScenario.Prepared || SpawnStatusRelicScenario.OriginalCombatRelicsAcquired || OriginalRelicBatchScenario.Prepared ||
+                bool ordinaryBirthCapture = !onlyCovenants && (OriginalEquipmentGrowthScenario.Prepared || OriginalConduitScenario.Prepared || OriginalCombatTriggerBatchScenario.Prepared || SpawnStatusRelicScenario.Prepared || SpawnStatusRelicScenario.OriginalCombatRelicsAcquired || OriginalRelicBatchScenario.Prepared ||
                     RelicCardModifierScenario.Prepared && RelicCardModifierScenario.AllUnitsMultistrikeMutator);
                 bool covenantBirthCapture = onlyCovenants && CovenantCharacterFilterScenario.Prepared;
                 if ((!ordinaryBirthCapture && !covenantBirthCapture) || FullBattleTrace.Active == null || AllGameManagers.Instance!.GetSaveManager().PreviewMode) return;
@@ -66,7 +66,7 @@ namespace MonsterTrain2Poju.Probe
             Records.Add(record);
             RelicBirthResult? world = null;
             RoomCombatResult? predicted = null;
-            if (SpawnStatusRelicScenario.Clones || OriginalLifecycleRelicBatchScenario.Enabled || OriginalCombatTriggerBatchScenario.Enabled || OriginalConduitScenario.Enabled)
+            if (SpawnStatusRelicScenario.Clones || OriginalLifecycleRelicBatchScenario.Enabled || OriginalCombatTriggerBatchScenario.Enabled || OriginalConduitScenario.Enabled || OriginalEquipmentGrowthScenario.Enabled)
             {
                 record.BeforeTrain = trace.CaptureTrain();
                 record.QueueRunningBefore = AllGameManagers.Instance!.GetCombatManager()!.IsRunningTriggerQueue;
@@ -86,7 +86,7 @@ namespace MonsterTrain2Poju.Probe
             {
                 observingBirth--;
                 (native as IDisposable)?.Dispose(); record.After = trace.Capture(room);
-                if (SpawnStatusRelicScenario.Clones || OriginalLifecycleRelicBatchScenario.Enabled || OriginalCombatTriggerBatchScenario.Enabled || OriginalConduitScenario.Enabled)
+                if (SpawnStatusRelicScenario.Clones || OriginalLifecycleRelicBatchScenario.Enabled || OriginalCombatTriggerBatchScenario.Enabled || OriginalConduitScenario.Enabled || OriginalEquipmentGrowthScenario.Enabled)
                 {
                     active.Remove(record); record.AfterTrain = trace.CaptureTrain(); record.QueuedAfter = Queue(record);
                     record.Difference = record.UnsupportedQueueReason ?? (!world!.Supported ? world.UnsupportedReason :
@@ -104,26 +104,27 @@ namespace MonsterTrain2Poju.Probe
         {
             var queue = ((IEnumerable)AccessTools.Property(typeof(CombatManager), "TriggerQueue")
                 .GetValue(AllGameManagers.Instance!.GetCombatManager())).Cast<CombatManager.TriggerQueueData>().ToArray();
-            if (queue.Any(item => item.exclusiveTrigger != null || !item.canAttackOrHeal || !item.canFireTriggers))
-                record.UnsupportedQueueReason = "Relic birth requires captured exclusive/disabled native queue flags.";
-            return queue.Select(item => Payload(item.character, item.trigger, item.dyingCharacter, item.fireTriggersData, item.triggerCount)).ToList();
+            if (queue.Any(item => !item.canAttackOrHeal || !item.canFireTriggers))
+                record.UnsupportedQueueReason = "Relic birth requires captured disabled native queue flags.";
+            return queue.Select(item => Payload(item.character, item.trigger, item.dyingCharacter, item.fireTriggersData, item.triggerCount, item.exclusiveTrigger)).ToList();
         }
         private static UnitCloneCallback Payload(CharacterState actor, CharacterTriggerData.Trigger kind, CharacterState? dying,
-            CharacterState.FireTriggersData? data, int count)
+            CharacterState.FireTriggersData? data, int count, CharacterTriggerState? exclusive)
         {
             FullBattleTrace trace = FullBattleTrace.Active!;
             return new UnitCloneCallback(trace.UnitId(actor), kind.ToString(), data?.paramInt ?? 0, data?.paramInt2 ?? 0, data?.paramString,
                 count, dying == null ? 0 : trace.UnitId(dying), data?.overrideTargetCharacter == null ? 0 : trace.UnitId(data.overrideTargetCharacter),
-                data?.overrideLastSpawnedCharacter == null ? 0 : trace.UnitId(data.overrideLastSpawnedCharacter));
+                data?.overrideLastSpawnedCharacter == null ? 0 : trace.UnitId(data.overrideLastSpawnedCharacter),
+                exclusive == null ? (int?)null : trace.TriggerStateId(actor, exclusive));
         }
         [HarmonyPatch(typeof(CharacterState), nameof(CharacterState.FireTriggers))]
         private static class FirePatch
         {
             private static void Prefix(CharacterState __instance, CharacterTriggerData.Trigger trigger, CharacterState dyingCharacter,
-                CharacterState.FireTriggersData fireTriggersData, int triggerCount, bool fromRunningTriggerQueue)
+                CharacterState.FireTriggersData fireTriggersData, int triggerCount, bool fromRunningTriggerQueue, CharacterTriggerState exclusiveTrigger)
             {
                 if (!fromRunningTriggerQueue || active.Count == 0 || AllGameManagers.Instance!.GetSaveManager().PreviewMode) return;
-                UnitCloneCallback item = Payload(__instance, trigger, dyingCharacter, fireTriggersData, triggerCount);
+                UnitCloneCallback item = Payload(__instance, trigger, dyingCharacter, fireTriggersData, triggerCount, exclusiveTrigger);
                 foreach (Record record in active) record.Dispatched.Add(item);
             }
         }

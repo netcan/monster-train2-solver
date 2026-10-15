@@ -546,6 +546,12 @@ if (args.Length == 2 && args[0] == "--original-conduit-relics-only")
     OriginalConduitChecks.Native(fixture.RootElement);
     return;
 }
+if (args.Length == 2 && args[0] == "--original-equipment-growth-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    OriginalEquipmentGrowthChecks.Native(fixture.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--original-combat-trigger-relics-only")
 {
     using var document = ModelJson.ReadFixture(args[1]);
