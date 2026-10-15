@@ -84,6 +84,15 @@ internal static class RelicCardPlayMagicPowerChecks
             RelicCardPlayMagicPowerModel.Apply(RelicConditionModel.EndDuration(combat.Context, "ThisTurn"), 3, currentTurn: 2).Dispatches.Count == 1,
             "Spell threshold failed deployment, once-per-turn or condition-reset controls: " + deployment.UnsupportedReason + "/" + combat.UnsupportedReason +
             " dispatches=" + deployment.Dispatches.Count + "/" + combat.Dispatches.Count + "/" + repeated.Dispatches.Count);
+        var uncached = new CombatContext(new([new CardToken(3, "normal")], [], [], rng, 0, []), rng, 0, 6, 10,
+            statistics: new([], [], [], [], [], [], [], 0, 0, 0, 0, 0, trackedCards: [1], storedCards: [1]),
+            cardInstances: [normalSpell], relics: [threshold], otherPiles: []);
+        string cacheParent = JsonSerializer.Serialize(uncached);
+        var passive = RelicStatusStackModel.Notify(uncached, preview: true, fromEffectType: null);
+        Require(passive.Supported && passive.Context!.Statistics!.StoredCards!.SequenceEqual([3]) &&
+            !passive.Context.Relics![0].CardPlayMagicPowerModifiers![0].Conditions[0].Triggered &&
+            JsonSerializer.Serialize(uncached) == cacheParent,
+            "Failed passive status condition did not refresh owned-card cache before preview gating, or mutated its parent.");
         Console.WriteLine("RELIC-CARD-PLAY-MAGIC-POWER-CHECKS PASS: required traits, owned scalable spells, trait multipliers, accumulation, immutable branches and explicit missing metadata.");
     }
 

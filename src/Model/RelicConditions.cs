@@ -27,6 +27,26 @@ namespace MonsterTrain2Poju.Model
 
     internal static class RelicConditionModel
     {
+        // RelicState invokes these base callbacks on every effect, even when
+        // that effect has no specialized status/birth behavior. Failed global
+        // conditions can still refresh native deckStats membership.
+        internal static RelicConditionEvaluation EvaluatePassiveCardPlayConditions(CombatContext source, CombatRelicState relic)
+        {
+            CombatContext context = source;
+            for (int index = 0; index < relic.EffectTypes.Count; index++)
+            {
+                IReadOnlyList<RelicConditionState>? conditions = null;
+                if (relic.EffectTypes[index] == RelicModel.ModifyCardMagicPowerOnCardPlayed)
+                    conditions = relic.CardPlayMagicPowerModifiers?.SingleOrDefault(effect => effect.EffectIndex == index)?.Conditions;
+                if (relic.EffectTypes[index] == RelicModel.CardDrawOnCardPlay)
+                    conditions = relic.CardDrawOnCardPlayModifiers?.SingleOrDefault(effect => effect.EffectIndex == index)?.Conditions;
+                if (conditions == null) continue;
+                var evaluation = Evaluate(context, conditions);
+                if (!evaluation.Supported) return evaluation;
+                context = evaluation.Context;
+            }
+            return new RelicConditionEvaluation(context, true);
+        }
         internal static RelicConditionEvaluation Evaluate(CombatContext source, IReadOnlyList<RelicConditionState> conditions)
         {
             CombatContext context = source;

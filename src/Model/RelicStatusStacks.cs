@@ -69,6 +69,12 @@ namespace MonsterTrain2Poju.Model
             for (int phase = 0; phase < 2; phase++)
             for (int relicIndex = 0; relicIndex < context.Relics!.Count; relicIndex++)
             {
+                if (phase == 0)
+                {
+                    var passive = RelicConditionModel.EvaluatePassiveCardPlayConditions(context, context.Relics[relicIndex]);
+                    if (!passive.Supported) return new StatusScalingResult(null, 0, passive.UnsupportedReason);
+                    context = passive.Context;
+                }
                 var rules = context.Relics[relicIndex].StatusStackAdditions;
                 if (rules == null) continue;
                 for (int ruleIndex = 0; ruleIndex < rules.Count; ruleIndex++)

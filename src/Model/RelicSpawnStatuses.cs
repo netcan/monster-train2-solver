@@ -102,7 +102,8 @@ namespace MonsterTrain2Poju.Model
             string? error = RelicModel.Validate(source.Context);
             if (error != null) return Fail(error);
             if (source.Context?.Relics == null || !source.Context.Relics.Any(relic => relic.SpawnStatuses?.Count > 0 ||
-                relic.CardModifiers?.Count > 0 || relic.CardAttackModifiers?.Count > 0 || relic.TriggerAdditions?.Count > 0))
+                relic.CardModifiers?.Count > 0 || relic.CardAttackModifiers?.Count > 0 || relic.TriggerAdditions?.Count > 0 ||
+                relic.CardPlayMagicPowerModifiers?.Count > 0 || relic.CardDrawOnCardPlayModifiers?.Count > 0))
                 return new RoomCombatResult(source, RoomOutcome.Exchanged, 0, new List<CombatEvent>(), pendingCallbacks: prior);
             if (!source.Units.Any(unit => unit.Id == unitId) || fromCardId < 0 ||
                 fromCardId > 0 && source.Context.FindCard(fromCardId) == null) return Fail("Missing native relic birth references.");
@@ -116,6 +117,9 @@ namespace MonsterTrain2Poju.Model
                 CombatRelicState relic = state.Context!.Relics![relicIndex];
                 if (relic.IsCovenant != onlyCovenants ||
                     relic.DisallowedInPlacementPhase == true && state.Deployment) continue;
+                var passive = RelicConditionModel.EvaluatePassiveCardPlayConditions(state.Context!, relic);
+                if (!passive.Supported) return Fail(passive.UnsupportedReason!);
+                SetContext(passive.Context);
                 for (int effectIndex = 0; effectIndex < relic.EffectTypes.Count; effectIndex++)
                 {
                     relic = state.Context!.Relics![relicIndex];
