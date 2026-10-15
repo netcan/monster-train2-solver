@@ -1,5 +1,14 @@
 # Native regression fixtures
 
+Turn-draw and campaign purge extension (2026-10-15): 354 archives (318 battles
+and 36 calibrations), 131/224 original owners (58.48%): 117 battle owners plus
+fourteen campaign-interface owners. Original PyrePiping and DrawToMaxStartOfCombat
+match 13 native mutating Test callbacks and one positive post-opening draw.
+Complete 25-play/five-EndTurn replay and five affected archives pass. Canio
+matches 144 actual purge-manager calls across six card types, with 24 rewards
+and combat/removed controls; four affected archives pass. This component tests
+the purge callback rather than deck removal/payment UI. See validation provenance.
+
 Pre-opening draw extension (2026-10-15): 352 archives (317 battles and 35
 calibrations), 128/224 original owners (57.14%): 115 battle owners plus thirteen
 campaign-interface owners. Three unchanged owners match five exact native

@@ -1,5 +1,57 @@
 # Inventory validation, 2026-10-15
 
+## Turn-draw and campaign purge extension
+
+Current inventory: 354 archives (318 battles, 36 calibrations), 131/224 original
+owners (58.48%): 117 battle owners and fourteen campaign-interface owners.
+
+Turn-draw source:
+`.probe-runs/full-battle-units-spells-and-junk-20261015-213048-f34dd327/full-battle.mt2f`.
+Unchanged DrawToMaxStartOfCombat performs one positive natural post-opening draw
+on turn one. It subtracts GetStartingHandSize from the maximum, not current hand
+count; its Int=10 is unused. Unchanged PyrePiping updates its registered mutable
+draw value in Test while returning false. Thirteen exact Test contexts cover
+natural callbacks and controlled raw-save full/partial/zero health. Controlled
+health changes are restored before the winning policy; they do not prove a
+natural incoming-damage/healing chain. The branch turn updates the value after
+combat, before drawing. Preview/removed-owner controls and sixteen parallel
+callbacks preserve parents. All 25 plays/five EndTurns, mid-battle and sixteen
+parallel complete-policy branches match. The 40-stage battle wins at Pyre 80 in
+101.61 seconds with zero error counters and unchanged Steam files.
+
+The first `20261015-212923-ffe7c85d` setup fails before battle because a guessed
+Steward asset name is absent. It produces no accepted battle. The accepted
+schema-103 archive has 32409 bytes, 5795 nodes, source length 0 and SHA-256
+`93d0d3df2ba0b964c7024a6db2339d1cec111668157b541321de16a244812760`.
+Five affected archives pass general/focused checks:
+`.probe-runs/model-checks-20261015-213456-474db34c/summary.json`.
+All 25 recorded search decisions match with zero unsupported alternatives,
+128/128 states, equal serial/parallel best results and three replayed best steps.
+
+Campaign purge source:
+`.probe-runs/full-battle-steward-once-20261015-213429-b3b37ff2/campaign-purge-gold-calibration.mt2f`.
+Unchanged BalatroEventCanio passes 144 actual manager calls: baseline/owned/
+removed, six original card types, in/out of combat, two initial gold values and
+two repetitions. Twenty-four rewards add +75 and notify once; 24 owned combat
+controls and 96 absent-owner controls grant nothing. Completion runs exactly
+once and all deterministic RNG streams remain unchanged. The preview control
+is pure model only. The callback receives real CardState objects, without
+removing them from a deck or exercising merchant payment/selection UI.
+Recorded owner/deck IDs, gold, health, frame and RNG are restored; isolated run
+statistics/signals are not claimed fully restored. The host wins with 55 stages,
+one play/seven EndTurns, zero counters and unchanged Steam files in 54.93 seconds.
+The schema-1 component has 2374 bytes, 321 nodes, source length 0 and SHA-256
+`96c09573a4a740cd9476ba747f4a683bdf703c2029c42b3431b6d54b5840fbec`.
+Four affected archives pass general/focused checks:
+`.probe-runs/model-checks-20261015-213855-388a8b6b/summary.json`.
+
+Both regressions freeze Model/Archive/Checker hashes
+`F5BD8EEFAEC574EA8EEE742CEF6739846B85F1829D1E190D42F1D6868C93382D`,
+`A1BE18F2A4A069897CBF95167F9EAF19CFB23BA30E759DD2F557CDFD2A79B865`,
+`C4425BFC783E829DE19BAF335FC702B7FBB41B4A44D140057AEF038E8A980883`.
+All worker exits are zero. These are affected-fixture regressions, not a complete
+354-archive rerun.
+
 ## Pre-opening draw extension
 
 Current inventory: 352 archives (317 battles, 35 calibrations), 128/224 original

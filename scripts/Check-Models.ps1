@@ -51,6 +51,7 @@ $fixtureNames = @('full-battle-steward-once.mt2f', 'full-battle-no-cards.mt2f', 
     'full-battle-original-after-draw-generation-relics.mt2f',
     'full-battle-original-unit-resource-relics.mt2f',
     'full-battle-original-opening-draw-relics.mt2f',
+    'full-battle-original-turn-draw-relics.mt2f',
     'full-battle-original-unit-upgrade-trigger-relic.mt2f',
     'full-battle-relic-card-status-upgrades.mt2f', 'full-battle-relic-card-negative-unhealed.mt2f',
     'full-battle-generation-relic-card-status-upgrades.mt2f',
@@ -242,6 +243,7 @@ $fixtureNames = @('full-battle-steward-once.mt2f', 'full-battle-no-cards.mt2f', 
     'campaign-draft-calibration.mt2f',
     'campaign-post-battle-calibration.mt2f',
     'campaign-battle-resource-calibration.mt2f',
+    'campaign-purge-gold-calibration.mt2f',
     'standby-routing-calibration.mt2f', 'ui-rng-isolation-calibration.mt2f',
     'statistic-query-calibration.mt2f', 'statistic-overflow-calibration.mt2f',
     'statistic-zero-increment-calibration.mt2f', 'horde-stat-calibration.mt2f', 'enchantment-lifecycle-calibration.mt2f',
@@ -771,6 +773,12 @@ foreach ($fixturePath in @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 
     foreach ($mode in @('--original-health-choice-only', '--battle-search-only')) {
         dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- $mode $fixturePath
         if ($LASTEXITCODE -ne 0) { throw "Original health-choice relic checks failed ($mode): $fixturePath" }
+    }
+}
+foreach ($fixturePath in @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 'full-battle-original-turn-draw-relics.mt2f' })) {
+    foreach ($mode in @('--original-turn-draw-only', '--battle-search-only')) {
+        dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- $mode $fixturePath
+        if ($LASTEXITCODE -ne 0) { throw "Original turn draw checks failed ($mode): $fixturePath" }
     }
 }
 foreach ($fixturePath in @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 'full-battle-original-opening-draw-relics.mt2f' })) {
