@@ -244,6 +244,7 @@ param(
     [switch] $OriginalForgeConservationRelic,
     [switch] $OriginalOpeningCorruptionRelics,
     [switch] $OriginalSpellPlayThresholdRelics,
+    [switch] $OriginalCombatTriggerRelics,
     [switch] $OriginalUnitUpgradeTriggerRelic,
     [switch] $TypedDraw,
     [switch] $IncantRelic,
@@ -359,6 +360,7 @@ if ($OriginalStartCombatEnergyRelic) { $BranchCardMasks = $true; $Policy = 'unit
 if ($OriginalForgeConservationRelic) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalOpeningCorruptionRelics) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalSpellPlayThresholdRelics) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
+if ($OriginalCombatTriggerRelics) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalUnitUpgradeTriggerRelic) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalTriggerRelicBatch -or $OriginalLifecycleRelicBatch) {
     $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $SettleDeathDissolves = $true; $SettleCardAnimations = $true
@@ -735,6 +737,7 @@ if ($OriginalStartCombatEnergyRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'or
 if ($OriginalForgeConservationRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-forge-conservation-relic' }
 if ($OriginalOpeningCorruptionRelics) { $environment['MT2_PROBE_MODIFIERS'] = 'original-opening-corruption-relics' }
 if ($OriginalSpellPlayThresholdRelics) { $environment['MT2_PROBE_MODIFIERS'] = 'original-spell-play-threshold-relics' }
+if ($OriginalCombatTriggerRelics) { $environment['MT2_PROBE_MODIFIERS'] = 'original-combat-trigger-relics' }
 if ($OriginalUnitUpgradeTriggerRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-unit-upgrade-trigger-relic' }
 if ($TypedDraw) {
     $environment['MT2_PROBE_MODIFIERS'] = 'typed-draw'
@@ -1297,6 +1300,20 @@ if ($OriginalOpeningCorruptionRelics) {
     if ($trace.ModifierScenario -ne 'original-opening-corruption-relics' -or @($trace.OpeningCorruptionOperations).Count -ne 3 -or
         -not (Select-String -LiteralPath $unityLog -Pattern 'ORIGINAL-OPENING-CORRUPTION-PREPARED three natural deployment callbacks' -Quiet)) {
         throw 'Original opening-corruption relics lack their natural ordered deployment callbacks.'
+    }
+}
+if ($OriginalSpellPlayThresholdRelics) {
+    if ($trace.ModifierScenario -ne 'original-spell-play-threshold-relics' -or
+        @($trace.Actions).Count -eq 0 -or
+        -not (Select-String -LiteralPath $unityLog -Pattern 'ORIGINAL-SPELL-PLAY-THRESHOLDS-PREPARED' -Quiet)) {
+        throw 'Original spell threshold relics lack the unchanged owners and consuming/non-consuming carrier setup.'
+    }
+}
+if ($OriginalCombatTriggerRelics) {
+    if ($trace.ModifierScenario -ne 'original-combat-trigger-relics' -or
+        @($trace.RelicSpawnStatuses).Count -eq 0 -or @($trace.Actions).Count -eq 0 -or
+        -not (Select-String -LiteralPath $unityLog -Pattern 'ORIGINAL-COMBAT-TRIGGERS-PREPARED' -Quiet)) {
+        throw 'Original Shroom Decay lacks its unchanged owner, birth records and carrier setup.'
     }
 }
 if ($CampaignRelicCalibration) {

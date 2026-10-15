@@ -1,5 +1,37 @@
 # Inventory validation, 2026-10-15
 
+## Shroom Decay extension
+
+Current inventory: 343 archives (311 battles, 32 calibrations), 104/224 original
+owners (46.43%): 98 battle owners and six campaign-interface owners. Six affected
+fixtures pass general/focused gates with three workers and no reruns:
+`.probe-runs/model-checks-20261015-190850-7109024f/summary.json`.
+This is an affected regression, not a complete inventory rerun.
+
+Native source:
+`.probe-runs/full-battle-units-spells-and-junk-20261015-190619-2a1be001/full-battle.mt2f`.
+Unchanged `ShroomsGainSapDecay` installs its original Shroom-only summon trigger.
+Fourteen complete birth/train/queue transitions include seven enemy and four
+non-Shroom controls. Five native enemy status witnesses disappear when removing
+the original owner and its installed triggers. Three later combat stages deal
+actual Decay damage. The policy retains Shrooms until enemies occupy a legal
+room; independent root/mid-battle/16-branch replay uses that same documented
+selection rule rather than recorded choices. The battle wins with 57 stages,
+19 plays, five EndTurns, Pyre 79 and all four error counters zero; Steam files
+remain unchanged. Bounded serial/parallel search passes.
+
+Native status data fixes Decay at three damage per stack in the post-combat
+poison stage, followed by one-stack end-turn removal. Deployment damages without
+natural stack removal. Pure checks cover armor and immutable parent state.
+Earlier diagnostic battles with empty summon targets are excluded despite their
+zero differential counters. The proposed two Conduit owners remain pending.
+
+| Frozen runtime binary | SHA-256 |
+| --- | --- |
+| Model | `DCF914880DB75AAAC5266099E9439218F00CE42E5781562B1884A2D2D3CA1FDA` |
+| FixtureArchive | `3A063EDA51EAE850E1C80687D4E299CBEF500F0348E62F0766AE7CC5998C6473` |
+| Checker | `515B04931F729DC879ED40B9E82093EAAE6FE3887A3BD67FA3E282D98D2AF9A5` |
+
 ## Spell-play threshold extension
 
 Current inventory: 342 archives (310 battles, 32 calibrations), 103/224 original

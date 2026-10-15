@@ -8,6 +8,21 @@ internal static class RoomCombatChecks
 
     internal static void Run(string[] fixtures)
     {
+        var decayStatus = new CombatStatus("decay", 2, 3, removeStackAtEnd: true);
+        var decayRoot = Room(Unit(1, CombatTeam.Enemy, 0, 20, decayStatus,
+            new CombatStatus("armor", 4, 1, removeWhenTriggered: true)));
+        RoomCombatResult decayDamage = RoomCombatModel.Resolve(decayRoot);
+        Require(decayDamage.Supported && decayDamage.State!.Units.Single().Health == 18 &&
+            decayDamage.State.Units.Single().Status("armor") == null &&
+            decayDamage.State.Units.Single().Status("decay")?.Stacks == 1 &&
+            decayDamage.Events.Any(item => item.Kind == "Decay" && item.Amount == 2) &&
+            decayRoot.Units.Single().Health == 20 && decayRoot.Units.Single().Status("decay")?.Stacks == 2,
+            "Decay must deal three damage per stack through armor before its one-stack end-turn removal, without mutating its parent.");
+        RoomCombatResult deploymentDecay = RoomCombatModel.Resolve(new RoomCombatState(0, true,
+            [Unit(1, CombatTeam.Enemy, 0, 20, decayStatus)], []));
+        Require(deploymentDecay.Supported && deploymentDecay.State!.Units.Single().Health == 14 &&
+            deploymentDecay.State.Units.Single().Status("decay")?.Stacks == 2,
+            "Decay should damage during deployment while retaining its stacks until an ordinary end turn.");
         RoomCombatResult flatFirst = RoomCombatModel.Exchange(Room(Unit(1, CombatTeam.Enemy, 1, 20),
             Unit(2, CombatTeam.Player, 0, 20, new("armor", 10, 1, removeWhenTriggered: true), new("pyregel", 1, 1),
                 new("melee weakness", 1, removeWhenTriggered: true))));
@@ -317,6 +332,8 @@ internal static class RoomCombatChecks
             RelicOpeningCorruptionChecks.Native(fixture);
         else if (fixture.TryGetProperty("ModifierScenario", out relicScenario) && relicScenario.GetString() == "original-spell-play-threshold-relics")
             OriginalSpellPlayThresholdChecks.Native(fixture);
+        else if (fixture.TryGetProperty("ModifierScenario", out relicScenario) && relicScenario.GetString() == "original-combat-trigger-relics")
+            OriginalCombatTriggerBatchChecks.Native(fixture);
         else if (fixture.TryGetProperty("ModifierScenario", out relicScenario) && relicScenario.GetString() is "card-type-cost-discount-first" or "card-type-cost-upgrade-first")
             RelicCardTypeCostOrderChecks.Native(fixture);
         else RelicCardModifierChecks.Native(fixture, requireScenarioCoverage:

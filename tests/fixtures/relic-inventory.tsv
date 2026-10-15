@@ -207,7 +207,7 @@
 "RandomCardCostOnDraw"	"834f4c02-2987-469c-8634-eac97f2f67c8"	"pending"	"RelicEffectRandomCardCostOnDraw,RelicEffectChangeStartingHandSize"	""
 "IncreaseRageDamage"	"b9bddf11-acaa-40fb-bc40-eee83e478424"	"accepted-native-battle"	"RelicEffectModifyStatusMagnitude"	""
 "LifeInsurer"	"c1ae061c-5f95-4f1d-a8f0-6e027636a81e"	"accepted-native-battle"	"RelicEffectAddTrigger"	""
-"ShroomsGainSapDecay"	"3accd42e-3f82-4bf1-9026-29a624d3dde5"	"pending"	"RelicEffectAddTrigger"	""
+"ShroomsGainSapDecay"	"3accd42e-3f82-4bf1-9026-29a624d3dde5"	"accepted-native-battle"	"RelicEffectAddTrigger"	""
 "BossEmber2"	"6eef1e2d-3bd5-4f04-bd88-d0c24d5eb691"	"accepted-native-battle"	"RelicEffectModifyEnergy,RelicEffectIncreasePyreHealth,RelicEffectIncreasePyreAttack,RelicEffectModifyEnergyDuringDeployment"	""
 "ModifyDragonsHoardBattleStart"	"3b6780ab-a1e8-443d-9ddb-5caedbd87775"	"pending"	"RelicEffectModifyDragonsHoardStartOfCombat"	""
 "DrawOnSnackPlayed"	"8b00c46d-374e-4afb-aa27-526873e242d1"	"accepted-native-battle"	"RelicEffectCardDrawOnCardPlay"	""

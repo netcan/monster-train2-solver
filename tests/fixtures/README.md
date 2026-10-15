@@ -1,5 +1,14 @@
 # Native regression fixtures
 
+Shroom Decay extension (2026-10-15): 343 archives (311 battles and 32
+calibrations), 104/224 original owners (46.43%): 98 battle owners plus six
+campaign-interface owners. The unchanged Shroom owner has 14 exact birth
+transitions, enemy/non-Shroom controls, five positive owner ablations and three
+damaging Decay stages. Native battle wins with 57 stages, 19 plays, five EndTurns,
+Pyre 79 and zero error counters. Six affected fixtures pass general/focused gates,
+independent targeted-policy replay and bounded search. Earlier captures whose
+default policy summoned only on empty floors are excluded from acceptance.
+
 Spell threshold extension (2026-10-15): 342 archives (310 battles and 32
 calibrations), 103/224 original owners (45.98%): 97 battle owners plus six
 campaign-interface owners. Two unchanged original owners produce five third-spell

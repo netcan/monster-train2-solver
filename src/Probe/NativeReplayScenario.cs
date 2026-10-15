@@ -540,6 +540,12 @@ namespace MonsterTrain2Poju.Probe
                 numericModifiersPrepared = true;
                 return;
             }
+            if (fullBattle && !numericModifiersPrepared && OriginalCombatTriggerBatchScenario.Enabled)
+            {
+                OriginalCombatTriggerBatchScenario.Prepare(managers, log);
+                numericModifiersPrepared = true;
+                return;
+            }
             if (fullBattle && !numericModifiersPrepared && OriginalForgeConservationScenario.Enabled)
             {
                 if (OriginalForgeConservationScenario.Error != null) throw new InvalidOperationException(OriginalForgeConservationScenario.Error);
@@ -1226,6 +1232,8 @@ namespace MonsterTrain2Poju.Probe
                         ? BattleActionModel.ChooseUnitSpellAndJunkPlay(decision) : BattleActionModel.ChooseUnitAndJunkPlay(decision);
                 if (OriginalEggCardScenario.Enabled)
                     pendingPlay = OriginalEggCardScenario.Choose(decision) ?? pendingPlay;
+                if (OriginalCombatTriggerBatchScenario.Enabled)
+                    pendingPlay = OriginalCombatTriggerBatchScenario.Choose(decision);
                 if (fullBattle && OriginalCardDrawOnCardPlayScenario.Enabled)
                     pendingPlay = OriginalCardDrawOnCardPlayScenario.ChooseSnack(decision) ?? pendingPlay;
                 if (fullBattle && UnplayedCardTriggerScenario.Enabled)

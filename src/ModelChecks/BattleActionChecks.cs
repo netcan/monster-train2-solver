@@ -474,6 +474,9 @@ internal static class BattleActionChecks
             Console.WriteLine("LEGACY-POLICY-CHAIN-LIMITATION: stale room Enabled snapshots are excluded; the complete independent policy and all other compared state remain checked.");
         Func<BattleTurnState, PlayCardAction?> chooser = policy.GetString() == "units-spells-and-junk"
             ? BattleActionModel.ChooseUnitSpellAndJunkPlay : BattleActionModel.ChooseUnitAndJunkPlay;
+        if (fixture.TryGetProperty("ModifierScenario", out var combatTriggerPolicy) &&
+            combatTriggerPolicy.GetString() == "original-combat-trigger-relics")
+            chooser = OriginalCombatTriggerBatchChecks.Choose;
         if (fixture.TryGetProperty("ModifierScenario", out var chooseDiscardPolicy) &&
             chooseDiscardPolicy.GetString() is "card-effect-choose-discard" or "card-effect-choose-discard-others" or "card-effect-choose-discard-others-policy" or "card-effect-choose-discard-refine" or "card-effect-choose-discard-persistent" or
                 "original-smelt-ember-relic" or "original-smelt-ember-relic-zero" or "original-smelt-ember-relic-bulk")
