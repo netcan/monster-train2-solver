@@ -1,16 +1,29 @@
 # Native regression fixtures
 
-Legacy replay refresh (2026-10-15): 14 of the 30 recordings with disabled-floor
+Legacy replay refresh (2026-10-15): 15 of the 30 recordings with disabled-floor
 policy plays have fresh native replacements. The resumed attack-trigger and
 branch-mask clone-upgrade recordings both pass their complete independent policy
 chains, including mid-battle roots and 16 immutable branches. Their original
 scenario and capture flags are preserved. Incant, the base binary recording,
 original Endless return and ordinary clone upgrade refresh are also replaced;
 the Endless recording retains relic modifier capture with seven actual records.
-Sixteen replacements and the complete
+The conditional relic upgrade recording is also replaced. Fifteen replacements and the complete
 inventory regression remain pending. Byte counts and hashes in older entries
 below describe their historical captures; [manifest.tsv](manifest.tsv) records
 the current accepted binaries.
+
+The refreshed `full-battle-conditional-relic-card-upgrades.mt2f` wins with 49
+matched stages, 18 policy plays and six EndTurns, retaining Pyre health 80.
+All four capture counters are zero; 115 actual relic modifier calls and 450
+branch-mask decision contexts are present. Complete independent policy replay
+and 16 immutable branches pass. Snapshot-scoped definition reuse reduces
+`PojuGenerationStarting` log rows from 496,455 in the earlier incomplete run to
+4,404 in this complete run (37,464,930 versus 1,779,671 log bytes). The new native
+run takes 541.55 seconds while two native workers and the eight-process regression
+run concurrently; the prior run timed out at 600 seconds. These different loads
+do not establish a controlled wall-time speedup. The accepted binary has 62,632
+bytes, 11,901 unique nodes and SHA-256
+`d030c73705135ff916e0d72c325778c9f3a88215bd313b18f2a44edcbc34a92f`.
 
 `full-battle-original-conserve-ember.mt2f` acquires unchanged `ConserveEmber`
 before battle, retaining the natural deck, Pyre and enemy waves. Seven native

@@ -65,6 +65,12 @@ capture and phantom card identities while preserving real fallback setup
 records. Definition projections are reused only inside one synchronous context
 snapshot, with thread-local state cleared in a finally block; no live card
 identity or definition result is cached across game transitions.
+The conditional relic-upgrade witness now completes with 115 native modifier
+calls, 450 branch-mask contexts, 49 matched stages and zero capture counters;
+its full 18-play/six-EndTurn policy and 16 parallel branches pass. Projection
+log rows fall from 496,455 in the earlier incomplete run to 4,404 in the complete
+run. Native runtime is 541.55 seconds under concurrent native/regression load,
+versus an earlier 600-second timeout; this is not a controlled timing benchmark.
 
 `scripts/Check-Models.ps1 -Workers 4` runs the existing complete checks in four
 processes after one build. Per-worker inputs, stdout/stderr, terminal exit
@@ -78,8 +84,8 @@ other state comparisons remain enforced, and fresh recordings compare every
 field. An independent audit of the 97 previously skipped chains passes 67 and
 identifies 30 recordings that played on a disabled floor. Native UI selection
 rejects those actions even though the low-level card manager accepts them.
-The probe now enforces that UI gate. Fourteen of those 30 recordings now have fresh
-native replacements with their original scenario coverage; sixteen remain to be
+The probe now enforces that UI gate. Fifteen of those 30 recordings now have fresh
+native replacements with their original scenario coverage; fifteen remain to be
 recaptured before the final inventory regression.
 The two isolated native workers use separate game/plugin directories and
 unique run profiles; each verifies the original Steam files remain unchanged.
