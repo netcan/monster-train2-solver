@@ -55,6 +55,32 @@ internal static class RelicMagicPowerChecks
             "Generated cards did not receive native relic magic-power modifiers.");
         Require(context.FindCard(11) == null && context.Relics![0].MagicPowerModifiers!.Count == 1,
             "Generated magic-power application changed its parent context or lost its relic descriptor.");
+        var healing = new CombatRelicState("healing", "HealingPower", [RelicModel.ModifyCardHealingPower],
+            magicPowerModifiers: [new(0, 10)]);
+        foreach (bool? scale in new bool?[] { true, false, null })
+        foreach (bool stronger in new[] { false, true })
+        {
+            var before = Card(20, scale, stronger);
+            var healed = RelicCardModifierModel.Apply(before, [healing]);
+            Require(healed.Supported && healed.Card!.Temporary.Offsets.Damage == 0 &&
+                healed.Card.Temporary.Offsets.Heal == (stronger ? 50 : 10) && healed.Dispatches.Single().Returned,
+                "Spell healing incorrectly used CanScaleWithMagicPower or changed damage.");
+            var reset = RelicCardModifierModel.Apply(healed.Card!, [healing]);
+            Require(reset.Supported && reset.Card!.Temporary.Offsets.Heal == healed.Card!.Temporary.Offsets.Heal &&
+                before.Temporary.Offsets.Heal == 0, "Healing refresh accumulated offsets or mutated its input.");
+        }
+        foreach (string type in new[] { "Monster", "Blight", "Junk" })
+        {
+            var control = new CardInstanceState(21, "control", CardModifiers.Empty(), CardModifiers.Empty(), 0, 0, 0, [],
+                maskDescriptor: new(new("control", type, "Common", false, false, false,
+                    [], [], [], [], null, false, 0, 0, false, false, false, true), 1, [], []));
+            var result = RelicCardModifierModel.Apply(control, [healing]);
+            Require(result.Supported && result.Card!.Temporary.Offsets.Heal == 0 && !result.Dispatches.Single().Returned,
+                "Healing relic accepted a non-spell.");
+        }
+        var combined = RelicCardModifierModel.Apply(Card(22, true, true), [relic, healing]);
+        Require(combined.Supported && combined.Card!.Temporary.Offsets.Damage == 75 && combined.Card.Temporary.Offsets.Heal == 125,
+            "Magic power and healing power did not compose independently in native order.");
         Console.WriteLine("RELIC-MAGIC-POWER-CHECKS PASS: native eligibility, trait multiplier, signed temporary offsets, unsupported conditions, generated cards and immutable input.");
     }
 

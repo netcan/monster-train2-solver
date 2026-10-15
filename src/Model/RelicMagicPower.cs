@@ -25,7 +25,7 @@ namespace MonsterTrain2Poju.Model
         internal static string? Validate(CombatRelicState relic)
         {
             int[] indices = relic.EffectTypes.Select((type, index) => (type, index))
-                .Where(item => item.type == RelicModel.ModifyCardMagicalPower)
+                .Where(item => item.type == RelicModel.ModifyCardMagicalPower || item.type == RelicModel.ModifyCardHealingPower)
                 .Select(item => item.index).ToArray();
             if (indices.Length == 0)
                 return relic.MagicPowerModifiers?.Count > 0 ? "Unexpected relic magic-power definitions." : null;
@@ -42,7 +42,7 @@ namespace MonsterTrain2Poju.Model
         }
 
         internal static CardInstanceState? ApplyToCard(CardInstanceState source, RelicMagicPowerModifier effect,
-            out string? unsupportedReason)
+            out string? unsupportedReason, bool healingOnly = false)
         {
             unsupportedReason = null;
             CardMaskDescriptor? descriptor = source.MaskDescriptor;
@@ -51,18 +51,19 @@ namespace MonsterTrain2Poju.Model
                 unsupportedReason = "Relic magic-power card modifiers require matching card mask metadata.";
                 return null;
             }
-            if (!descriptor.Definition.CanScaleWithMagicPower.HasValue)
+            if (healingOnly && descriptor.Definition.CardType != "Spell") return source;
+            if (!healingOnly && !descriptor.Definition.CanScaleWithMagicPower.HasValue)
             {
                 unsupportedReason = "Relic magic-power card eligibility was not captured from the native card.";
                 return null;
             }
-            if (!descriptor.Definition.CanScaleWithMagicPower.Value) return source;
+            if (!healingOnly && !descriptor.Definition.CanScaleWithMagicPower!.Value) return source;
 
             // No IMultiplyMagicPowerRelicEffect is modeled; such relic types are
             // rejected by RelicModel.Validate, so the native global multiplier is 1.
             int amount = unchecked(effect.PowerModifier * CardMagicPowerModel.Multiplier(source));
             CardStatModifier old = source.Temporary.Offsets;
-            var offsets = new CardStatModifier(unchecked(old.Damage + amount), old.Health, old.Cost,
+            var offsets = new CardStatModifier(unchecked(old.Damage + (healingOnly ? 0 : amount)), old.Health, old.Cost,
                 unchecked(old.Heal + amount), old.Size, old.XCost, old.EquipmentLimit, old.UpgradeSlotCount);
             var temporary = new CardModifiers(offsets, source.Temporary.Upgrades, source.Temporary.PersistentHealth,
                 source.Temporary.ExternalInteractions);

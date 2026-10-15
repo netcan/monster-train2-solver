@@ -223,12 +223,14 @@ namespace MonsterTrain2Poju.Model
                             false, Array.Empty<RelicCardFilterResult>()));
                         continue;
                     }
-                    if (type == RelicModel.ModifyCardMagicalPower)
+                    if (type == RelicModel.ModifyCardMagicalPower || type == RelicModel.ModifyCardHealingPower)
                     {
                         if (!magicEffects.TryGetValue(effectIndex, out RelicMagicPowerModifier? magicEffect))
                             return Fail("Missing ordered relic magic-power definition.");
-                        bool returned = card.MaskDescriptor?.Definition.CanScaleWithMagicPower == true;
-                        card = RelicMagicPowerModel.ApplyToCard(card, magicEffect!, out error)!;
+                        bool healingOnly = type == RelicModel.ModifyCardHealingPower;
+                        bool returned = healingOnly ? card.MaskDescriptor?.Definition.CardType == "Spell" :
+                            card.MaskDescriptor?.Definition.CanScaleWithMagicPower == true;
+                        card = RelicMagicPowerModel.ApplyToCard(card, magicEffect!, out error, healingOnly)!;
                         if (card == null) return Fail(error!);
                         if (!RefreshTemporaryPayloads(card.Temporary, state, temporaryPayloads))
                             return Fail("Relic magic-power refresh changed the temporary upgrade lifecycle order.");
