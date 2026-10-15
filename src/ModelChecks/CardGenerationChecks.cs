@@ -72,7 +72,9 @@ internal static class CardGenerationChecks
             !CardGenerationModel.Apply(context, new("DeckPile", 1, [new("bad", CardModifiers.Empty(), null, ["Unknown setup trait"])])).Supported,
             "Unknown generation routing/setup returned a partial child.");
         CardUpgradeModifier sourceUpgrade = new("shared-upgrade", "NativeUpgrade", new(damage: 2), [new("armor", 3)],
-            true, true, false, 0, 0, [], copyRemoveOnDiscard: false, copyUnique: false, copyExcludeFromClones: true);
+            true, true, false, 0, 0, [], copyRemoveOnDiscard: false, copyUnique: false, copyExcludeFromClones: true,
+            lifecycle: new(new("shared-upgrade", new(damage: 2), [], false, false, false, false),
+                "NativeUpgrade", true, true, [], [], false, [], [], []));
         CardUpgradeModifier existingUpgrade = new("shared-upgrade", "NativeUpgrade", new(damage: 1), [new("armor", 1)],
             false, true, false, 0, 0, []);
         var copySource = new CardInstanceState(40, "source-card", new(new(), [sourceUpgrade], 0, []),
@@ -86,6 +88,7 @@ internal static class CardGenerationChecks
             .Permanent.Upgrades.ToArray();
         Require(copied.Supported && copiedUpgrades.Length == 2 && copiedUpgrades[0].Unique &&
             !copiedUpgrades[1].Unique && !copiedUpgrades[1].RemoveOnDiscard && copiedUpgrades[1].ExcludeFromClones &&
+            copiedUpgrades[1].Lifecycle is { Unique: false, RemoveOnDiscard: false } &&
             copiedUpgrades[1].Stats.Damage == 2 && copiedUpgrades[1].Statuses.Single().Stacks == 3,
             "AddCard upgrade copy did not restore base identity flags while preserving copied values.");
         var missingInstances = new CombatContext(context.Cards, rng, 0, 4, 2);
