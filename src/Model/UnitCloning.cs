@@ -37,13 +37,15 @@ namespace MonsterTrain2Poju.Model
         public int DyingId { get; }
         public int OverrideTargetId { get; }
         public int LastSpawnedOverrideUnitId { get; }
+        public int? ExclusiveTriggerStateId { get; }
         public UnitCloneCallback(int actorId, string kind, int paramInt, int paramInt2, string? paramString,
-            int triggerCount, int dyingId, int overrideTargetId, int lastSpawnedOverrideUnitId)
+            int triggerCount, int dyingId, int overrideTargetId, int lastSpawnedOverrideUnitId, int? exclusiveTriggerStateId = null)
         { ActorId = actorId; Kind = kind; ParamInt = paramInt; ParamInt2 = paramInt2; ParamString = paramString;
-            TriggerCount = triggerCount; DyingId = dyingId; OverrideTargetId = overrideTargetId; LastSpawnedOverrideUnitId = lastSpawnedOverrideUnitId; }
+            TriggerCount = triggerCount; DyingId = dyingId; OverrideTargetId = overrideTargetId; LastSpawnedOverrideUnitId = lastSpawnedOverrideUnitId;
+            ExclusiveTriggerStateId = exclusiveTriggerStateId; }
         internal static UnitCloneCallback From(RoomCombatModel.QueuedCharacterTrigger callback) => new UnitCloneCallback(callback.Unit.Id,
             callback.Kind, callback.ParamInt, callback.ParamInt2, callback.ParamString, callback.TriggerCount,
-            callback.DyingCharacter?.Id ?? 0, callback.OverrideTarget?.Id ?? 0, callback.LastSpawnedOverrideUnitId);
+            callback.DyingCharacter?.Id ?? 0, callback.OverrideTarget?.Id ?? 0, callback.LastSpawnedOverrideUnitId, callback.ExclusiveTriggerStateId);
     }
 
     public sealed class UnitCloneBoundary
@@ -264,7 +266,7 @@ namespace MonsterTrain2Poju.Model
                     ? result.State : room).ToArray(), state.Movement, state.EnemySlotsPerRoom, result.State!.Context), result.State.Context!);
                 pending.AddRange(result.PendingCallbacks); events.AddRange(result.Events);
                 if (prior != null) dispatched.AddRange(result.Dispatches.Select(item => new UnitCloneCallback(item.ActorId, item.Kind,
-                    item.ParamInt, item.ParamInt2, item.ParamString, item.TriggerCount, item.DyingId, item.OverrideTargetId, item.LastSpawnedOverrideUnitId)));
+                    item.ParamInt, item.ParamInt2, item.ParamString, item.TriggerCount, item.DyingId, item.OverrideTargetId, item.LastSpawnedOverrideUnitId, item.ExclusiveTriggerStateId)));
                 if (result.Outcome != RoomOutcome.Exchanged) outcome = result.Outcome;
                 return true;
             }

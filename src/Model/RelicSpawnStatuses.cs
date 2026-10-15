@@ -147,7 +147,7 @@ namespace MonsterTrain2Poju.Model
                         RoomCombatResult applied = RelicCharacterTriggerModel.Apply(state, unitId,
                             relic.TriggerAdditions!.Single(item => item.EffectIndex == effectIndex));
                         if (!applied.Supported) return applied;
-                        state = applied.State!;
+                        state = applied.State!; callbacks.AddRange(applied.PendingCallbacks); events.AddRange(applied.Events);
                         if (!onlyCovenants && !DrainYield()) return failed!;
                         continue;
                     }

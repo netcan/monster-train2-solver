@@ -113,7 +113,7 @@ namespace MonsterTrain2Poju.Model
                     state.Movement, state.EnemySlotsPerRoom, result.State!.Context), result.State.Context!);
                 pending.AddRange(result.PendingCallbacks); events.AddRange(result.Events);
                 dispatched.AddRange(result.Dispatches.Select(item => new UnitCloneCallback(item.ActorId, item.Kind, item.ParamInt, item.ParamInt2,
-                    item.ParamString, item.TriggerCount, item.DyingId, item.OverrideTargetId, item.LastSpawnedOverrideUnitId)));
+                    item.ParamString, item.TriggerCount, item.DyingId, item.OverrideTargetId, item.LastSpawnedOverrideUnitId, item.ExclusiveTriggerStateId)));
                 if (result.Outcome != RoomOutcome.Exchanged) outcome = result.Outcome;
                 return true;
             }

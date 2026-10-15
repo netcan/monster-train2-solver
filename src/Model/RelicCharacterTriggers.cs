@@ -71,10 +71,12 @@ namespace MonsterTrain2Poju.Model
                 (actor.Team == CombatTeam.Enemy || rule.SubtypeIsPyre == actor.IsPyre);
             if (!evaluated.Passed || !character || !subtype || state.Preview || rule.Triggers.Count == 0) return Match(state);
             if (!actor.NextTriggerId.HasValue) return Fail("Missing native trigger allocation for relic installation.");
-            var triggers = actor.Triggers.ToList();
+            var callbacks = new List<RoomCombatModel.QueuedCharacterTrigger>();
             int next = actor.NextTriggerId.Value;
             foreach (CombatTrigger definition in rule.Triggers)
             {
+                actor = state.Units.Single(unit => unit.Id == unitId);
+                var triggers = actor.Triggers.ToList();
                 // Each installation creates a fresh runtime object. Native prepending
                 // reverses the authored list and retains an empty non-equipment origin.
                 var installed = new CombatTrigger(definition.Kind, definition.Once, false, definition.IgnoreSilence,
@@ -82,15 +84,28 @@ namespace MonsterTrain2Poju.Model
                     new CombatTriggerOrigin("", 0, false, definition.Origin?.OnlyIfEquipped == true), next++,
                     definition.Conditions, definition.RemoveOnRelentlessChange, rule.NoCountModifiersAllowed);
                 triggers.Insert(0, installed);
+                actor = actor.WithTriggerAllocation(triggers, next);
+                state = new RoomCombatState(state.RoomIndex, state.Deployment,
+                    state.Units.Select(unit => unit.Id == unitId ? actor : unit).ToArray(), state.ExternalInteractions,
+                    state.Context, state.Preview, state.ActiveCompanionBossIds);
+                // CharacterState.AddTrigger updates Deathwish immediately for
+                // OnDeathwish, before the next authored trigger is prepended.
+                if (definition.Kind == "OnDeathwish")
+                {
+                    RoomCombatResult updated = DeathwishModel.Update(state);
+                    if (!updated.Supported) return updated;
+                    state = updated.State!; callbacks.AddRange(updated.PendingCallbacks);
+                }
             }
-            actor = actor.WithTriggerAllocation(triggers, next);
+            actor = state.Units.Single(unit => unit.Id == unitId);
             actor = TriggerCountModel.Refresh(state.Context, actor, out string? error);
             if (error != null) return Fail(error);
             state = new RoomCombatState(state.RoomIndex, state.Deployment,
                 state.Units.Select(unit => unit.Id == unitId ? actor : unit).ToArray(), state.ExternalInteractions,
                 state.Context, state.Preview, state.ActiveCompanionBossIds);
             error = RoomCombatModel.Validate(state);
-            return error == null ? Match(state) : Fail(error);
+            return error == null ? new RoomCombatResult(state, RoomOutcome.Exchanged, 0, new List<CombatEvent>(),
+                pendingCallbacks: callbacks) : Fail(error);
             // This native effect does not notify its relic or record its conditions.
         }
         private static RoomCombatResult Match(RoomCombatState state) => new RoomCombatResult(state, RoomOutcome.Exchanged, 0, new List<CombatEvent>());

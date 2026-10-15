@@ -341,10 +341,12 @@ namespace MonsterTrain2Poju.Model
         public string? ParamString { get; }
         public int OverrideTargetId { get; }
         public int LastSpawnedOverrideUnitId { get; }
+        public int? ExclusiveTriggerStateId { get; }
         internal CharacterTriggerDispatch(int actorId, string kind, int dyingId, int triggerCount, int paramInt = 0,
-            int paramInt2 = 0, string? paramString = null, int overrideTargetId = 0, int lastSpawnedOverrideUnitId = 0)
+            int paramInt2 = 0, string? paramString = null, int overrideTargetId = 0, int lastSpawnedOverrideUnitId = 0, int? exclusiveTriggerStateId = null)
         { ActorId = actorId; Kind = kind; DyingId = dyingId; TriggerCount = triggerCount; ParamInt = paramInt; ParamInt2 = paramInt2;
-            ParamString = paramString; OverrideTargetId = overrideTargetId; LastSpawnedOverrideUnitId = lastSpawnedOverrideUnitId; }
+            ParamString = paramString; OverrideTargetId = overrideTargetId; LastSpawnedOverrideUnitId = lastSpawnedOverrideUnitId;
+            ExclusiveTriggerStateId = exclusiveTriggerStateId; }
     }
 
     public sealed class RoomCombatResult
@@ -1072,13 +1074,17 @@ namespace MonsterTrain2Poju.Model
                             continue;
                         }
                         if (effect.Type == "CardEffectAddCardUpgradeToUnits" || effect.Type == "CardEffectAddTempCardUpgradeToUnits" ||
-                            effect.Type == "CardEffectRemoveTempUpgradeFromUnit")
+                            effect.Type == "CardEffectRemoveTempUpgradeFromUnit" || effect.Type == "CardEffectBuffEquipment")
                         {
                             CardActionEffect? action = effect.UnitUpgrade;
-                            if (action?.Upgrade == null || action.Type != (effect.Type == "CardEffectRemoveTempUpgradeFromUnit" ? "RemoveUnitUpgrade" : "UnitUpgrade"))
+                            if (action?.Upgrade == null || action.Type != (effect.Type == "CardEffectBuffEquipment" ? "BuffEquipment" : effect.Type == "CardEffectRemoveTempUpgradeFromUnit" ? "RemoveUnitUpgrade" : "UnitUpgrade"))
                                 return "Missing triggered unit upgrade definition.";
                             if (state.Context?.CardInstances == null || unit.Modifiers == null)
                                 return "Triggered unit upgrades require unit and card modifier state.";
+                            if (effect.Type == "CardEffectBuffEquipment" && unit.EquipmentCards == null)
+                                return "Triggered equipment buffs require captured equipped-card ownership.";
+                            if (effect.Type == "CardEffectBuffEquipment" && action.ScaleUpgrade)
+                                return "Scaled triggered equipment buffs require independent native calibration.";
                             if (action.Upgrade.ExternalInteractions.Count > 0)
                                 return string.Join("; ", action.Upgrade.ExternalInteractions);
                             if (action.Upgrade.RestrictSizeToRoomCapacity && state.Context?.RoomCapacities == null)
@@ -2676,7 +2682,7 @@ namespace MonsterTrain2Poju.Model
             {
                 if (traceAllDispatches || unit.Triggers.Any(trigger => trigger.Kind == kind))
                     dispatches.Add(new CharacterTriggerDispatch(unit.Source.Id, kind, dyingCharacter?.Source.Id ?? 0, triggerCount,
-                        paramInt, paramInt2, paramString, overrideTarget?.Source.Id ?? 0, lastSpawnedOverrideUnitId));
+                        paramInt, paramInt2, paramString, overrideTarget?.Source.Id ?? 0, lastSpawnedOverrideUnitId, exclusiveTriggerStateId));
                 if (kind == "OnDeath" && unit.Despawned) return;
                 if (!unit.Alive && kind != "OnDeath" && (unit.Source.IsBoss == true || unit.Source.EndsBattleOnDeath)) return;
                 if (kind == "OnHit" && unit.Has("horde"))
@@ -2764,7 +2770,8 @@ namespace MonsterTrain2Poju.Model
                             }
                             else if (effect.UnitUpgrade != null)
                             {
-                                if (!ApplyTriggeredUpgrade(unit, effect.UnitUpgrade, kind, overrideTarget, lastSpawnedOverrideUnitId)) break;
+                                if (!ApplyTriggeredUpgrade(unit, effect.UnitUpgrade, kind, overrideTarget, lastSpawnedOverrideUnitId,
+                                    retained.Origin?.EquipmentCardId ?? 0)) break;
                             }
                             else if (effect.Type == "CardEffectDespawnCharacter")
                             {
@@ -3167,7 +3174,8 @@ namespace MonsterTrain2Poju.Model
                 return passed;
             }
 
-            private bool ApplyTriggeredUpgrade(WorkingUnit actor, CardActionEffect action, string kind, WorkingUnit? overrideTarget, int lastSpawnedOverrideUnitId)
+            private bool ApplyTriggeredUpgrade(WorkingUnit actor, CardActionEffect action, string kind, WorkingUnit? overrideTarget, int lastSpawnedOverrideUnitId,
+                int parentEquipmentId)
             {
                 CardTargets tested = TriggerTargets(actor, action, testing: true, overrideTarget, lastSpawnedOverrideUnitId);
                 if (!tested.Supported) { unsupportedReason = tested.UnsupportedReason; return false; }
@@ -3181,9 +3189,44 @@ namespace MonsterTrain2Poju.Model
                 {
                     WorkingUnit? target = units.FirstOrDefault(unit => unit.Source.Id == targetId && (unit.Alive || action.Target == "Self" && unit == actor || action.Target == "LastAttackedCharacter"));
                     if (target == null) continue;
+                    if (action.Type == "BuffEquipment")
+                    {
+                        if (!ApplyTriggeredEquipmentBuff(actor, target, action, kind, parentEquipmentId)) return false;
+                        continue;
+                    }
                     if (!ApplyUpgrade(target, action.Upgrade!, action.Lifetime, action.Type == "RemoveUnitUpgrade",
                         null, actor.Source.SpawnerCardId, kind, scaleUpgrade: action.ScaleUpgrade)) return false;
                     Emit(action.Type, actor, target, 0);
+                }
+                return true;
+            }
+
+            private bool ApplyTriggeredEquipmentBuff(WorkingUnit actor, WorkingUnit target, CardActionEffect action, string kind, int parentEquipmentId)
+            {
+                // CardEffectBuffEquipment writes the equipped card before calling
+                // CharacterState.ApplyCardUpgrade, including on a retained dying host.
+                // Its payload's status list is unused; only the upgrade is applied.
+                foreach (int equipmentId in target.Source.EquipmentCards!)
+                {
+                    if (parentEquipmentId > 0 && parentEquipmentId != equipmentId) continue;
+                    var card = context!.FindCard(equipmentId);
+                    if (card == null) { unsupportedReason = "Missing attached card for triggered equipment buff."; return false; }
+                    var upgrade = action.Upgrade!.WithSharedReference(null);
+                    bool persistent = !source.Preview && context.IsolatedBattlePreview != true;
+                    if (persistent)
+                    {
+                        var existing = action.ScaleUpgrade ? card.Permanent.Upgrades.FirstOrDefault(value => value.DataId == upgrade.DataId) : null;
+                        var cardUpgrade = existing == null ? CardMagicPowerModel.Scale(upgrade, CardMagicPowerModel.Multiplier(card)) : upgrade;
+                        var changed = card.WithPermanentUpgrade(cardUpgrade, action.ScaleUpgrade);
+                        if (action.ScaleUpgrade) upgrade = changed.Permanent.Upgrades.First(value => value.DataId == upgrade.DataId);
+                        context = context.WithCard(changed);
+                    }
+                    bool scale = persistent && action.ScaleUpgrade;
+                    if (scale && target.Source.Modifiers!.Upgrades.Any(value => value.DataId == upgrade.DataId))
+                        upgrade = action.Upgrade.WithSharedReference(null);
+                    if (!ApplyUpgrade(target, upgrade, "TemporaryUntilUnitDeath", false, null, 0, kind,
+                        directApi: true, scaleUpgrade: scale, accumulateScaledUpgradeRecord: false)) return false;
+                    Emit("BuffEquipment", actor, target, equipmentId);
                 }
                 return true;
             }

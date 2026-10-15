@@ -8,7 +8,7 @@ namespace MonsterTrain2Poju.Probe
     internal static class UnitTriggerUpgradeProbe
     {
         internal static bool Known(string type) => type == "CardEffectAddCardUpgradeToUnits" ||
-            type == "CardEffectAddTempCardUpgradeToUnits" || type == "CardEffectRemoveTempUpgradeFromUnit";
+            type == "CardEffectAddTempCardUpgradeToUnits" || type == "CardEffectRemoveTempUpgradeFromUnit" || type == "CardEffectBuffEquipment";
 
         internal static CardActionEffect? Capture(CardEffectState effect, List<string> interactions) =>
             Definition(effect.GetSourceCardEffectData(), interactions);
@@ -20,7 +20,8 @@ namespace MonsterTrain2Poju.Probe
                 effect.GetUseStatusEffectStackMultiplier() || effect.GetUseHealthMissingStackMultiplier() ||
                 effect.GetUseMagicPowerMultiplier() || !effect.GetParamSubtype().IsNone)
                 interactions.Add("Unmodeled triggered unit upgrade parameters");
-            bool scaleUpgrade = effect.GetEffectStateName() == "CardEffectAddCardUpgradeToUnits" && effect.GetParamBool();
+            bool equipment = effect.GetEffectStateName() == "CardEffectBuffEquipment";
+            bool scaleUpgrade = (effect.GetEffectStateName() == "CardEffectAddCardUpgradeToUnits" || equipment) && effect.GetParamBool();
             CardUpgradeModifier? upgrade = null;
             if (effect.GetParamCardUpgradeData() == null) interactions.Add("Missing triggered unit upgrade definition");
             else
@@ -29,15 +30,15 @@ namespace MonsterTrain2Poju.Probe
                 if (scaleUpgrade && !data.CanScaleUpgradeToSingleInstance())
                     interactions.Add("Invalid scaled triggered unit upgrade definition");
                 var state = new CardUpgradeState(); state.Setup(data);
-                bool filtersIgnoredByEffect = effect.GetEffectStateName() == "CardEffectAddCardUpgradeToUnits";
+                bool filtersIgnoredByEffect = effect.GetEffectStateName() == "CardEffectAddCardUpgradeToUnits" || equipment;
                 upgrade = CardModifierProbe.Upgrade(state, false, filtersAlreadyApplied: filtersIgnoredByEffect);
                 interactions.AddRange(upgrade.ExternalInteractions);
             }
             var excluded = new List<SubtypeData>(); effect.GetTargetCharacterExcludedSubtypes(excluded);
-            string type = effect.GetEffectStateName() == "CardEffectRemoveTempUpgradeFromUnit" ? "RemoveUnitUpgrade" : "UnitUpgrade";
+            string type = equipment ? "BuffEquipment" : effect.GetEffectStateName() == "CardEffectRemoveTempUpgradeFromUnit" ? "RemoveUnitUpgrade" : "UnitUpgrade";
             return new CardActionEffect(type, effect.GetTargetMode().ToString(), effect.GetParamInt(),
                 effect.GetTargetTeamType().HasFlag(Team.Type.Heroes), effect.GetTargetTeamType().HasFlag(Team.Type.Monsters),
-                Array.Empty<CombatStatus>(), upgrade, ((UnitUpgradeLifetime)effect.GetAdditionalParamInt1()).ToString(),
+                Array.Empty<CombatStatus>(), upgrade, equipment ? "TemporaryUntilUnitDeath" : ((UnitUpgradeLifetime)effect.GetAdditionalParamInt1()).ToString(),
                 new CardEffectTests(effect.GetShouldTest(), effect.GetShouldFailToCastIfTestFails(),
                     effect.GetShouldCancelSubsequentEffectsIfTestFails(), false, true), filters:
                 new CardTargetFilters(effect.GetTargetModeHealthFilter().ToString(), effect.GetTargetModeStatusEffectsFilter(),

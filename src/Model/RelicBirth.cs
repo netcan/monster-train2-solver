@@ -37,7 +37,8 @@ namespace MonsterTrain2Poju.Model
                 pending.Add(new RoomCombatModel.QueuedCharacterTrigger(actorRoom.RoomIndex,
                     actorRoom.Units.First(unit => unit.Id == item.ActorId), item.Kind, paramInt: item.ParamInt,
                     paramInt2: item.ParamInt2, paramString: item.ParamString, dyingCharacter: dying, overrideTarget: target,
-                    triggerCount: item.TriggerCount, lastSpawnedOverrideUnitId: item.LastSpawnedOverrideUnitId));
+                    triggerCount: item.TriggerCount, lastSpawnedOverrideUnitId: item.LastSpawnedOverrideUnitId,
+                    exclusiveTriggerStateId: item.ExclusiveTriggerStateId));
             }
             RoomCombatResult result = RelicSpawnStatusModel.CharacterAddedWithPending(room, unitId, fromCardId, onlyCovenants,
                 deferCallbacks ? null : Drain, pending);
