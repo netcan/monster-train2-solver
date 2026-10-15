@@ -1,5 +1,14 @@
 # Native regression fixtures
 
+Explicit no-op extension (2026-10-15): 357 archives (319 battles and 38
+calibrations), 135/224 original owners (60.27%): 119 battle owners, fifteen
+campaign-interface owners and one native no-op. StarterWurmRelic has only base/
+editor interfaces. Actual acquire/remove/reacquire changes none of the recorded
+deck/resource/frame/RNG state. Two winning native same-seed policies match all
+21 actions/seven EndTurns and complete decision contexts except ownership; both
+independently replay. A binary bundle preserves both input graphs. Three affected
+archives pass. See validation provenance; no activation is claimed.
+
 Permanent deck-copy extension (2026-10-15): 356 archives (319 battles and 37
 calibrations), 134/224 original owners (59.82%): 119 battle owners plus fifteen
 campaign-interface owners. MothersRemnant1Relic matches 72 actual end-battle

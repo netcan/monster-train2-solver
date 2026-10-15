@@ -39,7 +39,7 @@
 "CardDrawOnHeal"	"9a38370b-150c-45bd-9e3e-93a688a04850"	"pending"	"RelicEffectCardDrawOnHeal"	""
 "BrokenRail"	"1699b5c7-8c34-471c-8e5a-c9830e2bc482"	"pending"	"RelicEffectModifyForgeUpgrade"	""
 "MoltenManifold"	"f141d334-b503-48ff-ac21-5f2ad27105dd"	"accepted-native-battle"	"RelicEffectAddTempUpgrade"	""
-"StarterWurmRelic"	"815a25e7-2fed-4cb2-a568-79af12cd7116"	"pending"	"RelicEffectNull"	""
+"StarterWurmRelic"	"815a25e7-2fed-4cb2-a568-79af12cd7116"	"accepted-native-noop"	"RelicEffectNull"	""
 "RageOnBurnoutStackLoss"	"85667d60-8053-4204-8c02-ba101dab7945"	"pending"	"RelicEffectAddStatusEffectOnOtherStatusRemoved"	""
 "PyreRevengeAddPyregel"	"82b22203-9da1-4f83-9e84-826fb8d1d280"	"pending"	"RelicEffectAddTrigger"	""
 "ProgressPacemaker"	"4446fd0c-f7c3-4a9d-96c3-bd12e4426a76"	"accepted-native-battle"	"RelicEffectAdjustMixAmount"	""

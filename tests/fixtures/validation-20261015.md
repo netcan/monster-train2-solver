@@ -1,5 +1,40 @@
 # Inventory validation, 2026-10-15
 
+## Explicit native no-op owner
+
+Current inventory: 357 archives (319 battles, 38 calibrations), 135/224 original
+owners (60.27%): 119 battle, fifteen campaign-interface and one no-op owner.
+Native sources:
+`.probe-runs/full-battle-units-spells-and-junk-20261015-220058-df3b0add/full-battle.mt2f`
+and
+`.probe-runs/full-battle-units-spells-and-junk-20261015-220230-98c5aa2e/full-battle.mt2f`.
+Unchanged StarterWurmRelic has only RelicEffectNull and its inherited IRelicEffect/
+editor interfaces. Actual pre-battle acquire/remove/reacquire preserves recorded
+deck IDs, gold, HP/maximum, frame and every deterministic RNG stream. Isolated
+run/unlock statistics and signals are not claimed fully restored.
+
+Baseline and owned native battles both win with 60 stages, 21 plays, seven
+EndTurns and final Pyre 66, with zero error counters and unchanged Steam files,
+in 55.68/56.53 seconds. Every before/actual decision context and chosen action
+matches after removing only this owner's identity from the comparison. The model
+retains real ownership; no effect activation or general irrelevance to other
+relics' count conditions is claimed. Both independent complete policies pass
+from root, mid-battle and sixteen parallel branches. The first focused checker
+incorrectly expected only IRelicEffect; runtime also exposes the inherited
+editor-description interface. Correcting that assertion requires no new capture.
+
+FixtureTools bundle-native preserves every value and numeric lexeme of both
+complete input graphs; its memoized import retains shared immutable nodes.
+The schema-1 binary bundle has 48924 bytes, 6295 nodes, source length 0 and SHA-256
+`b3fe86dfa46c2f5abb693c037bec5e73b9ad244debd497dddb2f7bef9d0546f4`.
+Three affected archives pass general/focused regression:
+`.probe-runs/model-checks-20261015-220745-caec337d/summary.json`.
+Model/Archive/Checker frozen hashes are
+`2402737DF648DD163588242F46E5ABB496B6CEFAB675DBF909A8D81D9A97D931`,
+`02469EBDB950E73C7C3B4198CB2D04BF9427B02CB1FF7CD9114463B83D619CC8`,
+`4CE8A34A43C22240B1AA383D5321D7FC53C4414B1ECC1589016F3D85E31E7691`.
+All workers exit zero; this is not a complete 357-archive rerun.
+
 ## Permanent deck-copy interface
 
 Current inventory: 356 archives (319 battles, 37 calibrations), 134/224 original

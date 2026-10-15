@@ -1,9 +1,10 @@
 # Original relic coverage evidence
 
-As of 2026-10-15, **134 distinct original collectable relics / 224 catalog entries
-(59.82%)** have accepted native evidence: 119 have full-battle effect evidence,
-and fifteen have their campaign consumer interfaces validated below. This counts unchanged relic
-definitions whose effects actually ran, including their original filters and
+As of 2026-10-15, **135 distinct original collectable relics / 224 catalog entries
+(60.27%)** have accepted native evidence: 119 have full-battle effect evidence,
+fifteen have campaign consumer interfaces validated, and one is an explicit
+native no-op with seeded baseline equivalence. Except for that no-op, this counts
+unchanged relic definitions whose effects actually ran, including original filters and
 conditions. Test cards, unit triggers and carrier subtypes may be authored to
 exercise those effects; the claim covers the recorded paths, not every possible
 combination. Catalog enumeration and other owners of a supported effect class
@@ -21,8 +22,14 @@ The battle archives cited below report game `2.2.1`, module MVID
 `8fb07b96-f4db-4d2b-884d-c00536d6ccf4`, `NativeWon=true`, and zero
 `CaptureFailures`, `Mismatches`, `Unsupported` and `Pending`. Archive provenance,
 byte lengths and SHA-256 hashes are recorded in [manifest.tsv](manifest.tsv).
-The accepted inventory is 356 archives: 319 battles and 37 component
-calibrations, with no JSON companions. The newest component proves the original
+The accepted inventory is 357 archives: 319 battles and 38 component
+calibrations, with no JSON companions. The newest calibration bundles two
+complete winning native battles for StarterWurmRelic: identical 21-play/seven-
+EndTurn policies and all decision state except ownership, with independent root,
+mid-battle and parallel replay. Actual acquisition/removal/reacquisition leaves
+recorded deck/resources/frame/RNG unchanged. Base/editor interfaces alone do
+not imply an activation; ownership remains present. Three affected archives pass.
+The previous component proves the original
 random permanent deck-copy owner through 72 native end-battle manager calls.
 Sixteen fresh copies preserve permanent modifiers and flags, discard temporary
 upgrades, and match exact Rewards RNG. Empty/champion-only/removed controls and
@@ -258,6 +265,15 @@ not claim natural incoming-damage integration into battle branches.
 | `ModifyDragonsHoardBattleEnd` | `26c9bc93-f5a6-439d-8239-14c22cbeb02e` | [battle-resource calibration][battleResources] | Actual +3 hoard capped at capacity, 144 increases, 54 positive-Pyre-OnHit damage gates and 24 recoveries after native start-battle reset. Zero/negative/wrong-trigger/null-character controls do not mark damage. |
 | `BalatroEventCanio` | `d8d1e069-938e-4141-b6ac-e20f4578163a` | [purge gold calibration][purgeGold] | Actual campaign purge callback grants +75 adjusted reward gold and one notification for each of six card types. All 144 manager calls match, including 24 positive rewards, combat no-op and removed-owner controls, completion and unchanged RNG. Deck removal/payment UI is outside this interface claim. |
 | `MothersRemnant1Relic` | `8ee399d2-4ee4-409d-af95-319bcd6accc4` | [permanent copy calibration][deckCopy] | Seventy-two actual end-battle manager calls prove 16 fresh permanent copies with original champion-excluding mask, ordered candidate selection and Rewards RNG. Four modified/purified/event-cached witnesses retain permanent offsets/upgrades and drop temporary upgrades. Native cached-duplicate setter updates the cached flag; its duplicate getter remains false. Presentation bookkeeping is suppressed after deck mutation. |
+
+## Native no-op evidence
+
+This category proves unchanged definitions without a gameplay effect interface;
+it does not invent an activation or remove ownership from other relics' counts.
+
+| Original owner | Data ID | Native evidence | Accepted path |
+| --- | --- | --- | --- |
+| `StarterWurmRelic` | `815a25e7-2fed-4cb2-a568-79af12cd7116` | [native no-op equivalence][nullRelic] | Only RelicEffectNull with base/editor interfaces. Actual acquisition/removal/reacquisition preserves recorded deck/resources/frame/RNG. Two same-seed native winning policies match all 21 actions/seven EndTurns and complete decision contexts except the retained owner. Both independently replay, including sixteen parallel branches. |
 
 ## Recorded battle sizes
 
@@ -583,3 +599,4 @@ dotnet run --project src/ModelChecks -c Release -- --original-card-attack-only t
 [purgeGold]: campaign-purge-gold-calibration.mt2f
 [phaseUpgrades]: full-battle-original-unit-phase-upgrade-relics.mt2f
 [deckCopy]: campaign-deck-copy-calibration.mt2f
+[nullRelic]: null-relic-equivalence-calibration.mt2f

@@ -10,7 +10,11 @@ $accepted = @{}
 $evidenceKind = 'accepted-native-battle'
 foreach ($line in Get-Content (Join-Path $workspace 'tests/fixtures/relic-coverage.md')) {
     if ($line -match '^## ') {
-        $evidenceKind = if ($line -eq '## Campaign interface evidence') { 'accepted-native-campaign' } else { 'accepted-native-battle' }
+        $evidenceKind = switch ($line) {
+            '## Campaign interface evidence' { 'accepted-native-campaign' }
+            '## Native no-op evidence' { 'accepted-native-noop' }
+            default { 'accepted-native-battle' }
+        }
     }
     if ($line -match '^\| `(?<key>[^`]+)` \| `(?<id>[0-9a-f-]{36})` \|') {
         if ($accepted.ContainsKey($Matches.id)) { throw "Duplicate accepted owner $($Matches.id)" }
@@ -55,6 +59,7 @@ try {
         AcceptedOriginal = $accepted.Count
         AcceptedNativeBattle = @($accepted.Values | Where-Object Kind -eq 'accepted-native-battle').Count
         AcceptedNativeCampaign = @($accepted.Values | Where-Object Kind -eq 'accepted-native-campaign').Count
+        AcceptedNativeNoop = @($accepted.Values | Where-Object Kind -eq 'accepted-native-noop').Count
         Remaining = @($rows | Where-Object Evidence -eq 'pending').Count
         MissingNativeSource = @($rows | Where-Object MissingNativeSource -ne '').Count
         OutputPath = $OutputPath
