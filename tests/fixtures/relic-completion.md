@@ -17,8 +17,8 @@ Schema 6 additionally captures required card traits; schema 5 omitted that field
 Regenerate the checklist with `scripts/Get-RelicCoverageInventory.ps1 -Catalog
 <relic-catalog.mt2f> -OutputPath tests/fixtures/relic-inventory.tsv`. This verifies
 catalog identity, unique owner IDs, accepted table identities and source presence.
-Current checkpoint: 113 original owners accepted (104 native battle owners and
-nine actual campaign-interface owners); 111 remain pending. Campaign acceptance
+Current checkpoint: 114 original owners accepted (105 native battle owners and
+nine actual campaign-interface owners); 110 remain pending. Campaign acceptance
 does not imply those effect classes are integrated into battle branch state.
 
 Acceptance requires an unchanged original owner, actual eligible and control

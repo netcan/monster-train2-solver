@@ -1,5 +1,14 @@
 # Native regression fixtures
 
+Health-dependent equipment extension (2026-10-15): 347 archives (314 battles and
+33 calibrations), 114/224 original owners (50.89%): 105 battle owners plus nine
+campaign-interface owners. Unchanged HairOfTheHybrid has four exact natural
+equipment callbacks at full, ceil-half and below-half HP, seven friendly/seven
+enemy birth controls, positive owner ablations and no status/chance RNG draws.
+The 40-stage/24-play/five-EndTurn battle wins with Pyre 80 and zero counters;
+complete independent policy replay and inverted/preview/retained controls pass.
+Five affected archives pass regression; see validation provenance.
+
 Campaign draft/health extension (2026-10-15): 346 archives (313 battles and 33
 calibrations), 113/224 original owners (50.45%): 104 battle owners plus nine
 campaign-interface owners. Three unchanged owners pass 840 actual native

@@ -1,5 +1,40 @@
 # Inventory validation, 2026-10-15
 
+## Health-dependent equipment extension
+
+Current inventory: 347 archives (314 battles, 33 calibrations), 114/224 original
+owners (50.89%): 105 battle owners and nine campaign-interface owners.
+
+Native source:
+`.probe-runs/full-battle-units-spells-and-junk-20261015-201844-ec5fb176/full-battle.mt2f`.
+Unchanged HairOfTheHybrid installs its original friendly-only OnEquipmentAdded
+trigger. Four complete native status callbacks match exact room/context state,
+including natural 7/13 HP (Rage 5), 6/13 HP (armor 10) and healed 13/13 HP (Rage 5).
+All four witnesses disappear under owner/installed-trigger removal; Battle RNG
+does not advance for status/chance selection. The model follows the native
+float percentage and upward-rounded threshold, rather than integer division.
+Pure controls invert the comparison, retain dying targets and exercise preview.
+Other health-choice definitions with uncaptured scaling remain rejected.
+
+Fourteen exact birth/train/queue transitions include seven friendly and seven
+enemy controls. The native battle wins with 40 stages, 24 plays, five EndTurns,
+Pyre 80 and all error counters zero; Steam files remain unchanged. Independent
+root/mid-battle/16-branch policy replay and bounded 128-state search pass.
+The curated schema-103 archive is 48123 bytes, 7072 nodes, SHA-256
+`8aec2d99ce19a1487c656f0e31bcb29a9ca8e5e295e88b90cbd3720cb2e1a544`.
+
+Five affected archives pass general/focused gates and search with three workers:
+`.probe-runs/model-checks-20261015-202157-2571b911/summary.json`.
+All workers exit 0 with no reruns. The set includes native triggered status,
+equipment triggers, original equipment growth and original lifecycle archives;
+this is not a complete 347-archive rerun.
+
+| Frozen runtime binary | SHA-256 |
+| --- | --- |
+| Model | `76F11DD727517449466462A744A642E16D70B23AC1806A0A52880DCB1561ACDA` |
+| FixtureArchive | `0494F5EA21F39A0713BEABF6E46CCEF89BBBA9350FB1A5757245769FD9027FC1` |
+| Checker | `688603906767A2C4BB73CF74A6437F13491E5B197607DDAF8893F8A2E013CEF8` |
+
 ## Campaign draft and Pyre health extension
 
 Current inventory: 346 archives (313 battles, 33 calibrations), 113/224 original

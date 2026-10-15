@@ -1,14 +1,14 @@
 # Original relic coverage evidence
 
-As of 2026-10-15, **113 distinct original collectable relics / 224 catalog entries
-(50.45%)** have accepted native evidence: 104 have full-battle effect evidence,
+As of 2026-10-15, **114 distinct original collectable relics / 224 catalog entries
+(50.89%)** have accepted native evidence: 105 have full-battle effect evidence,
 and nine have their campaign consumer interfaces validated below. This counts unchanged relic
 definitions whose effects actually ran, including their original filters and
 conditions. Test cards, unit triggers and carrier subtypes may be authored to
 exercise those effects; the claim covers the recorded paths, not every possible
 combination. Catalog enumeration and other owners of a supported effect class
 do not count as validated relics. `RelicEffectAddTrigger` appears on 26 catalog
-entries; 20 now have accepted original-owner effect evidence.
+entries; 21 now have accepted original-owner effect evidence.
 `RelicEffectAddStatusEffectOnStatusApplied` appears on eight catalog entries;
 all eight now have accepted original-owner evidence. Both catalog owners of
 `RelicEffectPreventStatusEffectDecay` have accepted evidence for their original
@@ -21,7 +21,7 @@ The battle archives cited below report game `2.2.1`, module MVID
 `8fb07b96-f4db-4d2b-884d-c00536d6ccf4`, `NativeWon=true`, and zero
 `CaptureFailures`, `Mismatches`, `Unsupported` and `Pending`. Archive provenance,
 byte lengths and SHA-256 hashes are recorded in [manifest.tsv](manifest.tsv).
-The accepted inventory is 346 archives: 313 battles and 33 component
+The accepted inventory is 347 archives: 314 battles and 33 component
 calibrations, with no JSON companions. The newest component proves actual draft
 candidate selection and exact Rewards RNG over 840 GrantReward calls, plus
 three Pyre max-health acquisition/removal transitions. Five affected archives
@@ -157,6 +157,7 @@ owner count.
 | `UpgradeEquipmentOnDeath` | `b3e7888f-8f5e-4082-89b0-078d80ce4a9b` | [original equipment growth][equipmentGrowth] | Original equipped-only player OnKill adds +2 attack permanently to equipment and to its host. Seven positive stage witnesses disappear under owner/installed-trigger removal. |
 | `AdvancedGrowth` | `449f6464-8164-48ad-bf66-6107b10f7f5c` | [original equipment growth][equipmentGrowth] | Original both-team OnDeath grants equipment +4 attack. An actual equipped sacrifice and returned/replayed gear prove the persistent change; seven enemy births receive this trigger while rejecting the other two owners. Its unused effect status parameter is not applied. Campaign run-stat counters are outside this battle claim. |
 | `FriendlyUnitsGainDeathwishValor` | `19f0d8e3-a3f8-4cac-b73d-46dc189a70ac` | [original equipment growth][equipmentGrowth] | Original front-position Deathwish installs/removes unique ValorOnTurnStart. Two actual entries, four losses and nine subsequent PreCombat Valor-2 applications match; removing owner/installed triggers eliminates all nine status witnesses. Birth registration preserves exclusive trigger-instance queue identity. |
+| `HairOfTheHybrid` | `ac208c49-610a-43e7-80cc-e9680cf84fcd` | [original health choice][healthChoice] | Friendly-only OnEquipmentAdded applies armor 10 below ceil(50% max HP), otherwise Rage 5. Four exact native callbacks include natural 7/13, 6/13 and healed 13/13 boundaries, positive owner/trigger ablations and unchanged Battle RNG. Seven friendly/seven enemy births, full policy replay and inverted/preview/retained controls pass. |
 | `SpellWeaknessBelowPyre` | `5a96d89f-d7c0-49fa-88d1-8ec75a8f3140` | [room-entry status relics][roomEntry] | Its unchanged room-2 Heroes effect adds 2 Spell Weakness. Three distinct native Heroes have the exact status; spell damage and post-card removal match through the full battle. |
 | `PyregelOnEnterTopFloor` | `e4be072c-e389-4ae7-acc6-0c8aa4cf0078` | [room-entry status relics][roomEntry] | Its unchanged room-2 Heroes effect adds 10 Pyregel. Three distinct native Heroes have the exact status after entry. |
 | `MoonPhaseModifyEmber` | `70096a91-220a-4ab3-b8d0-b8fe8f3a819c` | [original moon-phase energy relic][moonPhase] | Three Full callbacks add 1 Ember and notify; three New callbacks change nothing. Original once-per-turn condition and exact hidden moon markers match. |
@@ -173,7 +174,7 @@ owner count.
 
 These nine unchanged original owners are validated by their actual native
 campaign consumers, with baseline and removed-owner controls. This table is
-separate from the 104 battle owners. It does not claim whole-battle integration
+separate from the 105 battle owners. It does not claim whole-battle integration
 for these effect classes. The first capture's recorded relic IDs, gold, hoard cap and
 amount, deck IDs, frame and RNG match before/after; reward grants still execute
 their native run-stat side effects in the isolated save. Catalog enumeration
@@ -511,3 +512,4 @@ dotnet run --project src/ModelChecks -c Release -- --original-card-attack-only t
 [shroomDecay]: full-battle-original-shroom-decay-relic.mt2f
 [conduit]: full-battle-original-conduit-relics.mt2f
 [equipmentGrowth]: full-battle-original-equipment-growth-relics.mt2f
+[healthChoice]: full-battle-original-health-choice-relic.mt2f
