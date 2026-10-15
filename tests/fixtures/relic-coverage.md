@@ -1,14 +1,14 @@
 # Original relic coverage evidence
 
-As of 2026-10-15, **107 distinct original collectable relics / 224 catalog entries
-(47.77%)** have accepted native evidence: 101 have full-battle effect evidence,
+As of 2026-10-15, **110 distinct original collectable relics / 224 catalog entries
+(49.11%)** have accepted native evidence: 104 have full-battle effect evidence,
 and six have their campaign consumer interfaces validated below. This counts unchanged relic
 definitions whose effects actually ran, including their original filters and
 conditions. Test cards, unit triggers and carrier subtypes may be authored to
 exercise those effects; the claim covers the recorded paths, not every possible
 combination. Catalog enumeration and other owners of a supported effect class
 do not count as validated relics. `RelicEffectAddTrigger` appears on 26 catalog
-entries; 17 now have accepted original-owner effect evidence.
+entries; 20 now have accepted original-owner effect evidence.
 `RelicEffectAddStatusEffectOnStatusApplied` appears on eight catalog entries;
 all eight now have accepted original-owner evidence. Both catalog owners of
 `RelicEffectPreventStatusEffectDecay` have accepted evidence for their original
@@ -21,9 +21,13 @@ The battle archives cited below report game `2.2.1`, module MVID
 `8fb07b96-f4db-4d2b-884d-c00536d6ccf4`, `NativeWon=true`, and zero
 `CaptureFailures`, `Mismatches`, `Unsupported` and `Pending`. Archive provenance,
 byte lengths and SHA-256 hashes are recorded in [manifest.tsv](manifest.tsv).
-The accepted inventory is 344 archives: 312 battles and 32 component
+The accepted inventory is 345 archives: 313 battles and 32 component
 calibrations, with no JSON companions. The newest battle proves three original
-Conduit owners through first-summon, slay and equipment callbacks, native temporary
+equipment growth owners through slay/death buffs, front-position Deathwish
+entry/loss and nine actual PreCombat Valor applications. Fourteen exact births
+include both-team and friendly-only controls and five exclusive trigger queues.
+Seven affected archives pass the general/focused gates and bounded search.
+The previous battle proves three Conduit owners through first-summon, slay and equipment callbacks, native temporary
 upgrades, room selection and independent policy replay. The previous battle proves
 Shroom summon Decay with positive damage and team/subtype controls.
 Six affected archives pass the Conduit extension's general/focused gates and bounded search.
@@ -147,6 +151,9 @@ owner count.
 | `Inkbound_Clepsydranium` | `b0972732-ea21-42d0-844d-05fb5ff028e6` | [original Conduit relics][conduit] | Original player OnKill adds Conduit 1; nine positive stage witnesses disappear under removal of this owner and its installed triggers. Full room power and temporary hand upgrades match. |
 | `EquipmentBoon_DH` | `394a559b-0c45-4bac-880a-522b04f1780c` | [original Conduit relics][conduit] | Original OnEquipmentAdded adds Conduit 4 with IgnoreDualism; two real equipment attachments have positive removed-owner controls. No original owner definition is modified. |
 | `AddConduitOnSpawn` | `357c7265-74d0-4567-b793-d2fbac464d82` | [original Conduit relics][conduit] | Original tracked once-per-turn condition gives Conduit 4 on four first summons; three later player births and seven enemy births are controls. Fourteen full birth transitions and 12 Conduit-upgraded card plays match. |
+| `UpgradeEquipmentOnDeath` | `b3e7888f-8f5e-4082-89b0-078d80ce4a9b` | [original equipment growth][equipmentGrowth] | Original equipped-only player OnKill adds +2 attack permanently to equipment and to its host. Seven positive stage witnesses disappear under owner/installed-trigger removal. |
+| `AdvancedGrowth` | `449f6464-8164-48ad-bf66-6107b10f7f5c` | [original equipment growth][equipmentGrowth] | Original both-team OnDeath grants equipment +4 attack. An actual equipped sacrifice and returned/replayed gear prove the persistent change; seven enemy births receive this trigger while rejecting the other two owners. Its unused effect status parameter is not applied. Campaign run-stat counters are outside this battle claim. |
+| `FriendlyUnitsGainDeathwishValor` | `19f0d8e3-a3f8-4cac-b73d-46dc189a70ac` | [original equipment growth][equipmentGrowth] | Original front-position Deathwish installs/removes unique ValorOnTurnStart. Two actual entries, four losses and nine subsequent PreCombat Valor-2 applications match; removing owner/installed triggers eliminates all nine status witnesses. Birth registration preserves exclusive trigger-instance queue identity. |
 | `SpellWeaknessBelowPyre` | `5a96d89f-d7c0-49fa-88d1-8ec75a8f3140` | [room-entry status relics][roomEntry] | Its unchanged room-2 Heroes effect adds 2 Spell Weakness. Three distinct native Heroes have the exact status; spell damage and post-card removal match through the full battle. |
 | `PyregelOnEnterTopFloor` | `e4be072c-e389-4ae7-acc6-0c8aa4cf0078` | [room-entry status relics][roomEntry] | Its unchanged room-2 Heroes effect adds 10 Pyregel. Three distinct native Heroes have the exact status after entry. |
 | `MoonPhaseModifyEmber` | `70096a91-220a-4ab3-b8d0-b8fe8f3a819c` | [original moon-phase energy relic][moonPhase] | Three Full callbacks add 1 Ember and notify; three New callbacks change nothing. Original once-per-turn condition and exact hidden moon markers match. |
@@ -490,3 +497,4 @@ dotnet run --project src/ModelChecks -c Release -- --original-card-attack-only t
 [spellThresholds]: full-battle-original-spell-play-threshold-relics.mt2f
 [shroomDecay]: full-battle-original-shroom-decay-relic.mt2f
 [conduit]: full-battle-original-conduit-relics.mt2f
+[equipmentGrowth]: full-battle-original-equipment-growth-relics.mt2f

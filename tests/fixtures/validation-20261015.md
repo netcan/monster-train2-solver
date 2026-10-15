@@ -1,5 +1,47 @@
 # Inventory validation, 2026-10-15
 
+## Equipment growth extension
+
+Current inventory: 345 archives (313 battles, 32 calibrations), 110/224 original
+owners (49.11%): 104 battle owners and six campaign-interface owners.
+
+Native source:
+`.probe-runs/full-battle-units-spells-and-junk-20261015-200021-84134976/full-battle.mt2f`.
+Three unchanged original owners install +2 equipped slay, +4 equipped death and
+front-position Deathwish Valor triggers. Fourteen complete birth/train/queue
+transitions include seven friendly and seven enemy controls. Five births retain
+exclusive trigger-instance IDs, including creation-time Deathwish registration.
+Positive owner/installed-trigger ablations remove seven slay gear witnesses,
+one equipped sacrifice gear witness and nine native PreCombat Valor-2 effects.
+Two real entries and four losses install/remove the original unique upgrade;
+original rearrangement spells provide those position changes. The authored
+damage/heal carriers do not define Deathwish eligibility.
+
+The battle wins with 42 stages, 24 plays, five EndTurns, Pyre 80 and all four
+error counters zero. Independent root/mid-battle/16-branch policy replay matches.
+Pure controls cover two equipment copies, parent equipment binding, permanent
+card versus live host trait scaling, preview and parent immutability. Scaled
+triggered equipment buffs remain rejected. AdvancedGrowth campaign run-stat
+counters are outside this battle claim; isolated Steam files remain unchanged.
+
+Earlier birth diagnostics without exclusive queue capture are excluded. A
+whole-manager PreCombat diagnostic
+(`full-battle-units-spells-and-junk-20261015-195706-fcb53e2d`) also observed
+asynchronous destroyed-attacker and UI-selection changes and is excluded. The
+accepted sample records the individual native status effects, matching complete
+room/context state, alongside the complete decision/EndTurn replay.
+
+Seven affected fixtures pass all general/focused gates and bounded search with
+three workers and no reruns:
+`.probe-runs/model-checks-20261015-200235-e73dae52/summary.json`.
+This is an affected regression, not a complete 345-archive rerun.
+
+| Frozen runtime binary | SHA-256 |
+| --- | --- |
+| Model | `B7D1C8719B6659683525EFD8FE2E760AD77FAE81F4EA09441A9D9CC9EA154255` |
+| FixtureArchive | `EBEF13EB78D1C36028C992480DB080115CD212DA0ED2D0F2D4A1AB3AB2197983` |
+| Checker | `3515938422D46BA42316A58132279FE8637D314A0ECA6079E97AF86A424FE973` |
+
 ## Conduit extension
 
 Current inventory: 344 archives (312 battles, 32 calibrations), 107/224 original

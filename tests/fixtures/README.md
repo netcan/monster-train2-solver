@@ -1,5 +1,17 @@
 # Native regression fixtures
 
+Equipment growth extension (2026-10-15): 345 archives (313 battles and 32
+calibrations), 110/224 original owners (49.11%): 104 battle owners plus six
+campaign-interface owners. Three unchanged originals have positive slay,
+equipped-death and PreCombat Valor controls. Fourteen exact births include seven
+friendly/seven enemy controls and five exclusive trigger queues. Native play
+reorders yield two Deathwish entries and four losses; nine later PreCombat
+effects apply Valor 2. Deathwish is a front-position condition. The battle wins
+with 42 stages, 24 plays, five EndTurns, Pyre 80 and zero error counters.
+Seven affected archives pass general/focused gates and bounded search; native
+provenance and frozen runtime hashes are in the validation record. Triggered
+scaled equipment buffs remain rejected pending native calibration.
+
 Conduit extension (2026-10-15): 344 archives (312 battles and 32 calibrations),
 107/224 original owners (47.77%): 101 battle owners plus six campaign-interface
 owners. Three unchanged originals have positive first-summon, slay and equipment
