@@ -6,6 +6,14 @@ covers 87/224 catalog entries (38.84%); see
 [the owner evidence table](tests/fixtures/relic-coverage.md). Whole-battle
 coverage and the optimal solver remain in progress.
 
+The complete 335-archive general/focused regression now passes, including all
+30 fresh legacy replacements. The audit combines 306 passed fixtures from the
+initial bulk run, two final recaptures, and all 27 fixtures from its failed shard
+rerun after a resource-checker terminal projection fix. Every accepted run uses
+identical model/archive binaries; the checker-only change is scoped and recorded
+in [the validation report](tests/fixtures/validation-20261015.md). The original
+failed bulk summary is preserved rather than relabelled as a complete pass.
+
 The unchanged original `ConserveEmber` now preserves remaining Ember through
 EndTurn. Its native battle banks the first two turns (4 -> 7 -> 10 Ember), then
 makes 21 paid plays while retaining each turn's remainder. All seven native
@@ -90,13 +98,13 @@ unreadable checker binaries invalidate every shard. The default remains serial.
 
 Whole-policy legacy skips have been removed. Legacy recordings may omit only
 the known-stale room `Enabled` comparison; action legality, capacities and all
-other state comparisons remain enforced, and fresh recordings compare every
-field. An independent audit of the 97 previously skipped chains passes 67 and
+other state comparisons remain enforced, and fresh decision snapshots remain
+strict. An independent audit of the 97 previously skipped chains passes 67 and
 identifies 30 recordings that played on a disabled floor. Native UI selection
 rejects those actions even though the low-level card manager accepts them.
 The probe now enforces that UI gate. All 30 recordings now have fresh native
 replacements with their original scenario coverage and complete independent
-policy replay. The final inventory regression is still running.
+policy replay and the final inventory regression.
 The two isolated native workers use separate game/plugin directories and
 unique run profiles; each verifies the original Steam files remain unchanged.
 

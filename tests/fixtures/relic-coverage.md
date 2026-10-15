@@ -23,8 +23,10 @@ byte lengths and SHA-256 hashes are recorded in [manifest.tsv](manifest.tsv).
 The accepted inventory is 335 archives: 304 battles and 31 component
 calibrations, with no JSON companions. Unchanged `ConserveEmber` adds the latest
 original-owner witness; the two cost-filter ordering battles add combination
-coverage without adding another owner. The complete inventory regression has
-not yet finished. An independent-chain preflight of 97 legacy archives passed
+coverage without adding another owner. The complete 335-archive general/focused
+regression passes; [validation provenance](validation-20261015.md) distinguishes
+the failed original shard and its corrected-checker rerun. An independent-chain
+preflight of 97 legacy archives passed
 67 and identified 30 old captures with card plays on disabled floors; all 30 now
 have fresh replacements and complete independent policy replay.
 Whole-policy-chain legacy skips have been

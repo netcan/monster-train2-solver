@@ -13,8 +13,10 @@ Status callbacks, permanent consume generation and original resource relics are
 also refreshed, along with the status registry, Instant triggered status and
 Incant relic recordings, ordinary triggered status and combined Incant relics.
 Incant thresholds and generation with relic status upgrades are refreshed too.
-The complete inventory regression remains pending. Byte counts and hashes in older entries
-below describe their historical captures; [manifest.tsv](manifest.tsv) records
+The complete 335-archive general/focused regression passes; see the
+[validation report](validation-20261015.md) for shard provenance and the scoped
+resource-checker correction. Byte counts and hashes in older entries below
+describe their historical captures; [manifest.tsv](manifest.tsv) records
 the current accepted binaries.
 
 The generation/relic status-upgrade refresh wins with Pyre health 80 after
