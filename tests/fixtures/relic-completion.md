@@ -11,13 +11,14 @@ It contains 662 definitions from eight collections, including 224 unique
 collectible relics, with identical native frame/RNG before and after enumeration.
 All 224 owners have local source files in `.game-reference/native-source/`.
 Catalog path:
-`.probe-runs/full-battle-steward-once-20261015-175508-1dd011a0/relic-catalog.mt2f`.
+`.probe-runs/full-battle-units-spells-and-junk-20261015-184639-1ba6990c/relic-catalog.mt2f`.
+Schema 6 additionally captures required card traits; schema 5 omitted that field.
 
 Regenerate the checklist with `scripts/Get-RelicCoverageInventory.ps1 -Catalog
 <relic-catalog.mt2f> -OutputPath tests/fixtures/relic-inventory.tsv`. This verifies
 catalog identity, unique owner IDs, accepted table identities and source presence.
-Current checkpoint: 101 original owners accepted (95 native battle owners and
-six actual campaign-interface owners); 123 remain pending. Campaign acceptance
+Current checkpoint: 103 original owners accepted (97 native battle owners and
+six actual campaign-interface owners); 121 remain pending. Campaign acceptance
 does not imply those effect classes are integrated into battle branch state.
 
 Acceptance requires an unchanged original owner, actual eligible and control

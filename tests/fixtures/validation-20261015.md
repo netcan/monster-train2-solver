@@ -1,5 +1,44 @@
 # Inventory validation, 2026-10-15
 
+## Spell-play threshold extension
+
+Current inventory: 342 archives (310 battles, 32 calibrations), 103/224 original
+owners (45.98%): 97 battle owners and six campaign-interface owners. Eight
+affected fixtures pass all general/focused gates with three workers and no
+reruns: `.probe-runs/model-checks-20261015-184842-12b4aaf1/summary.json`.
+This is an affected regression rather than a complete inventory rerun.
+
+Native source:
+`.probe-runs/full-battle-units-spells-and-junk-20261015-184639-1ba6990c/full-battle.mt2f`.
+Original `IncreaseMagicPowerOnSpellsPlayed` and `DrawCardWhenConsumePlayed`
+definitions are unchanged, including the latter's required Exhaust trait. Three
+zero-cost authored spells provide two non-consuming controls and one Consume
+carrier. Five third-spell activations include deployment; 65 owned spell damage/
+heal increments, one real Consume draw and 15 non-Consume controls match. The
+natural battle wins with 49 stages, 26 plays, six EndTurns, Pyre 80 and all four
+error counters zero. Root/mid-battle/16-branch policy replay and bounded serial/
+parallel search match. Steam files remain unchanged.
+
+Native `RelicState.OnCharacterAdded` and `OnCharacterStatusEffectApplied` evaluate
+the card-play effects' conditions even when their specialized callback is a no-op.
+A temporary native call-stack trace identified the latter refreshing deckStats
+after generated Junk, during Valor's Armor application. The model now preserves
+this cache transition without recording or triggering the relic. Pure controls
+also cover failed conditions before preview gating and immutable parent state.
+The diagnostic patch is removed from the accepted capture. Earlier diagnostic
+captures with nonzero mismatch counters are excluded.
+
+Catalog schema 6 adds required card traits to all 662 definitions; enumeration
+keeps native frame/RNG unchanged. The exact 224-owner inventory uses the catalog
+beside the accepted battle. Schema 5 omitted traits and must not establish a
+trait-filter acceptance claim.
+
+| Frozen runtime binary | SHA-256 |
+| --- | --- |
+| Model | `1F9FE0D930721D353BD5EE7BEC10CCDFD135D6EA43A227F187AF0887B0D63BCE` |
+| FixtureArchive | `74B29A7EAFE7818B45EE899E000ACE6F7ACB8A33744350890D1F83E5F81BF779` |
+| Checker | `09CC7F0867EE3787856EB85D10771F47704E1E4639AD19777563203F9F8FF077` |
+
 ## Opening corruption extension
 
 Current inventory: 341 archives (309 battles, 32 calibrations), 101/224 original

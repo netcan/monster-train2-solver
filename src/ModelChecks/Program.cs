@@ -534,6 +534,12 @@ if (args.Length == 2 && args[0] == "--campaign-relics-only")
     CampaignRelicChecks.Native(args[1]);
     return;
 }
+if (args.Length == 2 && args[0] == "--original-spell-play-thresholds-only")
+{
+    using var document = ModelJson.ReadFixture(args[1]);
+    OriginalSpellPlayThresholdChecks.Native(document.RootElement);
+    return;
+}
 if (args.Length == 1 && args[0] == "--campaign-relics-pure")
 {
     CampaignRelicChecks.Run();

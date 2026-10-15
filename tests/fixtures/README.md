@@ -1,5 +1,14 @@
 # Native regression fixtures
 
+Spell threshold extension (2026-10-15): 342 archives (310 battles and 32
+calibrations), 103/224 original owners (45.98%): 97 battle owners plus six
+campaign-interface owners. Two unchanged original owners produce five third-spell
+magic activations, one Consume draw, 15 non-Consume controls and 65 spell offset
+updates. The winning 49-stage/26-play/six-EndTurn battle has zero error counters.
+Eight affected fixtures pass all general/focused gates, independent policy replay
+and bounded search. Required draw traits and passive birth/status condition
+queries are modeled from actual native callbacks; catalog schema 6 includes traits.
+
 Opening-corruption extension (2026-10-15): 341 archives (309 battles and 32
 calibrations), 101/224 original owners (45.09%): 95 battle owners plus six
 campaign-interface owners. The three original max/permanent/post-draw owners
