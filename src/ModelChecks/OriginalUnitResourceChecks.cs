@@ -14,13 +14,13 @@ internal static class OriginalUnitResourceChecks
     {
         var context = state.Spawn.Train.Context!; var plays = BattleActionModel.EnumerateSupportedPlays(state);
         string? Data(int id) => context.FindCard(id)?.DataId;
-        bool sacrificed = context.Statistics!.Values.Any(value => value.Type == "TimesPlayed" && value.Duration == "ThisBattle" && value.Value > 0 && Data(value.CardId) == SacrificeId);
+        int sacrifices = context.Statistics!.Values.Where(value => value.Type == "TimesPlayed" && value.Duration == "ThisBattle" && Data(value.CardId) == SacrificeId).Sum(value => value.Value);
         var room = state.Spawn.Train.Rooms[0];
-        foreach (bool strong in new[] { true, false })
+        foreach (int health in new[] { 80, 12, 10 })
         {
-            if (room.Units.Any(unit => unit.Team == CombatTeam.Player && unit.MaxHealth == (strong ? 80 : 12)) || !strong && sacrificed) continue;
+            if (room.Units.Any(unit => unit.Team == CombatTeam.Player && unit.MaxHealth == health) || health == 12 && sacrifices > 0 || health == 10 && sacrifices > 1) continue;
             var summon = plays.FirstOrDefault(play => play.RoomIndex == 0 && play.PlayerPosition == room.Units.Count(unit => unit.Team == CombatTeam.Player) &&
-                state.PlayRules!.Cards.FirstOrDefault(rule => rule.DataId == Data(play.CardInstanceId))?.SpawnUnit?.MaxHealth == (strong ? 80 : 12));
+                state.PlayRules!.Cards.FirstOrDefault(rule => rule.DataId == Data(play.CardInstanceId))?.SpawnUnit?.MaxHealth == health);
             if (summon != null) return summon;
         }
         var target = room.Units.FirstOrDefault(unit => unit.Team == CombatTeam.Player && unit.MaxHealth == 80);
@@ -29,8 +29,8 @@ internal static class OriginalUnitResourceChecks
             var gear = plays.FirstOrDefault(play => Data(play.CardInstanceId) == GearId && play.TargetUnitId == target.Id);
             if (gear != null) return gear;
         }
-        var tomb = room.Units.FirstOrDefault(unit => unit.Team == CombatTeam.Player && unit.MaxHealth == 12);
-        if (tomb != null && !sacrificed)
+        var tomb = room.Units.FirstOrDefault(unit => unit.Team == CombatTeam.Player && unit.MaxHealth == (sacrifices == 0 ? 12 : 10));
+        if (tomb != null && sacrifices < 2)
         {
             var sacrifice = plays.FirstOrDefault(play => Data(play.CardInstanceId) == SacrificeId && play.TargetUnitId == tomb.Id);
             if (sacrifice != null) return sacrifice;
@@ -69,6 +69,16 @@ internal static class OriginalUnitResourceChecks
             var result = RelicUnitResourceModel.Apply(before, actor, kind, alive, param, placement);
             Require(result.Supported, "Unit resource consumer unsupported: " + result.UnsupportedReason);
             Equal(result.Context, actual, "actual manager callback");
+            if (result.Events.Count > 0 && ablations == 0)
+            {
+                Parallel.For(0, 16, _ => {
+                    var branch = RelicUnitResourceModel.Apply(before, actor, kind, alive, param, placement);
+                    Require(branch.Supported, "Parallel resource callback unsupported."); Equal(branch.Context, actual, "parallel native callback");
+                    Require(parent == JsonSerializer.Serialize(before, ModelJson.Options), "Parallel callback changed parent state.");
+                });
+                var preview = RelicUnitResourceModel.Apply(before, actor, kind, alive, param, placement, preview: true);
+                Require(preview.Supported && preview.Events.Count == 0, "Original preview gate allowed unit resources.");
+            }
             foreach (var witness in result.Events)
             {
                 positives[witness.RelicId]++;
@@ -83,7 +93,7 @@ internal static class OriginalUnitResourceChecks
             Require(parent == JsonSerializer.Serialize(before, ModelJson.Options), "Unit resource consumer mutated parent state."); count++;
         }
         Require(count > 20 && positives.Values.All(value => value > 0) && teamControls > 0 && subtypeControls > 0 && conditionControls > 0 && ablations >= 3,
-            "Missing original resource positives or team/subtype/condition controls.");
+            $"Missing original resource controls: rows={count}, positives={string.Join('/', positives.Values)}, enemy={teamControls}, subtype={subtypeControls}, conditions={conditionControls}, ablations={ablations}.");
         BattleActionChecks.Native(root);
         Console.WriteLine($"ORIGINAL-UNIT-RESOURCES-NATIVE PASS: three unchanged owners, {count} exact manager contexts, positives {string.Join('/', positives.Values)}, {teamControls} enemy deaths, {subtypeControls} non-Tomb deaths, {conditionControls} equipment-condition controls, {ablations} positive ablations; exact gold/energy/conditions/RNG and independent policy replay.");
     }

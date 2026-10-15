@@ -42,10 +42,17 @@ namespace MonsterTrain2Poju.Probe
             var sacrifice = UnityEngine.Object.Instantiate(data.GetAllCardData().First(card => card.GetCardType() == CardType.Spell &&
                 card.GetEffects().Count == 1 && card.GetEffects()[0].GetEffectStateName() == "CardEffectDamage"));
             Configure(sacrifice, "PojuUnitResourceSacrifice", SacrificeId); Set(sacrifice, "effects", new List<CardEffectData> { Effect("CardEffectSacrifice") });
-            ((List<CardData>)AccessTools.Field(typeof(AllGameData), "cardDatas").GetValue(data)).AddRange(new[] { gear, sacrifice });
+            var controlUnit = UnityEngine.Object.Instantiate(stewards[0].GetSpawnCharacterData()!);
+            controlUnit.name = "TrainStewardPojuResourceControl"; Set(controlUnit, "id", "fc119000-0000-4000-8000-000000000464");
+            Set(controlUnit, "health", 10); Set(controlUnit, "attackDamage", 1); Set(controlUnit, "subtypeKeys", new List<string>());
+            var control = UnityEngine.Object.Instantiate(stewards[0]); Configure(control, "PojuUnitResourceControl", "fc119000-0000-4000-8000-000000000465");
+            var spawn = new CardEffectData("CardEffectSpawnMonster", null!, Team.Type.Monsters);
+            Set(spawn, "paramCharacterData", controlUnit); Set(control, "effects", new List<CardEffectData> { spawn });
+            ((List<CharacterData>)AccessTools.Field(typeof(AllGameData), "characterDatas").GetValue(data)).Add(controlUnit);
+            ((List<CardData>)AccessTools.Field(typeof(AllGameData), "cardDatas").GetValue(data)).AddRange(new[] { gear, sacrifice, control });
             foreach (var card in owned) card.Setup(data.FindCardData(card.GetCardDataID())!, save);
             foreach (var card in cards.GetHand().ToArray()) cards.MoveCardFromHandToTopOfDeck(card);
-            foreach (var card in new[] { stewards[0], stewards[1], gear, gear, sacrifice })
+            foreach (var card in new[] { stewards[0], stewards[1], control, gear, gear, sacrifice, sacrifice })
                 if (cards.AddNewCard(card, CardPile.HandPile, false, false, animate: false) == null) throw new InvalidOperationException("Unit resource carrier hand full.");
             foreach (string id in Ids)
             {
@@ -61,13 +68,13 @@ namespace MonsterTrain2Poju.Probe
         {
             var context = state.Spawn.Train.Context!; var plays = BattleActionModel.EnumerateSupportedPlays(state);
             string? Data(int id) => context.FindCard(id)?.DataId;
-            bool sacrificed = context.Statistics!.Values.Any(value => value.Type == "TimesPlayed" && value.Duration == "ThisBattle" && value.Value > 0 && Data(value.CardId) == SacrificeId);
+            int sacrifices = context.Statistics!.Values.Where(value => value.Type == "TimesPlayed" && value.Duration == "ThisBattle" && Data(value.CardId) == SacrificeId).Sum(value => value.Value);
             var room = state.Spawn.Train.Rooms[0];
-            foreach (bool strong in new[] { true, false })
+            foreach (int health in new[] { 80, 12, 10 })
             {
-                if (room.Units.Any(unit => unit.Team == CombatTeam.Player && unit.MaxHealth == (strong ? 80 : 12)) || !strong && sacrificed) continue;
+                if (room.Units.Any(unit => unit.Team == CombatTeam.Player && unit.MaxHealth == health) || health == 12 && sacrifices > 0 || health == 10 && sacrifices > 1) continue;
                 var summon = plays.FirstOrDefault(play => play.RoomIndex == 0 && play.PlayerPosition == room.Units.Count(unit => unit.Team == CombatTeam.Player) &&
-                    state.PlayRules!.Cards.FirstOrDefault(rule => rule.DataId == Data(play.CardInstanceId))?.SpawnUnit?.MaxHealth == (strong ? 80 : 12));
+                    state.PlayRules!.Cards.FirstOrDefault(rule => rule.DataId == Data(play.CardInstanceId))?.SpawnUnit?.MaxHealth == health);
                 if (summon != null) return summon;
             }
             var target = room.Units.FirstOrDefault(unit => unit.Team == CombatTeam.Player && unit.MaxHealth == 80);
@@ -76,8 +83,8 @@ namespace MonsterTrain2Poju.Probe
                 var gear = plays.FirstOrDefault(play => Data(play.CardInstanceId) == GearId && play.TargetUnitId == target.Id);
                 if (gear != null) return gear;
             }
-            var tomb = room.Units.FirstOrDefault(unit => unit.Team == CombatTeam.Player && unit.MaxHealth == 12);
-            if (tomb != null && !sacrificed)
+            var tomb = room.Units.FirstOrDefault(unit => unit.Team == CombatTeam.Player && unit.MaxHealth == (sacrifices == 0 ? 12 : 10));
+            if (tomb != null && sacrifices < 2)
             {
                 var sacrifice = plays.FirstOrDefault(play => Data(play.CardInstanceId) == SacrificeId && play.TargetUnitId == tomb.Id);
                 if (sacrifice != null) return sacrifice;
