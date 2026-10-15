@@ -1,5 +1,13 @@
 # Native regression fixtures
 
+Death/moon upgrade extension (2026-10-15): 355 archives (319 battles and 36
+calibrations), 133/224 original owners (59.38%): 119 battle owners plus fourteen
+campaign-interface owners. Original EnhanceAttackOnConsume and SeleneandSilentBuff
+prove one actual death upgrade, five moon additions/four removals and 3025 Test
+filters with enemy/subtype controls. Native birth queues its initial phase callback;
+the model now does so too. Five positive owner ablations, complete 21-play/five-
+EndTurn policy replay and six affected archives pass. See validation provenance.
+
 Turn-draw and campaign purge extension (2026-10-15): 354 archives (318 battles
 and 36 calibrations), 131/224 original owners (58.48%): 117 battle owners plus
 fourteen campaign-interface owners. Original PyrePiping and DrawToMaxStartOfCombat

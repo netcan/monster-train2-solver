@@ -1,7 +1,7 @@
 # Original relic coverage evidence
 
-As of 2026-10-15, **131 distinct original collectable relics / 224 catalog entries
-(58.48%)** have accepted native evidence: 117 have full-battle effect evidence,
+As of 2026-10-15, **133 distinct original collectable relics / 224 catalog entries
+(59.38%)** have accepted native evidence: 119 have full-battle effect evidence,
 and fourteen have their campaign consumer interfaces validated below. This counts unchanged relic
 definitions whose effects actually ran, including their original filters and
 conditions. Test cards, unit triggers and carrier subtypes may be authored to
@@ -21,8 +21,13 @@ The battle archives cited below report game `2.2.1`, module MVID
 `8fb07b96-f4db-4d2b-884d-c00536d6ccf4`, `NativeWon=true`, and zero
 `CaptureFailures`, `Mismatches`, `Unsupported` and `Pending`. Archive provenance,
 byte lengths and SHA-256 hashes are recorded in [manifest.tsv](manifest.tsv).
-The accepted inventory is 354 archives: 318 battles and 36 component
-calibrations, with no JSON companions. The newest battle proves original
+The accepted inventory is 355 archives: 319 battles and 36 component
+calibrations, with no JSON companions. The newest battle proves two original
+death/moon upgrade owners: one spawner-retained death upgrade, five moon additions
+and four removals across all four callbacks. 3025 native Test filters include
+enemy/subtype controls; five positive owner ablations and complete independent
+policy replay pass. Six affected archives pass, including prior moon callbacks.
+The previous battle proves original
 full-health and first-combat draw owners through 13 actual mutating Test
 callbacks and one positive natural post-opening draw. Complete independent
 25-play/five-EndTurn replay and five affected archives pass. The newest
@@ -95,6 +100,8 @@ owner count.
 | `RandomEquipmentCardFirstTurn` | `7a1d5b5d-cd08-4935-b629-d3d441905100` | [original opening draw][openingDraw] | Natural Equipment primary draw plus controlled native fallback to an Equipment with the deployment-draw trait. Original temporary -99 cost, count expansion and CardDraw RNG match. |
 | `DrawToMaxStartOfCombat` | `2058bafa-a15c-4787-9b9e-4dc7fdf09b74` | [original turn draw][turnDraw] | One positive natural turn-one post-opening callback. Draws maximum hand size minus starting draw size, independently of current hand count; Int=10 is unused. Complete policy and bounded search replay match. |
 | `PyrePiping` | `44aae53e-ee70-4b2c-8d25-a02f977349ee` | [original turn draw][turnDraw] | Native start-battle/before-draw Test updates the registered +1/0 mutable value while returning false. Thirteen callbacks include controlled full/partial/zero health and natural full-health draws; the branch model refreshes after combat damage. |
+| `EnhanceAttackOnConsume` | `52c41ba0-f720-4b7e-9dd0-bd318be6acae` | [original death/moon upgrades][phaseUpgrades] | Actual friendly OnDeath adds original +10 attack upgrade and retains it on the spawner's temporary card modifiers until battle end. An actual sacrifice proves the gain; owner removal removes exactly that future upgrade. The upgrade's attacking-unit filter is not consulted by the direct native unit API. |
+| `SeleneandSilentBuff` | `e54e6cb7-f424-44be-a7d2-869c6fb7bb15` | [original death/moon upgrades][phaseUpgrades] | Four original subtype-filtered callbacks add/remove unique +20 attack for Selene in Full and Silent in New. Five additions/four removals, initial birth callback, ordinary/enemy controls and four positive next-turn ablations match. Unit-death lifetime upgrades do not enter spawner modifiers. |
 | `RandomTrainRoomCardFirstTurn` | `d245f9d5-e966-4a8e-a125-4aa5b48f1e7c` | [original opening draw][openingDraw] | Natural room-card primary draw plus controlled native fallback to a room card with the deployment-draw trait. Both original masks, temporary -99 cost and count expansion match; the inert room carrier is not played. |
 | `DrawSpellOnDeployment` | `69d88251-cfed-4fd0-a355-cba2e10e09d4` | [original opening draw][openingDraw] | Natural original-mask Spell draw and temporary -1 cost/+1 X-cost reduction, without draw-count expansion. Full native contexts, preview/nondeployment/removed-owner controls and independent 19-play policy match. |
 | `GiveSpellStatsForUpgrades_DH` | `4200307a-616d-4cbb-a54e-527c5dc0f492` | [upgrade-count relics][upgradeCounts] | Original +3 damage per permanent upgrade with a visible icon: 0/1/2 yield 0/3/6. Hidden, no-icon and temporary upgrades are excluded; a visible region upgrade counts. Original `DevilishDetails` exclusion rejects the upgraded spell. The damage spell is played and redrawn with its bonus intact. |
@@ -568,3 +575,4 @@ dotnet run --project src/ModelChecks -c Release -- --original-card-attack-only t
 [openingDraw]: full-battle-original-opening-draw-relics.mt2f
 [turnDraw]: full-battle-original-turn-draw-relics.mt2f
 [purgeGold]: campaign-purge-gold-calibration.mt2f
+[phaseUpgrades]: full-battle-original-unit-phase-upgrade-relics.mt2f

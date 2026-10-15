@@ -1,5 +1,42 @@
 # Inventory validation, 2026-10-15
 
+## Death and moon temporary upgrades
+
+Current inventory: 355 archives (319 battles, 36 calibrations), 133/224 original
+owners (59.38%): 119 battle owners and fourteen campaign-interface owners.
+Source:
+`.probe-runs/full-battle-units-spells-and-junk-20261015-214602-6955f52f/full-battle.mt2f`.
+EnhanceAttackOnConsume and SeleneandSilentBuff retain all original effects.
+Authored Selene/Silent/ordinary/fragile Stewards and a sacrifice spell exercise
+one friendly death upgrade and all four phase callbacks: five +20 additions and
+four -20 removals. The +10 death upgrade remains on its spawner until battle end;
+the unique moon upgrades last until unit death and never enter card modifiers.
+3025 actual native Test observations include enemy and ordinary-subtype controls.
+One death and four next-turn owner ablations remove positive future effects.
+
+The diagnostic `20261015-214154-7d8f8bfa` wins but has four initial-summon
+mismatches: the old model updates phase masks without firing initial unit phase
+callbacks. It is excluded. After adding that native birth callback, all diagnostic
+actions match, and the fresh accepted battle has zero error counters. Native
+tracking is enabled explicitly in this isolated scenario; four authored zero-gold
+phase triggers provide observable queue state without altering the relics.
+The original death upgrade's OnlyAttackingUnits filter is bypassed by the native
+direct unit upgrade API, rather than modeled as a card-eligibility check.
+
+The accepted 38-stage/21-play/five-EndTurn battle wins at Pyre 80 in 78.78 seconds
+with unchanged Steam files. Independent root/mid-battle/sixteen-parallel policy
+replay passes. The schema-103 archive has 32157 bytes, 5331 nodes, source length 0,
+SHA-256 `2cf0cbce1667fd064785ee1ab48d867f599219a10ac209921e4c1f6026b62569`.
+Six affected archives pass general/focused regression:
+`.probe-runs/model-checks-20261015-215027-d4e33962/summary.json`.
+All 21 search decisions match with zero unsupported alternatives, 128/128 states,
+equal serial/parallel best results and three replayed best steps. Model/Archive/
+Checker frozen hashes are
+`DFBB571A7E98D13063D27E4F21AD06853E58D23FBB2E23CF8E40A5EC424251F7`,
+`34875EA4A3AE355A11064AB7040E94CE430FEFC40B1B672C5B5BCC9AF65127BF`,
+`448551176F6423C29AF59FB1465174E931E04FE388D5322B40074A7C04EEA1F9`.
+Every worker exits zero; this is not a complete 355-archive rerun.
+
 ## Turn-draw and campaign purge extension
 
 Current inventory: 354 archives (318 battles, 36 calibrations), 131/224 original
