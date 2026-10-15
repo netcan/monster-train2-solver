@@ -1,10 +1,16 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-15): 338 binary archives, including 307
+Current accepted inventory (2026-10-15): 339 binary archives, including 308
 full battles and 31 component calibrations. Unchanged original relic evidence
-covers 91/224 catalog entries (40.63%); see
+covers 92/224 catalog entries (41.07%); see
 [the owner evidence table](tests/fixtures/relic-coverage.md). Whole-battle
 coverage and the optimal solver remain in progress.
+
+`SteelStockpile` now has explicit post-combat forge conservation. Four original
+cap queries are exercised through `PlayerManager.OnCombatEnd`, an owner-removal
+control resets points to zero, and natural post-victory cleanup retains 10 of
+17 points. Every in-battle EndTurn keeps 17. Six complete callback contexts,
+notifications, independent policy replay and the five-fixture regression pass.
 
 `IncreaseSpellHealing` now applies +10 healing only to every Spell, including
 native cards that cannot scale with magic power; fivefold trait scaling and

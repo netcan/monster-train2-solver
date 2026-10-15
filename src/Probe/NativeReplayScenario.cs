@@ -137,6 +137,11 @@ namespace MonsterTrain2Poju.Probe
                 FullBattleTrace trace = FullBattleTrace.Active;
                 try
                 {
+                    if (OriginalForgeConservationScenario.Enabled && !OriginalForgeConservationScenario.NaturalCompleted)
+                    {
+                        if (Time.realtimeSinceStartup > deadline) Finish(false, "Natural forge-conservation combat-end callback did not complete.");
+                        return;
+                    }
                     // StopCombatLoop captures the battle boundary. Later cleanup
                     // resets resources/phase; keep that snapshot while allowing
                     // native card animation callbacks to finish before export/exit.
@@ -267,6 +272,8 @@ namespace MonsterTrain2Poju.Probe
                         OriginalHealingPowerScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalStartCombatEnergyScenario.Enabled && !OriginalStartCombatEnergyScenario.Acquired)
                         OriginalStartCombatEnergyScenario.AcquireBeforeBattle(managers!, log);
+                    if (fullBattle && OriginalForgeConservationScenario.Enabled && !OriginalForgeConservationScenario.Acquired)
+                        OriginalForgeConservationScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalConserveEmberScenario.Enabled && !OriginalConserveEmberScenario.Acquired)
                         OriginalConserveEmberScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && ChooseDiscardScenario.OriginalSmeltRelicMode && !ChooseDiscardScenario.RelicAcquired)
@@ -514,6 +521,17 @@ namespace MonsterTrain2Poju.Probe
             if (fullBattle && !numericModifiersPrepared && OriginalStartCombatEnergyScenario.Enabled)
             {
                 OriginalStartCombatEnergyScenario.Prepare(managers, log);
+                numericModifiersPrepared = true;
+                return;
+            }
+            if (fullBattle && !numericModifiersPrepared && OriginalForgeConservationScenario.Enabled)
+            {
+                if (OriginalForgeConservationScenario.Error != null) throw new InvalidOperationException(OriginalForgeConservationScenario.Error);
+                if (!OriginalForgeConservationScenario.Prepared)
+                {
+                    if (!OriginalForgeConservationScenario.Started) OriginalForgeConservationScenario.Start(managers, log);
+                    return;
+                }
                 numericModifiersPrepared = true;
                 return;
             }

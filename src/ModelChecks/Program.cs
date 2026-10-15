@@ -517,6 +517,12 @@ if (args.Length == 2 && args[0] == "--original-start-combat-energy-only")
     OriginalStartCombatEnergyChecks.Native(document.RootElement);
     return;
 }
+if (args.Length == 2 && args[0] == "--original-forge-conservation-only")
+{
+    using var document = ModelJson.ReadFixture(args[1]);
+    RelicForgeConservationChecks.Native(document.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--original-card-attack-only")
 {
     using var document = ModelJson.ReadFixture(args[1]);

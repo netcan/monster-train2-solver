@@ -606,6 +606,7 @@ namespace MonsterTrain2Poju.Probe
                 RelicStatusDecayQueries = RelicStatusDecayProbe.Queries,
                 RelicResourceOperations = RelicResourceProbe.Operations,
                 EnergyConservationQueries = OriginalConserveEmberScenario.EnergyRemovals,
+                ForgeCombatEndOperations = OriginalForgeConservationScenario.Records,
                 PyreResourceOperations = PyreResourceRefreshProbe.Operations,
                 FloorCapacityOriginalDefinitions = OriginalFloorCapacityRelicProbe.OriginalDefinitions,
                 FloorCapacityDeploymentCards = OriginalFloorCapacityRelicProbe.DeploymentCards,

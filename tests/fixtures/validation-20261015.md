@@ -1,8 +1,36 @@
 # Inventory validation, 2026-10-15
 
+## Forge conservation extension
+
+Current inventory: 339 archives (308 battles, 31 calibrations), 92/224 original
+owners (41.07%). Five affected archives pass with three workers and no reruns:
+`.probe-runs/model-checks-20261015-181708-5484b7be/summary.json`. This is not a
+complete 339-archive rerun.
+
+Native source:
+`.probe-runs/full-battle-units-spells-and-junk-20261015-181515-5141e8c9/full-battle.mt2f`.
+The original `SteelStockpile` flat cap remains 10. Four actual
+`PlayerManager.OnCombatEnd` calls exercise 0/5/10/17; removing the owner resets
+17→0, then reacquiring it leaves the actual battle with 17. All seven EndTurns
+retain 17, including the terminal battle snapshot. Export waits for the natural
+post-victory player cleanup, where 17→10 with one relic notification. All six
+complete callback contexts, moon reset, notification counts and input isolation
+match. Pure cases additionally check percentage initialization, unknown modes,
+first eligible owner, conditional notification/consumption, preview and bounds.
+The game wins with Pyre health 66, 60 stages, 21 plays, seven EndTurns, all four
+error counters zero, and unchanged Steam files. Direct binary archive:
+33,171 bytes, 5,314 nodes, source length zero, SHA-256
+`118fea00a50e61e3b1ee64e951d06ff938970093afe4780e0f4b3286bcdd68f9`.
+
+| Frozen runtime binary | SHA-256 |
+| --- | --- |
+| Model | `93DB0E1157715CB22E7B57048793FB24873CCBDD3A5C5C79DE398488B5007AF9` |
+| FixtureArchive | `6F2BDC5131050F0353E983F5094E2F19129813D17E4F6E3D55E640F646918D83` |
+| Checker | `47BB19394B2A0473E1A7617768CC913D1FAAB46E251AC7F28219C2C54946D375` |
+
 ## Healing and first-combat energy extension
 
-Current inventory: 338 archives (307 battles, 31 calibrations), with 91/224
+Previous inventory: 338 archives (307 battles, 31 calibrations), with 91/224
 original collectible owners (40.63%). Two new battles and six affected older
 archives pass the current general/focused gates, independent complete policy
 replay, mid-battle roots, immutable branches and bounded serial/parallel search.

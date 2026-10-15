@@ -240,6 +240,7 @@ param(
     [switch] $OriginalUpgradeCountRelics,
     [switch] $OriginalHealingPowerRelic,
     [switch] $OriginalStartCombatEnergyRelic,
+    [switch] $OriginalForgeConservationRelic,
     [switch] $OriginalUnitUpgradeTriggerRelic,
     [switch] $TypedDraw,
     [switch] $IncantRelic,
@@ -352,6 +353,7 @@ if ($OriginalCardAttackRelic) { $BranchCardMasks = $true; $Policy = 'units-spell
 if ($OriginalUpgradeCountRelics) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalHealingPowerRelic) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalStartCombatEnergyRelic) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
+if ($OriginalForgeConservationRelic) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalUnitUpgradeTriggerRelic) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalTriggerRelicBatch -or $OriginalLifecycleRelicBatch) {
     $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $SettleDeathDissolves = $true; $SettleCardAnimations = $true
@@ -724,6 +726,7 @@ if ($OriginalCardAttackRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-
 if ($OriginalUpgradeCountRelics) { $environment['MT2_PROBE_MODIFIERS'] = 'original-upgrade-count-relics' }
 if ($OriginalHealingPowerRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-healing-power-relic' }
 if ($OriginalStartCombatEnergyRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-start-combat-energy-relic' }
+if ($OriginalForgeConservationRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-forge-conservation-relic' }
 if ($OriginalUnitUpgradeTriggerRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-unit-upgrade-trigger-relic' }
 if ($TypedDraw) {
     $environment['MT2_PROBE_MODIFIERS'] = 'typed-draw'
@@ -1271,6 +1274,15 @@ if ($OriginalStartCombatEnergyRelic) {
         $callbacks[0].Before.Turn -ne 1 -or $callbacks[0].Deployment -or $callbacks[0].Notifications -ne 0 -or
         $callbacks[0].After.Energy -ne [Math]::Min($callbacks[0].Before.Resources.MaxEnergy, $callbacks[0].Before.Energy + 2)) {
         throw 'Original start-combat energy relic lacks its unique turn-one callback.'
+    }
+}
+if ($OriginalForgeConservationRelic) {
+    $forgeCallbacks = @($trace.ForgeCombatEndOperations)
+    $naturalForge = @($forgeCallbacks | Where-Object Kind -eq 'natural')
+    if ($trace.ModifierScenario -ne 'original-forge-conservation-relic' -or $forgeCallbacks.Count -ne 6 -or
+        $naturalForge.Count -ne 1 -or $naturalForge[0].Before.QueryFrame.ForgePoints -ne 17 -or
+        $naturalForge[0].After.QueryFrame.ForgePoints -ne 10 -or $naturalForge[0].Notifications -ne 1) {
+        throw 'Original SteelStockpile lacks its natural battle-end 17-to-10 conservation witness.'
     }
 }
 if ($OriginalCardAttackRelic) {

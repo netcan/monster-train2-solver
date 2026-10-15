@@ -143,6 +143,8 @@ namespace MonsterTrain2Poju.Probe
                 amount = (int)AccessTools.Field(effect.GetType(), "_additionalSmeltEmber").GetValue(effect);
             else if (effect is RelicEffectAdjustMixAmount)
                 amount = (int)AccessTools.Field(effect.GetType(), "additionalAmount").GetValue(effect);
+            else if (effect is RelicEffectConserveForgePoints)
+                amount = (int)AccessTools.Field(effect.GetType(), "_value").GetValue(effect);
             else if (effect is RelicEffectConserveEnergyEndOfTurn conserve)
             {
                 IConserveEnergyEndOfTurnRelicEffect.ConserveParamaters parameters = conserve.GetConserveParameters();

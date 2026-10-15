@@ -1,6 +1,13 @@
 # Native regression fixtures
 
-Healing/start-combat energy extension (2026-10-15): 338 archives, comprising
+Forge conservation extension (2026-10-15): 339 archives (308 battles and 31
+calibrations), 92/224 original owners (41.07%). The unchanged `SteelStockpile`
+passes four complete `PlayerManager.OnCombatEnd` contexts at 0/5/10/17 points,
+an actual removed-owner reset, and natural post-victory conservation 17→10.
+In-battle EndTurns retain 17. The native game wins with all counters zero;
+five affected archives pass current general/focused regression and search.
+
+Previous healing/start-combat energy checkpoint (2026-10-15): 338 archives, comprising
 307 full battles and 31 calibrations; 91/224 original relic owners (40.63%).
 The unchanged `IncreaseSpellHealing` has 22 exact native manager refreshes,
 scalable/non-scalable Spell controls, Monster/Blight rejections, fivefold traits,
