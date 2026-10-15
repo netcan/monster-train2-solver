@@ -253,6 +253,7 @@ param(
     [switch] $OriginalHealthChoiceRelic,
     [switch] $OriginalAfterDrawGenerationRelics,
     [switch] $OriginalUnitResourceRelics,
+    [switch] $OriginalOpeningDrawRelics,
     [switch] $OriginalUnitUpgradeTriggerRelic,
     [switch] $TypedDraw,
     [switch] $IncantRelic,
@@ -374,6 +375,7 @@ if ($OriginalEquipmentGrowthRelics) { $BranchCardMasks = $true; $Policy = 'units
 if ($OriginalHealthChoiceRelic) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalAfterDrawGenerationRelics) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalUnitResourceRelics) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
+if ($OriginalOpeningDrawRelics) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalUnitUpgradeTriggerRelic) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalTriggerRelicBatch -or $OriginalLifecycleRelicBatch) {
     $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $SettleDeathDissolves = $true; $SettleCardAnimations = $true
@@ -759,6 +761,7 @@ if ($OriginalEquipmentGrowthRelics) { $environment['MT2_PROBE_MODIFIERS'] = 'ori
 if ($OriginalHealthChoiceRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-health-choice-relic' }
 if ($OriginalAfterDrawGenerationRelics) { $environment['MT2_PROBE_MODIFIERS'] = 'original-after-draw-generation-relics' }
 if ($OriginalUnitResourceRelics) { $environment['MT2_PROBE_MODIFIERS'] = 'original-unit-resource-relics' }
+if ($OriginalOpeningDrawRelics) { $environment['MT2_PROBE_MODIFIERS'] = 'original-opening-draw-relics' }
 if ($OriginalUnitUpgradeTriggerRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-unit-upgrade-trigger-relic' }
 if ($TypedDraw) {
     $environment['MT2_PROBE_MODIFIERS'] = 'typed-draw'
@@ -1398,6 +1401,11 @@ if ($CampaignPostBattleCalibration) {
             throw 'Post-battle original-owner matrix or recorded state restoration is incomplete.'
         }
     } finally { $postBattleDocument.Dispose() }
+}
+if ($OriginalOpeningDrawRelics -and ($trace.ModifierScenario -ne 'original-opening-draw-relics' -or
+    @($trace.RelicOpeningDraw).Count -lt 5 -or
+    -not (Select-String -LiteralPath $unityLog -Pattern 'ORIGINAL-OPENING-DRAW-PREPARED natural primary selections' -Quiet))) {
+    throw 'Original opening draw owners lack natural primary and controlled fallback callbacks.'
 }
 if ($OriginalUnitResourceRelics -and ($trace.ModifierScenario -ne 'original-unit-resource-relics' -or
     @($trace.RelicUnitResources).Count -lt 10 -or

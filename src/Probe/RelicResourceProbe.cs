@@ -104,7 +104,17 @@ namespace MonsterTrain2Poju.Probe
             MutatorData? required = null;
             CardGenerationRule? generation = null;
             RelicUnitResourceRule? unitTrigger = null;
-            if (RelicUnitResourceModel.IsEffect(type))
+            RelicOpeningDrawRule? openingDraw = null;
+            if (effect is RelicEffectDrawOnPreOpeningDraw)
+            {
+                var upgradeData = data.GetParamCardUpgradeData(); CardUpgradeModifier? upgrade = null;
+                if (upgradeData != null) { var state = new CardUpgradeState(); state.Setup(upgradeData); upgrade = CardModifierProbe.Upgrade(state); }
+                var first = data.GetParamCardFilter(); var second = data.GetParamCardFilterSecondary();
+                openingDraw = new RelicOpeningDrawRule(first == null ? null : CardUpgradeMaskProbe.Rule(first),
+                    second == null ? null : CardUpgradeMaskProbe.Rule(second), data.GetParamBool(), upgrade);
+                amount = data.GetParamInt();
+            }
+            else if (RelicUnitResourceModel.IsEffect(type))
             {
                 var subtype = data.GetParamCharacterSubtype();
                 unitTrigger = new RelicUnitResourceRule(data.GetParamTrigger().ToString(), data.GetParamSourceTeam().ToString(),
@@ -180,7 +190,7 @@ namespace MonsterTrain2Poju.Probe
             return new RelicResourceEffect(index, type, data.GetParamInt(), data.GetParamInt2(), amount,
                 effect.CanApplyInPreviewMode, required?.GetID(), RelicCardModifierProbe.Conditions(effect), value, registration,
                 capacityValue, capacityRegistration, data.GetParamMinInt(),
-                effect is RelicEffectAddPermanentCorruptionStartOfCombat ? data.GetParamFloat() : 0, generation, unitTrigger);
+                effect is RelicEffectAddPermanentCorruptionStartOfCombat ? data.GetParamFloat() : 0, generation, unitTrigger, openingDraw);
         }
 
         internal static ResourceSnapshot Capture()

@@ -62,17 +62,19 @@ namespace MonsterTrain2Poju.Model
         public float ParamFloat { get; }
         public CardGenerationRule? CardGeneration { get; }
         public RelicUnitResourceRule? UnitTrigger { get; }
+        public RelicOpeningDrawRule? OpeningDraw { get; }
         public RelicResourceEffect(int effectIndex, string type, int paramInt, int paramInt2, int amount,
             bool canApplyInPreviewMode, string? requiredMutatorId = null, IReadOnlyList<RelicConditionState>? conditions = null,
             float? drawValue = null, int? drawMutationOrder = null,
             float? capacityValue = null, int? capacityMutationOrder = null, int paramMinInt = 0, float paramFloat = 0,
-            CardGenerationRule? cardGeneration = null, RelicUnitResourceRule? unitTrigger = null)
+            CardGenerationRule? cardGeneration = null, RelicUnitResourceRule? unitTrigger = null, RelicOpeningDrawRule? openingDraw = null)
         {
             EffectIndex = effectIndex; Type = type; ParamInt = paramInt; ParamInt2 = paramInt2; Amount = amount;
             ParamMinInt = paramMinInt;
             ParamFloat = paramFloat;
             CardGeneration = cardGeneration;
             UnitTrigger = unitTrigger;
+            OpeningDraw = openingDraw;
             CanApplyInPreviewMode = canApplyInPreviewMode; RequiredMutatorId = requiredMutatorId;
             Conditions = Array.AsReadOnly((conditions ?? Array.Empty<RelicConditionState>()).ToArray());
             DrawValue = drawValue; DrawMutationOrder = drawMutationOrder;
@@ -80,7 +82,7 @@ namespace MonsterTrain2Poju.Model
         }
         internal RelicResourceEffect WithConditions(IReadOnlyList<RelicConditionState> conditions) =>
             new RelicResourceEffect(EffectIndex, Type, ParamInt, ParamInt2, Amount, CanApplyInPreviewMode,
-                RequiredMutatorId, conditions, DrawValue, DrawMutationOrder, CapacityValue, CapacityMutationOrder, ParamMinInt, ParamFloat, CardGeneration, UnitTrigger);
+                RequiredMutatorId, conditions, DrawValue, DrawMutationOrder, CapacityValue, CapacityMutationOrder, ParamMinInt, ParamFloat, CardGeneration, UnitTrigger, OpeningDraw);
     }
 
     public sealed class RelicResourceEvent
@@ -134,7 +136,7 @@ namespace MonsterTrain2Poju.Model
         public static bool IsEffect(string type) => type == Energy || type == DeploymentEnergy || type == StartCombatEnergy || type == Draw ||
             type == PyreAttack || type == PyreHealth || type == FloorCapacity || type == MoonPhaseEnergy ||
             type == AdditionalSmeltEmber || type == AdjustMixAmount || type == ConserveEnergyEndOfTurn || type == ConserveForgePoints ||
-            type == RelicCardGenerationModel.AfterDraw || RelicUnitResourceModel.IsEffect(type) || IsOpeningCorruption(type);
+            type == RelicCardGenerationModel.AfterDraw || RelicUnitResourceModel.IsEffect(type) || RelicOpeningDrawModel.IsEffect(type) || IsOpeningCorruption(type);
 
         internal static string? Validate(CombatRelicState relic)
         {
@@ -146,6 +148,12 @@ namespace MonsterTrain2Poju.Model
             foreach (RelicResourceEffect rule in rules)
             {
                 if (rule.Type != relic.EffectTypes[rule.EffectIndex]) return "Relic resource runtime type differs from its effect index.";
+                if (RelicOpeningDrawModel.IsEffect(rule.Type))
+                {
+                    string? openingError = RelicOpeningDrawModel.Validate(relic, rule);
+                    if (openingError != null) return openingError;
+                }
+                else if (rule.OpeningDraw != null) return "Unexpected opening-draw payload on another effect.";
                 if (RelicUnitResourceModel.IsEffect(rule.Type))
                 {
                     string? triggerError = RelicUnitResourceModel.Validate(relic, rule);
