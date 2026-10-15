@@ -1,5 +1,14 @@
 # Native regression fixtures
 
+Campaign draft/health extension (2026-10-15): 346 archives (313 battles and 33
+calibrations), 113/224 original owners (50.45%): 104 battle owners plus nine
+campaign-interface owners. Three unchanged owners pass 840 actual native
+GrantReward candidate selections with exact Rewards RNG, positive allied/rare
+controls, explicit-class/ignore-rarity bypasses and three Pyre health acquisition/
+removal transitions. UI choice/grant and run rarity tickets are outside this
+bounded draft claim. Five affected archives pass regression; provenance and
+frozen binary hashes are in the validation record.
+
 Equipment growth extension (2026-10-15): 345 archives (313 battles and 32
 calibrations), 110/224 original owners (49.11%): 104 battle owners plus six
 campaign-interface owners. Three unchanged originals have positive slay,

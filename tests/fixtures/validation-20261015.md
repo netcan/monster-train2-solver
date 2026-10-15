@@ -1,5 +1,46 @@
 # Inventory validation, 2026-10-15
 
+## Campaign draft and Pyre health extension
+
+Current inventory: 346 archives (313 battles, 33 calibrations), 113/224 original
+owners (50.45%): 104 battle owners and nine campaign-interface owners.
+
+Native component source:
+`.probe-runs/full-battle-steward-once-20261015-200933-3c29997e/campaign-draft-calibration.mt2f`.
+The host battle wins with 55 stages, one play, seven EndTurns and all four error
+counters zero; Steam files remain unchanged. The component is schema 1, game
+2.2.1, module MVID `8fb07b96-f4db-4d2b-884d-c00536d6ccf4`, 5239 bytes,
+1137 unique nodes, SHA-256
+`06cfd88a3aab87d6f2d76f3bbc0a18a5c687bd5dd62ee04705a6687f270134d4`.
+
+Three unchanged originals are acquired and removed through SaveManager. Actual
+DraftRewardData.GrantReward executes 840 candidate selections over five owner
+phases, seven class masks, three rarity floors, two bypass gates and two seeds.
+The model matches exact candidate IDs and Rewards RNG after each call. Positive
+owner ablations produce 48 allied-class changes and 56 Rare changes; 168 explicit
+class controls and 168 ignore-rarity controls pass. Native neutral fallback is
+retained even without the NonClass flag. PyreHeartFather adds 25 maximum/current
+health at low/near-full/full health; removal preserves raw HP while the visible
+getter clamps to the restored maximum.
+
+The authored ordered pool contains unchanged unlocked/DLC-eligible original
+cards; rarity weights are flattened. The bounded claim excludes UI choice,
+chosen-card grant and run rarity tickets. Scheduling of subsequent loading/UI
+tasks is suppressed only after actual native candidate selection. Recorded
+relic/deck IDs, raw/visible/max HP, frame and deterministic RNG match before/after;
+native isolated-save run-stat side effects are outside this restoration claim.
+
+Five affected fixtures pass general/focused gates, including the new component,
+prior campaign and gold consumers, Steward battle and equipment growth battle:
+`.probe-runs/model-checks-20261015-201404-b9f42f96/summary.json`.
+All three workers pass with exit 0; this is not a complete 346-archive rerun.
+
+| Frozen runtime binary | SHA-256 |
+| --- | --- |
+| Model | `2DD4DE35F34A8926F704350C2F147504AD888003A817FD3A9A829602AD6E03F8` |
+| FixtureArchive | `5DFDD5BB6A9143F8B9E08CCB8C5D071FE0FA018251D47BD92AC9A63CD501A51E` |
+| Checker | `2019AB2967F54D79E3008C34952BB11A40242345C6D4A53F41A2BB3C8699DDDC` |
+
 ## Equipment growth extension
 
 Current inventory: 345 archives (313 battles, 32 calibrations), 110/224 original

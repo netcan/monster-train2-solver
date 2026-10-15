@@ -1,8 +1,8 @@
 # Original relic coverage evidence
 
-As of 2026-10-15, **110 distinct original collectable relics / 224 catalog entries
-(49.11%)** have accepted native evidence: 104 have full-battle effect evidence,
-and six have their campaign consumer interfaces validated below. This counts unchanged relic
+As of 2026-10-15, **113 distinct original collectable relics / 224 catalog entries
+(50.45%)** have accepted native evidence: 104 have full-battle effect evidence,
+and nine have their campaign consumer interfaces validated below. This counts unchanged relic
 definitions whose effects actually ran, including their original filters and
 conditions. Test cards, unit triggers and carrier subtypes may be authored to
 exercise those effects; the claim covers the recorded paths, not every possible
@@ -21,8 +21,11 @@ The battle archives cited below report game `2.2.1`, module MVID
 `8fb07b96-f4db-4d2b-884d-c00536d6ccf4`, `NativeWon=true`, and zero
 `CaptureFailures`, `Mismatches`, `Unsupported` and `Pending`. Archive provenance,
 byte lengths and SHA-256 hashes are recorded in [manifest.tsv](manifest.tsv).
-The accepted inventory is 345 archives: 313 battles and 32 component
-calibrations, with no JSON companions. The newest battle proves three original
+The accepted inventory is 346 archives: 313 battles and 33 component
+calibrations, with no JSON companions. The newest component proves actual draft
+candidate selection and exact Rewards RNG over 840 GrantReward calls, plus
+three Pyre max-health acquisition/removal transitions. Five affected archives
+pass general/focused regression. The newest battle proves three original
 equipment growth owners through slay/death buffs, front-position Deathwish
 entry/loss and nine actual PreCombat Valor applications. Fourteen exact births
 include both-team and friendly-only controls and five exclusive trigger queues.
@@ -168,13 +171,19 @@ owner count.
 
 ## Campaign interface evidence
 
-These six unchanged original owners are validated by their actual native
+These nine unchanged original owners are validated by their actual native
 campaign consumers, with baseline and removed-owner controls. This table is
-separate from the 101 battle owners. It does not claim whole-battle integration
-for these effect classes. The capture's recorded relic IDs, gold, hoard cap and
+separate from the 104 battle owners. It does not claim whole-battle integration
+for these effect classes. The first capture's recorded relic IDs, gold, hoard cap and
 amount, deck IDs, frame and RNG match before/after; reward grants still execute
 their native run-stat side effects in the isolated save. Catalog enumeration
 and inert presence do not count. Evidence: [campaign calibration][campaign].
+The [draft calibration][campaignDrafts] records exact original candidate IDs and
+Rewards RNG from actual GrantReward selection, using an authored ordered pool
+of unlocked original cards and flattened Common..Rare weights. UI choice,
+chosen-card grant and run rarity tickets are outside this bounded consumer.
+Recorded relic/deck IDs, raw/visible/max Pyre health, frame and deterministic RNG
+are restored; this does not claim restoration of every isolated-save run statistic.
 
 | Original owner | Data ID | Native evidence | Accepted path |
 | --- | --- | --- | --- |
@@ -184,6 +193,9 @@ and inert presence do not count. Evidence: [campaign calibration][campaign].
 | `ApplyUnitUpgradeWhenRich` | `07bdefdb-03b8-4159-b74b-be85f68c4c56` | [campaign calibration][campaign] | Actual effect is +50% trial gold, despite asset name. All 66 `GoldRewardData.RewardValue` displays and `GrantReward` balance deltas match optional trial gating, minimum/rounding, nonpositive rewards, baseline and removal. |
 | `ModifyDragonsHoardCap` | `00a8f443-cdea-437a-98bf-0ebe0ead00b0` | [campaign calibration][campaign] | Original +3 on actual acquisition; removal subtracts 3 and truncates amount to cap. Starting caps 0/max-1/max exercise both clamps and capped-acquisition loss on removal. |
 | `ModifyDragonsHoardCap_DH` | `c3f91e0e-629f-4d3f-b422-ce1653147293` | [campaign calibration][campaign] | Original +2 acquisition/removal through SaveManager, including amount truncation and upper cap; three independent starting-cap cases. |
+| `AlliedClassRelic` | `656861c9-a96d-4c99-988c-390b75e5d8d4` | [draft calibration][campaignDrafts] | Replaces the main class flag with the allied class; 48 positive changes, all seven class masks and explicit-class bypass controls. Native neutral fallback remains available. |
+| `FutureDraftsAreRares` | `8f46fde9-0c75-49ba-9f58-3063864f81bf` | [draft calibration][campaignDrafts] | Sets both minimum rarity and exact Rare filter; 56 positive changes, three authored rarity floors and ignore-rarity bypass controls. All 840 combined selection results and Rewards RNG match. |
+| `PyreHeartFather` | `fe768ab5-3f58-4f96-9afc-48f0f30c7b21` | [draft calibration][campaignDrafts] | Actual acquisition adds 25 maximum and current health at low/near-full/full HP. Removal drops dynamic maximum, preserves raw HP and clamps the visible getter. |
 
 ## Recorded battle sizes
 
@@ -493,6 +505,7 @@ dotnet run --project src/ModelChecks -c Release -- --original-card-attack-only t
 [firstCombatEnergy]: full-battle-original-start-combat-energy-relic.mt2f
 [forgeConservation]: full-battle-original-forge-conservation-relic.mt2f
 [campaign]: campaign-relic-calibration.mt2f
+[campaignDrafts]: campaign-draft-calibration.mt2f
 [openingCorruption]: full-battle-original-opening-corruption-relics.mt2f
 [spellThresholds]: full-battle-original-spell-play-threshold-relics.mt2f
 [shroomDecay]: full-battle-original-shroom-decay-relic.mt2f
