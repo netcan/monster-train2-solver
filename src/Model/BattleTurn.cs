@@ -456,6 +456,14 @@ namespace MonsterTrain2Poju.Model
             else context = EnergyModel.StartTurn(context, source.EnergyPerTurn);
             context = UnitStandbyModel.ReturnReady(context);
             context = EquipmentModel.ReturnUnattached(context, new HashSet<int>(train.Rooms.SelectMany(room => room.Units).Select(unit => unit.Id)));
+            if (context.Relics?.Any(owner => owner.EffectTypes.Contains(RelicTurnDrawModel.FullHealth)) == true)
+            {
+                var refresh = RelicTurnDrawModel.BeforeDraw(context, train.Rooms.SelectMany(room => room.Units).Single(unit => unit.IsPyre).Health);
+                if (!refresh.Supported) return Unsupported(refresh.UnsupportedReason!);
+                var count = RelicResourceModel.GetDrawCount(refresh.Context!);
+                if (!count.Supported) return Unsupported(count.UnsupportedReason!);
+                context = count.Context!; drawPerTurn = count.Value;
+            }
             if (context.OtherPiles != null) otherPiles = context.OtherPiles.ToArray();
             CardCycleResult drawn = CardCycleModel.DrawHand(context.Cards, drawPerTurn, context.MaxHandSize);
             if (!drawn.Supported) return Unsupported(drawn.UnsupportedReason!);
@@ -469,6 +477,12 @@ namespace MonsterTrain2Poju.Model
             if (bonusError != null) return Unsupported(bonusError);
             context = ConduitModel.Drawn(context, drawn.State!.Hand.Reverse().Where(card => !existingHand.Contains(card.InstanceId)).Select(card => card.InstanceId));
             train = WithContext(train, context, false);
+            if (turn == 1 && context.Relics?.Any(owner => owner.EffectTypes.Contains(RelicTurnDrawModel.Opening)) == true)
+            {
+                var openingDraw = RelicTurnDrawModel.PostOpening(context, definitions: source.PlayRules);
+                if (!openingDraw.Supported) return Unsupported(openingDraw.UnsupportedReason!);
+                context = openingDraw.Context!; train = WithContext(train, context, false);
+            }
             if (turn == 1 && train.Context!.Relics?.Any(relic => relic.EffectTypes.Any(RelicResourceModel.IsOpeningCorruption)) == true)
             {
                 TrainCombatResult opening = RelicResourceModel.ApplyOpeningCorruption(train, postDraw: true);

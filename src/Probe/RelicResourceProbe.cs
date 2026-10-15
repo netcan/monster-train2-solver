@@ -131,10 +131,13 @@ namespace MonsterTrain2Poju.Probe
                     (data.GetParamCardPool()?.GetFilteredChoices() ?? new List<CardData>()).Select(CardGenerationProbe.Creation).ToArray(), upgrade: upgrade);
                 amount = data.GetParamInt();
             }
-            else if (effect is RelicEffectChangeStartingHandSize draw)
+            else if (effect is RelicEffectDrawToMaxStartOfCombat)
+                amount = data.GetParamInt();
+            else if (effect is RelicEffectChangeStartingHandSize || effect is RelicEffectAdditionalDrawOnTowerFullHealth)
             {
+                var draw = (IBalanceEditingRelicEffect)effect;
                 value = draw.Value;
-                amount = UnityEngine.Mathf.RoundToInt(draw.Value);
+                amount = effect is RelicEffectAdditionalDrawOnTowerFullHealth ? data.GetParamInt() : UnityEngine.Mathf.RoundToInt(draw.Value);
                 var rules = (MutableRules?)AccessTools.Field(typeof(SaveManager), "mutableRules").GetValue(managers.GetSaveManager());
                 if (rules != null)
                 {

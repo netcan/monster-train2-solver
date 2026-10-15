@@ -278,6 +278,8 @@ namespace MonsterTrain2Poju.Probe
                         OriginalOpeningCorruptionScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalOpeningDrawScenario.Enabled && !OriginalOpeningDrawScenario.Acquired)
                         OriginalOpeningDrawScenario.AcquireBeforeBattle(managers!, log);
+                    if (fullBattle && OriginalTurnDrawScenario.Enabled && !OriginalTurnDrawScenario.Acquired)
+                        OriginalTurnDrawScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalSpellPlayThresholdScenario.Enabled && !OriginalSpellPlayThresholdScenario.Acquired)
                         OriginalSpellPlayThresholdScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalConserveEmberScenario.Enabled && !OriginalConserveEmberScenario.Acquired)
@@ -560,6 +562,11 @@ namespace MonsterTrain2Poju.Probe
             if (fullBattle && !numericModifiersPrepared && OriginalUnitResourceScenario.Enabled)
             {
                 OriginalUnitResourceScenario.Prepare(managers, log);
+                numericModifiersPrepared = true;
+            }
+            if (fullBattle && !numericModifiersPrepared && OriginalTurnDrawScenario.Enabled)
+            {
+                OriginalTurnDrawScenario.Prepare(managers, log);
                 numericModifiersPrepared = true;
             }
             if (fullBattle && !numericModifiersPrepared && OriginalOpeningDrawScenario.Enabled)

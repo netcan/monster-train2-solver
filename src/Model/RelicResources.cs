@@ -83,6 +83,9 @@ namespace MonsterTrain2Poju.Model
         internal RelicResourceEffect WithConditions(IReadOnlyList<RelicConditionState> conditions) =>
             new RelicResourceEffect(EffectIndex, Type, ParamInt, ParamInt2, Amount, CanApplyInPreviewMode,
                 RequiredMutatorId, conditions, DrawValue, DrawMutationOrder, CapacityValue, CapacityMutationOrder, ParamMinInt, ParamFloat, CardGeneration, UnitTrigger, OpeningDraw);
+        internal RelicResourceEffect WithDrawValue(float value) =>
+            new RelicResourceEffect(EffectIndex, Type, ParamInt, ParamInt2, Amount, CanApplyInPreviewMode,
+                RequiredMutatorId, Conditions, value, DrawMutationOrder, CapacityValue, CapacityMutationOrder, ParamMinInt, ParamFloat, CardGeneration, UnitTrigger, OpeningDraw);
     }
 
     public sealed class RelicResourceEvent
@@ -136,7 +139,8 @@ namespace MonsterTrain2Poju.Model
         public static bool IsEffect(string type) => type == Energy || type == DeploymentEnergy || type == StartCombatEnergy || type == Draw ||
             type == PyreAttack || type == PyreHealth || type == FloorCapacity || type == MoonPhaseEnergy ||
             type == AdditionalSmeltEmber || type == AdjustMixAmount || type == ConserveEnergyEndOfTurn || type == ConserveForgePoints ||
-            type == RelicCardGenerationModel.AfterDraw || RelicUnitResourceModel.IsEffect(type) || RelicOpeningDrawModel.IsEffect(type) || IsOpeningCorruption(type);
+            type == RelicCardGenerationModel.AfterDraw || type == RelicTurnDrawModel.FullHealth || type == RelicTurnDrawModel.Opening ||
+            RelicUnitResourceModel.IsEffect(type) || RelicOpeningDrawModel.IsEffect(type) || IsOpeningCorruption(type);
 
         internal static string? Validate(CombatRelicState relic)
         {
@@ -184,10 +188,12 @@ namespace MonsterTrain2Poju.Model
                 if (rule.Type == ConserveEnergyEndOfTurn && (rule.ParamInt != 0 || rule.ParamInt2 != 0 ||
                     rule.ParamMinInt != 0 || rule.Amount != 0 || rule.RequiredMutatorId != null || rule.CanApplyInPreviewMode))
                     return "End-of-turn conservation differs from the native conserve-all payload.";
-                if (rule.Type == Draw)
+                if (rule.Type == Draw || rule.Type == RelicTurnDrawModel.FullHealth)
                 {
-                    if (!rule.DrawValue.HasValue || rule.DrawValue.Value != (float)rule.ParamInt ||
-                        !TryRound(rule.DrawValue.Value, out int rounded) || rounded != rule.Amount || rule.DrawMutationOrder < 0)
+                    if (!rule.DrawValue.HasValue ||
+                        (rule.Type == Draw ? rule.DrawValue.Value != (float)rule.ParamInt : rule.DrawValue.Value != 0 && rule.DrawValue.Value != rule.ParamInt) ||
+                        !TryRound(rule.DrawValue.Value, out int rounded) ||
+                        (rule.Type == Draw ? rounded != rule.Amount : rule.Amount != rule.ParamInt) || rule.DrawMutationOrder < 0)
                         return "Missing or inconsistent native float draw mutation metadata.";
                 }
                 else if (rule.DrawValue.HasValue || rule.DrawMutationOrder.HasValue)
@@ -345,8 +351,8 @@ namespace MonsterTrain2Poju.Model
             // MutableRules tracks initialized object registration independently
             // of current manager order, preview, placement and outer conditions.
             foreach (RelicResourceEffect rule in source.Relics!.SelectMany(relic => relic.ResourceEffects ?? Array.Empty<RelicResourceEffect>())
-                .Where(rule => rule.Type == Draw && rule.DrawMutationOrder.HasValue).OrderBy(rule => rule.DrawMutationOrder))
-                value = unchecked(value + rule.Amount);
+                .Where(rule => (rule.Type == Draw || rule.Type == RelicTurnDrawModel.FullHealth) && rule.DrawMutationOrder.HasValue).OrderBy(rule => rule.DrawMutationOrder))
+                value = unchecked(value + (rule.Type == Draw ? rule.Amount : (int)rule.DrawValue!.Value));
             return new RelicResourceResult(source, Math.Min(source.Resources.MaxHandSize, Math.Max(1, value)));
         }
 

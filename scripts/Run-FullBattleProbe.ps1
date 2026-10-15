@@ -254,6 +254,7 @@ param(
     [switch] $OriginalAfterDrawGenerationRelics,
     [switch] $OriginalUnitResourceRelics,
     [switch] $OriginalOpeningDrawRelics,
+    [switch] $OriginalTurnDrawRelics,
     [switch] $OriginalUnitUpgradeTriggerRelic,
     [switch] $TypedDraw,
     [switch] $IncantRelic,
@@ -376,6 +377,7 @@ if ($OriginalHealthChoiceRelic) { $BranchCardMasks = $true; $Policy = 'units-spe
 if ($OriginalAfterDrawGenerationRelics) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalUnitResourceRelics) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalOpeningDrawRelics) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
+if ($OriginalTurnDrawRelics) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalUnitUpgradeTriggerRelic) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalTriggerRelicBatch -or $OriginalLifecycleRelicBatch) {
     $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $SettleDeathDissolves = $true; $SettleCardAnimations = $true
@@ -762,6 +764,7 @@ if ($OriginalHealthChoiceRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'origina
 if ($OriginalAfterDrawGenerationRelics) { $environment['MT2_PROBE_MODIFIERS'] = 'original-after-draw-generation-relics' }
 if ($OriginalUnitResourceRelics) { $environment['MT2_PROBE_MODIFIERS'] = 'original-unit-resource-relics' }
 if ($OriginalOpeningDrawRelics) { $environment['MT2_PROBE_MODIFIERS'] = 'original-opening-draw-relics' }
+if ($OriginalTurnDrawRelics) { $environment['MT2_PROBE_MODIFIERS'] = 'original-turn-draw-relics' }
 if ($OriginalUnitUpgradeTriggerRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-unit-upgrade-trigger-relic' }
 if ($TypedDraw) {
     $environment['MT2_PROBE_MODIFIERS'] = 'typed-draw'
@@ -1401,6 +1404,11 @@ if ($CampaignPostBattleCalibration) {
             throw 'Post-battle original-owner matrix or recorded state restoration is incomplete.'
         }
     } finally { $postBattleDocument.Dispose() }
+}
+if ($OriginalTurnDrawRelics -and ($trace.ModifierScenario -ne 'original-turn-draw-relics' -or
+    @($trace.RelicTurnDraw).Count -lt 8 -or
+    -not (Select-String -LiteralPath $unityLog -Pattern 'ORIGINAL-TURN-DRAW-PREPARED native full/partial/zero' -Quiet))) {
+    throw 'Original turn draw owners lack native full-health controls and post-opening consumer.'
 }
 if ($OriginalOpeningDrawRelics -and ($trace.ModifierScenario -ne 'original-opening-draw-relics' -or
     @($trace.RelicOpeningDraw).Count -lt 5 -or

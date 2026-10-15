@@ -591,6 +591,12 @@ if (args.Length == 2 && args[0] == "--original-opening-draw-only")
     OriginalOpeningDrawChecks.Native(fixture.RootElement);
     return;
 }
+if (args.Length == 2 && args[0] == "--original-turn-draw-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    OriginalTurnDrawChecks.Native(fixture.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--original-combat-trigger-relics-only")
 {
     using var document = ModelJson.ReadFixture(args[1]);
