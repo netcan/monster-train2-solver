@@ -1,5 +1,14 @@
 # Native regression fixtures
 
+Unit-trigger resource extension (2026-10-15): 351 archives (316 battles and 35
+calibrations), 125/224 original owners (55.80%): 112 battle owners plus thirteen
+campaign-interface owners. GoldOnDeath, EmberOnTombDeath and Frenzystesia match
+505 actual manager contexts: positive callbacks 2/1/1, six enemy-death controls,
+one ordinary friendly death, one repeated-equipment rejection and four positive
+owner ablations. Native effect/manager notifications record the first-equipment
+condition twice in order. The 43-stage/22-play/five-EndTurn battle wins with Pyre
+80 and zero counters; independent policy replay passes. See validation provenance.
+
 End-battle resource extension (2026-10-15): 350 archives (315 battles and 35
 calibrations), 122/224 original owners (54.46%): 109 battle owners plus thirteen
 campaign-interface owners. Original gold and hoard owners pass 756 actual

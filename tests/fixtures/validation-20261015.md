@@ -1,5 +1,48 @@
 # Inventory validation, 2026-10-15
 
+## Unit-trigger gold and Ember extension
+
+Current inventory: 351 archives (316 battles, 35 calibrations), 125/224 original
+owners (55.80%): 112 battle owners and thirteen campaign-interface owners.
+
+Native source:
+`.probe-runs/full-battle-units-spells-and-junk-20261015-205942-7bde684e/full-battle.mt2f`.
+GoldOnDeath, EmberOnTombDeath and Frenzystesia are unchanged original owners.
+The fixture records 505 complete actual ApplyCharacterTriggerRelicEffect calls.
+Positive gold/Tomb-Ember/equipment-Ember callbacks are 2/1/1, with six enemy-death
+controls, one non-Tomb friendly death, one same-turn second-equipment rejection
+and four positive owner ablations. Authored carriers include strong and fragile
+Stewards, an ordinary control unit, two +1 attack equipment cards and two
+sacrifice spells. Only the Tomb death gains +5 Ember; both friendly sacrifices
+gain +5 reward gold. First equipment gains +1 Ember; subsequent equipment skips.
+All context, resource, condition, actor and RNG state matches. Sixteen parallel
+callbacks preserve the parent; original preview restrictions suppress resources.
+
+The first diagnostic capture `20261015-205327-e7eb9646` found a first-equipment
+condition mismatch: the second notification reused the initial condition rather
+than the first notification's updated count. Its old native mismatch excludes it
+from acceptance despite passing updated offline actions/turns. The subsequent
+`20261015-205647-818c072b` capture has zero counters but lacks a non-Tomb friendly
+death; it is also excluded. The accepted capture adds an actual ordinary-unit
+sacrifice control and passes with all four native error counters zero.
+
+The native battle wins with 43 stages, 22 plays, five EndTurns, Pyre 80 and
+unchanged Steam files in 102.19 seconds. Independent root/mid-battle/16-branch policy
+replay passes. The schema-103 archive is 36552 bytes, 6064 nodes, source length 0,
+SHA-256 `a17032190ce769a0bdd5cc6160cbec20e7f780e94a97242ea8e9c59fff7b2382`.
+Seven affected archives pass general/focused gates and bounded search, with
+three workers and all terminal exits zero:
+`.probe-runs/model-checks-20261015-210219-4ca083e3/summary.json`.
+The set covers new unit resources, unit upgrade triggers, equipment growth,
+health-choice triggers, lifecycle callbacks, raw resources and after-draw
+generation. This is not a complete 351-archive rerun.
+
+| Frozen runtime binary | SHA-256 |
+| --- | --- |
+| Model | `1ECAA12BEEF665001E9D1DD9D18C87D530EB530B81751DFE6CB75D8F20187452` |
+| FixtureArchive | `03266B99CFD667B05EA4A42BEFDA4FDD491565E4AA1B0584F31A5F508C3D92A9` |
+| Checker | `7F6E1014467640D43B4621A0E5300E057E5F8C6E0B4E8A469DF1717DB54FE787` |
+
 ## End-battle gold and hoard extension
 
 Current inventory: 350 archives (315 battles, 35 calibrations), 122/224 original
