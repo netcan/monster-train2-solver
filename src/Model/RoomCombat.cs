@@ -379,6 +379,7 @@ namespace MonsterTrain2Poju.Model
             internal int RoomIndex { get; }
             internal CombatUnit Unit { get; set; }
             internal string Kind { get; }
+            internal bool IsDeathRoomFocus => Kind == DeathRoomFocusPhase;
             internal int ParamInt { get; }
             internal int ParamInt2 { get; }
             internal string? ParamString { get; }

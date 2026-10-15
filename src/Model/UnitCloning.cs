@@ -291,8 +291,8 @@ namespace MonsterTrain2Poju.Model
             RoomOutcome outcome = input.Outcome; string? error = null;
             bool okay = RoomCombatModel.DrainCharacterQueue(queue, callback =>
                 {
-                    dispatched.Add(UnitCloneCallback.From(callback));
-                    if (input.UnitId == 0 && state.Context?.QueryFrame?.SelectedRoomIndex != null)
+                    if (!callback.IsDeathRoomFocus) dispatched.Add(UnitCloneCallback.From(callback));
+                    if (!callback.IsDeathRoomFocus && input.UnitId == 0 && state.Context?.QueryFrame?.SelectedRoomIndex != null)
                         state = CardSpellModel.WithContext(state, state.Context.WithQueryFrame(
                             state.Context.QueryFrame.With(selectedRoomIndex: callback.RoomIndex)));
                     return Accept(RoomCombatModel.ApplyQueuedCharacterTrigger(

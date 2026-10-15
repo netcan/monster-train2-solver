@@ -275,7 +275,7 @@ namespace MonsterTrain2Poju.Model
                 }
                 bool okay = RoomCombatModel.DrainCharacterQueue(queue, callback =>
                 {
-                    dispatched.Add(callback);
+                    if (!callback.IsDeathRoomFocus) dispatched.Add(callback);
                     RoomCombatResult fired = RoomCombatModel.ApplyQueuedCharacterTrigger(state.Rooms[callback.RoomIndex], callback, queue.Add);
                     return Accept(fired);
                 }, callback => Accept(RoomCombatModel.SettleQueuedSpawnerAndCenter(state.Rooms[callback.RoomIndex], callback.Unit)),

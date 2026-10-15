@@ -58,6 +58,11 @@ the requested room. Pure checks cover cross-floor deaths, missing current points
 legacy unknown frames, preview counters and immutable parallel branches. The
 four fresh equipment/multi-summon death archives pass strict full replay,
 including the equipment damage phases that exposed this discrepancy.
+Death-focus completion is internal queue bookkeeping, so Bump and clone dispatch
+traces now record only the actual native callbacks rather than inventing another
+FireTriggers event. The correction passes all 19/20/22 ordinary/companion/outer
+Boss Bump cases, 13 clone operations and 14 paid-copy cases with exact states,
+callback order and 32 branches; native comparison rules are unchanged.
 
 Fresh-spawner capture now distinguishes real card creation from the temporary
 CardState.Setup calls used to describe definitions. This prevents recursive
