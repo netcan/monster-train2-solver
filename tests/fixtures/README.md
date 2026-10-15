@@ -1,6 +1,16 @@
 # Native regression fixtures
 
-Forge conservation extension (2026-10-15): 339 archives (308 battles and 31
+Campaign consumer extension (2026-10-15): 340 archives (308 battles and 32
+calibrations), 98/224 original owners (43.75%): 92 battle owners plus six
+campaign interface owners. `campaign-relic-calibration.mt2f` has 80 slot queries,
+108 merchant prices, 66 actual reward displays/grants and six hoard acquisition/
+removal transitions. Original definitions, eligible/control paths, recorded
+balance/deck/relic/hoard/frame/RNG restoration and consumer model comparisons
+pass. This is separate campaign evidence, not whole-battle integration of these
+classes. The isolated host battle wins with zero counters and unchanged Steam
+files. Four affected archives pass regression; see the validation record.
+
+Previous forge conservation checkpoint (2026-10-15): 339 archives (308 battles and 31
 calibrations), 92/224 original owners (41.07%). The unchanged `SteelStockpile`
 passes four complete `PlayerManager.OnCombatEnd` contexts at 0/5/10/17 points,
 an actual removed-owner reset, and natural post-victory conservation 17→10.

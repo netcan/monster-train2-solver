@@ -1,8 +1,52 @@
 # Inventory validation, 2026-10-15
 
+## Campaign consumer extension
+
+Current inventory: 340 archives (308 battles, 32 calibrations), 98/224 original
+owners (43.75%): 92 battle owners and six campaign consumer owners. Four
+affected archives pass with three workers, all exit codes zero and no reruns:
+`.probe-runs/model-checks-20261015-182410-a2e07d5d/summary.json`.
+The selection is the new campaign calibration, old gold reward calibration,
+original forge conservation and dragon-hoard battle; this is not a full suite.
+
+Native source:
+`.probe-runs/full-battle-steward-once-20261015-182118-3767d576/campaign-relic-calibration.mt2f`.
+Its host battle wins with zero four counters and unchanged original Steam
+files. All six original owners are acquired and removed through SaveManager;
+their definition IDs, effect classes, parameters, None subtypes and lack of
+conditions are independently checked. The actual consumer observations are:
+
+- 80 `BalanceData.GetUpgradeSlots` queries: baseline, Spell only, both owners,
+  Monster only, removal; Monster/Spell/Equipment/Blight and modifiers -5/0/1/20.
+- 108 `MerchantGoodState.GetCost` prices: original -0.25 all-cost modifier,
+  purchase schedules, two reward classes, 0/10/50% merchant discounts, Purge
+  exclusion and final rounding, with baseline/removal controls.
+- 66 actual `GoldRewardData.RewardValue` and `GrantReward` observations:
+  original +50% trial modifier, trial flag on/off, positive/nonpositive amounts,
+  baseline/removal, and exact displayed/granted gold after reward rounding.
+- Six real hoard-cap acquisition/removal transitions: both original +3/+2
+  owners at starting caps 0/max-1/max, upper bounds and amount truncation.
+
+Recorded relic IDs, gold, cap, hoard amount, deck IDs, frame and RNG are equal
+before/after. Actual reward grants execute native run-stat side effects within
+the isolated save; complete save restoration is not claimed. Campaign consumer
+evidence is distinguished from full-battle effect integration; these classes
+are not silently permitted in battle branch validation.
+
+The direct binary archive is 3,514 bytes, 507 unique nodes, source length zero,
+SHA-256 `e0a9b3e9e51ff2d6a4e6ddbb24f8ab871cc304b9e5c177b063d03e3fdf210378`.
+The refreshed 224-owner inventory separates 92 accepted-native-battle, six
+accepted-native-campaign and 126 pending entries.
+
+| Frozen runtime binary | SHA-256 |
+| --- | --- |
+| Model | `4781018AF50FB211D0012A6F9B5D0E4906E3735B518F55CF351848DA709AE279` |
+| FixtureArchive | `E5248285D936F1C42E251D9FDB09F73EC3E35F692E1C3065039EEBA22A053C2C` |
+| Checker | `68D351D8D963BA2611A45BCA566F7543B1D08769EFC978D10C7BF4DB0896E1FD` |
+
 ## Forge conservation extension
 
-Current inventory: 339 archives (308 battles, 31 calibrations), 92/224 original
+Previous inventory: 339 archives (308 battles, 31 calibrations), 92/224 original
 owners (41.07%). Five affected archives pass with three workers and no reruns:
 `.probe-runs/model-checks-20261015-181708-5484b7be/summary.json`. This is not a
 complete 339-archive rerun.

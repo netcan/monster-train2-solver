@@ -7,10 +7,14 @@ $ErrorActionPreference = 'Stop'
 $workspace = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 Add-Type -Path (Join-Path $workspace 'src/FixtureArchive/bin/Release/net8.0/FixtureArchive.dll')
 $accepted = @{}
+$evidenceKind = 'accepted-native-battle'
 foreach ($line in Get-Content (Join-Path $workspace 'tests/fixtures/relic-coverage.md')) {
+    if ($line -match '^## ') {
+        $evidenceKind = if ($line -eq '## Campaign interface evidence') { 'accepted-native-campaign' } else { 'accepted-native-battle' }
+    }
     if ($line -match '^\| `(?<key>[^`]+)` \| `(?<id>[0-9a-f-]{36})` \|') {
         if ($accepted.ContainsKey($Matches.id)) { throw "Duplicate accepted owner $($Matches.id)" }
-        $accepted[$Matches.id] = $Matches.key
+        $accepted[$Matches.id] = [pscustomobject]@{ Key = $Matches.key; Kind = $evidenceKind }
     }
 }
 $document = [MonsterTrain2Poju.Fixtures.FixtureDocument]::Read((Resolve-Path -LiteralPath $Catalog).Path)
@@ -27,7 +31,7 @@ try {
         throw 'Original collectible catalog must contain exactly 224 unique owners.'
     }
     foreach ($id in $accepted.Keys) {
-        if (@($relics | Where-Object { $_.Id -eq $id -and $_.AssetKey -ceq $accepted[$id] }).Count -ne 1) {
+        if (@($relics | Where-Object { $_.Id -eq $id -and $_.AssetKey -ceq $accepted[$id].Key }).Count -ne 1) {
             throw "Accepted owner identity is absent from the original catalog: $id"
         }
     }
@@ -35,7 +39,7 @@ try {
         [pscustomobject][ordered]@{
             AssetKey = $relic.AssetKey
             DataId = $relic.Id
-            Evidence = if ($accepted.ContainsKey($relic.Id)) { 'accepted-native-battle' } else { 'pending' }
+            Evidence = if ($accepted.ContainsKey($relic.Id)) { $accepted[$relic.Id].Kind } else { 'pending' }
             Effects = $relic.Effects.ClassName -join ','
             MissingNativeSource = @($relic.Effects.ClassName | Where-Object {
                 -not (Test-Path -LiteralPath (Join-Path $workspace ".game-reference/native-source/$_.cs"))
@@ -48,7 +52,9 @@ try {
     }
     [pscustomobject]@{
         CatalogEntries = $rows.Count
-        AcceptedNativeBattle = $accepted.Count
+        AcceptedOriginal = $accepted.Count
+        AcceptedNativeBattle = @($accepted.Values | Where-Object Kind -eq 'accepted-native-battle').Count
+        AcceptedNativeCampaign = @($accepted.Values | Where-Object Kind -eq 'accepted-native-campaign').Count
         Remaining = @($rows | Where-Object Evidence -eq 'pending').Count
         MissingNativeSource = @($rows | Where-Object MissingNativeSource -ne '').Count
         OutputPath = $OutputPath

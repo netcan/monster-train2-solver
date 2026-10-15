@@ -1,10 +1,17 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-15): 339 binary archives, including 308
-full battles and 31 component calibrations. Unchanged original relic evidence
-covers 92/224 catalog entries (41.07%); see
+Current accepted inventory (2026-10-15): 340 binary archives, including 308
+full battles and 32 component calibrations. Unchanged original relic evidence
+covers 98/224 catalog entries (43.75%): 92 battle owners and six campaign
+interface owners; see
 [the owner evidence table](tests/fixtures/relic-coverage.md). Whole-battle
 coverage and the optimal solver remain in progress.
+
+The campaign calibration validates original Spell/Monster upgrade-slot bonuses,
+all-cost merchant discount, trial reward gold and both hoard-cap acquisition/
+removal owners through native consumer APIs. Its 260 observations include
+actual reward grants, baseline/removed controls, bounds and discount exclusions.
+Campaign interfaces remain separate from battle branch integration.
 
 `SteelStockpile` now has explicit post-combat forge conservation. Four original
 cap queries are exercised through `PlayerManager.OnCombatEnd`, an owner-removal

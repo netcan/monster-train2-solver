@@ -1,7 +1,8 @@
 # Original relic coverage evidence
 
-As of 2026-10-15, **92 distinct original collectable relics / 224 catalog entries
-(41.07%)** have accepted native full-battle evidence. This counts unchanged relic
+As of 2026-10-15, **98 distinct original collectable relics / 224 catalog entries
+(43.75%)** have accepted native evidence: 92 have full-battle effect evidence,
+and six have their campaign consumer interfaces validated below. This counts unchanged relic
 definitions whose effects actually ran, including their original filters and
 conditions. Test cards, unit triggers and carrier subtypes may be authored to
 exercise those effects; the claim covers the recorded paths, not every possible
@@ -16,11 +17,11 @@ Rage and Frostbite consumers. All four catalog owners of
 families and other effects on the remaining owners still require modeling and
 native proof.
 
-The source archives cited below report game `2.2.1`, module MVID
+The battle archives cited below report game `2.2.1`, module MVID
 `8fb07b96-f4db-4d2b-884d-c00536d6ccf4`, `NativeWon=true`, and zero
 `CaptureFailures`, `Mismatches`, `Unsupported` and `Pending`. Archive provenance,
 byte lengths and SHA-256 hashes are recorded in [manifest.tsv](manifest.tsv).
-The accepted inventory is 339 archives: 308 battles and 31 component
+The accepted inventory is 340 archives: 308 battles and 32 component
 calibrations, with no JSON companions. The newest battle proves original
 `SteelStockpile` post-victory forge conservation; five affected archives pass.
 The previous two battles add original
@@ -47,7 +48,7 @@ separate `CorruptionAdded` callback battles; none adds a relic owner. The origin
 effects each add one Corrupt Poison stack to an enemy on corruption increase.
 The Mageblade status/cache/attack path has an accepted
 native battle archive, but Mageblade is not a collectable relic and is not
-included in the 92/224 owner count. The `AllUnitsMultistrike` archive
+included in the 98/224 owner count. The `AllUnitsMultistrike` archive
 validates a mutator, not a collectible relic, and is also excluded from that
 owner count.
 
@@ -146,7 +147,28 @@ owner count.
 | `CheaperBlightScourge` | `a19cac7c-b2e0-42bd-bc1e-d180e17a1c15` | [original card-type cost][cardTypeCost] | Its unchanged ordered Blight/Junk -99 effects match ten native modifier calls, including repeated application, reset, a nonmatching card and enemy-generated Junk. Original Blight and Junk play for zero Ember and self-purge; full battle and search replay match. |
 | `ConserveEmber` | `3e200d1f-7ba9-4a6e-a09d-5625f25b01ac` | [original Ember conservation][conserveEmber] | Its unchanged all-energy effect conserves positive balances on all seven EndTurns. Initial banking produces 4 → 7 → 10 Ember, followed by 21 paid plays and a winning terminal balance of 1 Ember with Pyre health 58. Seven exact native queries, complete policy replay and bounded serial/parallel search match. |
 
-Record indices above are zero-based. Full-battle acceptance and independent
+## Campaign interface evidence
+
+These six unchanged original owners are validated by their actual native
+campaign consumers, with baseline and removed-owner controls. This table is
+separate from the 92 battle owners. It does not claim whole-battle integration
+for these effect classes. The capture's recorded relic IDs, gold, hoard cap and
+amount, deck IDs, frame and RNG match before/after; reward grants still execute
+their native run-stat side effects in the isolated save. Catalog enumeration
+and inert presence do not count. Evidence: [campaign calibration][campaign].
+
+| Original owner | Data ID | Native evidence | Accepted path |
+| --- | --- | --- | --- |
+| `ExtraSpellUpgrades` | `60a7f580-0788-42f2-8896-cb8d22e849a5` | [campaign calibration][campaign] | +1 Spell upgrade slot through `BalanceData.GetUpgradeSlots`, type controls, lower/upper clamps and spell-only/both/removed phases. |
+| `ExtraUnitUpgrades` | `3203c2d3-58f3-4f38-888e-886d8faae758` | [campaign calibration][campaign] | +1 Monster slot with original None subtype; unit-only/both/removed phases. The combined 80-query matrix includes Spell, Monster, Equipment and Blight with four card modifiers. |
+| `CheaperMerchants` | `ffcb6931-e45e-4e27-bacf-4c649779c2be` | [campaign calibration][campaign] | Original -0.25 additional cost multiplier; 108 actual `MerchantGoodState.GetCost` queries cover purchase indices, rounding, merchant discounts, Purge discount exclusion, baseline and removal. |
+| `ApplyUnitUpgradeWhenRich` | `07bdefdb-03b8-4159-b74b-be85f68c4c56` | [campaign calibration][campaign] | Actual effect is +50% trial gold, despite asset name. All 66 `GoldRewardData.RewardValue` displays and `GrantReward` balance deltas match optional trial gating, minimum/rounding, nonpositive rewards, baseline and removal. |
+| `ModifyDragonsHoardCap` | `00a8f443-cdea-437a-98bf-0ebe0ead00b0` | [campaign calibration][campaign] | Original +3 on actual acquisition; removal subtracts 3 and truncates amount to cap. Starting caps 0/max-1/max exercise both clamps and capped-acquisition loss on removal. |
+| `ModifyDragonsHoardCap_DH` | `c3f91e0e-629f-4d3f-b422-ce1653147293` | [campaign calibration][campaign] | Original +2 acquisition/removal through SaveManager, including amount truncation and upper cap; three independent starting-cap cases. |
+
+## Recorded battle sizes
+
+Record indices in the battle table are zero-based. Full-battle acceptance and independent
 effect checks are documented in [README.md](README.md); the source
 archives contain these observed battle sizes:
 
@@ -451,3 +473,4 @@ dotnet run --project src/ModelChecks -c Release -- --original-card-attack-only t
 [healingPower]: full-battle-original-healing-power-relic.mt2f
 [firstCombatEnergy]: full-battle-original-start-combat-energy-relic.mt2f
 [forgeConservation]: full-battle-original-forge-conservation-relic.mt2f
+[campaign]: campaign-relic-calibration.mt2f

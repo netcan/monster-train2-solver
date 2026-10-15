@@ -188,6 +188,7 @@ param(
     [switch] $CharacterRemoval,
     [switch] $PreviewReferences,
     [switch] $RelicCatalog,
+    [switch] $CampaignRelicCalibration,
     [switch] $FullRuleCatalog,
     [switch] $UpgradeMasks,
     [switch] $ModifierOverflow,
@@ -543,6 +544,7 @@ $environment = @{
     MT2_PROBE_ENCHANTER_REMOVAL_TRACE = $(if ($TraceEnchanterRemoval) { '1' } else { '0' })
     MT2_PROBE_PREVIEW_REFERENCES = $(if ($PreviewReferences) { '1' } else { '0' })
     MT2_PROBE_RELIC_CATALOG = $(if ($RelicCatalog) { '1' } else { '0' })
+    MT2_PROBE_CAMPAIGN_RELICS = $(if ($CampaignRelicCalibration) { '1' } else { '0' })
     MT2_PROBE_FULL_RULE_CATALOG = $(if ($FullRuleCatalog) { '1' } else { '0' })
     MT2_PROBE_UPGRADE_MASKS = $(if ($UpgradeMasks) { '1' } else { '0' })
     MT2_PROBE_MODIFIER_OVERFLOW = $(if ($ModifierOverflow) { '1' } else { '0' })
@@ -1284,6 +1286,24 @@ if ($OriginalForgeConservationRelic) {
         $naturalForge[0].After.QueryFrame.ForgePoints -ne 10 -or $naturalForge[0].Notifications -ne 1) {
         throw 'Original SteelStockpile lacks its natural battle-end 17-to-10 conservation witness.'
     }
+}
+if ($CampaignRelicCalibration) {
+    Add-Type -Path (Join-Path $workspace 'src\FixtureArchive\bin\Release\net8.0\FixtureArchive.dll')
+    $campaignPath = Join-Path $profile 'campaign-relic-calibration.mt2f'
+    if (-not (Test-Path -LiteralPath $campaignPath)) { throw 'Missing current campaign relic calibration.' }
+    $campaignDocument = [MonsterTrain2Poju.Fixtures.FixtureDocument]::Read($campaignPath)
+    try {
+        $campaignRoot = $campaignDocument.RootElement
+        if ($campaignRoot.GetProperty('Schema').GetInt32() -ne 1 -or
+            $campaignRoot.GetProperty('Owners').GetArrayLength() -ne 6 -or
+            -not $campaignRoot.GetProperty('Before').ContentEquals($campaignRoot.GetProperty('After')) -or
+            $campaignRoot.GetProperty('Slots').GetArrayLength() -ne 80 -or
+            $campaignRoot.GetProperty('Merchant').GetArrayLength() -ne 108 -or
+            $campaignRoot.GetProperty('Trial').GetArrayLength() -ne 66 -or
+            $campaignRoot.GetProperty('Hoard').GetArrayLength() -ne 6) {
+            throw 'Campaign original-owner matrix or recorded state restoration is incomplete.'
+        }
+    } finally { $campaignDocument.Dispose() }
 }
 if ($OriginalCardAttackRelic) {
     $attackRecords = @($trace.RelicCardModifiers | Where-Object { $_.Before.DataId -in @('fc119000-0000-4000-8000-000000000201', 'fc119000-0000-4000-8000-000000000202') })
