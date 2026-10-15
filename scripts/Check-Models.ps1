@@ -38,6 +38,7 @@ $fixtureNames = @('full-battle-steward-once.mt2f', 'full-battle-no-cards.mt2f', 
     'full-battle-original-room-entry-status-relics.mt2f',
     'full-battle-original-moon-phase-energy-relic.mt2f',
     'full-battle-original-card-attack-relic.mt2f',
+    'full-battle-original-upgrade-count-relics.mt2f',
     'full-battle-original-unit-upgrade-trigger-relic.mt2f',
     'full-battle-relic-card-status-upgrades.mt2f', 'full-battle-relic-card-negative-unhealed.mt2f',
     'full-battle-generation-relic-card-status-upgrades.mt2f',
@@ -718,6 +719,12 @@ foreach ($fixturePath in @($fixtures | Where-Object { (Split-Path -Leaf $_) -in 
     foreach ($mode in @('--original-mix-relic-only', '--battle-search-only')) {
         dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- $mode $fixturePath
         if ($LASTEXITCODE -ne 0) { throw "Original Mix relic checks failed ($mode): $fixturePath" }
+    }
+}
+foreach ($fixturePath in @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 'full-battle-original-upgrade-count-relics.mt2f' })) {
+    foreach ($mode in @('--original-upgrade-count-only', '--battle-search-only')) {
+        dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- $mode $fixturePath
+        if ($LASTEXITCODE -ne 0) { throw "Original upgrade-count relic checks failed ($mode): $fixturePath" }
     }
 }
 foreach ($fixturePath in @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 'full-battle-original-card-type-cost-relic.mt2f' })) {

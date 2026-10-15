@@ -1,7 +1,7 @@
 # Original relic coverage evidence
 
-As of 2026-10-15, **87 distinct original collectable relics / 224 catalog entries
-(38.84%)** have accepted native full-battle evidence. This counts unchanged relic
+As of 2026-10-15, **89 distinct original collectable relics / 224 catalog entries
+(39.73%)** have accepted native full-battle evidence. This counts unchanged relic
 definitions whose effects actually ran, including their original filters and
 conditions. Test cards, unit triggers and carrier subtypes may be authored to
 exercise those effects; the claim covers the recorded paths, not every possible
@@ -20,11 +20,12 @@ The source archives cited below report game `2.2.1`, module MVID
 `8fb07b96-f4db-4d2b-884d-c00536d6ccf4`, `NativeWon=true`, and zero
 `CaptureFailures`, `Mismatches`, `Unsupported` and `Pending`. Archive provenance,
 byte lengths and SHA-256 hashes are recorded in [manifest.tsv](manifest.tsv).
-The accepted inventory is 335 archives: 304 battles and 31 component
-calibrations, with no JSON companions. Unchanged `ConserveEmber` adds the latest
-original-owner witness; the two cost-filter ordering battles add combination
-coverage without adding another owner. The complete 335-archive general/focused
-regression passes; [validation provenance](validation-20261015.md) distinguishes
+The accepted inventory is 336 archives: 305 battles and 31 component
+calibrations, with no JSON companions. The latest battle adds both original
+upgrade-count stat relics, including the spell owner's original excluded pool.
+The complete previous 335-archive general/focused regression passes; this
+extension has a focused regression over its new battle and six affected older
+archives. [Validation provenance](validation-20261015.md) distinguishes
 the failed original shard and its corrected-checker rerun. An independent-chain
 preflight of 97 legacy archives passed
 67 and identified 30 old captures with card plays on disabled floors; all 30 now
@@ -43,12 +44,14 @@ separate `CorruptionAdded` callback battles; none adds a relic owner. The origin
 effects each add one Corrupt Poison stack to an enemy on corruption increase.
 The Mageblade status/cache/attack path has an accepted
 native battle archive, but Mageblade is not a collectable relic and is not
-included in the 87/224 owner count. The `AllUnitsMultistrike` archive
+included in the 89/224 owner count. The `AllUnitsMultistrike` archive
 validates a mutator, not a collectible relic, and is also excluded from that
 owner count.
 
 | AssetKey | DataId | Accepted archive | Actual effect witness |
 | --- | --- | --- | --- |
+| `GiveSpellStatsForUpgrades_DH` | `4200307a-616d-4cbb-a54e-527c5dc0f492` | [upgrade-count relics][upgradeCounts] | Original +3 damage per permanent upgrade with a visible icon: 0/1/2 yield 0/3/6. Hidden, no-icon and temporary upgrades are excluded; a visible region upgrade counts. Original `DevilishDetails` exclusion rejects the upgraded spell. The damage spell is played and redrawn with its bonus intact. |
+| `GiveUnitStatsForUpgrades_DH` | `fc1f6104-b3c1-4714-ac0f-9c76a6fb1a77` | [upgrade-count relics][upgradeCounts] | Ordered original health then attack effects give 0/3/6 to both temporary offsets for 0/1/2 visible permanent upgrades. A real Train Steward summons with +6 attack/+6 max health. All 44 manager refreshes match, including reset/repeat, card-type controls and independent owner ablations. |
 | `ExtraSpellCastTrigger` | `410ba540-7c4f-4dc5-a84f-b1d8af508891` | [combined trigger relics][counts] | `IncantTriggers`: 65 player `CardSpellPlayed` queries have `FireCount=2`; five enemy queries remain 1. Full callbacks and the 21-play policy match. |
 | `ExtraSpawnTrigger` | `9e0deb69-6196-44a6-8220-85bd0df25f77` | [combined trigger relics][counts] | 26 player `OnSpawn` queries have `FireCount=2`; five enemy queries remain 1. The battle contains new paid unit births. |
 | `ExtraDeathTrigger` | `a5d67620-a9ec-4257-91b5-305336e11987` | [combined trigger relics][counts] | 26 player `OnDeath` queries have `FireCount=2`; five enemy queries remain 1. Final `MonstersDeadThisBattle=5` confirms actual deaths. |
@@ -438,3 +441,4 @@ dotnet run --project src/ModelChecks -c Release -- --original-card-attack-only t
 [progressMix]: full-battle-original-progress-pacemaker-mix.mt2f
 [cardTypeCost]: full-battle-original-card-type-cost-relic.mt2f
 [conserveEmber]: full-battle-original-conserve-ember.mt2f
+[upgradeCounts]: full-battle-original-upgrade-count-relics.mt2f

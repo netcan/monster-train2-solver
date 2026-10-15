@@ -237,6 +237,7 @@ param(
     [switch] $OriginalRoomEntryStatusRelics,
     [switch] $OriginalMoonPhaseEnergyRelic,
     [switch] $OriginalCardAttackRelic,
+    [switch] $OriginalUpgradeCountRelics,
     [switch] $OriginalUnitUpgradeTriggerRelic,
     [switch] $TypedDraw,
     [switch] $IncantRelic,
@@ -346,6 +347,7 @@ if ($UnplayedCardEffects) { $BranchCardMasks = $true; $Policy = 'units-spells-an
 if ($OriginalRoomEntryStatusRelics) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalMoonPhaseEnergyRelic) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalCardAttackRelic) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
+if ($OriginalUpgradeCountRelics) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalUnitUpgradeTriggerRelic) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalTriggerRelicBatch -or $OriginalLifecycleRelicBatch) {
     $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $SettleDeathDissolves = $true; $SettleCardAnimations = $true
@@ -715,6 +717,7 @@ if ($UnplayedCardEffects) { $environment['MT2_PROBE_MODIFIERS'] = 'unplayed-card
 if ($OriginalRoomEntryStatusRelics) { $environment['MT2_PROBE_MODIFIERS'] = 'original-room-entry-status-relics' }
 if ($OriginalMoonPhaseEnergyRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-moon-phase-energy-relic' }
 if ($OriginalCardAttackRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-card-attack-relic' }
+if ($OriginalUpgradeCountRelics) { $environment['MT2_PROBE_MODIFIERS'] = 'original-upgrade-count-relics' }
 if ($OriginalUnitUpgradeTriggerRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-unit-upgrade-trigger-relic' }
 if ($TypedDraw) {
     $environment['MT2_PROBE_MODIFIERS'] = 'typed-draw'
@@ -1238,6 +1241,14 @@ if ($OriginalMoonPhaseEnergyRelic) {
         @($fullMoonCallbacks | Where-Object { $_.Notifications -ne 1 -or $_.After.Energy -ne [Math]::Min($_.Before.Resources.MaxEnergy, $_.Before.Energy + 1) }).Count -gt 0 -or
         @($newMoonCallbacks | Where-Object { $_.Notifications -ne 0 -or $_.After.Energy -ne $_.Before.Energy }).Count -gt 0) {
         throw 'Original moon-phase energy relic lacks the expected Full/New native callback witnesses.'
+    }
+}
+if ($OriginalUpgradeCountRelics) {
+    if ($trace.ModifierScenario -ne 'original-upgrade-count-relics' -or
+        -not (Select-String -LiteralPath $unityLog -Pattern 'ORIGINAL-UPGRADE-COUNT-RELICS-PREPARED 36 detached refreshes' -Quiet) -or
+        @($trace.RelicCardModifiers).Count -lt 38 -or @($trace.Actions).Count -lt 2 -or
+        @($trace.RelicCardModifiers | Where-Object { $_.Difference -ne $null }).Count -gt 0) {
+        throw 'Original upgrade-count relics lack native manager and played-card witnesses.'
     }
 }
 if ($OriginalCardAttackRelic) {

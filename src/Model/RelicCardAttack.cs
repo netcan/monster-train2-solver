@@ -50,7 +50,7 @@ namespace MonsterTrain2Poju.Model
                     return "Relic card-attack card-name filters are not modeled.";
                 if (effect.AttackModifier == 0 || effect.AttackMultiplier != 0 || effect.UnmodifiedAttackMultiplier != 0 ||
                     effect.MultiplyByRelicCount || effect.ExcludeChampions ||
-                    effect.ExcludeStartRelics || effect.CardFilter != null)
+                    effect.ExcludeStartRelics)
                     return "Relic card-attack multipliers, scaling and advanced filters are not modeled.";
                 if (effect.CharacterSubtypeKey.Length == 0 && effect.CardType.Length == 0)
                     return "Relic card-attack effect has no supported subtype or card-type filter.";
@@ -59,9 +59,10 @@ namespace MonsterTrain2Poju.Model
         }
 
         internal static CardInstanceState? Apply(CardInstanceState source, RelicCardAttackModifier effect,
-            out bool returned, out string? error)
+            out bool returned, out string? error, out IReadOnlyList<RelicCardFilterResult> filters)
         {
             returned = false; error = null;
+            filters = Array.Empty<RelicCardFilterResult>();
             CardMaskDescriptor? descriptor = source.MaskDescriptor;
             if (descriptor == null)
             { error = "Relic card-attack modifiers require branch-owned mask metadata."; return null; }
@@ -72,6 +73,12 @@ namespace MonsterTrain2Poju.Model
                 amount = unchecked(amount * count);
             }
             if (amount == 0) return source;
+            if (effect.CardFilter != null)
+            {
+                bool accepted = CardUpgradeMaskModel.FilterCard(effect.CardFilter, CardBranchMaskModel.Resolve(source));
+                filters = new[] { new RelicCardFilterResult(effect.CardFilter.AssetKey, accepted) };
+                if (!accepted) return source;
+            }
             bool matches = effect.CharacterSubtypeKey.Length > 0
                 ? descriptor.Definition.Subtypes.Contains(effect.CharacterSubtypeKey, StringComparer.Ordinal)
                 : descriptor.Definition.CardType == effect.CardType;

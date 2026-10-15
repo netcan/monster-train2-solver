@@ -11,9 +11,9 @@ namespace MonsterTrain2Poju.Probe
     internal static class RelicCardModifierProbe
     {
         internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_BATTLE_RELIC_UPGRADES") == "1" ||
-            OriginalRelicBatchScenario.Enabled || OriginalCardAttackRelicScenario.Enabled || OriginalCardTypeCostScenario.Enabled;
+            OriginalRelicBatchScenario.Enabled || OriginalCardAttackRelicScenario.Enabled || OriginalCardTypeCostScenario.Enabled || OriginalUpgradeCountRelicsScenario.Enabled;
         internal static bool CaptureReady => RelicCardModifierScenario.CaptureReady || OriginalRelicBatchScenario.CaptureReady ||
-            MagebladeScenario.CaptureReady || OriginalCardAttackRelicScenario.CaptureReady || OriginalCardTypeCostScenario.CaptureReady;
+            MagebladeScenario.CaptureReady || OriginalCardAttackRelicScenario.CaptureReady || OriginalCardTypeCostScenario.CaptureReady || OriginalUpgradeCountRelicsScenario.CaptureReady;
         internal static readonly List<Record> Records = new List<Record>();
         private static readonly List<Record> active = new List<Record>();
         internal sealed class Record
@@ -177,6 +177,24 @@ namespace MonsterTrain2Poju.Probe
         [HarmonyPatch(typeof(RelicEffectModifyCardAttack), nameof(RelicEffectModifyCardAttack.ApplyCardStateModifiers))]
         private static class AttackEffectPatch
         {
+            // Instrument this call site separately from AddTempUpgrade: Mono
+            // shares generic FilterCard bodies with definition-only callers.
+            private static IEnumerable<HarmonyLib.CodeInstruction> Transpiler(IEnumerable<HarmonyLib.CodeInstruction> instructions)
+            {
+                int replaced = 0;
+                foreach (var instruction in instructions)
+                {
+                    if (instruction.operand is System.Reflection.MethodInfo method &&
+                        method.DeclaringType == typeof(CardUpgradeMaskData) && method.Name == nameof(CardUpgradeMaskData.FilterCard))
+                    {
+                        instruction.opcode = System.Reflection.Emit.OpCodes.Call;
+                        instruction.operand = AccessTools.Method(typeof(RelicCardUpgradeCalibration), "Filter");
+                        replaced++;
+                    }
+                    yield return instruction;
+                }
+                if (replaced != 1) throw new InvalidOperationException("Unexpected native attack relic filter call site.");
+            }
             private static void Prefix(RelicEffectModifyCardAttack __instance, out Dispatch? __state)
             {
                 __state = null; if (active.Count == 0) return;

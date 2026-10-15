@@ -1,5 +1,17 @@
 # Native regression fixtures
 
+Original upgrade-count relics (2026-10-15): the inventory is now 336 archives
+(305 full battles and 31 calibrations), with 89/224 original collectible relic
+owners (39.73%). `full-battle-original-upgrade-count-relics.mt2f` keeps both
+original relic definitions and the spell owner's original excluded pool intact.
+Its 44 exact manager refreshes cover visible permanent upgrade counts 0/1/2,
+hidden/no-icon/temporary controls, region upgrades, reset/repeat, rejected
+`DevilishDetails` and separate owner ablations. The upgraded Train Steward and
+damage spell are played; a later spell redraw retains +6 damage. The winning
+52-stage, 20-play, six-EndTurn capture has all four error counters at zero.
+The new fixture and six affected older archives have focused general/specialized
+regression coverage; the 335-archive baseline below remains historical evidence.
+
 Legacy replay refresh (2026-10-15): all 30 recordings with disabled-floor
 policy plays have fresh native replacements. The resumed attack-trigger and
 branch-mask clone-upgrade recordings both pass their complete independent policy

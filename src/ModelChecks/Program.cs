@@ -499,6 +499,12 @@ if (args.Length == 2 && args[0] == "--original-moon-phase-energy-only")
     Console.WriteLine($"NATIVE-MOON-PHASE-FIXTURE bytes={new FileInfo(args[1]).Length} uniqueNodes={document.UniqueNodeCount}");
     return;
 }
+if (args.Length == 2 && args[0] == "--original-upgrade-count-only")
+{
+    using var document = ModelJson.ReadFixture(args[1]);
+    RelicUpgradeCountChecks.Native(document.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--original-card-attack-only")
 {
     using var document = ModelJson.ReadFixture(args[1]);

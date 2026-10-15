@@ -1,6 +1,55 @@
 # Inventory validation, 2026-10-15
 
-All 335 accepted archives pass their curated general/focused regression gates:
+## Upgrade-count relic extension
+
+The current inventory is 336 archives (305 battles and 31 calibrations), with
+89/224 original collectible relic owners (39.73%). This extension validates the
+new upgrade-count battle and six affected older archives with the current
+model/checker; the complete 335-archive baseline below used the earlier model.
+It is not a claim that all 336 archives were rerun after this extension.
+
+Native source:
+`.probe-runs/full-battle-units-spells-and-junk-20261015-174325-66c763b4/full-battle.mt2f`.
+The unchanged `GiveSpellStatsForUpgrades_DH` and `GiveUnitStatsForUpgrades_DH`
+definitions retain their original parameters and the spell owner's complete
+`DevilishDetails` exclusion mask. The isolated game wins with Pyre health 80:
+52 stages, 20 card plays, six EndTurns, 44 exact manager refreshes and zero
+`CaptureFailures`, `Mismatches`, `Unsupported` and `Pending`. The launcher checks
+that original Steam files remain unchanged.
+
+The decompiled `RelicEffectModifyCardAttack`, `RelicEffectModifyCardHealth` and
+`CardUpgradeState.ShouldShowIcon` implementations determine the rules. Permanent
+visible upgrades give +3 each; hidden/no-icon upgrades and temporary upgrades do
+not count. Visible region upgrades count here, unlike the separate upgrade-mask
+counter. Counts 0/1/2, nonmatching card types, native excluded-pool rejection,
+reset/repeat and individual owner ablations pass. The upgraded original Train
+Steward and damage spell are played, with a later spell redraw retaining +6.
+Cardless source-card scaling has pure boundary checks rather than a native
+cardless witness in this capture.
+
+Only the initial two witness plays are marked as scenario preparation. All
+remaining 18 policy plays and six EndTurns run as one independent chain, with
+a second mid-battle root and 16 immutable branches. Every native manager call
+compares complete card state, dispatch/filter order, relic state and statistics.
+The standard selected-fixture gates also exercise bounded serial/parallel search.
+
+Curated archive `full-battle-original-upgrade-count-relics.mt2f`: 33,297 bytes,
+5,417 unique nodes, direct-binary source length zero, SHA-256
+`a601b943b86b373aa03c7e8a50b28ae3915684dc82a42bf37f3302285d11e7ec`.
+All 336 archive lengths and hashes match the manifest; the owner table has 89
+distinct entries. Regression evidence is
+`.probe-runs/model-checks-20261015-174540-cec0ed4d/summary.json` (seven selected
+fixtures, three workers).
+
+| Runtime binary | SHA-256 |
+| --- | --- |
+| Model | `B97CCAE8E43F6AA5A34B80B098364F0400E5A363388476BA6AC6185E821678C1` |
+| FixtureArchive | `9C875F79538C33A30367EA1E6A29694E868460FC109FE9341A72D6AD45AB3168` |
+| Checker | `11E302F2FCD76A0C16BBC9212062B7689644753092D78AA674A654B211C02410` |
+
+## Previous complete 335-archive baseline
+
+All 335 baseline archives pass their curated general/focused regression gates:
 304 full battles and 31 component calibrations. All 30 historical recordings
 that played on disabled floors have fresh native replacements, preserving
 their original scenarios and capture flags. Each replacement has fresh decision

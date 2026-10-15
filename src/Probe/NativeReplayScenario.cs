@@ -261,6 +261,8 @@ namespace MonsterTrain2Poju.Probe
                         OriginalCardAttackRelicScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalCardTypeCostScenario.Enabled && !OriginalCardTypeCostScenario.Acquired)
                         OriginalCardTypeCostScenario.AcquireBeforeBattle(managers!, log);
+                    if (fullBattle && OriginalUpgradeCountRelicsScenario.Enabled && !OriginalUpgradeCountRelicsScenario.Acquired)
+                        OriginalUpgradeCountRelicsScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalConserveEmberScenario.Enabled && !OriginalConserveEmberScenario.Acquired)
                         OriginalConserveEmberScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && ChooseDiscardScenario.OriginalSmeltRelicMode && !ChooseDiscardScenario.RelicAcquired)
@@ -490,6 +492,12 @@ namespace MonsterTrain2Poju.Probe
             if (fullBattle && !numericModifiersPrepared && OriginalCardTypeCostScenario.Enabled)
             {
                 OriginalCardTypeCostScenario.Prepare(managers, log);
+                numericModifiersPrepared = true;
+                return;
+            }
+            if (fullBattle && !numericModifiersPrepared && OriginalUpgradeCountRelicsScenario.Enabled)
+            {
+                OriginalUpgradeCountRelicsScenario.Prepare(managers, log);
                 numericModifiersPrepared = true;
                 return;
             }
@@ -1074,7 +1082,7 @@ namespace MonsterTrain2Poju.Probe
                 return;
             }
             if (fullBattle && RelicCardModifierProbe.Enabled && !OriginalRelicBatchScenario.Enabled &&
-                !OriginalCardAttackRelicScenario.Enabled && !OriginalCardTypeCostScenario.Enabled &&
+                !OriginalCardAttackRelicScenario.Enabled && !OriginalCardTypeCostScenario.Enabled && !OriginalUpgradeCountRelicsScenario.Enabled &&
                 !RelicCardModifierScenario.Prepared)
             {
                 RelicCardModifierScenario.Prepare(managers, log);
@@ -1239,6 +1247,7 @@ namespace MonsterTrain2Poju.Probe
                 if (OriginalCardPlayMagicPowerScenario.Enabled) pendingPlay = OriginalCardPlayMagicPowerScenario.Choose(decision) ?? pendingPlay;
                 if (OriginalCardAttackRelicScenario.Enabled) pendingPlay = OriginalCardAttackRelicScenario.Choose(decision) ?? pendingPlay;
                 if (OriginalCardTypeCostScenario.Enabled) pendingPlay = OriginalCardTypeCostScenario.Choose(decision) ?? pendingPlay;
+                if (OriginalUpgradeCountRelicsScenario.Enabled) pendingPlay = OriginalUpgradeCountRelicsScenario.Choose(decision) ?? pendingPlay;
                 if (OriginalConserveEmberScenario.Enabled) pendingPlay = OriginalConserveEmberScenario.Choose(decision);
                 if (OriginalUnitUpgradeTriggerRelicScenario.Enabled) pendingPlay = OriginalUnitUpgradeTriggerRelicScenario.Choose(decision) ?? pendingPlay;
                 if (modifierScenario == "rally-lethal") pendingPlay = LethalRallyScenario.ChooseNativeBossSummon(managers) ?? pendingPlay;
@@ -1388,6 +1397,7 @@ namespace MonsterTrain2Poju.Probe
                     CardEffectRecursionScenario.IsScenarioPrelude(action)) ||
                 (MixScenario.Enabled && MixScenario.IsScenarioPrelude(action)) ||
                 (OriginalCardTypeCostScenario.Enabled && OriginalCardTypeCostScenario.IsScenarioPrelude(action)) ||
+                (OriginalUpgradeCountRelicsScenario.Enabled && OriginalUpgradeCountRelicsScenario.IsScenarioPrelude(action)) ||
                 (ChooseDiscardScenario.Enabled && ChooseDiscardScenario.IsScenarioPrelude(action));
             PreviewSchedulingProbe.Observe("Play:" + action.CardInstanceId);
             if (MixScenario.Enabled) MixScenario.Expect(action);

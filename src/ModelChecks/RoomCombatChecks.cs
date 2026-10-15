@@ -305,6 +305,8 @@ internal static class RoomCombatChecks
             RelicCardAttackChecks.Native(fixture);
         else if (fixture.TryGetProperty("ModifierScenario", out relicScenario) && relicScenario.GetString() == "original-card-type-cost-relic")
             OriginalCardTypeCostChecks.Native(fixture);
+        else if (fixture.TryGetProperty("ModifierScenario", out relicScenario) && relicScenario.GetString() == "original-upgrade-count-relics")
+            RelicUpgradeCountChecks.Native(fixture);
         else if (fixture.TryGetProperty("ModifierScenario", out relicScenario) && relicScenario.GetString() is "card-type-cost-discount-first" or "card-type-cost-upgrade-first")
             RelicCardTypeCostOrderChecks.Native(fixture);
         else RelicCardModifierChecks.Native(fixture, requireScenarioCoverage:

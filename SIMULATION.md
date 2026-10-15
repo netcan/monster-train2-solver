@@ -1,12 +1,25 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-15): 335 binary archives, including 304
+Current accepted inventory (2026-10-15): 336 binary archives, including 305
 full battles and 31 component calibrations. Unchanged original relic evidence
-covers 87/224 catalog entries (38.84%); see
+covers 89/224 catalog entries (39.73%); see
 [the owner evidence table](tests/fixtures/relic-coverage.md). Whole-battle
 coverage and the optimal solver remain in progress.
 
-The complete 335-archive general/focused regression now passes, including all
+The new unchanged `GiveSpellStatsForUpgrades_DH` and
+`GiveUnitStatsForUpgrades_DH` battle validates +3 attack/health per visible
+permanent upgrade. Forty-four exact native manager refreshes cover counts 0/1/2,
+hidden/no-icon/temporary controls, visible region upgrades, reset/repeat, the
+original `DevilishDetails` spell exclusion and separate owner ablations. Both
+upgraded original card types are played; the redrawn spell retains its bonus.
+The extension runs the new fixture and six affected older archives through
+their general/focused gates, including complete policy replay and bounded search.
+The local decompiled implementations are under `.game-reference/native-source/`;
+`CardUpgradeState.ShouldShowIcon` determines this count, which differs from the
+upgrade-mask count that excludes region upgrades. Cardless attack scaling uses
+the source card's permanent upgrades; that boundary is covered by pure checks.
+
+The previous complete 335-archive general/focused regression passes, including all
 30 fresh legacy replacements. The audit combines 306 passed fixtures from the
 initial bulk run, two final recaptures, and all 27 fixtures from its failed shard
 rerun after a resource-checker terminal projection fix. Every accepted run uses
