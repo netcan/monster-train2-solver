@@ -184,8 +184,9 @@ internal static class OriginalResourceRelicBatchChecks
             string parent = Serialize(before);
             BattleActionResult result = BattleActionModel.PlayCard(before, action);
             Require(result.Supported, "Original resource action unsupported: " + result.Reason);
-            Equal(BattleTurnChecks.Comparable(result.State!, compareRoomEnabled: compareRoomEnabled),
-                BattleTurnChecks.Comparable(actual, compareRoomEnabled: compareRoomEnabled), "complete native resource action");
+            bool terminalAction = result.Outcome is RoomOutcome.BattleWon or RoomOutcome.PlayerDefeated;
+            Equal(BattleTurnChecks.Comparable(result.State!, terminalAction, compareRoomEnabled),
+                BattleTurnChecks.Comparable(actual, terminalAction, compareRoomEnabled), "complete native resource action");
             if (row.TryGetProperty("ActualOutcome", out var outcome)) Require(result.Outcome == (RoomOutcome)outcome.GetInt32(), "Resource action outcome differs.");
             Require(Serialize(before) == parent, "Resource card replay mutated its source.");
         }
@@ -198,8 +199,9 @@ internal static class OriginalResourceRelicBatchChecks
             BattleTurnResult result = BattleTurnModel.EndTurn(before);
             Require(result.Supported && result.Outcome == (RoomOutcome)row.GetProperty("ActualOutcome").GetInt32(),
                 "Original resource EndTurn unsupported or outcome differs: " + result.UnsupportedReason);
-            Equal(BattleTurnChecks.Comparable(result.State!, compareRoomEnabled: compareRoomEnabled),
-                BattleTurnChecks.Comparable(actual, compareRoomEnabled: compareRoomEnabled), "complete native resource EndTurn");
+            bool terminalTurn = result.Outcome is RoomOutcome.BattleWon or RoomOutcome.PlayerDefeated;
+            Equal(BattleTurnChecks.Comparable(result.State!, terminalTurn, compareRoomEnabled),
+                BattleTurnChecks.Comparable(actual, terminalTurn, compareRoomEnabled), "complete native resource EndTurn");
             Require(Serialize(before) == parent, "Resource EndTurn mutated its source.");
         }
         int pyreCombats = 0;
@@ -456,27 +458,29 @@ internal static class OriginalResourceRelicBatchChecks
         BattleTurnState terminal, bool compareRoomEnabled, string label)
     {
         string parent = Serialize(source);
-        string expected = BattleTurnChecks.Comparable(terminal, compareRoomEnabled: compareRoomEnabled);
+        string expected = BattleTurnChecks.Comparable(terminal, terminal: true, compareRoomEnabled: compareRoomEnabled);
         void Run()
         {
             BattleSimulationResult result = BattleSimulator.Resolve(source, Choose);
             Require(result.Supported && result.Outcome == RoomOutcome.BattleWon && result.Actions.Count == actions.Length && result.Turns.Count == turns.Length,
                 "Independent resource " + label + " policy did not reproduce native action/turn counts: " + result.UnsupportedReason);
-            Equal(expected, BattleTurnChecks.Comparable(result.State!, compareRoomEnabled: compareRoomEnabled),
+            Equal(expected, BattleTurnChecks.Comparable(result.State!, terminal: true, compareRoomEnabled: compareRoomEnabled),
                 "independent resource " + label + " terminal");
             for (int index = 0; index < actions.Length; index++)
             {
                 Equal(result.Actions[index].Action, actions[index].GetProperty("Action").Deserialize<PlayCardAction>()!, label + " native policy action");
-                Equal(BattleTurnChecks.Comparable(result.Actions[index].Result.State!, compareRoomEnabled: compareRoomEnabled),
+                bool terminalAction = result.Actions[index].Result.Outcome is RoomOutcome.BattleWon or RoomOutcome.PlayerDefeated;
+                Equal(BattleTurnChecks.Comparable(result.Actions[index].Result.State!, terminalAction, compareRoomEnabled),
                     BattleTurnChecks.Comparable(actions[index].GetProperty("Actual").Deserialize<BattleTurnState>()!,
-                        compareRoomEnabled: compareRoomEnabled), label + " native action decision");
+                        terminalAction, compareRoomEnabled), label + " native action decision");
             }
             for (int index = 0; index < turns.Length; index++)
             {
                 Require(result.Turns[index].Outcome == (RoomOutcome)turns[index].GetProperty("ActualOutcome").GetInt32(), label + " EndTurn outcome differs.");
-                Equal(BattleTurnChecks.Comparable(result.Turns[index].State!, compareRoomEnabled: compareRoomEnabled),
+                bool terminalTurn = result.Turns[index].Outcome is RoomOutcome.BattleWon or RoomOutcome.PlayerDefeated;
+                Equal(BattleTurnChecks.Comparable(result.Turns[index].State!, terminalTurn, compareRoomEnabled),
                     BattleTurnChecks.Comparable(turns[index].GetProperty("Actual").Deserialize<BattleTurnState>()!,
-                        compareRoomEnabled: compareRoomEnabled), label + " native EndTurn decision");
+                        terminalTurn, compareRoomEnabled), label + " native EndTurn decision");
             }
         }
         Run(); Parallel.For(0, 16, _ => Run());
