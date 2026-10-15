@@ -2814,13 +2814,34 @@ namespace MonsterTrain2Poju.Model
                     string.Equals(pair.Key, id, StringComparison.OrdinalIgnoreCase) && pair.Value.Stacks > 0);
             }
 
-            // Native relic unit-upgrade effects run after the character's own trigger effects.
+            // Native relic callbacks run after the character's own trigger effects.
+            private bool ApplyRelicUnitResource(WorkingUnit unit, string kind, int paramInt, CombatRelicState owner, RelicResourceEffect effect)
+            {
+                var result = RelicUnitResourceModel.ApplyOne(context!, owner.DataId, effect.EffectIndex,
+                    unit.Freeze(), kind, unit.Alive, paramInt, source.Deployment, source.Preview);
+                if (!result.Supported) { unsupportedReason = result.UnsupportedReason; return false; }
+                context = result.Context;
+                if (result.Events.Count == 0) return true;
+                if (effect.Type == RelicUnitResourceModel.Gold) RefreshPyreAfterGold();
+                Emit(effect.Type == RelicUnitResourceModel.Gold ? "Gold" : "GainEnergy", unit, unit, result.Value);
+                if (unsupportedReason != null) return false;
+                return true;
+            }
+
             private bool ApplyRelicUnitUpgradeTriggers(WorkingUnit unit, string kind, int paramInt, int paramInt2)
             {
                 if (context?.Relics == null) return true;
                 foreach (CombatRelicState relic in context.Relics)
-                foreach (RelicUnitUpgradeTrigger rule in relic.UnitUpgradeTriggers ?? Array.Empty<RelicUnitUpgradeTrigger>())
+                for (int effectIndex = 0; effectIndex < relic.EffectTypes.Count; effectIndex++)
                 {
+                    var resource = relic.ResourceEffects?.SingleOrDefault(effect => effect.EffectIndex == effectIndex && RelicUnitResourceModel.IsEffect(effect.Type));
+                    if (resource != null)
+                    {
+                        if (!ApplyRelicUnitResource(unit, kind, paramInt, relic, resource)) return false;
+                        continue;
+                    }
+                    var rule = relic.UnitUpgradeTriggers?.SingleOrDefault(effect => effect.EffectIndex == effectIndex);
+                    if (rule == null) continue;
                     if (rule.Trigger != kind || rule.Upgrade == null || unit.Source.IsPyre ||
                         !(unit.Source.Team == CombatTeam.Player ? rule.SourcePlayer : rule.SourceEnemy) ||
                         !rule.SubtypeIsNone && !unit.Source.Subtypes.Contains(rule.RequiredSubtype!) ||

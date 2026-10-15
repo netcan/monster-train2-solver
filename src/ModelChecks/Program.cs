@@ -579,6 +579,12 @@ if (args.Length == 2 && args[0] == "--original-after-draw-generation-only")
     OriginalAfterDrawGenerationChecks.Native(fixture.RootElement);
     return;
 }
+if (args.Length == 2 && args[0] == "--original-unit-resources-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    OriginalUnitResourceChecks.Native(fixture.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--original-combat-trigger-relics-only")
 {
     using var document = ModelJson.ReadFixture(args[1]);

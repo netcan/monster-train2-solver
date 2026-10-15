@@ -103,7 +103,16 @@ namespace MonsterTrain2Poju.Probe
             int? capacityRegistration = null;
             MutatorData? required = null;
             CardGenerationRule? generation = null;
-            if (effect is RelicEffectAddBattleCardToHand)
+            RelicUnitResourceRule? unitTrigger = null;
+            if (RelicUnitResourceModel.IsEffect(type))
+            {
+                var subtype = data.GetParamCharacterSubtype();
+                unitTrigger = new RelicUnitResourceRule(data.GetParamTrigger().ToString(), data.GetParamSourceTeam().ToString(),
+                    effect is RelicEffectEmberOnUnitTrigger && subtype != null && !subtype.IsNone ? subtype.Key : null,
+                    effect is RelicEffectGoldOnTrigger ? data.GetParamStatusEffects().Select(status => status.statusId).ToArray() : Array.Empty<string>());
+                amount = data.GetParamInt();
+            }
+            else if (effect is RelicEffectAddBattleCardToHand)
             {
                 var upgradeData = data.GetParamCardUpgradeData();
                 CardUpgradeModifier? upgrade = null;
@@ -171,7 +180,7 @@ namespace MonsterTrain2Poju.Probe
             return new RelicResourceEffect(index, type, data.GetParamInt(), data.GetParamInt2(), amount,
                 effect.CanApplyInPreviewMode, required?.GetID(), RelicCardModifierProbe.Conditions(effect), value, registration,
                 capacityValue, capacityRegistration, data.GetParamMinInt(),
-                effect is RelicEffectAddPermanentCorruptionStartOfCombat ? data.GetParamFloat() : 0, generation);
+                effect is RelicEffectAddPermanentCorruptionStartOfCombat ? data.GetParamFloat() : 0, generation, unitTrigger);
         }
 
         internal static ResourceSnapshot Capture()

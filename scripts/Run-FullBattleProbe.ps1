@@ -252,6 +252,7 @@ param(
     [switch] $OriginalEquipmentGrowthRelics,
     [switch] $OriginalHealthChoiceRelic,
     [switch] $OriginalAfterDrawGenerationRelics,
+    [switch] $OriginalUnitResourceRelics,
     [switch] $OriginalUnitUpgradeTriggerRelic,
     [switch] $TypedDraw,
     [switch] $IncantRelic,
@@ -372,6 +373,7 @@ if ($OriginalConduitRelics) { $BranchCardMasks = $true; $Policy = 'units-spells-
 if ($OriginalEquipmentGrowthRelics) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalHealthChoiceRelic) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalAfterDrawGenerationRelics) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
+if ($OriginalUnitResourceRelics) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalUnitUpgradeTriggerRelic) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalTriggerRelicBatch -or $OriginalLifecycleRelicBatch) {
     $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $SettleDeathDissolves = $true; $SettleCardAnimations = $true
@@ -756,6 +758,7 @@ if ($OriginalConduitRelics) { $environment['MT2_PROBE_MODIFIERS'] = 'original-co
 if ($OriginalEquipmentGrowthRelics) { $environment['MT2_PROBE_MODIFIERS'] = 'original-equipment-growth-relics' }
 if ($OriginalHealthChoiceRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-health-choice-relic' }
 if ($OriginalAfterDrawGenerationRelics) { $environment['MT2_PROBE_MODIFIERS'] = 'original-after-draw-generation-relics' }
+if ($OriginalUnitResourceRelics) { $environment['MT2_PROBE_MODIFIERS'] = 'original-unit-resource-relics' }
 if ($OriginalUnitUpgradeTriggerRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-unit-upgrade-trigger-relic' }
 if ($TypedDraw) {
     $environment['MT2_PROBE_MODIFIERS'] = 'typed-draw'
@@ -1395,6 +1398,11 @@ if ($CampaignPostBattleCalibration) {
             throw 'Post-battle original-owner matrix or recorded state restoration is incomplete.'
         }
     } finally { $postBattleDocument.Dispose() }
+}
+if ($OriginalUnitResourceRelics -and ($trace.ModifierScenario -ne 'original-unit-resource-relics' -or
+    @($trace.RelicUnitResources).Count -lt 10 -or
+    -not (Select-String -LiteralPath $unityLog -Pattern 'ORIGINAL-UNIT-RESOURCES-PREPARED three unchanged owners' -Quiet))) {
+    throw 'Original unit resource owners lack actual native callbacks.'
 }
 if ($OriginalAfterDrawGenerationRelics -and ($trace.ModifierScenario -ne 'original-after-draw-generation-relics' -or
     @($trace.RelicAfterDrawGeneration).Count -lt 8 -or
