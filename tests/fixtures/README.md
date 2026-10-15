@@ -1,6 +1,13 @@
 # Native regression fixtures
 
-Campaign consumer extension (2026-10-15): 340 archives (308 battles and 32
+Opening-corruption extension (2026-10-15): 341 archives (309 battles and 32
+calibrations), 101/224 original owners (45.09%): 95 battle owners plus six
+campaign-interface owners. The three original max/permanent/post-draw owners
+fire naturally on deployment in order. Exact room states, notification counts,
+owner ablations and no repeated effects match a winning 60-stage/21-play/
+seven-EndTurn battle. Seven affected archives pass general/focused regression.
+
+Previous campaign consumer checkpoint (2026-10-15): 340 archives (308 battles and 32
 calibrations), 98/224 original owners (43.75%): 92 battle owners plus six
 campaign interface owners. `campaign-relic-calibration.mt2f` has 80 slot queries,
 108 merchant prices, 66 actual reward displays/grants and six hoard acquisition/

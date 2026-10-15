@@ -1,8 +1,41 @@
 # Inventory validation, 2026-10-15
 
+## Opening corruption extension
+
+Current inventory: 341 archives (309 battles, 32 calibrations), 101/224 original
+owners (45.09%): 95 battle owners and six campaign-interface owners. Seven
+affected archives pass all general/focused gates with three workers and no
+reruns: `.probe-runs/model-checks-20261015-183147-ab29f41a/summary.json`.
+This is an affected regression rather than a full inventory rerun.
+
+Native source:
+`.probe-runs/full-battle-units-spells-and-junk-20261015-182923-965483a5/full-battle.mt2f`.
+Unchanged `IncreaseMaxCorruption`, `UnremovableCorruptionTop` and
+`CorruptionBattleStart` run naturally on deployment. The first two callbacks
+are start-battle effects; the last is post-opening-draw. The ordered initial
+manager chain and each individual callback's four-room corruption state match.
+All room maxima become 5, top-floor current/permanent becomes 3/1, and the
+remaining rooms become 2/0. Only permanent corruption notifies once. There are
+no native unit CorruptionAdded triggers at these initial boundaries; unsupported
+callback combinations remain guarded. Pure tests cover phase/preview skips,
+owner ablations and immutable sources. All seven EndTurns retain the resulting
+room values, proving no extra first-combat or later-turn application.
+
+The game wins: 60 stages, 21 plays, seven EndTurns, zero four error counters,
+unchanged Steam files. Direct binary: 33,232 bytes, 5,332 nodes, source length
+zero, SHA-256 `e63d17b24ebaf007c72a52ecb98ca373afafafa93cf0ca88c39fe9d93fe98226`.
+The unified start-battle dispatcher keeps energy and corruption in native
+owner/effect order; the original first-combat energy archive remains exact.
+
+| Frozen runtime binary | SHA-256 |
+| --- | --- |
+| Model | `4A671013164A4DD7E6C5A7A2C11DC2B24700A743B0F58D740F2D33486325E002` |
+| FixtureArchive | `DFD2B89DA6B0B9924474B95422E097699E63C3E805A1B3ECCD26AAF3D12F9767` |
+| Checker | `6A1CDA2BF52C7B282A78D6D553CD453E8822731F990AEE0D26B78EDA7FE63BB0` |
+
 ## Campaign consumer extension
 
-Current inventory: 340 archives (308 battles, 32 calibrations), 98/224 original
+Previous inventory: 340 archives (308 battles, 32 calibrations), 98/224 original
 owners (43.75%): 92 battle owners and six campaign consumer owners. Four
 affected archives pass with three workers, all exit codes zero and no reruns:
 `.probe-runs/model-checks-20261015-182410-a2e07d5d/summary.json`.

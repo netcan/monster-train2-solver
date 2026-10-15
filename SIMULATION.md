@@ -1,11 +1,18 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-15): 340 binary archives, including 308
+Current accepted inventory (2026-10-15): 341 binary archives, including 309
 full battles and 32 component calibrations. Unchanged original relic evidence
-covers 98/224 catalog entries (43.75%): 92 battle owners and six campaign
+covers 101/224 catalog entries (45.09%): 95 battle owners and six campaign
 interface owners; see
 [the owner evidence table](tests/fixtures/relic-coverage.md). Whole-battle
 coverage and the optimal solver remain in progress.
+
+Three unchanged opening-corruption relics now match their natural ordered
+callbacks: all-room maximum +1, permanent corruption +1 on floor two, then
+post-opening-draw corruption +2 everywhere. All rooms finish at maximum 5;
+top-floor current/permanent is 3/1, others 2/0. Notification counts, initial
+phase order, owner ablations and absence of later repeats are checked. Seven
+affected archives pass the current regression and bounded search gates.
 
 The campaign calibration validates original Spell/Monster upgrade-slot bonuses,
 all-cost merchant discount, trial reward gold and both hoard-cap acquisition/

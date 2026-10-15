@@ -1,7 +1,7 @@
 # Original relic coverage evidence
 
-As of 2026-10-15, **98 distinct original collectable relics / 224 catalog entries
-(43.75%)** have accepted native evidence: 92 have full-battle effect evidence,
+As of 2026-10-15, **101 distinct original collectable relics / 224 catalog entries
+(45.09%)** have accepted native evidence: 95 have full-battle effect evidence,
 and six have their campaign consumer interfaces validated below. This counts unchanged relic
 definitions whose effects actually ran, including their original filters and
 conditions. Test cards, unit triggers and carrier subtypes may be authored to
@@ -21,7 +21,7 @@ The battle archives cited below report game `2.2.1`, module MVID
 `8fb07b96-f4db-4d2b-884d-c00536d6ccf4`, `NativeWon=true`, and zero
 `CaptureFailures`, `Mismatches`, `Unsupported` and `Pending`. Archive provenance,
 byte lengths and SHA-256 hashes are recorded in [manifest.tsv](manifest.tsv).
-The accepted inventory is 340 archives: 308 battles and 32 component
+The accepted inventory is 341 archives: 309 battles and 32 component
 calibrations, with no JSON companions. The newest battle proves original
 `SteelStockpile` post-victory forge conservation; five affected archives pass.
 The previous two battles add original
@@ -48,7 +48,7 @@ separate `CorruptionAdded` callback battles; none adds a relic owner. The origin
 effects each add one Corrupt Poison stack to an enemy on corruption increase.
 The Mageblade status/cache/attack path has an accepted
 native battle archive, but Mageblade is not a collectable relic and is not
-included in the 98/224 owner count. The `AllUnitsMultistrike` archive
+included in the 101/224 owner count. The `AllUnitsMultistrike` archive
 validates a mutator, not a collectible relic, and is also excluded from that
 owner count.
 
@@ -58,6 +58,9 @@ owner count.
 | `IncreaseSpellHealing` | `03613302-e55a-4e6c-99a1-c198c8d3175c` | [original healing power][healingPower] | Unchanged +10 healing to every Spell, independently of native magic-power eligibility. Non-scalable Spell, Monster/Blight rejection, fivefold trait multiplier, reset/repeat and owner ablations pass all 22 manager calls. A controlled damage-then-heal spell actually restores health; damage remains unchanged. |
 | `OneEmberFirstTurn_DH` | `c5a68f6d-671d-4db3-999f-120b5febf41b` | [original first-combat energy][firstCombatEnergy] | Original amount is +2 despite the asset name. Acquisition does not add energy; the natural first-combat callback runs once on turn one after initial enemy spawn and before regular income, with zero notifications. Deployment/owner-ablation controls and all seven EndTurns match. |
 | `SteelStockpile` | `b2868935-103c-4d27-ae48-a96d947c05ed` | [original forge conservation][forgeConservation] | Original flat cap 10 is applied by actual `PlayerManager.OnCombatEnd`: 0/5/10/17 retain 0/5/10/10, including one notification at zero. Removed-owner control resets 17→0. Natural post-victory cleanup retains 17→10; all seven in-battle EndTurns keep 17. All six full callback contexts match. |
+| `IncreaseMaxCorruption` | `3a28026e-e44b-4456-b535-7134e7525240` | [original opening corruption][openingCorruption] | Natural start-battle callback raises all four room maxima 4→5, including Pyre room. Original +1, placement restriction and no notification remain unchanged; no later-turn repeat. |
+| `UnremovableCorruptionTop` | `a66188b9-845d-475e-b6e6-7ea5335ec00b` | [original opening corruption][openingCorruption] | Native floor index `(int)2f` applies permanent +1 only to top floor and adjusts current by one. Original cap/clamp semantics and single notification match, before post-draw effects. |
+| `CorruptionBattleStart` | `a528a1b2-0d14-4fc5-9b8f-4b1f23722422` | [original opening corruption][openingCorruption] | The effect runs after deployment's opening draw, adding 2 to each room after the preceding two owners. Final max=5 everywhere; top current/permanent=3/1, others=2/0. Zero notifications; all seven EndTurns keep these values. |
 | `GiveUnitStatsForUpgrades_DH` | `fc1f6104-b3c1-4714-ac0f-9c76a6fb1a77` | [upgrade-count relics][upgradeCounts] | Ordered original health then attack effects give 0/3/6 to both temporary offsets for 0/1/2 visible permanent upgrades. A real Train Steward summons with +6 attack/+6 max health. All 44 manager refreshes match, including reset/repeat, card-type controls and independent owner ablations. |
 | `ExtraSpellCastTrigger` | `410ba540-7c4f-4dc5-a84f-b1d8af508891` | [combined trigger relics][counts] | `IncantTriggers`: 65 player `CardSpellPlayed` queries have `FireCount=2`; five enemy queries remain 1. Full callbacks and the 21-play policy match. |
 | `ExtraSpawnTrigger` | `9e0deb69-6196-44a6-8220-85bd0df25f77` | [combined trigger relics][counts] | 26 player `OnSpawn` queries have `FireCount=2`; five enemy queries remain 1. The battle contains new paid unit births. |
@@ -151,7 +154,7 @@ owner count.
 
 These six unchanged original owners are validated by their actual native
 campaign consumers, with baseline and removed-owner controls. This table is
-separate from the 92 battle owners. It does not claim whole-battle integration
+separate from the 95 battle owners. It does not claim whole-battle integration
 for these effect classes. The capture's recorded relic IDs, gold, hoard cap and
 amount, deck IDs, frame and RNG match before/after; reward grants still execute
 their native run-stat side effects in the isolated save. Catalog enumeration
@@ -474,3 +477,4 @@ dotnet run --project src/ModelChecks -c Release -- --original-card-attack-only t
 [firstCombatEnergy]: full-battle-original-start-combat-energy-relic.mt2f
 [forgeConservation]: full-battle-original-forge-conservation-relic.mt2f
 [campaign]: campaign-relic-calibration.mt2f
+[openingCorruption]: full-battle-original-opening-corruption-relics.mt2f

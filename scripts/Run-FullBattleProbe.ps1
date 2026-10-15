@@ -242,6 +242,7 @@ param(
     [switch] $OriginalHealingPowerRelic,
     [switch] $OriginalStartCombatEnergyRelic,
     [switch] $OriginalForgeConservationRelic,
+    [switch] $OriginalOpeningCorruptionRelics,
     [switch] $OriginalUnitUpgradeTriggerRelic,
     [switch] $TypedDraw,
     [switch] $IncantRelic,
@@ -355,6 +356,7 @@ if ($OriginalUpgradeCountRelics) { $BranchCardMasks = $true; $Policy = 'units-sp
 if ($OriginalHealingPowerRelic) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalStartCombatEnergyRelic) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalForgeConservationRelic) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
+if ($OriginalOpeningCorruptionRelics) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalUnitUpgradeTriggerRelic) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalTriggerRelicBatch -or $OriginalLifecycleRelicBatch) {
     $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $SettleDeathDissolves = $true; $SettleCardAnimations = $true
@@ -729,6 +731,7 @@ if ($OriginalUpgradeCountRelics) { $environment['MT2_PROBE_MODIFIERS'] = 'origin
 if ($OriginalHealingPowerRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-healing-power-relic' }
 if ($OriginalStartCombatEnergyRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-start-combat-energy-relic' }
 if ($OriginalForgeConservationRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-forge-conservation-relic' }
+if ($OriginalOpeningCorruptionRelics) { $environment['MT2_PROBE_MODIFIERS'] = 'original-opening-corruption-relics' }
 if ($OriginalUnitUpgradeTriggerRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-unit-upgrade-trigger-relic' }
 if ($TypedDraw) {
     $environment['MT2_PROBE_MODIFIERS'] = 'typed-draw'
@@ -1285,6 +1288,12 @@ if ($OriginalForgeConservationRelic) {
         $naturalForge.Count -ne 1 -or $naturalForge[0].Before.QueryFrame.ForgePoints -ne 17 -or
         $naturalForge[0].After.QueryFrame.ForgePoints -ne 10 -or $naturalForge[0].Notifications -ne 1) {
         throw 'Original SteelStockpile lacks its natural battle-end 17-to-10 conservation witness.'
+    }
+}
+if ($OriginalOpeningCorruptionRelics) {
+    if ($trace.ModifierScenario -ne 'original-opening-corruption-relics' -or @($trace.OpeningCorruptionOperations).Count -ne 3 -or
+        -not (Select-String -LiteralPath $unityLog -Pattern 'ORIGINAL-OPENING-CORRUPTION-PREPARED three natural deployment callbacks' -Quiet)) {
+        throw 'Original opening-corruption relics lack their natural ordered deployment callbacks.'
     }
 }
 if ($CampaignRelicCalibration) {

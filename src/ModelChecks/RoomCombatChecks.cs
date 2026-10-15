@@ -313,6 +313,8 @@ internal static class RoomCombatChecks
             OriginalStartCombatEnergyChecks.Native(fixture);
         else if (fixture.TryGetProperty("ModifierScenario", out relicScenario) && relicScenario.GetString() == "original-forge-conservation-relic")
             RelicForgeConservationChecks.Native(fixture);
+        else if (fixture.TryGetProperty("ModifierScenario", out relicScenario) && relicScenario.GetString() == "original-opening-corruption-relics")
+            RelicOpeningCorruptionChecks.Native(fixture);
         else if (fixture.TryGetProperty("ModifierScenario", out relicScenario) && relicScenario.GetString() is "card-type-cost-discount-first" or "card-type-cost-upgrade-first")
             RelicCardTypeCostOrderChecks.Native(fixture);
         else RelicCardModifierChecks.Native(fixture, requireScenarioCoverage:

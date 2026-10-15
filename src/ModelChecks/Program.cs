@@ -523,6 +523,12 @@ if (args.Length == 2 && args[0] == "--original-forge-conservation-only")
     RelicForgeConservationChecks.Native(document.RootElement);
     return;
 }
+if (args.Length == 2 && args[0] == "--original-opening-corruption-only")
+{
+    using var document = ModelJson.ReadFixture(args[1]);
+    RelicOpeningCorruptionChecks.Native(document.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--campaign-relics-only")
 {
     CampaignRelicChecks.Native(args[1]);

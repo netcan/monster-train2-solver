@@ -16,8 +16,8 @@ Catalog path:
 Regenerate the checklist with `scripts/Get-RelicCoverageInventory.ps1 -Catalog
 <relic-catalog.mt2f> -OutputPath tests/fixtures/relic-inventory.tsv`. This verifies
 catalog identity, unique owner IDs, accepted table identities and source presence.
-Current checkpoint: 98 original owners accepted (92 native battle owners and
-six actual campaign-interface owners); 126 remain pending. Campaign acceptance
+Current checkpoint: 101 original owners accepted (95 native battle owners and
+six actual campaign-interface owners); 123 remain pending. Campaign acceptance
 does not imply those effect classes are integrated into battle branch state.
 
 Acceptance requires an unchanged original owner, actual eligible and control

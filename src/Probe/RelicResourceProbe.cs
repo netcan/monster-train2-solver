@@ -145,6 +145,10 @@ namespace MonsterTrain2Poju.Probe
                 amount = (int)AccessTools.Field(effect.GetType(), "additionalAmount").GetValue(effect);
             else if (effect is RelicEffectConserveForgePoints)
                 amount = (int)AccessTools.Field(effect.GetType(), "_value").GetValue(effect);
+            else if (effect is RelicEffectModifyMaxCorruption || effect is RelicEffectModifyCorruptionStartOfCombat)
+                amount = (int)AccessTools.Field(effect.GetType(), "corruptionChange").GetValue(effect);
+            else if (effect is RelicEffectAddPermanentCorruptionStartOfCombat)
+                amount = (int)AccessTools.Field(effect.GetType(), "addPermanentAmount").GetValue(effect);
             else if (effect is RelicEffectConserveEnergyEndOfTurn conserve)
             {
                 IConserveEnergyEndOfTurnRelicEffect.ConserveParamaters parameters = conserve.GetConserveParameters();
@@ -156,7 +160,8 @@ namespace MonsterTrain2Poju.Probe
                 amount = (int)AccessTools.Field(effect.GetType(), "energyChange").GetValue(effect);
             return new RelicResourceEffect(index, type, data.GetParamInt(), data.GetParamInt2(), amount,
                 effect.CanApplyInPreviewMode, required?.GetID(), RelicCardModifierProbe.Conditions(effect), value, registration,
-                capacityValue, capacityRegistration, data.GetParamMinInt());
+                capacityValue, capacityRegistration, data.GetParamMinInt(),
+                effect is RelicEffectAddPermanentCorruptionStartOfCombat ? data.GetParamFloat() : 0);
         }
 
         internal static ResourceSnapshot Capture()
