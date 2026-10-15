@@ -1,5 +1,14 @@
 # Native regression fixtures
 
+Permanent deck-copy extension (2026-10-15): 356 archives (319 battles and 37
+calibrations), 134/224 original owners (59.82%): 119 battle owners plus fifteen
+campaign-interface owners. MothersRemnant1Relic matches 72 actual end-battle
+manager calls, 16 fresh copies, champion/empty/removed controls and exact Rewards
+RNG. Four modified/purified/cached copies retain permanent modifiers, omit temporary
+upgrades and match this build's actual cached flag setter. Presentation and its
+pending-card bookkeeping are suppressed after deck mutation. Four affected
+archives pass; see validation provenance.
+
 Death/moon upgrade extension (2026-10-15): 355 archives (319 battles and 36
 calibrations), 133/224 original owners (59.38%): 119 battle owners plus fourteen
 campaign-interface owners. Original EnhanceAttackOnConsume and SeleneandSilentBuff

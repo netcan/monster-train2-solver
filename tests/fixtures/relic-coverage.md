@@ -1,8 +1,8 @@
 # Original relic coverage evidence
 
-As of 2026-10-15, **133 distinct original collectable relics / 224 catalog entries
-(59.38%)** have accepted native evidence: 119 have full-battle effect evidence,
-and fourteen have their campaign consumer interfaces validated below. This counts unchanged relic
+As of 2026-10-15, **134 distinct original collectable relics / 224 catalog entries
+(59.82%)** have accepted native evidence: 119 have full-battle effect evidence,
+and fifteen have their campaign consumer interfaces validated below. This counts unchanged relic
 definitions whose effects actually ran, including their original filters and
 conditions. Test cards, unit triggers and carrier subtypes may be authored to
 exercise those effects; the claim covers the recorded paths, not every possible
@@ -21,8 +21,13 @@ The battle archives cited below report game `2.2.1`, module MVID
 `8fb07b96-f4db-4d2b-884d-c00536d6ccf4`, `NativeWon=true`, and zero
 `CaptureFailures`, `Mismatches`, `Unsupported` and `Pending`. Archive provenance,
 byte lengths and SHA-256 hashes are recorded in [manifest.tsv](manifest.tsv).
-The accepted inventory is 355 archives: 319 battles and 36 component
-calibrations, with no JSON companions. The newest battle proves two original
+The accepted inventory is 356 archives: 319 battles and 37 component
+calibrations, with no JSON companions. The newest component proves the original
+random permanent deck-copy owner through 72 native end-battle manager calls.
+Sixteen fresh copies preserve permanent modifiers and flags, discard temporary
+upgrades, and match exact Rewards RNG. Empty/champion-only/removed controls and
+four affected archives pass. Animation and pending-animation bookkeeping are
+suppressed after the actual deck mutation. The newest battle proves two original
 death/moon upgrade owners: one spawner-retained death upgrade, five moon additions
 and four removals across all four callbacks. 3025 native Test filters include
 enemy/subtype controls; five positive owner ablations and complete independent
@@ -252,6 +257,7 @@ not claim natural incoming-damage integration into battle branches.
 | `Inkbound_KwillingCatcher` | `28772b0a-6f5c-44a7-98dd-260a851dd391` | [battle-resource calibration][battleResources] | Actual end-battle +100 reward gold, unaffected by Pyre damage: 378 increases, repeated calls and removed-owner/order controls. |
 | `ModifyDragonsHoardBattleEnd` | `26c9bc93-f5a6-439d-8239-14c22cbeb02e` | [battle-resource calibration][battleResources] | Actual +3 hoard capped at capacity, 144 increases, 54 positive-Pyre-OnHit damage gates and 24 recoveries after native start-battle reset. Zero/negative/wrong-trigger/null-character controls do not mark damage. |
 | `BalatroEventCanio` | `d8d1e069-938e-4141-b6ac-e20f4578163a` | [purge gold calibration][purgeGold] | Actual campaign purge callback grants +75 adjusted reward gold and one notification for each of six card types. All 144 manager calls match, including 24 positive rewards, combat no-op and removed-owner controls, completion and unchanged RNG. Deck removal/payment UI is outside this interface claim. |
+| `MothersRemnant1Relic` | `8ee399d2-4ee4-409d-af95-319bcd6accc4` | [permanent copy calibration][deckCopy] | Seventy-two actual end-battle manager calls prove 16 fresh permanent copies with original champion-excluding mask, ordered candidate selection and Rewards RNG. Four modified/purified/event-cached witnesses retain permanent offsets/upgrades and drop temporary upgrades. Native cached-duplicate setter updates the cached flag; its duplicate getter remains false. Presentation bookkeeping is suppressed after deck mutation. |
 
 ## Recorded battle sizes
 
@@ -576,3 +582,4 @@ dotnet run --project src/ModelChecks -c Release -- --original-card-attack-only t
 [turnDraw]: full-battle-original-turn-draw-relics.mt2f
 [purgeGold]: campaign-purge-gold-calibration.mt2f
 [phaseUpgrades]: full-battle-original-unit-phase-upgrade-relics.mt2f
+[deckCopy]: campaign-deck-copy-calibration.mt2f

@@ -1,5 +1,44 @@
 # Inventory validation, 2026-10-15
 
+## Permanent deck-copy interface
+
+Current inventory: 356 archives (319 battles, 37 calibrations), 134/224 original
+owners (59.82%): 119 battle owners and fifteen campaign-interface owners.
+Source:
+`.probe-runs/full-battle-steward-once-20261015-215424-3a98d1e2/campaign-deck-copy-calibration.mt2f`.
+Unchanged MothersRemnant1Relic passes 72 actual ApplyEndOfBattleRelicEffects calls:
+three ownership phases, six ordered deck sets, two Rewards seeds and two repeats.
+Sixteen fresh permanent copies and 56 no-copy controls match the original
+ExcludeChampions mask and exact Rewards RNG; unrelated RNG streams are unchanged.
+Four modified/purified/event-cached source selections prove permanent +3 raw
+attack and an original +5 attack upgrade survive, while a temporary +7 offset
+and temporary +5 upgrade do not. The native duplicate setter writes the cached
+flag rather than the duplicate flag in this build; the model follows observation.
+
+Actual AddCardToDeck, source modifier copying and all preceding consumer code
+run. A scoped patch stops ShowCardAddedAnimation before pending-animation
+bookkeeping/UI dispatch; those presentation/lifecycle effects are outside the
+claim. Permanent-only source masks are captured with temporary modifiers
+temporarily removed and restored. Existing card-modifying/end-battle relics are
+excluded from this isolated interface matrix. Fresh object references and
+prefix/source reference preservation are checked; logical branch identities
+represent native CLR identity without pretending it is a gameplay RNG draw.
+Original deck references, owner IDs, gold, HP, frame and all deterministic RNG
+are restored. Isolated discovery/run statistics and signals are not claimed
+fully restored. Sixteen parallel model copies preserve every input parent.
+
+The host wins with 55 stages, one play/seven EndTurns, all four counters zero
+and unchanged Steam files in 39.86 seconds. The schema-1 component has 3948 bytes,
+479 nodes, source length 0 and SHA-256
+`74b12e8a5be536c5d3538af9c08de282282c4cd97495acef1f49352c8763de5f`.
+Four affected archives pass general/focused regression:
+`.probe-runs/model-checks-20261015-215609-5449a297/summary.json`.
+Model/Archive/Checker frozen hashes are
+`5752A7FB118E39C917FC78CFA014B22260BA05C998B4262FD0E84FB193E84BBF`,
+`4B74532F996076BCC36A1923C5586381AD3C4FEF5095EC99418823561A43171A`,
+`DA14CF54B030107FA2FEE1D7E1F4A7AB987ED8CC783ADE57F480554153CE1685`.
+All workers exit zero; this is not a complete 356-archive rerun.
+
 ## Death and moon temporary upgrades
 
 Current inventory: 355 archives (319 battles, 36 calibrations), 133/224 original
