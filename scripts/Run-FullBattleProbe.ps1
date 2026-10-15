@@ -189,6 +189,7 @@ param(
     [switch] $PreviewReferences,
     [switch] $RelicCatalog,
     [switch] $CampaignRelicCalibration,
+    [switch] $CampaignDraftCalibration,
     [switch] $FullRuleCatalog,
     [switch] $UpgradeMasks,
     [switch] $ModifierOverflow,
@@ -555,6 +556,7 @@ $environment = @{
     MT2_PROBE_PREVIEW_REFERENCES = $(if ($PreviewReferences) { '1' } else { '0' })
     MT2_PROBE_RELIC_CATALOG = $(if ($RelicCatalog) { '1' } else { '0' })
     MT2_PROBE_CAMPAIGN_RELICS = $(if ($CampaignRelicCalibration) { '1' } else { '0' })
+    MT2_PROBE_CAMPAIGN_DRAFTS = $(if ($CampaignDraftCalibration) { '1' } else { '0' })
     MT2_PROBE_FULL_RULE_CATALOG = $(if ($FullRuleCatalog) { '1' } else { '0' })
     MT2_PROBE_UPGRADE_MASKS = $(if ($UpgradeMasks) { '1' } else { '0' })
     MT2_PROBE_MODIFIER_OVERFLOW = $(if ($ModifierOverflow) { '1' } else { '0' })
@@ -1353,6 +1355,22 @@ if ($CampaignRelicCalibration) {
             throw 'Campaign original-owner matrix or recorded state restoration is incomplete.'
         }
     } finally { $campaignDocument.Dispose() }
+}
+if ($CampaignDraftCalibration) {
+    Add-Type -Path (Join-Path $workspace 'src\FixtureArchive\bin\Release\net8.0\FixtureArchive.dll')
+    $draftPath = Join-Path $profile 'campaign-draft-calibration.mt2f'
+    if (-not (Test-Path -LiteralPath $draftPath)) { throw 'Missing current campaign draft calibration.' }
+    $draftDocument = [MonsterTrain2Poju.Fixtures.FixtureDocument]::Read($draftPath)
+    try {
+        $draftRoot = $draftDocument.RootElement
+        if ($draftRoot.GetProperty('Schema').GetInt32() -ne 1 -or
+            $draftRoot.GetProperty('Owners').GetArrayLength() -ne 3 -or
+            -not $draftRoot.GetProperty('Before').ContentEquals($draftRoot.GetProperty('After')) -or
+            $draftRoot.GetProperty('Drafts').GetArrayLength() -ne 840 -or
+            $draftRoot.GetProperty('Health').GetArrayLength() -ne 3) {
+            throw 'Campaign draft original-owner matrix or recorded state restoration is incomplete.'
+        }
+    } finally { $draftDocument.Dispose() }
 }
 if ($OriginalCardAttackRelic) {
     $attackRecords = @($trace.RelicCardModifiers | Where-Object { $_.Before.DataId -in @('fc119000-0000-4000-8000-000000000201', 'fc119000-0000-4000-8000-000000000202') })
