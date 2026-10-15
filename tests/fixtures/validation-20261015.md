@@ -1,5 +1,44 @@
 # Inventory validation, 2026-10-15
 
+## End-battle gold and hoard extension
+
+Current inventory: 350 archives (315 battles, 35 calibrations), 122/224 original
+owners (54.46%): 109 battle owners and thirteen campaign-interface owners.
+
+Native source:
+`.probe-runs/full-battle-steward-once-20261015-204459-495bcd30/campaign-battle-resource-calibration.mt2f`.
+Unchanged Inkbound_KwillingCatcher (+100 reward gold) and
+ModifyDragonsHoardBattleEnd (+3 hoard if no Pyre damage) pass 756 actual
+RelicManager.ApplyEndOfBattleRelicEffects calls: six ownership phases, seven
+controlled damage histories, three capacities, three initial amount cases and
+two repetitions. There are 378 gold increases, 144 hoard increases, 54 damage
+gates and 24 reset recoveries. Native ApplyCharacterTriggerRelicEffect receives
+the live Pyre, OnHit/OnDeath and positive/zero/negative/null-character controls;
+the effect's Test method remembers damage while returning false. Actual native
+start-battle Test/Apply resets that memory. These controlled callbacks do not
+prove natural incoming-damage integration into branch battle state.
+
+Recorded owner/deck IDs, gold, hoard cap/amount, Pyre health, frame and all
+deterministic RNG states are restored. Native unlock/run statistics and signal
+side effects run in the isolated save; they are not claimed fully restored.
+The host wins after 55 stages, one play and seven EndTurns with all four counters
+zero; Steam files remain unchanged. The schema-1 component has 3770 bytes,
+954 nodes, source length 0 and SHA-256
+`5914f8801373d67f83950ce47da35d7706b403a3102c852e72a6e9ab3ff374c5`.
+Focused validation and four affected archives pass with three workers and all
+terminal exits zero:
+`.probe-runs/model-checks-20261015-204625-aca52f0a/summary.json`.
+The set covers campaign resources, prior campaign interfaces, reward rounding
+and the Steward host. The first launch was rejected before worker creation
+because the new fixture had not yet been registered; the registered run passes.
+This is not a complete 350-archive rerun.
+
+| Frozen runtime binary | SHA-256 |
+| --- | --- |
+| Model | `B44E9B1C26B72C535FE26353C54EF838132F35E65CCB5A31FC78B13BFB3D3331` |
+| FixtureArchive | `6C086B8E6CF29A0503E6687BD476F889CD3B6AC16F6FC1AC73CA2AF94518314C` |
+| Checker | `00EF2147FE814A05AA171D42352DB58586DEC7764C7D13B27114890D60E7BF86` |
+
 ## Fixed post-battle reward extension
 
 Current inventory: 349 archives (315 battles, 34 calibrations), 120/224 original

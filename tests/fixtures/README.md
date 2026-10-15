@@ -1,5 +1,13 @@
 # Native regression fixtures
 
+End-battle resource extension (2026-10-15): 350 archives (315 battles and 35
+calibrations), 122/224 original owners (54.46%): 109 battle owners plus thirteen
+campaign-interface owners. Original gold and hoard owners pass 756 actual
+end-battle manager calls, with 378 gold increases, 144 hoard increases, 54 damage
+gates and 24 reset recoveries. Character-trigger inputs are controlled native
+callbacks; this is campaign-consumer evidence rather than natural damage-chain
+integration. Four affected archives pass regression; see validation provenance.
+
 Post-battle reward extension (2026-10-15): 349 archives (315 battles and 34
 calibrations), 120/224 original owners (53.57%): 109 battle owners plus eleven
 campaign-interface owners. VoidPortal and MothersRemnant2Relic pass 108 actual

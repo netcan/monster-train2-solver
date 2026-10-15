@@ -1,8 +1,8 @@
 # Original relic coverage evidence
 
-As of 2026-10-15, **120 distinct original collectable relics / 224 catalog entries
-(53.57%)** have accepted native evidence: 109 have full-battle effect evidence,
-and eleven have their campaign consumer interfaces validated below. This counts unchanged relic
+As of 2026-10-15, **122 distinct original collectable relics / 224 catalog entries
+(54.46%)** have accepted native evidence: 109 have full-battle effect evidence,
+and thirteen have their campaign consumer interfaces validated below. This counts unchanged relic
 definitions whose effects actually ran, including their original filters and
 conditions. Test cards, unit triggers and carrier subtypes may be authored to
 exercise those effects; the claim covers the recorded paths, not every possible
@@ -21,12 +21,14 @@ The battle archives cited below report game `2.2.1`, module MVID
 `8fb07b96-f4db-4d2b-884d-c00536d6ccf4`, `NativeWon=true`, and zero
 `CaptureFailures`, `Mismatches`, `Unsupported` and `Pending`. Archive provenance,
 byte lengths and SHA-256 hashes are recorded in [manifest.tsv](manifest.tsv).
-The accepted inventory is 349 archives: 315 battles and 34 component
+The accepted inventory is 350 archives: 315 battles and 35 component
 calibrations, with no JSON companions. The newest battle proves all four
 after-draw card-generation owners through 16 actual native Test/Apply callbacks,
 including one full hand and four temporary Ephemeral upgrades. All candidate
 definitions are captured before selection, with exact Battle RNG and complete
-independent policy replay. The newest component proves 108 actual post-battle
+independent policy replay. The newest component proves 756 actual end-battle
+resource manager calls, including controlled Pyre damage, reset and capacity
+boundaries. Four affected archives pass regression. The previous component proves 108 actual post-battle
 reward-list calls, preserving original reward references, prefixes, duplicates
 and owner order with unchanged RNG. Four affected archives pass regression.
 The previous component proves actual draft
@@ -183,7 +185,7 @@ owner count.
 
 ## Campaign interface evidence
 
-These eleven unchanged original owners are validated by their actual native
+These thirteen unchanged original owners are validated by their actual native
 campaign consumers, with baseline and removed-owner controls. This table is
 separate from the 109 battle owners. It does not claim whole-battle integration
 for these effect classes. The first capture's recorded relic IDs, gold, hoard cap and
@@ -199,6 +201,9 @@ are restored; this does not claim restoration of every isolated-save run statist
 The [post-battle calibration][postBattleRewards] validates collection of fixed
 reward offers, including prefix duplicates and reversed owner order. Accepting
 or granting rewards, UI choice and pool-based rewards are outside this claim.
+The [battle-resource calibration][battleResources] exercises actual end-battle
+gold/hoard consumers and controlled native character-trigger callbacks. It does
+not claim natural incoming-damage integration into battle branches.
 
 | Original owner | Data ID | Native evidence | Accepted path |
 | --- | --- | --- | --- |
@@ -213,6 +218,8 @@ or granting rewards, UI choice and pool-based rewards are outside this claim.
 | `PyreHeartFather` | `fe768ab5-3f58-4f96-9afc-48f0f30c7b21` | [draft calibration][campaignDrafts] | Actual acquisition adds 25 maximum and current health at low/near-full/full HP. Removal drops dynamic maximum, preserves raw HP and clamps the visible getter. |
 | `VoidPortal` | `5cad6ad0-769b-46d3-9464-514b8e74190a` | [post-battle calibration][postBattleRewards] | Appends the original PurgeReward object through ApplyPostBattleRelicRewards; existing offers and duplicates remain intact. Int=8 and Int2=2 are unused by this consumer. |
 | `MothersRemnant2Relic` | `202a7153-bfe9-4da9-be3e-ddcf8c195354` | [post-battle calibration][postBattleRewards] | Appends the original CardDuplicatorReward enhancer offer. Combined and reversed owner order, repeated calls and removed-owner controls match all 108 native calls with unchanged RNG. |
+| `Inkbound_KwillingCatcher` | `28772b0a-6f5c-44a7-98dd-260a851dd391` | [battle-resource calibration][battleResources] | Actual end-battle +100 reward gold, unaffected by Pyre damage: 378 increases, repeated calls and removed-owner/order controls. |
+| `ModifyDragonsHoardBattleEnd` | `26c9bc93-f5a6-439d-8239-14c22cbeb02e` | [battle-resource calibration][battleResources] | Actual +3 hoard capped at capacity, 144 increases, 54 positive-Pyre-OnHit damage gates and 24 recoveries after native start-battle reset. Zero/negative/wrong-trigger/null-character controls do not mark damage. |
 
 ## Recorded battle sizes
 
@@ -524,6 +531,7 @@ dotnet run --project src/ModelChecks -c Release -- --original-card-attack-only t
 [campaign]: campaign-relic-calibration.mt2f
 [campaignDrafts]: campaign-draft-calibration.mt2f
 [postBattleRewards]: campaign-post-battle-calibration.mt2f
+[battleResources]: campaign-battle-resource-calibration.mt2f
 [openingCorruption]: full-battle-original-opening-corruption-relics.mt2f
 [spellThresholds]: full-battle-original-spell-play-threshold-relics.mt2f
 [shroomDecay]: full-battle-original-shroom-decay-relic.mt2f
