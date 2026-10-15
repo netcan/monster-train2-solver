@@ -6,6 +6,20 @@ internal static class RelicResourceChecks
     internal static void Run()
     {
         var once = new RelicConditionState(new("AnyCardPlayed"), true, 6, 1, false);
+        var firstCombat = Context([Rule("first", RelicResourceModel.StartCombatEnergy, 2, disallowed: true, conditions: [once])], energy: 9);
+        string firstFrozen = Serialize(firstCombat);
+        var firstBonus = RelicResourceModel.ApplyEnergyTiming(firstCombat, startOfCombat: true);
+        Require(firstBonus.Supported && firstBonus.Value == 10 && !firstBonus.Events.Single().Notified &&
+            !firstBonus.Context!.Relics![0].ResourceEffects![0].Conditions[0].Triggered &&
+            Serialize(firstCombat) == firstFrozen &&
+            RelicResourceModel.ApplyEnergyTiming(firstCombat, placement: true, startOfCombat: true).Value == 9 &&
+            RelicResourceModel.ApplyEnergyTiming(firstCombat, preview: true, startOfCombat: true).Value == 9 &&
+            RelicResourceModel.StartTurn(firstCombat).Events.Count == 0,
+            "Start-combat energy ignored caps, lifecycle/preview gates, no-notify semantics or input isolation.");
+        Require(RelicResourceModel.ApplyEnergyTiming(Context([Rule("deployment-only", RelicResourceModel.StartCombatEnergy, 2)]), startOfCombat: true).Value == 0 &&
+            RelicResourceModel.ApplyEnergyTiming(Context([Rule("deployment-only", RelicResourceModel.StartCombatEnergy, 2)]), placement: true, startOfCombat: true).Value == 2 &&
+            RelicResourceModel.ApplyEnergyTiming(Context([Rule("first-loss", RelicResourceModel.StartCombatEnergy, -5, disallowed: true)], energy: 2), startOfCombat: true).Value == 0,
+            "Start-of-battle placement equality gate or signed energy removal differs.");
         CombatContext ordered = Context([Rule("up", RelicResourceModel.Energy, 3), Rule("down", RelicResourceModel.Energy, -3)], energy: 9);
         RelicResourceResult capped = Timing(ordered);
         Require(capped.Value == 7 && capped.Events.Select(item => (item.Before, item.After)).SequenceEqual([(9, 10), (10, 7)]) &&

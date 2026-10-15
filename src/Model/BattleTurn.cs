@@ -414,6 +414,12 @@ namespace MonsterTrain2Poju.Model
                 TrainCombatResult initialOrder = EnchantmentWorldModel.UpdateAll(train);
                 if (!initialOrder.Supported) return Unsupported(initialOrder.UnsupportedReason!);
                 train = initialOrder.State!;
+                if (train.Context!.Relics?.Any(relic => relic.EffectTypes.Contains(RelicResourceModel.StartCombatEnergy)) == true)
+                {
+                    RelicResourceResult firstCombat = RelicResourceModel.ApplyEnergyTiming(train.Context, startOfCombat: true);
+                    if (!firstCombat.Supported) return Unsupported(firstCombat.UnsupportedReason!);
+                    train = WithContext(train, firstCombat.Context!, false);
+                }
             }
             spawn = WithTrain(spawn, train, turn, UnityRng.Seed(unchecked(spawningStream.Seed + turn)));
             train = WithContext(train, EnergyModel.SetPhase(train.Context!, "PreCombat"), false);
