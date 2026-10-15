@@ -78,8 +78,8 @@ other state comparisons remain enforced, and fresh recordings compare every
 field. An independent audit of the 97 previously skipped chains passes 67 and
 identifies 30 recordings that played on a disabled floor. Native UI selection
 rejects those actions even though the low-level card manager accepts them.
-The probe now enforces that UI gate. Ten of those 30 recordings now have fresh
-native replacements with their original scenario coverage; twenty remain to be
+The probe now enforces that UI gate. Fourteen of those 30 recordings now have fresh
+native replacements with their original scenario coverage; sixteen remain to be
 recaptured before the final inventory regression.
 The two isolated native workers use separate game/plugin directories and
 unique run profiles; each verifies the original Steam files remain unchanged.
