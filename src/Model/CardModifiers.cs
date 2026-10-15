@@ -87,6 +87,13 @@ namespace MonsterTrain2Poju.Model
             ExcludeFromClones, UnhealedHealth, DamageBuff, ExternalInteractions, RestrictSizeToRoomCapacity,
             MagicPowerTraitScalingOnly, CloneDamageBase, CloneHealBase, EquipmentSourceCardId, EquipmentSourceUpgradeIndex, TriggerUpgrades, AbilityUpgrade, DoNotReplaceExistingAbility, MaskMetadata,
             CopyRemoveOnDiscard, CopyUnique, CopyExcludeFromClones, Lifecycle);
+        internal CardUpgradeModifier WithRuntimeIdentity(string id) => new CardUpgradeModifier(id, AssetKey,
+            Stats, Statuses, RemoveOnDiscard, Unique, ExcludeFromClones, UnhealedHealth, DamageBuff, ExternalInteractions,
+            RestrictSizeToRoomCapacity, MagicPowerTraitScalingOnly, CloneDamageBase, CloneHealBase, EquipmentSourceCardId,
+            EquipmentSourceUpgradeIndex, TriggerUpgrades, AbilityUpgrade, DoNotReplaceExistingAbility, MaskMetadata,
+            null, null, null, Lifecycle == null ? null : Lifecycle.WithValues(new CardMaskUpgrade(id,
+                Lifecycle.Values.Stats, Lifecycle.Values.Statuses, Lifecycle.Values.HasIcon, Lifecycle.Values.HideIcon,
+                Lifecycle.Values.RegionRun, Lifecycle.Values.UnitAbility)), SharedReferenceId);
         internal CardUpgradeModifier WithLifecycle(CardLifecycleUpgrade? lifecycle) => new CardUpgradeModifier(DataId, AssetKey,
             Stats, Statuses, RemoveOnDiscard, Unique, ExcludeFromClones, UnhealedHealth, DamageBuff, ExternalInteractions,
             RestrictSizeToRoomCapacity, MagicPowerTraitScalingOnly, CloneDamageBase, CloneHealBase, EquipmentSourceCardId,

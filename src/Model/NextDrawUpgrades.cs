@@ -117,7 +117,7 @@ namespace MonsterTrain2Poju.Model
         {
             error = null;
             var pending = source.Cards.NextDrawUpgrades;
-            if (pending == null || pending.Count == 0 || drawnCardIds.Count == 0) return source;
+            if (pending == null || pending.Count == 0 || drawnCardIds.Count == 0) return ConduitModel.Drawn(source, drawnCardIds);
             if (!source.Cards.NextUpgradeReferenceId.HasValue || pending.Any(rule => !rule.Upgrade.SharedReferenceId.HasValue))
             { error = "Missing captured next-draw upgrade reference identity."; return source; }
             CombatContext context = source;
@@ -171,7 +171,7 @@ namespace MonsterTrain2Poju.Model
                     }
                 context = context.WithCard(card);
             }
-            return context;
+            return ConduitModel.Drawn(context, drawnCardIds);
         }
 
         private static CardCycleState WithPending(CardCycleState cards, IReadOnlyList<NextDrawUpgradeRule> pending) =>

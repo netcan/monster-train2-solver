@@ -415,7 +415,7 @@ namespace MonsterTrain2Poju.Model
             "spikes", "lifesteal", "fragile", "piercing", "immune", "immobile",
             "relentless", "sweep", "sniper", "rooted", "haste", "untouchable", "endless",
             "buff", "debuff", "regen", "poison", "decay", "corrupt_poison", "melee weakness", "spell weakness", "silenced", "muted", "valor", "pyregel",
-            "heal multiplier", "heal immunity", "cooldown", "unit_ability", "unit_ability_available", "horde", "cardless", "undying", "ephemeral", "purify", "mageblade", "titanskin", "duality",
+            "heal multiplier", "heal immunity", "cooldown", "unit_ability", "unit_ability_available", "horde", "cardless", "undying", "ephemeral", "purify", "mageblade", "titanskin", "duality", "conduit",
             "newmoon", "fullmoon", "stygian_blessing", "scorch", "trample", "spell shield", "unstable", "hatch"
         };
         internal static bool KnowsStatus(string id) => KnownStatuses.Contains(id);
@@ -866,6 +866,8 @@ namespace MonsterTrain2Poju.Model
                 relic.StatusDecays?.Any(rule => rule.StatusIds.Contains("buff")) == true) == true;
             foreach (CombatUnit unit in state.Units)
             {
+                if (unit.RegisteredStatus("conduit") != null && !ConduitModel.Captured(state.Context))
+                    return "Conduit requires captured native room/card tracker state.";
                 if (unit.Status("mageblade")?.Stacks > 0 && unit.Modifiers?.MagebladeDamagePerMagicPower == null)
                     return "Missing native Mageblade cached attack coefficient.";
                 if (unit.Modifiers?.MagebladeDamagePerMagicPower.HasValue == true &&
@@ -2041,6 +2043,7 @@ namespace MonsterTrain2Poju.Model
                     FireTriggers(actor, "OnAttackingBeforeDamage", overrideTarget: target);
                 if (unsupportedReason != null) return;
                 target.Health = resultingHealth;
+                if (context != null) context = ConduitModel.Alive(context, target.RoomIndex, target.Freeze());
                 if (!source.Preview && target.Source.IsPyre && context?.EnergyState != null)
                     context = context.WithEnergyState(context.EnergyState.With(pyreAlive: target.Alive));
                 if (!source.Preview && !target.Alive && IsTerminalBossDeath(target))
@@ -2188,6 +2191,7 @@ namespace MonsterTrain2Poju.Model
                         isDespawned: before.DeathState.IsDespawned, isDestroyed: before.DeathState.IsDestroyed)
                         .WithPreviewPrimary(before.DeathState.PreviewPrimary), bumpRules: before.BumpRules));
                 target.DeathFinished = false;
+                if (context != null) context = ConduitModel.Alive(context, target.RoomIndex, target.Freeze());
                 RemoveStatus(target, "undying", 1);
                 CombatUnit revived = target.Freeze();
                 // Unlike physical removal, all four harvest groups are captured before any dispatch.
@@ -2211,6 +2215,7 @@ namespace MonsterTrain2Poju.Model
                 bool immediateHarvest = false, bool doNotFullyRemove = false, bool returnSpawnerAfterQueue = false)
             {
                 if (target.DeathFinished) return;
+                if (context != null) context = ConduitModel.Alive(context, target.RoomIndex, target.Freeze());
                 if (!source.Preview && target.Source.IsPyre && context?.EnergyState != null)
                     context = context.WithEnergyState(context.EnergyState.With(pyreAlive: false));
                 target.DeathFinished = true;
@@ -2286,6 +2291,7 @@ namespace MonsterTrain2Poju.Model
             private void RemovePhysicalPoint(WorkingUnit unit)
             {
                 unit.Destroyed = true;
+                if (context != null) context = ConduitModel.Change(context, unit.RoomIndex, unit.Freeze(), source.Preview, remove: true);
                 if (context?.SpawnPoints == null) return;
                 var removed = BattleSpawnPointModel.Apply(context.SpawnPoints, CurrentRoom(), "Remove", unit.Source.Team, unit.Source.Id);
                 if (!removed.Supported) { unsupportedReason = removed.Error; return; }
@@ -2481,6 +2487,7 @@ namespace MonsterTrain2Poju.Model
             private void ReviveFromEphemeral(WorkingUnit target)
             {
                 target.Health = 1;
+                if (context != null) context = ConduitModel.Alive(context, target.RoomIndex, target.Freeze());
                 target.DeathFinished = false;
                 RemoveStatus(target, "undying", 1);
                 if (target.Source.DeathState is UnitDeathState death)
@@ -3440,6 +3447,9 @@ namespace MonsterTrain2Poju.Model
                         status.Stacks - (after.RegisteredStatus(id)?.Stacks ?? 0), adding: false);
                     if (!changed.Supported) { unsupportedReason = changed.UnsupportedReason; return; }
                     context = changed.Context; unit.Apply(changed.Unit!);
+                    if (id == "conduit" && context != null)
+                        context = ConduitModel.Change(context, unit.RoomIndex, unit.Freeze(), source.Preview,
+                            refreshSelection: false, order: units.Where(actor => actor.InRoom).Select(actor => actor.Source.Id).ToArray());
                 }
                 var callbacks = new List<QueuedCharacterTrigger>();
                 StatusCallbackModel.Removed(unit.RoomIndex, before, unit.Freeze(), id, callbacks);

@@ -230,7 +230,8 @@ namespace MonsterTrain2Poju.Probe
             int id = UnitId(character);
             CharacterState? lastAttacker = character.GetLastAttackerCharacter();
             CombatTrigger[] triggers = CaptureTriggers(character, interactions);
-            if (character.GetRoomStateModifiers().Any(modifier => modifier is not RoomStateSelfDamagePerMagicPowerModifier))
+            if (character.GetRoomStateModifiers().Any(modifier => modifier is not RoomStateSelfDamagePerMagicPowerModifier &&
+                !(ConduitProbe.Enabled && modifier is RoomStateConduitModifier)))
                 interactions.Add(character.GetSourceCharacterData().GetAssetKey() + " room modifiers");
             CardState? card = character.GetSpawnerCard();
             bool unsupportedSpawnerCardTriggers = card != null && card.GetTriggers().Any(trigger =>
@@ -351,7 +352,7 @@ namespace MonsterTrain2Poju.Probe
                 Enumerable.Range(0, managers.GetRoomManager()!.GetNumRooms()).SelectMany(index => new[] { Team.Type.Heroes, Team.Type.Monsters }
                     .Select(team => new RoomMagicPower(index, team == Team.Type.Heroes ? CombatTeam.Enemy : CombatTeam.Player,
                         managers.GetRoomManager()!.GetRoom(index).GetRoomStateModifiedMagicPower(team, managers.GetCoreManagers()) +
-                        managers.GetRelicManager().GetMagicPowerModification()))).ToArray(), PreviewRngIsolation.Enabled ? true : (bool?)null,
+                        managers.GetRelicManager().GetMagicPowerModification(), ConduitProbe.CaptureRoom(index, team, this)))).ToArray(), PreviewRngIsolation.Enabled ? true : (bool?)null,
                 new BattleEnergyState(managers.GetSaveManager().GetBalanceData().GetMaxEnergy(),
                     (int)AccessTools.Field(typeof(CombatManager), "modifiedEnergyNextTurn").GetValue(managers.GetCombatManager()),
                     (int)AccessTools.Field(typeof(CombatManager), "modifiedEnergyEveryTurn").GetValue(managers.GetCombatManager()),

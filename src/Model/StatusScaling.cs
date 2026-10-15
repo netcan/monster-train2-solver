@@ -108,6 +108,8 @@ namespace MonsterTrain2Poju.Model
             if (!overrideImmunity && (target.StatusImmunities.Contains(added.Id) || target.Status("immune") != null)) return Match(source);
             if (target.Status("purify")?.Stacks > 0) return Match(source);
             CombatContext? context = source.Context;
+            if (added.Id == "conduit" && !ConduitModel.Captured(context))
+                return Unsupported("Conduit application requires captured native room/card tracker state.");
             int stacks = added.Stacks;
             if (allowModification)
             {
@@ -130,6 +132,8 @@ namespace MonsterTrain2Poju.Model
             StatusAttackDamageResult attack = StatusAttackDamageModel.Change(context, changed, existing ?? added, count - old, adding: true);
             if (!attack.Supported) return Unsupported(attack.UnsupportedReason!);
             changed = attack.Unit!; context = attack.Context;
+            if (added.Id == "conduit") context = ConduitModel.Change(context!, source.RoomIndex, changed, source.Preview,
+                order: source.Units.Select(unit => unit.Id).ToArray());
             if (!source.Preview && sourceCardId > 0 && count > old && context?.Statistics != null)
                 context = context.WithStatistics(context.LiveStatistics!.Increment(sourceCardId, "AnyStatusEffectStacksAdded", count - old,
                     requireTrackedCard: context.CardInstances?.Count == 0));

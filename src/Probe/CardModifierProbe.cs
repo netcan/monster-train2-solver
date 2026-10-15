@@ -165,7 +165,7 @@ namespace MonsterTrain2Poju.Probe
             if (upgrade.GetStatusEffectUpgrades().Any(status => status.fromPermanentUpgrade)) interactions.Add("Separate permanent starting-status application group");
             CardUpgradeData? copyDefinition = AllGameManagers.Instance?.GetSaveManager()?.GetAllGameData()
                 .FindCardUpgradeData(upgrade.GetCardUpgradeDataId());
-            return new CardUpgradeModifier(upgrade.GetCardUpgradeDataId(), upgrade.GetAssetName(),
+            return new CardUpgradeModifier(ConduitProbe.Normalize(upgrade.GetCardUpgradeDataId()), upgrade.GetAssetName(),
                 new CardStatModifier(upgrade.GetAttackDamage(), upgrade.GetAdditionalHP(), -upgrade.GetCostReduction(),
                     upgrade.GetAdditionalHeal(), upgrade.GetAdditionalSize(), upgrade.GetXCostReduction(),
                     upgrade.GetAdditionalEquipmentLimit(), upgrade.GetAdditionalUpgradeSlotCount()),

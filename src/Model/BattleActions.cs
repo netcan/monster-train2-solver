@@ -745,6 +745,7 @@ namespace MonsterTrain2Poju.Model
                 context.CardInstances?.Select(instance => instance.InstanceId == card.InstanceId
                     ? skipNaturalDiscard ? instance : instance.OnDiscard(true, paidCost) : instance).ToArray(), context.CardRegistry, context.AllScenarioBossesDead, context.NextAddedTemporaryUpgrades,
                 context.OtherPiles == null ? null : piles, context.QueryFrame?.With(runningCombat: !terminal), context.KillCamActivated, context.MagicPower, context.IsolatedBattlePreview, context.EnergyState, context.RoomCapacities, context.AbilityCardCache, context.LastAbilityActivatorUnitId, context.PermanentlyDisabledAbilities, context.LastSpawnedUnitId, context.NextUnitId, context.SpawnPoints, context.SummonCatalog, context.Enchantments, context.PurifyBlockedTriggers, context.Relics, context.TriggerCounts, context.Resources, context.MixState);
+            if (!skipNaturalDiscard) context = ConduitModel.Discarded(context, card.InstanceId);
             if (summonedEndless && !terminal && !consumedOnPlay)
                 context = UnitStandbyModel.ReturnEndless(context, card.InstanceId);
             if (consumedOnPlay)

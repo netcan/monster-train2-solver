@@ -9,8 +9,9 @@ namespace MonsterTrain2Poju.Model
         public int RoomIndex { get; }
         public CombatTeam Team { get; }
         public int Value { get; }
-        public RoomMagicPower(int roomIndex, CombatTeam team, int value)
-        { RoomIndex = roomIndex; Team = team; Value = value; }
+        public ConduitRoomState? Conduit { get; }
+        public RoomMagicPower(int roomIndex, CombatTeam team, int value, ConduitRoomState? conduit = null)
+        { RoomIndex = roomIndex; Team = team; Value = value; Conduit = conduit; }
     }
 
     // Shared outputs of unit effects. The room and train phases carry this state forward.
@@ -125,9 +126,15 @@ namespace MonsterTrain2Poju.Model
         internal CombatContext WithEnergyState(BattleEnergyState state) => new CombatContext(Cards, BattleRng,
             Gold, NextCardId, MaxHandSize, StatusRules, Statistics, CardInstances, CardRegistry, AllScenarioBossesDead,
             NextAddedTemporaryUpgrades, OtherPiles, QueryFrame, KillCamActivated, MagicPower, IsolatedBattlePreview, state, RoomCapacities, AbilityCardCache, LastAbilityActivatorUnitId, PermanentlyDisabledAbilities, LastSpawnedUnitId, NextUnitId, SpawnPoints, SummonCatalog, Enchantments, PurifyBlockedTriggers, Relics, TriggerCounts, Resources, MixState);
-        internal CombatContext WithQueryFrame(StatisticQueryFrame? frame) => new CombatContext(Cards, BattleRng,
+        internal CombatContext WithQueryFrame(StatisticQueryFrame? frame) => ConduitModel.Select(new CombatContext(Cards, BattleRng,
             Gold, NextCardId, MaxHandSize, StatusRules, Statistics, CardInstances, CardRegistry, AllScenarioBossesDead,
-            NextAddedTemporaryUpgrades, OtherPiles, frame, KillCamActivated, MagicPower, IsolatedBattlePreview, EnergyState, RoomCapacities, AbilityCardCache, LastAbilityActivatorUnitId, PermanentlyDisabledAbilities, LastSpawnedUnitId, NextUnitId, SpawnPoints, SummonCatalog, Enchantments, PurifyBlockedTriggers, Relics, TriggerCounts, Resources, MixState);
+            NextAddedTemporaryUpgrades, OtherPiles, frame, KillCamActivated, MagicPower, IsolatedBattlePreview, EnergyState, RoomCapacities, AbilityCardCache, LastAbilityActivatorUnitId, PermanentlyDisabledAbilities, LastSpawnedUnitId, NextUnitId, SpawnPoints, SummonCatalog, Enchantments, PurifyBlockedTriggers, Relics, TriggerCounts, Resources, MixState),
+            QueryFrame?.SelectedRoomIndex, frame?.SelectedRoomIndex);
+        internal CombatContext WithMagicPower(IReadOnlyList<RoomMagicPower> power) => new CombatContext(Cards, BattleRng,
+            Gold, NextCardId, MaxHandSize, StatusRules, Statistics, CardInstances, CardRegistry, AllScenarioBossesDead,
+            NextAddedTemporaryUpgrades, OtherPiles, QueryFrame, KillCamActivated, power, IsolatedBattlePreview, EnergyState,
+            RoomCapacities, AbilityCardCache, LastAbilityActivatorUnitId, PermanentlyDisabledAbilities, LastSpawnedUnitId,
+            NextUnitId, SpawnPoints, SummonCatalog, Enchantments, PurifyBlockedTriggers, Relics, TriggerCounts, Resources, MixState);
         internal CombatContext WithStatistics(BattleStatistics? statistics) => new CombatContext(Cards, BattleRng,
             Gold, NextCardId, MaxHandSize, StatusRules, statistics, CardInstances, CardRegistry, AllScenarioBossesDead, NextAddedTemporaryUpgrades, OtherPiles, QueryFrame, KillCamActivated, MagicPower, IsolatedBattlePreview, EnergyState, RoomCapacities, AbilityCardCache, LastAbilityActivatorUnitId, PermanentlyDisabledAbilities, LastSpawnedUnitId, NextUnitId, SpawnPoints, SummonCatalog, Enchantments, PurifyBlockedTriggers, Relics, TriggerCounts, Resources, MixState);
         internal CombatContext WithCardInstances(IReadOnlyList<CardInstanceState>? instances) => new CombatContext(Cards, BattleRng,

@@ -310,6 +310,7 @@ namespace MonsterTrain2Poju.Model
                 .Select(card => card.InstanceId));
             context = context.WithCardInstances(context.CardInstances?.Select(card => discardedIds.Contains(card.InstanceId)
                 ? card.OnDiscard(false) : card).ToArray());
+            foreach (int discardedId in discardedIds) context = ConduitModel.Discarded(context, discardedId);
             CardCycleState cards = discard.State!;
             if (discard.PurgedCards.Count > 0)
             {
@@ -466,6 +467,7 @@ namespace MonsterTrain2Poju.Model
             context = WithCards(context, drawn.State!);
             context = BonusDrawModel.ApplyUpgrades(context, drawn, source.PlayRules, out string? bonusError);
             if (bonusError != null) return Unsupported(bonusError);
+            context = ConduitModel.Drawn(context, drawn.State!.Hand.Reverse().Where(card => !existingHand.Contains(card.InstanceId)).Select(card => card.InstanceId));
             train = WithContext(train, context, false);
             if (turn == 1 && train.Context!.Relics?.Any(relic => relic.EffectTypes.Any(RelicResourceModel.IsOpeningCorruption)) == true)
             {

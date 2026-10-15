@@ -43,6 +43,12 @@ namespace MonsterTrain2Poju.Model
             StatusAttackDamageResult attack = StatusAttackDamageModel.Change(context, changed, status, status.Stacks - count, adding: false);
             if (!attack.Supported) return Unsupported(attack.UnsupportedReason!);
             changed = attack.Unit!; context = attack.Context;
+            if (id == "conduit")
+            {
+                if (!ConduitModel.Captured(context)) return Unsupported("Conduit removal requires captured native room/card tracker state.");
+                context = ConduitModel.Change(context!, source.RoomIndex, changed, source.Preview, refreshSelection: false,
+                    order: source.Units.Select(unit => unit.Id).ToArray());
+            }
             if (!source.Preview && sourceCardId > 0 && count < status.Stacks && context?.Statistics != null)
                 context = context.WithStatistics(context.LiveStatistics!.Increment(sourceCardId, "AnyStatusEffectStacksRemoved", status.Stacks - count,
                     requireTrackedCard: context.CardInstances?.Count == 0));

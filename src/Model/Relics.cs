@@ -126,7 +126,7 @@ namespace MonsterTrain2Poju.Model
         internal const string AdditionalForgePoints = "RelicEffectAdditionalForgePoints";
         internal static bool AbilitiesTriggerIncant(CombatContext? context) =>
             context?.Relics?.Any(relic => relic.EffectTypes.Contains(AbilityIncant)) == true;
-        internal static string? Validate(CombatContext? context) => Validate(context?.Relics) ??
+        internal static string? Validate(CombatContext? context) => ConduitModel.Validate(context) ?? Validate(context?.Relics) ??
             (context?.Relics?.Any(relic => relic.EffectTypes.Contains(ModifyTriggerCount) || relic.EffectTypes.Contains(AddTrigger)) == true && context.TriggerCounts == null
                 ? "Missing native relic trigger count cache." : TriggerCountModel.Validate(context?.TriggerCounts)) ?? RelicResourceModel.Validate(context);
         internal static string? Validate(IReadOnlyList<CombatRelicState>? relics)

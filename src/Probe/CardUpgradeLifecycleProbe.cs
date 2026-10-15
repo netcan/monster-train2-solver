@@ -21,7 +21,7 @@ namespace MonsterTrain2Poju.Probe
         {
             var source = upgrade.GetSourceCardUpgradeData();
             bool rescale = source != null && !source.GetUpgradeWillBeScaledByNonMagicPowerTrait();
-            var values = new CardMaskUpgrade(upgrade.GetCardUpgradeDataId(),
+            var values = new CardMaskUpgrade(ConduitProbe.Normalize(upgrade.GetCardUpgradeDataId()),
                 new CardStatModifier(upgrade.GetAttackDamage(), upgrade.GetAdditionalHP(), unchecked(-upgrade.GetCostReduction()), upgrade.GetAdditionalHeal(),
                     upgrade.GetAdditionalSize(), upgrade.GetXCostReduction(), upgrade.GetAdditionalEquipmentLimit(), upgrade.GetAdditionalUpgradeSlotCount()),
                 upgrade.GetStatusEffectUpgrades().Select(status => new UpgradeMaskStatus(status.statusId, status.count, status.fromPermanentUpgrade)).ToArray(),

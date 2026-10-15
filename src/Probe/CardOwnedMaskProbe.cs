@@ -25,7 +25,7 @@ namespace MonsterTrain2Poju.Probe
                 int Field(string name) => (int)AccessTools.Field(typeof(CardStateModifiers), name).GetValue(modifiers);
                 return new CardMaskModifiers(new CardStatModifier(Field("additionalDamage"), Field("additionalMaxHP"), Field("additionalCost"), Field("additionalHeal"),
                     Field("additionalSize"), Field("additionalXCost"), Field("additionalEquipmentLimit"), Field("additionalUpgradeSlotCount")),
-                    modifiers.GetCardUpgrades().Select(upgrade => new CardMaskUpgrade(upgrade.GetCardUpgradeDataId(),
+                    modifiers.GetCardUpgrades().Select(upgrade => new CardMaskUpgrade(ConduitProbe.Normalize(upgrade.GetCardUpgradeDataId()),
                         new CardStatModifier(upgrade.GetAttackDamage(), upgrade.GetAdditionalHP(), unchecked(-upgrade.GetCostReduction()), upgrade.GetAdditionalHeal(),
                             upgrade.GetAdditionalSize(), upgrade.GetXCostReduction(), upgrade.GetAdditionalEquipmentLimit(), upgrade.GetAdditionalUpgradeSlotCount()),
                         upgrade.GetStatusEffectUpgrades().Select(Status).ToArray(), upgrade.GetUpgradeIcon() != null, upgrade.GetHideUpgradeIconOnCard(),

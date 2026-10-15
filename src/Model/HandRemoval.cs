@@ -93,6 +93,7 @@ namespace MonsterTrain2Poju.Model
                     context = context.WithStatistics(context.Statistics?.Increment(token.InstanceId, "TimesDiscarded"));
                     CardInstanceState? instance = context.FindCard(token.InstanceId);
                     if (instance != null) context = context.WithCard(instance.OnDiscard(false));
+                    context = ConduitModel.Discarded(context, token.InstanceId);
                     CheckStandby(0);
                 }
                 else
