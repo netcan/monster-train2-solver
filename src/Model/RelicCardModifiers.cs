@@ -388,8 +388,8 @@ namespace MonsterTrain2Poju.Model
                     return "Relic card-health conditions are not modeled.";
                 if (effect.CharacterName.Length != 0)
                     return "Relic card-health card-name filters are not modeled.";
-                if (effect.HealthMultiplier != 0 || effect.MultiplyByUpgradeCount)
-                    return "Relic card-health multipliers and upgrade-count scaling are not modeled.";
+                if (effect.HealthMultiplier != 0)
+                    return "Relic card-health multipliers are not modeled.";
                 if (effect.CharacterSubtypeKey.Length == 0 && effect.CardType.Length == 0)
                     return "Relic card-health effect has no supported subtype or card-type filter.";
             }
@@ -403,6 +403,12 @@ namespace MonsterTrain2Poju.Model
             CardMaskDescriptor? descriptor = source.MaskDescriptor;
             if (descriptor == null)
             { error = "Relic card-health modifiers require branch-owned mask metadata."; return null; }
+            int amount = effect.HealthModifier;
+            if (effect.MultiplyByUpgradeCount)
+            {
+                if (!RelicCardUpgradeCount.TryCount(source, out int count, out error)) return null;
+                amount = unchecked(amount * count);
+            }
             bool matches;
             if (effect.CharacterSubtypeKey.Length > 0)
             {
@@ -411,13 +417,31 @@ namespace MonsterTrain2Poju.Model
                 { error = "Subtype-filtered relic health needs exactly one captured spawned character."; return null; }
             }
             else matches = descriptor.Definition.CardType == effect.CardType;
-            if (!matches || effect.HealthModifier == 0) return source;
+            if (!matches || amount == 0) return source;
             returned = true;
             CardStatModifier offsets = source.Temporary.Offsets;
-            var updated = new CardModifiers(new CardStatModifier(offsets.Damage, unchecked(offsets.Health + effect.HealthModifier),
+            var updated = new CardModifiers(new CardStatModifier(offsets.Damage, unchecked(offsets.Health + amount),
                 offsets.Cost, offsets.Heal, offsets.Size, offsets.XCost, offsets.EquipmentLimit, offsets.UpgradeSlotCount),
                 source.Temporary.Upgrades, source.Temporary.PersistentHealth, source.Temporary.ExternalInteractions);
             return source.WithModifiers(source.Permanent, updated);
+        }
+    }
+
+    internal static class RelicCardUpgradeCount
+    {
+        // Both native relics call CardUpgradeState.ShouldShowIcon on permanent
+        // upgrades. Unlike the upgrade-mask count, this includes region upgrades.
+        internal static bool TryCount(CardInstanceState card, out int count, out string? error)
+        {
+            count = 0; error = null;
+            foreach (CardUpgradeModifier upgrade in card.Permanent.Upgrades)
+            {
+                CardUpgradeMaskMetadata? metadata = upgrade.MaskMetadata;
+                if (metadata == null)
+                { error = "Relic upgrade-count scaling requires permanent upgrade icon metadata."; return false; }
+                if (metadata.HasIcon && !metadata.HideIcon) count++;
+            }
+            return true;
         }
     }
 }

@@ -132,7 +132,7 @@ namespace MonsterTrain2Poju.Model
                     if (relic.EffectTypes[effectIndex] == RelicModel.ModifyCardAttack)
                     {
                         RelicCardAttackModifier effect = relic.CardAttackModifiers!.Single(item => item.EffectIndex == effectIndex);
-                        RoomCombatResult applied = RelicCardAttackModel.ApplyCardlessSpawn(state, unitId, effect);
+                        RoomCombatResult applied = RelicCardAttackModel.ApplyCardlessSpawn(state, unitId, fromCardId, effect);
                         if (!applied.Supported) return applied;
                         state = applied.State!;
                         if (!onlyCovenants && !DrainYield()) return failed!;

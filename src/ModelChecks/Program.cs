@@ -528,6 +528,7 @@ if (args.Length == 1 && args[0] == "--relic-card-play-magic-power-pure")
 if (args.Length == 1 && args[0] == "--relic-card-attack-pure")
 {
     RelicCardAttackChecks.Run();
+    RelicUpgradeCountChecks.Run();
     return;
 }
 
@@ -1039,6 +1040,7 @@ RelicCardModifierChecks.Run();
 RelicCardTypeCostChecks.Run();
 ConserveEmberChecks.Run();
     RelicCardAttackChecks.Run();
+RelicUpgradeCountChecks.Run();
 RelicMagicPowerChecks.Run();
 RelicCardPlayMagicPowerChecks.Run();
 RelicCardDrawOnCardPlayChecks.Run();

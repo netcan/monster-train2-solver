@@ -49,7 +49,7 @@ namespace MonsterTrain2Poju.Model
                 if (effect.CharacterName.Length > 0)
                     return "Relic card-attack card-name filters are not modeled.";
                 if (effect.AttackModifier == 0 || effect.AttackMultiplier != 0 || effect.UnmodifiedAttackMultiplier != 0 ||
-                    effect.MultiplyByUpgradeCount || effect.MultiplyByRelicCount || effect.ExcludeChampions ||
+                    effect.MultiplyByRelicCount || effect.ExcludeChampions ||
                     effect.ExcludeStartRelics || effect.CardFilter != null)
                     return "Relic card-attack multipliers, scaling and advanced filters are not modeled.";
                 if (effect.CharacterSubtypeKey.Length == 0 && effect.CardType.Length == 0)
@@ -65,20 +65,27 @@ namespace MonsterTrain2Poju.Model
             CardMaskDescriptor? descriptor = source.MaskDescriptor;
             if (descriptor == null)
             { error = "Relic card-attack modifiers require branch-owned mask metadata."; return null; }
+            int amount = effect.AttackModifier;
+            if (effect.MultiplyByUpgradeCount)
+            {
+                if (!RelicCardUpgradeCount.TryCount(source, out int count, out error)) return null;
+                amount = unchecked(amount * count);
+            }
+            if (amount == 0) return source;
             bool matches = effect.CharacterSubtypeKey.Length > 0
                 ? descriptor.Definition.Subtypes.Contains(effect.CharacterSubtypeKey, StringComparer.Ordinal)
                 : descriptor.Definition.CardType == effect.CardType;
             if (!matches) return source;
             returned = true;
             CardStatModifier offsets = source.Temporary.Offsets;
-            var temporary = new CardModifiers(new CardStatModifier(unchecked(offsets.Damage + effect.AttackModifier),
+            var temporary = new CardModifiers(new CardStatModifier(unchecked(offsets.Damage + amount),
                 offsets.Health, offsets.Cost, offsets.Heal, offsets.Size, offsets.XCost, offsets.EquipmentLimit,
                 offsets.UpgradeSlotCount), source.Temporary.Upgrades, source.Temporary.PersistentHealth,
                 source.Temporary.ExternalInteractions);
             return source.WithModifiers(source.Permanent, temporary);
         }
 
-        internal static RoomCombatResult ApplyCardlessSpawn(RoomCombatState source, int unitId,
+        internal static RoomCombatResult ApplyCardlessSpawn(RoomCombatState source, int unitId, int fromCardId,
             RelicCardAttackModifier effect)
         {
             CombatUnit? actor = source.Units.FirstOrDefault(unit => unit.Id == unitId);
@@ -89,6 +96,13 @@ namespace MonsterTrain2Poju.Model
             if (effect.CharacterSubtypeKey.Length > 0 && !actor.Subtypes.Contains(effect.CharacterSubtypeKey, StringComparer.Ordinal))
                 return Match(source);
             int amount = effect.AttackModifier;
+            if (effect.MultiplyByUpgradeCount)
+            {
+                int count = 0;
+                if (fromCardId != 0 && !RelicCardUpgradeCount.TryCount(source.Context!.FindCard(fromCardId)!, out count, out string? error))
+                    return Fail(error!);
+                amount = unchecked(amount * count);
+            }
             return UnitAttackModel.Apply(source, unitId, amount < 0 ? -amount : amount, debuff: amount < 0);
         }
 
