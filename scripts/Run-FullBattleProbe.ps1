@@ -191,6 +191,7 @@ param(
     [switch] $CampaignRelicCalibration,
     [switch] $CampaignDraftCalibration,
     [switch] $CampaignPostBattleCalibration,
+    [switch] $CampaignBattleResourceCalibration,
     [switch] $FullRuleCatalog,
     [switch] $UpgradeMasks,
     [switch] $ModifierOverflow,
@@ -563,6 +564,7 @@ $environment = @{
     MT2_PROBE_CAMPAIGN_RELICS = $(if ($CampaignRelicCalibration) { '1' } else { '0' })
     MT2_PROBE_CAMPAIGN_DRAFTS = $(if ($CampaignDraftCalibration) { '1' } else { '0' })
     MT2_PROBE_CAMPAIGN_POST_BATTLE = $(if ($CampaignPostBattleCalibration) { '1' } else { '0' })
+    MT2_PROBE_CAMPAIGN_BATTLE_RESOURCES = $(if ($CampaignBattleResourceCalibration) { '1' } else { '0' })
     MT2_PROBE_FULL_RULE_CATALOG = $(if ($FullRuleCatalog) { '1' } else { '0' })
     MT2_PROBE_UPGRADE_MASKS = $(if ($UpgradeMasks) { '1' } else { '0' })
     MT2_PROBE_MODIFIER_OVERFLOW = $(if ($ModifierOverflow) { '1' } else { '0' })
@@ -1363,6 +1365,21 @@ if ($CampaignRelicCalibration) {
             throw 'Campaign original-owner matrix or recorded state restoration is incomplete.'
         }
     } finally { $campaignDocument.Dispose() }
+}
+if ($CampaignBattleResourceCalibration) {
+    Add-Type -Path (Join-Path $workspace 'src\FixtureArchive\bin\Release\net8.0\FixtureArchive.dll')
+    $battleResourcePath = Join-Path $profile 'campaign-battle-resource-calibration.mt2f'
+    if (-not (Test-Path -LiteralPath $battleResourcePath)) { throw 'Missing current end-battle resource calibration.' }
+    $battleResourceDocument = [MonsterTrain2Poju.Fixtures.FixtureDocument]::Read($battleResourcePath)
+    try {
+        $battleResourceRoot = $battleResourceDocument.RootElement
+        if ($battleResourceRoot.GetProperty('Schema').GetInt32() -ne 1 -or
+            $battleResourceRoot.GetProperty('Owners').GetArrayLength() -ne 2 -or
+            $battleResourceRoot.GetProperty('Rows').GetArrayLength() -ne 756 -or
+            -not $battleResourceRoot.GetProperty('Before').ContentEquals($battleResourceRoot.GetProperty('After'))) {
+            throw 'End-battle original-owner matrix or recorded state restoration is incomplete.'
+        }
+    } finally { $battleResourceDocument.Dispose() }
 }
 if ($CampaignPostBattleCalibration) {
     Add-Type -Path (Join-Path $workspace 'src\FixtureArchive\bin\Release\net8.0\FixtureArchive.dll')

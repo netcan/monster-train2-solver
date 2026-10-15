@@ -562,6 +562,11 @@ if (args.Length == 2 && args[0] == "--campaign-post-battle-only")
     CampaignPostBattleChecks.Native(args[1]);
     return;
 }
+if (args.Length == 2 && args[0] == "--campaign-battle-resources-only")
+{
+    CampaignBattleResourceChecks.Native(args[1]);
+    return;
+}
 if (args.Length == 2 && args[0] == "--original-health-choice-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
@@ -1264,6 +1269,8 @@ foreach (string path in args.Where(path => path.Contains("campaign-draft-calibra
     CampaignDraftChecks.Native(path);
 foreach (string path in args.Where(path => path.Contains("campaign-post-battle-calibration", StringComparison.OrdinalIgnoreCase)))
     CampaignPostBattleChecks.Native(path);
+foreach (string path in args.Where(path => path.Contains("campaign-battle-resource-calibration", StringComparison.OrdinalIgnoreCase)))
+    CampaignBattleResourceChecks.Native(path);
 foreach (string path in args.Where(path => path.Contains("standby-routing-calibration", StringComparison.OrdinalIgnoreCase)))
     StandbyPileChecks.Native(path);
 foreach (string path in args.Where(path => path.Contains("ui-rng-isolation-calibration", StringComparison.OrdinalIgnoreCase)))
