@@ -113,7 +113,7 @@ namespace MonsterTrain2Poju.Probe
             return traits.Length == 0 ? null : traits;
         }
 
-        private static CardModifiers Modifiers(CardStateModifiers modifiers)
+        internal static CardModifiers Modifiers(CardStateModifiers modifiers)
         {
             int Field(string name) => (int)AccessTools.Field(typeof(CardStateModifiers), name).GetValue(modifiers);
             var interactions = new List<string>();

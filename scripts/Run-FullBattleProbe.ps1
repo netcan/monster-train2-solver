@@ -193,6 +193,7 @@ param(
     [switch] $CampaignPostBattleCalibration,
     [switch] $CampaignBattleResourceCalibration,
     [switch] $CampaignPurgeGoldCalibration,
+    [switch] $CampaignDeckCopyCalibration,
     [switch] $FullRuleCatalog,
     [switch] $UpgradeMasks,
     [switch] $ModifierOverflow,
@@ -575,6 +576,7 @@ $environment = @{
     MT2_PROBE_CAMPAIGN_POST_BATTLE = $(if ($CampaignPostBattleCalibration) { '1' } else { '0' })
     MT2_PROBE_CAMPAIGN_BATTLE_RESOURCES = $(if ($CampaignBattleResourceCalibration) { '1' } else { '0' })
     MT2_PROBE_CAMPAIGN_PURGE_GOLD = $(if ($CampaignPurgeGoldCalibration) { '1' } else { '0' })
+    MT2_PROBE_CAMPAIGN_DECK_COPY = $(if ($CampaignDeckCopyCalibration) { '1' } else { '0' })
     MT2_PROBE_FULL_RULE_CATALOG = $(if ($FullRuleCatalog) { '1' } else { '0' })
     MT2_PROBE_UPGRADE_MASKS = $(if ($UpgradeMasks) { '1' } else { '0' })
     MT2_PROBE_MODIFIER_OVERFLOW = $(if ($ModifierOverflow) { '1' } else { '0' })
@@ -1379,6 +1381,15 @@ if ($CampaignRelicCalibration) {
             throw 'Campaign original-owner matrix or recorded state restoration is incomplete.'
         }
     } finally { $campaignDocument.Dispose() }
+}
+if ($CampaignDeckCopyCalibration) {
+    Add-Type -Path (Join-Path $workspace 'src\FixtureArchive\bin\Release\net8.0\FixtureArchive.dll')
+    $copyDocument = [MonsterTrain2Poju.Fixtures.FixtureDocument]::Read((Join-Path $profile 'campaign-deck-copy-calibration.mt2f'))
+    try {
+        $copyRoot = $copyDocument.RootElement
+        if ($copyRoot.GetProperty('Rows').GetArrayLength() -ne 72 -or
+            -not $copyRoot.GetProperty('Before').ContentEquals($copyRoot.GetProperty('After'))) { throw 'Original permanent deck-copy matrix or recorded restoration is incomplete.' }
+    } finally { $copyDocument.Dispose() }
 }
 if ($CampaignPurgeGoldCalibration) {
     Add-Type -Path (Join-Path $workspace 'src\FixtureArchive\bin\Release\net8.0\FixtureArchive.dll')
