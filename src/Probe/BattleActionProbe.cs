@@ -203,7 +203,9 @@ namespace MonsterTrain2Poju.Probe
                 }
             }
             else if (kind == "CardEffectNULL" && effects.Length == 0) kind = "Null";
-            else if ((data.GetCardType() == CardType.Spell || data.GetCardType() == CardType.Equipment || data.GetCardType() == CardType.TrainRoomAttachment) && effects.Length > 0 && effects.All(SupportedSpellEffect))
+            else if ((data.GetCardType() == CardType.Spell || data.GetCardType() == CardType.Equipment ||
+                data.GetCardType() == CardType.TrainRoomAttachment || data.GetCardType() == CardType.Blight ||
+                data.GetCardType() == CardType.Junk) && effects.Length > 0 && effects.All(SupportedSpellEffect))
             {
                 kind = "Spell";
                 foreach (CardEffectData effect in effects)

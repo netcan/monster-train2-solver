@@ -202,7 +202,7 @@ namespace MonsterTrain2Poju.Model
                 // copied, discard-conditional and pending temporary upgrades.
                 if (context.Relics?.Any(relic => relic.CardModifiers?.Count > 0 || relic.CardHealthModifiers?.Count > 0 ||
                     relic.CardAttackModifiers?.Count > 0 ||
-                    relic.MagicPowerModifiers?.Count > 0) == true)
+                    relic.MagicPowerModifiers?.Count > 0 || relic.CardTypeCosts?.Count > 0) == true)
                 {
                     var relicModifiers = RelicCardModifierModel.Apply(candidate, context.Relics, context: context);
                     if (!relicModifiers.Supported) return Unsupported(relicModifiers.UnsupportedReason!);

@@ -209,6 +209,43 @@ internal static class EnchantmentCombatChecks
         UnityRng rng = default;
         var context = new CombatContext(new CardCycleState(Array.Empty<CardToken>(), Array.Empty<CardToken>(),
             Array.Empty<CardToken>(), rng, 0, Array.Empty<string>()), rng, 40, 1, 10);
+        var physical = new BattleSpawnPoints(
+            new[] { new SpawnPointGroupState(2, CombatTeam.Player, 2, 2, new[] { 2, 0 }, new[] { false, false }) },
+            new[] { new UnitSpawnPointState(1, null, new SpawnPointReference(2, CombatTeam.Player, 1)),
+                new UnitSpawnPointState(2, new SpawnPointReference(2, CombatTeam.Player, 0), null) });
+        foreach (CombatUnit removed in new[] {
+            Actor(1, true, 10).WithHealth(0).WithDeathState(new UnitDeathState(false, false, true)),
+            Actor(1, true, 10).WithDeathState(new UnitDeathState(false, false, true, isDespawned: true)),
+            Actor(1, true, 10).WithDeathState(new UnitDeathState(false, false, true, isDestroyed: true)) })
+        foreach (CombatContext pendingContext in new[] { context, context.WithSpawnPoints(physical) })
+        {
+            var pendingRoom = new RoomCombatState(2, false, new[] { removed, back }, Array.Empty<string>(),
+                pendingContext);
+            string original = JsonSerializer.Serialize(pendingRoom);
+            RoomCombatResult pendingUpdate = DeathwishModel.Update(pendingRoom);
+            Require(pendingUpdate.Supported && pendingUpdate.PendingCallbacks.Count == 2 &&
+                pendingUpdate.PendingCallbacks.All(callback => callback.Unit.Id == 2 && callback.Kind == "OnDeathwish") &&
+                pendingUpdate.PendingCallbacks.Select(callback => callback.ExclusiveTriggerStateId).SequenceEqual(new int?[] { 20, 21 }) &&
+                pendingUpdate.State!.Units.Single(unit => unit.Id == 2).Triggers.All(trigger => trigger.DeathwishActive == true) &&
+                ReferenceEquals(pendingUpdate.State!.Units.Single(unit => unit.Id == 1), removed) &&
+                JsonSerializer.Serialize(pendingRoom) == original,
+                "Native source collection and front selection must ignore dead/despawned/destroyed actors without changing their retained death state " +
+                "(physical points=" + (pendingContext.SpawnPoints != null) + ").");
+        }
+        var missingLivePoint = new RoomCombatState(2, false, new[] { front, back }, Array.Empty<string>(),
+            context.WithSpawnPoints(physical));
+        Require(!DeathwishModel.Update(missingLivePoint).Supported,
+            "A living source without its captured physical point must still be rejected.");
+        CombatUnit deadSource = Actor(1, true, 10).WithHealth(0);
+        var crossRoomFrame = new EnchantmentCombatState(new TrainCombatState(new[] {
+            new RoomCombatState(0, false, new[] { deadSource }, Array.Empty<string>()),
+            new RoomCombatState(2, false, new[] { back }, Array.Empty<string>()) }, Array.Empty<EnemyMovement>(), 2),
+            Array.Empty<EnchantmentRetainedUnit>(), new[] { 1, 2 }, true, false, false, rng);
+        EnchantmentCombatResult crossRoomUpdate = EnchantmentCombatModel.UpdateAll(crossRoomFrame);
+        Require(crossRoomUpdate.Supported && crossRoomUpdate.PendingCallbacks.Count == 2 &&
+            crossRoomUpdate.PendingCallbacks.All(callback => callback.Unit.Id == 2) &&
+            ReferenceEquals(crossRoomUpdate.State!.Train.Rooms[0].Units.Single(), deadSource),
+            "A dead source on another floor must not require cross-room physical metadata or change retained state.");
         CombatUnit GoldActor(int id, int stateId) => new CombatUnit(id, "deathwish-unit", CombatTeam.Player, 0, 10, 10,
             true, false, false, Array.Empty<CombatStatus>(), new[]
             {

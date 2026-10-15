@@ -1,7 +1,7 @@
 # Original relic coverage evidence
 
-As of 2026-10-15, **85 distinct original collectable relics / 224 catalog entries
-(37.95%)** have accepted native full-battle evidence. This counts unchanged relic
+As of 2026-10-15, **87 distinct original collectable relics / 224 catalog entries
+(38.84%)** have accepted native full-battle evidence. This counts unchanged relic
 definitions whose effects actually ran, including their original filters and
 conditions. Test cards, unit triggers and carrier subtypes may be authored to
 exercise those effects; the claim covers the recorded paths, not every possible
@@ -20,17 +20,17 @@ The source archives cited below report game `2.2.1`, module MVID
 `8fb07b96-f4db-4d2b-884d-c00536d6ccf4`, `NativeWon=true`, and zero
 `CaptureFailures`, `Mismatches`, `Unsupported` and `Pending`. Archive provenance,
 byte lengths and SHA-256 hashes are recorded in [manifest.tsv](manifest.tsv).
-The floor-capacity batch passes strict native acceptance, complete-fixture checks,
-independent full-battle replay and six directly affected old-fixture regressions.
-The accepted inventory is 331 archives: 300 battles and 31 component
-calibrations, with no JSON companions. A 246-archive replay was
-attempted on 2026-10-13 but has not completed: legacy EndTurn snapshots can
-conflict with the current model's room `Enabled` state. Focused follow-up checks
-pass for the affected resource and Sting archives and for a fresh trigger
-archive; the complete replay remains pending. The checker preserves native
-action/turn comparisons and skips an independent legacy policy chain only when
-recomputed EndTurn state confirms that room-rule conflict. Freshness-marked
-archives remain strict. The Egg transformation archive now proves two native
+The accepted inventory is 335 archives: 304 battles and 31 component
+calibrations, with no JSON companions. Unchanged `ConserveEmber` adds the latest
+original-owner witness; the two cost-filter ordering battles add combination
+coverage without adding another owner. The complete inventory regression has
+not yet finished. An independent-chain preflight of 97 legacy archives passed
+67 and identified 30 old captures with card plays on disabled floors; those
+captures require new native evidence. Whole-policy-chain legacy skips have been
+removed. The remaining compatibility rule is explicitly labelled and applies
+only to the historical room `Enabled` field; fresh archives remain strict.
+
+The Egg transformation archive now proves two native
 OnHatched sacrifice/summon chains after the already counted `EggHatchRemoval`
 effect. The original `KinhostVessel` card now has a separate native Hatch 8
 play/sacrifice/Pupa witness, including a separate two-combat path with permanent
@@ -40,7 +40,7 @@ separate `CorruptionAdded` callback battles; none adds a relic owner. The origin
 effects each add one Corrupt Poison stack to an enemy on corruption increase.
 The Mageblade status/cache/attack path has an accepted
 native battle archive, but Mageblade is not a collectable relic and is not
-included in the 85/224 owner count. The `AllUnitsMultistrike` archive
+included in the 87/224 owner count. The `AllUnitsMultistrike` archive
 validates a mutator, not a collectible relic, and is also excluded from that
 owner count.
 
@@ -131,6 +131,8 @@ owner count.
 | `EmberFoundryCrucible` | `a034e00f-3a12-4c19-b626-4b8fd17c412a` | [normal smelt][smelt], [zero-cost smelt][smeltZero], [bulk smelt][smeltBulk] | Original +1 Ember per consumed card: cost-2 Starter Scrap choice changes Ember 4→6 after paying 1; zero-cost Sting changes 4→4; Foundry Line consumes four cards for 3 Forge and Ember 4→10. All three complete battles and action/search replays match. |
 | `TinkermasterTools` | `db2193eb-a476-4cc4-9a26-2d0e35f46b74` | [original Tinkermaster Mix][tinkermasterMix] | Its unchanged +1 amount changes both original Mixology drafts from two candidates to three. Two Mixology casts in separate turns, four native draft screens and their full action/search replays match. |
 | `ProgressPacemaker` | `4446fd0c-f7c3-4a9d-96c3-bd12e4426a76` | [original Progress Mix][progressMix] | Its unchanged once-per-turn condition adds one follow-up Mix with two candidates. Both original Mixology casts yield three ordered drafts; the condition triggers after each play and resets before the next turn. Six native draft screens and full action/search replays match. |
+| `CheaperBlightScourge` | `a19cac7c-b2e0-42bd-bc1e-d180e17a1c15` | [original card-type cost][cardTypeCost] | Its unchanged ordered Blight/Junk -99 effects match ten native modifier calls, including repeated application, reset, a nonmatching card and enemy-generated Junk. Original Blight and Junk play for zero Ember and self-purge; full battle and search replay match. |
+| `ConserveEmber` | `3e200d1f-7ba9-4a6e-a09d-5625f25b01ac` | [original Ember conservation][conserveEmber] | Its unchanged all-energy effect conserves positive balances on all seven EndTurns. Initial banking produces 4 → 7 → 10 Ember, followed by 21 paid plays and a winning terminal balance of 1 Ember with Pyre health 58. Seven exact native queries, complete policy replay and bounded serial/parallel search match. |
 
 Record indices above are zero-based. Full-battle acceptance and independent
 effect checks are documented in [README.md](README.md); the source
@@ -165,11 +167,15 @@ archives contain these observed battle sizes:
 | [bulk smelt][smeltBulk] | 103 | 1 | 7 | 52 | Four consumed cards, 3 Forge and four extra Ember |
 | [original Tinkermaster Mix][tinkermasterMix] | 103 | 21 | 7 | 62 | Four native Mix drafts with three candidates each across two Mixology casts |
 | [original Progress Mix][progressMix] | 103 | 21 | 7 | 60 | Six native Mix drafts, two conditional follow-up rounds across separate turns |
+| [original card-type cost][cardTypeCost] | 103 | 24 | 6 | 50 | Ten modifier calls, two original zero-Ember self-purge plays, generated Junk |
+| [original Ember conservation][conserveEmber] | 103 | 21 | 7 | 62 | Seven conservation queries, two banked turns, later positive payments and terminal Ember retention |
 
 The checks that enforce these observations are
 [TriggerCountChecks.Native](../../src/ModelChecks/TriggerCountChecks.cs),
 [RelicSpawnStatusChecks.Native](../../src/ModelChecks/RelicSpawnStatusChecks.cs),
 [RelicCardModifierChecks.Native](../../src/ModelChecks/RelicCardModifierChecks.cs),
+[OriginalCardTypeCostChecks.Native](../../src/ModelChecks/OriginalCardTypeCostChecks.cs),
+[ConserveEmberChecks.Native](../../src/ModelChecks/ConserveEmberChecks.cs),
 [OriginalRelicBatchChecks.Native](../../src/ModelChecks/OriginalRelicBatchChecks.cs),
 [OriginalUnitRelicBatchChecks.Native](../../src/ModelChecks/OriginalUnitRelicBatchChecks.cs),
 [OriginalTriggerRelicBatchChecks.Native/Combined](../../src/ModelChecks/OriginalTriggerRelicBatchChecks.cs),
@@ -315,9 +321,9 @@ coverage to 64/224. The subsequent status-stack relic archive adds
 `ExtraSpellWeakness`, bringing the total at that milestone to 65/224 (29.02%). The
 refreshed schema-136 status-stack archive now also accepts `IncreaseDecaySlimeStacks`,
 bringing coverage to 66/224 (29.46%); its 39 battle stages have zero
-mismatches, capture failures, unsupported interactions or pending records. The previous
-246-archive replay attempt remains incomplete;
-full replay of the current 251-archive inventory is still deferred. The
+mismatches, capture failures, unsupported interactions or pending records. At
+that checkpoint, the 246-archive replay attempt had not completed and a full
+replay of the then-current 251 archives was deferred. The
 `HerzalsAnvil` Forge Points battle then brings accepted original-owner coverage
 to 67/224 (29.91%); its positive adjustment, `+1` payload and owner ablation pass
 with zero native mismatches, capture failures, unsupported interactions or pending records.
@@ -427,3 +433,5 @@ dotnet run --project src/ModelChecks -c Release -- --original-card-attack-only t
 [smeltBulk]: full-battle-original-smelt-ember-bulk.mt2f
 [tinkermasterMix]: full-battle-original-tinkermaster-mix.mt2f
 [progressMix]: full-battle-original-progress-pacemaker-mix.mt2f
+[cardTypeCost]: full-battle-original-card-type-cost-relic.mt2f
+[conserveEmber]: full-battle-original-conserve-ember.mt2f

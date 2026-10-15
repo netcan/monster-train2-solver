@@ -244,17 +244,14 @@ internal static class OriginalResourceRelicBatchChecks
         if (replayBattle)
         {
             if (!compareRoomEnabled)
-                Console.WriteLine("NATIVE-RESOURCE-POLICY-CHECKS SKIP: legacy EndTurn room Enabled snapshots conflict with the current model.");
-            else
-            {
-                CardCycleChecks.Native(root); BattleTurnChecks.Native(root); BattleActionChecks.Native(root);
-                ReplayBranches(first, actions, turns, terminal, "root");
-                int midIndex = Array.FindIndex(actions, row => row.GetProperty("Actual").GetProperty("Spawn").GetProperty("Turn").GetInt32() > 0);
-                Require(midIndex >= 0, "Resource native battle lacks a mid-battle card-action root.");
-                BattleTurnState mid = actions[midIndex].GetProperty("Actual").Deserialize<BattleTurnState>()!;
-                ReplayBranches(mid, actions.Skip(midIndex + 1).ToArray(), turns.Where(row =>
-                    row.GetProperty("Before").GetProperty("Spawn").GetProperty("Turn").GetInt32() >= mid.Spawn.Turn).ToArray(), terminal, "mid");
-            }
+                Console.WriteLine("LEGACY-RESOURCE-POLICY-LIMITATION: stale room Enabled snapshots are excluded; complete root and mid-battle policies remain checked.");
+            CardCycleChecks.Native(root); BattleTurnChecks.Native(root); BattleActionChecks.Native(root);
+            ReplayBranches(first, actions, turns, terminal, compareRoomEnabled, "root");
+            int midIndex = Array.FindIndex(actions, row => row.GetProperty("Actual").GetProperty("Spawn").GetProperty("Turn").GetInt32() > 0);
+            Require(midIndex >= 0, "Resource native battle lacks a mid-battle card-action root.");
+            BattleTurnState mid = actions[midIndex].GetProperty("Actual").Deserialize<BattleTurnState>()!;
+            ReplayBranches(mid, actions.Skip(midIndex + 1).ToArray(), turns.Where(row =>
+                row.GetProperty("Before").GetProperty("Spawn").GetProperty("Turn").GetInt32() >= mid.Spawn.Turn).ToArray(), terminal, compareRoomEnabled, "mid");
         }
         var witnesses = Artifacts.ToDictionary(item => item.Key, item => proofs.Where(proof => proof.Key.Id == item.Id).Sum(proof => proof.Value));
         Console.WriteLine("ORIGINAL-RESOURCE-RELIC-WITNESSES " + string.Join(", ", witnesses.Select(item => item.Key + "=" + item.Value)));
@@ -455,27 +452,31 @@ internal static class OriginalResourceRelicBatchChecks
     }
     private static string Cycle(CardCycleState source) => Serialize(new
         { source.Hand, source.Draw, source.Discard, source.Rng, source.DrawModifier, source.BonusDraw, source.NextDrawUpgrades, source.NextUpgradeReferenceId });
-    private static void ReplayBranches(BattleTurnState source, FixtureValue[] actions, FixtureValue[] turns, BattleTurnState terminal, string label)
+    private static void ReplayBranches(BattleTurnState source, FixtureValue[] actions, FixtureValue[] turns,
+        BattleTurnState terminal, bool compareRoomEnabled, string label)
     {
         string parent = Serialize(source);
-        string expected = BattleTurnChecks.Comparable(terminal);
+        string expected = BattleTurnChecks.Comparable(terminal, compareRoomEnabled: compareRoomEnabled);
         void Run()
         {
             BattleSimulationResult result = BattleSimulator.Resolve(source, Choose);
             Require(result.Supported && result.Outcome == RoomOutcome.BattleWon && result.Actions.Count == actions.Length && result.Turns.Count == turns.Length,
                 "Independent resource " + label + " policy did not reproduce native action/turn counts: " + result.UnsupportedReason);
-            Equal(expected, BattleTurnChecks.Comparable(result.State!), "independent resource " + label + " terminal");
+            Equal(expected, BattleTurnChecks.Comparable(result.State!, compareRoomEnabled: compareRoomEnabled),
+                "independent resource " + label + " terminal");
             for (int index = 0; index < actions.Length; index++)
             {
                 Equal(result.Actions[index].Action, actions[index].GetProperty("Action").Deserialize<PlayCardAction>()!, label + " native policy action");
-                Equal(BattleTurnChecks.Comparable(result.Actions[index].Result.State!),
-                    BattleTurnChecks.Comparable(actions[index].GetProperty("Actual").Deserialize<BattleTurnState>()!), label + " native action decision");
+                Equal(BattleTurnChecks.Comparable(result.Actions[index].Result.State!, compareRoomEnabled: compareRoomEnabled),
+                    BattleTurnChecks.Comparable(actions[index].GetProperty("Actual").Deserialize<BattleTurnState>()!,
+                        compareRoomEnabled: compareRoomEnabled), label + " native action decision");
             }
             for (int index = 0; index < turns.Length; index++)
             {
                 Require(result.Turns[index].Outcome == (RoomOutcome)turns[index].GetProperty("ActualOutcome").GetInt32(), label + " EndTurn outcome differs.");
-                Equal(BattleTurnChecks.Comparable(result.Turns[index].State!),
-                    BattleTurnChecks.Comparable(turns[index].GetProperty("Actual").Deserialize<BattleTurnState>()!), label + " native EndTurn decision");
+                Equal(BattleTurnChecks.Comparable(result.Turns[index].State!, compareRoomEnabled: compareRoomEnabled),
+                    BattleTurnChecks.Comparable(turns[index].GetProperty("Actual").Deserialize<BattleTurnState>()!,
+                        compareRoomEnabled: compareRoomEnabled), label + " native EndTurn decision");
             }
         }
         Run(); Parallel.For(0, 16, _ => Run());

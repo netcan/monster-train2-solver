@@ -303,6 +303,10 @@ internal static class RoomCombatChecks
             EndlessReturnChecks.Native(fixture);
         else if (fixture.TryGetProperty("ModifierScenario", out relicScenario) && relicScenario.GetString() == "original-card-attack-relic")
             RelicCardAttackChecks.Native(fixture);
+        else if (fixture.TryGetProperty("ModifierScenario", out relicScenario) && relicScenario.GetString() == "original-card-type-cost-relic")
+            OriginalCardTypeCostChecks.Native(fixture);
+        else if (fixture.TryGetProperty("ModifierScenario", out relicScenario) && relicScenario.GetString() is "card-type-cost-discount-first" or "card-type-cost-upgrade-first")
+            RelicCardTypeCostOrderChecks.Native(fixture);
         else RelicCardModifierChecks.Native(fixture, requireScenarioCoverage:
             !fixture.TryGetProperty("ModifierScenario", out var integrationScenario) || integrationScenario.GetString() != "typed-draw");
         UnitIdentityChecks.Native(fixture);
@@ -335,6 +339,9 @@ internal static class RoomCombatChecks
         CloneUpgradeRefreshChecks.Native(fixture);
         DynamicStatisticChecks.Native(fixture);
         EnergyChecks.Native(fixture);
+        if (fixture.TryGetProperty("ModifierScenario", out var conserveScenario) &&
+            conserveScenario.GetString() == "original-conserve-ember-relic")
+            ConserveEmberChecks.Native(fixture);
         CardCostChecks.Native(fixture);
         BonusDrawChecks.Native(fixture);
         RoomCapacityChecks.Native(fixture);

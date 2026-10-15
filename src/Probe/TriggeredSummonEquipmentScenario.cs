@@ -99,14 +99,23 @@ namespace MonsterTrain2Poju.Probe
                 yield return null;
             var units = new List<CharacterState>(); rooms.GetRoom(0).AddCharactersToList(units, Team.Type.Monsters);
             CharacterState host = units.Single(unit => unit.GetSpawnerCard() == source);
-            foreach (CardState card in gear)
+            CombatManager combat = managers.GetCombatManager()!;
+            bool previousPreviewSuppression = combat.SuppressCombatPreviewUpdates;
+            combat.SuppressCombatPreviewUpdates = true;
+            try
             {
-                yield return host.AddEquipment(card, managers.GetCoreManagers(), grafted: false);
-                CardState captured = card;
-                cards.MoveToStandByPile(card, wasPlayed: true, wasExhausted: false,
-                    new RemoveFromStandByCondition(() => cards.CheckEquipmentRemoveFromStandByCondition(host, captured)));
+                // These setup calls run outside card replay. Keep the independent
+                // monster-turn preview loop from interleaving their yielded steps.
+                foreach (CardState card in gear)
+                {
+                    yield return host.AddEquipment(card, managers.GetCoreManagers(), grafted: false);
+                    CardState captured = card;
+                    cards.MoveToStandByPile(card, wasPlayed: true, wasExhausted: false,
+                        new RemoveFromStandByCondition(() => cards.CheckEquipmentRemoveFromStandByCondition(host, captured)));
+                }
             }
-            Set(managers.GetCombatManager()!, "combatStateChanged", true);
+            finally { combat.SuppressCombatPreviewUpdates = previousPreviewSuppression; }
+            Set(combat, "combatStateChanged", true);
             log.LogInfo("TRIGGERED-SUMMON-EQUIPMENT-PREPARED two transferring cards, one return-to-hand exclusion, live/dead copies, modifiers and child replacement.");
         }
         private static void Set(object target, string field, object value) => AccessTools.Field(target.GetType(), field).SetValue(target, value);

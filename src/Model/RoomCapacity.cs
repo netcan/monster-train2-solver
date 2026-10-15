@@ -115,6 +115,10 @@ namespace MonsterTrain2Poju.Model
                     context = statistic.Context!; amount = unchecked(amount + trait.CapacityPerStat * statistic.Value);
                 }
             }
+            // Native resolves scaling statistics before selecting the effect's room,
+            // and selects that room even when capacity bounds refuse the adjustment.
+            if (context.QueryFrame?.SelectedRoomIndex != null)
+                context = context.WithQueryFrame(context.QueryFrame.With(selectedRoomIndex: roomIndex));
             // Native exact Heroes selects enemies; None and combined team flags select players.
             bool enemy = effect.AllowEnemy && !effect.AllowPlayer;
             var changed = new RoomCapacityState(roomIndex,

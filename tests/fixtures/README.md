@@ -1,5 +1,82 @@
 # Native regression fixtures
 
+`full-battle-original-conserve-ember.mt2f` acquires unchanged `ConserveEmber`
+before battle, retaining the natural deck, Pyre and enemy waves. Seven native
+end-turn conservation queries retain all remaining Ember. Banking the first two
+turns produces 4 → 7 → 10 Ember; later paid plays leave positive balances, and
+the winning terminal state retains 1 Ember with Pyre health 58. The battle has
+62 matched stages, 21 paid actions and seven EndTurns, with zero capture failures,
+mismatches, unsupported transitions or pending records. Dedicated checks,
+complete independent policy replay with 16 immutable branches, full-fixture
+checks and bounded serial/parallel search (128 states each) pass. The native
+path does not reach the captured maximum energy of 99; cap rollover is covered
+by pure checks, not claimed as a native witness.
+
+The 32,702-byte archive contains 5,330 unique nodes and has SHA-256
+`1a3ef9260fabb9019eb3975cb74ba1ebe0de7c8d237590d42bb6bb23bc6308b3`.
+Accepted original-owner coverage is now 87/224 (38.84%); the inventory contains
+335 archives: 304 full battles and 31 component calibrations. Full-inventory
+regression is still pending; see [relic-coverage.md](relic-coverage.md).
+
+```powershell
+./scripts/Run-FullBattleProbe.ps1 -OriginalConserveEmber
+./scripts/Check-Models.ps1 -Fixture full-battle-original-conserve-ember.mt2f
+```
+
+`full-battle-card-type-cost-discount-first.mt2f` and
+`full-battle-card-type-cost-upgrade-first.mt2f` capture both acquisition orders
+of unchanged `CheaperBlightScourge` and an authored +7 Damage upgrade restricted
+to zero-cost Blight cards. The later filter observes the current cost: a reset
+accepts the marker only when the discount runs first, while a no-reset repeat
+accepts the already discounted Blight in either order. Junk and a nonmatching
+control never receive the marker. Both original cards still play free and
+self-purge, and four later generated Junk identities receive their discount.
+Each muted Instant battle wins with 50 matched stages, 24 actions and six
+EndTurns; capture failures, mismatches, unsupported transitions and pending
+records are zero. Dedicated checks compare complete modifier contexts, effect,
+filter and notification order, and 16 immutable parallel manager/action branches.
+The probe registers new identities before capturing the context, preserving
+exact card-counter and registry comparisons. At that checkpoint, original-owner
+coverage stayed 86/224 and inventory reached 334 archives: 303 battles and 31
+calibrations.
+
+| Order | Bytes | Unique nodes | SHA-256 |
+| --- | ---: | ---: | --- |
+| Discount first | 33,005 | 5,422 | `0e86149f4bd31e59f320743f4b76ad69a78db64ac5410ddd389f0578869b8e1b` |
+| Upgrade first | 33,169 | 5,421 | `ec37e921d12e92c6371561afc73fbcfd83d0105c441cb96c86e27e103fcb0117` |
+
+```powershell
+./scripts/Run-FullBattleProbe.ps1 -CardTypeCostUpgradeOrder DiscountFirst
+./scripts/Run-FullBattleProbe.ps1 -CardTypeCostUpgradeOrder UpgradeFirst
+./scripts/Check-Models.ps1 -Fixture @('full-battle-card-type-cost-discount-first.mt2f', 'full-battle-card-type-cost-upgrade-first.mt2f') -Workers 2
+# Full inventory, one build followed by four isolated checker processes:
+./scripts/Check-Models.ps1 -Workers 4
+```
+
+Parallel checks preserve every existing general and focused gate. The run
+directory under `.probe-runs/model-checks-*` contains per-worker inputs, stdout,
+stderr and terminal result JSON plus `summary.json`. A shard passes only after
+all its checks exit successfully; partial progress is not a completed shard.
+`RerunFixtures` contains complete failed, interrupted or invalidated shards.
+Changed or unreadable checker binaries invalidate the result. `-SkipBuild`
+allows reuse of an already built checker; omit it for ordinary use.
+
+`full-battle-original-card-type-cost-relic.mt2f` acquires unchanged
+`CheaperBlightScourge` before battle. Ten native modifier calls cover ordered
+Blight/Junk -99 cost effects, repeat/reset, a nonmatching card and generated
+Junk. Original SelfPurgeBlight and ScourgeT1 both play at zero Ember and purge.
+The muted Instant battle wins with 50 matched stages, 24 actions and six
+EndTurns; capture failures, mismatches, unsupported transitions and pending
+records are zero. The dedicated modifier/action check and bounded serial/parallel
+battle search pass. This adds one original relic owner: 86/224 (38.39%). The
+32,603-byte archive has 5,361 unique nodes and SHA-256
+`70bc1dab5ecd27d5781b2da80c6d129d04043825edaa6ec82a34c3afd81cbd4f`.
+At that checkpoint, inventory was 332 archives: 301 battles and 31 component calibrations.
+
+```powershell
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-card-type-cost-relic.mt2f
+```
+
 `full-battle-spawn-status-relics-egg-hatch.mt2f` exercises unchanged
 `EggHatchRemoval` on two authored Egg-subtype units with 3 starting Hatch.
 Each native birth removes all Hatch and gains 30 Armor from that relic, for 35
@@ -1213,13 +1290,28 @@ Native dispatches repeat in 32 isolated branches. Additional unsupported effect
 targets continue to reject transitions explicitly.
 
 `full-battle-room-capacity.mt2f` and `full-battle-room-capacity-lethal.mt2f`
-retain schema 52 battles with live capacities used by subsequent summons and
-restricted size upgrades. Their 220 exact effect contexts and 2,050 native
+were recaptured on 2026-10-15 with schema 103 and
+`DecisionPlayRulesSnapshotsFresh=true`. The older schema 52 captures froze
+`PlayRules` capacities at five while live context capacities had already changed.
+Fresh native evidence also exposed a model bug: EndTurn must refresh both sides'
+play-rule capacities after callbacks and terminal settlement. The model now
+does so, including PreCombat capacity changes affecting the next summon.
+Effect-level replay also checks that scaling traits read the previously selected
+room before the native effect selects its target room, even at capacity bounds.
+The ordinary battle has 67 stages, 23 actions and seven EndTurns; the lethal
+battle has 30 stages, 15 actions and four EndTurns. Both win with zero capture
+failures, mismatches, unsupported transitions or pending records.
+Their 217 exact effect contexts and 2,197 native
 casting/runtime tests cover occupied-room shrinking, 1/30 bounds, signed wrap,
 ignored quantity ranges, exact team flags, conditional cancellation, ordered
 paid-cost scaling and unit PreCombat effects. Both policies match from initial
 and mid-battle roots in 16 parallel branches; the lethal fixture also verifies
 that subsequent capacity effects skip after the spell kills the Boss.
+
+The ordinary archive is 38,096 bytes / 6,681 unique nodes, SHA-256
+`1847451cb7881ea09374bee7b3f4996863d42538d958da750b0241f1318049c4`.
+The lethal archive is 26,240 bytes / 4,245 unique nodes, SHA-256
+`59b04bcc1d2f24b7b98c7133dc2ba19d236b617861d20707a284855192bd8225`.
 
 `full-battle-bonus-draw.mt2f` and `full-battle-bonus-draw-lethal.mt2f` retain
 schema 51 battles with 125 exact future-draw contexts. They cover signed/ranged
@@ -1564,7 +1656,7 @@ summon checks. Unsupported transition counts remain zero. The complete archive
 inventory, sizes and SHA-256 values match the curated manifest.
 
 
-The schema-86 triggered summon family contains four direct binary archives:
+The schema-86 triggered summon checkpoint introduced four direct binary archives:
 `full-battle-triggered-summons.mt2f`, `full-battle-triggered-summons-fresh.mt2f`,
 `full-battle-triggered-summons-death.mt2f` and
 `full-battle-triggered-summons-death-fresh.mt2f`. Real player unit definitions
@@ -1588,12 +1680,20 @@ deaths reject without partial children or parent changes. Full policy and
 position checks remain active. All four native capture gates are zero, with
 muted audio and unchanged original profile signatures.
 
-Sizes/nodes are 24,791/3,941; 24,661/3,941; 32,000/5,308; and 32,021/5,308
+At that checkpoint, sizes/nodes were 24,791/3,941; 24,661/3,941; 32,000/5,308; and 32,021/5,308
 in the archive order above. Instant sampling times are 43.59, 44.02, 44.63 and
 45.73 seconds. The inventory contains 133 archives: 124 battles and nine
 calibration suites. Equipment transfer, revival, Horde merging, additional
 trigger summon pool/multi-birth combinations and broader special mechanics
 remain incomplete; these archives establish the recorded paths only.
+
+On 2026-10-15, both death variants were replaced with schema-103 captures with
+fresh decision rules. Each still wins at Pyre 49 after 21 plays and seven
+EndTurns, and now passes strict independent policy replay from root and mid-battle
+with 16 immutable branches. Single-effect inputs explicitly include other dead
+actors that still occupy physical slots; both summon effects and all 14 damage
+phases compare complete state in 16 branches. The replacement sizes/nodes are
+41,038/7,037 and 41,076/7,027; current hashes are in the manifest.
 
 
 The full 133-archive regression exits zero: all 124 battle archives and nine

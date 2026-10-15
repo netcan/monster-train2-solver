@@ -1,5 +1,9 @@
 #requires -Version 7.4
-param([string[]]$Fixture = @())
+param(
+    [string[]]$Fixture = @(),
+    [ValidateRange(1, 32)][int]$Workers = 1,
+    [switch]$SkipBuild
+)
 
 $ErrorActionPreference = 'Stop'
 $workspace = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
@@ -57,6 +61,9 @@ $fixtureNames = @('full-battle-steward-once.mt2f', 'full-battle-no-cards.mt2f', 
     'full-battle-mix.mt2f', 'full-battle-mix-alternate.mt2f', 'full-battle-mix-01.mt2f', 'full-battle-mix-10.mt2f',
     'full-battle-mix-unstable.mt2f', 'full-battle-mix-unstable-explosion.mt2f',
     'full-battle-original-tinkermaster-mix.mt2f', 'full-battle-original-progress-pacemaker-mix.mt2f',
+    'full-battle-original-card-type-cost-relic.mt2f',
+    'full-battle-original-conserve-ember.mt2f',
+    'full-battle-card-type-cost-discount-first.mt2f', 'full-battle-card-type-cost-upgrade-first.mt2f',
     'full-battle-damage-by-units-killed.mt2f',
     'full-battle-damage-by-units-killed-physical.mt2f',
     'full-battle-hand-upgrades.mt2f', 'full-battle-targeted-hand-upgrades.mt2f', 'full-battle-permanent-consume-hand-upgrades.mt2f',
@@ -264,6 +271,191 @@ if ($Fixture.Count -gt 0) {
 } else {
     Write-Host "FIXTURE-INTEGRITY PASS: $($fixtures.Count) binary archives match the curated inventory and SHA-256 manifest."
 }
+if ($Workers -gt 1) {
+    if (-not $SkipBuild) {
+        dotnet build (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release
+        if ($LASTEXITCODE -ne 0) { throw 'Independent model checker build failed.' }
+    }
+    $binaryRoot = Join-Path $workspace 'src\ModelChecks\bin\Release\net8.0'
+    $binaryHashes = [ordered]@{}
+    foreach ($binary in @('ModelChecks.dll', 'Model.dll', 'FixtureArchive.dll')) {
+        $binaryHashes[$binary] = (Get-FileHash -LiteralPath (Join-Path $binaryRoot $binary) -Algorithm SHA256).Hash
+    }
+    $runDirectory = Join-Path $workspace ('.probe-runs\model-checks-' +
+        (Get-Date -Format 'yyyyMMdd-HHmmss') + '-' + [Guid]::NewGuid().ToString('N').Substring(0, 8))
+    $null = New-Item -ItemType Directory -Path $runDirectory
+    $workerCount = [Math]::Min($Workers, $selectedFixtureNames.Count)
+    $workerStates = [Collections.Generic.List[object]]::new()
+    $startedUtc = [DateTime]::UtcNow.ToString('o')
+    $summaryPath = Join-Path $runDirectory 'summary.json'
+    $runError = $null
+    $cleanupErrors = [Collections.Generic.List[string]]::new()
+    function Save-ParallelSummary([string]$Status) {
+        $incomplete = @($workerStates | Where-Object Status -ne 'Passed')
+        [ordered]@{
+            Status = $Status
+            StartedUtc = $startedUtc
+            UpdatedUtc = [DateTime]::UtcNow.ToString('o')
+            RequestedWorkers = $Workers
+            FixtureCount = $selectedFixtureNames.Count
+            BinaryHashes = $binaryHashes
+            Error = $runError
+            CleanupErrors = @($cleanupErrors)
+            Workers = @($workerStates | Select-Object Number, Status, ProcessId, ExitCode,
+                Fixtures, InputPath, OutputPath, ErrorPath, ResultPath)
+            # A failed shard may have partial passes. Rerun its complete selection
+            # because general checks precede its focused checks.
+            RerunFixtures = @($incomplete | ForEach-Object Fixtures)
+        } | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath $summaryPath -Encoding utf8
+    }
+    function Complete-ParallelWorker($Worker) {
+        $Worker.Process.WaitForExit()
+        $Worker.ExitCode = $Worker.Process.ExitCode
+        $Worker.Status = 'Failed'
+        if (Test-Path -LiteralPath $Worker.ResultPath) {
+            $result = Get-Content -LiteralPath $Worker.ResultPath -Raw | ConvertFrom-Json
+            if ($Worker.ExitCode -eq 0 -and $result.ExitCode -eq 0 -and
+                (@($result.Fixtures) -join "`n") -ceq ($Worker.Fixtures -join "`n")) {
+                $Worker.Status = 'Passed'
+            }
+        }
+    }
+    for ($workerIndex = 0; $workerIndex -lt $workerCount; $workerIndex++) {
+        $workerFixtures = @(for ($fixtureIndex = $workerIndex; $fixtureIndex -lt $selectedFixtureNames.Count; $fixtureIndex += $workerCount) {
+            $selectedFixtureNames[$fixtureIndex]
+        })
+        $prefix = Join-Path $runDirectory ('worker-{0:D2}' -f ($workerIndex + 1))
+        $worker = [pscustomobject]@{
+            Number = $workerIndex + 1; Status = 'Pending'; ProcessId = $null; ExitCode = $null
+            Fixtures = $workerFixtures; InputPath = "$prefix-input.json"
+            OutputPath = "$prefix.stdout.log"; ErrorPath = "$prefix.stderr.log"
+            ResultPath = "$prefix-result.json"; Process = $null
+        }
+        [ordered]@{ ScriptPath = $PSCommandPath; Fixtures = $workerFixtures; ResultPath = $worker.ResultPath } |
+            ConvertTo-Json -Depth 4 | Set-Content -LiteralPath $worker.InputPath -Encoding utf8
+        $workerStates.Add($worker)
+    }
+    Save-ParallelSummary 'Running'
+    Write-Host "MODEL-CHECKS-PARALLEL START: $workerCount workers, $($fixtures.Count) fixtures; $runDirectory"
+    try {
+        foreach ($worker in $workerStates) {
+            # EncodedCommand avoids native command-line quoting of fixture arrays
+            # and workspace paths. Only this literal JSON path enters the script.
+            $inputLiteral = "'" + $worker.InputPath.Replace("'", "''") + "'"
+            $workerCommand = @'
+$ErrorActionPreference = 'Stop'
+$inputData = Get-Content -LiteralPath __INPUT_PATH__ -Raw | ConvertFrom-Json
+$started = [DateTime]::UtcNow.ToString('o')
+$exitCode = 1
+$errorText = $null
+try {
+    & $inputData.ScriptPath -Fixture ([string[]]$inputData.Fixtures) -SkipBuild
+    $exitCode = 0
+} catch {
+    $errorText = $_.ToString()
+    [Console]::Error.WriteLine($_.ToString())
+    [Console]::Error.WriteLine($_.ScriptStackTrace)
+} finally {
+    [ordered]@{
+        ExitCode = $exitCode; StartedUtc = $started; CompletedUtc = [DateTime]::UtcNow.ToString('o')
+        Fixtures = @($inputData.Fixtures); Error = $errorText
+    } | ConvertTo-Json -Depth 4 | Set-Content -LiteralPath $inputData.ResultPath -Encoding utf8
+}
+exit $exitCode
+'@
+            $workerCommand = $workerCommand.Replace('__INPUT_PATH__', $inputLiteral)
+            $encodedCommand = [Convert]::ToBase64String([Text.Encoding]::Unicode.GetBytes($workerCommand))
+            $process = Start-Process -FilePath (Join-Path $PSHOME 'pwsh.exe') -WorkingDirectory $workspace `
+                -ArgumentList @('-NoProfile', '-NonInteractive', '-OutputFormat', 'Text', '-EncodedCommand', $encodedCommand) `
+                -WindowStyle Hidden -RedirectStandardOutput $worker.OutputPath `
+                -RedirectStandardError $worker.ErrorPath -PassThru
+            $worker.Process = $process
+            $worker.ProcessId = $process.Id
+            $worker.Status = 'Running'
+            Save-ParallelSummary 'Running'
+        }
+        $progressTimer = [Diagnostics.Stopwatch]::StartNew()
+        while (@($workerStates | Where-Object Status -eq 'Running').Count -gt 0) {
+            foreach ($worker in @($workerStates | Where-Object Status -eq 'Running')) {
+                if (-not $worker.Process.HasExited) { continue }
+                Complete-ParallelWorker $worker
+                Write-Host "MODEL-CHECKS-WORKER $($worker.Number): $($worker.Status), exit=$($worker.ExitCode), fixtures=$($worker.Fixtures.Count)"
+                Save-ParallelSummary 'Running'
+            }
+            if ($progressTimer.Elapsed.TotalSeconds -ge 15) {
+                $passed = @($workerStates | Where-Object Status -eq 'Passed')
+                $passedCount = @($passed | ForEach-Object Fixtures).Count
+                Write-Host "MODEL-CHECKS-PARALLEL PROGRESS: $($passed.Count)/$workerCount workers passed, $passedCount/$($fixtures.Count) fixtures complete; $summaryPath"
+                $progressTimer.Restart()
+            }
+            if (@($workerStates | Where-Object Status -eq 'Running').Count -gt 0) { Start-Sleep -Milliseconds 250 }
+        }
+        try {
+            foreach ($binary in $binaryHashes.Keys) {
+                if ((Get-FileHash -LiteralPath (Join-Path $binaryRoot $binary) -Algorithm SHA256).Hash -ne $binaryHashes[$binary]) {
+                    throw "Checker binary changed during parallel regression: $binary"
+                }
+            }
+        } catch {
+            # Missing or unreadable binaries invalidate the run just like a hash
+            # mismatch; every shard must then remain in the rerun selection.
+            foreach ($worker in $workerStates) { $worker.Status = 'Invalidated' }
+            throw
+        }
+        $failed = @($workerStates | Where-Object Status -ne 'Passed')
+        if ($failed.Count -gt 0) {
+            throw "Parallel model checks failed in workers $($failed.Number -join ', '); see logs and RerunFixtures in $summaryPath"
+        }
+    } catch {
+        $runError = $_.ToString()
+        throw
+    } finally {
+        # On interruption or launch failure, terminate only children started by
+        # this invocation; completed worker exit records remain on disk.
+        foreach ($worker in $workerStates) {
+            if ($null -ne $worker.Process) {
+                try {
+                    if (-not $worker.Process.HasExited) {
+                        $worker.Process.Kill($true)
+                        $worker.Process.WaitForExit()
+                        $worker.Status = 'Interrupted'
+                        $worker.ExitCode = $worker.Process.ExitCode
+                    } elseif ($worker.Status -in @('Pending', 'Running')) {
+                        Complete-ParallelWorker $worker
+                    }
+                } catch {
+                    $worker.Status = 'CleanupFailed'
+                    $cleanupErrors.Add("Worker $($worker.Number) cleanup: $($_.ToString())")
+                } finally {
+                    try {
+                        $worker.Process.Dispose()
+                    } catch {
+                        $worker.Status = 'CleanupFailed'
+                        $cleanupErrors.Add("Worker $($worker.Number) dispose: $($_.ToString())")
+                    }
+                }
+            }
+        }
+        if ($cleanupErrors.Count -gt 0 -and $null -eq $runError) {
+            $runError = $cleanupErrors -join [Environment]::NewLine
+        }
+        try {
+            if ($null -ne $runError -or @($workerStates | Where-Object Status -ne 'Passed').Count -gt 0) {
+                Save-ParallelSummary 'Failed'
+            } else {
+                Save-ParallelSummary 'Passed'
+            }
+        } catch {
+            # Keep the original failure or interruption and still report a
+            # secondary summary-write error without masking it.
+            $cleanupErrors.Add("Final summary: $($_.ToString())")
+        }
+        foreach ($cleanupError in $cleanupErrors) { Write-Warning $cleanupError -WarningAction Continue }
+    }
+    if ($cleanupErrors.Count -gt 0) { throw ($cleanupErrors -join [Environment]::NewLine) }
+    Write-Host "MODEL-CHECKS-PARALLEL PASS: $($fixtures.Count) fixtures, $workerCount workers, all terminal exit codes zero; $summaryPath"
+    return
+}
 $focusedBumpFixtures = @($fixtures | Where-Object {
     (Split-Path -Leaf $_) -in @('full-battle-companion-bump.mt2f', 'full-battle-outer-boss-bump.mt2f')
 })
@@ -279,10 +471,12 @@ $generalFixtures = @($fixtures | Where-Object {
         'full-battle-relic-card-cast-trigger-upgrades.mt2f',
         'full-battle-relic-card-cast-trigger-unit-upgrades.mt2f')
 })
+$buildArguments = @()
+if ($SkipBuild) { $buildArguments += '--no-build' }
 if ($generalFixtures.Count -gt 0) {
-    dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release -- @generalFixtures
+    dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release @buildArguments -- @generalFixtures
 } else {
-    dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release
+    dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release @buildArguments
 }
 if ($LASTEXITCODE -ne 0) { throw 'Independent model checks failed.' }
 
@@ -524,6 +718,25 @@ foreach ($fixturePath in @($fixtures | Where-Object { (Split-Path -Leaf $_) -in 
     foreach ($mode in @('--original-mix-relic-only', '--battle-search-only')) {
         dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- $mode $fixturePath
         if ($LASTEXITCODE -ne 0) { throw "Original Mix relic checks failed ($mode): $fixturePath" }
+    }
+}
+foreach ($fixturePath in @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 'full-battle-original-card-type-cost-relic.mt2f' })) {
+    foreach ($mode in @('--original-card-type-cost-only', '--battle-search-only')) {
+        dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- $mode $fixturePath
+        if ($LASTEXITCODE -ne 0) { throw "Original card-type cost relic checks failed ($mode): $fixturePath" }
+    }
+}
+foreach ($fixturePath in @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 'full-battle-original-conserve-ember.mt2f' })) {
+    foreach ($mode in @('--original-conserve-ember-only', '--battle-search-only')) {
+        dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- $mode $fixturePath
+        if ($LASTEXITCODE -ne 0) { throw "Original ConserveEmber checks failed ($mode): $fixturePath" }
+    }
+}
+foreach ($fixturePath in @($fixtures | Where-Object { (Split-Path -Leaf $_) -in @(
+    'full-battle-card-type-cost-discount-first.mt2f', 'full-battle-card-type-cost-upgrade-first.mt2f') })) {
+    foreach ($mode in @('--card-type-cost-order-only', '--battle-search-only')) {
+        dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- $mode $fixturePath
+        if ($LASTEXITCODE -ne 0) { throw "Card-type cost upgrade-order checks failed ($mode): $fixturePath" }
     }
 }
 foreach ($fixturePath in @($fixtures | Where-Object { (Split-Path -Leaf $_) -in @(

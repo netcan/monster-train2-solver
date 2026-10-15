@@ -121,6 +121,7 @@ namespace MonsterTrain2Poju.Model
                 return Unsupported("Selected room is not present in the captured rules.");
             TrainCombatState train = source.Spawn.Train;
             int? framedRoom = train.Context!.QueryFrame?.SelectedRoomIndex;
+            int currentRoom = framedRoom ?? source.SelectedRoom;
             if (source.SelectedRoom == roomIndex && (!framedRoom.HasValue || framedRoom == roomIndex))
                 return new BattleTurnResult(source, RoomOutcome.Exchanged);
             IReadOnlyList<string> actionInteractions = ActionInteractions(source);
@@ -130,13 +131,15 @@ namespace MonsterTrain2Poju.Model
                 return Unsupported(string.Join("; ", train.Rooms.SelectMany(room => room.ExternalInteractions).Distinct()));
             string? relicError = RelicModel.Validate(train.Context);
             if (relicError != null) return Unsupported(relicError);
-            if (source.SelectedRoom >= 0 && !source.PlayRules.Rooms.Any(room => room.RoomIndex == source.SelectedRoom))
+            if (currentRoom >= 0 && !source.PlayRules.Rooms.Any(room => room.RoomIndex == currentRoom))
                 return Unsupported("Current selected room is not present in the captured rules.");
 
-            bool selectionChanged = source.SelectedRoom != roomIndex;
+            // Native callbacks can focus a different room before the next decision.
+            // The captured live frame is authoritative when the outer snapshot lags.
+            bool selectionChanged = currentRoom != roomIndex;
             if (framedRoom.HasValue)
                 train = CardSpellModel.WithContext(train, train.Context!.WithQueryFrame(train.Context.QueryFrame!.With(selectedRoomIndex: roomIndex)));
-            if (selectionChanged && source.SelectedRoom >= 0 && source.BattlePreviewEnabled)
+            if (selectionChanged && currentRoom >= 0 && source.BattlePreviewEnabled)
             {
                 TrainCombatResult preview = BattlePreviewModel.Refresh(train);
                 if (!preview.Supported) return Unsupported(preview.UnsupportedReason!);
@@ -300,7 +303,9 @@ namespace MonsterTrain2Poju.Model
             foreach (CardToken card in context.Cards.Hand.Reverse().Where(card => !retainedIds.Contains(card.InstanceId)))
                 statistics = statistics?.Increment(card.InstanceId, "TimesDiscarded");
             foreach (CardToken card in discard.PurgedCards) statistics = statistics?.RemoveDeckCard(card.InstanceId);
-            context = context.WithStatistics(statistics?.WithEndTurnEnergy(context.EnergyState == null ? source.Energy : context.QueryFrame!.Energy!.Value));
+            bool conserveEnergy = context.Relics?.Any(relic => relic.EffectTypes.Contains(RelicResourceModel.ConserveEnergyEndOfTurn)) == true;
+            context = context.WithStatistics(conserveEnergy ? statistics :
+                statistics?.WithEndTurnEnergy(context.EnergyState == null ? source.Energy : context.QueryFrame!.Energy!.Value));
             var discardedIds = new HashSet<int>(context.Cards.Hand.Where(card => !retainedIds.Contains(card.InstanceId))
                 .Select(card => card.InstanceId));
             context = context.WithCardInstances(context.CardInstances?.Select(card => discardedIds.Contains(card.InstanceId)
@@ -322,8 +327,19 @@ namespace MonsterTrain2Poju.Model
             }
             context = WithCards(context, cards);
             if (discardedIds.Count > 0) context = UnitStandbyModel.ReturnReady(CardExhaustModel.ReturnReady(context));
-            // Hand callbacks precede the native energy removal; combat sees zero energy.
-            context = context.WithQueryFrame(context.QueryFrame?.With(energy: 0));
+            // Native conservation sees hand callbacks and the previous EndTurnEnergy
+            // statistic, then stores this turn's remaining energy before removal.
+            if (conserveEnergy)
+            {
+                if (context.QueryFrame?.Energy == null) return Unsupported("Missing end-of-turn conservation energy.");
+                int remaining = context.QueryFrame.Energy.Value;
+                RelicResourceResult removal = RelicResourceModel.GetEnergyToRemoveAtTurnEnd(context, remaining, placement: spawn.Turn == 0);
+                if (!removal.Supported) return Unsupported(removal.UnsupportedReason!);
+                context = removal.Context!;
+                context = context.WithStatistics(context.Statistics?.WithEndTurnEnergy(remaining));
+                context = context.WithQueryFrame(context.QueryFrame!.With(energy: remaining - removal.Value));
+            }
+            else context = context.WithQueryFrame(context.QueryFrame?.With(energy: 0));
             context = EnergyModel.SetPhase(context, "Combat");
             train = WithContext(train, context, spawn.Turn == 0);
             TrainCombatResult combat = TrainCombatModel.ResolveCombat(train);
@@ -468,6 +484,10 @@ namespace MonsterTrain2Poju.Model
                 if (source.CanonicalDecisionReferences)
                     spawn = WithTrain(spawn, TrainCombatModel.CompleteFrameRemovals(spawn.Train), spawn.Turn, spawn.Rng);
                 CombatContext finalContext = spawn.Train.Context!;
+                // Native decision captures refresh room rules after all turn callbacks,
+                // including PreCombat capacity changes and terminal transitions.
+                if (finalContext.RoomCapacities != null)
+                    outputPlayRules = outputPlayRules?.WithCapacities(finalContext.RoomCapacities);
                 BattleRngStream[] streams = source.RngStreams.Select(stream => new BattleRngStream(stream.Name, stream.Seed,
                     stream.Name == "Battle" ? finalContext.BattleRng : stream.Name == "CardDraw" ? finalContext.Cards.Rng :
                     stream.Name == "Spawning" ? spawn.Rng : stream.State)).ToArray();
@@ -476,8 +496,8 @@ namespace MonsterTrain2Poju.Model
                     : otherPiles;
                 spawn = WithTrain(spawn, CardSpellModel.WithContext(spawn.Train, finalContext.WithOtherPiles(piles)),
                     spawn.Turn, spawn.Rng);
-                int selectedRoom = source.SelectedRoom;
-                if (selectedRoom >= 0)
+                int selectedRoom = finalContext.QueryFrame?.SelectedRoomIndex ?? source.SelectedRoom;
+                if (finalContext.QueryFrame?.SelectedRoomIndex == null && selectedRoom >= 0)
                 {
                     var priorRooms = source.Spawn.Train.Rooms.SelectMany(room => room.Units.Select(unit => (unit.Id, room.RoomIndex)))
                         .ToDictionary(item => item.Id, item => item.RoomIndex);

@@ -125,13 +125,17 @@ internal static class TriggeredSummonChecks
     {
         var before = record.GetProperty("Before").Deserialize<RoomCombatState>()!;
         var actor = record.GetProperty("ActorBefore").Deserialize<CombatUnit>()!;
-        string parent = JsonSerializer.Serialize(before), originalActor = JsonSerializer.Serialize(actor);
+        var retained = record.TryGetProperty("RetainedBefore", out var retainedBefore) ? retainedBefore.Deserialize<CombatUnit[]>()! : [];
+        string parent = JsonSerializer.Serialize(before), originalActor = JsonSerializer.Serialize(actor), originalRetained = JsonSerializer.Serialize(retained);
         var result = RoomCombatModel.ApplyNativeTriggeredSummon(before, actor, record.GetProperty("TriggerStateId").GetInt32(),
-            record.GetProperty("EffectIndex").GetInt32(), out var resultingRule);
+            record.GetProperty("EffectIndex").GetInt32(), out var resultingRule, retainedOccupants: retained);
         Require(result.Supported, "Native summon effect unsupported: " + result.UnsupportedReason);
         Compare(result.State, record.GetProperty("After").Deserialize<RoomCombatState>(), "Native summon effect room");
         Compare(result.State!.Units.Concat(result.RetainedUnits).Single(unit => unit.Id == actor.Id),
             record.GetProperty("ActorAfter").Deserialize<CombatUnit>(), "Native summon effect actor");
+        if (record.TryGetProperty("RetainedAfter", out var retainedAfter))
+            Compare(retained.Select(source => result.RetainedUnits.Single(unit => unit.Id == source.Id)).ToArray(),
+                retainedAfter.Deserialize<CombatUnit[]>(), "Native summon retained physical occupants");
         Compare(resultingRule, record.GetProperty("RuleAfter").Deserialize<TriggeredSummonRule>(), "Native summon effect cache");
         var callbacks = result.PendingCallbacks.Where(item => item.Unit.Triggers.Any(trigger => trigger.Kind == item.Kind))
             .Select(item => new Callback(item.Unit.Id, item.Kind, item.DyingCharacter?.Id ?? 0, item.ParamInt, item.TriggerCount)).ToArray();
@@ -139,12 +143,24 @@ internal static class TriggeredSummonChecks
         if (record.TryGetProperty("FullQueued", out var full))
             Compare(result.PendingCallbacks.Where(item => item.Unit.Triggers.Any(trigger => trigger.Kind == item.Kind))
                 .Select(UnitCloneCallback.From).ToArray(), full.Deserialize<UnitCloneCallback[]>(), "Native summon full callback payloads");
-        Require(JsonSerializer.Serialize(before) == parent && JsonSerializer.Serialize(actor) == originalActor,
+        Require(JsonSerializer.Serialize(before) == parent && JsonSerializer.Serialize(actor) == originalActor && JsonSerializer.Serialize(retained) == originalRetained,
             "Native summon effect changed its parent or retained source actor.");
         var invalid = RoomCombatModel.ApplyNativeTriggeredSummon(before, actor, record.GetProperty("TriggerStateId").GetInt32(),
             -1, out var invalidRule);
         Require(!invalid.Supported && invalid.State == null && invalidRule == null && JsonSerializer.Serialize(before) == parent,
             "An invalid native summon cursor produced a partial child or changed the parent.");
+        if (retained.Length > 0)
+        {
+            var missing = RoomCombatModel.ApplyNativeTriggeredSummon(before, actor, record.GetProperty("TriggerStateId").GetInt32(),
+                record.GetProperty("EffectIndex").GetInt32(), out var missingRule);
+            Require(!missing.Supported && missing.State == null && missingRule == null &&
+                missing.UnsupportedReason!.Contains("retained occupant"), "A missing physical occupant produced a partial native summon child.");
+            var duplicate = RoomCombatModel.ApplyNativeTriggeredSummon(before, actor, record.GetProperty("TriggerStateId").GetInt32(),
+                record.GetProperty("EffectIndex").GetInt32(), out var duplicateRule, retainedOccupants: retained.Append(retained[0]).ToArray());
+            Require(!duplicate.Supported && duplicate.State == null && duplicateRule == null &&
+                JsonSerializer.Serialize(before) == parent && JsonSerializer.Serialize(retained) == originalRetained,
+                "Duplicate retained occupants produced a partial native summon child or changed the parent.");
+        }
     }
     private static void Compare<T>(T actual, T expected, string label)
     {

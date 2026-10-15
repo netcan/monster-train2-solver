@@ -39,6 +39,14 @@ namespace MonsterTrain2Poju.Probe
                     .Select(item => CorruptionStatus(item.Effect, item.Index)).ToArray();
                 var cardModifiers = effects.Select((effect, index) => new { Effect = effect, Index = index })
                     .Where(item => item.Effect is RelicEffectAddTempUpgrade).Select(item => RelicCardModifierProbe.Definition(item.Effect, item.Index)).ToArray();
+                var cardTypeCosts = effects.Select((effect, index) => new { Effect = effect, Index = index })
+                    .Where(item => item.Effect is RelicEffectModifyCardTypeCost).Select(item => {
+                        var data = (RelicEffectData)AccessTools.Field(typeof(RelicEffectBase), "_srcRelicEffectData").GetValue(item.Effect);
+                        SubtypeData? subtype = data.GetParamCharacterSubtype();
+                        return new RelicCardTypeCost(item.Index, data.GetParamCardType().ToString(), data.GetParamInt(),
+                            data.GetParamBool(), subtype == null || subtype.IsNone ? null : subtype.Key,
+                            data.GetEffectConditions().Count);
+                    }).ToArray();
                 var cardHealthModifiers = effects.Select((effect, index) => new { Effect = effect, Index = index })
                     .Where(item => item.Effect is RelicEffectModifyCardHealth).Select(item => {
                         object Field(string name) => AccessTools.Field(item.Effect.GetType(), name).GetValue(item.Effect);
@@ -115,7 +123,8 @@ namespace MonsterTrain2Poju.Probe
                     cardHealthModifiers.Length > 0 ? cardHealthModifiers : null,
                     cardAttackModifiers.Length > 0 ? cardAttackModifiers : null,
                     cardDrawOnCardPlay.Length > 0 ? cardDrawOnCardPlay : null,
-                    corruptionStatuses.Length > 0 ? corruptionStatuses : null);
+                    corruptionStatuses.Length > 0 ? corruptionStatuses : null,
+                    cardTypeCosts.Length > 0 ? cardTypeCosts : null);
             }).ToArray();
         }
 

@@ -169,7 +169,8 @@ namespace MonsterTrain2Poju.Model
             {
                 if (!state.AllowUpdates || state.Updating || error != null) return;
                 Set(updating: true);
-                int[] sourceRooms = state.Train.Rooms.Where(room => room.Units.Any(unit => state.EnchanterIds.Contains(unit.Id)))
+                int[] sourceRooms = state.Train.Rooms.Where(room => room.Units.Any(unit =>
+                    CanCollect(unit) && state.EnchanterIds.Contains(unit.Id)))
                     .Select(room => room.RoomIndex).ToArray();
                 if (sourceRooms.Length > 1 && state.Train.Context?.SpawnPoints == null)
                 { error = "Cross-room enchantment source order requires captured physical points."; Set(updating: false); return; }
@@ -178,11 +179,21 @@ namespace MonsterTrain2Poju.Model
                     foreach (CombatTeam team in new[] { CombatTeam.Enemy, CombatTeam.Player })
                     {
                         int rank = 0;
-                        foreach (CombatUnit unit in room.Units.Where(unit => unit.Team == team))
+                        // RoomState.AddCharactersToList excludes IsDead/IsDestroyed.
+                        // Damage queues can retain a zero-HP actor after its point
+                        // has been removed; it is not an enchantment/Deathwish source.
+                        foreach (CombatUnit unit in room.Units.Where(unit => unit.Team == team && CanCollect(unit)))
                         {
                             var group = state.Train.Context?.SpawnPoints?.SelectedGroup(room.RoomIndex, team);
                             int index = group == null ? rank : Array.IndexOf(group.Occupants.ToArray(), unit.Id);
-                            if (index < 0) { error = "Missing physical point for enchantment source collection."; Set(updating: false); return; }
+                            if (index < 0)
+                            {
+                                error = "Missing physical point for enchantment source collection: unit=" + unit.Id +
+                                    ", room=" + room.RoomIndex + ", team=" + team + ", health=" + unit.Health +
+                                    ", finishedDying=" + unit.DeathState?.HasFinishedDying +
+                                    ", occupants=" + string.Join(",", group!.Occupants) + ".";
+                                Set(updating: false); return;
+                            }
                             positions.Add(new EnchantmentSourcePosition(unit.Id, team, room.RoomIndex, index)); rank++;
                         }
                     }
@@ -201,6 +212,8 @@ namespace MonsterTrain2Poju.Model
                 Set(updating: false);
                 if (error == null) UpdateDeathwish(sources);
             }
+            private static bool CanCollect(CombatUnit unit) => unit.Health > 0 &&
+                unit.DeathState?.IsDespawned != true && unit.DeathState?.IsDestroyed != true;
             private void UpdateDeathwish(int[] actorOrder)
             {
                 var units = state.Train.Rooms.SelectMany(room => room.Units).ToDictionary(unit => unit.Id);
@@ -241,10 +254,10 @@ namespace MonsterTrain2Poju.Model
             }
             private bool IsDeathwishFront(RoomCombatState room, CombatUnit actor)
             {
-                var members = room.Units.Where(unit => unit.Team == actor.Team && unit.Health > 0 && unit.DeathState?.IsDestroyed != true)
+                var members = room.Units.Where(unit => unit.Team == actor.Team && CanCollect(unit))
                     .ToDictionary(unit => unit.Id);
                 SpawnPointGroupState? group = state.Train.Context?.SpawnPoints?.SelectedGroup(room.RoomIndex, actor.Team);
-                IEnumerable<CombatUnit> ordered = group == null ? room.Units.Where(unit => unit.Team == actor.Team) :
+                IEnumerable<CombatUnit> ordered = group == null ? room.Units.Where(unit => members.ContainsKey(unit.Id)) :
                     group.Occupants.Where(members.ContainsKey).Select(id => members[id]).Concat(room.Units.Where(unit =>
                         unit.Team == actor.Team && members.ContainsKey(unit.Id) && !group.Occupants.Contains(unit.Id)));
                 CombatUnit? front = ordered.FirstOrDefault(unit => (unit.Status("untouchable")?.Stacks ?? 0) <= 0);

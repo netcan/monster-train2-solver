@@ -124,15 +124,13 @@ internal static class PyreResourceRefreshChecks
         if (replayBattle)
         {
             CardCycleChecks.Native(root); BattleActionChecks.Native(root); BattleTurnChecks.Native(root);
-            if (compareRoomEnabled)
-            {
-                ReplayBranches(first, actions, turns, terminal, compareRoomEnabled, "root");
-                BattleTurnState mid = actions[0].GetProperty("Actual").Deserialize<BattleTurnState>()!;
-                ReplayBranches(mid, actions.Skip(1).ToArray(), turns.Where(row =>
-                    row.GetProperty("Before").GetProperty("Spawn").GetProperty("Turn").GetInt32() >= mid.Spawn.Turn).ToArray(),
-                    terminal, compareRoomEnabled, "mid");
-            }
-            else Console.WriteLine("PYRE-RESOURCE-REFRESH-POLICY-CHECKS SKIP: legacy EndTurn room Enabled snapshots conflict with the current model.");
+            if (!compareRoomEnabled)
+                Console.WriteLine("LEGACY-PYRE-RESOURCE-POLICY-LIMITATION: stale room Enabled snapshots are excluded; complete root and mid-battle policies remain checked.");
+            ReplayBranches(first, actions, turns, terminal, compareRoomEnabled, "root");
+            BattleTurnState mid = actions[0].GetProperty("Actual").Deserialize<BattleTurnState>()!;
+            ReplayBranches(mid, actions.Skip(1).ToArray(), turns.Where(row =>
+                row.GetProperty("Before").GetProperty("Spawn").GetProperty("Turn").GetInt32() >= mid.Spawn.Turn).ToArray(),
+                terminal, compareRoomEnabled, "mid");
         }
         var witnesses = Artifacts.ToDictionary(owner => owner.Key, owner => proofs.Where(proof => proof.Key.Id == owner.Id).Sum(proof => proof.Value));
         Console.WriteLine("PYRE-RESOURCE-REFRESH-WITNESSES " + string.Join(", ", witnesses.Select(row => row.Key + "=" + row.Value)));

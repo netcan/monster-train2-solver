@@ -287,7 +287,8 @@ namespace MonsterTrain2Poju.Model
         {
             if (action.ActivatorUnitId != 0)
             {
-                if (source.SelectedRoom >= 0 && source.SelectedRoom != action.RoomIndex &&
+                int currentRoom = source.Spawn.Train.Context?.QueryFrame?.SelectedRoomIndex ?? source.SelectedRoom;
+                if (currentRoom >= 0 && currentRoom != action.RoomIndex &&
                     source.PlayRules?.Rooms.Any(room => room.RoomIndex == action.RoomIndex) == true)
                 {
                     BattleTurnResult selection = BattleTurnModel.SelectRoom(source, action.RoomIndex);
@@ -790,7 +791,8 @@ namespace MonsterTrain2Poju.Model
                     stream.Name == "Battle" ? context.BattleRng : stream.Name == "CardDraw" ? context.Cards.Rng : stream.State)).ToArray(),
                 piles, BattleTurnModel.AfterActionInteractions(source, context), outputPlayRules, source.BattlePreviewEnabled, source.UiRngIsolated,
                 source.CanonicalDecisionReferences, source.CanonicalPhysicalReferences,
-                source.SelectedRoom < 0 ? source.SelectedRoom : action.RoomIndex, source.MoonPhaseTrackingActive), outcome: outcome);
+                train.Context?.QueryFrame?.SelectedRoomIndex ?? (source.SelectedRoom < 0 ? source.SelectedRoom : action.RoomIndex),
+                source.MoonPhaseTrackingActive), outcome: outcome);
         }
 
         // Unsupported attempts are kept separate from legal actions so callers can detect an incomplete search frontier.

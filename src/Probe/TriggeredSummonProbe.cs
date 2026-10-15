@@ -28,6 +28,8 @@ namespace MonsterTrain2Poju.Probe
             public TriggeredSummonRule? RuleAfter { get; set; }
             public CombatUnit ActorBefore { get; set; } = null!;
             public CombatUnit? ActorAfter { get; set; }
+            public CombatUnit[] RetainedBefore { get; set; } = Array.Empty<CombatUnit>();
+            public CombatUnit[] RetainedAfter { get; set; } = Array.Empty<CombatUnit>();
             public RoomCombatState Before { get; set; } = null!;
             public RoomCombatState? After { get; set; }
             public bool Completed { get; set; }
@@ -141,6 +143,7 @@ namespace MonsterTrain2Poju.Probe
             FullBattleTrace trace = FullBattleTrace.Active!;
             CharacterState actor = parameters.selfTarget!;
             RoomState room = parameters.GetSelectedRoom(AllGameManagers.Instance!.GetRoomManager()!)!;
+            CharacterState[] retained = Array.Empty<CharacterState>();
             try
             {
                 record.Kind = parameters.sourceCharacterTriggerState?.GetTrigger().ToString() ?? "";
@@ -152,6 +155,11 @@ namespace MonsterTrain2Poju.Probe
                 record.RuleBefore = Capture(effect)!;
                 using (new CharacterState.SetAllowDestroyedAccessHelper(actor, onlyIfDestroyed: true)) record.ActorBefore = trace.CaptureUnit(actor);
                 record.Before = trace.Capture(room);
+                var absent = (record.Before.Context?.SpawnPoints?.Groups.Where(group => group.RoomIndex == record.Before.RoomIndex &&
+                    !group.PreviewCopyId.HasValue).SelectMany(group => group.Occupants) ?? Enumerable.Empty<int>())
+                    .Where(id => id > 0 && id != record.ActorBefore.Id && !record.Before.Units.Any(unit => unit.Id == id)).Distinct().OrderBy(id => id).ToArray();
+                retained = absent.Select(id => trace.KnownUnits.Single(unit => trace.TryGetUnitId(unit, out int known) && known == id)).ToArray();
+                record.RetainedBefore = CaptureRetained(trace, retained);
             }
             catch (Exception error) { record.Error = error.ToString(); }
             try { while (native.MoveNext()) yield return native.Current; record.Completed = true; }
@@ -163,24 +171,32 @@ namespace MonsterTrain2Poju.Probe
                     record.RuleAfter = Capture(effect);
                     using (new CharacterState.SetAllowDestroyedAccessHelper(actor, onlyIfDestroyed: true)) record.ActorAfter = trace.CaptureUnit(actor);
                     record.After = trace.Capture(room);
+                    record.RetainedAfter = CaptureRetained(trace, retained);
                 }
                 catch (Exception error) { record.Error = error.ToString(); }
                 if (EnchantmentBattleScenario.ChildSummons && Records.Count >= 2 && Records.All(item => item.Completed)) WriteAuraCalibration();
             }
         }
+        private static CombatUnit[] CaptureRetained(FullBattleTrace trace, IEnumerable<CharacterState> retained)
+            => retained.Select(unit =>
+            {
+                using (new CharacterState.SetAllowDestroyedAccessHelper(unit, onlyIfDestroyed: true)) return trace.CaptureUnit(unit);
+            }).ToArray();
         private static void WriteAuraCalibration()
         {
             string? Difference(Record record)
             {
                 if (record.Error != null || record.After == null) return record.Error ?? "Missing native completion.";
                 RoomCombatResult result = RoomCombatModel.ApplyNativeTriggeredSummon(record.Before, record.ActorBefore,
-                    record.TriggerStateId, record.EffectIndex, out TriggeredSummonRule? rule);
+                    record.TriggerStateId, record.EffectIndex, out TriggeredSummonRule? rule, retainedOccupants: record.RetainedBefore);
                 if (!result.Supported) return result.UnsupportedReason;
                 CombatUnit actor = result.State!.Units.Concat(result.RetainedUnits).Single(unit => unit.Id == record.ActorBefore.Id);
                 UnitCloneCallback[] callbacks = result.PendingCallbacks.Where(item => item.Unit.Triggers.Any(trigger => trigger.Kind == item.Kind))
                     .Select(UnitCloneCallback.From).ToArray();
                 return JToken.DeepEquals(JToken.FromObject(result.State), JToken.FromObject(record.After)) &&
                     JToken.DeepEquals(JToken.FromObject(actor), JToken.FromObject(record.ActorAfter!)) &&
+                    JToken.DeepEquals(JToken.FromObject(record.RetainedBefore.Select(retained => result.RetainedUnits.Single(unit => unit.Id == retained.Id))),
+                        JToken.FromObject(record.RetainedAfter)) &&
                     JToken.DeepEquals(JToken.FromObject(rule!), JToken.FromObject(record.RuleAfter!)) &&
                     JToken.DeepEquals(JToken.FromObject(callbacks), JToken.FromObject(record.FullQueued)) ? null : "Native queued aura summon differs.";
             }

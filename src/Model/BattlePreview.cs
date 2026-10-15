@@ -150,6 +150,14 @@ namespace MonsterTrain2Poju.Model
                     originalWorld.EnchanterIds.Concat(observed.EnchanterIds).Distinct().ToArray(),
                     originalWorld.AllowUpdates, originalWorld.Updating, originalWorld.Preview, originalWorld.TestRng, true));
             }
+            // Ordinary preview births have temporary simulation IDs: native identity
+            // capture skips them. Only the observed enchantment lifecycle above keeps
+            // those IDs and advances the persistent counter. Preserve older retained
+            // actors, including deaths and already observed preview births.
+            if (context.SpawnPoints is BattleSpawnPoints restoredPoints && context.NextUnitId is int nextUnitId &&
+                restoredPoints.Units.Any(unit => unit.SpawnedInPreview && unit.UnitId >= nextUnitId))
+                context = context.WithSpawnPoints(restoredPoints.WithState(restoredPoints.Groups,
+                    restoredPoints.Units.Where(unit => !unit.SpawnedInPreview || unit.UnitId < nextUnitId).ToArray()));
             var train = new TrainCombatState(source.Rooms.Select(room => new RoomCombatState(room.RoomIndex, room.Deployment,
                 room.Units.Select(RestorePrimaryEffects).ToArray(), room.ExternalInteractions, context, room.Preview,
                 room.ActiveCompanionBossIds)).ToArray(), source.Movement, source.EnemySlotsPerRoom, context);

@@ -29,6 +29,20 @@ internal static class BattleActionChecks
         var spawn = new EnemySpawnState(train, [new EnemyWave([new EnemyGroup([])])], [-1], 0, false, rng, 2, [], 0, false, 2, 1, 3, []);
         var root = new BattleTurnState(spawn, 3, 3, 5, 0, 0, "New", [new("Spawning", 42, rng)],
             [new("Standby", []), new("Exhausted", []), new("Purged", [])], [], rules, selectedRoom: 0);
+        BattleTurnState WithComparisonRules(BattlePlayRules changed) => new(root.Spawn, root.Energy,
+            root.EnergyPerTurn, root.DrawPerTurn, root.ForgePoints, root.DragonsHoard, root.MoonPhase,
+            root.RngStreams, root.OtherPiles, root.ExternalInteractions, changed, selectedRoom: root.SelectedRoom);
+        BattleTurnState enabledMismatch = WithComparisonRules(rules.WithRooms(rules.Rooms.Select(room =>
+            room.RoomIndex == 0 ? room.WithEnabled(false) : room).ToArray()));
+        BattleTurnState capacityMismatch = WithComparisonRules(rules.WithRooms(rules.Rooms.Select(room =>
+            room.RoomIndex == 0 ? room.WithCapacities(room.PlayerCapacity + 1, room.EnemyCapacity) : room).ToArray()));
+        Require(BattleTurnChecks.Comparable(root) != BattleTurnChecks.Comparable(enabledMismatch) &&
+            BattleTurnChecks.Comparable(root, compareRoomEnabled: false) ==
+                BattleTurnChecks.Comparable(enabledMismatch, compareRoomEnabled: false),
+            "Fresh decision comparisons must reject Enabled differences; only the explicit legacy comparison may exclude that field.");
+        Require(BattleTurnChecks.Comparable(root, compareRoomEnabled: false) !=
+            BattleTurnChecks.Comparable(capacityMismatch, compareRoomEnabled: false),
+            "The legacy Enabled exclusion must still reject a capacity mismatch.");
         string parent = JsonSerializer.Serialize(root);
         BattleTurnResult selected = BattleTurnModel.SelectRoom(root, 1);
         Require(selected.Supported && selected.State!.SelectedRoom == 1 && root.SelectedRoom == 0 &&
@@ -279,7 +293,7 @@ internal static class BattleActionChecks
             PlayCardAction action = entry.GetProperty("Action").Deserialize<PlayCardAction>()!;
             BattleActionResult result = BattleActionModel.PlayCard(before, action);
             if (!result.Supported)
-            { unsupported++; Console.WriteLine("NATIVE-ACTION-UNSUPPORTED index=" + entry.GetProperty("Index") + ": " + result.Reason); continue; }
+            { unsupported++; Console.WriteLine("NATIVE-ACTION-UNSUPPORTED index=" + entry.GetProperty("Index").GetInt32() + ": " + result.Reason); continue; }
             BattleTurnState actual = entry.GetProperty("Actual").Deserialize<BattleTurnState>()!;
             if (entry.TryGetProperty("ActualOutcome", out FixtureValue actionOutcome))
             {
@@ -457,10 +471,7 @@ internal static class BattleActionChecks
         if (!fixture.TryGetProperty("Policy", out FixtureValue policy) ||
             policy.GetString() is not ("units-and-junk" or "units-spells-and-junk")) return;
         if (!compareRoomEnabled)
-        {
-            Console.WriteLine("NATIVE-POLICY-CHAIN-CHECKS SKIP: legacy EndTurn room Enabled snapshots conflict with the current model.");
-            return;
-        }
+            Console.WriteLine("LEGACY-POLICY-CHAIN-LIMITATION: stale room Enabled snapshots are excluded; the complete independent policy and all other compared state remain checked.");
         Func<BattleTurnState, PlayCardAction?> chooser = policy.GetString() == "units-spells-and-junk"
             ? BattleActionModel.ChooseUnitSpellAndJunkPlay : BattleActionModel.ChooseUnitAndJunkPlay;
         if (fixture.TryGetProperty("ModifierScenario", out var chooseDiscardPolicy) &&
@@ -531,6 +542,8 @@ internal static class BattleActionChecks
             chooser = OriginalStingRelicBatchChecks.Choose;
         if (fixture.TryGetProperty("ModifierScenario", out var originalDeployableRelicPolicy) && originalDeployableRelicPolicy.GetString() == "original-deployable-relic")
             chooser = OriginalDeployableRelicChecks.Choose;
+        if (fixture.TryGetProperty("ModifierScenario", out var conserveEmberPolicy) && conserveEmberPolicy.GetString() == "original-conserve-ember-relic")
+            chooser = ConserveEmberChecks.Choose;
         if (fixture.TryGetProperty("ModifierScenario", out var originalTriggerRelicPolicy) && originalTriggerRelicPolicy.GetString() == "original-trigger-relic-batch")
             chooser = OriginalTriggerRelicBatchChecks.Choose;
         if (fixture.TryGetProperty("ModifierScenario", out var originalLifecycleRelicPolicy) && originalLifecycleRelicPolicy.GetString() == "original-lifecycle-relic-batch")

@@ -372,6 +372,7 @@ namespace MonsterTrain2Poju.Model
 
     public static class RoomCombatModel
     {
+        private const string DeathRoomFocusPhase = "DeathRoomFocus";
         internal enum CharacterTriggerAdmission { Pending, Accepted, Rejected }
         internal sealed class QueuedCharacterTrigger
         {
@@ -586,7 +587,10 @@ namespace MonsterTrain2Poju.Model
                     if (!Fire(new QueuedCharacterTrigger(dead.RoomIndex, dead.Unit, stage,
                         triggerCount: HarvestModel.Count(counts, kind))) || !Drain()) return false;
                 }
-                return true;
+                // Deferred damage removal finishes InnerCharacterDeath after Harvest.
+                // An immediate sacrifice inside a running queue already focused
+                // before removing its point; its queued callbacks must not refocus.
+                return !dead.DeferUntilRemoval || Fire(new QueuedCharacterTrigger(dead.RoomIndex, dead.Unit, DeathRoomFocusPhase));
             }
             return Drain();
         }
@@ -610,7 +614,8 @@ namespace MonsterTrain2Poju.Model
         // Resume a single native effect after trigger preflight/marking and source
         // caching. Its child callbacks stay queued until the caller resumes.
         internal static RoomCombatResult ApplyNativeTriggeredSummon(RoomCombatState state, CombatUnit actor,
-            int triggerStateId, int effectIndex, out TriggeredSummonRule? resultingRule, Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null)
+            int triggerStateId, int effectIndex, out TriggeredSummonRule? resultingRule, Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null,
+            IReadOnlyList<CombatUnit>? retainedOccupants = null)
         {
             resultingRule = null;
             CombatTrigger? trigger = actor.Triggers.FirstOrDefault(item => item.StateId == triggerStateId);
@@ -625,9 +630,20 @@ namespace MonsterTrain2Poju.Model
                 return new RoomCombatResult(null, RoomOutcome.Unsupported, 0, new List<CombatEvent>(), error ?? "Invalid native triggered summon effect.");
             error = TriggeredSummonModel.Validate(state, trigger.Effects[effectIndex].Summon);
             if (error != null) return new RoomCombatResult(null, RoomOutcome.Unsupported, 0, new List<CombatEvent>(), error);
+            retainedOccupants ??= Array.Empty<CombatUnit>();
+            if (retainedOccupants.Select(unit => unit.Id).Distinct().Count() != retainedOccupants.Count ||
+                retainedOccupants.Any(unit => unit.Id == actor.Id || unit.Health != 0 || state.Units.Any(live => live.Id == unit.Id) ||
+                    state.Context?.SpawnPoints?.SelectedGroup(state.RoomIndex, unit.Team)?.Occupants.Contains(unit.Id) != true))
+                return new RoomCombatResult(null, RoomOutcome.Unsupported, 0, new List<CombatEvent>(), "Invalid retained summon occupants.");
+            foreach (CombatUnit retained in retainedOccupants)
+            {
+                error = Validate(new RoomCombatState(state.RoomIndex, state.Deployment, state.Units.Append(retained).ToArray(),
+                    state.ExternalInteractions, state.Context, state.Preview, state.ActiveCompanionBossIds), retained.Id);
+                if (error != null) return new RoomCombatResult(null, RoomOutcome.Unsupported, 0, new List<CombatEvent>(), error);
+            }
             var callbacks = new List<QueuedCharacterTrigger>();
             RoomCombatResult result = new Engine(state, new List<CombatEvent>(), enqueueCharacterTrigger: callbacks.Add,
-                resetPreviewTriggers: false, refreshPyre: refreshPyre).TriggeredSummonEffect(actor, triggerStateId, effectIndex, out resultingRule);
+                resetPreviewTriggers: false, refreshPyre: refreshPyre).TriggeredSummonEffect(actor, triggerStateId, effectIndex, out resultingRule, retainedOccupants);
             if (!result.Supported) resultingRule = null;
             return new RoomCombatResult(result.State, result.Outcome, result.Rounds, result.Events.ToList(),
                 result.UnsupportedReason, callbacks, result.RetainedUnits, result.Dispatches);
@@ -1574,8 +1590,11 @@ namespace MonsterTrain2Poju.Model
             }
 
             internal RoomCombatResult TriggeredSummonEffect(CombatUnit sourceActor, int triggerStateId, int effectIndex,
-                out TriggeredSummonRule? resultingRule)
+                out TriggeredSummonRule? resultingRule, IReadOnlyList<CombatUnit> retainedOccupants)
             {
+                // Other deaths can still occupy physical slots after leaving the
+                // live manager. Native ShiftSpawnPoints reads their actual HP.
+                foreach (CombatUnit retained in retainedOccupants) units.Add(NewUnit(retained, false));
                 WorkingUnit? actor = units.FirstOrDefault(unit => unit.Source.Id == sourceActor.Id);
                 if (actor == null) { actor = NewUnit(sourceActor, false); units.Add(actor); }
                 CombatTrigger trigger = actor.Triggers.Single(item => item.StateId == triggerStateId);
@@ -1597,6 +1616,11 @@ namespace MonsterTrain2Poju.Model
 
             internal RoomCombatResult QueuedTrigger(QueuedCharacterTrigger queued)
             {
+                if (queued.Kind == DeathRoomFocusPhase)
+                {
+                    FocusAfterDeath(queued.Unit, queued.RoomIndex);
+                    return Finish(RoomOutcome.Exchanged);
+                }
                 if (HarvestModel.Stage(queued.Kind, out string harvestKind, out CombatTeam harvestTeam))
                 {
                     QueueHarvestGroup(queued.Unit, harvestKind, harvestTeam, queued.TriggerCount);
@@ -2242,6 +2266,11 @@ namespace MonsterTrain2Poju.Model
                         PhysicalHarvest(target);
                     }
                 }
+                // A sacrifice inside an already-running trigger queue only
+                // enqueues OnDeath/Harvest. Native still focuses the room before
+                // removing the point, while those callbacks remain pending.
+                if (immediateHarvest || enqueueCharacterTrigger != null && !deferRemoval)
+                    FocusAfterDeath(target.Freeze(), target.RoomIndex);
                 if (!source.Preview && !deferReturn && !returnSpawnerAfterQueue && !DeferSpawner(target)) SettleDeadSpawner(target);
                 if (!deferRemoval)
                 {
@@ -2619,6 +2648,19 @@ namespace MonsterTrain2Poju.Model
                     QueueHarvestGroup(dying.Freeze(), kind, team, HarvestModel.Count(counts, kind));
                     DrainLocalTriggerQueue();
                 }
+                FocusAfterDeath(dying.Freeze(), dying.RoomIndex);
+            }
+
+            private void FocusAfterDeath(CombatUnit dying, int roomIndex)
+            {
+                if (source.Preview || context?.QueryFrame?.SelectedRoomIndex == null || dying.DeathState?.IsDespawned == true) return;
+                // FocusRoom reads GetCurrentRoomIndex, unlike Harvest which can
+                // use lastKnownSpawnPoint. A death summon may already have cleared
+                // the dying source's current point before this final step.
+                int? currentRoom = context.SpawnPoints == null ? roomIndex :
+                    context.SpawnPoints.Units.FirstOrDefault(unit => unit.UnitId == dying.Id)?.Current?.RoomIndex;
+                if (currentRoom >= 0)
+                    context = context.WithQueryFrame(context.QueryFrame.With(selectedRoomIndex: currentRoom.Value));
             }
 
             private void ExecuteTriggers(WorkingUnit unit, string kind, bool canFireTriggers, int paramInt, WorkingUnit? overrideTarget, WorkingUnit? dyingCharacter, int triggerCount, int lastSpawnedOverrideUnitId,

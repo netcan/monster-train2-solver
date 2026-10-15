@@ -146,7 +146,7 @@ namespace MonsterTrain2Poju.Model
                 return Fail("Relic card modifier conditions require the current combat context.");
             if (!resetTemporary && workingRelics?.Any(relic => relic.CardModifiers?.Count > 0 || relic.CardHealthModifiers?.Count > 0 ||
                 relic.CardAttackModifiers?.Count > 0 ||
-                relic.MagicPowerModifiers?.Count > 0) != true)
+                relic.MagicPowerModifiers?.Count > 0 || relic.CardTypeCosts?.Count > 0) != true)
                 return new RelicCardModifierResult(source, context: context);
             error = CardModifierModel.UnsupportedReason(source);
             if (error != null) return Fail(error);
@@ -186,12 +186,33 @@ namespace MonsterTrain2Poju.Model
             {
                 CombatRelicState relic = workingRelics![relicIndex];
                 var cardEffects = (relic.CardModifiers ?? Array.Empty<RelicCardModifier>()).ToDictionary(effect => effect.EffectIndex);
+                var costEffects = (relic.CardTypeCosts ?? Array.Empty<RelicCardTypeCost>()).ToDictionary(effect => effect.EffectIndex);
                 var healthEffects = (relic.CardHealthModifiers ?? Array.Empty<RelicCardHealthModifier>()).ToDictionary(effect => effect.EffectIndex);
                 var attackEffects = (relic.CardAttackModifiers ?? Array.Empty<RelicCardAttackModifier>()).ToDictionary(effect => effect.EffectIndex);
                 var magicEffects = (relic.MagicPowerModifiers ?? Array.Empty<RelicMagicPowerModifier>()).ToDictionary(effect => effect.EffectIndex);
                 for (int effectIndex = 0; effectIndex < relic.EffectTypes.Count; effectIndex++)
                 {
                     string type = relic.EffectTypes[effectIndex];
+                    if (type == RelicModel.ModifyCardTypeCost)
+                    {
+                        if (!costEffects.TryGetValue(effectIndex, out RelicCardTypeCost? costEffect))
+                            return Fail("Missing ordered relic card-type cost definition.");
+                        card = RelicCardTypeCostModel.Apply(card, costEffect!, out bool returned);
+                        if (returned)
+                        {
+                            // Later upgrade filters read the cost after this native effect.
+                            // Keep lifecycle identities and trait/trigger state while updating its offsets.
+                            var current = state.Card;
+                            var updated = new CardOwnedMaskState(current.Definition, current.BaseCost, current.Permanent,
+                                new CardMaskModifiers(card.Temporary.Offsets, current.Temporary.Upgrades), current.Traits,
+                                current.InstalledCastEffects, current.Purified, current.PermanentGraft);
+                            state = new CardUpgradeLifecycleState(updated, state.Permanent, state.Temporary,
+                                state.AuthoredTriggers, state.UpgradeTriggers, state.StandbyOverride, state.StandbyPile);
+                        }
+                        dispatches.Add(new RelicCardModifierDispatch(relicIndex, effectIndex, returned,
+                            false, Array.Empty<RelicCardFilterResult>()));
+                        continue;
+                    }
                     if (type == RelicModel.ModifyCardHealth)
                     {
                         if (!healthEffects.TryGetValue(effectIndex, out RelicCardHealthModifier? healthEffect))

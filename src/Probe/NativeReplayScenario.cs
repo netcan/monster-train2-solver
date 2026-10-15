@@ -259,6 +259,10 @@ namespace MonsterTrain2Poju.Probe
                         OriginalCardDrawOnCardPlayScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalCardAttackRelicScenario.Enabled && !OriginalCardAttackRelicScenario.Acquired)
                         OriginalCardAttackRelicScenario.AcquireBeforeBattle(managers!, log);
+                    if (fullBattle && OriginalCardTypeCostScenario.Enabled && !OriginalCardTypeCostScenario.Acquired)
+                        OriginalCardTypeCostScenario.AcquireBeforeBattle(managers!, log);
+                    if (fullBattle && OriginalConserveEmberScenario.Enabled && !OriginalConserveEmberScenario.Acquired)
+                        OriginalConserveEmberScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && ChooseDiscardScenario.OriginalSmeltRelicMode && !ChooseDiscardScenario.RelicAcquired)
                         ChooseDiscardScenario.AcquireRelicBeforeBattle(managers!, log);
                     if (fullBattle && (MixScenario.TinkermasterMode || MixScenario.ProgressMode) && !MixScenario.Acquired)
@@ -480,6 +484,18 @@ namespace MonsterTrain2Poju.Probe
             {
                 if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Card-attack relic must start on deployment turn.");
                 OriginalCardAttackRelicScenario.Prepare(managers, log);
+                numericModifiersPrepared = true;
+                return;
+            }
+            if (fullBattle && !numericModifiersPrepared && OriginalCardTypeCostScenario.Enabled)
+            {
+                OriginalCardTypeCostScenario.Prepare(managers, log);
+                numericModifiersPrepared = true;
+                return;
+            }
+            if (fullBattle && !numericModifiersPrepared && OriginalConserveEmberScenario.Enabled)
+            {
+                OriginalConserveEmberScenario.Prepare(managers, log);
                 numericModifiersPrepared = true;
                 return;
             }
@@ -1058,7 +1074,8 @@ namespace MonsterTrain2Poju.Probe
                 return;
             }
             if (fullBattle && RelicCardModifierProbe.Enabled && !OriginalRelicBatchScenario.Enabled &&
-                !OriginalCardAttackRelicScenario.Enabled && !RelicCardModifierScenario.Prepared)
+                !OriginalCardAttackRelicScenario.Enabled && !OriginalCardTypeCostScenario.Enabled &&
+                !RelicCardModifierScenario.Prepared)
             {
                 RelicCardModifierScenario.Prepare(managers, log);
                 return;
@@ -1221,6 +1238,8 @@ namespace MonsterTrain2Poju.Probe
                 if (MagebladeScenario.Enabled) pendingPlay = MagebladeScenario.Choose(decision) ?? pendingPlay;
                 if (OriginalCardPlayMagicPowerScenario.Enabled) pendingPlay = OriginalCardPlayMagicPowerScenario.Choose(decision) ?? pendingPlay;
                 if (OriginalCardAttackRelicScenario.Enabled) pendingPlay = OriginalCardAttackRelicScenario.Choose(decision) ?? pendingPlay;
+                if (OriginalCardTypeCostScenario.Enabled) pendingPlay = OriginalCardTypeCostScenario.Choose(decision) ?? pendingPlay;
+                if (OriginalConserveEmberScenario.Enabled) pendingPlay = OriginalConserveEmberScenario.Choose(decision);
                 if (OriginalUnitUpgradeTriggerRelicScenario.Enabled) pendingPlay = OriginalUnitUpgradeTriggerRelicScenario.Choose(decision) ?? pendingPlay;
                 if (modifierScenario == "rally-lethal") pendingPlay = LethalRallyScenario.ChooseNativeBossSummon(managers) ?? pendingPlay;
                 if (modifierScenario == "incant" || modifierScenario == "incant-thresholds" || (modifierScenario == "incant-relic" || modifierScenario == "incant-relic-combined")) pendingPlay = BattleActionModel.ChooseEmptySpellThenCards(decision);
@@ -1368,6 +1387,7 @@ namespace MonsterTrain2Poju.Probe
                 (modifierScenario is "card-effect-recursion" or "card-effect-recursion-choice" or "card-effect-recursion-choose-to-hand" or "card-effect-recursion-filter-choice" or "card-effect-recursion-discard-choice" or "card-effect-recursion-upgrade" or "card-effect-recursion-upgrade-hand" or "card-effect-recursion-upgrade-choice" or "card-effect-recursion-upgrade-filter-choice" or "card-effect-recursion-upgrade-replacement-choice" &&
                     CardEffectRecursionScenario.IsScenarioPrelude(action)) ||
                 (MixScenario.Enabled && MixScenario.IsScenarioPrelude(action)) ||
+                (OriginalCardTypeCostScenario.Enabled && OriginalCardTypeCostScenario.IsScenarioPrelude(action)) ||
                 (ChooseDiscardScenario.Enabled && ChooseDiscardScenario.IsScenarioPrelude(action));
             PreviewSchedulingProbe.Observe("Play:" + action.CardInstanceId);
             if (MixScenario.Enabled) MixScenario.Expect(action);
@@ -1395,6 +1415,10 @@ namespace MonsterTrain2Poju.Probe
             int index = cards.GetHand().FindIndex(card => FullBattleTrace.Active!.CardId(card) == action.CardInstanceId);
             if (index < 0) throw new InvalidOperationException("Policy card disappeared from hand.");
             RoomState room = managers.GetRoomManager()!.GetRoom(action.RoomIndex);
+            // CardManager's direct-play API omits the UI's disabled-room gate.
+            // Keep probe policies within CommonSelectionBehavior.CanSelectCard rules.
+            if (!room.IsRoomEnabled())
+                throw new InvalidOperationException("The native UI rejects a card play in a disabled room.");
             SpawnPoint? drop = action.PlayerPosition < 0 ? null : room.GetMonsterPoint(action.PlayerPosition);
             if (action.TargetUnitId > 0)
             {

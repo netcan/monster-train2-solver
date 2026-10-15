@@ -5,6 +5,10 @@ param(
     [string] $Policy = 'steward-once',
     [ValidateSet('Normal', 'Fast', 'Ultra', 'SuperUltra', 'Instant')]
     [string] $GameSpeed = 'Instant',
+    [ValidateRange(1, 2)]
+    [int] $NativeWorker = 1,
+    [ValidateRange(60, 3600)]
+    [int] $TimeoutSeconds = 600,
     [switch] $SpawnPoints,
     [switch] $PhysicalSpawnPoints,
     [switch] $Revival,
@@ -70,6 +74,10 @@ param(
     [switch] $Mix,
     [switch] $OriginalTinkermasterMix,
     [switch] $OriginalProgressPacemakerMix,
+    [switch] $OriginalCardTypeCostRelic,
+    [switch] $OriginalConserveEmber,
+    [ValidateSet('DiscountFirst', 'UpgradeFirst')]
+    [string] $CardTypeCostUpgradeOrder,
     [switch] $MixAlternate,
     [switch] $MixUnstableExplosion,
     [ValidateSet('00', '01', '10', '11')]
@@ -453,12 +461,15 @@ if ($MixUnstableExplosion) { $MixChoices = '01' }
 if ($MixChoices) { $Mix = $true }
 if ($Mix) { $Policy = 'units-spells-and-junk'; $BranchCardMasks = $true }
 if ($OriginalTinkermasterMix -or $OriginalProgressPacemakerMix) { $Policy = 'units-spells-and-junk'; $BranchCardMasks = $true }
+if ($OriginalCardTypeCostRelic -and $CardTypeCostUpgradeOrder) { throw 'Select the original cost witness or its ordering variant, not both.' }
+if ($OriginalCardTypeCostRelic -or $CardTypeCostUpgradeOrder) { $Policy = 'units-spells-and-junk'; $BranchCardMasks = $true }
+if ($OriginalConserveEmber) { $Policy = 'units-spells-and-junk'; $BranchCardMasks = $true }
 if ($SpawnOrStatus) { $Policy = 'units-and-junk' }
 if ($AbilityTeleport) { $Policy = 'units-and-junk'; $PhysicalSpawnPoints = $true }
 if ($damagePerHpModes.Count -gt 0) { $Policy = 'units-spells-and-junk' }
 if ($DamagePerHpAbility) { $Policy = 'units-spells-and-junk' }
 $workspace = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
-$gameRoot = Join-Path $workspace '.sandbox-game'
+$gameRoot = Join-Path $workspace $(if ($NativeWorker -eq 2) { '.sandbox-game-worker2' } else { '.sandbox-game' })
 $runId = (Get-Date -Format 'yyyyMMdd-HHmmss') + '-' + [Guid]::NewGuid().ToString('N').Substring(0, 8)
 $profile = Join-Path $workspace ('.probe-runs\full-battle-' + $Policy + '-' + $runId)
 $originalLogRoot = Join-Path ([Environment]::GetFolderPath('UserProfile')) 'AppData\LocalLow\Shiny Shoe\MonsterTrain2'
@@ -472,6 +483,21 @@ function Get-OriginalSignature {
     return [string]::Join('|', [string[]] @($parts))
 }
 
+$workerLockPath = Join-Path $workspace ".probe-runs\native-worker-$NativeWorker.lock"
+try {
+    $nativeWorkerLease = [IO.File]::Open($workerLockPath, [IO.FileMode]::OpenOrCreate,
+        [IO.FileAccess]::ReadWrite, [IO.FileShare]::None)
+} catch {
+    throw "Native worker $NativeWorker is already reserved or its lock is unavailable: $workerLockPath"
+}
+try {
+# A prior launcher may have been interrupted while its game process survived.
+$nativeGamePath = Join-Path $gameRoot 'MonsterTrain2.exe'
+$existingGame = @(Get-CimInstance Win32_Process -Filter "Name = 'MonsterTrain2.exe'" |
+    Where-Object { $_.ExecutablePath -ieq $nativeGamePath })
+if ($existingGame.Count -gt 0) {
+    throw "Native worker $NativeWorker is already running (PID $($existingGame.ProcessId -join ', '))."
+}
 if (-not $SkipBuild) {
     dotnet build (Join-Path $workspace 'src\Probe\Probe.csproj') -c Release
     if ($LASTEXITCODE -ne 0) { throw 'Probe build failed.' }
@@ -618,6 +644,9 @@ if ($FrostChanneling) { $environment['MT2_PROBE_MODIFIERS'] = 'frost-channeling'
 if ($Mix) { $environment['MT2_PROBE_MODIFIERS'] = 'card-effect-mix' }
 if ($OriginalTinkermasterMix) { $environment['MT2_PROBE_MODIFIERS'] = 'original-tinkermaster-mix' }
 if ($OriginalProgressPacemakerMix) { $environment['MT2_PROBE_MODIFIERS'] = 'original-progress-pacemaker-mix' }
+if ($OriginalCardTypeCostRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-card-type-cost-relic' }
+if ($OriginalConserveEmber) { $environment['MT2_PROBE_MODIFIERS'] = 'original-conserve-ember-relic' }
+if ($CardTypeCostUpgradeOrder) { $environment['MT2_PROBE_MODIFIERS'] = if ($CardTypeCostUpgradeOrder -eq 'DiscountFirst') { 'card-type-cost-discount-first' } else { 'card-type-cost-upgrade-first' } }
 if ($Mix) { $environment['MT2_PROBE_MIX_CHOICES'] = if ($MixChoices) { $MixChoices } else { '00' } }
 if ($MixUnstableExplosion) { $environment['MT2_PROBE_MIX_UNSTABLE_EXPLOSION'] = '1' }
 if ($TransferAttackAbility) { $environment['MT2_PROBE_MODIFIERS'] = 'transfer-attack-ability' }
@@ -714,11 +743,11 @@ if ($RoomCapacityAttachment) { $environment['MT2_PROBE_MODIFIERS'] = 'room-capac
 $process = Start-Process -FilePath (Join-Path $gameRoot 'MonsterTrain2.exe') `
     -WorkingDirectory $gameRoot -ArgumentList @('-logFile', $unityLog) `
     -Environment $environment -WindowStyle Hidden -PassThru
-Write-Output "FULL-BATTLE-RUN pid=$($process.Id) policy=$Policy profile=$profile"
-if (-not $process.WaitForExit(600000)) {
+Write-Output "FULL-BATTLE-RUN pid=$($process.Id) worker=$NativeWorker policy=$Policy profile=$profile"
+if (-not $process.WaitForExit($TimeoutSeconds * 1000)) {
     $process.Kill()
     $process.WaitForExit()
-    throw "Full battle timed out; profile: $profile"
+    throw "Full battle timed out after $TimeoutSeconds seconds; profile: $profile"
 }
 $nativeTimer.Stop()
 Write-Output "FULL-BATTLE-TIMING speed=$GameSpeed elapsedSeconds=$($nativeTimer.Elapsed.TotalSeconds.ToString('F2', [Globalization.CultureInfo]::InvariantCulture))"
@@ -874,6 +903,46 @@ if ($OriginalTinkermasterMix -or $OriginalProgressPacemakerMix) {
         @($offerCounts | Where-Object { $_ -ne $(if ($progress) { 2 } else { 3 }) }).Count -gt 0 -or
         @($mixActions | Where-Object { @($_.Action.MixSelections).Count -ne $(if ($progress) { 3 } else { 2 }) }).Count -gt 0) {
         throw 'Original Mix relic did not produce the expected native draft amounts and repetitions.'
+    }
+}
+if ($OriginalConserveEmber) {
+    $conservation = @($trace.EnergyConservationQueries)
+    $carried = @($conservation | Where-Object { $_.Completed -and -not $_.Preview -and $_.RemainingPlayerEnergy -gt 0 })
+    $paid = @($trace.Actions | Where-Object { $_.Before.Energy -gt $_.Actual.Energy })
+    if ($trace.ModifierScenario -ne 'original-conserve-ember-relic' -or
+        $carried.Count -lt 2 -or $paid.Count -eq 0 -or
+        @($conservation | Where-Object { -not $_.Completed -or $_.RemovedEnergy -ne 0 -or
+            $_.PlayerEnergyBefore -ne $_.PlayerEnergyAfter }).Count -ne 0 -or
+        @($trace.Turns | Where-Object { $_.Before.Spawn.Turn -lt 2 }).Count -lt 2) {
+        throw 'Original ConserveEmber must preserve positive energy across turns and spend retained energy in a complete battle.'
+    }
+    Write-Output "NATIVE-CONSERVE-EMBER PASS: $($carried.Count) positive carry queries, $($paid.Count) paid plays."
+}
+if ($OriginalCardTypeCostRelic -or $CardTypeCostUpgradeOrder) {
+    $plays = @($trace.Actions | Select-Object -First 2)
+    $expectedIds = @('21038774-c0a4-413c-ab7e-27e458228e5f', '62cc5532-5fa0-4e66-9fec-85be573af359')
+    $expectedCostScenario = if ($CardTypeCostUpgradeOrder -eq 'DiscountFirst') { 'card-type-cost-discount-first' } elseif ($CardTypeCostUpgradeOrder -eq 'UpgradeFirst') { 'card-type-cost-upgrade-first' } else { 'original-card-type-cost-relic' }
+    if ($trace.ModifierScenario -ne $expectedCostScenario -or
+        -not (Select-String -LiteralPath $unityLog -Pattern 'ORIGINAL-CARD-TYPE-COST-ACQUIRED unchanged CheaperBlightScourge Blight=-99 Junk=-99' -Quiet) -or
+        -not (Select-String -LiteralPath $unityLog -Pattern 'ORIGINAL-CARD-TYPE-COST-PREPARED blight=\d+ cost=0 junk=\d+ cost=0' -Quiet) -or
+        $plays.Count -ne 2 -or @($trace.RelicCardModifiers).Count -lt 10) {
+        throw 'Original CheaperBlightScourge native setup or manager evidence is missing.'
+    }
+    if ($CardTypeCostUpgradeOrder) {
+        $blightResets = @($trace.RelicCardModifiers | Where-Object { $_.ResetTemporary -and $_.Before.DataId -eq $expectedIds[0] })
+        $expectedMarkerCount = if ($CardTypeCostUpgradeOrder -eq 'DiscountFirst') { 1 } else { 0 }
+        if ($blightResets.Count -eq 0 -or @($blightResets | Where-Object {
+            @($_.Actual.Temporary.Upgrades | Where-Object DataId -EQ 'fc119000-0000-4000-8000-000000000191').Count -ne $expectedMarkerCount
+        }).Count -gt 0) { throw 'Native cost/upgrade ordering did not produce the expected marker acceptance.' }
+        Write-Output "NATIVE-CARD-TYPE-COST-ORDER PASS: $CardTypeCostUpgradeOrder resets=$($blightResets.Count) markerCount=$expectedMarkerCount."
+    }
+    for ($index = 0; $index -lt 2; $index++) {
+        $play = $plays[$index]
+        $card = @($play.Before.Spawn.Train.Context.Cards.Hand | Where-Object InstanceId -EQ $play.Action.CardInstanceId)
+        if (-not $play.ScenarioAction -or $card.Count -ne 1 -or $card[0].DataId -ne $expectedIds[$index] -or
+            $play.Before.Energy -ne $play.Actual.Energy) {
+            throw 'Original Blight/Junk cards did not play free in their expected order.'
+        }
     }
 }
 if ($RemoveAllStatusEffects -and ($trace.Schema -ne 164 -or $trace.ModifierScenario -ne 'remove-all-status-effects' -or
@@ -3515,4 +3584,7 @@ if ($StatisticOverflow) {
 if ($null -eq $trace.NativeWon -or $process.ExitCode -ne 0 -or -not $nativePassed -or -not $originalUnchanged -or -not $modifierCoverage -or -not $healingCoverage -or -not $onHealCoverage -or -not $roomSpellCoverage -or -not $damagePerHpCoverage -or -not $damagePerHpAbilityCoverage -or -not $damageOverflowCoverage -or -not $terminalSettled -or -not $terminalSpellCoverage -or
     -not $postKillCoverage -or -not $randomCoverage -or -not $randomStatusCoverage -or -not $crossRoomCoverage -or -not $attackCoverage -or -not $maxHealthCoverage -or -not $numericRangeCoverage -or -not $targetFilterCoverage -or -not $drawCoverage -or -not $handRemovalCoverage -or -not $randomDiscardCoverage -or -not $generationCoverage -or -not $permanentConsumeGenerationCoverage -or -not $scalingCoverage -or -not $statusScalingCoverage -or -not $unitUpgradeScalingCoverage -or -not $unitTriggerUpgradeCoverage -or -not $spawnTriggerCoverage -or -not $unitTurnBeginCoverage -or -not $teamTurnBeginCoverage -or -not $preHandDiscardCoverage -or -not $cloneUpgradeRefreshCoverage -or -not $preCombatCoverage -or -not $triggeredHealingCoverage -or -not $postCombatHealingCoverage -or -not $triggeredDamageCoverage -or -not $damageDeathQueueCoverage -or -not $terminalDeathDamageCoverage -or -not $hitKillCoverage -or -not $dyingUpgradeCoverage -or -not $attackTriggerCoverage -or -not $triggeredStatusCoverage -or -not $statusCallbackCoverage -or -not $energyCoverage -or -not $forgePointsCoverage -or -not $xCostCoverage -or -not $bonusDrawCoverage -or -not $capacityCoverage -or -not $directUpgradeCoverage -or -not $equipmentCoverage -or ($PermanentConsumeOverTemporary -and -not $modifierCoverage) -or $trace.CaptureFailures -ne 0 -or $trace.Mismatches -ne 0 -or $trace.Unsupported -ne 0 -or $trace.Pending -ne 0) {
     throw "Full battle differential probe failed; inspect $tracePath and $unityLog"
+}
+} finally {
+    $nativeWorkerLease.Dispose()
 }

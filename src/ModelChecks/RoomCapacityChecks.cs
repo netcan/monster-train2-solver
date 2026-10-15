@@ -6,6 +6,7 @@ internal static class RoomCapacityChecks
 {
     internal static void Run()
     {
+        EndTurnDecisionCapacities();
         foreach (var sample in new[] { (5, -100, 1), (1, -1, 1), (5, 100, 30), (30, 1, 30), (5, 0, 5),
             (5, int.MaxValue, 1), (0, 0, 1), (35, -1, 30), (35, 1, 35) })
             Require(RoomCapacityModel.AdjustedMaximum(sample.Item1, sample.Item2) == sample.Item3, "Native capacity boundary arithmetic differs.");
@@ -22,6 +23,21 @@ internal static class RoomCapacityChecks
         var adjusted = RoomCapacityModel.Apply(context, 0, grow, 1);
         Require(adjusted.Supported && adjusted.Amount == 2 && adjusted.Context!.RoomCapacities![0].PlayerMaximum == 7 &&
             adjusted.Context.BattleRng.Equals(rng), "Ordered capacity scaling or ignored range differs: " + adjusted.UnsupportedReason);
+        var selectionContext = context.WithQueryFrame(context.QueryFrame!.With(selectedRoomIndex: 0))
+            .WithRoomCapacities([new(0, 2, 5, false), new(1, 5, 5, false)])
+            .WithCardInstances([new CardInstanceState(1, "capacity", CardModifiers.Empty(), CardModifiers.Empty(), 1, 0, 0, [],
+                capacityScalingTraits: [new(new("CapacityOfTargetRoom"), 1)])]);
+        string selectionParent = JsonSerializer.Serialize(selectionContext);
+        RoomCapacityResult selected = RoomCapacityModel.Apply(selectionContext, 1, grow, 1);
+        Require(selected.Supported && selected.Amount == 3 && selected.Context!.RoomCapacities![1].PlayerMaximum == 8 &&
+            selected.Context.QueryFrame!.SelectedRoomIndex == 1 && JsonSerializer.Serialize(selectionContext) == selectionParent,
+            "Capacity scaling did not query the old selected room before selecting its target: " + selected.UnsupportedReason);
+        var boundContext = selectionContext.WithRoomCapacities([new(0, 2, 5, false), new(1, 30, 5, false)]);
+        RoomCapacityResult refusedSelection = RoomCapacityModel.Apply(boundContext, 1, grow);
+        Require(refusedSelection.Supported && refusedSelection.Context!.RoomCapacities![1].PlayerMaximum == 30 &&
+            refusedSelection.Context.QueryFrame!.SelectedRoomIndex == 1 && boundContext.QueryFrame!.SelectedRoomIndex == 0 &&
+            adjusted.Context!.QueryFrame!.SelectedRoomIndex == null,
+            "A refused capacity adjustment skipped native room selection or introduced missing legacy selection state.");
         var enemy = RoomCapacityModel.Apply(context, 0, new("AdjustCapacity", "Room", -100, true, false, []));
         Require(enemy.Context!.RoomCapacities![0].EnemyMaximum == 1 && enemy.Context.RoomCapacities[0].PlayerMaximum == 5,
             "Enemy adjustment changed player capacity.");
@@ -94,6 +110,61 @@ internal static class RoomCapacityChecks
         Require(JsonSerializer.Serialize(context) == parent, "Capacity branches changed their parent.");
         Console.WriteLine("CAPACITY-CHECKS PASS: boundaries, signed wrap, ignored ranges, ordered statistic traits, exact team mapping, dying-enemy/Pyre/preview gates, live summon legality and 32 parallel branches.");
     }
+
+    private static void EndTurnDecisionCapacities()
+    {
+        var rng = UnityRng.Seed(439);
+        CombatEffect Adjust(int amount, bool enemy) => new("CardEffectAdjustRoomCapacity", amount, 0, "", 0, [], false,
+            action: new("AdjustCapacity", "Room", amount, enemy, !enemy, []));
+        BattleTurnState Root(bool terminal)
+        {
+            CardPileState[] piles = [new("Standby", []), new("Exhausted", []), new("Purged", []), new("Eaten", [])];
+            var context = new CombatContext(new([new(10, "capacity-guest")], [], [], rng, 0, []), rng, 0, 11, 10,
+                cardInstances: [CardInstanceState.Empty(10, "capacity-guest")], otherPiles: piles,
+                roomCapacities: [new(0, 5, 5, false), new(1, 0, 0, true)]);
+            var trigger = new CombatTrigger(terminal ? "OnTeamTurnBegin" : "PreCombat", false, false, false, 1,
+                [Adjust(2, false), Adjust(-1, true)], false);
+            var actor = new CombatUnit(1, "capacity-unit", CombatTeam.Player, 10, 50, 50, true, false, false, [], [trigger], size: 3);
+            var pyre = new CombatUnit(2, "pyre", CombatTeam.Player, 45, 80, 80, true, true, false, []);
+            var boss = new CombatUnit(3, "boss", CombatTeam.Enemy, 0, 1, 1, true, false, true, [], isBoss: true);
+            var train = new TrainCombatState([
+                new(0, false, terminal ? [boss, actor] : [actor], [], context),
+                new(1, false, [pyre], [], context)
+            ], [], 7, context);
+            var spawn = new EnemySpawnState(train, [new([new([])])], [-1], 0, false, rng, 4, [], 0, false, 0, 0,
+                terminal ? 1 : 0, []);
+            var guest = new CombatUnit(4, "capacity-guest", CombatTeam.Player, 1, 50, 50, true, false, false, [], size: 3);
+            var rules = new BattlePlayRules([new(0, 5, 7, true, false, false, 5), new(1, 0, 7, true, true, true)],
+                [new("capacity-guest", "capacity-guest", 0, "SpawnMonster", "Standby", guest, [])]);
+            return new BattleTurnState(spawn, 3, 3, 1, 0, 0, "New", [new("Spawning", 439, rng)], piles, [], rules);
+        }
+        foreach (bool terminal in new[] { false, true })
+        {
+            BattleTurnState root = Root(terminal);
+            string parent = JsonSerializer.Serialize(root);
+            Require(BattleActionModel.PlayCard(root, new(10, 0)).Rejection == ActionRejection.Illegal,
+                "Capacity callback fixture must begin with an oversized summon.");
+            BattleTurnResult result = BattleTurnModel.EndTurn(root);
+            Require(result.Supported && result.Outcome == (terminal ? RoomOutcome.BattleWon : RoomOutcome.Exchanged),
+                "Capacity callback EndTurn failed before its decision boundary: " + result.UnsupportedReason);
+            RoomCapacityState actual = result.State!.Spawn.Train.Context!.RoomCapacities!.Single(room => room.RoomIndex == 0);
+            RoomPlayRule rule = result.State.PlayRules!.Rooms.Single(room => room.RoomIndex == 0);
+            Require(actual.PlayerMaximum == 7 && actual.EnemyMaximum == 4 && rule.PlayerCapacity == 7 && rule.EnemyCapacity == 4 &&
+                rule.PlayerSlots == 7 && rule.Enabled && !rule.SummonBlocked && !rule.IsPyre &&
+                JsonSerializer.Serialize(root) == parent,
+                "EndTurn retained stale room rules after a capacity callback or mutated its parent (terminal=" + terminal + ").");
+            if (!terminal)
+            {
+                string decision = JsonSerializer.Serialize(result.State);
+                BattleActionResult summoned = BattleActionModel.PlayCard(result.State, new(10, 0));
+                Require(summoned.Supported && JsonSerializer.Serialize(result.State) == decision &&
+                    JsonSerializer.Serialize(root) == parent,
+                    "The next decision did not permit the newly fitting summon or changed its parent: " + summoned.Reason);
+            }
+        }
+        Console.WriteLine("CAPACITY-ENDTURN-CHECKS PASS: PreCombat and terminal combat callbacks refresh both capacities at the decision boundary.");
+    }
+
     internal static void Native(FixtureValue fixture)
     {
         if (!fixture.TryGetProperty("CapacityEffects", out var records) || records.GetArrayLength() == 0) return;
@@ -113,7 +184,7 @@ internal static class RoomCapacityChecks
                 Require(applied.Supported, "Native capacity effect unsupported: " + applied.UnsupportedReason); predicted = applied.Context!;
             }
             string? difference = ModelJson.Difference(JsonSerializer.Serialize(predicted), JsonSerializer.Serialize(after.Context));
-            Require(difference == null, "Native capacity context differs: " + difference);
+            Require(difference == null, "Native capacity context differs at index " + count + ": " + difference);
             foreach (var attempt in record.GetProperty("Attempts").EnumerateArray())
             {
                 int max = attempt.GetProperty("Maximum").GetInt32(), requested = attempt.GetProperty("Requested").GetInt32();

@@ -5,6 +5,7 @@ internal static class PreviewCopyChecks
 {
     internal static void Run()
     {
+        UnobservedBirthIdentities();
         var groups = Enumerable.Range(0, 4).SelectMany(room => new[] { CombatTeam.Enemy, CombatTeam.Player }
             .Select(team => new SpawnPointGroupState(room, team, 4, 4,
                 room == 0 && team == CombatTeam.Player ? new[] { 1, 0, 2, 0 } : new int[4], new bool[4]))).ToArray();
@@ -58,6 +59,51 @@ internal static class PreviewCopyChecks
         Require(BattleSpawnPointModel.Validate(new BattleSpawnPoints(groups, primary.Units, 0), 3) != null,
             "An invalid copied-list counter was accepted.");
         Console.WriteLine("PREVIEW-COPY-CHECKS PASS: native room/team allocation order, nested calculation gate, selected compaction, newborn primary origin, historical copies, UI clearing and 32 immutable branches.");
+    }
+
+    private static void UnobservedBirthIdentities()
+    {
+        var rng = UnityRng.Seed(31);
+        var summon = new TriggeredSummonRule("preview-child", "", [], 1, true, false, null,
+            new(true, false, false, false), 4);
+        var actor = new CombatUnit(1, "preview-parent", CombatTeam.Player, 1, 10, 10, true, false, false, [],
+            [new("OnTurnBegin", false, false, false, 1,
+                [new("CardEffectSpawnMonster", 1, 0, "", 0, [], false, summon: summon)], false)]);
+        var enemy = new CombatUnit(2, "enemy", CombatTeam.Enemy, 1, 10, 10, true, false, false, []);
+        var pyre = new CombatUnit(5, "pyre", CombatTeam.Player, 45, 80, 80, true, true, false, []);
+        var child = new CombatUnit(0, "preview-child", CombatTeam.Player, 1, 1, 1, true, false, false, []);
+        var points = new BattleSpawnPoints([
+            new(0, CombatTeam.Enemy, 4, 4, [2, 0, 0, 0], new bool[4]),
+            new(0, CombatTeam.Player, 4, 4, [1, 0, 0, 0], new bool[4]),
+            new(1, CombatTeam.Enemy, 4, 4, [0, 0, 0, 0], new bool[4]),
+            new(1, CombatTeam.Player, 4, 4, [5, 0, 0, 0], new bool[4])
+        ], [new(1, new(0, CombatTeam.Player, 0), null), new(2, new(0, CombatTeam.Enemy, 0), null),
+            new(3, null, new(0, CombatTeam.Player, 2)), new(4, null, null, spawnedInPreview: true),
+            new(5, new(1, CombatTeam.Player, 0), null)], 17);
+        var catalog = new TriggeredSummonCatalog([new("preview-child", child, null, [])], [],
+            [new(0, 5, 4, true, false, false, 5)]);
+        var context = new CombatContext(new([], [], [], rng, 0, []), rng, 0, 1, 10,
+            statusRules: [new("cardless", 1)], statistics: BattleStatistics.Empty(), nextUnitId: 6,
+            lastSpawnedUnitId: 4, spawnPoints: points, summonCatalog: catalog);
+        var root = new TrainCombatState([new(0, false, [enemy, actor], [], context), new(1, false, [pyre], [], context)], [], 4, context);
+        string parent = JsonSerializer.Serialize(root);
+        string Verify()
+        {
+            TrainCombatResult refreshed = BattlePreviewModel.Refresh(root);
+            Require(refreshed.Supported, "Preview birth identity check unsupported: " + refreshed.UnsupportedReason);
+            CombatContext after = refreshed.State!.Context!;
+            Require(after.NextUnitId == 6 && after.LastSpawnedUnitId == 0 &&
+                after.SpawnPoints!.Units.Select(unit => unit.UnitId).SequenceEqual([1, 2, 3, 4, 5]) &&
+                after.SpawnPoints.Units.Single(unit => unit.UnitId == 3).LastKnown!.Index == 2 &&
+                after.SpawnPoints.Units.Single(unit => unit.UnitId == 4).SpawnedInPreview &&
+                after.SpawnPoints.NextPreviewCopyId == 21 &&
+                refreshed.State.Rooms[0].Units.Single(unit => unit.Id == 1).Triggers[0].Effects[0].Summon!.FirstSpawnedUnitId == 0 &&
+                JsonSerializer.Serialize(root) == parent,
+                "An unobserved preview birth leaked its temporary ID, lost shared cache writes, or removed an older retained actor.");
+            return JsonSerializer.Serialize(refreshed.State);
+        }
+        string expected = Verify();
+        Parallel.For(0, 16, _ => Require(Verify() == expected, "Preview birth identity branches diverged."));
     }
     private static void Require(bool condition, string message) { if (!condition) throw new InvalidOperationException(message); }
 }

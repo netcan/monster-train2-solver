@@ -1,10 +1,95 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-15): 331 binary archives, including 300
+Current accepted inventory (2026-10-15): 335 binary archives, including 304
 full battles and 31 component calibrations. Unchanged original relic evidence
-covers 85/224 catalog entries (37.95%); see
+covers 87/224 catalog entries (38.84%); see
 [the owner evidence table](tests/fixtures/relic-coverage.md). Whole-battle
 coverage and the optimal solver remain in progress.
+
+The unchanged original `ConserveEmber` now preserves remaining Ember through
+EndTurn. Its native battle banks the first two turns (4 -> 7 -> 10 Ember), then
+makes 21 paid plays while retaining each turn's remainder. All seven native
+conservation queries remove zero energy; the 62-stage winning battle has zero
+capture failures, mismatches, unsupported transitions or pending records.
+Dedicated checks, fresh independent replay with 16 immutable branches, and
+bounded serial/parallel search pass. The model preserves native callback and
+condition ordering, notification gates and next-turn energy limits; the cap
+boundary is covered by pure checks rather than this native battle.
+
+The cost/upgrade ordering pair now exercises unchanged `CheaperBlightScourge`
+with an authored Blight upgrade whose filter accepts only zero-cost cards.
+Discount-first accepts the +7 Damage marker; upgrade-first rejects it after a
+reset, then accepts it on a no-reset refresh of the already discounted card.
+The model now synchronizes temporary offsets before later upgrade filters while
+preserving upgrade identities and triggers. Both native battles match 50 stages,
+24 actions and six EndTurns with zero capture failures, mismatches, unsupported
+transitions or pending records. Exact modifier/context replay and 16 immutable
+parallel branches pass. This adds combination evidence, not an original owner.
+
+The modifier probe registers generated-card identities before freezing the
+pre-operation context, so full-context replay also verifies `NextCardId` and
+registry membership without a capture-order discrepancy.
+
+The two room-capacity battles have been recaptured with fresh decision rules.
+They exposed an EndTurn bug: PreCombat and terminal callbacks changed live
+capacities without updating the returned play rules. EndTurn now copies final
+capacities at its decision boundary; pure checks also verify the newly legal
+summon and unchanged parent state. The effect-level replay also exposed the
+native capacity effect's selected-room update, which occurs after scaling
+trait queries and before capacity bounds checks. The ordinary/lethal native battles match
+67/30 stages and 23/15 actions with zero failures or differences.
+
+The death-summon regression pair exposed a separate source-collection bug.
+Native enchantment and Deathwish scans exclude zero-HP, despawned and destroyed
+actors. The model now follows that eligibility while retaining pending death
+objects for their later callbacks. Fresh replay also exposed temporary preview
+birth identities leaking into the persistent registry; preview restoration now
+discards only new temporary identities, retaining real pending death objects.
+Dedicated summon replay records all still-occupied dead actors as explicit
+inputs, so it can preserve native physical slot compaction during death chains.
+
+Native death completion also focuses the dying actor's current physical room
+after its death/Harvest callbacks, before removing its point. The model now
+preserves that timing, including immediate sacrifices inside an active trigger
+queue; preview and despawn paths do not change selection. Card, ability and
+EndTurn results carry the final live selection frame forward. Selection repair
+does not spend another preview refresh when the native frame already points at
+the requested room. Pure checks cover cross-floor deaths, missing current points,
+legacy unknown frames, preview counters and immutable parallel branches. The
+four fresh equipment/multi-summon death archives pass strict full replay,
+including the equipment damage phases that exposed this discrepancy.
+
+Fresh-spawner capture now distinguishes real card creation from the temporary
+CardState.Setup calls used to describe definitions. This prevents recursive
+capture and phantom card identities while preserving real fallback setup
+records. Definition projections are reused only inside one synchronous context
+snapshot, with thread-local state cleared in a finally block; no live card
+identity or definition result is cached across game transitions.
+
+`scripts/Check-Models.ps1 -Workers 4` runs the existing complete checks in four
+processes after one build. Per-worker inputs, stdout/stderr, terminal exit
+records and `summary.json` are written under `.probe-runs/model-checks-*`.
+The summary lists complete failed/interrupted shards for rerun; changed or
+unreadable checker binaries invalidate every shard. The default remains serial.
+
+Whole-policy legacy skips have been removed. Legacy recordings may omit only
+the known-stale room `Enabled` comparison; action legality, capacities and all
+other state comparisons remain enforced, and fresh recordings compare every
+field. An independent audit of the 97 previously skipped chains passes 67 and
+identifies 30 recordings that played on a disabled floor. Native UI selection
+rejects those actions even though the low-level card manager accepts them.
+The probe now enforces that UI gate. Those 30 recordings are being recaptured
+with their original scenario coverage before the final inventory regression.
+The two isolated native workers use separate game/plugin directories and
+unique run profiles; each verifies the original Steam files remain unchanged.
+
+The latest original cost witness acquires unchanged `CheaperBlightScourge` before
+battle. Its ordered Blight/Junk -99 cost effects match ten native manager calls,
+including repeated application, reset, a nonmatching card and enemy-generated
+Junk. Original Blight and Junk cards both play for zero Ember and self-purge.
+The complete native battle matches 50 stages, 24 actions and six EndTurns, with
+zero capture failures, mismatches, unsupported actions or pending records.
+Independent battle search also agrees on the recorded path.
 
 The latest original Mix witnesses acquire unchanged `TinkermasterTools` and
 `ProgressPacemaker` before battle in separate scenes. The former raises both

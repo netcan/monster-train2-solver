@@ -1,12 +1,35 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using MonsterTrain2Poju.Model;
 
 namespace MonsterTrain2Poju.Probe
 {
     internal static class CardGenerationProbe
     {
+        [ThreadStatic] private static int projectionSetupDepth;
+        [ThreadStatic] private static int contextCaptureDepth;
+        [ThreadStatic] private static Dictionary<CardData, CardCreationRule>? contextCreations;
+        internal static bool ProjectingSetup => projectionSetupDepth > 0;
+        internal static void BeginContextCapture()
+        {
+            if (contextCaptureDepth == 0)
+                contextCreations = new Dictionary<CardData, CardCreationRule>(CardDataReferenceComparer.Instance);
+            contextCaptureDepth++;
+        }
+        internal static void EndContextCapture()
+        {
+            if (--contextCaptureDepth == 0) contextCreations = null;
+        }
+
+        private sealed class CardDataReferenceComparer : IEqualityComparer<CardData>
+        {
+            internal static readonly CardDataReferenceComparer Instance = new CardDataReferenceComparer();
+            public bool Equals(CardData? left, CardData? right) => ReferenceEquals(left, right);
+            public int GetHashCode(CardData value) => RuntimeHelpers.GetHashCode(value);
+        }
+
         internal static CardGenerationRule Definition(CardEffectData data)
         {
             var pool = new List<CardData>();
@@ -40,13 +63,30 @@ namespace MonsterTrain2Poju.Probe
         { var state = new CardUpgradeState(); state.Setup(data); return CardModifierProbe.Upgrade(state); }
         internal static CardCreationRule Creation(CardData data)
         {
+            // Creation rules contain definition values, not live card identities.
+            // A synchronous context snapshot can request the same definition many
+            // times. Never reuse it across snapshots, where definitions or query
+            // conditions may have changed, or suppress a real CardState.Setup.
+            Dictionary<CardData, CardCreationRule>? cache = contextCreations;
+            if (cache != null && cache.TryGetValue(data, out CardCreationRule cached)) return cached;
+            CardCreationRule result = CreateDefinition(data);
+            if (cache != null) cache[data] = result;
+            return result;
+        }
+        private static CardCreationRule CreateDefinition(CardData data)
+        {
             var interactions = new List<string>();
             foreach (CardTraitData trait in data.GetTraits())
                 if (!DamageScalingProbe.Known(trait.GetTraitStateName()) &&
                     !(data.IsUnitAbility() && trait.GetTraitStateName() == "CardTraitCorruptRestricted"))
                     interactions.Add("Generated card trait setup/callback " + trait.GetTraitStateName());
             CardState instance = new CardState();
-            instance.Setup(data, AllGameManagers.Instance!.GetSaveManager());
+            // This temporary instance supplies native trait defaults to the projection.
+            // It must not enter live fallback identity/creation observation, including
+            // when another observer captures card definitions inside ApplyEffect.
+            projectionSetupDepth++;
+            try { instance.Setup(data, AllGameManagers.Instance!.GetSaveManager()); }
+            finally { projectionSetupDepth--; }
             CardModifiers modifiers = CardModifiers.Empty();
             CardMaskDescriptor? descriptor = CardBranchMaskProbe.Creation(data, instance.CanScaleWithMagicPower());
             int multiplier = CardMagicPowerModel.Multiplier(new CardInstanceState(0, data.GetID(), modifiers, modifiers, 0, 0, 0,

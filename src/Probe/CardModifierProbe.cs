@@ -48,8 +48,10 @@ namespace MonsterTrain2Poju.Probe
                     if (card.GetCost(managers.GetCardStatistics(), managers.GetMonsterManager(), managers.GetRelicManager(),
                         managers.GetRoomManager()!.GetRoom(index)) != rule.Cost)
                         interactions.Add("Unmodeled room/trait/hand card cost");
+                // CardState.GetHealth excludes positive unhealed HP, which is added
+                // only to the spawned unit's maximum health during birth.
                 if (rule.SpawnUnit != null && (card.GetSize() != rule.SpawnUnit.Size ||
-                    card.GetTotalAttackDamage() != rule.SpawnUnit.BaseAttack || (int)Math.Round(card.GetHealth()) != rule.SpawnUnit.MaxHealth))
+                    card.GetTotalAttackDamage() != rule.SpawnUnit.BaseAttack || (int)Math.Round(card.GetHealth()) != rule.SpawnUnit.Health))
                     interactions.Add("Unmodeled unit card statistics");
                 if (rule.Effect == "Spell")
                 {

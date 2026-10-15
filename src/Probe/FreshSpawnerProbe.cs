@@ -10,6 +10,7 @@ namespace MonsterTrain2Poju.Probe
     internal static class FreshSpawnerProbe
     {
         private static bool inFallback;
+        [ThreadStatic] private static bool projectingSetup;
         internal sealed class Record
         {
             public CardCreationRule Creation { get; set; } = null!;
@@ -79,17 +80,31 @@ namespace MonsterTrain2Poju.Probe
             private static void Prefix(CardData setCardData, out Record? __state)
             {
                 __state = null;
-                if (!inFallback || FullBattleTrace.Active == null) return;
-                __state = new Record { Creation = CardGenerationProbe.Creation(setCardData), Before = FullBattleTrace.Active.CaptureContext() };
-                Records.Add(__state);
+                if (!inFallback || projectingSetup || CardGenerationProbe.ProjectingSetup || FullBattleTrace.Active == null) return;
+                bool previous = projectingSetup;
+                try
+                {
+                    // Creation projects native trait defaults with a temporary CardState.Setup.
+                    // Observe the real fallback setup, not the setup used to describe it.
+                    projectingSetup = true;
+                    __state = new Record { Creation = CardGenerationProbe.Creation(setCardData), Before = FullBattleTrace.Active.CaptureContext() };
+                    Records.Add(__state);
+                }
+                finally { projectingSetup = previous; }
             }
             private static void Postfix(CardState __instance, Record? __state)
             {
                 if (__state == null) return;
-                __state.CardId = FullBattleTrace.Active!.CardId(__instance); __state.After = FullBattleTrace.Active.CaptureContext(); __state.Completed = true;
-                var result = CardGenerationModel.CreateDetached(__state.Before, __state.Creation);
-                __state.Difference = !result.Supported ? result.UnsupportedReason : result.AddedCards[0].InstanceId != __state.CardId ||
-                    !JToken.DeepEquals(JToken.FromObject(result.Context!), JToken.FromObject(__state.After)) ? "Fresh detached setup differs" : null;
+                bool previous = projectingSetup;
+                try
+                {
+                    projectingSetup = true;
+                    __state.CardId = FullBattleTrace.Active!.CardId(__instance); __state.After = FullBattleTrace.Active.CaptureContext(); __state.Completed = true;
+                    var result = CardGenerationModel.CreateDetached(__state.Before, __state.Creation);
+                    __state.Difference = !result.Supported ? result.UnsupportedReason : result.AddedCards[0].InstanceId != __state.CardId ||
+                        !JToken.DeepEquals(JToken.FromObject(result.Context!), JToken.FromObject(__state.After)) ? "Fresh detached setup differs" : null;
+                }
+                finally { projectingSetup = previous; }
             }
         }
     }

@@ -122,9 +122,10 @@ namespace MonsterTrain2Poju.Model
         public const string MoonPhaseEnergy = "RelicEffectModifyEnergyOnMoonPhase";
         public const string AdditionalSmeltEmber = "RelicEffectAdditionalSmeltEmber";
         public const string AdjustMixAmount = "RelicEffectAdjustMixAmount";
+        public const string ConserveEnergyEndOfTurn = "RelicEffectConserveEnergyEndOfTurn";
         public static bool IsEffect(string type) => type == Energy || type == DeploymentEnergy || type == Draw ||
             type == PyreAttack || type == PyreHealth || type == FloorCapacity || type == MoonPhaseEnergy ||
-            type == AdditionalSmeltEmber || type == AdjustMixAmount;
+            type == AdditionalSmeltEmber || type == AdjustMixAmount || type == ConserveEnergyEndOfTurn;
 
         internal static string? Validate(CombatRelicState relic)
         {
@@ -145,6 +146,9 @@ namespace MonsterTrain2Poju.Model
                     return "Additional smelt Ember amount differs from its original parameter.";
                 if (rule.Type == AdjustMixAmount && rule.Amount != rule.ParamInt)
                     return "Mix adjustment differs from its original parameter.";
+                if (rule.Type == ConserveEnergyEndOfTurn && (rule.ParamInt != 0 || rule.ParamInt2 != 0 ||
+                    rule.ParamMinInt != 0 || rule.Amount != 0 || rule.RequiredMutatorId != null || rule.CanApplyInPreviewMode))
+                    return "End-of-turn conservation differs from the native conserve-all payload.";
                 if (rule.Type == Draw)
                 {
                     if (!rule.DrawValue.HasValue || rule.DrawValue.Value != (float)rule.ParamInt ||
@@ -164,7 +168,7 @@ namespace MonsterTrain2Poju.Model
                 if ((rule.Type == Energy || rule.Type == DeploymentEnergy || rule.Type == Draw || rule.Type == FloorCapacity) && rule.RequiredMutatorId != null)
                     return "Unexpected required mutator on a resource effect without that native gate.";
                 if ((rule.Type == Energy || rule.Type == DeploymentEnergy || rule.Type == PyreAttack || rule.Type == PyreHealth ||
-                    rule.Type == MoonPhaseEnergy) &&
+                    rule.Type == MoonPhaseEnergy || rule.Type == ConserveEnergyEndOfTurn) &&
                     !relic.DisallowedInPlacementPhase.HasValue)
                     return "Missing native resource owner placement restriction.";
             }
@@ -213,6 +217,47 @@ namespace MonsterTrain2Poju.Model
         private static RelicPyreResourceResult PyreFail(string error) => new RelicPyreResourceResult(null, 0, 0, 0, error);
         private static bool MutatorMatches(CombatContext context, RelicResourceEffect rule) => rule.RequiredMutatorId == null ||
             context.Resources!.MutatorIds.Contains(rule.RequiredMutatorId);
+
+        // Native RelicManager queries conservation after hand callbacks. Unlike
+        // timing effects, this path does not gate conservation on preview support;
+        // only NotifyRelicTriggeredScreenCenter suppresses notification in preview.
+        public static RelicResourceResult GetEnergyToRemoveAtTurnEnd(CombatContext source, int remainingPlayerEnergy,
+            bool placement = false, bool preview = false)
+        {
+            if (remainingPlayerEnergy < 0) return Fail("Negative remaining energy at the end-of-turn boundary.");
+            string? error = RelicModel.Validate(source);
+            if (error != null) return Fail(error);
+            if (source.Relics?.Any(relic => relic.EffectTypes.Contains(ConserveEnergyEndOfTurn)) != true)
+                return new RelicResourceResult(source, remainingPlayerEnergy);
+            CombatContext context = source;
+            int conserved = 0;
+            var events = new List<RelicResourceEvent>();
+            for (int relicIndex = 0; relicIndex < context.Relics!.Count; relicIndex++)
+            {
+                CombatRelicState owner = context.Relics[relicIndex];
+                if (placement && owner.DisallowedInPlacementPhase == true) continue;
+                for (int ruleIndex = 0; ruleIndex < (owner.ResourceEffects?.Count ?? 0); ruleIndex++)
+                {
+                    RelicResourceEffect rule = context.Relics![relicIndex].ResourceEffects![ruleIndex];
+                    if (rule.Type != ConserveEnergyEndOfTurn) continue;
+                    RelicConditionEvaluation evaluation = RelicConditionModel.Evaluate(context, rule.Conditions);
+                    if (!evaluation.Supported) return Fail(evaluation.UnsupportedReason!);
+                    context = evaluation.Context;
+                    if (!evaluation.Passed) continue;
+                    int before = conserved;
+                    conserved = remainingPlayerEnergy;
+                    bool notify = conserved > 0 && conserved > before && !preview;
+                    if (notify)
+                    {
+                        RelicConditionRecord recorded = RelicConditionModel.Record(context, rule.Conditions);
+                        if (!recorded.Supported) return Fail(recorded.UnsupportedReason!);
+                        context = ReplaceConditions(recorded.Context, relicIndex, ruleIndex, recorded.Conditions);
+                    }
+                    events.Add(new RelicResourceEvent(owner.DataId, rule.EffectIndex, before, conserved, notify));
+                }
+            }
+            return new RelicResourceResult(context, Math.Max(0, remainingPlayerEnergy - conserved), events: events);
+        }
 
         public static RelicResourceResult GetAdditionalSmeltEmber(CombatContext source, bool preview = false, bool placement = false)
         {

@@ -1,6 +1,24 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
 
+if (args.Length == 1 && args[0] == "--selection-state-pure")
+{
+    SelectionStateChecks.Run();
+    return;
+}
+
+if (args.Length == 1 && args[0] == "--conserve-ember-pure")
+{
+    ConserveEmberChecks.Run();
+    return;
+}
+if (args.Length == 2 && args[0] == "--original-conserve-ember-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    ConserveEmberChecks.Native(fixture.RootElement);
+    return;
+}
+
 if (args.Length == 2 && args[0] == "--unstable-explosion-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
@@ -18,6 +36,23 @@ if (args.Length == 2 && args[0] == "--original-mix-relic-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
     OriginalMixRelicChecks.Native(fixture.RootElement);
+    return;
+}
+if (args.Length == 2 && args[0] == "--original-card-type-cost-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    OriginalCardTypeCostChecks.Native(fixture.RootElement);
+    return;
+}
+if (args.Length == 1 && args[0] == "--relic-card-type-cost-pure")
+{
+    RelicCardTypeCostChecks.Run();
+    return;
+}
+if (args.Length == 2 && args[0] == "--card-type-cost-order-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    RelicCardTypeCostOrderChecks.Native(fixture.RootElement);
     return;
 }
 
@@ -1001,6 +1036,8 @@ RelicCharacterTriggerChecks.Run();
 RelicUnitUpgradeTriggerChecks.Run();
 CovenantCharacterFilterChecks.Run();
 RelicCardModifierChecks.Run();
+RelicCardTypeCostChecks.Run();
+ConserveEmberChecks.Run();
     RelicCardAttackChecks.Run();
 RelicMagicPowerChecks.Run();
 RelicCardPlayMagicPowerChecks.Run();
@@ -1060,6 +1097,7 @@ HealingTriggerChecks.Run();
 TriggerUpgradeChecks.Run();
 EnemySpawningChecks.Run();
 BattleActionChecks.Run();
+SelectionStateChecks.Run();
 EndlessReturnChecks.Run();
 DecisionReferenceChecks.Run();
 UnitIdentityChecks.Run();

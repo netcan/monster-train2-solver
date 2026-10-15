@@ -139,6 +139,13 @@ namespace MonsterTrain2Poju.Probe
                 amount = (int)AccessTools.Field(effect.GetType(), "_additionalSmeltEmber").GetValue(effect);
             else if (effect is RelicEffectAdjustMixAmount)
                 amount = (int)AccessTools.Field(effect.GetType(), "additionalAmount").GetValue(effect);
+            else if (effect is RelicEffectConserveEnergyEndOfTurn conserve)
+            {
+                IConserveEnergyEndOfTurnRelicEffect.ConserveParamaters parameters = conserve.GetConserveParameters();
+                if (parameters.Mode != IConserveEnergyEndOfTurnRelicEffect.ConserveMode.All || parameters.Amount.HasValue)
+                    throw new InvalidOperationException("Unexpected native end-of-turn conservation mode.");
+                amount = 0;
+            }
             else
                 amount = (int)AccessTools.Field(effect.GetType(), "energyChange").GetValue(effect);
             return new RelicResourceEffect(index, type, data.GetParamInt(), data.GetParamInt2(), amount,

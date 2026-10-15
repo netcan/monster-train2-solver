@@ -294,6 +294,13 @@ namespace MonsterTrain2Poju.Probe
 
         internal CombatContext CaptureContext()
         {
+            CardGenerationProbe.BeginContextCapture();
+            try { return CaptureContextCore(); }
+            finally { CardGenerationProbe.EndContextCapture(); }
+        }
+
+        private CombatContext CaptureContextCore()
+        {
             AllGameManagers managers = AllGameManagers.Instance!;
             CardManager cards = managers.GetCardManager()!;
             CombatProjection state = projection.Capture(managers, managers.GetSaveManager(),
@@ -598,6 +605,7 @@ namespace MonsterTrain2Poju.Probe
                 RelicStatusMagnitudeQueries = RelicStatusMagnitudeProbe.Queries,
                 RelicStatusDecayQueries = RelicStatusDecayProbe.Queries,
                 RelicResourceOperations = RelicResourceProbe.Operations,
+                EnergyConservationQueries = OriginalConserveEmberScenario.EnergyRemovals,
                 PyreResourceOperations = PyreResourceRefreshProbe.Operations,
                 FloorCapacityOriginalDefinitions = OriginalFloorCapacityRelicProbe.OriginalDefinitions,
                 FloorCapacityDeploymentCards = OriginalFloorCapacityRelicProbe.DeploymentCards,

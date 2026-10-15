@@ -79,10 +79,70 @@ internal static class DamageDeathQueueChecks
         Require(localNested.Supported && localNested.Events.Where(e => e.Kind == "Gold").Select(e => e.Actor).SequenceEqual([1, 3, 2]) &&
             localNested.State!.Context!.OtherPiles!.Single(p => p.Name == "Exhausted").Cards.Select(c => c.InstanceId).SequenceEqual([3, 1, 2]),
             "Local nested removal order or parent spawner return differs.");
+
+        var framedContext = context.WithNextUnitId(10).WithQueryFrame(new StatisticQueryFrame(selectedRoomIndex: 0));
+        var fatalUpgrade = new CombatEffect("CardEffectAddTempCardUpgradeToUnits", 0, 0, "", 0, [], false,
+            unitUpgrade: new("UnitUpgrade", "Self", 0, false, true, [],
+                new("fatal", "fatal", new(health: -100), [], false, false, false, 0, 0, []), "TemporaryUntilUnitDeath"));
+        var floorDeaths = new TrainCombatState([
+            new(0, false, [Player(1, 1, Trigger("PreCombat", fatalUpgrade), Trigger("OnDeath", Gold()))], [], framedContext),
+            new(1, false, [Player(2, 1, Trigger("PreCombat", fatalUpgrade), Trigger("OnDeath", Gold()))], [], framedContext)], [], 5, framedContext);
+        string floorParent = JsonSerializer.Serialize(floorDeaths);
+        var focusedDeaths = TrainCombatModel.PreCombat(floorDeaths, CombatTeam.Player);
+        Require(focusedDeaths.Supported && focusedDeaths.State!.Rooms.All(room => room.Units.Count == 0) &&
+            focusedDeaths.RoomResults.SelectMany(room => room.Events).Where(e => e.Kind == "Gold").Select(e => e.Actor).SequenceEqual([1, 2]) &&
+            focusedDeaths.State.Context!.QueryFrame!.SelectedRoomIndex == 1 &&
+            focusedDeaths.State.Rooms.All(room => room.Context!.QueryFrame!.SelectedRoomIndex == 1),
+            "Queued deaths across floors did not focus the final dying actor after its callbacks: " + focusedDeaths.UnsupportedReason);
+
+        var deathPoint = new SpawnPointReference(1, CombatTeam.Player, 0);
+        BattleSpawnPoints Points(bool attached) => new(
+            [new(1, CombatTeam.Player, 1, 1, [attached ? 2 : 0], [false])],
+            [new(2, attached ? deathPoint : null, deathPoint)]);
+        CombatContext FocusQueued(bool attached, bool preview = false, bool despawned = false)
+        {
+            var current = framedContext.WithSpawnPoints(Points(attached));
+            var dead = Player(2, 0).WithDeathState(new UnitDeathState(true, true, false, isDespawned: despawned));
+            var pending = new List<RoomCombatModel.QueuedCharacterTrigger>
+            { new(1, dead, deferUntilRemoval: true, harvestAfterDeath: !despawned, removalLifecycle: true) };
+            string? failure = null;
+            bool drained = RoomCombatModel.DrainCharacterQueue(pending, queued =>
+            {
+                var applied = RoomCombatModel.ApplyQueuedCharacterTrigger(new(1, false, [], [], current, preview), queued, pending.Add);
+                if (!applied.Supported) { failure = applied.UnsupportedReason; return false; }
+                current = applied.State!.Context!;
+                return true;
+            }, _ => throw new InvalidOperationException("Focus should not require returning a spawner."),
+                () => true, () => current, error => failure = error);
+            Require(drained, "Death focus queue failed: " + failure);
+            return current;
+        }
+        Require(FocusQueued(true).QueryFrame!.SelectedRoomIndex == 1 &&
+            FocusQueued(false).QueryFrame!.SelectedRoomIndex == 0 &&
+            FocusQueued(true, preview: true).QueryFrame!.SelectedRoomIndex == 0 &&
+            FocusQueued(true, despawned: true).QueryFrame!.SelectedRoomIndex == 0,
+            "Death focus ignored current-point ownership, preview or despawn gates.");
+        var sacrificeQueue = new List<RoomCombatModel.QueuedCharacterTrigger>();
+        var sacrificeActor = Player(2, 1, Trigger("OnDeath", Gold()));
+        var sacrificed = RoomCombatModel.QueueSacrifice(new(1, false, [sacrificeActor], [],
+            framedContext.WithSpawnPoints(Points(true))), sacrificeActor, 2, sacrificeQueue.Add, whileRunningQueue: true);
+        Require(sacrificed.Supported && sacrificed.State!.Context!.QueryFrame!.SelectedRoomIndex == 1 &&
+            sacrificed.State.Context.SpawnPoints!.Units.Single().Current == null &&
+            sacrificed.State.Context.Gold == 0 && sacrificeQueue.Any(callback => callback.Kind == "OnDeath"),
+            "A sacrifice inside a running queue did not focus before point removal and deferred callbacks: " + sacrificed.UnsupportedReason);
+        var localFocused = RoomCombatModel.ApplySpawnTriggers(new(1, false,
+            [Player(1, 1, Trigger("OnSpawn", Damage(9, "Self")))], [], framedContext), 1, false);
+        Require(localFocused.Supported && localFocused.State!.Context!.QueryFrame!.SelectedRoomIndex == 1,
+            "Local deferred damage death omitted its final room focus: " + localFocused.UnsupportedReason);
+        Parallel.For(0, 16, _ => Require(JsonSerializer.Serialize(TrainCombatModel.PreCombat(floorDeaths, CombatTeam.Player)) ==
+            JsonSerializer.Serialize(focusedDeaths) && FocusQueued(true).QueryFrame!.SelectedRoomIndex == 1,
+            "Death focus branches differed."));
+        Require(JsonSerializer.Serialize(floorDeaths) == floorParent && framedContext.QueryFrame!.SelectedRoomIndex == 0,
+            "Death focus mutated its parent selection or physical points.");
         Parallel.For(0, 32, _ => Require(JsonSerializer.Serialize(Run(root)) == JsonSerializer.Serialize(result) &&
             JsonSerializer.Serialize(Run(nestedRoot)) == JsonSerializer.Serialize(nested), "Parallel removal branches differ."));
         Require(JsonSerializer.Serialize(root) == parent, "Removal simulation mutated its parent.");
-        Console.WriteLine("DAMAGE-DEATH-QUEUE PASS: ordinary callbacks before removal, enemy/player creation batches, nested removal/returns, death-generated exhaustion, local/global queues and 32 parallel branches.");
+        Console.WriteLine("DAMAGE-DEATH-QUEUE PASS: ordinary callbacks before removal, enemy/player creation batches, nested removal/returns, death-generated exhaustion, current-point death focus, local/global queues and 32 parallel branches.");
     }
 
     internal static void Native(FixtureValue fixture)
