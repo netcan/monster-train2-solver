@@ -523,6 +523,16 @@ if (args.Length == 2 && args[0] == "--original-forge-conservation-only")
     RelicForgeConservationChecks.Native(document.RootElement);
     return;
 }
+if (args.Length == 2 && args[0] == "--campaign-relics-only")
+{
+    CampaignRelicChecks.Native(args[1]);
+    return;
+}
+if (args.Length == 1 && args[0] == "--campaign-relics-pure")
+{
+    CampaignRelicChecks.Run();
+    return;
+}
 if (args.Length == 2 && args[0] == "--original-card-attack-only")
 {
     using var document = ModelJson.ReadFixture(args[1]);
@@ -1119,6 +1129,7 @@ SelfAttackStatusChecks.Run();
 HandUpgradeChecks.Run();
 HealingChecks.Run();
 GoldRewardChecks.Run();
+CampaignRelicChecks.Run();
 HealingTriggerChecks.Run();
 TriggerUpgradeChecks.Run();
 EnemySpawningChecks.Run();
@@ -1195,6 +1206,8 @@ foreach (string path in args.Where(path => path.Contains("rng-calibration", Stri
     RngChecks.Run(path);
 foreach (string path in args.Where(path => path.Contains("gold-reward-calibration", StringComparison.OrdinalIgnoreCase)))
     GoldRewardChecks.Native(path);
+foreach (string path in args.Where(path => path.Contains("campaign-relic-calibration", StringComparison.OrdinalIgnoreCase)))
+    CampaignRelicChecks.Native(path);
 foreach (string path in args.Where(path => path.Contains("standby-routing-calibration", StringComparison.OrdinalIgnoreCase)))
     StandbyPileChecks.Native(path);
 foreach (string path in args.Where(path => path.Contains("ui-rng-isolation-calibration", StringComparison.OrdinalIgnoreCase)))
