@@ -602,6 +602,12 @@ if (args.Length == 2 && args[0] == "--original-turn-draw-only")
     OriginalTurnDrawChecks.Native(fixture.RootElement);
     return;
 }
+if (args.Length == 2 && args[0] == "--original-unit-phase-upgrades-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    OriginalUnitPhaseUpgradeChecks.Native(fixture.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--original-combat-trigger-relics-only")
 {
     using var document = ModelJson.ReadFixture(args[1]);

@@ -559,6 +559,11 @@ namespace MonsterTrain2Poju.Probe
                 OriginalAfterDrawGenerationScenario.Prepare(managers, log);
                 numericModifiersPrepared = true;
             }
+            if (fullBattle && !numericModifiersPrepared && OriginalUnitPhaseUpgradeScenario.Enabled)
+            {
+                OriginalUnitPhaseUpgradeScenario.Prepare(managers, log);
+                numericModifiersPrepared = true;
+            }
             if (fullBattle && !numericModifiersPrepared && OriginalUnitResourceScenario.Enabled)
             {
                 OriginalUnitResourceScenario.Prepare(managers, log);
@@ -1354,6 +1359,7 @@ namespace MonsterTrain2Poju.Probe
                 if (OriginalHealingPowerScenario.Enabled) pendingPlay = OriginalHealingPowerScenario.Choose(decision) ?? pendingPlay;
                 if (OriginalConserveEmberScenario.Enabled) pendingPlay = OriginalConserveEmberScenario.Choose(decision);
                 if (OriginalUnitUpgradeTriggerRelicScenario.Enabled) pendingPlay = OriginalUnitUpgradeTriggerRelicScenario.Choose(decision) ?? pendingPlay;
+                if (OriginalUnitPhaseUpgradeScenario.Enabled) pendingPlay = OriginalUnitPhaseUpgradeScenario.Choose(decision);
                 if (modifierScenario == "rally-lethal") pendingPlay = LethalRallyScenario.ChooseNativeBossSummon(managers) ?? pendingPlay;
                 if (modifierScenario == "incant" || modifierScenario == "incant-thresholds" || (modifierScenario == "incant-relic" || modifierScenario == "incant-relic-combined")) pendingPlay = BattleActionModel.ChooseEmptySpellThenCards(decision);
                 if (modifierScenario.StartsWith("multi-summon", StringComparison.Ordinal)) pendingPlay = MultiSummonScenario.Choose(managers) ?? pendingPlay;

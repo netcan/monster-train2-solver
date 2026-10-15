@@ -483,6 +483,9 @@ internal static class BattleActionChecks
         if (fixture.TryGetProperty("ModifierScenario", out var unitResourcePolicy) &&
             unitResourcePolicy.GetString() == "original-unit-resource-relics")
             chooser = OriginalUnitResourceChecks.Choose;
+        if (fixture.TryGetProperty("ModifierScenario", out var unitPhasePolicy) &&
+            unitPhasePolicy.GetString() == "original-unit-phase-upgrade-relics")
+            chooser = OriginalUnitPhaseUpgradeChecks.Choose;
         if (fixture.TryGetProperty("ModifierScenario", out var combatTriggerPolicy) &&
             combatTriggerPolicy.GetString() == "original-combat-trigger-relics")
             chooser = OriginalCombatTriggerBatchChecks.Choose;

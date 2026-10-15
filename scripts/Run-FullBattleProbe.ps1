@@ -256,6 +256,7 @@ param(
     [switch] $OriginalUnitResourceRelics,
     [switch] $OriginalOpeningDrawRelics,
     [switch] $OriginalTurnDrawRelics,
+    [switch] $OriginalUnitPhaseUpgradeRelics,
     [switch] $OriginalUnitUpgradeTriggerRelic,
     [switch] $TypedDraw,
     [switch] $IncantRelic,
@@ -379,6 +380,7 @@ if ($OriginalAfterDrawGenerationRelics) { $BranchCardMasks = $true; $Policy = 'u
 if ($OriginalUnitResourceRelics) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalOpeningDrawRelics) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalTurnDrawRelics) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
+if ($OriginalUnitPhaseUpgradeRelics) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalUnitUpgradeTriggerRelic) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalTriggerRelicBatch -or $OriginalLifecycleRelicBatch) {
     $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $SettleDeathDissolves = $true; $SettleCardAnimations = $true
@@ -767,6 +769,7 @@ if ($OriginalAfterDrawGenerationRelics) { $environment['MT2_PROBE_MODIFIERS'] = 
 if ($OriginalUnitResourceRelics) { $environment['MT2_PROBE_MODIFIERS'] = 'original-unit-resource-relics' }
 if ($OriginalOpeningDrawRelics) { $environment['MT2_PROBE_MODIFIERS'] = 'original-opening-draw-relics' }
 if ($OriginalTurnDrawRelics) { $environment['MT2_PROBE_MODIFIERS'] = 'original-turn-draw-relics' }
+if ($OriginalUnitPhaseUpgradeRelics) { $environment['MT2_PROBE_MODIFIERS'] = 'original-unit-phase-upgrade-relics' }
 if ($OriginalUnitUpgradeTriggerRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-unit-upgrade-trigger-relic' }
 if ($TypedDraw) {
     $environment['MT2_PROBE_MODIFIERS'] = 'typed-draw'
@@ -1417,6 +1420,11 @@ if ($CampaignPostBattleCalibration) {
             throw 'Post-battle original-owner matrix or recorded state restoration is incomplete.'
         }
     } finally { $postBattleDocument.Dispose() }
+}
+if ($OriginalUnitPhaseUpgradeRelics -and ($trace.ModifierScenario -ne 'original-unit-phase-upgrade-relics' -or
+    @($trace.RelicPhaseUpgrades).Count -lt 5 -or
+    -not (Select-String -LiteralPath $unityLog -Pattern 'ORIGINAL-UNIT-PHASE-UPGRADES-PREPARED two unchanged' -Quiet))) {
+    throw 'Original phase-upgrade owners lack actual native effects.'
 }
 if ($OriginalTurnDrawRelics -and ($trace.ModifierScenario -ne 'original-turn-draw-relics' -or
     @($trace.RelicTurnDraw).Count -lt 8 -or

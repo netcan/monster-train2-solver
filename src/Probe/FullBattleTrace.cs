@@ -615,6 +615,8 @@ namespace MonsterTrain2Poju.Probe
                 RelicUnitResources = RelicUnitResourceProbe.Records,
                 RelicOpeningDraw = RelicOpeningDrawProbe.Records,
                 RelicTurnDraw = RelicTurnDrawProbe.Records,
+                RelicPhaseUpgrades = RelicPhaseUpgradeProbe.Records,
+                RelicPhaseUpgradeTests = RelicPhaseUpgradeProbe.Tests,
                 EnergyConservationQueries = OriginalConserveEmberScenario.EnergyRemovals,
                 ForgeCombatEndOperations = OriginalForgeConservationScenario.Records,
                 OpeningCorruptionOperations = OriginalOpeningCorruptionScenario.Records,

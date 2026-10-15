@@ -1538,7 +1538,13 @@ namespace MonsterTrain2Poju.Model
                 if (!ApplyBirthRelics(true)) return Finish(RoomOutcome.Unsupported);
                 if (context?.QueryFrame?.MoonPhase is int moon &&
                     MoonPhaseStatusModel.IsTracking(context, units.Select(unit => unit.Freeze())))
+                {
                     spawned.Apply(MoonPhaseStatusModel.WithPhase(spawned.Freeze(), moon));
+                    // The native birth updates the unit's moon understanding and
+                    // queues its initial phase callback before the spawn triggers.
+                    // Deferred births already carry this callback in their queue.
+                    if (!prepareOnly) FireTriggers(spawned, moon == 1 ? "OnMoonShade" : "OnMoonLit");
+                }
                 if (!prepareOnly || spawned.Source.Team == CombatTeam.Player)
                 {
                     if (!UpdateEnchantments()) return Finish(RoomOutcome.Unsupported);
