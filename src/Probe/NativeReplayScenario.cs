@@ -1433,8 +1433,11 @@ namespace MonsterTrain2Poju.Probe
             log.LogInfo("DEPTH-POLICY-PLAY card=" + action.CardInstanceId + " room=" + action.RoomIndex + " position=" + action.PlayerPosition + " target=" + action.TargetUnitId);
             pendingPlay = null;
             string summonScenario = modifierScenario;
+            // Generation plus relic setup can exceed 30 seconds under concurrent
+            // replay load; keep a bounded wait without changing settlement checks.
             Enter(Stage.PlayingCard, summonScenario.StartsWith("multi-summon-additional", StringComparison.Ordinal) ||
-                summonScenario.StartsWith("multi-summon-pool", StringComparison.Ordinal) ? 180f : 30f);
+                summonScenario.StartsWith("multi-summon-pool", StringComparison.Ordinal) ||
+                summonScenario == "generation-relic-card-status-upgrades" ? 180f : 30f);
         }
 
         private void AdvanceTurn(CombatManager combat)

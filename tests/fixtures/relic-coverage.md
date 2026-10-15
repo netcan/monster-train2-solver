@@ -25,8 +25,8 @@ calibrations, with no JSON companions. Unchanged `ConserveEmber` adds the latest
 original-owner witness; the two cost-filter ordering battles add combination
 coverage without adding another owner. The complete inventory regression has
 not yet finished. An independent-chain preflight of 97 legacy archives passed
-67 and identified 30 old captures with card plays on disabled floors; twenty-nine now
-have fresh replacements and one still requires new native evidence.
+67 and identified 30 old captures with card plays on disabled floors; all 30 now
+have fresh replacements and complete independent policy replay.
 Whole-policy-chain legacy skips have been
 removed. The remaining compatibility rule is explicitly labelled and applies
 only to the historical room `Enabled` field; fresh archives remain strict.

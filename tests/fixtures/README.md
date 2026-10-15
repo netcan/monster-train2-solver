@@ -1,6 +1,6 @@
 # Native regression fixtures
 
-Legacy replay refresh (2026-10-15): 29 of the 30 recordings with disabled-floor
+Legacy replay refresh (2026-10-15): all 30 recordings with disabled-floor
 policy plays have fresh native replacements. The resumed attack-trigger and
 branch-mask clone-upgrade recordings both pass their complete independent policy
 chains, including mid-battle roots and 16 immutable branches. Their original
@@ -12,10 +12,21 @@ discard, sacrifice effects/upgrades and dying upgrades are also replaced.
 Status callbacks, permanent consume generation and original resource relics are
 also refreshed, along with the status registry, Instant triggered status and
 Incant relic recordings, ordinary triggered status and combined Incant relics.
-Incant thresholds are refreshed too. One replacement and the complete
-inventory regression remain pending. Byte counts and hashes in older entries
+Incant thresholds and generation with relic status upgrades are refreshed too.
+The complete inventory regression remains pending. Byte counts and hashes in older entries
 below describe their historical captures; [manifest.tsv](manifest.tsv) records
 the current accepted binaries.
+
+The generation/relic status-upgrade refresh wins with Pyre health 80 after
+18 card plays, six EndTurns and 49 matched stages. Its 91 exact generation
+effects include three unit-triggered copies of the original relic upgrade.
+Copied upgrades now restore both outer and lifecycle uniqueness/discard flags
+from the native copy definition; the original source upgrade remains unchanged.
+All four capture counters are zero, and complete independent policy replay plus
+16 immutable branches pass. This heavy scenario has a bounded 180-second
+single-card wait, retaining the original settlement and comparison gates; the
+earlier 30-second wait expired under concurrent replay load. Its accepted binary
+has 62,339 bytes and 11,806 unique nodes; its hash is in the manifest.
 
 The original resource-relic refresh records all eight pre-battle acquisitions,
 50 matched stages, 42 policy plays and seven EndTurns, ending with Pyre health
