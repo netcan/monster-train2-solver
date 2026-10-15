@@ -133,6 +133,7 @@ namespace MonsterTrain2Poju.Probe
                 CampaignDraftCalibration.Capture(managers);
                 CampaignPostBattleCalibration.Capture(managers);
                 CampaignBattleResourceCalibration.Capture(managers);
+                CampaignPurgeGoldCalibration.Capture(managers);
                 RuleCatalogProbe.Capture(managers, Environment.GetEnvironmentVariable("MT2_PROBE_FULL_RULE_CATALOG") == "1");
                 RelicCatalogProbe.Capture(managers);
                 CardUpgradeMaskCalibration.Capture(this);

@@ -192,6 +192,7 @@ param(
     [switch] $CampaignDraftCalibration,
     [switch] $CampaignPostBattleCalibration,
     [switch] $CampaignBattleResourceCalibration,
+    [switch] $CampaignPurgeGoldCalibration,
     [switch] $FullRuleCatalog,
     [switch] $UpgradeMasks,
     [switch] $ModifierOverflow,
@@ -571,6 +572,7 @@ $environment = @{
     MT2_PROBE_CAMPAIGN_DRAFTS = $(if ($CampaignDraftCalibration) { '1' } else { '0' })
     MT2_PROBE_CAMPAIGN_POST_BATTLE = $(if ($CampaignPostBattleCalibration) { '1' } else { '0' })
     MT2_PROBE_CAMPAIGN_BATTLE_RESOURCES = $(if ($CampaignBattleResourceCalibration) { '1' } else { '0' })
+    MT2_PROBE_CAMPAIGN_PURGE_GOLD = $(if ($CampaignPurgeGoldCalibration) { '1' } else { '0' })
     MT2_PROBE_FULL_RULE_CATALOG = $(if ($FullRuleCatalog) { '1' } else { '0' })
     MT2_PROBE_UPGRADE_MASKS = $(if ($UpgradeMasks) { '1' } else { '0' })
     MT2_PROBE_MODIFIER_OVERFLOW = $(if ($ModifierOverflow) { '1' } else { '0' })
@@ -1374,6 +1376,17 @@ if ($CampaignRelicCalibration) {
             throw 'Campaign original-owner matrix or recorded state restoration is incomplete.'
         }
     } finally { $campaignDocument.Dispose() }
+}
+if ($CampaignPurgeGoldCalibration) {
+    Add-Type -Path (Join-Path $workspace 'src\FixtureArchive\bin\Release\net8.0\FixtureArchive.dll')
+    $purgeDocument = [MonsterTrain2Poju.Fixtures.FixtureDocument]::Read((Join-Path $profile 'campaign-purge-gold-calibration.mt2f'))
+    try {
+        $purgeRoot = $purgeDocument.RootElement
+        if ($purgeRoot.GetProperty('Rows').GetArrayLength() -ne 144 -or
+            -not $purgeRoot.GetProperty('Before').ContentEquals($purgeRoot.GetProperty('After'))) {
+            throw 'Original purge-gold consumer controls or recorded restoration are incomplete.'
+        }
+    } finally { $purgeDocument.Dispose() }
 }
 if ($CampaignBattleResourceCalibration) {
     Add-Type -Path (Join-Path $workspace 'src\FixtureArchive\bin\Release\net8.0\FixtureArchive.dll')

@@ -591,6 +591,11 @@ if (args.Length == 2 && args[0] == "--original-opening-draw-only")
     OriginalOpeningDrawChecks.Native(fixture.RootElement);
     return;
 }
+if (args.Length == 2 && args[0] == "--campaign-purge-gold-only")
+{
+    CampaignPurgeGoldChecks.Native(args[1]);
+    return;
+}
 if (args.Length == 2 && args[0] == "--original-turn-draw-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
@@ -1289,6 +1294,8 @@ foreach (string path in args.Where(path => path.Contains("campaign-post-battle-c
     CampaignPostBattleChecks.Native(path);
 foreach (string path in args.Where(path => path.Contains("campaign-battle-resource-calibration", StringComparison.OrdinalIgnoreCase)))
     CampaignBattleResourceChecks.Native(path);
+foreach (string path in args.Where(path => path.Contains("campaign-purge-gold-calibration", StringComparison.OrdinalIgnoreCase)))
+    CampaignPurgeGoldChecks.Native(path);
 foreach (string path in args.Where(path => path.Contains("standby-routing-calibration", StringComparison.OrdinalIgnoreCase)))
     StandbyPileChecks.Native(path);
 foreach (string path in args.Where(path => path.Contains("ui-rng-isolation-calibration", StringComparison.OrdinalIgnoreCase)))
