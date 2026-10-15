@@ -258,6 +258,8 @@ param(
     [switch] $OriginalOpeningDrawRelics,
     [switch] $OriginalTurnDrawRelics,
     [switch] $OriginalUnitPhaseUpgradeRelics,
+    [switch] $OriginalNullRelic,
+    [switch] $OriginalNullRelicBaseline,
     [switch] $OriginalUnitUpgradeTriggerRelic,
     [switch] $TypedDraw,
     [switch] $IncantRelic,
@@ -382,6 +384,7 @@ if ($OriginalUnitResourceRelics) { $BranchCardMasks = $true; $Policy = 'units-sp
 if ($OriginalOpeningDrawRelics) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalTurnDrawRelics) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalUnitPhaseUpgradeRelics) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
+if ($OriginalNullRelic -or $OriginalNullRelicBaseline) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalUnitUpgradeTriggerRelic) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalTriggerRelicBatch -or $OriginalLifecycleRelicBatch) {
     $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $SettleDeathDissolves = $true; $SettleCardAnimations = $true
@@ -772,6 +775,8 @@ if ($OriginalUnitResourceRelics) { $environment['MT2_PROBE_MODIFIERS'] = 'origin
 if ($OriginalOpeningDrawRelics) { $environment['MT2_PROBE_MODIFIERS'] = 'original-opening-draw-relics' }
 if ($OriginalTurnDrawRelics) { $environment['MT2_PROBE_MODIFIERS'] = 'original-turn-draw-relics' }
 if ($OriginalUnitPhaseUpgradeRelics) { $environment['MT2_PROBE_MODIFIERS'] = 'original-unit-phase-upgrade-relics' }
+if ($OriginalNullRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-null-relic' }
+if ($OriginalNullRelicBaseline) { $environment['MT2_PROBE_MODIFIERS'] = 'original-null-relic-baseline' }
 if ($OriginalUnitUpgradeTriggerRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-unit-upgrade-trigger-relic' }
 if ($TypedDraw) {
     $environment['MT2_PROBE_MODIFIERS'] = 'typed-draw'
@@ -1431,6 +1436,11 @@ if ($CampaignPostBattleCalibration) {
             throw 'Post-battle original-owner matrix or recorded state restoration is incomplete.'
         }
     } finally { $postBattleDocument.Dispose() }
+}
+if (($OriginalNullRelic -or $OriginalNullRelicBaseline) -and ($null -eq $trace.OriginalNullRelic -or
+    $trace.OriginalNullRelic.Present -ne $(if ($OriginalNullRelicBaseline) { 0 } else { 1 }) -or
+    -not (Select-String -LiteralPath $unityLog -Pattern 'ORIGINAL-NULL-RELIC-ACQUIRED baseline=' -Quiet))) {
+    throw 'Original null relic lacks native acquisition/removal evidence.'
 }
 if ($OriginalUnitPhaseUpgradeRelics -and ($trace.ModifierScenario -ne 'original-unit-phase-upgrade-relics' -or
     @($trace.RelicPhaseUpgrades).Count -lt 5 -or

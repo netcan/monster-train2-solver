@@ -141,6 +141,24 @@ public sealed class FixtureBuilder
     private readonly List<ValueNode> nodes = [];
     private readonly Dictionary<ValueNode, int> interned = [];
     private readonly Dictionary<string, string> strings = new(StringComparer.Ordinal);
+    public int Import(FixtureValue root)
+    {
+        var imported = new Dictionary<FixtureValue, int>();
+        int Copy(FixtureValue value)
+        {
+            if (imported.TryGetValue(value, out int existing)) return existing;
+            int id = value.ValueKind switch
+            {
+                FixtureKind.Object => Add(FixtureKind.Object, children: value.EnumerateObject().SelectMany(property => new[] { Add(FixtureKind.String, property.Name), Copy(property.Value) }).ToArray()),
+                FixtureKind.Array => Add(FixtureKind.Array, children: value.EnumerateArray().Select(Copy).ToArray()),
+                FixtureKind.String => Add(FixtureKind.String, value.GetString()),
+                FixtureKind.Number => Add(FixtureKind.Number, value.Number()),
+                _ => Add(value.ValueKind)
+            };
+            imported.Add(value, id); return id;
+        }
+        return Copy(root);
+    }
     public int Add(FixtureKind kind, string? text = null, int[]? children = null)
     {
         children ??= [];

@@ -110,6 +110,7 @@ namespace MonsterTrain2Poju.Model
         internal const string AddRemoveTempUpgradeOnUnitTrigger = "RelicEffectAddRemoveTempUpgradeOnUnitTrigger";
         // This type only provides generated-card tooltip data and has no battle hook.
         internal const string AddCardsNull = "RelicEffectAddCardsNull";
+        internal const string Null = "RelicEffectNull";
         internal const string ModifyCardMagicalPower = "RelicEffectModifyCardMagicalPower";
         internal const string ModifyCardHealingPower = "RelicEffectModifyCardHealingPower";
         internal const string ModifyCardMagicPowerOnCardPlayed = "RelicEffectModifyCardMagicPowerOnCardPlayed";
@@ -138,7 +139,7 @@ namespace MonsterTrain2Poju.Model
                     return "Missing captured relic identity.";
                 foreach (string effect in relic.EffectTypes)
                 {
-                    if (effect == ModifyCardHealingPower) continue;
+                    if (effect == ModifyCardHealingPower || effect == Null) continue;
                     if (effect != AbilityIncant && effect != ModifyTriggerCount && effect != AddStatusOnSpawn && effect != RemoveStatusOnSpawn && effect != AddStatusOnTeamSpawn && effect != AddStatusOnRoomEntry && effect != AddStatusOnCorruption && effect != AddTempUpgrade && effect != ModifyCardTypeCost && effect != ModifyCardHealth && effect != ModifyCardAttack && effect != AddRemoveTempUpgradeOnUnitTrigger && effect != AddCardsNull && effect != ModifyCardMagicalPower && effect != ModifyCardMagicPowerOnCardPlayed && effect != CardDrawOnCardPlay && effect != AddTrigger && effect != AddStatusOnApplied && effect != ModifyStatusMagnitude && effect != PreventStatusDecay && effect != ModifyCharacterAttackDamage && effect != ModifyCharacterMaxHealth && effect != AllDamageIsPiercing && effect != AdditionalForgePoints && !RelicResourceModel.IsEffect(effect)) return "Unmodeled relic effect " + effect + " on " + relic.AssetKey + ".";
                 }
                 string? error = RelicCardModifierModel.Validate(relic) ?? RelicCardTypeCostModel.Validate(relic) ?? RelicCardHealthModel.Validate(relic) ?? RelicCardAttackModel.Validate(relic) ?? RelicUnitUpgradeTriggerModel.Validate(relic) ?? RelicMagicPowerModel.Validate(relic) ?? RelicCardPlayMagicPowerModel.Validate(relic) ?? RelicCardDrawOnCardPlayModel.Validate(relic) ?? RelicSpawnStatusModel.Validate(relic) ?? RelicRoomEntryStatusModel.Validate(relic) ?? RelicCorruptionStatusModel.Validate(relic) ?? RelicCharacterTriggerModel.Validate(relic) ?? RelicStatusStackModel.Validate(relic) ?? RelicStatusMagnitudeModel.Validate(relic) ?? RelicStatusDecayModel.Validate(relic) ?? RelicForgePointModel.Validate(relic) ?? RelicResourceModel.Validate(relic);

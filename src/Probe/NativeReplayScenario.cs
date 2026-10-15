@@ -280,6 +280,8 @@ namespace MonsterTrain2Poju.Probe
                         OriginalOpeningDrawScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalTurnDrawScenario.Enabled && !OriginalTurnDrawScenario.Acquired)
                         OriginalTurnDrawScenario.AcquireBeforeBattle(managers!, log);
+                    if (fullBattle && OriginalNullRelicScenario.Enabled && !OriginalNullRelicScenario.Acquired)
+                        OriginalNullRelicScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalSpellPlayThresholdScenario.Enabled && !OriginalSpellPlayThresholdScenario.Acquired)
                         OriginalSpellPlayThresholdScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalConserveEmberScenario.Enabled && !OriginalConserveEmberScenario.Acquired)
