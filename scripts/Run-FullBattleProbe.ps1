@@ -248,6 +248,7 @@ param(
     [switch] $OriginalCombatTriggerRelics,
     [switch] $OriginalConduitRelics,
     [switch] $OriginalEquipmentGrowthRelics,
+    [switch] $OriginalHealthChoiceRelic,
     [switch] $OriginalUnitUpgradeTriggerRelic,
     [switch] $TypedDraw,
     [switch] $IncantRelic,
@@ -366,6 +367,7 @@ if ($OriginalSpellPlayThresholdRelics) { $BranchCardMasks = $true; $Policy = 'un
 if ($OriginalCombatTriggerRelics) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalConduitRelics) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalEquipmentGrowthRelics) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
+if ($OriginalHealthChoiceRelic) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalUnitUpgradeTriggerRelic) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalTriggerRelicBatch -or $OriginalLifecycleRelicBatch) {
     $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $SettleDeathDissolves = $true; $SettleCardAnimations = $true
@@ -746,6 +748,7 @@ if ($OriginalSpellPlayThresholdRelics) { $environment['MT2_PROBE_MODIFIERS'] = '
 if ($OriginalCombatTriggerRelics) { $environment['MT2_PROBE_MODIFIERS'] = 'original-combat-trigger-relics' }
 if ($OriginalConduitRelics) { $environment['MT2_PROBE_MODIFIERS'] = 'original-conduit-relics' }
 if ($OriginalEquipmentGrowthRelics) { $environment['MT2_PROBE_MODIFIERS'] = 'original-equipment-growth-relics' }
+if ($OriginalHealthChoiceRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-health-choice-relic' }
 if ($OriginalUnitUpgradeTriggerRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-unit-upgrade-trigger-relic' }
 if ($TypedDraw) {
     $environment['MT2_PROBE_MODIFIERS'] = 'typed-draw'
@@ -1355,6 +1358,11 @@ if ($CampaignRelicCalibration) {
             throw 'Campaign original-owner matrix or recorded state restoration is incomplete.'
         }
     } finally { $campaignDocument.Dispose() }
+}
+if ($OriginalHealthChoiceRelic -and ($trace.ModifierScenario -ne 'original-health-choice-relic' -or
+    @($trace.RelicSpawnStatuses).Count -eq 0 -or @($trace.TriggeredStatuses).Count -lt 4 -or
+    -not (Select-String -LiteralPath $unityLog -Pattern 'ORIGINAL-HEALTH-CHOICE-PREPARED unchanged HairOfTheHybrid' -Quiet))) {
+    throw 'Original health-choice relic lacks unchanged owner, birth or equipment callback evidence.'
 }
 if ($CampaignDraftCalibration) {
     Add-Type -Path (Join-Path $workspace 'src\FixtureArchive\bin\Release\net8.0\FixtureArchive.dll')

@@ -11,9 +11,12 @@ namespace MonsterTrain2Poju.Model
         public bool MagicPower { get; }
         public bool IgnoreDualism { get; }
         public string Subtype { get; }
+        public int? HealthChoicePercent { get; }
+        public bool HealthChoiceAbove { get; }
         public TriggeredStatusScaling(string? actorStatus = null, bool missingHealth = false, bool magicPower = false,
-            bool ignoreDualism = false, string subtype = "")
-        { ActorStatus = actorStatus; MissingHealth = missingHealth; MagicPower = magicPower; IgnoreDualism = ignoreDualism; Subtype = subtype; }
+            bool ignoreDualism = false, string subtype = "", int? healthChoicePercent = null, bool healthChoiceAbove = false)
+        { ActorStatus = actorStatus; MissingHealth = missingHealth; MagicPower = magicPower; IgnoreDualism = ignoreDualism; Subtype = subtype;
+            HealthChoicePercent = healthChoicePercent; HealthChoiceAbove = healthChoiceAbove; }
     }
 
     internal static class TriggeredStatusModel
@@ -23,6 +26,16 @@ namespace MonsterTrain2Poju.Model
             CardActionEffect action = effect.Action!;
             if (action.Statuses.Count == 0) return "Triggered status requires a nonempty status pool.";
             if (action.Statuses.Any(status => !RoomCombatModel.KnowsStatus(status.Id))) return "Unmodeled triggered status definition.";
+            if (effect.Type == "CardEffectAddStatusEffectBasedOnHealth")
+            {
+                var health = effect.StatusScaling;
+                if (health?.HealthChoicePercent == null || health.HealthChoicePercent < 0 || health.HealthChoicePercent > 100 ||
+                    health.ActorStatus != null || health.MissingHealth || health.MagicPower ||
+                    health.IgnoreDualism || health.Subtype.Length != 0 || action.Range != null || action.Statuses.Count > 2)
+                    return "Unsupported health-dependent status definition.";
+                return null;
+            }
+            if (effect.StatusScaling?.HealthChoicePercent != null) return "Health-dependent status metadata on another effect.";
             if (action.Tests?.StrictTargets == true || action.Target == "DropTargetCharacter")
             {
                 if (action.Statuses.Any(status => status.Stackable == null)) return "Strict status legality requires stackability definitions.";
@@ -37,6 +50,9 @@ namespace MonsterTrain2Poju.Model
         internal static bool Test(RoomCombatState room, CombatEffect effect, IReadOnlyList<int> targets, out string? error, CombatStatus? testedStatus = null)
         {
             error = null; CardActionEffect action = effect.Action!;
+            if (effect.Type == "CardEffectAddStatusEffectBasedOnHealth")
+                return room.Units.Any(unit => targets.Contains(unit.Id) && HealthChoice(unit.Health, unit.MaxHealth,
+                    effect.StatusScaling!.HealthChoicePercent!.Value, effect.StatusScaling.HealthChoiceAbove) < action.Statuses.Count);
             // Stackable pools share legality, so their test-stream selection cannot change gameplay.
             if (action.Tests?.StrictTargets != true && action.Target != "DropTargetCharacter") return true;
             if (targets.Count == 0) return false;
@@ -68,6 +84,8 @@ namespace MonsterTrain2Poju.Model
             if (error != null || actor == null || source.Context == null || targetIds.Any(id => source.Units.All(unit => unit.Id != id)))
                 return Unsupported(error ?? "Triggered status requires captured actor, targets and battle context.");
             CardActionEffect action = effect.Action!;
+            if (effect.Type == "CardEffectAddStatusEffectBasedOnHealth")
+                return ApplyHealthChoice(source, actor, effect, targetIds, sourceCardId);
             bool perSelfAttack = effect.Type == "CardEffectAddStatusEffectPerSelfAttack";
             if (source.Preview && source.Context.IsolatedBattlePreview != true &&
                 (!perSelfAttack && (action.Range != null || action.Value != 0) ||
@@ -142,6 +160,31 @@ namespace MonsterTrain2Poju.Model
         }
         private static RoomCombatState WithContext(RoomCombatState source, CombatContext context) =>
             source.WithContext(context);
+        internal static int HealthChoice(int health, int maximum, int percent, bool above)
+        {
+            int threshold = (int)Math.Ceiling((float)percent / 100f * maximum);
+            return (above ? health >= threshold : health < threshold) ? 0 : 1;
+        }
+        private static RoomCombatResult ApplyHealthChoice(RoomCombatState source, CombatUnit actor, CombatEffect effect,
+            IReadOnlyList<int> targets, int? sourceCardId)
+        {
+            var state = source; var events = new List<CombatEvent>();
+            var callbacks = new List<RoomCombatModel.QueuedCharacterTrigger>();
+            foreach (int id in targets)
+            {
+                var target = state.Units.First(unit => unit.Id == id);
+                int selected = HealthChoice(target.Health, target.MaxHealth, effect.StatusScaling!.HealthChoicePercent!.Value,
+                    effect.StatusScaling.HealthChoiceAbove);
+                if (selected >= effect.Action!.Statuses.Count) continue;
+                var status = effect.Action.Statuses[selected];
+                var added = StatusApplicationModel.ApplyRetained(state, id, status, sourceCardId ?? actor.SpawnerCardId);
+                if (!added.Supported) return added;
+                state = added.State!; callbacks.AddRange(added.PendingCallbacks);
+                events.Add(new CombatEvent(0, "TriggeredStatus:" + status.Id, actor.Id, id,
+                    (state.Units.First(unit => unit.Id == id).Status(status.Id)?.Stacks ?? 0) - (target.Status(status.Id)?.Stacks ?? 0)));
+            }
+            return new RoomCombatResult(state, RoomOutcome.Exchanged, 0, events, pendingCallbacks: callbacks);
+        }
         private static RoomCombatResult Unsupported(string reason) => new RoomCombatResult(null, RoomOutcome.Unsupported, 0, new List<CombatEvent>(), reason);
     }
 }

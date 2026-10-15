@@ -39,7 +39,7 @@ namespace MonsterTrain2Poju.Probe
                 Kind = parameters.sourceCharacterTriggerState?.GetTrigger().ToString() ?? "",
                 SourceCardId = parameters.playedCard == null ? 0 : trace.CardId(parameters.playedCard),
                 Targets = parameters.targets.Select(trace.UnitId).ToArray(),
-                Effect = new CombatEffect("CardEffectAddStatusEffect", effect.GetParamInt(), 0, "", 0, Array.Empty<string>(), false,
+                Effect = new CombatEffect(effect.GetCardEffect() is CardEffectAddStatusEffectBasedOnHealth ? "CardEffectAddStatusEffectBasedOnHealth" : "CardEffectAddStatusEffect", effect.GetParamInt(), 0, "", 0, Array.Empty<string>(), false,
                     action: UnitTriggerActionProbe.Capture(effect), statusScaling: UnitTriggerActionProbe.Scaling(effect)),
                 Before = trace.Capture(room), BeforeUnits = units.Select(unit => trace.CaptureUnit(unit, interactions)).ToArray() };
                 Records.Add(record);
@@ -58,6 +58,16 @@ namespace MonsterTrain2Poju.Probe
                     }
                     catch (Exception error) { trace.CaptureFailure(error); }
                 }
+            }
+        }
+        [HarmonyPatch(typeof(CardEffectAddStatusEffectBasedOnHealth), nameof(CardEffectAddStatusEffectBasedOnHealth.ApplyEffect))]
+        private static class HealthChoicePatch
+        {
+            private static void Postfix(CardEffectState cardEffectState, CardEffectParams cardEffectParams, ref IEnumerator __result)
+            {
+                if (OriginalHealthChoiceScenario.Prepared && FullBattleTrace.Active != null &&
+                    !AllGameManagers.Instance!.GetSaveManager().PreviewMode && cardEffectParams.selfTarget != null)
+                    __result = Wrap(__result, cardEffectState, cardEffectParams);
             }
         }
         [HarmonyPatch(typeof(CardEffectAddStatusEffect), nameof(CardEffectAddStatusEffect.ApplyEffect))]
