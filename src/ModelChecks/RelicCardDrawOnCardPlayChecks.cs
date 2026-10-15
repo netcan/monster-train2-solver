@@ -83,6 +83,17 @@ internal static class RelicCardDrawOnCardPlayChecks
             "The relic's native played-card subtype or trigger-count condition was not respected.");
 
         var missingDefinition = new CombatRelicState("bad", "MissingCardDrawDefinition", [RelicModel.CardDrawOnCardPlay]);
+        var traitFiltered = new CombatRelicState("trait", "DrawCardWhenConsumePlayed", [RelicModel.CardDrawOnCardPlay],
+            cardDrawOnCardPlayModifiers: [new(0, 1, "Spell", [trackedThisTurn], requiredTraits: ["CardTraitExhaustState"])]);
+        var noTrait = RelicCardPlayMagicPowerModel.Apply(Context(stats, [traitFiltered]), 2, currentTurn: 0);
+        var consuming = new CardInstanceState(2, "card-2", CardModifiers.Empty(), CardModifiers.Empty(), 0, 0, 0, [],
+            maskDescriptor: new CardMaskDescriptor(instances[1].MaskDescriptor!.Definition, 1,
+                [new CardTraitValue("CardTraitExhaustState", "CardTraitExhaustState", 0, 0, true, 0)], []));
+        var withTrait = RelicCardPlayMagicPowerModel.Apply(Context(stats, [traitFiltered]).WithCard(consuming), 2, currentTurn: 0);
+        Require(noTrait.Supported && noTrait.Context.Cards.Hand.Count == 0 && withTrait.Supported &&
+            withTrait.Context.Cards.Hand.Count == 1 &&
+            withTrait.Context.Relics![0].CardDrawOnCardPlayModifiers![0].RequiredTraits.SequenceEqual(["CardTraitExhaustState"]),
+            "Required Consume trait was ignored or lost while recording the draw condition.");
         Require(RelicModel.Validate([missingDefinition])?.Contains("card-draw-on-card-play", StringComparison.Ordinal) == true,
             "An uncaptured native card-draw-on-play payload passed validation.");
         Console.WriteLine("RELIC-CARD-DRAW-ON-PLAY-CHECKS PASS: threshold, once-per-duration, reset, type/subtype filtering, draw statistics and explicit missing definitions.");

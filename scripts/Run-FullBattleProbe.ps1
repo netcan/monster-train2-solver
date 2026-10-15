@@ -243,6 +243,7 @@ param(
     [switch] $OriginalStartCombatEnergyRelic,
     [switch] $OriginalForgeConservationRelic,
     [switch] $OriginalOpeningCorruptionRelics,
+    [switch] $OriginalSpellPlayThresholdRelics,
     [switch] $OriginalUnitUpgradeTriggerRelic,
     [switch] $TypedDraw,
     [switch] $IncantRelic,
@@ -357,6 +358,7 @@ if ($OriginalHealingPowerRelic) { $BranchCardMasks = $true; $Policy = 'units-spe
 if ($OriginalStartCombatEnergyRelic) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalForgeConservationRelic) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalOpeningCorruptionRelics) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
+if ($OriginalSpellPlayThresholdRelics) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalUnitUpgradeTriggerRelic) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalTriggerRelicBatch -or $OriginalLifecycleRelicBatch) {
     $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $SettleDeathDissolves = $true; $SettleCardAnimations = $true
@@ -732,6 +734,7 @@ if ($OriginalHealingPowerRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'origina
 if ($OriginalStartCombatEnergyRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-start-combat-energy-relic' }
 if ($OriginalForgeConservationRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-forge-conservation-relic' }
 if ($OriginalOpeningCorruptionRelics) { $environment['MT2_PROBE_MODIFIERS'] = 'original-opening-corruption-relics' }
+if ($OriginalSpellPlayThresholdRelics) { $environment['MT2_PROBE_MODIFIERS'] = 'original-spell-play-threshold-relics' }
 if ($OriginalUnitUpgradeTriggerRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-unit-upgrade-trigger-relic' }
 if ($TypedDraw) {
     $environment['MT2_PROBE_MODIFIERS'] = 'typed-draw'
@@ -1335,7 +1338,7 @@ if ($RelicCatalog) {
     try {
         $catalog = $catalogArchive.RootElement
         $catalogRecords = @($catalog.GetProperty('Relics').EnumerateArray())
-        if ($catalog.GetProperty('Schema').GetInt32() -ne 5 -or
+        if ($catalog.GetProperty('Schema').GetInt32() -ne 6 -or
             $catalog.GetProperty('GameModuleMvid').GetString() -ne $trace.GameModuleMvid -or
             $catalog.GetProperty('FrameBefore').GetInt32() -ne $catalog.GetProperty('FrameAfter').GetInt32() -or
             -not $catalog.GetProperty('RngBefore').ContentEquals($catalog.GetProperty('RngAfter')) -or

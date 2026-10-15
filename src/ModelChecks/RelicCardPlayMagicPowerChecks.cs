@@ -37,7 +37,7 @@ internal static class RelicCardPlayMagicPowerChecks
         var cards = new CardCycleState([], [], [], rng, 0, []);
         var context = new CombatContext(cards, rng, 0, 6, 10,
             cardInstances: [carrier, strongerSpell, normalSpell, nonScalingSpell],
-            cardRegistry: [carrier, strongerSpell, normalSpell, nonScalingSpell, unownedSpell], relics: [relic]);
+            cardRegistry: [carrier, strongerSpell, normalSpell, nonScalingSpell, unownedSpell], relics: [relic], otherPiles: []);
 
         RelicCardPlayMagicPowerResult first = RelicCardPlayMagicPowerModel.Apply(context, carrier.InstanceId);
         Require(first.Supported && first.Dispatches.Count == 1 && first.Dispatches[0].Applied,
@@ -71,6 +71,19 @@ internal static class RelicCardPlayMagicPowerChecks
             [RelicModel.ModifyCardMagicPowerOnCardPlayed]);
         Require(RelicModel.Validate([malformed])?.Contains("ordered native card-play", StringComparison.Ordinal) == true,
             "An uncaptured native card-play magic-power payload passed validation.");
+        var threshold = new CombatRelicState("threshold", "IncreaseMagicPowerOnSpellsPlayed",
+            [RelicModel.ModifyCardMagicPowerOnCardPlayed], cardPlayMagicPowerModifiers: [
+                new(0, 1, conditions: [new(new("AnyCardPlayed", typeMatchDataIds: ["normal"]), false, 6, 3, false)])]);
+        var counted = context.WithRelics([threshold]).WithOtherPiles([]).WithStatistics(BattleStatistics.Empty(deckCards: [3])
+            .Increment(3, "TimesPlayed").Increment(3, "TimesPlayed").Increment(3, "TimesPlayed"));
+        var deployment = RelicCardPlayMagicPowerModel.Apply(counted, 3, currentTurn: 0);
+        var combat = RelicCardPlayMagicPowerModel.Apply(counted, 3, currentTurn: 1);
+        var repeated = RelicCardPlayMagicPowerModel.Apply(combat.Context, 3, currentTurn: 1);
+        Require(deployment.Supported && deployment.Dispatches.Count == 1 && combat.Supported && combat.Dispatches.Count == 1 &&
+            repeated.Supported && repeated.Dispatches.Count == 0 &&
+            RelicCardPlayMagicPowerModel.Apply(RelicConditionModel.EndDuration(combat.Context, "ThisTurn"), 3, currentTurn: 2).Dispatches.Count == 1,
+            "Spell threshold failed deployment, once-per-turn or condition-reset controls: " + deployment.UnsupportedReason + "/" + combat.UnsupportedReason +
+            " dispatches=" + deployment.Dispatches.Count + "/" + combat.Dispatches.Count + "/" + repeated.Dispatches.Count);
         Console.WriteLine("RELIC-CARD-PLAY-MAGIC-POWER-CHECKS PASS: required traits, owned scalable spells, trait multipliers, accumulation, immutable branches and explicit missing metadata.");
     }
 

@@ -10,22 +10,25 @@ namespace MonsterTrain2Poju.Model
         public int Count { get; }
         public string CardType { get; }
         public string? RequiredSubtype { get; }
+        public IReadOnlyList<string> RequiredTraits { get; }
         public int ConditionCount { get; }
         public IReadOnlyList<RelicConditionState> Conditions { get; }
 
         public RelicCardDrawOnCardPlayModifier(int effectIndex, int count, string cardType,
-            IReadOnlyList<RelicConditionState>? conditions = null, int conditionCount = 0, string? requiredSubtype = null)
+            IReadOnlyList<RelicConditionState>? conditions = null, int conditionCount = 0, string? requiredSubtype = null,
+            IReadOnlyList<string>? requiredTraits = null)
         {
             EffectIndex = effectIndex;
             Count = count;
             CardType = cardType;
             RequiredSubtype = requiredSubtype;
+            RequiredTraits = Array.AsReadOnly((requiredTraits ?? Array.Empty<string>()).ToArray());
             Conditions = Array.AsReadOnly((conditions ?? Array.Empty<RelicConditionState>()).ToArray());
             ConditionCount = conditions?.Count ?? conditionCount;
         }
 
         internal RelicCardDrawOnCardPlayModifier WithConditions(IReadOnlyList<RelicConditionState> conditions) =>
-            new RelicCardDrawOnCardPlayModifier(EffectIndex, Count, CardType, conditions, requiredSubtype: RequiredSubtype);
+            new RelicCardDrawOnCardPlayModifier(EffectIndex, Count, CardType, conditions, requiredSubtype: RequiredSubtype, requiredTraits: RequiredTraits);
     }
 
     internal sealed class RelicCardDrawOnCardPlayResult
@@ -50,7 +53,8 @@ namespace MonsterTrain2Poju.Model
                 !indices.SequenceEqual(relic.CardDrawOnCardPlayModifiers.Select(effect => effect.EffectIndex)))
                 return "Missing ordered native card-draw-on-card-play definitions.";
             foreach (RelicCardDrawOnCardPlayModifier effect in relic.CardDrawOnCardPlayModifiers)
-                if (string.IsNullOrEmpty(effect.CardType) || effect.ConditionCount != effect.Conditions.Count)
+                if (string.IsNullOrEmpty(effect.CardType) || effect.ConditionCount != effect.Conditions.Count ||
+                    effect.RequiredTraits.Any(string.IsNullOrEmpty))
                     return "Incomplete native card-draw-on-card-play definition.";
             return null;
         }
@@ -68,6 +72,18 @@ namespace MonsterTrain2Poju.Model
             if (effect == null) return Fail(source, "Missing ordered native card-draw-on-card-play definition.");
 
             CombatContext context = source;
+            if (effect.RequiredTraits.Count > 0)
+            {
+                CardInstanceState? played = context.FindCard(playedCardId);
+                if (played?.MaskDescriptor == null || played.MaskDescriptor.Definition.DataId != played.DataId)
+                    return Fail(context, "Required card-draw relic traits need matching played-card metadata.");
+                IReadOnlyList<CardTraitValue>? traits;
+                try { traits = CardTraitRefreshModel.Ensure(CardBranchMaskModel.OwnedState(played).Traits).Composition.CombinedTraits; }
+                catch (InvalidOperationException error) { return Fail(context, error.Message); }
+                if (traits == null) return Fail(context, "Required card-draw relic traits were not captured.");
+                if (effect.RequiredTraits.Any(required => !traits.Any(trait => trait.RuntimeType == required)))
+                    return new RelicCardDrawOnCardPlayResult(context);
+            }
             if (effect.CardType != "Invalid" || !string.IsNullOrEmpty(effect.RequiredSubtype))
             {
                 CardInstanceState? played = context.FindCard(playedCardId);

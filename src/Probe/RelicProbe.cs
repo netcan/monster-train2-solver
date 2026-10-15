@@ -108,7 +108,7 @@ namespace MonsterTrain2Poju.Probe
                         string? requiredSubtype = subtype == null || subtype.IsNone ? null : subtype.Key;
                         return new RelicCardDrawOnCardPlayModifier(item.Index, data.GetParamInt(),
                             data.GetParamCardType().ToString(), RelicCardModifierProbe.Conditions(item.Effect),
-                            requiredSubtype: requiredSubtype);
+                            requiredSubtype: requiredSubtype, requiredTraits: data.GetTraits().Select(trait => trait.GetTraitStateName()).ToArray());
                     }).ToArray();
                 return new CombatRelicState(relic.GetRelicDataID(), relic.GetAssetName(), effects.Select(effect => effect.GetType().Name).ToArray(),
                     statuses.Length == 0 ? null : statuses, relic is CovenantState,
