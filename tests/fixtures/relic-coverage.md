@@ -1,7 +1,7 @@
 # Original relic coverage evidence
 
-As of 2026-10-16, **136 distinct original collectable relics / 224 catalog entries
-(60.71%)** have accepted native evidence: 120 have full-battle effect evidence,
+As of 2026-10-16, **137 distinct original collectable relics / 224 catalog entries
+(61.16%)** have accepted native evidence: 121 have full-battle effect evidence,
 fifteen have campaign consumer interfaces validated, and one is an explicit
 native no-op with seeded baseline equivalence. Except for that no-op, this counts
 unchanged relic definitions whose effects actually ran, including original filters and
@@ -22,7 +22,7 @@ The battle archives cited below report game `2.2.1`, module MVID
 `8fb07b96-f4db-4d2b-884d-c00536d6ccf4`, `NativeWon=true`, and zero
 `CaptureFailures`, `Mismatches`, `Unsupported` and `Pending`. Archive provenance,
 byte lengths and SHA-256 hashes are recorded in [manifest.tsv](manifest.tsv).
-The accepted inventory is 358 archives: 320 battles and 38 component
+The accepted inventory is 359 archives: 321 battles and 38 component
 calibrations, with no JSON companions. The newest calibration bundles two
 complete winning native battles for StarterWurmRelic: identical 21-play/seven-
 EndTurn policies and all decision state except ownership, with independent root,
@@ -220,6 +220,7 @@ owner count.
 | `WhelpDragonAttack_DH` | `72706202-526e-4377-9745-7df40a26ba7d` | [original card-attack relic][cardAttack] | Two unchanged +8 effects match Whelp and Dragon spawn subtypes in order. Four native manager observations cover both subtype outcomes and reset/reapply; dynamic scaling and cardless callbacks remain separately bounded. |
 | `CardDrawOnCardPlay` | `f3f07b9b-1349-41d0-abab-bd5ec04d81e4` | [original card-draw-on-play][cardDraw] | The unchanged one-card effect has `AnyCardPlayed >= 3`; it skips deployment and draws on the third play in five active turns. All five native activations and draws match. |
 | `MoreOrLessArtifactsRelic` | `79122f7a-6895-443a-830c-2db23027776c` | [relic-count attack scaling][relicCountAttack] | Both unchanged ordered effects match 64 actual manager calls. The negative attack scales by currently held collected relics while excluding boss, Soul Savior and active-clan starters; monster/champion/spell, foreign/active starter, boss, remove, reset/repeat and unknown-new-owner controls pass. Positive effect ablation and 16 immutable parallel branches pass. |
+| `MoreSpikes` | `a6c957cc-e9f5-49b7-a6a3-cd7e95393289` | [dynamic status attack][moreSpikes] | Its unchanged team/status/multiplier query adds one attack per friendly Spike. An authored 4-Spike monster carries 26 native attack through 15 exact plays; 27 positive owner observations and 21 enemy controls match. Status-scaled attack remains separate from base/status buffs and applies to combat attacks. |
 | `DrawOnSnackPlayed` | `8b00c46d-374e-4afb-aa27-526873e242d1` | [original card-draw-on-play][cardDraw] | Its unchanged Monster / Snack filter and tracked `ThisTurn` condition draw once on deployment. A synthetic Train Steward carrier with the Snack subtype provides the native positive witness without invoking its unrelated `OnEaten` behavior. |
 | `EmberFoundryCrucible` | `a034e00f-3a12-4c19-b626-4b8fd17c412a` | [normal smelt][smelt], [zero-cost smelt][smeltZero], [bulk smelt][smeltBulk] | Original +1 Ember per consumed card: cost-2 Starter Scrap choice changes Ember 4→6 after paying 1; zero-cost Sting changes 4→4; Foundry Line consumes four cards for 3 Forge and Ember 4→10. All three complete battles and action/search replays match. |
 | `TinkermasterTools` | `db2193eb-a476-4cc4-9a26-2d0e35f46b74` | [original Tinkermaster Mix][tinkermasterMix] | Its unchanged +1 amount changes both original Mixology drafts from two candidates to three. Two Mixology casts in separate turns, four native draft screens and their full action/search replays match. |
@@ -602,3 +603,4 @@ dotnet run --project src/ModelChecks -c Release -- --original-card-attack-only t
 [deckCopy]: campaign-deck-copy-calibration.mt2f
 [nullRelic]: null-relic-equivalence-calibration.mt2f
 [relicCountAttack]: full-battle-original-relic-count-attack.mt2f
+[moreSpikes]: full-battle-original-more-spikes.mt2f

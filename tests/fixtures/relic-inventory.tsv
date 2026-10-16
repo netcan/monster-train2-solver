@@ -125,7 +125,7 @@
 "MothersRemnant3Relic"	"6b5ccd78-056a-4599-b05a-368bb9e1d6bc"	"pending"	"RelicEffectCopyCardOnCardPlay"	""
 "DoubleMagebladeDamage"	"622860d3-b2ca-45b0-991a-b7745e1dcd5c"	"accepted-native-battle"	"RelicEffectModifyStatusMagnitude"	""
 "ModifyDragonsHoardCap_DH"	"c3f91e0e-629f-4d3f-b422-ce1653147293"	"accepted-native-campaign"	"RelicEffectModifyDragonsHoardCap"	""
-"MoreSpikes"	"a6c957cc-e9f5-49b7-a6a3-cd7e95393289"	"pending"	"RelicEffectAdjustAttackByStatusEffect"	""
+"MoreSpikes"	"a6c957cc-e9f5-49b7-a6a3-cd7e95393289"	"accepted-native-battle"	"RelicEffectAdjustAttackByStatusEffect"	""
 "HerzalsAnvil"	"4e0f1e86-f122-4b20-82cf-7c997e4ee84a"	"accepted-native-battle"	"RelicEffectAdditionalForgePoints"	""
 "PyreHeartFather"	"fe768ab5-3f58-4f96-9afc-48f0f30c7b21"	"accepted-native-campaign"	"RelicEffectModifyTowerMaxHealth"	""
 "CorruptionBattleStart"	"a528a1b2-0d14-4fc5-9b8f-4b1f23722422"	"accepted-native-battle"	"RelicEffectModifyCorruptionStartOfCombat"	""

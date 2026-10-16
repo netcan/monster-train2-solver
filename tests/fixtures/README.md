@@ -1,5 +1,11 @@
 # Native regression fixtures
 
+Dynamic status attack extension (2026-10-16): 359 archives (321 battles and 38
+calibrations), 137/224 original owners (61.16%): 121 battle, fifteen campaign-
+interface and one explicit no-op. MoreSpikes matches the unchanged team/status/
+multiplier query across 27 positive friendly Spike observations, 21 enemy
+controls and 15 complete action states. Four affected archives pass.
+
 Relic-count attack extension (2026-10-16): 358 archives (320 battles and 38
 calibrations), 136/224 original owners (60.71%): 120 battle, fifteen campaign-
 interface and one explicit no-op. MoreOrLessArtifactsRelic matches 64 actual

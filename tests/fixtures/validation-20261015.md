@@ -1,5 +1,19 @@
 # Inventory validation, 2026-10-15
 
+## Dynamic status attack extension, 2026-10-16
+
+Current inventory: 359 archives (321 battles, 38 calibrations), 137/224 original
+owners (61.16%): 121 battle, fifteen campaign-interface and one no-op owner.
+Native battle: `.probe-runs/full-battle-units-spells-and-junk-20261016-204242-034bd01c/full-battle.mt2f`.
+The unchanged MoreSpikes owner adds its captured status-query result independently
+from base attack and ordinary status buffs. Fifteen actual action transitions
+match, including 27 friendly 4-Spike observations and 21 enemy controls. The
+native battle wins with 35 matched stages, five EndTurns and zero capture,
+mismatch, unsupported or pending records; original game files are unchanged.
+The complete 15-play/five-EndTurn native policy replay includes mid-battle and
+16 parallel branches. Four related archives pass. Curated archive SHA-256 is
+`39bd24dbb2209040f22473f1acd39943a9e43080d7364a6b706167a469e996fc`.
+
 ## Relic-count attack extension, 2026-10-16
 
 Current inventory: 358 archives (320 battles, 38 calibrations), 136/224 original
