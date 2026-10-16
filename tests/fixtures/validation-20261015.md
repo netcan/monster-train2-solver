@@ -1,5 +1,20 @@
 # Inventory validation, 2026-10-15
 
+## Stealth-on-slay status attack extension, 2026-10-16
+
+Current inventory: 360 archives (322 battles, 38 calibrations), 138/224
+original owners (61.61%): 122 battle, fifteen campaign-interface and one no-op.
+Native battle: `.probe-runs/full-battle-units-spells-and-junk-20261016-205706-77e594ae/full-battle.mt2f`.
+The unchanged UnitsGainStealthOnSlayPlusAttack query adds three attack per
+friendly Stealth stack; its original AddTrigger installs OnSpawn and OnKill
+status effects. Five friendly units receive one native OnSpawn stack. Five
+positive owner-specific OnKill ablations each reduce Stealth by at least one
+stack. Fifteen actions and all 31 stages match, with five
+EndTurns, a won battle, and zero capture, mismatch, unsupported or pending
+records. The complete 15-play policy replay includes a mid-battle root and 16
+parallel branches. Fixture SHA-256 is
+`2c0f403640e58115db455feb38f8c10bad8f788d7bd974a0cfc794993ba072cb`.
+
 ## Dynamic status attack extension, 2026-10-16
 
 Current inventory: 359 archives (321 battles, 38 calibrations), 137/224 original

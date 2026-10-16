@@ -103,7 +103,7 @@
 "Inkbound_NimsOath"	"727e69a6-3a8c-4029-895c-99e9dac0bc0a"	"pending"	"RelicEffectAddEffectStartOfTurn"	""
 "JudgesScales"	"3511a804-42be-465c-9d40-56b988c8a940"	"pending"	"RelicEffectChooseDiscardsDrawReplacementsOnPostOpeningDraw"	""
 "PyregelOnAscend_DH"	"394fb724-046f-448f-9531-f9d6caadae77"	"pending"	"RelicEffectAddStatusOnUnitMovedUpDown"	""
-"UnitsGainStealthOnSlayPlusAttack"	"4687feca-a053-48ed-b208-81dc6dfc6e72"	"pending"	"RelicEffectAdjustAttackByStatusEffect,RelicEffectAddTrigger"	""
+"UnitsGainStealthOnSlayPlusAttack"	"4687feca-a053-48ed-b208-81dc6dfc6e72"	"accepted-native-battle"	"RelicEffectAdjustAttackByStatusEffect,RelicEffectAddTrigger"	""
 "ReduceCostUnitIfNoUpgrade"	"f03c7664-0485-4bcf-8bb9-f76321e090c3"	"pending"	"RelicEffectModifyCardCostIfNoUpgrades"	""
 "TrainRoomInstallFloor3AtStartOfCombat"	"c474dd00-3725-46d6-b074-0be7f7687cdd"	"pending"	"RelicEffectAddTrainRoomAttachmentOnStartOfCombat"	""
 "DrawCardWhenConsumePlayed"	"4fbb0cca-26cd-4510-af02-66694c7edfd3"	"accepted-native-battle"	"RelicEffectCardDrawOnCardPlay"	""

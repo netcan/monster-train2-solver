@@ -1,5 +1,13 @@
 # Native regression fixtures
 
+Stealth-on-slay status attack extension (2026-10-16): 360 archives (322 battles and 38
+calibrations), 138/224 original owners (61.61%): 122 battle, fifteen campaign-
+interface and one explicit no-op. The unchanged UnitsGainStealthOnSlayPlusAttack
+owner adds one Stealth on spawn and kill and +3 attack per friendly Stealth;
+12 exact births (5 friendly/7 enemy), five positive OnKill ablations and 15
+native actions match. Six affected battle archives plus the no-op calibration
+pass, including 16 parallel policy branches.
+
 Dynamic status attack extension (2026-10-16): 359 archives (321 battles and 38
 calibrations), 137/224 original owners (61.16%): 121 battle, fifteen campaign-
 interface and one explicit no-op. MoreSpikes matches the unchanged team/status/
