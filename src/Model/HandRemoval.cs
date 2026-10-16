@@ -23,7 +23,8 @@ namespace MonsterTrain2Poju.Model
         public static HandRemovalResult Apply(CombatContext source, int mode, int sourceCardId, int effectIndex,
             BattlePlayRules? definitions, IReadOnlyList<CardPileState>? otherPiles = null,
             IReadOnlyList<int>? pendingExhaustedCards = null, bool exhaustionRunsTriggerQueue = false,
-            IReadOnlyList<int>? selectedCardIds = null, string? effectCounterType = "CardEffectDiscardHand")
+            IReadOnlyList<int>? selectedCardIds = null, string? effectCounterType = "CardEffectDiscardHand",
+            bool triggeredByCard = true, bool placement = false, bool preview = false)
         {
             if (source.Cards.ExternalInteractions.Count > 0) return Unsupported(string.Join("; ", source.Cards.ExternalInteractions));
             CardToken[] handTargets = mode == 0 || mode == 1
@@ -91,6 +92,10 @@ namespace MonsterTrain2Poju.Model
                     CardPileState moved = CardPileModel.Add(CardPileModel.Remove(buffer, token.InstanceId), token);
                     piles = piles.Select(pile => pile == buffer ? moved : pile).ToArray();
                     context = context.WithStatistics(context.Statistics?.Increment(token.InstanceId, "TimesDiscarded"));
+                    RelicEarlyDiscardEnergyResult earlyDiscard = RelicEarlyDiscardEnergyModel.CardDiscarded(context,
+                        triggeredByCard, placement, preview);
+                    if (!earlyDiscard.Supported) return Unsupported(earlyDiscard.UnsupportedReason!);
+                    context = earlyDiscard.Context!;
                     CardInstanceState? instance = context.FindCard(token.InstanceId);
                     if (instance != null) context = context.WithCard(instance.OnDiscard(false));
                     context = ConduitModel.Discarded(context, token.InstanceId);

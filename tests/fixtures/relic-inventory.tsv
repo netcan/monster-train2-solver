@@ -21,7 +21,7 @@
 "BossEmberDH"	"50e516a6-f27a-4878-9586-c0efce046206"	"accepted-native-battle"	"RelicEffectModifyEnergy,RelicEffectIncreasePyreHealth,RelicEffectIncreasePyreAttack,RelicEffectModifyEnergyDuringDeployment"	""
 "PartFactory"	"623ce968-aae5-4b07-b0c8-071f315031b7"	"accepted-native-battle"	"RelicEffectAddCardsStartOfBattle"	""
 "BigDamageFromManyMorsels"	"15f3c641-14ba-4305-8c9f-cdb2ebb4e572"	"accepted-native-battle"	"RelicEffectDamageOnMonsterSummoned"	""
-"EmberOnEarlyDiscard"	"44149a09-df55-4864-b5d9-f30c4e659999"	"pending"	"RelicEffectEnergyOnCardEarlyDiscard"	""
+"EmberOnEarlyDiscard"	"44149a09-df55-4864-b5d9-f30c4e659999"	"accepted-native-battle"	"RelicEffectEnergyOnCardEarlyDiscard"	""
 "IncreaseDecaySlimeStacks"	"55c06c99-7cee-4d7e-ad17-f893722d8071"	"accepted-native-battle"	"RelicEffectAddStatusEffectOnStatusApplied"	""
 "SpellWeaknessBelowPyre"	"5a96d89f-d7c0-49fa-88d1-8ec75a8f3140"	"accepted-native-battle"	"RelicEffectAddStatusEffectOnEnterRoomIndex"	""
 "ChanceToVineGrasp"	"00063533-9277-485c-b100-13637a228f9a"	"accepted-native-battle"	"RelicEffectAddBattleCardToHand"	""

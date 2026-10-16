@@ -1,7 +1,7 @@
 # Original relic coverage evidence
 
-As of 2026-10-17, **145 distinct original collectable relics / 224 catalog entries
-(64.73%)** have accepted native evidence: 129 have full-battle effect evidence,
+As of 2026-10-17, **147 distinct original collectable relics / 224 catalog entries
+(65.63%)** have accepted native evidence: 131 have full-battle effect evidence,
 fifteen have campaign consumer interfaces validated, and one is an explicit
 native no-op with seeded baseline equivalence. Except for that no-op, this counts
 unchanged relic definitions whose effects actually ran, including original filters and
@@ -41,8 +41,14 @@ battle validates an ordinary-card control
 does not trigger it, the first native capacity attachment is copied to all
 non-Pyre floors, and a later attachment is blocked by the unchanged once-per-
 battle condition. Native room and unit snapshots also match attachment upgrade
-propagation. The accepted inventory is 366 archives: 328 battles and 38 component
-calibrations, with no JSON companions.
+propagation. The accepted inventory is 367 archives: 329 battles and 38 component
+calibrations, with no JSON companions. The new EmberOnEarlyDiscard battle starts
+at zero Ember and confirms +1 per card-triggered card discard across five gaining
+steps; 18 consume controls do not gain Ember. Its pure checks cover energy cap,
+placement and preview gates. All 45 battle stages match, with zero capture
+failures, mismatches, unsupported transitions or pending records. The dedicated
+checker validates 36 hand-removal effects, and independent search matches
+128/128 states, two replayed steps, and serial/parallel best results.
 A recent calibration bundles two
 complete winning native battles for StarterWurmRelic: identical 21-play/seven-
 EndTurn policies and all decision state except ownership, with independent root,
@@ -127,6 +133,8 @@ owner count.
 | AssetKey | DataId | Accepted archive | Actual effect witness |
 | --- | --- | --- | --- |
 | `GoldOnDeath` | `265d9fb6-934f-4b7d-ba12-d3a06c48b610` | [unit resource relics][unitResources] | Original +5 reward gold on actual friendly death: two positive native callbacks. Both Tomb and ordinary sacrifice qualify; six enemy deaths do not. Gold's living-death override is preserved separately from Ember's strict dead-only gate. |
+| `BigDamageFromManyMorsels` | `15f3c641-14ba-4305-8c9f-cdb2ebb4e572` | [Big Damage from Many Morsels][bigDamage] | Six actual complete-train births replay the unchanged threshold effect; native checks cover 19/20/21 Snacks, player/Pyre/enemy gates, five Tower targets and seven room/character notifications. Its 113-stage winning battle has zero differential counters. Bounded search visits 128 states and replays three steps with serial/parallel best equality; unsupported branches remain excluded. |
+| `EmberOnEarlyDiscard` | `44149a09-df55-4864-b5d9-f30c4e659999` | [early discard energy][earlyDiscardEnergy] | The unchanged +1 effect triggers for card-caused discard of each card, but not Consume; five native steps gain Ember and 18 consume controls gain none. Pure checks cover the energy clamp, placement and preview gates. Full battle and independent 128/128-state replay/search match. |
 | `EmberOnTombDeath` | `4a5b1613-568c-4bf6-8bf7-15f8bf013345` | [unit resource relics][unitResources] | Original +5 Ember after actual Tomb sacrifice; ordinary friendly sacrifice and enemy deaths do not qualify. Complete manager contexts and exact resource/RNG state match. |
 | `Frenzystesia` | `56316fc2-b41a-41ae-aba8-e83fb668e8e1` | [unit resource relics][unitResources] | Original +1 Ember on the first equipment callback this turn. Two actual equipment additions prove the first-only condition, with notification count recorded once by the effect and again by RelicManager. Full 22-play/five-EndTurn policy matches, including native duration resets. |
 | `RandomEquipmentCardFirstTurn` | `7a1d5b5d-cd08-4935-b629-d3d441905100` | [original opening draw][openingDraw] | Natural Equipment primary draw plus controlled native fallback to an Equipment with the deployment-draw trait. Original temporary -99 cost, count expansion and CardDraw RNG match. |
@@ -260,7 +268,7 @@ owner count.
 
 These fifteen unchanged original owners are validated by their actual native
 campaign consumers, with baseline and removed-owner controls. This table is
-separate from the 129 battle owners. It does not claim whole-battle integration
+separate from the 131 battle owners. It does not claim whole-battle integration
 for these effect classes. The first capture's recorded relic IDs, gold, hoard cap and
 amount, deck IDs, frame and RNG match before/after; reward grants still execute
 their native run-stat side effects in the isolated save. Catalog enumeration
@@ -344,6 +352,8 @@ archives contain these observed battle sizes:
 | [original Progress Mix][progressMix] | 103 | 21 | 7 | 60 | Six native Mix drafts, two conditional follow-up rounds across separate turns |
 | [original card-type cost][cardTypeCost] | 103 | 24 | 6 | 50 | Ten modifier calls, two original zero-Ember self-purge plays, generated Junk |
 | [original Ember conservation][conserveEmber] | 103 | 21 | 7 | 62 | Seven conservation queries, two banked turns, later positive payments and terminal Ember retention |
+| [Big Damage from Many Morsels][bigDamage] | 169 | 6 | 7 | 113 | Six native train-birth replays, exact 19/20/21 Snack thresholds and Tower/Pyre/enemy controls |
+| [original early-discard energy][earlyDiscardEnergy] | 170 | 11 | 6 | 45 | Five Ember-gaining card discards, 18 no-gain consume controls |
 
 The checks that enforce these observations are
 [TriggerCountChecks.Native](../../src/ModelChecks/TriggerCountChecks.cs),
@@ -696,6 +706,7 @@ dotnet run --project src/ModelChecks -c Release -- --gold-pyre-pure
 [upgradeCounts]: full-battle-original-upgrade-count-relics.mt2f
 [healingPower]: full-battle-original-healing-power-relic.mt2f
 [firstCombatEnergy]: full-battle-original-start-combat-energy-relic.mt2f
+[earlyDiscardEnergy]: full-battle-original-early-discard-energy.mt2f
 [forgeConservation]: full-battle-original-forge-conservation-relic.mt2f
 [campaign]: campaign-relic-calibration.mt2f
 [campaignDrafts]: campaign-draft-calibration.mt2f
@@ -716,5 +727,6 @@ dotnet run --project src/ModelChecks -c Release -- --gold-pyre-pure
 [deckCopy]: campaign-deck-copy-calibration.mt2f
 [nullRelic]: null-relic-equivalence-calibration.mt2f
 [relicCountAttack]: full-battle-original-relic-count-attack.mt2f
+[bigDamage]: full-battle-original-big-damage-many-morsels.mt2f
 [moreSpikes]: full-battle-original-more-spikes.mt2f
 [stealthSlay]: full-battle-original-stealth-slay.mt2f

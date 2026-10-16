@@ -201,6 +201,8 @@ namespace MonsterTrain2Poju.Probe
                     throw new InvalidOperationException("Unexpected native end-of-turn conservation mode.");
                 amount = 0;
             }
+            else if (effect is RelicEffectEnergyOnCardEarlyDiscard)
+                amount = data.GetParamInt();
             else
                 amount = (int)AccessTools.Field(effect.GetType(), "energyChange").GetValue(effect);
             return new RelicResourceEffect(index, type, data.GetParamInt(), data.GetParamInt2(), amount,

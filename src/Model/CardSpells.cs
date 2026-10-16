@@ -836,8 +836,9 @@ namespace MonsterTrain2Poju.Model
                 }
                 if (effect.Type == "RandomDiscard")
                 {
+                    bool placement = state.Rooms.Single(room => room.RoomIndex == roomIndex).Deployment;
                     HandRemovalResult discarded = RandomDiscardModel.Apply(state.Context!, effect.Value, sourceCardId,
-                        index, definitions, piles);
+                        index, definitions, piles, placement, state.Context!.IsolatedBattlePreview == true);
                     if (!discarded.Supported) return UnsupportedTrain(discarded.UnsupportedReason!);
                     state = WithContext(state, discarded.Context!);
                     piles = discarded.OtherPiles?.ToArray() ?? piles;
@@ -845,12 +846,14 @@ namespace MonsterTrain2Poju.Model
                 }
                 if (effect.Type == "DiscardHand")
                 {
+                    bool placement = state.Rooms.Single(room => room.RoomIndex == roomIndex).Deployment;
                     int[] pendingCards = source.Rooms.SelectMany(room => room.Units).Where(unit => pendingDeadRooms.ContainsKey(unit.Id) &&
                         unit.SpawnerCardId > 0 && piles?.Any(pile => pile.Name == "Standby" && pile.Cards.Any(card => card.InstanceId == unit.SpawnerCardId)) == true)
                         .Select(unit => unit.SpawnerCardId).ToArray();
                     bool runsQueue = state.Rooms.Single(room => room.RoomIndex == roomIndex).Units.Count > 0 || pendingDeadRooms.Values.Contains(roomIndex);
                     HandRemovalResult removed = HandRemovalModel.Apply(state.Context!, effect.Value, sourceCardId, index, definitions, piles,
-                        pendingCards, runsQueue);
+                        pendingCards, runsQueue, triggeredByCard: true, placement: placement,
+                        preview: state.Context!.IsolatedBattlePreview == true);
                     if (!removed.Supported) return UnsupportedTrain(removed.UnsupportedReason!);
                     piles = removed.OtherPiles?.ToArray();
                     state = WithContext(state, removed.Context!);

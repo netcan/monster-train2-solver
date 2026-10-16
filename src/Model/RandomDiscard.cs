@@ -37,7 +37,8 @@ namespace MonsterTrain2Poju.Model
         }
 
         public static HandRemovalResult Apply(CombatContext source, int discardCount, int sourceCardId, int effectIndex,
-            BattlePlayRules? definitions, IReadOnlyList<CardPileState>? otherPiles = null)
+            BattlePlayRules? definitions, IReadOnlyList<CardPileState>? otherPiles = null,
+            bool placement = false, bool preview = false)
         {
             if (discardCount < 0) return Unsupported("Negative random discard count is not modeled.");
             int? eligibleCount = EligibleCount(source, sourceCardId, out string? error);
@@ -63,7 +64,8 @@ namespace MonsterTrain2Poju.Model
             if (candidates.Count == 0)
                 return new HandRemovalResult(withRng, otherPiles ?? source.OtherPiles, Array.Empty<CardToken>(), 0);
             return HandRemovalModel.Apply(withRng, 0, sourceCardId, effectIndex, definitions, otherPiles,
-                selectedCardIds: candidates.Select(card => card.InstanceId).ToArray(), effectCounterType: null);
+                selectedCardIds: candidates.Select(card => card.InstanceId).ToArray(), effectCounterType: null,
+                triggeredByCard: true, placement: placement, preview: preview);
         }
 
         private static HandRemovalResult Unsupported(string error) =>

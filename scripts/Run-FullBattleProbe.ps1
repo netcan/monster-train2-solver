@@ -262,6 +262,7 @@ param(
     [switch] $OriginalAfterDrawGenerationRelics,
     [switch] $OriginalPartFactory,
     [switch] $OriginalBigDamageFromManyMorsels,
+    [switch] $OriginalEarlyDiscardEnergy,
     [switch] $OriginalUnitResourceRelics,
     [switch] $OriginalOpeningDrawRelics,
     [switch] $OriginalTurnDrawRelics,
@@ -400,6 +401,7 @@ if ($OriginalBigDamageFromManyMorsels) {
     $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $SettleDeathDissolves = $true; $SettleCardAnimations = $true
     $Policy = 'units-spells-and-junk'
 }
+if ($OriginalEarlyDiscardEnergy) { $BranchCardMasks = $true; $HandRemoval = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalUnitResourceRelics) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalOpeningDrawRelics) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalTurnDrawRelics) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
@@ -716,6 +718,7 @@ if ($Mix) { $environment['MT2_PROBE_MODIFIERS'] = 'card-effect-mix' }
 if ($OriginalTinkermasterMix) { $environment['MT2_PROBE_MODIFIERS'] = 'original-tinkermaster-mix' }
 if ($OriginalPartFactory) { $environment['MT2_PROBE_MODIFIERS'] = 'original-part-factory' }
 if ($OriginalBigDamageFromManyMorsels) { $environment['MT2_PROBE_MODIFIERS'] = 'original-big-damage-many-morsels' }
+if ($OriginalEarlyDiscardEnergy) { $environment['MT2_PROBE_MODIFIERS'] = 'hand-removal'; $environment['MT2_PROBE_ORIGINAL_EARLY_DISCARD_ENERGY'] = '1' }
 if ($OriginalProgressPacemakerMix) { $environment['MT2_PROBE_MODIFIERS'] = 'original-progress-pacemaker-mix' }
 if ($OriginalCardTypeCostRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-card-type-cost-relic' }
 if ($OriginalConserveEmber) { $environment['MT2_PROBE_MODIFIERS'] = 'original-conserve-ember-relic' }
@@ -808,6 +811,7 @@ if ($OriginalHealthChoiceRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'origina
 if ($OriginalAfterDrawGenerationRelics) { $environment['MT2_PROBE_MODIFIERS'] = 'original-after-draw-generation-relics' }
 if ($OriginalPartFactory) { $environment['MT2_PROBE_MODIFIERS'] = 'original-part-factory' }
 if ($OriginalBigDamageFromManyMorsels) { $environment['MT2_PROBE_MODIFIERS'] = 'original-big-damage-many-morsels' }
+if ($OriginalEarlyDiscardEnergy) { $environment['MT2_PROBE_MODIFIERS'] = 'hand-removal'; $environment['MT2_PROBE_ORIGINAL_EARLY_DISCARD_ENERGY'] = '1' }
 if ($OriginalUnitResourceRelics) { $environment['MT2_PROBE_MODIFIERS'] = 'original-unit-resource-relics' }
 if ($OriginalOpeningDrawRelics) { $environment['MT2_PROBE_MODIFIERS'] = 'original-opening-draw-relics' }
 if ($OriginalTurnDrawRelics) { $environment['MT2_PROBE_MODIFIERS'] = 'original-turn-draw-relics' }
@@ -1546,6 +1550,11 @@ if ($OriginalBigDamageFromManyMorsels -and ($trace.ModifierScenario -ne 'origina
     @($trace.RelicSpawnStatuses | Where-Object { $null -ne $_.BeforeTrain -and $null -ne $_.AfterTrain }).Count -lt 2 -or
     -not (Select-String -LiteralPath $unityLog -Pattern 'ORIGINAL-BIG-DAMAGE-PREPARED seeded Snack count=19' -Quiet))) {
     throw 'BigDamageFromManyMorsels lacks isolated threshold controls or complete-train birth captures.'
+}
+if ($OriginalEarlyDiscardEnergy -and ($trace.Schema -ne 170 -or $trace.ModifierScenario -ne 'hand-removal' -or
+    -not $trace.OriginalEarlyDiscardEnergyPrepared -or
+    -not (Select-String -LiteralPath $unityLog -Pattern 'ORIGINAL-EMBER-EARLY-DISCARD-PREPARED' -Quiet))) {
+    throw 'EmberOnEarlyDiscard lacks the isolated card-triggered discard scenario.'
 }
 if (($OriginalNullRelic -or $OriginalNullRelicBaseline) -and ($null -eq $trace.OriginalNullRelic -or
     $trace.OriginalNullRelic.Present -ne $(if ($OriginalNullRelicBaseline) { 0 } else { 1 }) -or

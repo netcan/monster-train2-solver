@@ -1,5 +1,6 @@
 using MonsterTrain2Poju.Fixtures;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using MonsterTrain2Poju.Model;
 
 internal static class HandRemovalChecks
@@ -16,12 +17,29 @@ internal static class HandRemovalChecks
             [new("remove", "remove", 1, "Spell", "Discard", null, [], upgradeInteractions: [], handDiscardInteractions: [], handConsumeInteractions: []),
                 new("held", "held", 0, "Null", "Discard", null, [], upgradeInteractions: [], handDiscardInteractions: [], handConsumeInteractions: [])]);
         CardPileState[] piles = [new("Standby", [], [], []), new("Exhausted", [new(6, "held")]), new("DiscardBuffer", []), new("Purged", []), new("Eaten", [])];
+        const string earlyDiscardEffect = "RelicEffectEnergyOnCardEarlyDiscard";
+        var earlyDiscardRule = new RelicResourceEffect(0, earlyDiscardEffect, 2, 0, 2, false);
+        CombatRelicState EarlyDiscardRelic(bool placementBlocked = false) => new("discard-energy", "EmberOnEarlyDiscard",
+            [earlyDiscardEffect], disallowedInPlacementPhase: placementBlocked, resourceEffects: [earlyDiscardRule]);
+        CombatContext EnergyContext(bool placementBlocked = false) => new(context.Cards, rng, context.Gold, context.NextCardId,
+            context.MaxHandSize, statistics: context.Statistics, cardInstances: context.CardInstances,
+            queryFrame: new StatisticQueryFrame(energy: 0, runningCombat: true),
+            energyState: new BattleEnergyState(3, 0, 0, "Combat", true), relics: [EarlyDiscardRelic(placementBlocked)]);
         string parent = JsonSerializer.Serialize(context), pileParent = JsonSerializer.Serialize(piles);
         HandRemovalResult discard = HandRemovalModel.Apply(context, 0, 1, 0, rules, piles);
         Require(discard.Supported && discard.Context!.Cards.Hand.Single().InstanceId == 1 &&
             discard.Context.Cards.Discard.Select(card => card.InstanceId).SequenceEqual([5, 3, 2]) &&
             discard.OtherPiles!.Single(pile => pile.Name == "DiscardBuffer").Cards.Select(card => card.InstanceId).SequenceEqual([3, 2]),
             "Spell hand discards must use the forward hand snapshot and exclude the resolving card.");
+        HandRemovalResult relicDiscard = HandRemovalModel.Apply(EnergyContext(), 0, 1, 0, rules, piles);
+        HandRemovalResult relicConsume = HandRemovalModel.Apply(EnergyContext(), 1, 1, 0, rules, piles);
+        HandRemovalResult nonTriggeredDiscard = HandRemovalModel.Apply(EnergyContext(), 0, 1, 0, rules, piles, triggeredByCard: false);
+        HandRemovalResult deploymentDiscard = HandRemovalModel.Apply(EnergyContext(placementBlocked: true), 0, 1, 0, rules, piles, placement: true);
+        Require(relicDiscard.Supported && relicDiscard.Context!.QueryFrame!.Energy == 3 &&
+            relicConsume.Supported && relicConsume.Context!.QueryFrame!.Energy == 0 &&
+            nonTriggeredDiscard.Supported && nonTriggeredDiscard.Context!.QueryFrame!.Energy == 0 &&
+            deploymentDiscard.Supported && deploymentDiscard.Context!.QueryFrame!.Energy == 0,
+            "Hand removal did not distinguish card-triggered discards, consumes, ordinary discards, placement and the live energy cap.");
         Require(discard.Context!.CardInstances!.Where(card => card.InstanceId is 2 or 3).All(card => card.Temporary.Upgrades.Count == 0 &&
             card.PlayCount == 4 && card.LastPlayedCost == 3 && card.LastForgedAmount == 7) &&
             discard.Context.CardInstances.Single(card => card.InstanceId == 1).Temporary.Upgrades.Count == 1 &&
@@ -188,8 +206,14 @@ internal static class HandRemovalChecks
             Require(pendingReturns > 0 && nestedReturns > 0, "The lethal hand-removal oracle lacks pending deaths returned inside consumption callbacks.");
         Console.WriteLine($"NATIVE-HAND-REMOVAL-COVERAGE PASS: {removals} exact effects, {discarded} discarded, {consumed} consumed, {empty} empty consumes, {ignored} ignored modes, {removed} upgrade removals, {kept} preserved upgrades, {allocated} dictionary extensions and {nestedReturns} nested death returns.");
     }
-    private static string Comparable(CombatContext context, IReadOnlyList<CardPileState>? piles) => JsonSerializer.Serialize(new
-        { Context = context, OtherPiles = piles });
+    private static string Comparable(CombatContext context, IReadOnlyList<CardPileState>? piles)
+    {
+        JsonObject comparable = JsonNode.Parse(JsonSerializer.Serialize(new { Context = context, OtherPiles = piles }))!.AsObject();
+        // Room selection belongs to the enclosing card play, not hand removal.
+        if (comparable["Context"]?["QueryFrame"] is JsonObject queryFrame)
+            queryFrame.Remove(nameof(StatisticQueryFrame.SelectedRoomIndex));
+        return comparable.ToJsonString();
+    }
     private static void Require(bool condition, string message)
     { if (!condition) throw new InvalidOperationException(message); }
 }

@@ -633,6 +633,18 @@ if (args.Length == 2 && args[0] == "--original-big-damage-replay-only")
     OriginalBigDamageFromManyMorselsChecks.Replay(fixture.RootElement);
     return;
 }
+if (args.Length == 2 && args[0] == "--original-early-discard-energy-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    OriginalEarlyDiscardEnergyChecks.Native(fixture.RootElement);
+    return;
+}
+if (args.Length == 1 && args[0] == "--original-early-discard-energy-pure")
+{
+    OriginalEarlyDiscardEnergyChecks.Run();
+    HandRemovalChecks.Run();
+    return;
+}
 if (args.Length == 2 && args[0] == "--original-unit-resources-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
@@ -1264,6 +1276,7 @@ TitanSkinChecks.Run();
 DamageOverflowChecks.Run();
 RelicStatusDecayChecks.Run();
 RelicResourceChecks.Run();
+OriginalEarlyDiscardEnergyChecks.Run();
 RelicFloorCapacityChecks.Run();
 StatusAttackDamageChecks.Run();
 TypedDrawChecks.Run();
