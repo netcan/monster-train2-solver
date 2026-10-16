@@ -638,7 +638,8 @@ namespace MonsterTrain2Poju.Model
                 terminal = outcome == RoomOutcome.BattleWon || outcome == RoomOutcome.PlayerDefeated;
             }
             RelicCardPlayMagicPowerResult cardPlayMagicPower = RelicCardPlayMagicPowerModel.Apply(
-                context, card.InstanceId, source.PlayRules, source.Spawn.Turn);
+                context, card.InstanceId, source.PlayRules, source.Spawn.Turn,
+                context.QueryFrame?.SelectedRoomIndex ?? action.RoomIndex);
             if (!cardPlayMagicPower.Supported) return Unsupported(cardPlayMagicPower.UnsupportedReason!);
             context = cardPlayMagicPower.Context;
             train = CardSpellModel.WithContext(train, context);

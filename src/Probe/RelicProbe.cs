@@ -120,6 +120,12 @@ namespace MonsterTrain2Poju.Probe
                             data.GetParamCardType().ToString(), RelicCardModifierProbe.Conditions(item.Effect),
                             requiredSubtype: requiredSubtype, requiredTraits: data.GetTraits().Select(trait => trait.GetTraitStateName()).ToArray());
                     }).ToArray();
+                var cardPlayRoomCapacity = effects.Select((effect, index) => new { Effect = effect, Index = index })
+                    .Where(item => item.Effect is RelicEffectModifyRoomCapacityOnCardPlay)
+                    .Select(item => {
+                        var data = (RelicEffectData)AccessTools.Field(typeof(RelicEffectBase), "_srcRelicEffectData").GetValue(item.Effect);
+                        return new RelicCardPlayRoomCapacityModifier(item.Index, data.GetParamInt(), data.GetParamCardType().ToString());
+                    }).ToArray();
                 return new CombatRelicState(relic.GetRelicDataID(), relic.GetAssetName(), effects.Select(effect => effect.GetType().Name).ToArray(),
                     statuses.Length == 0 ? null : statuses, relic is CovenantState,
                     relic.DisallowedInPlacementPhase, cardModifiers?.Length > 0 ? cardModifiers : null,
@@ -135,7 +141,8 @@ namespace MonsterTrain2Poju.Probe
                     cardDrawOnCardPlay.Length > 0 ? cardDrawOnCardPlay : null,
                     corruptionStatuses.Length > 0 ? corruptionStatuses : null,
                     cardTypeCosts.Length > 0 ? cardTypeCosts : null,
-                    effects.Any(effect => effect is RelicEffectAdjustAttackByStatusEffect) ? StatusAttackModifiers(managers) : null);
+                    effects.Any(effect => effect is RelicEffectAdjustAttackByStatusEffect) ? StatusAttackModifiers(managers) : null,
+                    cardPlayRoomCapacity.Length > 0 ? cardPlayRoomCapacity : null);
             }).ToArray();
         }
 

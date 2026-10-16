@@ -481,6 +481,17 @@ if (args.Length == 2 && args[0] == "--original-card-draw-on-card-play-only")
     RelicCardDrawOnCardPlayChecks.Native(document.RootElement);
     return;
 }
+if (args.Length == 2 && args[0] == "--original-carriage-jack-only")
+{
+    using var document = ModelJson.ReadFixture(args[1]);
+    RelicCardPlayRoomCapacityChecks.Native(document.RootElement);
+    return;
+}
+if (args.Length == 1 && args[0] == "--original-carriage-jack-model-only")
+{
+    RelicCardPlayRoomCapacityChecks.Run();
+    return;
+}
 if (args.Length == 1 && args[0] == "--relic-card-draw-on-card-play-model-only")
 {
     RelicCardDrawOnCardPlayChecks.Run();
@@ -677,6 +688,7 @@ if (args.Length == 1 && args[0] == "--relic-card-play-magic-power-pure")
 {
     RelicCardPlayMagicPowerChecks.Run();
     RelicCardDrawOnCardPlayChecks.Run();
+    RelicCardPlayRoomCapacityChecks.Run();
     return;
 }
 if (args.Length == 1 && args[0] == "--relic-card-attack-pure")
@@ -1198,6 +1210,7 @@ RelicUpgradeCountChecks.Run();
 RelicMagicPowerChecks.Run();
 RelicCardPlayMagicPowerChecks.Run();
 RelicCardDrawOnCardPlayChecks.Run();
+RelicCardPlayRoomCapacityChecks.Run();
 RelicStatusStackChecks.Run();
 RelicStatusMagnitudeChecks.Run();
 TitanSkinChecks.Run();
@@ -1297,6 +1310,11 @@ foreach (string path in args.Where(path => path.Contains("original-card-draw-on-
 {
     using var document = ModelJson.ReadFixture(path);
     RelicCardDrawOnCardPlayChecks.Native(document.RootElement);
+}
+foreach (string path in args.Where(path => path.Contains("original-carriage-jack", StringComparison.OrdinalIgnoreCase)))
+{
+    using var document = ModelJson.ReadFixture(path);
+    RelicCardPlayRoomCapacityChecks.Native(document.RootElement);
 }
 foreach (string path in args.Where(path => path.Contains("original-room-entry-status-relics", StringComparison.OrdinalIgnoreCase)))
 {

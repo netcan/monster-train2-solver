@@ -587,6 +587,11 @@ internal static class BattleActionChecks
             string cardDataId = fixture.GetProperty("RoomCapacityAttachmentCoverage").GetProperty("CardDataId").GetString()!;
             chooser = source => ChooseRoomCapacityAttachmentThenCards(source, cardDataId);
         }
+        if (fixture.TryGetProperty("ModifierScenario", out var carriageJackPolicy) && carriageJackPolicy.GetString() == "original-carriage-jack")
+        {
+            int roomIndex = fixture.GetProperty("OriginalCarriageJackCoverage").GetProperty("RoomIndex").GetInt32();
+            chooser = source => RelicCardPlayRoomCapacityChecks.Choose(source, roomIndex);
+        }
         if (fixture.TryGetProperty("ModifierScenario", out var summonScenario) && summonScenario.GetString()?.StartsWith("multi-summon", StringComparison.Ordinal) == true)
             chooser = BattleActionModel.ChooseMultiSummonThenCards;
         if (fixture.TryGetProperty("ModifierScenario", out var abilityScenario) &&

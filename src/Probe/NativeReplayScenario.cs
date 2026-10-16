@@ -262,6 +262,8 @@ namespace MonsterTrain2Poju.Probe
                         OriginalCardPlayMagicPowerScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalCardDrawOnCardPlayScenario.Enabled && !OriginalCardDrawOnCardPlayScenario.Acquired)
                         OriginalCardDrawOnCardPlayScenario.AcquireBeforeBattle(managers!, log);
+                    if (fullBattle && OriginalCarriageJackScenario.Enabled && !OriginalCarriageJackScenario.Acquired)
+                        OriginalCarriageJackScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalCardAttackRelicScenario.Enabled && !OriginalCardAttackRelicScenario.Acquired)
                         OriginalCardAttackRelicScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalCardTypeCostScenario.Enabled && !OriginalCardTypeCostScenario.Acquired)
@@ -471,6 +473,7 @@ namespace MonsterTrain2Poju.Probe
                     PreviewSchedulingProbe.Observe("PlayReady");
                     if (fullBattle) FullBattleTrace.Active?.CompleteCardPlay();
                     RoomCapacityAttachmentScenario.CompleteCardPlay(managers);
+                    OriginalCarriageJackScenario.CompleteCardPlay(managers);
                     log.LogInfo("DEPTH-PLAYED pass=" + pass + " turn=" + (combat!.GetTurnCount() - initialTurn));
                     if (IsUnitAndJunkPolicy()) Enter(Stage.Battle, 60f);
                     else AdvanceTurn(combat);
@@ -486,6 +489,13 @@ namespace MonsterTrain2Poju.Probe
             {
                 if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Capacity attachment fixture must start on deployment turn.");
                 RoomCapacityAttachmentScenario.Prepare(managers, log);
+                numericModifiersPrepared = true;
+                return;
+            }
+            if (fullBattle && !numericModifiersPrepared && OriginalCarriageJackScenario.Enabled)
+            {
+                if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("CarriageJack fixture must start on deployment turn.");
+                OriginalCarriageJackScenario.Prepare(managers, log);
                 numericModifiersPrepared = true;
                 return;
             }
@@ -1311,6 +1321,8 @@ namespace MonsterTrain2Poju.Probe
                     pendingPlay = OriginalUnitResourceScenario.Choose(decision);
                 if (fullBattle && OriginalCardDrawOnCardPlayScenario.Enabled)
                     pendingPlay = OriginalCardDrawOnCardPlayScenario.ChooseSnack(decision) ?? pendingPlay;
+                if (fullBattle && OriginalCarriageJackScenario.Enabled)
+                    pendingPlay = OriginalCarriageJackScenario.Choose(decision, pendingPlay);
                 if (fullBattle && UnplayedCardTriggerScenario.Enabled)
                     pendingPlay = UnplayedCardTriggerScenario.AvoidPlaying(decision, pendingPlay);
                 if (fullBattle && UnplayedCardEffectsScenario.Enabled)
@@ -1511,6 +1523,7 @@ namespace MonsterTrain2Poju.Probe
             bool scenarioPrelude = (OriginalUnitRelicBatchScenario.Enabled && !OriginalUnitRelicBatchScenario.PolicyCarriersInjected) ||
                 (modifierScenario == "damage-per-hp-ability" && !damagePerHpAbilityInputPrepared) ||
                 (modifierScenario == "dragon-hoard" && DragonHoardScenario.IsScenarioAction(action)) ||
+                (OriginalCarriageJackScenario.Enabled && OriginalCarriageJackScenario.IsScenarioAction(action)) ||
                 (modifierScenario == "train-heal" && TrainHealScenario.IsScenarioAction(action)) ||
                 (modifierScenario == "overheal" && OverhealScenario.IsScenarioAction(action)) ||
                 (modifierScenario is "corruption" or "corruption-unit-trigger" or "corruption-carver-trigger" or "corruption-keeper-trigger" or "corruption-relic-trigger" &&
