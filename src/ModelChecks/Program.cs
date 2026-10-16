@@ -510,6 +510,13 @@ if (args.Length == 2 && args[0] == "--original-moon-phase-energy-only")
     Console.WriteLine($"NATIVE-MOON-PHASE-FIXTURE bytes={new FileInfo(args[1]).Length} uniqueNodes={document.UniqueNodeCount}");
     return;
 }
+if (args.Length == 2 && args[0] == "--original-moon-phase-heal-only")
+{
+    using var document = ModelJson.ReadFixture(args[1]);
+    OriginalMoonPhaseHealRelicChecks.Native(document.RootElement);
+    Console.WriteLine($"NATIVE-MOON-PHASE-HEAL-FIXTURE bytes={new FileInfo(args[1]).Length} uniqueNodes={document.UniqueNodeCount}");
+    return;
+}
 if (args.Length == 2 && args[0] == "--original-upgrade-count-only")
 {
     using var document = ModelJson.ReadFixture(args[1]);
@@ -1325,6 +1332,11 @@ foreach (string path in args.Where(path => path.Contains("original-moon-phase-en
 {
     using var document = ModelJson.ReadFixture(path);
     OriginalMoonPhaseEnergyRelicChecks.Native(document.RootElement);
+}
+foreach (string path in args.Where(path => path.Contains("original-moon-phase-heal-relic", StringComparison.OrdinalIgnoreCase)))
+{
+    using var document = ModelJson.ReadFixture(path);
+    OriginalMoonPhaseHealRelicChecks.Native(document.RootElement);
 }
 foreach (string path in args.Where(path => path.Contains("card-upgrade-mask-calibration", StringComparison.OrdinalIgnoreCase)))
     CardUpgradeMaskChecks.Native(path);

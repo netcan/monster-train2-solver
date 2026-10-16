@@ -302,6 +302,8 @@ namespace MonsterTrain2Poju.Probe
                         OriginalRoomEntryStatusRelicScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && CorruptionScenario.RelicTrigger && !CorruptionScenario.RelicAcquired)
                         CorruptionScenario.AcquireRelicBeforeBattle(managers!, log);
+                    if (fullBattle && OriginalMoonPhaseHealRelicScenario.Enabled && !OriginalMoonPhaseHealRelicScenario.Acquired)
+                        OriginalMoonPhaseHealRelicScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalMoonPhaseEnergyRelicScenario.Enabled && !OriginalMoonPhaseEnergyRelicScenario.Acquired)
                         OriginalMoonPhaseEnergyRelicScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalUnitUpgradeTriggerRelicScenario.Enabled && !OriginalUnitUpgradeTriggerRelicScenario.Acquired)
@@ -793,6 +795,12 @@ namespace MonsterTrain2Poju.Probe
                 if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Moon-phase callbacks fixture must start on deployment turn.");
                 numericModifiersPrepared = true;
                 MoonPhaseCallbackScenario.Prepare(managers, log);
+            }
+            if (fullBattle && !numericModifiersPrepared && OriginalMoonPhaseHealRelicScenario.Enabled)
+            {
+                if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Moon-phase heal relic fixture must start on deployment turn.");
+                numericModifiersPrepared = true;
+                OriginalMoonPhaseHealRelicScenario.Prepare(managers, log);
             }
             if (fullBattle && !numericModifiersPrepared && ConditionalNoPlayerUnitScenario.Enabled)
             {
@@ -1365,6 +1373,7 @@ namespace MonsterTrain2Poju.Probe
                 if (MoonPhaseCardScenario.Enabled) pendingPlay = MoonPhaseCardScenario.Choose(decision);
                 if (MoonPhaseAdvanceScenario.Enabled) pendingPlay = MoonPhaseAdvanceScenario.Choose(decision);
                 if (MoonPhaseCallbackScenario.Enabled) pendingPlay = MoonPhaseCallbackScenario.Choose(decision);
+                if (OriginalMoonPhaseHealRelicScenario.Enabled) pendingPlay = OriginalMoonPhaseHealRelicScenario.Choose(decision);
                 if (ConditionalNoPlayerUnitScenario.Enabled) pendingPlay = ConditionalNoPlayerUnitScenario.Choose(decision);
                 if (SelfAttackStatusScenario.Enabled) pendingPlay = SelfAttackStatusScenario.Choose(decision);
                 if (ConditionalPyreDamageScenario.Enabled) pendingPlay = ConditionalPyreDamageScenario.Choose(decision);
@@ -1532,6 +1541,7 @@ namespace MonsterTrain2Poju.Probe
                 (modifierScenario == "moon-phase-card" && MoonPhaseCardScenario.IsScenarioAction(action)) ||
                 (modifierScenario == "moon-phase-advance" && MoonPhaseAdvanceScenario.IsScenarioAction(action)) ||
                 (modifierScenario == "moon-phase-callbacks" && MoonPhaseCallbackScenario.IsScenarioAction(action)) ||
+                (modifierScenario == OriginalMoonPhaseHealRelicScenario.Name && OriginalMoonPhaseHealRelicScenario.IsScenarioAction(action)) ||
                 (modifierScenario == "soul-siphon" && SoulSiphonScenario.IsScenarioAction(action)) ||
                 (modifierScenario == "status-upgrade" && StatusUpgradeScenario.IsScenarioAction(action)) ||
                 (modifierScenario == "card-effect-kill-subtype" && CardEffectKillScenario.IsScenarioPrelude(action)) ||

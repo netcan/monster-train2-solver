@@ -4093,6 +4093,31 @@ pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-car
 dotnet run --project src/ModelChecks -c Release -- --original-carriage-jack-only tests/fixtures/full-battle-original-carriage-jack.mt2f
 ```
 
+### Native original moon-phase healing relic
+
+The schema-166 `full-battle-original-moon-phase-heal-relic.mt2f` captures the
+unchanged `MooncycleRestoreFriendlyHealth` owner (ID
+`6d977136-5aac-44fd-9843-54cf2a0bd01d`, 10 HP, all moon phases, friendly team,
+`WeakestAllRooms`). Seven native callbacks cover both Full and New phases; six
+heal the weakest damaged friendly across all rooms, including two callbacks with
+eligible targets on multiple floors; one no-target callback leaves HP unchanged.
+The unit-level snapshots verify target order and exclude enemy units and the
+Pyre. The battle wins with 52 stages, 24 plays and six
+EndTurns; capture failures, mismatches, unsupported transitions and pending
+records are zero. Five scenario plays replay exactly. Independent battle search
+matches 24 decisions and 128/128 states, including serial/parallel best results.
+Other target modes, conditioned relics and OnHeal callbacks remain outside the
+model. The binary is 35,543 bytes with 5,814 unique nodes and SHA-256
+`2814a44aba7f03b2a730b4396ef5e7034acf507484bf35d127ee6991ced1f3c1`; no JSON
+companion is tracked. Accepted original relic evidence is now 140/224 (62.50%),
+and the inventory has 362 archives: 324 battles and 38 component calibrations.
+
+```powershell
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -OriginalMoonPhaseHealRelic
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-moon-phase-heal-relic.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-moon-phase-heal-only tests/fixtures/full-battle-original-moon-phase-heal-relic.mt2f
+```
+
 ### Selected-room and current-cost statistic queries
 
 The statistic query calibration stores 18,000 observations across six native

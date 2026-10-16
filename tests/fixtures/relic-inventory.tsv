@@ -3,7 +3,7 @@
 "ExtraSpellWeakness"	"b1d918d8-1fa6-4e6d-b523-5f7f339e5af8"	"accepted-native-battle"	"RelicEffectAddStatusEffectOnStatusApplied"	""
 "FirstRoomCardOnAllFloors"	"e55235f7-1d84-43f0-b8f5-037b64b8f582"	"pending"	"RelicEffectFirstRoomCardIsPlayedOnAllFloors"	""
 "TrainRoomInstallFloor1AtStartOfCombat"	"2c97e1b3-d4bb-4133-9572-e582805c106f"	"pending"	"RelicEffectAddTrainRoomAttachmentOnStartOfCombat"	""
-"MooncycleRestoreFriendlyHealth"	"6d977136-5aac-44fd-9843-54cf2a0bd01d"	"pending"	"RelicEffectHealOnMoonPhase"	""
+"MooncycleRestoreFriendlyHealth"	"6d977136-5aac-44fd-9843-54cf2a0bd01d"	"accepted-native-battle"	"RelicEffectHealOnMoonPhase"	""
 "AddAttackToFunguy"	"25166141-810b-46ae-ac48-b5560083355a"	"accepted-native-battle"	"RelicEffectAddRemoveTempUpgradeOnUnitTrigger,RelicEffectAddRemoveTempUpgradeOnUnitTrigger"	""
 "SilverIncreasedEmber"	"1a69fbff-9f1d-4c98-92ff-a63e0ac520c5"	"accepted-native-battle"	"RelicEffectModifyEnergy,RelicEffectModifyEnergyDuringDeployment"	""
 "ExtraToughTombs"	"61fdeafd-21c5-4009-a448-a5c286ac3fc0"	"accepted-native-battle"	"RelicEffectModifyCardHealth,RelicEffectAddTempUpgrade"	""

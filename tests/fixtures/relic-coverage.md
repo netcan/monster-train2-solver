@@ -1,7 +1,7 @@
 # Original relic coverage evidence
 
-As of 2026-10-16, **139 distinct original collectable relics / 224 catalog entries
-(62.05%)** have accepted native evidence: 123 have full-battle effect evidence,
+As of 2026-10-16, **140 distinct original collectable relics / 224 catalog entries
+(62.50%)** have accepted native evidence: 124 have full-battle effect evidence,
 fifteen have campaign consumer interfaces validated, and one is an explicit
 native no-op with seeded baseline equivalence. Except for that no-op, this counts
 unchanged relic definitions whose effects actually ran, including original filters and
@@ -22,11 +22,18 @@ The battle archives cited below report game `2.2.1`, module MVID
 `8fb07b96-f4db-4d2b-884d-c00536d6ccf4`, `NativeWon=true`, and zero
 `CaptureFailures`, `Mismatches`, `Unsupported` and `Pending`. Archive provenance,
 byte lengths and SHA-256 hashes are recorded in [manifest.tsv](manifest.tsv).
-The latest battle validates unchanged CarriageJack through one non-attachment
-control and one original TrainRoomAttachment play: the attachment's +4 and
-CarriageJack's +1 apply only to the selected player floor. The attached room's
-separate unit-upgrade propagation is not covered. The accepted inventory is 361
-archives: 323 battles and 38 component calibrations, with no JSON companions.
+The latest battle validates unchanged MooncycleRestoreFriendlyHealth through
+seven native Full/New callbacks. Six restore exactly the lowest-health damaged
+friendly unit across all rooms, capped at 10 and maximum HP; two callbacks have
+eligible candidates on multiple floors, and one has no eligible target. The
+original Selene Acolyte, two controlled wounds and two original Fae
+Meddler phase advances provide positive controls. The winning battle and native
+callback capture have zero capture failures, mismatches, unsupported transitions
+or pending records. Five setup plays replay exactly; independent search matches
+24 decisions across 128/128 states and serial/parallel best results. Original
+CarriageJack's separate room-capacity behavior remains covered by its own archive.
+The accepted inventory is 362 archives: 324 battles and 38 component
+calibrations, with no JSON companions.
 A recent calibration bundles two
 complete winning native battles for StarterWurmRelic: identical 21-play/seven-
 EndTurn policies and all decision state except ownership, with independent root,
@@ -221,6 +228,7 @@ owner count.
 | `SpellWeaknessBelowPyre` | `5a96d89f-d7c0-49fa-88d1-8ec75a8f3140` | [room-entry status relics][roomEntry] | Its unchanged room-2 Heroes effect adds 2 Spell Weakness. Three distinct native Heroes have the exact status; spell damage and post-card removal match through the full battle. |
 | `PyregelOnEnterTopFloor` | `e4be072c-e389-4ae7-acc6-0c8aa4cf0078` | [room-entry status relics][roomEntry] | Its unchanged room-2 Heroes effect adds 10 Pyregel. Three distinct native Heroes have the exact status after entry. |
 | `MoonPhaseModifyEmber` | `70096a91-220a-4ab3-b8d0-b8fe8f3a819c` | [original moon-phase energy relic][moonPhase] | Three Full callbacks add 1 Ember and notify; three New callbacks change nothing. Original once-per-turn condition and exact hidden moon markers match. |
+| `MooncycleRestoreFriendlyHealth` | `6d977136-5aac-44fd-9843-54cf2a0bd01d` | [original moon-phase healing relic][moonHeal] | Seven unchanged-owner callbacks across Full and New phases select only the weakest damaged friendly across rooms, including two multi-floor candidate sets; healing is capped at max HP and the no-target control is unchanged. |
 | `WhelpDragonAttack_DH` | `72706202-526e-4377-9745-7df40a26ba7d` | [original card-attack relic][cardAttack] | Two unchanged +8 effects match Whelp and Dragon spawn subtypes in order. Four native manager observations cover both subtype outcomes and reset/reapply; dynamic scaling and cardless callbacks remain separately bounded. |
 | `CardDrawOnCardPlay` | `f3f07b9b-1349-41d0-abab-bd5ec04d81e4` | [original card-draw-on-play][cardDraw] | The unchanged one-card effect has `AnyCardPlayed >= 3`; it skips deployment and draws on the third play in five active turns. All five native activations and draws match. |
 | `MoreOrLessArtifactsRelic` | `79122f7a-6895-443a-830c-2db23027776c` | [relic-count attack scaling][relicCountAttack] | Both unchanged ordered effects match 64 actual manager calls. The negative attack scales by currently held collected relics while excluding boss, Soul Savior and active-clan starters; monster/champion/spell, foreign/active starter, boss, remove, reset/repeat and unknown-new-owner controls pass. Positive effect ablation and 16 immutable parallel branches pass. |
@@ -523,6 +531,33 @@ pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-moo
 dotnet run --project src/ModelChecks -c Release -- --original-moon-phase-energy-only tests/fixtures/full-battle-original-moon-phase-energy-relic.mt2f
 ```
 
+The schema-166 `full-battle-original-moon-phase-heal-relic.mt2f` archive accepts
+unchanged `MooncycleRestoreFriendlyHealth` (DataId
+`6d977136-5aac-44fd-9843-54cf2a0bd01d`): `Monsters`, `WeakestAllRooms`, 10 HP,
+all moon phases, no subtype or conditions. Seven actual callbacks span Full and
+New phases; six restore the selected lowest-HP damaged friendly, including
+cross-room choices in two callback snapshots, with healing capped at both the
+configured amount and max HP.
+The remaining callback has no damaged friendly and leaves all HP unchanged.
+The capture includes team, room, target order, targetability and before/after HP
+for every unit, including enemy and Pyre controls. Five authored scenario plays
+replay exactly; the full winning battle records 52 stages, 24 card plays and six
+EndTurns, with zero capture failures, mismatches, unsupported transitions or
+pending records. Independent search matches 24 decisions, 128/128 states, four
+replayed steps and serial/parallel best results. Other target modes, conditioned
+definitions and `OnHeal` callbacks remain explicitly unsupported by this model.
+Coverage is now 140/224 (62.50%).
+
+The binary is 35,543 bytes with 5,814 unique nodes and SHA-256
+`2814a44aba7f03b2a730b4396ef5e7034acf507484bf35d127ee6991ced1f3c1`; it has no
+JSON companion. The inventory is 362 archives: 324 battles and 38 component
+calibrations.
+
+```powershell
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-moon-phase-heal-relic.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-moon-phase-heal-only tests/fixtures/full-battle-original-moon-phase-heal-relic.mt2f
+```
+
 The schema-147 `full-battle-original-card-attack-relic.mt2f` archive accepts the
 unchanged `WhelpDragonAttack_DH` owner. Its original effect data has `CardType=Spell`,
 but native code checks the spawned subtype first when one is configured. Two
@@ -567,6 +602,7 @@ dotnet run --project src/ModelChecks -c Release -- --original-card-attack-only t
 [cardPlayMagicPower]: full-battle-original-card-play-magic-power.mt2f
 [roomEntry]: full-battle-original-room-entry-status-relics.mt2f
 [moonPhase]: full-battle-original-moon-phase-energy-relic.mt2f
+[moonHeal]: full-battle-original-moon-phase-heal-relic.mt2f
 [cardAttack]: full-battle-original-card-attack-relic.mt2f
 [cardDraw]: full-battle-original-card-draw-on-card-play.mt2f
 [carriageJack]: full-battle-original-carriage-jack.mt2f
