@@ -40,6 +40,8 @@ namespace MonsterTrain2Poju.Model
                     conditions = relic.CardPlayMagicPowerModifiers?.SingleOrDefault(effect => effect.EffectIndex == index)?.Conditions;
                 if (relic.EffectTypes[index] == RelicModel.CardDrawOnCardPlay)
                     conditions = relic.CardDrawOnCardPlayModifiers?.SingleOrDefault(effect => effect.EffectIndex == index)?.Conditions;
+                if (relic.EffectTypes[index] == RelicModel.CopyCardOnCardPlay)
+                    conditions = relic.CopyCardOnCardPlayModifiers?.SingleOrDefault(effect => effect.EffectIndex == index)?.Conditions;
                 if (relic.EffectTypes[index] == RelicModel.FirstRoomCardOnAllFloors)
                     conditions = relic.RoomAttachmentReplications?.SingleOrDefault(effect => effect.EffectIndex == index)?.Conditions;
                 if (conditions == null) continue;
@@ -125,6 +127,9 @@ namespace MonsterTrain2Poju.Model
                         rule.Conditions.Select(condition => condition.Reset(duration)).ToArray())).ToArray());
                 if (relic.CardDrawOnCardPlayModifiers != null)
                     relic = relic.WithCardDrawOnCardPlayModifiers(relic.CardDrawOnCardPlayModifiers.Select(rule => rule.WithConditions(
+                        rule.Conditions.Select(condition => condition.Reset(duration)).ToArray())).ToArray());
+                if (relic.CopyCardOnCardPlayModifiers != null)
+                    relic = relic.WithCopyCardOnCardPlayModifiers(relic.CopyCardOnCardPlayModifiers.Select(rule => rule.WithConditions(
                         rule.Conditions.Select(condition => condition.Reset(duration)).ToArray())).ToArray());
                 if (relic.RoomAttachmentReplications != null)
                     relic = relic.WithRoomAttachmentReplications(relic.RoomAttachmentReplications.Select(rule => rule.WithConditions(

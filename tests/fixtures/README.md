@@ -4648,3 +4648,30 @@ pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-nef
 dotnet run --project src/ModelChecks -c Release -- --original-nefarious-overflow-only tests/fixtures/full-battle-original-nefarious-overflow.mt2f
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-nefarious-overflow.mt2f
 ```
+
+### Original CopyFirstSpellPlayed relic (schema 173)
+
+`full-battle-original-copy-first-spell-played.mt2f` captures the unchanged
+`CopyFirstSpellPlayed` owner and its exact `RelicEffectCopyCardOnCardPlay`
+payload: one non-permanent Spell copy with the original temporary
+`AddEphemeral` upgrade and a once-per-turn condition. The deterministic native
+witness directly plays a synthetic no-op Spell, verifies one Ephemeral copy in
+hand, then plays that copy again in the same turn; the relic does not generate a
+second copy. Full-hand Discard-to-Purge behavior and ability exclusion are pure
+model controls, not native claims. The winning battle has 52 matched stages,
+22 matched card actions and six EndTurns, with zero capture failures,
+mismatches, unsupported transitions or pending records. Independent search
+matches 128/128 states, replays three steps and has equal serial/parallel best
+results.
+
+The binary is 35,820 bytes with 5,820 unique nodes and SHA-256
+`1d65d48c05f2ed8fdc0b9d3f80a905e68b574186777cd5a0d02ad9a34ce1cbed`; it has no
+JSON companion. This supports only the unchanged original owner and captured
+Spell/Ephemeral/ThisTurn configuration; other `RelicEffectCopyCardOnCardPlay`
+owners and parameter combinations remain rejected.
+
+```powershell
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-copy-first-spell-played.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-copy-first-spell-only tests/fixtures/full-battle-original-copy-first-spell-played.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-copy-first-spell-played.mt2f
+```

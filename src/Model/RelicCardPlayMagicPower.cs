@@ -71,14 +71,15 @@ namespace MonsterTrain2Poju.Model
         {
             bool hasMagicPower = source.Relics?.Any(relic => relic.EffectTypes.Contains(RelicModel.ModifyCardMagicPowerOnCardPlayed)) == true;
             bool hasCheaperSpellUpgrade = source.Relics?.Any(relic => relic.EffectTypes.Contains(RelicModel.AddTempUpgradeToHandCardsIfCheaper)) == true;
+            bool hasCardCopy = source.Relics?.Any(relic => relic.EffectTypes.Contains(RelicModel.CopyCardOnCardPlay)) == true;
             bool hasCardDraw = source.Relics?.Any(relic => relic.EffectTypes.Contains(RelicModel.CardDrawOnCardPlay)) == true;
             bool hasRoomCapacity = source.Relics?.Any(relic => relic.EffectTypes.Contains(RelicModel.ModifyRoomCapacityOnCardPlay)) == true;
             bool hasRoomAttachmentReplication = source.Relics?.Any(relic => relic.EffectTypes.Contains(RelicModel.FirstRoomCardOnAllFloors)) == true;
-            if (!hasMagicPower && !hasCheaperSpellUpgrade && !hasCardDraw && !hasRoomCapacity && !hasRoomAttachmentReplication)
+            if (!hasMagicPower && !hasCheaperSpellUpgrade && !hasCardCopy && !hasCardDraw && !hasRoomCapacity && !hasRoomAttachmentReplication)
                 return new RelicCardPlayMagicPowerResult(source);
-            if ((hasMagicPower || hasCheaperSpellUpgrade) && source.CardInstances == null)
+            if ((hasMagicPower || hasCheaperSpellUpgrade || hasCardCopy) && source.CardInstances == null)
                 return Fail(source, "Native card-play relic effects require the current owned-card list.");
-            if ((hasMagicPower || hasCheaperSpellUpgrade) && !source.CardInstances!.Any(card => card.InstanceId == playedCardId))
+            if ((hasMagicPower || hasCheaperSpellUpgrade || hasCardCopy) && !source.CardInstances!.Any(card => card.InstanceId == playedCardId))
                 return Fail(source, "Native card-play relic effects require the played card in the owned-card list.");
 
             CombatContext context = source;
@@ -88,6 +89,16 @@ namespace MonsterTrain2Poju.Model
                 for (int effectIndex = 0; effectIndex < context.Relics![relicIndex].EffectTypes.Count; effectIndex++)
                 {
                     CombatRelicState relic = context.Relics[relicIndex];
+                    if (relic.EffectTypes[effectIndex] == RelicModel.CopyCardOnCardPlay)
+                    {
+                        RelicCopyCardOnCardPlayResult copied = RelicCopyCardOnCardPlayModel.ApplyOne(
+                            context, playedCardId, definitions, relicIndex, effectIndex);
+                        if (!copied.Supported) return Fail(context, copied.UnsupportedReason!);
+                        context = copied.Context;
+                        if (copied.Applied)
+                            dispatches.Add(new RelicCardPlayMagicPowerDispatch(relicIndex, effectIndex, true, copied.CopiedCardIds));
+                        continue;
+                    }
                     if (relic.EffectTypes[effectIndex] == RelicModel.CardDrawOnCardPlay)
                     {
                         RelicCardDrawOnCardPlayResult drawn = RelicCardDrawOnCardPlayModel.ApplyOne(

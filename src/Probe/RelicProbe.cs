@@ -143,6 +143,23 @@ namespace MonsterTrain2Poju.Probe
                             data.GetParamCardType().ToString(), RelicCardModifierProbe.Conditions(item.Effect),
                             requiredSubtype: requiredSubtype, requiredTraits: data.GetTraits().Select(trait => trait.GetTraitStateName()).ToArray());
                     }).ToArray();
+                var copyCardOnCardPlay = effects.Select((effect, index) => new { Effect = effect, Index = index })
+                    .Where(item => item.Effect is RelicEffectCopyCardOnCardPlay)
+                    .Select(item => {
+                        var data = (RelicEffectData)AccessTools.Field(typeof(RelicEffectBase), "_srcRelicEffectData").GetValue(item.Effect);
+                        CardUpgradeData? upgradeData = data.GetParamCardUpgradeData();
+                        CardUpgradeModifier? upgrade = null;
+                        if (upgradeData != null)
+                        {
+                            var upgradeState = new CardUpgradeState();
+                            upgradeState.Setup(upgradeData);
+                            upgrade = CardModifierProbe.Upgrade(upgradeState, rejectFilters: false, filtersAlreadyApplied: true);
+                        }
+                        return new RelicCopyCardOnCardPlayModifier(item.Index, data.GetParamInt(),
+                            data.GetParamCardType().ToString(), data.GetParamBool(), data.GetParamBool2(),
+                            data.GetTraits().Select(trait => trait.GetTraitStateName()).ToArray(), upgrade,
+                            RelicCardModifierProbe.Conditions(item.Effect));
+                    }).ToArray();
                 var cardPlayRoomCapacity = effects.Select((effect, index) => new { Effect = effect, Index = index })
                     .Where(item => item.Effect is RelicEffectModifyRoomCapacityOnCardPlay)
                     .Select(item => {
@@ -197,7 +214,8 @@ namespace MonsterTrain2Poju.Probe
                     roomAttachmentReplications.Length > 0 ? roomAttachmentReplications : null,
                     summonDamage.Length > 0 ? summonDamage : null,
                     cheaperSpellUpgradeModifiers: cheaperSpellUpgrades.Length > 0 ? cheaperSpellUpgrades : null,
-                    unstableRebalances: unstableRebalances.Length > 0 ? unstableRebalances : null);
+                    unstableRebalances: unstableRebalances.Length > 0 ? unstableRebalances : null,
+                    copyCardOnCardPlayModifiers: copyCardOnCardPlay.Length > 0 ? copyCardOnCardPlay : null);
             }).ToArray();
         }
 
