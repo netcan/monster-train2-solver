@@ -23,6 +23,26 @@ internal static class MoonPhaseTransitionChecks
             if (tracking) unit = MoonPhaseStatusModel.WithPhase(unit, 1);
             return new TrainCombatState([new RoomCombatState(0, false, [unit], [], context)], [], 1, context);
         }
+        TrainCombatState HealingTrain(int firstHealth, int secondHealth, bool onHeal = false, string targetMode = "WeakestAllRooms")
+        {
+            var heal = new RelicMoonPhaseHealRule(0, targetPlayer: true, targetEnemy: false,
+                targetMode, requiredSubtype: null, healthAmount: 10, moonPhaseMask: -1, conditionCount: 0);
+            var relic = new CombatRelicState("moon-heal", "MooncycleRestoreFriendlyHealth",
+                ["RelicEffectHealOnMoonPhase"], moonPhaseHealRules: [heal]);
+            UnityRng rng = UnityRng.Seed(642);
+            var context = new CombatContext(new CardCycleState([], [], [], rng, 0, []), rng, 0, 10, 10,
+                queryFrame: new StatisticQueryFrame(energy: 3, runningCombat: true, turn: 1,
+                    moonPhase: 1, moonPhaseTrackingActive: true),
+                energyState: new BattleEnergyState(10, 0, 0, "MonsterTurn", true), relics: [relic]);
+            CombatTrigger[] triggers = onHeal ? [new CombatTrigger("OnHeal", false, false, false, 1, [])] : [];
+            var first = new CombatUnit(1, "first", CombatTeam.Player, 8, firstHealth, 40, true, false, false, [], triggers);
+            var second = new CombatUnit(2, "second", CombatTeam.Player, 8, secondHealth, 40, true, false, false, [], []);
+            var enemy = new CombatUnit(3, "enemy", CombatTeam.Enemy, 8, 1, 40, true, false, false, [], []);
+            return new TrainCombatState([
+                new RoomCombatState(0, false, [first], [], context),
+                new RoomCombatState(2, false, [second, enemy], [], context)
+            ], [], 1, context);
+        }
         CardActionEffect Effect(string type, int value) => new(type, "Room", value, false, false, []);
         TrainCombatState source = Train(true);
         string parent = JsonSerializer.Serialize(source);
@@ -45,11 +65,33 @@ internal static class MoonPhaseTransitionChecks
             "Moon-phase advance changed a non-player-action phase.");
         Require(!MoonPhaseTransitionModel.Apply(Train(true, callback: true), Effect("SetMoonPhase", 2)).Supported &&
             JsonSerializer.Serialize(source) == parent, "Moon callbacks were silently skipped or parent branch changed.");
+        TrainCombatState healSource = HealingTrain(15, 20);
+        string healParent = JsonSerializer.Serialize(healSource);
+        MoonPhaseTransitionResult firstHeal = MoonPhaseTransitionModel.Apply(healSource, Effect("SetMoonPhase", 2));
+        CombatUnit[] afterFirstHeal = firstHeal.State!.Rooms.SelectMany(room => room.Units).ToArray();
+        MoonPhaseTransitionResult secondHeal = MoonPhaseTransitionModel.Apply(firstHeal.State, Effect("AdvanceMoonPhase", 1));
+        CombatUnit[] afterSecondHeal = secondHeal.State!.Rooms.SelectMany(room => room.Units).ToArray();
+        Require(firstHeal.Supported && secondHeal.Supported && afterFirstHeal.Single(unit => unit.Id == 1).Health == 25 &&
+            afterFirstHeal.Single(unit => unit.Id == 2).Health == 20 && afterFirstHeal.Single(unit => unit.Id == 3).Health == 1 &&
+            afterSecondHeal.Single(unit => unit.Id == 1).Health == 25 && afterSecondHeal.Single(unit => unit.Id == 2).Health == 30 &&
+            JsonSerializer.Serialize(healSource) == healParent,
+            "Original moon-phase healing did not choose the weakest friendly unit once per phase without mutating its parent.");
+        TrainCombatState capSource = HealingTrain(39, 40);
+        MoonPhaseTransitionResult cappedHeal = MoonPhaseTransitionModel.Apply(capSource, Effect("SetMoonPhase", 2));
+        Require(cappedHeal.Supported && cappedHeal.State!.Rooms.SelectMany(room => room.Units).Single(unit => unit.Id == 1).Health == 40,
+            "Moon-phase healing exceeded the target's max health.");
+        MoonPhaseTransitionResult onHealControl = MoonPhaseTransitionModel.Apply(HealingTrain(15, 20, onHeal: true),
+            Effect("SetMoonPhase", 2));
+        MoonPhaseTransitionResult modeControl = MoonPhaseTransitionModel.Apply(HealingTrain(15, 20, targetMode: "Room"),
+            Effect("SetMoonPhase", 2));
+        Require(!onHealControl.Supported && onHealControl.UnsupportedReason?.Contains("OnHeal") == true &&
+            !modeControl.Supported && modeControl.UnsupportedReason?.Contains("Unmodeled native relic moon-phase healing") == true,
+            "Moon-phase healing silently accepted an unmodeled OnHeal or target-selection path.");
         string expected = JsonSerializer.Serialize(full.State);
         Parallel.For(0, 16, _ => Require(JsonSerializer.Serialize(
             MoonPhaseTransitionModel.Apply(source, Effect("SetMoonPhase", 2)).State) == expected,
             "Parallel moon-phase branches diverged."));
-        Console.WriteLine("MOON-PHASE-TRANSITION-CHECKS PASS: set, repeated advance, inactive tracking, action-phase gate, callback guard and branches.");
+        Console.WriteLine("MOON-PHASE-TRANSITION-CHECKS PASS: set, repeated advance, inactive tracking, action-phase gate, callback guard, weakest-all-rooms healing, controls and branches.");
     }
 
     internal static void Native(FixtureValue fixture)

@@ -59,8 +59,19 @@ namespace MonsterTrain2Poju.Model
             }
             if (source.Context!.Relics?.Any(relic => relic.EffectTypes.Any(type =>
                     type.Contains("MoonPhase", StringComparison.Ordinal) &&
-                    type != RelicResourceModel.MoonPhaseEnergy)) == true)
+                    type != RelicResourceModel.MoonPhaseEnergy && type != RelicMoonPhaseHealModel.Effect)) == true)
                 return "Unmodeled moon-phase relic callback.";
+            if (frame.MoonPhaseTrackingActive == true)
+            {
+                int phase = frame.MoonPhase.Value;
+                int count = effect.Type == "SetMoonPhase" ? 1 : Math.Max(0, effect.Value);
+                for (int index = 0; index < count; index++)
+                {
+                    phase = effect.Type == "SetMoonPhase" ? effect.Value : phase == 1 ? 2 : 1;
+                    string? healError = RelicMoonPhaseHealModel.ValidateTransition(source, phase);
+                    if (healError != null) return healError;
+                }
+            }
             if (source.Rooms.SelectMany(room => room.Units).Any(unit => !unit.IsPyre) &&
                 source.Context.Relics?.Any(relic => relic.EffectTypes.Contains(RelicModel.AddStatusOnApplied) ||
                     relic.StatusStackAdditions?.Count > 0 || relic.StatusMagnitudes?.Count > 0) == true)
@@ -103,6 +114,9 @@ namespace MonsterTrain2Poju.Model
                     if (!energy.Supported) return new MoonPhaseTransitionResult(null, energy.UnsupportedReason);
                     state = CardSpellModel.WithContext(state, energy.Context!);
                 }
+                MoonPhaseHealResult heal = RelicMoonPhaseHealModel.Apply(state, phase);
+                if (!heal.Supported) return new MoonPhaseTransitionResult(null, heal.UnsupportedReason);
+                state = heal.State!;
                 foreach (CombatTeam team in new[] { CombatTeam.Player, CombatTeam.Enemy })
                 {
                     var callbacks = new List<RoomCombatModel.QueuedCharacterTrigger>();

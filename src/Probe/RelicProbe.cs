@@ -126,6 +126,18 @@ namespace MonsterTrain2Poju.Probe
                         var data = (RelicEffectData)AccessTools.Field(typeof(RelicEffectBase), "_srcRelicEffectData").GetValue(item.Effect);
                         return new RelicCardPlayRoomCapacityModifier(item.Index, data.GetParamInt(), data.GetParamCardType().ToString());
                     }).ToArray();
+                var moonPhaseHeals = effects.Select((effect, index) => new { Effect = effect, Index = index })
+                    .Where(item => item.Effect is RelicEffectHealOnMoonPhase)
+                    .Select(item => {
+                        object Field(string name) => AccessTools.Field(item.Effect.GetType(), name).GetValue(item.Effect);
+                        Team.Type team = (Team.Type)Field("targetTeam");
+                        var subtype = (SubtypeData)Field("characterSubtype");
+                        var data = (RelicEffectData)AccessTools.Field(typeof(RelicEffectBase), "_srcRelicEffectData").GetValue(item.Effect);
+                        return new RelicMoonPhaseHealRule(item.Index, team == Team.Type.None || team.HasFlag(Team.Type.Monsters),
+                            team == Team.Type.None || team.HasFlag(Team.Type.Heroes), Field("targetMode").ToString(),
+                            subtype == null || subtype.IsNone ? null : subtype.Key, (int)Field("healthAmount"),
+                            (int)Field("moonPhaseMask"), data.GetEffectConditions().Count);
+                    }).ToArray();
                 return new CombatRelicState(relic.GetRelicDataID(), relic.GetAssetName(), effects.Select(effect => effect.GetType().Name).ToArray(),
                     statuses.Length == 0 ? null : statuses, relic is CovenantState,
                     relic.DisallowedInPlacementPhase, cardModifiers?.Length > 0 ? cardModifiers : null,
@@ -142,7 +154,8 @@ namespace MonsterTrain2Poju.Probe
                     corruptionStatuses.Length > 0 ? corruptionStatuses : null,
                     cardTypeCosts.Length > 0 ? cardTypeCosts : null,
                     effects.Any(effect => effect is RelicEffectAdjustAttackByStatusEffect) ? StatusAttackModifiers(managers) : null,
-                    cardPlayRoomCapacity.Length > 0 ? cardPlayRoomCapacity : null);
+                    cardPlayRoomCapacity.Length > 0 ? cardPlayRoomCapacity : null,
+                    moonPhaseHeals.Length > 0 ? moonPhaseHeals : null);
             }).ToArray();
         }
 
