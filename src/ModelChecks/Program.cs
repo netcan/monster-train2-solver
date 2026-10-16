@@ -637,6 +637,14 @@ if (args.Length == 2 && args[0] == "--original-more-spikes-only")
     BattleActionChecks.Native(document.RootElement);
     return;
 }
+if (args.Length == 2 && args[0] == "--original-stealth-slay-only")
+{
+    using var document = ModelJson.ReadFixture(args[1]);
+    OriginalStealthSlayChecks.Native(document.RootElement);
+    BattleTurnChecks.Native(document.RootElement);
+    BattleActionChecks.Native(document.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--original-relic-count-attack-only")
 {
     using var document = ModelJson.ReadFixture(args[1]);

@@ -262,6 +262,7 @@ param(
     [switch] $OriginalNullRelicBaseline,
     [switch] $OriginalRelicCountAttack,
     [switch] $OriginalMoreSpikes,
+    [switch] $OriginalStealthSlay,
     [switch] $OriginalUnitUpgradeTriggerRelic,
     [switch] $TypedDraw,
     [switch] $IncantRelic,
@@ -389,6 +390,7 @@ if ($OriginalUnitPhaseUpgradeRelics) { $BranchCardMasks = $true; $Policy = 'unit
 if ($OriginalNullRelic -or $OriginalNullRelicBaseline) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalRelicCountAttack) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalMoreSpikes) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
+if ($OriginalStealthSlay) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalUnitUpgradeTriggerRelic) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalTriggerRelicBatch -or $OriginalLifecycleRelicBatch) {
     $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $SettleDeathDissolves = $true; $SettleCardAnimations = $true
@@ -783,6 +785,7 @@ if ($OriginalNullRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-null-r
 if ($OriginalNullRelicBaseline) { $environment['MT2_PROBE_MODIFIERS'] = 'original-null-relic-baseline' }
 if ($OriginalRelicCountAttack) { $environment['MT2_PROBE_MODIFIERS'] = 'original-relic-count-attack' }
 if ($OriginalMoreSpikes) { $environment['MT2_PROBE_MODIFIERS'] = 'original-more-spikes' }
+if ($OriginalStealthSlay) { $environment['MT2_PROBE_MODIFIERS'] = 'original-stealth-slay' }
 if ($OriginalUnitUpgradeTriggerRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-unit-upgrade-trigger-relic' }
 if ($TypedDraw) {
     $environment['MT2_PROBE_MODIFIERS'] = 'typed-draw'
@@ -1359,6 +1362,13 @@ if ($OriginalCombatTriggerRelics) {
         @($trace.RelicSpawnStatuses).Count -eq 0 -or @($trace.Actions).Count -eq 0 -or
         -not (Select-String -LiteralPath $unityLog -Pattern 'ORIGINAL-COMBAT-TRIGGERS-PREPARED' -Quiet)) {
         throw 'Original Shroom Decay lacks its unchanged owner, birth records and carrier setup.'
+    }
+}
+if ($OriginalStealthSlay) {
+    if ($trace.ModifierScenario -ne 'original-stealth-slay' -or
+        @($trace.RelicSpawnStatuses).Count -eq 0 -or @($trace.Actions).Count -eq 0 -or
+        -not (Select-String -LiteralPath $unityLog -Pattern 'ORIGINAL-STEALTH-SLAY-PREPARED' -Quiet)) {
+        throw 'Original stealth-on-slay relic lacks its unchanged owner, birth records and carrier setup.'
     }
 }
 if ($OriginalConduitRelics) {

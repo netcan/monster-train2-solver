@@ -286,6 +286,8 @@ namespace MonsterTrain2Poju.Probe
                         OriginalRelicCountAttackScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalMoreSpikesScenario.Enabled && !OriginalMoreSpikesScenario.Acquired)
                         OriginalMoreSpikesScenario.AcquireBeforeBattle(managers!, log);
+                    if (fullBattle && OriginalStealthSlayScenario.Enabled && !OriginalStealthSlayScenario.Acquired)
+                        OriginalStealthSlayScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalSpellPlayThresholdScenario.Enabled && !OriginalSpellPlayThresholdScenario.Acquired)
                         OriginalSpellPlayThresholdScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalConserveEmberScenario.Enabled && !OriginalConserveEmberScenario.Acquired)
@@ -573,6 +575,11 @@ namespace MonsterTrain2Poju.Probe
             if (fullBattle && !numericModifiersPrepared && OriginalMoreSpikesScenario.Enabled)
             {
                 OriginalMoreSpikesScenario.Prepare(managers, log);
+                numericModifiersPrepared = true;
+            }
+            if (fullBattle && !numericModifiersPrepared && OriginalStealthSlayScenario.Enabled)
+            {
+                OriginalStealthSlayScenario.Prepare(managers, log);
                 numericModifiersPrepared = true;
             }
             if (fullBattle && !numericModifiersPrepared && OriginalUnitPhaseUpgradeScenario.Enabled)
@@ -1294,6 +1301,8 @@ namespace MonsterTrain2Poju.Probe
                     pendingPlay = OriginalEggCardScenario.Choose(decision) ?? pendingPlay;
                 if (OriginalCombatTriggerBatchScenario.Enabled)
                     pendingPlay = OriginalCombatTriggerBatchScenario.Choose(decision);
+                if (OriginalStealthSlayScenario.Enabled)
+                    pendingPlay = OriginalStealthSlayScenario.Choose(decision);
                 if (OriginalEquipmentGrowthScenario.Enabled)
                     pendingPlay = OriginalEquipmentGrowthScenario.Choose(decision);
                 if (OriginalHealthChoiceScenario.Enabled)
