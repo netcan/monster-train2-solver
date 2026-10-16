@@ -1,5 +1,22 @@
 # Inventory validation, 2026-10-15
 
+## Relic-count attack extension, 2026-10-16
+
+Current inventory: 358 archives (320 battles, 38 calibrations), 136/224 original
+owners (60.71%): 120 battle, fifteen campaign-interface and one no-op owner.
+Native battle: `.probe-runs/full-battle-units-spells-and-junk-20261015-222238-68b4aefd/full-battle.mt2f`.
+The unchanged MoreOrLessArtifactsRelic matches 64 manager refreshes and 45
+control calls across monster, champion and spell witnesses. Repeated application,
+reset, starter-clan switching, foreign-starter inclusion, active-starter and boss
+exclusion, removed ownership and unknown new-owner rejection are verified.
+Positive owner ablation and 16 parallel immutable branches pass. Native battle
+won at 35 matched stages, 20 card plays and five EndTurns; all four error counters
+are zero and original game files are unchanged. Four related archives pass,
+including the existing card-attack, upgrade-count and native no-op regressions.
+Archive SHA-256 is `023806c977584b3fdffdc962b34f6363116f3d2a4cbde63c423133f49895c85b`.
+
+## Explicit native no-op owner
+
 ## Explicit native no-op owner
 
 Current inventory: 357 archives (319 battles, 38 calibrations), 135/224 original

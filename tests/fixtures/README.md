@@ -1,5 +1,12 @@
 # Native regression fixtures
 
+Relic-count attack extension (2026-10-16): 358 archives (320 battles and 38
+calibrations), 136/224 original owners (60.71%): 120 battle, fifteen campaign-
+interface and one explicit no-op. MoreOrLessArtifactsRelic matches 64 actual
+manager calls and 45 native class/owner controls; active starters, boss rewards,
+reset/repeat, removed-owner branches and parallel immutable predictions are
+verified. Four affected archives pass.
+
 Explicit no-op extension (2026-10-15): 357 archives (319 battles and 38
 calibrations), 135/224 original owners (60.27%): 119 battle owners, fifteen
 campaign-interface owners and one native no-op. StarterWurmRelic has only base/
