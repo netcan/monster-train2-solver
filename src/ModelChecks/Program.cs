@@ -56,6 +56,18 @@ if (args.Length == 2 && args[0] == "--original-funguy-deck-only")
     Console.WriteLine($"NATIVE-FIXTURE-METADATA schema={fixture.RootElement.GetProperty("Schema").GetInt32()} bytes={new FileInfo(args[1]).Length} uniqueNodes={fixture.UniqueNodeCount}");
     return;
 }
+if (args.Length == 1 && args[0] == "--original-card-draw-on-heal-pure")
+{
+    OriginalCardDrawOnHealChecks.Run();
+    return;
+}
+if (args.Length == 2 && args[0] == "--original-card-draw-on-heal-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    OriginalCardDrawOnHealChecks.Native(fixture.RootElement);
+    Console.WriteLine($"NATIVE-FIXTURE-METADATA schema={fixture.RootElement.GetProperty("Schema").GetInt32()} bytes={new FileInfo(args[1]).Length} uniqueNodes={fixture.UniqueNodeCount}");
+    return;
+}
 if (args.Length == 1 && args[0] == "--original-nefarious-overflow-pure")
 {
     OriginalNefariousOverflowChecks.Run();
@@ -1327,6 +1339,7 @@ OriginalEarlyDiscardEnergyChecks.Run();
 OriginalCheaperSpellCostChecks.Run();
 OriginalNefariousOverflowChecks.Run();
 OriginalCopyFirstSpellChecks.Run();
+OriginalCardDrawOnHealChecks.Run();
 RelicFloorCapacityChecks.Run();
 StatusAttackDamageChecks.Run();
 TypedDrawChecks.Run();

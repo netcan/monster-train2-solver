@@ -1,7 +1,7 @@
 # Original relic coverage evidence
 
-As of 2026-10-17, **151 distinct original collectable relics / 224 catalog entries
-(67.41%)** have accepted native evidence: 135 have full-battle effect evidence,
+As of 2026-10-17, **152 distinct original collectable relics / 224 catalog entries
+(67.86%)** have accepted native evidence: 136 have full-battle effect evidence,
 fifteen have campaign consumer interfaces validated, and one is an explicit
 native no-op with seeded baseline equivalence. Except for that no-op, this counts
 unchanged relic definitions whose effects actually ran, including original filters and
@@ -145,6 +145,7 @@ owner count.
 | `NefariousOverflow` | `b0575799-1511-489d-a05d-b5b2e6bf84c2` | [NefariousOverflow][nefariousOverflow] | The unchanged both-team payload adds 1 explosion damage per Unstable stack: the five-stack carrier's death kills the Mage and reduces the Guard's Armor 17→7. Proc-damage and growth hooks remain unsupported when nonzero. Full battle and independent 128/128-state replay/search match. |
 | `CopyFirstSpellPlayed` | `0f4a9e72-cd34-4667-95f6-6a0ca69832f8` | [CopyFirstSpellPlayed][copyFirstSpell] | The unchanged once-per-turn owner copies the first direct Spell with temporary Ephemeral; its generated copy plays again the same turn without retriggering. Exact original owner only; sibling copy payloads are not generalized. |
 | `StartOfTurnAddFunguysPerDeckSize` | `e5d7c9d0-c0a3-4b0c-97cf-6def6ad287e9` | [Funguy deck scaling][funguyDeckScaling] | Six original callbacks at 40 visible cards apply two cardless Horde effects on each live room: three Funguys spawn and Horde rises by six total. Relentless room destruction is respected; support is limited to this original payload and captured positive path. |
+| `CardDrawOnHeal` | `9a38370b-150c-45bd-9e3e-93a688a04850` | [CardDrawOnHeal][cardDrawOnHeal] | Four allied OnHeal callbacks draw exactly one card after native ThisTurn reset; a second same-turn heal is suppressed after the two native notifications, and an enemy-heal control does not trigger the Monsters-only owner. Placement/preview gates are pure controls; targeted test-card setup is excluded from full-policy replay. |
 | `EmberOnTombDeath` | `4a5b1613-568c-4bf6-8bf7-15f8bf013345` | [unit resource relics][unitResources] | Original +5 Ember after actual Tomb sacrifice; ordinary friendly sacrifice and enemy deaths do not qualify. Complete manager contexts and exact resource/RNG state match. |
 | `Frenzystesia` | `56316fc2-b41a-41ae-aba8-e83fb668e8e1` | [unit resource relics][unitResources] | Original +1 Ember on the first equipment callback this turn. Two actual equipment additions prove the first-only condition, with notification count recorded once by the effect and again by RelicManager. Full 22-play/five-EndTurn policy matches, including native duration resets. |
 | `RandomEquipmentCardFirstTurn` | `7a1d5b5d-cd08-4935-b629-d3d441905100` | [original opening draw][openingDraw] | Natural Equipment primary draw plus controlled native fallback to an Equipment with the deployment-draw trait. Original temporary -99 cost, count expansion and CardDraw RNG match. |
@@ -748,3 +749,4 @@ dotnet run --project src/ModelChecks -c Release -- --gold-pyre-pure
 [bigDamage]: full-battle-original-big-damage-many-morsels.mt2f
 [moreSpikes]: full-battle-original-more-spikes.mt2f
 [stealthSlay]: full-battle-original-stealth-slay.mt2f
+[cardDrawOnHeal]: full-battle-original-card-draw-on-heal.mt2f

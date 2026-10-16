@@ -2905,12 +2905,28 @@ namespace MonsterTrain2Poju.Model
                 return true;
             }
 
+            private bool ApplyRelicCardDrawOnHeal(WorkingUnit unit, string kind, CombatRelicState owner, RelicResourceEffect effect)
+            {
+                RelicCardDrawOnHealResult result = RelicCardDrawOnHealModel.ApplyOne(context!, owner.DataId,
+                    effect.EffectIndex, unit.Freeze(), kind, source.Deployment, source.Preview);
+                if (!result.Supported) { unsupportedReason = result.UnsupportedReason; return false; }
+                context = result.Context;
+                return true;
+            }
+
             private bool ApplyRelicUnitUpgradeTriggers(WorkingUnit unit, string kind, int paramInt, int paramInt2)
             {
                 if (context?.Relics == null) return true;
                 foreach (CombatRelicState relic in context.Relics)
                 for (int effectIndex = 0; effectIndex < relic.EffectTypes.Count; effectIndex++)
                 {
+                    var cardDrawOnHeal = relic.ResourceEffects?.SingleOrDefault(effect =>
+                        effect.EffectIndex == effectIndex && RelicCardDrawOnHealModel.IsEffect(effect.Type));
+                    if (cardDrawOnHeal != null)
+                    {
+                        if (!ApplyRelicCardDrawOnHeal(unit, kind, relic, cardDrawOnHeal)) return false;
+                        continue;
+                    }
                     var resource = relic.ResourceEffects?.SingleOrDefault(effect => effect.EffectIndex == effectIndex && RelicUnitResourceModel.IsEffect(effect.Type));
                     if (resource != null)
                     {

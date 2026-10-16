@@ -124,6 +124,11 @@ namespace MonsterTrain2Poju.Probe
                     effect is RelicEffectGoldOnTrigger ? data.GetParamStatusEffects().Select(status => status.statusId).ToArray() : Array.Empty<string>());
                 amount = data.GetParamInt();
             }
+            else if (RelicCardDrawOnHealModel.IsEffect(type))
+            {
+                unitTrigger = new RelicUnitResourceRule("OnHeal", data.GetParamSourceTeam().ToString(), null, Array.Empty<string>());
+                amount = data.GetParamInt();
+            }
             else if (effect is RelicEffectAddCardsStartOfBattle)
             {
                 var upgradeData = data.GetParamCardUpgradeData();

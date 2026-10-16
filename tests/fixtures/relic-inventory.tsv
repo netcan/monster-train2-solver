@@ -36,7 +36,7 @@
 "StartOfTurnAddFunguysPerDeckSize"	"e5d7c9d0-c0a3-4b0c-97cf-6def6ad287e9"	"accepted-native-battle"	"RelicEffectAddEffectPerPileStartOfTurn"	""
 "GiveUnitStatsForUpgrades_DH"	"fc1f6104-b3c1-4714-ac0f-9c76a6fb1a77"	"accepted-native-battle"	"RelicEffectModifyCardHealth,RelicEffectModifyCardAttack"	""
 "ValorTransferOnAngelDeath"	"8c493cd7-8048-4598-bdd5-6cc2801cd842"	"accepted-native-battle"	"RelicEffectModifyTriggerCount"	""
-"CardDrawOnHeal"	"9a38370b-150c-45bd-9e3e-93a688a04850"	"pending"	"RelicEffectCardDrawOnHeal"	""
+"CardDrawOnHeal"	"9a38370b-150c-45bd-9e3e-93a688a04850"	"accepted-native-battle"	"RelicEffectCardDrawOnHeal"	""
 "BrokenRail"	"1699b5c7-8c34-471c-8e5a-c9830e2bc482"	"pending"	"RelicEffectModifyForgeUpgrade"	""
 "MoltenManifold"	"f141d334-b503-48ff-ac21-5f2ad27105dd"	"accepted-native-battle"	"RelicEffectAddTempUpgrade"	""
 "StarterWurmRelic"	"815a25e7-2fed-4cb2-a568-79af12cd7116"	"accepted-native-noop"	"RelicEffectNull"	""

@@ -267,6 +267,7 @@ param(
     [switch] $OriginalNefariousOverflow,
     [switch] $OriginalCopyFirstSpellPlayed,
     [switch] $OriginalFunguyDeckScaling,
+    [switch] $OriginalCardDrawOnHeal,
     [switch] $OriginalUnitResourceRelics,
     [switch] $OriginalOpeningDrawRelics,
     [switch] $OriginalTurnDrawRelics,
@@ -383,6 +384,7 @@ if ($OriginalCheaperSpellCost) { $BranchCardMasks = $true; $Policy = 'units-spel
 if ($OriginalCardDrawOnCardPlay) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalCopyFirstSpellPlayed) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalFunguyDeckScaling) { $PhysicalSpawnPoints = $true; $Policy = 'no-cards' }
+if ($OriginalCardDrawOnHeal) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalCarriageJack) { $Policy = 'units-and-junk' }
 if ($OriginalFirstRoomAttachment) { $BranchCardMasks = $true; $Policy = 'units-and-junk' }
 if ($OriginalStartRoomAttachment) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
@@ -800,6 +802,7 @@ if ($OriginalCheaperSpellCost) { $environment['MT2_PROBE_MODIFIERS'] = 'original
 if ($OriginalNefariousOverflow) { $environment['MT2_PROBE_MODIFIERS'] = 'original-nefarious-overflow' }
 if ($OriginalCopyFirstSpellPlayed) { $environment['MT2_PROBE_MODIFIERS'] = 'original-copy-first-spell-played' }
 if ($OriginalFunguyDeckScaling) { $environment['MT2_PROBE_MODIFIERS'] = 'original-funguy-deck-scaling' }
+if ($OriginalCardDrawOnHeal) { $environment['MT2_PROBE_MODIFIERS'] = 'original-card-draw-on-heal' }
 if ($OriginalCardDrawOnCardPlay) { $environment['MT2_PROBE_MODIFIERS'] = 'original-card-draw-on-card-play' }
 if ($OriginalCarriageJack) { $environment['MT2_PROBE_MODIFIERS'] = 'original-carriage-jack' }
 if ($OriginalFirstRoomAttachment) { $environment['MT2_PROBE_MODIFIERS'] = 'original-first-room-attachment' }
@@ -1599,6 +1602,13 @@ if ($OriginalFunguyDeckScaling) {
         -not (Select-String -LiteralPath $unityLog -Pattern 'ORIGINAL-FUNGUY-DECK-PREPARED deck=40 threshold=20' -Quiet)) {
         throw 'StartOfTurnAddFunguysPerDeckSize lacks the native 40-card repeated callback witness.'
     }
+}
+if ($OriginalCardDrawOnHeal -and ($trace.Schema -ne 175 -or
+    $trace.ModifierScenario -ne 'original-card-draw-on-heal' -or
+    -not $trace.OriginalCardDrawOnHealPrepared -or
+    @($trace.RelicUnitResources | Where-Object Trigger -EQ 'OnHeal').Count -lt 4 -or
+    -not (Select-String -LiteralPath $unityLog -Pattern 'ORIGINAL-CARD-DRAW-ON-HEAL-PREPARED two same-turn allied heals, a next-turn allied heal, and an enemy-heal control' -Quiet))) {
+    throw 'CardDrawOnHeal lacks repeated allied heal callbacks or its enemy-heal control.'
 }
 if (($OriginalNullRelic -or $OriginalNullRelicBaseline) -and ($null -eq $trace.OriginalNullRelic -or
     $trace.OriginalNullRelic.Present -ne $(if ($OriginalNullRelicBaseline) { 0 } else { 1 }) -or

@@ -4701,3 +4701,28 @@ and deck-size bands remain unsupported.
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-funguy-deck-scaling.mt2f
 dotnet run --project src/ModelChecks -c Release -- --original-funguy-deck-only tests/fixtures/full-battle-original-funguy-deck-scaling.mt2f
 ```
+
+### Original CardDrawOnHeal relic (schema 175)
+
+`full-battle-original-card-draw-on-heal.mt2f` captures the unchanged owner and
+its Monsters-only, amount-1 `OnHeal` effect with a once-per-`ThisTurn` condition.
+The winning battle records four allied draws, one same-turn suppression, one
+enemy-heal control, and three condition resets; all 525 manager callback
+contexts and all 26 recorded card actions match. Capture failures, mismatches,
+unsupported transitions and pending records are zero. Bounded search matches
+all 26 recorded decisions, visits 128/128 states, replays four steps, and has
+equal serial/parallel best results. Test-card selection uses targeted native
+draw setup, so every captured action is replayed individually instead of
+claiming an independent full-policy chain.
+
+The binary is 45,612 bytes with 7,478 unique nodes and SHA-256
+`1f1882d2fd339aee0c3a860092957d5334cf890e6fd489313eb73f46b05e4f84`; it has no
+JSON companion. The witness covers this unchanged owner, its allied trigger,
+same-turn suppression, enemy-team exclusion and duration reset; other owners
+and condition combinations remain unsupported.
+
+```powershell
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-card-draw-on-heal.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-card-draw-on-heal-only tests/fixtures/full-battle-original-card-draw-on-heal.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-card-draw-on-heal.mt2f
+```

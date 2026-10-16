@@ -173,7 +173,8 @@ namespace MonsterTrain2Poju.Model
             type == AdditionalSmeltEmber || type == AdjustMixAmount || type == ConserveEnergyEndOfTurn || type == ConserveForgePoints ||
             type == RelicCardGenerationModel.AfterDraw || type == RelicCardGenerationModel.StartOfBattle ||
             type == RelicTurnDrawModel.FullHealth || type == RelicTurnDrawModel.Opening ||
-            RelicUnitResourceModel.IsEffect(type) || RelicOpeningDrawModel.IsEffect(type) || IsOpeningCorruption(type) || type == PileStartTurn;
+            RelicUnitResourceModel.IsEffect(type) || RelicCardDrawOnHealModel.IsEffect(type) ||
+            RelicOpeningDrawModel.IsEffect(type) || IsOpeningCorruption(type) || type == PileStartTurn;
 
         internal static string? Validate(CombatRelicState relic)
         {
@@ -197,6 +198,11 @@ namespace MonsterTrain2Poju.Model
                 {
                     string? triggerError = RelicUnitResourceModel.Validate(relic, rule);
                     if (triggerError != null) return triggerError;
+                }
+                else if (RelicCardDrawOnHealModel.IsEffect(rule.Type))
+                {
+                    string? drawError = RelicCardDrawOnHealModel.Validate(relic, rule);
+                    if (drawError != null) return drawError;
                 }
                 else if (rule.UnitTrigger != null) return "Unexpected unit resource callback on another effect.";
                 if (rule.Type == RelicCardGenerationModel.AfterDraw)
@@ -257,7 +263,8 @@ namespace MonsterTrain2Poju.Model
                 if ((rule.Type == Energy || rule.Type == DeploymentEnergy || rule.Type == StartCombatEnergy || rule.Type == Draw || rule.Type == FloorCapacity) && rule.RequiredMutatorId != null)
                     return "Unexpected required mutator on a resource effect without that native gate.";
                 if ((rule.Type == Energy || rule.Type == DeploymentEnergy || rule.Type == StartCombatEnergy || rule.Type == PyreAttack || rule.Type == PyreHealth ||
-                    rule.Type == MoonPhaseEnergy || rule.Type == EnergyOnCardEarlyDiscard || rule.Type == ConserveEnergyEndOfTurn) &&
+                    rule.Type == MoonPhaseEnergy || rule.Type == EnergyOnCardEarlyDiscard || rule.Type == ConserveEnergyEndOfTurn ||
+                    RelicCardDrawOnHealModel.IsEffect(rule.Type)) &&
                     !relic.DisallowedInPlacementPhase.HasValue)
                     return "Missing native resource owner placement restriction.";
             }
