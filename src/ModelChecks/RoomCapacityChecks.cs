@@ -57,8 +57,9 @@ internal static class RoomCapacityChecks
         RoomCombatResult attachmentSpell = CardSpellModel.Apply(attachmentRoom, [attach], 0, 1);
         Require(RoomCapacityModel.TestAttachment(attachmentRoom, attach) && attachmentSpell.Supported &&
             attachmentSpell.State!.Context!.RoomCapacities![0].PlayerMaximum == 9 &&
-            attachmentSpell.State.Context.RoomCapacities[0].Attachments!.Single().DataId == "increase",
-            "Native capacity attachment did not alter the monster floor capacity or persist its identity.");
+            attachmentSpell.State.Context.RoomCapacities[0].Attachments!.Single().DataId == "increase" &&
+            attachmentSpell.State.Context.RoomCapacities[0].AttachmentsAddedFromCards == null,
+            "Native capacity attachment changed legacy-unknown card counters, floor capacity or attachment identity.");
         var attachmentCards = new CardCycleState([new(1, "increase")], [], [], rng, 0, []);
         var attachmentContext = new CombatContext(attachmentCards, rng, 0, 4, 10,
             cardInstances: [CardInstanceState.Empty(1, "increase")],

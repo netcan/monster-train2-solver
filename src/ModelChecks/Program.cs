@@ -503,6 +503,13 @@ if (args.Length == 1 && args[0] == "--original-first-room-attachment-model-only"
     RelicRoomAttachmentReplicationChecks.Run();
     return;
 }
+if (args.Length == 2 && args[0] == "--original-start-room-attachment-only")
+{
+    using var document = ModelJson.ReadFixture(args[1]);
+    OriginalStartRoomAttachmentChecks.Native(document.RootElement);
+    Console.WriteLine($"NATIVE-FIXTURE-METADATA schema={document.RootElement.GetProperty("Schema").GetInt32()} bytes={new FileInfo(args[1]).Length} uniqueNodes={document.UniqueNodeCount}");
+    return;
+}
 if (args.Length == 1 && args[0] == "--relic-card-draw-on-card-play-model-only")
 {
     RelicCardDrawOnCardPlayChecks.Run();
@@ -1342,6 +1349,11 @@ foreach (string path in args.Where(path => path.Contains("original-first-room-at
 {
     using var document = ModelJson.ReadFixture(path);
     OriginalFirstRoomAttachmentChecks.Native(document.RootElement);
+}
+foreach (string path in args.Where(path => path.Contains("original-start-room-attachment", StringComparison.OrdinalIgnoreCase)))
+{
+    using var document = ModelJson.ReadFixture(path);
+    OriginalStartRoomAttachmentChecks.Native(document.RootElement);
 }
 foreach (string path in args.Where(path => path.Contains("original-room-entry-status-relics", StringComparison.OrdinalIgnoreCase)))
 {

@@ -8,6 +8,7 @@ namespace MonsterTrain2Poju.Model
     {
         public string DataId { get; }
         public string AssetKey { get; }
+        public string AttachmentId { get; }
         public int AttachmentType { get; }
         public int CapacityDelta { get; }
         public IReadOnlyList<CardUpgradeModifier>? CharacterUpgrades { get; }
@@ -16,9 +17,9 @@ namespace MonsterTrain2Poju.Model
         public bool IgnoreBosses { get; }
         public RoomCapacityAttachmentState(string dataId, string assetKey, int attachmentType, int capacityDelta,
             IReadOnlyList<CardUpgradeModifier>? characterUpgrades = null, bool affectsHeroes = false,
-            bool affectsMonsters = true, bool ignoreBosses = false)
+            bool affectsMonsters = true, bool ignoreBosses = false, string attachmentId = "")
         {
-            DataId = dataId; AssetKey = assetKey; AttachmentType = attachmentType; CapacityDelta = capacityDelta;
+            DataId = dataId; AssetKey = assetKey; AttachmentId = attachmentId; AttachmentType = attachmentType; CapacityDelta = capacityDelta;
             CharacterUpgrades = characterUpgrades == null ? null : Array.AsReadOnly(characterUpgrades.ToArray());
             AffectsHeroes = affectsHeroes; AffectsMonsters = affectsMonsters; IgnoreBosses = ignoreBosses;
         }
@@ -67,9 +68,11 @@ namespace MonsterTrain2Poju.Model
                 context.RoomCapacities.Select(room => room.RoomIndex).Distinct().Count() != context.RoomCapacities.Count ||
                 context.RoomCapacities.Any(room => room.Attachments?.Any(attachment => string.IsNullOrEmpty(attachment.DataId) ||
                     string.IsNullOrEmpty(attachment.AssetKey) || attachment.AttachmentType != 0 ||
+                    attachment.AttachmentId.Length > 0 && (!Guid.TryParse(attachment.AttachmentId, out Guid attachmentGuid) || attachmentGuid == Guid.Empty) ||
                     attachment.CharacterUpgrades?.Any(upgrade => upgrade.ExternalInteractions.Count > 0 ||
                         upgrade.Stats.Damage != 0 || upgrade.Stats.Health != 0 || upgrade.Stats.Size != 0 ||
-                        upgrade.Statuses.Count > 0 || upgrade.TriggerUpgrades?.Count > 0 || upgrade.AbilityUpgrade != null) == true) == true)
+                        upgrade.Statuses.Count > 0 || upgrade.TriggerUpgrades?.Count > 0 && attachment.AttachmentId.Length == 0 ||
+                        upgrade.AbilityUpgrade != null) == true) == true)
                 ? "Invalid room capacity state." : null;
         }
         public static int? Maximum(CombatContext? context, int room, CombatTeam team) =>
@@ -93,7 +96,8 @@ namespace MonsterTrain2Poju.Model
             if (selected == null || selected.IsPyre || selected.Attachments == null || attachment.AttachmentType != 0)
                 return new RoomCapacityResult(null, 0, "Invalid capacity attachment target or type.");
             RoomCapacityAttachmentState[] attachments = selected.Attachments?.ToArray() ?? Array.Empty<RoomCapacityAttachmentState>();
-            int attachmentsAddedFromCards = selected.AttachmentsAddedFromCards ?? attachments.Length;
+            int? attachmentsAddedFromCards = selected.AttachmentsAddedFromCards.HasValue
+                ? unchecked(selected.AttachmentsAddedFromCards.Value + 1) : null;
             RoomCapacityAttachmentState? previous = attachments.FirstOrDefault(item => item.AttachmentType == 0);
             if (previous != null)
                 attachments = attachments.Where(item => !ReferenceEquals(item, previous)).ToArray();
@@ -103,7 +107,7 @@ namespace MonsterTrain2Poju.Model
             var changed = new RoomCapacityState(roomIndex, maximum, selected.EnemyMaximum, selected.IsPyre,
                 selected.Corruption, attachments.Concat(new[] { attachment }).ToArray(),
                 selected.MaxCorruption, selected.PermanentCorruption,
-                unchecked(attachmentsAddedFromCards + 1));
+                attachmentsAddedFromCards);
             return new RoomCapacityResult(context.WithRoomCapacities(context.RoomCapacities!
                 .Select(room => room.RoomIndex == roomIndex ? changed : room).ToArray()), attachment.CapacityDelta);
         }

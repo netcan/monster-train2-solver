@@ -376,6 +376,9 @@ namespace MonsterTrain2Poju.Model
                 movementContext, room.Preview, room.ActiveCompanionBossIds)).ToArray();
             TrainCombatState moving = EnchantmentWorldModel.Rebase(new TrainCombatState(next, source.Movement, source.EnemySlotsPerRoom, movementContext));
             moving = Freeze(moving, moving.Rooms.ToArray(), moving.Context);
+            RoomAttachmentUnitSyncResult attachmentSync = RoomAttachmentUnitModel.SynchronizeMovement(source, moving);
+            if (!attachmentSync.Supported) return Unsupported(attachmentSync.UnsupportedReason!);
+            moving = attachmentSync.State!;
             if (looped.Count > 0)
             {
                 var callbacks = looped.Select(id => (id, "OnTrainRoomLoop")).Concat(looped.SelectMany(id =>

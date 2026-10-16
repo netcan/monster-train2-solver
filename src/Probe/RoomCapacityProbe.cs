@@ -24,32 +24,35 @@ namespace MonsterTrain2Poju.Probe
             var result = new List<RoomCapacityAttachmentState>();
             foreach (TrainRoomAttachmentState attachment in room.Attachments)
             {
-                if (!attachment.IsActive || (int)attachment.AttachType != 0 || attachment.CardState == null ||
-                    attachment.UpgradeStates.Count == 0) return null;
+                if (!attachment.IsActive || (int)attachment.AttachType != 0 || attachment.UpgradeStates.Count == 0 ||
+                    attachment.CardState == null && attachment.UpgradeStates.Count != 1) return null;
                 int delta = 0;
                 var characterUpgrades = new List<CardUpgradeModifier>();
                 foreach (var (state, definition) in attachment.UpgradeStates)
                 {
                     var capacityModifiers = definition.GetRoomModifierUpgrades();
-                    bool supported = capacityModifiers.Count == 1 && capacityModifiers[0].GetRoomStateModifierClassName() == "RoomStateCapacityModifier" &&
+                    bool supported = capacityModifiers.Count <= 1 && (capacityModifiers.Count == 0 ||
+                        capacityModifiers[0].GetRoomStateModifierClassName() == "RoomStateCapacityModifier") &&
                         state.GetAttackDamage() == 0 && state.GetAttackDamageBuff() == 0 && state.GetAdditionalHP() == 0 &&
                         state.GetAdditionalUnhealedHP() == 0 && state.GetCostReduction() == 0 && state.GetAdditionalSize() == 0 &&
                         state.GetAdditionalEquipmentLimit() == 0 && state.GetStatusEffectUpgrades().Count == 0 &&
                         state.GetTraitDataUpgrades().Count == 0 && state.GetRemoveTraitUpgrades().Count == 0 &&
-                        state.GetTriggerUpgrades().Count == 0 && state.GetCardTriggerUpgrades().Count == 0 &&
+                        (attachment.CardState == null || state.GetTriggerUpgrades().Count == 0) && state.GetCardTriggerUpgrades().Count == 0 &&
                         state.GetUpgradesToRemove().Count == 0 && state.GetFilters().Count == 0 &&
                         state.GetUnitAbilityUpgrade() == null && state.GetRoomAbilityUpgrade() == null && !state.IsUnique();
                     if (!supported) return null;
-                    delta = unchecked(delta + capacityModifiers[0].GetParamInt());
+                    if (capacityModifiers.Count == 1) delta = unchecked(delta + capacityModifiers[0].GetParamInt());
                     characterUpgrades.Add(CardModifierProbe.Upgrade(state, rejectFilters: false,
                         filtersAlreadyApplied: true, roomAttachmentUnitUpgrade: true));
                 }
-                string dataId = attachment.CardState.GetCardDataID();
-                string assetKey = AllGameManagers.Instance!.GetSaveManager().GetAllGameData().FindCardData(dataId)!.name;
+                string dataId = attachment.CardState?.GetCardDataID() ?? attachment.UpgradeStates.Single().Item2.GetID();
+                string assetKey = attachment.CardState == null ? attachment.UpgradeStates.Single().Item2.name :
+                    AllGameManagers.Instance!.GetSaveManager().GetAllGameData().FindCardData(dataId)!.name;
                 bool ignoreBosses = (bool)AccessTools.Field(typeof(TrainRoomAttachmentState), "_isIgnoreBosses").GetValue(attachment);
                 result.Add(new RoomCapacityAttachmentState(dataId, assetKey, (int)attachment.AttachType, delta,
                     characterUpgrades, attachment.TrainSide.HasFlag(Team.Type.Heroes),
-                    attachment.TrainSide.HasFlag(Team.Type.Monsters), ignoreBosses));
+                    attachment.TrainSide.HasFlag(Team.Type.Monsters), ignoreBosses,
+                    attachment.CardState == null ? attachment.Guid : ""));
             }
             return result.ToArray();
         }

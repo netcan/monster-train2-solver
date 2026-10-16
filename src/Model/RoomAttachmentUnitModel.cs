@@ -29,21 +29,22 @@ namespace MonsterTrain2Poju.Model
                 return error == null ? source : null;
             }
 
-            CombatUnit changed = unit;
+            RoomCombatState state = source;
             foreach (RoomCapacityAttachmentState attachment in room.Attachments)
             {
+                CombatUnit changed = state.Units.First(item => item.Id == unitId);
                 if (!Affected(changed, attachment)) continue;
                 if (attachment.CharacterUpgrades == null)
                 { error = "Room attachment birth synchronization requires captured character upgrades."; return null; }
                 if (changed.Modifiers == null)
                 { error = "Room attachment birth synchronization requires captured unit modifiers."; return null; }
                 foreach (CardUpgradeModifier upgrade in attachment.CharacterUpgrades)
-                    changed = WithUpgrades(changed, changed.Modifiers!.Upgrades.Concat(new[] { upgrade }).ToArray());
+                {
+                    if (!ApplyUpgrade(ref state, unitId, attachment, upgrade, remove: false, out error)) return null;
+                }
             }
 
-            return ReferenceEquals(changed, unit) ? source : new RoomCombatState(source.RoomIndex, source.Deployment,
-                source.Units.Select(item => item.Id == unitId ? changed : item).ToArray(), source.ExternalInteractions,
-                source.Context, source.Preview, source.ActiveCompanionBossIds);
+            return ReferenceEquals(state, source) ? source : state;
         }
 
         internal static RoomAttachmentUnitSyncResult Synchronize(TrainCombatState source,
@@ -64,46 +65,102 @@ namespace MonsterTrain2Poju.Model
                     continue;
                 }
 
-                CombatUnit[] units = room.Units.ToArray();
+                RoomCombatState state = new RoomCombatState(room.RoomIndex, room.Deployment, room.Units,
+                    room.ExternalInteractions, source.Context, room.Preview, room.ActiveCompanionBossIds);
                 if (previous?.Attachments?.SingleOrDefault() is RoomCapacityAttachmentState removed)
                 {
-                    for (int unitIndex = 0; unitIndex < units.Length; unitIndex++)
+                    foreach (CombatUnit original in state.Units.ToArray())
                     {
-                        if (!Affected(units[unitIndex], removed)) continue;
+                        if (!Affected(original, removed)) continue;
                         if (removed.CharacterUpgrades == null)
                             return Fail("Removing a room attachment requires its captured character upgrades.");
-                        if (units[unitIndex].Modifiers == null)
+                        if (original.Modifiers == null)
                             return Fail("Room attachment character synchronization requires captured unit modifiers.");
                         foreach (CardUpgradeModifier upgrade in removed.CharacterUpgrades)
                         {
-                            int appliedIndex = LastMatchingUpgrade(units[unitIndex].Modifiers!.Upgrades, upgrade);
-                            if (appliedIndex < 0)
-                                return Fail("A replaced room attachment upgrade was missing from an impacted unit.");
-                            units[unitIndex] = WithUpgrades(units[unitIndex], units[unitIndex].Modifiers!.Upgrades
-                                .Where((_, upgradeIndex) => upgradeIndex != appliedIndex).ToArray());
+                            if (!ApplyUpgrade(ref state, original.Id, removed, upgrade, remove: true, out string? error))
+                                return Fail(error!);
                         }
                     }
                 }
 
                 if (current?.Attachments?.SingleOrDefault() is RoomCapacityAttachmentState added)
                 {
-                    for (int index = 0; index < units.Length; index++)
+                    foreach (CombatUnit original in state.Units.ToArray())
                     {
-                        if (!Affected(units[index], added)) continue;
+                        if (!Affected(original, added)) continue;
                         if (added.CharacterUpgrades == null)
                             return Fail("Adding a room attachment requires its captured character upgrades.");
-                        if (units[index].Modifiers == null)
+                        if (original.Modifiers == null)
                             return Fail("Room attachment character synchronization requires captured unit modifiers.");
                         foreach (CardUpgradeModifier upgrade in added.CharacterUpgrades)
-                            units[index] = WithUpgrades(units[index], units[index].Modifiers!.Upgrades.Concat(new[] { upgrade }).ToArray());
+                        {
+                            if (!ApplyUpgrade(ref state, original.Id, added, upgrade, remove: false, out string? error))
+                                return Fail(error!);
+                        }
                     }
                 }
 
-                rooms.Add(new RoomCombatState(room.RoomIndex, room.Deployment, units, room.ExternalInteractions,
-                    source.Context, room.Preview, room.ActiveCompanionBossIds));
+                rooms.Add(state);
             }
             return new RoomAttachmentUnitSyncResult(new TrainCombatState(rooms, source.Movement,
                 source.EnemySlotsPerRoom, source.Context));
+        }
+
+        internal static RoomAttachmentUnitSyncResult SynchronizeMovement(TrainCombatState before, TrainCombatState after)
+        {
+            IReadOnlyList<RoomCapacityState>? previousRooms = before.Context?.RoomCapacities;
+            IReadOnlyList<RoomCapacityState>? currentRooms = after.Context?.RoomCapacities;
+            if (previousRooms == null && currentRooms == null) return new RoomAttachmentUnitSyncResult(after);
+            if (previousRooms == null || currentRooms == null)
+                return Fail("Room attachment movement synchronization requires before/after room states.");
+
+            TrainCombatState state = after;
+            foreach (CombatUnit previousUnit in before.Rooms.SelectMany(room => room.Units))
+            {
+                RoomCombatState? oldRoom = before.Rooms.FirstOrDefault(room => room.Units.Any(unit => unit.Id == previousUnit.Id));
+                RoomCombatState? newRoom = state.Rooms.FirstOrDefault(room => room.Units.Any(unit => unit.Id == previousUnit.Id));
+                if (oldRoom == null || newRoom == null || oldRoom.RoomIndex == newRoom.RoomIndex) continue;
+                RoomCapacityState? oldCapacity = previousRooms.FirstOrDefault(room => room.RoomIndex == oldRoom.RoomIndex);
+                RoomCapacityState? newCapacity = currentRooms.FirstOrDefault(room => room.RoomIndex == newRoom.RoomIndex);
+                if (oldCapacity == null || newCapacity == null) continue;
+                if ((oldCapacity.Attachments == null && oldCapacity.AttachmentsAddedFromCards > 0) ||
+                    (newCapacity.Attachments == null && newCapacity.AttachmentsAddedFromCards > 0))
+                    return Fail("Room attachment movement requires captured attachment payloads.");
+
+                RoomCombatState currentRoom = state.Rooms.Single(room => room.RoomIndex == newRoom.RoomIndex);
+                CombatUnit currentUnit = currentRoom.Units.Single(unit => unit.Id == previousUnit.Id);
+                foreach (RoomCapacityAttachmentState removed in oldCapacity.Attachments ?? Array.Empty<RoomCapacityAttachmentState>())
+                {
+                    if (!IsApplied(currentUnit, removed) ||
+                        (newCapacity.Attachments ?? Array.Empty<RoomCapacityAttachmentState>()).Any(item => SameAttachment(removed, item))) continue;
+                    if (removed.CharacterUpgrades == null)
+                        return Fail("Leaving a room attachment requires its captured character upgrades.");
+                    foreach (CardUpgradeModifier upgrade in removed.CharacterUpgrades)
+                    {
+                        if (!ApplyUpgrade(ref currentRoom, currentUnit.Id, removed, upgrade, remove: true, out string? error))
+                            return Fail(error!);
+                    }
+                    state = WithRoom(state, currentRoom);
+                    currentUnit = currentRoom.Units.Single(unit => unit.Id == previousUnit.Id);
+                }
+
+                foreach (RoomCapacityAttachmentState added in newCapacity.Attachments ?? Array.Empty<RoomCapacityAttachmentState>())
+                {
+                    if (!Affected(currentUnit, added) || IsApplied(currentUnit, added) ||
+                        (oldCapacity.Attachments ?? Array.Empty<RoomCapacityAttachmentState>()).Any(item => SameAttachment(added, item))) continue;
+                    if (added.CharacterUpgrades == null)
+                        return Fail("Entering a room attachment requires its captured character upgrades.");
+                    foreach (CardUpgradeModifier upgrade in added.CharacterUpgrades)
+                    {
+                        if (!ApplyUpgrade(ref currentRoom, currentUnit.Id, added, upgrade, remove: false, out string? error))
+                            return Fail(error!);
+                    }
+                    state = WithRoom(state, currentRoom);
+                    currentUnit = currentRoom.Units.Single(unit => unit.Id == previousUnit.Id);
+                }
+            }
+            return new RoomAttachmentUnitSyncResult(state);
         }
 
         private static bool SameAttachment(RoomCapacityState? left, RoomCapacityState? right)
@@ -114,8 +171,60 @@ namespace MonsterTrain2Poju.Model
             return a.DataId == b.DataId && a.AssetKey == b.AssetKey && a.AttachmentType == b.AttachmentType &&
                 a.CapacityDelta == b.CapacityDelta && a.AffectsHeroes == b.AffectsHeroes &&
                 a.AffectsMonsters == b.AffectsMonsters && a.IgnoreBosses == b.IgnoreBosses &&
+                a.AttachmentId == b.AttachmentId &&
                 a.CharacterUpgrades?.Select(upgrade => upgrade.DataId).SequenceEqual(
                     b.CharacterUpgrades?.Select(upgrade => upgrade.DataId) ?? Array.Empty<string>()) == true;
+        }
+
+        private static bool SameAttachment(RoomCapacityAttachmentState left, RoomCapacityAttachmentState right) =>
+            left.DataId == right.DataId && left.AssetKey == right.AssetKey && left.AttachmentType == right.AttachmentType &&
+            left.CapacityDelta == right.CapacityDelta && left.AffectsHeroes == right.AffectsHeroes &&
+            left.AffectsMonsters == right.AffectsMonsters && left.IgnoreBosses == right.IgnoreBosses &&
+            left.AttachmentId == right.AttachmentId &&
+            left.CharacterUpgrades?.Select(upgrade => upgrade.DataId).SequenceEqual(
+                right.CharacterUpgrades?.Select(upgrade => upgrade.DataId) ?? Array.Empty<string>()) == true;
+
+        private static bool IsApplied(CombatUnit unit, RoomCapacityAttachmentState attachment)
+        {
+            if (attachment.CharacterUpgrades == null || unit.Modifiers?.Upgrades == null) return false;
+            if (attachment.AttachmentId.Length > 0)
+                return unit.Triggers.Any(trigger => trigger.Origin?.UpgradeId == attachment.AttachmentId) &&
+                    attachment.CharacterUpgrades.All(expected => unit.Modifiers.Upgrades.Any(applied =>
+                        applied.DataId == expected.DataId && applied.AssetKey == expected.AssetKey));
+            return attachment.CharacterUpgrades.Count > 0 && attachment.CharacterUpgrades.All(expected =>
+                unit.Modifiers.Upgrades.Any(applied => applied.DataId == expected.DataId && applied.AssetKey == expected.AssetKey));
+        }
+
+        private static bool ApplyUpgrade(ref RoomCombatState state, int unitId,
+            RoomCapacityAttachmentState attachment, CardUpgradeModifier upgrade, bool remove, out string? error)
+        {
+            error = null;
+            if (upgrade.TriggerUpgrades?.Count > 0)
+            {
+                if (string.IsNullOrEmpty(attachment.AttachmentId))
+                { error = "Room attachment trigger synchronization requires its native attachment identity."; return false; }
+                RoomCombatResult applied = UnitModifierModel.ApplyDirect(state, unitId, upgrade,
+                    remove, attachment.AttachmentId);
+                if (!applied.Supported || applied.State == null)
+                { error = applied.UnsupportedReason ?? "Room attachment trigger synchronization failed."; return false; }
+                state = applied.State;
+                return true;
+            }
+
+            CombatUnit? unit = state.Units.FirstOrDefault(item => item.Id == unitId);
+            if (unit?.Modifiers == null)
+            { error = "Room attachment character synchronization requires captured unit modifiers."; return false; }
+            CardUpgradeModifier[] upgrades;
+            if (remove)
+            {
+                int appliedIndex = LastMatchingUpgrade(unit.Modifiers.Upgrades, upgrade);
+                if (appliedIndex < 0)
+                { error = "A replaced room attachment upgrade was missing from an impacted unit."; return false; }
+                upgrades = unit.Modifiers.Upgrades.Where((_, upgradeIndex) => upgradeIndex != appliedIndex).ToArray();
+            }
+            else upgrades = unit.Modifiers.Upgrades.Concat(new[] { upgrade }).ToArray();
+            state = WithUnit(state, unitId, WithUpgrades(unit, upgrades));
+            return true;
         }
 
         private static bool Affected(CombatUnit unit, RoomCapacityAttachmentState attachment)
@@ -141,6 +250,20 @@ namespace MonsterTrain2Poju.Model
                 modifiers.IsClone, upgrades, modifiers.HealthFromUpgrades, modifiers.SpawnerMatchesDefinition,
                 modifiers.DamageBuffFromStatusEffects, modifiers.MagebladeDamagePerMagicPower,
                 modifiers.StatusAttackModifiers));
+        }
+
+        private static RoomCombatState WithUnit(RoomCombatState room, int unitId, CombatUnit changed) =>
+            new RoomCombatState(room.RoomIndex, room.Deployment,
+                room.Units.Select(item => item.Id == unitId ? changed : item).ToArray(), room.ExternalInteractions,
+                room.Context, room.Preview, room.ActiveCompanionBossIds);
+
+        private static TrainCombatState WithRoom(TrainCombatState train, RoomCombatState changed)
+        {
+            CombatContext? context = changed.Context ?? train.Context;
+            RoomCombatState[] rooms = train.Rooms.Select(room => new RoomCombatState(room.RoomIndex, room.Deployment,
+                room.RoomIndex == changed.RoomIndex ? changed.Units : room.Units, room.ExternalInteractions,
+                context, room.Preview, room.ActiveCompanionBossIds)).ToArray();
+            return new TrainCombatState(rooms, train.Movement, train.EnemySlotsPerRoom, context);
         }
 
         private static RoomAttachmentUnitSyncResult Fail(string error) => new(null, error);

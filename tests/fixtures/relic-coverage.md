@@ -1,7 +1,7 @@
 # Original relic coverage evidence
 
-As of 2026-10-16, **142 distinct original collectable relics / 224 catalog entries
-(63.39%)** have accepted native evidence: 126 have full-battle effect evidence,
+As of 2026-10-17, **143 distinct original collectable relics / 224 catalog entries
+(63.84%)** have accepted native evidence: 127 have full-battle effect evidence,
 fifteen have campaign consumer interfaces validated, and one is an explicit
 native no-op with seeded baseline equivalence. Except for that no-op, this counts
 unchanged relic definitions whose effects actually ran, including original filters and
@@ -32,11 +32,16 @@ callback capture have zero capture failures, mismatches, unsupported transitions
 or pending records. Five setup plays replay exactly; independent search matches
 24 decisions across 128/128 states and serial/parallel best results. Original
 CarriageJack's separate room-capacity behavior remains covered by its own archive.
-The latest battle validates FirstRoomCardOnAllFloors: an ordinary-card control
+The latest battle validates TrainRoomInstallFloor1AtStartOfCombat: the unchanged
+cardless FuelCar attachment is added to floor one at combat start for both teams.
+Six Heroes and two Monsters retain its GUID-attributed OnDeath trigger in native
+snapshots; Ascend removes the old-room effect in live state and model. The 60-stage
+battle and independent 128/128-state search pass. The separate FirstRoomCardOnAllFloors
+battle validates an ordinary-card control
 does not trigger it, the first native capacity attachment is copied to all
 non-Pyre floors, and a later attachment is blocked by the unchanged once-per-
 battle condition. Native room and unit snapshots also match attachment upgrade
-propagation. The accepted inventory is 363 archives: 325 battles and 38 component
+propagation. The accepted inventory is 364 archives: 326 battles and 38 component
 calibrations, with no JSON companions.
 A recent calibration bundles two
 complete winning native battles for StarterWurmRelic: identical 21-play/seven-
@@ -247,12 +252,13 @@ owner count.
 | `ConserveEmber` | `3e200d1f-7ba9-4a6e-a09d-5625f25b01ac` | [original Ember conservation][conserveEmber] | Its unchanged all-energy effect conserves positive balances on all seven EndTurns. Initial banking produces 4 → 7 → 10 Ember, followed by 21 paid plays and a winning terminal balance of 1 Ember with Pyre health 58. Seven exact native queries, complete policy replay and bounded serial/parallel search match. |
 | `CarriageJack` | `19e15240-37ca-460d-8230-693626fc7f7e` | [card-play room capacity][carriageJack] | Its unchanged +1 effect matches only `TrainRoomAttachment` plays and adjusts the selected player floor after the native attachment's +4. A non-attachment control leaves capacity unchanged. Unit-upgrade propagation from the attached room modifier is outside this fixture. |
 | `FirstRoomCardOnAllFloors` | `e55235f7-1d84-43f0-b8f5-037b64b8f582` | [first-room attachment replication][firstRoomAttachment] | The unchanged once-per-battle condition copies the first native `IncreaseRoomCapacity` attachment to every non-Pyre floor. An ordinary-card control is inert; a second attachment increments only its source-room counter and does not replicate. Full native state replay includes live and later unit upgrade propagation. |
+| `TrainRoomInstallFloor1AtStartOfCombat` | `2c97e1b3-d4bb-4133-9572-e582805c106f` | [start-room attachment][startRoomAttachment] | Its unchanged cardless Primary FuelCar attachment targets both teams on floor one. Six Heroes and two Monsters carry exactly one OnDeath trigger attributed to the native attachment GUID; source-room removal on Ascend matches live snapshots. |
 
 ## Campaign interface evidence
 
 These fifteen unchanged original owners are validated by their actual native
 campaign consumers, with baseline and removed-owner controls. This table is
-separate from the 126 battle owners. It does not claim whole-battle integration
+separate from the 127 battle owners. It does not claim whole-battle integration
 for these effect classes. The first capture's recorded relic IDs, gold, hoard cap and
 amount, deck IDs, frame and RNG match before/after; reward grants still execute
 their native run-stat side effects in the isolated save. Catalog enumeration
@@ -328,6 +334,7 @@ archives contain these observed battle sizes:
 | [original card-attack relic][cardAttack] | 147 | 21 | 7 | 60 | Four native manager observations; Whelp/Dragon subtype dispatch, +8 offset and reset/reapply |
 | [original card-draw-on-play][cardDraw] | 160 | 20 | 6 | 52 | Five threshold draws plus one deployment-turn Snack activation/draw |
 | [first-room attachment replication][firstRoomAttachment] | 167 | 7 | 7 | 60 | Three controlled plays: ordinary negative, first attachment copied to all non-Pyre rooms, then once-per-battle gate control |
+| [start-room attachment][startRoomAttachment] | 168 | 23 | 7 | 60 | Both-team cardless FuelCar attachment, eight GUID-attributed OnDeath witnesses and source-room removal on Ascend |
 | [normal smelt][smelt] | 103 | 22 | 7 | 55 | Original +1 Ember on a cost-2 smelt |
 | [zero-cost smelt][smeltZero] | 103 | 21 | 7 | 56 | Original +1 Ember with zero base smelt cost |
 | [bulk smelt][smeltBulk] | 103 | 1 | 7 | 52 | Four consumed cards, 3 Forge and four extra Ember |
@@ -587,6 +594,29 @@ pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-car
 dotnet run --project src/ModelChecks -c Release -- --original-card-attack-only tests/fixtures/full-battle-original-card-attack-relic.mt2f
 ```
 
+The schema-168 `full-battle-original-start-room-attachment.mt2f` archive accepts
+the unchanged `TrainRoomInstallFloor1AtStartOfCombat` owner. Its primary, cardless
+`FuelCar_Upgrade` attachment targets both Heroes and Monsters in room 0 without
+incrementing the card-attachment counter. Native traces show six Heroes and two
+Monsters with exactly one `OnDeath` trigger whose origin is the attachment GUID
+and with the applied FuelCar upgrade recorded. Ascending enemies lose the source-
+room upgrade and trigger immediately; the movement model matches this state.
+The complete battle wins with 60 matched stages, 23 plays and seven EndTurns, all
+failure/mismatch/unsupported/pending counters zero. Independent search matches 23
+decisions across 128/128 states with serial and parallel best results equal.
+Other room-attachment lifecycle paths are not claimed by this fixture. Coverage is
+now 143/224 (63.84%).
+
+The binary is 34,617 bytes with 5,544 unique nodes and SHA-256
+`409f538660dbc7e13f1c708f0f1d26903c1e4b81381dd722fe6d815a47daa65b`; it has no
+JSON companion. Inventory is 364 archives: 326 battles and 38 component
+calibrations.
+
+```powershell
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-start-room-attachment.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-start-room-attachment-only tests/fixtures/full-battle-original-start-room-attachment.mt2f
+```
+
 [counts]: full-battle-incant-relics-combined.mt2f
 [statuses]: full-battle-spawn-status-relics.mt2f
 [cost]: full-battle-relic-card-modifiers.mt2f
@@ -614,6 +644,7 @@ dotnet run --project src/ModelChecks -c Release -- --original-card-attack-only t
 [cardDraw]: full-battle-original-card-draw-on-card-play.mt2f
 [carriageJack]: full-battle-original-carriage-jack.mt2f
 [firstRoomAttachment]: full-battle-original-first-room-attachment.mt2f
+[startRoomAttachment]: full-battle-original-start-room-attachment.mt2f
 [unitUpgradeTrigger]: full-battle-original-unit-upgrade-trigger-relic.mt2f
 [extraToughTombs]: full-battle-relic-extra-tough-tombs.mt2f
 [stealthWaxers]: full-battle-original-stealth-waxers.mt2f

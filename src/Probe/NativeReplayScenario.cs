@@ -266,6 +266,8 @@ namespace MonsterTrain2Poju.Probe
                         OriginalCarriageJackScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalFirstRoomAttachmentScenario.Enabled && !OriginalFirstRoomAttachmentScenario.Acquired)
                         OriginalFirstRoomAttachmentScenario.AcquireBeforeBattle(managers!, log);
+                    if (fullBattle && OriginalStartRoomAttachmentScenario.Enabled && !OriginalStartRoomAttachmentScenario.Acquired)
+                        OriginalStartRoomAttachmentScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalCardAttackRelicScenario.Enabled && !OriginalCardAttackRelicScenario.Acquired)
                         OriginalCardAttackRelicScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalCardTypeCostScenario.Enabled && !OriginalCardTypeCostScenario.Acquired)
@@ -508,6 +510,13 @@ namespace MonsterTrain2Poju.Probe
             {
                 if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("FirstRoomCardOnAllFloors fixture must start on deployment turn.");
                 OriginalFirstRoomAttachmentScenario.Prepare(managers, log);
+                numericModifiersPrepared = true;
+                return;
+            }
+            if (fullBattle && !numericModifiersPrepared && OriginalStartRoomAttachmentScenario.Enabled)
+            {
+                if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Floor-one start attachment fixture must start on deployment turn.");
+                OriginalStartRoomAttachmentScenario.Prepare(managers, log);
                 numericModifiersPrepared = true;
                 return;
             }

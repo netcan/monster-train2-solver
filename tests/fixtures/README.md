@@ -1,5 +1,14 @@
 # Native regression fixtures
 
+Start-room attachment extension (2026-10-17): 364 archives (326 battles and 38
+calibrations), 143/224 original owners (63.84%): 127 battle, fifteen campaign-
+interface and one explicit no-op. The unchanged TrainRoomInstallFloor1AtStartOfCombat
+adds cardless FuelCar_Upgrade to floor one for both teams. Native spawn, movement
+and turn snapshots match the attachment-GUID OnDeath trigger across Heroes and
+Monsters; the 60-stage winning battle and 128/128-state independent search pass.
+The captured source-room removal on Ascend is modeled; destination-room attachment
+application remains only when its payload is present in native capture.
+
 Stealth-on-slay status attack extension (2026-10-16): 360 archives (322 battles and 38
 calibrations), 138/224 original owners (61.61%): 122 battle, fifteen campaign-
 interface and one explicit no-op. The unchanged UnitsGainStealthOnSlayPlusAttack
