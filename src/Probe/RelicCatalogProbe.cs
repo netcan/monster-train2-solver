@@ -37,6 +37,7 @@ namespace MonsterTrain2Poju.Probe
                     Trigger = effect.GetParamTrigger().ToString(), ExcludedCardTriggers = effect.GetCardTriggers().Select(trigger => trigger.ToString()).ToArray(),
                     RequiredTraits = effect.GetTraits().Select(trait => trait.GetTraitStateName()).ToArray(),
                     RequiredSubtype = effect.GetParamCharacterSubtype()?.Key,
+                    CardEffects = CardEffectDefinitions(effect),
                     CharacterFilters = effect.GetParamCharacters()?.Select(character => character == null ? null : new { Id = character.GetID(), AssetKey = character.GetAssetKey() }).ToArray(),
                     AddedTriggers = effect.GetTriggers()?.Select(trigger => new
                     {
@@ -66,7 +67,7 @@ namespace MonsterTrain2Poju.Probe
                 throw new InvalidOperationException("Relic definition inspection changed native RNG or frame.");
             using (var document = NativeFixtureCapture.Capture(new
             {
-                Schema = 7, GameVersion = UnityEngine.Application.version,
+                Schema = 8, GameVersion = UnityEngine.Application.version,
                 GameModuleMvid = typeof(RelicState).Assembly.ManifestModule.ModuleVersionId,
                 FrameBefore = frame, FrameAfter = UnityEngine.Time.frameCount, RngBefore = before, RngAfter = after, Relics = relics
             }))
@@ -88,6 +89,38 @@ namespace MonsterTrain2Poju.Probe
             UnitAbilityId = data.GetUnitAbilityUpgrade()?.GetID(), RoomAbilityId = data.GetRoomAbilityUpgrade()?.GetID(),
             Filters = data.GetFilters().Select(CardUpgradeMaskProbe.Definition).ToArray()
         };
+        private static object[] CardEffectDefinitions(RelicEffectData relicEffect) =>
+            (relicEffect.GetParamCardEffectData() ?? new System.Collections.Generic.List<CardEffectData>())
+                .Select(effect =>
+                {
+                    CharacterData? character = effect.GetParamCharacterData();
+                    CharacterData? additionalCharacter = effect.GetParamAdditionalCharacterData();
+                    RoomData? room = effect.GetParamRoomData();
+                    CardData? card = effect.GetParamCardData();
+                    SubtypeData? subtype = effect.GetParamSubtype();
+                    SubtypeData? targetSubtype = effect.GetTargetCharacterSubtype();
+                    CardPool? pool = effect.GetParamCardPool();
+                    return (object)new
+                    {
+                        Type = effect.GetEffectStateName(), Target = effect.GetTargetMode().ToString(),
+                        Team = effect.GetTargetTeamType().ToString(), Int = effect.GetParamInt(),
+                        AdditionalInt = effect.GetAdditionalParamInt(), AdditionalInt1 = effect.GetAdditionalParamInt1(),
+                        MinInt = effect.GetParamMinInt(), MaxInt = effect.GetParamMaxInt(),
+                        Bool = effect.GetParamBool(), Bool2 = effect.GetParamBool2(), Bool3 = effect.GetParamBool3(),
+                        Float = effect.GetParamFloat(), Str = effect.GetParamStr(),
+                        Character = character == null ? null : new { Id = character.GetID(), AssetKey = character.GetAssetKey() },
+                        AdditionalCharacter = additionalCharacter == null ? null : new { Id = additionalCharacter.GetID(), AssetKey = additionalCharacter.GetAssetKey() },
+                        CharacterPool = (effect.GetParamCharacterDataPool() ?? new System.Collections.Generic.List<CharacterData>())
+                            .Select(item => new { Id = item.GetID(), AssetKey = item.GetAssetKey() }).ToArray(),
+                        Room = room == null ? null : new { Id = room.GetID(), AssetKey = room.GetAssetKey() },
+                        Card = card == null ? null : new { Id = card.GetID(), AssetKey = card.GetAssetKey() },
+                        CardPool = pool?.name,
+                        Subtype = subtype?.Key, TargetSubtype = targetSubtype?.Key,
+                        Statuses = (effect.GetParamStatusEffects() ?? System.Array.Empty<StatusEffectStackData>())
+                            .Select(status => new { status.statusId, status.count }).ToArray(),
+                        Upgrade = Upgrade(effect.GetParamCardUpgradeData())
+                    };
+                }).ToArray();
         private static object Field(object source, string name) => AccessTools.Field(source.GetType(), name).GetValue(source);
         private static JObject RngStates()
         {

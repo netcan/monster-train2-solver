@@ -24,7 +24,7 @@ foreach ($line in Get-Content (Join-Path $workspace 'tests/fixtures/relic-covera
 $document = [MonsterTrain2Poju.Fixtures.FixtureDocument]::Read((Resolve-Path -LiteralPath $Catalog).Path)
 try {
     $root = $document.RootElement
-    if ($root.GetProperty('Schema').GetInt32() -ne 7 -or
+    if ($root.GetProperty('Schema').GetInt32() -ne 8 -or
         $root.GetProperty('GameModuleMvid').GetString() -ne '8fb07b96-f4db-4d2b-884d-c00536d6ccf4' -or
         $root.GetProperty('FrameBefore').GetInt32() -ne $root.GetProperty('FrameAfter').GetInt32() -or
         -not $root.GetProperty('RngBefore').ContentEquals($root.GetProperty('RngAfter'))) {

@@ -1657,7 +1657,7 @@ if ($RelicCatalog) {
     try {
         $catalog = $catalogArchive.RootElement
         $catalogRecords = @($catalog.GetProperty('Relics').EnumerateArray())
-        if ($catalog.GetProperty('Schema').GetInt32() -ne 7 -or
+        if ($catalog.GetProperty('Schema').GetInt32() -ne 8 -or
             $catalog.GetProperty('GameModuleMvid').GetString() -ne $trace.GameModuleMvid -or
             $catalog.GetProperty('FrameBefore').GetInt32() -ne $catalog.GetProperty('FrameAfter').GetInt32() -or
             -not $catalog.GetProperty('RngBefore').ContentEquals($catalog.GetProperty('RngAfter')) -or
