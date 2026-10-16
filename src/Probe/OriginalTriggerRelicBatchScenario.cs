@@ -15,6 +15,7 @@ namespace MonsterTrain2Poju.Probe
         internal const string Dragon = "SubtypesData_Dragon";
         internal const string Whelp = "SubtypesData_Whelp";
         internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == Name;
+        internal static bool Stationary => Environment.GetEnvironmentVariable("MT2_PROBE_ORIGINAL_TRIGGER_RELIC_BATCH_STATIONARY") == "1";
         internal static bool Prepared { get; private set; }
         internal static bool CaptureReady { get; private set; }
         private static string angelCardId = "", whelpCardId = "", woundCardId = "", gearCardId = "", shiftCardId = "";
@@ -26,6 +27,7 @@ namespace MonsterTrain2Poju.Probe
             ("SurgeonsStitcher", "8f22145d-5c41-45da-8abf-95bc5f369648"),
             ("AngelsSpawnWithShiftyValor", "3d4705ec-ee6b-433b-88c8-1b4ce0ed7cc9"),
             ("RageOnHymnistDeath", "ec46f782-87ad-4cbd-aacb-023701417283"),
+            ("ExtinguishSpreadPyregel", "9142aaa7-072e-43ca-bc5e-2c9995061174"),
             ("WhelpsGainExtinguishHealPyre", "e6a167d5-f57e-4a02-a0f0-b8cf9373c838"),
             ("DragonsGainStrikeAddPyregel", "1fdf2fde-a5e7-4eae-86eb-d432145c4621"),
             ("WhelpStrikeAddPyregel_DH", "588825ab-8517-48db-8447-31b48e931aaa")
@@ -47,6 +49,9 @@ namespace MonsterTrain2Poju.Probe
                 AddSubtype(unit, index == 0 ? Angel : Whelp);
                 if (index == 0) AddSubtype(unit, Dragon);
                 Set(unit, "health", index == 0 ? 80 : 12); Set(unit, "attackDamage", 2); Set(unit, "size", 1);
+                Set(unit, "startingStatusEffects", index == 1
+                    ? new[] { new StatusEffectStackData { statusId = "pyregel", count = 1 } }
+                    : Array.Empty<StatusEffectStackData>());
                 Set(unit, "equipmentLimit", 2); Set(stewards[index], "cost", 0);
                 var shift = HealingScenario.HealGold(5, false, true); Set(shift, "trigger", CharacterTriggerData.Trigger.OnShift);
                 Set(unit, "triggers", unit.GetTriggers().Concat(new[] { shift }).ToList());
@@ -85,7 +90,9 @@ namespace MonsterTrain2Poju.Probe
             foreach (CharacterData enemy in enemies) { AddSubtype(enemy, Angel); Set(enemy, "equipmentLimit", 2); }
             foreach (CardState card in owned) card.Setup(data.FindCardData(card.GetCardDataID())!, save);
             foreach (CardState card in cards.GetHand().ToArray()) cards.MoveCardFromHandToTopOfDeck(card);
-            foreach (CardData card in new[] { stewards[0], stewards[1], wound, wound, gear, gear, shiftCard })
+            var handCards = new List<CardData> { stewards[0], stewards[1], wound, wound, gear, gear };
+            if (!Stationary) handCards.Add(shiftCard);
+            foreach (CardData card in handCards)
                 cards.AddNewCard(card, CardPile.HandPile, false, false, animate: false);
             CardState laterGear = cards.AddNewCard(gear, CardPile.HandPile, false, false, animate: false);
             cards.MoveCardFromHandToTopOfDeck(laterGear);
@@ -111,7 +118,7 @@ namespace MonsterTrain2Poju.Probe
             Set(countRelic, "effects", new List<RelicEffectData> { countEffect });
             ((IList)AccessTools.Field(typeof(AllGameData), "collectableRelicDatas").GetValue(data)).Add(countRelic); save.AddRelic(countRelic);
             CaptureReady = true; Prepared = true; Set(managers.GetCombatManager()!, "combatStateChanged", true);
-            log.LogInfo("ORIGINAL-TRIGGER-RELIC-BATCH-PREPARED nine unchanged artifacts; authored player/enemy subtype and count carriers; native Boss/waves retained.");
+            log.LogInfo("ORIGINAL-TRIGGER-RELIC-BATCH-PREPARED ten unchanged artifacts; authored player/enemy subtype and count carriers; native Boss/waves retained.");
         }
         internal static PlayCardAction? Choose(BattleTurnState source)
         {
@@ -152,6 +159,7 @@ namespace MonsterTrain2Poju.Probe
                             unit.Triggers.Any(trigger => trigger.Kind == "OnEquipmentAdded" && trigger.Effects.Any(effect => effect.Action?.Statuses.Any(status => status.Id == "valor") == true)))));
                 if (equip != null) return equip;
             }
+            if (!Stationary)
             foreach (CardToken card in context.Cards.Hand.Where(card => card.DataId == shiftCardId))
             {
                 var shift = plays.FirstOrDefault(action => action.CardInstanceId == card.InstanceId &&
@@ -159,7 +167,8 @@ namespace MonsterTrain2Poju.Probe
                 if (shift != null) return shift;
             }
             // Friendly damage is restricted to the wound/death steps above.
-            return plays.FirstOrDefault(action => context.FindCard(action.CardInstanceId)?.DataId != woundCardId);
+            return plays.FirstOrDefault(action => context.FindCard(action.CardInstanceId)?.DataId != woundCardId &&
+                (!Stationary || context.FindCard(action.CardInstanceId)?.DataId != shiftCardId));
         }
         private static void AddSubtype(CharacterData unit, string key)
         {

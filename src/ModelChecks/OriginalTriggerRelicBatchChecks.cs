@@ -13,6 +13,7 @@ internal static class OriginalTriggerRelicBatchChecks
         ("SurgeonsStitcher", "8f22145d-5c41-45da-8abf-95bc5f369648", "OnEquipmentAdded", null, false, "Self", [], []),
         ("AngelsSpawnWithShiftyValor", "3d4705ec-ee6b-433b-88c8-1b4ce0ed7cc9", "OnShift", Angel, false, "Self", ["valor"], [2]),
         ("RageOnHymnistDeath", "ec46f782-87ad-4cbd-aacb-023701417283", "OnDeath", null, false, "Room", ["buff"], [7]),
+        ("ExtinguishSpreadPyregel", "9142aaa7-072e-43ca-bc5e-2c9995061174", "OnDeath", null, true, "Self", ["pyregel"], [1]),
         ("WhelpsGainExtinguishHealPyre", "e6a167d5-f57e-4a02-a0f0-b8cf9373c838", "OnDeath", Whelp, true, "Room", ["pyregel"], [5]),
         ("DragonsGainStrikeAddPyregel", "1fdf2fde-a5e7-4eae-86eb-d432145c4621", "OnAttacking", Dragon, false, "LastAttackedCharacter", ["pyregel"], [5]),
         ("WhelpStrikeAddPyregel_DH", "588825ab-8517-48db-8447-31b48e931aaa", "OnAttacking", Whelp, false, "LastAttackedCharacter", ["pyregel"], [3])
@@ -73,7 +74,11 @@ internal static class OriginalTriggerRelicBatchChecks
             births++;
         }
         Require(births > 0 && enemyAngels > 0 && admitted > 0 && excluded > 0 &&
-            installs.Values.All(count => count > 0) && rejections.Values.All(count => count > 0), "Missing original installs, rejection or count gates.");
+            installs.Values.All(count => count > 0) && Artifacts.Where(item => item.Key != "ExtinguishSpreadPyregel")
+                .All(item => rejections[item.Key] > 0),
+            "Missing original installs, applicable rejection or count gates: installs=" +
+            string.Join(",", installs.Select(item => item.Key + ":" + item.Value)) + "; rejections=" +
+            string.Join(",", rejections.Select(item => item.Key + ":" + item.Value)));
 
         int equipmentPlays = 0, enemyEquipment = 0, woundedHeals = 0, shifts = 0;
         foreach (var row in root.GetProperty("Actions").EnumerateArray())
@@ -126,11 +131,13 @@ internal static class OriginalTriggerRelicBatchChecks
         // The earlier stationary battle has the natural Angel death witness;
         // the later physical battle covers Shift and enemy equipment. Require
         // each archive's observed scope, and validate their union separately.
-        string absentWitness = deathCapture ? "AngelsSpawnWithShiftyValor" : "RageOnHymnistDeath";
+        string[] absentWitnesses = deathCapture
+            ? ["AngelsSpawnWithShiftyValor", "WhelpStrikeAddPyregel_DH"]
+            : ["RageOnHymnistDeath"];
         Require(equipmentPlays > 0 && woundedHeals > 0 && (deathCapture || enemyEquipment > 0 && shifts > 0) &&
-            witnesses.Where(item => item.Key != absentWitness).All(item => item.Value > 0),
+            witnesses.Where(item => !absentWitnesses.Contains(item.Key)).All(item => item.Value > 0),
             "Some original relics lack a positive effect beyond trigger metadata.");
-        Console.WriteLine($"NATIVE-ORIGINAL-TRIGGER-RELICS PASS: nine unchanged originals installed, eight required effect witnesses ({(deathCapture ? "stationary death" : "physical Shift")}), {births} complete births, {enemyAngels} enemy Angels, {admitted} admitted/{excluded} excluded counts, {equipmentPlays} equips/{enemyEquipment} enemy equips/{woundedHeals} wounded heals, {shifts} shifts; per-relic effect ablations and 32 immutable installation branches.");
+        Console.WriteLine($"NATIVE-ORIGINAL-TRIGGER-RELICS PASS: ten unchanged originals installed, {Artifacts.Length - absentWitnesses.Length} required effect witnesses ({(deathCapture ? "stationary death" : "physical Shift")}), {births} complete births, {enemyAngels} enemy Angels, {admitted} admitted/{excluded} excluded counts, {equipmentPlays} equips/{enemyEquipment} enemy equips/{woundedHeals} wounded heals, {shifts} shifts; per-relic effect ablations and 32 immutable installation branches.");
         return witnesses;
     }
     internal static void Combined(FixtureValue deaths, FixtureValue shifts)
@@ -139,7 +146,7 @@ internal static class OriginalTriggerRelicBatchChecks
             "Combined acceptance requires both stationary and physical native archives.");
         var a = Native(deaths, required: true)!; var b = Native(shifts, required: true)!;
         Require(Artifacts.All(item => a[item.Key] > 0 || b[item.Key] > 0), "The two native archives do not cover every original relic effect.");
-        Console.WriteLine("NATIVE-ORIGINAL-TRIGGER-RELICS-COMBINED PASS: all nine unchanged originals have actual effect witnesses across two complete native battles.");
+        Console.WriteLine("NATIVE-ORIGINAL-TRIGGER-RELICS-COMBINED PASS: all ten unchanged originals have actual effect witnesses across two complete native battles.");
     }
     private static void CheckDefinitions(IReadOnlyList<CombatRelicState> relics, Dictionary<string, CombatTrigger> definitions)
     {
@@ -155,7 +162,18 @@ internal static class OriginalTriggerRelicBatchChecks
                 trigger.IgnoreSilence && trigger.TriggerAtThreshold == 0 && trigger.Conditions == null && !trigger.RemoveOnRelentlessChange &&
                 trigger.Origin?.OnlyIfEquipped == false,
                 "Original trigger relic identity/rules changed: " + item.Key);
-            if (item.Key == "SurgeonsStitcher") Require(trigger.Effects.Single().Type == "CardEffectHeal" &&
+            if (item.Key == "ExtinguishSpreadPyregel")
+            {
+                CombatEffect effect = trigger.Effects.Single(); CardActionEffect transfer = effect.Action!;
+                Require(effect.Type == TriggeredStatusTransferModel.EffectType && effect.Action != null &&
+                    transfer.Type == "TransferAllStatusesFromUnit" && transfer.Target == item.Target && transfer.Value == 12 &&
+                    transfer.AllowEnemy && transfer.AllowPlayer && transfer.Statuses.Select(status => (status.Id, status.Stacks))
+                        .SequenceEqual(new[] { ("pyregel", 1) }) && transfer.StatusTransfer is
+                        { TargetMode: "EvenlyDistributedAcrossHeroTeam", AllowedStatusTypes: "BuffsAndDebuffs",
+                            RoomScope: "SourceRoomOnly", AllowStackModification: false, SkipRemove: false, StackPercentage: 0f },
+                    "Original Pyregel transfer trigger payload changed.");
+            }
+            else if (item.Key == "SurgeonsStitcher") Require(trigger.Effects.Single().Type == "CardEffectHeal" &&
                 trigger.Effects[0].Action?.Value == 999999 && trigger.Effects[0].Action!.Target == "Self", "Original surgeon heal changed.");
             else Require(trigger.Effects.Count == item.Statuses.Length && trigger.Effects.SelectMany(effect => effect.Action!.Statuses)
                 .Select(status => (status.Id, status.Stacks)).SequenceEqual(item.Statuses.Zip(item.Stacks)) &&
@@ -167,7 +185,7 @@ internal static class OriginalTriggerRelicBatchChecks
             else definitions.Add(item.Key, trigger);
         }
     }
-    internal static PlayCardAction? Choose(BattleTurnState source)
+    internal static PlayCardAction? Choose(BattleTurnState source, bool physical)
     {
         var plays = BattleActionModel.EnumerateSupportedPlays(source); var rooms = source.Spawn.Train.Rooms;
         var context = source.Spawn.Train.Context!;
@@ -187,7 +205,7 @@ internal static class OriginalTriggerRelicBatchChecks
             var wound = plays.FirstOrDefault(action => action.CardInstanceId == card.InstanceId && action.TargetUnitId == carrier.Id);
             if (wound != null) return wound;
         }
-        var fragile = context.SpawnPoints == null ? null : rooms.Where(room => room.Units.Any(unit => unit.Team == CombatTeam.Player && unit.Subtypes.Contains(Angel)) &&
+        var fragile = rooms.Where(room => room.Units.Any(unit => unit.Team == CombatTeam.Player && unit.Subtypes.Contains(Angel)) &&
             room.Units.Any(unit => unit.Team == CombatTeam.Enemy)).SelectMany(room => room.Units)
             .FirstOrDefault(unit => unit.Team == CombatTeam.Player && unit.Subtypes.Contains(Whelp) && unit.Health <= 12);
         if (fragile != null)
@@ -206,13 +224,16 @@ internal static class OriginalTriggerRelicBatchChecks
                         unit.Triggers.Any(trigger => trigger.Kind == "OnEquipmentAdded" && trigger.Effects.Any(effect => effect.Action?.Statuses.Any(status => status.Id == "valor") == true)))));
             if (equip != null) return equip;
         }
+        if (physical)
         foreach (var card in context.Cards.Hand.Where(card => Has(card.DataId, rule => rule.Effects.Any(effect => effect.Type == "Bump"))))
         {
             var shift = plays.FirstOrDefault(action => action.CardInstanceId == card.InstanceId && rooms.SelectMany(room => room.Units)
                 .Any(unit => unit.Id == action.TargetUnitId && unit.Team == CombatTeam.Player && unit.Subtypes.Contains(Angel)));
             if (shift != null) return shift;
         }
-        return plays.FirstOrDefault(action => !Wound(context.FindCard(action.CardInstanceId)!.DataId));
+        return plays.FirstOrDefault(action => !Wound(context.FindCard(action.CardInstanceId)!.DataId) &&
+            (physical || !Has(context.FindCard(action.CardInstanceId)!.DataId,
+                rule => rule.Effects.Any(effect => effect.Type == "Bump"))));
     }
     private static bool Matches(CombatTrigger trigger, CombatTrigger definition) => trigger.Kind == definition.Kind &&
         trigger.Origin?.UpgradeId == "" && trigger.Origin.EquipmentCardId == 0 && Serialize(trigger.Effects) == Serialize(definition.Effects);

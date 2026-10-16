@@ -1216,6 +1216,15 @@ mask, matching native behavior. Model checks cover the filtered
 isolated native battle: 11 wave decisions and eight Covenant births match, with
 no capture failures or unsupported stages. It adds no original relic owner.
 
+Triggered `CardEffectTransferAllStatusEffectsFromUnit` is supported only for the
+unchanged `ExtinguishSpreadPyregel` payload: explicit Pyregel stacks transfer to
+all eligible `Heroes` in the source room, ceil-divided per recipient, then leave
+the source. Two full native battles provide four and seven positive owner-
+ablation witnesses and pass independent policy replay; pure controls cover the
+empty target team, dead/untouchable recipients, both source teams and Pyre
+exclusion. Other target modes, tower-wide scope and transfer status settings
+remain unsupported.
+
 `full-battle-spawn-status-relics-clones-ungated-capture.mt2f` confirms ordinary
 native capture includes the `PyreHeartSon` `RelicEffectAddTempUpgrade` definition
 while the specialized relic-modifier probe is disabled. Its cardless upgrade

@@ -65,6 +65,24 @@ internal static class RelicCharacterTriggerChecks
         var preview = new RoomCombatState(0, false, root.Units, [], root.Context, preview: true);
         Require(Serialize(Add(preview).State) == Serialize(preview), "Preview installed live relic triggers.");
         Require(!Add(State(actor, relic, null)).Supported, "Missing count metadata was guessed.");
+
+        var allTeams = new RelicCharacterTriggers(0, true, true, [Gold("OnDeath", 1)], true);
+        var bothTeamsRelic = new CombatRelicState("both-teams", "ExtinguishSpreadPyregel", [RelicModel.AddTrigger],
+            isCovenant: false, disallowedInPlacementPhase: false, triggerAdditions: [allTeams]);
+        var bothTeamsCache = new TriggerCountState([new("OnDeath", 1)], [], [], []);
+        foreach (var candidate in new[]
+        {
+            new CombatUnit(1, "monster", CombatTeam.Player, 0, 20, 20, false, false, false, [], nextTriggerId: 0),
+            new CombatUnit(1, "hero", CombatTeam.Enemy, 0, 20, 20, false, false, false, [], nextTriggerId: 0)
+        })
+        {
+            var installed = RelicSpawnStatusModel.CharacterAdded(State(candidate, bothTeamsRelic, bothTeamsCache), 1, 0, false);
+            Require(installed.Supported && installed.State!.Units[0].Triggers.Single().Kind == "OnDeath",
+                "The native team-union gate omitted an eligible hero or monster.");
+        }
+        var pyre = new CombatUnit(1, "pyre", CombatTeam.Player, 0, 20, 20, false, true, true, [], nextTriggerId: 0);
+        var pyreRoot = State(pyre, bothTeamsRelic, bothTeamsCache);
+        Require(Serialize(Add(pyreRoot).State) == Serialize(pyreRoot), "The no-subtype relic installed its trigger on the Pyre.");
         Parallel.For(0, 32, _ => Require(Serialize(Add(root).State) == Serialize(applied.State), "Parallel relic branches differ."));
         Require(Serialize(root) == parent, "Relic installation mutated the source branch.");
         Console.WriteLine("RELIC-CHARACTER-TRIGGER-CHECKS PASS: ordered fresh installs, count gates, team/subtype/definition/covenant/preview filters and 32 immutable branches.");

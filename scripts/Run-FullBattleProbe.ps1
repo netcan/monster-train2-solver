@@ -223,6 +223,7 @@ param(
     [switch] $OriginalUnitRelicBatch,
     [switch] $OriginalEndlessReturn,
     [switch] $OriginalTriggerRelicBatch,
+    [switch] $OriginalTriggerRelicBatchStationary,
     [switch] $CovenantCharacterFilter,
     [switch] $TitanSkinCombat,
     [switch] $AllUnitsMultistrikeMutator,
@@ -396,8 +397,11 @@ if ($OriginalRelicCountAttack) { $BranchCardMasks = $true; $Policy = 'units-spel
 if ($OriginalMoreSpikes) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalStealthSlay) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalUnitUpgradeTriggerRelic) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
-if ($OriginalTriggerRelicBatch -or $OriginalLifecycleRelicBatch) {
-    $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $SettleDeathDissolves = $true; $SettleCardAnimations = $true
+if ($OriginalTriggerRelicBatch -or $OriginalTriggerRelicBatchStationary -or $OriginalLifecycleRelicBatch) {
+    $BranchCardMasks = $true
+    if (-not $OriginalTriggerRelicBatchStationary) {
+        $PhysicalSpawnPoints = $true; $SettleDeathDissolves = $true; $SettleCardAnimations = $true
+    }
     $Policy = 'units-spells-and-junk'
 }
 if ($ConditionalBattleRelicUpgrades) { $BattleRelicUpgrades = $true }
@@ -750,7 +754,10 @@ if ($AllUnitsMultistrikeMutator) { $environment['MT2_PROBE_MODIFIERS'] = 'all-un
 if ($OriginalStingRelicBatch) { $environment['MT2_PROBE_MODIFIERS'] = 'original-sting-relics' }
 if ($OriginalUnitRelicBatch) { $environment['MT2_PROBE_MODIFIERS'] = 'original-unit-relic-batch' }
 if ($OriginalEndlessReturn) { $environment['MT2_PROBE_MODIFIERS'] = 'original-endless-return' }
-if ($OriginalTriggerRelicBatch) { $environment['MT2_PROBE_MODIFIERS'] = 'original-trigger-relic-batch' }
+if ($OriginalTriggerRelicBatch -or $OriginalTriggerRelicBatchStationary) {
+    $environment['MT2_PROBE_MODIFIERS'] = 'original-trigger-relic-batch'
+    $environment['MT2_PROBE_ORIGINAL_TRIGGER_RELIC_BATCH_STATIONARY'] = $(if ($OriginalTriggerRelicBatchStationary) { '1' } else { '0' })
+}
 if ($CovenantCharacterFilter) { $environment['MT2_PROBE_MODIFIERS'] = 'covenant-character-filter' }
 if ($TitanSkinCombat) { $environment['MT2_PROBE_MODIFIERS'] = 'titan-skin-combat' }
 if ($OriginalStatusRelicBatch) { $environment['MT2_PROBE_MODIFIERS'] = 'original-status-relic-batch' }

@@ -824,6 +824,7 @@ if (args.Length == 1 && args[0] == "--relic-triggers-pure")
 {
     RelicCharacterTriggerChecks.Run();
     RelicSpawnStatusChecks.Run();
+    TriggeredStatusTransferChecks.Run();
     RelicCardlessUpgradeChecks.Run();
     return;
 }
@@ -1207,6 +1208,7 @@ TriggerCountChecks.Run();
 RelicCardlessUpgradeChecks.Run();
 RelicSpawnStatusChecks.Run();
 RelicCharacterTriggerChecks.Run();
+TriggeredStatusTransferChecks.Run();
 RelicUnitUpgradeTriggerChecks.Run();
 CovenantCharacterFilterChecks.Run();
 RelicCardModifierChecks.Run();

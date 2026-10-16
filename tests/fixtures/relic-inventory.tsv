@@ -1,5 +1,5 @@
 "AssetKey"	"DataId"	"Evidence"	"Effects"	"MissingNativeSource"
-"ExtinguishSpreadPyregel"	"9142aaa7-072e-43ca-bc5e-2c9995061174"	"pending"	"RelicEffectAddTrigger"	""
+"ExtinguishSpreadPyregel"	"9142aaa7-072e-43ca-bc5e-2c9995061174"	"accepted-native-battle"	"RelicEffectAddTrigger"	""
 "ExtraSpellWeakness"	"b1d918d8-1fa6-4e6d-b523-5f7f339e5af8"	"accepted-native-battle"	"RelicEffectAddStatusEffectOnStatusApplied"	""
 "FirstRoomCardOnAllFloors"	"e55235f7-1d84-43f0-b8f5-037b64b8f582"	"pending"	"RelicEffectFirstRoomCardIsPlayedOnAllFloors"	""
 "TrainRoomInstallFloor1AtStartOfCombat"	"2c97e1b3-d4bb-4133-9572-e582805c106f"	"pending"	"RelicEffectAddTrainRoomAttachmentOnStartOfCombat"	""

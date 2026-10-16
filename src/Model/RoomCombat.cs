@@ -1033,6 +1033,12 @@ namespace MonsterTrain2Poju.Model
                                 return "Missing or mismatched triggered moon-phase definition.";
                             continue;
                         }
+                        if (effect.Type == TriggeredStatusTransferModel.EffectType)
+                        {
+                            string? transferError = TriggeredStatusTransferModel.Validate(effect.Action);
+                            if (transferError != null) return transferError;
+                            continue;
+                        }
                         if (effect.Type == "CardEffectNULL")
                         {
                             CardActionEffect? action = effect.Action;
@@ -3262,6 +3268,7 @@ namespace MonsterTrain2Poju.Model
 
             private bool ActionTestValid(CardActionEffect action, CardTargets targets, int amount = 0) =>
                 action.Type == "Null" ? targets.UnitIds.Count > 0 || action.NullTargetless :
+                action.Type == "TransferAllStatusesFromUnit" ? targets.UnitIds.Count > 0 && TriggeredStatusTransferModel.Validate(action) == null :
                 action.Type == "RemoveStatus" ? StatusRemovalModel.Test(CurrentRoom(), action, targets.UnitIds) :
                 AbilityCooldownModel.IsEffect(action.Type) || AbilityLifecycleModel.IsEffect(action.Type) ? true :
                 action.Type == "AdjustCapacity" ? !source.Preview && !battleWon && context!.AllScenarioBossesDead != true &&
@@ -3343,6 +3350,22 @@ namespace MonsterTrain2Poju.Model
                 CardTargets targets = TriggerTargets(actor, action, testing: false, overrideTarget, lastSpawnedOverrideUnitId);
                 if (!targets.Supported) { unsupportedReason = targets.UnsupportedReason; return false; }
                 if (targets.BattleRng.HasValue) context = context!.WithBattleRng(targets.BattleRng.Value);
+                if (action.Type == "TransferAllStatusesFromUnit")
+                {
+                    if (!targets.UnitIds.Contains(actor.Source.Id)) return true;
+                    RoomCombatResult transfer = TriggeredStatusTransferModel.Apply(RetainedStatusRoom(actor, targets.UnitIds),
+                        actor.Source.Id, action, actor.Source.SpawnerCardId);
+                    if (!transfer.Supported) { unsupportedReason = transfer.UnsupportedReason; return false; }
+                    context = transfer.State!.Context;
+                    foreach (CombatUnit changed in transfer.State.Units)
+                    {
+                        WorkingUnit? current = units.FirstOrDefault(unit => unit.Source.Id == changed.Id);
+                        if (current != null) current.Apply(changed);
+                    }
+                    foreach (QueuedCharacterTrigger callback in transfer.PendingCallbacks) QueueCallback(callback);
+                    foreach (CombatEvent item in transfer.Events) events.Add(new CombatEvent(round, item.Kind, item.Actor, item.Target, item.Amount));
+                    return true;
+                }
                 if (action.Type == "Null") return true;
                 if (AbilityCooldownModel.IsEffect(action.Type) || action.Type == "RemoveStatus" || AbilityLifecycleModel.IsEffect(action.Type))
                 {

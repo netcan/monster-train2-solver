@@ -450,7 +450,7 @@ namespace MonsterTrain2Poju.Model
                 removeHalfStatusEffects: effect.RemoveHalfStatusEffects, overheal: effect.Overheal,
                 corruptionAdd: effect.CorruptionAdd, nullTargetless: effect.NullTargetless,
                 nullForwardSelf: effect.NullForwardSelf, chooseDiscard: effect.ChooseDiscard,
-                transferAttackMultiplier: effect.TransferAttackMultiplier);
+                transferAttackMultiplier: effect.TransferAttackMultiplier, statusTransfer: effect.StatusTransfer);
 
             int ResolveValue(CardActionEffect effect, int value) => effect.Type == "Damage" || effect.Type == "Heal" || effect.Type == "HealOverheal"
                 ? UpgradedStat(UpgradedStat(value, effect.Type == "HealOverheal" ? "Heal" : effect.Type, true, instance.Permanent),
