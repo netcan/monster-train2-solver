@@ -4067,6 +4067,32 @@ dotnet run --project src/ModelChecks -c Release -- --original-card-play-magic-po
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-card-play-magic-power.mt2f
 ```
 
+### Native original card-play room-capacity relic
+
+The schema-165 `full-battle-original-carriage-jack.mt2f` captures unchanged
+`CarriageJack` (ID `19e15240-37ca-460d-8230-693626fc7f7e`, +1 capacity,
+`TrainRoomAttachment` only, no conditions). A native `IncreaseRoomCapacity`
+attachment adds +4 and CarriageJack adds +1 on the selected player floor; the
+ordinary-card negative control leaves capacity unchanged. All six card actions
+match, including the four later policy plays; the winning battle has 62 captured
+stages, seven EndTurns and zero capture failures, mismatches, unsupported
+transitions or pending records. Independent policy replay matches all four
+policy plays, seven EndTurns and 16 parallel branches.
+
+The scenario keeps the attachment floor empty and routes later unit deployments
+away from it. Native propagation of that attached room modifier to units is a
+separate behavior and is not included in this relic-owner claim. The binary is
+34,617 bytes with 4,122 unique nodes and SHA-256
+`e9cd3c1375855dd15157c74c5fb50e8339a3f1e09c48c1482c668b12280bc813`; no JSON
+companion is tracked. Accepted original relic evidence is now 139/224 (62.05%),
+and the inventory has 361 archives: 323 battles and 38 component calibrations.
+
+```powershell
+dotnet run --project src/ModelChecks -c Release -- --relic-card-play-magic-power-pure
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-carriage-jack.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-carriage-jack-only tests/fixtures/full-battle-original-carriage-jack.mt2f
+```
+
 ### Selected-room and current-cost statistic queries
 
 The statistic query calibration stores 18,000 observations across six native

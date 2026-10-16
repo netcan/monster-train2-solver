@@ -1,7 +1,7 @@
 # Original relic coverage evidence
 
-As of 2026-10-16, **138 distinct original collectable relics / 224 catalog entries
-(61.61%)** have accepted native evidence: 122 have full-battle effect evidence,
+As of 2026-10-16, **139 distinct original collectable relics / 224 catalog entries
+(62.05%)** have accepted native evidence: 123 have full-battle effect evidence,
 fifteen have campaign consumer interfaces validated, and one is an explicit
 native no-op with seeded baseline equivalence. Except for that no-op, this counts
 unchanged relic definitions whose effects actually ran, including original filters and
@@ -22,8 +22,12 @@ The battle archives cited below report game `2.2.1`, module MVID
 `8fb07b96-f4db-4d2b-884d-c00536d6ccf4`, `NativeWon=true`, and zero
 `CaptureFailures`, `Mismatches`, `Unsupported` and `Pending`. Archive provenance,
 byte lengths and SHA-256 hashes are recorded in [manifest.tsv](manifest.tsv).
-The accepted inventory is 360 archives: 322 battles and 38 component
-calibrations, with no JSON companions. The newest calibration bundles two
+The latest battle validates unchanged CarriageJack through one non-attachment
+control and one original TrainRoomAttachment play: the attachment's +4 and
+CarriageJack's +1 apply only to the selected player floor. The attached room's
+separate unit-upgrade propagation is not covered. The accepted inventory is 361
+archives: 323 battles and 38 component calibrations, with no JSON companions.
+A recent calibration bundles two
 complete winning native battles for StarterWurmRelic: identical 21-play/seven-
 EndTurn policies and all decision state except ownership, with independent root,
 mid-battle and parallel replay. Actual acquisition/removal/reacquisition leaves
@@ -34,7 +38,7 @@ random permanent deck-copy owner through 72 native end-battle manager calls.
 Sixteen fresh copies preserve permanent modifiers and flags, discard temporary
 upgrades, and match exact Rewards RNG. Empty/champion-only/removed controls and
 four affected archives pass. Animation and pending-animation bookkeeping are
-suppressed after the actual deck mutation. The newest battle proves two original
+suppressed after the actual deck mutation. An earlier battle proves two original
 death/moon upgrade owners: one spawner-retained death upgrade, five moon additions
 and four removals across all four callbacks. 3025 native Test filters include
 enemy/subtype controls; five positive owner ablations and complete independent
@@ -42,7 +46,7 @@ policy replay pass. Six affected archives pass, including prior moon callbacks.
 The previous battle proves original
 full-health and first-combat draw owners through 13 actual mutating Test
 callbacks and one positive natural post-opening draw. Complete independent
-25-play/five-EndTurn replay and five affected archives pass. The newest
+25-play/five-EndTurn replay and five affected archives pass. An earlier
 component proves Canio through 144 actual purge-manager calls, including 24
 positive rewards, six card types and combat/removed controls. Four affected
 archives pass. This is callback evidence, excluding removal/payment UI.
@@ -59,7 +63,7 @@ The previous battle proves all four
 after-draw card-generation owners through 16 actual native Test/Apply callbacks,
 including one full hand and four temporary Ephemeral upgrades. All candidate
 definitions are captured before selection, with exact Battle RNG and complete
-independent policy replay. The newest component proves 756 actual end-battle
+independent policy replay. An earlier component proves 756 actual end-battle
 resource manager calls, including controlled Pyre damage, reset and capacity
 boundaries. Four affected archives pass regression. The previous component proves 108 actual post-battle
 reward-list calls, preserving original reward references, prefixes, duplicates
@@ -67,7 +71,7 @@ and owner order with unchanged RNG. Four affected archives pass regression.
 The previous component proves actual draft
 candidate selection and exact Rewards RNG over 840 GrantReward calls, plus
 three Pyre max-health acquisition/removal transitions. Five affected archives
-pass general/focused regression. The newest battle proves three original
+pass general/focused regression. An earlier battle proves three original
 equipment growth owners through slay/death buffs, front-position Deathwish
 entry/loss and nine actual PreCombat Valor applications. Fourteen exact births
 include both-team and friendly-only controls and five exclusive trigger queues.
@@ -228,6 +232,7 @@ owner count.
 | `ProgressPacemaker` | `4446fd0c-f7c3-4a9d-96c3-bd12e4426a76` | [original Progress Mix][progressMix] | Its unchanged once-per-turn condition adds one follow-up Mix with two candidates. Both original Mixology casts yield three ordered drafts; the condition triggers after each play and resets before the next turn. Six native draft screens and full action/search replays match. |
 | `CheaperBlightScourge` | `a19cac7c-b2e0-42bd-bc1e-d180e17a1c15` | [original card-type cost][cardTypeCost] | Its unchanged ordered Blight/Junk -99 effects match ten native modifier calls, including repeated application, reset, a nonmatching card and enemy-generated Junk. Original Blight and Junk play for zero Ember and self-purge; full battle and search replay match. |
 | `ConserveEmber` | `3e200d1f-7ba9-4a6e-a09d-5625f25b01ac` | [original Ember conservation][conserveEmber] | Its unchanged all-energy effect conserves positive balances on all seven EndTurns. Initial banking produces 4 → 7 → 10 Ember, followed by 21 paid plays and a winning terminal balance of 1 Ember with Pyre health 58. Seven exact native queries, complete policy replay and bounded serial/parallel search match. |
+| `CarriageJack` | `19e15240-37ca-460d-8230-693626fc7f7e` | [card-play room capacity][carriageJack] | Its unchanged +1 effect matches only `TrainRoomAttachment` plays and adjusts the selected player floor after the native attachment's +4. A non-attachment control leaves capacity unchanged. Unit-upgrade propagation from the attached room modifier is outside this fixture. |
 
 ## Campaign interface evidence
 
@@ -564,6 +569,7 @@ dotnet run --project src/ModelChecks -c Release -- --original-card-attack-only t
 [moonPhase]: full-battle-original-moon-phase-energy-relic.mt2f
 [cardAttack]: full-battle-original-card-attack-relic.mt2f
 [cardDraw]: full-battle-original-card-draw-on-card-play.mt2f
+[carriageJack]: full-battle-original-carriage-jack.mt2f
 [unitUpgradeTrigger]: full-battle-original-unit-upgrade-trigger-relic.mt2f
 [extraToughTombs]: full-battle-relic-extra-tough-tombs.mt2f
 [stealthWaxers]: full-battle-original-stealth-waxers.mt2f
