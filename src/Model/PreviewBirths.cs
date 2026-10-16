@@ -27,7 +27,7 @@ namespace MonsterTrain2Poju.Model
                 metadata.RawSize, metadata.EquipmentLimit, metadata.CanBeHealed, false,
                 Array.Empty<CardUpgradeModifier>(), Array.Empty<StatisticCount>(), metadata.SpawnerMatchesDefinition,
                 metadata.DamageBuffFromStatusEffects.HasValue ? 0 : (int?)null,
-                metadata.MagebladeDamagePerMagicPower.HasValue ? 0 : (int?)null);
+                metadata.MagebladeDamagePerMagicPower.HasValue ? 0 : (int?)null, metadata.StatusAttackModifiers);
             var death = raw.DeathState == null ? new UnitDeathState(false, false, false) : new UnitDeathState(false, false, false,
                 isSacrifice: raw.DeathState.IsSacrifice.HasValue ? false : (bool?)null,
                 statisticsListenerOnce: raw.DeathState.StatisticsListenerOnce.HasValue ? false : (bool?)null,

@@ -105,7 +105,7 @@ namespace MonsterTrain2Poju.Model
                 UnitModifiers old = template.Modifiers!;
                 var cloned = new UnitModifiers(old.AttackDamage, old.AttackDamageAdded, old.DamageBuff, old.RawSize, old.EquipmentLimit,
                     old.CanBeHealed, true, old.Upgrades, old.HealthFromUpgrades, old.SpawnerMatchesDefinition,
-                    old.DamageBuffFromStatusEffects, old.MagebladeDamagePerMagicPower);
+                    old.DamageBuffFromStatusEffects, old.MagebladeDamagePerMagicPower, old.StatusAttackModifiers);
                 template = UnitCloneModel.Copy(template, cloned, template.BaseAttack, template.Health, template.MaxHealth);
             }
             template = StatusAttackDamageModel.PrepareBirthTemplate(template, starting);

@@ -316,6 +316,8 @@ internal static class RoomCombatChecks
             OriginalFloorCapacityRelicChecks.Native(fixture, required: true);
         else if (fixture.TryGetProperty("ModifierScenario", out relicScenario) && relicScenario.GetString() == "original-endless-return")
             EndlessReturnChecks.Native(fixture);
+        else if (fixture.TryGetProperty("ModifierScenario", out relicScenario) && relicScenario.GetString() == "original-more-spikes")
+            OriginalMoreSpikesChecks.Native(fixture);
         else if (fixture.TryGetProperty("ModifierScenario", out relicScenario) && relicScenario.GetString() == "original-relic-count-attack")
             OriginalRelicCountAttackChecks.Native(fixture);
         else if (fixture.TryGetProperty("ModifierScenario", out relicScenario) && relicScenario.GetString() == "original-card-attack-relic")

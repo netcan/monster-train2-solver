@@ -261,6 +261,7 @@ param(
     [switch] $OriginalNullRelic,
     [switch] $OriginalNullRelicBaseline,
     [switch] $OriginalRelicCountAttack,
+    [switch] $OriginalMoreSpikes,
     [switch] $OriginalUnitUpgradeTriggerRelic,
     [switch] $TypedDraw,
     [switch] $IncantRelic,
@@ -387,6 +388,7 @@ if ($OriginalTurnDrawRelics) { $BranchCardMasks = $true; $Policy = 'units-spells
 if ($OriginalUnitPhaseUpgradeRelics) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalNullRelic -or $OriginalNullRelicBaseline) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalRelicCountAttack) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
+if ($OriginalMoreSpikes) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalUnitUpgradeTriggerRelic) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalTriggerRelicBatch -or $OriginalLifecycleRelicBatch) {
     $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $SettleDeathDissolves = $true; $SettleCardAnimations = $true
@@ -780,6 +782,7 @@ if ($OriginalUnitPhaseUpgradeRelics) { $environment['MT2_PROBE_MODIFIERS'] = 'or
 if ($OriginalNullRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-null-relic' }
 if ($OriginalNullRelicBaseline) { $environment['MT2_PROBE_MODIFIERS'] = 'original-null-relic-baseline' }
 if ($OriginalRelicCountAttack) { $environment['MT2_PROBE_MODIFIERS'] = 'original-relic-count-attack' }
+if ($OriginalMoreSpikes) { $environment['MT2_PROBE_MODIFIERS'] = 'original-more-spikes' }
 if ($OriginalUnitUpgradeTriggerRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-unit-upgrade-trigger-relic' }
 if ($TypedDraw) {
     $environment['MT2_PROBE_MODIFIERS'] = 'typed-draw'

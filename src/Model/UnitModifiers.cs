@@ -11,6 +11,7 @@ namespace MonsterTrain2Poju.Model
         public int DamageBuff { get; }
         public int? DamageBuffFromStatusEffects { get; }
         public int? MagebladeDamagePerMagicPower { get; }
+        public IReadOnlyList<RelicStatusAttackModifier>? StatusAttackModifiers { get; }
         public int RawSize { get; }
         public int EquipmentLimit { get; }
         public bool CanBeHealed { get; }
@@ -21,7 +22,7 @@ namespace MonsterTrain2Poju.Model
         public UnitModifiers(int attackDamage, int attackDamageAdded, int damageBuff, int rawSize, int equipmentLimit,
             bool canBeHealed, bool isClone, IReadOnlyList<CardUpgradeModifier> upgrades, IReadOnlyList<StatisticCount>? healthFromUpgrades = null,
             bool spawnerMatchesDefinition = true, int? damageBuffFromStatusEffects = null,
-            int? magebladeDamagePerMagicPower = null)
+            int? magebladeDamagePerMagicPower = null, IReadOnlyList<RelicStatusAttackModifier>? statusAttackModifiers = null)
         {
             AttackDamage = attackDamage; AttackDamageAdded = attackDamageAdded; DamageBuff = damageBuff; RawSize = rawSize;
             EquipmentLimit = equipmentLimit; CanBeHealed = canBeHealed; IsClone = isClone; Upgrades = Array.AsReadOnly(upgrades.ToArray());
@@ -29,17 +30,18 @@ namespace MonsterTrain2Poju.Model
             SpawnerMatchesDefinition = spawnerMatchesDefinition;
             DamageBuffFromStatusEffects = damageBuffFromStatusEffects;
             MagebladeDamagePerMagicPower = magebladeDamagePerMagicPower;
+            StatusAttackModifiers = statusAttackModifiers == null ? null : Array.AsReadOnly(statusAttackModifiers.ToArray());
         }
         internal UnitModifiers WithStatusDamage(int amount) => new UnitModifiers(AttackDamage, AttackDamageAdded, DamageBuff,
             RawSize, EquipmentLimit, CanBeHealed, IsClone, Upgrades, HealthFromUpgrades, SpawnerMatchesDefinition, amount,
-            MagebladeDamagePerMagicPower);
+            MagebladeDamagePerMagicPower, StatusAttackModifiers);
         internal UnitModifiers WithMagebladeDamage(int amount) => new UnitModifiers(AttackDamage, AttackDamageAdded, DamageBuff,
             RawSize, EquipmentLimit, CanBeHealed, IsClone, Upgrades, HealthFromUpgrades, SpawnerMatchesDefinition,
-            DamageBuffFromStatusEffects, amount);
+            DamageBuffFromStatusEffects, amount, StatusAttackModifiers);
         internal UnitModifiers ResetStartingStatusCaches() => new UnitModifiers(AttackDamage, AttackDamageAdded, DamageBuff,
             RawSize, EquipmentLimit, CanBeHealed, IsClone, Upgrades, HealthFromUpgrades, SpawnerMatchesDefinition,
             DamageBuffFromStatusEffects.HasValue ? 0 : (int?)null,
-            MagebladeDamagePerMagicPower.HasValue ? 0 : (int?)null);
+            MagebladeDamagePerMagicPower.HasValue ? 0 : (int?)null, StatusAttackModifiers);
     }
 
     public static class UnitModifierModel
@@ -159,7 +161,7 @@ namespace MonsterTrain2Poju.Model
                 var statuses = target.Statuses.ToDictionary(status => status.Id);
                 var nextModifiers = new UnitModifiers(damage, added, buff, size, equipment, modifiers.CanBeHealed, modifiers.IsClone, upgrades,
                     healthFromUpgrades, modifiers.SpawnerMatchesDefinition, modifiers.DamageBuffFromStatusEffects,
-                    modifiers.MagebladeDamagePerMagicPower);
+                    modifiers.MagebladeDamagePerMagicPower, modifiers.StatusAttackModifiers);
                 var statusCallbacks = new List<RoomCombatModel.QueuedCharacterTrigger>();
                 RoomCombatResult? healthFailure = null;
                 ChangeHealth(sign * upgrade.Stats.Health, !(remove && upgrade.Stats.Health > 0), !remove || upgrade.Stats.Health < 0);
@@ -207,7 +209,7 @@ namespace MonsterTrain2Poju.Model
                 }
                 nextModifiers = new UnitModifiers(damage, added, buff, size, equipment, modifiers.CanBeHealed, modifiers.IsClone, upgrades,
                     healthFromUpgrades, modifiers.SpawnerMatchesDefinition, nextModifiers.DamageBuffFromStatusEffects,
-                    modifiers.MagebladeDamagePerMagicPower);
+                    modifiers.MagebladeDamagePerMagicPower, modifiers.StatusAttackModifiers);
                 CombatUnit Snapshot() => new CombatUnit(target.Id, target.AssetKey, target.Team, Math.Max(0, checked(damage + buff)), health, maxHealth,
                     target.CanAttack, target.IsPyre, target.EndsBattleOnDeath, statuses.Values.ToArray(), triggers, target.SpawnerCardId,
                     Math.Max(1, Math.Min(6, size)), target.StatusImmunities, target.Subtypes, nextModifiers, target.IsBoss, target.LastAttackerId, target.StatusRegistry, target.EquipmentCards, nextTriggerId, target.Ability, target.StatusDictionary, target.AbilityRules, target.HordeDefinition, target.IsSpawning, target.SacrificeCardId, target.DeathState, bumpRules: target.BumpRules);

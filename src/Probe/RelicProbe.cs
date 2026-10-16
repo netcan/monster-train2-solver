@@ -13,7 +13,16 @@ namespace MonsterTrain2Poju.Probe
             Current(managers).Any(relic => relic.GetEffects().Any(effect => effect is RelicEffectModifyTriggerCount || effect is RelicEffectAddTrigger));
         internal static bool HasStatusAttackHistory(AllGameManagers managers) =>
             PyreResourceRefreshScenario.Enabled || Current(managers).Any(relic => relic.GetEffects().Any(effect => effect is RelicEffectModifyStatusMagnitude ||
+                effect is RelicEffectAdjustAttackByStatusEffect ||
                 effect is RelicEffectPreventStatusEffectDecay decay && decay.GetStatusEffects().Any(status => status.statusId == "buff")));
+        internal static RelicStatusAttackModifier[] StatusAttackModifiers(AllGameManagers managers) =>
+            Current(managers).SelectMany(owner => owner.GetEffects().Select((effect, index) => (owner, effect, index)))
+                .Where(item => item.effect is RelicEffectAdjustAttackByStatusEffect)
+                .Select(item => {
+                    object Field(string name) => AccessTools.Field(item.effect.GetType(), name).GetValue(item.effect);
+                    return new RelicStatusAttackModifier(item.index, (string)Field("statusId"),
+                        ((Team.Type)Field("team")).ToString(), (int)Field("multiplier"));
+                }).ToArray();
         private static List<RelicState> Current(AllGameManagers managers)
         {
             var relics = new List<RelicState>();
@@ -125,7 +134,8 @@ namespace MonsterTrain2Poju.Probe
                     cardAttackModifiers.Length > 0 ? cardAttackModifiers : null,
                     cardDrawOnCardPlay.Length > 0 ? cardDrawOnCardPlay : null,
                     corruptionStatuses.Length > 0 ? corruptionStatuses : null,
-                    cardTypeCosts.Length > 0 ? cardTypeCosts : null);
+                    cardTypeCosts.Length > 0 ? cardTypeCosts : null,
+                    effects.Any(effect => effect is RelicEffectAdjustAttackByStatusEffect) ? StatusAttackModifiers(managers) : null);
             }).ToArray();
         }
 

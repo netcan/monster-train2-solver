@@ -48,7 +48,18 @@ internal static class RelicCardAttackChecks
             birth.State.Units.Single().Modifiers!.DamageBuff == 8,
             "Cardless Whelp birth did not receive the native subtype-matched attack bonus: " + birth.UnsupportedReason);
 
-        Console.WriteLine("RELIC-CARD-ATTACK-CHECKS PASS: ordered subtype dispatch, reset, nonmatch, multiplier rejection and cardless birth.");
+        var spikeRule = new RelicStatusAttackModifier(0, "spikes", "Monsters", 2);
+        var spikeModifiers = new UnitModifiers(7, 0, 0, 1, 1, true, false, [], statusAttackModifiers: [spikeRule]);
+        var spiked = new CombatUnit(21, "spiked", CombatTeam.Player, 7, 20, 20, true, false, false,
+            [new CombatStatus("spikes", 3)], modifiers: spikeModifiers);
+        var enemySpiked = new CombatUnit(22, "enemy-spiked", CombatTeam.Enemy, 7, 20, 20, true, false, false,
+            [new CombatStatus("spikes", 3)], modifiers: spikeModifiers);
+        var noSpikes = new CombatUnit(23, "plain", CombatTeam.Player, 7, 20, 20, true, false, false,
+            [], modifiers: spikeModifiers);
+        Require(spiked.Attack == 13 && enemySpiked.Attack == 7 && noSpikes.Attack == 7,
+            "Dynamic native IAddAttack status scaling did not remain separate and team-filtered.");
+
+        Console.WriteLine("RELIC-CARD-ATTACK-CHECKS PASS: ordered subtype dispatch, reset, nonmatch, multiplier rejection, cardless birth and separate team-filtered dynamic relic attack.");
     }
 
     internal static void Native(FixtureValue root)

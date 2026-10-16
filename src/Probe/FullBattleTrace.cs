@@ -620,6 +620,8 @@ namespace MonsterTrain2Poju.Probe
                 RelicPhaseUpgradeTests = RelicPhaseUpgradeProbe.Tests,
                 OriginalNullRelic = OriginalNullRelicScenario.Evidence,
                 RelicCountAttackControls = OriginalRelicCountAttackScenario.Controls,
+                RelicStatusAttackSchema = OriginalMoreSpikesScenario.Acquired ? 1 : 0,
+                OriginalMoreSpikes = OriginalMoreSpikesScenario.Acquired ? new { OwnerId = OriginalMoreSpikesScenario.Id, Multiplier = 1, Status = "spikes", Team = "Monsters" } : null,
                 EnergyConservationQueries = OriginalConserveEmberScenario.EnergyRemovals,
                 ForgeCombatEndOperations = OriginalForgeConservationScenario.Records,
                 OpeningCorruptionOperations = OriginalOpeningCorruptionScenario.Records,

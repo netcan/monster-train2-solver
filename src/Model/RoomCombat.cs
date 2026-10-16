@@ -117,7 +117,8 @@ namespace MonsterTrain2Poju.Model
         internal int AttackBeforeStatuses => Modifiers == null ? BaseAttack : unchecked(Modifiers.AttackDamage + Modifiers.DamageBuff);
         internal int AttackFromStatuses => Modifiers?.DamageBuffFromStatusEffects ??
             unchecked(StatusAmount("buff") + StatusAmount("valor") - StatusAmount("debuff"));
-        public int Attack => Math.Max(0, unchecked(AttackBeforeStatuses + AttackFromStatuses));
+        public int Attack => Math.Max(0, unchecked(AttackBeforeStatuses + AttackFromStatuses +
+            RelicStatusAttackModel.AdditionalAttack(Modifiers?.StatusAttackModifiers, Team, Statuses)));
         public int Health { get; }
         public int MaxHealth { get; }
         public bool CanAttack { get; }
@@ -1147,6 +1148,7 @@ namespace MonsterTrain2Poju.Model
                     }
                     return Math.Max(0, unchecked(Source.AttackBeforeStatuses +
                         (Source.Modifiers?.DamageBuffFromStatusEffects ?? unchecked(Amount("buff") + Amount("valor") - Amount("debuff"))) +
+                        RelicStatusAttackModel.AdditionalAttack(Source.Modifiers?.StatusAttackModifiers, Source.Team, Statuses.Values.ToArray()) +
                         mageblade + (Source.IsPyre ? getContext?.Invoke()?.Resources?.PyreModifiedBaseAttack ?? 0 : 0)));
                 }
             }
