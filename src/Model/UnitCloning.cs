@@ -293,14 +293,48 @@ namespace MonsterTrain2Poju.Model
             RoomOutcome outcome = input.Outcome; string? error = null;
             bool okay = RoomCombatModel.DrainCharacterQueue(queue, callback =>
                 {
-                    if (!callback.IsDeathRoomFocus) dispatched.Add(UnitCloneCallback.From(callback));
+                    if (!callback.IsDeathRoomFocus && !HarvestModel.Stage(callback.Kind, out _, out _))
+                        dispatched.Add(UnitCloneCallback.From(callback));
                     if (!callback.IsDeathRoomFocus && input.UnitId == 0 && state.Context?.QueryFrame?.SelectedRoomIndex != null)
                         state = CardSpellModel.WithContext(state, state.Context.WithQueryFrame(
                             state.Context.QueryFrame.With(selectedRoomIndex: callback.RoomIndex)));
                     return Accept(RoomCombatModel.ApplyQueuedCharacterTrigger(
                         state.Rooms.Single(room => room.RoomIndex == callback.RoomIndex), callback, queue.Add));
                 },
-                callback => Accept(RoomCombatModel.SettleQueuedSpawnerAndCenter(state.Rooms.Single(room => room.RoomIndex == callback.RoomIndex), callback.Unit)),
+                callback =>
+                {
+                    RoomCombatResult settled;
+                    if (callback.RelicDamageRemoval && callback.CompletePhysicalRemovalAfterQueue && state.Context?.SpawnPoints != null)
+                    {
+                        UnitSpawnPointState? point = state.Context.SpawnPoints.Units.FirstOrDefault(item => item.UnitId == callback.Unit.Id);
+                        SpawnPointGroupState? group = point?.Current == null ? null :
+                            state.Context.SpawnPoints.SelectedGroup(callback.RoomIndex, callback.Unit.Team);
+                        bool vacancyBefore = point?.Current != null && point.Current.Index > 0 &&
+                            group?.Occupants.Take(point.Current.Index).Any(id => id == 0) == true;
+                        if (vacancyBefore)
+                        {
+                            RoomCombatState currentRoom = state.Rooms.Single(item => item.RoomIndex == callback.RoomIndex);
+                            if (!currentRoom.Units.Any(item => item.Id == callback.Unit.Id))
+                                currentRoom = new RoomCombatState(currentRoom.RoomIndex, currentRoom.Deployment,
+                                    currentRoom.Units.Append(callback.Unit).ToArray(), currentRoom.ExternalInteractions,
+                                    currentRoom.Context, currentRoom.Preview, currentRoom.ActiveCompanionBossIds);
+                            BattleSpawnPointResult compacted = BattleSpawnPointModel.Apply(state.Context.SpawnPoints, currentRoom,
+                                "Compact", callback.Unit.Team);
+                            if (!compacted.Supported) { error = compacted.Error; return false; }
+                            state = CardSpellModel.WithContext(state, state.Context.WithSpawnPoints(compacted.State!));
+                        }
+                        settled = RoomCombatModel.SettleQueuedSpawner(state.Rooms.Single(room => room.RoomIndex == callback.RoomIndex), callback.Unit);
+                    }
+                    else
+                    {
+                        bool lastPhysicalDeath = callback.CompletePhysicalRemovalAfterQueue && !queue.Any(item => item.Kind == "OnDeath" &&
+                            item.Unit.Team == callback.Unit.Team && item.Unit.Id > callback.Unit.Id);
+                        settled = lastPhysicalDeath || !callback.CompletePhysicalRemovalAfterQueue
+                            ? RoomCombatModel.SettleQueuedSpawnerAndCenter(state.Rooms.Single(room => room.RoomIndex == callback.RoomIndex), callback.Unit)
+                            : RoomCombatModel.SettleQueuedSpawner(state.Rooms.Single(room => room.RoomIndex == callback.RoomIndex), callback.Unit);
+                    }
+                    return Accept(settled);
+                },
                 () =>
                 {
                     TrainCombatResult updated = EnchantmentWorldModel.UpdateAll(state, queue.Add);

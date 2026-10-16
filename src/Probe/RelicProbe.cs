@@ -133,6 +133,14 @@ namespace MonsterTrain2Poju.Probe
                         return new RelicRoomAttachmentReplication(item.Index, data.GetParamInt2(),
                             RelicCardModifierProbe.Conditions(item.Effect));
                     }).ToArray();
+                var summonDamage = effects.Select((effect, index) => new { Effect = effect, Index = index })
+                    .Where(item => item.Effect is RelicEffectDamageOnMonsterSummoned)
+                    .Select(item => {
+                        object Field(string name) => AccessTools.Field(item.Effect.GetType(), name).GetValue(item.Effect);
+                        return new RelicSummonDamageRule(item.Index, (int)Field("damageAmount"),
+                            ((Team.Type)Field("targetTeam")).ToString(), Field("targetMode").ToString(),
+                            ((RelicEffectBase)item.Effect).CanApplyInPreviewMode, RelicCardModifierProbe.Conditions(item.Effect));
+                    }).ToArray();
                 var moonPhaseHeals = effects.Select((effect, index) => new { Effect = effect, Index = index })
                     .Where(item => item.Effect is RelicEffectHealOnMoonPhase)
                     .Select(item => {
@@ -163,7 +171,8 @@ namespace MonsterTrain2Poju.Probe
                     effects.Any(effect => effect is RelicEffectAdjustAttackByStatusEffect) ? StatusAttackModifiers(managers) : null,
                     cardPlayRoomCapacity.Length > 0 ? cardPlayRoomCapacity : null,
                     moonPhaseHeals.Length > 0 ? moonPhaseHeals : null,
-                    roomAttachmentReplications.Length > 0 ? roomAttachmentReplications : null);
+                    roomAttachmentReplications.Length > 0 ? roomAttachmentReplications : null,
+                    summonDamage.Length > 0 ? summonDamage : null);
             }).ToArray();
         }
 

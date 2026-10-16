@@ -261,6 +261,7 @@ param(
     [switch] $OriginalHealthChoiceRelic,
     [switch] $OriginalAfterDrawGenerationRelics,
     [switch] $OriginalPartFactory,
+    [switch] $OriginalBigDamageFromManyMorsels,
     [switch] $OriginalUnitResourceRelics,
     [switch] $OriginalOpeningDrawRelics,
     [switch] $OriginalTurnDrawRelics,
@@ -395,6 +396,10 @@ if ($OriginalEquipmentGrowthRelics) { $BranchCardMasks = $true; $Policy = 'units
 if ($OriginalHealthChoiceRelic) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalAfterDrawGenerationRelics) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalPartFactory) { $Policy = 'units-spells-and-junk' }
+if ($OriginalBigDamageFromManyMorsels) {
+    $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $SettleDeathDissolves = $true; $SettleCardAnimations = $true
+    $Policy = 'units-spells-and-junk'
+}
 if ($OriginalUnitResourceRelics) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalOpeningDrawRelics) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalTurnDrawRelics) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
@@ -710,6 +715,7 @@ if ($FrostChanneling) { $environment['MT2_PROBE_MODIFIERS'] = 'frost-channeling'
 if ($Mix) { $environment['MT2_PROBE_MODIFIERS'] = 'card-effect-mix' }
 if ($OriginalTinkermasterMix) { $environment['MT2_PROBE_MODIFIERS'] = 'original-tinkermaster-mix' }
 if ($OriginalPartFactory) { $environment['MT2_PROBE_MODIFIERS'] = 'original-part-factory' }
+if ($OriginalBigDamageFromManyMorsels) { $environment['MT2_PROBE_MODIFIERS'] = 'original-big-damage-many-morsels' }
 if ($OriginalProgressPacemakerMix) { $environment['MT2_PROBE_MODIFIERS'] = 'original-progress-pacemaker-mix' }
 if ($OriginalCardTypeCostRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-card-type-cost-relic' }
 if ($OriginalConserveEmber) { $environment['MT2_PROBE_MODIFIERS'] = 'original-conserve-ember-relic' }
@@ -801,6 +807,7 @@ if ($OriginalEquipmentGrowthRelics) { $environment['MT2_PROBE_MODIFIERS'] = 'ori
 if ($OriginalHealthChoiceRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-health-choice-relic' }
 if ($OriginalAfterDrawGenerationRelics) { $environment['MT2_PROBE_MODIFIERS'] = 'original-after-draw-generation-relics' }
 if ($OriginalPartFactory) { $environment['MT2_PROBE_MODIFIERS'] = 'original-part-factory' }
+if ($OriginalBigDamageFromManyMorsels) { $environment['MT2_PROBE_MODIFIERS'] = 'original-big-damage-many-morsels' }
 if ($OriginalUnitResourceRelics) { $environment['MT2_PROBE_MODIFIERS'] = 'original-unit-resource-relics' }
 if ($OriginalOpeningDrawRelics) { $environment['MT2_PROBE_MODIFIERS'] = 'original-opening-draw-relics' }
 if ($OriginalTurnDrawRelics) { $environment['MT2_PROBE_MODIFIERS'] = 'original-turn-draw-relics' }
@@ -1534,6 +1541,11 @@ if ($OriginalRelicCountAttack -and ($trace.ModifierScenario -ne 'original-relic-
     @($trace.RelicCountAttackControls).Count -ne 45 -or
     -not (Select-String -LiteralPath $unityLog -Pattern 'ORIGINAL-RELIC-COUNT-PREPARED actual foreign/active starter' -Quiet))) {
     throw 'Original relic-count attack owner lacks native classification controls.'
+}
+if ($OriginalBigDamageFromManyMorsels -and ($trace.ModifierScenario -ne 'original-big-damage-many-morsels' -or
+    @($trace.RelicSpawnStatuses | Where-Object { $null -ne $_.BeforeTrain -and $null -ne $_.AfterTrain }).Count -lt 2 -or
+    -not (Select-String -LiteralPath $unityLog -Pattern 'ORIGINAL-BIG-DAMAGE-PREPARED seeded Snack count=19' -Quiet))) {
+    throw 'BigDamageFromManyMorsels lacks isolated threshold controls or complete-train birth captures.'
 }
 if (($OriginalNullRelic -or $OriginalNullRelicBaseline) -and ($null -eq $trace.OriginalNullRelic -or
     $trace.OriginalNullRelic.Present -ne $(if ($OriginalNullRelicBaseline) { 0 } else { 1 }) -or
@@ -3819,7 +3831,7 @@ if (-not $cardEffectKillSubtypeCoverage) { throw 'Native CardEffectKill did not 
 if (-not $cardRecursionCoverage) { throw 'Native WurmkinEtchings recursion did not restore the expected cards in a matched full battle action.' }
 $result | ConvertTo-Json
 if ($SettleDeathDissolves) {
-    if (-not $trace.DeathDissolveSettlementEnabled -or $trace.Schema -ne $(if ($OriginalFloorCapacityRelics) { 119 } elseif ($PyreResourceRefresh) { 118 } elseif ($OriginalResourceRelicBatch) { 117 } elseif ($OriginalLifecycleRelicBatch) { 115 } elseif ($TypedDraw) { 112 } elseif ($SpawnStatusRelicsClones) { 111 } elseif ($SpawnStatusRelics) { 110 } elseif ($IncantRelic) { 109 } elseif ($AbilityIncant) { 108 } elseif ($SettleCardAnimations) { 106 } else { 105 }) -or
+    if (-not $trace.DeathDissolveSettlementEnabled -or $trace.Schema -ne $(if ($OriginalBigDamageFromManyMorsels) { 169 } elseif ($OriginalFloorCapacityRelics) { 119 } elseif ($PyreResourceRefresh) { 118 } elseif ($OriginalResourceRelicBatch) { 117 } elseif ($OriginalLifecycleRelicBatch) { 115 } elseif ($TypedDraw) { 112 } elseif ($SpawnStatusRelicsClones) { 111 } elseif ($SpawnStatusRelics) { 110 } elseif ($IncantRelic) { 109 } elseif ($AbilityIncant) { 108 } elseif ($SettleCardAnimations) { 106 } else { 105 }) -or
         @($trace.DeathDissolveSettlements).Count -eq 0 -or
         @($trace.DeathDissolveSettlements | Where-Object { -not $_.Completed -or $_.PendingAfter -ne 0 -or $_.Error }).Count -ne 0 -or
         @($trace.DeathDissolveCallbacks | Where-Object { $_.Error }).Count -ne 0) {
@@ -3827,7 +3839,7 @@ if ($SettleDeathDissolves) {
     }
 }
 if ($SettleCardAnimations) {
-    if ($trace.Schema -ne $(if ($OriginalFloorCapacityRelics) { 119 } elseif ($PyreResourceRefresh) { 118 } elseif ($OriginalResourceRelicBatch) { 117 } elseif ($OriginalLifecycleRelicBatch) { 115 } elseif ($TypedDraw) { 112 } elseif ($SpawnStatusRelicsClones) { 111 } elseif ($SpawnStatusRelics) { 110 } elseif ($IncantRelic) { 109 } elseif ($AbilityIncant) { 108 } else { 106 }) -or -not $trace.CardAnimationSettlement.Enabled -or
+    if ($trace.Schema -ne $(if ($OriginalBigDamageFromManyMorsels) { 169 } elseif ($OriginalFloorCapacityRelics) { 119 } elseif ($PyreResourceRefresh) { 118 } elseif ($OriginalResourceRelicBatch) { 117 } elseif ($OriginalLifecycleRelicBatch) { 115 } elseif ($TypedDraw) { 112 } elseif ($SpawnStatusRelicsClones) { 111 } elseif ($SpawnStatusRelics) { 110 } elseif ($IncantRelic) { 109 } elseif ($AbilityIncant) { 108 } else { 106 }) -or -not $trace.CardAnimationSettlement.Enabled -or
         $trace.CardAnimationSettlement.PreviewWaits -lt 0 -or $trace.CardAnimationSettlement.DecisionWaits -lt 0 -or
         $trace.CardAnimationSettlement.ScheduledMovements -le 0 -or $trace.CardAnimationSettlement.PendingMovements -ne 0) {
         throw 'Native card-animation settlement protocol is missing or invalid.'

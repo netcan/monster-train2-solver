@@ -399,18 +399,28 @@ namespace MonsterTrain2Poju.Model
             internal CharacterTriggerAdmission Admission { get; }
             internal bool RemovalLifecycle { get; }
             internal bool PreservePhysicalPoint { get; }
+            internal bool CaptureAllDispatches { get; }
+            internal bool RelicDamageRemoval { get; }
             internal QueuedCharacterTrigger(int roomIndex, CombatUnit unit, string kind = "OnDeath", bool returnSpawnerAfterQueue = false, bool deferUntilRemoval = false, int paramInt = 0,
                 CombatUnit? overrideTarget = null, int paramInt2 = 0, string? paramString = null, CombatUnit? dyingCharacter = null, bool canFireTriggers = true,
                 int triggerCount = 1, int lastSpawnedOverrideUnitId = 0, bool harvestAfterDeath = false, bool completePhysicalRemovalAfterQueue = false,
                 CharacterTriggerAdmission admission = CharacterTriggerAdmission.Pending, bool removalLifecycle = false, bool preservePhysicalPoint = false,
-                int? exclusiveTriggerStateId = null)
-            { RoomIndex = roomIndex; Unit = unit; Kind = kind; ReturnSpawnerAfterQueue = returnSpawnerAfterQueue; DeferUntilRemoval = deferUntilRemoval; ParamInt = paramInt; OverrideTarget = overrideTarget; ParamInt2 = paramInt2; ParamString = paramString; DyingCharacter = dyingCharacter; CanFireTriggers = canFireTriggers; TriggerCount = triggerCount; LastSpawnedOverrideUnitId = lastSpawnedOverrideUnitId; HarvestAfterDeath = harvestAfterDeath; CompletePhysicalRemovalAfterQueue = completePhysicalRemovalAfterQueue; Admission = admission; RemovalLifecycle = removalLifecycle; PreservePhysicalPoint = preservePhysicalPoint; ExclusiveTriggerStateId = exclusiveTriggerStateId; }
+                int? exclusiveTriggerStateId = null, bool captureAllDispatches = false, bool relicDamageRemoval = false)
+            { RoomIndex = roomIndex; Unit = unit; Kind = kind; ReturnSpawnerAfterQueue = returnSpawnerAfterQueue; DeferUntilRemoval = deferUntilRemoval; ParamInt = paramInt; OverrideTarget = overrideTarget; ParamInt2 = paramInt2; ParamString = paramString; DyingCharacter = dyingCharacter; CanFireTriggers = canFireTriggers; TriggerCount = triggerCount; LastSpawnedOverrideUnitId = lastSpawnedOverrideUnitId; HarvestAfterDeath = harvestAfterDeath; CompletePhysicalRemovalAfterQueue = completePhysicalRemovalAfterQueue; Admission = admission; RemovalLifecycle = removalLifecycle; PreservePhysicalPoint = preservePhysicalPoint; ExclusiveTriggerStateId = exclusiveTriggerStateId; CaptureAllDispatches = captureAllDispatches; RelicDamageRemoval = relicDamageRemoval; }
+            internal QueuedCharacterTrigger WithRelicDamageRemoval() => new QueuedCharacterTrigger(RoomIndex, Unit, Kind,
+                ReturnSpawnerAfterQueue, DeferUntilRemoval, ParamInt, OverrideTarget, ParamInt2, ParamString, DyingCharacter,
+                CanFireTriggers, TriggerCount, LastSpawnedOverrideUnitId, HarvestAfterDeath, CompletePhysicalRemovalAfterQueue,
+                Admission, RemovalLifecycle, PreservePhysicalPoint, ExclusiveTriggerStateId, CaptureAllDispatches, true);
             internal QueuedCharacterTrigger InRoom(int roomIndex) => new QueuedCharacterTrigger(roomIndex, Unit, Kind,
                 ReturnSpawnerAfterQueue, DeferUntilRemoval, ParamInt, OverrideTarget, ParamInt2, ParamString, DyingCharacter,
-                CanFireTriggers, TriggerCount, LastSpawnedOverrideUnitId, HarvestAfterDeath, CompletePhysicalRemovalAfterQueue, Admission, RemovalLifecycle, PreservePhysicalPoint, ExclusiveTriggerStateId);
+                CanFireTriggers, TriggerCount, LastSpawnedOverrideUnitId, HarvestAfterDeath, CompletePhysicalRemovalAfterQueue, Admission, RemovalLifecycle, PreservePhysicalPoint, ExclusiveTriggerStateId, CaptureAllDispatches, RelicDamageRemoval);
             internal QueuedCharacterTrigger WithAdmission(CharacterTriggerAdmission admission) => new QueuedCharacterTrigger(RoomIndex, Unit, Kind,
                 ReturnSpawnerAfterQueue, DeferUntilRemoval, ParamInt, OverrideTarget, ParamInt2, ParamString, DyingCharacter,
-                CanFireTriggers, TriggerCount, LastSpawnedOverrideUnitId, HarvestAfterDeath, CompletePhysicalRemovalAfterQueue, admission, RemovalLifecycle, PreservePhysicalPoint, ExclusiveTriggerStateId);
+                CanFireTriggers, TriggerCount, LastSpawnedOverrideUnitId, HarvestAfterDeath, CompletePhysicalRemovalAfterQueue, admission, RemovalLifecycle, PreservePhysicalPoint, ExclusiveTriggerStateId, CaptureAllDispatches, RelicDamageRemoval);
+            internal QueuedCharacterTrigger WithCaptureAllDispatches(bool capture) => new QueuedCharacterTrigger(RoomIndex, Unit, Kind,
+                ReturnSpawnerAfterQueue, DeferUntilRemoval, ParamInt, OverrideTarget, ParamInt2, ParamString, DyingCharacter,
+                CanFireTriggers, TriggerCount, LastSpawnedOverrideUnitId, HarvestAfterDeath, CompletePhysicalRemovalAfterQueue,
+                Admission, RemovalLifecycle, PreservePhysicalPoint, ExclusiveTriggerStateId, CaptureAllDispatches || capture, RelicDamageRemoval);
         }
         private static readonly HashSet<string> KnownStatuses = new HashSet<string>(StringComparer.Ordinal)
         {
@@ -561,7 +571,7 @@ namespace MonsterTrain2Poju.Model
                     else
                     {
                         if (!Fire(queued)) return false;
-                        if (queued.HarvestAfterDeath && (!Drain() || !Harvest(queued))) return false;
+                    if (queued.HarvestAfterDeath && (!Drain() || !Harvest(queued))) return false;
                         if (queued.ReturnSpawnerAfterQueue && !returnSpawner(queued)) return false;
                     }
                 }
@@ -589,7 +599,7 @@ namespace MonsterTrain2Poju.Model
                 {
                     HarvestModel.Stage(stage, out string kind, out _);
                     if (!Fire(new QueuedCharacterTrigger(dead.RoomIndex, dead.Unit, stage,
-                        triggerCount: HarvestModel.Count(counts, kind))) || !Drain()) return false;
+                        triggerCount: HarvestModel.Count(counts, kind), captureAllDispatches: dead.CaptureAllDispatches)) || !Drain()) return false;
                 }
                 // Deferred damage removal finishes InnerCharacterDeath after Harvest.
                 // An immediate sacrifice inside a running queue already focused
@@ -611,7 +621,7 @@ namespace MonsterTrain2Poju.Model
         internal static RoomCombatResult ApplyQueuedCharacterTrigger(RoomCombatState state, QueuedCharacterTrigger queued, Action<QueuedCharacterTrigger> enqueue, Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null)
         {
             RoomCombatResult triggered = new Engine(state, new List<CombatEvent>(), enqueueCharacterTrigger: enqueue,
-                resetPreviewTriggers: false, refreshPyre: refreshPyre).QueuedTrigger(queued);
+                resetPreviewTriggers: false, refreshPyre: refreshPyre).TraceAllDispatches(queued.CaptureAllDispatches).QueuedTrigger(queued);
             return RelicRoomEntryStatusModel.ApplyAfterEntry(triggered, queued, enqueue);
         }
 
@@ -670,12 +680,19 @@ namespace MonsterTrain2Poju.Model
 
         public static RoomCombatResult ApplySpawnTriggers(RoomCombatState state, int unitId, bool fromCard,
             IReadOnlyList<CombatStatus>? startingApplications = null, Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null,
-            Func<RoomCombatState, CardActionEffect, int, MoonPhaseTransitionResult>? moonPhase = null)
-            => ApplySpawnTriggers(state, unitId, fromCard, startingApplications, null, refreshPyre, moonPhase: moonPhase);
+            Func<RoomCombatState, CardActionEffect, int, MoonPhaseTransitionResult>? moonPhase = null,
+            Func<RoomCombatState, int, RoomCombatResult>? relicBirthEffect = null)
+        {
+            Func<RoomCombatState, int, IReadOnlyList<QueuedCharacterTrigger>, RoomCombatResult>? completeTrainBirth =
+                relicBirthEffect == null ? null : (frame, addedUnitId, _) => relicBirthEffect(frame, addedUnitId);
+            return ApplySpawnTriggers(state, unitId, fromCard, startingApplications, null, refreshPyre,
+                moonPhase: moonPhase, relicBirthEffect: completeTrainBirth);
+        }
         internal static RoomCombatResult ApplySpawnTriggers(RoomCombatState state, int unitId, bool fromCard,
             IReadOnlyList<CombatStatus>? startingApplications, Action<QueuedCharacterTrigger>? enqueue,
             Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null, SpawnStatusApplication? additionalStatus = null,
-            Func<RoomCombatState, CardActionEffect, int, MoonPhaseTransitionResult>? moonPhase = null)
+            Func<RoomCombatState, CardActionEffect, int, MoonPhaseTransitionResult>? moonPhase = null,
+            Func<RoomCombatState, int, IReadOnlyList<QueuedCharacterTrigger>, RoomCombatResult>? relicBirthEffect = null)
         {
             string? error = Validate(state);
             CombatUnit? unit = state.Units.FirstOrDefault(item => item.Id == unitId);
@@ -689,7 +706,8 @@ namespace MonsterTrain2Poju.Model
             state = synchronized;
             unit = state.Units.First(item => item.Id == unitId);
             return new Engine(state, new List<CombatEvent>(), pendingSummonCardId: fromCard ? unit.SpawnerCardId : 0,
-                enqueueCharacterTrigger: enqueue, refreshPyre: refreshPyre, moonPhase: moonPhase).Spawn(unitId, fromCard, startingApplications,
+                enqueueCharacterTrigger: enqueue, refreshPyre: refreshPyre, moonPhase: moonPhase,
+                relicBirthEffect: relicBirthEffect).Spawn(unitId, fromCard, startingApplications,
                     additionalStatus: additionalStatus);
         }
 
@@ -712,6 +730,11 @@ namespace MonsterTrain2Poju.Model
         public static RoomCombatResult ApplyCardDamage(RoomCombatState state, int targetId, int damage, int sourceCardId = 0,
             bool deferSpawnerExhaustion = false, int attackerUnitId = 0, Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null) => ApplyCardDamage(state, targetId, damage, sourceCardId, deferSpawnerExhaustion, true, attackerUnitId, refreshPyre: refreshPyre);
 
+        internal static RoomCombatResult ApplyRelicDamage(RoomCombatState state, int targetId, int damage,
+            Action<QueuedCharacterTrigger> enqueueCharacterTrigger) =>
+            ApplyNativeCardDamageAfterTraits(state, targetId, damage, 0, enqueueCharacterTrigger: enqueueCharacterTrigger,
+                captureAllDispatches: true);
+
         internal static RoomCombatResult ApplyCardDamageAfterTraits(RoomCombatState state, int targetId, int damage, int sourceCardId,
             bool deferSpawnerExhaustion, int attackerUnitId = 0, Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null,
             CombatUnit? externalActor = null, int externalActorRoomIndex = -1,
@@ -722,7 +745,7 @@ namespace MonsterTrain2Poju.Model
             int attackerUnitId = 0,
             Func<RoomCombatState, RoomCombatResult>? finishDamageQueue = null, Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null,
             CombatUnit? externalActor = null, int externalActorRoomIndex = -1,
-            Action<QueuedCharacterTrigger>? enqueueCharacterTrigger = null)
+            Action<QueuedCharacterTrigger>? enqueueCharacterTrigger = null, bool captureAllDispatches = false)
         {
             string? error = Validate(state);
             bool localAttacker = state.Units.Any(unit => unit.Id == attackerUnitId);
@@ -738,6 +761,7 @@ namespace MonsterTrain2Poju.Model
                 finishDamageQueue: finishDamageQueue, refreshPyre: refreshPyre,
                 enqueueCharacterTrigger: enqueueCharacterTrigger, externalActor: externalActor,
                 externalActorRoomIndex: externalActorRoomIndex, externalActorInRoom: false)
+                .TraceAllDispatches(captureAllDispatches)
                 .CardDamage(targetId, damage, sourceCardId, false, attackerUnitId);
         }
 
@@ -745,7 +769,7 @@ namespace MonsterTrain2Poju.Model
             bool deferSpawnerExhaustion, bool applyTraits, int attackerUnitId,
             Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null,
             CombatUnit? externalActor = null, int externalActorRoomIndex = -1,
-            Action<QueuedCharacterTrigger>? enqueueCharacterTrigger = null)
+            Action<QueuedCharacterTrigger>? enqueueCharacterTrigger = null, bool captureAllDispatches = false)
         {
             string? error = Validate(state);
             if (error != null || damage < 0 || !state.Units.Any(unit => unit.Id == targetId))
@@ -761,6 +785,7 @@ namespace MonsterTrain2Poju.Model
             return new Engine(state, new List<CombatEvent>(), deferSpawnerExhaustion,
                 enqueueCharacterTrigger: enqueueCharacterTrigger, refreshPyre: refreshPyre,
                 externalActor: externalActor, externalActorRoomIndex: externalActorRoomIndex, externalActorInRoom: false)
+                .TraceAllDispatches(captureAllDispatches)
                 .CardDamage(targetId, damage, sourceCardId, applyTraits, attackerUnitId);
         }
 
@@ -1250,6 +1275,7 @@ namespace MonsterTrain2Poju.Model
             private readonly Func<RoomCombatState, RoomCombatResult>? finishDamageQueue;
             private readonly Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre;
             private readonly Func<RoomCombatState, CardActionEffect, int, MoonPhaseTransitionResult>? moonPhase;
+            private readonly Func<RoomCombatState, int, IReadOnlyList<QueuedCharacterTrigger>, RoomCombatResult>? relicBirthEffect;
             private readonly Queue<(int RoomIndex, WorkingUnit Unit, string Kind, bool CanFire, int ParamInt, WorkingUnit? OverrideTarget, int ParamInt2, string? ParamString, WorkingUnit? DyingCharacter, int TriggerCount, int LastSpawnedOverrideUnitId, int? ExclusiveTriggerStateId)> triggerQueue = new Queue<(int, WorkingUnit, string, bool, int, WorkingUnit?, int, string?, WorkingUnit?, int, int, int?)>();
             private bool runningTriggerQueue;
             private bool stopAfterBossRemoval;
@@ -1270,7 +1296,8 @@ namespace MonsterTrain2Poju.Model
                 Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null,
                 CombatUnit? externalActor = null, int externalActorRoomIndex = -1, bool externalActorInRoom = true,
                 Func<RoomCombatState, CardActionEffect, int, MoonPhaseTransitionResult>? moonPhase = null,
-                CombatUnit? externalPyre = null, int externalPyreRoomIndex = -1)
+                CombatUnit? externalPyre = null, int externalPyreRoomIndex = -1,
+                Func<RoomCombatState, int, IReadOnlyList<QueuedCharacterTrigger>, RoomCombatResult>? relicBirthEffect = null)
             {
                 this.source = source; this.events = events;
                 this.deferSpawnerExhaustion = deferSpawnerExhaustion;
@@ -1281,6 +1308,7 @@ namespace MonsterTrain2Poju.Model
                 this.finishDamageQueue = finishDamageQueue;
                 this.refreshPyre = refreshPyre;
                 this.moonPhase = moonPhase;
+                this.relicBirthEffect = relicBirthEffect;
                 context = source.Context;
                 activeCompanionBossIds = new HashSet<int>(source.ActiveCompanionBossIds ?? Array.Empty<int>());
                 units = source.Units.Select(unit => NewUnit(unit)).ToList();
@@ -1596,9 +1624,24 @@ namespace MonsterTrain2Poju.Model
                     RoomCombatResult result = RelicSpawnStatusModel.CharacterAdded(CurrentRoom(), unitId,
                         fromCard ? spawned.Source.SpawnerCardId : 0, covenants);
                     if (!result.Supported) { unsupportedReason = result.UnsupportedReason; return false; }
+                    var birthCallbacks = result.PendingCallbacks;
+                    events.AddRange(result.Events);
+                    CombatUnit? added = result.State!.Units.FirstOrDefault(unit => unit.Id == unitId);
+                    if (!covenants && added?.Team == CombatTeam.Player && !added.IsPyre &&
+                        result.State.Context?.Relics?.Any(relic => relic.SummonDamageRules?.Count > 0) == true)
+                    {
+                        if (relicBirthEffect == null)
+                        { unsupportedReason = "Tower summon damage requires a complete-train birth callback."; return false; }
+                        RoomCombatResult damaged = relicBirthEffect(result.State, unitId, birthCallbacks);
+                        if (!damaged.Supported) { unsupportedReason = damaged.UnsupportedReason; return false; }
+                        events.AddRange(damaged.Events);
+                        if (damaged.Outcome != RoomOutcome.Exchanged) battleWon = damaged.Outcome == RoomOutcome.BattleWon;
+                        result = new RoomCombatResult(damaged.State, damaged.Outcome, damaged.Rounds,
+                            damaged.Events.ToList(), damaged.UnsupportedReason, damaged.PendingCallbacks,
+                            damaged.RetainedUnits, damaged.Dispatches);
+                    }
                     ImportEnchantmentRoom(result.State!);
                     foreach (QueuedCharacterTrigger callback in result.PendingCallbacks) QueueCallback(callback);
-                    events.AddRange(result.Events);
                     return true;
                 }
             }
@@ -2294,7 +2337,7 @@ namespace MonsterTrain2Poju.Model
                 if (enqueueCharacterTrigger != null) enqueueCharacterTrigger(new QueuedCharacterTrigger(target.RoomIndex, target.Freeze(),
                     returnSpawnerAfterQueue: deferReturn || returnSpawnerAfterQueue, deferUntilRemoval: deferRemoval, harvestAfterDeath: !target.Despawned && !immediateHarvest,
                     completePhysicalRemovalAfterQueue: deferRemoval && context?.SpawnPoints != null, removalLifecycle: true,
-                    preservePhysicalPoint: doNotFullyRemove));
+                    preservePhysicalPoint: doNotFullyRemove, captureAllDispatches: traceAllDispatches));
                 else
                 {
                     if (deferRemoval) deferredDamageDeaths.Add((target, deferReturn));
@@ -2592,7 +2635,8 @@ namespace MonsterTrain2Poju.Model
                 if (!fromQueue && enqueueCharacterTrigger != null)
                 { enqueueCharacterTrigger(new QueuedCharacterTrigger(unit.RoomIndex, unit.Freeze(), kind, paramInt: paramInt, overrideTarget: overrideTarget?.Freeze(), paramInt2: paramInt2, paramString: paramString,
                     dyingCharacter: dyingCharacter?.Freeze(), canFireTriggers: canFireTriggers, triggerCount: triggerCount, lastSpawnedOverrideUnitId: lastSpawnedOverrideUnitId,
-                    admission: CharacterTriggerAdmission.Accepted, exclusiveTriggerStateId: exclusiveTriggerStateId)); return; }
+                    admission: CharacterTriggerAdmission.Accepted, exclusiveTriggerStateId: exclusiveTriggerStateId,
+                    captureAllDispatches: traceAllDispatches)); return; }
                 if (!fromQueue)
                 {
                     triggerQueue.Enqueue((unit.RoomIndex, unit, kind, canFireTriggers, paramInt, overrideTarget, paramInt2, paramString, dyingCharacter, triggerCount, lastSpawnedOverrideUnitId, exclusiveTriggerStateId));
@@ -2631,7 +2675,7 @@ namespace MonsterTrain2Poju.Model
                             paramInt: queued.ParamInt, overrideTarget: queued.OverrideTarget?.Freeze(), paramInt2: queued.ParamInt2,
                             paramString: queued.ParamString, dyingCharacter: queued.DyingCharacter?.Freeze(), canFireTriggers: queued.CanFire,
                             triggerCount: queued.TriggerCount, lastSpawnedOverrideUnitId: queued.LastSpawnedOverrideUnitId,
-                            exclusiveTriggerStateId: queued.ExclusiveTriggerStateId);
+                            exclusiveTriggerStateId: queued.ExclusiveTriggerStateId, captureAllDispatches: traceAllDispatches);
                         RoomCombatResult fired = ApplyQueuedCharacterTrigger(EnchantmentWorldModel.Room(remote, context), callback, QueueCallback);
                         if (!fired.Supported) { unsupportedReason = fired.UnsupportedReason; break; }
                         events.AddRange(fired.Events); dispatches.AddRange(fired.Dispatches);
@@ -2676,9 +2720,9 @@ namespace MonsterTrain2Poju.Model
                 // Native snapshots each team's surviving actors before draining that group.
                 // Inert callbacks have no effects within the validated status rules.
                 foreach (WorkingUnit actor in units.Where(unit => unit.Alive && unit.InRoom && !unit.Removed &&
-                    unit.Source.Team == team && unit.Triggers.Any(trigger => trigger.Kind == kind)).ToArray())
+                    unit.Source.Team == team && (traceAllDispatches || unit.Triggers.Any(trigger => trigger.Kind == kind))).ToArray())
                     QueueCallback(new QueuedCharacterTrigger(actor.RoomIndex, actor.Freeze(), kind,
-                        dyingCharacter: dying, triggerCount: count));
+                        dyingCharacter: dying, triggerCount: count, captureAllDispatches: traceAllDispatches));
             }
             private void PhysicalHarvest(WorkingUnit dying)
             {
@@ -3527,6 +3571,7 @@ namespace MonsterTrain2Poju.Model
 
             private void QueueCallback(QueuedCharacterTrigger callback)
             {
+                callback = callback.WithCaptureAllDispatches(traceAllDispatches);
                 string? error = StatusCallbackModel.Admit(context, callback, out QueuedCharacterTrigger admitted);
                 if (error != null) { unsupportedReason = error; return; }
                 if (admitted.Admission == CharacterTriggerAdmission.Rejected) return;
@@ -3762,7 +3807,8 @@ namespace MonsterTrain2Poju.Model
                 outcome, round, events, pendingCallbacks: nativeCardDamage ? deferredDamageDeaths.Select(dead =>
                     new QueuedCharacterTrigger(source.RoomIndex, dead.Unit.Freeze(), returnSpawnerAfterQueue: dead.Return,
                         deferUntilRemoval: true, harvestAfterDeath: !dead.Unit.Despawned,
-                        completePhysicalRemovalAfterQueue: context?.SpawnPoints != null, removalLifecycle: true)).ToArray() : null,
+                        completePhysicalRemovalAfterQueue: context?.SpawnPoints != null, removalLifecycle: true,
+                        captureAllDispatches: traceAllDispatches)).ToArray() : null,
                 retainedUnits: units.Where(unit => !unit.Alive || externalTurnActorIds.Contains(unit.Source.Id))
                     .Select(unit => unit.Freeze()).ToArray(), dispatches: dispatches);
             }

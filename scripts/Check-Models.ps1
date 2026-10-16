@@ -26,6 +26,7 @@ $fixtureNames = @('full-battle-steward-once.mt2f', 'full-battle-no-cards.mt2f', 
     'full-battle-original-trigger-relics.mt2f', 'full-battle-original-trigger-relic-deaths.mt2f',
     'full-battle-original-fused-pyreshard.mt2f',
     'full-battle-original-part-factory.mt2f',
+    'full-battle-original-big-damage-many-morsels.mt2f',
     'full-battle-original-status-relics.mt2f', 'full-battle-original-burnout-stacks.mt2f',
     'full-battle-original-sting-relics.mt2f',
     'full-battle-original-deployable-relic.mt2f',
@@ -858,6 +859,12 @@ foreach ($fixturePath in @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 
     foreach ($mode in @('--original-part-factory-only', '--battle-search-only')) {
         dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- $mode $fixturePath
         if ($LASTEXITCODE -ne 0) { throw "Original PartFactory checks failed ($mode): $fixturePath" }
+    }
+}
+foreach ($fixturePath in @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 'full-battle-original-big-damage-many-morsels.mt2f' })) {
+    foreach ($mode in @('--original-big-damage-only', '--battle-search-only')) {
+        dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- $mode $fixturePath
+        if ($LASTEXITCODE -ne 0) { throw "BigDamageFromManyMorsels checks failed ($mode): $fixturePath" }
     }
 }
 foreach ($fixturePath in @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 'full-battle-original-spell-play-threshold-relics.mt2f' })) {

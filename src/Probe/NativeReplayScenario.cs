@@ -286,6 +286,8 @@ namespace MonsterTrain2Poju.Probe
                         OriginalOpeningDrawScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalPartFactoryScenario.Enabled && !OriginalPartFactoryScenario.Acquired)
                         OriginalPartFactoryScenario.AcquireBeforeBattle(managers!, log);
+                    if (fullBattle && OriginalBigDamageScenario.Enabled && !OriginalBigDamageScenario.Acquired)
+                        OriginalBigDamageScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalTurnDrawScenario.Enabled && !OriginalTurnDrawScenario.Acquired)
                         OriginalTurnDrawScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalNullRelicScenario.Enabled && !OriginalNullRelicScenario.Acquired)
@@ -604,6 +606,12 @@ namespace MonsterTrain2Poju.Probe
             {
                 OriginalRelicCountAttackScenario.Prepare(managers, log);
                 numericModifiersPrepared = true;
+            }
+            if (fullBattle && !numericModifiersPrepared && OriginalBigDamageScenario.Enabled)
+            {
+                OriginalBigDamageScenario.Prepare(managers, log);
+                numericModifiersPrepared = true;
+                return;
             }
             if (fullBattle && !numericModifiersPrepared && OriginalMoreSpikesScenario.Enabled)
             {
@@ -1336,6 +1344,8 @@ namespace MonsterTrain2Poju.Probe
                     ? OriginalStingRelicBatchScenario.Choose(decision)
                     : Environment.GetEnvironmentVariable("MT2_PROBE_FULL_BATTLE_POLICY") == "units-spells-and-junk"
                         ? BattleActionModel.ChooseUnitSpellAndJunkPlay(decision) : BattleActionModel.ChooseUnitAndJunkPlay(decision);
+                if (OriginalBigDamageScenario.Enabled)
+                    pendingPlay = OriginalBigDamageScenario.Choose(decision, pendingPlay, log);
                 if (OriginalEggCardScenario.Enabled)
                     pendingPlay = OriginalEggCardScenario.Choose(decision) ?? pendingPlay;
                 if (OriginalCombatTriggerBatchScenario.Enabled)

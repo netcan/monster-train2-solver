@@ -44,6 +44,13 @@ namespace MonsterTrain2Poju.Model
                 deferCallbacks ? null : Drain, pending);
             if (!result.Supported) return Fail(result.UnsupportedReason!);
             Import(result.State!); events.AddRange(result.Events);
+            if (!onlyCovenants && state.Context?.Relics?.Any(relic => relic.SummonDamageRules?.Count > 0) == true)
+            {
+                RelicSummonDamageResult damage = RelicSummonDamageModel.CharacterAdded(state, unitId, result.PendingCallbacks);
+                if (!damage.Supported) return Fail(damage.UnsupportedReason!);
+                state = damage.State!; events.AddRange(damage.Events); dispatched.AddRange(damage.Dispatched);
+                return new RelicBirthResult(state, null, damage.PendingCallbacks.Select(UnitCloneCallback.From).ToArray(), dispatched, events);
+            }
             return new RelicBirthResult(state, null, result.PendingCallbacks.Select(UnitCloneCallback.From).ToArray(), dispatched, events);
 
             CombatUnit? Find(int id) => id == 0 ? null : source.Rooms.SelectMany(frame => frame.Units).FirstOrDefault(unit => unit.Id == id);

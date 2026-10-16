@@ -474,6 +474,9 @@ internal static class BattleActionChecks
             Console.WriteLine("LEGACY-POLICY-CHAIN-LIMITATION: stale room Enabled snapshots are excluded; the complete independent policy and all other compared state remain checked.");
         Func<BattleTurnState, PlayCardAction?> chooser = policy.GetString() == "units-spells-and-junk"
             ? BattleActionModel.ChooseUnitSpellAndJunkPlay : BattleActionModel.ChooseUnitAndJunkPlay;
+        if (fixture.TryGetProperty("ModifierScenario", out var originalBigDamagePolicy) &&
+            originalBigDamagePolicy.GetString() == "original-big-damage-many-morsels")
+            chooser = OriginalBigDamageFromManyMorselsChecks.Choose;
         if (fixture.TryGetProperty("ModifierScenario", out var equipmentGrowthPolicy) &&
             equipmentGrowthPolicy.GetString() == "original-equipment-growth-relics")
             chooser = OriginalEquipmentGrowthChecks.Choose;

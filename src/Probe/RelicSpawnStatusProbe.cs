@@ -50,14 +50,17 @@ namespace MonsterTrain2Poju.Probe
         {
             private static void Postfix(CharacterState character, CardState fromCard, bool onlyCovenants, ref IEnumerator __result)
             {
+                bool bigDamageBirthCapture = OriginalBigDamageScenario.Prepared && !onlyCovenants &&
+                    character.GetTeamType() == Team.Type.Monsters && !character.IsPyreHeart();
                 bool ordinaryBirthCapture = !onlyCovenants && (OriginalHealthChoiceScenario.Prepared || OriginalEquipmentGrowthScenario.Prepared || OriginalConduitScenario.Prepared || OriginalCombatTriggerBatchScenario.Prepared || OriginalStealthSlayScenario.Prepared || SpawnStatusRelicScenario.Prepared || SpawnStatusRelicScenario.OriginalCombatRelicsAcquired || OriginalRelicBatchScenario.Prepared ||
-                    RelicCardModifierScenario.Prepared && RelicCardModifierScenario.AllUnitsMultistrikeMutator);
+                    RelicCardModifierScenario.Prepared && RelicCardModifierScenario.AllUnitsMultistrikeMutator || bigDamageBirthCapture);
                 bool covenantBirthCapture = onlyCovenants && CovenantCharacterFilterScenario.Prepared;
+                bool completeTrainCapture = SpawnStatusRelicScenario.Clones || OriginalLifecycleRelicBatchScenario.Enabled || OriginalCombatTriggerBatchScenario.Enabled || OriginalConduitScenario.Enabled || OriginalEquipmentGrowthScenario.Enabled || OriginalStealthSlayScenario.Enabled || OriginalHealthChoiceScenario.Enabled || bigDamageBirthCapture;
                 if ((!ordinaryBirthCapture && !covenantBirthCapture) || FullBattleTrace.Active == null || AllGameManagers.Instance!.GetSaveManager().PreviewMode) return;
-                __result = Observe(__result, character, fromCard, onlyCovenants);
+                __result = Observe(__result, character, fromCard, onlyCovenants, completeTrainCapture);
             }
         }
-        private static IEnumerator Observe(IEnumerator native, CharacterState character, CardState fromCard, bool covenants)
+        private static IEnumerator Observe(IEnumerator native, CharacterState character, CardState fromCard, bool covenants, bool completeTrainCapture)
         {
             FullBattleTrace trace = FullBattleTrace.Active!;
             RoomState room = character.GetCurrentRoom();
@@ -66,7 +69,7 @@ namespace MonsterTrain2Poju.Probe
             Records.Add(record);
             RelicBirthResult? world = null;
             RoomCombatResult? predicted = null;
-            if (SpawnStatusRelicScenario.Clones || OriginalLifecycleRelicBatchScenario.Enabled || OriginalCombatTriggerBatchScenario.Enabled || OriginalConduitScenario.Enabled || OriginalEquipmentGrowthScenario.Enabled || OriginalStealthSlayScenario.Enabled || OriginalHealthChoiceScenario.Enabled)
+            if (completeTrainCapture)
             {
                 record.BeforeTrain = trace.CaptureTrain();
                 record.QueueRunningBefore = AllGameManagers.Instance!.GetCombatManager()!.IsRunningTriggerQueue;
@@ -86,13 +89,20 @@ namespace MonsterTrain2Poju.Probe
             {
                 observingBirth--;
                 (native as IDisposable)?.Dispose(); record.After = trace.Capture(room);
-                if (SpawnStatusRelicScenario.Clones || OriginalLifecycleRelicBatchScenario.Enabled || OriginalCombatTriggerBatchScenario.Enabled || OriginalConduitScenario.Enabled || OriginalEquipmentGrowthScenario.Enabled || OriginalStealthSlayScenario.Enabled || OriginalHealthChoiceScenario.Enabled)
+                if (completeTrainCapture)
                 {
                     active.Remove(record); record.AfterTrain = trace.CaptureTrain(); record.QueuedAfter = Queue(record);
+                    IEnumerable<UnitCloneCallback> predictedDispatches = world!.Dispatched;
+                    IEnumerable<UnitCloneCallback> nativeDispatches = record.Dispatched;
+                    if (OriginalBigDamageScenario.Prepared)
+                    {
+                        predictedDispatches = BehavioralDispatches(record.BeforeTrain!, predictedDispatches);
+                        nativeDispatches = BehavioralDispatches(record.BeforeTrain!, nativeDispatches);
+                    }
                     record.Difference = record.UnsupportedQueueReason ?? (!world!.Supported ? world.UnsupportedReason :
                         JToken.DeepEquals(JToken.FromObject(world.State!), JToken.FromObject(record.AfterTrain)) &&
                         JToken.DeepEquals(JToken.FromObject(world.Queued), JToken.FromObject(record.QueuedAfter)) &&
-                        JToken.DeepEquals(JToken.FromObject(world.Dispatched), JToken.FromObject(record.Dispatched)) ? null :
+                        JToken.DeepEquals(JToken.FromObject(predictedDispatches.ToArray()), JToken.FromObject(nativeDispatches.ToArray())) ? null :
                         "Relic CharacterAdded train/queue/dispatch differs.");
                 }
                 else record.Difference = !predicted!.Supported ? predicted.UnsupportedReason :
@@ -116,6 +126,13 @@ namespace MonsterTrain2Poju.Probe
                 count, dying == null ? 0 : trace.UnitId(dying), data?.overrideTargetCharacter == null ? 0 : trace.UnitId(data.overrideTargetCharacter),
                 data?.overrideLastSpawnedCharacter == null ? 0 : trace.UnitId(data.overrideLastSpawnedCharacter),
                 exclusive == null ? (int?)null : trace.TriggerStateId(actor, exclusive));
+        }
+        private static IEnumerable<UnitCloneCallback> BehavioralDispatches(TrainCombatState before,
+            IEnumerable<UnitCloneCallback> callbacks)
+        {
+            return callbacks.Where(callback => before.Rooms.SelectMany(room => room.Units)
+                .FirstOrDefault(unit => unit.Id == callback.ActorId) is CombatUnit actor &&
+                (actor.Statuses.Count > 0 || actor.Triggers.Any(trigger => trigger.Kind == callback.Kind)));
         }
         [HarmonyPatch(typeof(CharacterState), nameof(CharacterState.FireTriggers))]
         private static class FirePatch

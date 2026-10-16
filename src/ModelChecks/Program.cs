@@ -621,6 +621,18 @@ if (args.Length == 2 && args[0] == "--original-part-factory-only")
     OriginalPartFactoryChecks.Native(fixture.RootElement);
     return;
 }
+if (args.Length == 2 && args[0] == "--original-big-damage-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    OriginalBigDamageFromManyMorselsChecks.Native(fixture.RootElement);
+    return;
+}
+if (args.Length == 2 && args[0] == "--original-big-damage-replay-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    OriginalBigDamageFromManyMorselsChecks.Replay(fixture.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--original-unit-resources-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
