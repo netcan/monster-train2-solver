@@ -110,6 +110,20 @@ namespace MonsterTrain2Poju.Probe
                             data.GetTraits().Select(trait => trait.GetTraitStateName()).ToArray(),
                             RelicCardModifierProbe.Conditions(item.Effect));
                     }).ToArray();
+                var cheaperSpellUpgrades = effects.Select((effect, index) => new { Effect = effect, Index = index })
+                    .Where(item => item.Effect.GetType().Name == RelicModel.AddTempUpgradeToHandCardsIfCheaper)
+                    .Select(item => {
+                        var data = (RelicEffectData)AccessTools.Field(typeof(RelicEffectBase), "_srcRelicEffectData").GetValue(item.Effect);
+                        CardUpgradeData upgradeData = data.GetParamCardUpgradeData()
+                            ?? throw new InvalidOperationException("Cheaper-spell relic upgrade data is missing.");
+                        var upgradeState = new CardUpgradeState();
+                        upgradeState.Setup(upgradeData);
+                        var upgradedCards = (List<CardState>)AccessTools.Field(item.Effect.GetType(), "upgradedCards").GetValue(item.Effect);
+                        return new RelicCheaperSpellUpgradeModifier(item.Index, data.GetParamCardType().ToString(),
+                            CardModifierProbe.Upgrade(upgradeState, rejectFilters: false, filtersAlreadyApplied: true),
+                            upgradeData.GetFilters().Select(CardUpgradeMaskProbe.Rule).ToArray(),
+                            upgradedCards.Select(card => FullBattleTrace.Active!.CardId(card)).ToArray());
+                    }).ToArray();
                 var cardDrawOnCardPlay = effects.Select((effect, index) => new { Effect = effect, Index = index })
                     .Where(item => item.Effect is RelicEffectCardDrawOnCardPlay)
                     .Select(item => {
@@ -172,7 +186,8 @@ namespace MonsterTrain2Poju.Probe
                     cardPlayRoomCapacity.Length > 0 ? cardPlayRoomCapacity : null,
                     moonPhaseHeals.Length > 0 ? moonPhaseHeals : null,
                     roomAttachmentReplications.Length > 0 ? roomAttachmentReplications : null,
-                    summonDamage.Length > 0 ? summonDamage : null);
+                    summonDamage.Length > 0 ? summonDamage : null,
+                    cheaperSpellUpgradeModifiers: cheaperSpellUpgrades.Length > 0 ? cheaperSpellUpgrades : null);
             }).ToArray();
         }
 

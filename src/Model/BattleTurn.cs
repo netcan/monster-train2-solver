@@ -226,6 +226,11 @@ namespace MonsterTrain2Poju.Model
                 if (Terminal(triggers.Outcome)) return Finish(triggers.Outcome, source.Energy, source.MoonPhase);
             }
             context = train.Context!;
+            RelicCheaperSpellUpgradeResult endTurnRelics = RelicCheaperSpellUpgradeModel.EndTurnPreHandDiscard(context);
+            if (!endTurnRelics.Supported) return Unsupported(endTurnRelics.UnsupportedReason!);
+            context = endTurnRelics.Context;
+            train = WithContext(train, context, spawn.Turn == 0);
+            spawn = WithTrain(spawn, train, spawn.Turn, spawn.Rng);
             if (outputPlayRules != null)
             {
                 var unplayed = context.Cards.Hand.Select((card, handIndex) =>
@@ -300,6 +305,13 @@ namespace MonsterTrain2Poju.Model
             if (!discard.Supported) return Unsupported(discard.UnsupportedReason!);
             BattleStatistics? statistics = context.Statistics;
             var retainedIds = new HashSet<int>(persistentCardIds.Concat(infusionCardIds));
+            foreach (CardToken card in context.Cards.Hand.Reverse().Where(card => !retainedIds.Contains(card.InstanceId)))
+            {
+                RelicCheaperSpellUpgradeResult discarded = RelicCheaperSpellUpgradeModel.CardDiscarded(context, card.InstanceId);
+                if (!discarded.Supported) return Unsupported(discarded.UnsupportedReason!);
+                context = discarded.Context;
+            }
+            train = WithContext(train, context, spawn.Turn == 0);
             foreach (CardToken card in context.Cards.Hand.Reverse().Where(card => !retainedIds.Contains(card.InstanceId)))
                 statistics = statistics?.Increment(card.InstanceId, "TimesDiscarded");
             foreach (CardToken card in discard.PurgedCards) statistics = statistics?.RemoveDeckCard(card.InstanceId);

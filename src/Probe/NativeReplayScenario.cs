@@ -260,6 +260,8 @@ namespace MonsterTrain2Poju.Probe
                         MagebladeScenario.ConfigureBeforeBattle(managers!, log);
                     if (fullBattle && OriginalCardPlayMagicPowerScenario.Enabled && !OriginalCardPlayMagicPowerScenario.Acquired)
                         OriginalCardPlayMagicPowerScenario.AcquireBeforeBattle(managers!, log);
+                    if (fullBattle && OriginalCheaperSpellCostScenario.Enabled && !OriginalCheaperSpellCostScenario.Acquired)
+                        OriginalCheaperSpellCostScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalCardDrawOnCardPlayScenario.Enabled && !OriginalCardDrawOnCardPlayScenario.Acquired)
                         OriginalCardDrawOnCardPlayScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalCarriageJackScenario.Enabled && !OriginalCarriageJackScenario.Acquired)
@@ -1332,6 +1334,8 @@ namespace MonsterTrain2Poju.Probe
                 }
                 if (fullBattle && OriginalCardPlayMagicPowerScenario.Enabled && !OriginalCardPlayMagicPowerScenario.Prepared)
                     OriginalCardPlayMagicPowerScenario.Prepare(managers, log);
+                if (fullBattle && OriginalCheaperSpellCostScenario.Enabled && !OriginalCheaperSpellCostScenario.Prepared)
+                    OriginalCheaperSpellCostScenario.Prepare(managers, log);
                 if (fullBattle && OriginalCardDrawOnCardPlayScenario.Enabled && !OriginalCardDrawOnCardPlayScenario.Prepared)
                     OriginalCardDrawOnCardPlayScenario.Prepare(managers, log);
                 if (fullBattle && UnplayedCardTriggerScenario.Enabled && !UnplayedCardTriggerScenario.Prepared)
@@ -1440,6 +1444,7 @@ namespace MonsterTrain2Poju.Probe
                 if (OriginalFloorCapacityRelicScenario.Enabled) pendingPlay = OriginalFloorCapacityRelicScenario.Choose(decision);
                 if (MagebladeScenario.Enabled) pendingPlay = MagebladeScenario.Choose(decision) ?? pendingPlay;
                 if (OriginalCardPlayMagicPowerScenario.Enabled) pendingPlay = OriginalCardPlayMagicPowerScenario.Choose(decision) ?? pendingPlay;
+                if (OriginalCheaperSpellCostScenario.Enabled) pendingPlay = OriginalCheaperSpellCostScenario.Choose(decision);
                 if (OriginalCardAttackRelicScenario.Enabled) pendingPlay = OriginalCardAttackRelicScenario.Choose(decision) ?? pendingPlay;
                 if (OriginalCardTypeCostScenario.Enabled) pendingPlay = OriginalCardTypeCostScenario.Choose(decision) ?? pendingPlay;
                 if (OriginalUpgradeCountRelicsScenario.Enabled) pendingPlay = OriginalUpgradeCountRelicsScenario.Choose(decision) ?? pendingPlay;
@@ -1587,6 +1592,7 @@ namespace MonsterTrain2Poju.Probe
                 (modifierScenario == "soul-siphon" && SoulSiphonScenario.IsScenarioAction(action)) ||
                 (modifierScenario == "status-upgrade" && StatusUpgradeScenario.IsScenarioAction(action)) ||
                 (modifierScenario == "card-effect-kill-subtype" && CardEffectKillScenario.IsScenarioPrelude(action)) ||
+                (OriginalCheaperSpellCostScenario.Enabled && OriginalCheaperSpellCostScenario.IsScenarioAction(action)) ||
                 (NullForwardingScenario.Enabled && NullForwardingScenario.ConsumeScenarioActionMark(action)) ||
                 (NullTriggerScenario.Enabled && NullTriggerScenario.ConsumeScenarioActionMark(action)) ||
                 (NullTargetlessScenario.Enabled && NullTargetlessScenario.ConsumeScenarioActionMark(action)) ||

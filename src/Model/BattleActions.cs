@@ -766,6 +766,12 @@ namespace MonsterTrain2Poju.Model
             if (terminal && context.Statistics != null && context.Statistics.DeckCards == null)
                 return Unsupported("Terminal card resolution requires permanent deck membership.");
             // Discard restores the resolving card after terminal clearing.
+            if (!skipNaturalDiscard)
+            {
+                RelicCheaperSpellUpgradeResult discarded = RelicCheaperSpellUpgradeModel.CardDiscarded(context, card.InstanceId);
+                if (!discarded.Supported) return Unsupported(discarded.UnsupportedReason!);
+                context = discarded.Context;
+            }
             BattleStatistics? statistics = context.Statistics;
             if (terminal) statistics = statistics?.RefreshOwnedCards(new[] { card.InstanceId });
             if (!skipNaturalDiscard) statistics = statistics?.Increment(card.InstanceId, "TimesDiscarded");

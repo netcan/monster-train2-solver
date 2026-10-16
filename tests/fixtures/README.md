@@ -4599,3 +4599,28 @@ pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-relic-card-c
 dotnet run --project src/ModelChecks -c Release -- --relic-card-modifiers-only tests/fixtures/full-battle-relic-card-cast-trigger-unit-upgrades.mt2f
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-relic-card-cast-trigger-unit-upgrades.mt2f
 ```
+
+### Original cheaper-spell upgrade relic (schema 171)
+
+`full-battle-original-cheaper-spell-cost.mt2f` captures the unchanged
+`ReduceSpellCostOfCheaper` relic and `FreeSpellBlessing` upgrade. A 3-cost
+played spell upgrades filtered 1- and 2-cost spells in hand; equal-cost,
+zero-cost, X-cost and excluded-type controls remain unchanged. Playing the
+1-cost target removes its tracked temporary upgrade, and the remaining 2-cost
+target is cleaned before end-turn discard. The battle wins with 52 matched
+stages, two scenario actions and seven turns, with zero capture failures,
+mismatches, unsupported transitions or pending records. Independent search
+matches 128/128 states, replays three steps, and has equal serial/parallel best
+results.
+
+The binary is 24,578 bytes with 3,570 unique nodes and SHA-256
+`caf046410083334f94260df4343a6fbb2205b0c9e21d722f445819dac468d785`; it has no
+JSON companion. This proves the original relic's filtered cheaper-spell path and
+the two observed discard cleanup paths, not every possible combination of
+filters and temporary upgrades.
+
+```powershell
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-cheaper-spell-cost.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-cheaper-spell-cost-only tests/fixtures/full-battle-original-cheaper-spell-cost.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-cheaper-spell-cost.mt2f
+```

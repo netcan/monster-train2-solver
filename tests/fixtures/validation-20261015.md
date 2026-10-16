@@ -1,5 +1,28 @@
 # Inventory validation, 2026-10-15
 
+## Cheaper-spell upgrade relic extension, 2026-10-17
+
+Current inventory: 368 archives (330 battles, 38 calibrations), 148/224
+original owners (66.07%): 132 battle, fifteen campaign-interface and one no-op.
+Native source: `.probe-runs/full-battle-units-spells-and-junk-20261017-050550-dfb78b1b/full-battle.mt2f`.
+The unchanged `ReduceSpellCostOfCheaper` owner and `FreeSpellBlessing` upgrade
+apply to filtered spells strictly cheaper than the played spell. A 3-cost source
+upgrades 1- and 2-cost targets; equal-cost, zero-cost, X-cost and excluded-type
+controls remain unchanged. Playing the upgraded 1-cost target cleans up its
+tracked upgrade, and the remaining 2-cost target is cleaned before end-turn hand
+discard. The native battle wins with 52 matched stages, two scenario actions and
+seven turns; capture failures, mismatches, unsupported transitions and pending
+records are zero. The original Steam game files remain unchanged.
+
+Pure checks cover strict/equal boundaries, cost zero/X, card type and filter
+behavior, upgrade clamping, played-card discard, end-turn pre-discard cleanup,
+immutable branches and missing paid-cost rejection. The focused native checker
+validates the original payload and all controls. Independent search matches
+128/128 states, replays three steps and returns equal serial/parallel best
+results. The curated archive is 24,578 bytes with 3,570 unique nodes, source
+length zero and SHA-256
+`caf046410083334f94260df4343a6fbb2205b0c9e21d722f445819dac468d785`.
+
 ## Stealth-on-slay status attack extension, 2026-10-16
 
 Current inventory: 360 archives (322 battles, 38 calibrations), 138/224

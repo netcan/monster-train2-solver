@@ -645,6 +645,17 @@ if (args.Length == 1 && args[0] == "--original-early-discard-energy-pure")
     HandRemovalChecks.Run();
     return;
 }
+if (args.Length == 2 && args[0] == "--original-cheaper-spell-cost-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    OriginalCheaperSpellCostChecks.Native(fixture.RootElement);
+    return;
+}
+if (args.Length == 1 && args[0] == "--original-cheaper-spell-cost-pure")
+{
+    OriginalCheaperSpellCostChecks.Run();
+    return;
+}
 if (args.Length == 2 && args[0] == "--original-unit-resources-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
@@ -1277,6 +1288,7 @@ DamageOverflowChecks.Run();
 RelicStatusDecayChecks.Run();
 RelicResourceChecks.Run();
 OriginalEarlyDiscardEnergyChecks.Run();
+OriginalCheaperSpellCostChecks.Run();
 RelicFloorCapacityChecks.Run();
 StatusAttackDamageChecks.Run();
 TypedDrawChecks.Run();

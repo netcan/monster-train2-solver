@@ -28,7 +28,7 @@
 "AddStingToHand"	"5e5d863b-514c-4026-a9b0-ffe56af2a3eb"	"accepted-native-battle"	"RelicEffectAddBattleCardToHand"	""
 "ExtraSpellCastTrigger"	"410ba540-7c4f-4dc5-a84f-b1d8af508891"	"accepted-native-battle"	"RelicEffectModifyTriggerCount"	""
 "BossIncreaseTurnDraw"	"f9cc17ee-b7e5-45de-a02f-bd271e2dcd1a"	"accepted-native-battle"	"RelicEffectChangeStartingHandSize,RelicEffectIncreasePyreHealth,RelicEffectIncreasePyreAttack"	""
-"ReduceSpellCostOfCheaper"	"9cc85dbb-d0ae-409b-8f26-41d2202eb1e0"	"pending"	"RelicEffectAddTempUpgradeToCardsInHandIfCheaper"	""
+"ReduceSpellCostOfCheaper"	"9cc85dbb-d0ae-409b-8f26-41d2202eb1e0"	"accepted-native-battle"	"RelicEffectAddTempUpgradeToCardsInHandIfCheaper"	""
 "IncreaseMaxCorruption"	"3a28026e-e44b-4456-b535-7134e7525240"	"accepted-native-battle"	"RelicEffectModifyMaxCorruption"	""
 "AngelsSpawnWithShiftyValor"	"3d4705ec-ee6b-433b-88c8-1b4ce0ed7cc9"	"accepted-native-battle"	"RelicEffectAddTrigger"	""
 "NefariousOverflow"	"b0575799-1511-489d-a05d-b5b2e6bf84c2"	"pending"	"RelicEffectRebalanceUnstable"	""

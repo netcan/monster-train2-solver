@@ -263,6 +263,7 @@ param(
     [switch] $OriginalPartFactory,
     [switch] $OriginalBigDamageFromManyMorsels,
     [switch] $OriginalEarlyDiscardEnergy,
+    [switch] $OriginalCheaperSpellCost,
     [switch] $OriginalUnitResourceRelics,
     [switch] $OriginalOpeningDrawRelics,
     [switch] $OriginalTurnDrawRelics,
@@ -375,6 +376,7 @@ if ($PyreResourceRefresh) { $BranchCardMasks = $true; $Policy = 'units-spells-an
 if ($OriginalFloorCapacityRelics) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($Mageblade -or $OriginalMagebladeMagnitudeRelic) { $BranchCardMasks = $true; $BattleRelicUpgrades = $true; $Policy = 'units-and-junk' }
 if ($OriginalCardPlayMagicPower) { $BranchCardMasks = $true; $Policy = 'units-and-junk' }
+if ($OriginalCheaperSpellCost) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalCardDrawOnCardPlay) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalCarriageJack) { $Policy = 'units-and-junk' }
 if ($OriginalFirstRoomAttachment) { $BranchCardMasks = $true; $Policy = 'units-and-junk' }
@@ -788,6 +790,7 @@ if ($OriginalFloorCapacityRelics) { $environment['MT2_PROBE_MODIFIERS'] = 'origi
 if ($Mageblade) { $environment['MT2_PROBE_MODIFIERS'] = 'mageblade' }
 if ($OriginalMagebladeMagnitudeRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-mageblade-magnitude' }
 if ($OriginalCardPlayMagicPower) { $environment['MT2_PROBE_MODIFIERS'] = 'original-card-play-magic-power' }
+if ($OriginalCheaperSpellCost) { $environment['MT2_PROBE_MODIFIERS'] = 'original-reduce-spell-cost-cheaper' }
 if ($OriginalCardDrawOnCardPlay) { $environment['MT2_PROBE_MODIFIERS'] = 'original-card-draw-on-card-play' }
 if ($OriginalCarriageJack) { $environment['MT2_PROBE_MODIFIERS'] = 'original-carriage-jack' }
 if ($OriginalFirstRoomAttachment) { $environment['MT2_PROBE_MODIFIERS'] = 'original-first-room-attachment' }
@@ -1555,6 +1558,13 @@ if ($OriginalEarlyDiscardEnergy -and ($trace.Schema -ne 170 -or $trace.ModifierS
     -not $trace.OriginalEarlyDiscardEnergyPrepared -or
     -not (Select-String -LiteralPath $unityLog -Pattern 'ORIGINAL-EMBER-EARLY-DISCARD-PREPARED' -Quiet))) {
     throw 'EmberOnEarlyDiscard lacks the isolated card-triggered discard scenario.'
+}
+if ($OriginalCheaperSpellCost -and ($trace.Schema -ne 171 -or
+    $trace.ModifierScenario -ne 'original-reduce-spell-cost-cheaper' -or
+    -not $trace.OriginalCheaperSpellCostPrepared -or
+    -not (Select-String -LiteralPath $unityLog -Pattern 'ORIGINAL-CHEAPER-SPELL-RELIC-PREPARED' -Quiet) -or
+    @($trace.Actions | Where-Object ScenarioAction).Count -lt 2)) {
+    throw 'ReduceSpellCostOfCheaper lacks strict-cost, filter and cleanup actions in the isolated battle.'
 }
 if (($OriginalNullRelic -or $OriginalNullRelicBaseline) -and ($null -eq $trace.OriginalNullRelic -or
     $trace.OriginalNullRelic.Present -ne $(if ($OriginalNullRelicBaseline) { 0 } else { 1 }) -or

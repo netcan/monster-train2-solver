@@ -28,6 +28,7 @@ $fixtureNames = @('full-battle-steward-once.mt2f', 'full-battle-no-cards.mt2f', 
     'full-battle-original-part-factory.mt2f',
     'full-battle-original-big-damage-many-morsels.mt2f',
     'full-battle-original-early-discard-energy.mt2f',
+    'full-battle-original-cheaper-spell-cost.mt2f',
     'full-battle-original-status-relics.mt2f', 'full-battle-original-burnout-stacks.mt2f',
     'full-battle-original-sting-relics.mt2f',
     'full-battle-original-deployable-relic.mt2f',
@@ -494,6 +495,7 @@ $focusedBumpFixtures = @($fixtures | Where-Object {
 $focusedTeamSpawnStatusFixtures = @($fixtures | Where-Object {
     (Split-Path -Leaf $_) -eq 'full-battle-original-team-spawn-status.mt2f'
 })
+# This isolated relic fixture ends after two authored plays; its native and search checks run below.
 $generalFixtures = @($fixtures | Where-Object {
     (Split-Path -Leaf $_) -notin @('full-battle-companion-bump.mt2f', 'full-battle-outer-boss-bump.mt2f',
         'full-battle-original-team-spawn-status.mt2f', 'full-battle-egg-transformation.mt2f',
@@ -501,7 +503,8 @@ $generalFixtures = @($fixtures | Where-Object {
         'full-battle-original-kinhost-vessel.mt2f',
         'full-battle-original-kinhost-vessel-delayed.mt2f',
         'full-battle-relic-card-cast-trigger-upgrades.mt2f',
-        'full-battle-relic-card-cast-trigger-unit-upgrades.mt2f')
+        'full-battle-relic-card-cast-trigger-unit-upgrades.mt2f',
+        'full-battle-original-cheaper-spell-cost.mt2f')
 })
 $buildArguments = @()
 if ($SkipBuild) { $buildArguments += '--no-build' }
@@ -872,6 +875,12 @@ foreach ($fixturePath in @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 
     foreach ($mode in @('--original-early-discard-energy-only', '--battle-search-only')) {
         dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- $mode $fixturePath
         if ($LASTEXITCODE -ne 0) { throw "EmberOnEarlyDiscard checks failed ($mode): $fixturePath" }
+    }
+}
+foreach ($fixturePath in @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 'full-battle-original-cheaper-spell-cost.mt2f' })) {
+    foreach ($mode in @('--original-cheaper-spell-cost-only', '--battle-search-only')) {
+        dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- $mode $fixturePath
+        if ($LASTEXITCODE -ne 0) { throw "ReduceSpellCostOfCheaper checks failed ($mode): $fixturePath" }
     }
 }
 foreach ($fixturePath in @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 'full-battle-original-spell-play-threshold-relics.mt2f' })) {
