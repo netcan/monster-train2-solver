@@ -25,6 +25,18 @@ if (args.Length == 2 && args[0] == "--unstable-explosion-only")
     UnstableExplosionChecks.Native(fixture.RootElement);
     return;
 }
+if (args.Length == 2 && args[0] == "--original-nefarious-overflow-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    OriginalNefariousOverflowChecks.Native(fixture.RootElement);
+    Console.WriteLine($"NATIVE-FIXTURE-METADATA schema={fixture.RootElement.GetProperty("Schema").GetInt32()} bytes={new FileInfo(args[1]).Length} uniqueNodes={fixture.UniqueNodeCount}");
+    return;
+}
+if (args.Length == 1 && args[0] == "--original-nefarious-overflow-pure")
+{
+    OriginalNefariousOverflowChecks.Run();
+    return;
+}
 
 if (args.Length == 2 && args[0] == "--mix-catalog-only")
 {
@@ -1289,6 +1301,7 @@ RelicStatusDecayChecks.Run();
 RelicResourceChecks.Run();
 OriginalEarlyDiscardEnergyChecks.Run();
 OriginalCheaperSpellCostChecks.Run();
+OriginalNefariousOverflowChecks.Run();
 RelicFloorCapacityChecks.Run();
 StatusAttackDamageChecks.Run();
 TypedDrawChecks.Run();

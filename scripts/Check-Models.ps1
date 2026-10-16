@@ -29,6 +29,7 @@ $fixtureNames = @('full-battle-steward-once.mt2f', 'full-battle-no-cards.mt2f', 
     'full-battle-original-big-damage-many-morsels.mt2f',
     'full-battle-original-early-discard-energy.mt2f',
     'full-battle-original-cheaper-spell-cost.mt2f',
+    'full-battle-original-nefarious-overflow.mt2f',
     'full-battle-original-status-relics.mt2f', 'full-battle-original-burnout-stacks.mt2f',
     'full-battle-original-sting-relics.mt2f',
     'full-battle-original-deployable-relic.mt2f',
@@ -881,6 +882,12 @@ foreach ($fixturePath in @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 
     foreach ($mode in @('--original-cheaper-spell-cost-only', '--battle-search-only')) {
         dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- $mode $fixturePath
         if ($LASTEXITCODE -ne 0) { throw "ReduceSpellCostOfCheaper checks failed ($mode): $fixturePath" }
+    }
+}
+foreach ($fixturePath in @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 'full-battle-original-nefarious-overflow.mt2f' })) {
+    foreach ($mode in @('--original-nefarious-overflow-only', '--battle-search-only')) {
+        dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- $mode $fixturePath
+        if ($LASTEXITCODE -ne 0) { throw "NefariousOverflow checks failed ($mode): $fixturePath" }
     }
 }
 foreach ($fixturePath in @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 'full-battle-original-spell-play-threshold-relics.mt2f' })) {

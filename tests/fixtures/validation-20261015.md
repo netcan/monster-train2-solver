@@ -1,8 +1,32 @@
-# Inventory validation, 2026-10-15
+# Inventory validation, 2026-10-17
+
+## NefariousOverflow relic extension, 2026-10-17
+
+Current inventory: 369 archives (331 battles, 38 calibrations), 149/224
+original owners (66.52%): 133 battle, fifteen campaign-interface and one no-op.
+Native source: `.probe-runs/full-battle-units-spells-and-junk-20261017-054007-1e4693fa/full-battle.mt2f`.
+The unchanged `NefariousOverflow` payload has both-team scope, zero extra proc
+damage, +1 explosion damage per Unstable stack and zero growth. In a Mixology
+witness, a five-stack carrier dies after Frostbite and Unstable resolve; the
+explosion kills the Mage and drops Guard Armor from 17 to 7. The battle wins
+with 59 matched stages, two scenario actions and seven turns; capture failures,
+mismatches, unsupported transitions and pending records are zero. Original
+game files are unchanged.
+
+Pure checks cover per-stack scaling, team masks, same-room uniqueness, dead and
+Undying candidates, payload copies, and explicit rejection of nonzero proc or
+growth hooks. The native check verifies the original payload and exact damage
+witness; independent search matches 128/128 states with equal serial/parallel
+best results. The schema-172 archive is 35,896 bytes with 5,516 unique nodes,
+source length zero and SHA-256
+`7b3f1a323f6988662ec2215cbd798a92e24ffe52ba064c058d4926ea0a60e42f`.
+
+`UncontrolledGroup` remains pending: it shares the growth hook with native
+`ParamMinInt=5` and is not covered by this bounded model.
 
 ## Cheaper-spell upgrade relic extension, 2026-10-17
 
-Current inventory: 368 archives (330 battles, 38 calibrations), 148/224
+Inventory at that stage: 368 archives (330 battles, 38 calibrations), 148/224
 original owners (66.07%): 132 battle, fifteen campaign-interface and one no-op.
 Native source: `.probe-runs/full-battle-units-spells-and-junk-20261017-050550-dfb78b1b/full-battle.mt2f`.
 The unchanged `ReduceSpellCostOfCheaper` owner and `FreeSpellBlessing` upgrade

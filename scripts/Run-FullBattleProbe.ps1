@@ -264,6 +264,7 @@ param(
     [switch] $OriginalBigDamageFromManyMorsels,
     [switch] $OriginalEarlyDiscardEnergy,
     [switch] $OriginalCheaperSpellCost,
+    [switch] $OriginalNefariousOverflow,
     [switch] $OriginalUnitResourceRelics,
     [switch] $OriginalOpeningDrawRelics,
     [switch] $OriginalTurnDrawRelics,
@@ -505,6 +506,7 @@ if ($ChooseDiscardPersistent) { $BranchCardMasks = $true; $Policy = 'units-spell
 if ($OriginalSmeltEmberRelic) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalSmeltEmberRelicZero -or $OriginalSmeltEmberRelicBulk) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($RemoveAllStatusEffects) { $Policy = 'units-spells-and-junk' }
+if ($OriginalNefariousOverflow) { $Mix = $true; $MixUnstableExplosion = $true }
 if ($DragonHoard) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($TrainHeal) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($Overheal) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
@@ -791,6 +793,7 @@ if ($Mageblade) { $environment['MT2_PROBE_MODIFIERS'] = 'mageblade' }
 if ($OriginalMagebladeMagnitudeRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-mageblade-magnitude' }
 if ($OriginalCardPlayMagicPower) { $environment['MT2_PROBE_MODIFIERS'] = 'original-card-play-magic-power' }
 if ($OriginalCheaperSpellCost) { $environment['MT2_PROBE_MODIFIERS'] = 'original-reduce-spell-cost-cheaper' }
+if ($OriginalNefariousOverflow) { $environment['MT2_PROBE_MODIFIERS'] = 'original-nefarious-overflow' }
 if ($OriginalCardDrawOnCardPlay) { $environment['MT2_PROBE_MODIFIERS'] = 'original-card-draw-on-card-play' }
 if ($OriginalCarriageJack) { $environment['MT2_PROBE_MODIFIERS'] = 'original-carriage-jack' }
 if ($OriginalFirstRoomAttachment) { $environment['MT2_PROBE_MODIFIERS'] = 'original-first-room-attachment' }
@@ -1566,6 +1569,12 @@ if ($OriginalCheaperSpellCost -and ($trace.Schema -ne 171 -or
     @($trace.Actions | Where-Object ScenarioAction).Count -lt 2)) {
     throw 'ReduceSpellCostOfCheaper lacks strict-cost, filter and cleanup actions in the isolated battle.'
 }
+if ($OriginalNefariousOverflow -and ($trace.Schema -ne 172 -or
+    $trace.ModifierScenario -ne 'original-nefarious-overflow' -or
+    -not $trace.OriginalNefariousOverflowPrepared -or
+    -not (Select-String -LiteralPath $unityLog -Pattern 'ORIGINAL-NEFARIOUS-OVERFLOW-PREPARED' -Quiet))) {
+    throw 'NefariousOverflow lacks its original relic and isolated Unstable explosion witness.'
+}
 if (($OriginalNullRelic -or $OriginalNullRelicBaseline) -and ($null -eq $trace.OriginalNullRelic -or
     $trace.OriginalNullRelic.Present -ne $(if ($OriginalNullRelicBaseline) { 0 } else { 1 }) -or
     -not (Select-String -LiteralPath $unityLog -Pattern 'ORIGINAL-NULL-RELIC-ACQUIRED baseline=' -Quiet))) {
@@ -1638,7 +1647,7 @@ if ($RelicCatalog) {
     try {
         $catalog = $catalogArchive.RootElement
         $catalogRecords = @($catalog.GetProperty('Relics').EnumerateArray())
-        if ($catalog.GetProperty('Schema').GetInt32() -ne 6 -or
+        if ($catalog.GetProperty('Schema').GetInt32() -ne 7 -or
             $catalog.GetProperty('GameModuleMvid').GetString() -ne $trace.GameModuleMvid -or
             $catalog.GetProperty('FrameBefore').GetInt32() -ne $catalog.GetProperty('FrameAfter').GetInt32() -or
             -not $catalog.GetProperty('RngBefore').ContentEquals($catalog.GetProperty('RngAfter')) -or

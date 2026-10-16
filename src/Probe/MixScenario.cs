@@ -14,8 +14,10 @@ namespace MonsterTrain2Poju.Probe
         internal const string Name = "card-effect-mix";
         internal const string TinkermasterName = "original-tinkermaster-mix";
         internal const string ProgressName = "original-progress-pacemaker-mix";
+        internal const string NefariousOverflowName = "original-nefarious-overflow";
         private const string TinkermasterId = "db2193eb-a476-4cc4-9a26-2d0e35f46b74";
         private const string ProgressId = "4446fd0c-f7c3-4a9d-96c3-bd12e4426a76";
+        private const string NefariousOverflowId = "b0575799-1511-489d-a05d-b5b2e6bf84c2";
         private const string MixologyId = "9582724d-2d5e-4349-a642-9720bbb833e9";
         private const string BlastInfusionId = "3cf25a9b-daa1-42cd-8174-eb0f59cd590f";
         private static ManualLogSource? logger;
@@ -27,12 +29,14 @@ namespace MonsterTrain2Poju.Probe
         private static int secondOpeningChoice;
         private static bool explosionWitness;
         private static bool seededPoison;
+        internal static bool Prepared { get; private set; }
         private static IReadOnlyList<ElixirMixSelection> pendingSelections = Array.Empty<ElixirMixSelection>();
         private static int pendingSelectionIndex;
         internal static bool Acquired { get; private set; }
-        internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") is Name or TinkermasterName or ProgressName;
+        internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") is Name or TinkermasterName or ProgressName or NefariousOverflowName;
         internal static bool TinkermasterMode => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == TinkermasterName;
         internal static bool ProgressMode => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == ProgressName;
+        internal static bool NefariousOverflowMode => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == NefariousOverflowName;
 
         internal static void AcquireBeforeBattle(AllGameManagers managers, ManualLogSource log)
         {
@@ -40,29 +44,40 @@ namespace MonsterTrain2Poju.Probe
             SaveManager save = managers.GetSaveManager();
             if (save.PreviewMode || save.GetGameSequence() == SaveData.GameSequence.InBattle)
                 throw new InvalidOperationException("Original Mix relic must be acquired before battle setup.");
-            string id = TinkermasterMode ? TinkermasterId : ProgressId;
-            string key = TinkermasterMode ? "TinkermasterTools" : "ProgressPacemaker";
+            string id = NefariousOverflowMode ? NefariousOverflowId : TinkermasterMode ? TinkermasterId : ProgressId;
+            string key = NefariousOverflowMode ? "NefariousOverflow" : TinkermasterMode ? "TinkermasterTools" : "ProgressPacemaker";
             CollectableRelicData relic = save.GetAllGameData().GetAllCollectableRelicData().Single(item => item.GetID() == id);
             RelicEffectData effect = relic.GetEffects().Single();
-            if (relic.name != key || relic.DisallowInDeploymentPhase ||
-                effect.GetEffectClassName() != "RelicEffectAdjustMixAmount" ||
+            bool validNefariousOverflow = !NefariousOverflowMode ||
+                effect.GetEffectClassName() == RelicUnstableRebalanceModel.Effect && effect.GetParamSourceTeam() == (Team.Type)255 &&
+                effect.GetParamInt() == 0 && effect.GetParamInt2() == 1 && effect.GetParamMinInt() == 0 &&
+                !effect.GetParamBool() && effect.GetParamStatusEffects().Single() is var unstable &&
+                unstable.statusId == "unstable" && unstable.count == 1;
+            if (relic.name != key || relic.DisallowInDeploymentPhase || !validNefariousOverflow ||
+                !NefariousOverflowMode && (effect.GetEffectClassName() != "RelicEffectAdjustMixAmount" ||
                 effect.GetParamInt() != (TinkermasterMode ? 1 : 0) ||
                 effect.GetParamInt2() != (TinkermasterMode ? 0 : 1) ||
-                effect.GetEffectConditions().Count != (TinkermasterMode ? 0 : 1) ||
+                effect.GetEffectConditions().Count != (TinkermasterMode ? 0 : 1)) ||
                 save.GetCollectedRelics().Any(item => item.GetRelicDataID() == id))
-                throw new InvalidOperationException("Original Mix relic definition or acquisition changed.");
+                throw new InvalidOperationException("Original scenario relic definition or acquisition changed.");
             save.AddRelic(relic);
             Acquired = true;
-            log.LogInfo("ORIGINAL-MIX-RELIC-ACQUIRED unchanged " + key + " amount=" + effect.GetParamInt() +
-                " extraMixes=" + effect.GetParamInt2() + " followupAmount=" + effect.GetParamMinInt());
+            if (NefariousOverflowMode)
+                log.LogInfo("ORIGINAL-NEFARIOUS-OVERFLOW-ACQUIRED unchanged team=" + (int)effect.GetParamSourceTeam() +
+                    " proc=" + effect.GetParamInt() + " explosionPerStack=" + effect.GetParamInt2() +
+                    " growth=" + effect.GetParamMinInt() + " onlyOne=" + effect.GetParamBool());
+            else
+                log.LogInfo("ORIGINAL-MIX-RELIC-ACQUIRED unchanged " + key + " amount=" + effect.GetParamInt() +
+                    " extraMixes=" + effect.GetParamInt2() + " followupAmount=" + effect.GetParamMinInt());
         }
 
         internal static void Prepare(AllGameManagers managers, ManualLogSource log)
         {
-            if ((TinkermasterMode || ProgressMode) && (!Acquired ||
+            if ((TinkermasterMode || ProgressMode || NefariousOverflowMode) && (!Acquired ||
                 managers.GetSaveManager().GetCollectedRelics().Count(item => item.GetRelicDataID() ==
-                    (TinkermasterMode ? TinkermasterId : ProgressId)) != 1))
+                    (NefariousOverflowMode ? NefariousOverflowId : TinkermasterMode ? TinkermasterId : ProgressId)) != 1))
                 throw new InvalidOperationException("Original Mix relic is missing or duplicated at battle setup.");
+            Prepared = false;
             logger = log;
             played = false;
             playedOpeningElixirId = 0;
@@ -88,7 +103,10 @@ namespace MonsterTrain2Poju.Probe
             if (added == null || !cards.GetHand().Contains(added))
                 throw new InvalidOperationException("Mix fixture could not place Mixology in hand.");
             sourceId = FullBattleTrace.Active!.CardId(added);
-            log.LogInfo("MIX-PREPARED original Mixology card=" + sourceId);
+            Prepared = true;
+            log.LogInfo(NefariousOverflowMode
+                ? "ORIGINAL-NEFARIOUS-OVERFLOW-PREPARED unchanged relic, original Mixology witness card=" + sourceId
+                : "MIX-PREPARED original Mixology card=" + sourceId);
         }
 
         internal static bool IsScenarioPrelude(PlayCardAction action) =>

@@ -4624,3 +4624,27 @@ pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-che
 dotnet run --project src/ModelChecks -c Release -- --original-cheaper-spell-cost-only tests/fixtures/full-battle-original-cheaper-spell-cost.mt2f
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-cheaper-spell-cost.mt2f
 ```
+
+### Original NefariousOverflow relic (schema 172)
+
+`full-battle-original-nefarious-overflow.mt2f` captures the unchanged original
+relic before battle. Its `RelicEffectRebalanceUnstable` payload applies to both
+teams, adds no proc damage or growth, and contributes one extra explosion
+damage per Unstable stack. The Mixology witness puts five Unstable on a carrier;
+after Frostbite makes it lethal, the death explosion kills the Mage and reduces
+the Guard's Armor from 17 to 7. All 59 room stages match, with two setup card
+plays and seven EndTurns; capture failures, mismatches, unsupported transitions
+and pending records are zero. Independent search matches 128/128 states and has
+equal serial/parallel best results.
+
+The 35,896-byte binary has 5,516 unique nodes and SHA-256
+`7b3f1a323f6988662ec2215cbd798a92e24ffe52ba064c058d4926ea0a60e42f`; it has no
+JSON companion. This supports only the captured extra explosion-damage path.
+Nonzero proc-damage and growth hooks are rejected, and `UncontrolledGroup`
+remains pending because its native growth rate is 5.
+
+```powershell
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-nefarious-overflow.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-nefarious-overflow-only tests/fixtures/full-battle-original-nefarious-overflow.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-nefarious-overflow.mt2f
+```

@@ -2318,7 +2318,12 @@ namespace MonsterTrain2Poju.Model
                 DispatchDeathStatistics(actor, target, sourceCardId, sacrifice);
                 if (target.Count("unstable") > 0)
                 {
-                    int explosion = target.Count("unstable");
+                    int stacks = target.Count("unstable");
+                    CombatUnit unstableSource = target.Freeze();
+                    CombatUnit[] roomUnits = units.Where(unit => unit.InRoom).Select(unit => unit.Freeze()).ToArray();
+                    int additionalDamage = RelicUnstableRebalanceModel.GetAdditionalExplosionDamagePerStack(
+                        context, unstableSource, roomUnits);
+                    int explosion = unchecked(stacks + unchecked(additionalDamage * stacks));
                     foreach (WorkingUnit enemy in units.Where(unit => unit.InRoom && unit.Source.Team == CombatTeam.Enemy &&
                         unit.Source.Id != target.Source.Id && !unit.Destroyed && !unit.Source.IsPyre &&
                         !unit.Has("blastresistant")).ToArray())

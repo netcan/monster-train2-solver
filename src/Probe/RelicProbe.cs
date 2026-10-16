@@ -124,6 +124,15 @@ namespace MonsterTrain2Poju.Probe
                             upgradeData.GetFilters().Select(CardUpgradeMaskProbe.Rule).ToArray(),
                             upgradedCards.Select(card => FullBattleTrace.Active!.CardId(card)).ToArray());
                     }).ToArray();
+                var unstableRebalances = effects.Select((effect, index) => new { Effect = effect, Index = index })
+                    .Where(item => item.Effect.GetType().Name == RelicUnstableRebalanceModel.Effect)
+                    .Select(item => {
+                        var data = (RelicEffectData)AccessTools.Field(typeof(RelicEffectBase), "_srcRelicEffectData").GetValue(item.Effect);
+                        StatusEffectStackData status = data.GetParamStatusEffects().Single();
+                        return new RelicUnstableRebalanceModifier(item.Index, (int)data.GetParamSourceTeam(),
+                            data.GetParamInt(), data.GetParamInt2(), data.GetParamMinInt(), data.GetParamBool(),
+                            status.statusId, status.count);
+                    }).ToArray();
                 var cardDrawOnCardPlay = effects.Select((effect, index) => new { Effect = effect, Index = index })
                     .Where(item => item.Effect is RelicEffectCardDrawOnCardPlay)
                     .Select(item => {
@@ -187,7 +196,8 @@ namespace MonsterTrain2Poju.Probe
                     moonPhaseHeals.Length > 0 ? moonPhaseHeals : null,
                     roomAttachmentReplications.Length > 0 ? roomAttachmentReplications : null,
                     summonDamage.Length > 0 ? summonDamage : null,
-                    cheaperSpellUpgradeModifiers: cheaperSpellUpgrades.Length > 0 ? cheaperSpellUpgrades : null);
+                    cheaperSpellUpgradeModifiers: cheaperSpellUpgrades.Length > 0 ? cheaperSpellUpgrades : null,
+                    unstableRebalances: unstableRebalances.Length > 0 ? unstableRebalances : null);
             }).ToArray();
         }
 
