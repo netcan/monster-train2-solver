@@ -266,6 +266,7 @@ param(
     [switch] $OriginalCheaperSpellCost,
     [switch] $OriginalNefariousOverflow,
     [switch] $OriginalCopyFirstSpellPlayed,
+    [switch] $OriginalFunguyDeckScaling,
     [switch] $OriginalUnitResourceRelics,
     [switch] $OriginalOpeningDrawRelics,
     [switch] $OriginalTurnDrawRelics,
@@ -381,6 +382,7 @@ if ($OriginalCardPlayMagicPower) { $BranchCardMasks = $true; $Policy = 'units-an
 if ($OriginalCheaperSpellCost) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalCardDrawOnCardPlay) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalCopyFirstSpellPlayed) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
+if ($OriginalFunguyDeckScaling) { $PhysicalSpawnPoints = $true; $Policy = 'no-cards' }
 if ($OriginalCarriageJack) { $Policy = 'units-and-junk' }
 if ($OriginalFirstRoomAttachment) { $BranchCardMasks = $true; $Policy = 'units-and-junk' }
 if ($OriginalStartRoomAttachment) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
@@ -797,6 +799,7 @@ if ($OriginalCardPlayMagicPower) { $environment['MT2_PROBE_MODIFIERS'] = 'origin
 if ($OriginalCheaperSpellCost) { $environment['MT2_PROBE_MODIFIERS'] = 'original-reduce-spell-cost-cheaper' }
 if ($OriginalNefariousOverflow) { $environment['MT2_PROBE_MODIFIERS'] = 'original-nefarious-overflow' }
 if ($OriginalCopyFirstSpellPlayed) { $environment['MT2_PROBE_MODIFIERS'] = 'original-copy-first-spell-played' }
+if ($OriginalFunguyDeckScaling) { $environment['MT2_PROBE_MODIFIERS'] = 'original-funguy-deck-scaling' }
 if ($OriginalCardDrawOnCardPlay) { $environment['MT2_PROBE_MODIFIERS'] = 'original-card-draw-on-card-play' }
 if ($OriginalCarriageJack) { $environment['MT2_PROBE_MODIFIERS'] = 'original-carriage-jack' }
 if ($OriginalFirstRoomAttachment) { $environment['MT2_PROBE_MODIFIERS'] = 'original-first-room-attachment' }
@@ -1584,6 +1587,18 @@ if ($OriginalCopyFirstSpellPlayed -and ($trace.Schema -ne 173 -or
     -not (Select-String -LiteralPath $unityLog -Pattern 'ORIGINAL-COPY-FIRST-SPELL-PREPARED' -Quiet) -or
     @($trace.Actions | Where-Object ScenarioAction).Count -lt 2)) {
     throw 'CopyFirstSpellPlayed lacks its first direct spell and same-turn spell witness.'
+}
+if ($OriginalFunguyDeckScaling) {
+    $pileStartRecords = @($trace.RelicPileStartTurn)
+    if ($trace.Schema -ne 174 -or $trace.ModifierScenario -ne 'original-funguy-deck-scaling' -or
+        -not $trace.OriginalFunguyDeckScalingPrepared -or $pileStartRecords.Count -lt 2 -or
+        @($pileStartRecords | Where-Object {
+            -not $_.Completed -or $null -ne $_.UnsupportedReason -or $null -ne $_.Difference -or
+            $_.VisibleDeckCount -ne 40 -or $_.ApplicationsPerRoom -ne 2
+        }).Count -gt 0 -or
+        -not (Select-String -LiteralPath $unityLog -Pattern 'ORIGINAL-FUNGUY-DECK-PREPARED deck=40 threshold=20' -Quiet)) {
+        throw 'StartOfTurnAddFunguysPerDeckSize lacks the native 40-card repeated callback witness.'
+    }
 }
 if (($OriginalNullRelic -or $OriginalNullRelicBaseline) -and ($null -eq $trace.OriginalNullRelic -or
     $trace.OriginalNullRelic.Present -ne $(if ($OriginalNullRelicBaseline) { 0 } else { 1 }) -or

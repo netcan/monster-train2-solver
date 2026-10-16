@@ -294,6 +294,8 @@ namespace MonsterTrain2Poju.Probe
                         OriginalEarlyDiscardEnergyScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalTurnDrawScenario.Enabled && !OriginalTurnDrawScenario.Acquired)
                         OriginalTurnDrawScenario.AcquireBeforeBattle(managers!, log);
+                    if (fullBattle && OriginalFunguyDeckScalingScenario.Enabled && !OriginalFunguyDeckScalingScenario.Acquired)
+                        OriginalFunguyDeckScalingScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalNullRelicScenario.Enabled && !OriginalNullRelicScenario.Acquired)
                         OriginalNullRelicScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalRelicCountAttackScenario.Enabled && !OriginalRelicCountAttackScenario.Acquired)
@@ -647,6 +649,12 @@ namespace MonsterTrain2Poju.Probe
             {
                 OriginalTurnDrawScenario.Prepare(managers, log);
                 numericModifiersPrepared = true;
+            }
+            if (fullBattle && !numericModifiersPrepared && OriginalFunguyDeckScalingScenario.Enabled)
+            {
+                OriginalFunguyDeckScalingScenario.Prepare(managers, log);
+                numericModifiersPrepared = true;
+                return;
             }
             if (fullBattle && !numericModifiersPrepared && OriginalOpeningDrawScenario.Enabled)
             {

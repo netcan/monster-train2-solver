@@ -510,14 +510,19 @@ namespace MonsterTrain2Poju.Model
                         if (!fullTrain || definitions == null || effect.SpawnFallbackUnit == null)
                             return UnsupportedTrain("Spawn-or-status fallback requires the complete birth catalog.");
                         CardInstanceState? sourceCard = state.Context!.FindCard(sourceCardId);
-                        CardPlayRule? birthRule = definitions.Cards.FirstOrDefault(item => item.DataId == sourceCard?.DataId);
+                        CardPlayRule? birthRule = sourceCardId == 0
+                            ? new CardPlayRule("cardless-relic-spawn:" + effect.SpawnFallbackUnit.AssetKey,
+                                "CardlessRelicSpawn", 0, "SpawnMonster", "Room", effect.SpawnFallbackUnit,
+                                Array.Empty<string>(), cardType: "Monster")
+                            : definitions.Cards.FirstOrDefault(item => item.DataId == sourceCard?.DataId);
                         if (birthRule == null) return UnsupportedTrain("Spawn-or-status requires its live source card definition.");
                         RoomCombatState birthRoom = state.Rooms.Single(item => item.RoomIndex == collectionRoom);
                         var additionalStatus = new SpawnStatusApplication(effect.Statuses[0], sourceCardId,
                             !effect.DisallowStatusStackModifiers, "CardEffectSpawnMonsterOrAddStatusEffect");
                         UnitBirthResult born = UnitBirthModel.SpawnWithStatus(birthRoom, birthRule.WithSpawn(effect.SpawnFallbackUnit),
                             0, 0, new CombatStatus("cardless", 1, triggerVfxEnemy: false, triggerVfxPlayer: false,
-                                stackable: false, hidden: false, displayCategory: "Persistent"), additionalStatus);
+                                stackable: false, hidden: false, displayCategory: "Persistent", propagatable: false,
+                                excludeHeroPropagation: false, excludeMonsterPropagation: false), additionalStatus);
                         if (!born.Supported) return UnsupportedTrain(born.Result.UnsupportedReason!);
                         state = ReplaceRoom(state, born.Result.State!);
                         events.AddRange(born.Result.Events);
@@ -1938,7 +1943,8 @@ namespace MonsterTrain2Poju.Model
                     // Retain the context for status rules while satisfying its cache guard.
                     var test = new CombatUnit(0, "status-validation", CombatTeam.Player, 0, 1, 1, false, false, false, new[] { status },
                         modifiers: new UnitModifiers(0, 0, 0, 1, 1, true, false, Array.Empty<CardUpgradeModifier>(),
-                            damageBuffFromStatusEffects: 0));
+                            damageBuffFromStatusEffects: 0),
+                        hordeDefinition: status.Id == "horde" ? new HordeBaseStats(0, 1) : null);
                     error = RoomCombatModel.Validate(new RoomCombatState(source.RoomIndex, source.Deployment,
                         new[] { test }, Array.Empty<string>(), source.Context, source.Preview, source.ActiveCompanionBossIds));
                     if (error != null) return error;

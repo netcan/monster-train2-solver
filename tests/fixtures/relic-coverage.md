@@ -1,7 +1,7 @@
 # Original relic coverage evidence
 
-As of 2026-10-17, **150 distinct original collectable relics / 224 catalog entries
-(66.96%)** have accepted native evidence: 134 have full-battle effect evidence,
+As of 2026-10-17, **151 distinct original collectable relics / 224 catalog entries
+(67.41%)** have accepted native evidence: 135 have full-battle effect evidence,
 fifteen have campaign consumer interfaces validated, and one is an explicit
 native no-op with seeded baseline equivalence. Except for that no-op, this counts
 unchanged relic definitions whose effects actually ran, including original filters and
@@ -41,7 +41,7 @@ battle validates an ordinary-card control
 does not trigger it, the first native capacity attachment is copied to all
 non-Pyre floors, and a later attachment is blocked by the unchanged once-per-
 battle condition. Native room and unit snapshots also match attachment upgrade
-propagation. The accepted inventory is 369 archives: 331 battles and 38 component
+propagation. The accepted inventory is 370 archives: 332 battles and 38 component
 calibrations, with no JSON companions. The new EmberOnEarlyDiscard battle starts
 at zero Ember and confirms +1 per card-triggered card discard across five gaining
 steps; 18 consume controls do not gain Ember. Its pure checks cover energy cap,
@@ -132,7 +132,7 @@ separate `CorruptionAdded` callback battles; none adds a relic owner. The origin
 effects each add one Corrupt Poison stack to an enemy on corruption increase.
 The Mageblade status/cache/attack path has an accepted
 native battle archive, but Mageblade is not a collectable relic and is not
-included in the 103/224 owner count. The `AllUnitsMultistrike` archive
+included in the 151/224 owner count. The `AllUnitsMultistrike` archive
 validates a mutator, not a collectible relic, and is also excluded from that
 owner count.
 
@@ -144,6 +144,7 @@ owner count.
 | `ReduceSpellCostOfCheaper` | `9cc85dbb-d0ae-409b-8f26-41d2202eb1e0` | [cheaper spell cost][cheaperSpellCost] | Unchanged FreeSpellBlessing applies only to filtered spells with strictly lower cost; equal-cost, zero-cost and X-cost controls are unchanged. Played-card and end-turn discard clean up tracked upgrades. Full battle and independent 128/128-state replay/search match. |
 | `NefariousOverflow` | `b0575799-1511-489d-a05d-b5b2e6bf84c2` | [NefariousOverflow][nefariousOverflow] | The unchanged both-team payload adds 1 explosion damage per Unstable stack: the five-stack carrier's death kills the Mage and reduces the Guard's Armor 17→7. Proc-damage and growth hooks remain unsupported when nonzero. Full battle and independent 128/128-state replay/search match. |
 | `CopyFirstSpellPlayed` | `0f4a9e72-cd34-4667-95f6-6a0ca69832f8` | [CopyFirstSpellPlayed][copyFirstSpell] | The unchanged once-per-turn owner copies the first direct Spell with temporary Ephemeral; its generated copy plays again the same turn without retriggering. Exact original owner only; sibling copy payloads are not generalized. |
+| `StartOfTurnAddFunguysPerDeckSize` | `e5d7c9d0-c0a3-4b0c-97cf-6def6ad287e9` | [Funguy deck scaling][funguyDeckScaling] | Six original callbacks at 40 visible cards apply two cardless Horde effects on each live room: three Funguys spawn and Horde rises by six total. Relentless room destruction is respected; support is limited to this original payload and captured positive path. |
 | `EmberOnTombDeath` | `4a5b1613-568c-4bf6-8bf7-15f8bf013345` | [unit resource relics][unitResources] | Original +5 Ember after actual Tomb sacrifice; ordinary friendly sacrifice and enemy deaths do not qualify. Complete manager contexts and exact resource/RNG state match. |
 | `Frenzystesia` | `56316fc2-b41a-41ae-aba8-e83fb668e8e1` | [unit resource relics][unitResources] | Original +1 Ember on the first equipment callback this turn. Two actual equipment additions prove the first-only condition, with notification count recorded once by the effect and again by RelicManager. Full 22-play/five-EndTurn policy matches, including native duration resets. |
 | `RandomEquipmentCardFirstTurn` | `7a1d5b5d-cd08-4935-b629-d3d441905100` | [original opening draw][openingDraw] | Natural Equipment primary draw plus controlled native fallback to an Equipment with the deployment-draw trait. Original temporary -99 cost, count expansion and CardDraw RNG match. |
@@ -366,6 +367,7 @@ archives contain these observed battle sizes:
 | [cheaper spell cost][cheaperSpellCost] | 171 | 2 | 7 | 52 | Two ordered spell plays; played-card and end-turn discard cleanup witnesses |
 | [NefariousOverflow][nefariousOverflow] | 172 | 2 | 7 | 59 | One unchanged relic payload; five-stack Unstable death adds 5 explosion damage, killing the Mage and reducing Guard Armor 17→7 |
 | [CopyFirstSpellPlayed][copyFirstSpell] | 173 | 2 | 6 | 52 | First direct Spell receives an Ephemeral hand copy; a second same-turn direct play leaves the one-shot condition unchanged |
+| [Funguy deck scaling][funguyDeckScaling] | 174 | 0 | 7 | 67 | Six callbacks at 40 visible cards apply twice per live room; three cardless Funguys spawn with six total Horde stacks |
 
 The checks that enforce these observations are
 [TriggerCountChecks.Native](../../src/ModelChecks/TriggerCountChecks.cs),
@@ -722,6 +724,7 @@ dotnet run --project src/ModelChecks -c Release -- --gold-pyre-pure
 [cheaperSpellCost]: full-battle-original-cheaper-spell-cost.mt2f
 [nefariousOverflow]: full-battle-original-nefarious-overflow.mt2f
 [copyFirstSpell]: full-battle-original-copy-first-spell-played.mt2f
+[funguyDeckScaling]: full-battle-original-funguy-deck-scaling.mt2f
 [forgeConservation]: full-battle-original-forge-conservation-relic.mt2f
 [campaign]: campaign-relic-calibration.mt2f
 [campaignDrafts]: campaign-draft-calibration.mt2f

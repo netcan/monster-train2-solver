@@ -4675,3 +4675,29 @@ pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-cop
 dotnet run --project src/ModelChecks -c Release -- --original-copy-first-spell-only tests/fixtures/full-battle-original-copy-first-spell-played.mt2f
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-copy-first-spell-played.mt2f
 ```
+
+### Original StartOfTurnAddFunguysPerDeckSize relic (schema 174)
+
+`full-battle-original-funguy-deck-scaling.mt2f` captures the unchanged original
+owner and its nested cardless Horde effect. At 40 visible deck cards, native
+`RelicEffectAddEffectPerPileStartOfTurn` floors the deck count by the original
+threshold of 20 and applies twice in each live room. Six callbacks spawn three
+Funguys and add six Horde stacks total. The later Relentless room destruction
+is reflected in the callback's placement gate. Pure controls cover 19/20/39/40
+thresholds, the preview/placement gate, all-room order and destroyed rooms.
+The winning battle has 67 matched stages, 13 card cycles and seven EndTurns;
+capture failures, mismatches, unsupported transitions and pending records are
+zero. Independent full-turn chain replay matches all seven EndTurns, including
+16 parallel branches. This archive has no recorded card actions, so it does not
+claim bounded card-action search evidence.
+
+The binary is 29,923 bytes with 4,780 unique nodes and SHA-256
+`721df6c82cc4684b0867872894dff3e244819e15d65289e9bf86e1b476418555`; it has no
+JSON companion. This supports the captured original owner at a 40-card visible
+deck and its cardless Horde payload; other owners, thresholds, nested effects
+and deck-size bands remain unsupported.
+
+```powershell
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-funguy-deck-scaling.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-funguy-deck-only tests/fixtures/full-battle-original-funguy-deck-scaling.mt2f
+```

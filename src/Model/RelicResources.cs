@@ -25,11 +25,12 @@ namespace MonsterTrain2Poju.Model
         public int? BaseFloorCapacity { get; }
         public int? DragonsHoardCap { get; }
         public bool? TowerHealingDisabled { get; }
+        public int VisibleDeckCount { get; }
         public BattleResourceState(int baseEnergy, int deploymentExtraEnergy, int baseDraw, int maxEnergy, int maxHandSize,
             string pyreDataId, int pyreBaseAttack, int basePyreMaxHealth, int pyrePersistentDamage, int pyreModifiedBaseAttack,
             IReadOnlyList<int> upgradeAttack, IReadOnlyList<int> upgradeHealth, IReadOnlyList<string> mutatorIds,
             float goldRewardMultiplier = 1f, int? baseFloorCapacity = null, int? dragonsHoardCap = null,
-            bool? towerHealingDisabled = null)
+            bool? towerHealingDisabled = null, int visibleDeckCount = 0)
         {
             BaseEnergy = baseEnergy; DeploymentExtraEnergy = deploymentExtraEnergy; BaseDraw = baseDraw;
             MaxEnergy = maxEnergy; MaxHandSize = maxHandSize; PyreDataId = pyreDataId; PyreBaseAttack = pyreBaseAttack;
@@ -39,13 +40,33 @@ namespace MonsterTrain2Poju.Model
             BaseFloorCapacity = baseFloorCapacity;
             DragonsHoardCap = dragonsHoardCap;
             TowerHealingDisabled = towerHealingDisabled;
+            VisibleDeckCount = visibleDeckCount;
             UpgradeAttack = Array.AsReadOnly(upgradeAttack.ToArray()); UpgradeHealth = Array.AsReadOnly(upgradeHealth.ToArray());
             MutatorIds = Array.AsReadOnly(mutatorIds.ToArray());
         }
         internal BattleResourceState WithPyreModifiedBaseAttack(int value) => new(BaseEnergy, DeploymentExtraEnergy,
             BaseDraw, MaxEnergy, MaxHandSize, PyreDataId, PyreBaseAttack, BasePyreMaxHealth, PyrePersistentDamage,
             value, UpgradeAttack, UpgradeHealth, MutatorIds, GoldRewardMultiplier, BaseFloorCapacity, DragonsHoardCap,
-            TowerHealingDisabled);
+            TowerHealingDisabled, VisibleDeckCount);
+        internal BattleResourceState WithVisibleDeckCount(int value) => new(BaseEnergy, DeploymentExtraEnergy,
+            BaseDraw, MaxEnergy, MaxHandSize, PyreDataId, PyreBaseAttack, BasePyreMaxHealth, PyrePersistentDamage,
+            PyreModifiedBaseAttack, UpgradeAttack, UpgradeHealth, MutatorIds, GoldRewardMultiplier, BaseFloorCapacity,
+            DragonsHoardCap, TowerHealingDisabled, value);
+    }
+
+    public sealed class RelicPileStartTurnRule
+    {
+        public string Pile { get; }
+        public int Threshold { get; }
+        public bool ApplyAllRooms { get; }
+        public CardActionEffect Effect { get; }
+        public IReadOnlyList<string> ExternalInteractions { get; }
+        public RelicPileStartTurnRule(string pile, int threshold, bool applyAllRooms, CardActionEffect effect,
+            IReadOnlyList<string>? externalInteractions = null)
+        {
+            Pile = pile; Threshold = threshold; ApplyAllRooms = applyAllRooms; Effect = effect;
+            ExternalInteractions = Array.AsReadOnly((externalInteractions ?? Array.Empty<string>()).ToArray());
+        }
     }
 
     public sealed class RelicResourceEffect
@@ -67,11 +88,13 @@ namespace MonsterTrain2Poju.Model
         public CardGenerationRule? CardGeneration { get; }
         public RelicUnitResourceRule? UnitTrigger { get; }
         public RelicOpeningDrawRule? OpeningDraw { get; }
+        public RelicPileStartTurnRule? PileStartTurn { get; }
         public RelicResourceEffect(int effectIndex, string type, int paramInt, int paramInt2, int amount,
             bool canApplyInPreviewMode, string? requiredMutatorId = null, IReadOnlyList<RelicConditionState>? conditions = null,
             float? drawValue = null, int? drawMutationOrder = null,
             float? capacityValue = null, int? capacityMutationOrder = null, int paramMinInt = 0, float paramFloat = 0,
-            CardGenerationRule? cardGeneration = null, RelicUnitResourceRule? unitTrigger = null, RelicOpeningDrawRule? openingDraw = null)
+            CardGenerationRule? cardGeneration = null, RelicUnitResourceRule? unitTrigger = null,
+            RelicOpeningDrawRule? openingDraw = null, RelicPileStartTurnRule? pileStartTurn = null)
         {
             EffectIndex = effectIndex; Type = type; ParamInt = paramInt; ParamInt2 = paramInt2; Amount = amount;
             ParamMinInt = paramMinInt;
@@ -79,6 +102,7 @@ namespace MonsterTrain2Poju.Model
             CardGeneration = cardGeneration;
             UnitTrigger = unitTrigger;
             OpeningDraw = openingDraw;
+            PileStartTurn = pileStartTurn;
             CanApplyInPreviewMode = canApplyInPreviewMode; RequiredMutatorId = requiredMutatorId;
             Conditions = Array.AsReadOnly((conditions ?? Array.Empty<RelicConditionState>()).ToArray());
             DrawValue = drawValue; DrawMutationOrder = drawMutationOrder;
@@ -86,10 +110,10 @@ namespace MonsterTrain2Poju.Model
         }
         internal RelicResourceEffect WithConditions(IReadOnlyList<RelicConditionState> conditions) =>
             new RelicResourceEffect(EffectIndex, Type, ParamInt, ParamInt2, Amount, CanApplyInPreviewMode,
-                RequiredMutatorId, conditions, DrawValue, DrawMutationOrder, CapacityValue, CapacityMutationOrder, ParamMinInt, ParamFloat, CardGeneration, UnitTrigger, OpeningDraw);
+                RequiredMutatorId, conditions, DrawValue, DrawMutationOrder, CapacityValue, CapacityMutationOrder, ParamMinInt, ParamFloat, CardGeneration, UnitTrigger, OpeningDraw, PileStartTurn);
         internal RelicResourceEffect WithDrawValue(float value) =>
             new RelicResourceEffect(EffectIndex, Type, ParamInt, ParamInt2, Amount, CanApplyInPreviewMode,
-                RequiredMutatorId, Conditions, value, DrawMutationOrder, CapacityValue, CapacityMutationOrder, ParamMinInt, ParamFloat, CardGeneration, UnitTrigger, OpeningDraw);
+                RequiredMutatorId, Conditions, value, DrawMutationOrder, CapacityValue, CapacityMutationOrder, ParamMinInt, ParamFloat, CardGeneration, UnitTrigger, OpeningDraw, PileStartTurn);
     }
 
     public sealed class RelicResourceEvent
@@ -142,13 +166,14 @@ namespace MonsterTrain2Poju.Model
         public const string AdjustMixAmount = "RelicEffectAdjustMixAmount";
         public const string ConserveEnergyEndOfTurn = "RelicEffectConserveEnergyEndOfTurn";
         public const string PermanentPyreAttackAdjustment = "CardEffectPermanentlyAdjustPyreAttack";
+        public const string PileStartTurn = "RelicEffectAddEffectPerPileStartOfTurn";
         public static bool IsEffect(string type) => type == Energy || type == DeploymentEnergy || type == StartCombatEnergy || type == Draw ||
             type == PyreAttack || type == PyreHealth || type == FloorCapacity || type == MoonPhaseEnergy ||
             type == EnergyOnCardEarlyDiscard ||
             type == AdditionalSmeltEmber || type == AdjustMixAmount || type == ConserveEnergyEndOfTurn || type == ConserveForgePoints ||
             type == RelicCardGenerationModel.AfterDraw || type == RelicCardGenerationModel.StartOfBattle ||
             type == RelicTurnDrawModel.FullHealth || type == RelicTurnDrawModel.Opening ||
-            RelicUnitResourceModel.IsEffect(type) || RelicOpeningDrawModel.IsEffect(type) || IsOpeningCorruption(type);
+            RelicUnitResourceModel.IsEffect(type) || RelicOpeningDrawModel.IsEffect(type) || IsOpeningCorruption(type) || type == PileStartTurn;
 
         internal static string? Validate(CombatRelicState relic)
         {
@@ -185,6 +210,12 @@ namespace MonsterTrain2Poju.Model
                     if (generationError != null) return generationError;
                 }
                 else if (rule.CardGeneration != null) return "Unexpected relic card generation on another resource effect.";
+                if (rule.Type == PileStartTurn)
+                {
+                    string? pileError = RelicPileStartTurnModel.Validate(relic, rule);
+                    if (pileError != null) return pileError;
+                }
+                else if (rule.PileStartTurn != null) return "Unexpected pile start-of-turn payload on another resource effect.";
                 if (rule.RequiredMutatorId == "") return "Empty required resource mutator identity.";
                 if ((rule.Type == Energy || rule.Type == DeploymentEnergy || rule.Type == StartCombatEnergy) && rule.Amount != rule.ParamInt)
                     return "Relic energy initialized amount differs from its original parameter.";
@@ -239,7 +270,7 @@ namespace MonsterTrain2Poju.Model
             if (context?.Resources == null) return required ? "Missing raw native resource inputs." : null;
             BattleResourceState raw = context.Resources;
             if (context.Relics == null || raw.BaseEnergy < 0 || raw.BaseDraw < 0 || raw.MaxEnergy < 0 || raw.MaxHandSize < 1 ||
-                raw.BasePyreMaxHealth < 1 || string.IsNullOrEmpty(raw.PyreDataId) || raw.MutatorIds.Any(string.IsNullOrEmpty) ||
+                raw.BasePyreMaxHealth < 1 || raw.VisibleDeckCount < 0 || string.IsNullOrEmpty(raw.PyreDataId) || raw.MutatorIds.Any(string.IsNullOrEmpty) ||
                 raw.MutatorIds.Distinct().Count() != raw.MutatorIds.Count || context.MaxHandSize != raw.MaxHandSize ||
                 context.EnergyState?.Maximum != raw.MaxEnergy || float.IsNaN(raw.GoldRewardMultiplier) || float.IsInfinity(raw.GoldRewardMultiplier))
                 return "Invalid or inconsistent raw native resource inputs.";

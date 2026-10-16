@@ -468,6 +468,15 @@ namespace MonsterTrain2Poju.Model
             else context = EnergyModel.StartTurn(context, source.EnergyPerTurn);
             context = UnitStandbyModel.ReturnReady(context);
             context = EquipmentModel.ReturnUnattached(context, new HashSet<int>(train.Rooms.SelectMany(room => room.Units).Select(unit => unit.Id)));
+            train = WithContext(train, context, false);
+            if (context.Relics?.Any(owner => owner.EffectTypes.Contains(RelicResourceModel.PileStartTurn)) == true)
+            {
+                TrainSpellResult pileStart = RelicPileStartTurnModel.Apply(train, outputPlayRules);
+                if (!pileStart.Supported) return Unsupported(pileStart.UnsupportedReason!);
+                train = pileStart.State!;
+                context = train.Context!;
+                spawn = WithTrain(spawn, train, turn, spawn.Rng);
+            }
             if (context.Relics?.Any(owner => owner.EffectTypes.Contains(RelicTurnDrawModel.FullHealth)) == true)
             {
                 var refresh = RelicTurnDrawModel.BeforeDraw(context, train.Rooms.SelectMany(room => room.Units).Single(unit => unit.IsPyre).Health);

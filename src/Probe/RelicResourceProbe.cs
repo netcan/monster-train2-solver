@@ -89,7 +89,8 @@ namespace MonsterTrain2Poju.Probe
                 ((MutableRules)AccessTools.Field(typeof(SaveManager), "mutableRules").GetValue(save))
                     .GetRule(MutableRules.Condition.GoldRewardMultiplier, 1f),
                 baseFloorCapacity: balance.GetCharacterCapacityPerFloor(), dragonsHoardCap: save.GetDragonsHoardCap(),
-                towerHealingDisabled: save.GetRelicModifiedRules().GetTowerHealingDisabled());
+                towerHealingDisabled: save.GetRelicModifiedRules().GetTowerHealingDisabled(),
+                visibleDeckCount: save.GetVisibleDeckCount());
         }
 
         internal static RelicResourceEffect Definition(IRelicEffect effect, int index, AllGameManagers managers)
@@ -105,6 +106,7 @@ namespace MonsterTrain2Poju.Probe
             CardGenerationRule? generation = null;
             RelicUnitResourceRule? unitTrigger = null;
             RelicOpeningDrawRule? openingDraw = null;
+            RelicPileStartTurnRule? pileStartTurn = null;
             if (effect is RelicEffectDrawOnPreOpeningDraw)
             {
                 var upgradeData = data.GetParamCardUpgradeData(); CardUpgradeModifier? upgrade = null;
@@ -146,6 +148,15 @@ namespace MonsterTrain2Poju.Probe
             }
             else if (effect is RelicEffectDrawToMaxStartOfCombat)
                 amount = data.GetParamInt();
+            else if (effect is RelicEffectAddEffectPerPileStartOfTurn)
+            {
+                CardEffectData nested = data.GetParamCardEffectData().Single();
+                var interactions = new List<string>();
+                CardActionEffect action = BattleActionProbe.DescribeTriggerEffect(nested, interactions);
+                pileStartTurn = new RelicPileStartTurnRule(((CardPile)data.GetParamMinInt()).ToString(),
+                    data.GetParamMaxInt(), data.GetParamBool(), action, interactions);
+                amount = data.GetParamInt();
+            }
             else if (effect is RelicEffectChangeStartingHandSize || effect is RelicEffectAdditionalDrawOnTowerFullHealth)
             {
                 var draw = (IBalanceEditingRelicEffect)effect;
@@ -208,7 +219,8 @@ namespace MonsterTrain2Poju.Probe
             return new RelicResourceEffect(index, type, data.GetParamInt(), data.GetParamInt2(), amount,
                 effect.CanApplyInPreviewMode, required?.GetID(), RelicCardModifierProbe.Conditions(effect), value, registration,
                 capacityValue, capacityRegistration, data.GetParamMinInt(),
-                effect is RelicEffectAddPermanentCorruptionStartOfCombat ? data.GetParamFloat() : 0, generation, unitTrigger, openingDraw);
+                effect is RelicEffectAddPermanentCorruptionStartOfCombat ? data.GetParamFloat() : 0,
+                generation, unitTrigger, openingDraw, pileStartTurn);
         }
 
         internal static ResourceSnapshot Capture()

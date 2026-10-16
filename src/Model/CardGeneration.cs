@@ -318,6 +318,9 @@ namespace MonsterTrain2Poju.Model
                     context = context.WithStatistics(context.Statistics.RefreshOwnedCards(context.CardInstances!.Select(card => card.InstanceId)));
                 added.Add(card);
             }
+            if (rule.Permanent == true && added.Count > 0 && context.Resources != null)
+                context = context.WithResources(context.Resources.WithVisibleDeckCount(
+                    checked(context.Resources.VisibleDeckCount + added.Count)));
             return new CardGenerationResult(context, added);
         }
         private static CardModifiers Copy(CardModifiers destination, CardModifiers source, HashSet<string> ignored,
