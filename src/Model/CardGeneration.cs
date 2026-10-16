@@ -59,17 +59,23 @@ namespace MonsterTrain2Poju.Model
         public bool DeterministicPoolSelection { get; }
         public bool RequireCopyableSource { get; }
         public bool UpgradeIsPermanent { get; }
+        public bool? Permanent { get; }
+        public int? SelectedPoolIndex { get; }
         public CardGenerationRule(string destination, int count, IReadOnlyList<CardCreationRule> pool,
             bool skipDuplicateInHand = false, bool requireHandSpace = false, bool copyModifiers = false,
             bool ignoreTemporaryModifiers = false, CardUpgradeModifier? upgrade = null,
             IReadOnlyList<DiscardGenerationUpgrade>? discardCopyUpgrades = null, IReadOnlyList<string>? externalInteractions = null,
-            bool deterministicPoolSelection = false, bool requireCopyableSource = false, bool upgradeIsPermanent = false)
+            bool deterministicPoolSelection = false, bool requireCopyableSource = false, bool upgradeIsPermanent = false,
+            bool? permanent = null, int? selectedPoolIndex = null)
         { Destination = destination; Count = count; Pool = Array.AsReadOnly(pool.ToArray()); SkipDuplicateInHand = skipDuplicateInHand;
             RequireHandSpace = requireHandSpace; CopyModifiers = copyModifiers; IgnoreTemporaryModifiers = ignoreTemporaryModifiers; Upgrade = upgrade;
             DiscardCopyUpgrades = Array.AsReadOnly((discardCopyUpgrades ?? Array.Empty<DiscardGenerationUpgrade>()).ToArray());
             ExternalInteractions = Array.AsReadOnly((externalInteractions ?? Array.Empty<string>()).ToArray());
             DeterministicPoolSelection = deterministicPoolSelection; RequireCopyableSource = requireCopyableSource;
-            UpgradeIsPermanent = upgradeIsPermanent; }
+            UpgradeIsPermanent = upgradeIsPermanent; Permanent = permanent; SelectedPoolIndex = selectedPoolIndex; }
+        internal CardGenerationRule WithSelectedPoolIndex(int index) => new(Destination, Count, Pool, SkipDuplicateInHand,
+            RequireHandSpace, CopyModifiers, IgnoreTemporaryModifiers, Upgrade, DiscardCopyUpgrades, ExternalInteractions,
+            DeterministicPoolSelection, RequireCopyableSource, UpgradeIsPermanent, Permanent, index);
     }
 
     public sealed class CardGenerationResult
@@ -148,6 +154,13 @@ namespace MonsterTrain2Poju.Model
         }
 
         public static CardGenerationResult Apply(CombatContext source, CardGenerationRule rule, int sourceCardId = 0)
+            => Apply(source, rule, sourceCardId, false);
+
+        internal static CardGenerationResult ApplyPartFactory(CombatContext source, CardGenerationRule rule)
+            => Apply(source, rule, 0, true);
+
+        private static CardGenerationResult Apply(CombatContext source, CardGenerationRule rule, int sourceCardId,
+            bool allowDeferredGraftedSpawnCard)
         {
             if (source.Cards.ExternalInteractions.Count > 0) return Unsupported(string.Join("; ", source.Cards.ExternalInteractions));
             if (rule.ExternalInteractions.Count > 0) return Unsupported(string.Join("; ", rule.ExternalInteractions));
@@ -167,7 +180,13 @@ namespace MonsterTrain2Poju.Model
             {
                 if (rule.Pool.Count == 0) continue; // Native pool filtering failed: no selection or allocation.
                 int poolIndex = 0;
-                if (!rule.DeterministicPoolSelection)
+                if (rule.SelectedPoolIndex is int selectedPoolIndex)
+                {
+                    if (selectedPoolIndex < 0 || selectedPoolIndex >= rule.Pool.Count)
+                        return Unsupported("Captured generated-card pool selection is outside its native pool.");
+                    poolIndex = selectedPoolIndex;
+                }
+                else if (!rule.DeterministicPoolSelection)
                 {
                     RngDraw selected = context.BattleRng.Range(0, rule.Pool.Count);
                     context = context.WithBattleRng(selected.State);
@@ -197,7 +216,9 @@ namespace MonsterTrain2Poju.Model
                 }
                 candidate = CardExhaustModel.InitializeCreated(candidate, context);
                 string? error = CardModifierModel.UnsupportedReason(candidate);
-                if (error != null) return Unsupported(error);
+                if (error != null && !(allowDeferredGraftedSpawnCard &&
+                    error == "Unmodeled unit card statistics; Grafted equipment" &&
+                    RelicCardGenerationModel.IsPartFactoryGraftedCard(candidate))) return Unsupported(error);
                 // AddCardImpl applies the manager's current relics before optional,
                 // copied, discard-conditional and pending temporary upgrades.
                 if (context.Relics?.Any(relic => relic.CardModifiers?.Count > 0 || relic.CardHealthModifiers?.Count > 0 ||

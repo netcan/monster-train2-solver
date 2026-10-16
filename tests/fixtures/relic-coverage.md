@@ -1,7 +1,7 @@
 # Original relic coverage evidence
 
-As of 2026-10-17, **144 distinct original collectable relics / 224 catalog entries
-(64.29%)** have accepted native evidence: 128 have full-battle effect evidence,
+As of 2026-10-17, **145 distinct original collectable relics / 224 catalog entries
+(64.73%)** have accepted native evidence: 129 have full-battle effect evidence,
 fifteen have campaign consumer interfaces validated, and one is an explicit
 native no-op with seeded baseline equivalence. Except for that no-op, this counts
 unchanged relic definitions whose effects actually ran, including original filters and
@@ -41,7 +41,7 @@ battle validates an ordinary-card control
 does not trigger it, the first native capacity attachment is copied to all
 non-Pyre floors, and a later attachment is blocked by the unchanged once-per-
 battle condition. Native room and unit snapshots also match attachment upgrade
-propagation. The accepted inventory is 364 archives: 326 battles and 38 component
+propagation. The accepted inventory is 366 archives: 328 battles and 38 component
 calibrations, with no JSON companions.
 A recent calibration bundles two
 complete winning native battles for StarterWurmRelic: identical 21-play/seven-
@@ -254,12 +254,13 @@ owner count.
 | `CarriageJack` | `19e15240-37ca-460d-8230-693626fc7f7e` | [card-play room capacity][carriageJack] | Its unchanged +1 effect matches only `TrainRoomAttachment` plays and adjusts the selected player floor after the native attachment's +4. A non-attachment control leaves capacity unchanged. Unit-upgrade propagation from the attached room modifier is outside this fixture. |
 | `FirstRoomCardOnAllFloors` | `e55235f7-1d84-43f0-b8f5-037b64b8f582` | [first-room attachment replication][firstRoomAttachment] | The unchanged once-per-battle condition copies the first native `IncreaseRoomCapacity` attachment to every non-Pyre floor. An ordinary-card control is inert; a second attachment increments only its source-room counter and does not replicate. Full native state replay includes live and later unit upgrade propagation. |
 | `TrainRoomInstallFloor1AtStartOfCombat` | `2c97e1b3-d4bb-4133-9572-e582805c106f` | [start-room attachment][startRoomAttachment] | Its unchanged cardless Primary FuelCar attachment targets both teams on floor one. Six Heroes and two Monsters carry exactly one OnDeath trigger attributed to the native attachment GUID; source-room removal on Ascend matches live snapshots. |
+| `PartFactory` | `623ce968-aae5-4b07-b0c8-071f315031b7` | [PartFactory][partFactory] | The unchanged start-of-battle owner adds the native SetupRun-selected Pufferflesh to hand. Both weighted entries for that DataId match complete card context; the card later moves to Draw and is never played. Pool selection is a captured external result, not modeled SetupRun RNG. Grafted-equipment unit state and deploying/playing this card remain unsupported. |
 
 ## Campaign interface evidence
 
 These fifteen unchanged original owners are validated by their actual native
 campaign consumers, with baseline and removed-owner controls. This table is
-separate from the 127 battle owners. It does not claim whole-battle integration
+separate from the 129 battle owners. It does not claim whole-battle integration
 for these effect classes. The first capture's recorded relic IDs, gold, hoard cap and
 amount, deck IDs, frame and RNG match before/after; reward grants still execute
 their native run-stat side effects in the isolated save. Catalog enumeration
@@ -674,6 +675,7 @@ dotnet run --project src/ModelChecks -c Release -- --gold-pyre-pure
 [carriageJack]: full-battle-original-carriage-jack.mt2f
 [firstRoomAttachment]: full-battle-original-first-room-attachment.mt2f
 [startRoomAttachment]: full-battle-original-start-room-attachment.mt2f
+[partFactory]: full-battle-original-part-factory.mt2f
 [unitUpgradeTrigger]: full-battle-original-unit-upgrade-trigger-relic.mt2f
 [extraToughTombs]: full-battle-relic-extra-tough-tombs.mt2f
 [stealthWaxers]: full-battle-original-stealth-waxers.mt2f

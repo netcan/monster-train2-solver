@@ -1,9 +1,14 @@
 # Native regression fixtures
 
-Fused Pyreshard extension (2026-10-17): 365 archives (327 battles and 38
-calibrations), 144/224 original owners (64.29%): 128 battle, fifteen campaign-
-interface and one explicit no-op. The unchanged FusedPyreshard installs native
-Pyre-only OnKill +5; two kills persist +10 attack, with five non-Pyre controls,
+PartFactory extension (2026-10-17): 366 archives (328 battles and 38
+calibrations), 145/224 original owners (64.73%): 129 battle, fifteen campaign-
+interface and one explicit no-op. The unchanged PartFactory adds the captured
+SetupRun-selected Pufferflesh to hand; both weighted entries for that card match
+complete context. SetupRun selection and Grafted-equipment unit behavior remain
+outside the model. The winning replay has 61 stages, 21 actions and zero capture,
+mismatch, unsupported or pending records. Bounded search covers 128/128 states,
+but retains unsupported branches. The preceding Fused Pyreshard extension installs
+native Pyre-only OnKill +5; two kills persist +10 attack, with five non-Pyre controls,
 two trigger ablations and 53 matched room stages. Independent policy replay checks
 650 decision contexts, 16,610 native card views and 16 parallel branches.
 The preceding TrainRoomInstallFloor1AtStartOfCombat archive still matches its
@@ -3318,6 +3323,35 @@ coverage is 144/224 (64.29%).
 ```powershell
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-fused-pyreshard.mt2f
 dotnet run --project src/ModelChecks -c Release -- --gold-pyre-pure
+```
+
+### PartFactory
+
+`full-battle-original-part-factory.mt2f` validates the unchanged `PartFactory`
+owner. The native `RelicEffectAddCardsStartOfBattle` selects Pufferflesh
+(`7227d3ea-343a-45b2-ae2c-6f05383fcc7c`) and adds it to hand. The model receives
+the captured selected DataId as an external result; SetupRun pool selection/RNG
+is not modeled. The focused checker compares the complete generated-card context
+for both weighted pool entries with that DataId and confirms the card is not among
+the played action IDs. It later moves to Draw without being played.
+
+The schema-103 winning battle has 61 matched stages, 21 actions, seven decision
+turns, 13 CardCycles and 14 TrainPhases, with zero capture failures, mismatches,
+unsupported transitions or pending records. Independent bounded search covers
+128/128 states and has equal serial/parallel best results, while reporting 62
+unsupported recorded-decision attempts and 11 unsupported search attempts; those
+branches remain outside the claim. The selected unit card's Grafted-equipment
+statistics are not modeled: its interaction is deferred only while it remains in
+a non-Standby pile, and deployment/play remains unsupported.
+
+The binary is 33,792 bytes with 5,403 unique nodes and SHA-256
+`fae0989edf6ba907eb470504684a56fc97e34cff96fb46b04e9401e1c2485425`; it has no
+JSON companion. Inventory is 366 archives: 328 battles and 38 component
+calibrations. Original coverage is 145/224 (64.73%), including 129 battle owners.
+
+```powershell
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-part-factory.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-part-factory-only tests/fixtures/full-battle-original-part-factory.mt2f
 ```
 
 ### Original status stack relics

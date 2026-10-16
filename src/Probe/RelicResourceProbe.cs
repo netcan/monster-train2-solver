@@ -122,6 +122,19 @@ namespace MonsterTrain2Poju.Probe
                     effect is RelicEffectGoldOnTrigger ? data.GetParamStatusEffects().Select(status => status.statusId).ToArray() : Array.Empty<string>());
                 amount = data.GetParamInt();
             }
+            else if (effect is RelicEffectAddCardsStartOfBattle)
+            {
+                var upgradeData = data.GetParamCardUpgradeData();
+                CardUpgradeModifier? upgrade = null;
+                if (upgradeData != null) { var state = new CardUpgradeState(); state.Setup(upgradeData); upgrade = CardModifierProbe.Upgrade(state); }
+                var pool = data.GetParamCardPool()?.GetFilteredChoices() ?? new List<CardData>();
+                bool allCards = data.GetParamBool();
+                bool partFactory = ((RelicEffectBase)effect).SourceRelicState.GetRelicDataID() == OriginalPartFactoryScenario.DataId;
+                generation = new CardGenerationRule(data.GetParamBool3() ? "HandPile" : "DeckPileRandom",
+                    allCards ? pool.Count : 1, pool.Select(card => partFactory ? CardGenerationProbe.PartFactoryCreation(card) : CardGenerationProbe.Creation(card)).ToArray(), upgrade: upgrade,
+                    deterministicPoolSelection: allCards, permanent: data.GetParamBool2());
+                amount = allCards ? pool.Count : 1;
+            }
             else if (effect is RelicEffectAddBattleCardToHand)
             {
                 var upgradeData = data.GetParamCardUpgradeData();

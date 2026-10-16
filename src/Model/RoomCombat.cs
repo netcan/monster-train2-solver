@@ -867,7 +867,8 @@ namespace MonsterTrain2Poju.Model
             foreach (CardInstanceState instance in state.Context?.CardInstances ?? Array.Empty<CardInstanceState>())
             {
                 string? unsupported = CardModifierModel.UnsupportedReason(instance);
-                if (unsupported != null) return unsupported;
+                if (unsupported != null && !RelicCardGenerationModel.CanDeferUnplayedGraftedCard(state.Context, instance, state.Units))
+                    return unsupported;
             }
             if (state.Units.Select(unit => unit.Id).Distinct().Count() != state.Units.Count)
                 return "Unit instance IDs must be unique.";

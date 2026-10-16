@@ -260,6 +260,7 @@ param(
     [switch] $OriginalEquipmentGrowthRelics,
     [switch] $OriginalHealthChoiceRelic,
     [switch] $OriginalAfterDrawGenerationRelics,
+    [switch] $OriginalPartFactory,
     [switch] $OriginalUnitResourceRelics,
     [switch] $OriginalOpeningDrawRelics,
     [switch] $OriginalTurnDrawRelics,
@@ -393,6 +394,7 @@ if ($OriginalConduitRelics) { $BranchCardMasks = $true; $Policy = 'units-spells-
 if ($OriginalEquipmentGrowthRelics) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalHealthChoiceRelic) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalAfterDrawGenerationRelics) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
+if ($OriginalPartFactory) { $Policy = 'units-spells-and-junk' }
 if ($OriginalUnitResourceRelics) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalOpeningDrawRelics) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalTurnDrawRelics) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
@@ -707,6 +709,7 @@ if ($BrainTransfer) { $environment['MT2_PROBE_MODIFIERS'] = 'brain-transfer' }
 if ($FrostChanneling) { $environment['MT2_PROBE_MODIFIERS'] = 'frost-channeling' }
 if ($Mix) { $environment['MT2_PROBE_MODIFIERS'] = 'card-effect-mix' }
 if ($OriginalTinkermasterMix) { $environment['MT2_PROBE_MODIFIERS'] = 'original-tinkermaster-mix' }
+if ($OriginalPartFactory) { $environment['MT2_PROBE_MODIFIERS'] = 'original-part-factory' }
 if ($OriginalProgressPacemakerMix) { $environment['MT2_PROBE_MODIFIERS'] = 'original-progress-pacemaker-mix' }
 if ($OriginalCardTypeCostRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-card-type-cost-relic' }
 if ($OriginalConserveEmber) { $environment['MT2_PROBE_MODIFIERS'] = 'original-conserve-ember-relic' }
@@ -797,6 +800,7 @@ if ($OriginalConduitRelics) { $environment['MT2_PROBE_MODIFIERS'] = 'original-co
 if ($OriginalEquipmentGrowthRelics) { $environment['MT2_PROBE_MODIFIERS'] = 'original-equipment-growth-relics' }
 if ($OriginalHealthChoiceRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-health-choice-relic' }
 if ($OriginalAfterDrawGenerationRelics) { $environment['MT2_PROBE_MODIFIERS'] = 'original-after-draw-generation-relics' }
+if ($OriginalPartFactory) { $environment['MT2_PROBE_MODIFIERS'] = 'original-part-factory' }
 if ($OriginalUnitResourceRelics) { $environment['MT2_PROBE_MODIFIERS'] = 'original-unit-resource-relics' }
 if ($OriginalOpeningDrawRelics) { $environment['MT2_PROBE_MODIFIERS'] = 'original-opening-draw-relics' }
 if ($OriginalTurnDrawRelics) { $environment['MT2_PROBE_MODIFIERS'] = 'original-turn-draw-relics' }

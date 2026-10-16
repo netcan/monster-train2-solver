@@ -73,9 +73,13 @@ namespace MonsterTrain2Poju.Probe
             if (cache != null) cache[data] = result;
             return result;
         }
-        private static CardCreationRule CreateDefinition(CardData data)
+        internal static CardCreationRule PartFactoryCreation(CardData data) => CreateDefinition(data, true);
+
+        private static CardCreationRule CreateDefinition(CardData data, bool includeGraftedSpawnBoundary = false)
         {
             var interactions = new List<string>();
+            bool graftedSpawn = includeGraftedSpawnBoundary && data.GetSpawnCharacterData()?.GetGraftedEquipment() != null;
+            if (graftedSpawn) interactions.Add("Unmodeled unit card statistics");
             foreach (CardTraitData trait in data.GetTraits())
                 if (!DamageScalingProbe.Known(trait.GetTraitStateName()) &&
                     !(data.IsUnitAbility() && trait.GetTraitStateName() == "CardTraitCorruptRestricted"))
@@ -87,7 +91,8 @@ namespace MonsterTrain2Poju.Probe
             projectionSetupDepth++;
             try { instance.Setup(data, AllGameManagers.Instance!.GetSaveManager()); }
             finally { projectionSetupDepth--; }
-            CardModifiers modifiers = CardModifiers.Empty();
+            CardModifiers modifiers = new CardModifiers(new CardStatModifier(), Array.Empty<CardUpgradeModifier>(), 0,
+                graftedSpawn ? new[] { "Grafted equipment" } : Array.Empty<string>());
             CardMaskDescriptor? descriptor = CardBranchMaskProbe.Creation(data, instance.CanScaleWithMagicPower());
             int multiplier = CardMagicPowerModel.Multiplier(new CardInstanceState(0, data.GetID(), modifiers, modifiers, 0, 0, 0,
                 Array.Empty<string>(), maskDescriptor: descriptor));

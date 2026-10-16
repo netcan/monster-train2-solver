@@ -62,6 +62,13 @@ internal static class CardGenerationChecks
         CardGenerationResult empty = CardGenerationModel.Apply(context, new("DeckPileRandom", -5, []));
         Require(empty.Supported && empty.Context!.BattleRng.Equals(rng) && empty.Context.NextCardId == 4 && empty.Context.NextAddedTemporaryUpgrades!.Count == 1,
             "An empty filtered pool consumed selection/placement RNG or pending upgrades.");
+        var selectedCreation = new CardCreationRule("selected", CardModifiers.Empty(), null, []);
+        CardGenerationResult capturedSelection = CardGenerationModel.Apply(context,
+            new CardGenerationRule("HandPile", 1, [creation, selectedCreation], selectedPoolIndex: 1));
+        Require(capturedSelection.Supported && capturedSelection.AddedCards.Single().DataId == "selected" &&
+            capturedSelection.Context!.BattleRng.Equals(rng), "A captured external pool choice changed the battle RNG or selected another card.");
+        Require(!CardGenerationModel.Apply(context, new CardGenerationRule("HandPile", 1, [creation], selectedPoolIndex: 1)).Supported,
+            "An out-of-range captured pool choice was accepted.");
         foreach (string pile in new[] { "HandPile", "DiscardPile", "DeckPile", "DeckPileTop", "DeckPileRandom" })
         {
             CardGenerationResult result = CardGenerationModel.Apply(context, new(pile, -1, [creation]));

@@ -284,6 +284,8 @@ namespace MonsterTrain2Poju.Probe
                         OriginalOpeningCorruptionScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalOpeningDrawScenario.Enabled && !OriginalOpeningDrawScenario.Acquired)
                         OriginalOpeningDrawScenario.AcquireBeforeBattle(managers!, log);
+                    if (fullBattle && OriginalPartFactoryScenario.Enabled && !OriginalPartFactoryScenario.Acquired)
+                        OriginalPartFactoryScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalTurnDrawScenario.Enabled && !OriginalTurnDrawScenario.Acquired)
                         OriginalTurnDrawScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalNullRelicScenario.Enabled && !OriginalNullRelicScenario.Acquired)

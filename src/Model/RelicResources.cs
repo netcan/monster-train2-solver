@@ -144,7 +144,8 @@ namespace MonsterTrain2Poju.Model
         public static bool IsEffect(string type) => type == Energy || type == DeploymentEnergy || type == StartCombatEnergy || type == Draw ||
             type == PyreAttack || type == PyreHealth || type == FloorCapacity || type == MoonPhaseEnergy ||
             type == AdditionalSmeltEmber || type == AdjustMixAmount || type == ConserveEnergyEndOfTurn || type == ConserveForgePoints ||
-            type == RelicCardGenerationModel.AfterDraw || type == RelicTurnDrawModel.FullHealth || type == RelicTurnDrawModel.Opening ||
+            type == RelicCardGenerationModel.AfterDraw || type == RelicCardGenerationModel.StartOfBattle ||
+            type == RelicTurnDrawModel.FullHealth || type == RelicTurnDrawModel.Opening ||
             RelicUnitResourceModel.IsEffect(type) || RelicOpeningDrawModel.IsEffect(type) || IsOpeningCorruption(type);
 
         internal static string? Validate(CombatRelicState relic)
@@ -172,6 +173,11 @@ namespace MonsterTrain2Poju.Model
                 if (rule.Type == RelicCardGenerationModel.AfterDraw)
                 {
                     string? generationError = RelicCardGenerationModel.Validate(relic, rule);
+                    if (generationError != null) return generationError;
+                }
+                else if (rule.Type == RelicCardGenerationModel.StartOfBattle)
+                {
+                    string? generationError = RelicCardGenerationModel.ValidateStartOfBattle(relic, rule);
                     if (generationError != null) return generationError;
                 }
                 else if (rule.CardGeneration != null) return "Unexpected relic card generation on another resource effect.";
