@@ -1,11 +1,14 @@
 # Native regression fixtures
 
-Start-room attachment extension (2026-10-17): 364 archives (326 battles and 38
-calibrations), 143/224 original owners (63.84%): 127 battle, fifteen campaign-
-interface and one explicit no-op. The unchanged TrainRoomInstallFloor1AtStartOfCombat
-adds cardless FuelCar_Upgrade to floor one for both teams. Native spawn, movement
-and turn snapshots match the attachment-GUID OnDeath trigger across Heroes and
-Monsters; the 60-stage winning battle and 128/128-state independent search pass.
+Fused Pyreshard extension (2026-10-17): 365 archives (327 battles and 38
+calibrations), 144/224 original owners (64.29%): 128 battle, fifteen campaign-
+interface and one explicit no-op. The unchanged FusedPyreshard installs native
+Pyre-only OnKill +5; two kills persist +10 attack, with five non-Pyre controls,
+two trigger ablations and 53 matched room stages. Independent policy replay checks
+650 decision contexts, 16,610 native card views and 16 parallel branches.
+The preceding TrainRoomInstallFloor1AtStartOfCombat archive still matches its
+attachment-GUID OnDeath trigger across Heroes and Monsters and passes 128/128-state
+independent search.
 The captured source-room removal on Ascend is modeled; destination-room attachment
 application remains only when its payload is present in native capture.
 
@@ -3288,6 +3291,33 @@ pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -OriginalTriggerRelicBatch
 dotnet run --project src/ModelChecks -c Release -- --relic-triggers-pure
 dotnet run --project src/ModelChecks -c Release -- --original-trigger-relics-combined tests/fixtures/full-battle-original-trigger-relic-deaths.mt2f tests/fixtures/full-battle-original-trigger-relics.mt2f
 & ./scripts/Check-Models.ps1 -Fixture @('full-battle-original-trigger-relics.mt2f', 'full-battle-original-trigger-relic-deaths.mt2f')
+```
+
+### Fused Pyreshard
+
+`full-battle-original-fused-pyreshard.mt2f` validates the unchanged
+`FusedPyreshard` owner: the original Monsters-source, Pyre-subtype `OnKill`
+trigger applies `CardEffectPermanentlyAdjustPyreAttack` +5. The isolated setup
+adds the relic after the Pyre exists and invokes the original native
+`RelicState.OnCharacterAdded` callback on that live Pyre; natural
+acquisition-before-birth ordering is outside this fixture. The winning native
+battle has 53 matched room stages, 28 actions, seven EndTurns and zero capture,
+mismatch, unsupported or pending records. Two Pyre kill effects move the saved
+attack modifier from 0 to 10; five non-Pyre player-kill stages leave it unchanged,
+and two trigger-ablation replays remove the gain.
+
+The model also handles nonzero saved Pyre attack during combat and checks it is
+added once to live attack queries; native SaveManager preview mode remains a
+no-op. Independent replay covers 650 decision
+contexts and 16,610 exact native card views, with 16 immutable policy branches.
+The schema-106 archive is 69,639 bytes/10,692 unique nodes, SHA-256
+`d375c45659ebbafc694a012f45b5dab8717fff52c20423443270fdfbcaf2d748`; it has no
+JSON companion. The current inventory is 365 archives, and original relic
+coverage is 144/224 (64.29%).
+
+```powershell
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-fused-pyreshard.mt2f
+dotnet run --project src/ModelChecks -c Release -- --gold-pyre-pure
 ```
 
 ### Original status stack relics

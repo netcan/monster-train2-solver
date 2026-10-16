@@ -16,6 +16,15 @@ namespace MonsterTrain2Poju.Model
 
     public static partial class RelicResourceModel
     {
+        public static RelicResourceResult AdjustPyreAttack(CombatContext source, int delta)
+        {
+            string? error = Ready(source);
+            if (error != null) return new RelicResourceResult(null, 0, error);
+            BattleResourceState resources = source.Resources!;
+            int value = Math.Max(0, unchecked(resources.PyreModifiedBaseAttack + delta));
+            return new RelicResourceResult(source.WithResources(resources.WithPyreModifiedBaseAttack(value)), value);
+        }
+
         // The gold signal is synchronous. Recompute only the native raw attack
         // field; applied-upgrade and status accumulators remain independent.
         public static RelicPyreAttackRefreshResult RefreshPyreAttack(CombatContext source, CombatUnit? livePyre,

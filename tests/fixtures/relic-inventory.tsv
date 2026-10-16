@@ -12,7 +12,7 @@
 "BossIncreaseTurnDrawDH"	"401f30f6-6206-4c1c-b014-a8047c01597e"	"accepted-native-battle"	"RelicEffectChangeStartingHandSize,RelicEffectIncreasePyreHealth,RelicEffectIncreasePyreAttack"	""
 "BossIncreaseTurnDraw2"	"341001b3-3fa9-47a5-9d88-eb04390b82fa"	"accepted-native-battle"	"RelicEffectChangeStartingHandSize,RelicEffectIncreasePyreHealth,RelicEffectIncreasePyreAttack"	""
 "SurgeonsStitcher"	"8f22145d-5c41-45da-8abf-95bc5f369648"	"accepted-native-battle"	"RelicEffectAddTrigger"	""
-"FusedPyreshard"	"eae7f78f-fe81-4418-a491-d75413dbb55d"	"pending"	"RelicEffectAddTrigger"	""
+"FusedPyreshard"	"eae7f78f-fe81-4418-a491-d75413dbb55d"	"accepted-native-battle"	"RelicEffectAddTrigger"	""
 "ContingencyPlans"	"0278309e-d15c-4041-a8dc-b76f360f306b"	"accepted-native-battle"	"RelicEffectAddStatusEffectOnSpawn"	""
 "AddSnackToHand"	"81958958-6481-4847-afe1-cb651a041f6c"	"accepted-native-battle"	"RelicEffectAddBattleCardToHand"	""
 "CheaperMerchants"	"ffcb6931-e45e-4e27-bacf-4c649779c2be"	"accepted-native-campaign"	"RelicEffectModifyMerchantAllCosts"	""

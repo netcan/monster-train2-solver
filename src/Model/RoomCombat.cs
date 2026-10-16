@@ -882,8 +882,6 @@ namespace MonsterTrain2Poju.Model
                 if (unit.Modifiers?.MagebladeDamagePerMagicPower.HasValue == true &&
                     state.Context?.MagicPower?.Any(power => power.RoomIndex == state.RoomIndex && power.Team == unit.Team) != true)
                     return "Mageblade requires captured room magic power for this team.";
-                if (unit.IsPyre && state.Context?.Resources?.PyreModifiedBaseAttack is int savedPyreAttack && savedPyreAttack != 0)
-                    return "Live saved Pyre attack modifiers require native cached-attack lifecycle integration.";
                 if (requireStatusDamage && unit.Modifiers?.DamageBuffFromStatusEffects.HasValue != true)
                     return "Missing native status attack accumulator.";
                 if (unit.Ability?.CardCreation != null && unit.Ability.DataId != unit.Ability.CardCreation.DataId)
@@ -951,6 +949,15 @@ namespace MonsterTrain2Poju.Model
                     if (countError != null) return countError;
                     foreach (CombatEffect effect in trigger.Effects)
                     {
+                        if (effect.Type == RelicResourceModel.PermanentPyreAttackAdjustment)
+                        {
+                            CardActionEffect? adjustment = effect.Action;
+                            if (!unit.IsPyre || trigger.Kind != "OnKill" || state.Context?.Resources == null ||
+                                adjustment?.Type != "AdjustPyreAttack" || adjustment.Target != "Self" ||
+                                adjustment.Value != effect.Value || adjustment.Range != null || adjustment.Statuses.Count != 0)
+                                return "Permanent Pyre attack adjustment requires a live, non-preview Pyre OnKill with captured resources.";
+                            continue;
+                        }
                         if (effect.Type == "CardEffectEnchant")
                         {
                             if (state.Context?.Enchantments?.AutomaticLifecycle != true || effect.Enchantment == null)
@@ -3307,6 +3314,17 @@ namespace MonsterTrain2Poju.Model
             private bool ApplyTriggeredAction(WorkingUnit actor, CombatEffect effect, WorkingUnit? overrideTarget, int triggerIndex, int effectIndex, string triggerKind, int lastSpawnedOverrideUnitId)
             {
                 CardActionEffect action = effect.Action!;
+                if (action.Type == "AdjustPyreAttack")
+                {
+                    if (source.Preview) return true;
+                    if (!actor.Source.IsPyre || context == null)
+                    { unsupportedReason = "Permanent Pyre attack adjustment requires a live Pyre."; return false; }
+                    RelicResourceResult adjusted = RelicResourceModel.AdjustPyreAttack(context, action.Value);
+                    if (!adjusted.Supported) { unsupportedReason = adjusted.UnsupportedReason; return false; }
+                    context = adjusted.Context;
+                    Emit(action.Type, actor, actor, action.Value);
+                    return true;
+                }
                 if (action.Type == "ForceHatchCheck")
                 {
                     if (actor.Alive && actor.Count("hatch") == 0)

@@ -51,9 +51,12 @@ internal static class GoldPyreChecks
         Require(RelicResourceModel.AttackDamage(new(7, "enemy", CombatTeam.Enemy, 2, 5, 5, true, false, false, []), context) == 2,
             "Save's permanent Pyre modifier leaked into an ordinary unit's attack.");
         CombatContext saved = Context(modifiedAttack: 3);
-        Require(RelicResourceModel.AttackDamage(pyre, saved) == 35 &&
-            !RoomCombatModel.Exchange(new(1, false, [pyre], [], saved)).Supported,
-            "The saved Pyre query adjustment or the consumer guard pending native battle evidence differs.");
+        CombatUnit savedEnemy = new(2, "saved-attack-enemy", CombatTeam.Enemy, 0, 100, 100, false, false, false, []);
+        RoomCombatResult savedAttack = RoomCombatModel.Exchange(new(1, false, [pyre, savedEnemy], [], saved));
+        Require(RelicResourceModel.AttackDamage(pyre, saved) == 35 && savedAttack.Supported &&
+            savedAttack.Events.Single(item => item.Kind == "Attack" && item.Actor == pyre.Id).Amount == 35,
+            "The saved Pyre attack modifier was rejected or not applied exactly once in a live combat query.");
+        PermanentAttackAdjustment(context, pyre);
 
         TrainCombatState multiplied = State(GoldModel.Adjust(Train(Context(multiplier: 3f), pyre), 7, isReward: true));
         Require(multiplied.Context!.Gold == 20 && GoldRewardModel.Adjust(7, multiplier: 0.5f) == 5 &&
@@ -93,6 +96,47 @@ internal static class GoldPyreChecks
         });
         Require(Serialize(root) == parent, "Parallel branches changed parent resource, RNG or unit history.");
         Console.WriteLine("GOLD-PYRE-CHECKS PASS: synchronous actual-unit refresh, zero/unchanged/clipped/preview gold, signed upgrades and retained status cache, notify conditions, reward multiplier, paid next draw, local and cross-room callbacks, legacy and 32 immutable branches.");
+    }
+
+    private static void PermanentAttackAdjustment(CombatContext context, CombatUnit pyre)
+    {
+        string parent = Serialize(context);
+        RelicResourceResult raised = RelicResourceModel.AdjustPyreAttack(context, 5);
+        RelicPyreAttackRefreshResult baseline = RelicResourceModel.RefreshPyreAttack(context, pyre);
+        Require(raised.Supported && raised.Value == context.Resources!.PyreModifiedBaseAttack + 5 &&
+            raised.Context!.Resources!.PyreModifiedBaseAttack == 5 && baseline.Supported &&
+            RelicResourceModel.AttackDamage(baseline.Pyre!, raised.Context) == RelicResourceModel.AttackDamage(baseline.Pyre!, context) + 5 &&
+            context.Resources.PyreModifiedBaseAttack == 0 && Serialize(context) == parent,
+            "Permanent Pyre attack adjustment failed to update only saved state while changing the live attack query.");
+
+        CombatContext low = context.WithResources(context.Resources.WithPyreModifiedBaseAttack(3));
+        RelicResourceResult clipped = RelicResourceModel.AdjustPyreAttack(low, -7);
+        RelicResourceResult overflow = RelicResourceModel.AdjustPyreAttack(
+            context.WithResources(context.Resources.WithPyreModifiedBaseAttack(int.MaxValue)), 5);
+        Require(clipped.Supported && clipped.Value == 0 && overflow.Supported && overflow.Value == 0 &&
+            !RelicResourceModel.AdjustPyreAttack(new CombatContext(context.Cards, context.BattleRng, context.Gold,
+                context.NextCardId, context.MaxHandSize), 5).Supported,
+            "Native max-zero/unchecked overflow or missing-resource behavior differs for permanent Pyre attack adjustment.");
+
+        var adjustment = new CardActionEffect("AdjustPyreAttack", "Self", 5, false, false, []);
+        var onKill = new CombatTrigger("OnKill", false, false, true, 1,
+            [new(RelicResourceModel.PermanentPyreAttackAdjustment, 5, 0, "", 0, [], false, action: adjustment)],
+            skipDuringDeployment: false);
+        CombatUnit carrier = Pyre(raw: 20, triggers: [onKill]);
+        CombatUnit weakEnemy = new(2, "pyre-weak-enemy", CombatTeam.Enemy, 0, 1, 1, false, false, false, []);
+        RoomCombatResult kill = RoomCombatModel.Exchange(new(0, false, [carrier, weakEnemy], [], context));
+        CombatUnit afterKill = kill.State?.Units.SingleOrDefault(unit => unit.Id == carrier.Id)!;
+        Require(kill.Supported && kill.Events.Any(item => item.Kind == "Death" && item.Actor == carrier.Id) &&
+            kill.State!.Context!.Resources!.PyreModifiedBaseAttack == 5 &&
+            afterKill?.Modifiers?.AttackDamage == carrier.Modifiers!.AttackDamage &&
+            RelicResourceModel.AttackDamage(afterKill!, kill.State.Context) == RelicResourceModel.AttackDamage(carrier, context) + 5,
+            "A live Pyre OnKill failed to apply the permanent attack modifier: supported=" + kill.Supported +
+            "; reason=" + kill.UnsupportedReason + "; events=" + Serialize(kill.Events) +
+            "; resource=" + kill.State?.Context?.Resources?.PyreModifiedBaseAttack);
+        RoomCombatResult preview = RoomCombatModel.Exchange(new(0, false, [carrier, weakEnemy], [], context, preview: true));
+        Require(preview.Supported && preview.State!.Context!.Resources!.PyreModifiedBaseAttack == 0 &&
+            context.Resources.PyreModifiedBaseAttack == 0,
+            "The native permanent-Pyre-attack effect ran inside SaveManager.PreviewMode.");
     }
 
     private static void CrossRoomCallbacks()

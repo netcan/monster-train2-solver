@@ -68,7 +68,7 @@ namespace MonsterTrain2Poju.Probe
             dragonHoardResourceObserved |= dragonHoardCards;
             trainHealResourceObserved |= trainHealCards;
             if (!OriginalResourceRelicBatchScenario.Enabled && !PyreResourceRefreshScenario.Enabled && !OriginalFloorCapacityRelicScenario.Enabled &&
-                !OriginalMoonPhaseEnergyRelicScenario.Enabled &&
+                !OriginalMoonPhaseEnergyRelicScenario.Enabled && !OriginalTriggerRelicBatchScenario.FusedPyreshardOnly &&
                 !Current(managers).Any(relic => relic.GetEffects().Any(effect => RelicResourceModel.IsEffect(effect.GetType().Name))) &&
                 !dragonHoardResourceObserved && !trainHealResourceObserved)
                 return null;

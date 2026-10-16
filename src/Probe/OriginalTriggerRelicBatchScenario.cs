@@ -11,10 +11,12 @@ namespace MonsterTrain2Poju.Probe
     internal static class OriginalTriggerRelicBatchScenario
     {
         internal const string Name = "original-trigger-relic-batch";
+        internal const string FusedPyreshardName = "original-fused-pyreshard";
         internal const string Angel = "SubtypesData_Angel";
         internal const string Dragon = "SubtypesData_Dragon";
         internal const string Whelp = "SubtypesData_Whelp";
-        internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == Name;
+        internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") is Name or FusedPyreshardName;
+        internal static bool FusedPyreshardOnly => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == FusedPyreshardName;
         internal static bool Stationary => Environment.GetEnvironmentVariable("MT2_PROBE_ORIGINAL_TRIGGER_RELIC_BATCH_STATIONARY") == "1";
         internal static bool Prepared { get; private set; }
         internal static bool CaptureReady { get; private set; }
@@ -105,6 +107,15 @@ namespace MonsterTrain2Poju.Probe
                     throw new InvalidOperationException("Original trigger relic definition changed: " + entry.Key);
                 save.AddRelic(relic);
             }
+            if (FusedPyreshardOnly)
+            {
+                CollectableRelicData relic = data.GetAllCollectableRelicData().Single(item => item.GetID() == "eae7f78f-fe81-4418-a491-d75413dbb55d");
+                if (relic.name != "FusedPyreshard" || relic.GetEffects().Count != 1 ||
+                    relic.GetEffects()[0].GetEffectClassName() != "RelicEffectAddTrigger")
+                    throw new InvalidOperationException("Fused Pyreshard native owner definition changed.");
+                save.AddRelic(relic);
+                InstallFusedTriggerOnExistingPyre(managers, save);
+            }
             // These already accepted originals supply native modifiers. Added
             // Death/Shift callbacks must retain their original no-count flags.
             save.AddRelic(data.GetAllCollectableRelicData().Single(item => item.GetID() == "a5d67620-a9ec-4257-91b5-305336e11987"));
@@ -118,7 +129,36 @@ namespace MonsterTrain2Poju.Probe
             Set(countRelic, "effects", new List<RelicEffectData> { countEffect });
             ((IList)AccessTools.Field(typeof(AllGameData), "collectableRelicDatas").GetValue(data)).Add(countRelic); save.AddRelic(countRelic);
             CaptureReady = true; Prepared = true; Set(managers.GetCombatManager()!, "combatStateChanged", true);
-            log.LogInfo("ORIGINAL-TRIGGER-RELIC-BATCH-PREPARED ten unchanged artifacts; authored player/enemy subtype and count carriers; native Boss/waves retained.");
+            log.LogInfo("ORIGINAL-TRIGGER-RELIC-BATCH-PREPARED ten unchanged artifacts" +
+                (FusedPyreshardOnly ? " plus unchanged FusedPyreshard" : "") +
+                "; authored player/enemy subtype and count carriers; native Boss/waves retained.");
+        }
+        private static void InstallFusedTriggerOnExistingPyre(AllGameManagers managers, SaveManager save)
+        {
+            var relics = new List<RelicState>();
+            AccessTools.Method(typeof(RelicManager), "GetCurrentRelics").Invoke(managers.GetRelicManager(), new object[] { relics });
+            RelicState owner = relics.Single(item => item.GetRelicDataID() == "eae7f78f-fe81-4418-a491-d75413dbb55d");
+            CharacterState pyre = managers.GetRoomManager()!.GetPyreRoom().GetPyreHeart();
+            if (pyre == null || !pyre.IsPyreHeart()) throw new InvalidOperationException("Fused Pyreshard requires the live native Pyre heart.");
+            IEnumerator callback = owner.OnCharacterAdded(pyre, null!, managers.GetCoreManagers(), managers.GetRelicManager(), save,
+                managers.GetCardStatistics(), managers.GetPlayerManager(), managers.GetRoomManager()!, managers.GetCombatManager()!,
+                managers.GetCardManager()!);
+            Drain(callback);
+            if (!pyre.GetTriggers().Any(trigger => trigger.GetTrigger() == CharacterTriggerData.Trigger.OnKill &&
+                trigger.GetEffectStates().Any(effect => effect.GetCardEffect().GetType().Name == "CardEffectPermanentlyAdjustPyreAttack")))
+                throw new InvalidOperationException("Native Fused Pyreshard callback did not install its OnKill effect on the Pyre.");
+        }
+        private static void Drain(IEnumerator routine)
+        {
+            try
+            {
+                while (routine.MoveNext())
+                {
+                    if (routine.Current is IEnumerator nested) Drain(nested);
+                    else if (routine.Current != null) throw new InvalidOperationException("Fused Pyreshard setup requires asynchronous native callback work.");
+                }
+            }
+            finally { (routine as IDisposable)?.Dispose(); }
         }
         internal static PlayCardAction? Choose(BattleTurnState source)
         {

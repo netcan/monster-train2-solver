@@ -151,9 +151,10 @@ internal static class RelicResourceChecks
             RelicResourceModel.InitializePyre(withoutOwners, 90).Attack == 20,
             "Removing an initialization owner retroactively rewrote an existing native Pyre cache.");
         CombatContext savedModifier = Context([], raw: Raw(modifiedAttack: 2));
-        Require(RelicResourceModel.GetPyreAttack(savedModifier).Supported &&
-            !RoomCombatModel.Resolve(new(1, false, [cachedPyre], [], savedModifier)).Supported,
-            "Pure birth queries enabled an unmodeled live saved Pyre attack modifier.");
+        RoomCombatResult savedModifierCombat = RoomCombatModel.Resolve(new(1, false, [cachedPyre], [], savedModifier));
+        Require(RelicResourceModel.GetPyreAttack(savedModifier).Supported && savedModifierCombat.Supported &&
+            RelicResourceModel.AttackDamage(cachedPyre, savedModifier) == cachedPyre.Attack + 2,
+            "The saved Pyre attack modifier changed the initialized base cache or was unavailable to live combat queries.");
 
         Guards();
         CheckCopiesAndPlay();

@@ -1,7 +1,7 @@
 # Original relic coverage evidence
 
-As of 2026-10-17, **143 distinct original collectable relics / 224 catalog entries
-(63.84%)** have accepted native evidence: 127 have full-battle effect evidence,
+As of 2026-10-17, **144 distinct original collectable relics / 224 catalog entries
+(64.29%)** have accepted native evidence: 128 have full-battle effect evidence,
 fifteen have campaign consumer interfaces validated, and one is an explicit
 native no-op with seeded baseline equivalence. Except for that no-op, this counts
 unchanged relic definitions whose effects actually ran, including original filters and
@@ -9,7 +9,7 @@ conditions. Test cards, unit triggers and carrier subtypes may be authored to
 exercise those effects; the claim covers the recorded paths, not every possible
 combination. Catalog enumeration and other owners of a supported effect class
 do not count as validated relics. `RelicEffectAddTrigger` appears on 26 catalog
-entries; 23 now have accepted original-owner effect evidence.
+entries; 24 now have accepted original-owner effect evidence.
 `RelicEffectAddStatusEffectOnStatusApplied` appears on eight catalog entries;
 all eight now have accepted original-owner evidence. Both catalog owners of
 `RelicEffectPreventStatusEffectDecay` have accepted evidence for their original
@@ -179,6 +179,7 @@ owner count.
 | `SurgeonsStitcher` | `8f22145d-5c41-45da-8abf-95bc5f369648` | [original trigger relics][triggers] | Original 999999 Self heal restores a wounded 68/80 player to 80/80 on attachment. Removing its installed trigger loses that heal. |
 | `AngelsSpawnWithShiftyValor` | `3d4705ec-ee6b-433b-88c8-1b4ce0ed7cc9` | [original trigger relics][triggers] | Original Angel OnShift adds 2 Valor with fire count 1 despite the original +1 Shift relic. Ten Bump plays provide six positive effect counterfactuals; physical positions and other same-team callbacks also match. |
 | `ExtinguishSpreadPyregel` | `9142aaa7-072e-43ca-bc5e-2c9995061174` | [stationary trigger relic deaths][triggerDeaths] and [physical trigger relics][triggers] | The unchanged no-subtype OnDeath trigger installs on both teams except the Pyre. It transfers explicit Pyregel stacks to every eligible opposing Hero on the source floor, ceil-divided per target, then removes the source stacks. Owner ablation changes actual status state four times in the stationary battle and seven times in the physical battle. |
+| `FusedPyreshard` | `eae7f78f-fe81-4418-a491-d75413dbb55d` | [Fused Pyreshard][fusedPyreshard] | The unchanged Monsters-source, Pyre-subtype OnKill trigger adds 5 to the saved Pyre attack modifier. Native `RelicState.OnCharacterAdded` installs exactly one trigger on the live Pyre; the battle raises the modifier 0 → 10 on two Pyre kills. Five non-Pyre player-kill controls leave it unchanged; two trigger ablations remove the effect. |
 | `RageOnHymnistDeath` | `ec46f782-87ad-4cbd-aacb-023701417283` | [stationary trigger relic deaths][triggerDeaths] | Original player OnDeath targets eligible Angels on its floor with 7 Rage. Two combat counterfactuals change actual unit/status results. This effect has no positive witness in the separate physical Shift archive. |
 | `WhelpsGainExtinguishHealPyre` | `e6a167d5-f57e-4a02-a0f0-b8cf9373c838` | [original trigger relics][triggers] | Its actual payload adds 5 Pyregel to enemies on a Whelp's floor. The original exclusion flag prevents the +1 Death relic from doubling it. Four death/action/combat counterfactuals change unit/status results. |
 | `DragonsGainStrikeAddPyregel` | `1fdf2fde-a5e7-4eae-86eb-d432145c4621` | [original trigger relics][triggers] | Original Dragon Strike adds 5 Pyregel to LastAttackedCharacter. Five action/combat counterfactuals change unit/status results. |
@@ -617,6 +618,33 @@ pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-sta
 dotnet run --project src/ModelChecks -c Release -- --original-start-room-attachment-only tests/fixtures/full-battle-original-start-room-attachment.mt2f
 ```
 
+## Fused Pyreshard
+
+The schema-106 `full-battle-original-fused-pyreshard.mt2f` archive validates the
+unchanged owner and its Monsters-source `SubtypesData_Pyre` OnKill +5 effect.
+Because the isolated setup acquires the relic after creating the Pyre, it invokes
+the original `RelicState.OnCharacterAdded` callback on that live Pyre and captures
+the resulting single installed trigger; natural acquisition-before-Pyre-birth
+ordering is not claimed. The native battle wins with 53 matched room stages, 28
+actions and seven EndTurns, with all four failure counters at zero. Two Pyre
+kills raise the persisted attack modifier from 0 to 10; five non-Pyre player-kill
+controls remain unchanged, and two owner-trigger ablations remove the increase.
+Independent policy replay covers 650 decision contexts and 16,610 exact native
+card views, with 16 immutable branches. The model now accepts nonzero saved Pyre
+attack in room combat and applies it once in live attack queries.
+Native SaveManager preview mode suppresses the persistent adjustment; the pure
+preview check confirms no saved-state change.
+
+The binary is 69,639 bytes with 10,692 unique nodes and SHA-256
+`d375c45659ebbafc694a012f45b5dab8717fff52c20423443270fdfbcaf2d748`; it has no
+JSON companion. Inventory is 365 archives: 327 battles and 38 component
+calibrations. Original coverage is 144/224 (64.29%), including 128 battle owners.
+
+```powershell
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-fused-pyreshard.mt2f
+dotnet run --project src/ModelChecks -c Release -- --gold-pyre-pure
+```
+
 [counts]: full-battle-incant-relics-combined.mt2f
 [statuses]: full-battle-spawn-status-relics.mt2f
 [cost]: full-battle-relic-card-modifiers.mt2f
@@ -634,6 +662,7 @@ dotnet run --project src/ModelChecks -c Release -- --original-start-room-attachm
 [decays]: full-battle-original-decay-relics.mt2f
 [resources]: full-battle-original-resource-relics.mt2f
 [pyreRefresh]: full-battle-pyre-resource-refresh.mt2f
+[fusedPyreshard]: full-battle-original-fused-pyreshard.mt2f
 [floorCapacity]: full-battle-original-floor-capacity-relics.mt2f
 [endless]: full-battle-original-endless-return.mt2f
 [cardPlayMagicPower]: full-battle-original-card-play-magic-power.mt2f

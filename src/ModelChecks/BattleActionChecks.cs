@@ -562,7 +562,8 @@ internal static class BattleActionChecks
             chooser = OriginalDeployableRelicChecks.Choose;
         if (fixture.TryGetProperty("ModifierScenario", out var conserveEmberPolicy) && conserveEmberPolicy.GetString() == "original-conserve-ember-relic")
             chooser = ConserveEmberChecks.Choose;
-        if (fixture.TryGetProperty("ModifierScenario", out var originalTriggerRelicPolicy) && originalTriggerRelicPolicy.GetString() == "original-trigger-relic-batch")
+        if (fixture.TryGetProperty("ModifierScenario", out var originalTriggerRelicPolicy) &&
+            originalTriggerRelicPolicy.GetString() is "original-trigger-relic-batch" or "original-fused-pyreshard")
         {
             bool physical = fixture.GetProperty("Schema").GetInt32() == 106;
             chooser = source => OriginalTriggerRelicBatchChecks.Choose(source, physical);

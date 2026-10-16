@@ -42,6 +42,10 @@ namespace MonsterTrain2Poju.Model
             UpgradeAttack = Array.AsReadOnly(upgradeAttack.ToArray()); UpgradeHealth = Array.AsReadOnly(upgradeHealth.ToArray());
             MutatorIds = Array.AsReadOnly(mutatorIds.ToArray());
         }
+        internal BattleResourceState WithPyreModifiedBaseAttack(int value) => new(BaseEnergy, DeploymentExtraEnergy,
+            BaseDraw, MaxEnergy, MaxHandSize, PyreDataId, PyreBaseAttack, BasePyreMaxHealth, PyrePersistentDamage,
+            value, UpgradeAttack, UpgradeHealth, MutatorIds, GoldRewardMultiplier, BaseFloorCapacity, DragonsHoardCap,
+            TowerHealingDisabled);
     }
 
     public sealed class RelicResourceEffect
@@ -136,6 +140,7 @@ namespace MonsterTrain2Poju.Model
         public const string AdditionalSmeltEmber = "RelicEffectAdditionalSmeltEmber";
         public const string AdjustMixAmount = "RelicEffectAdjustMixAmount";
         public const string ConserveEnergyEndOfTurn = "RelicEffectConserveEnergyEndOfTurn";
+        public const string PermanentPyreAttackAdjustment = "CardEffectPermanentlyAdjustPyreAttack";
         public static bool IsEffect(string type) => type == Energy || type == DeploymentEnergy || type == StartCombatEnergy || type == Draw ||
             type == PyreAttack || type == PyreHealth || type == FloorCapacity || type == MoonPhaseEnergy ||
             type == AdditionalSmeltEmber || type == AdjustMixAmount || type == ConserveEnergyEndOfTurn || type == ConserveForgePoints ||
