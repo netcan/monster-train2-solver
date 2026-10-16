@@ -16,9 +16,20 @@ namespace MonsterTrain2Poju.Probe
             CardState? spawner = unit.GetSpawnerCard();
             RoomStateSelfDamagePerMagicPowerModifier[] mageblade = unit.GetRoomStateModifiers<RoomStateSelfDamagePerMagicPowerModifier>().ToArray();
             if (mageblade.Length > 1) throw new InvalidOperationException("Multiple Mageblade attack caches were attached to one unit.");
+            CardUpgradeState[] upgrades = unit.GetAppliedCardUpgrades().ToArray();
+            RoomState? room = unit.GetCurrentRoom();
+            var roomAttachmentUpgrades = new HashSet<string>(room == null ? Array.Empty<string>() :
+                room.Attachments.Where(attachment => attachment.IsActive && attachment.CurrentlyImpactsCharacter(unit))
+                    .SelectMany(attachment => attachment.UpgradeStates.Select(item => item.Item1.GetCardUpgradeDataId())));
             return new UnitModifiers(unit.GetUnbuffedAttackDamage(), unit.GetAttackDamageAddedFromUpgrades(), unit.GetDamageBuff(),
                 rawSize, unit.GetEquipmentLimit(), unit.GetCanBeHealed(), unit.GetIsClone(),
-                unit.GetAppliedCardUpgrades().Select(upgrade => FullBattleTrace.Active?.CaptureAppliedUpgrade(upgrade) ?? CardModifierProbe.Upgrade(upgrade)).ToArray(), health.OrderBy(item => item.Key)
+                upgrades.Select(upgrade =>
+                {
+                    bool roomAttachmentUpgrade = roomAttachmentUpgrades.Contains(upgrade.GetCardUpgradeDataId());
+                    return FullBattleTrace.Active?.CaptureAppliedUpgrade(upgrade, roomAttachmentUpgrade) ??
+                        CardModifierProbe.Upgrade(upgrade, rejectFilters: false, filtersAlreadyApplied: true,
+                            roomAttachmentUnitUpgrade: roomAttachmentUpgrade);
+                }).ToArray(), health.OrderBy(item => item.Key)
                     .Select(item => new StatisticCount(FullBattleTrace.Active?.UpgradeKey(item.Key) ?? item.Key, item.Value)).ToArray(),
                 spawner?.GetSpawnCharacterData() == null || spawner.GetSpawnCharacterData() == unit.GetSourceCharacterData(),
                 RelicProbe.HasStatusAttackHistory(AllGameManagers.Instance!) ? (int?)AccessTools.Property(state.GetType(), "DamageBuffFromStatusEffects").GetValue(state) : null,

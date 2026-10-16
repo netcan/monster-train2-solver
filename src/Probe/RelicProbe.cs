@@ -126,6 +126,13 @@ namespace MonsterTrain2Poju.Probe
                         var data = (RelicEffectData)AccessTools.Field(typeof(RelicEffectBase), "_srcRelicEffectData").GetValue(item.Effect);
                         return new RelicCardPlayRoomCapacityModifier(item.Index, data.GetParamInt(), data.GetParamCardType().ToString());
                     }).ToArray();
+                var roomAttachmentReplications = effects.Select((effect, index) => new { Effect = effect, Index = index })
+                    .Where(item => item.Effect is RelicEffectFirstRoomCardIsPlayedOnAllFloors)
+                    .Select(item => {
+                        var data = (RelicEffectData)AccessTools.Field(typeof(RelicEffectBase), "_srcRelicEffectData").GetValue(item.Effect);
+                        return new RelicRoomAttachmentReplication(item.Index, data.GetParamInt2(),
+                            RelicCardModifierProbe.Conditions(item.Effect));
+                    }).ToArray();
                 var moonPhaseHeals = effects.Select((effect, index) => new { Effect = effect, Index = index })
                     .Where(item => item.Effect is RelicEffectHealOnMoonPhase)
                     .Select(item => {
@@ -155,7 +162,8 @@ namespace MonsterTrain2Poju.Probe
                     cardTypeCosts.Length > 0 ? cardTypeCosts : null,
                     effects.Any(effect => effect is RelicEffectAdjustAttackByStatusEffect) ? StatusAttackModifiers(managers) : null,
                     cardPlayRoomCapacity.Length > 0 ? cardPlayRoomCapacity : null,
-                    moonPhaseHeals.Length > 0 ? moonPhaseHeals : null);
+                    moonPhaseHeals.Length > 0 ? moonPhaseHeals : null,
+                    roomAttachmentReplications.Length > 0 ? roomAttachmentReplications : null);
             }).ToArray();
         }
 

@@ -705,9 +705,14 @@ namespace MonsterTrain2Poju.Model
                 }
                 if (effect.Type == "AttachRoomCapacity")
                 {
+                    IReadOnlyList<RoomCapacityState>? before = state.Context!.RoomCapacities;
                     RoomCapacityResult attachment = RoomCapacityModel.Attach(state.Context!, roomIndex, effect.RoomAttachment!);
                     if (!attachment.Supported) return UnsupportedTrain(attachment.UnsupportedReason!);
-                    state = WithContext(state, attachment.Context!); continue;
+                    TrainCombatState attached = WithContext(state, attachment.Context!);
+                    RoomAttachmentUnitSyncResult characters = RoomAttachmentUnitModel.Synchronize(attached, before,
+                        attachment.Context!.RoomCapacities);
+                    if (!characters.Supported) return UnsupportedTrain(characters.UnsupportedReason!);
+                    state = characters.State!; continue;
                 }
                 if (effect.Type == "DrawNextTurn")
                 {

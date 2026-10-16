@@ -14,7 +14,7 @@ namespace MonsterTrain2Poju.Probe
             RoomState room = rooms.GetRoom(index);
             return new RoomCapacityState(index, room.GetCapacityInfo(Team.Type.Monsters).max,
                 room.GetCapacityInfo(Team.Type.Heroes).max, room.GetIsPyreRoom(), room.GetCurrentCorruption(),
-                CaptureAttachments(room), room.GetMaxCorruption(), room.GetPermanentCorruption());
+                CaptureAttachments(room), room.GetMaxCorruption(), room.GetPermanentCorruption(), room.NumRoomAttachmentsAddedFromCard);
         }).ToArray();
 
         internal static bool SupportsAttachments(RoomState room) => CaptureAttachments(room) != null;
@@ -27,6 +27,7 @@ namespace MonsterTrain2Poju.Probe
                 if (!attachment.IsActive || (int)attachment.AttachType != 0 || attachment.CardState == null ||
                     attachment.UpgradeStates.Count == 0) return null;
                 int delta = 0;
+                var characterUpgrades = new List<CardUpgradeModifier>();
                 foreach (var (state, definition) in attachment.UpgradeStates)
                 {
                     var capacityModifiers = definition.GetRoomModifierUpgrades();
@@ -40,10 +41,15 @@ namespace MonsterTrain2Poju.Probe
                         state.GetUnitAbilityUpgrade() == null && state.GetRoomAbilityUpgrade() == null && !state.IsUnique();
                     if (!supported) return null;
                     delta = unchecked(delta + capacityModifiers[0].GetParamInt());
+                    characterUpgrades.Add(CardModifierProbe.Upgrade(state, rejectFilters: false,
+                        filtersAlreadyApplied: true, roomAttachmentUnitUpgrade: true));
                 }
                 string dataId = attachment.CardState.GetCardDataID();
                 string assetKey = AllGameManagers.Instance!.GetSaveManager().GetAllGameData().FindCardData(dataId)!.name;
-                result.Add(new RoomCapacityAttachmentState(dataId, assetKey, (int)attachment.AttachType, delta));
+                bool ignoreBosses = (bool)AccessTools.Field(typeof(TrainRoomAttachmentState), "_isIgnoreBosses").GetValue(attachment);
+                result.Add(new RoomCapacityAttachmentState(dataId, assetKey, (int)attachment.AttachType, delta,
+                    characterUpgrades, attachment.TrainSide.HasFlag(Team.Type.Heroes),
+                    attachment.TrainSide.HasFlag(Team.Type.Monsters), ignoreBosses));
             }
             return result.ToArray();
         }

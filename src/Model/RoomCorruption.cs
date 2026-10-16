@@ -106,7 +106,7 @@ namespace MonsterTrain2Poju.Model
                     nextCurrent = Math.Max(requested, permanent);
                 }
                 var changed = new RoomCapacityState(index, room.PlayerMaximum, room.EnemyMaximum, room.IsPyre,
-                    nextCurrent, room.Attachments, nextMaximum, permanent);
+                    nextCurrent, room.Attachments, nextMaximum, permanent, room.AttachmentsAddedFromCards);
                 context = context.WithRoomCapacities(context.RoomCapacities.Select(item => item.RoomIndex == index ? changed : item).ToArray());
             }
             return new RoomCorruptionResult(context, additions: additions);

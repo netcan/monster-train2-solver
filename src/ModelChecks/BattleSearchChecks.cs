@@ -28,9 +28,11 @@ internal static class BattleSearchChecks
             }
             BattleTurnState nativeActual = entry.GetProperty("Actual").Deserialize<BattleTurnState>()!;
             bool terminal = nativeCandidate!.Result.Outcome is RoomOutcome.BattleWon or RoomOutcome.PlayerDefeated;
-            Require(nativeCandidate.Result.Outcome == (RoomOutcome)entry.GetProperty("ActualOutcome").GetInt32() &&
-                BattleTurnChecks.Comparable(nativeCandidate.Result.State!, terminal) == BattleTurnChecks.Comparable(nativeActual, terminal),
-                "Cached search successor for recorded native action " + index + " differs from the captured result.");
+            string predicted = BattleTurnChecks.Comparable(nativeCandidate.Result.State!, terminal);
+            string captured = BattleTurnChecks.Comparable(nativeActual, terminal);
+            Require(nativeCandidate.Result.Outcome == (RoomOutcome)entry.GetProperty("ActualOutcome").GetInt32() && predicted == captured,
+                "Cached search successor for recorded native action " + index + " differs from the captured result: " +
+                (predicted == captured ? "outcome" : ModelJson.Difference(predicted, captured)));
             if (index == 0)
             {
                 root = before;

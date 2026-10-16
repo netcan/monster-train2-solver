@@ -129,13 +129,15 @@ namespace MonsterTrain2Poju.Probe
         }
 
         internal static CardUpgradeModifier Upgrade(CardUpgradeState upgrade) => Upgrade(upgrade, false);
-        internal static CardUpgradeModifier Upgrade(CardUpgradeState upgrade, bool rejectFilters, bool filtersAlreadyApplied = false)
+        internal static CardUpgradeModifier Upgrade(CardUpgradeState upgrade, bool rejectFilters, bool filtersAlreadyApplied = false,
+            bool roomAttachmentUnitUpgrade = false)
         {
             upgradeDepth++;
-            try { return UpgradeCore(upgrade, rejectFilters, filtersAlreadyApplied); }
+            try { return UpgradeCore(upgrade, rejectFilters, filtersAlreadyApplied, roomAttachmentUnitUpgrade); }
             finally { upgradeDepth--; }
         }
-        private static CardUpgradeModifier UpgradeCore(CardUpgradeState upgrade, bool rejectFilters, bool filtersAlreadyApplied)
+        private static CardUpgradeModifier UpgradeCore(CardUpgradeState upgrade, bool rejectFilters, bool filtersAlreadyApplied,
+            bool roomAttachmentUnitUpgrade)
         {
             var interactions = new List<string>();
             if (rejectFilters && upgrade.GetFilters().Count > 0) interactions.Add("Filtered bonus-draw upgrade");
@@ -159,7 +161,7 @@ namespace MonsterTrain2Poju.Probe
                 if (upgradeDepth > 16) interactions.Add("Recursive upgrade trigger definitions");
                 else triggers = upgrade.GetTriggerUpgrades().Select(trigger => EnemySpawningProbe.TriggerDefinition(trigger, interactions)).ToArray();
             }
-            if (upgrade.GetRoomModifierUpgrades().Count > 0) interactions.Add("Upgrade room modifiers");
+            if (!roomAttachmentUnitUpgrade && upgrade.GetRoomModifierUpgrades().Count > 0) interactions.Add("Upgrade room modifiers");
             if (!filtersAlreadyApplied && upgrade.GetFilters().Count > 0) interactions.Add("Upgrade card filters");
             if (upgrade.GetUpgradesToRemove().Count > 0) interactions.Add("Upgrade replacements");
             if (upgrade.GetStatusEffectUpgrades().Any(status => status.fromPermanentUpgrade)) interactions.Add("Separate permanent starting-status application group");

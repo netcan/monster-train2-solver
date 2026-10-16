@@ -10,8 +10,18 @@ namespace MonsterTrain2Poju.Model
         public string AssetKey { get; }
         public int AttachmentType { get; }
         public int CapacityDelta { get; }
-        public RoomCapacityAttachmentState(string dataId, string assetKey, int attachmentType, int capacityDelta)
-        { DataId = dataId; AssetKey = assetKey; AttachmentType = attachmentType; CapacityDelta = capacityDelta; }
+        public IReadOnlyList<CardUpgradeModifier>? CharacterUpgrades { get; }
+        public bool AffectsHeroes { get; }
+        public bool AffectsMonsters { get; }
+        public bool IgnoreBosses { get; }
+        public RoomCapacityAttachmentState(string dataId, string assetKey, int attachmentType, int capacityDelta,
+            IReadOnlyList<CardUpgradeModifier>? characterUpgrades = null, bool affectsHeroes = false,
+            bool affectsMonsters = true, bool ignoreBosses = false)
+        {
+            DataId = dataId; AssetKey = assetKey; AttachmentType = attachmentType; CapacityDelta = capacityDelta;
+            CharacterUpgrades = characterUpgrades == null ? null : Array.AsReadOnly(characterUpgrades.ToArray());
+            AffectsHeroes = affectsHeroes; AffectsMonsters = affectsMonsters; IgnoreBosses = ignoreBosses;
+        }
     }
 
     public sealed class RoomCapacityState
@@ -24,11 +34,13 @@ namespace MonsterTrain2Poju.Model
         public int? MaxCorruption { get; }
         public int? PermanentCorruption { get; }
         public IReadOnlyList<RoomCapacityAttachmentState>? Attachments { get; }
+        public int? AttachmentsAddedFromCards { get; }
         public RoomCapacityState(int roomIndex, int playerMaximum, int enemyMaximum, bool isPyre, int? corruption = null,
-            IReadOnlyList<RoomCapacityAttachmentState>? attachments = null, int? maxCorruption = null, int? permanentCorruption = null)
+            IReadOnlyList<RoomCapacityAttachmentState>? attachments = null, int? maxCorruption = null, int? permanentCorruption = null,
+            int? attachmentsAddedFromCards = null)
         { RoomIndex = roomIndex; PlayerMaximum = playerMaximum; EnemyMaximum = enemyMaximum; IsPyre = isPyre; Corruption = corruption;
             MaxCorruption = maxCorruption; PermanentCorruption = permanentCorruption;
-            Attachments = attachments == null ? null : Array.AsReadOnly(attachments.ToArray()); }
+            Attachments = attachments == null ? null : Array.AsReadOnly(attachments.ToArray()); AttachmentsAddedFromCards = attachmentsAddedFromCards; }
     }
     public sealed class ScalingCapacityTrait
     {
@@ -51,10 +63,13 @@ namespace MonsterTrain2Poju.Model
         public static string? Validate(CombatContext? context)
         {
             if (context?.RoomCapacities == null) return "Missing captured room capacity state.";
-            return context.RoomCapacities.Any(room => room.RoomIndex < 0 || room.PlayerMaximum < 0 || room.EnemyMaximum < 0 || room.Corruption < 0) ||
+            return context.RoomCapacities.Any(room => room.RoomIndex < 0 || room.PlayerMaximum < 0 || room.EnemyMaximum < 0 || room.Corruption < 0 || room.AttachmentsAddedFromCards < 0) ||
                 context.RoomCapacities.Select(room => room.RoomIndex).Distinct().Count() != context.RoomCapacities.Count ||
                 context.RoomCapacities.Any(room => room.Attachments?.Any(attachment => string.IsNullOrEmpty(attachment.DataId) ||
-                    string.IsNullOrEmpty(attachment.AssetKey) || attachment.AttachmentType != 0) == true)
+                    string.IsNullOrEmpty(attachment.AssetKey) || attachment.AttachmentType != 0 ||
+                    attachment.CharacterUpgrades?.Any(upgrade => upgrade.ExternalInteractions.Count > 0 ||
+                        upgrade.Stats.Damage != 0 || upgrade.Stats.Health != 0 || upgrade.Stats.Size != 0 ||
+                        upgrade.Statuses.Count > 0 || upgrade.TriggerUpgrades?.Count > 0 || upgrade.AbilityUpgrade != null) == true) == true)
                 ? "Invalid room capacity state." : null;
         }
         public static int? Maximum(CombatContext? context, int room, CombatTeam team) =>
@@ -78,6 +93,7 @@ namespace MonsterTrain2Poju.Model
             if (selected == null || selected.IsPyre || selected.Attachments == null || attachment.AttachmentType != 0)
                 return new RoomCapacityResult(null, 0, "Invalid capacity attachment target or type.");
             RoomCapacityAttachmentState[] attachments = selected.Attachments?.ToArray() ?? Array.Empty<RoomCapacityAttachmentState>();
+            int attachmentsAddedFromCards = selected.AttachmentsAddedFromCards ?? attachments.Length;
             RoomCapacityAttachmentState? previous = attachments.FirstOrDefault(item => item.AttachmentType == 0);
             if (previous != null)
                 attachments = attachments.Where(item => !ReferenceEquals(item, previous)).ToArray();
@@ -86,7 +102,8 @@ namespace MonsterTrain2Poju.Model
             maximum = AdjustedMaximum(maximum, attachment.CapacityDelta);
             var changed = new RoomCapacityState(roomIndex, maximum, selected.EnemyMaximum, selected.IsPyre,
                 selected.Corruption, attachments.Concat(new[] { attachment }).ToArray(),
-                selected.MaxCorruption, selected.PermanentCorruption);
+                selected.MaxCorruption, selected.PermanentCorruption,
+                unchecked(attachmentsAddedFromCards + 1));
             return new RoomCapacityResult(context.WithRoomCapacities(context.RoomCapacities!
                 .Select(room => room.RoomIndex == roomIndex ? changed : room).ToArray()), attachment.CapacityDelta);
         }
@@ -124,7 +141,8 @@ namespace MonsterTrain2Poju.Model
             var changed = new RoomCapacityState(roomIndex,
                 enemy ? selected.PlayerMaximum : AdjustedMaximum(selected.PlayerMaximum, amount),
                 enemy ? AdjustedMaximum(selected.EnemyMaximum, amount) : selected.EnemyMaximum, selected.IsPyre,
-                selected.Corruption, selected.Attachments, selected.MaxCorruption, selected.PermanentCorruption);
+                selected.Corruption, selected.Attachments, selected.MaxCorruption, selected.PermanentCorruption,
+                selected.AttachmentsAddedFromCards);
             return new RoomCapacityResult(context.WithRoomCapacities(context.RoomCapacities!
                 .Select(room => room.RoomIndex == roomIndex ? changed : room).ToArray()), amount);
         }

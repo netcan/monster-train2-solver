@@ -34,7 +34,7 @@ namespace MonsterTrain2Poju.Model
             if (!capacity.Supported) return new RoomCapacityResult(null, 0, capacity.UnsupportedReason);
             RoomCapacityState[] rooms = source.RoomCapacities!.Select(room => new RoomCapacityState(
                 room.RoomIndex, capacity.Value, capacity.Value, room.IsPyre, room.Corruption, room.Attachments,
-                room.MaxCorruption, room.PermanentCorruption)).ToArray();
+                room.MaxCorruption, room.PermanentCorruption, room.AttachmentsAddedFromCards)).ToArray();
             return new RoomCapacityResult(source.WithRoomCapacities(rooms), capacity.Value);
         }
     }

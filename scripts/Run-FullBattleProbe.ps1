@@ -240,6 +240,7 @@ param(
     [switch] $OriginalCardPlayMagicPower,
     [switch] $OriginalCardDrawOnCardPlay,
     [switch] $OriginalCarriageJack,
+    [switch] $OriginalFirstRoomAttachment,
     [switch] $UnplayedCardTrigger,
     [switch] $UnplayedCardEffects,
     [switch] $OriginalRoomEntryStatusRelics,
@@ -371,6 +372,7 @@ if ($Mageblade -or $OriginalMagebladeMagnitudeRelic) { $BranchCardMasks = $true;
 if ($OriginalCardPlayMagicPower) { $BranchCardMasks = $true; $Policy = 'units-and-junk' }
 if ($OriginalCardDrawOnCardPlay) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalCarriageJack) { $Policy = 'units-and-junk' }
+if ($OriginalFirstRoomAttachment) { $BranchCardMasks = $true; $Policy = 'units-and-junk' }
 if ($UnplayedCardTrigger) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($UnplayedCardEffects) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalRoomEntryStatusRelics) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
@@ -773,6 +775,7 @@ if ($OriginalMagebladeMagnitudeRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'o
 if ($OriginalCardPlayMagicPower) { $environment['MT2_PROBE_MODIFIERS'] = 'original-card-play-magic-power' }
 if ($OriginalCardDrawOnCardPlay) { $environment['MT2_PROBE_MODIFIERS'] = 'original-card-draw-on-card-play' }
 if ($OriginalCarriageJack) { $environment['MT2_PROBE_MODIFIERS'] = 'original-carriage-jack' }
+if ($OriginalFirstRoomAttachment) { $environment['MT2_PROBE_MODIFIERS'] = 'original-first-room-attachment' }
 if ($UnplayedCardTrigger) { $environment['MT2_PROBE_MODIFIERS'] = 'unplayed-card-trigger' }
 if ($UnplayedCardEffects) { $environment['MT2_PROBE_MODIFIERS'] = 'unplayed-card-effects' }
 if ($OriginalRoomEntryStatusRelics) { $environment['MT2_PROBE_MODIFIERS'] = 'original-room-entry-status-relics' }
@@ -1278,6 +1281,19 @@ if ($OriginalCarriageJack -and (
     -not $trace.OriginalCarriageJackCoverage.AttachmentCompleted -or
     @($trace.Actions | Where-Object ScenarioAction).Count -ne 2)) {
     throw 'Original CarriageJack failed its ordinary-card and room-attachment controls in the expected full-battle capture.'
+}
+if ($OriginalFirstRoomAttachment -and (
+    $trace.Schema -ne 167 -or
+    -not $trace.OriginalFirstRoomAttachmentPrepared -or
+    $trace.ModifierScenario -ne 'original-first-room-attachment' -or
+    -not (Select-String -LiteralPath $unityLog -Pattern 'ORIGINAL-FIRST-ROOM-ATTACHMENT-ACQUIRED unchanged relic=FirstRoomCardOnAllFloors' -Quiet) -or
+    -not (Select-String -LiteralPath $unityLog -Pattern 'ORIGINAL-FIRST-ROOM-ATTACHMENT-PREPARED card=IncreaseRoomCapacity' -Quiet) -or
+    $trace.OriginalFirstRoomAttachmentCoverage.Error -or
+    -not $trace.OriginalFirstRoomAttachmentCoverage.NormalCompleted -or
+    -not $trace.OriginalFirstRoomAttachmentCoverage.FirstAttachmentCompleted -or
+    -not $trace.OriginalFirstRoomAttachmentCoverage.SecondAttachmentCompleted -or
+    @($trace.Actions | Where-Object ScenarioAction).Count -ne 3)) {
+    throw 'Original FirstRoomCardOnAllFloors failed its negative, first-attachment and later-attachment controls in the expected full-battle capture.'
 }
 if ($UnplayedCardTrigger) {
     $triggerCardIds = @(

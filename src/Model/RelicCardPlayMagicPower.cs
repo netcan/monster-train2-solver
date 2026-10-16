@@ -72,7 +72,8 @@ namespace MonsterTrain2Poju.Model
             bool hasMagicPower = source.Relics?.Any(relic => relic.EffectTypes.Contains(RelicModel.ModifyCardMagicPowerOnCardPlayed)) == true;
             bool hasCardDraw = source.Relics?.Any(relic => relic.EffectTypes.Contains(RelicModel.CardDrawOnCardPlay)) == true;
             bool hasRoomCapacity = source.Relics?.Any(relic => relic.EffectTypes.Contains(RelicModel.ModifyRoomCapacityOnCardPlay)) == true;
-            if (!hasMagicPower && !hasCardDraw && !hasRoomCapacity)
+            bool hasRoomAttachmentReplication = source.Relics?.Any(relic => relic.EffectTypes.Contains(RelicModel.FirstRoomCardOnAllFloors)) == true;
+            if (!hasMagicPower && !hasCardDraw && !hasRoomCapacity && !hasRoomAttachmentReplication)
                 return new RelicCardPlayMagicPowerResult(source);
             if (hasMagicPower && source.CardInstances == null)
                 return Fail(source, "Native card-play magic-power effects require the current owned-card list.");
@@ -101,6 +102,15 @@ namespace MonsterTrain2Poju.Model
                             context, playedCardId, definitions, relicIndex, effectIndex, selectedRoom);
                         if (!adjusted.Supported) return Fail(context, adjusted.UnsupportedReason!);
                         context = adjusted.Context!;
+                        continue;
+                    }
+                    if (relic.EffectTypes[effectIndex] == RelicModel.FirstRoomCardOnAllFloors)
+                    {
+                        int selectedRoom = context.QueryFrame?.SelectedRoomIndex ?? selectedRoomIndex ?? -1;
+                        RoomCapacityResult replicated = RelicRoomAttachmentReplicationModel.ApplyOne(
+                            context, playedCardId, definitions, relicIndex, effectIndex, selectedRoom);
+                        if (!replicated.Supported) return Fail(context, replicated.UnsupportedReason!);
+                        context = replicated.Context!;
                         continue;
                     }
                     if (relic.EffectTypes[effectIndex] != RelicModel.ModifyCardMagicPowerOnCardPlayed) continue;

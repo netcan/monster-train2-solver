@@ -36,6 +36,7 @@ $fixtureNames = @('full-battle-steward-once.mt2f', 'full-battle-no-cards.mt2f', 
     'full-battle-original-card-play-magic-power.mt2f',
     'full-battle-original-card-draw-on-card-play.mt2f',
     'full-battle-original-carriage-jack.mt2f',
+    'full-battle-original-first-room-attachment.mt2f',
     'full-battle-original-room-entry-status-relics.mt2f',
     'full-battle-original-moon-phase-energy-relic.mt2f',
     'full-battle-original-moon-phase-heal-relic.mt2f',
@@ -557,6 +558,16 @@ foreach ($fixturePath in $cardDrawOnCardPlayFixtures) {
     foreach ($mode in @('--original-card-draw-on-card-play-only', '--battle-search-only')) {
         dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- $mode $fixturePath
         if ($LASTEXITCODE -ne 0) { throw "Card-draw-on-play relic checks failed ($mode): $fixturePath" }
+    }
+}
+
+$firstRoomAttachmentFixtures = @($fixtures | Where-Object {
+    (Split-Path -Leaf $_) -eq 'full-battle-original-first-room-attachment.mt2f'
+})
+foreach ($fixturePath in $firstRoomAttachmentFixtures) {
+    foreach ($mode in @('--original-first-room-attachment-only', '--battle-search-only')) {
+        dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- $mode $fixturePath
+        if ($LASTEXITCODE -ne 0) { throw "First-room attachment relic checks failed ($mode): $fixturePath" }
     }
 }
 

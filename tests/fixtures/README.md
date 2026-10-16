@@ -4081,7 +4081,7 @@ policy plays, seven EndTurns and 16 parallel branches.
 
 The scenario keeps the attachment floor empty and routes later unit deployments
 away from it. Native propagation of that attached room modifier to units is a
-separate behavior and is not included in this relic-owner claim. The binary is
+separate behavior and is covered by the first-room attachment fixture below. The binary is
 34,617 bytes with 4,122 unique nodes and SHA-256
 `e9cd3c1375855dd15157c74c5fb50e8339a3f1e09c48c1482c668b12280bc813`; no JSON
 companion is tracked. Accepted original relic evidence is now 139/224 (62.05%),
@@ -4116,6 +4116,32 @@ and the inventory has 362 archives: 324 battles and 38 component calibrations.
 pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -OriginalMoonPhaseHealRelic
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-moon-phase-heal-relic.mt2f
 dotnet run --project src/ModelChecks -c Release -- --original-moon-phase-heal-only tests/fixtures/full-battle-original-moon-phase-heal-relic.mt2f
+```
+
+### Native original first-room attachment relic
+
+The schema-167 `full-battle-original-first-room-attachment.mt2f` captures the
+unchanged `FirstRoomCardOnAllFloors` owner (ID
+`e55235f7-1d84-43f0-b8f5-037b64b8f582`) and its once-per-battle condition. An
+ordinary Monster card is an inert negative control. The first native
+`IncreaseRoomCapacity` attachment adds +4 capacity and one attachment counter
+to every non-Pyre floor; a second attachment adds only its source-floor counter
+and does not replicate or retrigger the relic. Native room snapshots also cover
+attached upgrade propagation to existing units and units deployed later. Three
+scenario actions replay exactly; the winning battle matches all 60 stages with
+zero capture failures, mismatches, unsupported transitions or pending records.
+Independent search matches all seven recorded decisions and 128/128 states,
+including serial/parallel best results.
+
+The binary is 29,326 bytes with 4,583 unique nodes and SHA-256
+`81576c8db69090e7979b67f6b6ef1ba1c688e3210c79a5deb5dbc172738dd3cf`; no JSON
+companion is tracked. Accepted original relic evidence is now 142/224 (63.39%),
+and the inventory has 363 archives: 325 battles and 38 component calibrations.
+
+```powershell
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -OriginalFirstRoomAttachment
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-first-room-attachment.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-first-room-attachment-only tests/fixtures/full-battle-original-first-room-attachment.mt2f
 ```
 
 ### Selected-room and current-cost statistic queries

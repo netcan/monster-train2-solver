@@ -1,7 +1,7 @@
 # Original relic coverage evidence
 
-As of 2026-10-16, **141 distinct original collectable relics / 224 catalog entries
-(62.95%)** have accepted native evidence: 125 have full-battle effect evidence,
+As of 2026-10-16, **142 distinct original collectable relics / 224 catalog entries
+(63.39%)** have accepted native evidence: 126 have full-battle effect evidence,
 fifteen have campaign consumer interfaces validated, and one is an explicit
 native no-op with seeded baseline equivalence. Except for that no-op, this counts
 unchanged relic definitions whose effects actually ran, including original filters and
@@ -22,7 +22,7 @@ The battle archives cited below report game `2.2.1`, module MVID
 `8fb07b96-f4db-4d2b-884d-c00536d6ccf4`, `NativeWon=true`, and zero
 `CaptureFailures`, `Mismatches`, `Unsupported` and `Pending`. Archive provenance,
 byte lengths and SHA-256 hashes are recorded in [manifest.tsv](manifest.tsv).
-The latest battle validates unchanged MooncycleRestoreFriendlyHealth through
+The MooncycleRestoreFriendlyHealth battle validates the unchanged owner through
 seven native Full/New callbacks. Six restore exactly the lowest-health damaged
 friendly unit across all rooms, capped at 10 and maximum HP; two callbacks have
 eligible candidates on multiple floors, and one has no eligible target. The
@@ -32,7 +32,11 @@ callback capture have zero capture failures, mismatches, unsupported transitions
 or pending records. Five setup plays replay exactly; independent search matches
 24 decisions across 128/128 states and serial/parallel best results. Original
 CarriageJack's separate room-capacity behavior remains covered by its own archive.
-The accepted inventory is 362 archives: 324 battles and 38 component
+The latest battle validates FirstRoomCardOnAllFloors: an ordinary-card control
+does not trigger it, the first native capacity attachment is copied to all
+non-Pyre floors, and a later attachment is blocked by the unchanged once-per-
+battle condition. Native room and unit snapshots also match attachment upgrade
+propagation. The accepted inventory is 363 archives: 325 battles and 38 component
 calibrations, with no JSON companions.
 A recent calibration bundles two
 complete winning native battles for StarterWurmRelic: identical 21-play/seven-
@@ -242,12 +246,13 @@ owner count.
 | `CheaperBlightScourge` | `a19cac7c-b2e0-42bd-bc1e-d180e17a1c15` | [original card-type cost][cardTypeCost] | Its unchanged ordered Blight/Junk -99 effects match ten native modifier calls, including repeated application, reset, a nonmatching card and enemy-generated Junk. Original Blight and Junk play for zero Ember and self-purge; full battle and search replay match. |
 | `ConserveEmber` | `3e200d1f-7ba9-4a6e-a09d-5625f25b01ac` | [original Ember conservation][conserveEmber] | Its unchanged all-energy effect conserves positive balances on all seven EndTurns. Initial banking produces 4 → 7 → 10 Ember, followed by 21 paid plays and a winning terminal balance of 1 Ember with Pyre health 58. Seven exact native queries, complete policy replay and bounded serial/parallel search match. |
 | `CarriageJack` | `19e15240-37ca-460d-8230-693626fc7f7e` | [card-play room capacity][carriageJack] | Its unchanged +1 effect matches only `TrainRoomAttachment` plays and adjusts the selected player floor after the native attachment's +4. A non-attachment control leaves capacity unchanged. Unit-upgrade propagation from the attached room modifier is outside this fixture. |
+| `FirstRoomCardOnAllFloors` | `e55235f7-1d84-43f0-b8f5-037b64b8f582` | [first-room attachment replication][firstRoomAttachment] | The unchanged once-per-battle condition copies the first native `IncreaseRoomCapacity` attachment to every non-Pyre floor. An ordinary-card control is inert; a second attachment increments only its source-room counter and does not replicate. Full native state replay includes live and later unit upgrade propagation. |
 
 ## Campaign interface evidence
 
-These thirteen unchanged original owners are validated by their actual native
+These fifteen unchanged original owners are validated by their actual native
 campaign consumers, with baseline and removed-owner controls. This table is
-separate from the 112 battle owners. It does not claim whole-battle integration
+separate from the 126 battle owners. It does not claim whole-battle integration
 for these effect classes. The first capture's recorded relic IDs, gold, hoard cap and
 amount, deck IDs, frame and RNG match before/after; reward grants still execute
 their native run-stat side effects in the isolated save. Catalog enumeration
@@ -322,6 +327,7 @@ archives contain these observed battle sizes:
 | [original moon-phase energy relic][moonPhase] | 146 | 24 | 7 | 57 | Three Full +1/notification callbacks and three New no-op callbacks with exact unit markers |
 | [original card-attack relic][cardAttack] | 147 | 21 | 7 | 60 | Four native manager observations; Whelp/Dragon subtype dispatch, +8 offset and reset/reapply |
 | [original card-draw-on-play][cardDraw] | 160 | 20 | 6 | 52 | Five threshold draws plus one deployment-turn Snack activation/draw |
+| [first-room attachment replication][firstRoomAttachment] | 167 | 7 | 7 | 60 | Three controlled plays: ordinary negative, first attachment copied to all non-Pyre rooms, then once-per-battle gate control |
 | [normal smelt][smelt] | 103 | 22 | 7 | 55 | Original +1 Ember on a cost-2 smelt |
 | [zero-cost smelt][smeltZero] | 103 | 21 | 7 | 56 | Original +1 Ember with zero base smelt cost |
 | [bulk smelt][smeltBulk] | 103 | 1 | 7 | 52 | Four consumed cards, 3 Forge and four extra Ember |
@@ -607,6 +613,7 @@ dotnet run --project src/ModelChecks -c Release -- --original-card-attack-only t
 [cardAttack]: full-battle-original-card-attack-relic.mt2f
 [cardDraw]: full-battle-original-card-draw-on-card-play.mt2f
 [carriageJack]: full-battle-original-carriage-jack.mt2f
+[firstRoomAttachment]: full-battle-original-first-room-attachment.mt2f
 [unitUpgradeTrigger]: full-battle-original-unit-upgrade-trigger-relic.mt2f
 [extraToughTombs]: full-battle-relic-extra-tough-tombs.mt2f
 [stealthWaxers]: full-battle-original-stealth-waxers.mt2f

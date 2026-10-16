@@ -654,12 +654,17 @@ namespace MonsterTrain2Poju.Model
                 piles = context.OtherPiles?.ToArray() ?? piles;
                 terminal = outcome == RoomOutcome.BattleWon || outcome == RoomOutcome.PlayerDefeated;
             }
+            IReadOnlyList<RoomCapacityState>? capacitiesBeforeRelics = context.RoomCapacities;
             RelicCardPlayMagicPowerResult cardPlayMagicPower = RelicCardPlayMagicPowerModel.Apply(
                 context, card.InstanceId, source.PlayRules, source.Spawn.Turn,
                 context.QueryFrame?.SelectedRoomIndex ?? action.RoomIndex);
             if (!cardPlayMagicPower.Supported) return Unsupported(cardPlayMagicPower.UnsupportedReason!);
             context = cardPlayMagicPower.Context;
             train = CardSpellModel.WithContext(train, context);
+            RoomAttachmentUnitSyncResult replicatedCharacters = RoomAttachmentUnitModel.Synchronize(train,
+                capacitiesBeforeRelics, context.RoomCapacities);
+            if (!replicatedCharacters.Supported) return Unsupported(replicatedCharacters.UnsupportedReason!);
+            train = replicatedCharacters.State!;
             TrainCombatResult delayedStatusRemovals = TrainCombatModel.ProcessDelayedStatusRemovalsAfterCardPlayed(train);
             if (!delayedStatusRemovals.Supported) return Unsupported(delayedStatusRemovals.UnsupportedReason!);
             train = delayedStatusRemovals.State!; context = train.Context!;

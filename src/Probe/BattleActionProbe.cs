@@ -505,7 +505,11 @@ namespace MonsterTrain2Poju.Probe
                 return null;
             }
             return new RoomCapacityAttachmentState(card.GetID(), card.name, effect.GetAdditionalParamInt(),
-                modifiers[0].GetParamInt());
+                modifiers[0].GetParamInt(), [CardModifierProbe.Upgrade(upgrade, rejectFilters: false,
+                    filtersAlreadyApplied: true, roomAttachmentUnitUpgrade: true)],
+                affectsHeroes: effect.GetTargetTeamType().HasFlag(Team.Type.Heroes),
+                affectsMonsters: effect.GetTargetTeamType().HasFlag(Team.Type.Monsters),
+                ignoreBosses: effect.GetTargetIgnoreBosses());
         }
 
         private static CardData? Fallback(CharacterData unit) => AllGameManagers.Instance!.GetSaveManager().GetAllGameData()
@@ -619,6 +623,18 @@ namespace MonsterTrain2Poju.Probe
                             .Where(property => !JToken.DeepEquals(property.Value, actualObject[property.Name]))
                             .Select(property => property.Name));
                         log.LogInfo("ACTION-MODEL-DIFF index=" + record.Index + " fields=" + fields);
+                        if (OriginalFirstRoomAttachmentScenario.Enabled && fields.Contains("Rooms", StringComparison.Ordinal))
+                        {
+                            foreach (int roomIndex in record.Predicted.State!.Spawn.Train.Rooms.Select(room => room.RoomIndex)
+                                .Union(record.Actual.Spawn.Train.Rooms.Select(room => room.RoomIndex)).OrderBy(index => index))
+                            {
+                                RoomCombatState? expectedRoom = record.Predicted.State.Spawn.Train.Rooms.FirstOrDefault(room => room.RoomIndex == roomIndex);
+                                RoomCombatState? actualRoom = record.Actual.Spawn.Train.Rooms.FirstOrDefault(room => room.RoomIndex == roomIndex);
+                                log.LogInfo("FIRST-ROOM-ROOM-DIFF room=" + roomIndex + " predicted=" +
+                                    (expectedRoom == null ? "missing" : JToken.FromObject(new { expectedRoom.Deployment, expectedRoom.Units }).ToString(Newtonsoft.Json.Formatting.None)) +
+                                    " actual=" + (actualRoom == null ? "missing" : JToken.FromObject(new { actualRoom.Deployment, actualRoom.Units }).ToString(Newtonsoft.Json.Formatting.None)));
+                            }
+                        }
                     }
                     log.LogInfo("ACTION-MODEL-" + (record.Difference == null ? "MATCH" : "MISMATCH") + " index=" + record.Index);
                 }

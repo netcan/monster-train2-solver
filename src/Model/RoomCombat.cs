@@ -682,6 +682,12 @@ namespace MonsterTrain2Poju.Model
             if (error != null || unit == null || fromCard && unit.SpawnerCardId <= 0)
                 return new RoomCombatResult(null, RoomOutcome.Unsupported, 0, new List<CombatEvent>(),
                     error ?? "Spawn triggers require a living new unit and its source card identity.");
+            RoomCombatState? synchronized = RoomAttachmentUnitModel.ApplyToNewCharacter(state, unitId, out error);
+            if (error != null || synchronized == null)
+                return new RoomCombatResult(null, RoomOutcome.Unsupported, 0, new List<CombatEvent>(),
+                    error ?? "Room attachment birth synchronization failed.");
+            state = synchronized;
+            unit = state.Units.First(item => item.Id == unitId);
             return new Engine(state, new List<CombatEvent>(), pendingSummonCardId: fromCard ? unit.SpawnerCardId : 0,
                 enqueueCharacterTrigger: enqueue, refreshPyre: refreshPyre, moonPhase: moonPhase).Spawn(unitId, fromCard, startingApplications,
                     additionalStatus: additionalStatus);
@@ -3334,7 +3340,7 @@ namespace MonsterTrain2Poju.Model
                     capacity = context!.RoomCapacities!.First(room => room.RoomIndex == source.RoomIndex);
                     var changedCapacity = new RoomCapacityState(source.RoomIndex, capacity.PlayerMaximum, capacity.EnemyMaximum,
                         capacity.IsPyre, Math.Max(permanent, corruption - removedStacks), capacity.Attachments,
-                        capacity.MaxCorruption, permanent);
+                        capacity.MaxCorruption, permanent, capacity.AttachmentsAddedFromCards);
                     context = context.WithRoomCapacities(context.RoomCapacities.Select(room => room.RoomIndex == source.RoomIndex
                         ? changedCapacity : room).ToArray());
                     return unsupportedReason == null;
