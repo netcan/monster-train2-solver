@@ -17,7 +17,13 @@ foreach ($line in Get-Content (Join-Path $workspace 'tests/fixtures/relic-covera
         }
     }
     if ($line -match '^\| `(?<key>[^`]+)` \| `(?<id>[0-9a-f-]{36})` \|') {
-        if ($accepted.ContainsKey($Matches.id)) { throw "Duplicate accepted owner $($Matches.id)" }
+        if ($accepted.ContainsKey($Matches.id)) {
+            $existing = $accepted[$Matches.id]
+            if ($existing.Key -cne $Matches.key -or $existing.Kind -cne $evidenceKind) {
+                throw "Conflicting accepted owner record $($Matches.id)"
+            }
+            continue
+        }
         $accepted[$Matches.id] = [pscustomobject]@{ Key = $Matches.key; Kind = $evidenceKind }
     }
 }
