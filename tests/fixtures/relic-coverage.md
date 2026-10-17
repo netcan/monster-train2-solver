@@ -1,7 +1,7 @@
 # Original relic coverage evidence
 
-As of 2026-10-18, **182 distinct original collectable relics / 224 catalog entries
-(81.25%)** have accepted native evidence: 165 have full-battle effect evidence,
+As of 2026-10-18, **183 distinct original collectable relics / 224 catalog entries
+(81.70%)** have accepted native evidence: 166 have full-battle effect evidence,
 sixteen have campaign consumer interfaces validated, and one is an explicit
 native no-op with seeded baseline equivalence. Except for that no-op, this counts
 unchanged relic definitions whose effects actually ran, including original filters and
@@ -60,6 +60,10 @@ match exact per-stack magnitudes and target Armor. Pure model controls cover the
 vanilla/relic target, existing Armor, front-only application, turn-zero and
 deployment gates, and malformed definitions; independent 128-state search
 passes.
+`UpgradeMaxHpFrontUnit` now has schema-207 native evidence for repeated +15
+max/current HP upgrades on each populated floor's front Monster. Two floors have
+back-unit controls, two floors stay empty, and each source card retains the
+temporary upgrade; a retained dying front target remains unsupported.
 The native source and callback effect for `RageOnBurnoutStackLoss` now have one
 accepted battle witness for a controlled friendly Ephemeral removal.
 `PyreRevengeAddPyregel` now has four live native OnHit witnesses whose complete
@@ -244,6 +248,7 @@ owner count.
 | `ReduceSpellCostOfCheaper` | `9cc85dbb-d0ae-409b-8f26-41d2202eb1e0` | [cheaper spell cost][cheaperSpellCost] | Unchanged FreeSpellBlessing applies only to filtered spells with strictly lower cost; equal-cost, zero-cost and X-cost controls are unchanged. Played-card and end-turn discard clean up tracked upgrades. Full battle and independent 128/128-state replay/search match. |
 | `ReduceFirstSpellCostPerDeckSize` | `64d9943e-02e7-469d-b516-c483a3ad8ccf` | [first spell cost per deck size][firstCardCost] | The unchanged 15-card DeckPile threshold applies cost/X-cost reduction to eligible Spells, clears hand upgrades after the first Spell, and re-arms through the per-room EndOfTurn callback. The schema-205 battle matches 52 stages and three scripted actions; dedicated checks and 128-state serial/parallel search pass with zero unsupported attempts. Other owners and card/pile variants are not claimed. |
 | `RebalanceValor` | `76511782-d2c1-43d1-9878-e465758017d8` | [RebalanceValor][rebalanceValor] | The unchanged native owner keeps Valor attack at +0 and increases Armor to +2 per stack (base +1 plus relic +1). Three tracked callbacks match their native per-stack getters and target four Armor at two stacks; turn zero/deployment are excluded. The schema-206 battle matches 51 stages and six actions; dedicated checks and 128-state serial/parallel search pass with all error counters zero. Other owners and status-stack variants are not claimed. |
+| `UpgradeMaxHpFrontUnit` | `cb2c9d18-9a05-4523-acdc-6e4af73152aa` | `full-battle-original-front-room-health-upgrade.mt2f` | Four native start-of-turn callbacks apply exactly +15 max/current HP and one matching upgrade to the first player Monster on floors 0/1; each second unit and empty floors 2/3 are controls. Source-card temporary modifiers track only the front targets. The schema-207 battle has 54 stages, four actions, five EndTurns, and zero error counters; dedicated native/model ablation and 128-state search pass. Retained dying front targets remain unsupported. |
 | `NefariousOverflow` | `b0575799-1511-489d-a05d-b5b2e6bf84c2` | [NefariousOverflow][nefariousOverflow] | The unchanged both-team payload adds 1 explosion damage per Unstable stack: the five-stack carrier's death kills the Mage and reduces the Guard's Armor 17→7. Proc-damage and growth hooks remain unsupported when nonzero. Full battle and independent 128/128-state replay/search match. |
 | `UncontrolledGroup` | `4c737e1e-7e5c-40ee-87a3-944859784283` | [UncontrolledGroup][uncontrolledGroup] | The unchanged ordered two-effect owner adds +5 Unstable to eligible nonlethal units on both teams; Blast Resistant suppresses the callback. Native growth callback and full 41-stage replay match, with independent 128/128-state search. Lethal pre-growth sacrifice and sibling payloads are not claimed. |
 | `CopyFirstSpellPlayed` | `0f4a9e72-cd34-4667-95f6-6a0ca69832f8` | [CopyFirstSpellPlayed][copyFirstSpell] | The unchanged once-per-turn owner copies the first direct Spell with temporary Ephemeral; its generated copy plays again the same turn without retriggering. Exact original owner only; sibling copy payloads are not generalized. |
@@ -1434,4 +1439,31 @@ component calibrations. Original relic evidence is 180/224 (80.36%): 163 battle,
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-balatro-event-cavendish.mt2f
 dotnet run --project src/ModelChecks -c Release -- --original-balatro-event-cavendish-only tests/fixtures/full-battle-original-balatro-event-cavendish.mt2f
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-balatro-event-cavendish.mt2f
+```
+
+## UpgradeMaxHpFrontUnit
+
+The schema-207 fixture captures the unchanged owner applying its non-unique
+`EmblemOfExiles_Upgrade` (+15 Health) at start of turn. Four native callbacks
+increase MaxHealth and current Health by exactly 15 on the first player Monster
+in each populated floor; a second Monster on each floor and the two empty floors
+are controls. The matching temporary upgrade is also added to each front unit's
+spawner card, but not to either back-unit card. The start-of-turn test rejects
+the initially empty battle and accepts the later populated floors.
+
+The winning 54-stage battle has four card actions, five EndTurns and zero capture
+failures, mismatches, unsupported transitions or pending records. Focused native
+checks compare all four callbacks and run owner-present/owner-removed model
+branches; independent search visits 128/128 states, replays three steps and has
+serial/parallel best equality. A retained dying front unit is explicitly
+unsupported. The 25,633-byte archive has 3,774 unique nodes and SHA-256
+`ca53f9d4e4816704da2498f2adb8760bcf8ad340b21ead17664be3ef2285cde1`; no JSON
+companion is tracked. Inventory is 403 archives: 365 full battles and 38
+component calibrations. Original relic evidence is 183/224 (81.70%): 166 battle,
+16 campaign and one native no-op owner.
+
+```powershell
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-front-room-health-upgrade.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-front-room-health-upgrade-only tests/fixtures/full-battle-original-front-room-health-upgrade.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-front-room-health-upgrade.mt2f
 ```

@@ -1,8 +1,8 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-18): 402 binary archives, including 364
+Current accepted inventory (2026-10-18): 403 binary archives, including 365
 full battles and 38 component calibrations. Unchanged original relic evidence
-covers 182/224 catalog entries (81.25%): 165 battle owners, 16 campaign
+covers 183/224 catalog entries (81.70%): 166 battle owners, 16 campaign
 interface owners and one native no-op; see
 [the owner evidence table](tests/fixtures/relic-coverage.md). Whole-battle
 coverage and the optimal solver remain in progress.
@@ -23,6 +23,14 @@ Valor; turn zero and deployment do not trigger. The schema-206 winning fixture
 matches 51 stages and six actions with all four error counters at zero. Dedicated
 native/pure checks and independent 128-state serial/parallel search pass. The
 witness is limited to this owner and two-stack carrier.
+
+`UpgradeMaxHpFrontUnit` now has isolated native coverage. Four unchanged-owner
+start-of-turn callbacks add exactly +15 max/current HP to the front player
+Monster in each populated floor, and retain the matching temporary upgrade on
+that source card; back units and empty floors are controls. Its schema-207
+54-stage battle, native/model checks and independent 128-state serial/parallel
+search pass with all error counters zero. Retained dying front targets remain
+unsupported.
 
 Three unchanged opening-corruption relics now match their natural ordered
 callbacks: all-room maximum +1, permanent corruption +1 on floor two, then
@@ -9897,4 +9905,30 @@ pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -OriginalSoloUnitUpgradeRe
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-add-stats-to-solo-units.mt2f
 dotnet run --project src/ModelChecks -c Release -- --original-solo-unit-upgrade-only tests/fixtures/full-battle-original-add-stats-to-solo-units.mt2f
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-add-stats-to-solo-units.mt2f
+```
+
+### UpgradeMaxHpFrontUnit relic (schema 207)
+
+`full-battle-original-front-room-health-upgrade.mt2f` captures the unchanged
+owner and its non-unique +15 Health upgrade. At start of turn, the native effect
+selects the first player Monster in every floor (HealthFilter.Both), excludes
+Pyre Heart, applies the upgrade, and records it on the matching source card.
+Four callbacks prove exact +15 MaxHealth/current Health on two populated floors;
+each back unit and the two empty floors remain unchanged.
+
+The focused check compares native room and source-card snapshots, validates the
+owner-present/owner-removed model branches, and runs the full four-action policy
+replay. The winning battle has 54 stages, five EndTurns, and zero capture
+failures, mismatches, unsupported transitions or pending records. Independent
+search visits 128/128 states with serial/parallel best equality. Retained dying
+front targets are explicitly outside support. The 25,633-byte archive has 3,774
+unique nodes and SHA-256
+`ca53f9d4e4816704da2498f2adb8760bcf8ad340b21ead17664be3ef2285cde1`; no JSON
+companion is tracked.
+
+```powershell
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -OriginalFrontRoomHealthUpgradeRelic -GameSpeed Instant
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-front-room-health-upgrade.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-front-room-health-upgrade-only tests/fixtures/full-battle-original-front-room-health-upgrade.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-front-room-health-upgrade.mt2f
 ```

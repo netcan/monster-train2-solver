@@ -17,17 +17,16 @@ Schema 8 retains the required card traits introduced in schema 6.
 Regenerate the checklist with `scripts/Get-RelicCoverageInventory.ps1 -Catalog
 <relic-catalog.mt2f> -OutputPath tests/fixtures/relic-inventory.tsv`. This verifies
 catalog identity, unique owner IDs, accepted table identities and source presence.
-Current checkpoint: 182 original owners accepted (165 native battle owners,
+Current checkpoint: 183 original owners accepted (166 native battle owners,
 sixteen actual campaign-interface owners and one explicit native no-op owner);
-42 remain pending. The latest accepted owner is `RebalanceValor`: native source
-confirms +0 Attack and +1 Armor per Valor stack. Its schema-206 full battle
-matches 51 stages, six actions and three tracked callback observations with zero
-capture failures, mismatches, unsupported transitions or pending records.
-Dedicated checks cover the vanilla/relic magnitude split, turn-zero/deployment
-gates, and existing Armor; independent 128-state serial/parallel search passes.
-The witness is limited to the original owner and two-stack carrier. Campaign
-acceptance does not imply those effect classes are integrated into battle branch
-state.
+41 remain pending. The latest accepted owner is `UpgradeMaxHpFrontUnit`: its
+schema-207 full battle records four start-of-turn callbacks that add +15
+max/current HP to each populated floor's front player Monster, preserve the
+source-card temporary upgrade, and leave back units unchanged. The 54-stage
+capture has four actions and five EndTurns with zero capture failures, mismatches,
+unsupported transitions or pending records. Dedicated native/model ablation and
+independent 128-state serial/parallel search pass. Retained dying front targets
+remain explicitly unsupported.
 
 Acceptance requires an unchanged original owner, actual eligible and control
 paths, exact model/native state and relevant ordering/callback checks. Battle
