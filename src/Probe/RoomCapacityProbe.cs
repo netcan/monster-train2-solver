@@ -17,6 +17,11 @@ namespace MonsterTrain2Poju.Probe
                 CaptureAttachments(room), room.GetMaxCorruption(), room.GetPermanentCorruption(), room.NumRoomAttachmentsAddedFromCard);
         }).ToArray();
 
+        internal static int SpellCostDelta(RoomState room) => room.Attachments.Where(attachment => attachment.IsActive)
+            .SelectMany(attachment => attachment.UpgradeStates).SelectMany(upgrade => upgrade.Item2.GetRoomModifierUpgrades())
+            .Where(modifier => modifier.GetRoomStateModifierClassName() == "RoomStateSpellCostModifier")
+            .Sum(modifier => modifier.GetParamInt());
+
         internal static bool SupportsAttachments(RoomState room) => CaptureAttachments(room) != null;
 
         private static RoomCapacityAttachmentState[]? CaptureAttachments(RoomState room)
@@ -30,9 +35,13 @@ namespace MonsterTrain2Poju.Probe
                 var characterUpgrades = new List<CardUpgradeModifier>();
                 foreach (var (state, definition) in attachment.UpgradeStates)
                 {
-                    var capacityModifiers = definition.GetRoomModifierUpgrades();
-                    bool supported = capacityModifiers.Count <= 1 && (capacityModifiers.Count == 0 ||
-                        capacityModifiers[0].GetRoomStateModifierClassName() == "RoomStateCapacityModifier") &&
+                    RoomModifierData[] roomModifiers = definition.GetRoomModifierUpgrades().ToArray();
+                    RoomModifierData[] capacityModifiers = roomModifiers.Where(modifier =>
+                        modifier.GetRoomStateModifierClassName() == "RoomStateCapacityModifier").ToArray();
+                    RoomModifierData[] spellCostModifiers = roomModifiers.Where(modifier =>
+                        modifier.GetRoomStateModifierClassName() == "RoomStateSpellCostModifier").ToArray();
+                    bool supported = roomModifiers.Length == capacityModifiers.Length + spellCostModifiers.Length &&
+                        capacityModifiers.Length <= 1 && spellCostModifiers.Length <= 1 &&
                         state.GetAttackDamage() == 0 && state.GetAttackDamageBuff() == 0 && state.GetAdditionalHP() == 0 &&
                         state.GetAdditionalUnhealedHP() == 0 && state.GetCostReduction() == 0 && state.GetAdditionalSize() == 0 &&
                         state.GetAdditionalEquipmentLimit() == 0 && state.GetStatusEffectUpgrades().Count == 0 &&
@@ -41,7 +50,7 @@ namespace MonsterTrain2Poju.Probe
                         state.GetUpgradesToRemove().Count == 0 && state.GetFilters().Count == 0 &&
                         state.GetUnitAbilityUpgrade() == null && state.GetRoomAbilityUpgrade() == null && !state.IsUnique();
                     if (!supported) return null;
-                    if (capacityModifiers.Count == 1) delta = unchecked(delta + capacityModifiers[0].GetParamInt());
+                    if (capacityModifiers.Length == 1) delta = unchecked(delta + capacityModifiers[0].GetParamInt());
                     characterUpgrades.Add(CardModifierProbe.Upgrade(state, rejectFilters: false,
                         filtersAlreadyApplied: true, roomAttachmentUnitUpgrade: true));
                 }
@@ -49,10 +58,13 @@ namespace MonsterTrain2Poju.Probe
                 string assetKey = attachment.CardState == null ? attachment.UpgradeStates.Single().Item2.name :
                     AllGameManagers.Instance!.GetSaveManager().GetAllGameData().FindCardData(dataId)!.name;
                 bool ignoreBosses = (bool)AccessTools.Field(typeof(TrainRoomAttachmentState), "_isIgnoreBosses").GetValue(attachment);
+                int spellCostDelta = attachment.UpgradeStates.SelectMany(item => item.Item2.GetRoomModifierUpgrades())
+                    .Where(modifier => modifier.GetRoomStateModifierClassName() == "RoomStateSpellCostModifier")
+                    .Sum(modifier => modifier.GetParamInt());
                 result.Add(new RoomCapacityAttachmentState(dataId, assetKey, (int)attachment.AttachType, delta,
                     characterUpgrades, attachment.TrainSide.HasFlag(Team.Type.Heroes),
                     attachment.TrainSide.HasFlag(Team.Type.Monsters), ignoreBosses,
-                    attachment.CardState == null ? attachment.Guid : ""));
+                    attachment.CardState == null ? attachment.Guid : "", spellCostDelta));
             }
             return result.ToArray();
         }

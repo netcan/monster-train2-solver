@@ -81,7 +81,7 @@
 "PyrePiping"	"44aae53e-ee70-4b2c-8d25-a02f977349ee"	"accepted-native-battle"	"RelicEffectAdditionalDrawOnTowerFullHealth"	""
 "ExtraDeathTrigger"	"a5d67620-a9ec-4257-91b5-305336e11987"	"accepted-native-battle"	"RelicEffectModifyTriggerCount"	""
 "SummonWithAvarice"	"a9670728-2ad2-4776-be80-e1a08864f18c"	"pending"	"RelicEffectAddStatusEffectOnSpawn"	""
-"TrainRoomInstallFloor2AtStartOfCombat"	"b037ec04-6164-4cd8-8b9d-3bc420c29351"	"pending"	"RelicEffectAddTrainRoomAttachmentOnStartOfCombat"	""
+"TrainRoomInstallFloor2AtStartOfCombat"	"b037ec04-6164-4cd8-8b9d-3bc420c29351"	"accepted-native-battle"	"RelicEffectAddTrainRoomAttachmentOnStartOfCombat"	""
 "ModifyDragonsHoardCap"	"00a8f443-cdea-437a-98bf-0ebe0ead00b0"	"accepted-native-campaign"	"RelicEffectModifyDragonsHoardCap"	""
 "ExtraValorOnValor"	"74c025fa-ddcb-494b-a790-dcadc5b5772b"	"accepted-native-battle"	"RelicEffectAddStatusEffectOnStatusApplied"	""
 "BalatroEventCavendish"	"24c4ad26-f2b3-4a95-bddc-caab94bd4767"	"pending"	"RelicEffectModifyCardAttack,RelicEffectChanceToDestroySelf,RelicEffectBalatroBananaShake"	""

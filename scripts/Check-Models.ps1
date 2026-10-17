@@ -54,7 +54,7 @@ $fixtureNames = @('full-battle-steward-once.mt2f', 'full-battle-no-cards.mt2f', 
     'full-battle-original-card-draw-on-card-play.mt2f',
     'full-battle-original-carriage-jack.mt2f',
     'full-battle-original-first-room-attachment.mt2f',
-    'full-battle-original-start-room-attachment.mt2f',
+    'full-battle-original-start-room-attachment.mt2f', 'full-battle-original-start-room-attachment-floor2.mt2f',
     'full-battle-original-room-entry-status-relics.mt2f',
     'full-battle-original-moon-phase-energy-relic.mt2f',
     'full-battle-original-moon-phase-heal-relic.mt2f',
@@ -596,7 +596,7 @@ foreach ($fixturePath in $firstRoomAttachmentFixtures) {
 }
 
 $startRoomAttachmentFixtures = @($fixtures | Where-Object {
-    (Split-Path -Leaf $_) -eq 'full-battle-original-start-room-attachment.mt2f'
+    (Split-Path -Leaf $_) -in @('full-battle-original-start-room-attachment.mt2f', 'full-battle-original-start-room-attachment-floor2.mt2f')
 })
 foreach ($fixturePath in $startRoomAttachmentFixtures) {
     foreach ($mode in @('--original-start-room-attachment-only', '--battle-search-only')) {

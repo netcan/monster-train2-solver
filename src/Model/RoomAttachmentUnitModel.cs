@@ -187,10 +187,9 @@ namespace MonsterTrain2Poju.Model
         private static bool IsApplied(CombatUnit unit, RoomCapacityAttachmentState attachment)
         {
             if (attachment.CharacterUpgrades == null || unit.Modifiers?.Upgrades == null) return false;
-            if (attachment.AttachmentId.Length > 0)
-                return unit.Triggers.Any(trigger => trigger.Origin?.UpgradeId == attachment.AttachmentId) &&
-                    attachment.CharacterUpgrades.All(expected => unit.Modifiers.Upgrades.Any(applied =>
-                        applied.DataId == expected.DataId && applied.AssetKey == expected.AssetKey));
+            bool hasTriggerUpgrade = attachment.CharacterUpgrades.Any(expected => expected.TriggerUpgrades?.Count > 0);
+            if (hasTriggerUpgrade && (attachment.AttachmentId.Length == 0 ||
+                !unit.Triggers.Any(trigger => trigger.Origin?.UpgradeId == attachment.AttachmentId))) return false;
             return attachment.CharacterUpgrades.Count > 0 && attachment.CharacterUpgrades.All(expected =>
                 unit.Modifiers.Upgrades.Any(applied => applied.DataId == expected.DataId && applied.AssetKey == expected.AssetKey));
         }

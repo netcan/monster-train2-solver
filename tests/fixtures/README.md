@@ -1,5 +1,15 @@
 # Native regression fixtures
 
+TrainRoomInstallFloor2AtStartOfCombat extension (2026-10-17): 384 archives
+(346 battles and 38 calibrations), 163/224 original relic owners (72.77%):
+147 full-battle owners, fifteen campaign-interface owners and one native no-op.
+The unchanged owner installs SpellSanctum on room index 1 for both teams. A
+native hand Spell costs 1 on the control floor and 0 in SpellSanctum; eight
+impacted-unit snapshots and 31 attached-room snapshots match. The winning
+57-stage replay has 27 actions and zero error counters; independent search
+checks 128/128 states with serial/parallel best equality. No X-cost Spell was
+present in the captured hand, so that branch is not claimed as battle-witnessed.
+
 DamageOnFloorTransition extension (2026-10-17): 380 archives (342 battles and
 38 calibrations), 159/224 original relic owners (70.98%): 143 full-battle owners,
 fifteen campaign-interface owners and one native no-op. The unchanged owner

@@ -15,13 +15,14 @@ namespace MonsterTrain2Poju.Model
         public bool AffectsHeroes { get; }
         public bool AffectsMonsters { get; }
         public bool IgnoreBosses { get; }
+        public int SpellCostDelta { get; }
         public RoomCapacityAttachmentState(string dataId, string assetKey, int attachmentType, int capacityDelta,
             IReadOnlyList<CardUpgradeModifier>? characterUpgrades = null, bool affectsHeroes = false,
-            bool affectsMonsters = true, bool ignoreBosses = false, string attachmentId = "")
+            bool affectsMonsters = true, bool ignoreBosses = false, string attachmentId = "", int spellCostDelta = 0)
         {
             DataId = dataId; AssetKey = assetKey; AttachmentId = attachmentId; AttachmentType = attachmentType; CapacityDelta = capacityDelta;
             CharacterUpgrades = characterUpgrades == null ? null : Array.AsReadOnly(characterUpgrades.ToArray());
-            AffectsHeroes = affectsHeroes; AffectsMonsters = affectsMonsters; IgnoreBosses = ignoreBosses;
+            AffectsHeroes = affectsHeroes; AffectsMonsters = affectsMonsters; IgnoreBosses = ignoreBosses; SpellCostDelta = spellCostDelta;
         }
     }
 
@@ -61,6 +62,14 @@ namespace MonsterTrain2Poju.Model
     }
     public static class RoomCapacityModel
     {
+        internal static int SpellCostDelta(CombatContext? context, int roomIndex) =>
+            context?.RoomCapacities?.FirstOrDefault(room => room.RoomIndex == roomIndex)?.Attachments?
+                .Sum(attachment => attachment.SpellCostDelta) ?? 0;
+
+        internal static int SpellPlayedCostModifier(CombatContext? context, int roomIndex) =>
+            context?.RoomCapacities?.FirstOrDefault(room => room.RoomIndex == roomIndex)?.Attachments?
+                .Sum(attachment => Math.Abs(attachment.SpellCostDelta)) ?? 0;
+
         public static string? Validate(CombatContext? context)
         {
             if (context?.RoomCapacities == null) return "Missing captured room capacity state.";
@@ -68,6 +77,7 @@ namespace MonsterTrain2Poju.Model
                 context.RoomCapacities.Select(room => room.RoomIndex).Distinct().Count() != context.RoomCapacities.Count ||
                 context.RoomCapacities.Any(room => room.Attachments?.Any(attachment => string.IsNullOrEmpty(attachment.DataId) ||
                     string.IsNullOrEmpty(attachment.AssetKey) || attachment.AttachmentType != 0 ||
+                    attachment.SpellCostDelta != 0 && attachment.SpellCostDelta != -1 ||
                     attachment.AttachmentId.Length > 0 && (!Guid.TryParse(attachment.AttachmentId, out Guid attachmentGuid) || attachmentGuid == Guid.Empty) ||
                     attachment.CharacterUpgrades?.Any(upgrade => upgrade.ExternalInteractions.Count > 0 ||
                         upgrade.Stats.Damage != 0 || upgrade.Stats.Health != 0 || upgrade.Stats.Size != 0 ||

@@ -245,6 +245,7 @@ param(
     [switch] $OriginalCarriageJack,
     [switch] $OriginalFirstRoomAttachment,
     [switch] $OriginalStartRoomAttachment,
+    [switch] $OriginalStartRoomAttachmentFloor2,
     [switch] $UnplayedCardTrigger,
     [switch] $UnplayedCardEffects,
     [switch] $OriginalRoomEntryStatusRelics,
@@ -348,6 +349,9 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+if ($OriginalStartRoomAttachment -and $OriginalStartRoomAttachmentFloor2) {
+    throw 'Select one original start-room attachment relic owner.'
+}
 if ($OriginalTunedGearRelic -and ($OriginalStealthWaxersRelic -or $OriginalTeamSpawnStatusRelic -or $SpawnStatusRelicsClones -or $MixedCardlessRelicOrder)) {
     throw 'OriginalTunedGearRelic is an isolated spawn-status scenario.'
 }
@@ -401,7 +405,7 @@ if ($OriginalPyreRevenge) { $BranchCardMasks = $true; $Policy = 'units-spells-an
 if ($OriginalExtractForEmberAndEchos) { $BranchCardMasks = $true; $Policy = 'units-and-junk' }
 if ($OriginalCarriageJack) { $Policy = 'units-and-junk' }
 if ($OriginalFirstRoomAttachment) { $BranchCardMasks = $true; $Policy = 'units-and-junk' }
-if ($OriginalStartRoomAttachment) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
+if ($OriginalStartRoomAttachment -or $OriginalStartRoomAttachmentFloor2) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($UnplayedCardTrigger) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($UnplayedCardEffects) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalRoomEntryStatusRelics) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
@@ -834,6 +838,7 @@ if ($OriginalCardDrawOnCardPlay) { $environment['MT2_PROBE_MODIFIERS'] = 'origin
 if ($OriginalCarriageJack) { $environment['MT2_PROBE_MODIFIERS'] = 'original-carriage-jack' }
 if ($OriginalFirstRoomAttachment) { $environment['MT2_PROBE_MODIFIERS'] = 'original-first-room-attachment' }
 if ($OriginalStartRoomAttachment) { $environment['MT2_PROBE_MODIFIERS'] = 'original-start-room-attachment' }
+if ($OriginalStartRoomAttachmentFloor2) { $environment['MT2_PROBE_MODIFIERS'] = 'original-start-room-attachment-floor2' }
 if ($UnplayedCardTrigger) { $environment['MT2_PROBE_MODIFIERS'] = 'unplayed-card-trigger' }
 if ($UnplayedCardEffects) { $environment['MT2_PROBE_MODIFIERS'] = 'unplayed-card-effects' }
 if ($OriginalRoomEntryStatusRelics) { $environment['MT2_PROBE_MODIFIERS'] = 'original-room-entry-status-relics' }
@@ -1357,21 +1362,29 @@ if ($OriginalFirstRoomAttachment -and (
     @($trace.Actions | Where-Object ScenarioAction).Count -ne 3)) {
     throw 'Original FirstRoomCardOnAllFloors failed its negative, first-attachment and later-attachment controls in the expected full-battle capture.'
 }
-if ($OriginalStartRoomAttachment -and (
-    $trace.Schema -ne 168 -or
-    -not $trace.OriginalStartRoomAttachmentPrepared -or
-    $trace.ModifierScenario -ne 'original-start-room-attachment' -or
-    -not (Select-String -LiteralPath $unityLog -Pattern 'ORIGINAL-START-ROOM-ATTACHMENT-ACQUIRED unchanged relic=TrainRoomInstallFloor1AtStartOfCombat' -Quiet) -or
-    $trace.OriginalStartRoomAttachmentCoverage.Error -or
-    -not $trace.OriginalStartRoomAttachmentCoverage.Prepared -or
-    $trace.OriginalStartRoomAttachmentCoverage.RoomIndex -ne 0 -or
-    $trace.OriginalStartRoomAttachmentCoverage.AttachmentType -ne 0 -or
-    -not $trace.OriginalStartRoomAttachmentCoverage.AffectsHeroes -or
-    -not $trace.OriginalStartRoomAttachmentCoverage.AffectsMonsters -or
-    $trace.OriginalStartRoomAttachmentCoverage.AttachmentsAddedFromCards -ne 0 -or
-    $trace.CaptureFailures -ne 0 -or $trace.Mismatches -ne 0 -or $trace.Unsupported -ne 0 -or $trace.Pending -ne 0 -or
-    -not $trace.NativeWon)) {
-    throw 'The original floor-one start-of-combat attachment relic did not complete its clean full battle setup.'
+if ($OriginalStartRoomAttachment -or $OriginalStartRoomAttachmentFloor2) {
+    $expectedStartRoomSchema = if ($OriginalStartRoomAttachmentFloor2) { 186 } else { 168 }
+    $expectedStartRoomModifier = if ($OriginalStartRoomAttachmentFloor2) { 'original-start-room-attachment-floor2' } else { 'original-start-room-attachment' }
+    $expectedStartRoomRelic = if ($OriginalStartRoomAttachmentFloor2) { 'TrainRoomInstallFloor2AtStartOfCombat' } else { 'TrainRoomInstallFloor1AtStartOfCombat' }
+    $expectedStartRoomRelicId = if ($OriginalStartRoomAttachmentFloor2) { 'b037ec04-6164-4cd8-8b9d-3bc420c29351' } else { '2c97e1b3-d4bb-4133-9572-e582805c106f' }
+    $expectedStartRoomIndex = if ($OriginalStartRoomAttachmentFloor2) { 1 } else { 0 }
+    if ($trace.Schema -ne $expectedStartRoomSchema -or
+        -not $trace.OriginalStartRoomAttachmentPrepared -or
+        $trace.ModifierScenario -ne $expectedStartRoomModifier -or
+        -not (Select-String -LiteralPath $unityLog -Pattern "ORIGINAL-START-ROOM-ATTACHMENT-ACQUIRED unchanged relic=$expectedStartRoomRelic id=$expectedStartRoomRelicId room=$expectedStartRoomIndex" -Quiet) -or
+        $trace.OriginalStartRoomAttachmentCoverage.Error -or
+        -not $trace.OriginalStartRoomAttachmentCoverage.Prepared -or
+        $trace.OriginalStartRoomAttachmentCoverage.RelicId -ne $expectedStartRoomRelicId -or
+        $trace.OriginalStartRoomAttachmentCoverage.RelicKey -ne $expectedStartRoomRelic -or
+        $trace.OriginalStartRoomAttachmentCoverage.RoomIndex -ne $expectedStartRoomIndex -or
+        $trace.OriginalStartRoomAttachmentCoverage.AttachmentType -ne 0 -or
+        -not $trace.OriginalStartRoomAttachmentCoverage.AffectsHeroes -or
+        -not $trace.OriginalStartRoomAttachmentCoverage.AffectsMonsters -or
+        $trace.OriginalStartRoomAttachmentCoverage.AttachmentsAddedFromCards -ne 0 -or
+        $trace.CaptureFailures -ne 0 -or $trace.Mismatches -ne 0 -or $trace.Unsupported -ne 0 -or $trace.Pending -ne 0 -or
+        -not $trace.NativeWon) {
+        throw 'The selected original start-of-combat attachment relic did not complete its clean full battle setup.'
+    }
 }
 if ($UnplayedCardTrigger) {
     $triggerCardIds = @(

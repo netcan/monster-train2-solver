@@ -44,10 +44,16 @@ namespace MonsterTrain2Poju.Probe
                     trainHealScalingTraits: TrainHealScalingTraits(card));
                 CardPlayRule definition = BattleActionProbe.Definition(data);
                 CardPlayRule rule = CardModifierModel.Resolve(definition, state);
-                for (int index = 0; index < managers.GetRoomManager()!.GetNumRooms(); index++)
-                    if (card.GetCost(managers.GetCardStatistics(), managers.GetMonsterManager(), managers.GetRelicManager(),
-                        managers.GetRoomManager()!.GetRoom(index)) != rule.Cost)
+                RoomManager roomManager = managers.GetRoomManager()!;
+                for (int index = 0; index < roomManager.GetNumRooms(); index++)
+                {
+                    RoomState room = roomManager.GetRoom(index);
+                    int expectedCost = rule.CardType == "Spell"
+                        ? (int)Math.Clamp((long)rule.Cost + RoomCapacityProbe.SpellCostDelta(room), 0L, 99L)
+                        : rule.Cost;
+                    if (card.GetCost(managers.GetCardStatistics(), managers.GetMonsterManager(), managers.GetRelicManager(), room) != expectedCost)
                         interactions.Add("Unmodeled room/trait/hand card cost");
+                }
                 // CardState.GetHealth excludes positive unhealed HP, which is added
                 // only to the spawned unit's maximum health during birth.
                 if (rule.SpawnUnit != null && (card.GetSize() != rule.SpawnUnit.Size ||

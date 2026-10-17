@@ -40,7 +40,8 @@ namespace MonsterTrain2Poju.Probe
                 card.GetSpawnCharacterData()?.GetSubtypes().Contains(data.paramSubtype) == true).Select(card => card.GetID()).ToArray();
             return new CardStatisticQuery(data.trackedValue.ToString(), data.entryDuration.ToString(), typeMask, subtypeMask,
                 data.paramSubtype == null || data.paramSubtype.IsNone, data.paramSubtype?.Key, data.paramCardData?.GetID(), rawCost, variable,
-                data.paramTeamType.ToString(), CurrentCostModifiersOnly(data.cardState));
+                data.paramTeamType.ToString(), CurrentCostModifiersOnly(data.cardState),
+                data.cardState?.GetCardType() == CardType.Spell);
         }
 
         internal static bool CurrentCostModifiersOnly(CardState? card)
@@ -61,8 +62,10 @@ namespace MonsterTrain2Poju.Probe
             if (room == null) return true;
             var characters = new List<CharacterState>();
             room.AddCharactersToList(characters, Team.Type.Heroes | Team.Type.Monsters, allowDead: true);
+            IRoomStateCostModifier[] attachmentModifiers = room
+                .GetRoomStateModifiersFromTrainRoomAttachments<IRoomStateCostModifier>(Team.Type.Heroes | Team.Type.Monsters).ToArray();
             return !characters.SelectMany(character => character.GetRoomStateModifiers<IRoomStateCostModifier>()).Any() &&
-                !room.GetRoomStateModifiersFromTrainRoomAttachments<IRoomStateCostModifier>(Team.Type.Heroes | Team.Type.Monsters).Any();
+                attachmentModifiers.All(modifier => modifier is RoomStateSpellCostModifier spellCost && spellCost.GetParamInt() == -1);
         }
     }
 }

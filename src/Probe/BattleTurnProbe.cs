@@ -48,6 +48,7 @@ namespace MonsterTrain2Poju.Probe
             interactions.AddRange(cardCycles.Capture(cards, "Draw").ExternalInteractions);
             interactions.AddRange(cardCycles.Capture(cards, "Discard").ExternalInteractions);
             CardState[] nativeHand = cards.GetHand().ToArray();
+            OriginalStartRoomAttachmentScenario.CaptureCostWitness(managers, nativeHand, log);
             foreach (CardState card in nativeHand.Concat(cards.GetDrawPile()).Concat(cards.GetDiscardPile()))
             {
                 if (card.GetTraitStates().Any(trait => trait.GetType().GetMethod("OnPreOpeningHand",

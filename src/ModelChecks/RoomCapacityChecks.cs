@@ -7,6 +7,7 @@ internal static class RoomCapacityChecks
     internal static void Run()
     {
         EndTurnDecisionCapacities();
+        RoomAttachmentMovementLifecycle();
         foreach (var sample in new[] { (5, -100, 1), (1, -1, 1), (5, 100, 30), (30, 1, 30), (5, 0, 5),
             (5, int.MaxValue, 1), (0, 0, 1), (35, -1, 30), (35, 1, 35) })
             Require(RoomCapacityModel.AdjustedMaximum(sample.Item1, sample.Item2) == sample.Item3, "Native capacity boundary arithmetic differs.");
@@ -110,6 +111,37 @@ internal static class RoomCapacityChecks
             "Parallel capacity branches differ."));
         Require(JsonSerializer.Serialize(context) == parent, "Capacity branches changed their parent.");
         Console.WriteLine("CAPACITY-CHECKS PASS: boundaries, signed wrap, ignored ranges, ordered statistic traits, exact team mapping, dying-enemy/Pyre/preview gates, live summon legality and 32 parallel branches.");
+    }
+
+    private static void RoomAttachmentMovementLifecycle()
+    {
+        var rng = UnityRng.Seed(440);
+        var upgrade = new CardUpgradeModifier("spell-sanctum", "SpellSanctum_Upgrade", new(), [], false,
+            false, false, 0, 0, []);
+        var attachment = new RoomCapacityAttachmentState("spell-sanctum", "SpellSanctum_Upgrade", 0, 0,
+            [upgrade], affectsHeroes: true, affectsMonsters: true, attachmentId: "room-attachment-guid", spellCostDelta: -1);
+        RoomCapacityState[] capacities = [
+            new(0, 5, 5, false, attachments: [attachment]),
+            new(1, 5, 5, false, attachments: [])
+        ];
+        var beforeContext = new CombatContext(new([], [], [], rng, 0, []), rng, 0, 4, 10,
+            roomCapacities: capacities);
+        var afterContext = beforeContext.WithRoomCapacities(capacities);
+        var unit = new CombatUnit(1, "attached-unit", CombatTeam.Player, 1, 10, 10, true, false, false, [],
+            modifiers: new(1, 0, 0, 1, 1, true, false, [upgrade]));
+        var before = new TrainCombatState([
+            new(0, false, [unit], [], beforeContext),
+            new(1, false, [], [], beforeContext)
+        ], [], 7, beforeContext);
+        var after = new TrainCombatState([
+            new(0, false, [], [], afterContext),
+            new(1, false, [unit], [], afterContext)
+        ], [], 7, afterContext);
+        var synchronized = RoomAttachmentUnitModel.SynchronizeMovement(before, after);
+        Require(synchronized.Supported && synchronized.State!.Rooms[1].Units.Single().Modifiers!.Upgrades.Count == 0 &&
+            before.Rooms[0].Units.Single().Modifiers!.Upgrades.Count == 1 &&
+            after.Rooms[1].Units.Single().Modifiers!.Upgrades.Count == 1,
+            "A moved character retained a non-trigger room attachment upgrade or mutated its input branch.");
     }
 
     private static void EndTurnDecisionCapacities()

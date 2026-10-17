@@ -146,7 +146,8 @@ namespace MonsterTrain2Poju.Probe
                         int? rawCost = sourceCard == null || sourceCard == ghost ? (int?)null : (int)AccessTools.Field(typeof(CardState), "cost").GetValue(sourceCard);
                         var query = new CardStatisticQuery(type, duration.ToString(), typeMask, subtypeMask, subtype == null || subtype.IsNone,
                             subtype?.Key, specific?.GetID(), rawCost, sourceCard != null && sourceCard != ghost && sourceCard.IsConsumeRemainingEnergyCostType(),
-                            targetTeam.ToString(), type == "CurrentCost" && DamageScalingProbe.CurrentCostModifiersOnly(sourceCard));
+                            targetTeam.ToString(), type == "CurrentCost" && DamageScalingProbe.CurrentCostModifiersOnly(sourceCard),
+                            sourceCard?.GetCardType() == CardType.Spell);
                         var input = new CardStatistics.StatValueData { cardState = sourceCard!, trackedValue = (CardStatistics.TrackedValueType)Enum.Parse(typeof(CardStatistics.TrackedValueType), type),
                             entryDuration = duration, cardTypeTarget = targetType, paramSubtype = subtype!, paramCardData = specific!,
                             paramTeamType = targetTeam, forPreviewText = false };
