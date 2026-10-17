@@ -188,6 +188,7 @@ namespace MonsterTrain2Poju.Model
         public const string Draw = "RelicEffectChangeStartingHandSize";
         public const string PyreAttack = "RelicEffectIncreasePyreAttack";
         public const string PyreHealth = "RelicEffectIncreasePyreHealth";
+        public const string PayCardCostWithPyreHealth = "RelicEffectPayCardCostWithPyreHealth";
         public const string FloorCapacity = "RelicEffectChangeFloorCapacity";
         public const string MoonPhaseEnergy = "RelicEffectModifyEnergyOnMoonPhase";
         public const string MoonPhaseStatus = RelicMoonPhaseStatusModel.Effect;
@@ -202,7 +203,7 @@ namespace MonsterTrain2Poju.Model
         public const string PileStartTurn = "RelicEffectAddEffectPerPileStartOfTurn";
         public const string StartTurnHeal = RelicStartTurnHealModel.Effect;
         public static bool IsEffect(string type) => type == Energy || type == DeploymentEnergy || type == StartCombatEnergy || type == StartCombatHoard || type == Draw ||
-            type == PyreAttack || type == PyreHealth || type == FloorCapacity || type == MoonPhaseEnergy || type == MoonPhaseStatus ||
+            type == PyreAttack || type == PyreHealth || type == PayCardCostWithPyreHealth || type == FloorCapacity || type == MoonPhaseEnergy || type == MoonPhaseStatus ||
             type == EnergyOnCardEarlyDiscard ||
             type == GoldOnExhaust ||
             type == EnergyOnCorruptRestrictedPlayed || type == CorruptionOnCorruptRestrictedPlayed ||
@@ -233,6 +234,11 @@ namespace MonsterTrain2Poju.Model
                     if (healingError != null) return healingError;
                 }
                 else if (rule.StartTurnHeal != null) return "Unexpected start-turn healing payload on another effect.";
+                if (rule.Type == PayCardCostWithPyreHealth)
+                {
+                    string? paymentError = RelicPayCardCostWithPyreHealthModel.Validate(relic, rule);
+                    if (paymentError != null) return paymentError;
+                }
                 if (RelicOpeningDrawModel.IsEffect(rule.Type))
                 {
                     string? openingError = RelicOpeningDrawModel.Validate(relic, rule);

@@ -428,12 +428,22 @@ namespace MonsterTrain2Poju.Model
                 effectiveCost = (int)Math.Clamp((long)rule.Cost + RoomCapacityModel.SpellCostDelta(context, action.RoomIndex), 0L, 99L);
             int paidCost = rule.CostType == "ConsumeRemainingEnergy" ? source.Energy : effectiveCost;
             if (source.Energy < 0) return Unsupported("Negative decision energy.");
-            if (source.Energy < paidCost) return Illegal("Insufficient energy.");
             RoomPlayRule? targetRule = source.PlayRules.Rooms.FirstOrDefault(item => item.RoomIndex == action.RoomIndex);
             RoomCombatState? target = train.Rooms.FirstOrDefault(item => item.RoomIndex == action.RoomIndex);
             if (targetRule == null || target == null) return Illegal("The target room does not exist.");
             if (!targetRule.Enabled || targetRule.IsPyre && (rule.CanPlayInEngineRoom != true || rule.Effect == "SpawnMonster"))
                 return Illegal("This card cannot be played in the target room.");
+            RelicPyreCostPlan pyreCost = RelicPayCardCostWithPyreHealthModel.Plan(train, effectiveCost,
+                source.Energy, rule.CostType, source.Spawn.Turn,
+                context.IsolatedBattlePreview == true || target.Preview);
+            if (!pyreCost.Supported) return Unsupported(pyreCost.UnsupportedReason!);
+            if (!pyreCost.CanPay) return Illegal("Insufficient energy.");
+            bool paidWithPyre = pyreCost.PaidWithPyre;
+            int energyPaidCost = paidWithPyre ? 0 : paidCost;
+            int? nativePlayedCost = paidWithPyre ? null : paidCost;
+            train = pyreCost.State;
+            context = train.Context!;
+            target = train.Rooms.First(room => room.RoomIndex == action.RoomIndex);
             CardActionEffect[] actionEffects = rule.Effects.Concat(rule.OnCastEffects).ToArray();
             if (CardSpellModel.RequiresUnitTarget(actionEffects))
             {
@@ -454,12 +464,13 @@ namespace MonsterTrain2Poju.Model
                 string? pileError = CardPileModel.Validate(pile);
                 if (pileError != null) return Unsupported(pileError);
             }
-            context = context.WithOtherPiles(source.OtherPiles).WithStatistics(context.Statistics?.WithPlayedCost(card.InstanceId, paidCost));
+            context = context.WithOtherPiles(source.OtherPiles);
+            if (!paidWithPyre) context = context.WithStatistics(context.Statistics?.WithPlayedCost(card.InstanceId, paidCost));
             CombatContext castingContext = context;
             context = context.WithAbilityActivator(context.LastAbilityActivatorUnitId.HasValue ? 0 : (int?)null);
-            context = context.WithQueryFrame(context.QueryFrame?.With(energy: source.Energy - paidCost));
+            context = context.WithQueryFrame(context.QueryFrame?.With(energy: source.Energy - energyPaidCost));
             // Native records the payment on the card before any queued effect runs.
-            if (playingInstance != null) context = context.WithCard(playingInstance.WithPlayedCost(paidCost));
+            if (playingInstance != null && !paidWithPyre) context = context.WithCard(playingInstance.WithPlayedCost(paidCost));
             CardPileState[] piles = source.OtherPiles.ToArray();
             // A naturally played card remains owned in the discard buffer during queued effects.
             // Scaling queries refresh membership here, before the final destination is assigned.
@@ -491,8 +502,20 @@ namespace MonsterTrain2Poju.Model
             int nextUnitId = source.Spawn.NextUnitId;
             string? identityError = UnitIdentityModel.Validate(context, train.Rooms.SelectMany(room => room.Units), nextUnitId);
             if (identityError != null) return Unsupported(identityError);
+            string? DrainPyrePaymentCallbacks()
+            {
+                if (pyreCost.Callbacks.Count == 0) return null;
+                TrainCombatResult drained = RelicPayCardCostWithPyreHealthModel.DrainCallbacks(train, pyreCost);
+                if (!drained.Supported) return drained.UnsupportedReason;
+                train = drained.State!; context = train.Context!;
+                if (drained.Outcome != RoomOutcome.Exchanged) outcome = drained.Outcome;
+                target = train.Rooms.First(room => room.RoomIndex == action.RoomIndex);
+                return null;
+            }
             if (rule.Effect == "SpawnMonster")
             {
+                string? callbackError = DrainPyrePaymentCallbacks();
+                if (callbackError != null) return Unsupported(callbackError);
                 if (action.TargetUnitId != 0) return Illegal("A summon takes a spawn position, not a unit target.");
                 CombatUnit? template = rule.SpawnUnit;
                 if (template == null && !(rule.Summon?.Pool.Count > 0 && rule.Summon.NativeBaseSize.HasValue) ||
@@ -623,19 +646,24 @@ namespace MonsterTrain2Poju.Model
             else if (rule.Effect == "Spell" || rule.Effect == "Equipment")
             {
                 if (action.PlayerPosition != -1) return Illegal("A spell does not take a summon position.");
-                TrainCombatState spellInput = CardSpellModel.WithContext(train, context);
                 SpellCastCheck cast = CardSpellModel.TestPlay(CardSpellModel.WithContext(train, castingContext), action.RoomIndex,
                     rule.Effects, action.TargetUnitId, source.PlayRules, sourceCardId: card.InstanceId);
                 if (!cast.Supported) return Unsupported(cast.UnsupportedReason!);
                 if (!cast.CanPlay) return Illegal("Every effect failed its cast test or a required effect failed.");
-                spellInput = CardSpellModel.WithContext(spellInput, context.WithBattleRng(cast.BattleRngAfterTests!.Value));
+                context = context.WithBattleRng(cast.BattleRngAfterTests!.Value);
+                train = CardSpellModel.WithContext(train, context);
+                string? callbackError = DrainPyrePaymentCallbacks();
+                if (callbackError != null) return Unsupported(callbackError);
+                TrainCombatState spellInput = CardSpellModel.WithContext(train, context);
                 TrainSpellResult result = CardSpellModel.ApplyForCardPlay(spellInput, action.RoomIndex, rule.Effects, action.TargetUnitId,
                     card.InstanceId, source.PlayRules, piles, recursionSelections: action.RecursionSelections
                         .Where(selection => selection.EffectIndex < rule.Effects.Count).ToArray(),
                     mixSelections: action.MixSelections.Where(selection => selection.EffectIndex < rule.Effects.Count).ToArray());
                 if (!result.Supported) return Unsupported(result.UnsupportedReason!);
                 piles = result.OtherPiles?.ToArray() ?? piles;
-                train = result.State!; context = train.Context!; outcome = result.Outcome; effectsApplied = true;
+                train = result.State!; context = train.Context!;
+                if (result.Outcome != RoomOutcome.Exchanged || outcome == RoomOutcome.Exchanged) outcome = result.Outcome;
+                effectsApplied = true;
                 outputPlayRules = result.PlayRules ?? outputPlayRules;
                 pendingSpellCallbacks = result.PendingCallbacks;
                 retainedSpellUnits = result.RetainedUnits;
@@ -645,6 +673,11 @@ namespace MonsterTrain2Poju.Model
             }
             else if (rule.Effect != "Null") return Unsupported("Unimplemented card effect " + rule.Effect);
             else if (action.PlayerPosition != -1) return Illegal("A no-target card does not take a summon position.");
+            else
+            {
+                string? callbackError = DrainPyrePaymentCallbacks();
+                if (callbackError != null) return Unsupported(callbackError);
+            }
 
             bool terminal = outcome == RoomOutcome.BattleWon || outcome == RoomOutcome.PlayerDefeated;
             if (terminal && context.Statistics != null && context.Statistics.DeckCards == null)
@@ -847,9 +880,9 @@ namespace MonsterTrain2Poju.Model
                 context.Cards.DrawModifier, context.Cards.ExternalInteractions, context.Cards.BonusDraw, context.Cards.NextDrawUpgrades, context.Cards.NextUpgradeReferenceId), context.BattleRng,
                 context.Gold, context.NextCardId, context.MaxHandSize, context.StatusRules, statistics,
                 terminal ? playingInstance == null ? context.CardInstances : new[] { skipNaturalDiscard
-                    ? context.FindCard(card.InstanceId) ?? playingInstance : (context.FindCard(card.InstanceId) ?? playingInstance).OnDiscard(true, paidCost) } :
+                    ? context.FindCard(card.InstanceId) ?? playingInstance : (context.FindCard(card.InstanceId) ?? playingInstance).OnDiscard(true, nativePlayedCost) } :
                 context.CardInstances?.Select(instance => instance.InstanceId == card.InstanceId
-                    ? skipNaturalDiscard ? instance : instance.OnDiscard(true, paidCost) : instance).ToArray(), context.CardRegistry, context.AllScenarioBossesDead, context.NextAddedTemporaryUpgrades,
+                    ? skipNaturalDiscard ? instance : instance.OnDiscard(true, nativePlayedCost) : instance).ToArray(), context.CardRegistry, context.AllScenarioBossesDead, context.NextAddedTemporaryUpgrades,
                 context.OtherPiles == null ? null : piles, context.QueryFrame?.With(runningCombat: !terminal), context.KillCamActivated, context.MagicPower, context.IsolatedBattlePreview, context.EnergyState, context.RoomCapacities, context.AbilityCardCache, context.LastAbilityActivatorUnitId, context.PermanentlyDisabledAbilities, context.LastSpawnedUnitId, context.NextUnitId, context.SpawnPoints, context.SummonCatalog, context.Enchantments, context.PurifyBlockedTriggers, context.Relics, context.TriggerCounts, context.Resources, context.MixState);
             if (!skipNaturalDiscard) context = ConduitModel.Discarded(context, card.InstanceId);
             if (summonedEndless && !terminal && !consumedOnPlay)
@@ -890,7 +923,7 @@ namespace MonsterTrain2Poju.Model
                 train.Context?.NextUnitId ?? nextUnitId, spawn.Treasures, spawn.TreasuresRemaining, spawn.TreasureEnabled, spawn.FirstTreasureTurn,
                 spawn.FirstTreasureRoom, spawn.Turn, spawn.ExternalInteractions, spawn.CanonicalDecisionReferences);
             if (context.RoomCapacities != null) outputPlayRules = outputPlayRules.WithCapacities(context.RoomCapacities);
-            return new BattleActionResult(new BattleTurnState(spawn, context.EnergyState == null ? source.Energy - paidCost : context.QueryFrame!.Energy!.Value, source.EnergyPerTurn,
+            return new BattleActionResult(new BattleTurnState(spawn, context.EnergyState == null ? source.Energy - energyPaidCost : context.QueryFrame!.Energy!.Value, source.EnergyPerTurn,
                 source.DrawPerTurn, context.QueryFrame?.ForgePoints ?? source.ForgePoints,
                 context.QueryFrame?.DragonsHoard ?? source.DragonsHoard,
                 context.QueryFrame?.MoonPhase == 1 ? "New" : context.QueryFrame?.MoonPhase == 2 ? "Full" : source.MoonPhase,

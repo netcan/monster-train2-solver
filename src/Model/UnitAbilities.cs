@@ -54,8 +54,10 @@ namespace MonsterTrain2Poju.Model
                 return Illegal("This unit ability does not accept a destination spawn point.");
             if (rule.CostType != "Default" && rule.CostType != "ConsumeRemainingEnergy" || rule.Cost < 0 || source.Energy < 0)
                 return Unsupported("Unmodeled ability cost type or negative cost/energy.");
-            int paid = rule.CostType == "ConsumeRemainingEnergy" ? source.Energy : rule.Cost;
-            if (source.Energy < paid) return Illegal("Insufficient energy for the unit ability.");
+            int effectiveCost = rule.Cost;
+            if (rule.CardType == "Spell")
+                effectiveCost = (int)Math.Clamp((long)rule.Cost + RoomCapacityModel.SpellCostDelta(context, action.RoomIndex), 0L, 99L);
+            int paid = rule.CostType == "ConsumeRemainingEnergy" ? source.Energy : effectiveCost;
             error = CardSpellModel.UnisolatedUiRangeReason(source) ?? CardPileModel.ValidateMembership(context.Cards, source.OtherPiles, context.NextCardId);
             if (error != null) return Unsupported(error);
             train = CardSpellModel.WithContext(train, context);
@@ -63,12 +65,30 @@ namespace MonsterTrain2Poju.Model
                 actor.Id, action.TargetSpawnPointIndex);
             if (!cast.Supported) return Unsupported(cast.UnsupportedReason!);
             if (!cast.CanPlay) return Illegal("The ability failed its casting test.");
-            context = context.WithBattleRng(cast.BattleRngAfterTests!.Value)
-                .WithStatistics(context.Statistics?.WithPlayedCost(cache.Card.InstanceId, paid))
-                .WithCard(cache.Card.WithPlayedCost(paid)).WithAbilityActivator(actor.Id)
-                .WithQueryFrame(context.QueryFrame?.With(energy: source.Energy - paid));
-            train = Resolving(CardSpellModel.WithContext(train, context), actor.Id, true);
+            RoomCombatState? selectedRoomState = train.Rooms.FirstOrDefault(room => room.RoomIndex == action.RoomIndex);
+            if (selectedRoomState == null) return Illegal("The selected ability room is missing from train state.");
+            RelicPyreCostPlan pyreCost = RelicPayCardCostWithPyreHealthModel.Plan(train, effectiveCost,
+                source.Energy, rule.CostType, source.Spawn.Turn,
+                context.IsolatedBattlePreview == true || selectedRoomState.Preview);
+            if (!pyreCost.Supported) return Unsupported(pyreCost.UnsupportedReason!);
+            if (!pyreCost.CanPay) return Illegal("Insufficient energy for the unit ability.");
+            bool paidWithPyre = pyreCost.PaidWithPyre;
+            int energyPaid = paidWithPyre ? 0 : paid;
+            context = pyreCost.State.Context!.WithBattleRng(cast.BattleRngAfterTests!.Value);
+            if (!paidWithPyre)
+                context = context.WithStatistics(context.Statistics?.WithPlayedCost(cache.Card.InstanceId, paid))
+                    .WithCard(cache.Card.WithPlayedCost(paid));
+            context = context.WithAbilityActivator(actor.Id)
+                .WithQueryFrame(context.QueryFrame?.With(energy: source.Energy - energyPaid));
+            train = Resolving(CardSpellModel.WithContext(pyreCost.State, context), actor.Id, true);
             RoomOutcome outcome = RoomOutcome.Exchanged;
+            if (pyreCost.Callbacks.Count > 0)
+            {
+                TrainCombatResult paidCallbacks = RelicPayCardCostWithPyreHealthModel.DrainCallbacks(train, pyreCost);
+                if (!paidCallbacks.Supported) return Unsupported(paidCallbacks.UnsupportedReason!);
+                train = paidCallbacks.State!;
+                if (Terminal(paidCallbacks.Outcome)) outcome = paidCallbacks.Outcome;
+            }
             // Only MonsterManager (the player's units) receives the pre-own callback.
             if (actor.Team == CombatTeam.Player)
             {
@@ -118,7 +138,7 @@ namespace MonsterTrain2Poju.Model
             var spawn = new EnemySpawnState(train, old.Waves, old.SelectedGroups, old.Phase, old.Looping, old.Rng, train.Context?.NextUnitId ?? old.NextUnitId,
                 old.Treasures, old.TreasuresRemaining, old.TreasureEnabled, old.FirstTreasureTurn, old.FirstTreasureRoom,
                 old.Turn, old.ExternalInteractions, old.CanonicalDecisionReferences);
-            return new BattleActionResult(new BattleTurnState(spawn, context.QueryFrame?.Energy ?? source.Energy - paid,
+            return new BattleActionResult(new BattleTurnState(spawn, context.QueryFrame?.Energy ?? source.Energy - energyPaid,
                 source.EnergyPerTurn, source.DrawPerTurn, context.QueryFrame?.ForgePoints ?? source.ForgePoints, source.DragonsHoard,
                 context.QueryFrame?.MoonPhase == 1 ? "New" : context.QueryFrame?.MoonPhase == 2 ? "Full" : source.MoonPhase,
                 source.RngStreams.Select(stream => new BattleRngStream(stream.Name, stream.Seed,
