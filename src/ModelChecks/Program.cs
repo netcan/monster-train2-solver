@@ -784,6 +784,18 @@ if (args.Length == 2 && args[0] == "--original-start-combat-energy-only")
     OriginalStartCombatEnergyChecks.Native(document.RootElement);
     return;
 }
+if (args.Length == 2 && args[0] == "--original-start-combat-hoard-only")
+{
+    using var document = ModelJson.ReadFixture(args[1]);
+    OriginalStartCombatHoardChecks.Native(document.RootElement);
+    Console.WriteLine($"NATIVE-FIXTURE-METADATA schema={document.RootElement.GetProperty("Schema").GetInt32()} bytes={new FileInfo(args[1]).Length} uniqueNodes={document.UniqueNodeCount}");
+    return;
+}
+if (args.Length == 1 && args[0] == "--original-start-combat-hoard-pure")
+{
+    OriginalStartCombatHoardChecks.Run();
+    return;
+}
 if (args.Length == 2 && args[0] == "--original-forge-conservation-only")
 {
     using var document = ModelJson.ReadFixture(args[1]);

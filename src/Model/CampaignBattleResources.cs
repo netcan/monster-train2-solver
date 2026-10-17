@@ -27,6 +27,14 @@ namespace MonsterTrain2Poju.Model
         public static CampaignBattleResourceOwner StartBattle(CampaignBattleResourceOwner owner) =>
             owner.Amount == 0 ? owner : owner.WithDamage(false);
 
+        public static CampaignBattleResources StartCombatHoard(CampaignBattleResources state, int change, bool preview = false)
+        {
+            Validate(state);
+            if (preview || change == 0) return state;
+            int hoard = Math.Min(state.HoardCap, Math.Max(0, unchecked(state.Hoard + change)));
+            return hoard == state.Hoard ? state : new CampaignBattleResources(state.Gold, hoard, state.HoardCap);
+        }
+
         // The native Test callback records damage even though it always returns false.
         public static CampaignBattleResourceOwner Observe(CampaignBattleResourceOwner owner,
             string trigger, bool isPyre, int damage) => owner.RequireNoPyreDamage &&
@@ -35,8 +43,7 @@ namespace MonsterTrain2Poju.Model
         public static CampaignBattleResources EndBattle(CampaignBattleResources state,
             IReadOnlyList<CampaignBattleResourceOwner> owners, float goldRewardMultiplier = 1f)
         {
-            if (state.Gold < 0 || state.HoardCap < 0 || state.Hoard < 0 || state.Hoard > state.HoardCap)
-                throw new ArgumentOutOfRangeException(nameof(state));
+            Validate(state);
             var seen = new HashSet<string>();
             foreach (var owner in owners)
             {
@@ -49,6 +56,12 @@ namespace MonsterTrain2Poju.Model
                     : new CampaignBattleResources(state.Gold, Math.Min(state.HoardCap, Math.Max(0, unchecked(state.Hoard + owner.Amount))), state.HoardCap);
             }
             return state;
+        }
+
+        private static void Validate(CampaignBattleResources state)
+        {
+            if (state.Gold < 0 || state.HoardCap < 0 || state.Hoard < 0 || state.Hoard > state.HoardCap)
+                throw new ArgumentOutOfRangeException(nameof(state));
         }
     }
 }

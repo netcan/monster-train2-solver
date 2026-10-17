@@ -263,6 +263,7 @@ param(
     [switch] $OriginalUpgradeCountRelics,
     [switch] $OriginalHealingPowerRelic,
     [switch] $OriginalStartCombatEnergyRelic,
+    [switch] $OriginalStartCombatHoardRelic,
     [switch] $OriginalForgeConservationRelic,
     [switch] $OriginalOpeningCorruptionRelics,
     [switch] $OriginalSpellPlayThresholdRelics,
@@ -438,6 +439,7 @@ if ($OriginalCardAttackRelic) { $BranchCardMasks = $true; $Policy = 'units-spell
 if ($OriginalUpgradeCountRelics) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalHealingPowerRelic) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalStartCombatEnergyRelic) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
+if ($OriginalStartCombatHoardRelic) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalForgeConservationRelic) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalOpeningCorruptionRelics) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalSpellPlayThresholdRelics) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
@@ -909,6 +911,7 @@ if ($OriginalCardAttackRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-
 if ($OriginalUpgradeCountRelics) { $environment['MT2_PROBE_MODIFIERS'] = 'original-upgrade-count-relics' }
 if ($OriginalHealingPowerRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-healing-power-relic' }
 if ($OriginalStartCombatEnergyRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-start-combat-energy-relic' }
+if ($OriginalStartCombatHoardRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-start-combat-hoard-relic' }
 if ($OriginalForgeConservationRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-forge-conservation-relic' }
 if ($OriginalOpeningCorruptionRelics) { $environment['MT2_PROBE_MODIFIERS'] = 'original-opening-corruption-relics' }
 if ($OriginalSpellPlayThresholdRelics) { $environment['MT2_PROBE_MODIFIERS'] = 'original-spell-play-threshold-relics' }
@@ -1616,6 +1619,15 @@ if ($OriginalStartCombatEnergyRelic) {
         $callbacks[0].Before.Turn -ne 1 -or $callbacks[0].Deployment -or $callbacks[0].Notifications -ne 0 -or
         $callbacks[0].After.Energy -ne [Math]::Min($callbacks[0].Before.Resources.MaxEnergy, $callbacks[0].Before.Energy + 2)) {
         throw 'Original start-combat energy relic lacks its unique turn-one callback.'
+    }
+}
+if ($OriginalStartCombatHoardRelic) {
+    $callbacks = @($trace.RelicResourceOperations | Where-Object Kind -eq 'StartCombatHoard')
+    if ($trace.Schema -ne 201 -or $trace.ModifierScenario -ne 'original-start-combat-hoard-relic' -or $callbacks.Count -ne 1 -or
+        -not $callbacks[0].Deployment -or $callbacks[0].Notifications -ne 0 -or
+        $callbacks[0].After.Hoard -ne ($callbacks[0].Before.Hoard + 1) -or
+        $callbacks[0].CardRefreshes -ne 1 -or $callbacks[0].MonsterRefreshes -ne 1) {
+        throw 'Original ModifyDragonsHoardBattleStart lacks its unique deployment callback and dependent resource refreshes.'
     }
 }
 if ($OriginalForgeConservationRelic) {

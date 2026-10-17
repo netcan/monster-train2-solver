@@ -27,6 +27,7 @@ namespace MonsterTrain2Poju.Probe
             public int Turn { get; set; }
             public bool Preview { get; set; }
             public int Gold { get; set; }
+            public int Hoard { get; set; }
             public int Capacity { get; set; }
         }
 
@@ -37,12 +38,15 @@ namespace MonsterTrain2Poju.Probe
             public int EffectIndex { get; set; } = -1;
             public bool Deployment { get; set; }
             public int Notifications { get; set; }
+            public int CardRefreshes { get; set; }
+            public int MonsterRefreshes { get; set; }
             public ResourceSnapshot Before { get; set; } = null!;
             public ResourceSnapshot? After { get; set; }
         }
 
         internal static readonly List<Operation> Operations = new List<Operation>();
         private static Operation? energyOperation;
+        private static Operation? hoardOperation;
         private static bool dragonHoardResourceObserved;
         private static bool trainHealResourceObserved;
 
@@ -69,6 +73,7 @@ namespace MonsterTrain2Poju.Probe
             trainHealResourceObserved |= trainHealCards;
             if (!OriginalResourceRelicBatchScenario.Enabled && !PyreResourceRefreshScenario.Enabled && !OriginalFloorCapacityRelicScenario.Enabled &&
                 !OriginalMoonPhaseEnergyRelicScenario.Enabled && !OriginalTriggerRelicBatchScenario.FusedPyreshardOnly &&
+                !OriginalStartCombatHoardScenario.Enabled && !OriginalStartCombatHoardScenario.Acquired &&
                 !Current(managers).Any(relic => relic.GetEffects().Any(effect => RelicResourceModel.IsEffect(effect.GetType().Name))) &&
                 !dragonHoardResourceObserved && !trainHealResourceObserved)
                 return null;
@@ -202,6 +207,8 @@ namespace MonsterTrain2Poju.Probe
             }
             else if (effect is RelicEffectDrawToMaxStartOfCombat)
                 amount = data.GetParamInt();
+            else if (effect is RelicEffectModifyDragonsHoardStartOfCombat)
+                amount = data.GetParamInt();
             else if (effect is RelicEffectAddEffectPerPileStartOfTurn)
             {
                 CardEffectData nested = data.GetParamCardEffectData().Single();
@@ -306,8 +313,38 @@ namespace MonsterTrain2Poju.Probe
                 DeploymentModification = managers.GetRelicManager().GetEnergyPerDeploymentPhaseModification(),
                 Phase = combat?.GetCombatPhase().ToString() ?? "UNUSED", Turn = combat?.GetTurnCount() ?? 0,
                 MoonPhase = managers.GetPlayerManager().CurrentMoonPhase.ToString(),
-                Preview = save.PreviewMode, Gold = save.GetGold(), Capacity = save.GetCharacterCapacityPerFloor()
+                Preview = save.PreviewMode, Gold = save.GetGold(), Hoard = save.GetDragonsHoardAmount(),
+                Capacity = save.GetCharacterCapacityPerFloor()
             };
+        }
+
+        private static IEnumerator WrapHoard(IEnumerator native, RelicEffectModifyDragonsHoardStartOfCombat effect)
+        {
+            Operation? record = null;
+            try
+            {
+                var managers = AllGameManagers.Instance!;
+                RelicState owner = Current(managers).Single(relic => relic.GetEffects().Any(item => ReferenceEquals(item, effect)));
+                record = new Operation { Kind = "StartCombatHoard", OwnerDataId = owner.GetRelicDataID(),
+                    Deployment = managers.GetCombatManager()!.IsPlacementPhase,
+                    EffectIndex = owner.GetEffects().FindIndex(item => ReferenceEquals(item, effect)), Before = Capture() };
+                Operations.Add(record);
+                hoardOperation = record;
+            }
+            catch (Exception error) { FullBattleTrace.Active?.CaptureFailure(error); }
+            try
+            {
+                while (native.MoveNext()) yield return native.Current;
+            }
+            finally
+            {
+                hoardOperation = null;
+                if (record != null)
+                {
+                    try { record.After = Capture(); }
+                    catch (Exception error) { FullBattleTrace.Active?.CaptureFailure(error); }
+                }
+            }
         }
 
         private static IEnumerator WrapEnergy(IEnumerator native, IRelicEffect effect, bool deployment, string kind = "Energy")
@@ -343,7 +380,8 @@ namespace MonsterTrain2Poju.Probe
                     !(PyreResourceRefreshScenario.Enabled && PyreResourceRefreshScenario.Artifacts.Any(item => item.Id == relicData.GetID())) &&
                     !(OriginalFloorCapacityRelicScenario.Enabled && OriginalFloorCapacityRelicScenario.Artifacts.Any(item => item.Id == relicData.GetID())) &&
                     !(OriginalMoonPhaseEnergyRelicScenario.Enabled && relicData.GetID() == OriginalMoonPhaseEnergyRelicScenario.DataId) &&
-                    !(OriginalStartCombatEnergyScenario.Enabled && relicData.GetID() == OriginalStartCombatEnergyScenario.DataId)) return;
+                    !(OriginalStartCombatEnergyScenario.Enabled && relicData.GetID() == OriginalStartCombatEnergyScenario.DataId) &&
+                    !(OriginalStartCombatHoardScenario.Enabled && relicData.GetID() == OriginalStartCombatHoardScenario.DataId)) return;
                 try
                 {
                     __state = new Operation { Kind = "Acquire", OwnerDataId = relicData.GetID(), Before = Capture() };
@@ -390,6 +428,34 @@ namespace MonsterTrain2Poju.Probe
             {
                 if (OriginalStartCombatEnergyScenario.Acquired)
                     __result = WrapEnergy(__result, __instance, AllGameManagers.Instance!.GetCombatManager()!.IsPlacementPhase, "StartCombatEnergy");
+            }
+        }
+
+        [HarmonyPatch(typeof(RelicEffectModifyDragonsHoardStartOfCombat), nameof(RelicEffectModifyDragonsHoardStartOfCombat.ApplyEffectStartOfBattle))]
+        private static class StartCombatHoardPatch
+        {
+            private static void Postfix(RelicEffectModifyDragonsHoardStartOfCombat __instance, ref IEnumerator __result)
+            {
+                if (OriginalStartCombatHoardScenario.Acquired)
+                    __result = WrapHoard(__result, __instance);
+            }
+        }
+
+        [HarmonyPatch(typeof(CardManager), nameof(CardManager.OnDragonsHoardChanged))]
+        private static class CardHoardRefreshPatch
+        {
+            private static void Postfix()
+            {
+                if (hoardOperation != null) hoardOperation.CardRefreshes++;
+            }
+        }
+
+        [HarmonyPatch(typeof(MonsterManager), nameof(MonsterManager.OnDragonsHoardChanged))]
+        private static class MonsterHoardRefreshPatch
+        {
+            private static void Postfix()
+            {
+                if (hoardOperation != null) hoardOperation.MonsterRefreshes++;
             }
         }
         [HarmonyPatch(typeof(RelicManager), nameof(RelicManager.NotifyRelicTriggered))]

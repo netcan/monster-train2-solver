@@ -1,7 +1,7 @@
 # Original relic coverage evidence
 
-As of 2026-10-17, **178 distinct original collectable relics / 224 catalog entries
-(79.46%)** have accepted native evidence: 161 have full-battle effect evidence,
+As of 2026-10-17, **179 distinct original collectable relics / 224 catalog entries
+(79.91%)** have accepted native evidence: 162 have full-battle effect evidence,
 sixteen have campaign consumer interfaces validated, and one is an explicit
 native no-op with seeded baseline equivalence. Except for that no-op, this counts
 unchanged relic definitions whose effects actually ran, including original filters and
@@ -497,6 +497,7 @@ archives contain these observed battle sizes:
 | [ChanceToCleanse](full-battle-original-chance-to-cleanse.mt2f) | 198 | 5 | 7 | 63 | Seven eligible 50% rolls (four hits/three misses), four applications and 510 gated tests |
 | [ExtraFeedTrigger](full-battle-original-extra-feed-trigger.mt2f) | 199 | 5 | 7 | 61 | Original Monsters OnFeed +1; live Pyre native query 2 vs OnDeath control 1 |
 | [HephsBlueprints](full-battle-original-hephs-blueprints.mt2f) | 200 | 17 | 5 | 39 | Equipment-only +2 damage/+2 Armor forge upgrade scales to +6/+6 at three Forge; Monster filter control |
+| [ModifyDragonsHoardBattleStart][startCombatHoard] | 201 | 21 | 7 | 60 | Deployment +1 Hoard, one card and monster resource refresh each |
 
 The checks that enforce these observations are
 [TriggerCountChecks.Native](../../src/ModelChecks/TriggerCountChecks.cs),
@@ -859,6 +860,7 @@ dotnet run --project src/ModelChecks -c Release -- --gold-pyre-pure
 [upgradeCounts]: full-battle-original-upgrade-count-relics.mt2f
 [healingPower]: full-battle-original-healing-power-relic.mt2f
 [firstCombatEnergy]: full-battle-original-start-combat-energy-relic.mt2f
+[startCombatHoard]: full-battle-original-start-combat-hoard-relic.mt2f
 [earlyDiscardEnergy]: full-battle-original-early-discard-energy.mt2f
 [cheaperSpellCost]: full-battle-original-cheaper-spell-cost.mt2f
 [nefariousOverflow]: full-battle-original-nefarious-overflow.mt2f
@@ -1353,4 +1355,33 @@ component calibrations. Original relic evidence is 178/224 (79.46%): 161 battle,
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-hephs-blueprints.mt2f
 dotnet run --project src/ModelChecks -c Release -- --original-hephs-blueprints-only tests/fixtures/full-battle-original-hephs-blueprints.mt2f
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-hephs-blueprints.mt2f
+```
+
+## ModifyDragonsHoardBattleStart
+
+| `ModifyDragonsHoardBattleStart` | `3b6780ab-a1e8-443d-9ddb-5caedbd87775` | Native acquired owner and +1 deployment callback |
+
+The schema-201 battle archive captures the unchanged `RelicEffectModifyDragonsHoardStartOfCombat`
+owner and its +1 payload. The native deployment callback changes Hoard from 0
+to 1, then invokes the card-manager and monster-manager Hoard refresh exactly
+once each. Acquisition leaves resources unchanged. The model exhaustively checks
+6,006 cap, amount, signed-change and preview branches, including unchecked
+integer overflow and parallel parent immutability.
+
+The winning 60-stage battle has 21 card actions, seven EndTurns and zero capture
+failures, mismatches, unsupported transitions or pending records. All seven
+native EndTurns replay exactly; independent search matches 21 decisions, visits
+128/128 states, replays four steps and has serial/parallel best equality. This
+witness covers the original +1 deployment path and dependent refresh calls; other
+start-combat Hoard payloads and preview-mode manager execution are not claimed.
+The 35,081-byte archive has 5,503 unique nodes and SHA-256
+`150ae19ca9d3869086e4b97419b997259b5527346ea62e5d0595cb635c5091d0`; no JSON
+companion is tracked. Inventory is 399 archives: 361 full battles and 38
+component calibrations. Original relic evidence is 179/224 (79.91%): 162 battle,
+16 campaign and one native no-op owner.
+
+```powershell
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-start-combat-hoard-relic.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-start-combat-hoard-only tests/fixtures/full-battle-original-start-combat-hoard-relic.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-start-combat-hoard-relic.mt2f
 ```

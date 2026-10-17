@@ -300,6 +300,8 @@ namespace MonsterTrain2Poju.Probe
                         OriginalHealingPowerScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalStartCombatEnergyScenario.Enabled && !OriginalStartCombatEnergyScenario.Acquired)
                         OriginalStartCombatEnergyScenario.AcquireBeforeBattle(managers!, log);
+                    if (fullBattle && OriginalStartCombatHoardScenario.Enabled && !OriginalStartCombatHoardScenario.Acquired)
+                        OriginalStartCombatHoardScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalForgeConservationScenario.Enabled && !OriginalForgeConservationScenario.Acquired)
                         OriginalForgeConservationScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalOpeningCorruptionScenario.Enabled && !OriginalOpeningCorruptionScenario.Acquired)
@@ -657,6 +659,12 @@ namespace MonsterTrain2Poju.Probe
             if (fullBattle && !numericModifiersPrepared && OriginalStartCombatEnergyScenario.Enabled)
             {
                 OriginalStartCombatEnergyScenario.Prepare(managers, log);
+                numericModifiersPrepared = true;
+                return;
+            }
+            if (fullBattle && !numericModifiersPrepared && OriginalStartCombatHoardScenario.Enabled)
+            {
+                OriginalStartCombatHoardScenario.Prepare(managers, log);
                 numericModifiersPrepared = true;
                 return;
             }

@@ -71,6 +71,7 @@ $fixtureNames = @('full-battle-steward-once.mt2f', 'full-battle-no-cards.mt2f', 
     'full-battle-original-upgrade-count-relics.mt2f',
     'full-battle-original-healing-power-relic.mt2f',
     'full-battle-original-start-combat-energy-relic.mt2f',
+    'full-battle-original-start-combat-hoard-relic.mt2f',
     'full-battle-original-forge-conservation-relic.mt2f',
     'full-battle-original-opening-corruption-relics.mt2f',
     'full-battle-original-spell-play-threshold-relics.mt2f',
@@ -1069,9 +1070,12 @@ foreach ($fixturePath in @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 
     }
 }
 foreach ($fixturePath in @($fixtures | Where-Object { (Split-Path -Leaf $_) -in @(
-    'full-battle-original-healing-power-relic.mt2f', 'full-battle-original-start-combat-energy-relic.mt2f') })) {
+    'full-battle-original-healing-power-relic.mt2f', 'full-battle-original-start-combat-energy-relic.mt2f',
+    'full-battle-original-start-combat-hoard-relic.mt2f') })) {
     $focusedMode = if ((Split-Path -Leaf $fixturePath) -eq 'full-battle-original-healing-power-relic.mt2f') {
         '--original-healing-power-only'
+    } elseif ((Split-Path -Leaf $fixturePath) -eq 'full-battle-original-start-combat-hoard-relic.mt2f') {
+        '--original-start-combat-hoard-only'
     } else { '--original-start-combat-energy-only' }
     foreach ($mode in @($focusedMode, '--battle-search-only')) {
         dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- $mode $fixturePath

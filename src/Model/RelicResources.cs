@@ -163,6 +163,7 @@ namespace MonsterTrain2Poju.Model
         public const string Energy = "RelicEffectModifyEnergy";
         public const string DeploymentEnergy = "RelicEffectModifyEnergyDuringDeployment";
         public const string StartCombatEnergy = "RelicEffectModifyEnergyStartOfCombat";
+        public const string StartCombatHoard = "RelicEffectModifyDragonsHoardStartOfCombat";
         public const string Draw = "RelicEffectChangeStartingHandSize";
         public const string PyreAttack = "RelicEffectIncreasePyreAttack";
         public const string PyreHealth = "RelicEffectIncreasePyreHealth";
@@ -178,7 +179,7 @@ namespace MonsterTrain2Poju.Model
         public const string ConserveEnergyEndOfTurn = "RelicEffectConserveEnergyEndOfTurn";
         public const string PermanentPyreAttackAdjustment = "CardEffectPermanentlyAdjustPyreAttack";
         public const string PileStartTurn = "RelicEffectAddEffectPerPileStartOfTurn";
-        public static bool IsEffect(string type) => type == Energy || type == DeploymentEnergy || type == StartCombatEnergy || type == Draw ||
+        public static bool IsEffect(string type) => type == Energy || type == DeploymentEnergy || type == StartCombatEnergy || type == StartCombatHoard || type == Draw ||
             type == PyreAttack || type == PyreHealth || type == FloorCapacity || type == MoonPhaseEnergy || type == MoonPhaseStatus ||
             type == EnergyOnCardEarlyDiscard ||
             type == GoldOnExhaust ||
