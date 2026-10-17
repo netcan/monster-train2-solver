@@ -17,16 +17,17 @@ Schema 8 retains the required card traits introduced in schema 6.
 Regenerate the checklist with `scripts/Get-RelicCoverageInventory.ps1 -Catalog
 <relic-catalog.mt2f> -OutputPath tests/fixtures/relic-inventory.tsv`. This verifies
 catalog identity, unique owner IDs, accepted table identities and source presence.
-Current checkpoint: 181 original owners accepted (164 native battle owners,
+Current checkpoint: 182 original owners accepted (165 native battle owners,
 sixteen actual campaign-interface owners and one explicit native no-op owner);
-43 remain pending. The latest accepted owner is
-`ReduceFirstSpellCostPerDeckSize`: its unchanged 15-card DeckPile threshold
-applies the first-Spell cost/X-cost reduction, clears the hand upgrades after
-that play, and re-arms through the per-room EndOfTurn callback. Its schema-205
-full battle, dedicated native/pure checks and independent 128-state serial/
-parallel search pass. This witness is limited to the captured Spell and
-persistent-card paths. Campaign acceptance does not imply those effect classes
-are integrated into battle branch state.
+42 remain pending. The latest accepted owner is `RebalanceValor`: native source
+confirms +0 Attack and +1 Armor per Valor stack. Its schema-206 full battle
+matches 51 stages, six actions and three tracked callback observations with zero
+capture failures, mismatches, unsupported transitions or pending records.
+Dedicated checks cover the vanilla/relic magnitude split, turn-zero/deployment
+gates, and existing Armor; independent 128-state serial/parallel search passes.
+The witness is limited to the original owner and two-stack carrier. Campaign
+acceptance does not imply those effect classes are integrated into battle branch
+state.
 
 Acceptance requires an unchanged original owner, actual eligible and control
 paths, exact model/native state and relevant ordering/callback checks. Battle

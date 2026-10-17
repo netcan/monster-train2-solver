@@ -1,8 +1,8 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-18): 401 binary archives, including 363
+Current accepted inventory (2026-10-18): 402 binary archives, including 364
 full battles and 38 component calibrations. Unchanged original relic evidence
-covers 181/224 catalog entries (80.80%): 164 battle owners, 16 campaign
+covers 182/224 catalog entries (81.25%): 165 battle owners, 16 campaign
 interface owners and one native no-op; see
 [the owner evidence table](tests/fixtures/relic-coverage.md). Whole-battle
 coverage and the optimal solver remain in progress.
@@ -15,6 +15,14 @@ winning fixture matches 52 stages, seven turns and all three scripted actions
 with zero capture failures, mismatches, unsupported transitions or pending
 records; focused checks and 128-state serial/parallel search pass. This covers
 the recorded owner and paths only.
+
+`RebalanceValor` now has isolated native coverage: the original relic leaves
+Valor attack at +0 and increases end-of-room Armor by +1 per stack. Three native
+callbacks report the original per-stack getters and target four Armor at two
+Valor; turn zero and deployment do not trigger. The schema-206 winning fixture
+matches 51 stages and six actions with all four error counters at zero. Dedicated
+native/pure checks and independent 128-state serial/parallel search pass. The
+witness is limited to this owner and two-stack carrier.
 
 Three unchanged opening-corruption relics now match their natural ordered
 callbacks: all-room maximum +1, permanent corruption +1 on floor two, then
