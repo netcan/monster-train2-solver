@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using BepInEx.Logging;
@@ -16,10 +17,21 @@ namespace MonsterTrain2Poju.Probe
         internal const string WoundId = "fc119000-0000-4000-8000-000000000393";
         internal const string HealId = "fc119000-0000-4000-8000-000000000394";
         internal const string SacrificeId = "fc119000-0000-4000-8000-000000000395";
-        internal static readonly string[] Ids = { "b3e7888f-8f5e-4082-89b0-078d80ce4a9b", "449f6464-8164-48ad-bf66-6107b10f7f5c", "19f0d8e3-a3f8-4cac-b73d-46dc189a70ac" };
+        internal static readonly string[] Ids = { "b3e7888f-8f5e-4082-89b0-078d80ce4a9b", "449f6464-8164-48ad-bf66-6107b10f7f5c", "19f0d8e3-a3f8-4cac-b73d-46dc189a70ac", "cec4a632-fc04-48ba-b982-ffcd16a0710e" };
+        internal sealed class EncounterCompleteRecord
+        {
+            public TrainCombatState? Before { get; set; }
+            public TrainCombatState? After { get; set; }
+            public bool Completed { get; set; }
+            public string? CaptureError { get; set; }
+        }
+        internal static readonly List<EncounterCompleteRecord> EncounterCompleteRecords = new List<EncounterCompleteRecord>();
+        internal static bool EncounterCompleteSettled => EncounterCompleteRecords.Count == 1 &&
+            EncounterCompleteRecords[0].Completed && EncounterCompleteRecords[0].After != null;
         internal static void Prepare(AllGameManagers managers, ManualLogSource log)
         {
             if (Prepared) return;
+            EncounterCompleteRecords.Clear();
             var save = managers.GetSaveManager(); var data = save.GetAllGameData(); var cards = managers.GetCardManager()!;
             if (managers.GetCombatManager()!.GetTurnCount() != 0 || save.PreviewMode)
                 throw new InvalidOperationException("Original equipment growth requires deployment setup.");
@@ -71,7 +83,7 @@ namespace MonsterTrain2Poju.Probe
                 save.AddRelic(relic);
             }
             Prepared = true; Set(managers.GetCombatManager()!, "combatStateChanged", true);
-            log.LogInfo("ORIGINAL-EQUIPMENT-GROWTH-PREPARED three unchanged owners; equipped slayer, friendly damage/heal and equipped sacrifice carriers; original reposition spells, waves and boss.");
+            log.LogInfo("ORIGINAL-EQUIPMENT-GROWTH-PREPARED four unchanged owners; equipped slayer, friendly damage/heal and equipped sacrifice carriers; original reposition spells, waves and boss.");
         }
         internal static PlayCardAction? Choose(BattleTurnState state)
         {
@@ -81,13 +93,13 @@ namespace MonsterTrain2Poju.Probe
             bool Played(string data) => context.Statistics!.Values.Any(value => value.Type == "TimesPlayed" && value.Duration == "ThisBattle" &&
                 value.Value > 0 && context.FindCard(value.CardId)?.DataId == data);
             var players = state.Spawn.Train.Rooms.SelectMany(room => room.Units).Where(unit => unit.Team == CombatTeam.Player && unit.Health > 0).ToArray();
-            var room = state.Spawn.Train.Rooms[0];
             foreach (bool strong in new[] { true, false })
             {
                 bool Matches(CombatUnit unit) => unit.MaxHealth == (strong ? 80 : 12);
-                if (room.Units.Any(unit => unit.Team == CombatTeam.Player && Matches(unit))) continue;
+                if (players.Any(Matches)) continue;
                 if (!strong && Played(SacrificeId)) continue;
-                var summon = plays.FirstOrDefault(play => play.RoomIndex == 0 && play.PlayerPosition == room.Units.Count(unit => unit.Team == CombatTeam.Player) &&
+                var summon = plays.OrderBy(play => play.RoomIndex).FirstOrDefault(play =>
+                    state.Spawn.Train.Rooms.Single(room => room.RoomIndex == play.RoomIndex).Units.Count(unit => unit.Team == CombatTeam.Player) == play.PlayerPosition &&
                     state.PlayRules!.Cards.FirstOrDefault(rule => rule.DataId == Data(play.CardInstanceId))?.SpawnUnit is CombatUnit template && Matches(template));
                 if (summon != null) return summon;
             }
@@ -121,5 +133,37 @@ namespace MonsterTrain2Poju.Probe
             effect.Cheat_SetTargetMode(TargetMode.DropTargetCharacter); Set(effect, "paramInt", amount); return effect;
         }
         private static void Set(object target, string field, object? value) => AccessTools.Field(target.GetType(), field).SetValue(target, value);
+
+        [HarmonyPatch(typeof(MonsterManager), nameof(MonsterManager.DoEncounterCompleteEffects))]
+        private static class EncounterCompletePatch
+        {
+            private static void Postfix(ref IEnumerator __result)
+            {
+                FullBattleTrace? trace = FullBattleTrace.Active;
+                if (!Prepared || trace == null || AllGameManagers.Instance!.GetSaveManager().PreviewMode) return;
+                if (EncounterCompleteRecords.Count != 0)
+                { trace.CaptureFailure(new InvalidOperationException("Encounter-complete callback was observed more than once.")); return; }
+                __result = Observe(__result, trace);
+            }
+
+            private static IEnumerator Observe(IEnumerator native, FullBattleTrace trace)
+            {
+                var record = new EncounterCompleteRecord();
+                EncounterCompleteRecords.Add(record);
+                try { record.Before = trace.CaptureTrain(); }
+                catch (Exception error) { record.CaptureError = error.ToString(); trace.CaptureFailure(error); }
+                try
+                {
+                    while (native.MoveNext()) yield return native.Current;
+                    record.Completed = true;
+                }
+                finally
+                {
+                    (native as IDisposable)?.Dispose();
+                    try { record.After = trace.CaptureTrain(); }
+                    catch (Exception error) { record.CaptureError = error.ToString(); trace.CaptureFailure(error); }
+                }
+            }
+        }
     }
 }

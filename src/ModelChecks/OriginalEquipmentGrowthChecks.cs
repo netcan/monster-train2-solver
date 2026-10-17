@@ -8,10 +8,13 @@ internal static class OriginalEquipmentGrowthChecks
     private const string WoundId = "fc119000-0000-4000-8000-000000000393";
     private const string HealId = "fc119000-0000-4000-8000-000000000394";
     private const string SacrificeId = "fc119000-0000-4000-8000-000000000395";
+    private const string EndCombatTriggerUpgrade = "17e67c5f-5efe-4452-8853-bd2a94d31179";
+    private const string EndCombatHealthUpgrade = "130349e8-0016-4bf9-8878-5bf587ed708d";
     private static readonly (string Key, string Id, string[] Kinds)[] Owners = [
         ("UpgradeEquipmentOnDeath", "b3e7888f-8f5e-4082-89b0-078d80ce4a9b", ["OnKill"]),
         ("AdvancedGrowth", "449f6464-8164-48ad-bf66-6107b10f7f5c", ["OnDeath"]),
-        ("FriendlyUnitsGainDeathwishValor", "19f0d8e3-a3f8-4cac-b73d-46dc189a70ac", ["OnDeathwish", "OnDeathwishLost"])
+        ("FriendlyUnitsGainDeathwishValor", "19f0d8e3-a3f8-4cac-b73d-46dc189a70ac", ["OnDeathwish", "OnDeathwishLost"]),
+        ("FriendlyUnitsGainDeathwishPermanentHealth", "cec4a632-fc04-48ba-b982-ffcd16a0710e", ["OnDeathwish", "OnDeathwishLost"])
     ];
     private const string ValorUpgrade = "01abbd02-c6cb-48f2-9799-1f78367a0386";
     internal static PlayCardAction? Choose(BattleTurnState state)
@@ -22,13 +25,13 @@ internal static class OriginalEquipmentGrowthChecks
         bool Played(string data) => context.Statistics!.Values.Any(value => value.Type == "TimesPlayed" && value.Duration == "ThisBattle" &&
             value.Value > 0 && context.FindCard(value.CardId)?.DataId == data);
         var players = state.Spawn.Train.Rooms.SelectMany(room => room.Units).Where(unit => unit.Team == CombatTeam.Player && unit.Health > 0).ToArray();
-        var room = state.Spawn.Train.Rooms[0];
         foreach (bool strong in new[] { true, false })
         {
             bool Matches(CombatUnit unit) => unit.MaxHealth == (strong ? 80 : 12);
-            if (room.Units.Any(unit => unit.Team == CombatTeam.Player && Matches(unit))) continue;
+            if (players.Any(Matches)) continue;
             if (!strong && Played(SacrificeId)) continue;
-            var summon = plays.FirstOrDefault(play => play.RoomIndex == 0 && play.PlayerPosition == room.Units.Count(unit => unit.Team == CombatTeam.Player) &&
+            var summon = plays.OrderBy(play => play.RoomIndex).FirstOrDefault(play =>
+                state.Spawn.Train.Rooms.Single(room => room.RoomIndex == play.RoomIndex).Units.Count(unit => unit.Team == CombatTeam.Player) == play.PlayerPosition &&
                 state.PlayRules!.Cards.FirstOrDefault(rule => rule.DataId == Data(play.CardInstanceId))?.SpawnUnit is CombatUnit template && Matches(template));
             if (summon != null) return summon;
         }
@@ -78,16 +81,55 @@ internal static class OriginalEquipmentGrowthChecks
                         trigger.Effects.Count == 1, "Original growth trigger gate changed.");
                     var effect = trigger.Effects.Single(); var action = effect.UnitUpgrade!; var upgrade = action.Upgrade!;
                     bool valor = item.Key == "FriendlyUnitsGainDeathwishValor";
+                    bool endCombatHealth = item.Key == "FriendlyUnitsGainDeathwishPermanentHealth";
                     Require(action.Target == "Self" && action.AllowEnemy && action.AllowPlayer && !action.ScaleUpgrade &&
                         action.Statuses.Count == 0 && action.UpgradeFilters.Count == 0 && upgrade.ExternalInteractions.Count == 0 &&
                         upgrade.Statuses.Count == 0 && !upgrade.RemoveOnDiscard && upgrade.Unique == valor &&
                         upgrade.Stats.Health == 0 && upgrade.Stats.Heal == 0 && upgrade.Stats.Cost == 0 && upgrade.Stats.Size == 0,
                         "Original equipment growth action or upgrade flags changed.");
-                    if (!valor)
+                    if (!valor && !endCombatHealth)
                         Require(effect.Type == "CardEffectBuffEquipment" && action.Type == "BuffEquipment" &&
                             action.Lifetime == "TemporaryUntilUnitDeath" && upgrade.Stats.Damage == (item.Key == "AdvancedGrowth" ? 4 : 2) &&
                             upgrade.AssetKey == (item.Key == "AdvancedGrowth" ? "AdvancedGrowth_Upgrade" : "ArtifactBuffEquipment"),
                             "Original equipment buff payload changed.");
+                    else if (endCombatHealth && trigger.Kind == "OnDeathwishLost")
+                    {
+                        var encounter = upgrade.TriggerUpgrades!.Single();
+                        Require(upgrade.DataId == EndCombatTriggerUpgrade && upgrade.AssetKey == "PermanentHealthAtEndOfCombatTrigger" &&
+                            action.Type == "RemoveUnitUpgrade" && effect.Type == "CardEffectRemoveTempUpgradeFromUnit" &&
+                            action.Target == "Self" && action.Lifetime == "TemporaryUntilEndOfBattle" &&
+                            !action.ScaleUpgrade && action.AllowEnemy && action.AllowPlayer && upgrade.Stats.Health == 0 &&
+                            upgrade.Stats.Damage == 0 && encounter.Kind == "OnEncounterComplete" &&
+                            encounter.Effects.Single().UnitUpgrade?.Upgrade?.DataId == EndCombatHealthUpgrade,
+                            "Original Deathwish loss does not remove its temporary end-combat health trigger.");
+                    }
+                    else if (endCombatHealth)
+                    {
+                        Require(upgrade.TriggerUpgrades?.Count == 1, "Permanent-health carrier upgrade lost its encounter trigger.");
+                        var encounter = upgrade.TriggerUpgrades![0];
+                        Require(encounter.Effects.Count == 1 && encounter.Effects[0].UnitUpgrade != null,
+                            "Permanent-health encounter trigger lost its unit-upgrade effect.");
+                        var endEffect = encounter.Effects[0]; var endAction = endEffect.UnitUpgrade!;
+                        Require(endAction.Upgrade != null, "Permanent-health encounter action lost its upgrade.");
+                        var permanent = endAction.Upgrade!;
+                        Require(permanent.Stats != null, "Permanent-health encounter upgrade lost its stats.");
+                        Require(upgrade.DataId == EndCombatTriggerUpgrade && upgrade.AssetKey == "PermanentHealthAtEndOfCombatTrigger" &&
+                            action.Type == "UnitUpgrade" && effect.Type == "CardEffectAddTempCardUpgradeToUnits" &&
+                            action.Lifetime == "TemporaryUntilUnitDeath" && upgrade.TriggerUpgrades!.Count == 1 &&
+                            upgrade.Stats.Health == 0 && upgrade.Stats.Damage == 0 && upgrade.Stats.Cost == 0 && upgrade.Stats.Heal == 0 &&
+                            upgrade.Stats.Size == 0 && upgrade.Stats.XCost == 0 && upgrade.Stats.EquipmentLimit == 0 && upgrade.Stats.UpgradeSlotCount == 0 &&
+                            encounter.Kind == "OnEncounterComplete" && !encounter.Once && !encounter.HasTriggered && encounter.IgnoreSilence &&
+                            encounter.FireCount == 1 && encounter.SkipDuringDeployment == false &&
+                            endEffect.Type == "CardEffectAddCardUpgradeToUnits" && endAction.Type == "UnitUpgrade" &&
+                            endAction.Target == "Self" && endAction.AllowEnemy && endAction.AllowPlayer && endAction.ScaleUpgrade &&
+                            endAction.Lifetime == "Permanent" && endAction.Statuses.Count == 0 && endAction.UpgradeFilters.Count == 0 &&
+                            permanent.DataId == EndCombatHealthUpgrade && permanent.AssetKey == "PermanentHealthAtEndOfCombat" &&
+                            permanent.Stats?.Health == 6 && permanent.Stats.Damage == 0 && permanent.Stats.Cost == 0 && permanent.Stats.Heal == 0 &&
+                            permanent.Stats.Size == 0 && permanent.Stats.XCost == 0 && permanent.Stats.EquipmentLimit == 0 && permanent.Stats.UpgradeSlotCount == 0 &&
+                            !permanent.Unique && !permanent.RemoveOnDiscard && permanent.Statuses.Count == 0 && (permanent.TriggerUpgrades?.Count ?? 0) == 0 &&
+                            permanent.ExternalInteractions.Count == 0,
+                            "Original Deathwish permanent-health trigger or encounter-complete payload changed.");
+                    }
                     else
                     {
                         var precombat = upgrade.TriggerUpgrades!.Single(); var status = precombat.Effects.Single().Action!;
@@ -106,7 +148,8 @@ internal static class OriginalEquipmentGrowthChecks
                 else definitions.Add(item.Id, serialized);
             }
         }
-        int births = 0, enemies = 0, friends = 0, exclusiveBirths = 0, slays = 0, deaths = 0, valor = 0, enters = 0, exits = 0;
+        int births = 0, enemies = 0, friends = 0, exclusiveBirths = 0, slays = 0, deaths = 0, valor = 0, enters = 0, exits = 0,
+            endHealthEnters = 0, endHealthExits = 0;
         foreach (var row in root.GetProperty("RelicSpawnStatuses").EnumerateArray())
         {
             var before = row.GetProperty("BeforeTrain").Deserialize<TrainCombatState>()!;
@@ -126,6 +169,8 @@ internal static class OriginalEquipmentGrowthChecks
             Require(unit.Triggers.Any(trigger => trigger.Kind == "OnDeath" && trigger.Effects.Any(effect => effect.UnitUpgrade?.Upgrade?.AssetKey == "AdvancedGrowth_Upgrade")),
                 "Both-team AdvancedGrowth installation missing.");
             Require(unit.Triggers.Any(trigger => trigger.Kind == "OnDeathwish" && trigger.Effects.Any(effect => effect.UnitUpgrade?.Upgrade?.DataId == ValorUpgrade)) == !enemy &&
+                unit.Triggers.Any(trigger => trigger.Kind == "OnDeathwish" && trigger.Effects.Any(effect => effect.UnitUpgrade?.Upgrade?.DataId == EndCombatTriggerUpgrade)) == !enemy &&
+                unit.Triggers.Any(trigger => trigger.Kind == "OnDeathwishLost" && trigger.Effects.Any(effect => effect.UnitUpgrade?.Upgrade?.DataId == EndCombatTriggerUpgrade)) == !enemy &&
                 unit.Triggers.Any(trigger => trigger.Kind == "OnKill" && trigger.Effects.Any(effect => effect.UnitUpgrade?.Upgrade?.AssetKey == "ArtifactBuffEquipment")) == !enemy,
                 "Friendly-only growth installation filter differs.");
             if (enemy) enemies++; else friends++;
@@ -183,21 +228,28 @@ internal static class OriginalEquipmentGrowthChecks
                 {
                     int delta = ValorCount(unit) - ValorCount(old);
                     if (delta > 0) enters++; else if (delta < 0 && unit.Health > 0) exits++;
+                    int healthDelta = EndCombatHealthTriggerCount(unit) - EndCombatHealthTriggerCount(old);
+                    if (healthDelta > 0) endHealthEnters += healthDelta;
+                    else if (healthDelta < 0 && unit.Health > 0) endHealthExits -= healthDelta;
                 }
         }
-        Require(enemies > 0 && friends > 0 && exclusiveBirths > 0 && slays > 0 && deaths > 0 && valor > 0 && enters > 0 && exits > 0,
-            $"Missing original growth controls: friend={friends},enemy={enemies},exclusive={exclusiveBirths},slay={slays},death={deaths},valor={valor},enter={enters},exit={exits}.");
+        int endCombatHealth = EncounterCompleteChecks(root);
+        Require(enemies > 0 && friends > 0 && exclusiveBirths > 0 && slays > 0 && deaths > 0 && valor > 0 && enters > 0 && exits > 0 &&
+            endHealthEnters > 0 && endHealthExits > 0,
+            $"Missing original growth controls: friend={friends},enemy={enemies},exclusive={exclusiveBirths},slay={slays},death={deaths},valor={valor},enter={enters},exit={exits},healthEnter={endHealthEnters},healthExit={endHealthExits}.");
         BattleActionChecks.Native(root);
-        Console.WriteLine($"ORIGINAL-EQUIPMENT-GROWTH-NATIVE PASS: {births} exact births ({friends} friendly/{enemies} enemy, {exclusiveBirths} exclusive queues); owner ablations slay={slays}, death={deaths}, PreCombat Valor={valor}; Deathwish enter={enters}, exit={exits}.");
+        Console.WriteLine($"ORIGINAL-EQUIPMENT-GROWTH-NATIVE PASS: {births} exact births ({friends} friendly/{enemies} enemy, {exclusiveBirths} exclusive queues); owner ablations slay={slays}, death={deaths}, PreCombat Valor={valor}; Deathwish enter={enters}, exit={exits}; permanent end-combat health={endCombatHealth}.");
     }
     private static int ValorCount(CombatUnit unit) => unit.Modifiers!.Upgrades.Count(upgrade => upgrade.DataId == ValorUpgrade);
+    private static int EndCombatHealthTriggerCount(CombatUnit unit) => unit.Modifiers!.Upgrades.Count(upgrade => upgrade.DataId == EndCombatTriggerUpgrade);
     private static void TriggeredBuffChecks(FixtureValue root)
     {
         var sample = root.GetProperty("Actions").EnumerateArray().Select(row => row.GetProperty("Before").Deserialize<BattleTurnState>()!)
-            .First(state => state.Spawn.Train.Rooms.Any(room => room.Units.Count(unit => unit.EquipmentCards?.Count > 0) == 2));
-        var native = sample.Spawn.Train.Rooms.First(room => room.Units.Count(unit => unit.EquipmentCards?.Count > 0) == 2);
+            .First(state => state.Spawn.Train.Context!.CardRegistry!.Count(card => card.DataId == GearId) >= 2 &&
+                state.Spawn.Train.Rooms.Any(room => room.Units.Any(unit => unit.MaxHealth == 80)));
+        var native = sample.Spawn.Train.Rooms.First(room => room.Units.Any(unit => unit.MaxHealth == 80));
         var host = native.Units.First(unit => unit.MaxHealth == 80);
-        var gear = native.Units.SelectMany(unit => unit.EquipmentCards ?? []).Distinct().ToArray();
+        var gear = native.Context!.CardRegistry!.Where(card => card.DataId == GearId).Take(2).Select(card => card.InstanceId).ToArray();
         var definition = native.Context!.Relics!.Single(relic => relic.DataId == Owners[0].Id).TriggerAdditions!.Single().Triggers.Single();
         foreach (bool preview in new[] { false, true })
         foreach (bool bound in new[] { false, true })
@@ -212,7 +264,7 @@ internal static class OriginalEquipmentGrowthChecks
             }
             var trigger = new CombatTrigger("OnKill", false, false, true, 1, definition.Effects, false, 0,
                 new("", bound ? gear[0] : 0, bound, true), 0, noCountModifiersAllowed: true);
-            var actor = UnitCloneModel.Copy(host, host.Modifiers!, host.Attack, host.Health, host.MaxHealth, gear).WithTriggers([trigger]);
+            var actor = UnitCloneModel.Copy(host, host.Modifiers!, host.Attack, host.Health, host.MaxHealth, gear).WithTriggerAllocation([trigger], 1);
             var source = new RoomCombatState(native.RoomIndex, native.Deployment, [actor], [], context, preview);
             string parent = JsonSerializer.Serialize(source, ModelJson.Options);
             var callbacks = new List<RoomCombatModel.QueuedCharacterTrigger>();
@@ -231,6 +283,69 @@ internal static class OriginalEquipmentGrowthChecks
             Require(JsonSerializer.Serialize(source, ModelJson.Options) == parent, "Triggered equipment mutated its parent.");
         }
     }
+    private static int EncounterCompleteChecks(FixtureValue root)
+    {
+        var records = root.GetProperty("OriginalEquipmentGrowthEncounterComplete").EnumerateArray().ToArray();
+        Require(records.Length == 1, "Deathwish permanent-health relic requires one native encounter-complete capture.");
+        var record = records[0];
+        Require(record.GetProperty("Completed").GetBoolean() && record.GetProperty("CaptureError").GetString() == null,
+            "Deathwish permanent-health native encounter-complete capture is incomplete.");
+        var before = record.GetProperty("Before").Deserialize<TrainCombatState>()!;
+        var after = record.GetProperty("After").Deserialize<TrainCombatState>()!;
+        int carriers = 0, controls = 0;
+        foreach (var room in before.Rooms)
+        {
+            var actualRoom = after.Rooms.Single(item => item.RoomIndex == room.RoomIndex);
+            RoomCombatState replay = room;
+            foreach (var unit in room.Units.Where(unit => unit.Team == CombatTeam.Player && unit.Health > 0 &&
+                unit.Modifiers!.Upgrades.Any(upgrade => upgrade.DataId == EndCombatTriggerUpgrade)))
+            {
+                int applications = unit.Modifiers!.Upgrades.Count(upgrade => upgrade.DataId == EndCombatTriggerUpgrade);
+                Require(unit.Triggers.Any(trigger => trigger.Kind == "OnEncounterComplete" && trigger.Effects.Any(effect =>
+                    effect.UnitUpgrade?.Upgrade?.DataId == EndCombatHealthUpgrade)),
+                    "Deathwish end-combat upgrade is missing its installed encounter callback.");
+                var callbacks = new List<RoomCombatModel.QueuedCharacterTrigger>();
+                var result = RoomCombatModel.ApplyQueuedCharacterTrigger(replay,
+                    new(room.RoomIndex, replay.Units.Single(item => item.Id == unit.Id), "OnEncounterComplete"), callbacks.Add);
+                Require(result.Supported && callbacks.Count == 0,
+                    "Deathwish end-combat callback unsupported: " + result.UnsupportedReason);
+                replay = result.State!;
+                var expectedUnit = replay.Units.Single(item => item.Id == unit.Id);
+                var nativeUnit = actualRoom.Units.Single(item => item.Id == unit.Id);
+                var originalCard = before.Context!.FindCard(unit.SpawnerCardId);
+                var expectedCard = replay.Context!.FindCard(unit.SpawnerCardId);
+                var nativeCard = after.Context!.FindCard(unit.SpawnerCardId);
+                Require(originalCard != null && expectedCard != null && nativeCard != null,
+                    "Deathwish end-combat carrier card is missing from native/model card state.");
+                int CardHealth(CardInstanceState card) => card.Permanent.Upgrades.Where(upgrade => upgrade.DataId == EndCombatHealthUpgrade)
+                    .Sum(upgrade => upgrade.Stats.Health);
+                int expectedGain = CardHealth(expectedCard!) - CardHealth(originalCard!);
+                int nativeGain = CardHealth(nativeCard!) - CardHealth(originalCard!);
+                Require(expectedGain == applications * 6 && nativeGain == expectedGain &&
+                    nativeUnit.Health == expectedUnit.Health && nativeUnit.MaxHealth == expectedUnit.MaxHealth &&
+                    nativeUnit.Modifiers!.Upgrades.Where(upgrade => upgrade.DataId == EndCombatHealthUpgrade)
+                        .Sum(upgrade => upgrade.Stats.Health) == expectedUnit.Modifiers!.Upgrades
+                        .Where(upgrade => upgrade.DataId == EndCombatHealthUpgrade).Sum(upgrade => upgrade.Stats.Health),
+                    $"Deathwish permanent end-combat health differs for unit {unit.Id}: expected card +{expectedGain}, native +{nativeGain}.");
+                carriers += applications;
+            }
+            foreach (var unit in room.Units.Where(unit => unit.Team == CombatTeam.Player && unit.Health > 0 &&
+                !unit.Modifiers!.Upgrades.Any(upgrade => upgrade.DataId == EndCombatTriggerUpgrade) && unit.SpawnerCardId > 0))
+            {
+                var cardBefore = before.Context!.FindCard(unit.SpawnerCardId);
+                var cardAfter = after.Context!.FindCard(unit.SpawnerCardId);
+                if (cardBefore == null || cardAfter == null) continue;
+                Require(cardAfter.Permanent.Upgrades.Where(upgrade => upgrade.DataId == EndCombatHealthUpgrade)
+                    .Sum(upgrade => upgrade.Stats.Health) == cardBefore.Permanent.Upgrades
+                    .Where(upgrade => upgrade.DataId == EndCombatHealthUpgrade).Sum(upgrade => upgrade.Stats.Health),
+                    "Deathwish permanent end-combat health leaked to an untriggered friendly carrier.");
+                controls++;
+            }
+        }
+        Require(carriers > 0 && controls > 0,
+            $"Deathwish permanent end-combat witness missing: installed applications={carriers}, unaffected controls={controls}.");
+        return carriers;
+    }
     private static int CardGain(CombatContext actual, CombatContext control, string key, int amount) => actual.CardRegistry!.Count(card =>
         card.Permanent.Upgrades.Where(upgrade => upgrade.AssetKey == key).Sum(upgrade => upgrade.Stats.Damage) -
         (control.FindCard(card.InstanceId)?.Permanent.Upgrades.Where(upgrade => upgrade.AssetKey == key).Sum(upgrade => upgrade.Stats.Damage) ?? 0) >= amount);
@@ -241,7 +356,7 @@ internal static class OriginalEquipmentGrowthChecks
         return new(state.RoomIndex, state.Deployment, state.Units.Select(unit => unit.WithTriggers(unit.Triggers.Where(trigger =>
             !(index == 2 && trigger.Kind == "PreCombat" && trigger.Origin?.UpgradeId == ValorUpgrade) &&
             !kinds.Any(definition => trigger.Kind == definition.Kind && JsonSerializer.Serialize(trigger.Effects) == JsonSerializer.Serialize(definition.Effects))).ToArray())).ToArray(),
-            state.ExternalInteractions, state.Context.WithRelics(state.Context.Relics.Where(relic => relic.DataId != owner.DataId).ToArray()),
+            state.ExternalInteractions, state.Context!.WithRelics(state.Context.Relics!.Where(relic => relic.DataId != owner.DataId).ToArray()),
             state.Preview, state.ActiveCompanionBossIds);
     }
     private static BattleTurnState Remove(BattleTurnState state, int index)

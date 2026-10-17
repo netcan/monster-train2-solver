@@ -1702,8 +1702,12 @@ if ($OriginalConduitRelics) {
 if ($OriginalEquipmentGrowthRelics) {
     if ($trace.ModifierScenario -ne 'original-equipment-growth-relics' -or
         @($trace.RelicSpawnStatuses).Count -eq 0 -or @($trace.Actions).Count -eq 0 -or
-        -not (Select-String -LiteralPath $unityLog -Pattern 'ORIGINAL-EQUIPMENT-GROWTH-PREPARED three unchanged owners' -Quiet)) {
-        throw 'Original equipment growth relics lack unchanged owners, birth records or carrier setup.'
+        @($trace.OriginalEquipmentGrowthEncounterComplete).Count -ne 1 -or
+        -not $trace.OriginalEquipmentGrowthEncounterComplete[0].Completed -or
+        $null -eq $trace.OriginalEquipmentGrowthEncounterComplete[0].Before -or
+        $null -eq $trace.OriginalEquipmentGrowthEncounterComplete[0].After -or
+        -not (Select-String -LiteralPath $unityLog -Pattern 'ORIGINAL-EQUIPMENT-GROWTH-PREPARED four unchanged owners' -Quiet)) {
+        throw 'Original equipment growth relics lack unchanged owners, birth records, carrier setup or encounter-complete settlement.'
     }
 }
 if ($CampaignRelicCalibration) {
