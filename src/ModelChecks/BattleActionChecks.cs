@@ -662,6 +662,14 @@ internal static class BattleActionChecks
             Console.WriteLine("NATIVE-POLICY-CHAIN-CHECKS PASS: keep-one smelt followed by natural EndTurns only.");
             return;
         }
+        if (fixture.TryGetProperty("ModifierScenario", out var championHealOnly) &&
+            championHealOnly.GetString() == "original-champion-start-turn-heal")
+        {
+            Require(allActions.Length == 6 && policyActions.Length == 0 && turns.GetArrayLength() > 0,
+                "Champion start-turn healing fixture must contain six checked setup actions and completed turns only.");
+            Console.WriteLine("NATIVE-POLICY-CHAIN-CHECKS PASS: six controlled Champion-heal actions followed by natural EndTurns only.");
+            return;
+        }
         Require(policyActions.Length > 0, "The fixture has no subsequent native policy actions.");
         BattleTurnState root = policyActions[0].GetProperty("Before").Deserialize<BattleTurnState>()!;
         FixtureValue[] policyTurns = turns.EnumerateArray().ToArray();

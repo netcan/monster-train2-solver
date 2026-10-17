@@ -94,6 +94,7 @@ $fixtureNames = @('full-battle-steward-once.mt2f', 'full-battle-no-cards.mt2f', 
     'full-battle-original-unit-phase-upgrade-relics.mt2f',
     'full-battle-original-add-stats-to-solo-units.mt2f',
     'full-battle-original-front-room-health-upgrade.mt2f',
+    'full-battle-original-champion-start-turn-heal.mt2f',
     'full-battle-original-unit-upgrade-trigger-relic.mt2f',
     'full-battle-relic-card-status-upgrades.mt2f', 'full-battle-relic-card-negative-unhealed.mt2f',
     'full-battle-generation-relic-card-status-upgrades.mt2f',
@@ -868,6 +869,12 @@ foreach ($fixturePath in @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 
     foreach ($mode in @('--original-front-room-health-upgrade-only', '--battle-search-only')) {
         dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- $mode $fixturePath
         if ($LASTEXITCODE -ne 0) { throw "Original front-room health upgrade checks failed ($mode): $fixturePath" }
+    }
+}
+foreach ($fixturePath in @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 'full-battle-original-champion-start-turn-heal.mt2f' })) {
+    foreach ($mode in @('--original-champion-start-turn-heal-only', '--battle-search-only')) {
+        dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- $mode $fixturePath
+        if ($LASTEXITCODE -ne 0) { throw "Original champion start-turn heal checks failed ($mode): $fixturePath" }
     }
 }
 foreach ($fixturePath in @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 'full-battle-original-relic-count-attack.mt2f' })) {

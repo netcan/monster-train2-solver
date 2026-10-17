@@ -114,6 +114,7 @@ namespace MonsterTrain2Poju.Probe
             RelicOpeningDrawRule? openingDraw = null;
             RelicPileStartTurnRule? pileStartTurn = null;
             RelicMoonPhaseStatusRule? moonPhaseStatus = null;
+            RelicStartTurnHealRule? startTurnHeal = null;
             if (effect is RelicEffectDrawOnPreOpeningDraw)
             {
                 var upgradeData = data.GetParamCardUpgradeData(); CardUpgradeModifier? upgrade = null;
@@ -283,6 +284,16 @@ namespace MonsterTrain2Poju.Probe
                     subtype == null || subtype.IsNone ? null : subtype.Key, data.GetParamBool(), data.GetParamInt2());
                 amount = data.GetParamInt();
             }
+            else if (type == RelicStartTurnHealModel.Effect)
+            {
+                SubtypeData? subtype = data.GetParamCharacterSubtype();
+                object targets = AccessTools.Field(effect.GetType(), "targetsData").GetValue(effect);
+                string targetMode = AccessTools.Field(targets.GetType(), "targetMode").GetValue(targets).ToString()!;
+                startTurnHeal = new RelicStartTurnHealRule(index, data.GetParamInt(), data.GetParamInt2(),
+                    data.GetParamFloat(), data.GetParamSourceTeam().ToString(), targetMode,
+                    subtype == null || subtype.IsNone ? null : subtype.Key, data.GetEffectConditions().Count);
+                amount = data.GetParamInt();
+            }
             else if (effect is RelicEffectEnergyOnCardEarlyDiscard)
                 amount = data.GetParamInt();
             else if (effect is RelicEffectAddGoldOnExhaust)
@@ -297,7 +308,7 @@ namespace MonsterTrain2Poju.Probe
                 effect.CanApplyInPreviewMode, required?.GetID(), RelicCardModifierProbe.Conditions(effect), value, registration,
                 capacityValue, capacityRegistration, data.GetParamMinInt(),
                 effect is RelicEffectAddPermanentCorruptionStartOfCombat ? data.GetParamFloat() : 0,
-                generation, unitTrigger, openingDraw, pileStartTurn, moonPhaseStatus);
+                generation, unitTrigger, openingDraw, pileStartTurn, moonPhaseStatus, startTurnHeal);
         }
 
         internal static ResourceSnapshot Capture()

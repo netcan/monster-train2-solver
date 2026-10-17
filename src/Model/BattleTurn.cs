@@ -474,6 +474,10 @@ namespace MonsterTrain2Poju.Model
             RelicSoloUnitUpgradeResult soloUnitUpgrades = RelicSoloUnitUpgradeModel.Apply(train);
             if (!soloUnitUpgrades.Supported) return Unsupported(soloUnitUpgrades.UnsupportedReason!);
             train = soloUnitUpgrades.State!;
+            int startTurnRoom = train.Context!.QueryFrame?.SelectedRoomIndex ?? source.SelectedRoom;
+            RelicStartTurnHealResult startTurnHealing = RelicStartTurnHealModel.Apply(train, turn, startTurnRoom);
+            if (!startTurnHealing.Supported) return Unsupported(startTurnHealing.UnsupportedReason!);
+            train = startTurnHealing.State!;
             context = train.Context!;
             context = UnitStandbyModel.ReturnReady(context);
             context = EquipmentModel.ReturnUnattached(context, new HashSet<int>(train.Rooms.SelectMany(room => room.Units).Select(unit => unit.Id)));

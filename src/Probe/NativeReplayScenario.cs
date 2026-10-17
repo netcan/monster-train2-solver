@@ -360,6 +360,8 @@ namespace MonsterTrain2Poju.Probe
                         CorruptionScenario.AcquireRelicBeforeBattle(managers!, log);
                     if (fullBattle && OriginalMoonPhaseHealRelicScenario.Enabled && !OriginalMoonPhaseHealRelicScenario.Acquired)
                         OriginalMoonPhaseHealRelicScenario.AcquireBeforeBattle(managers!, log);
+                    if (fullBattle && OriginalChampionStartTurnHealScenario.Enabled && !OriginalChampionStartTurnHealScenario.Acquired)
+                        OriginalChampionStartTurnHealScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalMoonPhaseStatusRelicScenario.Enabled && !OriginalMoonPhaseStatusRelicScenario.Acquired)
                         OriginalMoonPhaseStatusRelicScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalMoonPhaseEnergyRelicScenario.Enabled && !OriginalMoonPhaseEnergyRelicScenario.Acquired)
@@ -769,6 +771,11 @@ namespace MonsterTrain2Poju.Probe
             if (fullBattle && !numericModifiersPrepared && OriginalFrontRoomHealthUpgradeScenario.Enabled)
             {
                 OriginalFrontRoomHealthUpgradeScenario.Prepare(managers, log);
+                numericModifiersPrepared = true;
+            }
+            if (fullBattle && !numericModifiersPrepared && OriginalChampionStartTurnHealScenario.Enabled)
+            {
+                OriginalChampionStartTurnHealScenario.Prepare(managers, log);
                 numericModifiersPrepared = true;
             }
             if (fullBattle && !numericModifiersPrepared && OriginalUnitResourceScenario.Enabled)
@@ -1680,6 +1687,7 @@ namespace MonsterTrain2Poju.Probe
                 if (OriginalUnitPhaseUpgradeScenario.Enabled) pendingPlay = OriginalUnitPhaseUpgradeScenario.Choose(decision);
                 if (OriginalSoloUnitUpgradeScenario.Enabled) pendingPlay = OriginalSoloUnitUpgradeScenario.Choose(decision);
                 if (OriginalFrontRoomHealthUpgradeScenario.Enabled) pendingPlay = OriginalFrontRoomHealthUpgradeScenario.Choose(decision);
+                if (OriginalChampionStartTurnHealScenario.Enabled) pendingPlay = OriginalChampionStartTurnHealScenario.Choose(decision);
                 if (modifierScenario == "rally-lethal") pendingPlay = LethalRallyScenario.ChooseNativeBossSummon(managers) ?? pendingPlay;
                 if (modifierScenario == "incant" || modifierScenario == "incant-thresholds" || (modifierScenario == "incant-relic" || modifierScenario == "incant-relic-combined")) pendingPlay = BattleActionModel.ChooseEmptySpellThenCards(decision);
                 if (modifierScenario.StartsWith("multi-summon", StringComparison.Ordinal)) pendingPlay = MultiSummonScenario.Choose(managers) ?? pendingPlay;
@@ -1819,6 +1827,7 @@ namespace MonsterTrain2Poju.Probe
                 (modifierScenario == "moon-phase-advance" && MoonPhaseAdvanceScenario.IsScenarioAction(action)) ||
                 (modifierScenario == "moon-phase-callbacks" && MoonPhaseCallbackScenario.IsScenarioAction(action)) ||
                 (modifierScenario == OriginalMoonPhaseHealRelicScenario.Name && OriginalMoonPhaseHealRelicScenario.IsScenarioAction(action)) ||
+                (modifierScenario == OriginalChampionStartTurnHealScenario.Name && OriginalChampionStartTurnHealScenario.IsScenarioAction(action)) ||
                 (modifierScenario == OriginalMoonPhaseStatusRelicScenario.Name && OriginalMoonPhaseStatusRelicScenario.IsScenarioAction(action)) ||
                 (OriginalCardDrawOnHealScenario.IsScenarioAction(action)) ||
                 (OriginalBrokenRailScenario.IsScenarioAction(action)) ||

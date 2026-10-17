@@ -1020,6 +1020,12 @@ if (args.Length == 2 && args[0] == "--original-front-room-health-upgrade-only")
     OriginalFrontRoomHealthUpgradeChecks.Native(fixture.RootElement);
     return;
 }
+if (args.Length == 2 && args[0] == "--original-champion-start-turn-heal-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    OriginalChampionStartTurnHealChecks.Native(fixture.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--original-combat-trigger-relics-only")
 {
     using var document = ModelJson.ReadFixture(args[1]);

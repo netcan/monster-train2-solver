@@ -302,6 +302,7 @@ param(
     [switch] $OriginalUnitPhaseUpgradeRelics,
     [switch] $OriginalSoloUnitUpgradeRelic,
     [switch] $OriginalFrontRoomHealthUpgradeRelic,
+    [switch] $OriginalChampionStartTurnHealRelic,
     [switch] $OriginalNullRelic,
     [switch] $OriginalNullRelicBaseline,
     [switch] $OriginalRelicCountAttack,
@@ -502,6 +503,7 @@ if ($OriginalTurnDrawRelics) { $BranchCardMasks = $true; $Policy = 'units-spells
 if ($OriginalUnitPhaseUpgradeRelics) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalSoloUnitUpgradeRelic) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalFrontRoomHealthUpgradeRelic) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
+if ($OriginalChampionStartTurnHealRelic) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalNullRelic -or $OriginalNullRelicBaseline) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalRelicCountAttack) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalMoreSpikes) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
@@ -952,6 +954,7 @@ if ($OriginalTurnDrawRelics) { $environment['MT2_PROBE_MODIFIERS'] = 'original-t
 if ($OriginalUnitPhaseUpgradeRelics) { $environment['MT2_PROBE_MODIFIERS'] = 'original-unit-phase-upgrade-relics' }
 if ($OriginalSoloUnitUpgradeRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-add-stats-to-solo-units' }
 if ($OriginalFrontRoomHealthUpgradeRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-front-room-health-upgrade' }
+if ($OriginalChampionStartTurnHealRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-champion-start-turn-heal' }
 if ($OriginalNullRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-null-relic' }
 if ($OriginalNullRelicBaseline) { $environment['MT2_PROBE_MODIFIERS'] = 'original-null-relic-baseline' }
 if ($OriginalRelicCountAttack) { $environment['MT2_PROBE_MODIFIERS'] = 'original-relic-count-attack' }
@@ -1959,6 +1962,20 @@ if ($OriginalFrontRoomHealthUpgradeRelic -and ($trace.Schema -ne 207 -or
     @($trace.RelicFrontRoomHealthUpgrades | Where-Object { -not $_.Completed -or $null -eq $_.Actual -or $null -eq $_.ActualRooms }).Count -gt 0 -or
     -not (Select-String -LiteralPath $unityLog -Pattern 'ORIGINAL-FRONT-ROOM-HEALTH-PREPARED native \+15 max/current HP per turn' -Quiet))) {
     throw 'Front-room max-health relic lacks repeated native callback and floor-front controls.'
+}
+if ($OriginalChampionStartTurnHealRelic -and ($trace.OriginalChampionStartTurnHealSchema -ne 208 -or
+    $trace.ModifierScenario -ne 'original-champion-start-turn-heal' -or
+    $trace.OriginalChampionStartTurnHeal.OwnerId -ne 'dbd5aec6-5046-4df2-ae61-4b646b8d1702' -or
+    $trace.CaptureFailures -ne 0 -or $trace.Mismatches -ne 0 -or $trace.Unsupported -ne 0 -or $trace.Pending -ne 0 -or
+    $trace.RelicStartTurnHealCaptureFailures -ne 0 -or $trace.RelicStartTurnHealMismatches -ne 0 -or
+    $trace.RelicStartTurnHealUnsupported -ne 0 -or $trace.RelicStartTurnHealPending -ne 0 -or
+    @($trace.RelicStartTurnHealResets).Count -ne 1 -or
+    @($trace.RelicStartTurnHealResets | Where-Object { -not $_.Completed -or $_.BeforeCounter -ne 4 -or $_.AfterCounter -ne 0 }).Count -gt 0 -or
+    @($trace.RelicStartTurnHealOperations).Count -lt 1 -or
+    @($trace.RelicStartTurnHealOperations | Where-Object { -not $_.Completed -or $null -eq $_.Actual }).Count -gt 0 -or
+    @($trace.Actions | Where-Object ScenarioAction).Count -ne 6 -or
+    -not (Select-String -LiteralPath $unityLog -Pattern 'ORIGINAL-CHAMPION-START-TURN-HEAL-PREPARED unchanged \+ full-health behavior' -Quiet))) {
+    throw 'ChampsHealBeginningOfTurn lacks counter reset, Tower-wide Champion healing and non-Champ native controls.'
 }
 if ($OriginalTurnDrawRelics -and ($trace.ModifierScenario -ne 'original-turn-draw-relics' -or
     @($trace.RelicTurnDraw).Count -lt 8 -or
