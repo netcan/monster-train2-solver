@@ -187,7 +187,7 @@
 "ChanceToNotConsume"	"51d95691-d59e-42f1-84ba-8c530743df69"	"pending"	"RelicEffectSuppressExhaust"	""
 "RebalanceValor"	"76511782-d2c1-43d1-9878-e465758017d8"	"accepted-native-battle"	"RelicEffectRebalanceValor"	""
 "UpgradeMaxHpFrontUnit"	"cb2c9d18-9a05-4523-acdc-6e4af73152aa"	"accepted-native-battle"	"RelicEffectModifyFrontInRoomCharacterMaxHealthEachTurn"	""
-"ChampsHealBeginningOfTurn"	"dbd5aec6-5046-4df2-ae61-4b646b8d1702"	"pending"	"RelicEffectHealStartOfTurn"	""
+"ChampsHealBeginningOfTurn"	"dbd5aec6-5046-4df2-ae61-4b646b8d1702"	"accepted-native-battle"	"RelicEffectHealStartOfTurn"	""
 "RootBeforePyre"	"4778bb46-27e4-49ae-aa5d-750813ceb6d0"	"accepted-native-battle"	"RelicEffectAddStatusEffectOnEnterRoomIndex"	""
 "Inkbound_LeakyPen"	"19c5ec66-4dde-4161-8fcf-68caf38a293c"	"accepted-native-battle"	"RelicEffectModifyEnergy,RelicEffectChangeStartingHandSize"	""
 "CardDrawOnCardPlay"	"f3f07b9b-1349-41d0-abab-bd5ec04d81e4"	"accepted-native-battle"	"RelicEffectCardDrawOnCardPlay"	""

@@ -1,5 +1,18 @@
 # Native regression fixtures
 
+ChampsHealBeginningOfTurn extension (2026-10-18): 404 archives (366 battles and
+38 calibrations), 184/224 original relic owners (82.14%): 167 full-battle owners,
+sixteen campaign-interface owners and one native no-op. The unchanged
+`RelicEffectHealStartOfTurn` resets its counter from 4 to 0 at battle start and
+heals every wounded living Champion across the Tower to full before each draw; a
+non-Champion remains wounded even when it shares a floor with a Champion. The
+70-stage winning replay records six callbacks and seven EndTurns with zero
+differential counters. Focused checks cover both Champion floors, callback caps,
+placement exclusion and owner ablation; independent search matches all six
+decisions over 128/128 states with serial/parallel best equality. The 31,365-byte
+archive has 4,892 unique nodes and SHA-256
+`a408d82e5159b2a2ab71543a61c3e57eee4738d939dcc6a86f66b8e2db84a6f4`.
+
 BalatroEventCavendish extension (2026-10-17): 400 archives (362 battles and 38
 calibrations), 180/224 original relic owners (80.36%): 163 full-battle owners,
 sixteen campaign-interface owners and one native no-op. The unchanged three-

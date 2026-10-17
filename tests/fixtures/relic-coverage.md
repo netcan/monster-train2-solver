@@ -1,7 +1,7 @@
 # Original relic coverage evidence
 
-As of 2026-10-18, **183 distinct original collectable relics / 224 catalog entries
-(81.70%)** have accepted native evidence: 166 have full-battle effect evidence,
+As of 2026-10-18, **184 distinct original collectable relics / 224 catalog entries
+(82.14%)** have accepted native evidence: 167 have full-battle effect evidence,
 sixteen have campaign consumer interfaces validated, and one is an explicit
 native no-op with seeded baseline equivalence. Except for that no-op, this counts
 unchanged relic definitions whose effects actually ran, including original filters and
@@ -64,6 +64,27 @@ passes.
 max/current HP upgrades on each populated floor's front Monster. Two floors have
 back-unit controls, two floors stay empty, and each source card retains the
 temporary upgrade; a retained dying front target remains unsupported.
+
+## ChampsHealBeginningOfTurn
+
+| AssetKey | DataId | Fixture | Evidence |
+| --- | --- | --- | --- |
+| `ChampsHealBeginningOfTurn` | `dbd5aec6-5046-4df2-ae61-4b646b8d1702` | `full-battle-original-champion-start-turn-heal.mt2f` | The unchanged `RelicEffectHealStartOfTurn` resets a seeded counter from 4 to 0 and runs six before-draw callbacks. Native `TargetMode.Tower` heals every wounded living Champion to full across all floors, not only the selected floor; a wounded non-Champion control is unchanged. The 70-stage battle has six actions, seven EndTurns and zero capture failures, mismatches, unsupported transitions or pending records. Dedicated native checks pass callback replay, two-floor targeting, placement exclusion, one-turn cap and owner ablation; independent search matches 128/128 states with serial/parallel best equality. |
+
+The accepted payload boundary is `HealToFull`, Monsters team, Tower targeting,
+the original Champion subtype, no conditions and deployment-phase exclusion.
+Other healing behaviors, target teams, modes, subtypes or condition sets remain
+unsupported. The 31,365-byte archive has 4,892 unique nodes and SHA-256
+`a408d82e5159b2a2ab71543a61c3e57eee4738d939dcc6a86f66b8e2db84a6f4`; no JSON
+companion is tracked. Inventory is 404 archives: 366 full battles and 38
+component calibrations. Original relic evidence is 184/224 (82.14%): 167 battle,
+16 campaign and one native no-op owner.
+
+```powershell
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-champion-start-turn-heal.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-champion-start-turn-heal-only tests/fixtures/full-battle-original-champion-start-turn-heal.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-champion-start-turn-heal.mt2f
+```
 The native source and callback effect for `RageOnBurnoutStackLoss` now have one
 accepted battle witness for a controlled friendly Ephemeral removal.
 `PyreRevengeAddPyregel` now has four live native OnHit witnesses whose complete
