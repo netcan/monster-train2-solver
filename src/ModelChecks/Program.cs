@@ -1014,6 +1014,12 @@ if (args.Length == 2 && args[0] == "--original-solo-unit-upgrade-only")
     OriginalSoloUnitUpgradeChecks.Native(fixture.RootElement);
     return;
 }
+if (args.Length == 2 && args[0] == "--original-front-room-health-upgrade-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    OriginalFrontRoomHealthUpgradeChecks.Native(fixture.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--original-combat-trigger-relics-only")
 {
     using var document = ModelJson.ReadFixture(args[1]);

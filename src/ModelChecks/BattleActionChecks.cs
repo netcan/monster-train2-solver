@@ -499,6 +499,9 @@ internal static class BattleActionChecks
         if (fixture.TryGetProperty("ModifierScenario", out var soloUnitUpgradePolicy) &&
             soloUnitUpgradePolicy.GetString() == "original-add-stats-to-solo-units")
             chooser = OriginalSoloUnitUpgradeChecks.Choose;
+        if (fixture.TryGetProperty("ModifierScenario", out var frontRoomHealthUpgradePolicy) &&
+            frontRoomHealthUpgradePolicy.GetString() == "original-front-room-health-upgrade")
+            chooser = OriginalFrontRoomHealthUpgradeChecks.Choose;
         if (fixture.TryGetProperty("ModifierScenario", out var combatTriggerPolicy) &&
             combatTriggerPolicy.GetString() == "original-combat-trigger-relics")
             chooser = OriginalCombatTriggerBatchChecks.Choose;

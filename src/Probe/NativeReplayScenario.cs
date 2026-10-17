@@ -324,6 +324,8 @@ namespace MonsterTrain2Poju.Probe
                         OriginalTurnDrawScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalSoloUnitUpgradeScenario.Enabled && !OriginalSoloUnitUpgradeScenario.Acquired)
                         OriginalSoloUnitUpgradeScenario.AcquireBeforeBattle(managers!, log);
+                    if (fullBattle && OriginalFrontRoomHealthUpgradeScenario.Enabled && !OriginalFrontRoomHealthUpgradeScenario.Acquired)
+                        OriginalFrontRoomHealthUpgradeScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalFunguyDeckScalingScenario.Enabled && !OriginalFunguyDeckScalingScenario.Acquired)
                         OriginalFunguyDeckScalingScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalCardDrawOnHealScenario.Enabled && !OriginalCardDrawOnHealScenario.Acquired)
@@ -762,6 +764,11 @@ namespace MonsterTrain2Poju.Probe
             if (fullBattle && !numericModifiersPrepared && OriginalSoloUnitUpgradeScenario.Enabled)
             {
                 OriginalSoloUnitUpgradeScenario.Prepare(managers, log);
+                numericModifiersPrepared = true;
+            }
+            if (fullBattle && !numericModifiersPrepared && OriginalFrontRoomHealthUpgradeScenario.Enabled)
+            {
+                OriginalFrontRoomHealthUpgradeScenario.Prepare(managers, log);
                 numericModifiersPrepared = true;
             }
             if (fullBattle && !numericModifiersPrepared && OriginalUnitResourceScenario.Enabled)
@@ -1672,6 +1679,7 @@ namespace MonsterTrain2Poju.Probe
                 if (OriginalUnitUpgradeTriggerRelicScenario.Enabled) pendingPlay = OriginalUnitUpgradeTriggerRelicScenario.Choose(decision) ?? pendingPlay;
                 if (OriginalUnitPhaseUpgradeScenario.Enabled) pendingPlay = OriginalUnitPhaseUpgradeScenario.Choose(decision);
                 if (OriginalSoloUnitUpgradeScenario.Enabled) pendingPlay = OriginalSoloUnitUpgradeScenario.Choose(decision);
+                if (OriginalFrontRoomHealthUpgradeScenario.Enabled) pendingPlay = OriginalFrontRoomHealthUpgradeScenario.Choose(decision);
                 if (modifierScenario == "rally-lethal") pendingPlay = LethalRallyScenario.ChooseNativeBossSummon(managers) ?? pendingPlay;
                 if (modifierScenario == "incant" || modifierScenario == "incant-thresholds" || (modifierScenario == "incant-relic" || modifierScenario == "incant-relic-combined")) pendingPlay = BattleActionModel.ChooseEmptySpellThenCards(decision);
                 if (modifierScenario.StartsWith("multi-summon", StringComparison.Ordinal)) pendingPlay = MultiSummonScenario.Choose(managers) ?? pendingPlay;

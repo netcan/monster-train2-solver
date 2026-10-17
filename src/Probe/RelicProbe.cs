@@ -121,8 +121,11 @@ namespace MonsterTrain2Poju.Probe
                     .Where(item => item.Effect is RelicEffectAddRemoveTempUpgradeOnUnitTrigger)
                     .Select(item => UnitUpgradeTrigger(item.Effect, item.Index)).ToArray();
                 var soloUnitUpgrades = effects.Select((effect, index) => new { Effect = effect, Index = index })
-                    .Where(item => item.Effect.GetType().Name == RelicSoloUnitUpgradeModel.Effect)
-                    .Select(item => SoloUnitUpgrade(item.Effect, item.Index)).ToArray();
+                    .Where(item => item.Effect.GetType().Name == RelicSoloUnitUpgradeModel.Effect ||
+                        item.Effect.GetType().Name == RelicSoloUnitUpgradeModel.FrontRoomEffect)
+                    .Select(item => item.Effect.GetType().Name == RelicSoloUnitUpgradeModel.FrontRoomEffect
+                        ? FrontRoomUnitUpgrade(item.Effect, item.Index)
+                        : SoloUnitUpgrade(item.Effect, item.Index)).ToArray();
                 var stackAdditions = effects.Select((effect, index) => new { Effect = effect, Index = index })
                     .Where(item => item.Effect is RelicEffectAddStatusEffectOnStatusApplied).Select(item => StatusStacks(item.Effect, item.Index)).ToArray();
                 var statusRemovedAdditions = effects.Select((effect, index) => new { Effect = effect, Index = index })
@@ -328,6 +331,19 @@ namespace MonsterTrain2Poju.Probe
             return new RelicSoloUnitUpgrade(index, ((Team.Type)Field("sourceTeamType")).HasFlag(Team.Type.Monsters),
                 subtype == null || subtype.IsNone ? null : subtype.Key, subtype == null || subtype.IsNone,
                 (bool)Field("upgradeIsRemovable"), data.GetEffectConditions().Count, upgrade, tracked);
+        }
+
+        private static RelicSoloUnitUpgrade FrontRoomUnitUpgrade(IRelicEffect effect, int index)
+        {
+            var data = (RelicEffectData)AccessTools.Field(typeof(RelicEffectBase), "_srcRelicEffectData").GetValue(effect);
+            CardUpgradeData upgradeData = data.GetParamCardUpgradeData()
+                ?? throw new InvalidOperationException("Front-room relic upgrade data is missing.");
+            var state = new CardUpgradeState();
+            state.Setup(upgradeData);
+            return new RelicSoloUnitUpgrade(index, sourceMonsters: true, subtypeKey: null, subtypeIsNone: true,
+                removable: false, conditionCount: data.GetEffectConditions().Count,
+                upgrade: CardModifierProbe.Upgrade(state, false, filtersAlreadyApplied: true),
+                trackedUnitIds: Array.Empty<int>(), frontInEachRoom: true);
         }
 
         private static RelicRoomEntryStatus RoomEntryStatus(IRelicEffect effect, int index)

@@ -14,18 +14,21 @@ namespace MonsterTrain2Poju.Model
         public int ConditionCount { get; }
         public CardUpgradeModifier? Upgrade { get; }
         public IReadOnlyList<int> TrackedUnitIds { get; }
+        public bool FrontInEachRoom { get; }
 
         public RelicSoloUnitUpgrade(int effectIndex, bool sourceMonsters, string? subtypeKey, bool subtypeIsNone,
-            bool removable, int conditionCount, CardUpgradeModifier? upgrade, IReadOnlyList<int> trackedUnitIds)
+            bool removable, int conditionCount, CardUpgradeModifier? upgrade, IReadOnlyList<int> trackedUnitIds,
+            bool frontInEachRoom = false)
         {
             EffectIndex = effectIndex; SourceMonsters = sourceMonsters; SubtypeKey = subtypeKey;
             SubtypeIsNone = subtypeIsNone; Removable = removable; ConditionCount = conditionCount;
             Upgrade = upgrade; TrackedUnitIds = Array.AsReadOnly(trackedUnitIds.ToArray());
+            FrontInEachRoom = frontInEachRoom;
         }
 
         internal RelicSoloUnitUpgrade WithTrackedUnitIds(IReadOnlyList<int> ids) =>
             new RelicSoloUnitUpgrade(EffectIndex, SourceMonsters, SubtypeKey, SubtypeIsNone,
-                Removable, ConditionCount, Upgrade, ids);
+                Removable, ConditionCount, Upgrade, ids, FrontInEachRoom);
     }
 
     internal sealed class RelicSoloUnitUpgradeResult
@@ -40,22 +43,29 @@ namespace MonsterTrain2Poju.Model
     internal static class RelicSoloUnitUpgradeModel
     {
         internal const string Effect = "RelicEffectAddTempSoloUnitUpgradeStartOfTurn";
+        internal const string FrontRoomEffect = "RelicEffectModifyFrontInRoomCharacterMaxHealthEachTurn";
 
         internal static string? Validate(CombatRelicState relic)
         {
             int[] indices = relic.EffectTypes.Select((type, index) => (type, index))
-                .Where(item => item.type == Effect).Select(item => item.index).ToArray();
+                .Where(item => item.type == Effect || item.type == FrontRoomEffect).Select(item => item.index).ToArray();
             if (indices.Length == 0)
                 return relic.SoloUnitUpgrades?.Count > 0 ? "Unexpected relic solo-unit upgrade definitions." : null;
             if (relic.SoloUnitUpgrades == null || !indices.SequenceEqual(relic.SoloUnitUpgrades.Select(rule => rule.EffectIndex)))
                 return "Missing ordered native relic solo-unit upgrade definitions.";
             foreach (RelicSoloUnitUpgrade rule in relic.SoloUnitUpgrades)
             {
+                bool frontInEachRoom = relic.EffectTypes[rule.EffectIndex] == FrontRoomEffect;
+                if (rule.FrontInEachRoom != frontInEachRoom)
+                    return "Relic unit-upgrade target mode does not match its native effect.";
                 if (!rule.SourceMonsters)
                     return "Unmodeled non-monster solo-unit source team.";
                 if (rule.ConditionCount != 0 || !rule.SubtypeIsNone && string.IsNullOrEmpty(rule.SubtypeKey))
                     return "Unmodeled relic solo-unit upgrade filter.";
-                if (rule.TrackedUnitIds.Count != 4 || rule.TrackedUnitIds.Any(id => id < 0))
+                if (frontInEachRoom && (rule.SubtypeKey != null || !rule.SubtypeIsNone || rule.Removable ||
+                    rule.TrackedUnitIds.Count != 0 || rule.Upgrade == null))
+                    return "Malformed native front-room relic upgrade definition.";
+                if (!frontInEachRoom && (rule.TrackedUnitIds.Count != 4 || rule.TrackedUnitIds.Any(id => id < 0)))
                     return "Malformed native relic solo-unit tracking state.";
                 if (rule.Upgrade != null && (string.IsNullOrEmpty(rule.Upgrade.DataId) || rule.Upgrade.ExternalInteractions.Count > 0))
                     return "Unmodeled relic solo-unit upgrade payload.";
@@ -66,7 +76,8 @@ namespace MonsterTrain2Poju.Model
         internal static RelicSoloUnitUpgradeResult Apply(TrainCombatState source)
         {
             CombatContext? context = source.Context;
-            if (context?.Relics == null || context.Relics.All(relic => !relic.EffectTypes.Contains(Effect)))
+            if (context?.Relics == null || context.Relics.All(relic =>
+                !relic.EffectTypes.Contains(Effect) && !relic.EffectTypes.Contains(FrontRoomEffect)))
                 return new RelicSoloUnitUpgradeResult(source);
             string? validation = RelicModel.Validate(context);
             if (validation != null) return Unsupported(validation);
@@ -81,6 +92,20 @@ namespace MonsterTrain2Poju.Model
                 if (rules.Length == 0) continue;
                 foreach (RelicSoloUnitUpgrade rule in rules)
                 {
+                    if (rule.FrontInEachRoom)
+                    {
+                        foreach (RoomCombatState room in state.Rooms.OrderBy(item => item.RoomIndex))
+                        {
+                            CombatUnit? front = room.Units.FirstOrDefault(unit => unit.Team == CombatTeam.Player && !unit.IsPyre);
+                            if (front == null) continue;
+                            if (front.Health <= 0)
+                                return Unsupported("Front-room relic upgrade cannot resolve a retained dying front unit.");
+                            var applied = ApplyUpgrade(state, front.Id, rule.Upgrade!);
+                            if (!applied.Supported) return Unsupported(applied.UnsupportedReason!);
+                            state = applied.State!;
+                        }
+                        continue;
+                    }
                     int[] tracked = rule.TrackedUnitIds.ToArray();
                     for (int roomIndex = 0; roomIndex < upgradableRoomCount; roomIndex++)
                     {
@@ -134,7 +159,7 @@ namespace MonsterTrain2Poju.Model
         }
 
         private static RelicSoloUnitUpgradeResult ApplyUpgrade(TrainCombatState source, int targetId,
-            CardUpgradeModifier upgrade, bool remove)
+            CardUpgradeModifier upgrade, bool remove = false)
         {
             RoomCombatState? room = source.Rooms.FirstOrDefault(item => item.Units.Any(unit => unit.Id == targetId));
             if (room == null) return Unsupported("Tracked solo unit is no longer in an upgradable room.");

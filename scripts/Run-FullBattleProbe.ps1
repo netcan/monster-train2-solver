@@ -301,6 +301,7 @@ param(
     [switch] $OriginalTurnDrawRelics,
     [switch] $OriginalUnitPhaseUpgradeRelics,
     [switch] $OriginalSoloUnitUpgradeRelic,
+    [switch] $OriginalFrontRoomHealthUpgradeRelic,
     [switch] $OriginalNullRelic,
     [switch] $OriginalNullRelicBaseline,
     [switch] $OriginalRelicCountAttack,
@@ -500,6 +501,7 @@ if ($OriginalOpeningDrawRelics) { $BranchCardMasks = $true; $Policy = 'units-spe
 if ($OriginalTurnDrawRelics) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalUnitPhaseUpgradeRelics) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalSoloUnitUpgradeRelic) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
+if ($OriginalFrontRoomHealthUpgradeRelic) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalNullRelic -or $OriginalNullRelicBaseline) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalRelicCountAttack) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalMoreSpikes) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
@@ -949,6 +951,7 @@ if ($OriginalOpeningDrawRelics) { $environment['MT2_PROBE_MODIFIERS'] = 'origina
 if ($OriginalTurnDrawRelics) { $environment['MT2_PROBE_MODIFIERS'] = 'original-turn-draw-relics' }
 if ($OriginalUnitPhaseUpgradeRelics) { $environment['MT2_PROBE_MODIFIERS'] = 'original-unit-phase-upgrade-relics' }
 if ($OriginalSoloUnitUpgradeRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-add-stats-to-solo-units' }
+if ($OriginalFrontRoomHealthUpgradeRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-front-room-health-upgrade' }
 if ($OriginalNullRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-null-relic' }
 if ($OriginalNullRelicBaseline) { $environment['MT2_PROBE_MODIFIERS'] = 'original-null-relic-baseline' }
 if ($OriginalRelicCountAttack) { $environment['MT2_PROBE_MODIFIERS'] = 'original-relic-count-attack' }
@@ -1946,6 +1949,16 @@ if ($OriginalSoloUnitUpgradeRelic -and ($trace.Schema -ne 183 -or
     @($trace.RelicSoloUnitUpgrades | Where-Object { -not $_.Completed -or $null -eq $_.Actual }).Count -gt 0 -or
     -not (Select-String -LiteralPath $unityLog -Pattern 'ORIGINAL-SOLO-UNIT-UPGRADE-PREPARED native single=' -Quiet))) {
     throw 'AddStatsToSoloUnits lacks native solo, multi-unit and empty-floor callback evidence.'
+}
+if ($OriginalFrontRoomHealthUpgradeRelic -and ($trace.Schema -ne 207 -or
+    $trace.ModifierScenario -ne 'original-front-room-health-upgrade' -or
+    $trace.OriginalFrontRoomHealthUpgrade.OwnerId -ne 'cb2c9d18-9a05-4523-acdc-6e4af73152aa' -or
+    $trace.CaptureFailures -ne 0 -or $trace.Mismatches -ne 0 -or $trace.Unsupported -ne 0 -or $trace.Pending -ne 0 -or
+    @($trace.RelicFrontRoomHealthUpgrades).Count -lt 2 -or
+    @($trace.RelicFrontRoomHealthUpgradeTests | Where-Object { $_.Phase -eq 'TestEffectStartOfTurn' -and $_.Returned -eq $true }).Count -lt 1 -or
+    @($trace.RelicFrontRoomHealthUpgrades | Where-Object { -not $_.Completed -or $null -eq $_.Actual -or $null -eq $_.ActualRooms }).Count -gt 0 -or
+    -not (Select-String -LiteralPath $unityLog -Pattern 'ORIGINAL-FRONT-ROOM-HEALTH-PREPARED native \+15 max/current HP per turn' -Quiet))) {
+    throw 'Front-room max-health relic lacks repeated native callback and floor-front controls.'
 }
 if ($OriginalTurnDrawRelics -and ($trace.ModifierScenario -ne 'original-turn-draw-relics' -or
     @($trace.RelicTurnDraw).Count -lt 8 -or
