@@ -282,6 +282,7 @@ param(
     [switch] $OriginalEarlyDiscardEnergy,
     [switch] $OriginalCheaperSpellCost,
     [switch] $OriginalFirstCardCost,
+    [switch] $OriginalRebalanceValor,
     [switch] $OriginalNefariousOverflow,
     [switch] $OriginalUncontrolledGroup,
     [switch] $OriginalCopyFirstSpellPlayed,
@@ -420,6 +421,7 @@ if ($OriginalExtraFeedTrigger) { $BranchCardMasks = $true; $Policy = 'units-and-
 if ($OriginalSummonWithAvarice) { $BranchCardMasks = $true; $Policy = 'units-and-junk' }
 if ($OriginalCheaperSpellCost) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalFirstCardCost) { $BranchCardMasks = $true; $Policy = 'units-and-junk' }
+if ($OriginalRebalanceValor) { $BranchCardMasks = $true; $Policy = 'units-and-junk' }
 if ($OriginalCardDrawOnCardPlay) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalCopyFirstSpellPlayed -or $OriginalCopyFirstConsumePlayed -or $OriginalCopyConsumedCard -or $OriginalMonsterSpellTargeting) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalFunguyDeckScaling) { $PhysicalSpawnPoints = $true; $Policy = 'no-cards' }
@@ -895,6 +897,7 @@ if ($OriginalExtraFeedTrigger) { $environment['MT2_PROBE_MODIFIERS'] = 'original
 if ($OriginalSummonWithAvarice) { $environment['MT2_PROBE_MODIFIERS'] = 'original-summon-with-avarice' }
 if ($OriginalCheaperSpellCost) { $environment['MT2_PROBE_MODIFIERS'] = 'original-reduce-spell-cost-cheaper' }
 if ($OriginalFirstCardCost) { $environment['MT2_PROBE_MODIFIERS'] = 'original-reduce-first-spell-cost-per-deck-size' }
+if ($OriginalRebalanceValor) { $environment['MT2_PROBE_MODIFIERS'] = 'original-rebalance-valor' }
 if ($OriginalNefariousOverflow) { $environment['MT2_PROBE_MODIFIERS'] = 'original-nefarious-overflow' }
 if ($OriginalUncontrolledGroup) { $environment['MT2_PROBE_MODIFIERS'] = 'original-uncontrolled-group' }
 if ($OriginalCopyFirstSpellPlayed) { $environment['MT2_PROBE_MODIFIERS'] = 'original-copy-first-spell-played' }
@@ -1790,6 +1793,14 @@ if ($OriginalFirstCardCost -and ($trace.Schema -ne 205 -or
     -not (Select-String -LiteralPath $unityLog -Pattern 'ORIGINAL-FIRST-CARD-COST-PREPARED' -Quiet) -or
     @($trace.Actions | Where-Object ScenarioAction).Count -lt 3)) {
     throw 'ReduceFirstSpellCostPerDeckSize lacks first-play cleanup, end-turn reset and retained next-turn Spell witnesses.'
+}
+if ($OriginalRebalanceValor -and ($trace.Schema -ne 206 -or
+    $trace.ModifierScenario -ne 'original-rebalance-valor' -or
+    -not $trace.OriginalRebalanceValorPrepared -or
+    -not (Select-String -LiteralPath $unityLog -Pattern 'ORIGINAL-REBALANCE-VALOR-PREPARED' -Quiet) -or
+    @($trace.Actions | Where-Object ScenarioAction).Count -lt 1 -or
+    @($trace.OriginalRebalanceValorObservations).Count -lt 1)) {
+    throw 'RebalanceValor lacks the original +1 Armor-per-stack carrier witness.'
 }
 if ($OriginalNefariousOverflow -and ($trace.Schema -ne 172 -or
     $trace.ModifierScenario -ne 'original-nefarious-overflow' -or

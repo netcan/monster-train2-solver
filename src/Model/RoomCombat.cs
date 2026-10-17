@@ -1458,12 +1458,16 @@ namespace MonsterTrain2Poju.Model
                 if (!source.Preview && units.Any(unit => unit.Source.IsPyre && !unit.Alive))
                     return Finish(RoomOutcome.PlayerDefeated);
                 RunUnitPostCombat(updateSelectedRoom);
-                if (!source.Deployment)
+                if (!source.Deployment && context?.QueryFrame?.Turn != 0)
+                {
+                    StatusScalingResult valorArmor = RelicStatusMagnitudeModel.GetValorArmorIncrease(context);
+                    if (!valorArmor.Supported) { unsupportedReason = valorArmor.UnsupportedReason; return Finish(RoomOutcome.Unsupported); }
+                    context = valorArmor.Context;
                     foreach (CombatTeam team in new[] { CombatTeam.Enemy, CombatTeam.Player })
                     {
                         WorkingUnit? front = units.FirstOrDefault(unit => unit.Alive && unit.InRoom && unit.Source.Team == team && !unit.Has("untouchable"));
                         if (front == null || !front.Has("valor") || front.Has("immune") || front.Source.StatusImmunities.Contains("armor")) continue;
-                        int goal = Math.Min(9999, front.Amount("valor"));
+                        int goal = Math.Min(9999, unchecked(front.Amount("valor") + front.Count("valor") * valorArmor.Stacks));
                         // Valor calls AddStatusEffect even when existing armor already meets its target.
                         // That zero addition still queues status and armor callbacks in the native game.
                         RoomCombatResult added = StatusApplicationModel.ApplyRetained(CurrentRoom(), front.Source.Id,
@@ -1473,6 +1477,7 @@ namespace MonsterTrain2Poju.Model
                         foreach (CombatUnit changed in added.State.Units) units.First(unit => unit.Source.Id == changed.Id).Apply(changed);
                         foreach (QueuedCharacterTrigger callback in added.PendingCallbacks) QueueCallback(callback);
                     }
+                }
                 if (enqueueCharacterTrigger == null && !runningTriggerQueue) DrainLocalTriggerQueue();
                 Clear(true);
                 return Finish(battleWon ? RoomOutcome.BattleWon : units.Any(unit => unit.Source.IsPyre && !unit.Alive)

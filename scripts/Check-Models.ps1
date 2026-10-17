@@ -30,6 +30,7 @@ $fixtureNames = @('full-battle-steward-once.mt2f', 'full-battle-no-cards.mt2f', 
     'full-battle-original-early-discard-energy.mt2f',
     'full-battle-original-cheaper-spell-cost.mt2f',
     'full-battle-original-first-card-cost.mt2f',
+    'full-battle-original-rebalance-valor.mt2f',
     'full-battle-original-nefarious-overflow.mt2f', 'full-battle-original-uncontrolled-group.mt2f',
     'full-battle-original-copy-first-spell-played.mt2f',
     'full-battle-original-copy-first-consume-played.mt2f',
@@ -537,6 +538,7 @@ $generalFixtures = @($fixtures | Where-Object {
         'full-battle-relic-card-cast-trigger-unit-upgrades.mt2f',
         'full-battle-original-cheaper-spell-cost.mt2f',
         'full-battle-original-first-card-cost.mt2f',
+        'full-battle-original-rebalance-valor.mt2f',
         'full-battle-original-uncontrolled-group.mt2f')
 })
 $buildArguments = @()
@@ -550,6 +552,8 @@ if ($LASTEXITCODE -ne 0) { throw 'Independent model checks failed.' }
 
 dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- --relic-first-card-cost-pure
 if ($LASTEXITCODE -ne 0) { throw 'First-card cost pure checks failed.' }
+dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- --original-rebalance-valor-pure
+if ($LASTEXITCODE -ne 0) { throw 'RebalanceValor pure checks failed.' }
 
 foreach ($fixturePath in $focusedTeamSpawnStatusFixtures) {
     foreach ($mode in @('--room-combat-only', '--native-actions-only', '--unit-clone-only')) {
@@ -1005,6 +1009,12 @@ foreach ($fixturePath in @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 
     foreach ($mode in @('--original-first-card-cost-only', '--battle-search-only')) {
         dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- $mode $fixturePath
         if ($LASTEXITCODE -ne 0) { throw "ReduceFirstSpellCostPerDeckSize checks failed ($mode): $fixturePath" }
+    }
+}
+foreach ($fixturePath in @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 'full-battle-original-rebalance-valor.mt2f' })) {
+    foreach ($mode in @('--original-rebalance-valor-only', '--battle-search-only')) {
+        dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- $mode $fixturePath
+        if ($LASTEXITCODE -ne 0) { throw "RebalanceValor checks failed ($mode): $fixturePath" }
     }
 }
 foreach ($fixturePath in @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 'full-battle-original-nefarious-overflow.mt2f' })) {

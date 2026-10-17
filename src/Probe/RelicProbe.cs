@@ -13,6 +13,7 @@ namespace MonsterTrain2Poju.Probe
             Current(managers).Any(relic => relic.GetEffects().Any(effect => effect is RelicEffectModifyTriggerCount || effect is RelicEffectAddTrigger));
         internal static bool HasStatusAttackHistory(AllGameManagers managers) =>
             PyreResourceRefreshScenario.Enabled || Current(managers).Any(relic => relic.GetEffects().Any(effect => effect is RelicEffectModifyStatusMagnitude ||
+                effect is IRebalanceValorRelicEffect ||
                 effect is RelicEffectAdjustAttackByStatusEffect ||
                 effect is RelicEffectPreventStatusEffectDecay decay && decay.GetStatusEffects().Any(status => status.statusId == "buff")));
         internal static RelicStatusAttackModifier[] StatusAttackModifiers(AllGameManagers managers) =>
@@ -130,7 +131,8 @@ namespace MonsterTrain2Poju.Probe
                 RelicStatusStacks[] statusStackRules = stackAdditions.Concat(statusRemovedAdditions)
                     .OrderBy(rule => rule.EffectIndex).ToArray();
                 var magnitudes = effects.Select((effect, index) => new { Effect = effect, Index = index })
-                    .Where(item => item.Effect is RelicEffectModifyStatusMagnitude).Select(item => StatusMagnitude(item.Effect, item.Index)).ToArray();
+                    .Where(item => item.Effect is RelicEffectModifyStatusMagnitude || item.Effect is IRebalanceValorRelicEffect)
+                    .Select(item => StatusMagnitude(item.Effect, item.Index)).ToArray();
                 var decays = effects.Select((effect, index) => new { Effect = effect, Index = index })
                     .Where(item => item.Effect is RelicEffectPreventStatusEffectDecay).Select(item => StatusDecay(item.Effect, item.Index)).ToArray();
                 var resources = effects.Select((effect, index) => new { Effect = effect, Index = index })
@@ -372,6 +374,9 @@ namespace MonsterTrain2Poju.Probe
 
         private static RelicStatusMagnitude StatusMagnitude(IRelicEffect effect, int index)
         {
+            if (effect is IRebalanceValorRelicEffect rebalance)
+                return new RelicStatusMagnitude(index, 0, "valor", 0, valorAttackIncrease: rebalance.AttackIncrease(),
+                    valorArmorIncrease: rebalance.ArmorIncrease());
             var data = (RelicEffectData)AccessTools.Field(typeof(RelicEffectBase), "_srcRelicEffectData").GetValue(effect);
             return new RelicStatusMagnitude(index, (int)data.GetParamSourceTeam(),
                 data.GetParamStatusEffects().FirstOrDefault()?.statusId ?? "", data.GetParamInt(), RelicCardModifierProbe.Conditions(effect));

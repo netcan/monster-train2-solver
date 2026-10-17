@@ -276,6 +276,8 @@ namespace MonsterTrain2Poju.Probe
                         OriginalCheaperSpellCostScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalFirstCardCostScenario.Enabled && !OriginalFirstCardCostScenario.Acquired)
                         OriginalFirstCardCostScenario.AcquireBeforeBattle(managers!, log);
+                    if (fullBattle && OriginalRebalanceValorScenario.Enabled && !OriginalRebalanceValorScenario.Acquired)
+                        OriginalRebalanceValorScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalCardDrawOnCardPlayScenario.Enabled && !OriginalCardDrawOnCardPlayScenario.Acquired)
                         OriginalCardDrawOnCardPlayScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalCarriageJackScenario.Enabled && !OriginalCarriageJackScenario.Acquired)
@@ -1510,6 +1512,8 @@ namespace MonsterTrain2Poju.Probe
                     OriginalCheaperSpellCostScenario.Prepare(managers, log);
                 if (fullBattle && OriginalFirstCardCostScenario.Enabled && !OriginalFirstCardCostScenario.Prepared)
                     OriginalFirstCardCostScenario.Prepare(managers, log);
+                if (fullBattle && OriginalRebalanceValorScenario.Enabled && !OriginalRebalanceValorScenario.Prepared)
+                    OriginalRebalanceValorScenario.Prepare(managers, log);
                 if (fullBattle && OriginalCardDrawOnCardPlayScenario.Enabled && !OriginalCardDrawOnCardPlayScenario.Prepared)
                     OriginalCardDrawOnCardPlayScenario.Prepare(managers, log);
                 if (fullBattle && UnplayedCardTriggerScenario.Enabled && !UnplayedCardTriggerScenario.Prepared)
@@ -1658,6 +1662,7 @@ namespace MonsterTrain2Poju.Probe
                     pendingPlay = OriginalExtractForEmberAndEchosScenario.Choose(decision) ?? pendingPlay;
                 if (OriginalCheaperSpellCostScenario.Enabled) pendingPlay = OriginalCheaperSpellCostScenario.Choose(decision);
                 if (OriginalFirstCardCostScenario.Enabled) pendingPlay = OriginalFirstCardCostScenario.Choose(decision);
+                if (OriginalRebalanceValorScenario.Enabled) pendingPlay = OriginalRebalanceValorScenario.Choose(decision) ?? pendingPlay;
                 if (OriginalCardAttackRelicScenario.Enabled) pendingPlay = OriginalCardAttackRelicScenario.Choose(decision) ?? pendingPlay;
                 if (OriginalCardTypeCostScenario.Enabled) pendingPlay = OriginalCardTypeCostScenario.Choose(decision) ?? pendingPlay;
                 if (OriginalPurgeToExhaustScenario.Enabled) pendingPlay = OriginalPurgeToExhaustScenario.Choose(decision) ?? pendingPlay;
@@ -1817,6 +1822,7 @@ namespace MonsterTrain2Poju.Probe
                 (modifierScenario == "card-effect-kill-subtype" && CardEffectKillScenario.IsScenarioPrelude(action)) ||
                 (OriginalCheaperSpellCostScenario.Enabled && OriginalCheaperSpellCostScenario.IsScenarioAction(action)) ||
                 (OriginalFirstCardCostScenario.Enabled && OriginalFirstCardCostScenario.IsScenarioAction(action)) ||
+                (OriginalRebalanceValorScenario.Enabled && OriginalRebalanceValorScenario.IsScenarioAction(action)) ||
                 (NullForwardingScenario.Enabled && NullForwardingScenario.ConsumeScenarioActionMark(action)) ||
                 (NullTriggerScenario.Enabled && NullTriggerScenario.ConsumeScenarioActionMark(action)) ||
                 (NullTargetlessScenario.Enabled && NullTargetlessScenario.ConsumeScenarioActionMark(action)) ||
