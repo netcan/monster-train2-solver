@@ -89,12 +89,14 @@ namespace MonsterTrain2Poju.Model
         public RelicUnitResourceRule? UnitTrigger { get; }
         public RelicOpeningDrawRule? OpeningDraw { get; }
         public RelicPileStartTurnRule? PileStartTurn { get; }
+        public RelicMoonPhaseStatusRule? MoonPhaseStatus { get; }
         public RelicResourceEffect(int effectIndex, string type, int paramInt, int paramInt2, int amount,
             bool canApplyInPreviewMode, string? requiredMutatorId = null, IReadOnlyList<RelicConditionState>? conditions = null,
             float? drawValue = null, int? drawMutationOrder = null,
             float? capacityValue = null, int? capacityMutationOrder = null, int paramMinInt = 0, float paramFloat = 0,
             CardGenerationRule? cardGeneration = null, RelicUnitResourceRule? unitTrigger = null,
-            RelicOpeningDrawRule? openingDraw = null, RelicPileStartTurnRule? pileStartTurn = null)
+            RelicOpeningDrawRule? openingDraw = null, RelicPileStartTurnRule? pileStartTurn = null,
+            RelicMoonPhaseStatusRule? moonPhaseStatus = null)
         {
             EffectIndex = effectIndex; Type = type; ParamInt = paramInt; ParamInt2 = paramInt2; Amount = amount;
             ParamMinInt = paramMinInt;
@@ -103,6 +105,7 @@ namespace MonsterTrain2Poju.Model
             UnitTrigger = unitTrigger;
             OpeningDraw = openingDraw;
             PileStartTurn = pileStartTurn;
+            MoonPhaseStatus = moonPhaseStatus;
             CanApplyInPreviewMode = canApplyInPreviewMode; RequiredMutatorId = requiredMutatorId;
             Conditions = Array.AsReadOnly((conditions ?? Array.Empty<RelicConditionState>()).ToArray());
             DrawValue = drawValue; DrawMutationOrder = drawMutationOrder;
@@ -110,10 +113,10 @@ namespace MonsterTrain2Poju.Model
         }
         internal RelicResourceEffect WithConditions(IReadOnlyList<RelicConditionState> conditions) =>
             new RelicResourceEffect(EffectIndex, Type, ParamInt, ParamInt2, Amount, CanApplyInPreviewMode,
-                RequiredMutatorId, conditions, DrawValue, DrawMutationOrder, CapacityValue, CapacityMutationOrder, ParamMinInt, ParamFloat, CardGeneration, UnitTrigger, OpeningDraw, PileStartTurn);
+                RequiredMutatorId, conditions, DrawValue, DrawMutationOrder, CapacityValue, CapacityMutationOrder, ParamMinInt, ParamFloat, CardGeneration, UnitTrigger, OpeningDraw, PileStartTurn, MoonPhaseStatus);
         internal RelicResourceEffect WithDrawValue(float value) =>
             new RelicResourceEffect(EffectIndex, Type, ParamInt, ParamInt2, Amount, CanApplyInPreviewMode,
-                RequiredMutatorId, Conditions, value, DrawMutationOrder, CapacityValue, CapacityMutationOrder, ParamMinInt, ParamFloat, CardGeneration, UnitTrigger, OpeningDraw, PileStartTurn);
+                RequiredMutatorId, Conditions, value, DrawMutationOrder, CapacityValue, CapacityMutationOrder, ParamMinInt, ParamFloat, CardGeneration, UnitTrigger, OpeningDraw, PileStartTurn, MoonPhaseStatus);
     }
 
     public sealed class RelicResourceEvent
@@ -161,6 +164,7 @@ namespace MonsterTrain2Poju.Model
         public const string PyreHealth = "RelicEffectIncreasePyreHealth";
         public const string FloorCapacity = "RelicEffectChangeFloorCapacity";
         public const string MoonPhaseEnergy = "RelicEffectModifyEnergyOnMoonPhase";
+        public const string MoonPhaseStatus = RelicMoonPhaseStatusModel.Effect;
         public const string EnergyOnCardEarlyDiscard = "RelicEffectEnergyOnCardEarlyDiscard";
         public const string EnergyOnCorruptRestrictedPlayed = "RelicEffectEnergyOnCorruptRestrictedPlayed";
         public const string CorruptionOnCorruptRestrictedPlayed = "RelicEffectCorruptionOnCorruptRestrictedPlayed";
@@ -170,7 +174,7 @@ namespace MonsterTrain2Poju.Model
         public const string PermanentPyreAttackAdjustment = "CardEffectPermanentlyAdjustPyreAttack";
         public const string PileStartTurn = "RelicEffectAddEffectPerPileStartOfTurn";
         public static bool IsEffect(string type) => type == Energy || type == DeploymentEnergy || type == StartCombatEnergy || type == Draw ||
-            type == PyreAttack || type == PyreHealth || type == FloorCapacity || type == MoonPhaseEnergy ||
+            type == PyreAttack || type == PyreHealth || type == FloorCapacity || type == MoonPhaseEnergy || type == MoonPhaseStatus ||
             type == EnergyOnCardEarlyDiscard ||
             type == EnergyOnCorruptRestrictedPlayed || type == CorruptionOnCorruptRestrictedPlayed ||
             type == AdditionalSmeltEmber || type == AdjustMixAmount || type == ConserveEnergyEndOfTurn || type == ConserveForgePoints ||
@@ -225,6 +229,12 @@ namespace MonsterTrain2Poju.Model
                     if (generationError != null) return generationError;
                 }
                 else if (rule.CardGeneration != null) return "Unexpected relic card generation on another resource effect.";
+                if (rule.Type == MoonPhaseStatus)
+                {
+                    string? statusError = RelicMoonPhaseStatusModel.Validate(relic, rule);
+                    if (statusError != null) return statusError;
+                }
+                else if (rule.MoonPhaseStatus != null) return "Unexpected moon-phase status payload on another resource effect.";
                 if (rule.Type == PileStartTurn)
                 {
                     string? pileError = RelicPileStartTurnModel.Validate(relic, rule);

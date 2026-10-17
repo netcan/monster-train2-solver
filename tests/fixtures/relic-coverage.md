@@ -1,7 +1,7 @@
 # Original relic coverage evidence
 
-As of 2026-10-17, **166 distinct original collectable relics / 224 catalog entries
-(74.11%)** have accepted native evidence: 150 have full-battle effect evidence,
+As of 2026-10-17, **167 distinct original collectable relics / 224 catalog entries
+(74.55%)** have accepted native evidence: 151 have full-battle effect evidence,
 fifteen have campaign consumer interfaces validated, and one is an explicit
 native no-op with seeded baseline equivalence. Except for that no-op, this counts
 unchanged relic definitions whose effects actually ran, including original filters and
@@ -41,6 +41,11 @@ Untouchable units. The 62-stage winning replay has zero error counters; focused
 checks validate the tracked ThisTurn condition and controls. Independent search
 visits 128/128 states with serial/parallel best equality, while unsupported
 alternatives remain outside the explicitly narrow card/effect boundary.
+`MoonPhaseAddArmorToSilent` now has six native Full/New callback witnesses: three
+Full callbacks leave state unchanged, and three New callbacks add 10 Armor to
+all eligible friendly Silent targets across three multi-room positive cases.
+The 45-stage replay, four controlled card actions, complete-state callback
+replays and 128-state independent search pass with zero native error counters.
 `DamageOnFloorTransition` now has exact +3 native enemy damage after both
 PostAscension and PostDescension; rooted, immobile and player movement controls
 remain unchanged. Its full replay and independent battle search pass.
@@ -195,6 +200,7 @@ owner count.
 | `CopyConsumedCard` | `51368ce4-b037-49ef-801c-545405b78800` | [CopyConsumedCard][copyConsumedCard] | The unchanged owner copies a direct-play card with the required Consume trait twice, irrespective of card type, as non-permanent hand cards. Playing one copy in the same battle creates no third copy. The captured Spell path passes native replay and independent 128/128-state search; other card types are not claimed. |
 | `SingleToTeamMonsterSpellTargeting` | `070c87f3-a48f-49d6-a288-04854ab3b0cf` | [Monster Spell targeting][monsterSpellTargeting] | One direct unupgraded, traitless 1-Damage DropTarget Spell targets Monsters; the unchanged owner copies the effect to the other eligible same-room Monster, excluding the original and Untouchable units. The ThisTurn condition and full native replay match. Other effect payloads, upgrades, traits, OnCast, Pyre-room and mixed-effect cases remain unsupported. |
 | `GarfieldBoxRandomCardPerTurn` | `d537c198-899f-4385-9552-f35f58826be4` | [GarfieldBox random card][garfieldBoxRandomCard] | Six unchanged after-draw callbacks replay the native partial shuffle over the full 348-entry pool, selecting only the two active player clans (58 eligible) before adding one non-permanent card to hand. The winning 61-stage replay and independent 128-state search pass. Placement/preview and synthetic full-hand RNG-only controls pass; other clan selections and broader candidate pools are not claimed. |
+| `MoonPhaseAddArmorToSilent` | `e013b17d-753b-47b8-a837-02af85addb4b` | [moon-phase Silent armor][moonPhaseArmor] | The unchanged New-only owner adds 10 Armor to each eligible friendly Silent. Three Full callbacks are no-ops; three New callbacks target both witnesses across separate rooms, with complete train state matching. Pure controls cover phase, team/subtype, Pyre/dead/Untouchable/immunity/Purify exclusions, status metadata, preview and unsupported target callbacks. The winning replay and independent 128/128-state search pass; other moon-phase status owners and callback families are not claimed. |
 | `StartOfTurnAddFunguysPerDeckSize` | `e5d7c9d0-c0a3-4b0c-97cf-6def6ad287e9` | [Funguy deck scaling][funguyDeckScaling] | Six original callbacks at 40 visible cards apply two cardless Horde effects on each live room: three Funguys spawn and Horde rises by six total. Relentless room destruction is respected; support is limited to this original payload and captured positive path. |
 | `CardDrawOnHeal` | `9a38370b-150c-45bd-9e3e-93a688a04850` | [CardDrawOnHeal][cardDrawOnHeal] | Four allied OnHeal callbacks draw exactly one card after native ThisTurn reset; a second same-turn heal is suppressed after the two native notifications, and an enemy-heal control does not trigger the Monsters-only owner. Placement/preview gates are pure controls; targeted test-card setup is excluded from full-policy replay. |
 | `BrokenRail` | `1699b5c7-8c34-471c-8e5a-c9830e2bc482` | [BrokenRail forge upgrade][brokenRail] | The unchanged +2 HP forge upgrade scales to +6 at three forge points on one eligible ordinary monster summon. Native direct-play and full-battle state match; bounded 128-state search matches with serial/parallel best equality. Tracking/toggle/eligibility controls are pure; room-specific replacements and non-monster plays remain unsupported. |
@@ -833,6 +839,7 @@ dotnet run --project src/ModelChecks -c Release -- --gold-pyre-pure
 [copyConsumedCard]: full-battle-original-copy-consumed-card.mt2f
 [monsterSpellTargeting]: full-battle-original-monster-spell-targeting.mt2f
 [garfieldBoxRandomCard]: full-battle-original-garfield-box-random-card.mt2f
+[moonPhaseArmor]: full-battle-original-moon-phase-status-relic.mt2f
 [damageOnFloorTransition]: full-battle-original-damage-on-floor-transition.mt2f
 [soloUnitUpgrade]: full-battle-original-add-stats-to-solo-units.mt2f
 [purgeToExhaust]: full-battle-original-purge-to-exhaust.mt2f
@@ -982,3 +989,28 @@ or mixed-effect spells. The 35,464-byte binary has 5,580 unique nodes and SHA-25
 companion is tracked. The inventory is 386 archives: 348 battles and 38
 component calibrations. Original relic coverage is 165/224 (73.66%): 149 battle,
 15 campaign and one native no-op owner.
+
+## MoonPhaseAddArmorToSilent
+
+The schema-190 archive captures the unchanged New-only owner applying 10 Armor
+to every eligible friendly Silent in Tower-targeted rooms. Three Full callbacks
+are no-ops; three New callbacks add Armor to two Silent witnesses across
+separate rooms. All six callbacks match complete-state replay. The winning
+45-stage battle has 17 actions, five EndTurns, and zero capture failures,
+mismatches, unsupported transitions or pending records. Independent search
+matches all 17 decisions across 128/128 states with serial/parallel best
+equality and zero unsupported attempts. Pure controls cover phase, owner
+filters, status metadata, preview behavior, rejected target callbacks and
+immutable branches. Support is limited to this owner and targets without status
+application callbacks; other moon-phase status relics remain pending. The
+34,017-byte binary has 5,272 unique nodes and SHA-256
+`6f8cf7873e739ec4189ca03c13db71db7f74f3919c7453191c164200e7356bb6`; no JSON
+companion is tracked. Inventory is 388 archives: 350 full battles and 38
+component calibrations. Original relic coverage is 167/224 (74.55%): 151
+battle, 15 campaign and one native no-op owner.
+
+```powershell
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-moon-phase-status-relic.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-moon-phase-status-only tests/fixtures/full-battle-original-moon-phase-status-relic.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-moon-phase-status-relic.mt2f
+```

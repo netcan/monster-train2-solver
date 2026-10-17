@@ -1,5 +1,17 @@
 # Native regression fixtures
 
+MoonPhaseAddArmorToSilent extension (2026-10-17): 388 archives
+(350 battles and 38 calibrations), 167/224 original relic owners (74.55%):
+151 full-battle owners, fifteen campaign-interface owners and one native no-op.
+The unchanged New-only owner adds 10 Armor to every eligible friendly Silent
+unit. Six native Full/New callbacks match complete-state replay; three New
+callbacks each target Silent units across multiple rooms. The 45-stage winning
+replay has 17 actions and zero differential counters. Focused controls cover
+phase mask, Tower targeting, status metadata, preview, and unsupported callbacks.
+Independent search matches all 17 recorded decisions and visits 128/128 states
+with serial/parallel best equality. Other moon-phase status owners and target
+status-callback families remain outside this narrow support boundary.
+
 GarfieldBoxRandomCardPerTurn extension (2026-10-17): 387 archives
 (349 battles and 38 calibrations), 166/224 original relic owners (74.11%):
 150 full-battle owners, fifteen campaign-interface owners and one native no-op.
@@ -5058,4 +5070,36 @@ battle, 15 campaign and one native no-op owner.
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-garfield-box-random-card.mt2f
 dotnet run --project src/ModelChecks -c Release -- --original-garfield-box-only tests/fixtures/full-battle-original-garfield-box-random-card.mt2f
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-garfield-box-random-card.mt2f
+```
+
+### Original MoonPhaseAddArmorToSilent relic (schema 190)
+
+`full-battle-original-moon-phase-status-relic.mt2f` captures the unchanged
+`MoonPhaseAddArmorToSilent` owner: friendly Monsters, Tower targeting, Silent
+subtype, +10 Armor and the New-only mask. Three Full callbacks leave the complete
+state unchanged; three New callbacks apply Armor to both Silent witnesses across
+separate rooms. All six native callbacks match complete-state model replay, with
+six positive targets across three cross-room witnesses. Four controlled card
+actions play two native Silent units and advance the moon twice with original
+Fae Meddlers.
+
+The winning battle has 45 matched stages, 17 actions and five EndTurns, with
+zero capture failures, mismatches, unsupported transitions or pending records.
+Independent search matches all 17 recorded decisions, visits 128/128 states,
+replays three steps and preserves serial/parallel best equality with no
+unsupported attempts. Pure controls cover New/Full phases, target team/subtype,
+Pyre/dead/Untouchable/immunity/Purify exclusions, Armor stack metadata,
+preview behavior, rejected target callbacks and immutable branches. Evidence is
+limited to this exact owner and targets without status-application callbacks.
+
+The binary is 34,017 bytes with 5,272 unique nodes and SHA-256
+`6f8cf7873e739ec4189ca03c13db71db7f74f3919c7453191c164200e7356bb6`; it has no
+JSON companion. Inventory is 388 archives: 350 full battles and 38 component
+calibrations. Original relic evidence is 167/224 (74.55%): 151 battle, fifteen
+campaign and one native no-op owner.
+
+```powershell
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-moon-phase-status-relic.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-moon-phase-status-only tests/fixtures/full-battle-original-moon-phase-status-relic.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-moon-phase-status-relic.mt2f
 ```

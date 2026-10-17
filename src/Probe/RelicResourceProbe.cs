@@ -107,6 +107,7 @@ namespace MonsterTrain2Poju.Probe
             RelicUnitResourceRule? unitTrigger = null;
             RelicOpeningDrawRule? openingDraw = null;
             RelicPileStartTurnRule? pileStartTurn = null;
+            RelicMoonPhaseStatusRule? moonPhaseStatus = null;
             if (effect is RelicEffectDrawOnPreOpeningDraw)
             {
                 var upgradeData = data.GetParamCardUpgradeData(); CardUpgradeModifier? upgrade = null;
@@ -233,6 +234,15 @@ namespace MonsterTrain2Poju.Probe
                     throw new InvalidOperationException("Unexpected native end-of-turn conservation mode.");
                 amount = 0;
             }
+            else if (effect is RelicEffectAddStatusEffectOnMoonPhase)
+            {
+                SubtypeData? subtype = data.GetParamCharacterSubtype();
+                moonPhaseStatus = new RelicMoonPhaseStatusRule(data.GetParamSourceTeam().ToString(),
+                    data.GetTargetMode().ToString(), data.GetParamStatusEffects()
+                        .Select(status => BattleActionProbe.Status(status.statusId, status.count)).ToArray(),
+                    subtype == null || subtype.IsNone ? null : subtype.Key, data.GetParamBool(), data.GetParamInt2());
+                amount = data.GetParamInt();
+            }
             else if (effect is RelicEffectEnergyOnCardEarlyDiscard)
                 amount = data.GetParamInt();
             else if (effect is RelicEffectEnergyOnCorruptRestrictedPlayed)
@@ -245,7 +255,7 @@ namespace MonsterTrain2Poju.Probe
                 effect.CanApplyInPreviewMode, required?.GetID(), RelicCardModifierProbe.Conditions(effect), value, registration,
                 capacityValue, capacityRegistration, data.GetParamMinInt(),
                 effect is RelicEffectAddPermanentCorruptionStartOfCombat ? data.GetParamFloat() : 0,
-                generation, unitTrigger, openingDraw, pileStartTurn);
+                generation, unitTrigger, openingDraw, pileStartTurn, moonPhaseStatus);
         }
 
         internal static ResourceSnapshot Capture()

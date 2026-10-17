@@ -60,6 +60,7 @@ $fixtureNames = @('full-battle-steward-once.mt2f', 'full-battle-no-cards.mt2f', 
     'full-battle-original-room-entry-status-relics.mt2f',
     'full-battle-original-moon-phase-energy-relic.mt2f',
     'full-battle-original-moon-phase-heal-relic.mt2f',
+    'full-battle-original-moon-phase-status-relic.mt2f',
     'full-battle-original-card-attack-relic.mt2f',
     'full-battle-original-upgrade-count-relics.mt2f',
     'full-battle-original-healing-power-relic.mt2f',
@@ -1135,4 +1136,13 @@ $originalMoonPhaseHealFixtures = @($fixtures | Where-Object {
 foreach ($fixturePath in $originalMoonPhaseHealFixtures) {
     dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- --battle-search-only $fixturePath
     if ($LASTEXITCODE -ne 0) { throw "Original moon-phase healing relic search checks failed: $fixturePath" }
+}
+$originalMoonPhaseStatusFixtures = @($fixtures | Where-Object {
+    (Split-Path -Leaf $_) -eq 'full-battle-original-moon-phase-status-relic.mt2f'
+})
+foreach ($fixturePath in $originalMoonPhaseStatusFixtures) {
+    foreach ($mode in @('--original-moon-phase-status-only', '--battle-search-only')) {
+        dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- $mode $fixturePath
+        if ($LASTEXITCODE -ne 0) { throw "Original moon-phase status relic checks failed ($mode): $fixturePath" }
+    }
 }

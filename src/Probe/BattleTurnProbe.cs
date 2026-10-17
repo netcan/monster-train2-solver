@@ -59,7 +59,7 @@ namespace MonsterTrain2Poju.Probe
             if (player.GetHasMoonPhaseCardEffect() && !OriginalMoonPhaseEnergyRelicScenario.IsolatedTrackingEnabled &&
                 !OriginalUnitPhaseUpgradeScenario.Prepared &&
                 !MoonPhaseCardScenario.Enabled && !MoonPhaseAdvanceScenario.Enabled && !MoonPhaseCallbackScenario.Enabled &&
-                !OriginalMoonPhaseHealRelicScenario.Prepared)
+                !OriginalMoonPhaseHealRelicScenario.Prepared && !OriginalMoonPhaseStatusRelicScenario.Prepared)
                 interactions.Add("Moon phase unit/card effects");
             var streams = new List<BattleRngStream>();
             foreach (RngId id in Enum.GetValues(typeof(RngId)))

@@ -59,7 +59,8 @@ namespace MonsterTrain2Poju.Model
             }
             if (source.Context!.Relics?.Any(relic => relic.EffectTypes.Any(type =>
                     type.Contains("MoonPhase", StringComparison.Ordinal) &&
-                    type != RelicResourceModel.MoonPhaseEnergy && type != RelicMoonPhaseHealModel.Effect)) == true)
+                    type != RelicResourceModel.MoonPhaseEnergy && type != RelicMoonPhaseHealModel.Effect &&
+                    type != RelicMoonPhaseStatusModel.Effect)) == true)
                 return "Unmodeled moon-phase relic callback.";
             if (frame.MoonPhaseTrackingActive == true)
             {
@@ -70,6 +71,9 @@ namespace MonsterTrain2Poju.Model
                     phase = effect.Type == "SetMoonPhase" ? effect.Value : phase == 1 ? 2 : 1;
                     string? healError = RelicMoonPhaseHealModel.ValidateTransition(source, phase);
                     if (healError != null) return healError;
+                    string? statusError = RelicMoonPhaseStatusModel.ValidateTransition(source, phase,
+                        source.Rooms.Any(room => room.Preview), source.Rooms.Any(room => room.Deployment));
+                    if (statusError != null) return statusError;
                 }
             }
             if (source.Rooms.SelectMany(room => room.Units).Any(unit => !unit.IsPyre) &&
@@ -117,6 +121,10 @@ namespace MonsterTrain2Poju.Model
                 MoonPhaseHealResult heal = RelicMoonPhaseHealModel.Apply(state, phase);
                 if (!heal.Supported) return new MoonPhaseTransitionResult(null, heal.UnsupportedReason);
                 state = heal.State!;
+                RelicMoonPhaseStatusResult statuses = RelicMoonPhaseStatusModel.Apply(state, phase,
+                    state.Rooms.Any(room => room.Preview), state.Rooms.Any(room => room.Deployment));
+                if (!statuses.Supported) return new MoonPhaseTransitionResult(null, statuses.UnsupportedReason);
+                state = statuses.State!;
                 foreach (CombatTeam team in new[] { CombatTeam.Player, CombatTeam.Enemy })
                 {
                     var callbacks = new List<RoomCombatModel.QueuedCharacterTrigger>();

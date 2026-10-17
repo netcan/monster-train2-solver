@@ -17,14 +17,16 @@ Schema 8 retains the required card traits introduced in schema 6.
 Regenerate the checklist with `scripts/Get-RelicCoverageInventory.ps1 -Catalog
 <relic-catalog.mt2f> -OutputPath tests/fixtures/relic-inventory.tsv`. This verifies
 catalog identity, unique owner IDs, accepted table identities and source presence.
-Current checkpoint: 161 original owners accepted (145 native battle owners,
+Current checkpoint: 167 original owners accepted (151 native battle owners,
 fifteen actual campaign-interface owners and one explicit native no-op owner);
-63 remain pending. The latest accepted native battle owner is `PurgeToExhaust`:
-its unchanged ordered Spell/Equipment filters convert SelfPurge to Exhaust, six
-source/filter controls and 24 repeated native manager calls match, and a played
-Spell reaches Exhausted with native private trait state. The full battle and
-independent 128-state search pass. Campaign acceptance does not imply those
-effect classes are integrated into battle branch state.
+57 remain pending. The latest accepted native battle owner is
+`MoonPhaseAddArmorToSilent`: six Full/New callbacks match complete-state replay,
+with three New-phase cross-room witnesses applying 10 Armor to eligible Silent
+units. Its 45-stage winning battle and independent 128-state search pass with
+zero unsupported attempts. Support is limited to this unchanged owner and
+targets without status-application callbacks; other moon-phase status relics
+remain pending. Campaign acceptance does not imply those effect classes are
+integrated into battle branch state.
 
 Acceptance requires an unchanged original owner, actual eligible and control
 paths, exact model/native state and relevant ordering/callback checks. Battle

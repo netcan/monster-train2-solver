@@ -675,6 +675,18 @@ if (args.Length == 2 && args[0] == "--original-moon-phase-heal-only")
     Console.WriteLine($"NATIVE-MOON-PHASE-HEAL-FIXTURE bytes={new FileInfo(args[1]).Length} uniqueNodes={document.UniqueNodeCount}");
     return;
 }
+if (args.Length == 1 && args[0] == "--original-moon-phase-status-pure")
+{
+    OriginalMoonPhaseStatusChecks.Run();
+    return;
+}
+if (args.Length == 2 && args[0] == "--original-moon-phase-status-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    OriginalMoonPhaseStatusChecks.Native(fixture.RootElement);
+    Console.WriteLine($"NATIVE-FIXTURE-METADATA schema={fixture.RootElement.GetProperty("Schema").GetInt32()} bytes={new FileInfo(args[1]).Length} uniqueNodes={fixture.UniqueNodeCount}");
+    return;
+}
 if (args.Length == 2 && args[0] == "--original-upgrade-count-only")
 {
     using var document = ModelJson.ReadFixture(args[1]);
@@ -1428,6 +1440,7 @@ StatusUpgradeChecks.Run();
 OverhealChecks.Run();
 RoomCorruptionChecks.Run();
 MoonPhaseTransitionChecks.Run();
+OriginalMoonPhaseStatusChecks.Run();
 ScorchStatusChecks.Run();
 UnitAbilityChecks.Run();
 RelicChecks.Run();
@@ -1589,6 +1602,11 @@ foreach (string path in args.Where(path => path.Contains("original-moon-phase-he
 {
     using var document = ModelJson.ReadFixture(path);
     OriginalMoonPhaseHealRelicChecks.Native(document.RootElement);
+}
+foreach (string path in args.Where(path => path.Contains("original-moon-phase-status-relic", StringComparison.OrdinalIgnoreCase)))
+{
+    using var document = ModelJson.ReadFixture(path);
+    OriginalMoonPhaseStatusChecks.Native(document.RootElement);
 }
 foreach (string path in args.Where(path => path.Contains("card-upgrade-mask-calibration", StringComparison.OrdinalIgnoreCase)))
     CardUpgradeMaskChecks.Native(path);

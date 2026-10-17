@@ -97,7 +97,7 @@
 "LessDeployEmberMoreOtherEmber"	"7bc61ac1-f295-4bf5-a978-1c538c8f2e51"	"accepted-native-battle"	"RelicEffectModifyEnergyDuringDeployment,RelicEffectModifyEnergy"	""
 "BalatroEventChicot"	"92d66578-b148-49f8-9880-edb67f8b18de"	"accepted-native-battle"	"RelicEffectAddStatusEffectOnSpawn"	""
 "DamageOnGoingDownFloor"	"19147050-9859-4cf1-b826-f258f6c48c42"	"accepted-native-battle"	"RelicEffectAddTrigger"	""
-"MoonPhaseAddArmorToSilent"	"e013b17d-753b-47b8-a837-02af85addb4b"	"pending"	"RelicEffectAddStatusEffectOnMoonPhase"	""
+"MoonPhaseAddArmorToSilent"	"e013b17d-753b-47b8-a837-02af85addb4b"	"accepted-native-battle"	"RelicEffectAddStatusEffectOnMoonPhase"	""
 "SeleneandSilentBuff"	"e54e6cb7-f424-44be-a7d2-869c6fb7bb15"	"accepted-native-battle"	"RelicEffectAddRemoveTempUpgradeOnUnitTrigger,RelicEffectAddRemoveTempUpgradeOnUnitTrigger,RelicEffectAddRemoveTempUpgradeOnUnitTrigger,RelicEffectAddRemoveTempUpgradeOnUnitTrigger"	""
 "PyreHeartSon"	"8503360a-26b2-4b71-9334-4c6014ad397f"	"accepted-native-battle"	"RelicEffectAddTempUpgrade"	""
 "Inkbound_NimsOath"	"727e69a6-3a8c-4029-895c-99e9dac0bc0a"	"pending"	"RelicEffectAddEffectStartOfTurn"	""

@@ -252,6 +252,7 @@ param(
     [switch] $OriginalRoomEntryStatusRelics,
     [switch] $OriginalMoonPhaseEnergyRelic,
     [switch] $OriginalMoonPhaseHealRelic,
+    [switch] $OriginalMoonPhaseStatusRelic,
     [switch] $OriginalCardAttackRelic,
     [switch] $OriginalPurgeToExhaustRelic,
     [switch] $OriginalUpgradeCountRelics,
@@ -416,6 +417,7 @@ if ($UnplayedCardEffects) { $BranchCardMasks = $true; $Policy = 'units-spells-an
 if ($OriginalRoomEntryStatusRelics) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalMoonPhaseEnergyRelic) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalMoonPhaseHealRelic) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
+if ($OriginalMoonPhaseStatusRelic) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalCardAttackRelic) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalUpgradeCountRelics) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalHealingPowerRelic) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
@@ -855,6 +857,7 @@ if ($UnplayedCardEffects) { $environment['MT2_PROBE_MODIFIERS'] = 'unplayed-card
 if ($OriginalRoomEntryStatusRelics) { $environment['MT2_PROBE_MODIFIERS'] = 'original-room-entry-status-relics' }
 if ($OriginalMoonPhaseEnergyRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-moon-phase-energy-relic' }
 if ($OriginalMoonPhaseHealRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-moon-phase-heal-relic' }
+if ($OriginalMoonPhaseStatusRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-moon-phase-status-relic' }
 if ($OriginalCardAttackRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-card-attack-relic' }
 if ($OriginalUpgradeCountRelics) { $environment['MT2_PROBE_MODIFIERS'] = 'original-upgrade-count-relics' }
 if ($OriginalHealingPowerRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-healing-power-relic' }
@@ -1466,6 +1469,21 @@ if ($OriginalMoonPhaseHealRelic) {
         @($moonHealCallbacks | Where-Object { $_.Phase -eq 'Full' }).Count -eq 0 -or
         @($moonHealCallbacks | Where-Object { $_.Phase -eq 'New' }).Count -eq 0) {
         throw 'Original MooncycleRestoreFriendlyHealth lacks both phase callbacks or its unchanged payload witness.'
+    }
+}
+if ($OriginalMoonPhaseStatusRelic) {
+    $moonStatusCallbacks = @($trace.RelicMoonPhaseStatusOperations | Where-Object { $_.OwnerDataId -eq 'e013b17d-753b-47b8-a837-02af85addb4b' })
+    if ($trace.Schema -ne 190 -or $trace.ModifierScenario -ne 'original-moon-phase-status-relic' -or
+        -not (Select-String -LiteralPath $unityLog -Pattern 'ORIGINAL-MOON-PHASE-STATUS-RELIC-PREPARED unchanged owner' -Quiet) -or
+        @($trace.Actions).Count -lt 4 -or $moonStatusCallbacks.Count -lt 2 -or
+        @($moonStatusCallbacks | Where-Object { $_.EffectIndex -ne 0 -or $_.SourceTeam -ne 'Monsters' -or
+            $_.TargetMode -ne 'Tower' -or $_.RequiredSubtype -ne 'SubtypesData_Silent' -or
+            $_.DoNotAnimateCamera -ne $true -or $_.MoonPhaseMask -ne 1 -or
+            $_.StatusIds.Count -ne 1 -or $_.StatusIds[0] -ne 'armor' -or
+            $_.StatusStacks.Count -ne 1 -or $_.StatusStacks[0] -ne 10 -or $_.After -eq $null }).Count -gt 0 -or
+        @($moonStatusCallbacks | Where-Object { $_.Phase -eq 'Full' }).Count -eq 0 -or
+        @($moonStatusCallbacks | Where-Object { $_.Phase -eq 'New' }).Count -eq 0) {
+        throw 'Original MoonPhaseAddArmorToSilent lacks both Full/New callback witnesses or its unchanged owner payload.'
     }
 }
 if ($OriginalUpgradeCountRelics) {
