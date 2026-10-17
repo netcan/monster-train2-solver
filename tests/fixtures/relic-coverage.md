@@ -1,8 +1,8 @@
 # Original relic coverage evidence
 
-As of 2026-10-17, **170 distinct original collectable relics / 224 catalog entries
-(75.89%)** have accepted native evidence: 154 have full-battle effect evidence,
-fifteen have campaign consumer interfaces validated, and one is an explicit
+As of 2026-10-17, **172 distinct original collectable relics / 224 catalog entries
+(76.79%)** have accepted native evidence: 155 have full-battle effect evidence,
+sixteen have campaign consumer interfaces validated, and one is an explicit
 native no-op with seeded baseline equivalence. Except for that no-op, this counts
 unchanged relic definitions whose effects actually ran, including original filters and
 conditions. Test cards, unit triggers and carrier subtypes may be authored to
@@ -17,6 +17,11 @@ Rage and Frostbite consumers. All four catalog owners of
 `RelicEffectModifyStatusMagnitude` now have accepted evidence. Unknown status
 families and other effects on the remaining owners still require modeling and
 native proof.
+`UpgradedDrafts` now has an unchanged-owner native manager probe on a spell,
+covering the ordered 50-position enhancer pool, 85 exact native filter outcomes,
+three supported selected pool positions, complete card-state application and
+Rewards RNG. External-interaction or replacement upgrades, other target cards,
+preview execution and the later draft UI choice/grant sequence are not claimed.
 `AddSnackOnKill` now has three native enemy-Hero OnDeath witnesses that add six
 cards from its exact 19-entry weighted filtered pool, plus 312 gated callbacks.
 The 55-stage replay and one model-selected action have zero differential

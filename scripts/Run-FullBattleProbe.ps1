@@ -434,6 +434,7 @@ if ($OriginalConduitRelics) { $BranchCardMasks = $true; $Policy = 'units-spells-
 if ($OriginalEquipmentGrowthRelics) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalHealthChoiceRelic) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalAfterDrawGenerationRelics) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
+if ($CampaignDraftCalibration) { $BranchCardMasks = $true }
 if ($OriginalAddSnackOnKill) {
     $BranchCardMasks = $true
     if (-not $PSBoundParameters.ContainsKey('Policy')) { $Policy = 'units-spells-and-junk' }
@@ -1874,11 +1875,13 @@ if ($CampaignDraftCalibration) {
     try {
         $draftRoot = $draftDocument.RootElement
         if ($draftRoot.GetProperty('Schema').GetInt32() -ne 1 -or
-            $draftRoot.GetProperty('Owners').GetArrayLength() -ne 3 -or
+            $draftRoot.GetProperty('Owners').GetArrayLength() -ne 4 -or
             -not $draftRoot.GetProperty('Before').ContentEquals($draftRoot.GetProperty('After')) -or
             $draftRoot.GetProperty('Drafts').GetArrayLength() -ne 840 -or
-            $draftRoot.GetProperty('Health').GetArrayLength() -ne 3) {
-            throw 'Campaign draft original-owner matrix or recorded state restoration is incomplete.'
+            $draftRoot.GetProperty('Health').GetArrayLength() -ne 3 -or
+            $draftRoot.GetProperty('StartingUpgrades').GetProperty('Pool').GetArrayLength() -eq 0 -or
+            $draftRoot.GetProperty('StartingUpgrades').GetProperty('Rows').GetArrayLength() -lt 4) {
+            throw 'Campaign draft original-owner matrix, UpgradedDrafts evidence or recorded state restoration is incomplete.'
         }
     } finally { $draftDocument.Dispose() }
 }

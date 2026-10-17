@@ -75,7 +75,7 @@
 "ApplyUnitUpgradeWhenRich"	"07bdefdb-03b8-4159-b74b-be85f68c4c56"	"accepted-native-campaign"	"RelicEffectModifyTrialGoldRewards"	""
 "OneEmberFirstTurn_DH"	"c5a68f6d-671d-4db3-999f-120b5febf41b"	"accepted-native-battle"	"RelicEffectModifyEnergyStartOfCombat"	""
 "AddConduitOnSpawn"	"357c7265-74d0-4567-b793-d2fbac464d82"	"accepted-native-battle"	"RelicEffectAddStatusEffectOnSpawn"	""
-"UpgradedDrafts"	"9e0e5d4e-6d16-43f1-8cd4-cc4c2b431afd"	"pending"	"RelicEffectAddStartingUpgradeToCardDrafts"	""
+"UpgradedDrafts"	"9e0e5d4e-6d16-43f1-8cd4-cc4c2b431afd"	"accepted-native-campaign"	"RelicEffectAddStartingUpgradeToCardDrafts"	""
 "2ChargesOnCardConsumed"	"217d553b-cddf-4a8c-a4c9-cfdb3c99389c"	"pending"	"RelicEffectModifyCorruptionOnCardPlayed"	""
 "ChanceForSpellWeakness"	"98989cbb-c729-4f87-8240-08f448db96d8"	"pending"	"RelicEffectChanceAddEffectAfterSpawn"	""
 "PyrePiping"	"44aae53e-ee70-4b2c-8d25-a02f977349ee"	"accepted-native-battle"	"RelicEffectAdditionalDrawOnTowerFullHealth"	""

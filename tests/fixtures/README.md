@@ -1,5 +1,19 @@
 # Native regression fixtures
 
+UpgradedDrafts extension (2026-10-17): 392 archives (354 battles and 38
+calibrations), 172/224 original relic owners (76.79%): 155 full-battle owners,
+sixteen campaign-interface owners and one native no-op. The unchanged owner is
+exercised through the native RelicManager on a spell against its ordered 50-entry
+EnhancerPool, preserving duplicate pool positions as RNG weights. All 85 native
+filter results (39 rejected) match the model; three distinct supported pool
+positions match the complete resulting card state and exact Rewards RNG. The
+probe also checks the owner-absent and non-random-candidate paths and restores
+recorded save state, frame and RNG. Upgrades with external interactions or
+replacements, other card definitions, preview execution and the later UI choice/
+grant workflow remain outside this focused boundary. The 13,082-byte archive has
+2,055 unique nodes and SHA-256
+`308c1560ebd976a04b35c46e3e25733c589d6d07bd2ce798afc8a6e63e8ddce7`.
+
 BalatroEventYorick extension (2026-10-17): 392 archives (354 battles and 38
 calibrations), 171/224 original relic owners (76.34%): 155 full-battle owners,
 fifteen campaign-interface owners and one native no-op. The unchanged one-effect
