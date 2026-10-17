@@ -1,7 +1,7 @@
 # Original relic coverage evidence
 
-As of 2026-10-17, **176 distinct original collectable relics / 224 catalog entries
-(78.57%)** have accepted native evidence: 159 have full-battle effect evidence,
+As of 2026-10-17, **177 distinct original collectable relics / 224 catalog entries
+(79.02%)** have accepted native evidence: 160 have full-battle effect evidence,
 sixteen have campaign consumer interfaces validated, and one is an explicit
 native no-op with seeded baseline equivalence. Except for that no-op, this counts
 unchanged relic definitions whose effects actually ran, including original filters and
@@ -495,6 +495,7 @@ archives contain these observed battle sizes:
 | [ChanceForSpellWeakness](full-battle-original-chance-for-spell-weakness.mt2f) | 196 | 5 | 7 | 61 | Seven eligible 50% rolls (four hits/three misses), four applications and 496 gated tests |
 | [SummonWithAvarice](full-battle-original-summon-with-avarice.mt2f) | 197 | 5 | 7 | 61 | Five eligible player births gain two Avarice; ten combat stages isolate positive native gold |
 | [ChanceToCleanse](full-battle-original-chance-to-cleanse.mt2f) | 198 | 5 | 7 | 63 | Seven eligible 50% rolls (four hits/three misses), four applications and 510 gated tests |
+| [ExtraFeedTrigger](full-battle-original-extra-feed-trigger.mt2f) | 199 | 5 | 7 | 61 | Original Monsters OnFeed +1; live Pyre native query 2 vs OnDeath control 1 |
 
 The checks that enforce these observations are
 [TriggerCountChecks.Native](../../src/ModelChecks/TriggerCountChecks.cs),
@@ -525,6 +526,9 @@ across all recorded decisions, and [RelicCardAttackChecks.Native](../../src/Mode
 checking the two unchanged attack payloads, ordered subtype matches and native
 temporary offsets. Its pure checks also cover cardless births and reject dynamic
 attack scaling, which is not included in this original-owner evidence.
+The native `ExtraFeedTrigger` owner, registration cache, direct Pyre count
+queries and shared count model are checked by
+[OriginalExtraFeedTriggerChecks.Native](../../src/ModelChecks/OriginalExtraFeedTriggerChecks.cs).
 The original BrokenRail payload and its three-point direct-monster forge
 transition are checked by [OriginalBrokenRailChecks.Native](../../src/ModelChecks/OriginalBrokenRailChecks.cs).
 The original status-removal callback and native status transition are checked by
@@ -1281,4 +1285,36 @@ battle, 16 campaign and one native no-op owner.
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-summon-with-avarice.mt2f
 dotnet run --project src/ModelChecks -c Release -- --original-summon-with-avarice-only tests/fixtures/full-battle-original-summon-with-avarice.mt2f
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-summon-with-avarice.mt2f
+```
+
+## ExtraFeedTrigger
+
+| `ExtraFeedTrigger` | `b6613fe4-13c6-4462-8a0b-9af42850a851` | Native acquired owner and exact trigger-count payload |
+
+The schema-199 archive captures the unchanged `RelicEffectModifyTriggerCount`
+owner: Monsters team, original None subtype, `OnFeed` +1, no all-trigger mode,
+Hero eligibility, excluded card triggers or conditions. On deployment turn,
+the live Monsters Pyre's native `GetTriggerFireCount` returns 2 for `OnFeed`
+and 1 for `OnDeath`; the captured registration cache contains only the exact
+`OnFeed` modifier. Focused model controls verify the Monsters positive, enemy,
+other-trigger and `NoCountModifiersAllowed` paths, plus immutable parallel
+queries.
+
+No natural `OnFeed` dispatch occurred in this battle, so the evidence does not
+claim a feed callback or its downstream effects were exercised. It combines
+the direct native count query with the exact cache captured in battle contexts,
+independent replay of all 61 native stages, and search across all five
+decisions. Search visits 128/128 states with serial/parallel best equality and
+replays four steps. The battle won with zero capture failures, mismatches,
+unsupported transitions or pending records. The 44,070-byte archive has 5,640
+unique nodes and SHA-256
+`3cf10ba1b2ecaee524e957bdd7821e5fd247ab6b33f37a80029fc3d572ccf8b0`; no JSON
+companion is tracked. Inventory is 397 archives: 359 full battles and 38
+component calibrations. Original relic evidence is 177/224 (79.02%): 160 battle,
+16 campaign and one native no-op owner.
+
+```powershell
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-extra-feed-trigger.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-extra-feed-trigger-only tests/fixtures/full-battle-original-extra-feed-trigger.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-extra-feed-trigger.mt2f
 ```

@@ -660,6 +660,17 @@ if (args.Length == 1 && args[0] == "--original-chance-to-cleanse-model-only")
     OriginalChanceToCleanseChecks.Run();
     return;
 }
+if (args.Length == 2 && args[0] == "--original-extra-feed-trigger-only")
+{
+    using var document = ModelJson.ReadFixture(args[1]);
+    OriginalExtraFeedTriggerChecks.Native(document.RootElement);
+    return;
+}
+if (args.Length == 1 && args[0] == "--original-extra-feed-trigger-model-only")
+{
+    OriginalExtraFeedTriggerChecks.Run();
+    return;
+}
 if (args.Length == 2 && args[0] == "--original-summon-with-avarice-only")
 {
     using var document = ModelJson.ReadFixture(args[1]);

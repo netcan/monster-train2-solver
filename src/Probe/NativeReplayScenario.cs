@@ -266,6 +266,8 @@ namespace MonsterTrain2Poju.Probe
                         OriginalChanceForSpellWeaknessScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalChanceToCleanseScenario.Enabled && !OriginalChanceToCleanseScenario.Acquired)
                         OriginalChanceToCleanseScenario.AcquireBeforeBattle(managers!, log);
+                    if (fullBattle && OriginalExtraFeedTriggerScenario.Enabled && !OriginalExtraFeedTriggerScenario.Acquired)
+                        OriginalExtraFeedTriggerScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalSummonWithAvariceScenario.Enabled && !OriginalSummonWithAvariceScenario.Acquired)
                         OriginalSummonWithAvariceScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalExtractForEmberAndEchosScenario.Enabled && !OriginalExtractForEmberAndEchosScenario.Acquired)
@@ -568,6 +570,13 @@ namespace MonsterTrain2Poju.Probe
             {
                 if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("ChanceToCleanse fixture must start on deployment turn.");
                 OriginalChanceToCleanseScenario.Prepare(managers, log);
+                numericModifiersPrepared = true;
+                return;
+            }
+            if (fullBattle && !numericModifiersPrepared && OriginalExtraFeedTriggerScenario.Enabled)
+            {
+                if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("ExtraFeedTrigger fixture must start on deployment turn.");
+                OriginalExtraFeedTriggerScenario.Prepare(managers, log);
                 numericModifiersPrepared = true;
                 return;
             }
@@ -1466,6 +1475,8 @@ namespace MonsterTrain2Poju.Probe
                     OriginalChanceForSpellWeaknessScenario.Prepare(managers, log);
                 if (fullBattle && OriginalChanceToCleanseScenario.Enabled && !OriginalChanceToCleanseScenario.Prepared)
                     OriginalChanceToCleanseScenario.Prepare(managers, log);
+                if (fullBattle && OriginalExtraFeedTriggerScenario.Enabled && !OriginalExtraFeedTriggerScenario.Prepared)
+                    OriginalExtraFeedTriggerScenario.Prepare(managers, log);
                 if (fullBattle && OriginalSummonWithAvariceScenario.Enabled && !OriginalSummonWithAvariceScenario.Prepared)
                     OriginalSummonWithAvariceScenario.Prepare(managers, log);
                 if (fullBattle && OriginalExtractForEmberAndEchosScenario.Enabled && !OriginalExtractForEmberAndEchosScenario.Prepared)

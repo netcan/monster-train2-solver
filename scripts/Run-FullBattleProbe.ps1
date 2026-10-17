@@ -244,6 +244,7 @@ param(
     [switch] $OriginalTwoChargesOnCardConsumed,
     [switch] $OriginalChanceForSpellWeakness,
     [switch] $OriginalChanceToCleanse,
+    [switch] $OriginalExtraFeedTrigger,
     [switch] $OriginalSummonWithAvarice,
     [switch] $OriginalCardDrawOnCardPlay,
     [switch] $OriginalCarriageJack,
@@ -411,6 +412,7 @@ if ($OriginalCardPlayMagicPower) { $BranchCardMasks = $true; $Policy = 'units-an
 if ($OriginalTwoChargesOnCardConsumed) { $BranchCardMasks = $true; $Policy = 'units-and-junk' }
 if ($OriginalChanceForSpellWeakness) { $BranchCardMasks = $true; $Policy = 'units-and-junk' }
 if ($OriginalChanceToCleanse) { $BranchCardMasks = $true; $Policy = 'units-and-junk' }
+if ($OriginalExtraFeedTrigger) { $BranchCardMasks = $true; $Policy = 'units-and-junk' }
 if ($OriginalSummonWithAvarice) { $BranchCardMasks = $true; $Policy = 'units-and-junk' }
 if ($OriginalCheaperSpellCost) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalCardDrawOnCardPlay) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
@@ -873,6 +875,7 @@ if ($OriginalCardPlayMagicPower) { $environment['MT2_PROBE_MODIFIERS'] = 'origin
 if ($OriginalTwoChargesOnCardConsumed) { $environment['MT2_PROBE_MODIFIERS'] = 'original-two-charges-on-card-consumed' }
 if ($OriginalChanceForSpellWeakness) { $environment['MT2_PROBE_MODIFIERS'] = 'original-chance-for-spell-weakness' }
 if ($OriginalChanceToCleanse) { $environment['MT2_PROBE_MODIFIERS'] = 'original-chance-to-cleanse' }
+if ($OriginalExtraFeedTrigger) { $environment['MT2_PROBE_MODIFIERS'] = 'original-extra-feed-trigger' }
 if ($OriginalSummonWithAvarice) { $environment['MT2_PROBE_MODIFIERS'] = 'original-summon-with-avarice' }
 if ($OriginalCheaperSpellCost) { $environment['MT2_PROBE_MODIFIERS'] = 'original-reduce-spell-cost-cheaper' }
 if ($OriginalNefariousOverflow) { $environment['MT2_PROBE_MODIFIERS'] = 'original-nefarious-overflow' }
@@ -1425,6 +1428,18 @@ if ($OriginalChanceToCleanse -and (
     @($trace.RelicAfterSpawnChanceTests | Where-Object { $_.Trigger -eq 'AfterSpawnEnchant' -and $_.Team -eq 'Heroes' -and -not $_.IsDestroyed -and -not $_.Untouchable -and -not $_.Result }).Count -eq 0 -or
     @($trace.RelicAfterSpawnChanceApplications | Where-Object { -not $_.Completed }).Count -gt 0)) {
     throw 'ChanceToCleanse lacks its unchanged owner, natural 50% hit/miss rolls or completed native applications.'
+}
+if ($OriginalExtraFeedTrigger -and (
+    $trace.Schema -ne 199 -or
+    -not $trace.OriginalExtraFeedTriggerPrepared -or
+    $trace.ModifierScenario -ne 'original-extra-feed-trigger' -or
+    -not (Select-String -LiteralPath $unityLog -Pattern 'ORIGINAL-EXTRA-FEED-TRIGGER-ACQUIRED unchanged owner' -Quiet) -or
+    -not (Select-String -LiteralPath $unityLog -Pattern 'ORIGINAL-EXTRA-FEED-TRIGGER-PREPARED owner unchanged' -Quiet) -or
+    $trace.OriginalExtraFeedTriggerEvidence.PlayerUnitId -eq 0 -or
+    $trace.OriginalExtraFeedTriggerEvidence.PlayerOnFeedCount -ne 2 -or
+    $trace.OriginalExtraFeedTriggerEvidence.PlayerOnDeathCount -ne 1
+)) {
+    throw 'ExtraFeedTrigger lacks its unchanged owner or native OnFeed/OnDeath count controls.'
 }
 if ($OriginalSummonWithAvarice -and (
     $trace.Schema -ne 197 -or

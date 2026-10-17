@@ -55,6 +55,7 @@ $fixtureNames = @('full-battle-steward-once.mt2f', 'full-battle-no-cards.mt2f', 
     'full-battle-original-two-charges-on-card-consumed.mt2f',
     'full-battle-original-chance-for-spell-weakness.mt2f',
     'full-battle-original-chance-to-cleanse.mt2f',
+    'full-battle-original-extra-feed-trigger.mt2f',
     'full-battle-original-summon-with-avarice.mt2f',
     'full-battle-original-card-draw-on-card-play.mt2f',
     'full-battle-original-carriage-jack.mt2f',
@@ -931,6 +932,14 @@ foreach ($fixturePath in @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 
     }
     dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- --original-chance-to-cleanse-model-only
     if ($LASTEXITCODE -ne 0) { throw "Original ChanceToCleanse focused model checks failed: $fixturePath" }
+}
+foreach ($fixturePath in @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 'full-battle-original-extra-feed-trigger.mt2f' })) {
+    foreach ($mode in @('--original-extra-feed-trigger-only', '--battle-search-only')) {
+        dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- $mode $fixturePath
+        if ($LASTEXITCODE -ne 0) { throw "Original ExtraFeedTrigger checks failed ($mode): $fixturePath" }
+    }
+    dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- --original-extra-feed-trigger-model-only
+    if ($LASTEXITCODE -ne 0) { throw "Original ExtraFeedTrigger focused model checks failed: $fixturePath" }
 }
 foreach ($fixturePath in @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 'full-battle-original-summon-with-avarice.mt2f' })) {
     foreach ($mode in @('--original-summon-with-avarice-only', '--battle-search-only')) {
