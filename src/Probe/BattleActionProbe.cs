@@ -221,7 +221,8 @@ namespace MonsterTrain2Poju.Probe
                 CardData? primarySource = effect.GetParamBool() ? fallback : data;
                 if (unit != null)
                     template = SpawnTemplate(unit, primarySource?.GetSpawnCharacterData() == null || primarySource.GetSpawnCharacterData() == unit, interactions);
-                kind = "SpawnMonster"; destination = "Standby";
+                kind = "SpawnMonster";
+                destination = selfPurge ? "Purged" : data.GetCardType() == CardType.Monster ? "Standby" : "Discard";
                 if (effect.GetParamInt() > 1 || effect.GetParamCardUpgradeData() != null || effect.GetParamBool() || effect.GetParamAdditionalCharacterData() != null || pool.Length > 0)
                 {
                     CardUpgradeModifier? upgrade = null;

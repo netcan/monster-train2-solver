@@ -219,6 +219,11 @@ namespace MonsterTrain2Poju.Model
             CanAttack, IsPyre, EndsBattleOnDeath, Statuses, Triggers, SpawnerCardId, Size, StatusImmunities, Subtypes,
             Modifiers, IsBoss, LastAttackerId, StatusRegistry, EquipmentCards, NextTriggerId, Ability, StatusDictionary,
             AbilityRules, HordeDefinition, IsSpawning, SacrificeCardId, DeathState, BumpRules);
+        internal CombatUnit WithHealthAndMaxHealth(int health, int maxHealth) => new CombatUnit(Id, AssetKey, Team,
+            BaseAttack, health, maxHealth, CanAttack, IsPyre, EndsBattleOnDeath, Statuses, Triggers, SpawnerCardId,
+            Size, StatusImmunities, Subtypes, Modifiers, IsBoss, LastAttackerId, StatusRegistry, EquipmentCards,
+            NextTriggerId, Ability, StatusDictionary, AbilityRules, HordeDefinition, IsSpawning, SacrificeCardId,
+            DeathState, BumpRules);
         internal CombatUnit WithSacrifice(int cardId) => new CombatUnit(Id, AssetKey, Team, BaseAttack, Health, MaxHealth,
             CanAttack, IsPyre, EndsBattleOnDeath, Statuses, Triggers, SpawnerCardId, Size, StatusImmunities, Subtypes,
             Modifiers, IsBoss, LastAttackerId, StatusRegistry, EquipmentCards, NextTriggerId, Ability, StatusDictionary,

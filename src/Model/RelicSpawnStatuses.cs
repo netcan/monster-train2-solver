@@ -131,7 +131,7 @@ namespace MonsterTrain2Poju.Model
             if (error != null) return Fail(error);
             if (source.Context?.Relics == null || !source.Context.Relics.Any(relic => relic.SpawnStatuses?.Count > 0 ||
                 relic.CardModifiers?.Count > 0 || relic.CardAttackModifiers?.Count > 0 || relic.TriggerAdditions?.Any(rule => rule.Triggers.Count > 0) == true ||
-                relic.CardPlayMagicPowerModifiers?.Count > 0 || relic.CardDrawOnCardPlayModifiers?.Count > 0))
+                relic.CardPlayMagicPowerModifiers?.Count > 0 || relic.CardDrawOnCardPlayModifiers?.Count > 0 || relic.CardHealthModifiers?.Count > 0))
                 return new RoomCombatResult(source, RoomOutcome.Exchanged, 0, new List<CombatEvent>(), pendingCallbacks: prior);
             if (!source.Units.Any(unit => unit.Id == unitId) || fromCardId < 0 ||
                 fromCardId > 0 && source.Context.FindCard(fromCardId) == null) return Fail("Missing native relic birth references.");
@@ -176,6 +176,20 @@ namespace MonsterTrain2Poju.Model
                             relic.TriggerAdditions!.Single(item => item.EffectIndex == effectIndex));
                         if (!applied.Supported) return applied;
                         state = applied.State!; callbacks.AddRange(applied.PendingCallbacks); events.AddRange(applied.Events);
+                        if (!onlyCovenants && !DrainYield()) return failed!;
+                        continue;
+                    }
+                    if (relic.EffectTypes[effectIndex] == RelicModel.ModifyCharacterMaxHealthPerRarityType ||
+                        relic.EffectTypes[effectIndex] == RelicModel.ModifyCharacterMaxHealthPerRarityTypeTrigger)
+                    {
+                        RelicCardHealthModifier effect = relic.CardHealthModifiers!.Single(item => item.EffectIndex == effectIndex);
+                        CombatUnit? healthActor = state.Units.FirstOrDefault(unit => unit.Id == unitId);
+                        if (healthActor == null) return Fail("Triboulet birth callback lost its captured unit.");
+                        if (!RelicRarityHealthModel.Applies(healthActor, fromCardId, effect)) continue;
+                        if (!onlyCovenants && !DrainYield()) return failed!;
+                        if (!RelicRarityHealthModel.TryApply(state, unitId, fromCardId, effect,
+                            out RoomCombatState healthState, out string? healthError)) return Fail(healthError!);
+                        state = healthState;
                         if (!onlyCovenants && !DrainYield()) return failed!;
                         continue;
                     }

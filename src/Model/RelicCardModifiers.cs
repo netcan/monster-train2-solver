@@ -13,14 +13,20 @@ namespace MonsterTrain2Poju.Model
         public int HealthMultiplier { get; }
         public string CardType { get; }
         public bool MultiplyByUpgradeCount { get; }
+        public string EffectType { get; }
+        public string CardRarityType { get; }
+        public string SourceTeam { get; }
+        public string Trigger { get; }
         public IReadOnlyList<RelicConditionState> Conditions { get; }
         public int ConditionCount { get; }
         public RelicCardHealthModifier(int effectIndex, string characterName, string characterSubtypeKey, int healthModifier,
             int healthMultiplier, string cardType, bool multiplyByUpgradeCount,
-            IReadOnlyList<RelicConditionState>? conditions = null, int conditionCount = 0)
+            IReadOnlyList<RelicConditionState>? conditions = null, int conditionCount = 0,
+            string effectType = RelicModel.ModifyCardHealth, string cardRarityType = "", string sourceTeam = "", string trigger = "")
         { EffectIndex = effectIndex; CharacterName = characterName; CharacterSubtypeKey = characterSubtypeKey;
             HealthModifier = healthModifier; HealthMultiplier = healthMultiplier; CardType = cardType;
-            MultiplyByUpgradeCount = multiplyByUpgradeCount;
+            MultiplyByUpgradeCount = multiplyByUpgradeCount; EffectType = effectType; CardRarityType = cardRarityType;
+            SourceTeam = sourceTeam; Trigger = trigger;
             Conditions = Array.AsReadOnly((conditions ?? Array.Empty<RelicConditionState>()).ToArray());
             ConditionCount = conditions?.Count ?? conditionCount; }
     }
@@ -376,11 +382,11 @@ namespace MonsterTrain2Poju.Model
                         dispatches.Add(new RelicCardModifierDispatch(relicIndex, effectIndex, returned, false, filters));
                         continue;
                     }
-                    if (type == RelicModel.ModifyCardHealth)
+                    if (type == RelicModel.ModifyCardHealth || type == RelicModel.ModifyCardHealthPerRarityType)
                     {
                         if (!healthEffects.TryGetValue(effectIndex, out RelicCardHealthModifier? healthEffect))
                             return Fail("Missing ordered relic card-health definition.");
-                        card = RelicCardHealthModel.Apply(card, healthEffect!, out bool returned, out error)!;
+                        card = RelicCardHealthModel.Apply(card, healthEffect!, context, out bool returned, out error)!;
                         if (card == null) return Fail(error!);
                         dispatches.Add(new RelicCardModifierDispatch(relicIndex, healthEffect!.EffectIndex, returned,
                             false, Array.Empty<RelicCardFilterResult>()));
@@ -611,16 +617,38 @@ namespace MonsterTrain2Poju.Model
 
     internal static class RelicCardHealthModel
     {
+        private static readonly string[] TribouletEffects = {
+            RelicModel.ModifyCardHealthPerRarityType,
+            RelicModel.ModifyCharacterMaxHealthPerRarityType,
+            RelicModel.ModifyCharacterMaxHealthPerRarityTypeTrigger
+        };
+
         internal static string? Validate(CombatRelicState relic)
         {
             var indices = relic.EffectTypes.Select((type, index) => (type, index))
-                .Where(item => item.type == RelicModel.ModifyCardHealth).Select(item => item.index).ToArray();
+                .Where(item => item.type == RelicModel.ModifyCardHealth || TribouletEffects.Contains(item.type, StringComparer.Ordinal))
+                .Select(item => item.index).ToArray();
             if (indices.Length == 0) return relic.CardHealthModifiers?.Count > 0
                 ? "Unexpected relic card-health definitions." : null;
             if (relic.CardHealthModifiers == null || !indices.SequenceEqual(relic.CardHealthModifiers.Select(effect => effect.EffectIndex)))
                 return "Missing ordered native relic card-health definitions.";
+            bool hasTribouletEffect = relic.EffectTypes.Any(type => TribouletEffects.Contains(type, StringComparer.Ordinal));
+            if (hasTribouletEffect)
+            {
+                if (relic.DataId != "dfe0d28c-ff6a-4a8b-8290-aefb32d0c1d6" || relic.AssetKey != "BalatroEventTriboulet" ||
+                    !relic.EffectTypes.SequenceEqual(TribouletEffects, StringComparer.Ordinal) || relic.CardHealthModifiers.Count != 3)
+                    return "Per-rarity character health effects are modeled only for the exact Triboulet owner.";
+                RelicCardHealthModifier[] effects = relic.CardHealthModifiers.ToArray();
+                if (!Plain(effects[0], RelicModel.ModifyCardHealthPerRarityType, 0, "Monster", 3, "Rare", "", "") ||
+                    !Plain(effects[1], RelicModel.ModifyCharacterMaxHealthPerRarityType, 1, "", 2, "Rare", "Monsters", "") ||
+                    !Plain(effects[2], RelicModel.ModifyCharacterMaxHealthPerRarityTypeTrigger, 2, "", 2, "Rare", "Monsters", "OnSpawnNotFromCard"))
+                    return "Triboulet's ordered rarity-health payload changed.";
+                return null;
+            }
             foreach (RelicCardHealthModifier effect in relic.CardHealthModifiers)
             {
+                if (effect.EffectType != RelicModel.ModifyCardHealth)
+                    return "Unexpected per-rarity relic health effect.";
                 if (effect.ConditionCount != effect.Conditions.Count || effect.Conditions.Count != 0)
                     return "Relic card-health conditions are not modeled.";
                 if (effect.CharacterName.Length != 0)
@@ -631,16 +659,39 @@ namespace MonsterTrain2Poju.Model
                     return "Relic card-health effect has no supported subtype or card-type filter.";
             }
             return null;
+
+            static bool Plain(RelicCardHealthModifier effect, string type, int index, string cardType,
+                int amount, string rarity, string sourceTeam, string trigger) =>
+                effect.EffectType == type && effect.EffectIndex == index && effect.CharacterName.Length == 0 &&
+                effect.CharacterSubtypeKey.Length == 0 && effect.HealthModifier == amount && effect.HealthMultiplier == 0 &&
+                effect.CardType == cardType && !effect.MultiplyByUpgradeCount && effect.CardRarityType == rarity &&
+                effect.SourceTeam == sourceTeam && effect.Trigger == trigger && effect.ConditionCount == 0 && effect.Conditions.Count == 0;
         }
 
         internal static CardInstanceState? Apply(CardInstanceState source, RelicCardHealthModifier effect,
-            out bool returned, out string? error)
+            CombatContext? context, out bool returned, out string? error)
         {
             returned = false; error = null;
             CardMaskDescriptor? descriptor = source.MaskDescriptor;
             if (descriptor == null)
             { error = "Relic card-health modifiers require branch-owned mask metadata."; return null; }
             int amount = effect.HealthModifier;
+            if (effect.EffectType == RelicModel.ModifyCardHealthPerRarityType)
+            {
+                if (context?.Statistics?.DeckCards == null)
+                { error = "Triboulet's per-rarity card health requires permanent deck membership."; return null; }
+                int count = 0;
+                foreach (int id in context.Statistics.DeckCards)
+                {
+                    CardInstanceState? deckCard = context.FindCard(id);
+                    if (deckCard?.MaskDescriptor == null)
+                    { error = "Triboulet's rarity count requires metadata for every deck card."; return null; }
+                    if (deckCard.MaskDescriptor.Definition.Rarity == effect.CardRarityType) count++;
+                }
+                amount = Math.Max(unchecked(count * amount), 0);
+            }
+            else if (effect.EffectType != RelicModel.ModifyCardHealth)
+            { error = "Character-only relic health effects cannot modify card masks."; return null; }
             if (effect.MultiplyByUpgradeCount)
             {
                 if (!RelicCardUpgradeCount.TryCount(source, out int count, out error)) return null;

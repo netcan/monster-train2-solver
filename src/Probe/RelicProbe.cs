@@ -108,8 +108,22 @@ namespace MonsterTrain2Poju.Probe
                             data.GetEffectConditions().Count);
                     }).ToArray();
                 var cardHealthModifiers = effects.Select((effect, index) => new { Effect = effect, Index = index })
-                    .Where(item => item.Effect is RelicEffectModifyCardHealth).Select(item => {
+                    .Where(item => item.Effect is RelicEffectModifyCardHealth ||
+                        item.Effect.GetType().Name == RelicModel.ModifyCardHealthPerRarityType ||
+                        item.Effect.GetType().Name == RelicModel.ModifyCharacterMaxHealthPerRarityType ||
+                        item.Effect.GetType().Name == RelicModel.ModifyCharacterMaxHealthPerRarityTypeTrigger).Select(item => {
                         object Field(string name) => AccessTools.Field(item.Effect.GetType(), name).GetValue(item.Effect);
+                        string effectType = item.Effect.GetType().Name;
+                        if (effectType == RelicModel.ModifyCardHealthPerRarityType)
+                            return new RelicCardHealthModifier(item.Index, "", "", (int)Field("baseHealthModifier"),
+                                0, Field("cardType").ToString()!, false, effectType: effectType,
+                                cardRarityType: Field("rarityType").ToString()!);
+                        if (effectType == RelicModel.ModifyCharacterMaxHealthPerRarityType ||
+                            effectType == RelicModel.ModifyCharacterMaxHealthPerRarityTypeTrigger)
+                            return new RelicCardHealthModifier(item.Index, "", "", (int)Field("baseHealModifier"),
+                                0, "", false, effectType: effectType, cardRarityType: Field("rarityType").ToString()!,
+                                sourceTeam: Field("sourceTeam").ToString()!, trigger: effectType == RelicModel.ModifyCharacterMaxHealthPerRarityTypeTrigger
+                                    ? Field("trigger").ToString()! : "");
                         var subtype = (SubtypeData)Field("characterSubtype");
                         return new RelicCardHealthModifier(item.Index, (string)Field("characterName"),
                             subtype == null || subtype.IsNone ? "" : subtype.Key, (int)Field("healthModifier"),

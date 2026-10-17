@@ -688,9 +688,10 @@ internal static class BattleActionChecks
             if (firstDecision.Spawn.Turn < root.Spawn.Turn) root = firstDecision;
         }
         if (fixture.TryGetProperty("ModifierScenario", out var targetedDrawPolicy) &&
-            targetedDrawPolicy.GetString() is "original-card-draw-on-heal" or "original-rage-on-burnout-stack-loss")
+            targetedDrawPolicy.GetString() is "original-card-draw-on-heal" or "original-rage-on-burnout-stack-loss" or
+                "original-balatro-event-triboulet")
         {
-            Console.WriteLine("NATIVE-POLICY-CHAIN-SKIPPED: controlled native scenario actions are outside the generic captured policy; every recorded play and turn transition was still replayed.");
+            Console.WriteLine("NATIVE-POLICY-CHAIN-SKIPPED: controlled native scenario actions are outside the generic captured policy; recorded plays and turns are checked individually, with the dedicated scenario search run separately.");
             return;
         }
         bool relicOneActionPolicy = fixture.TryGetProperty("ModifierScenario", out var addSnackPolicy) &&

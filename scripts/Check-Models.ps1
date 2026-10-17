@@ -101,6 +101,7 @@ $fixtureNames = @('full-battle-steward-once.mt2f', 'full-battle-no-cards.mt2f', 
     'full-battle-original-first-imp-bonus.mt2f',
     'full-battle-original-moon-phase-rooms-gain-magic-power.mt2f',
     'full-battle-original-mothers-remnant3.mt2f',
+    'full-battle-original-balatro-event-triboulet.mt2f',
     'full-battle-original-propagate-on-status-effect-applied.mt2f',
     'full-battle-original-pyre-health-card-cost.mt2f',
     'full-battle-original-unit-upgrade-trigger-relic.mt2f',
@@ -1335,5 +1336,14 @@ foreach ($fixturePath in $originalMothersRemnant3Fixtures) {
     foreach ($mode in @('--original-mothers-remnant3-only', '--battle-search-only')) {
         dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- $mode $fixturePath
         if ($LASTEXITCODE -ne 0) { throw "Original MothersRemnant3 checks failed ($mode): $fixturePath" }
+    }
+}
+$originalTribouletFixtures = @($fixtures | Where-Object {
+    (Split-Path -Leaf $_) -eq 'full-battle-original-balatro-event-triboulet.mt2f'
+})
+foreach ($fixturePath in $originalTribouletFixtures) {
+    foreach ($mode in @('--original-triboulet-only', '--battle-search-only')) {
+        dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- $mode $fixturePath
+        if ($LASTEXITCODE -ne 0) { throw "Original Triboulet checks failed ($mode): $fixturePath" }
     }
 }

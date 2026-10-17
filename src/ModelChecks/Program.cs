@@ -117,6 +117,17 @@ if (args.Length == 1 && args[0] == "--original-mothers-remnant3-pure")
     OriginalMothersRemnant3Checks.Run();
     return;
 }
+if (args.Length == 1 && args[0] == "--original-triboulet-pure")
+{
+    OriginalTribouletChecks.Run();
+    return;
+}
+if (args.Length == 2 && args[0] == "--original-triboulet-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    OriginalTribouletChecks.Native(fixture.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--original-monster-spell-targeting-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
@@ -1715,6 +1726,7 @@ OriginalCopyFirstSpellChecks.Run();
 OriginalCopyFirstConsumeChecks.Run();
 OriginalCopyConsumedCardChecks.Run();
 OriginalMothersRemnant3Checks.Run();
+OriginalTribouletChecks.Run();
 RelicMonsterSpellTargetingChecks.Run();
 RelicFloorTransitionDamageChecks.Run();
 OriginalCardDrawOnHealChecks.Run();

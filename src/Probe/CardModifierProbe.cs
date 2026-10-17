@@ -56,7 +56,7 @@ namespace MonsterTrain2Poju.Probe
                 }
                 // CardState.GetHealth excludes positive unhealed HP, which is added
                 // only to the spawned unit's maximum health during birth.
-                if (rule.SpawnUnit != null && (card.GetSize() != rule.SpawnUnit.Size ||
+                if (data.GetCardType() == CardType.Monster && rule.SpawnUnit != null && (card.GetSize() != rule.SpawnUnit.Size ||
                     card.GetTotalAttackDamage() != rule.SpawnUnit.BaseAttack || (int)Math.Round(card.GetHealth()) != rule.SpawnUnit.Health))
                     interactions.Add("Unmodeled unit card statistics");
                 if (rule.Effect == "Spell")
@@ -76,7 +76,9 @@ namespace MonsterTrain2Poju.Probe
 
         private static int[]? PlayedRoomUnits(CardState card)
         {
-            if (!MultiSummonScenario.Prepared && !TriggeredSummonProbe.Enabled && !HordeMergeScenario.Enabled && !BumpScenario.Enabled && !SpawnEnchantScenario.Prepared && !(OriginalUnitRelicBatchScenario.Enabled || OriginalTriggerRelicBatchScenario.Enabled || OriginalLifecycleRelicBatchScenario.Enabled)) return null;
+            if (!MultiSummonScenario.Prepared && !TriggeredSummonProbe.Enabled && !HordeMergeScenario.Enabled && !BumpScenario.Enabled &&
+                !SpawnEnchantScenario.Prepared && !OriginalTribouletScenario.Prepared &&
+                !(OriginalUnitRelicBatchScenario.Enabled || OriginalTriggerRelicBatchScenario.Enabled || OriginalLifecycleRelicBatchScenario.Enabled)) return null;
             var cached = (IEnumerable<WeakRef<CharacterState>>)AccessTools.Field(typeof(CardState), "charactersInRoomAtTimeOfCardPlay").GetValue(card);
             return cached.Select(reference => reference.Ref).Where(unit => unit != null && card.CharacterInRoomAtTimeOfCardPlay(unit))
                 .Select(unit => FullBattleTrace.Active!.UnitId(unit)).OrderBy(id => id).ToArray();
@@ -84,7 +86,9 @@ namespace MonsterTrain2Poju.Probe
 
         private static int[]? RawPlayedRoomUnits(CardState card)
         {
-            if (!MultiSummonScenario.Prepared && !TriggeredSummonProbe.Enabled && !HordeMergeScenario.Enabled && !BumpScenario.Enabled && !SpawnEnchantScenario.Prepared && !(OriginalUnitRelicBatchScenario.Enabled || OriginalTriggerRelicBatchScenario.Enabled || OriginalLifecycleRelicBatchScenario.Enabled)) return null;
+            if (!MultiSummonScenario.Prepared && !TriggeredSummonProbe.Enabled && !HordeMergeScenario.Enabled && !BumpScenario.Enabled &&
+                !SpawnEnchantScenario.Prepared && !OriginalTribouletScenario.Prepared &&
+                !(OriginalUnitRelicBatchScenario.Enabled || OriginalTriggerRelicBatchScenario.Enabled || OriginalLifecycleRelicBatchScenario.Enabled)) return null;
             FullBattleTrace trace = FullBattleTrace.Active!;
             var cached = (IEnumerable<WeakRef<CharacterState>>)AccessTools.Field(typeof(CardState), "charactersInRoomAtTimeOfCardPlay").GetValue(card);
             var units = cached.Select(reference => reference.Ref).Where(unit => unit != null).ToArray();

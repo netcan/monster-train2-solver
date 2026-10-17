@@ -301,6 +301,8 @@ namespace MonsterTrain2Poju.Probe
                         OriginalBalatroEventYorickScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalBalatroEventCavendishScenario.Enabled && !OriginalBalatroEventCavendishScenario.Acquired)
                         OriginalBalatroEventCavendishScenario.AcquireBeforeBattle(managers!, log);
+                    if (fullBattle && OriginalTribouletScenario.Enabled && !OriginalTribouletScenario.Acquired)
+                        OriginalTribouletScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalCardTypeCostScenario.Enabled && !OriginalCardTypeCostScenario.Acquired)
                         OriginalCardTypeCostScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalPurgeToExhaustScenario.Enabled && !OriginalPurgeToExhaustScenario.Acquired)
@@ -1090,6 +1092,12 @@ namespace MonsterTrain2Poju.Probe
                 numericModifiersPrepared = true;
                 MixScenario.Prepare(managers, log);
             }
+            if (fullBattle && !numericModifiersPrepared && OriginalTribouletScenario.Enabled)
+            {
+                if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Triboulet fixture must start on deployment turn.");
+                numericModifiersPrepared = true;
+                OriginalTribouletScenario.Prepare(managers, log);
+            }
             if (fullBattle && !numericModifiersPrepared && ChooseDiscardScenario.Enabled)
             {
                 if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Choose-discard fixture must start on deployment turn.");
@@ -1689,6 +1697,9 @@ namespace MonsterTrain2Poju.Probe
                 if (modifierScenario is "card-effect-recursion" or "card-effect-recursion-choice" or "card-effect-recursion-choose-to-hand" or "card-effect-recursion-filter-choice" or "card-effect-recursion-discard-choice" or "card-effect-recursion-upgrade" or "card-effect-recursion-upgrade-hand" or "card-effect-recursion-upgrade-choice" or "card-effect-recursion-upgrade-filter-choice" or "card-effect-recursion-upgrade-replacement-choice")
                     pendingPlay = CardEffectRecursionScenario.Choose(decision);
                 if (MixScenario.Enabled) pendingPlay = MixScenario.Choose(decision);
+                if (OriginalTribouletScenario.Enabled)
+                    pendingPlay = OriginalTribouletScenario.Choose(decision) ??
+                        OriginalTribouletScenario.AvoidRepeatedWitness(decision, pendingPlay);
                 if (ChooseDiscardScenario.Enabled) pendingPlay = ChooseDiscardScenario.Choose(decision);
                 if (modifierScenario == "typed-draw") pendingPlay = TypedDrawScenario.Choose(decision);
                 if (modifierScenario == DamagePerHpScenario.Name || modifierScenario == DamagePerHpScenario.ArmorName ||
@@ -1889,6 +1900,7 @@ namespace MonsterTrain2Poju.Probe
                 (modifierScenario is "card-effect-recursion" or "card-effect-recursion-choice" or "card-effect-recursion-choose-to-hand" or "card-effect-recursion-filter-choice" or "card-effect-recursion-discard-choice" or "card-effect-recursion-upgrade" or "card-effect-recursion-upgrade-hand" or "card-effect-recursion-upgrade-choice" or "card-effect-recursion-upgrade-filter-choice" or "card-effect-recursion-upgrade-replacement-choice" &&
                     CardEffectRecursionScenario.IsScenarioPrelude(action)) ||
                 (MixScenario.Enabled && MixScenario.IsScenarioPrelude(action)) ||
+                (OriginalTribouletScenario.Enabled && OriginalTribouletScenario.IsScenarioAction(action)) ||
                 (OriginalCardTypeCostScenario.Enabled && OriginalCardTypeCostScenario.IsScenarioPrelude(action)) ||
                 (OriginalPurgeToExhaustScenario.Enabled && OriginalPurgeToExhaustScenario.IsScenarioPrelude(action)) ||
                 (OriginalUpgradeCountRelicsScenario.Enabled && OriginalUpgradeCountRelicsScenario.IsScenarioPrelude(action)) ||

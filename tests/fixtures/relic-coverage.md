@@ -1,7 +1,7 @@
 # Original relic coverage evidence
 
-As of 2026-10-18, **193 distinct original collectable relics / 224 catalog entries
-(86.16%)** have accepted native evidence: 176 have full-battle effect evidence,
+As of 2026-10-18, **194 distinct original collectable relics / 224 catalog entries
+(86.61%)** have accepted native evidence: 177 have full-battle effect evidence,
 sixteen have campaign consumer interfaces validated, and one is an explicit
 native no-op with seeded baseline equivalence. Except for that no-op, this counts
 unchanged relic definitions whose effects actually ran, including original filters and
@@ -1639,4 +1639,23 @@ This witness covers the unchanged owner on an eligible Spell and a same-turn rep
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-mothers-remnant3.mt2f
 dotnet run --project src/ModelChecks -c Release -- --original-mothers-remnant3-only tests/fixtures/full-battle-original-mothers-remnant3.mt2f
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-mothers-remnant3.mt2f
+```
+
+## BalatroEventTriboulet
+
+| AssetKey | DataId | Fixture | Evidence |
+| --- | --- | --- | --- |
+| `BalatroEventTriboulet` | `dfe0d28c-ff6a-4a8b-8290-aefb32d0c1d6` | `full-battle-original-balatro-event-triboulet.mt2f` | The unchanged owner adds +3 temporary health per Rare deck card to Monster cards. One-Rare native acquisition applies exactly +3, and a cardless spell summon receives two ordered +2 max/current-health callbacks, ending at 15/15 from base 11. The spell is discarded and does not create a Monster standby binding. |
+
+Pure controls cover Monster-only card scaling, zero-Rare and missing-metadata behavior, both cardless callbacks, source-card callback behavior, team/card-backed exclusions and malformed-owner rejection. The 63-stage winning battle records 20 actions and seven EndTurns with zero capture failures, mismatches, unsupported transitions or pending records. Its one cardless witness has an exact native/model callback match. Independent search matches all 20 decisions, visits 128/128 states with serial/parallel best equality and replays three steps.
+
+The 39,815-byte archive has 6,404 unique nodes and SHA-256 `12bfc35e28c1bb37348fd311e7c84cd5e9b08bb51a82edcbbbcd15d29a0938bf`; no JSON companion is tracked. Inventory is 413 archives: 375 full battles and 38 component calibrations. Original relic evidence is 194/224 (86.61%): 177 battle, sixteen campaign and one native no-op owner.
+
+The native boundary is one unchanged owner, one Rare deck seed and one cardless spell-spawn witness. Pure controls do not establish every Rare count, duplicate-owner interaction, or arbitrary cardless spawn shape.
+
+```powershell
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-balatro-event-triboulet.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-triboulet-only tests/fixtures/full-battle-original-balatro-event-triboulet.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-triboulet-pure
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-balatro-event-triboulet.mt2f
 ```

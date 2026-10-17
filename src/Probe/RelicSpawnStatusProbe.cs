@@ -53,9 +53,9 @@ namespace MonsterTrain2Poju.Probe
                 bool bigDamageBirthCapture = OriginalBigDamageScenario.Prepared && !onlyCovenants &&
                     character.GetTeamType() == Team.Type.Monsters && !character.IsPyreHeart();
                 bool ordinaryBirthCapture = !onlyCovenants && (OriginalHealthChoiceScenario.Prepared || OriginalEquipmentGrowthScenario.Prepared || OriginalConduitScenario.Prepared || OriginalCombatTriggerBatchScenario.Prepared || OriginalStealthSlayScenario.Prepared || OriginalSummonWithAvariceScenario.Prepared || OriginalFirstImpBonusScenario.Prepared || SpawnStatusRelicScenario.Prepared || SpawnStatusRelicScenario.OriginalCombatRelicsAcquired || OriginalRelicBatchScenario.Prepared ||
-                    RelicCardModifierScenario.Prepared && RelicCardModifierScenario.AllUnitsMultistrikeMutator || bigDamageBirthCapture);
+                    OriginalTribouletScenario.Prepared || RelicCardModifierScenario.Prepared && RelicCardModifierScenario.AllUnitsMultistrikeMutator || bigDamageBirthCapture);
                 bool covenantBirthCapture = onlyCovenants && CovenantCharacterFilterScenario.Prepared;
-                bool completeTrainCapture = SpawnStatusRelicScenario.Clones || OriginalLifecycleRelicBatchScenario.Enabled || OriginalCombatTriggerBatchScenario.Enabled || OriginalConduitScenario.Enabled || OriginalEquipmentGrowthScenario.Enabled || OriginalStealthSlayScenario.Enabled || OriginalHealthChoiceScenario.Enabled || OriginalFirstImpBonusScenario.Enabled || bigDamageBirthCapture;
+                bool completeTrainCapture = SpawnStatusRelicScenario.Clones || OriginalLifecycleRelicBatchScenario.Enabled || OriginalCombatTriggerBatchScenario.Enabled || OriginalConduitScenario.Enabled || OriginalEquipmentGrowthScenario.Enabled || OriginalStealthSlayScenario.Enabled || OriginalHealthChoiceScenario.Enabled || OriginalFirstImpBonusScenario.Enabled || OriginalTribouletScenario.Prepared || bigDamageBirthCapture;
                 if ((!ordinaryBirthCapture && !covenantBirthCapture) || FullBattleTrace.Active == null || AllGameManagers.Instance!.GetSaveManager().PreviewMode) return;
                 __result = Observe(__result, character, fromCard, onlyCovenants, completeTrainCapture);
             }
@@ -76,7 +76,8 @@ namespace MonsterTrain2Poju.Probe
                 record.StandaloneScenarioActive = UnitCloneScenario.Started && !UnitCloneScenario.Completed;
                 record.ReplayCardPlayingBefore = AllGameManagers.Instance!.GetReplayManager()!.IsCardPlaying();
                 record.SettlementProtocol = UnitCloneScenario.StandaloneBirth ? "standalone-scenario-birth" : "enclosing-native-coroutine";
-                record.DeferCallbacks = !UnitCloneScenario.StandaloneBirth || record.QueueRunningBefore;
+                record.DeferCallbacks = record.QueueRunningBefore || !OriginalTribouletScenario.Prepared &&
+                    !UnitCloneScenario.StandaloneBirth;
                 record.QueuedBefore = Queue(record);
                 world = RelicBirthModel.CharacterAdded(record.BeforeTrain, record.UnitId, record.FromCardId, covenants,
                     record.DeferCallbacks, record.QueuedBefore);

@@ -520,7 +520,8 @@ namespace MonsterTrain2Poju.Model
                 if (action.TargetUnitId != 0) return Illegal("A summon takes a spawn position, not a unit target.");
                 CombatUnit? template = rule.SpawnUnit;
                 if (template == null && !(rule.Summon?.Pool.Count > 0 && rule.Summon.NativeBaseSize.HasValue) ||
-                    template?.IsPyre == true || template?.Size < 0 || rule.Destination != "Standby")
+                template?.IsPyre == true || template?.Size < 0 ||
+                rule.Destination != "Standby" && !(rule.CardType == "Spell" && rule.Destination == "Discard"))
                     return Unsupported("Invalid unit spawn definition.");
                 IReadOnlyList<CombatStatus> initialStatuses = Array.Empty<CombatStatus>();
                 if (template != null)
@@ -842,7 +843,8 @@ namespace MonsterTrain2Poju.Model
                 piles = piles.Select(pile => pile.Name == "Standby" ? CardPileModel.BindEquipment(pile,
                     new EquipmentStandbyCondition(card.InstanceId, action.TargetUnitId, rule.Equipment.ReturnToHand)) : pile).ToArray();
             }
-            if (rule.Effect == "SpawnMonster" && spawnedId.HasValue && piles.Any(pile => pile.Name == "Standby" && pile.UnitConditions != null))
+            if (rule.Effect == "SpawnMonster" && rule.Destination == "Standby" && spawnedId.HasValue &&
+                piles.Any(pile => pile.Name == "Standby" && pile.UnitConditions != null))
                 piles = piles.Select(pile => pile.Name == "Standby" ? CardPileModel.BindUnit(pile,
                     new UnitStandbyCondition(card.InstanceId, spawnedId.Value,
                         !train.Rooms.SelectMany(room => room.Units).Any(unit => unit.Id == spawnedId.Value))) : pile).ToArray();

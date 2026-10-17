@@ -289,6 +289,7 @@ param(
     [switch] $OriginalCopyFirstConsumePlayed,
     [switch] $OriginalCopyConsumedCard,
     [switch] $OriginalMothersRemnant3Relic,
+    [switch] $OriginalTribouletRelic,
     [switch] $OriginalMonsterSpellTargeting,
     [switch] $OriginalFunguyDeckScaling,
     [switch] $OriginalCardDrawOnHeal,
@@ -433,7 +434,7 @@ if ($OriginalCheaperSpellCost) { $BranchCardMasks = $true; $Policy = 'units-spel
 if ($OriginalFirstCardCost) { $BranchCardMasks = $true; $Policy = 'units-and-junk' }
 if ($OriginalRebalanceValor) { $BranchCardMasks = $true; $Policy = 'units-and-junk' }
 if ($OriginalCardDrawOnCardPlay) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
-if ($OriginalCopyFirstSpellPlayed -or $OriginalCopyFirstConsumePlayed -or $OriginalCopyConsumedCard -or $OriginalMothersRemnant3Relic -or $OriginalMonsterSpellTargeting) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
+if ($OriginalCopyFirstSpellPlayed -or $OriginalCopyFirstConsumePlayed -or $OriginalCopyConsumedCard -or $OriginalMothersRemnant3Relic -or $OriginalTribouletRelic -or $OriginalMonsterSpellTargeting) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalFunguyDeckScaling) { $PhysicalSpawnPoints = $true; $Policy = 'no-cards' }
 if ($OriginalCardDrawOnHeal) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalBrokenRailRelic) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
@@ -923,6 +924,7 @@ if ($OriginalCopyFirstSpellPlayed) { $environment['MT2_PROBE_MODIFIERS'] = 'orig
 if ($OriginalCopyFirstConsumePlayed) { $environment['MT2_PROBE_MODIFIERS'] = 'original-copy-first-consume-played' }
 if ($OriginalCopyConsumedCard) { $environment['MT2_PROBE_MODIFIERS'] = 'original-copy-consumed-card' }
 if ($OriginalMothersRemnant3Relic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-mothers-remnant3' }
+if ($OriginalTribouletRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-balatro-event-triboulet' }
 if ($OriginalMonsterSpellTargeting) { $environment['MT2_PROBE_MODIFIERS'] = 'original-monster-spell-targeting' }
 if ($OriginalFunguyDeckScaling) { $environment['MT2_PROBE_MODIFIERS'] = 'original-funguy-deck-scaling' }
 if ($OriginalCardDrawOnHeal) { $environment['MT2_PROBE_MODIFIERS'] = 'original-card-draw-on-heal' }
@@ -1877,6 +1879,13 @@ if ($OriginalMothersRemnant3Relic -and ($trace.OriginalMothersRemnant3Schema -ne
     -not (Select-String -LiteralPath $unityLog -Pattern 'ORIGINAL-MOTHERS-REMNANT3-PREPARED' -Quiet) -or
     @($trace.Actions | Where-Object ScenarioAction).Count -lt 2)) {
     throw 'MothersRemnant3 lacks its unchanged owner and same-turn permanent-copy control.'
+}
+if ($OriginalTribouletRelic -and ($trace.Schema -ne 217 -or $trace.OriginalTribouletSchema -ne 217 -or
+    $trace.ModifierScenario -ne 'original-balatro-event-triboulet' -or
+    -not $trace.OriginalTribouletPrepared -or
+    -not (Select-String -LiteralPath $unityLog -Pattern 'ORIGINAL-TRIBOULET-PREPARED' -Quiet) -or
+    @($trace.Actions | Where-Object ScenarioAction).Count -lt 1)) {
+    throw 'Triboulet lacks its unchanged owner, Rare deck seed, or cardless Monster-spawn witness.'
 }
 if ($OriginalMonsterSpellTargeting -and ($trace.Schema -ne 188 -or
     $trace.ModifierScenario -ne 'original-monster-spell-targeting' -or

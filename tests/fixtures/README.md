@@ -1,5 +1,15 @@
 # Native regression fixtures
 
+BalatroEventTriboulet extension (2026-10-18): 413 archives (375 battles and
+38 calibrations), 194/224 original relic owners (86.61%): 177 full-battle
+owners, sixteen campaign-interface owners and one native no-op. The unchanged
+owner adds +3 temporary health per Rare deck card to Monster cards; a one-Rare
+seed and a cardless spell summon confirm its 15/15 native health result. The
+63-stage winning replay has 20 actions and zero differential counters; focused
+checks and independent 128-state serial/parallel search pass. The 39,815-byte
+archive has 6,404 unique nodes and SHA-256
+`12bfc35e28c1bb37348fd311e7c84cd5e9b08bb51a82edcbbbcd15d29a0938bf`.
+
 MothersRemnant3Relic extension (2026-10-18): 412 archives (374 battles and
 38 calibrations), 193/224 original relic owners (86.16%): 176 full-battle
 owners, sixteen campaign-interface owners and one native no-op. The unchanged
