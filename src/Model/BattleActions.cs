@@ -505,6 +505,7 @@ namespace MonsterTrain2Poju.Model
             string? DrainPyrePaymentCallbacks()
             {
                 if (pyreCost.Callbacks.Count == 0) return null;
+                train = CardSpellModel.WithContext(train, context);
                 TrainCombatResult drained = RelicPayCardCostWithPyreHealthModel.DrainCallbacks(train, pyreCost);
                 if (!drained.Supported) return drained.UnsupportedReason;
                 train = drained.State!; context = train.Context!;
