@@ -1,7 +1,7 @@
 # Original relic coverage evidence
 
-As of 2026-10-17, **161 distinct original collectable relics / 224 catalog entries
-(71.88%)** have accepted native evidence: 145 have full-battle effect evidence,
+As of 2026-10-17, **162 distinct original collectable relics / 224 catalog entries
+(72.32%)** have accepted native evidence: 146 have full-battle effect evidence,
 fifteen have campaign consumer interfaces validated, and one is an explicit
 native no-op with seeded baseline equivalence. Except for that no-op, this counts
 unchanged relic definitions whose effects actually ran, including original filters and
@@ -41,6 +41,10 @@ remain unchanged. Its full replay and independent battle search pass.
 for the original ordered Spell and Equipment filters, including a played Spell
 that reaches Exhausted with native private trait state. Its full replay and
 independent 128-state search pass.
+`PyregelOnAscend_DH` now applies exactly 2 Pyregel after an enemy's native
+PostAscension callback. Descension, player movement, rooted and immobile controls
+remain unchanged; all 22 Bump records replay exactly and bounded battle search
+passes.
 
 The battle archives cited below report game `2.2.1`, module MVID
 `8fb07b96-f4db-4d2b-884d-c00536d6ccf4`, `NativeWon=true`, and zero
@@ -307,12 +311,13 @@ owner count.
 | `DamageOnFloorTransition` | `269a6f43-9982-4683-ac39-1a862e481898` | [DamageOnFloorTransition][damageOnFloorTransition] | The unchanged owner applies exactly 3 damage after an enemy's native PostAscension and PostDescension callbacks; rooted, immobile and player movement are controls. All 22 native Bump states and 42 full-battle actions match, and independent search passes 74/74 states with no unsupported attempts. |
 | `AddStatsToSoloUnits` | `724a1c19-192f-48c1-8099-8ae3ecb9c1e5` | [AddStatsToSoloUnits][soloUnitUpgrade] | Each start-of-turn callback gives the sole player Monster +5 Damage/+5 Health. Two repeated applications remain after a second Monster enters that floor; a two-Monster floor and two empty floors are controls. The owner is unconditional, non-removable, and captured on four upgradable floors only. |
 | `PurgeToExhaust` | `10648aee-8577-49b6-8659-318a7f922d5a` | [PurgeToExhaust][purgeToExhaust] | The unchanged ordered Spell/Equipment filters replace SelfPurge with Exhaust. Six native source/filter controls and 24 repeated manager calls match; a converted Spell is actually played into Exhausted with native private trait state. Full battle and independent 128-state search pass. |
+| `PyregelOnAscend_DH` | `394fb724-046f-448f-9531-f9d6caadae77` | [enemy ascend Pyregel][pyregelOnAscend] | The unchanged owner adds 2 Pyregel after enemy PostAscension; descend, player, rooted and immobile controls do not gain it. All 22 Bump replays, 40 full-battle stages and 42 actions match; independent search passes 74/74 states with serial/parallel best equality. |
 
 ## Campaign interface evidence
 
 These fifteen unchanged original owners are validated by their actual native
 campaign consumers, with baseline and removed-owner controls. This table is
-separate from the 145 battle owners. It does not claim whole-battle integration
+separate from the 146 battle owners. It does not claim whole-battle integration
 for these effect classes. The first capture's recorded relic IDs, gold, hoard cap and
 amount, deck IDs, frame and RNG match before/after; reward grants still execute
 their native run-stat side effects in the isolated save. Catalog enumeration
@@ -397,6 +402,7 @@ archives contain these observed battle sizes:
 | [original card-type cost][cardTypeCost] | 103 | 24 | 6 | 50 | Ten modifier calls, two original zero-Ember self-purge plays, generated Junk |
 | [original Ember conservation][conserveEmber] | 103 | 21 | 7 | 62 | Seven conservation queries, two banked turns, later positive payments and terminal Ember retention |
 | [PurgeToExhaust][purgeToExhaust] | 184 | 21 | 7 | 61 | 24 exact manager calls, six source/filter controls and one played converted Spell |
+| [enemy ascend Pyregel][pyregelOnAscend] | 185 | 42 | 5 | 40 | 22 Bump records, exact enemy PostAscension +2 Pyregel and descend/player/rooted/immobile controls |
 | [Big Damage from Many Morsels][bigDamage] | 169 | 6 | 7 | 113 | Six native train-birth replays, exact 19/20/21 Snack thresholds and Tower/Pyre/enemy controls |
 | [original early-discard energy][earlyDiscardEnergy] | 170 | 11 | 6 | 45 | Five Ember-gaining card discards, 18 no-gain consume controls |
 | [cheaper spell cost][cheaperSpellCost] | 171 | 2 | 7 | 52 | Two ordered spell plays; played-card and end-turn discard cleanup witnesses |
@@ -800,6 +806,7 @@ dotnet run --project src/ModelChecks -c Release -- --gold-pyre-pure
 [damageOnFloorTransition]: full-battle-original-damage-on-floor-transition.mt2f
 [soloUnitUpgrade]: full-battle-original-add-stats-to-solo-units.mt2f
 [purgeToExhaust]: full-battle-original-purge-to-exhaust.mt2f
+[pyregelOnAscend]: full-battle-original-pyregel-on-ascend.mt2f
 
 ## AddStatsToSoloUnits
 
@@ -833,11 +840,37 @@ metadata, repeat/reset idempotence, owner validation and immutable branches.
 
 The direct binary archive is 36,125 bytes with 5,754 nodes and SHA-256
 `f4efc2e1383f0783cab729a2b371c5438ebf0ec01aabd85ad296ca2a4e22f8c8`.
-The inventory is 382 archives: 344 full battles and 38 component calibrations.
-Original relic evidence is 161/224 (71.88%): 145 battle, 15 campaign and one
+The inventory is 383 archives: 345 full battles and 38 component calibrations.
+Original relic evidence is 162/224 (72.32%): 146 battle, 15 campaign and one
 native no-op owner.
 
 ```powershell
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-purge-to-exhaust.mt2f
 dotnet run --project src/ModelChecks -c Release -- --original-purge-to-exhaust-pure
+```
+
+## PyregelOnAscend_DH
+
+The schema-185 fixture captures the unchanged `PyregelOnAscend_DH` owner,
+`RelicEffectAddStatusOnUnitMovedUpDown`, source team Heroes, restriction mask 5,
+no excluded subtypes and a +2 Pyregel payload. The captured rooms have
+`Deployment=true`; the original owner is not disallowed during placement, so an
+enemy PostAscension still applies the status. Descension, player movement,
+rooted and immobile controls remain unchanged. All 22 native Bump operations
+replay exactly, including callback order. The winning battle matches 40 stages
+and 42 actions with zero capture failures, mismatches, unsupported transitions
+or pending records; the native probe also leaves original game files unchanged.
+Independent battle search matches 42 decisions and checks 74/74 states, with
+zero unsupported attempts, three replayed steps and equal serial/parallel best
+results.
+
+The direct binary archive is 50,842 bytes with 9,814 nodes and SHA-256
+`e4c1cf757d2b3550af6c1387f40720541d971abd633eb564436bba71b180c91d`.
+The inventory is 383 archives: 345 full battles and 38 component calibrations.
+Original relic evidence is 162/224 (72.32%): 146 battle, 15 campaign and one
+native no-op owner.
+
+```powershell
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-pyregel-on-ascend.mt2f
+dotnet run --project src/ModelChecks -c Release -- --pyregel-on-ascend-pure
 ```

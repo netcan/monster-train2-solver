@@ -34,6 +34,7 @@ $fixtureNames = @('full-battle-steward-once.mt2f', 'full-battle-no-cards.mt2f', 
     'full-battle-original-copy-first-consume-played.mt2f',
     'full-battle-original-copy-consumed-card.mt2f',
     'full-battle-original-damage-on-floor-transition.mt2f',
+    'full-battle-original-pyregel-on-ascend.mt2f',
     'full-battle-original-funguy-deck-scaling.mt2f',
     'full-battle-original-card-draw-on-heal.mt2f',
     'full-battle-original-broken-rail.mt2f',
@@ -504,7 +505,7 @@ exit $exitCode
 }
 $focusedBumpFixtures = @($fixtures | Where-Object {
     (Split-Path -Leaf $_) -in @('full-battle-companion-bump.mt2f', 'full-battle-outer-boss-bump.mt2f',
-        'full-battle-original-damage-on-floor-transition.mt2f')
+        'full-battle-original-damage-on-floor-transition.mt2f', 'full-battle-original-pyregel-on-ascend.mt2f')
 })
 $focusedTeamSpawnStatusFixtures = @($fixtures | Where-Object {
     (Split-Path -Leaf $_) -eq 'full-battle-original-team-spawn-status.mt2f'
@@ -512,7 +513,7 @@ $focusedTeamSpawnStatusFixtures = @($fixtures | Where-Object {
 # This isolated relic fixture ends after two authored plays; its native and search checks run below.
 $generalFixtures = @($fixtures | Where-Object {
     (Split-Path -Leaf $_) -notin @('full-battle-companion-bump.mt2f', 'full-battle-outer-boss-bump.mt2f',
-        'full-battle-original-damage-on-floor-transition.mt2f',
+        'full-battle-original-damage-on-floor-transition.mt2f', 'full-battle-original-pyregel-on-ascend.mt2f',
         'full-battle-original-team-spawn-status.mt2f', 'full-battle-egg-transformation.mt2f',
         'full-battle-corruption-unit-trigger.mt2f',
         'full-battle-original-kinhost-vessel.mt2f',
@@ -1081,7 +1082,7 @@ foreach ($fixturePath in $covenantFixtures) {
 
 $bumpFixtures = @($fixtures | Where-Object {
     (Split-Path -Leaf $_) -in @('full-battle-bump.mt2f', 'full-battle-companion-bump.mt2f', 'full-battle-outer-boss-bump.mt2f',
-        'full-battle-original-damage-on-floor-transition.mt2f')
+        'full-battle-original-damage-on-floor-transition.mt2f', 'full-battle-original-pyregel-on-ascend.mt2f')
 })
 foreach ($fixturePath in $bumpFixtures) {
     dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- --bump-only $fixturePath
@@ -1099,6 +1100,18 @@ $originalFloorTransitionFixtures = @($fixtures | Where-Object {
 foreach ($fixturePath in $originalFloorTransitionFixtures) {
     dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- --battle-search-only $fixturePath
     if ($LASTEXITCODE -ne 0) { throw "Original floor-transition damage relic battle search failed: $fixturePath" }
+}
+
+$originalPyregelFixtures = @($fixtures | Where-Object {
+    (Split-Path -Leaf $_) -eq 'full-battle-original-pyregel-on-ascend.mt2f'
+})
+foreach ($fixturePath in $originalPyregelFixtures) {
+    dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- --pyregel-on-ascend-pure
+    if ($LASTEXITCODE -ne 0) { throw 'Original PyregelOnAscend_DH pure model checks failed.' }
+    foreach ($mode in @('--pyregel-on-ascend-only', '--battle-search-only')) {
+        dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- $mode $fixturePath
+        if ($LASTEXITCODE -ne 0) { throw "Original PyregelOnAscend_DH checks failed ($mode): $fixturePath" }
+    }
 }
 
 $originalMoonPhaseHealFixtures = @($fixtures | Where-Object {

@@ -41,8 +41,10 @@ namespace MonsterTrain2Poju.Probe
                         item.Effect.GetType().Name == RelicModel.AddStatusOnTeamSpawn)
                     .Select(item => SpawnStatus(item.Effect, item.Index)).ToArray();
                 var roomEntryStatuses = effects.Select((effect, index) => new { Effect = effect, Index = index })
-                    .Where(item => item.Effect is RelicEffectAddStatusEffectOnEnterRoomIndex)
-                    .Select(item => RoomEntryStatus(item.Effect, item.Index)).ToArray();
+                    .Where(item => item.Effect is RelicEffectAddStatusEffectOnEnterRoomIndex ||
+                        item.Effect.GetType().Name == RelicModel.AddStatusOnUnitMovedUpDown)
+                    .Select(item => item.Effect is RelicEffectAddStatusEffectOnEnterRoomIndex
+                        ? RoomEntryStatus(item.Effect, item.Index) : MovementStatus(item.Effect, item.Index)).ToArray();
                 var corruptionStatuses = effects.Select((effect, index) => new { Effect = effect, Index = index })
                     .Where(item => item.Effect is RelicEffectAddStatusEffectOnCorruptionAdded)
                     .Select(item => CorruptionStatus(item.Effect, item.Index)).ToArray();
@@ -294,6 +296,18 @@ namespace MonsterTrain2Poju.Probe
             return new RelicRoomEntryStatus(index, (int)Field("targetRoomIndex"), monsters, heroes,
                 (bool)Field("firstWaveOnly"), ((StatusEffectStackData[])Field("statusEffects"))
                     .Select(status => BattleActionProbe.Status(status.statusId, status.count)).ToArray());
+        }
+
+        private static RelicRoomEntryStatus MovementStatus(IRelicEffect effect, int index)
+        {
+            var data = (RelicEffectData)AccessTools.Field(typeof(RelicEffectBase), "_srcRelicEffectData").GetValue(effect);
+            Team.Type team = data.GetParamSourceTeam();
+            SubtypeData[] excluded = data.GetParamExcludeCharacterSubtypes();
+            int restrictions = data.GetParamInt();
+            return new RelicRoomEntryStatus(index, -1, team.HasFlag(Team.Type.Monsters), team.HasFlag(Team.Type.Heroes), false,
+                data.GetParamStatusEffects().Select(status => BattleActionProbe.Status(status.statusId, status.count)).ToArray(),
+                restrictions == 5 ? "PostAscension" : null, restrictions,
+                excluded.Where(subtype => subtype != null && !subtype.IsNone).Select(subtype => subtype.Key).ToArray());
         }
 
         private static RelicCorruptionStatus CorruptionStatus(IRelicEffect effect, int index)

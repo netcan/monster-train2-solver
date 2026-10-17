@@ -12,6 +12,7 @@ namespace MonsterTrain2Poju.Probe
     internal static class BumpScenario
     {
         internal const string RelicDataId = "269a6f43-9982-4683-ac39-1a862e481898";
+        internal const string PyregelRelicDataId = "394fb724-046f-448f-9531-f9d6caadae77";
         internal sealed class Callback
         {
             public int ActorId { get; set; }
@@ -39,8 +40,12 @@ namespace MonsterTrain2Poju.Probe
             public List<Callback> Dispatched { get; set; } = new List<Callback>();
         }
         internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == "bump";
-        private static bool RelicScenario => Environment.GetEnvironmentVariable("MT2_PROBE_ORIGINAL_FLOOR_TRANSITION_DAMAGE") == "1";
-        internal static bool RelicAcquired { get; private set; }
+        private static bool DamageRelicScenario => Environment.GetEnvironmentVariable("MT2_PROBE_ORIGINAL_FLOOR_TRANSITION_DAMAGE") == "1";
+        private static bool PyregelRelicScenario => Environment.GetEnvironmentVariable("MT2_PROBE_ORIGINAL_PYREGEL_ON_ASCEND") == "1";
+        private static bool RelicScenario => DamageRelicScenario || PyregelRelicScenario;
+        internal static bool DamageRelicAcquired { get; private set; }
+        internal static bool PyregelRelicAcquired { get; private set; }
+        internal static bool RelicAcquired => DamageRelicAcquired || PyregelRelicAcquired;
         internal static bool CaptureOuterBossForAction => Enabled && probeBossSpawned && label != null;
         internal static readonly List<Record> Records = new List<Record>();
         internal static bool Started, Completed;
@@ -57,17 +62,40 @@ namespace MonsterTrain2Poju.Probe
         internal static void AcquireRelicBeforeBattle(AllGameManagers managers, ManualLogSource log)
         {
             SaveManager save = managers.GetSaveManager();
-            CollectableRelicData relic = save.GetAllGameData().GetAllCollectableRelicData().Single(item => item.GetID() == RelicDataId);
+            string relicId = DamageRelicScenario ? RelicDataId : PyregelRelicScenario ? PyregelRelicDataId :
+                throw new InvalidOperationException("A Bump relic probe mode must be explicitly selected.");
+            CollectableRelicData relic = save.GetAllGameData().GetAllCollectableRelicData().Single(item => item.GetID() == relicId);
             RelicEffectData[] effects = relic.GetEffects().ToArray();
             if (RelicAcquired || save.PreviewMode || save.GetGameSequence() == SaveData.GameSequence.InBattle ||
-                relic.name != "DamageOnFloorTransition" || relic.DisallowInDeploymentPhase || effects.Length != 2 ||
-                effects[0].GetEffectClassName() != "RelicEffectDamageEnemyOnAscend" || effects[0].GetParamInt() != 3 ||
-                effects[1].GetEffectClassName() != "RelicEffectDamageEnemyOnDescend" || effects[1].GetParamInt() != 3 ||
-                save.GetCollectedRelics().Any(item => item.GetRelicDataID() == RelicDataId))
-                throw new InvalidOperationException("Original DamageOnFloorTransition definition changed or is not isolated.");
+                save.GetCollectedRelics().Any(item => item.GetRelicDataID() == relicId))
+                throw new InvalidOperationException("Original Bump relic probe owner is not isolated before battle.");
+            if (DamageRelicScenario)
+            {
+                if (relic.name != "DamageOnFloorTransition" || relic.DisallowInDeploymentPhase || effects.Length != 2 ||
+                    effects[0].GetEffectClassName() != "RelicEffectDamageEnemyOnAscend" || effects[0].GetParamInt() != 3 ||
+                    effects[1].GetEffectClassName() != "RelicEffectDamageEnemyOnDescend" || effects[1].GetParamInt() != 3)
+                    throw new InvalidOperationException("Original DamageOnFloorTransition definition changed.");
+            }
+            else
+            {
+                var statuses = effects.Length == 1 ? effects[0].GetParamStatusEffects() : Array.Empty<StatusEffectStackData>();
+                if (relic.name != "PyregelOnAscend_DH" || relic.DisallowInDeploymentPhase || effects.Length != 1 ||
+                    effects[0].GetEffectClassName() != RelicModel.AddStatusOnUnitMovedUpDown || effects[0].GetParamInt() != 5 ||
+                    effects[0].GetParamSourceTeam() != Team.Type.Heroes || effects[0].GetParamExcludeCharacterSubtypes().Length != 0 ||
+                    statuses.Length != 1 || statuses[0].statusId != "pyregel" || statuses[0].count != 2)
+                    throw new InvalidOperationException("Original PyregelOnAscend_DH definition changed.");
+            }
             save.AddRelic(relic);
-            RelicAcquired = true;
-            log.LogInfo("ORIGINAL-FLOOR-TRANSITION-DAMAGE-ACQUIRED ascend=3 descend=3 from the unchanged native owner.");
+            if (DamageRelicScenario)
+            {
+                DamageRelicAcquired = true;
+                log.LogInfo("ORIGINAL-FLOOR-TRANSITION-DAMAGE-ACQUIRED ascend=3 descend=3 from the unchanged native owner.");
+            }
+            else
+            {
+                PyregelRelicAcquired = true;
+                log.LogInfo("ORIGINAL-PYREGEL-ON-ASCEND-ACQUIRED unchanged Heroes status rule restrictions=5 pyregel=2.");
+            }
         }
 
         internal static void Prepare(AllGameManagers managers, ManualLogSource log)

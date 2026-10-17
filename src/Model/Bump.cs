@@ -277,8 +277,13 @@ namespace MonsterTrain2Poju.Model
                 }
                 bool okay = RoomCombatModel.DrainCharacterQueue(queue, callback =>
                 {
-                    if (!callback.IsDeathRoomFocus && !callback.RelicDamageApplied) dispatched.Add(callback);
+                    int resumedMovementCallbacks = queue.Count(item => item.RelicMovementStatusApplied &&
+                        item.Kind == callback.Kind && item.Unit.Id == callback.Unit.Id);
                     RoomCombatResult fired = RoomCombatModel.ApplyQueuedCharacterTrigger(state.Rooms[callback.RoomIndex], callback, queue.Add);
+                    bool movementDeferred = queue.Count(item => item.RelicMovementStatusApplied &&
+                        item.Kind == callback.Kind && item.Unit.Id == callback.Unit.Id) > resumedMovementCallbacks;
+                    if (!callback.IsDeathRoomFocus && !callback.RelicDamageApplied &&
+                        (!movementDeferred || callback.RelicMovementStatusApplied)) dispatched.Add(callback);
                     return Accept(fired);
                 }, callback => Accept(RoomCombatModel.SettleQueuedSpawnerAndCenter(state.Rooms[callback.RoomIndex], callback.Unit)),
                 () =>

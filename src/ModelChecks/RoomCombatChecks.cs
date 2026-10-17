@@ -349,6 +349,8 @@ internal static class RoomCombatChecks
             OriginalCardTypeCostChecks.Native(fixture);
         else if (fixture.TryGetProperty("ModifierScenario", out relicScenario) && relicScenario.GetString() == "original-purge-to-exhaust-relic")
             OriginalPurgeToExhaustChecks.Native(fixture);
+        else if (fixture.TryGetProperty("OriginalPyregelOnAscendPrepared", out var pyregelPrepared) && pyregelPrepared.GetBoolean())
+            OriginalPyregelOnAscendChecks.Native(fixture);
         else if (fixture.TryGetProperty("ModifierScenario", out relicScenario) && relicScenario.GetString() == "original-upgrade-count-relics")
             RelicUpgradeCountChecks.Native(fixture);
         else if (fixture.TryGetProperty("ModifierScenario", out relicScenario) && relicScenario.GetString() == "original-healing-power-relic")

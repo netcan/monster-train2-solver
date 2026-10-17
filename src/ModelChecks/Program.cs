@@ -13,6 +13,18 @@ if (args.Length == 2 && args[0] == "--original-purge-to-exhaust-only")
     Console.WriteLine($"NATIVE-FIXTURE-METADATA schema={fixture.RootElement.GetProperty("Schema").GetInt32()} bytes={new FileInfo(args[1]).Length} uniqueNodes={fixture.UniqueNodeCount}");
     return;
 }
+if (args.Length == 1 && args[0] == "--pyregel-on-ascend-pure")
+{
+    OriginalPyregelOnAscendChecks.Run();
+    return;
+}
+if (args.Length == 2 && args[0] == "--pyregel-on-ascend-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    OriginalPyregelOnAscendChecks.Native(fixture.RootElement);
+    Console.WriteLine($"NATIVE-FIXTURE-METADATA schema={fixture.RootElement.GetProperty("Schema").GetInt32()} bytes={new FileInfo(args[1]).Length} uniqueNodes={fixture.UniqueNodeCount}");
+    return;
+}
 
 if (args.Length == 1 && args[0] == "--selection-state-pure")
 {
@@ -1254,9 +1266,10 @@ if (args.Length == 2 && args[0] == "--bump-only")
     if (fixture.RootElement.GetProperty("ModifierScenario").GetString() != "bump" ||
         fixture.RootElement.GetProperty("BumpOperations").GetArrayLength() == 0)
         throw new InvalidDataException("The requested fixture has no native Bump observations.");
-    BattleActionChecks.Native(fixture.RootElement);
     BumpChecks.Native(fixture.RootElement);
     RelicFloorTransitionDamageChecks.Native(fixture.RootElement);
+    OriginalPyregelOnAscendChecks.Native(fixture.RootElement);
+    BattleActionChecks.Native(fixture.RootElement);
     return;
 }
 
