@@ -118,7 +118,7 @@ internal static class BattleTurnChecks
                 old.CanonicalDecisionReferences, old.PendingDestroyedUnitIds);
             BattlePlayRules oldRules = source.PlayRules!;
             var playRules = new BattlePlayRules(oldRules.Rooms, oldRules.Cards.Concat(rules).ToArray(), oldRules.StatusRules,
-                oldRules.UnitCopyCatalog);
+                oldRules.UnitCopyCatalog, oldRules.Elixirs, oldRules.ForgeUpgrade);
             return new BattleTurnState(spawn, source.Energy, source.EnergyPerTurn, source.DrawPerTurn,
                 source.ForgePoints, source.DragonsHoard, source.MoonPhase, source.RngStreams, source.OtherPiles,
                 source.ExternalInteractions, playRules, source.BattlePreviewEnabled, source.UiRngIsolated,
@@ -261,14 +261,16 @@ internal static class BattleTurnChecks
             state.Spawn.TreasuresRemaining, state.Spawn.Turn, state.Energy, state.ForgePoints, state.DragonsHoard,
             state.EnergyPerTurn, state.DrawPerTurn,
             state.MoonPhase, state.MoonPhaseTrackingActive, state.RngStreams, state.OtherPiles,
-            PlayRules = terminal ? null : ComparablePlayRules(state.PlayRules, compareRoomEnabled),
+            PlayRules = terminal ? null : ComparablePlayRules(state.PlayRules, compareRoomEnabled, state.ForgePoints > 0),
             state.BattlePreviewEnabled, state.UiRngIsolated,
             state.CanonicalPhysicalReferences
         });
     }
-    private static object? ComparablePlayRules(BattlePlayRules? rules, bool compareRoomEnabled)
+    internal static object? ComparablePlayRules(BattlePlayRules? rules, bool compareRoomEnabled, bool compareForgeEligibility = true)
     {
         if (rules == null) return null;
+        // Native decision refreshes can discover a previously unreachable card; forge eligibility
+        // is behaviorally relevant only while forge points remain available.
         return new
         {
             Rooms = rules.Rooms.Select(room => new
@@ -281,7 +283,7 @@ internal static class BattleTurnChecks
                 room.IsPyre,
                 room.EnemyCapacity
             }),
-            rules.Cards,
+            Cards = compareForgeEligibility ? rules.Cards : rules.Cards.Select(card => card.WithForgeEligibility(null)).ToArray(),
             rules.StatusRules,
             rules.UnitCopyCatalog,
             rules.Elixirs
@@ -292,7 +294,8 @@ internal static class BattleTurnChecks
         if (context?.QueryFrame is StatisticQueryFrame frame &&
             (frame.SelectedRoomIndex.HasValue || frame.MoonPhaseTrackingActive.HasValue))
             context = context.WithQueryFrame(new StatisticQueryFrame(frame.Energy, frame.RunningCombat, frame.Turn,
-                frame.ForgePoints, frame.DragonsHoard, frame.MoonPhase, frame.PyreResurrectionCount, frame.ActiveBattle));
+                frame.ForgePoints, frame.DragonsHoard, frame.MoonPhase, frame.PyreResurrectionCount, frame.ActiveBattle,
+                forgeTrackingActive: frame.ForgeTrackingActive, forgeToggleActive: frame.ForgeToggleActive));
         if (context?.SpawnPoints?.NextPreviewCopyId.HasValue == true)
         {
             BattleSpawnPoints points = context.SpawnPoints;

@@ -268,6 +268,7 @@ param(
     [switch] $OriginalCopyFirstSpellPlayed,
     [switch] $OriginalFunguyDeckScaling,
     [switch] $OriginalCardDrawOnHeal,
+    [switch] $OriginalBrokenRailRelic,
     [switch] $OriginalUnitResourceRelics,
     [switch] $OriginalOpeningDrawRelics,
     [switch] $OriginalTurnDrawRelics,
@@ -385,6 +386,7 @@ if ($OriginalCardDrawOnCardPlay) { $BranchCardMasks = $true; $Policy = 'units-sp
 if ($OriginalCopyFirstSpellPlayed) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalFunguyDeckScaling) { $PhysicalSpawnPoints = $true; $Policy = 'no-cards' }
 if ($OriginalCardDrawOnHeal) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
+if ($OriginalBrokenRailRelic) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalCarriageJack) { $Policy = 'units-and-junk' }
 if ($OriginalFirstRoomAttachment) { $BranchCardMasks = $true; $Policy = 'units-and-junk' }
 if ($OriginalStartRoomAttachment) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
@@ -803,6 +805,7 @@ if ($OriginalNefariousOverflow) { $environment['MT2_PROBE_MODIFIERS'] = 'origina
 if ($OriginalCopyFirstSpellPlayed) { $environment['MT2_PROBE_MODIFIERS'] = 'original-copy-first-spell-played' }
 if ($OriginalFunguyDeckScaling) { $environment['MT2_PROBE_MODIFIERS'] = 'original-funguy-deck-scaling' }
 if ($OriginalCardDrawOnHeal) { $environment['MT2_PROBE_MODIFIERS'] = 'original-card-draw-on-heal' }
+if ($OriginalBrokenRailRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-broken-rail' }
 if ($OriginalCardDrawOnCardPlay) { $environment['MT2_PROBE_MODIFIERS'] = 'original-card-draw-on-card-play' }
 if ($OriginalCarriageJack) { $environment['MT2_PROBE_MODIFIERS'] = 'original-carriage-jack' }
 if ($OriginalFirstRoomAttachment) { $environment['MT2_PROBE_MODIFIERS'] = 'original-first-room-attachment' }
@@ -1609,6 +1612,13 @@ if ($OriginalCardDrawOnHeal -and ($trace.Schema -ne 175 -or
     @($trace.RelicUnitResources | Where-Object Trigger -EQ 'OnHeal').Count -lt 4 -or
     -not (Select-String -LiteralPath $unityLog -Pattern 'ORIGINAL-CARD-DRAW-ON-HEAL-PREPARED two same-turn allied heals, a next-turn allied heal, and an enemy-heal control' -Quiet))) {
     throw 'CardDrawOnHeal lacks repeated allied heal callbacks or its enemy-heal control.'
+}
+if ($OriginalBrokenRailRelic -and ($trace.Schema -ne 176 -or
+    $trace.ModifierScenario -ne 'original-broken-rail' -or
+    -not $trace.OriginalBrokenRailPrepared -or
+    @($trace.Actions | Where-Object ScenarioAction).Count -ne 1 -or
+    -not (Select-String -LiteralPath $unityLog -Pattern 'ORIGINAL-BROKEN-RAIL-PREPARED points=3 native ordinary monster, 80 HP, 20 attack' -Quiet))) {
+    throw 'BrokenRail lacks its prepared +2 HP per forge point native monster summon witness.'
 }
 if (($OriginalNullRelic -or $OriginalNullRelicBaseline) -and ($null -eq $trace.OriginalNullRelic -or
     $trace.OriginalNullRelic.Present -ne $(if ($OriginalNullRelicBaseline) { 0 } else { 1 }) -or

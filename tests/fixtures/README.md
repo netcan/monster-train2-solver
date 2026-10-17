@@ -1,5 +1,14 @@
 # Native regression fixtures
 
+BrokenRail forge extension (2026-10-17): 374 archives (336 battles and 38
+calibrations), 153/224 original relic owners (68.30%): 137 full-battle effect
+owners, fifteen campaign-interface owners and one native no-op. Its unchanged
++2 HP forge payload scales to +6 on a controlled eligible monster summon with
+three forge points. The winning replay has 39 matched stages, 16 card actions
+and five EndTurns with zero capture failures, mismatches, unsupported transitions
+or pending records. Bounded search matches all 16 decisions across 128/128 states,
+with no unsupported attempts and equal serial/parallel best results.
+
 PartFactory extension (2026-10-17): 366 archives (328 battles and 38
 calibrations), 145/224 original owners (64.73%): 129 battle, fifteen campaign-
 interface and one explicit no-op. The unchanged PartFactory adds the captured
@@ -4725,4 +4734,34 @@ and condition combinations remain unsupported.
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-card-draw-on-heal.mt2f
 dotnet run --project src/ModelChecks -c Release -- --original-card-draw-on-heal-only tests/fixtures/full-battle-original-card-draw-on-heal.mt2f
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-card-draw-on-heal.mt2f
+```
+
+### Original BrokenRail forge-upgrade relic (schema 176)
+
+`full-battle-original-broken-rail.mt2f` captures the unchanged `BrokenRail`
+owner, its original +2 HP forge upgrade, and an eligible ordinary monster
+direct play with three forge points. The relic contribution scales to +6 HP;
+native card/action state and the rest of the winning battle match with zero
+capture failures, mismatches, unsupported transitions or pending records. The
+fixture uses an isolated save, an authored carrier and an explicitly activated
+forge tracker/toggle; it does not claim natural tracker activation or cover
+room-specific forge replacements, non-monster plays, filtered upgrades or
+upgrade lifecycle interactions.
+
+The schema-176 battle has 39 matched stages, 16 card actions and five EndTurns.
+The dedicated checker validates the original owner/payload, card eligibility,
+point reset and +6 HP result. Bounded search matches all 16 recorded decisions,
+visits 128/128 states, replays two steps, has no unsupported attempts and produces
+the same best result serially and in parallel.
+
+The binary is 26,712 bytes with 4,063 unique nodes and SHA-256
+`933da33d175e725c3127d0dd4d5b63f9e9e6f8deef88c8f6c2e0fd51d11dfc02`; it has no
+JSON companion. BrokenRail is the 153rd accepted original relic owner (137
+full-battle owners, fifteen campaign-interface owners and one no-op); the
+inventory now has 374 archives: 336 battles and 38 component calibrations.
+
+```powershell
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-broken-rail.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-broken-rail-only tests/fixtures/full-battle-original-broken-rail.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-broken-rail.mt2f
 ```

@@ -75,6 +75,31 @@ namespace MonsterTrain2Poju.Model
             CopyRemoveOnDiscard, CopyUnique, CopyExcludeFromClones, Lifecycle, SharedReferenceId);
         internal CardUpgradeModifier WithScaledStats(int damage, int health) => WithStats(
             new CardStatModifier(damage, health, Stats.Cost, Stats.Heal, Stats.Size, Stats.XCost, Stats.EquipmentLimit, Stats.UpgradeSlotCount));
+        internal CardUpgradeModifier WithForgePoints(int forgePoints)
+        {
+            var stats = new CardStatModifier(unchecked(Stats.Damage * forgePoints), unchecked(Stats.Health * forgePoints),
+                Stats.Cost, Stats.Heal, Stats.Size, Stats.XCost, Stats.EquipmentLimit, Stats.UpgradeSlotCount);
+            var statuses = Statuses.Select(status => status.WithStacks(unchecked(status.Stacks * forgePoints))).ToArray();
+            CardUpgradeMaskMetadata? maskMetadata = MaskMetadata;
+            if (maskMetadata != null)
+                maskMetadata = new CardUpgradeMaskMetadata(maskMetadata.Statuses.Select(status =>
+                    new UpgradeMaskStatus(status.Id, unchecked(status.Count * forgePoints), status.FromPermanentUpgrade)).ToArray(),
+                    maskMetadata.HasIcon, maskMetadata.HideIcon, maskMetadata.RegionRun, maskMetadata.UnitAbility);
+            CardLifecycleUpgrade? lifecycle = Lifecycle;
+            if (lifecycle != null)
+            {
+                CardMaskUpgrade values = lifecycle.Values;
+                var maskStatuses = values.Statuses.Select(status => new UpgradeMaskStatus(status.Id,
+                    unchecked(status.Count * forgePoints), status.FromPermanentUpgrade)).ToArray();
+                lifecycle = lifecycle.WithValues(new CardMaskUpgrade(values.DataId, stats, maskStatuses,
+                    values.HasIcon, values.HideIcon, values.RegionRun, values.UnitAbility));
+            }
+            return new CardUpgradeModifier(DataId, AssetKey, stats, statuses, RemoveOnDiscard, Unique,
+                ExcludeFromClones, UnhealedHealth, DamageBuff, ExternalInteractions, RestrictSizeToRoomCapacity,
+                MagicPowerTraitScalingOnly, CloneDamageBase, CloneHealBase, EquipmentSourceCardId,
+                EquipmentSourceUpgradeIndex, TriggerUpgrades, AbilityUpgrade, DoNotReplaceExistingAbility,
+                maskMetadata, CopyRemoveOnDiscard, CopyUnique, CopyExcludeFromClones, lifecycle, SharedReferenceId);
+        }
         internal CardUpgradeModifier WithStats(CardStatModifier stats) => new CardUpgradeModifier(DataId, AssetKey,
             stats, Statuses, RemoveOnDiscard, Unique, ExcludeFromClones, UnhealedHealth, DamageBuff, ExternalInteractions,
             RestrictSizeToRoomCapacity, MagicPowerTraitScalingOnly, CloneDamageBase, CloneHealBase, EquipmentSourceCardId, EquipmentSourceUpgradeIndex, TriggerUpgrades, AbilityUpgrade, DoNotReplaceExistingAbility, MaskMetadata,
@@ -276,6 +301,11 @@ namespace MonsterTrain2Poju.Model
             return refreshTraits && (!Permanent.Upgrades.SequenceEqual(permanent.Upgrades) || !Temporary.Upgrades.SequenceEqual(temporary.Upgrades))
                 ? CardExhaustModel.RefreshUpgradeTrait(changed) : changed;
         }
+        internal CardInstanceState WithLastForgedAmount(int amount) => new CardInstanceState(InstanceId, DataId,
+            Permanent, Temporary, LastPlayedCost, amount, PlayCount, ExternalInteractions, EffectCounters,
+            DamageScalingTraits, StatusScalingTraits, UnitUpgradeScalingTraits, CapacityScalingTraits, EquippedUnitId,
+            PlayedRoomUnitIds, RawPlayedRoomUnitIds, MaskDescriptor, ExhaustState, ForgeCountScalingTraits,
+            RawCostOverride, CanBeCopied, TrainHealScalingTraits);
         internal CardInstanceState WithPermanentUpgrade(CardUpgradeModifier upgrade, bool scale)
             => WithModifiers(Permanent.WithPermanentUpgrade(upgrade, scale), Temporary);
         internal CardInstanceState WithPlayedRoomUnits(IReadOnlyList<int> units) => new CardInstanceState(InstanceId, DataId,
@@ -434,7 +464,7 @@ namespace MonsterTrain2Poju.Model
                 destination, unit, interactions.Distinct().OrderBy(value => value, StringComparer.Ordinal).ToArray(), effects, rule.UpgradeInteractions,
                 rule.HandDiscardInteractions, rule.HandConsumeInteractions, rule.CostType, rule.Equipment, rule.Ability, rule.Summon, rule.CardType,
                 rule.IsAnyAbility, rule.CanPlayInEngineRoom, onCastEffects, onUnplayedNegativeEffects,
-                rule.UnplayedNegativeOrder, unsupportedUnplayedTriggers);
+                rule.UnplayedNegativeOrder, unsupportedUnplayedTriggers, rule.ForgeEligible);
 
             CardActionEffect ResolveEffect(CardActionEffect effect) => new CardActionEffect(effect.Type, effect.Target,
                 ResolveValue(effect, effect.Value), effect.AllowEnemy, effect.AllowPlayer, effect.Statuses, effect.Upgrade, effect.Lifetime, effect.Tests,

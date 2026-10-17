@@ -191,6 +191,7 @@ namespace MonsterTrain2Poju.Model
         public IReadOnlyList<CardActionEffect> OnUnplayedNegativeEffects { get; }
         public int? UnplayedNegativeOrder { get; }
         public bool HasUnsupportedUnplayedTriggers { get; }
+        public bool? ForgeEligible { get; }
         public CardPlayRule(string dataId, string assetKey, int cost, string effect, string destination,
             CombatUnit? spawnUnit, IReadOnlyList<string> externalInteractions, IReadOnlyList<CardActionEffect>? effects = null,
             IReadOnlyList<string>? upgradeInteractions = null, IReadOnlyList<string>? handDiscardInteractions = null,
@@ -198,7 +199,7 @@ namespace MonsterTrain2Poju.Model
             CardAbilityRule? ability = null, UnitSummonRule? summon = null, string? cardType = null, bool? isAnyAbility = null,
             bool? canPlayInEngineRoom = null, IReadOnlyList<CardActionEffect>? onCastEffects = null,
             IReadOnlyList<CardActionEffect>? onUnplayedNegativeEffects = null, int? unplayedNegativeOrder = null,
-            bool hasUnsupportedUnplayedTriggers = false)
+            bool hasUnsupportedUnplayedTriggers = false, bool? forgeEligible = null)
         {
             DataId = dataId; AssetKey = assetKey; Cost = cost; CostType = costType; Effect = effect; Destination = destination;
             Equipment = equipment; Ability = ability; CardType = cardType; IsAnyAbility = isAnyAbility; CanPlayInEngineRoom = canPlayInEngineRoom;
@@ -209,6 +210,7 @@ namespace MonsterTrain2Poju.Model
             OnUnplayedNegativeEffects = Array.AsReadOnly((onUnplayedNegativeEffects ?? Array.Empty<CardActionEffect>()).ToArray());
             UnplayedNegativeOrder = unplayedNegativeOrder;
             HasUnsupportedUnplayedTriggers = hasUnsupportedUnplayedTriggers;
+            ForgeEligible = forgeEligible;
             UpgradeInteractions = upgradeInteractions == null ? null : Array.AsReadOnly(upgradeInteractions.ToArray());
             HandDiscardInteractions = handDiscardInteractions == null ? null : Array.AsReadOnly(handDiscardInteractions.ToArray());
             HandConsumeInteractions = handConsumeInteractions == null ? null : Array.AsReadOnly(handConsumeInteractions.ToArray());
@@ -216,7 +218,35 @@ namespace MonsterTrain2Poju.Model
         internal CardPlayRule WithSpawn(CombatUnit unit) => new CardPlayRule(DataId, AssetKey, Cost, Effect, Destination,
             unit, ExternalInteractions, Effects, UpgradeInteractions, HandDiscardInteractions, HandConsumeInteractions, CostType, Equipment, Ability, Summon,
             CardType, IsAnyAbility, CanPlayInEngineRoom, OnCastEffects, OnUnplayedNegativeEffects, UnplayedNegativeOrder,
-            HasUnsupportedUnplayedTriggers);
+            HasUnsupportedUnplayedTriggers, ForgeEligible);
+        internal CardPlayRule WithForgeEligibility(bool? eligible) => new CardPlayRule(DataId, AssetKey, Cost, Effect, Destination,
+            SpawnUnit, ExternalInteractions, Effects, UpgradeInteractions, HandDiscardInteractions, HandConsumeInteractions, CostType, Equipment, Ability, Summon,
+            CardType, IsAnyAbility, CanPlayInEngineRoom, OnCastEffects, OnUnplayedNegativeEffects, UnplayedNegativeOrder,
+            HasUnsupportedUnplayedTriggers, eligible);
+    }
+
+    public sealed class ForgeUpgradeModifier
+    {
+        public string RelicDataId { get; }
+        public string RelicAssetKey { get; }
+        public int EffectIndex { get; }
+        public CardUpgradeModifier Upgrade { get; }
+        public IReadOnlyList<CardUpgradeMaskRule> Filters { get; }
+        public ForgeUpgradeModifier(string relicDataId, string relicAssetKey, int effectIndex,
+            CardUpgradeModifier upgrade, IReadOnlyList<CardUpgradeMaskRule> filters)
+        { RelicDataId = relicDataId; RelicAssetKey = relicAssetKey; EffectIndex = effectIndex; Upgrade = upgrade;
+            Filters = Array.AsReadOnly(filters.ToArray()); }
+    }
+
+    public sealed class ForgeUpgradeDefinition
+    {
+        public CardUpgradeModifier? DefaultUpgrade { get; }
+        public bool HasRoomOverride { get; }
+        public IReadOnlyList<ForgeUpgradeModifier> RelicUpgrades { get; }
+        public ForgeUpgradeDefinition(CardUpgradeModifier? defaultUpgrade, bool hasRoomOverride,
+            IReadOnlyList<ForgeUpgradeModifier> relicUpgrades)
+        { DefaultUpgrade = defaultUpgrade; HasRoomOverride = hasRoomOverride;
+            RelicUpgrades = Array.AsReadOnly(relicUpgrades.ToArray()); }
     }
 
     public sealed class BattlePlayRules
@@ -226,10 +256,13 @@ namespace MonsterTrain2Poju.Model
         public IReadOnlyList<CombatStatus> StatusRules { get; }
         public UnitCopyCatalog? UnitCopyCatalog { get; }
         public ElixirCatalog? Elixirs { get; }
+        public ForgeUpgradeDefinition? ForgeUpgrade { get; }
         public BattlePlayRules(IReadOnlyList<RoomPlayRule> rooms, IReadOnlyList<CardPlayRule> cards, IReadOnlyList<CombatStatus>? statusRules = null,
-            UnitCopyCatalog? unitCopyCatalog = null, ElixirCatalog? elixirs = null)
-        { Rooms = Array.AsReadOnly(rooms.ToArray()); Cards = Array.AsReadOnly(cards.ToArray()); StatusRules = Array.AsReadOnly((statusRules ?? Array.Empty<CombatStatus>()).ToArray()); UnitCopyCatalog = unitCopyCatalog; Elixirs = elixirs; }
-        internal BattlePlayRules WithRooms(IReadOnlyList<RoomPlayRule> rooms) => new(rooms, Cards, StatusRules, UnitCopyCatalog, Elixirs);
+            UnitCopyCatalog? unitCopyCatalog = null, ElixirCatalog? elixirs = null, ForgeUpgradeDefinition? forgeUpgrade = null)
+        { Rooms = Array.AsReadOnly(rooms.ToArray()); Cards = Array.AsReadOnly(cards.ToArray()); StatusRules = Array.AsReadOnly((statusRules ?? Array.Empty<CombatStatus>()).ToArray()); UnitCopyCatalog = unitCopyCatalog; Elixirs = elixirs; ForgeUpgrade = forgeUpgrade; }
+        internal BattlePlayRules WithRooms(IReadOnlyList<RoomPlayRule> rooms) => new(rooms, Cards, StatusRules, UnitCopyCatalog, Elixirs, ForgeUpgrade);
+        internal BattlePlayRules WithForgeEligibility(bool? eligible) => new(Rooms,
+            Cards.Select(card => card.WithForgeEligibility(eligible)).ToArray(), StatusRules, UnitCopyCatalog, Elixirs, ForgeUpgrade);
         internal BattlePlayRules WithCapacities(IReadOnlyList<RoomCapacityState> capacities) => WithRooms(Rooms.Select(room =>
         {
             RoomCapacityState? capacity = capacities.FirstOrDefault(item => item.RoomIndex == room.RoomIndex);
@@ -348,6 +381,15 @@ namespace MonsterTrain2Poju.Model
             if (uiRangeError != null) return Unsupported(uiRangeError);
             if (rule == null) return Unsupported("Missing play definition for " + card.DataId);
             CardInstanceState? playingInstance = context.CardInstances?.FirstOrDefault(item => item.InstanceId == card.InstanceId);
+            if (source.ForgePoints > 0)
+            {
+                ForgeUpgradeModelResult forged = ForgeUpgradeModel.BeforeDirectCardPlay(context, source.PlayRules,
+                    rule, playingInstance, source.ForgePoints);
+                if (!forged.Supported) return Unsupported(forged.UnsupportedReason!);
+                context = forged.Context!;
+                playingInstance = context.FindCard(card.InstanceId);
+                train = CardSpellModel.WithContext(train, context);
+            }
             if (rule.SpawnUnit != null)
             {
                 CombatUnit initialized = AbilityLifecycleModel.InitialAtSpawn(rule.SpawnUnit, playingInstance, context, out string? spawnError);

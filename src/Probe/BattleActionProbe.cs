@@ -50,6 +50,8 @@ namespace MonsterTrain2Poju.Probe
             SaveManager save = managers.GetSaveManager();
             CardManager cards = managers.GetCardManager()!;
             var nativeCards = cards.GetAllCards(new List<CardState>()).ToArray();
+            var nativeCardsByDataId = nativeCards.GroupBy(card => card.GetCardDataID(), StringComparer.Ordinal)
+                .ToDictionary(group => group.Key, group => group.First(), StringComparer.Ordinal);
             var definitions = nativeCards.Select(card => card.GetCardDataID()).Concat(spawn.Waves.SelectMany(wave => wave.Candidates)
                 .SelectMany(group => group.Units).Concat(spawn.Treasures).SelectMany(unit => unit.Unit.Triggers)
                 .SelectMany(trigger => trigger.Effects).SelectMany(effect => effect.CardPool)).Distinct().ToArray();
@@ -96,7 +98,10 @@ namespace MonsterTrain2Poju.Probe
             while (pending.Count > 0)
             {
                 string id = pending.Dequeue(); if (reachable.ContainsKey(id)) continue;
-                CardPlayRule rule = Definition(save.GetAllGameData().FindCardData(id)!, unplayedOrder); reachable.Add(id, rule);
+                CardData data = save.GetAllGameData().FindCardData(id)!;
+                bool? forgeEligible = nativeCardsByDataId.TryGetValue(id, out CardState? nativeCard)
+                    ? CardForgeHelper.IsCardOfInterest(nativeCard, managers.GetCoreManagers()) : null;
+                CardPlayRule rule = Definition(data, unplayedOrder, forgeEligible); reachable.Add(id, rule);
                 CombatUnit[] spawned = new[] { rule.SpawnUnit, rule.Summon?.Additional?.Unit }
                     .Where(unit => unit != null).Cast<CombatUnit>()
                     .Concat(rule.Summon?.Pool.Select(choice => choice.Unit) ?? Array.Empty<CombatUnit>()).ToArray();
@@ -111,14 +116,38 @@ namespace MonsterTrain2Poju.Probe
                     .Where(child => !string.IsNullOrEmpty(child)).Cast<string>()) pending.Enqueue(child);
                 foreach (CombatUnit unit in spawned.Where(unit => unit.Ability?.HasAbility == true)) pending.Enqueue(unit.Ability!.DataId);
             }
+            CardUpgradeModifier? Upgrade(CardUpgradeData? data)
+            {
+                if (data == null) return null;
+                var state = new CardUpgradeState(); state.Setup(data);
+                return CardModifierProbe.Upgrade(state, rejectFilters: false, filtersAlreadyApplied: true);
+            }
+            CardUpgradeData? defaultForgeData = save.GetAllGameData().GetBalanceData().GetForgeUpgradeData();
+            bool hasRoomForgeOverride = Enumerable.Range(0, rooms.GetNumRooms()).Select(rooms.GetRoom)
+                .Any(room => room != null && room.TryGetCharacterWithRoomModifier<IRoomStateForgeUpgradeModifier>(
+                    Team.Type.Monsters, out _, out _));
+            ForgeUpgradeModifier[] relicForgeUpgrades = save.GetAllRelics().SelectMany(relic =>
+                relic.GetEffects().Select((effect, index) => (Relic: relic, Effect: effect, Index: index)))
+                .Where(item => item.Effect is RelicEffectModifyForgeUpgrade)
+                .Select(item =>
+                {
+                    CardUpgradeData upgradeData = ((RelicEffectModifyForgeUpgrade)item.Effect).GetUpgradeDataModification()
+                        ?? throw new InvalidOperationException("Original forge relic upgrade data is missing: " + item.Relic.GetAssetName());
+                    CardUpgradeModifier upgrade = Upgrade(upgradeData)
+                        ?? throw new InvalidOperationException("Failed to capture original forge relic upgrade: " + item.Relic.GetAssetName());
+                    return new ForgeUpgradeModifier(item.Relic.GetRelicDataID(), item.Relic.GetAssetName(), item.Index, upgrade,
+                        upgradeData.GetFilters().Select(CardUpgradeMaskProbe.Rule).ToArray());
+                }).ToArray();
+            var forgeUpgrade = new ForgeUpgradeDefinition(Upgrade(defaultForgeData), hasRoomForgeOverride, relicForgeUpgrades);
             rules = new BattlePlayRules(roomRules, reachable.Values.OrderBy(rule => rule.DataId, StringComparer.Ordinal).ToArray(),
                 new[] { "armor", "valor", "pyregel", "duality" }.Select(id => Status(id, 1)).ToArray(),
                 reachable.Values.Any(rule => rule.Effects.Any(effect => effect.Type == "CopyUnits")) ? UnitCopyCatalogProbe.Capture(reachable.Values.ToArray(), spawn) : null,
-                elixirs);
+                elixirs, forgeUpgrade);
             return rules;
         }
 
-        internal static CardPlayRule Definition(CardData data, IReadOnlyDictionary<string, int>? unplayedOrder = null)
+        internal static CardPlayRule Definition(CardData data, IReadOnlyDictionary<string, int>? unplayedOrder = null,
+            bool? forgeEligible = null)
         {
             var interactions = new List<string>();
             var onCastEffects = new List<CardActionEffect>();
@@ -239,7 +268,7 @@ namespace MonsterTrain2Poju.Probe
                 effects.All(effect => ((ICardEffect)Activator.CreateInstance(typeof(CardEffectBase).Assembly
                     .GetType(effect.GetEffectStateName())!)!).CanPlayInEngineRoom), onCastEffects: onCastEffects,
                 onUnplayedNegativeEffects: onUnplayedNegativeEffects, unplayedNegativeOrder: unplayedNegativeOrder,
-                hasUnsupportedUnplayedTriggers: hasUnsupportedUnplayedTriggers);
+                hasUnsupportedUnplayedTriggers: hasUnsupportedUnplayedTriggers, forgeEligible: forgeEligible);
         }
 
         private static bool SupportedSpellEffect(CardEffectData effect) =>
@@ -544,7 +573,8 @@ namespace MonsterTrain2Poju.Probe
                 interactions.Distinct().OrderBy(item => item, StringComparer.Ordinal).ToArray(), rule.Effects,
                 rule.UpgradeInteractions, rule.HandDiscardInteractions, rule.HandConsumeInteractions, rule.CostType,
                 rule.Equipment, rule.Ability, rule.Summon, rule.CardType, rule.IsAnyAbility, rule.CanPlayInEngineRoom, rule.OnCastEffects,
-                rule.OnUnplayedNegativeEffects, rule.UnplayedNegativeOrder, rule.HasUnsupportedUnplayedTriggers);
+                rule.OnUnplayedNegativeEffects, rule.UnplayedNegativeOrder, rule.HasUnsupportedUnplayedTriggers,
+                rule.ForgeEligible);
         }
 
         private static string[] HandInteractions(CardData data, bool consume)

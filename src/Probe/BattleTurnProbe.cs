@@ -136,6 +136,8 @@ namespace MonsterTrain2Poju.Probe
         internal static JToken Comparable(BattleTurnState state, bool terminal = false)
         {
             CombatContext? context = ComparableContext(state.Spawn.Train.Context);
+            BattlePlayRules? playRules = state.PlayRules;
+            if (state.ForgePoints == 0) playRules = playRules?.WithForgeEligibility(null);
             return JToken.FromObject(new
             {
                 Rooms = state.Spawn.Train.Rooms.Select(room => new { room.RoomIndex, room.Deployment, room.Units }).ToArray(),
@@ -143,7 +145,7 @@ namespace MonsterTrain2Poju.Probe
                 state.Spawn.Phase, state.Spawn.SelectedGroups, state.Spawn.Rng, state.Spawn.NextUnitId,
                 state.Spawn.TreasuresRemaining, state.Spawn.Turn, state.Energy, state.ForgePoints, state.DragonsHoard,
                 state.EnergyPerTurn, state.DrawPerTurn,
-                state.MoonPhase, state.MoonPhaseTrackingActive, state.RngStreams, state.OtherPiles, PlayRules = terminal ? null : state.PlayRules,
+                state.MoonPhase, state.MoonPhaseTrackingActive, state.RngStreams, state.OtherPiles, PlayRules = terminal ? null : playRules,
                 state.BattlePreviewEnabled, state.UiRngIsolated,
                 state.CanonicalPhysicalReferences
             });
@@ -152,9 +154,11 @@ namespace MonsterTrain2Poju.Probe
         internal static CombatContext? ComparableContext(CombatContext? context)
         {
             if (context?.QueryFrame is StatisticQueryFrame frame &&
-                (frame.SelectedRoomIndex.HasValue || frame.MoonPhaseTrackingActive.HasValue))
+                (frame.SelectedRoomIndex.HasValue || frame.MoonPhaseTrackingActive.HasValue ||
+                    frame.ForgeTrackingActive.HasValue || frame.ForgeToggleActive.HasValue))
                 context = context.WithQueryFrame(new StatisticQueryFrame(frame.Energy, frame.RunningCombat, frame.Turn,
-                    frame.ForgePoints, frame.DragonsHoard, frame.MoonPhase, frame.PyreResurrectionCount, frame.ActiveBattle));
+                    frame.ForgePoints, frame.DragonsHoard, frame.MoonPhase, frame.PyreResurrectionCount, frame.ActiveBattle,
+                    forgeTrackingActive: frame.ForgeTrackingActive, forgeToggleActive: frame.ForgeToggleActive));
             if (context?.SpawnPoints is BattleSpawnPoints points && points.NextPreviewCopyId.HasValue)
                 context = context.WithSpawnPoints(new BattleSpawnPoints(points.Groups, points.Units));
             return context;

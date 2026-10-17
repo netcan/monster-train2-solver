@@ -33,6 +33,7 @@ $fixtureNames = @('full-battle-steward-once.mt2f', 'full-battle-no-cards.mt2f', 
     'full-battle-original-copy-first-spell-played.mt2f',
     'full-battle-original-funguy-deck-scaling.mt2f',
     'full-battle-original-card-draw-on-heal.mt2f',
+    'full-battle-original-broken-rail.mt2f',
     'full-battle-original-status-relics.mt2f', 'full-battle-original-burnout-stacks.mt2f',
     'full-battle-original-sting-relics.mt2f',
     'full-battle-original-deployable-relic.mt2f',
@@ -907,6 +908,12 @@ foreach ($fixturePath in @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 
     foreach ($mode in @('--original-card-draw-on-heal-only', '--battle-search-only')) {
         dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- $mode $fixturePath
         if ($LASTEXITCODE -ne 0) { throw "Original CardDrawOnHeal checks failed ($mode): $fixturePath" }
+    }
+}
+foreach ($fixturePath in @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 'full-battle-original-broken-rail.mt2f' })) {
+    foreach ($mode in @('--original-broken-rail-only', '--battle-search-only')) {
+        dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- $mode $fixturePath
+        if ($LASTEXITCODE -ne 0) { throw "Original BrokenRail checks failed ($mode): $fixturePath" }
     }
 }
 foreach ($fixturePath in @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 'full-battle-original-spell-play-threshold-relics.mt2f' })) {

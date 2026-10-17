@@ -37,9 +37,11 @@ internal static class CardRecursionChecks
         var selectedRule = new CardPlayRule(original.DataId, original.AssetKey, original.Cost, original.Effect,
             original.Destination, original.SpawnUnit, original.ExternalInteractions, effects, original.UpgradeInteractions,
             original.HandDiscardInteractions, original.HandConsumeInteractions, original.CostType, original.Equipment,
-            original.Ability, original.Summon, original.CardType, original.IsAnyAbility, original.CanPlayInEngineRoom, original.OnCastEffects);
+            original.Ability, original.Summon, original.CardType, original.IsAnyAbility, original.CanPlayInEngineRoom,
+            original.OnCastEffects, forgeEligible: original.ForgeEligible);
         CardPlayRule[] cards = root.PlayRules.Cards.Select(rule => rule.DataId == recursionCardId ? selectedRule : rule).ToArray();
-        var rules = new BattlePlayRules(root.PlayRules.Rooms, cards, root.PlayRules.StatusRules, root.PlayRules.UnitCopyCatalog);
+        var rules = new BattlePlayRules(root.PlayRules.Rooms, cards, root.PlayRules.StatusRules,
+            root.PlayRules.UnitCopyCatalog, root.PlayRules.Elixirs, root.PlayRules.ForgeUpgrade);
         var choiceRoot = new BattleTurnState(root.Spawn, root.Energy, root.EnergyPerTurn, root.DrawPerTurn,
             root.ForgePoints, root.DragonsHoard, root.MoonPhase, root.RngStreams, root.OtherPiles,
             root.ExternalInteractions, rules, root.BattlePreviewEnabled, root.UiRngIsolated,

@@ -1,7 +1,7 @@
 # Original relic coverage evidence
 
-As of 2026-10-17, **152 distinct original collectable relics / 224 catalog entries
-(67.86%)** have accepted native evidence: 136 have full-battle effect evidence,
+As of 2026-10-17, **153 distinct original collectable relics / 224 catalog entries
+(68.30%)** have accepted native evidence: 137 have full-battle effect evidence,
 fifteen have campaign consumer interfaces validated, and one is an explicit
 native no-op with seeded baseline equivalence. Except for that no-op, this counts
 unchanged relic definitions whose effects actually ran, including original filters and
@@ -17,6 +17,8 @@ Rage and Frostbite consumers. All four catalog owners of
 `RelicEffectModifyStatusMagnitude` now have accepted evidence. Unknown status
 families and other effects on the remaining owners still require modeling and
 native proof.
+`RelicEffectModifyForgeUpgrade` appears on two catalog owners; BrokenRail now
+has one accepted native battle witness, while HephsBlueprints remains pending.
 
 The battle archives cited below report game `2.2.1`, module MVID
 `8fb07b96-f4db-4d2b-884d-c00536d6ccf4`, `NativeWon=true`, and zero
@@ -146,6 +148,7 @@ owner count.
 | `CopyFirstSpellPlayed` | `0f4a9e72-cd34-4667-95f6-6a0ca69832f8` | [CopyFirstSpellPlayed][copyFirstSpell] | The unchanged once-per-turn owner copies the first direct Spell with temporary Ephemeral; its generated copy plays again the same turn without retriggering. Exact original owner only; sibling copy payloads are not generalized. |
 | `StartOfTurnAddFunguysPerDeckSize` | `e5d7c9d0-c0a3-4b0c-97cf-6def6ad287e9` | [Funguy deck scaling][funguyDeckScaling] | Six original callbacks at 40 visible cards apply two cardless Horde effects on each live room: three Funguys spawn and Horde rises by six total. Relentless room destruction is respected; support is limited to this original payload and captured positive path. |
 | `CardDrawOnHeal` | `9a38370b-150c-45bd-9e3e-93a688a04850` | [CardDrawOnHeal][cardDrawOnHeal] | Four allied OnHeal callbacks draw exactly one card after native ThisTurn reset; a second same-turn heal is suppressed after the two native notifications, and an enemy-heal control does not trigger the Monsters-only owner. Placement/preview gates are pure controls; targeted test-card setup is excluded from full-policy replay. |
+| `BrokenRail` | `1699b5c7-8c34-471c-8e5a-c9830e2bc482` | [BrokenRail forge upgrade][brokenRail] | The unchanged +2 HP forge upgrade scales to +6 at three forge points on one eligible ordinary monster summon. Native direct-play and full-battle state match; bounded 128-state search matches with serial/parallel best equality. Tracking/toggle/eligibility controls are pure; room-specific replacements and non-monster plays remain unsupported. |
 | `EmberOnTombDeath` | `4a5b1613-568c-4bf6-8bf7-15f8bf013345` | [unit resource relics][unitResources] | Original +5 Ember after actual Tomb sacrifice; ordinary friendly sacrifice and enemy deaths do not qualify. Complete manager contexts and exact resource/RNG state match. |
 | `Frenzystesia` | `56316fc2-b41a-41ae-aba8-e83fb668e8e1` | [unit resource relics][unitResources] | Original +1 Ember on the first equipment callback this turn. Two actual equipment additions prove the first-only condition, with notification count recorded once by the effect and again by RelicManager. Full 22-play/five-EndTurn policy matches, including native duration resets. |
 | `RandomEquipmentCardFirstTurn` | `7a1d5b5d-cd08-4935-b629-d3d441905100` | [original opening draw][openingDraw] | Natural Equipment primary draw plus controlled native fallback to an Equipment with the deployment-draw trait. Original temporary -99 cost, count expansion and CardDraw RNG match. |
@@ -369,6 +372,7 @@ archives contain these observed battle sizes:
 | [NefariousOverflow][nefariousOverflow] | 172 | 2 | 7 | 59 | One unchanged relic payload; five-stack Unstable death adds 5 explosion damage, killing the Mage and reducing Guard Armor 17→7 |
 | [CopyFirstSpellPlayed][copyFirstSpell] | 173 | 2 | 6 | 52 | First direct Spell receives an Ephemeral hand copy; a second same-turn direct play leaves the one-shot condition unchanged |
 | [Funguy deck scaling][funguyDeckScaling] | 174 | 0 | 7 | 67 | Six callbacks at 40 visible cards apply twice per live room; three cardless Funguys spawn with six total Horde stacks |
+| [BrokenRail forge upgrade][brokenRail] | 176 | 16 | 5 | 39 | Original +2 HP forge payload scales to +6 at three points; native full-battle and bounded search match |
 
 The checks that enforce these observations are
 [TriggerCountChecks.Native](../../src/ModelChecks/TriggerCountChecks.cs),
@@ -398,6 +402,8 @@ across all recorded decisions, and [RelicCardAttackChecks.Native](../../src/Mode
 checking the two unchanged attack payloads, ordered subtype matches and native
 temporary offsets. Its pure checks also cover cardless births and reject dynamic
 attack scaling, which is not included in this original-owner evidence.
+The original BrokenRail payload and its three-point direct-monster forge
+transition are checked by [OriginalBrokenRailChecks.Native](../../src/ModelChecks/OriginalBrokenRailChecks.cs).
 Each new trigger archive has eight positive owner effects; their union covers
 all nine distinct originals. Removing only one original's installed callbacks
 must change health, attack, membership or status stacks, beyond trigger metadata.
@@ -750,3 +756,4 @@ dotnet run --project src/ModelChecks -c Release -- --gold-pyre-pure
 [moreSpikes]: full-battle-original-more-spikes.mt2f
 [stealthSlay]: full-battle-original-stealth-slay.mt2f
 [cardDrawOnHeal]: full-battle-original-card-draw-on-heal.mt2f
+[brokenRail]: full-battle-original-broken-rail.mt2f

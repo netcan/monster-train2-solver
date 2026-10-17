@@ -40,24 +40,30 @@ namespace MonsterTrain2Poju.Model
         public int? DragonsHoard { get; }
         public int? MoonPhase { get; }
         public bool? MoonPhaseTrackingActive { get; }
+        public bool? ForgeTrackingActive { get; }
+        public bool? ForgeToggleActive { get; }
         // Native PyreHeartResurrection is a consumed/not-allowed flag (0 or 1), not a tally.
         public int? PyreResurrectionCount { get; }
         public bool ActiveBattle { get; }
         public int? SelectedRoomIndex { get; }
         public StatisticQueryFrame(int? energy = null, bool? runningCombat = null, int? turn = null, int? forgePoints = null,
             int? dragonsHoard = null, int? moonPhase = null, int? pyreResurrectionCount = null, bool activeBattle = true,
-            int? selectedRoomIndex = null, bool? moonPhaseTrackingActive = null)
+            int? selectedRoomIndex = null, bool? moonPhaseTrackingActive = null,
+            bool? forgeTrackingActive = null, bool? forgeToggleActive = null)
         { Energy = energy; RunningCombat = runningCombat; Turn = turn; ForgePoints = forgePoints;
             DragonsHoard = dragonsHoard; MoonPhase = moonPhase; PyreResurrectionCount = pyreResurrectionCount; ActiveBattle = activeBattle;
-            SelectedRoomIndex = selectedRoomIndex; MoonPhaseTrackingActive = moonPhaseTrackingActive; }
+            SelectedRoomIndex = selectedRoomIndex; MoonPhaseTrackingActive = moonPhaseTrackingActive;
+            ForgeTrackingActive = forgeTrackingActive; ForgeToggleActive = forgeToggleActive; }
         public StatisticQueryFrame With(int? energy = null, bool? runningCombat = null, int? turn = null,
             int? forgePoints = null, int? dragonsHoard = null, int? moonPhase = null,
             int? pyreResurrectionCount = null, bool? activeBattle = null, int? selectedRoomIndex = null,
-            bool? moonPhaseTrackingActive = null) => new StatisticQueryFrame(
+            bool? moonPhaseTrackingActive = null, bool? forgeTrackingActive = null,
+            bool? forgeToggleActive = null) => new StatisticQueryFrame(
                 energy ?? Energy, runningCombat ?? RunningCombat, turn ?? Turn, forgePoints ?? ForgePoints,
                 dragonsHoard ?? DragonsHoard, moonPhase ?? MoonPhase, pyreResurrectionCount ?? PyreResurrectionCount,
                 activeBattle ?? ActiveBattle, selectedRoomIndex ?? SelectedRoomIndex,
-                moonPhaseTrackingActive ?? MoonPhaseTrackingActive);
+                moonPhaseTrackingActive ?? MoonPhaseTrackingActive, forgeTrackingActive ?? ForgeTrackingActive,
+                forgeToggleActive ?? ForgeToggleActive);
 
         internal static string? ValidateDecision(BattleTurnState state)
         {
