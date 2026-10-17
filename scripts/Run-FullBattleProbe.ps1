@@ -268,6 +268,7 @@ param(
     [switch] $OriginalAfterDrawGenerationRelics,
     [switch] $OriginalAddSnackOnKill,
     [switch] $OriginalFinalEndingArtifact,
+    [switch] $OriginalBalatroEventYorick,
     [switch] $OriginalGarfieldBoxRandomCard,
     [switch] $OriginalPartFactory,
     [switch] $OriginalBigDamageFromManyMorsels,
@@ -445,6 +446,13 @@ if ($OriginalFinalEndingArtifact) {
     if (-not $PSBoundParameters.ContainsKey('Policy')) { $Policy = 'units-spells-and-junk' }
     if ($Policy -notin @('units-and-junk', 'units-spells-and-junk')) {
         throw 'Original FinalEndingArtifact requires a model-driven card policy so recorded actions remain searchable.'
+    }
+}
+if ($OriginalBalatroEventYorick) {
+    $BranchCardMasks = $true
+    if (-not $PSBoundParameters.ContainsKey('Policy')) { $Policy = 'units-spells-and-junk' }
+    if ($Policy -notin @('units-and-junk', 'units-spells-and-junk')) {
+        throw 'Original BalatroEventYorick requires a model-driven card policy so recorded actions remain searchable.'
     }
 }
 if ($OriginalGarfieldBoxRandomCard) {
@@ -892,6 +900,7 @@ if ($OriginalHealthChoiceRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'origina
 if ($OriginalAfterDrawGenerationRelics) { $environment['MT2_PROBE_MODIFIERS'] = 'original-after-draw-generation-relics' }
 if ($OriginalAddSnackOnKill) { $environment['MT2_PROBE_MODIFIERS'] = 'original-add-snack-on-kill' }
 if ($OriginalFinalEndingArtifact) { $environment['MT2_PROBE_MODIFIERS'] = 'original-final-ending-artifact' }
+if ($OriginalBalatroEventYorick) { $environment['MT2_PROBE_MODIFIERS'] = 'original-balatro-event-yorick' }
 if ($OriginalGarfieldBoxRandomCard) { $environment['MT2_PROBE_MODIFIERS'] = 'original-garfield-box-random-card-per-turn' }
 if ($OriginalPartFactory) { $environment['MT2_PROBE_MODIFIERS'] = 'original-part-factory' }
 if ($OriginalBigDamageFromManyMorsels) { $environment['MT2_PROBE_MODIFIERS'] = 'original-big-damage-many-morsels' }
@@ -1839,6 +1848,12 @@ if ($OriginalFinalEndingArtifact -and ($trace.Schema -ne 193 -or $trace.Modifier
     -not $trace.OriginalFinalEndingArtifactPrepared -or @($trace.RelicChampionCardAfterDraw).Count -lt 1 -or
     -not (Select-String -LiteralPath $unityLog -Pattern 'ORIGINAL-FINAL-ENDING-ARTIFACT-PREPARED unchanged owner' -Quiet))) {
     throw 'Original FinalEndingArtifact lacks its unchanged owner or natural post-draw callback.'
+}
+if ($OriginalBalatroEventYorick -and ($trace.Schema -ne 194 -or $trace.ModifierScenario -ne 'original-balatro-event-yorick' -or
+    -not $trace.OriginalBalatroEventYorickPrepared -or @($trace.RelicCardPlayGoldOnExhaust).Count -lt 1 -or
+    @($trace.RelicCardPlayGoldOnExhaustTests).Count -lt 3 -or
+    -not (Select-String -LiteralPath $unityLog -Pattern 'ORIGINAL-BALATRO-EVENT-YORICK-PREPARED unchanged owner' -Quiet))) {
+    throw 'BalatroEventYorick lacks its unchanged owner, native Test controls or natural gold callback.'
 }
 if ($OriginalGarfieldBoxRandomCard -and ($trace.ModifierScenario -ne 'original-garfield-box-random-card-per-turn' -or
     $trace.Schema -ne 189 -or -not $trace.OriginalGarfieldBoxRandomCardPrepared -or

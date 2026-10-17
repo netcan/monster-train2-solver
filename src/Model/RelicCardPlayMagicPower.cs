@@ -80,6 +80,7 @@ namespace MonsterTrain2Poju.Model
             bool hasCheaperSpellUpgrade = source.Relics?.Any(relic => relic.EffectTypes.Contains(RelicModel.AddTempUpgradeToHandCardsIfCheaper)) == true;
             bool hasCardCopy = source.Relics?.Any(relic => relic.EffectTypes.Contains(RelicModel.CopyCardOnCardPlay)) == true;
             bool hasCardDraw = source.Relics?.Any(relic => relic.EffectTypes.Contains(RelicModel.CardDrawOnCardPlay)) == true;
+            bool hasGoldOnExhaust = source.Relics?.Any(relic => relic.EffectTypes.Contains(RelicCardPlayGoldOnExhaustModel.Effect)) == true;
             bool hasMonsterSpellTargeting = source.Relics?.Any(relic => relic.EffectTypes.Contains(RelicMonsterSpellTargetingModel.Effect)) == true;
             bool hasRoomCapacity = source.Relics?.Any(relic => relic.EffectTypes.Contains(RelicModel.ModifyRoomCapacityOnCardPlay)) == true;
             bool hasRoomAttachmentReplication = source.Relics?.Any(relic => relic.EffectTypes.Contains(RelicModel.FirstRoomCardOnAllFloors)) == true;
@@ -87,11 +88,11 @@ namespace MonsterTrain2Poju.Model
                 type == RelicResourceModel.EnergyOnCorruptRestrictedPlayed ||
                 type == RelicResourceModel.CorruptionOnCorruptRestrictedPlayed)) == true;
             if (!hasMagicPower && !hasCheaperSpellUpgrade && !hasCardCopy && !hasCardDraw && !hasMonsterSpellTargeting && !hasRoomCapacity &&
-                !hasRoomAttachmentReplication && !hasCorruptRestrictedCardPlay)
+                !hasRoomAttachmentReplication && !hasCorruptRestrictedCardPlay && !hasGoldOnExhaust)
                 return new RelicCardPlayMagicPowerResult(source);
-            if ((hasMagicPower || hasCheaperSpellUpgrade || hasCardCopy || hasCorruptRestrictedCardPlay) && source.CardInstances == null)
+            if ((hasMagicPower || hasCheaperSpellUpgrade || hasCardCopy || hasCorruptRestrictedCardPlay || hasGoldOnExhaust) && source.CardInstances == null)
                 return Fail(source, "Native card-play relic effects require the current owned-card list.");
-            if ((hasMagicPower || hasCheaperSpellUpgrade || hasCardCopy || hasCorruptRestrictedCardPlay) &&
+            if ((hasMagicPower || hasCheaperSpellUpgrade || hasCardCopy || hasCorruptRestrictedCardPlay || hasGoldOnExhaust) &&
                 !source.CardInstances!.Any(card => card.InstanceId == playedCardId))
                 return Fail(source, "Native card-play relic effects require the played card in the owned-card list.");
 
@@ -135,6 +136,18 @@ namespace MonsterTrain2Poju.Model
                             context, playedCardId, definitions, relicIndex, effectIndex, currentTurn);
                         if (!drawn.Supported) return Fail(context, drawn.UnsupportedReason!);
                         context = drawn.Context;
+                        continue;
+                    }
+                    if (relic.EffectTypes[effectIndex] == RelicCardPlayGoldOnExhaustModel.Effect)
+                    {
+                        if (trainState == null)
+                            return Fail(context, "Gold-on-exhaust requires the current train state.");
+                        trainState = CardSpellModel.WithContext(trainState, context);
+                        TrainCombatResult gold = RelicCardPlayGoldOnExhaustModel.ApplyOne(trainState, playedCardId,
+                            relicIndex, effectIndex, placement, preview);
+                        if (!gold.Supported) return Fail(context, gold.UnsupportedReason!);
+                        trainState = gold.State!;
+                        context = trainState.Context!;
                         continue;
                     }
                     if (relic.EffectTypes[effectIndex] == RelicModel.ModifyRoomCapacityOnCardPlay)

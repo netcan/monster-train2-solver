@@ -793,6 +793,13 @@ if (args.Length == 2 && args[0] == "--original-final-ending-artifact-only")
     Console.WriteLine($"NATIVE-FIXTURE-METADATA schema={fixture.RootElement.GetProperty("Schema").GetInt32()} bytes={new FileInfo(args[1]).Length} uniqueNodes={fixture.UniqueNodeCount}");
     return;
 }
+if (args.Length == 2 && args[0] == "--original-balatro-event-yorick-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    OriginalBalatroEventYorickChecks.Native(fixture.RootElement);
+    Console.WriteLine($"NATIVE-FIXTURE-METADATA schema={fixture.RootElement.GetProperty("Schema").GetInt32()} bytes={new FileInfo(args[1]).Length} uniqueNodes={fixture.UniqueNodeCount}");
+    return;
+}
 if (args.Length == 2 && args[0] == "--original-garfield-box-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
@@ -1594,6 +1601,11 @@ foreach (string path in args.Where(path => path.Contains("original-card-play-mag
 {
     using var document = ModelJson.ReadFixture(path);
     RelicCardPlayMagicPowerChecks.Native(document.RootElement);
+}
+foreach (string path in args.Where(path => path.Contains("original-balatro-event-yorick", StringComparison.OrdinalIgnoreCase)))
+{
+    using var document = ModelJson.ReadFixture(path);
+    OriginalBalatroEventYorickChecks.Native(document.RootElement);
 }
 foreach (string path in args.Where(path => path.Contains("original-card-draw-on-card-play", StringComparison.OrdinalIgnoreCase)))
 {

@@ -1,5 +1,18 @@
 # Native regression fixtures
 
+BalatroEventYorick extension (2026-10-17): 392 archives (354 battles and 38
+calibrations), 171/224 original relic owners (76.34%): 155 full-battle owners,
+fifteen campaign-interface owners and one native no-op. The unchanged one-effect
+owner's exhaust look-ahead is checked against 28 native Test calls and six
+natural Consume callbacks; every callback's complete train state matches the
+model's adjusted reward gold at one-gold precision. The 64-stage winning replay
+has 26 card actions, seven EndTurns and zero differential counters. Focused
+checks cover non-Consume rejection, modified play-count thresholds, preview
+refusal and reward multipliers. Independent search visits 128 states with
+serial/parallel best equality. The 38,959-byte archive has 6,373 unique nodes
+and SHA-256 `3d93650ab8c35fb869faf4332cd78ec9555b3334ab8a3078fd9eaca653a45e84`;
+no JSON companion is tracked.
+
 FinalEndingArtifact extension (2026-10-17): 391 archives (353 battles and 38
 calibrations), 170/224 original relic owners (75.89%): 154 full-battle owners,
 fifteen campaign-interface owners and one native no-op. Four natural post-draw
@@ -5191,4 +5204,31 @@ campaign and one native no-op.
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-final-ending-artifact.mt2f
 dotnet run --project src/ModelChecks -c Release -- --original-final-ending-artifact-only tests/fixtures/full-battle-original-final-ending-artifact.mt2f
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-final-ending-artifact.mt2f
+```
+
+### Original BalatroEventYorick relic (schema 194)
+
+`full-battle-original-balatro-event-yorick.mt2f` captures the unchanged owner
+and its `RelicEffectAddGoldOnExhaust` callback. A zero-cost inert Spell carrier
+gets the native Consume trait in the probe harness; the rest of the battle uses
+the normal units/spells/junk policy. All 28 native look-ahead tests and six
+natural Consume callbacks match, including complete train state and reward
+multiplier rounding. Controls reject non-Consume cards, exercise the extra-play
+threshold, preserve the source branch and ensure the callback is disabled in
+preview. The native-adjusted gold amount uses one-gold precision.
+
+The winning replay has 64 stages, 13 card cycles, 14 train phases, 11 spawns,
+26 card actions and seven EndTurns, with zero capture failures, mismatches,
+unsupported transitions or pending records. Independent search matches all 26
+recorded decisions and visits 128/128 states with serial/parallel best equality.
+The 38,959-byte archive has 6,373 unique nodes and SHA-256
+`3d93650ab8c35fb869faf4332cd78ec9555b3334ab8a3078fd9eaca653a45e84`; no JSON
+companion is tracked. Inventory is 392 archives: 354 battles and 38 component
+calibrations. Original relic evidence is 171/224 (76.34%): 155 battle, 15
+campaign and one native no-op.
+
+```powershell
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-balatro-event-yorick.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-balatro-event-yorick-only tests/fixtures/full-battle-original-balatro-event-yorick.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-balatro-event-yorick.mt2f
 ```

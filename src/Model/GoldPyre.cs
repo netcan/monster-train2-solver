@@ -111,13 +111,15 @@ namespace MonsterTrain2Poju.Model
 
     public static class GoldModel
     {
-        public static TrainCombatResult Adjust(TrainCombatState source, int amount, bool isReward = false, bool preview = false)
+        public static TrainCombatResult Adjust(TrainCombatState source, int amount, bool isReward = false, bool preview = false,
+            int roundIncrement = 5)
         {
             if (source.Context == null) return Fail("Gold adjustment requires shared battle context.");
             string? error = RelicModel.Validate(source.Context);
             if (error != null) return Fail(error);
             int adjusted;
-            try { adjusted = GoldRewardModel.Adjust(amount, isReward, multiplier: source.Context.Resources?.GoldRewardMultiplier ?? 1f); }
+            try { adjusted = GoldRewardModel.Adjust(amount, isReward, roundIncrement,
+                source.Context.Resources?.GoldRewardMultiplier ?? 1f); }
             catch (OverflowException) { return Fail("Gold reward float conversion exceeds the modeled native integer range."); }
             // AdjustGold(0) never calls SetGold. A clipped, unchanged result from
             // a nonzero amount still dispatches the native gold signal.

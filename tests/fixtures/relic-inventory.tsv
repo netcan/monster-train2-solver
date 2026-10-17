@@ -64,7 +64,7 @@
 "AddSnackOnKill"	"b6548209-3ccf-4deb-9896-f07d5df3dab9"	"accepted-native-battle"	"RelicEffectAddBattleCardToHandOnUnitTrigger"	""
 "MoreDeploymentPhaseEmber"	"83116c76-f5cc-4912-8a56-872731393975"	"accepted-native-battle"	"RelicEffectModifyEnergyDuringDeployment"	""
 "FinalEndingArtifact"	"6bb39014-9b03-4620-b088-f618a7e680b7"	"accepted-native-battle"	"RelicEffectAddChampionCardToHand"	""
-"BalatroEventYorick"	"2bd14ebc-1589-4652-a002-54013f0eace4"	"pending"	"RelicEffectAddGoldOnExhaust"	""
+"BalatroEventYorick"	"2bd14ebc-1589-4652-a002-54013f0eace4"	"accepted-native-battle"	"RelicEffectAddGoldOnExhaust"	""
 "EggHatchRemoval"	"8c8a2a2c-500c-4b77-90fd-0d309b94bb2c"	"accepted-native-battle"	"RelicEffectRemoveStatusEffectOnSpawn,RelicEffectAddStatusEffectOnSpawn"	""
 "SpawnWithArmor"	"68ef2523-5c2e-4660-b96d-00b1c0485f54"	"accepted-native-battle"	"RelicEffectAddStatusEffectOnSpawn"	""
 "EquipmentBoon_DH"	"394a559b-0c45-4bac-880a-522b04f1780c"	"accepted-native-battle"	"RelicEffectAddTrigger"	""

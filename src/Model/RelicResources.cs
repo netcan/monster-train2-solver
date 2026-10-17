@@ -170,6 +170,7 @@ namespace MonsterTrain2Poju.Model
         public const string MoonPhaseEnergy = "RelicEffectModifyEnergyOnMoonPhase";
         public const string MoonPhaseStatus = RelicMoonPhaseStatusModel.Effect;
         public const string EnergyOnCardEarlyDiscard = "RelicEffectEnergyOnCardEarlyDiscard";
+        public const string GoldOnExhaust = RelicCardPlayGoldOnExhaustModel.Effect;
         public const string EnergyOnCorruptRestrictedPlayed = "RelicEffectEnergyOnCorruptRestrictedPlayed";
         public const string CorruptionOnCorruptRestrictedPlayed = "RelicEffectCorruptionOnCorruptRestrictedPlayed";
         public const string AdditionalSmeltEmber = "RelicEffectAdditionalSmeltEmber";
@@ -180,6 +181,7 @@ namespace MonsterTrain2Poju.Model
         public static bool IsEffect(string type) => type == Energy || type == DeploymentEnergy || type == StartCombatEnergy || type == Draw ||
             type == PyreAttack || type == PyreHealth || type == FloorCapacity || type == MoonPhaseEnergy || type == MoonPhaseStatus ||
             type == EnergyOnCardEarlyDiscard ||
+            type == GoldOnExhaust ||
             type == EnergyOnCorruptRestrictedPlayed || type == CorruptionOnCorruptRestrictedPlayed ||
             type == AdditionalSmeltEmber || type == AdjustMixAmount || type == ConserveEnergyEndOfTurn || type == ConserveForgePoints ||
             type == RelicCardGenerationModel.AfterDraw || type == RelicCardGenerationModel.StartOfBattle ||
@@ -269,6 +271,9 @@ namespace MonsterTrain2Poju.Model
                     return "Moon-phase energy amount or phase mask differs from its original parameters.";
                 if (rule.Type == EnergyOnCardEarlyDiscard && rule.Amount != rule.ParamInt)
                     return "Early-discard energy amount differs from its original parameter.";
+                if (rule.Type == GoldOnExhaust && (rule.Amount != rule.ParamInt || rule.Conditions.Count != 0 ||
+                    rule.RequiredMutatorId != null || rule.CanApplyInPreviewMode))
+                    return "Gold-on-exhaust amount or callback restrictions differ from its native parameters.";
                 if ((rule.Type == EnergyOnCorruptRestrictedPlayed || rule.Type == CorruptionOnCorruptRestrictedPlayed) &&
                     (rule.Amount != rule.ParamInt || !relic.DisallowedInPlacementPhase.HasValue))
                     return "Corrupt Restricted card-play resource amount or placement restriction differs from its native parameter.";

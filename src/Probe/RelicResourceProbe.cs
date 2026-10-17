@@ -277,6 +277,8 @@ namespace MonsterTrain2Poju.Probe
             }
             else if (effect is RelicEffectEnergyOnCardEarlyDiscard)
                 amount = data.GetParamInt();
+            else if (effect is RelicEffectAddGoldOnExhaust)
+                amount = data.GetParamInt();
             else if (effect is RelicEffectEnergyOnCorruptRestrictedPlayed)
                 amount = (int)AccessTools.Field(effect.GetType(), "energyChange").GetValue(effect);
             else if (effect is RelicEffectCorruptionOnCorruptRestrictedPlayed)

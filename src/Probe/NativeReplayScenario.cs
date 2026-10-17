@@ -278,6 +278,8 @@ namespace MonsterTrain2Poju.Probe
                         OriginalGarfieldBoxRandomCardScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalAddSnackOnKillScenario.Enabled && !OriginalAddSnackOnKillScenario.Acquired)
                         OriginalAddSnackOnKillScenario.AcquireBeforeBattle(managers!, log);
+                    if (fullBattle && OriginalBalatroEventYorickScenario.Enabled && !OriginalBalatroEventYorickScenario.Acquired)
+                        OriginalBalatroEventYorickScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalCardTypeCostScenario.Enabled && !OriginalCardTypeCostScenario.Acquired)
                         OriginalCardTypeCostScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalPurgeToExhaustScenario.Enabled && !OriginalPurgeToExhaustScenario.Acquired)
@@ -645,6 +647,11 @@ namespace MonsterTrain2Poju.Probe
             if (fullBattle && !numericModifiersPrepared && OriginalFinalEndingArtifactScenario.Enabled)
             {
                 OriginalFinalEndingArtifactScenario.Prepare(managers, log);
+                numericModifiersPrepared = true;
+            }
+            if (fullBattle && !numericModifiersPrepared && OriginalBalatroEventYorickScenario.Enabled)
+            {
+                OriginalBalatroEventYorickScenario.Prepare(managers, log);
                 numericModifiersPrepared = true;
             }
             if (fullBattle && !numericModifiersPrepared && OriginalGarfieldBoxRandomCardScenario.Enabled)
@@ -1438,7 +1445,11 @@ namespace MonsterTrain2Poju.Probe
                 RelicStatusStackProbe.Matrix();
                 RelicStatusMagnitudeProbe.Matrix();
                 RelicStatusDecayProbe.Matrix();
-                if (OriginalAddSnackOnKillScenario.Enabled)
+                if (OriginalBalatroEventYorickScenario.Enabled)
+                {
+                    pendingPlay = OriginalBalatroEventYorickScenario.Choose(decision);
+                }
+                else if (OriginalAddSnackOnKillScenario.Enabled)
                 {
                     pendingPlay = OriginalAddSnackOnKillScenario.PolicyActionPlayed ? null :
                         Environment.GetEnvironmentVariable("MT2_PROBE_FULL_BATTLE_POLICY") == "units-and-junk"
@@ -1694,6 +1705,7 @@ namespace MonsterTrain2Poju.Probe
             PlayCardAction action = pendingPlay ?? throw new InvalidOperationException("Missing policy card action.");
             string modifierScenario = Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") ?? string.Empty;
             bool scenarioPrelude = (OriginalUnitRelicBatchScenario.Enabled && !OriginalUnitRelicBatchScenario.PolicyCarriersInjected) ||
+                (OriginalBalatroEventYorickScenario.Enabled && OriginalBalatroEventYorickScenario.IsScenarioAction(action)) ||
                 (modifierScenario == "damage-per-hp-ability" && !damagePerHpAbilityInputPrepared) ||
                 (modifierScenario == "dragon-hoard" && DragonHoardScenario.IsScenarioAction(action)) ||
                 (OriginalCarriageJackScenario.Enabled && OriginalCarriageJackScenario.IsScenarioAction(action)) ||
@@ -1775,6 +1787,7 @@ namespace MonsterTrain2Poju.Probe
             if (!cards.PlayCard(index, drop, ref error)) throw new InvalidOperationException("Policy card play failed: " + error);
             if (OriginalAddSnackOnKillScenario.Enabled) OriginalAddSnackOnKillScenario.MarkPolicyActionPlayed();
             if (OriginalFinalEndingArtifactScenario.Enabled) OriginalFinalEndingArtifactScenario.MarkPolicyActionPlayed();
+            if (OriginalBalatroEventYorickScenario.Enabled) OriginalBalatroEventYorickScenario.MarkPolicyActionPlayed();
             log.LogInfo("DEPTH-POLICY-PLAY card=" + action.CardInstanceId + " room=" + action.RoomIndex + " position=" + action.PlayerPosition + " target=" + action.TargetUnitId);
             pendingPlay = null;
             string summonScenario = modifierScenario;
