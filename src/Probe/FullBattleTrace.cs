@@ -159,6 +159,7 @@ namespace MonsterTrain2Poju.Probe
         }
 
         internal void BeginEndTurn() => turns.Begin();
+        internal void CompleteEndTurn(RoomOutcome outcome) => turns.Complete(outcome);
         internal BattleTurnState CaptureDecision(bool includeOuterBossForBump = false,
             bool ignoreOuterBossSpawnInteraction = false) => turns.Capture(includeOuterBossForBump, ignoreOuterBossSpawnInteraction);
         internal BattlePlayRules CapturePlayRules(EnemySpawnState spawn) => actions.CaptureRules(spawn);
@@ -680,6 +681,8 @@ namespace MonsterTrain2Poju.Probe
                 ModifierScenario = Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS"),
                 OriginalChampionStartTurnHealSchema = OriginalChampionStartTurnHealScenario.Prepared ? 208 : 0,
                 OriginalChampionStartTurnHeal = OriginalChampionStartTurnHealScenario.Prepared ? OriginalChampionStartTurnHealScenario.Evidence : null,
+                OriginalPyreCardCostSchema = OriginalPyreCardCostScenario.Prepared ? 209 : 0,
+                OriginalPyreCardCost = OriginalPyreCardCostScenario.Prepared ? OriginalPyreCardCostScenario.Evidence : null,
                 RelicStartTurnHealResets = RelicStartTurnHealProbe.Resets,
                 RelicStartTurnHealTests = RelicStartTurnHealProbe.Tests,
                 RelicStartTurnHealOperations = RelicStartTurnHealProbe.Records,

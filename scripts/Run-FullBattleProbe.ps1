@@ -303,6 +303,7 @@ param(
     [switch] $OriginalSoloUnitUpgradeRelic,
     [switch] $OriginalFrontRoomHealthUpgradeRelic,
     [switch] $OriginalChampionStartTurnHealRelic,
+    [switch] $OriginalPyreHealthCardCostRelic,
     [switch] $OriginalNullRelic,
     [switch] $OriginalNullRelicBaseline,
     [switch] $OriginalRelicCountAttack,
@@ -504,6 +505,7 @@ if ($OriginalUnitPhaseUpgradeRelics) { $BranchCardMasks = $true; $Policy = 'unit
 if ($OriginalSoloUnitUpgradeRelic) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalFrontRoomHealthUpgradeRelic) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalChampionStartTurnHealRelic) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
+if ($OriginalPyreHealthCardCostRelic) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalNullRelic -or $OriginalNullRelicBaseline) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalRelicCountAttack) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalMoreSpikes) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
@@ -955,6 +957,7 @@ if ($OriginalUnitPhaseUpgradeRelics) { $environment['MT2_PROBE_MODIFIERS'] = 'or
 if ($OriginalSoloUnitUpgradeRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-add-stats-to-solo-units' }
 if ($OriginalFrontRoomHealthUpgradeRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-front-room-health-upgrade' }
 if ($OriginalChampionStartTurnHealRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-champion-start-turn-heal' }
+if ($OriginalPyreHealthCardCostRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-pyre-health-card-cost' }
 if ($OriginalNullRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-null-relic' }
 if ($OriginalNullRelicBaseline) { $environment['MT2_PROBE_MODIFIERS'] = 'original-null-relic-baseline' }
 if ($OriginalRelicCountAttack) { $environment['MT2_PROBE_MODIFIERS'] = 'original-relic-count-attack' }
@@ -1976,6 +1979,17 @@ if ($OriginalChampionStartTurnHealRelic -and ($trace.OriginalChampionStartTurnHe
     @($trace.Actions | Where-Object ScenarioAction).Count -ne 6 -or
     -not (Select-String -LiteralPath $unityLog -Pattern 'ORIGINAL-CHAMPION-START-TURN-HEAL-PREPARED unchanged \+ full-health behavior' -Quiet))) {
     throw 'ChampsHealBeginningOfTurn lacks counter reset, Tower-wide Champion healing and non-Champ native controls.'
+}
+if ($OriginalPyreHealthCardCostRelic -and ($trace.OriginalPyreCardCostSchema -ne 209 -or
+    $trace.ModifierScenario -ne 'original-pyre-health-card-cost' -or
+    $trace.OriginalPyreCardCost.OwnerId -ne '7f4c8a90-2518-4a41-8c8c-0f5ca0b0a475' -or
+    $trace.CaptureFailures -ne 0 -or $trace.Mismatches -ne 0 -or $trace.Unsupported -ne 0 -or $trace.Pending -ne 0 -or
+    @($trace.OriginalPyreCardCost.Eligibility).Count -ne 3 -or
+    @($trace.OriginalPyreCardCost.Results).Count -ne 3 -or
+    @($trace.OriginalPyreCardCost.QueuedHits).Count -ne 1 -or
+    @($trace.Actions | Where-Object ScenarioAction).Count -ne 3 -or
+    -not (Select-String -LiteralPath $unityLog -Pattern 'ORIGINAL-PYRE-CARD-COST-PREPARED' -Quiet))) {
+    throw 'PyreHealthForEmberCardCost lacks native affordable, health-paid, X-cost and OnHit callback evidence.'
 }
 if ($OriginalTurnDrawRelics -and ($trace.ModifierScenario -ne 'original-turn-draw-relics' -or
     @($trace.RelicTurnDraw).Count -lt 8 -or
