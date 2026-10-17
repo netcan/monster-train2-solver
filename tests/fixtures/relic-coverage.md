@@ -1538,3 +1538,19 @@ pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-nim
 dotnet run --project src/ModelChecks -c Release -- --original-nims-oath-only tests/fixtures/full-battle-original-nims-oath.mt2f
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-nims-oath.mt2f
 ```
+
+## JudgesScales
+
+| AssetKey | DataId | Fixture | Evidence |
+| --- | --- | --- | --- |
+| `JudgesScales` | `3511a804-42be-465c-9d40-56b988c8a940` | `full-battle-original-judges-scales.mt2f` | The unchanged owner runs `RelicEffectChooseDiscardsDrawReplacementsOnPostOpeningDraw` during deployment after the opening draw. Native filtering excludes both Persistent and Infusion cards. The isolated selection discards one eligible carrier, explicitly cancels the follow-up selection, and draws one replacement; direct model replay matches the full native context. |
+
+The focused checker verifies owner parameters and placement gate, positive TestEffects eligibility, both protected-trait guards, cancellation with no choice, no-eligible and owner-removal controls, and preview/regular-turn no-op behavior. It does not claim automated search over multiple player choices; the native evidence is one discard followed by cancellation. The 62-stage winning battle has 22 actions, seven EndTurns and zero capture failures, mismatches, unsupported transitions or pending records. Independent search matches 128/128 states with serial/parallel best equality and replays four steps.
+
+The 36,805-byte archive has 5,780 unique nodes and SHA-256 `754bacc3fd8f55387a1a610ed43db565665793bd495fe89ca0a9950b5d371b4f`; no JSON companion is tracked. Inventory is 407 archives: 369 full battles and 38 component calibrations. Original relic evidence is 188/224 (83.93%): 171 battle, 16 campaign and one native no-op owner.
+
+```powershell
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-judges-scales.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-judges-scales-only tests/fixtures/full-battle-original-judges-scales.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-judges-scales.mt2f
+```

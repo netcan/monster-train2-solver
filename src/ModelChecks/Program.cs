@@ -1044,6 +1044,13 @@ if (args.Length == 2 && args[0] == "--original-nims-oath-only")
     OriginalNimsOathChecks.Native(fixture.RootElement);
     return;
 }
+if (args.Length == 2 && args[0] == "--original-judges-scales-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    OriginalJudgesScalesChecks.Native(fixture.RootElement);
+    Console.WriteLine($"NATIVE-FIXTURE-METADATA schema={fixture.RootElement.GetProperty("Schema").GetInt32()} bytes={new FileInfo(args[1]).Length} uniqueNodes={fixture.UniqueNodeCount}");
+    return;
+}
 if (args.Length == 2 && args[0] == "--original-combat-trigger-relics-only")
 {
     using var document = ModelJson.ReadFixture(args[1]);

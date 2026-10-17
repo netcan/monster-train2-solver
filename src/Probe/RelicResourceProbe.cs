@@ -243,6 +243,8 @@ namespace MonsterTrain2Poju.Probe
                     triggerMetadata);
                 amount = data.GetParamInt();
             }
+            else if (effect is RelicEffectChooseDiscardsDrawReplacementsOnPostOpeningDraw)
+                amount = data.GetParamInt();
             else if (effect is RelicEffectChangeStartingHandSize || effect is RelicEffectAdditionalDrawOnTowerFullHealth)
             {
                 var draw = (IBalanceEditingRelicEffect)effect;

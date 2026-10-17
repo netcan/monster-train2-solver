@@ -369,6 +369,8 @@ namespace MonsterTrain2Poju.Probe
                         OriginalChampionStartTurnHealScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalNimsOathScenario.Enabled && !OriginalNimsOathScenario.Acquired)
                         OriginalNimsOathScenario.AcquireBeforeBattle(managers!, log);
+                    if (fullBattle && OriginalJudgesScalesScenario.Enabled && !OriginalJudgesScalesScenario.Acquired)
+                        OriginalJudgesScalesScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalPyreCardCostScenario.Enabled && !OriginalPyreCardCostScenario.Acquired)
                         OriginalPyreCardCostScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalMoonPhaseStatusRelicScenario.Enabled && !OriginalMoonPhaseStatusRelicScenario.Acquired)

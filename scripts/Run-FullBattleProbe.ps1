@@ -304,6 +304,7 @@ param(
     [switch] $OriginalFrontRoomHealthUpgradeRelic,
     [switch] $OriginalChampionStartTurnHealRelic,
     [switch] $OriginalNimsOathRelic,
+    [switch] $OriginalJudgesScalesRelic,
     [switch] $OriginalPyreHealthCardCostRelic,
     [switch] $OriginalNullRelic,
     [switch] $OriginalNullRelicBaseline,
@@ -507,6 +508,7 @@ if ($OriginalSoloUnitUpgradeRelic) { $BranchCardMasks = $true; $Policy = 'units-
 if ($OriginalFrontRoomHealthUpgradeRelic) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalChampionStartTurnHealRelic) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalNimsOathRelic) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
+if ($OriginalJudgesScalesRelic) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalPyreHealthCardCostRelic) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalNullRelic -or $OriginalNullRelicBaseline) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalRelicCountAttack) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
@@ -960,6 +962,7 @@ if ($OriginalSoloUnitUpgradeRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'orig
 if ($OriginalFrontRoomHealthUpgradeRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-front-room-health-upgrade' }
 if ($OriginalChampionStartTurnHealRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-champion-start-turn-heal' }
 if ($OriginalNimsOathRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-nims-oath' }
+if ($OriginalJudgesScalesRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-judges-scales' }
 if ($OriginalPyreHealthCardCostRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-pyre-health-card-cost' }
 if ($OriginalNullRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-null-relic' }
 if ($OriginalNullRelicBaseline) { $environment['MT2_PROBE_MODIFIERS'] = 'original-null-relic-baseline' }
@@ -2005,6 +2008,22 @@ if ($OriginalNimsOathRelic -and ($trace.Schema -ne 210 -or
     @($trace.RelicNimsOathApplications | Where-Object { @($_.ModelCandidateRooms).Count -ge 2 }).Count -eq 0 -or
     -not (Select-String -LiteralPath $unityLog -Pattern 'ORIGINAL-NIMS-OATH-ACQUIRED unchanged owner=727e69a6-3a8c-4029-895c-99e9dac0bc0a' -Quiet))) {
     throw 'Inkbound_NimsOath lacks TestEffects controls, exact random-room Dazed applications or the bounded OnKill metadata boundary.'
+}
+if ($OriginalJudgesScalesRelic -and ($trace.Schema -ne 211 -or
+    $trace.OriginalJudgesScalesSchema -ne 211 -or $trace.ModifierScenario -ne 'original-judges-scales' -or
+    $trace.OriginalJudgesScales.OwnerId -ne '3511a804-42be-465c-9d40-56b988c8a940' -or
+    $trace.OriginalJudgesScales.EffectType -ne 'RelicEffectChooseDiscardsDrawReplacementsOnPostOpeningDraw' -or
+    $trace.OriginalJudgesScales.DisallowedInPlacementPhase -ne $false -or
+    $trace.OriginalJudgesScales.ParamInt2 -ne 2 -or
+    $trace.CaptureFailures -ne 0 -or $trace.Mismatches -ne 0 -or $trace.Unsupported -ne 0 -or $trace.Pending -ne 0 -or
+    @($trace.RelicJudgesScalesTests | Where-Object { $_.Result -and $_.Turn -eq 0 -and $_.Placement -and
+        @($_.EligibleCardIds).Count -gt 0 }).Count -eq 0 -or
+    @($trace.RelicJudgesScalesApplications).Count -ne 1 -or
+    @($trace.RelicJudgesScalesApplications | Where-Object { -not $_.Completed -or $null -eq $_.After -or
+        -not $_.Placement -or -not $_.Cancelled -or $_.SuppressedFollowupSelections -ne 1 -or
+        -not $_.ModelSupported -or $null -ne $_.Error -or $null -ne $_.Difference -or $_.Choices.Count -ne 1 }).Count -gt 0 -or
+    -not (Select-String -LiteralPath $unityLog -Pattern 'ORIGINAL-JUDGES-SCALES-ACQUIRED unchanged owner=3511a804-42be-465c-9d40-56b988c8a940' -Quiet))) {
+    throw 'JudgesScales lacks an eligible deployment hand, native discard/cancel/replacement evidence or exact model replay.'
 }
 if ($OriginalPyreHealthCardCostRelic -and ($trace.OriginalPyreCardCostSchema -ne 209 -or
     $trace.ModifierScenario -ne 'original-pyre-health-card-cost' -or

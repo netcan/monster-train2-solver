@@ -528,6 +528,12 @@ namespace MonsterTrain2Poju.Model
                 if (!openingDraw.Supported) return Unsupported(openingDraw.UnsupportedReason!);
                 context = openingDraw.Context!; train = WithContext(train, context, false);
             }
+            if (turn == 1 && context.Relics?.Any(owner => owner.EffectTypes.Contains(RelicJudgesScalesModel.Effect)) == true)
+            {
+                RelicJudgesScalesResult replacements = RelicJudgesScalesModel.Apply(context, source.PlayRules);
+                if (!replacements.Supported) return Unsupported(replacements.UnsupportedReason!);
+                context = replacements.Context!; train = WithContext(train, context, false);
+            }
             if (turn == 1 && train.Context!.Relics?.Any(relic => relic.EffectTypes.Any(RelicResourceModel.IsOpeningCorruption)) == true)
             {
                 TrainCombatResult opening = RelicResourceModel.ApplyOpeningCorruption(train, postDraw: true);

@@ -254,6 +254,7 @@ namespace MonsterTrain2Poju.Model
         public const string PileStartTurn = "RelicEffectAddEffectPerPileStartOfTurn";
         public const string StartTurnHeal = RelicStartTurnHealModel.Effect;
         public const string StartTurnRoomEffect = RelicStartTurnStatusModel.Effect;
+        public const string PostOpeningDiscardReplacement = RelicJudgesScalesModel.Effect;
         public static bool IsEffect(string type) => type == Energy || type == DeploymentEnergy || type == StartCombatEnergy || type == StartCombatHoard || type == Draw ||
             type == PyreAttack || type == PyreHealth || type == PayCardCostWithPyreHealth || type == FloorCapacity || type == MoonPhaseEnergy || type == MoonPhaseStatus ||
             type == EnergyOnCardEarlyDiscard ||
@@ -267,7 +268,7 @@ namespace MonsterTrain2Poju.Model
             RelicUnitResourceModel.IsEffect(type) || RelicCardDrawOnHealModel.IsEffect(type) ||
             RelicUnitTriggerCardGenerationModel.IsEffect(type) ||
             RelicOpeningDrawModel.IsEffect(type) || IsOpeningCorruption(type) || type == PileStartTurn || type == StartTurnHeal ||
-            type == StartTurnRoomEffect;
+            type == StartTurnRoomEffect || type == PostOpeningDiscardReplacement;
 
         internal static string? Validate(CombatRelicState relic)
         {
@@ -293,6 +294,11 @@ namespace MonsterTrain2Poju.Model
                     if (startTurnError != null) return startTurnError;
                 }
                 else if (rule.StartTurnRoomEffect != null) return "Unexpected start-turn room-effect payload on another effect.";
+                if (rule.Type == PostOpeningDiscardReplacement)
+                {
+                    string? discardError = RelicJudgesScalesModel.Validate(relic, rule);
+                    if (discardError != null) return discardError;
+                }
                 if (rule.Type == PayCardCostWithPyreHealth)
                 {
                     string? paymentError = RelicPayCardCostWithPyreHealthModel.Validate(relic, rule);
