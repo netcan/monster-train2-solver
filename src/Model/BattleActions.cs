@@ -358,6 +358,8 @@ namespace MonsterTrain2Poju.Model
                 source.PlayRules.Rooms.Select(room => room.RoomIndex).Distinct().Count() != source.PlayRules.Rooms.Count)
                 return Unsupported("Duplicate play definitions.");
             TrainCombatState train = source.Spawn.Train;
+            CombatTeam? originalTargetTeam = train.Rooms.SelectMany(room => room.Units)
+                .FirstOrDefault(unit => unit.Id == action.TargetUnitId)?.Team;
             BattlePlayRules outputPlayRules = source.PlayRules;
             string? trainValidation = TrainCombatModel.Validate(train);
             if (trainValidation != null) return Unsupported(trainValidation);
@@ -725,10 +727,12 @@ namespace MonsterTrain2Poju.Model
                 context, card.InstanceId, source.PlayRules, source.Spawn.Turn,
                 context.QueryFrame?.SelectedRoomIndex ?? action.RoomIndex, placement: source.Spawn.Turn == 0,
                 preview: context.IsolatedBattlePreview == true || train.Rooms.FirstOrDefault(room =>
-                    room.RoomIndex == action.RoomIndex)?.Preview == true, trainState: train);
+                    room.RoomIndex == action.RoomIndex)?.Preview == true, trainState: train, playedCardRule: rule,
+                lastTargets: lastMainTargets ?? Array.Empty<int>(), originalTargetTeam: originalTargetTeam);
             if (!cardPlayMagicPower.Supported) return Unsupported(cardPlayMagicPower.UnsupportedReason!);
             context = cardPlayMagicPower.Context;
-            train = CardSpellModel.WithContext(train, context);
+            train = cardPlayMagicPower.TrainState ?? CardSpellModel.WithContext(train, context);
+            if (cardPlayMagicPower.Outcome != RoomOutcome.Exchanged) outcome = cardPlayMagicPower.Outcome;
             RoomAttachmentUnitSyncResult replicatedCharacters = RoomAttachmentUnitModel.Synchronize(train,
                 capacitiesBeforeRelics, context.RoomCapacities);
             if (!replicatedCharacters.Supported) return Unsupported(replicatedCharacters.UnsupportedReason!);

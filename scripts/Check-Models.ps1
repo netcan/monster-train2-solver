@@ -33,6 +33,7 @@ $fixtureNames = @('full-battle-steward-once.mt2f', 'full-battle-no-cards.mt2f', 
     'full-battle-original-copy-first-spell-played.mt2f',
     'full-battle-original-copy-first-consume-played.mt2f',
     'full-battle-original-copy-consumed-card.mt2f',
+    'full-battle-original-monster-spell-targeting.mt2f',
     'full-battle-original-damage-on-floor-transition.mt2f',
     'full-battle-original-pyregel-on-ascend.mt2f',
     'full-battle-original-funguy-deck-scaling.mt2f',
@@ -928,6 +929,12 @@ foreach ($fixturePath in @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 
     foreach ($mode in @('--original-copy-consumed-card-only', '--battle-search-only')) {
         dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- $mode $fixturePath
         if ($LASTEXITCODE -ne 0) { throw "CopyConsumedCard checks failed ($mode): $fixturePath" }
+    }
+}
+foreach ($fixturePath in @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 'full-battle-original-monster-spell-targeting.mt2f' })) {
+    foreach ($mode in @('--original-monster-spell-targeting-only', '--battle-search-only')) {
+        dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- $mode $fixturePath
+        if ($LASTEXITCODE -ne 0) { throw "SingleToTeamMonsterSpellTargeting checks failed ($mode): $fixturePath" }
     }
 }
 foreach ($fixturePath in @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 'full-battle-original-funguy-deck-scaling.mt2f' })) {

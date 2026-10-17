@@ -1,5 +1,16 @@
 # Native regression fixtures
 
+SingleToTeamMonsterSpellTargeting extension (2026-10-17): 386 archives
+(348 battles and 38 calibrations), 165/224 original relic owners (73.66%):
+149 full-battle owners, fifteen campaign-interface owners and one native no-op.
+The unchanged owner copies one direct 1-damage Monster Spell to the other
+eligible Monster in its room, excluding the original target and Untouchable
+units. Its winning 62-stage replay has 13 card cycles, 20 actions and seven
+EndTurns, with zero native error counters. The focused checker confirms the
+owner condition, target/team controls and copied-target state. Independent
+search visits 128/128 states with serial/parallel best equality; unsupported
+candidate paths remain bounded by the explicit model guards.
+
 TrainRoomInstallFloor3AtStartOfCombat extension (2026-10-17): 385 archives
 (347 battles and 38 calibrations), 164/224 original relic owners (73.21%):
 148 full-battle owners, fifteen campaign-interface owners and one native no-op.
@@ -4972,4 +4983,34 @@ owners, fifteen campaign-interface owners and one no-op); the inventory now has
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-damage-on-floor-transition.mt2f
 dotnet run --project src/ModelChecks -c Release -- --bump-only tests/fixtures/full-battle-original-damage-on-floor-transition.mt2f
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-damage-on-floor-transition.mt2f
+```
+
+### Original SingleToTeamMonsterSpellTargeting relic (schema 188)
+
+`full-battle-original-monster-spell-targeting.mt2f` captures the unchanged
+`SingleToTeamMonsterSpellTargeting` owner and its tracked ThisTurn condition.
+One direct, unupgraded Spell with no traits targets Monsters and applies fixed
+1 Damage through DropTarget; the native callback copies that effect to the
+other eligible Monster in the same non-Pyre room. It excludes the original
+target and Untouchable units. The full battle wins with 62 matched stages, 13
+card cycles, 20 actions and seven EndTurns, with zero capture failures,
+mismatches, unsupported transitions or pending records. Focused checks cover
+the exact owner and condition update, one copied teammate, original-target,
+Untouchable, team and no-target controls, and once-per-turn reset.
+
+Independent search visits 128/128 states and preserves serial/parallel best
+equality. The checker reports 91 unsupported alternatives while matching
+recorded decisions and 21 unsupported candidate moves in its bounded search;
+these stay outside this captured support boundary. Other spell effects,
+upgrades, traits, OnCast behavior and Pyre-room or mixed-effect cases are not
+claimed. The binary is 35,464 bytes with 5,580 unique nodes and SHA-256
+`a14ea15a21c34c58ca672d3d28e0b8b1eec0db68f57e642fa5ed43272707b584`; no JSON
+companion is tracked. Inventory is 386 archives: 348 full battles and 38
+component calibrations. Original relic evidence is 165/224 (73.66%): 149
+battle, 15 campaign and one native no-op owner.
+
+```powershell
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-monster-spell-targeting.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-monster-spell-targeting-only tests/fixtures/full-battle-original-monster-spell-targeting.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-monster-spell-targeting.mt2f
 ```

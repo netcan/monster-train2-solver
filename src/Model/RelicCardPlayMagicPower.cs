@@ -40,12 +40,16 @@ namespace MonsterTrain2Poju.Model
     internal sealed class RelicCardPlayMagicPowerResult
     {
         internal CombatContext Context { get; }
+        internal TrainCombatState? TrainState { get; }
+        internal RoomOutcome Outcome { get; }
         internal string? UnsupportedReason { get; }
         internal bool Supported => UnsupportedReason == null;
         internal IReadOnlyList<RelicCardPlayMagicPowerDispatch> Dispatches { get; }
         internal RelicCardPlayMagicPowerResult(CombatContext context,
-            IReadOnlyList<RelicCardPlayMagicPowerDispatch>? dispatches = null, string? unsupportedReason = null)
-        { Context = context; Dispatches = Array.AsReadOnly((dispatches ?? Array.Empty<RelicCardPlayMagicPowerDispatch>()).ToArray()); UnsupportedReason = unsupportedReason; }
+            IReadOnlyList<RelicCardPlayMagicPowerDispatch>? dispatches = null, string? unsupportedReason = null,
+            TrainCombatState? trainState = null, RoomOutcome outcome = RoomOutcome.Exchanged)
+        { Context = context; Dispatches = Array.AsReadOnly((dispatches ?? Array.Empty<RelicCardPlayMagicPowerDispatch>()).ToArray());
+            UnsupportedReason = unsupportedReason; TrainState = trainState; Outcome = outcome; }
     }
 
     internal static class RelicCardPlayMagicPowerModel
@@ -68,18 +72,21 @@ namespace MonsterTrain2Poju.Model
 
         internal static RelicCardPlayMagicPowerResult Apply(CombatContext source, int playedCardId,
             BattlePlayRules? definitions = null, int currentTurn = -1, int? selectedRoomIndex = null,
-            bool placement = false, bool preview = false, TrainCombatState? trainState = null)
+            bool placement = false, bool preview = false, TrainCombatState? trainState = null,
+            CardPlayRule? playedCardRule = null, IReadOnlyList<int>? lastTargets = null,
+            CombatTeam? originalTargetTeam = null)
         {
             bool hasMagicPower = source.Relics?.Any(relic => relic.EffectTypes.Contains(RelicModel.ModifyCardMagicPowerOnCardPlayed)) == true;
             bool hasCheaperSpellUpgrade = source.Relics?.Any(relic => relic.EffectTypes.Contains(RelicModel.AddTempUpgradeToHandCardsIfCheaper)) == true;
             bool hasCardCopy = source.Relics?.Any(relic => relic.EffectTypes.Contains(RelicModel.CopyCardOnCardPlay)) == true;
             bool hasCardDraw = source.Relics?.Any(relic => relic.EffectTypes.Contains(RelicModel.CardDrawOnCardPlay)) == true;
+            bool hasMonsterSpellTargeting = source.Relics?.Any(relic => relic.EffectTypes.Contains(RelicMonsterSpellTargetingModel.Effect)) == true;
             bool hasRoomCapacity = source.Relics?.Any(relic => relic.EffectTypes.Contains(RelicModel.ModifyRoomCapacityOnCardPlay)) == true;
             bool hasRoomAttachmentReplication = source.Relics?.Any(relic => relic.EffectTypes.Contains(RelicModel.FirstRoomCardOnAllFloors)) == true;
             bool hasCorruptRestrictedCardPlay = source.Relics?.Any(relic => relic.EffectTypes.Any(type =>
                 type == RelicResourceModel.EnergyOnCorruptRestrictedPlayed ||
                 type == RelicResourceModel.CorruptionOnCorruptRestrictedPlayed)) == true;
-            if (!hasMagicPower && !hasCheaperSpellUpgrade && !hasCardCopy && !hasCardDraw && !hasRoomCapacity &&
+            if (!hasMagicPower && !hasCheaperSpellUpgrade && !hasCardCopy && !hasCardDraw && !hasMonsterSpellTargeting && !hasRoomCapacity &&
                 !hasRoomAttachmentReplication && !hasCorruptRestrictedCardPlay)
                 return new RelicCardPlayMagicPowerResult(source);
             if ((hasMagicPower || hasCheaperSpellUpgrade || hasCardCopy || hasCorruptRestrictedCardPlay) && source.CardInstances == null)
@@ -90,6 +97,7 @@ namespace MonsterTrain2Poju.Model
 
             CombatContext context = source;
             var dispatches = new List<RelicCardPlayMagicPowerDispatch>();
+            RoomOutcome outcome = RoomOutcome.Exchanged;
             for (int relicIndex = 0; relicIndex < context.Relics!.Count; relicIndex++)
             {
                 for (int effectIndex = 0; effectIndex < context.Relics![relicIndex].EffectTypes.Count; effectIndex++)
@@ -103,6 +111,22 @@ namespace MonsterTrain2Poju.Model
                         context = copied.Context;
                         if (copied.Applied)
                             dispatches.Add(new RelicCardPlayMagicPowerDispatch(relicIndex, effectIndex, true, copied.CopiedCardIds));
+                        continue;
+                    }
+                    if (relic.EffectTypes[effectIndex] == RelicMonsterSpellTargetingModel.Effect)
+                    {
+                        if (trainState == null || definitions == null || playedCardRule == null)
+                            return Fail(context, "Monster spell targeting requires the current train state and played card rule.");
+                        RelicMonsterSpellTargetingResult spread = RelicMonsterSpellTargetingModel.Apply(
+                            CardSpellModel.WithContext(trainState, context), relicIndex, effectIndex, playedCardRule,
+                            playedCardId, context.QueryFrame?.SelectedRoomIndex ?? selectedRoomIndex ?? -1,
+                            lastTargets ?? Array.Empty<int>(), originalTargetTeam, definitions, currentTurn);
+                        if (!spread.Supported) return Fail(context, spread.UnsupportedReason!);
+                        trainState = spread.State;
+                        context = trainState.Context!;
+                        if (spread.Outcome != RoomOutcome.Exchanged) outcome = spread.Outcome;
+                        if (spread.CopiedTargets > 0)
+                            dispatches.Add(new RelicCardPlayMagicPowerDispatch(relicIndex, effectIndex, true, Array.Empty<int>()));
                         continue;
                     }
                     if (relic.EffectTypes[effectIndex] == RelicModel.CardDrawOnCardPlay)
@@ -219,7 +243,8 @@ namespace MonsterTrain2Poju.Model
                     dispatches.Add(new RelicCardPlayMagicPowerDispatch(relicIndex, effect.EffectIndex, true, changed));
                 }
             }
-            return new RelicCardPlayMagicPowerResult(context, dispatches);
+            if (trainState != null) trainState = CardSpellModel.WithContext(trainState, context);
+            return new RelicCardPlayMagicPowerResult(context, dispatches, trainState: trainState, outcome: outcome);
         }
 
         private static RelicCardPlayMagicPowerResult Fail(CombatContext source, string error) =>

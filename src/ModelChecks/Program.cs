@@ -93,6 +93,13 @@ if (args.Length == 1 && args[0] == "--original-copy-consumed-card-pure")
     OriginalCopyConsumedCardChecks.Run();
     return;
 }
+if (args.Length == 2 && args[0] == "--original-monster-spell-targeting-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    RelicMonsterSpellTargetingChecks.Native(fixture.RootElement);
+    Console.WriteLine($"NATIVE-FIXTURE-METADATA schema={fixture.RootElement.GetProperty("Schema").GetInt32()} bytes={new FileInfo(args[1]).Length} uniqueNodes={fixture.UniqueNodeCount}");
+    return;
+}
 if (args.Length == 1 && args[0] == "--original-funguy-deck-pure")
 {
     OriginalFunguyDeckScalingChecks.Run();
@@ -1448,6 +1455,7 @@ OriginalNefariousOverflowChecks.Run();
 OriginalCopyFirstSpellChecks.Run();
 OriginalCopyFirstConsumeChecks.Run();
 OriginalCopyConsumedCardChecks.Run();
+RelicMonsterSpellTargetingChecks.Run();
 RelicFloorTransitionDamageChecks.Run();
 OriginalCardDrawOnHealChecks.Run();
 OriginalBrokenRailChecks.Run();

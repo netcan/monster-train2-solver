@@ -273,6 +273,7 @@ param(
     [switch] $OriginalCopyFirstSpellPlayed,
     [switch] $OriginalCopyFirstConsumePlayed,
     [switch] $OriginalCopyConsumedCard,
+    [switch] $OriginalMonsterSpellTargeting,
     [switch] $OriginalFunguyDeckScaling,
     [switch] $OriginalCardDrawOnHeal,
     [switch] $OriginalBrokenRailRelic,
@@ -399,7 +400,7 @@ if ($Mageblade -or $OriginalMagebladeMagnitudeRelic) { $BranchCardMasks = $true;
 if ($OriginalCardPlayMagicPower) { $BranchCardMasks = $true; $Policy = 'units-and-junk' }
 if ($OriginalCheaperSpellCost) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalCardDrawOnCardPlay) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
-if ($OriginalCopyFirstSpellPlayed -or $OriginalCopyFirstConsumePlayed -or $OriginalCopyConsumedCard) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
+if ($OriginalCopyFirstSpellPlayed -or $OriginalCopyFirstConsumePlayed -or $OriginalCopyConsumedCard -or $OriginalMonsterSpellTargeting) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalFunguyDeckScaling) { $PhysicalSpawnPoints = $true; $Policy = 'no-cards' }
 if ($OriginalCardDrawOnHeal) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalBrokenRailRelic) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
@@ -831,6 +832,7 @@ if ($OriginalNefariousOverflow) { $environment['MT2_PROBE_MODIFIERS'] = 'origina
 if ($OriginalCopyFirstSpellPlayed) { $environment['MT2_PROBE_MODIFIERS'] = 'original-copy-first-spell-played' }
 if ($OriginalCopyFirstConsumePlayed) { $environment['MT2_PROBE_MODIFIERS'] = 'original-copy-first-consume-played' }
 if ($OriginalCopyConsumedCard) { $environment['MT2_PROBE_MODIFIERS'] = 'original-copy-consumed-card' }
+if ($OriginalMonsterSpellTargeting) { $environment['MT2_PROBE_MODIFIERS'] = 'original-monster-spell-targeting' }
 if ($OriginalFunguyDeckScaling) { $environment['MT2_PROBE_MODIFIERS'] = 'original-funguy-deck-scaling' }
 if ($OriginalCardDrawOnHeal) { $environment['MT2_PROBE_MODIFIERS'] = 'original-card-draw-on-heal' }
 if ($OriginalBrokenRailRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-broken-rail' }
@@ -1650,6 +1652,13 @@ if ($OriginalCopyConsumedCard -and ($trace.Schema -ne 181 -or
     -not (Select-String -LiteralPath $unityLog -Pattern 'ORIGINAL-COPY-CONSUMED-CARD-PREPARED' -Quiet) -or
     @($trace.Actions | Where-Object ScenarioAction).Count -lt 2)) {
     throw 'CopyConsumedCard lacks its direct Consume Spell and same-battle copy control.'
+}
+if ($OriginalMonsterSpellTargeting -and ($trace.Schema -ne 188 -or
+    $trace.ModifierScenario -ne 'original-monster-spell-targeting' -or
+    -not $trace.OriginalMonsterSpellTargetingPrepared -or
+    -not (Select-String -LiteralPath $unityLog -Pattern 'ORIGINAL-MONSTER-SPELL-TARGETING-PREPARED' -Quiet) -or
+    @($trace.Actions | Where-Object ScenarioAction).Count -ne 1)) {
+    throw 'SingleToTeamMonsterSpellTargeting lacks its direct Monster-target spell witness.'
 }
 if ($OriginalDamageOnFloorTransition -and ($trace.Schema -ne 182 -or
     $trace.ModifierScenario -ne 'bump' -or

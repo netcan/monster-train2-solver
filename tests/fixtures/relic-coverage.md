@@ -1,7 +1,7 @@
 # Original relic coverage evidence
 
-As of 2026-10-17, **164 distinct original collectable relics / 224 catalog entries
-(73.21%)** have accepted native evidence: 148 have full-battle effect evidence,
+As of 2026-10-17, **165 distinct original collectable relics / 224 catalog entries
+(73.66%)** have accepted native evidence: 149 have full-battle effect evidence,
 fifteen have campaign consumer interfaces validated, and one is an explicit
 native no-op with seeded baseline equivalence. Except for that no-op, this counts
 unchanged relic definitions whose effects actually ran, including original filters and
@@ -34,6 +34,13 @@ replay and 128-state search pass.
 unchanged owner creates two non-permanent copies, and replaying one is blocked
 by the original once-per-battle condition. Its full replay and 128-state search
 pass with zero error counters.
+`SingleToTeamMonsterSpellTargeting` now has one native direct Monster Spell
+witness: the unchanged owner copies fixed 1 Damage/DropTarget to the other
+eligible Monster in the same non-Pyre room, excluding the original target and
+Untouchable units. The 62-stage winning replay has zero error counters; focused
+checks validate the tracked ThisTurn condition and controls. Independent search
+visits 128/128 states with serial/parallel best equality, while unsupported
+alternatives remain outside the explicitly narrow card/effect boundary.
 `DamageOnFloorTransition` now has exact +3 native enemy damage after both
 PostAscension and PostDescension; rooted, immobile and player movement controls
 remain unchanged. Its full replay and independent battle search pass.
@@ -186,6 +193,7 @@ owner count.
 | `CopyFirstSpellPlayed` | `0f4a9e72-cd34-4667-95f6-6a0ca69832f8` | [CopyFirstSpellPlayed][copyFirstSpell] | The unchanged once-per-turn owner copies the first direct Spell with temporary Ephemeral; its generated copy plays again the same turn without retriggering. Exact original owner only; sibling copy payloads are not generalized. |
 | `CopyFirstConsumePlayed` | `b7207406-3c55-4771-b9c9-ed99dd9e1f9b` | [CopyFirstConsumePlayed][copyFirstConsume] | The unchanged original owner copies the first direct-play Spell carrying the required Consume trait as a permanent hand card, and the copy enters deck statistics. Playing that copy in the same battle does not retrigger the ThisBattle condition. Native replay and independent 128/128-state search pass; sibling copy payloads are not generalized. |
 | `CopyConsumedCard` | `51368ce4-b037-49ef-801c-545405b78800` | [CopyConsumedCard][copyConsumedCard] | The unchanged owner copies a direct-play card with the required Consume trait twice, irrespective of card type, as non-permanent hand cards. Playing one copy in the same battle creates no third copy. The captured Spell path passes native replay and independent 128/128-state search; other card types are not claimed. |
+| `SingleToTeamMonsterSpellTargeting` | `070c87f3-a48f-49d6-a288-04854ab3b0cf` | [Monster Spell targeting][monsterSpellTargeting] | One direct unupgraded, traitless 1-Damage DropTarget Spell targets Monsters; the unchanged owner copies the effect to the other eligible same-room Monster, excluding the original and Untouchable units. The ThisTurn condition and full native replay match. Other effect payloads, upgrades, traits, OnCast, Pyre-room and mixed-effect cases remain unsupported. |
 | `StartOfTurnAddFunguysPerDeckSize` | `e5d7c9d0-c0a3-4b0c-97cf-6def6ad287e9` | [Funguy deck scaling][funguyDeckScaling] | Six original callbacks at 40 visible cards apply two cardless Horde effects on each live room: three Funguys spawn and Horde rises by six total. Relentless room destruction is respected; support is limited to this original payload and captured positive path. |
 | `CardDrawOnHeal` | `9a38370b-150c-45bd-9e3e-93a688a04850` | [CardDrawOnHeal][cardDrawOnHeal] | Four allied OnHeal callbacks draw exactly one card after native ThisTurn reset; a second same-turn heal is suppressed after the two native notifications, and an enemy-heal control does not trigger the Monsters-only owner. Placement/preview gates are pure controls; targeted test-card setup is excluded from full-policy replay. |
 | `BrokenRail` | `1699b5c7-8c34-471c-8e5a-c9830e2bc482` | [BrokenRail forge upgrade][brokenRail] | The unchanged +2 HP forge upgrade scales to +6 at three forge points on one eligible ordinary monster summon. Native direct-play and full-battle state match; bounded 128-state search matches with serial/parallel best equality. Tracking/toggle/eligibility controls are pure; room-specific replacements and non-monster plays remain unsupported. |
@@ -410,6 +418,7 @@ archives contain these observed battle sizes:
 | [start-room attachment][startRoomAttachment] | 168 | 23 | 7 | 60 | Both-team cardless FuelCar attachment, eight GUID-attributed OnDeath witnesses and source-room removal on Ascend |
 | [start-room SpellSanctum attachment][startRoomSpellSanctum] | 186 | 27 | 7 | 57 | Both-team cardless attachment, native 1-to-0 Spell cost witness and room-exit upgrade removal |
 | [start-room FightClub attachment][startRoomFightClub] | 187 | 21 | 7 | 60 | Monsters-only cardless +15 attack attachment on room 2; one impacted-unit and 32 room-state witnesses |
+| [Monster Spell targeting][monsterSpellTargeting] | 188 | 13 | 7 | 62 | One copied 1-Damage DropTarget effect; original-target, Untouchable and team controls |
 | [normal smelt][smelt] | 103 | 22 | 7 | 55 | Original +1 Ember on a cost-2 smelt |
 | [zero-cost smelt][smeltZero] | 103 | 21 | 7 | 56 | Original +1 Ember with zero base smelt cost |
 | [bulk smelt][smeltBulk] | 103 | 1 | 7 | 52 | Four consumed cards, 3 Forge and four extra Ember |
@@ -821,6 +830,7 @@ dotnet run --project src/ModelChecks -c Release -- --gold-pyre-pure
 [extractForEmberAndEchos]: full-battle-original-extract-for-ember-and-echos.mt2f
 [copyFirstConsume]: full-battle-original-copy-first-consume-played.mt2f
 [copyConsumedCard]: full-battle-original-copy-consumed-card.mt2f
+[monsterSpellTargeting]: full-battle-original-monster-spell-targeting.mt2f
 [damageOnFloorTransition]: full-battle-original-damage-on-floor-transition.mt2f
 [soloUnitUpgrade]: full-battle-original-add-stats-to-solo-units.mt2f
 [purgeToExhaust]: full-battle-original-purge-to-exhaust.mt2f
@@ -948,3 +958,25 @@ battle, 15 campaign and one native no-op owner.
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-start-room-attachment-floor3.mt2f
 dotnet run --project src/ModelChecks -c Release -- --original-start-room-attachment-only tests/fixtures/full-battle-original-start-room-attachment-floor3.mt2f
 ```
+
+## SingleToTeamMonsterSpellTargeting
+
+The schema-188 archive captures the unchanged original owner and its tracked
+ThisTurn condition. A direct unupgraded Spell with no traits targets Monsters
+and applies fixed 1 Damage via DropTarget. The owner applies that effect to the
+other eligible Monster in the same non-Pyre room, excluding the selected target
+and Untouchable units. Native team, no-target and eligibility controls pass;
+the full 62-stage winning replay has 13 card cycles, 20 actions, seven EndTurns
+and zero capture failures, mismatches, unsupported transitions or pending
+records. The focused checker verifies the condition update and once-per-turn
+reset.
+
+Independent search visits 128/128 states with serial/parallel best equality;
+it records 91 unsupported alternatives while matching recorded decisions and
+21 unsupported candidate moves in its bounded search. This is not generic
+coverage for other spell effects, upgrades, traits, OnCast behavior, Pyre rooms
+or mixed-effect spells. The 35,464-byte binary has 5,580 unique nodes and SHA-256
+`a14ea15a21c34c58ca672d3d28e0b8b1eec0db68f57e642fa5ed43272707b584`; no JSON
+companion is tracked. The inventory is 386 archives: 348 battles and 38
+component calibrations. Original relic coverage is 165/224 (73.66%): 149 battle,
+15 campaign and one native no-op owner.

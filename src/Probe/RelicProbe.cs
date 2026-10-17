@@ -179,6 +179,10 @@ namespace MonsterTrain2Poju.Probe
                             data.GetTraits().Select(trait => trait.GetTraitStateName()).ToArray(), upgrade,
                             RelicCardModifierProbe.Conditions(item.Effect));
                     }).ToArray();
+                var monsterSpellTargeting = effects.Select((effect, index) => new { Effect = effect, Index = index })
+                    .Where(item => item.Effect.GetType().Name == RelicMonsterSpellTargetingModel.Effect)
+                    .Select(item => new RelicMonsterSpellTargetingModifier(item.Index,
+                        RelicCardModifierProbe.Conditions(item.Effect))).ToArray();
                 var cardPlayRoomCapacity = effects.Select((effect, index) => new { Effect = effect, Index = index })
                     .Where(item => item.Effect is RelicEffectModifyRoomCapacityOnCardPlay)
                     .Select(item => {
@@ -243,7 +247,8 @@ namespace MonsterTrain2Poju.Probe
                     unstableRebalances: unstableRebalances.Length > 0 ? unstableRebalances : null,
                     copyCardOnCardPlayModifiers: copyCardOnCardPlay.Length > 0 ? copyCardOnCardPlay : null,
                     floorTransitionDamageRules: floorTransitionDamage.Length > 0 ? floorTransitionDamage : null,
-                    soloUnitUpgrades: soloUnitUpgrades.Length > 0 ? soloUnitUpgrades : null);
+                    soloUnitUpgrades: soloUnitUpgrades.Length > 0 ? soloUnitUpgrades : null,
+                    monsterSpellTargetingModifiers: monsterSpellTargeting.Length > 0 ? monsterSpellTargeting : null);
             }).ToArray();
         }
 

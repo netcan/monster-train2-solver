@@ -18,12 +18,15 @@ namespace MonsterTrain2Poju.Probe
         internal const string CopyFirstSpellName = "original-copy-first-spell-played";
         internal const string CopyFirstConsumeName = "original-copy-first-consume-played";
         internal const string CopyConsumedCardName = "original-copy-consumed-card";
+        internal const string MonsterSpellTargetingName = "original-monster-spell-targeting";
         private const string TinkermasterId = "db2193eb-a476-4cc4-9a26-2d0e35f46b74";
         private const string ProgressId = "4446fd0c-f7c3-4a9d-96c3-bd12e4426a76";
         private const string NefariousOverflowId = "b0575799-1511-489d-a05d-b5b2e6bf84c2";
         private const string CopyFirstSpellId = "0f4a9e72-cd34-4667-95f6-6a0ca69832f8";
         private const string CopyFirstConsumeId = "b7207406-3c55-4771-b9c9-ed99dd9e1f9b";
         private const string CopyConsumedCardId = "51368ce4-b037-49ef-801c-545405b78800";
+        private const string MonsterSpellTargetingId = "070c87f3-a48f-49d6-a288-04854ab3b0cf";
+        private const string MonsterSpellWitnessId = "d9042b99-f328-4ae9-8995-1bb242a970c4";
         private const string MixologyId = "9582724d-2d5e-4349-a642-9720bbb833e9";
         private const string BlastInfusionId = "3cf25a9b-daa1-42cd-8174-eb0f59cd590f";
         private const string CopyWitnessSpellId = "03b20d75-b919-4f87-96e1-4d35cd556520";
@@ -40,17 +43,19 @@ namespace MonsterTrain2Poju.Probe
         private static int secondOpeningChoice;
         private static bool explosionWitness;
         private static bool seededPoison;
+        private static bool monsterSpellTargetingActionMarked;
         internal static bool Prepared { get; private set; }
         private static IReadOnlyList<ElixirMixSelection> pendingSelections = Array.Empty<ElixirMixSelection>();
         private static int pendingSelectionIndex;
         internal static bool Acquired { get; private set; }
-        internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") is Name or TinkermasterName or ProgressName or NefariousOverflowName or CopyFirstSpellName or CopyFirstConsumeName or CopyConsumedCardName;
+        internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") is Name or TinkermasterName or ProgressName or NefariousOverflowName or CopyFirstSpellName or CopyFirstConsumeName or CopyConsumedCardName or MonsterSpellTargetingName;
         internal static bool TinkermasterMode => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == TinkermasterName;
         internal static bool ProgressMode => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == ProgressName;
         internal static bool NefariousOverflowMode => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == NefariousOverflowName;
         internal static bool CopyFirstSpellMode => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == CopyFirstSpellName;
         internal static bool CopyFirstConsumeMode => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == CopyFirstConsumeName;
         internal static bool CopyConsumedCardMode => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == CopyConsumedCardName;
+        internal static bool MonsterSpellTargetingMode => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == MonsterSpellTargetingName;
         private static bool CopyConsumeMode => CopyFirstConsumeMode || CopyConsumedCardMode;
 
         internal static void AcquireBeforeBattle(AllGameManagers managers, ManualLogSource log)
@@ -59,8 +64,8 @@ namespace MonsterTrain2Poju.Probe
             SaveManager save = managers.GetSaveManager();
             if (save.PreviewMode || save.GetGameSequence() == SaveData.GameSequence.InBattle)
                 throw new InvalidOperationException("Original Mix relic must be acquired before battle setup.");
-            string id = CopyConsumedCardMode ? CopyConsumedCardId : CopyFirstConsumeMode ? CopyFirstConsumeId : CopyFirstSpellMode ? CopyFirstSpellId : NefariousOverflowMode ? NefariousOverflowId : TinkermasterMode ? TinkermasterId : ProgressId;
-            string key = CopyConsumedCardMode ? "CopyConsumedCard" : CopyFirstConsumeMode ? "CopyFirstConsumePlayed" : CopyFirstSpellMode ? "CopyFirstSpellPlayed" : NefariousOverflowMode ? "NefariousOverflow" : TinkermasterMode ? "TinkermasterTools" : "ProgressPacemaker";
+            string id = MonsterSpellTargetingMode ? MonsterSpellTargetingId : CopyConsumedCardMode ? CopyConsumedCardId : CopyFirstConsumeMode ? CopyFirstConsumeId : CopyFirstSpellMode ? CopyFirstSpellId : NefariousOverflowMode ? NefariousOverflowId : TinkermasterMode ? TinkermasterId : ProgressId;
+            string key = MonsterSpellTargetingMode ? "SingleToTeamMonsterSpellTargeting" : CopyConsumedCardMode ? "CopyConsumedCard" : CopyFirstConsumeMode ? "CopyFirstConsumePlayed" : CopyFirstSpellMode ? "CopyFirstSpellPlayed" : NefariousOverflowMode ? "NefariousOverflow" : TinkermasterMode ? "TinkermasterTools" : "ProgressPacemaker";
             CollectableRelicData relic = save.GetAllGameData().GetAllCollectableRelicData().Single(item => item.GetID() == id);
             RelicEffectData effect = relic.GetEffects().Single();
             bool validNefariousOverflow = !NefariousOverflowMode ||
@@ -76,13 +81,17 @@ namespace MonsterTrain2Poju.Probe
             bool validCopyFirstSpell = !CopyFirstSpellMode || ValidCopyFirstSpell(effect);
             bool validCopyFirstConsume = !CopyFirstConsumeMode || ValidCopyFirstConsume(effect);
             bool validCopyConsumedCard = !CopyConsumedCardMode || ValidCopyConsumedCard(effect);
+            bool validMonsterSpellTargeting = !MonsterSpellTargetingMode || ValidMonsterSpellTargeting(effect);
             if (relic.name != key || relic.DisallowInDeploymentPhase || !validNefariousOverflow || !validCopyFirstSpell || !validCopyFirstConsume || !validCopyConsumedCard ||
-                !validMixRelic ||
+                !validMonsterSpellTargeting || !validMixRelic ||
                 save.GetCollectedRelics().Any(item => item.GetRelicDataID() == id))
                 throw new InvalidOperationException("Original scenario relic definition or acquisition changed.");
             save.AddRelic(relic);
             Acquired = true;
-            if (CopyFirstSpellMode)
+            if (MonsterSpellTargetingMode)
+                log.LogInfo("ORIGINAL-MONSTER-SPELL-TARGETING-ACQUIRED unchanged effect=" + effect.GetEffectClassName() +
+                    " conditions=" + effect.GetEffectConditions().Count);
+            else if (CopyFirstSpellMode)
                 log.LogInfo("ORIGINAL-COPY-FIRST-SPELL-ACQUIRED unchanged count=" + effect.GetParamInt() +
                     " cardType=" + effect.GetParamCardType() + " upgrade=" + effect.GetParamCardUpgradeData()?.GetID() +
                     " conditions=" + effect.GetEffectConditions().Count);
@@ -107,9 +116,9 @@ namespace MonsterTrain2Poju.Probe
 
         internal static void Prepare(AllGameManagers managers, ManualLogSource log)
         {
-            if ((TinkermasterMode || ProgressMode || NefariousOverflowMode || CopyFirstSpellMode || CopyConsumeMode) && (!Acquired ||
+            if ((TinkermasterMode || ProgressMode || NefariousOverflowMode || CopyFirstSpellMode || CopyConsumeMode || MonsterSpellTargetingMode) && (!Acquired ||
                 managers.GetSaveManager().GetCollectedRelics().Count(item => item.GetRelicDataID() ==
-                    (CopyConsumedCardMode ? CopyConsumedCardId : CopyFirstConsumeMode ? CopyFirstConsumeId : CopyFirstSpellMode ? CopyFirstSpellId : NefariousOverflowMode ? NefariousOverflowId : TinkermasterMode ? TinkermasterId : ProgressId)) != 1))
+                    (MonsterSpellTargetingMode ? MonsterSpellTargetingId : CopyConsumedCardMode ? CopyConsumedCardId : CopyFirstConsumeMode ? CopyFirstConsumeId : CopyFirstSpellMode ? CopyFirstSpellId : NefariousOverflowMode ? NefariousOverflowId : TinkermasterMode ? TinkermasterId : ProgressId)) != 1))
                 throw new InvalidOperationException("Original Mix relic is missing or duplicated at battle setup.");
             Prepared = false;
             logger = log;
@@ -117,6 +126,7 @@ namespace MonsterTrain2Poju.Probe
             playedOpeningElixirId = 0;
             copySourcePreludeMarked = false;
             copyControlPreludeMarked = false;
+            monsterSpellTargetingActionMarked = false;
             consumeCopyId = 0;
             seededPoison = false;
             drafts = 0;
@@ -132,17 +142,20 @@ namespace MonsterTrain2Poju.Probe
             pendingSelectionIndex = 0;
             CardManager cards = managers.GetCardManager()!;
             AllGameData gameData = managers.GetSaveManager().GetAllGameData();
-            CardData definition = CopyFirstSpellMode || CopyConsumeMode ? AddCopyWitnessSpell(gameData, CopyConsumeMode) : gameData.FindCardData(MixologyId) ??
+            CardData definition = MonsterSpellTargetingMode ? AddMonsterSpellWitness(gameData) : CopyFirstSpellMode || CopyConsumeMode ? AddCopyWitnessSpell(gameData, CopyConsumeMode) : gameData.FindCardData(MixologyId) ??
                 throw new InvalidOperationException("Mix fixture requires original Mixology.");
-            if ((!CopyFirstSpellMode && !CopyConsumeMode && definition.GetEffects().Count(effect => effect.GetEffectStateName() == typeof(CardEffectMix).Name) != 2) ||
+            if ((!MonsterSpellTargetingMode && !CopyFirstSpellMode && !CopyConsumeMode && definition.GetEffects().Count(effect => effect.GetEffectStateName() == typeof(CardEffectMix).Name) != 2) ||
                 !cards.GetBelowHandSize())
                 throw new InvalidOperationException("Mix fixture requires its original effects and a free hand slot.");
-            CardState added = cards.AddNewCard(definition, CardPile.HandPile, false, false, animate: false);
-            if (added == null || !cards.GetHand().Contains(added))
-                throw new InvalidOperationException("Mix fixture could not place its scenario card in hand.");
+            CardPile destination = MonsterSpellTargetingMode ? CardPile.DeckPileTop : CardPile.HandPile;
+            CardState added = cards.AddNewCard(definition, destination, false, false, animate: false);
+            if (added == null || !(MonsterSpellTargetingMode ? cards.GetDrawPile() : cards.GetHand()).Contains(added))
+                throw new InvalidOperationException("Mix fixture could not place its scenario card in the requested pile.");
             sourceId = FullBattleTrace.Active!.CardId(added);
             Prepared = true;
-            log.LogInfo(CopyFirstSpellMode
+            log.LogInfo(MonsterSpellTargetingMode
+                ? "ORIGINAL-MONSTER-SPELL-TARGETING-PREPARED unchanged relic, direct 1-damage Monster-target witness card=" + sourceId
+                : CopyFirstSpellMode
                 ? "ORIGINAL-COPY-FIRST-SPELL-PREPARED unchanged relic, deterministic null-Spell witness card=" + sourceId
                 : CopyFirstConsumeMode
                 ? "ORIGINAL-COPY-FIRST-CONSUME-PREPARED unchanged relic, Consume Spell witness card=" + sourceId
@@ -155,6 +168,11 @@ namespace MonsterTrain2Poju.Probe
 
         internal static bool IsScenarioPrelude(PlayCardAction action)
         {
+            if (MonsterSpellTargetingMode && !monsterSpellTargetingActionMarked && action.CardInstanceId == sourceId)
+            {
+                monsterSpellTargetingActionMarked = true;
+                return true;
+            }
             if (CopyConsumeMode)
             {
                 if (!copySourcePreludeMarked && action.CardInstanceId == sourceId)
@@ -188,6 +206,30 @@ namespace MonsterTrain2Poju.Probe
 
         internal static PlayCardAction? Choose(BattleTurnState state)
         {
+            if (MonsterSpellTargetingMode)
+            {
+                if (!played)
+                {
+                    IReadOnlyList<PlayCardAction> plays = BattleActionModel.EnumerateSupportedPlays(state);
+                    foreach (RoomCombatState room in state.Spawn.Train.Rooms)
+                    {
+                        int[] viable = room.Units.Where(unit => unit.Team == CombatTeam.Player && !unit.IsPyre && unit.Health > 0 &&
+                            unit.Status("untouchable") == null).Select(unit => unit.Id).ToArray();
+                        if (viable.Length < 2) continue;
+                        PlayCardAction? witness = plays.FirstOrDefault(action => action.CardInstanceId == sourceId &&
+                            action.RoomIndex == room.RoomIndex && viable.Contains(action.TargetUnitId));
+                        if (witness != null)
+                        {
+                            played = true;
+                            return witness;
+                        }
+                    }
+                }
+                PlayCardAction? normal = BattleActionModel.ChooseUnitSpellAndJunkPlay(state);
+                if (normal?.CardInstanceId != sourceId) return normal;
+                return BattleActionModel.EnumerateSupportedPlays(state).FirstOrDefault(action => action.CardInstanceId != sourceId &&
+                    state.PlayRules?.Cards.FirstOrDefault(rule => rule.DataId == state.Spawn.Train.Context!.FindCard(action.CardInstanceId)?.DataId)?.Effect == "SpawnMonster");
+            }
             if (CopyConsumeMode)
             {
                 if (!played)
@@ -350,6 +392,47 @@ namespace MonsterTrain2Poju.Probe
                 Field("paramTrackedValue").ToString() == "SubtypeInDeck" && Field("paramCardType").ToString() == "Any" &&
                 Convert.ToInt32(Field("paramComparator")) == 6 && (int)Field("paramInt") == 1 &&
                 !(bool)Field("allowMultipleTriggersPerDuration");
+        }
+
+        private static bool ValidMonsterSpellTargeting(RelicEffectData effect)
+        {
+            if (effect.GetEffectClassName() != RelicMonsterSpellTargetingModel.Effect ||
+                effect.GetEffectConditions().Count != 1) return false;
+            RelicEffectCondition condition = effect.GetEffectConditions().Single();
+            object Field(string name) => AccessTools.Field(typeof(RelicEffectCondition), name).GetValue(condition);
+            return (bool)Field("paramTrackTriggerCount") && Field("paramEntryDuration").ToString() == "ThisTurn" &&
+                Field("paramTrackedValue").ToString() == "SubtypeInDeck" &&
+                Field("paramSubtype").ToString() == "SubtypesData_None" &&
+                Convert.ToInt32(Field("paramComparator")) == 6 && (int)Field("paramInt") == 1 &&
+                !(bool)Field("allowMultipleTriggersPerDuration");
+        }
+
+        private static CardData AddMonsterSpellWitness(AllGameData gameData)
+        {
+            if (gameData.FindCardData(MonsterSpellWitnessId) != null)
+                throw new InvalidOperationException("Monster spell-targeting witness card id is already registered.");
+            CardData template = gameData.GetAllCardData().FirstOrDefault(card => card.GetCardType() == CardType.Spell) ??
+                throw new InvalidOperationException("Monster spell-targeting requires an original Spell template.");
+            CardData witness = UnityEngine.Object.Instantiate(template);
+            witness.name = "PojuMonsterSpellTargetingWitness";
+            Set(witness, "id", MonsterSpellWitnessId);
+            Set(witness, "cardType", CardType.Spell);
+            Set(witness, "cost", 0);
+            Set(witness, "costType", CardData.CostType.Default);
+            Set(witness, "isUnitAbility", false);
+            Set(witness, "isRoomAbility", false);
+            Set(witness, "targetless", false);
+            Set(witness, "targetsRoom", true);
+            Set(witness, "traits", new List<CardTraitData>());
+            Set(witness, "effectTriggers", new List<CharacterTriggerData>());
+            Set(witness, "triggers", new List<CardTriggerEffectData>());
+            Set(witness, "startingUpgrades", new List<CardUpgradeData>());
+            var damage = new CardEffectData("CardEffectDamage", null!, Team.Type.Monsters);
+            damage.Cheat_SetTargetMode(TargetMode.DropTargetCharacter);
+            Set(damage, "paramInt", 1);
+            Set(witness, "effects", new List<CardEffectData> { damage });
+            ((List<CardData>)AccessTools.Field(typeof(AllGameData), "cardDatas").GetValue(gameData)!).Add(witness);
+            return witness;
         }
 
         private static CardData AddCopyWitnessSpell(AllGameData gameData, bool withConsume)
