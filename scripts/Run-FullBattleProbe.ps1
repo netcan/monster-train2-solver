@@ -303,6 +303,7 @@ param(
     [switch] $OriginalSoloUnitUpgradeRelic,
     [switch] $OriginalFrontRoomHealthUpgradeRelic,
     [switch] $OriginalChampionStartTurnHealRelic,
+    [switch] $OriginalNimsOathRelic,
     [switch] $OriginalPyreHealthCardCostRelic,
     [switch] $OriginalNullRelic,
     [switch] $OriginalNullRelicBaseline,
@@ -505,6 +506,7 @@ if ($OriginalUnitPhaseUpgradeRelics) { $BranchCardMasks = $true; $Policy = 'unit
 if ($OriginalSoloUnitUpgradeRelic) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalFrontRoomHealthUpgradeRelic) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalChampionStartTurnHealRelic) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
+if ($OriginalNimsOathRelic) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalPyreHealthCardCostRelic) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalNullRelic -or $OriginalNullRelicBaseline) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalRelicCountAttack) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
@@ -957,6 +959,7 @@ if ($OriginalUnitPhaseUpgradeRelics) { $environment['MT2_PROBE_MODIFIERS'] = 'or
 if ($OriginalSoloUnitUpgradeRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-add-stats-to-solo-units' }
 if ($OriginalFrontRoomHealthUpgradeRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-front-room-health-upgrade' }
 if ($OriginalChampionStartTurnHealRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-champion-start-turn-heal' }
+if ($OriginalNimsOathRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-nims-oath' }
 if ($OriginalPyreHealthCardCostRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-pyre-health-card-cost' }
 if ($OriginalNullRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-null-relic' }
 if ($OriginalNullRelicBaseline) { $environment['MT2_PROBE_MODIFIERS'] = 'original-null-relic-baseline' }
@@ -1983,6 +1986,25 @@ if ($OriginalChampionStartTurnHealRelic -and ($trace.OriginalChampionStartTurnHe
     @($trace.Actions | Where-Object ScenarioAction).Count -ne 6 -or
     -not (Select-String -LiteralPath $unityLog -Pattern 'ORIGINAL-CHAMPION-START-TURN-HEAL-PREPARED unchanged \+ full-health behavior' -Quiet))) {
     throw 'ChampsHealBeginningOfTurn lacks counter reset, Tower-wide Champion healing and non-Champ native controls.'
+}
+if ($OriginalNimsOathRelic -and ($trace.Schema -ne 210 -or
+    $trace.OriginalNimsOathSchema -ne 210 -or $trace.ModifierScenario -ne 'original-nims-oath' -or
+    $trace.OriginalNimsOath.OwnerId -ne '727e69a6-3a8c-4029-895c-99e9dac0bc0a' -or
+    $trace.OriginalNimsOath.AssetKey -ne 'Inkbound_NimsOath' -or
+    $trace.OriginalNimsOath.TriggerMetadata.RuntimeCallbackSupported -ne $false -or
+    $trace.CaptureFailures -ne 0 -or $trace.Mismatches -ne 0 -or $trace.Unsupported -ne 0 -or $trace.Pending -ne 0 -or
+    @($trace.RelicNimsOathRoomTests).Count -lt 2 -or
+    @($trace.RelicNimsOathRoomTests | Where-Object Result).Count -eq 0 -or
+    @($trace.RelicNimsOathRoomTests | Where-Object { -not $_.Result }).Count -eq 0 -or
+    @($trace.RelicNimsOathTimingTests | Where-Object { $_.Turn -eq 0 -and -not $_.Result }).Count -ne 1 -or
+    @($trace.RelicNimsOathTimingTests | Where-Object Result).Count -eq 0 -or
+    @($trace.RelicNimsOathApplications).Count -lt 4 -or
+    @($trace.RelicNimsOathApplications | Where-Object { -not $_.Completed -or $null -eq $_.After -or
+        -not $_.ModelSupported -or $null -ne $_.Error -or $null -ne $_.Difference -or
+        @($_.Ranges | Where-Object Rng -eq 'Battle').Count -ne 1 }).Count -gt 0 -or
+    @($trace.RelicNimsOathApplications | Where-Object { @($_.ModelCandidateRooms).Count -ge 2 }).Count -eq 0 -or
+    -not (Select-String -LiteralPath $unityLog -Pattern 'ORIGINAL-NIMS-OATH-ACQUIRED unchanged owner=727e69a6-3a8c-4029-895c-99e9dac0bc0a' -Quiet))) {
+    throw 'Inkbound_NimsOath lacks TestEffects controls, exact random-room Dazed applications or the bounded OnKill metadata boundary.'
 }
 if ($OriginalPyreHealthCardCostRelic -and ($trace.OriginalPyreCardCostSchema -ne 209 -or
     $trace.ModifierScenario -ne 'original-pyre-health-card-cost' -or

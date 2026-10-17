@@ -100,7 +100,7 @@
 "MoonPhaseAddArmorToSilent"	"e013b17d-753b-47b8-a837-02af85addb4b"	"accepted-native-battle"	"RelicEffectAddStatusEffectOnMoonPhase"	""
 "SeleneandSilentBuff"	"e54e6cb7-f424-44be-a7d2-869c6fb7bb15"	"accepted-native-battle"	"RelicEffectAddRemoveTempUpgradeOnUnitTrigger,RelicEffectAddRemoveTempUpgradeOnUnitTrigger,RelicEffectAddRemoveTempUpgradeOnUnitTrigger,RelicEffectAddRemoveTempUpgradeOnUnitTrigger"	""
 "PyreHeartSon"	"8503360a-26b2-4b71-9334-4c6014ad397f"	"accepted-native-battle"	"RelicEffectAddTempUpgrade"	""
-"Inkbound_NimsOath"	"727e69a6-3a8c-4029-895c-99e9dac0bc0a"	"pending"	"RelicEffectAddEffectStartOfTurn"	""
+"Inkbound_NimsOath"	"727e69a6-3a8c-4029-895c-99e9dac0bc0a"	"accepted-native-battle"	"RelicEffectAddEffectStartOfTurn"	""
 "JudgesScales"	"3511a804-42be-465c-9d40-56b988c8a940"	"pending"	"RelicEffectChooseDiscardsDrawReplacementsOnPostOpeningDraw"	""
 "PyregelOnAscend_DH"	"394fb724-046f-448f-9531-f9d6caadae77"	"accepted-native-battle"	"RelicEffectAddStatusOnUnitMovedUpDown"	""
 "UnitsGainStealthOnSlayPlusAttack"	"4687feca-a053-48ed-b208-81dc6dfc6e72"	"accepted-native-battle"	"RelicEffectAdjustAttackByStatusEffect,RelicEffectAddTrigger"	""

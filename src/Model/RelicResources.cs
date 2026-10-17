@@ -88,6 +88,54 @@ namespace MonsterTrain2Poju.Model
         }
     }
 
+    public sealed class RelicStartTurnEffectTriggerMetadata
+    {
+        public string Kind { get; }
+        public bool Once { get; }
+        public bool IgnoreSilence { get; }
+        public bool OnlyIfEquipped { get; }
+        public IReadOnlyList<CardActionEffect> Effects { get; }
+        public RelicStartTurnEffectTriggerMetadata(string kind, bool once, bool ignoreSilence,
+            bool onlyIfEquipped, IReadOnlyList<CardActionEffect> effects)
+        {
+            Kind = kind; Once = once; IgnoreSilence = ignoreSilence; OnlyIfEquipped = onlyIfEquipped;
+            Effects = Array.AsReadOnly(effects.ToArray());
+        }
+    }
+
+    public sealed class RelicStartTurnRoomEffectRule
+    {
+        public int EffectIndex { get; }
+        public int Mode { get; }
+        public int ParamMaxInt { get; }
+        public float ParamFloat { get; }
+        public bool ParamBool { get; }
+        public bool ParamBool2 { get; }
+        public bool ParamBool3 { get; }
+        public bool ParamBool4 { get; }
+        public CardActionEffect Action { get; }
+        public IReadOnlyList<string> ExternalInteractions { get; }
+        public bool UseStatusStackMultiplier { get; }
+        public bool UseHealthMissingStackMultiplier { get; }
+        public bool UseMagicPowerMultiplier { get; }
+        public bool IgnoreDualism { get; }
+        public IReadOnlyList<RelicStartTurnEffectTriggerMetadata> TriggerMetadata { get; }
+        public RelicStartTurnRoomEffectRule(int effectIndex, int mode, int paramMaxInt, float paramFloat,
+            bool paramBool, bool paramBool2, bool paramBool3, bool paramBool4, CardActionEffect action,
+            IReadOnlyList<string> externalInteractions, bool useStatusStackMultiplier,
+            bool useHealthMissingStackMultiplier, bool useMagicPowerMultiplier, bool ignoreDualism,
+            IReadOnlyList<RelicStartTurnEffectTriggerMetadata> triggerMetadata)
+        {
+            EffectIndex = effectIndex; Mode = mode; ParamMaxInt = paramMaxInt; ParamFloat = paramFloat;
+            ParamBool = paramBool; ParamBool2 = paramBool2; ParamBool3 = paramBool3; ParamBool4 = paramBool4;
+            Action = action; ExternalInteractions = Array.AsReadOnly(externalInteractions.ToArray());
+            UseStatusStackMultiplier = useStatusStackMultiplier;
+            UseHealthMissingStackMultiplier = useHealthMissingStackMultiplier;
+            UseMagicPowerMultiplier = useMagicPowerMultiplier; IgnoreDualism = ignoreDualism;
+            TriggerMetadata = Array.AsReadOnly(triggerMetadata.ToArray());
+        }
+    }
+
     public sealed class RelicResourceEffect
     {
         public int EffectIndex { get; }
@@ -110,13 +158,15 @@ namespace MonsterTrain2Poju.Model
         public RelicPileStartTurnRule? PileStartTurn { get; }
         public RelicMoonPhaseStatusRule? MoonPhaseStatus { get; }
         public RelicStartTurnHealRule? StartTurnHeal { get; }
+        public RelicStartTurnRoomEffectRule? StartTurnRoomEffect { get; }
         public RelicResourceEffect(int effectIndex, string type, int paramInt, int paramInt2, int amount,
             bool canApplyInPreviewMode, string? requiredMutatorId = null, IReadOnlyList<RelicConditionState>? conditions = null,
             float? drawValue = null, int? drawMutationOrder = null,
             float? capacityValue = null, int? capacityMutationOrder = null, int paramMinInt = 0, float paramFloat = 0,
             CardGenerationRule? cardGeneration = null, RelicUnitResourceRule? unitTrigger = null,
             RelicOpeningDrawRule? openingDraw = null, RelicPileStartTurnRule? pileStartTurn = null,
-            RelicMoonPhaseStatusRule? moonPhaseStatus = null, RelicStartTurnHealRule? startTurnHeal = null)
+            RelicMoonPhaseStatusRule? moonPhaseStatus = null, RelicStartTurnHealRule? startTurnHeal = null,
+            RelicStartTurnRoomEffectRule? startTurnRoomEffect = null)
         {
             EffectIndex = effectIndex; Type = type; ParamInt = paramInt; ParamInt2 = paramInt2; Amount = amount;
             ParamMinInt = paramMinInt;
@@ -127,6 +177,7 @@ namespace MonsterTrain2Poju.Model
             PileStartTurn = pileStartTurn;
             MoonPhaseStatus = moonPhaseStatus;
             StartTurnHeal = startTurnHeal;
+            StartTurnRoomEffect = startTurnRoomEffect;
             CanApplyInPreviewMode = canApplyInPreviewMode; RequiredMutatorId = requiredMutatorId;
             Conditions = Array.AsReadOnly((conditions ?? Array.Empty<RelicConditionState>()).ToArray());
             DrawValue = drawValue; DrawMutationOrder = drawMutationOrder;
@@ -134,14 +185,14 @@ namespace MonsterTrain2Poju.Model
         }
         internal RelicResourceEffect WithConditions(IReadOnlyList<RelicConditionState> conditions) =>
             new RelicResourceEffect(EffectIndex, Type, ParamInt, ParamInt2, Amount, CanApplyInPreviewMode,
-                RequiredMutatorId, conditions, DrawValue, DrawMutationOrder, CapacityValue, CapacityMutationOrder, ParamMinInt, ParamFloat, CardGeneration, UnitTrigger, OpeningDraw, PileStartTurn, MoonPhaseStatus, StartTurnHeal);
+                RequiredMutatorId, conditions, DrawValue, DrawMutationOrder, CapacityValue, CapacityMutationOrder, ParamMinInt, ParamFloat, CardGeneration, UnitTrigger, OpeningDraw, PileStartTurn, MoonPhaseStatus, StartTurnHeal, StartTurnRoomEffect);
         internal RelicResourceEffect WithDrawValue(float value) =>
             new RelicResourceEffect(EffectIndex, Type, ParamInt, ParamInt2, Amount, CanApplyInPreviewMode,
-                RequiredMutatorId, Conditions, value, DrawMutationOrder, CapacityValue, CapacityMutationOrder, ParamMinInt, ParamFloat, CardGeneration, UnitTrigger, OpeningDraw, PileStartTurn, MoonPhaseStatus, StartTurnHeal);
+                RequiredMutatorId, Conditions, value, DrawMutationOrder, CapacityValue, CapacityMutationOrder, ParamMinInt, ParamFloat, CardGeneration, UnitTrigger, OpeningDraw, PileStartTurn, MoonPhaseStatus, StartTurnHeal, StartTurnRoomEffect);
         internal RelicResourceEffect WithCardGeneration(CardGenerationRule generation) =>
             new RelicResourceEffect(EffectIndex, Type, ParamInt, ParamInt2, Amount, CanApplyInPreviewMode,
                 RequiredMutatorId, Conditions, DrawValue, DrawMutationOrder, CapacityValue, CapacityMutationOrder,
-                ParamMinInt, ParamFloat, generation, UnitTrigger, OpeningDraw, PileStartTurn, MoonPhaseStatus, StartTurnHeal);
+                ParamMinInt, ParamFloat, generation, UnitTrigger, OpeningDraw, PileStartTurn, MoonPhaseStatus, StartTurnHeal, StartTurnRoomEffect);
     }
 
     public sealed class RelicResourceEvent
@@ -202,6 +253,7 @@ namespace MonsterTrain2Poju.Model
         public const string PermanentPyreAttackAdjustment = "CardEffectPermanentlyAdjustPyreAttack";
         public const string PileStartTurn = "RelicEffectAddEffectPerPileStartOfTurn";
         public const string StartTurnHeal = RelicStartTurnHealModel.Effect;
+        public const string StartTurnRoomEffect = RelicStartTurnStatusModel.Effect;
         public static bool IsEffect(string type) => type == Energy || type == DeploymentEnergy || type == StartCombatEnergy || type == StartCombatHoard || type == Draw ||
             type == PyreAttack || type == PyreHealth || type == PayCardCostWithPyreHealth || type == FloorCapacity || type == MoonPhaseEnergy || type == MoonPhaseStatus ||
             type == EnergyOnCardEarlyDiscard ||
@@ -214,7 +266,8 @@ namespace MonsterTrain2Poju.Model
             type == RelicTurnDrawModel.FullHealth || type == RelicTurnDrawModel.Opening ||
             RelicUnitResourceModel.IsEffect(type) || RelicCardDrawOnHealModel.IsEffect(type) ||
             RelicUnitTriggerCardGenerationModel.IsEffect(type) ||
-            RelicOpeningDrawModel.IsEffect(type) || IsOpeningCorruption(type) || type == PileStartTurn || type == StartTurnHeal;
+            RelicOpeningDrawModel.IsEffect(type) || IsOpeningCorruption(type) || type == PileStartTurn || type == StartTurnHeal ||
+            type == StartTurnRoomEffect;
 
         internal static string? Validate(CombatRelicState relic)
         {
@@ -234,6 +287,12 @@ namespace MonsterTrain2Poju.Model
                     if (healingError != null) return healingError;
                 }
                 else if (rule.StartTurnHeal != null) return "Unexpected start-turn healing payload on another effect.";
+                if (rule.Type == StartTurnRoomEffect)
+                {
+                    string? startTurnError = RelicStartTurnStatusModel.Validate(relic, rule);
+                    if (startTurnError != null) return startTurnError;
+                }
+                else if (rule.StartTurnRoomEffect != null) return "Unexpected start-turn room-effect payload on another effect.";
                 if (rule.Type == PayCardCostWithPyreHealth)
                 {
                     string? paymentError = RelicPayCardCostWithPyreHealthModel.Validate(relic, rule);

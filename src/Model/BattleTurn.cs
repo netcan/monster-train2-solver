@@ -478,6 +478,10 @@ namespace MonsterTrain2Poju.Model
             RelicStartTurnHealResult startTurnHealing = RelicStartTurnHealModel.Apply(train, turn, startTurnRoom);
             if (!startTurnHealing.Supported) return Unsupported(startTurnHealing.UnsupportedReason!);
             train = startTurnHealing.State!;
+            RelicStartTurnStatusResult startTurnStatus = RelicStartTurnStatusModel.Apply(train, outputPlayRules?.Rooms, turn);
+            if (!startTurnStatus.Supported) return Unsupported(startTurnStatus.UnsupportedReason!);
+            train = startTurnStatus.State!;
+            spawn = WithTrain(spawn, train, turn, spawn.Rng);
             context = train.Context!;
             context = UnitStandbyModel.ReturnReady(context);
             context = EquipmentModel.ReturnUnattached(context, new HashSet<int>(train.Rooms.SelectMany(room => room.Units).Select(unit => unit.Id)));

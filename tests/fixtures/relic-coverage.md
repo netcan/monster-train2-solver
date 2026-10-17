@@ -1520,3 +1520,21 @@ pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-equ
 dotnet run --project src/ModelChecks -c Release -- --original-equipment-growth-only tests/fixtures/full-battle-original-equipment-growth-relics.mt2f
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-equipment-growth-relics.mt2f
 ```
+
+## Inkbound_NimsOath
+
+| AssetKey | DataId | Fixture | Evidence |
+| --- | --- | --- | --- |
+| `Inkbound_NimsOath` | `727e69a6-3a8c-4029-895c-99e9dac0bc0a` | `full-battle-original-nims-oath.mt2f` | The unchanged owner runs `RelicEffectAddEffectStartOfTurn` before draw. It tests each enabled non-Pyre room, selects one eligible room with `RngId.Battle`, and adds one Dazed stack to that room's front enemy. The initial empty floors reject the timing callback; six later applications match the complete native room state and RNG. |
+
+The focused checker covers native TestEffects true/false results, single- and multi-room candidate pools, each bounded Battle RNG selection, selected-front-only Dazed changes, owner removal, disabled rooms, preview rejection and the native placement flag. The checked native class consumes only the nested timing effect and implements no `ICharacterKilledRelicEffect`; its `OnKill`/Conduit trigger metadata is preserved but is outside modeled behavior. The 61-stage winning battle has 21 actions, seven EndTurns and zero capture failures, mismatches, unsupported transitions or pending records. Independent search matches 128/128 states, preserves serial/parallel best equality and replays four steps.
+
+The 37,304-byte archive has 5,786 unique nodes and SHA-256 `b3910f0e2b0ef0f43004344b8a15d74b7c600a62a967dc7cce499ef367b94e99`; no JSON companion is tracked. Inventory is 406 archives: 368 full battles and 38 component calibrations. Original relic evidence is 187/224 (83.48%): 170 battle, 16 campaign and one native no-op owner.
+
+This evidence covers the random-room start-of-turn Dazed effect only. The OnKill metadata callback, preview execution and other owner variants remain unsupported.
+
+```powershell
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-nims-oath.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-nims-oath-only tests/fixtures/full-battle-original-nims-oath.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-nims-oath.mt2f
+```

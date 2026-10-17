@@ -115,6 +115,7 @@ namespace MonsterTrain2Poju.Probe
             RelicPileStartTurnRule? pileStartTurn = null;
             RelicMoonPhaseStatusRule? moonPhaseStatus = null;
             RelicStartTurnHealRule? startTurnHeal = null;
+            RelicStartTurnRoomEffectRule? startTurnRoomEffect = null;
             if (effect is RelicEffectDrawOnPreOpeningDraw)
             {
                 var upgradeData = data.GetParamCardUpgradeData(); CardUpgradeModifier? upgrade = null;
@@ -220,6 +221,28 @@ namespace MonsterTrain2Poju.Probe
                     data.GetParamMaxInt(), data.GetParamBool(), action, interactions);
                 amount = data.GetParamInt();
             }
+            else if (effect is RelicEffectAddEffectStartOfTurn)
+            {
+                CardEffectData nested = data.GetParamCardEffectData().Single();
+                var interactions = new List<string>();
+                CardActionEffect action = BattleActionProbe.DescribeTriggerEffect(nested, interactions);
+                RelicStartTurnEffectTriggerMetadata[] triggerMetadata = data.GetTriggers().Select(trigger =>
+                {
+                    var triggerInteractions = new List<string>();
+                    CardActionEffect[] triggerEffects = trigger.GetEffects()
+                        .Select(triggerEffect => BattleActionProbe.DescribeTriggerEffect(triggerEffect, triggerInteractions)).ToArray();
+                    interactions.AddRange(triggerInteractions);
+                    return new RelicStartTurnEffectTriggerMetadata(trigger.GetTrigger().ToString(),
+                        trigger.GetTriggerOnce(), trigger.GetHideVisualAndIgnoreSilence(),
+                        trigger.GetOnlyTriggerIfEquipped(), triggerEffects);
+                }).ToArray();
+                startTurnRoomEffect = new RelicStartTurnRoomEffectRule(index, data.GetParamInt(), data.GetParamMaxInt(),
+                    data.GetParamFloat(), data.GetParamBool(), data.GetParamBool2(), data.GetParamBool3(), data.GetParamBool4(),
+                    action, interactions, nested.GetUseStatusEffectStackMultiplier(),
+                    nested.GetUseHealthMissingStackMultiplier(), nested.GetUseMagicPowerMultiplier(), nested.GetParamBool2(),
+                    triggerMetadata);
+                amount = data.GetParamInt();
+            }
             else if (effect is RelicEffectChangeStartingHandSize || effect is RelicEffectAdditionalDrawOnTowerFullHealth)
             {
                 var draw = (IBalanceEditingRelicEffect)effect;
@@ -310,7 +333,7 @@ namespace MonsterTrain2Poju.Probe
                 effect.CanApplyInPreviewMode, required?.GetID(), RelicCardModifierProbe.Conditions(effect), value, registration,
                 capacityValue, capacityRegistration, data.GetParamMinInt(),
                 effect is RelicEffectAddPermanentCorruptionStartOfCombat ? data.GetParamFloat() : 0,
-                generation, unitTrigger, openingDraw, pileStartTurn, moonPhaseStatus, startTurnHeal);
+                generation, unitTrigger, openingDraw, pileStartTurn, moonPhaseStatus, startTurnHeal, startTurnRoomEffect);
         }
 
         internal static ResourceSnapshot Capture()

@@ -1038,6 +1038,12 @@ if (args.Length == 2 && args[0] == "--original-champion-start-turn-heal-only")
     OriginalChampionStartTurnHealChecks.Native(fixture.RootElement);
     return;
 }
+if (args.Length == 2 && args[0] == "--original-nims-oath-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    OriginalNimsOathChecks.Native(fixture.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--original-combat-trigger-relics-only")
 {
     using var document = ModelJson.ReadFixture(args[1]);
