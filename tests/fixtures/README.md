@@ -1,5 +1,16 @@
 # Native regression fixtures
 
+GarfieldBoxRandomCardPerTurn extension (2026-10-17): 387 archives
+(349 battles and 38 calibrations), 166/224 original relic owners (74.11%):
+150 full-battle owners, fifteen campaign-interface owners and one native no-op.
+Six after-draw callbacks select from the full 348-entry native card pool using
+the two active player clans (58 eligible entries), add one non-permanent card,
+and match an independent partial-shuffle replay. The 61-stage winning replay
+has five policy actions and zero differential counters; independent search
+checks 128/128 states with serial/parallel best equality. Full-hand RNG-only
+behavior and placement/preview gates have synthetic controls; other clan
+selections and wider card pools remain outside the claimed boundary.
+
 SingleToTeamMonsterSpellTargeting extension (2026-10-17): 386 archives
 (348 battles and 38 calibrations), 165/224 original relic owners (73.66%):
 149 full-battle owners, fifteen campaign-interface owners and one native no-op.
@@ -5013,4 +5024,38 @@ battle, 15 campaign and one native no-op owner.
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-monster-spell-targeting.mt2f
 dotnet run --project src/ModelChecks -c Release -- --original-monster-spell-targeting-only tests/fixtures/full-battle-original-monster-spell-targeting.mt2f
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-monster-spell-targeting.mt2f
+```
+
+### Original GarfieldBoxRandomCardPerTurn relic (schema 189)
+
+`full-battle-original-garfield-box-random-card.mt2f` captures the unchanged
+`GarfieldBoxRandomCardPerTurn` owner. The native after-draw callback partially
+shuffles the complete 348-card pool with BattleRng until it finds a card whose
+linked clan is either the main or secondary player clan, then creates one
+non-permanent hand card. Six callbacks select one of 58 eligible entries and
+match the model's selected card and post-selection RNG. The winning replay has
+61 stages, 13 card cycles, 14 train phases, 11 spawns, five policy actions and
+seven EndTurns, with zero capture failures, mismatches, unsupported transitions
+or pending records. Focused checks cover six exact generated cards, 18 skipped
+foreign-clan candidates, placement/preview gates and six synthetic full-hand
+controls where selection advances RNG without allocating a card.
+
+Independent search matches all five recorded decisions and visits 128/128
+states with serial/parallel best equality. It reports nine unsupported
+alternatives across recorded decisions and six unsupported candidates during
+search; these remain outside the captured support boundary. Only the captured
+two-clan pool and `units-and-junk` policy are claimed. A broader spell-enabled
+policy was not accepted because the unrelated `SpikeOfTheBanished`
+`CurrentCostSourceIsSpell` query differs; other clan choices and full-hand
+native battle behavior are not claimed. The binary is 45,901 bytes with 6,229
+unique nodes and SHA-256
+`dc833db69d4e4de65734855b54c4c0cc4a5c380c5014085541b3c79899885bba`; no JSON
+companion is tracked. Inventory is 387 archives: 349 full battles and 38
+component calibrations. Original relic evidence is 166/224 (74.11%): 150
+battle, 15 campaign and one native no-op owner.
+
+```powershell
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-garfield-box-random-card.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-garfield-box-only tests/fixtures/full-battle-original-garfield-box-random-card.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-garfield-box-random-card.mt2f
 ```

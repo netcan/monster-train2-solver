@@ -72,6 +72,7 @@ $fixtureNames = @('full-battle-steward-once.mt2f', 'full-battle-no-cards.mt2f', 
     'full-battle-original-equipment-growth-relics.mt2f',
     'full-battle-original-health-choice-relic.mt2f',
     'full-battle-original-after-draw-generation-relics.mt2f',
+    'full-battle-original-garfield-box-random-card.mt2f',
     'full-battle-original-unit-resource-relics.mt2f',
     'full-battle-original-opening-draw-relics.mt2f',
     'full-battle-original-turn-draw-relics.mt2f',
@@ -881,6 +882,12 @@ foreach ($fixturePath in @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 
     foreach ($mode in @('--original-after-draw-generation-only', '--battle-search-only')) {
         dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- $mode $fixturePath
         if ($LASTEXITCODE -ne 0) { throw "Original after-draw generation checks failed ($mode): $fixturePath" }
+    }
+}
+foreach ($fixturePath in @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 'full-battle-original-garfield-box-random-card.mt2f' })) {
+    foreach ($mode in @('--original-garfield-box-only', '--battle-search-only')) {
+        dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- $mode $fixturePath
+        if ($LASTEXITCODE -ne 0) { throw "Original GarfieldBox checks failed ($mode): $fixturePath" }
     }
 }
 foreach ($fixturePath in @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 'full-battle-original-part-factory.mt2f' })) {

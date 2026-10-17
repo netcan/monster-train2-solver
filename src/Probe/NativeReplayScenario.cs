@@ -274,6 +274,8 @@ namespace MonsterTrain2Poju.Probe
                         OriginalStartRoomAttachmentScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalCardAttackRelicScenario.Enabled && !OriginalCardAttackRelicScenario.Acquired)
                         OriginalCardAttackRelicScenario.AcquireBeforeBattle(managers!, log);
+                    if (fullBattle && OriginalGarfieldBoxRandomCardScenario.Enabled && !OriginalGarfieldBoxRandomCardScenario.Acquired)
+                        OriginalGarfieldBoxRandomCardScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalCardTypeCostScenario.Enabled && !OriginalCardTypeCostScenario.Acquired)
                         OriginalCardTypeCostScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalPurgeToExhaustScenario.Enabled && !OriginalPurgeToExhaustScenario.Acquired)
@@ -629,6 +631,11 @@ namespace MonsterTrain2Poju.Probe
             if (fullBattle && !numericModifiersPrepared && OriginalAfterDrawGenerationScenario.Enabled)
             {
                 OriginalAfterDrawGenerationScenario.Prepare(managers, log);
+                numericModifiersPrepared = true;
+            }
+            if (fullBattle && !numericModifiersPrepared && OriginalGarfieldBoxRandomCardScenario.Enabled)
+            {
+                OriginalGarfieldBoxRandomCardScenario.Prepare(managers, log);
                 numericModifiersPrepared = true;
             }
             if (fullBattle && !numericModifiersPrepared && OriginalRelicCountAttackScenario.Enabled)

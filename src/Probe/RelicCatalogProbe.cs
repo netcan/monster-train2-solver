@@ -61,7 +61,9 @@ namespace MonsterTrain2Poju.Probe
                         TrackTriggerCount = (bool)Field(condition, "paramTrackTriggerCount"), Duration = Field(condition, "paramEntryDuration").ToString(),
                         Comparator = Convert.ToInt32(Field(condition, "paramComparator")), Int = (int)Field(condition, "paramInt"),
                         AllowMultiple = (bool)Field(condition, "allowMultipleTriggersPerDuration"), Subtype = Field(condition, "paramSubtype")
-                    }).ToArray()
+                    }).ToArray(),
+                    PlayerClanCardPool = effect.GetEffectClassName() == "RelicEffectAddPrecachedBattleCardToHand"
+                        ? CaptureCardPool(effect.GetParamCardPool()) : null
                 }).ToArray()
             }).ToArray();
             JObject after = RngStates();
@@ -76,6 +78,21 @@ namespace MonsterTrain2Poju.Probe
             using (var stream = File.Create(Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!, "relic-catalog.mt2f")))
                 document.Write(stream);
         }
+        private static object? CaptureCardPool(CardPool? pool)
+        {
+            if (pool == null) return null;
+            var cards = pool.GetAllChoices(new System.Collections.Generic.List<CardData>());
+            return new
+            {
+                Name = pool.name,
+                Cards = cards.Select((card, index) => new
+                {
+                    Index = index, Id = card.GetID(), AssetKey = card.name,
+                    LinkedClan = card.GetLinkedClassID(), CardType = card.GetCardType().ToString()
+                }).ToArray()
+            };
+        }
+
         private static object? Upgrade(CardUpgradeData? data) => data == null ? null : new
         {
             Id = data.GetID(), AssetKey = data.name, Unique = data.IsUnique(), ExcludeFromClones = data.GetExcludeFromClones(),

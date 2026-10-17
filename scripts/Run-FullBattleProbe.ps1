@@ -265,6 +265,7 @@ param(
     [switch] $OriginalEquipmentGrowthRelics,
     [switch] $OriginalHealthChoiceRelic,
     [switch] $OriginalAfterDrawGenerationRelics,
+    [switch] $OriginalGarfieldBoxRandomCard,
     [switch] $OriginalPartFactory,
     [switch] $OriginalBigDamageFromManyMorsels,
     [switch] $OriginalEarlyDiscardEnergy,
@@ -427,6 +428,10 @@ if ($OriginalConduitRelics) { $BranchCardMasks = $true; $Policy = 'units-spells-
 if ($OriginalEquipmentGrowthRelics) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalHealthChoiceRelic) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalAfterDrawGenerationRelics) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
+if ($OriginalGarfieldBoxRandomCard) {
+    $BranchCardMasks = $true
+    if ($Policy -eq 'steward-once') { $Policy = 'units-and-junk' }
+}
 if ($OriginalPartFactory) { $Policy = 'units-spells-and-junk' }
 if ($OriginalBigDamageFromManyMorsels) {
     $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $SettleDeathDissolves = $true; $SettleCardAnimations = $true
@@ -862,6 +867,7 @@ if ($OriginalConduitRelics) { $environment['MT2_PROBE_MODIFIERS'] = 'original-co
 if ($OriginalEquipmentGrowthRelics) { $environment['MT2_PROBE_MODIFIERS'] = 'original-equipment-growth-relics' }
 if ($OriginalHealthChoiceRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-health-choice-relic' }
 if ($OriginalAfterDrawGenerationRelics) { $environment['MT2_PROBE_MODIFIERS'] = 'original-after-draw-generation-relics' }
+if ($OriginalGarfieldBoxRandomCard) { $environment['MT2_PROBE_MODIFIERS'] = 'original-garfield-box-random-card-per-turn' }
 if ($OriginalPartFactory) { $environment['MT2_PROBE_MODIFIERS'] = 'original-part-factory' }
 if ($OriginalBigDamageFromManyMorsels) { $environment['MT2_PROBE_MODIFIERS'] = 'original-big-damage-many-morsels' }
 if ($OriginalEarlyDiscardEnergy) { $environment['MT2_PROBE_MODIFIERS'] = 'hand-removal'; $environment['MT2_PROBE_ORIGINAL_EARLY_DISCARD_ENERGY'] = '1' }
@@ -1774,6 +1780,12 @@ if ($OriginalAfterDrawGenerationRelics -and ($trace.ModifierScenario -ne 'origin
     @($trace.RelicAfterDrawGeneration).Count -lt 8 -or
     -not (Select-String -LiteralPath $unityLog -Pattern 'ORIGINAL-AFTER-DRAW-GENERATION-PREPARED four unchanged owners' -Quiet))) {
     throw 'Original after-draw generation lacks unchanged owners or actual Test/Apply consumers.'
+}
+if ($OriginalGarfieldBoxRandomCard -and ($trace.ModifierScenario -ne 'original-garfield-box-random-card-per-turn' -or
+    $trace.Schema -ne 189 -or -not $trace.OriginalGarfieldBoxRandomCardPrepared -or
+    @($trace.RelicPrecachedPlayerClanGeneration).Count -lt 2 -or
+    -not (Select-String -LiteralPath $unityLog -Pattern 'ORIGINAL-GARFIELD-BOX-RANDOM-CARD-PREPARED unchanged owner' -Quiet))) {
+    throw 'GarfieldBoxRandomCardPerTurn lacks unchanged owner or completed post-draw native callbacks.'
 }
 if ($OriginalHealthChoiceRelic -and ($trace.ModifierScenario -ne 'original-health-choice-relic' -or
     @($trace.RelicSpawnStatuses).Count -eq 0 -or @($trace.TriggeredStatuses).Count -lt 4 -or

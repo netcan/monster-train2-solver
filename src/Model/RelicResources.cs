@@ -175,6 +175,7 @@ namespace MonsterTrain2Poju.Model
             type == EnergyOnCorruptRestrictedPlayed || type == CorruptionOnCorruptRestrictedPlayed ||
             type == AdditionalSmeltEmber || type == AdjustMixAmount || type == ConserveEnergyEndOfTurn || type == ConserveForgePoints ||
             type == RelicCardGenerationModel.AfterDraw || type == RelicCardGenerationModel.StartOfBattle ||
+            type == RelicCardGenerationModel.PrecachedPlayerClan ||
             type == RelicTurnDrawModel.FullHealth || type == RelicTurnDrawModel.Opening ||
             RelicUnitResourceModel.IsEffect(type) || RelicCardDrawOnHealModel.IsEffect(type) ||
             RelicOpeningDrawModel.IsEffect(type) || IsOpeningCorruption(type) || type == PileStartTurn;
@@ -216,6 +217,11 @@ namespace MonsterTrain2Poju.Model
                 else if (rule.Type == RelicCardGenerationModel.StartOfBattle)
                 {
                     string? generationError = RelicCardGenerationModel.ValidateStartOfBattle(relic, rule);
+                    if (generationError != null) return generationError;
+                }
+                else if (rule.Type == RelicCardGenerationModel.PrecachedPlayerClan)
+                {
+                    string? generationError = RelicCardGenerationModel.ValidatePrecachedPlayerClan(relic, rule);
                     if (generationError != null) return generationError;
                 }
                 else if (rule.CardGeneration != null) return "Unexpected relic card generation on another resource effect.";

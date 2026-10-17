@@ -151,6 +151,22 @@ namespace MonsterTrain2Poju.Probe
                     (data.GetParamCardPool()?.GetFilteredChoices() ?? new List<CardData>()).Select(CardGenerationProbe.Creation).ToArray(), upgrade: upgrade);
                 amount = data.GetParamInt();
             }
+            else if (effect is RelicEffectAddPrecachedBattleCardToHand)
+            {
+                CardPool? pool = data.GetParamCardPool();
+                List<CardData> cards = pool?.GetAllChoices(new List<CardData>()) ?? new List<CardData>();
+                SaveManager save = managers.GetSaveManager();
+                ClassData mainClass = save.GetMainClass();
+                ClassData subClass = save.GetSubClass();
+                bool[] eligibility = cards.Select(card => card.GetLinkedClass() == mainClass ||
+                    card.GetLinkedClass() == subClass).ToArray();
+                CardCreationRule[] choices = cards.Select((card, index) => eligibility[index]
+                    ? CardGenerationProbe.Creation(card)
+                    : new CardCreationRule(card.GetID(), CardModifiers.Empty(), null, Array.Empty<string>())).ToArray();
+                generation = new CardGenerationRule("HandPile", 1, choices, permanent: false,
+                    poolEligibility: eligibility);
+                amount = data.GetParamInt();
+            }
             else if (effect is RelicEffectDrawToMaxStartOfCombat)
                 amount = data.GetParamInt();
             else if (effect is RelicEffectAddEffectPerPileStartOfTurn)

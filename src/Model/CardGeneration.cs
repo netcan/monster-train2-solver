@@ -61,21 +61,24 @@ namespace MonsterTrain2Poju.Model
         public bool UpgradeIsPermanent { get; }
         public bool? Permanent { get; }
         public int? SelectedPoolIndex { get; }
+        public IReadOnlyList<bool>? PoolEligibility { get; }
         public CardGenerationRule(string destination, int count, IReadOnlyList<CardCreationRule> pool,
             bool skipDuplicateInHand = false, bool requireHandSpace = false, bool copyModifiers = false,
             bool ignoreTemporaryModifiers = false, CardUpgradeModifier? upgrade = null,
             IReadOnlyList<DiscardGenerationUpgrade>? discardCopyUpgrades = null, IReadOnlyList<string>? externalInteractions = null,
             bool deterministicPoolSelection = false, bool requireCopyableSource = false, bool upgradeIsPermanent = false,
-            bool? permanent = null, int? selectedPoolIndex = null)
+            bool? permanent = null, int? selectedPoolIndex = null, IReadOnlyList<bool>? poolEligibility = null)
         { Destination = destination; Count = count; Pool = Array.AsReadOnly(pool.ToArray()); SkipDuplicateInHand = skipDuplicateInHand;
             RequireHandSpace = requireHandSpace; CopyModifiers = copyModifiers; IgnoreTemporaryModifiers = ignoreTemporaryModifiers; Upgrade = upgrade;
             DiscardCopyUpgrades = Array.AsReadOnly((discardCopyUpgrades ?? Array.Empty<DiscardGenerationUpgrade>()).ToArray());
             ExternalInteractions = Array.AsReadOnly((externalInteractions ?? Array.Empty<string>()).ToArray());
             DeterministicPoolSelection = deterministicPoolSelection; RequireCopyableSource = requireCopyableSource;
-            UpgradeIsPermanent = upgradeIsPermanent; Permanent = permanent; SelectedPoolIndex = selectedPoolIndex; }
+            UpgradeIsPermanent = upgradeIsPermanent; Permanent = permanent; SelectedPoolIndex = selectedPoolIndex;
+            PoolEligibility = poolEligibility == null ? null : Array.AsReadOnly(poolEligibility.ToArray()); }
+        public bool ShouldSerializePoolEligibility() => PoolEligibility != null;
         internal CardGenerationRule WithSelectedPoolIndex(int index) => new(Destination, Count, Pool, SkipDuplicateInHand,
             RequireHandSpace, CopyModifiers, IgnoreTemporaryModifiers, Upgrade, DiscardCopyUpgrades, ExternalInteractions,
-            DeterministicPoolSelection, RequireCopyableSource, UpgradeIsPermanent, Permanent, index);
+            DeterministicPoolSelection, RequireCopyableSource, UpgradeIsPermanent, Permanent, index, PoolEligibility);
     }
 
     public sealed class CardGenerationResult

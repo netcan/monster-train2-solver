@@ -943,3 +943,32 @@ fresh decision snapshots retain that comparison. Whole-policy legacy skips are
 removed. This validates the recorded paths; unchanged original relic-owner
 coverage remains 87/224 (38.84%), and full game/optimal solver coverage remains
 unfinished.
+
+## GarfieldBoxRandomCardPerTurn extension (2026-10-17)
+
+Captured the unchanged `GarfieldBoxRandomCardPerTurn` owner and full native
+348-entry `MegaPool` order. Two active player clans make 58 entries eligible.
+The six native after-draw callbacks choose by BattleRng partial shuffle and add
+one non-permanent card to hand. All six selected indices, card rules, RNG
+states and post-Apply contexts match; 18 foreign-clan candidates were skipped
+by the native selection loop. Placement/preview controls pass, and synthetic
+full-hand cases confirm the native RNG selection still occurs before card
+allocation is rejected for lack of hand space.
+
+The accepted full replay is the `units-and-junk` policy run: 61 stages, 13 card
+cycles, 14 train phases, 11 spawns, five policy actions and seven EndTurns;
+capture failures, mismatches, unsupported transitions and pending records are
+all zero. Focused native checks match all five action records and the policy
+chain (including 16 parallel branches). Independent search visits 128/128
+states, replays four steps and preserves serial/parallel best equality; nine
+unsupported attempts across recorded decisions and six during search remain
+outside coverage. The broader `units-spells-and-junk` run exposed an unrelated
+`SpikeOfTheBanished` `CurrentCostSourceIsSpell` mismatch and is not an accepted
+fixture. Other clan selections, other card pools and native full-hand battle
+behavior remain unclaimed.
+
+The curated binary is 45,901 bytes with 6,229 unique nodes and SHA-256
+`dc833db69d4e4de65734855b54c4c0cc4a5c380c5014085541b3c79899885bba`; no JSON
+companion is tracked. Inventory advances to 387 archives (349 full battles and
+38 component calibrations) and 166/224 accepted owners (150 battle, 15 campaign
+and one native no-op).
