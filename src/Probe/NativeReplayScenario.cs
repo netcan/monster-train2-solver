@@ -262,6 +262,8 @@ namespace MonsterTrain2Poju.Probe
                         OriginalCardPlayMagicPowerScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalTwoChargesOnCardConsumedScenario.Enabled && !OriginalTwoChargesOnCardConsumedScenario.Acquired)
                         OriginalTwoChargesOnCardConsumedScenario.AcquireBeforeBattle(managers!, log);
+                    if (fullBattle && OriginalChanceForSpellWeaknessScenario.Enabled && !OriginalChanceForSpellWeaknessScenario.Acquired)
+                        OriginalChanceForSpellWeaknessScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalExtractForEmberAndEchosScenario.Enabled && !OriginalExtractForEmberAndEchosScenario.Acquired)
                         OriginalExtractForEmberAndEchosScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalCheaperSpellCostScenario.Enabled && !OriginalCheaperSpellCostScenario.Acquired)
@@ -548,6 +550,13 @@ namespace MonsterTrain2Poju.Probe
             {
                 if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("2ChargesOnCardConsumed fixture must start on deployment turn.");
                 OriginalTwoChargesOnCardConsumedScenario.Prepare(managers, log);
+                numericModifiersPrepared = true;
+                return;
+            }
+            if (fullBattle && !numericModifiersPrepared && OriginalChanceForSpellWeaknessScenario.Enabled)
+            {
+                if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("ChanceForSpellWeakness fixture must start on deployment turn.");
+                OriginalChanceForSpellWeaknessScenario.Prepare(managers, log);
                 numericModifiersPrepared = true;
                 return;
             }
@@ -1435,6 +1444,8 @@ namespace MonsterTrain2Poju.Probe
                 }
                 if (fullBattle && OriginalCardPlayMagicPowerScenario.Enabled && !OriginalCardPlayMagicPowerScenario.Prepared)
                     OriginalCardPlayMagicPowerScenario.Prepare(managers, log);
+                if (fullBattle && OriginalChanceForSpellWeaknessScenario.Enabled && !OriginalChanceForSpellWeaknessScenario.Prepared)
+                    OriginalChanceForSpellWeaknessScenario.Prepare(managers, log);
                 if (fullBattle && OriginalExtractForEmberAndEchosScenario.Enabled && !OriginalExtractForEmberAndEchosScenario.Prepared)
                     OriginalExtractForEmberAndEchosScenario.Prepare(managers, log);
                 if (fullBattle && OriginalCheaperSpellCostScenario.Enabled && !OriginalCheaperSpellCostScenario.Prepared)

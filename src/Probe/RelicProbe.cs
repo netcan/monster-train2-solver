@@ -45,6 +45,9 @@ namespace MonsterTrain2Poju.Probe
                         item.Effect.GetType().Name == RelicModel.AddStatusOnUnitMovedUpDown)
                     .Select(item => item.Effect is RelicEffectAddStatusEffectOnEnterRoomIndex
                         ? RoomEntryStatus(item.Effect, item.Index) : MovementStatus(item.Effect, item.Index)).ToArray();
+                var afterSpawnChanceRules = effects.Select((effect, index) => new { Effect = effect, Index = index })
+                    .Where(item => item.Effect is RelicEffectChanceAddEffectAfterSpawn)
+                    .Select(item => AfterSpawnChance(item.Effect, item.Index)).ToArray();
                 var corruptionStatuses = effects.Select((effect, index) => new { Effect = effect, Index = index })
                     .Where(item => item.Effect is RelicEffectAddStatusEffectOnCorruptionAdded)
                     .Select(item => CorruptionStatus(item.Effect, item.Index)).ToArray();
@@ -258,7 +261,8 @@ namespace MonsterTrain2Poju.Probe
                     floorTransitionDamageRules: floorTransitionDamage.Length > 0 ? floorTransitionDamage : null,
                     soloUnitUpgrades: soloUnitUpgrades.Length > 0 ? soloUnitUpgrades : null,
                     monsterSpellTargetingModifiers: monsterSpellTargeting.Length > 0 ? monsterSpellTargeting : null,
-                    cardPlayCorruptionModifiers: cardPlayCorruption.Length > 0 ? cardPlayCorruption : null);
+                    cardPlayCorruptionModifiers: cardPlayCorruption.Length > 0 ? cardPlayCorruption : null,
+                    afterSpawnChanceRules: afterSpawnChanceRules.Length > 0 ? afterSpawnChanceRules : null);
             }).ToArray();
         }
 
@@ -365,6 +369,60 @@ namespace MonsterTrain2Poju.Probe
             int additionalStacks = (int)Field("additionalStacks");
             return new RelicStatusStacks(index, Field("team").ToString()!, statusId, additionalStacks, 0,
                 RelicCardModifierProbe.Conditions(effect), (string)Field("otherStatusId"), BattleActionProbe.Status(statusId, additionalStacks));
+        }
+
+        private static RelicAfterSpawnChanceRule AfterSpawnChance(IRelicEffect effect, int index)
+        {
+            var data = (RelicEffectData)AccessTools.Field(typeof(RelicEffectBase), "_srcRelicEffectData").GetValue(effect);
+            SubtypeData? subtype = data.GetParamCharacterSubtype();
+            string[] excluded = data.GetParamExcludeCharacterSubtypes().Select(item => item.Key).ToArray();
+            CardEffectData[] cardEffects = data.GetParamCardEffectData().ToArray();
+            CardEffectData? cardEffect = cardEffects.FirstOrDefault();
+            var cardExcludedSubtypes = new List<SubtypeData>();
+            cardEffect?.GetTargetCharacterExcludedSubtypes(cardExcludedSubtypes);
+            var payloadIssues = new List<string>();
+            void Require(bool condition, string field) { if (!condition) payloadIssues.Add(field); }
+            if (cardEffect == null) payloadIssues.Add("missing-card-effect");
+            else
+            {
+                Require(cardEffect.GetShouldTest(), "should-test");
+                Require(!cardEffect.GetShouldCancelSubsequentEffectsIfTestFails(), "cancel-subsequent-on-fail");
+                Require(!cardEffect.GetShouldFailToCastIfTestFails(), "fail-cast-on-fail");
+                Require(!cardEffect.GetShouldSuppressPyreRoomFocus(), "suppress-pyre-room-focus");
+                Require(cardEffect.GetTargetModeStatusEffectsFilter().Length == 0, "target-status-filter");
+                Require(cardEffect.GetTargetModeStatusEffectsExcludedFilter().Length == 0, "target-status-excluded-filter");
+                Require(cardEffect.GetTargetModeHealthFilter() == CardEffectData.HealthFilter.Both, "target-health-filter");
+                Require(!cardEffect.GetTargetIgnoreBosses(), "target-ignore-bosses");
+                Require(!cardEffect.GetFilterBasedOnMainSubClass(), "filter-main-subclass");
+                Require(cardEffect.GetTargetCharacterSubtype().IsNone, "target-character-subtype");
+                Require(cardExcludedSubtypes.Count == 0, "target-character-excluded-subtypes");
+                Require(!cardEffect.GetCopyModifiersFromSource(), "copy-source-modifiers");
+                Require(!cardEffect.GetIgnoreTempModifiersFromSource(), "ignore-temp-source-modifiers");
+                Require(!cardEffect.GetUseIntRange(), "use-int-range");
+                Require(cardEffect.GetParamMinInt() == 0, "param-min-int");
+                Require(cardEffect.GetParamMaxInt() == 0, "param-max-int");
+                Require(string.IsNullOrEmpty(cardEffect.GetParamStr()), "param-string");
+                Require(cardEffect.GetParamFloat() == 0f, "param-float");
+                Require(!cardEffect.GetParamBool3(), "param-bool-3");
+                Require(!cardEffect.GetDisallowStatusEffectStackModifiers(), "disallow-status-stack-modifiers");
+                Require(!cardEffect.GetUseStatusEffectStackMultiplier(), "use-status-stack-multiplier");
+                Require(string.IsNullOrEmpty(cardEffect.GetStatusEffectStackMultiplier()), "status-stack-multiplier");
+                Require(!cardEffect.GetUseHealthMissingStackMultiplier(), "use-health-missing-stack-multiplier");
+                Require(!cardEffect.GetUseMagicPowerMultiplier(), "use-magic-power-multiplier");
+            }
+            bool simpleCardEffect = payloadIssues.Count == 0;
+            CombatStatus[] statuses = cardEffects.SelectMany(item => item.GetParamStatusEffects())
+                .Select(status => BattleActionProbe.Status(status.statusId, status.count)).ToArray();
+            return new RelicAfterSpawnChanceRule(index, data.GetParamInt(), data.GetParamInt2(),
+                data.GetParamSourceTeam().ToString(), subtype != null, subtype?.IsNone == true, subtype?.Key,
+                excluded, data.GetEffectConditions().Count, ((RelicEffectBase)effect).CanApplyInPreviewMode,
+                cardEffects.Length, simpleCardEffect, payloadIssues,
+                cardEffect?.GetEffectStateName() ?? string.Empty, cardEffect?.GetTargetMode().ToString() ?? string.Empty,
+                cardEffect?.GetTargetTeamType().ToString() ?? string.Empty, cardEffect?.GetTargetCardType().ToString() ?? string.Empty,
+                cardEffect?.GetParamMultiplier() ?? 0f, cardEffect?.GetParamInt() ?? 0,
+                cardEffect?.GetAdditionalParamInt() ?? 0,
+                cardEffect?.GetUseIntRange() ?? false, cardEffect?.GetParamBool() ?? false,
+                cardEffect?.GetParamBool2() ?? false, statuses);
         }
 
         private static RelicCharacterTriggers AddedTriggers(IRelicEffect effect, int index)

@@ -1,5 +1,16 @@
 # Native regression fixtures
 
+ChanceForSpellWeakness extension (2026-10-17): 394 archives (356 battles and 38
+calibrations), 174/224 original relic owners (77.68%): 157 full-battle owners,
+sixteen campaign-interface owners and one native no-op. Its unchanged 50%
+AfterSpawnEnchant effect adds one Spell Weakness to eligible enemy Heroes: all
+seven eligible native rolls match (four hits, three misses), with 496 gated
+tests preserving Battle RNG. The 61-stage battle and 128-state search pass;
+four native applications match exactly. Other owner identities and nested
+effect shapes are not generalized. The 31,208-byte archive has 4,728 unique
+nodes and SHA-256
+`c4981c58612f035f5f69df78f100ba78c8aa7d42a197b5293ac596e729e56692`.
+
 2ChargesOnCardConsumed extension (2026-10-17): 393 archives (355 battles and 38
 calibrations), 173/224 original relic owners (77.23%): 156 full-battle owners,
 sixteen campaign-interface owners and one native no-op. The unchanged owner
@@ -5283,4 +5294,35 @@ battles and 38 component calibrations. Original relic coverage is 173/224
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-two-charges-on-card-consumed.mt2f
 dotnet run --project src/ModelChecks -c Release -- --original-two-charges-only tests/fixtures/full-battle-original-two-charges-on-card-consumed.mt2f
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-two-charges-on-card-consumed.mt2f
+```
+
+### Original ChanceForSpellWeakness relic (schema 196)
+
+`full-battle-original-chance-for-spell-weakness.mt2f` captures the unchanged
+`RelicEffectChanceAddEffectAfterSpawn` owner: 50%, no room restriction, Heroes
+team, original None subtype, and one self-targeted `CardEffectAddStatusEffect`
+for Spell Weakness +1. Native payload capture includes the exact subtype key,
+`TargetCardType=Spell`, zero nested chance multiplier, and full registered Spell
+Weakness metadata. Seven eligible `AfterSpawnEnchant` tests consume the exact
+native 0..100 Battle RNG roll (four hits, three misses); 496 gated tests consume
+no RNG. All four Apply coroutines match successful native Tests one-to-one with
++1 stack and no extra RNG.
+
+The 61-stage winning replay has 13 card cycles, 14 train phases, 11 spawns, five
+card actions and seven EndTurns, with zero capture failures, mismatches,
+unsupported transitions or pending records. Independent search matches all
+five decisions, visits 128/128 states with serial/parallel best equality and
+replays four steps. Focused controls cover preview, destroyed/Untouchable units,
+wrong trigger/team, removed owner, missing payload and all 25 immutable relic
+copy updates. Other owner identities and nested effect shapes are outside the
+accepted boundary. The 31,208-byte archive has 4,728 unique nodes and SHA-256
+`c4981c58612f035f5f69df78f100ba78c8aa7d42a197b5293ac596e729e56692`; no JSON
+companion is tracked. The current inventory is 394 archives: 356 battles and
+38 component calibrations. Original relic coverage is 174/224 (77.68%): 157
+battle owners, sixteen campaign owners and one native no-op.
+
+```powershell
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-chance-for-spell-weakness.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-chance-for-spell-weakness-only tests/fixtures/full-battle-original-chance-for-spell-weakness.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-chance-for-spell-weakness.mt2f
 ```

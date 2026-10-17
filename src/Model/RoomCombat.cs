@@ -640,7 +640,8 @@ namespace MonsterTrain2Poju.Model
                 return movementStatus;
             RoomCombatResult triggered = new Engine(state, new List<CombatEvent>(), enqueueCharacterTrigger: enqueue,
                 resetPreviewTriggers: false, refreshPyre: refreshPyre).TraceAllDispatches(queued.CaptureAllDispatches).QueuedTrigger(queued);
-            return RelicRoomEntryStatusModel.ApplyAfterEntry(triggered, queued, enqueue);
+            RoomCombatResult entered = RelicRoomEntryStatusModel.ApplyAfterEntry(triggered, queued, enqueue);
+            return RelicAfterSpawnChanceStatusModel.ApplyAfterEntry(entered, queued, enqueue);
         }
 
         // Resume a single native effect after trigger preflight/marking and source

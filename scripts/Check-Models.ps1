@@ -53,6 +53,7 @@ $fixtureNames = @('full-battle-steward-once.mt2f', 'full-battle-no-cards.mt2f', 
     'full-battle-original-endless-return.mt2f',
     'full-battle-original-card-play-magic-power.mt2f',
     'full-battle-original-two-charges-on-card-consumed.mt2f',
+    'full-battle-original-chance-for-spell-weakness.mt2f',
     'full-battle-original-card-draw-on-card-play.mt2f',
     'full-battle-original-carriage-jack.mt2f',
     'full-battle-original-first-room-attachment.mt2f',
@@ -912,6 +913,14 @@ foreach ($fixturePath in @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 
         dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- $mode $fixturePath
         if ($LASTEXITCODE -ne 0) { throw "Original 2ChargesOnCardConsumed checks failed ($mode): $fixturePath" }
     }
+}
+foreach ($fixturePath in @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 'full-battle-original-chance-for-spell-weakness.mt2f' })) {
+    foreach ($mode in @('--original-chance-for-spell-weakness-only', '--battle-search-only')) {
+        dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- $mode $fixturePath
+        if ($LASTEXITCODE -ne 0) { throw "Original ChanceForSpellWeakness checks failed ($mode): $fixturePath" }
+    }
+    dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- --original-chance-for-spell-weakness-model-only
+    if ($LASTEXITCODE -ne 0) { throw "Original ChanceForSpellWeakness focused model checks failed: $fixturePath" }
 }
 foreach ($fixturePath in @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 'full-battle-original-garfield-box-random-card.mt2f' })) {
     foreach ($mode in @('--original-garfield-box-only', '--battle-search-only')) {

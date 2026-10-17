@@ -638,6 +638,17 @@ if (args.Length == 1 && args[0] == "--original-two-charges-model-only")
     RelicCardPlayCorruptionChecks.Run();
     return;
 }
+if (args.Length == 2 && args[0] == "--original-chance-for-spell-weakness-only")
+{
+    using var document = ModelJson.ReadFixture(args[1]);
+    OriginalChanceForSpellWeaknessChecks.Native(document.RootElement);
+    return;
+}
+if (args.Length == 1 && args[0] == "--original-chance-for-spell-weakness-model-only")
+{
+    OriginalChanceForSpellWeaknessChecks.Run();
+    return;
+}
 if (args.Length == 2 && args[0] == "--original-card-draw-on-card-play-only")
 {
     using var document = ModelJson.ReadFixture(args[1]);

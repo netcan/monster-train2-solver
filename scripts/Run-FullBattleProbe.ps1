@@ -242,6 +242,7 @@ param(
     [switch] $OriginalMagebladeMagnitudeRelic,
     [switch] $OriginalCardPlayMagicPower,
     [switch] $OriginalTwoChargesOnCardConsumed,
+    [switch] $OriginalChanceForSpellWeakness,
     [switch] $OriginalCardDrawOnCardPlay,
     [switch] $OriginalCarriageJack,
     [switch] $OriginalFirstRoomAttachment,
@@ -406,6 +407,7 @@ if ($OriginalFloorCapacityRelics) { $BranchCardMasks = $true; $Policy = 'units-s
 if ($Mageblade -or $OriginalMagebladeMagnitudeRelic) { $BranchCardMasks = $true; $BattleRelicUpgrades = $true; $Policy = 'units-and-junk' }
 if ($OriginalCardPlayMagicPower) { $BranchCardMasks = $true; $Policy = 'units-and-junk' }
 if ($OriginalTwoChargesOnCardConsumed) { $BranchCardMasks = $true; $Policy = 'units-and-junk' }
+if ($OriginalChanceForSpellWeakness) { $BranchCardMasks = $true; $Policy = 'units-and-junk' }
 if ($OriginalCheaperSpellCost) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalCardDrawOnCardPlay) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalCopyFirstSpellPlayed -or $OriginalCopyFirstConsumePlayed -or $OriginalCopyConsumedCard -or $OriginalMonsterSpellTargeting) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
@@ -865,6 +867,7 @@ if ($Mageblade) { $environment['MT2_PROBE_MODIFIERS'] = 'mageblade' }
 if ($OriginalMagebladeMagnitudeRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-mageblade-magnitude' }
 if ($OriginalCardPlayMagicPower) { $environment['MT2_PROBE_MODIFIERS'] = 'original-card-play-magic-power' }
 if ($OriginalTwoChargesOnCardConsumed) { $environment['MT2_PROBE_MODIFIERS'] = 'original-two-charges-on-card-consumed' }
+if ($OriginalChanceForSpellWeakness) { $environment['MT2_PROBE_MODIFIERS'] = 'original-chance-for-spell-weakness' }
 if ($OriginalCheaperSpellCost) { $environment['MT2_PROBE_MODIFIERS'] = 'original-reduce-spell-cost-cheaper' }
 if ($OriginalNefariousOverflow) { $environment['MT2_PROBE_MODIFIERS'] = 'original-nefarious-overflow' }
 if ($OriginalUncontrolledGroup) { $environment['MT2_PROBE_MODIFIERS'] = 'original-uncontrolled-group' }
@@ -1392,6 +1395,18 @@ if ($OriginalTwoChargesOnCardConsumed -and (
     -not $trace.OriginalTwoChargesOnCardConsumedCoverage.CarrierCompleted -or
     @($trace.Actions | Where-Object ScenarioAction).Count -ne 2)) {
     throw 'Original 2ChargesOnCardConsumed failed its non-Exhaust control or corruption positive in the expected full-battle capture.'
+}
+if ($OriginalChanceForSpellWeakness -and (
+    $trace.Schema -ne 196 -or
+    -not $trace.OriginalChanceForSpellWeaknessPrepared -or
+    $trace.ModifierScenario -ne 'original-chance-for-spell-weakness' -or
+    -not (Select-String -LiteralPath $unityLog -Pattern 'ORIGINAL-CHANCE-SPELL-WEAKNESS-ACQUIRED unchanged owner' -Quiet) -or
+    -not (Select-String -LiteralPath $unityLog -Pattern 'ORIGINAL-CHANCE-SPELL-WEAKNESS-PREPARED unchanged 50% owner' -Quiet) -or
+    @($trace.RelicAfterSpawnChanceTests | Where-Object { $_.Trigger -eq 'AfterSpawnEnchant' -and $_.Team -eq 'Heroes' -and -not $_.IsDestroyed -and -not $_.Untouchable }).Count -lt 2 -or
+    @($trace.RelicAfterSpawnChanceTests | Where-Object { $_.Trigger -eq 'AfterSpawnEnchant' -and $_.Team -eq 'Heroes' -and -not $_.IsDestroyed -and -not $_.Untouchable -and $_.Result }).Count -eq 0 -or
+    @($trace.RelicAfterSpawnChanceTests | Where-Object { $_.Trigger -eq 'AfterSpawnEnchant' -and $_.Team -eq 'Heroes' -and -not $_.IsDestroyed -and -not $_.Untouchable -and -not $_.Result }).Count -eq 0 -or
+    @($trace.RelicAfterSpawnChanceApplications | Where-Object { -not $_.Completed -or $_.SpellWeaknessAfter -ne ($_.SpellWeaknessBefore + 1) }).Count -gt 0)) {
+    throw 'ChanceForSpellWeakness lacks its unchanged owner, natural hit/miss rolls or completed +1 status applications.'
 }
 if ($OriginalCardDrawOnCardPlay -and ($trace.Schema -ne 160 -or
     $trace.ModifierScenario -ne 'original-card-draw-on-card-play' -or

@@ -1,7 +1,7 @@
 # Original relic coverage evidence
 
-As of 2026-10-17, **173 distinct original collectable relics / 224 catalog entries
-(77.23%)** have accepted native evidence: 156 have full-battle effect evidence,
+As of 2026-10-17, **174 distinct original collectable relics / 224 catalog entries
+(77.68%)** have accepted native evidence: 157 have full-battle effect evidence,
 sixteen have campaign consumer interfaces validated, and one is an explicit
 native no-op with seeded baseline equivalence. Except for that no-op, this counts
 unchanged relic definitions whose effects actually ran, including original filters and
@@ -17,6 +17,9 @@ Rage and Frostbite consumers. All four catalog owners of
 `RelicEffectModifyStatusMagnitude` now have accepted evidence. Unknown status
 families and other effects on the remaining owners still require modeling and
 native proof.
+The original `ChanceForSpellWeakness` owner now has native 50% AfterSpawnEnchant
+evidence for its unchanged enemy-Hero Spell Weakness effect, including eligible
+hit/miss rolls, gated callbacks and the full nested effect/status definition.
 `UpgradedDrafts` now has an unchanged-owner native manager probe on a spell,
 covering the ordered 50-position enhancer pool, 85 exact native filter outcomes,
 three supported selected pool positions, complete card-state application and
@@ -26,6 +29,11 @@ preview execution and the later draft UI choice/grant sequence are not claimed.
 play and a non-Exhaust control: corruption rises by exactly one only on the
 selected floor. CorruptionAdded callback floors and already-over-maximum values
 are not covered by this witness.
+`ChanceForSpellWeakness` now has seven native eligible 50% AfterSpawnEnchant
+rolls (four hits, three misses) and four exact Spell Weakness applications;
+496 gated tests preserve Battle RNG. The winning replay and independent
+128-state search pass. Other owner identities and nested effect shapes are not
+generalized.
 `AddSnackOnKill` now has three native enemy-Hero OnDeath witnesses that add six
 cards from its exact 19-entry weighted filtered pool, plus 312 gated callbacks.
 The 55-stage replay and one model-selected action have zero differential
@@ -379,6 +387,7 @@ owner count.
 | `PyregelOnAscend_DH` | `394fb724-046f-448f-9531-f9d6caadae77` | [enemy ascend Pyregel][pyregelOnAscend] | The unchanged owner adds 2 Pyregel after enemy PostAscension; descend, player, rooted and immobile controls do not gain it. All 22 Bump replays, 40 full-battle stages and 42 actions match; independent search passes 74/74 states with serial/parallel best equality. |
 | `BalatroEventYorick` | `2bd14ebc-1589-4652-a002-54013f0eace4` | [schema-194 Balatro battle](full-battle-original-balatro-event-yorick.mt2f) | Its unchanged exhaust look-ahead matches 28 native Test calls and six natural Consume callbacks, including full train state and adjusted reward gold; non-Consume, threshold, preview and multiplier controls pass. Independent replay/search match. |
 | `2ChargesOnCardConsumed` | `217d553b-cddf-4a8c-a4c9-cfdb3c99389c` | [2Charges battle](full-battle-original-two-charges-on-card-consumed.mt2f) | Unchanged +1 corruption owner: an Exhaust carrier changes only its selected floor; a non-Exhaust play and all other floors remain unchanged. Five card actions replay; callback-bearing floors and above-maximum behavior are outside this capture. |
+| `ChanceForSpellWeakness` | `98989cbb-c729-4f87-8240-08f448db96d8` | [ChanceForSpellWeakness battle](full-battle-original-chance-for-spell-weakness.mt2f) | Unchanged 50% AfterSpawnEnchant effect adds one Spell Weakness to eligible enemy Heroes: seven exact rolls (four hits/three misses), four applications, and 496 gated tests with unchanged Battle RNG. Other owner identities and nested payload shapes remain unsupported. |
 
 ## Campaign interface evidence
 
@@ -483,6 +492,7 @@ archives contain these observed battle sizes:
 | [BrokenRail forge upgrade][brokenRail] | 176 | 16 | 5 | 39 | Original +2 HP forge payload scales to +6 at three points; native full-battle and bounded search match |
 | [Ephemeral-loss Rage][rageBurnout] | 177 | 18 | 5 | 41 | Original +3 Rage payload on one controlled friendly Ephemeral removal; all recorded actions and turns replay |
 | [2ChargesOnCardConsumed](full-battle-original-two-charges-on-card-consumed.mt2f) | 195 | 5 | 7 | 61 | Exact +1 corruption on selected floor, with non-Exhaust and cross-floor controls |
+| [ChanceForSpellWeakness](full-battle-original-chance-for-spell-weakness.mt2f) | 196 | 5 | 7 | 61 | Seven eligible 50% rolls (four hits/three misses), four applications and 496 gated tests |
 
 The checks that enforce these observations are
 [TriggerCountChecks.Native](../../src/ModelChecks/TriggerCountChecks.cs),
@@ -1166,4 +1176,35 @@ component calibrations. Original relic evidence is 173/224 (77.23%): 156 battle,
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-two-charges-on-card-consumed.mt2f
 dotnet run --project src/ModelChecks -c Release -- --original-two-charges-only tests/fixtures/full-battle-original-two-charges-on-card-consumed.mt2f
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-two-charges-on-card-consumed.mt2f
+```
+
+## ChanceForSpellWeakness
+
+The schema-196 archive captures unchanged owner
+`98989cbb-c729-4f87-8240-08f448db96d8`, its 50% enemy-Hero
+`AfterSpawnEnchant` filter and one self-targeted Spell Weakness +1 effect.
+Captured nested metadata includes the native `SubtypesData_None` key,
+`TargetCardType=Spell`, `ParamMultiplier=0`, and the complete Spell Weakness
+status definition. Seven eligible tests match one native 0..100 Battle RNG draw
+each (four hits, three misses), while 496 gated tests preserve RNG. Four native
+Apply coroutines add exactly one stack and consume no additional RNG.
+
+The winning replay has 61 stages, 13 card cycles, 14 train phases, 11 spawns,
+five card actions and seven EndTurns, with zero capture failures, mismatches,
+unsupported transitions or pending records. Independent search matches all five
+decisions and visits 128/128 states with serial/parallel best equality; four
+steps replay. Focused controls cover preview, destroyed/Untouchable units, wrong
+trigger/team, removed owner, incomplete payload and all 25 immutable relic copy
+updates. The changed spawn-trigger ordering also passes existing room-entry and
+spawn-trigger fixture replays. Other owner identities and nested effect shapes
+are not generalized. The 31,208-byte archive has 4,728 unique nodes and SHA-256
+`c4981c58612f035f5f69df78f100ba78c8aa7d42a197b5293ac596e729e56692`; no JSON
+companion is tracked. Inventory is 394 archives: 356 battles and 38 component
+calibrations. Original relic evidence is 174/224 (77.68%): 157 battle, 16
+campaign and one native no-op owner.
+
+```powershell
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-chance-for-spell-weakness.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-chance-for-spell-weakness-only tests/fixtures/full-battle-original-chance-for-spell-weakness.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-chance-for-spell-weakness.mt2f
 ```
