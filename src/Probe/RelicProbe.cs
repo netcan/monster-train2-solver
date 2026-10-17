@@ -39,7 +39,8 @@ namespace MonsterTrain2Poju.Probe
                 var effects = relic.GetEffects().ToArray();
                 var statuses = effects.Select((effect, index) => new { Effect = effect, Index = index })
                     .Where(item => item.Effect is RelicEffectAddStatusEffectOnSpawn || item.Effect is RelicEffectRemoveStatusEffectOnSpawn ||
-                        item.Effect.GetType().Name == RelicModel.AddStatusOnTeamSpawn)
+                        item.Effect.GetType().Name == RelicModel.AddStatusOnTeamSpawn ||
+                        item.Effect is RelicEffectEnergyAndCardDrawOnUnitSpawned)
                     .Select(item => SpawnStatus(item.Effect, item.Index)).ToArray();
                 var roomEntryStatuses = effects.Select((effect, index) => new { Effect = effect, Index = index })
                     .Where(item => item.Effect is RelicEffectAddStatusEffectOnEnterRoomIndex ||
@@ -498,6 +499,14 @@ namespace MonsterTrain2Poju.Probe
         {
             object Field(string name) => AccessTools.Field(effect.GetType(), name).GetValue(effect);
             var conditions = RelicCardModifierProbe.Conditions(effect);
+            if (effect is RelicEffectEnergyAndCardDrawOnUnitSpawned)
+            {
+                var data = (RelicEffectData)AccessTools.Field(typeof(RelicEffectBase), "_srcRelicEffectData").GetValue(effect);
+                Team.Type teamFilter = data.GetParamSourceTeam();
+                return new RelicSpawnStatus(index, teamFilter.HasFlag(Team.Type.Monsters),
+                    teamFilter.HasFlag(Team.Type.Heroes), System.Array.Empty<CombatStatus>(),
+                    conditions: conditions, energyGain: data.GetParamInt(), drawCount: 1);
+            }
             bool applyToTeam = effect.GetType().Name == RelicModel.AddStatusOnTeamSpawn;
             Team.Type team = (Team.Type)Field("targetTeam");
             var subtype = (SubtypeData)Field("characterSubtype");

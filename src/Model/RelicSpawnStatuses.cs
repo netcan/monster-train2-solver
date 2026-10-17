@@ -41,11 +41,14 @@ namespace MonsterTrain2Poju.Model
         public bool ApplyToTeam { get; }
         public IReadOnlyList<string> CharacterAssetKeys { get; }
         public IReadOnlyList<RelicConditionState> Conditions { get; }
+        public int EnergyGain { get; }
+        public int DrawCount { get; }
         public RelicSpawnStatus(int effectIndex, bool targetPlayer, bool targetEnemy, IReadOnlyList<CombatStatus> statuses,
             string? requiredSubtype = null, bool subtypeIsNone = true, bool subtypeIsPyre = false,
             IReadOnlyList<string>? excludedSubtypes = null, int? restrictedRoom = null, int hpPercentAsStacks = 0,
             string sourceKind = "", bool requireGraft = false, IReadOnlyList<string>? characterAssetKeys = null,
-            IReadOnlyList<RelicConditionState>? conditions = null, bool applyToTeam = false)
+            IReadOnlyList<RelicConditionState>? conditions = null, bool applyToTeam = false,
+            int energyGain = 0, int drawCount = 0)
         { EffectIndex = effectIndex; TargetPlayer = targetPlayer; TargetEnemy = targetEnemy;
             Statuses = Array.AsReadOnly(statuses.ToArray()); RequiredSubtype = requiredSubtype;
             SubtypeIsNone = subtypeIsNone; SubtypeIsPyre = subtypeIsPyre;
@@ -53,10 +56,12 @@ namespace MonsterTrain2Poju.Model
             RestrictedRoom = restrictedRoom; HpPercentAsStacks = hpPercentAsStacks; SourceKind = sourceKind; RequireGraft = requireGraft;
             ApplyToTeam = applyToTeam;
             CharacterAssetKeys = Array.AsReadOnly((characterAssetKeys ?? Array.Empty<string>()).ToArray());
-            Conditions = Array.AsReadOnly((conditions ?? Array.Empty<RelicConditionState>()).ToArray()); }
+            Conditions = Array.AsReadOnly((conditions ?? Array.Empty<RelicConditionState>()).ToArray());
+            EnergyGain = energyGain; DrawCount = drawCount; }
         internal RelicSpawnStatus WithConditions(IReadOnlyList<RelicConditionState> conditions) =>
             new RelicSpawnStatus(EffectIndex, TargetPlayer, TargetEnemy, Statuses, RequiredSubtype, SubtypeIsNone, SubtypeIsPyre,
-                ExcludedSubtypes, RestrictedRoom, HpPercentAsStacks, SourceKind, RequireGraft, CharacterAssetKeys, conditions, ApplyToTeam);
+                ExcludedSubtypes, RestrictedRoom, HpPercentAsStacks, SourceKind, RequireGraft, CharacterAssetKeys, conditions,
+                ApplyToTeam, EnergyGain, DrawCount);
     }
 
     public static class RelicSpawnStatusModel
@@ -65,16 +70,39 @@ namespace MonsterTrain2Poju.Model
         {
             int[] indices = relic.EffectTypes.Select((type, index) => (type, index))
                 .Where(item => item.type == RelicModel.AddStatusOnSpawn || item.type == RelicModel.RemoveStatusOnSpawn ||
-                    item.type == RelicModel.AddStatusOnTeamSpawn)
+                    item.type == RelicModel.AddStatusOnTeamSpawn || item.type == RelicModel.EnergyAndCardDrawOnUnitSpawned)
                 .Select(item => item.index).ToArray();
             if (indices.Length == 0) return relic.SpawnStatuses?.Count > 0 ? "Unexpected relic spawn status definitions." : null;
             if (relic.IsCovenant == null || relic.DisallowedInPlacementPhase == null || relic.SpawnStatuses == null ||
                 !indices.SequenceEqual(relic.SpawnStatuses.Select(rule => rule.EffectIndex)))
                 return "Missing ordered native relic spawn status definitions.";
+            bool hasFirstImpBonus = relic.EffectTypes.Contains(RelicModel.EnergyAndCardDrawOnUnitSpawned);
+            if (hasFirstImpBonus && (relic.DataId != "0a6cff92-aefa-4d7f-ae71-615c8e30739b" ||
+                relic.AssetKey != "FirstImpBonus" || relic.EffectTypes.Count != 1 || relic.IsCovenant != false ||
+                relic.DisallowedInPlacementPhase != true))
+                return "Energy-and-draw-on-unit-spawned is supported only for the unchanged FirstImpBonus owner.";
             foreach (RelicSpawnStatus rule in relic.SpawnStatuses)
             {
-                bool teamEffect = relic.EffectTypes[rule.EffectIndex] == RelicModel.AddStatusOnTeamSpawn;
-                bool removal = relic.EffectTypes[rule.EffectIndex] == RelicModel.RemoveStatusOnSpawn;
+                string effect = relic.EffectTypes[rule.EffectIndex];
+                bool teamEffect = effect == RelicModel.AddStatusOnTeamSpawn;
+                bool removal = effect == RelicModel.RemoveStatusOnSpawn;
+                bool firstImpBonus = effect == RelicModel.EnergyAndCardDrawOnUnitSpawned;
+                if (firstImpBonus)
+                {
+                    RelicConditionState[] conditions = rule.Conditions.ToArray();
+                    CardStatisticQuery? query = conditions.Length == 1 ? conditions[0].Query : null;
+                    if (rule.ApplyToTeam || !rule.TargetPlayer || rule.TargetEnemy || rule.EnergyGain != 1 ||
+                        rule.DrawCount != 1 || rule.Statuses.Count != 0 || rule.RequiredSubtype != null ||
+                        !rule.SubtypeIsNone || rule.ExcludedSubtypes.Count != 0 || rule.RestrictedRoom.HasValue ||
+                        rule.HpPercentAsStacks != 0 || rule.SourceKind.Length != 0 || rule.RequireGraft ||
+                        rule.CharacterAssetKeys.Count != 0 || conditions.Length != 1 || conditions[0].TrackTriggerCount ||
+                        conditions[0].Comparator != 2 || conditions[0].Value != 1 || conditions[0].AllowMultiple ||
+                        query?.Type != "MonsterSubtypePlayed" || query.Duration != "ThisTurn" ||
+                        query.Subtype != "SubtypesData_Imp_0f9b989f-15b5-4b16-8378-5d8ed8691e7c" || query.SubtypeIsNone ||
+                        query.TypeMatchDataIds?.Count == 0 || query.SubtypeMatchDataIds?.Count == 0)
+                        return "Malformed native FirstImpBonus callback definition.";
+                    continue;
+                }
                 if (rule.ApplyToTeam != teamEffect) return "Relic spawn status target scope does not match its native effect.";
                 if (removal && (rule.HpPercentAsStacks != 0 || rule.RequireGraft || rule.CharacterAssetKeys.Count != 0))
                     return "Status-removal relic contains add-only parameters.";
@@ -153,7 +181,8 @@ namespace MonsterTrain2Poju.Model
                     }
                     bool applyToTeam = relic.EffectTypes[effectIndex] == RelicModel.AddStatusOnTeamSpawn;
                     bool remove = relic.EffectTypes[effectIndex] == RelicModel.RemoveStatusOnSpawn;
-                    if (relic.EffectTypes[effectIndex] != RelicModel.AddStatusOnSpawn && !applyToTeam && !remove) continue;
+                    bool firstImpBonus = relic.EffectTypes[effectIndex] == RelicModel.EnergyAndCardDrawOnUnitSpawned;
+                    if (relic.EffectTypes[effectIndex] != RelicModel.AddStatusOnSpawn && !applyToTeam && !remove && !firstImpBonus) continue;
                     int ruleIndex = relic.SpawnStatuses!.ToList().FindIndex(rule => rule.EffectIndex == effectIndex);
                     RelicSpawnStatus rule = relic.SpawnStatuses![ruleIndex];
                     RelicConditionEvaluation conditionEvaluation = RelicConditionModel.Evaluate(state.Context!, rule.Conditions);
@@ -162,6 +191,26 @@ namespace MonsterTrain2Poju.Model
                     if (!conditionEvaluation.Passed) continue;
                     CombatUnit? actor = state.Units.FirstOrDefault(unit => unit.Id == unitId);
                     if (actor == null) return Fail("Relic birth removal requires a retained native actor.");
+                    if (firstImpBonus)
+                    {
+                        bool bonusTeamMatches = actor.Team == CombatTeam.Player && rule.TargetPlayer ||
+                            actor.Team == CombatTeam.Enemy && rule.TargetEnemy;
+                        if (!bonusTeamMatches || state.Preview) continue;
+                        RelicConditionRecord firstImpConditionRecord = RelicConditionModel.Record(state.Context!, rule.Conditions);
+                        if (!firstImpConditionRecord.Supported) return Fail(firstImpConditionRecord.UnsupportedReason!);
+                        SetContext(firstImpConditionRecord.Context);
+                        relic = state.Context!.Relics![relicIndex];
+                        var firstImpRules = relic.SpawnStatuses!.ToArray(); firstImpRules[ruleIndex] = rule.WithConditions(firstImpConditionRecord.Conditions);
+                        relic = relic.WithSpawnStatuses(firstImpRules);
+                        var firstImpRelics = state.Context.Relics!.ToArray(); firstImpRelics[relicIndex] = relic;
+                        SetContext(state.Context.WithRelics(firstImpRelics));
+                        CombatContext context = EnergyModel.Apply(state.Context!, "GainEnergy", rule.EnergyGain);
+                        TypedDrawResult drawn = NextDrawUpgradeModel.DrawCards(context, rule.DrawCount, 0);
+                        if (!drawn.Supported) return Fail(drawn.UnsupportedReason!);
+                        SetContext(drawn.Context!);
+                        if (!onlyCovenants && !DrainYield()) return failed!;
+                        continue;
+                    }
                     if (rule.CharacterAssetKeys.Count > 0 && !rule.CharacterAssetKeys.Contains(actor.AssetKey)) continue;
                     if (fromCardId > 0 && actor.Modifiers == null) return Fail("Relic birth requires source-definition matching metadata.");
                     bool fromCard = fromCardId > 0 && actor.Modifiers!.SpawnerMatchesDefinition &&

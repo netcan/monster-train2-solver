@@ -47,6 +47,61 @@ internal static class StatisticCacheChecks
         var refreshed = StatisticQueryModel.Evaluate(born.Context, new("Gold"));
         Require(refreshed.Supported && refreshed.Context!.Statistics!.StoredCards!.SequenceEqual([1, 2]) &&
             Clear(refreshed.Context).Statistics!.TrackedCards.SequenceEqual([1, 2]), "Statistic query failed to materialize actual owned entries.");
+        var generatedAfterQuery = CardGenerationModel.Apply(refreshed.Context, generation);
+        Require(generatedAfterQuery.Supported && generatedAfterQuery.Context!.Statistics!.StoredCards!.SequenceEqual([1, 2]) &&
+            generatedAfterQuery.Context.Statistics.TrackedCards.SequenceEqual([1, 2, 3]) &&
+            born.Context.Statistics.StoredCards!.SequenceEqual([1]),
+            "Ownership after a statistic query eagerly changed the native cache before a refresh operation.");
+        var impCondition = new RelicConditionState(new("MonsterSubtypePlayed", subtype: "imp", subtypeIsNone: false), false, 2, 1, false);
+        var impRule = new RelicSpawnStatus(0, true, false, [], conditions: [impCondition], energyGain: 1, drawCount: 1);
+        var impRelic = new CombatRelicState("0a6cff92-aefa-4d7f-ae71-615c8e30739b", "FirstImpBonus",
+            [RelicModel.EnergyAndCardDrawOnUnitSpawned], [impRule], false, true);
+        var birthSnapshot = new CombatContext(root.Cards, rng, 0, 2, 10, statistics: stats.Spawn(0, ["imp"]),
+            cardInstances: [instance], cardRegistry: [instance], otherPiles: [],
+            queryFrame: new(energy: 0, runningCombat: true, turn: 1), relics: [impRelic]);
+        var generatedAfterBirthQuery = CardGenerationModel.Apply(birthSnapshot, generation);
+        Require(generatedAfterBirthQuery.Supported && generatedAfterBirthQuery.Context!.Statistics!.StoredCards!.SequenceEqual([1]) &&
+            generatedAfterBirthQuery.Context.Statistics.TrackedCards.SequenceEqual([1, 2]) &&
+            !birthSnapshot.Statistics!.StoredCards!.Contains(2),
+            "A FirstImpBonus snapshot inferred a cache refresh without a native query.");
+        const string impSubtype = "SubtypesData_Imp_0f9b989f-15b5-4b16-8378-5d8ed8691e7c";
+        const string junkDataId = "62cc5532-5fa0-4e66-9fec-85be573af359";
+        var armor = new CombatStatus("armor", 0, hidden: false, displayCategory: "Positive");
+        CombatContext StatusContext(bool triggered)
+        {
+            var condition = new RelicConditionState(new("MonsterSubtypePlayed", typeMatchDataIds: ["unit"],
+                subtypeMatchDataIds: [impSubtype], subtype: impSubtype, subtypeIsNone: false),
+                false, 2, 1, false, triggered, triggered ? 1 : 0, triggered ? 1 : 0);
+            var rule = new RelicSpawnStatus(0, true, false, [], conditions: [condition], energyGain: 1, drawCount: 1);
+            var relic = new CombatRelicState("0a6cff92-aefa-4d7f-ae71-615c8e30739b", "FirstImpBonus",
+                [RelicModel.EnergyAndCardDrawOnUnitSpawned], [rule], false, true);
+            return new CombatContext(root.Cards, rng, 0, 2, 10, statusRules: [armor], statistics: stats,
+                cardInstances: [instance], cardRegistry: [instance], otherPiles: [],
+                queryFrame: new(energy: 0, runningCombat: true, turn: 2), relics: [relic]);
+        }
+        CombatContext WithJunk(bool triggered)
+        {
+            var context = StatusContext(triggered);
+            var generated = CardGenerationModel.Apply(context, new CardGenerationRule("DeckPileTop", 1,
+                [new(junkDataId, CardModifiers.Empty(), null, [])]));
+            Require(generated.Supported && generated.Context!.Statistics!.StoredCards!.SequenceEqual([1]) &&
+                generated.Context.Statistics.TrackedCards.SequenceEqual([1, 2]),
+                "Generated Junk changed the cache before its status-applied condition query.");
+            return generated.Context;
+        }
+        var statusUnit = new CombatUnit(9, "CacheRefreshProbe", CombatTeam.Player, 0, 10, 10, false, false, false,
+            [], [], modifiers: new(0, 0, 0, 1, 1, true, false, []), isBoss: false, lastAttackerId: 0,
+            statusRegistry: [armor]);
+        RoomCombatResult statusQuery = StatusApplicationModel.Apply(new RoomCombatState(0, false, [statusUnit], [], WithJunk(false)),
+            9, armor, allowModification: false);
+        RoomCombatResult triggeredStatus = StatusApplicationModel.Apply(new RoomCombatState(0, false, [statusUnit], [], WithJunk(true)),
+            9, armor, allowModification: false);
+        Require(statusQuery.Supported && statusQuery.State!.Context!.Statistics!.StoredCards!.SequenceEqual([1, 2]) &&
+            triggeredStatus.Supported && triggeredStatus.State!.Context!.Statistics!.StoredCards!.SequenceEqual([1]),
+            "Status-applied FirstImpBonus cache boundary differed: untriggered=" + statusQuery.Supported + ":" +
+            statusQuery.UnsupportedReason + ":" + string.Join(",", statusQuery.State?.Context?.Statistics?.StoredCards ?? Array.Empty<int>()) +
+            " alreadyTriggered=" + triggeredStatus.Supported + ":" + triggeredStatus.UnsupportedReason + ":" +
+            string.Join(",", triggeredStatus.State?.Context?.Statistics?.StoredCards ?? Array.Empty<int>()));
         var fallback = StatisticQueryModel.Evaluate(Clear(cached), new("Gold"));
         Require(fallback.Supported && fallback.Context!.Statistics!.StoredCards!.SequenceEqual([1]) &&
             fallback.Context.Statistics.Values.All(value => value.CardId == 1), "Empty-pile query did not refresh from the permanent deck.");
@@ -67,7 +122,7 @@ internal static class StatisticCacheChecks
             JsonSerializer.Serialize(cleared) && JsonSerializer.Serialize(StatisticQueryModel.Evaluate(born.Context, new("Gold"))) ==
             JsonSerializer.Serialize(refreshed), "Parallel cache and ownership branches diverged."));
         Require(JsonSerializer.Serialize(born.Context) == parent, "Cache refresh mutated its parent.");
-        Console.WriteLine("STATISTIC-CACHE-CHECKS PASS: generated ownership/cached entry distinction, terminal clears, counter/query/turn refresh, passive setters, detached/zero sources, legacy captures and 32 immutable parallel branches.");
+        Console.WriteLine("STATISTIC-CACHE-CHECKS PASS: generated ownership/cached entry distinction, status-applied FirstImp condition refresh, terminal clears, counter/query/turn refresh, passive setters, detached/zero sources, legacy captures and 32 immutable parallel branches.");
     }
 
     internal static void Native(FixtureValue fixture)

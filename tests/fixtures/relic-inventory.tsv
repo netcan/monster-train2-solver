@@ -116,7 +116,7 @@
 "MothersRemnant1Relic"	"8ee399d2-4ee4-409d-af95-319bcd6accc4"	"accepted-native-campaign"	"RelicEffectCopyRandomCardFromDeckEndOfBattle"	""
 "StingBuffPower"	"0f6d3edc-d212-4e3a-877f-e9eb2ac78339"	"accepted-native-battle"	"RelicEffectAddTempUpgrade,RelicEffectAddCardsNull"	""
 "FutureDraftsAreRares"	"8f46fde9-0c75-49ba-9f58-3063864f81bf"	"accepted-native-campaign"	"RelicEffectOverrideCardDraftRarity"	""
-"FirstImpBonus"	"0a6cff92-aefa-4d7f-ae71-615c8e30739b"	"pending"	"RelicEffectEnergyAndCardDrawOnUnitSpawned"	""
+"FirstImpBonus"	"0a6cff92-aefa-4d7f-ae71-615c8e30739b"	"accepted-native-battle"	"RelicEffectEnergyAndCardDrawOnUnitSpawned"	""
 "RagePreservedOnFriendlies"	"b7822614-96ec-4ace-9029-6efc8adef374"	"accepted-native-battle"	"RelicEffectPreventStatusEffectDecay"	""
 "MoonPhaseRoomsGainMagicPower"	"e96497a1-3c1e-4adf-b897-8ef09b931d1d"	"pending"	"RelicEffectApplyCardUpgradeToHandEndOfTurnOnMoon"	""
 "EmberFoundryCrucible"	"a034e00f-3a12-4c19-b626-4b8fd17c412a"	"accepted-native-battle"	"RelicEffectAdditionalSmeltEmber"	""

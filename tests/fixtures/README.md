@@ -5430,3 +5430,30 @@ pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-no-
 dotnet run --project src/ModelChecks -c Release -- --original-no-upgrade-card-cost-only tests/fixtures/full-battle-original-no-upgrade-cost.mt2f
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-no-upgrade-cost.mt2f
 ```
+
+### Original FirstImpBonus relic
+
+`full-battle-original-first-imp-bonus.mt2f` captures the unchanged owner with
+Monster-only energy/draw parameters, the `MonsterSubtypePlayed:Imp == 1/ThisTurn`
+gate, and the placement/preview exclusions intact. A synthetic Imp card is
+prepared after deployment and played on a later turn; the native callback
+records the condition once, adds one energy and draws one card. The focused
+checker independently replays both card play and unit birth.
+
+The 62-stage winning battle records 23 actions, seven EndTurns, 14 train phases
+and 11 spawns, with zero capture failures, mismatches, unsupported transitions
+or pending records. Native source showed that every status-applied relic
+notification evaluates the base condition before the effect callback. Modeling
+that query boundary preserves the native deck-stat refresh without treating card
+ownership as an eager cache update. The focused checks and 128-state serial/
+parallel search pass. The 42,282-byte archive has 6,156 unique nodes and SHA-256
+`9b9fe9a8437d85ee553306ee7c23651a6dc73cfa78d202ae32c9b1a089da238b`; no JSON
+companion is tracked. The inventory is now 409 archives: 371 battles and 38
+component calibrations. Original relic coverage is 190/224 (84.82%): 173 battle
+owners, sixteen campaign owners and one native no-op owner.
+
+```powershell
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-first-imp-bonus.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-first-imp-bonus-only tests/fixtures/full-battle-original-first-imp-bonus.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-first-imp-bonus.mt2f
+```

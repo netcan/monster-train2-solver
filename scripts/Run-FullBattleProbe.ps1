@@ -305,6 +305,7 @@ param(
     [switch] $OriginalChampionStartTurnHealRelic,
     [switch] $OriginalNimsOathRelic,
     [switch] $OriginalJudgesScalesRelic,
+    [switch] $OriginalFirstImpBonusRelic,
     [switch] $OriginalNoUpgradeCardCostRelic,
     [switch] $OriginalPyreHealthCardCostRelic,
     [switch] $OriginalNullRelic,
@@ -510,6 +511,7 @@ if ($OriginalFrontRoomHealthUpgradeRelic) { $BranchCardMasks = $true; $Policy = 
 if ($OriginalChampionStartTurnHealRelic) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalNimsOathRelic) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalJudgesScalesRelic) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
+if ($OriginalFirstImpBonusRelic) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalNoUpgradeCardCostRelic) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalPyreHealthCardCostRelic) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalNullRelic -or $OriginalNullRelicBaseline) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
@@ -965,6 +967,7 @@ if ($OriginalFrontRoomHealthUpgradeRelic) { $environment['MT2_PROBE_MODIFIERS'] 
 if ($OriginalChampionStartTurnHealRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-champion-start-turn-heal' }
 if ($OriginalNimsOathRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-nims-oath' }
 if ($OriginalJudgesScalesRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-judges-scales' }
+if ($OriginalFirstImpBonusRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-first-imp-bonus' }
 if ($OriginalNoUpgradeCardCostRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-reduce-cost-unit-no-upgrade' }
 if ($OriginalPyreHealthCardCostRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-pyre-health-card-cost' }
 if ($OriginalNullRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-null-relic' }

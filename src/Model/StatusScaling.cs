@@ -155,6 +155,13 @@ namespace MonsterTrain2Poju.Model
                 source.Units.Select(unit => unit.Id == targetId ? changed : unit).ToArray(),
                 source.ExternalInteractions, context, source.Preview, source.ActiveCompanionBossIds),
                 RoomOutcome.Exchanged, 0, new List<CombatEvent>(), pendingCallbacks: queue), added.Id, target.Status("dormant") != null, update: true);
+            if (applied.Supported && applied.State!.Context != null)
+            {
+                RelicConditionEvaluation conditions = RelicConditionModel.EvaluateFirstImpStatusEffectApplied(applied.State.Context);
+                if (!conditions.Supported) return Unsupported(conditions.UnsupportedReason!);
+                applied = new RoomCombatResult(applied.State.WithContext(conditions.Context), applied.Outcome, applied.Rounds,
+                    applied.Events.ToList(), pendingCallbacks: applied.PendingCallbacks, retainedUnits: applied.RetainedUnits);
+            }
             if (applied.Supported && count > old && fromPermanentUpgrade && !spawnEffect)
             {
                 int deferred = RelicStatusStackModel.GetStacks(applied.State!.Context?.Relics, added.Id, 0,

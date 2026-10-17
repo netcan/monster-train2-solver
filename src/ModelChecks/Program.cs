@@ -1503,6 +1503,18 @@ if (args.Length == 2 && args[0] == "--relic-spawn-status-only")
     RelicSpawnStatusChecks.Native(fixture.RootElement);
     return;
 }
+if (args.Length == 2 && args[0] == "--original-first-imp-bonus-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    OriginalFirstImpBonusChecks.Native(fixture.RootElement);
+    return;
+}
+if (args.Length == 2 && args[0] == "--original-first-imp-bonus-diagnose")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    OriginalFirstImpBonusChecks.Diagnose(fixture.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--covenant-character-filter-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);

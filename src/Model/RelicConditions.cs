@@ -83,6 +83,22 @@ namespace MonsterTrain2Poju.Model
             return new RelicConditionEvaluation(context, true);
         }
 
+        internal static RelicConditionEvaluation EvaluateFirstImpStatusEffectApplied(CombatContext source)
+        {
+            CombatContext context = source;
+            foreach (CombatRelicState relic in context.Relics ?? Array.Empty<CombatRelicState>())
+            for (int effectIndex = 0; effectIndex < relic.EffectTypes.Count; effectIndex++)
+            {
+                if (relic.EffectTypes[effectIndex] != RelicModel.EnergyAndCardDrawOnUnitSpawned) continue;
+                RelicSpawnStatus? rule = relic.SpawnStatuses?.SingleOrDefault(status => status.EffectIndex == effectIndex);
+                if (rule == null) continue;
+                RelicConditionEvaluation evaluation = Evaluate(context, rule.Conditions);
+                if (!evaluation.Supported) return evaluation;
+                context = evaluation.Context;
+            }
+            return new RelicConditionEvaluation(context, true);
+        }
+
         internal static RelicConditionRecord Record(CombatContext source, IReadOnlyList<RelicConditionState> conditions)
         {
             CombatContext context = source;

@@ -1,7 +1,7 @@
 # Original relic coverage evidence
 
-As of 2026-10-18, **189 distinct original collectable relics / 224 catalog entries
-(84.38%)** have accepted native evidence: 172 have full-battle effect evidence,
+As of 2026-10-18, **190 distinct original collectable relics / 224 catalog entries
+(84.82%)** have accepted native evidence: 173 have full-battle effect evidence,
 sixteen have campaign consumer interfaces validated, and one is an explicit
 native no-op with seeded baseline equivalence. Except for that no-op, this counts
 unchanged relic definitions whose effects actually ran, including original filters and
@@ -1569,4 +1569,22 @@ This support is limited to the captured original Monster-exclusive owner and hid
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-no-upgrade-cost.mt2f
 dotnet run --project src/ModelChecks -c Release -- --original-no-upgrade-card-cost-only tests/fixtures/full-battle-original-no-upgrade-cost.mt2f
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-no-upgrade-cost.mt2f
+```
+
+## FirstImpBonus
+
+| AssetKey | DataId | Fixture | Evidence |
+| --- | --- | --- | --- |
+| `FirstImpBonus` | `0a6cff92-aefa-4d7f-ae71-615c8e30739b` | `full-battle-original-first-imp-bonus.mt2f` | The unchanged owner grants +1 energy and draws one card when a player Imp is added, gated by `MonsterSubtypePlayed:Imp == 1/ThisTurn`; the native placement and preview exclusions are preserved. |
+
+The focused checker validates the original owner/effect parameters, exact Imp condition record, one synthetic positive Imp on a prepared turn outside deployment, +1 energy, one-card draw, and independent card-play/birth replay. Native source also confirms that status-application notifications evaluate base relic conditions; the model preserves this query boundary and its one-shot short circuit. The 62-stage winning battle records 23 actions, seven EndTurns, 14 train phases and 11 spawns, with zero capture failures, mismatches, unsupported transitions or pending records. Independent search matches 128/128 states with serial/parallel best equality.
+
+The 42,282-byte archive has 6,156 unique nodes and SHA-256 `9b9fe9a8437d85ee553306ee7c23651a6dc73cfa78d202ae32c9b1a089da238b`; no JSON companion is tracked. Inventory is 409 archives: 371 full battles and 38 component calibrations. Original relic evidence is 190/224 (84.82%): 173 battle, 16 campaign and one native no-op owner.
+
+This witness covers the recorded player Imp callback and a single prepared turn; it does not claim every Imp creation path or effect combination.
+
+```powershell
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-first-imp-bonus.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-first-imp-bonus-only tests/fixtures/full-battle-original-first-imp-bonus.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-first-imp-bonus.mt2f
 ```

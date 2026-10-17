@@ -126,8 +126,13 @@ namespace MonsterTrain2Poju.Model
                 SubtypesSpawnedThisTurn, SubtypesSpawnedThisBattle, MonstersDeadThisTurn, MonstersDeadThisBattle,
                 EnergyRemainingEndOfTurn, GoldStartOfThisTurn, LastAttackDamageDealt, TrackedCards,
                 DeckCards.Where(id => id != cardId).ToArray(), StoredCards);
-        internal BattleStatistics WithOwnedCards(IEnumerable<int> cards) => StoredCards == null ? this :
-            Copy(tracked: StoredCards.Concat(cards).Distinct().ToArray());
+        internal BattleStatistics WithOwnedCards(IEnumerable<int> cards)
+        {
+            if (StoredCards == null) return this;
+            int[] owned = cards.Distinct().ToArray();
+            int[] tracked = StoredCards.Concat(owned).Distinct().ToArray();
+            return Copy(tracked: tracked);
+        }
         public BattleStatistics RefreshOwnedCards(IEnumerable<int> cards)
         {
             int[] owned = cards.Distinct().ToArray();

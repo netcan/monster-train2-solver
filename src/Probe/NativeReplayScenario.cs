@@ -371,6 +371,8 @@ namespace MonsterTrain2Poju.Probe
                         OriginalNimsOathScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalJudgesScalesScenario.Enabled && !OriginalJudgesScalesScenario.Acquired)
                         OriginalJudgesScalesScenario.AcquireBeforeBattle(managers!, log);
+                    if (fullBattle && OriginalFirstImpBonusScenario.Enabled && !OriginalFirstImpBonusScenario.Acquired)
+                        OriginalFirstImpBonusScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalNoUpgradeCardCostScenario.Enabled && !OriginalNoUpgradeCardCostScenario.Acquired)
                         OriginalNoUpgradeCardCostScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalPyreCardCostScenario.Enabled && !OriginalPyreCardCostScenario.Acquired)
@@ -1547,6 +1549,8 @@ namespace MonsterTrain2Poju.Probe
                     OriginalFirstCardCostScenario.Prepare(managers, log);
                 if (fullBattle && OriginalNoUpgradeCardCostScenario.Enabled && !OriginalNoUpgradeCardCostScenario.Prepared)
                     OriginalNoUpgradeCardCostScenario.Prepare(managers, log);
+                if (fullBattle && OriginalFirstImpBonusScenario.Enabled && !OriginalFirstImpBonusScenario.Prepared && combat!.GetTurnCount() > 0)
+                    OriginalFirstImpBonusScenario.Prepare(managers, log);
                 if (fullBattle && OriginalRebalanceValorScenario.Enabled && !OriginalRebalanceValorScenario.Prepared)
                     OriginalRebalanceValorScenario.Prepare(managers, log);
                 if (fullBattle && OriginalCardDrawOnCardPlayScenario.Enabled && !OriginalCardDrawOnCardPlayScenario.Prepared)
@@ -1723,6 +1727,8 @@ namespace MonsterTrain2Poju.Probe
                     pendingPlay = UnitAbilityModel.ChooseAbilityThenCards(decision);
                 if (modifierScenario == "equipment-buff")
                     pendingPlay = EquipmentScenario.ChooseBuffTarget(decision, pendingPlay) ?? pendingPlay;
+                if (fullBattle && OriginalFirstImpBonusScenario.Enabled)
+                    pendingPlay = OriginalFirstImpBonusScenario.Choose(decision) ?? pendingPlay;
                 if (pendingPlay != null)
                 {
                     RoomManager rooms = managers.GetRoomManager()!;
