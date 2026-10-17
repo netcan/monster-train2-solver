@@ -210,6 +210,16 @@ namespace MonsterTrain2Poju.Model
                 return true;
             }
 
+            if (upgrade.Stats.Damage != 0)
+            {
+                RoomCombatResult applied = UnitModifierModel.ApplyDirect(state, unitId, upgrade, remove,
+                    upgrade.DataId);
+                if (!applied.Supported || applied.State == null)
+                { error = applied.UnsupportedReason ?? "Room attachment stat synchronization failed."; return false; }
+                state = applied.State;
+                return true;
+            }
+
             CombatUnit? unit = state.Units.FirstOrDefault(item => item.Id == unitId);
             if (unit?.Modifiers == null)
             { error = "Room attachment character synchronization requires captured unit modifiers."; return false; }

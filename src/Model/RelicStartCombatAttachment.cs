@@ -10,10 +10,14 @@ namespace MonsterTrain2Poju.Model
         internal const string RelicKey = "TrainRoomInstallFloor1AtStartOfCombat";
         internal const string Floor2RelicId = "b037ec04-6164-4cd8-8b9d-3bc420c29351";
         internal const string Floor2RelicKey = "TrainRoomInstallFloor2AtStartOfCombat";
+        internal const string Floor3RelicId = "c474dd00-3725-46d6-b074-0be7f7687cdd";
+        internal const string Floor3RelicKey = "TrainRoomInstallFloor3AtStartOfCombat";
         internal const string UpgradeId = "05e215c6-600c-4ecb-a75e-c806dd596bcf";
         internal const string UpgradeKey = "FuelCar_Upgrade";
         internal const string Floor2UpgradeId = "35178e4a-0880-440b-a929-de29de6e88f8";
         internal const string Floor2UpgradeKey = "SpellSanctum_Upgrade";
+        internal const string Floor3UpgradeId = "f93ac9f7-45d2-47a4-a159-a1b326bd047f";
+        internal const string Floor3UpgradeKey = "FightClub";
 
         internal static string? Validate(CombatRelicState relic)
         {
@@ -21,7 +25,8 @@ namespace MonsterTrain2Poju.Model
                 .Where(item => item.type == Effect).Select(item => item.index).ToArray();
             if (indices.Length == 0) return null;
             bool knownOwner = relic.DataId == RelicId && relic.AssetKey == RelicKey ||
-                relic.DataId == Floor2RelicId && relic.AssetKey == Floor2RelicKey;
+                relic.DataId == Floor2RelicId && relic.AssetKey == Floor2RelicKey ||
+                relic.DataId == Floor3RelicId && relic.AssetKey == Floor3RelicKey;
             return knownOwner && relic.EffectTypes.Count == 1 &&
                 indices.SequenceEqual([0]) ? null : "Unmodeled start-of-combat room attachment relic identity or effect order.";
         }
@@ -35,9 +40,10 @@ namespace MonsterTrain2Poju.Model
             foreach (CombatRelicState owner in owners)
             {
                 bool floor2 = owner.DataId == Floor2RelicId;
-                int roomIndex = floor2 ? 1 : 0;
-                string upgradeId = floor2 ? Floor2UpgradeId : UpgradeId;
-                string upgradeKey = floor2 ? Floor2UpgradeKey : UpgradeKey;
+                bool floor3 = owner.DataId == Floor3RelicId;
+                int roomIndex = floor3 ? 2 : floor2 ? 1 : 0;
+                string upgradeId = floor3 ? Floor3UpgradeId : floor2 ? Floor2UpgradeId : UpgradeId;
+                string upgradeKey = floor3 ? Floor3UpgradeKey : floor2 ? Floor2UpgradeKey : UpgradeKey;
                 RoomCapacityState? room = context.RoomCapacities.SingleOrDefault(item => item.RoomIndex == roomIndex);
                 RoomCapacityAttachmentState[] attachments = room?.Attachments?.Where(item =>
                     item.DataId == upgradeId && item.AssetKey == upgradeKey).ToArray() ?? Array.Empty<RoomCapacityAttachmentState>();
@@ -45,14 +51,21 @@ namespace MonsterTrain2Poju.Model
                     return "Incomplete original start-of-combat room attachment state.";
                 RoomCapacityAttachmentState attachment = attachments[0];
                 if (attachment.AttachmentType != 0 || attachment.CapacityDelta != 0 ||
-                    attachment.SpellCostDelta != (floor2 ? -1 : 0) || !attachment.AffectsHeroes ||
-                    !attachment.AffectsMonsters || !Guid.TryParse(attachment.AttachmentId, out Guid id) || id == Guid.Empty ||
+                    attachment.SpellCostDelta != (floor2 ? -1 : 0) ||
+                    (floor3 ? attachment.AffectsHeroes || !attachment.AffectsMonsters : !attachment.AffectsHeroes || !attachment.AffectsMonsters) ||
+                    !Guid.TryParse(attachment.AttachmentId, out Guid id) || id == Guid.Empty ||
                     attachment.CharacterUpgrades?.Count != 1)
                     return "Incomplete original start-of-combat room attachment state.";
                 CardUpgradeModifier upgrade = attachment.CharacterUpgrades[0];
                 if (upgrade.DataId != upgradeId || upgrade.AssetKey != upgradeKey || upgrade.ExternalInteractions.Count != 0)
                     return "Unmodeled original start-of-combat room attachment upgrade payload.";
-                if (floor2)
+                if (floor3)
+                {
+                    if (upgrade.Stats.Damage != 15 || upgrade.Stats.Health != 0 || upgrade.Stats.Size != 0 ||
+                        upgrade.Statuses.Count != 0 || upgrade.TriggerUpgrades?.Count > 0 || upgrade.AbilityUpgrade != null)
+                        return "Unmodeled original FightClub room attachment upgrade payload.";
+                }
+                else if (floor2)
                 {
                     if (upgrade.Stats.Damage != 0 || upgrade.Stats.Health != 0 || upgrade.Stats.Size != 0 ||
                         upgrade.Statuses.Count != 0 || upgrade.TriggerUpgrades?.Count > 0 || upgrade.AbilityUpgrade != null)

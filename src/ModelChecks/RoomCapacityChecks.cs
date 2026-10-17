@@ -8,6 +8,7 @@ internal static class RoomCapacityChecks
     {
         EndTurnDecisionCapacities();
         RoomAttachmentMovementLifecycle();
+        AttackRoomAttachmentLifecycle();
         foreach (var sample in new[] { (5, -100, 1), (1, -1, 1), (5, 100, 30), (30, 1, 30), (5, 0, 5),
             (5, int.MaxValue, 1), (0, 0, 1), (35, -1, 30), (35, 1, 35) })
             Require(RoomCapacityModel.AdjustedMaximum(sample.Item1, sample.Item2) == sample.Item3, "Native capacity boundary arithmetic differs.");
@@ -142,6 +143,44 @@ internal static class RoomCapacityChecks
             before.Rooms[0].Units.Single().Modifiers!.Upgrades.Count == 1 &&
             after.Rooms[1].Units.Single().Modifiers!.Upgrades.Count == 1,
             "A moved character retained a non-trigger room attachment upgrade or mutated its input branch.");
+    }
+
+    private static void AttackRoomAttachmentLifecycle()
+    {
+        var rng = UnityRng.Seed(441);
+        var upgrade = new CardUpgradeModifier("fight-club", "FightClub", new(damage: 15), [], false,
+            false, false, 0, 0, []);
+        var attachment = new RoomCapacityAttachmentState("fight-club", "FightClub", 0, 0,
+            [upgrade], affectsHeroes: false, affectsMonsters: true, attachmentId: "fight-club-room-guid");
+        RoomCapacityState[] capacities = [
+            new(1, 5, 5, false, attachments: []),
+            new(2, 5, 5, false, attachments: [attachment])
+        ];
+        var context = new CombatContext(new([], [], [], rng, 0, []), rng, 0, 4, 10,
+            cardInstances: [], roomCapacities: capacities);
+        CombatUnit attached = new(1, "unit", CombatTeam.Player, 20, 10, 10, true, false, false, [],
+            modifiers: new(35, 0, 0, 1, 1, true, false, [upgrade]));
+        var before = new TrainCombatState([
+            new(1, false, [], [], context),
+            new(2, false, [attached], [], context)
+        ], [], 7, context);
+        var after = new TrainCombatState([
+            new(1, false, [attached], [], context),
+            new(2, false, [], [], context)
+        ], [], 7, context);
+        var synchronized = RoomAttachmentUnitModel.SynchronizeMovement(before, after);
+        Require(synchronized.Supported && synchronized.State!.Rooms[0].Units.Single().Modifiers!.AttackDamage == 20 &&
+            synchronized.State.Rooms[0].Units.Single().Modifiers!.Upgrades.Count == 0 &&
+            before.Rooms[1].Units.Single().Modifiers!.AttackDamage == 35 && after.Rooms[0].Units.Single().Modifiers!.AttackDamage == 35,
+            "Leaving a FightClub room did not remove its +15 attack upgrade or mutated the input branch: " + synchronized.UnsupportedReason);
+
+        CombatUnit entering = new(2, "unit", CombatTeam.Player, 20, 10, 10, true, false, false, [],
+            modifiers: new(20, 0, 0, 1, 1, true, false, []));
+        RoomCombatState? spawned = RoomAttachmentUnitModel.ApplyToNewCharacter(
+            new RoomCombatState(2, false, [entering], [], context), entering.Id, out string? error);
+        Require(spawned != null && spawned.Units.Single().Modifiers!.AttackDamage == 35 &&
+            spawned.Units.Single().Modifiers!.Upgrades.Single().DataId == "fight-club",
+            "Entering a FightClub room did not apply its +15 attack upgrade: " + error);
     }
 
     private static void EndTurnDecisionCapacities()

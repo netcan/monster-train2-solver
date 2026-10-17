@@ -10,23 +10,29 @@ namespace MonsterTrain2Poju.Probe
     {
         internal const string Name = "original-start-room-attachment";
         internal const string Floor2Name = "original-start-room-attachment-floor2";
+        internal const string Floor3Name = "original-start-room-attachment-floor3";
         internal const string RelicId = "2c97e1b3-d4bb-4133-9572-e582805c106f";
         internal const string RelicKey = "TrainRoomInstallFloor1AtStartOfCombat";
         internal const string Floor2RelicId = "b037ec04-6164-4cd8-8b9d-3bc420c29351";
         internal const string Floor2RelicKey = "TrainRoomInstallFloor2AtStartOfCombat";
+        internal const string Floor3RelicId = "c474dd00-3725-46d6-b074-0be7f7687cdd";
+        internal const string Floor3RelicKey = "TrainRoomInstallFloor3AtStartOfCombat";
+        internal const string Floor3UpgradeId = "f93ac9f7-45d2-47a4-a159-a1b326bd047f";
+        internal const string Floor3UpgradeKey = "FightClub";
         internal const string UpgradeId = "05e215c6-600c-4ecb-a75e-c806dd596bcf";
         internal const string UpgradeKey = "FuelCar_Upgrade";
         internal const string Floor2UpgradeId = "35178e4a-0880-440b-a929-de29de6e88f8";
         internal const string Floor2UpgradeKey = "SpellSanctum_Upgrade";
-
         private static string Mode => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") ?? string.Empty;
         internal static bool Floor2 => Mode == Floor2Name;
-        internal static int TargetRoomIndex => Floor2 ? 1 : 0;
-        private static string TargetRelicId => Floor2 ? Floor2RelicId : RelicId;
-        private static string TargetRelicKey => Floor2 ? Floor2RelicKey : RelicKey;
-        private static string TargetUpgradeId => Floor2 ? Floor2UpgradeId : UpgradeId;
-        private static string TargetUpgradeKey => Floor2 ? Floor2UpgradeKey : UpgradeKey;
-        internal static bool Enabled => Mode == Name || Floor2;
+        internal static bool Floor3 => Mode == Floor3Name;
+        internal static int TargetRoomIndex => Floor3 ? 2 : Floor2 ? 1 : 0;
+        private static Team.Type TargetTeam => Floor3 ? Team.Type.Monsters : Team.Type.Heroes | Team.Type.Monsters;
+        private static string TargetRelicId => Floor3 ? Floor3RelicId : Floor2 ? Floor2RelicId : RelicId;
+        private static string TargetRelicKey => Floor3 ? Floor3RelicKey : Floor2 ? Floor2RelicKey : RelicKey;
+        private static string TargetUpgradeId => Floor3 ? Floor3UpgradeId : Floor2 ? Floor2UpgradeId : UpgradeId;
+        private static string TargetUpgradeKey => Floor3 ? Floor3UpgradeKey : Floor2 ? Floor2UpgradeKey : UpgradeKey;
+        internal static bool Enabled => Mode == Name || Floor2 || Floor3;
         internal static bool Acquired { get; private set; }
         internal static bool Prepared { get; private set; }
         internal static CoverageRecord Evidence { get; } = new CoverageRecord();
@@ -45,7 +51,7 @@ namespace MonsterTrain2Poju.Probe
             save.AddRelic(relic);
             Acquired = true;
             log.LogInfo("ORIGINAL-START-ROOM-ATTACHMENT-ACQUIRED unchanged relic=" + relic.name + " id=" + relic.GetID() +
-                " room=" + TargetRoomIndex + ".");
+                " room=" + TargetRoomIndex + " upgrade=" + TargetUpgradeId + "/" + TargetUpgradeKey + ".");
         }
 
         internal static void Prepare(AllGameManagers managers, ManualLogSource log)
@@ -69,7 +75,7 @@ namespace MonsterTrain2Poju.Probe
                 throw new InvalidOperationException("The start-of-combat relic did not create exactly one active expected attachment on its target floor.");
             TrainRoomAttachmentState attachment = matches[0];
             if (attachment.CardState != null || (int)attachment.AttachType != 0 ||
-                attachment.TrainSide != (Team.Type.Heroes | Team.Type.Monsters) || attachment.Guid.Length == 0 ||
+                attachment.TrainSide != TargetTeam || attachment.Guid.Length == 0 ||
                 !Guid.TryParse(attachment.Guid, out Guid parsedId) || parsedId == Guid.Empty ||
                 attachment.UpgradeStates.Count != 1 || attachment.UpgradeStates[0].Item2.name != TargetUpgradeKey ||
                 room.NumRoomAttachmentsAddedFromCard != 0)
@@ -109,7 +115,7 @@ namespace MonsterTrain2Poju.Probe
             Prepared = true;
             AccessTools.Field(typeof(CombatManager), "combatStateChanged").SetValue(managers.GetCombatManager(), true);
             log.LogInfo("ORIGINAL-START-ROOM-ATTACHMENT-PREPARED room=" + room.GetRoomIndex() + " attachment=" + attachment.Guid +
-                " upgrade=" + Evidence.UpgradeKey + " teams=Heroes|Monsters cardCounter=" + Evidence.AttachmentsAddedFromCards +
+                " upgrade=" + Evidence.UpgradeKey + " teams=" + TargetTeam + " cardCounter=" + Evidence.AttachmentsAddedFromCards +
                 " initiallyImpacted=" + Evidence.InitiallyImpactedCharacters + " stats=" + upgradeState.GetAttackDamage() + "/" +
                 upgradeState.GetAdditionalHP() + "/" + upgradeState.GetAdditionalUnhealedHP() + " statuses=" + statuses +
                 " triggers=" + triggerKinds + " roomModifiers=" + roomModifiers + " traits=" + upgradeData.GetTraitDataUpgrades().Count +
@@ -174,12 +180,13 @@ namespace MonsterTrain2Poju.Probe
         {
             RelicEffectData effect = relic.GetEffects().Single();
             CardUpgradeData upgrade = effect.GetParamCardUpgradeData();
+            bool upgradeMatches = upgrade != null && upgrade.GetID() == TargetUpgradeId && upgrade.name == TargetUpgradeKey;
             if (relic.GetID() != TargetRelicId || relic.name != TargetRelicKey || relic.DisallowInDeploymentPhase ||
                 effect.GetEffectClassName() != "RelicEffectAddTrainRoomAttachmentOnStartOfCombat" ||
-                (int)effect.GetParamSourceTeam() != 255 || effect.GetParamInt() != TargetRoomIndex || effect.GetParamInt2() != 0 ||
+                (int)effect.GetParamSourceTeam() != (Floor3 ? 2 : 255) || effect.GetParamInt() != TargetRoomIndex || effect.GetParamInt2() != 0 ||
                 effect.GetParamFloat() != 0 || effect.GetParamBool() || effect.GetParamBool2() ||
                 effect.GetParamBool3() || effect.GetParamBool4() || effect.GetParamCardFilter() != null ||
-                effect.GetEffectConditions().Count != 0 || upgrade == null || upgrade.GetID() != TargetUpgradeId || upgrade.name != TargetUpgradeKey)
+                effect.GetEffectConditions().Count != 0 || !upgradeMatches)
                 throw new InvalidOperationException("Original start-of-combat attachment relic definition changed: id=" + relic.GetID() +
                     " key=" + relic.name + " disallow=" + relic.DisallowInDeploymentPhase + " class=" + effect.GetEffectClassName() +
                     " team=" + (int)effect.GetParamSourceTeam() + " room=" + effect.GetParamInt() + " type=" + effect.GetParamInt2() +

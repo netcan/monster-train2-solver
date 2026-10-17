@@ -42,7 +42,7 @@ namespace MonsterTrain2Poju.Probe
                         modifier.GetRoomStateModifierClassName() == "RoomStateSpellCostModifier").ToArray();
                     bool supported = roomModifiers.Length == capacityModifiers.Length + spellCostModifiers.Length &&
                         capacityModifiers.Length <= 1 && spellCostModifiers.Length <= 1 &&
-                        state.GetAttackDamage() == 0 && state.GetAttackDamageBuff() == 0 && state.GetAdditionalHP() == 0 &&
+                        state.GetAttackDamageBuff() == 0 && state.GetAdditionalHP() == 0 &&
                         state.GetAdditionalUnhealedHP() == 0 && state.GetCostReduction() == 0 && state.GetAdditionalSize() == 0 &&
                         state.GetAdditionalEquipmentLimit() == 0 && state.GetStatusEffectUpgrades().Count == 0 &&
                         state.GetTraitDataUpgrades().Count == 0 && state.GetRemoveTraitUpgrades().Count == 0 &&

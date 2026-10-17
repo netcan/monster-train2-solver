@@ -105,7 +105,7 @@
 "PyregelOnAscend_DH"	"394fb724-046f-448f-9531-f9d6caadae77"	"accepted-native-battle"	"RelicEffectAddStatusOnUnitMovedUpDown"	""
 "UnitsGainStealthOnSlayPlusAttack"	"4687feca-a053-48ed-b208-81dc6dfc6e72"	"accepted-native-battle"	"RelicEffectAdjustAttackByStatusEffect,RelicEffectAddTrigger"	""
 "ReduceCostUnitIfNoUpgrade"	"f03c7664-0485-4bcf-8bb9-f76321e090c3"	"pending"	"RelicEffectModifyCardCostIfNoUpgrades"	""
-"TrainRoomInstallFloor3AtStartOfCombat"	"c474dd00-3725-46d6-b074-0be7f7687cdd"	"pending"	"RelicEffectAddTrainRoomAttachmentOnStartOfCombat"	""
+"TrainRoomInstallFloor3AtStartOfCombat"	"c474dd00-3725-46d6-b074-0be7f7687cdd"	"accepted-native-battle"	"RelicEffectAddTrainRoomAttachmentOnStartOfCombat"	""
 "DrawCardWhenConsumePlayed"	"4fbb0cca-26cd-4510-af02-66694c7edfd3"	"accepted-native-battle"	"RelicEffectCardDrawOnCardPlay"	""
 "CopyConsumedCard"	"51368ce4-b037-49ef-801c-545405b78800"	"accepted-native-battle"	"RelicEffectCopyCardOnCardPlay"	""
 "FrostbiteOnEnemies"	"270356af-16bd-4433-a0b2-3e5bb94ef890"	"accepted-native-battle"	"RelicEffectAddStatusEffectOnSpawn"	""
