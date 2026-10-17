@@ -15,6 +15,7 @@ namespace MonsterTrain2Poju.Probe
         internal const string TinkermasterName = "original-tinkermaster-mix";
         internal const string ProgressName = "original-progress-pacemaker-mix";
         internal const string NefariousOverflowName = "original-nefarious-overflow";
+        internal const string UncontrolledGroupName = "original-uncontrolled-group";
         internal const string CopyFirstSpellName = "original-copy-first-spell-played";
         internal const string CopyFirstConsumeName = "original-copy-first-consume-played";
         internal const string CopyConsumedCardName = "original-copy-consumed-card";
@@ -22,6 +23,7 @@ namespace MonsterTrain2Poju.Probe
         private const string TinkermasterId = "db2193eb-a476-4cc4-9a26-2d0e35f46b74";
         private const string ProgressId = "4446fd0c-f7c3-4a9d-96c3-bd12e4426a76";
         private const string NefariousOverflowId = "b0575799-1511-489d-a05d-b5b2e6bf84c2";
+        private const string UncontrolledGroupId = "4c737e1e-7e5c-40ee-87a3-944859784283";
         private const string CopyFirstSpellId = "0f4a9e72-cd34-4667-95f6-6a0ca69832f8";
         private const string CopyFirstConsumeId = "b7207406-3c55-4771-b9c9-ed99dd9e1f9b";
         private const string CopyConsumedCardId = "51368ce4-b037-49ef-801c-545405b78800";
@@ -33,6 +35,7 @@ namespace MonsterTrain2Poju.Probe
         private const string CopyWitnessUpgradeId = "80a5edf4-6dc8-41a7-ab4e-9d0e914e0848";
         private static ManualLogSource? logger;
         private static int sourceId;
+        private static int uncontrolledCarrierCardId;
         private static bool played;
         private static int playedOpeningElixirId;
         private static bool copySourcePreludeMarked;
@@ -44,14 +47,16 @@ namespace MonsterTrain2Poju.Probe
         private static bool explosionWitness;
         private static bool seededPoison;
         private static bool monsterSpellTargetingActionMarked;
+        private static bool uncontrolledCarrierPlayed;
         internal static bool Prepared { get; private set; }
         private static IReadOnlyList<ElixirMixSelection> pendingSelections = Array.Empty<ElixirMixSelection>();
         private static int pendingSelectionIndex;
         internal static bool Acquired { get; private set; }
-        internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") is Name or TinkermasterName or ProgressName or NefariousOverflowName or CopyFirstSpellName or CopyFirstConsumeName or CopyConsumedCardName or MonsterSpellTargetingName;
+        internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") is Name or TinkermasterName or ProgressName or NefariousOverflowName or UncontrolledGroupName or CopyFirstSpellName or CopyFirstConsumeName or CopyConsumedCardName or MonsterSpellTargetingName;
         internal static bool TinkermasterMode => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == TinkermasterName;
         internal static bool ProgressMode => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == ProgressName;
         internal static bool NefariousOverflowMode => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == NefariousOverflowName;
+        internal static bool UncontrolledGroupMode => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == UncontrolledGroupName;
         internal static bool CopyFirstSpellMode => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == CopyFirstSpellName;
         internal static bool CopyFirstConsumeMode => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == CopyFirstConsumeName;
         internal static bool CopyConsumedCardMode => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == CopyConsumedCardName;
@@ -64,15 +69,23 @@ namespace MonsterTrain2Poju.Probe
             SaveManager save = managers.GetSaveManager();
             if (save.PreviewMode || save.GetGameSequence() == SaveData.GameSequence.InBattle)
                 throw new InvalidOperationException("Original Mix relic must be acquired before battle setup.");
-            string id = MonsterSpellTargetingMode ? MonsterSpellTargetingId : CopyConsumedCardMode ? CopyConsumedCardId : CopyFirstConsumeMode ? CopyFirstConsumeId : CopyFirstSpellMode ? CopyFirstSpellId : NefariousOverflowMode ? NefariousOverflowId : TinkermasterMode ? TinkermasterId : ProgressId;
-            string key = MonsterSpellTargetingMode ? "SingleToTeamMonsterSpellTargeting" : CopyConsumedCardMode ? "CopyConsumedCard" : CopyFirstConsumeMode ? "CopyFirstConsumePlayed" : CopyFirstSpellMode ? "CopyFirstSpellPlayed" : NefariousOverflowMode ? "NefariousOverflow" : TinkermasterMode ? "TinkermasterTools" : "ProgressPacemaker";
+            string id = MonsterSpellTargetingMode ? MonsterSpellTargetingId : CopyConsumedCardMode ? CopyConsumedCardId : CopyFirstConsumeMode ? CopyFirstConsumeId : CopyFirstSpellMode ? CopyFirstSpellId : UncontrolledGroupMode ? UncontrolledGroupId : NefariousOverflowMode ? NefariousOverflowId : TinkermasterMode ? TinkermasterId : ProgressId;
+            string key = MonsterSpellTargetingMode ? "SingleToTeamMonsterSpellTargeting" : CopyConsumedCardMode ? "CopyConsumedCard" : CopyFirstConsumeMode ? "CopyFirstConsumePlayed" : CopyFirstSpellMode ? "CopyFirstSpellPlayed" : UncontrolledGroupMode ? "UncontrolledGroup" : NefariousOverflowMode ? "NefariousOverflow" : TinkermasterMode ? "TinkermasterTools" : "ProgressPacemaker";
             CollectableRelicData relic = save.GetAllGameData().GetAllCollectableRelicData().Single(item => item.GetID() == id);
-            RelicEffectData effect = relic.GetEffects().Single();
+            RelicEffectData[] effects = relic.GetEffects().ToArray();
+            RelicEffectData effect = effects[0];
             bool validNefariousOverflow = !NefariousOverflowMode ||
+                effects.Length == 1 &&
                 effect.GetEffectClassName() == RelicUnstableRebalanceModel.Effect && effect.GetParamSourceTeam() == (Team.Type)255 &&
                 effect.GetParamInt() == 0 && effect.GetParamInt2() == 1 && effect.GetParamMinInt() == 0 &&
                 !effect.GetParamBool() && effect.GetParamStatusEffects().Single() is var unstable &&
                 unstable.statusId == "unstable" && unstable.count == 1;
+            bool validUncontrolledGroup = !UncontrolledGroupMode || effects.Length == 2 &&
+                effect.GetEffectClassName() == RelicUnstableRebalanceModel.Effect && effect.GetParamSourceTeam() == (Team.Type)255 &&
+                effect.GetParamInt() == 0 && effect.GetParamInt2() == 0 && effect.GetParamMinInt() == 5 &&
+                !effect.GetParamBool() && effect.GetParamStatusEffects().Single() is var growthStatus &&
+                growthStatus.statusId == "unstable" && growthStatus.count == 1 &&
+                effects[1].GetEffectClassName() == RelicModel.Null;
             bool validMixRelic = !(TinkermasterMode || ProgressMode) ||
                 effect.GetEffectClassName() == "RelicEffectAdjustMixAmount" &&
                 effect.GetParamInt() == (TinkermasterMode ? 1 : 0) &&
@@ -82,7 +95,7 @@ namespace MonsterTrain2Poju.Probe
             bool validCopyFirstConsume = !CopyFirstConsumeMode || ValidCopyFirstConsume(effect);
             bool validCopyConsumedCard = !CopyConsumedCardMode || ValidCopyConsumedCard(effect);
             bool validMonsterSpellTargeting = !MonsterSpellTargetingMode || ValidMonsterSpellTargeting(effect);
-            if (relic.name != key || relic.DisallowInDeploymentPhase || !validNefariousOverflow || !validCopyFirstSpell || !validCopyFirstConsume || !validCopyConsumedCard ||
+            if (relic.name != key || relic.DisallowInDeploymentPhase || !validNefariousOverflow || !validUncontrolledGroup || !validCopyFirstSpell || !validCopyFirstConsume || !validCopyConsumedCard ||
                 !validMonsterSpellTargeting || !validMixRelic ||
                 save.GetCollectedRelics().Any(item => item.GetRelicDataID() == id))
                 throw new InvalidOperationException("Original scenario relic definition or acquisition changed.");
@@ -109,6 +122,11 @@ namespace MonsterTrain2Poju.Probe
                 log.LogInfo("ORIGINAL-NEFARIOUS-OVERFLOW-ACQUIRED unchanged team=" + (int)effect.GetParamSourceTeam() +
                     " proc=" + effect.GetParamInt() + " explosionPerStack=" + effect.GetParamInt2() +
                     " growth=" + effect.GetParamMinInt() + " onlyOne=" + effect.GetParamBool());
+            else if (UncontrolledGroupMode)
+                log.LogInfo("ORIGINAL-UNCONTROLLED-GROUP-ACQUIRED unchanged team=" + (int)effect.GetParamSourceTeam() +
+                    " proc=" + effect.GetParamInt() + " explosionPerStack=" + effect.GetParamInt2() +
+                    " growth=" + effect.GetParamMinInt() + " onlyOne=" + effect.GetParamBool() +
+                    " following=" + effects[1].GetEffectClassName());
             else
                 log.LogInfo("ORIGINAL-MIX-RELIC-ACQUIRED unchanged " + key + " amount=" + effect.GetParamInt() +
                     " extraMixes=" + effect.GetParamInt2() + " followupAmount=" + effect.GetParamMinInt());
@@ -116,9 +134,9 @@ namespace MonsterTrain2Poju.Probe
 
         internal static void Prepare(AllGameManagers managers, ManualLogSource log)
         {
-            if ((TinkermasterMode || ProgressMode || NefariousOverflowMode || CopyFirstSpellMode || CopyConsumeMode || MonsterSpellTargetingMode) && (!Acquired ||
+            if ((TinkermasterMode || ProgressMode || NefariousOverflowMode || UncontrolledGroupMode || CopyFirstSpellMode || CopyConsumeMode || MonsterSpellTargetingMode) && (!Acquired ||
                 managers.GetSaveManager().GetCollectedRelics().Count(item => item.GetRelicDataID() ==
-                    (MonsterSpellTargetingMode ? MonsterSpellTargetingId : CopyConsumedCardMode ? CopyConsumedCardId : CopyFirstConsumeMode ? CopyFirstConsumeId : CopyFirstSpellMode ? CopyFirstSpellId : NefariousOverflowMode ? NefariousOverflowId : TinkermasterMode ? TinkermasterId : ProgressId)) != 1))
+                    (MonsterSpellTargetingMode ? MonsterSpellTargetingId : CopyConsumedCardMode ? CopyConsumedCardId : CopyFirstConsumeMode ? CopyFirstConsumeId : CopyFirstSpellMode ? CopyFirstSpellId : UncontrolledGroupMode ? UncontrolledGroupId : NefariousOverflowMode ? NefariousOverflowId : TinkermasterMode ? TinkermasterId : ProgressId)) != 1))
                 throw new InvalidOperationException("Original Mix relic is missing or duplicated at battle setup.");
             Prepared = false;
             logger = log;
@@ -127,6 +145,9 @@ namespace MonsterTrain2Poju.Probe
             copySourcePreludeMarked = false;
             copyControlPreludeMarked = false;
             monsterSpellTargetingActionMarked = false;
+            uncontrolledCarrierPlayed = false;
+            uncontrolledCarrierCardId = 0;
+            UncontrolledGroupGrowthProbe.Reset();
             consumeCopyId = 0;
             seededPoison = false;
             drafts = 0;
@@ -152,6 +173,21 @@ namespace MonsterTrain2Poju.Probe
             if (added == null || !(MonsterSpellTargetingMode ? cards.GetDrawPile() : cards.GetHand()).Contains(added))
                 throw new InvalidOperationException("Mix fixture could not place its scenario card in the requested pile.");
             sourceId = FullBattleTrace.Active!.CardId(added);
+            if (UncontrolledGroupMode)
+            {
+                CardState carrierCard = cards.GetHand().FirstOrDefault(card => card.GetCardType() == CardType.Monster &&
+                    card.GetCardDataID() != MixologyId) ?? throw new InvalidOperationException(
+                        "UncontrolledGroup fixture requires an original Monster in the opening hand.");
+                CharacterData carrier = gameData.FindCardData(carrierCard.GetCardDataID())?.GetSpawnCharacterData() ??
+                    throw new InvalidOperationException("UncontrolledGroup original Monster has no spawn character.");
+                Set(carrier, "health", 120);
+                Set(carrier, "attackDamage", 30);
+                Set(carrier, "size", 1);
+                Set(carrier, "triggers", new List<CharacterTriggerData>());
+                Set(carrier, "startingStatusEffects", Array.Empty<StatusEffectStackData>());
+                Set(carrier, "unitAbility", null!);
+                uncontrolledCarrierCardId = FullBattleTrace.Active.CardId(carrierCard);
+            }
             Prepared = true;
             log.LogInfo(MonsterSpellTargetingMode
                 ? "ORIGINAL-MONSTER-SPELL-TARGETING-PREPARED unchanged relic, direct 1-damage Monster-target witness card=" + sourceId
@@ -161,6 +197,9 @@ namespace MonsterTrain2Poju.Probe
                 ? "ORIGINAL-COPY-FIRST-CONSUME-PREPARED unchanged relic, Consume Spell witness card=" + sourceId
                 : CopyConsumedCardMode
                 ? "ORIGINAL-COPY-CONSUMED-CARD-PREPARED unchanged relic, two-copy Consume Spell witness card=" + sourceId
+                : UncontrolledGroupMode
+                ? "ORIGINAL-UNCONTROLLED-GROUP-PREPARED unchanged relic, high-health 30-attack carrier and original Mixology card=" + sourceId +
+                    " carrier=" + uncontrolledCarrierCardId
                 : NefariousOverflowMode
                 ? "ORIGINAL-NEFARIOUS-OVERFLOW-PREPARED unchanged relic, original Mixology witness card=" + sourceId
                 : "MIX-PREPARED original Mixology card=" + sourceId);
@@ -173,6 +212,8 @@ namespace MonsterTrain2Poju.Probe
                 monsterSpellTargetingActionMarked = true;
                 return true;
             }
+            if (UncontrolledGroupMode && (action.CardInstanceId == sourceId || action.CardInstanceId == uncontrolledCarrierCardId ||
+                action.CardInstanceId == playedOpeningElixirId)) return true;
             if (CopyConsumeMode)
             {
                 if (!copySourcePreludeMarked && action.CardInstanceId == sourceId)
@@ -206,6 +247,56 @@ namespace MonsterTrain2Poju.Probe
 
         internal static PlayCardAction? Choose(BattleTurnState state)
         {
+            if (UncontrolledGroupMode)
+            {
+                if (!played)
+                {
+                    CardToken? source = state.Spawn.Train.Context!.Cards.Hand.FirstOrDefault(card => card.InstanceId == sourceId);
+                    if (source != null && state.Energy >= 2)
+                    {
+                        played = true;
+                        return new PlayCardAction(sourceId, 0, mixSelections: [
+                            new ElixirMixSelection(0, 0, firstOpeningChoice),
+                            new ElixirMixSelection(1, 0, secondOpeningChoice)]);
+                    }
+                }
+                if (!uncontrolledCarrierPlayed && state.Spawn.Train.Context!.Cards.Hand.Any(card =>
+                    card.InstanceId == uncontrolledCarrierCardId))
+                {
+                    PlayCardAction[] supported = BattleActionModel.EnumerateSupportedPlays(state).ToArray();
+                    PlayCardAction? carrier = supported.FirstOrDefault(action => action.CardInstanceId == uncontrolledCarrierCardId && action.RoomIndex == 0);
+                    if (carrier == null)
+                    {
+                        string legal = string.Join(",", supported.Where(action => action.CardInstanceId == uncontrolledCarrierCardId)
+                            .Select(action => action.RoomIndex + ":" + action.TargetUnitId));
+                        logger!.LogInfo("ORIGINAL-UNCONTROLLED-GROUP-CARRIER-ACTIONS id=" + uncontrolledCarrierCardId +
+                            " legal=" + (legal.Length == 0 ? "none" : legal));
+                        throw new InvalidOperationException("UncontrolledGroup carrier has no legal room-zero play.");
+                    }
+                    uncontrolledCarrierPlayed = true;
+                    return carrier;
+                }
+                if (playedOpeningElixirId == 0 && firstOpeningChoice == 0 && secondOpeningChoice == 1)
+                {
+                    CardToken? infusion = state.Spawn.Train.Context!.Cards.Hand.FirstOrDefault(card => card.DataId == BlastInfusionId);
+                    CombatUnit? carrier = state.Spawn.Train.Rooms.SelectMany(room => room.Units)
+                        .FirstOrDefault(unit => unit.Team == CombatTeam.Player && unit.SpawnerCardId == uncontrolledCarrierCardId &&
+                            unit.Health > 5 && unit.DeathState?.IsDestroyed != true);
+                    if (infusion != null && carrier != null)
+                    {
+                        int roomIndex = state.Spawn.Train.Rooms.Single(room => room.Units.Any(unit => unit.Id == carrier.Id)).RoomIndex;
+                        PlayCardAction? application = BattleActionModel.EnumerateSupportedPlays(state).FirstOrDefault(action =>
+                            action.CardInstanceId == infusion.InstanceId && action.TargetUnitId == carrier.Id && action.RoomIndex == roomIndex);
+                        if (application == null) throw new InvalidOperationException("Blast Infusion cannot target the UncontrolledGroup carrier.");
+                        playedOpeningElixirId = infusion.InstanceId;
+                        return application;
+                    }
+                }
+                if (playedOpeningElixirId != 0 && state.Spawn.Train.Rooms.SelectMany(room => room.Units)
+                    .Any(unit => unit.Team == CombatTeam.Player && unit.SpawnerCardId == uncontrolledCarrierCardId &&
+                        unit.Status("unstable")?.Stacks > 0)) return null;
+                return BattleActionModel.ChooseUnitSpellAndJunkPlay(state);
+            }
             if (MonsterSpellTargetingMode)
             {
                 if (!played)

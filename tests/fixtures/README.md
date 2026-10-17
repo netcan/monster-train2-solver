@@ -1,5 +1,13 @@
 # Native regression fixtures
 
+UncontrolledGroup extension (2026-10-17): 389 archives (351 battles and 38
+calibrations), 168/224 original relic owners (75.00%): 152 full-battle owners,
+fifteen campaign-interface owners and one native no-op. The unchanged two-effect
+owner adds +5 Unstable to eligible nonlethal units on both teams; Blast Resistant
+suppresses growth. The 41-stage winning replay has zero differential counters,
+and its native 5-to-10 callback and 128-state independent search pass. Lethal
+pre-growth sacrifice and sibling RebalanceUnstable payloads remain unsupported.
+
 MoonPhaseAddArmorToSilent extension (2026-10-17): 388 archives
 (350 battles and 38 calibrations), 167/224 original relic owners (74.55%):
 151 full-battle owners, fifteen campaign-interface owners and one native no-op.

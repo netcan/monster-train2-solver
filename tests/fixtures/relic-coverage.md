@@ -1,7 +1,7 @@
 # Original relic coverage evidence
 
-As of 2026-10-17, **167 distinct original collectable relics / 224 catalog entries
-(74.55%)** have accepted native evidence: 151 have full-battle effect evidence,
+As of 2026-10-17, **168 distinct original collectable relics / 224 catalog entries
+(75.00%)** have accepted native evidence: 152 have full-battle effect evidence,
 fifteen have campaign consumer interfaces validated, and one is an explicit
 native no-op with seeded baseline equivalence. Except for that no-op, this counts
 unchanged relic definitions whose effects actually ran, including original filters and
@@ -46,6 +46,13 @@ Full callbacks leave state unchanged, and three New callbacks add 10 Armor to
 all eligible friendly Silent targets across three multi-room positive cases.
 The 45-stage replay, four controlled card actions, complete-state callback
 replays and 128-state independent search pass with zero native error counters.
+`UncontrolledGroup` now has direct native evidence for its unchanged ordered
+`RelicEffectRebalanceUnstable` / `RelicEffectNull` payload: eligible nonlethal
+units on either team gain +5 Unstable, with Blast Resistant as a no-growth
+control. The 41-stage battle and 5-to-10 callback replay have zero differential
+counters; independent search checks 128/128 states with serial/parallel best
+equality. Lethal pre-growth sacrifice and other unstable-rebalance payloads
+remain unsupported.
 `DamageOnFloorTransition` now has exact +3 native enemy damage after both
 PostAscension and PostDescension; rooted, immobile and player movement controls
 remain unchanged. Its full replay and independent battle search pass.
@@ -195,6 +202,7 @@ owner count.
 | `EmberOnEarlyDiscard` | `44149a09-df55-4864-b5d9-f30c4e659999` | [early discard energy][earlyDiscardEnergy] | The unchanged +1 effect triggers for card-caused discard of each card, but not Consume; five native steps gain Ember and 18 consume controls gain none. Pure checks cover the energy clamp, placement and preview gates. Full battle and independent 128/128-state replay/search match. |
 | `ReduceSpellCostOfCheaper` | `9cc85dbb-d0ae-409b-8f26-41d2202eb1e0` | [cheaper spell cost][cheaperSpellCost] | Unchanged FreeSpellBlessing applies only to filtered spells with strictly lower cost; equal-cost, zero-cost and X-cost controls are unchanged. Played-card and end-turn discard clean up tracked upgrades. Full battle and independent 128/128-state replay/search match. |
 | `NefariousOverflow` | `b0575799-1511-489d-a05d-b5b2e6bf84c2` | [NefariousOverflow][nefariousOverflow] | The unchanged both-team payload adds 1 explosion damage per Unstable stack: the five-stack carrier's death kills the Mage and reduces the Guard's Armor 17→7. Proc-damage and growth hooks remain unsupported when nonzero. Full battle and independent 128/128-state replay/search match. |
+| `UncontrolledGroup` | `4c737e1e-7e5c-40ee-87a3-944859784283` | [UncontrolledGroup][uncontrolledGroup] | The unchanged ordered two-effect owner adds +5 Unstable to eligible nonlethal units on both teams; Blast Resistant suppresses the callback. Native growth callback and full 41-stage replay match, with independent 128/128-state search. Lethal pre-growth sacrifice and sibling payloads are not claimed. |
 | `CopyFirstSpellPlayed` | `0f4a9e72-cd34-4667-95f6-6a0ca69832f8` | [CopyFirstSpellPlayed][copyFirstSpell] | The unchanged once-per-turn owner copies the first direct Spell with temporary Ephemeral; its generated copy plays again the same turn without retriggering. Exact original owner only; sibling copy payloads are not generalized. |
 | `CopyFirstConsumePlayed` | `b7207406-3c55-4771-b9c9-ed99dd9e1f9b` | [CopyFirstConsumePlayed][copyFirstConsume] | The unchanged original owner copies the first direct-play Spell carrying the required Consume trait as a permanent hand card, and the copy enters deck statistics. Playing that copy in the same battle does not retrigger the ThisBattle condition. Native replay and independent 128/128-state search pass; sibling copy payloads are not generalized. |
 | `CopyConsumedCard` | `51368ce4-b037-49ef-801c-545405b78800` | [CopyConsumedCard][copyConsumedCard] | The unchanged owner copies a direct-play card with the required Consume trait twice, irrespective of card type, as non-permanent hand cards. Playing one copy in the same battle creates no third copy. The captured Spell path passes native replay and independent 128/128-state search; other card types are not claimed. |
@@ -844,6 +852,7 @@ dotnet run --project src/ModelChecks -c Release -- --gold-pyre-pure
 [soloUnitUpgrade]: full-battle-original-add-stats-to-solo-units.mt2f
 [purgeToExhaust]: full-battle-original-purge-to-exhaust.mt2f
 [pyregelOnAscend]: full-battle-original-pyregel-on-ascend.mt2f
+[uncontrolledGroup]: full-battle-original-uncontrolled-group.mt2f
 
 ## AddStatsToSoloUnits
 
@@ -1013,4 +1022,28 @@ battle, 15 campaign and one native no-op owner.
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-moon-phase-status-relic.mt2f
 dotnet run --project src/ModelChecks -c Release -- --original-moon-phase-status-only tests/fixtures/full-battle-original-moon-phase-status-relic.mt2f
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-moon-phase-status-relic.mt2f
+```
+
+## UncontrolledGroup
+
+The schema-191 archive captures the unchanged ordered
+`RelicEffectRebalanceUnstable` / `RelicEffectNull` owner. Its native
+`OnMonsterTeamTurnBegin` callback grows the nonlethal carrier from 5 to 10
+Unstable; Blast Resistant suppresses growth. The 41-stage winning replay has
+zero capture failures, mismatches, unsupported transitions or pending records.
+The focused checks cover both teams, exact payload guards, the nonzero-floor
+callback queue, and the lethal pre-growth rejection boundary. Independent search
+matches all three recorded decisions over 128/128 states, with serial/parallel
+best equality and zero unsupported attempts. Lethal pre-growth sacrifice and
+sibling `RelicEffectRebalanceUnstable` payloads remain outside the support
+boundary. The 25,130-byte binary has 3,471 unique nodes and SHA-256
+`c0bb3b5babf93a34eaef97e4afd763de925a17415a592891e3aee121d75f84b8`; no JSON
+companion is tracked. Inventory is 389 archives: 351 full battles and 38
+component calibrations. Original relic coverage is 168/224 (75.00%): 152 battle,
+15 campaign and one native no-op owner.
+
+```powershell
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-uncontrolled-group.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-uncontrolled-group-only tests/fixtures/full-battle-original-uncontrolled-group.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-uncontrolled-group.mt2f
 ```

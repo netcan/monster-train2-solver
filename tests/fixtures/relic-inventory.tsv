@@ -54,7 +54,7 @@
 "AddStatsToSoloUnits"	"724a1c19-192f-48c1-8099-8ae3ecb9c1e5"	"accepted-native-battle"	"RelicEffectAddTempSoloUnitUpgradeStartOfTurn"	""
 "EnhanceAttackOnConsume"	"52c41ba0-f720-4b7e-9dd0-bd318be6acae"	"accepted-native-battle"	"RelicEffectAddRemoveTempUpgradeOnUnitTrigger"	""
 "PurgeToExhaust"	"10648aee-8577-49b6-8659-318a7f922d5a"	"accepted-native-battle"	"RelicEffectModifyTrait"	""
-"UncontrolledGroup"	"4c737e1e-7e5c-40ee-87a3-944859784283"	"pending"	"RelicEffectRebalanceUnstable,RelicEffectNull"	""
+"UncontrolledGroup"	"4c737e1e-7e5c-40ee-87a3-944859784283"	"accepted-native-battle"	"RelicEffectRebalanceUnstable,RelicEffectNull"	""
 "AwokenRegen"	"1fd244de-7d7b-4345-974b-4e5bf287a3df"	"accepted-native-battle"	"RelicEffectModifyStatusMagnitude"	""
 "ImpDamageBuff"	"94595f3a-4624-4408-977d-b166a98f23d2"	"accepted-native-battle"	"RelicEffectAddTempUpgrade"	""
 "CopyFirstConsumePlayed"	"b7207406-3c55-4771-b9c9-ed99dd9e1f9b"	"accepted-native-battle"	"RelicEffectCopyCardOnCardPlay"	""

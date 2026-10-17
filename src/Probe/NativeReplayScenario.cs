@@ -326,7 +326,7 @@ namespace MonsterTrain2Poju.Probe
                         OriginalConserveEmberScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && ChooseDiscardScenario.OriginalSmeltRelicMode && !ChooseDiscardScenario.RelicAcquired)
                         ChooseDiscardScenario.AcquireRelicBeforeBattle(managers!, log);
-                    if (fullBattle && (MixScenario.TinkermasterMode || MixScenario.ProgressMode || MixScenario.NefariousOverflowMode || MixScenario.CopyFirstSpellMode || MixScenario.CopyFirstConsumeMode || MixScenario.CopyConsumedCardMode || MixScenario.MonsterSpellTargetingMode) && !MixScenario.Acquired)
+                    if (fullBattle && (MixScenario.TinkermasterMode || MixScenario.ProgressMode || MixScenario.NefariousOverflowMode || MixScenario.UncontrolledGroupMode || MixScenario.CopyFirstSpellMode || MixScenario.CopyFirstConsumeMode || MixScenario.CopyConsumedCardMode || MixScenario.MonsterSpellTargetingMode) && !MixScenario.Acquired)
                         MixScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalRoomEntryStatusRelicScenario.Enabled && !OriginalRoomEntryStatusRelicScenario.Acquired)
                         OriginalRoomEntryStatusRelicScenario.AcquireBeforeBattle(managers!, log);

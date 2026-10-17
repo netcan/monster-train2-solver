@@ -1401,6 +1401,7 @@ namespace MonsterTrain2Poju.Model
                     context = context.WithQueryFrame(context.QueryFrame.With(selectedRoomIndex: source.RoomIndex));
                 bool relentless = units.Any(unit => unit.InRoom && unit.Has("relentless")) && BothTeamsPresent();
                 var seen = new HashSet<string>(StringComparer.Ordinal);
+                bool repeat;
                 do
                 {
                     if (round > 0 && entireRoom) Clear(true);
@@ -1422,7 +1423,26 @@ namespace MonsterTrain2Poju.Model
                     if (!source.Preview && units.Any(unit => unit.Source.IsPyre && !unit.Alive))
                         return Finish(RoomOutcome.PlayerDefeated);
                     Clear(false);
-                } while (relentless && BothTeamsPresent());
+                    repeat = relentless && BothTeamsPresent();
+                    if (context?.Relics?.Any(relic => relic.UnstableRebalances?.Any(rule =>
+                        rule.AdditionalGrowthRate != 0) == true) == true)
+                    {
+                        UnstableGrowthResult growth = UnstableGrowthModel.StartTurn(new TrainCombatState(
+                            [CurrentRoom()], Array.Empty<EnemyMovement>(), 0, context));
+                        if (!growth.Supported) return Finish(RoomOutcome.Unsupported);
+                        if (growth.Outcome is RoomOutcome.BattleWon or RoomOutcome.PlayerDefeated)
+                            return Finish(growth.Outcome);
+                        context = growth.State!.Context;
+                        foreach (CombatUnit changed in growth.State.Rooms.Single().Units)
+                        {
+                            WorkingUnit? current = units.FirstOrDefault(unit => unit.Source.Id == changed.Id);
+                            if (current == null)
+                            { unsupportedReason = "Unstable growth changed room membership between combat exchanges."; break; }
+                            current.Apply(changed);
+                        }
+                        if (unsupportedReason != null) return Finish(RoomOutcome.Unsupported);
+                    }
+                } while (repeat);
                 AlmostPostRoomCombat();
                 if (unsupportedReason != null) return Finish(RoomOutcome.Unsupported);
                 if (battleWon) return Finish(RoomOutcome.BattleWon);

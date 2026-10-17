@@ -272,6 +272,7 @@ param(
     [switch] $OriginalEarlyDiscardEnergy,
     [switch] $OriginalCheaperSpellCost,
     [switch] $OriginalNefariousOverflow,
+    [switch] $OriginalUncontrolledGroup,
     [switch] $OriginalCopyFirstSpellPlayed,
     [switch] $OriginalCopyFirstConsumePlayed,
     [switch] $OriginalCopyConsumedCard,
@@ -545,6 +546,8 @@ if ($OriginalSmeltEmberRelic) { $BranchCardMasks = $true; $Policy = 'units-spell
 if ($OriginalSmeltEmberRelicZero -or $OriginalSmeltEmberRelicBulk) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($RemoveAllStatusEffects) { $Policy = 'units-spells-and-junk' }
 if ($OriginalNefariousOverflow) { $Mix = $true; $MixUnstableExplosion = $true }
+if ($OriginalUncontrolledGroup -and $MixChoices -and $MixChoices -ne '01') { throw 'UncontrolledGroup requires Mix choices 01.' }
+if ($OriginalUncontrolledGroup) { $Mix = $true; $MixChoices = '01' }
 if ($DragonHoard) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($TrainHeal) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($Overheal) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
@@ -836,6 +839,7 @@ if ($OriginalMagebladeMagnitudeRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'o
 if ($OriginalCardPlayMagicPower) { $environment['MT2_PROBE_MODIFIERS'] = 'original-card-play-magic-power' }
 if ($OriginalCheaperSpellCost) { $environment['MT2_PROBE_MODIFIERS'] = 'original-reduce-spell-cost-cheaper' }
 if ($OriginalNefariousOverflow) { $environment['MT2_PROBE_MODIFIERS'] = 'original-nefarious-overflow' }
+if ($OriginalUncontrolledGroup) { $environment['MT2_PROBE_MODIFIERS'] = 'original-uncontrolled-group' }
 if ($OriginalCopyFirstSpellPlayed) { $environment['MT2_PROBE_MODIFIERS'] = 'original-copy-first-spell-played' }
 if ($OriginalCopyFirstConsumePlayed) { $environment['MT2_PROBE_MODIFIERS'] = 'original-copy-first-consume-played' }
 if ($OriginalCopyConsumedCard) { $environment['MT2_PROBE_MODIFIERS'] = 'original-copy-consumed-card' }
@@ -1655,6 +1659,15 @@ if ($OriginalNefariousOverflow -and ($trace.Schema -ne 172 -or
     -not $trace.OriginalNefariousOverflowPrepared -or
     -not (Select-String -LiteralPath $unityLog -Pattern 'ORIGINAL-NEFARIOUS-OVERFLOW-PREPARED' -Quiet))) {
     throw 'NefariousOverflow lacks its original relic and isolated Unstable explosion witness.'
+}
+if ($OriginalUncontrolledGroup) {
+    $growthCallbacks = @($trace.UncontrolledGroupGrowthCallbacks | Where-Object {
+        $_.Stage -eq 'OnMonsterTeamTurnBegin' -and $_.UnstableBefore -eq 5 -and $_.UnstableAfter -eq 10
+    })
+    if ($trace.Schema -ne 191 -or -not $trace.OriginalUncontrolledGroupPrepared -or
+        $trace.ModifierScenario -ne 'original-uncontrolled-group' -or $growthCallbacks.Count -lt 1) {
+        throw 'UncontrolledGroup lacks its unchanged relic and native five-stack growth callback witness.'
+    }
 }
 if ($OriginalCopyFirstSpellPlayed -and ($trace.Schema -ne 173 -or
     $trace.ModifierScenario -ne 'original-copy-first-spell-played' -or
